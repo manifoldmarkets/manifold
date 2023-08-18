@@ -92,7 +92,7 @@ export const MultiBettor = (props: {
 }
 
 export const OpenProb = (props: { prob: number }) => (
-  <span className="text-ink-900 text-xl">{formatPercent(props.prob)}</span>
+  <span className="text-lg font-bold">{formatPercent(props.prob)}</span>
 )
 
 export const ClosedProb = (props: { prob: number; resolvedProb?: number }) => {
@@ -100,13 +100,13 @@ export const ClosedProb = (props: { prob: number; resolvedProb?: number }) => {
   return (
     <>
       {!!resolveProb && (
-        <span className="dark:text-ink-900 text-xl text-purple-500">
+        <span className="dark:text-ink-900 text-lg text-purple-500">
           {Math.round(resolveProb * 100)}%
         </span>
       )}
       <span
         className={clsx(
-          'text-ink-500 text-xl',
+          'text-ink-500 text-lg',
           resolveProb != undefined &&
             'inline-block min-w-[40px] text-right line-through'
         )}
