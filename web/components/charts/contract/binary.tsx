@@ -2,7 +2,6 @@ import { useMemo } from 'react'
 import { last } from 'lodash'
 import { scaleTime, scaleLinear } from 'd3-scale'
 
-import { Bet } from 'common/bet'
 import { getProbability } from 'common/calculate'
 import { BinaryContract } from 'common/contract'
 import {
@@ -17,20 +16,28 @@ import { Row } from 'web/components/layout/row'
 import { Avatar } from 'web/components/widgets/avatar'
 import { YES_GRAPH_COLOR } from 'common/envs/constants'
 import { HistoryPoint, viewScale } from 'common/chart'
+import { HOUR_MS } from 'common/util/time'
 
-const BinaryChartTooltip = (
-  props: TooltipProps<Date, HistoryPoint<Partial<Bet>>>
-) => {
-  const { prev, x, xScale } = props
+type BinaryPoint = HistoryPoint<{
+  userAvatarUrl?: string
+  isLast?: boolean
+}>
+
+const BinaryChartTooltip = (props: TooltipProps<Date, BinaryPoint>) => {
+  const { prev, next, x, xScale } = props
+  if (!prev) return null
+
   const [start, end] = xScale.domain()
   const d = xScale.invert(x)
-  if (!prev) return null
+  const dateLabel =
+    !next || next.obj?.isLast ? 'Now' : formatDateInRange(d, start, end)
+
   return (
     <Row className="items-center gap-2">
       {prev.obj?.userAvatarUrl && (
         <Avatar size="xs" avatarUrl={prev.obj.userAvatarUrl} />
       )}
-      <span className="font-semibold">{formatDateInRange(d, start, end)}</span>
+      <span className="font-semibold">{dateLabel}</span>
       <span className="text-ink-600">{formatPct(prev.y)}</span>
     </Row>
   )
@@ -38,13 +45,13 @@ const BinaryChartTooltip = (
 
 export const BinaryContractChart = (props: {
   contract: BinaryContract
-  betPoints: HistoryPoint<Partial<Bet>>[]
+  betPoints: BinaryPoint[]
   width: number
   height: number
   viewScaleProps: viewScale
   controlledStart?: number
   color?: string
-  onMouseOver?: (p: HistoryPoint<Partial<Bet>> | undefined) => void
+  onMouseOver?: (p: BinaryPoint | undefined) => void
   showZoomer?: boolean
 }) => {
   const {
@@ -62,10 +69,10 @@ export const BinaryContractChart = (props: {
   const rangeStart = controlledStart ?? start
   const endP = getProbability(contract)
 
-  const now = useMemo(Date.now, [betPoints])
+  const now = useMemo(() => Date.now() + 2 * HOUR_MS, [betPoints])
 
   const data = useMemo(() => {
-    return [...betPoints, { x: end ?? now, y: endP }]
+    return [...betPoints, { x: end ?? now, y: endP, obj: { isLast: true } }]
   }, [end, endP, betPoints])
 
   const rightmostDate = getRightmostVisibleDate(end, last(betPoints)?.x, now)

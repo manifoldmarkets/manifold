@@ -1,7 +1,6 @@
 import { useMemo } from 'react'
 import { last, sortBy } from 'lodash'
 import { scaleTime, scaleLinear } from 'd3-scale'
-import { curveStepAfter } from 'd3-shape'
 import { Bet, calculateMultiBets } from 'common/bet'
 import { Answer, DpmAnswer } from 'common/answer'
 import { MultiContract } from 'common/contract'
@@ -16,7 +15,11 @@ import {
 import { MultiValueHistoryChart } from '../generic-charts'
 import { Row } from 'web/components/layout/row'
 import { buildArray } from 'common/util/array'
-import { MultiPoint, unserializePoints } from 'common/chart'
+import {
+  MultiPoint as GenericMultiPoint,
+  unserializePoints,
+} from 'common/chart'
+import { HOUR_MS } from 'common/util/time'
 
 const CHOICE_ANSWER_COLORS = [
   '#99DDFF', // sky
@@ -76,6 +79,8 @@ const getAnswers = (contract: MultiContract) => {
   )
 }
 
+type MultiPoint = GenericMultiPoint<{ isLast?: boolean }>
+
 // new multi only
 export const getMultiBetPoints = (answers: Answer[], bets: Bet[]) => {
   return unserializePoints(
@@ -108,7 +113,7 @@ export const ChoiceContractChart = (props: {
     [answers, contract]
   )
 
-  const now = useMemo(() => Date.now(), [points])
+  const now = useMemo(() => Date.now() + 2 * HOUR_MS, [points])
 
   const data = useMemo(() => {
     if (!answers.length) return []
@@ -125,6 +130,7 @@ export const ChoiceContractChart = (props: {
     return buildArray(isMultipleChoice && { x: start, y: startY }, points, {
       x: end ?? now,
       y: endProbs,
+      obj: { isLast: true },
     })
   }, [answers.length, points, endProbs, start, end, now])
 
@@ -140,7 +146,6 @@ export const ChoiceContractChart = (props: {
       yScale={yScale}
       yKind="percent"
       data={data}
-      curve={curveStepAfter}
       onMouseOver={onMouseOver}
       Tooltip={(props) => <ChoiceTooltip answers={answers} ttProps={props} />}
     />
@@ -152,11 +157,12 @@ const ChoiceTooltip = (props: {
   answers: (DpmAnswer | Answer)[]
 }) => {
   const { ttProps, answers } = props
-  const { prev, x, y, xScale, yScale } = ttProps
-  const [start, end] = xScale.domain()
+  const { prev, next, x, y, xScale, yScale } = ttProps
 
   if (!yScale) return null
   if (!prev) return null
+
+  const [start, end] = xScale.domain()
 
   const d = xScale.invert(x)
   const prob = yScale.invert(y)
@@ -165,9 +171,12 @@ const ChoiceTooltip = (props: {
   const answer = answers[index]?.text ?? 'Other'
   const value = formatPct(prev.y[index])
 
+  const dateLabel =
+    !next || next.obj?.isLast ? 'Now' : formatDateInRange(d, start, end)
+
   return (
     <>
-      <span className="font-semibold">{formatDateInRange(d, start, end)}</span>
+      <span className="font-semibold">{dateLabel}</span>
       <div className="flex max-w-xs flex-row justify-between gap-4">
         <Row className="items-center gap-2 overflow-hidden">
           <span className="overflow-hidden text-ellipsis">{answer}</span>

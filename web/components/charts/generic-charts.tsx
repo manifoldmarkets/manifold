@@ -204,7 +204,7 @@ export const MultiValueHistoryChart = <P extends MultiPoint>(props: {
   onMouseOver?: (p: P | undefined) => void
   Tooltip?: TooltipComponent<Date, P>
 }) => {
-  const { data, w, h, yScale, yKind, curve, Tooltip } = props
+  const { data, w, h, yScale, yKind, Tooltip } = props
 
   const [ttParams, setTTParams] = useState<TooltipParams<P>>()
   const [viewXScale, setViewXScale] = useState<ScaleTime<number, number>>()
@@ -219,6 +219,8 @@ export const MultiValueHistoryChart = <P extends MultiPoint>(props: {
     () => compressMultiPoints(data, xMin, xMax),
     [data, xMin, xMax]
   )
+
+  const curve = props.curve ?? isCompressed ? curveLinear : curveStepAfter
 
   type SP = SeriesPoint<P>
   const px = useCallback((p: SP) => xScale(p.data.x), [xScale])
@@ -289,7 +291,7 @@ export const MultiValueHistoryChart = <P extends MultiPoint>(props: {
           px={px}
           py0={py0}
           py1={py1}
-          curve={curve ?? curveLinear}
+          curve={curve}
           color={nthColor(i)}
           className="opacity-80 hover:!opacity-100 group-hover:opacity-60"
         />
