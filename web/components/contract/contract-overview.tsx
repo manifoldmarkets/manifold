@@ -1,6 +1,6 @@
 import { memo, useState } from 'react'
 import { Bet } from 'common/bet'
-import { HistoryPoint, MultiPoint } from 'common/chart'
+import { HistoryPoint } from 'common/chart'
 import {
   BinaryContract,
   CPMMStonkContract,
@@ -12,7 +12,7 @@ import {
 import { YES_GRAPH_COLOR } from 'common/envs/constants'
 import { NumericContractChart } from '../charts/contract/numeric'
 import { BinaryContractChart } from '../charts/contract/binary'
-import { ChoiceContractChart } from '../charts/contract/choice'
+import { ChoiceContractChart, MultiPoint } from '../charts/contract/choice'
 import { PseudoNumericContractChart } from '../charts/contract/pseudo-numeric'
 import { useViewScale } from 'web/components/charts/generic-charts'
 import {
