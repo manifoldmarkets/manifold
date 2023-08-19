@@ -13,6 +13,7 @@ import {
 import { db } from 'web/lib/supabase/db'
 import { SupabaseContractSearch } from '../supabase-search'
 import { useUser } from 'web/hooks/use-user'
+import { CreateQuestionButton } from '../buttons/create-question-button'
 
 export function UserContractsList(props: { creator: User }) {
   const { creator } = props
@@ -81,8 +82,19 @@ export function UserContractsList(props: { creator: User }) {
           creatorId: creator.id,
         }}
         persistPrefix={`user-contracts-list-${creator.id}`}
-        profile={creator.id === user?.id}
         useUrlParams
+        emptyState={
+          <>
+            <div className="text-ink-700 mx-2 my-6 text-center">
+              No questions found
+            </div>
+            {creator.id === user?.id && (
+              <Row className={'mt-8 justify-center'}>
+                <CreateQuestionButton className={'max-w-[15rem]'} />
+              </Row>
+            )}
+          </>
+        }
       />
     </Col>
   )

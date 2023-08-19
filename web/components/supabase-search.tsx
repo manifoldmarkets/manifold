@@ -7,9 +7,16 @@ import clsx from 'clsx'
 import { Contract } from 'common/contract'
 import { Group } from 'common/group'
 import { SELECTABLE_TOPICS, cleanTopic } from 'common/topics'
-import { debounce, isEqual, uniqBy } from 'lodash'
+import { debounce, isEqual, sample, uniqBy } from 'lodash'
 import { useRouter } from 'next/router'
-import { createContext, useContext, useEffect, useRef } from 'react'
+import {
+  ReactNode,
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from 'react'
 import { PillButton } from 'web/components/buttons/pill-button'
 import { useEvent } from 'web/hooks/use-event'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
@@ -34,7 +41,6 @@ import generateFilterDropdownItems, {
 } from './search/search-dropdown-helpers'
 import { Carousel } from './widgets/carousel'
 import { Input } from './widgets/input'
-import { CreateQuestionButton } from 'web/components/buttons/create-question-button'
 
 const CONTRACTS_PER_PAGE = 20
 
@@ -184,7 +190,7 @@ export function SupabaseContractSearch(props: {
   useUrlParams?: boolean
   includeProbSorts?: boolean
   autoFocus?: boolean
-  profile?: boolean | undefined
+  emptyState?: ReactNode
   fromGroupProps?: {
     group: Group
     userRole: groupRoleType | null
@@ -211,7 +217,7 @@ export function SupabaseContractSearch(props: {
     isWholePage,
     useUrlParams,
     autoFocus,
-    profile,
+    emptyState,
     fromGroupProps,
     listViewDisabled,
     showTopics,
@@ -359,18 +365,8 @@ export function SupabaseContractSearch(props: {
           hideFilters={hideFilters}
         />
         {contracts && contracts.length === 0 ? (
-          <Col className={''}>
-            <Row className="text-ink-500 mx-2 items-center gap-2">
-              No questions found.
-            </Row>
-            {profile && (
-              <Row className={' items-center justify-center'}>
-                <Col className={'mt-8 w-full items-center justify-center'}>
-                  <CreateQuestionButton className={'max-w-[15rem]'} />
-                </Col>
-              </Row>
-            )}
-          </Col>
+          emptyState ??
+          (searchParams.current?.query ? <NoResults /> : <Empty />)
         ) : asList ? (
           <ContractsList
             key={
@@ -406,6 +402,29 @@ export function SupabaseContractSearch(props: {
       </Col>
     </AsListContext.Provider>
   )
+}
+
+const Empty = () => (
+  <div className="text-ink-700 mx-2 my-6 text-center">No questions yet</div>
+)
+
+const NoResults = () => {
+  const [message] = useState(
+    sample([
+      'no questions found x.x',
+      'no questions found u_u',
+      'no questions found T_T',
+      'no questions found :c',
+      'no questions found :(',
+      'no questions found :(',
+      'no questions found :(',
+      'that search is too bananas for me 🍌',
+      '<.3% chance of a question being found',
+      'only nothingness',
+    ])
+  )
+
+  return <div className="text-ink-700 mx-2 my-6 text-center">{message}</div>
 }
 
 function SupabaseContractSearchControls(props: {
