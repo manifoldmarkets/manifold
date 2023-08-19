@@ -157,7 +157,7 @@ export const createanswercpmm = authEndpoint(async (req, auth) => {
       updatedOtherAnswer,
     ]
     const { unfilledBets, balanceByUserId } =
-      await getUnfilledBetsAndUserBalances(transaction, contractDoc, user.id)
+      await getUnfilledBetsAndUserBalances(transaction, contractDoc)
 
     // Cancel limit orders on Other answer.
     const [unfilledBetsOnOther, unfilledBetsExcludingOther] = partition(

@@ -137,7 +137,7 @@ export const placeBetMain = async (
           `Checking for limit orders in placebet for user ${uid} on contract id ${contractId}.`
         )
         const { unfilledBets, balanceByUserId } =
-          await getUnfilledBetsAndUserBalances(trans, contractDoc, uid)
+          await getUnfilledBetsAndUserBalances(trans, contractDoc)
 
         return getBinaryCpmmBetInfo(
           contract,
@@ -180,7 +180,7 @@ export const placeBetMain = async (
           )
 
         const { unfilledBets, balanceByUserId } =
-          await getUnfilledBetsAndUserBalances(trans, contractDoc, uid)
+          await getUnfilledBetsAndUserBalances(trans, contractDoc)
 
         return getNewMultiCpmmBetInfo(
           contract,
@@ -356,8 +356,7 @@ const getUnfilledBetsQuery = (contractDoc: DocumentReference) => {
 
 export const getUnfilledBetsAndUserBalances = async (
   trans: Transaction,
-  contractDoc: DocumentReference,
-  bettorId: string
+  contractDoc: DocumentReference
 ) => {
   const unfilledBetsSnap = await trans.get(getUnfilledBetsQuery(contractDoc))
   const unfilledBets = unfilledBetsSnap.docs.map((doc) => doc.data())
@@ -368,12 +367,7 @@ export const getUnfilledBetsAndUserBalances = async (
     userIds.length === 0
       ? []
       : await trans.getAll(
-          ...userIds.map((userId) => {
-            log(
-              `Bettor ${bettorId} is checking balance of user ${userId} that has limit order on contract ${contractDoc.id}`
-            )
-            return firestore.doc(`users/${userId}`)
-          })
+          ...userIds.map((userId) => firestore.doc(`users/${userId}`))
         )
   const users = filterDefined(userDocs.map((doc) => doc.data() as User))
   const balanceByUserId = Object.fromEntries(

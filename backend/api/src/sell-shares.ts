@@ -39,7 +39,7 @@ export const sellshares = authEndpoint(async (req, auth) => {
     ] = await Promise.all([
       transaction.getAll(contractDoc, userDoc),
       transaction.get(betsQ),
-      getUnfilledBetsAndUserBalances(transaction, contractDoc, auth.uid),
+      getUnfilledBetsAndUserBalances(transaction, contractDoc),
     ])
     if (!contractSnap.exists) throw new APIError(404, 'Contract not found')
     if (!userSnap.exists) throw new APIError(401, 'Your account was not found')
