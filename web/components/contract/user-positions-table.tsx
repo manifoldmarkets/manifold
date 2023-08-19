@@ -106,14 +106,16 @@ export const BinaryUserPositionsTable = memo(
     const noPositionsSorted =
       sortBy === 'shares' ? positions.NO ?? [] : negativeProfitPositions
 
-    const visibleYesPositions = uniqBy(
-      yesPositionsSorted.slice(page * pageSize, (page + 1) * pageSize),
-      'userId'
+    const visibleYesPositions = yesPositionsSorted.slice(
+      page * pageSize,
+      (page + 1) * pageSize
     )
-    const visibleNoPositions = uniqBy(
-      noPositionsSorted.slice(page * pageSize, (page + 1) * pageSize),
-      'userId'
+
+    const visibleNoPositions = noPositionsSorted.slice(
+      page * pageSize,
+      (page + 1) * pageSize
     )
+
     const largestColumnLength =
       yesPositionsSorted.length > noPositionsSorted.length
         ? yesPositionsSorted.length
