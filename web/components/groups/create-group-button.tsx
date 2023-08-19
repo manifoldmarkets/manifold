@@ -8,7 +8,6 @@ import { createGroup } from 'web/lib/firebase/api'
 import { getGroupWithFields } from 'web/lib/supabase/group'
 import { ColorType } from '../buttons/button'
 import { ConfirmationButton } from '../buttons/confirmation-button'
-import { LOADING_PING_INTERVAL } from '../contract/waiting-for-supabase-button'
 import { Col } from '../layout/col'
 import { SCROLLABLE_MODAL_CLASS } from '../layout/modal'
 import { TextEditor, useTextEditor } from '../widgets/editor'
@@ -16,6 +15,8 @@ import { Input } from '../widgets/input'
 import { Title } from '../widgets/title'
 import { savePost } from './group-about-section'
 import { PrivacyStatusView } from './group-privacy-modal'
+
+const LOADING_PING_INTERVAL = 200
 
 export function CreateGroupButton(props: {
   user: User

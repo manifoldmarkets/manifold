@@ -13,6 +13,7 @@ import {
   OutcomeType,
   Visibility,
   add_answers_mode,
+  contractPath,
 } from 'common/contract'
 import { MINIMUM_BOUNTY, UNIQUE_BETTOR_BONUS_AMOUNT } from 'common/economy'
 import { ENV_CONFIG } from 'common/envs/constants'
@@ -49,13 +50,13 @@ import { createMarket, getSimilarGroupsToContract } from 'web/lib/firebase/api'
 import { track } from 'web/lib/service/analytics'
 import { getGroup } from 'web/lib/supabase/group'
 import { safeLocalStorage } from 'web/lib/util/local'
-import WaitingForSupabaseButton from '../contract/waiting-for-supabase-button'
 import { Col } from '../layout/col'
 import { BuyAmountInput } from '../widgets/amount-input'
 import { getContractTypeThingFromValue } from './create-contract-types'
 import { GroupTag } from 'web/pages/groups'
 import { ContractVisibilityType, NewQuestionParams } from './new-contract-panel'
 import { VisibilityTheme } from 'web/pages/create'
+import { getContractWithFields } from 'web/lib/supabase/contracts'
 
 export function ContractParamsForm(props: {
   creator: User
@@ -85,9 +86,6 @@ export function ContractParamsForm(props: {
   const [visibility, setVisibility] = usePersistentLocalState<Visibility>(
     (params?.visibility as Visibility) ?? 'public',
     `new-visibility` + paramsKey
-  )
-  const [newContract, setNewContract] = useState<Contract | undefined>(
-    undefined
   )
 
   // For multiple choice, init to 2 empty answers
@@ -294,48 +292,58 @@ export function ContractParamsForm(props: {
     setBountyAmount(50)
   }
 
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitState, setSubmitState] = useState<
+    'EDITING' | 'LOADING' | 'DONE'
+  >('EDITING')
 
   async function submit() {
     if (!isValid) return
-    setIsSubmitting(true)
+    setSubmitState('LOADING')
     try {
-      const newContract = (await createMarket(
-        removeUndefinedProps({
-          question,
-          outcomeType:
-            outcomeType === 'FREE_RESPONSE' ? 'MULTIPLE_CHOICE' : outcomeType,
-          description: editor?.getJSON(),
-          initialProb: 50,
-          ante,
-          closeTime,
-          min,
-          max,
-          initialValue,
-          isLogScale,
-          groupIds: selectedGroups.map((g) => g.id),
-          answers,
-          addAnswersMode:
-            outcomeType === 'FREE_RESPONSE' ? 'ANYONE' : addAnswersMode,
-          visibility,
-          utcOffset: new Date().getTimezoneOffset(),
-          totalBounty:
-            amountSuppliedByHouse > 0 ? amountSuppliedByHouse : bountyAmount,
-        })
-      )) as Contract
+      const createProps = removeUndefinedProps({
+        question,
+        outcomeType:
+          outcomeType === 'FREE_RESPONSE' ? 'MULTIPLE_CHOICE' : outcomeType,
+        description: editor?.getJSON(),
+        initialProb: 50,
+        ante,
+        closeTime,
+        min,
+        max,
+        initialValue,
+        isLogScale,
+        groupIds: selectedGroups.map((g) => g.id),
+        answers,
+        addAnswersMode:
+          outcomeType === 'FREE_RESPONSE' ? 'ANYONE' : addAnswersMode,
+        visibility,
+        utcOffset: new Date().getTimezoneOffset(),
+        totalBounty:
+          amountSuppliedByHouse > 0 ? amountSuppliedByHouse : bountyAmount,
+      })
+      const newContract = (await createMarket(createProps)) as Contract
 
-      setNewContract(newContract)
-      resetProperties()
+      // wait for supabase
+      const supabaseContract = await waitForSupabaseContract(newContract.id)
 
       track('create market', {
         slug: newContract.slug,
         selectedGroups: selectedGroups.map((g) => g.id),
         outcomeType,
       })
+
+      resetProperties()
+      setSubmitState('DONE')
+
+      try {
+        await router.push(contractPath(supabaseContract as Contract))
+      } catch (error) {
+        console.error(error)
+      }
     } catch (e) {
       console.error('error creating contract', e)
       setErrorText((e as any).message || 'Error creating contract')
-      setIsSubmitting(false)
+      setSubmitState('EDITING')
     }
   }
   const [bountyError, setBountyError] = useState<string | undefined>(undefined)
@@ -441,7 +449,7 @@ export function ContractParamsForm(props: {
                 onChange={(e) => setMinString(e.target.value)}
                 min={Number.MIN_SAFE_INTEGER}
                 max={Number.MAX_SAFE_INTEGER}
-                disabled={isSubmitting}
+                disabled={submitState === 'LOADING'}
                 value={minString ?? ''}
               />
               <Input
@@ -452,7 +460,7 @@ export function ContractParamsForm(props: {
                 onChange={(e) => setMaxString(e.target.value)}
                 min={Number.MIN_SAFE_INTEGER}
                 max={Number.MAX_SAFE_INTEGER}
-                disabled={isSubmitting}
+                disabled={submitState === 'LOADING'}
                 value={maxString}
               />
             </Row>
@@ -462,7 +470,7 @@ export function ContractParamsForm(props: {
               label="Log scale"
               checked={isLogScale}
               toggle={() => setIsLogScale(!isLogScale)}
-              disabled={isSubmitting}
+              disabled={submitState === 'LOADING'}
             />
 
             {min !== undefined && max !== undefined && min >= max && (
@@ -484,7 +492,7 @@ export function ContractParamsForm(props: {
                 onClick={(e) => e.stopPropagation()}
                 onChange={(e) => setInitialValueString(e.target.value)}
                 max={Number.MAX_SAFE_INTEGER}
-                disabled={isSubmitting}
+                disabled={submitState === 'LOADING'}
                 value={initialValueString ?? ''}
               />
             </Row>
@@ -605,7 +613,7 @@ export function ContractParamsForm(props: {
                 }
               }}
               choicesMap={closeDateMap}
-              disabled={isSubmitting}
+              disabled={submitState === 'LOADING'}
               className={clsx(
                 'col-span-4 sm:col-span-2',
                 outcomeType == 'POLL' ? 'text-xs sm:text-sm' : ''
@@ -625,7 +633,7 @@ export function ContractParamsForm(props: {
                 }}
                 min={dayjs().format('YYYY-MM-DD')}
                 max="9999-12-31"
-                disabled={isSubmitting}
+                disabled={submitState === 'LOADING'}
                 value={closeDate}
               />
               {/*<Input*/}
@@ -742,34 +750,30 @@ export function ContractParamsForm(props: {
       </Row>
 
       <Spacer h={6} />
-      <Row className="w-full justify-center">
-        {newContract && (
-          <WaitingForSupabaseButton
-            contractId={newContract.id}
-            router={router}
-          />
-        )}
-        {!newContract && (
-          <Button
-            className="w-full"
-            type="submit"
-            color="indigo"
-            size="xl"
-            loading={isSubmitting}
-            disabled={
-              !isValid ||
-              editor?.storage.upload.mutation.isLoading ||
-              (outcomeType == 'BOUNTIED_QUESTION' && bountyError)
-            }
-            onClick={(e) => {
-              e.preventDefault()
-              submit()
-            }}
-          >
-            {isSubmitting ? 'Creating...' : 'Create question'}
-          </Button>
-        )}
-      </Row>
+
+      <Button
+        className="w-full"
+        type="submit"
+        color={submitState === 'DONE' ? 'green' : 'indigo'}
+        size="xl"
+        loading={submitState === 'LOADING'}
+        disabled={
+          !isValid ||
+          editor?.storage.upload.mutation.isLoading ||
+          (outcomeType == 'BOUNTIED_QUESTION' && bountyError)
+        }
+        onClick={(e) => {
+          e.preventDefault()
+          submit()
+        }}
+      >
+        {submitState === 'EDITING'
+          ? 'Create Question'
+          : submitState === 'LOADING'
+          ? 'Creating...'
+          : 'Created!'}
+      </Button>
+
       <Spacer h={6} />
     </Col>
   )
@@ -777,3 +781,30 @@ export function ContractParamsForm(props: {
 
 // get days from today until the end of this year:
 const daysLeftInTheYear = dayjs().endOf('year').diff(dayjs(), 'day')
+
+// waiting for supabase logic
+
+export const LOADING_PING_INTERVAL = 200
+
+async function fetchContract(contractId: string) {
+  try {
+    const contract = await getContractWithFields(contractId)
+    if (contract && contract.visibility && contract.slug) {
+      return contract
+    }
+    return null
+  } catch (error) {
+    console.error('Error fetching the contract:', error)
+    return null
+  }
+}
+
+async function waitForSupabaseContract(contractId: string) {
+  let retries = 5
+  while (retries > 0) {
+    const contract = await fetchContract(contractId)
+    if (contract) return contract
+    retries--
+  }
+  throw new Error('Contract failed to replicate to supabase')
+}
