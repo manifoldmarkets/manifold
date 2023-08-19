@@ -51,7 +51,9 @@ export const BinaryUserPositionsTable = memo(
 
     const [totalYesPositions, setTotalYesPositions] = useState(0)
     const [totalNoPositions, setTotalNoPositions] = useState(0)
-    const [sortBy, setSortBy] = useState<'profit' | 'shares'>('shares')
+    const [sortBy, setSortBy] = useState<'profit' | 'shares'>(
+      contract.isResolved ? 'profit' : 'shares'
+    )
 
     useEffect(() => {
       if (sortBy === 'profit' && contractMetricsByProfit === undefined) {
