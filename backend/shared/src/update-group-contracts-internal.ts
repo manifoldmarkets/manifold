@@ -2,13 +2,8 @@ import * as admin from 'firebase-admin'
 
 import { Contract } from 'common/contract'
 import { GroupLink } from 'common/group'
-import {
-  createSupabaseClient,
-  createSupabaseDirectClient,
-  SupabaseDirectClient,
-} from './supabase/init'
+import { createSupabaseClient, SupabaseDirectClient } from './supabase/init'
 import { NON_PREDICTIVE_GROUP_ID } from 'common/supabase/groups'
-import { upsertGroupEmbedding } from 'shared/helpers/embeddings'
 
 const firestore = admin.firestore()
 
@@ -62,7 +57,6 @@ export async function addGroupToContract(
       nonPredictive: true,
     })
   }
-  await upsertGroupEmbedding(pg, group.id)
   return !(linkedToGroupAlready && addedToGroupAlready)
 }
 
@@ -96,6 +90,4 @@ export async function removeGroupFromContract(
       nonPredictive: false,
     })
   }
-  const pg = createSupabaseDirectClient()
-  await upsertGroupEmbedding(pg, group.id)
 }
