@@ -14,6 +14,7 @@ import {
 import { filterDefined } from 'common/util/array'
 import { log } from 'shared/utils'
 import { isAdminId } from 'common/envs/constants'
+import { NON_PREDICTIVE_GROUP_ID } from 'common/supabase/groups'
 
 export const getUniqueBettorIds = async (
   contractId: string,
@@ -264,16 +265,11 @@ export const isContractLikelyNonPredictive = async (
   return (
     await pg.map(
       `
-    with topic_embedding as
-    (
-      select embedding from topic_embeddings
-      where topic = 'Non-Predictive'
-    )
     select
     ((select embedding from contract_embeddings where contract_id = $1)
          <=>
-        (select embedding from topic_embedding)) as distance`,
-      [contractId],
+        (select embedding from group_embeddings where group_id = $2)) as distance`,
+      [contractId, NON_PREDICTIVE_GROUP_ID],
       (row) => row.distance < 0.1
     )
   )[0]

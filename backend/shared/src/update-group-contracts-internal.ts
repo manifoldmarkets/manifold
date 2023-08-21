@@ -8,7 +8,7 @@ import {
   SupabaseDirectClient,
 } from './supabase/init'
 import { NON_PREDICTIVE_GROUP_ID } from 'common/supabase/groups'
-import { updateNonPredictiveEmbedding } from 'shared/supabase/groups'
+import { upsertGroupEmbedding } from 'shared/helpers/embeddings'
 
 const firestore = admin.firestore()
 
@@ -54,17 +54,16 @@ export async function addGroupToContract(
           slug: group.slug,
           name: group.name,
         }),
-        nonPredictive: group.id === NON_PREDICTIVE_GROUP_ID,
       })
   }
 
-  if (linkedToGroupAlready && addedToGroupAlready) return false
-
   if (group.id === NON_PREDICTIVE_GROUP_ID) {
-    const pg = createSupabaseDirectClient()
-    await updateNonPredictiveEmbedding(pg)
+    await firestore.collection('contracts').doc(contract.id).update({
+      nonPredictive: true,
+    })
   }
-  return true
+  await upsertGroupEmbedding(pg, group.id)
+  return !(linkedToGroupAlready && addedToGroupAlready)
 }
 
 export async function removeGroupFromContract(
@@ -90,10 +89,13 @@ export async function removeGroupFromContract(
     .update({
       groupSlugs: admin.firestore.FieldValue.arrayRemove(group.slug),
       groupLinks: newLinks,
+    })
+
+  if (group.id === NON_PREDICTIVE_GROUP_ID) {
+    await firestore.collection('contracts').doc(contract.id).update({
       nonPredictive: false,
     })
-  if (group.id === NON_PREDICTIVE_GROUP_ID) {
-    const pg = createSupabaseDirectClient()
-    await updateNonPredictiveEmbedding(pg)
   }
+  const pg = createSupabaseDirectClient()
+  await upsertGroupEmbedding(pg, group.id)
 }
