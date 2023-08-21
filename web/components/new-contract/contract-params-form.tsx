@@ -125,6 +125,11 @@ export function ContractParamsForm(props: {
     '',
     'new-question' + paramsKey
   )
+  const [categorizedQuestion, setCategorizedQuestion] = usePersistentLocalState(
+    '',
+    'last-categorized-question' + paramsKey
+  )
+
   useEffect(() => {
     if (params?.q) setQuestion(params?.q ?? '')
   }, [params?.q])
@@ -360,8 +365,14 @@ export function ContractParamsForm(props: {
   }, [selectedGroups?.length, toggleVisibility])
 
   const finishedTypingQuestion = async () => {
-    setQuestion(question.trim())
-    if (question.trim().length == 0 || params?.groupIds?.length) return
+    const trimmed = question.trim()
+    if (
+      trimmed.length == 0 ||
+      params?.groupIds?.length ||
+      trimmed === categorizedQuestion
+    )
+      return
+    setCategorizedQuestion(trimmed)
     try {
       const { groups } = await getSimilarGroupsToContract({ question })
       setSelectedGroups(groups)
@@ -535,7 +546,31 @@ export function ContractParamsForm(props: {
           <Spacer h={6} />
         </>
       )}
-      <Col>
+      <Col className={'gap-2'}>
+        <span className={'px-1'}>
+          Add categories{' '}
+          <InfoTooltip text="Question will be displayed alongside the other questions in the category." />
+        </span>
+        <Row className={'flex-wrap gap-2'}>
+          {selectedGroups.map((group) => (
+            <GroupTag
+              key={group.id}
+              group={group}
+              isPrivate={group.privacyStatus === 'private'}
+              className="bg-ink-100"
+            >
+              <button
+                onClick={() =>
+                  setSelectedGroups((groups) =>
+                    groups?.filter((g) => g.id !== group.id)
+                  )
+                }
+              >
+                <XIcon className="hover:text-ink-700 text-ink-400 ml-1 h-4 w-4" />
+              </button>
+            </GroupTag>
+          ))}
+        </Row>
         <Row>
           <GroupSelector
             setSelectedGroup={(group) => {
@@ -556,30 +591,9 @@ export function ContractParamsForm(props: {
               )
             }}
             ignoreGroupIds={selectedGroups.map((g) => g.id)}
-            label={'Add categories'}
             isContractCreator={true}
             newContract={true}
           />
-        </Row>
-        <Row className={'mt-2 flex-wrap gap-2'}>
-          {selectedGroups.map((group) => (
-            <GroupTag
-              key={group.id}
-              group={group}
-              isPrivate={group.privacyStatus === 'private'}
-              className="bg-ink-100"
-            >
-              <button
-                onClick={() =>
-                  setSelectedGroups((groups) =>
-                    groups?.filter((g) => g.id !== group.id)
-                  )
-                }
-              >
-                <XIcon className="hover:text-ink-700 text-ink-400 ml-1 h-4 w-4" />
-              </button>
-            </GroupTag>
-          ))}
         </Row>
       </Col>
 
