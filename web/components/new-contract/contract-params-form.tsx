@@ -57,6 +57,7 @@ import { GroupTag } from 'web/pages/groups'
 import { ContractVisibilityType, NewQuestionParams } from './new-contract-panel'
 import { VisibilityTheme } from 'web/pages/create'
 import { getContractWithFields } from 'web/lib/supabase/contracts'
+import { filterDefined } from 'common/util/array'
 
 export function ContractParamsForm(props: {
   creator: User
@@ -141,7 +142,10 @@ export function ContractParamsForm(props: {
       const groups = await Promise.all(groupIds.map((id) => getGroup(id))).then(
         (groups) => groups.filter((g) => g)
       )
-      setSelectedGroups(groups as Group[])
+      const publicGroups = filterDefined(groups).filter(
+        (g) => g.privacyStatus === 'public'
+      )
+      setSelectedGroups(publicGroups)
     }
     setGroups()
   }, [creator.id, params?.groupIds])
