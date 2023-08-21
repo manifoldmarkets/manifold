@@ -5,13 +5,18 @@ import { bulkUpdate } from 'shared/supabase/utils'
 import { log } from 'shared/utils'
 import { getWhenToIgnoreUsersTime } from 'shared/supabase/users'
 
-export function magnitude(vector: number[]): number {
+function magnitude(vector: number[]): number {
   const vectorSum = sum(vector.map((val) => val * val))
   return Math.sqrt(vectorSum)
 }
-export function normalize(vector: number[]): number[] {
+function normalize(vector: number[]): number[] {
   const mag = magnitude(vector)
   return vector.map((val) => val / mag)
+}
+
+export function normalizeAndAverageVectors(vectors: number[][]): number[] {
+  const zipped = zip(...vectors)
+  return normalize(zipped.map((vals) => mean(vals)))
 }
 
 async function normalizeOrGetDefault(
@@ -57,6 +62,24 @@ export async function upsertGroupEmbedding(
   await pg.none(
     'insert into group_embeddings (group_id, embedding) values ($1, $2) on conflict (group_id) do update set embedding = $2',
     [groupId, embed]
+  )
+}
+
+export async function getAverageGroupEmbedding(
+  pg: SupabaseDirectClient,
+  groupIds: string[] | undefined
+) {
+  if (!groupIds || groupIds.length === 0) {
+    return null
+  }
+  return await pg.one(
+    `select avg(embedding) as average_embedding
+            from group_embeddings where group_id = any($1)`,
+    [groupIds],
+    async (r: { average_embedding: string }) => {
+      if (r.average_embedding === null) return null
+      return normalize(JSON.parse(r.average_embedding) as number[])
+    }
   )
 }
 
@@ -311,15 +334,14 @@ export async function updateViewsAndViewersEmbeddings(
       contract_view_average_embedding: string | null
       group_view_average_embedding: string | null
     }) => {
-      const zipped = zip(
+      const normAverage = normalizeAndAverageVectors([
         normalize(
           JSON.parse(r.contract_view_average_embedding ?? '[]') as number[]
         ),
         normalize(
           JSON.parse(r.group_view_average_embedding ?? '[]') as number[]
-        )
-      )
-      const normAverage = normalize(zipped.map((vector) => mean(vector)))
+        ),
+      ])
       if (normAverage.length > 0) userToEmbeddingMap[r.user_id] = normAverage
     }
   )

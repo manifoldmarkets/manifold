@@ -16,11 +16,13 @@ import { getStorage } from 'firebase-admin/storage'
 import { DEV_CONFIG } from 'common/envs/dev'
 import { PROD_CONFIG } from 'common/envs/prod'
 import { RESERVED_PATHS } from 'common/envs/constants'
-import { isProd } from 'shared/utils'
+import { isProd, log } from 'shared/utils'
 import { trackSignupFB } from 'shared/fb-analytics'
 import {
   getAverageContractEmbedding,
+  getAverageGroupEmbedding,
   getDefaultEmbedding,
+  normalizeAndAverageVectors,
 } from 'shared/helpers/embeddings'
 import {
   createSupabaseClient,
@@ -189,8 +191,24 @@ async function upsertNewUserEmbeddings(
   visitedContractIds: string[] | undefined,
   pg: SupabaseDirectClient
 ): Promise<void> {
+  log('Averaging contract embeddings for user', userId, visitedContractIds)
   let embed = await getAverageContractEmbedding(pg, visitedContractIds)
   if (!embed) embed = await getDefaultEmbedding(pg)
+  const groupIds =
+    visitedContractIds && visitedContractIds.length > 0
+      ? await pg.map(
+          `select group_id
+        from group_contracts
+        where contract_id = any($1)`,
+          [visitedContractIds],
+          (r) => r.group_id
+        )
+      : []
+  log('Averaging group embeddings for user', userId, groupIds)
+  let groupEmbed = await getAverageGroupEmbedding(pg, groupIds)
+  if (groupEmbed) {
+    embed = normalizeAndAverageVectors([embed, embed, groupEmbed])
+  }
 
   await pg.none(
     `insert into user_embeddings (user_id, interest_embedding, contract_view_embedding)
