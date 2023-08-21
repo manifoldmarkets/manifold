@@ -57,7 +57,9 @@ const ContractGroupBreadcrumbs = (props: { contract: Contract }) => {
           <Link className={clsx(linkClass)} href={`/group/${group.slug}`}>
             {group.name}
           </Link>
-          {i !== groups.length - 1 && <span className="mx-1">{'•'}</span>}
+          {i !== groups.length - 1 && (
+            <span className="mx-1 inline-block w-2">{'•'}</span>
+          )}
         </span>
       ))}
     </Row>
