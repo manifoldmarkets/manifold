@@ -251,7 +251,7 @@ export async function searchContract(props: {
     }
   }
   if (state.fuzzyContractOffset > 0) {
-    const contractFuzzy = searchContractFuzzy({
+    const contractFuzzy = await searchContractFuzzy({
       state,
       query,
       filter,

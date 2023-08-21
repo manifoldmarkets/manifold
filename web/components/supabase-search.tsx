@@ -323,11 +323,11 @@ export function SupabaseContractSearch(props: {
           searchParamsStore.set(`${persistPrefix}-params`, params)
         }
         searchParams.current = params
-        setState({
+        const freshState = {
           ...INITIAL_STATE,
           showTime: getShowTime(params.sort),
-        })
-        query(state, true)
+        }
+        query(freshState, true)
       }
     }, 100)
   ).current
