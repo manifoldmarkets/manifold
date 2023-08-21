@@ -419,7 +419,6 @@ const NoResults = () => {
       'no questions found :(',
       'no questions found :(',
       'that search is too bananas for me 🍌',
-      '<.3% chance of a question being found',
       'only nothingness',
     ])
   )
