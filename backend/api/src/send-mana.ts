@@ -32,10 +32,13 @@ export const sendmana = authEndpoint(async (req, auth) => {
       throw new APIError(403, `You must have at least 1000 mana.`)
     }
 
-    if (fromUser.balance < amount) {
+    if (toIds.length <= 0) {
+      throw new APIError(400, 'Destination users not found.')
+    }
+    if (fromUser.balance < amount * toIds.length) {
       throw new APIError(
         403,
-        `Insufficient balance: ${fromUser.name} needed ${amount} but only had ${fromUser.balance} `
+        `Insufficient balance: ${fromUser.name} needed ${amount * toIds.length} but only had ${fromUser.balance} `
       )
     }
 
