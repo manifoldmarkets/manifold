@@ -11,43 +11,49 @@ export interface Database {
     Tables: {
       answers: {
         Row: {
-          contract_id: string
-          created_time: string
+          contract_id: string | null
+          created_time: string | null
+          data: Json
+          fs_updated_time: string
           id: string
-          index: number
-          pool_no: number
-          pool_yes: number
-          prob: number
-          subsidy_pool: number
-          text: string
-          total_subsidy: number
-          user_id: string
+          index: number | null
+          pool_no: number | null
+          pool_yes: number | null
+          prob: number | null
+          subsidy_pool: number | null
+          text: string | null
+          total_liquidity: number | null
+          user_id: string | null
         }
         Insert: {
-          contract_id: string
-          created_time?: string
+          contract_id?: string | null
+          created_time?: string | null
+          data: Json
+          fs_updated_time: string
           id: string
-          index: number
-          pool_no: number
-          pool_yes: number
-          prob: number
-          subsidy_pool: number
-          text: string
-          total_subsidy: number
-          user_id: string
+          index?: number | null
+          pool_no?: number | null
+          pool_yes?: number | null
+          prob?: number | null
+          subsidy_pool?: number | null
+          text?: string | null
+          total_liquidity?: number | null
+          user_id?: string | null
         }
         Update: {
-          contract_id?: string
-          created_time?: string
+          contract_id?: string | null
+          created_time?: string | null
+          data?: Json
+          fs_updated_time?: string
           id?: string
-          index?: number
-          pool_no?: number
-          pool_yes?: number
-          prob?: number
-          subsidy_pool?: number
-          text?: string
-          total_subsidy?: number
-          user_id?: string
+          index?: number | null
+          pool_no?: number | null
+          pool_yes?: number | null
+          prob?: number | null
+          subsidy_pool?: number | null
+          text?: string | null
+          total_liquidity?: number | null
+          user_id?: string | null
         }
         Relationships: []
       }
