@@ -17,7 +17,6 @@ import { Col } from 'web/components/layout/col'
 import { ContractGroupsList } from 'web/components/groups/contract-groups-list'
 import { useAdmin } from 'web/hooks/use-admin'
 import { isTrustworthy } from 'common/envs/constants'
-import { groups } from 'd3-array'
 import { filterDefined } from 'common/util/array'
 import { Group } from 'common/group'
 
@@ -44,7 +43,6 @@ function PrivateMarketGroups(props: { contract: Contract }) {
 
 const ContractGroupBreadcrumbs = (props: { contract: Contract }) => {
   const { contract } = props
-  const { groupLinks } = contract
   const groups = orderBy(
     useGroupsWithContract(contract) ?? [],
     // boost public groups
@@ -53,12 +51,7 @@ const ContractGroupBreadcrumbs = (props: { contract: Contract }) => {
   )
 
   return (
-    <Row
-      className={clsx(
-        'line-clamp-1',
-        (groupLinks?.length ?? 0) > 0 ? 'h-5' : 'h-0'
-      )}
-    >
+    <Row className={clsx('line-clamp-1')}>
       {groups.map((group, i) => (
         <span key={group.id} className={'text-primary-600 text-sm'}>
           <Link className={clsx(linkClass)} href={`/group/${group.slug}`}>
@@ -92,7 +85,7 @@ export function PublicMarketGroups(props: { contract: Contract }) {
     !!(adminGroups && adminGroups.some((g) => g.group_id === group.id))
   return (
     <>
-      <Row className={'gap-1'}>
+      <Row className={'h-6 gap-1'}>
         <ContractGroupBreadcrumbs contract={contract} />
         {user && canEdit && (
           <button
@@ -101,13 +94,13 @@ export function PublicMarketGroups(props: { contract: Contract }) {
               e.stopPropagation()
               setOpen(true)
             }}
-            className="hover:bg-primary-400/20 text-primary-700 rounded-sm text-sm"
+            className="hover:bg-primary-400/20 text-primary-700 rounded-md text-sm"
           >
-            {groups.length ? (
-              <PencilIcon className="h-6 w-6 px-1" />
+            {contract.groupLinks?.length ? (
+              <PencilIcon className="w-6 px-1" />
             ) : (
-              <span className={clsx('flex items-center py-0.5 px-1')}>
-                <PlusIcon className="mr-1 h-4 w-4" /> Category
+              <span className={clsx('flex items-center px-1 text-sm')}>
+                <PlusIcon className="mr-1 h-3 " /> Categories
               </span>
             )}
           </button>
