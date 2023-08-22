@@ -1,5 +1,3 @@
-import * as admin from 'firebase-admin'
-
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { updateData } from 'shared/supabase/utils'
 import { z } from 'zod'

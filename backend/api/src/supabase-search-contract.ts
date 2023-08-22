@@ -1,21 +1,18 @@
 import { z } from 'zod'
 import { Contract } from 'common/contract'
-import { createSupabaseDirectClient, pgp } from 'shared/supabase/init'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
 import {
   SqlBuilder,
   buildSql,
   from,
-  join,
   renderSql,
   select,
   where,
-  withClause,
 } from 'shared/supabase/sql-builder'
 import { Json, MaybeAuthedEndpoint, validate } from './helpers'
 import { getContractPrivacyWhereSQLFilter } from 'shared/supabase/contracts'
 
 export const FIRESTORE_DOC_REF_ID_REGEX = /^[a-zA-Z0-9_-]{1,}$/
-const TOPIC_DISTANCE_THRESHOLD = 0.23
 const bodySchema = z.object({
   term: z.string(),
   filter: z.union([
