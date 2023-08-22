@@ -1,13 +1,18 @@
 import clsx from 'clsx'
 import { forwardRef, Ref } from 'react'
+import { IconButton } from 'web/components/buttons/button'
+import { XIcon } from '@heroicons/react/outline'
 
 /** Text input. Wraps html `<input>` */
 export const Input = forwardRef(
   (
-    props: { error?: boolean } & JSX.IntrinsicElements['input'],
+    props: {
+      error?: boolean
+      showClearButton?: boolean
+    } & JSX.IntrinsicElements['input'],
     ref: Ref<HTMLInputElement>
   ) => {
-    const { error, className, ...rest } = props
+    const { error, showClearButton, className, ...rest } = props
 
     return (
       <>
@@ -34,6 +39,17 @@ export const Input = forwardRef(
           )}
           {...rest}
         />
+        {showClearButton && (
+          <IconButton
+            className={'absolute right-0 top-2'}
+            size={'sm'}
+            onClick={() => {
+              if (rest.onChange) rest.onChange({ target: { value: '' } } as any)
+            }}
+          >
+            <XIcon className={'h-5 w-5'} />
+          </IconButton>
+        )}
       </>
     )
   }

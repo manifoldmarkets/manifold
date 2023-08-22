@@ -42,6 +42,9 @@ import { Carousel } from './widgets/carousel'
 import { Input } from './widgets/input'
 import { useTrendingGroupsSearchResults } from 'web/components/search/query-groups'
 import { GROUP_SLUGS_TO_HIDE_FROM_PILL_SEARCH } from 'common/envs/constants'
+import { getGroup } from 'web/lib/supabase/group'
+import { buildArray } from 'common/util/array'
+import { SearchGroupInfo } from 'web/lib/supabase/groups'
 
 const CONTRACTS_PER_PAGE = 40
 
@@ -126,11 +129,10 @@ export type SupabaseSearchParameters = {
   category: string
 }
 
-const QUERY_KEY = 'q'
+const CATEGORY_AND_QUERY_KEY = 'cq'
 const SORT_KEY = 's'
 const FILTER_KEY = 'f'
 const CONTRACT_TYPE_KEY = 'ct'
-const CATEGORY_KEY = 'c'
 
 function getShowTime(sort: Sort) {
   return sort === 'close-date' || sort === 'resolve-date' ? sort : null
@@ -253,7 +255,6 @@ export function SupabaseContractSearch(props: {
       const { query, sort, filter, category, contractType } =
         searchParams.current
       const id = ++requestId.current
-      console.log('category:', category)
       const offset = freshQuery
         ? 0
         : currentState.contracts
@@ -464,23 +465,23 @@ function SupabaseContractSearchControls(props: {
   } = props
 
   const router = useRouter()
-  const trendingGroups = showCategories // eslint-disable-next-line react-hooks/rules-of-hooks
-    ? useTrendingGroupsSearchResults('', 30).filter(
-        (g) =>
-          !GROUP_SLUGS_TO_HIDE_FROM_PILL_SEARCH.includes(g.slug) &&
-          (excludeGroupSlugs ? !excludeGroupSlugs.includes(g.slug) : true)
-      )
-    : []
 
-  const [query, setQuery] = usePersistentState(
-    '',
+  // We group these so that when a user selects a category, we can clear the query
+  // at the same time and only run the search once.
+  const [categoryAndQuery, setCategoryAndQuery] = usePersistentState(
+    JSON.stringify({
+      c: '',
+      q: '',
+    }),
     useUrlParams
       ? {
-          key: QUERY_KEY,
+          key: CATEGORY_AND_QUERY_KEY,
           store: urlParamStore(router),
         }
       : undefined
   )
+  const query = JSON.parse(categoryAndQuery).q
+  const category = JSON.parse(categoryAndQuery).c
 
   const [sort, setSort] = usePersistentState(
     defaultSort,
@@ -512,15 +513,21 @@ function SupabaseContractSearchControls(props: {
       : undefined
   )
 
-  const [category, setCategory] = usePersistentState(
-    '',
-    useUrlParams
-      ? {
-          key: CATEGORY_KEY,
-          store: urlParamStore(router),
-        }
-      : undefined
-  )
+  const categoryPills = showCategories // eslint-disable-next-line react-hooks/rules-of-hooks
+    ? useTrendingGroupsSearchResults(query, 30, !!category).filter(
+        (g) =>
+          !GROUP_SLUGS_TO_HIDE_FROM_PILL_SEARCH.includes(g.slug) &&
+          (excludeGroupSlugs ? !excludeGroupSlugs.includes(g.slug) : true)
+      )
+    : []
+
+  const [categoryFromRouter, setCategoryFromRouter] =
+    useState<SearchGroupInfo>()
+  useEffect(() => {
+    if (!!category && !categoryPills.map((g) => g.id).includes(category)) {
+      getGroup(category).then((g) => setCategoryFromRouter(g ?? undefined))
+    }
+  }, [router.query])
 
   const filter =
     sort === 'close-date'
@@ -530,7 +537,12 @@ function SupabaseContractSearchControls(props: {
       : filterState
 
   const updateQuery = (newQuery: string) => {
-    setQuery(newQuery)
+    setCategoryAndQuery(
+      JSON.stringify({
+        c: category,
+        q: newQuery,
+      })
+    )
   }
 
   const selectFilter = (selection: filter) => {
@@ -560,9 +572,16 @@ function SupabaseContractSearchControls(props: {
   }
 
   const selectCategory = (newCategory: string) => {
-    if (newCategory === category) return setCategory('')
-    setCategory(newCategory)
-    track('select search category', { category: newCategory })
+    const deselecting = newCategory === category
+    setCategoryAndQuery(
+      JSON.stringify({
+        c: deselecting ? '' : newCategory,
+        q: deselecting ? query : '',
+      })
+    )
+    newCategory != category &&
+      track('select search category', { category: newCategory })
+    setCategoryFromRouter(undefined)
   }
 
   const isAuth = useIsAuthorized()
@@ -570,7 +589,7 @@ function SupabaseContractSearchControls(props: {
   useEffect(() => {
     if (isAuth !== undefined) {
       onSearchParametersChanged({
-        query: query,
+        query,
         sort: sort as Sort,
         category,
         filter: filter as filter,
@@ -596,6 +615,7 @@ function SupabaseContractSearchControls(props: {
           placeholder="Search questions"
           className="w-full"
           autoFocus={autoFocus}
+          showClearButton={query !== ''}
         />
         {!hideFilters && (
           <SearchFilters
@@ -614,7 +634,10 @@ function SupabaseContractSearchControls(props: {
       </Col>
       {showCategories && (
         <Carousel className="mt-0.5 h-6">
-          {trendingGroups.map((g) => (
+          {uniqBy(
+            buildArray(categoryFromRouter).concat(categoryPills),
+            'id'
+          ).map((g) => (
             <PillButton
               key={'pill-' + g}
               selected={category === g.id}
