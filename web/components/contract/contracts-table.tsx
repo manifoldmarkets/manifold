@@ -276,7 +276,7 @@ function ContractRow(props: {
         <Row className="w-full justify-end sm:w-fit">
           {visibleColumns.map((column) => (
             <Row
-              key={contract.id}
+              key={contract.id + column.key}
               className={clsx(
                 'group relative cursor-pointer text-left',
                 faded && 'text-ink-500',

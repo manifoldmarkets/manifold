@@ -180,7 +180,7 @@ function UserProfile(props: {
           )
         })
     }
-  }, [currentUser?.id])
+  }, [currentUser?.id, user?.id])
 
   return (
     <Page key={user.id}>
