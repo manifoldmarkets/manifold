@@ -232,6 +232,7 @@ function Answer(props: {
         </>
       }
       bottom={
+        !resolution &&
         hasBets &&
         isCpmm && <AnswerPosition contract={contract} userBets={userBets} />
       }
