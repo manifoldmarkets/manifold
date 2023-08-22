@@ -9,7 +9,6 @@ import { buildArray } from 'common/util/array'
 
 export function NewsTopicsTabs(props: {
   homeContent?: ReactNode
-  questionsContent?: ReactNode
   dontScroll?: boolean
 }) {
   const { homeContent, dontScroll } = props

@@ -11,7 +11,6 @@ import { DailyStats } from 'web/components/daily-stats'
 import { Spacer } from 'web/components/layout/spacer'
 import { ProfileSummary } from 'web/components/nav/profile-summary'
 import { useUser } from 'web/hooks/use-user'
-import MarketsHome from 'web/pages/markets-home'
 import { Title } from 'web/components/widgets/title'
 import Welcome from 'web/components/onboarding/welcome'
 import { SEO } from 'web/components/SEO'
@@ -54,10 +53,7 @@ function HomeDashboard() {
           <DailyStats user={user} />
         </Row>
 
-        <NewsTopicsTabs
-          homeContent={<FeedTimeline />}
-          questionsContent={<MarketsHome />}
-        />
+        <NewsTopicsTabs homeContent={<FeedTimeline />} />
       </Page>
     </>
   )
