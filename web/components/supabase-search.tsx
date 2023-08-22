@@ -43,7 +43,7 @@ import { Input } from './widgets/input'
 import { useTrendingGroupsSearchResults } from 'web/components/search/query-groups'
 import { GROUP_SLUGS_TO_HIDE_FROM_PILL_SEARCH } from 'common/envs/constants'
 
-const CONTRACTS_PER_PAGE = 20
+const CONTRACTS_PER_PAGE = 40
 
 export const SORTS = [
   { label: 'Trending', value: 'score' },
