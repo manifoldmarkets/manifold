@@ -241,6 +241,8 @@ export const GROUP_SLUGS_TO_HIDE_FROM_PILL_SEARCH = [
   'magaland',
   'metaforecasting',
   'nonpredictive-profits',
+  '-sircryptomind-crypto-stock',
+  'selfresolving',
 ]
 
 export const EXTERNAL_REDIRECTS = ['/umami']
