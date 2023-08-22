@@ -35,7 +35,10 @@ export default function BannerImage(props: {
           groupBannerUrl ? ' h-60 sm:h-72' : 'h-24'
         )}
       >
-        <div className="absolute top-2 right-4 z-20 transition-opacity sm:opacity-0 sm:group-hover:opacity-100">
+        {groupBannerUrl && (
+          <Image src={groupBannerUrl} alt="" fill className="object-cover" />
+        )}
+        <div className="absolute bottom-1 right-3 z-10">
           {user && canEdit && (
             <BannerDropdown
               group={group}
@@ -48,9 +51,6 @@ export default function BannerImage(props: {
             />
           )}
         </div>
-        {groupBannerUrl && (
-          <Image src={groupBannerUrl} alt="" fill className="object-cover" />
-        )}
       </figure>
     </>
   )
@@ -241,8 +241,8 @@ function BannerDropdown(props: {
             onClick: onChangeBannerClick,
           },
         ]}
-        Icon={<CameraIcon className="text-ink-900 h-5 w-5" />}
-        buttonClass="rounded-md bg-canvas-0 bg-opacity-50 p-1"
+        Icon={<CameraIcon className="text-ink-700 h-5 w-5" />}
+        buttonClass="rounded-md p-1"
         menuWidth="w-60"
       />
       <ChangeBannerModal
