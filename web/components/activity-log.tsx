@@ -79,6 +79,7 @@ export function ActivityLog(props: {
   const rawBets = useRealtimeBets({
     limit: count * 3 + 20,
     filterRedemptions: true,
+    order: 'desc',
   })
   const bets = (rawBets ?? []).filter(
     (bet) =>

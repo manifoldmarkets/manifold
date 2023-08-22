@@ -23,7 +23,7 @@ export function useRealtimeBets(options?: BetFilter) {
     }
   }
   const { rows } = useSubscription('contract_bets', filteredQuery, () =>
-    getBetRows(db, { ...options, order: 'asc' })
+    getBetRows(db, { ...options, order: options?.order ?? 'asc' })
   )
   const newBets = (rows ?? [])
     .map((r) => r.data as Bet)

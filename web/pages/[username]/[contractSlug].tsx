@@ -205,6 +205,7 @@ export function ContractPageContent(props: {
       contractId: contract.id,
       afterTime: lastBetTime,
       filterRedemptions: contract.outcomeType !== 'MULTIPLE_CHOICE',
+      order: 'asc',
     }) ?? []
   const newBetsWithoutRedemptions = newBets.filter((bet) => !bet.isRedemption)
   const totalBets = contractParams.totalBets + newBetsWithoutRedemptions.length
