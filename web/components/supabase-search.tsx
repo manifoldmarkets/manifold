@@ -367,6 +367,7 @@ export function SupabaseContractSearch(props: {
           listViewDisabled={listViewDisabled}
           showCategories={showCategories}
           hideFilters={hideFilters}
+          excludeGroupSlugs={additionalFilter?.excludeGroupSlugs}
         />
         {contracts && contracts.length === 0 ? (
           emptyState ??
@@ -444,6 +445,7 @@ function SupabaseContractSearchControls(props: {
   listViewDisabled?: boolean
   showCategories?: boolean
   hideFilters?: boolean
+  excludeGroupSlugs?: string[]
 }) {
   const {
     className,
@@ -458,12 +460,15 @@ function SupabaseContractSearchControls(props: {
     showCategories,
     inputRowClassName,
     hideFilters,
+    excludeGroupSlugs,
   } = props
 
   const router = useRouter()
   const trendingGroups = showCategories // eslint-disable-next-line react-hooks/rules-of-hooks
     ? useTrendingGroupsSearchResults('', 30).filter(
-        (g) => !GROUP_SLUGS_TO_HIDE_FROM_PILL_SEARCH.includes(g.slug)
+        (g) =>
+          !GROUP_SLUGS_TO_HIDE_FROM_PILL_SEARCH.includes(g.slug) &&
+          (excludeGroupSlugs ? !excludeGroupSlugs.includes(g.slug) : true)
       )
     : []
 
