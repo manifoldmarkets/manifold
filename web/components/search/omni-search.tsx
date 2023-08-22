@@ -123,7 +123,7 @@ const Results = (props: { query: string; recentMarkets: Contract[] }) => {
   const prefix = query.match(/^(%|#|@)/) ? query.charAt(0) : ''
   const search = prefix ? query.slice(1) : query
 
-  const userHitLimit = !prefix ? 2 : prefix === '@' ? 25 : 0
+  const userHitLimit = !prefix ? 5 : prefix === '@' ? 25 : 0
   const groupHitLimit = !prefix ? 2 : prefix === '#' ? 25 : 0
   const marketHitLimit = !prefix ? 5 : prefix === '%' ? 25 : 0
 
