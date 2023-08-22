@@ -65,10 +65,14 @@ export const supabasesearchcontracts = MaybeAuthedEndpoint(
       offset,
       limit,
       fuzzy,
-      groupId,
+      groupId: trueGroupId,
       creatorId,
     } = validate(bodySchema, req.body)
     const pg = createSupabaseDirectClient()
+
+    const isForYou = trueGroupId === 'for-you'
+    const groupId = trueGroupId && !isForYou ? trueGroupId : undefined
+
     const hasGroupAccess = groupId
       ? await pg
           .one('select * from check_group_accessibility($1,$2)', [
@@ -92,7 +96,11 @@ export const supabasesearchcontracts = MaybeAuthedEndpoint(
       creatorId,
       uid: auth?.uid,
       hasGroupAccess,
+      isForYou
     })
+
+    console.log('sql:')
+    console.log(searchMarketSQL)
 
     const contracts = await pg.map(
       searchMarketSQL,
@@ -103,6 +111,7 @@ export const supabasesearchcontracts = MaybeAuthedEndpoint(
     return (contracts ?? []) as unknown as Json
   }
 )
+
 
 function getSearchContractSQL(contractInput: {
   term: string
@@ -116,6 +125,7 @@ function getSearchContractSQL(contractInput: {
   creatorId?: string
   uid?: string
   hasGroupAccess?: boolean
+  isForYou?: boolean
 }) {
   const {
     term,
