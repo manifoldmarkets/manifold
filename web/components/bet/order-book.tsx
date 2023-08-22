@@ -262,17 +262,17 @@ export function OrderBookButton(props: {
 
       <Modal open={open} setOpen={setOpen} size="md">
         <Col className="bg-canvas-0 text-ink-800 rounded p-4 py-6">
-          <Title className="flex">
+          <Title className="flex items-center">
             Order book{' '}
             <InfoTooltip
               text="List of active limit orders by traders wishing to buy YES or NO at a given probability"
-              className="ml-1 self-center"
+              className="ml-1"
             />
           </Title>
 
           <h2 className="mb-1 text-center">Cumulative shares vs probability</h2>
           {!isCPMMMulti && !isPseudoNumeric && (
-            <SizedContainer className="mb-6 h-[200px] px-16">
+            <SizedContainer className="mb-6 h-[132px] w-full max-w-md self-center px-8 sm:h-[200px] sm:px-14">
               {(w, h) => (
                 <DepthChart
                   contract={contract as any}
