@@ -142,10 +142,7 @@ export function ContractParamsForm(props: {
       const groups = await Promise.all(groupIds.map((id) => getGroup(id))).then(
         (groups) => groups.filter((g) => g)
       )
-      const publicGroups = filterDefined(groups).filter(
-        (g) => g.privacyStatus === 'public'
-      )
-      setSelectedGroups(publicGroups)
+      setSelectedGroups(filterDefined(groups))
     }
     setGroups()
   }, [creator.id, params?.groupIds])

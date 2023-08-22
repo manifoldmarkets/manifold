@@ -5,6 +5,7 @@ import { APIError, authEndpoint, validate } from './helpers'
 import { canUserAddGroupToMarket } from 'api/add-contract-to-group'
 import { createSupabaseClient } from 'shared/supabase/init'
 import { removeGroupFromContract } from 'shared/update-group-contracts-internal'
+import { getUser } from 'shared/utils'
 
 const bodySchema = z.object({
   groupId: z.string(),
@@ -43,8 +44,9 @@ export const removecontractfromgroup = authEndpoint(async (req, auth) => {
     )
   }
 
-  const canAdd = await canUserAddGroupToMarket({
-    userId: auth.uid,
+  const user = await getUser(auth.uid)
+  const canAdd = canUserAddGroupToMarket({
+    user,
     group,
     contract,
     membership,

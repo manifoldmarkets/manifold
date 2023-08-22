@@ -72,10 +72,14 @@ export async function createMarketHelper(body: any, auth: AuthedUser) {
   } = validateMarketBody(body)
 
   const userId = auth.uid
+  const user = await getUser(userId)
+  if (!user) throw new APIError(401, 'Your account was not found')
 
   let groups = groupIds
     ? await Promise.all(
-        groupIds.map(async (gId) => getGroup(gId, visibility, userId))
+        groupIds.map(async (gId) =>
+          getGroupCheckPermissions(gId, visibility, user)
+        )
       )
     : null
 
@@ -89,7 +93,7 @@ export async function createMarketHelper(body: any, auth: AuthedUser) {
 
   const closeTimestamp = await getCloseTimestamp(closeTime, question, utcOffset)
 
-  const { user, contract } = await firestore.runTransaction(async (trans) => {
+  const contract = await firestore.runTransaction(async (trans) => {
     const userDoc = await trans.get(firestore.collection('users').doc(userId))
     if (!userDoc.exists) throw new APIError(401, 'Your account was not found')
 
@@ -167,11 +171,8 @@ export async function createMarketHelper(body: any, auth: AuthedUser) {
       groups.map(async (g) => {
         await addGroupToContract(contract, g, pg)
         if (contract.visibility == 'private') {
-          const contractCreator = await getUser(contract.creatorId)
-          if (!contractCreator)
-            throw new Error('Could not find contract creator')
           await createNewContractFromPrivateGroupNotification(
-            contractCreator,
+            user,
             contract,
             g
           )
@@ -253,7 +254,7 @@ const runCreateMarketTxn = async (
       freeQuestionsCreated: FieldValue.increment(1),
     })
 
-  return { user, contract }
+  return contract
 }
 
 const generateContractEmbeddings = async (
@@ -423,7 +424,11 @@ function validateMarketBody(body: any) {
   }
 }
 
-async function getGroup(groupId: string, visibility: string, userId: string) {
+async function getGroupCheckPermissions(
+  groupId: string,
+  visibility: string,
+  user: User
+) {
   const db = createSupabaseClient()
 
   const groupQuery = await db.from('groups').select().eq('id', groupId).limit(1)
@@ -436,7 +441,7 @@ async function getGroup(groupId: string, visibility: string, userId: string) {
   const membershipQuery = await db
     .from('group_members')
     .select()
-    .eq('member_id', userId)
+    .eq('member_id', user.id)
     .eq('group_id', groupId)
     .limit(1)
   const membership = membershipQuery.data?.[0]
@@ -453,7 +458,7 @@ async function getGroup(groupId: string, visibility: string, userId: string) {
 
   if (
     !canUserAddGroupToMarket({
-      userId,
+      user,
       group,
       membership,
     })

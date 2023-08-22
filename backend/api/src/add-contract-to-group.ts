@@ -12,6 +12,7 @@ import {
 } from 'shared/supabase/init'
 import { addGroupToContract } from 'shared/update-group-contracts-internal'
 import { GroupMember } from 'common/group-member'
+import { User } from 'common/user'
 
 const bodySchema = z.object({
   groupId: z.string(),
@@ -54,8 +55,9 @@ export const addcontracttogroup = authEndpoint(async (req, auth) => {
     )
   }
 
-  const canAdd = await canUserAddGroupToMarket({
-    userId: auth.uid,
+  const user = await getUser(auth.uid)
+  const canAdd = canUserAddGroupToMarket({
+    user,
     group,
     contract,
     membership,
@@ -74,18 +76,19 @@ export const addcontracttogroup = authEndpoint(async (req, auth) => {
 
 const firestore = admin.firestore()
 
-export async function canUserAddGroupToMarket(props: {
-  userId: string
+export function canUserAddGroupToMarket(props: {
+  user: User | undefined
   group: GroupResponse
   contract?: Contract
   membership?: GroupMember
 }) {
-  const { userId, group, contract, membership } = props
+  const { user, group, contract, membership } = props
+  if (!user) return false
+  const userId = user.id
 
-  const user = await getUser(userId)
   const isMarketCreator = !contract || contract.creatorId === userId
   const isManifoldAdmin = isAdminId(userId)
-  const trustworthy = isTrustworthy(user?.username)
+  const trustworthy = isTrustworthy(user.username)
 
   const isMember = membership != undefined
   const isAdminOrMod =
