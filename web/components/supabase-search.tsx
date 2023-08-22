@@ -129,7 +129,7 @@ export type SupabaseSearchParameters = {
   category: string
 }
 
-const CATEGORY_AND_QUERY_KEY = 'cq'
+export const CATEGORY_AND_QUERY_KEY = 'cq'
 const SORT_KEY = 's'
 const FILTER_KEY = 'f'
 const CONTRACT_TYPE_KEY = 'ct'
@@ -469,10 +469,7 @@ function SupabaseContractSearchControls(props: {
   // We group these so that when a user selects a category, we can clear the query
   // at the same time and only run the search once.
   const [categoryAndQuery, setCategoryAndQuery] = usePersistentState(
-    JSON.stringify({
-      c: '',
-      q: '',
-    }),
+    formatQueryAndCategory('', ''),
     useUrlParams
       ? {
           key: CATEGORY_AND_QUERY_KEY,
@@ -537,12 +534,7 @@ function SupabaseContractSearchControls(props: {
       : filterState
 
   const updateQuery = (newQuery: string) => {
-    setCategoryAndQuery(
-      JSON.stringify({
-        c: category,
-        q: newQuery,
-      })
-    )
+    setCategoryAndQuery(formatQueryAndCategory(newQuery, category))
   }
 
   const selectFilter = (selection: filter) => {
@@ -574,10 +566,10 @@ function SupabaseContractSearchControls(props: {
   const selectCategory = (newCategory: string) => {
     const deselecting = newCategory === category
     setCategoryAndQuery(
-      JSON.stringify({
-        c: deselecting ? '' : newCategory,
-        q: deselecting ? query : '',
-      })
+      formatQueryAndCategory(
+        deselecting ? query : '',
+        deselecting ? '' : newCategory
+      )
     )
     newCategory != category &&
       track('select search category', { category: newCategory })
@@ -765,4 +757,11 @@ export function SearchFilters(props: {
       )}
     </div>
   )
+}
+
+export function formatQueryAndCategory(query: string, categoryId: string) {
+  return JSON.stringify({
+    q: query,
+    c: categoryId,
+  })
 }
