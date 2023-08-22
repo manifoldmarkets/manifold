@@ -287,9 +287,9 @@ export const computeContractScores = (
     2 * newness +
     commentScore +
     normalize(thisWeekScore, 200) +
-    normalize(Math.log10(contract.volume24Hours), 5) +
+    normalize(Math.log10(contract.volume24Hours + 1), 5) +
     normalize(contract.uniqueBettorCount, 1000) +
-    normalize(Math.log10(contract.volume), 7) +
+    normalize(Math.log10(contract.volume + 1), 7) +
     liquidityScore +
     uncertainness
 
@@ -326,8 +326,8 @@ const bountiedImportanceScore = (
 ) => {
   const { totalBounty, bountyLeft } = contract
 
-  const bountyScore = normalize(Math.log10(totalBounty), 5)
-  const bountyLeftScore = normalize(Math.log10(bountyLeft), 5)
+  const bountyScore = normalize(Math.log10(totalBounty + 1), 5)
+  const bountyLeftScore = normalize(Math.log10(bountyLeft + 1), 5)
 
   const rawImportance =
     3 * commentScore + newness + bountyScore + bountyLeftScore
