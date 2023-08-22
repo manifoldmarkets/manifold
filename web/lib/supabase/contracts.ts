@@ -206,14 +206,12 @@ export async function searchContract(props: {
   sort: Sort
   contractType?: ContractTypeType
   offset?: number
-  topic?: string
   limit: number
   group_id?: string
   creator_id?: string
 }) {
   const {
     query,
-    topic,
     filter,
     sort,
     contractType = 'ALL',
@@ -242,7 +240,6 @@ export async function searchContract(props: {
       contractType,
       offset,
       limit,
-      topic,
       groupId: group_id,
       creatorId: creator_id,
     })
@@ -260,7 +257,6 @@ export async function searchContract(props: {
       limit,
       group_id,
       creator_id,
-      topic,
     })
     return contractFuzzy
   }
@@ -275,7 +271,6 @@ export async function searchContract(props: {
     fuzzy: false,
     groupId: group_id,
     creatorId: creator_id,
-    topic,
   })
   if (contracts) {
     if (contracts.length == limit) {

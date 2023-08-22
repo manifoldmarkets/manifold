@@ -54,7 +54,7 @@ export default function Search() {
             useUrlParams
             isWholePage
             headerClassName={'bg-canvas-0'}
-            showTopics
+            showCategories
           />
         </Col>
       </Page>

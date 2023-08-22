@@ -235,6 +235,14 @@ export const GROUP_SLUGS_TO_IGNORE_IN_MARKETS_EMAIL = [
   'nonpredictive',
 ]
 
+export const GROUP_SLUGS_TO_HIDE_FROM_PILL_SEARCH = [
+  'new-years-resolutions-2024',
+  'metamarkets',
+  'magaland',
+  'metaforecasting',
+  'nonpredictive-profits',
+]
+
 export const EXTERNAL_REDIRECTS = ['/umami']
 
 export const DISCORD_INVITE_LINK = 'https://discord.com/invite/eHQBNBqXuh'

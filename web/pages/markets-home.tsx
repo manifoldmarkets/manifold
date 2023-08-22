@@ -40,7 +40,7 @@ export default function MarketsHome() {
         }}
         isWholePage
         useUrlParams
-        showTopics={true}
+        showCategories={true}
         headerClassName={'bg-canvas-0 !static pt-0'}
         inputRowClassName="hidden"
       />

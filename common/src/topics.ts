@@ -48,19 +48,6 @@ export const TOPICS_TO_SUBTOPICS: { [key: string]: string[] } = {
   '👥 Communities': ['💗 Effective Altruism', '🎮 Destiny.gg'],
 }
 
-export const SELECTABLE_TOPICS = [
-  '🗳️ Politics',
-  '💻 Technology',
-  '🏟️ Sports',
-  '💰 Economics',
-  '🍿 Movies',
-  '🇷🇺🇺🇦 Russia & Ukraine',
-  '🇨🇳 China',
-  '🪙 Crypto',
-  '🎮 Gaming',
-  '🚀 Space',
-]
-
 const COMMUNITY_TO_GROUP_ID: { [key: string]: string } = {
   'CGP Grey': 'yXIziLaaVxHFOPG1aMrJ',
   'Effective Altruism': 'znYsWa9eZRkBvSHwmaNz',
@@ -122,8 +109,4 @@ export const getSubtopics = (topic: string) =>
   )
 export const ALL_TOPICS = Object.keys(TOPICS_TO_SUBTOPICS)
   .map((topic) => getSubtopics(topic).map(([_, subtopic]) => subtopic))
-  .flat()
-
-export const ALL_TOPICS_WITH_EMOJIS = Object.keys(TOPICS_TO_SUBTOPICS)
-  .map((topic) => getSubtopics(topic).map(([subtopic]) => subtopic))
   .flat()

@@ -40,6 +40,7 @@ import { getPostsByGroup } from 'web/lib/supabase/post'
 import { getUser, getUsers } from 'web/lib/supabase/user'
 import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
 import { useUserById } from 'web/hooks/use-user-supabase'
+import { EditableGroupTitle } from 'web/components/groups/editable-group-name'
 
 export const groupButtonClass = 'text-ink-700 hover:text-ink-800'
 const MAX_LEADERBOARD_SIZE = 50
@@ -167,6 +168,7 @@ export function GroupPageContent(props: { groupParams?: GroupParams }) {
   const isMobile = useIsMobile()
   const privateUser = usePrivateUser()
   const [writingNewAbout, setWritingNewAbout] = useState(false)
+  const [editingName, setEditingName] = useState(false)
   const bannerRef = useRef<HTMLDivElement | null>(null)
   const bannerVisible = useIntersection(bannerRef, '-120px', useRef(null))
   const creator = useUserById(group?.creatorId) ?? groupParams?.creator
@@ -234,6 +236,7 @@ export function GroupPageContent(props: { groupParams?: GroupParams }) {
           setWritingNewAbout={setWritingNewAbout}
           bannerVisible={bannerVisible}
           onAddMemberClick={onAddMemberClick}
+          setEditingName={setEditingName}
         />
       )}
       <div className="relative">
@@ -247,9 +250,14 @@ export function GroupPageContent(props: { groupParams?: GroupParams }) {
         </div>
         <Col className="bg-canvas-0 absolute bottom-0 w-full bg-opacity-90 px-4">
           <Row className="mt-4 mb-2 w-full justify-between gap-1">
-            <div className="text-ink-900 text-2xl font-normal sm:text-3xl">
-              {group.name}
-            </div>
+            <EditableGroupTitle
+              group={group}
+              isEditing={editingName}
+              onFinishEditing={(changed) => {
+                setEditingName(false)
+                if (changed) router.reload()
+              }}
+            />
             <Col className="justify-end">
               <Row className="items-center gap-2">
                 {user?.id != group.creatorId && (
@@ -268,6 +276,7 @@ export function GroupPageContent(props: { groupParams?: GroupParams }) {
                     canEdit={userRole === 'admin'}
                     setWritingNewAbout={setWritingNewAbout}
                     onAddMemberClick={onAddMemberClick}
+                    setEditingName={setEditingName}
                   />
                 )}
               </Row>
@@ -368,6 +377,7 @@ export function TopGroupNavBar(props: {
   privateUser: PrivateUser | undefined | null
   canEdit: boolean
   setWritingNewAbout: (writingNewAbout: boolean) => void
+  setEditingName: (editingName: boolean) => void
   bannerVisible: boolean
   onAddMemberClick: () => void
 }) {
@@ -379,6 +389,7 @@ export function TopGroupNavBar(props: {
     setWritingNewAbout,
     bannerVisible,
     onAddMemberClick,
+    setEditingName,
   } = props
 
   const transitionClass = clsx(
@@ -414,6 +425,7 @@ export function TopGroupNavBar(props: {
               canEdit={canEdit}
               setWritingNewAbout={setWritingNewAbout}
               onAddMemberClick={onAddMemberClick}
+              setEditingName={setEditingName}
             />
           </Row>
         </div>

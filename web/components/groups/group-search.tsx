@@ -116,8 +116,7 @@ export default function GroupSearch(props: {
           searchTermStore.set(`${persistPrefix}-params`, term)
         }
         searchTerm.current = term
-        setState(INITIAL_STATE)
-        performQuery(state, true)
+        performQuery(INITIAL_STATE, true)
       }
     }, 100)
   ).current

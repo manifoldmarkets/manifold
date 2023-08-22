@@ -1,9 +1,13 @@
 import { debounce } from 'lodash'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo } from 'react'
 import { SearchGroupInfo, searchGroups } from 'web/lib/supabase/groups'
+import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 
-export function useGroupSearchResults(query: string, limit: number) {
-  const [results, setResults] = useState<SearchGroupInfo[]>([])
+export function useTrendingGroupsSearchResults(query: string, limit: number) {
+  const [results, setResults] = usePersistentInMemoryState<SearchGroupInfo[]>(
+    [],
+    'trending-groups-market-search'
+  )
 
   const debouncedOnSearch = useMemo(
     () =>

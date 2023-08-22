@@ -6,7 +6,6 @@ import {
 import clsx from 'clsx'
 import { Contract } from 'common/contract'
 import { Group } from 'common/group'
-import { SELECTABLE_TOPICS, cleanTopic } from 'common/topics'
 import { debounce, isEqual, sample, uniqBy } from 'lodash'
 import { useRouter } from 'next/router'
 import {
@@ -41,6 +40,8 @@ import generateFilterDropdownItems, {
 } from './search/search-dropdown-helpers'
 import { Carousel } from './widgets/carousel'
 import { Input } from './widgets/input'
+import { useTrendingGroupsSearchResults } from 'web/components/search/query-groups'
+import { GROUP_SLUGS_TO_HIDE_FROM_PILL_SEARCH } from 'common/envs/constants'
 
 const CONTRACTS_PER_PAGE = 20
 
@@ -122,14 +123,14 @@ export type SupabaseSearchParameters = {
   sort: Sort
   filter: filter
   contractType: ContractTypeType
-  topic: string
+  category: string
 }
 
 const QUERY_KEY = 'q'
 const SORT_KEY = 's'
 const FILTER_KEY = 'f'
 const CONTRACT_TYPE_KEY = 'ct'
-const TOPIC_KEY = 't'
+const CATEGORY_KEY = 'c'
 
 function getShowTime(sort: Sort) {
   return sort === 'close-date' || sort === 'resolve-date' ? sort : null
@@ -197,7 +198,7 @@ export function SupabaseContractSearch(props: {
   }
   listViewDisabled?: boolean
   contractSearchControlsClassName?: string
-  showTopics?: boolean
+  showCategories?: boolean
   hideSearch?: boolean
   hideFilters?: boolean
 }) {
@@ -220,7 +221,7 @@ export function SupabaseContractSearch(props: {
     emptyState,
     fromGroupProps,
     listViewDisabled,
-    showTopics,
+    showCategories,
     hideFilters,
   } = props
 
@@ -249,8 +250,10 @@ export function SupabaseContractSearch(props: {
       if (searchParams.current == null) {
         return false
       }
-      const { query, sort, filter, topic, contractType } = searchParams.current
+      const { query, sort, filter, category, contractType } =
+        searchParams.current
       const id = ++requestId.current
+      console.log('category:', category)
       const offset = freshQuery
         ? 0
         : currentState.contracts
@@ -263,10 +266,11 @@ export function SupabaseContractSearch(props: {
           filter,
           sort,
           contractType: additionalFilter?.contractType ?? contractType,
-          topic,
           offset: offset,
           limit: CONTRACTS_PER_PAGE,
-          group_id: additionalFilter?.groupId,
+          group_id:
+            additionalFilter?.groupId ??
+            (category !== '' ? category : undefined),
           creator_id: additionalFilter?.creatorId,
         })
 
@@ -361,7 +365,7 @@ export function SupabaseContractSearch(props: {
           onSearchParametersChanged={onSearchParametersChanged}
           autoFocus={autoFocus}
           listViewDisabled={listViewDisabled}
-          showTopics={showTopics}
+          showCategories={showCategories}
           hideFilters={hideFilters}
         />
         {contracts && contracts.length === 0 ? (
@@ -438,7 +442,7 @@ function SupabaseContractSearchControls(props: {
   useUrlParams?: boolean
   autoFocus?: boolean
   listViewDisabled?: boolean
-  showTopics?: boolean
+  showCategories?: boolean
   hideFilters?: boolean
 }) {
   const {
@@ -451,12 +455,17 @@ function SupabaseContractSearchControls(props: {
     useUrlParams,
     autoFocus,
     includeProbSorts,
-    showTopics,
+    showCategories,
     inputRowClassName,
     hideFilters,
   } = props
 
   const router = useRouter()
+  const trendingGroups = showCategories // eslint-disable-next-line react-hooks/rules-of-hooks
+    ? useTrendingGroupsSearchResults('', 30).filter(
+        (g) => !GROUP_SLUGS_TO_HIDE_FROM_PILL_SEARCH.includes(g.slug)
+      )
+    : []
 
   const [query, setQuery] = usePersistentState(
     '',
@@ -498,11 +507,11 @@ function SupabaseContractSearchControls(props: {
       : undefined
   )
 
-  const [topic, setTopic] = usePersistentState(
+  const [category, setCategory] = usePersistentState(
     '',
     useUrlParams
       ? {
-          key: TOPIC_KEY,
+          key: CATEGORY_KEY,
           store: urlParamStore(router),
         }
       : undefined
@@ -545,10 +554,10 @@ function SupabaseContractSearchControls(props: {
     track('select contract type', { contractType: selection })
   }
 
-  const selectTopic = (newTopic: string) => {
-    if (newTopic === topic) return setTopic('')
-    setTopic(newTopic)
-    track('select search topic', { topic: newTopic })
+  const selectCategory = (newCategory: string) => {
+    if (newCategory === category) return setCategory('')
+    setCategory(newCategory)
+    track('select search category', { category: newCategory })
   }
 
   const isAuth = useIsAuthorized()
@@ -558,12 +567,12 @@ function SupabaseContractSearchControls(props: {
       onSearchParametersChanged({
         query: query,
         sort: sort as Sort,
-        topic: topic,
+        category,
         filter: filter as filter,
         contractType: contractType as ContractTypeType,
       })
     }
-  }, [query, sort, filter, topic, contractType, isAuth])
+  }, [query, sort, filter, category, contractType, isAuth])
 
   return (
     <Col className={clsx('bg-canvas-50 sticky top-0 z-30 mb-2', className)}>
@@ -598,15 +607,15 @@ function SupabaseContractSearchControls(props: {
           />
         )}
       </Col>
-      {showTopics && (
-        <Carousel className="mt-0.5">
-          {SELECTABLE_TOPICS.map((t) => (
+      {showCategories && (
+        <Carousel className="mt-0.5 h-6">
+          {trendingGroups.map((g) => (
             <PillButton
-              key={'pill-' + t}
-              selected={topic === cleanTopic(t)}
-              onSelect={() => selectTopic(cleanTopic(t))}
+              key={'pill-' + g}
+              selected={category === g.id}
+              onSelect={() => selectCategory(g.id)}
             >
-              {t}
+              {g.name}
             </PillButton>
           ))}
         </Carousel>

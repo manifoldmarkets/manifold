@@ -51,7 +51,6 @@ const bodySchema = z.object({
     z.literal('STONK'),
     z.literal('POLL'),
   ]),
-  topic: z.string().optional(),
   offset: z.number().gte(0),
   limit: z.number().gt(0),
   fuzzy: z.boolean().optional(),
@@ -63,7 +62,6 @@ export const supabasesearchcontracts = MaybeAuthedEndpoint(
   async (req, auth) => {
     const {
       term,
-      topic,
       filter,
       sort,
       contractType,
@@ -97,7 +95,6 @@ export const supabasesearchcontracts = MaybeAuthedEndpoint(
       creatorId,
       uid: auth?.uid,
       hasGroupAccess,
-      topic,
     })
 
     const contracts = await pg.map(
@@ -122,7 +119,6 @@ function getSearchContractSQL(contractInput: {
   creatorId?: string
   uid?: string
   hasGroupAccess?: boolean
-  topic?: string
 }) {
   const {
     term,
@@ -136,7 +132,6 @@ function getSearchContractSQL(contractInput: {
     creatorId,
     uid,
     hasGroupAccess,
-    topic,
   } = contractInput
 
   let query = ''
@@ -311,44 +306,18 @@ function getSearchContractSQL(contractInput: {
   }
   // Blank search for markets not by group nor creator
   else {
-    const topicJoin = topic
-      ? `contract_embeddings ON contracts.id = contract_embeddings.contract_id, topic_embedding`
-      : ''
-    const topicQuery = pgp.as.format(
-      'topic_embedding AS ( SELECT embedding FROM topic_embeddings WHERE topic = $1 LIMIT 1)',
-      [topic]
-    )
-    const topicFilter = topic
-      ? `(contract_embeddings.embedding <=> topic_embedding.embedding < ${TOPIC_DISTANCE_THRESHOLD})`
-      : ''
-    const topicSqlBuilder = buildSql(
-      withClause(topicQuery),
-      join(topicJoin),
-      where(topicFilter)
-    )
-
     if (emptyTerm) {
       queryBuilder = buildSql(
         select('data'),
         from('contracts'),
-        whereSqlBuilder,
-        topicSqlBuilder
+        whereSqlBuilder
       )
     }
     // Fuzzy search for markets not by group nor creator
     else if (fuzzy) {
-      const fuzzyTopicQuery = topic ? `${topicQuery},` : ''
-      const topicSelect = topic ? `contract_embeddings.embedding,` : ''
-      const topicFrom = topic ? `, contract_embeddings, topic_embedding` : ''
-      const topicAnd = topic
-        ? `AND contracts.id = contract_embeddings.contract_id`
-        : ''
-      const whereSqlWithTopic = topic
-        ? whereSQL + ` AND ${topicFilter}`
-        : whereSQL
       query = `
 select * from (
-    WITH ${fuzzyTopicQuery}
+    WITH
      subset_query AS (
          SELECT to_tsquery('english_nostop_with_prefix', get_exact_match_minus_last_word_query($1)) AS query
      ),
@@ -356,16 +325,16 @@ select * from (
          SELECT to_tsquery('english_nostop_with_prefix', get_prefix_match_query($1)) AS query
      ),
      subset_matches AS (
-         SELECT contracts.*, ${topicSelect} subset_query.query, 0.0 AS weight
-         FROM contracts, subset_query ${topicFrom}
-             ${whereSqlWithTopic}
-           AND question_nostop_fts @@ subset_query.query ${topicAnd}
+         SELECT contracts.*, subset_query.query, 0.0 AS weight
+         FROM contracts, subset_query
+             ${whereSQL}
+           AND question_nostop_fts @@ subset_query.query 
         ),
      prefix_matches AS (
-         SELECT contracts.*, ${topicSelect} prefix_query.query,  1.0 AS weight
-         FROM contracts, prefix_query ${topicFrom}
-           ${whereSqlWithTopic}
-           AND question_nostop_fts @@ prefix_query.query ${topicAnd}
+         SELECT contracts.*,  prefix_query.query,  1.0 AS weight
+         FROM contracts, prefix_query 
+           ${whereSQL}
+           AND question_nostop_fts @@ prefix_query.query
         ),
      combined_matches AS (
          SELECT * FROM prefix_matches
@@ -387,13 +356,10 @@ select * from (
     // Normal full text search for markets
     else {
       query = `
-          with ${topicQuery}
           SELECT data
-          FROM contracts
-          ${topicJoin ? `JOIN ${topicJoin}` : ''},
+          FROM contracts,
                websearch_to_tsquery('english',  $1) as query
           ${whereSQL}
-          ${topicFilter ? `AND ${topicFilter}` : ''}
           AND (question_fts @@ query
           OR description_fts @@ query)`
     }

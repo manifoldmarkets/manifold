@@ -1,4 +1,4 @@
-import { PencilIcon, PhotographIcon } from '@heroicons/react/solid'
+import { PhotographIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { Group } from 'common/group'
 import { User } from 'common/user'
@@ -11,6 +11,7 @@ import DropdownMenu from '../comments/dropdown-menu'
 import { Col } from '../layout/col'
 import { Modal, MODAL_CLASS, SCROLLABLE_MODAL_CLASS } from '../layout/modal'
 import { Row } from '../layout/row'
+import { CameraIcon } from '@heroicons/react/outline'
 
 export const DEFAULT_BANNERS = [
   '/group/default_group_banner_indigo.png',
@@ -240,7 +241,7 @@ function BannerDropdown(props: {
             onClick: onChangeBannerClick,
           },
         ]}
-        Icon={<PencilIcon className="text-ink-900 h-5 w-5" />}
+        Icon={<CameraIcon className="text-ink-900 h-5 w-5" />}
         buttonClass="rounded-md bg-canvas-0 bg-opacity-50 p-1"
         menuWidth="w-60"
       />
