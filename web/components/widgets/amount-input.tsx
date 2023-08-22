@@ -82,7 +82,7 @@ export function AmountInput(
               type={allowFloat ? 'number' : 'text'}
               inputMode={allowFloat ? 'decimal' : 'numeric'}
               placeholder="0"
-              maxLength={7}
+              maxLength={9}
               value={amountString}
               error={error}
               disabled={disabled}
