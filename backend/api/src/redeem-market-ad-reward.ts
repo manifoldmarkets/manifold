@@ -17,23 +17,6 @@ export const redeemboost = authEndpoint(async (req, auth) => {
 
   const firestore = admin.firestore()
 
-  // search txns if you've already reedemed this boost
-  const { count } = await pg.one(
-    `select count(*) from txns
-    where 
-    data->>'category' = 'MARKET_BOOST_REDEEM'
-    and data->>'fromId' = $1
-    and data->>'toId' = $2`,
-    [adId, auth.uid]
-  )
-
-  if (count > 1) {
-    throw new APIError(
-      403,
-      `You have already redeemed the boost for this market ${count} times`
-    )
-  }
-
   // find the advertisement
   const data = await pg.one(
     `select cost_per_view::numeric, funds::numeric from market_ads
@@ -53,6 +36,23 @@ export const redeemboost = authEndpoint(async (req, auth) => {
 
   // create the redeem txn
   const result = await firestore.runTransaction(async (trans) => {
+    // first check if user has redeemed before, in firestore.
+    // we check in this transaction to prevent double redeems via race condition
+    const oldTxn = await trans.get(
+      firestore
+        .collection('txns')
+        .where('category', '==', 'MARKET_BOOST_REDEEM')
+        .where('fromId', '==', adId)
+        .where('toId', '==', auth.uid)
+    )
+
+    if (oldTxn.docs.length > 0) {
+      throw new APIError(
+        403,
+        `You have already redeemed the boost for this market ${oldTxn.docs.length} times`
+      )
+    }
+
     const pg = createSupabaseDirectClient()
 
     await pg.none(
