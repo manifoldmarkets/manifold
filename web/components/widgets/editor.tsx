@@ -43,6 +43,9 @@ import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 
 const DisplayLink = Link.extend({
   renderHTML({ HTMLAttributes }) {
+    HTMLAttributes.target = HTMLAttributes.href.includes('manifold.markets')
+      ? '_self'
+      : '_blank'
     delete HTMLAttributes.class // only use our classes (don't duplicate on paste)
     return [
       'a',

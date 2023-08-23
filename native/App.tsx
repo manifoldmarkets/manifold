@@ -503,13 +503,7 @@ const App = () => {
             ref={webview}
             onError={(e) => handleWebviewError(e, resetWebView)}
             renderError={(e) => handleRenderError(e, width, height)}
-            onShouldStartLoadWithRequest={(r) =>
-              r.mainDocumentURL ? handleExternalLink(r.mainDocumentURL) : true
-            }
-            // On navigation state change changes on every url change
-            onNavigationStateChange={(navState) =>
-              handleExternalLink(navState.url)
-            }
+            onOpenWindow={(e) => handleExternalLink(e.nativeEvent.targetUrl)}
             onRenderProcessGone={(e) => handleWebviewKilled(e, resetWebView)}
             onContentProcessDidTerminate={(e) =>
               handleWebviewKilled(e, resetWebView)
