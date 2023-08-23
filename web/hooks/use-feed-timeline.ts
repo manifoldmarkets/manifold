@@ -67,9 +67,6 @@ const baseUserFeedQuery = (
   const alreadySavedContractIds = filterDefined(
     savedFeedItems?.map((item) => item.contractId) ?? []
   )
-  const alreadySavedNewsIds = filterDefined(
-    savedFeedItems?.map((item) => item.newsId) ?? []
-  )
   return db
     .from('user_feed')
     .select('*')
@@ -84,7 +81,6 @@ const baseUserFeedQuery = (
       'in',
       `(${privateUser.blockedContractIds.concat(alreadySavedContractIds)})`
     )
-    .not('news_id', 'in', `(${alreadySavedNewsIds})`)
     .order('created_time', { ascending: false })
     .limit(limit)
 }
@@ -167,7 +163,7 @@ export const useFeedTimeline = (
       potentiallySeenCommentIds,
       newsIds,
       groupIds,
-    } = getNewContentIds(newFeedRows, followedIds)
+    } = getNewContentIds(newFeedRows, savedFeedItems, followedIds)
 
     const [
       comments,
@@ -426,10 +422,22 @@ function createFeedTimelineItems(
   )
 }
 
-const getNewContentIds = (data: Row<'user_feed'>[], followedIds?: string[]) => {
+const getNewContentIds = (
+  data: Row<'user_feed'>[],
+  savedFeedItems: FeedTimelineItem[] | undefined,
+  followedIds?: string[]
+) => {
+  const alreadySavedNewsIds = filterDefined(
+    savedFeedItems?.map((item) => item.newsId) ?? []
+  )
   const newsIds = filterDefined(
     data
-      .filter((item) => item.news_id && item.contract_id)
+      .filter(
+        (item) =>
+          item.news_id &&
+          item.contract_id &&
+          !alreadySavedNewsIds.includes(item.news_id)
+      )
       .map((item) => item.news_id)
   )
   const rowsByNewsIdCount = countBy(newsIds)
