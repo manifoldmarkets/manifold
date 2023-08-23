@@ -90,6 +90,7 @@ export const supabasesearchcontracts = MaybeAuthedEndpoint(
             hasGroupAccess: await hasGroupAccess(groupId, auth?.uid),
           })
 
+    console.log(searchMarketSQL)
 
     const pg = createSupabaseDirectClient()
     const contracts = await pg.map(
@@ -125,7 +126,13 @@ function getForYouSQL(
   return `with user_interest AS (SELECT interest_embedding 
                        FROM user_embeddings
                        WHERE user_id = '${uid}'
-                       LIMIT 1)
+                       LIMIT 1),
+
+user_disinterests AS (
+  SELECT contract_id
+  FROM user_disinterests
+  WHERE user_id = '${uid}'
+)
 select data, contract_id,
        importance_score
            * 10 *( (1 - (contract_embeddings.embedding <=> user_interest.interest_embedding)) - 0.8)
@@ -135,6 +142,11 @@ from user_interest,
          join contract_embeddings ON contracts.id = contract_embeddings.contract_id
     ${whereClause}
   and importance_score > 0.2
+  AND NOT EXISTS (
+    SELECT 1
+    FROM user_disinterests
+    WHERE user_disinterests.contract_id = contracts.id
+  )
 ORDER BY modified_importance_score DESC
 LIMIT ${limit} OFFSET ${offset};`
 }
