@@ -47,7 +47,6 @@ export const handlePushNotificationPermissionStatus = async (
 
 export const setPushTokenRequestDenied = async (userId: string) => {
   console.log('push token denied', userId)
-  // TODO: at some point in the future we can ask them again
   await updatePrivateUser(userId, {
     rejectedPushNotificationsOn: Date.now(),
     interestedInPushNotifications: false,

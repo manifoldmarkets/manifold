@@ -29,7 +29,8 @@ import {
   createSupabaseDirectClient,
   SupabaseDirectClient,
 } from 'shared/supabase/init'
-import { populateNewUsersFeedFromDefaultFeed } from 'shared/supabase/users'
+import { spiceUpNewUsersFeedBasedOnTheirInterests } from 'shared/supabase/users'
+import { DEFAULT_FEED_USER_ID } from 'common/feed'
 
 const bodySchema = z.object({
   deviceToken: z.string().optional(),
@@ -152,7 +153,12 @@ export const createuser = authEndpoint(async (req, auth) => {
 
   await addContractsToSeenMarketsTable(auth.uid, visitedContractIds, pg)
   await upsertNewUserEmbeddings(auth.uid, visitedContractIds, pg)
-  await populateNewUsersFeedFromDefaultFeed(auth.uid, pg)
+  await spiceUpNewUsersFeedBasedOnTheirInterests(
+    auth.uid,
+    pg,
+    DEFAULT_FEED_USER_ID,
+    200
+  )
 
   await track(auth.uid, 'create user', { username: user.username }, { ip })
 

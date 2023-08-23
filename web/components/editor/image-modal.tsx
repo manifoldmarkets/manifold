@@ -31,7 +31,6 @@ export function DreamModal(props: {
           <>
             <img src={imageUrl} alt="Image" />
             {/* Show the current imageUrl */}
-            {/* TODO: Keep the other generated images, so the user can play with different attempts. */}
             <Col className="gap-2 p-6">
               <CopyLinkRow
                 url={imageUrl}
@@ -140,13 +139,11 @@ export function DreamCard(props: {
           loading={isDreaming}
         >
           Dream
-          {/* TODO: Charge Ṁ5 with ({formatMoney(5)}) */}
         </Button>
       </Row>
       {isDreaming && (
         <div className="text-sm">This may take ~10 seconds...</div>
       )}
-      {/* TODO: Allow the user to choose their own modifiers */}
       <div className="text-ink-300 pt-2 text-xs">Modifiers: {MODIFIERS}</div>
     </Col>
   )

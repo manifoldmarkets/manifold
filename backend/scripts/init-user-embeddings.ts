@@ -13,7 +13,6 @@ async function main() {
     [],
     (r: { id: string }) => r.id
   )
-  // TODO: do this for users who have the 0 vector, probably those who've made no bets?
   for (const userId of userIds) {
     console.log('userId', userId)
     await updateUserInterestEmbedding(pg, userId)

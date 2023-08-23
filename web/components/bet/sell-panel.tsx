@@ -159,6 +159,8 @@ export function SellPanel(props: {
     // Check for errors.
     if (realAmount !== undefined && realAmount > shares) {
       setError(`Maximum ${formatWithCommas(Math.floor(shares))} shares`)
+    } else {
+      setError(undefined)
     }
   }
 
@@ -176,10 +178,10 @@ export function SellPanel(props: {
         }
         allowFloat={isStonk}
         onChangeAmount={onAmountChange}
-        label="Qty"
+        label="Shares"
         error={!!error}
         disabled={isSubmitting}
-        inputClassName="w-full ml-1"
+        inputClassName="w-full pl-[69px]"
         quickAddMoreButton={
           <button
             className={clsx(
@@ -196,6 +198,7 @@ export function SellPanel(props: {
           </button>
         }
       />
+      <div className="text-error mt-1 mb-2 h-1 text-xs">{error}</div>
 
       <Col className="mt-3 w-full gap-3 text-sm">
         {!isStonk && (

@@ -1,5 +1,3 @@
-//TODO: we can't yet respond to summarized bets yet bc we're just combining bets in the feed and
-
 import { Bet } from 'common/bet'
 import { Contract, contractPath } from 'common/contract'
 import { Row } from '../layout/row'
@@ -20,7 +18,6 @@ export const FeedBetsItem = (props: {
     return <></>
   }
   return (
-    // TODO: make more specific link
     <ClickFrame
       className="bg-canvas-0 mb-2 flex flex-col"
       onClick={() => router.push(contractPath(contract))}

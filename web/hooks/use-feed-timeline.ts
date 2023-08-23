@@ -58,8 +58,16 @@ export type FeedTimelineItem = {
   data?: Record<string, any>
   manuallyCreatedFromContract?: boolean
 }
-const baseUserFeedQuery = (userId: string, privateUser: PrivateUser) =>
-  db
+const baseUserFeedQuery = (
+  userId: string,
+  privateUser: PrivateUser,
+  savedFeedItems: FeedTimelineItem[] | undefined,
+  limit: number = PAGE_SIZE
+) => {
+  const alreadySavedContractIds = filterDefined(
+    savedFeedItems?.map((item) => item.contractId) ?? []
+  )
+  return db
     .from('user_feed')
     .select('*')
     .eq('user_id', userId)
@@ -68,8 +76,14 @@ const baseUserFeedQuery = (userId: string, privateUser: PrivateUser) =>
       'in',
       `(${privateUser.blockedUserIds.concat(privateUser.blockedByUserIds)})`
     )
-    .not('contract_id', 'in', `(${privateUser.blockedContractIds})`)
+    .not(
+      'contract_id',
+      'in',
+      `(${privateUser.blockedContractIds.concat(alreadySavedContractIds)})`
+    )
     .order('created_time', { ascending: false })
+    .limit(limit)
+}
 
 type loadProps = {
   new?: boolean
@@ -104,20 +118,25 @@ export const useFeedTimeline = (
 
   const fetchFeedItems = async (userId: string, options: loadProps) => {
     const newFeedRows = [] as Row<'user_feed'>[]
-    let query = baseUserFeedQuery(userId, privateUser).limit(PAGE_SIZE)
+
+    let query = baseUserFeedQuery(userId, privateUser, savedFeedItems)
     // TODO: if you're loading older, unseen stuff, newer stuff could be seen
     if (options.new) {
       query = query.gt('created_time', newestCreatedTimestamp.current)
     }
     if (options.old) {
       // get the highest priority items first
-      const bestFeedRowsQuery = baseUserFeedQuery(userId, privateUser)
+      const highSignalQuery = baseUserFeedQuery(
+        userId,
+        privateUser,
+        savedFeedItems,
+        15
+      )
         .in('data_type', ['contract_probability_changed', 'trending_contract'])
         .gt('created_time', OLDEST_UNSEEN_TIME_OF_INTEREST)
         .lt('created_time', oldestCreatedTimestamp.current)
         .is('seen_time', null)
-        .limit(15)
-      const { data: highSignalData } = await run(bestFeedRowsQuery)
+      const { data: highSignalData } = await run(highSignalQuery)
       newFeedRows.push(...highSignalData)
 
       query = query
@@ -408,14 +427,9 @@ const getNewContentIds = (
   savedFeedItems: FeedTimelineItem[] | undefined,
   followedIds?: string[]
 ) => {
-  // Filter out already saved ones to reduce bandwidth and avoid duplicates
-  const alreadySavedContractIds = filterDefined(
-    savedFeedItems?.map((item) => item.contractId) ?? []
-  )
   const alreadySavedNewsIds = filterDefined(
     savedFeedItems?.map((item) => item.newsId) ?? []
   )
-
   const newsIds = filterDefined(
     data
       .filter(
@@ -426,9 +440,12 @@ const getNewContentIds = (
       )
       .map((item) => item.news_id)
   )
-  const counted = countBy(newsIds)
+  const rowsByNewsIdCount = countBy(newsIds)
   const mostImportantNewsId = first(
-    sortBy(Object.keys(counted), (newsId) => -counted[newsId])
+    sortBy(
+      Object.keys(rowsByNewsIdCount),
+      (newsId) => -rowsByNewsIdCount[newsId]
+    )
   )
   const shouldGetNewsRelatedItem = (item: Row<'user_feed'>) =>
     item.news_id ? item.news_id === mostImportantNewsId : true
@@ -436,12 +453,7 @@ const getNewContentIds = (
   const newContractIds = uniq(
     filterDefined(
       data
-        .filter(
-          (item) =>
-            item.contract_id &&
-            !alreadySavedContractIds.includes(item.contract_id) &&
-            shouldGetNewsRelatedItem(item)
-        )
+        .filter((item) => item.contract_id && shouldGetNewsRelatedItem(item))
         .map((item) => item.contract_id)
     )
   )

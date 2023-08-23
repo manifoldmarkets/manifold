@@ -45,7 +45,7 @@ async function deleteTopLevelCollections() {
   )
 }
 
-// TODO: Note for next time: this was failing to delete collection on some users,
+//  Note for next time: this was failing to delete collection on some users,
 //  but in the end I used an old, smaller firestore export and using this wasn't necessary.
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function deleteUsersSubcollections() {

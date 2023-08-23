@@ -74,7 +74,6 @@ export function useManalinkTxns(userId: string) {
   const [toTxns, setToTxns] = useState<ManalinkTxn[]>([])
 
   useEffect(() => {
-    // TODO: Need to instantiate these indexes too
     const fromQuery = query(
       txns,
       where('fromId', '==', userId),

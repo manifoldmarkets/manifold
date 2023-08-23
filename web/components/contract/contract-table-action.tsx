@@ -31,7 +31,6 @@ export function BetButton(props: { contract: Contract; user?: User | null }) {
   if (
     !isClosed(contract) &&
     !contract.isResolved &&
-    // TODO: only have betting for binary markets right now
     contract.outcomeType === 'BINARY' &&
     contract.mechanism === 'cpmm-1'
   ) {

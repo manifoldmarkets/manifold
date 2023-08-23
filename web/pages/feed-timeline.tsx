@@ -103,20 +103,10 @@ function FeedTimelineContent(props: { privateUser: PrivateUser }) {
   >([])
   const [loadingMore, setLoadingMore] = useState(false)
 
-  // This queries for new items if they haven't looked at the page in a while like twitter
   useEffect(() => {
     if (newerTimelineItems.length > 0) return
     const now = Date.now()
-    if (pageVisible && now - lastSeen > MINUTE_MS)
-      checkForNewer().then(setNewerTimelineItems)
-    if (!pageVisible) setLastSeen(now)
-    return () => setLastSeen(Date.now())
-  }, [pageVisible])
-
-  // This queries for new items if they scroll to the top
-  useEffect(() => {
-    if (newerTimelineItems.length > 0) return
-    const now = Date.now()
+    // This queries for new items if they scroll to the top
     if (topIsVisible && now - lastSeen > 10000) {
       setLoadingMore(true)
       checkForNewer().then((newerTimelineItems) => {
@@ -124,9 +114,13 @@ function FeedTimelineContent(props: { privateUser: PrivateUser }) {
         setLoadingMore(false)
       })
     }
-    if (!topIsVisible) setLastSeen(now)
+    // This queries for new items if they haven't looked at the page in a while like twitter
+    else if (pageVisible && now - lastSeen > MINUTE_MS && !loadingMore) {
+      checkForNewer().then(setNewerTimelineItems)
+    }
+    setLastSeen(now)
     return () => setLastSeen(Date.now())
-  }, [topIsVisible])
+  }, [pageVisible, topIsVisible])
 
   if (!boosts || !savedFeedItems) return <LoadingIndicator />
   const newAvatarUrls = uniq(

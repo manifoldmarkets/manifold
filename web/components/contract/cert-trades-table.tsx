@@ -58,7 +58,6 @@ export default function CertTradesTable(props: { txns: CertTxn[] }) {
     }
   }
 
-  // TODO: Condense PAY_MANA/TRANFER pairs into a single row
   const entries = txns.map((txn) => ({
     id: txn.id,
     from: formatWalletId(txn.fromType, txn.fromId),

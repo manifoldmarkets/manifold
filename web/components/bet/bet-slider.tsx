@@ -16,17 +16,17 @@ export const BetSlider = (props: {
 
   return (
     <Slider
-      className="mb-1 w-full"
+      className="mb-2 w-full"
       min={0}
       max={rangeMax ?? maximumAmount}
       marks={
         maximumAmount || rangeMin || rangeMax
-          ? { '0': formatMoney(0) }
-          : {
-              '0': formatMoney(0),
-              '50': formatMoney(50),
-              '100': formatMoney(100),
-            }
+          ? [{ value: 0, label: formatMoney(0) }]
+          : [
+              { value: 0, label: formatMoney(0) },
+              { value: 50, label: formatMoney(50) },
+              { value: 100, label: formatMoney(100) },
+            ]
       }
       color={
         binaryOutcome === 'YES'

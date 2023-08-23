@@ -62,7 +62,6 @@ export default function CardsPage() {
 
   // GAME DATA
   const user = useUser()
-  // TODO: what if user doesn't have enough top markets?
   const topMarkets = useTopMarketsByUser(user?.id ?? '')
   const defaults = useContractsByIds(DEFAULT_MARKETS)
   const shuffledMarkets = useMemo(

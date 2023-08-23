@@ -1,11 +1,6 @@
 import { pgp, SupabaseDirectClient } from 'shared/supabase/init'
 import { fromPairs } from 'lodash'
-import {
-  ALL_FEED_USER_ID,
-  DEFAULT_FEED_USER_ID,
-  FEED_REASON_TYPES,
-  INTEREST_DISTANCE_THRESHOLDS,
-} from 'common/feed'
+import { FEED_REASON_TYPES, INTEREST_DISTANCE_THRESHOLDS } from 'common/feed'
 import { Row } from 'common/supabase/utils'
 import { log } from 'shared/utils'
 import { ITask } from 'pg-promise'
@@ -58,10 +53,11 @@ export const getUsersWithSimilarInterestVectorToNews = async (
 
 export const spiceUpNewUsersFeedBasedOnTheirInterests = async (
   userId: string,
-  pg: SupabaseDirectClient
+  pg: SupabaseDirectClient,
+  userIdFeedSource: string,
+  limit: number
 ) => {
   await pg.tx(async (t) => {
-    await t.none('SET LOCAL ivfflat.probes = $1', [20])
     const relatedFeedItems = await t.manyOrNone<Row<'user_feed'>>(
       `              
           WITH user_embedding AS (
@@ -69,23 +65,28 @@ export const spiceUpNewUsersFeedBasedOnTheirInterests = async (
             FROM user_embeddings
             WHERE user_id = $1
           ),
-          interesting_contract_embeddings AS (
-             SELECT contract_id
+         recent_feed as (
+             SELECT distinct on (contract_id) * FROM user_feed
+             where created_time > now() - interval '14 days'
+               and user_id = $2
+         ),
+         feed_embeddings AS (
+             SELECT contract_embeddings.contract_id, embedding
              FROM contract_embeddings
-             where (SELECT interest_embedding FROM user_embedding) <=> embedding < $2
-           ),
-           filtered_user_feed AS (
-               SELECT DISTINCT ON (contract_id) *
-               FROM user_feed
-               WHERE contract_id IN (SELECT contract_id FROM interesting_contract_embeddings)
-               and created_time > now() - interval '10 days'
-               and user_id = $3
-               limit $4
-           )
+              JOIN recent_feed
+              ON contract_embeddings.contract_id = recent_feed.contract_id
+         ),
+         feed_ordered_by_distance AS (
+             SELECT recent_feed.*
+             FROM feed_embeddings,user_embedding,recent_feed
+             WHERE feed_embeddings.contract_id = recent_feed.contract_id
+             order by (feed_embeddings.embedding <=> user_embedding.interest_embedding)
+             limit $3
+         )
           SELECT *
-          FROM filtered_user_feed
+          FROM feed_ordered_by_distance
         `,
-      [userId, 0.25, ALL_FEED_USER_ID, 250]
+      [userId, userIdFeedSource, limit]
     )
     log('found relatedFeedItems', relatedFeedItems.length)
 
@@ -93,49 +94,6 @@ export const spiceUpNewUsersFeedBasedOnTheirInterests = async (
   })
 }
 
-export const populateNewUsersFeedFromDefaultFeed = async (
-  userId: string,
-  pg: SupabaseDirectClient
-) => {
-  await pg.tx(async (t) => {
-    await t.none('SET LOCAL ivfflat.probes = $1', [10])
-    const relatedFeedItems = await t.manyOrNone<userFeedRowAndDistance>(
-      `
-          with user_embedding as (
-              select interest_embedding
-              from user_embeddings
-              where user_id = $1
-          ),
-         contract_embeddings_for_user_feed as (
-             select contract_embeddings.contract_id, contract_embeddings.embedding
-             from contract_embeddings
-             where contract_embeddings.contract_id in (
-                 select contract_id
-                 from user_feed
-                 where user_id = $2
-                 order by created_time desc
-                 limit 200
-             )
-         ),
-         interesting_contracts as (
-             select
-                 contract_embeddings_for_user_feed.contract_id,
-                 contract_embeddings_for_user_feed.embedding <=> user_embedding.interest_embedding as distance
-             from contract_embeddings_for_user_feed, user_embedding
-         )
-          select user_feed.*, interesting_contracts.distance
-          from user_feed
-                   join interesting_contracts on user_feed.contract_id = interesting_contracts.contract_id
-          where user_feed.user_id = $2
-          order by interesting_contracts.distance;
-          `,
-      [userId, DEFAULT_FEED_USER_ID]
-    )
-
-    log('found', relatedFeedItems.length, 'feed items to copy')
-    return copyOverFeedItems(userId, relatedFeedItems, t)
-  })
-}
 type userFeedRowAndDistance = Row<'user_feed'> & { distance?: number }
 const copyOverFeedItems = async (
   userId: string,

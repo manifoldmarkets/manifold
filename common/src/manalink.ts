@@ -17,7 +17,7 @@ export type Manalink = {
 
   // How much to send with the link
   amount: number
-  token: 'M$' // TODO: could send eg YES shares too??
+  token: 'M$'
 
   createdTime: number
   // If null, the link is valid forever

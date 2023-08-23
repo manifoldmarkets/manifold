@@ -4,19 +4,15 @@ import dayjs from 'dayjs'
 import customParseFormat from 'dayjs/plugin/customParseFormat'
 dayjs.extend(customParseFormat)
 
-import { ManalinkTxn } from 'common/txn'
 import { User } from 'common/user'
 import { formatMoney } from 'common/util/format'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
 import { CreateLinksButton } from 'web/components/manalinks/create-links-button'
-import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { SEO } from 'web/components/SEO'
-import { Avatar } from 'web/components/widgets/avatar'
 import { Subtitle } from 'web/components/widgets/subtitle'
 import { Title } from 'web/components/widgets/title'
-import { useUserById } from 'web/hooks/use-user'
 import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
 import { getUserAndPrivateUser } from 'web/lib/firebase/users'
 
@@ -31,7 +27,6 @@ import {
 import { Pagination } from 'web/components/widgets/pagination'
 import ShortToggle from 'web/components/widgets/short-toggle'
 import { SiteLink } from 'web/components/widgets/site-link'
-import { UserLink } from 'web/components/widgets/user-link'
 import { useCanCreateManalink } from 'web/hooks/use-can-create-manalink'
 import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
 import { getUserManalinks } from 'web/lib/supabase/manalinks'
@@ -153,51 +148,4 @@ function ManalinksDisplay(props: {
       </>
     )
   }
-}
-
-// TODO: either utilize this or get rid of it
-export function ClaimsList(props: { txns: ManalinkTxn[] }) {
-  const { txns } = props
-  return (
-    <>
-      <h1 className="text-ink-900 mb-4 text-xl font-semibold">Claimed links</h1>
-      {txns.map((txn) => (
-        <ClaimDescription txn={txn} key={txn.id} />
-      ))}
-    </>
-  )
-}
-
-export function ClaimDescription(props: { txn: ManalinkTxn }) {
-  const { txn } = props
-  const from = useUserById(txn.fromId)
-  const to = useUserById(txn.toId)
-
-  if (!from || !to) {
-    return <>Loading...</>
-  }
-
-  return (
-    <div className="mb-2 flow-root pr-2 md:pr-0">
-      <div className="relative flex items-center space-x-3">
-        <Avatar username={to.name} avatarUrl={to.avatarUrl} size="sm" />
-        <div className="min-w-0 flex-1">
-          <p className="text-ink-500 mt-0.5 text-sm">
-            <UserLink
-              className="text-ink-500"
-              username={to.username}
-              name={to.name}
-            />{' '}
-            claimed {formatMoney(txn.amount)} from{' '}
-            <UserLink
-              className="text-ink-500"
-              username={from.username}
-              name={from.name}
-            />
-            <RelativeTimestamp time={txn.createdTime} />
-          </p>
-        </div>
-      </div>
-    </div>
-  )
 }

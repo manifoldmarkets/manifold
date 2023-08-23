@@ -20,7 +20,7 @@ export const ZoomSlider = (props: {
   const now = useMemo(() => new Date(), [])
 
   return (
-    <Col className={clsx('w-full items-stretch gap-1 py-1 text-xs', className)}>
+    <Col className={clsx('w-full items-stretch', className)}>
       <RangeSlider
         lowValue={low.valueOf()}
         highValue={hi.valueOf()}
@@ -31,10 +31,9 @@ export const ZoomSlider = (props: {
             fullScale.copy().domain([new Date(newLow), new Date(newHigh)])
           )
         }
-        className="flex h-auto grow items-center"
         color="light-green"
       />
-      <Row className="justify-between">
+      <Row className="justify-between text-xs">
         <div>{formatDateInRange(min, min, max)}</div>
         <div>{formatDateInRange(max, min, now)}</div>
       </Row>

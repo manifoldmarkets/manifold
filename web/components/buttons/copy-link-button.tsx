@@ -109,7 +109,7 @@ export const CopyLinkRow = (props: {
       <div className={'select-all truncate'}>{displayUrl}</div>
       {url && (
         <div className={linkButtonClassName}>
-          {iconPressed ? (
+          {!iconPressed ? (
             (isNative && platform === 'ios') || os === 'ios' ? (
               <ArrowUpSquareIcon className={'h-[1.4rem]'} />
             ) : (isNative && platform === 'android') || os === 'android' ? (

@@ -314,8 +314,8 @@ module.exports = {
           800: '#2d2d54',
           900: '#111140',
         },
-        warning: '#F59E0B', // amber-500 TODO: change color
-        error: '#FF5033', // TODO: change color
+        warning: '#F59E0B', // amber-500
+        error: '#FF5033',
         'red-25': '#FDF7F6',
         'indigo-25': '#F2F7FF',
         'highlight-blue': '#5BCEFF',
