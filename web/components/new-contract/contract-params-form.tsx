@@ -400,7 +400,6 @@ export function ContractParamsForm(props: {
             autoFocus
             maxLength={MAX_QUESTION_LENGTH}
             value={question}
-            // TODO: Search question titles as the user types with minimum of 5 unique traders
             onChange={(e) => setQuestion(e.target.value || '')}
             onBlur={finishedTypingQuestion}
           />
