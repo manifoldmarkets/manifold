@@ -68,40 +68,30 @@ export const supabasesearchcontracts = MaybeAuthedEndpoint(
       groupId: trueGroupId,
       creatorId,
     } = validate(bodySchema, req.body)
-    const pg = createSupabaseDirectClient()
 
     const isForYou = trueGroupId === 'for-you'
     const groupId = trueGroupId && !isForYou ? trueGroupId : undefined
 
-    const hasGroupAccess = groupId
-      ? await pg
-          .one('select * from check_group_accessibility($1,$2)', [
+    const searchMarketSQL =
+      isForYou && !term && sort === 'score' && auth?.uid
+        ? getForYouSQL(auth.uid, filter, contractType, limit, offset)
+        : getSearchContractSQL({
+            term,
+            filter,
+            sort,
+            contractType,
+            offset,
+            limit,
+            fuzzy,
             groupId,
-            auth?.uid ?? null,
-          ])
-          .then((r) => {
-            return r.check_group_accessibility
+            creatorId,
+            uid: auth?.uid,
+            isForYou,
+            hasGroupAccess: await hasGroupAccess(groupId, auth?.uid),
           })
-      : undefined
 
-    const searchMarketSQL = getSearchContractSQL({
-      term,
-      filter,
-      sort,
-      contractType,
-      offset,
-      limit,
-      fuzzy,
-      groupId,
-      creatorId,
-      uid: auth?.uid,
-      hasGroupAccess,
-      isForYou
-    })
 
-    console.log('sql:')
-    console.log(searchMarketSQL)
-
+    const pg = createSupabaseDirectClient()
     const contracts = await pg.map(
       searchMarketSQL,
       [term],
@@ -112,6 +102,55 @@ export const supabasesearchcontracts = MaybeAuthedEndpoint(
   }
 )
 
+function getForYouSQL(
+  uid: string,
+  filter: string,
+  contractType: string,
+  limit: number,
+  offset: number
+) {
+  const whereClause = renderSql(
+    getSearchContractWhereSQL(
+      filter,
+      '',
+      contractType,
+      undefined,
+      uid,
+      undefined,
+      false,
+      true
+    )
+  )
+
+  return `with user_interest AS (SELECT interest_embedding 
+                       FROM user_embeddings
+                       WHERE user_id = '${uid}'
+                       LIMIT 1)
+select data, contract_id,
+       importance_score
+           * 10 *( (1 - (contract_embeddings.embedding <=> user_interest.interest_embedding)) - 0.8)
+           AS modified_importance_score
+from user_interest,
+     contracts
+         join contract_embeddings ON contracts.id = contract_embeddings.contract_id
+    ${whereClause}
+  and importance_score > 0.33
+ORDER BY modified_importance_score DESC
+LIMIT ${limit} OFFSET ${offset};`
+}
+
+const hasGroupAccess = async (groupId?: string, uid?: string) => {
+  const pg = createSupabaseDirectClient()
+  if (!groupId) return undefined
+  return await pg
+    .one('select * from check_group_accessibility($1,$2)', [
+      groupId,
+      uid ?? null,
+    ])
+    .then((r: any) => {
+      return r.check_group_accessibility
+    })
+}
 
 function getSearchContractSQL(contractInput: {
   term: string
