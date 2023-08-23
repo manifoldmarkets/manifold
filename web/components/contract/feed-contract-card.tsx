@@ -34,7 +34,7 @@ import { Tooltip } from '../widgets/tooltip'
 import { LikeButton } from './like-button'
 import { TradesButton } from './trades-button'
 import FeedContractCardDescription from '../feed/feed-contract-card-description'
-import { Router, useRouter } from 'next/router'
+import { useRouter } from 'next/router'
 import Link from 'next/link'
 
 export function FeedContractCard(props: {
