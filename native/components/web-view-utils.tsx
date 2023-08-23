@@ -9,7 +9,7 @@ import {
 import * as Sentry from 'sentry-expo'
 import { Splash } from 'components/splash'
 import { log } from 'components/logger'
-import { IS_NATIVE_KEY, PLATFORM_KEY } from 'common/src/native-message'
+import { IS_NATIVE_KEY, PLATFORM_KEY } from 'common/native-message'
 const PREVENT_ZOOM_SET_NATIVE = `(function() {
   const meta = document.createElement('meta'); 
   meta.setAttribute('content', 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no'); 
