@@ -626,6 +626,16 @@ function SupabaseContractSearchControls(props: {
       </Col>
       {showCategories && (
         <Carousel className="mt-0.5 h-6">
+          {isAuth && (
+            <PillButton
+              key={'pill-for-you'}
+              selected={category === 'for-you'}
+              onSelect={() => selectCategory('for-you')}
+            >
+              ⭐️ For you
+            </PillButton>
+          )}
+
           {uniqBy(
             buildArray(categoryFromRouter).concat(categoryPills),
             'id'
