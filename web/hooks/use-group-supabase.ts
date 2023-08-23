@@ -147,6 +147,8 @@ export function useRealtimeGroupMembers(
   const [loadMore, setLoadMore] = useState<boolean>(false)
   const [offsetPage, setOffsetPage] = useState<number>(0)
 
+  console.log(admins, moderators, members, loadMore, offsetPage)
+
   function loadMoreMembers() {
     setLoadMore(true)
     getGroupMembers(groupId, offsetPage + 1)
