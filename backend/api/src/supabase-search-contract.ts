@@ -134,7 +134,7 @@ from user_interest,
      contracts
          join contract_embeddings ON contracts.id = contract_embeddings.contract_id
     ${whereClause}
-  and importance_score > 0.33
+  and importance_score > 0.2
 ORDER BY modified_importance_score DESC
 LIMIT ${limit} OFFSET ${offset};`
 }
