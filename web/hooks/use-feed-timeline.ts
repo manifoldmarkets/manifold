@@ -58,7 +58,11 @@ export type FeedTimelineItem = {
   data?: Record<string, any>
   manuallyCreatedFromContract?: boolean
 }
-const baseUserFeedQuery = (userId: string, privateUser: PrivateUser) =>
+const baseUserFeedQuery = (
+  userId: string,
+  privateUser: PrivateUser,
+  currentContractIds: string[]
+) =>
   db
     .from('user_feed')
     .select('*')
@@ -68,7 +72,11 @@ const baseUserFeedQuery = (userId: string, privateUser: PrivateUser) =>
       'in',
       `(${privateUser.blockedUserIds.concat(privateUser.blockedByUserIds)})`
     )
-    .not('contract_id', 'in', `(${privateUser.blockedContractIds})`)
+    .not(
+      'contract_id',
+      'in',
+      `(${privateUser.blockedContractIds.concat(currentContractIds)})`
+    )
     .order('created_time', { ascending: false })
 
 type loadProps = {
@@ -104,20 +112,31 @@ export const useFeedTimeline = (
 
   const fetchFeedItems = async (userId: string, options: loadProps) => {
     const newFeedRows = [] as Row<'user_feed'>[]
-    let query = baseUserFeedQuery(userId, privateUser).limit(PAGE_SIZE)
+    const alreadySavedContractIds = filterDefined(
+      savedFeedItems?.map((item) => item.contractId) ?? []
+    )
+    let query = baseUserFeedQuery(
+      userId,
+      privateUser,
+      alreadySavedContractIds
+    ).limit(PAGE_SIZE)
     // TODO: if you're loading older, unseen stuff, newer stuff could be seen
     if (options.new) {
       query = query.gt('created_time', newestCreatedTimestamp.current)
     }
     if (options.old) {
       // get the highest priority items first
-      const bestFeedRowsQuery = baseUserFeedQuery(userId, privateUser)
+      const highSignalQuery = baseUserFeedQuery(
+        userId,
+        privateUser,
+        alreadySavedContractIds
+      )
         .in('data_type', ['contract_probability_changed', 'trending_contract'])
         .gt('created_time', OLDEST_UNSEEN_TIME_OF_INTEREST)
         .lt('created_time', oldestCreatedTimestamp.current)
         .is('seen_time', null)
         .limit(15)
-      const { data: highSignalData } = await run(bestFeedRowsQuery)
+      const { data: highSignalData } = await run(highSignalQuery)
       newFeedRows.push(...highSignalData)
 
       query = query
