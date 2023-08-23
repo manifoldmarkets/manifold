@@ -48,7 +48,6 @@ export default function App() {
               <img src={imageUrl} alt={prompt} width={512} />
               {/* Show the current imageUrl */}
               <Col className="p-6">
-                {/* TODO: Make the sharing experience more viral; use a nicer URL */}
                 <CopyLinkRow
                   url={imageUrl}
                   eventTrackingName={'copy dream link'}

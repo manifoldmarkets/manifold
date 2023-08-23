@@ -44,7 +44,6 @@ function HomeDashboard() {
       <Welcome />
 
       <Page>
-        {/* TODO: Improve design of row on desktop. (Mobile is fine) */}
         <Row className="mx-4 mb-2 items-center justify-between gap-4">
           <div className="flex sm:hidden">
             {user ? <ProfileSummary user={user} /> : <Spacer w={4} />}

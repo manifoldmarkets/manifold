@@ -40,7 +40,6 @@ export const changeuserinfo = authEndpoint(async (req, auth) => {
     if (otherUserExists) throw new APIError(403, 'Username already taken')
   }
 
-  // TODO not sure about denying duplicate display names
   try {
     await changeUser(user, {
       username: cleanedUsername,

@@ -539,7 +539,6 @@ export const sendBonusWithInterestingMarketsEmail = async (
 }
 
 function imageSourceUrl(contract: Contract) {
-  // TODO: get bet points into image so interesting markets can see the image
   return buildOgUrl(
     removeUndefinedProps(getContractOGProps(contract)),
     'market'

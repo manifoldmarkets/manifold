@@ -52,11 +52,7 @@ export function useUnseenReplyChainCommentsOnContracts(
         }
         setComments((prev) =>
           uniqBy(
-            [
-              // TODO: why does typescript think d is an array?
-              ...data.map((d: any) => d.data as ContractComment),
-              ...prev,
-            ],
+            [...data.map((d: any) => d.data as ContractComment), ...prev],
             (c) => c.id
           )
         )

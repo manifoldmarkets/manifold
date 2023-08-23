@@ -212,7 +212,6 @@ function DefaultBannerIcon(props: {
   )
 }
 
-// TODO: add option to position photo
 function BannerDropdown(props: {
   group: Group
   open: boolean

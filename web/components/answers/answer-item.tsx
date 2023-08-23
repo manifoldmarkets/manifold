@@ -15,7 +15,6 @@ import { useUserByIdOrAnswer } from 'web/hooks/use-user-supabase'
 import { ReactNode } from 'react'
 import { Tooltip } from '../widgets/tooltip'
 
-//  TODO: make this look better
 export function ResolutionAnswerItem(props: {
   answer: DpmAnswer | Answer
   contract: MultiContract

@@ -128,7 +128,7 @@ function ProfileComment(props: { comment: ContractComment }) {
   const { comment } = props
   const { text, content, userUsername, userName, userAvatarUrl, createdTime } =
     comment
-  // TODO: find and attach relevant bets by comment betId at some point
+
   return (
     <Row className="relative flex items-start space-x-3">
       <Avatar username={userUsername} avatarUrl={userAvatarUrl} />

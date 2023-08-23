@@ -52,7 +52,6 @@ function LiquidityStatusText(props: {
   const { liquidity, bettor, isSelf } = props
   const { amount, createdTime } = liquidity
 
-  // TODO: Withdrawn liquidity will never be shown, since liquidity amounts currently are zeroed out upon withdrawal.
   const bought = amount >= 0 ? 'added' : 'withdrew'
   const money = formatMoney(Math.abs(amount))
 

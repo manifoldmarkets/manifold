@@ -69,7 +69,6 @@ Developing with a local copy of the database is deprecated. The old instructions
 1. `git pull origin main`
 1. `firebase use prod` to switch to prod
 1. `firebase deploy --only functions` to push your changes live!
-   - (TODO: auto-deploy functions on Git push)
 
 ## Secrets management
 

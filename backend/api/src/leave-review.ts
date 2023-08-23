@@ -42,8 +42,6 @@ export const leavereview = authEndpoint(async (req, auth) => {
     throw new APIError(403, `You are banned`)
   }
 
-  // TODO: check that the user has bet in the market?
-
   await db.from('reviews').upsert({
     market_id: marketId,
     reviewer_id: auth.uid,

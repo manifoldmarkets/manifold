@@ -86,7 +86,6 @@ export const validate = <T extends z.ZodTypeAny>(schema: T, val: unknown) => {
   const result = schema.safeParse(val)
   if (!result.success) {
     const issues = result.error.issues.map((i) => {
-      // TODO: export this type for the front-end to parse
       return {
         field: i.path.join('.') || null,
         error: i.message,

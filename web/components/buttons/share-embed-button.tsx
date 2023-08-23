@@ -14,15 +14,6 @@ export function embedContractCode(contract: Contract) {
   return `<iframe src="${src}" title="${title}" frameborder="0" width="600" height="300"></iframe>`
 }
 
-// TODO: move this function elsewhere
-export function embedContractGridCode(contracts: Contract[]) {
-  const height = (contracts.length - (contracts.length % 2)) * 100 + 'px'
-  const src = `https://${DOMAIN}/embed/grid/${contracts
-    .map((c) => c.slug)
-    .join('/')}`
-  return `<iframe height="${height}" src="${src}" title="Grid of contracts" frameborder="0"></iframe>`
-}
-
 export function ShareEmbedButton(props: {
   contract: Contract
   className?: string
