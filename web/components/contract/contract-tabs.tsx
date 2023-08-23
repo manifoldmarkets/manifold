@@ -417,9 +417,10 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
   ]
 
   const totalItems = totalBets + visibleLps.length
+  const totalLoadedItems = bets.length + visibleLps.length
 
   const limit = (items.length - (page + 1) * ITEMS_PER_PAGE) * -1
-  const shouldLoadMore = limit > 0 && bets.length < totalItems
+  const shouldLoadMore = limit > 0 && totalLoadedItems < totalItems
   const oldestBetTime = oldestBet?.createdTime ?? contract.createdTime
   useEffect(() => {
     if (!shouldLoadMore) return
