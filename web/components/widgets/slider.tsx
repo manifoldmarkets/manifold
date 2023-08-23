@@ -48,7 +48,7 @@ export function Slider(props: {
         marks={mapValues(marks, (value) => (
           <Mark>{value}</Mark>
         ))}
-        className={'[&>.rc-slider-rail]:bg-ink-200'}
+        className={'[&>.rc-slider-rail]:bg-ink-200 !bg-inherit'}
         dotStyle={{ borderColor: 'lightgray' }}
         activeDotStyle={{ borderColor: dark }}
         trackStyle={{ backgroundColor: light }}
