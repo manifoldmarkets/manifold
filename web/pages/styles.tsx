@@ -228,7 +228,6 @@ function SliderExample() {
         // min={0}
         // max={100}
         // color="green"
-        marks={{ 0: '0%', 50: '$50', 100: 100 }}
         amount={amount}
         onChange={setAmount}
       />
