@@ -121,23 +121,31 @@ function getForYouSQL(
     )
   )
 
-  return `with user_interest AS (SELECT interest_embedding 
+  return `with 
+  user_interest AS (SELECT interest_embedding 
                        FROM user_embeddings
                        WHERE user_id = '${uid}'
                        LIMIT 1),
-
 user_disinterests AS (
   SELECT contract_id
   FROM user_disinterests
   WHERE user_id = '${uid}'
-)
+),
+
+user_follows AS (SELECT follow_id
+                      FROM user_follows
+                      WHERE user_id = '${uid}')
 select data, contract_id,
-       importance_score
-           * 10 *( (1 - (contract_embeddings.embedding <=> user_interest.interest_embedding)) - 0.8)
+      importance_score
+           * (
+               8 * ((1 - (contract_embeddings.embedding <=> user_interest.interest_embedding)) - 0.8)
+               + (CASE WHEN user_follows.follow_id IS NOT NULL THEN 0.2 ELSE 0 END)
+           )
            AS modified_importance_score
 from user_interest,
      contracts
          join contract_embeddings ON contracts.id = contract_embeddings.contract_id
+        LEFT JOIN user_follows ON contracts.creator_id = user_follows.follow_id
     ${whereClause}
   and importance_score > 0.2
   AND NOT EXISTS (
