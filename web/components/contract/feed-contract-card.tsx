@@ -29,11 +29,13 @@ import { CardReason } from '../feed/card-reason'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { PollPanel } from '../poll/poll-panel'
-import { LinkFrame } from '../widgets/click-frame'
+import { ClickFrame } from '../widgets/click-frame'
 import { Tooltip } from '../widgets/tooltip'
 import { LikeButton } from './like-button'
 import { TradesButton } from './trades-button'
 import FeedContractCardDescription from '../feed/feed-contract-card-description'
+import { Router, useRouter } from 'next/router'
+import Link from 'next/link'
 
 export function FeedContractCard(props: {
   contract: Contract
@@ -61,6 +63,23 @@ export function FeedContractCard(props: {
     useFirebasePublicContract(props.contract.visibility, props.contract.id) ??
     props.contract
 
+  const {
+    closeTime,
+    creatorUsername,
+    creatorAvatarUrl,
+    outcomeType,
+    mechanism,
+  } = contract
+
+  const isBinaryCpmm = outcomeType === 'BINARY' && mechanism === 'cpmm-1'
+  const isClosed = closeTime && closeTime < Date.now()
+  const path = contractPath(contract)
+  const metrics = useSavedContractMetrics(contract)
+
+  const showAvatar = !children && !bottomChildren
+
+  const router = useRouter()
+
   // Note: if we ever make cards taller than viewport, we'll need to pass a lower threshold to the useIsVisible hook
 
   const { ref } = useIsVisible(
@@ -83,135 +102,7 @@ export function FeedContractCard(props: {
     })
 
   return (
-    <div ref={ref}>
-      {children || bottomChildren ? (
-        <SimpleCard
-          contract={contract}
-          item={item}
-          trackClick={trackClick}
-          user={user}
-          className={className}
-          bottomChildren={bottomChildren}
-          hide={hide}
-        >
-          {children}
-        </SimpleCard>
-      ) : (
-        <DetailedCard
-          contract={contract}
-          trackClick={trackClick}
-          user={user}
-          promotedData={promotedData}
-          item={item}
-          className={className}
-          hide={hide}
-        />
-      )}
-    </div>
-  )
-}
-
-// TODO: merge with DetailedCard
-function SimpleCard(props: {
-  contract: Contract
-  trackClick: () => void
-  user: User | null | undefined
-  children?: React.ReactNode
-  bottomChildren?: React.ReactNode
-  item?: FeedTimelineItem
-  className?: string
-  hide?: () => void
-}) {
-  const {
-    contract,
-    user,
-    item,
-    trackClick,
-    className,
-    children,
-    bottomChildren,
-    hide,
-  } = props
-  const { outcomeType, mechanism, closeTime, isResolved } = contract
-  const isClosed = closeTime && closeTime < Date.now()
-  const textColor = isClosed && !isResolved ? 'text-ink-600' : 'text-ink-900'
-  const isBinaryCpmm = outcomeType === 'BINARY' && mechanism === 'cpmm-1'
-
-  const path = contractPath(contract)
-
-  return (
-    <LinkFrame
-      className={clsx(
-        className,
-        'bg-canvas-0 border-canvas-0 hover:border-primary-300 relative flex cursor-pointer flex-col justify-between gap-2 overflow-hidden rounded-xl border px-4 pt-2 drop-shadow-md transition-colors sm:px-6'
-      )}
-      onClick={(e) => {
-        e.currentTarget.focus()
-      }}
-      href={path}
-    >
-      <div
-        className={
-          'flex flex-col gap-1 sm:flex-row sm:justify-between sm:gap-4'
-        }
-      >
-        <Row className="grow items-start text-lg">
-          <VisibilityIcon contract={contract} /> {contract.question}
-        </Row>
-        <Col className="w-full sm:w-min sm:items-start">
-          <Row className="w-full items-center justify-end gap-3 sm:w-min">
-            <ContractStatusLabel
-              className={'text-lg font-bold'}
-              contract={contract}
-            />
-            {isBinaryCpmm && !isClosed && (
-              <BetButton contract={contract} user={user} className="h-min" />
-            )}
-          </Row>
-        </Col>
-      </div>
-
-      {children}
-      <Col>
-        <BottomActionRow
-          contract={contract}
-          item={item}
-          user={user}
-          hide={hide}
-          underline={!!bottomChildren}
-        />
-        {bottomChildren}
-      </Col>
-    </LinkFrame>
-  )
-}
-
-function DetailedCard(props: {
-  contract: Contract
-  trackClick: () => void
-  user: User | null | undefined
-  promotedData?: { adId: string; reward: number }
-  item?: FeedTimelineItem
-  hide?: () => void
-  className?: string
-}) {
-  const { user, contract, trackClick, promotedData, item, hide, className } =
-    props
-  const {
-    closeTime,
-    isResolved,
-    creatorUsername,
-    creatorAvatarUrl,
-    outcomeType,
-    mechanism,
-  } = contract
-  const isBinaryCpmm = outcomeType === 'BINARY' && mechanism === 'cpmm-1'
-  const isClosed = closeTime && closeTime < Date.now()
-  const textColor = isClosed && !isResolved ? 'text-ink-600' : 'text-ink-900'
-  const path = contractPath(contract)
-  const metrics = useSavedContractMetrics(contract)
-  return (
-    <LinkFrame
+    <ClickFrame
       className={clsx(
         className,
         'relative rounded-xl',
@@ -221,38 +112,41 @@ function DetailedCard(props: {
       )}
       onClick={(e) => {
         trackClick()
+        router.push(path)
         e.currentTarget.focus() // focus the div like a button, for style
       }}
-      href={path}
+      ref={ref}
     >
-      {/* Title is link to contract for open in new tab and a11y */}
       <Col className={'w-full flex-col gap-1.5 pt-2'}>
-        <Row className="w-full justify-between">
-          <Row className={'text-ink-500 items-center gap-1 text-sm'}>
-            <Avatar
-              size={'xs'}
-              className={'mr-0.5'}
-              avatarUrl={creatorAvatarUrl}
-              username={creatorUsername}
-            />
-            <UserLink
-              name={contract.creatorName}
-              username={creatorUsername}
-              className={clsx(
-                'w-full max-w-[10rem] text-ellipsis sm:max-w-[12rem]'
-              )}
-            />
+        {showAvatar && (
+          <Row className="w-full justify-between">
+            <Row className={'text-ink-500 items-center gap-1 text-sm'}>
+              <Avatar
+                size={'xs'}
+                className={'mr-0.5'}
+                avatarUrl={creatorAvatarUrl}
+                username={creatorUsername}
+              />
+              <UserLink
+                name={contract.creatorName}
+                username={creatorUsername}
+                className={clsx(
+                  'w-full max-w-[10rem] text-ellipsis sm:max-w-[12rem]'
+                )}
+              />
+            </Row>
+            <CardReason item={item} contract={contract} />
           </Row>
-          <CardReason item={item} contract={contract} />
-        </Row>
+        )}
         <div
           className={
             'flex flex-col gap-1 sm:flex-row sm:justify-between sm:gap-4'
           }
         >
-          <Row className="grow items-start text-lg">
+          {/* Title is link to contract for open in new tab and a11y */}
+          <Link className="grow items-start text-lg" href={path}>
             <VisibilityIcon contract={contract} /> {contract.question}
-          </Row>
+          </Link>
           <Col className="w-full sm:w-min sm:items-start">
             <Row className="w-full items-center justify-end gap-3 sm:w-min">
               {contract.outcomeType !== 'MULTIPLE_CHOICE' && (
@@ -267,6 +161,8 @@ function DetailedCard(props: {
             </Row>
           </Col>
         </div>
+
+        {children}
       </Col>
 
       {contract.outcomeType === 'POLL' && (
@@ -280,14 +176,14 @@ function DetailedCard(props: {
         </div>
       )}
 
-      <Col className={'w-full items-center'}>
-        {promotedData && (
+      {promotedData && (
+        <Col className={'w-full items-center'}>
           <ClaimButton
             {...promotedData}
             className={'z-10 my-2 whitespace-nowrap'}
           />
-        )}
-      </Col>
+        </Col>
+      )}
 
       {item?.dataType == 'new_contract' && (
         <FeedContractCardDescription contract={contract} />
@@ -296,13 +192,17 @@ function DetailedCard(props: {
       {isBinaryCpmm && metrics && metrics.hasShares && (
         <YourMetricsFooter metrics={metrics} />
       )}
-      <BottomActionRow
-        contract={contract}
-        item={item}
-        user={user}
-        hide={hide}
-      />
-    </LinkFrame>
+
+      <Col>
+        <BottomActionRow
+          contract={contract}
+          item={item}
+          user={user}
+          hide={hide}
+        />
+        {bottomChildren}
+      </Col>
+    </ClickFrame>
   )
 }
 
