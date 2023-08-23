@@ -816,7 +816,22 @@ const CancerPill = createNewsDashboardTab(
   ]
 )
 
+const PlaneCrash = createNewsDashboardTab(
+  'Plane Crash',
+  'Prigozhin feared dead on plane crash',
+  [
+    { slug: 'will-yevgeny-prigozhin-be-killed-du' },
+    { url: 'https://www.bbc.com/news/live/world-66599774' },
+    { slug: 'what-will-be-the-cause-of-the-prigo' },
+    { slug: 'conditional-on-prigozhin-plane-cras' },
+    { slug: 'will-putin-imply-he-was-directly-re' },
+    { slug: 'prigozhin-dies-in-a-plane-crash' },
+    { slug: 'will-prigozhin-outlast-a-head-of-ca' },
+  ]
+)
+
 export const newsContent = [
+  PlaneCrash,
   Trump,
   STPSuper,
   ElonVersusZuck,
