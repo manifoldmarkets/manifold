@@ -29,7 +29,7 @@ const ExpandSection = (props: { title: string; children: React.ReactNode }) => {
         <div className="text-lg font-semibold">{title}</div>
         <ChevronDoubleDownIcon
           className={clsx(
-            'ml-auto inline-block h-4 w-4 transition-transform',
+            'ml-auto inline-block h-4 w-4',
             isExpanded && 'rotate-180'
           )}
         />
