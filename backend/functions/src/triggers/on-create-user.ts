@@ -10,6 +10,7 @@ import { secrets } from 'common/secrets'
 import { addNewUserToLeague } from 'shared/generate-leagues'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { spiceUpNewUsersFeedBasedOnTheirInterests } from 'shared/supabase/users'
+import { ALL_FEED_USER_ID } from 'common/feed'
 
 export const onCreateUser = functions
   .runWith({ secrets })
@@ -24,5 +25,10 @@ export const onCreateUser = functions
 
     await sendWelcomeEmail(user, privateUser)
 
-    await spiceUpNewUsersFeedBasedOnTheirInterests(user.id, pg)
+    await spiceUpNewUsersFeedBasedOnTheirInterests(
+      user.id,
+      pg,
+      ALL_FEED_USER_ID,
+      400
+    )
   })
