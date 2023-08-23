@@ -61,9 +61,16 @@ export type FeedTimelineItem = {
 const baseUserFeedQuery = (
   userId: string,
   privateUser: PrivateUser,
-  currentContractIds: string[]
-) =>
-  db
+  savedFeedItems: FeedTimelineItem[] | undefined,
+  limit: number = PAGE_SIZE
+) => {
+  const alreadySavedContractIds = filterDefined(
+    savedFeedItems?.map((item) => item.contractId) ?? []
+  )
+  const alreadySavedNewsIds = filterDefined(
+    savedFeedItems?.map((item) => item.newsId) ?? []
+  )
+  return db
     .from('user_feed')
     .select('*')
     .eq('user_id', userId)
@@ -75,9 +82,12 @@ const baseUserFeedQuery = (
     .not(
       'contract_id',
       'in',
-      `(${privateUser.blockedContractIds.concat(currentContractIds)})`
+      `(${privateUser.blockedContractIds.concat(alreadySavedContractIds)})`
     )
+    .not('news_id', 'in', `(${alreadySavedNewsIds})`)
     .order('created_time', { ascending: false })
+    .limit(limit)
+}
 
 type loadProps = {
   new?: boolean
@@ -112,14 +122,8 @@ export const useFeedTimeline = (
 
   const fetchFeedItems = async (userId: string, options: loadProps) => {
     const newFeedRows = [] as Row<'user_feed'>[]
-    const alreadySavedContractIds = filterDefined(
-      savedFeedItems?.map((item) => item.contractId) ?? []
-    )
-    let query = baseUserFeedQuery(
-      userId,
-      privateUser,
-      alreadySavedContractIds
-    ).limit(PAGE_SIZE)
+
+    let query = baseUserFeedQuery(userId, privateUser, savedFeedItems)
     // TODO: if you're loading older, unseen stuff, newer stuff could be seen
     if (options.new) {
       query = query.gt('created_time', newestCreatedTimestamp.current)
@@ -129,13 +133,13 @@ export const useFeedTimeline = (
       const highSignalQuery = baseUserFeedQuery(
         userId,
         privateUser,
-        alreadySavedContractIds
+        savedFeedItems,
+        15
       )
         .in('data_type', ['contract_probability_changed', 'trending_contract'])
         .gt('created_time', OLDEST_UNSEEN_TIME_OF_INTEREST)
         .lt('created_time', oldestCreatedTimestamp.current)
         .is('seen_time', null)
-        .limit(15)
       const { data: highSignalData } = await run(highSignalQuery)
       newFeedRows.push(...highSignalData)
 
@@ -163,7 +167,7 @@ export const useFeedTimeline = (
       potentiallySeenCommentIds,
       newsIds,
       groupIds,
-    } = getNewContentIds(newFeedRows, savedFeedItems, followedIds)
+    } = getNewContentIds(newFeedRows, followedIds)
 
     const [
       comments,
@@ -422,32 +426,18 @@ function createFeedTimelineItems(
   )
 }
 
-const getNewContentIds = (
-  data: Row<'user_feed'>[],
-  savedFeedItems: FeedTimelineItem[] | undefined,
-  followedIds?: string[]
-) => {
-  // Filter out already saved ones to reduce bandwidth and avoid duplicates
-  const alreadySavedContractIds = filterDefined(
-    savedFeedItems?.map((item) => item.contractId) ?? []
-  )
-  const alreadySavedNewsIds = filterDefined(
-    savedFeedItems?.map((item) => item.newsId) ?? []
-  )
-
+const getNewContentIds = (data: Row<'user_feed'>[], followedIds?: string[]) => {
   const newsIds = filterDefined(
     data
-      .filter(
-        (item) =>
-          item.news_id &&
-          item.contract_id &&
-          !alreadySavedNewsIds.includes(item.news_id)
-      )
+      .filter((item) => item.news_id && item.contract_id)
       .map((item) => item.news_id)
   )
-  const counted = countBy(newsIds)
+  const rowsByNewsIdCount = countBy(newsIds)
   const mostImportantNewsId = first(
-    sortBy(Object.keys(counted), (newsId) => -counted[newsId])
+    sortBy(
+      Object.keys(rowsByNewsIdCount),
+      (newsId) => -rowsByNewsIdCount[newsId]
+    )
   )
   const shouldGetNewsRelatedItem = (item: Row<'user_feed'>) =>
     item.news_id ? item.news_id === mostImportantNewsId : true
@@ -455,12 +445,7 @@ const getNewContentIds = (
   const newContractIds = uniq(
     filterDefined(
       data
-        .filter(
-          (item) =>
-            item.contract_id &&
-            !alreadySavedContractIds.includes(item.contract_id) &&
-            shouldGetNewsRelatedItem(item)
-        )
+        .filter((item) => item.contract_id && shouldGetNewsRelatedItem(item))
         .map((item) => item.contract_id)
     )
   )
