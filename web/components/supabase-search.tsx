@@ -486,7 +486,11 @@ function SupabaseContractSearchControls(props: {
   const category = state[CATEGORY_KEY]
 
   const categoryPills = showCategories // eslint-disable-next-line react-hooks/rules-of-hooks
-    ? useTrendingGroupsSearchResults(query, 30, !!category).filter(
+    ? useTrendingGroupsSearchResults(
+        query,
+        30,
+        !!category && category !== 'for-you'
+      ).filter(
         (g) =>
           !GROUP_SLUGS_TO_HIDE_FROM_PILL_SEARCH.includes(g.slug) &&
           (excludeGroupSlugs ? !excludeGroupSlugs.includes(g.slug) : true)
