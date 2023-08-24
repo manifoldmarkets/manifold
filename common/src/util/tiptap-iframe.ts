@@ -49,10 +49,44 @@ export default Node.create<IframeOptions>({
   },
 
   renderHTML({ HTMLAttributes }) {
-    return [
-      'iframe',
-      mergeAttributes(this.options.HTMLAttributes, HTMLAttributes),
-    ]
+    const iframeAttributes = mergeAttributes(
+      this.options.HTMLAttributes,
+      HTMLAttributes
+    )
+    const { src } = HTMLAttributes
+
+    // This is a hack to prevent native from opening the iframe in an in-app browser
+    // and mobile in another tab. In native, links with target='_blank' open in the in-app browser.
+    if (src.includes('manifold.markets/embed/')) {
+      return [
+        'div',
+        {
+          style: {
+            position: 'relative',
+          },
+          ...this.options.HTMLAttributes,
+        },
+        [
+          'a',
+          {
+            href: src.replace('embed/', ''),
+            target: '_self',
+            style: {
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              zIndex: 10000,
+              display: 'block',
+            },
+          },
+        ],
+        ['iframe', iframeAttributes],
+      ]
+    }
+
+    return ['iframe', iframeAttributes]
   },
 
   addCommands() {

@@ -1,15 +1,13 @@
-import WebView, { WebViewProps } from 'react-native-webview'
+import { WebViewProps } from 'react-native-webview'
 import { Platform, View } from 'react-native'
-import React, { RefObject } from 'react'
 import {
   WebViewErrorEvent,
   WebViewRenderProcessGoneEvent,
   WebViewTerminatedEvent,
 } from 'react-native-webview/lib/WebViewTypes'
-import * as Sentry from 'sentry-expo'
 import { Splash } from 'components/splash'
 import { log } from 'components/logger'
-import { IS_NATIVE_KEY, PLATFORM_KEY } from 'common/src/native-message'
+import { IS_NATIVE_KEY, PLATFORM_KEY } from 'common/native-message'
 const PREVENT_ZOOM_SET_NATIVE = `(function() {
   const meta = document.createElement('meta'); 
   meta.setAttribute('content', 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no'); 
@@ -50,12 +48,7 @@ export const handleWebviewError = (
 ) => {
   const { nativeEvent } = e
   log('Webview error native event', nativeEvent)
-  Sentry.Native.captureException(nativeEvent.description, {
-    extra: {
-      message: 'webview error',
-      nativeEvent,
-    },
-  })
+
   callback()
 }
 
@@ -65,12 +58,7 @@ export const handleRenderError = (
   height: number
 ) => {
   log('error on render webview', e)
-  Sentry.Native.captureException(e, {
-    extra: {
-      message: 'webview render error',
-      e,
-    },
-  })
+
   // Renders this view while we resolve the error
   return (
     <View style={{ height, width }}>
