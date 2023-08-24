@@ -3,7 +3,8 @@
 import { Node, mergeAttributes } from '@tiptap/core'
 import { IS_NATIVE_KEY } from 'common/native-message'
 
-// TODO: this should actually just return true for ANY mobile browser (not just native apps)
+//TODO: this should actually just return true for ANY mobile browser (not just native apps),
+// but will cause hydration errors if we do that check outside a useEffect.
 const getIsNative = () => {
   if (typeof window === 'undefined') return false
   const isNative =
