@@ -436,4 +436,5 @@ const MarketSortResults = (props: { sort: Sort; markets: Contract[] }) => {
   )
 }
 
-const marketSearchSlug = (query: string) => `/questions?s=score&f=all&q=${query}`
+const marketSearchSlug = (query: string) =>
+  `/questions?s=score&f=all&q=${query}`
