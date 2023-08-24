@@ -351,7 +351,9 @@ const App = () => {
           await setFirebaseUserViaJson(fbUser, app)
           await storeData('user', fbUser)
         }
-      } catch (e) {}
+      } catch (e) {
+        log('error signing in users', e)
+      }
     } else if (type === 'share') {
       const { url, title, message } = payload as NativeShareData
       log('Sharing:', message, url, title)

@@ -1,6 +1,5 @@
-import WebView, { WebViewProps } from 'react-native-webview'
+import { WebViewProps } from 'react-native-webview'
 import { Platform, View } from 'react-native'
-import React, { RefObject } from 'react'
 import {
   WebViewErrorEvent,
   WebViewRenderProcessGoneEvent,
