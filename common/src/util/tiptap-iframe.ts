@@ -1,17 +1,6 @@
 // Adopted from https://github.com/ueberdosis/tiptap/blob/main/demos/src/Experiments/Embeds/Vue/iframe.ts
 
 import { Node, mergeAttributes } from '@tiptap/core'
-import { IS_NATIVE_KEY } from 'common/native-message'
-
-//TODO: this should actually just return true for ANY mobile browser (not just native apps),
-// but will cause hydration errors if we do that check outside a useEffect.
-const getIsNative = () => {
-  if (typeof window === 'undefined') return false
-  const isNative =
-    localStorage?.getItem(IS_NATIVE_KEY) ||
-    sessionStorage?.getItem(IS_NATIVE_KEY)
-  return isNative === 'true'
-}
 
 export interface IframeOptions {
   HTMLAttributes: {
@@ -60,16 +49,15 @@ export default Node.create<IframeOptions>({
   },
 
   renderHTML({ HTMLAttributes }) {
-    const isNative = getIsNative()
     const iframeAttributes = mergeAttributes(
       this.options.HTMLAttributes,
       HTMLAttributes
     )
     const { src } = HTMLAttributes
 
-    // This is a hack to prevent native apps from opening the iframe in an in-app browser:
-    // links with target='_blank' will open in the in-app browser.
-    if (isNative && src.includes('manifold.markets/embed/')) {
+    // This is a hack to prevent native from opening the iframe in an in-app browser
+    // and mobile in another tab. In native, links with target='_blank' open in the in-app browser.
+    if (src.includes('manifold.markets/embed/')) {
       return [
         'div',
         {
