@@ -424,8 +424,6 @@ const App = () => {
   }
 
   const resetWebView = () => {
-    setHasLoadedWebView(false)
-    setListeningToNative(false)
     hasLoadedWebView.current = false
     listeningToNative.current = false
     setEndpointWithNativeQuery()
