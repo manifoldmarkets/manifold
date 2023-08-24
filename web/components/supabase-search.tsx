@@ -625,7 +625,7 @@ function SupabaseContractSearchControls(props: {
         )}
       </Col>
       {showCategories && (
-        <Carousel className="mt-0.5 h-6">
+        <Carousel className="mt-0.5 h-8">
           {isAuth && (
             <PillButton
               key={'pill-for-you'}
