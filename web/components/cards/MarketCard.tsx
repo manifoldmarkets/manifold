@@ -6,28 +6,19 @@ import { Dictionary, sortBy, uniqBy } from 'lodash'
 import Image from 'next/image'
 import { useEffect } from 'react'
 import { ContractStatusLabel } from 'web/components/contract/contracts-table'
-import {
-  usePersistentState,
-  inMemoryStore,
-} from 'web/hooks/use-persistent-state'
+import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { db } from 'web/lib/supabase/db'
 
 // Find 100 top question in terms of value from this user
 // Mostly extracted from BetsList
 export function useTopMarketsByUser(userId: string) {
-  const [initialContracts, setInitialContracts] = usePersistentState<
+  const [initialContracts, setInitialContracts] = usePersistentInMemoryState<
     Contract[] | undefined
-  >(undefined, {
-    key: `user-contract-metrics-contracts-${userId}`,
-    store: inMemoryStore(),
-  })
+  >(undefined, `user-contract-metrics-contracts-${userId}`)
 
-  const [metricsByContract, setMetricsByContract] = usePersistentState<
+  const [metricsByContract, setMetricsByContract] = usePersistentInMemoryState<
     Dictionary<ContractMetric> | undefined
-  >(undefined, {
-    key: `user-contract-metrics-${userId}`,
-    store: inMemoryStore(),
-  })
+  >(undefined, `user-contract-metrics-${userId}`)
 
   useEffect(() => {
     getUserContractMetricsWithContracts(userId, db, 5000).then(

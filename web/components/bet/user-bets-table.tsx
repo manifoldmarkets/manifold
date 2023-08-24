@@ -9,10 +9,6 @@ import { buildArray } from 'common/util/array'
 import { formatMoney, shortFormatNumber } from 'common/util/format'
 import { searchInAny } from 'common/util/parse'
 import { Input } from 'web/components/widgets/input'
-import {
-  inMemoryStore,
-  usePersistentState,
-} from 'web/hooks/use-persistent-state'
 import { useIsAuthorized, useUser } from 'web/hooks/use-user'
 import { Bet } from 'web/lib/firebase/bets'
 import { Contract } from 'web/lib/firebase/contracts'
@@ -39,6 +35,7 @@ import { ProfitBadge } from 'web/components/profit-badge'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { getUserContractsMetricsWithContracts } from 'web/lib/firebase/api'
 import { useEvent } from 'web/hooks/use-event'
+import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 
 type BetSort =
   | 'newest'
@@ -61,25 +58,19 @@ export function UserBetsTable(props: { user: User }) {
   const signedInUser = useUser()
   const isAuth = useIsAuthorized()
 
-  const [metricsByContract, setMetricsByContract] = usePersistentState<
+  const [metricsByContract, setMetricsByContract] = usePersistentInMemoryState<
     Dictionary<ContractMetric> | undefined
-  >(undefined, {
-    key: `user-contract-metrics-${user.id}`,
-    store: inMemoryStore(),
-  })
+  >(undefined, `user-contract-metrics-${user.id}`)
 
-  const [initialContracts, setInitialContracts] = usePersistentState<
+  const [initialContracts, setInitialContracts] = usePersistentInMemoryState<
     Contract[] | undefined
-  >(undefined, {
-    key: `user-contract-metrics-contracts-${user.id}`,
-    store: inMemoryStore(),
-  })
+  >(undefined, `user-contract-metrics-contracts-${user.id}`)
 
   const [openLimitBetsByContract, setOpenLimitBetsByContract] =
-    usePersistentState<Dictionary<LimitBet[]> | undefined>(undefined, {
-      key: `user-open-limit-bets-${user.id}`,
-      store: inMemoryStore(),
-    })
+    usePersistentInMemoryState<Dictionary<LimitBet[]> | undefined>(
+      undefined,
+      `user-open-limit-bets-${user.id}`
+    )
   const debounceGetMetrics = useEvent(debounce(() => getMetrics(), 100))
   useEffect(() => {
     debounceGetMetrics()
@@ -112,14 +103,12 @@ export function UserBetsTable(props: { user: User }) {
     })
   }, [setInitialContracts, setOpenLimitBetsByContract, user.id, isAuth])
 
-  const [filter, setFilter] = usePersistentState<BetFilter>('open', {
-    key: 'bets-list-filter',
-    store: inMemoryStore(),
-  })
-  const [page, setPage] = usePersistentState(0, {
-    key: 'portfolio-page',
-    store: inMemoryStore(),
-  })
+  const [filter, setFilter] = usePersistentInMemoryState<BetFilter>(
+    'open',
+    'bets-list-filter'
+  )
+  const [page, setPage] = usePersistentInMemoryState(0, 'portfolio-page')
+
   const [query, setQuery] = useState('')
 
   const onSetFilter = (f: BetFilter) => {
@@ -267,16 +256,10 @@ function BetsTable(props: {
     signedInUser,
   } = props
   const areYourBets = user.id === signedInUser?.id
-  const [sort, setSort] = usePersistentState<{
+  const [sort, setSort] = usePersistentInMemoryState<{
     field: BetSort
     direction: 'asc' | 'desc'
-  }>(
-    { field: 'newest', direction: 'desc' },
-    {
-      key: 'bets-list-sort',
-      store: inMemoryStore(),
-    }
-  )
+  }>({ field: 'newest', direction: 'desc' }, 'bets-list-sort')
   const onSetSort = (field: BetSort) => {
     if (sort.field === field) {
       setSort((prevSort) => ({
