@@ -126,9 +126,6 @@ const App = () => {
     setUrlToLoad(newUrl)
   }
 
-  const [allowSystemBack, setAllowSystemBack] = useState(
-    sharedWebViewProps.allowsBackForwardNavigationGestures
-  )
   // IAP
   const [checkoutAmount, setCheckoutAmount] = useState<number | null>(null)
 
@@ -361,11 +358,6 @@ const App = () => {
           extra: { message: 'error parsing users from client' },
         })
       }
-    } else if (type == 'onPageVisit') {
-      if (!isIOS) return // Android doesn't use the swipe to go back
-      const { page } = payload
-      log('page:', page)
-      setAllowSystemBack(page !== 'swipe')
     } else if (type === 'share') {
       const { url, title, message } = payload as NativeShareData
       log('Sharing:', message, url, title)
@@ -492,7 +484,6 @@ const App = () => {
         <View style={[styles.container, { position: 'relative' }]}>
           <WebView
             {...sharedWebViewProps}
-            allowsBackForwardNavigationGestures={allowSystemBack}
             style={styles.webView}
             // Load start and end is for whole website loading, not navigations within manifold
             onLoadEnd={() => {
