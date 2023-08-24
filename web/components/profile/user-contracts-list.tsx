@@ -14,6 +14,7 @@ import { db } from 'web/lib/supabase/db'
 import { SupabaseContractSearch } from '../supabase-search'
 import { useUser } from 'web/hooks/use-user'
 import { CreateQuestionButton } from '../buttons/create-question-button'
+import { useRouter } from 'next/router'
 
 export function UserContractsList(props: { creator: User }) {
   const { creator } = props
@@ -32,6 +33,12 @@ export function UserContractsList(props: { creator: User }) {
   }, [creator.id, allTime])
 
   const user = useUser()
+  const router = useRouter()
+  const seeClosed = () => {
+    router.replace({ query: { ...router.query, f: 'closed' } }, undefined, {
+      shallow: true,
+    })
+  }
 
   return (
     <Col className={'w-full'}>
@@ -46,9 +53,12 @@ export function UserContractsList(props: { creator: User }) {
           subTitle={
             unresolvedMarkets === 0 ? null : (
               <Tooltip text={'Closed and waiting for resolution'}>
-                <div className="bg-scarlet-300 text-ink-0 min-w-[15px] cursor-pointer rounded-full p-[2px] text-center text-[10px] leading-3">
+                <button
+                  className="bg-scarlet-300 text-ink-0 min-w-[15px] cursor-pointer rounded-full p-[2px] text-center text-[10px] leading-3"
+                  onClick={seeClosed}
+                >
                   {`${unresolvedMarkets}`}
-                </div>
+                </button>
               </Tooltip>
             )
           }
