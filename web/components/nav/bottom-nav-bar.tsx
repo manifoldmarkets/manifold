@@ -169,13 +169,17 @@ function NavBarItem(props: {
     )
   }
 
+  const currentBasePath = '/' + (currentPage?.split('/')[1] ?? '')
+  const isCurrentPage =
+    item.href != null && currentBasePath === item.href.split('?')[0]
+
   return (
     <Link
       href={item.href}
       className={clsx(
         itemClass,
         touched && touchItemClass,
-        currentPage === item.href && selectedItemClass
+        isCurrentPage && selectedItemClass
       )}
       onClick={track}
       onTouchStart={() => setTouched(true)}
