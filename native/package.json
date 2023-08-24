@@ -28,14 +28,11 @@
     "@react-native-async-storage/async-storage": "1.17.11",
     "@react-native-clipboard/clipboard": "^1.11.1",
     "@react-native-community/netinfo": "9.3.7",
-    "@sentry/react-native": "4.15.2",
-    "expo": "^49.0.0",
+    "expo": "~48.0.18",
     "expo-apple-authentication": "~6.0.1",
-    "expo-application": "~5.1.1",
     "expo-auth-session": "~4.0.3",
-    "expo-constants": "14.4.2",
+    "expo-constants": "~14.2.1",
     "expo-dev-client": "~2.2.1",
-    "expo-device": "~5.2.1",
     "expo-file-system": "~15.2.2",
     "expo-font": "~11.1.1",
     "expo-notifications": "~0.18.1",
@@ -53,8 +50,7 @@
     "react-native-iap": "^12.4.2",
     "react-native-logs": "^5.0.1",
     "react-native-web": "~0.18.10",
-    "react-native-webview": "13.3.1",
-    "sentry-expo": "~6.2.0"
+    "react-native-webview": "13.3.1"
   },
   "devDependencies": {
     "@babel/core": "^7.19.3",

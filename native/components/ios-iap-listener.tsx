@@ -7,7 +7,6 @@ import {
   Sku,
   useIAP,
 } from 'react-native-iap'
-import * as Sentry from 'sentry-expo'
 import { nativeToWebMessageType } from 'common/native-message'
 
 const SKUS = ['mana_1000', 'mana_2500', 'mana_10000']
@@ -45,17 +44,7 @@ export const IosIapListener = (props: {
       }
 
       getAvailablePurchases()
-      Sentry.Native.captureException('error on purchase or connection', {
-        extra: {
-          message: currentPurchaseError
-            ? 'currentPurchaseError'
-            : 'initConnectionError',
-          products,
-          currentPurchase,
-          currentPurchaseError,
-          initConnectionError,
-        },
-      })
+
       communicateWithWebview('iapError', {})
     }
   }, [currentPurchaseError, initConnectionError])
@@ -63,13 +52,6 @@ export const IosIapListener = (props: {
   useEffect(() => {
     if (availablePurchases.length > 0) {
       console.log('availablePurchases', availablePurchases)
-      Sentry.Native.captureException('got available purchases', {
-        extra: {
-          message: `available purchases after error? ${didGetPurchaseError}`,
-          didGetPurchaseError,
-          availablePurchases,
-        },
-      })
     }
   }, [availablePurchases])
 
@@ -87,22 +69,11 @@ export const IosIapListener = (props: {
           const receipt = currentPurchase.transactionReceipt
           console.log('finishTransaction receipt', receipt)
           if (didGetPurchaseError) {
-            Sentry.Native.captureException(
-              'receipt received after error on purchase or connection',
-              {
-                extra: {
-                  message: `receipt received after ${didGetPurchaseError}`,
-                },
-              }
-            )
           }
 
           communicateWithWebview('iapReceipt', { receipt })
         }
       } catch (error) {
-        Sentry.Native.captureException(error, {
-          extra: { message: 'error during purchase' },
-        })
         if (error instanceof PurchaseError) {
           console.log({ message: `[${error.code}]: ${error.message}`, error })
         } else {
@@ -140,9 +111,6 @@ export const IosIapListener = (props: {
         skus: SKUS,
       }).catch((e) => {
         console.log('getProducts error', e)
-        Sentry.Native.captureException(e, {
-          extra: { message: 'error getting products' },
-        })
       })
     }
   }, [connected])

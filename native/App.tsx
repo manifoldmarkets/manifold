@@ -3,7 +3,6 @@ import React, { useEffect, useRef, useState } from 'react'
 import WebView from 'react-native-webview'
 import 'expo-dev-client'
 import { EXTERNAL_REDIRECTS } from 'common/envs/constants'
-import * as Device from 'expo-device'
 import * as Notifications from 'expo-notifications'
 import {
   Platform,
@@ -24,7 +23,6 @@ import * as LinkingManager from 'react-native/Libraries/Linking/NativeLinkingMan
 import * as Linking from 'expo-linking'
 import { Subscription } from 'expo-modules-core'
 import { setFirebaseUserViaJson } from 'common/firebase-auth'
-import * as Sentry from 'sentry-expo'
 import { StatusBar } from 'expo-status-bar'
 import { IosIapListener } from 'components/ios-iap-listener'
 import { withIAPContext } from 'react-native-iap'
@@ -50,9 +48,9 @@ import { useIsConnected } from 'lib/use-is-connected'
 
 // NOTE: URIs other than manifold.markets and localhost:3000 won't work for API requests due to CORS
 // this means no supabase jwt, placing bets, creating markets, etc.
-// const baseUri = 'http://192.168.0.74:3000/'
-const baseUri =
-  ENV === 'DEV' ? 'https://dev.manifold.markets/' : 'https://manifold.markets/'
+const baseUri = 'http://192.168.1.154:3000/'
+// const baseUri =
+//   ENV === 'DEV' ? 'https://dev.manifold.markets/' : 'https://manifold.markets/'
 const nativeQuery = `?nativePlatform=${Platform.OS}`
 const isIOS = Platform.OS === 'ios'
 const App = () => {
@@ -246,9 +244,6 @@ const App = () => {
       webview.current?.goBack()
       return true
     } catch (err) {
-      Sentry.Native.captureException(err, {
-        extra: { message: 'back button press' },
-      })
       log('[handleBackButtonPress] Error : ', err)
       return false
     }
@@ -281,8 +276,6 @@ const App = () => {
   }
 
   const registerForPushNotificationsAsync = async () => {
-    if (!Device.isDevice) return null
-
     try {
       const existingStatus = await getExistingPushNotificationStatus()
       let finalStatus = existingStatus
@@ -299,9 +292,6 @@ const App = () => {
       }
       return await getPushToken()
     } catch (e) {
-      Sentry.Native.captureException(e, {
-        extra: { message: 'error registering for push notifications' },
-      })
       log('Error registering for push notifications', e)
       return null
     }
@@ -358,11 +348,7 @@ const App = () => {
           await setFirebaseUserViaJson(fbUser, app)
           await storeData('user', fbUser)
         }
-      } catch (e) {
-        Sentry.Native.captureException(e, {
-          extra: { message: 'error parsing users from client' },
-        })
-      }
+      } catch (e) {}
     } else if (type === 'share') {
       const { url, title, message } = payload as NativeShareData
       log('Sharing:', message, url, title)
@@ -392,16 +378,10 @@ const App = () => {
       await auth.signOut()
     } catch (err) {
       log(errorMessage, err)
-      Sentry.Native.captureException(err, {
-        extra: { message: errorMessage },
-      })
     }
     setFbUser(null)
     await clearData('user').catch((err) => {
       log('Error clearing user data', err)
-      Sentry.Native.captureException(err, {
-        extra: { message: 'error clearing user data' },
-      })
     })
   }
 
@@ -455,14 +435,14 @@ const App = () => {
 
   const handleExternalLink = (url: string) => {
     if (
-      !url.startsWith(baseUri) ||
+      (!url.startsWith(baseUri) &&
+        !url.startsWith('https://manifold.markets')) ||
       EXTERNAL_REDIRECTS.some((u) => url.endsWith(u))
     ) {
       webview.current?.stopLoading()
       WebBrowser.openBrowserAsync(url)
-      return false
+      return
     }
-    return true
   }
 
   return (
@@ -476,7 +456,7 @@ const App = () => {
         fbUser={fbUser}
         isConnected={isConnected}
       />
-      {Platform.OS === 'ios' && Device.isDevice && fullyLoaded && (
+      {Platform.OS === 'ios' && fullyLoaded && (
         <IosIapListener
           checkoutAmount={checkoutAmount}
           setCheckoutAmount={setCheckoutAmount}
@@ -519,7 +499,7 @@ const App = () => {
           />
         </View>
       </SafeAreaView>
-      {/*<ExportLogsButton />*/}
+      <ExportLogsButton />
     </>
   )
 }
