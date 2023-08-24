@@ -13,9 +13,11 @@ const firestore = admin.firestore()
 
 async function getProbsPerDay() {
   console.log('Getting probs per day')
-  const bets = await getValues<Bet>(
-    firestore.collectionGroup('bets').orderBy('createdTime', 'asc')
-  )
+  const bets = (
+    await getValues<Bet>(
+      firestore.collectionGroup('bets').orderBy('createdTime', 'asc')
+    )
+  ).filter((b) => b.createdTime > new Date('2022-08-07').getTime())
   const betsByContractId = groupBy(bets, 'contractId')
 
   const contracts = await getValues<Contract>(
@@ -85,6 +87,31 @@ async function getProbsPerDay() {
   ].join('\n')
   try {
     fs.writeFileSync('./market-probabilities.csv', str, { flag: 'w+' })
+    // file written successfully
+  } catch (err) {
+    console.error(err)
+  }
+
+  const brierDataRows = [['Market', 'Day', 'Probability', 'Outcome']]
+  for (const contract of contracts) {
+    for (const day of allDays) {
+      const outcome = contract.resolution === 'YES' ? 1 : 0
+      const prob = contractIdToProbsPerDay[contract.id][day]
+      if (prob !== undefined && prob !== 0 && prob !== 1) {
+        brierDataRows.push([
+          contract.slug,
+          day,
+          prob.toString(),
+          outcome.toString(),
+        ])
+      }
+    }
+  }
+  const brierStr = brierDataRows
+    .map((dayAndProbs) => dayAndProbs.join(','))
+    .join('\n')
+  try {
+    fs.writeFileSync('./brier-data.csv', brierStr, { flag: 'w+' })
     // file written successfully
   } catch (err) {
     console.error(err)
