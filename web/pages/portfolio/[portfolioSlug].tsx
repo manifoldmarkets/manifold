@@ -15,7 +15,6 @@ import { buyPortfolio, updatePortfolio } from 'web/lib/firebase/api'
 import { getContracts } from 'web/lib/supabase/contracts'
 import { Contract } from 'common/contract'
 import { keyBy, mapValues, partition } from 'lodash'
-import { ContractCard } from 'web/components/contract/contract-card'
 import { Col } from 'web/components/layout/col'
 import { BinaryOutcomeLabel } from 'web/components/outcome-label'
 import { Avatar } from 'web/components/widgets/avatar'
@@ -23,6 +22,7 @@ import { AmountInput } from 'web/components/widgets/amount-input'
 import { useState } from 'react'
 import { Button } from 'web/components/buttons/button'
 import toast from 'react-hot-toast'
+import { ContractsTable } from 'web/components/contract/contracts-table'
 
 export async function getStaticProps(props: {
   params: { portfolioSlug: string }
@@ -70,7 +70,7 @@ export default function PortfolioPage(props: {
   const canEdit = !!user && user.id === portfolio.creatorId
 
   return (
-    <Page className="!max-w-[1720px]" mainClassName="!col-span-10">
+    <Page mainClassName="!col-span-10">
       <SEO
         title={portfolio.name}
         description={'A portfolio of markets related to ' + portfolio.name}
@@ -179,23 +179,13 @@ const PortfolioView = (props: {
   )
 
   return (
-    <Col className="gap-6">
+    <div className="flex flex-col gap-6 xl:flex-row">
       {yesContracts.length > 0 && (
         <Col className="gap-4">
           <div className="text-ink-800 text-2xl">
             Buy <BinaryOutcomeLabel outcome={'YES'} /> in
           </div>
-          <Row className="flex-wrap gap-2">
-            {yesContracts.map((contract) => (
-              <ContractCard
-                key={contract.id}
-                className="max-w-[350px]"
-                contract={contract}
-                hideGroupLink
-                hideQuickBet
-              />
-            ))}
-          </Row>
+          <ContractsTable contracts={yesContracts} hideActions />
         </Col>
       )}
       {noContracts.length > 0 && (
@@ -203,19 +193,9 @@ const PortfolioView = (props: {
           <div className="text-ink-800 text-2xl">
             Buy <BinaryOutcomeLabel outcome={'NO'} /> in
           </div>
-          <Row className="flex-wrap gap-2">
-            {noContracts.map((contract) => (
-              <ContractCard
-                key={contract.id}
-                className="max-w-[350px]"
-                contract={contract}
-                hideGroupLink
-                hideQuickBet
-              />
-            ))}
-          </Row>
+          <ContractsTable contracts={noContracts} hideActions />
         </Col>
       )}
-    </Col>
+    </div>
   )
 }
