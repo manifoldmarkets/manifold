@@ -16,12 +16,7 @@ import { SearchGroupInfo, searchGroups } from 'web/lib/supabase/groups'
 import { UserSearchResult, searchUsers } from 'web/lib/supabase/users'
 import { ContractStatusLabel } from '../contract/contracts-table'
 import { JoinOrLeaveGroupButton } from '../groups/groups-button'
-import {
-  SORTS,
-  Sort,
-  CATEGORY_AND_QUERY_KEY,
-  formatQueryAndCategory,
-} from '../supabase-search'
+import { SORTS, Sort } from '../supabase-search'
 import { Avatar } from '../widgets/avatar'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { searchMarketSorts } from './query-market-sorts'
@@ -441,7 +436,4 @@ const MarketSortResults = (props: { sort: Sort; markets: Contract[] }) => {
   )
 }
 
-const marketSearchSlug = (query: string) =>
-  `/questions?s=score&f=all&${CATEGORY_AND_QUERY_KEY}=${encodeURIComponent(
-    formatQueryAndCategory(query, '')
-  )}`
+const marketSearchSlug = (query: string) => `/questions?s=score&f=all&q=${query}`
