@@ -150,7 +150,6 @@ const App = () => {
     const notification = response.notification.request.content
       .data as Notification
 
-    // TODO: this should check if the webview is listening to native, not if it's loaded
     if (hasLoadedWebView && listeningToNative.current) {
       communicateWithWebview(
         'notification',
