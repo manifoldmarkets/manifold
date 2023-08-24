@@ -90,8 +90,6 @@ export const supabasesearchcontracts = MaybeAuthedEndpoint(
             hasGroupAccess: await hasGroupAccess(groupId, auth?.uid),
           })
 
-    console.log(searchMarketSQL)
-
     const pg = createSupabaseDirectClient()
     const contracts = await pg.map(
       searchMarketSQL,

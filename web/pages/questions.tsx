@@ -22,9 +22,9 @@ export default function Search() {
   useTracking('view search')
 
   const { query } = useRouter()
-  const { q, s } = query
+  const { q } = query
   // Allow users to browse without keyboard popping up on mobile.
-  const autoFocus = !isMobile && !q && !s
+  const autoFocus = !isMobile && !q
 
   const shouldFilterDestiny = useShouldBlockDestiny(user?.id)
 
@@ -42,7 +42,6 @@ export default function Search() {
           <SupabaseContractSearch
             persistPrefix="search"
             autoFocus={autoFocus}
-            defaultSort={(s as Sort) || 'score'}
             additionalFilter={{
               excludeContractIds: privateUser?.blockedContractIds,
               excludeGroupSlugs: [
