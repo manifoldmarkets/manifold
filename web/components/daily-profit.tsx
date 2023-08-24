@@ -1,6 +1,5 @@
 import { memo, useCallback, useEffect, useMemo, useState } from 'react'
 import { User } from 'common/user'
-import { HOUR_MS } from 'common/util/time'
 import clsx from 'clsx'
 import { withTracking } from 'web/lib/service/analytics'
 import { Row } from 'web/components/layout/row'
