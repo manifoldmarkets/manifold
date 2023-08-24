@@ -134,12 +134,25 @@ user_disinterests AS (
 
 user_follows AS (SELECT follow_id
                       FROM user_follows
-                      WHERE user_id = '${uid}')
+                      WHERE user_id = '${uid}'),
+
+groups AS (
+  SELECT group_id
+  FROM group_members
+  WHERE member_id = '${uid}'
+)
+
 select data, contract_id,
       importance_score
-           * (
-               8 * ((1 - (contract_embeddings.embedding <=> user_interest.interest_embedding)) - 0.8)
-               + (CASE WHEN user_follows.follow_id IS NOT NULL THEN 0.2 ELSE 0 END)
+           * ( 
+               5 * ((1 - (contract_embeddings.embedding <=> user_interest.interest_embedding)) - 0.8)
+               + (CASE WHEN user_follows.follow_id IS NOT NULL THEN 0.25 ELSE 0 END)
+                + (CASE WHEN  EXISTS (
+                    SELECT 1
+                    FROM group_contracts
+                    join groups on group_contracts.group_id = groups.group_id
+                    WHERE group_contracts.contract_id = contracts.id
+                  ) THEN 0.25 ELSE 0 END)
            )
            AS modified_importance_score
 from user_interest,
