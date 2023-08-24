@@ -37,7 +37,7 @@ const touchItemClass = 'bg-primary-100'
 function getNavigation(user: User) {
   return [
     { name: 'Home', href: '/home', icon: HomeIcon },
-    { name: 'Questions', href: '/questions', icon: ScaleIcon },
+    { name: 'Questions', href: '/questions?category=for-you', icon: ScaleIcon },
     {
       name: 'Profile',
       href: `/${user.username}`,
