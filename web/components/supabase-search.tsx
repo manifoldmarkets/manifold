@@ -599,7 +599,7 @@ function SupabaseContractSearchControls(props: {
       </Col>
       {showCategories && (
         <Carousel className="mt-0.5 h-8">
-          {isAuth && (
+          {isAuth && sort === 'score' && (
             <PillButton
               key={'pill-for-you'}
               selected={category === 'for-you'}
