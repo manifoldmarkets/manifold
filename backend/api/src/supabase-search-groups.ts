@@ -25,21 +25,57 @@ export const supabasesearchgroups = MaybeAuthedEndpoint(async (req, auth) => {
     addingToContract,
     newContract,
   } = validate(bodySchema, req.body)
+
   const pg = createSupabaseDirectClient()
-  const searchGroupSQL = getSearchGroupSQL({
-    term,
-    offset,
-    limit,
-    fuzzy,
-    yourGroups,
-    uid: auth?.uid,
-    addingToContract,
-    newContract,
-  })
+  const uid = auth?.uid
+
+  const searchGroupSQL =
+    !term && !fuzzy && !!uid
+      ? getForYouGroupsSQL({ uid, offset, limit })
+
+      : getSearchGroupSQL({
+          term,
+          offset,
+          limit,
+          fuzzy,
+          yourGroups,
+          uid,
+          addingToContract,
+          newContract,
+        })
   const groups = await pg.map(searchGroupSQL, [term], convertGroup)
 
   return (groups ?? []) as unknown as Json
 })
+
+function getForYouGroupsSQL(groupInput: {
+  uid: string
+  offset: number
+  limit: number
+}) {
+  const { uid, offset, limit } = groupInput
+
+  return `with
+     followed_groups AS (SELECT group_id
+                FROM group_members
+                WHERE member_id = '${uid}')
+select groups.*, 
+      importance_score
+           * 
+                (CASE
+                      WHEN EXISTS (SELECT 1
+                                   FROM followed_groups
+                                   WHERE followed_groups.group_id = groups.id) THEN 1
+                      ELSE 0.75 END)
+           
+           AS modified_importance_score
+from groups
+where (privacy_status != 'private' or is_group_member(groups.id, '${uid}') or
+       is_admin('${uid}'))
+order by modified_importance_score DESC
+  limit ${limit} offset ${offset};
+  `
+}
 
 function getSearchGroupSQL(groupInput: {
   term: string
