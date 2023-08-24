@@ -438,8 +438,7 @@ const App = () => {
 
   const handleExternalLink = (url: string) => {
     if (
-      (!url.startsWith(baseUri) &&
-        !url.startsWith('https://manifold.markets')) ||
+      !url.startsWith(baseUri) ||
       EXTERNAL_REDIRECTS.some((u) => url.endsWith(u))
     ) {
       webview.current?.stopLoading()
