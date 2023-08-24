@@ -7,11 +7,12 @@ import { Row } from 'web/components/layout/row'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { withTracking } from 'web/lib/service/analytics'
 import { leaveGroup, SearchGroupInfo } from 'web/lib/supabase/groups'
-import { groupButtonClass } from 'web/pages/group/[...slugs]'
 import { Button } from '../buttons/button'
 import { ConfirmationButton } from '../buttons/confirmation-button'
 import { Subtitle } from '../widgets/subtitle'
 import { joinGroup } from 'web/lib/firebase/api'
+
+export const groupButtonClass = 'text-ink-700 hover:text-ink-800'
 
 export function LeavePrivateGroupButton(props: {
   group: SearchGroupInfo

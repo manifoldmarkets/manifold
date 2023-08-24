@@ -5,16 +5,12 @@ import Head from 'next/head'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useEffect, useMemo, useRef, useState } from 'react'
-
 import { Answer, DpmAnswer } from 'common/answer'
 import { unserializePoints } from 'common/chart'
 import { ContractParams, MaybeAuthedContractParams } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
-import { getContractOGProps, getSeoDescription } from 'common/contract-seo'
 import { HOUSE_BOT_USERNAME, isTrustworthy } from 'common/envs/constants'
 import { User } from 'common/user'
-import { removeUndefinedProps } from 'common/util/object'
-import { SEO } from 'web/components/SEO'
 import { DeleteMarketButton } from 'web/components/buttons/delete-market-button'
 import { ScrollToTopButton } from 'web/components/buttons/scroll-to-top-button'
 import { BackButton } from 'web/components/contract/back-button'
@@ -72,6 +68,7 @@ import { linkClass } from 'web/components/widgets/site-link'
 import { MarketGroups } from 'web/components/contract/market-groups'
 import { getMultiBetPoints } from 'web/components/charts/contract/choice'
 import { useRealtimeBets } from 'web/hooks/use-bets-supabase'
+import { ContractSEO } from 'web/components/contract/contract-seo'
 
 export async function getStaticProps(ctx: {
   params: { username: string; contractSlug: string }
@@ -608,34 +605,7 @@ export function ContractPageContent(props: {
   )
 }
 
-export function ContractSEO(props: {
-  contract: Contract
-  /** Base64 encoded points */
-  points?: string
-}) {
-  const { contract, points } = props
-  const { question, creatorUsername, slug } = contract
-
-  const seoDesc = getSeoDescription(contract)
-  const ogCardProps = removeUndefinedProps({
-    ...getContractOGProps(contract),
-    points,
-  })
-
-  return (
-    <SEO
-      title={question}
-      description={seoDesc}
-      url={`/${creatorUsername}/${slug}`}
-      ogProps={{ props: ogCardProps, endpoint: 'market' }}
-    />
-  )
-}
-
-export function PrivateContractAdminTag(props: {
-  contract: Contract
-  user: User
-}) {
+function PrivateContractAdminTag(props: { contract: Contract; user: User }) {
   const { contract, user } = props
   const isPrivateContractMember = useIsPrivateContractMember(
     user.id,

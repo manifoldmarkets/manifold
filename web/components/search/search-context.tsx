@@ -23,12 +23,15 @@ export const SearchProvider = (props: { children: ReactNode }) => {
   const [query, setQuery] = useState('')
 
   useEffect(() => {
-    window.addEventListener('keydown', (e) => {
+    const handler = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         setOpen(true)
         e.preventDefault()
       }
-    })
+    }
+
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
   }, [])
 
   return (

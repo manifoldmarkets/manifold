@@ -21,6 +21,7 @@ import {
   PseudoNumericResolutionOrExpectation,
   StonkPrice,
 } from 'web/components/contract/contract-price'
+import { ContractSEO } from 'web/components/contract/contract-seo'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { SizedContainer } from 'web/components/sized-container'
@@ -30,7 +31,6 @@ import { useNumContractComments } from 'web/hooks/use-comments-supabase'
 import { track } from 'web/lib/service/analytics'
 import { getBetFields } from 'web/lib/supabase/bets'
 import { db } from 'web/lib/supabase/db'
-import { ContractSEO } from 'web/pages/[username]/[contractSlug]'
 import Custom404 from '../../404'
 import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
 
