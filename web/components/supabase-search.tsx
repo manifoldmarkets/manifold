@@ -42,7 +42,7 @@ import { buildArray } from 'common/util/array'
 import { SearchGroupInfo } from 'web/lib/supabase/groups'
 import {
   usePartialUpdater,
-  usePersistentQueryState,
+  usePersistentQueriesState,
 } from 'web/hooks/use-persistent-query-state'
 
 const CONTRACTS_PER_PAGE = 40
@@ -475,7 +475,7 @@ function SupabaseContractSearchControls(props: {
 
   const [state, setState] = useUrlParams
     ? /* eslint-disable-next-line react-hooks/rules-of-hooks */
-      usePersistentQueryState(defaults)
+      usePersistentQueriesState(defaults)
     : /* eslint-disable-next-line react-hooks/rules-of-hooks */
       usePartialUpdater(defaults)
 

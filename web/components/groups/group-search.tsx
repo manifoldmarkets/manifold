@@ -9,7 +9,6 @@ import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-s
 import {
   historyStore,
   inMemoryStore,
-  urlParamStore,
   usePersistentState,
 } from 'web/hooks/use-persistent-state'
 import { getMyGroupRoles, searchGroups } from 'web/lib/supabase/groups'
@@ -17,7 +16,7 @@ import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { Spacer } from '../layout/spacer'
 import { Input } from '../widgets/input'
-import router from 'next/router'
+import { usePersistentQueryState } from 'web/hooks/use-persistent-query-state'
 
 const INITIAL_STATE = {
   groups: undefined,
@@ -51,10 +50,7 @@ export default function GroupSearch(props: {
   const loadMoreGroups = () => performQuery(state)
 
   const searchTerm = useRef<string>('')
-  const [inputTerm, setInputTerm] = usePersistentState('', {
-    key: 'search',
-    store: urlParamStore(router),
-  })
+  const [inputTerm, setInputTerm] = usePersistentQueryState('search', '')
   const searchTermStore = inMemoryStore<string>()
 
   const requestId = useRef(0)

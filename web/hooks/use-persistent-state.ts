@@ -1,6 +1,5 @@
 import { useEffect } from 'react'
 import { useStateCheckEquality } from './use-state-check-equality'
-import { NextRouter, useRouter } from 'next/router'
 import { useHasLoaded } from './use-has-loaded'
 
 export type PersistenceOptions<T> = { key: string; store: PersistentStore<T> }
@@ -15,19 +14,6 @@ export type Backend = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>
 export interface PersistentStore<T> {
   get: (k: string) => T | undefined
   set: (k: string, v: T | undefined) => void
-  readsUrl?: boolean
-}
-
-const withURLParam = (location: Location, k: string, v?: string) => {
-  const newParams = new URLSearchParams(location.search)
-  if (!v) {
-    newParams.delete(k)
-  } else {
-    newParams.set(k, v)
-  }
-  const newUrl = new URL(location.href)
-  newUrl.search = newParams.toString()
-  return newUrl
 }
 
 export const storageStore = <T>(
@@ -57,21 +43,6 @@ export const storageStore = <T>(
       }
     }
   },
-})
-
-export const urlParamStore = (router: NextRouter): PersistentStore<string> => ({
-  get: (k: string) => {
-    const v = router.query[k]
-    return typeof v === 'string' ? v : undefined
-  },
-  set: (k: string, v: string | undefined) => {
-    if (typeof window !== 'undefined') {
-      // see relevant discussion here https://github.com/vercel/next.js/discussions/18072
-      const url = withURLParam(window.location, k, v).toString()
-      router.replace(url, undefined, { shallow: true })
-    }
-  },
-  readsUrl: true,
 })
 
 export const historyStore = <T>(prefix = '__manifold'): PersistentStore<T> => ({
@@ -132,21 +103,6 @@ export const usePersistentState = <T>(
     }
   }, [key, state, hasLoaded])
 
-  if (store?.readsUrl) {
-    // On route change on the same page, set the state.
-    // On page load, router isn't ready immediately, so set state once it is.
-
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    const router = useRouter()
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    useEffect(() => {
-      if (router.isReady) {
-        const savedValue = key != null ? store.get(key) : undefined
-        setState(savedValue ?? initial)
-      }
-    }, [router.isReady, router.query])
-  }
-
   return [state, setState] as const
 }
 
@@ -187,20 +143,6 @@ export const usePersistentRevalidatedState = <T>(
       store.set(key, state)
     }
   }, [key, state, hasLoaded])
-
-  if (store?.readsUrl) {
-    // On page load, router isn't ready immediately, so set state once it is.
-
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    const router = useRouter()
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    useEffect(() => {
-      if (router.isReady) {
-        const savedValue = key != null ? store.get(key) : undefined
-        setState(savedValue ?? initial)
-      }
-    }, [router.isReady])
-  }
 
   return [state ?? savedValue, setState] as const
 }
