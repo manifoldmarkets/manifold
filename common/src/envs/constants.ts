@@ -178,6 +178,7 @@ export const VERIFIED_USERNAMES = [
   'JamesMedlock',
   'Writer',
   'GeorgeHotz',
+  'ShayneCoplan',
 ]
 
 export const HOUSE_BOT_USERNAME = 'acc'
