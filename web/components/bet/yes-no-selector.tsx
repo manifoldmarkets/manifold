@@ -13,6 +13,7 @@ export function YesNoSelector(props: {
   yesLabel?: string
   noLabel?: string
   disabled?: boolean
+  highlight?: boolean
 }) {
   const {
     selected,
@@ -22,12 +23,17 @@ export function YesNoSelector(props: {
     yesLabel,
     noLabel,
     disabled,
+    highlight,
   } = props
 
   return (
     <Row className={clsx('space-x-3', className)}>
       <Button
-        color={selected !== 'YES' ? 'green-outline' : 'green'}
+        color={
+          (highlight && !selected) || selected === 'YES'
+            ? 'green'
+            : 'green-outline'
+        }
         size="xl"
         onClick={() => onSelect('YES')}
         className={btnClassName}
@@ -38,7 +44,9 @@ export function YesNoSelector(props: {
       </Button>
 
       <Button
-        color={selected !== 'NO' ? 'red-outline' : 'red'}
+        color={
+          (highlight && !selected) || selected === 'NO' ? 'red' : 'red-outline'
+        }
         size="xl"
         onClick={() => onSelect('NO')}
         className={btnClassName}
