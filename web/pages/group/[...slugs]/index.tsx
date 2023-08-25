@@ -330,10 +330,6 @@ export function GroupPageContent(props: { groupParams?: GroupParams }) {
                   }}
                   persistPrefix={`group-${group.slug}`}
                   includeProbSorts
-                  fromGroupProps={{
-                    group: group,
-                    userRole: userRole ?? null,
-                  }}
                   useUrlParams
                 />
               ),
