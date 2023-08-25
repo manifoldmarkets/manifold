@@ -5,6 +5,7 @@ import { useIsGroupMember } from 'web/hooks/use-group-supabase'
 import { GroupPageContent } from 'web/pages/group/[...slugs]'
 import * as unlocking from '../../public/lottie/unlocking-icon.json'
 import { Col } from '../layout/col'
+import { BiGhost } from 'react-icons/bi'
 
 export function LoadingPrivateThing() {
   return (
@@ -45,13 +46,16 @@ export function InaccessiblePrivateThing(props: { thing: string }) {
 
 export function PrivateGroupPage(props: { slugs: string[] }) {
   const { slugs } = props
-  const isManifoldAdmin = useAdmin()
-  const isMember = useIsGroupMember(slugs[0])
-  if (isMember === undefined) {
-    return <LoadingPrivateThing />
-  }
-  if (isMember === false && !isManifoldAdmin) {
-    return <InaccessiblePrivateThing thing="group" />
-  }
-  return <GroupPageContent />
+  return (
+    <Col className="mt-24 h-full w-full items-center justify-center gap-4 lg:mt-0">
+      <BiGhost className="text-ink-400 h-36 w-36" />
+      <Col className="max-w-lg gap-2">
+        <div className="text-primary-500 text-center text-lg">
+          {`Private groups are being deprecated :(`}
+        </div>
+        You no longer have access to this page, but don't worry! You can still
+        see the content within this group through search and your portfolio.
+      </Col>
+    </Col>
+  )
 }
