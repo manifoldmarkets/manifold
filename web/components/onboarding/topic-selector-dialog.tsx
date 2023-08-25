@@ -57,7 +57,7 @@ export function TopicSelectorDialog(props: {
     if (user && !skipUpdate) updateUserEmbedding()
 
     setOpen(false)
-    if (window.location.pathname !== '/questions') window.location.reload()
+    window.location.reload()
   }
   const selectedCategories: string[] = userSelectedCategories ?? []
 
