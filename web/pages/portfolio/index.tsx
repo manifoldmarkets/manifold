@@ -132,7 +132,7 @@ const ContractSearch = memo(
           excludeUserIds: privateUser?.blockedUserIds,
           contractType: 'BINARY',
         }}
-        listUIOptions={{ hideActions: true }}
+        hideActions
         hideFilters
         headerClassName={clsx('bg-canvas-0')}
       />

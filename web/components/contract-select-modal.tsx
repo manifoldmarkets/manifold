@@ -19,17 +19,8 @@ export function SelectMarketsModal(props: {
   setOpen: (open: boolean) => void
   submitLabel: (length: number) => string
   onSubmit: (contracts: Contract[]) => void | Promise<void>
-  contractSearchOptions?: Partial<Parameters<typeof SupabaseContractSearch>[0]>
 }) {
-  const {
-    title,
-    description,
-    open,
-    setOpen,
-    submitLabel,
-    onSubmit,
-    contractSearchOptions,
-  } = props
+  const { title, description, open, setOpen, submitLabel, onSubmit } = props
 
   return (
     <Modal open={open} setOpen={setOpen} className={'sm:p-0'} size={'lg'}>
@@ -39,7 +30,6 @@ export function SelectMarketsModal(props: {
         <SelectMarkets
           submitLabel={submitLabel}
           onSubmit={onSubmit}
-          contractSearchOptions={contractSearchOptions}
           setOpen={setOpen}
           className="grow overflow-y-auto"
         />
@@ -51,7 +41,6 @@ export function SelectMarketsModal(props: {
 export function SelectMarkets(props: {
   submitLabel: (length: number) => string
   onSubmit: (contracts: Contract[]) => void | Promise<void>
-  contractSearchOptions?: Partial<Parameters<typeof SupabaseContractSearch>[0]>
   setOpen: (open: boolean) => void
   className?: string
   additionalFilter?: SupabaseAdditionalFilter
@@ -60,7 +49,6 @@ export function SelectMarkets(props: {
   const {
     submitLabel,
     onSubmit,
-    contractSearchOptions,
     setOpen,
     className,
     additionalFilter,
@@ -96,11 +84,7 @@ export function SelectMarkets(props: {
         persistPrefix="contract-select-modal"
         hideOrderSelector
         onContractClick={addContract}
-        cardUIOptions={{
-          hideGroupLink: true,
-          hideQuickBet: true,
-          noLinkAvatar: true,
-        }}
+        hideActions
         highlightContractIds={contracts.map((c) => c.id)}
         additionalFilter={{
           excludeContractIds: [
@@ -111,10 +95,8 @@ export function SelectMarkets(props: {
           excludeUserIds: privateUser?.blockedUserIds,
         }}
         headerClassName={clsx('bg-canvas-0', headerClassName)}
-        {...contractSearchOptions}
-        listViewDisabled={true}
       />
-      <Row className="bg-canvas-0 fixed inset-x-0 bottom-0 z-40 justify-end px-8 py-2">
+      <Row className="bg-canvas-0 fixed inset-x-0 bottom-0 justify-end px-8 py-2">
         {!loading && (
           <Row className="grow justify-end gap-4">
             <Button

@@ -1,20 +1,8 @@
-import {
-  ChevronDownIcon,
-  ViewGridIcon,
-  ViewListIcon,
-} from '@heroicons/react/outline'
+import { ChevronDownIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { Contract } from 'common/contract'
-import { Group } from 'common/group'
 import { debounce, isEqual, sample, uniqBy } from 'lodash'
-import {
-  ReactNode,
-  createContext,
-  useContext,
-  useEffect,
-  useRef,
-  useState,
-} from 'react'
+import { ReactNode, useEffect, useRef, useState } from 'react'
 import { PillButton } from 'web/components/buttons/pill-button'
 import { useEvent } from 'web/hooks/use-event'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
@@ -25,9 +13,7 @@ import { track, trackCallback } from 'web/lib/service/analytics'
 import { searchContract } from 'web/lib/supabase/contracts'
 import DropdownMenu from './comments/dropdown-menu'
 import { ShowTime } from './contract/contract-details'
-import { ContractsGrid } from './contract/contracts-grid'
 import { ContractsList } from './contract/contracts-list'
-import { groupRoleType } from './groups/group-member-modal'
 import { Col } from './layout/col'
 import { Row } from './layout/row'
 import generateFilterDropdownItems, {
@@ -158,11 +144,6 @@ export type SupabaseAdditionalFilter = {
   contractType?: ContractTypeType
 }
 
-const AsListContext = createContext({
-  asList: false,
-  setAsList: (_asList: boolean) => {},
-})
-
 export type stateType = {
   contracts: Contract[] | undefined
   fuzzyContractOffset: number
@@ -178,14 +159,7 @@ export function SupabaseContractSearch(props: {
   highlightContractIds?: string[]
   onContractClick?: (contract: Contract) => void
   hideOrderSelector?: boolean
-  cardUIOptions?: {
-    hideGroupLink?: boolean
-    hideQuickBet?: boolean
-    noLinkAvatar?: boolean
-  }
-  listUIOptions?: {
-    hideActions?: boolean
-  }
+  hideActions?: boolean
   headerClassName?: string
   inputRowClassName?: string
   isWholePage?: boolean
@@ -195,10 +169,6 @@ export function SupabaseContractSearch(props: {
   includeProbSorts?: boolean
   autoFocus?: boolean
   emptyState?: ReactNode
-  fromGroupProps?: {
-    group: Group
-    userRole: groupRoleType | null
-  }
   listViewDisabled?: boolean
   contractSearchControlsClassName?: string
   showCategories?: boolean
@@ -211,8 +181,7 @@ export function SupabaseContractSearch(props: {
     additionalFilter,
     onContractClick,
     hideOrderSelector,
-    cardUIOptions,
-    listUIOptions,
+    hideActions,
     highlightContractIds,
     headerClassName,
     inputRowClassName,
@@ -222,7 +191,6 @@ export function SupabaseContractSearch(props: {
     useUrlParams,
     autoFocus,
     emptyState,
-    fromGroupProps,
     listViewDisabled,
     showCategories,
     hideFilters,
@@ -236,10 +204,6 @@ export function SupabaseContractSearch(props: {
   const searchParams = useRef<SupabaseSearchParameters | null>(null)
   const searchParamsStore = inMemoryStore<SupabaseSearchParameters>()
   const requestId = useRef(0)
-  const [asList, setAsList] = usePersistentInMemoryState(
-    !listViewDisabled,
-    'contract-search-as-list'
-  )
 
   useSafeLayoutEffect(() => {
     const params = searchParamsStore.get(`${persistPrefix}-params`)
@@ -354,60 +318,41 @@ export function SupabaseContractSearch(props: {
     : undefined
 
   return (
-    <AsListContext.Provider value={{ asList, setAsList }}>
-      <Col>
-        <SupabaseContractSearchControls
-          className={headerClassName}
-          inputRowClassName={inputRowClassName}
-          defaultSort={defaultSort}
-          defaultFilter={defaultFilter}
-          hideOrderSelector={hideOrderSelector}
-          useUrlParams={useUrlParams}
-          includeProbSorts={includeProbSorts}
-          onSearchParametersChanged={onSearchParametersChanged}
-          autoFocus={autoFocus}
-          listViewDisabled={listViewDisabled}
-          showCategories={showCategories}
-          hideFilters={hideFilters}
-          excludeGroupSlugs={additionalFilter?.excludeGroupSlugs}
+    <Col>
+      <SupabaseContractSearchControls
+        className={headerClassName}
+        inputRowClassName={inputRowClassName}
+        defaultSort={defaultSort}
+        defaultFilter={defaultFilter}
+        hideOrderSelector={hideOrderSelector}
+        useUrlParams={useUrlParams}
+        includeProbSorts={includeProbSorts}
+        onSearchParametersChanged={onSearchParametersChanged}
+        autoFocus={autoFocus}
+        listViewDisabled={listViewDisabled}
+        showCategories={showCategories}
+        hideFilters={hideFilters}
+        excludeGroupSlugs={additionalFilter?.excludeGroupSlugs}
+      />
+      {contracts && contracts.length === 0 ? (
+        emptyState ?? (searchParams.current?.query ? <NoResults /> : <Empty />)
+      ) : (
+        <ContractsList
+          key={
+            searchParams.current?.query ??
+            '' + searchParams.current?.filter ??
+            '' + searchParams.current?.sort ??
+            ''
+          }
+          contracts={contracts}
+          loadMore={loadMoreContracts}
+          onContractClick={onContractClick}
+          highlightContractIds={highlightContractIds}
+          headerClassName={clsx(headerClassName, '!top-14')}
+          hideActions={hideActions}
         />
-        {contracts && contracts.length === 0 ? (
-          emptyState ??
-          (searchParams.current?.query ? <NoResults /> : <Empty />)
-        ) : asList ? (
-          <ContractsList
-            key={
-              searchParams.current?.query ??
-              '' + searchParams.current?.filter ??
-              '' + searchParams.current?.sort ??
-              ''
-            }
-            contracts={contracts}
-            loadMore={loadMoreContracts}
-            onContractClick={onContractClick}
-            highlightContractIds={highlightContractIds}
-            headerClassName={clsx(headerClassName, '!top-14')}
-            hideActions={listUIOptions?.hideActions}
-          />
-        ) : (
-          <ContractsGrid
-            key={
-              searchParams.current?.query ??
-              '' + searchParams.current?.filter ??
-              '' + searchParams.current?.sort ??
-              ''
-            }
-            contracts={contracts}
-            showTime={state.showTime ?? undefined}
-            onContractClick={onContractClick}
-            highlightContractIds={highlightContractIds}
-            cardUIOptions={cardUIOptions}
-            loadMore={loadMoreContracts}
-            fromGroupProps={fromGroupProps}
-          />
-        )}
-      </Col>
-    </AsListContext.Provider>
+      )}
+    </Col>
   )
 }
 
@@ -597,7 +542,6 @@ function SupabaseContractSearchControls(props: {
             hideOrderSelector={hideOrderSelector}
             className={'flex flex-row gap-2'}
             includeProbSorts={includeProbSorts}
-            listViewDisabled={true}
           />
         )}
       </Col>
@@ -640,10 +584,7 @@ export function SearchFilters(props: {
   hideOrderSelector: boolean | undefined
   className?: string
   includeProbSorts?: boolean
-  listViewDisabled?: boolean
 }) {
-  const { asList, setAsList } = useContext(AsListContext)
-
   const {
     filter,
     selectFilter,
@@ -654,7 +595,6 @@ export function SearchFilters(props: {
     hideOrderSelector,
     className,
     includeProbSorts,
-    listViewDisabled,
   } = props
 
   const hideFilter =
@@ -727,20 +667,6 @@ export function SearchFilters(props: {
         selectedItemName={contractTypeLabel}
         closeOnClick={true}
       />
-
-      {!listViewDisabled && (
-        <button
-          type="button"
-          onClick={() => setAsList(!asList)}
-          className="hover:bg-canvas-50 border-ink-300 text-ink-500 bg-canvas-0 focus:border-primary-500 focus:ring-primary-500 relative inline-flex h-full items-center rounded-md border px-2 py-1 text-sm font-medium shadow-sm focus:z-10 focus:outline-none focus:ring-1 sm:py-2"
-        >
-          {asList ? (
-            <ViewGridIcon className="h-5 w-5" aria-hidden="true" />
-          ) : (
-            <ViewListIcon className="h-5 w-5" aria-hidden="true" />
-          )}
-        </button>
-      )}
     </div>
   )
 }

@@ -1,8 +1,6 @@
-import { ClockIcon, UserGroupIcon } from '@heroicons/react/outline'
-import { FireIcon, PencilIcon } from '@heroicons/react/solid'
+import { PencilIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import dayjs from 'dayjs'
-import Link from 'next/link'
 import { Row } from '../layout/row'
 import { Contract, updateContract } from 'web/lib/firebase/contracts'
 import { DateTimeTooltip } from '../widgets/datetime-tooltip'
@@ -11,9 +9,6 @@ import { useState } from 'react'
 import { Button } from 'web/components/buttons/button'
 import { Modal } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
-import { linkClass } from 'web/components/widgets/site-link'
-import { Tooltip } from 'web/components/widgets/tooltip'
-import { getGroupLinkToDisplay, groupPath } from 'common/group'
 import { Title } from '../widgets/title'
 import { useIsClient } from 'web/hooks/use-is-client'
 import { Input } from '../widgets/input'
@@ -21,70 +16,6 @@ import { Avatar } from '../widgets/avatar'
 import { UserLink } from '../widgets/user-link'
 
 export type ShowTime = 'resolve-date' | 'close-date'
-
-export function MiscDetails(props: {
-  contract: Contract
-  showTime?: ShowTime
-  hideGroupLink?: boolean
-}) {
-  const { contract, showTime, hideGroupLink } = props
-  const { closeTime, resolutionTime, uniqueBettorCount } = contract
-
-  const isClient = useIsClient()
-  // const isNew = createdTime > Date.now() - DAY_MS && !isResolved
-  const groupToDisplay = getGroupLinkToDisplay(contract)
-  const isOpen =
-    !contract.isResolved && (contract.closeTime ?? Infinity) > Date.now()
-
-  return (
-    <Row className="text-ink-400 w-full items-center gap-3 text-sm">
-      {isOpen && contract.elasticity < 0.5 ? (
-        <Tooltip text={'High-stakes'} className={'z-10'}>
-          <FireIcon className="h-5 w-5 text-blue-700" />
-        </Tooltip>
-      ) : null}
-
-      {isClient && showTime === 'close-date' ? (
-        <Row className="gap-0.5 whitespace-nowrap">
-          <ClockIcon className="h-5 w-5" />
-          {(closeTime || 0) < Date.now() ? 'Closed' : 'Closes'}{' '}
-          {fromNow(closeTime || 0)}
-        </Row>
-      ) : isClient && showTime === 'resolve-date' && resolutionTime ? (
-        <Row className="gap-0.5">
-          <ClockIcon className="h-5 w-5" />
-          {'Resolved '}
-          {fromNow(resolutionTime)}
-        </Row>
-      ) : (uniqueBettorCount ?? 0) > 1 ? (
-        <Tooltip
-          text={`${uniqueBettorCount} unique traders`}
-          className={'z-10'}
-        >
-          <Row className={'shrink-0 items-center gap-1'}>
-            <UserGroupIcon className="h-4 w-4" />
-            <div className="font-semibold">{uniqueBettorCount || '0'}</div>
-          </Row>
-        </Tooltip>
-      ) : (
-        <></>
-      )}
-
-      {!hideGroupLink && groupToDisplay && (
-        <Link
-          prefetch={false}
-          href={groupPath(groupToDisplay.slug)}
-          className={clsx(
-            linkClass,
-            'text-ink-400 z-10 max-w-[8rem] truncate text-sm'
-          )}
-        >
-          {groupToDisplay.name}
-        </Link>
-      )}
-    </Row>
-  )
-}
 
 export function AuthorInfo(props: { contract: Contract }) {
   const { contract } = props

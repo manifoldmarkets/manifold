@@ -19,7 +19,7 @@ import { getDisplayProbability, getProbability } from 'common/calculate'
 import { useAnimatedNumber } from 'web/hooks/use-animated-number'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { animated } from '@react-spring/web'
-import { getTextColor } from 'web/components/bet/quick-bet'
+import { getTextColor } from 'web/components/contract/text-color'
 import { formatLargeNumber, formatPercent } from 'common/util/format'
 import { Tooltip } from 'web/components/widgets/tooltip'
 
