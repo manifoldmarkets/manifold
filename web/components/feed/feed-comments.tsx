@@ -441,6 +441,7 @@ export function DotMenu(props: {
           }
           setShow={setTipping}
           show={tipping}
+          groupId={comment.id}
           defaultMessage={`Tip for comment on ${
             contract.question
           } (${getCommentLink(

@@ -8,15 +8,22 @@ import { runTxn, TxnData } from 'shared/txn/run-txn'
 import { createManaPaymentNotification } from 'shared/create-notification'
 import * as crypto from 'crypto'
 import { createSupabaseClient } from 'shared/supabase/init'
+import { MAX_ID_LENGTH } from 'common/group'
 
 const bodySchema = z.object({
   amount: z.number().gt(0).finite(),
   toIds: z.array(z.string()),
   message: z.string(),
+  groupId: z.string().max(MAX_ID_LENGTH).optional(),
 })
 
 export const sendmana = authEndpoint(async (req, auth) => {
-  const { toIds, message, amount } = validate(bodySchema, req.body)
+  const {
+    toIds,
+    message,
+    amount,
+    groupId: passedGroupId,
+  } = validate(bodySchema, req.body)
   const fromId = auth.uid
   // Run as transaction to prevent race conditions.
   return await firestore.runTransaction(async (transaction) => {
@@ -45,7 +52,7 @@ export const sendmana = authEndpoint(async (req, auth) => {
       )
     }
 
-    const groupId = crypto.randomUUID()
+    const groupId = passedGroupId ? passedGroupId : crypto.randomUUID()
     await Promise.all(
       toIds.map(async (toId) => {
         const data = {
