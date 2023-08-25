@@ -25,6 +25,7 @@ import { ExpandingInput } from 'web/components/widgets/expanding-input'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import SquaresIcon from 'web/lib/icons/squares-icon'
 import { SEO } from 'web/components/SEO'
+import { useCanSendMana } from 'web/hooks/use-can-send-mana'
 
 export default function Payments() {
   const { payments, load } = useManaPayments()
@@ -108,7 +109,7 @@ export const PaymentsContent = (props: {
           toUser={
             forUser ? (forUser.id === user.id ? undefined : forUser) : undefined
           }
-          fromId={user.id}
+          fromUser={user}
           show={showModal}
           setShow={setShowModal}
         />
@@ -314,18 +315,19 @@ function PaymentsTable(props: {
 }
 
 const PaymentsModal = (props: {
-  fromId: string
+  fromUser: User
   toUser?: User
   show: boolean
   setShow: (show: boolean) => void
 }) => {
-  const { fromId, toUser, setShow, show } = props
+  const { fromUser, toUser, setShow, show } = props
   const [amount, setAmount] = useState<number | undefined>(10)
   const [message, setMessage] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [toUsers, setToUsers] = useState<UserSearchResult[]>([])
   const [removedToUser, setRemovedToUser] = useState(false)
+  const { canSend, message: cannotSendMessage } = useCanSendMana(fromUser)
   useEffect(() => {
     if (toUser) setToUsers([toUser])
   }, [toUser])
@@ -333,6 +335,9 @@ const PaymentsModal = (props: {
     <Modal open={show} setOpen={setShow}>
       <Col className={'bg-canvas-0 rounded-md p-4'}>
         <div className="my-2 text-xl">Send Mana</div>
+        <Row className={'text-red-500'}>
+          {!canSend ? cannotSendMessage : ''}
+        </Row>
         <Col className={'gap-3'}>
           <Row className={'items-center justify-between'}>
             <Col>
@@ -359,7 +364,7 @@ const PaymentsModal = (props: {
                 <FilterSelectUsers
                   setSelectedUsers={setToUsers}
                   selectedUsers={toUsers}
-                  ignoreUserIds={[fromId]}
+                  ignoreUserIds={[fromUser.id]}
                 />
               )}
             </Col>
@@ -413,7 +418,9 @@ const PaymentsModal = (props: {
                 }
                 setLoading(false)
               }}
-              disabled={loading || !amount || amount < 10 || !toUsers.length}
+              disabled={
+                loading || !amount || amount < 10 || !toUsers.length || !canSend
+              }
             >
               Send
             </Button>

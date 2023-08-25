@@ -2,11 +2,12 @@ import * as admin from 'firebase-admin'
 import { z } from 'zod'
 
 import { User } from 'common/user'
-import { canSendMana } from 'common/manalink'
+import { canSendMana, SEND_MANA_REQ } from 'common/manalink'
 import { APIError, authEndpoint, validate } from './helpers'
 import { runTxn, TxnData } from 'shared/txn/run-txn'
 import { createManaPaymentNotification } from 'shared/create-notification'
 import * as crypto from 'crypto'
+import { createSupabaseClient } from 'shared/supabase/init'
 
 const bodySchema = z.object({
   amount: z.number().gt(0).finite(),
@@ -27,9 +28,9 @@ export const sendmana = authEndpoint(async (req, auth) => {
     }
     const fromUser = fromSnap.data() as User
 
-    const canCreate = await canSendMana(fromUser)
+    const canCreate = await canSendMana(fromUser, createSupabaseClient())
     if (!canCreate) {
-      throw new APIError(403, `You must have at least 1000 mana.`)
+      throw new APIError(403, SEND_MANA_REQ)
     }
 
     if (toIds.length <= 0) {
@@ -38,7 +39,9 @@ export const sendmana = authEndpoint(async (req, auth) => {
     if (fromUser.balance < amount * toIds.length) {
       throw new APIError(
         403,
-        `Insufficient balance: ${fromUser.name} needed ${amount * toIds.length} but only had ${fromUser.balance} `
+        `Insufficient balance: ${fromUser.name} needed ${
+          amount * toIds.length
+        } but only had ${fromUser.balance} `
       )
     }
 
