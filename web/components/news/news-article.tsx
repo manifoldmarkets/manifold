@@ -20,14 +20,34 @@ export const NewsArticle = (props: {
   const date = Date.parse(published_time as any)
   return (
     <Link href={url} target="_blank" className="relative flex w-full flex-col">
+      <Col className=" px-4 py-2 sm:hidden sm:px-6">
+        <Row className="text-ink-500 w-full justify-between text-sm">
+          <div>{props.source_name ? props.source_name : 'News'}</div>
+          {published_time && (
+            <span>
+              published
+              {
+                <RelativeTimestamp
+                  time={date}
+                  shortened={true}
+                  className="text-ink-500"
+                />
+              }
+            </span>
+          )}
+        </Row>
+        <div className="line-clamp-2 text-lg">{title}</div>
+        <Spacer h={1.5} />
+        <div className="line-clamp-3 text-sm">{description}</div>
+      </Col>
       <div className="relative">
         <img
-          className={clsx('h-50 m-0 object-cover')}
+          className={clsx('sm:h-50 h-42 m-0 object-cover')}
           src={urlToImage}
           alt={title}
         />
 
-        <Col className="bg-canvas-0 absolute bottom-0 px-4 py-2 opacity-90 sm:px-6">
+        <Col className="bg-canvas-0 absolute top-0 hidden w-full px-4 py-2 opacity-90 sm:block sm:px-6">
           <Row className="text-ink-500 w-full justify-between text-sm">
             <div>{props.source_name ? props.source_name : 'News'}</div>
             {published_time && (
