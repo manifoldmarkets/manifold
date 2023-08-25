@@ -66,7 +66,7 @@ select groups.*,
                       WHEN EXISTS (SELECT 1
                                    FROM followed_groups
                                    WHERE followed_groups.group_id = groups.id) THEN 1
-                      ELSE 0.75 END)
+                      ELSE 0.5 END)
            
            AS modified_importance_score
 from groups
