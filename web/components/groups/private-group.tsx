@@ -53,8 +53,8 @@ export function PrivateGroupPage(props: { slugs: string[] }) {
         <div className="text-primary-500 text-center text-lg">
           {`Private groups are being deprecated :(`}
         </div>
-        You no longer have access to this page, but don't worry! You still have
-        access to the content within this group through search.
+        You no longer have access to this page, but don't worry! You can still
+        see the content within this group through search and your portfolio.
       </Col>
     </Col>
   )
