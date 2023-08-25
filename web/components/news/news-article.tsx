@@ -3,8 +3,6 @@ import Link from 'next/link'
 import clsx from 'clsx'
 import { Row } from '../layout/row'
 import { RelativeTimestamp } from '../relative-timestamp'
-import dayjs from 'dayjs'
-import { BiNews } from 'react-icons/bi'
 import { Spacer } from '../layout/spacer'
 
 export const NewsArticle = (props: {
