@@ -45,7 +45,7 @@ function GridComponent(attrs: any) {
     <div className=" not-prose font-normal">
       {loaded ? (
         <ContractsGrid
-          contracts={filterDefined(contracts)}
+          contracts={contracts}
           breakpointColumns={{ default: 2, 650: 1 }}
         />
       ) : (
