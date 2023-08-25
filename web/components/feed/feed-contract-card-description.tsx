@@ -21,7 +21,7 @@ export default function FeedContractCardDescription(props: {
     }
   }, [contract.description])
   return (
-    <div className="relative">
+    <div className="relative text-sm">
       <div
         ref={contentRef}
         className={`overflow-hidden`}
