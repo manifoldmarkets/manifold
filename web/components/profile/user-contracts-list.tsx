@@ -11,7 +11,7 @@ import {
   getTotalContractsCreated,
 } from 'web/lib/supabase/users'
 import { db } from 'web/lib/supabase/db'
-import { SupabaseContractSearch } from '../supabase-search'
+import { SupabaseContractSearch } from '../contracts-search'
 import { useUser } from 'web/hooks/use-user'
 import { CreateQuestionButton } from '../buttons/create-question-button'
 import { useRouter } from 'next/router'

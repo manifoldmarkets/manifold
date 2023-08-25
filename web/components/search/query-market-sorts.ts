@@ -1,5 +1,5 @@
 import { searchInAny } from 'common/util/parse'
-import { SORTS } from '../supabase-search'
+import { SORTS } from '../contracts-search'
 
 export const searchMarketSorts = (query: string) => {
   if (query.length < 2) {

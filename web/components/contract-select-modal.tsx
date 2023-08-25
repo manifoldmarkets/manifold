@@ -9,7 +9,7 @@ import { Row } from './layout/row'
 import {
   SupabaseAdditionalFilter,
   SupabaseContractSearch,
-} from './supabase-search'
+} from './contracts-search'
 import { LoadingIndicator } from './widgets/loading-indicator'
 
 export function SelectMarketsModal(props: {
