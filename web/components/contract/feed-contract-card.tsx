@@ -79,8 +79,6 @@ export function FeedContractCard(props: {
   const path = contractPath(contract)
   const metrics = useSavedContractMetrics(contract)
 
-  const showAvatar = !children && !bottomChildren
-
   const router = useRouter()
 
   // Note: if we ever make cards taller than viewport, we'll need to pass a lower threshold to the useIsVisible hook
@@ -122,26 +120,24 @@ export function FeedContractCard(props: {
       ref={ref}
     >
       <Col className={'w-full flex-col gap-1.5 pt-2'}>
-        {showAvatar && (
-          <Row className="w-full justify-between">
-            <Row className={'text-ink-500 items-center gap-1 text-sm'}>
-              <Avatar
-                size={'xs'}
-                className={'mr-0.5'}
-                avatarUrl={creatorAvatarUrl}
-                username={creatorUsername}
-              />
-              <UserLink
-                name={contract.creatorName}
-                username={creatorUsername}
-                className={clsx(
-                  'w-full max-w-[10rem] text-ellipsis sm:max-w-[12rem]'
-                )}
-              />
-            </Row>
-            <CardReason item={item} contract={contract} />
+        <Row className="w-full justify-between">
+          <Row className={'text-ink-500 items-center gap-1 text-sm'}>
+            <Avatar
+              size={'xs'}
+              className={'mr-0.5'}
+              avatarUrl={creatorAvatarUrl}
+              username={creatorUsername}
+            />
+            <UserLink
+              name={contract.creatorName}
+              username={creatorUsername}
+              className={clsx(
+                'w-full max-w-[10rem] text-ellipsis sm:max-w-[12rem]'
+              )}
+            />
           </Row>
-        )}
+          <CardReason item={item} contract={contract} />
+        </Row>
         <div
           className={clsx(
             'flex flex-col gap-1',
@@ -208,6 +204,7 @@ export function FeedContractCard(props: {
           item={item}
           user={user}
           hide={hide}
+          underline={!!bottomChildren}
         />
         {bottomChildren}
       </Col>
