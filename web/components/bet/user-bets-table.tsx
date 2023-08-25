@@ -36,6 +36,7 @@ import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { getUserContractsMetricsWithContracts } from 'web/lib/firebase/api'
 import { useEvent } from 'web/hooks/use-event'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import { usePersistentQueryState } from 'web/hooks/use-persistent-query-state'
 
 type BetSort =
   | 'newest'
@@ -109,7 +110,7 @@ export function UserBetsTable(props: { user: User }) {
   )
   const [page, setPage] = usePersistentInMemoryState(0, 'portfolio-page')
 
-  const [query, setQuery] = useState('')
+  const [query, setQuery] = usePersistentQueryState('b', '')
 
   const onSetFilter = (f: BetFilter) => {
     setFilter(f)
