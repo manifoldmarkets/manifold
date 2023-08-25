@@ -493,7 +493,7 @@ function SupabaseContractSearchControls(props: {
     if (deselecting) {
       setState({ category: undefined })
     } else {
-      setState({ category: newCategory })
+      setState({ q: '', category: newCategory })
       track('select search category', { category: newCategory })
     }
   }
