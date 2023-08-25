@@ -1,7 +1,6 @@
 import { mergeAttributes, Node } from '@tiptap/core'
 import { ContractsGrid } from '../contract/contracts-grid'
 
-import { filterDefined } from 'common/util/array'
 import { useContracts } from 'web/hooks/use-contract-supabase'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 
