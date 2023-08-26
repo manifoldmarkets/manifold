@@ -54,7 +54,7 @@ export const EditableQuestionTitle = (props: {
       </IconButton>
     </div>
   ) : (
-    <span className="text-xl font-medium sm:text-2xl group">
+    <span className="group text-xl font-medium sm:text-2xl">
       <Linkify className="" text={contract.question} />
       {canEdit && (
         <button
