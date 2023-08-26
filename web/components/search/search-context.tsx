@@ -7,6 +7,7 @@ import {
 } from 'react'
 import { OmniSearch } from './omni-search'
 import { Modal } from '../layout/modal'
+import { FullscreenConfetti } from '../widgets/fullscreen-confetti'
 
 // context for opening modal
 
@@ -20,6 +21,7 @@ const SearchCtx = createContext<SearchContextInterface | null>(null)
 export const SearchProvider = (props: { children: ReactNode }) => {
   const { children } = props
   const [open, setOpen] = useState(false)
+  const [confettiCount, setConfettiCount] = useState(0)
   const [query, setQuery] = useState('')
 
   useEffect(() => {
@@ -27,6 +29,11 @@ export const SearchProvider = (props: { children: ReactNode }) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         setOpen(true)
         e.preventDefault()
+      }
+      if (e.altKey && (e.key === 'c' || e.code === 'KeyC')) {
+        setConfettiCount((count) => count + 1)
+        e.preventDefault()
+        e.stopPropagation()
       }
     }
 
@@ -36,6 +43,9 @@ export const SearchProvider = (props: { children: ReactNode }) => {
 
   return (
     <SearchCtx.Provider value={{ open, setOpen }}>
+      {Array.from({ length: confettiCount }).map((_, i) => (
+        <FullscreenConfetti key={i} />
+      ))}
       <Modal
         open={open}
         setOpen={setOpen}
