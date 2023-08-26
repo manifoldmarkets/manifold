@@ -166,8 +166,7 @@ export function ContractTabs(props: {
   )
 }
 
-const DEFAULT_PARENT_COMMENTS_TO_RENDER = 15
-const LOAD_MORE = 20
+const LOAD_MORE = 10
 export const CommentsTabContent = memo(function CommentsTabContent(props: {
   contract: Contract
   comments: ContractComment[]
@@ -192,7 +191,7 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
   )
 
   const [parentCommentsToRender, setParentCommentsToRender] = useState(
-    DEFAULT_PARENT_COMMENTS_TO_RENDER
+    props.comments.filter((c) => !c.replyToCommentId).length
   )
 
   const user = useUser()
@@ -417,9 +416,10 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
   ]
 
   const totalItems = totalBets + visibleLps.length
+  const totalLoadedItems = bets.length + visibleLps.length
 
   const limit = (items.length - (page + 1) * ITEMS_PER_PAGE) * -1
-  const shouldLoadMore = limit > 0 && bets.length < totalItems
+  const shouldLoadMore = limit > 0 && totalLoadedItems < totalItems
   const oldestBetTime = oldestBet?.createdTime ?? contract.createdTime
   useEffect(() => {
     if (!shouldLoadMore) return

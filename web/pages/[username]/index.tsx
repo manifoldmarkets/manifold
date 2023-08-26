@@ -189,9 +189,7 @@ function UserProfile(props: {
         description={user.bio ?? ''}
         url={`/${user.username}`}
       />
-      {showConfetti && (
-        <FullscreenConfetti recycle={false} numberOfPieces={300} />
-      )}
+      {showConfetti && <FullscreenConfetti />}
 
       <Col className="mx-4 mt-1">
         <Row className="flex-wrap justify-between gap-2 py-1">

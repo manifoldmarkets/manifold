@@ -41,6 +41,7 @@ import { AnswersResolvePanel } from '../answers/answer-resolve-panel'
 import { CancelLabel } from '../outcome-label'
 import { PollPanel } from '../poll/poll-panel'
 import { CreateAnswerPanel } from '../answers/create-answer-panel'
+import clsx from 'clsx'
 
 export const ContractOverview = memo(
   (props: {
@@ -112,6 +113,8 @@ const BinaryOverview = (props: {
   const { contract, betPoints } = props
   const user = useUser()
 
+  const [showZoomer, setShowZoomer] = useState(false)
+
   const { viewScale, currentTimePeriod, setTimePeriod, start, maxRange } =
     useTimePicker(contract)
 
@@ -121,13 +124,21 @@ const BinaryOverview = (props: {
         <BinaryResolutionOrChance contract={contract} />
         <TimeRangePicker
           currentTimePeriod={currentTimePeriod}
-          setCurrentTimePeriod={setTimePeriod}
+          setCurrentTimePeriod={(p) => {
+            setTimePeriod(p)
+            setShowZoomer(true)
+          }}
           maxRange={maxRange}
           color="green"
         />
       </Row>
 
-      <SizedContainer className="mb-8 h-[150px] w-full pb-3 pr-10 sm:h-[250px]">
+      <SizedContainer
+        className={clsx(
+          showZoomer && 'mb-8',
+          'h-[150px] w-full pb-3 pr-10 sm:h-[250px]'
+        )}
+      >
         {(w, h) => (
           <BinaryContractChart
             width={w}
@@ -136,7 +147,7 @@ const BinaryOverview = (props: {
             viewScaleProps={viewScale}
             controlledStart={start}
             contract={contract}
-            showZoomer
+            showZoomer={showZoomer}
           />
         )}
       </SizedContainer>

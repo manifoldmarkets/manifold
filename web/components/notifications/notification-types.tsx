@@ -571,7 +571,7 @@ export function MarketResolvedNotification(props: {
       <>
         Your {formatMoney(userInvestment)} won{' '}
         <span className="text-teal-600">+{formatMoney(profit)}</span> in profit
-        {comparison ? `, and ${comparison}` : ``}
+        {comparison ? `, and ${comparison}` : ``} 🎉🎉🎉
       </>
     ) : userInvestment > 0 ? (
       <>
@@ -654,32 +654,27 @@ export function MarketResolvedNotification(props: {
       </>
     )
 
-  const confettiBg = profitable ? (
-    <div
-      className={clsx(
-        'bg-confetti-static pointer-events-none absolute inset-0 opacity-50'
-      )}
-    />
-  ) : undefined
-
   return (
     <NotificationFrame
       notification={notification}
       isChildOfGroup={isChildOfGroup}
       highlighted={highlighted}
       setHighlighted={setHighlighted}
-      subtitle={subtitle}
+      subtitle={
+        <>
+          <div className="mb-1">{subtitle}</div>
+          <StarDisplay rating={0} />
+        </>
+      }
       icon={
         <AvatarNotificationIcon
           notification={notification}
           symbol={sourceText === 'CANCEL' ? '🚫' : profitable ? '💰' : '☑️'}
         />
       }
-      customBackground={confettiBg}
       link={getSourceUrl(notification)}
     >
       {content}
-      <StarDisplay rating={0} />
     </NotificationFrame>
   )
 }

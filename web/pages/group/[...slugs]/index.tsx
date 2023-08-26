@@ -29,7 +29,7 @@ import {
 } from 'web/components/groups/private-group'
 import { Page } from 'web/components/layout/page'
 import { ControlledTabs } from 'web/components/layout/tabs'
-import { SupabaseContractSearch } from 'web/components/supabase-search'
+import { SupabaseContractSearch } from 'web/components/contracts-search'
 import { useAdmin } from 'web/hooks/use-admin'
 import { useGroupFromSlug, useRealtimeRole } from 'web/hooks/use-group-supabase'
 import { useIntersection } from 'web/hooks/use-intersection'
@@ -42,7 +42,6 @@ import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
 import { useUserById } from 'web/hooks/use-user-supabase'
 import { EditableGroupTitle } from 'web/components/groups/editable-group-name'
 
-export const groupButtonClass = 'text-ink-700 hover:text-ink-800'
 const MAX_LEADERBOARD_SIZE = 50
 export const MEMBER_INDEX = 0
 export const MEMBER_INVITE_INDEX = 1
@@ -331,10 +330,6 @@ export function GroupPageContent(props: { groupParams?: GroupParams }) {
                   }}
                   persistPrefix={`group-${group.slug}`}
                   includeProbSorts
-                  fromGroupProps={{
-                    group: group,
-                    userRole: userRole ?? null,
-                  }}
                   useUrlParams
                 />
               ),

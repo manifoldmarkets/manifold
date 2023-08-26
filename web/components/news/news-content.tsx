@@ -533,23 +533,28 @@ const Election2024 = createNewsDashboardTab(
   'US Elections',
   '2024 US Election Updates',
   [
-    { slug: 'will-donald-trump-be-convicted-of-a-99e01f724b3f' },
     {
-      url: 'https://www.theguardian.com/us-news/2023/jul/03/trump-hillary-clinton-president-under-indictment-comments',
+      content: (
+        <DashboardNewsItem
+          className="mb-4"
+          urlToImage="https://www.washingtonpost.com/wp-apps/imrs.php?src=https://arc-anglerfish-washpost-prod-washpost.s3.amazonaws.com/public/B6GOFP7PS5F67I6BYHTRIX3CME.jpg&w=700&h=467"
+          url="https://www.washingtonpost.com/politics/interactive/2023/poll-republican-presidential-debate/"
+          description={`A Washington Post/FiveThirtyEight/Ipsos poll survyed likely Republican voters before and after the debate`}
+        />
+      ),
     },
+    { slug: 'will-the-august-23-2023-republican' },
+    { slug: 'will-vivek-ramaswamys-poll-numbers' },
+    { slug: 'will-vivek-ramaswamy-win-the-septem' },
+    { slug: 'will-vivek-ramaswamy-win-the-august' },
+    { slug: 'will-donald-trump-be-convicted-of-a-99e01f724b3f' },
     { slug: 'who-will-be-the-republican-presiden-7bf11c066154' },
     { slug: 'who-will-win-the-us-2024-democratic' },
     { slug: 'who-will-win-2024-us-presidential-e' },
     { slug: 'will-a-democrat-win-the-2024-us-pre' },
-    {
-      url: 'https://news.yahoo.com/hurd-says-won-t-support-150448106.html',
-    },
     { slug: 'will-donald-trump-participate-in-th' },
     { slug: 'will-ai-be-a-major-topic-during-the' },
-    {
-      url: 'https://www.thedailybeast.com/rfk-jr-presidential-campaign-boosted-by-dollar10-million-super-pac-contributions',
-    },
-    { slug: 'will-rfk-jr-break-his-google-trends' },
+
     { slug: 'will-a-third-party-candidate-receiv' },
   ]
 )
@@ -755,9 +760,12 @@ const Trump = createNewsDashboardTab('Trump', 'Trump indicted', [
     ),
   },
   { slug: 'when-will-trump-be-imprisoned' },
+
   { slug: 'will-donald-trump-be-the-republican' },
   { slug: 'will-a-trump-mugshot-be-available-b' },
   { slug: 'will-one-of-the-18-indicted-coconsp' },
+  { slug: 'will-donald-trumps-height-be-62-or' },
+  { slug: 'will-donald-trump-weigh-280-pounds' },
   { slug: 'will-trump-be-indicted-by-three-or' },
   { slug: 'who-will-be-the-republican-presiden-7bf11c066154' },
   { slug: 'is-trump-more-likely-to-spend-1-nig' },
@@ -816,16 +824,31 @@ const CancerPill = createNewsDashboardTab(
   ]
 )
 
+const PlaneCrash = createNewsDashboardTab(
+  'Plane Crash',
+  'Prigozhin feared dead on plane crash',
+  [
+    { slug: 'will-yevgeny-prigozhin-be-killed-du' },
+    {
+      slug: 'https://www.reuters.com/world/europe/us-believes-missile-inside-russia-likely-shot-down-prigozhins-presumed-plane-us-2023-08-24/',
+    },
+    { url: 'https://www.bbc.com/news/live/world-66599774' },
+    { slug: 'what-will-be-the-cause-of-the-prigo' },
+    { slug: 'conditional-on-prigozhin-plane-cras' },
+    { slug: 'will-putin-imply-he-was-directly-re' },
+    { slug: 'prigozhin-dies-in-a-plane-crash' },
+    { slug: 'will-prigozhin-outlast-a-head-of-ca' },
+  ]
+)
+
 export const newsContent = [
+  PlaneCrash,
   Trump,
   STPSuper,
+  Election2024,
   ElonVersusZuck,
   UkraineWar,
-  CancerPill,
   NigerCoup,
   UFOs,
   XCom,
-  Election2024,
-  Threads,
-  OpenAI,
 ]

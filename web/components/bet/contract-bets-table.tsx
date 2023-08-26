@@ -100,7 +100,7 @@ export function ContractBetsTable(props: {
 
       {!hideRedemptionAndLoanMessages && !isResolved && amountLoaned > 0 && (
         <>
-          <div className="text-ink-500 pl-0 text-sm">
+          <div className="text-ink-500 pl-2 text-sm">
             {isYourBets ? (
               <>You currently have a loan of {formatMoney(amountLoaned)}.</>
             ) : (

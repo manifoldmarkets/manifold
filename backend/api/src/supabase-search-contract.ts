@@ -65,35 +65,32 @@ export const supabasesearchcontracts = MaybeAuthedEndpoint(
       offset,
       limit,
       fuzzy,
-      groupId,
+      groupId: trueGroupId,
       creatorId,
     } = validate(bodySchema, req.body)
-    const pg = createSupabaseDirectClient()
-    const hasGroupAccess = groupId
-      ? await pg
-          .one('select * from check_group_accessibility($1,$2)', [
+
+    const isForYou = trueGroupId === 'for-you'
+    const groupId = trueGroupId && !isForYou ? trueGroupId : undefined
+
+    const searchMarketSQL =
+      isForYou && !term && sort === 'score' && auth?.uid
+        ? getForYouSQL(auth.uid, filter, contractType, limit, offset)
+        : getSearchContractSQL({
+            term,
+            filter,
+            sort,
+            contractType,
+            offset,
+            limit,
+            fuzzy,
             groupId,
-            auth?.uid ?? null,
-          ])
-          .then((r) => {
-            return r.check_group_accessibility
+            creatorId,
+            uid: auth?.uid,
+            isForYou,
+            hasGroupAccess: await hasGroupAccess(groupId, auth?.uid),
           })
-      : undefined
 
-    const searchMarketSQL = getSearchContractSQL({
-      term,
-      filter,
-      sort,
-      contractType,
-      offset,
-      limit,
-      fuzzy,
-      groupId,
-      creatorId,
-      uid: auth?.uid,
-      hasGroupAccess,
-    })
-
+    const pg = createSupabaseDirectClient()
     const contracts = await pg.map(
       searchMarketSQL,
       [term],
@@ -103,6 +100,88 @@ export const supabasesearchcontracts = MaybeAuthedEndpoint(
     return (contracts ?? []) as unknown as Json
   }
 )
+
+function getForYouSQL(
+  uid: string,
+  filter: string,
+  contractType: string,
+  limit: number,
+  offset: number
+) {
+  const whereClause = renderSql(
+    getSearchContractWhereSQL(
+      filter,
+      '',
+      contractType,
+      undefined,
+      uid,
+      undefined,
+      false,
+      true
+    )
+  )
+
+  return `with 
+  user_interest AS (SELECT interest_embedding 
+                       FROM user_embeddings
+                       WHERE user_id = '${uid}'
+                       LIMIT 1),
+user_disinterests AS (
+  SELECT contract_id
+  FROM user_disinterests
+  WHERE user_id = '${uid}'
+),
+
+user_follows AS (SELECT follow_id
+                      FROM user_follows
+                      WHERE user_id = '${uid}'),
+
+groups AS (
+  SELECT group_id
+  FROM group_members
+  WHERE member_id = '${uid}'
+)
+
+select data, contract_id,
+      importance_score
+           * ( 
+               5 * ((1 - (contract_embeddings.embedding <=> user_interest.interest_embedding)) - 0.8)
+               + (CASE WHEN user_follows.follow_id IS NOT NULL THEN 0.25 ELSE 0 END)
+                + (CASE WHEN  EXISTS (
+                    SELECT 1
+                    FROM group_contracts
+                    join groups on group_contracts.group_id = groups.group_id
+                    WHERE group_contracts.contract_id = contracts.id
+                  ) THEN 0.25 ELSE 0 END)
+           )
+           AS modified_importance_score
+from user_interest,
+     contracts
+         join contract_embeddings ON contracts.id = contract_embeddings.contract_id
+        LEFT JOIN user_follows ON contracts.creator_id = user_follows.follow_id
+    ${whereClause}
+  and importance_score > 0.2
+  AND NOT EXISTS (
+    SELECT 1
+    FROM user_disinterests
+    WHERE user_disinterests.contract_id = contracts.id
+  )
+ORDER BY modified_importance_score DESC
+LIMIT ${limit} OFFSET ${offset};`
+}
+
+const hasGroupAccess = async (groupId?: string, uid?: string) => {
+  const pg = createSupabaseDirectClient()
+  if (!groupId) return undefined
+  return await pg
+    .one('select * from check_group_accessibility($1,$2)', [
+      groupId,
+      uid ?? null,
+    ])
+    .then((r: any) => {
+      return r.check_group_accessibility
+    })
+}
 
 function getSearchContractSQL(contractInput: {
   term: string
@@ -116,6 +195,7 @@ function getSearchContractSQL(contractInput: {
   creatorId?: string
   uid?: string
   hasGroupAccess?: boolean
+  isForYou?: boolean
 }) {
   const {
     term,

@@ -5,6 +5,6 @@
   <Description>Search market questions on Manifold</Description>
   <InputEncoding>UTF-8</InputEncoding>
   <Image width="16" height="16" type="image/x-icon">https://manifold.markets/favicon.ico</Image>
-  <Url type="text/html" template="https://manifold.markets/search?s=relevance&amp;f=all&amp;q={searchTerms}"/>
+  <Url type="text/html" template="https://manifold.markets/questions?s=score&amp;f=all&amp;q={searchTerms}"/>
   <moz:SearchForm>https://manifold.markets</moz:SearchForm>
 </OpenSearchDescription>

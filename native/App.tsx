@@ -2,8 +2,7 @@ import { app, auth, ENV } from './init'
 import React, { useEffect, useRef, useState } from 'react'
 import WebView from 'react-native-webview'
 import 'expo-dev-client'
-import { EXTERNAL_REDIRECTS } from 'common/src/envs/constants'
-import * as Device from 'expo-device'
+import { EXTERNAL_REDIRECTS } from 'common/envs/constants'
 import * as Notifications from 'expo-notifications'
 import {
   Platform,
@@ -23,19 +22,16 @@ import * as WebBrowser from 'expo-web-browser'
 import * as LinkingManager from 'react-native/Libraries/Linking/NativeLinkingManager'
 import * as Linking from 'expo-linking'
 import { Subscription } from 'expo-modules-core'
-import { setFirebaseUserViaJson } from 'common/src/firebase-auth'
-import * as Sentry from 'sentry-expo'
+import { setFirebaseUserViaJson } from 'common/firebase-auth'
 import { StatusBar } from 'expo-status-bar'
-import { AuthPage } from 'components/auth-page'
 import { IosIapListener } from 'components/ios-iap-listener'
 import { withIAPContext } from 'react-native-iap'
-import { getSourceUrl, Notification } from 'common/src/notification'
-import { Splash } from 'components/splash'
+import { getSourceUrl, Notification } from 'common/notification'
 import {
   nativeToWebMessage,
   nativeToWebMessageType,
   webToNativeMessage,
-} from 'common/src/native-message'
+} from 'common/native-message'
 import {
   handleWebviewKilled,
   sharedWebViewProps,
@@ -45,14 +41,14 @@ import {
 import { ExportLogsButton, log } from 'components/logger'
 import { ReadexPro_400Regular, useFonts } from '@expo-google-fonts/readex-pro'
 import Constants from 'expo-constants'
-import { NativeShareData } from 'common/src/native-share-data'
+import { NativeShareData } from 'common/native-share-data'
 import { clearData, getData, storeData } from 'lib/auth'
 import { SplashAuth } from 'components/splash-auth'
 import { useIsConnected } from 'lib/use-is-connected'
 
 // NOTE: URIs other than manifold.markets and localhost:3000 won't work for API requests due to CORS
 // this means no supabase jwt, placing bets, creating markets, etc.
-// const baseUri = 'http://192.168.0.74:3000/'
+// const baseUri = 'http://192.168.1.154:3000/'
 const baseUri =
   ENV === 'DEV' ? 'https://dev.manifold.markets/' : 'https://manifold.markets/'
 const nativeQuery = `?nativePlatform=${Platform.OS}`
@@ -66,7 +62,8 @@ const App = () => {
   // This tracks if the webview has loaded its first page
   const [hasLoadedWebView, setHasLoadedWebView] = useState(false)
   // This tracks if the app has its nativeMessageListener set up
-  const [listeningToNative, setListeningToNative] = useState(false)
+  // NOTE: After the webview is killed on android due to OOM, this will always be false, see: https://github.com/react-native-webview/react-native-webview/issues/2680
+  const listeningToNative = useRef(false)
   // Sometimes we're linked to a url but the webview has been killed by the OS. We save it here to reload it on reboot
   const [lastLinkInMemory, setLastLinkInMemory] = useState<string | undefined>()
 
@@ -80,6 +77,7 @@ const App = () => {
     if (!user) return
     log('Got user from storage:', user.email)
     setFbUser(user)
+    sendWebviewAuthInfo(user)
     setFirebaseUserViaJson(user, app)
       .catch((e) => {
         log('Error setting user:', e)
@@ -94,19 +92,17 @@ const App = () => {
   }, [])
 
   // Sends the saved user to the web client to make the log in process faster
-  useEffect(() => {
-    if (listeningToNative && fbUser) {
-      // We use a timeout because sometimes the auth persistence manager is still undefined on the client side
-      // Seems my iPhone 12 mini can regularly handle a shorter timeout
-      setTimeout(() => {
-        communicateWithWebview('nativeFbUser', fbUser)
-      }, 100)
-      // My older android phone needs a bit longer
-      setTimeout(() => {
-        communicateWithWebview('nativeFbUser', fbUser)
-      }, 250)
-    }
-  }, [listeningToNative, fbUser])
+  const sendWebviewAuthInfo = (user: FirebaseUser) => {
+    // We use a timeout because sometimes the auth persistence manager is still undefined on the client side
+    // Seems my iPhone 12 mini can regularly handle a shorter timeout
+    setTimeout(() => {
+      communicateWithWebview('nativeFbUser', user)
+    }, 100)
+    // My older android phone needs a bit longer
+    setTimeout(() => {
+      communicateWithWebview('nativeFbUser', user)
+    }, 500)
+  }
 
   // Url management
   const [urlToLoad, setUrlToLoad] = useState<string>(
@@ -122,15 +118,21 @@ const App = () => {
   const [theme, setTheme] = useState<'dark' | 'light'>('light')
 
   const setEndpointWithNativeQuery = (endpoint?: string) => {
-    const newUrl = baseUri + (endpoint ?? 'home') + nativeQuery
+    const newUrl =
+      baseUri +
+      (endpoint ?? 'home') +
+      nativeQuery +
+      `&rand=${Math.random().toString()}`
     log('Setting new url:', newUrl)
-    // React native doesn't come with Url, so we may want to use a library
     setUrlToLoad(newUrl)
   }
 
-  const [allowSystemBack, setAllowSystemBack] = useState(
-    sharedWebViewProps.allowsBackForwardNavigationGestures
-  )
+  const setUrlWithNativeQuery = (url: String) => {
+    const newUrl = url + nativeQuery + `&rand=${Math.random().toString()}`
+    log('Setting new url:', newUrl)
+    setUrlToLoad(newUrl)
+  }
+
   // IAP
   const [checkoutAmount, setCheckoutAmount] = useState<number | null>(null)
 
@@ -141,15 +143,14 @@ const App = () => {
       'Push notification tapped, has loaded webview:',
       hasLoadedWebView,
       ', is listening to native:',
-      listeningToNative
+      listeningToNative.current
     )
     log('webview.current:', webview.current)
     // Perhaps this isn't current if the webview is killed for memory collection? Not sure
     const notification = response.notification.request.content
       .data as Notification
 
-    // TODO: this should check if the webview is listening to native, not if it's loaded
-    if (hasLoadedWebView) {
+    if (hasLoadedWebView && listeningToNative.current) {
       communicateWithWebview(
         'notification',
         response.notification.request.content.data
@@ -159,13 +160,12 @@ const App = () => {
   }
 
   useEffect(() => {
-    if (lastLinkInMemory)
-      log(
-        'Running lastNotificationInMemory effect, has loaded webview:',
-        hasLoadedWebView,
-        'last link in memory:',
-        lastLinkInMemory
-      )
+    log(
+      'Running lastNotificationInMemory effect, has loaded webview:',
+      hasLoadedWebView,
+      'last link in memory:',
+      lastLinkInMemory
+    )
     // If there's a notification in memory and the webview has not loaded, set it as the url to load
     if (lastLinkInMemory && !hasLoadedWebView) {
       log(
@@ -205,9 +205,7 @@ const App = () => {
   useEffect(() => {
     Linking.getInitialURL().then((url) => {
       log('Initial url:', url, '- has loaded webview:', hasLoadedWebView)
-      if (url) {
-        setUrlToLoad(url)
-      }
+      if (url) setUrlWithNativeQuery(url)
     })
     BackHandler.addEventListener('hardwareBackPress', handleBackButtonPress)
     return () =>
@@ -230,7 +228,9 @@ const App = () => {
         `, and data: ${JSON.stringify(queryParams)}`
       )
       const url = path ? path : '/'
-      communicateWithWebview('link', { url })
+      if (hasLoadedWebView && listeningToNative.current)
+        communicateWithWebview('link', { url })
+      else setEndpointWithNativeQuery(url)
       setLastLinkInMemory(url)
       // If we don't clear the url, we'll reopen previously opened links
       const clearUrlCacheEvent = {
@@ -246,9 +246,6 @@ const App = () => {
       webview.current?.goBack()
       return true
     } catch (err) {
-      Sentry.Native.captureException(err, {
-        extra: { message: 'back button press' },
-      })
       log('[handleBackButtonPress] Error : ', err)
       return false
     }
@@ -281,8 +278,6 @@ const App = () => {
   }
 
   const registerForPushNotificationsAsync = async () => {
-    if (!Device.isDevice) return null
-
     try {
       const existingStatus = await getExistingPushNotificationStatus()
       let finalStatus = existingStatus
@@ -299,9 +294,6 @@ const App = () => {
       }
       return await getPushToken()
     } catch (e) {
-      Sentry.Native.captureException(e, {
-        extra: { message: 'error registering for push notifications' },
-      })
       log('Error registering for push notifications', e)
       return null
     }
@@ -359,15 +351,8 @@ const App = () => {
           await storeData('user', fbUser)
         }
       } catch (e) {
-        Sentry.Native.captureException(e, {
-          extra: { message: 'error parsing users from client' },
-        })
+        log('error signing in users', e)
       }
-    } else if (type == 'onPageVisit') {
-      if (!isIOS) return // Android doesn't use the swipe to go back
-      const { page } = payload
-      log('page:', page)
-      setAllowSystemBack(page !== 'swipe')
     } else if (type === 'share') {
       const { url, title, message } = payload as NativeShareData
       log('Sharing:', message, url, title)
@@ -385,7 +370,8 @@ const App = () => {
       log('[Web Console]', ...args)
     } else if (type === 'startedListening') {
       log('Client started listening')
-      setListeningToNative(true)
+      listeningToNative.current = true
+      if (fbUser) sendWebviewAuthInfo(fbUser)
     } else {
       log('Unhandled message from web type: ', type)
       log('Unhandled message from web data: ', data)
@@ -397,16 +383,10 @@ const App = () => {
       await auth.signOut()
     } catch (err) {
       log(errorMessage, err)
-      Sentry.Native.captureException(err, {
-        extra: { message: errorMessage },
-      })
     }
     setFbUser(null)
     await clearData('user').catch((err) => {
       log('Error clearing user data', err)
-      Sentry.Native.captureException(err, {
-        extra: { message: 'error clearing user data' },
-      })
     })
   }
 
@@ -414,7 +394,12 @@ const App = () => {
     type: nativeToWebMessageType,
     data: object
   ) => {
-    log('Sending message to webview:', type, 'is listening:', listeningToNative)
+    log(
+      'Sending message to webview:',
+      type,
+      'is listening:',
+      listeningToNative.current
+    )
     webview.current?.postMessage(
       JSON.stringify({
         type,
@@ -425,12 +410,10 @@ const App = () => {
 
   const resetWebView = () => {
     setHasLoadedWebView(false)
-    setListeningToNative(false)
+    listeningToNative.current = false
     setEndpointWithNativeQuery()
-    setTimeout(() => {
-      log('Reloading webview, webview.current:', webview.current)
-      webview.current?.reload()
-    }, 100)
+    log('Reloading webview, webview.current:', webview.current)
+    webview.current?.reload()
   }
 
   const isConnected = useIsConnected()
@@ -460,9 +443,8 @@ const App = () => {
     ) {
       webview.current?.stopLoading()
       WebBrowser.openBrowserAsync(url)
-      return false
+      return
     }
-    return true
   }
 
   return (
@@ -476,7 +458,7 @@ const App = () => {
         fbUser={fbUser}
         isConnected={isConnected}
       />
-      {Platform.OS === 'ios' && Device.isDevice && fullyLoaded && (
+      {Platform.OS === 'ios' && fullyLoaded && (
         <IosIapListener
           checkoutAmount={checkoutAmount}
           setCheckoutAmount={setCheckoutAmount}
@@ -494,24 +476,17 @@ const App = () => {
         <View style={[styles.container, { position: 'relative' }]}>
           <WebView
             {...sharedWebViewProps}
-            allowsBackForwardNavigationGestures={allowSystemBack}
             style={styles.webView}
             // Load start and end is for whole website loading, not navigations within manifold
             onLoadEnd={() => {
-              log('WebView onLoadEnd')
+              log('WebView onLoadEnd for url:', urlToLoad)
               setHasLoadedWebView(true)
             }}
             source={{ uri: urlToLoad }}
             ref={webview}
             onError={(e) => handleWebviewError(e, resetWebView)}
             renderError={(e) => handleRenderError(e, width, height)}
-            onShouldStartLoadWithRequest={(r) =>
-              r.mainDocumentURL ? handleExternalLink(r.mainDocumentURL) : true
-            }
-            // On navigation state change changes on every url change
-            onNavigationStateChange={(navState) =>
-              handleExternalLink(navState.url)
-            }
+            onOpenWindow={(e) => handleExternalLink(e.nativeEvent.targetUrl)}
             onRenderProcessGone={(e) => handleWebviewKilled(e, resetWebView)}
             onContentProcessDidTerminate={(e) =>
               handleWebviewKilled(e, resetWebView)

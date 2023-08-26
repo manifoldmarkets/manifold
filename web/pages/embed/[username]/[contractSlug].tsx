@@ -8,7 +8,6 @@ import Image from 'next/image'
 import { useRouter } from 'next/router'
 import { useEffect } from 'react'
 import { NoSEO } from 'web/components/NoSEO'
-import { ContractCardAnswers } from 'web/components/bet/quick-bet'
 import { BinaryContractChart } from 'web/components/charts/contract/binary'
 import { NumericContractChart } from 'web/components/charts/contract/numeric'
 import { PseudoNumericContractChart } from 'web/components/charts/contract/pseudo-numeric'
@@ -21,6 +20,7 @@ import {
   PseudoNumericResolutionOrExpectation,
   StonkPrice,
 } from 'web/components/contract/contract-price'
+import { ContractSEO } from 'web/components/contract/contract-seo'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { SizedContainer } from 'web/components/sized-container'
@@ -30,9 +30,9 @@ import { useNumContractComments } from 'web/hooks/use-comments-supabase'
 import { track } from 'web/lib/service/analytics'
 import { getBetFields } from 'web/lib/supabase/bets'
 import { db } from 'web/lib/supabase/db'
-import { ContractSEO } from 'web/pages/[username]/[contractSlug]'
 import Custom404 from '../../404'
 import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
+import { AnswersPanel } from 'web/components/answers/answers-panel'
 
 type Points = HistoryPoint<any>[]
 
@@ -142,11 +142,13 @@ const ContractChart = (props: {
     case 'FREE_RESPONSE':
     case 'MULTIPLE_CHOICE':
       return (
-        <ContractCardAnswers
-          contract={contract}
-          numAnswersFR={numBars(props.height)}
-          className="isolate h-full justify-center"
-        />
+        <div className="flex h-full flex-col justify-center">
+          <AnswersPanel
+            contract={contract}
+            maxAnswers={numBars(props.height)}
+            linkToContract
+          />
+        </div>
       )
 
     case 'NUMERIC':

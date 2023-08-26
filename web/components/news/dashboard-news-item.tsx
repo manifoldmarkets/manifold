@@ -5,7 +5,7 @@ import { track } from 'web/lib/service/analytics'
 import { Col } from 'web/components/layout/col'
 
 export const DashboardNewsItem = (props: {
-  title: string
+  title?: string
   urlToImage?: string
   image?: string
   url: string

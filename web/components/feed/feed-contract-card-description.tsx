@@ -5,6 +5,7 @@ import { ArrowRightIcon } from '@heroicons/react/solid'
 import { Row } from '../layout/row'
 import { Col } from '../layout/col'
 import { useEffectCheckEquality } from 'web/hooks/use-effect-check-equality'
+import { Spacer } from '../layout/spacer'
 export const MAX_HEIGHT = 250
 
 export default function FeedContractCardDescription(props: {
@@ -20,12 +21,13 @@ export default function FeedContractCardDescription(props: {
     }
   }, [contract.description])
   return (
-    <div className="relative">
+    <div className="relative text-sm">
       <div
         ref={contentRef}
         className={`overflow-hidden`}
         style={{ maxHeight: `${MAX_HEIGHT}px` }}
       >
+        <Spacer h={2} className="hidden sm:inline-block" />
         <Content content={contract.description} />
       </div>
       {isOverflowing && (

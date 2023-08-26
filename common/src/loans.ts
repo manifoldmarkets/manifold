@@ -1,6 +1,6 @@
 import { Dictionary, sumBy, minBy } from 'lodash'
 import { Bet } from './bet'
-import { getInvested } from './calculate'
+import { getMinimalInvested } from './calculate'
 import {
   Contract,
   CPMMContract,
@@ -61,7 +61,7 @@ const getCpmmContractLoanUpdate = (
   contract: CPMMContract | CPMMMultiContract,
   bets: Bet[]
 ) => {
-  const invested = getInvested(contract, bets)
+  const invested = getMinimalInvested(contract, bets)
   const loanAmount = sumBy(bets, (bet) => bet.loanAmount ?? 0)
   const oldestBet = minBy(bets, (bet) => bet.createdTime)
 

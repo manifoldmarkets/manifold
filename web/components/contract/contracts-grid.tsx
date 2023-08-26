@@ -1,43 +1,19 @@
-import clsx from 'clsx'
 import Masonry from 'react-masonry-css'
 import { Contract } from 'web/lib/firebase/contracts'
 import { Col } from '../layout/col'
-import { ContractCard, ContractMetricsFooter } from './contract-card'
 import { ShowTime } from './contract-details'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { LoadMoreUntilNotVisible } from '../widgets/visibility-observer'
-import { Group } from 'common/group'
-import { groupRoleType } from '../groups/group-member-modal'
+import { FeedContractCard } from './feed-contract-card'
 
 export function ContractsGrid(props: {
   contracts: Contract[] | undefined
   loadMore?: () => Promise<boolean>
   showTime?: ShowTime
-  onContractClick?: (contract: Contract) => void
-  cardUIOptions?: {
-    hideQuickBet?: boolean
-    hideGroupLink?: boolean
-    noLinkAvatar?: boolean
-  }
-  highlightContractIds?: string[]
   trackingPostfix?: string
   breakpointColumns?: { [key: string]: number }
-  fromGroupProps?: {
-    group: Group
-    userRole: groupRoleType | null
-  }
 }) {
-  const {
-    contracts,
-    showTime,
-    loadMore,
-    onContractClick,
-    cardUIOptions,
-    highlightContractIds,
-    trackingPostfix,
-    fromGroupProps,
-  } = props
-  const { hideQuickBet, hideGroupLink, noLinkAvatar } = cardUIOptions || {}
+  const { contracts, loadMore, trackingPostfix } = props
   if (contracts === undefined) {
     return <LoadingIndicator />
   }
@@ -52,31 +28,15 @@ export function ContractsGrid(props: {
         // Show only 1 column on tailwind's md breakpoint (768px)
         breakpointCols={props.breakpointColumns ?? { default: 2, 768: 1 }}
         className="-ml-4 flex w-auto"
-        columnClassName="pl-4 bg-clip-padding"
+        columnClassName="pl-4 bg-clip-padding space-y-4"
       >
         {contracts.map((contract) => (
-          <ContractCard
+          <FeedContractCard
             contract={contract}
             key={contract.id}
-            showTime={showTime}
-            onClick={
-              onContractClick ? () => onContractClick(contract) : undefined
-            }
-            noLinkAvatar={noLinkAvatar}
-            hideQuickBet={hideQuickBet}
-            hideGroupLink={hideGroupLink}
             trackingPostfix={trackingPostfix}
-            className={clsx(
-              'mb-4 transition-all',
-              highlightContractIds?.includes(contract.id) &&
-                'via-ink-0to-ink-0bg-gradient-to-b from-primary-50 outline-primary-400 outline outline-2'
-            )}
-            fromGroupProps={fromGroupProps}
-          >
-            {contract.mechanism === 'cpmm-1' ? (
-              <ContractMetricsFooter contract={contract} />
-            ) : undefined}
-          </ContractCard>
+            small
+          />
         ))}
       </Masonry>
       {loadMore && <LoadMoreUntilNotVisible loadMore={loadMore} />}

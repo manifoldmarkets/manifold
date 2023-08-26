@@ -189,7 +189,7 @@ export const AnswerBar = (props: {
 
   return (
     <Col>
-      <Col className={clsx('relative h-full w-full', className)}>
+      <Col className={clsx('relative isolate h-full w-full', className)}>
         <Row className="my-auto h-full items-center justify-between gap-x-4 px-3 py-2 leading-none">
           <div className="flex-grow">{label}</div>
           <Row className="relative items-center justify-end gap-2">{end}</Row>

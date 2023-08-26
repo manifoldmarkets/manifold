@@ -1,9 +1,9 @@
 import { useEffect } from 'react'
-import { usePersistentState, inMemoryStore } from './use-persistent-state'
 import { collection, orderBy, query } from 'firebase/firestore'
 import { ContractComment } from 'common/comment'
 import { db } from 'web/lib/firebase/init'
 import { listenForValues } from 'web/lib/firebase/utils'
+import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
 
 function getCommentsCollection(contractId: string) {
   return collection(db, 'contracts', contractId, 'comments')
@@ -20,12 +20,9 @@ function listenForCommentsOnContract(
 }
 
 export const useComments = (contractId: string) => {
-  const [comments, setComments] = usePersistentState<
+  const [comments, setComments] = usePersistentInMemoryState<
     ContractComment[] | undefined
-  >(undefined, {
-    key: 'comments-' + contractId,
-    store: inMemoryStore(),
-  })
+  >(undefined, 'comments-' + contractId)
 
   useEffect(() => {
     if (contractId) return listenForCommentsOnContract(contractId, setComments)

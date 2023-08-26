@@ -2,7 +2,7 @@ import * as admin from 'firebase-admin'
 import { z } from 'zod'
 
 import { User } from 'common/user'
-import { canCreateManalink, Manalink } from 'common/manalink'
+import { canSendMana, Manalink } from 'common/manalink'
 import { APIError, authEndpoint, validate } from './helpers'
 import { runTxn, TxnData } from 'shared/txn/run-txn'
 import { createSupabaseClient } from 'shared/supabase/init'
@@ -40,7 +40,7 @@ export const claimmanalink = authEndpoint(async (req, auth) => {
     const fromUser = fromSnap.data() as User
     const db = createSupabaseClient()
 
-    const canCreate = await canCreateManalink(fromUser, db)
+    const canCreate = await canSendMana(fromUser, db)
     if (!canCreate) {
       throw new APIError(
         403,

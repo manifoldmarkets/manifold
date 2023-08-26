@@ -116,7 +116,12 @@ function FeedTimelineContent(props: { privateUser: PrivateUser }) {
     }
     // This queries for new items if they haven't looked at the page in a while like twitter
     else if (pageVisible && now - lastSeen > MINUTE_MS && !loadingMore) {
-      checkForNewer().then(setNewerTimelineItems)
+      checkForNewer().then((newerTimelineItems) => {
+        const savedIds = savedFeedItems?.map((i) => i.id) ?? []
+        setNewerTimelineItems(
+          newerTimelineItems.filter((i) => !savedIds.includes(i.id))
+        )
+      })
     }
     setLastSeen(now)
     return () => setLastSeen(Date.now())

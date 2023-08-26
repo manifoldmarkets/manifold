@@ -10,7 +10,7 @@ import { Button } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
-import { SupabaseContractSearch } from 'web/components/supabase-search'
+import { SupabaseContractSearch } from 'web/components/contracts-search'
 import { ChoicesToggleGroup } from 'web/components/widgets/choices-toggle-group'
 import { Input } from 'web/components/widgets/input'
 import { Title } from 'web/components/widgets/title'
@@ -132,7 +132,7 @@ const ContractSearch = memo(
           excludeUserIds: privateUser?.blockedUserIds,
           contractType: 'BINARY',
         }}
-        listUIOptions={{ hideActions: true }}
+        hideActions
         hideFilters
         headerClassName={clsx('bg-canvas-0')}
       />

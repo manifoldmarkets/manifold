@@ -41,7 +41,7 @@ export const LinkPreviewNodeView = (props: LinkPreviewProps) => {
         className="block"
         key={id}
         href={url}
-        target="_blank"
+        target={url.includes('manifold.markets') ? '_self' : '_blank'}
         rel="noreferrer ugc"
       >
         <img

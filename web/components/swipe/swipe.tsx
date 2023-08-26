@@ -18,10 +18,6 @@ import {
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { SiteLink } from 'web/components/widgets/site-link'
 import { useFeed } from 'web/hooks/use-feed'
-import {
-  inMemoryStore,
-  usePersistentState,
-} from 'web/hooks/use-persistent-state'
 import { useTracking } from 'web/hooks/use-tracking'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { useWindowSize } from 'web/hooks/use-window-size'
@@ -32,6 +28,7 @@ import { formatMoney } from 'common/util/format'
 import { useEvent } from 'web/hooks/use-event'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { ContractCardView } from 'common/events'
+import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 
 export function Swipe(props: { toggleView?: () => void }) {
   useTracking('view swipe page')
@@ -46,10 +43,7 @@ export function Swipe(props: { toggleView?: () => void }) {
   })
   const feed = contracts as BinaryContract[] | undefined
 
-  const [index, setIndex] = usePersistentState(0, {
-    key: 'swipe-index',
-    store: inMemoryStore(),
-  })
+  const [index, setIndex] = usePersistentInMemoryState(0, 'swipe-index')
   const [amount, setAmount] = useState(STARTING_BET_AMOUNT)
   const [betDirection, setBetDirection] = useState<'YES' | 'NO' | undefined>()
   const [betStatus, setBetStatus] = useState<
@@ -72,10 +66,10 @@ export function Swipe(props: { toggleView?: () => void }) {
 
   // Measure height manually to accommodate mobile web.
   const { height: computedHeight } = useWindowSize()
-  const [height, setHeight] = usePersistentState(computedHeight ?? 800, {
-    key: 'screen-height',
-    store: inMemoryStore(),
-  })
+  const [height, setHeight] = usePersistentInMemoryState(
+    computedHeight ?? 800,
+    'screen-height'
+  )
 
   useEffect(() => {
     if (computedHeight !== undefined) {

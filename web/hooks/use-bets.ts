@@ -6,7 +6,6 @@ import {
   listenForUnfilledBets,
 } from 'web/lib/firebase/bets'
 import { BetFilter, LimitBet } from 'common/bet'
-import { inMemoryStore, usePersistentState } from './use-persistent-state'
 import { useEffectCheckEquality } from 'web/hooks/use-effect-check-equality'
 import { useUsersById } from './use-user'
 import { uniq } from 'lodash'
@@ -15,6 +14,7 @@ import { db } from 'web/lib/supabase/db'
 import { getBets } from 'common/supabase/bets'
 import { getValues } from 'web/lib/firebase/utils'
 import { getUnfilledLimitOrders } from 'web/lib/supabase/bets'
+import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
 
 export const useListenBets = (options?: BetFilter) => {
   const [bets, setBets] = useState<Bet[] | undefined>()
@@ -57,10 +57,10 @@ export const useUnfilledBetsAndBalanceByUserId = (contractId: string) => {
 }
 
 export const useRecentBets = (contractId: string, limit: number) => {
-  const [bets, setBets] = usePersistentState<Bet[] | undefined>(undefined, {
-    key: `recent-bets-${contractId}-${limit}`,
-    store: inMemoryStore(),
-  })
+  const [bets, setBets] = usePersistentInMemoryState<Bet[] | undefined>(
+    undefined,
+    `recent-bets-${contractId}-${limit}`
+  )
 
   useEffect(() => {
     getBets(db, {

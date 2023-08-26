@@ -1,38 +1,19 @@
-import {
-  ChevronDownIcon,
-  ViewGridIcon,
-  ViewListIcon,
-} from '@heroicons/react/outline'
+import { ChevronDownIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { Contract } from 'common/contract'
-import { Group } from 'common/group'
 import { debounce, isEqual, sample, uniqBy } from 'lodash'
-import { useRouter } from 'next/router'
-import {
-  ReactNode,
-  createContext,
-  useContext,
-  useEffect,
-  useRef,
-  useState,
-} from 'react'
+import { ReactNode, useEffect, useRef, useState } from 'react'
 import { PillButton } from 'web/components/buttons/pill-button'
 import { useEvent } from 'web/hooks/use-event'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
-import {
-  inMemoryStore,
-  urlParamStore,
-  usePersistentState,
-} from 'web/hooks/use-persistent-state'
+import { inMemoryStore } from 'web/hooks/use-persistent-state'
 import { useSafeLayoutEffect } from 'web/hooks/use-safe-layout-effect'
 import { useIsAuthorized } from 'web/hooks/use-user'
 import { track, trackCallback } from 'web/lib/service/analytics'
 import { searchContract } from 'web/lib/supabase/contracts'
 import DropdownMenu from './comments/dropdown-menu'
 import { ShowTime } from './contract/contract-details'
-import { ContractsGrid } from './contract/contracts-grid'
 import { ContractsList } from './contract/contracts-list'
-import { groupRoleType } from './groups/group-member-modal'
 import { Col } from './layout/col'
 import { Row } from './layout/row'
 import generateFilterDropdownItems, {
@@ -45,6 +26,10 @@ import { GROUP_SLUGS_TO_HIDE_FROM_PILL_SEARCH } from 'common/envs/constants'
 import { getGroup } from 'web/lib/supabase/group'
 import { buildArray } from 'common/util/array'
 import { SearchGroupInfo } from 'web/lib/supabase/groups'
+import {
+  usePartialUpdater,
+  usePersistentQueriesState,
+} from 'web/hooks/use-persistent-query-state'
 
 const CONTRACTS_PER_PAGE = 40
 
@@ -129,7 +114,9 @@ export type SupabaseSearchParameters = {
   category: string
 }
 
-export const CATEGORY_AND_QUERY_KEY = 'cq'
+// note: changing these breaks old urls. if you do, make sure to update omnisearch and opensearch.xml
+const CATEGORY_KEY = 'category'
+const QUERY_KEY = 'q'
 const SORT_KEY = 's'
 const FILTER_KEY = 'f'
 const CONTRACT_TYPE_KEY = 'ct'
@@ -157,11 +144,6 @@ export type SupabaseAdditionalFilter = {
   contractType?: ContractTypeType
 }
 
-const AsListContext = createContext({
-  asList: false,
-  setAsList: (_asList: boolean) => {},
-})
-
 export type stateType = {
   contracts: Contract[] | undefined
   fuzzyContractOffset: number
@@ -177,14 +159,7 @@ export function SupabaseContractSearch(props: {
   highlightContractIds?: string[]
   onContractClick?: (contract: Contract) => void
   hideOrderSelector?: boolean
-  cardUIOptions?: {
-    hideGroupLink?: boolean
-    hideQuickBet?: boolean
-    noLinkAvatar?: boolean
-  }
-  listUIOptions?: {
-    hideActions?: boolean
-  }
+  hideActions?: boolean
   headerClassName?: string
   inputRowClassName?: string
   isWholePage?: boolean
@@ -194,10 +169,6 @@ export function SupabaseContractSearch(props: {
   includeProbSorts?: boolean
   autoFocus?: boolean
   emptyState?: ReactNode
-  fromGroupProps?: {
-    group: Group
-    userRole: groupRoleType | null
-  }
   listViewDisabled?: boolean
   contractSearchControlsClassName?: string
   showCategories?: boolean
@@ -210,8 +181,7 @@ export function SupabaseContractSearch(props: {
     additionalFilter,
     onContractClick,
     hideOrderSelector,
-    cardUIOptions,
-    listUIOptions,
+    hideActions,
     highlightContractIds,
     headerClassName,
     inputRowClassName,
@@ -221,7 +191,6 @@ export function SupabaseContractSearch(props: {
     useUrlParams,
     autoFocus,
     emptyState,
-    fromGroupProps,
     listViewDisabled,
     showCategories,
     hideFilters,
@@ -235,10 +204,6 @@ export function SupabaseContractSearch(props: {
   const searchParams = useRef<SupabaseSearchParameters | null>(null)
   const searchParamsStore = inMemoryStore<SupabaseSearchParameters>()
   const requestId = useRef(0)
-  const [asList, setAsList] = usePersistentInMemoryState(
-    !listViewDisabled,
-    'contract-search-as-list'
-  )
 
   useSafeLayoutEffect(() => {
     const params = searchParamsStore.get(`${persistPrefix}-params`)
@@ -353,60 +318,41 @@ export function SupabaseContractSearch(props: {
     : undefined
 
   return (
-    <AsListContext.Provider value={{ asList, setAsList }}>
-      <Col>
-        <SupabaseContractSearchControls
-          className={headerClassName}
-          inputRowClassName={inputRowClassName}
-          defaultSort={defaultSort}
-          defaultFilter={defaultFilter}
-          hideOrderSelector={hideOrderSelector}
-          useUrlParams={useUrlParams}
-          includeProbSorts={includeProbSorts}
-          onSearchParametersChanged={onSearchParametersChanged}
-          autoFocus={autoFocus}
-          listViewDisabled={listViewDisabled}
-          showCategories={showCategories}
-          hideFilters={hideFilters}
-          excludeGroupSlugs={additionalFilter?.excludeGroupSlugs}
+    <Col>
+      <SupabaseContractSearchControls
+        className={headerClassName}
+        inputRowClassName={inputRowClassName}
+        defaultSort={defaultSort}
+        defaultFilter={defaultFilter}
+        hideOrderSelector={hideOrderSelector}
+        useUrlParams={useUrlParams}
+        includeProbSorts={includeProbSorts}
+        onSearchParametersChanged={onSearchParametersChanged}
+        autoFocus={autoFocus}
+        listViewDisabled={listViewDisabled}
+        showCategories={showCategories}
+        hideFilters={hideFilters}
+        excludeGroupSlugs={additionalFilter?.excludeGroupSlugs}
+      />
+      {contracts && contracts.length === 0 ? (
+        emptyState ?? (searchParams.current?.query ? <NoResults /> : <Empty />)
+      ) : (
+        <ContractsList
+          key={
+            searchParams.current?.query ??
+            '' + searchParams.current?.filter ??
+            '' + searchParams.current?.sort ??
+            ''
+          }
+          contracts={contracts}
+          loadMore={loadMoreContracts}
+          onContractClick={onContractClick}
+          highlightContractIds={highlightContractIds}
+          headerClassName={clsx(headerClassName, '!top-14')}
+          hideActions={hideActions}
         />
-        {contracts && contracts.length === 0 ? (
-          emptyState ??
-          (searchParams.current?.query ? <NoResults /> : <Empty />)
-        ) : asList ? (
-          <ContractsList
-            key={
-              searchParams.current?.query ??
-              '' + searchParams.current?.filter ??
-              '' + searchParams.current?.sort ??
-              ''
-            }
-            contracts={contracts}
-            loadMore={loadMoreContracts}
-            onContractClick={onContractClick}
-            highlightContractIds={highlightContractIds}
-            headerClassName={clsx(headerClassName, '!top-14')}
-            hideActions={listUIOptions?.hideActions}
-          />
-        ) : (
-          <ContractsGrid
-            key={
-              searchParams.current?.query ??
-              '' + searchParams.current?.filter ??
-              '' + searchParams.current?.sort ??
-              ''
-            }
-            contracts={contracts}
-            showTime={state.showTime ?? undefined}
-            onContractClick={onContractClick}
-            highlightContractIds={highlightContractIds}
-            cardUIOptions={cardUIOptions}
-            loadMore={loadMoreContracts}
-            fromGroupProps={fromGroupProps}
-          />
-        )}
-      </Col>
-    </AsListContext.Provider>
+      )}
+    </Col>
   )
 }
 
@@ -464,54 +410,32 @@ function SupabaseContractSearchControls(props: {
     excludeGroupSlugs,
   } = props
 
-  const router = useRouter()
+  const defaults = {
+    [QUERY_KEY]: '',
+    [SORT_KEY]: defaultSort,
+    [FILTER_KEY]: defaultFilter,
+    [CONTRACT_TYPE_KEY]: defaultContractType,
+    [CATEGORY_KEY]: '',
+  }
 
-  // We group these so that when a user selects a category, we can clear the query
-  // at the same time and only run the search once.
-  const [categoryAndQuery, setCategoryAndQuery] = usePersistentState(
-    formatQueryAndCategory('', ''),
-    useUrlParams
-      ? {
-          key: CATEGORY_AND_QUERY_KEY,
-          store: urlParamStore(router),
-        }
-      : undefined
-  )
-  const query = JSON.parse(categoryAndQuery).q
-  const category = JSON.parse(categoryAndQuery).c
+  const [state, setState] = useUrlParams
+    ? /* eslint-disable-next-line react-hooks/rules-of-hooks */
+      usePersistentQueriesState(defaults)
+    : /* eslint-disable-next-line react-hooks/rules-of-hooks */
+      usePartialUpdater(defaults)
 
-  const [sort, setSort] = usePersistentState(
-    defaultSort,
-    useUrlParams
-      ? {
-          key: SORT_KEY,
-          store: urlParamStore(router),
-        }
-      : undefined
-  )
-
-  const [filterState, setFilter] = usePersistentState(
-    defaultFilter,
-    useUrlParams
-      ? {
-          key: FILTER_KEY,
-          store: urlParamStore(router),
-        }
-      : undefined
-  )
-
-  const [contractType, setContractType] = usePersistentState(
-    defaultContractType,
-    useUrlParams
-      ? {
-          key: CONTRACT_TYPE_KEY,
-          store: urlParamStore(router),
-        }
-      : undefined
-  )
+  const query = state[QUERY_KEY]
+  const sort = state[SORT_KEY]
+  const filterState = state[FILTER_KEY]
+  const contractType = state[CONTRACT_TYPE_KEY]
+  const category = state[CATEGORY_KEY]
 
   const categoryPills = showCategories // eslint-disable-next-line react-hooks/rules-of-hooks
-    ? useTrendingGroupsSearchResults(query, 30, !!category).filter(
+    ? useTrendingGroupsSearchResults(
+        query,
+        30,
+        !!category && category !== 'for-you'
+      ).filter(
         (g) =>
           !GROUP_SLUGS_TO_HIDE_FROM_PILL_SEARCH.includes(g.slug) &&
           (excludeGroupSlugs ? !excludeGroupSlugs.includes(g.slug) : true)
@@ -521,10 +445,14 @@ function SupabaseContractSearchControls(props: {
   const [categoryFromRouter, setCategoryFromRouter] =
     useState<SearchGroupInfo>()
   useEffect(() => {
-    if (!!category && !categoryPills.map((g) => g.id).includes(category)) {
-      getGroup(category).then((g) => setCategoryFromRouter(g ?? undefined))
+    if (category) {
+      if (!categoryPills.some((g) => g.id === category)) {
+        getGroup(category).then((g) => setCategoryFromRouter(g ?? undefined))
+      }
+    } else {
+      setCategoryFromRouter(undefined)
     }
-  }, [router.query])
+  }, [category])
 
   const filter =
     sort === 'close-date'
@@ -533,47 +461,41 @@ function SupabaseContractSearchControls(props: {
       ? 'resolved'
       : filterState
 
-  const updateQuery = (newQuery: string) => {
-    setCategoryAndQuery(formatQueryAndCategory(newQuery, category))
-  }
-
   const selectFilter = (selection: filter) => {
     if (selection === filterState) return
-    setFilter(selection)
+    setState({ f: selection })
     track('select search filter', { filter: selection })
   }
 
   const selectSort = (selection: Sort) => {
     if (selection === sort) return
-    setSort(selection)
+    setState({ s: selection })
     track('select search sort', { sort: selection })
   }
+
+  const setQuery = (query: string) => setState({ q: query })
 
   const selectContractType = (selection: ContractTypeType) => {
     if (selection === contractType) return
 
     if (selection === 'BOUNTIED_QUESTION' && predictionMarketSorts.has(sort)) {
-      setSort('bounty-amount')
+      setState({ s: 'bounty-amount', ct: selection })
+    } else if (selection !== 'BOUNTIED_QUESTION' && bountySorts.has(sort)) {
+      setState({ s: 'score', ct: selection })
+    } else {
+      setState({ ct: selection })
     }
-    if (selection !== 'BOUNTIED_QUESTION' && bountySorts.has(sort)) {
-      setSort('score')
-    }
-
-    setContractType(selection)
     track('select contract type', { contractType: selection })
   }
 
   const selectCategory = (newCategory: string) => {
     const deselecting = newCategory === category
-    setCategoryAndQuery(
-      formatQueryAndCategory(
-        deselecting ? query : '',
-        deselecting ? '' : newCategory
-      )
-    )
-    newCategory != category &&
+    if (deselecting) {
+      setState({ category: undefined })
+    } else {
+      setState({ q: '', category: newCategory })
       track('select search category', { category: newCategory })
-    setCategoryFromRouter(undefined)
+    }
   }
 
   const isAuth = useIsAuthorized()
@@ -602,7 +524,7 @@ function SupabaseContractSearchControls(props: {
           type="text"
           inputMode="search"
           value={query}
-          onChange={(e) => updateQuery(e.target.value)}
+          onChange={(e) => setQuery(e.target.value)}
           onBlur={trackCallback('search', { query: query })}
           placeholder="Search questions"
           className="w-full"
@@ -620,24 +542,32 @@ function SupabaseContractSearchControls(props: {
             hideOrderSelector={hideOrderSelector}
             className={'flex flex-row gap-2'}
             includeProbSorts={includeProbSorts}
-            listViewDisabled={true}
           />
         )}
       </Col>
       {showCategories && (
-        <Carousel className="mt-0.5 h-6">
-          {uniqBy(
-            buildArray(categoryFromRouter).concat(categoryPills),
-            'id'
-          ).map((g) => (
+        <Carousel className="mt-0.5 h-8">
+          {isAuth && sort === 'score' && !query && (
             <PillButton
-              key={'pill-' + g}
-              selected={category === g.id}
-              onSelect={() => selectCategory(g.id)}
+              key={'pill-for-you'}
+              selected={category === 'for-you'}
+              onSelect={() => selectCategory('for-you')}
             >
-              {g.name}
+              ⭐️ For you
             </PillButton>
-          ))}
+          )}
+
+          {uniqBy(buildArray(categoryFromRouter, ...categoryPills), 'id').map(
+            (g) => (
+              <PillButton
+                key={'pill-' + g}
+                selected={category === g.id}
+                onSelect={() => selectCategory(g.id)}
+              >
+                {g.name}
+              </PillButton>
+            )
+          )}
         </Carousel>
       )}
     </Col>
@@ -654,10 +584,7 @@ export function SearchFilters(props: {
   hideOrderSelector: boolean | undefined
   className?: string
   includeProbSorts?: boolean
-  listViewDisabled?: boolean
 }) {
-  const { asList, setAsList } = useContext(AsListContext)
-
   const {
     filter,
     selectFilter,
@@ -668,7 +595,6 @@ export function SearchFilters(props: {
     hideOrderSelector,
     className,
     includeProbSorts,
-    listViewDisabled,
   } = props
 
   const hideFilter =
@@ -741,27 +667,6 @@ export function SearchFilters(props: {
         selectedItemName={contractTypeLabel}
         closeOnClick={true}
       />
-
-      {!listViewDisabled && (
-        <button
-          type="button"
-          onClick={() => setAsList(!asList)}
-          className="hover:bg-canvas-50 border-ink-300 text-ink-500 bg-canvas-0 focus:border-primary-500 focus:ring-primary-500 relative inline-flex h-full items-center rounded-md border px-2 py-1 text-sm font-medium shadow-sm focus:z-10 focus:outline-none focus:ring-1 sm:py-2"
-        >
-          {asList ? (
-            <ViewGridIcon className="h-5 w-5" aria-hidden="true" />
-          ) : (
-            <ViewListIcon className="h-5 w-5" aria-hidden="true" />
-          )}
-        </button>
-      )}
     </div>
   )
-}
-
-export function formatQueryAndCategory(query: string, categoryId: string) {
-  return JSON.stringify({
-    q: query,
-    c: categoryId,
-  })
 }

@@ -37,7 +37,7 @@ const touchItemClass = 'bg-primary-100'
 function getNavigation(user: User) {
   return [
     { name: 'Home', href: '/home', icon: HomeIcon },
-    { name: 'Questions', href: '/questions', icon: ScaleIcon },
+    { name: 'Questions', href: '/questions?category=for-you', icon: ScaleIcon },
     {
       name: 'Profile',
       href: `/${user.username}`,
@@ -169,13 +169,17 @@ function NavBarItem(props: {
     )
   }
 
+  const currentBasePath = '/' + (currentPage?.split('/')[1] ?? '')
+  const isCurrentPage =
+    item.href != null && currentBasePath === item.href.split('?')[0]
+
   return (
     <Link
       href={item.href}
       className={clsx(
         itemClass,
         touched && touchItemClass,
-        currentPage === item.href && selectedItemClass
+        isCurrentPage && selectedItemClass
       )}
       onClick={track}
       onTouchStart={() => setTouched(true)}

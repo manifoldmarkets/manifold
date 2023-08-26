@@ -130,7 +130,11 @@ const getDesktopNav = (
     return buildArray(
       { name: 'Home', href: '/home', icon: HomeIcon },
       showMarkets
-        ? { name: 'Questions', href: '/questions', icon: ScaleIcon }
+        ? {
+            name: 'Questions',
+            href: '/questions?category=for-you',
+            icon: ScaleIcon,
+          }
         : { name: 'News', href: '/news', icon: NewspaperIcon },
       {
         name: 'Notifications',

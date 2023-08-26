@@ -9,7 +9,7 @@
     "orientation": "portrait",
     "icon": "./assets/logo.png",
     "userInterfaceStyle": "light",
-    "plugins": ["./plugins/withAndroidVerifiedLinksWorkaround", "sentry-expo",
+    "plugins": ["./plugins/withAndroidVerifiedLinksWorkaround",
     [
       "expo-notifications",
       {

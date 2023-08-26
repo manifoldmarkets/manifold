@@ -10,7 +10,6 @@ import { Row } from '../layout/row'
 import { UserLink } from '../widgets/user-link'
 import { track } from 'web/lib/service/analytics'
 import { useEffect, useState } from 'react'
-import { FeaturedPill } from '../contract/contract-card'
 import { richTextToString } from 'common/util/parse'
 import { Linkify } from '../widgets/linkify'
 
@@ -18,9 +17,8 @@ export function PostCard(props: {
   post: Post
   onPostClick?: (post: Post) => void
   highlight?: boolean
-  pinned?: boolean
 }) {
-  const { post, onPostClick, highlight, pinned } = props
+  const { post, onPostClick, highlight } = props
 
   return (
     <Card
@@ -46,7 +44,6 @@ export function PostCard(props: {
           <span className="text-ink-400 text-sm">
             Created {fromNow(post.createdTime)}
           </span>
-          {pinned && <FeaturedPill label={post.featuredLabel} />}
         </Row>
         <div className="text-md text-ink-900 mb-1 font-medium">
           {post.title}

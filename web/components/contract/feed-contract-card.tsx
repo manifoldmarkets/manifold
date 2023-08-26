@@ -46,6 +46,8 @@ export function FeedContractCard(props: {
   trackingPostfix?: string
   item?: FeedTimelineItem
   className?: string
+  /** whether this card is small, to adjust sizing. TODO: replace with container queries */
+  small?: boolean
   hide?: () => void
 }) {
   const {
@@ -55,6 +57,7 @@ export function FeedContractCard(props: {
     className,
     children,
     bottomChildren,
+    small,
     hide,
   } = props
   const user = useUser()
@@ -75,8 +78,6 @@ export function FeedContractCard(props: {
   const isClosed = closeTime && closeTime < Date.now()
   const path = contractPath(contract)
   const metrics = useSavedContractMetrics(contract)
-
-  const showAvatar = !children && !bottomChildren
 
   const router = useRouter()
 
@@ -108,7 +109,8 @@ export function FeedContractCard(props: {
         'relative rounded-xl',
         'bg-canvas-0 cursor-pointer overflow-hidden',
         'border-canvas-0 hover:border-primary-300 focus:border-primary-300 border drop-shadow-md transition-colors',
-        'flex w-full flex-col gap-0.5 px-4 sm:px-6'
+        'flex w-full flex-col gap-0.5 px-4',
+        !small && 'sm:px-6'
       )}
       onClick={(e) => {
         trackClick()
@@ -118,48 +120,51 @@ export function FeedContractCard(props: {
       ref={ref}
     >
       <Col className={'w-full flex-col gap-1.5 pt-2'}>
-        {showAvatar && (
-          <Row className="w-full justify-between">
-            <Row className={'text-ink-500 items-center gap-1 text-sm'}>
-              <Avatar
-                size={'xs'}
-                className={'mr-0.5'}
-                avatarUrl={creatorAvatarUrl}
-                username={creatorUsername}
-              />
-              <UserLink
-                name={contract.creatorName}
-                username={creatorUsername}
-                className={clsx(
-                  'w-full max-w-[10rem] text-ellipsis sm:max-w-[12rem]'
-                )}
-              />
-            </Row>
-            <CardReason item={item} contract={contract} />
+        <Row className="w-full justify-between">
+          <Row className={'text-ink-500 items-center gap-1 text-sm'}>
+            <Avatar
+              size={'xs'}
+              className={'mr-0.5'}
+              avatarUrl={creatorAvatarUrl}
+              username={creatorUsername}
+            />
+            <UserLink
+              name={contract.creatorName}
+              username={creatorUsername}
+              className={clsx(
+                'w-full max-w-[10rem] text-ellipsis sm:max-w-[12rem]'
+              )}
+            />
           </Row>
-        )}
+          <CardReason item={item} contract={contract} />
+        </Row>
         <div
-          className={
-            'flex flex-col gap-1 sm:flex-row sm:justify-between sm:gap-4'
-          }
+          className={clsx(
+            'flex flex-col gap-1',
+            !small && 'sm:flex-row sm:justify-between sm:gap-4'
+          )}
         >
           {/* Title is link to contract for open in new tab and a11y */}
           <Link className="grow items-start text-lg" href={path}>
             <VisibilityIcon contract={contract} /> {contract.question}
           </Link>
-          <Col className="w-full sm:w-min sm:items-start">
-            <Row className="w-full items-center justify-end gap-3 sm:w-min">
-              {contract.outcomeType !== 'MULTIPLE_CHOICE' && (
-                <ContractStatusLabel
-                  className={'text-lg font-bold'}
-                  contract={contract}
-                />
-              )}
-              {isBinaryCpmm && !isClosed && (
-                <BetButton contract={contract} user={user} className="h-min" />
-              )}
-            </Row>
-          </Col>
+
+          <Row
+            className={clsx(
+              'w-full items-center justify-end gap-3',
+              !small && 'sm:w-fit'
+            )}
+          >
+            {contract.outcomeType !== 'MULTIPLE_CHOICE' && (
+              <ContractStatusLabel
+                className={'text-lg font-bold'}
+                contract={contract}
+              />
+            )}
+            {isBinaryCpmm && !isClosed && (
+              <BetButton contract={contract} user={user} className="h-min" />
+            )}
+          </Row>
         </div>
 
         {children}
@@ -199,6 +204,7 @@ export function FeedContractCard(props: {
           item={item}
           user={user}
           hide={hide}
+          underline={!!bottomChildren}
         />
         {bottomChildren}
       </Col>
@@ -302,7 +308,7 @@ function YourMetricsFooter(props: { metrics: ContractMetric }) {
   const { YES: yesShares, NO: noShares } = totalShares
 
   return (
-    <Row className="bg-ink-200/50 my-2 items-center gap-4 rounded p-2 text-sm">
+    <Row className="bg-ink-200/50 my-2 flex-wrap items-center justify-between gap-x-4 gap-y-1 rounded p-2 text-sm">
       <Row className="items-center gap-2">
         <span className="text-ink-500">Payout on {maxSharesOutcome}</span>
         <span className="text-ink-700 font-semibold">
@@ -311,7 +317,7 @@ function YourMetricsFooter(props: { metrics: ContractMetric }) {
             : formatMoney(noShares)}{' '}
         </span>
       </Row>
-      <Row className="ml-auto items-center gap-2">
+      <Row className="items-center gap-2">
         <div className="text-ink-500">Profit </div>
         <div className={clsx('text-ink-700 font-semibold')}>
           {profit ? formatMoney(profit) : '--'}
