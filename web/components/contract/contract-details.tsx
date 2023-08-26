@@ -178,7 +178,10 @@ function EditableCloseDate(props: {
       </Modal>
 
       <Row
-        className={clsx('items-center gap-1', editable ? 'cursor-pointer' : '')}
+        className={clsx(
+          'group items-center gap-1',
+          editable ? 'cursor-pointer' : ''
+        )}
         onClick={() => editable && setIsEditingCloseTime(true)}
       >
         <DateTimeTooltip
@@ -195,7 +198,9 @@ function EditableCloseDate(props: {
             ? dayJsCloseTime.format('MMM D')
             : dayJsCloseTime.format('YYYY')}
         </DateTimeTooltip>
-        {editable && <PencilIcon className="h-4 w-4" />}
+        {editable && (
+          <PencilIcon className="h-4 w-4 sm:fill-transparent sm:group-hover:fill-inherit" />
+        )}
       </Row>
     </>
   )
