@@ -186,13 +186,7 @@ function LootModal(props: {
   const totalValue = box?.reduce((acc, loot) => acc + loot.amount, 0)
   return (
     <>
-      {open && (
-        <FullscreenConfetti
-          recycle={false}
-          numberOfPieces={300}
-          className="hidden md:flex"
-        />
-      )}
+      {open && <FullscreenConfetti className="hidden md:flex" />}
 
       <Modal open={open} setOpen={setOpen}>
         <Col className={MODAL_CLASS}>
