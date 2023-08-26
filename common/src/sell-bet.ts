@@ -4,10 +4,11 @@ import {
   deductDpmFees,
   getDpmOutcomeProbability,
 } from './calculate-dpm'
-import { calculateCpmmSale, getCpmmProbability } from './calculate-cpmm'
+import { calculateCpmmMultiSale, calculateCpmmSale, getCpmmProbability } from './calculate-cpmm'
 import { CPMMContract, DPMContract } from './contract'
 import { DPM_CREATOR_FEE, DPM_PLATFORM_FEE, Fees } from './fees'
 import { sumBy } from 'lodash'
+import { Answer } from './answer'
 
 export type CandidateBet<T extends Bet> = Omit<
   T,
@@ -141,4 +142,17 @@ export const getCpmmSellBetInfo = (
     takers,
     ordersToCancel,
   }
+}
+
+export const getCpmmMultiSellBetInfo = (
+  answers: Answer[],
+  answerToSell: Answer,
+  shares: number,
+  outcome: 'YES' | 'NO',
+  limitProb: number | undefined,
+  unfilledBets: LimitBet[],
+  balanceByUserId: { [userId: string]: number },
+) => {
+  calculateCpmmMultiSale(answers, answerToSell, shares, outcome, limitProb, unfilledBets, balanceByUserId)
+
 }

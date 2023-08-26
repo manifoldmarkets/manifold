@@ -19,16 +19,20 @@ const bodySchema = z.object({
   contractId: z.string(),
   shares: z.number().positive().optional(), // leave it out to sell all shares
   outcome: z.enum(['YES', 'NO']).optional(), // leave it out to sell whichever you have
+  answerId: z.enum(['YES', 'NO']).optional(), // Required for multi binary markets
 })
 
 export const sellshares = authEndpoint(async (req, auth) => {
-  const { contractId, shares, outcome } = validate(bodySchema, req.body)
+  const { contractId, shares, outcome, answerId } = validate(bodySchema, req.body)
 
   // Run as transaction to prevent race conditions.
   const result = await firestore.runTransaction(async (transaction) => {
     const contractDoc = firestore.doc(`contracts/${contractId}`)
     const userDoc = firestore.doc(`users/${auth.uid}`)
-    const betsQ = contractDoc.collection('bets').where('userId', '==', auth.uid)
+    let betsQ = contractDoc.collection('bets').where('userId', '==', auth.uid)
+    if (answerId) {
+      betsQ = betsQ.where('answerId', '==', answerId)
+    }
     log(
       `Checking for limit orders and bets in sellshares for user ${auth.uid} on contract id ${contractId}.`
     )
@@ -50,8 +54,8 @@ export const sellshares = authEndpoint(async (req, auth) => {
 
     const { closeTime, mechanism, collectedFees, volume } = contract
 
-    if (mechanism !== 'cpmm-1')
-      throw new APIError(403, 'You can only sell shares on CPMM-1 contracts')
+    if (mechanism !== 'cpmm-1' && mechanism !== 'cpmm-multi-1')
+      throw new APIError(403, 'You can only sell shares on cpmm-1 or cpmm-multi-1 contracts')
     if (closeTime && Date.now() > closeTime)
       throw new APIError(403, 'Trading is closed.')
 
