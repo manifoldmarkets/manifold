@@ -372,7 +372,12 @@ export function DotMenu(props: {
         label={'Comment'}
       />
       <DropdownMenu
-        Icon={<DotsHorizontalIcon className="h-4 w-4" aria-hidden="true" />}
+        Icon={
+          <DotsHorizontalIcon
+            className="mt-[0.12rem] h-4 w-4"
+            aria-hidden="true"
+          />
+        }
         Items={buildArray(
           {
             name: 'Copy link',
