@@ -372,6 +372,7 @@ export function DotMenu(props: {
         label={'Comment'}
       />
       <DropdownMenu
+        menuWidth={'w-36'}
         Icon={
           <DotsHorizontalIcon
             className="mt-[0.12rem] h-4 w-4"
@@ -390,25 +391,26 @@ export function DotMenu(props: {
               )
             },
           },
-          user && {
-            name: 'Report',
-            icon: <FlagIcon className="h-5 w-5" />,
-            onClick: () => {
-              if (user?.id !== comment.userId) setIsModalOpen(true)
-              else toast.error(`You can't report your own comment`)
-            },
-          },
-          user &&
-            (comment.userId === user.id || isAdminId(user?.id)) && {
-              name: 'Edit',
-              icon: <PencilIcon className="h-5 w-5" />,
-              onClick: () => setEditingComment(true),
-            },
           user &&
             comment.userId !== user.id && {
               name: 'Tip',
               icon: <GiPayMoney className="h-5 w-5" />,
               onClick: () => setTipping(true),
+            },
+          user &&
+            comment.userId !== user.id && {
+              name: 'Report',
+              icon: <FlagIcon className="h-5 w-5" />,
+              onClick: () => {
+                if (user?.id !== comment.userId) setIsModalOpen(true)
+                else toast.error(`You can't report your own comment`)
+              },
+            },
+          user &&
+            (comment.userId === user.id || isAdminId(user?.id)) && {
+              name: 'Edit',
+              icon: <PencilIcon className="h-5 w-5" />,
+              onClick: () => setEditingComment(true),
             },
           (isAdmin || isContractCreator) && {
             name: comment.hidden ? 'Unhide' : 'Hide',
