@@ -216,9 +216,8 @@ export function ContractParamsForm(props: {
 
   useEffect(() => {
     if (outcomeType === 'STONK' || NON_BETTING_OUTCOMES.includes(outcomeType)) {
-      setCloseDate(dayjs().add(1000, 'year').format('YYYY-MM-DD'))
-      setCloseHoursMinutes('23:59')
-
+      setCloseDateInDays(NEVER_IN_DAYS)
+      setNeverCloses(true)
       if (outcomeType == 'STONK') {
         if (editor?.isEmpty) {
           editor?.commands.setContent(
@@ -232,10 +231,9 @@ export function ContractParamsForm(props: {
           )
         }
       }
-    }
-    if (outcomeType === 'POLL') {
-      setCloseDateInDays(NEVER_IN_DAYS)
-      setNeverCloses(true)
+    } else {
+      setCloseDateInDays(7)
+      setNeverCloses(false)
     }
   }, [outcomeType])
 
