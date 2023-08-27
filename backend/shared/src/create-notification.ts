@@ -949,10 +949,10 @@ export const createUniqueBettorBonusNotification = async (
   const uniqueBettorsExcludingCreator = uniqueBettorIds.filter(
     (id) => id !== contractCreatorId
   )
-
-  // Only send on 6th bettor
-  if (uniqueBettorsExcludingCreator.length !== 6) return
-  const totalNewBettorsToReport = 5
+  const TOTAL_NEW_BETTORS_TO_REPORT = 5
+  // Only send on 5th bettor
+  if (uniqueBettorsExcludingCreator.length !== TOTAL_NEW_BETTORS_TO_REPORT)
+    return
   const mostRecentUniqueBettors = await getValues<User>(
     firestore
       .collection('users')
@@ -960,7 +960,7 @@ export const createUniqueBettorBonusNotification = async (
         'id',
         'in',
         uniqueBettorsExcludingCreator.slice(
-          uniqueBettorsExcludingCreator.length - totalNewBettorsToReport,
+          uniqueBettorsExcludingCreator.length - TOTAL_NEW_BETTORS_TO_REPORT,
           uniqueBettorsExcludingCreator.length
         )
       )
@@ -988,7 +988,7 @@ export const createUniqueBettorBonusNotification = async (
     uniqueBettorsExcludingCreator.length,
     mostRecentUniqueBettors,
     bettorsToTheirBets,
-    amount * totalNewBettorsToReport
+    amount * TOTAL_NEW_BETTORS_TO_REPORT
   )
 }
 
