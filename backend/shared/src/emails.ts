@@ -623,7 +623,6 @@ export const sendNewPrivateMarketEmail = async (
 }
 export const sendNewUniqueBettorsEmail = async (
   reason: notification_reason_types,
-  userId: string,
   privateUser: PrivateUser,
   contract: Contract,
   totalPredictors: number,
@@ -676,7 +675,8 @@ export const sendNewUniqueBettorsEmail = async (
   return await sendTemplateEmail(
     privateUser.email,
     subject,
-    newPredictors.length === 1 ? 'new-unique-bettor' : 'new-unique-bettors',
+    // This template accepts 5 unique bettors
+    'new-unique-bettors',
     templateData,
     {
       from: `Manifold <no-reply@manifold.markets>`,
