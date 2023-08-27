@@ -68,7 +68,7 @@ const userIdsWithFeedRowsMatchingContract = async (
   contractId: string,
   userIds: string[],
   seenTime: number,
-  dataType: FEED_DATA_TYPES,
+  dataTypes: FEED_DATA_TYPES[],
   pg: SupabaseDirectClient
 ) => {
   return await pg.map(
@@ -77,9 +77,9 @@ const userIdsWithFeedRowsMatchingContract = async (
             where contract_id = $1 and 
                 user_id = ANY($2) and 
                 (created_time > $3 or seen_time > $3) and
-                data_type = $4
+                data_type = ANY($4)
                 `,
-    [contractId, userIds, new Date(seenTime).toISOString(), dataType],
+    [contractId, userIds, new Date(seenTime).toISOString(), dataTypes],
     (row: { user_id: string }) => row.user_id
   )
 }
@@ -246,7 +246,7 @@ export const addContractToFeedIfNotDuplicative = async (
     contract.id,
     Object.keys(usersToReasonsInterestedInContract),
     unseenNewerThanTime,
-    dataType,
+    [dataType, 'new_contract', 'new_subsidy'],
     pg
   )
 
