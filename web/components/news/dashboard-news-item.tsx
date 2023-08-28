@@ -30,8 +30,6 @@ export const DashboardNewsItem = (props: {
     source_name,
     siteName,
   } = props
-
-  console.log(title, props)
   const date = Date.parse(published_time as any)
   return (
     <Link
@@ -50,7 +48,7 @@ export const DashboardNewsItem = (props: {
         alt={title}
         height={200}
       />
-      <Col className=" border-canvas-0 w-full bg-opacity-80 py-2 sm:pl-4 sm:pr-6 ">
+      <Col className=" border-canvas-0 w-full bg-opacity-80 py-2 px-4 sm:pl-4 sm:pr-6 ">
         <Row className="text-ink-500 w-full justify-between text-sm">
           <div>{siteName ? siteName : ''}</div>
           {published_time && (

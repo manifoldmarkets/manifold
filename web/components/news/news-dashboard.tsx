@@ -1,13 +1,12 @@
-import { Col } from 'web/components/layout/col'
-import { useContracts } from 'web/hooks/use-contract-supabase'
+import { ReactNode } from 'react'
 import { FeedContractCard } from 'web/components/contract/feed-contract-card'
+import { Col } from 'web/components/layout/col'
 import { DashboardNewsItem } from 'web/components/news/dashboard-news-item'
 import { Title } from 'web/components/widgets/title'
-import { LoadingIndicator } from '../widgets/loading-indicator'
+import { useContracts } from 'web/hooks/use-contract-supabase'
 import { useLinkPreviews } from 'web/hooks/use-link-previews'
-import Masonry from 'react-masonry-css'
-import { NewsArticle } from './news-article'
-import { ReactNode } from 'react'
+import { LoadingIndicator } from '../widgets/loading-indicator'
+import clsx from 'clsx'
 
 export type NewsContentType = { url: string } | { slug: string }
 
@@ -25,10 +24,10 @@ export const createNewsDashboardTab = (
 
 export const NewsDashboard = (props: {
   context?: ReactNode
-  data: ({ url: string } | { slug: string } | { content: any })[]
+  data: NewsContentType[]
   title: string
 }) => {
-  const { data, title } = props
+  const { data, title, context } = props
 
   const slugs = data.map((x) => (x as any).slug).filter((x) => !!x)
   const contracts = useContracts(slugs, 'slug')
@@ -98,19 +97,9 @@ export const NewsDashboard = (props: {
 
   return (
     <Col>
-      <Title className="mb-4">{title}</Title>
-      {props.context}
+      <Title className={clsx(context ? 'mb-2' : 'mb-4')}>{title}</Title>
+      {context && <div className="mb-4">{context}</div>}
       {isLoading ? <LoadingIndicator /> : <>{content}</>}
     </Col>
   )
 }
-
-export const NewsGrid = (props: { children: React.ReactNode }) => (
-  <Masonry
-    breakpointCols={{ default: 2, 768: 1 }}
-    className="-ml-4 flex w-auto"
-    columnClassName="pl-4 bg-clip-padding"
-  >
-    {props.children}
-  </Masonry>
-)
