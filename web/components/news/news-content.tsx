@@ -733,7 +733,7 @@ const UFOs = createNewsDashboardTab(
 
 const Trump = createNewsDashboardTab('Trump', 'Trump indicted', [
   {
-    url: 'https://apnews.com/article/trump-georgia-election-investigation-grand-jury-willis-d39562cedfc60d64948708de1b011ed3',
+    url: 'https://www.nbcnews.com/politics/donald-trump/federal-judge-set-trump-trial-date-election-interference-case-rcna101669',
   },
   {
     content: (
@@ -743,9 +743,9 @@ const Trump = createNewsDashboardTab('Trump', 'Trump indicted', [
           <Col className="gap-4">
             <div>Trump faces 4th criminal case, August 14th</div>
             <div>
-              “The indictment alleges that rather than abide by Georgia’s legal
+              “The indictment alleges that rather than abide by Georgia's legal
               process for election challenges, the defendants engaged in a
-              criminal racketeering enterprise to overturn Georgia’s
+              criminal racketeering enterprise to overturn Georgia's
               presidential election result,” Fulton County District Attorney
               Fani Willis
             </div>
