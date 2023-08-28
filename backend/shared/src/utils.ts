@@ -14,7 +14,7 @@ import {
   QuerySnapshot,
   Transaction,
 } from 'firebase-admin/firestore'
-import { chunk, groupBy, mapValues, sumBy } from 'lodash'
+import { groupBy, mapValues, sumBy } from 'lodash'
 import { BETTING_STREAK_RESET_HOUR } from 'common/economy'
 import { DAY_MS } from 'common/util/time'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
@@ -84,22 +84,18 @@ export type UpdateSpec = {
 export const writeAsync = async (
   db: admin.firestore.Firestore,
   updates: UpdateSpec[],
-  operationType: 'update' | 'set' = 'update',
-  batchSize = 500 // 500 = Firestore batch limit
+  operationType: 'update' | 'set' = 'update'
 ) => {
-  const chunks = chunk(updates, batchSize)
-  for (let i = 0; i < chunks.length; i++) {
-    log(`${i * batchSize}/${updates.length} updates written...`)
-    const batch = db.batch()
-    for (const { doc, fields } of chunks[i]) {
-      if (operationType === 'update') {
-        batch.update(doc, fields as any)
-      } else {
-        batch.set(doc, fields)
-      }
+  const writer = db.bulkWriter()
+  for (const update of updates) {
+    const { doc, fields } = update
+    if (operationType === 'update') {
+      writer.update(doc, fields as any)
+    } else {
+      writer.set(doc, fields)
     }
-    await batch.commit()
   }
+  await writer.close()
 }
 
 export const loadPaginated = async <T extends DocumentData>(
