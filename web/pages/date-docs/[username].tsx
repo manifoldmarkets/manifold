@@ -108,7 +108,7 @@ export function DateDocPost(props: {
 
   return (
     <Col className="bg-canvas-0 gap-6 rounded-lg px-6 py-6">
-      <Link href={link ? `/date-docs/${creator.username}` : undefined}>
+      <MaybeLink href={link ? `/date-docs/${creator.username}` : undefined}>
         <Col className="gap-6">
           <Row className="relative items-center justify-between gap-4 text-2xl">
             <div>
@@ -139,7 +139,7 @@ export function DateDocPost(props: {
             </Col>
           </Row>
         </Col>
-      </Link>
+      </MaybeLink>
       <RichEditPost post={post} canEdit={!!user && user.id === creator.id} />
       {contractSlug && (
         <div className="to-primary-300 mt-4 w-full max-w-lg self-center rounded-xl bg-gradient-to-r from-blue-200 via-purple-200 p-3">
@@ -154,4 +154,11 @@ export function DateDocPost(props: {
       )}
     </Col>
   )
+}
+
+const MaybeLink = (props: { href?: string; children: React.ReactNode }) => {
+  const { href, children } = props
+  if (!href) return <>{children}</>
+
+  return <Link href={href}>{children}</Link>
 }
