@@ -39,6 +39,8 @@ import { useComments } from 'web/hooks/use-comments'
 import { useRealtimeBets } from 'web/hooks/use-bets-supabase'
 import { Button } from '../buttons/button'
 import { firebaseLogin } from 'web/lib/firebase/users'
+import { ArrowRightIcon } from '@heroicons/react/outline'
+import clsx from 'clsx'
 
 export const EMPTY_USER = '_'
 
@@ -292,7 +294,7 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
 
   return (
     <>
-      {user ? (
+      {user && (
         <ContractCommentInput
           replyToBet={betResponse}
           replyToUserInfo={
@@ -308,15 +310,6 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
           clearReply={clearReply}
           trackingLocation={'contract page'}
         />
-      ) : (
-        <Button
-          onClick={withTracking(
-            firebaseLogin,
-            'sign up to comment button click'
-          )}
-        >
-          Sign up to comment
-        </Button>
       )}
       {comments.length > 0 && (
         <SortRow
@@ -369,12 +362,27 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
               }
             />
           ))}
+
       <div className="relative w-full">
         <VisibilityObserver
           onVisibilityUpdated={onVisibilityUpdated}
           className="pointer-events-none absolute bottom-0 h-[75vh]"
         />
       </div>
+
+      {!user && (
+        <Button
+          onClick={withTracking(
+            firebaseLogin,
+            'sign up to comment button click'
+          )}
+          className={clsx('mt-4', comments.length > 0 && 'ml-12')}
+          size="lg"
+          color="gradient"
+        >
+          Sign up to comment <ArrowRightIcon className="ml-2 h-4 w-4" />
+        </Button>
+      )}
     </>
   )
 })
