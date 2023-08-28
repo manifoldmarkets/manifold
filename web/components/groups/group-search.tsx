@@ -15,6 +15,7 @@ import { Col } from '../layout/col'
 import { Spacer } from '../layout/spacer'
 import { Input } from '../widgets/input'
 import { usePersistentQueryState } from 'web/hooks/use-persistent-query-state'
+import { LoadingIndicator } from '../widgets/loading-indicator'
 
 const INITIAL_STATE = {
   groups: undefined,
@@ -127,11 +128,12 @@ export default function GroupSearch(props: {
 
   const { roles, groups: myGroups } = useGroupRoles(user)
 
-  const resultGroups = state.groups ?? []
+  const resultGroups = state.groups
 
-  const groups = inputTerm
-    ? resultGroups
-    : combineGroupsByImportance(resultGroups, myGroups)
+  const groups =
+    inputTerm || !resultGroups
+      ? resultGroups
+      : combineGroupsByImportance(resultGroups, myGroups)
 
   return (
     <Col>
@@ -144,15 +146,19 @@ export default function GroupSearch(props: {
         className="w-full"
       />
       <Spacer h={1} />
-      <GroupsList
-        key={'groups' + groups.length}
-        groups={groups}
-        loadMore={loadMoreGroups}
-        yourGroupIds={yourGroupIds}
-        yourGroupRoles={roles}
-        className="my-1"
-        emptyState={<div>No categories found</div>}
-      />
+      {!groups ? (
+        <LoadingIndicator />
+      ) : (
+        <GroupsList
+          key={'groups' + groups.length}
+          groups={groups}
+          loadMore={loadMoreGroups}
+          yourGroupIds={yourGroupIds}
+          yourGroupRoles={roles}
+          className="my-1"
+          emptyState={<div>No categories found</div>}
+        />
+      )}
     </Col>
   )
 }
