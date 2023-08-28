@@ -530,7 +530,7 @@ const MissingSubData = () => {
 }
 
 const Election2024 = createNewsDashboardTab(
-  'US Elections',
+  'US 2024',
   '2024 US Election Updates',
   [
     {
@@ -841,11 +841,28 @@ const PlaneCrash = createNewsDashboardTab(
   ]
 )
 
+const FLHurricane = createNewsDashboardTab(
+  'Gulf Hurricane',
+  'Tropical Storm Idalia likely to become hurricane',
+  [
+    {
+      url: 'https://www.orlandosentinel.com/2023/08/28/tropical-storm-idalia-forecast-to-become-major-hurricane-before-striking-florida/',
+    },
+    { slug: 'will-tropical-storm-idalia-become-a' },
+
+    { slug: 'will-a-hurricane-make-landfall-in-f-736c1b6b35db' },
+    { slug: 'will-a-hurricane-hit-the-state-of-f' },
+    { slug: 'will-a-hurricane-make-landfall-in-l-d39166018a46' },
+    { slug: 'will-a-hurricane-make-landfall-in-t-d9549c66acae' },
+  ]
+)
+
 export const newsContent = [
-  PlaneCrash,
+  FLHurricane,
+  Election2024,
   Trump,
   STPSuper,
-  Election2024,
+  PlaneCrash,
   ElonVersusZuck,
   UkraineWar,
   NigerCoup,
