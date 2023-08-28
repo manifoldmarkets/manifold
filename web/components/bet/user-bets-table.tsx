@@ -17,7 +17,7 @@ import { getOpenLimitOrdersWithContracts } from 'web/lib/supabase/bets'
 import { db } from 'web/lib/supabase/db'
 import { Col } from '../layout/col'
 import { LoadingIndicator } from '../widgets/loading-indicator'
-import { SiteLink } from '../widgets/site-link'
+import Link from 'next/link'
 import { Row } from 'web/components/layout/row'
 import { Select } from 'web/components/widgets/select'
 import { Pagination } from 'web/components/widgets/pagination'
@@ -37,6 +37,7 @@ import { getUserContractsMetricsWithContracts } from 'web/lib/firebase/api'
 import { useEvent } from 'web/hooks/use-event'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { usePersistentQueryState } from 'web/hooks/use-persistent-query-state'
+import { linkClass } from '../widgets/site-link'
 
 type BetSort =
   | 'newest'
@@ -223,9 +224,9 @@ const NoBets = ({ user }: { user: User }) => {
     <div className="text-ink-500">
       {user.id === me?.id && (
         <>
-          <SiteLink href="/home" className="text-primary-500 hover:underline">
+          <Link href="/home" className="text-primary-500 hover:underline">
             Find a prediction market!
-          </SiteLink>
+          </Link>
         </>
       )}
     </div>
@@ -534,14 +535,13 @@ function BetsTable(props: {
                   {/* Contract title*/}
                   <Row className={'-mb-2'}>
                     <Col>
-                      <SiteLink
+                      <Link
                         href={contractPath(contract)}
-                        className={'line-clamp-2 pr-2 sm:pr-1'}
+                        className={clsx(linkClass, 'line-clamp-2 pr-2 sm:pr-1')}
                         onClick={(e) => e.stopPropagation()}
-                        followsLinkClass
                       >
                         {contract.question}
-                      </SiteLink>
+                      </Link>
                       <UserLink
                         className={'text-ink-500 w-fit text-sm'}
                         name={contract.creatorName}

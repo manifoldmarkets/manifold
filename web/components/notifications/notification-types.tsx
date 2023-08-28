@@ -36,7 +36,7 @@ import { useContract } from 'web/hooks/use-contract-supabase'
 import { useGroupsWithContract } from 'web/hooks/use-group-supabase'
 import { StarDisplay } from '../reviews/stars'
 import { Linkify } from '../widgets/linkify'
-import { linkClass, SiteLink } from '../widgets/site-link'
+import { linkClass } from '../widgets/site-link'
 import {
   AvatarNotificationIcon,
   NOTIFICATION_ICON_SIZE,
@@ -46,6 +46,7 @@ import {
   PrimaryNotificationLink,
   QuestionOrGroupLink,
 } from './notification-helpers'
+import Link from 'next/link'
 
 export function NotificationItem(props: {
   notification: Notification
@@ -787,12 +788,12 @@ function NewPrivateMarketNotification(props: {
         </span>{' '}
         in private group,{' '}
         {privateGroup && privateGroup.length > 0 ? (
-          <SiteLink
+          <Link
             className={clsx(linkClass, 'hover:text-primary-500 font-semibold')}
             href={`group/${privateGroup[0].slug}`}
           >
             {privateGroup[0].name}
-          </SiteLink>
+          </Link>
         ) : (
           'a private group'
         )}

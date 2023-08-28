@@ -7,7 +7,7 @@ import clsx from 'clsx'
 import { DateDoc } from 'common/post'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
-import { SiteLink } from 'web/components/widgets/site-link'
+import Link from 'next/link'
 import { User } from 'web/lib/firebase/users'
 import { DOMAIN } from 'common/envs/constants'
 import Custom404 from '../404'
@@ -74,12 +74,12 @@ function DateDocPage(props: {
     <Page>
       <NoSEO />
       <Col className="mx-auto w-full max-w-xl gap-6 sm:mb-6">
-        <SiteLink href="/date-docs">
+        <Link href="/date-docs">
           <Row className="items-center gap-2">
             <ArrowLeftIcon className="h-5 w-5" aria-hidden="true" />
             <div>Date docs</div>
           </Row>
-        </SiteLink>
+        </Link>
         <DateDocPost dateDoc={post} creator={creator} />
         <Col className="bg-canvas-0 gap-4 rounded-lg px-6 py-4">
           <div className="">Add your endorsement of {creator.name}!</div>
@@ -108,7 +108,7 @@ export function DateDocPost(props: {
 
   return (
     <Col className="bg-canvas-0 gap-6 rounded-lg px-6 py-6">
-      <SiteLink href={link ? `/date-docs/${creator.username}` : undefined}>
+      <Link href={link ? `/date-docs/${creator.username}` : undefined}>
         <Col className="gap-6">
           <Row className="relative items-center justify-between gap-4 text-2xl">
             <div>
@@ -139,7 +139,7 @@ export function DateDocPost(props: {
             </Col>
           </Row>
         </Col>
-      </SiteLink>
+      </Link>
       <RichEditPost post={post} canEdit={!!user && user.id === creator.id} />
       {contractSlug && (
         <div className="to-primary-300 mt-4 w-full max-w-lg self-center rounded-xl bg-gradient-to-r from-blue-200 via-purple-200 p-3">

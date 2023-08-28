@@ -3,7 +3,7 @@ import { memo, useEffect, useState } from 'react'
 import { TextButton } from 'web/components/buttons/text-button'
 import { Modal } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
-import { SiteLink } from 'web/components/widgets/site-link'
+import Link from 'next/link'
 import { Row } from 'web/components/layout/row'
 import {
   getLikedContracts,
@@ -73,12 +73,12 @@ export const UserLikedContractsButton = memo(
                   className={'items-center justify-between gap-2'}
                 >
                   <Col className={'w-full'}>
-                    <SiteLink
+                    <Link
                       href={like.slug}
                       className={'line-clamp-2 text-primary-700 text-sm'}
                     >
                       {like.title}
-                    </SiteLink>
+                    </Link>
                   </Col>
                   <XIcon
                     className="ml-2 h-5 w-5 shrink-0 cursor-pointer"

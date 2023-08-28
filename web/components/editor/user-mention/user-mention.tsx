@@ -1,10 +1,11 @@
-import { SiteLink } from 'web/components/widgets/site-link'
+import Link from 'next/link'
+import { linkClass } from 'web/components/widgets/site-link'
 
 export const UserMention = (props: { userName: string }) => {
   const { userName } = props
   return (
-    <SiteLink href={`/${userName}`} followsLinkClass>
+    <Link href={`/${userName}`} className={linkClass}>
       @{userName}
-    </SiteLink>
+    </Link>
   )
 }

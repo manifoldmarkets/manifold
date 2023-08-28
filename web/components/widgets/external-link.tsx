@@ -1,5 +1,5 @@
 import { ExternalLinkIcon } from '@heroicons/react/outline'
-import Link from 'next/link'
+import clsx from 'clsx'
 
 export const ExternalLink = (props: {
   title: string
@@ -10,11 +10,18 @@ export const ExternalLink = (props: {
   const { title, href, onClick, className } = props
 
   return (
-    <Link href={href} onClick={onClick} target="_blank" className={className}>
-      <span className="items-center hover:text-indigo-400 hover:underline ">
-        {title}
-        <ExternalLinkIcon className="ml-1 inline-block h-4 w-4 " />
-      </span>
-    </Link>
+    <a
+      href={href}
+      onClick={onClick}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={clsx(
+        'items-center hover:text-indigo-400 hover:underline',
+        className
+      )}
+    >
+      {title}
+      <ExternalLinkIcon className="ml-1 inline-block h-4 w-4 " />
+    </a>
   )
 }

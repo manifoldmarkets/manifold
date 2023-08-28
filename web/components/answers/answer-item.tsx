@@ -5,7 +5,7 @@ import { MultiContract } from 'common/contract'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { Avatar, EmptyAvatar } from '../widgets/avatar'
-import { SiteLink } from '../widgets/site-link'
+import Link from 'next/link'
 import { formatPercent } from 'common/util/format'
 import { tradingAllowed } from 'common/contract'
 import { Linkify } from '../widgets/linkify'
@@ -70,12 +70,12 @@ export function ResolutionAnswerItem(props: {
         {outcomeType === 'FREE_RESPONSE' && (
           <Row className="text-ink-500 items-center gap-2 text-sm">
             {user ? (
-              <SiteLink className="relative" href={`/${user.username}`}>
+              <Link className="relative" href={`/${user.username}`}>
                 <Row className="items-center gap-2">
                   <Avatar avatarUrl={user.avatarUrl} size="2xs" />
                   <div className="truncate">{user.name}</div>
                 </Row>
-              </SiteLink>
+              </Link>
             ) : (
               <EmptyAvatar />
             )}

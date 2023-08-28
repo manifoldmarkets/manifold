@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { axisBottom, axisRight } from 'd3-axis'
 import { scaleLinear } from 'd3-scale'
-
 import { Col } from 'web/components/layout/col'
 import { Title } from 'web/components/widgets/title'
 import { Page } from 'web/components/layout/page'
@@ -10,7 +9,6 @@ import { SVGChart, formatPct } from 'web/components/charts/helpers'
 import { formatLargeNumber } from 'common/util/format'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { Linkify } from 'web/components/widgets/linkify'
-import { SiteLink } from 'web/components/widgets/site-link'
 import { Spacer } from 'web/components/layout/spacer'
 import { SizedContainer } from 'web/components/sized-container'
 import { db } from 'web/lib/supabase/db'
@@ -224,12 +222,13 @@ export function WasabiCharts() {
       <p className="text-ink-500 mt-8">
         More charts courtesy of <Linkify text="@wasabipesto" />; originally
         found{' '}
-        <SiteLink
-          className="font-bold"
+        <a
+          className="text-primary-700 hover:underline"
+          target="_blank"
           href="https://wasabipesto.com/manifold/markets/"
         >
           here.
-        </SiteLink>
+        </a>
       </p>
       <Spacer h={4} />
       <iframe

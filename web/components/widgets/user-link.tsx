@@ -1,4 +1,4 @@
-import { SiteLink } from 'web/components/widgets/site-link'
+import Link from 'next/link'
 import clsx from 'clsx'
 import {
   BOT_USERNAMES,
@@ -13,6 +13,7 @@ import { Row } from '../layout/row'
 import { Avatar } from './avatar'
 import { DAY_MS } from 'common/util/time'
 import ScalesIcon from 'web/lib/icons/scales-icon'
+import { linkClass } from './site-link'
 
 export const isFresh = (createdTime: number) =>
   createdTime > Date.now() - DAY_MS * 14
@@ -95,14 +96,17 @@ export function UserLink(props: {
     )
   }
   return (
-    <SiteLink
+    <Link
       href={`/${username}`}
-      className={clsx('inline-flex flex-row items-center gap-1', className)}
-      followsLinkClass
+      className={clsx(
+        linkClass,
+        'inline-flex flex-row items-center gap-1',
+        className
+      )}
       onClick={(e) => e.stopPropagation()}
     >
       {children}
-    </SiteLink>
+    </Link>
   )
 }
 

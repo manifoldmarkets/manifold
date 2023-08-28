@@ -54,7 +54,7 @@ const ContractGroupBreadcrumbs = (props: { contract: Contract }) => {
     <Row className={clsx('line-clamp-1')}>
       {groups.map((group, i) => (
         <span key={group.id} className={'text-primary-600 text-sm'}>
-          <Link className={clsx(linkClass)} href={`/group/${group.slug}`}>
+          <Link className={linkClass} href={`/group/${group.slug}`}>
             {removeEmojis(group.name)}
           </Link>
           {i !== groups.length - 1 && (
