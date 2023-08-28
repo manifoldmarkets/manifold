@@ -29,7 +29,7 @@ export function GroupLine(props: {
       <div className={clsx('flex cursor-pointer items-center justify-between')}>
         {group.name}
         <Row className="gap-4">
-          {isCreator && (
+          {(role !== 'member' || isCreator) && (
             <MemberRoleTag
               role={role}
               isCreator={isCreator}
