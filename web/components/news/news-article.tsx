@@ -7,7 +7,7 @@ import { Spacer } from '../layout/spacer'
 
 export const NewsArticle = (props: {
   title: string
-  urlToImage: string
+  urlToImage?: string
   url: string
   description: string
   author: string
@@ -15,7 +15,7 @@ export const NewsArticle = (props: {
   published_time?: number
 }) => {
   const { title, urlToImage, url, description, published_time } = props
-  const date = Date.parse(published_time as any)
+  const date = Date.parse(props.published_time as any)
   return (
     <Link href={url} target="_blank" className="relative flex w-full flex-col">
       <Col className=" px-4 py-2 sm:hidden sm:px-6">

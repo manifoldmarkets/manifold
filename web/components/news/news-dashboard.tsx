@@ -6,6 +6,7 @@ import { Title } from 'web/components/widgets/title'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { useLinkPreviews } from 'web/hooks/use-link-previews'
 import Masonry from 'react-masonry-css'
+import { NewsArticle } from './news-article'
 
 export const createNewsDashboardTab = (
   shortTitle: string,
@@ -69,7 +70,7 @@ export const NewsDashboard = (props: {
   return (
     <Col>
       <Title className="mb-4">{title}</Title>
-      {isLoading ? <LoadingIndicator /> : <NewsGrid>{content}</NewsGrid>}
+      {isLoading ? <LoadingIndicator /> : <>{content}</>}
     </Col>
   )
 }
