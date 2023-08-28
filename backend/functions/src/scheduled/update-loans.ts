@@ -1,7 +1,7 @@
 import * as functions from 'firebase-functions'
 import { onRequest } from 'firebase-functions/v2/https'
 import * as admin from 'firebase-admin'
-import { groupBy, sortBy } from 'lodash'
+import { groupBy, sortBy, chunk } from 'lodash'
 import {
   invokeFunction,
   loadPaginated,
@@ -107,29 +107,41 @@ export async function updateLoansCore() {
   const today = new Date().toDateString().replace(' ', '-')
   const key = `loan-notifications-${today}`
 
-  await mapAsync(userUpdates, async ({ user, result }) => {
-    const { updates, payout } = result
+  const updateChunks = chunk(userUpdates, 500)
 
-    const betUpdates = updates.map((update) => ({
-      doc: firestore
-        .collection('contracts')
-        .doc(update.contractId)
-        .collection('bets')
-        .doc(update.betId),
-      fields: {
-        loanAmount: update.loanTotal,
-      },
-    }))
+  for (let i = 0; i < updateChunks.length; i++) {
+    const updateChunk = updateChunks[i]
+    log(`Paying out ${i + 1}/${updateChunks.length} chunk of loans...`)
 
+    const userBetUpdates = await Promise.all(
+      updateChunk.map(async ({ user, result }) => {
+        const { updates, payout } = result
+
+        await payUser(user.id, payout)
+
+        if (payout >= 1) {
+          // Don't send a notification if the payout is < Ṁ1,
+          // because a Ṁ0 loan is confusing.
+          await createLoanIncomeNotification(user, key, payout)
+        }
+
+        return updates.map((update) => ({
+          doc: firestore
+            .collection('contracts')
+            .doc(update.contractId)
+            .collection('bets')
+            .doc(update.betId),
+          fields: {
+            loanAmount: update.loanTotal,
+          },
+        }))
+      })
+    )
+
+    const betUpdates = userBetUpdates.flat()
+    log(`Writing ${betUpdates.length} bet updates...`)
     await writeAsync(firestore, betUpdates)
-    await payUser(user.id, payout)
-
-    if (payout >= 1) {
-      // Don't send a notification if the payout is < Ṁ1,
-      // because a Ṁ0 loan is confusing.
-      await createLoanIncomeNotification(user, key, payout)
-    }
-  })
+  }
 
   log(`${userUpdates.length} user loans paid out!`)
 }

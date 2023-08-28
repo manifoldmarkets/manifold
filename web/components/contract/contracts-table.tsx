@@ -126,9 +126,11 @@ function ContractQuestion(props: { contract: Contract; className?: string }) {
         avatarUrl={contract.creatorAvatarUrl}
         size="xs"
         preventDefault={true}
+        className="mt-0.5"
       />
-      <div className="">
-        <VisibilityIcon contract={contract} /> {contract.question}
+      <div>
+        <VisibilityIcon contract={contract} />
+        {contract.question}
       </div>
     </Row>
   )

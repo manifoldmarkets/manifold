@@ -415,6 +415,7 @@ export function sendMana(params: {
   toIds: string[]
   amount: number
   message: string
+  groupId?: string
 }) {
   return call(getApiUrl('send-mana'), 'POST', params)
 }

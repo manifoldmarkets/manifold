@@ -258,6 +258,7 @@ export function BuyPanel(props: {
           className="flex-1"
           btnClassName="flex-1 px-2 sm:px-6"
           selected={selected}
+          highlight
           onSelect={(choice) => {
             onOptionChoice(choice)
           }}

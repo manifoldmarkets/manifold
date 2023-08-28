@@ -30,9 +30,8 @@ export const supabasesearchgroups = MaybeAuthedEndpoint(async (req, auth) => {
   const uid = auth?.uid
 
   const searchGroupSQL =
-    !term && !fuzzy && !yourGroups && !addingToContract && !newContract && !!uid
+    !term && !fuzzy && !addingToContract && !newContract && !!uid
       ? getForYouGroupsSQL({ uid, offset, limit })
-
       : getSearchGroupSQL({
           term,
           offset,

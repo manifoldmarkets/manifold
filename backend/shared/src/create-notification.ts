@@ -20,7 +20,7 @@ import {
 import { Contract, MultiContract } from 'common/contract'
 import { getPrivateUser, getUser, getValues, log } from 'shared/utils'
 import { Comment } from 'common/comment'
-import { groupBy, keyBy, mapValues, sum, uniq } from 'lodash'
+import { groupBy, keyBy, mapValues, minBy, sum, uniq } from 'lodash'
 import { Bet, LimitBet } from 'common/bet'
 import { Answer, DpmAnswer } from 'common/answer'
 import { removeUndefinedProps } from 'common/util/object'
@@ -61,6 +61,7 @@ import { richTextToString } from 'common/util/parse'
 import { JSONContent } from '@tiptap/core'
 import { league_user_info } from 'common/leagues'
 import { getInterestingMarketsForUsers } from 'shared/interesting-markets-email-helpers'
+import { hasUserSeenMarket } from 'shared/helpers/seen-markets'
 
 const firestore = admin.firestore()
 
@@ -896,6 +897,8 @@ export const createUniqueBettorBonusNotification = async (
     privateUser,
     'unique_bettors_on_your_contract'
   )
+  const pg = createSupabaseDirectClient()
+
   if (sendToBrowser) {
     const { outcomeType } = contract
     const pseudoNumericData =
@@ -939,7 +942,6 @@ export const createUniqueBettorBonusNotification = async (
         ...pseudoNumericData,
       } as UniqueBettorData),
     }
-    const pg = createSupabaseDirectClient()
     await insertNotificationToSupabase(notification, pg)
   }
 
@@ -947,15 +949,10 @@ export const createUniqueBettorBonusNotification = async (
   const uniqueBettorsExcludingCreator = uniqueBettorIds.filter(
     (id) => id !== contractCreatorId
   )
-  // only send on 1st and 6th bettor
-  if (
-    uniqueBettorsExcludingCreator.length !== 1 &&
-    uniqueBettorsExcludingCreator.length !== 6
-  )
+  const TOTAL_NEW_BETTORS_TO_REPORT = 5
+  // Only send on 5th bettor
+  if (uniqueBettorsExcludingCreator.length !== TOTAL_NEW_BETTORS_TO_REPORT)
     return
-  const totalNewBettorsToReport =
-    uniqueBettorsExcludingCreator.length === 1 ? 1 : 5
-
   const mostRecentUniqueBettors = await getValues<User>(
     firestore
       .collection('users')
@@ -963,7 +960,7 @@ export const createUniqueBettorBonusNotification = async (
         'id',
         'in',
         uniqueBettorsExcludingCreator.slice(
-          uniqueBettorsExcludingCreator.length - totalNewBettorsToReport,
+          uniqueBettorsExcludingCreator.length - TOTAL_NEW_BETTORS_TO_REPORT,
           uniqueBettorsExcludingCreator.length
         )
       )
@@ -972,17 +969,26 @@ export const createUniqueBettorBonusNotification = async (
   const bets = await getValues<Bet>(
     firestore.collection('contracts').doc(contract.id).collection('bets')
   )
-  // group bets by bettors
   const bettorsToTheirBets = groupBy(bets, (bet) => bet.userId)
+
+  // Don't send if creator has seen their market since the 1st bet was placed
+  const creatorHasSeenMarketSinceBet = await hasUserSeenMarket(
+    contract.id,
+    privateUser.id,
+    minBy(Object.values(bettorsToTheirBets).flat(), 'createdTime')
+      ?.createdTime ?? contract.createdTime,
+    pg
+  )
+  if (creatorHasSeenMarketSinceBet) return
+
   await sendNewUniqueBettorsEmail(
     'unique_bettors_on_your_contract',
-    contractCreatorId,
     privateUser,
     contract,
     uniqueBettorsExcludingCreator.length,
     mostRecentUniqueBettors,
     bettorsToTheirBets,
-    amount * totalNewBettorsToReport
+    amount * TOTAL_NEW_BETTORS_TO_REPORT
   )
 }
 

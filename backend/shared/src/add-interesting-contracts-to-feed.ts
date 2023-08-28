@@ -97,7 +97,7 @@ export async function addInterestingContractsToFeed(
     // This is a newly trending contract, and should be at the top of most users' feeds
     if (todayScore > 10 && todayScore / thisWeekScore > 0.5 && !readOnly) {
       log('Inserting specifically today trending contract', contract.id)
-      await insertTrendingContractToUsersFeeds(contract, now - 2 * DAY_MS, {
+      await insertTrendingContractToUsersFeeds(contract, now - 3 * DAY_MS, {
         todayScore,
         thisWeekScore,
         importanceScore: parseFloat(importanceScore.toPrecision(2)),
@@ -117,7 +117,7 @@ export async function addInterestingContractsToFeed(
         hourAgoTradersByContract[contract.id],
         'traders in the past hour'
       )
-      await insertTrendingContractToUsersFeeds(contract, now - 7 * DAY_MS, {
+      await insertTrendingContractToUsersFeeds(contract, now - 14 * DAY_MS, {
         tradersInPastHour: hourAgoTradersByContract[contract.id] ?? 0,
         importanceScore: parseFloat(importanceScore.toPrecision(2)),
       })

@@ -23,6 +23,7 @@ import { LikeButton } from 'web/components/contract/like-button'
 import {
   CopyLinkDateTimeComponent,
   copyLinkToComment,
+  getCommentLink,
 } from 'web/components/feed/copy-link-date-time'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -34,7 +35,7 @@ import { useEvent } from 'web/hooks/use-event'
 import { useIsVisible } from 'web/hooks/use-is-visible'
 import { isBlocked, usePrivateUser, useUser } from 'web/hooks/use-user'
 import { createCommentOnContract, hideComment } from 'web/lib/firebase/api'
-import { firebaseLogin } from 'web/lib/firebase/users'
+import { firebaseLogin, User } from 'web/lib/firebase/users'
 import LinkIcon from 'web/lib/icons/link-icon'
 import TriangleDownFillIcon from 'web/lib/icons/triangle-down-fill-icon'
 import TriangleFillIcon from 'web/lib/icons/triangle-fill-icon'
@@ -49,6 +50,8 @@ import { Content } from '../widgets/editor'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import { Tooltip } from '../widgets/tooltip'
 import { isAdminId } from 'common/envs/constants'
+import { PaymentsModal } from 'web/pages/payments'
+import { GiPayMoney } from 'react-icons/gi'
 
 export type ReplyToUserInfo = { id: string; username: string }
 export const isReplyToBet = (comment: ContractComment) =>
@@ -353,6 +356,7 @@ export function DotMenu(props: {
   const isAdmin = useAdmin()
   const isContractCreator = privateUser?.id === contract.creatorId
   const [editingComment, setEditingComment] = useState(false)
+  const [tipping, setTipping] = useState(false)
   return (
     <>
       <ReportModal
@@ -368,7 +372,13 @@ export function DotMenu(props: {
         label={'Comment'}
       />
       <DropdownMenu
-        Icon={<DotsHorizontalIcon className="h-4 w-4" aria-hidden="true" />}
+        menuWidth={'w-36'}
+        Icon={
+          <DotsHorizontalIcon
+            className="mt-[0.12rem] h-4 w-4"
+            aria-hidden="true"
+          />
+        }
         Items={buildArray(
           {
             name: 'Copy link',
@@ -381,21 +391,26 @@ export function DotMenu(props: {
               )
             },
           },
-          user && {
-            name: 'Report',
-            icon: <FlagIcon className="h-5 w-5" />,
-            onClick: () => {
-              if (user?.id !== comment.userId) setIsModalOpen(true)
-              else toast.error(`You can't report your own comment`)
+          user &&
+            comment.userId !== user.id && {
+              name: 'Tip',
+              icon: <GiPayMoney className="h-5 w-5" />,
+              onClick: () => setTipping(true),
             },
-          },
+          user &&
+            comment.userId !== user.id && {
+              name: 'Report',
+              icon: <FlagIcon className="h-5 w-5" />,
+              onClick: () => {
+                if (user?.id !== comment.userId) setIsModalOpen(true)
+                else toast.error(`You can't report your own comment`)
+              },
+            },
           user &&
             (comment.userId === user.id || isAdminId(user?.id)) && {
               name: 'Edit',
               icon: <PencilIcon className="h-5 w-5" />,
-              onClick: async () => {
-                setEditingComment(true)
-              },
+              onClick: () => setEditingComment(true),
             },
           (isAdmin || isContractCreator) && {
             name: comment.hidden ? 'Unhide' : 'Hide',
@@ -418,6 +433,29 @@ export function DotMenu(props: {
           contract={contract}
           open={editingComment}
           setOpen={setEditingComment}
+        />
+      )}
+      {user && tipping && (
+        <PaymentsModal
+          fromUser={user}
+          toUser={
+            {
+              id: comment.userId,
+              name: comment.userName,
+              username: comment.userUsername,
+              avatarUrl: comment.userAvatarUrl ?? '',
+            } as User
+          }
+          setShow={setTipping}
+          show={tipping}
+          groupId={comment.id}
+          defaultMessage={`Tip for comment on ${
+            contract.question
+          } (${getCommentLink(
+            contract.creatorUsername,
+            contract.slug,
+            comment.id
+          )})`}
         />
       )}
     </>

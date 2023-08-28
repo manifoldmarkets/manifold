@@ -281,10 +281,10 @@ export const computeContractScores = (
   // recalibrate all of these numbers as site usage changes
   const rawImportance =
     3 * normalize(traderHour, 20) +
+    3 * newness +
     2 * normalize(todayScore, 100) +
     2 * marketMovt +
     2 * closingSoonnness +
-    2 * newness +
     commentScore +
     normalize(thisWeekScore, 200) +
     normalize(Math.log10(contract.volume24Hours + 1), 5) +

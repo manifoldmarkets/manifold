@@ -218,16 +218,18 @@ const App = () => {
   // Handle deep links
   useEffect(() => {
     if (!linkedUrl || linkedUrl === 'blank') return
-    const { hostname, path, queryParams } = Linking.parse(linkedUrl)
+    const { hostname, path } = Linking.parse(linkedUrl)
     if (path !== 'blank' && hostname) {
+      const pathIncludeParams = linkedUrl.split('manifold.markets')[1]
+      const url = pathIncludeParams != '/' ? pathIncludeParams : '/home'
       log(
         'Linked url',
         linkedUrl,
         ', has loaded webview:',
         hasLoadedWebView,
-        `, and data: ${JSON.stringify(queryParams)}`
+        ', path:',
+        url
       )
-      const url = path ? path : '/'
       if (hasLoadedWebView && listeningToNative.current)
         communicateWithWebview('link', { url })
       else setEndpointWithNativeQuery(url)

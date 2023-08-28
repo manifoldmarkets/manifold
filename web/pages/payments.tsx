@@ -314,15 +314,17 @@ function PaymentsTable(props: {
   )
 }
 
-const PaymentsModal = (props: {
+export const PaymentsModal = (props: {
   fromUser: User
   toUser?: User
   show: boolean
   setShow: (show: boolean) => void
+  defaultMessage?: string
+  groupId?: string
 }) => {
-  const { fromUser, toUser, setShow, show } = props
+  const { fromUser, groupId, defaultMessage, toUser, setShow, show } = props
   const [amount, setAmount] = useState<number | undefined>(10)
-  const [message, setMessage] = useState('')
+  const [message, setMessage] = useState(defaultMessage ?? '')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [toUsers, setToUsers] = useState<UserSearchResult[]>([])
@@ -409,6 +411,7 @@ const PaymentsModal = (props: {
                     toIds: toUsers.map((user) => user.id),
                     amount,
                     message,
+                    groupId,
                   })
                   setError('')
                   setShow(false)

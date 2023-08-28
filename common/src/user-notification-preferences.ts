@@ -13,15 +13,11 @@ export type notification_preferences = {
   poll_close_on_watched_markets: notification_destination_types[]
 
   // Comments
-  tipped_comments_on_watched_markets: notification_destination_types[]
-  comments_by_followed_users_on_watched_markets: notification_destination_types[]
   all_replies_to_my_comments_on_watched_markets: notification_destination_types[]
   all_replies_to_my_answers_on_watched_markets: notification_destination_types[]
   all_comments_on_contracts_with_shares_in_on_watched_markets: notification_destination_types[]
 
   // Answers
-  answers_by_followed_users_on_watched_markets: notification_destination_types[]
-  answers_by_market_creator_on_watched_markets: notification_destination_types[]
   all_answers_on_contracts_with_shares_in_on_watched_markets: notification_destination_types[]
 
   // On users' markets
@@ -47,8 +43,6 @@ export type notification_preferences = {
   betting_streaks: notification_destination_types[]
   referral_bonuses: notification_destination_types[]
   unique_bettors_on_your_contract: notification_destination_types[]
-  tips_on_your_comments: notification_destination_types[]
-  tips_on_your_markets: notification_destination_types[]
   limit_order_fills: notification_destination_types[]
   quest_payout: notification_destination_types[]
 
@@ -94,12 +88,6 @@ export const getDefaultNotificationPreferences = (isDev?: boolean) => {
     all_answers_on_watched_markets: constructPref(true, false, false),
 
     // Comments
-    tips_on_your_comments: constructPref(true, true, false),
-    comments_by_followed_users_on_watched_markets: constructPref(
-      true,
-      true,
-      false
-    ),
     all_replies_to_my_comments_on_watched_markets: constructPref(
       true,
       true,
@@ -117,19 +105,9 @@ export const getDefaultNotificationPreferences = (isDev?: boolean) => {
     ),
 
     // Answers
-    answers_by_followed_users_on_watched_markets: constructPref(
-      true,
-      true,
-      false
-    ),
-    answers_by_market_creator_on_watched_markets: constructPref(
-      true,
-      true,
-      false
-    ),
     all_answers_on_contracts_with_shares_in_on_watched_markets: constructPref(
       true,
-      true,
+      false,
       false
     ),
 
@@ -142,7 +120,7 @@ export const getDefaultNotificationPreferences = (isDev?: boolean) => {
     your_poll_closed: constructPref(true, true, false),
 
     // Market updates
-    resolutions_on_watched_markets: constructPref(true, false, true),
+    resolutions_on_watched_markets: constructPref(true, true, true),
     market_updates_on_watched_markets: constructPref(true, false, false),
     market_updates_on_watched_markets_with_shares_in: constructPref(
       true,
@@ -164,8 +142,6 @@ export const getDefaultNotificationPreferences = (isDev?: boolean) => {
     betting_streaks: constructPref(true, false, true),
     referral_bonuses: constructPref(true, true, false),
     unique_bettors_on_your_contract: constructPref(true, true, false),
-    tipped_comments_on_watched_markets: constructPref(true, true, false),
-    tips_on_your_markets: constructPref(true, true, false),
     limit_order_fills: constructPref(true, false, false),
     quest_payout: constructPref(true, false, false),
 
@@ -203,12 +179,9 @@ export const notificationReasonToSubscriptionType: Partial<
 > = {
   you_referred_user: 'referral_bonuses',
   user_joined_to_bet_on_your_market: 'referral_bonuses',
-  tip_received: 'tips_on_your_comments',
   bet_fill: 'limit_order_fills',
   user_joined_from_your_group_invite: 'referral_bonuses',
-  challenge_accepted: 'limit_order_fills',
   betting_streak_incremented: 'betting_streaks',
-  liked_and_tipped_your_contract: 'tips_on_your_markets',
   comment_on_your_contract: 'all_comments_on_my_markets',
   answer_on_your_contract: 'all_answers_on_my_markets',
   comment_on_contract_you_follow: 'all_comments_on_watched_markets',
