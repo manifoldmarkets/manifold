@@ -559,33 +559,29 @@ const Election2024 = createNewsDashboardTab(
   ]
 )
 
-const RPlace = createNewsDashboardTab('r/place', 'r/place', [
-  { slug: 'will-rplace-say-fuck-spez-when-it-c' },
-  {
-    content: (
-      <NewsTopicsContentContainer
-        containerContent={
-          <>
-            Redditors create live animation of the anime Bad Apple:
-            <Link
-              className="text-indigo-500 underline"
-              href="https://twitter.com/MrFoxWasTaken/status/1683184769012748288"
-            >
-              Watch on Twitter
-            </Link>
-          </>
-        }
-      />
-    ),
-  },
-  { slug: 'how-long-will-rplace-last' },
-  { slug: 'what-will-the-final-color-be-at-0-0' },
-  { slug: 'is-this-rplace-a-good-business-move' },
+const RPlace = createNewsDashboardTab(
+  'r/place',
+  'r/place',
+  [
+    { slug: 'will-rplace-say-fuck-spez-when-it-c' },
+    { slug: 'how-long-will-rplace-last' },
+    { slug: 'what-will-the-final-color-be-at-0-0' },
+    { slug: 'is-this-rplace-a-good-business-move' },
 
-  { slug: 'will-i-be-convinced-that-the-destin' },
-  { slug: 'will-manifold-make-it-on-rplace' },
-  { slug: 'will-destiny-be-the-most-represente' },
-])
+    { slug: 'will-i-be-convinced-that-the-destin' },
+    { slug: 'will-manifold-make-it-on-rplace' },
+    { slug: 'will-destiny-be-the-most-represente' },
+  ],
+  <>
+    Redditors create live animation of the anime Bad Apple:
+    <Link
+      className="text-indigo-500 underline"
+      href="https://twitter.com/MrFoxWasTaken/status/1683184769012748288"
+    >
+      Watch on Twitter
+    </Link>
+  </>
+)
 
 const XCom = createNewsDashboardTab('X.com', 'Twitter rebrands to X.com', [
   { url: 'https://www.bbc.co.uk/news/business-66284304' },
@@ -621,64 +617,51 @@ const STPSuper = createNewsDashboardTab(
   [
     { slug: 'will-the-lk99-room-temp-ambient-pre' },
     { slug: 'when-will-we-know-whether-the-room' },
-    {
-      content: (
-        <NewsTopicsContentContainer
-          header="Additional Context"
-          containerContent={
-            <Col className="gap-4">
-              <ExternalLink
-                title="Main Paper"
-                href="https://arxiv.org/abs/2307.12008"
-              />
-
-              <ExternalLink
-                title="Companion Paper"
-                href="https://arxiv.org/abs/2307.12037"
-              />
-
-              <ExternalLink
-                title="First claims of replication from China"
-                href="https://www.zhihu.com/question/613850973/answer/3136316439?utm_id=0"
-              />
-
-              <ExternalLink
-                title="What would RTP superconductors mean?"
-                href="https://theconversation.com/room-temperature-superconductors-could-revolutionize-electronics-an-electrical-engineer-explains-the-materials-potential-201849"
-              />
-
-              <ExternalLink
-                title="Hacker News thread discussion"
-                href="https://news.ycombinator.com/item?id=36864624"
-              />
-
-              <ExternalLink
-                title="Table of all current replication attempts"
-                href="https://forums.spacebattles.com/threads/claims-of-room-temperature-and-ambient-pressure-superconductor.1106083/page-11?post=94266395#post-94266395"
-              />
-
-              <ExternalLink
-                title="Chinese team finds theoretical basis for LK-99 superconductivity"
-                href="https://arxiv.org/abs/2307.16040"
-              />
-
-              {/* <p className="mb-4">
-                Materials used are relatively cheap and not complicated, so it
-                should be easy for others to replicate.
-              </p> */}
-            </Col>
-          }
-        />
-      ),
-    },
-
     { slug: 'will-there-be-a-highcredibility-spu' },
     { slug: 'will-the-first-roomtemperature-ambi' },
     { slug: 'will-we-have-the-first-roomtemperat' },
     { slug: 'will-a-roomtemperature-atmospheric' },
     { slug: 'will-the-first-roomtemperature-ambi-61c98e502e09' },
     { slug: 'which-financial-instruments-should' },
-  ]
+  ],
+  <Col className="gap-4">
+    <ExternalLink title="Main Paper" href="https://arxiv.org/abs/2307.12008" />
+
+    <ExternalLink
+      title="Companion Paper"
+      href="https://arxiv.org/abs/2307.12037"
+    />
+
+    <ExternalLink
+      title="First claims of replication from China"
+      href="https://www.zhihu.com/question/613850973/answer/3136316439?utm_id=0"
+    />
+
+    <ExternalLink
+      title="What would RTP superconductors mean?"
+      href="https://theconversation.com/room-temperature-superconductors-could-revolutionize-electronics-an-electrical-engineer-explains-the-materials-potential-201849"
+    />
+
+    <ExternalLink
+      title="Hacker News thread discussion"
+      href="https://news.ycombinator.com/item?id=36864624"
+    />
+
+    <ExternalLink
+      title="Table of all current replication attempts"
+      href="https://forums.spacebattles.com/threads/claims-of-room-temperature-and-ambient-pressure-superconductor.1106083/page-11?post=94266395#post-94266395"
+    />
+
+    <ExternalLink
+      title="Chinese team finds theoretical basis for LK-99 superconductivity"
+      href="https://arxiv.org/abs/2307.16040"
+    />
+
+    {/* <p className="mb-4">
+                Materials used are relatively cheap and not complicated, so it
+                should be easy for others to replicate.
+              </p> */}
+  </Col>
 )
 
 const UFOs = createNewsDashboardTab(
@@ -694,73 +677,56 @@ const UFOs = createNewsDashboardTab(
     { slug: 'will-the-ufo-retrieval-program-clai' },
     { slug: 'will-the-next-state-of-the-union-ad' },
     { slug: 'will-the-us-government-reveal-that' },
-    {
-      content: (
-        <img
-          className="mb-4"
-          alt="Tic Tac UFO"
-          src="https://nybreaking.com/wp-content/uploads/2023/07/1690479621_174_What-was-the-Tic-Tac-UFO-The-story-behind-retired.jpg"
-        />
-      ),
-    },
     { slug: 'will-the-president-of-the-usa-ackno' },
     { slug: 'by-2025-over-60-of-americans-will-b' },
     { slug: 'will-a-clear-4k-video-of-a-uap-be-r' },
     { slug: 'will-eliezer-yudkowsky-win-his-1500' },
     { slug: 'will-the-ufo-shot-down-in-alaska-on' },
-    {
-      content: (
-        <iframe
-          className="mb-4 h-48 w-full"
-          src="https://www.youtube.com/embed/KQ7Dw-739VY?start=2550"
-          title="Grusch UFO testimony"
-          allow=""
-        ></iframe>
-      ),
-    },
-    {
-      content: (
-        <img
-          className="mb-4"
-          alt="Alien"
-          src="https://preview.redd.it/tell-me-this-lil-fella-didnt-just-steal-your-heart-at-this-v0-7ukx8e9u8tbb1.png?auto=webp&s=8e0b01e616a9442dc64ededd657e9643bbdadcb0"
-        />
-      ),
-    },
     { slug: 'if-eliezer-yudkowsky-loses-his-bet' },
-  ]
+  ],
+  <div>
+    <img
+      className="mb-4"
+      alt="Alien"
+      src="https://preview.redd.it/tell-me-this-lil-fella-didnt-just-steal-your-heart-at-this-v0-7ukx8e9u8tbb1.png?auto=webp&s=8e0b01e616a9442dc64ededd657e9643bbdadcb0"
+    />
+    <iframe
+      className="mb-4 h-48 w-full"
+      src="https://www.youtube.com/embed/KQ7Dw-739VY?start=2550"
+      title="Grusch UFO testimony"
+      allow=""
+    ></iframe>
+  </div>
 )
 
 const Trump = createNewsDashboardTab('Trump', 'Trump indicted', [
   {
-    url: 'https://apnews.com/article/trump-georgia-election-investigation-grand-jury-willis-d39562cedfc60d64948708de1b011ed3',
-  },
-  {
     content: (
-      <NewsTopicsContentContainer
-        header="Trump charged with racketeering"
-        containerContent={
-          <Col className="gap-4">
-            <div>Trump faces 4th criminal case, August 14th</div>
-            <div>
-              “The indictment alleges that rather than abide by Georgia’s legal
-              process for election challenges, the defendants engaged in a
-              criminal racketeering enterprise to overturn Georgia’s
-              presidential election result,” Fulton County District Attorney
-              Fani Willis
-            </div>
-            <div>Odds of Trump avoiding prison were at 60% but fell to 23%</div>
-            <div>
-              The type of charges (RICO) being pressed is novel in this context
-              and is usually used against criminal organisations{' '}
-            </div>
-          </Col>
-        }
-      />
+      // <NewsTopicsContentContainer
+      //   header="Trump charged with racketeering"
+      //   containerContent={
+      <Col className="gap-4">
+        <div>Trump faces 4th criminal case, August 14th</div>
+        <div>
+          “The indictment alleges that rather than abide by Georgia’s legal
+          process for election challenges, the defendants engaged in a criminal
+          racketeering enterprise to overturn Georgia’s presidential election
+          result,” Fulton County District Attorney Fani Willis
+        </div>
+        <div>Odds of Trump avoiding prison were at 60% but fell to 23%</div>
+        <div>
+          The type of charges (RICO) being pressed is novel in this context and
+          is usually used against criminal organisations{' '}
+        </div>
+      </Col>
+      // }
+      // />
     ),
   },
+  {
+    url: 'https://apnews.com/article/trump-georgia-election-investigation-grand-jury-willis-d39562cedfc60d64948708de1b011ed3',
+  },
   { slug: 'when-will-trump-be-imprisoned' },
-
   { slug: 'will-donald-trump-be-the-republican' },
   { slug: 'will-a-trump-mugshot-be-available-b' },
   { slug: 'will-one-of-the-18-indicted-coconsp' },

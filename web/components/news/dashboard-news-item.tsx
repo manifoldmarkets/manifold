@@ -1,9 +1,8 @@
-import dayjs from 'dayjs'
 import clsx from 'clsx'
 
-import { track } from 'web/lib/service/analytics'
-import { Col } from 'web/components/layout/col'
 import Link from 'next/link'
+import { Col } from 'web/components/layout/col'
+import { track } from 'web/lib/service/analytics'
 import { Row } from '../layout/row'
 import { RelativeTimestamp } from '../relative-timestamp'
 
@@ -17,6 +16,7 @@ export const DashboardNewsItem = (props: {
   published_time?: number
   className?: string
   source_name?: string
+  siteName?: string
 }) => {
   const {
     title,
@@ -28,10 +28,10 @@ export const DashboardNewsItem = (props: {
     author,
     className,
     source_name,
+    siteName,
   } = props
 
-  console.log(props)
-
+  console.log(title, props)
   const date = Date.parse(published_time as any)
   return (
     <Link
@@ -52,7 +52,7 @@ export const DashboardNewsItem = (props: {
       />
       <Col className=" border-canvas-0 w-full bg-opacity-80 py-2 sm:pl-4 sm:pr-6 ">
         <Row className="text-ink-500 w-full justify-between text-sm">
-          <div>{props.siteName ? props.siteName : 'News'}</div>
+          <div>{siteName ? siteName : ''}</div>
           {published_time && (
             <span>
               published
@@ -67,10 +67,6 @@ export const DashboardNewsItem = (props: {
           )}
         </Row>
         <div className="line-clamp-2 text-lg">{title}</div>
-        {/* <div className="line-clamp-3 text-ink-600 text-xs">
-          {author}
-          {published_time && ` / ${dayjs.utc(published_time).fromNow()}`}
-        </div> */}
         <div className="line-clamp-3 text-sm">{description}</div>
       </Col>
     </Link>

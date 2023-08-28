@@ -7,19 +7,24 @@ import { LoadingIndicator } from '../widgets/loading-indicator'
 import { useLinkPreviews } from 'web/hooks/use-link-previews'
 import Masonry from 'react-masonry-css'
 import { NewsArticle } from './news-article'
+import { ReactNode } from 'react'
+
+export type NewsContentType = { url: string } | { slug: string }
 
 export const createNewsDashboardTab = (
   shortTitle: string,
   title: string,
-  content: ({ url: string } | { slug: string } | { content: any })[]
+  content: NewsContentType[],
+  context?: ReactNode
 ) => {
   return {
     title: shortTitle,
-    content: <NewsDashboard title={title} data={content} />,
+    content: <NewsDashboard title={title} context={context} data={content} />,
   }
 }
 
 export const NewsDashboard = (props: {
+  context?: ReactNode
   data: ({ url: string } | { slug: string } | { content: any })[]
   title: string
 }) => {
@@ -65,11 +70,36 @@ export const NewsDashboard = (props: {
     return <div key={'news-tab-content' + title + i}>{card.content}</div>
   }
 
-  const content = data.map(renderCard).filter((x) => !!x)
+  const getRelevantTime = (contract: any) =>
+    contract.resolutionTime || contract.createdTime
+
+  const hasSlug = (content: NewsContentType): content is { slug: string } => {
+    return 'slug' in content
+  }
+
+  // Use the custom type guard 'hasSlug' to filter out slugCards
+  const slugCards = data.filter(hasSlug)
+
+  // And similarly, you can safely filter out other types of cards
+  const otherCards = data.filter((card) => !hasSlug(card))
+
+  const sortedSlugCards = slugCards
+    .map((card) => ({
+      card,
+      contract: contracts.find((contract) => contract.slug === card.slug),
+    }))
+    .filter(({ contract }) => !!contract)
+    .sort((a, b) => getRelevantTime(b.contract!) - getRelevantTime(a.contract!))
+    .map(({ card }) => card)
+
+  const sortedData = [...otherCards, ...sortedSlugCards]
+
+  const content = sortedData.map(renderCard).filter((x) => !!x)
 
   return (
     <Col>
       <Title className="mb-4">{title}</Title>
+      {props.context}
       {isLoading ? <LoadingIndicator /> : <>{content}</>}
     </Col>
   )

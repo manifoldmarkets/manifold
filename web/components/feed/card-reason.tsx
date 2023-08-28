@@ -7,6 +7,7 @@ import { getMarketMovementInfo } from 'web/lib/supabase/feed-timeline/feed-marke
 import clsx from 'clsx'
 import { Row } from '../layout/row'
 import { HiSparkles } from 'react-icons/hi'
+import { fromNow } from 'web/lib/util/time'
 
 export function CardReason(props: {
   item: FeedTimelineItem | undefined
@@ -20,7 +21,34 @@ export function CardReason(props: {
   )
   const positiveChange = probChange && probChange > 0
 
-  if (!item || item.isCopied) {
+  if (!item) {
+    if (contract.resolutionTime) {
+      return (
+        <span className="text-ink-400 text-sm">
+          resolved
+          <RelativeTimestamp
+            time={contract.resolutionTime}
+            shortened={true}
+            className="text-ink-400"
+          />
+        </span>
+      )
+    } else {
+      return (
+        <span className="text-ink-400 text-sm">
+          created
+          <RelativeTimestamp
+            time={contract.createdTime}
+            shortened={true}
+            className="text-ink-400"
+          />
+        </span>
+      )
+    }
+    return <span></span>
+  }
+
+  if (item.isCopied) {
     return <></>
   }
 
