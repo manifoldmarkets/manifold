@@ -1,9 +1,8 @@
 import { Spacer } from './layout/spacer'
-import { firebaseLogin } from 'web/lib/firebase/users'
 import { Col } from './layout/col'
-import { withTracking } from 'web/lib/service/analytics'
 import { useTracking } from 'web/hooks/use-tracking'
 import { SiteLink } from './site-link'
+import Link from 'next/link'
 
 export function LandingPagePanel() {
   useTracking('view landing page')
@@ -45,12 +44,11 @@ export function LandingPagePanel() {
           </div>
         </div>
         <Spacer h={6} />
-        <button
-          className="self-center rounded-md border-none bg-gradient-to-r from-indigo-500 to-blue-500 py-4 px-6 text-lg font-semibold normal-case text-white hover:from-indigo-600 hover:to-blue-600"
-          onClick={withTracking(firebaseLogin, 'landing page button click')}
-        >
-          Get started
-        </button>{' '}
+        <Link href="/markets">
+          <button className="self-center rounded-md border-none bg-gradient-to-r from-indigo-500 to-blue-500 py-4 px-6 text-lg font-semibold normal-case text-white hover:from-indigo-600 hover:to-blue-600">
+            Go to markets
+          </button>
+        </Link>
       </Col>
     </>
   )

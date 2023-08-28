@@ -5,6 +5,7 @@ import {
   MenuAlt3Icon,
   SearchIcon,
   XIcon,
+  TrendingUpIcon,
 } from '@heroicons/react/outline'
 import { Transition, Dialog } from '@headlessui/react'
 import { useState, Fragment } from 'react'
@@ -34,6 +35,7 @@ function getNavigation() {
 const signedOutNavigation = [
   { name: 'Home', href: '/', icon: HomeIcon },
   { name: 'Explore', href: '/markets', icon: SearchIcon },
+  { name: 'Leaderboard', href: '/leaderboards', icon: TrendingUpIcon },
 ]
 
 // From https://codepen.io/chris__sev/pen/QWGvYbL

@@ -118,6 +118,12 @@ function getMoreNavigation(user?: User | null) {
 const signedOutNavigation = [
   { name: 'Home', href: '/home', icon: HomeIcon },
   { name: 'Explore', href: '/markets', icon: SearchIcon },
+  { name: 'Leaderboard', href: '/leaderboards', icon: TrendingUpIcon },
+  {
+    name: 'Rules',
+    href: 'https://www.cspicenter.com/p/introducing-the-salemcspi-forecasting',
+    icon: BookOpenIcon,
+  },
 ]
 
 const signedOutMobileNavigation = IS_PRIVATE_MANIFOLD
