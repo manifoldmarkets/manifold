@@ -199,7 +199,7 @@ export const useFeedTimeline = (
               ({
                 ...news,
                 id: news.id.toString(),
-                urlToImage: news.image_url
+                urlToImage: news.image_url,
               } as News)
           )
         ),
