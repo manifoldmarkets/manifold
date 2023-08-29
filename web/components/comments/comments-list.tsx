@@ -12,7 +12,7 @@ import { Avatar } from '../widgets/avatar'
 import { Content } from '../widgets/editor'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { Pagination } from '../widgets/pagination'
-import { SiteLink } from '../widgets/site-link'
+import Link from 'next/link'
 import { useIsAuthorized } from 'web/hooks/use-user'
 
 type ContractKey = {
@@ -109,12 +109,12 @@ function ProfileCommentGroup(props: {
   const path = contractPath(contractSlug)
   return (
     <div className="bg-canvas-0 border-ink-300 border-b p-5">
-      <SiteLink
+      <Link
         className="text-primary-700 mb-2 block pb-2 font-medium"
         href={path}
       >
         {contractQuestion}
-      </SiteLink>
+      </Link>
       <Col className="gap-6">
         {items.map((c) => (
           <ProfileComment key={c.id} comment={c} />

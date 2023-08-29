@@ -1,6 +1,7 @@
 import clsx from 'clsx'
 import { Fragment } from 'react'
-import { SiteLink } from './site-link'
+import Link from 'next/link'
+import { linkClass } from './site-link'
 
 // Return a JSX span, linkifying @username, and https://...
 export function Linkify(props: { text: string; className?: string }) {
@@ -26,10 +27,10 @@ export function Linkify(props: { text: string; className?: string }) {
     return (
       <>
         {whitespace}
-        <SiteLink className="text-primary-700" href={href} followsLinkClass>
+        <Link className={clsx(linkClass, 'text-primary-700')} href={href}>
           {symbol}
           {tag}
-        </SiteLink>
+        </Link>
       </>
     )
   })

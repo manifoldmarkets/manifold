@@ -4,7 +4,7 @@ import { User } from 'common/user'
 import toast from 'react-hot-toast'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
-import { SiteLink } from 'web/components/widgets/site-link'
+import Link from 'next/link'
 import {
   addContractToGroup,
   removeContractFromGroup,
@@ -30,7 +30,7 @@ export function ContractGroupsList(props: {
   return (
     <Col className={'gap-2'}>
       <span className={'text-primary-700 text-xl'}>
-        <SiteLink href={'/groups/'}>Categories</SiteLink>
+        <Link href={'/groups/'}>Categories</Link>
       </span>
       <Col className="h-96 justify-between overflow-auto">
         <Col>

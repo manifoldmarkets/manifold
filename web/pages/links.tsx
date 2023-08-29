@@ -26,7 +26,7 @@ import {
 } from 'web/components/manalink-card'
 import { Pagination } from 'web/components/widgets/pagination'
 import ShortToggle from 'web/components/widgets/short-toggle'
-import { SiteLink } from 'web/components/widgets/site-link'
+import Link from 'next/link'
 import { useCanSendMana } from 'web/hooks/use-can-send-mana'
 import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
 import { getUserManalinks } from 'web/lib/supabase/manalinks'
@@ -81,10 +81,10 @@ export default function LinkPage(props: {
         <p>
           You can use manalinks to send mana ({ENV_CONFIG.moneyMoniker}) to
           other people, even if they don&apos;t yet have a Manifold account.{' '}
-          <SiteLink href="/referrals">
+          <Link href="/referrals">
             Eligible for {formatMoney(REFERRAL_AMOUNT)} referral bonus if a new
             user signs up and places a trade!!
-          </SiteLink>
+          </Link>
         </p>
 
         <Row className="items-baseline justify-between">

@@ -7,7 +7,7 @@ import { track } from 'web/lib/service/analytics'
 import Router from 'next/router'
 import { ArrowUpIcon, PencilAltIcon } from '@heroicons/react/solid'
 import { VisibilityObserver } from 'web/components/widgets/visibility-observer'
-import { SiteLink } from 'web/components/widgets/site-link'
+import Link from 'next/link'
 import { FeedTimelineItem, useFeedTimeline } from 'web/hooks/use-feed-timeline'
 import {
   convertContractToManualFeedItem,
@@ -197,12 +197,9 @@ function FeedTimelineContent(props: { privateUser: PrivateUser }) {
       {savedFeedItems.length === 0 && (
         <div className="text-ink-1000 m-4 flex w-full flex-col items-center justify-center">
           We're fresh out of cards!
-          <SiteLink
-            href="/questions?s=newest&f=open"
-            className="text-primary-700"
-          >
+          <Link href="/questions?s=newest&f=open" className="text-primary-700">
             Browse new questions
-          </SiteLink>
+          </Link>
         </div>
       )}
     </Col>

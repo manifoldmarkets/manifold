@@ -10,8 +10,9 @@ import { Group } from 'common/group'
 import { ExpandingInput } from '../widgets/expanding-input'
 import { Button } from '../buttons/button'
 import { useUser } from 'web/hooks/use-user'
-import { linkClass, SiteLink } from '../widgets/site-link'
+import { linkClass } from '../widgets/site-link'
 import clsx from 'clsx'
+import Link from 'next/link'
 
 export function CreatePostForm(props: { group?: Group }) {
   const [title, setTitle] = useState('')
@@ -105,12 +106,12 @@ export function CreatePostForm(props: { group?: Group }) {
           <br />
           <p>
             Did you mean to{' '}
-            <SiteLink
+            <Link
               href="/create"
               className={clsx(linkClass, 'text-primary-700')}
             >
               create a question
-            </SiteLink>{' '}
+            </Link>{' '}
             instead?
           </p>
         </div>

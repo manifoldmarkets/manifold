@@ -48,7 +48,7 @@ export function GroupsPageContent(props: { user: User | null | undefined }) {
   if (user === undefined || yourGroupIds === undefined) {
     return <LoadingIndicator />
   }
-  if (user === null || (yourGroupIds && yourGroupIds.length < 1)) {
+  if (user === null) {
     return (
       <GroupSearch
         persistPrefix={'discover-groups'}

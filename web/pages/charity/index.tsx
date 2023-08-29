@@ -19,7 +19,7 @@ import { formatMoney, manaToUSD } from 'common/util/format'
 import { useTracking } from 'web/hooks/use-tracking'
 import { searchInAny } from 'common/util/parse'
 import { getUser } from 'web/lib/firebase/users'
-import { SiteLink } from 'web/components/widgets/site-link'
+import Link from 'next/link'
 import { User } from 'common/user'
 import { SEO } from 'web/components/SEO'
 import { Input } from 'web/components/widgets/input'
@@ -71,7 +71,7 @@ function DonatedStats(props: { stats: Stat[] }) {
 
           <dd className="text-ink-900 mt-1 text-2xl font-semibold">
             {stat.url ? (
-              <SiteLink href={stat.url}>{stat.stat}</SiteLink>
+              <Link href={stat.url}>{stat.stat}</Link>
             ) : (
               <span>{stat.stat}</span>
             )}
@@ -128,12 +128,14 @@ export default function Charity(props: {
             Convert your {ENV_CONFIG.moneyMoniker} earnings into real charitable
             donations at a ratio of{' '}
             <strong className="semibold">{formatMoney(100)} : $1</strong>.
-            <SiteLink
+            <a
               href="https://manifoldmarkets.notion.site/Charitable-donation-program-668d55f4ded147cf8cf1282a007fb005"
+              target="_blank"
+              rel="noreferrer"
               className="text-primary-700 ml-2"
             >
               Read more here.
-            </SiteLink>
+            </a>
           </span>
           <DonatedStats
             stats={[
