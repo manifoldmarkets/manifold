@@ -19,7 +19,6 @@ export function CardReason(props: {
     item?.dataType,
     item?.data
   )
-  const positiveChange = probChange && probChange > 0
 
   if (!item) {
     if (contract.resolutionTime) {
@@ -34,22 +33,7 @@ export function CardReason(props: {
         </span>
       )
     } else if (probChange && Math.abs(probChange) > 0.05) {
-      return (
-        <span
-          className={clsx(
-            'text-ink-500 my-auto items-center gap-1 text-sm',
-            positiveChange
-              ? ' text-teal-600 dark:text-teal-300'
-              : 'dark:text-scarlet-200 text-scarlet-600'
-          )}
-        >
-          <span className="font-bold">
-            {positiveChange ? '+' : ''}
-            {probChange}%
-          </span>{' '}
-          today
-        </span>
-      )
+      return <ProbabilityChange probChange={probChange} />
     } else {
       return (
         <span className="text-ink-400 text-sm">
@@ -69,22 +53,7 @@ export function CardReason(props: {
   }
 
   if (item.dataType == 'contract_probability_changed' && probChange) {
-    return (
-      <span
-        className={clsx(
-          'text-ink-500 my-auto items-center gap-1 text-sm',
-          positiveChange
-            ? ' text-teal-600 dark:text-teal-300'
-            : 'dark:text-scarlet-200 text-scarlet-600'
-        )}
-      >
-        <span className="font-bold">
-          {positiveChange ? '+' : ''}
-          {probChange}%
-        </span>{' '}
-        today
-      </span>
-    )
+    return <ProbabilityChange probChange={probChange} />
   }
 
   if (item.dataType == 'new_contract') {
@@ -131,5 +100,26 @@ export function CardReason(props: {
           </div>
         )}
     </>
+  )
+}
+
+function ProbabilityChange(props: { probChange: number }) {
+  const { probChange } = props
+  const positiveChange = probChange && probChange > 0
+  return (
+    <span
+      className={clsx(
+        'text-ink-500 my-auto items-center gap-1 text-sm',
+        positiveChange
+          ? ' text-teal-600 dark:text-teal-300'
+          : 'dark:text-scarlet-200 text-scarlet-600'
+      )}
+    >
+      <span className="font-bold">
+        {positiveChange ? '+' : ''}
+        {probChange}%
+      </span>{' '}
+      today
+    </span>
   )
 }
