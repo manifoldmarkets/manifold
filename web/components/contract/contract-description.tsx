@@ -235,5 +235,5 @@ export function descriptionIsEmpty(contract: Contract) {
   } else if ('content' in description) {
     return !(description.content && description.content[0].content)
   }
-  return false
+  return true
 }
