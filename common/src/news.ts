@@ -1,5 +1,5 @@
 export type News = {
-  image: string
+  image?: string
   url: string
   title: string
   description: string
