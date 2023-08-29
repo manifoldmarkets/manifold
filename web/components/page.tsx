@@ -6,6 +6,7 @@ import { Toaster } from 'react-hot-toast'
 import { Button } from './button'
 import { Col } from './layout/col'
 import { SiteLink } from './site-link'
+import { Row } from './layout/row'
 
 export function Page(props: {
   rightSidebar?: ReactNode
@@ -39,11 +40,17 @@ export function Page(props: {
           <Col className="mb-4 items-start gap-4 rounded border border-indigo-200 bg-indigo-100 px-6 py-4 shadow">
             <div className="text-2xl">Tournament complete!</div>
             <div>
-              Winners to be announced soon. Keep betting on the main site:
+              Thanks for participating. Read about the results, or continue
+              betting on Manifold.
             </div>
-            <SiteLink href="https://manifold.markets">
-              <Button>Continue to Manifold</Button>
-            </SiteLink>
+            <Row className="gap-4">
+              <SiteLink href="https://www.cspicenter.com/p/results-for-the-salemcspi-prediction">
+                <Button color="gradient">Results & writeup</Button>
+              </SiteLink>
+              <SiteLink href="https://manifold.markets">
+                <Button color="gradient">Go to Manifold</Button>
+              </SiteLink>
+            </Row>
           </Col>
           {children}
 
