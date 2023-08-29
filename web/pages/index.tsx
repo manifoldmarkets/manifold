@@ -109,7 +109,7 @@ export default function Home() {
           </Row>
         </Col>
 
-        <NewsTopicsTabs dontScroll />
+        <NewsTopicsTabs dontScroll noSidebar />
 
         <TestimonialsPanel />
 

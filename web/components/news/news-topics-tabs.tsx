@@ -11,8 +11,9 @@ export function NewsTopicsTabs(props: {
   homeContent?: ReactNode
   dontScroll?: boolean
   setSidebar?: (sidebarContent: ReactNode) => void
+  noSidebar?: boolean
 }) {
-  const { homeContent, dontScroll, setSidebar } = props
+  const { homeContent, dontScroll, setSidebar, noSidebar } = props
 
   const topics = buildArray<Tab>(
     !!homeContent && {

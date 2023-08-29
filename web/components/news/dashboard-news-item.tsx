@@ -31,6 +31,7 @@ export const DashboardNewsItem = (props: {
     siteName,
   } = props
   const date = Date.parse(published_time as any)
+  console.log(props)
   return (
     <Link
       href={url}
