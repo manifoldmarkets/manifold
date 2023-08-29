@@ -103,7 +103,6 @@ export function FeedContractCard(props: {
       isPromoted: !!promotedData,
     })
 
-  console.log(contract.question, contract.description)
   return (
     <ClickFrame
       className={clsx(
