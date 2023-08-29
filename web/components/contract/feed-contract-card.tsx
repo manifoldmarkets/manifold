@@ -36,6 +36,7 @@ import { TradesButton } from './trades-button'
 import FeedContractCardDescription from '../feed/feed-contract-card-description'
 import { useRouter } from 'next/router'
 import Link from 'next/link'
+import { descriptionIsEmpty } from './contract-description'
 
 export function FeedContractCard(props: {
   contract: Contract
@@ -190,7 +191,7 @@ export function FeedContractCard(props: {
         </Col>
       )}
 
-      {item?.dataType == 'new_contract' && (
+      {item?.dataType == 'new_contract' && !descriptionIsEmpty(contract) && (
         <FeedContractCardDescription contract={contract} />
       )}
 
