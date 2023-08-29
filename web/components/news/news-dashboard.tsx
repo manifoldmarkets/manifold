@@ -91,9 +91,7 @@ export const NewsSidebar = (props: {
           </Col>
         </>
       )}
-      <Col className="gap-4">
-        {isLoading ? <LoadingIndicator /> : <>{content}</>}
-      </Col>
+      <Col>{isLoading ? <LoadingIndicator /> : <>{content}</>}</Col>
     </Col>
   )
 }
