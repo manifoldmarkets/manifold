@@ -1,4 +1,4 @@
-import { PencilIcon, PhotographIcon } from '@heroicons/react/solid'
+import { PhotographIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { Group } from 'common/group'
 import { User } from 'common/user'
@@ -11,6 +11,7 @@ import DropdownMenu from '../comments/dropdown-menu'
 import { Col } from '../layout/col'
 import { Modal, MODAL_CLASS, SCROLLABLE_MODAL_CLASS } from '../layout/modal'
 import { Row } from '../layout/row'
+import { CameraIcon } from '@heroicons/react/outline'
 
 export const DEFAULT_BANNERS = [
   '/group/default_group_banner_indigo.png',
@@ -18,23 +19,26 @@ export const DEFAULT_BANNERS = [
   '/group/default_group_banner_red.png',
 ]
 
-function isDefaultBanner(url: string) {
-  return DEFAULT_BANNERS.some((path) => path === url)
-}
 export default function BannerImage(props: {
   group: Group
   user: User | undefined | null
   canEdit: boolean
 }) {
   const { group, user, canEdit } = props
-  const [groupBannerUrl, setGroupBannerUrl] = useState(
-    group.bannerUrl ?? DEFAULT_BANNERS[0]
-  )
+  const [groupBannerUrl, setGroupBannerUrl] = useState(group.bannerUrl)
   const [changeBannerModalOpen, setChangeBannerModalOpen] = useState(false)
   return (
     <>
-      <figure className="group relative h-60 w-full sm:h-72">
-        <div className="absolute top-2 right-4 z-20 transition-opacity sm:opacity-0 sm:group-hover:opacity-100">
+      <figure
+        className={clsx(
+          'group relative w-full',
+          groupBannerUrl ? ' h-60 sm:h-72' : 'h-24'
+        )}
+      >
+        {groupBannerUrl && (
+          <Image src={groupBannerUrl} alt="" fill className="object-cover" />
+        )}
+        <div className="absolute bottom-1 right-3 z-10">
           {user && canEdit && (
             <BannerDropdown
               group={group}
@@ -47,7 +51,6 @@ export default function BannerImage(props: {
             />
           )}
         </div>
-        <Image src={groupBannerUrl} alt="" fill className="object-cover" />
       </figure>
     </>
   )
@@ -67,14 +70,12 @@ export function ChangeBannerModal(props: {
   group: Group
   open: boolean
   setOpen: (open: boolean) => void
-  bannerUrl: string
+  bannerUrl: string | undefined
   setBannerUrl: (bannerUrl: string) => void
   user: User
 }) {
   const { group, open, setOpen, bannerUrl, setBannerUrl, user } = props
-  const [bannerSelection, setBannerSelection] = useState(
-    isDefaultBanner(bannerUrl) ? bannerUrl : undefined
-  )
+  const [bannerSelection, setBannerSelection] = useState(bannerUrl)
   const [fileUrl, setFileUrl] = useState<string | undefined>(undefined)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(undefined)
@@ -104,6 +105,7 @@ export function ChangeBannerModal(props: {
         <Row className="w-full gap-4">
           {DEFAULT_BANNERS.map((bannerUrl) => (
             <DefaultBannerIcon
+              key={bannerUrl}
               src={bannerUrl}
               width="w-1/3"
               bannerSelection={bannerSelection}
@@ -210,12 +212,11 @@ function DefaultBannerIcon(props: {
   )
 }
 
-// TODO: add option to position photo
 function BannerDropdown(props: {
   group: Group
   open: boolean
   setOpen: (open: boolean) => void
-  bannerUrl: string
+  bannerUrl: string | undefined
   setBannerUrl: (bannerUrl: string) => void
   user: User
   onChangeBannerClick: () => void
@@ -239,8 +240,8 @@ function BannerDropdown(props: {
             onClick: onChangeBannerClick,
           },
         ]}
-        Icon={<PencilIcon className="text-ink-900 h-5 w-5" />}
-        buttonClass="rounded-md bg-canvas-0 bg-opacity-50 p-1"
+        Icon={<CameraIcon className="text-ink-700 h-5 w-5" />}
+        buttonClass="rounded-md p-1"
         menuWidth="w-60"
       />
       <ChangeBannerModal

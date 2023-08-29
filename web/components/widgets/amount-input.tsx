@@ -1,7 +1,7 @@
 import clsx from 'clsx'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { formatMoney } from 'common/util/format'
-import React, { ReactNode, useEffect, useState } from 'react'
+import { ReactNode, useEffect, useState } from 'react'
 import { BetSlider } from 'web/components/bet/bet-slider'
 import { useUser } from 'web/hooks/use-user'
 import { AddFundsModal } from '../add-funds-modal'
@@ -14,8 +14,8 @@ export function AmountInput(
   props: {
     amount: number | undefined
     onChangeAmount: (newAmount: number | undefined) => void
-    error?: string
-    label: string
+    error?: boolean
+    label?: string
     disabled?: boolean
     className?: string
     inputClassName?: string
@@ -23,35 +23,51 @@ export function AmountInput(
     inputRef?: React.MutableRefObject<any>
     quickAddMoreButton?: ReactNode
     allowFloat?: boolean
+    allowNegative?: boolean
   } & JSX.IntrinsicElements['input']
 ) {
   const {
     amount,
     onChangeAmount,
     error,
-    label,
+    label = ENV_CONFIG.moneyMoniker,
     disabled,
     className,
     inputClassName,
     inputRef,
     quickAddMoreButton,
     allowFloat,
+    allowNegative,
+    ...rest
   } = props
 
-  const parse = (str: string) =>
-    !allowFloat
-      ? parseInt(str.replace(/\D/g, ''))
-      : parseFloat(str.replace(/[^0-9.]/g, ''))
+  const [amountString, setAmountString] = useState(amount?.toString() ?? '')
+
+  const parse = allowFloat ? parseFloat : parseInt
+
+  const bannedChars = new RegExp(
+    `[^\\d${allowFloat && '.'}${allowNegative && '-'}]`,
+    'g'
+  )
+
+  useEffect(() => {
+    if (amount !== parse(amountString))
+      setAmountString(amount?.toString() ?? '')
+  }, [amount])
 
   const onAmountChange = (str: string) => {
-    const amount = parse(str)
-    const isInvalid = !str || isNaN(amount)
-    onChangeAmount(isInvalid ? undefined : amount)
+    const s = str.replace(bannedChars, '')
+    if (s !== amountString) {
+      setAmountString(s)
+      const amount = parse(s)
+      const isInvalid = !s || isNaN(amount)
+      onChangeAmount(isInvalid ? undefined : amount)
+    }
   }
 
   return (
     <>
-      <Col className={clsx('relative', error && 'mb-3', className)}>
+      <Col className={clsx('relative', className)}>
         <label className="font-sm md:font-lg relative">
           {label && (
             <span className="text-ink-400 absolute top-1/2 my-auto ml-2 -translate-y-1/2">
@@ -60,18 +76,18 @@ export function AmountInput(
           )}
           <div className="flex">
             <Input
-              {...props}
+              {...rest}
               className={clsx(label && 'pl-9', ' !text-lg', inputClassName)}
               ref={inputRef}
               type={allowFloat ? 'number' : 'text'}
               inputMode={allowFloat ? 'decimal' : 'numeric'}
-              step={allowFloat ? 'any' : '1'}
               placeholder="0"
-              maxLength={6}
-              value={amount ?? ''}
-              error={!!error}
+              maxLength={9}
+              value={amountString}
+              error={error}
               disabled={disabled}
               onChange={(e) => onAmountChange(e.target.value)}
+              onBlur={() => setAmountString(amount?.toString() ?? '')}
               onKeyDown={(e) => {
                 if (e.key === 'ArrowUp') {
                   onChangeAmount((amount ?? 0) + 5)
@@ -184,7 +200,7 @@ export function BuyAmountInput(props: {
             amount={amount}
             onChangeAmount={onChange}
             label={ENV_CONFIG.moneyMoniker}
-            error={error}
+            error={!!error}
             disabled={disabled}
             className={className}
             inputClassName={clsx('pr-12', inputClassName)}
@@ -198,19 +214,20 @@ export function BuyAmountInput(props: {
               binaryOutcome={binaryOutcome}
               maximumAmount={maximumAmount}
               customRange={customRange}
+              disabled={disabled}
             />
           )}
         </Row>
         {error ? (
-          <div className="text-scarlet-500 whitespace-nowrap text-xs font-medium tracking-wide">
+          <div className="text-scarlet-500 mt-0.5 whitespace-nowrap text-sm">
             {error === 'Insufficient balance' ? <BuyMoreFunds /> : error}
           </div>
         ) : (
           showBalance &&
           user && (
-            <div className="text-ink-500 whitespace-nowrap text-sm font-medium tracking-wide">
+            <div className="text-ink-500 mt-0.5 whitespace-nowrap text-sm">
               Balance{' '}
-              <span className="text-ink-1000">{formatMoney(user.balance)}</span>
+              <span className="text-ink-800">{formatMoney(user.balance)}</span>
             </div>
           )
         )}

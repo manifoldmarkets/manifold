@@ -1,8 +1,8 @@
-import * as admin from 'firebase-admin'
 import { z } from 'zod'
 import { isAdminId } from 'common/envs/constants'
 import { APIError, authEndpoint, validate } from './helpers'
 import { createSupabaseClient } from 'shared/supabase/init'
+import { Group } from 'common/group'
 
 const bodySchema = z.object({
   groupId: z.string(),
@@ -34,34 +34,34 @@ export const updategroupprivacy = authEndpoint(async (req, auth) => {
     throw new APIError(404, 'You cannot be found in group')
 
   const group = groupQuery.data[0]
-  const firebaseUser = await admin.auth().getUser(auth.uid)
+  console.log(group)
 
-  if (
-    requester?.role !== 'admin' &&
-    auth.uid !== group.creator_id &&
-    !isAdminId(auth.uid)
-  )
+  if (requester?.role !== 'admin' && !isAdminId(auth.uid))
     throw new APIError(
       403,
       'You do not have permission to change group privacy'
     )
 
   if (group.privacy_status == 'private')
-    throw new APIError(400, 'Private groups must remain private')
+    throw new APIError(403, 'Private groups must remain private')
 
   if (privacy == 'private') {
-    throw new APIError(400, 'You can not retroactively make a group private')
+    throw new APIError(403, 'You can not retroactively make a group private')
   }
 
   if (privacy == group.privacy_status) {
-    throw new APIError(400, 'Group privacy is already set to this!')
+    throw new APIError(403, 'Group privacy is already set to this!')
   }
-
+  // TODO: we need to figure out the role of the data column for the migration plan
   await db
     .from('groups')
-    .update({ privacy_status: privacy })
+    .update({
+      data: {
+        ...(group.data as Group),
+        privacyStatus: privacy,
+      },
+    })
     .eq('id', groupId)
-    .returns()
 
   return { status: 'success', message: 'Group privacy updated' }
 })

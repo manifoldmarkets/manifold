@@ -1,6 +1,5 @@
 import { mergeAttributes, Node } from '@tiptap/core'
 import { LinkPreviewNodeView } from 'web/components/editor/link-preview-node-view'
-import React from 'react'
 
 interface LinkPreviewOptions {
   HTMLAttributes: Record<string, unknown>

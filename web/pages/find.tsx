@@ -1,19 +1,9 @@
-import { useRouter } from 'next/router'
 import { Page } from 'web/components/layout/page'
 import { OmniSearch } from 'web/components/search/omni-search'
-import {
-  urlParamStore,
-  usePersistentState,
-} from 'web/hooks/use-persistent-state'
+import { usePersistentQueryState } from 'web/hooks/use-persistent-query-state'
 
 export default function Find() {
-  const router = useRouter()
-  const store = urlParamStore(router)
-  const startingQuery = typeof router.query.q === 'string' ? router.query.q : ''
-  const [query, setQuery] = usePersistentState(startingQuery ?? '', {
-    store,
-    key: 'q',
-  })
+  const [query, setQuery] = usePersistentQueryState('q', '')
 
   return (
     <Page>

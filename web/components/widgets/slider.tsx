@@ -1,23 +1,22 @@
 import clsx from 'clsx'
-import { mapValues } from 'lodash'
-import RcSlider from 'rc-slider'
-import 'rc-slider/assets/index.css'
+import * as RxSlider from '@radix-ui/react-slider'
 import { ReactNode } from 'react'
 
 const colors = {
-  green: ['#14b8a6', '#0d9488'], // teal-500, teal-600
-  red: ['#FF7C66', '#CC1D00'], // scarlet-300, scarlet-600
-  indigo: ['#a5b4fc', '#6366f1'], // indigo-300, indigo-500
-} as const
-
-const handleStyle = {
-  height: 20,
-  width: 20,
-  opacity: 1,
-  border: 'none',
-  boxShadow: 'none',
-  top: 2,
-  cursor: 'col-resize',
+  green: [
+    'bg-teal-500',
+    'focus:outline-teal-600/30 bg-teal-600 dark:bg-teal-300',
+  ],
+  'light-green': [
+    'bg-emerald-200/50 dark:bg-emerald-800/50',
+    'focus:outline-emerald-200/20 bg-emerald-200 dark:bg-teal-800',
+  ],
+  red: [
+    'bg-scarlet-300 dark:bg-scarlet-600',
+    'focus:outline-scarlet-600/30 bg-scarlet-600 dark:bg-scarlet-400',
+  ],
+  indigo: ['bg-primary-300', 'focus:outline-primary-500/30 bg-primary-500'],
+  // light: ['primary-200', 'primary-300']
 } as const
 
 export function Slider(props: {
@@ -26,105 +25,130 @@ export function Slider(props: {
   min?: number
   max?: number
   step?: number
-  marks?: { [key: number]: ReactNode }
+  marks?: { value: number; label: string }[]
   color?: keyof typeof colors
   className?: string
+  disabled?: boolean
 }) {
-  const { amount, onChange, min, max, step, marks, className } = props
+  const {
+    amount,
+    onChange,
+    min,
+    max,
+    step,
+    marks,
+    className,
+    disabled,
+    color = 'indigo',
+  } = props
 
-  const [light, dark] = colors[props.color ?? 'indigo']
+  const [trackClasses, thumbClasses] = colors[color]
 
   return (
-    <div className={clsx('h-10 px-3 pt-1', className)}>
-      <RcSlider
-        value={amount}
-        onChange={onChange as any}
-        min={min}
-        max={max}
-        step={step}
-        marks={mapValues(marks, (value) => (
+    <RxSlider.Root
+      className={clsx(
+        className,
+        'relative flex h-5 touch-none select-none items-center'
+      )}
+      value={[amount]}
+      onValueChange={([val]) => onChange(val)}
+      min={min}
+      max={max}
+      step={step}
+      disabled={disabled}
+    >
+      <Track className={trackClasses}>
+        <div className="absolute left-2.5 right-2.5 h-full">
+          {marks?.map(({ value, label }) => (
+            <div
+              className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2"
+              style={{ left: `${value}%` }}
+              key={value}
+            >
+              <div
+                className={clsx(
+                  amount >= value ? trackClasses : 'bg-ink-200',
+                  'h-2 w-2 rounded-full'
+                )}
+              />
+              <span className="text-ink-400 absolute top-4 left-1/2 -translate-x-1/2 text-xs">
+                {label}
+              </span>
+            </div>
+          ))}
+        </div>
+      </Track>
+      <Thumb className={thumbClasses} />
+      {/* {marks.map (value) => (
           <Mark>{value}</Mark>
-        ))}
-        className={'[&>.rc-slider-rail]:bg-ink-200 !h-4'}
-        dotStyle={{ borderColor: 'lightgray' }}
-        activeDotStyle={{ borderColor: dark }}
-        trackStyle={{ backgroundColor: light }}
-        handleStyle={{ ...handleStyle, backgroundColor: dark }}
-      />
-    </div>
+        } */}
+    </RxSlider.Root>
   )
 }
 
 export function RangeSlider(props: {
   lowValue: number
   highValue: number
-  setLow: (low: number) => void
-  setHigh: (high: number) => void
+  setValues: (low: number, high: number) => void
   min?: number
   max?: number
   disabled?: boolean
-  error?: boolean
-  marks?: { [key: number]: ReactNode }
   overlappable?: boolean
   color?: keyof typeof colors
+  handleSize?: number
   className?: string
 }) {
   const {
     lowValue,
     highValue,
-    setLow,
-    setHigh,
+    setValues,
     min,
     max,
-    marks,
     overlappable,
     disabled,
-    error,
+    color = 'indigo',
     className,
   } = props
 
-  const [light, dark] = colors[props.color ?? 'indigo']
+  const [trackClasses, thumbClasses] = colors[color]
 
   return (
-    <div className={clsx('h-10 px-3 pt-1', className)}>
-      <RcSlider
-        range
-        draggableTrack
-        min={min}
-        max={max}
-        disabled={disabled}
-        value={[lowValue, highValue]}
-        onChange={(value) => {
-          if (Array.isArray(value)) {
-            // eslint-disable-next-line prefer-const
-            let [low, high] = value
-            if (low === high && !overlappable) high++
-            setLow(low)
-            setHigh(high)
-          }
-        }}
-        marks={mapValues(marks, (value) => (
-          <Mark>{value}</Mark>
-        ))}
-        className={'[&>.rc-slider-rail]:bg-ink-200 !h-4 !bg-inherit'}
-        dotStyle={{ borderColor: 'lightgray' }}
-        activeDotStyle={{ borderColor: dark }}
-        trackStyle={{
-          cursor: 'grab',
-          backgroundColor: error ? '#FF2400' : light,
-        }}
-        handleStyle={[
-          { ...handleStyle, backgroundColor: error ? '#FF2400' : dark },
-          { ...handleStyle, backgroundColor: dark },
-        ]}
-      />
-    </div>
+    <RxSlider.Root
+      className={clsx(
+        className,
+        'relative flex h-7 touch-none select-none items-center'
+      )}
+      value={[lowValue, highValue]}
+      minStepsBetweenThumbs={overlappable ? 0 : 1}
+      onValueChange={([low, high]) => setValues(low, high)}
+      min={min}
+      max={max}
+      disabled={disabled}
+    >
+      <Track className={trackClasses} />
+      <Thumb className={thumbClasses} />
+      <Thumb className={thumbClasses} />
+    </RxSlider.Root>
   )
 }
 
-const Mark = (props: { children: ReactNode }) => (
-  <span className="text-ink-400 text-xs">
-    {/* <div className={'sm:h-0.5'} /> */}
-    {props.children}
-  </span>
+const Track = (props: { className: string; children?: ReactNode }) => {
+  const { className, children } = props
+  return (
+    <RxSlider.Track className="bg-ink-200 relative h-1 grow rounded-full">
+      {children}
+      <RxSlider.Range
+        className={clsx(className, 'absolute h-full rounded-full')}
+      />
+    </RxSlider.Track>
+  )
+}
+
+const Thumb = (props: { className: string }) => (
+  <RxSlider.Thumb
+    className={clsx(
+      props.className,
+      'block h-5 w-5 cursor-col-resize rounded-full outline outline-4 outline-transparent transition-colors'
+    )}
+  />
 )

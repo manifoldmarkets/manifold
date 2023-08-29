@@ -1,19 +1,27 @@
 import { groupBy } from 'lodash'
-import { pgp, SupabaseDirectClient } from './supabase/init'
+import {
+  createSupabaseClient,
+  pgp,
+  SupabaseDirectClient,
+} from './supabase/init'
 import { genNewAdjectiveAnimal } from 'common/util/adjective-animal'
 import { BOT_USERNAMES } from 'common/envs/constants'
 import {
+  BRONZE_COHORT_SIZE,
   COHORT_SIZE,
   CURRENT_SEASON,
   getDivisionChange,
+  getDivisionNumber,
   getSeasonDates,
   league_user_info,
+  MASTERS_COHORT_SIZE,
   MAX_COHORT_SIZE,
   SEASONS,
 } from 'common/leagues'
 import { getCurrentPortfolio } from './helpers/portfolio'
 import { createLeagueChangedNotification } from 'shared/create-notification'
 import { bulkInsert } from './supabase/utils'
+import { generateLeagueChats } from 'shared/generate-league-chats'
 
 export async function generateNextSeason(
   pg: SupabaseDirectClient,
@@ -38,7 +46,7 @@ export async function generateNextSeason(
     join users on users.id = user_id
     where coalesce(users.data->>'isBannedFromPosting', 'false') = 'false'
     and coalesce(users.data->>'userDeleted', 'false') = 'false'
-    and users.data->>'username' not in ($2:csv)
+    and users.username not in ($2:csv)
     `,
     [startDate, BOT_USERNAMES]
   )
@@ -72,6 +80,7 @@ export async function generateNextSeason(
     division = excluded.division,
     cohort = excluded.cohort`
   await pg.none(insertStatement)
+  await generateLeagueChats(season, pg, createSupabaseClient())
 }
 
 const generateDivisions = (
@@ -113,7 +122,13 @@ const generateCohorts = async (
   for (const divisionStr in usersByDivision) {
     const divisionUserIds = usersByDivision[divisionStr]
     const division = Number(divisionStr)
-    const numCohorts = Math.ceil(divisionUserIds.length / COHORT_SIZE)
+    const cohortSize =
+      division === getDivisionNumber('Bronze')
+        ? BRONZE_COHORT_SIZE
+        : division === getDivisionNumber('Masters')
+        ? MASTERS_COHORT_SIZE
+        : COHORT_SIZE
+    const numCohorts = Math.ceil(divisionUserIds.length / cohortSize)
     const usersPerCohort = Math.ceil(divisionUserIds.length / numCohorts)
     const cohortsWithOneLess =
       usersPerCohort * numCohorts - divisionUserIds.length
@@ -167,7 +182,7 @@ export const insertBots = async (pg: SupabaseDirectClient, season: number) => {
   //   where season = $1
   //   and user_id in (
   //     select id from users
-  //     where data->>'username' in ($2:csv)
+  //     where data.username in ($2:csv)
   //   )
   //   `,
   //   [season, BOT_USERNAMES],
@@ -184,7 +199,7 @@ export const insertBots = async (pg: SupabaseDirectClient, season: number) => {
         where contract_bets.created_time > $1
       )
       select id from users
-      where data->>'username' in ($2:csv)
+      where data.username in ($2:csv)
       and id in (select user_id from active_user_ids)
     `,
     [startDate, BOT_USERNAMES],

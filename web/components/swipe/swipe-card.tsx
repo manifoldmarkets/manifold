@@ -12,14 +12,14 @@ import { fromNow } from 'web/lib/util/time'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { Avatar } from '../widgets/avatar'
-import { SiteLink } from '../widgets/site-link'
+import Link from 'next/link'
 import { SwipeBetPanel } from './swipe-bet-panel'
 import getQuestionSize from './swipe-helpers'
 import { MoreSwipeInfo } from './more-swipe-info'
-import { SwipeComments } from './swipe-comments'
+import { SwipeComments } from '../comments/comments-button'
 import { Percent } from './percent'
 import { SwitchHorizontalIcon } from '@heroicons/react/solid'
-import { useFirebasePublicAndRealtimePrivateContract } from 'web/hooks/use-contract-supabase'
+import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
 
 export const SwipeCard = memo(
   (props: {
@@ -49,7 +49,7 @@ export const SwipeCard = memo(
       small,
       toggleView,
     } = props
-    const contract = (useFirebasePublicAndRealtimePrivateContract(
+    const contract = (useFirebasePublicContract(
       props.contract.visibility,
       props.contract.id
     ) ?? props.contract) as BinaryContract
@@ -98,16 +98,15 @@ export const SwipeCard = memo(
           />
 
           <div className="line-clamp-6 mt-6 overflow-ellipsis">
-            <SiteLink href={contractPath(contract)} followsLinkClass>
-              <div
-                className={clsx(
-                  'font-semibold text-white [text-shadow:_0_1px_0_rgb(0_0_0_/_40%)]',
-                  getQuestionSize(question, cardHeight)
-                )}
-              >
-                {question}
-              </div>
-            </SiteLink>
+            <Link
+              href={contractPath(contract)}
+              className={clsx(
+                'font-semibold text-white [text-shadow:_0_1px_0_rgb(0_0_0_/_40%)]',
+                getQuestionSize(question, cardHeight)
+              )}
+            >
+              {question}
+            </Link>
           </div>
 
           <div className="grid grow grid-cols-[1fr_auto_1fr]">
@@ -170,13 +169,13 @@ const CornerDetails = (props: {
   return (
     <div className={clsx('flex justify-between', className)}>
       <Row className="gap-2">
-        <SiteLink href={`/${creatorUsername}`}>
+        <Link href={`/${creatorUsername}`}>
           <Avatar size="sm" avatarUrl={creatorAvatarUrl} noLink />
-        </SiteLink>
+        </Link>
         <div className="text-xs">
-          <SiteLink href={`/${creatorUsername}`} followsLinkClass>
-            <div className="text-white">{creatorName}</div>
-          </SiteLink>
+          <Link href={`/${creatorUsername}`} className="text-white">
+            {creatorName}
+          </Link>
           {closeTime != undefined && (
             <div className="text-ink-400 ">
               trading closes {fromNow(closeTime)}

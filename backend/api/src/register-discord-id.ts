@@ -34,7 +34,7 @@ export const registerdiscordid = authEndpoint(async (req, auth) => {
     api_key: apiKey,
     user_id: auth.uid,
   })
-  if (error) throw new APIError(400, error.message)
+  if (error) throw new APIError(500, error.message)
 
   return { success: true, update }
 })

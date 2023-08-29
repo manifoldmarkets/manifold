@@ -12,7 +12,7 @@ import {
 } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import clsx from 'clsx'
-import React, { ReactNode, useCallback, useMemo, useRef } from 'react'
+import { ReactNode, useCallback, useMemo, useRef } from 'react'
 import { DisplayContractMention } from '../editor/contract-mention/contract-mention-extension'
 import { DisplayMention } from '../editor/user-mention/mention-extension'
 import GridComponent from '../editor/tiptap-grid-cards'
@@ -43,8 +43,21 @@ import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 
 const DisplayLink = Link.extend({
   renderHTML({ HTMLAttributes }) {
+    HTMLAttributes.target = HTMLAttributes.href.includes('manifold.markets')
+      ? '_self'
+      : '_blank'
     delete HTMLAttributes.class // only use our classes (don't duplicate on paste)
-    return ['a', mergeAttributes(HTMLAttributes, { class: linkClass }), 0]
+    return [
+      'a',
+      mergeAttributes(this.options.HTMLAttributes, HTMLAttributes),
+      0,
+    ]
+  },
+}).configure({
+  openOnClick: false, // stop link opening twice (browser still opens)
+  HTMLAttributes: {
+    rel: 'noopener ugc',
+    class: linkClass,
   },
 })
 
@@ -242,7 +255,7 @@ function RichContent(props: {
       generateReact(content, [
         StarterKit,
         size === 'sm' ? DisplayImage : BasicImage,
-        DisplayLink.configure({ openOnClick: false }), // stop link opening twice (browser still opens)
+        DisplayLink,
         DisplayMention,
         DisplayContractMention,
         GridComponent,

@@ -1,15 +1,11 @@
 import { auth } from './users'
 import { APIError, getApiUrl } from 'common/api'
 import { JSONContent } from '@tiptap/core'
-import { QfAnswerReq } from 'web/pages/api/v0/qf/answer'
-import { QfPayReq } from 'web/pages/api/v0/qf/pay'
-import { QfAddPoolReq } from 'web/pages/api/v0/qf/add-pool'
-import { QfResolveReq } from 'web/pages/api/v0/qf/resolve'
 import { Group, PrivacyStatusType } from 'common/group'
 import { HideCommentReq } from 'web/pages/api/v0/hide-comment'
 import { Contract } from './contracts'
 export { APIError } from 'common/api'
-import { ContractTypeType, filter, Sort } from 'web/components/supabase-search'
+import { ContractTypeType, filter, Sort } from 'web/components/contracts-search'
 import { AD_RATE_LIMIT } from 'common/boost'
 import { groupRoleType } from 'web/components/groups/group-member-modal'
 import { Bet } from 'common/bet'
@@ -18,7 +14,7 @@ import { Post } from 'common/post'
 import { MaybeAuthedContractParams } from 'common/contract'
 import { Portfolio, PortfolioItem } from 'common/portfolio'
 
-export async function call(url: string, method: string, params?: any) {
+export async function call(url: string, method: 'POST' | 'GET', params?: any) {
   const user = auth.currentUser
   if (user == null) {
     throw new Error('Must be signed in to make API calls.')
@@ -35,7 +31,7 @@ export async function call(url: string, method: string, params?: any) {
   return await fetch(req).then(async (resp) => {
     const json = (await resp.json()) as { [k: string]: any }
     if (!resp.ok) {
-      throw new APIError(resp.status, json?.message, json?.details)
+      throw new APIError(resp.status as any, json?.message, json?.details)
     }
     return json
   })
@@ -59,14 +55,14 @@ export async function maybeAuthedCall(
   return await fetch(req).then(async (resp) => {
     const json = (await resp.json()) as { [k: string]: any }
     if (!resp.ok) {
-      throw new APIError(resp.status, json?.message, json?.details)
+      throw new APIError(resp.status as any, json?.message, json?.details)
     }
     return json
   })
 }
 
-export function callApi(apiEndpoint: string, params?: any, method = 'POST') {
-  return call(getApiUrl(apiEndpoint), method, params)
+export function lootbox() {
+  return call(getApiUrl('lootbox'), 'POST')
 }
 
 export function createAnswer(params: any) {
@@ -163,7 +159,6 @@ export function boostMarket(params: any) {
 
 let nonce = 0
 export function redeemBoost(params: any) {
-  // TODO: rate limit on the backend instead?
   const now = Date.now()
   if (now - nonce < AD_RATE_LIMIT - 500) {
     throw Error(
@@ -206,22 +201,6 @@ export function removeContractFromGroup(params: {
   contractId: string
 }) {
   return call(getApiUrl('removecontractfromgroup'), 'POST', params)
-}
-
-export function createQfAnswer(params: QfAnswerReq) {
-  return call('/api/v0/qf/answer', 'POST', params)
-}
-
-export function payQfAnswer(params: QfPayReq) {
-  return call('/api/v0/qf/pay', 'POST', params)
-}
-
-export function addQfAddPool(params: QfAddPoolReq) {
-  return call('/api/v0/qf/add-pool', 'POST', params)
-}
-
-export function resolveQf(params: QfResolveReq) {
-  return call('/api/v0/qf/resolve', 'POST', params)
 }
 
 export function unresolveMarket(params: { marketId: string }) {
@@ -436,6 +415,7 @@ export function sendMana(params: {
   toIds: string[]
   amount: number
   message: string
+  groupId?: string
 }) {
   return call(getApiUrl('send-mana'), 'POST', params)
 }
@@ -457,4 +437,24 @@ export function getUserContractsMetricsWithContracts(params: {
 
 export function castPollVote(params: { contractId: string; voteId: string }) {
   return call(getApiUrl('cast-poll-vote'), 'POST', params)
+}
+
+export function getSimilarGroupsToContract(params: { question: string }) {
+  return call(getApiUrl('get-similar-groups-to-contract'), 'POST', params)
+}
+
+export function bidForLeague(params: {
+  season: number
+  division: number
+  cohort: string
+  amount: number
+}) {
+  return call(getApiUrl('bidforleague'), 'POST', params)
+}
+
+export function createChatMessage(params: {
+  channelId: string
+  content: JSONContent
+}) {
+  return call(getApiUrl('create-chat-message'), 'POST', params)
 }

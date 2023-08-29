@@ -34,7 +34,6 @@ async function postMarket(submission: CEPSubmission) {
       groupId: 'h3MhjYbSSG6HbxY8ZTwE', // [DEV] CART
       // groupId: 'K86LmEmidMKdyCHdHNv4', // [PROD] CART
       visibility: 'unlisted',
-      // TODO: Increase liquidity?
     }),
   })
   const data = await response.json()

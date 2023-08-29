@@ -19,10 +19,9 @@ import { getDisplayProbability, getProbability } from 'common/calculate'
 import { useAnimatedNumber } from 'web/hooks/use-animated-number'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { animated } from '@react-spring/web'
-import { getTextColor } from 'web/components/bet/quick-bet'
+import { getTextColor } from 'web/components/contract/text-color'
 import { formatLargeNumber, formatPercent } from 'common/util/format'
 import { Tooltip } from 'web/components/widgets/tooltip'
-import { getValueFromBucket } from 'common/calculate-dpm'
 
 export function BinaryResolutionOrChance(props: {
   contract: BinaryContract
@@ -87,10 +86,7 @@ export function NumericResolutionOrExpectation(props: {
   contract: NumericContract
 }) {
   const { contract } = props
-  const { resolution } = contract
-
-  const resolutionValue =
-    contract.resolutionValue ?? getValueFromBucket(resolution ?? '', contract)
+  const { resolution, resolutionValue = NaN } = contract
 
   // All distributional numeric questions are resolved now
   return (

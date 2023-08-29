@@ -1,13 +1,9 @@
-import { Bet, calculateMultiBets } from 'common/bet'
+import { calculateMultiBets } from 'common/bet'
 import { getInitialProbability } from 'common/calculate'
-import {
-  BinaryContract,
-  MaybeAuthedContractParams as Ret,
-  PseudoNumericContract,
-} from 'common/contract'
-import { MultiSerializedPoint, SerializedPoint } from 'common/src/chart'
-import { getBets, getTotalBetCount } from 'common/supabase/bets'
-import { getAllComments } from 'common/supabase/comments'
+import { MaybeAuthedContractParams as Ret } from 'common/contract'
+import { binAvg, maxMinBin } from 'common/chart'
+import { getBets, getBetPoints, getTotalBetCount } from 'common/supabase/bets'
+import { getRecentTopLevelCommentsAndReplies } from 'common/supabase/comments'
 import {
   getCPMMContractUserContractMetrics,
   getTopContractMetrics,
@@ -17,14 +13,12 @@ import { getContractFromSlug } from 'common/supabase/contracts'
 import { getUserIsMember } from 'common/supabase/groups'
 import { getRelatedContracts } from 'common/supabase/related-contracts'
 import { removeUndefinedProps } from 'common/util/object'
-import { compressItems, pointsToBase64 } from 'common/util/og'
 import { createSupabaseClient } from 'shared/supabase/init'
 import { getUser } from 'shared/utils'
 import { z } from 'zod'
 import { APIError, MaybeAuthedEndpoint, validate } from './helpers'
 import { getIsAdmin } from 'common/supabase/is-admin'
-import { groupBy } from 'lodash'
-import { buildArray } from 'common/util/array'
+import { pointsToBase64 } from 'common/util/og'
 
 const bodySchema = z.object({
   contractSlug: z.string(),
@@ -37,18 +31,18 @@ export const getcontractparams = MaybeAuthedEndpoint<Ret>(async (req, auth) => {
   const contract = await getContractFromSlug(contractSlug, db)
 
   if (!contract) {
-    throw new APIError(404, 'This contract does not exist!')
+    throw new APIError(404, 'This contract does not exist')
   }
 
   if (contract.visibility === 'private') {
     if (!contract.groupLinks) {
-      throw new APIError(400, 'No associated group with this private contract.')
+      throw new APIError(500, 'No associated group with this private contract')
     }
 
     if (contract.groupLinks.length > 1) {
       throw new APIError(
-        400,
-        'Too many groups associated with this private contract!'
+        500,
+        'Too many groups associated with this private contract'
       )
     }
   }
@@ -82,40 +76,50 @@ export const getcontractparams = MaybeAuthedEndpoint<Ret>(async (req, auth) => {
 
   const totalBets =
     contract.mechanism == 'none' ? 0 : await getTotalBetCount(contract.id, db)
-  const includingSingleBetPts = contract.mechanism === 'cpmm-1'
-  const includingMultiBetPts = contract.mechanism === 'cpmm-multi-1'
+  const isSingle = contract.mechanism === 'cpmm-1'
+  const isMulti = contract.mechanism === 'cpmm-multi-1'
 
-  // prioritize newer bets via descending order
-  const bets =
+  const betsToPass =
     contract.mechanism == 'none'
       ? []
       : await getBets(db, {
           contractId: contract.id,
-          filterRedemptions: !includingMultiBetPts,
-          limit: includingSingleBetPts ? 50000 : 4000,
+          limit: 100,
           order: 'desc',
+          filterAntes: true,
+          filterRedemptions: true,
         })
 
-  const betPoints: SerializedPoint<Partial<Bet>>[] = includingSingleBetPts
-    ? bets.map(
-        (bet) =>
-          buildArray([
-            bet.createdTime,
-            bet.probAfter,
-            totalBets < 1000 ? { userAvatarUrl: bet.userAvatarUrl } : undefined,
-          ]) as any
+  const allBetPoints =
+    contract.mechanism == 'none'
+      ? []
+      : await getBetPoints(db, {
+          contractId: contract.id,
+          filterRedemptions: !isMulti,
+          order: 'asc',
+        })
+
+  let chartPoints = isSingle
+    ? [
+        { x: contract.createdTime, y: getInitialProbability(contract) },
+        ...maxMinBin(allBetPoints, 500),
+      ].map((p) => [p.x, p.y] as const)
+    : isMulti
+    ? calculateMultiBets(
+        allBetPoints,
+        contract.answers.map((a) => a.id)
       )
     : []
 
-  let multiBetPoints: MultiSerializedPoint[] = []
-  if (includingMultiBetPts) {
-    multiBetPoints = calculateMultiBets(
-      bets,
-      contract.answers.map((a) => a.id)
-    )
-  }
+  const ogPoints =
+    isSingle && contract.visibility !== 'private' ? binAvg(allBetPoints) : []
+  const pointsString = pointsToBase64(ogPoints.map((p) => [p.x, p.y] as const))
 
-  const comments = await getAllComments(db, contract.id, 100)
+  const comments = await getRecentTopLevelCommentsAndReplies(
+    db,
+    contract.id,
+    50
+  )
 
   const userPositionsByOutcome =
     contract.mechanism === 'cpmm-1'
@@ -131,21 +135,6 @@ export const getcontractparams = MaybeAuthedEndpoint<Ret>(async (req, auth) => {
       ? await getTotalContractMetrics(contract.id, db)
       : 0
 
-  if (includingSingleBetPts) {
-    const firstPoint = [
-      contract.createdTime,
-      getInitialProbability(contract as BinaryContract | PseudoNumericContract),
-    ] as const
-
-    betPoints.push(firstPoint)
-    betPoints.reverse()
-  }
-
-  const pointsString =
-    contract.visibility != 'private'
-      ? pointsToBase64(compressItems(betPoints))
-      : undefined
-
   const creator = await getUser(contract.creatorId)
 
   const relatedContracts = await getRelatedContracts(contract, 20, db, true)
@@ -155,12 +144,8 @@ export const getcontractparams = MaybeAuthedEndpoint<Ret>(async (req, auth) => {
       outcomeType: contract.outcomeType,
       contract,
       historyData: {
-        bets: includingSingleBetPts
-          ? bets.slice(0, 100)
-          : includingMultiBetPts
-          ? bets.filter((b) => !b.isRedemption)
-          : bets,
-        points: includingMultiBetPts ? multiBetPoints : betPoints,
+        bets: betsToPass,
+        points: chartPoints,
       },
       pointsString,
       comments,

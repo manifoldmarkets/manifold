@@ -14,23 +14,23 @@ export const claimdestinysub = authEndpoint(async (req, auth) => {
   const { destinyUsername } = validate(bodySchema, req.body)
 
   return await firestore.runTransaction(async (trans) => {
-    const privateSnap = await trans.get(
-      firestore.collection('private-users').doc(auth.uid)
-    )
-    if (!privateSnap.exists) throw new APIError(400, 'Private user not found.')
-    const privateUser = privateSnap.data() as PrivateUser
-
-    if (privateUser.destinySub2Claimed)
-      throw new APIError(400, 'Destiny sub already claimed.')
-
     const userSnap = await trans.get(
       firestore.collection('users').doc(auth.uid)
     )
-    if (!userSnap.exists) throw new APIError(400, 'User not found.')
-
+    if (!userSnap.exists) throw new APIError(401, 'Your account was not found')
     const user = userSnap.data() as User
+
+    const privateSnap = await trans.get(
+      firestore.collection('private-users').doc(auth.uid)
+    )
+    if (!privateSnap.exists) throw new APIError(500, 'Private user not found')
+    const privateUser = privateSnap.data() as PrivateUser
+
+    if (privateUser.destinySub2Claimed)
+      throw new APIError(403, 'Destiny sub already claimed.')
+
     if (user.balance < DESTINY_SUB_COST)
-      throw new APIError(400, 'Insufficient balance.')
+      throw new APIError(403, 'Insufficient balance.')
 
     const response = await fetch(
       'https://www.destiny.gg/api/mm/award-sub?privatekey=' +
@@ -46,7 +46,7 @@ export const claimdestinysub = authEndpoint(async (req, auth) => {
     const destinySubId = result?.data?.newSubId
 
     if (!destinySubId) {
-      throw new APIError(400, 'Error claiming Destiny sub: ' + result?.message)
+      throw new APIError(500, 'Error claiming Destiny sub: ' + result?.message)
     }
 
     const subDoc = firestore.collection('destiny-subs2').doc()

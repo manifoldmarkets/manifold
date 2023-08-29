@@ -1,5 +1,5 @@
 import { Button } from 'web/components/buttons/button'
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { Modal } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
 import { QRCode } from 'web/components/widgets/qr-code'

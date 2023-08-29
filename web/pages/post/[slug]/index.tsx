@@ -12,7 +12,7 @@ import {
 import { getUser, User } from 'web/lib/firebase/users'
 import { PencilIcon } from '@heroicons/react/solid'
 import { Button } from 'web/components/buttons/button'
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { Row } from 'web/components/layout/row'
 import { Col } from 'web/components/layout/col'
 import { ENV_CONFIG } from 'common/envs/constants'
@@ -29,7 +29,7 @@ import { useUser } from 'web/hooks/use-user'
 import { SEO } from 'web/components/SEO'
 import { EditInPlaceInput } from 'web/components/widgets/edit-in-place'
 import { richTextToString } from 'common/util/parse'
-import { CopyLinkButton } from 'web/components/buttons/copy-link-button'
+import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
 import { getUsersWhoSkipped, getUsersWhoWatched } from 'web/lib/supabase/ads'
 import { formatMoney } from 'common/util/format'
 import { Ad } from 'common/ad'
@@ -106,7 +106,7 @@ export default function PostPage(props: {
           onSave={(title) => updatePost({ id: post.id, title })}
           disabled={!canEdit}
         >
-          {(value) => <Title className="!my-0 p-2" children={value} />}
+          {(value) => <Title className="!my-0 p-2">{value}</Title>}
         </EditInPlaceInput>
         <div className="h-2" />
         <Row className="mt-4 items-center">
@@ -119,10 +119,8 @@ export default function PostPage(props: {
             />
           </div>
           <Row className="items-center sm:pr-2">
-            <CopyLinkButton
-              linkIconOnlyProps={{
-                tooltip: 'Copy link to post',
-              }}
+            <CopyLinkOrShareButton
+              tooltip="Copy link to post"
               url={shareUrl}
               eventTrackingName={'copy post link'}
             />

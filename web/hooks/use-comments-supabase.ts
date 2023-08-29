@@ -4,6 +4,7 @@ import {
   convertContractComment,
   getAllCommentRows,
   getCommentRows,
+  getCommentsOnContract,
   getNumContractComments,
   getNumUserComments,
   getPostCommentRows,
@@ -51,11 +52,7 @@ export function useUnseenReplyChainCommentsOnContracts(
         }
         setComments((prev) =>
           uniqBy(
-            [
-              // TODO: why does typescript think d is an array?
-              ...data.map((d: any) => d.data as ContractComment),
-              ...prev,
-            ],
+            [...data.map((d: any) => d.data as ContractComment), ...prev],
             (c) => c.id
           )
         )
@@ -78,6 +75,18 @@ export function useNumUserComments(userId: string) {
   }, [userId])
 
   return num
+}
+
+export function useCommentsOnContract(contractId: string) {
+  const [comments, setComments] = useState<ContractComment[] | undefined>(
+    undefined
+  )
+  useEffect(() => {
+    getCommentsOnContract(contractId).then((comments) => {
+      setComments(comments)
+    })
+  }, [contractId])
+  return comments
 }
 
 export function useRealtimeCommentsOnContract(contractId: string) {

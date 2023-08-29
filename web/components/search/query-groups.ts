@@ -1,23 +1,37 @@
-import { debounce } from 'lodash'
-import { useEffect, useMemo, useState } from 'react'
+import { debounce, uniqBy } from 'lodash'
+import { useEffect, useMemo } from 'react'
 import { SearchGroupInfo, searchGroups } from 'web/lib/supabase/groups'
+import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import { auth } from 'web/lib/firebase/users'
 
-export function useGroupSearchResults(query: string, limit: number) {
-  const [results, setResults] = useState<SearchGroupInfo[]>([])
-
-  const debouncedOnSearch = useMemo(
-    () =>
-      debounce(async (query: string) => {
-        searchGroups({ term: query, limit }).then((results) =>
-          setResults(results.data)
-        )
-      }, 50),
-    [limit]
+export function useTrendingGroupsSearchResults(
+  query: string,
+  limit: number,
+  lockSearch: boolean
+) {
+  const [results, setResults] = usePersistentInMemoryState<SearchGroupInfo[]>(
+    [],
+    'trending-groups-market-search'
   )
 
+  const search = async (query: string) => {
+    searchGroups({ term: query, limit }).then((results) =>
+      setResults(uniqBy(results.data, 'id'))
+    )
+  }
+  const debouncedOnSearch = useMemo(() => debounce(search, 50), [limit])
+
   useEffect(() => {
-    debouncedOnSearch(query)
-  }, [query, debouncedOnSearch])
+    if (lockSearch) return
+    if (query) debouncedOnSearch(query)
+    else search('') // don't debounce on page load
+  }, [
+    query,
+    debouncedOnSearch,
+    lockSearch,
+    // need to pass FB user to get auth token to request customized groups
+    auth.currentUser?.uid,
+  ])
 
   return results
 }

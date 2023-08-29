@@ -6,18 +6,15 @@ import {
   getYourTrendingContracts,
 } from 'web/lib/supabase/contracts'
 import { SupabaseClient } from 'common/supabase/utils'
-import { inMemoryStore, usePersistentState } from './use-persistent-state'
+import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
 
 export function useYourRecentContracts(
   db: SupabaseClient,
   userId: string | null | undefined
 ) {
-  const [contracts, setContracts] = usePersistentState<
+  const [contracts, setContracts] = usePersistentInMemoryState<
     CPMMContract[] | undefined
-  >(undefined, {
-    key: 'your-recent-contracts',
-    store: inMemoryStore(),
-  })
+  >(undefined, 'your-recent-contracts')
 
   useEffect(() => {
     if (!userId) return
@@ -36,12 +33,9 @@ export function useYourDailyChangedContracts(
   userId: string | null | undefined,
   count: number
 ) {
-  const [contracts, setContracts] = usePersistentState<
+  const [contracts, setContracts] = usePersistentInMemoryState<
     CPMMContract[] | undefined
-  >(undefined, {
-    key: 'your-daily-changed-contracts',
-    store: inMemoryStore(),
-  })
+  >(undefined, 'your-daily-changed-contracts')
 
   useEffect(() => {
     if (!userId) return
@@ -60,13 +54,9 @@ export function useYourTrendingContracts(
   userId: string | null | undefined,
   count: number
 ) {
-  const [contracts, setContracts] = usePersistentState<Contract[] | undefined>(
-    undefined,
-    {
-      key: 'your-trending-contracts',
-      store: inMemoryStore(),
-    }
-  )
+  const [contracts, setContracts] = usePersistentInMemoryState<
+    Contract[] | undefined
+  >(undefined, 'your-trending-contracts')
 
   useEffect(() => {
     if (!userId) return

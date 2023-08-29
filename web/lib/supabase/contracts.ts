@@ -8,8 +8,8 @@ import {
   Tables,
 } from 'common/supabase/utils'
 import { filterDefined } from 'common/util/array'
-import { ContractTypeType, Sort, filter } from 'web/components/supabase-search'
-import { stateType } from 'web/components/supabase-search'
+import { ContractTypeType, Sort, filter } from 'web/components/contracts-search'
+import { stateType } from 'web/components/contracts-search'
 import { supabaseSearchContracts } from '../firebase/api'
 import { db } from './db'
 import { chunk, flatten, keyBy } from 'lodash'
@@ -206,14 +206,12 @@ export async function searchContract(props: {
   sort: Sort
   contractType?: ContractTypeType
   offset?: number
-  topic?: string
   limit: number
   group_id?: string
   creator_id?: string
 }) {
   const {
     query,
-    topic,
     filter,
     sort,
     contractType = 'ALL',
@@ -242,7 +240,6 @@ export async function searchContract(props: {
       contractType,
       offset,
       limit,
-      topic,
       groupId: group_id,
       creatorId: creator_id,
     })
@@ -251,7 +248,7 @@ export async function searchContract(props: {
     }
   }
   if (state.fuzzyContractOffset > 0) {
-    const contractFuzzy = searchContractFuzzy({
+    const contractFuzzy = await searchContractFuzzy({
       state,
       query,
       filter,
@@ -260,7 +257,6 @@ export async function searchContract(props: {
       limit,
       group_id,
       creator_id,
-      topic,
     })
     return contractFuzzy
   }
@@ -275,7 +271,6 @@ export async function searchContract(props: {
     fuzzy: false,
     groupId: group_id,
     creatorId: creator_id,
-    topic,
   })
   if (contracts) {
     if (contracts.length == limit) {

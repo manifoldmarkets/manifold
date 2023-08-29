@@ -148,7 +148,10 @@ export function AwardBountyButton(props: {
         color={'gray-outline'}
         size="xs"
         disabled={disabled}
-        onClick={() => setOpen(true)}
+        onClick={(e) => {
+          e.preventDefault()
+          setOpen(true)
+        }}
       >
         Award bounty
       </Button>
@@ -187,10 +190,9 @@ export function AwardBountyButton(props: {
 
 export function AddBountyButton(props: {
   contract: BountiedQuestionContract
-  user: User
   buttonClassName?: string
 }) {
-  const { contract, user, buttonClassName } = props
+  const { contract, buttonClassName } = props
   const [open, setOpen] = useState(false)
   const [error, setError] = useState<string | undefined>(undefined)
   const [amount, setAmount] = useState<number | undefined>(undefined)

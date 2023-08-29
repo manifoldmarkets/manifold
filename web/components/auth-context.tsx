@@ -108,6 +108,9 @@ export function AuthProvider(props: {
         privateUser: newUser.privateUser,
       })
     )
+
+    // generate auth token
+    fbUser.getIdToken()
   }
 
   useEffect(() => {

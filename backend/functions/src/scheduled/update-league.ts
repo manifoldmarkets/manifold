@@ -15,7 +15,7 @@ import { getProfitMetrics } from 'common/calculate'
 
 export const updateLeague = functions
   .runWith({
-    memory: '1GB',
+    memory: '4GB',
     timeoutSeconds: 540,
     secrets,
   })

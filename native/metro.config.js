@@ -11,7 +11,7 @@ const path = require('path')
 const projectRoot = __dirname
 const defaultConfig = getDefaultConfig(projectRoot)
 const extraNodeModules = {
-  common: path.resolve(__dirname + '/../common'),
+  common: path.resolve(__dirname + '/../common/src'),
   components: path.resolve(__dirname + '/components'),
   lib: path.resolve(__dirname + '/lib'),
 }
@@ -19,7 +19,7 @@ module.exports = {
   ...defaultConfig,
   watchFolders: [
     ...defaultConfig.watchFolders,
-    path.resolve(__dirname + '/../common'),
+    path.resolve(__dirname + '/../common/src'),
   ],
   transformer: {
     ...defaultConfig.transformer,

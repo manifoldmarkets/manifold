@@ -1,19 +1,22 @@
 import { useEffect, useState } from 'react'
 import {
   Bet,
+  getBetsQuery,
   listenForBets,
   listenForUnfilledBets,
 } from 'web/lib/firebase/bets'
 import { BetFilter, LimitBet } from 'common/bet'
-import { inMemoryStore, usePersistentState } from './use-persistent-state'
 import { useEffectCheckEquality } from 'web/hooks/use-effect-check-equality'
 import { useUsersById } from './use-user'
 import { uniq } from 'lodash'
 import { filterDefined } from 'common/util/array'
 import { db } from 'web/lib/supabase/db'
 import { getBets } from 'common/supabase/bets'
+import { getValues } from 'web/lib/firebase/utils'
+import { getUnfilledLimitOrders } from 'web/lib/supabase/bets'
+import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
 
-export const useBets = (options?: BetFilter) => {
+export const useListenBets = (options?: BetFilter) => {
   const [bets, setBets] = useState<Bet[] | undefined>()
   useEffectCheckEquality(() => {
     return listenForBets(setBets, options)
@@ -22,12 +25,23 @@ export const useBets = (options?: BetFilter) => {
   return bets
 }
 
+export const useBets = (options?: BetFilter) => {
+  const [bets, setBets] = useState<Bet[] | undefined>()
+  useEffect(() => {
+    getValues<Bet>(getBetsQuery(options)).then(setBets)
+  }, [])
+
+  return bets
+}
+
 export const useUnfilledBets = (contractId: string) => {
   const [unfilledBets, setUnfilledBets] = useState<LimitBet[] | undefined>()
-  useEffect(
-    () => listenForUnfilledBets(contractId, setUnfilledBets),
-    [contractId]
-  )
+  useEffect(() => {
+    // Load first with supabase b/c it's faster.
+    getUnfilledLimitOrders(contractId).then(setUnfilledBets)
+    // Then listen for updates w/ firebase.
+    return listenForUnfilledBets(contractId, setUnfilledBets)
+  }, [contractId])
   return unfilledBets
 }
 
@@ -43,10 +57,10 @@ export const useUnfilledBetsAndBalanceByUserId = (contractId: string) => {
 }
 
 export const useRecentBets = (contractId: string, limit: number) => {
-  const [bets, setBets] = usePersistentState<Bet[] | undefined>(undefined, {
-    key: `recent-bets-${contractId}-${limit}`,
-    store: inMemoryStore(),
-  })
+  const [bets, setBets] = usePersistentInMemoryState<Bet[] | undefined>(
+    undefined,
+    `recent-bets-${contractId}-${limit}`
+  )
 
   useEffect(() => {
     getBets(db, {

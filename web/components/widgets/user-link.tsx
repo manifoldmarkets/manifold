@@ -1,8 +1,9 @@
-import { SiteLink } from 'web/components/widgets/site-link'
+import Link from 'next/link'
 import clsx from 'clsx'
 import {
   BOT_USERNAMES,
-  CHECK_USERNAMES,
+  MOD_USERNAMES,
+  VERIFIED_USERNAMES,
   CORE_USERNAMES,
 } from 'common/envs/constants'
 import { ShieldCheckIcon, SparklesIcon } from '@heroicons/react/solid'
@@ -12,6 +13,7 @@ import { Row } from '../layout/row'
 import { Avatar } from './avatar'
 import { DAY_MS } from 'common/util/time'
 import ScalesIcon from 'web/lib/icons/scales-icon'
+import { linkClass } from './site-link'
 
 export const isFresh = (createdTime: number) =>
   createdTime > Date.now() - DAY_MS * 14
@@ -94,14 +96,17 @@ export function UserLink(props: {
     )
   }
   return (
-    <SiteLink
+    <Link
       href={`/${username}`}
-      className={clsx('inline-flex flex-row items-center gap-1', className)}
-      followsLinkClass
+      className={clsx(
+        linkClass,
+        'inline-flex flex-row items-center gap-1',
+        className
+      )}
       onClick={(e) => e.stopPropagation()}
     >
       {children}
-    </SiteLink>
+    </Link>
   )
 }
 
@@ -139,8 +144,11 @@ export function UserBadge(props: {
   if (CORE_USERNAMES.includes(username)) {
     badges.push(<CoreBadge key="core" />)
   }
-  if (CHECK_USERNAMES.includes(username)) {
-    badges.push(<CheckBadge key="check" />)
+  if (MOD_USERNAMES.includes(username)) {
+    badges.push(<ModBadge key="mod" />)
+  }
+  if (VERIFIED_USERNAMES.includes(username)) {
+    badges.push(<VerifiedBadge key="check" />)
   }
   if (fresh) {
     badges.push(<FreshBadge key="fresh" />)
@@ -163,11 +171,23 @@ function CoreBadge() {
   )
 }
 
-// Show a normal checkmark next to our trustworthy users
-function CheckBadge() {
+// Show a normal checkmark next to our mods
+function ModBadge() {
   return (
     <Tooltip text="Trustworthy. ish." placement="right">
       <BadgeCheckIcon className="text-primary-700 h-4 w-4" aria-hidden="true" />
+    </Tooltip>
+  )
+}
+
+// Show a normal checkmark next to our verified users
+function VerifiedBadge() {
+  return (
+    <Tooltip text="It's really me!" placement="right">
+      <BadgeCheckIcon
+        className="h-4 w-4 text-purple-700 dark:text-purple-400"
+        aria-hidden
+      />
     </Tooltip>
   )
 }

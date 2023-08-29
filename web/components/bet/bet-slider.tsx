@@ -1,4 +1,3 @@
-import React from 'react'
 import { binaryOutcomes } from 'web/components/bet/bet-panel'
 import { Slider } from 'web/components/widgets/slider'
 import { formatMoney } from 'common/util/format'
@@ -9,23 +8,25 @@ export const BetSlider = (props: {
   binaryOutcome?: binaryOutcomes
   maximumAmount?: number
   customRange?: { rangeMin?: number; rangeMax?: number }
+  disabled?: boolean
 }) => {
-  const { amount, onAmountChange, binaryOutcome, maximumAmount } = props
+  const { amount, onAmountChange, binaryOutcome, maximumAmount, disabled } =
+    props
   const { rangeMin, rangeMax } = props.customRange ?? {}
 
   return (
     <Slider
-      className="mb-1 w-full"
+      className="mb-2 w-full"
       min={0}
       max={rangeMax ?? maximumAmount}
       marks={
         maximumAmount || rangeMin || rangeMax
-          ? { '0': formatMoney(0) }
-          : {
-              '0': formatMoney(0),
-              '50': formatMoney(50),
-              '100': formatMoney(100),
-            }
+          ? [{ value: 0, label: formatMoney(0) }]
+          : [
+              { value: 0, label: formatMoney(0) },
+              { value: 50, label: formatMoney(50) },
+              { value: 100, label: formatMoney(100) },
+            ]
       }
       color={
         binaryOutcome === 'YES'
@@ -37,6 +38,7 @@ export const BetSlider = (props: {
       amount={amount ?? 0}
       onChange={(value) => onAmountChange(value as number)}
       step={5}
+      disabled={disabled}
     />
   )
 }

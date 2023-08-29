@@ -23,6 +23,7 @@ import { LikeButton } from 'web/components/contract/like-button'
 import {
   CopyLinkDateTimeComponent,
   copyLinkToComment,
+  getCommentLink,
 } from 'web/components/feed/copy-link-date-time'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -34,7 +35,7 @@ import { useEvent } from 'web/hooks/use-event'
 import { useIsVisible } from 'web/hooks/use-is-visible'
 import { isBlocked, usePrivateUser, useUser } from 'web/hooks/use-user'
 import { createCommentOnContract, hideComment } from 'web/lib/firebase/api'
-import { firebaseLogin } from 'web/lib/firebase/users'
+import { firebaseLogin, User } from 'web/lib/firebase/users'
 import LinkIcon from 'web/lib/icons/link-icon'
 import TriangleDownFillIcon from 'web/lib/icons/triangle-down-fill-icon'
 import TriangleFillIcon from 'web/lib/icons/triangle-fill-icon'
@@ -48,6 +49,9 @@ import { AwardBountyButton } from '../contract/bountied-question'
 import { Content } from '../widgets/editor'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import { Tooltip } from '../widgets/tooltip'
+import { isAdminId } from 'common/envs/constants'
+import { PaymentsModal } from 'web/pages/payments'
+import { GiPayMoney } from 'react-icons/gi'
 
 export type ReplyToUserInfo = { id: string; username: string }
 export const isReplyToBet = (comment: ContractComment) =>
@@ -80,7 +84,9 @@ export function FeedCommentThread(props: {
   const idInThisThread =
     idInUrl && threadComments.map((comment) => comment.id).includes(idInUrl)
 
-  const [seeReplies, setSeeReplies] = useState(showReplies || !!idInThisThread)
+  const [seeReplies, setSeeReplies] = useState(
+    !parentComment.hidden && (showReplies || !!idInThisThread)
+  )
 
   const onSeeRepliesClick = useEvent(() => setSeeReplies(!seeReplies))
   const clearReply = useEvent(() => setReplyToUserInfo(undefined))
@@ -162,7 +168,10 @@ export const FeedComment = memo(function FeedComment(props: {
   trackingLocation: string
   highlighted?: boolean
   showLike?: boolean
+  seeReplies?: boolean
+  hasReplies?: boolean
   onReplyClick?: (comment: ContractComment) => void
+  onSeeReplyClick?: () => void
   children?: ReactNode
   className?: string
   inTimeline?: boolean
@@ -175,7 +184,10 @@ export const FeedComment = memo(function FeedComment(props: {
     comment,
     highlighted,
     showLike,
+    seeReplies,
+    hasReplies,
     onReplyClick,
+    onSeeReplyClick,
     children,
     trackingLocation,
     inTimeline,
@@ -197,31 +209,38 @@ export const FeedComment = memo(function FeedComment(props: {
       {isReplyToBet(comment) && (
         <FeedCommentReplyHeader comment={comment} contract={contract} />
       )}
-      <Row ref={ref} className={clsx(className ? className : 'ml-9 gap-2')}>
+      <Row ref={ref} className={clsx(className ? className : 'gap-2')}>
         <Col className="relative">
-          {!isParent && (
-            <div className="bg-ink-200 absolute -top-3 left-4 h-3 w-0.5 grow" />
-          )}
-          <Avatar
-            username={userUsername}
-            size={'sm'}
-            avatarUrl={userAvatarUrl}
-            className={clsx(
-              marketCreator ? 'shadow shadow-amber-300' : '',
-              'z-10'
+          <Row>
+            {!isParent && (
+              <div className="border-ink-200 -mt-4 ml-4 h-6 w-4 rounded-bl-xl border-b-2 border-l-2" />
             )}
-          />
+            <Avatar
+              username={userUsername}
+              size={isParent ? 'sm' : '2xs'}
+              avatarUrl={userAvatarUrl}
+              className={clsx(
+                marketCreator ? 'shadow shadow-amber-300' : '',
+                'z-10'
+              )}
+            />
+          </Row>
+          {isParent && seeReplies && hasReplies && (
+            <div className="bg-ink-200 absolute -top-0 left-4 bottom-0 w-0.5" />
+          )}
           {!isParent && !isLastReplyInThread && (
-            <div className="bg-ink-200 ml-4 w-0.5 grow" />
+            <div className="bg-ink-200 absolute -top-1 left-4 bottom-0 w-0.5" />
           )}
         </Col>
         <Col
           className={clsx(
-            'w-full rounded-xl rounded-tl-none px-4 py-1',
+            'group w-full rounded-xl rounded-tl-none px-4 py-1 transition-colors',
+            isParent && hasReplies ? 'hover:bg-primary-50' : '',
             highlighted
               ? 'bg-primary-100 border-primary-300 border-2'
               : 'bg-ink-100'
           )}
+          onClick={onSeeReplyClick}
         >
           <FeedCommentHeader
             comment={comment}
@@ -287,7 +306,10 @@ export const ParentFeedComment = memo(function ParentFeedComment(props: {
     <FeedComment
       contract={contract}
       comment={comment}
+      seeReplies={seeReplies}
+      hasReplies={numReplies > 0}
       onReplyClick={onReplyClick}
+      onSeeReplyClick={onSeeReplyClick}
       highlighted={highlighted}
       showLike={showLike}
       className={clsx('gap-2', commentKind)}
@@ -299,7 +321,6 @@ export const ParentFeedComment = memo(function ParentFeedComment(props: {
       <ReplyToggle
         seeReplies={seeReplies}
         numComments={numReplies}
-        onClick={onSeeReplyClick}
         childrenBountyTotal={childrenBountyTotal}
       />
     </FeedComment>
@@ -335,6 +356,7 @@ export function DotMenu(props: {
   const isAdmin = useAdmin()
   const isContractCreator = privateUser?.id === contract.creatorId
   const [editingComment, setEditingComment] = useState(false)
+  const [tipping, setTipping] = useState(false)
   return (
     <>
       <ReportModal
@@ -350,7 +372,13 @@ export function DotMenu(props: {
         label={'Comment'}
       />
       <DropdownMenu
-        Icon={<DotsHorizontalIcon className="h-4 w-4" aria-hidden="true" />}
+        menuWidth={'w-36'}
+        Icon={
+          <DotsHorizontalIcon
+            className="mt-[0.12rem] h-4 w-4"
+            aria-hidden="true"
+          />
+        }
         Items={buildArray(
           {
             name: 'Copy link',
@@ -363,21 +391,27 @@ export function DotMenu(props: {
               )
             },
           },
-          user && {
-            name: 'Report',
-            icon: <FlagIcon className="h-5 w-5" />,
-            onClick: () => {
-              if (user?.id !== comment.userId) setIsModalOpen(true)
-              else toast.error(`You can't report your own comment`)
+          user &&
+            comment.userId !== user.id && {
+              name: 'Tip',
+              icon: <GiPayMoney className="h-5 w-5" />,
+              onClick: () => setTipping(true),
             },
-          },
-          comment.userId === user?.id && {
-            name: 'Edit',
-            icon: <PencilIcon className="h-5 w-5" />,
-            onClick: async () => {
-              setEditingComment(true)
+          user &&
+            comment.userId !== user.id && {
+              name: 'Report',
+              icon: <FlagIcon className="h-5 w-5" />,
+              onClick: () => {
+                if (user?.id !== comment.userId) setIsModalOpen(true)
+                else toast.error(`You can't report your own comment`)
+              },
             },
-          },
+          user &&
+            (comment.userId === user.id || isAdminId(user?.id)) && {
+              name: 'Edit',
+              icon: <PencilIcon className="h-5 w-5" />,
+              onClick: () => setEditingComment(true),
+            },
           (isAdmin || isContractCreator) && {
             name: comment.hidden ? 'Unhide' : 'Hide',
             icon: <EyeOffIcon className="h-5 w-5 text-red-500" />,
@@ -399,6 +433,29 @@ export function DotMenu(props: {
           contract={contract}
           open={editingComment}
           setOpen={setEditingComment}
+        />
+      )}
+      {user && tipping && (
+        <PaymentsModal
+          fromUser={user}
+          toUser={
+            {
+              id: comment.userId,
+              name: comment.userName,
+              username: comment.userUsername,
+              avatarUrl: comment.userAvatarUrl ?? '',
+            } as User
+          }
+          setShow={setTipping}
+          show={tipping}
+          groupId={comment.id}
+          defaultMessage={`Tip for comment on ${
+            contract.question
+          } (${getCommentLink(
+            contract.creatorUsername,
+            contract.slug,
+            comment.id
+          )})`}
         />
       )}
     </>
@@ -438,11 +495,13 @@ export function CommentActions(props: {
         <Tooltip text="Reply" placement="bottom">
           <IconButton
             size={'xs'}
-            onClick={() => {
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
               onReplyClick(comment)
             }}
           >
-            <ReplyIcon className="h-5 w-5" />
+            <ReplyIcon className="h-5 w-5 " />
           </IconButton>
         </Tooltip>
       )}
@@ -621,21 +680,24 @@ function FeedCommentHeader(props: {
                 )}
               </span>
             )}
+            {editedTime ? (
+              <CommentEditHistoryButton comment={comment} />
+            ) : (
+              <CopyLinkDateTimeComponent
+                prefix={contract.creatorUsername}
+                slug={contract.slug}
+                createdTime={editedTime ? editedTime : createdTime}
+                elementId={comment.id}
+                size={'sm'}
+                linkClassName="text-ink-500"
+              />
+            )}
+            {!inTimeline && isApi && (
+              <InfoTooltip text="Placed via API" className="mx-1">
+                🤖
+              </InfoTooltip>
+            )}
           </span>
-          <CopyLinkDateTimeComponent
-            prefix={contract.creatorUsername}
-            slug={contract.slug}
-            createdTime={editedTime ? editedTime : createdTime}
-            elementId={comment.id}
-            seeEditsButton={<CommentEditHistoryButton comment={comment} />}
-            size={'sm'}
-            linkClassName="text-ink-500"
-          />
-          {!inTimeline && isApi && (
-            <InfoTooltip text="Placed via API" className="mr-1">
-              🤖
-            </InfoTooltip>
-          )}
           {!inTimeline && <DotMenu comment={comment} contract={contract} />}
         </Row>
         {bountyAwarded && bountyAwarded > 0 && (
@@ -696,7 +758,6 @@ export function CommentOnBetRow(props: {
     betAnswerId,
     contract,
     clearReply,
-    className,
   } = props
   const { bought, money } = getBoughtMoney(betAmount)
 

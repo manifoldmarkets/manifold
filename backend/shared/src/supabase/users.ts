@@ -1,14 +1,11 @@
 import { pgp, SupabaseDirectClient } from 'shared/supabase/init'
 import { fromPairs } from 'lodash'
-import {
-  DEFAULT_USER_FEED_ID,
-  FEED_REASON_TYPES,
-  INTEREST_DISTANCE_THRESHOLDS,
-} from 'common/feed'
+import { FEED_REASON_TYPES, INTEREST_DISTANCE_THRESHOLDS } from 'common/feed'
 import { Row } from 'common/supabase/utils'
 import { log } from 'shared/utils'
 import { ITask } from 'pg-promise'
 import { IClient } from 'pg-promise/typescript/pg-subset'
+import { WEEK_MS } from 'common/util/time'
 
 export const getUserFollowerIds = async (
   userId: string,
@@ -56,10 +53,11 @@ export const getUsersWithSimilarInterestVectorToNews = async (
 
 export const spiceUpNewUsersFeedBasedOnTheirInterests = async (
   userId: string,
-  pg: SupabaseDirectClient
+  pg: SupabaseDirectClient,
+  userIdFeedSource: string,
+  limit: number
 ) => {
   await pg.tx(async (t) => {
-    await t.none('SET LOCAL ivfflat.probes = $1', [20])
     const relatedFeedItems = await t.manyOrNone<Row<'user_feed'>>(
       `              
           WITH user_embedding AS (
@@ -67,23 +65,28 @@ export const spiceUpNewUsersFeedBasedOnTheirInterests = async (
             FROM user_embeddings
             WHERE user_id = $1
           ),
-          interesting_contract_embeddings AS (
-             SELECT contract_id,
-                    (SELECT interest_embedding FROM user_embedding) <=> embedding AS distance
+         recent_feed as (
+             SELECT distinct on (contract_id) * FROM user_feed
+             where created_time > now() - interval '14 days'
+               and user_id = $2
+         ),
+         feed_embeddings AS (
+             SELECT contract_embeddings.contract_id, embedding
              FROM contract_embeddings
-             ORDER BY distance
-            LIMIT $2
-           ),
-           filtered_user_feed AS (
-               SELECT *
-               FROM user_feed
-               WHERE contract_id IN (SELECT contract_id FROM interesting_contract_embeddings)
-               and created_time > now() - interval '3 days'
-           )
-          SELECT DISTINCT ON (contract_id) *
-          FROM filtered_user_feed
+              JOIN recent_feed
+              ON contract_embeddings.contract_id = recent_feed.contract_id
+         ),
+         feed_ordered_by_distance AS (
+             SELECT recent_feed.*
+             FROM feed_embeddings,user_embedding,recent_feed
+             WHERE feed_embeddings.contract_id = recent_feed.contract_id
+             order by (feed_embeddings.embedding <=> user_embedding.interest_embedding)
+             limit $3
+         )
+          SELECT *
+          FROM feed_ordered_by_distance
         `,
-      [userId, 100]
+      [userId, userIdFeedSource, limit]
     )
     log('found relatedFeedItems', relatedFeedItems.length)
 
@@ -91,86 +94,13 @@ export const spiceUpNewUsersFeedBasedOnTheirInterests = async (
   })
 }
 
-export const populateNewUsersFeed = async (
-  userId: string,
-  pg: SupabaseDirectClient,
-  postWelcomeTopicSelection: boolean
-) => {
-  await pg.tx(async (t) => {
-    await t.none('SET LOCAL ivfflat.probes = $1', [10])
-
-    const relatedFeedItems = postWelcomeTopicSelection
-      ? await t.manyOrNone<Row<'user_feed'>>(
-          `
-              WITH user_embedding AS (
-                  SELECT interest_embedding
-                  FROM user_embeddings
-                  WHERE user_id = $1
-              ),
-               interesting_contracts AS (
-                   SELECT contract_id,
-                          (SELECT interest_embedding FROM user_embedding) <=> embedding AS distance
-                   FROM contract_embeddings
-                   ORDER BY distance
-                   LIMIT $2
-               ),
-               filtered_user_feed AS (
-                   SELECT *
-                   FROM user_feed
-                   WHERE contract_id IN (SELECT contract_id FROM interesting_contracts)
-                   and created_time > now() - interval '7 days'
-               )
-              SELECT DISTINCT ON (contract_id) *
-              FROM filtered_user_feed
-              ORDER BY contract_id, created_time DESC;
-          `,
-          [userId, 200]
-        )
-      : await t.manyOrNone<userFeedRowAndDistance>(
-          `
-          with user_embedding as (
-              select interest_embedding
-              from user_embeddings
-              where user_id = $1
-          ),
-         contract_embeddings_for_user_feed as (
-             select contract_embeddings.contract_id, contract_embeddings.embedding
-             from contract_embeddings
-             where contract_embeddings.contract_id in (
-                 select contract_id
-                 from user_feed
-                 where user_id = $2
-                 order by created_time desc
-                 limit 200
-             )
-         ),
-         interesting_contracts as (
-             select
-                 contract_embeddings_for_user_feed.contract_id,
-                 contract_embeddings_for_user_feed.embedding <=> user_embedding.interest_embedding as distance
-             from contract_embeddings_for_user_feed, user_embedding
-         )
-          select user_feed.*, interesting_contracts.distance
-          from user_feed
-                   join interesting_contracts on user_feed.contract_id = interesting_contracts.contract_id
-          where user_feed.user_id = $2
-          order by interesting_contracts.distance;
-          `,
-          [userId, DEFAULT_USER_FEED_ID]
-        )
-
-    log('found', relatedFeedItems.length, 'feed items to copy')
-    if (relatedFeedItems.length === 0) return []
-
-    return copyOverFeedItems(userId, relatedFeedItems, t)
-  })
-}
 type userFeedRowAndDistance = Row<'user_feed'> & { distance?: number }
 const copyOverFeedItems = async (
   userId: string,
   relatedFeedItems: userFeedRowAndDistance[],
   pg: ITask<IClient> & IClient
 ) => {
+  if (relatedFeedItems.length === 0) return []
   const now = Date.now()
   const updatedRows = relatedFeedItems.map((row, i) => {
     // assuming you want to change the 'columnToChange' column
@@ -191,4 +121,11 @@ const copyOverFeedItems = async (
   }
 
   return relatedFeedItems
+}
+
+export const getWhenToIgnoreUsersTime = () => {
+  // Always get the same time a month ago today so postgres can cache the query
+  const today = new Date()
+  today.setUTCHours(0, 0, 0, 0)
+  return today.getTime() - 3 * WEEK_MS
 }

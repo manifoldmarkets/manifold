@@ -51,6 +51,15 @@ Feel free to use the API for any purpose you'd like. We ask that you:
 - A non-refundable transaction fee of M0.25 will be levied on any bet, sell, or limit order placed through the API, or by any account marked as a bot.
 - Comments placed through the API will incur a M1 transaction fee.
 
+## Trade history dumps
+
+For data analysis and backtesting purposes, you can bulk download all markets and bets/trades on the platform.
+
+- [Markets dump](https://firebasestorage.googleapis.com/v0/b/mantic-markets.appspot.com/o/trade-dumps%2Fmanifold-dump-markets-04082023.json.zip?alt=media&token=7e18a376-6ac3-4d66-a9a0-552b967f2fe8) (10MB)
+- [Bets dump](https://firebasestorage.googleapis.com/v0/b/mantic-markets.appspot.com/o/trade-dumps%2Fmanifold-dump-bets-04082023.zip?alt=media&token=c3ffdfbd-6769-48e3-8cfc-4fc93c2443f3) (436MB)
+
+Last updated: August 8th, 2023
+
 ## Endpoints
 
 ### `GET /v0/user/[username]`

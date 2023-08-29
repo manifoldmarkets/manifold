@@ -38,6 +38,10 @@ export default async function handler(
   }
 
   const { id: contractId, userId } = params
+  if (contractId === 'U3zLgOZkGUE7cvG98961') {
+    res.status(404).json({ error: `We're done with whales vs minnows, sorry!` })
+    return
+  }
   const contract = await getContract(contractId)
   if (!contract) {
     res.status(404).json({ error: 'Contract not found' })

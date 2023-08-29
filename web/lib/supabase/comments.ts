@@ -73,6 +73,7 @@ export async function getUserComments(
       .from('contract_comments')
       .select()
       .eq('user_id', userId)
+      .eq('visibility', 'public')
       .order('created_time', { ascending: false } as any)
       .range(page * limit, page * limit + limit - 1)
   )
@@ -159,7 +160,7 @@ export async function getNumContractComments(contractId: string) {
   const { count } = await run(
     db
       .from('contract_comments')
-      .select('comment_id', { count: 'exact' })
+      .select('*', { head: true, count: 'exact' })
       .eq('contract_id', contractId)
   )
   return count ?? 0

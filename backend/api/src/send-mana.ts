@@ -2,28 +2,32 @@ import * as admin from 'firebase-admin'
 import { z } from 'zod'
 
 import { User } from 'common/user'
-import { canSendMana } from 'common/manalink'
+import { canSendMana, SEND_MANA_REQ } from 'common/manalink'
 import { APIError, authEndpoint, validate } from './helpers'
 import { runTxn, TxnData } from 'shared/txn/run-txn'
 import { createManaPaymentNotification } from 'shared/create-notification'
 import * as crypto from 'crypto'
+import { createSupabaseClient } from 'shared/supabase/init'
+import { MAX_ID_LENGTH } from 'common/group'
 
 const bodySchema = z.object({
-  amount: z.number(),
+  amount: z.number().gt(0).finite(),
   toIds: z.array(z.string()),
   message: z.string(),
+  groupId: z.string().max(MAX_ID_LENGTH).optional(),
 })
 
 export const sendmana = authEndpoint(async (req, auth) => {
-  const { toIds, message, amount } = validate(bodySchema, req.body)
+  const {
+    toIds,
+    message,
+    amount,
+    groupId: passedGroupId,
+  } = validate(bodySchema, req.body)
   const fromId = auth.uid
   // Run as transaction to prevent race conditions.
   return await firestore.runTransaction(async (transaction) => {
     // Look up the manalink
-
-    if (amount <= 0 || isNaN(amount) || !isFinite(amount))
-      throw new APIError(400, 'Invalid amount')
-
     const fromDoc = firestore.doc(`users/${fromId}`)
     const fromSnap = await transaction.get(fromDoc)
     if (!fromSnap.exists) {
@@ -31,26 +35,27 @@ export const sendmana = authEndpoint(async (req, auth) => {
     }
     const fromUser = fromSnap.data() as User
 
-    const canCreate = await canSendMana(fromUser)
+    const canCreate = await canSendMana(fromUser, createSupabaseClient())
     if (!canCreate) {
+      throw new APIError(403, SEND_MANA_REQ)
+    }
+
+    if (toIds.length <= 0) {
+      throw new APIError(400, 'Destination users not found.')
+    }
+    if (fromUser.balance < amount * toIds.length) {
       throw new APIError(
-        401,
-        `You don't have at least 1000 mana or your account isn't 1 week old.`
+        403,
+        `Insufficient balance: ${fromUser.name} needed ${
+          amount * toIds.length
+        } but only had ${fromUser.balance} `
       )
     }
 
-    if (fromUser.balance < amount) {
-      throw new APIError(
-        400,
-        `Insufficient balance: ${fromUser.name} needed ${amount} but only had ${fromUser.balance} `
-      )
-    }
-
-    const groupId = crypto.randomUUID()
+    const groupId = passedGroupId ? passedGroupId : crypto.randomUUID()
     await Promise.all(
       toIds.map(async (toId) => {
-        // Actually execute the txn
-        const data: TxnData = {
+        const data = {
           fromId: auth.uid,
           fromType: 'USER',
           toId,
@@ -64,7 +69,7 @@ export const sendmana = authEndpoint(async (req, auth) => {
             visibility: 'public',
           },
           description: `Mana payment ${amount} from ${fromUser.username} to ${auth.uid}`,
-        }
+        } as const
         const result = await runTxn(transaction, data)
         const txnId = result.txn?.id
         if (!txnId) {

@@ -5,7 +5,6 @@ import {
 import { JSONContent } from '@tiptap/react'
 import clsx from 'clsx'
 import { MouseEventHandler, useRef, useState } from 'react'
-import { Button } from 'web/components/buttons/button'
 import { useSafeLayoutEffect } from 'web/hooks/use-safe-layout-effect'
 import { Row } from '../layout/row'
 import { Content } from './editor'
@@ -25,14 +24,12 @@ export function ShowMoreLessButton(props: {
   const howManyMoreText = howManyMore ? howManyMore + ' ' : ''
 
   return (
-    <Button
-      color="override"
+    <button
       className={clsx(
-        'bg-canvas-0 text-primary-500 hover:text-primary-700 z-10 select-none text-sm',
+        'text-primary-500 hover:text-primary-700 z-10 select-none text-sm',
         className
       )}
       onClick={onClick}
-      size={'xs'}
     >
       <Row className="items-center gap-0.5">
         {isCollapsed
@@ -44,7 +41,7 @@ export function ShowMoreLessButton(props: {
           <ChevronDoubleUpIcon className="h-4 w-4" />
         )}
       </Row>
-    </Button>
+    </button>
   )
 }
 

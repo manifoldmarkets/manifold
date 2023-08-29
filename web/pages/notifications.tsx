@@ -3,7 +3,7 @@ import { Notification, ReactionNotificationTypes } from 'common/notification'
 import { PrivateUser } from 'common/user'
 import { sortBy } from 'lodash'
 import { useRouter } from 'next/router'
-import React, { Fragment, ReactNode, useEffect, useMemo, useState } from 'react'
+import { Fragment, ReactNode, useEffect, useMemo, useState } from 'react'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
@@ -137,12 +137,7 @@ function NotificationsContent(props: {
               },
               {
                 title: 'Settings',
-                content: (
-                  <NotificationSettings
-                    navigateToSection={section}
-                    privateUser={privateUser}
-                  />
-                ),
+                content: <NotificationSettings navigateToSection={section} />,
               },
             ]}
           />
@@ -218,9 +213,12 @@ function NotificationsList(props: {
 
   // Mark all notifications as seen. Rerun as new notifications come in.
   useEffect(() => {
-    if (privateUser && isPageVisible && isAuthorized) {
-      markAllNotifications({ seen: true })
-    }
+    if (!privateUser || !isPageVisible) return
+    if (isAuthorized) markAllNotifications({ seen: true })
+    groupedNotifications
+      ?.map((ng) => ng.notifications)
+      .flat()
+      .forEach((n) => (!n.isSeen ? (n.isSeen = true) : null))
   }, [privateUser, isPageVisible, mostRecentNotification?.id, isAuthorized])
 
   return (

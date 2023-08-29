@@ -1,13 +1,13 @@
 import { Combobox } from '@headlessui/react'
 import { ChevronRightIcon } from '@heroicons/react/outline'
-import { SparklesIcon, UsersIcon } from '@heroicons/react/solid'
+import { SparklesIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { Contract } from 'common/contract'
 import { Group } from 'common/group'
 import { debounce, startCase, uniqBy } from 'lodash'
 import { useRouter } from 'next/router'
 import { ReactNode, useCallback, useEffect, useRef, useState } from 'react'
-import { useRealtimeMemberGroupIds } from 'web/hooks/use-group-supabase'
+import { useMemberGroupIds } from 'web/hooks/use-group-supabase'
 import { useUser } from 'web/hooks/use-user'
 import { useYourRecentContracts } from 'web/hooks/use-your-daily-changed-contracts'
 import { searchContract } from 'web/lib/supabase/contracts'
@@ -16,11 +16,11 @@ import { SearchGroupInfo, searchGroups } from 'web/lib/supabase/groups'
 import { UserSearchResult, searchUsers } from 'web/lib/supabase/users'
 import { ContractStatusLabel } from '../contract/contracts-table'
 import { JoinOrLeaveGroupButton } from '../groups/groups-button'
-import { SORTS, Sort } from '../supabase-search'
+import { SORTS, Sort } from '../contracts-search'
 import { Avatar } from '../widgets/avatar'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { searchMarketSorts } from './query-market-sorts'
-import { PageData, defaultPages, searchPages } from './query-pages'
+import { PageData, searchPages } from './query-pages'
 import { useSearchContext } from './search-context'
 
 export interface Option {
@@ -76,7 +76,7 @@ export const OmniSearch = (props: {
               }
             }}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search questions, users, & groups"
+            placeholder="Search questions, users, & categories"
             enterKeyHint="search"
             className={clsx(
               'border-ink-100 focus:border-ink-100 placeholder:text-ink-400 bg-canvas-0 text-ink-1000 border-0 border-b py-4 px-6 text-xl ring-0 ring-transparent focus:ring-transparent',
@@ -104,11 +104,10 @@ const DefaultResults = (props: { recentMarkets: Contract[] }) => {
   return (
     <>
       <MarketResults markets={recentMarkets.slice(0, 7)} />
-      <PageResults pages={defaultPages} />
       <div className="mx-2 my-2 text-xs">
         <SparklesIcon className="text-primary-500 mr-1 inline h-4 w-4 align-text-bottom" />
         Start with <Key>%</Key> for questions, <Key>@</Key> for users, or{' '}
-        <Key>#</Key> for groups
+        <Key>#</Key> for categories
       </div>
     </>
   )
@@ -124,7 +123,7 @@ const Results = (props: { query: string; recentMarkets: Contract[] }) => {
   const prefix = query.match(/^(%|#|@)/) ? query.charAt(0) : ''
   const search = prefix ? query.slice(1) : query
 
-  const userHitLimit = !prefix ? 2 : prefix === '@' ? 25 : 0
+  const userHitLimit = !prefix ? 5 : prefix === '@' ? 25 : 0
   const groupHitLimit = !prefix ? 2 : prefix === '#' ? 25 : 0
   const marketHitLimit = !prefix ? 5 : prefix === '%' ? 25 : 0
 
@@ -340,7 +339,7 @@ const UserResults = (props: { users: UserSearchResult[]; search?: string }) => {
         Users
       </SectionTitle>
       {props.users.map(({ id, name, username, avatarUrl }) => (
-        <ResultOption value={{ id, slug: `/${username}` }}>
+        <ResultOption key={id} value={{ id, slug: `/${username}` }}>
           <div className="flex items-center gap-2">
             <Avatar
               username={username}
@@ -364,28 +363,26 @@ const GroupResults = (props: {
   search?: string
 }) => {
   const me = useUser()
-  const myGroups = useRealtimeMemberGroupIds(me?.id) || []
+  const myGroupIds = useMemberGroupIds(me?.id) ?? []
   const { search } = props
   if (!props.groups.length) return null
   return (
     <>
       <SectionTitle link={`/groups?search=${encodeURIComponent(search ?? '')}`}>
-        Groups
+        Categories
       </SectionTitle>
       {props.groups.map((group) => (
-        <ResultOption value={{ id: group.id, slug: `/group/${group.slug}` }}>
+        <ResultOption
+          key={group.id}
+          value={{ id: group.id, slug: `/group/${group.slug}` }}
+        >
           <div className="flex items-center gap-3">
             <span className="line-clamp-1 grow">{group.name}</span>
-            <span className="flex items-center">
-              <UsersIcon className="mr-1 h-4 w-4" />
-              {group.totalMembers}
-            </span>
             <div onClick={(e) => e.stopPropagation()}>
               <JoinOrLeaveGroupButton
                 group={group}
                 user={me}
-                isMember={myGroups.includes(group.id)}
-                className="w-[80px] !px-0 !py-1"
+                isMember={myGroupIds.includes(group.id)}
               />
             </div>
           </div>
@@ -440,4 +437,4 @@ const MarketSortResults = (props: { sort: Sort; markets: Contract[] }) => {
 }
 
 const marketSearchSlug = (query: string) =>
-  `/questions?s=score&f=all&q=${encodeURIComponent(query)}`
+  `/questions?s=score&f=all&q=${query}`

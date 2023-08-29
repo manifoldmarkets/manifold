@@ -1,7 +1,6 @@
 import { useMemo } from 'react'
 import { last, maxBy, minBy } from 'lodash'
 import { scaleTime, scaleLinear } from 'd3-scale'
-import { curveStepAfter } from 'd3-shape'
 import { Bet } from 'common/bet'
 import { getInitialProbability, getProbability } from 'common/calculate'
 import { formatLargeNumber } from 'common/util/format'
@@ -99,8 +98,7 @@ export const StonkContractChart = (props: {
     [betPoints, start, startP, end, endP]
   )
   const rightmostDate = getRightmostVisibleDate(end, last(betPoints)?.x, now)
-  const visibleRange = [rangeStart, rightmostDate]
-  const xScale = scaleTime(visibleRange, [0, width])
+  const xScale = scaleTime([rangeStart, rightmostDate], [0, width])
   // clamp log scale to make sure zeroes go to the bottom
   const yScale = scaleLinear([min, max], [height, 0])
   return (
@@ -111,7 +109,6 @@ export const StonkContractChart = (props: {
       yScale={yScale}
       viewScaleProps={viewScaleProps}
       data={data}
-      curve={curveStepAfter}
       onMouseOver={onMouseOver}
       Tooltip={StonkChartTooltip}
       color={color ?? YES_GRAPH_COLOR}

@@ -1,5 +1,4 @@
 import { ClipboardCopyIcon } from '@heroicons/react/outline'
-import React from 'react'
 import clsx from 'clsx'
 import { Row } from 'web/components/layout/row'
 

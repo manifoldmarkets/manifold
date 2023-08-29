@@ -8,7 +8,6 @@ import {
   SunIcon,
   SparklesIcon,
   StarIcon,
-  UserGroupIcon,
   QuestionMarkCircleIcon,
   NewspaperIcon,
   SearchIcon,
@@ -36,6 +35,7 @@ import { ManifoldLogo } from './manifold-logo'
 import { ProfileSummary } from './profile-summary'
 import { SearchButton } from './search-button'
 import { SidebarItem } from './sidebar-item'
+import SquaresIcon from 'web/lib/icons/squares-icon'
 
 export default function Sidebar(props: {
   className?: string
@@ -67,7 +67,7 @@ export default function Sidebar(props: {
   )
 
   const createMarketButton = user && !user.isBannedFromPosting && (
-    <CreateQuestionButton key="create-market-button" />
+    <CreateQuestionButton key="create-market-button" className={'mt-4'} />
   )
 
   return (
@@ -130,7 +130,11 @@ const getDesktopNav = (
     return buildArray(
       { name: 'Home', href: '/home', icon: HomeIcon },
       showMarkets
-        ? { name: 'Questions', href: '/questions', icon: ScaleIcon }
+        ? {
+            name: 'Questions',
+            href: '/questions?category=for-you',
+            icon: ScaleIcon,
+          }
         : { name: 'News', href: '/news', icon: NewspaperIcon },
       {
         name: 'Notifications',
@@ -143,8 +147,8 @@ const getDesktopNav = (
         icon: TrophyIcon,
       },
       {
-        name: 'Groups',
-        icon: UserGroupIcon,
+        name: 'Categories',
+        icon: SquaresIcon,
         href: '/groups',
       }
     )
@@ -164,8 +168,8 @@ const getMobileNav = (toggleModal: () => void) => {
     { name: 'Leagues', href: '/leagues', icon: TrophyIcon },
     { name: 'Live', href: '/live', icon: LightningBoltIcon },
     {
-      name: 'Groups',
-      icon: UserGroupIcon,
+      name: 'Categories',
+      icon: SquaresIcon,
       href: '/groups',
     },
     { name: 'Get mana', icon: CashIcon, onClick: toggleModal },
@@ -181,6 +185,7 @@ const bottomNav = (
 ) =>
   buildArray(
     !loggedIn && { name: 'Sign in', icon: LoginIcon, onClick: firebaseLogin },
+    loggedIn && { name: 'About', href: '/about', icon: QuestionMarkCircleIcon },
     {
       name:
         theme === 'auto'
@@ -194,6 +199,5 @@ const bottomNav = (
           : SparklesIcon,
       onClick: toggleTheme,
     },
-    loggedIn && { name: 'About', href: '/about', icon: QuestionMarkCircleIcon },
     loggedIn && { name: 'Sign out', icon: LogoutIcon, onClick: logout }
   )

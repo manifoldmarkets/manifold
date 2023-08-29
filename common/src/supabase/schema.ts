@@ -11,43 +11,49 @@ export interface Database {
     Tables: {
       answers: {
         Row: {
-          contract_id: string
-          created_time: string
+          contract_id: string | null
+          created_time: string | null
+          data: Json
+          fs_updated_time: string
           id: string
-          index: number
-          pool_no: number
-          pool_yes: number
-          prob: number
-          subsidy_pool: number
-          text: string
-          total_subsidy: number
-          user_id: string
+          index: number | null
+          pool_no: number | null
+          pool_yes: number | null
+          prob: number | null
+          subsidy_pool: number | null
+          text: string | null
+          total_liquidity: number | null
+          user_id: string | null
         }
         Insert: {
-          contract_id: string
-          created_time?: string
+          contract_id?: string | null
+          created_time?: string | null
+          data: Json
+          fs_updated_time: string
           id: string
-          index: number
-          pool_no: number
-          pool_yes: number
-          prob: number
-          subsidy_pool: number
-          text: string
-          total_subsidy: number
-          user_id: string
+          index?: number | null
+          pool_no?: number | null
+          pool_yes?: number | null
+          prob?: number | null
+          subsidy_pool?: number | null
+          text?: string | null
+          total_liquidity?: number | null
+          user_id?: string | null
         }
         Update: {
-          contract_id?: string
-          created_time?: string
+          contract_id?: string | null
+          created_time?: string | null
+          data?: Json
+          fs_updated_time?: string
           id?: string
-          index?: number
-          pool_no?: number
-          pool_yes?: number
-          prob?: number
-          subsidy_pool?: number
-          text?: string
-          total_subsidy?: number
-          user_id?: string
+          index?: number | null
+          pool_no?: number | null
+          pool_yes?: number | null
+          prob?: number | null
+          subsidy_pool?: number | null
+          text?: string | null
+          total_liquidity?: number | null
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -453,20 +459,14 @@ export interface Database {
       group_contracts: {
         Row: {
           contract_id: string
-          data: Json | null
-          fs_updated_time: string | null
           group_id: string
         }
         Insert: {
           contract_id: string
-          data?: Json | null
-          fs_updated_time?: string | null
           group_id: string
         }
         Update: {
           contract_id?: string
-          data?: Json | null
-          fs_updated_time?: string | null
           group_id?: string
         }
         Relationships: []
@@ -547,27 +547,21 @@ export interface Database {
       group_members: {
         Row: {
           created_time: string | null
-          data: Json | null
-          fs_updated_time: string | null
           group_id: string
           member_id: string
-          role: string | null
+          role: string
         }
         Insert: {
           created_time?: string | null
-          data?: Json | null
-          fs_updated_time?: string | null
           group_id: string
           member_id: string
-          role?: string | null
+          role?: string
         }
         Update: {
           created_time?: string | null
-          data?: Json | null
-          fs_updated_time?: string | null
           group_id?: string
           member_id?: string
-          role?: string | null
+          role?: string
         }
         Relationships: []
       }
@@ -1157,8 +1151,6 @@ export interface Database {
           created_at: string
           disinterest_embedding: string | null
           interest_embedding: string
-          pre_signup_embedding_is_default: boolean | null
-          pre_signup_interest_embedding: string | null
           user_id: string
         }
         Insert: {
@@ -1166,8 +1158,6 @@ export interface Database {
           created_at?: string
           disinterest_embedding?: string | null
           interest_embedding: string
-          pre_signup_embedding_is_default?: boolean | null
-          pre_signup_interest_embedding?: string | null
           user_id: string
         }
         Update: {
@@ -1175,8 +1165,6 @@ export interface Database {
           created_at?: string
           disinterest_embedding?: string | null
           interest_embedding?: string
-          pre_signup_embedding_is_default?: boolean | null
-          pre_signup_interest_embedding?: string | null
           user_id?: string
         }
         Relationships: []
@@ -1471,22 +1459,25 @@ export interface Database {
           data: Json
           fs_updated_time: string
           id: string
+          name: string
           name_username_vector: unknown | null
-          username: string | null
+          username: string
         }
         Insert: {
           data: Json
           fs_updated_time: string
           id: string
+          name: string
           name_username_vector?: unknown | null
-          username?: string | null
+          username: string
         }
         Update: {
           data?: Json
           fs_updated_time?: string
           id?: string
+          name?: string
           name_username_vector?: unknown | null
-          username?: string | null
+          username?: string
         }
         Relationships: []
       }
@@ -2329,6 +2320,30 @@ export interface Database {
         }
         Returns: string
       }
+      get_noob_questions: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          close_time: string | null
+          created_time: string | null
+          creator_id: string | null
+          data: Json
+          description_fts: unknown | null
+          fs_updated_time: string
+          id: string
+          importance_score: number | null
+          mechanism: string | null
+          outcome_type: string | null
+          popularity_score: number | null
+          question: string | null
+          question_fts: unknown | null
+          question_nostop_fts: unknown | null
+          resolution: string | null
+          resolution_probability: number | null
+          resolution_time: string | null
+          slug: string | null
+          visibility: string | null
+        }[]
+      }
       get_notifications: {
         Args: {
           uid: string
@@ -2989,8 +3004,9 @@ export interface Database {
           data: Json
           fs_updated_time: string
           id: string
+          name: string
           name_username_vector: unknown | null
-          username: string | null
+          username: string
         }[]
       }
       set_limit: {
@@ -3161,7 +3177,14 @@ export interface Database {
         Args: {
           this_contract_id: string
         }
-        Returns: {data:Json}[]
+        Returns: { data: Json }[]
+      }
+      get_option_voters: {
+        Args: {
+          this_contract_id: string
+          this_option_id: string
+        }
+        Returns: { data: Json }[]
       }
     }
     Enums: {

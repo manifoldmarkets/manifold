@@ -9,7 +9,6 @@ import { createPost } from 'web/lib/firebase/api'
 import { Row } from 'web/components/layout/row'
 import { Button } from 'web/components/buttons/button'
 import dayjs from 'dayjs'
-import { MINUTE_MS } from 'common/util/time'
 import { Col } from 'web/components/layout/col'
 import { MAX_QUESTION_LENGTH } from 'common/contract'
 import { NoSEO } from 'web/components/NoSEO'
@@ -79,7 +78,7 @@ export default function CreateDateDocPage() {
       <div className="mx-auto w-full max-w-3xl">
         <div className="rounded-lg px-6 py-4 pb-4 sm:py-0">
           <Row className="mb-8 items-center justify-between">
-            <Title className="!my-0" children="Your Date Doc" />
+            <Title className="!my-0">Your date doc</Title>
             <Button
               type="submit"
               loading={isSubmitting}
@@ -101,7 +100,8 @@ export default function CreateDateDocPage() {
                 type={'date'}
                 onClick={(e) => e.stopPropagation()}
                 onChange={(e) => setBirthday(e.target.value)}
-                max={Math.round(Date.now() / MINUTE_MS) * MINUTE_MS}
+                min="1900-01-01"
+                max={dayjs().format('YYYY-MM-DD')}
                 disabled={isSubmitting}
                 value={birthday}
               />

@@ -12,7 +12,7 @@ import {
   formatMoney,
 } from 'common/util/format'
 import { sumBy } from 'lodash'
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { useUnfilledBetsAndBalanceByUserId } from 'web/hooks/use-bets'
 import { sellShares } from 'web/lib/firebase/api'
 import { track } from 'web/lib/service/analytics'
@@ -26,6 +26,7 @@ import {
 } from '../widgets/amount-input'
 import { getSharesFromStonkShares, getStonkDisplayShares } from 'common/stonk'
 import clsx from 'clsx'
+import toast from 'react-hot-toast'
 
 export function SellPanel(props: {
   contract: CPMMContract
@@ -63,6 +64,8 @@ export function SellPanel(props: {
       ? getSharesFromStonkShares(contract, displayAmount ?? 0, shares)
       : displayAmount
   )
+
+  // just for the input TODO: actually display somewhere
   const [error, setError] = useState<string | undefined>()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [wasSubmitted, setWasSubmitted] = useState(false)
@@ -103,10 +106,9 @@ export function SellPanel(props: {
       })
       .catch((e) => {
         if (e instanceof APIError) {
-          setError(e.toString())
+          toast.error(e.message)
         } else {
           console.error(e)
-          setError('Error selling')
         }
         setIsSubmitting(false)
       })
@@ -155,12 +157,10 @@ export function SellPanel(props: {
     setAmount(realAmount)
 
     // Check for errors.
-    if (realAmount !== undefined) {
-      if (realAmount > shares) {
-        setError(`Maximum ${formatWithCommas(Math.floor(shares))} shares`)
-      } else {
-        setError(undefined)
-      }
+    if (realAmount !== undefined && realAmount > shares) {
+      setError(`Maximum ${formatWithCommas(Math.floor(shares))} shares`)
+    } else {
+      setError(undefined)
     }
   }
 
@@ -178,10 +178,10 @@ export function SellPanel(props: {
         }
         allowFloat={isStonk}
         onChangeAmount={onAmountChange}
-        label="Qty"
-        error={error}
+        label="Shares"
+        error={!!error}
         disabled={isSubmitting}
-        inputClassName="w-full ml-1"
+        inputClassName="w-full pl-[69px]"
         quickAddMoreButton={
           <button
             className={clsx(
@@ -198,6 +198,7 @@ export function SellPanel(props: {
           </button>
         }
       />
+      <div className="text-error mt-1 mb-2 h-1 text-xs">{error}</div>
 
       <Col className="mt-3 w-full gap-3 text-sm">
         {!isStonk && (

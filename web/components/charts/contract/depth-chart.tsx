@@ -6,7 +6,7 @@ import { scaleLinear } from 'd3-scale'
 import { AreaWithTopStroke, SVGChart, formatPct } from '../helpers'
 import { curveStepBefore, line } from 'd3-shape'
 import { axisBottom, axisRight } from 'd3-axis'
-import { formatMoney } from 'common/util/format'
+import { formatLargeNumber } from 'common/util/format'
 
 export function DepthChart(props: {
   contract: CPMMBinaryContract | StonkContract
@@ -42,7 +42,7 @@ export function DepthChart(props: {
     .y((p) => yScale(p.y))
     .curve(curveStepBefore)
 
-  const yAxis = axisRight<number>(yScale).ticks(8).tickFormat(formatMoney)
+  const yAxis = axisRight<number>(yScale).ticks(8).tickFormat(formatLargeNumber)
   const xAxis = axisBottom<number>(xScale).ticks(6).tickFormat(formatPct)
 
   const dYes = dl(yesData)
@@ -89,10 +89,15 @@ function cumulative(bets: LimitBet[]): HistoryPoint[] {
   const result: HistoryPoint[] = []
   let totalAmount = 0
 
-  for (let i = 0; i < bets.length; i++) {
-    totalAmount += bets[i].orderAmount
-    result.push({ x: bets[i].limitProb, y: totalAmount })
+  for (const bet of bets) {
+    totalAmount += orderSize(bet)
+    result.push({ x: bet.limitProb, y: totalAmount })
   }
 
   return result
+}
+
+function orderSize(bet: LimitBet) {
+  const price = bet.outcome === 'YES' ? bet.limitProb : 1 - bet.limitProb
+  return (bet.orderAmount - bet.amount) / price
 }

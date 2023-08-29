@@ -1,5 +1,5 @@
 import { formatMoney, manaToUSD } from 'common/util/format'
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useUser } from 'web/hooks/use-user'
 import { checkoutURL } from 'web/lib/service/stripe'
 import { Button } from './buttons/button'
@@ -24,6 +24,8 @@ import { coll, listenForValues } from 'web/lib/firebase/utils'
 import { sum } from 'lodash'
 import { AlertBox } from './widgets/alert-box'
 import { AD_REDEEM_REWARD } from 'common/boost'
+import { Txn } from 'common/txn'
+import { DAY_MS } from 'common/util/time'
 
 export function AddFundsModal(props: {
   open: boolean
@@ -221,11 +223,15 @@ export function FundsSelector(props: {
 }
 
 export const use24hrUsdPurchases = (userId: string) => {
-  const [purchases, setPurchases] = useState<any[]>([])
+  const [purchases, setPurchases] = useState<Txn[]>([])
 
   useEffect(() => {
-    return listenForValues<any>(
-      query(coll<any>('stripe-transactions'), where('userId', '==', userId)),
+    return listenForValues(
+      query(
+        coll<Txn>('txns'),
+        where('category', '==', 'MANA_PURCHASE'),
+        where('toId', '==', userId)
+      ),
       setPurchases
     )
   }, [userId])
@@ -235,8 +241,8 @@ export const use24hrUsdPurchases = (userId: string) => {
   return (
     sum(
       purchases
-        .filter((p) => p.timestamp > Date.now() - 24 * 60 * 60 * 1000)
-        .map((p) => p.manticDollarQuantity)
+        .filter((t) => t.createdTime > Date.now() - DAY_MS)
+        .map((t) => t.amount)
     ) / 100
   )
 }

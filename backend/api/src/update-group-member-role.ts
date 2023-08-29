@@ -36,35 +36,33 @@ export const updatememberrole = authEndpoint(async (req, auth) => {
       [auth.uid]
     )
 
-    if (!group) throw new APIError(400, 'Group cannot be found')
+    if (!group) throw new APIError(404, 'Group cannot be found')
     if (!affectedMember)
-      throw new APIError(400, 'Member cannot be found in group')
-    if (!requesterUser) throw new APIError(400, 'You cannot be found')
+      throw new APIError(404, 'Member cannot be found in group')
+    if (!requesterUser) throw new APIError(401, 'Your account was not found')
 
     const isAdminRequest = isAdminId(auth.uid)
 
     if (!requesterMembership) {
       if (!isAdminRequest) {
-        throw new APIError(400, 'User does not have permission to change roles')
+        throw new APIError(403, 'User does not have permission to change roles')
       }
     } else {
       if (
         requesterMembership.role !== 'admin' &&
-        requesterMembership.member_id !== group.creator_id &&
         auth.uid !== affectedMember.member_id
       )
-        throw new APIError(400, 'User does not have permission to change roles')
+        throw new APIError(403, 'User does not have permission to change roles')
     }
 
     if (auth.uid === affectedMember.member_id && role !== 'member')
-      throw new APIError(400, 'User can only change their role to a lower role')
+      throw new APIError(403, 'You can only change your role to a lower role')
 
-    const realRole = role === 'member' ? null : role
     const ret = await tx.one(
       `update group_members
        set role = $1 where member_id = $2 and group_id = $3
        returning *`,
-      [realRole, memberId, groupId]
+      [role, memberId, groupId]
     )
 
     if (requesterUser && auth.uid != memberId) {

@@ -89,6 +89,7 @@ function HelpButton() {
       <a
         href="https://help.manifold.markets/manifold-101/markdown-text-formatting"
         target="_blank"
+        rel="noreferrer"
         className="text-ink-400 hover:text-ink-600 active:bg-ink-300 flex h-full w-12 items-center justify-center"
       >
         <QuestionMarkCircleIcon className="h-5 w-5" />

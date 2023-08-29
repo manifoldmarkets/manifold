@@ -1,13 +1,13 @@
 // User interest to user interest distance:
 export const MINIMUM_SCORE = 0.0035
-export const DEFAULT_USER_FEED_ID = 'yYNDWRmBJDcWW0q1aZFi6xfKNcQ2'
+export const DEFAULT_FEED_USER_ID = 'yYNDWRmBJDcWW0q1aZFi6xfKNcQ2'
+export const ALL_FEED_USER_ID = 'IG3WZ8i3IzY6R4wuTDxuvsXbkxD3'
 
 export type FEED_DATA_TYPES =
   | 'new_comment'
   | 'news_with_related_contracts'
   | 'new_contract'
   | 'contract_probability_changed'
-  | 'popular_comment'
   | 'trending_contract'
   | 'new_subsidy'
 
@@ -36,7 +36,6 @@ export const INTEREST_DISTANCE_THRESHOLDS: Record<FEED_DATA_TYPES, number> = {
   new_contract: 0.125,
   new_comment: 0.125,
   news_with_related_contracts: 0.175, // used to compare user interest vector to news title embedding
-  popular_comment: 0.175, // Not yet in use
   new_subsidy: 0.175,
 }
 
@@ -94,20 +93,6 @@ export const FeedExplanationDictionary: Record<
     follow_user: 'Market movement on question by a creator you follow',
     private_contract_shared_with_you:
       'Market movement on a private question shared with you',
-  },
-  popular_comment: {
-    follow_contract: 'Popular comment on question you follow',
-    liked_contract: 'Popular comment on question you liked',
-    viewed_contract: 'Popular comment on question you viewed',
-    contract_in_group_you_are_in:
-      'Popular comment on question in a group you are in',
-    similar_interest_vector_to_user:
-      'Popular comment by a creator you may be interested in',
-    similar_interest_vector_to_contract:
-      'Popular comment on a question you may be interested in',
-    follow_user: 'Popular comment by a creator you follow',
-    private_contract_shared_with_you:
-      'Popular comment on a private question shared with you',
   },
   trending_contract: {
     follow_contract: 'Trending question you follow',

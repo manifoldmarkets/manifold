@@ -1,4 +1,3 @@
-import React from 'react'
 import clsx from 'clsx'
 import Link from 'next/link'
 
@@ -16,7 +15,8 @@ export function SidebarItem(props: { item: Item; currentPage?: string }) {
   const { item, currentPage } = props
 
   const currentBasePath = '/' + (currentPage?.split('/')[1] ?? '')
-  const isCurrentPage = item.href != null && currentBasePath === item.href
+  const isCurrentPage =
+    item.href != null && currentBasePath === item.href.split('?')[0]
 
   const sidebarItem = (
     <div

@@ -57,7 +57,7 @@ export function YourOrders(props: {
         <Subtitle className="!my-0">Your orders</Subtitle>
       </Row>
 
-      <OrderTable limitBets={yourBets} contract={contract} isYou={true} />
+      <OrderTable limitBets={yourBets} contract={contract} isYou />
     </Col>
   )
 }
@@ -69,7 +69,7 @@ export function OrderTable(props: {
     | PseudoNumericContract
     | StonkContract
     | CPMMMultiContract
-  isYou: boolean
+  isYou?: boolean
   side?: 'YES' | 'NO'
 }) {
   const { limitBets, contract, isYou, side } = props
@@ -124,7 +124,7 @@ export function OrderTable(props: {
               key={bet.id}
               bet={bet}
               contract={contract}
-              isYou={isYou}
+              isYou={!!isYou}
               showOutcome={!side}
             />
           ))}
@@ -262,19 +262,17 @@ export function OrderBookButton(props: {
 
       <Modal open={open} setOpen={setOpen} size="md">
         <Col className="bg-canvas-0 text-ink-800 rounded p-4 py-6">
-          <Title className="flex">
+          <Title className="flex items-center">
             Order book{' '}
             <InfoTooltip
               text="List of active limit orders by traders wishing to buy YES or NO at a given probability"
-              className="ml-1 self-center"
+              className="ml-1"
             />
           </Title>
 
-          <h2 className="mb-1 text-center">
-            Cumulative order size vs probability
-          </h2>
+          <h2 className="mb-1 text-center">Cumulative shares vs probability</h2>
           {!isCPMMMulti && !isPseudoNumeric && (
-            <SizedContainer className="mb-6 h-[200px] px-16">
+            <SizedContainer className="mb-6 h-[132px] w-full max-w-md self-center px-8 sm:h-[200px] sm:px-14">
               {(w, h) => (
                 <DepthChart
                   contract={contract as any}
@@ -304,13 +302,11 @@ export function OrderBookButton(props: {
                     <OrderTable
                       limitBets={answerYesBets}
                       contract={contract}
-                      isYou={false}
                       side="YES"
                     />
                     <OrderTable
                       limitBets={answerNoBets}
                       contract={contract}
-                      isYou={false}
                       side="NO"
                     />
                   </Row>

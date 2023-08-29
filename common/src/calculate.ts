@@ -257,6 +257,12 @@ function getDpmInvested(yourBets: Bet[]) {
   })
 }
 
+function getSimpleCpmmInvested(yourBets: Bet[]) {
+  const total = sumBy(yourBets, (b) => b.amount)
+  if (total < 0) return 0
+  return total
+}
+
 export function getInvested(contract: Contract, yourBets: Bet[]) {
   const { mechanism } = contract
   if (mechanism === 'cpmm-1') return getCpmmInvested(yourBets)
@@ -264,6 +270,31 @@ export function getInvested(contract: Contract, yourBets: Bet[]) {
     const betsByAnswerId = groupBy(yourBets, 'answerId')
     const investedByAnswerId = mapValues(betsByAnswerId, getCpmmInvested)
     return sum(Object.values(investedByAnswerId))
+  }
+  return getDpmInvested(yourBets)
+}
+
+/**
+ * Take the minimum of the average cost basis and the simple cost basis (sum of bet amounts).
+ */
+export function getMinimalInvested(contract: Contract, yourBets: Bet[]) {
+  const { mechanism } = contract
+  if (mechanism === 'cpmm-1') {
+    const costBasisAvg = getCpmmInvested(yourBets)
+    const simpleCostBasis = getSimpleCpmmInvested(yourBets)
+    return Math.min(costBasisAvg, simpleCostBasis)
+  }
+  if (mechanism === 'cpmm-multi-1') {
+    const betsByAnswerId = groupBy(yourBets, 'answerId')
+    const investedByAnswerId = mapValues(betsByAnswerId, getCpmmInvested)
+    const costBasisAvg = sum(Object.values(investedByAnswerId))
+
+    const simpleInvestedByAnswerId = mapValues(
+      betsByAnswerId,
+      getSimpleCpmmInvested
+    )
+    const simpleCostBasis = sum(Object.values(simpleInvestedByAnswerId))
+    return Math.min(costBasisAvg, simpleCostBasis)
   }
   return getDpmInvested(yourBets)
 }
@@ -428,14 +459,10 @@ export function getContractBetNullMetrics() {
 }
 export function getTopAnswer(contract: MultiContract) {
   const { answers } = contract
-  const top = maxBy(
-    answers?.map((answer) => ({
-      answer,
-      prob: getOutcomeProbability(contract, answer.id),
-    })),
-    ({ prob }) => prob
+  const top = maxBy<Answer | DpmAnswer>(answers, (answer) =>
+    'prob' in answer ? answer.prob : getOutcomeProbability(contract, answer.id)
   )
-  return top?.answer
+  return top
 }
 
 export function getTopNSortedAnswers(contract: MultiContract, n: number) {

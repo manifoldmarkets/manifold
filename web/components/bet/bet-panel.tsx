@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { sumBy } from 'lodash'
 import toast from 'react-hot-toast'
 import { CheckIcon } from '@heroicons/react/solid'
@@ -12,7 +12,6 @@ import {
 } from 'common/contract'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
-import { Spacer } from '../layout/spacer'
 import {
   formatLargeNumber,
   formatMoney,
@@ -259,6 +258,7 @@ export function BuyPanel(props: {
           className="flex-1"
           btnClassName="flex-1 px-2 sm:px-6"
           selected={selected}
+          highlight
           onSelect={(choice) => {
             onOptionChoice(choice)
           }}
@@ -290,12 +290,12 @@ export function BuyPanel(props: {
               ? 'bg-teal-500/10'
               : 'hidden'
             : '',
-          'rounded-lg',
+          'rounded-xl',
           singularView ? '' : ' px-4 py-2',
           singularView && option === 'LIMIT' ? 'hidden' : ''
         )}
       >
-        <div className="text-ink-800 mt-2 mb-1 text-sm">Amount</div>
+        <div className="text-ink-700 mt-2 mb-1 text-sm">Amount</div>
 
         <BuyAmountInput
           inputClassName="w-full max-w-none"
@@ -310,11 +310,9 @@ export function BuyPanel(props: {
           showBalance
         />
 
-        <Spacer h={6} />
-
-        <Row className="border-ink-200 w-full rounded border px-4 py-2">
+        <Row className="mb-4 mt-8 w-full">
           <Col className="w-1/2">
-            <Col className="text-ink-700 flex-nowrap whitespace-nowrap text-xs">
+            <Col className="text-ink-700 flex-nowrap whitespace-nowrap text-sm">
               {isPseudoNumeric || isStonk ? (
                 'Shares'
               ) : (
@@ -336,7 +334,7 @@ export function BuyPanel(props: {
           </Col>
           <Col className="w-1/2 text-sm">
             <Row>
-              <span className="text-ink-700 whitespace-nowrap text-xs">
+              <span className="text-ink-700 whitespace-nowrap text-sm">
                 {isPseudoNumeric
                   ? 'Estimated value'
                   : isStonk
@@ -383,7 +381,6 @@ export function BuyPanel(props: {
             )}
           </Col>
         </Row>
-        <Spacer h={2} />
 
         {user ? (
           <WarningConfirmationButton
@@ -416,27 +413,26 @@ export function BuyPanel(props: {
         )}
       </Col>
 
-      {option === 'LIMIT' && (
-        <>
-          <LimitOrderPanel
-            className={clsx(
-              singularView ? '' : 'rounded-lg bg-indigo-400/10 px-4 py-2'
-            )}
-            contract={contract}
-            multiProps={multiProps}
-            hidden={!seeLimit}
-            user={user}
-            unfilledBets={unfilledBets}
-            balanceByUserId={balanceByUserId}
-          />
+      <Col className={clsx(option !== 'LIMIT' && 'hidden')}>
+        <LimitOrderPanel
+          className={clsx(
+            singularView ? '' : 'rounded-lg bg-indigo-400/10 px-4 py-2'
+          )}
+          contract={contract}
+          multiProps={multiProps}
+          hidden={!seeLimit}
+          user={user}
+          unfilledBets={unfilledBets}
+          balanceByUserId={balanceByUserId}
+        />
 
-          <YourOrders
-            className="mt-2 rounded-lg bg-indigo-400/10 px-4 py-2"
-            contract={contract}
-            bets={unfilledBetsMatchingAnswer}
-          />
-        </>
-      )}
+        <YourOrders
+          className="mt-2 rounded-lg bg-indigo-400/10 px-4 py-2"
+          contract={contract}
+          bets={unfilledBetsMatchingAnswer}
+        />
+      </Col>
+
       {/* Stonks don't allow limit orders but users may have them from before the conversion*/}
       {isStonk && unfilledBets.length > 0 && (
         <YourOrders

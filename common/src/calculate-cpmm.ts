@@ -5,7 +5,7 @@ import { CREATOR_FEE, Fees, LIQUIDITY_FEE, PLATFORM_FEE } from './fees'
 import { LiquidityProvision } from './liquidity-provision'
 import { computeFills } from './new-bet'
 import { binarySearch } from './util/algos'
-import { floatingEqual } from './util/math'
+import { EPSILON, floatingEqual } from './util/math'
 
 export type CpmmState = {
   pool: { [outcome: string]: number }
@@ -358,58 +358,66 @@ export function addCpmmLiquidityFixedP(
 ) {
   const prob = getCpmmProbability(pool, 0.5)
   const newPool = { ...pool }
+  const sharesThrownAway = { YES: 0, NO: 0 }
 
   // Throws away some shares so that prob is maintained.
   if (prob < 0.5) {
     newPool.YES += amount
     newPool.NO += (prob / (1 - prob)) * amount
+    sharesThrownAway.NO = amount - (prob / (1 - prob)) * amount
   } else {
     newPool.NO += amount
     newPool.YES += ((1 - prob) / prob) * amount
+    sharesThrownAway.YES = amount - ((1 - prob) / prob) * amount
   }
 
   const oldLiquidity = getMultiCpmmLiquidity(pool)
   const newLiquidity = getMultiCpmmLiquidity(newPool)
   const liquidity = newLiquidity - oldLiquidity
 
-  return { newPool, liquidity }
+  return { newPool, liquidity, sharesThrownAway }
 }
 
 export function addCpmmMultiLiquidity(
   pools: { [answerId: string]: { YES: number; NO: number } },
   amount: number
 ) {
-  const numAnswers = Object.keys(pools).length
+  const answerIds = Object.keys(pools)
+  const numAnswers = answerIds.length
 
-  const newPools: typeof pools = {}
-  for (const [answerId, pool] of Object.entries(pools)) {
-    const { YES: y, NO: n } = pool
-    const p = getCpmmProbability(pool, 0.5)
+  const newPools = { ...pools }
 
-    // First, amount is equal to payout when one set of yes shares pay out
-    // while all but one set of no shares pay out:
-    //   amount = newYes + (numAnswers - 1) * newNo
-    // Secondly, cpmm identity for probability is preserved:
-    //   n / (n + y) = (n + newNo) / (y + n + newYes + newNo)
-    // https://www.wolframalpha.com/input?i=Solve+n+%2F+%28n%2By%29+%3D+%28n+%2B+n1%29+%2F+%28y+%2B+n+%2B+y1+%2B+n1%29%2C++a+%3D+y1+%2B+%28c+-+1%29+*+n1+for+y1%2C+n1
+  let amountRemaining = amount
+  while (amountRemaining > EPSILON) {
+    const yesSharesThrownAway: { [answerId: string]: number } =
+      Object.fromEntries(answerIds.map((answerId) => [answerId, 0]))
 
-    const newYes = (amount * y) / ((numAnswers - 1) * n + y)
-    const newNo = (amount * n) / ((numAnswers - 1) * n + y)
+    for (const [answerId, pool] of Object.entries(newPools)) {
+      const { newPool, sharesThrownAway } = addCpmmLiquidityFixedP(
+        pool,
+        amountRemaining / numAnswers
+      )
+      newPools[answerId] = newPool
 
-    const newPool = { YES: y + newYes, NO: n + newNo }
+      yesSharesThrownAway[answerId] += sharesThrownAway.YES
+      const otherAnswerIds = answerIds.filter((id) => id !== answerId)
+      for (const otherAnswerId of otherAnswerIds) {
+        // Convert NO shares into YES shares for each other answer.
+        yesSharesThrownAway[otherAnswerId] += sharesThrownAway.NO
+      }
+    }
+
+    const minSharesThrownAway = Math.min(...Object.values(yesSharesThrownAway))
     console.log(
-      'prev pool',
-      pool,
-      'new pool',
-      newPool,
-      'prob',
-      p,
-      'new prob',
-      getCpmmProbability(newPool, 0.5)
+      'amount remaining',
+      amountRemaining,
+      'yes shares thrown away',
+      yesSharesThrownAway,
+      'min',
+      minSharesThrownAway
     )
-    newPools[answerId] = newPool
+    amountRemaining = minSharesThrownAway
   }
-
   return newPools
 }
 

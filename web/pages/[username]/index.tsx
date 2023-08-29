@@ -1,4 +1,3 @@
-import React from 'react'
 import {
   ChatAlt2Icon,
   CurrencyDollarIcon,
@@ -10,7 +9,6 @@ import clsx from 'clsx'
 import { useRouter } from 'next/router'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
-
 import { Post } from 'common/post'
 import { getUserByUsername, User } from 'web/lib/firebase/users'
 import Custom404 from 'web/pages/404'
@@ -39,7 +37,7 @@ import { SEO } from 'web/components/SEO'
 import { Avatar } from 'web/components/widgets/avatar'
 import ImageWithBlurredShadow from 'web/components/widgets/image-with-blurred-shadow'
 import { Linkify } from 'web/components/widgets/linkify'
-import { linkClass, SiteLink } from 'web/components/widgets/site-link'
+import { linkClass } from 'web/components/widgets/site-link'
 import {
   isFresh,
   PostBanBadge,
@@ -57,12 +55,12 @@ import { QuestsOrStreak } from 'web/components/quests-or-streak'
 import { useAdmin } from 'web/hooks/use-admin'
 import { UserPayments } from 'web/pages/payments'
 import { FaMoneyBillTransfer } from 'react-icons/fa6'
-import { StarDisplay } from 'web/components/reviews/stars'
 import { useQuery } from 'react-query'
 import { getUserRating, getUserReviews } from 'web/lib/supabase/reviews'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { removeUndefinedProps } from 'common/util/object'
 import { Review } from 'web/components/reviews/review'
+import { db } from 'web/lib/supabase/db'
 
 export const getStaticProps = async (props: {
   params: {
@@ -121,7 +119,7 @@ const DeletedUser = () => {
   return (
     <Page>
       <div className="flex h-full flex-col items-center justify-center">
-        <Title children="Deleted account page" />
+        <Title>Deleted account page</Title>
         <p>This user has been deleted.</p>
         <p>If you didn't expect this, let us know on Discord!</p>
         <br />
@@ -149,6 +147,7 @@ function UserProfile(props: {
   const currentUser = useUser()
   const isCurrentUser = user.id === currentUser?.id
   const [showConfetti, setShowConfetti] = useState(false)
+  const [followsYou, setFollowsYou] = useState(false)
 
   useEffect(() => {
     const claimedMana = router.query['claimed-mana'] === 'yes'
@@ -168,6 +167,20 @@ function UserProfile(props: {
     }
   }, [])
 
+  useEffect(() => {
+    if (currentUser && currentUser.id !== user.id) {
+      db.from('user_follows')
+        .select('user_id')
+        .eq('follow_id', currentUser.id)
+        .eq('user_id', user.id)
+        .then(({ data }) => {
+          setFollowsYou(
+            data?.some(({ user_id }) => user_id === user.id) ?? false
+          )
+        })
+    }
+  }, [currentUser?.id, user?.id])
+
   return (
     <Page key={user.id}>
       <SEO
@@ -175,9 +188,7 @@ function UserProfile(props: {
         description={user.bio ?? ''}
         url={`/${user.username}`}
       />
-      {showConfetti && (
-        <FullscreenConfetti recycle={false} numberOfPieces={300} />
-      )}
+      {showConfetti && <FullscreenConfetti />}
 
       <Col className="mx-4 mt-1">
         <Row className="flex-wrap justify-between gap-2 py-1">
@@ -217,9 +228,24 @@ function UserProfile(props: {
                 }
                 {user.isBannedFromPosting && <PostBanBadge />}
               </div>
-              <span className={'text-ink-400 text-sm sm:text-lg'}>
-                @{user.username}
-              </span>
+              <Row
+                className={
+                  'max-w-[8rem] flex-shrink flex-wrap gap-2 sm:max-w-none'
+                }
+              >
+                <span className={'text-ink-400  text-sm sm:text-base'}>
+                  @{user.username}{' '}
+                </span>
+                {followsYou && (
+                  <span
+                    className={
+                      'bg-canvas-100 w-fit self-center rounded-md p-0.5 px-1 text-xs'
+                    }
+                  >
+                    Follows you
+                  </span>
+                )}
+              </Row>
             </Col>
           </Row>
           {isCurrentUser ? (
@@ -246,9 +272,9 @@ function UserProfile(props: {
               <Linkify text={user.bio}></Linkify>
             </div>
           )}
-          <Row className="mt-2 flex-wrap items-center gap-2 sm:gap-4">
+          <Row className="text-ink-400 mt-2 flex-wrap items-center gap-2 sm:gap-4">
             {user.website && (
-              <SiteLink
+              <a
                 href={
                   'https://' +
                   user.website.replace('http://', '').replace('https://', '')
@@ -258,11 +284,11 @@ function UserProfile(props: {
                   <LinkIcon className="h-4 w-4" />
                   <span className="text-ink-400 text-sm">{user.website}</span>
                 </Row>
-              </SiteLink>
+              </a>
             )}
 
             {user.twitterHandle && (
-              <SiteLink
+              <a
                 href={`https://twitter.com/${user.twitterHandle
                   .replace('https://www.twitter.com/', '')
                   .replace('https://twitter.com/', '')
@@ -279,11 +305,11 @@ function UserProfile(props: {
                     {user.twitterHandle}
                   </span>
                 </Row>
-              </SiteLink>
+              </a>
             )}
 
             {user.discordHandle && (
-              <SiteLink href="https://discord.com/invite/eHQBNBqXuh">
+              <a href="https://discord.com/invite/eHQBNBqXuh">
                 <Row className="items-center gap-1">
                   <img
                     src="/discord-logo.svg"
@@ -294,7 +320,7 @@ function UserProfile(props: {
                     {user.discordHandle}
                   </span>
                 </Row>
-              </SiteLink>
+              </a>
             )}
           </Row>
         </Col>
@@ -314,6 +340,8 @@ function UserProfile(props: {
                     <PortfolioValueSection
                       userId={user.id}
                       defaultTimePeriod={'weekly'}
+                      lastUpdatedTime={user.metricsLastUpdated}
+                      isCurrentUser={isCurrentUser}
                     />
                     <Spacer h={4} />
                     <UserBetsTable user={user} />
@@ -420,30 +448,26 @@ function ProfilePublicStats(props: {
           Rank {leagueInfo.rank}
         </Link>
       )}
-      <SiteLink
+
+      {reviewCount > 0 && (
+        <button
+          className="group flex gap-0.5"
+          onClick={() => setReviewsOpen(true)}
+        >
+          <span className="decoration-primary-400 decoration-2 group-hover:underline">
+            <span className="font-semibold">{reviewCount}</span> Review
+            {reviewCount === 1 ? '' : 's'}
+          </span>
+        </button>
+      )}
+
+      <Link
         href={'/' + user.username + '/calibration'}
         className={clsx(linkClass, 'cursor-pointer text-sm')}
       >
         <ChartBarIcon className="mr-1 mb-1 inline h-4 w-4" />
         Calibration
-      </SiteLink>
-
-      {rating && (
-        <button
-          className="group flex gap-0.5"
-          onClick={() => setReviewsOpen(true)}
-        >
-          <span className="font-semibold">{rating.toFixed(1)}</span>
-          <StarDisplay rating={rating} />
-          <span>
-            (
-            <span className="decoration-primary-400 decoration-2 group-hover:underline">
-              {reviewCount} Reviews
-            </span>
-            )
-          </span>
-        </button>
-      )}
+      </Link>
 
       <FollowsDialog
         user={user}
@@ -457,9 +481,9 @@ function ProfilePublicStats(props: {
         isOpen={reviewsOpen}
         setIsOpen={setReviewsOpen}
         userId={user.id}
+        rating={rating ?? 4}
       />
-      {/* {isCurrentUser && <GroupsButton user={user} className={className} />}
-      {isCurrentUser && <ReferralsButton user={user} className={className} />}
+      {/*{isCurrentUser && <ReferralsButton user={user} className={className} />}
       {isCurrentUser && (
         <UserLikedContractsButton user={user} className={className} />
       )} */}
@@ -523,15 +547,33 @@ function ReviewsDialog(props: {
   isOpen: boolean
   setIsOpen: (isOpen: boolean) => void
   userId: string
+  rating: number
 }) {
-  const { isOpen, setIsOpen, userId } = props
+  const { isOpen, setIsOpen, userId, rating } = props
 
   const reviews = useQuery([`reviews ${userId}`], () => getUserReviews(userId))
+
+  const ratingLabel =
+    rating > 4.8 ? (
+      <span className="font-semibold text-green-600">Exceptional</span>
+    ) : rating > 4.5 ? (
+      <span className="font-semibold text-green-600">Great</span>
+    ) : rating > 3.3 ? (
+      <span className="font-semibold text-green-600">Good</span>
+    ) : rating > 2.5 ? (
+      <span className="font-semibold text-yellow-600">Okay</span>
+    ) : rating > 2 ? (
+      <span className="font-semibold text-red-600">Poor</span>
+    ) : (
+      <span className="font-semibold text-red-600">Very Poor</span>
+    )
 
   return (
     <Modal open={isOpen} setOpen={setIsOpen}>
       <div className="bg-canvas-0 max-h-[90vh] overflow-y-auto rounded p-6">
         <Title>Reviews</Title>
+
+        <div className="mb-4">Resolution reliability: {ratingLabel}</div>
         {reviews.isLoading && <LoadingIndicator className="text-center" />}
 
         <Col className="divide-ink-300 divide-y-2">

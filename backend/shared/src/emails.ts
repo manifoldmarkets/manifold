@@ -8,7 +8,6 @@ import {
   formatMoney,
   formatPercent,
 } from 'common/util/format'
-import { getValueFromBucket } from 'common/calculate-dpm'
 import { formatNumericProbability } from 'common/pseudo-numeric'
 import { sendTemplateEmail, sendTextEmail } from './send-email'
 import { contractUrl, getUser, log } from 'shared/utils'
@@ -166,10 +165,7 @@ const toDisplayResolution = (
   if (resolution === 'CANCEL') return 'N/A'
 
   if (contract.outcomeType === 'NUMERIC' && contract.mechanism === 'dpm-2')
-    return (
-      contract.resolutionValue?.toString() ??
-      getValueFromBucket(resolution, contract).toString()
-    )
+    return '[ERROR: if you can see this, Sinclair owes you 1000 mana]' // unless you see this comment
 
   const answer = (contract as MultiContract).answers.find(
     (a) => a.id === resolution
@@ -244,8 +240,7 @@ https://manifold.markets
 
 export const sendCreatorGuideEmail = async (
   user: User,
-  privateUser: PrivateUser,
-  sendTime: string
+  privateUser: PrivateUser
 ) => {
   if (!privateUser || !privateUser.email) return
 
@@ -266,7 +261,6 @@ export const sendCreatorGuideEmail = async (
     },
     {
       from: 'David from Manifold <david@manifold.markets>',
-      'o:deliverytime': sendTime,
     }
   )
 }
@@ -494,8 +488,57 @@ export const sendInterestingMarketsEmail = async (
   )
 }
 
+export const sendBonusWithInterestingMarketsEmail = async (
+  user: User,
+  privateUser: PrivateUser,
+  contractsToSend: Contract[],
+  bonusAmount: number
+) => {
+  if (!privateUser || !privateUser.email) return
+  let unsubscribeUrl = ''
+  // This is email is of both types, so try either
+  const { sendToEmail, unsubscribeUrl: unsub1 } =
+    getNotificationDestinationsForUser(privateUser, 'onboarding_flow')
+  const { sendToEmail: trendingSendToEmail, unsubscribeUrl: unsub2 } =
+    getNotificationDestinationsForUser(privateUser, 'trending_markets')
+
+  if (!sendToEmail && !trendingSendToEmail) return
+  unsubscribeUrl = !sendToEmail ? unsub2 : unsub1
+
+  const { name } = user
+  const firstName = name.split(' ')[0]
+
+  await sendTemplateEmail(
+    privateUser.email,
+    `Here's ${bonusAmount} free mana 🎉!`,
+    'signup-bonus-with-interesting-markets',
+    {
+      name: firstName,
+      unsubscribeUrl,
+      bonusAmount: formatMoney(bonusAmount),
+      question1Title: contractsToSend[0].question,
+      question1Link: contractUrl(contractsToSend[0]),
+      question1ImgSrc: imageSourceUrl(contractsToSend[0]),
+      question2Title: contractsToSend[1].question,
+      question2Link: contractUrl(contractsToSend[1]),
+      question2ImgSrc: imageSourceUrl(contractsToSend[1]),
+      question3Title: contractsToSend[2].question,
+      question3Link: contractUrl(contractsToSend[2]),
+      question3ImgSrc: imageSourceUrl(contractsToSend[2]),
+      question4Title: contractsToSend[3].question,
+      question4Link: contractUrl(contractsToSend[3]),
+      question4ImgSrc: imageSourceUrl(contractsToSend[3]),
+      question5Title: contractsToSend[4].question,
+      question5Link: contractUrl(contractsToSend[4]),
+      question5ImgSrc: imageSourceUrl(contractsToSend[4]),
+      question6Title: contractsToSend[5].question,
+      question6Link: contractUrl(contractsToSend[5]),
+      question6ImgSrc: imageSourceUrl(contractsToSend[5]),
+    }
+  )
+}
+
 function imageSourceUrl(contract: Contract) {
-  // TODO: get bet points into image so interesting markets can see the image
   return buildOgUrl(
     removeUndefinedProps(getContractOGProps(contract)),
     'market'
@@ -580,7 +623,6 @@ export const sendNewPrivateMarketEmail = async (
 }
 export const sendNewUniqueBettorsEmail = async (
   reason: notification_reason_types,
-  userId: string,
   privateUser: PrivateUser,
   contract: Contract,
   totalPredictors: number,
@@ -633,7 +675,8 @@ export const sendNewUniqueBettorsEmail = async (
   return await sendTemplateEmail(
     privateUser.email,
     subject,
-    newPredictors.length === 1 ? 'new-unique-bettor' : 'new-unique-bettors',
+    // This template accepts 5 unique bettors
+    'new-unique-bettors',
     templateData,
     {
       from: `Manifold <no-reply@manifold.markets>`,

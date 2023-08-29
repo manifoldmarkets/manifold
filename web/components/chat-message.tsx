@@ -7,45 +7,70 @@ import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { Content } from 'web/components/widgets/editor'
 import { User } from 'common/user'
 import { ChatMessage } from 'common/chat-message'
+import { first } from 'lodash'
+import { forwardRef } from 'react'
 
-export const ChatMessageItem = (props: {
-  chat: ChatMessage
-  user: User | undefined | null
-}) => {
-  const { chat, user } = props
-  return (
-    <Col
-      className={clsx(
-        'bg-canvas-0 p-2',
-        user?.id === chat.userId ? 'items-end' : 'items-start'
-      )}
-      key={chat.id}
-    >
+export const ChatMessageItem = forwardRef(
+  (
+    props: {
+      chats: ChatMessage[]
+      user: User | undefined | null
+      onReplyClick?: (chat: ChatMessage) => void
+    },
+    ref: React.Ref<HTMLDivElement>
+  ) => {
+    const { chats, user, onReplyClick } = props
+    const chat = first(chats)
+    if (!chat) return null
+    const { userUsername, userAvatarUrl, userId, userName } = chat
+    return (
       <Col
+        ref={ref}
         className={clsx(
-          'bg-canvas-100 max-w-[90%] rounded-md p-2',
-          user?.id === chat.userId ? 'items-end' : 'items-start'
+          'p-0.5',
+          user?.id === userId ? 'items-end' : 'items-start'
         )}
       >
-        <Row className={'items-center gap-2'}>
-          <Avatar
-            size={'xs'}
-            avatarUrl={chat.userAvatarUrl}
-            username={chat.userUsername}
-          />
-          <UserLink
-            className={'text-sm'}
-            name={chat.userName}
-            username={chat.userUsername}
-          />
-          <span className={' -ml-2 text-sm'}>
-            <RelativeTimestamp time={chat.createdTime} />
-          </span>
-        </Row>
-        <Row className={'ml-1'}>
-          <Content content={chat.content} />
-        </Row>
+        <Col
+          className={clsx(
+            'bg-canvas-100 max-w-[90%] rounded-md px-2 py-1.5',
+            user?.id === userId ? 'items-end' : 'items-start'
+          )}
+        >
+          <Row className={'items-center gap-2'}>
+            <Avatar
+              size={'xs'}
+              avatarUrl={userAvatarUrl}
+              username={userUsername}
+            />
+            <UserLink
+              className={clsx('text-sm')}
+              name={userName}
+              username={userUsername}
+            />
+            <span className={'text-sm'}>
+              <RelativeTimestamp time={chat.createdTime} />
+            </span>
+          </Row>
+          {chats.map((chat) => (
+            <Row key={chat.id + 'content'} className={'ml-1'}>
+              <Content content={chat.content} />
+            </Row>
+          ))}
+          <Row>
+            {user?.id !== chats[0].userId && onReplyClick && (
+              <button
+                className={
+                  'self-start py-1 text-xs font-bold text-gray-500 hover:underline'
+                }
+                onClick={() => onReplyClick(chat)}
+              >
+                Reply
+              </button>
+            )}
+          </Row>
+        </Col>
       </Col>
-    </Col>
-  )
-}
+    )
+  }
+)

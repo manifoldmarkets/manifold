@@ -2,9 +2,11 @@ import * as admin from 'firebase-admin'
 import Stripe from 'stripe'
 import { Request, Response } from 'express'
 
-import { getPrivateUser, getUser, isProd, payUsers } from 'shared/utils'
+import { getPrivateUser, getUser, isProd, log } from 'shared/utils'
 import { sendThankYouEmail } from 'shared/emails'
 import { track } from 'shared/analytics'
+import { APIError } from './helpers'
+import { runTxnFromBank } from 'shared/txn/run-txn'
 
 export type StripeSession = Stripe.Event.Data.Object & {
   id: string
@@ -34,6 +36,7 @@ const manticDollarStripePrice = isProd()
       1000: 'price_1KFQp1GdoFKoCJW7Iu0dsF65',
       2500: 'price_1KFQqNGdoFKoCJW7SDvrSaEB',
       10000: 'price_1KFQraGdoFKoCJW77I4XCwM3',
+      20000: 'price_1NYYkmGdoFKoCJW73bEpIR93', // temporary conference amount
       100000: 'price_1N0TeXGdoFKoCJW7htfCrFd7',
     }
   : {
@@ -41,7 +44,8 @@ const manticDollarStripePrice = isProd()
       1000: 'price_1K8bC1GdoFKoCJW76k3g5MJk',
       2500: 'price_1K8bDSGdoFKoCJW7avAwpV0e',
       10000: 'price_1K8bEiGdoFKoCJW7Us4UkRHE',
-      100000: 'price_1N0Td3GdoFKoCJW7rbQYmwho'
+      20000: 'price_1NYHJ2GdoFKoCJW7WK0wOeBJ',
+      100000: 'price_1N0Td3GdoFKoCJW7rbQYmwho',
     }
 
 export const createcheckoutsession = async (req: Request, res: Response) => {
@@ -115,6 +119,10 @@ export const stripewebhook = async (req: Request, res: Response) => {
 const issueMoneys = async (session: StripeSession) => {
   const { id: sessionId } = session
   const { userId, manticDollarQuantity } = session.metadata
+  if (manticDollarQuantity === undefined) {
+    console.log('skipping session', sessionId, '; no mana amount')
+    return
+  }
   const deposit = Number.parseInt(manticDollarQuantity)
 
   const success = await firestore.runTransaction(async (trans) => {
@@ -135,20 +143,39 @@ const issueMoneys = async (session: StripeSession) => {
       session,
       timestamp: Date.now(),
     })
-    payUsers(trans, [{ userId, payout: deposit, deposit }])
-    return true
+
+    const manaPurchaseTxn = {
+      fromId: 'EXTERNAL',
+      fromType: 'BANK',
+      toId: userId,
+      toType: 'USER',
+      amount: deposit,
+      token: 'M$',
+      category: 'MANA_PURCHASE',
+      data: { stripeTransactionId: stripeDoc.id, type: 'stripe' },
+      description: `Deposit M$${deposit} from BANK for mana purchase`,
+    } as const
+
+    const result = await runTxnFromBank(trans, manaPurchaseTxn)
+
+    if (result.status === 'error') {
+      throw new APIError(500, result.message ?? 'An unknown error occurred')
+    }
+
+    return result
   })
 
   if (success) {
-    console.log('user', userId, 'paid M$', deposit)
+    log('user', userId, 'paid M$', deposit)
 
     const user = await getUser(userId)
-    if (!user) return
+    if (!user) throw new APIError(500, 'Your account was not found')
 
     const privateUser = await getPrivateUser(userId)
-    if (!privateUser) return
+    if (!privateUser) throw new APIError(500, 'Private user not found')
 
     await sendThankYouEmail(user, privateUser)
+    log('stripe revenue', deposit / 100)
 
     await track(
       userId,

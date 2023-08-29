@@ -1,11 +1,10 @@
 import clsx from 'clsx'
 import { getSourceUrl, Notification } from 'common/notification'
 import Link from 'next/link'
-import React, { ReactNode } from 'react'
+import { ReactNode } from 'react'
 import { Col } from 'web/components/layout/col'
 import { Avatar } from 'web/components/widgets/avatar'
 import { Linkify } from 'web/components/widgets/linkify'
-import { SiteLink } from 'web/components/widgets/site-link'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { track } from 'web/lib/service/analytics'
 import { Row } from '../layout/row'
@@ -72,7 +71,7 @@ export function QuestionOrGroupLink(props: {
 
   if (ignoreClick) return <span className={'font-bold '}>{title}</span>
   return (
-    <SiteLink
+    <Link
       className={'hover:text-primary-500 relative font-semibold'}
       href={getSourceUrl(notification).split('#')[0]}
       onClick={(e) => {
@@ -89,7 +88,7 @@ export function QuestionOrGroupLink(props: {
       }}
     >
       {title}
-    </SiteLink>
+    </Link>
   )
 }
 
@@ -224,7 +223,7 @@ export function NotificationFrame(props: {
       {customBackground}
       {link && (
         <Col className={'w-full'}>
-          <SiteLink
+          <Link
             href={link}
             className={clsx('flex w-full flex-col')}
             onClick={() => {
@@ -234,7 +233,7 @@ export function NotificationFrame(props: {
             }}
           >
             {frameObject}
-          </SiteLink>
+          </Link>
         </Col>
       )}
       {!link && (

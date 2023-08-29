@@ -69,15 +69,17 @@ export default function Users() {
   )
 }
 
+const Metadata = (props: { children: ReactNode; className?: string }) => (
+  <span className={clsx('text-ink-500 text-xs', props.className)}>
+    {props.children}
+  </span>
+)
+
 const UserListEntry = (props: { user: UserSearchResult }) => {
   const { user } = props
   const { avatarUrl, username, name, id } = user
   const { followerCountCached, creatorTraders, profitCached } = user
-  const Metadata = (props: { children: ReactNode; className?: string }) => (
-    <span className={clsx('text-ink-500 text-xs', props.className)}>
-      {props.children}
-    </span>
-  )
+
   return (
     <Row className={'gap-2'}>
       <Col className={''}>

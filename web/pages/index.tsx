@@ -1,12 +1,11 @@
 import { ReactNode, useState } from 'react'
 import Link from 'next/link'
-
 import { Page } from 'web/components/layout/page'
 import { Col } from 'web/components/layout/col'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { Row } from 'web/components/layout/row'
-import TestimonialsPanel from './testimonials-panel'
+import { TestimonialsPanel } from 'web/components/testimonials-panel'
 import { Modal } from 'web/components/layout/modal'
 import { Title } from 'web/components/widgets/title'
 import { firebaseLogin } from 'web/lib/firebase/users'
@@ -19,13 +18,14 @@ import { useRedirectIfSignedIn } from 'web/hooks/use-redirect-if-signed-in'
 import { STARTING_BALANCE } from 'common/economy'
 import { ManifoldLogo } from 'web/components/nav/manifold-logo'
 import { LogoSEO } from 'web/components/LogoSEO'
-import { SiteLink } from 'web/components/widgets/site-link'
 import { MobileAppsQRCodeDialog } from 'web/components/buttons/mobile-apps-qr-code-button'
+import { useSaveCampaign } from 'web/hooks/use-save-campaign'
 
 export const getServerSideProps = redirectIfLoggedIn('/home')
 
 export default function Home() {
   useSaveReferral()
+  useSaveCampaign()
   useRedirectIfSignedIn()
   const [isModalOpen, setIsModalOpen] = useState(false)
 
@@ -38,11 +38,11 @@ export default function Home() {
             <LogoSEO />
 
             <Row className="items-center gap-2">
-              <SiteLink href="/about">
+              <Link href="/about">
                 <Button color="gray-white" size="xs">
                   About
                 </Button>
-              </SiteLink>
+              </Link>
               <Button
                 color="gray-white"
                 size="xs"
@@ -152,7 +152,7 @@ export function InfoCard(props: {
     <>
       <Modal open={open} setOpen={setOpen} size="md">
         <Col className="bg-canvas-0 text-ink-1000 rounded-md px-8 py-6 text-sm md:text-lg">
-          <Title children={text} />
+          <Title>{text}</Title>
           {modal}
         </Col>
       </Modal>

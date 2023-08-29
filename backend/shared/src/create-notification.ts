@@ -20,12 +20,13 @@ import {
 import { Contract, MultiContract } from 'common/contract'
 import { getPrivateUser, getUser, getValues, log } from 'shared/utils'
 import { Comment } from 'common/comment'
-import { groupBy, keyBy, mapValues, sum, uniq } from 'lodash'
+import { groupBy, keyBy, mapValues, minBy, sum, uniq } from 'lodash'
 import { Bet, LimitBet } from 'common/bet'
 import { Answer, DpmAnswer } from 'common/answer'
 import { removeUndefinedProps } from 'common/util/object'
 import { Group } from 'common/group'
 import {
+  sendBonusWithInterestingMarketsEmail,
   sendMarketCloseEmail,
   sendMarketResolutionEmail,
   sendNewAnswerEmail,
@@ -38,6 +39,7 @@ import { filterDefined } from 'common/util/array'
 import {
   getNotificationDestinationsForUser,
   notification_destination_types,
+  notification_preference,
   userIsBlocked,
   userOptedOutOfBrowserNotifications,
 } from 'common/user-notification-preferences'
@@ -58,6 +60,8 @@ import { getGroupMemberIds } from 'common/supabase/groups'
 import { richTextToString } from 'common/util/parse'
 import { JSONContent } from '@tiptap/core'
 import { league_user_info } from 'common/leagues'
+import { getInterestingMarketsForUsers } from 'shared/interesting-markets-email-helpers'
+import { hasUserSeenMarket } from 'shared/helpers/seen-markets'
 
 const firestore = admin.firestore()
 
@@ -598,7 +602,6 @@ export const createLimitBetCanceledNotification = async (
 export const createReferralNotification = async (
   toUser: User,
   referredUser: User,
-  idempotencyKey: string,
   bonusAmount: string,
   referredByContract?: Contract,
   referredByGroup?: { slug: string; name: string }
@@ -612,7 +615,7 @@ export const createReferralNotification = async (
   if (!sendToBrowser) return
 
   const notification: Notification = {
-    id: idempotencyKey,
+    id: referredUser.id + '-signup-referral-bonus',
     userId: toUser.id,
     reason: referredByGroup
       ? 'user_joined_from_your_group_invite'
@@ -894,6 +897,8 @@ export const createUniqueBettorBonusNotification = async (
     privateUser,
     'unique_bettors_on_your_contract'
   )
+  const pg = createSupabaseDirectClient()
+
   if (sendToBrowser) {
     const { outcomeType } = contract
     const pseudoNumericData =
@@ -937,7 +942,6 @@ export const createUniqueBettorBonusNotification = async (
         ...pseudoNumericData,
       } as UniqueBettorData),
     }
-    const pg = createSupabaseDirectClient()
     await insertNotificationToSupabase(notification, pg)
   }
 
@@ -945,15 +949,10 @@ export const createUniqueBettorBonusNotification = async (
   const uniqueBettorsExcludingCreator = uniqueBettorIds.filter(
     (id) => id !== contractCreatorId
   )
-  // only send on 1st and 6th bettor
-  if (
-    uniqueBettorsExcludingCreator.length !== 1 &&
-    uniqueBettorsExcludingCreator.length !== 6
-  )
+  const TOTAL_NEW_BETTORS_TO_REPORT = 5
+  // Only send on 5th bettor
+  if (uniqueBettorsExcludingCreator.length !== TOTAL_NEW_BETTORS_TO_REPORT)
     return
-  const totalNewBettorsToReport =
-    uniqueBettorsExcludingCreator.length === 1 ? 1 : 5
-
   const mostRecentUniqueBettors = await getValues<User>(
     firestore
       .collection('users')
@@ -961,7 +960,7 @@ export const createUniqueBettorBonusNotification = async (
         'id',
         'in',
         uniqueBettorsExcludingCreator.slice(
-          uniqueBettorsExcludingCreator.length - totalNewBettorsToReport,
+          uniqueBettorsExcludingCreator.length - TOTAL_NEW_BETTORS_TO_REPORT,
           uniqueBettorsExcludingCreator.length
         )
       )
@@ -970,17 +969,26 @@ export const createUniqueBettorBonusNotification = async (
   const bets = await getValues<Bet>(
     firestore.collection('contracts').doc(contract.id).collection('bets')
   )
-  // group bets by bettors
   const bettorsToTheirBets = groupBy(bets, (bet) => bet.userId)
+
+  // Don't send if creator has seen their market since the 1st bet was placed
+  const creatorHasSeenMarketSinceBet = await hasUserSeenMarket(
+    contract.id,
+    privateUser.id,
+    minBy(Object.values(bettorsToTheirBets).flat(), 'createdTime')
+      ?.createdTime ?? contract.createdTime,
+    pg
+  )
+  if (creatorHasSeenMarketSinceBet) return
+
   await sendNewUniqueBettorsEmail(
     'unique_bettors_on_your_contract',
-    contractCreatorId,
     privateUser,
     contract,
     uniqueBettorsExcludingCreator.length,
     mostRecentUniqueBettors,
     bettorsToTheirBets,
-    amount * totalNewBettorsToReport
+    amount * TOTAL_NEW_BETTORS_TO_REPORT
   )
 }
 
@@ -1470,15 +1478,14 @@ export const createQuestPayoutNotification = async (
 
 export const createSignupBonusNotification = async (
   user: User,
+  privateUser: PrivateUser,
   txnId: string,
   bonusAmount: number
 ) => {
-  const privateUser = await getPrivateUser(user.id)
-  if (!privateUser) return
   if (userOptedOutOfBrowserNotifications(privateUser)) return
   const notification: Notification = {
     id: crypto.randomUUID(),
-    userId: user.id,
+    userId: privateUser.id,
     reason: 'onboarding_flow',
     createdTime: Date.now(),
     isSeen: false,
@@ -1492,6 +1499,28 @@ export const createSignupBonusNotification = async (
   }
   const pg = createSupabaseDirectClient()
   await insertNotificationToSupabase(notification, pg)
+
+  // This is email is of both types, so try either
+  const { sendToEmail } = getNotificationDestinationsForUser(
+    privateUser,
+    'onboarding_flow'
+  )
+  const { sendToEmail: trendingSendToEmail } =
+    getNotificationDestinationsForUser(privateUser, 'trending_markets')
+
+  if (!sendToEmail && !trendingSendToEmail) return
+
+  const { contractsToSend } = await getInterestingMarketsForUsers(
+    [privateUser],
+    firestore
+  )
+
+  await sendBonusWithInterestingMarketsEmail(
+    user,
+    privateUser,
+    contractsToSend[privateUser.id],
+    bonusAmount
+  )
 }
 
 export const createBountyAwardedNotification = async (
@@ -1553,4 +1582,205 @@ export const createBountyAddedNotification = async (
   }
   const pg = createSupabaseDirectClient()
   await insertNotificationToSupabase(notification, pg)
+}
+
+export const createVotedOnPollNotification = async (
+  voterId: string,
+  sourceText: string,
+  sourceContract: Contract
+) => {
+  const pg = createSupabaseDirectClient()
+  const voter = await getUser(voterId)
+  if (!voter) return
+
+  const usersToReceivedNotifications: Record<
+    string,
+    notification_destination_types[]
+  > = {}
+
+  const followerIds = await pg.manyOrNone<{ follow_id: string }>(
+    `select follow_id from contract_follows where contract_id = $1`,
+    [sourceContract.id]
+  )
+  const contractFollowersIds = mapValues(
+    keyBy(followerIds, 'follow_id'),
+    () => true
+  )
+
+  const constructNotification = (
+    userId: string,
+    reason: notification_preference
+  ) => {
+    const notification: Notification = {
+      id: crypto.randomUUID(),
+      userId,
+      reason,
+      createdTime: Date.now(),
+      isSeen: false,
+      sourceId: sourceContract.id,
+      sourceType: 'contract',
+      sourceContractId: sourceContract.id,
+      sourceUserName: voter.name,
+      sourceUserUsername: voter.username,
+      sourceUserAvatarUrl: voter.avatarUrl,
+      sourceText,
+      sourceContractCreatorUsername: sourceContract.creatorUsername,
+      sourceContractTitle: sourceContract.question,
+      sourceContractSlug: sourceContract.slug,
+      sourceSlug: sourceContract.slug,
+      sourceTitle: sourceContract.question,
+    }
+    return removeUndefinedProps(notification)
+  }
+
+  const stillFollowingContract = (userId: string) => {
+    // Should be better performance than includes
+    return contractFollowersIds[userId] !== undefined
+  }
+
+  const sendNotificationsIfSettingsPermit = async (
+    userId: string,
+    reason: notification_preference
+  ) => {
+    // A user doesn't have to follow a market to receive a notification with their tag
+    if (!stillFollowingContract(userId) || voter.id == userId) return
+    const privateUser = await getPrivateUser(userId)
+    if (!privateUser) return
+    if (userIsBlocked(privateUser, voter.id)) return
+
+    const { sendToBrowser } = getNotificationDestinationsForUser(
+      privateUser,
+      reason
+    )
+
+    const receivedNotifications = usersToReceivedNotifications[userId] ?? []
+
+    // Browser notifications
+    if (sendToBrowser && !receivedNotifications.includes('browser')) {
+      const notification = constructNotification(userId, reason)
+      await insertNotificationToSupabase(notification, pg)
+      receivedNotifications.push('browser')
+    }
+  }
+
+  const notifyContractFollowers = async () => {
+    await Promise.all(
+      Object.keys(contractFollowersIds).map((userId) => {
+        if (userId !== sourceContract.creatorId) {
+          sendNotificationsIfSettingsPermit(
+            userId,
+            'all_votes_on_watched_markets'
+          )
+        }
+      })
+    )
+  }
+
+  const notifyContractCreator = async () => {
+    await sendNotificationsIfSettingsPermit(
+      sourceContract.creatorId,
+      'vote_on_your_contract'
+    )
+  }
+  log('notifying creator')
+  await notifyContractCreator()
+  log('notifying followers')
+  await notifyContractFollowers()
+}
+
+export const createPollClosedNotification = async (
+  sourceText: string,
+  sourceContract: Contract
+) => {
+  const pg = createSupabaseDirectClient()
+  const usersToReceivedNotifications: Record<
+    string,
+    notification_destination_types[]
+  > = {}
+
+  const followerIds = await pg.manyOrNone<{ follow_id: string }>(
+    `select follow_id from contract_follows where contract_id = $1`,
+    [sourceContract.id]
+  )
+  const contractFollowersIds = mapValues(
+    keyBy(followerIds, 'follow_id'),
+    () => true
+  )
+
+  const constructNotification = (
+    userId: string,
+    reason: notification_reason_types
+  ) => {
+    const notification: Notification = {
+      id: crypto.randomUUID(),
+      userId,
+      reason,
+      createdTime: Date.now(),
+      isSeen: false,
+      sourceId: sourceContract.id,
+      sourceType: 'contract',
+      sourceContractId: sourceContract.id,
+      sourceUserName: sourceContract.creatorName,
+      sourceUserUsername: sourceContract.creatorUsername,
+      sourceUserAvatarUrl: sourceContract.creatorAvatarUrl ?? '',
+      sourceText,
+      sourceContractCreatorUsername: sourceContract.creatorUsername,
+      sourceContractTitle: sourceContract.question,
+      sourceContractSlug: sourceContract.slug,
+      sourceSlug: sourceContract.slug,
+      sourceTitle: sourceContract.question,
+    }
+    return removeUndefinedProps(notification)
+  }
+
+  const stillFollowingContract = (userId: string) => {
+    // Should be better performance than includes
+    return contractFollowersIds[userId] !== undefined
+  }
+
+  const sendNotificationsIfSettingsPermit = async (
+    userId: string,
+    reason: notification_reason_types
+  ) => {
+    // A user doesn't have to follow a market to receive a notification with their tag
+    if (!stillFollowingContract(userId)) return
+    const privateUser = await getPrivateUser(userId)
+    if (!privateUser) return
+    if (userIsBlocked(privateUser, sourceContract.creatorId)) return
+
+    const { sendToBrowser } = getNotificationDestinationsForUser(
+      privateUser,
+      reason
+    )
+
+    const receivedNotifications = usersToReceivedNotifications[userId] ?? []
+
+    // Browser notifications
+    if (sendToBrowser && !receivedNotifications.includes('browser')) {
+      const notification = constructNotification(userId, reason)
+      await insertNotificationToSupabase(notification, pg)
+      receivedNotifications.push('browser')
+    }
+  }
+
+  const notifyContractFollowers = async () => {
+    await Promise.all(
+      Object.keys(contractFollowersIds).map((userId) => {
+        if (userId !== sourceContract.creatorId) {
+          sendNotificationsIfSettingsPermit(userId, 'poll_you_follow_closed')
+        }
+      })
+    )
+  }
+
+  const notifyContractCreator = async () => {
+    await sendNotificationsIfSettingsPermit(
+      sourceContract.creatorId,
+      'your_poll_closed'
+    )
+  }
+  log('notifying creator')
+  await notifyContractCreator()
+  log('notifying followers')
+  await notifyContractFollowers()
 }

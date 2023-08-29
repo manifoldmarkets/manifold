@@ -1,5 +1,5 @@
 import { debounce, Dictionary, groupBy, max, sortBy, sum, uniqBy } from 'lodash'
-import React, { ReactNode, useEffect, useMemo, useState } from 'react'
+import { ReactNode, useEffect, useMemo, useState } from 'react'
 
 import { LimitBet } from 'common/bet'
 import { getContractBetNullMetrics } from 'common/calculate'
@@ -9,10 +9,6 @@ import { buildArray } from 'common/util/array'
 import { formatMoney, shortFormatNumber } from 'common/util/format'
 import { searchInAny } from 'common/util/parse'
 import { Input } from 'web/components/widgets/input'
-import {
-  inMemoryStore,
-  usePersistentState,
-} from 'web/hooks/use-persistent-state'
 import { useIsAuthorized, useUser } from 'web/hooks/use-user'
 import { Bet } from 'web/lib/firebase/bets'
 import { Contract } from 'web/lib/firebase/contracts'
@@ -21,7 +17,7 @@ import { getOpenLimitOrdersWithContracts } from 'web/lib/supabase/bets'
 import { db } from 'web/lib/supabase/db'
 import { Col } from '../layout/col'
 import { LoadingIndicator } from '../widgets/loading-indicator'
-import { SiteLink } from '../widgets/site-link'
+import Link from 'next/link'
 import { Row } from 'web/components/layout/row'
 import { Select } from 'web/components/widgets/select'
 import { Pagination } from 'web/components/widgets/pagination'
@@ -39,6 +35,9 @@ import { ProfitBadge } from 'web/components/profit-badge'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { getUserContractsMetricsWithContracts } from 'web/lib/firebase/api'
 import { useEvent } from 'web/hooks/use-event'
+import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import { usePersistentQueryState } from 'web/hooks/use-persistent-query-state'
+import { linkClass } from '../widgets/site-link'
 
 type BetSort =
   | 'newest'
@@ -61,25 +60,19 @@ export function UserBetsTable(props: { user: User }) {
   const signedInUser = useUser()
   const isAuth = useIsAuthorized()
 
-  const [metricsByContract, setMetricsByContract] = usePersistentState<
+  const [metricsByContract, setMetricsByContract] = usePersistentInMemoryState<
     Dictionary<ContractMetric> | undefined
-  >(undefined, {
-    key: `user-contract-metrics-${user.id}`,
-    store: inMemoryStore(),
-  })
+  >(undefined, `user-contract-metrics-${user.id}`)
 
-  const [initialContracts, setInitialContracts] = usePersistentState<
+  const [initialContracts, setInitialContracts] = usePersistentInMemoryState<
     Contract[] | undefined
-  >(undefined, {
-    key: `user-contract-metrics-contracts-${user.id}`,
-    store: inMemoryStore(),
-  })
+  >(undefined, `user-contract-metrics-contracts-${user.id}`)
 
   const [openLimitBetsByContract, setOpenLimitBetsByContract] =
-    usePersistentState<Dictionary<LimitBet[]> | undefined>(undefined, {
-      key: `user-open-limit-bets-${user.id}`,
-      store: inMemoryStore(),
-    })
+    usePersistentInMemoryState<Dictionary<LimitBet[]> | undefined>(
+      undefined,
+      `user-open-limit-bets-${user.id}`
+    )
   const debounceGetMetrics = useEvent(debounce(() => getMetrics(), 100))
   useEffect(() => {
     debounceGetMetrics()
@@ -112,15 +105,13 @@ export function UserBetsTable(props: { user: User }) {
     })
   }, [setInitialContracts, setOpenLimitBetsByContract, user.id, isAuth])
 
-  const [filter, setFilter] = usePersistentState<BetFilter>('open', {
-    key: 'bets-list-filter',
-    store: inMemoryStore(),
-  })
-  const [page, setPage] = usePersistentState(0, {
-    key: 'portfolio-page',
-    store: inMemoryStore(),
-  })
-  const [query, setQuery] = useState('')
+  const [filter, setFilter] = usePersistentInMemoryState<BetFilter>(
+    'open',
+    'bets-list-filter'
+  )
+  const [page, setPage] = usePersistentInMemoryState(0, 'portfolio-page')
+
+  const [query, setQuery] = usePersistentQueryState('b', '')
 
   const onSetFilter = (f: BetFilter) => {
     setFilter(f)
@@ -230,16 +221,13 @@ export function UserBetsTable(props: { user: User }) {
 const NoBets = ({ user }: { user: User }) => {
   const me = useUser()
   return (
-    <div className="text-ink-500 py-4 text-center">
-      {user.id === me?.id ? (
+    <div className="text-ink-500">
+      {user.id === me?.id && (
         <>
-          You have not made any bets yet.{' '}
-          <SiteLink href="/home" className="text-primary-500 hover:underline">
+          <Link href="/home" className="text-primary-500 hover:underline">
             Find a prediction market!
-          </SiteLink>
+          </Link>
         </>
-      ) : (
-        <>{user.name} has not made any bets yet</>
       )}
     </div>
   )
@@ -270,16 +258,10 @@ function BetsTable(props: {
     signedInUser,
   } = props
   const areYourBets = user.id === signedInUser?.id
-  const [sort, setSort] = usePersistentState<{
+  const [sort, setSort] = usePersistentInMemoryState<{
     field: BetSort
     direction: 'asc' | 'desc'
-  }>(
-    { field: 'newest', direction: 'desc' },
-    {
-      key: 'bets-list-sort',
-      store: inMemoryStore(),
-    }
-  )
+  }>({ field: 'newest', direction: 'desc' }, 'bets-list-sort')
   const onSetSort = (field: BetSort) => {
     if (sort.field === field) {
       setSort((prevSort) => ({
@@ -333,64 +315,9 @@ function BetsTable(props: {
   const currentSlice = page * rowsPerSection
   const isMobile = useIsMobile(600)
 
-  const NumberCell = (props: { num: number; change?: boolean }) => {
-    const { num, change } = props
-    const formattedNum =
-      num < 1000 && num > -1000
-        ? formatMoney(num)
-        : ENV_CONFIG.moneyMoniker + shortFormatNumber(num)
-    return (
-      <Row className="items-start justify-end ">
-        {change && formattedNum !== formatMoney(0) ? (
-          num > 0 ? (
-            <span className="text-teal-500">{formattedNum}</span>
-          ) : (
-            <span className="text-scarlet-500">{formattedNum}</span>
-          )
-        ) : (
-          <span>{formatMoney(num)}</span>
-        )}
-      </Row>
-    )
-  }
-  const Header = (props: {
-    children: ReactNode
-    id: BetSort
-    className?: string
-  }) => {
-    const { id, className } = props
-    return (
-      <Row
-        className={clsx(
-          className ? className : 'justify-end',
-          'cursor-pointer'
-        )}
-        onClick={() => onSetSort(id)}
-      >
-        {sort.field === id ? (
-          sort.direction === 'asc' ? (
-            <BiCaretUp className=" h-4" />
-          ) : (
-            <BiCaretDown className="mt-1.5 h-4" />
-          )
-        ) : (
-          <Col className={'items-center justify-center'}>
-            <BiCaretUp className="text-ink-300 -mb-2 h-4" />
-            <BiCaretDown className="text-ink-300 h-4" />
-          </Col>
-        )}
-        <span>{props.children}</span>
-      </Row>
-    )
-  }
-
   const dataColumns = buildArray([
     {
-      header: (
-        <Header id="probChangeDay" className={'justify-left'}>
-          Prob
-        </Header>
-      ),
+      header: { sort: 'probChangeDay', label: 'Prob' },
       span: isMobile ? 3 : 2,
       renderCell: (c: Contract) => {
         let change: string | undefined
@@ -422,7 +349,7 @@ function BetsTable(props: {
       },
     },
     {
-      header: <Header id="newest">Bet</Header>,
+      header: { sort: 'newest', label: 'Bet' },
       span: isMobile ? 2 : 1,
       renderCell: (c: Contract) => (
         <Row className={'justify-end'}>
@@ -434,7 +361,7 @@ function BetsTable(props: {
       ),
     },
     !isMobile && {
-      header: <Header id="closeTime">Close</Header>,
+      header: { sort: 'closeTime', label: 'Close' },
       span: 3,
       renderCell: (c: Contract) => {
         const date = new Date(c.resolutionTime ?? c.closeTime ?? Infinity)
@@ -452,21 +379,21 @@ function BetsTable(props: {
       },
     },
     {
-      header: <Header id="value">Value</Header>,
+      header: { sort: 'value', label: 'Value' },
       span: isMobile ? 3 : 2,
       renderCell: (c: Contract) => (
         <NumberCell num={metricsByContractId[c.id].payout} />
       ),
     },
     {
-      header: <Header id="profit">Profit</Header>,
+      header: { sort: 'profit', label: 'Profit' },
       span: isMobile ? 3 : 2,
       renderCell: (c: Contract) => (
         <NumberCell num={metricsByContractId[c.id].profit} change={true} />
       ),
     },
     !isMobile && {
-      header: <Header id="profitPercent">%</Header>,
+      header: { sort: 'profitPercent', label: '%' },
       span: 1,
       renderCell: (c: Contract) => {
         const cm = metricsByContractId[c.id]
@@ -485,7 +412,7 @@ function BetsTable(props: {
       },
     },
     {
-      header: <Header id="day">1d Profit</Header>,
+      header: { sort: 'day', label: '1d Profit' },
       span: isMobile ? 4 : 2,
       renderCell: (c: Contract) => (
         <NumberCell
@@ -495,7 +422,7 @@ function BetsTable(props: {
       ),
     },
     !isMobile && {
-      header: <Header id="dayPercent">%</Header>,
+      header: { sort: 'dayPercent', label: '%' },
       span: 1,
       renderCell: (c: Contract) => {
         const cm = metricsByContractId[c.id]
@@ -561,8 +488,23 @@ function BetsTable(props: {
           }
         >
           {dataColumns.map((c) => (
-            <span key={c.header?.props.id} className={clsx(getColSpan(c.span))}>
-              {c.header}
+            <span
+              key={c.header.sort}
+              className={clsx(
+                getColSpan(c.span),
+                'flex justify-end first:justify-start'
+              )}
+            >
+              <Header
+                onClick={() => onSetSort(c.header.sort as BetSort)}
+                up={
+                  sort.field === c.header.sort
+                    ? sort.direction === 'asc'
+                    : undefined
+                }
+              >
+                {c.header.label}
+              </Header>
             </span>
           ))}
         </Row>
@@ -593,14 +535,13 @@ function BetsTable(props: {
                   {/* Contract title*/}
                   <Row className={'-mb-2'}>
                     <Col>
-                      <SiteLink
+                      <Link
                         href={contractPath(contract)}
-                        className={'line-clamp-2 pr-2 sm:pr-1'}
+                        className={clsx(linkClass, 'line-clamp-2 pr-2 sm:pr-1')}
                         onClick={(e) => e.stopPropagation()}
-                        followsLinkClass
                       >
                         {contract.question}
-                      </SiteLink>
+                      </Link>
                       <UserLink
                         className={'text-ink-500 w-fit text-sm'}
                         name={contract.creatorName}
@@ -613,7 +554,7 @@ function BetsTable(props: {
                     {dataColumns.map((c) => (
                       <div
                         className={clsx(getColSpan(c.span))}
-                        key={c.header?.props.id + contract.id + 'row'}
+                        key={c.header.sort + contract.id + 'row'}
                       >
                         {c.renderCell(contract)}
                       </div>
@@ -635,6 +576,7 @@ function BetsTable(props: {
                             includeSellButton={includeSellButtonForUser}
                             hideProfit={true}
                             hideValue={true}
+                            areYourBets={areYourBets}
                           />
                           {contract.mechanism === 'cpmm-1' &&
                             limitBets.length > 0 && (
@@ -671,5 +613,52 @@ function BetsTable(props: {
         setPage={setPage}
       />
     </Col>
+  )
+}
+
+const NumberCell = (props: { num: number; change?: boolean }) => {
+  const { num, change } = props
+  const formattedNum =
+    num < 1000 && num > -1000
+      ? formatMoney(num)
+      : ENV_CONFIG.moneyMoniker + shortFormatNumber(num)
+  return (
+    <Row className="items-start justify-end ">
+      {change && formattedNum !== formatMoney(0) ? (
+        num > 0 ? (
+          <span className="text-teal-500">{formattedNum}</span>
+        ) : (
+          <span className="text-scarlet-500">{formattedNum}</span>
+        )
+      ) : (
+        <span>{formatMoney(num)}</span>
+      )}
+    </Row>
+  )
+}
+
+const Header = (props: {
+  children: ReactNode
+  onClick?: () => void
+  up?: boolean
+  className?: string
+}) => {
+  const { onClick, up, className, children } = props
+  return (
+    <Row className={clsx(className, 'cursor-pointer')} onClick={onClick}>
+      {up != undefined ? (
+        up ? (
+          <BiCaretUp className=" h-4" />
+        ) : (
+          <BiCaretDown className="mt-1.5 h-4" />
+        )
+      ) : (
+        <Col className={'items-center justify-center'}>
+          <BiCaretUp className="text-ink-300 -mb-2 h-4" />
+          <BiCaretDown className="text-ink-300 h-4" />
+        </Col>
+      )}
+      <span>{children}</span>
+    </Row>
   )
 }

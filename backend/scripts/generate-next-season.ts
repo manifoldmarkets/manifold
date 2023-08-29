@@ -6,7 +6,7 @@ if (require.main === module) {
     // James prod user id
     // const userId = '5LZ4LgYuySdL1huCWe7bti02ghx2'
 
-    const newSeason = 3
+    const newSeason = 4
     await generateNextSeason(pg, newSeason)
     await insertBots(pg, newSeason)
     console.log('Completed generateNextSeason.')

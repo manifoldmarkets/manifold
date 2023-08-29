@@ -59,21 +59,21 @@ export async function calculateImportanceScore(
   const todayComments = await getTodayComments(db)
   const todayLikesByContract = await getRecentContractLikes(db, dayAgo)
   const thisWeekLikesByContract = await getRecentContractLikes(db, weekAgo)
-  const todayTradersByContract = await getContractTraders(
-    pg,
-    dayAgo,
-    contractIds
-  )
-  const hourAgoTradersByContract = await getContractTraders(
-    pg,
-    hourAgo,
-    contractIds
-  )
-  const thisWeekTradersByContract = await getContractTraders(
-    pg,
-    weekAgo,
-    contractIds
-  )
+
+  const todayTradersByContract = {
+    ...(await getContractTraders(pg, dayAgo, contractIds)),
+    ...(await getContractVoters(pg, dayAgo, contractIds)),
+  }
+
+  const hourAgoTradersByContract = {
+    ...(await getContractTraders(pg, hourAgo, contractIds)),
+    ...(await getContractVoters(pg, hourAgo, contractIds)),
+  }
+
+  const thisWeekTradersByContract = {
+    ...(await getContractTraders(pg, weekAgo, contractIds)),
+    ...(await getContractVoters(pg, weekAgo, contractIds)),
+  }
 
   const contractsWithUpdates: Contract[] = []
 
@@ -176,6 +176,26 @@ export const getContractTraders = async (
   )
 }
 
+export const getContractVoters = async (
+  pg: SupabaseDirectClient,
+  since: number,
+  inContractIds: string[]
+) => {
+  return Object.fromEntries(
+    await pg.map(
+      `select cb.contract_id, count(distinct cb.user_id)::int as n
+       from votes cb
+                join users u on cb.user_id = u.id
+       where cb.created_time >= millis_to_ts($1)
+         and u.username <> ANY(ARRAY[$2])
+          and cb.contract_id = ANY(ARRAY[$3])
+       group by cb.contract_id`,
+      [since, BOT_USERNAMES, inContractIds],
+      (r) => [r.contract_id as string, r.n as number]
+    )
+  )
+}
+
 export const computeContractScores = (
   now: number,
   contract: Contract,
@@ -205,7 +225,11 @@ export const computeContractScores = (
       : 0
 
   const closingSoonnness =
-    !isResolved && closeTime && closeTime > now && outcomeType !== 'STONK'
+    !wasCreatedToday &&
+    !isResolved &&
+    closeTime &&
+    closeTime > now &&
+    outcomeType !== 'STONK'
       ? closeTime <= now + DAY_MS
         ? 1
         : closeTime <= now + WEEK_MS
@@ -257,21 +281,31 @@ export const computeContractScores = (
   // recalibrate all of these numbers as site usage changes
   const rawImportance =
     3 * normalize(traderHour, 20) +
+    3 * newness +
     2 * normalize(todayScore, 100) +
     2 * marketMovt +
     2 * closingSoonnness +
+    commentScore +
+    normalize(thisWeekScore, 200) +
+    normalize(Math.log10(contract.volume24Hours + 1), 5) +
+    normalize(contract.uniqueBettorCount, 1000) +
+    normalize(Math.log10(contract.volume + 1), 7) +
+    liquidityScore +
+    uncertainness
+
+  const rawPollImportance =
+    2 * normalize(traderHour, 20) +
+    2 * normalize(todayScore, 100) +
     2 * newness +
     commentScore +
     normalize(thisWeekScore, 200) +
-    normalize(Math.log10(contract.volume24Hours), 5) +
-    normalize(contract.uniqueBettorCount, 1000) +
-    normalize(Math.log10(contract.volume), 7) +
-    liquidityScore +
-    uncertainness
+    normalize(contract.uniqueBettorCount, 1000)
 
   const importanceScore =
     outcomeType === 'BOUNTIED_QUESTION'
       ? bountiedImportanceScore(contract, newness, commentScore)
+      : outcomeType === 'POLL'
+      ? normalize(rawPollImportance, 5) // increase max as polls catch on
       : normalize(rawImportance, 8)
 
   return {
@@ -292,8 +326,8 @@ const bountiedImportanceScore = (
 ) => {
   const { totalBounty, bountyLeft } = contract
 
-  const bountyScore = normalize(Math.log10(totalBounty), 5)
-  const bountyLeftScore = normalize(Math.log10(bountyLeft), 5)
+  const bountyScore = normalize(Math.log10(totalBounty + 1), 5)
+  const bountyLeftScore = normalize(Math.log10(bountyLeft + 1), 5)
 
   const rawImportance =
     3 * commentScore + newness + bountyScore + bountyLeftScore

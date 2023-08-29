@@ -1,6 +1,5 @@
 import clsx from 'clsx'
 import { OutcomeType } from 'common/contract'
-import { POLLS_ENABLED } from 'common/envs/constants'
 import { ReactNode, useState } from 'react'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
@@ -10,6 +9,8 @@ import {
   PREDICTIVE_CONTRACT_TYPES,
 } from './create-contract-types'
 import { CreateContractStateType } from './new-contract-panel'
+import { MINIMUM_BOUNTY, getAnte } from 'common/economy'
+import { formatMoney } from 'common/util/format'
 
 export function ChoosingContractForm(props: {
   outcomeType: OutcomeType | undefined
@@ -25,6 +26,7 @@ export function ChoosingContractForm(props: {
         {Object.entries(PREDICTIVE_CONTRACT_TYPES).map(
           ([_, { label, descriptor, example, value, visual }]) => (
             <OutcomeButton
+              key={value}
               label={label}
               descriptor={descriptor}
               example={example}
@@ -54,6 +56,7 @@ export function ChoosingContractForm(props: {
             },
           ]) => (
             <OutcomeButton
+              key={value}
               label={label}
               descriptor={descriptor}
               example={example}
@@ -99,7 +102,6 @@ function OutcomeButton(props: {
     setState,
   } = props
   const [touch, setTouch] = useState(false)
-  if (value == 'POLL' && !POLLS_ENABLED) return <></>
   return (
     <button
       className={clsx(
@@ -118,10 +120,13 @@ function OutcomeButton(props: {
       onTouchStart={() => setTouch(true)}
       onTouchEnd={() => setTouch(false)}
     >
-      <Row className="gap-4">
+      <Row className="grow gap-4">
         {visual}
-        <Col>
-          <div className="font-semibold sm:text-lg">{label}</div>
+        <Col className="w-full">
+          <Row className="w-full justify-between">
+            <div className="font-semibold sm:text-lg">{label}</div>
+            <AntePrice outcome={value as OutcomeType} />
+          </Row>
           <Col className="sm:text-md text-sm">
             <span className="text-ink-700 mt-0.5 italic">{example}</span>
           </Col>
@@ -129,4 +134,20 @@ function OutcomeButton(props: {
       </Row>
     </button>
   )
+}
+
+function AntePrice(props: { outcome: OutcomeType }) {
+  const { outcome } = props
+  const ante = formatMoney(getAnte(outcome, 1))
+  if (outcome === 'BOUNTIED_QUESTION') {
+    return (
+      <div className="text-ink-500 text-xs">
+        {formatMoney(MINIMUM_BOUNTY)} minimum
+      </div>
+    )
+  }
+  if (outcome == 'MULTIPLE_CHOICE' || outcome == 'FREE_RESPONSE') {
+    return <div className="text-ink-500 text-xs">{ante} / option</div>
+  }
+  return <div className="text-ink-500 text-xs">{ante}</div>
 }

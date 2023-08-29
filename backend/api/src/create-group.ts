@@ -29,8 +29,7 @@ export const creategroup = authEndpoint(async (req, auth) => {
   )
 
   const creator = await getUser(auth.uid)
-  if (!creator)
-    throw new APIError(400, 'No user exists with the authenticated user ID.')
+  if (!creator) throw new APIError(401, 'Your account was not found')
 
   const pg = createSupabaseDirectClient()
 
@@ -72,13 +71,11 @@ export const creategroup = authEndpoint(async (req, auth) => {
   await bulkInsert(
     pg,
     'group_members',
-    memberIds.map((memberId) =>
-      removeUndefinedProps({
-        group_id: group.id,
-        member_id: memberId,
-        role: memberId === creator.id ? 'admin' : undefined,
-      })
-    )
+    memberIds.map((memberId) => ({
+      group_id: group.id,
+      member_id: memberId,
+      role: memberId === creator.id ? 'admin' : 'member',
+    }))
   )
 
   return { status: 'success', group: group }

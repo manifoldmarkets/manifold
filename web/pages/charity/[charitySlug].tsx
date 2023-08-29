@@ -1,5 +1,5 @@
 import { sortBy, sumBy, uniqBy } from 'lodash'
-import React, { useState } from 'react'
+import { useState } from 'react'
 import Image from 'next/legacy/image'
 
 import { Col } from 'web/components/layout/col'
@@ -39,8 +39,6 @@ export default function CharityPageWrapper() {
 function CharityPage(props: { charity: Charity }) {
   const { charity } = props
   const { name, photo, description } = charity
-
-  // TODO: why not just useUser inside Donation Box rather than passing in?
   const user = useUser()
 
   const txns = useCharityTxns(charity.id)
@@ -65,14 +63,11 @@ function CharityPage(props: { charity: Charity }) {
       }
     >
       <SEO title={name} description={description} url="/groups" />
-      {showConfetti && (
-        <FullscreenConfetti recycle={false} numberOfPieces={300} />
-      )}
+      {showConfetti && <FullscreenConfetti />}
 
       <Col className="mx-1 w-full items-center sm:px-0">
         <Col className="bg-canvas-0 max-w-2xl rounded px-8 py-6">
-          <Title children={name} />
-          {/* TODO: donations over time chart */}
+          <Title>{name}</Title>
           <Row className="justify-between">
             {photo && (
               <div className="relative w-40 rounded-2xl">
@@ -186,7 +181,6 @@ function DonationBox(props: {
           <span className="text-ink-500 mr-1">{charity.name} receives</span>
           <span>{manaToUSD(amount || 0)}</span>
         </Row>
-        {/* TODO: matching pool */}
       </Col>
 
       <Spacer h={8} />

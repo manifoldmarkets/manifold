@@ -1,21 +1,18 @@
 import { z } from 'zod'
 import { Contract } from 'common/contract'
-import { createSupabaseDirectClient, pgp } from 'shared/supabase/init'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
 import {
   SqlBuilder,
   buildSql,
   from,
-  join,
   renderSql,
   select,
   where,
-  withClause,
 } from 'shared/supabase/sql-builder'
 import { Json, MaybeAuthedEndpoint, validate } from './helpers'
 import { getContractPrivacyWhereSQLFilter } from 'shared/supabase/contracts'
 
 export const FIRESTORE_DOC_REF_ID_REGEX = /^[a-zA-Z0-9_-]{1,}$/
-const TOPIC_DISTANCE_THRESHOLD = 0.23
 const bodySchema = z.object({
   term: z.string(),
   filter: z.union([
@@ -27,7 +24,6 @@ const bodySchema = z.object({
     z.literal('all'),
   ]),
   sort: z.union([
-    z.literal('relevance'),
     z.literal('newest'),
     z.literal('score'),
     z.literal('daily-score'),
@@ -38,6 +34,9 @@ const bodySchema = z.object({
     z.literal('close-date'),
     z.literal('resolve-date'),
     z.literal('random'),
+    z.literal('bounty-amount'),
+    z.literal('prob-descending'),
+    z.literal('prob-ascending'),
   ]),
   contractType: z.union([
     z.literal('ALL'),
@@ -47,8 +46,8 @@ const bodySchema = z.object({
     z.literal('PSEUDO_NUMERIC'),
     z.literal('BOUNTIED_QUESTION'),
     z.literal('STONK'),
+    z.literal('POLL'),
   ]),
-  topic: z.string().optional(),
   offset: z.number().gte(0),
   limit: z.number().gt(0),
   fuzzy: z.boolean().optional(),
@@ -60,43 +59,38 @@ export const supabasesearchcontracts = MaybeAuthedEndpoint(
   async (req, auth) => {
     const {
       term,
-      topic,
       filter,
       sort,
       contractType,
       offset,
       limit,
       fuzzy,
-      groupId,
+      groupId: trueGroupId,
       creatorId,
     } = validate(bodySchema, req.body)
-    const pg = createSupabaseDirectClient()
-    const hasGroupAccess = groupId
-      ? await pg
-          .one('select * from check_group_accessibility($1,$2)', [
+
+    const isForYou = trueGroupId === 'for-you'
+    const groupId = trueGroupId && !isForYou ? trueGroupId : undefined
+
+    const searchMarketSQL =
+      isForYou && !term && sort === 'score' && auth?.uid
+        ? getForYouSQL(auth.uid, filter, contractType, limit, offset)
+        : getSearchContractSQL({
+            term,
+            filter,
+            sort,
+            contractType,
+            offset,
+            limit,
+            fuzzy,
             groupId,
-            auth?.uid ?? null,
-          ])
-          .then((r) => {
-            return r.check_group_accessibility
+            creatorId,
+            uid: auth?.uid,
+            isForYou,
+            hasGroupAccess: await hasGroupAccess(groupId, auth?.uid),
           })
-      : undefined
 
-    const searchMarketSQL = getSearchContractSQL({
-      term,
-      filter,
-      sort,
-      contractType,
-      offset,
-      limit,
-      fuzzy,
-      groupId,
-      creatorId,
-      uid: auth?.uid,
-      hasGroupAccess,
-      topic,
-    })
-
+    const pg = createSupabaseDirectClient()
     const contracts = await pg.map(
       searchMarketSQL,
       [term],
@@ -106,6 +100,88 @@ export const supabasesearchcontracts = MaybeAuthedEndpoint(
     return (contracts ?? []) as unknown as Json
   }
 )
+
+function getForYouSQL(
+  uid: string,
+  filter: string,
+  contractType: string,
+  limit: number,
+  offset: number
+) {
+  const whereClause = renderSql(
+    getSearchContractWhereSQL(
+      filter,
+      '',
+      contractType,
+      undefined,
+      uid,
+      undefined,
+      false,
+      true
+    )
+  )
+
+  return `with 
+  user_interest AS (SELECT interest_embedding 
+                       FROM user_embeddings
+                       WHERE user_id = '${uid}'
+                       LIMIT 1),
+user_disinterests AS (
+  SELECT contract_id
+  FROM user_disinterests
+  WHERE user_id = '${uid}'
+),
+
+user_follows AS (SELECT follow_id
+                      FROM user_follows
+                      WHERE user_id = '${uid}'),
+
+groups AS (
+  SELECT group_id
+  FROM group_members
+  WHERE member_id = '${uid}'
+)
+
+select data, contract_id,
+      importance_score
+           * ( 
+               5 * ((1 - (contract_embeddings.embedding <=> user_interest.interest_embedding)) - 0.8)
+               + (CASE WHEN user_follows.follow_id IS NOT NULL THEN 0.25 ELSE 0 END)
+                + (CASE WHEN  EXISTS (
+                    SELECT 1
+                    FROM group_contracts
+                    join groups on group_contracts.group_id = groups.group_id
+                    WHERE group_contracts.contract_id = contracts.id
+                  ) THEN 0.25 ELSE 0 END)
+           )
+           AS modified_importance_score
+from user_interest,
+     contracts
+         join contract_embeddings ON contracts.id = contract_embeddings.contract_id
+        LEFT JOIN user_follows ON contracts.creator_id = user_follows.follow_id
+    ${whereClause}
+  and importance_score > 0.2
+  AND NOT EXISTS (
+    SELECT 1
+    FROM user_disinterests
+    WHERE user_disinterests.contract_id = contracts.id
+  )
+ORDER BY modified_importance_score DESC
+LIMIT ${limit} OFFSET ${offset};`
+}
+
+const hasGroupAccess = async (groupId?: string, uid?: string) => {
+  const pg = createSupabaseDirectClient()
+  if (!groupId) return undefined
+  return await pg
+    .one('select * from check_group_accessibility($1,$2)', [
+      groupId,
+      uid ?? null,
+    ])
+    .then((r: any) => {
+      return r.check_group_accessibility
+    })
+}
 
 function getSearchContractSQL(contractInput: {
   term: string
@@ -119,7 +195,7 @@ function getSearchContractSQL(contractInput: {
   creatorId?: string
   uid?: string
   hasGroupAccess?: boolean
-  topic?: string
+  isForYou?: boolean
 }) {
   const {
     term,
@@ -133,15 +209,13 @@ function getSearchContractSQL(contractInput: {
     creatorId,
     uid,
     hasGroupAccess,
-    topic,
   } = contractInput
 
   let query = ''
   let queryBuilder: SqlBuilder | undefined
   const emptyTerm = term.length === 0
 
-  const hideStonks =
-    (sort === 'relevance' || sort === 'score') && emptyTerm && !groupId
+  const hideStonks = sort === 'score' && emptyTerm && !groupId
 
   const whereSqlBuilder = getSearchContractWhereSQL(
     filter,
@@ -154,7 +228,6 @@ function getSearchContractSQL(contractInput: {
     hideStonks
   )
   const whereSQL = renderSql(whereSqlBuilder)
-  let sortAlgorithm: string | undefined = undefined
   const isUrl = term.startsWith('https://manifold.markets/')
 
   if (isUrl) {
@@ -165,7 +238,6 @@ function getSearchContractSQL(contractInput: {
       whereSqlBuilder,
       where('slug = $1', [slug])
     )
-    sortAlgorithm = 'importance_score'
   }
   // Searching markets within a group
   else if (groupId) {
@@ -243,8 +315,6 @@ function getSearchContractSQL(contractInput: {
     ORDER BY ts_rank_cd(question_nostop_fts, query, 4) + weight DESC
     ) as relevant_group_contracts
       `
-      // We use importance score bc these are exact matches and can be low quality
-      sortAlgorithm = 'importance_score'
     }
   }
   // Searching markets by creator
@@ -313,44 +383,18 @@ function getSearchContractSQL(contractInput: {
   }
   // Blank search for markets not by group nor creator
   else {
-    const topicJoin = topic
-      ? `contract_embeddings ON contracts.id = contract_embeddings.contract_id, topic_embedding`
-      : ''
-    const topicQuery = pgp.as.format(
-      'topic_embedding AS ( SELECT embedding FROM topic_embeddings WHERE topic = $1 LIMIT 1)',
-      [topic]
-    )
-    const topicFilter = topic
-      ? `(contract_embeddings.embedding <=> topic_embedding.embedding < ${TOPIC_DISTANCE_THRESHOLD})`
-      : ''
-    const topicSqlBuilder = buildSql(
-      withClause(topicQuery),
-      join(topicJoin),
-      where(topicFilter)
-    )
-
     if (emptyTerm) {
       queryBuilder = buildSql(
         select('data'),
         from('contracts'),
-        whereSqlBuilder,
-        topicSqlBuilder
+        whereSqlBuilder
       )
     }
     // Fuzzy search for markets not by group nor creator
     else if (fuzzy) {
-      const fuzzyTopicQuery = topic ? `${topicQuery},` : ''
-      const topicSelect = topic ? `contract_embeddings.embedding,` : ''
-      const topicFrom = topic ? `, contract_embeddings, topic_embedding` : ''
-      const topicAnd = topic
-        ? `AND contracts.id = contract_embeddings.contract_id`
-        : ''
-      const whereSqlWithTopic = topic
-        ? whereSQL + ` AND ${topicFilter}`
-        : whereSQL
       query = `
 select * from (
-    WITH ${fuzzyTopicQuery}
+    WITH
      subset_query AS (
          SELECT to_tsquery('english_nostop_with_prefix', get_exact_match_minus_last_word_query($1)) AS query
      ),
@@ -358,16 +402,16 @@ select * from (
          SELECT to_tsquery('english_nostop_with_prefix', get_prefix_match_query($1)) AS query
      ),
      subset_matches AS (
-         SELECT contracts.*, ${topicSelect} subset_query.query, 0.0 AS weight
-         FROM contracts, subset_query ${topicFrom}
-             ${whereSqlWithTopic}
-           AND question_nostop_fts @@ subset_query.query ${topicAnd}
+         SELECT contracts.*, subset_query.query, 0.0 AS weight
+         FROM contracts, subset_query
+             ${whereSQL}
+           AND question_nostop_fts @@ subset_query.query 
         ),
      prefix_matches AS (
-         SELECT contracts.*, ${topicSelect} prefix_query.query,  1.0 AS weight
-         FROM contracts, prefix_query ${topicFrom}
-           ${whereSqlWithTopic}
-           AND question_nostop_fts @@ prefix_query.query ${topicAnd}
+         SELECT contracts.*,  prefix_query.query,  1.0 AS weight
+         FROM contracts, prefix_query 
+           ${whereSQL}
+           AND question_nostop_fts @@ prefix_query.query
         ),
      combined_matches AS (
          SELECT * FROM prefix_matches
@@ -385,19 +429,14 @@ select * from (
     ORDER BY ts_rank_cd(question_nostop_fts, query, 4) + weight DESC
   ) as ranked_matches
     `
-      // We use importance score bc these are exact matches and can be low quality
-      sortAlgorithm = 'importance_score'
     }
     // Normal full text search for markets
     else {
       query = `
-          with ${topicQuery}
           SELECT data
-          FROM contracts
-          ${topicJoin ? `JOIN ${topicJoin}` : ''},
+          FROM contracts,
                websearch_to_tsquery('english',  $1) as query
           ${whereSQL}
-          ${topicFilter ? `AND ${topicFilter}` : ''}
           AND (question_fts @@ query
           OR description_fts @@ query)`
     }
@@ -408,7 +447,7 @@ select * from (
   return (
     query +
     ' ' +
-    getSearchContractSortSQL(sort, fuzzy, emptyTerm, sortAlgorithm) +
+    getSearchContractSortSQL(sort) +
     ' ' +
     `LIMIT ${limit} OFFSET ${offset}`
   )
@@ -435,7 +474,11 @@ function getSearchContractWhereSQL(
     all: 'true',
   }
   const contractTypeFilter =
-    contractType != 'ALL' ? `outcome_type = '${contractType}'` : ''
+    contractType === 'ALL'
+      ? ''
+      : contractType === 'FREE_RESPONSE'
+      ? `(outcome_type = 'FREE_RESPONSE' OR outcome_type = 'MULTIPLE_CHOICE' AND data->>'addAnswersMode' = 'ANYONE')`
+      : `outcome_type = '${contractType}'`
 
   const stonkFilter =
     hideStonks && contractType !== 'STONK' ? `outcome_type != 'STONK'` : ''
@@ -459,20 +502,8 @@ function getSearchContractWhereSQL(
 
 type SortFields = Record<string, string>
 
-function getSearchContractSortSQL(
-  sort: string,
-  fuzzy: boolean | undefined,
-  empty: boolean,
-  sortingAlgorithm: string | undefined
-) {
+function getSearchContractSortSQL(sort: string) {
   const sortFields: SortFields = {
-    relevance: sortingAlgorithm
-      ? sortingAlgorithm
-      : empty
-      ? 'importance_score'
-      : fuzzy
-      ? 'similarity_score'
-      : 'ts_rank_cd(question_fts, query) * 1.0 + ts_rank_cd(description_fts, query) * 0.5',
     score: 'importance_score',
     'daily-score': "(data->>'dailyScore')::numeric",
     '24-hour-vol': "(data->>'volume24Hours')::numeric",
@@ -483,8 +514,16 @@ function getSearchContractSortSQL(
     'resolve-date': 'resolution_time',
     'close-date': 'close_time',
     random: 'random()',
+    'bounty-amount': "COALESCE((data->>'bountyLeft')::integer, -1)",
+    'prob-descending': "resolution DESC, (data->>'p')::numeric",
+    'prob-ascending': "resolution DESC, (data->>'p')::numeric",
   }
 
-  const ASCDESC = sort === 'close-date' || sort === 'liquidity' ? 'ASC' : 'DESC'
+  const ASCDESC =
+    sort === 'close-date' || sort === 'liquidity' || sort === 'prob-ascending'
+      ? 'ASC'
+      : sort === 'prob-descending'
+      ? 'DESC NULLS LAST'
+      : 'DESC'
   return `ORDER BY ${sortFields[sort]} ${ASCDESC}`
 }

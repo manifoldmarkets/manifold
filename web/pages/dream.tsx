@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { CopyLinkButton } from 'web/components/buttons/copy-link-button'
+import { CopyLinkRow } from 'web/components/buttons/copy-link-button'
 import { DreamCard, DreamResults } from 'web/components/editor/image-modal'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
@@ -48,8 +48,7 @@ export default function App() {
               <img src={imageUrl} alt={prompt} width={512} />
               {/* Show the current imageUrl */}
               <Col className="p-6">
-                {/* TODO: Make the sharing experience more viral; use a nicer URL */}
-                <CopyLinkButton
+                <CopyLinkRow
                   url={imageUrl}
                   eventTrackingName={'copy dream link'}
                 />

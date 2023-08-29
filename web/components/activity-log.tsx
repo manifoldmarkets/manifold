@@ -12,10 +12,6 @@ import {
   useRealtimeContracts,
 } from 'web/hooks/use-contract-supabase'
 import {
-  inMemoryStore,
-  usePersistentState,
-} from 'web/hooks/use-persistent-state'
-import {
   usePrivateUser,
   useShouldBlockDestiny,
   useUser,
@@ -34,6 +30,7 @@ import { UserLink } from './widgets/user-link'
 import { db } from 'web/lib/supabase/db'
 import { track } from 'web/lib/service/analytics'
 import { useTracking } from 'web/hooks/use-tracking'
+import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 
 const EXTRA_USERNAMES_TO_EXCLUDE = ['Charlie', 'GamblingGandalf']
 
@@ -52,10 +49,10 @@ export function ActivityLog(props: {
   const shouldBlockDestiny = useShouldBlockDestiny(user?.id)
 
   const [blockedGroupContractIds, setBlockedGroupContractIds] =
-    usePersistentState<string[] | undefined>(undefined, {
-      key: 'blockedGroupContractIds',
-      store: inMemoryStore(),
-    })
+    usePersistentInMemoryState<string[] | undefined>(
+      undefined,
+      'blockedGroupContractIds'
+    )
 
   useEffect(() => {
     const blockedGroupSlugs = buildArray(
@@ -79,6 +76,7 @@ export function ActivityLog(props: {
   const rawBets = useRealtimeBets({
     limit: count * 3 + 20,
     filterRedemptions: true,
+    order: 'desc',
   })
   const bets = (rawBets ?? []).filter(
     (bet) =>

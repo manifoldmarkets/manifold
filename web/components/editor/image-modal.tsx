@@ -5,7 +5,7 @@ import { Button } from '../buttons/button'
 import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
 import { Row } from '../layout/row'
-import { CopyLinkButton } from '../buttons/copy-link-button'
+import { CopyLinkRow } from '../buttons/copy-link-button'
 
 const MODIFIERS =
   '8k, beautiful, illustration, trending on art station, picture of the day, epic composition'
@@ -31,9 +31,8 @@ export function DreamModal(props: {
           <>
             <img src={imageUrl} alt="Image" />
             {/* Show the current imageUrl */}
-            {/* TODO: Keep the other generated images, so the user can play with different attempts. */}
             <Col className="gap-2 p-6">
-              <CopyLinkButton
+              <CopyLinkRow
                 url={imageUrl}
                 eventTrackingName={'copy dream link'}
               />
@@ -140,13 +139,11 @@ export function DreamCard(props: {
           loading={isDreaming}
         >
           Dream
-          {/* TODO: Charge Ṁ5 with ({formatMoney(5)}) */}
         </Button>
       </Row>
       {isDreaming && (
         <div className="text-sm">This may take ~10 seconds...</div>
       )}
-      {/* TODO: Allow the user to choose their own modifiers */}
       <div className="text-ink-300 pt-2 text-xs">Modifiers: {MODIFIERS}</div>
     </Col>
   )

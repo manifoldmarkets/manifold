@@ -74,7 +74,7 @@ export type notification_source_update_types =
   | 'deleted'
   | 'closed'
 
-/* Optional - if possible use a notification_preference */
+/** @deprecated - use a notification_preference (in user-notification-preferences.ts) */
 export type notification_reason_types =
   | 'tagged_user'
   | 'on_new_follow'
@@ -83,14 +83,11 @@ export type notification_reason_types =
   | 'you_referred_user'
   | 'user_joined_to_bet_on_your_market'
   | 'unique_bettors_on_your_contract'
-  | 'tip_received'
   | 'bet_fill'
   | 'limit_order_cancelled'
   | 'user_joined_from_your_group_invite'
-  | 'challenge_accepted'
   | 'betting_streak_incremented'
   | 'loan_income'
-  | 'liked_and_tipped_your_contract'
   | 'comment_on_your_contract'
   | 'answer_on_your_contract'
   | 'comment_on_contract_you_follow'
@@ -118,6 +115,8 @@ export type notification_reason_types =
   | 'bounty_awarded'
   | 'bounty_added'
   | 'mana_payment_received'
+  | 'poll_you_follow_closed'
+  | 'your_poll_closed'
 
 type notification_descriptions = {
   [key in notification_preference]: {
@@ -138,14 +137,6 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
     detailed: 'Comments on your own questions',
     verb: 'commented on your market',
   },
-  answers_by_followed_users_on_watched_markets: {
-    simple: 'Only answers by users you follow',
-    detailed: "Only answers by users you follow on questions you're watching",
-  },
-  answers_by_market_creator_on_watched_markets: {
-    simple: 'Only answers by market creator',
-    detailed: "Only answers by market creator on questions you're watching",
-  },
   betting_streaks: {
     simple: `Prediction streak bonuses & expirations`,
     detailed: `Bonuses and expiration notices for prediction streaks made over consecutive days`,
@@ -153,11 +144,6 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
   quest_payout: {
     simple: `Quest completion rewards`,
     detailed: `Bonuses paid out for completing quests`,
-  },
-  comments_by_followed_users_on_watched_markets: {
-    simple: 'Only comments by users you follow',
-    detailed:
-      'Only comments by users that you follow on questions that you watch',
   },
   contract_from_followed_user: {
     simple: 'New questions from users you follow',
@@ -229,18 +215,6 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
     simple: 'Thank you notes for your purchases',
     detailed: 'Thank you notes for your purchases',
   },
-  tipped_comments_on_watched_markets: {
-    simple: 'Only highly tipped comments on questions that you watch',
-    detailed: 'Only highly tipped comments on questions that you watch',
-  },
-  tips_on_your_comments: {
-    simple: 'Tips on your comments',
-    detailed: 'Tips on your comments',
-  },
-  tips_on_your_markets: {
-    simple: 'Tips/Likes on your questions',
-    detailed: 'Tips/Likes on your questions',
-  },
   trending_markets: {
     simple: 'Weekly interesting questions',
     detailed: 'Weekly interesting questions',
@@ -304,6 +278,22 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
   bounty_added: {
     simple: 'Bounties added to your question',
     detailed: 'When another user adds a bounty to your question',
+  },
+  all_votes_on_watched_markets: {
+    simple: 'Votes on polls you follow',
+    detailed: 'When a user votes on a poll you follow',
+  },
+  vote_on_your_contract: {
+    simple: 'Votes on your polls',
+    detailed: 'When a user votes on a poll you created',
+  },
+  poll_close_on_watched_markets: {
+    simple: 'Polls you follow close',
+    detailed: 'When a poll you follow closes',
+  },
+  your_poll_closed: {
+    simple: 'Your poll closes',
+    detailed: 'When a poll you created closes',
   },
 }
 
@@ -425,4 +415,5 @@ export const BalanceChangeNotificationTypes: NotificationReason[] = [
   'user_joined_from_your_group_invite',
   'quest_payout',
   'bet_fill',
+  'mana_payment_received',
 ]

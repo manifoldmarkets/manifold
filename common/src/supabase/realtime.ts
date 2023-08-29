@@ -33,6 +33,7 @@ export type TableSpec<T extends TableName> = {
   ts?: (row: Row<T>) => number
 }
 
+// if you add a table here, don't forget to enable in supabase seed.sql (alter publication supabase_realtime)
 export const REALTIME_TABLES: Partial<{ [T in TableName]: TableSpec<T> }> = {
   posts: {
     pk: ['id'],
@@ -67,6 +68,10 @@ export const REALTIME_TABLES: Partial<{ [T in TableName]: TableSpec<T> }> = {
   },
   group_contracts: {
     pk: ['group_id', 'contract_id'],
+  },
+  chat_messages: {
+    pk: ['id'],
+    ts: (r) => Date.parse(r.created_time),
   },
 }
 

@@ -1,5 +1,5 @@
 import { beginsWith, searchInAny } from 'common/util/parse'
-import { keyBy, orderBy } from 'lodash'
+import { orderBy } from 'lodash'
 
 export interface PageData {
   label: string
@@ -8,7 +8,7 @@ export interface PageData {
 }
 
 const pages: PageData[] = [
-  { label: 'Home', slug: '/home' },
+  { label: 'Home', slug: '/home', keywords: ['news'] },
   { label: 'Notifications', slug: '/notifications' },
   { label: 'Leaderboards', slug: '/leaderboards', keywords: ['top', 'high'] },
   {
@@ -17,17 +17,15 @@ const pages: PageData[] = [
     keywords: ['add', 'make', 'ask'],
   },
   {
-    label: 'Groups',
+    label: 'Categories',
     slug: '/groups',
-    keywords: ['create group'], // TODO: this flow is bad
+    keywords: ['category', 'groups'],
   },
   { label: 'Get mana', slug: '/add-funds', keywords: ['buy', 'subscribe'] },
   { label: 'Charity', slug: '/charity', keywords: ['donate', 'for good'] },
   { label: 'Referrals', slug: '/referrals', keywords: ['invite', 'share'] },
   { label: 'Live feed', slug: '/live' },
   { label: 'About', slug: '/about' },
-  { label: 'Ads', slug: '/ad', keywords: ['advertisement'] },
-
   { label: 'Questions', slug: '/questions' },
   { label: 'Users', slug: '/users' },
 ]
@@ -53,11 +51,3 @@ export function searchPages(query: string, limit: number) {
     ['desc']
   ).slice(0, limit)
 }
-
-const pagesByLabel = keyBy(pages, 'label')
-
-export const defaultPages = [
-  pagesByLabel['Users'],
-  pagesByLabel['Groups'],
-  pagesByLabel['Live feed'],
-]

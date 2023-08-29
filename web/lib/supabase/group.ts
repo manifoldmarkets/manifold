@@ -41,7 +41,7 @@ export async function getGroupMembers(
       .from('group_role')
       .select('*')
       .eq('group_id', groupId)
-      .is('role', null)
+      .eq('role', 'member')
       .order('name')
       .range(
         start ? start : offset * MEMBER_LOAD_NUM,

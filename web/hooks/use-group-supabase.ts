@@ -7,11 +7,11 @@ import { useSupabasePolling } from 'web/hooks/use-supabase-polling'
 import { getUserIsGroupMember } from 'web/lib/firebase/api'
 import { db } from 'web/lib/supabase/db'
 import {
-  MEMBER_LOAD_NUM,
   getGroupFromSlug,
   getGroupMembers,
   getGroupOfRole,
   getMemberRole,
+  MEMBER_LOAD_NUM,
 } from 'web/lib/supabase/group'
 import {
   getGroupsWhereUserHasRole,
@@ -25,6 +25,7 @@ import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
 import { useIsAuthorized, useUser } from './use-user'
 import { Row } from 'common/supabase/utils'
 import { convertGroup } from 'common/supabase/groups'
+import { useAsyncData } from 'web/hooks/use-async-data'
 
 export function useIsGroupMember(groupSlug: string) {
   const [isMember, setIsMember] = usePersistentInMemoryState<
@@ -42,6 +43,25 @@ export function useIsGroupMember(groupSlug: string) {
     }
   }, [groupSlug, isAuthorized])
   return isMember
+}
+
+export function useMemberGroupIds(
+  userId: string | undefined | null
+): string[] | undefined {
+  const [groupIds, setGroupIds] = useState<string[] | undefined>(undefined)
+  useEffect(() => {
+    if (!userId) return
+    db.from('group_members')
+      .select('group_id')
+      .eq('member_id', userId)
+      .then((result) => {
+        if (result) {
+          const groupIds = (result as any).data.map((row: any) => row.group_id)
+          setGroupIds(groupIds)
+        }
+      })
+  }, [userId])
+  return groupIds
 }
 
 export function useRealtimeMemberGroupIds(
@@ -116,10 +136,11 @@ export function useRealtimeGroupMemberIds(groupId: string) {
 export type Member = Row<'group_role'>
 
 export function useRealtimeGroupMembers(
-  groupId: string,
+  group: Group,
   hitBottom: boolean,
   numMembers: number | undefined
 ) {
+  const { id: groupId } = group
   const [admins, setAdmins] = useState<Member[] | undefined>(undefined)
   const [moderators, setModerators] = useState<Member[] | undefined>(undefined)
   const [members, setMembers] = useState<Member[] | undefined>(undefined)
@@ -131,8 +152,7 @@ export function useRealtimeGroupMembers(
     getGroupMembers(groupId, offsetPage + 1)
       .then((result) => {
         if (members) {
-          const prevMembers = members
-          setMembers([...prevMembers, ...result.data])
+          setMembers([...members, ...result.data])
         } else {
           setMembers(result.data)
         }
@@ -156,6 +176,7 @@ export function useRealtimeGroupMembers(
       })
       .catch((e) => console.log(e))
 
+    if (group.totalMembers > 250) return
     getGroupMembers(groupId, offsetPage, 0)
       .then((result) => {
         const members = result.data
@@ -216,18 +237,6 @@ export async function setTranslatedMemberRole(
   } else {
     setRole(null)
   }
-}
-
-// TODO: maybe this belongs in a more general file
-function useAsyncData<T, R>(
-  prop: T | undefined,
-  asyncFn: (prop: T) => Promise<R>
-) {
-  const [data, setData] = useState<R | null>(null)
-  useEffect(() => {
-    if (prop) asyncFn(prop).then(setData).catch(console.error)
-  }, [prop])
-  return data
 }
 
 export function useGroupFromSlug(groupSlug: string) {

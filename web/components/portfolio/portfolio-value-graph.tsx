@@ -1,6 +1,5 @@
 import { useMemo } from 'react'
 import { scaleTime, scaleLinear } from 'd3-scale'
-import { curveStepAfter } from 'd3-shape'
 import { min, max } from 'lodash'
 import dayjs from 'dayjs'
 import { Col } from '../layout/col'
@@ -8,6 +7,7 @@ import { TooltipProps } from 'web/components/charts/helpers'
 import { ControllableSingleValueHistoryChart } from 'web/components/charts/generic-charts'
 import { PortfolioMetrics } from 'common/portfolio-metrics'
 import { HistoryPoint, viewScale } from 'common/chart'
+import { curveLinear } from 'd3-shape'
 
 export type GraphMode = 'profit' | 'value' | 'balance'
 
@@ -55,9 +55,9 @@ export const PortfolioGraph = (props: {
       viewScaleProps={viewScaleProps}
       yKind="Ṁ"
       data={points}
-      curve={curveStepAfter}
       Tooltip={PortfolioTooltip}
       onMouseOver={onMouseOver}
+      curve={curveLinear}
       color={
         mode === 'profit'
           ? (p: HistoryPoint) => (p.y >= 0 ? '#14b8a6' : '#FFA799')

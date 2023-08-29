@@ -3,9 +3,9 @@ import { Contract, contractPath } from 'common/contract'
 import { formatMoney } from 'common/util/format'
 import Link from 'next/link'
 import { fromNow } from 'web/lib/util/time'
-import { getTextColor } from '../bet/quick-bet'
 import { useIsClient } from 'web/hooks/use-is-client'
 import { ContractStatusLabel } from './contracts-table'
+import { getTextColor } from './text-color'
 
 export function ContractMention(props: {
   contract: Contract

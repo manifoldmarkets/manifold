@@ -16,6 +16,7 @@ import { getIsNative } from 'web/lib/native/is-native'
 import { Major_Mono_Display, Figtree } from 'next/font/google'
 import { GoogleOneTapSetup } from 'web/lib/firebase/google-onetap-login'
 import clsx from 'clsx'
+import { useRefreshAllClients } from 'web/hooks/use-refresh-all-clients'
 
 // See https://nextjs.org/docs/basic-features/font-optimization#google-fonts
 // and if you add a font, you must add it to tailwind config as well for it to work.
@@ -68,6 +69,7 @@ type ManifoldPageProps = { auth?: AuthUser }
 function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
   useEffect(printBuildInfo, [])
   useHasLoaded()
+  useRefreshAllClients()
 
   return (
     <>
@@ -157,6 +159,22 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
         r.src=t+h._hjSettings.hjid+j+h._hjSettings.hjsv;
         a.appendChild(r);
     })(window,document,'https://static.hotjar.com/c/hotjar-','.js?sv=');`,
+        }}
+      />
+      <Script
+        id="fbpx"
+        dangerouslySetInnerHTML={{
+          __html: `
+          !function(f,b,e,v,n,t,s)
+  {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+  n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+  if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+  n.queue=[];t=b.createElement(e);t.async=!0;
+  t.src=v;s=b.getElementsByTagName(e)[0];
+  s.parentNode.insertBefore(t,s)}(window, document,'script',
+  'https://connect.facebook.net/en_US/fbevents.js');
+  fbq('init', '254770557407697');
+  fbq('track', 'PageView');`,
         }}
       />
       <GoogleOneTapSetup />

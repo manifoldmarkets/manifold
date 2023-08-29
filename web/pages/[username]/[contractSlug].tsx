@@ -5,22 +5,12 @@ import Head from 'next/head'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useEffect, useMemo, useRef, useState } from 'react'
-
 import { Answer, DpmAnswer } from 'common/answer'
 import { unserializePoints } from 'common/chart'
-import {
-  ContractParams,
-  MaybeAuthedContractParams,
-  tradingAllowed,
-} from 'common/contract'
+import { ContractParams, MaybeAuthedContractParams } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
-import { getContractOGProps, getSeoDescription } from 'common/contract-seo'
 import { HOUSE_BOT_USERNAME, isTrustworthy } from 'common/envs/constants'
-import { ContractView } from 'common/events'
 import { User } from 'common/user'
-import { removeUndefinedProps } from 'common/util/object'
-import { SEO } from 'web/components/SEO'
-import { NumericBetPanel } from 'web/components/bet/numeric-bet-panel'
 import { DeleteMarketButton } from 'web/components/buttons/delete-market-button'
 import { ScrollToTopButton } from 'web/components/buttons/scroll-to-top-button'
 import { BackButton } from 'web/components/contract/back-button'
@@ -30,21 +20,17 @@ import { ContractDescription } from 'web/components/contract/contract-descriptio
 import {
   AuthorInfo,
   CloseOrResolveTime,
-  MarketGroups,
 } from 'web/components/contract/contract-details'
 import { ContractLeaderboard } from 'web/components/contract/contract-leaderboard'
 import { ContractOverview } from 'web/components/contract/contract-overview'
 import { ContractTabs } from 'web/components/contract/contract-tabs'
 import { VisibilityIcon } from 'web/components/contract/contracts-table'
-
-import { calculateMultiBets } from 'common/bet'
 import { getTopContractMetrics } from 'common/supabase/contract-metrics'
 import ContractSharePanel from 'web/components/contract/contract-share-panel'
 import { ExtraContractActionsRow } from 'web/components/contract/extra-contract-actions-row'
 import { PrivateContractPage } from 'web/components/contract/private-contract'
-import { QfResolutionPanel } from 'web/components/contract/qf-overview'
 import { RelatedContractsList } from 'web/components/contract/related-contracts-widget'
-import { TitleOrEdit } from 'web/components/contract/title-edit'
+import { EditableQuestionTitle } from 'web/components/contract/title-edit'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
@@ -56,9 +42,8 @@ import { GradientContainer } from 'web/components/widgets/gradient-container'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { useAdmin } from 'web/hooks/use-admin'
 import { useAnswersCpmm } from 'web/hooks/use-answers'
-import { useRealtimeBets } from 'web/hooks/use-bets-supabase'
 import {
-  useFirebasePublicAndRealtimePrivateContract,
+  useFirebasePublicContract,
   useIsPrivateContractMember,
 } from 'web/hooks/use-contract-supabase'
 import { useEvent } from 'web/hooks/use-event'
@@ -77,9 +62,13 @@ import { db } from 'web/lib/supabase/db'
 import { scrollIntoViewCentered } from 'web/lib/util/scroll'
 import Custom404 from '../404'
 import ContractEmbedPage from '../embed/[username]/[contractSlug]'
-import { Button } from 'web/components/buttons/button'
 import { ExplainerPanel } from 'web/components/explainer-panel'
 import { SidebarSignUpButton } from 'web/components/buttons/sign-up-button'
+import { linkClass } from 'web/components/widgets/site-link'
+import { MarketGroups } from 'web/components/contract/market-groups'
+import { getMultiBetPoints } from 'web/components/charts/contract/choice'
+import { useRealtimeBets } from 'web/hooks/use-bets-supabase'
+import { ContractSEO } from 'web/components/contract/contract-seo'
 
 export async function getStaticProps(ctx: {
   params: { username: string; contractSlug: string }
@@ -150,7 +139,9 @@ export function NonPrivateContractPage(props: {
     )
 }
 
-export function ContractPageContent(props: { contractParams: ContractParams }) {
+export function ContractPageContent(props: {
+  contractParams: ContractParams & { contract: Contract }
+}) {
   const { contractParams } = props
   const {
     userPositionsByOutcome,
@@ -159,12 +150,15 @@ export function ContractPageContent(props: { contractParams: ContractParams }) {
     creatorTwitter,
     relatedContracts,
   } = contractParams
-  const contract: typeof contractParams.contract =
-    useFirebasePublicAndRealtimePrivateContract(
+  const contract =
+    useFirebasePublicContract(
       contractParams.contract.visibility,
       contractParams.contract.id
     ) ?? contractParams.contract
-
+  const cachedContract = useMemo(
+    () => contract,
+    [contract.id, contract.resolution, contract.closeTime]
+  )
   if (
     'answers' in contractParams.contract &&
     contract.mechanism === 'cpmm-multi-1'
@@ -195,44 +189,43 @@ export function ContractPageContent(props: { contractParams: ContractParams }) {
       slug: contract.slug,
       contractId: contract.id,
       creatorId: contract.creatorId,
-    } as ContractView,
+    },
     true
   )
   useSaveContractVisitsLocally(user === null, contract.id)
 
   // Static props load bets in descending order by time
   const lastBetTime = first(contractParams.historyData.bets)?.createdTime
-  const newBets = useRealtimeBets({
-    contractId: contract.id,
-    afterTime: lastBetTime,
-    filterRedemptions: contract.outcomeType !== 'MULTIPLE_CHOICE',
-  })
-  const totalBets =
-    contractParams.totalBets + newBets.filter((bet) => !bet.isRedemption).length
+
+  const newBets =
+    useRealtimeBets({
+      contractId: contract.id,
+      afterTime: lastBetTime,
+      filterRedemptions: contract.outcomeType !== 'MULTIPLE_CHOICE',
+      order: 'asc',
+    }) ?? []
+  const newBetsWithoutRedemptions = newBets.filter((bet) => !bet.isRedemption)
+  const totalBets = contractParams.totalBets + newBetsWithoutRedemptions.length
   const bets = useMemo(
-    () => contractParams.historyData.bets.concat(newBets ?? []),
+    () => [...contractParams.historyData.bets, ...newBetsWithoutRedemptions],
     [contractParams.historyData.bets, newBets]
   )
 
   const betPoints = useMemo(() => {
     const points = unserializePoints(contractParams.historyData.points)
 
-    points.concat(
+    const newPoints =
       contract.outcomeType === 'MULTIPLE_CHOICE'
-        ? unserializePoints(
-            calculateMultiBets(
-              newBets,
-              contract.answers.map((a) => a.id)
-            )
-          )
+        ? contract.mechanism === 'cpmm-multi-1'
+          ? getMultiBetPoints(contract.answers, newBets)
+          : []
         : newBets.map((bet) => ({
             x: bet.createdTime,
             y: bet.probAfter,
             obj: { userAvatarUrl: bet.userAvatarUrl },
           }))
-    )
 
-    return points
+    return [...points, ...newPoints]
   }, [contractParams.historyData.points, newBets])
 
   const {
@@ -265,8 +258,6 @@ export function ContractPageContent(props: { contractParams: ContractParams }) {
       setShowResolver(true)
     }
   }, [isAdmin, isCreator, trustworthy, closeTime, isResolved])
-
-  const allowTrade = tradingAllowed(contract)
 
   useSaveReferral(user, {
     defaultReferrerUsername: contract.creatorUsername,
@@ -309,7 +300,8 @@ export function ContractPageContent(props: { contractParams: ContractParams }) {
   }, [titleRef])
 
   const showExplainerPanel =
-    !user || user.createdTime > Date.now() - 24 * 60 * 60 * 1000
+    user === null ||
+    (user && user.createdTime > Date.now() - 24 * 60 * 60 * 1000)
 
   return (
     <>
@@ -416,11 +408,12 @@ export function ContractPageContent(props: { contractParams: ContractParams }) {
                     isLarge
                     className="mr-1"
                   />
-                  <TitleOrEdit
+                  <EditableQuestionTitle
                     contract={contract}
                     canEdit={isAdmin || isCreator}
                   />
                 </div>
+                <MarketGroups contract={contract} />
               </Col>
 
               <div className="text-ink-600 flex items-center justify-between text-sm">
@@ -435,7 +428,9 @@ export function ContractPageContent(props: { contractParams: ContractParams }) {
                 ) : (
                   <div className="flex gap-4">
                     <Tooltip
-                      text="Traders"
+                      text={
+                        contract.outcomeType == 'POLL' ? 'Voters' : 'Traders'
+                      }
                       placement="bottom"
                       noTap
                       className="flex flex-row items-center gap-1"
@@ -454,7 +449,6 @@ export function ContractPageContent(props: { contractParams: ContractParams }) {
 
               <ContractOverview
                 contract={contract}
-                bets={bets}
                 betPoints={betPoints as any}
                 showResolver={showResolver}
                 onAnswerCommentClick={onAnswerCommentClick}
@@ -482,17 +476,17 @@ export function ContractPageContent(props: { contractParams: ContractParams }) {
             {showResolver &&
               user &&
               !resolution &&
-              (outcomeType === 'NUMERIC' || outcomeType === 'PSEUDO_NUMERIC' ? (
-                <GradientContainer>
+              (outcomeType === 'PSEUDO_NUMERIC' ? (
+                <GradientContainer className="my-2">
                   <NumericResolutionPanel
-                    isAdmin={!!isAdmin}
+                    isAdmin={isAdmin}
                     creator={user}
                     isCreator={!isAdmin}
                     contract={contract}
                   />
                 </GradientContainer>
               ) : outcomeType === 'BINARY' ? (
-                <GradientContainer>
+                <GradientContainer className="my-2">
                   <ResolutionPanel
                     isAdmin={isAdmin || trustworthy}
                     creator={user}
@@ -500,40 +494,36 @@ export function ContractPageContent(props: { contractParams: ContractParams }) {
                     contract={contract}
                   />
                 </GradientContainer>
-              ) : outcomeType === 'QUADRATIC_FUNDING' ? (
-                <GradientContainer>
-                  <QfResolutionPanel contract={contract} />
-                </GradientContainer>
               ) : null)}
 
-            {isResolved && user && (
-              <ReviewPanel
-                marketId={contract.id}
-                author={contract.creatorName}
-                user={user}
-              />
-            )}
+            {isResolved &&
+              // resolved less than week ago
+              (Date.now() - (contract.resolutionTime ?? 0)) / 1000 <
+                60 * 60 * 24 * 7 &&
+              user &&
+              user.id !== contract.creatorId &&
+              contract.outcomeType !== 'POLL' && (
+                <ReviewPanel
+                  marketId={contract.id}
+                  author={contract.creatorName}
+                  user={user}
+                  className="my-2"
+                />
+              )}
 
-            <Row className="my-4 flex-wrap gap-2 sm:flex-nowrap">
-              <MarketGroups contract={contract} />
+            <Row className="my-2 flex-wrap items-center justify-between gap-y-2">
               {outcomeType === 'BOUNTIED_QUESTION' && (
                 <Link
-                  className="self-end"
-                  href={`/questions?s=score&f=open&search-contract-type=BOUNTIED_QUESTION`}
+                  className={clsx(linkClass, 'text-primary-500 ml-2 text-sm')}
+                  href={`/questions?s=score&f=open&ct=BOUNTIED_QUESTION`}
                 >
-                  <Button
-                    className="whitespace-nowrap"
-                    color="green-outline"
-                    size="xs"
-                  >
-                    More bountied questions
-                  </Button>
+                  See all bounties &rarr;
                 </Link>
               )}
             </Row>
 
             {showExplainerPanel && (
-              <ExplainerPanel className="flex xl:hidden" />
+              <ExplainerPanel className="bg-canvas-50 -mx-4 flex rounded-lg p-4 pb-0 xl:hidden" />
             )}
 
             {!user && <SidebarSignUpButton className="mb-4 flex md:hidden" />}
@@ -545,9 +535,6 @@ export function ContractPageContent(props: { contractParams: ContractParams }) {
                 showResolver={showResolver}
                 contract={contract}
               />
-            )}
-            {outcomeType === 'NUMERIC' && allowTrade && (
-              <NumericBetPanel className="xl:hidden" contract={contract} />
             )}
 
             {isResolved && resolution !== 'CANCEL' && (
@@ -566,7 +553,8 @@ export function ContractPageContent(props: { contractParams: ContractParams }) {
 
             <div ref={tabsContainerRef}>
               <ContractTabs
-                contract={contract}
+                // Pass cached contract so it won't rerender so many times.
+                contract={cachedContract}
                 bets={bets}
                 totalBets={totalBets}
                 comments={comments}
@@ -617,34 +605,7 @@ export function ContractPageContent(props: { contractParams: ContractParams }) {
   )
 }
 
-export function ContractSEO(props: {
-  contract: Contract
-  /** Base64 encoded points */
-  points?: string
-}) {
-  const { contract, points } = props
-  const { question, creatorUsername, slug } = contract
-
-  const seoDesc = getSeoDescription(contract)
-  const ogCardProps = removeUndefinedProps({
-    ...getContractOGProps(contract),
-    points,
-  })
-
-  return (
-    <SEO
-      title={question}
-      description={seoDesc}
-      url={`/${creatorUsername}/${slug}`}
-      ogProps={{ props: ogCardProps, endpoint: 'market' }}
-    />
-  )
-}
-
-export function PrivateContractAdminTag(props: {
-  contract: Contract
-  user: User
-}) {
+function PrivateContractAdminTag(props: { contract: Contract; user: User }) {
   const { contract, user } = props
   const isPrivateContractMember = useIsPrivateContractMember(
     user.id,

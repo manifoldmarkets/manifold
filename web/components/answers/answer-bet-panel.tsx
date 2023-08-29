@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { XIcon } from '@heroicons/react/solid'
 
 import { Answer, DpmAnswer } from 'common/answer'

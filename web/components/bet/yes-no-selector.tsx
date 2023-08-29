@@ -1,5 +1,4 @@
 import clsx from 'clsx'
-import React from 'react'
 import { ArrowDownIcon, ArrowUpIcon } from '@heroicons/react/solid'
 
 import { Row } from '../layout/row'
@@ -13,27 +12,45 @@ export function YesNoSelector(props: {
   btnClassName?: string
   yesLabel?: string
   noLabel?: string
+  disabled?: boolean
+  highlight?: boolean
 }) {
-  const { selected, onSelect, className, btnClassName, yesLabel, noLabel } =
-    props
+  const {
+    selected,
+    onSelect,
+    className,
+    btnClassName,
+    yesLabel,
+    noLabel,
+    disabled,
+    highlight,
+  } = props
 
   return (
     <Row className={clsx('space-x-3', className)}>
       <Button
-        color={selected && selected !== 'YES' ? 'green-outline' : 'green'}
+        color={
+          (highlight && !selected) || selected === 'YES'
+            ? 'green'
+            : 'green-outline'
+        }
         size="xl"
         onClick={() => onSelect('YES')}
         className={btnClassName}
+        disabled={disabled}
       >
         {yesLabel ? yesLabel : 'YES'}
         <ArrowUpIcon className="ml-1 h-4 w-4" />
       </Button>
 
       <Button
-        color={selected && selected !== 'NO' ? 'red-outline' : 'red'}
+        color={
+          (highlight && !selected) || selected === 'NO' ? 'red' : 'red-outline'
+        }
         size="xl"
         onClick={() => onSelect('NO')}
         className={btnClassName}
+        disabled={disabled}
       >
         {noLabel ? noLabel : 'NO'}
         <ArrowDownIcon className="ml-1 h-4 w-4" />

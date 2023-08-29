@@ -4,7 +4,7 @@ import clsx from 'clsx'
 import { Answer, DpmAnswer } from 'common/answer'
 import { Contract } from 'common/contract'
 import { User } from 'common/user'
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useUser } from 'web/hooks/use-user'
 import { MAX_COMMENT_LENGTH } from 'common/comment'
 import Curve from 'web/public/custom-components/curve'
@@ -73,7 +73,7 @@ export function CommentInput(props: {
       !!parentCommentId || !!parentAnswerOutcome
         ? 'Write a reply...'
         : contract?.outcomeType == 'BOUNTIED_QUESTION'
-        ? 'Write an answer...'
+        ? 'Write an answer or comment...'
         : 'Write a comment...',
   })
 
@@ -192,9 +192,11 @@ export function CommentInputTextArea(props: {
   editor: Editor | null
   submit: () => void
   isSubmitting: boolean
+  submitOnEnter?: boolean
   size?: EditorSize
 }) {
-  const { user, editor, submit, isSubmitting, replyTo, size } = props
+  const { user, submitOnEnter, editor, submit, isSubmitting, replyTo, size } =
+    props
   useEffect(() => {
     editor?.setEditable(!isSubmitting)
   }, [isSubmitting, editor])
@@ -209,7 +211,7 @@ export function CommentInputTextArea(props: {
           if (
             event.key === 'Enter' &&
             !event.shiftKey &&
-            (event.ctrlKey || event.metaKey) &&
+            (!submitOnEnter ? event.ctrlKey || event.metaKey : true) &&
             // mention list is closed
             !(view.state as any).mention$.active
           ) {

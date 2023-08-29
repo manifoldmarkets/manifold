@@ -5,7 +5,7 @@ import { track } from 'web/lib/service/analytics'
 import { Col } from 'web/components/layout/col'
 
 export const DashboardNewsItem = (props: {
-  title: string
+  title?: string
   urlToImage?: string
   image?: string
   url: string
@@ -39,6 +39,7 @@ export const DashboardNewsItem = (props: {
         href={url}
         target="_blank"
         onClick={() => track('click news article', { article: title })}
+        rel="noreferrer"
       />
 
       <Col className="bg-canvas-0 border-canvas-0 rounded-b-lg border border-t-0 p-2 hover:underline">

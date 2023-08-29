@@ -964,22 +964,11 @@ user_embedding as (
 $$ language sql;
 
 create
-or replace function save_user_topics (p_user_id text, p_topics text[]) returns void language sql as $$ with chosen_embedding as (
+or replace function save_user_topics (p_user_id text, p_topics text[]) returns void language sql as $$
+with topic_embedding as (
     select avg(embedding) as average
     from topic_embeddings
     where topic = any(p_topics)
-  ),
-  not_chosen_embedding as (
-    select avg(embedding) as average
-    from topic_embeddings
-    where topic not in (
-        select unnest(p_topics)
-      )
-  ),
-  topic_embedding as (
-    select (chosen.average - not_chosen.average) as average
-    from chosen_embedding as chosen,
-      not_chosen_embedding as not_chosen
   )
 insert into user_topics (user_id, topics, topic_embedding)
 values (
@@ -998,22 +987,12 @@ $$;
 create
 or replace function save_user_topics_blank (p_user_id text) returns void language sql as $$
 with
-  average_all as (
+    topic_embedding as (
     select avg(embedding) as average
-    from topic_embeddings
-  ),
-  ignore_embeddings as (
-    select avg(embedding) as average
-    from topic_embeddings
-    where topic in (
+    from topic_embeddings where topic not in (
       select unnest(ARRAY['destiny.gg', 'stock', 'planecrash', 'proofnik', 'permanent', 'personal']::text[])
+        )
     )
-  ),
-  topic_embedding as (
-    select (avg_all.average - not_chosen.average) as average
-    from average_all as avg_all,
-         ignore_embeddings as not_chosen
-  )
 insert into user_topics (user_id, topics, topic_embedding)
 values (
          p_user_id,
@@ -1078,8 +1057,8 @@ or replace function get_reply_chain_comments_matching_contracts (contract_ids te
   SELECT * FROM reply_chain_comments;
 $$ language sql;
 
-CREATE OR REPLACE FUNCTION count_recent_comments_by_contract()
-RETURNS TABLE (contract_id TEXT, comment_count INTEGER) AS $$
+create
+or replace function count_recent_comments_by_contract () returns table (contract_id text, comment_count integer) as $$
   SELECT
     contract_id,
     COUNT(*) AS comment_count
@@ -1091,7 +1070,7 @@ RETURNS TABLE (contract_id TEXT, comment_count INTEGER) AS $$
     contract_id
   ORDER BY
     comment_count DESC;
-$$ LANGUAGE SQL;
+$$ language sql;
 
 create
 or replace function get_contracts_with_unseen_liked_comments (
@@ -1154,11 +1133,11 @@ or replace function search_users (query text, count integer) returns setof users
 select *
 from users
 where users.name_username_vector @@ websearch_to_tsquery(query)
-   or (data->>'username') % query
-   or (data->>'name') % query
+   or username % query
+   or name % query
 order by greatest(
-    similarity(query, data->>'name'),
-    similarity(query, data->>'username')
+    similarity(query, name),
+    similarity(query, username)
   ) desc,
   data->>'lastBetTime' desc nulls last
 limit count $$ language sql stable;
@@ -1325,7 +1304,7 @@ or replace function get_engaged_users () returns table (user_id text, username t
        GROUP BY user_id, week
    )
 
-  SELECT u.id, u.data->>'username' AS username, u.data->>'name' AS name
+  SELECT u.id, u.username, u.name
   FROM users u
   WHERE u.id IN (
       SELECT user_id

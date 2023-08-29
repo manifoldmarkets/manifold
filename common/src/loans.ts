@@ -1,6 +1,6 @@
 import { Dictionary, sumBy, minBy } from 'lodash'
 import { Bet } from './bet'
-import { getInvested } from './calculate'
+import { getMinimalInvested } from './calculate'
 import {
   Contract,
   CPMMContract,
@@ -10,7 +10,7 @@ import {
 import { filterDefined } from './util/array'
 import { PortfolioMetrics } from 'common/portfolio-metrics'
 
-const LOAN_DAILY_RATE = 0.02
+export const LOAN_DAILY_RATE = 0.04
 
 const calculateNewLoan = (investedValue: number, loanTotal: number) => {
   const netValue = investedValue - loanTotal
@@ -61,7 +61,7 @@ const getCpmmContractLoanUpdate = (
   contract: CPMMContract | CPMMMultiContract,
   bets: Bet[]
 ) => {
-  const invested = getInvested(contract, bets)
+  const invested = getMinimalInvested(contract, bets)
   const loanAmount = sumBy(bets, (bet) => bet.loanAmount ?? 0)
   const oldestBet = minBy(bets, (bet) => bet.createdTime)
 

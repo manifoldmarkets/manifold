@@ -5,7 +5,7 @@ import { MultiContract } from 'common/contract'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { Avatar, EmptyAvatar } from '../widgets/avatar'
-import { SiteLink } from '../widgets/site-link'
+import Link from 'next/link'
 import { formatPercent } from 'common/util/format'
 import { tradingAllowed } from 'common/contract'
 import { Linkify } from '../widgets/linkify'
@@ -15,7 +15,6 @@ import { useUserByIdOrAnswer } from 'web/hooks/use-user-supabase'
 import { ReactNode } from 'react'
 import { Tooltip } from '../widgets/tooltip'
 
-//  TODO: make this look better
 export function ResolutionAnswerItem(props: {
   answer: DpmAnswer | Answer
   contract: MultiContract
@@ -71,12 +70,12 @@ export function ResolutionAnswerItem(props: {
         {outcomeType === 'FREE_RESPONSE' && (
           <Row className="text-ink-500 items-center gap-2 text-sm">
             {user ? (
-              <SiteLink className="relative" href={`/${user.username}`}>
+              <Link className="relative" href={`/${user.username}`}>
                 <Row className="items-center gap-2">
                   <Avatar avatarUrl={user.avatarUrl} size="2xs" />
                   <div className="truncate">{user.name}</div>
                 </Row>
-              </SiteLink>
+              </Link>
             ) : (
               <EmptyAvatar />
             )}
@@ -190,7 +189,7 @@ export const AnswerBar = (props: {
 
   return (
     <Col>
-      <Col className={clsx('relative h-full w-full', className)}>
+      <Col className={clsx('relative isolate h-full w-full', className)}>
         <Row className="my-auto h-full items-center justify-between gap-x-4 px-3 py-2 leading-none">
           <div className="flex-grow">{label}</div>
           <Row className="relative items-center justify-end gap-2">{end}</Row>
@@ -248,7 +247,7 @@ export const AnswerLabel = (props: {
     <Tooltip text={truncated === text ? false : text}>
       <span className={clsx('my-1', className)}>
         {creator === false ? (
-          <EmptyAvatar />
+          <EmptyAvatar className="mr-2 inline" size={4} />
         ) : creator ? (
           <Avatar
             className="mr-2 inline"

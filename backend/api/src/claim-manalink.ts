@@ -2,7 +2,7 @@ import * as admin from 'firebase-admin'
 import { z } from 'zod'
 
 import { User } from 'common/user'
-import { canCreateManalink, Manalink } from 'common/manalink'
+import { canSendMana, Manalink } from 'common/manalink'
 import { APIError, authEndpoint, validate } from './helpers'
 import { runTxn, TxnData } from 'shared/txn/run-txn'
 import { createSupabaseClient } from 'shared/supabase/init'
@@ -20,7 +20,7 @@ export const claimmanalink = authEndpoint(async (req, auth) => {
     const manalinkDoc = firestore.doc(`manalinks/${slug}`)
     const manalinkSnap = await transaction.get(manalinkDoc)
     if (!manalinkSnap.exists) {
-      throw new APIError(400, 'Manalink not found')
+      throw new APIError(404, 'Manalink not found')
     }
     const manalink = manalinkSnap.data() as Manalink
 
@@ -30,7 +30,7 @@ export const claimmanalink = authEndpoint(async (req, auth) => {
       throw new APIError(500, 'Invalid amount')
 
     if (auth.uid === fromId)
-      throw new APIError(400, `You can't claim your own manalink`)
+      throw new APIError(403, `You can't claim your own manalink`)
 
     const fromDoc = firestore.doc(`users/${fromId}`)
     const fromSnap = await transaction.get(fromDoc)
@@ -40,23 +40,23 @@ export const claimmanalink = authEndpoint(async (req, auth) => {
     const fromUser = fromSnap.data() as User
     const db = createSupabaseClient()
 
-    const canCreate = await canCreateManalink(fromUser, db)
+    const canCreate = await canSendMana(fromUser, db)
     if (!canCreate) {
       throw new APIError(
-        400,
-        `@${fromUser.username} is not authorized to create manalinks.`
+        403,
+        `You don't have at least 1000 mana or your account isn't 1 week old`
       )
     }
 
     // Only permit one redemption per user per link
     if (claimedUserIds.includes(auth.uid)) {
-      throw new APIError(400, `You already redeemed manalink ${slug}`)
+      throw new APIError(403, `You already redeemed manalink ${slug}`)
     }
 
     // Disallow expired or maxed out links
     if (manalink.expiresTime != null && manalink.expiresTime < Date.now()) {
       throw new APIError(
-        400,
+        403,
         `Manalink ${slug} expired on ${new Date(
           manalink.expiresTime
         ).toLocaleString()}`
@@ -67,20 +67,20 @@ export const claimmanalink = authEndpoint(async (req, auth) => {
       manalink.maxUses <= manalink.claims.length
     ) {
       throw new APIError(
-        400,
+        403,
         `Manalink ${slug} has reached its max uses of ${manalink.maxUses}`
       )
     }
 
     if (fromUser.balance < amount) {
       throw new APIError(
-        400,
+        403,
         `Insufficient balance: ${fromUser.name} needed ${amount} for this manalink but only had ${fromUser.balance} `
       )
     }
 
     // Actually execute the txn
-    const data: TxnData = {
+    const data = {
       fromId,
       fromType: 'USER',
       toId: auth.uid,
@@ -89,7 +89,7 @@ export const claimmanalink = authEndpoint(async (req, auth) => {
       token: 'M$',
       category: 'MANALINK',
       description: `Manalink ${slug} claimed: ${amount} from ${fromUser.username} to ${auth.uid}`,
-    }
+    } as const
     const result = await runTxn(transaction, data)
     const txnId = result.txn?.id
     if (!txnId) {

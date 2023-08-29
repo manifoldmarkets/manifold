@@ -6,9 +6,13 @@ import { isAdminId, isTrustworthy } from 'common/envs/constants'
 import { GroupResponse } from 'common/group'
 import { APIError, authEndpoint, validate } from './helpers'
 import { getUser } from 'shared/utils'
-import { createSupabaseClient } from 'shared/supabase/init'
+import {
+  createSupabaseClient,
+  createSupabaseDirectClient,
+} from 'shared/supabase/init'
 import { addGroupToContract } from 'shared/update-group-contracts-internal'
 import { GroupMember } from 'common/group-member'
+import { User } from 'common/user'
 
 const bodySchema = z.object({
   groupId: z.string(),
@@ -41,47 +45,50 @@ export const addcontracttogroup = authEndpoint(async (req, auth) => {
   const contract = contractSnap.data() as Contract
 
   if (contract.visibility == 'private') {
-    throw new APIError(400, 'You cannot add a group to a private contract')
+    throw new APIError(403, 'You cannot add a group to a private contract')
   }
 
   if (group.privacy_status == 'private') {
     throw new APIError(
-      400,
+      403,
       'You cannot add an existing public market to a private group'
     )
   }
 
-  const canAdd = await canUserAddGroupToMarket({
-    userId: auth.uid,
+  const user = await getUser(auth.uid)
+  const canAdd = canUserAddGroupToMarket({
+    user,
     group,
     contract,
     membership,
   })
   if (!canAdd) {
     throw new APIError(
-      400,
+      403,
       `User does not have permission to add this market to group "${group.name}".`
     )
   }
-  const isNew = await addGroupToContract(contract, group, db)
+  const pg = createSupabaseDirectClient()
+  const isNew = await addGroupToContract(contract, group, pg)
 
   return { status: 'success', existed: !isNew }
 })
 
 const firestore = admin.firestore()
 
-export async function canUserAddGroupToMarket(props: {
-  userId: string
+export function canUserAddGroupToMarket(props: {
+  user: User | undefined
   group: GroupResponse
   contract?: Contract
   membership?: GroupMember
 }) {
-  const { userId, group, contract, membership } = props
+  const { user, group, contract, membership } = props
+  if (!user) return false
+  const userId = user.id
 
-  const user = await getUser(userId)
   const isMarketCreator = !contract || contract.creatorId === userId
   const isManifoldAdmin = isAdminId(userId)
-  const trustworthy = isTrustworthy(user?.username)
+  const trustworthy = isTrustworthy(user.username)
 
   const isMember = membership != undefined
   const isAdminOrMod =
@@ -90,7 +97,6 @@ export async function canUserAddGroupToMarket(props: {
   return (
     isManifoldAdmin ||
     isAdminOrMod ||
-    group.creator_id === userId ||
     // if user owns the contract and is a public group
     (group.privacy_status === 'public' && (isMarketCreator || trustworthy)) ||
     (group.privacy_status === 'private' && isMarketCreator && isMember)

@@ -1,6 +1,5 @@
-import React, { memo, useCallback, useEffect, useMemo, useState } from 'react'
+import { memo, useCallback, useEffect, useMemo, useState } from 'react'
 import { User } from 'common/user'
-import { HOUR_MS } from 'common/util/time'
 import clsx from 'clsx'
 import { withTracking } from 'web/lib/service/analytics'
 import { Row } from 'web/components/layout/row'
@@ -14,17 +13,13 @@ import { keyBy, partition, sortBy, sum } from 'lodash'
 import { ContractMention } from 'web/components/contract/contract-mention'
 import { dailyStatsClass } from 'web/components/daily-stats'
 import { Pagination } from 'web/components/widgets/pagination'
-import {
-  storageStore,
-  usePersistentRevalidatedState,
-} from 'web/hooks/use-persistent-state'
-import { safeLocalStorage } from 'web/lib/util/local'
 import { LoadingIndicator } from './widgets/loading-indicator'
 import { db } from 'web/lib/supabase/db'
 import { InfoTooltip } from './widgets/info-tooltip'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
 import { useCurrentPortfolio } from 'web/hooks/use-portfolio-history'
 import { Table } from './widgets/table'
+import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 const DAILY_PROFIT_CLICK_EVENT = 'click daily profit button'
 
 export const DailyProfit = memo(function DailyProfit(props: {
@@ -45,19 +40,10 @@ export const DailyProfit = memo(function DailyProfit(props: {
       return getUserContractMetricsByProfitWithContracts(user.id, db, 'day')
   }, [user])
 
-  const [data, setData] = usePersistentRevalidatedState<
+  const [data, setData] = usePersistentLocalState<
     { metrics: ContractMetric[]; contracts: CPMMContract[] } | undefined
-  >(
-    undefined,
-    {
-      key: `daily-profit-${user?.id}`,
-      store: storageStore(safeLocalStorage),
-    },
-    {
-      every: HOUR_MS,
-      callback: refreshContractMetrics,
-    }
-  )
+  >(undefined, `daily-profit-${user?.id}`)
+
   useEffect(() => {
     if (open) refreshContractMetrics().then(setData)
   }, [open, refreshContractMetrics, setData])

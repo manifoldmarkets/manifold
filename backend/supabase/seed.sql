@@ -42,44 +42,6 @@ $$;
 /* 1. tables containing firestore content */
 /******************************************/
 create table if not exists
-  users (
-    id text not null primary key,
-    data jsonb not null,
-    fs_updated_time timestamp not null,
-    name_username_vector tsvector generated always as (
-      to_tsvector((data ->> 'username') || ' ' || (data ->> 'name'))
-    ) stored
-  );
-
-alter table users enable row level security;
-
-drop policy if exists "public read" on users;
-
-create policy "public read" on users for
-select
-  using (true);
-
-/* indexes supporting @-mention autocomplete */
-create index if not exists users_name_gin on users using GIN ((data ->> 'name') gin_trgm_ops);
-
-create index if not exists users_username_gin on users using GIN ((data ->> 'username') gin_trgm_ops);
-
-create index users_name_username_vector_idx on users using gin (name_username_vector);
-
-create index if not exists users_follower_count_cached on users ((to_jsonb(data -> 'followerCountCached')) desc);
-
-create index if not exists user_referrals_idx on users ((data ->> 'referredByUserId'))
-where
-  data ->> 'referredByUserId' is not null;
-
-create index if not exists user_profit_cached_all_time_idx on users (((data -> 'profitCached' ->> 'allTime')::numeric));
-
-create index if not exists users_betting_streak_idx on users (((data -> 'currentBettingStreak')::int));
-
-alter table users
-cluster on users_pkey;
-
-create table if not exists
   user_portfolio_history (
     user_id text not null,
     portfolio_id text not null,
@@ -306,8 +268,11 @@ create index if not exists user_seen_markets_type_created_time_desc_idx on user_
   created_time desc
 );
 
-create index if not exists user_seen_markets_user_type_created_time_desc_idx on user_seen_markets
-    (user_id,type, created_time desc);
+create index if not exists user_seen_markets_user_type_created_time_desc_idx on user_seen_markets (
+  user_id,
+  type,
+  created_time desc
+);
 
 alter table user_seen_markets
 cluster on user_seen_markets_created_time_desc_idx;
@@ -434,6 +399,8 @@ create index if not exists contracts_creator_id on contracts (creator_id, create
 
 create index if not exists contracts_created_time on contracts (created_time desc);
 
+create index if not exists contracts_unique_bettors on contracts (((data->>'uniqueBettorCount')::integer) desc);
+
 create index if not exists contracts_close_time on contracts (close_time desc);
 
 create index if not exists contracts_popularity_score on contracts (popularity_score desc);
@@ -485,7 +452,6 @@ begin
     new.resolution_probability := ((new.data) ->> 'resolutionProbability')::numeric;
     new.resolution := (new.data) ->> 'resolution';
     new.popularity_score := coalesce(((new.data) ->> 'popularityScore')::numeric, 0);
-    new.importance_score := coalesce(((new.data) ->> 'importanceScore')::numeric, 0);
   end if;
   return new;
 end
@@ -644,9 +610,9 @@ create policy "public read" on contract_comments for
 select
   using (true);
 
-create index contract_comments_data_likes_idx on contract_comments (((data -> 'likes')::numeric));
+create index contract_comments_contract_id_created_time_idx on contract_comments (contract_id, created_time desc);
 
-create index contract_comments_data_created_time_idx on contract_comments (((data ->> 'createdTime')::bigint));
+create index contract_comments_data_likes_idx on contract_comments (((data -> 'likes')::numeric));
 
 create index contract_comments_created_time_idx on contract_comments (created_time desc);
 
@@ -713,6 +679,60 @@ drop policy if exists "public read" on chat_messages;
 create policy "public read" on chat_messages for
 select
   using (true);
+create index if not exists chat_messages_channel_id_idx
+    on chat_messages (channel_id, created_time desc);
+
+alter table chat_messages
+    cluster on chat_messages_channel_id_idx;
+
+create table if not exists
+    league_chats (
+                     id serial primary key,
+                     channel_id text not null, -- link to chat_messages table
+                     created_time timestamptz not null default now(),
+                     season int not null, -- integer id of season, i.e. 1 for first season, 2 for second, etc.
+                     division int not null, -- 1 (beginner) to 4 (expert)
+                     cohort text not null, -- id of cohort (group of competing users). Unique across seasons.
+                     owner_id text,
+                     unique (season, division, cohort)
+);
+
+alter table league_chats enable row level security;
+
+drop policy if exists "public read" on league_chats;
+
+create policy "public read" on league_chats for
+    select
+    using (true);
+
+create table if not exists
+    user_seen_chats (
+      id bigint generated always as identity primary key,
+      user_id text not null,
+      channel_id text not null,
+      created_time timestamptz not null default now()
+);
+
+alter table user_seen_chats enable row level security;
+
+drop policy if exists "public read" on user_seen_chats;
+
+create policy "public read" on user_seen_chats for
+    select
+    using (true);
+
+drop policy if exists "user can insert" on user_seen_chats;
+
+create policy "user can insert" on user_seen_chats for insert
+    with
+    check (true);
+
+create index if not exists user_seen_chats_created_time_desc_idx
+    on user_seen_chats (user_id, channel_id, created_time desc);
+
+alter table user_seen_chats
+    cluster on user_seen_chats_created_time_desc_idx;
+
 
 create table if not exists
   contract_follows (
@@ -965,10 +985,8 @@ create table if not exists
     user_id text not null primary key,
     created_at timestamp not null default now(),
     interest_embedding vector (1536) not null,
-    pre_signup_interest_embedding vector (1536),
     contract_view_embedding vector (1536),
-    disinterest_embedding vector (1536),
-    pre_signup_embedding_is_default boolean default false
+    disinterest_embedding vector (1536)
   );
 
 alter table user_embeddings enable row level security;
@@ -1033,19 +1051,19 @@ drop policy if exists "admin write access" on topic_embeddings;
 create policy "admin write access" on topic_embeddings as PERMISSIVE for all to service_role;
 
 create table if not exists
-    group_embeddings (
-                         group_id text not null primary key,
-                         created_time timestamp not null default now(),
-                         embedding vector (1536) not null
-);
+  group_embeddings (
+    group_id text not null primary key,
+    created_time timestamp not null default now(),
+    embedding vector (1536) not null
+  );
 
 alter table group_embeddings enable row level security;
 
 drop policy if exists "public read" on group_embeddings;
 
 create policy "public read" on group_embeddings for
-    select
-    using (true);
+select
+  using (true);
 
 drop policy if exists "admin write access" on group_embeddings;
 
@@ -1246,14 +1264,12 @@ create publication supabase_realtime;
 
 alter publication supabase_realtime
 add table contracts;
+
 alter publication supabase_realtime
 add table contract_bets;
 
 alter publication supabase_realtime
 add table contract_comments;
-
-alter publication supabase_realtime
-add table group_members;
 
 alter publication supabase_realtime
 add table post_comments;
@@ -1262,10 +1278,16 @@ alter publication supabase_realtime
 add table group_contracts;
 
 alter publication supabase_realtime
-add table chat_messages;
+add table group_members;
 
 alter publication supabase_realtime
 add table user_notifications;
+
+alter publication supabase_realtime
+add table user_contract_metrics;
+
+alter publication supabase_realtime
+add table chat_messages;
 
 commit;
 

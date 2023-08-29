@@ -134,6 +134,10 @@ export type CPMMStonkContract = StonkContract & CPMM
 export type BountiedQuestionContract = Contract & BountiedQuestion & NonBet
 export type PollContract = Contract & Poll & NonBet
 
+export type StillOpenDPMContract =
+  | DpmMultipleChoiceContract
+  | (FreeResponseContract & DPM)
+
 export type BinaryOrPseudoNumericContract =
   | CPMMBinaryContract
   | PseudoNumericContract
@@ -181,7 +185,8 @@ export type NonBet = {
   mechanism: 'none'
 }
 
-export const NON_BETTING_OUTCOMES = ['BOUNTIED_QUESTION']
+export const NON_BETTING_OUTCOMES = ['BOUNTIED_QUESTION', 'POLL']
+
 /**
  * Implemented as a set of cpmm-1 binary contracts, one for each answer.
  * The mechanism is stored among the contract's answers, which each
@@ -191,6 +196,8 @@ export type CPMMMulti = {
   mechanism: 'cpmm-multi-1'
   outcomeType: 'MULTIPLE_CHOICE'
   shouldAnswersSumToOne: boolean
+  addAnswersMode?: add_answers_mode
+
   totalLiquidity: number // for historical reasons, this the total subsidy amount added in Ṁ
   subsidyPool: number // current value of subsidy pool in Ṁ
 
@@ -201,6 +208,8 @@ export type CPMMMulti = {
   // NOTE: This field is stored in the answers table and must be denormalized to the client.
   answers: Answer[]
 }
+
+export type add_answers_mode = 'DISABLED' | 'ONLY_CREATOR' | 'ANYONE'
 
 export type Cert = {
   outcomeType: 'CERT'
@@ -277,6 +286,7 @@ export type BountiedQuestion = {
 export type Poll = {
   outcomeType: 'POLL'
   options: PollOption[]
+  resolutions?: string[]
 }
 
 export type MultiContract = (
@@ -291,14 +301,10 @@ export type MultiContract = (
 export type OutcomeType = AnyOutcomeType['outcomeType']
 export type resolution = 'YES' | 'NO' | 'MKT' | 'CANCEL'
 export const RESOLUTIONS = ['YES', 'NO', 'MKT', 'CANCEL'] as const
-export const OUTCOME_TYPES = [
+export const CREATEABLE_OUTCOME_TYPES = [
   'BINARY',
   'MULTIPLE_CHOICE',
-  'FREE_RESPONSE',
   'PSEUDO_NUMERIC',
-  'NUMERIC',
-  'CERT',
-  'QUADRATIC_FUNDING',
   'STONK',
   'BOUNTIED_QUESTION',
   'POLL',
@@ -347,7 +353,6 @@ export function tradingAllowed(contract: Contract) {
 
 export const MAX_QUESTION_LENGTH = 120
 export const MAX_DESCRIPTION_LENGTH = 16000
-export const MAX_TAG_LENGTH = 60
 
 export const CPMM_MIN_POOL_QTY = 0.01
 

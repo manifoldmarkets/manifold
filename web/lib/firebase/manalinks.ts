@@ -43,7 +43,6 @@ export async function createManalink(data: {
   return slug
 }
 
-// TODO: This required an index, make sure to also set up in prod
 function listUserManalinks(fromId?: string) {
   return query(
     manalinks,

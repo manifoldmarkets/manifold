@@ -69,7 +69,6 @@ Developing with a local copy of the database is deprecated. The old instructions
 1. `git pull origin main`
 1. `firebase use prod` to switch to prod
 1. `firebase deploy --only functions` to push your changes live!
-   - (TODO: auto-deploy functions on Git push)
 
 ## Secrets management
 
@@ -80,4 +79,4 @@ Add or remove keys using [Google Secret Manager](https://console.cloud.google.co
 [Dev secrets manager](https://console.cloud.google.com/security/secret-manager?project=dev-mantic-markets)
 [Prod secrets manager](https://console.cloud.google.com/security/secret-manager?project=mantic-markets)
 
-Secondly, please update the list of secret keys at `backend/shared/src/secrets.ts`. Only these keys are provided to functions, scripts, and the api.
+Secondly, please update the list of secret keys at `common/src/secrets.ts`. Only these keys are provided to functions, scripts, and the api.

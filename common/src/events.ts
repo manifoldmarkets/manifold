@@ -21,15 +21,6 @@ export type CommentView = {
   timestamp: number
 }
 
-export type ContractView = {
-  slug: string
-  contractId: string
-  creatorId: string
-  // Following attributes added by saveUserEvent
-  name: 'view market'
-  timestamp: number
-}
-
 export type ShareEvent = {
   type: 'copy sharing link'
   url: string

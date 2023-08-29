@@ -10,7 +10,6 @@ import {
   collectionGroup,
   deleteDoc,
   doc,
-  getCountFromServer,
   getDoc,
   getDocs,
   limit,
@@ -315,11 +314,4 @@ export const isContractBlocked = (
     blockedByUserIds?.includes(contract.creatorId) ||
     blockedUserIds?.includes(contract.creatorId)
   )
-}
-
-export async function getTotalContractCreated(userId: string) {
-  const resp = await getCountFromServer(
-    query(collection(db, 'contracts'), where('creatorId', '==', userId))
-  )
-  return resp.data().count
 }

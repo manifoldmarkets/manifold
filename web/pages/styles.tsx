@@ -1,8 +1,12 @@
 import { useState } from 'react'
 import { Button } from 'web/components/buttons/button'
-import { CopyLinkButton } from 'web/components/buttons/copy-link-button'
+import {
+  CopyLinkOrShareButton,
+  CopyLinkRow,
+} from 'web/components/buttons/copy-link-button'
 import { Page } from 'web/components/layout/page'
 import { StarPicker } from 'web/components/reviews/stars'
+import { AmountInput } from 'web/components/widgets/amount-input'
 import { ChoicesToggleGroup } from 'web/components/widgets/choices-toggle-group'
 import { TextEditor, useTextEditor } from 'web/components/widgets/editor'
 import { ExpandingInput } from 'web/components/widgets/expanding-input'
@@ -33,11 +37,11 @@ export default function StylePage() {
         <LoadingIndicator />
       </div>
       <Subtitle>Inputs</Subtitle>
-      TODO: number input
       <div className="mb-4 flex flex-wrap gap-2">
         <Input placeholder="Input" />
         <Input disabled placeholder="Input disabled=true" />
         <Input error placeholder="Input error=true" />
+        <NumberInputExample />
       </div>
       <ExpandingInput
         className="mb-4 w-full"
@@ -46,10 +50,17 @@ export default function StylePage() {
       <EditorExample />
       <SliderExample />
       <Subtitle>Copy Link</Subtitle>
-      <CopyLinkButton
+      <CopyLinkOrShareButton
+        url="www.example.com"
+        eventTrackingName={'copy styles link'}
+        tooltip="Share"
+      />
+      <div />
+      <CopyLinkRow
         url="www.example.com"
         eventTrackingName={'copy styles link'}
       />
+      <CopyLinkRow eventTrackingName="copy styles link" />
       <RatingSection />
     </Page>
   )
@@ -194,6 +205,11 @@ function ToggleSection() {
   )
 }
 
+function NumberInputExample() {
+  const [value, setValue] = useState<number>()
+  return <AmountInput amount={value} onChangeAmount={setValue} />
+}
+
 function EditorExample() {
   const editor = useTextEditor({
     defaultValue: '<p>Rich text editor from <code>editor.tsx</code></p>',
@@ -212,15 +228,16 @@ function SliderExample() {
         // min={0}
         // max={100}
         // color="green"
-        marks={{ 0: '0%', 50: '$50', 100: 100 }}
         amount={amount}
         onChange={setAmount}
       />
       <RangeSlider
         lowValue={low}
         highValue={high}
-        setLow={setLow}
-        setHigh={setHigh}
+        setValues={(low, high) => {
+          setLow(low)
+          setHigh(high)
+        }}
       />
     </>
   )

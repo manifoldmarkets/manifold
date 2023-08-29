@@ -89,17 +89,16 @@ export function SwipeBetPanel(props: {
           pressState={'sub'}
           setPressState={setPressState}
           disabled={disabled}
-          children={
-            <MinusIcon
-              className={clsx(
-                'text-white',
-                swipingRight || swipingLeft ? 'opacity-0' : '',
-                'z-10 h-8 w-8 rounded-full border p-1 transition-colors active:bg-white active:text-black'
-              )}
-            />
-          }
-          className={'opacity-70'}
-        />
+          className="opacity-70"
+        >
+          <MinusIcon
+            className={clsx(
+              'text-white',
+              swipingRight || swipingLeft ? 'opacity-0' : '',
+              'z-10 h-8 w-8 rounded-full border p-1 transition-colors active:bg-white active:text-black'
+            )}
+          />
+        </TouchButton>
 
         <Row className="z-30 mx-1 w-10 justify-center py-4">
           {disabled ? formatMoney(STARTING_BET_AMOUNT) : formatMoney(amount)}
@@ -109,17 +108,17 @@ export function SwipeBetPanel(props: {
           pressState={'add'}
           setPressState={setPressState}
           disabled={disabled}
-          children={
-            <PlusIcon
-              className={clsx(
-                'text-white',
-                swipingRight || swipingLeft ? 'opacity-0' : '',
-                'z-10 h-8 w-8 rounded-full border p-1 transition-colors active:bg-white active:text-black'
-              )}
-            />
-          }
-          className={'opacity-70'}
-        />
+          className="opacity-70"
+        >
+          <PlusIcon
+            className={clsx(
+              'text-white',
+              swipingRight || swipingLeft ? 'opacity-0' : '',
+              'z-10 h-8 w-8 rounded-full border p-1 transition-colors active:bg-white active:text-black'
+            )}
+          />
+        </TouchButton>
+
         <button
           className={clsx(
             'absolute -right-[100px] z-20 flex h-16 flex-col justify-center rounded-full border-2 font-semibold transition-all active:border-teal-600 active:bg-teal-600 active:text-white',

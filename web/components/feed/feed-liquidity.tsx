@@ -5,7 +5,6 @@ import { Row } from 'web/components/layout/row'
 import { Avatar, EmptyAvatar } from 'web/components/widgets/avatar'
 import { formatMoney } from 'common/util/format'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
-import React from 'react'
 import { LiquidityProvision } from 'common/liquidity-provision'
 import { UserLink } from 'web/components/widgets/user-link'
 
@@ -53,7 +52,6 @@ function LiquidityStatusText(props: {
   const { liquidity, bettor, isSelf } = props
   const { amount, createdTime } = liquidity
 
-  // TODO: Withdrawn liquidity will never be shown, since liquidity amounts currently are zeroed out upon withdrawal.
   const bought = amount >= 0 ? 'added' : 'withdrew'
   const money = formatMoney(Math.abs(amount))
 

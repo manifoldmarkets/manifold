@@ -1,7 +1,9 @@
-import dayjs from 'dayjs'
 import { Col } from 'web/components/layout/col'
 import Link from 'next/link'
-import { shortenedFromNow } from 'web/lib/util/shortenedFromNow'
+import clsx from 'clsx'
+import { Row } from '../layout/row'
+import { RelativeTimestamp } from '../relative-timestamp'
+import { Spacer } from '../layout/spacer'
 
 export const NewsArticle = (props: {
   title: string
@@ -9,29 +11,61 @@ export const NewsArticle = (props: {
   url: string
   description: string
   author: string
+  source_name?: string
   published_time?: number
-  className?: string
 }) => {
-  const { title, urlToImage, url, description, published_time, author } = props
-
+  const { title, urlToImage, url, description, published_time } = props
+  const date = Date.parse(published_time as any)
   return (
     <Link href={url} target="_blank" className="relative flex w-full flex-col">
-      <Col className="gap-1.5 px-4 pt-3 pb-2">
+      <Col className=" px-4 py-2 sm:hidden sm:px-6">
+        <Row className="text-ink-500 w-full justify-between text-sm">
+          <div>{props.source_name ? props.source_name : 'News'}</div>
+          {published_time && (
+            <span>
+              published
+              {
+                <RelativeTimestamp
+                  time={date}
+                  shortened={true}
+                  className="text-ink-500"
+                />
+              }
+            </span>
+          )}
+        </Row>
         <div className="line-clamp-2 text-lg">{title}</div>
-        <div className="line-clamp-3 text-sm">
-          {author && `${author} `}
-          <span className={'text-ink-500'}>
-            {shortenedFromNow(dayjs.utc(published_time) as unknown as number)}
-          </span>
-        </div>
+        <Spacer h={1.5} />
         <div className="line-clamp-3 text-sm">{description}</div>
       </Col>
-      <img
-        className="m-0 object-contain "
-        src={urlToImage}
-        alt={title}
-        height={100}
-      />
+      <div className="relative">
+        <img
+          className={clsx('sm:h-50 h-42 m-0 object-cover')}
+          src={urlToImage}
+          alt={title}
+        />
+
+        <Col className="bg-canvas-0 absolute top-0 hidden w-full px-4 py-2 opacity-90 sm:block sm:px-6">
+          <Row className="text-ink-500 w-full justify-between text-sm">
+            <div>{props.source_name ? props.source_name : 'News'}</div>
+            {published_time && (
+              <span>
+                published
+                {
+                  <RelativeTimestamp
+                    time={date}
+                    shortened={true}
+                    className="text-ink-500"
+                  />
+                }
+              </span>
+            )}
+          </Row>
+          <div className="line-clamp-2 text-lg">{title}</div>
+          <Spacer h={1.5} />
+          <div className="line-clamp-3 text-sm">{description}</div>
+        </Col>
+      </div>
     </Link>
   )
 }

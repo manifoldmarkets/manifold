@@ -7,21 +7,28 @@ import { track } from 'web/lib/service/analytics'
 import Router from 'next/router'
 import { ArrowUpIcon, PencilAltIcon } from '@heroicons/react/solid'
 import { VisibilityObserver } from 'web/components/widgets/visibility-observer'
-import { SiteLink } from 'web/components/widgets/site-link'
+import Link from 'next/link'
 import { FeedTimelineItem, useFeedTimeline } from 'web/hooks/use-feed-timeline'
-import { FeedTimelineItems } from 'web/components/feed/feed-timeline-items'
+import {
+  convertContractToManualFeedItem,
+  FeedTimelineItems,
+} from 'web/components/feed/feed-timeline-items'
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
 import { useEffect, useState } from 'react'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { Avatar } from 'web/components/widgets/avatar'
-import { uniq } from 'lodash'
+import { last, range, uniq, uniqBy } from 'lodash'
 import { filterDefined } from 'common/util/array'
-import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
-import { Contract } from 'common/contract'
 import { db } from 'web/lib/supabase/db'
 import { Page } from 'web/components/layout/page'
-import { MINUTE_MS } from 'common/util/time'
-import { PrivateUser } from 'common/user'
+import { DAY_MS, HOUR_MS, MINUTE_MS } from 'common/util/time'
+import {
+  DAYS_TO_USE_FREE_QUESTIONS,
+  freeQuestionRemaining,
+  PrivateUser,
+} from 'common/user'
+import { CreateQuestionButton } from 'web/components/buttons/create-question-button'
+import { shortenedFromNow } from 'web/lib/util/shortenedFromNow'
 
 export default function FeedTimelinePage() {
   return (
@@ -32,11 +39,28 @@ export default function FeedTimelinePage() {
 }
 export function FeedTimeline() {
   const privateUser = usePrivateUser()
-
+  const user = useUser()
+  const remaining = freeQuestionRemaining(
+    user?.freeQuestionsCreated,
+    user?.createdTime
+  )
   return (
     <Col className="mx-auto w-full max-w-2xl gap-2 pb-4 sm:px-2 lg:pr-4">
       <Col className={clsx('gap-6')}>
         <Col>
+          {user && remaining > 0 && (
+            <Row className="text-ink-600 mb-2 items-center justify-between gap-2 rounded-md bg-green-200 p-2 text-sm">
+              <span className={'text-gray-700'}>
+                🎉 You've got {remaining} free questions! Use them before they
+                expire in{' '}
+                {shortenedFromNow(
+                  user.createdTime + DAY_MS * DAYS_TO_USE_FREE_QUESTIONS
+                )}
+                .
+              </span>
+              <CreateQuestionButton className={'max-w-[10rem]'} />
+            </Row>
+          )}
           {privateUser && <FeedTimelineContent privateUser={privateUser} />}
           <button
             type="button"
@@ -72,69 +96,69 @@ function FeedTimelineContent(props: { privateUser: PrivateUser }) {
     Date.now(),
     'last-seen-feed-timeline' + user?.id
   )
-  const [manualContracts, setManualContracts] = usePersistentInMemoryState<
-    Contract[] | undefined
-  >(undefined, `new-interesting-contracts-${user?.id}-feed-timeline`)
 
   const [topIsVisible, setTopIsVisible] = useState(false)
   const [newerTimelineItems, setNewerTimelineItems] = useState<
     FeedTimelineItem[]
   >([])
   const [loadingMore, setLoadingMore] = useState(false)
-  const checkForNewerFeedItems = async () => {
-    return await checkForNewer()
-  }
 
-  // This queries for new items if they haven't looked at the page in a while like twitter
   useEffect(() => {
     if (newerTimelineItems.length > 0) return
     const now = Date.now()
-    if (pageVisible && now - lastSeen > MINUTE_MS)
-      checkForNewerFeedItems().then(setNewerTimelineItems)
-    if (!pageVisible) setLastSeen(now)
-    return () => setLastSeen(Date.now())
-  }, [pageVisible])
-
-  // This queries for new items if they scroll to the top
-  useEffect(() => {
-    if (newerTimelineItems.length > 0) return
-    const now = Date.now()
+    // This queries for new items if they scroll to the top
     if (topIsVisible && now - lastSeen > 10000) {
       setLoadingMore(true)
-      checkForNewerFeedItems().then((newerTimelineItems) => {
+      checkForNewer().then((newerTimelineItems) => {
         addTimelineItems(newerTimelineItems, { new: true })
         setLoadingMore(false)
       })
     }
-    if (!topIsVisible) setLastSeen(now)
+    // This queries for new items if they haven't looked at the page in a while like twitter
+    else if (pageVisible && now - lastSeen > MINUTE_MS && !loadingMore) {
+      checkForNewer().then((newerTimelineItems) => {
+        const savedIds = savedFeedItems?.map((i) => i.id) ?? []
+        setNewerTimelineItems(
+          newerTimelineItems.filter((i) => !savedIds.includes(i.id))
+        )
+      })
+    }
+    setLastSeen(now)
     return () => setLastSeen(Date.now())
-  }, [topIsVisible])
+  }, [pageVisible, topIsVisible])
 
   if (!boosts || !savedFeedItems) return <LoadingIndicator />
   const newAvatarUrls = uniq(
     filterDefined(newerTimelineItems.map((item) => item.avatarUrl))
   ).slice(0, 3)
   const fetchMoreOlderContent = async () => {
-    const moreFeedItems = await loadMoreOlder()
-    if (moreFeedItems == 0 && user) {
-      const excludedContractIds = savedFeedItems
-        .map((i) => i.contractId)
-        .concat(manualContracts?.map((c) => c.id) ?? [])
-      const { data } = await db.rpc(
-        'get_recommended_contracts_embeddings_fast',
-        {
-          uid: user.id,
-          n: 10,
-          excluded_contract_ids: filterDefined(excludedContractIds),
-        }
-      )
-
-      setManualContracts((data ?? []).map((row: any) => row.data as Contract))
+    if (!user) return
+    for (const i of range(0, 2)) {
+      const moreFeedItems = await loadMoreOlder()
+      if (moreFeedItems.length > 5) break
+      if (i == 1) {
+        const excludedContractIds = savedFeedItems.map((i) => i.contractId)
+        const { data } = await db.rpc(
+          'get_recommended_contracts_embeddings_fast',
+          {
+            uid: user.id,
+            n: 20,
+            excluded_contract_ids: filterDefined(excludedContractIds),
+          }
+        )
+        const manualFeedItems = (data ?? []).map((row: any) =>
+          convertContractToManualFeedItem(
+            row.data,
+            (last(savedFeedItems)?.createdTime ?? Date.now()) - HOUR_MS
+          )
+        )
+        addTimelineItems(manualFeedItems, { old: true })
+      }
     }
   }
 
   return (
-    <Col className={'relative w-full gap-6'}>
+    <Col className={'relative w-full gap-4'}>
       <VisibilityObserver
         className="pointer-events-none absolute top-0 h-5 w-full select-none "
         onVisibilityUpdated={(visible) => {
@@ -161,8 +185,7 @@ function FeedTimelineContent(props: { privateUser: PrivateUser }) {
       <FeedTimelineItems
         boosts={boosts}
         user={user}
-        feedTimelineItems={savedFeedItems}
-        manualContracts={manualContracts}
+        feedTimelineItems={uniqBy(savedFeedItems, (i) => i.newsId ?? i.id)}
       />
       <div className="relative">
         <VisibilityObserver
@@ -174,12 +197,9 @@ function FeedTimelineContent(props: { privateUser: PrivateUser }) {
       {savedFeedItems.length === 0 && (
         <div className="text-ink-1000 m-4 flex w-full flex-col items-center justify-center">
           We're fresh out of cards!
-          <SiteLink
-            href="/questions?s=newest&f=open"
-            className="text-primary-700"
-          >
+          <Link href="/questions?s=newest&f=open" className="text-primary-700">
             Browse new questions
-          </SiteLink>
+          </Link>
         </div>
       )}
     </Col>

@@ -1,15 +1,15 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 
 import { User } from 'web/lib/firebase/users'
 import { NumberCancelSelector } from './bet/yes-no-selector'
 import { Spacer } from './layout/spacer'
 import { ResolveConfirmationButton } from './buttons/confirmation-button'
-import { NumericContract, PseudoNumericContract } from 'common/contract'
+import { PseudoNumericContract } from 'common/contract'
 import { APIError, resolveMarket } from 'web/lib/firebase/api'
-import { BucketInput } from './widgets/bucket-input'
 import { getPseudoProbability } from 'common/pseudo-numeric'
 import { BETTORS } from 'common/user'
 import { Button } from './buttons/button'
+import { AmountInput } from './widgets/amount-input'
 
 function getNumericResolveButtonColor(
   outcomeMode: 'NUMBER' | 'CANCEL' | undefined
@@ -28,7 +28,7 @@ export function NumericResolutionPanel(props: {
   isAdmin: boolean
   isCreator: boolean
   creator: User
-  contract: NumericContract | PseudoNumericContract
+  contract: PseudoNumericContract
   modalSetOpen?: (open: boolean) => void
 }) {
   const { contract, isAdmin, isCreator, modalSetOpen } = props
@@ -37,7 +37,6 @@ export function NumericResolutionPanel(props: {
   const [outcomeMode, setOutcomeMode] = useState<
     'NUMBER' | 'CANCEL' | undefined
   >()
-  const [outcome, setOutcome] = useState<string | undefined>()
   const [value, setValue] = useState<number | undefined>()
 
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -66,13 +65,12 @@ export function NumericResolutionPanel(props: {
       )
 
     try {
-      const result = await resolveMarket({
+      await resolveMarket({
         outcome: finalOutcome,
         value,
         probabilityInt,
         contractId: contract.id,
       })
-      console.log('resolved', outcome, 'result:', result)
     } catch (e) {
       if (e instanceof APIError) {
         setError(e.toString())
@@ -107,18 +105,24 @@ export function NumericResolutionPanel(props: {
 
       <Spacer h={4} />
 
-      {outcomeMode === 'NUMBER' && (
-        <BucketInput
-          contract={contract}
-          isSubmitting={isSubmitting}
-          onBucketChange={(v, o) => (setValue(v), setOutcome(o))}
-        />
-      )}
-
       <div className="flex items-center justify-between">
-        <div className="text-sm">
+        <div className="flex items-center gap-2 text-sm">
           {outcomeMode === 'CANCEL' ? (
             <>Cancel all trades and return money back to {BETTORS}.</>
+          ) : outcomeMode === 'NUMBER' ? (
+            <>
+              Traders will be paid out at the value you specify:
+              <AmountInput
+                amount={value}
+                onChangeAmount={setValue}
+                disabled={isSubmitting}
+                error={value !== undefined && (value < min || value > max)}
+                allowNegative
+                label=""
+                className="mr-3"
+                inputClassName="w-28"
+              />
+            </>
           ) : (
             <>Resolving this market will immediately pay out {BETTORS}.</>
           )}

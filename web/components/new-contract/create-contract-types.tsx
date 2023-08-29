@@ -5,7 +5,6 @@ import {
   BsUiChecks,
 } from 'react-icons/bs'
 import { GiReceiveMoney } from 'react-icons/gi'
-import { GoNumber } from 'react-icons/go'
 import { TfiWrite } from 'react-icons/tfi'
 import { Col } from '../layout/col'
 import { CgPoll } from 'react-icons/cg'
@@ -48,18 +47,18 @@ export const PREDICTIVE_CONTRACT_TYPES = {
       </Col>
     ),
   },
-  numeric: {
-    label: 'Numeric',
-    value: 'PSEUDO_NUMERIC',
-    name: 'numeric',
-    descriptor: 'A question with a numerical answer.',
-    example: 'How many people will come to Taco Tuesday?',
-    visual: (
-      <Col className="text-primary-400 relative my-auto h-12 w-12">
-        <GoNumber className="h-12 w-12" />
-      </Col>
-    ),
-  },
+  // numeric: {
+  //   label: 'Numeric',
+  //   value: 'PSEUDO_NUMERIC',
+  //   name: 'numeric',
+  //   descriptor: 'A question with a numerical answer.',
+  //   example: 'How many people will come to Taco Tuesday?',
+  //   visual: (
+  //     <Col className="text-primary-400 relative my-auto h-12 w-12">
+  //       <GoNumber className="h-12 w-12" />
+  //     </Col>
+  //   ),
+  // },
 }
 
 export const NON_PREDICTIVE_CONTRACT_TYPES = {

@@ -11,8 +11,10 @@ import {
   getTotalContractsCreated,
 } from 'web/lib/supabase/users'
 import { db } from 'web/lib/supabase/db'
-import { SupabaseContractSearch } from '../supabase-search'
+import { SupabaseContractSearch } from '../contracts-search'
 import { useUser } from 'web/hooks/use-user'
+import { CreateQuestionButton } from '../buttons/create-question-button'
+import { useRouter } from 'next/router'
 
 export function UserContractsList(props: { creator: User }) {
   const { creator } = props
@@ -31,6 +33,12 @@ export function UserContractsList(props: { creator: User }) {
   }, [creator.id, allTime])
 
   const user = useUser()
+  const router = useRouter()
+  const seeClosed = () => {
+    router.replace({ query: { ...router.query, f: 'closed' } }, undefined, {
+      shallow: true,
+    })
+  }
 
   return (
     <Col className={'w-full'}>
@@ -45,9 +53,12 @@ export function UserContractsList(props: { creator: User }) {
           subTitle={
             unresolvedMarkets === 0 ? null : (
               <Tooltip text={'Closed and waiting for resolution'}>
-                <div className="bg-scarlet-300 text-ink-0 min-w-[15px] cursor-pointer rounded-full p-[2px] text-center text-[10px] leading-3">
+                <button
+                  className="bg-scarlet-300 text-ink-0 min-w-[15px] cursor-pointer rounded-full p-[2px] text-center text-[10px] leading-3"
+                  onClick={seeClosed}
+                >
                   {`${unresolvedMarkets}`}
-                </div>
+                </button>
               </Tooltip>
             )
           }
@@ -81,8 +92,19 @@ export function UserContractsList(props: { creator: User }) {
           creatorId: creator.id,
         }}
         persistPrefix={`user-contracts-list-${creator.id}`}
-        profile={creator.id === user?.id}
-        useQueryUrlParam={true}
+        useUrlParams
+        emptyState={
+          <>
+            <div className="text-ink-700 mx-2 my-6 text-center">
+              No questions found
+            </div>
+            {creator.id === user?.id && (
+              <Row className={'mt-8 justify-center'}>
+                <CreateQuestionButton className={'max-w-[15rem]'} />
+              </Row>
+            )}
+          </>
+        }
       />
     </Col>
   )

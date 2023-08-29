@@ -16,11 +16,10 @@ import { Page } from 'web/components/layout/page'
 import { Title } from 'web/components/widgets/title'
 import { getAllCharityTxns } from 'web/lib/firebase/txns'
 import { formatMoney, manaToUSD } from 'common/util/format'
-import { quadraticMatches } from 'common/quadratic-funding'
 import { useTracking } from 'web/hooks/use-tracking'
 import { searchInAny } from 'common/util/parse'
 import { getUser } from 'web/lib/firebase/users'
-import { SiteLink } from 'web/components/widgets/site-link'
+import Link from 'next/link'
 import { User } from 'common/user'
 import { SEO } from 'web/components/SEO'
 import { Input } from 'web/components/widgets/input'
@@ -35,7 +34,6 @@ export async function getStaticProps() {
   )
   const totalRaised = sum(Object.values(totals))
   const sortedCharities = sortBy(charities, [(charity) => -totals[charity.id]])
-  const matches = quadraticMatches(txns, totalRaised, 'toId')
   const numDonors = uniqBy(txns, (txn) => txn.fromId).length
   const mostRecentDonor = txns[0] ? await getUser(txns[0].fromId) : null
   const mostRecentCharity = txns[0]?.toId ?? ''
@@ -44,7 +42,6 @@ export async function getStaticProps() {
     props: {
       totalRaised,
       charities: sortedCharities,
-      matches,
       numDonors,
       mostRecentDonor,
       mostRecentCharity,
@@ -74,7 +71,7 @@ function DonatedStats(props: { stats: Stat[] }) {
 
           <dd className="text-ink-900 mt-1 text-2xl font-semibold">
             {stat.url ? (
-              <SiteLink href={stat.url}>{stat.stat}</SiteLink>
+              <Link href={stat.url}>{stat.stat}</Link>
             ) : (
               <span>{stat.stat}</span>
             )}
@@ -88,18 +85,11 @@ function DonatedStats(props: { stats: Stat[] }) {
 export default function Charity(props: {
   totalRaised: number
   charities: CharityType[]
-  matches: { [charityId: string]: number }
   numDonors: number
   mostRecentDonor?: User | null
   mostRecentCharity?: string
 }) {
-  const {
-    totalRaised,
-    charities,
-    matches,
-    mostRecentCharity,
-    mostRecentDonor,
-  } = props
+  const { totalRaised, charities, mostRecentCharity, mostRecentDonor } = props
 
   const [query, setQuery] = useState('')
   const debouncedQuery = debounce(setQuery, 50)
@@ -138,12 +128,14 @@ export default function Charity(props: {
             Convert your {ENV_CONFIG.moneyMoniker} earnings into real charitable
             donations at a ratio of{' '}
             <strong className="semibold">{formatMoney(100)} : $1</strong>.
-            <SiteLink
+            <a
               href="https://manifoldmarkets.notion.site/Charitable-donation-program-668d55f4ded147cf8cf1282a007fb005"
+              target="_blank"
+              rel="noreferrer"
               className="text-primary-700 ml-2"
             >
               Read more here.
-            </SiteLink>
+            </a>
           </span>
           <DonatedStats
             stats={[
@@ -174,11 +166,7 @@ export default function Charity(props: {
         </Col>
         <div className="grid max-w-xl grid-flow-row grid-cols-1 gap-4 self-center lg:max-w-full lg:grid-cols-2 xl:grid-cols-3">
           {filterCharities.map((charity) => (
-            <CharityCard
-              charity={charity}
-              key={charity.name}
-              match={matches[charity.id]}
-            />
+            <CharityCard charity={charity} key={charity.name} />
           ))}
         </div>
         {filterCharities.length === 0 && (

@@ -13,7 +13,7 @@ import {
 } from 'common/util/format'
 import { Spacer } from 'web/components/layout/spacer'
 import { Table } from 'web/components/widgets/table'
-import React, { useState } from 'react'
+import { useState } from 'react'
 import {
   calculatePayout,
   getAnswerProbability,
@@ -100,7 +100,7 @@ export function ContractBetsTable(props: {
 
       {!hideRedemptionAndLoanMessages && !isResolved && amountLoaned > 0 && (
         <>
-          <div className="text-ink-500 pl-0 text-sm">
+          <div className="text-ink-500 pl-2 text-sm">
             {isYourBets ? (
               <>You currently have a loan of {formatMoney(amountLoaned)}.</>
             ) : (
@@ -213,7 +213,7 @@ function BetRow(props: {
   const payoutIfChosenDisplay =
     bet.isAnte && outcomeType === 'FREE_RESPONSE' && bet.outcome === '0'
       ? 'N/A'
-      : formatMoney(calculatePayout(contract, bet, bet.outcome))
+      : formatMoney(calculatePayout(contract as any, bet, bet.outcome))
 
   const hadPoolMatch =
     (bet.limitProb === undefined ||
@@ -251,7 +251,6 @@ function BetRow(props: {
         ) : (
           <OutcomeLabel
             outcome={outcome}
-            value={(bet as any).value}
             contract={contract}
             truncate="short"
           />

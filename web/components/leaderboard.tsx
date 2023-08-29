@@ -25,14 +25,10 @@ export function Leaderboard<T extends LeaderboardEntry>(props: {
 }) {
   const { title, columns, className, highlightUsername } = props
   const maxToShow = props.maxToShow ?? props.entries.length
-
   const entries = sortBy(
-    props.entries.filter(
-      (e) => e.username !== 'acc' || highlightUsername === 'acc'
-    ), // exclude house bot
+    props.entries.slice(0, maxToShow),
     (entry) => entry.rank
-  ).slice(0, maxToShow)
-
+  )
   return (
     <div className={clsx('w-full px-1', className)}>
       <Title>{title}</Title>
@@ -62,10 +58,7 @@ export function Leaderboard<T extends LeaderboardEntry>(props: {
                   }
                 >
                   <td className={'w-[4.5rem] min-w-[4.5rem] '}>
-                    {entry.username === highlightUsername &&
-                    (entry.rank ?? 0) > maxToShow
-                      ? (entry.rank ?? 21) - 1 // account for @acc's removal
-                      : index + 1}
+                    {entry.rank ? entry.rank : index + 1}
                   </td>
                   <td>
                     <UserAvatarAndBadge

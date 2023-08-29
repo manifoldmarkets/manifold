@@ -80,12 +80,7 @@ export const resolveMarketHelper = async (
   } as Contract
 
   // handle exploit where users can get negative payouts
-  const negPayoutThreshold =
-    Date.now() - contract.createdTime < 96 * 60 * 60 * 1000 ||
-    contract.uniqueBettorCount < 10 ||
-    contract.visibility !== 'public'
-      ? -10
-      : -250
+  const negPayoutThreshold = contract.uniqueBettorCount <= 2 ? -500 : -10000
 
   const userPayouts = groupPayoutsByUser(payouts)
   console.log('user payouts', userPayouts)
@@ -239,7 +234,7 @@ async function undoUniqueBettorRewardsIfCancelResolution(
     const totalBonusAmount = sumBy(bonusTxnsOnThisContract, (txn) => txn.amount)
     log('totalBonusAmount to be withdrawn', totalBonusAmount)
     const result = await firestore.runTransaction(async (trans) => {
-      const bonusTxn: TxnData = {
+      const bonusTxn = {
         fromId: contract.creatorId,
         fromType: 'USER',
         toId: isProd()

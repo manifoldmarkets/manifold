@@ -6,9 +6,9 @@ Everything you wanted to know about [Manifold](https://manifold.markets) in one 
 
 ### What is a prediction market?
 
-Prediction markets allow you to bet on the outcome of future events. 
+Prediction markets allow you to bet on the outcome of future events.
 
-The prices for shares on each outcome can be interpreted as the probability that the underlying event will happen and track what market participants in aggregate believe. 
+The prices for shares on each outcome can be interpreted as the probability that the underlying event will happen and track what market participants in aggregate believe.
 
 As more people trade on the market, the probability estimate converges to reflect the truth. Since these probabilities are public, anyone can use them to make more informed decisions.
 
@@ -24,30 +24,29 @@ Now, you or I could be mistaken and overshooting the true probability one way or
 
 [![Explainer video](https://ruittinten.nl/wp-content/uploads/youtube-placeholder.png)](https://youtu.be/xA27x7GRMZQ)
 
-
 ### Can prediction markets work without real money?
 
 Yes! You can track Manifold's predictive track record in real time from our [platform calibration page](https://manifold.markets/calibration).
 
 Beside our own platform, there is substantial evidence that play-money prediction markets provide real forecasting power. Examples include [sports betting](http://www.electronicmarkets.org/fileadmin/user_upload/doc/Issues/Volume_16/Issue_01/V16I1_Statistical_Tests_of_Real-Money_versus_Play-Money_Prediction_Markets.pdf) and internal prediction markets at firms like [Google](https://www.networkworld.com/article/2284098/google-bets-on-value-of-prediction-markets.html).
 
-Traders in a play-money environments are competing for the social prestige and sense of progression that come from predicting and trading well. 
+Traders in a play-money environments are competing for the social prestige and sense of progression that come from predicting and trading well.
 
 ## Using Manifold
 
 ### What is mana (M)?
 
-Mana (M) is the play-money used by our platform to keep track of your bets. It **cannot be converted to cash**. All users start with M500 for free.
+Mana (M) is the play-money used to bet on our platform. It **cannot be converted to cash**. All users start with M500 for free.
 
-As the native currency of Manifold, mana is backed by the ability to create, subsidise, promote, and bet in markets on the platform.
+You can also spend mana to create, subsidise, and promote markets on your own questions.
 
-In addition, you can also [purchase more mana](https://manifold.markets/add-funds) or convert your mana earnings into real [charitable donations](https://manifold.markets/charity) at a rate of **M100 to $1**.
+In addition, you can [purchase more mana](https://manifold.markets/add-funds) or convert your mana earnings into real [charitable donations](https://manifold.markets/charity) at a rate of **M100 to $1**.
 
 ### How can I earn mana?
 
 The most obvious way is by trading well and having a market resolve in your favour. But, there are plenty of other ways to earn mana:
 
-- **Unique trader bonus** 
+- **Unique trader bonus**
   As the creator of a market, Manifold will give you M5 each time a unique user bets on your market. This bonus is capped per market at 100 unique traders.
 
 - **Daily betting streaks**
@@ -57,7 +56,6 @@ The most obvious way is by trading well and having a market resolve in your favo
   Receive M250 for each person who signs up when you share a market or group! Make sure they use your link and place at least one trade after signing up.
 
 - [**Purchase mana**](https://manifold.markets/add-funds)
-
 
 ### What types of questions can I use Manifold to answer?
 
@@ -70,7 +68,7 @@ Here are some of the top use cases for our markets, with corresponding examples.
 - Fun wagers with friends about your interests or personal life.
 - Recommendations - Similar to asking for suggestions from another site but with Manifold users are incentivized to give higher quality answers as they can profit from being helpful.
   - [What book will I enjoy the most?](https://manifold.markets/dreev/which-book-will-i-like-best)
-  https://manifold.markets/dreev/which-book-will-i-like-best
+    https://manifold.markets/dreev/which-book-will-i-like-best
   - [What skincare treatment will work best for me?](https://manifold.markets/DavidChee/what-treatmentactive-ingredient-wil)
 - Accountability/goals
   - Betting YES on your [own market](https://manifold.markets/SneakySly/motivation-market-will-i-get-my-per) and allowing people to bet NO to motivate you.
@@ -143,7 +141,6 @@ Here are some other tips to get you started:
 - **Sort by newest**
   This may allow you to find markets which haven’t had enough bets to converge to an accurate probability allowing you to snatch up some cheap shares.
 
-
 ## Resolving markets
 
 ### How does resolving markets work?
@@ -197,14 +194,13 @@ Don’t abuse resolving to N/A as it inflicts an opportunity cost on bettors.
 
 ## Market mechanics
 
-
 ### How are prices and probabilities set in the market?
 
-Prices are set by traders buying or selling shares in outcomes of events. The more shares traders buy, the higher the price will be. 
+Prices are set by traders buying or selling shares in outcomes of events. The more shares traders buy, the higher the price will be.
 
 The probability is the value implied by the current market price. For instance, if YES shares currently cost 0.75M, that implies a probability of 75% for the event associated the market.
 
-Manifold uses an automated market maker to automatically adjust the market price in response to traders buying and selling. 
+Manifold uses an automated market maker to automatically adjust the market price in response to traders buying and selling.
 
 ### What are shares?
 
@@ -235,7 +231,6 @@ Manifold uses two completely different market mechanisms for binary and free-res
 - For example, say you choose the correct answer so will make a profit when the market resolves. If since the time of betting the probability of the answer you chose has decreased (other users have bet on other answers) then you will win more Mana. However, if since the time of betting lots of users have chosen the same answer as you then you will make less. Betting earlier at a lower probability is still advantageous and you will make more money than those who bet later but will still be lowered overall.
 - E.g. 10 YES shares means a payout of M100 if there 100 outstanding YES shares when the market resolves and the final betting pool is worth M1,000.
 - Parimutuel payouts will likely be deprecated in the future.
-
 
 ### What is a limit order?
 
@@ -297,7 +292,7 @@ Every day at midnight PT, get 2% of your total bet amount back as a loan. You ca
 
 - **What is an example?**
   If you bet M1000 on "Will I become a millionaire?" today, you will get M20 back tomorrow.
-Previous loans count against your total bet amount. So on the next day, you would get back 2% of M(1000 - 20) = M19.6.
+  Previous loans count against your total bet amount. So on the next day, you would get back 2% of M(1000 - 20) = M19.6.
 
 ## Misc
 

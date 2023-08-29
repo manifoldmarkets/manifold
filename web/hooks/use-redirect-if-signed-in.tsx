@@ -7,7 +7,8 @@ export const useRedirectIfSignedIn = () => {
   const user = useUser()
   useEffect(() => {
     // New users go to questions until we make the new user feed great
-    if (user && user.createdTime > Date.now() - 10000) router.push('/questions')
+    if (user && user.createdTime > Date.now() - 10000)
+      router.push('/questions?category=for-you')
     else if (user) router.push('/home')
   }, [user])
 }

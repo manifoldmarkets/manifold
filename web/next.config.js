@@ -88,6 +88,21 @@ module.exports = {
           'https://analytics.umami.is/share/ARwUIC9GWLNyowjq/Manifold%20Markets',
         permanent: false,
       },
+      {
+        source: '/this-month',
+        destination: '/markets?f=closing-this-month&s=most-popular',
+        permanent: true,
+      },
+      {
+        source: '/markets',
+        destination: '/questions',
+        permanent: true,
+      },
+      {
+        source: '/search',
+        destination: '/questions',
+        permanent: true,
+      },
       // NOTE: add any external redirects at common/envs/constants.ts and update native apps.
     ]
   },

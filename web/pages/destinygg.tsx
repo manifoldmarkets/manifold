@@ -17,7 +17,7 @@ import { formatMoney } from 'common/util/format'
 import { Subtitle } from 'web/components/widgets/subtitle'
 import { LandingPagePanel } from 'web/components/landing-page-panel'
 import { Spacer } from 'web/components/layout/spacer'
-import TestimonialsPanel from './testimonials-panel'
+import { TestimonialsPanel } from 'web/components/testimonials-panel'
 import { ContractsGrid } from 'web/components/contract/contracts-grid'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { claimDestinySub } from 'web/lib/firebase/api'
@@ -202,7 +202,7 @@ export function InfoCard(props: {
     <>
       <Modal open={open} setOpen={setOpen} size="md">
         <Col className="bg-canvas-0 rounded-md px-8 pb-6 pt-0 text-sm md:text-lg">
-          <Title children={text} />
+          <Title>{text}</Title>
           {modal}
           <Link
             href={link}

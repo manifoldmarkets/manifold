@@ -15,8 +15,8 @@ import { formatMoney } from 'common/util/format'
 import { ExpandingInput } from 'web/components/widgets/expanding-input'
 import { Button } from 'web/components/buttons/button'
 import { track } from 'web/lib/service/analytics'
-import { SiteLink } from 'web/components/widgets/site-link'
 import { MANACHAN_TWEET_COST } from 'common/economy'
+import { linkClass } from 'web/components/widgets/site-link'
 
 export default function ManachanPage() {
   useTracking('view manachan page')
@@ -71,9 +71,13 @@ export default function ManachanPage() {
           Mana-chan is Manifold's official anime spokesgirl...but she is very
           shy and doesn't know what to say. For{' '}
           {formatMoney(MANACHAN_TWEET_COST)}, you can tell her what to{' '}
-          <SiteLink href="https://twitter.com/manachan_waifu" followsLinkClass>
+          <a
+            href="https://twitter.com/manachan_waifu"
+            className={linkClass}
+            target="_blank"
+          >
             tweet
-          </SiteLink>
+          </a>
           !
         </div>
         <ExpandingInput
@@ -101,13 +105,13 @@ export default function ManachanPage() {
           tweets. Please be nice to her! If your post makes Mana-chan cry, we
           will delete it and no refund will be given.
         </div>
-        <SiteLink
+        <a
           className="flex items-center"
           href="https://twitter.com/manachan_waifu"
-          followsLinkClass
+          target="_blank"
         >
           <TwitterLogo className="mr-1 h-5 w-5" /> See Mana-chan's tweets
-        </SiteLink>
+        </a>
       </Col>
     </Page>
   )

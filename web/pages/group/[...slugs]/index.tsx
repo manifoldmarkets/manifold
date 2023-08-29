@@ -29,7 +29,7 @@ import {
 } from 'web/components/groups/private-group'
 import { Page } from 'web/components/layout/page'
 import { ControlledTabs } from 'web/components/layout/tabs'
-import { SupabaseContractSearch } from 'web/components/supabase-search'
+import { SupabaseContractSearch } from 'web/components/contracts-search'
 import { useAdmin } from 'web/hooks/use-admin'
 import { useGroupFromSlug, useRealtimeRole } from 'web/hooks/use-group-supabase'
 import { useIntersection } from 'web/hooks/use-intersection'
@@ -40,12 +40,8 @@ import { getPostsByGroup } from 'web/lib/supabase/post'
 import { getUser, getUsers } from 'web/lib/supabase/user'
 import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
 import { useUserById } from 'web/hooks/use-user-supabase'
-import {
-  urlParamStore,
-  usePersistentState,
-} from 'web/hooks/use-persistent-state'
+import { EditableGroupTitle } from 'web/components/groups/editable-group-name'
 
-export const groupButtonClass = 'text-ink-700 hover:text-ink-800'
 const MAX_LEADERBOARD_SIZE = 50
 export const MEMBER_INDEX = 0
 export const MEMBER_INVITE_INDEX = 1
@@ -141,7 +137,7 @@ export function NonPrivateGroupPage(props: { groupParams: GroupParams }) {
     <>
       <SEO
         title={group.name}
-        description={`Manifold ${group.privacyStatus} group with ${group.totalMembers} members`}
+        description={`Manifold ${group.privacyStatus} category with ${group.totalMembers} followers`}
         url={groupPath(group.slug)}
         image={group.bannerUrl}
       />
@@ -154,14 +150,9 @@ export function GroupPageContent(props: { groupParams?: GroupParams }) {
   const { groupParams } = props
   const router = useRouter()
   const { slugs } = router.query as { slugs: string[] }
-  // const page = slugs?.[1] as typeof groupSubpages[number]
-
-  const [tab, setTab] = usePersistentState('questions', {
-    key: 'tab',
-    store: urlParamStore(router),
-  })
+  const page = slugs?.[1] as typeof groupSubpages[number]
   const tabIndex = ['questions', 'about', 'leaderboards'].indexOf(
-    tab === 'about' ? 'about' : tab ?? 'questions'
+    page === 'about' ? 'about' : page ?? 'questions'
   )
   const [activeIndex, setActiveIndex] = useState(tabIndex)
   useEffect(() => {
@@ -176,6 +167,7 @@ export function GroupPageContent(props: { groupParams?: GroupParams }) {
   const isMobile = useIsMobile()
   const privateUser = usePrivateUser()
   const [writingNewAbout, setWritingNewAbout] = useState(false)
+  const [editingName, setEditingName] = useState(false)
   const bannerRef = useRef<HTMLDivElement | null>(null)
   const bannerVisible = useIntersection(bannerRef, '-120px', useRef(null))
   const creator = useUserById(group?.creatorId) ?? groupParams?.creator
@@ -201,7 +193,7 @@ export function GroupPageContent(props: { groupParams?: GroupParams }) {
   if (group === undefined) {
     return <></>
   }
-  if (group === null || !groupSubpages.includes(tab as any) || slugs[2]) {
+  if (group === null || !groupSubpages.includes(page) || slugs[2]) {
     return <Custom404Content />
   }
 
@@ -219,7 +211,6 @@ export function GroupPageContent(props: { groupParams?: GroupParams }) {
     setOpenMemberModal(true)
   }
   const groupUrl = `https://${ENV_CONFIG.domain}${groupPath(group.slug)}`
-
   return (
     <>
       {!realtimeRole && isManifoldAdmin && (
@@ -238,13 +229,13 @@ export function GroupPageContent(props: { groupParams?: GroupParams }) {
       {isMobile && (
         <TopGroupNavBar
           group={group}
-          isMember={!!userRole}
           groupUrl={groupUrl}
           privateUser={privateUser}
-          canEdit={isManifoldAdmin || userRole === 'admin'}
+          canEdit={userRole === 'admin'}
           setWritingNewAbout={setWritingNewAbout}
           bannerVisible={bannerVisible}
           onAddMemberClick={onAddMemberClick}
+          setEditingName={setEditingName}
         />
       )}
       <div className="relative">
@@ -252,15 +243,20 @@ export function GroupPageContent(props: { groupParams?: GroupParams }) {
           <BannerImage
             group={group}
             user={user}
-            canEdit={isManifoldAdmin || userRole === 'admin'}
+            canEdit={userRole === 'admin'}
             key={group.id}
           />
         </div>
         <Col className="bg-canvas-0 absolute bottom-0 w-full bg-opacity-90 px-4">
           <Row className="mt-4 mb-2 w-full justify-between gap-1">
-            <div className="text-ink-900 text-2xl font-normal sm:text-3xl">
-              {group.name}
-            </div>
+            <EditableGroupTitle
+              group={group}
+              isEditing={editingName}
+              onFinishEditing={(changed) => {
+                setEditingName(false)
+                if (changed) router.reload()
+              }}
+            />
             <Col className="justify-end">
               <Row className="items-center gap-2">
                 {user?.id != group.creatorId && (
@@ -276,9 +272,10 @@ export function GroupPageContent(props: { groupParams?: GroupParams }) {
                     group={group}
                     groupUrl={groupUrl}
                     privateUser={privateUser}
-                    canEdit={isManifoldAdmin || userRole === 'admin'}
+                    canEdit={userRole === 'admin'}
                     setWritingNewAbout={setWritingNewAbout}
                     onAddMemberClick={onAddMemberClick}
+                    setEditingName={setEditingName}
                   />
                 )}
               </Row>
@@ -295,22 +292,28 @@ export function GroupPageContent(props: { groupParams?: GroupParams }) {
             />
             <GroupPrivacyStatusWidget
               group={group}
-              canEdit={isManifoldAdmin || userRole === 'admin'}
+              canEdit={userRole === 'admin'}
             />
           </Row>
         </Col>
       </div>
+
       <GroupAboutSection
         group={group}
-        canEdit={isManifoldAdmin || userRole === 'admin'}
+        canEdit={userRole === 'admin'}
         writingNewAbout={writingNewAbout}
         setWritingNewAbout={setWritingNewAbout}
       />
       <div className={'relative p-1 pt-0'}>
         <ControlledTabs
           activeIndex={activeIndex}
-          onClick={(_title, index) => {
-            setTab(groupSubpages[index + 1] ?? '')
+          onClick={(title, index) => {
+            // concatenates the group slug with the subpage slug
+            const path = `/group/${group.slug}/${
+              groupSubpages[index + 1] ?? ''
+            }`
+            router.push(path, undefined, { shallow: true })
+            setActiveIndex(index)
           }}
           className={'mb-2'}
           tabs={[
@@ -327,11 +330,7 @@ export function GroupPageContent(props: { groupParams?: GroupParams }) {
                   }}
                   persistPrefix={`group-${group.slug}`}
                   includeProbSorts
-                  fromGroupProps={{
-                    group: group,
-                    userRole: isManifoldAdmin ? 'admin' : userRole ?? null,
-                  }}
-                  useQueryUrlParam={true}
+                  useUrlParams
                 />
               ),
             },
@@ -369,25 +368,25 @@ export function GroupPageContent(props: { groupParams?: GroupParams }) {
 
 export function TopGroupNavBar(props: {
   group: Group
-  isMember: boolean | undefined
   groupUrl: string
   privateUser: PrivateUser | undefined | null
   canEdit: boolean
   setWritingNewAbout: (writingNewAbout: boolean) => void
+  setEditingName: (editingName: boolean) => void
   bannerVisible: boolean
   onAddMemberClick: () => void
 }) {
   const {
     group,
-    isMember,
     groupUrl,
     privateUser,
     canEdit,
     setWritingNewAbout,
     bannerVisible,
     onAddMemberClick,
+    setEditingName,
   } = props
-  const user = useUser()
+
   const transitionClass = clsx(
     'transition-opacity',
     bannerVisible ? 'opacity-0' : 'opacity-100'
@@ -421,6 +420,7 @@ export function TopGroupNavBar(props: {
               canEdit={canEdit}
               setWritingNewAbout={setWritingNewAbout}
               onAddMemberClick={onAddMemberClick}
+              setEditingName={setEditingName}
             />
           </Row>
         </div>

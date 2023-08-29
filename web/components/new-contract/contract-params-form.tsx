@@ -1,17 +1,23 @@
 import dayjs from 'dayjs'
 import router from 'next/router'
 import { useEffect, useState } from 'react'
+import { XIcon } from '@heroicons/react/outline'
+import { uniqBy } from 'lodash'
+import { toast } from 'react-hot-toast'
+import { generateJSON } from '@tiptap/core'
+import clsx from 'clsx'
 
 import {
   Contract,
   MAX_QUESTION_LENGTH,
   OutcomeType,
   Visibility,
+  add_answers_mode,
+  contractPath,
 } from 'common/contract'
-import { UNIQUE_BETTOR_BONUS_AMOUNT } from 'common/economy'
+import { MINIMUM_BOUNTY, UNIQUE_BETTOR_BONUS_AMOUNT } from 'common/economy'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { formatMoney } from 'common/util/format'
-import { MINUTE_MS } from 'common/util/time'
 import { AddFundsModal } from 'web/components/add-funds-modal'
 import { MultipleChoiceAnswers } from 'web/components/answers/multiple-choice-answers'
 import { Button } from 'web/components/buttons/button'
@@ -26,32 +32,32 @@ import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { Input } from 'web/components/widgets/input'
 import ShortToggle from 'web/components/widgets/short-toggle'
 import { QfExplainer } from '../contract/qf-overview'
-
-import { generateJSON } from '@tiptap/core'
-import clsx from 'clsx'
 import { MAX_DESCRIPTION_LENGTH, NON_BETTING_OUTCOMES } from 'common/contract'
 import { getAnte } from 'common/economy'
 import { Group } from 'common/group'
 import { STONK_NO, STONK_YES } from 'common/stonk'
-import { User } from 'common/user'
+import {
+  freeQuestionRemaining,
+  getAvailableBalancePerQuestion,
+  marketCreationCosts,
+  User,
+} from 'common/user'
 import { removeUndefinedProps } from 'common/util/object'
 import { extensions } from 'common/util/parse'
 import { useTextEditor } from 'web/components/widgets/editor'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
-import { createMarket } from 'web/lib/firebase/api'
+import { createMarket, getSimilarGroupsToContract } from 'web/lib/firebase/api'
 import { track } from 'web/lib/service/analytics'
 import { getGroup } from 'web/lib/supabase/group'
 import { safeLocalStorage } from 'web/lib/util/local'
-import WaitingForSupabaseButton from '../contract/waiting-for-supabase-button'
 import { Col } from '../layout/col'
 import { BuyAmountInput } from '../widgets/amount-input'
 import { getContractTypeThingFromValue } from './create-contract-types'
+import { GroupTag } from 'web/pages/groups'
 import { ContractVisibilityType, NewQuestionParams } from './new-contract-panel'
-import { uniqBy } from 'lodash'
-import { GroupLinkItem } from 'web/pages/groups'
-import { LockClosedIcon, XCircleIcon } from '@heroicons/react/solid'
-import { toast } from 'react-hot-toast'
 import { VisibilityTheme } from 'web/pages/create'
+import { getContractWithFields } from 'web/lib/supabase/contracts'
+import { filterDefined } from 'common/util/array'
 
 export function ContractParamsForm(props: {
   creator: User
@@ -82,28 +88,49 @@ export function ContractParamsForm(props: {
     (params?.visibility as Visibility) ?? 'public',
     `new-visibility` + paramsKey
   )
-  const [newContract, setNewContract] = useState<Contract | undefined>(
-    undefined
+
+  // For multiple choice, init to 2 empty answers
+  const defaultAnswers =
+    outcomeType === 'MULTIPLE_CHOICE' || outcomeType == 'POLL' ? ['', ''] : []
+
+  const [answers, setAnswers] = usePersistentLocalState(
+    params?.answers ? params.answers : defaultAnswers,
+    'new-answers-with-other' + paramsKey
+  )
+  const [addAnswersMode, setAddAnswersMode] = useState<add_answers_mode>(
+    outcomeType === 'FREE_RESPONSE' ? 'ANYONE' : 'DISABLED'
   )
 
-  // for multiple choice, init to 2 empty answers
-  const [answers, setAnswers] = usePersistentLocalState(
-    params?.answers ? params.answers : ['', ''],
-    'new-answers' + paramsKey
-  )
+  const numAnswers =
+    addAnswersMode === 'DISABLED' ? answers.length : answers.length + 1
 
   useEffect(() => {
     if (params?.answers) {
       setAnswers(params.answers)
     } else if (answers.length && answers.every((a) => a.trim().length === 0)) {
-      setAnswers(['', ''])
+      setAnswers(defaultAnswers)
+    } else if (outcomeType === 'MULTIPLE_CHOICE' && answers.length < 2) {
+      if (answers.length === 0) setAnswers(defaultAnswers)
+      else setAnswers(answers.concat(['']))
     }
   }, [params?.answers])
+
+  useEffect(() => {
+    if (addAnswersMode === 'DISABLED' && answers.length < 2) {
+      if (answers.length === 0) setAnswers(defaultAnswers)
+      else setAnswers(answers.concat(['']))
+    }
+  })
 
   const [question, setQuestion] = usePersistentLocalState(
     '',
     'new-question' + paramsKey
   )
+  const [categorizedQuestion, setCategorizedQuestion] = usePersistentLocalState(
+    '',
+    'last-categorized-question' + paramsKey
+  )
+
   useEffect(() => {
     if (params?.q) setQuestion(params?.q ?? '')
   }, [params?.q])
@@ -115,12 +142,12 @@ export function ContractParamsForm(props: {
       const groups = await Promise.all(groupIds.map((id) => getGroup(id))).then(
         (groups) => groups.filter((g) => g)
       )
-      setSelectedGroups(groups as Group[])
+      setSelectedGroups(filterDefined(groups))
     }
     setGroups()
   }, [creator.id, params?.groupIds])
 
-  const ante = getAnte(outcomeType, answers.length, visibility === 'private')
+  const ante = getAnte(outcomeType, numAnswers)
 
   // If params.closeTime is set, extract out the specified date and time
   // By default, close the question a week from today
@@ -135,24 +162,38 @@ export function ContractParamsForm(props: {
     timeInMs ? initDate : undefined,
     'now-close-date' + paramsKey
   )
+
   const [closeHoursMinutes, setCloseHoursMinutes] = usePersistentLocalState<
     string | undefined
-  >(timeInMs ? initTime : undefined, 'now-close-time' + paramsKey)
+  >(
+    timeInMs || outcomeType == 'POLL' ? initTime : undefined,
+    'now-close-time' + paramsKey
+  )
 
   const [selectedGroups, setSelectedGroups] = usePersistentLocalState<Group[]>(
     [],
     'new-selected-groups' + paramsKey
   )
-
   const [bountyAmount, setBountyAmount] = usePersistentLocalState<
     number | undefined
   >(50, 'new-bounty' + paramsKey)
 
+  const balance = getAvailableBalancePerQuestion(creator)
+  const { amountSuppliedByUser, amountSuppliedByHouse } = marketCreationCosts(
+    creator,
+    outcomeType !== 'BOUNTIED_QUESTION'
+      ? ante
+      : freeQuestionRemaining(
+          creator.freeQuestionsCreated,
+          creator.createdTime
+        ) > 0
+      ? 250
+      : bountyAmount ?? 50
+  )
+
   const closeTime = closeDate
     ? dayjs(`${closeDate}T${closeHoursMinutes}`).valueOf()
     : undefined
-
-  const balance = creator.balance || 0
 
   const min = minString ? parseFloat(minString) : undefined
   const max = maxString ? parseFloat(maxString) : undefined
@@ -175,9 +216,8 @@ export function ContractParamsForm(props: {
 
   useEffect(() => {
     if (outcomeType === 'STONK' || NON_BETTING_OUTCOMES.includes(outcomeType)) {
-      setCloseDate(dayjs().add(1000, 'year').format('YYYY-MM-DD'))
-      setCloseHoursMinutes('23:59')
-
+      setCloseDateInDays(NEVER_IN_DAYS)
+      setNeverCloses(true)
       if (outcomeType == 'STONK') {
         if (editor?.isEmpty) {
           editor?.commands.setContent(
@@ -191,10 +231,9 @@ export function ContractParamsForm(props: {
           )
         }
       }
-    }
-    if (outcomeType === 'POLL') {
-      setCloseDateInDays(NEVER_IN_DAYS)
-      setNeverCloses(true)
+    } else {
+      setCloseDateInDays(7)
+      setNeverCloses(false)
     }
   }, [outcomeType])
 
@@ -245,11 +284,11 @@ export function ContractParamsForm(props: {
     editor?.commands.clearContent(true)
     safeLocalStorage?.removeItem(`text create market`)
     setQuestion('')
-    setCloseDate(undefined)
-    setCloseHoursMinutes(undefined)
+    setCloseDate(initDate)
+    setCloseHoursMinutes(initTime)
     setSelectedGroups([])
     setVisibility((params?.visibility as Visibility) ?? 'public')
-    setAnswers(['', ''])
+    setAnswers(defaultAnswers)
     setMinString('')
     setMaxString('')
     setInitialValueString('')
@@ -257,44 +296,58 @@ export function ContractParamsForm(props: {
     setBountyAmount(50)
   }
 
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitState, setSubmitState] = useState<
+    'EDITING' | 'LOADING' | 'DONE'
+  >('EDITING')
 
   async function submit() {
     if (!isValid) return
-    setIsSubmitting(true)
+    setSubmitState('LOADING')
     try {
-      const newContract = (await createMarket(
-        removeUndefinedProps({
-          question,
-          outcomeType,
-          description: editor?.getJSON(),
-          initialProb: 50,
-          ante,
-          closeTime,
-          min,
-          max,
-          initialValue,
-          isLogScale,
-          groupIds: selectedGroups.map((g) => g.id),
-          answers,
-          visibility,
-          utcOffset: new Date().getTimezoneOffset(),
-          totalBounty: bountyAmount,
-        })
-      )) as Contract
+      const createProps = removeUndefinedProps({
+        question,
+        outcomeType:
+          outcomeType === 'FREE_RESPONSE' ? 'MULTIPLE_CHOICE' : outcomeType,
+        description: editor?.getJSON(),
+        initialProb: 50,
+        ante,
+        closeTime,
+        min,
+        max,
+        initialValue,
+        isLogScale,
+        groupIds: selectedGroups.map((g) => g.id),
+        answers,
+        addAnswersMode:
+          outcomeType === 'FREE_RESPONSE' ? 'ANYONE' : addAnswersMode,
+        visibility,
+        utcOffset: new Date().getTimezoneOffset(),
+        totalBounty:
+          amountSuppliedByHouse > 0 ? amountSuppliedByHouse : bountyAmount,
+      })
+      const newContract = (await createMarket(createProps)) as Contract
 
-      setNewContract(newContract)
-      resetProperties()
+      // wait for supabase
+      const supabaseContract = await waitForSupabaseContract(newContract.id)
 
       track('create market', {
         slug: newContract.slug,
         selectedGroups: selectedGroups.map((g) => g.id),
         outcomeType,
       })
+
+      resetProperties()
+      setSubmitState('DONE')
+
+      try {
+        await router.push(contractPath(supabaseContract as Contract))
+      } catch (error) {
+        console.error(error)
+      }
     } catch (e) {
       console.error('error creating contract', e)
       setErrorText((e as any).message || 'Error creating contract')
-      setIsSubmitting(false)
+      setSubmitState('EDITING')
     }
   }
   const [bountyError, setBountyError] = useState<string | undefined>(undefined)
@@ -310,10 +363,28 @@ export function ContractParamsForm(props: {
     }
   }, [selectedGroups?.length, toggleVisibility])
 
+  const finishedTypingQuestion = async () => {
+    const trimmed = question.trim()
+    if (
+      trimmed.length == 0 ||
+      params?.groupIds?.length ||
+      trimmed === categorizedQuestion
+    )
+      return
+    setCategorizedQuestion(trimmed)
+    try {
+      const { groups } = await getSimilarGroupsToContract({ question })
+      setSelectedGroups(groups)
+    } catch (e) {
+      console.error('error getting similar groups', e)
+    }
+  }
+
   const [fundsModalOpen, setFundsModalOpen] = useState(false)
 
   const isMulti =
     outcomeType === 'MULTIPLE_CHOICE' || outcomeType === 'FREE_RESPONSE'
+
   return (
     <Col>
       <Col>
@@ -328,6 +399,7 @@ export function ContractParamsForm(props: {
             maxLength={MAX_QUESTION_LENGTH}
             value={question}
             onChange={(e) => setQuestion(e.target.value || '')}
+            onBlur={finishedTypingQuestion}
           />
         </div>
         <Spacer h={6} />
@@ -343,11 +415,6 @@ export function ContractParamsForm(props: {
           Tradeable shares of a stock based on sentiment. Never resolves.
         </div>
       )}
-      {outcomeType === 'FREE_RESPONSE' && (
-        <div className="text-primary-500 mt-1 ml-1 text-sm">
-          Users can submit their own answers to this question.
-        </div>
-      )}
       {outcomeType === 'PSEUDO_NUMERIC' && (
         <div className="text-primary-500 mt-1 ml-1 text-sm">
           Predict the value of a number.
@@ -356,13 +423,22 @@ export function ContractParamsForm(props: {
       <Spacer h={2} />
       {outcomeType === 'QUADRATIC_FUNDING' && <QfExplainer />}
       <Spacer h={4} />
-      {(outcomeType === 'MULTIPLE_CHOICE' || outcomeType == 'POLL') && (
+      {(isMulti || outcomeType == 'POLL') && (
         <MultipleChoiceAnswers
           answers={answers}
           setAnswers={setAnswers}
-          placeholder={
-            outcomeType == 'MULTIPLE_CHOICE' ? 'Type your answer..' : undefined
+          includeOtherAnswer={
+            addAnswersMode !== 'DISABLED' &&
+            (outcomeType === 'MULTIPLE_CHOICE' || answers.length > 0)
           }
+          setIncludeOtherAnswer={
+            outcomeType === 'FREE_RESPONSE' || outcomeType === 'POLL'
+              ? undefined
+              : (include) =>
+                  setAddAnswersMode(include ? 'ONLY_CREATOR' : 'DISABLED')
+          }
+          outcomeType={outcomeType}
+          placeholder={isMulti ? 'Type your answer..' : undefined}
         />
       )}
       {outcomeType === 'PSEUDO_NUMERIC' && (
@@ -382,7 +458,7 @@ export function ContractParamsForm(props: {
                 onChange={(e) => setMinString(e.target.value)}
                 min={Number.MIN_SAFE_INTEGER}
                 max={Number.MAX_SAFE_INTEGER}
-                disabled={isSubmitting}
+                disabled={submitState === 'LOADING'}
                 value={minString ?? ''}
               />
               <Input
@@ -393,7 +469,7 @@ export function ContractParamsForm(props: {
                 onChange={(e) => setMaxString(e.target.value)}
                 min={Number.MIN_SAFE_INTEGER}
                 max={Number.MAX_SAFE_INTEGER}
-                disabled={isSubmitting}
+                disabled={submitState === 'LOADING'}
                 value={maxString}
               />
             </Row>
@@ -403,7 +479,7 @@ export function ContractParamsForm(props: {
               label="Log scale"
               checked={isLogScale}
               toggle={() => setIsLogScale(!isLogScale)}
-              disabled={isSubmitting}
+              disabled={submitState === 'LOADING'}
             />
 
             {min !== undefined && max !== undefined && min >= max && (
@@ -425,7 +501,7 @@ export function ContractParamsForm(props: {
                 onClick={(e) => e.stopPropagation()}
                 onChange={(e) => setInitialValueString(e.target.value)}
                 max={Number.MAX_SAFE_INTEGER}
-                disabled={isSubmitting}
+                disabled={submitState === 'LOADING'}
                 value={initialValueString ?? ''}
               />
             </Row>
@@ -449,20 +525,50 @@ export function ContractParamsForm(props: {
             <span className="mb-1 mr-1">Bounty</span>
             <InfoTooltip text="The award you give good answers. You can divide this amongst answers however you'd like." />
           </label>
-          <BuyAmountInput
-            inputClassName="w-full max-w-none"
-            minimumAmount={5}
-            amount={bountyAmount}
-            onChange={(newAmount) => setBountyAmount(newAmount)}
-            error={bountyError}
-            setError={setBountyError}
-            sliderOptions={{ show: true, wrap: false }}
-            customRange={{ rangeMax: 500 }}
-          />
+          {amountSuppliedByHouse === 0 ? (
+            <BuyAmountInput
+              inputClassName="w-full max-w-none"
+              minimumAmount={MINIMUM_BOUNTY}
+              amount={bountyAmount}
+              onChange={(newAmount) => setBountyAmount(newAmount)}
+              error={bountyError}
+              setError={setBountyError}
+              sliderOptions={{ show: true, wrap: false }}
+              customRange={{ rangeMax: 500 }}
+            />
+          ) : (
+            <div className="text-ink-700 pl-1 text-sm">
+              {formatMoney(amountSuppliedByHouse)} (Supplied by the house)
+            </div>
+          )}
           <Spacer h={6} />
         </>
       )}
-      <Col>
+      <Col className={'gap-2'}>
+        <span className={'px-1'}>
+          Add categories{' '}
+          <InfoTooltip text="Question will be displayed alongside the other questions in the category." />
+        </span>
+        <Row className={'flex-wrap gap-2'}>
+          {selectedGroups.map((group) => (
+            <GroupTag
+              key={group.id}
+              group={group}
+              isPrivate={group.privacyStatus === 'private'}
+              className="bg-ink-100"
+            >
+              <button
+                onClick={() =>
+                  setSelectedGroups((groups) =>
+                    groups?.filter((g) => g.id !== group.id)
+                  )
+                }
+              >
+                <XIcon className="hover:text-ink-700 text-ink-400 ml-1 h-4 w-4" />
+              </button>
+            </GroupTag>
+          ))}
+        </Row>
         <Row>
           <GroupSelector
             setSelectedGroup={(group) => {
@@ -473,7 +579,7 @@ export function ContractParamsForm(props: {
                   selectedGroups.some((g) => g.privacyStatus === 'private'))
               ) {
                 toast(
-                  `Questions are only allowed one group if the group is private.`,
+                  `Questions are only allowed one category if the category is private.`,
                   { icon: '🚫' }
                 )
                 return
@@ -483,37 +589,9 @@ export function ContractParamsForm(props: {
               )
             }}
             ignoreGroupIds={selectedGroups.map((g) => g.id)}
-            showLabel={true}
             isContractCreator={true}
             newContract={true}
           />
-        </Row>
-        <Row className={'mt-2 gap-2'}>
-          {selectedGroups.map((group) => (
-            <div
-              key={group.id}
-              className={
-                'bg-canvas-100 relative rounded-full px-4 py-1.5 hover:bg-blue-600 focus-visible:bg-blue-600'
-              }
-            >
-              <GroupLinkItem group={group} />
-              {group.privacyStatus === 'private' && (
-                <LockClosedIcon className={'ml-1 inline h-5 w-5 pb-1'} />
-              )}
-              <button
-                className={
-                  'hover:bg-canvas-100 absolute -top-1 -right-1 rounded-full'
-                }
-                onClick={() =>
-                  setSelectedGroups((groups) =>
-                    groups?.filter((g) => g.id !== group.id)
-                  )
-                }
-              >
-                <XCircleIcon className="hover:text-ink-700 text-ink-400 h-5 w-5" />
-              </button>
-            </div>
-          ))}
         </Row>
       </Col>
 
@@ -547,7 +625,7 @@ export function ContractParamsForm(props: {
                 }
               }}
               choicesMap={closeDateMap}
-              disabled={isSubmitting}
+              disabled={submitState === 'LOADING'}
               className={clsx(
                 'col-span-4 sm:col-span-2',
                 outcomeType == 'POLL' ? 'text-xs sm:text-sm' : ''
@@ -565,8 +643,9 @@ export function ContractParamsForm(props: {
                     setCloseHoursMinutes(initTime)
                   }
                 }}
-                min={Math.round(Date.now() / MINUTE_MS) * MINUTE_MS}
-                disabled={isSubmitting}
+                min={dayjs().format('YYYY-MM-DD')}
+                max="9999-12-31"
+                disabled={submitState === 'LOADING'}
                 value={closeDate}
               />
               {/*<Input*/}
@@ -614,39 +693,47 @@ export function ContractParamsForm(props: {
               text={
                 outcomeType == 'BOUNTIED_QUESTION'
                   ? 'Your bounty. This amount is put upfront.'
+                  : outcomeType == 'POLL'
+                  ? 'Cost to create your poll.'
                   : `Cost to create your question. This amount is used to subsidize predictions.`
               }
             />
           </label>
 
           <div className="text-ink-700 pl-1 text-sm">
-            {outcomeType !== 'BOUNTIED_QUESTION' && <>{formatMoney(ante)}</>}
-            {outcomeType !== 'BOUNTIED_QUESTION' && visibility === 'public' && (
+            {amountSuppliedByUser === 0 ? (
+              <span className="text-teal-500">FREE </span>
+            ) : outcomeType !== 'BOUNTIED_QUESTION' &&
+              outcomeType !== 'POLL' ? (
+              <>
+                {formatMoney(amountSuppliedByUser)}
+                {visibility === 'public' && (
+                  <span>
+                    {' '}
+                    or <span className=" text-teal-500">FREE </span>
+                    if you get{' '}
+                    {isMulti
+                      ? amountSuppliedByUser / (UNIQUE_BETTOR_BONUS_AMOUNT / 2)
+                      : amountSuppliedByUser / UNIQUE_BETTOR_BONUS_AMOUNT}
+                    + participants{' '}
+                    <InfoTooltip
+                      text={
+                        isMulti
+                          ? `You'll earn a bonus of ${formatMoney(
+                              Math.ceil(UNIQUE_BETTOR_BONUS_AMOUNT / 2)
+                            )} for each unique trader you get on each answer.`
+                          : `You'll earn a bonus of ${formatMoney(
+                              UNIQUE_BETTOR_BONUS_AMOUNT
+                            )} for each unique trader you get on your question.`
+                      }
+                    />
+                  </span>
+                )}
+              </>
+            ) : (
               <span>
-                {' '}
-                or <span className=" text-teal-500">FREE </span>
-                if you get{' '}
-                {isMulti
-                  ? ante / (UNIQUE_BETTOR_BONUS_AMOUNT / 2)
-                  : ante / UNIQUE_BETTOR_BONUS_AMOUNT}
-                + participants{' '}
-                <InfoTooltip
-                  text={
-                    isMulti
-                      ? `You'll earn a bonus of ${formatMoney(
-                          Math.ceil(UNIQUE_BETTOR_BONUS_AMOUNT / 2)
-                        )} for each unique trader you get on each answer.`
-                      : `You'll earn a bonus of ${formatMoney(
-                          UNIQUE_BETTOR_BONUS_AMOUNT
-                        )} for each unique trader you get on your question.`
-                  }
-                />
-              </span>
-            )}
-            {outcomeType == 'BOUNTIED_QUESTION' && (
-              <span>
-                {bountyAmount
-                  ? formatMoney(bountyAmount)
+                {amountSuppliedByUser
+                  ? formatMoney(amountSuppliedByUser)
                   : `${ENV_CONFIG.moneyMoniker} --`}
               </span>
             )}
@@ -675,34 +762,30 @@ export function ContractParamsForm(props: {
       </Row>
 
       <Spacer h={6} />
-      <Row className="w-full justify-center">
-        {newContract && (
-          <WaitingForSupabaseButton
-            contractId={newContract.id}
-            router={router}
-          />
-        )}
-        {!newContract && (
-          <Button
-            className="w-full"
-            type="submit"
-            color="indigo"
-            size="xl"
-            loading={isSubmitting}
-            disabled={
-              !isValid ||
-              editor?.storage.upload.mutation.isLoading ||
-              (outcomeType == 'BOUNTIED_QUESTION' && bountyError)
-            }
-            onClick={(e) => {
-              e.preventDefault()
-              submit()
-            }}
-          >
-            {isSubmitting ? 'Creating...' : 'Create question'}
-          </Button>
-        )}
-      </Row>
+
+      <Button
+        className="w-full"
+        type="submit"
+        color={submitState === 'DONE' ? 'green' : 'indigo'}
+        size="xl"
+        loading={submitState === 'LOADING'}
+        disabled={
+          !isValid ||
+          editor?.storage.upload.mutation.isLoading ||
+          (outcomeType == 'BOUNTIED_QUESTION' && bountyError)
+        }
+        onClick={(e) => {
+          e.preventDefault()
+          submit()
+        }}
+      >
+        {submitState === 'EDITING'
+          ? 'Create Question'
+          : submitState === 'LOADING'
+          ? 'Creating...'
+          : 'Created!'}
+      </Button>
+
       <Spacer h={6} />
     </Col>
   )
@@ -710,3 +793,30 @@ export function ContractParamsForm(props: {
 
 // get days from today until the end of this year:
 const daysLeftInTheYear = dayjs().endOf('year').diff(dayjs(), 'day')
+
+// waiting for supabase logic
+
+export const LOADING_PING_INTERVAL = 200
+
+async function fetchContract(contractId: string) {
+  try {
+    const contract = await getContractWithFields(contractId)
+    if (contract && contract.visibility && contract.slug) {
+      return contract
+    }
+    return null
+  } catch (error) {
+    console.error('Error fetching the contract:', error)
+    return null
+  }
+}
+
+async function waitForSupabaseContract(contractId: string) {
+  let retries = 15
+  while (retries > 0) {
+    const contract = await fetchContract(contractId)
+    if (contract) return contract
+    retries--
+  }
+  throw new Error('Contract failed to replicate to supabase')
+}

@@ -1,4 +1,4 @@
-import React, { memo } from 'react'
+import { memo } from 'react'
 import dayjs from 'dayjs'
 import { Contract } from 'common/contract'
 import { Bet } from 'common/bet'
@@ -25,7 +25,7 @@ import { MINUTE_MS } from 'common/util/time'
 import { sort } from 'd3-array'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { InfoTooltip } from '../widgets/info-tooltip'
-import { SiteLink } from '../widgets/site-link'
+import Link from 'next/link'
 
 export const FeedBet = memo(function FeedBet(props: {
   contract: Contract
@@ -236,7 +236,6 @@ export function BetStatusText(props: {
           <OutcomeLabel
             outcome={outcome}
             answerId={answerId}
-            value={(bet as any).value}
             contract={contract}
             truncate="short"
           />{' '}
@@ -248,7 +247,6 @@ export function BetStatusText(props: {
           <OutcomeLabel
             outcome={outcome}
             answerId={answerId}
-            value={(bet as any).value}
             contract={contract}
             truncate="short"
           />{' '}
@@ -259,7 +257,7 @@ export function BetStatusText(props: {
       )}{' '}
       {isChallenge && (
         <InfoTooltip text="Loot box purchase">
-          <SiteLink href="/lootbox">🎁</SiteLink>
+          <Link href="/lootbox">🎁</Link>
         </InfoTooltip>
       )}
       {isApi && <InfoTooltip text="Placed via the API">🤖</InfoTooltip>}

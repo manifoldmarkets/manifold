@@ -65,7 +65,9 @@ export function ContractDescription(props: {
             hideButton={!user}
           />
           {showEditHistory && !!user && (
-            <ContractEditHistoryButton contract={contract} />
+            <div className="flex w-full justify-end">
+              <ContractEditHistoryButton contract={contract} className="mt-1" />
+            </div>
           )}
         </>
       )}
@@ -140,9 +142,17 @@ function ContractActions(props: {
           stateKey={`isCollapsed-contract-${contract.id}`}
         />
       )}
-      <Row className="flex-wrap items-center justify-end gap-2 text-xs">
+      <Row className="mt-2 flex-wrap items-center justify-end gap-2 text-xs">
         {isOnlyAdmin && 'Admin '}
-        <ContractEditHistoryButton contract={contract} className="my-2" />
+        {!isOnlyTrustworthy &&
+          contract.mechanism === 'cpmm-multi-1' &&
+          contract.addAnswersMode === 'ONLY_CREATOR' && (
+            <AddAnswerButton
+              setEditing={setEditingAnswer}
+              buttonColor={'gray'}
+            />
+          )}
+        <ContractEditHistoryButton contract={contract} />
         {!isOnlyTrustworthy && (
           <EditDescriptionButton
             setEditing={setEditing}
@@ -150,19 +160,19 @@ function ContractActions(props: {
             text={emptyDescription ? 'Add description' : 'Edit description'}
             icon={
               emptyDescription ? (
-                <PlusIcon className="ml-1 inline h-4 w-4" />
+                <PlusIcon className="mr-1 inline h-4 w-4" />
               ) : (
-                <PencilIcon className="ml-1 inline h-4 w-4" />
+                <PencilIcon className="mr-1 inline h-4 w-4" />
               )
             }
             buttonColor={'gray'}
           />
         )}
+        <ContractEditHistoryButton contract={contract} className="my-2" />
         {contract.outcomeType !== 'STONK' && contract.mechanism !== 'none' && (
           <Button
             color={highlightResolver ? 'red' : 'gray'}
             size="2xs"
-            className="relative my-2"
             onClick={toggleResolver}
           >
             Resolve
@@ -195,8 +205,7 @@ function EditDescriptionButton(props: {
   )
 }
 
-// Disabled for now, until we support an Other answer.
-function _AddAnswerButton(props: {
+function AddAnswerButton(props: {
   setEditing: (editing: boolean) => void
   buttonColor?: ColorType
 }) {
@@ -210,7 +219,7 @@ function _AddAnswerButton(props: {
         setEditing(true)
       }}
     >
-      <PlusIcon className="ml-1 inline h-4 w-4" /> Add answer
+      <PlusIcon className="mr-1 inline h-4 w-4" /> Add answer
     </Button>
   )
 }
