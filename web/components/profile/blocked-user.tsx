@@ -4,7 +4,7 @@ import { Page } from 'web/components/layout/page'
 import { Avatar } from 'web/components/widgets/avatar'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
-import { UserFollowButton } from 'web/components/buttons/follow-button'
+import { FollowButton } from 'web/components/buttons/follow-button'
 import { PostBanBadge, UserBadge } from 'web/components/widgets/user-link'
 import { MoreOptionsUserButton } from 'web/components/buttons/more-options-user-button'
 import { PrivateUser } from 'common/user'
@@ -47,7 +47,7 @@ export function BlockedUser(props: { user: User; privateUser: PrivateUser }) {
                   'h-full w-full items-center justify-between sm:w-auto sm:justify-end sm:gap-4'
                 }
               >
-                <UserFollowButton userId={user.id} />
+                <FollowButton userId={user.id} />
                 <MoreOptionsUserButton user={user} />
               </Row>
             </div>

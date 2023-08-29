@@ -14,3 +14,27 @@ export async function getContractFollows(contractId: string) {
     return []
   }
 }
+
+export async function getUserFollows(userId: string) {
+  const { data } = await run(
+    db.from('user_follows').select().eq('user_id', userId)
+  )
+  return data
+}
+
+export async function getUserFollowers(userId: string) {
+  const { data } = await run(
+    db.from('user_follows').select().eq('follow_id', userId)
+  )
+  return data
+}
+
+export async function getUserIsFollowing(simp: string, idol: string) {
+  const { count } = await db
+    .from('user_follows')
+    .select('*', { head: true, count: 'exact' })
+    .eq('user_id', simp)
+    .eq('follow_id', idol)
+
+  return !!count
+}
