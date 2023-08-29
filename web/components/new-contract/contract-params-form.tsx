@@ -812,7 +812,7 @@ async function fetchContract(contractId: string) {
 }
 
 async function waitForSupabaseContract(contractId: string) {
-  let retries = 5
+  let retries = 15
   while (retries > 0) {
     const contract = await fetchContract(contractId)
     if (contract) return contract
