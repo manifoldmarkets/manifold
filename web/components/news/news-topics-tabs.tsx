@@ -1,14 +1,28 @@
+import { ReactNode } from 'react'
 import { Col } from 'web/components/layout/col'
-import { QueryUncontrolledTabs, Tab } from 'web/components/layout/tabs'
 import { track } from 'web/lib/service/analytics'
+import { QueryUncontrolledTabs, Tab } from 'web/components/layout/tabs'
+import { HomeIcon } from '@heroicons/react/solid'
 
+import { newsContent } from 'web/components/news/news-content'
+import { buildArray } from 'common/util/array'
+import { TbIndentDecrease } from 'react-icons/tb'
 
 export function NewsTopicsTabs(props: {
-  topics: Tab[]
+  homeContent?: ReactNode
   dontScroll?: boolean
-  onTabClick: (tabTitle: string, index: number) => void
+  setSidebar?: (sidebarContent: ReactNode) => void
 }) {
-  const { topics, dontScroll, onTabClick } = props
+  const { homeContent, dontScroll, setSidebar } = props
+
+  const topics = buildArray<Tab>(
+    !!homeContent && {
+      title: 'For you',
+      inlineTabIcon: <HomeIcon className="h-4 w-4" />,
+      content: homeContent as JSX.Element,
+    },
+    ...newsContent
+  )
   return (
     <Col className="w-full gap-2 px-1 pb-8 sm:mx-auto sm:gap-6 sm:px-2 lg:pr-4">
       <QueryUncontrolledTabs
@@ -20,7 +34,18 @@ export function NewsTopicsTabs(props: {
             track('news topic clicked', { tab: tab.title })
           },
         }))}
-        onClick={(tabTitle, index) => onTabClick(tabTitle, index)}
+        onClick={
+          setSidebar
+            ? (_tabTitle, index) => {
+                const sidebar = topics[index].sidebar
+                if (sidebar) {
+                  setSidebar(topics[index].sidebar)
+                } else {
+                  setSidebar(<></>)
+                }
+              }
+            : undefined
+        }
       />
     </Col>
   )

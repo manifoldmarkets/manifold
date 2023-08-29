@@ -126,6 +126,12 @@ export function QueryUncontrolledTabs(
   const selectedIdx = tabs.findIndex((t) => isTabSelected(router, 'tab', t))
   const activeIndex = selectedIdx !== -1 ? selectedIdx : defaultIndex ?? 0
 
+  useEffect(() => {
+    if (onClick) {
+      onClick(tabs[activeIndex].title, activeIndex)
+    }
+  }, [activeIndex])
+
   return (
     <ControlledTabs
       {...rest}
@@ -134,7 +140,7 @@ export function QueryUncontrolledTabs(
       onClick={(title, i) => {
         if (scrollToTop) window.scrollTo({ top: 0 })
 
-        onClick?.(title, i)
+        // onClick?.(title, i)
         router.replace(
           { query: { ...router.query, tab: title.toLowerCase() } },
           undefined,

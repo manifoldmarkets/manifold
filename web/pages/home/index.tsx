@@ -42,15 +42,6 @@ function HomeDashboard() {
 
   const [sidebar, setSidebar] = useState<ReactNode>(<></>)
 
-  const topics = buildArray<Tab>(
-    {
-      title: 'For you',
-      inlineTabIcon: <HomeIcon className="h-4 w-4" />,
-      content: <FeedTimeline />,
-    },
-    ...newsContent
-  )
-
   return (
     <>
       <SEO
@@ -68,10 +59,8 @@ function HomeDashboard() {
         </Row>
 
         <NewsTopicsTabs
-          topics={topics}
-          onTabClick={(tabTitle, index) => {
-            setSidebar(topics[index].sidebar)
-          }}
+          homeContent={<FeedTimeline />}
+          setSidebar={setSidebar}
         />
       </Page>
     </>
