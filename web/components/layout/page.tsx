@@ -43,7 +43,7 @@ export function Page(props: {
           <Sidebar className="sticky top-0 hidden self-start pl-2 lg:col-span-2 lg:flex" />
         )}
         {/* put right sidebar below main content on small or medium screens */}
-        <Col className="flex-1 lg:col-span-8 xl:contents">
+        <Col className={'flex-1 lg:col-span-8 xl:contents'}>
           <main
             className={clsx(
               'flex flex-1 flex-col lg:mt-6',

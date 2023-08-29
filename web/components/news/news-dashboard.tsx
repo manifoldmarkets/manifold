@@ -25,8 +25,20 @@ export const createNewsDashboardTab = (
   const otherCards = content.filter((card) => !hasSlug(card))
   return {
     title: shortTitle,
-    content: <NewsDashboard title={title} data={slugCards} />,
-    sidebar: <NewsSidebar description={description} data={otherCards} />,
+    content: (
+      <Col>
+        <Title>{title}</Title>
+        <div className="xl:hidden">
+          <NewsSidebar description={description} data={otherCards} />
+        </div>
+        <NewsDashboard title={title} data={slugCards} />
+      </Col>
+    ),
+    sidebar: (
+      <div className="hidden xl:inline-flex">
+        <NewsSidebar description={description} data={otherCards} />
+      </div>
+    ),
   }
 }
 
@@ -53,14 +65,20 @@ export const NewsSidebar = (props: {
 
   const content = data.map(renderCard).filter((x) => !!x)
   return (
-    <Col className="gap-4">
-      {description && (
-        <Col className="xl:bg-canvas-0 gap-2 xl:px-6 xl:py-4">
-          <Col className=" text-primary-700">Additional Context</Col>
-          {description}
+    <Col className="gap-2">
+      {(description || content.length > 0) && (
+        <Col className=" text-primary-700 hidden xl:inline-flex">
+          Additional Context
         </Col>
       )}
-      {isLoading ? <LoadingIndicator /> : <>{content}</>}
+      <Col className="gap-4">
+        {description && (
+          <Col className="xl:bg-canvas-0 gap-2 xl:px-6 xl:py-4">
+            {description}
+          </Col>
+        )}
+        {isLoading ? <LoadingIndicator /> : <>{content}</>}
+      </Col>
     </Col>
   )
 }
