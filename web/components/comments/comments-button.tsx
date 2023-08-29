@@ -12,6 +12,7 @@ import { Tooltip } from '../widgets/tooltip'
 import { User } from 'common/user'
 import {
   useCommentsOnContract,
+  useNumContractComments,
   useRealtimeCommentsOnContract,
 } from 'web/hooks/use-comments-supabase'
 
@@ -54,7 +55,7 @@ export function CommentsButton(props: {
   const { contract, user } = props
 
   const [open, setOpen] = useState(false)
-  const totalComments = 0 // useNumContractComments(contract.id)
+  const totalComments = useNumContractComments(contract.id)
 
   return (
     <Tooltip text={`Comments`} placement="top" className={'z-10'}>
