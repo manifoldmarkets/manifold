@@ -167,30 +167,13 @@ const combineGroupsByImportance = (
   resultGroups: Group[],
   myGroups: Group[]
 ) => {
-  const lowestImportance =
-    resultGroups?.sort((a, b) => b.importanceScore - a.importanceScore)[
-      Math.min(resultGroups.length, GROUPS_PER_PAGE) - 1
-    ]?.importanceScore ?? 0
-
-  const myGroupIds = new Set(myGroups.map((g) => g.id))
-
   const combined = [
-    ...resultGroups.map((g) => ({
-      ...g,
-      importanceScore: myGroupIds.has(g.id)
-        ? Math.max(g.importanceScore, lowestImportance)
-        : g.importanceScore,
-    })),
-
-    ...myGroups.map((g) => ({
-      ...g,
-      importanceScore: lowestImportance,
-    })),
+    ...resultGroups.slice(0, GROUPS_PER_PAGE),
+    ...myGroups,
+    ...resultGroups.slice(GROUPS_PER_PAGE - 1),
   ]
 
-  return uniqBy(combined, 'id').sort(
-    (a, b) => b.importanceScore - a.importanceScore
-  )
+  return uniqBy(combined, 'id')
 }
 
 const useGroupRoles = (user: User | undefined | null) => {
