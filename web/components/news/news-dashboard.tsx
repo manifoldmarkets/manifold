@@ -8,7 +8,9 @@ import { useLinkPreviews } from 'web/hooks/use-link-previews'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import clsx from 'clsx'
 
-export type NewsContentType = { url: string } | { slug: string }
+export type NewsContentType = NewsLink | NewsQuestion
+export type NewsLink = { url: string }
+export type NewsQuestion = { slug: string }
 
 export const createNewsDashboardTab = (
   shortTitle: string,
@@ -16,76 +18,87 @@ export const createNewsDashboardTab = (
   content: NewsContentType[],
   description?: ReactNode
 ) => {
+  const hasSlug = (content: NewsContentType): content is { slug: string } => {
+    return 'slug' in content
+  }
+  const slugCards = content.filter(hasSlug)
+  const otherCards = content.filter((card) => !hasSlug(card))
   return {
     title: shortTitle,
     content: (
-      <NewsDashboard title={title} description={description} data={content} />
+      <Col>
+        <div className="xl:hidden">
+          <NewsSidebar description={description} data={otherCards} />
+        </div>
+        <NewsDashboard title={title} data={slugCards} />
+      </Col>
     ),
-    sidebar: description,
+    sidebar: <NewsSidebar description={description} data={otherCards} />,
   }
+}
+
+export const NewsSidebar = (props: {
+  description?: ReactNode
+  data: NewsLink[]
+  title: string
+}) => {
+  const { data, title, description } = props
+
+  if (!description && data.length === 0) return <></>
+
+  const urls = data.map((x) => (x as any).url).filter((x) => !!x)
+  const previews = useLinkPreviews(urls)
+  const isLoading = urls.length > 0 && previews.length === 0
+
+  const renderCard = (card: NewsLink, i: number) => {
+    const preview = previews.find((p) => p.url === card.url)
+    if (!preview) return undefined
+    return (
+      <DashboardNewsItem {...preview} className="mb-4" key={title + card.url} />
+    )
+  }
+
+  const content = data.map(renderCard).filter((x) => !!x)
+  return (
+    <Col className="gap-4">
+      {description && (
+        <Col className="xl:bg-canvas-0 gap-2 xl:px-6 xl:py-4">
+          <Col className=" text-primary-700">Additional Context</Col>
+          {description}
+        </Col>
+      )}
+      {isLoading ? <LoadingIndicator /> : <>{content}</>}
+    </Col>
+  )
 }
 
 export const NewsDashboard = (props: {
   description?: ReactNode
-  data: NewsContentType[]
+  data: NewsQuestion[]
   title: string
 }) => {
   const { data, title, description } = props
 
   const slugs = data.map((x) => (x as any).slug).filter((x) => !!x)
   const contracts = useContracts(slugs, 'slug')
+  const isLoading = slugs.length > 0 && contracts.length === 0
 
-  const urls = data.map((x) => (x as any).url).filter((x) => !!x)
-  const previews = useLinkPreviews(urls)
-  const isLoading =
-    (slugs.length > 0 && contracts.length === 0) ||
-    (urls.length > 0 && previews.length === 0)
-
-  const renderCard = (
-    card: { url: string } | { slug: string } | { content: any },
-    i: number
-  ) => {
-    if ('url' in card) {
-      const preview = previews.find((p) => p.url === card.url)
-      if (!preview) return undefined
-      return (
-        <DashboardNewsItem
-          {...preview}
-          className="mb-4"
-          key={title + card.url}
-        />
-      )
-    }
-
-    if ('slug' in card) {
-      const contract = contracts.find((c) => c.slug === card.slug)
-      if (!contract) return undefined
-      return (
-        <FeedContractCard
-          key={title + contract.id}
-          contract={contract}
-          className="mb-4"
-        />
-      )
-    }
-
-    return <div key={'news-tab-content' + title + i}>{card.content}</div>
+  const renderCard = (card: NewsQuestion, i: number) => {
+    const contract = contracts.find((c) => c.slug === card.slug)
+    if (!contract) return undefined
+    return (
+      <FeedContractCard
+        key={title + contract.id}
+        contract={contract}
+        className="mb-4"
+      />
+    )
   }
 
   const getRelevantTime = (contract: any) =>
     contract.resolutionTime || contract.createdTime
 
-  const hasSlug = (content: NewsContentType): content is { slug: string } => {
-    return 'slug' in content
-  }
-
-  // Use the custom type guard 'hasSlug' to filter out slugCards
-  const slugCards = data.filter(hasSlug)
-
-  // And similarly, you can safely filter out other types of cards
-  const otherCards = data.filter((card) => !hasSlug(card))
-
-  const sortedSlugCards = slugCards
+  const sortedQuestions = data
     .map((card) => ({
       card,
       contract: contracts.find((contract) => contract.slug === card.slug),
@@ -94,14 +107,6 @@ export const NewsDashboard = (props: {
     .sort((a, b) => getRelevantTime(b.contract!) - getRelevantTime(a.contract!))
     .map(({ card }) => card)
 
-  const sortedData = [...otherCards, ...sortedSlugCards]
-
-  const content = sortedData.map(renderCard).filter((x) => !!x)
-  return (
-    <Col>
-      <Title className={clsx(description ? 'mb-2' : 'mb-4')}>{title}</Title>
-      {/* {description && <div className="mb-4">{description}</div>} */}
-      {isLoading ? <LoadingIndicator /> : <>{content}</>}
-    </Col>
-  )
+  const content = sortedQuestions.map(renderCard).filter((x) => !!x)
+  return <Col>{isLoading ? <LoadingIndicator /> : <>{content}</>}</Col>
 }

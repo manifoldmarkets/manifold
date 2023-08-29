@@ -1,12 +1,11 @@
+import { HomeIcon } from '@heroicons/react/solid'
 import { ReactNode } from 'react'
 import { Col } from 'web/components/layout/col'
-import { track } from 'web/lib/service/analytics'
 import { QueryUncontrolledTabs, Tab } from 'web/components/layout/tabs'
-import { HomeIcon } from '@heroicons/react/solid'
+import { track } from 'web/lib/service/analytics'
 
-import { newsContent } from 'web/components/news/news-content'
 import { buildArray } from 'common/util/array'
-import { TbIndentDecrease } from 'react-icons/tb'
+import { newsContent } from 'web/components/news/news-content'
 
 export function NewsTopicsTabs(props: {
   homeContent?: ReactNode

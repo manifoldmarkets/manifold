@@ -38,17 +38,17 @@ export const DashboardNewsItem = (props: {
       rel="noreferrer"
       target="_blank"
       className={clsx(
-        'border-canvas-0 bg-canvas-0 hover:border-primary-300 focus:border-primary-300 relative flex w-full flex-col overflow-hidden rounded-xl border transition-colors sm:flex-row',
+        'border-canvas-0 bg-canvas-0 hover:border-primary-300 focus:border-primary-300 relative flex w-full flex-col overflow-hidden rounded-xl border transition-colors',
         className
       )}
     >
       <img
-        className=" object-contains m-0 sm:w-1/3"
+        className=" object-contains m-0"
         src={image ?? urlToImage}
         alt={title}
         height={200}
       />
-      <Col className=" border-canvas-0 w-full bg-opacity-80 py-2 px-4 sm:pl-4 sm:pr-6 ">
+      <Col className=" border-canvas-0 w-full bg-opacity-80 py-2 px-4 sm:pr-6 ">
         <Row className="text-ink-500 w-full justify-between text-sm">
           <div>{siteName ? siteName : ''}</div>
           {published_time && (

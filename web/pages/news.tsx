@@ -1,23 +1,19 @@
-import { Page } from 'web/components/layout/page'
-import { Col } from 'web/components/layout/col'
-import { Row } from 'web/components/layout/row'
-import { Title } from 'web/components/widgets/title'
-import { useTracking } from 'web/hooks/use-tracking'
+import { ReactNode, useState } from 'react'
 import { SEO } from 'web/components/SEO'
+import { Col } from 'web/components/layout/col'
+import { Page } from 'web/components/layout/page'
+import { Row } from 'web/components/layout/row'
 import { NewsTopicsTabs } from 'web/components/news/news-topics-tabs'
-import { useSaveReferral } from 'web/hooks/use-save-referral'
+import { Title } from 'web/components/widgets/title'
 import { useSaveCampaign } from 'web/hooks/use-save-campaign'
-import { buildArray } from 'common/util/array'
-import { Tab } from 'web/components/layout/tabs'
-import { newsContent } from 'web/components/news/news-content'
-import { useState, ReactNode } from 'react'
+import { useSaveReferral } from 'web/hooks/use-save-referral'
+import { useTracking } from 'web/hooks/use-tracking'
 
 export default function NewsPage() {
   useTracking('view news page')
   useSaveReferral()
   useSaveCampaign()
 
-  const topics = buildArray<Tab>(...newsContent)
   const [sidebar, setSidebar] = useState<ReactNode>(<></>)
 
   return (
