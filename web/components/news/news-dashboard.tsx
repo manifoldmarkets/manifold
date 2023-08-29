@@ -25,14 +25,7 @@ export const createNewsDashboardTab = (
   const otherCards = content.filter((card) => !hasSlug(card))
   return {
     title: shortTitle,
-    content: (
-      <Col>
-        <div className="xl:hidden">
-          <NewsSidebar description={description} data={otherCards} />
-        </div>
-        <NewsDashboard title={title} data={slugCards} />
-      </Col>
-    ),
+    content: <NewsDashboard title={title} data={slugCards} />,
     sidebar: <NewsSidebar description={description} data={otherCards} />,
   }
 }
