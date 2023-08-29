@@ -7,7 +7,6 @@ import { getMarketMovementInfo } from 'web/lib/supabase/feed-timeline/feed-marke
 import clsx from 'clsx'
 import { Row } from '../layout/row'
 import { HiSparkles } from 'react-icons/hi'
-import { fromNow } from 'web/lib/util/time'
 
 export function CardReason(props: {
   item: FeedTimelineItem | undefined
