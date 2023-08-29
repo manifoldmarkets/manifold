@@ -1,4 +1,4 @@
-import { ReactNode, useContext, useEffect } from 'react'
+import { ReactNode } from 'react'
 import { FeedContractCard } from 'web/components/contract/feed-contract-card'
 import { Col } from 'web/components/layout/col'
 import { DashboardNewsItem } from 'web/components/news/dashboard-news-item'
@@ -6,7 +6,6 @@ import { Title } from 'web/components/widgets/title'
 import { useContracts } from 'web/hooks/use-contract-supabase'
 import { useLinkPreviews } from 'web/hooks/use-link-previews'
 import { LoadingIndicator } from '../widgets/loading-indicator'
-import clsx from 'clsx'
 
 export type NewsContentType = NewsLink | NewsQuestion
 export type NewsLink = { url: string }
@@ -18,25 +17,39 @@ export const createNewsDashboardTab = (
   content: NewsContentType[],
   description?: ReactNode
 ) => {
-  const hasSlug = (content: NewsContentType): content is { slug: string } => {
+  const isQuestion = (
+    content: NewsContentType
+  ): content is { slug: string } => {
     return 'slug' in content
   }
-  const slugCards = content.filter(hasSlug)
-  const otherCards = content.filter((card) => !hasSlug(card))
+  const isNews = (content: NewsContentType): content is NewsLink => {
+    return 'url' in content
+  }
+
+  const slugCards = content.filter(isQuestion)
+  const otherCards = content.filter(isNews)
   return {
     title: shortTitle,
     content: (
       <Col>
         <Title>{title}</Title>
         <div className="xl:hidden">
-          <NewsSidebar description={description} data={otherCards} />
+          <NewsSidebar
+            description={description}
+            data={otherCards}
+            title={title}
+          />
         </div>
         <NewsDashboard title={title} data={slugCards} />
       </Col>
     ),
     sidebar: (
       <div className="hidden xl:inline-flex">
-        <NewsSidebar description={description} data={otherCards} />
+        <NewsSidebar
+          description={description}
+          data={otherCards}
+          title={title}
+        />
       </div>
     ),
   }
@@ -65,18 +78,20 @@ export const NewsSidebar = (props: {
 
   const content = data.map(renderCard).filter((x) => !!x)
   return (
-    <Col className="gap-2">
+    <Col>
       {(description || content.length > 0) && (
-        <Col className=" text-primary-700 hidden xl:inline-flex">
+        <Col className=" text-primary-700 mb-2 hidden xl:inline-flex">
           Additional Context
         </Col>
       )}
-      <Col className="gap-4">
-        {description && (
-          <Col className="xl:bg-canvas-0 gap-2 xl:px-6 xl:py-4">
+      {description && (
+        <>
+          <Col className="bg-canvas-0 mb-4 gap-2 py-2 px-4 xl:px-6 xl:py-4">
             {description}
           </Col>
-        )}
+        </>
+      )}
+      <Col className="gap-4">
         {isLoading ? <LoadingIndicator /> : <>{content}</>}
       </Col>
     </Col>

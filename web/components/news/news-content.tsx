@@ -304,13 +304,16 @@ const Election2024 = createNewsDashboardTab(
     { slug: 'will-ai-be-a-major-topic-during-the' },
 
     { slug: 'will-a-third-party-candidate-receiv' },
-  ],
-  <DashboardNewsItem
-    className="mb-4"
-    urlToImage="https://www.washingtonpost.com/wp-apps/imrs.php?src=https://arc-anglerfish-washpost-prod-washpost.s3.amazonaws.com/public/B6GOFP7PS5F67I6BYHTRIX3CME.jpg&w=700&h=467"
-    url="https://www.washingtonpost.com/politics/interactive/2023/poll-republican-presidential-debate/"
-    description={`A Washington Post/FiveThirtyEight/Ipsos poll survyed likely Republican voters before and after the debate`}
-  />
+    {
+      url: 'https://www.npr.org/2023/08/25/1195726967/where-the-gop-primary-stands-with-trump-still-front-and-center',
+    },
+  ]
+  // <DashboardNewsItem
+  //   className="mb-4"
+  //   urlToImage="https://www.washingtonpost.com/wp-apps/imrs.php?src=https://arc-anglerfish-washpost-prod-washpost.s3.amazonaws.com/public/B6GOFP7PS5F67I6BYHTRIX3CME.jpg&w=700&h=467"
+  //   url="https://www.washingtonpost.com/politics/interactive/2023/poll-republican-presidential-debate/"
+  //   description={`A Washington Post/FiveThirtyEight/Ipsos poll survyed likely Republican voters before and after the debate`}
+  // />
 )
 
 const RPlace = createNewsDashboardTab(
