@@ -192,7 +192,7 @@ export function FeedContractCard(props: {
         </Col>
       )}
 
-      {item?.dataType == 'new_contract' && descriptionIsEmpty(contract) && (
+      {item?.dataType == 'new_contract' && !descriptionIsEmpty(contract) && (
         <FeedContractCardDescription contract={contract} />
       )}
 
