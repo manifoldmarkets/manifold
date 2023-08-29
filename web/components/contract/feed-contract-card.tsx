@@ -222,9 +222,10 @@ const BottomActionRow = (props: {
   const { contract, user, item, hide, underline } = props
   const { question } = contract
   return (
-    <Row
+    // <Row
+    <div
       className={clsx(
-        'items-center justify-between pt-2',
+        'grid grid-cols-4 items-center justify-between gap-[12%] pt-2',
         underline ? 'border-1 border-ink-200 border-b pb-3' : 'pb-2'
       )}
     >
@@ -252,7 +253,8 @@ const BottomActionRow = (props: {
         className="px-0"
         trackingLocation={'contract card (feed)'}
       />
-    </Row>
+      {/* </Row> */}
+    </div>
   )
 }
 
