@@ -45,7 +45,7 @@ export function FeedTimeline() {
     user?.createdTime
   )
   return (
-    <Col className="mx-auto w-full max-w-2xl gap-2 pb-4 sm:px-2 lg:pr-4">
+    <Col className="mx-auto w-full gap-2 pb-4 sm:px-2 lg:pr-4">
       <Col className={clsx('gap-6')}>
         <Col>
           {user && remaining > 0 && (

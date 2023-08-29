@@ -7,6 +7,7 @@ import { getMarketMovementInfo } from 'web/lib/supabase/feed-timeline/feed-marke
 import clsx from 'clsx'
 import { Row } from '../layout/row'
 import { HiSparkles } from 'react-icons/hi'
+import { fromNow } from 'web/lib/util/time'
 
 export function CardReason(props: {
   item: FeedTimelineItem | undefined
@@ -18,29 +19,41 @@ export function CardReason(props: {
     item?.dataType,
     item?.data
   )
-  const positiveChange = probChange && probChange > 0
 
-  if (!item || item.isCopied) {
+  if (!item) {
+    if (contract.resolutionTime) {
+      return (
+        <span className="text-ink-400 text-sm">
+          resolved
+          <RelativeTimestamp
+            time={contract.resolutionTime}
+            shortened={true}
+            className="text-ink-400"
+          />
+        </span>
+      )
+    } else if (probChange && Math.abs(probChange) > 0.05) {
+      return <ProbabilityChange probChange={probChange} />
+    } else {
+      return (
+        <span className="text-ink-400 text-sm">
+          created
+          <RelativeTimestamp
+            time={contract.createdTime}
+            shortened={true}
+            className="text-ink-400"
+          />
+        </span>
+      )
+    }
+  }
+
+  if (item.isCopied) {
     return <></>
   }
 
   if (item.dataType == 'contract_probability_changed' && probChange) {
-    return (
-      <span
-        className={clsx(
-          'text-ink-500 my-auto items-center gap-1 text-sm',
-          positiveChange
-            ? ' text-teal-600 dark:text-teal-300'
-            : 'dark:text-scarlet-200 text-scarlet-600'
-        )}
-      >
-        <span className="font-bold">
-          {positiveChange ? '+' : ''}
-          {probChange}%
-        </span>{' '}
-        today
-      </span>
-    )
+    return <ProbabilityChange probChange={probChange} />
   }
 
   if (item.dataType == 'new_contract') {
@@ -87,5 +100,26 @@ export function CardReason(props: {
           </div>
         )}
     </>
+  )
+}
+
+function ProbabilityChange(props: { probChange: number }) {
+  const { probChange } = props
+  const positiveChange = probChange && probChange > 0
+  return (
+    <span
+      className={clsx(
+        'text-ink-500 my-auto items-center gap-1 text-sm',
+        positiveChange
+          ? ' text-teal-600 dark:text-teal-300'
+          : 'dark:text-scarlet-200 text-scarlet-600'
+      )}
+    >
+      <span className="font-bold">
+        {positiveChange ? '+' : ''}
+        {probChange}%
+      </span>{' '}
+      today
+    </span>
   )
 }
