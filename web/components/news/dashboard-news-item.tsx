@@ -38,12 +38,12 @@ export const DashboardNewsItem = (props: {
       rel="noreferrer"
       target="_blank"
       className={clsx(
-        'border-canvas-0 bg-canvas-0 hover:border-primary-300 focus:border-primary-300 relative flex w-full flex-col overflow-hidden rounded-xl border transition-colors',
+        'border-canvas-0 bg-canvas-0 hover:border-primary-300 focus:border-primary-300 relative flex w-full flex-col overflow-hidden rounded-xl border transition-colors sm:flex-row',
         className
       )}
     >
       <img
-        className=" object-contains m-0"
+        className=" m-0 object-cover sm:w-1/3"
         src={image ?? urlToImage}
         alt={title}
         height={200}
