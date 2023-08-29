@@ -33,6 +33,23 @@ export function CardReason(props: {
           />
         </span>
       )
+    } else if (probChange && Math.abs(probChange) > 0.05) {
+      return (
+        <span
+          className={clsx(
+            'text-ink-500 my-auto items-center gap-1 text-sm',
+            positiveChange
+              ? ' text-teal-600 dark:text-teal-300'
+              : 'dark:text-scarlet-200 text-scarlet-600'
+          )}
+        >
+          <span className="font-bold">
+            {positiveChange ? '+' : ''}
+            {probChange}%
+          </span>{' '}
+          today
+        </span>
+      )
     } else {
       return (
         <span className="text-ink-400 text-sm">
@@ -45,7 +62,6 @@ export function CardReason(props: {
         </span>
       )
     }
-    return <span></span>
   }
 
   if (item.isCopied) {
