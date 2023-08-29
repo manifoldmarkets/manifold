@@ -6,10 +6,7 @@ import { LiquidityProvision } from './liquidity-provision'
 import { computeFills } from './new-bet'
 import { binarySearch } from './util/algos'
 import { EPSILON, floatingEqual } from './util/math'
-import {
-  calculateCpmmMultiArbitrageBet,
-  calculateCpmmMultiArbitrageSellNo,
-} from './calculate-cpmm-arbitrage'
+import { calculateCpmmMultiArbitrageSellNo } from './calculate-cpmm-arbitrage'
 import { Answer } from './answer'
 
 export type CpmmState = {
@@ -242,7 +239,7 @@ export function calculateCpmmMultiSale(
   const { newBetResult, otherBetResults } =
     outcome === 'YES'
       ? { newBetResult: undefined, otherBetResults: undefined }
-      : // Buy NO shares
+      : // Buy YES shares
         calculateCpmmMultiArbitrageSellNo(
           answers,
           answerToSell,
@@ -253,7 +250,7 @@ export function calculateCpmmMultiSale(
         )
 
   // Transform buys of opposite outcome into sells.
-  const saleTakers = newBetResult.takers.map((taker) => ({
+  const saleTakers = newBetResult!.takers.map((taker) => ({
     ...taker,
     // You bought opposite shares, which combine with existing shares, removing them.
     shares: -taker.shares,
@@ -266,9 +263,15 @@ export function calculateCpmmMultiSale(
 
   const saleValue = -sumBy(saleTakers, (taker) => taker.amount)
 
+  const transformedNewBetResult = {
+    ...newBetResult!,
+    takers: saleTakers,
+    outcome
+  }
+
   return {
     saleValue,
-    newBetResult,
+    newBetResult: transformedNewBetResult,
     otherBetResults,
   }
 }
