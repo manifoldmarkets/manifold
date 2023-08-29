@@ -1,10 +1,14 @@
-import { ReactNode, useState } from 'react'
+import { HomeIcon } from '@heroicons/react/solid'
+import { buildArray } from 'common/util/array'
+import { ReactNode, createContext, useState } from 'react'
 import { SEO } from 'web/components/SEO'
 import { DailyStats } from 'web/components/daily-stats'
 import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
 import { Spacer } from 'web/components/layout/spacer'
+import { Tab } from 'web/components/layout/tabs'
 import { ProfileSummary } from 'web/components/nav/profile-summary'
+import { newsContent } from 'web/components/news/news-content'
 import { NewsTopicsTabs } from 'web/components/news/news-topics-tabs'
 import Welcome from 'web/components/onboarding/welcome'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
@@ -36,6 +40,17 @@ export default function Home() {
 function HomeDashboard() {
   const user = useUser()
 
+  const [sidebar, setSidebar] = useState<ReactNode>(<></>)
+
+  const topics = buildArray<Tab>(
+    {
+      title: 'For you',
+      inlineTabIcon: <HomeIcon className="h-4 w-4" />,
+      content: <FeedTimeline />,
+    },
+    ...newsContent
+  )
+
   return (
     <>
       <SEO
@@ -43,8 +58,7 @@ function HomeDashboard() {
         description="Breaking news meets the wisdom of the crowd"
       />
       <Welcome />
-
-      <Page>
+      <Page rightSidebar={sidebar}>
         <Row className="mx-4 mb-2 items-center justify-between gap-4">
           <div className="flex sm:hidden">
             {user ? <ProfileSummary user={user} /> : <Spacer w={4} />}
@@ -53,7 +67,12 @@ function HomeDashboard() {
           <DailyStats user={user} />
         </Row>
 
-        <NewsTopicsTabs homeContent={<FeedTimeline />} />
+        <NewsTopicsTabs
+          topics={topics}
+          onTabClick={(tabTitle, index) => {
+            setSidebar(topics[index].sidebar)
+          }}
+        />
       </Page>
     </>
   )

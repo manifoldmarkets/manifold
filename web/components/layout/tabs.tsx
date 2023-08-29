@@ -1,6 +1,6 @@
 import clsx from 'clsx'
 import { useRouter, NextRouter } from 'next/router'
-import { ReactNode, useState } from 'react'
+import { ReactNode, useEffect, useState } from 'react'
 import { track } from 'web/lib/service/analytics'
 import { Col } from './col'
 import { Tooltip } from 'web/components/widgets/tooltip'
@@ -9,6 +9,7 @@ import { Carousel } from 'web/components/widgets/carousel'
 
 export type Tab = {
   title: string
+  sidebar?: ReactNode
   content: ReactNode
   stackedTabIcon?: ReactNode
   inlineTabIcon?: ReactNode
@@ -124,6 +125,7 @@ export function QueryUncontrolledTabs(
   const router = useRouter()
   const selectedIdx = tabs.findIndex((t) => isTabSelected(router, 'tab', t))
   const activeIndex = selectedIdx !== -1 ? selectedIdx : defaultIndex ?? 0
+
   return (
     <ControlledTabs
       {...rest}
@@ -133,7 +135,6 @@ export function QueryUncontrolledTabs(
         if (scrollToTop) window.scrollTo({ top: 0 })
 
         onClick?.(title, i)
-
         router.replace(
           { query: { ...router.query, tab: title.toLowerCase() } },
           undefined,

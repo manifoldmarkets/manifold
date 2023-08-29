@@ -1,4 +1,4 @@
-import { ReactNode } from 'react'
+import { ReactNode, useContext, useEffect } from 'react'
 import { FeedContractCard } from 'web/components/contract/feed-contract-card'
 import { Col } from 'web/components/layout/col'
 import { DashboardNewsItem } from 'web/components/news/dashboard-news-item'
@@ -14,20 +14,23 @@ export const createNewsDashboardTab = (
   shortTitle: string,
   title: string,
   content: NewsContentType[],
-  context?: ReactNode
+  description?: ReactNode
 ) => {
   return {
     title: shortTitle,
-    content: <NewsDashboard title={title} context={context} data={content} />,
+    content: (
+      <NewsDashboard title={title} description={description} data={content} />
+    ),
+    sidebar: description,
   }
 }
 
 export const NewsDashboard = (props: {
-  context?: ReactNode
+  description?: ReactNode
   data: NewsContentType[]
   title: string
 }) => {
-  const { data, title, context } = props
+  const { data, title, description } = props
 
   const slugs = data.map((x) => (x as any).slug).filter((x) => !!x)
   const contracts = useContracts(slugs, 'slug')
@@ -94,11 +97,10 @@ export const NewsDashboard = (props: {
   const sortedData = [...otherCards, ...sortedSlugCards]
 
   const content = sortedData.map(renderCard).filter((x) => !!x)
-
   return (
     <Col>
-      <Title className={clsx(context ? 'mb-2' : 'mb-4')}>{title}</Title>
-      {context && <div className="mb-4">{context}</div>}
+      <Title className={clsx(description ? 'mb-2' : 'mb-4')}>{title}</Title>
+      {/* {description && <div className="mb-4">{description}</div>} */}
       {isLoading ? <LoadingIndicator /> : <>{content}</>}
     </Col>
   )

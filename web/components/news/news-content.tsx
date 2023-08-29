@@ -382,52 +382,44 @@ const STPSuper = createNewsDashboardTab(
     { slug: 'will-the-first-roomtemperature-ambi-61c98e502e09' },
     { slug: 'which-financial-instruments-should' },
   ],
-  <NewsTopicsContentContainer
-    header="Additional Context"
-    containerContent={
-      <Col className="gap-4">
-        <ExternalLink
-          title="Main Paper"
-          href="https://arxiv.org/abs/2307.12008"
-        />
+  <Col className="gap-4">
+    <ExternalLink title="Main Paper" href="https://arxiv.org/abs/2307.12008" />
 
-        <ExternalLink
-          title="Companion Paper"
-          href="https://arxiv.org/abs/2307.12037"
-        />
+    <ExternalLink
+      title="Companion Paper"
+      href="https://arxiv.org/abs/2307.12037"
+    />
 
-        <ExternalLink
-          title="First claims of replication from China"
-          href="https://www.zhihu.com/question/613850973/answer/3136316439?utm_id=0"
-        />
+    <ExternalLink
+      title="First claims of replication from China"
+      href="https://www.zhihu.com/question/613850973/answer/3136316439?utm_id=0"
+    />
 
-        <ExternalLink
-          title="What would RTP superconductors mean?"
-          href="https://theconversation.com/room-temperature-superconductors-could-revolutionize-electronics-an-electrical-engineer-explains-the-materials-potential-201849"
-        />
+    <ExternalLink
+      title="What would RTP superconductors mean?"
+      href="https://theconversation.com/room-temperature-superconductors-could-revolutionize-electronics-an-electrical-engineer-explains-the-materials-potential-201849"
+    />
 
-        <ExternalLink
-          title="Hacker News thread discussion"
-          href="https://news.ycombinator.com/item?id=36864624"
-        />
+    <ExternalLink
+      title="Hacker News thread discussion"
+      href="https://news.ycombinator.com/item?id=36864624"
+    />
 
-        <ExternalLink
-          title="Table of all current replication attempts"
-          href="https://forums.spacebattles.com/threads/claims-of-room-temperature-and-ambient-pressure-superconductor.1106083/page-11?post=94266395#post-94266395"
-        />
+    <ExternalLink
+      title="Table of all current replication attempts"
+      href="https://forums.spacebattles.com/threads/claims-of-room-temperature-and-ambient-pressure-superconductor.1106083/page-11?post=94266395#post-94266395"
+    />
 
-        <ExternalLink
-          title="Chinese team finds theoretical basis for LK-99 superconductivity"
-          href="https://arxiv.org/abs/2307.16040"
-        />
+    <ExternalLink
+      title="Chinese team finds theoretical basis for LK-99 superconductivity"
+      href="https://arxiv.org/abs/2307.16040"
+    />
 
-        <p className="mb-4">
-          Materials used are relatively cheap and not complicated, so it should
-          be easy for others to replicate.
-        </p>
-      </Col>
-    }
-  />
+    <p className="mb-4">
+      Materials used are relatively cheap and not complicated, so it should be
+      easy for others to replicate.
+    </p>
+  </Col>
 )
 
 const UFOs = createNewsDashboardTab(
