@@ -7,7 +7,6 @@ import utc from 'dayjs/plugin/utc'
 import { GoogleAuthProvider, getAuth, signInWithPopup } from 'firebase/auth'
 import {
   collection,
-  collectionGroup,
   deleteDoc,
   doc,
   getDoc,
@@ -28,7 +27,7 @@ import { track } from '../service/analytics'
 import { safeLocalStorage } from '../util/local'
 import { addGroupMember } from './api'
 import { app, db } from './init'
-import { coll, getValues, listenForValue, listenForValues } from './utils'
+import { coll, getValues, listenForValue } from './utils'
 
 dayjs.extend(utc)
 
