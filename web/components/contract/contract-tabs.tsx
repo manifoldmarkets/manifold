@@ -35,12 +35,12 @@ import { ControlledTabs } from '../layout/tabs'
 import { ContractMetricsByOutcome } from 'common/contract-metric'
 import { ContractBetsTable } from 'web/components/bet/contract-bets-table'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
-import { useComments } from 'web/hooks/use-comments'
 import { useRealtimeBets } from 'web/hooks/use-bets-supabase'
 import { Button } from '../buttons/button'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { ArrowRightIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
+import { useRealtimeCommentsOnContract } from 'web/hooks/use-comments-supabase'
 
 export const EMPTY_USER = '_'
 
@@ -188,9 +188,18 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
     betResponse,
     clearReply,
   } = props
-  const comments = (useComments(contract.id) ?? props.comments).filter(
-    (c) => !blockedUserIds.includes(c.userId)
-  )
+
+  // Firebase useComments
+  // const comments = (
+  //   useComments(
+  //     contract.id,
+  //     maxBy(props.comments, (c) => c.createdTime)?.createdTime ?? 0
+  //   ) ?? props.comments
+  // ).filter((c) => !blockedUserIds.includes(c.userId))
+
+  const comments = (
+    useRealtimeCommentsOnContract(contract.id) ?? props.comments
+  ).filter((c) => !blockedUserIds.includes(c.userId))
 
   const [parentCommentsToRender, setParentCommentsToRender] = useState(
     props.comments.filter((c) => !c.replyToCommentId).length
