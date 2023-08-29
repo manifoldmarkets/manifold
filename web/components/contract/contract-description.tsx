@@ -13,9 +13,8 @@ import { CollapsibleContent } from '../widgets/collapsible-content'
 import { isTrustworthy } from 'common/envs/constants'
 import { ContractEditHistoryButton } from 'web/components/contract/contract-edit-history-button'
 import { PencilIcon, PlusIcon } from '@heroicons/react/solid'
-import { Editor, JSONContent } from '@tiptap/core'
+import { Editor } from '@tiptap/core'
 import { CreateAnswerCpmmPanel } from '../answers/create-answer-panel'
-import { dsv } from 'd3'
 
 export function ContractDescription(props: {
   contract: Contract
