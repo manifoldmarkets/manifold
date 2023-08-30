@@ -193,8 +193,8 @@ export const getUserMostChangedPosition = async (
   )
 
   const max = maxBy(
-    investedByAnswer.filter(([, v]) => v.change),
-    ([, v]) => v.change
+    investedByAnswer.filter(([, v]) => v.change !== null),
+    ([, v]) => Math.abs(v.change ?? 0)
   )
   if (!max) return undefined
 
