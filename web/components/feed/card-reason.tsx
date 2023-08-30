@@ -48,7 +48,11 @@ export function CardReason(props: {
     return <></>
   }
 
-  if (item.dataType == 'contract_probability_changed' && probChange) {
+  if (
+    probChange &&
+    (item.dataType == 'contract_probability_changed' ||
+      probChange > PROB_THRESHOLD)
+  ) {
     return <ProbabilityChange probChange={probChange} />
   }
 
