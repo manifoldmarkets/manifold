@@ -36,7 +36,7 @@ import { AnswersPanel } from 'web/components/answers/answers-panel'
 
 type Points = HistoryPoint<any>[]
 
-async function getHistoryData(contract: Contract) {
+export async function getHistoryData(contract: Contract, limit = 50000) {
   switch (contract.outcomeType) {
     case 'BINARY':
     case 'PSEUDO_NUMERIC':
@@ -47,7 +47,7 @@ async function getHistoryData(contract: Contract) {
           contractId: contract.id,
           filterRedemptions: true,
           filterChallenges: true,
-          limit: 50000,
+          limit,
           order: 'desc',
         })
       )
@@ -110,7 +110,7 @@ export default function ContractEmbedPage(props: {
   )
 }
 
-const ContractChart = (props: {
+export const ContractChart = (props: {
   contract: Contract
   points: Points | null
   width: number
@@ -120,8 +120,10 @@ const ContractChart = (props: {
   const { contract, points, ...rest } = props
   const viewScale = useViewScale()
 
+  console.log('OUTCOMETYPE', contract.outcomeType)
   switch (contract.outcomeType) {
     case 'BINARY':
+      console.log('BINARY')
       return (
         <BinaryContractChart
           {...rest}

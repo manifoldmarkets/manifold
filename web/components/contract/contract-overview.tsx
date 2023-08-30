@@ -155,8 +155,16 @@ export function BinaryChart(props: {
   contract: BinaryContract
   viewScale: viewScale
   className?: string
+  controlledStart?: number
 }) {
-  const { showZoomer, betPoints, contract, viewScale, className } = props
+  const {
+    showZoomer,
+    betPoints,
+    contract,
+    viewScale,
+    className,
+    controlledStart,
+  } = props
   return (
     <SizedContainer
       className={clsx(
@@ -171,6 +179,7 @@ export function BinaryChart(props: {
           height={h}
           betPoints={betPoints}
           viewScaleProps={viewScale}
+          controlledStart={controlledStart}
           contract={contract}
           showZoomer={showZoomer}
         />
