@@ -12,6 +12,10 @@ import { IconButton, Button } from '../buttons/button'
 import { Modal, MODAL_CLASS } from '../layout/modal'
 import { AnswerBetPanel, AnswerCpmmBetPanel } from './answer-bet-panel'
 import { useUser } from 'web/hooks/use-user'
+import { Bet } from 'common/bet'
+import { sumBy } from 'lodash'
+import { User } from 'common/user'
+import { SellSharesModal } from '../bet/sell-row'
 
 // All items on the right side of an answer bar
 
@@ -86,6 +90,38 @@ export const MultiBettor = (props: {
         onClick={() => setOutcome('YES')}
       >
         Bet
+      </Button>
+    </>
+  )
+}
+
+export const MultiSeller = (props: {
+  answer: Answer
+  contract: CPMMMultiContract
+  userBets: Bet[]
+  user: User
+}) => {
+  const { answer, contract, userBets, user } = props
+  const [open, setOpen] = useState(false)
+  const sharesSum = sumBy(userBets, (bet) =>
+    bet.outcome === 'YES' ? bet.shares : -bet.shares
+  )
+
+  return (
+    <>
+      {open && (
+        <SellSharesModal
+          contract={contract}
+          user={user}
+          userBets={userBets}
+          shares={Math.abs(sharesSum)}
+          sharesOutcome={sharesSum > 0 ? 'YES' : 'NO'}
+          setOpen={setOpen}
+          answerId={answer.id}
+        />
+      )}
+      <Button size="2xs" color="indigo-outline" onClick={() => setOpen(true)}>
+        Sell
       </Button>
     </>
   )

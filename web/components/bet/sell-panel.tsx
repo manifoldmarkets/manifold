@@ -1,8 +1,16 @@
 import { APIError } from 'common/api'
 import { Bet, LimitBet } from 'common/bet'
-import { getInvested, getProbability } from 'common/calculate'
-import { calculateCpmmSale, getCpmmProbability } from 'common/calculate-cpmm'
-import { CPMMContract } from 'common/contract'
+import {
+  getAnswerProbability,
+  getInvested,
+  getProbability,
+} from 'common/calculate'
+import {
+  calculateCpmmMultiSale,
+  calculateCpmmSale,
+  getCpmmProbability,
+} from 'common/calculate-cpmm'
+import { CPMMContract, CPMMMultiContract } from 'common/contract'
 import { getMappedValue, getFormattedMappedValue } from 'common/pseudo-numeric'
 import { User } from 'common/user'
 import {
@@ -27,32 +35,51 @@ import {
 import { getSharesFromStonkShares, getStonkDisplayShares } from 'common/stonk'
 import clsx from 'clsx'
 import toast from 'react-hot-toast'
+import { removeUndefinedProps } from 'common/util/object'
 
 export function SellPanel(props: {
-  contract: CPMMContract
+  contract: CPMMContract | CPMMMultiContract
   userBets: Bet[]
   shares: number
   sharesOutcome: 'YES' | 'NO'
   user: User
   onSellSuccess?: () => void
+  answerId?: string
 }) {
-  const { contract, shares, sharesOutcome, userBets, user, onSellSuccess } =
-    props
+  const {
+    contract,
+    shares,
+    sharesOutcome,
+    userBets,
+    user,
+    onSellSuccess,
+    answerId,
+  } = props
   const { outcomeType } = contract
   const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
   const isStonk = outcomeType === 'STONK'
+  const isMulti = outcomeType === 'MULTIPLE_CHOICE'
 
   const { unfilledBets, balanceByUserId } = useUnfilledBetsAndBalanceByUserId(
     contract.id
   )
   const [displayAmount, setDisplayAmount] = useState<number | undefined>(() => {
-    const probChange = getSaleProbChange(
-      contract,
-      shares,
-      sharesOutcome,
-      unfilledBets,
-      balanceByUserId
-    )
+    const probChange = isMulti
+      ? getSaleProbChangeMulti(
+          contract,
+          answerId!,
+          shares,
+          sharesOutcome,
+          unfilledBets,
+          balanceByUserId
+        )
+      : getSaleProbChange(
+          contract,
+          shares,
+          sharesOutcome,
+          unfilledBets,
+          balanceByUserId
+        )
     return probChange > 0.2
       ? undefined
       : isStonk
@@ -96,6 +123,7 @@ export function SellPanel(props: {
       shares: isSellingAllShares ? undefined : amount,
       outcome: sharesOutcome,
       contractId: contract.id,
+      answerId,
     })
       .then((r) => {
         console.log('Sold shares. Result:', r)
@@ -122,14 +150,32 @@ export function SellPanel(props: {
     })
   }
 
-  const initialProb = getProbability(contract)
-  const { cpmmState, saleValue } = calculateCpmmSale(
-    contract,
-    sellQuantity,
-    sharesOutcome,
-    unfilledBets,
-    balanceByUserId
-  )
+  let initialProb, saleValue: number
+  let cpmmState
+  if (isMulti) {
+    initialProb = getAnswerProbability(contract, answerId!)
+    const answerToSell = contract.answers.find((a) => a.id === answerId)
+    const { newBetResult, saleValue: saleValueMulti } = calculateCpmmMultiSale(
+      contract.answers,
+      answerToSell!,
+      shares,
+      sharesOutcome,
+      undefined,
+      unfilledBets,
+      balanceByUserId
+    )
+    cpmmState = newBetResult.cpmmState
+    saleValue = saleValueMulti
+  } else {
+    initialProb = getProbability(contract)
+    ;({ cpmmState, saleValue } = calculateCpmmSale(
+      contract,
+      sellQuantity,
+      sharesOutcome,
+      unfilledBets,
+      balanceByUserId
+    ))
+  }
 
   const netProceeds = saleValue - loanPaid
   const profit = saleValue - costBasis
@@ -181,7 +227,7 @@ export function SellPanel(props: {
         label="Shares"
         error={!!error}
         disabled={isSubmitting}
-        inputClassName="w-full pl-[69px]"
+        inputClassName="w-full !pl-[69px]"
         quickAddMoreButton={
           <button
             className={clsx(
@@ -279,6 +325,30 @@ const getSaleProbChange = (
     unfilledBets,
     balanceByUserId
   )
+  const resultProb = getCpmmProbability(cpmmState.pool, cpmmState.p)
+  return Math.abs(resultProb - initialProb)
+}
+
+const getSaleProbChangeMulti = (
+  contract: CPMMMultiContract,
+  answerId: string,
+  shares: number,
+  outcome: 'YES' | 'NO',
+  unfilledBets: LimitBet[],
+  balanceByUserId: { [userId: string]: number }
+) => {
+  const initialProb = getAnswerProbability(contract, answerId)
+  const answerToSell = contract.answers.find((a) => a.id === answerId)
+  const { newBetResult } = calculateCpmmMultiSale(
+    contract.answers,
+    answerToSell!,
+    shares,
+    outcome,
+    undefined,
+    unfilledBets,
+    balanceByUserId
+  )
+  const { cpmmState } = newBetResult
   const resultProb = getCpmmProbability(cpmmState.pool, cpmmState.p)
   return Math.abs(resultProb - initialProb)
 }

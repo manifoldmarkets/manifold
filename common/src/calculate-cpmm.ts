@@ -237,9 +237,9 @@ export function calculateCpmmMultiSale(
   }
 
   const { newBetResult, otherBetResults } =
-    outcome === 'YES'
-      ? { newBetResult: undefined, otherBetResults: undefined }
-      : // Buy YES shares
+    // outcome === 'YES'
+    //   ? { newBetResult: undefined, otherBetResults: undefined }
+    //   : // Buy YES shares
         calculateCpmmMultiArbitrageSellNo(
           answers,
           answerToSell,
