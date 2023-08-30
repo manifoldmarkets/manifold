@@ -59,6 +59,7 @@ import { bulkUpdateContractMetrics } from 'shared/helpers/user-contract-metrics'
 import { Answer } from 'common/answer'
 import { getUserMostChangedPosition } from 'common/supabase/bets'
 import { addBetDataToUsersFeeds } from 'shared/create-feed'
+import { HOUR_MS } from 'common/util/time'
 
 const firestore = admin.firestore()
 
@@ -153,7 +154,7 @@ const addBetToFollowersFeeds = async (
   const positionChange = await getUserMostChangedPosition(
     bettor,
     contract,
-    bet.createdTime,
+    bet.createdTime - HOUR_MS,
     createSupabaseClient()
   )
   if (!positionChange) return
