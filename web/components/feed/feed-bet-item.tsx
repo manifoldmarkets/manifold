@@ -22,7 +22,10 @@ export const FeedBetsItem = (props: {
   const { avatarUrl, username, name } = creatorDetails
   const { previous, beforeProb, afterProb, change, current } = betData
   const saleAmount =
-    previous?.outcome === current?.outcome ? change : previous?.invested ?? 0
+    previous?.outcome === current?.outcome &&
+    (previous?.invested ?? 0) > (current?.invested ?? 0)
+      ? change
+      : previous?.invested ?? 0
 
   return (
     <ClickFrame
