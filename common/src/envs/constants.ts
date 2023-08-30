@@ -93,7 +93,7 @@ export const BOT_USERNAMES = [
   'arrbit',
   'ManaMaximizer',
   'rita',
-  'uhh'
+  'uhh',
 ]
 
 export const CORE_USERNAMES = [
