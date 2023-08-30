@@ -5,6 +5,8 @@ import { ContractMetric } from 'common/contract-metric'
 import { ContractCardView } from 'common/events'
 import { User } from 'common/user'
 import { formatMoney } from 'common/util/format'
+import Link from 'next/link'
+import { useRouter } from 'next/router'
 import { toast } from 'react-hot-toast'
 import { FiThumbsDown } from 'react-icons/fi'
 import { TiVolumeMute } from 'react-icons/ti'
@@ -22,24 +24,21 @@ import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { useUser } from 'web/hooks/use-user'
 import { updateUserDisinterestEmbedding } from 'web/lib/firebase/api'
 import { track } from 'web/lib/service/analytics'
+import { getMarketMovementInfo } from 'web/lib/supabase/feed-timeline/feed-market-movement-display'
 import { AnswersPanel } from '../answers/answers-panel'
 import { BetButton } from '../bet/feed-bet-button'
 import { CommentsButton } from '../comments/comments-button'
 import { CardReason, PROB_THRESHOLD } from '../feed/card-reason'
+import { FeedBinaryChart } from '../feed/feed-chart'
+import FeedContractCardDescription from '../feed/feed-contract-card-description'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { PollPanel } from '../poll/poll-panel'
 import { ClickFrame } from '../widgets/click-frame'
 import { Tooltip } from '../widgets/tooltip'
+import { descriptionIsEmpty } from './contract-description'
 import { LikeButton } from './like-button'
 import { TradesButton } from './trades-button'
-import FeedContractCardDescription from '../feed/feed-contract-card-description'
-import { useRouter } from 'next/router'
-import Link from 'next/link'
-import { descriptionIsEmpty } from './contract-description'
-import { BinaryOverview } from './contract-overview'
-import { getMarketMovementInfo } from 'web/lib/supabase/feed-timeline/feed-market-movement-display'
-import { FeedChart } from '../feed/feed-chart'
 
 export function FeedContractCard(props: {
   contract: Contract
@@ -189,8 +188,8 @@ export function FeedContractCard(props: {
         </div>
       )}
 
-      {isBinaryCpmm && probChange && probChange > PROB_THRESHOLD && (
-        <FeedChart contract={contract} />
+      {isBinaryCpmm && probChange && Math.abs(probChange) > PROB_THRESHOLD && (
+        <FeedBinaryChart contract={contract} className="my-4" />
       )}
       {promotedData && (
         <Col className={'w-full items-center'}>

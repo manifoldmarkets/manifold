@@ -135,24 +135,12 @@ export const BinaryOverview = (props: {
         />
       </Row>
 
-      <SizedContainer
-        className={clsx(
-          showZoomer && 'mb-8',
-          'h-[150px] w-full pb-3 pr-10 sm:h-[250px]'
-        )}
-      >
-        {(w, h) => (
-          <BinaryContractChart
-            width={w}
-            height={h}
-            betPoints={betPoints}
-            viewScaleProps={viewScale}
-            controlledStart={start}
-            contract={contract}
-            showZoomer={showZoomer}
-          />
-        )}
-      </SizedContainer>
+      <BinaryChart
+        showZoomer={showZoomer}
+        betPoints={betPoints}
+        contract={contract}
+        viewScale={viewScale}
+      />
 
       {tradingAllowed(contract) && (
         <SignedInBinaryMobileBetting contract={contract} user={user} />
@@ -166,13 +154,15 @@ export function BinaryChart(props: {
   betPoints: HistoryPoint<Partial<Bet>>[]
   contract: BinaryContract
   viewScale: viewScale
+  className?: string
 }) {
-  const { showZoomer, betPoints, contract, viewScale } = props
+  const { showZoomer, betPoints, contract, viewScale, className } = props
   return (
     <SizedContainer
       className={clsx(
         showZoomer && 'mb-8',
-        'h-[150px] w-full pb-3 pr-10 sm:h-[250px]'
+        'h-[150px] w-full pb-3 pr-10 sm:h-[250px]',
+        className
       )}
     >
       {(w, h) => (

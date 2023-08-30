@@ -15,8 +15,11 @@ import { db } from 'web/lib/supabase/db'
 import { Bet } from 'common/bet'
 import { ScaleTime, ScaleContinuousNumeric } from 'd3-scale'
 
-export function FeedChart(props: { contract: BinaryContract }) {
-  const { contract } = props
+export function FeedBinaryChart(props: {
+  contract: BinaryContract
+  className?: string
+}) {
+  const { contract, className } = props
   const [serializedPoints, setSerializedPoints] = useState<
     MultiSerializedPoint[] | SerializedPoint<Partial<Bet>>[] | undefined
   >(undefined)
@@ -55,6 +58,7 @@ export function FeedChart(props: { contract: BinaryContract }) {
             throw new Error('Function not implemented.')
           },
         }}
+        className={className}
       />
     )
   }
