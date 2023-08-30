@@ -25,9 +25,11 @@ export function FeedBinaryChart(props: {
   >(undefined)
 
   useEffect(() => {
-    getChartPoints(contract, db).then(({ allBetPoints, chartPoints }) => {
-      setSerializedPoints(chartPoints)
-    })
+    getChartPoints(contract, db, { limit: 50 }).then(
+      ({ allBetPoints, chartPoints }) => {
+        setSerializedPoints(chartPoints)
+      }
+    )
   }, [])
 
   const betPoints = useMemo(() => {

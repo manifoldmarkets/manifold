@@ -3,10 +3,14 @@ import { Contract } from 'common/contract'
 import { getInitialProbability } from 'common/calculate'
 import { getBetPoints, getBets } from './bets'
 import { binAvg, maxMinBin } from 'common/chart'
-import { calculateMultiBets } from 'common/bet'
+import { BetFilter, calculateMultiBets } from 'common/bet'
 import { pointsToBase64 } from 'common/util/og'
 
-export async function getChartPoints(contract: Contract, db: SupabaseClient) {
+export async function getChartPoints(
+  contract: Contract,
+  db: SupabaseClient,
+  options?: BetFilter
+) {
   const isMulti = contract.mechanism === 'cpmm-multi-1'
   const isSingle = contract.mechanism === 'cpmm-1'
 
@@ -17,6 +21,7 @@ export async function getChartPoints(contract: Contract, db: SupabaseClient) {
           contractId: contract.id,
           filterRedemptions: !isMulti,
           order: 'asc',
+          ...options,
         })
 
   let chartPoints = isSingle
