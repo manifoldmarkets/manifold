@@ -156,6 +156,7 @@ export function BinaryChart(props: {
   viewScale: viewScale
   className?: string
   controlledStart?: number
+  size?: 'sm' | 'md'
 }) {
   const {
     showZoomer,
@@ -164,12 +165,14 @@ export function BinaryChart(props: {
     viewScale,
     className,
     controlledStart,
+    size = 'md',
   } = props
   return (
     <SizedContainer
       className={clsx(
         showZoomer && 'mb-8',
-        'h-[150px] w-full pb-3 pr-10 sm:h-[250px]',
+        ' w-full pb-3 pr-10',
+        size == 'sm' ? 'h-[100px]' : 'h-[150px] sm:h-[250px]',
         className
       )}
     >

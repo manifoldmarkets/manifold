@@ -31,6 +31,7 @@ export function FeedBinaryChart(props: {
         viewScale={viewScaleProps}
         controlledStart={points[0].x}
         className={className}
+        size={'sm'}
       />
     )
   }
