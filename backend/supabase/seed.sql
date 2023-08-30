@@ -96,8 +96,7 @@ create table if not exists
   user_follows (
     user_id text not null,
     follow_id text not null,
-    data jsonb not null,
-    fs_updated_time timestamp not null,
+    created_time timestamptz not null default now(),
     primary key (user_id, follow_id)
   );
 
@@ -108,6 +107,7 @@ drop policy if exists "public read" on user_follows;
 create policy "public read" on user_follows for
 select
   using (true);
+
 
 alter table user_follows
 cluster on user_follows_pkey;
@@ -1348,7 +1348,6 @@ begin
   return case
     table_id
            when 'users' then cast((null, 'id') as table_spec)
-           when 'user_follows' then cast(('user_id', 'follow_id') as table_spec)
            when 'user_reactions' then cast(('user_id', 'reaction_id') as table_spec)
            when 'contracts' then cast((null, 'id') as table_spec)
            when 'contract_answers' then cast(('contract_id', 'answer_id') as table_spec)

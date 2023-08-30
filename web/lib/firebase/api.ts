@@ -458,3 +458,11 @@ export function createChatMessage(params: {
 }) {
   return call(getApiUrl('create-chat-message'), 'POST', params)
 }
+
+export function followUser(userId: string) {
+  return call(getApiUrl('follow-user'), 'POST', { userId, follow: true })
+}
+
+export function unfollowUser(userId: string) {
+  return call(getApiUrl('follow-user'), 'POST', { userId, follow: false })
+}
