@@ -110,7 +110,7 @@ export default function ContractEmbedPage(props: {
   )
 }
 
-export const ContractChart = (props: {
+const ContractChart = (props: {
   contract: Contract
   points: Points | null
   width: number
@@ -120,10 +120,8 @@ export const ContractChart = (props: {
   const { contract, points, ...rest } = props
   const viewScale = useViewScale()
 
-  console.log('OUTCOMETYPE', contract.outcomeType)
   switch (contract.outcomeType) {
     case 'BINARY':
-      console.log('BINARY')
       return (
         <BinaryContractChart
           {...rest}
