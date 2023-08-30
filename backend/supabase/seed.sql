@@ -108,11 +108,6 @@ create policy "public read" on user_follows for
 select
   using (true);
 
-drop policy if exists "user follow and unfollow" on user_follows;
-
-create policy "user follow and unfollow" on user_follows for insert and delete
-using user_follows.follow_id = firebase_uid ();
-
 
 alter table user_follows
 cluster on user_follows_pkey;
