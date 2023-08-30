@@ -25,7 +25,7 @@ import { track } from 'web/lib/service/analytics'
 import { AnswersPanel } from '../answers/answers-panel'
 import { BetButton } from '../bet/feed-bet-button'
 import { CommentsButton } from '../comments/comments-button'
-import { CardReason } from '../feed/card-reason'
+import { CardReason, PROB_THRESHOLD } from '../feed/card-reason'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { PollPanel } from '../poll/poll-panel'
@@ -37,6 +37,9 @@ import FeedContractCardDescription from '../feed/feed-contract-card-description'
 import { useRouter } from 'next/router'
 import Link from 'next/link'
 import { descriptionIsEmpty } from './contract-description'
+import { BinaryOverview } from './contract-overview'
+import { getMarketMovementInfo } from 'web/lib/supabase/feed-timeline/feed-market-movement-display'
+import { FeedChart } from '../feed/feed-chart'
 
 export function FeedContractCard(props: {
   contract: Contract
@@ -81,7 +84,6 @@ export function FeedContractCard(props: {
   const metrics = useSavedContractMetrics(contract)
 
   const router = useRouter()
-
   // Note: if we ever make cards taller than viewport, we'll need to pass a lower threshold to the useIsVisible hook
 
   const { ref } = useIsVisible(
@@ -93,6 +95,12 @@ export function FeedContractCard(props: {
         isPromoted: !!promotedData,
       } as ContractCardView),
     true
+  )
+
+  const { probChange } = getMarketMovementInfo(
+    contract,
+    item?.dataType,
+    item?.data
   )
 
   const trackClick = () =>
@@ -137,7 +145,7 @@ export function FeedContractCard(props: {
               )}
             />
           </Row>
-          <CardReason item={item} contract={contract} />
+          <CardReason item={item} contract={contract} probChange={probChange} />
         </Row>
         <div
           className={clsx(
@@ -167,7 +175,6 @@ export function FeedContractCard(props: {
             )}
           </Row>
         </div>
-
         {children}
       </Col>
 
@@ -182,6 +189,9 @@ export function FeedContractCard(props: {
         </div>
       )}
 
+      {isBinaryCpmm && probChange && probChange > PROB_THRESHOLD && (
+        <FeedChart contract={contract} />
+      )}
       {promotedData && (
         <Col className={'w-full items-center'}>
           <ClaimButton

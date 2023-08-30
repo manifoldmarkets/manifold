@@ -19,6 +19,7 @@ import { z } from 'zod'
 import { APIError, MaybeAuthedEndpoint, validate } from './helpers'
 import { getIsAdmin } from 'common/supabase/is-admin'
 import { pointsToBase64 } from 'common/util/og'
+import { getChartPoints } from 'common/supabase/chart-points'
 
 const bodySchema = z.object({
   contractSlug: z.string(),
@@ -76,44 +77,6 @@ export const getcontractparams = MaybeAuthedEndpoint<Ret>(async (req, auth) => {
 
   const totalBets =
     contract.mechanism == 'none' ? 0 : await getTotalBetCount(contract.id, db)
-  const isSingle = contract.mechanism === 'cpmm-1'
-  const isMulti = contract.mechanism === 'cpmm-multi-1'
-
-  const betsToPass =
-    contract.mechanism == 'none'
-      ? []
-      : await getBets(db, {
-          contractId: contract.id,
-          limit: 100,
-          order: 'desc',
-          filterAntes: true,
-          filterRedemptions: true,
-        })
-
-  const allBetPoints =
-    contract.mechanism == 'none'
-      ? []
-      : await getBetPoints(db, {
-          contractId: contract.id,
-          filterRedemptions: !isMulti,
-          order: 'asc',
-        })
-
-  let chartPoints = isSingle
-    ? [
-        { x: contract.createdTime, y: getInitialProbability(contract) },
-        ...maxMinBin(allBetPoints, 500),
-      ].map((p) => [p.x, p.y] as const)
-    : isMulti
-    ? calculateMultiBets(
-        allBetPoints,
-        contract.answers.map((a) => a.id)
-      )
-    : []
-
-  const ogPoints =
-    isSingle && contract.visibility !== 'private' ? binAvg(allBetPoints) : []
-  const pointsString = pointsToBase64(ogPoints.map((p) => [p.x, p.y] as const))
 
   const comments = await getRecentTopLevelCommentsAndReplies(
     db,
@@ -138,6 +101,27 @@ export const getcontractparams = MaybeAuthedEndpoint<Ret>(async (req, auth) => {
   const creator = await getUser(contract.creatorId)
 
   const relatedContracts = await getRelatedContracts(contract, 20, db, true)
+
+  const isSingle = contract.mechanism === 'cpmm-1'
+
+  const { allBetPoints, chartPoints } = await getChartPoints(contract, db)
+
+  const ogPoints =
+    isSingle && contract.visibility !== 'private' ? binAvg(allBetPoints) : []
+
+  const pointsString = pointsToBase64(ogPoints.map((p) => [p.x, p.y] as const))
+
+  const betsToPass =
+    contract.mechanism == 'none'
+      ? []
+      : await getBets(db, {
+          contractId: contract.id,
+          limit: 100,
+          order: 'desc',
+          filterAntes: true,
+          filterRedemptions: true,
+        })
+
   return {
     state: 'authed',
     params: removeUndefinedProps({

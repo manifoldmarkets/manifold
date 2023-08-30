@@ -1,23 +1,20 @@
+import clsx from 'clsx'
+import { Contract } from 'common/contract'
+import { HOUR_MS } from 'common/util/time'
+import { HiSparkles } from 'react-icons/hi'
 import { FeedTimelineItem } from 'web/hooks/use-feed-timeline'
+import { Row } from '../layout/row'
 import { RelativeTimestamp } from '../relative-timestamp'
 import { Tooltip } from '../widgets/tooltip'
-import { HOUR_MS } from 'common/util/time'
-import { Contract } from 'common/contract'
-import { getMarketMovementInfo } from 'web/lib/supabase/feed-timeline/feed-market-movement-display'
-import clsx from 'clsx'
-import { Row } from '../layout/row'
-import { HiSparkles } from 'react-icons/hi'
+
+export const PROB_THRESHOLD = 0.05
 
 export function CardReason(props: {
   item: FeedTimelineItem | undefined
   contract: Contract
+  probChange: number | null
 }) {
-  const { item, contract } = props
-  const { probChange } = getMarketMovementInfo(
-    contract,
-    item?.dataType,
-    item?.data
-  )
+  const { item, contract, probChange } = props
 
   if (!item) {
     if (contract.resolutionTime) {
@@ -31,7 +28,7 @@ export function CardReason(props: {
           />
         </span>
       )
-    } else if (probChange && Math.abs(probChange) > 0.05) {
+    } else if (probChange && Math.abs(probChange) > PROB_THRESHOLD) {
       return <ProbabilityChange probChange={probChange} />
     } else {
       return (

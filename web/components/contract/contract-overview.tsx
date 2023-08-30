@@ -42,6 +42,7 @@ import { CancelLabel } from '../outcome-label'
 import { PollPanel } from '../poll/poll-panel'
 import { CreateAnswerPanel } from '../answers/create-answer-panel'
 import clsx from 'clsx'
+import { ScaleTime } from 'd3-scale'
 
 export const ContractOverview = memo(
   (props: {
@@ -106,7 +107,7 @@ const NumericOverview = (props: { contract: NumericContract }) => {
   )
 }
 
-const BinaryOverview = (props: {
+export const BinaryOverview = (props: {
   contract: BinaryContract
   betPoints: HistoryPoint<Partial<Bet>>[]
 }) => {
@@ -156,6 +157,35 @@ const BinaryOverview = (props: {
         <SignedInBinaryMobileBetting contract={contract} user={user} />
       )}
     </>
+  )
+}
+
+export function BinaryChart(props: {
+  showZoomer: boolean
+  betPoints: HistoryPoint<Partial<Bet>>[]
+  contract: BinaryContract
+  viewScale?: ScaleTime<number, number, never>
+}) {
+  const { showZoomer, betPoints, contract, viewScale } = props
+  return (
+    <SizedContainer
+      className={clsx(
+        showZoomer && 'mb-8',
+        'h-[150px] w-full pb-3 pr-10 sm:h-[250px]'
+      )}
+    >
+      {(w, h) => (
+        <BinaryContractChart
+          width={w}
+          height={h}
+          betPoints={betPoints}
+          viewScaleProps={viewScale}
+          controlledStart={start}
+          contract={contract}
+          showZoomer={showZoomer}
+        />
+      )}
+    </SizedContainer>
   )
 }
 
