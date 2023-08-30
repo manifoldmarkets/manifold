@@ -32,7 +32,6 @@ export const addcontractstofeed = onRequest(
     memory: '4GiB',
     secrets,
     cpu: 2,
-    minInstances: 1,
   },
   async (_req, res) => {
     const db = createSupabaseClient()
