@@ -157,6 +157,7 @@ export function BinaryChart(props: {
   className?: string
   controlledStart?: number
   size?: 'sm' | 'md'
+  color?: string
 }) {
   const {
     showZoomer,
@@ -166,7 +167,16 @@ export function BinaryChart(props: {
     className,
     controlledStart,
     size = 'md',
+    color,
   } = props
+
+  const percentBounds = betPoints.reduce(
+    (acc, point) => ({
+      max: Math.max(acc.max, point.y),
+      min: Math.min(acc.min, point.y),
+    }),
+    { max: Number.NEGATIVE_INFINITY, min: Number.POSITIVE_INFINITY }
+  )
   return (
     <SizedContainer
       className={clsx(
@@ -183,8 +193,10 @@ export function BinaryChart(props: {
           betPoints={betPoints}
           viewScaleProps={viewScale}
           controlledStart={controlledStart}
+          percentBounds={percentBounds}
           contract={contract}
           showZoomer={showZoomer}
+          color={color}
         />
       )}
     </SizedContainer>
