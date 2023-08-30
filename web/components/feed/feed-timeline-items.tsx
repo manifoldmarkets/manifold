@@ -4,7 +4,6 @@ import { run } from 'common/supabase/utils'
 import { User } from 'common/user'
 import { filterDefined } from 'common/util/array'
 import { FeedContractCard } from 'web/components/contract/feed-contract-card'
-import { mergePeriodic } from 'web/components/feed/feed-items'
 import { Col } from 'web/components/layout/col'
 import { groupCommentsByContractsAndParents } from 'web/hooks/use-additional-feed-items'
 import { BoostsType } from 'web/hooks/use-feed'
@@ -16,7 +15,6 @@ import { NewsArticle } from '../news/news-article'
 import { FeedBetsItem } from './feed-bet-item'
 import { FeedCommentItem } from './feed-comment-item'
 import { Contract } from 'common/contract'
-import { Bet } from 'common/bet'
 import { ContractComment } from 'common/comment'
 import { track } from 'web/lib/service/analytics'
 import { useState } from 'react'
@@ -54,7 +52,7 @@ export const FeedTimelineItems = (props: {
   return (
     <>
       {feedTimelineItems.map((item) => {
-        if (item.contract && 'manuallyCreatedFromContract' in item) {
+        if ('manuallyCreatedFromContract' in item && item.contract) {
           return (
             <FeedContractAndRelatedItems
               user={user}
@@ -64,31 +62,30 @@ export const FeedTimelineItems = (props: {
               key={item.contract.id}
             />
           )
-        }
-        if (item.contract && ('ad_id' in item || 'contract' in item)) {
-          const { contract } = item
+        } else if ('ad_id' in item) {
           // Boosted contract
-          if ('ad_id' in item) {
-            return (
-              <FeedContractAndRelatedItems
-                user={user}
-                contract={contract}
-                promotedData={{
-                  adId: item.ad_id,
-                  reward: AD_REDEEM_REWARD,
-                }}
-                parentComments={[]}
-                childCommentsByParentCommentId={{}}
-                key={item.ad_id}
-              />
-            )
-          }
+          const { contract } = item
+          return (
+            <FeedContractAndRelatedItems
+              user={user}
+              contract={contract}
+              promotedData={{
+                adId: item.ad_id,
+                reward: AD_REDEEM_REWARD,
+              }}
+              parentComments={[]}
+              childCommentsByParentCommentId={{}}
+              key={item.ad_id}
+            />
+          )
+        } else if (item.contract) {
+          // Organic contract
+          const { contract } = item
           const parentComments = (
             item.comments ??
             parentCommentsByContractId[contract.id] ??
             []
           ).slice(0, MAX_PARENT_COMMENTS_PER_FEED_ITEM)
-          // Organic contract
           return (
             <FeedContractAndRelatedItems
               user={user}
@@ -143,7 +140,6 @@ const FeedContractAndRelatedItems = (props: {
   user: User | null | undefined
   parentComments: ContractComment[]
   childCommentsByParentCommentId: Record<string, ContractComment[]>
-  groupedBetsByTime?: Bet[][]
   item?: FeedTimelineItem
   promotedData?: { adId: string; reward: number }
 }) => {
@@ -151,12 +147,10 @@ const FeedContractAndRelatedItems = (props: {
     contract,
     promotedData,
     item,
-    groupedBetsByTime,
     childCommentsByParentCommentId,
     parentComments,
   } = props
   const hasComments = parentComments && parentComments.length > 0
-  const hasBets = groupedBetsByTime && groupedBetsByTime.length > 0
   const [hidden, setHidden] = useState(false)
 
   return (
@@ -182,8 +176,13 @@ const FeedContractAndRelatedItems = (props: {
           item={item}
           className="max-w-full"
         >
-          {hasBets && !hasComments && (
-            <FeedBetsItem contract={contract} groupedBets={groupedBetsByTime} />
+          {item?.betData && item?.creatorDetails && !hasComments && (
+            <FeedBetsItem
+              contract={contract}
+              betData={item.betData}
+              creatorDetails={item.creatorDetails}
+              answers={item.answers}
+            />
           )}
         </FeedContractCard>
       ) : (
@@ -231,21 +230,16 @@ const FeedItemFrame = (props: {
   )
 }
 
-export const convertContractToManualFeedItem = (
-  contract: Contract,
-  createdTime: number
-): FeedTimelineItem =>
-  ({
-    contract,
-    createdTime,
-    id: Math.random(),
-    contractId: contract.id,
-    dataType: 'trending_contract',
-    reason: 'similar_interest_vector_to_contract',
-    supabaseTimestamp: new Date(createdTime).toISOString(),
-    isCopied: true,
-    avatarUrl: contract.creatorAvatarUrl,
-    commentId: null,
-    newsId: null,
-    manuallyCreatedFromContract: true,
-  } as FeedTimelineItem)
+// every period items in A, insert an item from B
+function mergePeriodic<A, B>(a: A[], b: B[], period: number): (A | B)[] {
+  const merged = []
+  let j = 0
+  for (let i = 0; i < a.length; ++i) {
+    merged.push(a[i])
+    if ((i + 1) % period === 0 && j < b.length) {
+      merged.push(b[j])
+      ++j
+    }
+  }
+  return merged
+}

@@ -167,8 +167,6 @@ export function FeedContractCard(props: {
             )}
           </Row>
         </div>
-
-        {children}
       </Col>
 
       {contract.outcomeType === 'POLL' && (
@@ -198,6 +196,8 @@ export function FeedContractCard(props: {
       {isBinaryCpmm && metrics && metrics.hasShares && (
         <YourMetricsFooter metrics={metrics} />
       )}
+
+      {children}
 
       <Col>
         <BottomActionRow

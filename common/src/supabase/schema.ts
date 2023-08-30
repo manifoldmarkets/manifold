@@ -525,22 +525,22 @@ export interface Database {
         }
         Relationships: [
           {
-            foreignKeyName: 'group_invites_group_id_fkey'
-            columns: ['group_id']
-            referencedRelation: 'groups'
-            referencedColumns: ['id']
+            foreignKeyName: "group_invites_group_id_fkey"
+            columns: ["group_id"]
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'group_invites_group_id_fkey'
-            columns: ['group_id']
-            referencedRelation: 'group_role'
-            referencedColumns: ['group_id']
+            foreignKeyName: "group_invites_group_id_fkey"
+            columns: ["group_id"]
+            referencedRelation: "group_role"
+            referencedColumns: ["group_id"]
           },
           {
-            foreignKeyName: 'group_invites_group_id_fkey'
-            columns: ['group_id']
-            referencedRelation: 'groups_rbac'
-            referencedColumns: ['id']
+            foreignKeyName: "group_invites_group_id_fkey"
+            columns: ["group_id"]
+            referencedRelation: "groups_rbac"
+            referencedColumns: ["id"]
           }
         ]
       }
@@ -637,6 +637,36 @@ export interface Database {
         }
         Relationships: []
       }
+      league_chats: {
+        Row: {
+          channel_id: string
+          cohort: string
+          created_time: string
+          division: number
+          id: number
+          owner_id: string | null
+          season: number
+        }
+        Insert: {
+          channel_id: string
+          cohort: string
+          created_time?: string
+          division: number
+          id?: number
+          owner_id?: string | null
+          season: number
+        }
+        Update: {
+          channel_id?: string
+          cohort?: string
+          created_time?: string
+          division?: number
+          id?: number
+          owner_id?: string | null
+          season?: number
+        }
+        Relationships: []
+      }
       leagues: {
         Row: {
           cohort: string
@@ -673,16 +703,19 @@ export interface Database {
       manalinks: {
         Row: {
           data: Json
+          from_id: string | null
           fs_updated_time: string
           id: string
         }
         Insert: {
           data: Json
+          from_id?: string | null
           fs_updated_time: string
           id: string
         }
         Update: {
           data?: Json
+          from_id?: string | null
           fs_updated_time?: string
           id?: string
         }
@@ -718,46 +751,46 @@ export interface Database {
         }
         Relationships: [
           {
-            foreignKeyName: 'market_ads_market_id_fkey'
-            columns: ['market_id']
-            referencedRelation: 'contracts'
-            referencedColumns: ['id']
+            foreignKeyName: "market_ads_market_id_fkey"
+            columns: ["market_id"]
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'market_ads_market_id_fkey'
-            columns: ['market_id']
-            referencedRelation: 'contracts_rbac'
-            referencedColumns: ['id']
+            foreignKeyName: "market_ads_market_id_fkey"
+            columns: ["market_id"]
+            referencedRelation: "contracts_rbac"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'market_ads_market_id_fkey'
-            columns: ['market_id']
-            referencedRelation: 'contracts_view'
-            referencedColumns: ['id']
+            foreignKeyName: "market_ads_market_id_fkey"
+            columns: ["market_id"]
+            referencedRelation: "contracts_view"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'market_ads_market_id_fkey'
-            columns: ['market_id']
-            referencedRelation: 'listed_open_contracts'
-            referencedColumns: ['id']
+            foreignKeyName: "market_ads_market_id_fkey"
+            columns: ["market_id"]
+            referencedRelation: "listed_open_contracts"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'market_ads_market_id_fkey'
-            columns: ['market_id']
-            referencedRelation: 'public_contracts'
-            referencedColumns: ['id']
+            foreignKeyName: "market_ads_market_id_fkey"
+            columns: ["market_id"]
+            referencedRelation: "public_contracts"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'market_ads_market_id_fkey'
-            columns: ['market_id']
-            referencedRelation: 'public_open_contracts'
-            referencedColumns: ['id']
+            foreignKeyName: "market_ads_market_id_fkey"
+            columns: ["market_id"]
+            referencedRelation: "public_open_contracts"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'market_ads_market_id_fkey'
-            columns: ['market_id']
-            referencedRelation: 'trending_contracts'
-            referencedColumns: ['id']
+            foreignKeyName: "market_ads_market_id_fkey"
+            columns: ["market_id"]
+            referencedRelation: "trending_contracts"
+            referencedColumns: ["id"]
           }
         ]
       }
@@ -1204,8 +1237,8 @@ export interface Database {
       }
       user_feed: {
         Row: {
-          answer_id: string | null
-          bet_id: string | null
+          answer_ids: string[] | null
+          bet_data: Json | null
           comment_id: string | null
           contract_id: string | null
           created_time: string
@@ -1224,8 +1257,8 @@ export interface Database {
           user_id: string
         }
         Insert: {
-          answer_id?: string | null
-          bet_id?: string | null
+          answer_ids?: string[] | null
+          bet_data?: Json | null
           comment_id?: string | null
           contract_id?: string | null
           created_time?: string
@@ -1244,8 +1277,8 @@ export interface Database {
           user_id: string
         }
         Update: {
-          answer_id?: string | null
-          bet_id?: string | null
+          answer_ids?: string[] | null
+          bet_data?: Json | null
           comment_id?: string | null
           contract_id?: string | null
           created_time?: string
@@ -1403,6 +1436,27 @@ export interface Database {
         }
         Relationships: []
       }
+      user_seen_chats: {
+        Row: {
+          channel_id: string
+          created_time: string
+          id: number
+          user_id: string
+        }
+        Insert: {
+          channel_id: string
+          created_time?: string
+          id?: never
+          user_id: string
+        }
+        Update: {
+          channel_id?: string
+          created_time?: string
+          id?: never
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_seen_markets: {
         Row: {
           contract_id: string
@@ -1475,6 +1529,27 @@ export interface Database {
           name?: string
           name_username_vector?: unknown | null
           username?: string
+        }
+        Relationships: []
+      }
+      votes: {
+        Row: {
+          contract_id: string
+          created_time: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          contract_id: string
+          created_time?: string
+          id: string
+          user_id: string
+        }
+        Update: {
+          contract_id?: string
+          created_time?: string
+          id?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -2239,6 +2314,14 @@ export interface Database {
               contract: Json
             }[]
           }
+      get_contract_voters: {
+        Args: {
+          this_contract_id: string
+        }
+        Returns: {
+          data: Json
+        }[]
+      }
       get_contracts_by_creator_ids: {
         Args: {
           creator_ids: string[]
@@ -2287,7 +2370,7 @@ export interface Database {
         Args: {
           table_id: string
         }
-        Returns: Database['public']['CompositeTypes']['table_spec']
+        Returns: Database["public"]["CompositeTypes"]["table_spec"]
       }
       get_engaged_users: {
         Args: Record<PropertyKey, never>
@@ -2376,6 +2459,15 @@ export interface Database {
           contract: Json
         }[]
       }
+      get_option_voters: {
+        Args: {
+          this_contract_id: string
+          this_option_id: string
+        }
+        Returns: {
+          data: Json
+        }[]
+      }
       get_prefix_match_query: {
         Args: {
           p_query: string
@@ -2389,6 +2481,15 @@ export interface Database {
         Returns: number
       }
       get_rating: {
+        Args: {
+          user_id: string
+        }
+        Returns: {
+          count: number
+          rating: number
+        }[]
+      }
+      get_rating2: {
         Args: {
           user_id: string
         }
@@ -2608,6 +2709,15 @@ export interface Database {
           data: Json
         }[]
       }
+      get_sigmoid_rating: {
+        Args: {
+          user_id: string
+        }
+        Returns: {
+          count: number
+          rating: number
+        }[]
+      }
       get_time: {
         Args: Record<PropertyKey, never>
         Returns: number
@@ -2750,31 +2860,31 @@ export interface Database {
       }
       gtrgm_compress: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
       gtrgm_decompress: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
       gtrgm_in: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
       gtrgm_options: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: undefined
       }
       gtrgm_out: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
@@ -2824,7 +2934,7 @@ export interface Database {
       }
       ivfflathandler: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
@@ -2887,6 +2997,13 @@ export interface Database {
           is_yes: boolean
         }[]
       }
+      save_user_topic_2: {
+        Args: {
+          p_user_id: string
+          p_topics: string[]
+        }
+        Returns: undefined
+      }
       save_user_topics: {
         Args: {
           p_user_id: string
@@ -2894,7 +3011,20 @@ export interface Database {
         }
         Returns: undefined
       }
+      save_user_topics_2: {
+        Args: {
+          p_user_id: string
+          p_topics: string[]
+        }
+        Returns: undefined
+      }
       save_user_topics_blank: {
+        Args: {
+          p_user_id: string
+        }
+        Returns: undefined
+      }
+      save_user_topics_blank_2: {
         Args: {
           p_user_id: string
         }
@@ -3008,7 +3138,7 @@ export interface Database {
       }
       set_limit: {
         Args: {
-          '': number
+          "": number
         }
         Returns: number
       }
@@ -3018,7 +3148,7 @@ export interface Database {
       }
       show_trgm: {
         Args: {
-          '': string
+          "": string
         }
         Returns: unknown
       }
@@ -3055,7 +3185,7 @@ export interface Database {
       }
       to_jsonb: {
         Args: {
-          '': Json
+          "": Json
         }
         Returns: Json
       }
@@ -3136,52 +3266,39 @@ export interface Database {
       }
       vector_avg: {
         Args: {
-          '': number[]
+          "": number[]
         }
         Returns: string
       }
       vector_dims: {
         Args: {
-          '': string
+          "": string
         }
         Returns: number
       }
       vector_norm: {
         Args: {
-          '': string
+          "": string
         }
         Returns: number
       }
       vector_out: {
         Args: {
-          '': string
+          "": string
         }
         Returns: unknown
       }
       vector_send: {
         Args: {
-          '': string
+          "": string
         }
         Returns: string
       }
       vector_typmod_in: {
         Args: {
-          '': unknown[]
+          "": unknown[]
         }
         Returns: number
-      }
-      get_contract_voters: {
-        Args: {
-          this_contract_id: string
-        }
-        Returns: { data: Json }[]
-      }
-      get_option_voters: {
-        Args: {
-          this_contract_id: string
-          this_option_id: string
-        }
-        Returns: { data: Json }[]
       }
     }
     Enums: {

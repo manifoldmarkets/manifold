@@ -9,10 +9,7 @@ import { ArrowUpIcon, PencilAltIcon } from '@heroicons/react/solid'
 import { VisibilityObserver } from 'web/components/widgets/visibility-observer'
 import Link from 'next/link'
 import { FeedTimelineItem, useFeedTimeline } from 'web/hooks/use-feed-timeline'
-import {
-  convertContractToManualFeedItem,
-  FeedTimelineItems,
-} from 'web/components/feed/feed-timeline-items'
+import { FeedTimelineItems } from 'web/components/feed/feed-timeline-items'
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
 import { useEffect, useState } from 'react'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
@@ -29,6 +26,7 @@ import {
 } from 'common/user'
 import { CreateQuestionButton } from 'web/components/buttons/create-question-button'
 import { shortenedFromNow } from 'web/lib/util/shortenedFromNow'
+import { Contract } from 'common/contract'
 
 export default function FeedTimelinePage() {
   return (
@@ -242,3 +240,22 @@ const NewActivityButton = (props: {
     </button>
   )
 }
+
+const convertContractToManualFeedItem = (
+  contract: Contract,
+  createdTime: number
+): FeedTimelineItem =>
+  ({
+    contract,
+    createdTime,
+    id: Math.random(),
+    contractId: contract.id,
+    dataType: 'trending_contract',
+    reason: 'similar_interest_vector_to_contract',
+    supabaseTimestamp: new Date(createdTime).toISOString(),
+    isCopied: true,
+    avatarUrl: contract.creatorAvatarUrl,
+    commentId: null,
+    newsId: null,
+    manuallyCreatedFromContract: true,
+  } as FeedTimelineItem)

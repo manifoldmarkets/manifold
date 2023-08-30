@@ -10,6 +10,7 @@ export type FEED_DATA_TYPES =
   | 'contract_probability_changed'
   | 'trending_contract'
   | 'new_subsidy'
+  | 'user_position_changed'
 
 type DEPRECATED_FEED_REASON_TYPES =
   | 'viewed_contract'
@@ -28,6 +29,13 @@ export type FEED_REASON_TYPES =
   | CONTRACT_OR_USER_FEED_REASON_TYPES
   | 'similar_interest_vector_to_news_vector'
 
+export type CreatorDetails = {
+  id: string
+  name: string
+  username: string
+  avatarUrl: string
+}
+
 // TODO: now that we have disinterest vectors, increase this threshold
 // User interest to contract distances:
 export const INTEREST_DISTANCE_THRESHOLDS: Record<FEED_DATA_TYPES, number> = {
@@ -37,6 +45,7 @@ export const INTEREST_DISTANCE_THRESHOLDS: Record<FEED_DATA_TYPES, number> = {
   new_comment: 0.125,
   news_with_related_contracts: 0.175, // used to compare user interest vector to news title embedding
   new_subsidy: 0.175,
+  user_position_changed: 0.0, // only for followed users
 }
 
 export const FeedExplanationDictionary: Record<
@@ -117,6 +126,16 @@ export const FeedExplanationDictionary: Record<
     follow_user: 'New subsidy by a creator you follow',
     private_contract_shared_with_you:
       'New subsidy on a private question shared with you',
+  },
+  user_position_changed: {
+    contract_in_group_you_are_in: 'New bets on question in a group you are in',
+    similar_interest_vector_to_user:
+      'New bets by a creator you may be interested in',
+    similar_interest_vector_to_contract:
+      'New bets on a question you may be interested in',
+    follow_user: 'New bets by a creator you follow',
+    private_contract_shared_with_you:
+      'New bets on a private question shared with you',
   },
 }
 

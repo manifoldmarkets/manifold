@@ -112,7 +112,7 @@ export const getAnswersForContracts = async (
   return groupBy(answers, 'contractId')
 }
 
-const convertAnswer = (row: Row<'answers'>) =>
+export const convertAnswer = (row: Row<'answers'>) =>
   mapTypes<'answers', Answer>(row, {
     created_time: (maybeTs) => (maybeTs != null ? tsToMillis(maybeTs) : 0),
   })

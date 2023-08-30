@@ -57,6 +57,8 @@ import { removeUndefinedProps } from 'common/util/object'
 import { updateUserInterestEmbedding } from 'shared/helpers/embeddings'
 import { bulkUpdateContractMetrics } from 'shared/helpers/user-contract-metrics'
 import { Answer } from 'common/answer'
+import { getUserMostChangedPosition } from 'common/supabase/bets'
+import { addBetDataToUsersFeeds } from 'shared/create-feed'
 
 const firestore = admin.firestore()
 
@@ -131,7 +133,46 @@ export const onCreateBet = functions
       await firestore
         .doc(`users/${bettor.id}`)
         .update({ lastBetTime: bet.createdTime })
+
+    await addBetToFollowersFeeds(bettor, contract, bet, eventId)
   })
+
+const MED_BALANCE_PERCENTAGE_FOR_FEED = 0.005
+const MED_BET_SIZE_FOR_FEED = 100
+
+const MIN_BALANCE_PERCENTAGE_FOR_FEED = 0.05
+const MIN_BET_SIZE_GIVEN_PERCENTAGE = 20
+
+const addBetToFollowersFeeds = async (
+  bettor: User,
+  contract: Contract,
+  bet: Bet,
+  idempotencyKey: string
+) => {
+  if (bettor.followerCountCached <= 0 || contract.mechanism === 'dpm-2') return
+  const positionChange = await getUserMostChangedPosition(
+    bettor,
+    contract,
+    bet.createdTime,
+    createSupabaseClient()
+  )
+  if (!positionChange) return
+  const percentUsersBalance = positionChange.change / bettor.balance
+  if (
+    // For shrimp
+    (percentUsersBalance > MIN_BALANCE_PERCENTAGE_FOR_FEED &&
+      positionChange.change >= MIN_BET_SIZE_GIVEN_PERCENTAGE) ||
+    // For dolphins/whales
+    (percentUsersBalance > MED_BALANCE_PERCENTAGE_FOR_FEED &&
+      positionChange.change >= MED_BET_SIZE_FOR_FEED)
+  )
+    await addBetDataToUsersFeeds(
+      contract,
+      bettor,
+      positionChange,
+      idempotencyKey
+    )
+}
 
 const updateBettingStreak = async (
   user: User,

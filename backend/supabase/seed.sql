@@ -321,14 +321,14 @@ create table if not exists
     data jsonb null,
     contract_id text null,
     comment_id text null,
-    answer_id text null,
     creator_id text null,
-    bet_id text null,
     news_id text null,
     group_id text null,
     reaction_id text null,
     idempotency_key text null,
     is_copied boolean not null default false,
+    bet_data jsonb null,
+    answer_ids text[] null,
     unique (user_id, idempotency_key)
   );
 

@@ -13,9 +13,17 @@ import {
   INTEREST_DISTANCE_THRESHOLDS,
 } from 'common/feed'
 import { log } from 'shared/utils'
-import { getUsersWithSimilarInterestVectorToNews } from 'shared/supabase/users'
+import {
+  getUserFollowerIds,
+  getUsersWithSimilarInterestVectorToNews,
+} from 'shared/supabase/users'
 import { convertObjectToSQLRow } from 'common/supabase/utils'
 import { DAY_MS } from 'common/util/time'
+import { User } from 'common/user'
+import { fromPairs, uniq } from 'lodash'
+import { removeUndefinedProps } from 'common/util/object'
+import { PositionChangeData } from 'common/supabase/bets'
+import { filterDefined } from 'common/util/array'
 
 export const bulkInsertDataToUserFeed = async (
   usersToReasonsInterestedInContract: {
@@ -27,14 +35,14 @@ export const bulkInsertDataToUserFeed = async (
   dataProps: {
     contractId?: string
     commentId?: string
-    answerId?: string
+    answerIds?: string[]
     creatorId?: string
-    betId?: string
     newsId?: string
     data?: any
     groupId?: string
     reactionId?: string
     idempotencyKey?: string
+    betData?: any
   },
   pg: SupabaseDirectClient
 ) => {
@@ -359,6 +367,34 @@ export const insertTrendingContractToUsersFeeds = async (
     unseenNewerThanTime,
     INTEREST_DISTANCE_THRESHOLDS.trending_contract,
     data
+  )
+}
+
+export const addBetDataToUsersFeeds = async (
+  contract: Contract,
+  bettor: User,
+  betData: PositionChangeData,
+  idempotencyKey: string
+) => {
+  const pg = createSupabaseDirectClient()
+  const now = Date.now()
+  const followerIds = await getUserFollowerIds(bettor.id, pg)
+  // const followerIds = ['mwaVAaKkabODsH8g5VrtbshsXz03']
+  await bulkInsertDataToUserFeed(
+    fromPairs(followerIds.map((id) => [id, 'follow_user'])),
+    now,
+    'user_position_changed',
+    [],
+    removeUndefinedProps({
+      contractId: contract.id,
+      creatorId: bettor.id,
+      betData: removeUndefinedProps(betData),
+      answerIds: filterDefined(
+        uniq([betData.current?.answerId, betData.previous?.answerId])
+      ),
+      idempotencyKey,
+    }),
+    pg
   )
 }
 
