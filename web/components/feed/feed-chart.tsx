@@ -1,6 +1,10 @@
 import { BinaryContract, Contract } from 'common/contract'
-import { useEffect, useMemo, useState } from 'react'
-import { BinaryOverview, ContractOverview } from '../contract/contract-overview'
+import { SetStateAction, useEffect, useMemo, useState } from 'react'
+import {
+  BinaryChart,
+  BinaryOverview,
+  ContractOverview,
+} from '../contract/contract-overview'
 import {
   MultiSerializedPoint,
   SerializedPoint,
@@ -9,6 +13,7 @@ import {
 import { getChartPoints } from 'common/supabase/chart-points'
 import { db } from 'web/lib/supabase/db'
 import { Bet } from 'common/bet'
+import { ScaleTime, ScaleContinuousNumeric } from 'd3-scale'
 
 export function FeedChart(props: { contract: BinaryContract }) {
   const { contract } = props
@@ -29,7 +34,29 @@ export function FeedChart(props: { contract: BinaryContract }) {
   }, [serializedPoints])
 
   if (betPoints) {
-    return <BinaryOverview betPoints={betPoints as any} contract={contract} />
+    return (
+      <BinaryChart
+        betPoints={betPoints as any}
+        contract={contract}
+        showZoomer={false}
+        viewScale={{
+          viewXScale: undefined,
+          setViewXScale: function (
+            value: SetStateAction<ScaleTime<number, number, never> | undefined>
+          ): void {
+            throw new Error('Function not implemented.')
+          },
+          viewYScale: undefined,
+          setViewYScale: function (
+            value: SetStateAction<
+              ScaleContinuousNumeric<number, number, never> | undefined
+            >
+          ): void {
+            throw new Error('Function not implemented.')
+          },
+        }}
+      />
+    )
   }
 
   return <></>

@@ -13,7 +13,7 @@ import { Group } from 'common/group'
 import { db } from 'web/lib/supabase/db'
 import { removeEmojis } from 'web/components/contract/market-groups'
 import { Row } from 'web/components/layout/row'
-import { GROUP_SLUGS_TO_HIDE_FROM_PILL_SEARCH } from 'common/envs/constants'
+import { GROUP_SLUGS_TO_HIDE_FROM_WELCOME_FLOW } from 'common/envs/constants'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 
 export function TopicSelectorDialog(props: {
@@ -39,7 +39,8 @@ export function TopicSelectorDialog(props: {
     db.from('groups')
       .select('id,data')
       .not('id', 'in', `(${hardCodedCategoryIds.join(',')})`)
-      .not('slug', 'in', `(${GROUP_SLUGS_TO_HIDE_FROM_PILL_SEARCH.join(',')})`)
+      .not('slug', 'in', `(${GROUP_SLUGS_TO_HIDE_FROM_WELCOME_FLOW.join(',')})`)
+      .or(`slug.not.ilike.%manifold%`)
       .order('importance_score', { ascending: false })
       .limit(15)
       .then(({ data }) => {

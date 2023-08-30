@@ -1,6 +1,6 @@
 import { useIsFollowing } from 'web/hooks/use-follows'
 import { isBlocked, usePrivateUser, useUser } from 'web/hooks/use-user'
-import { follow, unfollow } from 'web/lib/firebase/users'
+import { followUser, unfollowUser } from 'web/lib/firebase/api'
 import { track } from 'web/lib/service/analytics'
 import { Button } from './button'
 
@@ -14,12 +14,12 @@ export function FollowButton(props: { userId: string }) {
 
   const onFollow = () => {
     track('follow')
-    follow(user.id, userId).then(() => setIsFollowing(true))
+    followUser(userId).then(() => setIsFollowing(true))
   }
 
   const onUnfollow = () => {
     track('unfollow')
-    unfollow(user.id, userId).then(() => setIsFollowing(false))
+    unfollowUser(userId).then(() => setIsFollowing(false))
   }
 
   return (

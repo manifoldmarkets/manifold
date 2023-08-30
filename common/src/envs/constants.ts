@@ -93,6 +93,7 @@ export const BOT_USERNAMES = [
   'arrbit',
   'ManaMaximizer',
   'rita',
+  'uhh',
 ]
 
 export const CORE_USERNAMES = [
@@ -179,6 +180,7 @@ export const VERIFIED_USERNAMES = [
   'Writer',
   'GeorgeHotz',
   'ShayneCoplan',
+  'SanghyeonSeo',
 ]
 
 export const HOUSE_BOT_USERNAME = 'acc'
@@ -246,6 +248,20 @@ export const GROUP_SLUGS_TO_HIDE_FROM_PILL_SEARCH = [
   'nonpredictive-profits',
   '-sircryptomind-crypto-stock',
   'selfresolving',
+]
+export const GROUP_SLUGS_TO_HIDE_FROM_WELCOME_FLOW = [
+  'new-years-resolutions-2024',
+  'metamarkets',
+  'magaland',
+  'metaforecasting',
+  'nonpredictive-profits',
+  '-sircryptomind-crypto-stock',
+  'selfresolving',
+  'fun',
+  'nonpredictive',
+  'bugs',
+  'rationalussy',
+  'personal',
 ]
 
 export const EXTERNAL_REDIRECTS = ['/umami']

@@ -551,8 +551,10 @@ const FLHurricane = createNewsDashboardTab(
   'Tropical Storm Idalia likely to become hurricane',
   [
     {
-      url: 'https://www.orlandosentinel.com/2023/08/28/tropical-storm-idalia-forecast-to-become-major-hurricane-before-striking-florida/',
+      url: 'https://edition.cnn.com/us/live-news/hurricane-idalia-path-florida-08-30-23/index.html',
     },
+    { slug: 'will-hurricane-idalia-cost-150-live' },
+    { slug: 'in-2023-will-a-hurricane-make-landf' },
     { slug: 'will-tropical-storm-idalia-become-a' },
 
     { slug: 'will-a-hurricane-make-landfall-in-f-736c1b6b35db' },

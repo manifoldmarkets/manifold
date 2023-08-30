@@ -43,6 +43,7 @@ import { PollPanel } from '../poll/poll-panel'
 import { CreateAnswerPanel } from '../answers/create-answer-panel'
 import clsx from 'clsx'
 import { ScaleTime } from 'd3-scale'
+import { viewScale } from 'common/chart'
 
 export const ContractOverview = memo(
   (props: {
@@ -164,7 +165,7 @@ export function BinaryChart(props: {
   showZoomer: boolean
   betPoints: HistoryPoint<Partial<Bet>>[]
   contract: BinaryContract
-  viewScale?: ScaleTime<number, number, never>
+  viewScale: viewScale
 }) {
   const { showZoomer, betPoints, contract, viewScale } = props
   return (
@@ -180,7 +181,6 @@ export function BinaryChart(props: {
           height={h}
           betPoints={betPoints}
           viewScaleProps={viewScale}
-          controlledStart={start}
           contract={contract}
           showZoomer={showZoomer}
         />
