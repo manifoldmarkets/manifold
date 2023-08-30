@@ -14,6 +14,7 @@ import { getChartPoints } from 'common/supabase/chart-points'
 import { db } from 'web/lib/supabase/db'
 import { Bet } from 'common/bet'
 import { ScaleTime, ScaleContinuousNumeric } from 'd3-scale'
+import { useViewScale } from '../charts/generic-charts'
 
 export function FeedBinaryChart(props: {
   contract: BinaryContract
@@ -25,11 +26,9 @@ export function FeedBinaryChart(props: {
   >(undefined)
 
   useEffect(() => {
-    getChartPoints(contract, db, { limit: 50 }).then(
-      ({ allBetPoints, chartPoints }) => {
-        setSerializedPoints(chartPoints)
-      }
-    )
+    getChartPoints(contract, db).then(({ allBetPoints, chartPoints }) => {
+      setSerializedPoints(chartPoints)
+    })
   }, [])
 
   const betPoints = useMemo(() => {
@@ -38,28 +37,31 @@ export function FeedBinaryChart(props: {
     return points
   }, [serializedPoints])
 
+  const viewScaleProps = useViewScale()
+
   if (betPoints) {
     return (
       <BinaryChart
         betPoints={betPoints as any}
         contract={contract}
         showZoomer={false}
-        viewScale={{
-          viewXScale: undefined,
-          setViewXScale: function (
-            value: SetStateAction<ScaleTime<number, number, never> | undefined>
-          ): void {
-            throw new Error('Function not implemented.')
-          },
-          viewYScale: undefined,
-          setViewYScale: function (
-            value: SetStateAction<
-              ScaleContinuousNumeric<number, number, never> | undefined
-            >
-          ): void {
-            throw new Error('Function not implemented.')
-          },
-        }}
+        // viewScale={{
+        //   viewXScale: undefined,
+        //   setViewXScale: function (
+        //     value: SetStateAction<ScaleTime<number, number, never> | undefined>
+        //   ): void {
+        //     throw new Error('Function not implemented.')
+        //   },
+        //   viewYScale: undefined,
+        //   setViewYScale: function (
+        //     value: SetStateAction<
+        //       ScaleContinuousNumeric<number, number, never> | undefined
+        //     >
+        //   ): void {
+        //     throw new Error('Function not implemented.')
+        //   },
+        // }}
+        viewScale={viewScaleProps}
         className={className}
       />
     )
