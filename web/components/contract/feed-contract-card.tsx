@@ -222,38 +222,51 @@ const BottomActionRow = (props: {
 }) => {
   const { contract, user, item, hide, underline } = props
   const { question } = contract
+
+  // ensures that the correct spacing is between buttons
+  const ButtonWrapper = (props: { children: React.ReactNode }) => {
+    return <Row className="w-14 justify-start">{props.children}</Row>
+  }
   return (
-    <div
+    <Row
       className={clsx(
-        'grid grid-cols-4 items-center justify-between gap-[12%] pt-2',
+        'items-center justify-between pt-2',
         underline ? 'border-1 border-ink-200 border-b pb-3' : 'pb-2'
       )}
     >
-      <TradesButton contract={contract} />
-      <CommentsButton contract={contract} user={user} />
+      <ButtonWrapper>
+        <TradesButton contract={contract} />
+      </ButtonWrapper>
+      <ButtonWrapper>
+        <CommentsButton contract={contract} user={user} />
+      </ButtonWrapper>
       {hide && (
-        <DislikeButton
-          user={user}
-          contract={contract}
-          item={item}
-          interesting={true}
-          toggleInteresting={hide}
-        />
+        <ButtonWrapper>
+          <DislikeButton
+            user={user}
+            contract={contract}
+            item={item}
+            interesting={true}
+            toggleInteresting={hide}
+          />
+        </ButtonWrapper>
       )}
-      <LikeButton
-        contentId={contract.id}
-        contentCreatorId={contract.creatorId}
-        user={user}
-        contentType={'contract'}
-        totalLikes={contract.likedByUserCount ?? 0}
-        contract={contract}
-        contentText={question}
-        size="md"
-        color="gray"
-        className="px-0"
-        trackingLocation={'contract card (feed)'}
-      />
-    </div>
+      <ButtonWrapper>
+        <LikeButton
+          contentId={contract.id}
+          contentCreatorId={contract.creatorId}
+          user={user}
+          contentType={'contract'}
+          totalLikes={contract.likedByUserCount ?? 0}
+          contract={contract}
+          contentText={question}
+          size="md"
+          color="gray"
+          className="px-0"
+          trackingLocation={'contract card (feed)'}
+        />
+      </ButtonWrapper>
+    </Row>
   )
 }
 
