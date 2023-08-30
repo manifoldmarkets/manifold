@@ -1,6 +1,5 @@
 import { BinaryContract } from 'common/contract'
-import { ScaleContinuousNumeric, ScaleTime } from 'd3-scale'
-import { SetStateAction, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { getHistoryData } from 'web/pages/embed/[username]/[contractSlug]'
 import { useViewScale } from '../charts/generic-charts'
 import { BinaryChart } from '../contract/contract-overview'
@@ -39,7 +38,6 @@ export function FeedBinaryChart(props: {
   if (points === undefined) {
     return <LoadingIndicator />
   }
-  if (points === null) {
-    return <>NULL</>
-  }
+
+  return <></>
 }
