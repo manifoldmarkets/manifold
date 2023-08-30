@@ -249,6 +249,20 @@ export const GROUP_SLUGS_TO_HIDE_FROM_PILL_SEARCH = [
   '-sircryptomind-crypto-stock',
   'selfresolving',
 ]
+export const GROUP_SLUGS_TO_HIDE_FROM_WELCOME_FLOW = [
+  'new-years-resolutions-2024',
+  'metamarkets',
+  'magaland',
+  'metaforecasting',
+  'nonpredictive-profits',
+  '-sircryptomind-crypto-stock',
+  'selfresolving',
+  'fun',
+  'nonpredictive',
+  'bugs',
+  'rationalussy',
+  'personal',
+]
 
 export const EXTERNAL_REDIRECTS = ['/umami']
 
