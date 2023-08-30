@@ -213,6 +213,11 @@ export function FeedContractCard(props: {
   )
 }
 
+// ensures that the correct spacing is between buttons
+const BottomRowButtonWrapper = (props: { children: React.ReactNode }) => {
+  return <Row className="w-14 justify-start">{props.children}</Row>
+}
+
 const BottomActionRow = (props: {
   contract: Contract
   item: FeedTimelineItem | undefined
@@ -223,10 +228,6 @@ const BottomActionRow = (props: {
   const { contract, user, item, hide, underline } = props
   const { question } = contract
 
-  // ensures that the correct spacing is between buttons
-  const ButtonWrapper = (props: { children: React.ReactNode }) => {
-    return <Row className="w-14 justify-start">{props.children}</Row>
-  }
   return (
     <Row
       className={clsx(
@@ -234,14 +235,14 @@ const BottomActionRow = (props: {
         underline ? 'border-1 border-ink-200 border-b pb-3' : 'pb-2'
       )}
     >
-      <ButtonWrapper>
+      <BottomRowButtonWrapper>
         <TradesButton contract={contract} />
-      </ButtonWrapper>
-      <ButtonWrapper>
+      </BottomRowButtonWrapper>
+      <BottomRowButtonWrapper>
         <CommentsButton contract={contract} user={user} />
-      </ButtonWrapper>
+      </BottomRowButtonWrapper>
       {hide && (
-        <ButtonWrapper>
+        <BottomRowButtonWrapper>
           <DislikeButton
             user={user}
             contract={contract}
@@ -249,9 +250,9 @@ const BottomActionRow = (props: {
             interesting={true}
             toggleInteresting={hide}
           />
-        </ButtonWrapper>
+        </BottomRowButtonWrapper>
       )}
-      <ButtonWrapper>
+      <BottomRowButtonWrapper>
         <LikeButton
           contentId={contract.id}
           contentCreatorId={contract.creatorId}
@@ -265,7 +266,7 @@ const BottomActionRow = (props: {
           className="px-0"
           trackingLocation={'contract card (feed)'}
         />
-      </ButtonWrapper>
+      </BottomRowButtonWrapper>
     </Row>
   )
 }
