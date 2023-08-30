@@ -21,7 +21,7 @@ const bodySchema = z.object({
   contractId: z.string(),
   shares: z.number().positive().optional(), // leave it out to sell all shares
   outcome: z.enum(['YES', 'NO']).optional(), // leave it out to sell whichever you have
-  answerId: z.enum(['YES', 'NO']).optional(), // Required for multi binary markets
+  answerId: z.string().optional(), // Required for multi binary markets
 })
 
 export const sellshares = authEndpoint(async (req, auth) => {
@@ -185,19 +185,39 @@ export const sellshares = authEndpoint(async (req, auth) => {
       isApi,
       ...newBet,
     })
-    transaction.update(
-      contractDoc,
-      removeUndefinedProps({
-        pool: newPool,
-        p: newP,
-        volume: volume + Math.abs(newBet.amount),
-      })
-    )
 
     for (const bet of ordersToCancel) {
       transaction.update(contractDoc.collection('bets').doc(bet.id), {
         isCancelled: true,
       })
+    }
+
+    if (mechanism === 'cpmm-1') {
+      transaction.update(
+        contractDoc,
+        removeUndefinedProps({
+          pool: newPool,
+          p: newP,
+          volume: volume + Math.abs(newBet.amount),
+        })
+      )
+    } else if (newBet.answerId) {
+      transaction.update(
+        contractDoc,
+        removeUndefinedProps({
+          volume: volume + Math.abs(newBet.amount),
+        })
+      )
+      const prob = getCpmmProbability(newPool, 0.5)
+      const { YES: poolYes, NO: poolNo } = newPool
+      transaction.update(
+        contractDoc.collection('answersCpmm').doc(newBet.answerId),
+        removeUndefinedProps({
+          poolYes,
+          poolNo,
+          prob,
+        })
+      )
     }
 
     for (const {

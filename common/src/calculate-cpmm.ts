@@ -1,4 +1,4 @@
-import { groupBy, mapValues, sumBy } from 'lodash'
+import { groupBy, mapValues, sum, sumBy } from 'lodash'
 import { LimitBet } from './bet'
 
 import { CREATOR_FEE, Fees, LIQUIDITY_FEE, PLATFORM_FEE } from './fees'
@@ -240,14 +240,14 @@ export function calculateCpmmMultiSale(
     // outcome === 'YES'
     //   ? { newBetResult: undefined, otherBetResults: undefined }
     //   : // Buy YES shares
-        calculateCpmmMultiArbitrageSellNo(
-          answers,
-          answerToSell,
-          shares,
-          limitProb,
-          unfilledBets,
-          balanceByUserId
-        )
+    calculateCpmmMultiArbitrageSellNo(
+      answers,
+      answerToSell,
+      shares,
+      limitProb,
+      unfilledBets,
+      balanceByUserId
+    )
 
   // Transform buys of opposite outcome into sells.
   const saleTakers = newBetResult!.takers.map((taker) => ({
@@ -260,13 +260,29 @@ export function calculateCpmmMultiSale(
     amount: -(taker.shares - taker.amount),
     isSale: true,
   }))
+  console.log('shares to sell', shares, 'outcome', outcome)
+  console.log(
+    'newBetResult takers',
+    newBetResult.takers,
+    'sale takers',
+    saleTakers
+  )
+  const probsAfter =
+    [
+      newBetResult.cpmmState.pool,
+      ...otherBetResults.map((r) => r.cpmmState.pool),
+    ].map((pool) => getCpmmProbability(pool, 0.5))
+  console.log(
+    'prob after', probsAfter,
+    'prob', sum(probsAfter),
+  )
 
   const saleValue = -sumBy(saleTakers, (taker) => taker.amount)
 
   const transformedNewBetResult = {
     ...newBetResult!,
     takers: saleTakers,
-    outcome
+    outcome,
   }
 
   return {

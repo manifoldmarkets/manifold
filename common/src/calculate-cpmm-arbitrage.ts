@@ -520,7 +520,7 @@ export function calculateCpmmMultiArbitrageSellNo(
     const noSharesInOtherAnswers = noShares - yesShares
     const yesAmount = calculateAmountToBuySharesFixedP(
       { pool, p: 0.5 },
-      noShares,
+      yesShares,
       'YES',
       unfilledBetsByAnswer[id] ?? [],
       balanceByUserId
@@ -565,13 +565,21 @@ export function calculateCpmmMultiArbitrageSellNo(
       ...noResults.map((r) => r.cpmmState.pool),
     ]
     const diff = sumBy(newPools, (pool) => getCpmmProbability(pool, 0.5)) - 1
+    console.log(
+      'diff',
+      diff,
+      'yesShares',
+      yesShares,
+      'noSharesInOtherAnswers',
+      noSharesInOtherAnswers
+    )
     return diff
   })
 
   const noSharesInOtherAnswers = noShares - yesShares
   const yesAmount = calculateAmountToBuySharesFixedP(
     { pool, p: 0.5 },
-    noShares,
+    yesShares,
     'YES',
     unfilledBetsByAnswer[id] ?? [],
     balanceByUserId
@@ -585,6 +593,15 @@ export function calculateCpmmMultiArbitrageSellNo(
       balanceByUserId
     )
   )
+  console.log(
+    'noShares',
+    noShares,
+    'yesShares',
+    yesShares,
+    'noSharesInOtherAnswers',
+    noSharesInOtherAnswers
+  )
+  console.log('yesAmount', yesAmount, 'noAmounts', noAmounts)
   const yesBetResult = computeFills(
     { pool, p: 0.5 },
     'YES',

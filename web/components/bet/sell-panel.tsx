@@ -35,7 +35,6 @@ import {
 import { getSharesFromStonkShares, getStonkDisplayShares } from 'common/stonk'
 import clsx from 'clsx'
 import toast from 'react-hot-toast'
-import { removeUndefinedProps } from 'common/util/object'
 
 export function SellPanel(props: {
   contract: CPMMContract | CPMMMultiContract
@@ -158,7 +157,7 @@ export function SellPanel(props: {
     const { newBetResult, saleValue: saleValueMulti } = calculateCpmmMultiSale(
       contract.answers,
       answerToSell!,
-      shares,
+      sellQuantity,
       sharesOutcome,
       undefined,
       unfilledBets,
