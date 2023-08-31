@@ -6,7 +6,10 @@ import { LiquidityProvision } from './liquidity-provision'
 import { computeFills } from './new-bet'
 import { binarySearch } from './util/algos'
 import { EPSILON, floatingEqual } from './util/math'
-import { calculateCpmmMultiArbitrageSellNo } from './calculate-cpmm-arbitrage'
+import {
+  calculateCpmmMultiArbitrageSellNo,
+  calculateCpmmMultiArbitrageSellYes,
+} from './calculate-cpmm-arbitrage'
 import { Answer } from './answer'
 
 export type CpmmState = {
@@ -237,20 +240,26 @@ export function calculateCpmmMultiSale(
   }
 
   const { newBetResult, otherBetResults } =
-    // outcome === 'YES'
-    //   ? { newBetResult: undefined, otherBetResults: undefined }
-    //   : // Buy YES shares
-    calculateCpmmMultiArbitrageSellNo(
-      answers,
-      answerToSell,
-      shares,
-      limitProb,
-      unfilledBets,
-      balanceByUserId
-    )
+    outcome === 'YES'
+      ? calculateCpmmMultiArbitrageSellYes(
+          answers,
+          answerToSell,
+          shares,
+          limitProb,
+          unfilledBets,
+          balanceByUserId
+        )
+      : calculateCpmmMultiArbitrageSellNo(
+          answers,
+          answerToSell,
+          shares,
+          limitProb,
+          unfilledBets,
+          balanceByUserId
+        )
 
   // Transform buys of opposite outcome into sells.
-  const saleTakers = newBetResult!.takers.map((taker) => ({
+  const saleTakers = newBetResult.takers.map((taker) => ({
     ...taker,
     // You bought opposite shares, which combine with existing shares, removing them.
     shares: -taker.shares,
@@ -267,20 +276,16 @@ export function calculateCpmmMultiSale(
     'sale takers',
     saleTakers
   )
-  const probsAfter =
-    [
-      newBetResult.cpmmState.pool,
-      ...otherBetResults.map((r) => r.cpmmState.pool),
-    ].map((pool) => getCpmmProbability(pool, 0.5))
-  console.log(
-    'prob after', probsAfter,
-    'prob', sum(probsAfter),
-  )
+  const probsAfter = [
+    newBetResult.cpmmState.pool,
+    ...otherBetResults.map((r) => r.cpmmState.pool),
+  ].map((pool) => getCpmmProbability(pool, 0.5))
+  console.log('prob after', probsAfter, 'prob', sum(probsAfter))
 
   const saleValue = -sumBy(saleTakers, (taker) => taker.amount)
 
   const transformedNewBetResult = {
-    ...newBetResult!,
+    ...newBetResult,
     takers: saleTakers,
     outcome,
   }
