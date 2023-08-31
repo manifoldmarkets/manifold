@@ -197,11 +197,7 @@ export function FeedContractCard(props: {
       )}
 
       {isBinaryCpmm && probChange && Math.abs(probChange) > PROB_THRESHOLD && (
-        <FeedBinaryChart
-          contract={contract}
-          className="my-4"
-          isNegative={probChange < 0}
-        />
+        <FeedBinaryChart contract={contract} className="my-4" />
       )}
       {promotedData && (
         <Col className={'w-full items-center'}>
