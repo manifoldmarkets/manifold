@@ -1287,6 +1287,9 @@ alter publication supabase_realtime
 add table user_contract_metrics;
 
 alter publication supabase_realtime
+add table user_follows;
+
+alter publication supabase_realtime
 add table chat_messages;
 
 commit;
