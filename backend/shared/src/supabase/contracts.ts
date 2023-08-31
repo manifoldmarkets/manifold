@@ -318,20 +318,16 @@ export const getImportantContractsForNewUsers = async (
     (s) => !groupSlugs?.includes(s)
   )
   while (contractIds.length < targetCount && threshold > 0.2) {
-    const res = await pg.map(
-      `select id, data->'groupSlugs' as group_slugs
+    const ids = await pg.map(
+      `select id
        from contracts
-       where ($1::text[] is null or jsonb_array_to_text_array((data -> 'groupSlugs')) && $1)
+       where (data -> 'groupSlugs') is not null
+         and ($1::text[] is null or jsonb_array_to_text_array((data -> 'groupSlugs')) && $1)
          and not exists (
            select 1
            from unnest(jsonb_array_to_text_array(data->'groupSlugs')) as t(slug)
-           where slug = any($2)
-       )
-         and not exists (
-           select 1
-           from unnest(jsonb_array_to_text_array(data->'groupSlugs')) as t(slug)
-           where slug ilike '%manifold%'
-       )
+           where (slug = any($2) or slug ilike '%manifold%')
+         )
          and resolution_time is null
          and data ->> 'deleted' is null
          and visibility = 'public'
@@ -342,7 +338,7 @@ export const getImportantContractsForNewUsers = async (
       (r) => r.id as string
     )
 
-    contractIds = uniq(contractIds.concat(res))
+    contractIds = uniq(contractIds.concat(ids))
     threshold -= 0.02
   }
 

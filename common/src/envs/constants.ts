@@ -242,6 +242,7 @@ export const DEEMPHASIZED_GROUP_SLUGS = [
   'rationalussy',
   'uk',
   'uk-politics',
+  'crystal-ballin',
 ]
   .concat(GROUP_SLUGS_TO_IGNORE_IN_MARKETS_EMAIL)
   .concat(DESTINY_GROUP_SLUGS)
