@@ -6,6 +6,6 @@ export const useRedirectIfSignedIn = () => {
   const router = useRouter()
   const user = useUser()
   useEffect(() => {
-   if (user) router.push('/home')
+    if (user) router.push('/home')
   }, [user])
 }
