@@ -208,7 +208,6 @@ export function FeedContractCard(props: {
           contract={contract}
           item={item}
           user={user}
-          // hide={hide}
           underline={!!bottomChildren}
         />
         {bottomChildren}
@@ -227,7 +226,6 @@ const BottomActionRow = (props: {
   item: FeedTimelineItem | undefined
   user: User | null | undefined
   underline?: boolean
-  // hide?: () => void
 }) => {
   const { contract, user, item, underline } = props
   const { question } = contract
