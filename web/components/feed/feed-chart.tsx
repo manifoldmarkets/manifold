@@ -21,6 +21,15 @@ export function FeedBinaryChart(props: {
     })
   }, [])
 
+  const percentBounds = points
+    ? points.reduce(
+        (acc, point) => ({
+          max: Math.max(acc.max, point.y),
+          min: Math.min(acc.min, point.y),
+        }),
+        { max: Number.NEGATIVE_INFINITY, min: Number.POSITIVE_INFINITY }
+      )
+    : undefined
   const viewScaleProps = useViewScale()
   if (points && points.length > 0 && !!points[0]) {
     return (
@@ -30,6 +39,7 @@ export function FeedBinaryChart(props: {
         showZoomer={false}
         viewScale={viewScaleProps}
         controlledStart={points[0].x}
+        percentBounds={percentBounds}
         className={className}
         size={'sm'}
       />

@@ -151,6 +151,7 @@ export const BinaryOverview = (props: {
 export function BinaryChart(props: {
   showZoomer: boolean
   betPoints: HistoryPoint<Partial<Bet>>[]
+  percentBounds?: { max: number; min: number }
   contract: BinaryContract
   viewScale: viewScale
   className?: string
@@ -162,6 +163,7 @@ export function BinaryChart(props: {
     showZoomer,
     betPoints,
     contract,
+    percentBounds,
     viewScale,
     className,
     controlledStart,
@@ -169,13 +171,6 @@ export function BinaryChart(props: {
     color,
   } = props
 
-  const percentBounds = betPoints.reduce(
-    (acc, point) => ({
-      max: Math.max(acc.max, point.y),
-      min: Math.min(acc.min, point.y),
-    }),
-    { max: Number.NEGATIVE_INFINITY, min: Number.POSITIVE_INFINITY }
-  )
   return (
     <SizedContainer
       className={clsx(
