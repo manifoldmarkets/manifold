@@ -240,9 +240,15 @@ export const DEEMPHASIZED_GROUP_SLUGS = [
   'personal-goals',
   'personal',
   'rationalussy',
+  'uk',
+  'uk-politics',
 ]
   .concat(GROUP_SLUGS_TO_IGNORE_IN_MARKETS_EMAIL)
   .concat(DESTINY_GROUP_SLUGS)
+
+export const GROUP_SLUGS_TO_IGNORE_FOR_NEWS = DEEMPHASIZED_GROUP_SLUGS.filter(
+  (slug) => ['uk', 'uk-politics'].includes(slug)
+)
 
 export const GROUP_SLUGS_TO_HIDE_FROM_PILL_SEARCH = [
   'new-years-resolutions-2024',
