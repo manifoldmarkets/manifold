@@ -100,9 +100,7 @@ export function TopicSelectorDialog(props: {
           <p>Select 3 or more categories to personalize your experience</p>
         </div>
         <Col className={'mb-4 px-5'}>
-          <div className="text-primary-700 mb-1 text-sm">
-            Trending now
-          </div>
+          <div className="text-primary-700 mb-1 text-sm">Trending now</div>
           <Row className={'flex-wrap gap-1 '}>
             {trendingCategories ? (
               trendingCategories.map((group) => (
@@ -121,12 +119,10 @@ export function TopicSelectorDialog(props: {
             <div className="text-primary-700 text-sm">{topic.slice(3)}</div>
             <Row className="flex flex-wrap gap-x-1 gap-y-1.5">
               {getSubtopics(topic)
-              .filter(([_, __, groupId]) => !!groupId)
-              .map(
-                ([subtopicWithEmoji, subtopic, groupId]) => {
+                .filter(([_, __, groupId]) => !!groupId)
+                .map(([subtopicWithEmoji, subtopic, groupId]) => {
                   return pillButton(subtopic, subtopicWithEmoji, groupId)
-                }
-              )}
+                })}
             </Row>
           </div>
         ))}
