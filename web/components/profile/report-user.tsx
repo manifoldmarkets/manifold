@@ -1,19 +1,15 @@
-import { reportContent } from 'web/components/buttons/report-button'
 import { useState } from 'react'
-import { PrivateUser, User } from 'common/user'
+import { User } from 'common/user'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Checkbox } from 'web/components/widgets/checkbox'
 import { Button } from 'web/components/buttons/button'
 import Textarea from 'react-expanding-textarea'
 import { toast } from 'react-hot-toast'
+import { report } from 'web/lib/firebase/api'
 
-export const ReportUser = (props: {
-  user: User
-  currentUser: PrivateUser
-  closeModal: () => void
-}) => {
-  const { user, currentUser, closeModal } = props
+export const ReportUser = (props: { user: User; closeModal: () => void }) => {
+  const { user, closeModal } = props
   const reportTypes = [
     'Spam',
     'Inappropriate or objectionable content',
@@ -33,7 +29,7 @@ export const ReportUser = (props: {
     setIsSubmitting(true)
     await toast
       .promise(
-        reportContent(currentUser.id, {
+        report({
           contentType: 'user',
           contentId: user.id,
           contentOwnerId: user.id,

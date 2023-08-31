@@ -35,7 +35,6 @@ import {
   sendNewPrivateMarketEmail,
   sendNewUniqueBettorsEmail,
 } from './emails'
-import { filterDefined } from 'common/util/array'
 import {
   getNotificationDestinationsForUser,
   notification_destination_types,

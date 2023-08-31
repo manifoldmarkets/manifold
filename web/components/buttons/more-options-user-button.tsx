@@ -89,7 +89,6 @@ export function MoreOptionsUserButton(props: { user: User }) {
                 content: (
                   <ReportUser
                     user={user}
-                    currentUser={currentUser}
                     closeModal={() => setIsModalOpen(false)}
                   />
                 ),

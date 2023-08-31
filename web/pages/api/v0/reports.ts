@@ -1,9 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next'
 import { ApiError, ValidationError } from 'web/pages/api/v0/_types'
 import { applyCorsHeaders, CORS_UNRESTRICTED } from 'web/lib/api/cors'
-import { collection, getDocs, query } from 'firebase/firestore'
-import { db } from 'web/lib/firebase/init'
-import { Report } from 'common/report'
 import { contractUrl } from 'common/contract'
 import { filterDefined } from 'common/util/array'
 import { getComment, getCommentsOnPost } from 'web/lib/supabase/comments'
@@ -13,6 +10,9 @@ import { getPost } from 'web/lib/supabase/post'
 import { richTextToString } from 'common/util/parse'
 import { getUser } from 'web/lib/firebase/users'
 import { getContract } from 'web/lib/supabase/contracts'
+import { db } from 'web/lib/supabase/db'
+import { run } from 'common/supabase/utils'
+
 type LiteReport = {
   reportedById: string
   slug: string
@@ -27,22 +27,25 @@ export default async function handler(
   res: NextApiResponse<LiteReport[] | ValidationError | ApiError>
 ) {
   await applyCorsHeaders(req, res, CORS_UNRESTRICTED)
-  const reportsQuery = await getDocs(query(collection(db, 'reports')))
-  const mostRecentReports = reportsQuery.docs
-    .map((doc) => doc.data() as Report)
-    .sort((a, b) => b.createdTime - a.createdTime)
-    .slice(0, 100)
+
+  const { data: mostRecentReports } = await run(
+    db
+      .from('reports')
+      .select()
+      .order('created_time', { ascending: false })
+      .limit(100)
+  )
 
   const liteReports: LiteReport[] = filterDefined(
     await Promise.all(
       mostRecentReports.map(async (report) => {
         const {
-          contentId,
-          contentType,
-          contentOwnerId,
-          parentType,
-          parentId,
-          userId,
+          content_id: contentId,
+          content_type: contentType,
+          content_owner_id: contentOwnerId,
+          parent_type: parentType,
+          parent_id: parentId,
+          user_id: userId,
           id,
           description,
         } = report
@@ -95,7 +98,7 @@ export default async function handler(
                   }
                 : null
           }
-          // Reported a user, probably should add a field as to why they were reported
+          // Reported a user
         } else if (contentType === 'user') {
           const reportedUser = await getUser(contentId)
           partialReport = {

@@ -8,14 +8,10 @@ import { useState } from 'react'
 import { Col } from 'web/components/layout/col'
 import { Title } from 'web/components/widgets/title'
 import { capitalize } from 'lodash'
-import { collection, doc, setDoc } from 'firebase/firestore'
-import { Report } from 'common/report'
-import { db } from 'web/lib/firebase/init'
-import { removeUndefinedProps } from 'common/util/object'
+import { ReportProps } from 'common/report'
+import { report as reportContent } from 'web/lib/firebase/api'
 
-export function ReportButton(props: {
-  report: Omit<Report, 'id' | 'createdTime' | 'userId'>
-}) {
+export function ReportButton(props: { report: ReportProps }) {
   const { report } = props
   const { contentOwnerId, contentType } = report
   const currentUser = useUser()
@@ -44,49 +40,18 @@ export function ReportButton(props: {
   )
 }
 
-export const reportContent = async (
-  currentUserId: string,
-  report: Omit<Report, 'id' | 'createdTime' | 'userId'>
-) => {
-  const {
-    contentOwnerId,
-    contentType,
-    parentType,
-    parentId,
-    contentId,
-    description,
-  } = report
-  const reportDoc = doc(collection(db, 'reports'))
-  await setDoc(
-    reportDoc,
-    removeUndefinedProps({
-      id: reportDoc.id,
-      userId: currentUserId,
-      createdTime: Date.now(),
-      contentId,
-      contentOwnerId,
-      parentId,
-      description,
-      contentType,
-      parentType,
-    }) as Report
-  )
-}
-
 export const ReportModal = (props: {
   isModalOpen: boolean
   setIsModalOpen: (isModalOpen: boolean) => void
   label: string
-  report: Omit<Report, 'id' | 'createdTime' | 'userId'>
+  report: ReportProps
 }) => {
   const { label, report, setIsModalOpen, isModalOpen } = props
-  const currentUser = useUser()
 
   const [isReported, setIsReported] = useState(false)
 
   const onReport = async () => {
-    if (!currentUser) return
-    await toast.promise(reportContent(currentUser.id, report), {
+    await toast.promise(reportContent(report), {
       loading: 'Reporting...',
       success: `${capitalize(
         label

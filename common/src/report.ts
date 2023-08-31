@@ -1,4 +1,4 @@
-export type Report = {
+type Report = {
   id: string
   // Reporter user ID
   userId: string
@@ -14,4 +14,7 @@ export type Report = {
   parentId?: string
   parentType?: 'contract' | 'post'
 }
+
 export type ReportContentTypes = 'user' | 'comment' | 'contract'
+
+export type ReportProps = Omit<Report, 'id' | 'createdTime' | 'userId'>

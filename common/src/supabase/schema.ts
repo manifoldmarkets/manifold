@@ -1007,6 +1007,91 @@ export interface Database {
         }
         Relationships: []
       }
+      reports: {
+        Row: {
+          content_id: string
+          content_owner_id: string
+          content_type: string
+          created_time: string | null
+          description: string | null
+          id: string
+          parent_id: string | null
+          parent_type: string | null
+          user_id: string
+        }
+        Insert: {
+          content_id: string
+          content_owner_id: string
+          content_type: string
+          created_time?: string | null
+          description?: string | null
+          id?: string
+          parent_id?: string | null
+          parent_type?: string | null
+          user_id: string
+        }
+        Update: {
+          content_id?: string
+          content_owner_id?: string
+          content_type?: string
+          created_time?: string | null
+          description?: string | null
+          id?: string
+          parent_id?: string | null
+          parent_type?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'reports_content_owner_id_fkey'
+            columns: ['content_owner_id']
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'reports_content_owner_id_fkey'
+            columns: ['content_owner_id']
+            referencedRelation: 'user_groups'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'reports_content_owner_id_fkey'
+            columns: ['content_owner_id']
+            referencedRelation: 'user_referrals'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'reports_content_owner_id_fkey'
+            columns: ['content_owner_id']
+            referencedRelation: 'user_referrals_profit'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'reports_user_id_fkey'
+            columns: ['user_id']
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'reports_user_id_fkey'
+            columns: ['user_id']
+            referencedRelation: 'user_groups'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'reports_user_id_fkey'
+            columns: ['user_id']
+            referencedRelation: 'user_referrals'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'reports_user_id_fkey'
+            columns: ['user_id']
+            referencedRelation: 'user_referrals_profit'
+            referencedColumns: ['id']
+          }
+        ]
+      }
       reviews: {
         Row: {
           content: Json | null

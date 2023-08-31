@@ -13,6 +13,7 @@ import { ContractComment } from 'common/comment'
 import { Post } from 'common/post'
 import { MaybeAuthedContractParams } from 'common/contract'
 import { Portfolio, PortfolioItem } from 'common/portfolio'
+import { ReportProps } from 'common/report'
 
 export async function call(url: string, method: 'POST' | 'GET', params?: any) {
   const user = auth.currentUser
@@ -465,4 +466,8 @@ export function followUser(userId: string) {
 
 export function unfollowUser(userId: string) {
   return call(getApiUrl('follow-user'), 'POST', { userId, follow: false })
+}
+
+export function report(params: ReportProps) {
+  return call(getApiUrl('report'), 'POST', params)
 }

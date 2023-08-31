@@ -80,6 +80,7 @@ import { claimdestinysub } from './claim-destiny-sub'
 import { castpollvote } from './cast-poll-vote'
 import { getsimilargroupstocontract } from 'api/get-similar-groups-to-contract'
 import { followUser } from './follow-user'
+import { report } from './report'
 
 const allowCors: RequestHandler = cors({
   origin: [CORS_ORIGIN_MANIFOLD, CORS_ORIGIN_VERCEL, CORS_ORIGIN_LOCALHOST],
@@ -202,6 +203,7 @@ app.post(
 )
 app.post('/claimdestinysub', ...apiRoute(claimdestinysub))
 app.post('/follow-user', ...apiRoute(followUser))
+app.post('/report', ...apiRoute(report))
 
 // Catch 404 errors - this should be the last route
 app.use(allowCors, (req, res) => {
