@@ -121,7 +121,7 @@ export const FeedTimelineItems = (props: {
                   />
                 </Col>
               )}
-              <GroupTags groups={item.groups} className="mx-4" />
+              <GroupTags groups={item.groups} className="mx-4 mb-3" />
             </FeedItemFrame>
           )
         }
@@ -138,13 +138,13 @@ export function GroupTags(props: {
   const { groups, className, maxGroups = 3 } = props
   if (!groups || groups.length <= 0) return null
   return (
-    <Row className="w-full justify-end">
-      <Row className="gap-0.5 overflow-hidden">
-        {groups.slice(0, maxGroups).map((group) => (
-          <GroupTag key={group.slug} group={group} />
-        ))}
-      </Row>
+    // <Row className="w-full justify-end">
+    <Row className={(clsx('gap-0.5 overflow-hidden'), className)}>
+      {groups.slice(0, maxGroups).map((group) => (
+        <GroupTag key={group.slug} group={group} />
+      ))}
     </Row>
+    // </Row>
   )
 }
 
