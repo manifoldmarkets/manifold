@@ -4,14 +4,11 @@ import { followUser, unfollowUser } from 'web/lib/firebase/api'
 import { track } from 'web/lib/service/analytics'
 import { Button } from './button'
 
-export function FollowButton(props: { userId: string }) {
-  const { userId } = props
-  const user = useUser()
-  const { isFollowing, setIsFollowing } = useIsFollowing(user?.id, userId)
-  const privateUser = usePrivateUser()
-  if (!user || user.id === userId) return null
-  if (isBlocked(privateUser, userId)) return <div />
-
+export const onFollowClick = (
+  userId: string,
+  isFollowing: boolean,
+  setIsFollowing: (isFollowing: boolean) => void
+) => {
   const onFollow = () => {
     track('follow')
     followUser(userId).then(() => setIsFollowing(true))
@@ -21,13 +18,27 @@ export function FollowButton(props: { userId: string }) {
     track('unfollow')
     unfollowUser(userId).then(() => setIsFollowing(false))
   }
+  if (isFollowing) {
+    onUnfollow()
+  } else {
+    onFollow()
+  }
+}
+
+export function FollowButton(props: { userId: string }) {
+  const { userId } = props
+  const user = useUser()
+  const { isFollowing, setIsFollowing } = useIsFollowing(user?.id, userId)
+  const privateUser = usePrivateUser()
+  if (!user || user.id === userId) return null
+  if (isBlocked(privateUser, userId)) return <div />
 
   return (
     <Button
       size="sm"
       color={isFollowing ? 'gray-outline' : 'indigo'}
       className="my-auto"
-      onClick={isFollowing ? onUnfollow : onFollow}
+      onClick={() => onFollowClick(userId, isFollowing, setIsFollowing)}
     >
       {isFollowing ? 'Following' : 'Follow'}
     </Button>
