@@ -37,6 +37,7 @@ import FeedContractCardDescription from '../feed/feed-contract-card-description'
 import { useRouter } from 'next/router'
 import Link from 'next/link'
 import { descriptionIsEmpty } from './contract-description'
+import { type } from 'os'
 
 export function FeedContractCard(props: {
   contract: Contract
@@ -102,6 +103,13 @@ export function FeedContractCard(props: {
       slug: contract.slug,
       isPromoted: !!promotedData,
     })
+
+  const nonTextDescription =
+    typeof contract.description !== 'string' &&
+    contract.description.content &&
+    contract.description.content.some(
+      (item) => item.type === 'image' || item.type === 'embed'
+    )
 
   return (
     <ClickFrame
@@ -189,9 +197,13 @@ export function FeedContractCard(props: {
         </Col>
       )}
 
-      {item?.dataType == 'new_contract' && !descriptionIsEmpty(contract) && (
-        <FeedContractCardDescription contract={contract} />
-      )}
+      {!descriptionIsEmpty(contract) &&
+        (item?.dataType == 'new_contract' || nonTextDescription) && (
+          <FeedContractCardDescription
+            contract={contract}
+            nonTextDescription={nonTextDescription}
+          />
+        )}
 
       {isBinaryCpmm && metrics && metrics.hasShares && (
         <YourMetricsFooter metrics={metrics} />

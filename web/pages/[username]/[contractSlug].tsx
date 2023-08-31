@@ -303,6 +303,8 @@ export function ContractPageContent(props: {
     user === null ||
     (user && user.createdTime > Date.now() - 24 * 60 * 60 * 1000)
 
+  console.log(contract.description)
+
   return (
     <>
       {creatorTwitter && (
