@@ -516,11 +516,11 @@ export function calculateCpmmMultiArbitrageSellNo(
     (a) => a.id !== answerToSell.id
   )
 
+  // Strategy: We have noShares, and need that many yes shares to complete the sell.
+  // We buy some yes shares in the answer directly, and the rest is from converting No shares of all the other answers.
+  // The proportion of each is dependent on what leaves the final probability sum at 1.
+  // Which is what this binary search is discovering.
   const yesShares = binarySearch(0, noShares, (yesShares) => {
-    // Strategy: We have noShares, and need that many yes shares to complete the sell.
-    // We buy some yes shares in the answer directly, and the rest is from converting No shares of all the other answers. 
-    // The proportion of each is dependent on what leaves the final probability sum at 1.
-    // Which is what this binary search is discovering.
     const noSharesInOtherAnswers = noShares - yesShares
     const yesAmount = calculateAmountToBuySharesFixedP(
       { pool, p: 0.5 },
@@ -569,14 +569,6 @@ export function calculateCpmmMultiArbitrageSellNo(
       ...noResults.map((r) => r.cpmmState.pool),
     ]
     const diff = sumBy(newPools, (pool) => getCpmmProbability(pool, 0.5)) - 1
-    console.log(
-      'diff',
-      diff,
-      'yesShares',
-      yesShares,
-      'noSharesInOtherAnswers',
-      noSharesInOtherAnswers
-    )
     return diff
   })
 
@@ -597,15 +589,6 @@ export function calculateCpmmMultiArbitrageSellNo(
       balanceByUserId
     )
   )
-  console.log(
-    'noShares',
-    noShares,
-    'yesShares',
-    yesShares,
-    'noSharesInOtherAnswers',
-    noSharesInOtherAnswers
-  )
-  console.log('yesAmount', yesAmount, 'noAmounts', noAmounts)
   const yesBetResult = computeFills(
     { pool, p: 0.5 },
     'YES',
@@ -632,7 +615,6 @@ export function calculateCpmmMultiArbitrageSellNo(
 
   const redeemedMana = noSharesInOtherAnswers * (answers.length - 2)
   const netNoAmount = sum(noAmounts) - redeemedMana
-  // const payout = yesAmount + sum(noAmounts) - redeemedMana + noShares
 
   const now = Date.now()
   for (const noBetResult of noBetResults) {
@@ -764,14 +746,6 @@ export function calculateCpmmMultiArbitrageSellYes(
       ...yesResults.map((r) => r.cpmmState.pool),
     ]
     const diff = 1 - sumBy(newPools, (pool) => getCpmmProbability(pool, 0.5))
-    console.log(
-      'diff',
-      diff,
-      'noShares',
-      noShares,
-      'yesSharesInOtherAnswers',
-      yesSharesInOtherAnswers
-    )
     return diff
   })
 
@@ -792,15 +766,6 @@ export function calculateCpmmMultiArbitrageSellYes(
       balanceByUserId
     )
   )
-  console.log(
-    'noShares',
-    noShares,
-    'yesShares',
-    yesShares,
-    'noSharesInOtherAnswers',
-    yesSharesInOtherAnswers
-  )
-  console.log('noAmount', noAmount, 'yesAmounts', yesAmounts)
   const noBetResult = computeFills(
     { pool, p: 0.5 },
     'NO',
