@@ -106,6 +106,13 @@ export function FeedContractCard(props: {
       isPromoted: !!promotedData,
     })
 
+  const nonTextDescription =
+    typeof contract.description !== 'string' &&
+    contract.description.content &&
+    contract.description.content.some(
+      (item) => item.type === 'image' || item.type === 'embed'
+    )
+
   return (
     <ClickFrame
       className={clsx(
@@ -208,9 +215,13 @@ export function FeedContractCard(props: {
         </Col>
       )}
 
-      {item?.dataType == 'new_contract' && !descriptionIsEmpty(contract) && (
-        <FeedContractCardDescription contract={contract} />
-      )}
+      {!descriptionIsEmpty(contract) &&
+        (item?.dataType == 'new_contract' || nonTextDescription) && (
+          <FeedContractCardDescription
+            contract={contract}
+            nonTextDescription={nonTextDescription}
+          />
+        )}
 
       {isBinaryCpmm && metrics && metrics.hasShares && (
         <YourMetricsFooter metrics={metrics} />

@@ -6,17 +6,22 @@ import { Row } from '../layout/row'
 import { Col } from '../layout/col'
 import { useEffectCheckEquality } from 'web/hooks/use-effect-check-equality'
 import { Spacer } from '../layout/spacer'
-export const MAX_HEIGHT = 250
+export const TEXT_MAX_HEIGHT = 250
+export const NON_TEXT_MAX_HEIGHT = 2000
 
 export default function FeedContractCardDescription(props: {
   contract: Contract
+  nonTextDescription?: boolean
 }) {
-  const { contract } = props
+  const { contract, nonTextDescription } = props
   const [isOverflowing, setIsOverflowing] = useState(false)
   const contentRef = useRef<HTMLDivElement>(null)
 
+  // if content has images/embeds, have larger max height
+  const maxHeight = nonTextDescription ? NON_TEXT_MAX_HEIGHT : TEXT_MAX_HEIGHT
+
   useEffectCheckEquality(() => {
-    if (contentRef.current && contentRef.current.scrollHeight > MAX_HEIGHT) {
+    if (contentRef.current && contentRef.current.scrollHeight > maxHeight) {
       setIsOverflowing(true)
     }
   }, [contract.description])
@@ -25,7 +30,7 @@ export default function FeedContractCardDescription(props: {
       <div
         ref={contentRef}
         className={`overflow-hidden`}
-        style={{ maxHeight: `${MAX_HEIGHT}px` }}
+        style={{ maxHeight: `${maxHeight}px` }}
       >
         <Spacer h={2} className="hidden sm:inline-block" />
         <Content content={contract.description} />
