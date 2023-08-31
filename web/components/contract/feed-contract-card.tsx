@@ -37,7 +37,6 @@ import FeedContractCardDescription from '../feed/feed-contract-card-description'
 import { useRouter } from 'next/router'
 import Link from 'next/link'
 import { descriptionIsEmpty } from './contract-description'
-import { type } from 'os'
 
 export function FeedContractCard(props: {
   contract: Contract
