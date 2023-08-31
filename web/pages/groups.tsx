@@ -75,9 +75,7 @@ export function GroupTag(props: {
     <div
       className={clsx(
         'group flex w-fit min-w-0 shrink-0 whitespace-nowrap rounded-sm px-1 py-0.5 text-sm transition-colors',
-        isPrivate
-          ? 'text-ink-1000 bg-primary-100 hover:bg-primary-200'
-          : 'text-primary-700 hover:bg-primary-400/20',
+        'text-ink-500 dark:text-ink-400 hover:text-ink-600 hover:bg-primary-400/10 rounded',
         className
       )}
     >
@@ -92,7 +90,7 @@ export function GroupTag(props: {
         {isPrivate ? (
           <LockClosedIcon className="my-auto mr-0.5 h-3 w-3" />
         ) : (
-          <span className="text-primary-700/50 mr-px transition-colors group-hover:text-inherit">
+          <span className="mr-px opacity-50 transition-colors group-hover:text-inherit">
             #
           </span>
         )}

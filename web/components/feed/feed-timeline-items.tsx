@@ -20,6 +20,7 @@ import { track } from 'web/lib/service/analytics'
 import { useState } from 'react'
 import { Row } from 'web/components/layout/row'
 import { GroupTag } from 'web/pages/groups'
+import { Group } from 'common/group'
 
 const MAX_PARENT_COMMENTS_PER_FEED_ITEM = 1
 export const MIN_BET_AMOUNT = 20
@@ -120,18 +121,30 @@ export const FeedTimelineItems = (props: {
                   />
                 </Col>
               )}
-              {item.groups && item.groups.length > 0 && (
-                <Row className="mx-4 gap-1 overflow-hidden pt-1 pb-3">
-                  {item.groups.map((group) => (
-                    <GroupTag key={group.id} group={group} />
-                  ))}
-                </Row>
-              )}
+              <GroupTags groups={item.groups} className="mx-4 mb-3" />
             </FeedItemFrame>
           )
         }
       })}
     </>
+  )
+}
+
+export function GroupTags(props: {
+  groups?: { slug: string; name: string }[]
+  className?: string
+  maxGroups?: number
+}) {
+  const { groups, className, maxGroups = 3 } = props
+  if (!groups || groups.length <= 0) return null
+  return (
+    <Row className="w-full justify-end">
+      <Row className={(clsx('gap-0.5 overflow-hidden'), className)}>
+        {groups.slice(0, maxGroups).map((group) => (
+          <GroupTag key={group.slug} group={group} />
+        ))}
+      </Row>
+    </Row>
   )
 }
 
