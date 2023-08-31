@@ -99,9 +99,9 @@ export function TopicSelectorDialog(props: {
           <p className="text-primary-700 mb-2 text-2xl">What interests you?</p>
           <p>Select 3 or more categories to personalize your experience</p>
         </div>
-        <Col className={'mb-2 px-5'}>
+        <Col className={'mb-4 px-5'}>
           <div className="text-primary-700 mb-1 text-sm">
-            Trending categories
+            Trending now
           </div>
           <Row className={'flex-wrap gap-1 '}>
             {trendingCategories ? (
@@ -117,10 +117,12 @@ export function TopicSelectorDialog(props: {
         </Col>
 
         {topics.map((topic) => (
-          <div className="mb-2 px-5" key={topic + '-section'}>
+          <div className="mb-4 px-5" key={topic + '-section'}>
             <div className="text-primary-700 text-sm">{topic.slice(3)}</div>
             <Row className="flex flex-wrap gap-x-1 gap-y-1.5">
-              {getSubtopics(topic).map(
+              {getSubtopics(topic)
+              .filter(([_, __, groupId]) => !!groupId)
+              .map(
                 ([subtopicWithEmoji, subtopic, groupId]) => {
                   return pillButton(subtopic, subtopicWithEmoji, groupId)
                 }

@@ -262,6 +262,14 @@ export const GROUP_SLUGS_TO_HIDE_FROM_WELCOME_FLOW = [
   'bugs',
   'rationalussy',
   'personal',
+  'world-default',
+  'shortterm-markets',
+  'global-macro',
+  'video-games',
+  'politics-default', // should follow US Politics instead
+  '2024-us-presidential-election', // same
+  'elon-musk', // listed as Elon Musk
+  'elon-musk-14d9d9498c7e',
 ]
 
 export const EXTERNAL_REDIRECTS = ['/umami']
