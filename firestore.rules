@@ -19,22 +19,12 @@ service cloud.firestore {
       ]
     }
 
-     match /apr1-auction/{bid} {
-      allow read;
-    }
-
     match /stats/stats {
       allow read;
     }
 
      match /destiny-subs2/{sub} {
       allow read;
-    }
-
-    match /globalConfig/globalConfig {
-      allow read;
-      allow update: if isAdmin()
-      allow create: if isAdmin()
     }
 
     match /users/{userId} {
@@ -136,10 +126,6 @@ service cloud.firestore {
       allow read: if userId == request.auth.uid
     }
 
-     match /stripe-transactions/{transactionId} {
-      allow read: if resource.data.userId == request.auth.uid;
-    }
-
     match /contracts/{contractId} {
       allow read: if isAdmin()
       // allow read if contract is not private
@@ -200,12 +186,6 @@ service cloud.firestore {
       allow create: if request.auth.uid == request.resource.data.fromId;
       // Only you can list and change your own manalinks
       allow list, update: if request.auth.uid == resource.data.fromId;
-    }
-
-    // for testing supabase replication
-    match /test/{id} {
-      allow read;
-      allow write;
     }
 
     match /refresh-all-clients/{id} {
