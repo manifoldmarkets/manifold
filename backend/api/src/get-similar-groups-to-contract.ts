@@ -29,12 +29,12 @@ export const getsimilargroupstocontract = authEndpoint(async (req) => {
     `
       select *, (embedding <=> ($1)::vector) as distance from groups
           join group_embeddings on groups.id = group_embeddings.group_id
-            where (embedding <=> ($1)::vector) < 0.127
+            where (embedding <=> ($1)::vector) < 0.1
             and importance_score > 0.15
             and privacy_status = 'public'
             and slug not in ($2:list)
-      order by (1-(embedding <=> ($1)::vector))*importance_score desc 
-            limit 4
+      order by POW(1-(embedding <=> ($1)::vector) - 0.8, 2) * importance_score desc 
+            limit 3
     `,
     [embedding, GROUPS_SLUGS_TO_IGNORE],
     (group) => {

@@ -1,14 +1,13 @@
-import { sum, zipWith } from 'lodash'
+import { Dictionary, sum, zipWith } from 'lodash'
 
-export const userInterestEmbeddings: Record<
-  string,
-  {
-    interest: number[]
-    disinterest: number[] | null
-    lastBetTime: number | null
-    createdTime: number
-  }
-> = {}
+export type UserEmbeddingDetails = {
+  interest: number[]
+  disinterest: number[] | null
+  lastBetTime: number | null
+  createdTime: number
+  lastSeenTime: number
+}
+export const userInterestEmbeddings: Dictionary<UserEmbeddingDetails> = {}
 
 function dotProduct(vecA: number[], vecB: number[]) {
   return sum(zipWith(vecA, vecB, (a, b) => a * b))

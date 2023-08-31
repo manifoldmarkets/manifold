@@ -36,6 +36,7 @@ import { TradesButton } from './trades-button'
 import FeedContractCardDescription from '../feed/feed-contract-card-description'
 import { useRouter } from 'next/router'
 import Link from 'next/link'
+import { descriptionIsEmpty } from './contract-description'
 
 export function FeedContractCard(props: {
   contract: Contract
@@ -46,6 +47,8 @@ export function FeedContractCard(props: {
   trackingPostfix?: string
   item?: FeedTimelineItem
   className?: string
+  /** whether this card is small, to adjust sizing. TODO: replace with container queries */
+  small?: boolean
   hide?: () => void
 }) {
   const {
@@ -55,6 +58,7 @@ export function FeedContractCard(props: {
     className,
     children,
     bottomChildren,
+    small,
     hide,
   } = props
   const user = useUser()
@@ -75,8 +79,6 @@ export function FeedContractCard(props: {
   const isClosed = closeTime && closeTime < Date.now()
   const path = contractPath(contract)
   const metrics = useSavedContractMetrics(contract)
-
-  const showAvatar = !children && !bottomChildren
 
   const router = useRouter()
 
@@ -108,7 +110,8 @@ export function FeedContractCard(props: {
         'relative rounded-xl',
         'bg-canvas-0 cursor-pointer overflow-hidden',
         'border-canvas-0 hover:border-primary-300 focus:border-primary-300 border drop-shadow-md transition-colors',
-        'flex w-full flex-col gap-0.5 px-4 sm:px-6'
+        'flex w-full flex-col gap-0.5 px-4',
+        !small && 'sm:px-6'
       )}
       onClick={(e) => {
         trackClick()
@@ -118,51 +121,52 @@ export function FeedContractCard(props: {
       ref={ref}
     >
       <Col className={'w-full flex-col gap-1.5 pt-2'}>
-        {showAvatar && (
-          <Row className="w-full justify-between">
-            <Row className={'text-ink-500 items-center gap-1 text-sm'}>
-              <Avatar
-                size={'xs'}
-                className={'mr-0.5'}
-                avatarUrl={creatorAvatarUrl}
-                username={creatorUsername}
-              />
-              <UserLink
-                name={contract.creatorName}
-                username={creatorUsername}
-                className={clsx(
-                  'w-full max-w-[10rem] text-ellipsis sm:max-w-[12rem]'
-                )}
-              />
-            </Row>
-            <CardReason item={item} contract={contract} />
+        <Row className="w-full justify-between">
+          <Row className={'text-ink-500 items-center gap-1 text-sm'}>
+            <Avatar
+              size={'xs'}
+              className={'mr-0.5'}
+              avatarUrl={creatorAvatarUrl}
+              username={creatorUsername}
+            />
+            <UserLink
+              name={contract.creatorName}
+              username={creatorUsername}
+              className={clsx(
+                'w-full max-w-[10rem] text-ellipsis sm:max-w-[12rem]'
+              )}
+            />
           </Row>
-        )}
+          <CardReason item={item} contract={contract} />
+        </Row>
         <div
-          className={
-            'flex flex-col gap-1 sm:flex-row sm:justify-between sm:gap-4'
-          }
+          className={clsx(
+            'flex flex-col gap-1',
+            !small && 'sm:flex-row sm:justify-between sm:gap-4'
+          )}
         >
           {/* Title is link to contract for open in new tab and a11y */}
           <Link className="grow items-start text-lg" href={path}>
             <VisibilityIcon contract={contract} /> {contract.question}
           </Link>
-          <Col className="w-full sm:w-min sm:items-start">
-            <Row className="w-full items-center justify-end gap-3 sm:w-min">
-              {contract.outcomeType !== 'MULTIPLE_CHOICE' && (
-                <ContractStatusLabel
-                  className={'text-lg font-bold'}
-                  contract={contract}
-                />
-              )}
-              {isBinaryCpmm && !isClosed && (
-                <BetButton contract={contract} user={user} className="h-min" />
-              )}
-            </Row>
-          </Col>
-        </div>
 
-        {children}
+          <Row
+            className={clsx(
+              'w-full items-center justify-end gap-3',
+              !small && 'sm:w-fit'
+            )}
+          >
+            {contract.outcomeType !== 'MULTIPLE_CHOICE' && (
+              <ContractStatusLabel
+                className={'text-lg font-bold'}
+                contract={contract}
+              />
+            )}
+            {isBinaryCpmm && !isClosed && (
+              <BetButton contract={contract} user={user} className="h-min" />
+            )}
+          </Row>
+        </div>
       </Col>
 
       {contract.outcomeType === 'POLL' && (
@@ -185,7 +189,7 @@ export function FeedContractCard(props: {
         </Col>
       )}
 
-      {item?.dataType == 'new_contract' && (
+      {item?.dataType == 'new_contract' && !descriptionIsEmpty(contract) && (
         <FeedContractCardDescription contract={contract} />
       )}
 
@@ -193,17 +197,25 @@ export function FeedContractCard(props: {
         <YourMetricsFooter metrics={metrics} />
       )}
 
+      {children}
+
       <Col>
         <BottomActionRow
           contract={contract}
           item={item}
           user={user}
           hide={hide}
+          underline={!!bottomChildren}
         />
         {bottomChildren}
       </Col>
     </ClickFrame>
   )
+}
+
+// ensures that the correct spacing is between buttons
+const BottomRowButtonWrapper = (props: { children: React.ReactNode }) => {
+  return <Row className="w-14 justify-start">{props.children}</Row>
 }
 
 const BottomActionRow = (props: {
@@ -215,6 +227,7 @@ const BottomActionRow = (props: {
 }) => {
   const { contract, user, item, hide, underline } = props
   const { question } = contract
+
   return (
     <Row
       className={clsx(
@@ -222,30 +235,38 @@ const BottomActionRow = (props: {
         underline ? 'border-1 border-ink-200 border-b pb-3' : 'pb-2'
       )}
     >
-      <TradesButton contract={contract} />
-      <CommentsButton contract={contract} user={user} />
+      <BottomRowButtonWrapper>
+        <TradesButton contract={contract} />
+      </BottomRowButtonWrapper>
+      <BottomRowButtonWrapper>
+        <CommentsButton contract={contract} user={user} />
+      </BottomRowButtonWrapper>
       {hide && (
-        <DislikeButton
-          user={user}
-          contract={contract}
-          item={item}
-          interesting={true}
-          toggleInteresting={hide}
-        />
+        <BottomRowButtonWrapper>
+          <DislikeButton
+            user={user}
+            contract={contract}
+            item={item}
+            interesting={true}
+            toggleInteresting={hide}
+          />
+        </BottomRowButtonWrapper>
       )}
-      <LikeButton
-        contentId={contract.id}
-        contentCreatorId={contract.creatorId}
-        user={user}
-        contentType={'contract'}
-        totalLikes={contract.likedByUserCount ?? 0}
-        contract={contract}
-        contentText={question}
-        size="md"
-        color="gray"
-        className="px-0"
-        trackingLocation={'contract card (feed)'}
-      />
+      <BottomRowButtonWrapper>
+        <LikeButton
+          contentId={contract.id}
+          contentCreatorId={contract.creatorId}
+          user={user}
+          contentType={'contract'}
+          totalLikes={contract.likedByUserCount ?? 0}
+          contract={contract}
+          contentText={question}
+          size="md"
+          color="gray"
+          className="px-0"
+          trackingLocation={'contract card (feed)'}
+        />
+      </BottomRowButtonWrapper>
     </Row>
   )
 }
@@ -302,7 +323,7 @@ function YourMetricsFooter(props: { metrics: ContractMetric }) {
   const { YES: yesShares, NO: noShares } = totalShares
 
   return (
-    <Row className="bg-ink-200/50 my-2 items-center gap-4 rounded p-2 text-sm">
+    <Row className="bg-ink-200/50 my-2 flex-wrap items-center justify-between gap-x-4 gap-y-1 rounded p-2 text-sm">
       <Row className="items-center gap-2">
         <span className="text-ink-500">Payout on {maxSharesOutcome}</span>
         <span className="text-ink-700 font-semibold">
@@ -311,7 +332,7 @@ function YourMetricsFooter(props: { metrics: ContractMetric }) {
             : formatMoney(noShares)}{' '}
         </span>
       </Row>
-      <Row className="ml-auto items-center gap-2">
+      <Row className="items-center gap-2">
         <div className="text-ink-500">Profit </div>
         <div className={clsx('text-ink-700 font-semibold')}>
           {profit ? formatMoney(profit) : '--'}

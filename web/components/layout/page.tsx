@@ -1,11 +1,14 @@
 import clsx from 'clsx'
-import { ReactNode } from 'react'
+import { ReactNode, useEffect } from 'react'
 import { BottomNavBar } from '../nav/bottom-nav-bar'
 import Sidebar from '../nav/sidebar'
 import { Toaster } from 'react-hot-toast'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { Col } from './col'
 import { GoogleOneTapLogin } from 'web/lib/firebase/google-onetap-login'
+import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
+import { safeLocalStorage } from 'web/lib/util/local'
+import { ManifestBanner } from '../nav/manifest-banner'
 
 export function Page(props: {
   rightSidebar?: ReactNode
@@ -13,13 +16,31 @@ export function Page(props: {
   children?: ReactNode
   hideSidebar?: boolean
   mainClassName?: string
+  manifestBannerEnabled?: boolean
 }) {
-  const { children, rightSidebar, className, hideSidebar, mainClassName } =
-    props
+  const {
+    children,
+    rightSidebar,
+    className,
+    hideSidebar,
+    mainClassName,
+    manifestBannerEnabled,
+  } = props
 
   const isMobile = useIsMobile()
   const bottomBarPadding = 'pb-[58px] lg:pb-0 '
   const TOAST_BOTTOM_PADDING = isMobile ? 70 : 20
+
+  const [showBanner, setShowBanner] = usePersistentLocalState<
+    boolean | undefined
+  >(undefined, 'show-manifest-banner')
+  useEffect(() => {
+    const shouldHide =
+      safeLocalStorage?.getItem('show-manifest-banner') === 'false'
+    if (!shouldHide) {
+      setShowBanner(true)
+    }
+  }, [showBanner])
 
   return (
     <>
@@ -43,14 +64,18 @@ export function Page(props: {
           <Sidebar className="sticky top-0 hidden self-start pl-2 lg:col-span-2 lg:flex" />
         )}
         {/* put right sidebar below main content on small or medium screens */}
-        <Col className="flex-1 lg:col-span-8 xl:contents">
+        <Col className={'flex-1 lg:col-span-8 xl:contents'}>
           <main
             className={clsx(
-              'flex flex-1 flex-col lg:mt-6',
+              'flex flex-1 flex-col',
+              manifestBannerEnabled && showBanner ? 'lg:mt-0' : 'lg:mt-6',
               rightSidebar ? 'col-span-7' : 'col-span-8',
               mainClassName
             )}
           >
+            {manifestBannerEnabled && showBanner && (
+              <ManifestBanner className="mb-3" setShowBanner={setShowBanner} />
+            )}
             {children}
           </main>
           {rightSidebar && (

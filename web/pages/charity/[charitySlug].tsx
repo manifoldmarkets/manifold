@@ -63,9 +63,7 @@ function CharityPage(props: { charity: Charity }) {
       }
     >
       <SEO title={name} description={description} url="/groups" />
-      {showConfetti && (
-        <FullscreenConfetti recycle={false} numberOfPieces={300} />
-      )}
+      {showConfetti && <FullscreenConfetti />}
 
       <Col className="mx-1 w-full items-center sm:px-0">
         <Col className="bg-canvas-0 max-w-2xl rounded px-8 py-6">

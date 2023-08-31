@@ -1,8 +1,8 @@
-import * as admin from 'firebase-admin'
 import { z } from 'zod'
 import { isAdminId } from 'common/envs/constants'
 import { APIError, authEndpoint, validate } from './helpers'
 import { createSupabaseClient } from 'shared/supabase/init'
+import { Group } from 'common/group'
 
 const bodySchema = z.object({
   groupId: z.string(),
@@ -34,6 +34,7 @@ export const updategroupprivacy = authEndpoint(async (req, auth) => {
     throw new APIError(404, 'You cannot be found in group')
 
   const group = groupQuery.data[0]
+  console.log(group)
 
   if (requester?.role !== 'admin' && !isAdminId(auth.uid))
     throw new APIError(
@@ -51,12 +52,16 @@ export const updategroupprivacy = authEndpoint(async (req, auth) => {
   if (privacy == group.privacy_status) {
     throw new APIError(403, 'Group privacy is already set to this!')
   }
-
+  // TODO: we need to figure out the role of the data column for the migration plan
   await db
     .from('groups')
-    .update({ privacy_status: privacy })
+    .update({
+      data: {
+        ...(group.data as Group),
+        privacyStatus: privacy,
+      },
+    })
     .eq('id', groupId)
-    .returns()
 
   return { status: 'success', message: 'Group privacy updated' }
 })

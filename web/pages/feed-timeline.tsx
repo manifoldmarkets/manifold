@@ -7,12 +7,9 @@ import { track } from 'web/lib/service/analytics'
 import Router from 'next/router'
 import { ArrowUpIcon, PencilAltIcon } from '@heroicons/react/solid'
 import { VisibilityObserver } from 'web/components/widgets/visibility-observer'
-import { SiteLink } from 'web/components/widgets/site-link'
+import Link from 'next/link'
 import { FeedTimelineItem, useFeedTimeline } from 'web/hooks/use-feed-timeline'
-import {
-  convertContractToManualFeedItem,
-  FeedTimelineItems,
-} from 'web/components/feed/feed-timeline-items'
+import { FeedTimelineItems } from 'web/components/feed/feed-timeline-items'
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
 import { useEffect, useState } from 'react'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
@@ -29,6 +26,7 @@ import {
 } from 'common/user'
 import { CreateQuestionButton } from 'web/components/buttons/create-question-button'
 import { shortenedFromNow } from 'web/lib/util/shortenedFromNow'
+import { Contract } from 'common/contract'
 
 export default function FeedTimelinePage() {
   return (
@@ -45,7 +43,7 @@ export function FeedTimeline() {
     user?.createdTime
   )
   return (
-    <Col className="mx-auto w-full max-w-2xl gap-2 pb-4 sm:px-2 lg:pr-4">
+    <Col className="mx-auto w-full gap-2 pb-4 sm:px-2 lg:pr-4">
       <Col className={clsx('gap-6')}>
         <Col>
           {user && remaining > 0 && (
@@ -116,7 +114,12 @@ function FeedTimelineContent(props: { privateUser: PrivateUser }) {
     }
     // This queries for new items if they haven't looked at the page in a while like twitter
     else if (pageVisible && now - lastSeen > MINUTE_MS && !loadingMore) {
-      checkForNewer().then(setNewerTimelineItems)
+      checkForNewer().then((newerTimelineItems) => {
+        const savedIds = savedFeedItems?.map((i) => i.id) ?? []
+        setNewerTimelineItems(
+          newerTimelineItems.filter((i) => !savedIds.includes(i.id))
+        )
+      })
     }
     setLastSeen(now)
     return () => setLastSeen(Date.now())
@@ -192,12 +195,9 @@ function FeedTimelineContent(props: { privateUser: PrivateUser }) {
       {savedFeedItems.length === 0 && (
         <div className="text-ink-1000 m-4 flex w-full flex-col items-center justify-center">
           We're fresh out of cards!
-          <SiteLink
-            href="/questions?s=newest&f=open"
-            className="text-primary-700"
-          >
+          <Link href="/questions?s=newest&f=open" className="text-primary-700">
             Browse new questions
-          </SiteLink>
+          </Link>
         </div>
       )}
     </Col>
@@ -240,3 +240,22 @@ const NewActivityButton = (props: {
     </button>
   )
 }
+
+const convertContractToManualFeedItem = (
+  contract: Contract,
+  createdTime: number
+): FeedTimelineItem =>
+  ({
+    contract,
+    createdTime,
+    id: Math.random(),
+    contractId: contract.id,
+    dataType: 'trending_contract',
+    reason: 'similar_interest_vector_to_contract',
+    supabaseTimestamp: new Date(createdTime).toISOString(),
+    isCopied: true,
+    avatarUrl: contract.creatorAvatarUrl,
+    commentId: null,
+    newsId: null,
+    manuallyCreatedFromContract: true,
+  } as FeedTimelineItem)

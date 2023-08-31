@@ -42,44 +42,6 @@ $$;
 /* 1. tables containing firestore content */
 /******************************************/
 create table if not exists
-  users (
-    id text not null primary key,
-    data jsonb not null,
-    fs_updated_time timestamp not null,
-    name_username_vector tsvector generated always as (
-      to_tsvector((data ->> 'username') || ' ' || (data ->> 'name'))
-    ) stored
-  );
-
-alter table users enable row level security;
-
-drop policy if exists "public read" on users;
-
-create policy "public read" on users for
-select
-  using (true);
-
-/* indexes supporting @-mention autocomplete */
-create index if not exists users_name_gin on users using GIN ((data ->> 'name') gin_trgm_ops);
-
-create index if not exists users_username_gin on users using GIN ((data ->> 'username') gin_trgm_ops);
-
-create index users_name_username_vector_idx on users using gin (name_username_vector);
-
-create index if not exists users_follower_count_cached on users ((to_jsonb(data -> 'followerCountCached')) desc);
-
-create index if not exists user_referrals_idx on users ((data ->> 'referredByUserId'))
-where
-  data ->> 'referredByUserId' is not null;
-
-create index if not exists user_profit_cached_all_time_idx on users (((data -> 'profitCached' ->> 'allTime')::numeric));
-
-create index if not exists users_betting_streak_idx on users (((data -> 'currentBettingStreak')::int));
-
-alter table users
-cluster on users_pkey;
-
-create table if not exists
   user_portfolio_history (
     user_id text not null,
     portfolio_id text not null,
@@ -134,8 +96,7 @@ create table if not exists
   user_follows (
     user_id text not null,
     follow_id text not null,
-    data jsonb not null,
-    fs_updated_time timestamp not null,
+    created_time timestamptz not null default now(),
     primary key (user_id, follow_id)
   );
 
@@ -146,6 +107,7 @@ drop policy if exists "public read" on user_follows;
 create policy "public read" on user_follows for
 select
   using (true);
+
 
 alter table user_follows
 cluster on user_follows_pkey;
@@ -359,14 +321,14 @@ create table if not exists
     data jsonb null,
     contract_id text null,
     comment_id text null,
-    answer_id text null,
     creator_id text null,
-    bet_id text null,
     news_id text null,
     group_id text null,
     reaction_id text null,
     idempotency_key text null,
     is_copied boolean not null default false,
+    bet_data jsonb null,
+    answer_ids text[] null,
     unique (user_id, idempotency_key)
   );
 
@@ -1325,6 +1287,9 @@ alter publication supabase_realtime
 add table user_contract_metrics;
 
 alter publication supabase_realtime
+add table user_follows;
+
+alter publication supabase_realtime
 add table chat_messages;
 
 commit;
@@ -1386,7 +1351,6 @@ begin
   return case
     table_id
            when 'users' then cast((null, 'id') as table_spec)
-           when 'user_follows' then cast(('user_id', 'follow_id') as table_spec)
            when 'user_reactions' then cast(('user_id', 'reaction_id') as table_spec)
            when 'contracts' then cast((null, 'id') as table_spec)
            when 'contract_answers' then cast(('contract_id', 'answer_id') as table_spec)

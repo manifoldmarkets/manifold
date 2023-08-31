@@ -30,9 +30,8 @@ export const supabasesearchgroups = MaybeAuthedEndpoint(async (req, auth) => {
   const uid = auth?.uid
 
   const searchGroupSQL =
-    !term && !fuzzy && !yourGroups && !addingToContract && !newContract && !!uid
+    !term && !fuzzy && !addingToContract && !newContract && !!uid
       ? getForYouGroupsSQL({ uid, offset, limit })
-
       : getSearchGroupSQL({
           term,
           offset,
@@ -66,7 +65,7 @@ select groups.*,
                       WHEN EXISTS (SELECT 1
                                    FROM followed_groups
                                    WHERE followed_groups.group_id = groups.id) THEN 1
-                      ELSE 0.75 END)
+                      ELSE 0.5 END)
            
            AS modified_importance_score
 from groups

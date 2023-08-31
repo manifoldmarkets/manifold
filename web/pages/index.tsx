@@ -1,6 +1,5 @@
 import { ReactNode, useState } from 'react'
 import Link from 'next/link'
-
 import { Page } from 'web/components/layout/page'
 import { Col } from 'web/components/layout/col'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
@@ -19,7 +18,6 @@ import { useRedirectIfSignedIn } from 'web/hooks/use-redirect-if-signed-in'
 import { STARTING_BALANCE } from 'common/economy'
 import { ManifoldLogo } from 'web/components/nav/manifold-logo'
 import { LogoSEO } from 'web/components/LogoSEO'
-import { SiteLink } from 'web/components/widgets/site-link'
 import { MobileAppsQRCodeDialog } from 'web/components/buttons/mobile-apps-qr-code-button'
 import { useSaveCampaign } from 'web/hooks/use-save-campaign'
 
@@ -40,11 +38,11 @@ export default function Home() {
             <LogoSEO />
 
             <Row className="items-center gap-2">
-              <SiteLink href="/about">
+              <Link href="/about">
                 <Button color="gray-white" size="xs">
                   About
                 </Button>
-              </SiteLink>
+              </Link>
               <Button
                 color="gray-white"
                 size="xs"
@@ -111,7 +109,7 @@ export default function Home() {
           </Row>
         </Col>
 
-        <NewsTopicsTabs dontScroll />
+        <NewsTopicsTabs dontScroll noSidebar />
 
         <TestimonialsPanel />
 

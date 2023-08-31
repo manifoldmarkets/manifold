@@ -87,6 +87,7 @@ export const MultiBettor = (props: {
       <Button
         size="2xs"
         color="indigo-outline"
+        className="whitespace-nowrap"
         onClick={() => setOutcome('YES')}
       >
         Bet
@@ -128,7 +129,9 @@ export const MultiSeller = (props: {
 }
 
 export const OpenProb = (props: { prob: number }) => (
-  <span className="text-lg font-bold">{formatPercent(props.prob)}</span>
+  <span className="whitespace-nowrap text-lg font-bold">
+    {formatPercent(props.prob)}
+  </span>
 )
 
 export const ClosedProb = (props: { prob: number; resolvedProb?: number }) => {
@@ -142,7 +145,7 @@ export const ClosedProb = (props: { prob: number; resolvedProb?: number }) => {
       )}
       <span
         className={clsx(
-          'text-ink-500 text-lg',
+          'text-ink-500 whitespace-nowrap text-lg',
           resolveProb != undefined &&
             'inline-block min-w-[40px] text-right line-through'
         )}

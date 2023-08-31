@@ -16,7 +16,7 @@ import {
   mapValues,
   intersection,
 } from 'lodash'
-import { log, logMemory } from 'shared/utils'
+import { log, logMemory, revalidateStaticProps } from 'shared/utils'
 import { Stats } from 'common/stats'
 import { DAY_MS } from 'common/util/time'
 import { average, median } from 'common/util/math'
@@ -460,6 +460,7 @@ export const updateStatsCore = async () => {
 
   // Write to postgres
   await bulkUpsert(pg, 'stats', 'title', rows)
+  await revalidateStaticProps(`/stats`)
   log('Done. Wrote', rows.length, ' rows to stats table')
 
   await saveCalibrationData(pg)

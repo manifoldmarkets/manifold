@@ -29,7 +29,7 @@ import {
 } from 'web/components/groups/private-group'
 import { Page } from 'web/components/layout/page'
 import { ControlledTabs } from 'web/components/layout/tabs'
-import { SupabaseContractSearch } from 'web/components/supabase-search'
+import { SupabaseContractSearch } from 'web/components/contracts-search'
 import { useAdmin } from 'web/hooks/use-admin'
 import { useGroupFromSlug, useRealtimeRole } from 'web/hooks/use-group-supabase'
 import { useIntersection } from 'web/hooks/use-intersection'
@@ -330,10 +330,6 @@ export function GroupPageContent(props: { groupParams?: GroupParams }) {
                   }}
                   persistPrefix={`group-${group.slug}`}
                   includeProbSorts
-                  fromGroupProps={{
-                    group: group,
-                    userRole: userRole ?? null,
-                  }}
                   useUrlParams
                 />
               ),

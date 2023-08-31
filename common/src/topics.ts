@@ -1,27 +1,36 @@
 export const TOPICS_TO_SUBTOPICS: { [key: string]: string[] } = {
-  '🗳️ Politics': ['🇺🇸 US Politics', '🟠 Trump'],
+  '🗳️ Politics': ['🟠 Trump', '🇺🇸 US Politics', '🇬🇧 UK Politics'],
 
   '💻 Technology': [
+    '💻 Technology',
     '🤖 AI',
     '🪙 Crypto',
     '🚀 Space',
     '🪸 Climate',
     '☢️ Nuclear',
     '🧬 Biotech',
-    '💻 Programming',
+    '☤ Health',
+    '👨‍💻 Programming',
     '🔬 Science',
     '🧮 Math',
   ],
 
-  '💼 Business': ['💵 Finance', '💰 Economics', '🚀 Startups', '🚘 Elon Musk'],
+  '💼 Business': [
+    '💵 Finance',
+    '💰 Economics',
+    '📈 Stocks',
+    '🪙 Crypto',
+    '🚀 Startups',
+    '🚘 Elon Musk',
+  ],
 
   '🏟️ Sports': [
+    '🏅 Sports',
     '🏈 NFL',
     '🏀 Basketball',
     '⚽ Soccer',
     '♟️ Chess',
-    '🏎️ Racing',
-    '🏅 Sports',
+    '🏎️ F1',
   ],
 
   '🍿 Media': [
@@ -29,23 +38,21 @@ export const TOPICS_TO_SUBTOPICS: { [key: string]: string[] } = {
     '🎮 Gaming',
     '📺 TV Shows',
     '🎵 Music',
-    '🌐 Internet Culture',
+    '💅 Celebrities',
   ],
 
   '🌍 World': [
-    '🇷🇺🇺🇦 Russia & Ukraine',
+    '🇷🇺 Russia',
     '🇨🇳 China',
     '🇮🇳 India',
-    // '🌏 Asia',
     '🇪🇺 Europe',
-    // '🌎 Latin America',
-    // '🌍 Middle East',
-    // '🌍 Africa',
+    '🇷🇺🇺🇦 Russia & Ukraine',
+    '🌎 Latin America',
+    '🌍 Middle East',
+    '🌍 Africa',
   ],
 
-  '🪂 Lifestyle': ['🏳️‍🌈 LGBTQIA+', '❤️‍🔥 Sex and love', '💪 Personal Development'],
-
-  '👥 Communities': ['💗 Effective Altruism', '🎮 Destiny.gg'],
+  '🪂 Lifestyle': ['💪 Personal Development', '❤️‍🔥 Sex and love', '🏳️‍🌈 LGBTQIA+'],
 }
 
 const COMMUNITY_TO_GROUP_ID: { [key: string]: string } = {
@@ -59,19 +66,25 @@ const COMMUNITY_TO_GROUP_ID: { [key: string]: string } = {
 
 export const TOPICS_TO_GROUP_ID: { [key: string]: string } = {
   'US Politics': 'AjxQR8JMpNyDqtiqoA96',
+  'UK Politics': 'aavkiDd6uZggfL3geuV2',
   Trump: 'cEzcLXuitr6o4VPI01Q1',
   AI: 'yEWvvwFFIqzf8JklMewp',
   Crypto: 'YuJw0M1xvUHrpiRRuKso',
   Space: 'SmJk6RHToaLxLk0I1ZSC',
   Climate: '97oNExy8iFftY2EgdkLw',
+  F1: 'ZdXq6X0Q8kZtA0Iyty7Q',
   Nuclear: '27a193db-f997-4533-86a6-386d9a915045',
   Biotech: 'zx0Pik5lD4jydGPxbLjB',
+  Health: 'JpUqUqRn9sSWxrk0Sq35',
   Programming: 'PZJMbrLekgJBy7OOBKGT',
+  Celebrities: '4QIcUOfCSSha0JZHAg9X',
   Science: 'XMhZ5LbQoLMZiOpQJRnj',
   Math: 'S1tbcVt1t5Bd9O5mVCx1',
   Finance: 'CgB83AAMkkOHSrTnzani',
   Economics: 'p88Ycq6yFd5ECKqq9PFO',
+  Technology: 'IlzY3moWwOcpsVZXCVej',
   Startups: '19c319ca-033c-474f-b417-5f07efe88ec0',
+  Stocks: 'QDQfgsFiQrNNlZhsRGf5',
   'Elon Musk': '9OR5MrEu1F01FhmBRcre',
   NFL: 'TNQwmbE5p6dnKx2e6Qlp',
   Basketball: 'NjkFkdkvRvBHoeMDQ5NB',
@@ -85,7 +98,11 @@ export const TOPICS_TO_GROUP_ID: { [key: string]: string } = {
   'Russia & Ukraine': 'OxcXOuxXvwsXtC0Dx5sr',
   China: 'oWTzfoeemQGkSoPFn2T7',
   India: 'Y2J00UcVhr3wKq2lAOAy',
+  Russia: 'TIpf6j0hLpifpXN93FxE',
+  Africa: 'dFsZaGwyohGDVkJi1C3E',
   Europe: 'ue52QI4BQgJgAJJNjLHr',
+  'Latin America': 'DX94A1LQmpckcVdz5Hb3',
+  'Middle East': 'xg8wCPeM9JP6gD0igBrA',
   'LGBTQIA+': 'cLtLfm3NSrhXU6lV6Cuy',
   'Sex and love': '3syjPCC7PxE5KurTiTT3',
   'Personal Development': 'izQp87CKagOVJp9Olm1p',

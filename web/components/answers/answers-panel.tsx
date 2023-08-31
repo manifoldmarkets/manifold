@@ -194,7 +194,7 @@ function Answer(props: {
           <span>
             Other{' '}
             <InfoTooltip
-              className="text-ink-900"
+              className="!text-ink-600"
               text="Represents all answers not listed. New answers are split out of this answer."
             />
           </span>

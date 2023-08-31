@@ -13,9 +13,17 @@ import {
   INTEREST_DISTANCE_THRESHOLDS,
 } from 'common/feed'
 import { log } from 'shared/utils'
-import { getUsersWithSimilarInterestVectorToNews } from 'shared/supabase/users'
+import {
+  getUserFollowerIds,
+  getUsersWithSimilarInterestVectorToNews,
+} from 'shared/supabase/users'
 import { convertObjectToSQLRow } from 'common/supabase/utils'
 import { DAY_MS } from 'common/util/time'
+import { User } from 'common/user'
+import { fromPairs, uniq } from 'lodash'
+import { removeUndefinedProps } from 'common/util/object'
+import { PositionChangeData } from 'common/supabase/bets'
+import { filterDefined } from 'common/util/array'
 
 export const bulkInsertDataToUserFeed = async (
   usersToReasonsInterestedInContract: {
@@ -27,14 +35,14 @@ export const bulkInsertDataToUserFeed = async (
   dataProps: {
     contractId?: string
     commentId?: string
-    answerId?: string
+    answerIds?: string[]
     creatorId?: string
-    betId?: string
     newsId?: string
     data?: any
     groupId?: string
     reactionId?: string
     idempotencyKey?: string
+    betData?: any
   },
   pg: SupabaseDirectClient
 ) => {
@@ -68,7 +76,7 @@ const userIdsWithFeedRowsMatchingContract = async (
   contractId: string,
   userIds: string[],
   seenTime: number,
-  dataType: FEED_DATA_TYPES,
+  dataTypes: FEED_DATA_TYPES[],
   pg: SupabaseDirectClient
 ) => {
   return await pg.map(
@@ -77,9 +85,9 @@ const userIdsWithFeedRowsMatchingContract = async (
             where contract_id = $1 and 
                 user_id = ANY($2) and 
                 (created_time > $3 or seen_time > $3) and
-                data_type = $4
+                data_type = ANY($4)
                 `,
-    [contractId, userIds, new Date(seenTime).toISOString(), dataType],
+    [contractId, userIds, new Date(seenTime).toISOString(), dataTypes],
     (row: { user_id: string }) => row.user_id
   )
 }
@@ -246,7 +254,7 @@ export const addContractToFeedIfNotDuplicative = async (
     contract.id,
     Object.keys(usersToReasonsInterestedInContract),
     unseenNewerThanTime,
-    dataType,
+    [dataType, 'new_contract', 'new_subsidy'],
     pg
   )
 
@@ -359,6 +367,34 @@ export const insertTrendingContractToUsersFeeds = async (
     unseenNewerThanTime,
     INTEREST_DISTANCE_THRESHOLDS.trending_contract,
     data
+  )
+}
+
+export const addBetDataToUsersFeeds = async (
+  contract: Contract,
+  bettor: User,
+  betData: PositionChangeData,
+  idempotencyKey: string
+) => {
+  const pg = createSupabaseDirectClient()
+  const now = Date.now()
+  const followerIds = await getUserFollowerIds(bettor.id, pg)
+  // const followerIds = ['mwaVAaKkabODsH8g5VrtbshsXz03']
+  await bulkInsertDataToUserFeed(
+    fromPairs(followerIds.map((id) => [id, 'follow_user'])),
+    now,
+    'user_position_changed',
+    [],
+    removeUndefinedProps({
+      contractId: contract.id,
+      creatorId: bettor.id,
+      betData: removeUndefinedProps(betData),
+      answerIds: filterDefined(
+        uniq([betData.current?.answerId, betData.previous?.answerId])
+      ),
+      idempotencyKey,
+    }),
+    pg
   )
 }
 

@@ -1,7 +1,6 @@
 import { mergeAttributes, Node } from '@tiptap/core'
 import { ContractsGrid } from '../contract/contracts-grid'
 
-import { filterDefined } from 'common/util/array'
 import { useContracts } from 'web/hooks/use-contract-supabase'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 
@@ -45,7 +44,7 @@ function GridComponent(attrs: any) {
     <div className=" not-prose font-normal">
       {loaded ? (
         <ContractsGrid
-          contracts={filterDefined(contracts)}
+          contracts={contracts}
           breakpointColumns={{ default: 2, 650: 1 }}
         />
       ) : (

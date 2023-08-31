@@ -9,7 +9,6 @@ import clsx from 'clsx'
 import { useRouter } from 'next/router'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
-
 import { Post } from 'common/post'
 import { getUserByUsername, User } from 'web/lib/firebase/users'
 import Custom404 from 'web/pages/404'
@@ -24,7 +23,7 @@ import { usePrefetchUsers, useUser, useUserById } from 'web/hooks/use-user'
 import { useDiscoverUsers } from 'web/hooks/use-users'
 import { UserBetsTable } from 'web/components/bet/user-bets-table'
 import { TextButton } from 'web/components/buttons/text-button'
-import { UserFollowButton } from 'web/components/buttons/follow-button'
+import { FollowButton } from 'web/components/buttons/follow-button'
 import { UserCommentsList } from 'web/components/comments/comments-list'
 import { FollowList } from 'web/components/follow-list'
 import { Col } from 'web/components/layout/col'
@@ -38,7 +37,7 @@ import { SEO } from 'web/components/SEO'
 import { Avatar } from 'web/components/widgets/avatar'
 import ImageWithBlurredShadow from 'web/components/widgets/image-with-blurred-shadow'
 import { Linkify } from 'web/components/widgets/linkify'
-import { linkClass, SiteLink } from 'web/components/widgets/site-link'
+import { linkClass } from 'web/components/widgets/site-link'
 import {
   isFresh,
   PostBanBadge,
@@ -189,9 +188,7 @@ function UserProfile(props: {
         description={user.bio ?? ''}
         url={`/${user.username}`}
       />
-      {showConfetti && (
-        <FullscreenConfetti recycle={false} numberOfPieces={300} />
-      )}
+      {showConfetti && <FullscreenConfetti />}
 
       <Col className="mx-4 mt-1">
         <Row className="flex-wrap justify-between gap-2 py-1">
@@ -258,7 +255,7 @@ function UserProfile(props: {
             </Row>
           ) : (
             <Row className="items-center gap-1 sm:gap-2">
-              <UserFollowButton userId={user.id} />
+              <FollowButton userId={user.id} />
               <MoreOptionsUserButton user={user} />
             </Row>
           )}
@@ -275,9 +272,9 @@ function UserProfile(props: {
               <Linkify text={user.bio}></Linkify>
             </div>
           )}
-          <Row className="mt-2 flex-wrap items-center gap-2 sm:gap-4">
+          <Row className="text-ink-400 mt-2 flex-wrap items-center gap-2 sm:gap-4">
             {user.website && (
-              <SiteLink
+              <a
                 href={
                   'https://' +
                   user.website.replace('http://', '').replace('https://', '')
@@ -287,11 +284,11 @@ function UserProfile(props: {
                   <LinkIcon className="h-4 w-4" />
                   <span className="text-ink-400 text-sm">{user.website}</span>
                 </Row>
-              </SiteLink>
+              </a>
             )}
 
             {user.twitterHandle && (
-              <SiteLink
+              <a
                 href={`https://twitter.com/${user.twitterHandle
                   .replace('https://www.twitter.com/', '')
                   .replace('https://twitter.com/', '')
@@ -308,11 +305,11 @@ function UserProfile(props: {
                     {user.twitterHandle}
                   </span>
                 </Row>
-              </SiteLink>
+              </a>
             )}
 
             {user.discordHandle && (
-              <SiteLink href="https://discord.com/invite/eHQBNBqXuh">
+              <a href="https://discord.com/invite/eHQBNBqXuh">
                 <Row className="items-center gap-1">
                   <img
                     src="/discord-logo.svg"
@@ -323,7 +320,7 @@ function UserProfile(props: {
                     {user.discordHandle}
                   </span>
                 </Row>
-              </SiteLink>
+              </a>
             )}
           </Row>
         </Col>
@@ -464,13 +461,13 @@ function ProfilePublicStats(props: {
         </button>
       )}
 
-      <SiteLink
+      <Link
         href={'/' + user.username + '/calibration'}
         className={clsx(linkClass, 'cursor-pointer text-sm')}
       >
         <ChartBarIcon className="mr-1 mb-1 inline h-4 w-4" />
         Calibration
-      </SiteLink>
+      </Link>
 
       <FollowsDialog
         user={user}
@@ -528,30 +525,15 @@ function FollowsDialog(props: {
           tabs={[
             {
               title: 'Following',
-              content: (
-                <FollowList
-                  userIds={followingIds}
-                  myFollowedIds={myFollowedIds}
-                />
-              ),
+              content: <FollowList userIds={followingIds} />,
             },
             {
               title: 'Followers',
-              content: (
-                <FollowList
-                  userIds={followerIds}
-                  myFollowedIds={myFollowedIds}
-                />
-              ),
+              content: <FollowList userIds={followerIds} />,
             },
             {
               title: 'Similar',
-              content: (
-                <FollowList
-                  userIds={suggestedUserIds}
-                  myFollowedIds={myFollowedIds}
-                />
-              ),
+              content: <FollowList userIds={suggestedUserIds} />,
             },
           ]}
           defaultIndex={defaultTab === 'following' ? 0 : 1}

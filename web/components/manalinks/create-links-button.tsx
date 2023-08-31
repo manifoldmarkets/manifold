@@ -15,7 +15,7 @@ import { ExpandingInput } from '../widgets/expanding-input'
 import { Select } from '../widgets/select'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { CopyLinkRow } from '../buttons/copy-link-button'
-import { useCanCreateManalink } from 'web/hooks/use-can-create-manalink'
+import { useCanSendMana } from 'web/hooks/use-can-send-mana'
 
 export function CreateLinksButton(props: {
   user: User
@@ -24,8 +24,8 @@ export function CreateLinksButton(props: {
 }) {
   const { user, highlightedSlug, setHighlightedSlug } = props
   const [open, setOpen] = useState(false)
-  const canCreate = useCanCreateManalink(user)
-  if (!canCreate) return <></>
+  const { canSend } = useCanSendMana(user)
+  if (!canSend) return <></>
 
   return (
     <>

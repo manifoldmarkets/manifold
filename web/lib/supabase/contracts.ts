@@ -8,8 +8,8 @@ import {
   Tables,
 } from 'common/supabase/utils'
 import { filterDefined } from 'common/util/array'
-import { ContractTypeType, Sort, filter } from 'web/components/supabase-search'
-import { stateType } from 'web/components/supabase-search'
+import { ContractTypeType, Sort, filter } from 'web/components/contracts-search'
+import { stateType } from 'web/components/contracts-search'
 import { supabaseSearchContracts } from '../firebase/api'
 import { db } from './db'
 import { chunk, flatten, keyBy } from 'lodash'

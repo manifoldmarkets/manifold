@@ -6,7 +6,7 @@ import { Modal } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Input } from 'web/components/widgets/input'
-import { SiteLink } from 'web/components/widgets/site-link'
+import Link from 'next/link'
 import { XIcon } from '@heroicons/react/outline'
 import {
   getWatchedContracts,
@@ -72,7 +72,7 @@ export const UserWatchedContractsButton = memo(
                   className={'items-center justify-between gap-2'}
                 >
                   <Col className={'w-full'}>
-                    <SiteLink
+                    <Link
                       href={
                         watchedContract.creatorUsername +
                         '/' +
@@ -81,7 +81,7 @@ export const UserWatchedContractsButton = memo(
                       className={'line-clamp-2 text-primary-700 text-sm'}
                     >
                       {watchedContract.question}
-                    </SiteLink>
+                    </Link>
                   </Col>
                   <XIcon
                     className="ml-2 h-5 w-5 shrink-0 cursor-pointer"

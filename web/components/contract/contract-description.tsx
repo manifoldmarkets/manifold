@@ -223,3 +223,16 @@ function AddAnswerButton(props: {
     </Button>
   )
 }
+
+export function descriptionIsEmpty(contract: Contract) {
+  const description = contract.description
+
+  if (!description) return true
+
+  if (typeof description === 'string') {
+    return description === ''
+  } else if ('content' in description) {
+    return !(description.content && description.content[0].content)
+  }
+  return true
+}

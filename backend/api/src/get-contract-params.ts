@@ -3,7 +3,7 @@ import { getInitialProbability } from 'common/calculate'
 import { MaybeAuthedContractParams as Ret } from 'common/contract'
 import { binAvg, maxMinBin } from 'common/chart'
 import { getBets, getBetPoints, getTotalBetCount } from 'common/supabase/bets'
-import { getAllComments } from 'common/supabase/comments'
+import { getRecentTopLevelCommentsAndReplies } from 'common/supabase/comments'
 import {
   getCPMMContractUserContractMetrics,
   getTopContractMetrics,
@@ -115,7 +115,11 @@ export const getcontractparams = MaybeAuthedEndpoint<Ret>(async (req, auth) => {
     isSingle && contract.visibility !== 'private' ? binAvg(allBetPoints) : []
   const pointsString = pointsToBase64(ogPoints.map((p) => [p.x, p.y] as const))
 
-  const comments = await getAllComments(db, contract.id, 100)
+  const comments = await getRecentTopLevelCommentsAndReplies(
+    db,
+    contract.id,
+    50
+  )
 
   const userPositionsByOutcome =
     contract.mechanism === 'cpmm-1'

@@ -16,7 +16,7 @@ import {
   verticalSwipeDist,
 } from 'web/components/swipe/swipe-helpers'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
-import { SiteLink } from 'web/components/widgets/site-link'
+import Link from 'next/link'
 import { useFeed } from 'web/hooks/use-feed'
 import { useTracking } from 'web/hooks/use-tracking'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
@@ -277,12 +277,12 @@ export function Swipe(props: { toggleView?: () => void }) {
           {contracts !== undefined && contracts.length === 0 && (
             <div className="m-4 flex w-full flex-col items-center justify-center">
               We're fresh out of cards!
-              <SiteLink
+              <Link
                 href="/questions?s=newest&f=open"
                 className="text-primary-700"
               >
                 Browse new questions
-              </SiteLink>
+              </Link>
             </div>
           )}
         </animated.div>

@@ -54,7 +54,7 @@ const ContractGroupBreadcrumbs = (props: { contract: Contract }) => {
     <Row className={clsx('line-clamp-1')}>
       {groups.map((group, i) => (
         <span key={group.id} className={'text-primary-600 text-sm'}>
-          <Link className={clsx(linkClass)} href={`/group/${group.slug}`}>
+          <Link className={linkClass} href={`/group/${group.slug}`}>
             {removeEmojis(group.name)}
           </Link>
           {i !== groups.length - 1 && (
@@ -87,7 +87,7 @@ export function PublicMarketGroups(props: { contract: Contract }) {
     !!(adminGroups && adminGroups.some((g) => g.group_id === group.id))
   return (
     <>
-      <Row className={'h-6 gap-1'}>
+      <Row className={'group h-6 gap-1'}>
         <ContractGroupBreadcrumbs contract={contract} />
         {user && canEdit && (
           <button
@@ -96,7 +96,7 @@ export function PublicMarketGroups(props: { contract: Contract }) {
               e.stopPropagation()
               setOpen(true)
             }}
-            className="hover:bg-primary-400/20 text-primary-700 rounded-md text-sm"
+            className="hover:bg-primary-400/20 text-primary-700 rounded-md text-sm sm:hidden sm:group-hover:inline"
           >
             {contract.groupLinks?.length ? (
               <PencilIcon className="w-6 px-1" />

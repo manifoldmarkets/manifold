@@ -26,8 +26,8 @@ import {
 } from 'web/components/manalink-card'
 import { Pagination } from 'web/components/widgets/pagination'
 import ShortToggle from 'web/components/widgets/short-toggle'
-import { SiteLink } from 'web/components/widgets/site-link'
-import { useCanCreateManalink } from 'web/hooks/use-can-create-manalink'
+import Link from 'next/link'
+import { useCanSendMana } from 'web/hooks/use-can-send-mana'
 import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
 import { getUserManalinks } from 'web/lib/supabase/manalinks'
 
@@ -58,7 +58,7 @@ export default function LinkPage(props: {
   const displayedLinks = showDisabled
     ? userLinks
     : userLinks.filter((l) => !linkClaimed(toInfo(l)))
-  const authorized = useCanCreateManalink(user)
+  const { canSend, message } = useCanSendMana(user)
 
   return (
     <Page>
@@ -81,10 +81,10 @@ export default function LinkPage(props: {
         <p>
           You can use manalinks to send mana ({ENV_CONFIG.moneyMoniker}) to
           other people, even if they don&apos;t yet have a Manifold account.{' '}
-          <SiteLink href="/referrals">
+          <Link href="/referrals">
             Eligible for {formatMoney(REFERRAL_AMOUNT)} referral bonus if a new
             user signs up and places a trade!!
-          </SiteLink>
+          </Link>
         </p>
 
         <Row className="items-baseline justify-between">
@@ -94,16 +94,13 @@ export default function LinkPage(props: {
             <ShortToggle on={showDisabled} setOn={setShowDisabled} />
           </Row>
         </Row>
-        {authorized ? (
+        {canSend ? (
           <ManalinksDisplay
             links={displayedLinks}
             highlightedSlug={highlightedSlug}
           />
         ) : (
-          <p className="text-ink-500">
-            Your account must be older than a week and have a balance or total
-            profits greater than {formatMoney(1000)} to create manalinks.
-          </p>
+          <p className="text-ink-500">{message}</p>
         )}
       </Col>
     </Page>

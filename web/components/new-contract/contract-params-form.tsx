@@ -216,9 +216,8 @@ export function ContractParamsForm(props: {
 
   useEffect(() => {
     if (outcomeType === 'STONK' || NON_BETTING_OUTCOMES.includes(outcomeType)) {
-      setCloseDate(dayjs().add(1000, 'year').format('YYYY-MM-DD'))
-      setCloseHoursMinutes('23:59')
-
+      setCloseDateInDays(NEVER_IN_DAYS)
+      setNeverCloses(true)
       if (outcomeType == 'STONK') {
         if (editor?.isEmpty) {
           editor?.commands.setContent(
@@ -232,10 +231,9 @@ export function ContractParamsForm(props: {
           )
         }
       }
-    }
-    if (outcomeType === 'POLL') {
-      setCloseDateInDays(NEVER_IN_DAYS)
-      setNeverCloses(true)
+    } else {
+      setCloseDateInDays(7)
+      setNeverCloses(false)
     }
   }, [outcomeType])
 
@@ -286,8 +284,8 @@ export function ContractParamsForm(props: {
     editor?.commands.clearContent(true)
     safeLocalStorage?.removeItem(`text create market`)
     setQuestion('')
-    setCloseDate(undefined)
-    setCloseHoursMinutes(undefined)
+    setCloseDate(initDate)
+    setCloseHoursMinutes(initTime)
     setSelectedGroups([])
     setVisibility((params?.visibility as Visibility) ?? 'public')
     setAnswers(defaultAnswers)
@@ -814,7 +812,7 @@ async function fetchContract(contractId: string) {
 }
 
 async function waitForSupabaseContract(contractId: string) {
-  let retries = 5
+  let retries = 15
   while (retries > 0) {
     const contract = await fetchContract(contractId)
     if (contract) return contract

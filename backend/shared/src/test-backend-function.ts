@@ -4,8 +4,11 @@ import {
   createSupabaseClient,
   createSupabaseDirectClient,
 } from 'shared/supabase/init'
-import { sendOnboardingNotificationsInternal } from 'shared/onboarding-helpers'
 import * as admin from 'firebase-admin'
+import { getUserMostChangedPosition } from 'common/supabase/bets'
+import { getContract, getUser } from 'shared/utils'
+import { addBetDataToUsersFeeds } from 'shared/create-feed'
+import * as crypto from 'crypto'
 
 // Ian's file for debugging
 export async function testBackendFunction() {
@@ -17,7 +20,27 @@ export async function testBackendFunction() {
     const firestore = admin.firestore()
     // await updateViewsAndViewersEmbeddings(pg)
     // await addInterestingContractsToFeed(db, pg)
-    await sendOnboardingNotificationsInternal(firestore)
+    // await sendOnboardingNotificationsInternal(firestore)
+    // await addInterestingContractsToFeed(db, pg)
+    const user = await getUser('AJwLWoo3xue32XIiAVrL5SyR1WB2')
+    if (!user) return
+    const contract = await getContract('sUfRsm6efdkUIOYcU980')
+    if (!contract) return
+    const maxOutcome = await getUserMostChangedPosition(
+      user,
+      contract,
+      Date.now() - 1000,
+      db
+    )
+    if (!maxOutcome) return
+    await addBetDataToUsersFeeds(
+      contract,
+      user,
+      maxOutcome,
+      crypto.randomUUID()
+    )
+
+    console.log('max change', maxOutcome)
     // await calculateGroupImportanceScore(pg)
     // const apiKey = process.env.NEWS_API_KEY
     // if (!apiKey) {

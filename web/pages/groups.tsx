@@ -13,9 +13,12 @@ import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { useUser } from 'web/hooks/use-user'
 import GroupSearch from 'web/components/groups/group-search'
 import { useMemberGroupIds } from 'web/hooks/use-group-supabase'
+import { useTracking } from 'web/hooks/use-tracking'
 
 export default function Groups() {
   const user = useUser()
+  useTracking('view groups')
+
   return (
     <Page>
       <SEO
@@ -48,7 +51,7 @@ export function GroupsPageContent(props: { user: User | null | undefined }) {
   if (user === undefined || yourGroupIds === undefined) {
     return <LoadingIndicator />
   }
-  if (user === null || (yourGroupIds && yourGroupIds.length < 1)) {
+  if (user === null) {
     return (
       <GroupSearch
         persistPrefix={'discover-groups'}

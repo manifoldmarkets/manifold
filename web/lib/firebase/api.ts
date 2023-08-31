@@ -5,7 +5,7 @@ import { Group, PrivacyStatusType } from 'common/group'
 import { HideCommentReq } from 'web/pages/api/v0/hide-comment'
 import { Contract } from './contracts'
 export { APIError } from 'common/api'
-import { ContractTypeType, filter, Sort } from 'web/components/supabase-search'
+import { ContractTypeType, filter, Sort } from 'web/components/contracts-search'
 import { AD_RATE_LIMIT } from 'common/boost'
 import { groupRoleType } from 'web/components/groups/group-member-modal'
 import { Bet } from 'common/bet'
@@ -415,6 +415,7 @@ export function sendMana(params: {
   toIds: string[]
   amount: number
   message: string
+  groupId?: string
 }) {
   return call(getApiUrl('send-mana'), 'POST', params)
 }
@@ -456,4 +457,12 @@ export function createChatMessage(params: {
   content: JSONContent
 }) {
   return call(getApiUrl('create-chat-message'), 'POST', params)
+}
+
+export function followUser(userId: string) {
+  return call(getApiUrl('follow-user'), 'POST', { userId, follow: true })
+}
+
+export function unfollowUser(userId: string) {
+  return call(getApiUrl('follow-user'), 'POST', { userId, follow: false })
 }

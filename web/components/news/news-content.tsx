@@ -1,14 +1,13 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { Col } from 'web/components/layout/col'
-import { useContracts } from 'web/hooks/use-contract-supabase'
-import { SimpleContractRow } from 'web/components/simple-contract-row'
+import Link from 'next/link'
 import { FeedContractCard } from 'web/components/contract/feed-contract-card'
+import { Col } from 'web/components/layout/col'
 import { DashboardNewsItem } from 'web/components/news/dashboard-news-item'
 import { NewsTopicsContentContainer } from 'web/components/widgets/news-topics-content-container'
-import Link from 'next/link'
 import { Title } from 'web/components/widgets/title'
-import { NewsGrid, createNewsDashboardTab } from './news-dashboard'
+import { useContracts } from 'web/hooks/use-contract-supabase'
 import { ExternalLink } from '../widgets/external-link'
+import { createNewsDashboardTab } from './news-dashboard'
 
 const SummitNATO = createNewsDashboardTab('NATO Summit', 'NATO Summit', [
   { slug: 'will-ukraine-be-an-official-member' },
@@ -41,15 +40,6 @@ const GlobalWarming = createNewsDashboardTab(
       url: 'https://www.smithsonianmag.com/smart-news/earth-faces-hottest-day-ever-recorded-three-days-in-a-row-180982493/',
     },
     { slug: 'will-2023-be-the-hottest-year-on-re' },
-
-    {
-      content: (
-        <img
-          src="https://cdn.vox-cdn.com/uploads/chorus_asset/file/24771180/heat_waves_download1_2022.png"
-          className="mb-4"
-        />
-      ),
-    },
     { slug: 'will-the-record-for-hottest-day-be' },
     { slug: 'will-this-summer-be-the-hottest-rec' },
     { slug: 'will-bryan-caplan-win-his-climate-b' },
@@ -61,7 +51,11 @@ const GlobalWarming = createNewsDashboardTab(
     {
       url: 'https://www.vox.com/climate/2023/7/5/23784587/hottest-day-heat-wave-recorded-temperature-climate-change',
     },
-  ]
+  ],
+  <img
+    src="https://cdn.vox-cdn.com/uploads/chorus_asset/file/24771180/heat_waves_download1_2022.png"
+    className="mb-4"
+  />
 )
 const Threads = createNewsDashboardTab('Threads', 'Facebook Launches Threads', [
   {
@@ -201,18 +195,14 @@ const ElonVersusZuck = createNewsDashboardTab(
     { slug: 'conditional-in-the-fight-between-mu' },
     { slug: 'if-elon-zuck-fight-will-either-brea' },
     { slug: 'if-the-elon-musk-vs-zuckerberg-figh-92350f63685f' },
-    {
-      content: (
-        <img
-          src="https://media.discordapp.net/attachments/1100471650392223834/1121601859073871943/image0.jpg?width=862&height=686"
-          width={862}
-          height={686}
-          alt=""
-          className="mb-4"
-        />
-      ),
-    },
-  ]
+  ],
+  <img
+    src="https://media.discordapp.net/attachments/1100471650392223834/1121601859073871943/image0.jpg?width=862&height=686"
+    width={862}
+    height={200}
+    alt=""
+    className="mb-4"
+  />
 )
 
 const RussianCoupData = () => {
@@ -231,318 +221,75 @@ const RussianCoupData = () => {
   return (
     <Col>
       <Title className="mb-4">Coup Over? Russian Merc Chief Stands Down</Title>
-      <NewsGrid>
-        <DashboardNewsItem
-          className="mb-4"
-          title="Vladimir Putin says Wagner mutiny leaders will be 'brought to justice'"
-          urlToImage="https://ichef.bbci.co.uk/news/976/cpsprodpb/B235/production/_130212654_vladimirputin.png.webp"
-          url="https://www.bbc.com/news/world-europe-66024526"
-          description={`Russian President Vladimir Putin has accused the leaders of last weekend's Wagner mutiny of wanting "to see Russia choked in bloody strife".`}
-          author="James Gregory & Sarah Rainsford"
-          published_time={Date.UTC(2023, 5, 26, 23, 30)}
-        />
+      {/* <NewsGrid> */}
+      <DashboardNewsItem
+        className="mb-4"
+        title="Vladimir Putin says Wagner mutiny leaders will be 'brought to justice'"
+        urlToImage="https://ichef.bbci.co.uk/news/976/cpsprodpb/B235/production/_130212654_vladimirputin.png.webp"
+        url="https://www.bbc.com/news/world-europe-66024526"
+        description={`Russian President Vladimir Putin has accused the leaders of last weekend's Wagner mutiny of wanting "to see Russia choked in bloody strife".`}
+        author="James Gregory & Sarah Rainsford"
+        published_time={Date.UTC(2023, 5, 26, 23, 30)}
+      />
 
-        <DashboardNewsItem
-          className="mb-4"
-          title="Rumors grow that a top Russian general who knew of Prigozhin's attempted coup may be under arrest"
-          urlToImage="https://s.yimg.com/ny/api/res/1.2/oXNcLmKnIjZRMTErBYsp9A--/YXBwaWQ9aGlnaGxhbmRlcjt3PTcwNTtoPTQ3MDtjZj13ZWJw/https://media.zenfs.com/en/business_insider_articles_888/ce08d4cc8e92c221186763d12243e885"
-          url="https://www.yahoo.com/news/rumors-grow-top-russian-general-213316102.html"
-          description={`Gen. Surovikin knew Prigozhin was planning an uprising against Russian military leadership, NYT reported.`}
-          author="Chris Panella"
-          published_time={Date.UTC(2023, 5, 28, 9, 30)}
-        />
+      <DashboardNewsItem
+        className="mb-4"
+        title="Rumors grow that a top Russian general who knew of Prigozhin's attempted coup may be under arrest"
+        urlToImage="https://s.yimg.com/ny/api/res/1.2/oXNcLmKnIjZRMTErBYsp9A--/YXBwaWQ9aGlnaGxhbmRlcjt3PTcwNTtoPTQ3MDtjZj13ZWJw/https://media.zenfs.com/en/business_insider_articles_888/ce08d4cc8e92c221186763d12243e885"
+        url="https://www.yahoo.com/news/rumors-grow-top-russian-general-213316102.html"
+        description={`Gen. Surovikin knew Prigozhin was planning an uprising against Russian military leadership, NYT reported.`}
+        author="Chris Panella"
+        published_time={Date.UTC(2023, 5, 28, 9, 30)}
+      />
 
-        {prigozhinMarkets.map((contract) => (
-          <>
-            <FeedContractCard
-              key={key + contract.id}
-              contract={contract}
-              className="mb-4"
-            />
-          </>
-        ))}
+      {prigozhinMarkets.map((contract) => (
+        <>
+          <FeedContractCard
+            key={key + contract.id}
+            contract={contract}
+            className="mb-4"
+          />
+        </>
+      ))}
 
-        <DashboardNewsItem
-          className="mb-4"
-          title="Wagner chief says he ordered his Russian mercenaries to halt march on Moscow and return to Ukraine"
-          urlToImage="https://storage.googleapis.com/afs-prod/media/d4ed1506982c42e998398220ee61d51a/1000.jpeg"
-          url="https://apnews.com/article/russia-ukraine-wagner-prigozhin-9acbdf1eda849692ca0423a4116058d1"
-          description={`A rebellious mercenary commander said Saturday he ordered his mercenaries to halt their march on Moscow and retreat to field camps in Ukraine, appearing to defuse a dramatically escalating crisis that represented the most significant challenge to President Vladimir Putin in his more than two decades in power.`}
-          author="AP News"
-          published_time={Date.UTC(2023, 5, 24, 18)}
-        />
+      <DashboardNewsItem
+        className="mb-4"
+        title="Wagner chief says he ordered his Russian mercenaries to halt march on Moscow and return to Ukraine"
+        urlToImage="https://storage.googleapis.com/afs-prod/media/d4ed1506982c42e998398220ee61d51a/1000.jpeg"
+        url="https://apnews.com/article/russia-ukraine-wagner-prigozhin-9acbdf1eda849692ca0423a4116058d1"
+        description={`A rebellious mercenary commander said Saturday he ordered his mercenaries to halt their march on Moscow and retreat to field camps in Ukraine, appearing to defuse a dramatically escalating crisis that represented the most significant challenge to President Vladimir Putin in his more than two decades in power.`}
+        author="AP News"
+        published_time={Date.UTC(2023, 5, 24, 18)}
+      />
 
-        <DashboardNewsItem
-          className="mb-4"
-          title="Russia accuses Wagner mercenary boss Yevgeny Prigozhin of mutiny after he says Moscow killed 2,000 of his men"
-          urlToImage="https://live-production.wcms.abc-cdn.net.au/0b572035d75fec649729bcc01e15ad56?impolicy=wcms_crop_resize&cropH=2811&cropW=4997&xPos=3&yPos=0&width=862&height=485"
-          url="https://www.abc.net.au/news/2023-06-24/fsb-opens-criminal-case-against-wagner-chief-prigozhin-mutiny/102519616"
-          description={`Russia has accused mercenary chief Yevgeny Prigozhin of calling for an armed mutiny after he alleged, without providing evidence, that the military leadership had killed 2,000 of his fighters and vowed to stop what he called its "evil".`}
-          author="Reuters"
-          published_time={Date.UTC(2023, 5, 23, 22)}
-        />
+      <DashboardNewsItem
+        className="mb-4"
+        title="Russia accuses Wagner mercenary boss Yevgeny Prigozhin of mutiny after he says Moscow killed 2,000 of his men"
+        urlToImage="https://live-production.wcms.abc-cdn.net.au/0b572035d75fec649729bcc01e15ad56?impolicy=wcms_crop_resize&cropH=2811&cropW=4997&xPos=3&yPos=0&width=862&height=485"
+        url="https://www.abc.net.au/news/2023-06-24/fsb-opens-criminal-case-against-wagner-chief-prigozhin-mutiny/102519616"
+        description={`Russia has accused mercenary chief Yevgeny Prigozhin of calling for an armed mutiny after he alleged, without providing evidence, that the military leadership had killed 2,000 of his fighters and vowed to stop what he called its "evil".`}
+        author="Reuters"
+        published_time={Date.UTC(2023, 5, 23, 22)}
+      />
 
-        <DashboardNewsItem
-          className="mb-4"
-          title="Wagner boss Prigozhin says Russia's 'evil' defense ministry 'must be stopped' in latest shocking provocation"
-          urlToImage="https://i.insider.com/6495e7aa65b9ce0018a49df7?width=1300&format=jpeg&auto=webp"
-          url="https://www.businessinsider.com/wagner-boss-prigozhin-russia-evil-defense-ministry-must-stop-2023-6"
-          description={`Wagner Group founder Yevgeny Prigozhin blasted Russia's defense ministry as "evil" on Friday, saying Moscow's military leadership "must be stopped" after an alleged missile strike killed scores of his fighters, allegations immediately denied by that Russia's ministry of defense.`}
-          author="Jake Epstein"
-          published_time={Date.UTC(2023, 5, 23, 19)}
-        />
-      </NewsGrid>
-    </Col>
-  )
-}
-
-const UkraineWarData = () => {
-  const contractIds = [
-    'TCu9mfpMPGM9i7wjSGWC',
-    '8dD3vNDbHnPCx3movLl9',
-    'Zj5agn5qrD9Qsz4k80EW',
-    'mKuKAAsV3OCAEnhPwTCp',
-    'Zn6S6CWvmLJmOGSkFNEh',
-  ]
-  const contracts = useContracts(contractIds)
-  const newMarketsId = [
-    '	0z22nhXeCipEuXho6qa8',
-    'T2pUroz3OwKXmOQ4UOUK',
-    'g13teSHUN3VDickGKp9G',
-    'XeT9d6hwd1AeeXatOsXS',
-  ]
-  const newMarkets = useContracts(newMarketsId)
-
-  const prigozhinMarkets = useContracts([
-    'Uj4VpjfgWxdwwek3b9UJ',
-    '3hoy92xFKV9SQbX1HTiy',
-  ])
-  return (
-    <Col>
-      <Title className="mb-4">Ukraine vs Russia</Title>
-      <NewsGrid>
-        <DashboardNewsItem
-          className="mb-4"
-          title="Wagner boss Prigozhin says Russia's 'evil' defense ministry 'must be stopped' in latest shocking provocation"
-          urlToImage="https://i.insider.com/6495e7aa65b9ce0018a49df7?width=1300&format=jpeg&auto=webp"
-          url="https://www.businessinsider.com/wagner-boss-prigozhin-russia-evil-defense-ministry-must-stop-2023-6"
-          description={`Wagner Group founder Yevgeny Prigozhin blasted Russia's defense ministry as "evil" on Friday, saying Moscow's military leadership "must be stopped" after an alleged missile strike killed scores of his fighters, allegations immediately denied by that Russia's ministry of defense.`}
-          author="Jake Epstein"
-          published_time={Date.UTC(2023, 5, 23, 19)}
-        />
-
-        {prigozhinMarkets.map((contract) => (
-          <>
-            <FeedContractCard
-              key={contract.id}
-              contract={contract}
-              className="mb-4"
-            />
-          </>
-        ))}
-
-        <DashboardNewsItem
-          className="mb-4"
-          title="Ukrainian intelligence shows Moscow is plotting 'terror attack' on nuclear plant
-"
-          urlToImage="https://www.icrc.org/sites/default/files/styles/special_page_image/public/document_new/image/tihange_nuclear_power_station_belgium-reuters.jpg?itok=yUgL6S2U"
-          url="https://news.sky.com/story/ukraine-russia-war-latest-counteroffensive-paused-putin-12541713"
-          description="The president's comments came as Ukraine pressed on with its counteroffensive and just days after the Kremlin began deploying the weapons to Belarus."
-          author="Sky News"
-          published_time={Date.UTC(2023, 5, 22, 11)}
-        />
-
-        <NewsTopicsContentContainer
-          header="New Questions"
-          containerContent={
-            <>
-              {contracts &&
-                newMarkets.map((contract) => (
-                  <SimpleContractRow key={contract.id} contract={contract} />
-                ))}
-            </>
-          }
-        />
-        {contracts.map((contract) => (
-          <>
-            <FeedContractCard
-              key={contract.id}
-              contract={contract}
-              className="mb-4"
-            />
-          </>
-        ))}
-      </NewsGrid>
-    </Col>
-  )
-}
-
-const RedditBlackoutData = () => {
-  const key = 'reddit-blackout'
-  const contractIds = [
-    'FsdPt9ZNM8bhJCH6poED',
-    '3EK7ViWbBSj6mNKi2ZzV',
-    '7XgZSWhWFtSV0SxLUn0P',
-  ]
-  const contracts = useContracts(contractIds)
-  return (
-    <Col>
-      <Title className="mb-4">Reddit Blackout</Title>
-      <NewsGrid>
-        <NewsTopicsContentContainer
-          header="Summary"
-          containerContent={
-            <ul className="ml-6 list-disc">
-              <li>
-                Communities boycott Reddit in protest of API pricing which have
-                destroyed third party apps.
-              </li>
-              <li>At peak, 8829 subreddits went dark.</li>
-              <li>
-                <Link
-                  className="break-anywhere decoration-primary-400 underline hover:decoration-2"
-                  href="https://reddark.untone.uk/"
-                >
-                  Only 3243 remain private/restricted.
-                </Link>
-              </li>
-              <li>
-                <Link
-                  className="break-anywhere decoration-primary-400 underline hover:decoration-2"
-                  href="https://www.reddit.com/r/apple/comments/14al426/rapple_blackout_what_happened/"
-                >
-                  Mods from numerous subreddits have been forced to give in to
-                  Reddit's threats.
-                </Link>
-              </li>
-            </ul>
-          }
-        />
-        <DashboardNewsItem
-          className="mb-4"
-          title="Thousands of Reddit Communities Stay Dark as App Policy Protest Continues"
-          urlToImage="https://static01.nyt.com/images/2023/06/21/multimedia/20xp-reddit1-print-lcjh/20xp-reddit1-lcjh-superJumbo.jpg?quality=75&auto=webp"
-          url="https://www.nytimes.com/2023/06/20/business/media/reddit-moderators-api-protest.html"
-          description="Users’ anger continued to bubble over changes to the company’s business model."
-          author="The New York Times"
-          published_time={Date.UTC(2023, 5, 20)}
-        />
-        {contracts &&
-          contracts.length > 0 &&
-          contracts.map((contract) => (
-            <>
-              <FeedContractCard
-                key={key + contract.id}
-                contract={contract}
-                className="mb-4"
-              />
-            </>
-          ))}
-      </NewsGrid>
-    </Col>
-  )
-}
-
-const MissingSubData = () => {
-  const key = 'missing-sub'
-  const contractIds = [
-    'QLdcYfes6w4VSddzc5Lc',
-    'dRjGomQYlRMDBaBskqOk',
-
-    'lWojxiYMjgmOZOMVVvJu',
-    'YX9ZjC9te9W7dX3vp4o9',
-    'Kb8JZ1E7PRK83wQ8Zt9q',
-  ]
-  const contracts = useContracts(contractIds)
-
-  return (
-    <Col>
-      <Title className="mb-4">Missing Submarine</Title>
-      <NewsGrid>
-        <iframe
-          className="mb-4 h-48 w-full"
-          src="https://www.youtube.com/embed/0aybrUe8cPY"
-          title="YouTube video player"
-          allow=""
-        ></iframe>
-
-        <NewsTopicsContentContainer
-          header="Summary"
-          containerContent={
-            <ul className="ml-6 list-disc">
-              <li>
-                <Link
-                  href={'https://www.bbc.co.uk/news/world-us-canada-65991651'}
-                  className="break-anywhere decoration-primary-400 underline hover:decoration-2"
-                >
-                  Breaking - Debris field: Parts of missing sub's cover found,
-                  expert says{' '}
-                </Link>
-              </li>
-              <li>
-                <Link
-                  className="break-anywhere decoration-primary-400 underline hover:decoration-2"
-                  href="https://youtu.be/Uz7lxiEOouk?t=43"
-                >
-                  Oxygen runs out Thursday afternoon ET.
-                </Link>
-              </li>
-              <li>
-                No GPS, relies on surface support vessel to guide it via text.
-              </li>
-              <li>
-                <Link
-                  className="break-anywhere decoration-primary-400 underline hover:decoration-2"
-                  href="https://www.vice.com/en/article/bvjjqq/why-did-the-missing-titanic-sub-use-a-dollar40-video-game-controller"
-                >
-                  Controlled by the 5 passengers using a modified logitech
-                  controller
-                </Link>
-              </li>
-              <li>No way to open from the inside - bolted externally.</li>
-            </ul>
-          }
-        />
-
-        {contracts &&
-          contracts.length > 0 &&
-          contracts.map((contract) => (
-            <>
-              <FeedContractCard
-                key={key + contract.id}
-                contract={contract}
-                className="mb-4"
-              />
-            </>
-          ))}
-
-        <DashboardNewsItem
-          className="mb-4"
-          title="Search for Missing Titanic Submersible"
-          urlToImage="https://i.ytimg.com/vi/l9_qNO37oFs/maxresdefault.jpg"
-          url="https://www.bbc.co.uk/news/live/world-us-canada-65967464"
-          description='David Mearns tells the BBC a "landing frame and a rear cover from the submersible" were seen'
-          author="Edited by Frances Mao"
-        />
-      </NewsGrid>
+      <DashboardNewsItem
+        className="mb-4"
+        title="Wagner boss Prigozhin says Russia's 'evil' defense ministry 'must be stopped' in latest shocking provocation"
+        urlToImage="https://i.insider.com/6495e7aa65b9ce0018a49df7?width=1300&format=jpeg&auto=webp"
+        url="https://www.businessinsider.com/wagner-boss-prigozhin-russia-evil-defense-ministry-must-stop-2023-6"
+        description={`Wagner Group founder Yevgeny Prigozhin blasted Russia's defense ministry as "evil" on Friday, saying Moscow's military leadership "must be stopped" after an alleged missile strike killed scores of his fighters, allegations immediately denied by that Russia's ministry of defense.`}
+        author="Jake Epstein"
+        published_time={Date.UTC(2023, 5, 23, 19)}
+      />
+      {/* </NewsGrid> */}
     </Col>
   )
 }
 
 const Election2024 = createNewsDashboardTab(
-  'US Elections',
+  'US 2024',
   '2024 US Election Updates',
   [
-    {
-      content: (
-        <DashboardNewsItem
-          className="mb-4"
-          urlToImage="https://www.washingtonpost.com/wp-apps/imrs.php?src=https://arc-anglerfish-washpost-prod-washpost.s3.amazonaws.com/public/B6GOFP7PS5F67I6BYHTRIX3CME.jpg&w=700&h=467"
-          url="https://www.washingtonpost.com/politics/interactive/2023/poll-republican-presidential-debate/"
-          description={`A Washington Post/FiveThirtyEight/Ipsos poll survyed likely Republican voters before and after the debate`}
-        />
-      ),
-    },
     { slug: 'will-the-august-23-2023-republican' },
     { slug: 'will-vivek-ramaswamys-poll-numbers' },
     { slug: 'will-vivek-ramaswamy-win-the-septem' },
@@ -556,36 +303,39 @@ const Election2024 = createNewsDashboardTab(
     { slug: 'will-ai-be-a-major-topic-during-the' },
 
     { slug: 'will-a-third-party-candidate-receiv' },
+    {
+      url: 'https://www.npr.org/2023/08/25/1195726967/where-the-gop-primary-stands-with-trump-still-front-and-center',
+    },
   ]
 )
 
-const RPlace = createNewsDashboardTab('r/place', 'r/place', [
-  { slug: 'will-rplace-say-fuck-spez-when-it-c' },
-  {
-    content: (
-      <NewsTopicsContentContainer
-        containerContent={
-          <>
-            Redditors create live animation of the anime Bad Apple:
-            <Link
-              className="text-indigo-500 underline"
-              href="https://twitter.com/MrFoxWasTaken/status/1683184769012748288"
-            >
-              Watch on Twitter
-            </Link>
-          </>
-        }
-      />
-    ),
-  },
-  { slug: 'how-long-will-rplace-last' },
-  { slug: 'what-will-the-final-color-be-at-0-0' },
-  { slug: 'is-this-rplace-a-good-business-move' },
+const RPlace = createNewsDashboardTab(
+  'r/place',
+  'r/place',
+  [
+    { slug: 'will-rplace-say-fuck-spez-when-it-c' },
+    { slug: 'how-long-will-rplace-last' },
+    { slug: 'what-will-the-final-color-be-at-0-0' },
+    { slug: 'is-this-rplace-a-good-business-move' },
 
-  { slug: 'will-i-be-convinced-that-the-destin' },
-  { slug: 'will-manifold-make-it-on-rplace' },
-  { slug: 'will-destiny-be-the-most-represente' },
-])
+    { slug: 'will-i-be-convinced-that-the-destin' },
+    { slug: 'will-manifold-make-it-on-rplace' },
+    { slug: 'will-destiny-be-the-most-represente' },
+  ],
+  <NewsTopicsContentContainer
+    containerContent={
+      <>
+        Redditors create live animation of the anime Bad Apple:
+        <Link
+          className="text-indigo-500 underline"
+          href="https://twitter.com/MrFoxWasTaken/status/1683184769012748288"
+        >
+          Watch on Twitter
+        </Link>
+      </>
+    }
+  />
+)
 
 const XCom = createNewsDashboardTab('X.com', 'Twitter rebrands to X.com', [
   { url: 'https://www.bbc.co.uk/news/business-66284304' },
@@ -621,64 +371,51 @@ const STPSuper = createNewsDashboardTab(
   [
     { slug: 'will-the-lk99-room-temp-ambient-pre' },
     { slug: 'when-will-we-know-whether-the-room' },
-    {
-      content: (
-        <NewsTopicsContentContainer
-          header="Additional Context"
-          containerContent={
-            <Col className="gap-4">
-              <ExternalLink
-                title="Main Paper"
-                href="https://arxiv.org/abs/2307.12008"
-              />
-
-              <ExternalLink
-                title="Companion Paper"
-                href="https://arxiv.org/abs/2307.12037"
-              />
-
-              <ExternalLink
-                title="First claims of replication from China"
-                href="https://www.zhihu.com/question/613850973/answer/3136316439?utm_id=0"
-              />
-
-              <ExternalLink
-                title="What would RTP superconductors mean?"
-                href="https://theconversation.com/room-temperature-superconductors-could-revolutionize-electronics-an-electrical-engineer-explains-the-materials-potential-201849"
-              />
-
-              <ExternalLink
-                title="Hacker News thread discussion"
-                href="https://news.ycombinator.com/item?id=36864624"
-              />
-
-              <ExternalLink
-                title="Table of all current replication attempts"
-                href="https://forums.spacebattles.com/threads/claims-of-room-temperature-and-ambient-pressure-superconductor.1106083/page-11?post=94266395#post-94266395"
-              />
-
-              <ExternalLink
-                title="Chinese team finds theoretical basis for LK-99 superconductivity"
-                href="https://arxiv.org/abs/2307.16040"
-              />
-
-              {/* <p className="mb-4">
-                Materials used are relatively cheap and not complicated, so it
-                should be easy for others to replicate.
-              </p> */}
-            </Col>
-          }
-        />
-      ),
-    },
-
     { slug: 'will-there-be-a-highcredibility-spu' },
     { slug: 'will-the-first-roomtemperature-ambi' },
     { slug: 'will-we-have-the-first-roomtemperat' },
     { slug: 'will-a-roomtemperature-atmospheric' },
     { slug: 'will-the-first-roomtemperature-ambi-61c98e502e09' },
     { slug: 'which-financial-instruments-should' },
-  ]
+  ],
+  <Col className="gap-4">
+    <ExternalLink title="Main Paper" href="https://arxiv.org/abs/2307.12008" />
+
+    <ExternalLink
+      title="Companion Paper"
+      href="https://arxiv.org/abs/2307.12037"
+    />
+
+    <ExternalLink
+      title="First claims of replication from China"
+      href="https://www.zhihu.com/question/613850973/answer/3136316439?utm_id=0"
+    />
+
+    <ExternalLink
+      title="What would RTP superconductors mean?"
+      href="https://theconversation.com/room-temperature-superconductors-could-revolutionize-electronics-an-electrical-engineer-explains-the-materials-potential-201849"
+    />
+
+    <ExternalLink
+      title="Hacker News thread discussion"
+      href="https://news.ycombinator.com/item?id=36864624"
+    />
+
+    <ExternalLink
+      title="Table of all current replication attempts"
+      href="https://forums.spacebattles.com/threads/claims-of-room-temperature-and-ambient-pressure-superconductor.1106083/page-11?post=94266395#post-94266395"
+    />
+
+    <ExternalLink
+      title="Chinese team finds theoretical basis for LK-99 superconductivity"
+      href="https://arxiv.org/abs/2307.16040"
+    />
+
+    <p className="mb-4">
+      Materials used are relatively cheap and not complicated, so it should be
+      easy for others to replicate.
+    </p>
+  </Col>
 )
 
 const UFOs = createNewsDashboardTab(
@@ -694,83 +431,57 @@ const UFOs = createNewsDashboardTab(
     { slug: 'will-the-ufo-retrieval-program-clai' },
     { slug: 'will-the-next-state-of-the-union-ad' },
     { slug: 'will-the-us-government-reveal-that' },
-    {
-      content: (
-        <img
-          className="mb-4"
-          alt="Tic Tac UFO"
-          src="https://nybreaking.com/wp-content/uploads/2023/07/1690479621_174_What-was-the-Tic-Tac-UFO-The-story-behind-retired.jpg"
-        />
-      ),
-    },
     { slug: 'will-the-president-of-the-usa-ackno' },
     { slug: 'by-2025-over-60-of-americans-will-b' },
     { slug: 'will-a-clear-4k-video-of-a-uap-be-r' },
     { slug: 'will-eliezer-yudkowsky-win-his-1500' },
     { slug: 'will-the-ufo-shot-down-in-alaska-on' },
-    {
-      content: (
-        <iframe
-          className="mb-4 h-48 w-full"
-          src="https://www.youtube.com/embed/KQ7Dw-739VY?start=2550"
-          title="Grusch UFO testimony"
-          allow=""
-        ></iframe>
-      ),
-    },
-    {
-      content: (
-        <img
-          className="mb-4"
-          alt="Alien"
-          src="https://preview.redd.it/tell-me-this-lil-fella-didnt-just-steal-your-heart-at-this-v0-7ukx8e9u8tbb1.png?auto=webp&s=8e0b01e616a9442dc64ededd657e9643bbdadcb0"
-        />
-      ),
-    },
     { slug: 'if-eliezer-yudkowsky-loses-his-bet' },
-  ]
+  ],
+  <Col>
+    <iframe
+      className="mb-4 h-48 w-full"
+      src="https://www.youtube.com/embed/KQ7Dw-739VY?start=2550"
+      title="Grusch UFO testimony"
+      allow=""
+    ></iframe>
+  </Col>
 )
 
-const Trump = createNewsDashboardTab('Trump', 'Trump indicted', [
-  {
-    url: 'https://apnews.com/article/trump-georgia-election-investigation-grand-jury-willis-d39562cedfc60d64948708de1b011ed3',
-  },
-  {
-    content: (
-      <NewsTopicsContentContainer
-        header="Trump charged with racketeering"
-        containerContent={
-          <Col className="gap-4">
-            <div>Trump faces 4th criminal case, August 14th</div>
-            <div>
-              “The indictment alleges that rather than abide by Georgia’s legal
-              process for election challenges, the defendants engaged in a
-              criminal racketeering enterprise to overturn Georgia’s
-              presidential election result,” Fulton County District Attorney
-              Fani Willis
-            </div>
-            <div>Odds of Trump avoiding prison were at 60% but fell to 23%</div>
-            <div>
-              The type of charges (RICO) being pressed is novel in this context
-              and is usually used against criminal organisations{' '}
-            </div>
-          </Col>
-        }
-      />
-    ),
-  },
-  { slug: 'when-will-trump-be-imprisoned' },
+const Trump = createNewsDashboardTab(
+  'Trump',
+  'Trump indicted',
+  [
+    {
+      url: 'https://www.nbcnews.com/politics/donald-trump/federal-judge-set-trump-trial-date-election-interference-case-rcna101669',
+    },
+    { slug: 'when-will-trump-be-imprisoned' },
 
-  { slug: 'will-donald-trump-be-the-republican' },
-  { slug: 'will-a-trump-mugshot-be-available-b' },
-  { slug: 'will-one-of-the-18-indicted-coconsp' },
-  { slug: 'will-donald-trumps-height-be-62-or' },
-  { slug: 'will-donald-trump-weigh-280-pounds' },
-  { slug: 'will-trump-be-indicted-by-three-or' },
-  { slug: 'who-will-be-the-republican-presiden-7bf11c066154' },
-  { slug: 'is-trump-more-likely-to-spend-1-nig' },
-  { slug: 'will-there-be-large-scale-protests' },
-])
+    { slug: 'will-donald-trump-be-the-republican' },
+    { slug: 'will-a-trump-mugshot-be-available-b' },
+    { slug: 'will-one-of-the-18-indicted-coconsp' },
+    { slug: 'will-donald-trumps-height-be-62-or' },
+    { slug: 'will-donald-trump-weigh-280-pounds' },
+    { slug: 'will-trump-be-indicted-by-three-or' },
+    { slug: 'who-will-be-the-republican-presiden-7bf11c066154' },
+    { slug: 'is-trump-more-likely-to-spend-1-nig' },
+    { slug: 'will-there-be-large-scale-protests' },
+  ],
+  <Col className="gap-4">
+    <div>Trump faces 4th criminal case, August 14th</div>
+    <div>
+      “The indictment alleges that rather than abide by Georgia's legal process
+      for election challenges, the defendants engaged in a criminal racketeering
+      enterprise to overturn Georgia's presidential election result,” Fulton
+      County District Attorney Fani Willis
+    </div>
+    <div>Odds of Trump avoiding prison were at 60% but fell to 23%</div>
+    <div>
+      The type of charges (RICO) being pressed is novel in this context and is
+      usually used against criminal organisations{' '}
+    </div>
+  </Col>
+)
 
 const NigerCoup = createNewsDashboardTab('Niger coup', 'Niger coup', [
   {
@@ -789,39 +500,33 @@ const CancerPill = createNewsDashboardTab(
   'AOH1996 = miracle cancer pill?',
   [
     { slug: 'is-the-pcnatargeting-cancer-drug-pa' },
-    {
-      content: (
-        <NewsTopicsContentContainer
-          header="Facts"
-          containerContent={
-            <>
-              <p className="mb-4">
-                A new study claims oral cancer drug AOH1996 kills 100% of solid
-                tumors across many cancer types in animals with no discernible
-                side effects.
-              </p>
-              <p className="mb-4">
-                The drug works by interfering with PCNA which clamps DNA to
-                allow replication tools to attach.
-              </p>
-              <p className="mb-4">The drug is in Phase I clinical trials.</p>
-
-              <ExternalLink
-                className="mb-4"
-                title="Main paper"
-                href="https://www.cell.com/cell-chemical-biology/pdfExtended/S2451-9456(23)00221-0"
-              />
-            </>
-          }
-        />
-      ),
-    },
-
     { slug: 'will-aoh1996-be-fda-approved-before' },
     { slug: 'when-will-the-100-effective-against-7a6fcbc9b217' },
     { slug: 'will-aoh1996-succeed-in-phase-i-tri' },
     { slug: 'will-the-preclinical-results-on-the' },
-  ]
+  ],
+  <NewsTopicsContentContainer
+    header="Facts"
+    containerContent={
+      <>
+        <p className="mb-4">
+          A new study claims oral cancer drug AOH1996 kills 100% of solid tumors
+          across many cancer types in animals with no discernible side effects.
+        </p>
+        <p className="mb-4">
+          The drug works by interfering with PCNA which clamps DNA to allow
+          replication tools to attach.
+        </p>
+        <p className="mb-4">The drug is in Phase I clinical trials.</p>
+
+        <ExternalLink
+          className="mb-4"
+          title="Main paper"
+          href="https://www.cell.com/cell-chemical-biology/pdfExtended/S2451-9456(23)00221-0"
+        />
+      </>
+    }
+  />
 )
 
 const PlaneCrash = createNewsDashboardTab(
@@ -841,11 +546,30 @@ const PlaneCrash = createNewsDashboardTab(
   ]
 )
 
+const FLHurricane = createNewsDashboardTab(
+  'Gulf Hurricane',
+  'Tropical Storm Idalia likely to become hurricane',
+  [
+    {
+      url: 'https://edition.cnn.com/us/live-news/hurricane-idalia-path-florida-08-30-23/index.html',
+    },
+    { slug: 'will-hurricane-idalia-cost-150-live' },
+    { slug: 'in-2023-will-a-hurricane-make-landf' },
+    { slug: 'will-tropical-storm-idalia-become-a' },
+
+    { slug: 'will-a-hurricane-make-landfall-in-f-736c1b6b35db' },
+    { slug: 'will-a-hurricane-hit-the-state-of-f' },
+    { slug: 'will-a-hurricane-make-landfall-in-l-d39166018a46' },
+    { slug: 'will-a-hurricane-make-landfall-in-t-d9549c66acae' },
+  ]
+)
+
 export const newsContent = [
-  PlaneCrash,
+  FLHurricane,
+  Election2024,
   Trump,
   STPSuper,
-  Election2024,
+  PlaneCrash,
   ElonVersusZuck,
   UkraineWar,
   NigerCoup,

@@ -70,7 +70,7 @@ export default function LimitOrderPanel(props: {
   const [isSubmitting, setIsSubmitting] = useState(false)
   // Expiring orders
   const [addExpiration, setAddExpiration] = useState(false)
-  const timeInMs = Number(Date.now() + DAY_MS * 7)
+  const timeInMs = Number(Date.now() + DAY_MS)
   const initDate = dayjs(timeInMs).format('YYYY-MM-DD')
   const initTime = dayjs(timeInMs).format('HH:mm')
   const [expirationDate, setExpirationDate] = useState<string>(initDate)
@@ -276,6 +276,18 @@ export default function LimitOrderPanel(props: {
               disabled={isSubmitting}
               value={expirationHoursMinutes}
             />
+            <Button
+              color={'indigo-outline'}
+              size={'sm'}
+              onClick={() => {
+                const num = dayjs(expirationDate).valueOf() + DAY_MS
+                const addDay = dayjs(num).format('YYYY-MM-DD')
+                console.log('addDay', addDay)
+                setExpirationDate(addDay)
+              }}
+            >
+              + 1D
+            </Button>
           </Row>
         )}
       </div>

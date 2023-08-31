@@ -28,15 +28,22 @@ export const addTrendingFeedContractsScheduler = functions
 
 export const addcontractstofeed = onRequest(
   {
-    timeoutSeconds: (MINUTE_INTERVAL + 10) * 60,
-    memory: '2GiB',
+    timeoutSeconds: MINUTE_INTERVAL * 60,
+    memory: '4GiB',
     secrets,
     cpu: 2,
   },
   async (_req, res) => {
     const db = createSupabaseClient()
     const pg = createSupabaseDirectClient()
-    await addInterestingContractsToFeed(db, pg)
+    const startTime = Date.now()
+    // TODO: we should just turn this into a docker container
+    // Keep running with the users cached (we refresh for new users) until we've just 10 minutes left,
+    // on the next run we'll do a full refresh (picking a new random sample of old users)
+    while (Date.now() < startTime + (MINUTE_INTERVAL * 60 - 10) * 1000) {
+      await addInterestingContractsToFeed(db, pg)
+    }
+
     res.status(200).json({ success: true })
   }
 )

@@ -35,10 +35,12 @@ import { ControlledTabs } from '../layout/tabs'
 import { ContractMetricsByOutcome } from 'common/contract-metric'
 import { ContractBetsTable } from 'web/components/bet/contract-bets-table'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
-import { useComments } from 'web/hooks/use-comments'
 import { useRealtimeBets } from 'web/hooks/use-bets-supabase'
 import { Button } from '../buttons/button'
 import { firebaseLogin } from 'web/lib/firebase/users'
+import { ArrowRightIcon } from '@heroicons/react/outline'
+import clsx from 'clsx'
+import { useRealtimeCommentsOnContract } from 'web/hooks/use-comments-supabase'
 
 export const EMPTY_USER = '_'
 
@@ -166,8 +168,7 @@ export function ContractTabs(props: {
   )
 }
 
-const DEFAULT_PARENT_COMMENTS_TO_RENDER = 15
-const LOAD_MORE = 20
+const LOAD_MORE = 10
 export const CommentsTabContent = memo(function CommentsTabContent(props: {
   contract: Contract
   comments: ContractComment[]
@@ -187,12 +188,21 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
     betResponse,
     clearReply,
   } = props
-  const comments = (useComments(contract.id) ?? props.comments).filter(
-    (c) => !blockedUserIds.includes(c.userId)
-  )
+
+  // Firebase useComments
+  // const comments = (
+  //   useComments(
+  //     contract.id,
+  //     maxBy(props.comments, (c) => c.createdTime)?.createdTime ?? 0
+  //   ) ?? props.comments
+  // ).filter((c) => !blockedUserIds.includes(c.userId))
+
+  const comments = (
+    useRealtimeCommentsOnContract(contract.id) ?? props.comments
+  ).filter((c) => !blockedUserIds.includes(c.userId))
 
   const [parentCommentsToRender, setParentCommentsToRender] = useState(
-    DEFAULT_PARENT_COMMENTS_TO_RENDER
+    props.comments.filter((c) => !c.replyToCommentId).length
   )
 
   const user = useUser()
@@ -293,7 +303,7 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
 
   return (
     <>
-      {user ? (
+      {user && (
         <ContractCommentInput
           replyToBet={betResponse}
           replyToUserInfo={
@@ -309,15 +319,6 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
           clearReply={clearReply}
           trackingLocation={'contract page'}
         />
-      ) : (
-        <Button
-          onClick={withTracking(
-            firebaseLogin,
-            'sign up to comment button click'
-          )}
-        >
-          Sign up to comment
-        </Button>
       )}
       {comments.length > 0 && (
         <SortRow
@@ -370,12 +371,27 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
               }
             />
           ))}
+
       <div className="relative w-full">
         <VisibilityObserver
           onVisibilityUpdated={onVisibilityUpdated}
           className="pointer-events-none absolute bottom-0 h-[75vh]"
         />
       </div>
+
+      {!user && (
+        <Button
+          onClick={withTracking(
+            firebaseLogin,
+            'sign up to comment button click'
+          )}
+          className={clsx('mt-4', comments.length > 0 && 'ml-12')}
+          size="lg"
+          color="gradient"
+        >
+          Sign up to comment <ArrowRightIcon className="ml-2 h-4 w-4" />
+        </Button>
+      )}
     </>
   )
 })

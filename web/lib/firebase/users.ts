@@ -7,7 +7,6 @@ import utc from 'dayjs/plugin/utc'
 import { GoogleAuthProvider, getAuth, signInWithPopup } from 'firebase/auth'
 import {
   collection,
-  collectionGroup,
   deleteDoc,
   doc,
   getDoc,
@@ -28,7 +27,7 @@ import { track } from '../service/analytics'
 import { safeLocalStorage } from '../util/local'
 import { addGroupMember } from './api'
 import { app, db } from './init'
-import { coll, getValues, listenForValue, listenForValues } from './utils'
+import { coll, getValues, listenForValue } from './utils'
 
 dayjs.extend(utc)
 
@@ -232,48 +231,6 @@ export function getUsers() {
   return getValues<User>(users)
 }
 
-export async function follow(userId: string, followedUserId: string) {
-  const followDoc = doc(collection(users, userId, 'follows'), followedUserId)
-  await setDoc(followDoc, {
-    userId: followedUserId,
-    timestamp: Date.now(),
-  })
-}
-
-export async function unfollow(userId: string, unfollowedUserId: string) {
-  const followDoc = doc(collection(users, userId, 'follows'), unfollowedUserId)
-  await deleteDoc(followDoc)
-}
-
-export function listenForFollows(
-  userId: string,
-  setFollowIds: (followIds: string[]) => void
-) {
-  const follows = collection(users, userId, 'follows')
-  return listenForValues<{ userId: string }>(follows, (docs) =>
-    setFollowIds(docs.map(({ userId }) => userId))
-  )
-}
-
-export function listenForFollowers(
-  userId: string,
-  setFollowerIds: (followerIds: string[]) => void
-) {
-  const followersQuery = query(
-    collectionGroup(db, 'follows'),
-    where('userId', '==', userId)
-  )
-  return onSnapshot(
-    followersQuery,
-    { includeMetadataChanges: true },
-    (snapshot) => {
-      if (snapshot.metadata.fromCache) return
-
-      const values = snapshot.docs.map((doc) => doc.ref.parent.parent?.id)
-      setFollowerIds(filterDefined(values))
-    }
-  )
-}
 export function listenForReferrals(
   userId: string,
   setReferralIds: (referralIds: string[]) => void

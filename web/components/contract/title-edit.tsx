@@ -54,11 +54,14 @@ export const EditableQuestionTitle = (props: {
       </IconButton>
     </div>
   ) : (
-    <span className="text-xl font-medium sm:text-2xl">
+    <span className="group text-xl font-medium sm:text-2xl">
       <Linkify className="" text={contract.question} />
       {canEdit && (
-        <button onClick={edit} className="ml-1 p-1">
-          <PencilIcon className=" text-ink-500 hover:text-ink-600 h-4 w-4" />
+        <button
+          onClick={edit}
+          className="ml-1 p-1 sm:hidden sm:group-hover:inline"
+        >
+          <PencilIcon className="text-ink-500 hover:text-ink-600 h-5 w-5" />
         </button>
       )}
     </span>

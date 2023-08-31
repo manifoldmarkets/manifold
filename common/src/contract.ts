@@ -185,7 +185,7 @@ export type NonBet = {
   mechanism: 'none'
 }
 
-export const NON_BETTING_OUTCOMES = ['BOUNTIED_QUESTION']
+export const NON_BETTING_OUTCOMES = ['BOUNTIED_QUESTION', 'POLL']
 
 /**
  * Implemented as a set of cpmm-1 binary contracts, one for each answer.
