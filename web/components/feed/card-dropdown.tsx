@@ -3,13 +3,11 @@ import DropdownMenu, { DropdownItem } from '../comments/dropdown-menu'
 import { useIsFollowing } from 'web/hooks/use-follows'
 import { useUser } from 'web/hooks/use-user'
 import {
-  CheckIcon,
   DotsVerticalIcon,
   MinusCircleIcon,
   PlusCircleIcon,
 } from '@heroicons/react/solid'
 import { onFollowClick } from '../buttons/follow-button'
-import { FiThumbsDown } from 'react-icons/fi'
 import { updateUserDisinterestEmbedding } from 'web/lib/firebase/api'
 import { Contract } from 'common/contract'
 import { FeedTimelineItem } from 'web/hooks/use-feed-timeline'
