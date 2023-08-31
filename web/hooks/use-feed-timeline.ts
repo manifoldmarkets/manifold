@@ -40,9 +40,6 @@ import { removeUndefinedProps } from 'common/util/object'
 import { convertAnswer } from 'common/supabase/contracts'
 
 const PAGE_SIZE = 40
-const OLDEST_UNSEEN_TIME_OF_INTEREST = new Date(
-  Date.now() - 10 * DAY_MS
-).toISOString()
 
 export type FeedTimelineItem = {
   // These are stored in the db
@@ -138,7 +135,6 @@ export const useFeedTimeline = (
       query = query.gt('created_time', newestCreatedTimestamp.current)
     } else if (options.old) {
       query = query
-        .gt('created_time', OLDEST_UNSEEN_TIME_OF_INTEREST)
         .lt('created_time', newestCreatedTimestamp.current)
         .is('seen_time', null)
 

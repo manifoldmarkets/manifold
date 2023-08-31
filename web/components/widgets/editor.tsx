@@ -108,7 +108,6 @@ export function useTextEditor(props: {
   const fetchingLinks = useRef<boolean>(false)
 
   const save = useCallback(debounce(saveContent, 500), [])
-
   const editorClass = clsx(
     proseClass(size),
     'outline-none py-[.5em] px-4 h-full',
