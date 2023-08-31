@@ -203,6 +203,16 @@ export const DESTINY_GROUP_SLUGS = [
   'mumbowl-stonks',
 ]
 
+export const GROUP_SLUGS_TO_IGNORE_IN_MARKETS_EMAIL = [
+  'manifold-features',
+  'manifold-6748e065087e',
+  'destinygg',
+  'manifold-features-25bad7c7792e',
+  'bugs',
+  'manifold-leagues',
+  'nonpredictive',
+]
+
 export const DEEMPHASIZED_GROUP_SLUGS = [
   'fun',
   'selfresolving',
@@ -227,18 +237,18 @@ export const DEEMPHASIZED_GROUP_SLUGS = [
   'destinygg',
   'the-market',
   'nonpredictive-profits',
-  'nonpredictive',
+  'personal-goals',
+  'personal',
+  'rationalussy',
+  'uk',
+  'uk-politics',
 ]
+  .concat(GROUP_SLUGS_TO_IGNORE_IN_MARKETS_EMAIL)
+  .concat(DESTINY_GROUP_SLUGS)
 
-export const GROUP_SLUGS_TO_IGNORE_IN_MARKETS_EMAIL = [
-  'manifold-features',
-  'manifold-6748e065087e',
-  'destinygg',
-  'manifold-features-25bad7c7792e',
-  'bugs',
-  'manifold-leagues',
-  'nonpredictive',
-]
+export const GROUP_SLUGS_TO_IGNORE_FOR_NEWS = DEEMPHASIZED_GROUP_SLUGS.filter(
+  (slug) => ['uk', 'uk-politics'].includes(slug)
+)
 
 export const GROUP_SLUGS_TO_HIDE_FROM_PILL_SEARCH = [
   'new-years-resolutions-2024',
@@ -262,6 +272,14 @@ export const GROUP_SLUGS_TO_HIDE_FROM_WELCOME_FLOW = [
   'bugs',
   'rationalussy',
   'personal',
+  'world-default',
+  'shortterm-markets',
+  'global-macro',
+  'video-games',
+  'politics-default', // should follow US Politics instead
+  '2024-us-presidential-election', // same
+  'elon-musk', // listed as Elon Musk
+  'elon-musk-14d9d9498c7e',
 ]
 
 export const EXTERNAL_REDIRECTS = ['/umami']

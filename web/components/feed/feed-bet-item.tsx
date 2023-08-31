@@ -7,10 +7,10 @@ import { UserLink } from 'web/components/widgets/user-link'
 import clsx from 'clsx'
 import { CreatorDetails } from 'common/feed'
 import { Answer } from 'common/answer'
-import { formatMoney, formatPercent } from 'common/util/format'
+import { formatMoney } from 'common/util/format'
 import { OutcomeLabel } from 'web/components/outcome-label'
+import { RelativeTimestamp } from 'web/components/relative-timestamp'
 
-// not combining bet amounts on the backend (where the values are filled in on the comment)
 export const FeedBetsItem = (props: {
   contract: Contract
   betData: PositionChangeData
@@ -20,12 +20,23 @@ export const FeedBetsItem = (props: {
   const { contract, answers, creatorDetails, betData } = props
   const router = useRouter()
   const { avatarUrl, username, name } = creatorDetails
-  const { previous, beforeProb, afterProb, change, current } = betData
+  const { previous, change, current } = betData
+  // Current lists their original investment, not their sale value
   const saleAmount =
     previous?.outcome === current?.outcome &&
     (previous?.invested ?? 0) > (current?.invested ?? 0)
+      ? Math.abs(change)
+      : previous?.outcome != current?.outcome
+      ? previous?.invested ?? 0
+      : 0
+
+  const purchaseAmount =
+    previous?.outcome === current?.outcome &&
+    (previous?.invested ?? 0) < (current?.invested ?? 0)
       ? change
-      : previous?.invested ?? 0
+      : previous?.outcome != current?.outcome
+      ? current?.invested ?? 0
+      : 0
 
   return (
     <ClickFrame
@@ -47,9 +58,9 @@ export const FeedBetsItem = (props: {
           )}
         />
         <span>
-          {saleAmount !== 0 && previous?.outcome && (
+          {previous?.outcome && saleAmount > 0 && (
             <span>
-              {`sold ${formatMoney(Math.abs(saleAmount))}`}{' '}
+              {`sold their ${formatMoney(saleAmount)} on `}
               <OutcomeLabel
                 contract={contract}
                 outcome={previous.outcome}
@@ -57,12 +68,10 @@ export const FeedBetsItem = (props: {
               />
             </span>
           )}
-          {previous && Math.abs(change) > previous.invested && (
-            <span>{' and'}</span>
-          )}{' '}
-          {previous?.outcome !== current?.outcome && current?.outcome && (
+          {saleAmount > 0 && purchaseAmount > 0 && <span>{' and '}</span>}
+          {current?.outcome && purchaseAmount > 0 && (
             <span>
-              {`bought ${formatMoney(current.invested)} `}
+              {`bought ${formatMoney(purchaseAmount)} `}
               <OutcomeLabel
                 contract={contract}
                 outcome={current.outcome}
@@ -70,8 +79,9 @@ export const FeedBetsItem = (props: {
               />
             </span>
           )}{' '}
-          from {formatPercent(beforeProb)} to {formatPercent(afterProb)}
+          {/*from {formatPercent(beforeProb)} to {formatPercent(afterProb)}*/}
           {answers && answers.length > 0 && <span> of {answers[0].text}</span>}
+          <RelativeTimestamp time={betData.endTime} />
         </span>
       </div>
     </ClickFrame>

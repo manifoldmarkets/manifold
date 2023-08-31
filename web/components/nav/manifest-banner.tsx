@@ -2,13 +2,20 @@ import Image from 'next/image'
 import { ExternalLinkIcon, XIcon } from '@heroicons/react/outline'
 import { Button } from '../buttons/button'
 import { Row } from '../layout/row'
+import clsx from 'clsx'
 
 export function ManifestBanner(props: {
   setShowBanner: (show: boolean) => void
+  className?: string
 }) {
-  const { setShowBanner } = props
+  const { setShowBanner, className } = props
   return (
-    <Row className="border-1 items-center justify-between gap-4 border-indigo-200 bg-indigo-100 px-4 py-1.5 pr-2">
+    <Row
+      className={clsx(
+        className,
+        'border-1 dark-indigo-700 items-center justify-between gap-4 border-indigo-200 bg-indigo-100 px-4 py-1.5 pr-2 dark:bg-indigo-800'
+      )}
+    >
       <Row className="mx-auto gap-2">
         <a
           href="https://www.manifestconference.net/"

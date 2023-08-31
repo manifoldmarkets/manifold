@@ -1,6 +1,10 @@
 import { pgp, SupabaseDirectClient } from 'shared/supabase/init'
 import { fromPairs } from 'lodash'
-import { FEED_REASON_TYPES, INTEREST_DISTANCE_THRESHOLDS } from 'common/feed'
+import {
+  FEED_REASON_TYPES,
+  INTEREST_DISTANCE_THRESHOLDS,
+  NEW_USER_FEED_DATA_TYPES,
+} from 'common/feed'
 import { Row } from 'common/supabase/utils'
 import { log } from 'shared/utils'
 import { ITask } from 'pg-promise'
@@ -55,7 +59,7 @@ export const spiceUpNewUsersFeedBasedOnTheirInterests = async (
   userId: string,
   pg: SupabaseDirectClient,
   userIdFeedSource: string,
-  limit: number
+  targetContractIds: string[]
 ) => {
   await pg.tx(async (t) => {
     const relatedFeedItems = await t.manyOrNone<Row<'user_feed'>>(
@@ -69,6 +73,8 @@ export const spiceUpNewUsersFeedBasedOnTheirInterests = async (
              SELECT distinct on (contract_id) * FROM user_feed
              where created_time > now() - interval '14 days'
                and user_id = $2
+               and data_type = any($4::text[])
+               and contract_id = any($5::text[])
          ),
          feed_embeddings AS (
              SELECT contract_embeddings.contract_id, embedding
@@ -86,9 +92,15 @@ export const spiceUpNewUsersFeedBasedOnTheirInterests = async (
           SELECT *
           FROM feed_ordered_by_distance
         `,
-      [userId, userIdFeedSource, limit]
+      [
+        userId,
+        userIdFeedSource,
+        targetContractIds.length,
+        NEW_USER_FEED_DATA_TYPES,
+        targetContractIds,
+      ]
     )
-    log('found relatedFeedItems', relatedFeedItems.length)
+    log('found relatedFeedItems', relatedFeedItems.length, 'for user', userId)
 
     return copyOverFeedItems(userId, relatedFeedItems, t)
   })

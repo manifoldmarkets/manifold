@@ -29,6 +29,14 @@ export type FEED_REASON_TYPES =
   | CONTRACT_OR_USER_FEED_REASON_TYPES
   | 'similar_interest_vector_to_news_vector'
 
+export const NEW_USER_FEED_DATA_TYPES: FEED_DATA_TYPES[] = [
+  'news_with_related_contracts',
+  'new_contract',
+  'contract_probability_changed',
+  'trending_contract',
+  'new_subsidy',
+]
+
 export type CreatorDetails = {
   id: string
   name: string

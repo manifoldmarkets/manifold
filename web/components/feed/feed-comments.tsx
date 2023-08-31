@@ -451,11 +451,11 @@ export function DotMenu(props: {
           groupId={comment.id}
           defaultMessage={`Tip for comment on ${
             contract.question
-          } (${getCommentLink(
+          } ${getCommentLink(
             contract.creatorUsername,
             contract.slug,
             comment.id
-          )})`}
+          )}`}
         />
       )}
     </>

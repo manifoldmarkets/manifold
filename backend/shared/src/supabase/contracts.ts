@@ -1,5 +1,5 @@
 import { SupabaseDirectClient } from 'shared/supabase/init'
-import { fromPairs, map, merge, sortBy } from 'lodash'
+import { fromPairs, map, merge, sortBy, uniq } from 'lodash'
 import { getUserFollowerIds } from 'shared/supabase/users'
 import {
   ALL_FEED_USER_ID,
@@ -13,7 +13,7 @@ import {
 } from 'shared/supabase/vectors'
 import { filterDefined } from 'common/util/array'
 import { log } from 'shared/utils'
-import { isAdminId } from 'common/envs/constants'
+import { DEEMPHASIZED_GROUP_SLUGS, isAdminId } from 'common/envs/constants'
 import { NON_PREDICTIVE_GROUP_ID } from 'common/supabase/groups'
 
 export const getUniqueBettorIds = async (
@@ -305,4 +305,46 @@ export const getUsersWithAccessToContract = async (
     [contract.id],
     (row: { member_id: string }) => row.member_id
   )
+}
+
+export const getImportantContractsForNewUsers = async (
+  targetCount: number,
+  pg: SupabaseDirectClient,
+  groupSlugs: string[] | null = null
+): Promise<string[]> => {
+  let contractIds: string[] = []
+  let threshold = 0.5
+  const ignoreSlugs = DEEMPHASIZED_GROUP_SLUGS.filter(
+    (s) => !groupSlugs?.includes(s)
+  )
+  while (contractIds.length < targetCount && threshold > 0.2) {
+    const res = await pg.map(
+      `select id, data->'groupSlugs' as group_slugs
+       from contracts
+       where ($1::text[] is null or jsonb_array_to_text_array((data -> 'groupSlugs')) && $1)
+         and not exists (
+           select 1
+           from unnest(jsonb_array_to_text_array(data->'groupSlugs')) as t(slug)
+           where slug = any($2)
+       )
+         and not exists (
+           select 1
+           from unnest(jsonb_array_to_text_array(data->'groupSlugs')) as t(slug)
+           where slug ilike '%manifold%'
+       )
+         and resolution_time is null
+         and data ->> 'deleted' is null
+         and visibility = 'public'
+         and importance_score > $3
+       order by importance_score desc
+       limit $4`,
+      [groupSlugs, ignoreSlugs, threshold, targetCount],
+      (r) => r.id as string
+    )
+
+    contractIds = uniq(contractIds.concat(res))
+    threshold -= 0.02
+  }
+
+  return contractIds
 }

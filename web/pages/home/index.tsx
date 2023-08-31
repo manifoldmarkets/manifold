@@ -45,7 +45,7 @@ function HomeDashboard() {
         description="Breaking news meets the wisdom of the crowd"
       />
       <Welcome />
-      <Page rightSidebar={sidebar}>
+      <Page rightSidebar={sidebar} manifestBannerEnabled>
         <Row className="mx-4 mb-2 items-center justify-between gap-4">
           <div className="flex sm:hidden">
             {user ? <ProfileSummary user={user} /> : <Spacer w={4} />}

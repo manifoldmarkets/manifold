@@ -59,7 +59,7 @@ import { bulkUpdateContractMetrics } from 'shared/helpers/user-contract-metrics'
 import { Answer } from 'common/answer'
 import { getUserMostChangedPosition } from 'common/supabase/bets'
 import { addBetDataToUsersFeeds } from 'shared/create-feed'
-import { HOUR_MS } from 'common/util/time'
+import { MINUTE_MS } from 'common/util/time'
 
 const firestore = admin.firestore()
 
@@ -135,7 +135,7 @@ export const onCreateBet = functions
         .doc(`users/${bettor.id}`)
         .update({ lastBetTime: bet.createdTime })
 
-    await addBetToFollowersFeeds(bettor, contract, bet, eventId)
+    await addBetToFollowersFeeds(bettor, contract, bet)
   })
 
 const MED_BALANCE_PERCENTAGE_FOR_FEED = 0.005
@@ -147,14 +147,13 @@ const MIN_BET_SIZE_GIVEN_PERCENTAGE = 20
 const addBetToFollowersFeeds = async (
   bettor: User,
   contract: Contract,
-  bet: Bet,
-  idempotencyKey: string
+  bet: Bet
 ) => {
   if (bettor.followerCountCached <= 0 || contract.mechanism === 'dpm-2') return
   const positionChange = await getUserMostChangedPosition(
     bettor,
     contract,
-    bet.createdTime - HOUR_MS,
+    bet.createdTime - 10 * MINUTE_MS,
     createSupabaseClient()
   )
   if (!positionChange) return
@@ -171,7 +170,9 @@ const addBetToFollowersFeeds = async (
       contract,
       bettor,
       positionChange,
-      idempotencyKey
+      `${contract.id}-${bettor.id}-${
+        positionChange.change
+      }-${new Date().toLocaleDateString()}`
     )
 }
 

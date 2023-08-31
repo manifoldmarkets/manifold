@@ -5,7 +5,7 @@ import { generateEmbeddings } from 'shared/helpers/openai-utils'
 import { insertNewsToUsersFeeds } from 'shared/create-feed'
 import { Contract } from 'common/contract'
 import { Group } from 'common/group'
-import { DEEMPHASIZED_GROUP_SLUGS } from 'common/envs/constants'
+import { GROUP_SLUGS_TO_IGNORE_FOR_NEWS } from 'common/envs/constants'
 
 export const processNews = async (
   apiKey: string,
@@ -159,7 +159,10 @@ const processNewsArticle = async (
               and total_members > 1
               order by importance_score desc
           `,
-          [groupsData.flat().map((g) => g.group_id), DEEMPHASIZED_GROUP_SLUGS],
+          [
+            groupsData.flat().map((g) => g.group_id),
+            GROUP_SLUGS_TO_IGNORE_FOR_NEWS,
+          ],
           (r) => {
             const data = r.data as Group
             return { ...data, id: r.id, importanceScore: r.importance_score }
