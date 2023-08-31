@@ -17,6 +17,7 @@ export default function FeedContractCardDescription(props: {
   const [isOverflowing, setIsOverflowing] = useState(false)
   const contentRef = useRef<HTMLDivElement>(null)
 
+  // if content has images/embeds, have larger max height
   const maxHeight = nonTextDescription ? NON_TEXT_MAX_HEIGHT : TEXT_MAX_HEIGHT
 
   useEffectCheckEquality(() => {
