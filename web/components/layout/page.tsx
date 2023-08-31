@@ -16,9 +16,16 @@ export function Page(props: {
   children?: ReactNode
   hideSidebar?: boolean
   mainClassName?: string
+  manifestBannerEnabled?: boolean
 }) {
-  const { children, rightSidebar, className, hideSidebar, mainClassName } =
-    props
+  const {
+    children,
+    rightSidebar,
+    className,
+    hideSidebar,
+    mainClassName,
+    manifestBannerEnabled,
+  } = props
 
   const isMobile = useIsMobile()
   const bottomBarPadding = 'pb-[58px] lg:pb-0 '
@@ -37,7 +44,6 @@ export function Page(props: {
 
   return (
     <>
-      {showBanner && <ManifestBanner setShowBanner={setShowBanner} />}
       <GoogleOneTapLogin className="fixed bottom-12 right-4 z-[1000]" />
       <Col
         className={clsx(
@@ -61,11 +67,15 @@ export function Page(props: {
         <Col className={'flex-1 lg:col-span-8 xl:contents'}>
           <main
             className={clsx(
-              'flex flex-1 flex-col lg:mt-6',
+              'flex flex-1 flex-col',
+              manifestBannerEnabled && showBanner ? 'lg:mt-0' : 'lg:mt-6',
               rightSidebar ? 'col-span-7' : 'col-span-8',
               mainClassName
             )}
           >
+            {manifestBannerEnabled && showBanner && (
+              <ManifestBanner className="mb-3" setShowBanner={setShowBanner} />
+            )}
             {children}
           </main>
           {rightSidebar && (
