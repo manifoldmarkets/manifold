@@ -135,7 +135,7 @@ export const onCreateBet = functions
         .doc(`users/${bettor.id}`)
         .update({ lastBetTime: bet.createdTime })
 
-    await addBetToFollowersFeeds(bettor, contract, bet, eventId)
+    await addBetToFollowersFeeds(bettor, contract, bet)
   })
 
 const MED_BALANCE_PERCENTAGE_FOR_FEED = 0.005
@@ -147,8 +147,7 @@ const MIN_BET_SIZE_GIVEN_PERCENTAGE = 20
 const addBetToFollowersFeeds = async (
   bettor: User,
   contract: Contract,
-  bet: Bet,
-  idempotencyKey: string
+  bet: Bet
 ) => {
   if (bettor.followerCountCached <= 0 || contract.mechanism === 'dpm-2') return
   const positionChange = await getUserMostChangedPosition(
@@ -171,7 +170,9 @@ const addBetToFollowersFeeds = async (
       contract,
       bettor,
       positionChange,
-      idempotencyKey
+      `${contract.id}-${bettor.id}-${
+        positionChange.change
+      }-${new Date().toLocaleDateString()}`
     )
 }
 
