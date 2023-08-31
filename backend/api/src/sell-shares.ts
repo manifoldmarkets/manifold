@@ -6,29 +6,38 @@ import { FieldValue } from 'firebase-admin/firestore'
 import { APIError, authEndpoint, validate } from './helpers'
 import { Contract, CPMM_MIN_POOL_QTY } from 'common/contract'
 import { User } from 'common/user'
-import { getCpmmSellBetInfo } from 'common/sell-bet'
-import { addObjects, removeUndefinedProps } from 'common/util/object'
+import { getCpmmMultiSellBetInfo, getCpmmSellBetInfo } from 'common/sell-bet'
+import { removeUndefinedProps } from 'common/util/object'
 import { log } from 'shared/utils'
 import { Bet } from 'common/bet'
 import { floatingEqual, floatingLesserEqual } from 'common/util/math'
 import { getUnfilledBetsAndUserBalances, updateMakers } from './place-bet'
 import { redeemShares } from './redeem-shares'
 import { removeUserFromContractFollowers } from 'shared/follow-market'
+import { Answer } from 'common/answer'
+import { getCpmmProbability } from 'common/calculate-cpmm'
 
 const bodySchema = z.object({
   contractId: z.string(),
   shares: z.number().positive().optional(), // leave it out to sell all shares
   outcome: z.enum(['YES', 'NO']).optional(), // leave it out to sell whichever you have
+  answerId: z.string().optional(), // Required for multi binary markets
 })
 
 export const sellshares = authEndpoint(async (req, auth) => {
-  const { contractId, shares, outcome } = validate(bodySchema, req.body)
+  const { contractId, shares, outcome, answerId } = validate(
+    bodySchema,
+    req.body
+  )
 
   // Run as transaction to prevent race conditions.
   const result = await firestore.runTransaction(async (transaction) => {
     const contractDoc = firestore.doc(`contracts/${contractId}`)
     const userDoc = firestore.doc(`users/${auth.uid}`)
-    const betsQ = contractDoc.collection('bets').where('userId', '==', auth.uid)
+    let betsQ = contractDoc.collection('bets').where('userId', '==', auth.uid)
+    if (answerId) {
+      betsQ = betsQ.where('answerId', '==', answerId)
+    }
     log(
       `Checking for limit orders and bets in sellshares for user ${auth.uid} on contract id ${contractId}.`
     )
@@ -48,10 +57,13 @@ export const sellshares = authEndpoint(async (req, auth) => {
     const contract = contractSnap.data() as Contract
     const user = userSnap.data() as User
 
-    const { closeTime, mechanism, collectedFees, volume } = contract
+    const { closeTime, mechanism, volume } = contract
 
-    if (mechanism !== 'cpmm-1')
-      throw new APIError(403, 'You can only sell shares on CPMM-1 contracts')
+    if (mechanism !== 'cpmm-1' && mechanism !== 'cpmm-multi-1')
+      throw new APIError(
+        403,
+        'You can only sell shares on cpmm-1 or cpmm-multi-1 contracts'
+      )
     if (closeTime && Date.now() > closeTime)
       throw new APIError(403, 'Trading is closed.')
 
@@ -97,15 +109,55 @@ export const sellshares = authEndpoint(async (req, auth) => {
     let loanPaid = saleFrac * loanAmount
     if (!isFinite(loanPaid)) loanPaid = 0
 
-    const { newBet, newPool, newP, fees, makers, ordersToCancel } =
-      getCpmmSellBetInfo(
-        soldShares,
-        chosenOutcome,
-        contract,
-        unfilledBets,
-        balanceByUserId,
-        loanPaid
-      )
+    const {
+      newBet,
+      newPool,
+      newP,
+      makers,
+      ordersToCancel,
+      otherResultsWithBet,
+    } = await (async () => {
+      if (mechanism === 'cpmm-1') {
+        return {
+          otherResultsWithBet: [],
+          ...getCpmmSellBetInfo(
+            soldShares,
+            chosenOutcome,
+            contract,
+            unfilledBets,
+            balanceByUserId,
+            loanPaid
+          ),
+        }
+      } else {
+        const answersSnap = await transaction.get(
+          contractDoc.collection('answersCpmm')
+        )
+        const answers = answersSnap.docs.map((doc) => doc.data() as Answer)
+        const answer = answers.find((a) => a.id === answerId)
+        if (!answer) throw new APIError(404, 'Answer not found')
+        if (answers.length < 2)
+          throw new APIError(
+            403,
+            'Cannot bet until at least two answers are added.'
+          )
+
+        return {
+          newP: 0.5,
+          ...getCpmmMultiSellBetInfo(
+            contract,
+            answers,
+            answer,
+            soldShares,
+            chosenOutcome,
+            undefined,
+            unfilledBets,
+            balanceByUserId,
+            loanPaid
+          ),
+        }
+      }
+    })()
 
     if (
       !newP ||
@@ -133,20 +185,74 @@ export const sellshares = authEndpoint(async (req, auth) => {
       isApi,
       ...newBet,
     })
-    transaction.update(
-      contractDoc,
-      removeUndefinedProps({
-        pool: newPool,
-        p: newP,
-        collectedFees: addObjects(fees, collectedFees),
-        volume: volume + Math.abs(newBet.amount),
-      })
-    )
 
     for (const bet of ordersToCancel) {
       transaction.update(contractDoc.collection('bets').doc(bet.id), {
         isCancelled: true,
       })
+    }
+
+    if (mechanism === 'cpmm-1') {
+      transaction.update(
+        contractDoc,
+        removeUndefinedProps({
+          pool: newPool,
+          p: newP,
+          volume: volume + Math.abs(newBet.amount),
+        })
+      )
+    } else if (newBet.answerId) {
+      transaction.update(
+        contractDoc,
+        removeUndefinedProps({
+          volume: volume + Math.abs(newBet.amount),
+        })
+      )
+      const prob = getCpmmProbability(newPool, 0.5)
+      const { YES: poolYes, NO: poolNo } = newPool
+      transaction.update(
+        contractDoc.collection('answersCpmm').doc(newBet.answerId),
+        removeUndefinedProps({
+          poolYes,
+          poolNo,
+          prob,
+        })
+      )
+    }
+
+    for (const {
+      answer,
+      bet,
+      cpmmState,
+      makers,
+      ordersToCancel,
+    } of otherResultsWithBet) {
+      const betDoc = contractDoc.collection('bets').doc()
+      transaction.create(betDoc, {
+        id: betDoc.id,
+        userId: user.id,
+        userAvatarUrl: user.avatarUrl,
+        userUsername: user.username,
+        userName: user.name,
+        isApi,
+        ...bet,
+      })
+      const { YES: poolYes, NO: poolNo } = cpmmState.pool
+      const prob = getCpmmProbability(cpmmState.pool, 0.5)
+      transaction.update(
+        contractDoc.collection('answersCpmm').doc(answer.id),
+        removeUndefinedProps({
+          poolYes,
+          poolNo,
+          prob,
+        })
+      )
+      updateMakers(makers, betDoc.id, contractDoc, transaction)
+      for (const bet of ordersToCancel) {
+        transaction.update(contractDoc.collection('bets').doc(bet.id), {
+          isCancelled: true,
+        })
+      }
     }
 
     return {
@@ -156,15 +262,26 @@ export const sellshares = authEndpoint(async (req, auth) => {
       maxShares,
       soldShares,
       contract,
+      otherResultsWithBet,
     }
   })
 
-  const { newBet, betId, makers, maxShares, soldShares, contract } = result
+  const {
+    newBet,
+    betId,
+    makers,
+    maxShares,
+    soldShares,
+    contract,
+    otherResultsWithBet,
+  } = result
 
-  if (floatingEqual(maxShares, soldShares)) {
+  if (contract.mechanism === 'cpmm-1' && floatingEqual(maxShares, soldShares)) {
     await removeUserFromContractFollowers(contractId, auth.uid)
   }
-  const userIds = uniq(makers.map((maker) => maker.bet.userId))
+
+  const allMakers = [...makers, ...otherResultsWithBet.flatMap((r) => r.makers)]
+  const userIds = uniq(allMakers.map((maker) => maker.bet.userId))
   await Promise.all(userIds.map((userId) => redeemShares(userId, contract)))
   log('Share redemption transaction finished.')
 

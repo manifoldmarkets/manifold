@@ -119,7 +119,7 @@ export function ContractBetsTable(props: {
             {isYourBets && isDPM && !isNumeric && !isResolved && !isClosed && (
               <th></th>
             )}
-            {isCPMM && <th>Type</th>}
+            {(isCPMM || isCpmmMulti) && <th>Type</th>}
             {isCpmmMulti && <th>Answer</th>}
             <th>Outcome</th>
             <th>Amount</th>
@@ -236,7 +236,7 @@ function BetRow(props: {
           )}
         </td>
       )}
-      {isCPMM && <td>{shares >= 0 ? 'BUY' : 'SELL'}</td>}
+      {(isCPMM || isCpmmMulti) && <td>{shares >= 0 ? 'BUY' : 'SELL'}</td>}
       {isCpmmMulti && (
         <td>
           {contract.answers.find((a) => a.id === bet.answerId)?.text ?? ''}

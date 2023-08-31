@@ -28,6 +28,7 @@ import {
   ClosedProb,
   DPMMultiBettor,
   MultiBettor,
+  MultiSeller,
   OpenProb,
 } from './answer-options'
 import { floatingEqual } from 'common/util/math'
@@ -181,6 +182,7 @@ function Answer(props: {
     bet.outcome === 'YES' ? bet.shares : -bet.shares
   )
   const hasBets = userBets && !floatingEqual(sharesSum, 0)
+  const user = useUser()
 
   return (
     <AnswerBar
@@ -219,10 +221,20 @@ function Answer(props: {
               {isDpm ? (
                 <DPMMultiBettor answer={answer as any} contract={contract} />
               ) : (
-                <MultiBettor
-                  answer={answer as any}
-                  contract={contract as any}
-                />
+                <>
+                  <MultiBettor
+                    answer={answer as any}
+                    contract={contract as any}
+                  />
+                  {user && hasBets && (
+                    <MultiSeller
+                      answer={answer as any}
+                      contract={contract as any}
+                      userBets={userBets}
+                      user={user}
+                    />
+                  )}
+                </>
               )}
             </>
           )}
