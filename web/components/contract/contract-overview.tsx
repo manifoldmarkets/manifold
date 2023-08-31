@@ -42,6 +42,8 @@ import { CancelLabel } from '../outcome-label'
 import { PollPanel } from '../poll/poll-panel'
 import { CreateAnswerPanel } from '../answers/create-answer-panel'
 import clsx from 'clsx'
+import { ScaleTime } from 'd3-scale'
+import { viewScale } from 'common/chart'
 
 export const ContractOverview = memo(
   (props: {
@@ -106,7 +108,7 @@ const NumericOverview = (props: { contract: NumericContract }) => {
   )
 }
 
-const BinaryOverview = (props: {
+export const BinaryOverview = (props: {
   contract: BinaryContract
   betPoints: HistoryPoint<Partial<Bet>>[]
 }) => {
@@ -133,29 +135,71 @@ const BinaryOverview = (props: {
         />
       </Row>
 
-      <SizedContainer
-        className={clsx(
-          showZoomer && 'mb-8',
-          'h-[150px] w-full pb-3 pr-10 sm:h-[250px]'
-        )}
-      >
-        {(w, h) => (
-          <BinaryContractChart
-            width={w}
-            height={h}
-            betPoints={betPoints}
-            viewScaleProps={viewScale}
-            controlledStart={start}
-            contract={contract}
-            showZoomer={showZoomer}
-          />
-        )}
-      </SizedContainer>
+      <BinaryChart
+        showZoomer={showZoomer}
+        betPoints={betPoints}
+        contract={contract}
+        viewScale={viewScale}
+      />
 
       {tradingAllowed(contract) && (
         <SignedInBinaryMobileBetting contract={contract} user={user} />
       )}
     </>
+  )
+}
+
+export function BinaryChart(props: {
+  showZoomer: boolean
+  betPoints: HistoryPoint<Partial<Bet>>[]
+  contract: BinaryContract
+  viewScale: viewScale
+  className?: string
+  controlledStart?: number
+  size?: 'sm' | 'md'
+  color?: string
+}) {
+  const {
+    showZoomer,
+    betPoints,
+    contract,
+    viewScale,
+    className,
+    controlledStart,
+    size = 'md',
+    color,
+  } = props
+
+  const percentBounds = betPoints.reduce(
+    (acc, point) => ({
+      max: Math.max(acc.max, point.y),
+      min: Math.min(acc.min, point.y),
+    }),
+    { max: Number.NEGATIVE_INFINITY, min: Number.POSITIVE_INFINITY }
+  )
+  return (
+    <SizedContainer
+      className={clsx(
+        showZoomer && 'mb-8',
+        ' w-full pb-3 pr-10',
+        size == 'sm' ? 'h-[100px]' : 'h-[150px] sm:h-[250px]',
+        className
+      )}
+    >
+      {(w, h) => (
+        <BinaryContractChart
+          width={w}
+          height={h}
+          betPoints={betPoints}
+          viewScaleProps={viewScale}
+          controlledStart={controlledStart}
+          percentBounds={percentBounds}
+          contract={contract}
+          showZoomer={showZoomer}
+          color={color}
+        />
+      )}
+    </SizedContainer>
   )
 }
 

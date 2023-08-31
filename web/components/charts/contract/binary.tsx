@@ -50,6 +50,7 @@ export const BinaryContractChart = (props: {
   height: number
   viewScaleProps: viewScale
   controlledStart?: number
+  percentBounds?: { max?: number; min?: number }
   color?: string
   onMouseOver?: (p: BinaryPoint | undefined) => void
   showZoomer?: boolean
@@ -60,6 +61,7 @@ export const BinaryContractChart = (props: {
     height,
     viewScaleProps,
     controlledStart,
+    percentBounds,
     onMouseOver,
     color,
     betPoints,
@@ -78,7 +80,10 @@ export const BinaryContractChart = (props: {
   const rightmostDate = getRightmostVisibleDate(end, last(betPoints)?.x, now)
 
   const xScale = scaleTime([rangeStart, rightmostDate], [0, width])
-  const yScale = scaleLinear([0, 1], [height, 0])
+  const yScale = scaleLinear(
+    [percentBounds?.min ?? 0, percentBounds?.max ?? 1],
+    [height, 0]
+  )
   return (
     <ControllableSingleValueHistoryChart
       w={width}

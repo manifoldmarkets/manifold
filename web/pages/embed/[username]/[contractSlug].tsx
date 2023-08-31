@@ -36,7 +36,11 @@ import { AnswersPanel } from 'web/components/answers/answers-panel'
 
 type Points = HistoryPoint<any>[]
 
-async function getHistoryData(contract: Contract) {
+export async function getHistoryData(
+  contract: Contract,
+  limit = 50000,
+  afterTime?: number
+) {
   switch (contract.outcomeType) {
     case 'BINARY':
     case 'PSEUDO_NUMERIC':
@@ -47,8 +51,9 @@ async function getHistoryData(contract: Contract) {
           contractId: contract.id,
           filterRedemptions: true,
           filterChallenges: true,
-          limit: 50000,
+          limit,
           order: 'desc',
+          afterTime,
         })
       )
         .map((bet) => ({ x: bet.createdTime, y: bet.probAfter }))
