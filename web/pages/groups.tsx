@@ -75,7 +75,7 @@ export function GroupTag(props: {
     <div
       className={clsx(
         'group flex w-fit min-w-0 shrink-0 whitespace-nowrap rounded-sm px-1 py-0.5 text-sm transition-colors',
-        'text-ink-500 dark:text-ink-400 hover:text-ink-600 hover:bg-primary-400/10',
+        'text-ink-500 dark:text-ink-400 hover:text-ink-600 hover:bg-primary-400/10 rounded',
         className
       )}
     >
