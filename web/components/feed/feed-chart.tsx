@@ -22,7 +22,7 @@ export function FeedBinaryChart(props: {
   }, [])
 
   const viewScaleProps = useViewScale()
-  if (points) {
+  if (points && points.length > 0 && !!points[0]) {
     return (
       <BinaryChart
         betPoints={points as any}
