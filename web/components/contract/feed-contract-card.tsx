@@ -35,6 +35,7 @@ import { descriptionIsEmpty } from './contract-description'
 import { LikeButton } from './like-button'
 import { TradesButton } from './trades-button'
 import { FeedDropdown } from '../feed/card-dropdown'
+import { GroupTags } from '../feed/feed-timeline-items'
 
 export function FeedContractCard(props: {
   contract: Contract
@@ -161,6 +162,7 @@ export function FeedContractCard(props: {
             />
           </Row>
         </Row>
+
         <div
           className={clsx(
             'flex flex-col gap-1',
@@ -171,7 +173,6 @@ export function FeedContractCard(props: {
           <Link className="grow items-start text-lg" href={path}>
             <VisibilityIcon contract={contract} /> {contract.question}
           </Link>
-
           <Row
             className={clsx(
               'w-full items-center justify-end gap-3',
@@ -226,6 +227,8 @@ export function FeedContractCard(props: {
       {isBinaryCpmm && metrics && metrics.hasShares && (
         <YourMetricsFooter metrics={metrics} />
       )}
+
+      <GroupTags groups={contract.groupLinks} />
 
       <Col>
         <BottomActionRow
