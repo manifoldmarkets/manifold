@@ -91,7 +91,7 @@ const baseUserFeedQuery = (
       .not('contract_id', 'in', `(${privateUser.blockedContractIds})`)
       // New comments or news items with/on contracts we already have on feed are okay
       .or(
-        `data_type.eq.user_position_changed,data_type.eq.new_comment,data_type.eq.news_with_related_contracts,contract_id.not.in.(${ignoreContractIds})`
+        `data_type.eq.new_comment,data_type.eq.news_with_related_contracts,contract_id.not.in.(${ignoreContractIds})`
       )
       .order('created_time', { ascending: false })
       .limit(limit)
