@@ -42,7 +42,6 @@ import { CancelLabel } from '../outcome-label'
 import { PollPanel } from '../poll/poll-panel'
 import { CreateAnswerPanel } from '../answers/create-answer-panel'
 import clsx from 'clsx'
-import { ScaleTime } from 'd3-scale'
 import { viewScale } from 'common/chart'
 
 export const ContractOverview = memo(
