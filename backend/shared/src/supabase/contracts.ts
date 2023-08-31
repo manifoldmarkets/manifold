@@ -317,7 +317,6 @@ export const getImportantContractsForNewUsers = async (
   const ignoreSlugs = DEEMPHASIZED_GROUP_SLUGS.filter(
     (s) => !groupSlugs?.includes(s)
   )
-  const contractSlugs = []
   while (contractIds.length < targetCount && threshold > 0.2) {
     const res = await pg.map(
       `select id, data->'groupSlugs' as group_slugs
@@ -340,10 +339,7 @@ export const getImportantContractsForNewUsers = async (
        order by importance_score desc
        limit $4`,
       [groupSlugs, ignoreSlugs, threshold, targetCount],
-      (r) => {
-        contractSlugs.push(...(r.group_slugs ?? []))
-        return r.id as string
-      }
+      (r) => r.id as string
     )
 
     contractIds = uniq(contractIds.concat(res))
