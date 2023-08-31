@@ -20,7 +20,6 @@ import { track } from 'web/lib/service/analytics'
 import { useState } from 'react'
 import { Row } from 'web/components/layout/row'
 import { GroupTag } from 'web/pages/groups'
-import { Group } from 'common/group'
 
 const MAX_PARENT_COMMENTS_PER_FEED_ITEM = 1
 export const MIN_BET_AMOUNT = 20
