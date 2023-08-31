@@ -5,9 +5,8 @@ import { ContractMetric } from 'common/contract-metric'
 import { ContractCardView } from 'common/events'
 import { User } from 'common/user'
 import { formatMoney } from 'common/util/format'
-import { toast } from 'react-hot-toast'
-import { FiThumbsDown } from 'react-icons/fi'
-import { TiVolumeMute } from 'react-icons/ti'
+import Link from 'next/link'
+import { useRouter } from 'next/router'
 import { ClaimButton } from 'web/components/ad/claim-ad-button'
 import {
   ContractStatusLabel,
@@ -20,24 +19,20 @@ import { FeedTimelineItem } from 'web/hooks/use-feed-timeline'
 import { useIsVisible } from 'web/hooks/use-is-visible'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { useUser } from 'web/hooks/use-user'
-import { updateUserDisinterestEmbedding } from 'web/lib/firebase/api'
 import { track } from 'web/lib/service/analytics'
 import { AnswersPanel } from '../answers/answers-panel'
 import { BetButton } from '../bet/feed-bet-button'
 import { CommentsButton } from '../comments/comments-button'
+import { FeedDropdown } from '../feed/card-dropdown'
 import { CardReason } from '../feed/card-reason'
+import FeedContractCardDescription from '../feed/feed-contract-card-description'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { PollPanel } from '../poll/poll-panel'
 import { ClickFrame } from '../widgets/click-frame'
-import { Tooltip } from '../widgets/tooltip'
+import { descriptionIsEmpty } from './contract-description'
 import { LikeButton } from './like-button'
 import { TradesButton } from './trades-button'
-import FeedContractCardDescription from '../feed/feed-contract-card-description'
-import { useRouter } from 'next/router'
-import Link from 'next/link'
-import { descriptionIsEmpty } from './contract-description'
-import { FeedDropdown } from '../feed/card-dropdown'
 
 export function FeedContractCard(props: {
   contract: Contract
@@ -250,17 +245,6 @@ const BottomActionRow = (props: {
       <BottomRowButtonWrapper>
         <CommentsButton contract={contract} user={user} />
       </BottomRowButtonWrapper>
-      {/* {hide && (
-        <BottomRowButtonWrapper>
-          <DislikeButton
-            user={user}
-            contract={contract}
-            item={item}
-            interesting={true}
-            toggleInteresting={hide}
-          />
-        </BottomRowButtonWrapper>
-      )} */}
       <BottomRowButtonWrapper>
         <LikeButton
           contentId={contract.id}
@@ -279,53 +263,6 @@ const BottomActionRow = (props: {
     </Row>
   )
 }
-
-// export const DislikeButton = (props: {
-//   contract: Contract
-//   item: FeedTimelineItem | undefined
-//   user: User | null | undefined
-//   interesting: boolean
-//   toggleInteresting: () => void
-//   className?: string
-// }) => {
-//   const { contract, className, user, interesting, item, toggleInteresting } =
-//     props
-//   if (!user) return null
-
-//   const markUninteresting = async () => {
-//     await updateUserDisinterestEmbedding({
-//       contractId: contract.id,
-//       creatorId: contract.creatorId,
-//       feedId: item?.id,
-//       // Currently not interesting, toggling to interesting
-//       removeContract: !interesting,
-//     })
-//     if (interesting)
-//       toast(`We won't show you content like that again`, {
-//         icon: <TiVolumeMute className={'h-5 w-5 text-teal-500'} />,
-//       })
-//     toggleInteresting()
-//   }
-
-//   return (
-//     <Tooltip text={'Show less of this'} className={className}>
-//       <button
-//         className={clsx(
-//           'text-ink-500 hover:text-ink-600 flex flex-col justify-center transition-transform disabled:cursor-not-allowed'
-//         )}
-//         onClick={(e) => {
-//           e.preventDefault()
-//           markUninteresting()
-//         }}
-//       >
-//         <FiThumbsDown
-//           className={clsx('h-5 w-5', !interesting ? 'text-primary-500' : '')}
-//         />
-//       </button>
-//     </Tooltip>
-//   )
-// }
-
 function YourMetricsFooter(props: { metrics: ContractMetric }) {
   const { metrics } = props
   const { totalShares, maxSharesOutcome, profit } = metrics
