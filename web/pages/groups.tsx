@@ -84,7 +84,6 @@ export function GroupTag(props: {
         href={groupPath(group.slug)}
         onClick={(e) => {
           e.stopPropagation()
-          e.preventDefault()
         }}
         className={' max-w-[200px] truncate sm:max-w-[250px]'}
       >
