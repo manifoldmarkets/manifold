@@ -106,7 +106,8 @@ export async function getStaticProps(props: { params: { slugs: string[] } }) {
 export async function getStaticPaths() {
   return { paths: [], fallback: 'blocking' }
 }
-const groupSubpages = [undefined, 'questions', 'about', 'leaderboards'] as const
+
+const groupSubpages = ['questions', 'leaderboards']
 
 export default function GroupPage(props: {
   groupPrivacy: PrivacyStatusType | null
@@ -150,10 +151,9 @@ export function GroupPageContent(props: { groupParams?: GroupParams }) {
   const { groupParams } = props
   const router = useRouter()
   const { slugs } = router.query as { slugs: string[] }
-  const page = slugs?.[1] as typeof groupSubpages[number]
-  const tabIndex = ['questions', 'about', 'leaderboards'].indexOf(
-    page === 'about' ? 'about' : page ?? 'questions'
-  )
+  const page = slugs?.[1]
+  const rawIndex = groupSubpages.indexOf(page)
+  const tabIndex = rawIndex === -1 ? 0 : rawIndex
   const [activeIndex, setActiveIndex] = useState(tabIndex)
   useEffect(() => {
     setActiveIndex(tabIndex)
@@ -193,7 +193,7 @@ export function GroupPageContent(props: { groupParams?: GroupParams }) {
   if (group === undefined) {
     return <></>
   }
-  if (group === null || !groupSubpages.includes(page) || slugs[2]) {
+  if (group === null || slugs[2]) {
     return <Custom404Content />
   }
 
@@ -309,9 +309,7 @@ export function GroupPageContent(props: { groupParams?: GroupParams }) {
           activeIndex={activeIndex}
           onClick={(title, index) => {
             // concatenates the group slug with the subpage slug
-            const path = `/group/${group.slug}/${
-              groupSubpages[index + 1] ?? ''
-            }`
+            const path = `/group/${group.slug}/${groupSubpages[index] ?? ''}`
             router.push(path, undefined, { shallow: true })
             setActiveIndex(index)
           }}
