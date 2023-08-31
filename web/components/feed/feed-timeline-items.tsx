@@ -138,10 +138,12 @@ export function GroupTags(props: {
   const { groups, className, maxGroups = 3 } = props
   if (!groups || groups.length <= 0) return null
   return (
-    <Row className="gap-0.5 overflow-hidden">
-      {groups.slice(0, maxGroups).map((group) => (
-        <GroupTag key={group.slug} group={group} />
-      ))}
+    <Row className="w-full justify-end">
+      <Row className="gap-0.5 overflow-hidden">
+        {groups.slice(0, maxGroups).map((group) => (
+          <GroupTag key={group.slug} group={group} />
+        ))}
+      </Row>
     </Row>
   )
 }
