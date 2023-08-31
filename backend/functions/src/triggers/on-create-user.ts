@@ -11,6 +11,8 @@ import { addNewUserToLeague } from 'shared/generate-leagues'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { spiceUpNewUsersFeedBasedOnTheirInterests } from 'shared/supabase/users'
 import { ALL_FEED_USER_ID } from 'common/feed'
+import { getMemberGroupSlugs } from 'shared/supabase/groups'
+import { getImportantContractsForNewUsers } from 'shared/supabase/contracts'
 
 export const onCreateUser = functions
   .runWith({ secrets })
@@ -24,11 +26,18 @@ export const onCreateUser = functions
     await addNewUserToLeague(pg, user.id)
 
     await sendWelcomeEmail(user, privateUser)
+    const groupSlugs = await getMemberGroupSlugs(user.id, pg)
+    // They should have a good feed from updateUserEmbedding if they've joined any groups
+    if (groupSlugs.length > 0) return
 
+    const interestingContractIds = await getImportantContractsForNewUsers(
+      200,
+      pg
+    )
     await spiceUpNewUsersFeedBasedOnTheirInterests(
       user.id,
       pg,
       ALL_FEED_USER_ID,
-      400
+      interestingContractIds
     )
   })

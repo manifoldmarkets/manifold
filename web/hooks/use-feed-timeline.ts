@@ -33,7 +33,6 @@ import { DAY_MS } from 'common/util/time'
 import { convertContractComment } from 'web/lib/supabase/comments'
 import { Group } from 'common/group'
 import { getMarketMovementInfo } from 'web/lib/supabase/feed-timeline/feed-market-movement-display'
-import { DEEMPHASIZED_GROUP_SLUGS } from 'common/envs/constants'
 import { useFollowedIdsSupabase } from 'web/hooks/use-follows'
 import { PositionChangeData } from 'common/supabase/bets'
 import { Answer } from 'common/answer'
@@ -222,11 +221,6 @@ export const useFeedTimeline = (
         .from('groups')
         .select('data, id')
         .in('id', groupIds)
-        .not(
-          'slug',
-          'in',
-          `(${privateUser.blockedGroupSlugs.concat(DEEMPHASIZED_GROUP_SLUGS)})`
-        )
         .then((res) =>
           res.data?.map((r) => {
             const data = r.data as Group

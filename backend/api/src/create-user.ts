@@ -32,6 +32,8 @@ import {
 import { spiceUpNewUsersFeedBasedOnTheirInterests } from 'shared/supabase/users'
 import { DEFAULT_FEED_USER_ID } from 'common/feed'
 
+import { getImportantContractsForNewUsers } from 'shared/supabase/contracts'
+
 const bodySchema = z.object({
   deviceToken: z.string().optional(),
   adminToken: z.string().optional(),
@@ -153,11 +155,12 @@ export const createuser = authEndpoint(async (req, auth) => {
 
   await addContractsToSeenMarketsTable(auth.uid, visitedContractIds, pg)
   await upsertNewUserEmbeddings(auth.uid, visitedContractIds, pg)
+  const interestingContractIds = await getImportantContractsForNewUsers(100, pg)
   await spiceUpNewUsersFeedBasedOnTheirInterests(
     auth.uid,
     pg,
-    DEFAULT_FEED_USER_ID,
-    200
+    DEFAULT_FEED_USER_ID, // Should we just use the ALL_FEED_USER_ID now that we have tailored contract ids?
+    interestingContractIds
   )
 
   await track(auth.uid, 'create user', { username: user.username }, { ip })

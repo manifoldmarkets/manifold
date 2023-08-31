@@ -203,6 +203,16 @@ export const DESTINY_GROUP_SLUGS = [
   'mumbowl-stonks',
 ]
 
+export const GROUP_SLUGS_TO_IGNORE_IN_MARKETS_EMAIL = [
+  'manifold-features',
+  'manifold-6748e065087e',
+  'destinygg',
+  'manifold-features-25bad7c7792e',
+  'bugs',
+  'manifold-leagues',
+  'nonpredictive',
+]
+
 export const DEEMPHASIZED_GROUP_SLUGS = [
   'fun',
   'selfresolving',
@@ -227,18 +237,12 @@ export const DEEMPHASIZED_GROUP_SLUGS = [
   'destinygg',
   'the-market',
   'nonpredictive-profits',
-  'nonpredictive',
+  'personal-goals',
+  'personal',
+  'rationalussy',
 ]
-
-export const GROUP_SLUGS_TO_IGNORE_IN_MARKETS_EMAIL = [
-  'manifold-features',
-  'manifold-6748e065087e',
-  'destinygg',
-  'manifold-features-25bad7c7792e',
-  'bugs',
-  'manifold-leagues',
-  'nonpredictive',
-]
+  .concat(GROUP_SLUGS_TO_IGNORE_IN_MARKETS_EMAIL)
+  .concat(DESTINY_GROUP_SLUGS)
 
 export const GROUP_SLUGS_TO_HIDE_FROM_PILL_SEARCH = [
   'new-years-resolutions-2024',
