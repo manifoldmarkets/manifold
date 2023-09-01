@@ -72,13 +72,6 @@ export function GroupTag(props: {
   const { group, isPrivate, className, children } = props
 
   return (
-    // <span
-    //   className={clsx(
-    //     'group flex  whitespace-nowrap rounded-sm px-1 py-0.5 text-sm transition-colors',
-    //     'text-ink-500 dark:text-ink-400 hover:text-ink-600 hover:bg-primary-400/10 rounded',
-    //     className
-    //   )}
-    // >
     <span
       className={clsx(
         'text-ink-500 dark:text-ink-400 hover:text-ink-600 hover:bg-primary-400/10 group whitespace-nowrap rounded px-1 py-0.5 text-right text-sm transition-colors',
@@ -104,6 +97,5 @@ export function GroupTag(props: {
       </Link>
       {children}
     </span>
-    // </span>
   )
 }
