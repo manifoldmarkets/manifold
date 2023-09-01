@@ -290,15 +290,15 @@ const Election2024 = createNewsDashboardTab(
   'US 2024',
   '2024 US Election Updates',
   [
-    { slug: 'will-the-august-23-2023-republican' },
-    { slug: 'will-vivek-ramaswamys-poll-numbers' },
-    { slug: 'will-vivek-ramaswamy-win-the-septem' },
-    { slug: 'will-vivek-ramaswamy-win-the-august' },
-    { slug: 'will-donald-trump-be-convicted-of-a-99e01f724b3f' },
-    { slug: 'who-will-be-the-republican-presiden-7bf11c066154' },
-    { slug: 'who-will-win-the-us-2024-democratic' },
-    { slug: 'who-will-win-2024-us-presidential-e' },
+    {
+      url: 'https://www.politico.com/news/2023/09/01/biden-touts-job-numbers-people-are-coming-off-the-sidelines-00113767',
+    },
     { slug: 'will-a-democrat-win-the-2024-us-pre' },
+    { slug: 'who-will-win-the-us-2024-democratic' },
+    { slug: 'will-vivek-ramaswamy-win-the-septem' },
+    { slug: 'who-will-be-the-republican-presiden-7bf11c066154' },
+
+    { slug: 'who-will-win-2024-us-presidential-e' },
     { slug: 'will-donald-trump-participate-in-th' },
     { slug: 'will-ai-be-a-major-topic-during-the' },
 
@@ -453,6 +453,11 @@ const Trump = createNewsDashboardTab(
   'Trump indicted',
   [
     {
+      url: 'https://www.politico.com/news/2023/09/01/fourteenth-amendment-insurrection-clause-trump-00113790',
+    },
+    { slug: 'will-any-state-disqualify-trump-fro' },
+    { slug: 'will-donald-trump-be-convicted-of-a-99e01f724b3f' },
+    {
       url: 'https://www.nbcnews.com/politics/donald-trump/federal-judge-set-trump-trial-date-election-interference-case-rcna101669',
     },
     { slug: 'when-will-trump-be-imprisoned' },
@@ -548,10 +553,10 @@ const PlaneCrash = createNewsDashboardTab(
 
 const FLHurricane = createNewsDashboardTab(
   'Gulf Hurricane',
-  'Tropical Storm Idalia likely to become hurricane',
+  'Hurricane Idalia ravages coastline',
   [
     {
-      url: 'https://edition.cnn.com/us/live-news/hurricane-idalia-path-florida-08-30-23/index.html',
+      url: 'https://www.nbcnews.com/news/us-news/hurricane-idalias-destruction-skipped-homes-floridas-coast-rcna102887',
     },
     { slug: 'will-hurricane-idalia-cost-150-live' },
     { slug: 'in-2023-will-a-hurricane-make-landf' },
@@ -565,14 +570,14 @@ const FLHurricane = createNewsDashboardTab(
 )
 
 export const newsContent = [
-  FLHurricane,
-  Election2024,
   Trump,
+  Election2024,
   STPSuper,
-  PlaneCrash,
-  ElonVersusZuck,
   UkraineWar,
+  ElonVersusZuck,
   NigerCoup,
+  FLHurricane,
+  PlaneCrash,
   UFOs,
   XCom,
 ]
