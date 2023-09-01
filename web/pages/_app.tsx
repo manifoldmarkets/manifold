@@ -9,7 +9,6 @@ import {
   NativeMessageListener,
   postMessageToNative,
 } from 'web/components/native-message-listener'
-import { SearchProvider } from 'web/components/search/search-context'
 import { useHasLoaded } from 'web/hooks/use-has-loaded'
 import '../styles/globals.css'
 import { getIsNative } from 'web/lib/native/is-native'
@@ -130,9 +129,7 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
           <DarkModeProvider>
             <NativeMessageListener />
             <QueryClientProvider client={queryClient}>
-              <SearchProvider>
-                <Component {...pageProps} />
-              </SearchProvider>
+              <Component {...pageProps} />
             </QueryClientProvider>
           </DarkModeProvider>
         </AuthProvider>

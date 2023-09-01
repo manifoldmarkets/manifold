@@ -21,7 +21,6 @@ import { Avatar } from '../widgets/avatar'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { searchMarketSorts } from './query-market-sorts'
 import { PageData, searchPages } from './query-pages'
-import { useSearchContext } from './search-context'
 
 export interface Option {
   id: string
@@ -34,10 +33,11 @@ export const OmniSearch = (props: {
   query: string
   setQuery: (query: string) => void
   onSelect?: () => void
+  onFinished?: () => void
 }) => {
-  const { className, inputClassName, query, setQuery, onSelect } = props
+  const { className, inputClassName, query, setQuery, onSelect, onFinished } =
+    props
 
-  const { setOpen } = useSearchContext() ?? {}
   const router = useRouter()
   const user = useUser()
   const recentMarkets = useYourRecentContracts(db, user?.id) ?? []
@@ -57,7 +57,7 @@ export const OmniSearch = (props: {
       as="div"
       onChange={({ slug }: Option) => {
         router.push(slug)
-        setOpen?.(false)
+        onFinished?.()
         onSelect?.()
       }}
       className={clsx('bg-canvas-0 relative flex flex-col', className)}
@@ -68,10 +68,10 @@ export const OmniSearch = (props: {
             autoFocus
             value={query}
             onKeyDown={(e: any) => {
-              if (e.key === 'Escape') setOpen?.(false)
+              if (e.key === 'Escape') onFinished?.()
               if (e.key === 'Enter' && !activeOption) {
                 router.push(marketSearchSlug(query))
-                setOpen?.(false)
+                onFinished?.()
                 onSelect?.()
               }
             }}

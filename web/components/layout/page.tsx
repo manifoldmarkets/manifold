@@ -9,6 +9,7 @@ import { GoogleOneTapLogin } from 'web/lib/firebase/google-onetap-login'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { safeLocalStorage } from 'web/lib/util/local'
 import { ManifestBanner } from '../nav/manifest-banner'
+import { ConfettiOnDemand } from '../confetti-on-demand'
 
 export function Page(props: {
   rightSidebar?: ReactNode
@@ -44,6 +45,7 @@ export function Page(props: {
 
   return (
     <>
+      <ConfettiOnDemand />
       <GoogleOneTapLogin className="fixed bottom-12 right-4 z-[1000]" />
       <Col
         className={clsx(
