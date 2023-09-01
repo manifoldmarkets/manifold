@@ -5,6 +5,7 @@ import { useViewScale } from '../charts/generic-charts'
 import { BinaryChart } from '../contract/contract-overview'
 import { DAY_MS } from 'common/util/time'
 import PlaceholderGraph from 'web/lib/icons/placeholder-graph'
+import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 
 export function FeedBinaryChart(props: {
   contract: BinaryContract
@@ -12,9 +13,10 @@ export function FeedBinaryChart(props: {
 }) {
   const { contract, className } = props
 
-  const [points, setPoints] = useState<
+  const [points, setPoints] = usePersistentInMemoryState<
     { x: number; y: number }[] | null | undefined
-  >(undefined)
+  >(undefined, `${contract.id}-feed-chart`)
+  
   useEffect(() => {
     getHistoryData(contract, 100, Date.now() - DAY_MS * 1.5).then((points) => {
       setPoints(points)
