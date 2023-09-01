@@ -1,5 +1,5 @@
 import { BinaryContract } from 'common/contract'
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { getHistoryData } from 'web/pages/embed/[username]/[contractSlug]'
 import { useViewScale } from '../charts/generic-charts'
 import { BinaryChart } from '../contract/contract-overview'
@@ -17,21 +17,24 @@ export function FeedBinaryChart(props: {
     { x: number; y: number }[] | null | undefined
   >(undefined, `${contract.id}-feed-chart`)
 
-  const startingDate = Date.now() - DAY_MS * 1.5
+  const startingDate = Date.now() - DAY_MS
 
   useEffect(() => {
-    getHistoryData(contract, 100, startingDate).then((points) => {
-      let graphedPoints = points
-
-      // adds created time and starting prob if contract is created after the starting date
-      if (startingDate < contract.createdTime) {
-        graphedPoints = [
-          { x: contract.createdTime, y: contract.initialProbability },
-          ...(points || []),
+    getHistoryData(contract, 100, startingDate).then((fetchedPoints) => {
+      if (fetchedPoints && fetchedPoints.length > 0 && !!fetchedPoints[0]) {
+        const createdAfterStartingDate = contract.createdTime > startingDate
+        const graphedPoints = [
+          {
+            x: createdAfterStartingDate ? contract.createdTime : startingDate,
+            y: createdAfterStartingDate
+              ? contract.initialProbability
+              : fetchedPoints[0].yBefore,
+          },
+          ...fetchedPoints?.map((point) => ({ x: point.x, y: point.y })),
         ]
-      }
 
-      setPoints(graphedPoints)
+        setPoints(graphedPoints)
+      }
     })
   }, [])
 
@@ -45,6 +48,7 @@ export function FeedBinaryChart(props: {
       )
     : undefined
   const viewScaleProps = useViewScale()
+
   if (points && points.length > 0 && !!points[0]) {
     return (
       <BinaryChart
