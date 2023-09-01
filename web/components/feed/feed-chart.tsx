@@ -16,10 +16,22 @@ export function FeedBinaryChart(props: {
   const [points, setPoints] = usePersistentInMemoryState<
     { x: number; y: number }[] | null | undefined
   >(undefined, `${contract.id}-feed-chart`)
-  
+
+  const startingDate = Date.now() - DAY_MS * 1.5
+
   useEffect(() => {
-    getHistoryData(contract, 100, Date.now() - DAY_MS * 1.5).then((points) => {
-      setPoints(points)
+    getHistoryData(contract, 100, startingDate).then((points) => {
+      let graphedPoints = points
+
+      // adds created time and starting prob if contract is created after the starting date
+      if (startingDate < contract.createdTime) {
+        graphedPoints = [
+          { x: contract.createdTime, y: contract.initialProbability },
+          ...(points || []),
+        ]
+      }
+
+      setPoints(graphedPoints)
     })
   }, [])
 
