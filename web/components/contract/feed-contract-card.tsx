@@ -190,52 +190,55 @@ export function FeedContractCard(props: {
         </div>
       </Col>
 
-      {contract.outcomeType === 'POLL' && (
-        <div className="mt-2">
-          <PollPanel contract={contract} maxOptions={4} />
-        </div>
-      )}
-      {contract.outcomeType === 'MULTIPLE_CHOICE' && (
-        <div className="mt-2" onClick={(e) => e.preventDefault()}>
-          <AnswersPanel contract={contract} maxAnswers={4} linkToContract />
-        </div>
-      )}
-
-      {isBinaryCpmm && probChange && Math.abs(probChange) > PROB_THRESHOLD && (
-        <FeedBinaryChart contract={contract} className="my-4" />
-      )}
-      {promotedData && (
-        <Col className={'w-full items-center'}>
-          <ClaimButton
-            {...promotedData}
-            className={'z-10 my-2 whitespace-nowrap'}
-          />
-        </Col>
-      )}
-
-      {!descriptionIsEmpty(contract) &&
-        (item?.dataType == 'new_contract' || nonTextDescription) && (
-          <FeedContractCardDescription
-            contract={contract}
-            nonTextDescription={nonTextDescription}
-          />
+      <div className="w-full overflow-hidden">
+        {contract.outcomeType === 'POLL' && (
+          <div className="mt-2">
+            <PollPanel contract={contract} maxOptions={4} />
+          </div>
+        )}
+        {contract.outcomeType === 'MULTIPLE_CHOICE' && (
+          <div className="mt-2" onClick={(e) => e.preventDefault()}>
+            <AnswersPanel contract={contract} maxAnswers={4} linkToContract />
+          </div>
         )}
 
-      {isBinaryCpmm && metrics && metrics.hasShares && (
-        <YourMetricsFooter metrics={metrics} />
-      )}
+        {isBinaryCpmm &&
+          probChange &&
+          Math.abs(probChange) > PROB_THRESHOLD && (
+            <FeedBinaryChart contract={contract} className="my-4" />
+          )}
+        {promotedData && (
+          <Col className={'w-full items-center'}>
+            <ClaimButton
+              {...promotedData}
+              className={'z-10 my-2 whitespace-nowrap'}
+            />
+          </Col>
+        )}
 
-      <GroupTags groups={contract.groupLinks} />
+        {!descriptionIsEmpty(contract) &&
+          (item?.dataType == 'new_contract' || nonTextDescription) && (
+            <FeedContractCardDescription
+              contract={contract}
+              nonTextDescription={nonTextDescription}
+            />
+          )}
 
-      <Col>
-        <BottomActionRow
-          contract={contract}
-          item={item}
-          user={user}
-          underline={!!children}
-        />
-        {children}
-      </Col>
+        {isBinaryCpmm && metrics && metrics.hasShares && (
+          <YourMetricsFooter metrics={metrics} />
+        )}
+
+        <GroupTags groups={contract.groupLinks} />
+        <Col>
+          <BottomActionRow
+            contract={contract}
+            item={item}
+            user={user}
+            underline={!!children}
+          />
+          {children}
+        </Col>
+      </div>
     </ClickFrame>
   )
 }
