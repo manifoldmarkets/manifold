@@ -1,5 +1,5 @@
 import { BinaryContract } from 'common/contract'
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { getHistoryData } from 'web/pages/embed/[username]/[contractSlug]'
 import { useViewScale } from '../charts/generic-charts'
 import { BinaryChart } from '../contract/contract-overview'
