@@ -201,28 +201,28 @@ const FeedContractAndRelatedItems = (props: {
           promotedData={promotedData}
           trackingPostfix="feed"
           hide={() => setHidden(true)}
-          bottomChildren={
-            hasComments ? (
-              <FeedCommentItem
-                contract={contract}
-                commentThreads={parentComments.map((parentComment) => ({
-                  parentComment,
-                  childComments:
-                    childCommentsByParentCommentId[parentComment.id] ?? [],
-                }))}
-              />
-            ) : undefined
-          }
           item={item}
           className="max-w-full"
         >
-          {item?.betData && item?.creatorDetails && !hasComments && (
-            <FeedBetsItem
+          {hasComments ? (
+            <FeedCommentItem
               contract={contract}
-              betData={item.betData}
-              creatorDetails={item.creatorDetails}
-              answers={item.answers}
+              commentThreads={parentComments.map((parentComment) => ({
+                parentComment,
+                childComments:
+                  childCommentsByParentCommentId[parentComment.id] ?? [],
+              }))}
             />
+          ) : (
+            item?.betData &&
+            item?.creatorDetails && (
+              <FeedBetsItem
+                contract={contract}
+                betData={item.betData}
+                creatorDetails={item.creatorDetails}
+                answers={item.answers}
+              />
+            )
           )}
         </FeedContractCard>
       ) : (

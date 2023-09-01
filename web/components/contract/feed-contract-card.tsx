@@ -40,7 +40,6 @@ import { GroupTags } from '../feed/feed-timeline-items'
 export function FeedContractCard(props: {
   contract: Contract
   children?: React.ReactNode
-  bottomChildren?: React.ReactNode
   promotedData?: { adId: string; reward: number }
   /** location of the card, to disambiguate card click events */
   trackingPostfix?: string
@@ -56,7 +55,6 @@ export function FeedContractCard(props: {
     item,
     className,
     children,
-    bottomChildren,
     small,
     hide,
   } = props
@@ -190,7 +188,6 @@ export function FeedContractCard(props: {
             )}
           </Row>
         </div>
-        {children}
       </Col>
 
       {contract.outcomeType === 'POLL' && (
@@ -235,9 +232,9 @@ export function FeedContractCard(props: {
           contract={contract}
           item={item}
           user={user}
-          underline={!!bottomChildren}
+          underline={!!children}
         />
-        {bottomChildren}
+        {children}
       </Col>
     </ClickFrame>
   )
