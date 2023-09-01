@@ -171,7 +171,6 @@ export const FeedComment = memo(function FeedComment(props: {
   seeReplies?: boolean
   hasReplies?: boolean
   onReplyClick?: (comment: ContractComment) => void
-  onSeeReplyClick?: () => void
   children?: ReactNode
   className?: string
   inTimeline?: boolean
@@ -187,7 +186,6 @@ export const FeedComment = memo(function FeedComment(props: {
     seeReplies,
     hasReplies,
     onReplyClick,
-    onSeeReplyClick,
     children,
     trackingLocation,
     inTimeline,
@@ -235,12 +233,10 @@ export const FeedComment = memo(function FeedComment(props: {
         <Col
           className={clsx(
             'group w-full rounded-xl rounded-tl-none px-4 py-1 transition-colors',
-            isParent && hasReplies ? 'hover:bg-primary-50' : '',
             highlighted
               ? 'bg-primary-100 border-primary-300 border-2'
               : 'bg-ink-100'
           )}
-          onClick={onSeeReplyClick}
         >
           <FeedCommentHeader
             comment={comment}
@@ -309,7 +305,6 @@ export const ParentFeedComment = memo(function ParentFeedComment(props: {
       seeReplies={seeReplies}
       hasReplies={numReplies > 0}
       onReplyClick={onReplyClick}
-      onSeeReplyClick={onSeeReplyClick}
       highlighted={highlighted}
       showLike={showLike}
       className={clsx('gap-2', commentKind)}
@@ -322,6 +317,7 @@ export const ParentFeedComment = memo(function ParentFeedComment(props: {
         seeReplies={seeReplies}
         numComments={numReplies}
         childrenBountyTotal={childrenBountyTotal}
+        onSeeReplyClick={onSeeReplyClick}
       />
     </FeedComment>
   )

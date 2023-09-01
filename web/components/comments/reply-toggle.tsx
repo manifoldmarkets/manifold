@@ -7,11 +7,13 @@ export function ReplyToggle(props: {
   seeReplies: boolean
   numComments: number
   childrenBountyTotal?: number
+  onSeeReplyClick?: () => void
 }) {
-  const { seeReplies, numComments, childrenBountyTotal } = props
+  const { seeReplies, numComments, childrenBountyTotal, onSeeReplyClick } =
+    props
 
   return (
-    <Row className="items-center gap-2 text-sm">
+    <Row className="items-center gap-2 text-sm" onClick={onSeeReplyClick}>
       <div
         className={clsx(
           'text-ink-500 group-hover:text-primary-500 -mx-0.5 cursor-pointer select-none rounded px-0.5 text-left transition-colors',
