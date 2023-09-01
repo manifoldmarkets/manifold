@@ -29,17 +29,26 @@ export const getSeasonDates = (season: number) => {
   } else {
     end = new Date(LEAGUES_START)
     end.setMonth(end.getMonth() + season)
+    // Add a day, though the random close time will be some time before this.
+    end.setDate(end.getDate() + 1)
   }
 
   return { start, end }
 }
 
+export const getSeasonCountdownEnd = (season: number) => {
+  const end = new Date(LEAGUES_START)
+  end.setMonth(end.getMonth() + season)
+  return end
+}
+
 export const getSeasonStatus = (season: number) => {
-  const { start, end } = getSeasonDates(season)
+  const { start } = getSeasonDates(season)
+  const countdownEnd = getSeasonCountdownEnd(season)
   const now = new Date()
   if (now < start) {
     return 'upcoming'
-  } else if (now > end) {
+  } else if (now > countdownEnd) {
     if (!SEASON_END_TIMES[season - 1]) {
       return 'closing-period'
     }

@@ -9,12 +9,12 @@ import {
   CURRENT_SEASON,
   getLeaguePath,
   league_user_info,
-  getSeasonDates,
   parseLeaguePath,
   getSeasonStatus,
   SEASONS,
   getSeasonMonth,
   season,
+  getSeasonCountdownEnd,
 } from 'common/leagues'
 import { toLabel } from 'common/util/adjective-animal'
 import { Col } from 'web/components/layout/col'
@@ -179,7 +179,7 @@ export default function Leagues(props: { rows: league_user_info[] }) {
 
   const MARKER = '★'
   const seasonStatus = getSeasonStatus(season)
-  const seasonEnd = getSeasonDates(season).end
+  const countdownEnd = getSeasonCountdownEnd(season)
 
   const showNotif = (cohort: string) =>
     query.tab !== 'chat' && unseenCohortChats.includes(cohort)
@@ -214,13 +214,10 @@ export default function Leagues(props: { rows: league_user_info[] }) {
                 <ClockIcon className="text-ink-1000 h-4 w-4" />{' '}
                 <div className={'text-sm'}>
                   {seasonStatus === 'closing-period' && (
-                    <>
-                      Ends randomly within 24h:{' '}
-                      <Countdown className=" text-sm" endDate={seasonEnd} />
-                    </>
+                    <>Ends randomly within 24h</>
                   )}
                   {seasonStatus === 'ended' && (
-                    <>Ended at {formatTime(seasonEnd)}</>
+                    <>Ended at {formatTime(countdownEnd)}</>
                   )}
                   {seasonStatus === 'current' && (
                     <InfoTooltip
@@ -229,7 +226,10 @@ export default function Leagues(props: { rows: league_user_info[] }) {
                       }
                     >
                       <>
-                        <Countdown className=" text-sm" endDate={seasonEnd} />
+                        <Countdown
+                          className=" text-sm"
+                          endDate={countdownEnd}
+                        />
                       </>
                     </InfoTooltip>
                   )}
