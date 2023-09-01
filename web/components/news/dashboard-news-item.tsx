@@ -15,7 +15,6 @@ export const DashboardNewsItem = (props: {
   author?: string
   published_time?: number
   className?: string
-  source_name?: string
   siteName?: string
 }) => {
   const {
@@ -25,9 +24,7 @@ export const DashboardNewsItem = (props: {
     url,
     description,
     published_time,
-    author,
     className,
-    source_name,
     siteName,
   } = props
   const date = Date.parse(published_time as any)

@@ -234,7 +234,6 @@ export function FeedContractCard(props: {
         <Col>
           <BottomActionRow
             contract={contract}
-            item={item}
             user={user}
             underline={!!children}
           />
@@ -252,11 +251,10 @@ const BottomRowButtonWrapper = (props: { children: React.ReactNode }) => {
 
 const BottomActionRow = (props: {
   contract: Contract
-  item: FeedTimelineItem | undefined
   user: User | null | undefined
   underline?: boolean
 }) => {
-  const { contract, user, item, underline } = props
+  const { contract, user, underline } = props
   const { question } = contract
 
   return (

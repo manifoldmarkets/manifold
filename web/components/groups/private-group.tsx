@@ -41,8 +41,7 @@ export function InaccessiblePrivateThing(props: { thing: string }) {
   )
 }
 
-export function PrivateGroupPage(props: { slugs: string[] }) {
-  const { slugs } = props
+export function PrivateGroupPage() {
   return (
     <Col className="mt-24 h-full w-full items-center justify-center gap-4 lg:mt-0">
       <BiGhost className="text-ink-400 h-36 w-36" />

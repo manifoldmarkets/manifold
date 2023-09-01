@@ -116,7 +116,7 @@ export const BinaryOverview = (props: {
 
   const [showZoomer, setShowZoomer] = useState(false)
 
-  const { viewScale, currentTimePeriod, setTimePeriod, start, maxRange } =
+  const { viewScale, currentTimePeriod, setTimePeriod, maxRange } =
     useTimePicker(contract)
 
   return (

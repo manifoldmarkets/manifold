@@ -23,24 +23,21 @@ export const createNewsDashboardTab = (
       <Col>
         <Title>{title}</Title>
         <div className="xl:hidden">
-          <NewsSidebar description={description} title={title} />
+          <NewsSidebar description={description} />
         </div>
         <NewsDashboard title={title} data={content} />
       </Col>
     ),
     sidebar: (
       <div className="hidden xl:inline-flex">
-        <NewsSidebar description={description} title={title} />
+        <NewsSidebar description={description} />
       </div>
     ),
   }
 }
 
-export const NewsSidebar = (props: {
-  description?: ReactNode
-  title: string
-}) => {
-  const { title, description } = props
+export const NewsSidebar = (props: { description?: ReactNode }) => {
+  const { description } = props
 
   if (!description) return <></>
 
@@ -63,11 +60,10 @@ export const NewsSidebar = (props: {
 }
 
 export const NewsDashboard = (props: {
-  description?: ReactNode
   data: NewsContentType[]
   title: string
 }) => {
-  const { data, title, description } = props
+  const { data, title } = props
 
   const slugs = data.map((x) => (x as any).slug).filter((x) => !!x)
   const contracts = useContracts(slugs, 'slug')
@@ -79,8 +75,7 @@ export const NewsDashboard = (props: {
     (urls.length > 0 && previews.length === 0)
 
   const renderCard = (
-    card: { url: string } | { slug: string } | { content: any },
-    i: number
+    card: { url: string } | { slug: string } | { content: any }
   ) => {
     if ('url' in card) {
       const preview = previews.find((p) => p.url === card.url)

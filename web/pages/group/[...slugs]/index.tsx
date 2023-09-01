@@ -120,7 +120,7 @@ export default function GroupPage(props: {
   }
   return (
     <Page key={`group-${slugs[0]}`} mainClassName="!mt-0">
-      {groupPrivacy == 'private' && <PrivateGroupPage slugs={slugs} />}
+      {groupPrivacy == 'private' && <PrivateGroupPage />}
       {groupPrivacy != 'private' && groupParams && (
         <NonPrivateGroupPage groupParams={groupParams} />
       )}

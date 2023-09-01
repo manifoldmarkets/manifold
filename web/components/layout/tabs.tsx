@@ -137,7 +137,7 @@ export function QueryUncontrolledTabs(
       {...rest}
       tabs={tabs}
       activeIndex={activeIndex}
-      onClick={(title, i) => {
+      onClick={(title) => {
         if (scrollToTop) window.scrollTo({ top: 0 })
         router.replace(
           { query: { ...router.query, tab: title.toLowerCase() } },
