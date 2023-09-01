@@ -48,6 +48,7 @@ export function FeedContractCard(props: {
   /** whether this card is small, to adjust sizing. TODO: replace with container queries */
   small?: boolean
   hide?: () => void
+  showGraph?: boolean
 }) {
   const {
     promotedData,
@@ -57,6 +58,7 @@ export function FeedContractCard(props: {
     children,
     small,
     hide,
+    showGraph,
   } = props
   const user = useUser()
 
@@ -203,8 +205,8 @@ export function FeedContractCard(props: {
         )}
 
         {isBinaryCpmm &&
-          probChange &&
-          Math.abs(probChange) > PROB_THRESHOLD && (
+          (showGraph ||
+            (probChange && Math.abs(probChange) > PROB_THRESHOLD)) && (
             <FeedBinaryChart contract={contract} className="my-4" />
           )}
         {promotedData && (
