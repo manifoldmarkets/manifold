@@ -1,4 +1,4 @@
-import { CPMMContract } from 'common/contract'
+import { CPMMContract, CPMMMultiContract } from 'common/contract'
 import { User } from 'common/user'
 import { getInvested } from 'common/calculate'
 import { useState } from 'react'
@@ -96,14 +96,15 @@ export function SellRow(props: {
   return null
 }
 
-function SellSharesModal(props: {
+export function SellSharesModal(props: {
   className?: string
-  contract: CPMMContract
+  contract: CPMMContract | CPMMMultiContract
   userBets: Bet[]
   shares: number
   sharesOutcome: 'YES' | 'NO'
   user: User
   setOpen: (open: boolean) => void
+  answerId?: string
 }) {
   const {
     className,
@@ -113,6 +114,7 @@ function SellSharesModal(props: {
     userBets,
     user,
     setOpen,
+    answerId,
   } = props
   const isStonk = contract.outcomeType === 'STONK'
 
@@ -127,7 +129,8 @@ function SellSharesModal(props: {
           ) : (
             <>
               You have {formatWithCommas(shares)} shares worth{' '}
-              {formatMoney(shares)} if this question resolves{' '}
+              {formatMoney(shares)} if this {answerId ? 'answer' : 'question'}{' '}
+              resolves{' '}
             </>
           )}
           <OutcomeLabel
@@ -145,6 +148,7 @@ function SellSharesModal(props: {
           user={user}
           userBets={userBets ?? []}
           onSellSuccess={() => setOpen(false)}
+          answerId={answerId}
         />
       </Col>
     </Modal>

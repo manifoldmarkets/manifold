@@ -20,6 +20,7 @@ import { track } from 'web/lib/service/analytics'
 import { useState } from 'react'
 import { Row } from 'web/components/layout/row'
 import { GroupTag } from 'web/pages/groups'
+import { orderBy, uniqBy } from 'lodash'
 
 const MAX_PARENT_COMMENTS_PER_FEED_ITEM = 1
 export const MIN_BET_AMOUNT = 20
@@ -77,6 +78,33 @@ export const FeedTimelineItems = (props: {
               childCommentsByParentCommentId={{}}
               key={item.ad_id}
             />
+          )
+        } else if (item.relatedItems) {
+          const contracts = orderBy(
+            filterDefined([
+              item.contract,
+              ...item.relatedItems.map((i) => i.contract),
+            ]),
+            'createdTime'
+          )
+          return (
+            <FeedItemFrame
+              item={item}
+              key={contracts.map((c) => c.id) + 'feed-timeline-item'}
+              moreItems={item.relatedItems}
+              className="bg-canvas-0 border-canvas-0 hover:border-primary-300 w-full overflow-hidden rounded-2xl border drop-shadow-md "
+            >
+              <Col className="px-2 pt-3">
+                <ContractsTable contracts={contracts} hideHeader={true} />
+              </Col>
+              <GroupTags
+                groups={uniqBy(
+                  contracts.map((c) => c.groupLinks ?? []).flat(),
+                  'slug'
+                )}
+                className="mx-4 mb-3"
+              />
+            </FeedItemFrame>
           )
         } else if (item.contract) {
           // Organic contract
@@ -171,28 +199,28 @@ const FeedContractAndRelatedItems = (props: {
           promotedData={promotedData}
           trackingPostfix="feed"
           hide={() => setHidden(true)}
-          bottomChildren={
-            hasComments ? (
-              <FeedCommentItem
-                contract={contract}
-                commentThreads={parentComments.map((parentComment) => ({
-                  parentComment,
-                  childComments:
-                    childCommentsByParentCommentId[parentComment.id] ?? [],
-                }))}
-              />
-            ) : undefined
-          }
           item={item}
           className="max-w-full"
         >
-          {item?.betData && item?.creatorDetails && !hasComments && (
-            <FeedBetsItem
+          {hasComments ? (
+            <FeedCommentItem
               contract={contract}
-              betData={item.betData}
-              creatorDetails={item.creatorDetails}
-              answers={item.answers}
+              commentThreads={parentComments.map((parentComment) => ({
+                parentComment,
+                childComments:
+                  childCommentsByParentCommentId[parentComment.id] ?? [],
+              }))}
             />
+          ) : (
+            item?.betData &&
+            item?.creatorDetails && (
+              <FeedBetsItem
+                contract={contract}
+                betData={item.betData}
+                creatorDetails={item.creatorDetails}
+                answers={item.answers}
+              />
+            )
           )}
         </FeedContractCard>
       ) : (
@@ -214,28 +242,28 @@ const FeedItemFrame = (props: {
   item: FeedTimelineItem | undefined
   children: React.ReactNode
   className?: string
+  moreItems?: FeedTimelineItem[]
 }) => {
-  const { item, children, className } = props
-
+  const { moreItems, item, children, className } = props
+  const items = filterDefined([item, ...(moreItems ?? [])])
   const maybeVisibleHook = useIsVisible(
     () =>
-      // TODO: should we keep updating them or just do it once?
-      item &&
-      run(
-        db
-          .from('user_feed')
-          .update({ seen_time: new Date().toISOString() })
-          .eq('id', item.id)
-      ).then(() =>
-        track('view feed item', { id: item.id, type: item.dataType })
+      items.map(async (i) =>
+        run(
+          db
+            .from('user_feed')
+            .update({ seen_time: new Date().toISOString() })
+            .eq('id', i.id)
+        ).then(() => track('view feed item', { id: i.id, type: i.dataType }))
       ),
     true,
-    item !== undefined
+    items.length > 0
   )
 
   return (
-    <div ref={maybeVisibleHook?.ref} className={className}>
+    <div className={className}>
       {children}
+      <div className={'h-0'} ref={maybeVisibleHook?.ref} />
     </div>
   )
 }

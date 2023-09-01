@@ -38,6 +38,7 @@ import { PositionChangeData } from 'common/supabase/bets'
 import { Answer } from 'common/answer'
 import { removeUndefinedProps } from 'common/util/object'
 import { convertAnswer } from 'common/supabase/contracts'
+import { compareTwoStrings } from 'string-similarity'
 
 const PAGE_SIZE = 40
 
@@ -67,6 +68,7 @@ export type FeedTimelineItem = {
   isCopied?: boolean
   data?: Record<string, any>
   manuallyCreatedFromContract?: boolean
+  relatedItems?: FeedTimelineItem[]
 }
 const baseUserFeedQuery = (
   userId: string,
@@ -193,12 +195,21 @@ export const useFeedTimeline = (
         .then((res) => res.data?.map(convertContractComment)),
       db
         .from('contracts')
-        .select('data')
+        .select('data, importance_score')
         .in('id', newContractIds)
         .not('visibility', 'eq', 'unlisted')
         .is('resolution_time', null)
         .gt('close_time', new Date().toISOString())
-        .then((res) => res.data?.map((c) => c.data as Contract)),
+        .then((res) =>
+          res.data?.map(
+            (c) =>
+              ({
+                ...(c.data as Contract),
+                // importance_score is only updated in Supabase
+                importanceScore: c.importance_score,
+              } as Contract)
+          )
+        ),
       db
         .from('news')
         .select('*')
@@ -472,10 +483,34 @@ function createFeedTimelineItems(
       }),
     'contractId'
   )
-  return sortBy(
-    filterDefined([...newsData, ...nonNewsTimelineItems]),
-    (i) => -i.createdTime
+
+  const groupedItems = groupItemsBySimilarQuestions(
+    filterDefined(nonNewsTimelineItems)
   )
+
+  return sortBy([...newsData, ...groupedItems], (i) => -i.createdTime)
+}
+
+const groupItemsBySimilarQuestions = (items: FeedTimelineItem[]) => {
+  const groupedItems: FeedTimelineItem[] = []
+  for (const item of items) {
+    const similarItem = groupedItems.find(
+      (i2) =>
+        compareTwoStrings(
+          item.contract?.question ?? '',
+          i2.contract?.question ?? ''
+        ) > 0.5
+    )
+
+    if (similarItem && item.contract) {
+      if (similarItem.relatedItems) {
+        similarItem.relatedItems.push(item)
+      } else similarItem.relatedItems = [item]
+    } else {
+      groupedItems.push(item)
+    }
+  }
+  return groupedItems
 }
 
 const getNewContentIds = (

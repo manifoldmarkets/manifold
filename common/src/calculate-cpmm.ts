@@ -6,6 +6,11 @@ import { LiquidityProvision } from './liquidity-provision'
 import { computeFills } from './new-bet'
 import { binarySearch } from './util/algos'
 import { EPSILON, floatingEqual } from './util/math'
+import {
+  calculateCpmmMultiArbitrageSellNo,
+  calculateCpmmMultiArbitrageSellYes,
+} from './calculate-cpmm-arbitrage'
+import { Answer } from './answer'
 
 export type CpmmState = {
   pool: { [outcome: string]: number }
@@ -219,6 +224,65 @@ export function calculateAmountToBuySharesFixedP(
     outcome
   )
   return currAmount + fillAmount
+}
+
+export function calculateCpmmMultiSale(
+  answers: Answer[],
+  answerToSell: Answer,
+  shares: number,
+  outcome: 'YES' | 'NO',
+  limitProb: number | undefined,
+  unfilledBets: LimitBet[],
+  balanceByUserId: { [userId: string]: number }
+) {
+  if (Math.round(shares) < 0) {
+    throw new Error('Cannot sell non-positive shares')
+  }
+
+  const { newBetResult, otherBetResults } =
+    outcome === 'YES'
+      ? calculateCpmmMultiArbitrageSellYes(
+          answers,
+          answerToSell,
+          shares,
+          limitProb,
+          unfilledBets,
+          balanceByUserId
+        )
+      : calculateCpmmMultiArbitrageSellNo(
+          answers,
+          answerToSell,
+          shares,
+          limitProb,
+          unfilledBets,
+          balanceByUserId
+        )
+
+  // Transform buys of opposite outcome into sells.
+  const saleTakers = newBetResult.takers.map((taker) => ({
+    ...taker,
+    // You bought opposite shares, which combine with existing shares, removing them.
+    shares: -taker.shares,
+    // Opposite shares combine with shares you are selling for Ṁ of shares.
+    // You paid taker.amount for the opposite shares.
+    // Take the negative because this is money you gain.
+    amount: -(taker.shares - taker.amount),
+    isSale: true,
+  }))
+
+  const saleValue = -sumBy(saleTakers, (taker) => taker.amount)
+
+  const transformedNewBetResult = {
+    ...newBetResult,
+    takers: saleTakers,
+    outcome,
+  }
+
+  return {
+    saleValue,
+    newBetResult: transformedNewBetResult,
+    otherBetResults,
+  }
 }
 
 export function calculateAmountToBuyShares(
