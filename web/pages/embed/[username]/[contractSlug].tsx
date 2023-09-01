@@ -79,7 +79,7 @@ export async function getStaticProps(props: {
     return { notFound: true, revalidate: 60 }
   }
   const rawPoints = await getHistoryData(contract)
-  const filteredPoints = rawPoints?.filter((point) => {
+  const filteredPoints = rawPoints?.map((point) => {
     x: point.x
     y: point.y
   })
