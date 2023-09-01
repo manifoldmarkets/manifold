@@ -16,7 +16,7 @@ export function FeedBinaryChart(props: {
   const [points, setPoints] = usePersistentInMemoryState<
     { x: number; y: number }[] | null | undefined
   >(undefined, `${contract.id}-feed-chart`)
-  
+
   useEffect(() => {
     getHistoryData(contract, 100, Date.now() - DAY_MS * 1.5).then((points) => {
       setPoints(points)
