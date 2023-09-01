@@ -55,7 +55,7 @@ import { QuestsOrStreak } from 'web/components/quests-or-streak'
 import { useAdmin } from 'web/hooks/use-admin'
 import { UserPayments } from 'web/pages/payments'
 import { FaMoneyBillTransfer } from 'react-icons/fa6'
-import { useQuery } from 'react-query'
+import { useQuery } from 'web/hooks/use-query'
 import { getUserRating, getUserReviews } from 'web/lib/supabase/reviews'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { removeUndefinedProps } from 'common/util/object'
@@ -551,7 +551,7 @@ function ReviewsDialog(props: {
 }) {
   const { isOpen, setIsOpen, userId, rating } = props
 
-  const reviews = useQuery([`reviews ${userId}`], () => getUserReviews(userId))
+  const reviews = useQuery(() => getUserReviews(userId))
 
   const ratingLabel =
     rating > 4.8 ? (

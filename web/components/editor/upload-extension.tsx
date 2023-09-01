@@ -1,6 +1,6 @@
 import { Editor, Extension } from '@tiptap/core'
 import toast from 'react-hot-toast'
-import { useMutation } from 'react-query'
+import { useMutation } from 'web/hooks/use-mutation'
 import { uploadImage } from 'web/lib/firebase/storage'
 
 export const Upload = Extension.create({

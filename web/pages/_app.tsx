@@ -2,7 +2,6 @@ import type { AppProps } from 'next/app'
 import Head from 'next/head'
 import Script from 'next/script'
 import { useEffect } from 'react'
-import { QueryClient, QueryClientProvider } from 'react-query'
 import { AuthProvider, AuthUser } from 'web/components/auth-context'
 import { DarkModeProvider } from 'web/components/dark-mode-provider'
 import {
@@ -128,9 +127,7 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
         <AuthProvider serverUser={pageProps.auth}>
           <DarkModeProvider>
             <NativeMessageListener />
-            <QueryClientProvider client={queryClient}>
-              <Component {...pageProps} />
-            </QueryClientProvider>
+            <Component {...pageProps} />
           </DarkModeProvider>
         </AuthProvider>
         {/* Workaround for https://github.com/tailwindlabs/headlessui/discussions/666, to allow font CSS variable */}
@@ -178,7 +175,5 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
     </>
   )
 }
-
-const queryClient = new QueryClient()
 
 export default MyApp

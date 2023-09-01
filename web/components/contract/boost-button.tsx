@@ -8,7 +8,6 @@ import toast from 'react-hot-toast'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { DEFAULT_AD_COST_PER_VIEW, MIN_AD_COST_PER_VIEW } from 'common/boost'
 import { db } from 'web/lib/supabase/db'
-import { useQuery } from 'react-query'
 import { Table } from '../widgets/table'
 import { uniqBy } from 'lodash'
 import { ContractCardView } from 'common/events'
@@ -19,6 +18,7 @@ import { Row } from '../layout/row'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import { track } from 'web/lib/service/analytics'
+import { useQuery } from 'web/hooks/use-query'
 
 export function BoostButton(props: {
   contract: Contract
@@ -185,7 +185,6 @@ function FeedAnalytics(props: { contractId: string }) {
   // TODO rewrite these in functions.sql as a single rpc. This is ridiculous.
 
   const adQuery = useQuery(
-    ['ad data', contractId],
     async () =>
       await db
         .from('market_ads')
@@ -194,7 +193,6 @@ function FeedAnalytics(props: { contractId: string }) {
   )
 
   const viewQuery = useQuery(
-    ['view market card data', contractId],
     async () =>
       await db
         .from('user_seen_markets')
@@ -204,7 +202,6 @@ function FeedAnalytics(props: { contractId: string }) {
   )
 
   const clickQuery = useQuery(
-    ['click through data', contractId],
     async () =>
       await db
         .from('user_events')
@@ -214,21 +211,19 @@ function FeedAnalytics(props: { contractId: string }) {
   )
 
   const redeemQuery = useQuery(
-    ['redeem data', contractId],
     async () =>
       await db
         .from('txns')
         .select('*', { count: 'exact' })
         .eq('data->>category', 'MARKET_BOOST_REDEEM')
-        .eq('data->>fromId', adQuery.data?.data?.[0]?.id),
-    { enabled: adQuery.isSuccess }
+        .eq('data->>fromId', adQuery.data?.data?.[0]?.id)
   )
 
   if (
-    adQuery.isError ||
-    viewQuery.isError ||
-    clickQuery.isError ||
-    redeemQuery.isError
+    adQuery.error ||
+    viewQuery.error ||
+    clickQuery.error ||
+    redeemQuery.error
   ) {
     return (
       <div className="bg-scarlet-100 mb-2 rounded-md p-4">
@@ -255,9 +250,10 @@ function FeedAnalytics(props: { contractId: string }) {
     <div className="mt-4">
       <div className="mb-2 text-lg">
         Feed Analytics
-        {(adQuery.isFetching ||
-          viewQuery.isFetching ||
-          redeemQuery.isFetching) && (
+        {(adQuery.isLoading ||
+          viewQuery.isLoading ||
+          clickQuery.isLoading ||
+          redeemQuery.isLoading) && (
           <LoadingIndicator size="sm" className="ml-4 !inline-flex" />
         )}
       </div>
