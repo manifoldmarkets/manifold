@@ -38,7 +38,7 @@ import {
 } from 'common/league-chat'
 import { useAllUnseenChatsForLeages } from 'web/hooks/use-chats'
 import { Countdown } from 'web/components/widgets/countdown'
-import { formatTime } from 'web/lib/util/time'
+import { formatTime, getCountdownStringHoursMinutes } from 'web/lib/util/time'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 
 export async function getStaticProps() {
@@ -180,6 +180,7 @@ export default function Leagues(props: { rows: league_user_info[] }) {
   const MARKER = '★'
   const seasonStatus = getSeasonStatus(season)
   const countdownEnd = getSeasonCountdownEnd(season)
+  const randomPeriodEnd = new Date(countdownEnd.getTime() + 24 * 60 * 60 * 1000)
 
   const showNotif = (cohort: string) =>
     query.tab !== 'chat' && unseenCohortChats.includes(cohort)
@@ -210,11 +211,14 @@ export default function Leagues(props: { rows: league_user_info[] }) {
               </Select>
             </Col>
             <Col className="items-center gap-1">
-              <Row className="items-center gap-1.5">
-                <ClockIcon className="text-ink-1000 h-4 w-4" />{' '}
+              <Row className="gap-1.5">
                 <div className={'text-sm'}>
                   {seasonStatus === 'closing-period' && (
-                    <>Ends randomly within 24h</>
+                    <>
+                      Ends randomly within <br />
+                      <ClockIcon className="text-ink-1000 inline h-4 w-4" />{' '}
+                      {getCountdownStringHoursMinutes(randomPeriodEnd)}
+                    </>
                   )}
                   {seasonStatus === 'ended' && (
                     <>Ended at {formatTime(countdownEnd)}</>
@@ -238,7 +242,7 @@ export default function Leagues(props: { rows: league_user_info[] }) {
             </Col>
           </Row>
 
-          <Row className="mb-2 items-center gap-3">
+          <Row className="mb-2 mt-2 items-center gap-3">
             <text className="">
               Compete against similar users for{' '}
               <span
