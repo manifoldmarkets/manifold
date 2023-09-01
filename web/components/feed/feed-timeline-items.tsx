@@ -263,8 +263,9 @@ const FeedItemFrame = (props: {
   )
 
   return (
-    <div ref={maybeVisibleHook?.ref} className={className}>
+    <div className={className}>
       {children}
+      <div className={'h-0'} ref={maybeVisibleHook?.ref} />
     </div>
   )
 }
