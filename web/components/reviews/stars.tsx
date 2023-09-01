@@ -8,7 +8,7 @@ import { leaveReview } from 'web/lib/firebase/api'
 import { TextEditor, useTextEditor } from '../widgets/editor'
 import { Col } from '../layout/col'
 import clsx from 'clsx'
-import { useMutation } from 'react-query'
+import { useMutation } from 'web/hooks/use-mutation'
 import toast from 'react-hot-toast'
 import { User } from 'common/user'
 import { getMyReviewOnContract } from 'web/lib/supabase/reviews'
@@ -63,7 +63,7 @@ export const ReviewPanel = (props: {
       })
   }, [!!editor])
 
-  const send = useMutation(['review'], leaveReview, {
+  const send = useMutation(leaveReview, {
     onError: (e) => {
       toast.error((e as any).message ?? 'Failed to save review. Try again.')
     },
