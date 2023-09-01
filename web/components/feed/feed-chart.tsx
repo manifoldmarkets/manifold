@@ -5,6 +5,7 @@ import { useViewScale } from '../charts/generic-charts'
 import { BinaryChart } from '../contract/contract-overview'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { DAY_MS } from 'common/util/time'
+import PlaceholderGraph from 'web/lib/icons/placeholder-graph'
 
 export function FeedBinaryChart(props: {
   contract: BinaryContract
@@ -47,7 +48,17 @@ export function FeedBinaryChart(props: {
   }
 
   if (points === undefined) {
-    return <LoadingIndicator />
+    return (
+      <div
+        className="my-2"
+        style={{
+          height: `${92}px`,
+          margin: '20px 40px 20px 10px',
+        }}
+      >
+        <PlaceholderGraph className="text-ink-400 h-full w-full animate-pulse" />
+      </div>
+    )
   }
 
   return <></>

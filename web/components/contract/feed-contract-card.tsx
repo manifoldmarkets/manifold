@@ -216,6 +216,10 @@ export function FeedContractCard(props: {
           </Col>
         )}
 
+        {isBinaryCpmm && metrics && metrics.hasShares && (
+          <YourMetricsFooter metrics={metrics} />
+        )}
+
         {!descriptionIsEmpty(contract) &&
           (item?.dataType == 'new_contract' || nonTextDescription) && (
             <FeedContractCardDescription
@@ -223,10 +227,6 @@ export function FeedContractCard(props: {
               nonTextDescription={nonTextDescription}
             />
           )}
-
-        {isBinaryCpmm && metrics && metrics.hasShares && (
-          <YourMetricsFooter metrics={metrics} />
-        )}
 
         <GroupTags groups={contract.groupLinks} />
         <Col>
