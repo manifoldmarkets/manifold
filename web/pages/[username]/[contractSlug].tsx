@@ -155,10 +155,6 @@ export function ContractPageContent(props: {
       contractParams.contract.visibility,
       contractParams.contract.id
     ) ?? contractParams.contract
-  const cachedContract = useMemo(
-    () => contract,
-    [contract.id, contract.resolution, contract.closeTime]
-  )
   if (
     'answers' in contractParams.contract &&
     contract.mechanism === 'cpmm-multi-1'
@@ -167,6 +163,15 @@ export function ContractPageContent(props: {
       // eslint-disable-next-line react-hooks/rules-of-hooks
       useAnswersCpmm(contract.id) ?? contractParams.contract.answers
   }
+  const cachedContract = useMemo(
+    () => contract,
+    [
+      contract.id,
+      contract.resolution,
+      contract.closeTime,
+      'answers' in contract ? contract.answers : undefined,
+    ]
+  )
   const user = useUser()
   const contractMetrics = useSavedContractMetrics(contract)
   const privateUser = usePrivateUser()
