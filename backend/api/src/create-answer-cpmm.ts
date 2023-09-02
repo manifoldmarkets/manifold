@@ -90,33 +90,44 @@ export const createanswercpmm = authEndpoint(async (req, auth) => {
 
     const id = randomString()
     const newAnswerDoc = contractDoc.collection('answersCpmm').doc(id)
-
     const n = answers.length
-    // 1. Add ANSWER_COST to otherAnswer's pool.
-    // 2. Copy Yes shares into the new answer.
-    // Yes shares can be copied because, conceptually, if the new answer is split out of Other,
+
+    // 1. Create a mana budget including ANSWER_COST, and shares from Other.
+    // 2. Keep track of excess Yes and No shares of Other. Other has been divided
+    // into three pieces: mana, excessYesShares, excessNoShares.
+    // 3a. Recreate liquidity for the new answer and other by spending mana.
+    // 3b. Add excessYesShares to both other and the new answer's pools.
+    // These Yes shares can be copied because, conceptually, if the new answer is split out of Other,
     // then original yes shares in Other should pay out if either it or Other is chosen.
-    // 3. Convert No shares in Other into Yes shares in all the previous answers. Then, convert
-    // them back into equal No shares in the new answer and Other.
-    // As a consequence, the new answer and other gain up to half the No shares in Other and
-    // minus that many Yes shares.
-    // 4. Probability sum is now greater than 1. Bet it down equally.
-    // 5. Betting it down to 1 produces mana, which we then insert as subsidy.
-    const otherYesShares = otherAnswer.poolYes + ANSWER_COST
-    const otherNoShares = otherAnswer.poolNo + ANSWER_COST
-
-    const noSharesConvertedBack = Math.min(
-      otherNoShares / 2,
-      otherYesShares - 1
+    // Note that the new answer has up to ANSWER_COST liquidity, while the remainder of liquidity,
+    // which could be a lot, is spent on the other answer.
+    // 4. Convert excess No shares in Other into Yes shares in all the previous answers and add them
+    // to previous answers' pools.
+    // 5. Probability sum is now greater than 1. Bet it down equally.
+    // Proof of >1 prob sum:
+    // a. If there are excess Yes shares, then old answer probs are unchanged, so
+    // prob of new answer + prob of other answer must be > than previous prob of other answer. Empirically true...
+    // b. If there are excess No shares, then new answer & other answer each has 50% prob.
+    // 6. Betting it down to 1 produces mana, which we then insert as subsidy.
+    const mana = ANSWER_COST + Math.min(otherAnswer.poolYes, otherAnswer.poolNo)
+    const excessYesShares = Math.max(
+      0,
+      otherAnswer.poolYes - otherAnswer.poolNo
     )
-    const previousAnswersGainedYesShares =
-      otherNoShares - noSharesConvertedBack * 2
+    const excessNoShares = Math.max(0, otherAnswer.poolNo - otherAnswer.poolYes)
 
-    const poolYes = otherYesShares - noSharesConvertedBack
-    const poolNo = noSharesConvertedBack
-    const prob = poolNo / (poolYes + poolNo)
+    const answerCostOrHalf = Math.min(ANSWER_COST, mana / 2)
+    const newAnswerPool = {
+      YES: answerCostOrHalf + excessYesShares,
+      NO: answerCostOrHalf,
+    }
+    const newOtherPool = {
+      YES: mana - answerCostOrHalf + excessYesShares,
+      NO: mana - answerCostOrHalf,
+    }
 
-    const totalLiquidity = (otherAnswer.totalLiquidity + ANSWER_COST) / 2
+    const newAnswerProb = getCpmmProbability(newAnswerPool, 0.5)
+    const otherProb = getCpmmProbability(newOtherPool, 0.5)
 
     const newAnswer: Answer = {
       id,
@@ -126,29 +137,29 @@ export const createanswercpmm = authEndpoint(async (req, auth) => {
       userId: user.id,
       text,
       isOther: false,
-      poolYes,
-      poolNo,
-      prob,
-      totalLiquidity,
+      poolYes: newAnswerPool.YES,
+      poolNo: newAnswerPool.NO,
+      prob: newAnswerProb,
+      totalLiquidity: answerCostOrHalf,
       subsidyPool: 0,
     }
 
     const updatedOtherAnswerProps = {
-      totalLiquidity,
+      totalLiquidity: newOtherPool.NO,
       index: n,
     }
 
     const updatedOtherAnswer = {
       ...otherAnswer,
       ...updatedOtherAnswerProps,
-      poolYes,
-      poolNo,
-      prob,
+      poolYes: newOtherPool.YES,
+      poolNo: newOtherPool.NO,
+      prob: otherProb,
     }
 
     const updatedPreviousAnswers = answersWithoutOther.map((a) => ({
       ...a,
-      poolYes: a.poolYes + previousAnswersGainedYesShares,
+      poolYes: a.poolYes + excessNoShares,
     }))
 
     const answersWithNewAnswer = [
