@@ -15,6 +15,7 @@ import {
   getSeasonMonth,
   season,
   getSeasonCountdownEnd,
+  getSeasonDates,
 } from 'common/leagues'
 import { toLabel } from 'common/util/adjective-animal'
 import { Col } from 'web/components/layout/col'
@@ -180,6 +181,7 @@ export default function Leagues(props: { rows: league_user_info[] }) {
   const MARKER = '★'
   const seasonStatus = getSeasonStatus(season)
   const countdownEnd = getSeasonCountdownEnd(season)
+  const { end: seasonEnd } = getSeasonDates(season)
   const randomPeriodEnd = new Date(countdownEnd.getTime() + 24 * 60 * 60 * 1000)
 
   const showNotif = (cohort: string) =>
@@ -221,7 +223,7 @@ export default function Leagues(props: { rows: league_user_info[] }) {
                     </>
                   )}
                   {seasonStatus === 'ended' && (
-                    <>Ended at {formatTime(countdownEnd)}</>
+                    <>Ended at {formatTime(seasonEnd)}</>
                   )}
                   {seasonStatus === 'current' && (
                     <InfoTooltip
