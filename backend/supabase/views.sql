@@ -276,14 +276,14 @@ create or replace view
   user_league_info as (
     select
       *,
-      row_number() over (
+      (row_number() over (
         partition by
           season,
           division,
           cohort
         order by
           mana_earned desc
-      ) as rank
+      )::int) as rank
     from
       leagues
   );
