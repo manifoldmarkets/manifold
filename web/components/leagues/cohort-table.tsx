@@ -87,7 +87,7 @@ export const CohortTable = (props: {
               {user &&
                 shouldTruncateZeros &&
                 row.mana_earned === 0 &&
-                (i == 0 || rows[i - 1].mana_earned !== 0) && (
+                (i === rows.length - 1 || rows[i + 1].mana_earned !== 0) && (
                   <tr>
                     <td className="pl-9">
                       <div className="">...</div>
