@@ -223,21 +223,22 @@ export default function Leagues(props: { rows: league_user_info[] }) {
                     </>
                   )}
                   {seasonStatus === 'ended' && (
-                    <>Ended at {formatTime(seasonEnd)}</>
+                    <>Ended {formatTime(seasonEnd)}</>
                   )}
                   {seasonStatus === 'current' && (
-                    <InfoTooltip
-                      text={
-                        'Once the countdown is reached the leaderboards will freeze at a random time in the following 24h to determine final ranks.'
-                      }
-                    >
-                      <>
+                    <>
+                      Countdown:{' '}
+                      <InfoTooltip
+                        text={
+                          'Once the countdown is reached the leaderboards will freeze at a random time in the following 24h to determine final ranks.'
+                        }
+                      >
                         <Countdown
                           className=" text-sm"
                           endDate={countdownEnd}
                         />
-                      </>
-                    </InfoTooltip>
+                      </InfoTooltip>
+                    </>
                   )}
                 </div>
               </Row>

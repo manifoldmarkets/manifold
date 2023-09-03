@@ -49,6 +49,7 @@ export const CohortTable = (props: {
   const prevDivisionName = DIVISION_NAMES[prevDivison]
 
   const noPromotionDemotion = cohort === 'bots'
+  const shouldTruncateZeros = division === 1 || division === 2 || division === 3
 
   return (
     <table>
@@ -71,15 +72,29 @@ export const CohortTable = (props: {
           const user = users[i]
           return (
             <Fragment key={user.id}>
-              {user && (
-                <UserRow
-                  {...row}
-                  user={users[i]}
-                  isHighlighted={highlightedUserId === user.id}
-                  mana_earned_breakdown={row.mana_earned_breakdown as any}
-                  season={season}
-                />
-              )}
+              {user &&
+                (!shouldTruncateZeros ||
+                  !!row.mana_earned ||
+                  highlightedUserId === user.id) && (
+                  <UserRow
+                    {...row}
+                    user={users[i]}
+                    isHighlighted={highlightedUserId === user.id}
+                    mana_earned_breakdown={row.mana_earned_breakdown as any}
+                    season={season}
+                  />
+                )}
+              {user &&
+                shouldTruncateZeros &&
+                row.mana_earned === 0 &&
+                (i == 0 || rows[i - 1].mana_earned !== 0) && (
+                  <tr>
+                    <td className="pl-9">
+                      <div className="">...</div>
+                    </td>
+                    <td />
+                  </tr>
+                )}
               {!noPromotionDemotion && (
                 <>
                   {doublePromotionCount > 0 && i + 1 === doublePromotionCount && (

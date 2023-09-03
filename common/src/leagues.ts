@@ -2,8 +2,8 @@ import { Row } from './supabase/utils'
 
 export type season = typeof SEASONS[number]
 
-export const SEASONS = [1, 2, 3, 4] as const
-export const CURRENT_SEASON = 4
+export const SEASONS = [1, 2, 3, 4, 5] as const
+export const CURRENT_SEASON = SEASONS[SEASONS.length - 1]
 
 export const LEAGUES_START = new Date('2023-05-01T00:00:00-07:00') // Pacific Daylight Time (PDT) as time zone offset
 
@@ -127,10 +127,15 @@ export const getDivisionChange = (
 export type league_row = Row<'leagues'>
 export type league_user_info = league_row & { rank: number }
 
-export const COHORT_SIZE = 25
-export const BRONZE_COHORT_SIZE = 35
-export const MASTERS_COHORT_SIZE = COHORT_SIZE * 2
-export const MAX_COHORT_SIZE = 75
+export const MAX_COHORT_SIZE = 100
+
+export const getCohortSize = (division: number) => {
+  if (division === getDivisionNumber('Bronze')) return 100
+  if (division === getDivisionNumber('Silver')) return 50
+  if (division === getDivisionNumber('Gold')) return 50
+  if (division === getDivisionNumber('Masters')) return 100
+  return 25
+}
 
 export const prizesByDivisionAndRank = [
   [100, 90, 80, 70, 60, 50, 40],

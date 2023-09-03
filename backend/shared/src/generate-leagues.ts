@@ -7,14 +7,11 @@ import {
 import { genNewAdjectiveAnimal } from 'common/util/adjective-animal'
 import { BOT_USERNAMES } from 'common/envs/constants'
 import {
-  BRONZE_COHORT_SIZE,
-  COHORT_SIZE,
   CURRENT_SEASON,
+  getCohortSize,
   getDivisionChange,
-  getDivisionNumber,
   getSeasonDates,
   league_user_info,
-  MASTERS_COHORT_SIZE,
   MAX_COHORT_SIZE,
   SEASONS,
 } from 'common/leagues'
@@ -27,6 +24,7 @@ export async function generateNextSeason(
   pg: SupabaseDirectClient,
   season: number
 ) {
+  console.log('Generating season', season)
   const prevSeason = season - 1
   const startDate = getSeasonDates(prevSeason).start
   const rows = await pg.manyOrNone<league_user_info>(
@@ -122,12 +120,7 @@ const generateCohorts = async (
   for (const divisionStr in usersByDivision) {
     const divisionUserIds = usersByDivision[divisionStr]
     const division = Number(divisionStr)
-    const cohortSize =
-      division === getDivisionNumber('Bronze')
-        ? BRONZE_COHORT_SIZE
-        : division === getDivisionNumber('Masters')
-        ? MASTERS_COHORT_SIZE
-        : COHORT_SIZE
+    const cohortSize = getCohortSize(division)
     const numCohorts = Math.ceil(divisionUserIds.length / cohortSize)
     const usersPerCohort = Math.ceil(divisionUserIds.length / numCohorts)
     const cohortsWithOneLess =
@@ -199,7 +192,7 @@ export const insertBots = async (pg: SupabaseDirectClient, season: number) => {
         where contract_bets.created_time > $1
       )
       select id from users
-      where data.username in ($2:csv)
+      where users.username in ($2:csv)
       and id in (select user_id from active_user_ids)
     `,
     [startDate, BOT_USERNAMES],
