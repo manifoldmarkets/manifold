@@ -14,6 +14,7 @@ import { ReportUser } from 'web/components/profile/report-user'
 import { Title } from 'web/components/widgets/title'
 import { Row } from '../layout/row'
 import { PROJECT_ID } from 'common/envs/constants'
+import { SimpleCopyTextButton } from 'web/components/buttons/copy-link-button'
 
 export function MoreOptionsUserButton(props: { user: User }) {
   const { user } = props
@@ -69,6 +70,11 @@ export function MoreOptionsUserButton(props: { user: User }) {
                   private user
                 </a>
               </span>
+              <SimpleCopyTextButton
+                text={user.id}
+                tooltip="Copy user id"
+                eventTrackingName={'admin copy user id'}
+              />
             </Row>
           )}
           <UncontrolledTabs

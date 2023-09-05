@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { copyToClipboard } from 'web/lib/util/copy'
-import { trackShareEvent } from 'web/lib/service/analytics'
+import { track, trackShareEvent } from 'web/lib/service/analytics'
 import { Tooltip } from '../widgets/tooltip'
 import clsx from 'clsx'
 import { IconButton } from 'web/components/buttons/button'
@@ -8,7 +8,11 @@ import toast from 'react-hot-toast'
 import LinkIcon from 'web/lib/icons/link-icon'
 import { postMessageToNative } from 'web/components/native-message-listener'
 import { NativeShareData } from 'common/native-share-data'
-import { CheckIcon, DuplicateIcon } from '@heroicons/react/outline'
+import {
+  CheckIcon,
+  ClipboardCopyIcon,
+  DuplicateIcon,
+} from '@heroicons/react/outline'
 import ArrowUpSquareIcon from 'web/lib/icons/arrow-up-square-icon'
 import { getNativePlatform } from 'web/lib/native/is-native'
 import { useBrowserOS } from 'web/hooks/use-browser-os'
@@ -123,5 +127,37 @@ export const CopyLinkRow = (props: {
         </div>
       )}
     </button>
+  )
+}
+
+export function SimpleCopyTextButton(props: {
+  text: string
+  eventTrackingName: string // was type ShareEventName — why??
+  tooltip?: string
+  className?: string
+}) {
+  const { text, eventTrackingName, className, tooltip } = props
+  const { isNative } = getNativePlatform()
+
+  const onClick = () => {
+    if (!text) return
+    if (isNative) {
+      // If we want to extend this: iOS can use a url and a message, Android can use a title and a message.
+      postMessageToNative('share', {
+        message: text,
+      } as NativeShareData)
+    }
+
+    copyToClipboard(text)
+    toast.success('Link copied!')
+    track(eventTrackingName, { text })
+  }
+
+  return (
+    <IconButton onClick={onClick} className={className} disabled={!text}>
+      <Tooltip text={tooltip ?? 'Copy link'} noTap placement="bottom">
+        <ClipboardCopyIcon className={'h-5'} aria-hidden="true" />
+      </Tooltip>
+    </IconButton>
   )
 }
