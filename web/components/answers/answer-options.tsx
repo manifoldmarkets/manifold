@@ -121,7 +121,12 @@ export const MultiSeller = (props: {
           answerId={answer.id}
         />
       )}
-      <Button size="2xs" color="indigo-outline" onClick={() => setOpen(true)}>
+      <Button
+        size="2xs"
+        color="indigo-outline"
+        className="whitespace-nowrap"
+        onClick={() => setOpen(true)}
+      >
         Sell
       </Button>
     </>
