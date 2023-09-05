@@ -27,7 +27,6 @@ export function TopicSelectorDialog(props: {
     string[] | undefined
   >()
   const [isLoading, setIsLoading] = useState(false)
-  const [open, setOpen] = useState(true)
   const [trendingCategories, setTrendingCategories] = useState<Group[]>()
   const topics = Object.keys(TOPICS_TO_SUBTOPICS)
   const hardCodedCategoryIds = topics
@@ -52,13 +51,13 @@ export function TopicSelectorDialog(props: {
       })
   }, [])
 
-  const closeDialog = (skipUpdate: boolean) => {
+  const closeDialog = async (skipUpdate: boolean) => {
     setIsLoading(true)
 
-    if (user && !skipUpdate) updateUserEmbedding()
+    if (user && !skipUpdate) await updateUserEmbedding()
 
-    setOpen(false)
     window.location.reload()
+    // setOpen(false)
   }
   const selectedCategories: string[] = userSelectedCategories ?? []
 
@@ -88,7 +87,7 @@ export function TopicSelectorDialog(props: {
 
   return (
     <Modal
-      open={open}
+      open
       setOpen={skippable ? closeDialog : noop}
       className="bg-canvas-0 overflow-hidden rounded-md"
       size={'lg'}
