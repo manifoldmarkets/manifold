@@ -171,11 +171,7 @@ export async function createMarketHelper(body: any, auth: AuthedUser) {
       groups.map(async (g) => {
         await addGroupToContract(contract, g, pg)
         if (contract.visibility == 'private') {
-          await createNewContractFromPrivateGroupNotification(
-            user,
-            contract,
-            g
-          )
+          await createNewContractFromPrivateGroupNotification(user, contract, g)
         }
       })
     )
@@ -547,8 +543,8 @@ const multipleChoiceSchema = z.object({
   answers: z.string().trim().min(1).array().max(MAX_ANSWERS),
   addAnswersMode: z
     .enum(['DISABLED', 'ONLY_CREATOR', 'ANYONE'])
-    .default('DISABLED')
-    .optional(),
+    .optional()
+    .default('DISABLED'),
   shouldAnswersSumToOne: z.boolean().optional(),
 })
 

@@ -699,16 +699,15 @@ Creates a new market on behalf of the authorized user.
 
 Note: this costs mana. If you have insufficient mana, this call will return an error. The cost to create each type of market is:
 
-| Market Type     | Creation Cost |
-| --------------- | ------------- |
-| BINARY          | M$50          |
-| PSEUDO_NUMERIC  | M$250         |
-| FREE_RESPONSE   | M$100         |
-| MULTIPLE_CHOICE | M$100         |
+| Market Type     | Creation Cost                             |
+| --------------- |-------------------------------------------|
+| BINARY          | M$50                                      |
+| PSEUDO_NUMERIC  | M$250                                     |
+| MULTIPLE_CHOICE | M$25/answer  or M$25 for no preset answers |  
 
 Parameters:
 
-- `outcomeType`: Required. One of `BINARY`, `FREE_RESPONSE`, `MULTIPLE_CHOICE`, or `PSEUDO_NUMERIC`.
+- `outcomeType`: Required. One of `BINARY`, `MULTIPLE_CHOICE`, `PSEUDO_NUMERIC`, `POLL`, or `BOUNTIED_QUESTION`.
 - `question`: Required. The headline question for the market.
 - `description`: Optional. A long description describing the rules for the market.
   - Note: string descriptions do **not** turn into links, mentions, formatted text. You may instead use `descriptionMarkdown` or `descriptionHtml` for rich text formatting.
@@ -730,6 +729,13 @@ For numeric markets, you must also provide:
 For multiple choice markets, you must also provide:
 
 - `answers`: An array of strings, each of which will be a valid answer for the market.
+- `addAnswersMode`: Optional. Controls who can add answers to the market after it has been created. Must be one of `'DISABLED' | 'ONLY_CREATOR' | 'ANYONE'`. Defaults to `'DISABLED'`.
+
+For bountied questions, you must also provide:
+- `totalBounty`: The total amount of mana to be distributed to the best answers.
+
+For polls, you must also provide:
+- `answers`: An array of strings, each of which will be an option for the poll.
 
 Example request:
 
