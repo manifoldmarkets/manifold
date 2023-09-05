@@ -15,10 +15,11 @@ export async function getLeagueInfo(userId: string) {
   return null
 }
 
-export async function getLeagueRows() {
+export async function getLeagueRows(season: number) {
   const { data: rows } = await db
     .from('user_league_info')
     .select('*')
+    .filter('season', 'eq', season)
     .order('mana_earned', { ascending: false })
   return (rows ?? []) as league_user_info[]
 }

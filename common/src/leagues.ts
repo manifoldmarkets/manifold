@@ -97,10 +97,10 @@ export const getDemotionAndPromotionCount = (division: number) => {
     return { demotion: 5, promotion: 5, doublePromotion: 0 }
   }
   if (division === 5) {
-    return { demotion: 7, promotion: 4, doublePromotion: 0 }
+    return { demotion: 7, promotion: 3, doublePromotion: 0 }
   }
   if (division === 6) {
-    return { demotion: 17, promotion: 0, doublePromotion: 0 }
+    return { demotion: 25, promotion: 0, doublePromotion: 0 }
   }
   throw new Error(`Invalid division: ${division}`)
 }
@@ -122,6 +122,12 @@ export const getDivisionChange = (
     return -1
   }
   return 0
+}
+
+export const getMaxDivisionBySeason = (season: number) => {
+  if (season === 1) return 4
+  if (season === 2) return 5
+  return 6
 }
 
 export type league_row = Row<'leagues'>
@@ -173,7 +179,7 @@ export const parseLeaguePath = (
     season = CURRENT_SEASON
   }
 
-  const seasonRows = rowsBySeason[season]
+  const seasonRows = rowsBySeason[season] ?? []
   const userIdToFind = userIdSlug || userId
   const userRow = seasonRows.find((row) => row.user_id === userIdToFind)
 
@@ -187,7 +193,7 @@ export const parseLeaguePath = (
     )
     if (divisionMatchingName) division = +divisionMatchingName
     else if (userRow) division = userRow.division
-    else division = Math.max(...seasonRows.map((r) => r.division))
+    else division = getMaxDivisionBySeason(season)
   }
 
   const divisionRows = seasonRows.filter((row) => row.division === division)

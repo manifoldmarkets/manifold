@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { Dispatch, SetStateAction, useEffect, useMemo, useState } from 'react'
 import { groupBy, sortBy } from 'lodash'
 import { ChatIcon, ClockIcon } from '@heroicons/react/outline'
 import { useRouter } from 'next/router'
@@ -16,6 +16,7 @@ import {
   season,
   getSeasonCountdownEnd,
   getSeasonDates,
+  getMaxDivisionBySeason,
 } from 'common/leagues'
 import { toLabel } from 'common/util/adjective-animal'
 import { Col } from 'web/components/layout/col'
@@ -41,13 +42,13 @@ import { useAllUnseenChatsForLeages } from 'web/hooks/use-chats'
 import { Countdown } from 'web/components/widgets/countdown'
 import { formatTime, getCountdownStringHoursMinutes } from 'web/lib/util/time'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
+import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 
 export async function getStaticProps() {
-  const rows = await getLeagueRows()
-  const currentSeasonRows = rows.filter((row) => row.season === CURRENT_SEASON)
+  const rows = await getLeagueRows(CURRENT_SEASON)
   return {
     props: {
-      rows: currentSeasonRows,
+      rows,
     },
   }
 }
@@ -61,24 +62,26 @@ export function getStaticPaths() {
 
 export default function Leagues(props: { rows: league_user_info[] }) {
   useTracking('view leagues')
+  const user = useUser()
 
   const [rows, setRows] = usePersistentInMemoryState<league_user_info[]>(
     props.rows,
     'league-rows'
   )
 
-  const [hasLoaded, setHasLoaded] = useState<boolean>(false)
-  useEffect(() => {
-    getLeagueRows().then((rows) => {
-      setRows(rows)
-      setHasLoaded(true)
-    })
-  }, [])
-
   const rowsBySeason = useMemo(() => groupBy(rows, 'season'), [rows])
 
   const [season, setSeason] = useState<number>(CURRENT_SEASON)
-  const seasonRows = rowsBySeason[season]
+  useEffect(() => {
+    getLeagueRows(season).then((rows) => {
+      setRows((currRows) =>
+        currRows.filter((r) => r.season !== season).concat(rows)
+      )
+    })
+  }, [season])
+
+  const seasonRows = rowsBySeason[season] ?? []
+  const seasonLoaded = seasonRows.length > 0
 
   const cohorts = groupBy(seasonRows, 'cohort')
   const cohortNames = sortBy(Object.keys(cohorts), (cohort) =>
@@ -92,10 +95,13 @@ export default function Leagues(props: { rows: league_user_info[] }) {
     Object.keys(divisionToCohorts).map((division) => +division),
     (division) => division
   ).reverse()
-  const defaultDivision = Math.max(...divisions)
+  const defaultDivision = getMaxDivisionBySeason(season)
 
   const [division, setDivision] = useState<number>(defaultDivision)
-  const [cohort, setCohort] = useState(divisionToCohorts[defaultDivision][0])
+  const divisionCohorts = divisionToCohorts[defaultDivision]
+  const [cohort, setCohort] = useState(
+    divisionCohorts ? divisionCohorts[0] : undefined
+  )
   const [highlightedUserId, setHighlightedUserId] = useState<
     string | undefined
   >()
@@ -104,28 +110,8 @@ export default function Leagues(props: { rows: league_user_info[] }) {
     setPrizesModalOpen(!prizesModalOpen)
   }
 
-  const user = useUser()
-  const userRow = seasonRows.find((row) => row.user_id === user?.id)
-  const userDivision = userRow?.division
-  const userCohort = userRow?.cohort
-
   const { query, isReady, replace } = useRouter()
   const { leagueSlugs } = query as { leagueSlugs: string[] }
-  const leagueChannelId = getLeagueChatChannelId(season, division, cohort)
-
-  const [containerRef, setContainerRef] = useState<HTMLDivElement | null>(null)
-  const [unseenLeagueChats, setUnseenLeagueChats] = useAllUnseenChatsForLeages(
-    user?.id,
-    [],
-    {
-      season,
-      division,
-      cohort,
-    }
-  )
-  const unseenCohortChats = unseenLeagueChats.map(
-    (c) => getSeasonDivisionCohort(c).cohort
-  )
 
   const onSetSeason = (newSeason: number) => {
     const { season, division, cohort } = parseLeaguePath(
@@ -134,9 +120,13 @@ export default function Leagues(props: { rows: league_user_info[] }) {
       user?.id
     )
 
-    replace(getLeaguePath(season, division, cohort), undefined, {
-      shallow: true,
-    })
+    if (cohort) {
+      replace(getLeaguePath(season, division, cohort), undefined, {
+        shallow: true,
+      })
+    } else {
+      replace(`${season}`, undefined, { shallow: true })
+    }
   }
 
   const onSetDivision = (division: number) => {
@@ -157,32 +147,49 @@ export default function Leagues(props: { rows: league_user_info[] }) {
   }
 
   useEffect(() => {
-    if (
-      !isReady ||
-      (!hasLoaded && leagueSlugs && +leagueSlugs[0] !== CURRENT_SEASON)
-    ) {
-      return
-    }
+    if (!isReady || !seasonLoaded) return
+    console.log('leagueSlugs', leagueSlugs, 'user', user?.id)
 
     const { season, division, cohort, highlightedUserId } = parseLeaguePath(
       leagueSlugs ?? [],
       rowsBySeason,
       user?.id
     )
+    console.log(
+      'setting league',
+      season,
+      division,
+      cohort,
+      highlightedUserId ?? ''
+    )
     setSeason(season)
     setDivision(division)
     setCohort(cohort)
     setHighlightedUserId(highlightedUserId)
-  }, [isReady, hasLoaded, leagueSlugs, user])
-
-  const { demotion, promotion, doublePromotion } =
-    getDemotionAndPromotionCount(division)
+  }, [isReady, seasonLoaded, leagueSlugs, user?.id])
 
   const MARKER = '★'
   const seasonStatus = getSeasonStatus(season)
   const countdownEnd = getSeasonCountdownEnd(season)
   const { end: seasonEnd } = getSeasonDates(season)
   const randomPeriodEnd = new Date(countdownEnd.getTime() + 24 * 60 * 60 * 1000)
+
+  const userRow = seasonRows.find((row) => row.user_id === user?.id)
+  const userDivision = userRow?.division
+  const userCohort = userRow?.cohort
+
+  const [unseenLeagueChats, setUnseenLeagueChats] = useAllUnseenChatsForLeages(
+    user?.id,
+    [],
+    {
+      season,
+      division,
+      cohort: cohort ?? '--',
+    }
+  )
+  const unseenCohortChats = unseenLeagueChats.map(
+    (c) => getSeasonDivisionCohort(c).cohort
+  )
 
   const showNotif = (cohort: string) =>
     query.tab !== 'chat' && unseenCohortChats.includes(cohort)
@@ -258,89 +265,139 @@ export default function Leagues(props: { rows: league_user_info[] }) {
             </text>
             <PrizesModal open={prizesModalOpen} setOpen={setPrizesModalOpen} />
           </Row>
-          <Row className="mt-2 gap-2">
-            <Select
-              className="!border-ink-200"
-              value={division}
-              onChange={(e) => onSetDivision(+e.target.value)}
-            >
-              {divisions.map((division) => (
-                <option key={division} value={division}>
-                  {division === userDivision ? MARKER : ''}{' '}
-                  {unseenLeagueChats
-                    .map((c) => getSeasonDivisionCohort(c).division)
-                    .includes(division) &&
-                    query.tab != 'chat' &&
-                    '🔵'}{' '}
-                  {DIVISION_NAMES[division]}
-                </option>
-              ))}
-            </Select>
 
-            <Select
-              className="!border-ink-200"
-              value={cohort}
-              onChange={(e) => onSetCohort(e.target.value)}
-            >
-              {divisionToCohorts[division]?.map((cohort) => (
-                <option key={cohort} value={cohort}>
-                  {cohort === userCohort ? MARKER : ''} {toLabel(cohort)}
-                  {showNotif(cohort) && '🔵'}{' '}
-                </option>
-              ))}
-            </Select>
-          </Row>
+          {cohort && (
+            <Row className="mt-2 gap-2">
+              <Select
+                className="!border-ink-200"
+                value={division}
+                onChange={(e) => onSetDivision(+e.target.value)}
+              >
+                {divisions.map((division) => (
+                  <option key={division} value={division}>
+                    {division === userDivision ? MARKER : ''}{' '}
+                    {unseenLeagueChats
+                      .map((c) => getSeasonDivisionCohort(c).division)
+                      .includes(division) &&
+                      query.tab != 'chat' &&
+                      '🔵'}{' '}
+                    {DIVISION_NAMES[division]}
+                  </option>
+                ))}
+              </Select>
+
+              <Select
+                className="!border-ink-200"
+                value={cohort}
+                onChange={(e) => onSetCohort(e.target.value)}
+              >
+                {divisionToCohorts[division]?.map((cohort) => (
+                  <option key={cohort} value={cohort}>
+                    {cohort === userCohort ? MARKER : ''} {toLabel(cohort)}
+                    {showNotif(cohort) && '🔵'}{' '}
+                  </option>
+                ))}
+              </Select>
+            </Row>
+          )}
         </Col>
 
-        <div className={'h-0'} ref={setContainerRef} />
-        <QueryUncontrolledTabs
-          labelClassName={'!pb-3 !pt-0'}
-          onClick={(tab) => {
-            if (tab === 'Chat') {
-              setUnseenLeagueChats(
-                unseenLeagueChats.filter(
-                  (c) => c != getLeagueChatChannelId(season, division, cohort)
-                )
-              )
-            }
-          }}
-          key={`${season}-${division}-${cohort}`}
-          tabs={[
-            {
-              title: 'Rankings',
-              content: cohorts[cohort] && (
-                <CohortTable
-                  season={season}
-                  cohort={cohort}
-                  rows={cohorts[cohort]}
-                  highlightedUserId={highlightedUserId}
-                  demotionCount={demotion}
-                  promotionCount={promotion}
-                  doublePromotionCount={doublePromotion}
-                />
-              ),
-            },
-
-            {
-              title: 'Activity',
-              content: <LeagueFeed season={season} cohort={cohort} />,
-            },
-            {
-              title: 'Chat',
-              inlineTabIcon: showNotif(cohort) && (
-                <ChatIcon className="h-5 w-5 text-blue-600" />
-              ),
-              content: (
-                <LeagueChat
-                  user={user}
-                  channelId={leagueChannelId}
-                  offsetTop={(containerRef?.offsetTop ?? 0) + 47}
-                />
-              ),
-            },
-          ]}
-        />
+        {seasonLoaded && cohort ? (
+          <LeaguesInnerPage
+            seasonRows={seasonRows}
+            season={season}
+            division={division}
+            cohort={cohort}
+            highlightedUserId={highlightedUserId}
+            setUnseenLeagueChats={setUnseenLeagueChats}
+            showNotif={showNotif(cohort)}
+          />
+        ) : (
+          <LoadingIndicator />
+        )}
       </Col>
     </Page>
+  )
+}
+
+function LeaguesInnerPage(props: {
+  seasonRows: league_user_info[]
+  season: number
+  division: number
+  cohort: string
+  highlightedUserId: string | undefined
+  setUnseenLeagueChats: Dispatch<SetStateAction<string[]>>
+  showNotif: boolean
+}) {
+  const {
+    seasonRows,
+    season,
+    division,
+    cohort,
+    highlightedUserId,
+    setUnseenLeagueChats,
+    showNotif,
+  } = props
+  const cohorts = groupBy(seasonRows, 'cohort')
+
+  const user = useUser()
+
+  const { demotion, promotion, doublePromotion } =
+    getDemotionAndPromotionCount(division)
+
+  const leagueChannelId = getLeagueChatChannelId(season, division, cohort)
+
+  const [containerRef, setContainerRef] = useState<HTMLDivElement | null>(null)
+  return (
+    <>
+      <div className={'h-0'} ref={setContainerRef} />
+      <QueryUncontrolledTabs
+        labelClassName={'!pb-3 !pt-0'}
+        onClick={(tab) => {
+          if (tab === 'Chat') {
+            setUnseenLeagueChats((unseenLeagueChats) =>
+              unseenLeagueChats.filter(
+                (c) => c != getLeagueChatChannelId(season, division, cohort)
+              )
+            )
+          }
+        }}
+        key={`${season}-${division}-${cohort}`}
+        tabs={[
+          {
+            title: 'Rankings',
+            content: cohorts[cohort] && (
+              <CohortTable
+                season={season}
+                cohort={cohort}
+                rows={cohorts[cohort]}
+                highlightedUserId={highlightedUserId}
+                demotionCount={demotion}
+                promotionCount={promotion}
+                doublePromotionCount={doublePromotion}
+              />
+            ),
+          },
+
+          {
+            title: 'Activity',
+            content: <LeagueFeed season={season} cohort={cohort} />,
+          },
+          {
+            title: 'Chat',
+            inlineTabIcon: showNotif && (
+              <ChatIcon className="h-5 w-5 text-blue-600" />
+            ),
+            content: (
+              <LeagueChat
+                user={user}
+                channelId={leagueChannelId}
+                offsetTop={(containerRef?.offsetTop ?? 0) + 47}
+              />
+            ),
+          },
+        ]}
+      />
+    </>
   )
 }
