@@ -553,16 +553,13 @@ const PlaneCrash = createNewsDashboardTab(
 
 const FLHurricane = createNewsDashboardTab(
   'Gulf Hurricane',
-  'Hurricane Idalia ravages coastline',
+  'Tropical Storm Lee forms',
   [
     {
-      url: 'https://www.nbcnews.com/news/us-news/hurricane-idalias-destruction-skipped-homes-floridas-coast-rcna102887',
+      url: 'https://www.independent.co.uk/climate-change/news/tropical-storm-lee-hurricane-forecast-b2405453.html',
     },
-    { slug: 'will-hurricane-idalia-cost-150-live' },
-    { slug: 'in-2023-will-a-hurricane-make-landf' },
-    { slug: 'will-tropical-storm-idalia-become-a' },
-
-    { slug: 'will-a-hurricane-make-landfall-in-f-736c1b6b35db' },
+    { slug: 'will-tropical-storm-lee-become-a-ma' },
+    {slug: 'will-hurricane-season-of-2023-cause'},
     { slug: 'will-a-hurricane-hit-the-state-of-f' },
     { slug: 'will-a-hurricane-make-landfall-in-l-d39166018a46' },
     { slug: 'will-a-hurricane-make-landfall-in-t-d9549c66acae' },
@@ -571,12 +568,12 @@ const FLHurricane = createNewsDashboardTab(
 
 export const newsContent = [
   Trump,
+  FLHurricane,
   Election2024,
   STPSuper,
   UkraineWar,
   ElonVersusZuck,
   NigerCoup,
-  FLHurricane,
   PlaneCrash,
   UFOs,
   XCom,
