@@ -2,7 +2,6 @@ import clsx from 'clsx'
 import { Group, groupPath } from 'common/group'
 import { User } from 'common/user'
 import Link from 'next/link'
-import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { Row } from '../layout/row'
 import { MemberRoleTag } from './group-member-modal'
 import { PRIVACY_STATUS_ITEMS } from './group-privacy-modal'
@@ -18,7 +17,6 @@ export function GroupLine(props: {
   const { group, isMember, user, role } = props
 
   const isCreator = user?.id == group.creatorId
-  const isMobile = useIsMobile()
   const isPrivate = group.privacyStatus == 'private'
 
   return (
@@ -41,8 +39,6 @@ export function GroupLine(props: {
               group={group}
               user={user}
               isMember={isMember}
-              iconClassName={'text-canvas-50 '}
-              isMobile={isMobile}
             />
           )}
         </Row>

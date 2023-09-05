@@ -1,4 +1,3 @@
-import { UserAddIcon, UserRemoveIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { User } from 'common/user'
 import { useEffect, useState } from 'react'
@@ -11,6 +10,7 @@ import { Button } from '../buttons/button'
 import { ConfirmationButton } from '../buttons/confirmation-button'
 import { Subtitle } from '../widgets/subtitle'
 import { joinGroup } from 'web/lib/firebase/api'
+import { useIsMobile } from 'web/hooks/use-is-mobile'
 
 export const groupButtonClass = 'text-ink-700 hover:text-ink-800'
 
@@ -45,16 +45,6 @@ export function LeavePrivateGroupButton(props: {
           ),
           color: isMobile ? 'none' : 'dark-gray',
           disabled: disabled,
-          icon: (
-            <UserRemoveIcon
-              className={clsx(
-                'h-5 w-5',
-                isMobile
-                  ? 'disabled:text-ink-200 text-ink-500 hover:text-ink-900 transition-colors '
-                  : ''
-              )}
-            />
-          ),
           label: isMobile ? '' : ' Leave',
         }}
         cancelBtn={{
@@ -92,10 +82,10 @@ export function JoinOrLeaveGroupButton(props: {
   user: User | undefined | null
   className?: string
   iconClassName?: string
-  isMobile?: boolean
   disabled?: boolean
 }) {
-  const { group, user, isMobile, disabled, iconClassName } = props
+  const { group, user, disabled } = props
+  const isMobile = useIsMobile()
 
   // Handle both non-live and live updating isMember state
   const [isMember, setIsMember] = useState(props.isMember)
@@ -144,25 +134,9 @@ export function JoinOrLeaveGroupButton(props: {
     : firebaseLogin
 
   if (isMember) {
-    if (isMobile) {
-      return (
-        <button
-          className={className}
-          onClick={(e) => {
-            e.preventDefault()
-            e.stopPropagation()
-            unfollow()
-          }}
-          disabled={disabled}
-        >
-          <UserRemoveIcon
-            className={clsx('h-5 w-5', groupButtonClass, iconClassName)}
-          />
-        </button>
-      )
-    }
     return (
       <Button
+        size={isMobile ? '2xs' : undefined}
         color="dark-gray"
         className={className}
         onClick={(e) => {
@@ -172,33 +146,14 @@ export function JoinOrLeaveGroupButton(props: {
         }}
         disabled={disabled}
       >
-        <Row className="gap-1">
-          <UserRemoveIcon className="h-5 w-5" />
-          Unfollow
-        </Row>
+        <Row className="gap-1">Unfollow</Row>
       </Button>
     )
   }
 
-  if (isMobile) {
-    return (
-      <button
-        className={className}
-        onClick={(e) => {
-          e.preventDefault()
-          e.stopPropagation()
-          follow()
-        }}
-        disabled={disabled}
-      >
-        <UserAddIcon
-          className={clsx('h-5 w-5', groupButtonClass, iconClassName)}
-        />
-      </button>
-    )
-  }
   return (
     <Button
+      size={isMobile ? '2xs' : undefined}
       color="indigo"
       className={className}
       onClick={(e) => {
@@ -207,10 +162,7 @@ export function JoinOrLeaveGroupButton(props: {
         follow()
       }}
     >
-      <Row className="gap-1">
-        <UserAddIcon className="h-5 w-5" />
-        Follow
-      </Row>
+      <Row className="gap-1">Follow</Row>
     </Button>
   )
 }
