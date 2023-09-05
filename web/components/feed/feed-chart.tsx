@@ -20,20 +20,20 @@ export function FeedBinaryChart(props: {
   const startingDate = Date.now() - DAY_MS
 
   useEffect(() => {
-    getHistoryData(contract, 100, startingDate).then((fetchedPoints) => {
-      if (fetchedPoints && fetchedPoints.length > 0 && !!fetchedPoints[0]) {
-        const createdAfterStartingDate = contract.createdTime > startingDate
-        const graphedPoints = [
-          {
-            x: createdAfterStartingDate ? contract.createdTime : startingDate,
-            y: createdAfterStartingDate
-              ? contract.initialProbability
-              : fetchedPoints[0].yBefore,
-          },
-          ...fetchedPoints?.map((point) => ({ x: point.x, y: point.y })),
-        ]
+    getHistoryData(contract, 100, startingDate).then((points) => {
+      if (points && points.length > 0 && !!points[0]) {
+        // const createdAfterStartingDate = contract.createdTime > startingDate
+        // const graphedPoints = [
+        //   {
+        //     x: createdAfterStartingDate ? contract.createdTime : startingDate,
+        //     y: createdAfterStartingDate
+        //       ? contract.initialProbability
+        //       : fetchedPoints[0].yBefore,
+        //   },
+        //   ...fetchedPoints?.map((point) => ({ x: point.x, y: point.y })),
+        // ]
 
-        setPoints(graphedPoints)
+        setPoints(points)
       }
     })
   }, [])

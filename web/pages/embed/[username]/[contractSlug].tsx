@@ -46,8 +46,8 @@ export async function getHistoryData(
     case 'PSEUDO_NUMERIC':
     case 'STONK': {
       // get the last 50k bets, then reverse them (so they're chronological)
-      const points = (
-        await getBetFields(['createdTime', 'probBefore', 'probAfter'], {
+      const fetchedPoints = (
+        await getBetFields(['createdTime', 'probAfter', 'probBefore'], {
           contractId: contract.id,
           filterRedemptions: true,
           filterChallenges: true,
@@ -55,13 +55,22 @@ export async function getHistoryData(
           order: 'desc',
           afterTime,
         })
-      )
-        .map((bet) => ({
-          x: bet.createdTime,
-          y: bet.probAfter,
-          yBefore: bet.probBefore,
-        }))
-        .reverse()
+      ).reverse()
+
+      const createdAfterStartingDate =
+        !afterTime || contract.createdTime > afterTime
+      const points = [
+        {
+          x: createdAfterStartingDate ? contract.createdTime : afterTime,
+          y: createdAfterStartingDate
+            ? contract.initialProbability
+            : fetchedPoints[0].probBefore,
+        },
+        ...fetchedPoints?.map((point) => ({
+          x: point.createdTime,
+          y: point.probAfter,
+        })),
+      ]
       return points
     }
 
@@ -78,13 +87,9 @@ export async function getStaticProps(props: {
   if (contract == null) {
     return { notFound: true, revalidate: 60 }
   }
-  const rawPoints = await getHistoryData(contract)
-  const filteredPoints = rawPoints?.map((point) => {
-    x: point.x
-    y: point.y
-  })
+  const points = await getHistoryData(contract)
   return {
-    props: { contract, filteredPoints },
+    props: { contract, points },
   }
 }
 
@@ -99,6 +104,8 @@ export default function ContractEmbedPage(props: {
   const contract =
     useFirebasePublicContract(props.contract.visibility, props.contract.id) ??
     props.contract
+
+  console.log(props.points)
 
   useEffect(() => {
     if (contract?.id)
