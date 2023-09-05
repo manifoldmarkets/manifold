@@ -5,7 +5,6 @@ import { useRouter } from 'next/router'
 
 import {
   DIVISION_NAMES,
-  getDemotionAndPromotionCount,
   CURRENT_SEASON,
   getLeaguePath,
   league_user_info,
@@ -17,6 +16,7 @@ import {
   getSeasonCountdownEnd,
   getSeasonDates,
   getMaxDivisionBySeason,
+  getDemotionAndPromotionCountBySeason,
 } from 'common/leagues'
 import { toLabel } from 'common/util/adjective-animal'
 import { Col } from 'web/components/layout/col'
@@ -343,7 +343,7 @@ function LeaguesInnerPage(props: {
   const user = useUser()
 
   const { demotion, promotion, doublePromotion } =
-    getDemotionAndPromotionCount(division)
+    getDemotionAndPromotionCountBySeason(season, division)
 
   const leagueChannelId = getLeagueChatChannelId(season, division, cohort)
 
