@@ -5,6 +5,9 @@ import { Row } from '../layout/row'
 import { ConfirmationButton } from './confirmation-button'
 import { formatMoney } from 'common/util/format'
 import { Button, ColorType, SizeType } from './button'
+import { Ref, useEffect, useState } from 'react'
+import { useIsVisible } from 'web/hooks/use-is-visible'
+import { BOTTOM_NAV_BAR_HEIGHT } from 'web/components/nav/bottom-nav-bar'
 
 export function WarningConfirmationButton(props: {
   amount: number | undefined
@@ -32,6 +35,22 @@ export function WarningConfirmationButton(props: {
     userOptedOutOfWarning,
   } = props
 
+  const [isBetButtonVisible, setIsBetButtonVisible] = useState(false)
+  const { ref: betButtonRef } = useIsVisible(() => setIsBetButtonVisible(true))
+  useEffect(() => {
+    if (isBetButtonVisible || !betButtonRef.current) return
+    const rect = betButtonRef.current.getBoundingClientRect()
+    const buttonBottomPosition = rect.bottom
+    const windowHeight = window.innerHeight
+
+    if (buttonBottomPosition > windowHeight) {
+      window.scrollTo({
+        top: buttonBottomPosition - windowHeight + BOTTOM_NAV_BAR_HEIGHT,
+        behavior: 'smooth',
+      })
+    }
+  }, [actionLabel])
+
   const buttonText = isSubmitting
     ? 'Submitting...'
     : amount && !disabled
@@ -48,6 +67,7 @@ export function WarningConfirmationButton(props: {
         className={clsx(openModalButtonClass)}
         onClick={onSubmit}
         color={color}
+        ref={betButtonRef as Ref<HTMLButtonElement>}
       >
         {buttonText}
       </Button>

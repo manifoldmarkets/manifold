@@ -1,4 +1,4 @@
-import { MouseEventHandler, ReactNode } from 'react'
+import { forwardRef, MouseEventHandler, ReactNode, Ref } from 'react'
 import clsx from 'clsx'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 
@@ -78,16 +78,19 @@ export function buttonClass(size: SizeType, color: ColorType | 'override') {
   )
 }
 
-export function Button(props: {
-  className?: string
-  onClick?: MouseEventHandler<any> | undefined
-  children?: ReactNode
-  size?: SizeType
-  color?: ColorType | 'override'
-  type?: 'button' | 'reset' | 'submit'
-  disabled?: boolean
-  loading?: boolean
-}) {
+export const Button = forwardRef(function Button(
+  props: {
+    className?: string
+    onClick?: MouseEventHandler<any> | undefined
+    children?: ReactNode
+    size?: SizeType
+    color?: ColorType | 'override'
+    type?: 'button' | 'reset' | 'submit'
+    disabled?: boolean
+    loading?: boolean
+  },
+  ref: Ref<HTMLButtonElement>
+) {
   const {
     children,
     className,
@@ -105,6 +108,7 @@ export function Button(props: {
       className={clsx(buttonClass(size, color), className)}
       disabled={disabled || loading}
       onClick={onClick}
+      ref={ref}
     >
       {loading && (
         <LoadingIndicator
@@ -116,7 +120,7 @@ export function Button(props: {
       {children}
     </button>
   )
-}
+})
 
 export function IconButton(props: {
   className?: string

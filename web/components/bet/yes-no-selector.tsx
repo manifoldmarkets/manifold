@@ -36,7 +36,7 @@ export function YesNoSelector(props: {
         }
         size="xl"
         onClick={() => onSelect('YES')}
-        className={btnClassName}
+        className={clsx(btnClassName, selected === 'YES' && 'opacity-75')}
         disabled={disabled}
       >
         {yesLabel ? yesLabel : 'YES'}
@@ -49,7 +49,7 @@ export function YesNoSelector(props: {
         }
         size="xl"
         onClick={() => onSelect('NO')}
-        className={btnClassName}
+        className={clsx(btnClassName, selected === 'NO' && 'opacity-75')}
         disabled={disabled}
       >
         {noLabel ? noLabel : 'NO'}
