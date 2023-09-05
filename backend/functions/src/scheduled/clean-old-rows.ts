@@ -61,7 +61,7 @@ export const cleanoldfeedrows = onRequest(
                    user_id in ($1:list)
            ) as user_feed_rows
             where case
-              when user_id in ($2:list) and rn > 5000 then true
+              when user_id in ($2:list) and rn > 10000 then true
               when user_id not in ($2:list) and rn > 600 then true
               else false
               end

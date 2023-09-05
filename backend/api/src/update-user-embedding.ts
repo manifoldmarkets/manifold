@@ -12,7 +12,7 @@ export const updateUserEmbedding = authEndpoint(async (req, auth) => {
   await updateUserInterestEmbedding(pg, auth.uid)
   const groupSlugs = await getMemberGroupSlugs(auth.uid, pg)
   const contractIds = await getImportantContractsForNewUsers(
-    200,
+    300,
     pg,
     groupSlugs
   )

@@ -31,6 +31,20 @@ export const getUniqueBettorIds = async (
   return res.map((r) => r.user_id as string)
 }
 
+export const getContractsDirect = async (
+  contractIds: string[],
+  pg: SupabaseDirectClient
+) => {
+  if (contractIds.length === 0) {
+    return [] as Contract[]
+  }
+  return await pg.map(
+    `select data from contracts where id in ($1:list)`,
+    [contractIds],
+    (r) => r.data as Contract
+  )
+}
+
 export const getUniqueBettorIdsForAnswer = async (
   contractId: string,
   answerId: string,

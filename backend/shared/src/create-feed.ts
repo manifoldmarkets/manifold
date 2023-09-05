@@ -72,6 +72,23 @@ export const bulkInsertDataToUserFeed = async (
   }
 }
 
+export const createManualTrendingFeedRow = (
+  contracts: Contract[],
+  forUserId: string
+) => {
+  const now = Date.now()
+  return contracts.map((contract) =>
+    convertObjectToSQLRow<any, 'user_feed'>({
+      contractId: contract.id,
+      creatorId: contract.creatorId,
+      userId: forUserId,
+      eventTime: new Date(now).toISOString(),
+      reason: 'similar_interest_vector_to_contract',
+      dataType: 'trending_contract',
+    })
+  )
+}
+
 const userIdsWithFeedRowsMatchingContract = async (
   contractId: string,
   userIds: string[],

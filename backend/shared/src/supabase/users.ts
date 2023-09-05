@@ -10,6 +10,8 @@ import { log } from 'shared/utils'
 import { ITask } from 'pg-promise'
 import { IClient } from 'pg-promise/typescript/pg-subset'
 import { WEEK_MS } from 'common/util/time'
+import { getContractsDirect } from 'shared/supabase/contracts'
+import { createManualTrendingFeedRow } from 'shared/create-feed'
 
 export const getUserFollowerIds = async (
   userId: string,
@@ -100,9 +102,19 @@ export const spiceUpNewUsersFeedBasedOnTheirInterests = async (
         targetContractIds,
       ]
     )
-    log('found relatedFeedItems', relatedFeedItems.length, 'for user', userId)
-
-    return copyOverFeedItems(userId, relatedFeedItems, t)
+    log('found related feed items', relatedFeedItems.length, 'for user', userId)
+    await copyOverFeedItems(userId, relatedFeedItems, t)
+    const foundContractIds = relatedFeedItems.map((r) => r.contract_id)
+    const missingContractIds = targetContractIds.filter(
+      (cid) => !foundContractIds.includes(cid)
+    )
+    const manualContracts = await getContractsDirect(missingContractIds, pg)
+    const manualFeedRows = createManualTrendingFeedRow(
+      manualContracts,
+      userId
+    ) as userFeedRowAndDistance[]
+    log('made manual feed rows', manualFeedRows.length, 'for user', userId)
+    await copyOverFeedItems(userId, manualFeedRows, t)
   })
 }
 
