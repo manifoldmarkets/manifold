@@ -559,7 +559,7 @@ const FLHurricane = createNewsDashboardTab(
       url: 'https://www.independent.co.uk/climate-change/news/tropical-storm-lee-hurricane-forecast-b2405453.html',
     },
     { slug: 'will-tropical-storm-lee-become-a-ma' },
-    {slug: 'will-hurricane-season-of-2023-cause'},
+    { slug: 'will-hurricane-season-of-2023-cause' },
     { slug: 'will-a-hurricane-hit-the-state-of-f' },
     { slug: 'will-a-hurricane-make-landfall-in-l-d39166018a46' },
     { slug: 'will-a-hurricane-make-landfall-in-t-d9549c66acae' },
