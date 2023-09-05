@@ -819,7 +819,6 @@ async function waitForSupabaseContract(contractId: string) {
 
   while (retries > 0) {
     const contract = await fetchContract(contractId)
-    console.log(retries, contract)
     if (contract) return contract
     retries--
     await delay(500) // wait for 500 milliseconds after each try
