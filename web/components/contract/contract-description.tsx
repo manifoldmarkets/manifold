@@ -232,7 +232,11 @@ export function descriptionIsEmpty(contract: Contract) {
   if (typeof description === 'string') {
     return description === ''
   } else if ('content' in description) {
-    return !(description.content && description.content[0].content)
+    return !(
+      description.content &&
+      description.content.length > 0 &&
+      description.content[0].content
+    )
   }
   return true
 }
