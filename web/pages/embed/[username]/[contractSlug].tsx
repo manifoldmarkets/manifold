@@ -57,21 +57,25 @@ export async function getHistoryData(
         })
       ).reverse()
 
-      const createdAfterStartingDate =
-        !afterTime || contract.createdTime > afterTime
-      const points = [
-        {
-          x: createdAfterStartingDate ? contract.createdTime : afterTime,
-          y: createdAfterStartingDate
-            ? contract.initialProbability
-            : fetchedPoints[0].probBefore,
-        },
-        ...fetchedPoints?.map((point) => ({
-          x: point.createdTime,
-          y: point.probAfter,
-        })),
-      ]
-      return points
+      if (fetchedPoints && fetchedPoints.length > 0 && !!fetchedPoints[0]) {
+        const createdAfterStartingDate =
+          !afterTime || contract.createdTime > afterTime
+        const points = [
+          {
+            x: createdAfterStartingDate ? contract.createdTime : afterTime,
+            y: createdAfterStartingDate
+              ? contract.initialProbability
+              : fetchedPoints[0].probBefore,
+          },
+          ...fetchedPoints?.map((point) => ({
+            x: point.createdTime,
+            y: point.probAfter,
+          })),
+        ]
+        return points
+      } else {
+        return null
+      }
     }
 
     default:
@@ -104,8 +108,6 @@ export default function ContractEmbedPage(props: {
   const contract =
     useFirebasePublicContract(props.contract.visibility, props.contract.id) ??
     props.contract
-
-  console.log(props.points)
 
   useEffect(() => {
     if (contract?.id)

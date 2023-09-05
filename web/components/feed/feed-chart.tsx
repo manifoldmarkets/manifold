@@ -22,17 +22,6 @@ export function FeedBinaryChart(props: {
   useEffect(() => {
     getHistoryData(contract, 100, startingDate).then((points) => {
       if (points && points.length > 0 && !!points[0]) {
-        // const createdAfterStartingDate = contract.createdTime > startingDate
-        // const graphedPoints = [
-        //   {
-        //     x: createdAfterStartingDate ? contract.createdTime : startingDate,
-        //     y: createdAfterStartingDate
-        //       ? contract.initialProbability
-        //       : fetchedPoints[0].yBefore,
-        //   },
-        //   ...fetchedPoints?.map((point) => ({ x: point.x, y: point.y })),
-        // ]
-
         setPoints(points)
       }
     })
