@@ -172,7 +172,10 @@ export function FeedContractCard(props: {
         >
           {/* Title is link to contract for open in new tab and a11y */}
           <Link
-            className={clsx('grow items-start', !small && 'sm:text-lg')}
+            className={clsx(
+              'hover:text-primary-700 grow items-start transition-colors',
+              !small && 'sm:text-lg'
+            )}
             href={path}
           >
             <VisibilityIcon contract={contract} /> {contract.question}
