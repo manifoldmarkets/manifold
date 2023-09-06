@@ -45,7 +45,7 @@ export function FeedContractCard(props: {
   trackingPostfix?: string
   item?: FeedTimelineItem
   className?: string
-  /** whether this card is small, to adjust sizing. TODO: replace with container queries */
+  /** whether this card is small, like in card grids.*/
   small?: boolean
   hide?: () => void
   showGraph?: boolean
