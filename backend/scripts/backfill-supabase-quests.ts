@@ -3,7 +3,7 @@ initAdmin()
 import { loadSecretsToEnv } from 'common/secrets'
 import { START_OF_WEEK } from 'shared/complete-quest-internal'
 import { getAllUsers } from 'shared/utils'
-import { getRecentContractsCount } from 'common/supabase/contracts'
+import { getRecentContractIds } from 'common/supabase/contracts'
 import { createSupabaseClient } from 'shared/supabase/init'
 import { setQuestScoreValue } from 'common/supabase/set-scores'
 import { QUEST_DETAILS } from 'common/quest'
@@ -24,11 +24,9 @@ async function backfillSupabaseQuests() {
     await Promise.all(
       users.slice(start, end).map(async (user) => {
         try {
-          const marketsCreatedCount = await getRecentContractsCount(
-            user.id,
-            START_OF_WEEK,
-            db
-          )
+          const marketsCreatedCount = (
+            await getRecentContractIds(user.id, START_OF_WEEK, db)
+          ).length
           if (marketsCreatedCount > 0) {
             await setQuestScoreValue(
               user.id,

@@ -32,7 +32,8 @@ export const onCreateContract = functions
     await completeCalculatedQuestFromTrigger(
       contractCreator,
       'MARKETS_CREATED',
-      eventId
+      eventId,
+      contract.id
     )
 
     const desc = contract.description as JSONContent
