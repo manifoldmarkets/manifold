@@ -92,7 +92,7 @@ export const FeedTimelineItems = (props: {
               item={item}
               key={contracts.map((c) => c.id) + 'feed-timeline-item'}
               moreItems={item.relatedItems}
-              className="bg-canvas-0 border-canvas-0 hover:border-primary-300 w-full overflow-hidden rounded-2xl border drop-shadow-md "
+              className="bg-canvas-0 border-canvas-0  w-full overflow-hidden rounded-2xl border drop-shadow-md "
             >
               <Col className="px-2 pt-3">
                 <ContractsTable contracts={contracts} hideHeader={true} />
@@ -130,7 +130,7 @@ export const FeedTimelineItems = (props: {
             <FeedItemFrame
               item={item}
               key={news.id + 'feed-timeline-item'}
-              className="bg-canvas-0 border-canvas-0 hover:border-primary-300 w-full overflow-hidden rounded-2xl border drop-shadow-md "
+              className="bg-canvas-0 border-canvas-0 w-full overflow-hidden rounded-2xl border drop-shadow-md "
             >
               <NewsArticle
                 author={(news as any)?.author}
