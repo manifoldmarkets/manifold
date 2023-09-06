@@ -21,6 +21,7 @@ export function WarningConfirmationButton(props: {
   size: SizeType
   actionLabel: string
   userOptedOutOfWarning: boolean | undefined
+  inModal: boolean
 }) {
   const {
     amount,
@@ -33,12 +34,13 @@ export function WarningConfirmationButton(props: {
     color,
     actionLabel,
     userOptedOutOfWarning,
+    inModal,
   } = props
 
   const [isBetButtonVisible, setIsBetButtonVisible] = useState(false)
   const { ref: betButtonRef } = useIsVisible(() => setIsBetButtonVisible(true))
   useEffect(() => {
-    if (isBetButtonVisible || !betButtonRef.current) return
+    if (isBetButtonVisible || !betButtonRef.current || inModal) return
     const rect = betButtonRef.current.getBoundingClientRect()
     const buttonBottomPosition = rect.bottom
     const windowHeight = window.innerHeight
