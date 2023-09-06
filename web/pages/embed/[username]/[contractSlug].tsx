@@ -164,7 +164,7 @@ const ContractChart = (props: {
     case 'FREE_RESPONSE':
     case 'MULTIPLE_CHOICE':
       return (
-        <div className="flex h-full flex-col justify-center">
+        <div className=" flex h-full flex-col justify-center">
           <AnswersPanel
             contract={contract}
             maxAnswers={numBars(props.height)}

@@ -99,7 +99,7 @@ export function AnswersPanel(props: {
   const moreCount = answers.length - answersToShow.length
 
   return (
-    <Col className="gap-3">
+    <Col className="mx-[2px] gap-3">
       {/* Note: Answers can be length 1 if it is "Other".
           In that case, we'll wait until another answer is added before showing any answers.
       */}
