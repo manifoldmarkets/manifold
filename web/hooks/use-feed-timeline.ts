@@ -11,8 +11,10 @@ import { Row, run } from 'common/supabase/utils'
 import { db } from 'web/lib/supabase/db'
 import {
   countBy,
+  difference,
   first,
   groupBy,
+  intersection,
   minBy,
   orderBy,
   range,
@@ -493,13 +495,39 @@ function createFeedTimelineItems(
 
 const groupItemsBySimilarQuestions = (items: FeedTimelineItem[]) => {
   const groupedItems: FeedTimelineItem[] = []
+  const wordsToFilter = ['will', '?', 'by', 'the']
+  const cleanQuestion = (question: string | undefined) =>
+    (question ?? '')
+      .split(' ')
+      .filter((word) => !wordsToFilter.includes(word.toLowerCase()))
+      .join(' ')
+
+  const compareSlugs = (s1: string[], s2: string[]) => {
+    const sharedGroups = intersection(s1, s2).length
+
+    const uniqueToS1 = difference(s1, s2).length
+    const uniqueToS2 = difference(s2, s1).length
+
+    const totalUnique = uniqueToS1 + uniqueToS2
+    const totalGroupSlugs = sharedGroups + totalUnique
+
+    if (totalGroupSlugs === 0) return 0
+    // We could subtract the totalUniques if we're grouping too many dissimilar contracts
+    return sharedGroups / (totalGroupSlugs * 5)
+  }
+
   for (const item of items) {
     const similarItem = groupedItems.find(
       (i2) =>
         compareTwoStrings(
-          item.contract?.question ?? '',
-          i2.contract?.question ?? ''
-        ) > 0.5
+          cleanQuestion(item.contract?.question),
+          cleanQuestion(i2.contract?.question)
+        ) +
+          compareSlugs(
+            item.contract?.groupSlugs ?? [],
+            i2.contract?.groupSlugs ?? []
+          ) >
+        0.5
     )
 
     if (similarItem && item.contract) {
