@@ -287,7 +287,9 @@ function ContractSmolView(props: {
           />
           <Col className="absolute top-12 bottom-0 left-0 right-0">
             <Col className="mx-auto my-auto text-center">
-              <div className="text-3xl">{formatMoney(contract.bountyLeft)}</div>
+              <div className="text-ink-1000 text-3xl">
+                {formatMoney(contract.bountyLeft)}
+              </div>
               <div className="text-ink-500">bounty</div>
             </Col>
           </Col>
