@@ -65,7 +65,7 @@ export default function StylePage() {
       />
       <Subtitle>Other random stuff</Subtitle>
       <Rating />
-      <AlertBox title="Alert box" children="this is a warning message!" />
+      <AlertBox title="Alert box">this is a warning message!</AlertBox>
       <AlertBox title="Alert box with no text" />
     </Page>
   )
