@@ -9,9 +9,9 @@ import { BubbleMenu } from '@tiptap/react'
 import clsx from 'clsx'
 import { getUrl } from 'common/util/parse'
 import { useState } from 'react'
-import BoldIcon from 'web/lib/icons/bold-icon'
-import ItalicIcon from 'web/lib/icons/italic-icon'
-import TypeIcon from 'web/lib/icons/type-icon'
+import BoldIcon from 'web/lib/icons/bold-icon.svg'
+import ItalicIcon from 'web/lib/icons/italic-icon.svg'
+import TypeIcon from 'web/lib/icons/type-icon.svg'
 
 // see https://tiptap.dev/guide/menus
 

@@ -27,7 +27,7 @@ import { NotificationsIcon } from 'web/components/notifications-icon'
 import { DarkModeContext, useIsDarkMode } from 'web/hooks/dark-mode-context'
 import { useUser } from 'web/hooks/use-user'
 import { firebaseLogin, firebaseLogout } from 'web/lib/firebase/users'
-import TrophyIcon from 'web/lib/icons/trophy-icon'
+import TrophyIcon from 'web/lib/icons/trophy-icon.svg'
 import { withTracking } from 'web/lib/service/analytics'
 import { MobileAppsQRCodeDialog } from '../buttons/mobile-apps-qr-code-button'
 import { SidebarSignUpButton } from '../buttons/sign-up-button'
@@ -35,7 +35,7 @@ import { ManifoldLogo } from './manifold-logo'
 import { ProfileSummary } from './profile-summary'
 import { SearchButton } from './search-button'
 import { SidebarItem } from './sidebar-item'
-import SquaresIcon from 'web/lib/icons/squares-icon'
+import SquaresIcon from 'web/lib/icons/squares-icon.svg'
 
 export default function Sidebar(props: {
   className?: string

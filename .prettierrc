@@ -13,6 +13,12 @@
         "keywordCase": "lower",
         "logicalOperatorNewline": "before"
       }
+    },
+    {
+      "files": "*.svg",
+      "options": {
+        "parser": "html"
+      }
     }
   ]
 }

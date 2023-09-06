@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import TriangleDownFillIcon from 'web/lib/icons/triangle-down-fill-icon'
+import TriangleDownFillIcon from 'web/lib/icons/triangle-down-fill-icon.svg'
 import { Row } from '../layout/row'
 import { formatMoney } from 'common/util/format'
 

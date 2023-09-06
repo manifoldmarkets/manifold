@@ -42,7 +42,7 @@ import { postMessageToNative } from 'web/components/native-message-listener'
 import { UserWatchedContractsButton } from 'web/components/notifications/watched-markets'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
-import TrophyIcon from 'web/lib/icons/trophy-icon'
+import TrophyIcon from 'web/lib/icons/trophy-icon.svg'
 
 const emailsEnabled: Array<notification_preference> = [
   'all_comments_on_watched_markets',

@@ -12,7 +12,7 @@ import { BadgeCheckIcon } from '@heroicons/react/outline'
 import { Row } from '../layout/row'
 import { Avatar } from './avatar'
 import { DAY_MS } from 'common/util/time'
-import ScalesIcon from 'web/lib/icons/scales-icon'
+import ScalesIcon from 'web/lib/icons/scales-icon.svg'
 import { linkClass } from './site-link'
 
 export const isFresh = (createdTime: number) =>

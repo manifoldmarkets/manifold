@@ -23,7 +23,7 @@ import { formatMoney } from 'common/util/format'
 import { Linkify } from 'web/components/widgets/linkify'
 import { ExpandingInput } from 'web/components/widgets/expanding-input'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
-import SquaresIcon from 'web/lib/icons/squares-icon'
+import SquaresIcon from 'web/lib/icons/squares-icon.svg'
 import { SEO } from 'web/components/SEO'
 import { useCanSendMana } from 'web/hooks/use-can-send-mana'
 

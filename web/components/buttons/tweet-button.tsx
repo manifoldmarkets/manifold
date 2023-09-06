@@ -3,7 +3,7 @@ import clsx from 'clsx'
 import { Contract } from 'common/contract'
 import { formatMoneyNumber, formatPercent } from 'common/util/format'
 import { getShareUrl } from 'common/util/share'
-import TwitterLogo from 'web/lib/icons/twitter-logo'
+import TwitterLogo from 'web/lib/icons/twitter-logo.svg'
 import { trackCallback } from 'web/lib/service/analytics'
 import { buttonClass } from './button'
 
