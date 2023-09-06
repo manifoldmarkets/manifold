@@ -103,7 +103,10 @@ const DefaultResults = (props: { recentMarkets: Contract[] }) => {
   const { recentMarkets } = props
   return (
     <>
+      <GroupResults groups={[]} />
+      <UserResults users={[]} />
       <MarketResults markets={recentMarkets.slice(0, 7)} />
+
       <div className="mx-2 my-2 text-xs">
         <SparklesIcon className="text-primary-500 mr-1 inline h-4 w-4 align-text-bottom" />
         Start with <Key>%</Key> for questions, <Key>@</Key> for users, or{' '}
@@ -330,14 +333,17 @@ const MarketResult = (props: { market: Contract }) => {
 }
 
 const UserResults = (props: { users: UserSearchResult[]; search?: string }) => {
-  if (!props.users.length) return null
+  const title = (
+    <SectionTitle
+      link={`/users?search=${encodeURIComponent(props.search ?? '')}`}
+    >
+      Users
+    </SectionTitle>
+  )
+  if (!props.users.length) return title
   return (
     <>
-      <SectionTitle
-        link={`/users?search=${encodeURIComponent(props.search ?? '')}`}
-      >
-        Users
-      </SectionTitle>
+      {title}
       {props.users.map(({ id, name, username, avatarUrl }) => (
         <ResultOption key={id} value={{ id, slug: `/${username}` }}>
           <div className="flex items-center gap-2">
@@ -365,12 +371,16 @@ const GroupResults = (props: {
   const me = useUser()
   const myGroupIds = useMemberGroupIds(me?.id) ?? []
   const { search } = props
-  if (!props.groups.length) return null
+
+  const title = (
+    <SectionTitle link={`/groups?search=${encodeURIComponent(search ?? '')}`}>
+      Categories
+    </SectionTitle>
+  )
+  if (!props.groups.length) return title
   return (
     <>
-      <SectionTitle link={`/groups?search=${encodeURIComponent(search ?? '')}`}>
-        Categories
-      </SectionTitle>
+      {title}
       {props.groups.map((group) => (
         <ResultOption
           key={group.id}
