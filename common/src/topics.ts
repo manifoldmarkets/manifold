@@ -31,6 +31,7 @@ export const TOPICS_TO_SUBTOPICS: { [key: string]: string[] } = {
     '⚽ Soccer',
     '♟️ Chess',
     '🏎️ F1',
+    '🎾 Tennis',
   ],
 
   '🍿 Media': [
@@ -107,6 +108,7 @@ export const TOPICS_TO_GROUP_ID: { [key: string]: string } = {
   'Sex and love': '3syjPCC7PxE5KurTiTT3',
   'Personal Development': 'izQp87CKagOVJp9Olm1p',
   Brazil: 'ZQt0sCK1Hxn0HVJhH108',
+  Tennis: '1mvN9vIVIopcWiAsXhzp',
 }
 export const cleanTopic = (topic: string) =>
   topic
