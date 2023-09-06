@@ -814,7 +814,7 @@ async function fetchContract(contractId: string) {
 }
 
 async function waitForSupabaseContract(contractId: string) {
-  let retries = 30
+  let retries = 100
 
   const delay = (ms: number) =>
     new Promise((resolve) => setTimeout(resolve, ms))
@@ -823,7 +823,7 @@ async function waitForSupabaseContract(contractId: string) {
     const contract = await fetchContract(contractId)
     if (contract) return contract
     retries--
-    await delay(500) // wait for 500 milliseconds after each try
+    await delay(100) // wait for 100 milliseconds after each try
   }
 
   throw new Error('Contract failed to replicate to supabase')
