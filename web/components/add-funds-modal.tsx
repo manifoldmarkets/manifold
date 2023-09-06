@@ -116,11 +116,9 @@ export function BuyManaTab(props: { onClose: () => void }) {
       </div>
 
       {pastLimit && (
-        <AlertBox
-          title="Purchase limit"
-          text="You have reached your daily purchase limit. Please try again tomorrow."
-          className="my-4"
-        />
+        <AlertBox title="Purchase limit" className="my-4">
+          You have reached your daily purchase limit. Please try again tomorrow.
+        </AlertBox>
       )}
 
       <div className="mt-2 flex gap-2">

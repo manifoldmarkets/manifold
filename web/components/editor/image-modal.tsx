@@ -102,10 +102,11 @@ export function DreamCard(props: {
 
   if (!API_KEY) {
     return (
-      <AlertBox
-        title="Missing API Key"
-        text="An API key from https://beta.dreamstudio.ai/ is needed to dream; add it to your web/.env.local"
-      />
+      <AlertBox title="Missing API Key">
+        An API key from{' '}
+        <a href="https://beta.dreamstudio.ai/">beta.dreamstudio.ai</a> is needed
+        to dream; add it to your web/.env.local
+      </AlertBox>
     )
   }
 
