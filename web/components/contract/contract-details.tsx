@@ -144,7 +144,7 @@ function EditableCloseDate(props: {
           <Row className="items-stretch gap-2">
             <Input
               type="date"
-              className="shrink-0 sm:w-fit"
+              className="dark:date-range-input-white shrink-0 sm:w-fit"
               onClick={(e) => e.stopPropagation()}
               onChange={(e) => setCloseDate(e.target.value)}
               min={isClient ? dayJsNow.format('YYYY-MM-DD') : undefined}
@@ -153,7 +153,7 @@ function EditableCloseDate(props: {
             />
             <Input
               type="time"
-              className="shrink-0 sm:w-max"
+              className="dark:date-range-input-white shrink-0 sm:w-max"
               onClick={(e) => e.stopPropagation()}
               onChange={(e) => setCloseHoursMinutes(e.target.value)}
               value={closeHoursMinutes}
@@ -199,7 +199,7 @@ function EditableCloseDate(props: {
             : dayJsCloseTime.format('YYYY')}
         </DateTimeTooltip>
         {editable && (
-          <PencilIcon className="h-4 w-4 sm:fill-transparent sm:group-hover:fill-inherit" />
+          <PencilIcon className="sm:group-hover:fill-ink-600 h-4 w-4 sm:fill-transparent" />
         )}
       </Row>
     </>

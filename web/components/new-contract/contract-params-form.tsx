@@ -636,6 +636,7 @@ export function ContractParamsForm(props: {
             <Row className="mt-4 gap-2">
               <Input
                 type={'date'}
+                className="dark:date-range-input-white"
                 onClick={(e) => e.stopPropagation()}
                 onChange={(e) => {
                   setCloseDate(e.target.value)
@@ -650,6 +651,7 @@ export function ContractParamsForm(props: {
               />
               {/*<Input*/}
               {/*  type={'time'}*/}
+              {/* className="dark:date-range-input-white"*/}
               {/*  onClick={(e) => e.stopPropagation()}*/}
               {/*  onChange={(e) => setCloseHoursMinutes(e.target.value)}*/}
               {/*  min={'00:00'}*/}

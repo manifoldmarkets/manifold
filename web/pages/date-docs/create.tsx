@@ -98,6 +98,7 @@ export default function CreateDateDocPage() {
               <div>Birthday</div>
               <Input
                 type={'date'}
+                className="dark:date-range-input-white"
                 onClick={(e) => e.stopPropagation()}
                 onChange={(e) => setBirthday(e.target.value)}
                 min="1900-01-01"
