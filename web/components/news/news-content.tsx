@@ -450,8 +450,11 @@ const UFOs = createNewsDashboardTab(
 
 const Trump = createNewsDashboardTab(
   'Trump',
-  'Trump indicted',
+  'Trump indicted, loses defamation suit',
   [
+    {
+      url: 'https://www.cnbc.com/2023/09/06/trump-suffers-big-loss-in-e-jean-carroll-defamation-case-judge-says-hes-liable.html',
+    },
     {
       url: 'https://www.politico.com/news/2023/09/01/fourteenth-amendment-insurrection-clause-trump-00113790',
     },
@@ -566,8 +569,23 @@ const FLHurricane = createNewsDashboardTab(
   ]
 )
 
+const G20 = createNewsDashboardTab('G20', 'G20 Summit in India (Bharat?)', [
+  {
+    url: 'https://www.cnn.com/2023/09/06/asia/g20-summit-bharat-india-name-row-intl-hnk/index.html',
+  },
+  { slug: 'will-a-bill-to-rename-india-to-bhar' },
+  {
+    url: 'https://www.livemint.com/news/world/russiaukraine-war-and-absence-of-putin-xi-jinping-to-cast-a-shadow-over-g20-summit-11693875726035.html',
+  },
+  { slug: 'will-volodomyr-zelenskyy-attend-the' },
+  { slug: 'will-xi-and-modi-hold-a-bilateral-m' },
+  { slug: 'will-north-korea-launch-any-missile' },
+  { slug: 'will-chinese-premier-li-qiang-hold' },
+])
+
 export const newsContent = [
   Trump,
+  G20,
   FLHurricane,
   Election2024,
   STPSuper,
