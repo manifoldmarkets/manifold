@@ -1,12 +1,6 @@
 <!-- Icon from Bootstrap: https://icons.getbootstrap.com/ -->
 
-<svg
-  xmlns="http://www.w3.org/2000/svg"
-  width="18"
-  height="18"
-  fill="currentColor"
-  viewBox="0 0 18 18"
->
+<svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 18 18">
   <g>
     <path d="M15.24,16.04s-.02,.02-.03,.03c.01,0,.01-.02,.02-.03h.01Z" />
     <path
