@@ -113,7 +113,15 @@ export function ContractParamsForm(props: {
       if (answers.length === 0) setAnswers(defaultAnswers)
       else setAnswers(answers.concat(['']))
     }
-  }, [params?.answers])
+    if (params?.q) setQuestion(params?.q ?? '')
+    if (params?.groupIds) {
+      const getAndSetGroups = async (groupIds: string[]) => {
+        const groups = await Promise.all(groupIds.map((id) => getGroup(id)))
+        setSelectedGroups(filterDefined(groups))
+      }
+      getAndSetGroups(params.groupIds)
+    }
+  }, [params?.answers, params?.q, params?.groupIds])
 
   useEffect(() => {
     if (addAnswersMode === 'DISABLED' && answers.length < 2) {
@@ -131,44 +139,22 @@ export function ContractParamsForm(props: {
     'last-categorized-question' + paramsKey
   )
 
-  useEffect(() => {
-    if (params?.q) setQuestion(params?.q ?? '')
-  }, [params?.q])
-
-  useEffect(() => {
-    if (!params?.groupIds) return
-    const groupIds = params.groupIds
-    const setGroups = async () => {
-      const groups = await Promise.all(groupIds.map((id) => getGroup(id))).then(
-        (groups) => groups.filter((g) => g)
-      )
-      setSelectedGroups(filterDefined(groups))
-    }
-    setGroups()
-  }, [creator.id, params?.groupIds])
-
   const ante = getAnte(outcomeType, numAnswers)
 
-  // If params.closeTime is set, extract out the specified date and time
-  // By default, close the question a week from today
-  const weekFromToday = dayjs().add(7, 'day').format('YYYY-MM-DD')
-  const timeInMs = Number(params?.closeTime ?? 0)
-  const initDate = timeInMs
-    ? dayjs(timeInMs).format('YYYY-MM-DD')
-    : weekFromToday
+  const timeInMs = params?.closeTime ? Number(params.closeTime) : undefined
+  const initDate = (timeInMs ? dayjs(timeInMs) : dayjs().add(7, 'day')).format(
+    'YYYY-MM-DD'
+  )
   const initTime = timeInMs ? dayjs(timeInMs).format('HH:mm') : '23:59'
 
   const [closeDate, setCloseDate] = usePersistentLocalState<undefined | string>(
-    timeInMs ? initDate : undefined,
+    initDate,
     'now-close-date' + paramsKey
   )
 
   const [closeHoursMinutes, setCloseHoursMinutes] = usePersistentLocalState<
     string | undefined
-  >(
-    timeInMs || outcomeType == 'POLL' ? initTime : undefined,
-    'now-close-time' + paramsKey
-  )
+  >(initTime, 'now-close-time' + paramsKey)
 
   const [selectedGroups, setSelectedGroups] = usePersistentLocalState<Group[]>(
     [],
@@ -207,16 +193,16 @@ export function ContractParamsForm(props: {
     '30 days': 30,
     'This year': daysLeftInTheYear,
   }
-
-  const NEVER_IN_DAYS = 30 * 12 * 1000 // ~1000 years
+  const NEVER = 'Never'
   if (outcomeType == 'POLL') {
-    closeDateMap['Never'] = NEVER_IN_DAYS
+    closeDateMap['Never'] = NEVER
   }
   const [neverCloses, setNeverCloses] = useState(false)
 
   useEffect(() => {
     if (outcomeType === 'STONK' || NON_BETTING_OUTCOMES.includes(outcomeType)) {
-      setCloseDateInDays(NEVER_IN_DAYS)
+      setCloseDate(undefined)
+      setCloseHoursMinutes(undefined)
       setNeverCloses(true)
       if (outcomeType == 'STONK') {
         if (editor?.isEmpty) {
@@ -231,9 +217,9 @@ export function ContractParamsForm(props: {
           )
         }
       }
-    } else {
-      setCloseDateInDays(7)
-      setNeverCloses(false)
+    } else if (!closeDate) {
+      setCloseDate(initDate)
+      setCloseHoursMinutes(initTime)
     }
   }, [outcomeType])
 
@@ -284,8 +270,8 @@ export function ContractParamsForm(props: {
     editor?.commands.clearContent(true)
     safeLocalStorage?.removeItem(`text create market`)
     setQuestion('')
-    setCloseDate(initDate)
-    setCloseHoursMinutes(initTime)
+    setCloseDate(undefined)
+    setCloseHoursMinutes(undefined)
     setSelectedGroups([])
     setVisibility((params?.visibility as Visibility) ?? 'public')
     setAnswers(defaultAnswers)
@@ -611,14 +597,19 @@ export function ContractParamsForm(props: {
           </label>
           <Row className={'w-full items-center gap-2'}>
             <ChoicesToggleGroup
-              currentChoice={dayjs(`${closeDate}T23:59`).diff(dayjs(), 'day')}
+              currentChoice={
+                !closeDate
+                  ? NEVER
+                  : dayjs(`${closeDate}T23:59`).diff(dayjs(), 'day')
+              }
               setChoice={(choice) => {
-                if (choice == NEVER_IN_DAYS) {
+                if (choice == NEVER) {
                   setNeverCloses(true)
+                  setCloseDate(undefined)
                 } else {
                   setNeverCloses(false)
+                  setCloseDateInDays(choice as number)
                 }
-                setCloseDateInDays(choice as number)
 
                 if (!closeHoursMinutes) {
                   setCloseHoursMinutes(initTime)

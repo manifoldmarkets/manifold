@@ -18,6 +18,8 @@ import {
   CPMMMultiContract,
   CREATEABLE_OUTCOME_TYPES,
   MAX_QUESTION_LENGTH,
+  NO_CLOSE_TIME_TYPES,
+  OutcomeType,
   VISIBILITIES,
 } from 'common/contract'
 import { getAnte } from 'common/economy'
@@ -91,7 +93,12 @@ export async function createMarketHelper(body: any, auth: AuthedUser) {
 
   if (ante < 1) throw new APIError(400, 'Ante must be at least 1')
 
-  const closeTimestamp = await getCloseTimestamp(closeTime, question, utcOffset)
+  const closeTimestamp = await getCloseTimestamp(
+    closeTime,
+    question,
+    outcomeType,
+    utcOffset
+  )
 
   const contract = await firestore.runTransaction(async (trans) => {
     const userDoc = await trans.get(firestore.collection('users').doc(userId))
@@ -289,14 +296,17 @@ function getDescriptionJson(
 async function getCloseTimestamp(
   closeTime: number | Date | undefined,
   question: string,
+  outcomeType: OutcomeType,
   utcOffset?: number
-): Promise<number> {
+): Promise<number | undefined> {
   return closeTime
     ? typeof closeTime === 'number'
       ? closeTime
       : closeTime.getTime()
+    : NO_CLOSE_TIME_TYPES.includes(outcomeType)
+    ? closeTime
     : (await getCloseDate(question, utcOffset)) ??
-        Date.now() + 7 * 24 * 60 * 60 * 1000
+      Date.now() + 7 * 24 * 60 * 60 * 1000
 }
 
 const getSlug = async (trans: Transaction, question: string) => {

@@ -32,7 +32,7 @@ export function getNewContract(
   description: JSONContent,
   initialProb: number,
   ante: number,
-  closeTime: number,
+  closeTime: number | undefined,
   visibility: Visibility,
 
   // twitch
