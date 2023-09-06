@@ -881,7 +881,8 @@ export const createLikeNotification = async (reaction: Reaction) => {
 }
 
 export const createUniqueBettorBonusNotification = async (
-  contractCreatorId: string,
+  // Creator of contract or answer that was bet on.
+  creatorId: string,
   bettor: User,
   txnId: string,
   contract: Contract,
@@ -890,7 +891,7 @@ export const createUniqueBettorBonusNotification = async (
   idempotencyKey: string,
   bet: Bet
 ) => {
-  const privateUser = await getPrivateUser(contractCreatorId)
+  const privateUser = await getPrivateUser(creatorId)
   if (!privateUser) return
   const { sendToBrowser, sendToEmail } = getNotificationDestinationsForUser(
     privateUser,
@@ -911,7 +912,7 @@ export const createUniqueBettorBonusNotification = async (
 
     const notification: Notification = {
       id: idempotencyKey,
-      userId: contractCreatorId,
+      userId: creatorId,
       reason: 'unique_bettors_on_your_contract',
       createdTime: Date.now(),
       isSeen: false,
@@ -946,7 +947,7 @@ export const createUniqueBettorBonusNotification = async (
 
   if (!sendToEmail) return
   const uniqueBettorsExcludingCreator = uniqueBettorIds.filter(
-    (id) => id !== contractCreatorId
+    (id) => id !== contract.creatorId
   )
   const TOTAL_NEW_BETTORS_TO_REPORT = 5
   // Only send on 5th bettor
