@@ -1,13 +1,11 @@
 import Link from 'next/link'
 import clsx from 'clsx'
-
 import { useUser } from 'web/hooks/use-user'
-import { useIsDarkMode } from 'web/hooks/dark-mode-context'
 import { ENV } from 'common/envs/constants'
+import Logo from 'public/logo.svg'
 
 export function ManifoldLogo(props: { className?: string; twoLine?: boolean }) {
   const { className } = props
-  const isDarkMode = useIsDarkMode()
 
   const user = useUser()
 
@@ -19,12 +17,9 @@ export function ManifoldLogo(props: { className?: string; twoLine?: boolean }) {
         className
       )}
     >
-      <img
-        className="shrink-0 transition-all group-hover:rotate-12"
-        src={isDarkMode ? '/logo-white.svg' : '/logo.svg'}
-        height={40}
-        width={40}
-        alt=""
+      <Logo
+        className="h-10 w-10 shrink-0 stroke-indigo-700 transition-transform group-hover:rotate-12 dark:stroke-white"
+        aria-hidden
       />
       <div
         className={clsx('text-xl font-thin text-indigo-700 dark:text-white')}
