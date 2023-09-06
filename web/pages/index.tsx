@@ -79,10 +79,15 @@ export default function Home() {
             <Col className="max-w-lg gap-2">
               <h1 className="mb-4 text-4xl">Predict the future</h1>
               <h1 className="text-lg">
-                A new way to get news and answers to real-world questions.
+                Play-money markets. Real-world accuracy and impact.
               </h1>
               <h1 className="text-lg">
                 Compete with your friends by betting on literally anything.
+                Winnings go to{' '}
+                <Link href="/charity" className="hover:underline">
+                  charity
+                </Link>
+                .
               </h1>
 
               <Button
@@ -94,9 +99,9 @@ export default function Home() {
                 Play now
               </Button>
 
-              <div className="text-sm text-white">
-                and get{'   '}
-                <span className="relative z-10 font-semibold">
+              <div className="text-md ml-8 ">
+                ...and get{'   '}
+                <span className="z-10 font-semibold">
                   {formatMoney(STARTING_BALANCE)}
                 </span>
                 {'   '}
