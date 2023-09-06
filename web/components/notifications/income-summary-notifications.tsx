@@ -48,7 +48,10 @@ export function combineAndSumIncomeNotifications(
     const groupedNotificationsBySourceTitle = groupBy(
       groupedNotificationsBySourceType[sourceType],
       (notification) => {
-        return notification.sourceTitle ?? notification.sourceContractTitle
+        return (
+          (notification.sourceTitle ?? notification.sourceContractTitle) +
+          (notification.data?.answerText ?? '')
+        )
       }
     )
     for (const sourceTitle in groupedNotificationsBySourceTitle) {
@@ -83,10 +86,16 @@ export function UniqueBettorBonusIncomeNotification(props: {
   const { sourceText } = notification
   const [open, setOpen] = useState(false)
   const data = notification.data as UniqueBettorData
-  const numNewTraders =
+  const relatedNotifications =
     data && 'relatedNotifications' in data
-      ? (data as any).relatedNotifications.length
-      : 1
+      ? (data as any).relatedNotifications
+      : []
+  const numNewTraders =
+    relatedNotifications.length > 0 ? relatedNotifications.length : 1
+  const answerText =
+    relatedNotifications.length > 0
+      ? relatedNotifications[0].data.answerText
+      : undefined
 
   return (
     <NotificationFrame
@@ -116,9 +125,12 @@ export function UniqueBettorBonusIncomeNotification(props: {
       <span className="line-clamp-3">
         <IncomeNotificationLabel notification={notification} /> Bonus for{' '}
         <PrimaryNotificationLink
-          text={sourceText ? `${numNewTraders} new traders` : 'new traders'}
+          text={
+            (sourceText ? `${numNewTraders} new traders` : 'new traders') +
+            (answerText ? ` (${answerText})` : '')
+          }
         />{' '}
-        on <QuestionOrGroupLink notification={notification} />
+        <QuestionOrGroupLink notification={notification} />
       </span>
       <MultiUserNotificationModal
         notification={notification}

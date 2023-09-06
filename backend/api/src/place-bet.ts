@@ -179,6 +179,21 @@ export const placeBetMain = async (
             'Cannot bet until at least two answers are added.'
           )
 
+        let roundedLimitProb = limitProb
+        if (limitProb !== undefined) {
+          const isRounded = floatingEqual(
+            Math.round(limitProb * 100),
+            limitProb * 100
+          )
+          if (!isRounded)
+            throw new APIError(
+              400,
+              'limitProb must be in increments of 0.01 (i.e. whole percentage points)'
+            )
+
+          roundedLimitProb = Math.round(limitProb * 100) / 100
+        }
+
         const { unfilledBets, balanceByUserId } =
           await getUnfilledBetsAndUserBalances(trans, contractDoc)
 
@@ -188,7 +203,7 @@ export const placeBetMain = async (
           answer,
           outcome,
           amount,
-          limitProb,
+          roundedLimitProb,
           unfilledBets,
           balanceByUserId,
           expiresAt

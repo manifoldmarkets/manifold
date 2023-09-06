@@ -145,12 +145,12 @@ const getDesktopNav = (
         name: 'Leagues',
         href: '/leagues',
         icon: TrophyIcon,
-      },
-      {
-        name: 'Categories',
-        icon: SquaresIcon,
-        href: '/groups',
       }
+      // {
+      //   name: 'Categories',
+      //   icon: SquaresIcon,
+      //   href: '/groups',
+      // }
     )
 
   return buildArray(

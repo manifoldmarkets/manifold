@@ -1,8 +1,11 @@
 import { ChevronDownIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
-import { Contract } from 'common/contract'
+import Router from 'next/router'
+import { ArrowRightIcon } from '@heroicons/react/solid'
 import { debounce, isEqual, sample, uniqBy } from 'lodash'
 import { ReactNode, useEffect, useRef, useState } from 'react'
+
+import { Contract } from 'common/contract'
 import { PillButton } from 'web/components/buttons/pill-button'
 import { useEvent } from 'web/hooks/use-event'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
@@ -433,7 +436,7 @@ function SupabaseContractSearchControls(props: {
   const categoryPills = showCategories // eslint-disable-next-line react-hooks/rules-of-hooks
     ? useTrendingGroupsSearchResults(
         query,
-        30,
+        15,
         !!category && category !== 'for-you'
       ).filter(
         (g) =>
@@ -567,6 +570,17 @@ function SupabaseContractSearchControls(props: {
                 {g.name}
               </PillButton>
             )
+          )}
+
+          {!query && (
+            <PillButton
+              key={'pill-all-categories'}
+              selected={false}
+              onSelect={() => Router.push('/groups')}
+            >
+              See all categories{' '}
+              <ArrowRightIcon className="inline-block h-4 w-4" />
+            </PillButton>
           )}
         </Carousel>
       )}
