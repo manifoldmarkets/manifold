@@ -15,9 +15,16 @@ export const useSavedContractMetrics = (contract: Contract) => {
 
   useEffect(() => {
     if (!user?.id) return
-    getUserContractMetrics(user.id, contract.id, db).then((metrics) => {
-      if (metrics.length) setSavedMetrics({ ...savedMetrics, ...metrics[0] })
-    })
+    // Wait a small amount for the bet to replicate to supabase
+    const queryAndSet = async (retries: number) =>
+      setTimeout(() => {
+        getUserContractMetrics(user.id, contract.id, db).then((metrics) => {
+          if (metrics.length)
+            setSavedMetrics({ ...savedMetrics, ...metrics[0] })
+          else if (retries > 0) queryAndSet(retries - 1)
+        })
+      }, 50)
+    queryAndSet(2)
   }, [user?.id, contract.id, contract.lastBetTime])
 
   return savedMetrics
