@@ -46,8 +46,8 @@ export async function getHistoryData(
     case 'PSEUDO_NUMERIC':
     case 'STONK': {
       // get the last 50k bets, then reverse them (so they're chronological)
-      const fetchedPoints = (
-        await getBetFields(['createdTime', 'probAfter', 'probBefore'], {
+      const points = (
+        await getBetFields(['createdTime', 'probBefore', 'probAfter'], {
           contractId: contract.id,
           filterRedemptions: true,
           filterChallenges: true,
@@ -55,27 +55,14 @@ export async function getHistoryData(
           order: 'desc',
           afterTime,
         })
-      ).reverse()
-
-      if (fetchedPoints && fetchedPoints.length > 0 && !!fetchedPoints[0]) {
-        const createdAfterStartingDate =
-          !afterTime || contract.createdTime > afterTime
-        const points = [
-          {
-            x: createdAfterStartingDate ? contract.createdTime : afterTime,
-            y: createdAfterStartingDate
-              ? contract.initialProbability
-              : fetchedPoints[0].probBefore,
-          },
-          ...fetchedPoints?.map((point) => ({
-            x: point.createdTime,
-            y: point.probAfter,
-          })),
-        ]
-        return points
-      } else {
-        return null
-      }
+      )
+        .map((bet) => ({
+          x: bet.createdTime,
+          y: bet.probAfter,
+          yBefore: bet.probBefore,
+        }))
+        .reverse()
+      return points
     }
 
     default:
@@ -91,9 +78,13 @@ export async function getStaticProps(props: {
   if (contract == null) {
     return { notFound: true, revalidate: 60 }
   }
-  const points = await getHistoryData(contract)
+  const rawPoints = await getHistoryData(contract)
+  const filteredPoints = rawPoints?.map((point) => {
+    x: point.x
+    y: point.y
+  })
   return {
-    props: { contract, points },
+    props: { contract, filteredPoints },
   }
 }
 
