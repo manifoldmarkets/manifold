@@ -120,10 +120,10 @@ export function FeedContractCard(props: {
       className={clsx(
         className,
         'relative rounded-xl',
-        'bg-canvas-0 cursor-pointer ',
-        'border-canvas-0 hover:border-primary-300 focus:border-primary-300 border drop-shadow-md transition-colors',
+        'cursor-pointer ',
+        'border-canvas-0 hover:border-primary-300 focus:border-primary-300 border transition-colors',
         'flex w-full flex-col gap-0.5 px-4',
-        !small && 'sm:px-6'
+        small ? 'bg-canvas-50' : 'bg-canvas-0 drop-shadow-md sm:px-6'
       )}
       onClick={(e) => {
         trackClick()
@@ -171,7 +171,10 @@ export function FeedContractCard(props: {
           )}
         >
           {/* Title is link to contract for open in new tab and a11y */}
-          <Link className="grow items-start text-lg" href={path}>
+          <Link
+            className={clsx('grow items-start', !small && 'sm:text-lg')}
+            href={path}
+          >
             <VisibilityIcon contract={contract} /> {contract.question}
           </Link>
           <Row
