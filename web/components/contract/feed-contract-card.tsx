@@ -107,12 +107,13 @@ export function FeedContractCard(props: {
       isPromoted: !!promotedData,
     })
 
-  const nonTextDescription =
-    typeof contract.description !== 'string' &&
-    contract.description.content &&
-    contract.description.content.some(
-      (item) => item.type === 'image' || item.type === 'embed'
-    )
+  const nonTextDescription = small
+    ? false // don't show non-text description on small cards
+    : typeof contract.description !== 'string' &&
+      contract.description.content &&
+      contract.description.content.some(
+        (item) => item.type === 'image' || item.type === 'embed'
+      )
 
   return (
     <ClickFrame
@@ -223,6 +224,7 @@ export function FeedContractCard(props: {
         )}
 
         {!descriptionIsEmpty(contract) &&
+          !small &&
           (item?.dataType == 'new_contract' || nonTextDescription) && (
             <FeedContractCardDescription
               contract={contract}
