@@ -60,6 +60,7 @@ export function GroupAboutSection(props: {
                 groupName={group.name}
               />
             }
+            className="bg-canvas-0 rounded-md px-4 py-2"
           />
         )}
       </Col>
