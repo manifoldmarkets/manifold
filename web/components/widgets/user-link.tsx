@@ -6,14 +6,15 @@ import {
   VERIFIED_USERNAMES,
   CORE_USERNAMES,
 } from 'common/envs/constants'
-import { ShieldCheckIcon, SparklesIcon } from '@heroicons/react/solid'
+import { SparklesIcon } from '@heroicons/react/solid'
 import { Tooltip } from './tooltip'
-import { BadgeCheckIcon } from '@heroicons/react/outline'
+import { BadgeCheckIcon, ShieldCheckIcon } from '@heroicons/react/outline'
 import { Row } from '../layout/row'
 import { Avatar } from './avatar'
 import { DAY_MS } from 'common/util/time'
-import ScalesIcon from 'web/lib/icons/scales-icon'
+import ScalesIcon from 'web/lib/icons/scales-icon.svg'
 import { linkClass } from './site-link'
+import Foldy from '/public/logo.svg'
 
 export const isFresh = (createdTime: number) =>
   createdTime > Date.now() - DAY_MS * 14
@@ -163,9 +164,9 @@ export function UserBadge(props: {
 function CoreBadge() {
   return (
     <Tooltip text="I work on Manifold!" placement="right">
-      <ShieldCheckIcon
-        className="text-primary-700 h-4 w-4"
-        aria-hidden="true"
+      <Foldy
+        className="stoke-indigo-700 h-4 w-4 stroke-1 hover:rotate-12 dark:stroke-indigo-300"
+        aria-hidden
       />
     </Tooltip>
   )
@@ -175,7 +176,10 @@ function CoreBadge() {
 function ModBadge() {
   return (
     <Tooltip text="Trustworthy. ish." placement="right">
-      <BadgeCheckIcon className="text-primary-700 h-4 w-4" aria-hidden="true" />
+      <ShieldCheckIcon
+        className="text-primary-700 h-4 w-4"
+        aria-hidden="true"
+      />
     </Tooltip>
   )
 }

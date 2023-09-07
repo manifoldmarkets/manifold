@@ -4,7 +4,7 @@ import { getHistoryData } from 'web/pages/embed/[username]/[contractSlug]'
 import { useViewScale } from '../charts/generic-charts'
 import { BinaryChart } from '../contract/contract-overview'
 import { DAY_MS } from 'common/util/time'
-import PlaceholderGraph from 'web/lib/icons/placeholder-graph'
+import PlaceholderGraph from 'web/lib/icons/placeholder-graph.svg'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 
 export function FeedBinaryChart(props: {

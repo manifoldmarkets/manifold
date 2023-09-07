@@ -2,7 +2,7 @@ import toast from 'react-hot-toast'
 
 import { BinaryContract } from 'common/contract'
 import { track } from 'web/lib/service/analytics'
-import ArrowUpSquareIcon from '../../lib/icons/arrow-up-square-icon'
+import ArrowUpSquareIcon from 'web/lib/icons/arrow-up-square-icon.svg'
 import { getIsNative } from '../../lib/native/is-native'
 import { postMessageToNative } from '../native-message-listener'
 import { NativeShareData } from 'common/native-share-data'

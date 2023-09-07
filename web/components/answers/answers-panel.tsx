@@ -201,6 +201,8 @@ function Answer(props: {
         ) : (
           <AnswerLabel
             text={answer.text}
+            index={'index' in answer ? answer.index : undefined}
+            createdTime={answer.createdTime}
             creator={
               addAnswersMode === 'ANYONE' ? answerCreator ?? false : undefined
             }

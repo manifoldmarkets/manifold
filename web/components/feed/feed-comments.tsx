@@ -36,9 +36,8 @@ import { useIsVisible } from 'web/hooks/use-is-visible'
 import { isBlocked, usePrivateUser, useUser } from 'web/hooks/use-user'
 import { createCommentOnContract, hideComment } from 'web/lib/firebase/api'
 import { firebaseLogin, User } from 'web/lib/firebase/users'
-import LinkIcon from 'web/lib/icons/link-icon'
-import TriangleDownFillIcon from 'web/lib/icons/triangle-down-fill-icon'
-import TriangleFillIcon from 'web/lib/icons/triangle-fill-icon'
+import TriangleDownFillIcon from 'web/lib/icons/triangle-down-fill-icon.svg'
+import TriangleFillIcon from 'web/lib/icons/triangle-fill-icon.svg'
 import { track } from 'web/lib/service/analytics'
 import { scrollIntoViewCentered } from 'web/lib/util/scroll'
 import { Button, IconButton } from '../buttons/button'
@@ -51,6 +50,7 @@ import { InfoTooltip } from '../widgets/info-tooltip'
 import { Tooltip } from '../widgets/tooltip'
 import { isAdminId } from 'common/envs/constants'
 import { PaymentsModal } from 'web/pages/payments'
+import { FiLink } from 'react-icons/fi'
 import { GiPayMoney } from 'react-icons/gi'
 
 export type ReplyToUserInfo = { id: string; username: string }
@@ -378,7 +378,7 @@ export function DotMenu(props: {
         Items={buildArray(
           {
             name: 'Copy link',
-            icon: <LinkIcon className="h-5 w-5" />,
+            icon: <FiLink className="h-5 w-5" />,
             onClick: () => {
               copyLinkToComment(
                 contract.creatorUsername,

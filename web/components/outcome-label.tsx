@@ -126,6 +126,8 @@ export function MultiOutcomeLabel(props: {
   return (
     <AnswerLabel
       text={chosen ? chosen.text : `Answer #${resolution}`}
+      index={undefined}
+      createdTime={chosen?.createdTime ?? 0}
       truncate={truncate}
       className={answerClassName}
     />

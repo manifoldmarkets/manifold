@@ -1,4 +1,3 @@
-import * as admin from 'firebase-admin'
 import { z } from 'zod'
 
 import { isAdminId } from 'common/envs/constants'
@@ -18,10 +17,6 @@ export const updatememberrole = authEndpoint(async (req, auth) => {
   const db = createSupabaseDirectClient()
 
   return db.tx(async (tx) => {
-    const requesterMembership = await tx.oneOrNone(
-      'select * from group_members where member_id = $1 and group_id = $2',
-      [auth.uid, groupId]
-    )
     const affectedMember = await tx.oneOrNone(
       'select * from group_members where member_id = $1 and group_id = $2',
       [memberId, groupId]
@@ -43,20 +38,23 @@ export const updatememberrole = authEndpoint(async (req, auth) => {
 
     const isAdminRequest = isAdminId(auth.uid)
 
-    if (!requesterMembership) {
-      if (!isAdminRequest) {
+    if (!isAdminRequest) {
+      const requesterMembership = await tx.oneOrNone(
+        'select role from group_members where member_id = $1 and group_id = $2',
+        [auth.uid, groupId]
+      )
+      const requesterRole = requesterMembership?.role
+
+      if (
+        requesterRole !== 'admin' &&
+        (!requesterRole || auth.uid !== affectedMember.member_id)
+      ) {
         throw new APIError(403, 'User does not have permission to change roles')
       }
-    } else {
-      if (
-        requesterMembership.role !== 'admin' &&
-        auth.uid !== affectedMember.member_id
-      )
-        throw new APIError(403, 'User does not have permission to change roles')
-    }
 
-    if (auth.uid === affectedMember.member_id && role !== 'member')
-      throw new APIError(403, 'You can only change your role to a lower role')
+      if (auth.uid === affectedMember.member_id && role !== 'member')
+        throw new APIError(403, 'You can only change your role to a lower role')
+    }
 
     const ret = await tx.one(
       `update group_members

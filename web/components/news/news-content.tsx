@@ -450,20 +450,20 @@ const UFOs = createNewsDashboardTab(
 
 const Trump = createNewsDashboardTab(
   'Trump',
-  'Trump indicted, loses defamation suit',
+  'Trump indicted',
   [
+    { slug: 'when-will-trump-be-imprisoned' },
     {
-      url: 'https://www.cnbc.com/2023/09/06/trump-suffers-big-loss-in-e-jean-carroll-defamation-case-judge-says-hes-liable.html',
+      url: 'https://www.reuters.com/world/us/trump-may-seek-removal-georgia-election-subversion-case-us-court-filing-2023-09-07/',
     },
+    { slug: 'will-any-state-disqualify-trump-fro' },
     {
       url: 'https://www.politico.com/news/2023/09/01/fourteenth-amendment-insurrection-clause-trump-00113790',
     },
-    { slug: 'will-any-state-disqualify-trump-fro' },
     { slug: 'will-donald-trump-be-convicted-of-a-99e01f724b3f' },
     {
       url: 'https://www.nbcnews.com/politics/donald-trump/federal-judge-set-trump-trial-date-election-interference-case-rcna101669',
     },
-    { slug: 'when-will-trump-be-imprisoned' },
 
     { slug: 'will-donald-trump-be-the-republican' },
     { slug: 'will-a-trump-mugshot-be-available-b' },
@@ -556,11 +556,12 @@ const PlaneCrash = createNewsDashboardTab(
 
 const FLHurricane = createNewsDashboardTab(
   'Gulf Hurricane',
-  'Tropical Storm Lee forms',
+  'Hurricane Lee stengthens',
   [
     {
-      url: 'https://www.independent.co.uk/climate-change/news/tropical-storm-lee-hurricane-forecast-b2405453.html',
+      url: 'https://www.npr.org/2023/09/07/1198147021/hurricane-lee-forecast-category-5-storm',
     },
+    { slug: 'will-storm-lee-develop-into-a-categ' },
     { slug: 'will-tropical-storm-lee-become-a-ma' },
     { slug: 'will-hurricane-season-of-2023-cause' },
     { slug: 'will-a-hurricane-hit-the-state-of-f' },
@@ -575,7 +576,7 @@ const G20 = createNewsDashboardTab('G20', 'G20 Summit in India (Bharat?)', [
   },
   { slug: 'will-a-bill-to-rename-india-to-bhar' },
   {
-    url: 'https://www.livemint.com/news/world/russiaukraine-war-and-absence-of-putin-xi-jinping-to-cast-a-shadow-over-g20-summit-11693875726035.html',
+    url: 'https://www.reuters.com/markets/emerging/biden-doubles-down-emerging-markets-xi-snubs-g20-2023-09-07/',
   },
   { slug: 'will-volodomyr-zelenskyy-attend-the' },
   { slug: 'will-xi-and-modi-hold-a-bilateral-m' },

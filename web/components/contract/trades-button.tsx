@@ -57,14 +57,15 @@ export function TradesButton(props: { contract: Contract }) {
           <span className="font-bold">{contract.question}</span>
           {isPoll && <span> voters</span>}
         </div>
-        <div className={clsx(SCROLLABLE_MODAL_CLASS, 'scrollbar-hide')}>
-          {/*In case we need it:*/}
-          {/*<span className={'text-ink-500 text-xs'}>*/}
-          {/*  Currently held positions may not equal total traders*/}
-          {/*</span>*/}
-          {isPoll && <VotesModalContent contract={contract} />}
-          {!isPoll && <BetsModalContent contract={contract} />}
-        </div>
+        {modalOpen && (
+          <div className={clsx(SCROLLABLE_MODAL_CLASS, 'scrollbar-hide')}>
+            {isPoll ? (
+              <VotesModalContent contract={contract} />
+            ) : (
+              <BetsModalContent contract={contract} />
+            )}
+          </div>
+        )}
       </Modal>
     </button>
   )

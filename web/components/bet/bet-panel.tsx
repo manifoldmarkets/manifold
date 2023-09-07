@@ -52,6 +52,7 @@ export function BuyPanel(props: {
     | CPMMMultiContract
   multiProps?: { answers: Answer[]; answerToBuy: Answer }
   user: User | null | undefined
+  inModal: boolean
   onBuySuccess?: () => void
   singularView?: 'YES' | 'NO' | 'LIMIT'
   initialOutcome?: binaryOutcomes | 'LIMIT'
@@ -65,6 +66,7 @@ export function BuyPanel(props: {
     singularView,
     initialOutcome,
     location = 'bet panel',
+    inModal,
   } = props
 
   const isCpmmMulti = contract.mechanism === 'cpmm-multi-1'
@@ -280,7 +282,6 @@ export function BuyPanel(props: {
           </Button>
         )}
       </Row>
-
       <Col
         className={clsx(
           !singularView
@@ -401,6 +402,7 @@ export function BuyPanel(props: {
                   )} or ${formatOutcomeLabel(contract, 'NO')}`
                 : 'Bet'
             }
+            inModal={inModal}
           />
         ) : (
           <Button
@@ -412,7 +414,6 @@ export function BuyPanel(props: {
           </Button>
         )}
       </Col>
-
       <Col className={clsx(option !== 'LIMIT' && 'hidden')}>
         <LimitOrderPanel
           className={clsx(
@@ -432,7 +433,6 @@ export function BuyPanel(props: {
           bets={unfilledBetsMatchingAnswer}
         />
       </Col>
-
       {/* Stonks don't allow limit orders but users may have them from before the conversion*/}
       {isStonk && unfilledBets.length > 0 && (
         <YourOrders

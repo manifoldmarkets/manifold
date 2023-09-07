@@ -56,7 +56,7 @@ import {
 } from 'web/hooks/use-user'
 import { useDiscoverUsers } from 'web/hooks/use-users'
 import { User, getUserByUsername } from 'web/lib/firebase/users'
-import TrophyIcon from 'web/lib/icons/trophy-icon'
+import TrophyIcon from 'web/lib/icons/trophy-icon.svg'
 import { db } from 'web/lib/supabase/db'
 import { getPostsByUser } from 'web/lib/supabase/post'
 import { getUserRating } from 'web/lib/supabase/reviews'

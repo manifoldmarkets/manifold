@@ -35,6 +35,7 @@ export function BetDialog(props: {
           initialOutcome={initialOutcome}
           onBuySuccess={() => setTimeout(() => setOpen(false), 500)}
           location={trackingLocation}
+          inModal={true}
         />
       </Col>
     </Modal>

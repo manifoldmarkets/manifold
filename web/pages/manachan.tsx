@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import Image from 'next/image'
-import TwitterLogo from 'web/lib/icons/twitter-logo'
+import TwitterLogo from 'web/lib/icons/twitter-logo.svg'
 
 import { useUser } from 'web/hooks/use-user'
 import { firebaseLogin } from 'web/lib/firebase/users'

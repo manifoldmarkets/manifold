@@ -14,7 +14,7 @@ export function DuplicateContractButton(props: { contract: Contract }) {
   return (
     <Link
       className={clsx(
-        buttonClass('sm', 'override'),
+        buttonClass('sm', 'none'),
         'hover:text-ink-0 gap-1 border-2 border-violet-400 text-violet-400 hover:bg-violet-400'
       )}
       href={href}

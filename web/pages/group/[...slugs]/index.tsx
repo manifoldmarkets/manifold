@@ -210,6 +210,7 @@ export function GroupPageContent(props: { groupParams?: GroupParams }) {
     setDefaultMemberTab(MEMBER_INVITE_INDEX)
     setOpenMemberModal(true)
   }
+
   const groupUrl = `https://${ENV_CONFIG.domain}${groupPath(group.slug)}`
   return (
     <>
@@ -264,7 +265,6 @@ export function GroupPageContent(props: { groupParams?: GroupParams }) {
                     group={group}
                     isMember={!!userRole}
                     user={user}
-                    className={'-mr-2'}
                   />
                 )}
                 {!isMobile && (

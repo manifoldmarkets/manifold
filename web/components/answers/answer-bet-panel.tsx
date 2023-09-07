@@ -181,6 +181,7 @@ export function AnswerBetPanel(props: {
           color={'indigo'}
           actionLabel="Buy"
           userOptedOutOfWarning={user.optOutBetWarnings}
+          inModal={true}
         />
       ) : (
         <BetSignUpPrompt />
@@ -240,6 +241,7 @@ export function AnswerCpmmBetPanel(props: {
         // singularView={outcome}
         onBuySuccess={() => setTimeout(closePanel, 500)}
         location={'contract page answer'}
+        inModal={true}
       />
     </Col>
   )
