@@ -116,7 +116,7 @@ export const BinaryOverview = (props: {
 
   const [showZoomer, setShowZoomer] = useState(false)
 
-  const { viewScale, currentTimePeriod, setTimePeriod, maxRange } =
+  const { viewScale, currentTimePeriod, setTimePeriod, start, maxRange } =
     useTimePicker(contract)
 
   return (
@@ -139,6 +139,7 @@ export const BinaryOverview = (props: {
         betPoints={betPoints}
         contract={contract}
         viewScale={viewScale}
+        controlledStart={start}
       />
 
       {tradingAllowed(contract) && (
