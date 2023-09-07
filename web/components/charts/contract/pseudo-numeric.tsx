@@ -65,7 +65,6 @@ export const PseudoNumericContractChart = (props: {
   viewScaleProps: viewScale
   showZoomer?: boolean
   controlledStart?: number
-  color?: string
   onMouseOver?: (p: NumericPoint | undefined) => void
 }) => {
   const {
@@ -75,7 +74,6 @@ export const PseudoNumericContractChart = (props: {
     viewScaleProps,
     showZoomer,
     controlledStart,
-    color,
     onMouseOver,
   } = props
   const { min, max, isLogScale } = contract
@@ -119,7 +117,7 @@ export const PseudoNumericContractChart = (props: {
       data={data}
       onMouseOver={onMouseOver}
       Tooltip={PseudoNumericChartTooltip}
-      color={color ?? NUMERIC_GRAPH_COLOR}
+      color={NUMERIC_GRAPH_COLOR}
     />
   )
 }

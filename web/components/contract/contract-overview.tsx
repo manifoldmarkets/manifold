@@ -168,7 +168,6 @@ export function BinaryChart(props: {
     className,
     controlledStart,
     size = 'md',
-    color,
   } = props
 
   return (
@@ -190,7 +189,6 @@ export function BinaryChart(props: {
           percentBounds={percentBounds}
           contract={contract}
           showZoomer={showZoomer}
-          color={color}
         />
       )}
     </SizedContainer>

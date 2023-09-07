@@ -51,7 +51,6 @@ export const BinaryContractChart = (props: {
   viewScaleProps: viewScale
   controlledStart?: number
   percentBounds?: { max?: number; min?: number }
-  color?: string
   onMouseOver?: (p: BinaryPoint | undefined) => void
   showZoomer?: boolean
 }) => {
@@ -63,7 +62,6 @@ export const BinaryContractChart = (props: {
     controlledStart,
     percentBounds,
     onMouseOver,
-    color,
     betPoints,
     showZoomer,
   } = props
@@ -94,7 +92,7 @@ export const BinaryContractChart = (props: {
       showZoomer={showZoomer}
       yKind="percent"
       data={data}
-      color={color ?? YES_GRAPH_COLOR}
+      color={YES_GRAPH_COLOR}
       onMouseOver={onMouseOver}
       Tooltip={BinaryChartTooltip}
     />
