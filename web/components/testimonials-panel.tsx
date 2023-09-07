@@ -1,8 +1,4 @@
 import { useEffect, useState } from 'react'
-import {
-  getNextPageNumber,
-  PaginationCircle,
-} from 'web/components/landing-page-panel'
 import { Col } from 'web/components/layout/col'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { Row } from 'web/components/layout/row'
@@ -15,8 +11,7 @@ import { firebaseLogin } from 'web/lib/firebase/users'
 import { STARTING_BALANCE } from 'common/economy'
 import SquiggleVerticalFlippedIcon from 'web/lib/icons/squiggle_vertical_flipped.svg'
 import SquiggleHorizontalFlippedIcon from 'web/lib/icons/squiggle_horizontal_flipped.svg'
-import StartQuoteIcon from 'web/lib/icons/start_quote.svg'
-import EndQuoteIcon from 'web/lib/icons/start_quote.svg'
+import QuoteIcon from 'web/lib/icons/quote.svg'
 import testimonials from '../public/testimonials/testimonials.json'
 
 export function TestimonialsPanel() {
@@ -139,10 +134,10 @@ function Testimonial(props: {
   const { testimonial, name, credit, icon, src } = props
   return (
     <div className="animate-slide-up-1 sm:animate-slide-in-1 absolute top-[20%] left-8 z-20 w-4/5 select-none text-white sm:top-2 sm:z-0">
-      <StartQuoteIcon className="h-10 w-10 text-teal-200" />
+      <QuoteIcon className="h-10 w-10 text-teal-200" />
       <div className="ml-8">{testimonial}</div>
       <Row className="justify-end">
-        <EndQuoteIcon className="h-10 w-10 text-teal-200" />
+        <QuoteIcon className="h-10 w-10 rotate-180 text-teal-200" />
       </Row>
       <Link href={src} target="_blank">
         <Row className="group mt-2 justify-end gap-2 ">
@@ -151,10 +146,36 @@ function Testimonial(props: {
             <div className="font-semibold transition-colors group-hover:text-teal-200">
               {name}
             </div>
-            <div className="text-primary-200 font-thin">{credit}</div>
+            <div className="font-thin text-indigo-200">{credit}</div>
           </Col>
         </Row>
       </Link>
+    </div>
+  )
+}
+
+function getNextPageNumber(pageNumber: number, maxPage: number) {
+  if (pageNumber + 1 <= maxPage) {
+    return pageNumber + 1
+  } else {
+    return 0
+  }
+}
+
+function PaginationCircle(props: {
+  currentPageNumber: number
+  pageNumber: number
+  onClick: () => void
+}) {
+  const { currentPageNumber, pageNumber, onClick } = props
+  return (
+    <div onClick={() => onClick()} className="cursor-pointer p-1.5">
+      <div
+        className={clsx(
+          'h-2 w-2 rounded-full transition-colors',
+          currentPageNumber === pageNumber ? 'bg-white' : 'bg-indigo-400'
+        )}
+      />
     </div>
   )
 }
