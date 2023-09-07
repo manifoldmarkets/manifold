@@ -392,6 +392,8 @@ export const ControllableSingleValueHistoryChart = <
   const rescale = useCallback((newXScale: ScaleTime<number, number> | null) => {
     if (newXScale) {
       setViewXScale(() => newXScale)
+      if (yKind === 'percent') return
+
       const [xMin, xMax] = newXScale.domain()
 
       const bisect = bisector((p: P) => p.x)
