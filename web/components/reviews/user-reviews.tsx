@@ -6,34 +6,50 @@ import { LoadingIndicator } from '../widgets/loading-indicator'
 import { Review } from './review'
 import { Col } from '../layout/col'
 import { useState } from 'react'
+import { Row } from '../layout/row'
+import { StarIcon } from '@heroicons/react/solid'
 
 export function UserReviews(props: { userId: string; rating: number }) {
   const { userId, rating } = props
-  const [openReviewModal, setOpenReviewModal] = useState(false)
+  const [open, setOpen] = useState(false)
+  const shortenedRating = Math.ceil(rating * 100) / 100
+  return (
+    <button onClick={() => setOpen(true)}>
+      <Row className="text-primary-600 hover:text-primary-700 items-center gap-0.5 text-lg transition-colors sm:text-xl">
+        {shortenedRating}
+        <StarIcon className="h-5 w-5" />
+      </Row>
+      <UserReviewsModal
+        userId={userId}
+        rating={shortenedRating}
+        open={open}
+        setOpen={setOpen}
+      />
+    </button>
+  )
+}
+
+export function UserReviewsModal(props: {
+  userId: string
+  rating: number
+  open: boolean
+  setOpen: (open: boolean) => void
+}) {
+  const { userId, rating, open, setOpen } = props
 
   const reviews = useQuery(() => getUserReviews(userId))
 
-  const ratingLabel =
-    rating > 4.8 ? (
-      <span className="font-semibold text-green-600">Exceptional</span>
-    ) : rating > 4.5 ? (
-      <span className="font-semibold text-green-600">Great</span>
-    ) : rating > 3.3 ? (
-      <span className="font-semibold text-green-600">Good</span>
-    ) : rating > 2.5 ? (
-      <span className="font-semibold text-yellow-600">Okay</span>
-    ) : rating > 2 ? (
-      <span className="font-semibold text-red-600">Poor</span>
-    ) : (
-      <span className="font-semibold text-red-600">Very Poor</span>
-    )
-
   return (
-    <Modal open={openReviewModal} setOpen={setOpenReviewModal}>
+    <Modal open={open} setOpen={setOpen}>
       <div className="bg-canvas-0 max-h-[90vh] overflow-y-auto rounded p-6">
-        <Title>Reviews</Title>
+        <Row className="mb-4 justify-between sm:mb-6">
+          <Title className="mb-0 sm:mb-0">Reviews</Title>
+          <Row className="mt-0 items-center gap-0.5 text-lg sm:text-xl">
+            {rating}
+            <StarIcon className="h-5 w-5" />
+          </Row>
+        </Row>
 
-        <div className="mb-4">Resolution reliability: {ratingLabel}</div>
         {reviews.isLoading && <LoadingIndicator className="text-center" />}
 
         <Col className="divide-ink-300 divide-y-2">

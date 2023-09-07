@@ -1,7 +1,7 @@
 import clsx from 'clsx'
 import { getUnresolvedContractsCount } from 'common/supabase/contracts'
 import { User } from 'common/user'
-import { formatWithCommas } from 'common/util/format'
+import { formatWithCommas, shortFormatNumber } from 'common/util/format'
 import { ReactNode, useEffect, useState } from 'react'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -15,14 +15,14 @@ import { SupabaseContractSearch } from '../contracts-search'
 import { useUser } from 'web/hooks/use-user'
 import { CreateQuestionButton } from '../buttons/create-question-button'
 import { useRouter } from 'next/router'
-import { UserReviews } from '../reviews/user-reviews'
+import { UserReviews, UserReviewsModal } from '../reviews/user-reviews'
 
 export function UserContractsList(props: {
   creator: User
   rating?: number
   reviewCount?: number
 }) {
-  const { creator, rating } = props
+  const { creator, rating, reviewCount } = props
   const { creatorTraders } = creator
   const { weekly, allTime } = creatorTraders
   const [marketsCreated, setMarketsCreated] = useState<number | undefined>()
@@ -49,12 +49,12 @@ export function UserContractsList(props: {
     <Col className={'w-full'}>
       <Row className={'gap-8 pb-4'}>
         <MarketStats
-          title={'Creator rank'}
-          total={`#${formatWithCommas(creatorRank ?? 0)}`}
+          title={'Rank'}
+          total={`#${shortFormatNumber(creatorRank ?? 0)}`}
         />
         <MarketStats
-          title={'Total questions'}
-          total={formatWithCommas(marketsCreated ?? 0)}
+          title={'Questions'}
+          total={shortFormatNumber(marketsCreated ?? 0)}
           subTitle={
             unresolvedMarkets === 0 ? null : (
               <Tooltip text={'Closed and waiting for resolution'}>
@@ -70,7 +70,7 @@ export function UserContractsList(props: {
         />
         <MarketStats
           title={'Traders'}
-          total={formatWithCommas(allTime ?? 0)}
+          total={shortFormatNumber(allTime ?? 0)}
           subTitle={
             allTime === 0 ? (
               <></>
@@ -89,7 +89,12 @@ export function UserContractsList(props: {
             )
           }
         />
-        {rating && <UserReviews userId={creator.id} rating={rating} />}
+        {rating && (reviewCount ?? 0) > 0 && (
+          <Col>
+            <div className="text-ink-600 text-xs sm:text-sm">Rating</div>
+            <UserReviews userId={creator.id} rating={rating} />
+          </Col>
+        )}
       </Row>
       <SupabaseContractSearch
         defaultFilter="all"
