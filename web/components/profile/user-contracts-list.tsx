@@ -15,9 +15,14 @@ import { SupabaseContractSearch } from '../contracts-search'
 import { useUser } from 'web/hooks/use-user'
 import { CreateQuestionButton } from '../buttons/create-question-button'
 import { useRouter } from 'next/router'
+import { UserReviews } from '../reviews/user-reviews'
 
-export function UserContractsList(props: { creator: User }) {
-  const { creator } = props
+export function UserContractsList(props: {
+  creator: User
+  rating?: number
+  reviewCount?: number
+}) {
+  const { creator, rating } = props
   const { creatorTraders } = creator
   const { weekly, allTime } = creatorTraders
   const [marketsCreated, setMarketsCreated] = useState<number | undefined>()
@@ -84,6 +89,7 @@ export function UserContractsList(props: { creator: User }) {
             )
           }
         />
+        {rating && <UserReviews userId={creator.id} rating={rating} />}
       </Row>
       <SupabaseContractSearch
         defaultFilter="all"
