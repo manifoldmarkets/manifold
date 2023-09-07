@@ -16,6 +16,7 @@ import { useUser } from 'web/hooks/use-user'
 import { CreateQuestionButton } from '../buttons/create-question-button'
 import { useRouter } from 'next/router'
 import { UserReviews, UserReviewsModal } from '../reviews/user-reviews'
+import { InfoBox } from '../widgets/info-box'
 
 export function UserContractsList(props: {
   creator: User
@@ -48,9 +49,9 @@ export function UserContractsList(props: {
   return (
     <Col className={'w-full'}>
       <Row className={'gap-8 pb-4'}>
-        {rating && reviewCount && reviewCount > 0 && (
+        {rating && !!reviewCount && reviewCount > 0 && (
           <Col>
-            <div className="text-ink-600 text-xs sm:text-sm">Rating</div>
+            <Row className="text-ink-600 text-xs sm:text-sm">Rating</Row>
             <UserReviews
               userId={creator.id}
               rating={rating}

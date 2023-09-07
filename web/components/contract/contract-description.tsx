@@ -13,7 +13,7 @@ import { CollapsibleContent } from '../widgets/collapsible-content'
 import { isTrustworthy } from 'common/envs/constants'
 import { ContractEditHistoryButton } from 'web/components/contract/contract-edit-history-button'
 import { PencilIcon, PlusIcon } from '@heroicons/react/solid'
-import { Editor } from '@tiptap/core'
+import { Editor, JSONContent } from '@tiptap/core'
 import { CreateAnswerCpmmPanel } from '../answers/create-answer-panel'
 
 export function ContractDescription(props: {
@@ -224,19 +224,13 @@ function AddAnswerButton(props: {
   )
 }
 
-export function descriptionIsEmpty(contract: Contract) {
-  const description = contract.description
+export function JSONEmpty(text: string | JSONContent) {
+  if (!text) return true
 
-  if (!description) return true
-
-  if (typeof description === 'string') {
-    return description === ''
-  } else if ('content' in description) {
-    return !(
-      description.content &&
-      description.content.length > 0 &&
-      description.content[0].content
-    )
+  if (typeof text === 'string') {
+    return text === ''
+  } else if ('content' in text) {
+    return !(text.content && text.content.length > 0 && text.content[0].content)
   }
   return true
 }

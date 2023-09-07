@@ -24,9 +24,9 @@ export function UserReviews(props: {
         <StarIcon className="h-5 w-5" />
         <button
           onClick={() => setOpen(true)}
-          className="text-ink-600  text-sm hover:underline"
+          className="text-ink-600  group text-sm"
         >
-          ({reviewCount})
+          (<span className="group-hover:underline">{reviewCount}</span>)
         </button>
       </Row>
       <UserReviewsModal

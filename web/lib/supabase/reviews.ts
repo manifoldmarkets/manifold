@@ -11,7 +11,11 @@ export const getUserRating = async (userId: string) => {
 
 export const getUserReviews = async (userId: string) => {
   const { data } = await run(
-    db.from('reviews').select('*').eq('vendor_id', userId)
+    db
+      .from('reviews')
+      .select('*')
+      .eq('vendor_id', userId)
+      .order('created_time', { ascending: false })
   )
 
   return data.map(convertReview)
