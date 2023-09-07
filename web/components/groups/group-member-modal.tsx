@@ -33,7 +33,7 @@ export function GroupMemberModalContent(props: {
   const { group, canEdit, numMembers, defaultIndex } = props
   const [query, setQuery] = useState<string>('')
   return (
-    <Col className={clsx(MODAL_CLASS, 'h-[85vh]')}>
+    <Col className={clsx(MODAL_CLASS)}>
       {canEdit && (
         <UncontrolledTabs
           defaultIndex={defaultIndex ?? 0}
@@ -138,7 +138,7 @@ export function SearchGroupMemberModalContent(props: {
   }, [query])
   const length = searchMemberResult.length
   if (length == 0 && !loading) {
-    return <div>No results...</div>
+    return <div>No results</div>
   }
   return (
     <div
@@ -364,13 +364,12 @@ export function Member(props: {
 }
 
 // the dropdown for each member that is available to group admins
-export function AdminRoleDropdown(props: {
+function AdminRoleDropdown(props: {
   group: Group
   member: JSONContent
   canEdit: boolean
-  className?: string
 }) {
-  const { group, member, canEdit, className } = props
+  const { group, member, canEdit } = props
   const user = useUser()
   if (!user) {
     return <></>
@@ -481,7 +480,6 @@ export function AdminRoleDropdown(props: {
         Items={groupMemberOptions}
         Icon={<DotsVerticalIcon className={clsx('text-ink-400 h-5 w-5')} />}
         menuWidth={'w-40'}
-        className={clsx(className)}
       />
     )
   } else {
