@@ -19,6 +19,7 @@ import { isAdminId } from 'common/envs/constants'
 import { Bet } from 'common/bet'
 import { floatingEqual } from 'common/util/math'
 import { noFees } from 'common/fees'
+import { getCpmmInitialLiquidity } from 'common/antes'
 
 const bodySchema = z.object({
   contractId: z.string().max(MAX_ANSWER_LENGTH),
@@ -274,6 +275,17 @@ export const createanswercpmm = authEndpoint(async (req, auth) => {
     transaction.update(contractDoc, {
       totalLiquidity: FieldValue.increment(ANSWER_COST),
     })
+    const liquidityDoc = firestore
+      .collection(`contracts/${contract.id}/liquidity`)
+      .doc()
+    const lp = getCpmmInitialLiquidity(
+      user.id,
+      contract,
+      liquidityDoc.id,
+      ANSWER_COST
+    )
+    transaction.create(liquidityDoc, lp)
+
     return newAnswer.id
   })
 
