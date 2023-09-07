@@ -13,7 +13,6 @@ export type ColorType =
   | 'indigo-outline'
   | 'yellow'
   | 'gray'
-  | 'dark-gray'
   | 'gray-outline'
   | 'gradient'
   | 'gradient-pink'
@@ -21,7 +20,6 @@ export type ColorType =
   | 'yellow-outline'
   | 'gold'
   | 'none'
-  | 'gradient-cyan-pink'
 
 const sizeClasses = {
   '2xs': 'px-2 py-1 text-xs',
@@ -34,47 +32,49 @@ const sizeClasses = {
 }
 
 const baseButtonClasses =
-  'font-md inline-flex items-center justify-center rounded-md ring-inset shadow-sm transition-colors disabled:cursor-not-allowed text-center'
+  'font-md inline-flex items-center justify-center rounded-md ring-inset transition-colors disabled:cursor-not-allowed text-center'
 
-export function buttonClass(size: SizeType, color: ColorType | 'override') {
+const solid = 'disabled:bg-ink-300 text-white'
+const outline =
+  'ring-2 ring-current hover:ring-transparent disabled:ring-ink-300 disabled:text-ink-300 enabled:hover:text-ink-0 disabled:bg-inherit'
+const gradient = [solid, 'enabled:bg-gradient-to-r hover:saturate-150']
+
+export function buttonClass(size: SizeType, color: ColorType | 'none') {
   return clsx(
     baseButtonClasses,
     sizeClasses[size],
-    color === 'green' &&
-      'disabled:bg-ink-300 bg-teal-500 text-white hover:bg-teal-600 border-teal-500',
-    color === 'green-outline' &&
-      'ring-2 ring-teal-500 disabled:ring-ink-300 disabled:text-ink-300 text-teal-500 enabled:hover:bg-teal-500 enabled:hover:text-ink-0',
-    color === 'red' &&
-      'disabled:bg-ink-300 bg-scarlet-300 text-white hover:bg-scarlet-400 border-scarlet-300',
-    color === 'red-outline' &&
-      'ring-2 ring-scarlet-300 disabled:ring-ink-300 disabled:text-ink-300 text-scarlet-300 enabled:hover:bg-scarlet-300 enabled:hover:text-ink-0',
-    color === 'yellow' &&
-      'disabled:bg-ink-300 bg-yellow-400 text-white hover:bg-yellow-500 border-yellow-500',
-    color === 'blue' &&
-      'disabled:bg-ink-300 bg-blue-400 text-white hover:bg-blue-500 border-blue-500',
-    color === 'indigo' &&
-      'disabled:bg-ink-300 bg-primary-500 text-white hover:bg-primary-600 border-primary-500',
-    color === 'indigo-outline' &&
-      'ring-2 ring-primary-500 disabled:ring-ink-300 disabled:text-ink-300 text-primary-500 enabled:hover:bg-primary-500 enabled:hover:text-ink-0',
+    color === 'green' && [solid, 'bg-teal-500 hover:bg-teal-600'],
+    color === 'green-outline' && [outline, 'text-teal-500 hover:bg-teal-500'],
+    color === 'red' && [solid, 'bg-scarlet-300 hover:bg-scarlet-400'],
+    color === 'red-outline' && [
+      outline,
+      'text-scarlet-300 hover:bg-scarlet-300',
+    ],
+    color === 'yellow' && [solid, 'bg-yellow-400 hover:bg-yellow-500'],
+    color === 'yellow-outline' && [
+      outline,
+      'text-yellow-500 hover:bg-yellow-500',
+    ],
+    color === 'blue' && [solid, 'bg-blue-400 hover:bg-blue-500'],
+    color === 'indigo' && [
+      solid,
+      'bg-primary-500 hover:bg-primary-600 enabled:hover:dark:bg-indigo-500',
+    ],
+    color === 'indigo-outline' && [
+      outline,
+      'text-primary-500 hover:bg-primary-500',
+    ],
     color === 'gray' &&
-      'bg-ink-200 text-ink-600 enabled:hover:bg-ink-300 enabled:hover:text-ink-700 disabled:opacity-50 border-ink-300',
-    color === 'dark-gray' &&
-      'bg-gray-500 dark:bg-ink-400 text-ink-0 hover:bg-ink-700 disabled:opacity-50 border-ink-300',
-    color === 'gray-outline' &&
-      'ring-2 ring-ink-500 text-ink-500 enabled:hover:bg-ink-500 enabled:hover:text-ink-0 disabled:opacity-50',
-    color === 'gradient' &&
-      'disabled:bg-ink-300 enabled:bg-gradient-to-r from-primary-500 to-blue-500 text-white hover:from-primary-700 hover:to-blue-700 border-primary-500',
-    color === 'gradient-pink' &&
-      'disabled:bg-ink-300 enabled:bg-gradient-to-r from-primary-500 to-fuchsia-500 text-white hover:from-primary-700 hover:to-fuchsia-700 border-primary-500',
+      'bg-ink-200 text-ink-600 disabled:bg-ink-100 hover:bg-ink-300 hover:text-ink-700',
+    color === 'gray-outline' && [outline, 'text-ink-500 hover:bg-ink-500'],
+    color === 'gradient' && [gradient, 'from-primary-500 to-blue-500'],
+    color === 'gradient-pink' && [gradient, 'from-primary-500 to-fuchsia-500'],
     color === 'gray-white' &&
-      'text-ink-600 hover:bg-ink-200 shadow-none disabled:opacity-50 border-ink-300',
-    color === 'yellow-outline' &&
-      'ring-2 ring-yellow-500 text-yellow-500 disabled:ring-ink-300 enabled:hover:bg-yellow-500 enabled:hover:text-ink-0 disabled:text-ink-300',
-    color === 'gold' &&
-      'bg-yellow-300 enabled:bg-gradient-to-br from-yellow-400 via-yellow-200 to-yellow-300 text-gray-900 transition-colors hover:via-yellow-100 focus:via-yellow-100',
-    color === 'none' && 'bg-none',
-    color === 'gradient-cyan-pink' &&
-      'disabled:bg-ink-300 enabled:bg-gradient-to-r from-cyan-500 to-fuchsia-500 text-white hover:from-cyan-700 hover:to-fuchsia-700 border-cyan-500'
+      'text-ink-600 enabled:hover:bg-ink-200 disabled:text-ink-300',
+    color === 'gold' && [
+      gradient,
+      '!bg-gradient-to-br from-yellow-400 via-yellow-100 to-yellow-300 text-gray-900',
+    ]
   )
 }
 
@@ -84,7 +84,7 @@ export const Button = forwardRef(function Button(
     onClick?: MouseEventHandler<any> | undefined
     children?: ReactNode
     size?: SizeType
-    color?: ColorType | 'override'
+    color?: ColorType
     type?: 'button' | 'reset' | 'submit'
     disabled?: boolean
     loading?: boolean

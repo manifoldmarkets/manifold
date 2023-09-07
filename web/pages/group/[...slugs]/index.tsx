@@ -264,7 +264,6 @@ export function GroupPageContent(props: { groupParams?: GroupParams }) {
                     group={group}
                     isMember={!!userRole}
                     user={user}
-                    className={'-mr-2'}
                   />
                 )}
                 {!isMobile && (
