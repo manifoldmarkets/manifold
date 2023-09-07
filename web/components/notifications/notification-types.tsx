@@ -10,7 +10,7 @@ import { formatMoney } from 'common/util/format'
 import { floatingEqual } from 'common/util/math'
 import { WeeklyPortfolioUpdate } from 'common/weekly-portfolio-update'
 import { sortBy } from 'lodash'
-import { useState } from 'react'
+import { use, useState } from 'react'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { MultiUserReactionModal } from 'web/components/multi-user-reaction-link'
@@ -34,7 +34,7 @@ import { Avatar } from 'web/components/widgets/avatar'
 import { UserLink } from 'web/components/widgets/user-link'
 import { useContract } from 'web/hooks/use-contract-supabase'
 import { useGroupsWithContract } from 'web/hooks/use-group-supabase'
-import { StarDisplay } from '../reviews/stars'
+import { Rating, ReviewPanel, StarRating } from '../reviews/stars'
 import { Linkify } from '../widgets/linkify'
 import { linkClass } from '../widgets/site-link'
 import {
@@ -47,6 +47,10 @@ import {
   QuestionOrGroupLink,
 } from './notification-helpers'
 import Link from 'next/link'
+import { Modal } from '../layout/modal'
+import { Button } from '../buttons/button'
+import { StarIcon } from '@heroicons/react/solid'
+import { useReview } from 'web/hooks/use-review'
 
 export function NotificationItem(props: {
   notification: Notification
@@ -582,6 +586,7 @@ export function MarketResolvedNotification(props: {
     ) : (
       <div />
     )
+  const [openRateModal, setOpenRateModal] = useState(false)
 
   const resolutionDescription = () => {
     if (!sourceText) return <div />
@@ -655,6 +660,10 @@ export function MarketResolvedNotification(props: {
       </>
     )
 
+  const [justNowReview, setJustNowReview] = useState<null | Rating>(null)
+  const userReview = useReview(notification.sourceId, notification.userId)
+  const showReviewButton = !userReview && !justNowReview
+
   return (
     <NotificationFrame
       notification={notification}
@@ -664,7 +673,28 @@ export function MarketResolvedNotification(props: {
       subtitle={
         <>
           <div className="mb-1">{subtitle}</div>
-          <StarDisplay rating={0} />
+          {showReviewButton && (
+            <Button
+              size={'2xs'}
+              color={'gray'}
+              onClick={(e) => {
+                e.stopPropagation()
+                e.preventDefault()
+                setOpenRateModal(true)
+              }}
+            >
+              <Row className="gap-1">
+                <StarIcon className="h-4 w-4" />
+                Rate {notification.sourceUserName}'s resolution
+              </Row>
+            </Button>
+          )}
+          {!showReviewButton && (
+            <Row className="text-ink-500 items-center gap-0.5 text-sm italic">
+              You rated this resolution {justNowReview ?? userReview?.rating}{' '}
+              <StarIcon className="h-4 w-4" />
+            </Row>
+          )}
         </>
       }
       icon={
@@ -676,6 +706,18 @@ export function MarketResolvedNotification(props: {
       link={getSourceUrl(notification)}
     >
       {content}
+      <Modal open={openRateModal} setOpen={setOpenRateModal}>
+        <ReviewPanel
+          marketId={notification.sourceId}
+          author={notification.sourceUserName}
+          userId={notification.userId}
+          className="my-2"
+          onSubmit={(rating: Rating) => {
+            setJustNowReview(rating)
+            setOpenRateModal(false)
+          }}
+        />
+      </Modal>
     </NotificationFrame>
   )
 }

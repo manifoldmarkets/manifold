@@ -1,6 +1,6 @@
-import { UserIcon } from '@heroicons/react/solid'
+import { StarIcon, UserIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
-import { first } from 'lodash'
+import { first, set } from 'lodash'
 import Head from 'next/head'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -37,7 +37,7 @@ import { Row } from 'web/components/layout/row'
 import { Spacer } from 'web/components/layout/spacer'
 import { NumericResolutionPanel } from 'web/components/numeric-resolution-panel'
 import { ResolutionPanel } from 'web/components/resolution-panel'
-import { ReviewPanel } from 'web/components/reviews/stars'
+import { Rating, ReviewPanel } from 'web/components/reviews/stars'
 import { GradientContainer } from 'web/components/widgets/gradient-container'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { useAdmin } from 'web/hooks/use-admin'
@@ -69,6 +69,7 @@ import { MarketGroups } from 'web/components/contract/market-groups'
 import { getMultiBetPoints } from 'web/components/charts/contract/choice'
 import { useRealtimeBets } from 'web/hooks/use-bets-supabase'
 import { ContractSEO } from 'web/components/contract/contract-seo'
+import { useReview } from 'web/hooks/use-review'
 
 export async function getStaticProps(ctx: {
   params: { username: string; contractSlug: string }
@@ -308,6 +309,10 @@ export function ContractPageContent(props: {
     user === null ||
     (user && user.createdTime > Date.now() - 24 * 60 * 60 * 1000)
 
+  const [justNowReview, setJustNowReview] = useState<null | Rating>(null)
+  const userReview = useReview(contract.id, user?.id)
+  const userHasReviewed = userReview || justNowReview
+
   return (
     <>
       {creatorTwitter && (
@@ -451,12 +456,20 @@ export function ContractPageContent(props: {
                   </div>
                 )}
               </div>
-
               <ContractOverview
                 contract={contract}
                 betPoints={betPoints as any}
                 showResolver={showResolver}
                 onAnswerCommentClick={onAnswerCommentClick}
+                resolutionRating={
+                  userHasReviewed ? (
+                    <Row className="text-ink-500 items-center gap-0.5 text-sm italic">
+                      You rated this resolution{' '}
+                      {justNowReview ?? userReview?.rating}{' '}
+                      <StarIcon className="h-4 w-4" />
+                    </Row>
+                  ) : null
+                }
               />
             </Col>
 
@@ -502,17 +515,20 @@ export function ContractPageContent(props: {
               ) : null)}
 
             {isResolved &&
+              !userHasReviewed &&
               // resolved less than week ago
-              (Date.now() - (contract.resolutionTime ?? 0)) / 1000 <
-                60 * 60 * 24 * 7 &&
+              // (Date.now() - (contract.resolutionTime ?? 0)) / 1000 <
+              //   60 * 60 * 24 * 7 &&
               user &&
               user.id !== contract.creatorId &&
               contract.outcomeType !== 'POLL' && (
                 <ReviewPanel
                   marketId={contract.id}
                   author={contract.creatorName}
-                  user={user}
-                  className="my-2"
+                  userId={user.id}
+                  onSubmit={(rating: Rating) => {
+                    setJustNowReview(rating)
+                  }}
                 />
               )}
 

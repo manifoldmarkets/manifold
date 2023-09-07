@@ -1,3 +1,4 @@
+import { Json } from 'common/supabase/schema'
 import { db } from './db'
 import { Row, run, tsToMillis } from 'common/supabase/utils'
 
@@ -28,6 +29,15 @@ export const getMyReviewOnContract = async (
     .single()
 
   return data && convertReview(data)
+}
+
+export type Review = {
+  created_time: number
+  content: Json
+  market_id: string
+  rating: number
+  reviewer_id: string
+  vendor_id: string
 }
 
 const convertReview = (review: Row<'reviews'>) => ({

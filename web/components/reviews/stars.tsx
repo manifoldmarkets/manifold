@@ -12,56 +12,24 @@ import { useMutation } from 'web/hooks/use-mutation'
 import toast from 'react-hot-toast'
 import { User } from 'common/user'
 import { getMyReviewOnContract } from 'web/lib/supabase/reviews'
+import { Contract } from 'common/contract'
 
-export type Rating = 1 | 2 | 3 | 4 | 5
-
-export const StarPicker = (props: {
-  rating?: Rating
-  setRating: (value: Rating) => void
-  className?: string
-}) => {
-  const { rating = 0, setRating, className } = props
-
-  return (
-    <div className={clsx('flex', className)}>
-      {range(1, 6).map((star) => (
-        <button key={'star' + star} onClick={() => setRating(star as Rating)}>
-          {star <= rating ? (
-            <StarIcon className="h-8 w-8 text-yellow-500" />
-          ) : (
-            <StarOutline className="text-ink-300 h-8 w-8" />
-          )}
-        </button>
-      ))}
-    </div>
-  )
-}
+export type Rating = 0 | 1 | 2 | 3 | 4 | 5
 
 export const ReviewPanel = (props: {
   marketId: string
   author: string
-  user: User
+  userId: string
   className?: string
+  onSubmit: (rating: Rating) => void
 }) => {
-  const { marketId, author, user, className } = props
-  const [rating, setRating] = useState<Rating>()
+  const { marketId, author, userId, className, onSubmit } = props
+  const [rating, setRating] = useState<Rating>(0)
 
   const editor = useTextEditor({
     size: 'sm',
     placeholder: 'Add details (optional)',
   })
-
-  useEffect(() => {
-    if (editor)
-      getMyReviewOnContract(marketId, user.id).then((r) => {
-        if (r) {
-          setRating(r.rating as any)
-          if (r.content && !editor.isDestroyed) {
-            editor.commands.setContent(r.content as any)
-          }
-        }
-      })
-  }, [!!editor])
 
   const send = useMutation(leaveReview, {
     onError: (e) => {
@@ -77,18 +45,26 @@ export const ReviewPanel = (props: {
       <Col className="items-center gap-2">
         <h2 className="text-primary-500 text-xl">Rate {author}</h2>
         <span className="text-sm italic">
-          Did they run the market well and resolve it right?
+          Did they honestly resolve the question?
         </span>
 
-        <StarPicker rating={rating} setRating={setRating} className="my-3" />
+        <StarRating
+          rating={rating}
+          onClick={(rating: Rating) => {
+            setRating(rating)
+          }}
+          className="my-3"
+        />
         <TextEditor editor={editor} />
         <Button
           className="self-end"
           disabled={rating == undefined}
           loading={send.isLoading}
-          onClick={() =>
+          onClick={() => {
+            console.log('submitted rating', rating)
             send.mutate({ marketId, rating, review: editor?.getJSON() })
-          }
+            onSubmit(rating)
+          }}
         >
           Submit
         </Button>
@@ -97,25 +73,58 @@ export const ReviewPanel = (props: {
   )
 }
 
-export const StarDisplay = (props: { rating: number }) => {
-  const rating = clamp(props.rating, 0, 5)
-
-  // like 3.7 -> [1, 1, 1, 0.7, 0]
-  const starFullness = range(1, 6).map((i) => clamp(i - rating, 0, 1))
+export const StarRating = (props: {
+  rating: Rating
+  onClick: (rating: Rating) => void
+  className?: string
+}) => {
+  const { rating, onClick, className } = props
+  const [hoverRating, setHoverRating] = useState<number>(0)
 
   return (
-    <div className="inline-flex align-top">
-      {starFullness.map((fraction, i) => {
-        // star path is about 15 px in a 20px wide viewbox
-        const clipPx = fraction * 15 + 2.5
+    <div className={clsx('inline-flex align-top', className)}>
+      {range(0, 5).map((i) => {
         return (
-          <div className="relative" key={i}>
-            <StarIcon
-              className="absolute h-5 w-5 text-yellow-500"
-              viewBox={`${-clipPx} 0 20 20`}
-              style={{ left: -clipPx }}
-            />
-            <StarOutline className="text-ink-300 h-5 w-5" />
+          <button
+            className="relative"
+            key={i}
+            onClick={(e) => {
+              e.stopPropagation()
+              e.preventDefault()
+              onClick((i + 1) as Rating)
+            }}
+            onMouseEnter={() => setHoverRating(i + 1)}
+            onMouseLeave={() => setHoverRating(0)}
+          >
+            {(i + 1 <= rating || i + 1 <= hoverRating) && (
+              <StarIcon
+                className="absolute h-8 w-8 text-yellow-500"
+                viewBox={`0 0 20 20`}
+              />
+            )}
+            <StarOutline className="text-ink-300 h-8 w-8" />
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+export const StarDisplay = (props: { rating: Rating; className?: string }) => {
+  const { rating, className } = props
+
+  return (
+    <div className={clsx('inline-flex align-top', className)}>
+      {range(0, 5).map((i) => {
+        return (
+          <div className="relative">
+            {i + 1 <= rating && (
+              <StarIcon
+                className="absolute h-4 w-4 text-yellow-500"
+                viewBox={`0 0 20 20`}
+              />
+            )}
+            <StarOutline className="text-ink-300 h-4 w-4" />
           </div>
         )
       })}

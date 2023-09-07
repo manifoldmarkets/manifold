@@ -7,7 +7,7 @@ import { RelativeTimestamp } from '../relative-timestamp'
 import { Avatar } from '../widgets/avatar'
 import { Content } from '../widgets/editor'
 import { UserLink } from '../widgets/user-link'
-import { StarDisplay } from './stars'
+import { Rating, StarDisplay } from './stars'
 
 export const Review = (props: {
   userId: string
@@ -25,6 +25,7 @@ export const Review = (props: {
   return (
     <div className="py-6 first:pt-0 last:pb-0">
       <Col className="items-start">
+        <ContractMention contract={contract} />
         <div className="mb-1 flex items-center gap-3">
           <Avatar
             username={user.username}
@@ -38,8 +39,7 @@ export const Review = (props: {
           />
         </div>
         <div className="-ml-0.5 -mb-1 space-x-2">
-          <StarDisplay rating={rating} />
-          <ContractMention contract={contract} />
+          <StarDisplay rating={rating as Rating} />
         </div>
         <RelativeTimestamp time={created} className="-ml-1" />
       </Col>

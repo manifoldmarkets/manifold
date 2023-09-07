@@ -5,7 +5,7 @@ import {
   CopyLinkRow,
 } from 'web/components/buttons/copy-link-button'
 import { Page } from 'web/components/layout/page'
-import { StarPicker } from 'web/components/reviews/stars'
+import { StarRating } from 'web/components/reviews/stars'
 import { AlertBox } from 'web/components/widgets/alert-box'
 import { AmountInput } from 'web/components/widgets/amount-input'
 import { ChoicesToggleGroup } from 'web/components/widgets/choices-toggle-group'
@@ -18,6 +18,7 @@ import ShortToggle from 'web/components/widgets/short-toggle'
 import { RangeSlider, Slider } from 'web/components/widgets/slider'
 import { Subtitle } from 'web/components/widgets/subtitle'
 import { Title } from 'web/components/widgets/title'
+import { Rating } from 'web/components/reviews/stars'
 
 export default function StylePage() {
   return (
@@ -250,5 +251,10 @@ function SliderExample() {
 
 function Rating() {
   const [rating, setRating] = useState<number>()
-  return <StarPicker rating={rating as any} setRating={setRating} />
+  return (
+    <StarRating
+      rating={rating as any}
+      onClick={(rating: Rating) => setRating(rating)}
+    />
+  )
 }
