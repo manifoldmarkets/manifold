@@ -1371,7 +1371,7 @@ export const createGroupStatusChangeNotification = async (
   if (!privateUser) return
   let sourceText = `changed your role to ${newStatus}`
   if (
-    ((!affectedMember.role || affectedMember.role == 'member') &&
+    (affectedMember.role == 'member' &&
       (newStatus == 'admin' || newStatus == 'moderator')) ||
     (affectedMember.role == 'moderator' && newStatus == 'admin')
   ) {

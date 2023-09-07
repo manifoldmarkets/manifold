@@ -379,7 +379,7 @@ export function AdminRoleDropdown(props: {
   const groupMemberOptions = buildArray(
     // ADMIN ONLY: if the member is below admin, can upgrade to admin
     canEdit &&
-      (!member.role || member.role === 'moderator') && {
+      (member.role === 'member' || member.role === 'moderator') && {
         name: 'Make admin',
         onClick: async () => {
           toast.promise(
@@ -398,7 +398,7 @@ export function AdminRoleDropdown(props: {
       },
     //ADMIN ONLY: if the member is below moderator, can upgrade to moderator
     canEdit &&
-      !member.role && {
+      member.role === 'member' && {
         name: 'Make moderator',
         onClick: async () => {
           toast.promise(
