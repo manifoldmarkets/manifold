@@ -75,10 +75,11 @@ export const spiceUpNewUsersFeedBasedOnTheirInterests = async (
   userId: string,
   pg: SupabaseDirectClient,
   userIdFeedSource: string,
-  targetContractIds: string[]
+  targetContractIds: string[],
+  estimatedRelevance: number
 ) => {
   await pg.tx(async (t) => {
-    const relatedFeedItems = await t.manyOrNone<Row<'user_feed'>>(
+    const relatedFeedItems = await t.map(
       `              
           WITH user_embedding AS (
             SELECT interest_embedding
@@ -114,7 +115,11 @@ export const spiceUpNewUsersFeedBasedOnTheirInterests = async (
         targetContractIds.length,
         NEW_USER_FEED_DATA_TYPES,
         targetContractIds,
-      ]
+      ],
+      (r: Row<'user_feed'>) => ({
+        ...r,
+        relevance_score: (r.relevance_score ?? 0.85) * estimatedRelevance,
+      })
     )
     log('found related feed items', relatedFeedItems.length, 'for user', userId)
     await copyOverFeedItems(userId, relatedFeedItems, t)

@@ -86,6 +86,10 @@ export const createManualTrendingFeedRow = (
   forUserId: string
 ) => {
   const now = Date.now()
+  const reasons: FEED_REASON_TYPES[] = [
+    'similar_interest_vector_to_contract',
+    'contract_in_group_you_are_in',
+  ]
   return contracts.map((contract) =>
     convertObjectToSQLRow<any, 'user_feed'>({
       contractId: contract.id,
@@ -94,6 +98,13 @@ export const createManualTrendingFeedRow = (
       eventTime: new Date(now).toISOString(),
       reason: 'similar_interest_vector_to_contract',
       dataType: 'trending_contract',
+      reasons,
+      relevanceScore: getRelevanceScore(
+        'trending_contract',
+        reasons,
+        contract.importanceScore,
+        1
+      ),
     })
   )
 }

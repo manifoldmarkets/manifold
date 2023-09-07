@@ -146,14 +146,15 @@ export const useFeedTimeline = (
     }
     const { data } = await run(query)
 
-    const newFeedRows = orderBy(data, (d) => {
-      const createdTimeAdjusted = 1 - dayjs().diff(d.created_time, 'day') / 14
-      return (
+    const newFeedRows = data.map((d) => {
+      const createdTimeAdjusted =
+        1 - dayjs().diff(dayjs(d.created_time), 'day') / 14
+      d.relevance_score =
         -(
           d.relevance_score ??
           BASE_FEED_DATA_TYPE_SCORES[d.data_type as FEED_DATA_TYPES]
         ) * createdTimeAdjusted
-      )
+      return d
     })
     const {
       newContractIds,
@@ -463,7 +464,7 @@ function createFeedTimelineItems(
     filterDefined(nonNewsTimelineItems)
   )
 
-  return sortBy([...newsData, ...groupedItems], (i) => -i.createdTime)
+  return sortBy([...newsData, ...groupedItems], (i) => -i.relevanceScore)
 }
 
 const groupItemsBySimilarQuestions = (items: FeedTimelineItem[]) => {
