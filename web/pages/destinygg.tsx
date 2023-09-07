@@ -1,6 +1,5 @@
-import { ReactNode, useState } from 'react'
+import { useState } from 'react'
 import { CheckmarkIcon } from 'react-hot-toast'
-import Link from 'next/link'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { SEO } from 'web/components/SEO'
