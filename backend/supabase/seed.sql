@@ -329,6 +329,8 @@ create table if not exists
     is_copied boolean not null default false,
     bet_data jsonb null,
     answer_ids text[] null,
+    relevance_score numeric default 0,
+    reasons text[] null,
     unique (user_id, idempotency_key)
   );
 
@@ -347,6 +349,8 @@ for update
   using (true);
 
 create index if not exists user_feed_created_time on user_feed (user_id, created_time desc);
+
+create index if not exists user_feed_relevance_score_unseen on user_feed (user_id, relevance_score desc, seen_time);
 
 create index if not exists user_feed_user_id_contract_id_created_time on user_feed (user_id, contract_id, created_time desc);
 

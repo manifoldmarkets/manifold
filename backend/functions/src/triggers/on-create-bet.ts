@@ -1,6 +1,6 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
-import { keyBy } from 'lodash'
+import { first, keyBy } from 'lodash'
 
 import { Bet, LimitBet } from 'common/bet'
 import {
@@ -50,6 +50,7 @@ import { addToLeagueIfNotInOne } from 'shared/generate-leagues'
 import { FieldValue } from 'firebase-admin/firestore'
 import { FLAT_TRADE_FEE } from 'common/fees'
 import {
+  getContractsDirect,
   getUniqueBettorIds,
   getUniqueBettorIdsForAnswer,
 } from 'shared/supabase/contracts'
@@ -75,11 +76,14 @@ export const onCreateBet = functions
     const bet = change.data() as Bet
     if (bet.isChallenge) return
 
-    const contractRef = firestore.collection('contracts').doc(contractId)
-    const contractSnap = await contractRef.get()
-    const contract = contractSnap.data() as Contract
+    const contracts = await getContractsDirect(
+      [contractId],
+      createSupabaseDirectClient()
+    )
+    const contract = first(contracts)
     if (!contract) return
-    await contractRef.update({
+
+    await firestore.collection('contracts').doc(contract.id).update({
       lastBetTime: bet.createdTime,
       lastUpdatedTime: Date.now(),
     })

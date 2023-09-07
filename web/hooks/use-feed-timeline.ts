@@ -7,7 +7,7 @@ import { useEvent } from './use-event'
 import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
 import { getBoosts } from 'web/lib/supabase/ads'
 import { BoostsType } from 'web/hooks/use-feed'
-import { Row, run } from 'common/supabase/utils'
+import { mapTypes, Row, run, tsToMillis } from 'common/supabase/utils'
 import { db } from 'web/lib/supabase/db'
 import {
   countBy,
@@ -24,6 +24,7 @@ import {
 } from 'lodash'
 import { News } from 'common/news'
 import {
+  BASE_FEED_DATA_TYPE_SCORES,
   CreatorDetails,
   FEED_DATA_TYPES,
   FEED_REASON_TYPES,
@@ -41,16 +42,19 @@ import { Answer } from 'common/answer'
 import { removeUndefinedProps } from 'common/util/object'
 import { convertAnswer } from 'common/supabase/contracts'
 import { compareTwoStrings } from 'string-similarity'
+import dayjs from 'dayjs'
 
-const PAGE_SIZE = 40
+const PAGE_SIZE = 50
 
 export type FeedTimelineItem = {
   // These are stored in the db
   id: number
   dataType: FEED_DATA_TYPES
   reason: FEED_REASON_TYPES
+  reasons: FEED_REASON_TYPES[] | null
   createdTime: number
   supabaseTimestamp: string
+  relevanceScore: number
   contractId: string | null
   commentId: string | null
   newsId: string | null
@@ -75,8 +79,7 @@ export type FeedTimelineItem = {
 const baseUserFeedQuery = (
   userId: string,
   privateUser: PrivateUser,
-  ignoreContractIds: string[],
-  limit: number = PAGE_SIZE
+  ignoreContractIds: string[]
 ) => {
   return (
     db
@@ -93,15 +96,14 @@ const baseUserFeedQuery = (
       .or(
         `data_type.eq.new_comment,data_type.eq.news_with_related_contracts,contract_id.not.in.(${ignoreContractIds})`
       )
-      .order('created_time', { ascending: false })
-      .limit(limit)
+      .order('relevance_score', { ascending: false, nullsFirst: false })
+      .limit(PAGE_SIZE)
   )
 }
 
 type loadProps = {
   new?: boolean
   old?: boolean
-  signal?: 'high' | 'middle' | 'low'
   ignoreFeedTimelineItems: FeedTimelineItem[]
 }
 export const useFeedTimeline = (
@@ -141,25 +143,18 @@ export const useFeedTimeline = (
       query = query
         .lt('created_time', newestCreatedTimestamp.current)
         .is('seen_time', null)
-
-      // Get new trending and probability changed items first
-      if (options.signal === 'high') {
-        query = query
-          .in('data_type', [
-            'contract_probability_changed',
-            'trending_contract',
-          ])
-          .or('data->>todayScore.not.is.null,data->>currentProb.not.is.null')
-      }
-      // Then comments, new markets, or news items
-      else if (options.signal === 'middle') {
-        query = query.not('data_type', 'eq', 'trending_contract')
-      }
-      // Low signal gets anything else (old trending, etc.)
     }
     const { data } = await run(query)
-    const newFeedRows = data
 
+    const newFeedRows = orderBy(data, (d) => {
+      const createdTimeAdjusted = 1 - dayjs().diff(d.created_time, 'day') / 14
+      return (
+        -(
+          d.relevance_score ??
+          BASE_FEED_DATA_TYPE_SCORES[d.data_type as FEED_DATA_TYPES]
+        ) * createdTimeAdjusted
+      )
+    })
     const {
       newContractIds,
       newCommentIds,
@@ -276,7 +271,7 @@ export const useFeedTimeline = (
         ),
     ])
     const openFeedContractIds = (contracts ?? []).map((c) => c.id)
-    const closedOrResolvedContractFeedIds = data.filter(
+    const closedOrResolvedContractFeedIds = newFeedRows.filter(
       (d) =>
         d.contract_id &&
         !d.news_id &&
@@ -334,26 +329,12 @@ export const useFeedTimeline = (
     async (options: { old?: boolean; new?: boolean }) => {
       if (!userId) return []
 
-      if (options.new) {
-        const { timelineItems } = await fetchFeedItems(userId, {
-          ...options,
-          ignoreFeedTimelineItems: savedFeedItems ?? [],
-        })
-        addTimelineItems(timelineItems, options)
-        return timelineItems
-      }
-
-      const items = [] as FeedTimelineItem[]
-      for (const signal of ['high', 'middle', 'low'] as const) {
-        const { timelineItems } = await fetchFeedItems(userId, {
-          ...options,
-          signal,
-          ignoreFeedTimelineItems: (savedFeedItems ?? []).concat(items),
-        })
-        addTimelineItems(timelineItems, options)
-        items.push(...timelineItems)
-      }
-      return items
+      const { timelineItems } = await fetchFeedItems(userId, {
+        ...options,
+        ignoreFeedTimelineItems: savedFeedItems ?? [],
+      })
+      addTimelineItems(timelineItems, options)
+      return timelineItems
     }
   )
 
@@ -385,23 +366,15 @@ export const useFeedTimeline = (
 
 const getBaseTimelineItem = (item: Row<'user_feed'>) =>
   removeUndefinedProps({
-    id: item.id,
-    dataType: item.data_type as FEED_DATA_TYPES,
-    reason: item.reason as FEED_REASON_TYPES,
+    ...mapTypes<'user_feed', FeedTimelineItem>(item, {
+      created_time: (ts) => tsToMillis(ts),
+    }),
+    supabaseTimestamp: item.created_time,
     reasonDescription: getExplanation(
       item.data_type as FEED_DATA_TYPES,
       item.reason as FEED_REASON_TYPES
     ),
-    createdTime: new Date(item.created_time).valueOf(),
-    supabaseTimestamp: item.created_time,
-    isCopied: item.is_copied,
-    data: item.data as Record<string, any>,
-    answerIds: item.answer_ids,
-    contractId: item.contract_id,
-    commentId: item.comment_id,
-    betData: item.bet_data,
-    creatorId: item.creator_id,
-  } as FeedTimelineItem)
+  })
 
 function createFeedTimelineItems(
   data: Row<'user_feed'>[],

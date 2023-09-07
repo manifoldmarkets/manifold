@@ -1,4 +1,5 @@
 // User interest to user interest distance:
+import { sum } from 'lodash'
 export const MINIMUM_SCORE = 0.0035
 export const DEFAULT_FEED_USER_ID = 'yYNDWRmBJDcWW0q1aZFi6xfKNcQ2'
 export const ALL_FEED_USER_ID = 'IG3WZ8i3IzY6R4wuTDxuvsXbkxD3'
@@ -17,16 +18,15 @@ type DEPRECATED_FEED_REASON_TYPES =
   | 'similar_interest_vector_to_user'
 
 // TODO: add 'shared_contract'
-export type CONTRACT_OR_USER_FEED_REASON_TYPES =
+export type CONTRACT_FEED_REASON_TYPES =
   | 'follow_contract'
   | 'liked_contract'
   | 'contract_in_group_you_are_in'
   | 'similar_interest_vector_to_contract'
   | 'follow_user'
-  | 'private_contract_shared_with_you'
 
 export type FEED_REASON_TYPES =
-  | CONTRACT_OR_USER_FEED_REASON_TYPES
+  | CONTRACT_FEED_REASON_TYPES
   | 'similar_interest_vector_to_news_vector'
 
 export const NEW_USER_FEED_DATA_TYPES: FEED_DATA_TYPES[] = [
@@ -37,6 +37,49 @@ export const NEW_USER_FEED_DATA_TYPES: FEED_DATA_TYPES[] = [
   'new_subsidy',
 ]
 
+export const BASE_FEED_DATA_TYPE_SCORES: { [key in FEED_DATA_TYPES]: number } =
+  {
+    new_comment: 0.1,
+    new_contract: 0.15,
+    new_subsidy: 0.1,
+    news_with_related_contracts: 0.1,
+    user_position_changed: 0.1,
+    contract_probability_changed: 0.2, // todo: multiply by magnitude of prob change
+    trending_contract: 0.2,
+  }
+
+export const BASE_FEED_REASON_TYPE_SCORES: {
+  [key in FEED_REASON_TYPES]: number
+} = {
+  follow_contract: 0.4,
+  liked_contract: 0.2,
+  contract_in_group_you_are_in: 0.2,
+  similar_interest_vector_to_contract: 0, // factored in by multiplying by interest distance
+  follow_user: 0.3,
+  similar_interest_vector_to_news_vector: 0.1,
+}
+
+export const getRelevanceScore = (
+  feedDataType: FEED_DATA_TYPES,
+  reasons: FEED_REASON_TYPES[],
+  importanceScore: number,
+  interestDistance: number,
+  trendingContractType?: 'old' | 'new'
+): number => {
+  const dataTypeScore =
+    trendingContractType === 'old'
+      ? 0
+      : BASE_FEED_DATA_TYPE_SCORES[feedDataType]
+
+  const reasonsScore = sum(reasons.map((r) => BASE_FEED_REASON_TYPE_SCORES[r]))
+  return (
+    dataTypeScore +
+    reasonsScore +
+    importanceScore * 0.3 +
+    (1 - interestDistance) * 0.2
+  )
+}
+
 export type CreatorDetails = {
   id: string
   name: string
@@ -44,16 +87,14 @@ export type CreatorDetails = {
   avatarUrl: string
 }
 
-// TODO: now that we have disinterest vectors, increase this threshold
-// User interest to contract distances:
 export const INTEREST_DISTANCE_THRESHOLDS: Record<FEED_DATA_TYPES, number> = {
-  contract_probability_changed: 0.13,
-  trending_contract: 0.175,
-  new_contract: 0.125,
-  new_comment: 0.125,
-  news_with_related_contracts: 0.175, // used to compare user interest vector to news title embedding
-  new_subsidy: 0.175,
-  user_position_changed: 0.0, // only for followed users
+  contract_probability_changed: 0.125,
+  trending_contract: 0.125,
+  new_contract: 0.11,
+  new_comment: 0.11,
+  news_with_related_contracts: 0.17, // used to compare user interest vector to news title embedding
+  new_subsidy: 0.12,
+  user_position_changed: 1, // only targets followed users
 }
 
 export const FeedExplanationDictionary: Record<
@@ -71,8 +112,6 @@ export const FeedExplanationDictionary: Record<
     similar_interest_vector_to_contract:
       'New comment on a question you may be interested in',
     follow_user: 'New comment by a creator you follow',
-    private_contract_shared_with_you:
-      'New comment on a private question shared with you',
   },
   news_with_related_contracts: {
     follow_contract: 'News about question you follow',
@@ -85,8 +124,6 @@ export const FeedExplanationDictionary: Record<
       'News related to a question you may be interested in',
     follow_user: 'News about a question by a creator you follow',
     similar_interest_vector_to_news_vector: 'News you may be interested in',
-    private_contract_shared_with_you:
-      'News about a private question shared with you',
   },
   new_contract: {
     contract_in_group_you_are_in: 'New question in a group you are in',
@@ -95,7 +132,6 @@ export const FeedExplanationDictionary: Record<
     similar_interest_vector_to_contract:
       'New question you may be interested in',
     follow_user: 'New question by a creator you follow',
-    private_contract_shared_with_you: 'New private question shared with you',
   },
   contract_probability_changed: {
     follow_contract: 'Market movement on question you follow',
@@ -108,8 +144,6 @@ export const FeedExplanationDictionary: Record<
     similar_interest_vector_to_contract:
       'Market movement on question you may be interested in',
     follow_user: 'Market movement on question by a creator you follow',
-    private_contract_shared_with_you:
-      'Market movement on a private question shared with you',
   },
   trending_contract: {
     follow_contract: 'Trending question you follow',
@@ -121,8 +155,6 @@ export const FeedExplanationDictionary: Record<
     similar_interest_vector_to_contract:
       'Trending question you may be interested in',
     follow_user: 'Trending question by a creator you follow',
-    private_contract_shared_with_you:
-      'Trending private question shared with you',
   },
   new_subsidy: {
     contract_in_group_you_are_in:
@@ -132,8 +164,6 @@ export const FeedExplanationDictionary: Record<
     similar_interest_vector_to_contract:
       'New subsidy on a question you may be interested in',
     follow_user: 'New subsidy by a creator you follow',
-    private_contract_shared_with_you:
-      'New subsidy on a private question shared with you',
   },
   user_position_changed: {
     contract_in_group_you_are_in: 'New bets on question in a group you are in',
@@ -142,8 +172,6 @@ export const FeedExplanationDictionary: Record<
     similar_interest_vector_to_contract:
       'New bets on a question you may be interested in',
     follow_user: 'New bets by a creator you follow',
-    private_contract_shared_with_you:
-      'New bets on a private question shared with you',
   },
 }
 

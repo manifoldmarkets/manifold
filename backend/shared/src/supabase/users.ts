@@ -2,6 +2,7 @@ import { pgp, SupabaseDirectClient } from 'shared/supabase/init'
 import { fromPairs } from 'lodash'
 import {
   FEED_REASON_TYPES,
+  getRelevanceScore,
   INTEREST_DISTANCE_THRESHOLDS,
   NEW_USER_FEED_DATA_TYPES,
 } from 'common/feed'
@@ -26,6 +27,7 @@ export const getUserFollowerIds = async (
 
 export const getUsersWithSimilarInterestVectorToNews = async (
   newsId: string,
+  averageImportanceScore: number,
   pg: SupabaseDirectClient
 ) => {
   const userIdsAndDistances = await pg.manyOrNone<{
@@ -49,10 +51,22 @@ export const getUsersWithSimilarInterestVectorToNews = async (
   `,
     [newsId, INTEREST_DISTANCE_THRESHOLDS.news_with_related_contracts]
   )
+  const reasons = [
+    'similar_interest_vector_to_news_vector',
+  ] as FEED_REASON_TYPES[]
+
   return fromPairs(
     userIdsAndDistances.map((r) => [
       r.user_id,
-      'similar_interest_vector_to_news_vector' as FEED_REASON_TYPES,
+      {
+        reasons,
+        relevanceScore: getRelevanceScore(
+          'news_with_related_contracts',
+          reasons,
+          averageImportanceScore,
+          r.distance
+        ),
+      },
     ])
   )
 }

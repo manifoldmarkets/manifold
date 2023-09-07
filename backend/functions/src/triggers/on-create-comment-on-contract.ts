@@ -1,12 +1,7 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
-import { compact } from 'lodash'
-import {
-  getContract,
-  getUser,
-  getValues,
-  revalidateStaticProps,
-} from 'shared/utils'
+import { compact, first } from 'lodash'
+import { getUser, getValues, revalidateStaticProps } from 'shared/utils'
 import { ContractComment } from 'common/comment'
 import { Bet } from 'common/bet'
 import { getLargestPosition } from 'common/calculate'
@@ -22,6 +17,8 @@ import { secrets } from 'common/secrets'
 import { HOUR_MS } from 'common/util/time'
 import { removeUndefinedProps } from 'common/util/object'
 import { addCommentOnContractToFeed } from 'shared/create-feed'
+import { getContractsDirect } from 'shared/supabase/contracts'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
 
 const firestore = admin.firestore()
 
@@ -92,7 +89,11 @@ export const onCreateCommentOnContract = functions
     }
     const { eventId } = context
 
-    const contract = await getContract(contractId)
+    const contracts = await getContractsDirect(
+      [contractId],
+      createSupabaseDirectClient()
+    )
+    const contract = first(contracts)
     if (!contract)
       throw new Error('Could not find contract corresponding with comment')
 

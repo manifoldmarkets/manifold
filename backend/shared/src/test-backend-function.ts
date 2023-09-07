@@ -5,10 +5,7 @@ import {
   createSupabaseDirectClient,
 } from 'shared/supabase/init'
 import * as admin from 'firebase-admin'
-import { getUserMostChangedPosition } from 'common/supabase/bets'
-import { getContract, getUser } from 'shared/utils'
-import { addBetDataToUsersFeeds } from 'shared/create-feed'
-import * as crypto from 'crypto'
+import { addInterestingContractsToFeed } from 'shared/add-interesting-contracts-to-feed'
 
 // Ian's file for debugging
 export async function testBackendFunction() {
@@ -21,26 +18,27 @@ export async function testBackendFunction() {
     // await updateViewsAndViewersEmbeddings(pg)
     // await addInterestingContractsToFeed(db, pg)
     // await sendOnboardingNotificationsInternal(firestore)
-    // await addInterestingContractsToFeed(db, pg)
-    const user = await getUser('AJwLWoo3xue32XIiAVrL5SyR1WB2')
-    if (!user) return
-    const contract = await getContract('sUfRsm6efdkUIOYcU980')
-    if (!contract) return
-    const maxOutcome = await getUserMostChangedPosition(
-      user,
-      contract,
-      Date.now() - 1000,
-      db
-    )
-    if (!maxOutcome) return
-    await addBetDataToUsersFeeds(
-      contract,
-      user,
-      maxOutcome,
-      crypto.randomUUID()
-    )
+    await addInterestingContractsToFeed(db, pg)
+    // const user = await getUser('hqdXgp0jK2YMMhPs067eFK4afEH3')
+    // if (!user) return
+    // const contract = await getContract('OMDk6mF7gC4YZEi1sdVa')
+    // if (!contract) return
 
-    console.log('max change', maxOutcome)
+    // const maxOutcome = await getUserMostChangedPosition(
+    //   user,
+    //   contract,
+    //   Date.now() - 1000,
+    //   db
+    // )
+    // if (!maxOutcome) return
+    // await addBetDataToUsersFeeds(
+    //   contract,
+    //   user,
+    //   maxOutcome,
+    //   crypto.randomUUID()
+    // )
+    //
+    // console.log('max change', maxOutcome)
     // await calculateGroupImportanceScore(pg)
     // const apiKey = process.env.NEWS_API_KEY
     // if (!apiKey) {

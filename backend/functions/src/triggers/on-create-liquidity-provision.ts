@@ -9,7 +9,6 @@ import {
 } from 'common/antes'
 import { secrets } from 'common/secrets'
 import { addContractToFeed } from 'shared/create-feed'
-import { INTEREST_DISTANCE_THRESHOLDS } from 'common/feed'
 
 export const onCreateLiquidityProvision = functions
   .runWith({ secrets })
@@ -46,8 +45,6 @@ export const onCreateLiquidityProvision = functions
         'new_subsidy',
         [contract.creatorId, liquidity.userId],
         {
-          maxDistanceFromUserInterestToContract:
-            INTEREST_DISTANCE_THRESHOLDS.new_subsidy,
           userIdResponsibleForEvent: liquidity.userId,
           idempotencyKey: eventId,
         }

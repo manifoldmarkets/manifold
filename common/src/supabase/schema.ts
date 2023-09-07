@@ -1043,52 +1043,52 @@ export interface Database {
         }
         Relationships: [
           {
-            foreignKeyName: 'reports_content_owner_id_fkey'
-            columns: ['content_owner_id']
-            referencedRelation: 'users'
-            referencedColumns: ['id']
+            foreignKeyName: "reports_content_owner_id_fkey"
+            columns: ["content_owner_id"]
+            referencedRelation: "users"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'reports_content_owner_id_fkey'
-            columns: ['content_owner_id']
-            referencedRelation: 'user_groups'
-            referencedColumns: ['id']
+            foreignKeyName: "reports_content_owner_id_fkey"
+            columns: ["content_owner_id"]
+            referencedRelation: "user_groups"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'reports_content_owner_id_fkey'
-            columns: ['content_owner_id']
-            referencedRelation: 'user_referrals'
-            referencedColumns: ['id']
+            foreignKeyName: "reports_content_owner_id_fkey"
+            columns: ["content_owner_id"]
+            referencedRelation: "user_referrals"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'reports_content_owner_id_fkey'
-            columns: ['content_owner_id']
-            referencedRelation: 'user_referrals_profit'
-            referencedColumns: ['id']
+            foreignKeyName: "reports_content_owner_id_fkey"
+            columns: ["content_owner_id"]
+            referencedRelation: "user_referrals_profit"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'reports_user_id_fkey'
-            columns: ['user_id']
-            referencedRelation: 'users'
-            referencedColumns: ['id']
+            foreignKeyName: "reports_user_id_fkey"
+            columns: ["user_id"]
+            referencedRelation: "users"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'reports_user_id_fkey'
-            columns: ['user_id']
-            referencedRelation: 'user_groups'
-            referencedColumns: ['id']
+            foreignKeyName: "reports_user_id_fkey"
+            columns: ["user_id"]
+            referencedRelation: "user_groups"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'reports_user_id_fkey'
-            columns: ['user_id']
-            referencedRelation: 'user_referrals'
-            referencedColumns: ['id']
+            foreignKeyName: "reports_user_id_fkey"
+            columns: ["user_id"]
+            referencedRelation: "user_referrals"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'reports_user_id_fkey'
-            columns: ['user_id']
-            referencedRelation: 'user_referrals_profit'
-            referencedColumns: ['id']
+            foreignKeyName: "reports_user_id_fkey"
+            columns: ["user_id"]
+            referencedRelation: "user_referrals_profit"
+            referencedColumns: ["id"]
           }
         ]
       }
@@ -1338,6 +1338,8 @@ export interface Database {
           news_id: string | null
           reaction_id: string | null
           reason: string
+          reasons: string[] | null
+          relevance_score: number | null
           seen_time: string | null
           user_id: string
         }
@@ -1358,6 +1360,8 @@ export interface Database {
           news_id?: string | null
           reaction_id?: string | null
           reason: string
+          reasons?: string[] | null
+          relevance_score?: number | null
           seen_time?: string | null
           user_id: string
         }
@@ -1378,6 +1382,8 @@ export interface Database {
           news_id?: string | null
           reaction_id?: string | null
           reason?: string
+          reasons?: string[] | null
+          relevance_score?: number | null
           seen_time?: string | null
           user_id?: string
         }
@@ -2873,23 +2879,6 @@ export interface Database {
       get_user_group_id_for_current_user: {
         Args: Record<PropertyKey, never>
         Returns: string
-      }
-      get_user_league_info_from_username: {
-        Args: {
-          this_season: number
-          this_username: string
-        }
-        Returns: {
-          cohort: string | null
-          created_time: string | null
-          division: number | null
-          mana_earned: number | null
-          mana_earned_breakdown: Json | null
-          rank: number | null
-          rank_snapshot: number | null
-          season: number | null
-          user_id: string | null
-        }[]
       }
       get_your_contract_ids:
         | {

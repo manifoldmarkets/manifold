@@ -61,6 +61,7 @@ import { JSONContent } from '@tiptap/core'
 import { league_user_info } from 'common/leagues'
 import { getInterestingMarketsForUsers } from 'shared/interesting-markets-email-helpers'
 import { hasUserSeenMarket } from 'shared/helpers/seen-markets'
+import { getUserFollowerIds } from 'shared/supabase/users'
 
 const firestore = admin.firestore()
 
@@ -1039,25 +1040,22 @@ export const createNewContractNotification = async (
     if (reason === 'contract_from_followed_user')
       await sendNewFollowedMarketEmail(reason, userId, privateUser, contract)
   }
-
-  const followerUserIds = await pg.manyOrNone(
-    `select user_id from user_follows where follow_id = $1 and user_id != $1`,
-    [contractCreator.id]
-  )
+  const followerUserIds = await getUserFollowerIds(contractCreator.id, pg)
 
   // As it is coded now, the tag notification usurps the new contract notification
   // It'd be easy to append the reason to the eventId if desired
   if (contract.visibility == 'public') {
-    for (const followerUserId of followerUserIds) {
-      await sendNotificationsIfSettingsAllow(
-        followerUserId,
-        'contract_from_followed_user'
+    await Promise.all(
+      followerUserIds.map(async (userId) =>
+        sendNotificationsIfSettingsAllow(userId, 'contract_from_followed_user')
       )
-    }
+    )
   }
-  for (const mentionedUserId of mentionedUserIds) {
-    await sendNotificationsIfSettingsAllow(mentionedUserId, 'tagged_user')
-  }
+  await Promise.all(
+    mentionedUserIds.map(async (userId) =>
+      sendNotificationsIfSettingsAllow(userId, 'tagged_user')
+    )
+  )
 }
 
 export const createNewContractFromPrivateGroupNotification = async (

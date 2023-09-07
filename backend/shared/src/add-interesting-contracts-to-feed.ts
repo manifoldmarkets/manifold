@@ -108,16 +108,19 @@ export async function addInterestingContractsToFeed(
     // This is a newly trending contract, and should be at the top of most users' feeds
     if (todayScore > 10 && todayScore / thisWeekScore > 0.5 && !readOnly) {
       log('Inserting specifically today trending contract', contract.id)
-      await insertTrendingContractToUsersFeeds(contract, now - 3 * DAY_MS, {
-        todayScore,
-        thisWeekScore,
-        importanceScore: parseFloat(importanceScore.toPrecision(2)),
-      })
+      await insertTrendingContractToUsersFeeds(
+        contract,
+        now - 5 * DAY_MS,
+        {
+          todayScore,
+          thisWeekScore,
+          importanceScore: parseFloat(importanceScore.toPrecision(2)),
+        },
+        'new'
+      )
     } else if (
-      importanceScore > 0.6 ||
-      (importanceScore > 0.25 &&
-        (hourAgoTradersByContract[contract.id] ?? 0) >= 8 &&
-        !readOnly)
+      !readOnly &&
+      (hourAgoTradersByContract[contract.id] ?? 0) >= (1 - importanceScore) * 15
     ) {
       log(
         'Inserting generally trending, recently popular contract',
@@ -128,10 +131,15 @@ export async function addInterestingContractsToFeed(
         hourAgoTradersByContract[contract.id],
         'traders in the past hour'
       )
-      await insertTrendingContractToUsersFeeds(contract, now - 14 * DAY_MS, {
-        tradersInPastHour: hourAgoTradersByContract[contract.id] ?? 0,
-        importanceScore: parseFloat(importanceScore.toPrecision(2)),
-      })
+      await insertTrendingContractToUsersFeeds(
+        contract,
+        now - 14 * DAY_MS,
+        {
+          tradersInPastHour: hourAgoTradersByContract[contract.id] ?? 0,
+          importanceScore: parseFloat(importanceScore.toPrecision(2)),
+        },
+        'old'
+      )
     }
 
     // If it's just undergone a large prob change and wasn't created today, add it to the feed
