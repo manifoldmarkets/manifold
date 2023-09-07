@@ -14,6 +14,7 @@ import { getAnswerProbability } from 'common/calculate'
 import { useUserByIdOrAnswer } from 'web/hooks/use-user-supabase'
 import { ReactNode } from 'react'
 import { Tooltip } from '../widgets/tooltip'
+import { formatTimeShort } from 'web/lib/util/time'
 
 export function ResolutionAnswerItem(props: {
   answer: DpmAnswer | Answer
@@ -230,11 +231,20 @@ export const AnswerBar = (props: {
 
 export const AnswerLabel = (props: {
   text: string
+  index: number | undefined
+  createdTime: number
   truncate?: 'short' | 'long' | 'none' //  | medium (30)
   creator?: { username: string; avatarUrl?: string } | false
   className?: string
 }) => {
-  const { text, truncate = 'none', creator, className } = props
+  const {
+    text,
+    index,
+    createdTime,
+    truncate = 'none',
+    creator,
+    className,
+  } = props
 
   const ELLIPSES_LENGTH = 3
   const maxLength = { short: 20, long: 75, none: undefined }[truncate]
@@ -243,19 +253,27 @@ export const AnswerLabel = (props: {
       ? text.slice(0, maxLength) + '...'
       : text
 
+  const answerTextTooltip = truncated === text ? false : text
+
+  const indexText = index !== undefined ? `#${index + 1}: ` : ''
+  const dateText = `created ${formatTimeShort(createdTime)}`
+  const dateTooltip = `${indexText}${dateText}`
+
   return (
-    <Tooltip text={truncated === text ? false : text}>
+    <Tooltip text={answerTextTooltip}>
       <span className={clsx('my-1', className)}>
-        {creator === false ? (
-          <EmptyAvatar className="mr-2 inline" size={4} />
-        ) : creator ? (
-          <Avatar
-            className="mr-2 inline"
-            size="2xs"
-            username={creator.username}
-            avatarUrl={creator.avatarUrl}
-          />
-        ) : null}
+        <Tooltip text={dateTooltip}>
+          {creator === false ? (
+            <EmptyAvatar className="mr-2 inline" size={4} />
+          ) : creator ? (
+            <Avatar
+              className="mr-2 inline"
+              size="2xs"
+              username={creator.username}
+              avatarUrl={creator.avatarUrl}
+            />
+          ) : null}
+        </Tooltip>
         <Linkify text={truncated} className="[&_a]:text-primary-800" />
       </span>
     </Tooltip>
