@@ -517,8 +517,8 @@ export function ContractPageContent(props: {
             {isResolved &&
               !userHasReviewed &&
               // resolved less than week ago
-              // (Date.now() - (contract.resolutionTime ?? 0)) / 1000 <
-              //   60 * 60 * 24 * 7 &&
+              (Date.now() - (contract.resolutionTime ?? 0)) / 1000 <
+                60 * 60 * 24 * 7 &&
               user &&
               user.id !== contract.creatorId &&
               contract.outcomeType !== 'POLL' && (
