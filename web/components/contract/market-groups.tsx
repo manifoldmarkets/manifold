@@ -5,7 +5,7 @@ import {
   useGroupsWhereUserHasRole,
   useGroupsWithContract,
 } from 'web/hooks/use-group-supabase'
-import { orderBy, replace } from 'lodash'
+import { orderBy } from 'lodash'
 import Link from 'next/link'
 import { linkClass } from 'web/components/widgets/site-link'
 import { GroupTag } from 'web/pages/groups'
