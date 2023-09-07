@@ -9,8 +9,8 @@ import { Button } from 'web/components/buttons/button'
 import { withTracking } from 'web/lib/service/analytics'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { STARTING_BALANCE } from 'common/economy'
-import SquiggleVerticalFlippedIcon from 'web/lib/icons/squiggle_vertical_flipped.svg'
-import SquiggleHorizontalFlippedIcon from 'web/lib/icons/squiggle_horizontal_flipped.svg'
+import SquiggleVertical from 'web/lib/icons/squiggle-vertical.svg'
+import SquiggleHorizontal from 'web/lib/icons/squiggle-horizontal.svg'
 import QuoteIcon from 'web/lib/icons/quote.svg'
 import testimonials from '../public/testimonials/testimonials.json'
 
@@ -82,16 +82,12 @@ export function TestimonialsPanel() {
           )}
           {!isMobile && (
             <div className="absolute -left-0.5 bottom-0 z-20 h-full">
-              <SquiggleVerticalFlippedIcon
-                className={clsx('h-full text-indigo-200')}
-              />
+              <SquiggleVertical className={clsx('h-full text-indigo-200')} />
             </div>
           )}
           {isMobile && (
             <div className="absolute right-0 -top-0.5 z-10 w-full items-center">
-              <SquiggleHorizontalFlippedIcon
-                className={clsx('text-indigo-200')}
-              />
+              <SquiggleHorizontal className={clsx('text-indigo-200')} />
             </div>
           )}
           <div
