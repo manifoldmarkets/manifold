@@ -1,5 +1,5 @@
 import { StarIcon as StarOutline } from '@heroicons/react/outline'
-import { StarIcon } from '@heroicons/react/solid'
+import { CheckIcon, StarIcon } from '@heroicons/react/solid'
 import { clamp, range } from 'lodash'
 import { GradientContainer } from '../widgets/gradient-container'
 import { useEffect, useState } from 'react'
@@ -61,9 +61,11 @@ export const ReviewPanel = (props: {
           disabled={rating == undefined}
           loading={send.isLoading}
           onClick={() => {
-            console.log('submitted rating', rating)
-            send.mutate({ marketId, rating, review: editor?.getJSON() })
-            onSubmit(rating)
+            send
+              .mutate({ marketId, rating, review: editor?.getJSON() })
+              .then(() => {
+                onSubmit(rating)
+              })
           }}
         >
           Submit
