@@ -452,18 +452,18 @@ const Trump = createNewsDashboardTab(
   'Trump',
   'Trump indicted',
   [
+    { slug: 'when-will-trump-be-imprisoned' },
     {
       url: 'https://www.reuters.com/world/us/trump-may-seek-removal-georgia-election-subversion-case-us-court-filing-2023-09-07/',
     },
+    { slug: 'will-any-state-disqualify-trump-fro' },
     {
       url: 'https://www.politico.com/news/2023/09/01/fourteenth-amendment-insurrection-clause-trump-00113790',
     },
-    { slug: 'will-any-state-disqualify-trump-fro' },
     { slug: 'will-donald-trump-be-convicted-of-a-99e01f724b3f' },
     {
       url: 'https://www.nbcnews.com/politics/donald-trump/federal-judge-set-trump-trial-date-election-interference-case-rcna101669',
     },
-    { slug: 'when-will-trump-be-imprisoned' },
 
     { slug: 'will-donald-trump-be-the-republican' },
     { slug: 'will-a-trump-mugshot-be-available-b' },
