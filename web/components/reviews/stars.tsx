@@ -58,7 +58,7 @@ export const ReviewPanel = (props: {
         <TextEditor editor={editor} />
         <Button
           className="self-end"
-          disabled={rating == undefined}
+          disabled={rating == 0}
           loading={send.isLoading}
           onClick={() => {
             send
