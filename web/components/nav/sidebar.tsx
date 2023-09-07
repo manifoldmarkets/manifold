@@ -24,7 +24,7 @@ import { AddFundsModal } from 'web/components/add-funds-modal'
 import { AppBadgesOrGetAppButton } from 'web/components/buttons/app-badges-or-get-app-button'
 import { CreateQuestionButton } from 'web/components/buttons/create-question-button'
 import { NotificationsIcon } from 'web/components/notifications-icon'
-import { DarkModeContext, useIsDarkMode } from 'web/hooks/dark-mode-context'
+import { DarkModeContext } from 'web/hooks/dark-mode-context'
 import { useUser } from 'web/hooks/use-user'
 import { firebaseLogin, firebaseLogout } from 'web/lib/firebase/users'
 import TrophyIcon from 'web/lib/icons/trophy-icon.svg'
@@ -59,12 +59,7 @@ export default function Sidebar(props: {
     ? getMobileNav(() => setIsAddFundsModalOpen(!isAddFundsModalOpen))
     : getDesktopNav(!!user, () => setIsModalOpen(true), true)
 
-  const bottomNavOptions = bottomNav(
-    !!user,
-    theme,
-    useIsDarkMode(),
-    toggleTheme
-  )
+  const bottomNavOptions = bottomNav(!!user, theme, toggleTheme)
 
   const createMarketButton = user && !user.isBannedFromPosting && (
     <CreateQuestionButton key="create-market-button" className={'mt-4'} />
@@ -180,7 +175,6 @@ const getMobileNav = (toggleModal: () => void) => {
 const bottomNav = (
   loggedIn: boolean,
   theme: 'light' | 'dark' | 'auto',
-  isDarkMode: boolean,
   toggleTheme: () => void
 ) =>
   buildArray(
