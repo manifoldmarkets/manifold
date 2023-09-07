@@ -48,6 +48,16 @@ export function UserContractsList(props: {
   return (
     <Col className={'w-full'}>
       <Row className={'gap-8 pb-4'}>
+        {rating && reviewCount && reviewCount > 0 && (
+          <Col>
+            <div className="text-ink-600 text-xs sm:text-sm">Rating</div>
+            <UserReviews
+              userId={creator.id}
+              rating={rating}
+              reviewCount={reviewCount}
+            />
+          </Col>
+        )}
         <MarketStats
           title={'Rank'}
           total={`#${shortFormatNumber(creatorRank ?? 0)}`}
@@ -89,12 +99,6 @@ export function UserContractsList(props: {
             )
           }
         />
-        {rating && (reviewCount ?? 0) > 0 && (
-          <Col>
-            <div className="text-ink-600 text-xs sm:text-sm">Rating</div>
-            <UserReviews userId={creator.id} rating={rating} />
-          </Col>
-        )}
       </Row>
       <SupabaseContractSearch
         defaultFilter="all"
@@ -128,7 +132,7 @@ const MarketStats = (props: {
 }) => {
   const { title, total, subTitle } = props
   return (
-    <Col>
+    <Col className="select-none">
       <div className="text-ink-600 text-xs sm:text-sm">{title}</div>
       <Row className="items-center gap-2">
         <span className="text-primary-600 text-lg sm:text-xl">{total}</span>

@@ -9,15 +9,25 @@ import { useState } from 'react'
 import { Row } from '../layout/row'
 import { StarIcon } from '@heroicons/react/solid'
 
-export function UserReviews(props: { userId: string; rating: number }) {
-  const { userId, rating } = props
+export function UserReviews(props: {
+  userId: string
+  rating: number
+  reviewCount: number
+}) {
+  const { userId, rating, reviewCount } = props
   const [open, setOpen] = useState(false)
   const shortenedRating = Math.ceil(rating * 100) / 100
   return (
-    <button onClick={() => setOpen(true)}>
-      <Row className="text-primary-600 hover:text-primary-700 items-center gap-0.5 text-lg transition-colors sm:text-xl">
+    <>
+      <Row className="text-primary-600 items-center gap-0.5 text-lg transition-colors sm:text-xl">
         {shortenedRating}
         <StarIcon className="h-5 w-5" />
+        <button
+          onClick={() => setOpen(true)}
+          className="text-ink-600  text-sm hover:underline"
+        >
+          ({reviewCount})
+        </button>
       </Row>
       <UserReviewsModal
         userId={userId}
@@ -25,7 +35,7 @@ export function UserReviews(props: { userId: string; rating: number }) {
         open={open}
         setOpen={setOpen}
       />
-    </button>
+    </>
   )
 }
 
