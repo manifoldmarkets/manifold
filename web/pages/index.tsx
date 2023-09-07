@@ -76,7 +76,7 @@ export default function Home() {
             <Col className="max-w-lg gap-2">
               <h1 className="mb-4 text-4xl">Predict the future</h1>
               <h1 className="text-lg">
-                Play-money markets. Real-world accuracy and impact.
+                Play-money markets. Real-world accuracy.
               </h1>
               <h1 className="text-lg">
                 Compete with your friends by betting on literally anything.
