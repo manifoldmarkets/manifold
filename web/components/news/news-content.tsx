@@ -450,10 +450,10 @@ const UFOs = createNewsDashboardTab(
 
 const Trump = createNewsDashboardTab(
   'Trump',
-  'Trump indicted, loses defamation suit',
+  'Trump indicted',
   [
     {
-      url: 'https://www.cnbc.com/2023/09/06/trump-suffers-big-loss-in-e-jean-carroll-defamation-case-judge-says-hes-liable.html',
+      url: 'https://www.reuters.com/world/us/trump-may-seek-removal-georgia-election-subversion-case-us-court-filing-2023-09-07/',
     },
     {
       url: 'https://www.politico.com/news/2023/09/01/fourteenth-amendment-insurrection-clause-trump-00113790',
@@ -556,11 +556,12 @@ const PlaneCrash = createNewsDashboardTab(
 
 const FLHurricane = createNewsDashboardTab(
   'Gulf Hurricane',
-  'Tropical Storm Lee forms',
+  'Hurricane Lee stengthens',
   [
     {
-      url: 'https://www.independent.co.uk/climate-change/news/tropical-storm-lee-hurricane-forecast-b2405453.html',
+      url: 'https://www.npr.org/2023/09/07/1198147021/hurricane-lee-forecast-category-5-storm',
     },
+    { slug: 'will-storm-lee-develop-into-a-categ' },
     { slug: 'will-tropical-storm-lee-become-a-ma' },
     { slug: 'will-hurricane-season-of-2023-cause' },
     { slug: 'will-a-hurricane-hit-the-state-of-f' },
@@ -575,7 +576,7 @@ const G20 = createNewsDashboardTab('G20', 'G20 Summit in India (Bharat?)', [
   },
   { slug: 'will-a-bill-to-rename-india-to-bhar' },
   {
-    url: 'https://www.livemint.com/news/world/russiaukraine-war-and-absence-of-putin-xi-jinping-to-cast-a-shadow-over-g20-summit-11693875726035.html',
+    url: 'https://www.reuters.com/markets/emerging/biden-doubles-down-emerging-markets-xi-snubs-g20-2023-09-07/',
   },
   { slug: 'will-volodomyr-zelenskyy-attend-the' },
   { slug: 'will-xi-and-modi-hold-a-bilateral-m' },
