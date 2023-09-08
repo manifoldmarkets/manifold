@@ -3,7 +3,7 @@ import { noop, uniq } from 'lodash'
 
 import { Col } from 'web/components/layout/col'
 import { leaveGroup } from 'web/lib/supabase/groups'
-import { useUser } from 'web/hooks/use-user'
+import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { Modal } from 'web/components/layout/modal'
 import { PillButton } from 'web/components/buttons/pill-button'
 import { Button } from 'web/components/buttons/button'
@@ -15,6 +15,9 @@ import { removeEmojis } from 'web/components/contract/market-groups'
 import { Row } from 'web/components/layout/row'
 import { GROUP_SLUGS_TO_HIDE_FROM_WELCOME_FLOW } from 'common/envs/constants'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
+import ShortToggle from '../widgets/short-toggle'
+import { InfoTooltip } from '../widgets/info-tooltip'
+import { updatePrivateUser } from 'web/lib/firebase/users'
 
 export function TopicSelectorDialog(props: {
   skippable: boolean
@@ -23,10 +26,11 @@ export function TopicSelectorDialog(props: {
   const { skippable, opaque } = props
 
   const user = useUser()
+  const privateUser = usePrivateUser()
+
   const [userSelectedCategories, setUserSelectedCategories] = useState<
     string[] | undefined
   >()
-  const [isLoading, setIsLoading] = useState(false)
   const [trendingCategories, setTrendingCategories] = useState<Group[]>()
   const topics = Object.keys(TOPICS_TO_SUBTOPICS)
   const hardCodedCategoryIds = topics
@@ -50,6 +54,8 @@ export function TopicSelectorDialog(props: {
         setTrendingCategories(categories)
       })
   }, [])
+
+  const [isLoading, setIsLoading] = useState(false)
 
   const closeDialog = async (skipUpdate: boolean) => {
     setIsLoading(true)
@@ -125,6 +131,30 @@ export function TopicSelectorDialog(props: {
             </Row>
           </div>
         ))}
+
+        <div className="my-4 px-5" key={'nsfw'}>
+          <div className="text-primary-700 text-md">
+            Show NSFW content{' '}
+            <InfoTooltip text="Not-safe-for-work (NSFW) means sexually gratuitous, offensive, or other content unsuitable for viewing at work or in public places." />
+          </div>
+          <ShortToggle
+            on={!privateUser?.blockedGroupSlugs.includes('nsfw')}
+            setOn={(enabled) => {
+              const filteredSlugs =
+                privateUser?.blockedGroupSlugs.filter(
+                  (slug) => slug !== 'nsfw'
+                ) ?? []
+
+              const blockedGroupSlugs = !enabled
+                ? filteredSlugs.concat(['nsfw'])
+                : filteredSlugs
+
+              updatePrivateUser(privateUser?.id ?? '', {
+                blockedGroupSlugs,
+              })
+            }}
+          />
+        </div>
 
         <div className="from-canvas-0 pointer-events-none sticky bottom-0 bg-gradient-to-t to-transparent text-right">
           <span className="pointer-events-auto inline-flex gap-2 p-6 pt-2">
