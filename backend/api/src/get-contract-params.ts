@@ -1,6 +1,6 @@
 import { calculateMultiBets } from 'common/bet'
 import { getInitialProbability } from 'common/calculate'
-import { MaybeAuthedContractParams as Ret } from 'common/contract'
+import { Contract, MaybeAuthedContractParams as Ret } from 'common/contract'
 import { binAvg, maxMinBin } from 'common/chart'
 import { getBets, getBetPoints, getTotalBetCount } from 'common/supabase/bets'
 import { getRecentTopLevelCommentsAndReplies } from 'common/supabase/comments'
@@ -19,6 +19,7 @@ import { z } from 'zod'
 import { APIError, MaybeAuthedEndpoint, validate } from './helpers'
 import { getIsAdmin } from 'common/supabase/is-admin'
 import { pointsToBase64 } from 'common/util/og'
+import { SupabaseClient } from 'common/supabase/utils'
 
 const bodySchema = z.object({
   contractSlug: z.string(),
@@ -46,25 +47,50 @@ export const getcontractparams = MaybeAuthedEndpoint<Ret>(async (req, auth) => {
       )
     }
   }
-  const groupId =
-    contract.groupLinks && contract.groupLinks.length > 0
-      ? contract.groupLinks[0].groupId
-      : undefined
 
-  const isAdmin = await getIsAdmin(db, auth?.uid)
-  const canAccessContract =
-    // can't access if contract is deleted
-    (!contract.deleted || isAdmin) &&
-    // can access if contract is not private
-    (contract.visibility != 'private' ||
-      // if contract is private, can't access if in static props
-      (!fromStaticProps &&
-        // otherwise, can access if user can access contract's group
-        auth &&
-        groupId &&
-        (await getUserIsMember(db, groupId, auth?.uid))))
+  const isCpmm1 = contract.mechanism === 'cpmm-1'
+  const hasMechanism = contract.mechanism !== 'none'
+  const isMulti = contract.mechanism === 'cpmm-multi-1'
 
-  if (!canAccessContract && !isAdmin) {
+  const [
+    canAccessContract,
+    totalBets,
+    betsToPass,
+    allBetPoints,
+    comments,
+    userPositionsByOutcome,
+    topContractMetrics,
+    totalPositions,
+    creator,
+    relatedContracts,
+  ] = await Promise.all([
+    getCanAccessContract(contract, auth?.uid, fromStaticProps, db),
+    hasMechanism ? getTotalBetCount(contract.id, db) : 0,
+    hasMechanism
+      ? getBets(db, {
+          contractId: contract.id,
+          limit: 100,
+          order: 'desc',
+          filterAntes: true,
+          filterRedemptions: true,
+        })
+      : [],
+    hasMechanism
+      ? getBetPoints(db, {
+          contractId: contract.id,
+          filterRedemptions: contract.mechanism !== 'cpmm-multi-1',
+          order: 'asc',
+        })
+      : [],
+    getRecentTopLevelCommentsAndReplies(db, contract.id, 50),
+    isCpmm1 ? getCPMMContractUserContractMetrics(contract.id, 100, db) : {},
+    contract.resolution ? getTopContractMetrics(contract.id, 10, db) : [],
+    isCpmm1 ? getTotalContractMetrics(contract.id, db) : 0,
+    getUser(contract.creatorId),
+    getRelatedContracts(contract, 20, db, true),
+  ])
+
+  if (!canAccessContract) {
     return contract && !contract.deleted
       ? {
           state: 'not authed',
@@ -74,32 +100,7 @@ export const getcontractparams = MaybeAuthedEndpoint<Ret>(async (req, auth) => {
       : { state: 'not found' }
   }
 
-  const totalBets =
-    contract.mechanism == 'none' ? 0 : await getTotalBetCount(contract.id, db)
-  const isSingle = contract.mechanism === 'cpmm-1'
-  const isMulti = contract.mechanism === 'cpmm-multi-1'
-
-  const betsToPass =
-    contract.mechanism == 'none'
-      ? []
-      : await getBets(db, {
-          contractId: contract.id,
-          limit: 100,
-          order: 'desc',
-          filterAntes: true,
-          filterRedemptions: true,
-        })
-
-  const allBetPoints =
-    contract.mechanism == 'none'
-      ? []
-      : await getBetPoints(db, {
-          contractId: contract.id,
-          filterRedemptions: !isMulti,
-          order: 'asc',
-        })
-
-  let chartPoints = isSingle
+  let chartPoints = isCpmm1
     ? [
         { x: contract.createdTime, y: getInitialProbability(contract) },
         ...maxMinBin(allBetPoints, 500),
@@ -112,32 +113,9 @@ export const getcontractparams = MaybeAuthedEndpoint<Ret>(async (req, auth) => {
     : []
 
   const ogPoints =
-    isSingle && contract.visibility !== 'private' ? binAvg(allBetPoints) : []
+    isCpmm1 && contract.visibility !== 'private' ? binAvg(allBetPoints) : []
   const pointsString = pointsToBase64(ogPoints.map((p) => [p.x, p.y] as const))
 
-  const comments = await getRecentTopLevelCommentsAndReplies(
-    db,
-    contract.id,
-    50
-  )
-
-  const userPositionsByOutcome =
-    contract.mechanism === 'cpmm-1'
-      ? await getCPMMContractUserContractMetrics(contract.id, 100, db)
-      : {}
-
-  const topContractMetrics = contract.resolution
-    ? await getTopContractMetrics(contract.id, 10, db)
-    : []
-
-  const totalPositions =
-    contract.mechanism === 'cpmm-1'
-      ? await getTotalContractMetrics(contract.id, db)
-      : 0
-
-  const creator = await getUser(contract.creatorId)
-
-  const relatedContracts = await getRelatedContracts(contract, 20, db, true)
   return {
     state: 'authed',
     params: removeUndefinedProps({
@@ -158,3 +136,23 @@ export const getcontractparams = MaybeAuthedEndpoint<Ret>(async (req, auth) => {
     }),
   }
 })
+const getCanAccessContract = async (
+  contract: Contract,
+  uid: string | undefined,
+  fromStaticProps: boolean,
+  db: SupabaseClient
+): Promise<boolean> => {
+  const groupId = contract.groupLinks?.length
+    ? contract.groupLinks[0].groupId
+    : undefined
+  const isAdmin = uid ? await getIsAdmin(db, uid) : false
+
+  return (
+    (!contract.deleted || isAdmin) &&
+    (contract.visibility !== 'private' ||
+      (!fromStaticProps &&
+        groupId !== undefined &&
+        uid !== undefined &&
+        (isAdmin || (await getUserIsMember(db, groupId, uid)))))
+  )
+}

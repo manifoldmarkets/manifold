@@ -5,5 +5,5 @@ export async function getIsAdmin(
   userId: string | undefined | null
 ) {
   const { data: is_admin } = await db.rpc('is_admin', { input_string: userId })
-  return is_admin
+  return is_admin as any as boolean
 }
