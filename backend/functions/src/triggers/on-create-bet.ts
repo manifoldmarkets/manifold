@@ -153,7 +153,7 @@ const addBetToFollowersFeeds = async (
   contract: Contract,
   bet: Bet
 ) => {
-  if (bettor.followerCountCached <= 0 || contract.mechanism === 'dpm-2') return
+  if (contract.mechanism === 'dpm-2') return
   const positionChange = await getUserMostChangedPosition(
     bettor,
     contract,

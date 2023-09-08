@@ -132,7 +132,6 @@ create or replace view
       users.name as name,
       users.username as username,
       users.data ->> 'avatarUrl' as avatarurl,
-      (users.data ->> 'followerCountCached')::integer as follower_count,
       coalesce(user_groups.groups, '{}') as groups
     from
       (
@@ -276,14 +275,16 @@ create or replace view
   user_league_info as (
     select
       *,
-      (row_number() over (
-        partition by
-          season,
-          division,
-          cohort
-        order by
-          mana_earned desc
-      )::int) as rank
+      (
+        row_number() over (
+          partition by
+            season,
+            division,
+            cohort
+          order by
+            mana_earned desc
+        )::int
+      ) as rank
     from
       leagues
   );

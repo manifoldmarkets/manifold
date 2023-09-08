@@ -116,7 +116,6 @@ export const createuser = authEndpoint(async (req, auth) => {
         createdTime: Date.now(),
         profitCached: { daily: 0, weekly: 0, monthly: 0, allTime: 0 },
         nextLoanCached: 0,
-        followerCountCached: 0,
         streakForgiveness: 1,
         shouldShowWelcome: true,
         creatorTraders: { daily: 0, weekly: 0, monthly: 0, allTime: 0 },
