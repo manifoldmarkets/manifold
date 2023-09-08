@@ -40,9 +40,11 @@ export default function DashboardPage(props: { dashboard: Dashboard }) {
         <DashboardSidebar description={dashboard.description} inSidebar />
       }
     >
-      <Col>
-        <Title>{dashboard.title}</Title>
-        <DashboardSidebar description={dashboard.description} />
+      <Col className="items-center">
+        <Col className="w-full max-w-2xl px-1 sm:px-2">
+          <Title className="mt-4">{dashboard.title}</Title>
+          <DashboardSidebar description={dashboard.description} />
+        </Col>
       </Col>
     </Page>
   )
