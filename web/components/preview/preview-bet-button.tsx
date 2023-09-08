@@ -4,7 +4,6 @@ import {
   PseudoNumericContract,
   StonkContract,
 } from 'common/contract'
-import { UserBetsSummary } from 'web/components/bet/bet-summary'
 import { User } from 'web/lib/firebase/users'
 import { Col } from '../layout/col'
 import { PreviewBuyPanel } from './preview-bet-panel'

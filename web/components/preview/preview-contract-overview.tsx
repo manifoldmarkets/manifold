@@ -16,7 +16,6 @@ import { ChoiceContractChart, MultiPoint } from '../charts/contract/choice'
 import { PseudoNumericContractChart } from '../charts/contract/pseudo-numeric'
 import { useViewScale } from 'web/components/charts/generic-charts'
 import {
-  BinaryResolutionOrChance,
   NumericResolutionOrExpectation,
   PseudoNumericResolutionOrExpectation,
   StonkPrice,

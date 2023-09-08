@@ -4,7 +4,6 @@ import { sumBy } from 'lodash'
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 
-import { LimitBet } from 'common/bet'
 import {
   CPMMBinaryContract,
   CPMMMultiContract,
@@ -15,7 +14,6 @@ import { computeCpmmBet } from 'common/new-bet'
 import {
   formatLargeNumber,
   formatMoney,
-  formatOutcomeLabel,
   formatPercent,
 } from 'common/util/format'
 import { APIError, placeBet } from 'web/lib/firebase/api'
