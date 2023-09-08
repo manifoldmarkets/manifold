@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 
 export const useReloadIfClientOld = () => {
-  const deploymentId = process.env.PUBLIC_NEXT_VERCEL_URL
+  const deploymentId = process.env.NEXT_PUBLIC_VERCEL_URL
 
   useEffect(() => {
     getDeploymentId().then((newDeploymentId) => {
