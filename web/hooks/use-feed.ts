@@ -7,7 +7,6 @@ import { isContractBlocked } from 'web/lib/firebase/users'
 import { useEvent } from './use-event'
 import { db } from 'web/lib/supabase/db'
 import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
-import { CUSTOM_TOPIC_KEY } from 'web/components/topic-selector'
 import { getBoosts } from 'web/lib/supabase/ads'
 
 const PAGE_SIZE = 20
@@ -22,7 +21,7 @@ export type BoostsType =
       market_data: Contract
     }[]
   | null
-
+const CUSTOM_TOPIC_KEY = 'user-topics'
 export const useFeed = (
   user: User | null | undefined,
   privateUser: PrivateUser | null | undefined,

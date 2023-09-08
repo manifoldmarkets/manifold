@@ -62,8 +62,8 @@ export function TopicSelectorDialog(props: {
   const selectedCategories: string[] = userSelectedCategories ?? []
 
   const pillButton = (
-    category: string,
     categoryWithEmoji: string,
+    category: string,
     groupId: string
   ) => (
     <PillButton
@@ -104,7 +104,7 @@ export function TopicSelectorDialog(props: {
             {trendingCategories ? (
               trendingCategories.map((group) => (
                 <div className="" key={group.id + '-section'}>
-                  {pillButton(removeEmojis(group.name), group.name, group.id)}
+                  {pillButton(group.name, removeEmojis(group.name), group.id)}
                 </div>
               ))
             ) : (
@@ -120,7 +120,7 @@ export function TopicSelectorDialog(props: {
               {getSubtopics(topic)
                 .filter(([_, __, groupId]) => !!groupId)
                 .map(([subtopicWithEmoji, subtopic, groupId]) => {
-                  return pillButton(subtopic, subtopicWithEmoji, groupId)
+                  return pillButton(subtopicWithEmoji, subtopic, groupId)
                 })}
             </Row>
           </div>

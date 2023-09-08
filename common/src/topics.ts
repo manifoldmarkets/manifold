@@ -1,115 +1,67 @@
-export const TOPICS_TO_SUBTOPICS: { [key: string]: string[] } = {
-  '🗳️ Politics': ['🟠 Trump', '🇺🇸 US Politics', '🇬🇧 UK Politics'],
+type TopicInfo = { name: string; groupId: string }
 
+export const TOPICS_TO_SUBTOPICS: { [key: string]: TopicInfo[] } = {
+  '🗳️ Politics': [
+    { name: '🟠 Trump', groupId: 'cEzcLXuitr6o4VPI01Q1' },
+    { name: '🇺🇸 US Politics', groupId: 'AjxQR8JMpNyDqtiqoA96' },
+    { name: '🇬🇧 UK Politics', groupId: 'aavkiDd6uZggfL3geuV2' },
+  ],
   '💻 Technology': [
-    '💻 Technology',
-    '🤖 AI',
-    '🪙 Crypto',
-    '🚀 Space',
-    '🪸 Climate',
-    '☢️ Nuclear',
-    '🧬 Biotech',
-    '☤ Health',
-    '👨‍💻 Programming',
-    '🔬 Science',
-    '🧮 Math',
+    { name: '💻 Technology', groupId: 'IlzY3moWwOcpsVZXCVej' },
+    { name: '🤖 AI', groupId: 'yEWvvwFFIqzf8JklMewp' },
+    { name: '🪙 Crypto', groupId: 'YuJw0M1xvUHrpiRRuKso' },
+    { name: '🚀 Space', groupId: 'SmJk6RHToaLxLk0I1ZSC' },
+    { name: '🪸 Climate', groupId: '97oNExy8iFftY2EgdkLw' },
+    { name: '☢️ Nuclear', groupId: '27a193db-f997-4533-86a6-386d9a915045' },
+    { name: '🧬 Biotech', groupId: 'zx0Pik5lD4jydGPxbLjB' },
+    { name: '☤ Health', groupId: 'JpUqUqRn9sSWxrk0Sq35' },
+    { name: '👨‍💻 Programming', groupId: 'PZJMbrLekgJBy7OOBKGT' },
+    { name: '🔬 Science', groupId: 'XMhZ5LbQoLMZiOpQJRnj' },
+    { name: '🧮 Math', groupId: 'S1tbcVt1t5Bd9O5mVCx1' },
   ],
-
   '💼 Business': [
-    '💵 Finance',
-    '💰 Economics',
-    '📈 Stocks',
-    '🪙 Crypto',
-    '🚀 Startups',
-    '🚘 Elon Musk',
+    { name: '💵 Finance', groupId: 'CgB83AAMkkOHSrTnzani' },
+    { name: '💰 Economics', groupId: 'p88Ycq6yFd5ECKqq9PFO' },
+    { name: '📈 Stocks', groupId: 'QDQfgsFiQrNNlZhsRGf5' },
+    { name: '🪙 Crypto', groupId: 'YuJw0M1xvUHrpiRRuKso' },
+    { name: '🚀 Startups', groupId: '19c319ca-033c-474f-b417-5f07efe88ec0' },
+    { name: '🚘 Elon Musk', groupId: '9OR5MrEu1F01FhmBRcre' },
   ],
-
   '🏟️ Sports': [
-    '🏅 Sports',
-    '🏈 NFL',
-    '🏀 Basketball',
-    '⚽ Soccer',
-    '♟️ Chess',
-    '🏎️ F1',
-    '🎾 Tennis',
+    { name: '🏅 Sports', groupId: '2hGlgVhIyvVaFyQAREPi' },
+    { name: '🏈 NFL', groupId: 'TNQwmbE5p6dnKx2e6Qlp' },
+    { name: '🏀 Basketball', groupId: 'NjkFkdkvRvBHoeMDQ5NB' },
+    { name: '⚽ Soccer', groupId: 'ypd6vR44ZzJyN9xykx6e' },
+    { name: '♟️ Chess', groupId: 'ED7Cu6lVPshJkZ7FYePW' },
+    { name: '🏎️ F1', groupId: 'ZdXq6X0Q8kZtA0Iyty7Q' },
+    { name: '🎾 Tennis', groupId: '1mvN9vIVIopcWiAsXhzp' },
+    { name: '🚲 Cycling', groupId: '2yisxJryUq9V5sG7P6Gy' },
   ],
-
   '🍿 Media': [
-    '🍿 Movies',
-    '🎮 Gaming',
-    '📺 TV Shows',
-    '🎵 Music',
-    '💅 Celebrities',
+    { name: '🍿 Movies', groupId: 'KSeNIu7AWgiBBM5FqVuB' },
+    { name: '🎮 Gaming', groupId: '5FaFmmaNNFTSA5r0vTAi' },
+    { name: '📺 TV Shows', groupId: '8isZHbaQMsoFz30XuZTo' },
+    { name: '🎵 Music', groupId: 'Xuc2UY8gGfjQqFXwxq5d' },
+    { name: '💅 Celebrities', groupId: '4QIcUOfCSSha0JZHAg9X' },
   ],
-
   '🌍 World': [
-    '🇷🇺 Russia',
-    '🇨🇳 China',
-    '🇮🇳 India',
-    '🇪🇺 Europe',
-    '🇷🇺🇺🇦 Russia & Ukraine',
-    '🌎 Latin America',
-    '🌍 Middle East',
-    '🌍 Africa',
+    { name: '🇷🇺 Russia', groupId: 'TIpf6j0hLpifpXN93FxE' },
+    { name: '🇨🇳 China', groupId: 'oWTzfoeemQGkSoPFn2T7' },
+
+    { name: '🇪🇺 Europe', groupId: 'ue52QI4BQgJgAJJNjLHr' },
+    { name: '🇮🇳 India', groupId: 'Y2J00UcVhr3wKq2lAOAy' },
+    { name: '🇷🇺🇺🇦 Russia & Ukraine', groupId: 'OxcXOuxXvwsXtC0Dx5sr' },
+    { name: '🌎 Latin America', groupId: 'DX94A1LQmpckcVdz5Hb3' },
+    { name: '🌍 Middle East', groupId: 'xg8wCPeM9JP6gD0igBrA' },
+    { name: '🌍 Africa', groupId: 'dFsZaGwyohGDVkJi1C3E' },
   ],
-
-  '🪂 Lifestyle': ['💪 Personal Development', '❤️‍🔥 Sex and love', '🏳️‍🌈 LGBTQIA+'],
+  '🪂 Lifestyle': [
+    { name: '💪 Personal Development', groupId: 'izQp87CKagOVJp9Olm1p' },
+    { name: '❤️‍🔥 Sex and love', groupId: '3syjPCC7PxE5KurTiTT3' },
+    { name: '🏳️‍🌈 LGBTQIA+', groupId: 'cLtLfm3NSrhXU6lV6Cuy' },
+  ],
 }
 
-const COMMUNITY_TO_GROUP_ID: { [key: string]: string } = {
-  'CGP Grey': 'yXIziLaaVxHFOPG1aMrJ',
-  'Effective Altruism': 'znYsWa9eZRkBvSHwmaNz',
-  'Destiny.gg': 'W2ES30fRo6CCbPNwMTTj',
-  'Wall Street Bets': '8Gu77XZbp4YnYEhLkOKm',
-  Proofniks: 'HWg8Z5SraHRjoEjHCcIJ',
-  ACX: 'UCM2uiHxr7Rftaa1KB29',
-}
-
-export const TOPICS_TO_GROUP_ID: { [key: string]: string } = {
-  'US Politics': 'AjxQR8JMpNyDqtiqoA96',
-  'UK Politics': 'aavkiDd6uZggfL3geuV2',
-  Trump: 'cEzcLXuitr6o4VPI01Q1',
-  AI: 'yEWvvwFFIqzf8JklMewp',
-  Crypto: 'YuJw0M1xvUHrpiRRuKso',
-  Space: 'SmJk6RHToaLxLk0I1ZSC',
-  Climate: '97oNExy8iFftY2EgdkLw',
-  F1: 'ZdXq6X0Q8kZtA0Iyty7Q',
-  Nuclear: '27a193db-f997-4533-86a6-386d9a915045',
-  Biotech: 'zx0Pik5lD4jydGPxbLjB',
-  Health: 'JpUqUqRn9sSWxrk0Sq35',
-  Programming: 'PZJMbrLekgJBy7OOBKGT',
-  Celebrities: '4QIcUOfCSSha0JZHAg9X',
-  Science: 'XMhZ5LbQoLMZiOpQJRnj',
-  Math: 'S1tbcVt1t5Bd9O5mVCx1',
-  Finance: 'CgB83AAMkkOHSrTnzani',
-  Economics: 'p88Ycq6yFd5ECKqq9PFO',
-  Technology: 'IlzY3moWwOcpsVZXCVej',
-  Startups: '19c319ca-033c-474f-b417-5f07efe88ec0',
-  Stocks: 'QDQfgsFiQrNNlZhsRGf5',
-  'Elon Musk': '9OR5MrEu1F01FhmBRcre',
-  NFL: 'TNQwmbE5p6dnKx2e6Qlp',
-  Basketball: 'NjkFkdkvRvBHoeMDQ5NB',
-  Soccer: 'ypd6vR44ZzJyN9xykx6e',
-  Chess: 'ED7Cu6lVPshJkZ7FYePW',
-  Sports: '2hGlgVhIyvVaFyQAREPi',
-  Movies: 'KSeNIu7AWgiBBM5FqVuB',
-  Gaming: '5FaFmmaNNFTSA5r0vTAi',
-  'TV Shows': '8isZHbaQMsoFz30XuZTo',
-  Music: 'Xuc2UY8gGfjQqFXwxq5d',
-  'Russia & Ukraine': 'OxcXOuxXvwsXtC0Dx5sr',
-  China: 'oWTzfoeemQGkSoPFn2T7',
-  India: 'Y2J00UcVhr3wKq2lAOAy',
-  Russia: 'TIpf6j0hLpifpXN93FxE',
-  Africa: 'dFsZaGwyohGDVkJi1C3E',
-  Europe: 'ue52QI4BQgJgAJJNjLHr',
-  'Latin America': 'DX94A1LQmpckcVdz5Hb3',
-  'Middle East': 'xg8wCPeM9JP6gD0igBrA',
-  'LGBTQIA+': 'cLtLfm3NSrhXU6lV6Cuy',
-  'Sex and love': '3syjPCC7PxE5KurTiTT3',
-  'Personal Development': 'izQp87CKagOVJp9Olm1p',
-  Brazil: 'ZQt0sCK1Hxn0HVJhH108',
-  Tennis: '1mvN9vIVIopcWiAsXhzp',
-}
 export const cleanTopic = (topic: string) =>
   topic
     // eslint-disable-next-line no-control-regex
@@ -118,13 +70,8 @@ export const cleanTopic = (topic: string) =>
 
 export const getSubtopics = (topic: string) =>
   TOPICS_TO_SUBTOPICS[topic].map(
-    (subtopicWithEmoji) =>
-      [
-        subtopicWithEmoji,
-        cleanTopic(subtopicWithEmoji),
-        TOPICS_TO_GROUP_ID[cleanTopic(subtopicWithEmoji)] ??
-          COMMUNITY_TO_GROUP_ID[cleanTopic(topic)],
-      ] as const
+    (subtopic) =>
+      [subtopic.name, cleanTopic(subtopic.name), subtopic.groupId] as const
   )
 export const ALL_TOPICS = Object.keys(TOPICS_TO_SUBTOPICS)
   .map((topic) => getSubtopics(topic).map(([_, subtopic]) => subtopic))
