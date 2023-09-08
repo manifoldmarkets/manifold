@@ -8,7 +8,7 @@ import { Title } from 'web/components/widgets/title'
 
 export default function ChallengesListPage() {
   return (
-    <Page>
+    <Page trackPageView={'challenge list page'}>
       <SEO
         title="Challenges"
         description="Challenge your friends to a bet!"

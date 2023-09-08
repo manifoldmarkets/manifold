@@ -70,7 +70,7 @@ export default function PortfolioPage(props: {
   const canEdit = !!user && user.id === portfolio.creatorId
 
   return (
-    <Page mainClassName="!col-span-10">
+    <Page trackPageView={'portfolio slug page'} mainClassName="!col-span-10">
       <SEO
         title={portfolio.name}
         description={'A portfolio of markets related to ' + portfolio.name}

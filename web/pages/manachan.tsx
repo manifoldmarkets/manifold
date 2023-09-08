@@ -10,7 +10,6 @@ import { Col } from 'web/components/layout/col'
 import { SEO } from 'web/components/SEO'
 import { Title } from 'web/components/widgets/title'
 import { Page } from 'web/components/layout/page'
-import { useTracking } from 'web/hooks/use-tracking'
 import { formatMoney } from 'common/util/format'
 import { ExpandingInput } from 'web/components/widgets/expanding-input'
 import { Button } from 'web/components/buttons/button'
@@ -19,8 +18,6 @@ import { MANACHAN_TWEET_COST } from 'common/economy'
 import { linkClass } from 'web/components/widgets/site-link'
 
 export default function ManachanPage() {
-  useTracking('view manachan page')
-
   const [tweet, setTweet] = useState('')
   const [loading, setLoading] = useState(false)
   const [success, setSucess] = useState(false)
@@ -51,7 +48,7 @@ export default function ManachanPage() {
   }
 
   return (
-    <Page>
+    <Page trackPageView={'manachan page'}>
       <SEO
         title="Mana-chan speaks!"
         description="Mana-chan is Manifold's official anime spokesgirl"

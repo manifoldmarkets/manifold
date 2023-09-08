@@ -5,7 +5,7 @@ import { NoSEO } from 'web/components/NoSEO'
 
 export default function AdminPage() {
   return (
-    <Page>
+    <Page trackPageView={'admin page'}>
       <NoSEO />
       <div className="mx-8">
         <Title>Admin</Title>

@@ -158,7 +158,10 @@ export default function RangePerformancePage(props: {
     creatorName: user.name,
   } as WeeklyPortfolioUpdateOGCardProps
   return (
-    <Page>
+    <Page
+      trackPageView={'weekly portfolio update page'}
+      trackPageProps={{ username: user.username }}
+    >
       <SEO
         title={date + ' profit for ' + user.name}
         description={`${user.name} made M$${formatMoneyNumber(

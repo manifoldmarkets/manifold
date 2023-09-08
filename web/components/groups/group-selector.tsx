@@ -13,6 +13,7 @@ import { PRIVACY_STATUS_ITEMS } from './group-privacy-modal'
 import { uniqBy } from 'lodash'
 
 import { useAsyncData } from 'web/hooks/use-async-data'
+import { Col } from '../layout/col'
 
 export function GroupSelector(props: {
   setSelectedGroup: (group: Group) => void
@@ -75,7 +76,7 @@ export function GroupSelector(props: {
   }
 
   return (
-    <div className="flex w-full flex-col items-start">
+    <Col className="w-full items-start">
       <Combobox
         as="div"
         value={null}
@@ -182,6 +183,6 @@ export function GroupSelector(props: {
           </>
         )}
       </Combobox>
-    </div>
+    </Col>
   )
 }

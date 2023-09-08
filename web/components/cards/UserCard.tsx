@@ -78,7 +78,7 @@ export function UserCard(props: {
     <GreenCard
       imageUrl={user.avatarUrl}
       title={user.name}
-      description={user.bio ?? user.followerCountCached + ' followers'}
+      description={user.bio ?? ''}
       faceup={faceup}
       onClick={onClick}
     />

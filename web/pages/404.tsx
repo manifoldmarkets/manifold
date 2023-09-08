@@ -8,10 +8,10 @@ export default function Custom404(props: { customText?: string }) {
   if (IS_PRIVATE_MANIFOLD) {
     // Since private Manifolds are client-side rendered, they'll blink the 404
     // So we just show a blank page here:
-    return <Page></Page>
+    return <Page trackPageView={'404'}></Page>
   }
   return (
-    <Page>
+    <Page trackPageView={'404'}>
       <Custom404Content customText={props.customText} />
     </Page>
   )

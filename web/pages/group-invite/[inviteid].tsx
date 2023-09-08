@@ -58,7 +58,7 @@ export default function GroupInvitePage(props: {
   const [loading, setLoading] = useState(false)
   const router = useRouter()
   return (
-    <Page>
+    <Page trackPageView={'group invite page'}>
       <Col className="h-[80vh] w-full items-center justify-center">
         <Col className="bg-canvas-0 mx-8 my-auto max-w-lg gap-4 rounded-xl px-8  pt-4 pb-12 drop-shadow-lg">
           <Col className="gap-1">

@@ -18,7 +18,6 @@ import {
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import Link from 'next/link'
 import { useFeed } from 'web/hooks/use-feed'
-import { useTracking } from 'web/hooks/use-tracking'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { useWindowSize } from 'web/hooks/use-window-size'
 import { firebaseLogin } from 'web/lib/firebase/users'
@@ -31,7 +30,6 @@ import { ContractCardView } from 'common/events'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 
 export function Swipe(props: { toggleView?: () => void }) {
-  useTracking('view swipe page')
   useRedirectIfSignedOut()
 
   const { toggleView } = props
@@ -213,7 +211,7 @@ export function Swipe(props: { toggleView?: () => void }) {
 
   if (user === undefined || feed === undefined) {
     return (
-      <Page>
+      <Page trackPageView={'swipe loading page'}>
         <LoadingIndicator className="mt-6" />
       </Page>
     )
@@ -221,7 +219,7 @@ export function Swipe(props: { toggleView?: () => void }) {
   // Show log in prompt if user not logged in.
   if (user === null) {
     return (
-      <Page>
+      <Page trackPageView={'logged out swipe page'}>
         <div className="flex h-screen w-screen items-center justify-center">
           <Button onClick={firebaseLogin} color="gradient" size="2xl">
             Log in to use Manifold Swipe
@@ -231,7 +229,7 @@ export function Swipe(props: { toggleView?: () => void }) {
     )
   }
   return (
-    <Page>
+    <Page trackPageView={'swipe page'}>
       <Row
         className="absolute justify-center overflow-hidden overscroll-none"
         style={{ height: cardHeight }}

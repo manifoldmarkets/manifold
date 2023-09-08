@@ -23,7 +23,7 @@ import { Portfolio } from 'common/portfolio'
 
 export default function Portfolio() {
   return (
-    <Page>
+    <Page trackPageView={'portfolios page'}>
       <PortfolioList />
       <div className="pt-6" />
       <CreatePortfolio />

@@ -21,7 +21,7 @@ import { Title } from 'web/components/widgets/title'
 
 export default function StylePage() {
   return (
-    <Page className="gap-2">
+    <Page trackPageView={'styles page'} className="gap-2">
       <div>
         <Title>Design System</Title>
         <div>

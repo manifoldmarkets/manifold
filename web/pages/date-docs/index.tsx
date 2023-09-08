@@ -8,7 +8,6 @@ import { buttonClass } from 'web/components/buttons/button'
 import { getUser, User } from 'web/lib/firebase/users'
 import { DateDocPost } from './[username]'
 import { NoSEO } from 'web/components/NoSEO'
-import { useTracking } from 'web/hooks/use-tracking'
 import Link from 'next/link'
 import clsx from 'clsx'
 import { getDateDocs } from 'web/lib/supabase/post'
@@ -37,10 +36,9 @@ export default function DatePage(props: {
   const user = useUser()
 
   const hasDoc = dateDocs.some((d) => d.creatorId === user?.id)
-  useTracking('view date docs page')
 
   return (
-    <Page>
+    <Page trackPageView={'date docs page'}>
       <NoSEO />
       <div className="mx-auto w-full max-w-xl">
         <Row className="mb-6 items-center justify-between p-4 sm:p-0">

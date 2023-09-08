@@ -49,7 +49,7 @@ export default function AboutPage() {
   const user = useUser()
 
   return (
-    <Page>
+    <Page trackPageView={'about page'}>
       <SEO title="About" description="About Manifold" url="/sitemap" />
 
       <Col className="p-4">

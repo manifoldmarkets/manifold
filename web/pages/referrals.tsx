@@ -3,7 +3,6 @@ import { SEO } from 'web/components/SEO'
 import { Title } from 'web/components/widgets/title'
 import { useUser } from 'web/hooks/use-user'
 import { Page } from 'web/components/layout/page'
-import { useTracking } from 'web/hooks/use-tracking'
 import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
 import { CopyLinkRow } from 'web/components/buttons/copy-link-button'
 import { ENV_CONFIG } from 'common/envs/constants'
@@ -17,12 +16,10 @@ export const getServerSideProps = redirectIfLoggedOut('/')
 export default function ReferralsPage() {
   const user = useUser()
 
-  useTracking('view referrals')
-
   const url = `https://${ENV_CONFIG.domain}?referrer=${user?.username}`
 
   return (
-    <Page>
+    <Page trackPageView={'referrals'}>
       <SEO
         title="Refer a friend"
         description={`Invite new users to Manifold and get ${formatMoney(

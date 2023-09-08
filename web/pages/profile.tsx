@@ -173,7 +173,7 @@ export default function ProfilePage(props: {
   }
 
   return (
-    <Page>
+    <Page trackPageView={'user profile page'}>
       <SEO title="Profile" description="User profile settings" url="/profile" />
 
       <Col className="bg-canvas-0 max-w-lg rounded p-6 shadow-md sm:mx-auto">

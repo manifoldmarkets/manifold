@@ -58,7 +58,7 @@ export default function NotificationsPage() {
     privateUser && !privateUser.hasSeenAppBannerInNotificationsOn && !isNative
 
   return (
-    <Page>
+    <Page trackPageView={'notifications page'}>
       <Col className="mx-auto w-full p-2 pb-0">
         <Title className="hidden lg:block">Notifications</Title>
         <SEO title="Notifications" description="Manifold user notifications" />

@@ -93,7 +93,7 @@ export default function PostPage(props: {
   const canEdit = !!user && user.id === post.creatorId
 
   return (
-    <Page>
+    <Page trackPageView={'post slug page'}>
       <SEO
         title={post.title}
         description={richTextToString(post.content)}

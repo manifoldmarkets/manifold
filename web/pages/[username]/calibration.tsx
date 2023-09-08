@@ -63,7 +63,10 @@ export default function CalibrationPage(props: {
   const { user, yesPoints, noPoints, score } = props
 
   return (
-    <Page>
+    <Page
+      trackPageView={'user calibration page'}
+      trackPageProps={{ username: user?.username }}
+    >
       <SEO
         title={`${user?.name}'s calibration`}
         description="Personal calibration results"

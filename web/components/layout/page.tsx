@@ -10,8 +10,11 @@ import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { safeLocalStorage } from 'web/lib/util/local'
 import { ManifestBanner } from '../nav/manifest-banner'
 import { ConfettiOnDemand } from '../confetti-on-demand'
+import { useTracking } from 'web/hooks/use-tracking'
 
 export function Page(props: {
+  trackPageView: string | false
+  trackPageProps?: Record<string, any>
   rightSidebar?: ReactNode
   className?: string
   children?: ReactNode
@@ -20,6 +23,7 @@ export function Page(props: {
   manifestBannerEnabled?: boolean
 }) {
   const {
+    trackPageView,
     children,
     rightSidebar,
     className,
@@ -28,6 +32,8 @@ export function Page(props: {
     manifestBannerEnabled,
   } = props
 
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  trackPageView && useTracking(`view ${trackPageView}`)
   const isMobile = useIsMobile()
   const bottomBarPadding = 'pb-[58px] lg:pb-0 '
   const TOAST_BOTTOM_PADDING = isMobile ? 70 : 20

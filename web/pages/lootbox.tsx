@@ -5,7 +5,6 @@ import clsx from 'clsx'
 import { Col } from 'web/components/layout/col'
 import { Title } from 'web/components/widgets/title'
 import { Page } from 'web/components/layout/page'
-import { useTracking } from 'web/hooks/use-tracking'
 import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
 import { formatMoney } from 'common/util/format'
 import { Button } from 'web/components/buttons/button'
@@ -88,7 +87,6 @@ export const LootboxAnimation = forwardRef(
 )
 
 export default function LootBoxPage() {
-  useTracking('view loot box')
   const user = useUser()
   const cantAfford = (user?.balance ?? 0) < LOOTBOX_COST
 
@@ -135,7 +133,7 @@ export default function LootBoxPage() {
   }
 
   return (
-    <Page>
+    <Page trackPageView={'loot box'}>
       <SEO
         title="Loot Box"
         description={`Feeling lucky? A loot box gives you random shares in questions worth

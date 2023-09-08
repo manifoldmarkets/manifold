@@ -2,7 +2,6 @@ import { Col } from 'web/components/layout/col'
 import { SEO } from 'web/components/SEO'
 import { Title } from 'web/components/widgets/title'
 import { Page } from 'web/components/layout/page'
-import { useTracking } from 'web/hooks/use-tracking'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { formatMoney } from 'common/util/format'
 import { BuyManaTab } from 'web/components/add-funds-modal'
@@ -23,10 +22,9 @@ export const IOS_PRICES = {
 
 export default function AddFundsPage() {
   useRedirectIfSignedOut()
-  useTracking('view add funds')
 
   return (
-    <Page>
+    <Page trackPageView={'add funds'}>
       <SEO
         title="Get mana"
         description="Buy mana to trade in your favorite questionss on Manifold"

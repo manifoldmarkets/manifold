@@ -35,7 +35,7 @@ export default function TodaysUpdates() {
   const isLoading = !changedContracts || !metrics
 
   return (
-    <Page>
+    <Page trackPageView={'todays updates page'}>
       <Title>Today's updates</Title>
       {isLoading ? (
         <LoadingIndicator />

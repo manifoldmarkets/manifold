@@ -16,7 +16,6 @@ import { Page } from 'web/components/layout/page'
 import { Title } from 'web/components/widgets/title'
 import { getAllCharityTxns } from 'web/lib/firebase/txns'
 import { formatMoney, manaToUSD } from 'common/util/format'
-import { useTracking } from 'web/hooks/use-tracking'
 import { searchInAny } from 'common/util/parse'
 import { getUser } from 'web/lib/firebase/users'
 import Link from 'next/link'
@@ -111,10 +110,8 @@ export default function Charity(props: {
     [charities, query]
   )
 
-  useTracking('view charity')
-
   return (
-    <Page>
+    <Page trackPageView={'charity'}>
       <SEO
         title="Manifold for Charity"
         description="Donate your prediction market earnings to charity on Manifold."

@@ -4,10 +4,7 @@ import { User } from 'common/user'
 import { forwardRef, useEffect, useImperativeHandle, useState } from 'react'
 import { Avatar } from '../../widgets/avatar'
 
-type LiteUser = Pick<
-  User,
-  'id' | 'name' | 'username' | 'avatarUrl' | 'followerCountCached'
->
+type LiteUser = Pick<User, 'id' | 'name' | 'username' | 'avatarUrl'>
 
 // copied from https://tiptap.dev/api/nodes/mention#usage
 export const MentionList = forwardRef(

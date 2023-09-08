@@ -42,7 +42,7 @@ export default function QuestionAndAnswer() {
   const answersByQuestion = groupBy(visibleAnswers, 'q_and_a_id')
   const user = useUser()
   return (
-    <Page>
+    <Page trackPageView={'q and a page'}>
       <Col className="mx-auto w-full max-w-2xl gap-4 pb-8 pt-2 sm:pt-0">
         <Title className="mx-4 !mb-0 sm:mx-0">Q&A</Title>
         <AlertBox title="Q and A has moved!">

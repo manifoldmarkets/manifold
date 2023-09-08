@@ -73,7 +73,7 @@ export default function CreateDateDocPage() {
   }
 
   return (
-    <Page>
+    <Page trackPageView={'create date doc page'}>
       <NoSEO />
       <div className="mx-auto w-full max-w-3xl">
         <div className="rounded-lg px-6 py-4 pb-4 sm:py-0">

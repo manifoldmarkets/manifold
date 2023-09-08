@@ -27,7 +27,7 @@ export default function Home() {
   const [isModalOpen, setIsModalOpen] = useState(false)
 
   return (
-    <Page hideSidebar>
+    <Page trackPageView={'signed out home page'} hideSidebar>
       <Col className="mx-auto mb-8 w-full gap-8 px-4">
         <Col className="gap-4">
           <Row className="items-center justify-between">

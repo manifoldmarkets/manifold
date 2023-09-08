@@ -47,7 +47,7 @@ export default function AdsPage(props: { ads: AdType[] }) {
   const current = newAds[i]
 
   return (
-    <Page>
+    <Page trackPageView={'ads page'}>
       <NoSEO />
       {isLoading && <LoadingIndicator />}
 
