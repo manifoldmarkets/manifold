@@ -471,3 +471,10 @@ export function unfollowUser(userId: string) {
 export function report(params: ReportProps) {
   return call(getApiUrl('report'), 'POST', params)
 }
+
+export function createDashboard(params: {
+  title: string
+  description?: JSONContent
+}) {
+  return call(getApiUrl('createdashboard'), 'POST', params)
+}
