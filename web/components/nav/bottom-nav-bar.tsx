@@ -4,7 +4,6 @@ import {
   HomeIcon,
   MenuAlt3Icon,
   NewspaperIcon,
-  XIcon,
   QuestionMarkCircleIcon,
   ScaleIcon,
   UserCircleIcon,
