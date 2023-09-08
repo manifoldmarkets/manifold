@@ -36,7 +36,7 @@ else
   npx concurrently \
       -n FUNCTIONS,NEXT,TS \
       -c white,magenta,cyan \
-      "yarn --cwd=backend/api debug" \
+      "yarn --cwd=backend/api dev" \
       "cross-env NEXT_PUBLIC_API_URL=http://localhost:8088 \
                NEXT_PUBLIC_FIREBASE_ENV=${NEXT_ENV} \
                yarn --cwd=web serve" \
