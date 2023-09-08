@@ -107,13 +107,13 @@ export function FeedContractCard(props: {
       isPromoted: !!promotedData,
     })
 
-  const nonTextDescription = small
-    ? false // don't show non-text description on small cards
-    : typeof contract.description !== 'string' &&
-      contract.description.content &&
-      contract.description.content.some(
-        (item) => item.type === 'image' || item.type === 'embed'
-      )
+  const nonTextDescription =
+    !small &&
+    typeof contract.description !== 'string' &&
+    contract.description.content &&
+    contract.description.content.some(
+      (item) => item.type === 'image' || item.type === 'embed'
+    )
 
   return (
     <ClickFrame
@@ -166,29 +166,20 @@ export function FeedContractCard(props: {
 
         <div
           className={clsx(
-            'flex flex-col gap-1',
-            !small && 'sm:flex-row sm:justify-between sm:gap-4'
+            'flex flex-col gap-1 sm:flex-row sm:justify-between sm:gap-4'
           )}
         >
           {/* Title is link to contract for open in new tab and a11y */}
           <Link
-            className={clsx(
-              'hover:text-primary-700 grow items-start transition-colors',
-              !small && 'sm:text-lg'
-            )}
+            className="hover:text-primary-700 grow items-start transition-colors sm:text-lg"
             href={path}
           >
             <VisibilityIcon contract={contract} /> {contract.question}
           </Link>
-          <Row
-            className={clsx(
-              'w-full items-center justify-end gap-3',
-              !small && 'sm:w-fit'
-            )}
-          >
+          <Row className="w-full items-center justify-end gap-3 whitespace-nowrap sm:w-fit">
             {contract.outcomeType !== 'MULTIPLE_CHOICE' && (
               <ContractStatusLabel
-                className={'text-lg font-bold'}
+                className="text-lg font-bold"
                 contract={contract}
               />
             )}
