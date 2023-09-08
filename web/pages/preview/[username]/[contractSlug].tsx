@@ -14,7 +14,6 @@ import { BackButton } from 'web/components/contract/back-button'
 import { ChangeBannerButton } from 'web/components/contract/change-banner-button'
 import { ContractDescription } from 'web/components/contract/contract-description'
 
-
 import { ContractLeaderboard } from 'web/components/contract/contract-leaderboard'
 import { PreviewContractOverview } from 'web/components/preview/preview-contract-overview'
 import { ContractTabs } from 'web/components/contract/contract-tabs'
