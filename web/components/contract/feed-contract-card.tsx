@@ -24,7 +24,7 @@ import { getMarketMovementInfo } from 'web/lib/supabase/feed-timeline/feed-marke
 import { AnswersPanel } from '../answers/answers-panel'
 import { BetButton } from '../bet/feed-bet-button'
 import { CommentsButton } from '../comments/comments-button'
-import { CardReason, PROB_THRESHOLD } from '../feed/card-reason'
+import { CardReason } from '../feed/card-reason'
 import { FeedBinaryChart } from '../feed/feed-chart'
 import FeedContractCardDescription from '../feed/feed-contract-card-description'
 import { Col } from '../layout/col'
@@ -202,11 +202,13 @@ export function FeedContractCard(props: {
           </div>
         )}
 
-        {isBinaryCpmm &&
-          (showGraph ||
-            (probChange && Math.abs(probChange) > PROB_THRESHOLD)) && (
-            <FeedBinaryChart contract={contract} className="my-4" />
-          )}
+        {isBinaryCpmm && (showGraph || probChange) && (
+          <FeedBinaryChart
+            contract={contract}
+            className="my-4"
+            startDate={item?.createdTime}
+          />
+        )}
         {promotedData && (
           <Col className={'w-full items-center'}>
             <ClaimButton

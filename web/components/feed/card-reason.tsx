@@ -7,8 +7,6 @@ import { Row } from '../layout/row'
 import { RelativeTimestamp } from '../relative-timestamp'
 import { Tooltip } from '../widgets/tooltip'
 
-export const PROB_THRESHOLD = 0.05
-
 export function CardReason(props: {
   item: FeedTimelineItem | undefined
   contract: Contract
@@ -28,7 +26,7 @@ export function CardReason(props: {
           />
         </span>
       )
-    } else if (probChange && Math.abs(probChange) > PROB_THRESHOLD) {
+    } else if (probChange) {
       return <ProbabilityChange probChange={probChange} />
     } else {
       return (
@@ -48,11 +46,7 @@ export function CardReason(props: {
     return <></>
   }
 
-  if (
-    probChange &&
-    (item.dataType == 'contract_probability_changed' ||
-      probChange > PROB_THRESHOLD)
-  ) {
+  if (probChange) {
     return <ProbabilityChange probChange={probChange} />
   }
 
