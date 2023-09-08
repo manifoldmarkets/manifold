@@ -875,14 +875,6 @@ create table if not exists
     fs_updated_time timestamp not null
   );
 
-alter table manalinks enable row level security;
-
-drop policy if exists "public read" on manalinks;
-
-create policy "public read" on manalinks for
-select
-  using (true);
-
 alter table manalinks
 cluster on manalinks_pkey;
 

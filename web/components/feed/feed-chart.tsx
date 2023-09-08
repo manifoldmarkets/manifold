@@ -9,18 +9,18 @@ import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-s
 
 export function FeedBinaryChart(props: {
   contract: BinaryContract
+  startDate: number | undefined
   className?: string
 }) {
-  const { contract, className } = props
+  const { contract, className, startDate } = props
 
   const [points, setPoints] = usePersistentInMemoryState<
     { x: number; y: number }[] | null | undefined
   >(undefined, `${contract.id}-feed-chart`)
 
-  const startingDate = Date.now() - DAY_MS
-
   useEffect(() => {
-    getHistoryData(contract, 100, startingDate).then((points) => {
+    const startingDate = (startDate ?? Date.now()) - DAY_MS
+    getHistoryData(contract, 1000, startingDate).then((points) => {
       if (points && points.length > 0 && !!points[0]) {
         setPoints(points)
       }

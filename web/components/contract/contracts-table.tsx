@@ -38,10 +38,12 @@ export function ContractStatusLabel(props: {
   switch (outcomeType) {
     case 'BINARY': {
       return contract.resolution ? (
-        <BinaryContractOutcomeLabel
-          contract={contract}
-          resolution={contract.resolution}
-        />
+        <span className={className}>
+          <BinaryContractOutcomeLabel
+            contract={contract}
+            resolution={contract.resolution}
+          />
+        </span>
       ) : (
         <span className={clsx(probTextColor, className)}>
           {formatPercentShort(getDisplayProbability(contract))}

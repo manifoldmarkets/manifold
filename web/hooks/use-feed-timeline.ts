@@ -44,6 +44,9 @@ import { convertAnswer } from 'common/supabase/contracts'
 import { compareTwoStrings } from 'string-similarity'
 import dayjs from 'dayjs'
 
+export const DEBUG_FEED_CARDS =
+  typeof window != 'undefined' &&
+  window.location.toString().includes('localhost:3000')
 const PAGE_SIZE = 50
 
 export type FeedTimelineItem = {
@@ -96,7 +99,7 @@ const baseUserFeedQuery = (
       .or(
         `data_type.eq.new_comment,data_type.eq.news_with_related_contracts,contract_id.not.in.(${ignoreContractIds})`
       )
-      .order('relevance_score', { ascending: false, nullsFirst: false })
+      .order('relevance_score', { ascending: false })
       .limit(PAGE_SIZE)
   )
 }
@@ -118,6 +121,8 @@ export const useFeedTimeline = (
     getBoosts(privateUser).then(setBoosts)
   }, [])
   const followedIds = useFollowedIdsSupabase(privateUser.id)
+  if (DEBUG_FEED_CARDS)
+    console.log('DEBUG_FEED_CARDS is true, not marking feed cards as seen')
 
   const [savedFeedItems, setSavedFeedItems] = usePersistentInMemoryState<
     FeedTimelineItem[] | undefined
@@ -132,7 +137,13 @@ export const useFeedTimeline = (
     if (loadingFirstCards.current && options.new) return { timelineItems: [] }
 
     const ignoreContractIds = filterDefined(
-      options.ignoreFeedTimelineItems.map((item) => item.contractId)
+      options.ignoreFeedTimelineItems
+        .map((item) =>
+          (item.relatedItems ?? [])
+            .map((c) => c.contractId)
+            .concat([item.contractId])
+        )
+        .flat()
     )
 
     let query = baseUserFeedQuery(userId, privateUser, ignoreContractIds)
@@ -151,7 +162,7 @@ export const useFeedTimeline = (
         1 - dayjs().diff(dayjs(d.created_time), 'day') / 14
       d.relevance_score =
         -(
-          d.relevance_score ??
+          d.relevance_score ||
           BASE_FEED_DATA_TYPE_SCORES[d.data_type as FEED_DATA_TYPES]
         ) * createdTimeAdjusted
       return d
@@ -476,6 +487,13 @@ const groupItemsBySimilarQuestions = (items: FeedTimelineItem[]) => {
       .filter((word) => !wordsToFilter.includes(word.toLowerCase()))
       .join(' ')
 
+  const soloDataTypes: FEED_DATA_TYPES[] = [
+    'contract_probability_changed',
+    'news_with_related_contracts',
+    'new_comment',
+    'user_position_changed',
+  ]
+
   const compareSlugs = (s1: string[], s2: string[]) => {
     const sharedGroups = intersection(s1, s2).length
 
@@ -490,27 +508,45 @@ const groupItemsBySimilarQuestions = (items: FeedTimelineItem[]) => {
     return sharedGroups / (totalGroupSlugs * 5)
   }
 
-  for (const item of items) {
-    const similarItem = groupedItems.find(
-      (i2) =>
-        compareTwoStrings(
-          cleanQuestion(item.contract?.question),
-          cleanQuestion(i2.contract?.question)
-        ) +
-          compareSlugs(
-            item.contract?.groupSlugs ?? [],
-            i2.contract?.groupSlugs ?? []
-          ) >
-        0.5
-    )
+  let availableItems = [...items]
+  while (availableItems.length > 0) {
+    // Remove this item from the available items
+    const item = availableItems.shift()
+    if (!item) break
+    if (!soloDataTypes.includes(item.dataType)) {
+      const potentialGroupMembers = availableItems
+        .map((relatedItem) => ({
+          relatedItem,
+          score: soloDataTypes.includes(relatedItem.dataType)
+            ? 0
+            : compareTwoStrings(
+                cleanQuestion(item.contract?.question),
+                cleanQuestion(relatedItem.contract?.question)
+              ) +
+              compareSlugs(
+                item.contract?.groupSlugs ?? [],
+                relatedItem.contract?.groupSlugs ?? []
+              ),
+        }))
+        .filter((x) => x.score > 0.5)
 
-    if (similarItem && item.contract) {
-      if (similarItem.relatedItems) {
-        similarItem.relatedItems.push(item)
-      } else similarItem.relatedItems = [item]
-    } else {
-      groupedItems.push(item)
+      const sortedPotentialMembers = orderBy(
+        potentialGroupMembers,
+        'score',
+        'desc'
+      )
+      const mostSimilarItems = sortedPotentialMembers
+        .slice(0, 5)
+        .map((x) => x.relatedItem)
+      if (mostSimilarItems.length > 0) {
+        item.relatedItems = mostSimilarItems
+        availableItems = availableItems.filter(
+          (x) => !mostSimilarItems.includes(x)
+        )
+      }
     }
+
+    groupedItems.push(item)
   }
   return groupedItems
 }
@@ -596,6 +632,7 @@ const getNewContentIds = (
 }
 
 const setSeenFeedItems = async (feedItems: Row<'user_feed'>[]) => {
+  if (DEBUG_FEED_CARDS) return
   await Promise.all(
     feedItems.map(async (item) =>
       run(

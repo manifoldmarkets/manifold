@@ -4,7 +4,6 @@ import {
   HomeIcon,
   MenuAlt3Icon,
   NewspaperIcon,
-  XIcon,
   QuestionMarkCircleIcon,
   ScaleIcon,
   UserCircleIcon,
@@ -215,7 +214,7 @@ export function MobileSidebar(props: {
             leaveFrom="opacity-100"
             leaveTo="opacity-0"
           >
-            <Dialog.Overlay className="bg-ink-600 fixed inset-0 bg-opacity-75" />
+            <Dialog.Overlay className="bg-canvas-100 fixed inset-0 bg-opacity-75" />
           </Transition.Child>
           <Transition.Child
             as={Fragment}
@@ -227,26 +226,6 @@ export function MobileSidebar(props: {
             leaveTo="-translate-x-full"
           >
             <div className="bg-canvas-0 relative flex w-full max-w-xs flex-1 flex-col">
-              <Transition.Child
-                as={Fragment}
-                enter="ease-in-out duration-300"
-                enterFrom="opacity-0"
-                enterTo="opacity-100"
-                leave="ease-in-out duration-300"
-                leaveFrom="opacity-100"
-                leaveTo="opacity-0"
-              >
-                <div className="absolute top-0 right-0 -mr-12 pt-2">
-                  <button
-                    type="button"
-                    className="focus:ring-ink-0ml-1 flex h-10 w-10 items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-inset"
-                    onClick={() => setSidebarOpen(false)}
-                  >
-                    <span className="sr-only">Close sidebar</span>
-                    <XIcon className="text-ink-0 h-6 w-6" aria-hidden="true" />
-                  </button>
-                </div>
-              </Transition.Child>
               <div className="mx-2 h-0 flex-1 overflow-y-auto">
                 <Sidebar isMobile />
               </div>
