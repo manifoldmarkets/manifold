@@ -2589,6 +2589,15 @@ export interface Database {
           rating: number
         }[]
       }
+      get_rating_info: {
+        Args: {
+          p_vendor_id: string
+        }
+        Returns: {
+          avg_rating: number
+          count: number
+        }[]
+      }
       get_recommended_contracts_by_score: {
         Args: {
           uid: string
