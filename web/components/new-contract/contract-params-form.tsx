@@ -15,7 +15,11 @@ import {
   add_answers_mode,
   contractPath,
 } from 'common/contract'
-import { MINIMUM_BOUNTY, UNIQUE_BETTOR_BONUS_AMOUNT } from 'common/economy'
+import {
+  MINIMUM_BOUNTY,
+  UNIQUE_ANSWER_BETTOR_BONUS_AMOUNT,
+  UNIQUE_BETTOR_BONUS_AMOUNT,
+} from 'common/economy'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { formatMoney } from 'common/util/format'
 import { AddFundsModal } from 'web/components/add-funds-modal'
@@ -23,7 +27,6 @@ import { MultipleChoiceAnswers } from 'web/components/answers/multiple-choice-an
 import { Button } from 'web/components/buttons/button'
 import { GroupSelector } from 'web/components/groups/group-selector'
 import { Row } from 'web/components/layout/row'
-import { Spacer } from 'web/components/layout/spacer'
 import { Checkbox } from 'web/components/widgets/checkbox'
 import { ChoicesToggleGroup } from 'web/components/widgets/choices-toggle-group'
 import { TextEditor } from 'web/components/widgets/editor'
@@ -31,7 +34,6 @@ import { ExpandingInput } from 'web/components/widgets/expanding-input'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { Input } from 'web/components/widgets/input'
 import ShortToggle from 'web/components/widgets/short-toggle'
-import { QfExplainer } from '../contract/qf-overview'
 import { MAX_DESCRIPTION_LENGTH, NON_BETTING_OUTCOMES } from 'common/contract'
 import { getAnte } from 'common/economy'
 import { Group } from 'common/group'
@@ -199,8 +201,11 @@ export function ContractParamsForm(props: {
   }
   const [neverCloses, setNeverCloses] = useState(false)
 
+  const shouldHaveCloseDate =
+    outcomeType !== 'STONK' && !NON_BETTING_OUTCOMES.includes(outcomeType)
+
   useEffect(() => {
-    if (outcomeType === 'STONK' || NON_BETTING_OUTCOMES.includes(outcomeType)) {
+    if (!shouldHaveCloseDate) {
       setCloseDate(undefined)
       setCloseHoursMinutes(undefined)
       setNeverCloses(true)
@@ -223,17 +228,25 @@ export function ContractParamsForm(props: {
     }
   }, [outcomeType])
 
-  const isValidMultipleChoice = answers.every(
-    (answer) => answer.trim().length > 0
-  )
+  const isValidQuestion = question.length > 0
+
+  const hasAnswers =
+    outcomeType === 'MULTIPLE_CHOICE' ||
+    outcomeType === 'FREE_RESPONSE' ||
+    outcomeType === 'POLL'
+  const isValidMultipleChoice =
+    !hasAnswers || answers.every((answer) => answer.trim().length > 0)
+
+  const isValidDate =
+    // closeTime must be in the future
+    !shouldHaveCloseDate || (closeTime ?? Infinity) > Date.now()
 
   const isValid =
-    question.length > 0 &&
+    isValidQuestion &&
     ante !== undefined &&
     ante !== null &&
     ante <= balance &&
-    // closeTime must be in the future
-    (closeTime ?? Infinity) > Date.now() &&
+    isValidDate &&
     (outcomeType !== 'PSEUDO_NUMERIC' ||
       (min !== undefined &&
         max !== undefined &&
@@ -244,13 +257,26 @@ export function ContractParamsForm(props: {
         max - min > 0.01 &&
         min < initialValue &&
         initialValue < max)) &&
-    ((outcomeType !== 'MULTIPLE_CHOICE' && outcomeType !== 'POLL') ||
-      isValidMultipleChoice)
+    isValidMultipleChoice
 
   const [errorText, setErrorText] = useState<string>('')
   useEffect(() => {
     setErrorText('')
-  }, [isValid])
+
+    if (!isValid) {
+      if (!isValidDate) {
+        setErrorText('Close date must be in the future')
+      }
+      if (!isValidMultipleChoice) {
+        setErrorText(
+          `All ${outcomeType === 'POLL' ? 'options' : 'answers'} must have text`
+        )
+      }
+      if (!isValidQuestion) {
+        setErrorText('Question must have text')
+      }
+    }
+  }, [isValid, isValidDate, isValidMultipleChoice, isValidQuestion])
 
   const editor = useTextEditor({
     key: 'create market' + paramsKey,
@@ -372,43 +398,22 @@ export function ContractParamsForm(props: {
     outcomeType === 'MULTIPLE_CHOICE' || outcomeType === 'FREE_RESPONSE'
 
   return (
-    <Col>
+    <Col className="gap-6">
       <Col>
-        <div className="flex w-full flex-col">
-          <label className="px-1 pt-2 pb-3">
-            Question<span className={'text-scarlet-500'}>*</span>
-          </label>
+        <label className="px-1 pt-2 pb-3">
+          Question<span className={'text-scarlet-500'}>*</span>
+        </label>
 
-          <ExpandingInput
-            placeholder={getContractTypeThingFromValue('example', outcomeType)}
-            autoFocus
-            maxLength={MAX_QUESTION_LENGTH}
-            value={question}
-            onChange={(e) => setQuestion(e.target.value || '')}
-            onBlur={finishedTypingQuestion}
-          />
-        </div>
-        <Spacer h={6} />
-        <div className="mb-1 flex flex-col items-start gap-1">
-          <label className="gap-2 px-1 py-2">
-            <span className="mb-1">Description</span>
-          </label>
-          <TextEditor editor={editor} />
-        </div>
+        <ExpandingInput
+          placeholder={getContractTypeThingFromValue('example', outcomeType)}
+          autoFocus
+          maxLength={MAX_QUESTION_LENGTH}
+          value={question}
+          onChange={(e) => setQuestion(e.target.value || '')}
+          onBlur={finishedTypingQuestion}
+        />
       </Col>
-      {outcomeType === 'STONK' && (
-        <div className="text-primary-500 mt-1 ml-1 text-sm">
-          Tradeable shares of a stock based on sentiment. Never resolves.
-        </div>
-      )}
-      {outcomeType === 'PSEUDO_NUMERIC' && (
-        <div className="text-primary-500 mt-1 ml-1 text-sm">
-          Predict the value of a number.
-        </div>
-      )}
-      <Spacer h={2} />
-      {outcomeType === 'QUADRATIC_FUNDING' && <QfExplainer />}
-      <Spacer h={4} />
+
       {(isMulti || outcomeType == 'POLL') && (
         <MultipleChoiceAnswers
           answers={answers}
@@ -427,9 +432,43 @@ export function ContractParamsForm(props: {
           placeholder={isMulti ? 'Type your answer..' : undefined}
         />
       )}
+      {outcomeType == 'BOUNTIED_QUESTION' && (
+        <Col className="gap-2">
+          <label className="gap-2 px-1 py-2">
+            <span className="mb-1 mr-1">Bounty</span>
+            <InfoTooltip text="The award you give good answers. You can divide this amongst answers however you'd like." />
+          </label>
+          {amountSuppliedByHouse === 0 ? (
+            <BuyAmountInput
+              inputClassName="w-full max-w-none"
+              minimumAmount={MINIMUM_BOUNTY}
+              amount={bountyAmount}
+              onChange={(newAmount) => setBountyAmount(newAmount)}
+              error={bountyError}
+              setError={setBountyError}
+              sliderOptions={{ show: true, wrap: false }}
+              customRange={{ rangeMax: 500 }}
+            />
+          ) : (
+            <div className="text-ink-700 pl-1 text-sm">
+              {formatMoney(amountSuppliedByHouse)} (Supplied by the house)
+            </div>
+          )}
+        </Col>
+      )}
+      {outcomeType === 'STONK' && (
+        <div className="text-primary-500 mt-1 ml-1 text-sm">
+          Tradeable shares of a stock based on sentiment. Never resolves.
+        </div>
+      )}
       {outcomeType === 'PSEUDO_NUMERIC' && (
-        <>
-          <div className="mb-2 flex flex-col items-start">
+        <div className="text-primary-500 mt-1 ml-1 text-sm">
+          Predict the value of a number.
+        </div>
+      )}
+      {outcomeType === 'PSEUDO_NUMERIC' && (
+        <Col>
+          <Col className="mb-2 items-start">
             <label className="gap-2 px-1 py-2">
               <span className="mb-1">Range </span>
               <InfoTooltip text="The lower and higher bounds of the numeric range. Choose bounds the value could reasonably be expected to hit." />
@@ -473,7 +512,8 @@ export function ContractParamsForm(props: {
                 The maximum value must be greater than the minimum.
               </div>
             )}
-          </div>
+          </Col>
+
           <div className="mb-2 flex flex-col items-start">
             <label className="gap-2 px-1 py-2">
               <span className="mb-1">Initial value </span>
@@ -502,87 +542,69 @@ export function ContractParamsForm(props: {
                 </div>
               )}
           </div>
-        </>
+        </Col>
       )}
 
-      {outcomeType == 'BOUNTIED_QUESTION' && (
-        <>
-          <label className="gap-2 px-1 py-2">
-            <span className="mb-1 mr-1">Bounty</span>
-            <InfoTooltip text="The award you give good answers. You can divide this amongst answers however you'd like." />
-          </label>
-          {amountSuppliedByHouse === 0 ? (
-            <BuyAmountInput
-              inputClassName="w-full max-w-none"
-              minimumAmount={MINIMUM_BOUNTY}
-              amount={bountyAmount}
-              onChange={(newAmount) => setBountyAmount(newAmount)}
-              error={bountyError}
-              setError={setBountyError}
-              sliderOptions={{ show: true, wrap: false }}
-              customRange={{ rangeMax: 500 }}
-            />
-          ) : (
-            <div className="text-ink-700 pl-1 text-sm">
-              {formatMoney(amountSuppliedByHouse)} (Supplied by the house)
-            </div>
-          )}
-          <Spacer h={6} />
-        </>
-      )}
-      <Col className={'gap-2'}>
-        <span className={'px-1'}>
+      <Col className="gap-3">
+        <span className="px-1">
           Add categories{' '}
           <InfoTooltip text="Question will be displayed alongside the other questions in the category." />
         </span>
-        <Row className={'flex-wrap gap-2'}>
-          {selectedGroups.map((group) => (
-            <GroupTag
-              key={group.id}
-              group={group}
-              isPrivate={group.privacyStatus === 'private'}
-              className="bg-ink-100"
-            >
-              <button
-                onClick={() =>
-                  setSelectedGroups((groups) =>
-                    groups?.filter((g) => g.id !== group.id)
-                  )
-                }
+        {selectedGroups.length > 0 && (
+          <Row className={'flex-wrap gap-2'}>
+            {selectedGroups.map((group) => (
+              <GroupTag
+                key={group.id}
+                group={group}
+                isPrivate={group.privacyStatus === 'private'}
+                className="bg-ink-100"
               >
-                <XIcon className="hover:text-ink-700 text-ink-400 ml-1 h-4 w-4" />
-              </button>
-            </GroupTag>
-          ))}
-        </Row>
-        <Row>
-          <GroupSelector
-            setSelectedGroup={(group) => {
-              if (
-                (selectedGroups.length > 0 &&
-                  group.privacyStatus === 'private') ||
-                (selectedGroups.length > 0 &&
-                  selectedGroups.some((g) => g.privacyStatus === 'private'))
-              ) {
-                toast(
-                  `Questions are only allowed one category if the category is private.`,
-                  { icon: '🚫' }
-                )
-                return
-              }
-              setSelectedGroups((groups) =>
-                uniqBy([...(groups ?? []), group], 'id')
+                <button
+                  onClick={() =>
+                    setSelectedGroups((groups) =>
+                      groups?.filter((g) => g.id !== group.id)
+                    )
+                  }
+                >
+                  <XIcon className="hover:text-ink-700 text-ink-400 ml-1 h-4 w-4" />
+                </button>
+              </GroupTag>
+            ))}
+          </Row>
+        )}
+        <GroupSelector
+          setSelectedGroup={(group) => {
+            if (
+              (selectedGroups.length > 0 &&
+                group.privacyStatus === 'private') ||
+              (selectedGroups.length > 0 &&
+                selectedGroups.some((g) => g.privacyStatus === 'private'))
+            ) {
+              toast(
+                `Questions are only allowed one category if the category is private.`,
+                { icon: '🚫' }
               )
-            }}
-            ignoreGroupIds={selectedGroups.map((g) => g.id)}
-            isContractCreator={true}
-            newContract={true}
-          />
-        </Row>
+              return
+            }
+            setSelectedGroups((groups) =>
+              uniqBy([...(groups ?? []), group], 'id')
+            )
+          }}
+          ignoreGroupIds={selectedGroups.map((g) => g.id)}
+          isContractCreator={true}
+          newContract={true}
+        />
+      </Col>
+
+      <Col className="items-start gap-3">
+        <label className="px-1">
+          <span>Description</span>
+        </label>
+        <TextEditor editor={editor} />
       </Col>
 
       {outcomeType !== 'STONK' && outcomeType !== 'BOUNTIED_QUESTION' && (
-        <div className="mb-1 flex flex-col items-start">
+        <Col className="items-start">
           <label className="mb-1 gap-2 px-1 py-2">
             <span>
               {outcomeType == 'POLL' ? 'Poll' : 'Question'} closes in{' '}
@@ -651,110 +673,99 @@ export function ContractParamsForm(props: {
               {/*/>*/}
             </Row>
           )}
-        </div>
+        </Col>
       )}
       {visibility != 'private' && (
-        <>
-          <Spacer h={6} />
-          <Row className="items-center gap-2">
-            <span>
-              Publicly listed{' '}
-              <InfoTooltip
-                text={
-                  visibility === 'public'
-                    ? 'Visible on home page and search results'
-                    : "Only visible via link. Won't notify followers"
-                }
-              />
-            </span>
-            <ShortToggle
-              on={toggleVisibility === 'public'}
-              setOn={(on) => {
-                setToggleVisibility(on ? 'public' : 'unlisted')
-              }}
-            />
-          </Row>
-        </>
-      )}
-      <Spacer h={6} />
-      <span className={'text-error'}>{errorText}</span>
-      <Row className="items-end justify-between">
-        <div className="mb-1 flex flex-col items-start">
-          <label className="mb-1 gap-2 px-1 py-2">
-            <span>Cost </span>
+        <Row className="mt-2 items-center gap-2">
+          <span>
+            Publicly listed{' '}
             <InfoTooltip
               text={
-                outcomeType == 'BOUNTIED_QUESTION'
-                  ? 'Your bounty. This amount is put upfront.'
-                  : outcomeType == 'POLL'
-                  ? 'Cost to create your poll.'
-                  : `Cost to create your question. This amount is used to subsidize predictions.`
+                visibility === 'public'
+                  ? 'Visible on home page and search results'
+                  : "Only visible via link. Won't notify followers"
               }
             />
-          </label>
+          </span>
+          <ShortToggle
+            on={toggleVisibility === 'public'}
+            setOn={(on) => {
+              setToggleVisibility(on ? 'public' : 'unlisted')
+            }}
+          />
+        </Row>
+      )}
+      <Col className="items-start">
+        <label className="mb-1 gap-2 px-1 py-2">
+          <span>Cost </span>
+          <InfoTooltip
+            text={
+              outcomeType == 'BOUNTIED_QUESTION'
+                ? 'Your bounty. This amount is put upfront.'
+                : outcomeType == 'POLL'
+                ? 'Cost to create your poll.'
+                : `Cost to create your question. This amount is used to subsidize predictions.`
+            }
+          />
+        </label>
 
-          <div className="text-ink-700 pl-1 text-sm">
-            {amountSuppliedByUser === 0 ? (
-              <span className="text-teal-500">FREE </span>
-            ) : outcomeType !== 'BOUNTIED_QUESTION' &&
-              outcomeType !== 'POLL' ? (
-              <>
-                {formatMoney(amountSuppliedByUser)}
-                {visibility === 'public' && (
-                  <span>
-                    {' '}
-                    or <span className=" text-teal-500">FREE </span>
-                    if you get{' '}
-                    {isMulti
-                      ? amountSuppliedByUser / (UNIQUE_BETTOR_BONUS_AMOUNT / 2)
-                      : amountSuppliedByUser / UNIQUE_BETTOR_BONUS_AMOUNT}
-                    + participants{' '}
-                    <InfoTooltip
-                      text={
-                        isMulti
-                          ? `You'll earn a bonus of ${formatMoney(
-                              Math.ceil(UNIQUE_BETTOR_BONUS_AMOUNT / 2)
-                            )} for each unique trader you get on each answer.`
-                          : `You'll earn a bonus of ${formatMoney(
-                              UNIQUE_BETTOR_BONUS_AMOUNT
-                            )} for each unique trader you get on your question.`
-                      }
-                    />
-                  </span>
-                )}
-              </>
-            ) : (
-              <span>
-                {amountSuppliedByUser
-                  ? formatMoney(amountSuppliedByUser)
-                  : `${ENV_CONFIG.moneyMoniker} --`}
-              </span>
-            )}
-          </div>
-          <div className="text-ink-500 pl-1"></div>
-
-          {ante > balance && (
-            <div className="mb-2 mt-2 mr-auto self-center whitespace-nowrap text-xs font-medium tracking-wide">
-              <span className="text-scarlet-500 mr-2">
-                Insufficient balance
-              </span>
-              <Button
-                size="xs"
-                color="green"
-                onClick={() => setFundsModalOpen(true)}
-              >
-                Get {ENV_CONFIG.moneyMoniker}
-              </Button>
-              <AddFundsModal
-                open={fundsModalOpen}
-                setOpen={setFundsModalOpen}
-              />
-            </div>
+        <div className="text-ink-700 pl-1 text-sm">
+          {amountSuppliedByUser === 0 ? (
+            <span className="text-teal-500">FREE </span>
+          ) : outcomeType !== 'BOUNTIED_QUESTION' && outcomeType !== 'POLL' ? (
+            <>
+              {formatMoney(amountSuppliedByUser)}
+              {visibility === 'public' && (
+                <span>
+                  {' '}
+                  or <span className=" text-teal-500">FREE </span>
+                  if you get{' '}
+                  {isMulti
+                    ? Math.ceil(
+                        amountSuppliedByUser / UNIQUE_ANSWER_BETTOR_BONUS_AMOUNT
+                      )
+                    : amountSuppliedByUser / UNIQUE_BETTOR_BONUS_AMOUNT}
+                  + participants{' '}
+                  <InfoTooltip
+                    text={
+                      isMulti
+                        ? `You'll earn a bonus of ${formatMoney(
+                            UNIQUE_ANSWER_BETTOR_BONUS_AMOUNT
+                          )} for each unique trader you get on each answer.`
+                        : `You'll earn a bonus of ${formatMoney(
+                            UNIQUE_BETTOR_BONUS_AMOUNT
+                          )} for each unique trader you get on your question.`
+                    }
+                  />
+                </span>
+              )}
+            </>
+          ) : (
+            <span>
+              {amountSuppliedByUser
+                ? formatMoney(amountSuppliedByUser)
+                : `${ENV_CONFIG.moneyMoniker} --`}
+            </span>
           )}
         </div>
-      </Row>
+        <div className="text-ink-500 pl-1"></div>
 
-      <Spacer h={6} />
+        {ante > balance && (
+          <div className="mb-2 mt-2 mr-auto self-center whitespace-nowrap text-xs font-medium tracking-wide">
+            <span className="text-scarlet-500 mr-2">Insufficient balance</span>
+            <Button
+              size="xs"
+              color="green"
+              onClick={() => setFundsModalOpen(true)}
+            >
+              Get {ENV_CONFIG.moneyMoniker}
+            </Button>
+            <AddFundsModal open={fundsModalOpen} setOpen={setFundsModalOpen} />
+          </div>
+        )}
+      </Col>
+
+      {errorText && <span className={'text-error'}>{errorText}</span>}
 
       <Button
         className="w-full"
@@ -779,7 +790,7 @@ export function ContractParamsForm(props: {
           : 'Created!'}
       </Button>
 
-      <Spacer h={6} />
+      <div />
     </Col>
   )
 }
