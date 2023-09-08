@@ -3,8 +3,6 @@ import { getDashboardFromSlug } from 'common/supabase/dashboard'
 import { DashboardSidebar } from 'web/components/dashboard/dashboard-sidebar'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
-import { NewsSidebar } from 'web/components/news/news-dashboard'
-import { Content } from 'web/components/widgets/editor'
 import { Title } from 'web/components/widgets/title'
 import { db } from 'web/lib/supabase/db'
 
