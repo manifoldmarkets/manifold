@@ -33,7 +33,6 @@ export async function getStaticPaths() {
 
 export default function DashboardPage(props: { dashboard: Dashboard }) {
   const { dashboard } = props
-  console.log(dashboard)
   return (
     <Page
       rightSidebar={

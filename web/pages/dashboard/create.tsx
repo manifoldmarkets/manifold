@@ -1,5 +1,8 @@
+import { track } from '@amplitude/analytics-browser'
 import clsx from 'clsx'
 import { MAX_DESCRIPTION_LENGTH } from 'common/contract'
+import { removeUndefinedProps } from 'common/util/object'
+import router from 'next/router'
 import { useEffect, useState } from 'react'
 import { SEO } from 'web/components/SEO'
 import { Button } from 'web/components/buttons/button'
@@ -10,11 +13,7 @@ import { TextEditor, useTextEditor } from 'web/components/widgets/editor'
 import { ExpandingInput } from 'web/components/widgets/expanding-input'
 import { Title } from 'web/components/widgets/title'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
-import { removeUndefinedProps } from 'common/util/object'
 import { createDashboard } from 'web/lib/firebase/api'
-import { track } from '@amplitude/analytics-browser'
-import { safeLocalStorage } from 'web/lib/util/local'
-import router from 'next/router'
 
 export default function CreateDashboard() {
   const [title, setTitle] = usePersistentLocalState(
@@ -74,7 +73,6 @@ export default function CreateDashboard() {
       setSubmitState('EDITING')
     }
   }
-  console.log(editor?.getJSON())
 
   return (
     <Page>

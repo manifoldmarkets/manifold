@@ -26,7 +26,6 @@ export default function DashboardPage() {
             <span className={'text-primary-600 text-2xl'}>Dashboards</span>
             {user && <CreateDashboardButton />}
           </Row>
-          {/* <GroupsPageContent user={user} /> */}
         </Col>
       </Col>
     </Page>

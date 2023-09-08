@@ -12,20 +12,17 @@ const schema = z.object({
 })
 
 export const createdashboard = authEndpoint(async (req, auth) => {
-  console.log('BODYYY\n', req.body)
   const { title, description } = validate(schema, req.body)
 
   log('creating dashboard')
   const pg = createSupabaseDirectClient()
 
   let slug = slugify(title)
-  console.log('\n\nSLUGGG\n', slug)
   const data = await pg.manyOrNone(
     `select slug from dashboards where slug = $1`,
     [slug]
   )
 
-  console.log('\n\nDATA\n', data)
   if (data && data.length > 0) {
     slug = `${slug}-${randomString(8)}`
   }
