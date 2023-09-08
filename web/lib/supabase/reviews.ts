@@ -14,7 +14,6 @@ export const getAverageUserRating = async (userId: string) => {
     .rpc('get_rating_info', { p_vendor_id: userId })
     .single()
   const { data } = stuff
-  console.log('stuff', stuff, data)
 
   return data as any
 }
