@@ -5,15 +5,9 @@ export const useReloadIfClientOld = () => {
 
   useEffect(() => {
     getDeploymentId().then((newDeploymentId) => {
-      console.log(
-        'currDeploymentId',
-        deploymentId,
-        'newDeploymentId',
-        newDeploymentId
-      )
       if (deploymentId && newDeploymentId && newDeploymentId !== deploymentId) {
         console.log(
-          'Reloading b/c of deployment id change',
+          'Reloading b/c deployment id changed',
           deploymentId,
           '=>',
           newDeploymentId
