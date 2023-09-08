@@ -24,7 +24,7 @@ export const Review = (props: {
 
   if (!user || !contract) return null
 
-  const isEmpty = text ? JSONEmpty(text) : true
+  const isEmpty = !text || JSONEmpty(text)
   return (
     <div className="py-4 first:pt-0 last:pb-0">
       <div className="opacity-50">
