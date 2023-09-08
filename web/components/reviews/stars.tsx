@@ -119,7 +119,7 @@ export const StarDisplay = (props: { rating: Rating; className?: string }) => {
     <div className={clsx('inline-flex align-top', className)}>
       {range(0, 5).map((i) => {
         return (
-          <div className="relative">
+          <div className="relative" key={i}>
             {i + 1 <= rating && (
               <StarIcon
                 className="absolute h-4 w-4 text-yellow-500"
