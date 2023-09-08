@@ -31,11 +31,11 @@ import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { PollPanel } from '../poll/poll-panel'
 import { ClickFrame } from '../widgets/click-frame'
-import { descriptionIsEmpty } from './contract-description'
 import { LikeButton } from './like-button'
 import { TradesButton } from './trades-button'
 import { FeedDropdown } from '../feed/card-dropdown'
 import { GroupTags } from '../feed/feed-timeline-items'
+import { JSONEmpty } from './contract-description'
 
 export function FeedContractCard(props: {
   contract: Contract
@@ -229,8 +229,7 @@ export function FeedContractCard(props: {
           <YourMetricsFooter metrics={metrics} />
         )}
 
-        {!descriptionIsEmpty(contract) &&
-          !small &&
+        {!JSONEmpty(contract.description) &&
           (item?.dataType == 'new_contract' || nonTextDescription) && (
             <FeedContractCardDescription
               contract={contract}

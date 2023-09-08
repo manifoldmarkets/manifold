@@ -12,6 +12,8 @@ export const CONFIGS: { [env: string]: EnvConfig } = {
   DEV: DEV_CONFIG,
 }
 
+export const DASHBOARD_ENABLED = ENV === 'DEV'
+
 export const ENV_CONFIG = CONFIGS[ENV]
 
 export function isAdminId(id: string) {
