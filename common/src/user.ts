@@ -36,7 +36,8 @@ export type User = {
   fractionResolvedCorrectly?: number // Deprecated as of 2023-01-05
 
   nextLoanCached: number
-  followerCountCached: number
+  /** @deprecated */
+  followerCountCached?: number
 
   homeSections?: string[]
 

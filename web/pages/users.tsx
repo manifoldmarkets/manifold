@@ -24,7 +24,6 @@ export default function Users() {
   const { query, setQuery } = useSearchQueryParameter('/users', 'search')
   const users = useUsersSupabase(query.toString(), limit, [
     'bio',
-    'followerCountCached',
     'creatorTraders',
     'profitCached',
   ])
@@ -75,7 +74,7 @@ const Metadata = (props: { children: ReactNode; className?: string }) => (
 const UserListEntry = (props: { user: UserSearchResult }) => {
   const { user } = props
   const { avatarUrl, username, name, id } = user
-  const { followerCountCached, creatorTraders, profitCached } = user
+  const { creatorTraders, profitCached } = user
 
   return (
     <Row className={'gap-2'}>
@@ -87,19 +86,12 @@ const UserListEntry = (props: { user: UserSearchResult }) => {
           <Col className={''}>
             <UserLink name={name} username={username} />
             <Row className={'gap-1'}>
-              {followerCountCached > 0 && (
-                <Metadata>{followerCountCached} followers</Metadata>
-              )}
-              {followerCountCached > 0 && creatorTraders.allTime > 0 && (
-                <Metadata className={'hidden sm:inline-block'}>•</Metadata>
-              )}
               {creatorTraders.allTime > 0 && (
                 <Metadata>
                   {shortFormatNumber(creatorTraders.allTime)} traders
                 </Metadata>
               )}
-              {((profitCached.allTime !== 0 && creatorTraders.allTime > 0) ||
-                followerCountCached > 0) && (
+              {profitCached.allTime !== 0 && creatorTraders.allTime > 0 && (
                 <Metadata className={'hidden sm:inline-block'}>•</Metadata>
               )}
               {profitCached.allTime !== 0 && (

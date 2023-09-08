@@ -87,7 +87,7 @@ export const createFollowOrMarketSubsidizedNotification = async (
   sourceId: string,
   sourceType: 'liquidity' | 'follow',
   sourceUpdateType: 'created',
-  sourceUser: User,
+  sourceUser: Pick<User, 'name' | 'username' | 'avatarUrl'>,
   idempotencyKey: string,
   sourceText: string,
   miscData?: {
@@ -102,8 +102,7 @@ export const createFollowOrMarketSubsidizedNotification = async (
     userToReasonTexts: recipients_to_reason_texts
   ) => {
     return (
-      sourceUser.id != userId &&
-      !Object.keys(userToReasonTexts).includes(userId)
+      sourceId != userId && !Object.keys(userToReasonTexts).includes(userId)
     )
   }
 
