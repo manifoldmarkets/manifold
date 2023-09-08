@@ -44,7 +44,9 @@ import { convertAnswer } from 'common/supabase/contracts'
 import { compareTwoStrings } from 'string-similarity'
 import dayjs from 'dayjs'
 
-export const DEBUG_FEED_CARDS = false
+export const DEBUG_FEED_CARDS =
+  typeof window != 'undefined' &&
+  window.location.toString().includes('localhost:3000')
 const PAGE_SIZE = 50
 
 export type FeedTimelineItem = {
@@ -119,6 +121,8 @@ export const useFeedTimeline = (
     getBoosts(privateUser).then(setBoosts)
   }, [])
   const followedIds = useFollowedIdsSupabase(privateUser.id)
+  if (DEBUG_FEED_CARDS)
+    console.log('DEBUG_FEED_CARDS is true, not marking feed cards as seen')
 
   const [savedFeedItems, setSavedFeedItems] = usePersistentInMemoryState<
     FeedTimelineItem[] | undefined
