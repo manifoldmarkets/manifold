@@ -48,11 +48,13 @@ export async function canSendMana(user: User, db: SupabaseClient) {
   )
 
   return (
-    user.createdTime < ageThreshold &&
-    (user.balance > 1000 ||
-      user.profitCached.allTime > 500 ||
-      (portfolioHistory?.investmentValue ?? 0) > 1000 ||
-      user.creatorTraders.allTime > 10)
+    // Exception for new Manifest ticket purchasers
+    (user.balance > 20000 && Date.now() < new Date(1695625200000).valueOf()) ||
+    (user.createdTime < ageThreshold &&
+      (user.balance > 1000 ||
+        user.profitCached.allTime > 500 ||
+        (portfolioHistory?.investmentValue ?? 0) > 1000 ||
+        user.creatorTraders.allTime > 10))
   )
 }
 

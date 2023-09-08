@@ -79,6 +79,7 @@ function FeedBetButton(props: {
               setTimeout(() => setDialogueThatIsOpen(undefined), 500)
             }
             location={'feed card'}
+            inModal={true}
           />
         </Col>
       </Modal>

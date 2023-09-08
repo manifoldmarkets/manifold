@@ -6,6 +6,7 @@ import {
 } from 'web/components/buttons/copy-link-button'
 import { Page } from 'web/components/layout/page'
 import { StarPicker } from 'web/components/reviews/stars'
+import { AlertBox } from 'web/components/widgets/alert-box'
 import { AmountInput } from 'web/components/widgets/amount-input'
 import { ChoicesToggleGroup } from 'web/components/widgets/choices-toggle-group'
 import { TextEditor, useTextEditor } from 'web/components/widgets/editor'
@@ -20,11 +21,13 @@ import { Title } from 'web/components/widgets/title'
 
 export default function StylePage() {
   return (
-    <Page>
-      <Title>Design System</Title>
+    <Page className="gap-2">
       <div>
-        A reference for all the common widgets we use on our site. For instance,
-        the component above is <code>Title</code>.
+        <Title>Design System</Title>
+        <div>
+          A reference for all the common widgets we use on our site. For
+          instance, the component above is <code>Title</code>.
+        </div>
       </div>
       <Subtitle>Buttons</Subtitle>
       <ButtonSection />
@@ -37,14 +40,14 @@ export default function StylePage() {
         <LoadingIndicator />
       </div>
       <Subtitle>Inputs</Subtitle>
-      <div className="mb-4 flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2">
         <Input placeholder="Input" />
         <Input disabled placeholder="Input disabled=true" />
         <Input error placeholder="Input error=true" />
         <NumberInputExample />
       </div>
       <ExpandingInput
-        className="mb-4 w-full"
+        className="w-full"
         placeholder="ExpandingInput (try typing a lot)"
       />
       <EditorExample />
@@ -60,8 +63,10 @@ export default function StylePage() {
         url="www.example.com"
         eventTrackingName={'copy styles link'}
       />
-      <CopyLinkRow eventTrackingName="copy styles link" />
-      <RatingSection />
+      <Subtitle>Other random stuff</Subtitle>
+      <Rating />
+      <AlertBox title="Alert box">this is a warning message!</AlertBox>
+      <AlertBox title="Alert box with no text" />
     </Page>
   )
 }
@@ -72,7 +77,7 @@ function ButtonSection() {
 
   return (
     <>
-      <div className="mb-4 flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2">
         <Button disabled={disabled} loading={loading}>
           indigo
         </Button>
@@ -85,11 +90,11 @@ function ButtonSection() {
         <Button disabled={disabled} loading={loading} color="gradient-pink">
           gradient-pink
         </Button>
+        <Button disabled={disabled} loading={loading} color="gold">
+          gold
+        </Button>
         <Button disabled={disabled} loading={loading} color="blue">
           blue
-        </Button>
-        <Button disabled={disabled} loading={loading} color="dark-gray">
-          dark-gray
         </Button>
         <Button disabled={disabled} loading={loading} color="gray">
           gray
@@ -120,7 +125,7 @@ function ButtonSection() {
         </Button>
       </div>
 
-      <div className="mb-4 flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <Button disabled={disabled} loading={loading} size="2xs">
           2xs
         </Button>
@@ -214,7 +219,7 @@ function EditorExample() {
   const editor = useTextEditor({
     defaultValue: '<p>Rich text editor from <code>editor.tsx</code></p>',
   })
-  return <TextEditor editor={editor} className="mb-4" />
+  return <TextEditor editor={editor} />
 }
 
 function SliderExample() {
@@ -243,12 +248,7 @@ function SliderExample() {
   )
 }
 
-function RatingSection() {
+function Rating() {
   const [rating, setRating] = useState<number>()
-  return (
-    <div>
-      <Subtitle>Rating</Subtitle>
-      <StarPicker rating={rating as any} setRating={setRating} />
-    </div>
-  )
+  return <StarPicker rating={rating as any} setRating={setRating} />
 }

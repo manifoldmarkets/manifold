@@ -7,6 +7,7 @@
     "dev": "ENVIRONMENT=DEV yarn build:watch ",
     "alias": "tsc-alias",
     "compile": "tsc -b",
+    "lint": "eslint --ext .ts .",
     "build:watch": "concurrently --kill-others \"tsc -w\" \"tsc-alias -w\" \"nodemon --watch lib --exec node lib/index.js\"",
     "build": "yarn compile && yarn --cwd=../../common alias && yarn --cwd=../shared alias && yarn alias && yarn dist",
     "dist": "yarn dist:prepare && yarn dist:copy",
@@ -19,10 +20,10 @@
     "discord.js": "^14.10.2"
   },
   "devDependencies": {
-    "@typescript-eslint/eslint-plugin": "^5.48.0",
-    "@typescript-eslint/parser": "^5.48.0",
+    "@typescript-eslint/eslint-plugin": "6.6.0",
+    "@typescript-eslint/parser": "6.6.0",
     "concurrently": "7.6.0",
-    "eslint": "^8.31.0",
+    "eslint": "8.48.0",
     "eslint-plugin-import": "^2.26.0",
     "eslint-plugin-unused-imports": "^2.0.0",
     "nodemon": "2.0.20",

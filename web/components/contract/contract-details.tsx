@@ -14,6 +14,7 @@ import { useIsClient } from 'web/hooks/use-is-client'
 import { Input } from '../widgets/input'
 import { Avatar } from '../widgets/avatar'
 import { UserLink } from '../widgets/user-link'
+import { NO_CLOSE_TIME_TYPES } from 'common/contract'
 
 export type ShowTime = 'resolve-date' | 'close-date'
 
@@ -48,47 +49,34 @@ export function CloseOrResolveTime(props: {
 }) {
   const { contract, editable, className } = props
   const { resolutionTime, closeTime, isResolved } = contract
-  if (contract.outcomeType === 'STONK') {
-    return <></>
-  }
+  if (contract.outcomeType === 'STONK') return null
 
-  const almostForeverTime = dayjs(contract.createdTime).add(
-    dayjs.duration(900, 'year')
+  return (
+    <Row className={clsx('select-none items-center', className)}>
+      {isResolved && resolutionTime && (
+        <DateTimeTooltip
+          className="whitespace-nowrap"
+          text="Question resolved:"
+          time={resolutionTime}
+          placement="bottom-start"
+        >
+          resolved {dayjs(resolutionTime).format('MMM D')}
+        </DateTimeTooltip>
+      )}
+
+      {!isResolved && (
+        <EditableCloseDate
+          closeTime={closeTime}
+          contract={contract}
+          editable={!!editable}
+        />
+      )}
+    </Row>
   )
-  if (
-    contract.outcomeType === 'POLL' &&
-    dayjs(closeTime).isAfter(almostForeverTime)
-  ) {
-    return <>Never closes</>
-  }
-  if (!!closeTime || !!isResolved) {
-    return (
-      <Row className={clsx('select-none items-center', className)}>
-        {isResolved && resolutionTime && (
-          <DateTimeTooltip
-            className="whitespace-nowrap"
-            text="Question resolved:"
-            time={resolutionTime}
-            placement="bottom-start"
-          >
-            resolved {dayjs(resolutionTime).format('MMM D')}
-          </DateTimeTooltip>
-        )}
-
-        {!isResolved && closeTime && (
-          <EditableCloseDate
-            closeTime={closeTime}
-            contract={contract}
-            editable={!!editable}
-          />
-        )}
-      </Row>
-    )
-  } else return <></>
 }
 
 function EditableCloseDate(props: {
-  closeTime: number
+  closeTime: number | undefined
   contract: Contract
   editable: boolean
 }) {
@@ -129,7 +117,13 @@ function EditableCloseDate(props: {
       })
     }
   }
-
+  const almostForeverTime = dayjs(contract.createdTime).add(
+    dayjs.duration(900, 'year')
+  )
+  const neverCloses =
+    !closeTime ??
+    (NO_CLOSE_TIME_TYPES.includes(contract.outcomeType) &&
+      dayjs(closeTime).isAfter(almostForeverTime))
   return (
     <>
       <Modal
@@ -140,11 +134,14 @@ function EditableCloseDate(props: {
       >
         <Col className="bg-canvas-0 rounded-lg p-8">
           <Title className="!text-2xl">Close time</Title>
-          <div className="mb-4">Trading will halt at this time</div>
+          <div className="mb-4">
+            {contract.outcomeType === 'POLL' ? 'Voting' : 'Trading'} will halt
+            at this time
+          </div>
           <Row className="items-stretch gap-2">
             <Input
               type="date"
-              className="shrink-0 sm:w-fit"
+              className="dark:date-range-input-white shrink-0 sm:w-fit"
               onClick={(e) => e.stopPropagation()}
               onChange={(e) => setCloseDate(e.target.value)}
               min={isClient ? dayJsNow.format('YYYY-MM-DD') : undefined}
@@ -153,7 +150,7 @@ function EditableCloseDate(props: {
             />
             <Input
               type="time"
-              className="shrink-0 sm:w-max"
+              className="dark:date-range-input-white shrink-0 sm:w-max"
               onClick={(e) => e.stopPropagation()}
               onChange={(e) => setCloseHoursMinutes(e.target.value)}
               value={closeHoursMinutes}
@@ -184,22 +181,30 @@ function EditableCloseDate(props: {
         )}
         onClick={() => editable && setIsEditingCloseTime(true)}
       >
-        <DateTimeTooltip
-          text={closeTime <= Date.now() ? 'Trading ended:' : 'Trading ends:'}
-          time={closeTime}
-          placement="bottom-end"
-          noTap
-          className="flex items-center"
-        >
-          {dayjs().isBefore(closeTime) ? 'closes' : 'closed'}{' '}
-          {isSameDay
-            ? fromNow(closeTime)
-            : isSameYear || isSoon
-            ? dayJsCloseTime.format('MMM D')
-            : dayJsCloseTime.format('YYYY')}
-        </DateTimeTooltip>
+        {neverCloses ? (
+          <div className="text-ink-500">Never closes</div>
+        ) : (
+          closeTime && (
+            <DateTimeTooltip
+              text={
+                closeTime <= Date.now() ? 'Trading ended:' : 'Trading ends:'
+              }
+              time={closeTime}
+              placement="bottom-end"
+              noTap
+              className="flex items-center"
+            >
+              {dayjs().isBefore(closeTime) ? 'closes' : 'closed'}{' '}
+              {isSameDay
+                ? fromNow(closeTime)
+                : isSameYear || isSoon
+                ? dayJsCloseTime.format('MMM D')
+                : dayJsCloseTime.format('YYYY')}
+            </DateTimeTooltip>
+          )
+        )}
         {editable && (
-          <PencilIcon className="h-4 w-4 sm:fill-transparent sm:group-hover:fill-inherit" />
+          <PencilIcon className="sm:group-hover:fill-ink-600 h-4 w-4 sm:fill-transparent" />
         )}
       </Row>
     </>

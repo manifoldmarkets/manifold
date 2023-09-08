@@ -61,6 +61,7 @@ import { JSONContent } from '@tiptap/core'
 import { league_user_info } from 'common/leagues'
 import { getInterestingMarketsForUsers } from 'shared/interesting-markets-email-helpers'
 import { hasUserSeenMarket } from 'shared/helpers/seen-markets'
+import { getUserFollowerIds } from 'shared/supabase/users'
 
 const firestore = admin.firestore()
 
@@ -881,7 +882,8 @@ export const createLikeNotification = async (reaction: Reaction) => {
 }
 
 export const createUniqueBettorBonusNotification = async (
-  contractCreatorId: string,
+  // Creator of contract or answer that was bet on.
+  creatorId: string,
   bettor: User,
   txnId: string,
   contract: Contract,
@@ -890,7 +892,7 @@ export const createUniqueBettorBonusNotification = async (
   idempotencyKey: string,
   bet: Bet
 ) => {
-  const privateUser = await getPrivateUser(contractCreatorId)
+  const privateUser = await getPrivateUser(creatorId)
   if (!privateUser) return
   const { sendToBrowser, sendToEmail } = getNotificationDestinationsForUser(
     privateUser,
@@ -911,7 +913,7 @@ export const createUniqueBettorBonusNotification = async (
 
     const notification: Notification = {
       id: idempotencyKey,
-      userId: contractCreatorId,
+      userId: creatorId,
       reason: 'unique_bettors_on_your_contract',
       createdTime: Date.now(),
       isSeen: false,
@@ -946,7 +948,7 @@ export const createUniqueBettorBonusNotification = async (
 
   if (!sendToEmail) return
   const uniqueBettorsExcludingCreator = uniqueBettorIds.filter(
-    (id) => id !== contractCreatorId
+    (id) => id !== contract.creatorId
   )
   const TOTAL_NEW_BETTORS_TO_REPORT = 5
   // Only send on 5th bettor
@@ -1038,25 +1040,22 @@ export const createNewContractNotification = async (
     if (reason === 'contract_from_followed_user')
       await sendNewFollowedMarketEmail(reason, userId, privateUser, contract)
   }
-
-  const followerUserIds = await pg.manyOrNone(
-    `select user_id from user_follows where follow_id = $1 and user_id != $1`,
-    [contractCreator.id]
-  )
+  const followerUserIds = await getUserFollowerIds(contractCreator.id, pg)
 
   // As it is coded now, the tag notification usurps the new contract notification
   // It'd be easy to append the reason to the eventId if desired
   if (contract.visibility == 'public') {
-    for (const followerUserId of followerUserIds) {
-      await sendNotificationsIfSettingsAllow(
-        followerUserId,
-        'contract_from_followed_user'
+    await Promise.all(
+      followerUserIds.map(async (userId) =>
+        sendNotificationsIfSettingsAllow(userId, 'contract_from_followed_user')
       )
-    }
+    )
   }
-  for (const mentionedUserId of mentionedUserIds) {
-    await sendNotificationsIfSettingsAllow(mentionedUserId, 'tagged_user')
-  }
+  await Promise.all(
+    mentionedUserIds.map(async (userId) =>
+      sendNotificationsIfSettingsAllow(userId, 'tagged_user')
+    )
+  )
 }
 
 export const createNewContractFromPrivateGroupNotification = async (
@@ -1370,7 +1369,7 @@ export const createGroupStatusChangeNotification = async (
   if (!privateUser) return
   let sourceText = `changed your role to ${newStatus}`
   if (
-    ((!affectedMember.role || affectedMember.role == 'member') &&
+    (affectedMember.role == 'member' &&
       (newStatus == 'admin' || newStatus == 'moderator')) ||
     (affectedMember.role == 'moderator' && newStatus == 'admin')
   ) {

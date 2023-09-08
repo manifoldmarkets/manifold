@@ -15,6 +15,7 @@ import React, {
 import { Contract } from 'common/contract'
 import { useMeasureSize } from 'web/hooks/use-measure-size'
 import { clamp } from 'lodash'
+import { HistoryPoint } from 'common/chart'
 
 export interface ContinuousScale<T> extends AxisScale<T> {
   invert(n: number): T
@@ -450,23 +451,30 @@ export const formatDateInRange = (d: Date, start: Date, end: Date) => {
   }
   return formatDate(d, opts)
 }
-export const computeColorStops = <P,>(
+
+// assumes linear interpolation
+export const computeColorStops = <P extends HistoryPoint>(
   data: P[],
   pc: (p: P) => string,
   px: (p: P) => number
 ) => {
   const segments: { x: number; color: string }[] = []
-  let currOffset = px(data[0])
-  let currColor = pc(data[0])
-  for (const p of data) {
-    const c = pc(p)
-    if (c !== currColor) {
-      segments.push({ x: currOffset, color: currColor })
-      currOffset = px(p)
-      currColor = c
+
+  if (data.length === 0) return segments
+
+  segments.push({ x: px(data[0]), color: pc(data[0]) })
+
+  for (let i = 1; i < data.length - 1; i++) {
+    const prev = data[i - 1]
+    const curr = data[i]
+    if (pc(prev) !== pc(curr)) {
+      // given a line through points (x0, y0) and (x1, y1), find the x value where y = 0 (intersects with x axis)
+      const xIntersect =
+        prev.x + (prev.y * (curr.x - prev.x)) / (prev.y - curr.y)
+
+      segments.push({ x: px({ ...prev, x: xIntersect }), color: pc(curr) })
     }
   }
-  segments.push({ x: currOffset, color: currColor })
 
   const stops: { x: number; color: string }[] = []
   stops.push({ x: segments[0].x, color: segments[0].color })

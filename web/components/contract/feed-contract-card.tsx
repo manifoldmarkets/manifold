@@ -45,7 +45,7 @@ export function FeedContractCard(props: {
   trackingPostfix?: string
   item?: FeedTimelineItem
   className?: string
-  /** whether this card is small, to adjust sizing. TODO: replace with container queries */
+  /** whether this card is small, like in card grids.*/
   small?: boolean
   hide?: () => void
   showGraph?: boolean
@@ -107,22 +107,23 @@ export function FeedContractCard(props: {
       isPromoted: !!promotedData,
     })
 
-  const nonTextDescription =
-    typeof contract.description !== 'string' &&
-    contract.description.content &&
-    contract.description.content.some(
-      (item) => item.type === 'image' || item.type === 'embed'
-    )
+  const nonTextDescription = small
+    ? false // don't show non-text description on small cards
+    : typeof contract.description !== 'string' &&
+      contract.description.content &&
+      contract.description.content.some(
+        (item) => item.type === 'image' || item.type === 'embed'
+      )
 
   return (
     <ClickFrame
       className={clsx(
         className,
         'relative rounded-xl',
-        'bg-canvas-0 cursor-pointer ',
-        'border-canvas-0 hover:border-primary-300 focus:border-primary-300 border drop-shadow-md transition-colors',
+        'cursor-pointer ',
+        'border-canvas-0 hover:border-primary-300 focus:border-primary-300 border transition-colors',
         'flex w-full flex-col gap-0.5 px-4',
-        !small && 'sm:px-6'
+        small ? 'bg-canvas-50' : 'bg-canvas-0 drop-shadow-md sm:px-6'
       )}
       onClick={(e) => {
         trackClick()
@@ -170,7 +171,13 @@ export function FeedContractCard(props: {
           )}
         >
           {/* Title is link to contract for open in new tab and a11y */}
-          <Link className="grow items-start text-lg" href={path}>
+          <Link
+            className={clsx(
+              'hover:text-primary-700 grow items-start transition-colors',
+              !small && 'sm:text-lg'
+            )}
+            href={path}
+          >
             <VisibilityIcon contract={contract} /> {contract.question}
           </Link>
           <Row
@@ -283,6 +290,7 @@ const BottomActionRow = (props: {
           color="gray"
           className="px-0"
           trackingLocation={'contract card (feed)'}
+          placement="top"
         />
       </BottomRowButtonWrapper>
     </Row>

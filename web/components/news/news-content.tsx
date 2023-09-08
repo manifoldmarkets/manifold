@@ -452,15 +452,18 @@ const Trump = createNewsDashboardTab(
   'Trump',
   'Trump indicted',
   [
+    { slug: 'when-will-trump-be-imprisoned' },
+    {
+      url: 'https://www.reuters.com/world/us/trump-may-seek-removal-georgia-election-subversion-case-us-court-filing-2023-09-07/',
+    },
+    { slug: 'will-any-state-disqualify-trump-fro' },
     {
       url: 'https://www.politico.com/news/2023/09/01/fourteenth-amendment-insurrection-clause-trump-00113790',
     },
-    { slug: 'will-any-state-disqualify-trump-fro' },
     { slug: 'will-donald-trump-be-convicted-of-a-99e01f724b3f' },
     {
       url: 'https://www.nbcnews.com/politics/donald-trump/federal-judge-set-trump-trial-date-election-interference-case-rcna101669',
     },
-    { slug: 'when-will-trump-be-imprisoned' },
 
     { slug: 'will-donald-trump-be-the-republican' },
     { slug: 'will-a-trump-mugshot-be-available-b' },
@@ -553,30 +556,43 @@ const PlaneCrash = createNewsDashboardTab(
 
 const FLHurricane = createNewsDashboardTab(
   'Gulf Hurricane',
-  'Hurricane Idalia ravages coastline',
+  'Hurricane Lee stengthens',
   [
     {
-      url: 'https://www.nbcnews.com/news/us-news/hurricane-idalias-destruction-skipped-homes-floridas-coast-rcna102887',
+      url: 'https://www.npr.org/2023/09/07/1198147021/hurricane-lee-forecast-category-5-storm',
     },
-    { slug: 'will-hurricane-idalia-cost-150-live' },
-    { slug: 'in-2023-will-a-hurricane-make-landf' },
-    { slug: 'will-tropical-storm-idalia-become-a' },
-
-    { slug: 'will-a-hurricane-make-landfall-in-f-736c1b6b35db' },
+    { slug: 'will-storm-lee-develop-into-a-categ' },
+    { slug: 'will-tropical-storm-lee-become-a-ma' },
+    { slug: 'will-hurricane-season-of-2023-cause' },
     { slug: 'will-a-hurricane-hit-the-state-of-f' },
     { slug: 'will-a-hurricane-make-landfall-in-l-d39166018a46' },
     { slug: 'will-a-hurricane-make-landfall-in-t-d9549c66acae' },
   ]
 )
 
+const G20 = createNewsDashboardTab('G20', 'G20 Summit in India (Bharat?)', [
+  {
+    url: 'https://www.cnn.com/2023/09/06/asia/g20-summit-bharat-india-name-row-intl-hnk/index.html',
+  },
+  { slug: 'will-a-bill-to-rename-india-to-bhar' },
+  {
+    url: 'https://www.reuters.com/markets/emerging/biden-doubles-down-emerging-markets-xi-snubs-g20-2023-09-07/',
+  },
+  { slug: 'will-volodomyr-zelenskyy-attend-the' },
+  { slug: 'will-xi-and-modi-hold-a-bilateral-m' },
+  { slug: 'will-north-korea-launch-any-missile' },
+  { slug: 'will-chinese-premier-li-qiang-hold' },
+])
+
 export const newsContent = [
   Trump,
+  G20,
+  FLHurricane,
   Election2024,
   STPSuper,
   UkraineWar,
   ElonVersusZuck,
   NigerCoup,
-  FLHurricane,
   PlaneCrash,
   UFOs,
   XCom,

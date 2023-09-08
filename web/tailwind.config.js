@@ -367,6 +367,11 @@ module.exports = {
             display: 'none',
           },
         },
+        '.date-range-input-white': {
+          '&::-webkit-calendar-picker-indicator': {
+            filter: 'invert(1)',
+          },
+        },
         '.break-anywhere': {
           'overflow-wrap': 'anywhere',
           'word-break': 'break-word', // for Safari

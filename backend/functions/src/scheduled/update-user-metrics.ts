@@ -100,7 +100,7 @@ export async function updateUserMetricsCore() {
 
   for (const [contractId, answers] of Object.entries(answersByContractId)) {
     // Denormalize answers onto the contract.
-    ;(contractsById[contractId] as CPMMMultiContract).answers = answers
+    (contractsById[contractId] as CPMMMultiContract).answers = answers
   }
 
   log(`Loaded ${contracts.length} contracts.`)

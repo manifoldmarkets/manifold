@@ -2,6 +2,7 @@ import { pgp, SupabaseDirectClient } from 'shared/supabase/init'
 import { fromPairs } from 'lodash'
 import {
   FEED_REASON_TYPES,
+  getRelevanceScore,
   INTEREST_DISTANCE_THRESHOLDS,
   NEW_USER_FEED_DATA_TYPES,
 } from 'common/feed'
@@ -26,6 +27,7 @@ export const getUserFollowerIds = async (
 
 export const getUsersWithSimilarInterestVectorToNews = async (
   newsId: string,
+  averageImportanceScore: number,
   pg: SupabaseDirectClient
 ) => {
   const userIdsAndDistances = await pg.manyOrNone<{
@@ -49,10 +51,22 @@ export const getUsersWithSimilarInterestVectorToNews = async (
   `,
     [newsId, INTEREST_DISTANCE_THRESHOLDS.news_with_related_contracts]
   )
+  const reasons = [
+    'similar_interest_vector_to_news_vector',
+  ] as FEED_REASON_TYPES[]
+
   return fromPairs(
     userIdsAndDistances.map((r) => [
       r.user_id,
-      'similar_interest_vector_to_news_vector' as FEED_REASON_TYPES,
+      {
+        reasons,
+        relevanceScore: getRelevanceScore(
+          'news_with_related_contracts',
+          reasons,
+          averageImportanceScore,
+          r.distance
+        ),
+      },
     ])
   )
 }
@@ -61,10 +75,11 @@ export const spiceUpNewUsersFeedBasedOnTheirInterests = async (
   userId: string,
   pg: SupabaseDirectClient,
   userIdFeedSource: string,
-  targetContractIds: string[]
+  targetContractIds: string[],
+  estimatedRelevance: number
 ) => {
   await pg.tx(async (t) => {
-    const relatedFeedItems = await t.manyOrNone<Row<'user_feed'>>(
+    const relatedFeedItems = await t.map(
       `              
           WITH user_embedding AS (
             SELECT interest_embedding
@@ -100,7 +115,11 @@ export const spiceUpNewUsersFeedBasedOnTheirInterests = async (
         targetContractIds.length,
         NEW_USER_FEED_DATA_TYPES,
         targetContractIds,
-      ]
+      ],
+      (r: Row<'user_feed'>) => ({
+        ...r,
+        relevance_score: (r.relevance_score ?? 0.85) * estimatedRelevance,
+      })
     )
     log('found related feed items', relatedFeedItems.length, 'for user', userId)
     await copyOverFeedItems(userId, relatedFeedItems, t)

@@ -1,6 +1,6 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
-import { keyBy } from 'lodash'
+import { first, keyBy } from 'lodash'
 
 import { Bet, LimitBet } from 'common/bet'
 import {
@@ -50,6 +50,7 @@ import { addToLeagueIfNotInOne } from 'shared/generate-leagues'
 import { FieldValue } from 'firebase-admin/firestore'
 import { FLAT_TRADE_FEE } from 'common/fees'
 import {
+  getContractsDirect,
   getUniqueBettorIds,
   getUniqueBettorIdsForAnswer,
 } from 'shared/supabase/contracts'
@@ -75,11 +76,14 @@ export const onCreateBet = functions
     const bet = change.data() as Bet
     if (bet.isChallenge) return
 
-    const contractRef = firestore.collection('contracts').doc(contractId)
-    const contractSnap = await contractRef.get()
-    const contract = contractSnap.data() as Contract
+    const contracts = await getContractsDirect(
+      [contractId],
+      createSupabaseDirectClient()
+    )
+    const contract = first(contracts)
     if (!contract) return
-    await contractRef.update({
+
+    await firestore.collection('contracts').doc(contract.id).update({
       lastBetTime: bet.createdTime,
       lastUpdatedTime: Date.now(),
     })
@@ -268,10 +272,17 @@ export const giveUniqueBettorAndLiquidityBonus = async (
   const { answerId, isRedemption } = bet
   const pg = createSupabaseDirectClient()
 
-  const isCreator = bettor.id == contract.creatorId
   const isBot = BOT_USERNAMES.includes(bettor.username)
   const isUnlisted = contract.visibility === 'unlisted'
   const isNonPredictive = contract.nonPredictive
+
+  const answer =
+    answerId && 'answers' in contract
+      ? (contract.answers as Answer[]).find((a) => a.id == answerId)
+      : undefined
+  const answerCreatorId = answer?.userId
+  const creatorId = answerCreatorId ?? contract.creatorId
+  const isCreator = bettor.id == creatorId
 
   if (isCreator || isBot || isUnlisted || isRedemption || isNonPredictive)
     return
@@ -313,19 +324,13 @@ export const giveUniqueBettorAndLiquidityBonus = async (
   // Check max bonus exceeded.
   if (uniqueBettorIds.length > MAX_TRADERS_FOR_BONUS) return
 
-  const answer =
-    answerId && 'answers' in contract
-      ? (contract.answers as Answer[]).find((a) => a.id == answerId)
-      : undefined
-  const answerCreatorId = answer?.userId
-
   // They may still have bet on this previously, use a transaction to be sure
   // we haven't sent creator a bonus already
   const result = await firestore.runTransaction(async (trans) => {
     const query = firestore
       .collection('txns')
       .where('fromType', '==', 'BANK')
-      .where('toId', '==', answerCreatorId ?? contract.creatorId)
+      .where('toId', '==', creatorId)
       .where('category', '==', 'UNIQUE_BETTOR_BONUS')
       .where('data.uniqueNewBettorId', '==', bettor.id)
       .where('data.contractId', '==', contract.id)
@@ -333,10 +338,7 @@ export const giveUniqueBettorAndLiquidityBonus = async (
       ? query.where('data.answerId', '==', answerId)
       : query
     const txnsSnap = await queryWithMaybeAnswer.get()
-
-    const refs = txnsSnap.docs.map((doc) => doc.ref)
-    const txns = refs.length > 0 ? await trans.getAll(...refs) : []
-    const bonusGivenAlready = txns.length > 0
+    const bonusGivenAlready = txnsSnap.docs.length > 0
     if (bonusGivenAlready) return undefined
 
     const bonusTxnData = removeUndefinedProps({
@@ -355,7 +357,7 @@ export const giveUniqueBettorAndLiquidityBonus = async (
       'id' | 'createdTime' | 'fromId'
     > = {
       fromType: 'BANK',
-      toId: answerCreatorId ?? contract.creatorId,
+      toId: creatorId,
       toType: 'USER',
       amount: bonusAmount,
       token: 'M$',
@@ -364,8 +366,7 @@ export const giveUniqueBettorAndLiquidityBonus = async (
       data: bonusTxnData,
     }
 
-    const { status, message, txn } = await runTxnFromBank(trans, bonusTxn)
-    return { status, message, txn }
+    return await runTxnFromBank(trans, bonusTxn)
   })
   if (!result) return
 
@@ -398,7 +399,7 @@ export const giveUniqueBettorAndLiquidityBonus = async (
       : uniqueBettorIds
 
     await createUniqueBettorBonusNotification(
-      contract.creatorId,
+      creatorId,
       bettor,
       result.txn.id,
       contract,

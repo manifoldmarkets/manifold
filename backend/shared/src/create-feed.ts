@@ -4,12 +4,16 @@ import {
   SupabaseDirectClient,
 } from 'shared/supabase/init'
 import { Comment } from 'common/comment'
-import { getUserToReasonsInterestedInContractAndUser } from 'shared/supabase/contracts'
+import {
+  getUsersWithSimilarInterestVectorsToContract,
+  getUserToReasonsInterestedInContractAndUser,
+} from 'shared/supabase/contracts'
 import { Contract, CPMMContract } from 'common/contract'
 import {
-  CONTRACT_OR_USER_FEED_REASON_TYPES,
+  CONTRACT_FEED_REASON_TYPES,
   FEED_DATA_TYPES,
   FEED_REASON_TYPES,
+  getRelevanceScore,
   INTEREST_DISTANCE_THRESHOLDS,
 } from 'common/feed'
 import { log } from 'shared/utils'
@@ -24,10 +28,14 @@ import { fromPairs, uniq } from 'lodash'
 import { removeUndefinedProps } from 'common/util/object'
 import { PositionChangeData } from 'common/supabase/bets'
 import { filterDefined } from 'common/util/array'
+import { average } from 'common/util/math'
 
 export const bulkInsertDataToUserFeed = async (
   usersToReasonsInterestedInContract: {
-    [userId: string]: FEED_REASON_TYPES
+    [userId: string]: {
+      reasons: FEED_REASON_TYPES[]
+      relevanceScore: number
+    }
   },
   eventTime: number,
   dataType: FEED_DATA_TYPES,
@@ -50,11 +58,12 @@ export const bulkInsertDataToUserFeed = async (
 
   const feedRows = Object.entries(usersToReasonsInterestedInContract)
     .filter(([userId]) => !userIdsToExclude.includes(userId))
-    .map(([userId, reason]) =>
+    .map(([userId, reasonAndScore]) =>
       convertObjectToSQLRow<any, 'user_feed'>({
         ...dataProps,
         userId,
-        reason,
+        ...reasonAndScore,
+        reason: reasonAndScore.reasons[0],
         dataType,
         eventTime: eventTimeTz,
       })
@@ -77,6 +86,10 @@ export const createManualTrendingFeedRow = (
   forUserId: string
 ) => {
   const now = Date.now()
+  const reasons: FEED_REASON_TYPES[] = [
+    'similar_interest_vector_to_contract',
+    'contract_in_group_you_are_in',
+  ]
   return contracts.map((contract) =>
     convertObjectToSQLRow<any, 'user_feed'>({
       contractId: contract.id,
@@ -85,6 +98,13 @@ export const createManualTrendingFeedRow = (
       eventTime: new Date(now).toISOString(),
       reason: 'similar_interest_vector_to_contract',
       dataType: 'trending_contract',
+      reasons,
+      relevanceScore: getRelevanceScore(
+        'trending_contract',
+        reasons,
+        contract.importanceScore,
+        1
+      ),
     })
   )
 }
@@ -122,8 +142,8 @@ export const addCommentOnContractToFeed = async (
       comment.userId,
       pg,
       ['follow_contract', 'follow_user'],
-      INTEREST_DISTANCE_THRESHOLDS.new_comment,
-      false
+      false,
+      'new_comment'
     )
   await bulkInsertDataToUserFeed(
     usersToReasonsInterestedInContract,
@@ -185,31 +205,17 @@ export const addCommentOnContractToFeed = async (
 //   )
 // }
 
-//TODO: run this when a contract gets its 1st comment, 5th bet, 1st like
-// excluding those who:
-// - have already seen this contract
-// - already have it in their feed:  (unique by contract id, user id)
-// - creator of the contract & reaction
 export const addContractToFeed = async (
   contract: Contract,
-  reasonsToInclude: CONTRACT_OR_USER_FEED_REASON_TYPES[],
+  reasonsToInclude: CONTRACT_FEED_REASON_TYPES[],
   dataType: FEED_DATA_TYPES,
   userIdsToExclude: string[],
   options: {
-    maxDistanceFromUserInterestToContract: number
     userIdResponsibleForEvent?: string
     idempotencyKey?: string
-    currentProb?: number
-    previousProb?: number
   }
 ) => {
-  const {
-    idempotencyKey,
-    maxDistanceFromUserInterestToContract,
-    userIdResponsibleForEvent,
-    currentProb,
-    previousProb,
-  } = options
+  const { idempotencyKey, userIdResponsibleForEvent } = options
   const pg = createSupabaseDirectClient()
   const usersToReasonsInterestedInContract =
     await getUserToReasonsInterestedInContractAndUser(
@@ -217,8 +223,8 @@ export const addContractToFeed = async (
       userIdResponsibleForEvent ?? contract.creatorId,
       pg,
       reasonsToInclude,
-      maxDistanceFromUserInterestToContract,
-      false
+      false,
+      dataType
     )
   await bulkInsertDataToUserFeed(
     usersToReasonsInterestedInContract,
@@ -229,10 +235,6 @@ export const addContractToFeed = async (
       contractId: contract.id,
       creatorId: contract.creatorId,
       idempotencyKey,
-      data: {
-        currentProb,
-        previousProb,
-      },
     },
     pg
   )
@@ -245,12 +247,12 @@ export const addContractToFeed = async (
 
 export const addContractToFeedIfNotDuplicative = async (
   contract: Contract,
-  reasonsToInclude: CONTRACT_OR_USER_FEED_REASON_TYPES[],
+  reasonsToInclude: CONTRACT_FEED_REASON_TYPES[],
   dataType: FEED_DATA_TYPES,
   userIdsToExclude: string[],
   unseenNewerThanTime: number,
-  minUserInterestDistanceToContract: number,
-  data?: Record<string, any>
+  data?: Record<string, any>,
+  trendingContractType?: 'old' | 'new'
 ) => {
   const pg = createSupabaseDirectClient()
   const usersToReasonsInterestedInContract =
@@ -259,8 +261,9 @@ export const addContractToFeedIfNotDuplicative = async (
       contract.creatorId,
       pg,
       reasonsToInclude,
-      minUserInterestDistanceToContract,
-      true
+      true,
+      dataType,
+      trendingContractType
     )
   log(
     'checking users for feed rows:',
@@ -294,6 +297,7 @@ export const insertNewsToUsersFeeds = async (
   contracts: {
     id: string
     creatorId: string
+    importanceScore: number
   }[],
   groups: {
     id: string
@@ -304,6 +308,7 @@ export const insertNewsToUsersFeeds = async (
 ) => {
   const usersToReasons = await getUsersWithSimilarInterestVectorToNews(
     newsId,
+    average(contracts.map((c) => c.importanceScore)),
     pg
   )
   console.log(
@@ -356,11 +361,11 @@ export const insertMarketMovementContractToUsersFeeds = async (
       'follow_contract',
       'liked_contract',
       'similar_interest_vector_to_contract',
+      'contract_in_group_you_are_in',
     ],
     'contract_probability_changed',
     [],
     Date.now() - DAY_MS,
-    INTEREST_DISTANCE_THRESHOLDS.contract_probability_changed,
     {
       currentProb: contract.prob,
       previousProb: contract.prob - contract.probChanges.day,
@@ -370,7 +375,8 @@ export const insertMarketMovementContractToUsersFeeds = async (
 export const insertTrendingContractToUsersFeeds = async (
   contract: Contract,
   unseenNewerThanTime: number,
-  data?: Record<string, any>
+  data?: Record<string, any>,
+  trendingContractType?: 'old' | 'new'
 ) => {
   await addContractToFeedIfNotDuplicative(
     contract,
@@ -378,12 +384,13 @@ export const insertTrendingContractToUsersFeeds = async (
       'follow_contract',
       'liked_contract',
       'similar_interest_vector_to_contract',
+      'contract_in_group_you_are_in',
     ],
     'trending_contract',
     [contract.creatorId],
     unseenNewerThanTime,
-    INTEREST_DISTANCE_THRESHOLDS.trending_contract,
-    data
+    data,
+    trendingContractType
   )
 }
 
@@ -397,8 +404,29 @@ export const addBetDataToUsersFeeds = async (
   const now = Date.now()
   const followerIds = await getUserFollowerIds(bettor.id, pg)
   // const followerIds = ['mwaVAaKkabODsH8g5VrtbshsXz03']
+  const usersToDistances = await getUsersWithSimilarInterestVectorsToContract(
+    contract.id,
+    pg,
+    INTEREST_DISTANCE_THRESHOLDS.user_position_changed,
+    20,
+    followerIds
+  )
+
   await bulkInsertDataToUserFeed(
-    fromPairs(followerIds.map((id) => [id, 'follow_user'])),
+    fromPairs(
+      followerIds.map((id) => [
+        id,
+        {
+          reasons: ['follow_user'],
+          relevanceScore: getRelevanceScore(
+            'user_position_changed',
+            ['follow_user'],
+            contract.importanceScore,
+            usersToDistances[id]
+          ),
+        },
+      ])
+    ),
     now,
     'user_position_changed',
     [],

@@ -1,4 +1,3 @@
-import Masonry from 'react-masonry-css'
 import { Contract } from 'web/lib/firebase/contracts'
 import { Col } from '../layout/col'
 import { ShowTime } from './contract-details'
@@ -23,22 +22,15 @@ export function ContractsGrid(props: {
   }
 
   return (
-    <Col className="gap-8">
-      <Masonry
-        // Show only 1 column on tailwind's md breakpoint (768px)
-        breakpointCols={props.breakpointColumns ?? { default: 2, 768: 1 }}
-        className="-ml-4 flex w-auto"
-        columnClassName="pl-4 bg-clip-padding space-y-4"
-      >
-        {contracts.map((contract) => (
-          <FeedContractCard
-            contract={contract}
-            key={contract.id}
-            trackingPostfix={trackingPostfix}
-            small
-          />
-        ))}
-      </Masonry>
+    <Col className="gap-2">
+      {contracts.map((contract) => (
+        <FeedContractCard
+          contract={contract}
+          key={contract.id}
+          trackingPostfix={trackingPostfix}
+          small
+        />
+      ))}
       {loadMore && <LoadMoreUntilNotVisible loadMore={loadMore} />}
     </Col>
   )

@@ -49,7 +49,7 @@ import { UserLikedContractsButton } from 'web/components/profile/user-liked-cont
 import { getPostsByUser } from 'web/lib/supabase/post'
 import { useLeagueInfo } from 'web/hooks/use-leagues'
 import { DIVISION_NAMES, getLeaguePath } from 'common/leagues'
-import TrophyIcon from 'web/lib/icons/trophy-icon'
+import TrophyIcon from 'web/lib/icons/trophy-icon.svg'
 import { DailyLeagueStat } from 'web/components/daily-league-stat'
 import { QuestsOrStreak } from 'web/components/quests-or-streak'
 import { useAdmin } from 'web/hooks/use-admin'

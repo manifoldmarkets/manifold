@@ -37,7 +37,7 @@ export function QfOverview(props: { contract: QuadraticFundingContract }) {
 }
 
 export function QfExplainer() {
-  return <AlertBox title="Quadratic Funding markets are deprecated" text="" />
+  return <AlertBox title="Quadratic Funding markets are deprecated" />
 }
 
 function QfAnswersPanel(props: { contract: QuadraticFundingContract }) {

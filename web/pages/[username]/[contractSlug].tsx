@@ -446,7 +446,7 @@ export function ContractPageContent(props: {
 
                     <CloseOrResolveTime
                       contract={contract}
-                      editable={user?.id === creatorId}
+                      editable={isCreator || isAdmin}
                     />
                   </div>
                 )}

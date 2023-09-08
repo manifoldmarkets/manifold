@@ -17,7 +17,11 @@ export const NewsArticle = (props: {
   const { title, urlToImage, url, description, published_time } = props
   const date = Date.parse(props.published_time as any)
   return (
-    <Link href={url} target="_blank" className="relative flex w-full flex-col">
+    <Link
+      href={url}
+      target="_blank"
+      className="group relative flex w-full flex-col"
+    >
       <Col className=" px-4 py-2 sm:hidden sm:px-6">
         <Row className="text-ink-500 w-full justify-between text-sm">
           <div>{props.source_name ? props.source_name : 'News'}</div>
@@ -61,7 +65,9 @@ export const NewsArticle = (props: {
               </span>
             )}
           </Row>
-          <div className="line-clamp-2 text-lg">{title}</div>
+          <div className="line-clamp-2 group-hover:text-primary-700 text-lg transition-colors">
+            {title}
+          </div>
           <Spacer h={1.5} />
           <div className="line-clamp-3 text-sm">{description}</div>
         </Col>

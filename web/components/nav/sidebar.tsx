@@ -24,10 +24,10 @@ import { AddFundsModal } from 'web/components/add-funds-modal'
 import { AppBadgesOrGetAppButton } from 'web/components/buttons/app-badges-or-get-app-button'
 import { CreateQuestionButton } from 'web/components/buttons/create-question-button'
 import { NotificationsIcon } from 'web/components/notifications-icon'
-import { DarkModeContext, useIsDarkMode } from 'web/hooks/dark-mode-context'
+import { DarkModeContext } from 'web/hooks/dark-mode-context'
 import { useUser } from 'web/hooks/use-user'
 import { firebaseLogin, firebaseLogout } from 'web/lib/firebase/users'
-import TrophyIcon from 'web/lib/icons/trophy-icon'
+import TrophyIcon from 'web/lib/icons/trophy-icon.svg'
 import { withTracking } from 'web/lib/service/analytics'
 import { MobileAppsQRCodeDialog } from '../buttons/mobile-apps-qr-code-button'
 import { SidebarSignUpButton } from '../buttons/sign-up-button'
@@ -35,7 +35,7 @@ import { ManifoldLogo } from './manifold-logo'
 import { ProfileSummary } from './profile-summary'
 import { SearchButton } from './search-button'
 import { SidebarItem } from './sidebar-item'
-import SquaresIcon from 'web/lib/icons/squares-icon'
+import SquaresIcon from 'web/lib/icons/squares-icon.svg'
 
 export default function Sidebar(props: {
   className?: string
@@ -59,12 +59,7 @@ export default function Sidebar(props: {
     ? getMobileNav(() => setIsAddFundsModalOpen(!isAddFundsModalOpen))
     : getDesktopNav(!!user, () => setIsModalOpen(true), true)
 
-  const bottomNavOptions = bottomNav(
-    !!user,
-    theme,
-    useIsDarkMode(),
-    toggleTheme
-  )
+  const bottomNavOptions = bottomNav(!!user, theme, toggleTheme)
 
   const createMarketButton = user && !user.isBannedFromPosting && (
     <CreateQuestionButton key="create-market-button" className={'mt-4'} />
@@ -180,17 +175,13 @@ const getMobileNav = (toggleModal: () => void) => {
 const bottomNav = (
   loggedIn: boolean,
   theme: 'light' | 'dark' | 'auto',
-  isDarkMode: boolean,
   toggleTheme: () => void
 ) =>
   buildArray(
     !loggedIn && { name: 'Sign in', icon: LoginIcon, onClick: firebaseLogin },
     loggedIn && { name: 'About', href: '/about', icon: QuestionMarkCircleIcon },
     {
-      name:
-        theme === 'auto'
-          ? `Auto (${isDarkMode ? 'dark' : 'light'})`
-          : capitalize(theme),
+      name: theme === 'auto' ? 'Auto' : capitalize(theme),
       icon:
         theme === 'light'
           ? SunIcon

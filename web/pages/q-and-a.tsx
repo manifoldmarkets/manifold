@@ -32,6 +32,8 @@ import { MODAL_CLASS, Modal } from 'web/components/layout/modal'
 import { fromNow } from 'web/lib/util/time'
 import { Linkify } from 'web/components/widgets/linkify'
 import { UserLink } from 'web/components/widgets/user-link'
+import { AlertBox } from 'web/components/widgets/alert-box'
+import Link from 'next/link'
 
 export default function QuestionAndAnswer() {
   const { questions, answers } = useQAndA()
@@ -43,6 +45,21 @@ export default function QuestionAndAnswer() {
     <Page>
       <Col className="mx-auto w-full max-w-2xl gap-4 pb-8 pt-2 sm:pt-0">
         <Title className="mx-4 !mb-0 sm:mx-0">Q&A</Title>
+        <AlertBox title="Q and A has moved!">
+          Make a bounty{' '}
+          <Link href="/create" className="text-primary-700">
+            here
+          </Link>{' '}
+          or browse bounties on the{' '}
+          <Link
+            href="/questions?category=for-you&ct=BOUNTIED_QUESTION"
+            className="text-primary-700"
+          >
+            questions page
+          </Link>
+          .
+        </AlertBox>
+
         {visibleQuestions.map((q) => (
           <QuestionAnswer
             key={q.id}

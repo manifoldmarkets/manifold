@@ -6,7 +6,7 @@ import { QUEST_DETAILS, QuestType } from 'common/quest'
 import { QuestRewardTxn } from 'common/txn'
 import { runTxnFromBank } from 'shared/txn/run-txn'
 import { createSupabaseClient } from 'shared/supabase/init'
-import { getRecentContractsCount } from 'common/supabase/contracts'
+import { getRecentContractIds } from 'common/supabase/contracts'
 import { getUniqueUserShareEventsCount } from 'common/supabase/user-events'
 import { APIError } from 'common/api'
 import { createQuestPayoutNotification } from 'shared/create-notification'
@@ -16,6 +16,7 @@ import * as timezone from 'dayjs/plugin/timezone'
 import { getQuestScore, setQuestScoreValue } from 'common/supabase/set-scores'
 import { SupabaseClient } from 'common/supabase/utils'
 import { getReferralCount } from 'common/supabase/referrals'
+import { log } from 'shared/utils'
 
 dayjs.extend(utc)
 dayjs.extend(timezone)
@@ -25,7 +26,6 @@ dayjs.tz.setDefault('America/Los_Angeles')
 export const START_OF_WEEK = dayjs().startOf('week').add(1, 'day').valueOf()
 const START_OF_DAY = dayjs().startOf('day').valueOf()
 
-type QUESTS_INTERNALLY_CALCULATED = 'MARKETS_CREATED' | 'SHARES' | 'REFERRALS'
 export const completeCalculatedQuest = async (
   user: User,
   questType: 'SHARES'
@@ -40,11 +40,24 @@ export const completeCalculatedQuestFromTrigger = async (
   user: User,
   questType: 'MARKETS_CREATED',
   // idempotencyKey is used to prevent duplicate quest completions from triggers firing multiple times
-  idempotencyKey: string
+  idempotencyKey: string,
+  contractId: string
 ) => {
   const db = createSupabaseClient()
-  const count = await getCurrentCountForQuest(user, questType, db)
+  const contractIds = await getRecentContractIds(user.id, START_OF_WEEK, db)
+  // In case replication hasn't happened yet, add the id manually
+  if (!contractIds.includes(contractId)) contractIds.push(contractId)
+  const count = contractIds.length
+  log(
+    'markets created this week count:',
+    count,
+    'for user:',
+    user.id,
+    'and idempotencyKey:',
+    idempotencyKey
+  )
   const oldEntry = await getQuestScore(user.id, questType, db)
+  log('current quest entry:', oldEntry, 'for user:', user.id)
   if (idempotencyKey && oldEntry.idempotencyKey === idempotencyKey)
     return { count: oldEntry.score }
   return await completeQuestInternal(
@@ -99,12 +112,10 @@ const completeQuestInternal = async (
 
 const getCurrentCountForQuest = async (
   user: User,
-  questType: QUESTS_INTERNALLY_CALCULATED,
+  questType: 'SHARES' | 'REFERRALS',
   db: SupabaseClient
 ): Promise<number> => {
-  if (questType === 'MARKETS_CREATED') {
-    return await getRecentContractsCount(user.id, START_OF_WEEK, db)
-  } else if (questType === 'SHARES') {
+  if (questType === 'SHARES') {
     return await getUniqueUserShareEventsCount(
       user.id,
       START_OF_DAY,

@@ -247,20 +247,24 @@ export const computeContractScores = (
     ? 0
     : normalize(clamp(1 / contract.elasticity, 0, 100), 100)
 
-  let uncertainness = 0.5
-  if (contract.mechanism === 'cpmm-1') {
-    const { prob } = contract
-    uncertainness = normalize(prob * (1 - prob), 0.25)
-  } else if (contract.mechanism === 'cpmm-multi-1') {
-    const { answers } = contract
-    const probs = sortBy(answers.map((a) => a.prob)).reverse()
-    if (probs.length < 3) {
-      const prob = probs[0]
+
+  let uncertainness = 0
+
+  if (!isResolved) {
+    if (contract.mechanism === 'cpmm-1') {
+      const { prob } = contract
       uncertainness = normalize(prob * (1 - prob), 0.25)
-    } else {
-      const [p1, p2] = probs.slice(0, 2)
-      const product = p1 * p2 * (1 - p1 - p2)
-      uncertainness = normalize(product, 1 / 3 ** 3)
+    } else if (contract.mechanism === 'cpmm-multi-1') {
+      const { answers } = contract
+      const probs = sortBy(answers.map((a) => a.prob)).reverse()
+      if (probs.length < 3) {
+        const prob = probs[0]
+        uncertainness = normalize(prob * (1 - prob), 0.25)
+      } else {
+        const [p1, p2] = probs.slice(0, 2)
+        const product = p1 * p2 * (1 - p1 - p2)
+        uncertainness = normalize(product, 1 / 3 ** 3)
+      }
     }
   }
 

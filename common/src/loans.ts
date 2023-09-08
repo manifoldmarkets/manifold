@@ -1,4 +1,4 @@
-import { Dictionary, sumBy, minBy } from 'lodash'
+import { Dictionary, sumBy, minBy, groupBy } from 'lodash'
 import { Bet } from './bet'
 import { getMinimalInvested } from './calculate'
 import {
@@ -42,19 +42,24 @@ const calculateLoanBetUpdates = (
     Object.keys(betsByContractId).map((contractId) => contractsById[contractId])
   ).filter((c) => !c.isResolved)
 
-  return contracts
-    .map((c) => {
-      const bets = betsByContractId[c.id]
-      if (c.mechanism === 'cpmm-1' || c.mechanism === 'cpmm-multi-1') {
-        return getCpmmContractLoanUpdate(c, bets) ?? []
-      } else if (c.mechanism === 'dpm-2')
-        return filterDefined(getDpmContractLoanUpdate(c, bets))
-      else {
-        // Unsupported contract / mechanism for loans.
-        return []
-      }
-    })
-    .flat()
+  return contracts.flatMap((c) => {
+    const bets = betsByContractId[c.id]
+    if (c.mechanism === 'cpmm-1') {
+      return getCpmmContractLoanUpdate(c, bets) ?? []
+    } else if (c.mechanism === 'cpmm-multi-1') {
+      const betsByAnswerId = groupBy(bets, (bet) => bet.answerId)
+      return filterDefined(
+        Object.values(betsByAnswerId).map((bets) =>
+          getCpmmContractLoanUpdate(c, bets)
+        )
+      )
+    } else if (c.mechanism === 'dpm-2')
+      return filterDefined(getDpmContractLoanUpdate(c, bets))
+    else {
+      // Unsupported contract / mechanism for loans.
+      return []
+    }
+  })
 }
 
 const getCpmmContractLoanUpdate = (

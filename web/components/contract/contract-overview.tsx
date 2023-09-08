@@ -116,7 +116,7 @@ export const BinaryOverview = (props: {
 
   const [showZoomer, setShowZoomer] = useState(false)
 
-  const { viewScale, currentTimePeriod, setTimePeriod, maxRange } =
+  const { viewScale, currentTimePeriod, setTimePeriod, start, maxRange } =
     useTimePicker(contract)
 
   return (
@@ -139,6 +139,7 @@ export const BinaryOverview = (props: {
         betPoints={betPoints}
         contract={contract}
         viewScale={viewScale}
+        controlledStart={start}
       />
 
       {tradingAllowed(contract) && (
@@ -168,7 +169,6 @@ export function BinaryChart(props: {
     className,
     controlledStart,
     size = 'md',
-    color,
   } = props
 
   return (
@@ -190,7 +190,6 @@ export function BinaryChart(props: {
           percentBounds={percentBounds}
           contract={contract}
           showZoomer={showZoomer}
-          color={color}
         />
       )}
     </SizedContainer>

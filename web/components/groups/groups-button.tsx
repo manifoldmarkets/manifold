@@ -14,7 +14,7 @@ import { useIsMobile } from 'web/hooks/use-is-mobile'
 
 export const groupButtonClass = 'text-ink-700 hover:text-ink-800'
 
-export function LeavePrivateGroupButton(props: {
+function LeavePrivateGroupButton(props: {
   group: SearchGroupInfo
   user: User | undefined | null
   setIsMember: (isMember: boolean) => void
@@ -43,7 +43,7 @@ export function LeavePrivateGroupButton(props: {
               : '',
             className
           ),
-          color: isMobile ? 'none' : 'dark-gray',
+          color: isMobile ? 'none' : 'indigo',
           disabled: disabled,
           label: isMobile ? '' : ' Leave',
         }}
@@ -80,26 +80,14 @@ export function JoinOrLeaveGroupButton(props: {
   group: SearchGroupInfo
   isMember: boolean | undefined
   user: User | undefined | null
-  className?: string
-  iconClassName?: string
-  disabled?: boolean
 }) {
-  const { group, user, disabled } = props
+  const { group, user } = props
   const isMobile = useIsMobile()
 
   // Handle both non-live and live updating isMember state
   const [isMember, setIsMember] = useState(props.isMember)
   useEffect(() => setIsMember(props.isMember), [props.isMember])
 
-  const className = clsx(
-    isMobile ? 'rounded p-1' : '',
-    isMobile
-      ? isMember
-        ? 'dark:bg-ink-400 hover:bg-ink-700 bg-gray-500'
-        : 'bg-primary-500 hover:bg-primary-600'
-      : 'px-1 py-1',
-    props.className
-  )
   if (group.privacyStatus === 'private') {
     return (
       <LeavePrivateGroupButton
@@ -107,8 +95,6 @@ export function JoinOrLeaveGroupButton(props: {
         setIsMember={setIsMember}
         user={user}
         isMobile={isMobile}
-        disabled={disabled}
-        className={className}
       />
     )
   }
@@ -136,15 +122,14 @@ export function JoinOrLeaveGroupButton(props: {
   if (isMember) {
     return (
       <Button
-        size={isMobile ? '2xs' : undefined}
-        color="dark-gray"
-        className={className}
+        size="2xs"
+        color="none"
+        className="w-16 bg-gray-400 text-white hover:bg-gray-500 dark:bg-gray-700 dark:hover:bg-gray-600"
         onClick={(e) => {
           e.preventDefault()
           e.stopPropagation()
           unfollow()
         }}
-        disabled={disabled}
       >
         <Row className="gap-1">Unfollow</Row>
       </Button>
@@ -153,9 +138,9 @@ export function JoinOrLeaveGroupButton(props: {
 
   return (
     <Button
-      size={isMobile ? '2xs' : undefined}
+      size="2xs"
       color="indigo"
-      className={className}
+      className="w-16"
       onClick={(e) => {
         e.preventDefault()
         e.stopPropagation()

@@ -5,7 +5,6 @@ import { DOMAIN } from 'common/envs/constants'
 import { getContractFromSlug } from 'common/supabase/contracts'
 import { formatMoney } from 'common/util/format'
 import Image from 'next/image'
-import { useRouter } from 'next/router'
 import { useEffect } from 'react'
 import { NoSEO } from 'web/components/NoSEO'
 import { BinaryContractChart } from 'web/components/charts/contract/binary'
@@ -25,7 +24,6 @@ import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { SizedContainer } from 'web/components/sized-container'
 import { Avatar } from 'web/components/widgets/avatar'
-import { useIsDarkMode } from 'web/hooks/dark-mode-context'
 import { useNumContractComments } from 'web/hooks/use-comments-supabase'
 import { track } from 'web/lib/service/analytics'
 import { getBetFields } from 'web/lib/supabase/bets'
@@ -137,7 +135,6 @@ const ContractChart = (props: {
   points: Points | null
   width: number
   height: number
-  color?: string
 }) => {
   const { contract, points, ...rest } = props
   const viewScale = useViewScale()
@@ -164,7 +161,7 @@ const ContractChart = (props: {
     case 'FREE_RESPONSE':
     case 'MULTIPLE_CHOICE':
       return (
-        <div className="flex h-full flex-col justify-center">
+        <div className=" flex h-full flex-col justify-center">
           <AnswersPanel
             contract={contract}
             maxAnswers={numBars(props.height)}
@@ -205,10 +202,6 @@ function ContractSmolView(props: {
   const { contract, points } = props
   const { question, outcomeType } = contract
 
-  const router = useRouter()
-  const graphColor = router.query.graphColor as string
-  const textColor = router.query.textColor as string
-
   const isBinary = outcomeType === 'BINARY'
   const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
   const isMulti =
@@ -216,8 +209,6 @@ function ContractSmolView(props: {
   const isBountiedQuestion = outcomeType === 'BOUNTIED_QUESTION'
 
   const href = `https://${DOMAIN}${contractPath(contract)}`
-
-  const isDarkMode = useIsDarkMode()
 
   return (
     <Col className="bg-canvas-0 h-[100vh] w-full p-4">
@@ -227,10 +218,6 @@ function ContractSmolView(props: {
             href={href}
             target="_blank"
             className="text-primary-700 text-lg hover:underline sm:text-xl"
-            style={{
-              color: textColor,
-              filter: isDarkMode && textColor ? 'invert(1)' : undefined,
-            }}
             rel="noreferrer"
           >
             {question}
@@ -271,7 +258,6 @@ function ContractSmolView(props: {
               points={points}
               width={w}
               height={h}
-              color={graphColor}
             />
           )}
         </SizedContainer>
@@ -287,7 +273,9 @@ function ContractSmolView(props: {
           />
           <Col className="absolute top-12 bottom-0 left-0 right-0">
             <Col className="mx-auto my-auto text-center">
-              <div className="text-3xl">{formatMoney(contract.bountyLeft)}</div>
+              <div className="text-ink-1000 text-3xl">
+                {formatMoney(contract.bountyLeft)}
+              </div>
               <div className="text-ink-500">bounty</div>
             </Col>
           </Col>

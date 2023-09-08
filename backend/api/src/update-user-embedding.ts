@@ -20,7 +20,8 @@ export const updateUserEmbedding = authEndpoint(async (req, auth) => {
     auth.uid,
     pg,
     ALL_FEED_USER_ID,
-    contractIds
+    contractIds,
+    1
   )
 
   return { success: true }

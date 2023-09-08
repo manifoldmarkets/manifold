@@ -3,7 +3,7 @@ import clsx from 'clsx'
 import { Contract } from 'common/contract'
 import { formatMoneyNumber, formatPercent } from 'common/util/format'
 import { getShareUrl } from 'common/util/share'
-import TwitterLogo from 'web/lib/icons/twitter-logo'
+import TwitterLogo from 'web/lib/icons/twitter-logo.svg'
 import { trackCallback } from 'web/lib/service/analytics'
 import { buttonClass } from './button'
 
@@ -14,7 +14,7 @@ export function TweetButton(props: { tweetText: string; className?: string }) {
     <a
       // #1da1f2 is twitter blue
       className={clsx(
-        buttonClass('sm', 'override'),
+        buttonClass('sm', 'none'),
         'hover:text-ink-0 gap-1 border-2 border-[#1da1f2] text-[#1da1f2] hover:bg-[#1da1f2]',
         className
       )}

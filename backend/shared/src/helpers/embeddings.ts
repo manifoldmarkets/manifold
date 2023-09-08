@@ -4,6 +4,7 @@ import { chunk, mean, sum, zip } from 'lodash'
 import { bulkUpdate } from 'shared/supabase/utils'
 import { log } from 'shared/utils'
 import { getWhenToIgnoreUsersTime } from 'shared/supabase/users'
+import { DEEMPHASIZED_GROUP_SLUGS } from 'common/envs/constants'
 
 function magnitude(vector: number[]): number {
   const vectorSum = sum(vector.map((val) => val * val))
@@ -39,11 +40,18 @@ export async function getDefaultEmbedding(
                    join (
               select id
               from contracts
+                where (data -> 'groupSlugs') is not null
+                and not exists (
+                select 1
+                from unnest(jsonb_array_to_text_array(data->'groupSlugs')) as t(slug)
+                where (slug = any($1) or slug ilike '%manifold%')
+                )
               order by importance_score desc
-              limit 100
+              limit 25
           ) as top_contracts on top_contracts.id = contract_embeddings.contract_id
         ) as subquery
-    `
+    `,
+    [DEEMPHASIZED_GROUP_SLUGS]
   )
   return normalize(JSON.parse(avg.average_embedding) as number[])
 }

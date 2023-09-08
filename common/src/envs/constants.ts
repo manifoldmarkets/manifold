@@ -108,6 +108,7 @@ export const CORE_USERNAMES = [
   'DavidChee',
   'mqp',
   'IngaWei',
+  'rachel',
 ]
 
 export const MOD_USERNAMES = [
@@ -156,7 +157,6 @@ export const VERIFIED_USERNAMES = [
   'Aella',
   'ZviMowshowitz',
   'NathanpmYoung',
-
   'GavrielK',
   'CGPGrey',
   'LexFridman',
@@ -347,6 +347,7 @@ export const RESERVED_PATHS = [
   'profile',
   'public',
   'q-and-a',
+  'questions',
   'referral',
   'referrals',
   'send',

@@ -302,6 +302,7 @@ export function SellPanel(props: {
             ? `Sell ${formatMoney(saleValue)}`
             : `Sell ${formatWithCommas(sellQuantity)} shares`
         }
+        inModal={true}
       />
 
       {wasSubmitted && <div className="mt-4">Sell submitted!</div>}

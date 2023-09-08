@@ -1,13 +1,10 @@
-import { ReactNode, useState } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
 import { Page } from 'web/components/layout/page'
 import { Col } from 'web/components/layout/col'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
-import { ENV_CONFIG } from 'common/envs/constants'
 import { Row } from 'web/components/layout/row'
 import { TestimonialsPanel } from 'web/components/testimonials-panel'
-import { Modal } from 'web/components/layout/modal'
-import { Title } from 'web/components/widgets/title'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { Button } from 'web/components/buttons/button'
 import { redirectIfLoggedIn } from 'web/lib/firebase/server-auth'
@@ -79,10 +76,15 @@ export default function Home() {
             <Col className="max-w-lg gap-2">
               <h1 className="mb-4 text-4xl">Predict the future</h1>
               <h1 className="text-lg">
-                A new way to get news and answers to real-world questions.
+                Play-money markets. Real-world accuracy.
               </h1>
               <h1 className="text-lg">
                 Compete with your friends by betting on literally anything.
+                Winnings go to{' '}
+                <Link href="/charity" className="hover:underline">
+                  charity
+                </Link>
+                .
               </h1>
 
               <Button
@@ -94,9 +96,9 @@ export default function Home() {
                 Play now
               </Button>
 
-              <div className="text-sm text-white">
-                and get{'   '}
-                <span className="relative z-10 font-semibold">
+              <div className="text-md ml-8 ">
+                ...and get{'   '}
+                <span className="z-10 font-semibold">
                   {formatMoney(STARTING_BALANCE)}
                 </span>
                 {'   '}
@@ -116,110 +118,5 @@ export default function Home() {
         <PrivacyAndTerms />
       </Col>
     </Page>
-  )
-}
-
-export function LinkInfoCard(props: {
-  link: string
-  icon: ReactNode
-  text: string
-}) {
-  const { link, icon, text } = props
-  return (
-    <Link
-      className="text-ink-700 border-primary-300 hover:border-primary-700 group flex w-1/3 flex-col items-center gap-1 rounded-xl border px-4 py-2 text-center text-sm drop-shadow-sm transition-all"
-      href={link}
-    >
-      <div className="text-primary-300 group-hover:text-primary-700 transition-colors">
-        {icon}
-      </div>
-      <div>
-        <span className="text-ink-700">{text}</span>
-      </div>
-    </Link>
-  )
-}
-
-export function InfoCard(props: {
-  icon: ReactNode
-  text: string
-  externalLink?: boolean
-  modal: ReactNode
-}) {
-  const { icon, text, modal } = props
-  const [open, setOpen] = useState(false)
-  return (
-    <>
-      <Modal open={open} setOpen={setOpen} size="md">
-        <Col className="bg-canvas-0 text-ink-1000 rounded-md px-8 py-6 text-sm md:text-lg">
-          <Title>{text}</Title>
-          {modal}
-        </Col>
-      </Modal>
-      <button
-        className="text-ink-700 border-primary-300 hover:border-primary-700 group flex w-1/3 flex-col items-center gap-1 rounded-xl border px-4 py-2 text-center text-sm drop-shadow-sm transition-colors"
-        onClick={() => setOpen(true)}
-      >
-        <div className="text-primary-300 group-hover:text-primary-700 transition-colors">
-          {icon}
-        </div>
-        <div className="text-ink-700">{text}</div>
-      </button>
-    </>
-  )
-}
-
-export function ManaExplainer() {
-  return (
-    <>
-      <img
-        className="mx-auto mb-8 w-[60%] object-contain"
-        src={'/welcome/treasure.png'}
-      />
-      <div className="text-lg">
-        <strong className="semibold mt-4 text-xl">
-          Mana ({ENV_CONFIG.moneyMoniker})
-        </strong>{' '}
-        is Manifold's play money. Use it to create and bet in questions.
-      </div>
-      <div className={'my-3 text-lg '}>
-        Mana can't be converted into cash, but can be purchased and donated to
-        charity at a ratio of{' '}
-        <strong className="semibold text-xl">{formatMoney(100)} : $1</strong>.
-      </div>
-    </>
-  )
-}
-
-export function PredictionMarketExplainer() {
-  return (
-    <>
-      <div className="text-lg">
-        Prediction markets let you bet on the outcome of future events.
-      </div>
-      <div className="mt-2 text-lg">
-        On Manifold, you can create your own prediction market on any question
-        you want!
-      </div>
-
-      <div className="text-ink-400 mt-4 font-semibold">EXAMPLE</div>
-      <div className="border-primary-700 bg-primary-50 mb-4 border-l-2 py-2 px-2 text-sm">
-        <p className="mt-2">
-          <span className="text-primary-700 font-semibold">
-            "Will Democrats win the 2024 US presidential election?"
-          </span>
-        </p>
-        <p className="mt-4">
-          If I think the Democrats are very likely to win, and you disagree, I
-          might offer <b>$70</b> to your <b>$30</b> (with the winner taking home
-          <b> $100</b> total).
-        </p>
-        <p className="mt-4">
-          This set of bets implies a <b>70% probability</b> of the Democrats
-          winning. As more people bet, the implied probability will converge to
-          the questions's best estimate.
-        </p>
-      </div>
-    </>
   )
 }

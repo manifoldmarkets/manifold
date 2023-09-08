@@ -257,6 +257,7 @@ export default function LimitOrderPanel(props: {
           <Row className="mt-4 gap-2">
             <Input
               type={'date'}
+              className="dark:date-range-input-white"
               onClick={(e) => e.stopPropagation()}
               onChange={(e) => {
                 setExpirationDate(e.target.value)
@@ -271,6 +272,7 @@ export default function LimitOrderPanel(props: {
             />
             <Input
               type={'time'}
+              className="dark:date-range-input-white"
               onClick={(e) => e.stopPropagation()}
               onChange={(e) => setExpirationHoursMinutes(e.target.value)}
               disabled={isSubmitting}
