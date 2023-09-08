@@ -96,7 +96,7 @@ const baseUserFeedQuery = (
       .or(
         `data_type.eq.new_comment,data_type.eq.news_with_related_contracts,contract_id.not.in.(${ignoreContractIds})`
       )
-      .order('relevance_score', { ascending: false, nullsFirst: false })
+      .order('relevance_score', { ascending: false })
       .limit(PAGE_SIZE)
   )
 }
@@ -151,7 +151,7 @@ export const useFeedTimeline = (
         1 - dayjs().diff(dayjs(d.created_time), 'day') / 14
       d.relevance_score =
         -(
-          d.relevance_score ??
+          d.relevance_score ||
           BASE_FEED_DATA_TYPE_SCORES[d.data_type as FEED_DATA_TYPES]
         ) * createdTimeAdjusted
       return d

@@ -83,7 +83,8 @@ export const bulkInsertDataToUserFeed = async (
 
 export const createManualTrendingFeedRow = (
   contracts: Contract[],
-  forUserId: string
+  forUserId: string,
+  relevanceScore: number
 ) => {
   const now = Date.now()
   const reasons: FEED_REASON_TYPES[] = [
@@ -99,12 +100,7 @@ export const createManualTrendingFeedRow = (
       reason: 'similar_interest_vector_to_contract',
       dataType: 'trending_contract',
       reasons,
-      relevanceScore: getRelevanceScore(
-        'trending_contract',
-        reasons,
-        contract.importanceScore,
-        1
-      ),
+      relevanceScore,
     })
   )
 }

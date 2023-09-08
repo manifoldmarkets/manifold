@@ -525,22 +525,22 @@ export interface Database {
         }
         Relationships: [
           {
-            foreignKeyName: "group_invites_group_id_fkey"
-            columns: ["group_id"]
-            referencedRelation: "groups"
-            referencedColumns: ["id"]
+            foreignKeyName: 'group_invites_group_id_fkey'
+            columns: ['group_id']
+            referencedRelation: 'groups'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "group_invites_group_id_fkey"
-            columns: ["group_id"]
-            referencedRelation: "group_role"
-            referencedColumns: ["group_id"]
+            foreignKeyName: 'group_invites_group_id_fkey'
+            columns: ['group_id']
+            referencedRelation: 'group_role'
+            referencedColumns: ['group_id']
           },
           {
-            foreignKeyName: "group_invites_group_id_fkey"
-            columns: ["group_id"]
-            referencedRelation: "groups_rbac"
-            referencedColumns: ["id"]
+            foreignKeyName: 'group_invites_group_id_fkey'
+            columns: ['group_id']
+            referencedRelation: 'groups_rbac'
+            referencedColumns: ['id']
           }
         ]
       }
@@ -751,46 +751,46 @@ export interface Database {
         }
         Relationships: [
           {
-            foreignKeyName: "market_ads_market_id_fkey"
-            columns: ["market_id"]
-            referencedRelation: "contracts"
-            referencedColumns: ["id"]
+            foreignKeyName: 'market_ads_market_id_fkey'
+            columns: ['market_id']
+            referencedRelation: 'contracts'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "market_ads_market_id_fkey"
-            columns: ["market_id"]
-            referencedRelation: "contracts_rbac"
-            referencedColumns: ["id"]
+            foreignKeyName: 'market_ads_market_id_fkey'
+            columns: ['market_id']
+            referencedRelation: 'contracts_rbac'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "market_ads_market_id_fkey"
-            columns: ["market_id"]
-            referencedRelation: "contracts_view"
-            referencedColumns: ["id"]
+            foreignKeyName: 'market_ads_market_id_fkey'
+            columns: ['market_id']
+            referencedRelation: 'contracts_view'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "market_ads_market_id_fkey"
-            columns: ["market_id"]
-            referencedRelation: "listed_open_contracts"
-            referencedColumns: ["id"]
+            foreignKeyName: 'market_ads_market_id_fkey'
+            columns: ['market_id']
+            referencedRelation: 'listed_open_contracts'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "market_ads_market_id_fkey"
-            columns: ["market_id"]
-            referencedRelation: "public_contracts"
-            referencedColumns: ["id"]
+            foreignKeyName: 'market_ads_market_id_fkey'
+            columns: ['market_id']
+            referencedRelation: 'public_contracts'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "market_ads_market_id_fkey"
-            columns: ["market_id"]
-            referencedRelation: "public_open_contracts"
-            referencedColumns: ["id"]
+            foreignKeyName: 'market_ads_market_id_fkey'
+            columns: ['market_id']
+            referencedRelation: 'public_open_contracts'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "market_ads_market_id_fkey"
-            columns: ["market_id"]
-            referencedRelation: "trending_contracts"
-            referencedColumns: ["id"]
+            foreignKeyName: 'market_ads_market_id_fkey'
+            columns: ['market_id']
+            referencedRelation: 'trending_contracts'
+            referencedColumns: ['id']
           }
         ]
       }
@@ -1043,52 +1043,52 @@ export interface Database {
         }
         Relationships: [
           {
-            foreignKeyName: "reports_content_owner_id_fkey"
-            columns: ["content_owner_id"]
-            referencedRelation: "users"
-            referencedColumns: ["id"]
+            foreignKeyName: 'reports_content_owner_id_fkey'
+            columns: ['content_owner_id']
+            referencedRelation: 'users'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "reports_content_owner_id_fkey"
-            columns: ["content_owner_id"]
-            referencedRelation: "user_groups"
-            referencedColumns: ["id"]
+            foreignKeyName: 'reports_content_owner_id_fkey'
+            columns: ['content_owner_id']
+            referencedRelation: 'user_groups'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "reports_content_owner_id_fkey"
-            columns: ["content_owner_id"]
-            referencedRelation: "user_referrals"
-            referencedColumns: ["id"]
+            foreignKeyName: 'reports_content_owner_id_fkey'
+            columns: ['content_owner_id']
+            referencedRelation: 'user_referrals'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "reports_content_owner_id_fkey"
-            columns: ["content_owner_id"]
-            referencedRelation: "user_referrals_profit"
-            referencedColumns: ["id"]
+            foreignKeyName: 'reports_content_owner_id_fkey'
+            columns: ['content_owner_id']
+            referencedRelation: 'user_referrals_profit'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "reports_user_id_fkey"
-            columns: ["user_id"]
-            referencedRelation: "users"
-            referencedColumns: ["id"]
+            foreignKeyName: 'reports_user_id_fkey'
+            columns: ['user_id']
+            referencedRelation: 'users'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "reports_user_id_fkey"
-            columns: ["user_id"]
-            referencedRelation: "user_groups"
-            referencedColumns: ["id"]
+            foreignKeyName: 'reports_user_id_fkey'
+            columns: ['user_id']
+            referencedRelation: 'user_groups'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "reports_user_id_fkey"
-            columns: ["user_id"]
-            referencedRelation: "user_referrals"
-            referencedColumns: ["id"]
+            foreignKeyName: 'reports_user_id_fkey'
+            columns: ['user_id']
+            referencedRelation: 'user_referrals'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "reports_user_id_fkey"
-            columns: ["user_id"]
-            referencedRelation: "user_referrals_profit"
-            referencedColumns: ["id"]
+            foreignKeyName: 'reports_user_id_fkey'
+            columns: ['user_id']
+            referencedRelation: 'user_referrals_profit'
+            referencedColumns: ['id']
           }
         ]
       }
@@ -1339,7 +1339,7 @@ export interface Database {
           reaction_id: string | null
           reason: string
           reasons: string[] | null
-          relevance_score: number | null
+          relevance_score: number
           seen_time: string | null
           user_id: string
         }
@@ -2461,7 +2461,7 @@ export interface Database {
         Args: {
           table_id: string
         }
-        Returns: Database["public"]["CompositeTypes"]["table_spec"]
+        Returns: Database['public']['CompositeTypes']['table_spec']
       }
       get_engaged_users: {
         Args: Record<PropertyKey, never>
@@ -2934,31 +2934,31 @@ export interface Database {
       }
       gtrgm_compress: {
         Args: {
-          "": unknown
+          '': unknown
         }
         Returns: unknown
       }
       gtrgm_decompress: {
         Args: {
-          "": unknown
+          '': unknown
         }
         Returns: unknown
       }
       gtrgm_in: {
         Args: {
-          "": unknown
+          '': unknown
         }
         Returns: unknown
       }
       gtrgm_options: {
         Args: {
-          "": unknown
+          '': unknown
         }
         Returns: undefined
       }
       gtrgm_out: {
         Args: {
-          "": unknown
+          '': unknown
         }
         Returns: unknown
       }
@@ -3008,7 +3008,7 @@ export interface Database {
       }
       ivfflathandler: {
         Args: {
-          "": unknown
+          '': unknown
         }
         Returns: unknown
       }
@@ -3212,7 +3212,7 @@ export interface Database {
       }
       set_limit: {
         Args: {
-          "": number
+          '': number
         }
         Returns: number
       }
@@ -3222,7 +3222,7 @@ export interface Database {
       }
       show_trgm: {
         Args: {
-          "": string
+          '': string
         }
         Returns: unknown
       }
@@ -3259,7 +3259,7 @@ export interface Database {
       }
       to_jsonb: {
         Args: {
-          "": Json
+          '': Json
         }
         Returns: Json
       }
@@ -3340,37 +3340,37 @@ export interface Database {
       }
       vector_avg: {
         Args: {
-          "": number[]
+          '': number[]
         }
         Returns: string
       }
       vector_dims: {
         Args: {
-          "": string
+          '': string
         }
         Returns: number
       }
       vector_norm: {
         Args: {
-          "": string
+          '': string
         }
         Returns: number
       }
       vector_out: {
         Args: {
-          "": string
+          '': string
         }
         Returns: unknown
       }
       vector_send: {
         Args: {
-          "": string
+          '': string
         }
         Returns: string
       }
       vector_typmod_in: {
         Args: {
-          "": unknown[]
+          '': unknown[]
         }
         Returns: number
       }

@@ -1,5 +1,5 @@
 import { pgp, SupabaseDirectClient } from 'shared/supabase/init'
-import { fromPairs } from 'lodash'
+import { fromPairs, minBy } from 'lodash'
 import {
   FEED_REASON_TYPES,
   getRelevanceScore,
@@ -10,7 +10,7 @@ import { Row } from 'common/supabase/utils'
 import { log } from 'shared/utils'
 import { ITask } from 'pg-promise'
 import { IClient } from 'pg-promise/typescript/pg-subset'
-import { WEEK_MS } from 'common/util/time'
+import { MINUTE_MS, WEEK_MS } from 'common/util/time'
 import { getContractsDirect } from 'shared/supabase/contracts'
 import { createManualTrendingFeedRow } from 'shared/create-feed'
 
@@ -118,7 +118,7 @@ export const spiceUpNewUsersFeedBasedOnTheirInterests = async (
       ],
       (r: Row<'user_feed'>) => ({
         ...r,
-        relevance_score: (r.relevance_score ?? 0.85) * estimatedRelevance,
+        relevance_score: (r.relevance_score || 0.85) * estimatedRelevance,
       })
     )
     log('found related feed items', relatedFeedItems.length, 'for user', userId)
@@ -128,12 +128,16 @@ export const spiceUpNewUsersFeedBasedOnTheirInterests = async (
       (cid) => !foundContractIds.includes(cid)
     )
     const manualContracts = await getContractsDirect(missingContractIds, pg)
+    const minRelevanceScore =
+      (minBy(relatedFeedItems, 'relevance_score')?.relevance_score || 0.85) *
+      estimatedRelevance
     const manualFeedRows = createManualTrendingFeedRow(
       manualContracts,
-      userId
+      userId,
+      minRelevanceScore
     ) as userFeedRowAndDistance[]
     log('made manual feed rows', manualFeedRows.length, 'for user', userId)
-    await copyOverFeedItems(userId, manualFeedRows, t)
+    await copyOverFeedItems(userId, manualFeedRows, t, MINUTE_MS)
   })
 }
 
@@ -141,7 +145,8 @@ type userFeedRowAndDistance = Row<'user_feed'> & { distance?: number }
 const copyOverFeedItems = async (
   userId: string,
   relatedFeedItems: userFeedRowAndDistance[],
-  pg: ITask<IClient> & IClient
+  pg: ITask<IClient> & IClient,
+  timeOffset?: number
 ) => {
   if (relatedFeedItems.length === 0) return []
   const now = Date.now()
@@ -150,7 +155,9 @@ const copyOverFeedItems = async (
     const { id: __, distance: _, ...newRow } = row
     newRow.user_id = userId
     newRow.is_copied = true
-    newRow.created_time = new Date(now - i * 100).toISOString()
+    newRow.created_time = new Date(
+      now - i * 100 - (timeOffset ?? 0)
+    ).toISOString()
     return newRow
   })
   const cs = new pgp.helpers.ColumnSet(updatedRows[0], { table: 'user_feed' })
