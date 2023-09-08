@@ -408,7 +408,7 @@ export function PreviewContractPageContent(props: {
                     </ExtraContractActionsRow>
                   </Row>
                 )}
-                <div className="mt-4" ref={titleRef}>
+                <div className="mt-6" ref={titleRef}>
                   <VisibilityIcon
                     contract={contract}
                     isLarge
