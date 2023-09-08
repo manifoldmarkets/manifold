@@ -226,6 +226,7 @@ function AddAnswerButton(props: {
 
 export function descriptionIsEmpty(contract: Contract) {
   const description = contract.description
+  console.log('hi')
 
   if (!description) return true
 
