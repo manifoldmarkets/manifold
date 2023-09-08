@@ -1,7 +1,5 @@
-CREATE OR REPLACE FUNCTION get_rating(user_id TEXT)
-RETURNS TABLE (count BIGINT, rating NUMERIC)
-IMMUTABLE PARALLEL SAFE LANGUAGE SQL
-AS $$
+create
+or replace function get_rating (user_id text) returns table (count bigint, rating numeric) immutable parallel SAFE language sql as $$
   WITH
 
   -- find average of each user's reviews
@@ -41,4 +39,14 @@ AS $$
          -- squash with sigmoid, multiply by 5
          5 / (1 + POW(2.71828, -10*(rating.rating-0.5))) AS rating
   FROM total_count,rating;
+$$;
+
+create
+or replace function get_rating_info (p_vendor_id text) returns table (avg_rating numeric, count bigint) language plpgsql stable as $$
+BEGIN
+  RETURN QUERY
+    SELECT AVG(rating) AS avg_rating, COUNT(rating) AS count
+    FROM reviews
+    WHERE vendor_id = p_vendor_id;
+END;
 $$;

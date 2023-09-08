@@ -9,6 +9,16 @@ export const getUserRating = async (userId: string) => {
   return data as any
 }
 
+export const getAverageUserRating = async (userId: string) => {
+  const stuff = await db
+    .rpc('get_rating_info', { p_vendor_id: userId })
+    .single()
+  const { data } = stuff
+  console.log('stuff', stuff, data)
+
+  return data as any
+}
+
 export const getUserReviews = async (userId: string) => {
   const { data } = await run(
     db

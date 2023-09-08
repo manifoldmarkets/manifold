@@ -59,7 +59,7 @@ import { User, getUserByUsername } from 'web/lib/firebase/users'
 import TrophyIcon from 'web/lib/icons/trophy-icon.svg'
 import { db } from 'web/lib/supabase/db'
 import { getPostsByUser } from 'web/lib/supabase/post'
-import { getUserRating } from 'web/lib/supabase/reviews'
+import { getAverageUserRating, getUserRating } from 'web/lib/supabase/reviews'
 import Custom404 from 'web/pages/404'
 import { UserPayments } from 'web/pages/payments'
 
@@ -72,14 +72,15 @@ export const getStaticProps = async (props: {
   const user = await getUserByUsername(username)
   const posts = user ? await getPostsByUser(user.id) : []
 
-  const { count, rating } = (user ? await getUserRating(user.id) : null) ?? {}
+  const { avg_rating, count } =
+    (user ? await getAverageUserRating(user.id) : null) ?? {}
 
   return {
     props: removeUndefinedProps({
       user,
       username,
       posts,
-      rating,
+      rating: avg_rating,
       reviewCount: count,
     }),
     revalidate: 60 * 5, // Regenerate after 5 minutes
