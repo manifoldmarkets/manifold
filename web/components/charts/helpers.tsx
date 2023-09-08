@@ -16,7 +16,6 @@ import { Contract } from 'common/contract'
 import { useMeasureSize } from 'web/hooks/use-measure-size'
 import { clamp } from 'lodash'
 import { HistoryPoint } from 'common/chart'
-import { DAY_MS } from 'common/util/time'
 
 export interface ContinuousScale<T> extends AxisScale<T> {
   invert(n: number): T
