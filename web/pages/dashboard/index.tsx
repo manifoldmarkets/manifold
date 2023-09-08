@@ -1,22 +1,19 @@
 import { DASHBOARD_ENABLED } from 'common/envs/constants'
-import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
-import { useTracking } from 'web/hooks/use-tracking'
-import Custom404 from '../404'
-import { Page } from 'web/components/layout/page'
-import { Col } from 'web/components/layout/col'
-import { Row } from 'web/components/layout/row'
-import { useUser } from 'web/hooks/use-user'
-import Create from '../create'
 import { CreateDashboardButton } from 'web/components/dashboard/create-dashboard-button'
+import { Col } from 'web/components/layout/col'
+import { Page } from 'web/components/layout/page'
+import { Row } from 'web/components/layout/row'
+import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
+import { useUser } from 'web/hooks/use-user'
+import Custom404 from '../404'
 
 export default function DashboardPage() {
   useRedirectIfSignedOut()
+  const user = useUser()
 
   if (!DASHBOARD_ENABLED) {
     return <Custom404 />
   }
-
-  const user = useUser()
 
   return (
     <Page>
