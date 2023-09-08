@@ -160,7 +160,8 @@ export const createuser = authEndpoint(async (req, auth) => {
     auth.uid,
     pg,
     DEFAULT_FEED_USER_ID, // Should we just use the ALL_FEED_USER_ID now that we have tailored contract ids?
-    interestingContractIds
+    interestingContractIds,
+    0.5
   )
 
   await track(auth.uid, 'create user', { username: user.username }, { ip })

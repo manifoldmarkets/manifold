@@ -6,6 +6,7 @@ import { insertNewsToUsersFeeds } from 'shared/create-feed'
 import { Contract } from 'common/contract'
 import { Group } from 'common/group'
 import { GROUP_SLUGS_TO_IGNORE_FOR_NEWS } from 'common/envs/constants'
+import { getContractsDirect } from 'shared/supabase/contracts'
 
 export const processNews = async (
   apiKey: string,
@@ -109,12 +110,9 @@ const processNewsArticle = async (
 
   const contracts: Contract[] =
     data && data.length > 0
-      ? await pg.map(
-          `
-        select data from contracts where id in ($1:list)
-        `,
-          [data?.flat().map((c) => c.contract_id)],
-          (r) => r.data as Contract
+      ? await getContractsDirect(
+          data.flat().map((c) => c.contract_id),
+          pg
         )
       : []
 

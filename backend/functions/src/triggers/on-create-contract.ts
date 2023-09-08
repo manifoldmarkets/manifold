@@ -9,7 +9,6 @@ import { addUserToContractFollowers } from 'shared/follow-market'
 import { secrets } from 'common/secrets'
 import { completeCalculatedQuestFromTrigger } from 'shared/complete-quest-internal'
 import { addContractToFeed } from 'shared/create-feed'
-import { INTEREST_DISTANCE_THRESHOLDS } from 'common/feed'
 import { createNewContractNotification } from 'shared/create-notification'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { isContractLikelyNonPredictive } from 'shared/supabase/contracts'
@@ -83,13 +82,15 @@ export const onCreateContract = functions
     if (contract.visibility === 'unlisted') return
     await addContractToFeed(
       contract,
-      ['follow_user', 'similar_interest_vector_to_contract'],
+      [
+        'follow_user',
+        'similar_interest_vector_to_contract',
+        'contract_in_group_you_are_in',
+      ],
       'new_contract',
       [contractCreator.id],
       {
         idempotencyKey: eventId,
-        maxDistanceFromUserInterestToContract:
-          INTEREST_DISTANCE_THRESHOLDS.new_contract,
       }
     )
     const groupIds = (contract.groupLinks ?? []).map((gl) => gl.groupId)
