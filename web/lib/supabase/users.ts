@@ -40,15 +40,26 @@ export async function searchUsers(
 export async function searchUsersNotInGroup(
   prompt: string,
   limit: number,
-  groupId: string
+  groupId: string,
+  myId?: string
 ) {
   if (prompt === '') {
+    const { data: follows } = await run(
+      db
+        .from('user_follows')
+        .select('follow_id')
+        .eq('user_id', myId)
+        .order('created_time')
+    )
+
+    const ids = follows.map((i) => i.follow_id)
+
     const { data } = await run(
       db
         .from('user_groups')
         .select('*')
         .not('groups', 'cs', `{${groupId}}`)
-        .order('follower_count', { ascending: false })
+        .in('id', ids)
         .limit(limit)
     )
     return data
@@ -62,7 +73,7 @@ export async function searchUsersNotInGroup(
           .select('*')
           .not('groups', 'cs', `{${groupId}}`)
           .or(`username.ilike.${prompt},name.ilike.${prompt}`)
-          .order('follower_count', { ascending: false })
+          .order('name')
           .limit(limit)
       ),
       run(
@@ -71,7 +82,7 @@ export async function searchUsersNotInGroup(
           .select('*')
           .not('groups', 'cs', `{${groupId}}`)
           .or(`username.ilike.${prompt}%,name.ilike.${prompt}%`)
-          .order('follower_count', { ascending: false })
+          .order('name')
           .limit(limit)
       ),
       run(
@@ -80,7 +91,7 @@ export async function searchUsersNotInGroup(
           .select('*')
           .not('groups', 'cs', `{${groupId}}`)
           .or(`username.ilike.%${prompt}%,name.ilike.%${prompt}%`)
-          .order('follower_count', { ascending: false })
+          .order('name')
           .limit(limit)
       ),
     ])

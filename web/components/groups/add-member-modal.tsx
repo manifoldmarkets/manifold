@@ -6,7 +6,7 @@ import { buildArray } from 'common/util/array'
 import { useEffect, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
 import { useRealtimeGroupMemberIds } from 'web/hooks/use-group-supabase'
-import { useIsAuthorized } from 'web/hooks/use-user'
+import { useIsAuthorized, useUser } from 'web/hooks/use-user'
 import { addGroupMember, createGroupInvite } from 'web/lib/firebase/api'
 import { searchUsersNotInGroup } from 'web/lib/supabase/users'
 import { Button } from '../buttons/button'
@@ -61,6 +61,7 @@ export function AddMemberContent(props: {
   group: Group
 }) {
   const { query, setQuery, group } = props
+  const user = useUser()
 
   const [searchMemberResult, setSearchMemberResult] = useState<JSONContent[]>(
     []
@@ -73,7 +74,7 @@ export function AddMemberContent(props: {
   useEffect(() => {
     const id = ++requestId.current
     setLoading(true)
-    searchUsersNotInGroup(query, QUERY_SIZE, group.id)
+    searchUsersNotInGroup(query, QUERY_SIZE, group.id, user?.id)
       .then((results) => {
         // if there's a more recent request, forget about this one
         if (id === requestId.current) {
@@ -91,17 +92,18 @@ export function AddMemberContent(props: {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search users"
-          className={clsx('placeholder:text-ink-400 flex w-full flex-shrink-0')}
+          className="placeholder:text-ink-400 flex w-full flex-shrink-0"
         />
         <Col
           className={clsx(
-            loading ? 'animate-pulse' : '',
-            'gap-4',
-            'h-full w-full overflow-y-auto'
+            loading && 'animate-pulse',
+            'h-full min-h-[20rem] w-full gap-4 overflow-y-auto'
           )}
         >
           {searchMemberResult.length == 0 && (
-            <div className="text-ink-500">No members found</div>
+            <div className="text-ink-500">
+              {query ? 'No members found' : 'Invite your friends!'}
+            </div>
           )}
           {searchMemberResult.map((user) => (
             <AddMemberWidget
