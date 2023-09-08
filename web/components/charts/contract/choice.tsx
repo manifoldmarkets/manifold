@@ -19,7 +19,6 @@ import {
   MultiPoint as GenericMultiPoint,
   unserializePoints,
 } from 'common/chart'
-import { HOUR_MS } from 'common/util/time'
 
 const CHOICE_ANSWER_COLORS = [
   '#99DDFF', // sky
@@ -113,7 +112,7 @@ export const ChoiceContractChart = (props: {
     [answers, contract]
   )
 
-  const now = useMemo(() => Date.now() + 2 * HOUR_MS, [points])
+  const now = useMemo(() => Date.now(), [points])
 
   const data = useMemo(() => {
     if (!answers.length) return []

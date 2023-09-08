@@ -15,7 +15,6 @@ import { ControllableSingleValueHistoryChart } from '../generic-charts'
 import { Row } from 'web/components/layout/row'
 import { Avatar } from 'web/components/widgets/avatar'
 import { HistoryPoint, viewScale } from 'common/chart'
-import { HOUR_MS } from 'common/util/time'
 
 // mqp: note that we have an idiosyncratic version of 'log scale'
 // contracts. the values are stored "linearly" and can include zero.
@@ -90,7 +89,7 @@ export const PseudoNumericContractChart = (props: {
     [props.betPoints, scaleP]
   )
 
-  const now = useMemo(() => Date.now() + 2 * HOUR_MS, [betPoints])
+  const now = useMemo(() => Date.now(), [betPoints])
 
   const data = useMemo(
     () => [

@@ -16,6 +16,7 @@ import { Contract } from 'common/contract'
 import { useMeasureSize } from 'web/hooks/use-measure-size'
 import { clamp } from 'lodash'
 import { HistoryPoint } from 'common/chart'
+import { DAY_MS } from 'common/util/time'
 
 export interface ContinuousScale<T> extends AxisScale<T> {
   invert(n: number): T
@@ -144,6 +145,10 @@ export const AreaWithTopStroke = <P,>(props: {
   className?: string
 }) => {
   const { data, color, px, py0, py1, curve, className } = props
+  const last = data[data.length - 1]
+  const lastX = typeof px === 'function' ? px(last) : px
+  const lastY = typeof py1 === 'function' ? py1(last) : py1
+
   return (
     <g>
       <AreaPath
@@ -157,6 +162,12 @@ export const AreaWithTopStroke = <P,>(props: {
         className={className}
       />
       <LinePath data={data} px={px} py={py1} curve={curve} stroke={color} />
+      {/* a little extension so that the current value is always visible */}
+      <path
+        fill="none"
+        d={`M${lastX},${lastY} L${lastX + 2},${lastY}`}
+        stroke={color}
+      />
     </g>
   )
 }
