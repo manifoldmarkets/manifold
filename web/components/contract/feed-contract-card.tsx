@@ -230,6 +230,7 @@ export function FeedContractCard(props: {
         )}
 
         {!JSONEmpty(contract.description) &&
+          !small &&
           (item?.dataType == 'new_contract' || nonTextDescription) && (
             <FeedContractCardDescription
               contract={contract}
