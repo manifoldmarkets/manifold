@@ -63,6 +63,7 @@ export function CardReason(props: {
       </Row>
     )
   }
+  return null
 }
 
 function ProbabilityChange(props: { probChange: number }) {
