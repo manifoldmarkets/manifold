@@ -10,8 +10,6 @@ export * from './triggers/on-create-comment-on-contract'
 export * from './triggers/on-create-answer'
 export * from './triggers/on-update-contract'
 export * from './triggers/on-create-contract'
-export * from './triggers/on-follow-user'
-export * from './triggers/on-unfollow-user'
 export * from './triggers/on-create-liquidity-provision'
 export * from './triggers/on-update-reaction'
 
