@@ -15,7 +15,10 @@ import { generateAvatarUrl } from 'shared/helpers/generate-and-update-avatar-url
 import { getStorage } from 'firebase-admin/storage'
 import { DEV_CONFIG } from 'common/envs/dev'
 import { PROD_CONFIG } from 'common/envs/prod'
-import { RESERVED_PATHS } from 'common/envs/constants'
+import {
+  BLOCKED_BY_DEFAULT_GROUP_SLUGS,
+  RESERVED_PATHS,
+} from 'common/envs/constants'
 import { isProd, log } from 'shared/utils'
 import { trackSignupFB } from 'shared/fb-analytics'
 import {
@@ -135,7 +138,7 @@ export const createuser = authEndpoint(async (req, auth) => {
         blockedUserIds: [],
         blockedByUserIds: [],
         blockedContractIds: [],
-        blockedGroupSlugs: [],
+        blockedGroupSlugs: BLOCKED_BY_DEFAULT_GROUP_SLUGS,
         weeklyTrendingEmailSent: false,
         weeklyPortfolioUpdateEmailSent: false,
       }

@@ -198,6 +198,8 @@ export const APPLE_APP_URL =
 
 export const TEN_YEARS_SECS = 60 * 60 * 24 * 365 * 10
 
+export const BLOCKED_BY_DEFAULT_GROUP_SLUGS = ['nsfw']
+
 export const DESTINY_GROUP_SLUGS = [
   'destinygg',
   'destinygg-stocks',
@@ -245,9 +247,10 @@ export const DEEMPHASIZED_GROUP_SLUGS = [
   'uk',
   'uk-politics',
   'crystal-ballin',
+  ...GROUP_SLUGS_TO_IGNORE_IN_MARKETS_EMAIL,
+  ...DESTINY_GROUP_SLUGS,
+  ...BLOCKED_BY_DEFAULT_GROUP_SLUGS,
 ]
-  .concat(GROUP_SLUGS_TO_IGNORE_IN_MARKETS_EMAIL)
-  .concat(DESTINY_GROUP_SLUGS)
 
 export const GROUP_SLUGS_TO_IGNORE_FOR_NEWS = DEEMPHASIZED_GROUP_SLUGS.filter(
   (slug) => ['uk', 'uk-politics'].includes(slug)

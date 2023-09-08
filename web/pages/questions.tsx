@@ -1,4 +1,7 @@
-import { DESTINY_GROUP_SLUGS } from 'common/envs/constants'
+import {
+  BLOCKED_BY_DEFAULT_GROUP_SLUGS,
+  DESTINY_GROUP_SLUGS,
+} from 'common/envs/constants'
 import { useRouter } from 'next/router'
 import { SEO } from 'web/components/SEO'
 import { Col } from 'web/components/layout/col'
@@ -13,6 +16,7 @@ import {
   useShouldBlockDestiny,
   useUser,
 } from 'web/hooks/use-user'
+import { buildArray } from 'common/util/array'
 
 export default function Search() {
   const user = useUser()
@@ -44,10 +48,11 @@ export default function Search() {
             autoFocus={autoFocus}
             additionalFilter={{
               excludeContractIds: privateUser?.blockedContractIds,
-              excludeGroupSlugs: [
-                ...(privateUser?.blockedGroupSlugs ?? []),
-                ...(shouldFilterDestiny ? DESTINY_GROUP_SLUGS : []),
-              ],
+              excludeGroupSlugs: buildArray(
+                privateUser?.blockedGroupSlugs,
+                shouldFilterDestiny && DESTINY_GROUP_SLUGS,
+                !user && BLOCKED_BY_DEFAULT_GROUP_SLUGS
+              ),
               excludeUserIds: privateUser?.blockedUserIds,
             }}
             useUrlParams
