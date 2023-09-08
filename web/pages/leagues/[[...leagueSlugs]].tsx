@@ -25,7 +25,6 @@ import { Row } from 'web/components/layout/row'
 import { Select } from 'web/components/widgets/select'
 import { Title } from 'web/components/widgets/title'
 import { useUser } from 'web/hooks/use-user'
-import { useTracking } from 'web/hooks/use-tracking'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { getLeagueRows } from 'web/lib/supabase/leagues'
 import { CohortTable } from 'web/components/leagues/cohort-table'
@@ -61,7 +60,6 @@ export function getStaticPaths() {
 }
 
 export default function Leagues(props: { rows: league_user_info[] }) {
-  useTracking('view leagues')
   const user = useUser()
 
   const [rows, setRows] = usePersistentInMemoryState<league_user_info[]>(
@@ -195,7 +193,7 @@ export default function Leagues(props: { rows: league_user_info[] }) {
     query.tab !== 'chat' && unseenCohortChats.includes(cohort)
 
   return (
-    <Page>
+    <Page trackPageView={'leagues'}>
       <SEO
         title="Leagues"
         description="See the top-ranking users this season in each league."

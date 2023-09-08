@@ -31,7 +31,7 @@ export const getStaticProps = async () => {
 export default function AncientMarkets(props: { contracts: Contract[] }) {
   const { contracts } = props
   return (
-    <Page>
+    <Page trackPageView={'ancient markets page'}>
       <Title>Ancient Questions</Title>
       <ContractsTable contracts={contracts} />
     </Page>

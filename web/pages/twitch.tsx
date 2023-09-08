@@ -14,7 +14,6 @@ import { Page } from 'web/components/layout/page'
 import { SEO } from 'web/components/SEO'
 import { Title } from 'web/components/widgets/title'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
-import { useTracking } from 'web/hooks/use-tracking'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { firebaseLogin, updatePrivateUser } from 'web/lib/firebase/users'
 import { track } from 'web/lib/service/analytics'
@@ -32,13 +31,12 @@ import { CopyLinkRow } from 'web/components/buttons/copy-link-button'
 
 export default function TwitchLandingPage() {
   useSaveReferral()
-  useTracking('view twitch landing page')
 
   const user = useUser()
   const privateUser = usePrivateUser()
 
   return (
-    <Page>
+    <Page trackPageView={'twitch landing page'}>
       <SEO
         title="Manifold on Twitch"
         description="Get more out of Twitch with play-money betting questions."

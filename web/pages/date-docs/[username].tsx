@@ -71,7 +71,10 @@ function DateDocPage(props: {
   const comments = useRealtimePostComments(post.id) || props.comments
 
   return (
-    <Page>
+    <Page
+      trackPageView={'user date doc page'}
+      trackPageProps={{ username: creator.username }}
+    >
       <NoSEO />
       <Col className="mx-auto w-full max-w-xl gap-6 sm:mb-6">
         <Link href="/date-docs">

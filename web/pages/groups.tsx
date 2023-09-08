@@ -13,14 +13,12 @@ import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { useUser } from 'web/hooks/use-user'
 import GroupSearch from 'web/components/groups/group-search'
 import { useMemberGroupIds } from 'web/hooks/use-group-supabase'
-import { useTracking } from 'web/hooks/use-tracking'
 
 export default function Groups() {
   const user = useUser()
-  useTracking('view groups')
 
   return (
-    <Page>
+    <Page trackPageView={'groups page'}>
       <SEO
         title="Categories"
         description="Categories of questions."

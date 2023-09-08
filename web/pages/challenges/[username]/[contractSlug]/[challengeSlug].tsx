@@ -6,7 +6,7 @@ import { Row } from 'web/components/layout/row'
 
 export default function ChallengePage() {
   return (
-    <Page>
+    <Page trackPageView={'challenge slug page'}>
       <div className="my-8 px-4">
         Challenge bets are no longer supported.
         <br />

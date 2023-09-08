@@ -29,7 +29,6 @@ import { LoadingIndicator } from './widgets/loading-indicator'
 import { UserLink } from './widgets/user-link'
 import { db } from 'web/lib/supabase/db'
 import { track } from 'web/lib/service/analytics'
-import { useTracking } from 'web/hooks/use-tracking'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 
 const EXTRA_USERNAMES_TO_EXCLUDE = ['Charlie', 'GamblingGandalf']
@@ -40,8 +39,6 @@ export function ActivityLog(props: {
   rightPanel?: ReactNode
   className?: string
 }) {
-  useTracking('view live feed')
-
   const { count, pill, className } = props
 
   const privateUser = usePrivateUser()

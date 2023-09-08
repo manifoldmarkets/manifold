@@ -33,6 +33,8 @@ export default function DashboardPage(props: { dashboard: Dashboard }) {
   const { dashboard } = props
   return (
     <Page
+      trackPageView={'dashboard slug page'}
+      trackPageProps={{ slug: dashboard.slug, title: dashboard.title }}
       rightSidebar={
         <DashboardSidebar description={dashboard.description} inSidebar />
       }

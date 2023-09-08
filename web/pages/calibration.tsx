@@ -43,7 +43,7 @@ export default function CalibrationPage(props: {
   const { points, score, n } = props
 
   return (
-    <Page>
+    <Page trackPageView={'platform calibration page'}>
       <SEO
         title={`Platform calibration`}
         description="Manifold's overall track record"

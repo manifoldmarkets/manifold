@@ -25,7 +25,7 @@ export const getStaticProps = async () => {
 
 export default function Analytics(props: Stats) {
   return (
-    <Page>
+    <Page trackPageView={'site stats page'}>
       <SEO
         title="Stats"
         description="See site-wide usage statistics."

@@ -12,7 +12,6 @@ import { useEffect, useState } from 'react'
 import { Post } from 'common/post'
 import { getUserByUsername, User } from 'web/lib/firebase/users'
 import Custom404 from 'web/pages/404'
-import { useTracking } from 'web/hooks/use-tracking'
 import { BlockedUser } from 'web/components/profile/blocked-user'
 import { usePrivateUser } from 'web/hooks/use-user'
 import { Title } from 'web/components/widgets/title'
@@ -102,7 +101,6 @@ export default function UserPage(props: {
   const blockedByCurrentUser =
     privateUser?.blockedUserIds.includes(user?.id ?? '_') ?? false
 
-  useTracking('view user profile', { username })
   useSaveReferral()
 
   if (!user) return <Custom404 />
@@ -117,7 +115,7 @@ export default function UserPage(props: {
 
 const DeletedUser = () => {
   return (
-    <Page>
+    <Page trackPageView={'user profile'}>
       <div className="flex h-full flex-col items-center justify-center">
         <Title>Deleted account page</Title>
         <p>This user has been deleted.</p>
@@ -182,7 +180,11 @@ function UserProfile(props: {
   }, [currentUser?.id, user?.id])
 
   return (
-    <Page key={user.id}>
+    <Page
+      key={user.id}
+      trackPageView={'user profile'}
+      trackPageProps={{ username: user.username }}
+    >
       <SEO
         title={`${user.name} (@${user.username})`}
         description={user.bio ?? ''}

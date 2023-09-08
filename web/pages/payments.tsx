@@ -30,7 +30,7 @@ import { useCanSendMana } from 'web/hooks/use-can-send-mana'
 export default function Payments() {
   const { payments, load } = useManaPayments()
   return (
-    <Page>
+    <Page trackPageView={'managrams page'}>
       <SEO
         title="Managrams"
         description="See all mana transfers (managrams!) between users."

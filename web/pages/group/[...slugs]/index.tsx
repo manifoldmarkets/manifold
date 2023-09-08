@@ -119,7 +119,12 @@ export default function GroupPage(props: {
     return <Custom404 />
   }
   return (
-    <Page key={`group-${slugs[0]}`} mainClassName="!mt-0">
+    <Page
+      trackPageView={'group slug page'}
+      trackPageProps={{ groupSlug: groupParams?.group?.slug }}
+      key={`group-${slugs[0]}`}
+      mainClassName="!mt-0"
+    >
       {groupPrivacy == 'private' && <PrivateGroupPage />}
       {groupPrivacy != 'private' && groupParams && (
         <NonPrivateGroupPage groupParams={groupParams} />

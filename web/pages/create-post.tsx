@@ -3,7 +3,7 @@ import { CreatePostForm } from 'web/components/posts/create-post'
 
 export default function CreatePost() {
   return (
-    <Page>
+    <Page trackPageView={'create post page'}>
       <CreatePostForm />
     </Page>
   )

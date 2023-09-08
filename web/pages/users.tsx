@@ -34,7 +34,7 @@ export default function Users() {
   }
 
   return (
-    <Page>
+    <Page trackPageView={'users page'}>
       <Col className={'w-full p-2'}>
         <Row className={'mb-2 items-center'}>
           <BackButton className={'mr-2 md:hidden'} />

@@ -54,6 +54,8 @@ function CharityPage(props: { charity: Charity }) {
 
   return (
     <Page
+      trackPageView={'charity slug page'}
+      trackPageProps={{ charityName: charity.name }}
       rightSidebar={
         <DonationBox
           user={user}

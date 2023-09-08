@@ -5,7 +5,6 @@ import { Period, User } from 'web/lib/firebase/users'
 import { formatMoney, formatWithCommas } from 'common/util/format'
 import { useEffect, useState } from 'react'
 import { Title } from 'web/components/widgets/title'
-import { useTracking } from 'web/hooks/use-tracking'
 import { SEO } from 'web/components/SEO'
 import { BETTORS } from 'common/user'
 import { useUser } from 'web/hooks/use-user'
@@ -87,8 +86,6 @@ export default function Leaderboards(props: {
 
   const { topReferrals } = props
 
-  useTracking('view leaderboards')
-
   const { topTraders, topCreators } = props.allTime
 
   const topTraderEntries = topTraders.map((user, i) => ({
@@ -127,7 +124,7 @@ export default function Leaderboards(props: {
   }
 
   return (
-    <Page>
+    <Page trackPageView={'leaderboards'}>
       <SEO
         title="Leaderboards"
         description={`Manifold's leaderboards show the top ${BETTORS}, question creators, and referrers.`}

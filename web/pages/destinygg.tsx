@@ -4,7 +4,6 @@ import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { SEO } from 'web/components/SEO'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
-import { useTracking } from 'web/hooks/use-tracking'
 import { Row } from 'web/components/layout/row'
 import { Title } from 'web/components/widgets/title'
 import { Button } from 'web/components/buttons/button'
@@ -51,7 +50,6 @@ export default function DestinyLandingPage(props: {
   const { subCount, trendingContracts } = props
 
   useSaveReferral()
-  useTracking('view destiny landing page')
 
   const [destinyUsername, setDestinyUsername] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -80,7 +78,7 @@ export default function DestinyLandingPage(props: {
   const disabled = isSubmitting || !privateUser || !user || user.balance < 1000
 
   return (
-    <Page>
+    <Page trackPageView={'destiny landing page'}>
       <SEO
         title="Destiny on Manifold"
         description="Get more out of Twitch with play-money betting questions."

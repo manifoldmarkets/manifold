@@ -75,7 +75,7 @@ export default function CreateDashboard() {
   }
 
   return (
-    <Page>
+    <Page trackPageView={'create dashboard page'}>
       <SEO
         title="Create a dashboard"
         description="Create a collection of prediction markets."

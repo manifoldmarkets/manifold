@@ -6,7 +6,7 @@ export default function Find() {
   const [query, setQuery] = usePersistentQueryState('q', '')
 
   return (
-    <Page>
+    <Page trackPageView={'omnisearch page'}>
       <OmniSearch
         inputClassName="sticky top-0 left-0 right-0 !rounded-full !border !border-ink-400"
         query={query}

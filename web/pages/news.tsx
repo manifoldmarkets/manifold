@@ -7,17 +7,15 @@ import { NewsTopicsTabs } from 'web/components/news/news-topics-tabs'
 import { Title } from 'web/components/widgets/title'
 import { useSaveCampaign } from 'web/hooks/use-save-campaign'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
-import { useTracking } from 'web/hooks/use-tracking'
 
 export default function NewsPage() {
-  useTracking('view news page')
   useSaveReferral()
   useSaveCampaign()
 
   const [sidebar, setSidebar] = useState<ReactNode>(<></>)
 
   return (
-    <Page rightSidebar={sidebar}>
+    <Page trackPageView={'news page'} rightSidebar={sidebar}>
       <SEO
         title="News"
         description="Breaking news meets the wisdom of the crowd"

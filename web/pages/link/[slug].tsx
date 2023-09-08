@@ -32,7 +32,7 @@ export default function ClaimPage() {
 
   const info = { ...manalink, uses: manalink.claims.length }
   return (
-    <Page>
+    <Page trackPageView={'manalink slug page'}>
       <SEO
         title="Send Mana"
         description="Send mana to anyone via link!"

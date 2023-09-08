@@ -10,7 +10,6 @@ import Welcome from 'web/components/onboarding/welcome'
 import { SupabaseContractSearch } from 'web/components/contracts-search'
 import { Title } from 'web/components/widgets/title'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
-import { useTracking } from 'web/hooks/use-tracking'
 import {
   usePrivateUser,
   useShouldBlockDestiny,
@@ -23,8 +22,6 @@ export default function Search() {
   const privateUser = usePrivateUser()
   const isMobile = useIsMobile()
 
-  useTracking('view search')
-
   const { query } = useRouter()
   const { q } = query
   // Allow users to browse without keyboard popping up on mobile.
@@ -35,7 +32,7 @@ export default function Search() {
   return (
     <>
       <Welcome />
-      <Page>
+      <Page trackPageView={'search'}>
         <SEO
           title="Questions"
           description="Browse all questions."

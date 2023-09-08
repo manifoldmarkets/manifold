@@ -30,7 +30,7 @@ import { Contract } from 'common/contract'
 
 export default function FeedTimelinePage() {
   return (
-    <Page>
+    <Page trackPageView={'feed timeline page'}>
       <FeedTimeline />
     </Page>
   )

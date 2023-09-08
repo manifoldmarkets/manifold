@@ -61,7 +61,7 @@ export default function LinkPage(props: {
   const { canSend, message } = useCanSendMana(user)
 
   return (
-    <Page>
+    <Page trackPageView={'manalinks page'}>
       <SEO
         title="Manalinks"
         description="Send mana to others with a link, even if they don't have a Manifold account yet!"

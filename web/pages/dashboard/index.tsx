@@ -16,7 +16,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <Page>
+    <Page trackPageView={'dashboards page'}>
       <Col className="items-center">
         <Col className="w-full max-w-2xl px-4 sm:px-2">
           <Row className="mt-1 mb-3 items-start justify-between">

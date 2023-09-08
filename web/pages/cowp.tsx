@@ -3,7 +3,7 @@ import { SEO } from 'web/components/SEO'
 
 const App = () => {
   return (
-    <Page>
+    <Page trackPageView={'cowp page'}>
       <SEO
         title="COWP"
         description="A picture of a cowpy cowp copwer cowp saying 'salutations'"
