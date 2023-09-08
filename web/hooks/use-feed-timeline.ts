@@ -476,6 +476,13 @@ const groupItemsBySimilarQuestions = (items: FeedTimelineItem[]) => {
       .filter((word) => !wordsToFilter.includes(word.toLowerCase()))
       .join(' ')
 
+  const soloDataTypes: FEED_DATA_TYPES[] = [
+    'contract_probability_changed',
+    'news_with_related_contracts',
+    'new_comment',
+    'user_position_changed',
+  ]
+
   const compareSlugs = (s1: string[], s2: string[]) => {
     const sharedGroups = intersection(s1, s2).length
 
@@ -490,27 +497,45 @@ const groupItemsBySimilarQuestions = (items: FeedTimelineItem[]) => {
     return sharedGroups / (totalGroupSlugs * 5)
   }
 
-  for (const item of items) {
-    const similarItem = groupedItems.find(
-      (i2) =>
-        compareTwoStrings(
-          cleanQuestion(item.contract?.question),
-          cleanQuestion(i2.contract?.question)
-        ) +
-          compareSlugs(
-            item.contract?.groupSlugs ?? [],
-            i2.contract?.groupSlugs ?? []
-          ) >
-        0.5
-    )
+  let availableItems = [...items]
+  while (availableItems.length > 0) {
+    // Remove this item from the available items
+    const item = availableItems.shift()
+    if (!item) break
+    if (!soloDataTypes.includes(item.dataType)) {
+      const potentialGroupMembers = availableItems
+        .map((relatedItem) => ({
+          relatedItem,
+          score: soloDataTypes.includes(relatedItem.dataType)
+            ? 0
+            : compareTwoStrings(
+                cleanQuestion(item.contract?.question),
+                cleanQuestion(relatedItem.contract?.question)
+              ) +
+              compareSlugs(
+                item.contract?.groupSlugs ?? [],
+                relatedItem.contract?.groupSlugs ?? []
+              ),
+        }))
+        .filter((x) => x.score > 0.5)
 
-    if (similarItem && item.contract) {
-      if (similarItem.relatedItems) {
-        similarItem.relatedItems.push(item)
-      } else similarItem.relatedItems = [item]
-    } else {
-      groupedItems.push(item)
+      const sortedPotentialMembers = orderBy(
+        potentialGroupMembers,
+        'score',
+        'desc'
+      )
+      const mostSimilarItems = sortedPotentialMembers
+        .slice(0, 5)
+        .map((x) => x.relatedItem)
+      if (mostSimilarItems.length > 0) {
+        item.relatedItems = mostSimilarItems
+        availableItems = availableItems.filter(
+          (x) => !mostSimilarItems.includes(x)
+        )
+      }
     }
+
+    groupedItems.push(item)
   }
   return groupedItems
 }
