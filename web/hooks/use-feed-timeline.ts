@@ -44,6 +44,7 @@ import { convertAnswer } from 'common/supabase/contracts'
 import { compareTwoStrings } from 'string-similarity'
 import dayjs from 'dayjs'
 
+export const DEBUG_FEED_CARDS = false
 const PAGE_SIZE = 50
 
 export type FeedTimelineItem = {
@@ -132,7 +133,13 @@ export const useFeedTimeline = (
     if (loadingFirstCards.current && options.new) return { timelineItems: [] }
 
     const ignoreContractIds = filterDefined(
-      options.ignoreFeedTimelineItems.map((item) => item.contractId)
+      options.ignoreFeedTimelineItems
+        .map((item) =>
+          (item.relatedItems ?? [])
+            .map((c) => c.contractId)
+            .concat([item.contractId])
+        )
+        .flat()
     )
 
     let query = baseUserFeedQuery(userId, privateUser, ignoreContractIds)
@@ -621,6 +628,7 @@ const getNewContentIds = (
 }
 
 const setSeenFeedItems = async (feedItems: Row<'user_feed'>[]) => {
+  if (DEBUG_FEED_CARDS) return
   await Promise.all(
     feedItems.map(async (item) =>
       run(

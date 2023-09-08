@@ -7,7 +7,7 @@ import { FeedContractCard } from 'web/components/contract/feed-contract-card'
 import { Col } from 'web/components/layout/col'
 import { groupCommentsByContractsAndParents } from 'web/hooks/use-additional-feed-items'
 import { BoostsType } from 'web/hooks/use-feed'
-import { FeedTimelineItem } from 'web/hooks/use-feed-timeline'
+import { DEBUG_FEED_CARDS, FeedTimelineItem } from 'web/hooks/use-feed-timeline'
 import { useIsVisible } from 'web/hooks/use-is-visible'
 import { db } from 'web/lib/supabase/db'
 import { ContractsTable } from '../contract/contracts-table'
@@ -90,7 +90,7 @@ export const FeedTimelineItems = (props: {
           return (
             <FeedItemFrame
               item={item}
-              key={contracts.map((c) => c.id) + 'feed-timeline-item'}
+              key={item.id + '-feed-timeline-item'}
               moreItems={item.relatedItems}
               className="bg-canvas-0 border-canvas-0  w-full overflow-hidden rounded-2xl border drop-shadow-md "
             >
@@ -248,14 +248,18 @@ const FeedItemFrame = (props: {
   const items = filterDefined([item, ...(moreItems ?? [])])
   const maybeVisibleHook = useIsVisible(
     () =>
-      items.map(async (i) =>
-        run(
-          db
-            .from('user_feed')
-            .update({ seen_time: new Date().toISOString() })
-            .eq('id', i.id)
-        ).then(() => track('view feed item', { id: i.id, type: i.dataType }))
-      ),
+      DEBUG_FEED_CARDS
+        ? null
+        : items.map(async (i) =>
+            run(
+              db
+                .from('user_feed')
+                .update({ seen_time: new Date().toISOString() })
+                .eq('id', i.id)
+            ).then(() =>
+              track('view feed item', { id: i.id, type: i.dataType })
+            )
+          ),
     true,
     items.length > 0
   )
