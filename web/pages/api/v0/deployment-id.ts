@@ -7,12 +7,6 @@ export default async function handler(
 ) {
   await applyCorsHeaders(req, res, CORS_UNRESTRICTED)
 
-  const vercelUrl = process.env.VERCEL_URL ?? process.env.NEXT_PUBLIC_VERCEL_ENV
-  console.log(
-    'vercel url',
-    vercelUrl,
-    process.env.VERCEL_URL,
-    process.env.NEXT_PUBLIC_VERCEL_ENV
-  )
-  return res.status(200).json({ deploymentId: vercelUrl })
+  const deploymentId = process.env.VERCEL_URL
+  return res.status(200).json({ deploymentId })
 }
