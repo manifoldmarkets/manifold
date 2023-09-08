@@ -1,4 +1,3 @@
-drop table dashboards
 create table if not exists
   dashboards (
     id text not null primary key default random_alphanumeric (12),
