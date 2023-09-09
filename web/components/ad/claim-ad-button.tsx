@@ -62,7 +62,7 @@ export function ClaimButton(props: {
       ) : loading ? (
         <LoadingIndicator size={'sm'} />
       ) : (
-        `Claim ${formatMoney(reward)} Boost`
+        `Claim ${formatMoney(reward)} boost`
       )}
     </Button>
   )
