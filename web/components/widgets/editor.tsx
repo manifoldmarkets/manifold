@@ -91,12 +91,14 @@ export const proseClass = (size: 'sm' | 'md' | 'lg') =>
     'break-anywhere'
   )
 
+export const getEditorLocalStorageKey = (key: string) => `text ${key}`
+
 export function useTextEditor(props: {
   placeholder?: string
   max?: number
   defaultValue?: Content
   size?: 'sm' | 'md' | 'lg'
-  key?: string // unique key for autosave. If set, plz call `clearContent(true)` on submit to clear autosave
+  key?: string // unique key for autosave. If set, plz call `editor.commands.clearContent(true)` on submit to clear autosave
   extensions?: Extensions
 }) {
   const { placeholder, max, defaultValue, size = 'md', key } = props
@@ -104,7 +106,7 @@ export function useTextEditor(props: {
 
   const [content, saveContent] = usePersistentLocalState<
     JSONContent | undefined
-  >(undefined, `text ${key}`)
+  >(undefined, getEditorLocalStorageKey(key ?? ''))
   const fetchingLinks = useRef<boolean>(false)
 
   const save = useCallback(debounce(saveContent, 500), [])

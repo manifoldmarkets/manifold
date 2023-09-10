@@ -29,7 +29,10 @@ import { GroupSelector } from 'web/components/groups/group-selector'
 import { Row } from 'web/components/layout/row'
 import { Checkbox } from 'web/components/widgets/checkbox'
 import { ChoicesToggleGroup } from 'web/components/widgets/choices-toggle-group'
-import { TextEditor } from 'web/components/widgets/editor'
+import {
+  TextEditor,
+  getEditorLocalStorageKey,
+} from 'web/components/widgets/editor'
 import { ExpandingInput } from 'web/components/widgets/expanding-input'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { Input } from 'web/components/widgets/input'
@@ -278,8 +281,9 @@ export function ContractParamsForm(props: {
     }
   }, [isValid, isValidDate, isValidMultipleChoice, isValidQuestion])
 
+  const editorKey = 'create market' + paramsKey
   const editor = useTextEditor({
-    key: 'create market' + paramsKey,
+    key: editorKey,
     max: MAX_DESCRIPTION_LENGTH,
     placeholder: 'Optional. Provide background info and details.',
     defaultValue: params?.description
@@ -293,7 +297,11 @@ export function ContractParamsForm(props: {
   }
 
   const resetProperties = () => {
-    editor?.commands.clearContent(true)
+    // We would call this:
+    // editor?.commands.clearContent(true)
+    // except it doesn't work after you've navigated away. So we do this instead:
+    safeLocalStorage?.removeItem(getEditorLocalStorageKey(editorKey))
+
     safeLocalStorage?.removeItem(`text create market`)
     setQuestion('')
     setCloseDate(undefined)
@@ -348,8 +356,13 @@ export function ContractParamsForm(props: {
         outcomeType,
       })
 
-      resetProperties()
-      setSubmitState('DONE')
+      // Clear form data from localstorage on navigate, since market is created.
+      // Don't clear before navigate, because looks like a bug.
+      const clearFormOnNavigate = () => {
+        resetProperties()
+        router.events.off('routeChangeComplete', clearFormOnNavigate)
+      }
+      router.events.on('routeChangeComplete', clearFormOnNavigate)
 
       try {
         await router.push(contractPath(supabaseContract as Contract))
