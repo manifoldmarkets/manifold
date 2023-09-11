@@ -220,11 +220,9 @@ export function GroupPageContent(props: { groupParams?: GroupParams }) {
   return (
     <>
       {!realtimeRole && isManifoldAdmin && (
-        <Row className="fixed top-14 z-50 w-full justify-end sm:top-0 lg:left-0 lg:justify-center">
-          <div className="rounded bg-red-200/80 px-4 py-2 text-lg font-bold text-red-500 lg:ml-[47rem]">
-            ADMIN
-          </div>
-        </Row>
+        <div className="pointer-events-none fixed top-14 z-50 rounded bg-red-200/80 px-4 py-2 text-lg font-bold text-red-500 sm:top-0 lg:left-0 lg:ml-[47rem]">
+          ADMIN
+        </div>
       )}
       <AddContractButton
         group={group}
