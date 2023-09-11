@@ -159,12 +159,11 @@ export const useFeedTimeline = (
 
     const newFeedRows = data.map((d) => {
       const createdTimeAdjusted =
-        1 - dayjs().diff(dayjs(d.created_time), 'day') / 14
+        1 - dayjs().diff(dayjs(d.created_time), 'day') / 20
       d.relevance_score =
-        -(
-          d.relevance_score ||
-          BASE_FEED_DATA_TYPE_SCORES[d.data_type as FEED_DATA_TYPES]
-        ) * createdTimeAdjusted
+        (d.relevance_score ||
+          BASE_FEED_DATA_TYPE_SCORES[d.data_type as FEED_DATA_TYPES]) *
+        createdTimeAdjusted
       return d
     })
     const {
