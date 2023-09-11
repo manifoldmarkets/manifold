@@ -155,6 +155,7 @@ export const getUsersWithSimilarInterestVectorsToContract = async (
       }
     )
   })
+  // Note: this will not include keys for users with scores below the threshold
   return userDistanceMap
 }
 

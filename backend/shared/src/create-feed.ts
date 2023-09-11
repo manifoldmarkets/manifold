@@ -418,7 +418,7 @@ export const addBetDataToUsersFeeds = async (
             'user_position_changed',
             ['follow_user'],
             contract.importanceScore,
-            usersToDistances[id]
+            usersToDistances[id] ?? 1
           ),
         },
       ])
