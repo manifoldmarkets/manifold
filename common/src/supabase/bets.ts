@@ -48,15 +48,13 @@ export const getBetPoints = async <S extends SupabaseClient>(
 ) => {
   let q = db
     .from('contract_bets')
-    .select(
-      'created_time, prob_after, is_redemption, data->answerId, data->limitProb'
-    )
+    .select('created_time, prob_after, is_redemption, data->answerId')
     .order('created_time', { ascending: options?.order === 'asc' })
   q = applyBetsFilter(q, options)
   const { data } = await run(q)
 
   return data
-    .filter((r: any) => r.limitProb == null)
+    .filter((r: any) => r.prob_after != r.prob_before)
     .map((r: any) => ({
       x: tsToMillis(r.created_time),
       y: r.prob_after,
