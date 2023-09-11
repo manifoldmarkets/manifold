@@ -1,6 +1,6 @@
 import { Dictionary, sumBy, minBy, groupBy } from 'lodash'
 import { Bet } from './bet'
-import { getMinimalInvested } from './calculate'
+import { getMinimalInvested, getProfitMetrics } from './calculate'
 import {
   Contract,
   CPMMContract,
@@ -9,6 +9,7 @@ import {
 } from './contract'
 import { filterDefined } from './util/array'
 import { PortfolioMetrics } from 'common/portfolio-metrics'
+import { calculateDpmRawShareValue } from './calculate-dpm'
 
 export const LOAN_DAILY_RATE = 0.04
 
@@ -67,10 +68,12 @@ const getCpmmContractLoanUpdate = (
   bets: Bet[]
 ) => {
   const invested = getMinimalInvested(contract, bets)
+  const { payout: currentValue } = getProfitMetrics(contract, bets)
   const loanAmount = sumBy(bets, (bet) => bet.loanAmount ?? 0)
   const oldestBet = minBy(bets, (bet) => bet.createdTime)
 
-  const newLoan = calculateNewLoan(invested, loanAmount)
+  const loanBasis = Math.min(invested, currentValue)
+  const newLoan = calculateNewLoan(loanBasis, loanAmount)
   if (!isFinite(newLoan) || newLoan <= 0 || !oldestBet) return undefined
 
   const loanTotal = (oldestBet.loanAmount ?? 0) + newLoan
@@ -89,7 +92,13 @@ const getDpmContractLoanUpdate = (contract: DPMContract, bets: Bet[]) => {
 
   return openBets.map((bet) => {
     const loanAmount = bet.loanAmount ?? 0
-    const newLoan = calculateNewLoan(bet.amount, loanAmount)
+    const value = calculateDpmRawShareValue(
+      contract.totalShares,
+      bet.shares,
+      bet.outcome
+    )
+    const loanBasis = Math.min(value, bet.amount)
+    const newLoan = calculateNewLoan(loanBasis, loanAmount)
     const loanTotal = loanAmount + newLoan
 
     if (!isFinite(newLoan) || newLoan <= 0) return undefined
