@@ -35,7 +35,7 @@ import { LikeButton } from './like-button'
 import { TradesButton } from './trades-button'
 import { FeedDropdown } from '../feed/card-dropdown'
 import { GroupTags } from '../feed/feed-timeline-items'
-import { JSONEmpty } from './contract-description'
+import { JSONEmpty } from 'web/components/contract/contract-description'
 
 export function FeedContractCard(props: {
   contract: Contract
@@ -107,13 +107,7 @@ export function FeedContractCard(props: {
       isPromoted: !!promotedData,
     })
 
-  const nonTextDescription =
-    !small &&
-    typeof contract.description !== 'string' &&
-    contract.description.content &&
-    contract.description.content.some(
-      (item) => item.type === 'image' || item.type === 'embed'
-    )
+  const nonTextDescription = !JSONEmpty(contract.description)
 
   return (
     <ClickFrame
@@ -222,14 +216,12 @@ export function FeedContractCard(props: {
           <YourMetricsFooter metrics={metrics} />
         )}
 
-        {!JSONEmpty(contract.description) &&
-          !small &&
-          (item?.dataType == 'new_contract' || nonTextDescription) && (
-            <FeedContractCardDescription
-              contract={contract}
-              nonTextDescription={nonTextDescription}
-            />
-          )}
+        {!small && item?.dataType == 'new_contract' && nonTextDescription && (
+          <FeedContractCardDescription
+            contract={contract}
+            nonTextDescription={nonTextDescription}
+          />
+        )}
 
         <GroupTags groups={contract.groupLinks} />
         <Col>
