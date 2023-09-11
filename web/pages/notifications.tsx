@@ -113,7 +113,7 @@ function NotificationsContent(props: {
       <div className="relative">
         {privateUser && (
           <QueryUncontrolledTabs
-            currentPageForAnalytics={'notifications'}
+            trackingName={'notification tabs'}
             labelClassName={'pb-2 pt-1 '}
             className={'mb-0 sm:mb-2'}
             tabs={[

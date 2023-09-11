@@ -111,7 +111,7 @@ export function ContractTabs(props: {
   return (
     <ControlledTabs
       className="mb-4"
-      currentPageForAnalytics={'contract'}
+      trackingName="contract tabs"
       activeIndex={activeIndex}
       onClick={(_title, i) => {
         setActiveIndex(i)

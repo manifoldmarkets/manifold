@@ -40,7 +40,7 @@ export function AddFundsModal(props: {
       className="bg-canvas-0 text-ink-1000 rounded-md p-8"
     >
       <Tabs
-        currentPageForAnalytics="buy modal"
+        trackingName="buy modal tabs"
         tabs={[
           {
             title: 'Buy Mana',

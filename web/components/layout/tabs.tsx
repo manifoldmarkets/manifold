@@ -22,8 +22,8 @@ type TabProps = {
   labelClassName?: string
   onClick?: (tabTitle: string, index: number) => void
   className?: string
-  currentPageForAnalytics?: string
   labelsParentClassName?: string
+  trackingName?: string
 }
 
 export function ControlledTabs(props: TabProps & { activeIndex: number }) {
@@ -33,8 +33,8 @@ export function ControlledTabs(props: TabProps & { activeIndex: number }) {
     labelClassName,
     onClick,
     className,
-    currentPageForAnalytics,
     labelsParentClassName,
+    trackingName,
   } = props
   return (
     <>
@@ -49,11 +49,14 @@ export function ControlledTabs(props: TabProps & { activeIndex: number }) {
             key={tab.title}
             onClick={(e) => {
               e.preventDefault()
-              track('Clicked Tab', {
-                title: tab.title,
-                currentPage: currentPageForAnalytics,
-              })
+
               onClick?.(tab.title, i)
+
+              if (trackingName) {
+                track(trackingName, {
+                  tab: tab.title,
+                })
+              }
             }}
             className={clsx(
               activeIndex === i

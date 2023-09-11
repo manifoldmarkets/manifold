@@ -329,7 +329,7 @@ function UserProfile(props: {
 
         <Col className="mt-2">
           <QueryUncontrolledTabs
-            currentPageForAnalytics={'profile'}
+            trackingName={'profile tabs'}
             labelsParentClassName={'gap-0 sm:gap-4'}
             labelClassName={'pb-2 pt-1 sm:pt-4 '}
             tabs={[
