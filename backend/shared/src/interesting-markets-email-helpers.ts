@@ -4,7 +4,7 @@ import {
   createSupabaseDirectClient,
   SupabaseDirectClient,
 } from 'shared/supabase/init'
-import { orderBy, uniq, uniqBy } from 'lodash'
+import { sortBy, uniq, uniqBy } from 'lodash'
 import { getTrendingContractsToEmail, log } from 'shared/utils'
 import { PrivateUser } from 'common/user'
 import * as admin from 'firebase-admin'
@@ -55,36 +55,46 @@ export const getUsersRecommendedContracts = async (
   userIds: string[],
   pg: SupabaseDirectClient
 ) => {
-  const userContracts: { [userId: string]: Contract[] } = {}
+  type ContractAndScore = Contract & {
+    relevanceScore: number
+  }
+  const userContracts: { [userId: string]: ContractAndScore[] } = {}
   await Promise.all(
     userIds.map(async (userId) => {
       await pg.map(
         `
-          select c.data, c.importance_score, c.popularity_score
-          from (select contract_id
+          select c.data, c.importance_score, uf.relevance_score
+          from (select contract_id, relevance_score
                 from user_feed
                 where user_id = $1
-                  and (data_type = 'trending_contract' 
-                       or data_type = 'contract_probability_changed')
                   and contract_id is not null
                   and seen_time is null
-                order by created_time desc
-                limit 40) uf
+                and data_type != 'new_comment'
+                and data_type != 'user_position_changed'
+                order by relevance_score desc
+                limit 100) uf
                    join contracts c on uf.contract_id = c.id
-                    where not (c.data -> 'groupSlugs' ?| $2)  
-                    and popularity_score > 10
+                    where not (c.data -> 'groupSlugs' ?| $2)
+                      and c.creator_id != $1
+                      and not exists(select 1
+                        from contract_bets
+                        where contract_id = c.id    
+                          and user_id = $1) 
+                      and not exists(select 1 from user_seen_markets
+                        where user_id = $1
+                        and contract_id = c.id)
           `,
         [userId, GROUP_SLUGS_TO_IGNORE_IN_MARKETS_EMAIL],
         (r: {
           data: any
-          importance_score: string
-          popularity_score: string
+          importance_score: number
+          relevance_score: number
         }) => {
           const contract = {
             ...(r.data as Contract),
-            importanceScore: parseFloat(r.importance_score),
-            popularityScore: parseFloat(r.popularity_score),
-          } as Contract
+            importanceScore: r.importance_score,
+            relevanceScore: r.relevance_score,
+          } as ContractAndScore
           if (!userContracts[userId]) userContracts[userId] = []
           userContracts[userId].push(contract)
         }
@@ -95,10 +105,18 @@ export const getUsersRecommendedContracts = async (
   userIds.forEach(
     (userId) =>
       (userContracts[userId] = uniqBy(
-        orderBy(userContracts[userId], (c) => -c.popularityScore),
+        sortBy(
+          removeSimilarQuestions(
+            userContracts[userId],
+            userContracts[userId],
+            true
+          ) as ContractAndScore[],
+          (c) => -(c.importanceScore / 3 + c.relevanceScore)
+        ),
         'id'
       ))
   )
+
   return userContracts
 }
 const getUniqueTrendingContracts = async () => {
@@ -136,7 +154,7 @@ const removeSimilarQuestions = (
               ).filter((word) => contractQuestionWords.includes(word)).length >
               2
             const lessPopular =
-              (c2.popularityScore ?? 0) < (contract.popularityScore ?? 0)
+              (c2.importanceScore ?? 0) < (contract.importanceScore ?? 0)
             return (
               (significantOverlap && lessPopular) ||
               (allowExactSameContracts ? false : c2.id === contract.id)
