@@ -5,6 +5,7 @@ import { PrivateUser } from 'common/user'
 import { isContractBlocked } from 'web/lib/firebase/users'
 import { Contract } from 'common/contract'
 import { BoostsType } from 'web/hooks/use-feed'
+import { INTEREST_DISTANCE_THRESHOLDS } from 'common/feed'
 
 export async function getAllAds() {
   const query = selectJson(db, 'posts')
@@ -57,13 +58,16 @@ export async function getUsersWhoSkipped(adId: string) {
 }
 
 export const getBoosts = async (privateUser: PrivateUser, limit: number) => {
-  const { data } = await db.rpc('get_top_market_ads' as any, {
+  const { data } = await db.rpc('get_top_market_ads', {
     uid: privateUser.id,
+    distance_threshold: INTEREST_DISTANCE_THRESHOLDS.ad,
   })
   return (
-    (data?.filter(
-      (d) => !isContractBlocked(privateUser, d.market_data as Contract)
-    ) as BoostsType) ?? []
+    (data
+      ?.flat()
+      .filter(
+        (d) => !isContractBlocked(privateUser, d.market_data as Contract)
+      ) as BoostsType) ?? []
   ).slice(0, limit)
 }
 

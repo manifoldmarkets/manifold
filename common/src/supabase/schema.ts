@@ -411,6 +411,61 @@ export interface Database {
         }
         Relationships: []
       }
+      dashboards: {
+        Row: {
+          created_time: string
+          creator_id: string
+          description: Json | null
+          id: string
+          slug: string
+          title: string
+          views: number
+        }
+        Insert: {
+          created_time?: string
+          creator_id: string
+          description?: Json | null
+          id?: string
+          slug: string
+          title: string
+          views?: number
+        }
+        Update: {
+          created_time?: string
+          creator_id?: string
+          description?: Json | null
+          id?: string
+          slug?: string
+          title?: string
+          views?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dashboards_creator_id_fkey"
+            columns: ["creator_id"]
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dashboards_creator_id_fkey"
+            columns: ["creator_id"]
+            referencedRelation: "user_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dashboards_creator_id_fkey"
+            columns: ["creator_id"]
+            referencedRelation: "user_referrals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dashboards_creator_id_fkey"
+            columns: ["creator_id"]
+            referencedRelation: "user_referrals_profit"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       discord_messages_markets: {
         Row: {
           channel_id: string
@@ -525,22 +580,22 @@ export interface Database {
         }
         Relationships: [
           {
-            foreignKeyName: 'group_invites_group_id_fkey'
-            columns: ['group_id']
-            referencedRelation: 'groups'
-            referencedColumns: ['id']
+            foreignKeyName: "group_invites_group_id_fkey"
+            columns: ["group_id"]
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'group_invites_group_id_fkey'
-            columns: ['group_id']
-            referencedRelation: 'group_role'
-            referencedColumns: ['group_id']
+            foreignKeyName: "group_invites_group_id_fkey"
+            columns: ["group_id"]
+            referencedRelation: "group_role"
+            referencedColumns: ["group_id"]
           },
           {
-            foreignKeyName: 'group_invites_group_id_fkey'
-            columns: ['group_id']
-            referencedRelation: 'groups_rbac'
-            referencedColumns: ['id']
+            foreignKeyName: "group_invites_group_id_fkey"
+            columns: ["group_id"]
+            referencedRelation: "groups_rbac"
+            referencedColumns: ["id"]
           }
         ]
       }
@@ -751,46 +806,46 @@ export interface Database {
         }
         Relationships: [
           {
-            foreignKeyName: 'market_ads_market_id_fkey'
-            columns: ['market_id']
-            referencedRelation: 'contracts'
-            referencedColumns: ['id']
+            foreignKeyName: "market_ads_market_id_fkey"
+            columns: ["market_id"]
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'market_ads_market_id_fkey'
-            columns: ['market_id']
-            referencedRelation: 'contracts_rbac'
-            referencedColumns: ['id']
+            foreignKeyName: "market_ads_market_id_fkey"
+            columns: ["market_id"]
+            referencedRelation: "contracts_rbac"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'market_ads_market_id_fkey'
-            columns: ['market_id']
-            referencedRelation: 'contracts_view'
-            referencedColumns: ['id']
+            foreignKeyName: "market_ads_market_id_fkey"
+            columns: ["market_id"]
+            referencedRelation: "contracts_view"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'market_ads_market_id_fkey'
-            columns: ['market_id']
-            referencedRelation: 'listed_open_contracts'
-            referencedColumns: ['id']
+            foreignKeyName: "market_ads_market_id_fkey"
+            columns: ["market_id"]
+            referencedRelation: "listed_open_contracts"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'market_ads_market_id_fkey'
-            columns: ['market_id']
-            referencedRelation: 'public_contracts'
-            referencedColumns: ['id']
+            foreignKeyName: "market_ads_market_id_fkey"
+            columns: ["market_id"]
+            referencedRelation: "public_contracts"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'market_ads_market_id_fkey'
-            columns: ['market_id']
-            referencedRelation: 'public_open_contracts'
-            referencedColumns: ['id']
+            foreignKeyName: "market_ads_market_id_fkey"
+            columns: ["market_id"]
+            referencedRelation: "public_open_contracts"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'market_ads_market_id_fkey'
-            columns: ['market_id']
-            referencedRelation: 'trending_contracts'
-            referencedColumns: ['id']
+            foreignKeyName: "market_ads_market_id_fkey"
+            columns: ["market_id"]
+            referencedRelation: "trending_contracts"
+            referencedColumns: ["id"]
           }
         ]
       }
@@ -1043,52 +1098,52 @@ export interface Database {
         }
         Relationships: [
           {
-            foreignKeyName: 'reports_content_owner_id_fkey'
-            columns: ['content_owner_id']
-            referencedRelation: 'users'
-            referencedColumns: ['id']
+            foreignKeyName: "reports_content_owner_id_fkey"
+            columns: ["content_owner_id"]
+            referencedRelation: "users"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'reports_content_owner_id_fkey'
-            columns: ['content_owner_id']
-            referencedRelation: 'user_groups'
-            referencedColumns: ['id']
+            foreignKeyName: "reports_content_owner_id_fkey"
+            columns: ["content_owner_id"]
+            referencedRelation: "user_groups"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'reports_content_owner_id_fkey'
-            columns: ['content_owner_id']
-            referencedRelation: 'user_referrals'
-            referencedColumns: ['id']
+            foreignKeyName: "reports_content_owner_id_fkey"
+            columns: ["content_owner_id"]
+            referencedRelation: "user_referrals"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'reports_content_owner_id_fkey'
-            columns: ['content_owner_id']
-            referencedRelation: 'user_referrals_profit'
-            referencedColumns: ['id']
+            foreignKeyName: "reports_content_owner_id_fkey"
+            columns: ["content_owner_id"]
+            referencedRelation: "user_referrals_profit"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'reports_user_id_fkey'
-            columns: ['user_id']
-            referencedRelation: 'users'
-            referencedColumns: ['id']
+            foreignKeyName: "reports_user_id_fkey"
+            columns: ["user_id"]
+            referencedRelation: "users"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'reports_user_id_fkey'
-            columns: ['user_id']
-            referencedRelation: 'user_groups'
-            referencedColumns: ['id']
+            foreignKeyName: "reports_user_id_fkey"
+            columns: ["user_id"]
+            referencedRelation: "user_groups"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'reports_user_id_fkey'
-            columns: ['user_id']
-            referencedRelation: 'user_referrals'
-            referencedColumns: ['id']
+            foreignKeyName: "reports_user_id_fkey"
+            columns: ["user_id"]
+            referencedRelation: "user_referrals"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'reports_user_id_fkey'
-            columns: ['user_id']
-            referencedRelation: 'user_referrals_profit'
-            referencedColumns: ['id']
+            foreignKeyName: "reports_user_id_fkey"
+            columns: ["user_id"]
+            referencedRelation: "user_referrals_profit"
+            referencedColumns: ["id"]
           }
         ]
       }
@@ -1339,7 +1394,7 @@ export interface Database {
           reaction_id: string | null
           reason: string
           reasons: string[] | null
-          relevance_score: number
+          relevance_score: number | null
           seen_time: string | null
           user_id: string
         }
@@ -2171,7 +2226,6 @@ export interface Database {
       user_groups: {
         Row: {
           avatarurl: string | null
-          follower_count: number | null
           groups: string[] | null
           id: string | null
           name: string | null
@@ -2457,11 +2511,19 @@ export interface Database {
             }
             Returns: number
           }
+      get_daily_claimed_boosts: {
+        Args: {
+          user_id: string
+        }
+        Returns: {
+          total: number
+        }[]
+      }
       get_document_table_spec: {
         Args: {
           table_id: string
         }
-        Returns: Database['public']['CompositeTypes']['table_spec']
+        Returns: Database["public"]["CompositeTypes"]["table_spec"]
       }
       get_engaged_users: {
         Args: Record<PropertyKey, never>
@@ -2578,6 +2640,15 @@ export interface Database {
         Returns: {
           count: number
           rating: number
+        }[]
+      }
+      get_rating_info: {
+        Args: {
+          p_vendor_id: string
+        }
+        Returns: {
+          avg_rating: number
+          count: number
         }[]
       }
       get_rating2: {
@@ -2813,18 +2884,32 @@ export interface Database {
         Args: Record<PropertyKey, never>
         Returns: number
       }
-      get_top_market_ads: {
-        Args: {
-          uid: string
-        }
-        Returns: {
-          ad_id: string
-          market_id: string
-          ad_funds: number
-          ad_cost_per_view: number
-          market_data: Json
-        }[]
-      }
+      get_top_market_ads:
+        | {
+            Args: {
+              uid: string
+            }
+            Returns: {
+              ad_id: string
+              market_id: string
+              ad_funds: number
+              ad_cost_per_view: number
+              market_data: Json
+            }[]
+          }
+        | {
+            Args: {
+              uid: string
+              distance_threshold: number
+            }
+            Returns: {
+              ad_id: string
+              market_id: string
+              ad_funds: number
+              ad_cost_per_view: number
+              market_data: Json
+            }[]
+          }
       get_unique_bettors_since: {
         Args: {
           this_contract_id: string
@@ -2934,31 +3019,31 @@ export interface Database {
       }
       gtrgm_compress: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
       gtrgm_decompress: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
       gtrgm_in: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
       gtrgm_options: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: undefined
       }
       gtrgm_out: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
@@ -3008,7 +3093,7 @@ export interface Database {
       }
       ivfflathandler: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
@@ -3212,7 +3297,7 @@ export interface Database {
       }
       set_limit: {
         Args: {
-          '': number
+          "": number
         }
         Returns: number
       }
@@ -3222,7 +3307,7 @@ export interface Database {
       }
       show_trgm: {
         Args: {
-          '': string
+          "": string
         }
         Returns: unknown
       }
@@ -3259,7 +3344,7 @@ export interface Database {
       }
       to_jsonb: {
         Args: {
-          '': Json
+          "": Json
         }
         Returns: Json
       }
@@ -3340,37 +3425,37 @@ export interface Database {
       }
       vector_avg: {
         Args: {
-          '': number[]
+          "": number[]
         }
         Returns: string
       }
       vector_dims: {
         Args: {
-          '': string
+          "": string
         }
         Returns: number
       }
       vector_norm: {
         Args: {
-          '': string
+          "": string
         }
         Returns: number
       }
       vector_out: {
         Args: {
-          '': string
+          "": string
         }
         Returns: unknown
       }
       vector_send: {
         Args: {
-          '': string
+          "": string
         }
         Returns: string
       }
       vector_typmod_in: {
         Args: {
-          '': unknown[]
+          "": unknown[]
         }
         Returns: number
       }
