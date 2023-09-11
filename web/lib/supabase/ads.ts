@@ -56,13 +56,15 @@ export async function getUsersWhoSkipped(adId: string) {
   return filterDefined(data.map((r) => r['user_id']))
 }
 
-export const getBoosts = async (privateUser: PrivateUser) => {
+export const getBoosts = async (privateUser: PrivateUser, limit: number) => {
   const { data } = await db.rpc('get_top_market_ads' as any, {
     uid: privateUser.id,
   })
-  return data?.filter(
-    (d) => !isContractBlocked(privateUser, d.market_data as Contract)
-  ) as BoostsType
+  return (
+    (data?.filter(
+      (d) => !isContractBlocked(privateUser, d.market_data as Contract)
+    ) as BoostsType) ?? []
+  ).slice(0, limit)
 }
 
 export async function getAdCanPayFunds(adId: string) {
