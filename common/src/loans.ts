@@ -1,6 +1,6 @@
 import { Dictionary, sumBy, minBy, groupBy } from 'lodash'
 import { Bet } from './bet'
-import { getMinimalInvested, getProfitMetrics } from './calculate'
+import { getProfitMetrics, getSimpleCpmmInvested } from './calculate'
 import {
   Contract,
   CPMMContract,
@@ -67,13 +67,13 @@ const getCpmmContractLoanUpdate = (
   contract: CPMMContract | CPMMMultiContract,
   bets: Bet[]
 ) => {
-  const invested = getMinimalInvested(contract, bets)
+  const invested = getSimpleCpmmInvested(bets)
   const { payout: currentValue } = getProfitMetrics(contract, bets)
   const loanAmount = sumBy(bets, (bet) => bet.loanAmount ?? 0)
-  const oldestBet = minBy(bets, (bet) => bet.createdTime)
 
   const loanBasis = Math.min(invested, currentValue)
   const newLoan = calculateNewLoan(loanBasis, loanAmount)
+  const oldestBet = minBy(bets, (bet) => bet.createdTime)
   if (!isFinite(newLoan) || newLoan <= 0 || !oldestBet) return undefined
 
   const loanTotal = (oldestBet.loanAmount ?? 0) + newLoan

@@ -278,7 +278,7 @@ The liquidity in a market is the amount of capital available for traders to trad
 
 ### What are loans?
 
-Every day at midnight PT, get 2% of your total bet amount back as a loan. You can see how much your next loan is worth on the top right of your profile page.
+Every day at midnight PT, get 4% of your total bet amount back as a loan. If your bet has depreciated in value, you will get 4% of the lower value. You can see how much your last loan was by navigating to your Notifications and then Balance changes tab.
 
 - **Do I have to pay back a loan?**
   Yes, but don't worry! You will automatically pay back loans when the market resolves or you sell your bet. If this causes your balance to go negative then you will have to free up some mana before you can start trading again.
@@ -291,8 +291,8 @@ Every day at midnight PT, get 2% of your total bet amount back as a loan. You ca
   It's possible, but very rare.
 
 - **What is an example?**
-  If you bet M1000 on "Will I become a millionaire?" today, you will get M20 back tomorrow.
-  Previous loans count against your total bet amount. So on the next day, you would get back 2% of M(1000 - 20) = M19.6.
+  If you bet M1000 on "Will I become a millionaire?" today, you will get M40 back tomorrow.
+  Previous loans count against your total bet amount. So on the next day, you would get back 4% of M(1000 - 40) = M38.4.
 
 ## Misc
 
