@@ -82,7 +82,7 @@ export const getcontractparams = MaybeAuthedEndpoint<Ret>(async (req, auth) => {
           order: 'asc',
         })
       : [],
-    getRecentTopLevelCommentsAndReplies(db, contract.id, 50),
+    getRecentTopLevelCommentsAndReplies(db, contract.id, 25),
     isCpmm1 ? getCPMMContractUserContractMetrics(contract.id, 100, db) : {},
     contract.resolution ? getTopContractMetrics(contract.id, 10, db) : [],
     isCpmm1 ? getTotalContractMetrics(contract.id, db) : 0,

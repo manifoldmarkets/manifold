@@ -618,6 +618,8 @@ create index contract_comments_contract_id_created_time_idx on contract_comments
 
 create index contract_comments_data_likes_idx on contract_comments (((data -> 'likes')::numeric));
 
+create index contract_replies on contract_comments ((data ->> 'replyToCommentId'), contract_id, created_time desc);
+
 create index contract_comments_created_time_idx on contract_comments (created_time desc);
 
 alter table contract_comments
