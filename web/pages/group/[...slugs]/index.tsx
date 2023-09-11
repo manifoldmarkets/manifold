@@ -266,7 +266,7 @@ export function GroupPageContent(props: { groupParams?: GroupParams }) {
                 {user?.id != group.creatorId && (
                   <JoinOrLeaveGroupButton
                     group={group}
-                    isMember={!!userRole}
+                    isMember={!!realtimeRole}
                     user={user}
                   />
                 )}
