@@ -2,8 +2,11 @@ import { Page } from 'web/components/layout/page'
 import { Title } from 'web/components/widgets/title'
 import { LabCard } from '../about'
 import { NoSEO } from 'web/components/NoSEO'
+import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 
 export default function AdminPage() {
+  useRedirectIfSignedOut()
+
   return (
     <Page trackPageView={'admin page'}>
       <NoSEO />

@@ -257,11 +257,6 @@ export default function AboutPage() {
                 description="See how Manifold is doing"
                 href="/stats"
               />
-              <LabCard
-                title="🚨🛠️🚨 ADMIN 🔥💽🔥"
-                description="Is the site on FIRE??"
-                href="/admin"
-              />
             </LabSection>
 
             <Subtitle>🪦 Graveyard</Subtitle>
