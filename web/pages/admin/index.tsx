@@ -36,6 +36,11 @@ export default function AdminPage() {
           title="💤 postgres logs"
           href="https://app.supabase.com/project/pxidrgkatumlvfqaxcll/logs/postgres-logs"
         />
+        <LabCard
+          title="🗺️ user journeys"
+          description={'See what new users are up to'}
+          href="/admin/journeys"
+        />
         <LabCard title="🎨 design system" href="/styles" />
         <LabCard title="🌑 test new user" href="/admin/test-user" />
         <p className="mb-2 italic">anyone can see this page btw</p>
