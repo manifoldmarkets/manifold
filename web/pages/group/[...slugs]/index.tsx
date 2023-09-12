@@ -120,8 +120,8 @@ export default function GroupPage(props: {
   }
   return (
     <Page
-      trackPageView={'group slug page'}
-      trackPageProps={{ groupSlug: groupParams?.group?.slug }}
+      trackPageView={'category slug page'}
+      trackPageProps={{ slug: groupParams?.group?.slug }}
       key={`group-${slugs[0]}`}
       mainClassName="!mt-0"
     >
