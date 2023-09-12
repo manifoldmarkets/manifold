@@ -21,9 +21,11 @@ import { useNumContractComments } from 'web/hooks/use-comments-supabase'
 import { buildArray } from 'common/util/array'
 
 export function isClosed(contract: Contract) {
-  return (contract.closeTime &&
+  return (
+    !!contract.closeTime &&
     contract.closeTime < Date.now() &&
-    !contract.isResolved) as boolean
+    !contract.isResolved
+  )
 }
 
 export function ContractStatusLabel(props: {
