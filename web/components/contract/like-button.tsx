@@ -123,7 +123,7 @@ export const LikeButton = memo(function LikeButton(props: {
         <button
           disabled={disabled}
           className={clsx(
-            'text-ink-500 flex flex-row items-center px-2 transition-transform disabled:cursor-not-allowed',
+            'text-ink-500 flex flex-row items-center py-1.5 px-2 disabled:cursor-not-allowed',
             totalLikes === 0 && !user && 'disabled:opacity-50',
             !disabled && 'hover:text-ink-600',
             className

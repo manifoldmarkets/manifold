@@ -116,7 +116,7 @@ export function FeedCommentThread(props: {
       {seeReplies &&
         threadComments
           .slice(0, collapseToIndex)
-          .map((comment, i) => (
+          .map((comment) => (
             <FeedComment
               key={comment.id}
               contract={contract}
