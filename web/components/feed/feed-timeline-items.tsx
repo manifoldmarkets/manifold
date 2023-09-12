@@ -254,16 +254,15 @@ const FeedItemFrame = (props: {
     () =>
       DEBUG_FEED_CARDS
         ? null
-        : items.map(async (i) =>
+        : items.map(async (i) => {
             run(
               db
                 .from('user_feed')
                 .update({ seen_time: new Date().toISOString() })
                 .eq('id', i.id)
-            ).then(() =>
-              track('view feed item', { id: i.id, type: i.dataType })
             )
-          ),
+            track('view feed item', { id: i.id, type: i.dataType })
+          }),
     true,
     items.length > 0
   )

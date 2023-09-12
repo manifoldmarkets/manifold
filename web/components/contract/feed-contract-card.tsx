@@ -90,7 +90,7 @@ export function FeedContractCard(props: {
         slug: contract.slug,
         isPromoted: !!promotedData,
       } as ContractCardView),
-    true
+    false
   )
 
   const { probChange } = getMarketMovementInfo(

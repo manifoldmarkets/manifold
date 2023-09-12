@@ -293,7 +293,7 @@ export const ParentFeedComment = memo(function ParentFeedComment(props: {
         contractId: contract.id,
         commentId: comment.id,
       } as CommentView),
-    true
+    false
   )
   const commentKind = userUsername === 'ManifoldDream' ? 'ub-dream-comment' : ''
   return (
