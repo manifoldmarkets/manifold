@@ -182,7 +182,7 @@ function UserProfile(props: {
   return (
     <Page
       key={user.id}
-      trackPageView={'user profile'}
+      trackPageView={'user page'}
       trackPageProps={{ username: user.username }}
     >
       <SEO
