@@ -331,6 +331,7 @@ create table if not exists
     answer_ids text[] null,
     relevance_score numeric default 0,
     reasons text[] null,
+    seen_duration bigint null, -- ms
     unique (user_id, idempotency_key)
   );
 

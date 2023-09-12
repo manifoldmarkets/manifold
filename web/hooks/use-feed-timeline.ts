@@ -63,6 +63,8 @@ export type FeedTimelineItem = {
   betData: PositionChangeData | null
   answerIds: string[] | null
   creatorId: string | null
+  seenTime: string | null
+  seenDuration: number | null
   // These are fetched/generated at runtime
   avatarUrl: string | null
   creatorDetails?: CreatorDetails

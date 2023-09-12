@@ -1,34 +1,51 @@
 import { useEffect, useRef } from 'react'
+import { useEvent } from 'web/hooks/use-event'
 
-export function useIsVisible(cb: () => void, once = false, isLoaded = true) {
+export function useIsVisible(
+  onSeenStart: () => void,
+  triggerOnce = false,
+  isLoaded = true,
+  onSeenEnd?: () => void
+) {
   const ref = useRef<HTMLDivElement | null>(null)
   const seenOnce = useRef(false)
+  const eventOnVisible = useEvent(onSeenStart)
+  const eventOnInvisible = useEvent(onSeenEnd)
 
   useEffect(() => {
     const element = ref.current
     if (!element || !isLoaded) return
 
+    const viewportHeight = window.innerHeight
+    const elementHeight = element.getBoundingClientRect().height
+    const threshold =
+      elementHeight >= viewportHeight
+        ? viewportHeight / (elementHeight * 2)
+        : 0.9
+
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            cb()
-            if (once) {
-              observer.unobserve(element)
-              seenOnce.current = true
-            }
+            eventOnVisible()
+            seenOnce.current = true
+            if (triggerOnce && !onSeenEnd) observer.unobserve(element)
+          } else if (seenOnce.current) {
+            if (onSeenEnd) eventOnInvisible()
+            if (triggerOnce) observer.unobserve(element)
           }
         })
       },
-      { threshold: 1 }
+      { threshold }
     )
 
-    !seenOnce.current && observer.observe(element)
+    if (!triggerOnce || (triggerOnce && !seenOnce.current))
+      observer.observe(element)
 
     return () => {
       observer.unobserve(element)
     }
-  }, [ref, once, cb, isLoaded])
+  }, [ref, triggerOnce, eventOnVisible, eventOnInvisible, isLoaded])
 
   return { ref }
 }
