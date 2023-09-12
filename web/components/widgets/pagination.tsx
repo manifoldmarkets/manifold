@@ -181,10 +181,7 @@ export function PageNumbers(props: {
 
 type pageNumbers = number | string
 
-export function getPageNumbers(
-  maxPage: number,
-  page: number
-): Array<pageNumbers> {
+function getPageNumbers(maxPage: number, page: number): Array<pageNumbers> {
   if (maxPage <= 7) {
     return range(0, maxPage + 1)
   }

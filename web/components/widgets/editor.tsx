@@ -61,7 +61,7 @@ const DisplayLink = Link.extend({
   },
 })
 
-export const editorExtensions = (simple = false): Extensions =>
+const editorExtensions = (simple = false): Extensions =>
   nodeViewMiddleware([
     StarterKit.configure({
       heading: simple ? false : { levels: [1, 2, 3] },
@@ -80,7 +80,7 @@ export const editorExtensions = (simple = false): Extensions =>
     Upload,
   ])
 
-export const proseClass = (size: 'sm' | 'md' | 'lg') =>
+const proseClass = (size: 'sm' | 'md' | 'lg') =>
   clsx(
     'prose dark:prose-invert max-w-none leading-relaxed',
     'prose-a:text-primary-700 prose-a:no-underline',

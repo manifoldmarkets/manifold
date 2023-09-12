@@ -186,7 +186,7 @@ function BetsTable(props: {
 
 export const points = [1, 3, 5, ...range(10, 100, 10), 95, 97, 99]
 
-export const getCalibrationPoints = (betsData: [Contract, LimitBet[]][]) => {
+const getCalibrationPoints = (betsData: [Contract, LimitBet[]][]) => {
   const yesProbBuckets: Dictionary<number> = {}
   const yesCountBuckets: Dictionary<number> = {}
   const yesBetsBuckets: Record<number, [Contract, Bet][]> = {}
@@ -259,7 +259,7 @@ const getXY = (probBuckets: Dictionary<number>) => {
   return xy
 }
 
-export const calculateScore = (
+const calculateScore = (
   yesBuckets: Dictionary<number>,
   noBuckets: Dictionary<number>
 ) => {
@@ -286,7 +286,7 @@ export const calculateScore = (
   return (-100 * Math.round(raw * 1e4)) / 1e4
 }
 
-export const getGrade = (score: number) => {
+const getGrade = (score: number) => {
   if (score > -0.05) return 'S'
   if (score >= -0.15) return 'A+'
   if (score >= -0.5) return 'A'

@@ -43,9 +43,9 @@ import { useUserById } from 'web/hooks/use-user-supabase'
 import { EditableGroupTitle } from 'web/components/groups/editable-group-name'
 
 const MAX_LEADERBOARD_SIZE = 50
-export const MEMBER_INDEX = 0
-export const MEMBER_INVITE_INDEX = 1
-export type MemberIndex = 0 | 1
+const MEMBER_INDEX = 0
+const MEMBER_INVITE_INDEX = 1
+type MemberIndex = 0 | 1
 
 type GroupParams = {
   group: Group | null
@@ -133,7 +133,7 @@ export default function GroupPage(props: {
   )
 }
 
-export function NonPrivateGroupPage(props: { groupParams: GroupParams }) {
+function NonPrivateGroupPage(props: { groupParams: GroupParams }) {
   const { groupParams } = props
   const { group } = groupParams
   if (group === null) {
@@ -152,7 +152,7 @@ export function NonPrivateGroupPage(props: { groupParams: GroupParams }) {
   )
 }
 
-export function GroupPageContent(props: { groupParams?: GroupParams }) {
+function GroupPageContent(props: { groupParams?: GroupParams }) {
   const { groupParams } = props
   const router = useRouter()
   const { slugs } = router.query as { slugs: string[] }
@@ -367,7 +367,7 @@ export function GroupPageContent(props: { groupParams?: GroupParams }) {
   )
 }
 
-export function TopGroupNavBar(props: {
+function TopGroupNavBar(props: {
   group: Group
   groupUrl: string
   privateUser: PrivateUser | undefined | null

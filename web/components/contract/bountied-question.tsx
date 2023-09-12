@@ -18,7 +18,7 @@ const loadAwardJson = () => import('../../public/lottie/award.json')
 let lottieLib: ReturnType<typeof loadLottie> | undefined
 let animationJson: ReturnType<typeof loadAwardJson> | undefined
 
-export const loadImports = async () => {
+const loadImports = async () => {
   lottieLib ??= loadLottie()
   animationJson ??= loadAwardJson()
   return {

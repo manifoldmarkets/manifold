@@ -20,7 +20,7 @@ export type AddContractToGroupPermissionType =
   | 'any' // user can add a new or existing contract
   | 'none' // user cannot add any contract
 
-export function getAddContractToGroupPermission(
+function getAddContractToGroupPermission(
   privacyStatus: PrivacyStatusType,
   userRole: groupRoleType | null | undefined
 ): AddContractToGroupPermissionType {

@@ -329,7 +329,7 @@ const StonkOverview = (props: {
   )
 }
 
-export const useTimePicker = (contract: Contract) => {
+const useTimePicker = (contract: Contract) => {
   const viewScale = useViewScale()
   const [currentTimePeriod, setCurrentTimePeriod] = useState<Period>('allTime')
 

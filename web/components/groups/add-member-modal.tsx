@@ -37,7 +37,7 @@ export type InviteMaxUsesKey =
   | '100 uses'
   | 'Unlimited'
 
-export const durationOptions: Record<InviteDurationKey, string | undefined> = {
+const durationOptions: Record<InviteDurationKey, string | undefined> = {
   '1 hour': '1 hour',
   '1 week': '1 week',
   '1 month': '1 month',
@@ -45,7 +45,7 @@ export const durationOptions: Record<InviteDurationKey, string | undefined> = {
   Forever: undefined,
 }
 
-export const maxUsesOptions: Record<InviteMaxUsesKey, number | undefined> = {
+const maxUsesOptions: Record<InviteMaxUsesKey, number | undefined> = {
   '1 use': 1,
   '5 uses': 5,
   '10 uses': 10,
