@@ -272,6 +272,18 @@ function GroupPageContent(props: { groupParams?: GroupParams }) {
             </Col>
           </Row>
         </Col>
+        {editingName && (
+          <div className={'ml-1 sm:hidden'}>
+            <EditableGroupTitle
+              group={group}
+              isEditing={editingName}
+              onFinishEditing={(changed) => {
+                setEditingName(false)
+                if (changed) router.reload()
+              }}
+            />
+          </div>
+        )}
         <div ref={bannerRef}>
           <BannerImage
             group={group}
