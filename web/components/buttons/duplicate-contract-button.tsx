@@ -5,8 +5,8 @@ import { getMappedValue } from 'common/pseudo-numeric'
 import { trackCallback } from 'web/lib/service/analytics'
 import { buttonClass } from './button'
 import Link from 'next/link'
-import { getLinkTarget } from 'web/components/widgets/site-link'
 import { NewQuestionParams } from 'web/components/new-contract/new-contract-panel'
+import { getNativePlatform } from 'web/lib/native/is-native'
 
 export function DuplicateContractButton(props: { contract: Contract }) {
   const { contract } = props
@@ -60,4 +60,12 @@ function duplicateContractHref(contract: Contract) {
   }
 
   return `/create?params=` + encodeURIComponent(JSON.stringify(params))
+}
+
+const getLinkTarget = (href: string, newTab?: boolean) => {
+  if (href.startsWith('http')) return '_blank'
+  const { isNative, platform } = getNativePlatform()
+  // Native android will open 'a new tab' in the system browser rather than in the app
+  if (isNative && platform === 'android') return '_self'
+  return newTab ? '_blank' : '_self'
 }

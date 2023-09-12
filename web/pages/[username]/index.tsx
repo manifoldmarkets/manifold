@@ -465,7 +465,7 @@ function ProfilePublicStats(props: {
 
       <Link
         href={'/' + user.username + '/calibration'}
-        className={clsx(linkClass, 'cursor-pointer text-sm')}
+        className={clsx(linkClass, 'text-sm')}
       >
         <ChartBarIcon className="mr-1 mb-1 inline h-4 w-4" />
         Calibration
