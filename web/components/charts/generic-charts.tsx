@@ -34,6 +34,7 @@ import {
   TooltipParams,
   computeColorStops,
   formatPct,
+  useViewScale,
 } from './helpers'
 import { roundToNearestFive } from 'web/lib/util/roundToNearestFive'
 import { nthColor } from './contract/choice'
@@ -492,16 +493,4 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(
       viewScaleProps={viewScaleProps}
     />
   )
-}
-
-export const useViewScale = () => {
-  const [viewXScale, setViewXScale] = useState<ScaleTime<number, number>>()
-  const [viewYScale, setViewYScale] =
-    useState<ScaleContinuousNumeric<number, number>>()
-  return {
-    viewXScale,
-    setViewXScale,
-    viewYScale,
-    setViewYScale,
-  }
 }

@@ -1,7 +1,7 @@
 import { BinaryContract } from 'common/contract'
 import { useEffect } from 'react'
 import { getHistoryData } from 'web/pages/embed/[username]/[contractSlug]'
-import { useViewScale } from '../charts/generic-charts'
+import { useViewScale } from '../charts/helpers'
 import { BinaryChart } from '../contract/contract-overview'
 import { DAY_MS } from 'common/util/time'
 import PlaceholderGraph from 'web/lib/icons/placeholder-graph.svg'

@@ -14,7 +14,6 @@ import { NumericContractChart } from '../charts/contract/numeric'
 import { BinaryContractChart } from '../charts/contract/binary'
 import { ChoiceContractChart, MultiPoint } from '../charts/contract/choice'
 import { PseudoNumericContractChart } from '../charts/contract/pseudo-numeric'
-import { useViewScale } from 'web/components/charts/generic-charts'
 import {
   NumericResolutionOrExpectation,
   PseudoNumericResolutionOrExpectation,
@@ -28,7 +27,7 @@ import { Period } from 'web/lib/firebase/users'
 import { periodDurations } from 'web/lib/util/time'
 import { SignedInBinaryMobileBetting } from '../bet/bet-button'
 import { StonkContractChart } from '../charts/contract/stonk'
-import { getDateRange } from '../charts/helpers'
+import { getDateRange, useViewScale } from '../charts/helpers'
 import { TimeRangePicker } from '../charts/time-range-picker'
 import { Row } from '../layout/row'
 import { AnswersPanel } from '../answers/answers-panel'
