@@ -167,6 +167,7 @@ export function FeedContractCard(props: {
           <Link
             className="hover:text-primary-700 grow items-start transition-colors sm:text-lg"
             href={path}
+            onClick={trackClick}
           >
             <VisibilityIcon contract={contract} /> {contract.question}
           </Link>

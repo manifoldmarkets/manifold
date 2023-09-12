@@ -65,7 +65,7 @@ export function CommentsButton(props: {
         onClick={(e) => {
           e.preventDefault()
           setOpen(true)
-          track('view comments', { contractId: contract.id })
+          track('click feed card comments button', { contractId: contract.id })
         }}
       >
         <ChatIcon className="h-6 w-6" />
