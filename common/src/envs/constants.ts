@@ -346,6 +346,7 @@ export const RESERVED_PATHS = [
   'mana-auction',
   'markets',
   'mtg',
+  'news',
   'notifications',
   'privacy',
   'profile',
