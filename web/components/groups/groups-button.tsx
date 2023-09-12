@@ -121,8 +121,7 @@ export function JoinOrLeaveGroupButton(props: {
     return (
       <Button
         size="xs"
-        color="none"
-        className="w-16 bg-gray-400 text-white hover:bg-gray-500 dark:bg-gray-700 dark:hover:bg-gray-600"
+        color="gray-outline"
         onClick={(e) => {
           e.preventDefault()
           e.stopPropagation()
@@ -138,7 +137,6 @@ export function JoinOrLeaveGroupButton(props: {
     <Button
       size="xs"
       color="indigo"
-      className="w-16"
       onClick={(e) => {
         e.preventDefault()
         e.stopPropagation()
