@@ -5,7 +5,7 @@ import { Button } from '../buttons/button'
 import { SelectMarkets } from '../contract-select-modal'
 import { Col } from '../layout/col'
 import { MODAL_CLASS, Modal, SCROLLABLE_MODAL_CLASS } from '../layout/modal'
-import { DashboardQuestionItem } from './dashboard-content'
+import { DashboardQuestionItem } from 'common/dashboard'
 
 export function DashboardAddContractButton(props: {
   addQuestions: (questions: DashboardQuestionItem[]) => void

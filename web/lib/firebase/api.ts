@@ -14,6 +14,7 @@ import { Post } from 'common/post'
 import { MaybeAuthedContractParams } from 'common/contract'
 import { Portfolio, PortfolioItem } from 'common/portfolio'
 import { ReportProps } from 'common/report'
+import { DashboardItem } from 'common/dashboard'
 
 export async function call(url: string, method: 'POST' | 'GET', params?: any) {
   const user = auth.currentUser
@@ -474,6 +475,7 @@ export function report(params: ReportProps) {
 
 export function createDashboard(params: {
   title: string
+  items: DashboardItem[]
   description?: JSONContent
 }) {
   return call(getApiUrl('createdashboard'), 'POST', params)

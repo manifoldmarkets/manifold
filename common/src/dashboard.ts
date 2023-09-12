@@ -8,4 +8,17 @@ export type Dashboard = {
   views: number
   description: JSONContent
   title: string
+  items: DashboardItem[]
+}
+
+export type DashboardItem = DashboardQuestionItem | DashboardLinkItem
+
+export type DashboardQuestionItem = {
+  type: 'question'
+  slug: string
+}
+
+export type DashboardLinkItem = {
+  type: 'link'
+  url: string
 }

@@ -1,19 +1,19 @@
 import { track } from '@amplitude/analytics-browser'
-import { ExternalLinkIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { MAX_DESCRIPTION_LENGTH } from 'common/contract'
+import {
+  DashboardItem,
+  DashboardLinkItem,
+  DashboardQuestionItem,
+} from 'common/dashboard'
 import { removeUndefinedProps } from 'common/util/object'
 import router from 'next/router'
 import { useEffect, useState } from 'react'
 import { SEO } from 'web/components/SEO'
 import { Button } from 'web/components/buttons/button'
-import {
-  DashboardContent,
-  DashboardItem,
-  DashboardLinkItem,
-  DashboardQuestionItem,
-} from 'web/components/dashboard/dashboard-content'
 import { DashboardAddContractButton } from 'web/components/dashboard/dashboard-add-contract-button'
+import { DashboardAddLinkButton } from 'web/components/dashboard/dashboard-add-link-button'
+import { DashboardContent } from 'web/components/dashboard/dashboard-content'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
@@ -23,7 +23,6 @@ import { ExpandingInput } from 'web/components/widgets/expanding-input'
 import { Title } from 'web/components/widgets/title'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { createDashboard } from 'web/lib/firebase/api'
-import { DashboardAddLinkButton } from 'web/components/dashboard/dashboard-add-link-button'
 
 export default function CreateDashboard() {
   const [title, setTitle] = usePersistentLocalState(
@@ -67,6 +66,7 @@ export default function CreateDashboard() {
       const createProps = removeUndefinedProps({
         title,
         description: editor?.getJSON(),
+        items,
       })
       const newDashboard = await createDashboard(createProps)
 

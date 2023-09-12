@@ -1,20 +1,17 @@
-import clsx from 'clsx'
-import { useEffect, useState } from 'react'
-import { BsQuestionLg } from 'react-icons/bs'
-import { Button } from '../buttons/button'
-import { SelectMarkets } from '../contract-select-modal'
-import { Col } from '../layout/col'
-import { MODAL_CLASS, Modal, SCROLLABLE_MODAL_CLASS } from '../layout/modal'
-import { DashboardLinkItem, DashboardQuestionItem } from './dashboard-content'
 import { ExternalLinkIcon } from '@heroicons/react/solid'
-import { ExpandingInput } from '../widgets/expanding-input'
-import { News } from 'common/news'
+import clsx from 'clsx'
+import { useState } from 'react'
 import { useLinkPreview } from 'web/hooks/use-link-previews'
+import { Button } from '../buttons/button'
+import { Col } from '../layout/col'
+import { MODAL_CLASS, Modal } from '../layout/modal'
+import { Row } from '../layout/row'
 import {
   DashboardNewsItem,
   DashboardNewsItemPlaceholder,
 } from '../news/dashboard-news-item'
-import { Row } from '../layout/row'
+import { ExpandingInput } from '../widgets/expanding-input'
+import { DashboardLinkItem } from 'common/dashboard'
 
 export function DashboardAddLinkButton(props: {
   addLink: (link: DashboardLinkItem) => void
@@ -29,9 +26,6 @@ export function DashboardAddLinkButton(props: {
   const emptyImage = !!preview && !!preview.image && preview.image.length === 0
   const emptyDescription =
     !!preview && !!preview.description && preview.description.length === 0
-
-  // cosnt
-  console.log(preview)
 
   return (
     <>
@@ -58,7 +52,10 @@ export function DashboardAddLinkButton(props: {
           {!preview || preview.error ? (
             <DashboardNewsItemPlaceholder />
           ) : (
-            <DashboardNewsItem {...preview} className="mb-4" />
+            <div className="relative">
+              <div className="absolute top-0 bottom-0 right-0 left-0 z-40 rounded-lg bg-white opacity-10" />
+              <DashboardNewsItem {...preview} />
+            </div>
           )}
           <Row className="w-full justify-end gap-4">
             <Button

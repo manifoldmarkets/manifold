@@ -6,18 +6,7 @@ import { Col } from '../layout/col'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { ReactNode } from 'react'
 import { XCircleIcon } from '@heroicons/react/solid'
-
-export type DashboardItem = DashboardQuestionItem | DashboardLinkItem
-
-export type DashboardQuestionItem = {
-  type: 'question'
-  slug: string
-}
-
-export type DashboardLinkItem = {
-  type: 'link'
-  url: string
-}
+import { DashboardItem } from 'common/dashboard'
 
 export const DashboardContent = (props: {
   items: DashboardItem[]

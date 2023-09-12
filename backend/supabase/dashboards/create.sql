@@ -9,3 +9,6 @@ create table if not exists
     description json,
     title text not null
   );
+
+ALTER TABLE dashboards
+ADD COLUMN items jsonb DEFAULT '[]'::jsonb;
