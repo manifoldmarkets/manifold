@@ -289,19 +289,6 @@ function GroupPageContent(props: { groupParams?: GroupParams }) {
         setWritingNewAbout={setWritingNewAbout}
       />
       <div className={'relative p-1 pt-0'}>
-        <Row
-          className={
-            'absolute right-2 top-1 w-full items-end justify-end sm:hidden'
-          }
-        >
-          {user?.id != group.creatorId && (
-            <JoinOrLeaveGroupButton
-              group={group}
-              isMember={!!realtimeRole}
-              user={user}
-            />
-          )}
-        </Row>
         <ControlledTabs
           activeIndex={activeIndex}
           onClick={(title, index) => {
@@ -356,6 +343,19 @@ function GroupPageContent(props: { groupParams?: GroupParams }) {
             },
           ]}
         />
+        <Row
+          className={
+            'absolute right-2 top-1 w-full items-end justify-end sm:hidden'
+          }
+        >
+          {user?.id != group.creatorId && (
+            <JoinOrLeaveGroupButton
+              group={group}
+              isMember={!!realtimeRole}
+              user={user}
+            />
+          )}
+        </Row>
       </div>
     </>
   )
