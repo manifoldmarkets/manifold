@@ -197,7 +197,7 @@ const FeedContractAndRelatedItems = (props: {
   const [hidden, setHidden] = useState(false)
 
   return (
-    <FeedItemFrame item={item} className={'relative min-w-0'}>
+    <FeedItemFrame item={item}>
       {!hidden ? (
         <FeedContractCard
           contract={contract}

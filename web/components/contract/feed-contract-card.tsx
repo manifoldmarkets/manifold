@@ -117,7 +117,7 @@ export function FeedContractCard(props: {
         'cursor-pointer ',
         'border-canvas-0 hover:border-primary-300 focus:border-primary-300 border transition-colors',
         'flex w-full flex-col gap-0.5 px-4',
-        small ? 'bg-canvas-50' : 'bg-canvas-0 drop-shadow-md sm:px-6'
+        small ? 'bg-canvas-50' : 'bg-canvas-0 shadow-md sm:px-6'
       )}
       onClick={(e) => {
         trackClick()
