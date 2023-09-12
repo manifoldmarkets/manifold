@@ -219,11 +219,6 @@ export function GroupPageContent(props: { groupParams?: GroupParams }) {
   const groupUrl = `https://${ENV_CONFIG.domain}${groupPath(group.slug)}`
   return (
     <>
-      {!realtimeRole && isManifoldAdmin && (
-        <div className="pointer-events-none fixed top-14 z-50 rounded bg-red-200/80 px-4 py-2 text-lg font-bold text-red-500 sm:top-0 lg:left-0 lg:ml-[47rem]">
-          ADMIN
-        </div>
-      )}
       <AddContractButton
         group={group}
         user={user}
@@ -251,6 +246,11 @@ export function GroupPageContent(props: { groupParams?: GroupParams }) {
             key={group.id}
           />
         </div>
+        {!realtimeRole && isManifoldAdmin && (
+          <div className="pointer-events-none absolute top-0 right-0 z-50 rounded bg-red-200/80 px-4 py-2 text-lg font-bold text-red-500">
+            ADMIN
+          </div>
+        )}
         <Col className="bg-canvas-0 absolute bottom-0 w-full bg-opacity-90 px-4">
           <Row className="mt-4 mb-2 w-full justify-between gap-1">
             <EditableGroupTitle
