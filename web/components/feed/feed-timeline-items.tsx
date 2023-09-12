@@ -20,7 +20,8 @@ import { track } from 'web/lib/service/analytics'
 import { useState } from 'react'
 import { Row } from 'web/components/layout/row'
 import { CategoryTag } from 'web/pages/groups'
-import { orderBy, uniqBy } from 'lodash'
+import { orderBy, sum, uniqBy } from 'lodash'
+import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 
 const MAX_PARENT_COMMENTS_PER_FEED_ITEM = 1
 export const MIN_BET_AMOUNT = 20
@@ -250,27 +251,53 @@ const FeedItemFrame = (props: {
 }) => {
   const { moreItems, item, children, className } = props
   const items = filterDefined([item, ...(moreItems ?? [])])
-  const maybeVisibleHook = useIsVisible(
-    () =>
-      DEBUG_FEED_CARDS
-        ? null
-        : items.map(async (i) => {
-            run(
-              db
-                .from('user_feed')
-                .update({ seen_time: new Date().toISOString() })
-                .eq('id', i.id)
-            )
-            track('view feed item', { id: i.id, type: i.dataType })
-          }),
-    true,
-    items.length > 0
+  const [seenStart, setSeenStart] = useState(0)
+  const [seenDuration, setSeenDuration] = usePersistentInMemoryState(
+    sum(items.map((i) => i.seenDuration ?? 0)),
+    `feed-items-${items
+      .map((i) => i.id)
+      .sort()
+      .join('-')}-seen-duration`
+  )
+
+  const { ref } = useIsVisible(
+    () => {
+      if (DEBUG_FEED_CARDS) return
+      setSeenStart(Date.now())
+      if (seenDuration === 0) {
+        items.forEach(async (i) => {
+          run(
+            db
+              .from('user_feed')
+              .update({ seen_time: new Date().toISOString() })
+              .eq('id', i.id)
+          )
+          track('view feed item', { id: i.id, type: i.dataType })
+        })
+      }
+    },
+    false,
+    items.length > 0,
+    () => {
+      if (DEBUG_FEED_CARDS) return
+      const newSeenDuration =
+        (Date.now() - seenStart) / items.length + seenDuration
+      items.forEach(async (i) => {
+        run(
+          db
+            .from('user_feed')
+            .update({ seen_duration: newSeenDuration })
+            .eq('id', i.id)
+        )
+      })
+      setSeenDuration(newSeenDuration)
+    }
   )
 
   return (
-    <div className={className}>
+    <div className={clsx('relative', className)}>
+      <div className={'absolute inset-0'} ref={ref} />
       {children}
-      <div className={'h-0'} ref={maybeVisibleHook?.ref} />
     </div>
   )
 }
