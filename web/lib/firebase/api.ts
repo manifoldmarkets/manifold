@@ -480,3 +480,7 @@ export function createDashboard(params: {
 }) {
   return call(getApiUrl('createdashboard'), 'POST', params)
 }
+
+export function getYourDashboards() {
+  return call(getApiUrl('getyourdashboards'), 'POST')
+}

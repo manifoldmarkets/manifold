@@ -82,6 +82,7 @@ import { getsimilargroupstocontract } from 'api/get-similar-groups-to-contract'
 import { followUser } from './follow-user'
 import { report } from './report'
 import { createdashboard } from './create-dashboard'
+import { getyourdashboards } from './get-your-dashboards'
 
 const allowCors: RequestHandler = cors({
   origin: [CORS_ORIGIN_MANIFOLD, CORS_ORIGIN_VERCEL, CORS_ORIGIN_LOCALHOST],
@@ -207,6 +208,7 @@ app.post('/follow-user', ...apiRoute(followUser))
 app.post('/report', ...apiRoute(report))
 
 app.post('/createdashboard', ...apiRoute(createdashboard))
+app.post('/getyourdashboards', ...apiRoute(getyourdashboards))
 
 // Catch 404 errors - this should be the last route
 app.use(allowCors, (req, res) => {

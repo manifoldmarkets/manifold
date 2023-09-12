@@ -5,8 +5,10 @@ create table if not exists
     creator_id text not null,
     foreign key (creator_id) references users (id),
     created_time timestamptz not null default now(),
-    views numeric not null default 0,
     description json,
     title text not null,
     items jsonb default '[]'::jsonb
   );
+
+ALTER TABLE dashboards
+ADD COLUMN visibility TEXT DEFAULT 'public'
