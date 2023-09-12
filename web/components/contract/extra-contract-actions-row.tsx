@@ -33,7 +33,6 @@ export function ExtraContractActionsRow(props: {
           contentCreatorId={contract.creatorId}
           totalLikes={contract.likedByUserCount ?? 0}
           contentText={contract.question}
-          color={'gray'}
           className={clsx(
             isBlocked(privateUser, contract.creatorId) && 'pointer-events-none'
           )}

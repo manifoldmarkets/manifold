@@ -510,7 +510,6 @@ function CommentActions(props: {
           className={
             isBlocked(privateUser, comment.userId) ? 'pointer-events-none' : ''
           }
-          size={'md'}
           trackingLocation={trackingLocation}
         />
       )}
