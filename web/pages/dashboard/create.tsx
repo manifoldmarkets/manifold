@@ -1,13 +1,22 @@
 import { track } from '@amplitude/analytics-browser'
 import clsx from 'clsx'
 import { MAX_DESCRIPTION_LENGTH } from 'common/contract'
+import {
+  DashboardItem,
+  DashboardLinkItem,
+  DashboardQuestionItem,
+} from 'common/dashboard'
 import { removeUndefinedProps } from 'common/util/object'
 import router from 'next/router'
 import { useEffect, useState } from 'react'
 import { SEO } from 'web/components/SEO'
 import { Button } from 'web/components/buttons/button'
+import { DashboardAddContractButton } from 'web/components/dashboard/dashboard-add-contract-button'
+import { DashboardAddLinkButton } from 'web/components/dashboard/dashboard-add-link-button'
+import { DashboardContent } from 'web/components/dashboard/dashboard-content'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
+import { Row } from 'web/components/layout/row'
 import { Spacer } from 'web/components/layout/spacer'
 import { TextEditor, useTextEditor } from 'web/components/widgets/editor'
 import { ExpandingInput } from 'web/components/widgets/expanding-input'
@@ -33,6 +42,11 @@ export default function CreateDashboard() {
 
   const [errorText, setErrorText] = useState<string>('')
 
+  const [items, setItems] = usePersistentLocalState<DashboardItem[]>(
+    [],
+    'create dashboard items'
+  )
+
   const isValid = title.length > 0
 
   useEffect(() => {
@@ -42,6 +56,7 @@ export default function CreateDashboard() {
   const resetProperties = () => {
     editor?.commands.clearContent(true)
     setTitle('')
+    setItems([])
   }
 
   async function submit() {
@@ -51,6 +66,7 @@ export default function CreateDashboard() {
       const createProps = removeUndefinedProps({
         title,
         description: editor?.getJSON(),
+        items,
       })
       const newDashboard = await createDashboard(createProps)
 
@@ -83,7 +99,7 @@ export default function CreateDashboard() {
       />
       <Col
         className={clsx(
-          ' text-ink-1000 bg-canvas-0 mx-auto w-full max-w-2xl py-2 px-6 transition-colors'
+          ' text-ink-1000 mx-auto w-full max-w-2xl py-2 transition-colors'
         )}
       >
         <Title>Create a Dashboard</Title>
@@ -98,7 +114,6 @@ export default function CreateDashboard() {
             maxLength={150}
             value={title}
             onChange={(e) => setTitle(e.target.value || '')}
-            className="bg-canvas-50"
           />
         </Col>
         <Spacer h={6} />
@@ -106,11 +121,43 @@ export default function CreateDashboard() {
           <label className="gap-2 px-1 py-2">
             <span className="mb-1">Description</span>
           </label>
-          <TextEditor editor={editor} className="bg-canvas-50" />
+          <TextEditor editor={editor} />
         </Col>
         <Spacer h={6} />
+        <div className="mb-2">Content</div>
+        {items.length > 0 && (
+          <DashboardContent
+            items={items}
+            onRemove={(slugOrUrl: string) => {
+              setItems((items) => {
+                return items.filter((item) => {
+                  if (item.type === 'question') {
+                    return item.slug !== slugOrUrl
+                  } else if (item.type === 'link') {
+                    return item.url !== slugOrUrl
+                  }
+                  return true
+                })
+              })
+            }}
+            isEditing
+          />
+        )}
+        <Row className="border-ink-200 text-ink-400 items-center gap-4 rounded-lg border-2 border-dashed p-2">
+          <DashboardAddContractButton
+            addQuestions={(questions: DashboardQuestionItem[]) => {
+              setItems((items) => [...items, ...questions])
+            }}
+          />
+          OR
+          <DashboardAddLinkButton
+            addLink={(link: DashboardLinkItem) => {
+              setItems((items) => [...items, link])
+            }}
+          />
+        </Row>
+        <Spacer h={6} />
         <span className={'text-error'}>{errorText}</span>
-
         <Button
           className="w-full"
           type="submit"

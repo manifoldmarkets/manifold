@@ -7,5 +7,6 @@ create table if not exists
     created_time timestamptz not null default now(),
     views numeric not null default 0,
     description json,
-    title text not null
+    title text not null,
+    items jsonb default '[]'::jsonb
   );

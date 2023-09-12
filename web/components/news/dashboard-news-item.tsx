@@ -67,3 +67,25 @@ export const DashboardNewsItem = (props: {
     </Link>
   )
 }
+
+export const DashboardNewsItemPlaceholder = () => {
+  return (
+    <div
+      className={clsx(
+        'border-ink-500 bg-canvas-0 hover:border-primary-300 focus:border-primary-300 relative flex w-full w-full animate-pulse flex-col overflow-hidden rounded-xl border transition-colors sm:flex-row'
+      )}
+    >
+      <div className=" bg-ink-500 m-0 h-[120px] sm:w-1/3" />
+      <Col className=" border-canvas-0 w-full bg-opacity-80 py-2 px-4 sm:pr-6">
+        <div className="bg-ink-600 mb-2 h-3 w-12" />
+
+        <div className="bg-ink-600 mb-2 h-6" />
+
+        <Col className="gap-2">
+          <div className="bg-ink-600 h-3" />
+          <div className="bg-ink-600 h-3" />
+        </Col>
+      </Col>
+    </div>
+  )
+}

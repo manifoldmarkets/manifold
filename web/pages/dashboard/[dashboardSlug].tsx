@@ -1,5 +1,7 @@
-import { Dashboard } from 'common/dashboard'
+import { Dashboard, DashboardItem } from 'common/dashboard'
 import { getDashboardFromSlug } from 'common/supabase/dashboard'
+import { useState } from 'react'
+import { DashboardContent } from 'web/components/dashboard/dashboard-content'
 import { DashboardSidebar } from 'web/components/dashboard/dashboard-sidebar'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
@@ -31,6 +33,7 @@ export async function getStaticPaths() {
 
 export default function DashboardPage(props: { dashboard: Dashboard }) {
   const { dashboard } = props
+  const [items, setItems] = useState<DashboardItem[]>(dashboard.items)
   return (
     <Page
       trackPageView={'dashboard slug page'}
@@ -43,6 +46,21 @@ export default function DashboardPage(props: { dashboard: Dashboard }) {
         <Col className="w-full max-w-2xl px-1 sm:px-2">
           <Title className="mt-4">{dashboard.title}</Title>
           <DashboardSidebar description={dashboard.description} />
+          <DashboardContent
+            items={dashboard.items}
+            onRemove={(slugOrUrl: string) => {
+              setItems((items) => {
+                return items.filter((item) => {
+                  if (item.type === 'question') {
+                    return item.slug !== slugOrUrl
+                  } else if (item.type === 'link') {
+                    return item.url !== slugOrUrl
+                  }
+                  return true
+                })
+              })
+            }}
+          />
         </Col>
       </Col>
     </Page>
