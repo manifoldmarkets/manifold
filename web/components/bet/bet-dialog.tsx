@@ -4,12 +4,12 @@ import { CPMMBinaryContract } from 'common/contract'
 import { useUser } from '../../hooks/use-user'
 import { Col } from '../layout/col'
 import { Modal, MODAL_CLASS } from '../layout/modal'
-import { binaryOutcomes, BuyPanel } from './bet-panel'
+import { BinaryOutcomes, BuyPanel } from './bet-panel'
 import { Subtitle } from '../widgets/subtitle'
 
 export function BetDialog(props: {
   contract: CPMMBinaryContract
-  initialOutcome: binaryOutcomes
+  initialOutcome: BinaryOutcomes
   open: boolean
   setOpen: (open: boolean) => void
   trackingLocation: string

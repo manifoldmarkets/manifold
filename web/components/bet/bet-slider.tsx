@@ -1,11 +1,11 @@
-import { binaryOutcomes } from 'web/components/bet/bet-panel'
+import { BinaryOutcomes } from 'web/components/bet/bet-panel'
 import { Slider } from 'web/components/widgets/slider'
 import { formatMoney } from 'common/util/format'
 
 export const BetSlider = (props: {
   amount: number | undefined
   onAmountChange: (newAmount: number | undefined) => void
-  binaryOutcome?: binaryOutcomes
+  binaryOutcome?: BinaryOutcomes
   maximumAmount?: number
   customRange?: { rangeMin?: number; rangeMax?: number }
   disabled?: boolean

@@ -42,7 +42,7 @@ import { removeUndefinedProps } from 'common/util/object'
 import { calculateCpmmMultiArbitrageBet } from 'common/calculate-cpmm-arbitrage'
 import LimitOrderPanel from './limit-order-panel'
 
-export type binaryOutcomes = 'YES' | 'NO' | undefined
+export type BinaryOutcomes = 'YES' | 'NO' | undefined
 
 export function BuyPanel(props: {
   contract:
@@ -55,7 +55,7 @@ export function BuyPanel(props: {
   inModal: boolean
   onBuySuccess?: () => void
   singularView?: 'YES' | 'NO' | 'LIMIT'
-  initialOutcome?: binaryOutcomes | 'LIMIT'
+  initialOutcome?: BinaryOutcomes | 'LIMIT'
   location?: string
 }) {
   const {
@@ -78,7 +78,7 @@ export function BuyPanel(props: {
 
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
   const isStonk = contract.outcomeType === 'STONK'
-  const [option, setOption] = useState<binaryOutcomes | 'LIMIT'>(initialOutcome)
+  const [option, setOption] = useState<BinaryOutcomes | 'LIMIT'>(initialOutcome)
   const { unfilledBets: allUnfilledBets, balanceByUserId } =
     useUnfilledBetsAndBalanceByUserId(contract.id)
 

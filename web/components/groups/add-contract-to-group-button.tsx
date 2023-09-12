@@ -12,7 +12,7 @@ import toast from 'react-hot-toast'
 import { addContractToGroup } from 'web/lib/firebase/api'
 import { IconButton } from '../buttons/button'
 import { AddMarketToGroupModal } from './add-market-modal'
-import { groupRoleType } from './group-member-modal'
+import { GroupRole } from './group-member-modal'
 
 export type AddContractToGroupPermissionType =
   | 'private' // user can add a private contract (only new, only belongs in group)
@@ -22,7 +22,7 @@ export type AddContractToGroupPermissionType =
 
 function getAddContractToGroupPermission(
   privacyStatus: PrivacyStatusType,
-  userRole: groupRoleType | null | undefined
+  userRole: GroupRole | null | undefined
 ): AddContractToGroupPermissionType {
   if (
     privacyStatus != 'private' &&
@@ -42,7 +42,7 @@ function getAddContractToGroupPermission(
 export function AddContractButton(props: {
   group: Group
   user?: User | null
-  userRole: groupRoleType | null | undefined
+  userRole: GroupRole | null | undefined
   className?: string
 }) {
   const { group, user, className, userRole } = props

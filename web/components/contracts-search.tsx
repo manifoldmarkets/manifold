@@ -94,7 +94,7 @@ export const FILTERS = [
   { label: 'Resolved', value: 'resolved' },
 ] as const
 
-export type filter = typeof FILTERS[number]['value']
+export type Filter = typeof FILTERS[number]['value']
 
 export const CONTRACT_TYPES = [
   { label: 'Any type', value: 'ALL' },
@@ -112,7 +112,7 @@ export type ContractTypeType = typeof CONTRACT_TYPES[number]['value']
 export type SupabaseSearchParameters = {
   query: string
   sort: Sort
-  filter: filter
+  filter: Filter
   contractType: ContractTypeType
   category: string
 }
@@ -128,7 +128,7 @@ function getShowTime(sort: Sort) {
   return sort === 'close-date' || sort === 'resolve-date' ? sort : null
 }
 
-export const INITIAL_STATE: stateType = {
+export const INITIAL_STATE: SearchState = {
   contracts: undefined,
   fuzzyContractOffset: 0,
   shouldLoadMore: true,
@@ -147,7 +147,7 @@ export type SupabaseAdditionalFilter = {
   contractType?: ContractTypeType
 }
 
-export type stateType = {
+export type SearchState = {
   contracts: Contract[] | undefined
   fuzzyContractOffset: number
   shouldLoadMore: boolean
@@ -157,7 +157,7 @@ export type stateType = {
 export function SupabaseContractSearch(props: {
   persistPrefix: string
   defaultSort?: Sort
-  defaultFilter?: filter
+  defaultFilter?: Filter
   additionalFilter?: SupabaseAdditionalFilter
   highlightContractIds?: string[]
   onContractClick?: (contract: Contract) => void
@@ -199,7 +199,7 @@ export function SupabaseContractSearch(props: {
     hideFilters,
   } = props
 
-  const [state, setState] = usePersistentInMemoryState<stateType>(
+  const [state, setState] = usePersistentInMemoryState<SearchState>(
     INITIAL_STATE,
     `${persistPrefix}-supabase-search`
   )
@@ -216,7 +216,7 @@ export function SupabaseContractSearch(props: {
   }, [])
 
   const query = useEvent(
-    async (currentState: stateType, freshQuery?: boolean) => {
+    async (currentState: SearchState, freshQuery?: boolean) => {
       if (searchParams.current == null) {
         return false
       }
@@ -385,7 +385,7 @@ function SupabaseContractSearchControls(props: {
   className?: string
   inputRowClassName?: string
   defaultSort?: Sort
-  defaultFilter?: filter
+  defaultFilter?: Filter
   defaultContractType?: ContractTypeType
   hideOrderSelector?: boolean
   includeProbSorts?: boolean
@@ -464,7 +464,7 @@ function SupabaseContractSearchControls(props: {
       ? 'resolved'
       : filterState
 
-  const selectFilter = (selection: filter) => {
+  const selectFilter = (selection: Filter) => {
     if (selection === filterState) return
     setState({ f: selection })
     track('select search filter', { filter: selection })
@@ -509,7 +509,7 @@ function SupabaseContractSearchControls(props: {
         query,
         sort: sort as Sort,
         category,
-        filter: filter as filter,
+        filter: filter as Filter,
         contractType: contractType as ContractTypeType,
       })
     }
@@ -590,7 +590,7 @@ function SupabaseContractSearchControls(props: {
 
 export function SearchFilters(props: {
   filter: string
-  selectFilter: (selection: filter) => void
+  selectFilter: (selection: Filter) => void
   sort: string
   selectSort: (selection: Sort) => void
   contractType: string

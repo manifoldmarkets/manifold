@@ -45,20 +45,20 @@ const queryLeaderboardUsers = async (period: Period) => {
   }
 }
 
-type leaderboard = {
+type Leaderboard = {
   topTraders: User[]
   topCreators: User[]
 }
-type ranking = {
+type Ranking = {
   profitRank: number
   tradersRank: number
   referralsRank: number
 }
 export default function Leaderboards(props: {
-  allTime: leaderboard
+  allTime: Leaderboard
   topReferrals: Awaited<ReturnType<typeof getTopReferrals>>
 }) {
-  const [myRanks, setMyRanks] = useState<ranking>()
+  const [myRanks, setMyRanks] = useState<Ranking>()
   const [userReferralInfo, setUserReferralInfo] =
     useState<Awaited<ReturnType<typeof getUserReferralsInfo>>>()
 
@@ -67,7 +67,7 @@ export default function Leaderboards(props: {
   useEffect(() => {
     if (!user?.profitCached) return
     ;(async () => {
-      const rankings = {} as ranking
+      const rankings = {} as Ranking
       const myProfit = user.profitCached?.allTime
       if (myProfit != null) {
         rankings.profitRank = await getProfitRank(myProfit, 'allTime')

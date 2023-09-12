@@ -35,7 +35,7 @@ const EXTRA_USERNAMES_TO_EXCLUDE = ['Charlie', 'GamblingGandalf']
 
 export function ActivityLog(props: {
   count: number
-  pill: pill_options
+  pill: PillOptions
   rightPanel?: ReactNode
   className?: string
 }) {
@@ -199,14 +199,14 @@ export function ActivityLog(props: {
   )
 }
 
-export type pill_options = 'all' | 'questions' | 'comments' | 'trades'
+export type PillOptions = 'all' | 'questions' | 'comments' | 'trades'
 export const LivePillOptions = (props: {
-  pill: pill_options
-  setPill: (pill: pill_options) => void
+  pill: PillOptions
+  setPill: (pill: PillOptions) => void
 }) => {
   const { pill, setPill } = props
 
-  const selectPill = (pill: pill_options) => {
+  const selectPill = (pill: PillOptions) => {
     setPill(pill)
     track('select live feed pill', { pill })
   }

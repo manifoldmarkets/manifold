@@ -5,7 +5,7 @@ import { ReactNode, useEffect, useState } from 'react'
 import { BetSlider } from 'web/components/bet/bet-slider'
 import { useUser } from 'web/hooks/use-user'
 import { AddFundsModal } from '../add-funds-modal'
-import { binaryOutcomes } from '../bet/bet-panel'
+import { BinaryOutcomes } from '../bet/bet-panel'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { Input } from './input'
@@ -120,7 +120,7 @@ export function BuyAmountInput(props: {
   inputClassName?: string
   // Needed to focus the amount input
   inputRef?: React.MutableRefObject<any>
-  binaryOutcome?: binaryOutcomes
+  binaryOutcome?: BinaryOutcomes
   sliderOptions?: {
     show: boolean
     wrap: boolean

@@ -4,13 +4,13 @@ import { Title } from 'web/components/widgets/title'
 import {
   ActivityLog,
   LivePillOptions,
-  pill_options,
+  PillOptions,
 } from 'web/components/activity-log'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { SEO } from 'web/components/SEO'
 
 export default function LivePage() {
-  const [pill, setPill] = usePersistentInMemoryState<pill_options>(
+  const [pill, setPill] = usePersistentInMemoryState<PillOptions>(
     'all',
     'live-pill'
   )
