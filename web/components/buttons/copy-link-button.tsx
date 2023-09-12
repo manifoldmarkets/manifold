@@ -44,8 +44,8 @@ export function CopyLinkOrShareButton(props: {
   }
 
   return (
-    <IconButton onClick={onClick} className={className} disabled={!url}>
-      <Tooltip text={tooltip ?? 'Copy link'} noTap placement="bottom">
+    <Tooltip text={tooltip ?? 'Copy link'} noTap placement="bottom">
+      <IconButton onClick={onClick} className={className} disabled={!url}>
         {(isNative && platform === 'ios') || os === 'ios' ? (
           <ArrowUpSquareIcon className={'h-[1.4rem]'} />
         ) : (isNative && platform === 'android') || os === 'android' ? (
@@ -53,8 +53,8 @@ export function CopyLinkOrShareButton(props: {
         ) : (
           <LinkIcon strokeWidth={'2.5'} className={'h-5'} aria-hidden="true" />
         )}
-      </Tooltip>
-    </IconButton>
+      </IconButton>
+    </Tooltip>
   )
 }
 

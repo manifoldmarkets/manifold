@@ -13,16 +13,15 @@ import { LikeButton } from './like-button'
 export function ExtraContractActionsRow(props: {
   contract: Contract
   children?: ReactNode
-  className?: string
 }) {
-  const { contract, children, className } = props
+  const { contract, children } = props
   const user = useUser()
   const privateUser = usePrivateUser()
   const [dialogOpen, setDialogOpen] = useState(false)
   const hasCoverImage = !!contract.coverImageUrl
 
   return (
-    <Row className={className}>
+    <Row className="items-center">
       {children}
 
       <div className={'flex items-center'}>
@@ -52,12 +51,12 @@ export function ExtraContractActionsRow(props: {
       <Tooltip text="Question details" placement="bottom" noTap>
         <button
           className={clsx(
-            'text-ink-500 hover:text-ink-600 p-2 transition-colors',
+            'text-ink-500 hover:text-ink-600 px-2 py-1.5 transition-colors',
             hasCoverImage
           )}
           onClick={() => setDialogOpen(true)}
         >
-          <DotsVerticalIcon className={clsx('h-5 w-5')} aria-hidden />
+          <DotsVerticalIcon className="h-5 w-5" aria-hidden />
         </button>
       </Tooltip>
       <ContractInfoDialog
