@@ -152,7 +152,7 @@ export function CalibrationChart(props: {
           cx={px(p)}
           cy={py(p)}
           r={10}
-          fill="indigo"
+          className="fill-indigo-700 dark:fill-indigo-100"
           onMouseEnter={() => setTooltip(p)}
           onMouseLeave={() => setTooltip(null)}
           style={{ cursor: 'pointer' }}
