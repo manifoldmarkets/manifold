@@ -93,7 +93,9 @@ export function FeedCommentThread(props: {
     setReplyToUserInfo({ id: comment.id, username: comment.userUsername })
   })
   const [collapseToIndex, setCollapseToIndex] = useState<number>(
-    collapseMiddle && threadComments.length > 2 ? threadComments.length - 2 : -1
+    collapseMiddle && threadComments.length > 2
+      ? threadComments.length - 2
+      : Infinity
   )
   return (
     <Col className="mt-3 w-full items-stretch gap-3">
@@ -112,28 +114,9 @@ export function FeedCommentThread(props: {
         childrenBountyTotal={childrenBountyTotal}
       />
       {seeReplies &&
-        threadComments.map((comment, _commentIdx) =>
-          _commentIdx < collapseToIndex ? null : _commentIdx ===
-            collapseToIndex ? (
-            <Row
-              className={'justify-end sm:mt-1 sm:-mb-2'}
-              key={parentComment.id + 'see-replies-feed-button'}
-            >
-              <Button
-                size={'xs'}
-                color={'gray-white'}
-                onClick={() => {
-                  setCollapseToIndex(-1)
-                }}
-              >
-                <Col>
-                  <TriangleFillIcon className={'mr-2 h-2'} />
-                  <TriangleDownFillIcon className={'mr-2 h-2'} />
-                </Col>
-                See {threadComments.length - 1} replies
-              </Button>
-            </Row>
-          ) : (
+        threadComments
+          .slice(0, collapseToIndex)
+          .map((comment, i) => (
             <FeedComment
               key={comment.id}
               contract={contract}
@@ -142,10 +125,28 @@ export function FeedCommentThread(props: {
               showLike={true}
               onReplyClick={onReplyClick}
               trackingLocation={trackingLocation}
-              isLastReplyInThread={_commentIdx === threadComments.length - 1}
             />
-          )
-        )}
+          ))}
+      {seeReplies && threadComments.length > collapseToIndex && (
+        <Row
+          className={'justify-end sm:mt-1 sm:-mb-2'}
+          key={parentComment.id + 'see-replies-feed-button'}
+        >
+          <Button
+            size={'xs'}
+            color={'gray-white'}
+            onClick={() => {
+              setCollapseToIndex(Infinity)
+            }}
+          >
+            <Col>
+              <TriangleFillIcon className={'mr-2 h-2'} />
+              <TriangleDownFillIcon className={'mr-2 h-2'} />
+            </Col>
+            See {threadComments.length - 1} replies
+          </Button>
+        </Row>
+      )}
       {replyToUserInfo && (
         <Col className="stop-prop relative ml-6">
           <ContractCommentInput
@@ -173,7 +174,6 @@ export const FeedComment = memo(function FeedComment(props: {
   className?: string
   inTimeline?: boolean
   isParent?: boolean
-  isLastReplyInThread?: boolean
 }) {
   const {
     contract,
@@ -188,7 +188,6 @@ export const FeedComment = memo(function FeedComment(props: {
     trackingLocation,
     inTimeline,
     isParent,
-    isLastReplyInThread,
   } = props
   const { userUsername, userAvatarUrl } = comment
   const ref = useRef<HTMLDivElement>(null)
@@ -201,7 +200,7 @@ export const FeedComment = memo(function FeedComment(props: {
   }, [highlighted])
 
   return (
-    <Col>
+    <Col className="group">
       {comment.bettorUsername !== undefined && (
         <FeedCommentReplyHeader comment={comment} contract={contract} />
       )}
@@ -224,13 +223,13 @@ export const FeedComment = memo(function FeedComment(props: {
           {isParent && seeReplies && hasReplies && (
             <div className="bg-ink-200 absolute -top-0 left-4 bottom-0 w-0.5" />
           )}
-          {!isParent && !isLastReplyInThread && (
-            <div className="bg-ink-200 absolute -top-1 left-4 bottom-0 w-0.5" />
+          {!isParent && (
+            <div className="bg-ink-200 absolute -top-1 left-4 bottom-0 w-0.5 group-last:hidden" />
           )}
         </Col>
         <Col
           className={clsx(
-            'group w-full rounded-xl rounded-tl-none px-4 py-1 transition-colors',
+            'w-full rounded-xl rounded-tl-none px-4 py-1 transition-colors',
             highlighted
               ? 'bg-primary-100 border-primary-300 border-2'
               : 'bg-ink-100'
@@ -456,7 +455,7 @@ export function DotMenu(props: {
   )
 }
 
-export function CommentActions(props: {
+function CommentActions(props: {
   onReplyClick?: (comment: ContractComment) => void
   comment: ContractComment
   contract: Contract
