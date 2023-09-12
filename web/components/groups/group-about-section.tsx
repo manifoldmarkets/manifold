@@ -42,8 +42,7 @@ export function GroupAboutSection(props: {
   const { group, canEdit, writingNewAbout, setWritingNewAbout } = props
   if (group.about || writingNewAbout) {
     return (
-      <Col className="group my-2 gap-2 px-4 py-2 lg:px-0">
-        <div className="text-ink-500 uppercase">About</div>
+      <Col className="group gap-2 px-5 lg:px-2">
         {canEdit && (
           <EditableGroupAbout
             group={group}
@@ -60,7 +59,7 @@ export function GroupAboutSection(props: {
                 groupName={group.name}
               />
             }
-            className="bg-canvas-0 rounded-md px-4 py-2"
+            className="bg-canvas-0 rounded-md"
           />
         )}
       </Col>

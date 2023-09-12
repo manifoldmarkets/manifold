@@ -120,7 +120,7 @@ export function JoinOrLeaveGroupButton(props: {
   if (isMember) {
     return (
       <Button
-        size="2xs"
+        size="xs"
         color="none"
         className="w-16 bg-gray-400 text-white hover:bg-gray-500 dark:bg-gray-700 dark:hover:bg-gray-600"
         onClick={(e) => {
@@ -136,7 +136,7 @@ export function JoinOrLeaveGroupButton(props: {
 
   return (
     <Button
-      size="2xs"
+      size="xs"
       color="indigo"
       className="w-16"
       onClick={(e) => {
