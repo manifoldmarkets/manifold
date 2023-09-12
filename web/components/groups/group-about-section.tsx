@@ -19,6 +19,7 @@ import { Row } from '../layout/row'
 import { Spacer } from '../layout/spacer'
 import { Content } from '../widgets/editor'
 import { ExpandableContent } from '../widgets/expandable-content'
+import router from 'next/router'
 
 function GroupAboutModalContent(props: {
   content: JSONContent | string
@@ -112,7 +113,7 @@ function EditableGroupAbout(props: {
     </>
   ) : group.about ? (
     <div className="relative">
-      <Row className="absolute -top-8 right-0 transition-all group-hover:visible md:invisible">
+      <Row className="absolute right-0 z-10 transition-all group-hover:visible md:invisible">
         <Button
           color="gray-white"
           size="xs"
@@ -201,6 +202,7 @@ function DeleteAboutModal(props: {
               })
               setDeleteOpen(false)
               setDeleteLoading(false)
+              router.reload()
             }}
           >
             Yes, delete about section
