@@ -54,8 +54,6 @@ import { FiLink } from 'react-icons/fi'
 import { GiPayMoney } from 'react-icons/gi'
 
 export type ReplyToUserInfo = { id: string; username: string }
-export const isReplyToBet = (comment: ContractComment) =>
-  comment.bettorUsername !== undefined
 
 export function FeedCommentThread(props: {
   contract: Contract
@@ -204,7 +202,7 @@ export const FeedComment = memo(function FeedComment(props: {
 
   return (
     <Col>
-      {isReplyToBet(comment) && (
+      {comment.bettorUsername !== undefined && (
         <FeedCommentReplyHeader comment={comment} contract={contract} />
       )}
       <Row ref={ref} className={clsx(className ? className : 'gap-2')}>

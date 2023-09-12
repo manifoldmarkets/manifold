@@ -11,11 +11,13 @@ import React, {
   useEffect,
   useMemo,
   useRef,
+  useState,
 } from 'react'
 import { Contract } from 'common/contract'
 import { useMeasureSize } from 'web/hooks/use-measure-size'
 import { clamp } from 'lodash'
 import { HistoryPoint } from 'common/chart'
+import { ScaleTime, ScaleContinuousNumeric } from 'd3-scale'
 
 export interface ContinuousScale<T> extends AxisScale<T> {
   invert(n: number): T
@@ -493,4 +495,16 @@ export const computeColorStops = <P extends HistoryPoint>(
     stops.push({ x: s.x, color: s.color })
   }
   return stops
+}
+
+export const useViewScale = () => {
+  const [viewXScale, setViewXScale] = useState<ScaleTime<number, number>>()
+  const [viewYScale, setViewYScale] =
+    useState<ScaleContinuousNumeric<number, number>>()
+  return {
+    viewXScale,
+    setViewXScale,
+    viewYScale,
+    setViewYScale,
+  }
 }

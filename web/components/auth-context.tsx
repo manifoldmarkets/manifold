@@ -61,7 +61,7 @@ const stripUserData = (user: object) => {
   return JSON.stringify(stripped)
 }
 
-export const setUserCookie = (data: object | undefined) => {
+const setUserCookie = (data: object | undefined) => {
   const stripped = data ? stripUserData(data) : ''
   setCookie(AUTH_COOKIE_NAME, stripped, [
     ['path', '/'],

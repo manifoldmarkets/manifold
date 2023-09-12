@@ -11,7 +11,7 @@ import { BinaryContractChart } from 'web/components/charts/contract/binary'
 import { NumericContractChart } from 'web/components/charts/contract/numeric'
 import { PseudoNumericContractChart } from 'web/components/charts/contract/pseudo-numeric'
 import { StonkContractChart } from 'web/components/charts/contract/stonk'
-import { useViewScale } from 'web/components/charts/generic-charts'
+import { useViewScale } from 'web/components/charts/helpers'
 import { CloseOrResolveTime } from 'web/components/contract/contract-details'
 import {
   BinaryResolutionOrChance,

@@ -9,12 +9,13 @@ import { PrivateUser } from 'common/user'
 import { referralQuery } from 'common/util/share'
 import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
 import { useUser } from 'web/hooks/use-user'
-import { groupButtonClass } from './groups-button'
 import DropdownMenu, { DropdownItem } from '../comments/dropdown-menu'
 import { Row } from '../layout/row'
 import { getBlockGroupDropdownItem } from './hide-group-item'
 import { buildArray } from 'common/util/array'
 import { QuestionMarkCircleIcon } from '@heroicons/react/outline'
+
+const groupButtonClass = 'text-ink-700 hover:text-ink-800'
 
 export function GroupOptions(props: {
   group: Group

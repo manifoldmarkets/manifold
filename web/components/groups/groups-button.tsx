@@ -12,8 +12,6 @@ import { Subtitle } from '../widgets/subtitle'
 import { joinGroup } from 'web/lib/firebase/api'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 
-export const groupButtonClass = 'text-ink-700 hover:text-ink-800'
-
 function LeavePrivateGroupButton(props: {
   group: SearchGroupInfo
   user: User | undefined | null
