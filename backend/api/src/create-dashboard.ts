@@ -14,7 +14,6 @@ const schema = z.object({
 
 export const createdashboard = authEndpoint(async (req, auth) => {
   const { title, description, items } = validate(schema, req.body)
-  console.log(items)
 
   log('creating dashboard')
   const pg = createSupabaseDirectClient()
