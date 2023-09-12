@@ -19,7 +19,7 @@ import { ContractComment } from 'common/comment'
 import { track } from 'web/lib/service/analytics'
 import { useState } from 'react'
 import { Row } from 'web/components/layout/row'
-import { GroupTag } from 'web/pages/groups'
+import { CategoryTag } from 'web/pages/groups'
 import { orderBy, uniqBy } from 'lodash'
 
 const MAX_PARENT_COMMENTS_PER_FEED_ITEM = 1
@@ -97,8 +97,8 @@ export const FeedTimelineItems = (props: {
               <Col className="px-2 pt-3">
                 <ContractsTable contracts={contracts} hideHeader={true} />
               </Col>
-              <GroupTags
-                groups={uniqBy(
+              <CategoryTags
+                categories={uniqBy(
                   contracts.map((c) => c.groupLinks ?? []).flat(),
                   'slug'
                 )}
@@ -148,7 +148,7 @@ export const FeedTimelineItems = (props: {
                   />
                 </Col>
               )}
-              <GroupTags groups={item.groups} className="mx-4 mb-3" />
+              <CategoryTags categories={item.groups} className="mx-4 mb-3" />
             </FeedItemFrame>
           )
         }
@@ -157,17 +157,21 @@ export const FeedTimelineItems = (props: {
   )
 }
 
-export function GroupTags(props: {
-  groups?: { slug: string; name: string }[]
+export function CategoryTags(props: {
+  categories?: { slug: string; name: string }[]
   className?: string
   maxGroups?: number
 }) {
-  const { groups, className, maxGroups = 3 } = props
-  if (!groups || groups.length <= 0) return null
+  const { categories, className, maxGroups = 3 } = props
+  if (!categories || categories.length <= 0) return null
   return (
     <div className={clsx('w-full', className)}>
-      {groups.slice(0, maxGroups).map((group) => (
-        <GroupTag key={group.slug} group={group} />
+      {categories.slice(0, maxGroups).map((category) => (
+        <CategoryTag
+          location={'feed card'}
+          key={category.slug}
+          category={category}
+        />
       ))}
     </div>
   )

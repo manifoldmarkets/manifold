@@ -9,7 +9,7 @@ import {
   addContractToGroup,
   removeContractFromGroup,
 } from 'web/lib/firebase/api'
-import { GroupTag } from 'web/pages/groups'
+import { CategoryTag } from 'web/pages/groups'
 import { GroupSelector } from './group-selector'
 import { useGroupsWithContract } from 'web/hooks/use-group-supabase'
 import { useState } from 'react'
@@ -40,7 +40,12 @@ export function ContractGroupsList(props: {
           <Row className="my-2 flex-wrap gap-3">
             {groups.map((g) => {
               return (
-                <GroupTag key={g.id} group={g} className="bg-ink-100">
+                <CategoryTag
+                  location={'categories list'}
+                  key={g.id}
+                  category={g}
+                  className="bg-ink-100"
+                >
                   {g && canEditGroup(g) && (
                     <button
                       onClick={() => {
@@ -63,7 +68,7 @@ export function ContractGroupsList(props: {
                       <XIcon className="hover:text-ink-700 text-ink-400 ml-1 h-4 w-4" />
                     </button>
                   )}
-                </GroupTag>
+                </CategoryTag>
               )
             })}
           </Row>

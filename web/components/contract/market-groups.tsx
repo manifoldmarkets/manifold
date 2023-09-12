@@ -8,7 +8,7 @@ import {
 import { orderBy } from 'lodash'
 import Link from 'next/link'
 import { linkClass } from 'web/components/widgets/site-link'
-import { GroupTag } from 'web/pages/groups'
+import { CategoryTag } from 'web/pages/groups'
 import { useState } from 'react'
 import { useUser } from 'web/hooks/use-user'
 import { PencilIcon, PlusIcon } from '@heroicons/react/solid'
@@ -19,6 +19,7 @@ import { useAdmin } from 'web/hooks/use-admin'
 import { isTrustworthy } from 'common/envs/constants'
 import { filterDefined } from 'common/util/array'
 import { Group } from 'common/group'
+import { track } from 'web/lib/service/analytics'
 
 export function MarketGroups(props: { contract: Contract }) {
   const { contract } = props
@@ -34,7 +35,11 @@ function PrivateMarketGroups(props: { contract: Contract }) {
   if (contract.groupLinks) {
     return (
       <div className="flex">
-        <GroupTag group={contract.groupLinks[0]} isPrivate />
+        <CategoryTag
+          location={'market page'}
+          category={contract.groupLinks[0]}
+          isPrivate
+        />
       </div>
     )
   }
@@ -54,7 +59,16 @@ const ContractGroupBreadcrumbs = (props: { contract: Contract }) => {
     <Row className={clsx('line-clamp-1')}>
       {groups.map((group, i) => (
         <span key={group.id} className={'text-primary-600 text-sm'}>
-          <Link className={linkClass} href={`/group/${group.slug}`}>
+          <Link
+            className={linkClass}
+            href={`/group/${group.slug}`}
+            onClick={() => {
+              track('click category pill on market', {
+                contractId: contract.id,
+                categoryName: group.name,
+              })
+            }}
+          >
             {removeEmojis(group.name)}
           </Link>
           {i !== groups.length - 1 && (
