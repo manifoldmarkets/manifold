@@ -1,5 +1,4 @@
 import { NoSEO } from 'web/components/NoSEO'
-import { Title } from 'web/components/widgets/title'
 import { useEffect, useState } from 'react'
 import { Row as rowfor, run } from 'common/supabase/utils'
 import { db } from 'web/lib/supabase/db'
@@ -10,13 +9,17 @@ import { Row } from 'web/components/layout/row'
 import { Button } from 'web/components/buttons/button'
 import { User } from 'common/user'
 import { UserAvatarAndBadge } from 'web/components/widgets/user-link'
+import { usePersistentQueryState } from 'web/hooks/use-persistent-query-state'
 
 export default function Journeys() {
   const [eventsByUser, setEventsByUser] = useState<
     Record<string, rowfor<'user_events'>[]>
   >({})
-  const [hoursFromNow, setHoursFromNow] = useState(5)
+  const [hoursFromNowQ, setHoursFromNowQ] = usePersistentQueryState('h', '5')
+  const hoursFromNow = parseInt(hoursFromNowQ)
   const [users, setUsers] = useState<User[]>([])
+  const [bannedUsers, setBannedUsers] = useState<User[]>([])
+
   const getEvents = async () => {
     const events = await run(
       db.rpc('get_user_journeys' as any, {
@@ -29,11 +32,20 @@ export default function Journeys() {
     )
 
     setEventsByUser(eventsByUser)
-    const users = await run(
-      db.from('users').select('*').in('id', Object.keys(eventsByUser))
-    )
-    setUsers(users.data as any as User[])
   }
+
+  const getUsers = async () => {
+    const userData = await run(
+      db.from('users').select('data').in('id', Object.keys(eventsByUser))
+    )
+    const users = userData.data.map((d) => d.data as User)
+    setBannedUsers(users.filter((u) => u.isBannedFromPosting))
+    setUsers(users.filter((u) => !u.isBannedFromPosting))
+  }
+
+  useEffect(() => {
+    getUsers()
+  }, [JSON.stringify(Object.keys(eventsByUser))])
 
   useEffect(() => {
     getEvents()
@@ -43,13 +55,15 @@ export default function Journeys() {
     <Row>
       <NoSEO />
       <div className="mx-8">
-        <Title>User Journeys</Title>
+        <div className={'text-primary-700 my-1 text-2xl'}>User Journeys</div>
         <Row className={'items-center gap-2'}>
-          Journeys from users created: {hoursFromNow}h ago
+          Viewing journeys from {users.length} users ({bannedUsers.length}{' '}
+          banned) created: {hoursFromNow}h ago
           <Button
+            color={'indigo-outline'}
             size={'xs'}
             onClick={() => {
-              setHoursFromNow(hoursFromNow + 1)
+              setHoursFromNowQ((hoursFromNow + 1).toString())
             }}
           >
             +1h
@@ -57,6 +71,7 @@ export default function Journeys() {
         </Row>
         <Row className={'flex-wrap gap-2 scroll-auto'}>
           {Object.keys(eventsByUser).map((userId) => {
+            if (bannedUsers.find((u) => u.id === userId)) return null
             const events = eventsByUser[userId]
             const eventGroups: { [key: string]: any[] } = {}
             let eventName = ''
@@ -70,7 +85,7 @@ export default function Journeys() {
             const user = users.find((u) => u.id === userId)
 
             return (
-              <Col className={'mt-4 min-w-[18rem]'} key={userId}>
+              <Col className={'mt-4 min-w-[15rem]'} key={userId}>
                 <Row>
                   {user ? (
                     <UserAvatarAndBadge
@@ -83,7 +98,7 @@ export default function Journeys() {
                   )}
                 </Row>
                 <ul>
-                  <li>started: {new Date(events[0].ts!).toLocaleString()}</li>
+                  <li>{new Date(events[0].ts!).toLocaleString()}</li>
                 </ul>
                 <Col>
                   {Object.values(eventGroups).map((group, index) => {
@@ -96,15 +111,14 @@ export default function Journeys() {
 
                     return (
                       <li key={index}>
-                        {name} {times > 1 ? `${times} times` : ' '}
-                        {duration > 1 ? ` for ${duration}s` : ' '}
+                        {name} {times > 1 ? `${times}x` : ' '}
+                        {duration > 1 ? ` (${duration}s)` : ' '}
                       </li>
                     )
                   })}
                 </Col>
                 <ul>
                   <li>
-                    ended:{' '}
                     {new Date(events[events.length - 1].ts!).toLocaleString()}
                   </li>
                 </ul>
