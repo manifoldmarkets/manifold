@@ -116,9 +116,7 @@ export default function ContractPage(props: MaybeAuthedContractParams) {
   )
 }
 
-export function NonPrivateContractPage(props: {
-  contractParams: ContractParams
-}) {
+function NonPrivateContractPage(props: { contractParams: ContractParams }) {
   const { contract, historyData, pointsString } = props.contractParams
 
   const inIframe = useIsIframe()

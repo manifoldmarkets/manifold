@@ -17,6 +17,7 @@ import { Col } from 'web/components/layout/col'
 import { useContractVoters } from 'web/hooks/use-votes'
 import { Avatar } from '../widgets/avatar'
 import { UserLink } from '../widgets/user-link'
+import { track } from 'web/lib/service/analytics'
 
 export function TradesButton(props: { contract: Contract }) {
   const { contract } = props
@@ -33,6 +34,7 @@ export function TradesButton(props: { contract: Contract }) {
         'text-ink-500 transition-transform disabled:cursor-not-allowed'
       )}
       onClick={(e) => {
+        track('click feed card traders button', { contractId: contract.id })
         e.preventDefault()
         setModalOpen(true)
       }}

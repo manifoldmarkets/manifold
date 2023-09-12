@@ -156,7 +156,7 @@ export function PaginationArrow(props: {
 }
 
 export function PageNumbers(props: {
-  pageNumber: pageNumbers
+  pageNumber: PageNumbers
   setPage: (page: number) => void
   page: number
 }) {
@@ -179,24 +179,21 @@ export function PageNumbers(props: {
   )
 }
 
-type pageNumbers = number | string
+type PageNumbers = number | string
 
-export function getPageNumbers(
-  maxPage: number,
-  page: number
-): Array<pageNumbers> {
+function getPageNumbers(maxPage: number, page: number): Array<PageNumbers> {
   if (maxPage <= 7) {
     return range(0, maxPage + 1)
   }
   if (page < 4) {
-    return Array.from<unknown, pageNumbers>(
+    return Array.from<unknown, PageNumbers>(
       { length: 5 },
       (_, index) => index
     ).concat([PAGE_ELLIPSES, maxPage])
   }
   if (page >= maxPage - 3) {
     return [0, PAGE_ELLIPSES].concat(
-      Array.from<unknown, pageNumbers>(
+      Array.from<unknown, PageNumbers>(
         { length: 5 },
         (_, index) => index + maxPage - 4
       )

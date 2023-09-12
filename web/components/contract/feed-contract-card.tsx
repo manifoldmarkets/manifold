@@ -34,7 +34,7 @@ import { ClickFrame } from '../widgets/click-frame'
 import { LikeButton } from './like-button'
 import { TradesButton } from './trades-button'
 import { FeedDropdown } from '../feed/card-dropdown'
-import { GroupTags } from '../feed/feed-timeline-items'
+import { CategoryTags } from '../feed/feed-timeline-items'
 import { JSONEmpty } from 'web/components/contract/contract-description'
 
 export function FeedContractCard(props: {
@@ -90,7 +90,7 @@ export function FeedContractCard(props: {
         slug: contract.slug,
         isPromoted: !!promotedData,
       } as ContractCardView),
-    true
+    false
   )
 
   const { probChange } = getMarketMovementInfo(
@@ -167,6 +167,7 @@ export function FeedContractCard(props: {
           <Link
             className="hover:text-primary-700 grow items-start transition-colors sm:text-lg"
             href={path}
+            onClick={trackClick}
           >
             <VisibilityIcon contract={contract} /> {contract.question}
           </Link>
@@ -223,7 +224,7 @@ export function FeedContractCard(props: {
           />
         )}
 
-        <GroupTags groups={contract.groupLinks} />
+        <CategoryTags categories={contract.groupLinks} />
         <Col>
           <BottomActionRow
             contract={contract}

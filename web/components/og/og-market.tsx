@@ -195,7 +195,7 @@ const dateFormat = Intl.DateTimeFormat('en-US', {
 }).format
 
 // copied from format.ts
-export function formatPercent(zeroToOne: number) {
+function formatPercent(zeroToOne: number) {
   // Show 1 decimal place if <2% or >98%, giving more resolution on the tails
   const decimalPlaces = zeroToOne < 0.02 || zeroToOne > 0.98 ? 1 : 0
   const percent = zeroToOne * 100

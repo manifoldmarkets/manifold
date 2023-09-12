@@ -25,7 +25,7 @@ const INITIAL_STATE = {
 
 const GROUPS_PER_PAGE = 50
 
-export type groupStateType = {
+export type GroupState = {
   groups: Group[] | undefined
   fuzzyGroupOffset: number
   shouldLoadMore: boolean
@@ -42,7 +42,7 @@ export default function GroupSearch(props: {
     async (currentState, freshQuery?: boolean) =>
       (await debouncedQuery(currentState, freshQuery)) ?? false
   )
-  const [state, setState] = usePersistentInMemoryState<groupStateType>(
+  const [state, setState] = usePersistentInMemoryState<GroupState>(
     INITIAL_STATE,
     `${persistPrefix}-supabase-search`
   )
@@ -63,7 +63,7 @@ export default function GroupSearch(props: {
     []
   )
 
-  const query = async (currentState: groupStateType, freshQuery?: boolean) => {
+  const query = async (currentState: GroupState, freshQuery?: boolean) => {
     const id = ++requestId.current
     const offset = freshQuery
       ? 0

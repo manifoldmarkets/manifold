@@ -38,7 +38,7 @@ import { Button } from '../buttons/button'
 import { WarningConfirmationButton } from '../buttons/warning-confirmation-button'
 import { PreviewYesNoSelector } from './preview-yes-no-selector'
 
-export type binaryOutcomes = 'YES' | 'NO' | undefined
+type BinaryOutcomes = 'YES' | 'NO' | undefined
 
 export function PreviewBuyPanel(props: {
   contract:
@@ -51,7 +51,7 @@ export function PreviewBuyPanel(props: {
   inModal: boolean
   onBuySuccess?: () => void
   singularView?: 'YES' | 'NO' | 'LIMIT'
-  initialOutcome?: binaryOutcomes | 'LIMIT'
+  initialOutcome?: BinaryOutcomes | 'LIMIT'
   location?: string
 }) {
   const {
@@ -74,7 +74,7 @@ export function PreviewBuyPanel(props: {
 
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
   const isStonk = contract.outcomeType === 'STONK'
-  const [option, setOption] = useState<binaryOutcomes | 'LIMIT'>(initialOutcome)
+  const [option, setOption] = useState<BinaryOutcomes | 'LIMIT'>(initialOutcome)
   const { unfilledBets: allUnfilledBets, balanceByUserId } =
     useUnfilledBetsAndBalanceByUserId(contract.id)
 

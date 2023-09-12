@@ -375,9 +375,7 @@ export function CreateAnswerPanel(props: { contract: Contract }) {
   }
 }
 
-type answerErrorLevel = 'warning' | 'error'
-
-const AnswerError = (props: { text: string; level: answerErrorLevel }) => {
+const AnswerError = (props: { text: string; level: 'warning' | 'error' }) => {
   const { text, level } = props
   const colorClass =
     {

@@ -19,10 +19,6 @@ import { AddContractButton } from 'web/components/groups/add-contract-to-group-b
 import { GroupAboutSection } from 'web/components/groups/group-about-section'
 import BannerImage from 'web/components/groups/group-banner-image'
 import { GroupOptions } from 'web/components/groups/group-options'
-import GroupPrivacyStatusWidget, {
-  GroupMembersWidget,
-} from 'web/components/groups/group-page-items'
-import { JoinOrLeaveGroupButton } from 'web/components/groups/groups-button'
 import {
   InaccessiblePrivateThing,
   PrivateGroupPage,
@@ -41,11 +37,12 @@ import { getUser, getUsers } from 'web/lib/supabase/user'
 import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
 import { useUserById } from 'web/hooks/use-user-supabase'
 import { EditableGroupTitle } from 'web/components/groups/editable-group-name'
+import { JoinOrLeaveGroupButton } from 'web/components/groups/groups-button'
 
 const MAX_LEADERBOARD_SIZE = 50
-export const MEMBER_INDEX = 0
-export const MEMBER_INVITE_INDEX = 1
-export type MemberIndex = 0 | 1
+const MEMBER_INDEX = 0
+const MEMBER_INVITE_INDEX = 1
+type MemberIndex = 0 | 1
 
 type GroupParams = {
   group: Group | null
@@ -120,8 +117,8 @@ export default function GroupPage(props: {
   }
   return (
     <Page
-      trackPageView={'group slug page'}
-      trackPageProps={{ groupSlug: groupParams?.group?.slug }}
+      trackPageView={'category slug page'}
+      trackPageProps={{ slug: groupParams?.group?.slug }}
       key={`group-${slugs[0]}`}
       mainClassName="!mt-0"
     >
@@ -133,7 +130,7 @@ export default function GroupPage(props: {
   )
 }
 
-export function NonPrivateGroupPage(props: { groupParams: GroupParams }) {
+function NonPrivateGroupPage(props: { groupParams: GroupParams }) {
   const { groupParams } = props
   const { group } = groupParams
   if (group === null) {
@@ -152,7 +149,7 @@ export function NonPrivateGroupPage(props: { groupParams: GroupParams }) {
   )
 }
 
-export function GroupPageContent(props: { groupParams?: GroupParams }) {
+function GroupPageContent(props: { groupParams?: GroupParams }) {
   const { groupParams } = props
   const router = useRouter()
   const { slugs } = router.query as { slugs: string[] }
@@ -219,13 +216,6 @@ export function GroupPageContent(props: { groupParams?: GroupParams }) {
   const groupUrl = `https://${ENV_CONFIG.domain}${groupPath(group.slug)}`
   return (
     <>
-      {!realtimeRole && isManifoldAdmin && (
-        <Row className="fixed top-14 z-50 w-full justify-end sm:top-0 lg:left-0 lg:justify-center">
-          <div className="rounded bg-red-200/80 px-4 py-2 text-lg font-bold text-red-500 lg:ml-[47rem]">
-            ADMIN
-          </div>
-        </Row>
-      )}
       <AddContractButton
         group={group}
         user={user}
@@ -245,16 +235,13 @@ export function GroupPageContent(props: { groupParams?: GroupParams }) {
         />
       )}
       <div className="relative">
-        <div ref={bannerRef}>
-          <BannerImage
-            group={group}
-            user={user}
-            canEdit={userRole === 'admin'}
-            key={group.id}
-          />
-        </div>
-        <Col className="bg-canvas-0 absolute bottom-0 w-full bg-opacity-90 px-4">
-          <Row className="mt-4 mb-2 w-full justify-between gap-1">
+        {!realtimeRole && isManifoldAdmin && (
+          <div className="pointer-events-none absolute top-0 right-0 z-50 rounded bg-red-200/80 px-4 py-2 text-lg font-bold text-red-500">
+            ADMIN
+          </div>
+        )}
+        <Col className="bg-canvas-0 w-full bg-opacity-90 px-4">
+          <Row className="my-2 hidden w-full justify-between gap-1 sm:flex">
             <EditableGroupTitle
               group={group}
               isEditing={editingName}
@@ -263,44 +250,48 @@ export function GroupPageContent(props: { groupParams?: GroupParams }) {
                 if (changed) router.reload()
               }}
             />
-            <Col className="justify-end">
-              <Row className="items-center gap-2">
+            <Col>
+              <Row>
                 {user?.id != group.creatorId && (
                   <JoinOrLeaveGroupButton
                     group={group}
-                    isMember={!!userRole}
+                    isMember={!!realtimeRole}
                     user={user}
                   />
                 )}
-                {!isMobile && (
-                  <GroupOptions
-                    group={group}
-                    groupUrl={groupUrl}
-                    privateUser={privateUser}
-                    canEdit={userRole === 'admin'}
-                    setWritingNewAbout={setWritingNewAbout}
-                    onAddMemberClick={onAddMemberClick}
-                    setEditingName={setEditingName}
-                  />
-                )}
+                <GroupOptions
+                  group={group}
+                  groupUrl={groupUrl}
+                  privateUser={privateUser}
+                  canEdit={userRole === 'admin'}
+                  setWritingNewAbout={setWritingNewAbout}
+                  onAddMemberClick={onAddMemberClick}
+                  setEditingName={setEditingName}
+                />
               </Row>
             </Col>
           </Row>
-          <Row className="mb-2 gap-4">
-            <GroupMembersWidget
-              group={group}
-              canEdit={userRole === 'admin'}
-              onMemberClick={onMemberClick}
-              open={openMemberModal}
-              setOpen={setOpenMemberModal}
-              defaultTab={defaultMemberTab}
-            />
-            <GroupPrivacyStatusWidget
-              group={group}
-              canEdit={userRole === 'admin'}
-            />
-          </Row>
         </Col>
+        {editingName && (
+          <div className={'ml-1 sm:hidden'}>
+            <EditableGroupTitle
+              group={group}
+              isEditing={editingName}
+              onFinishEditing={(changed) => {
+                setEditingName(false)
+                if (changed) router.reload()
+              }}
+            />
+          </div>
+        )}
+        <div ref={bannerRef}>
+          <BannerImage
+            group={group}
+            user={user}
+            canEdit={userRole === 'admin'}
+            key={group.id}
+          />
+        </div>
       </div>
 
       <GroupAboutSection
@@ -364,12 +355,25 @@ export function GroupPageContent(props: { groupParams?: GroupParams }) {
             },
           ]}
         />
+        <Row
+          className={
+            'absolute right-2 top-1 w-full items-end justify-end sm:hidden'
+          }
+        >
+          {user?.id != group.creatorId && (
+            <JoinOrLeaveGroupButton
+              group={group}
+              isMember={!!realtimeRole}
+              user={user}
+            />
+          )}
+        </Row>
       </div>
     </>
   )
 }
 
-export function TopGroupNavBar(props: {
+function TopGroupNavBar(props: {
   group: Group
   groupUrl: string
   privateUser: PrivateUser | undefined | null

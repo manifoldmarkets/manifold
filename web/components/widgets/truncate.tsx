@@ -5,12 +5,11 @@ const truncatedLengths = {
   xl: 75,
 }
 
-export type truncateLengthType = 'sm' | 'md' | 'lg' | 'xl' | 'none'
 const TRUNCATE_BUFFER = 3
 
 export function truncateText(
   text: string | undefined,
-  truncateLength: truncateLengthType
+  truncateLength: 'sm' | 'md' | 'lg' | 'xl' | 'none'
 ) {
   if (truncateLength === 'none' || !text) {
     return text

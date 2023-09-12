@@ -32,14 +32,14 @@ export default function BannerImage(props: {
       <figure
         className={clsx(
           'group relative w-full',
-          groupBannerUrl ? ' h-60 sm:h-72' : 'h-24'
+          groupBannerUrl ? ' h-60 sm:h-72' : user && canEdit ? 'h-6' : 'h-0'
         )}
       >
         {groupBannerUrl && (
           <Image src={groupBannerUrl} alt="" fill className="object-cover" />
         )}
-        <div className="absolute bottom-1 right-3 z-10">
-          {user && canEdit && (
+        {user && canEdit && (
+          <div className="absolute bottom-0 right-3 z-10">
             <BannerDropdown
               group={group}
               open={changeBannerModalOpen}
@@ -49,8 +49,8 @@ export default function BannerImage(props: {
               user={user}
               onChangeBannerClick={() => setChangeBannerModalOpen(true)}
             />
-          )}
-        </div>
+          </div>
+        )}
       </figure>
     </>
   )

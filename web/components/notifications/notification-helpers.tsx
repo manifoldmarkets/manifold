@@ -9,7 +9,7 @@ import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { track } from 'web/lib/service/analytics'
 import { Row } from '../layout/row'
 import { RelativeTimestampNoTooltip } from '../relative-timestamp'
-import { truncateLengthType, truncateText } from '../widgets/truncate'
+import { truncateText } from '../widgets/truncate'
 import NotificationDropdown from './notification-dropdown'
 import { groupBy } from 'lodash'
 
@@ -36,7 +36,7 @@ export const NOTIFICATION_ICON_SIZE = 'md'
 
 export function PrimaryNotificationLink(props: {
   text: string | undefined
-  truncatedLength?: truncateLengthType
+  truncatedLength?: 'sm' | 'md' | 'lg' | 'xl' | 'none'
 }) {
   const { text, truncatedLength } = props
   if (!text) {
@@ -51,7 +51,7 @@ export function PrimaryNotificationLink(props: {
 
 export function QuestionOrGroupLink(props: {
   notification: Notification
-  truncatedLength?: truncateLengthType
+  truncatedLength?: 'sm' | 'md' | 'lg' | 'xl' | 'none'
   ignoreClick?: boolean
 }) {
   const { notification, ignoreClick, truncatedLength } = props

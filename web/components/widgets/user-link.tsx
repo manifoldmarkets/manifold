@@ -18,7 +18,8 @@ import Foldy from '/public/logo.svg'
 
 export const isFresh = (createdTime: number) =>
   createdTime > Date.now() - DAY_MS * 14
-export function shortenName(name: string) {
+
+function shortenName(name: string) {
   const firstName = name.split(' ')[0]
   const maxLength = 11
   const shortName =

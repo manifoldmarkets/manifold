@@ -17,7 +17,7 @@ import { GROUP_SLUGS_TO_HIDE_FROM_WELCOME_FLOW } from 'common/envs/constants'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import ShortToggle from '../widgets/short-toggle'
 import { InfoTooltip } from '../widgets/info-tooltip'
-import { updatePrivateUser } from 'web/lib/firebase/users'
+import { updatePrivateUser, updateUser } from 'web/lib/firebase/users'
 
 export function TopicSelectorDialog(props: {
   skippable: boolean
@@ -61,6 +61,8 @@ export function TopicSelectorDialog(props: {
     setIsLoading(true)
 
     if (user && !skipUpdate) await updateUserEmbedding()
+
+    if (user) await updateUser(user.id, { shouldShowWelcome: false })
 
     window.location.reload()
     // setOpen(false)

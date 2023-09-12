@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 
 export function useIsVisible(cb: () => void, once = false, isLoaded = true) {
   const ref = useRef<HTMLDivElement | null>(null)
+  const seenOnce = useRef(false)
 
   useEffect(() => {
     const element = ref.current
@@ -14,6 +15,7 @@ export function useIsVisible(cb: () => void, once = false, isLoaded = true) {
             cb()
             if (once) {
               observer.unobserve(element)
+              seenOnce.current = true
             }
           }
         })
@@ -21,7 +23,7 @@ export function useIsVisible(cb: () => void, once = false, isLoaded = true) {
       { threshold: 1 }
     )
 
-    observer.observe(element)
+    !seenOnce.current && observer.observe(element)
 
     return () => {
       observer.unobserve(element)

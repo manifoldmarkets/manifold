@@ -58,7 +58,7 @@ import { safeLocalStorage } from 'web/lib/util/local'
 import { Col } from '../layout/col'
 import { BuyAmountInput } from '../widgets/amount-input'
 import { getContractTypeThingFromValue } from './create-contract-types'
-import { GroupTag } from 'web/pages/groups'
+import { CategoryTag } from 'web/pages/groups'
 import { ContractVisibilityType, NewQuestionParams } from './new-contract-panel'
 import { VisibilityTheme } from 'web/pages/create'
 import { getContractWithFields } from 'web/lib/supabase/contracts'
@@ -566,9 +566,10 @@ export function ContractParamsForm(props: {
         {selectedGroups.length > 0 && (
           <Row className={'flex-wrap gap-2'}>
             {selectedGroups.map((group) => (
-              <GroupTag
+              <CategoryTag
+                location={'create page'}
                 key={group.id}
-                group={group}
+                category={group}
                 isPrivate={group.privacyStatus === 'private'}
                 className="bg-ink-100"
               >
@@ -581,7 +582,7 @@ export function ContractParamsForm(props: {
                 >
                   <XIcon className="hover:text-ink-700 text-ink-400 ml-1 h-4 w-4" />
                 </button>
-              </GroupTag>
+              </CategoryTag>
             ))}
           </Row>
         )}

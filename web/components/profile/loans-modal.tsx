@@ -19,7 +19,8 @@ export function LoansModal(props: {
           <span className={'text-primary-700'}>• What are daily loans?</span>
           <span className={'ml-2'}>
             Every day at midnight PT, get {LOAN_DAILY_RATE * 100}% of your total
-            bet amount back as a loan.
+            bet amount back as a loan. If your bet has depreciated in value, you
+            will get {LOAN_DAILY_RATE * 100}% of the lower value.
           </span>
           <span className={'text-primary-700'}>
             • Do I have to pay back a loan?

@@ -5,9 +5,9 @@ import { Group, PrivacyStatusType } from 'common/group'
 import { HideCommentReq } from 'web/pages/api/v0/hide-comment'
 import { Contract } from './contracts'
 export { APIError } from 'common/api'
-import { ContractTypeType, filter, Sort } from 'web/components/contracts-search'
+import { ContractTypeType, Filter, Sort } from 'web/components/contracts-search'
 import { AD_RATE_LIMIT } from 'common/boost'
-import { groupRoleType } from 'web/components/groups/group-member-modal'
+import { GroupRole } from 'web/components/groups/group-member-modal'
 import { Bet } from 'common/bet'
 import { ContractComment } from 'common/comment'
 import { Post } from 'common/post'
@@ -224,7 +224,7 @@ export function updateGroupPrivacy(params: {
 export function addGroupMember(params: {
   groupId: string
   userId: string
-  role?: groupRoleType
+  role?: GroupRole
 }) {
   return call(getApiUrl('addgroupmember'), 'POST', params)
 }
@@ -269,7 +269,7 @@ export function createCommentOnContract(params: {
 
 export function supabaseSearchContracts(params: {
   term: string
-  filter: filter
+  filter: Filter
   sort: Sort
   contractType: ContractTypeType
   offset: number

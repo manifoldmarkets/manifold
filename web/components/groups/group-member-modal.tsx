@@ -222,8 +222,8 @@ export function NonSearchGroupMemberModalContent(props: {
   )
 }
 
-export type groupRoleType = 'admin' | 'moderator' | 'member'
-export const roleDescription = {
+export type GroupRole = 'admin' | 'moderator' | 'member'
+const roleDescription = {
   admin: `Can appoint roles, edit the category, and add or delete anyone's content from category`,
   moderator: `Can add or delete anyone's content from category`,
   member: 'Can only add their own content to category',
@@ -256,7 +256,7 @@ export function LoadingMember(props: { className?: string }) {
 export function MemberRoleSection(props: {
   group: Group
   members: Member[] | undefined
-  role: groupRoleType
+  role: GroupRole
   canEdit: boolean
 }) {
   const { group, members, role, canEdit } = props

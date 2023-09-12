@@ -13,12 +13,13 @@ import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { useUser } from 'web/hooks/use-user'
 import GroupSearch from 'web/components/groups/group-search'
 import { useMemberGroupIds } from 'web/hooks/use-group-supabase'
+import { track } from 'web/lib/service/analytics'
 
 export default function Groups() {
   const user = useUser()
 
   return (
-    <Page trackPageView={'groups page'}>
+    <Page trackPageView={'categories page'}>
       <SEO
         title="Categories"
         description="Categories of questions."
@@ -61,13 +62,14 @@ export function GroupsPageContent(props: { user: User | null | undefined }) {
   return <YourGroups yourGroupIds={yourGroupIds} />
 }
 
-export function GroupTag(props: {
-  group: { slug: string; name: string }
+export function CategoryTag(props: {
+  category: { slug: string; name: string }
+  location: 'feed card' | 'market page' | 'categories list' | 'create page'
   isPrivate?: boolean
   className?: string
   children?: React.ReactNode // end element - usually for a remove button
 }) {
-  const { group, isPrivate, className, children } = props
+  const { category, isPrivate, className, children } = props
 
   return (
     <span
@@ -78,9 +80,12 @@ export function GroupTag(props: {
     >
       <Link
         prefetch={false}
-        href={groupPath(group.slug)}
+        href={groupPath(category.slug)}
         onClick={(e) => {
           e.stopPropagation()
+          track(`click category tag on ${location}`, {
+            categoryName: category.name,
+          })
         }}
         className={' max-w-[200px] truncate sm:max-w-[250px]'}
       >
@@ -91,7 +96,7 @@ export function GroupTag(props: {
             #
           </span>
         )}
-        {group.name}
+        {category.name}
       </Link>
       {children}
     </span>

@@ -2,7 +2,7 @@ import { Contract } from 'common/contract'
 import { Group } from 'common/group'
 import { User } from 'common/user'
 import { useEffect, useState } from 'react'
-import { groupRoleType } from 'web/components/groups/group-member-modal'
+import { GroupRole } from 'web/components/groups/group-member-modal'
 import { useSupabasePolling } from 'web/hooks/use-supabase-polling'
 import { getUserIsGroupMember } from 'web/lib/firebase/api'
 import { db } from 'web/lib/supabase/db'
@@ -104,7 +104,7 @@ export const useGroupsWithContract = (
 }
 
 export function useRealtimeRole(groupId: string | undefined) {
-  const [userRole, setUserRole] = useState<groupRoleType | null | undefined>(
+  const [userRole, setUserRole] = useState<GroupRole | null | undefined>(
     undefined
   )
   const user = useUser()
@@ -214,7 +214,7 @@ export function usePollingNumGroupMembers(groupId: string) {
 export async function setTranslatedMemberRole(
   groupId: string | undefined,
   isManifoldAdmin: boolean,
-  setRole: (role: groupRoleType | null) => void,
+  setRole: (role: GroupRole | null) => void,
   user?: User | null
 ) {
   if (isManifoldAdmin) {
@@ -227,7 +227,7 @@ export async function setTranslatedMemberRole(
           if (!result.data[0].role) {
             setRole('member')
           } else {
-            setRole(result.data[0].role as groupRoleType)
+            setRole(result.data[0].role as GroupRole)
           }
         } else {
           setRole(null)

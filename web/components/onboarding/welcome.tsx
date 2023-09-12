@@ -41,10 +41,9 @@ export default function Welcome() {
   const close = () => {
     setOpen(false)
     setPage(0)
-    if (user?.shouldShowWelcome) {
-      updateUser(user.id, { shouldShowWelcome: false })
-      setGroupSelectorOpen(true)
-    }
+
+    setGroupSelectorOpen(true)
+
     if (showSignedOutUser) setShowSignedOutUser(false)
   }
   function increasePage() {

@@ -5,8 +5,6 @@ import { useEffect, useRef } from 'react'
 import { buildArray, filterDefined } from 'common/util/array'
 import { useEvent } from './use-event'
 import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
-import { getBoosts } from 'web/lib/supabase/ads'
-import { BoostsType } from 'web/hooks/use-feed'
 import { mapTypes, Row, run, tsToMillis } from 'common/supabase/utils'
 import { db } from 'web/lib/supabase/db'
 import {
@@ -43,6 +41,7 @@ import { removeUndefinedProps } from 'common/util/object'
 import { convertAnswer } from 'common/supabase/contracts'
 import { compareTwoStrings } from 'string-similarity'
 import dayjs from 'dayjs'
+import { useBoosts } from 'web/hooks/use-boosts'
 
 export const DEBUG_FEED_CARDS =
   typeof window != 'undefined' &&
@@ -114,12 +113,7 @@ export const useFeedTimeline = (
   privateUser: PrivateUser,
   key: string
 ) => {
-  const [boosts, setBoosts] = usePersistentInMemoryState<
-    BoostsType | undefined
-  >(undefined, `boosts-${user?.id}-${key}`)
-  useEffect(() => {
-    getBoosts(privateUser).then(setBoosts)
-  }, [])
+  const boosts = useBoosts(privateUser, key)
   const followedIds = useFollowedIdsSupabase(privateUser.id)
   if (DEBUG_FEED_CARDS)
     console.log('DEBUG_FEED_CARDS is true, not marking feed cards as seen')

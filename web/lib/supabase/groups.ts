@@ -3,7 +3,7 @@ import { Group } from 'common/group'
 import { Row, run, SupabaseClient } from 'common/supabase/utils'
 import { db } from './db'
 import { Contract } from '../firebase/contracts'
-import { groupStateType } from 'web/components/groups/group-search'
+import { GroupState } from 'web/components/groups/group-search'
 import { supabaseSearchGroups } from '../firebase/api'
 import { convertGroup } from 'common/supabase/groups'
 
@@ -25,7 +25,7 @@ export async function getGroupContracts(groupId: string) {
 }
 
 export async function searchGroups(props: {
-  state?: groupStateType
+  state?: GroupState
   term: string
   offset?: number
   limit: number
@@ -108,7 +108,7 @@ export async function searchGroups(props: {
 }
 
 export async function searchGroupsFuzzy(props: {
-  state: groupStateType
+  state: GroupState
   term: string
   limit: number
   yourGroups?: boolean

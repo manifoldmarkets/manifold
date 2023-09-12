@@ -40,7 +40,7 @@ export function AddFundsModal(props: {
       className="bg-canvas-0 text-ink-1000 rounded-md p-8"
     >
       <Tabs
-        currentPageForAnalytics="buy modal"
+        trackingName="buy modal tabs"
         tabs={[
           {
             title: 'Buy Mana',
@@ -220,7 +220,7 @@ export function FundsSelector(props: {
   )
 }
 
-export const use24hrUsdPurchases = (userId: string) => {
+const use24hrUsdPurchases = (userId: string) => {
   const [purchases, setPurchases] = useState<Txn[]>([])
 
   useEffect(() => {

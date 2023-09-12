@@ -350,6 +350,7 @@ function LeaguesInnerPage(props: {
     <>
       <div className={'h-0'} ref={setContainerRef} />
       <QueryUncontrolledTabs
+        trackingName="league tabs"
         labelClassName={'!pb-3 !pt-0'}
         onClick={(tab) => {
           if (tab === 'Chat') {
