@@ -10,9 +10,10 @@ import { Button } from 'web/components/buttons/button'
 import {
   DashboardContent,
   DashboardItem,
+  DashboardLinkItem,
   DashboardQuestionItem,
 } from 'web/components/dashboard/dashboard-content'
-import { DashboardAddContractButton } from 'web/components/dashboard/dashboard-search-contract-button'
+import { DashboardAddContractButton } from 'web/components/dashboard/dashboard-add-contract-button'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
@@ -22,6 +23,7 @@ import { ExpandingInput } from 'web/components/widgets/expanding-input'
 import { Title } from 'web/components/widgets/title'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { createDashboard } from 'web/lib/firebase/api'
+import { DashboardAddLinkButton } from 'web/components/dashboard/dashboard-add-link-button'
 
 export default function CreateDashboard() {
   const [title, setTitle] = usePersistentLocalState(
@@ -112,7 +114,6 @@ export default function CreateDashboard() {
             maxLength={150}
             value={title}
             onChange={(e) => setTitle(e.target.value || '')}
-            className="bg-canvas-50"
           />
         </Col>
         <Spacer h={6} />
@@ -120,7 +121,7 @@ export default function CreateDashboard() {
           <label className="gap-2 px-1 py-2">
             <span className="mb-1">Description</span>
           </label>
-          <TextEditor editor={editor} className="bg-canvas-50" />
+          <TextEditor editor={editor} />
         </Col>
         <Spacer h={6} />
         <div className="mb-2">Content</div>
@@ -149,11 +150,11 @@ export default function CreateDashboard() {
             }}
           />
           OR
-          <Button className="w-1/2" color="gray-outline">
-            <div className="flex flex-col items-center gap-1 sm:flex-row sm:gap-2">
-              <ExternalLinkIcon className="h-5 w-5" /> Add link
-            </div>
-          </Button>
+          <DashboardAddLinkButton
+            addLink={(link: DashboardLinkItem) => {
+              setItems((items) => [...items, link])
+            }}
+          />
         </Row>
         <Spacer h={6} />
         <span className={'text-error'}>{errorText}</span>
