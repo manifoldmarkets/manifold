@@ -32,7 +32,6 @@ export const createdashboard = authEndpoint(async (req, auth) => {
     auth.uid,
   ])
 
-  console.log(user)
   // create if not exists the group invite link row
   const { id } = await pg.one(
     `insert into dashboards(slug, creator_id, description, title, items, creator_username, creator_name, creator_avatar_url)

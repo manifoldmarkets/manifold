@@ -15,7 +15,6 @@ export const getyourdashboards = authEndpoint(async (req, auth) => {
     db.from('dashboards').select('*').eq('creator_id', auth.uid)
   )
 
-  console.log(data)
   if (data && data.length > 0) {
     return { dashboards: data }
   }

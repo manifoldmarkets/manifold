@@ -52,7 +52,6 @@ export default function DashboardPage() {
 
 function DashboardPreviews(props: { dashboards?: Dashboard[] }) {
   const { dashboards } = props
-  console.log(dashboards)
   if (!dashboards || dashboards.length === 0) return null
 
   return (
