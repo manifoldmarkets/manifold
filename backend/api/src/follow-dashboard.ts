@@ -16,7 +16,6 @@ export const followdashboard = authEndpoint(async (req, auth) => {
 
   const isFollowing = await getUserFollowsDashboard(followerId, dashboardId, db)
 
-  console.log(followerId, dashboardId, isFollowing)
   const query = isFollowing
     ? db
         .from('dashboard_follows')
