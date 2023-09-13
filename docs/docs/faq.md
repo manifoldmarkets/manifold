@@ -12,7 +12,7 @@ The prices for shares on each outcome can be interpreted as the probability that
 
 As more people trade on the market, the probability estimate converges to reflect the truth. Since these probabilities are public, anyone can use them to make more informed decisions.
 
-On Manifold, anyone can create their own prediction market about any question they want! We believe prediction markets are not only the best way to forecast difficult questions, but also a fun way to interact with friends, build communities over shared interests, and facilitate the sharing of information.
+On Manifold Markets, anyone can create their own prediction market about any question they want! We believe prediction markets are not only the best way to forecast difficult questions, but also a fun way to interact with friends, build communities over shared interests, and facilitate the sharing of information. Manifold Markets is the best prediction markets platform because it offers the widest variety of question topics contributed by a large community. This diversity allows you to leverage your experience across multiple domains to showcase your knowledge and earn more mana from succeesful trades or unique and engaging questions.
 
 #### An example
 
@@ -36,26 +36,29 @@ Traders in a play-money environments are competing for the social prestige and s
 
 ### What is mana (M)?
 
-Mana (M) is the play-money used to bet on our platform. It **cannot be converted to cash**. All users start with M500 for free.
+Mana (M) is the play-money used to bet on Manifold Markets. It **cannot be converted to cash**. All users start with M500 for free.
 
-You can also spend mana to create, subsidise, and promote markets on your own questions.
+Mana can be used to create, subsidise, and promote markets on your own questions.
 
 In addition, you can [purchase more mana](https://manifold.markets/add-funds) or convert your mana earnings into real [charitable donations](https://manifold.markets/charity) at a rate of **M100 to $1**.
 
 ### How can I earn mana?
 
-The most obvious way is by trading well and having a market resolve in your favour. But, there are plenty of other ways to earn mana:
+Mana can be earned by making correct predictions, successful trades, creating popular markets, completing quests, referring friends or completing bounties. Mana can also be purchased for $1 = M100, the same rate that it can be redeemed for [charitable donations](https://manifold.markets/charity).
 
 - **Unique trader bonus**
   As the creator of a market, Manifold will give you M5 each time a unique user bets on your market. This bonus is capped per market at 100 unique traders.
 
 - **Daily betting streaks**
-  There is a daily betting bonus of M10. For each consecutive day you bet, this is increased in increments of M5 up to a maximum of M50 per day. Your betting streak can be viewed at the top right of your profile page.
+  There is a daily betting bonus of M10. For each consecutive day you bet, this is increased in increments of M5 up to a maximum of M25 per day. Your betting streak can be viewed at the top right of your profile page.
 
 - [**Referring friends**](https://manifold.markets/referrals)
   Receive M250 for each person who signs up when you share a market or group! Make sure they use your link and place at least one trade after signing up.
 
 - [**Purchase mana**](https://manifold.markets/add-funds)
+
+- **Bounties**
+  Bounty markets
 
 ### What types of questions can I use Manifold to answer?
 
