@@ -7,8 +7,9 @@ create table if not exists
     created_time timestamptz not null default now(),
     description json,
     title text not null,
-    items jsonb default '[]'::jsonb
+    items jsonb default '[]'::jsonb,
+    visibility text default 'public',
+    creator_username text not null,
+    creator_name text not null,
+    creator_avatar_url text not null
   );
-
-ALTER TABLE dashboards
-ADD COLUMN visibility TEXT DEFAULT 'public'

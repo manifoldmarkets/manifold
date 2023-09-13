@@ -66,30 +66,26 @@ function DashboardPreviews(props: { dashboards?: Dashboard[] }) {
 
 function DashboardPreview(props: { dashboard: Dashboard }) {
   const { dashboard } = props
-  const creator = useUserById(dashboard.creator_id)
+  const { slug, creator_avatar_url, creator_username, creator_name } = dashboard
   return (
     <Link
-      href={`/dashboard/${dashboard.slug}`}
+      href={`/dashboard/${slug}`}
       className=" bg-canvas-0 border-canvas-0 hover:border-primary-300 flex flex-col gap-2 rounded-lg border px-4 py-2 transition-colors"
     >
       <Row className={'text-ink-500 items-center gap-1 text-sm'}>
-        {creator && (
-          <>
-            <Avatar
-              size={'xs'}
-              className={'mr-0.5'}
-              avatarUrl={creator.avatarUrl}
-              username={creator.username}
-            />
-            <UserLink
-              name={creator.name}
-              username={creator.username}
-              className={clsx(
-                'w-full max-w-[10rem] text-ellipsis sm:max-w-[12rem]'
-              )}
-            />
-          </>
-        )}
+        <Avatar
+          size={'xs'}
+          className={'mr-0.5'}
+          avatarUrl={creator_avatar_url}
+          username={creator_username}
+        />
+        <UserLink
+          name={creator_name}
+          username={creator_username}
+          className={clsx(
+            'w-full max-w-[10rem] text-ellipsis sm:max-w-[12rem]'
+          )}
+        />
       </Row>
       <div className="text-lg">{dashboard.title}</div>
     </Link>
