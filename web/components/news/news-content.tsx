@@ -444,7 +444,8 @@ const UFOs = createNewsDashboardTab(
   ],
   <Col>
     <div className="mb-4">
-      Claims about the purported 'alien bodies' presented to Mexican Congress, via{' '}
+      Claims about the purported 'alien bodies' presented to Mexican Congress,
+      via{' '}
       <Link
         href="https://twitter.com/ChrisCYVR/status/1701790411159920899"
         target="_blank"
@@ -455,7 +456,7 @@ const UFOs = createNewsDashboardTab(
       :
     </div>
 
-    <ul className="list-inside list-disc text-sm mb-4">
+    <ul className="mb-4 list-inside list-disc text-sm">
       <li>Recovered in Peru in a diatom mine</li>
       <li>Found in 2017 between Palpa & Nazca</li>
       <li>Not part of our terrestrial evolution</li>
