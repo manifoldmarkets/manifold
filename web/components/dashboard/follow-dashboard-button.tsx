@@ -21,7 +21,7 @@ export function FollowDashboardButton(props: {
   if (
     !user ||
     !isAuth
-    // || dashboardCreatorId === user?.id
+    || dashboardCreatorId === user?.id
   ) {
     return null
   }
