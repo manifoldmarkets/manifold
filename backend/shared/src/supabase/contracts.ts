@@ -296,9 +296,11 @@ export const getUserToReasonsInterestedInContractAndUser = async (
 }
 
 export const isContractLikelyNonPredictive = async (
-  contractId: string,
+  contract: Contract,
   pg: SupabaseDirectClient
 ): Promise<boolean> => {
+  if (contract.question.trim().toLowerCase().includes('daily coinflip'))
+    return true
   return (
     await pg.map(
       `
@@ -306,8 +308,8 @@ export const isContractLikelyNonPredictive = async (
     ((select embedding from contract_embeddings where contract_id = $1)
          <=>
         (select embedding from group_embeddings where group_id = $2)) as distance`,
-      [contractId, NON_PREDICTIVE_GROUP_ID],
-      (row) => row.distance < 0.1
+      [contract.id, NON_PREDICTIVE_GROUP_ID],
+      (row) => row.distance < 0.11
     )
   )[0]
 }

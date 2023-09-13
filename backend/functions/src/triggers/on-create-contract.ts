@@ -62,7 +62,7 @@ export const onCreateContract = functions
         await new Promise((resolve) => setTimeout(resolve, 5000))
       }
       const likelyNonPredictive = await isContractLikelyNonPredictive(
-        contract.id,
+        contract,
         pg
       )
       log('likelyNonPredictive:', likelyNonPredictive)
