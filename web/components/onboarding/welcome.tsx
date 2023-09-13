@@ -117,8 +117,8 @@ function WhatIsManifoldPage() {
         Welcome to Manifold
       </div>
       <p className="mb-4 text-lg">
-        Manifold is a new way to get news and answers to real-world questions.
-        Compete with your friends by betting on literally anything.
+        Manifold is a play-money prediction market platform where you can bet on
+        anything.
       </p>
       <p> </p>
     </>
@@ -132,8 +132,8 @@ function PredictionMarketPage() {
         How it works
       </div>
       <div className="mt-2 text-lg">
-        Create a question on anything. Bet on the right answer. The probability
-        is the market's best estimate.
+        Create a question on anything. Bet on the right answer. Traders putting
+        their money where their mouth is produces accurate predictions.
       </div>
       <Image
         src="/welcome/manifold-example.gif"
