@@ -7,7 +7,6 @@ import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { Title } from 'web/components/widgets/title'
 import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
-import { db } from 'web/lib/supabase/db'
 
 export async function getStaticProps(ctx: {
   params: { dashboardSlug: string }

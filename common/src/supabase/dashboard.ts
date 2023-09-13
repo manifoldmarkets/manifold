@@ -1,6 +1,5 @@
 import { SupabaseClient } from '@supabase/supabase-js'
 import { run } from './utils'
-import { Dashboard } from 'common/dashboard'
 
 export async function getDashboardFromSlug(slug: string, db: SupabaseClient) {
   const { data: dashboard } = await run(
