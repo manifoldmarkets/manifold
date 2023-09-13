@@ -46,7 +46,6 @@ import { useBoosts } from 'web/hooks/use-boosts'
 export const DEBUG_FEED_CARDS =
   typeof window != 'undefined' &&
   window.location.toString().includes('localhost:3000')
-const PAGE_SIZE = 50
 
 export type FeedTimelineItem = {
   // These are stored in the db
@@ -80,35 +79,78 @@ export type FeedTimelineItem = {
   manuallyCreatedFromContract?: boolean
   relatedItems?: FeedTimelineItem[]
 }
-const baseUserFeedQuery = (
-  userId: string,
-  privateUser: PrivateUser,
-  ignoreContractIds: string[]
-) => {
-  return (
-    db
-      .from('user_feed')
-      .select('*')
-      .eq('user_id', userId)
-      .not(
-        'creator_id',
-        'in',
-        `(${privateUser.blockedUserIds.concat(privateUser.blockedByUserIds)})`
-      )
-      .not('contract_id', 'in', `(${privateUser.blockedContractIds})`)
-      // New comments or news items with/on contracts we already have on feed are okay
-      .or(
-        `data_type.eq.new_comment,data_type.eq.news_with_related_contracts,contract_id.not.in.(${ignoreContractIds})`
-      )
-      .order('relevance_score', { ascending: false })
-      .limit(PAGE_SIZE)
-  )
-}
-
 type loadProps = {
   new?: boolean
   old?: boolean
   ignoreFeedTimelineItems: FeedTimelineItem[]
+}
+const baseQuery = (
+  userId: string,
+  privateUser: PrivateUser,
+  ignoreContractIds: string[],
+  limit: number
+) =>
+  db
+    .from('user_feed')
+    .select('*')
+    .eq('user_id', userId)
+    .not(
+      'creator_id',
+      'in',
+      `(${privateUser.blockedUserIds.concat(privateUser.blockedByUserIds)})`
+    )
+    .not('contract_id', 'in', `(${privateUser.blockedContractIds})`)
+    // New comments or news items with/on contracts we already have on feed are okay
+    .or(
+      `data_type.eq.new_comment,data_type.eq.news_with_related_contracts,contract_id.not.in.(${ignoreContractIds})`
+    )
+    .order('relevance_score', { ascending: false })
+    .limit(limit)
+
+const queryForFeedRows = async (
+  userId: string,
+  privateUser: PrivateUser,
+  options: loadProps,
+  newestCreatedTimestamp: string
+) => {
+  const ignoreContractIds = filterDefined(
+    options.ignoreFeedTimelineItems
+      .map((item) =>
+        (item.relatedItems ?? [])
+          .map((c) => c.contractId)
+          .concat([item.contractId])
+      )
+      .flat()
+  )
+
+  const queriesByType: { dataTypes: FEED_DATA_TYPES[]; limit: number }[] = [
+    {
+      dataTypes: ['contract_probability_changed', 'trending_contract'],
+      limit: 15,
+    },
+    { dataTypes: ['new_comment'], limit: 10 },
+    { dataTypes: ['new_subsidy', 'news_with_related_contracts'], limit: 10 },
+    { dataTypes: ['new_contract'], limit: 10 },
+    { dataTypes: ['user_position_changed'], limit: 5 },
+  ]
+  const results = await Promise.all(
+    queriesByType.map(async (q) => {
+      let query = baseQuery(userId, privateUser, ignoreContractIds, q.limit).in(
+        'data_type',
+        q.dataTypes
+      )
+      if (options.new) {
+        query = query.gt('created_time', newestCreatedTimestamp)
+      } else if (options.old) {
+        query = query
+          .lt('created_time', newestCreatedTimestamp)
+          .is('seen_time', null)
+      }
+      const data = await query
+      return data.data
+    })
+  )
+  return filterDefined(results.flat())
 }
 export const useFeedTimeline = (
   user: User | null | undefined,
@@ -132,26 +174,12 @@ export const useFeedTimeline = (
   const fetchFeedItems = async (userId: string, options: loadProps) => {
     if (loadingFirstCards.current && options.new) return { timelineItems: [] }
 
-    const ignoreContractIds = filterDefined(
-      options.ignoreFeedTimelineItems
-        .map((item) =>
-          (item.relatedItems ?? [])
-            .map((c) => c.contractId)
-            .concat([item.contractId])
-        )
-        .flat()
+    const data = await queryForFeedRows(
+      userId,
+      privateUser,
+      options,
+      newestCreatedTimestamp.current
     )
-
-    let query = baseUserFeedQuery(userId, privateUser, ignoreContractIds)
-
-    if (options.new) {
-      query = query.gt('created_time', newestCreatedTimestamp.current)
-    } else if (options.old) {
-      query = query
-        .lt('created_time', newestCreatedTimestamp.current)
-        .is('seen_time', null)
-    }
-    const { data } = await run(query)
 
     const newFeedRows = data.map((d) => {
       const createdTimeAdjusted =
@@ -284,7 +312,7 @@ export const useFeedTimeline = (
         !d.news_id &&
         !openFeedContractIds.includes(d.contract_id)
     )
-    // TODO: should we set a discarded field instead of seen_time?
+    //TODO: Mark all the user_position_changed feed items as seen that match creator_id, contract_id
     setSeenFeedItems(closedOrResolvedContractFeedIds)
 
     const filteredNewContracts = contracts?.filter(
