@@ -65,7 +65,12 @@ import { MINUTE_MS } from 'common/util/time'
 const firestore = admin.firestore()
 
 export const onCreateBet = functions
-  .runWith({ secrets, memory: '512MB', timeoutSeconds: 540 })
+  .runWith({
+    secrets,
+    memory: '512MB',
+    timeoutSeconds: 540,
+    minInstances: 10,
+  })
   .firestore.document('contracts/{contractId}/bets/{betId}')
   .onCreate(async (change, context) => {
     const { contractId } = context.params as { contractId: string }
