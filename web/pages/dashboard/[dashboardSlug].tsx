@@ -6,15 +6,20 @@ import { DashboardSidebar } from 'web/components/dashboard/dashboard-sidebar'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { Title } from 'web/components/widgets/title'
+import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
 import { db } from 'web/lib/supabase/db'
 
 export async function getStaticProps(ctx: {
   params: { dashboardSlug: string }
 }) {
   const { dashboardSlug } = ctx.params
+  const adminDb = await initSupabaseAdmin()
 
   try {
-    const dashboard: Dashboard = await getDashboardFromSlug(dashboardSlug, db)
+    const dashboard: Dashboard = await getDashboardFromSlug(
+      dashboardSlug,
+      adminDb
+    )
     return { props: { dashboard } }
   } catch (e) {
     if (typeof e === 'object' && e !== null && 'code' in e && e.code === 404) {

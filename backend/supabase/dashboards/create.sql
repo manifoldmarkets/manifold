@@ -5,8 +5,11 @@ create table if not exists
     creator_id text not null,
     foreign key (creator_id) references users (id),
     created_time timestamptz not null default now(),
-    views numeric not null default 0,
     description json,
     title text not null,
-    items jsonb default '[]'::jsonb
+    items jsonb default '[]'::jsonb,
+    visibility text default 'public',
+    creator_username text not null,
+    creator_name text not null,
+    creator_avatar_url text not null
   );
