@@ -484,3 +484,7 @@ export function createDashboard(params: {
 export function getYourDashboards() {
   return call(getApiUrl('getyourdashboards'), 'POST')
 }
+
+export function followDashboard(params: { dashboardId: string }) {
+  return call(getApiUrl('followdashboard'), 'POST', params)
+}
