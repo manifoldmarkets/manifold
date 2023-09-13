@@ -45,6 +45,7 @@ export async function getStaticPaths() {
 export default function DashboardPage(props: { dashboard: Dashboard }) {
   const { dashboard } = props
   const [items, setItems] = useState<DashboardItem[]>(dashboard.items)
+  const user = useUser()
   return (
     <Page
       trackPageView={'dashboard slug page'}
@@ -55,13 +56,16 @@ export default function DashboardPage(props: { dashboard: Dashboard }) {
     >
       <Col className="items-center">
         <Col className="w-full max-w-2xl px-1 sm:px-2">
-          <Row className="w-full justify-between">
+          <Row className="w-full items-center justify-between">
             <Title className="mt-4">{dashboard.title}</Title>
-         <FollowDashboardButton dashboardId={dashboard.id}/>
+            <FollowDashboardButton
+              dashboardId={dashboard.id}
+              dashboardCreatorId={dashboard.creator_id}
+            />
           </Row>
           <DashboardSidebar description={dashboard.description} />
           <DashboardContent
-            items={dashboard.items}
+            items={items}
             onRemove={(slugOrUrl: string) => {
               setItems((items) => {
                 return items.filter((item) => {
