@@ -18,11 +18,7 @@ export function FollowDashboardButton(props: {
     dashboardId
   )
   const isAuth = useIsAuthorized()
-  if (
-    !user ||
-    !isAuth
-    || dashboardCreatorId === user?.id
-  ) {
+  if (!user || !isAuth || dashboardCreatorId === user?.id) {
     return null
   }
   return (
