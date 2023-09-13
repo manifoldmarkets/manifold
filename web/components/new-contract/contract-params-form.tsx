@@ -143,6 +143,10 @@ export function ContractParamsForm(props: {
     '',
     'last-categorized-question' + paramsKey
   )
+  const [hasChosenCategory, setHasChosenCategory] = usePersistentLocalState(
+    (params?.groupIds?.length ?? 0) > 0,
+    'has-chosen-category' + paramsKey
+  )
 
   const ante = getAnte(outcomeType, numAnswers)
 
@@ -314,6 +318,7 @@ export function ContractParamsForm(props: {
     setInitialValueString('')
     setIsLogScale(false)
     setBountyAmount(50)
+    setHasChosenCategory(false)
   }
 
   const [submitState, setSubmitState] = useState<
@@ -390,10 +395,15 @@ export function ContractParamsForm(props: {
 
   const finishedTypingQuestion = async () => {
     const trimmed = question.trim()
+    if (trimmed === '') {
+      setHasChosenCategory(false)
+      return
+    }
     if (
       trimmed.length == 0 ||
       params?.groupIds?.length ||
-      trimmed === categorizedQuestion
+      trimmed === categorizedQuestion ||
+      hasChosenCategory
     )
       return
     setCategorizedQuestion(trimmed)
@@ -574,11 +584,13 @@ export function ContractParamsForm(props: {
                 className="bg-ink-100"
               >
                 <button
-                  onClick={() =>
-                    setSelectedGroups((groups) =>
-                      groups?.filter((g) => g.id !== group.id)
+                  onClick={() => {
+                    const cleared = selectedGroups.filter(
+                      (g) => g.id !== group.id
                     )
-                  }
+                    setSelectedGroups(cleared)
+                    if (question !== '') setHasChosenCategory(true)
+                  }}
                 >
                   <XIcon className="hover:text-ink-700 text-ink-400 ml-1 h-4 w-4" />
                 </button>
@@ -603,6 +615,7 @@ export function ContractParamsForm(props: {
             setSelectedGroups((groups) =>
               uniqBy([...(groups ?? []), group], 'id')
             )
+            setHasChosenCategory(true)
           }}
           ignoreGroupIds={selectedGroups.map((g) => g.id)}
           isContractCreator={true}
