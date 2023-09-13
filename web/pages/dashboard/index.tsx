@@ -20,10 +20,6 @@ export default function DashboardPage() {
   useRedirectIfSignedOut()
   const user = useUser()
 
-  if (!DASHBOARD_ENABLED) {
-    return <Custom404 />
-  }
-
   const isAuth = useIsAuthorized()
 
   const [yourDashboards, setYourDashboards] = useState<Dashboard[]>([])
@@ -35,6 +31,9 @@ export default function DashboardPage() {
     })
   }, [isAuth])
 
+  if (!DASHBOARD_ENABLED) {
+    return <Custom404 />
+  }
   return (
     <Page trackPageView={'dashboards page'}>
       <Col className="items-center">
