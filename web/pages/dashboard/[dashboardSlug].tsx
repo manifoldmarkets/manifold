@@ -1,11 +1,17 @@
 import { Dashboard, DashboardItem } from 'common/dashboard'
 import { getDashboardFromSlug } from 'common/supabase/dashboard'
+import { getUserFollowsDashboard } from 'common/supabase/dashboard-follows'
 import { useState } from 'react'
+import { FaBookmark, FaRegBookmark } from 'react-icons/fa6'
 import { DashboardContent } from 'web/components/dashboard/dashboard-content'
 import { DashboardSidebar } from 'web/components/dashboard/dashboard-sidebar'
+import { FollowDashboardButton } from 'web/components/dashboard/follow-dashboard-button'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
+import { Row } from 'web/components/layout/row'
 import { Title } from 'web/components/widgets/title'
+import { useUserFollowsDashboard } from 'web/hooks/use-dashboard-follows'
+import { useUser } from 'web/hooks/use-user'
 import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
 
 export async function getStaticProps(ctx: {
@@ -38,6 +44,7 @@ export async function getStaticPaths() {
 export default function DashboardPage(props: { dashboard: Dashboard }) {
   const { dashboard } = props
   const [items, setItems] = useState<DashboardItem[]>(dashboard.items)
+  const user = useUser()
   return (
     <Page
       trackPageView={'dashboard slug page'}
@@ -48,10 +55,16 @@ export default function DashboardPage(props: { dashboard: Dashboard }) {
     >
       <Col className="items-center">
         <Col className="w-full max-w-2xl px-1 sm:px-2">
-          <Title className="mt-4">{dashboard.title}</Title>
+          <Row className="w-full items-center justify-between">
+            <Title className="mt-4">{dashboard.title}</Title>
+            <FollowDashboardButton
+              dashboardId={dashboard.id}
+              dashboardCreatorId={dashboard.creator_id}
+            />
+          </Row>
           <DashboardSidebar description={dashboard.description} />
           <DashboardContent
-            items={dashboard.items}
+            items={items}
             onRemove={(slugOrUrl: string) => {
               setItems((items) => {
                 return items.filter((item) => {
