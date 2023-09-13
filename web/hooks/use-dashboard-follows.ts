@@ -1,5 +1,4 @@
 import { getUserFollowsDashboard } from 'common/supabase/dashboard-follows'
-import { get } from 'lodash'
 import { useEffect, useState } from 'react'
 import { db } from 'web/lib/supabase/db'
 
