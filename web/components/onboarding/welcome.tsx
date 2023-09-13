@@ -15,6 +15,12 @@ import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
 import { Row } from '../layout/row'
 import { TopicSelectorDialog } from './topic-selector-dialog'
+import { run } from 'common/supabase/utils'
+import { db } from 'web/lib/supabase/db'
+import { GROUP_SLUGS_TO_HIDE_FROM_WELCOME_FLOW } from 'common/envs/constants'
+import { Group } from 'common/group'
+import { getSubtopics, TOPICS_TO_SUBTOPICS } from 'common/topics'
+import { uniqBy } from 'lodash'
 
 export default function Welcome() {
   const user = useUser()
@@ -37,6 +43,61 @@ export default function Welcome() {
   useEffect(() => {
     if (user?.shouldShowWelcome) setOpen(true)
   }, [user?.shouldShowWelcome])
+
+  const [userInterestedCategories, setUserInterestedCategories] = useState<
+    Group[]
+  >([])
+  const [userBetInCategories, setUserBetInCategories] = useState<Group[]>([])
+  const [trendingCategories, setTrendingCategories] = useState<Group[]>([])
+
+  const getTrendingCategories = async (userId: string) => {
+    const hardCodedCategoryIds = Object.keys(TOPICS_TO_SUBTOPICS)
+      .map((topic) => getSubtopics(topic))
+      .flat()
+      .map(([_, __, groupId]) => groupId)
+    const [userInterestedGroups, trendingGroups] = await Promise.all([
+      run(db.rpc('get_groups_from_user_seen_markets', { uid: userId })),
+      run(
+        db
+          .from('groups')
+          .select('id,data')
+          .not('id', 'in', `(${hardCodedCategoryIds.join(',')})`)
+          .not(
+            'slug',
+            'in',
+            `(${GROUP_SLUGS_TO_HIDE_FROM_WELCOME_FLOW.join(',')})`
+          )
+          .or(`slug.not.ilike.%manifold%`)
+          .order('importance_score', { ascending: false })
+          .limit(15)
+      ),
+    ])
+    const userCategories = userInterestedGroups.data
+      ?.flat()
+      .map((groupData) => ({
+        ...(groupData?.data as Group),
+        id: groupData.id,
+        hasBet: groupData.has_bet,
+      }))
+    const userHasBet = userCategories?.some((g) => g.hasBet)
+    const trendingCategories = trendingGroups.data?.map((groupData) => ({
+      ...(groupData?.data as Group),
+      id: groupData.id,
+    }))
+
+    setTrendingCategories(
+      uniqBy([...(userCategories ?? []), ...(trendingCategories ?? [])], 'id')
+    )
+    if (userHasBet) {
+      setUserBetInCategories(userCategories ?? [])
+    } else {
+      setUserInterestedCategories(userCategories)
+    }
+  }
+
+  useEffect(() => {
+    if (user?.id) getTrendingCategories(user.id)
+  }, [user?.id])
 
   const close = () => {
     setOpen(false)
@@ -65,7 +126,15 @@ export default function Welcome() {
   if (!shouldShowWelcomeModals) return <></>
 
   if (groupSelectorOpen)
-    return <TopicSelectorDialog skippable={false} opaque={false} />
+    return (
+      <TopicSelectorDialog
+        skippable={false}
+        opaque={false}
+        trendingCategories={trendingCategories}
+        userInterestedCategories={userInterestedCategories}
+        userBetInCategories={userBetInCategories}
+      />
+    )
 
   return (
     <Modal open={open} setOpen={increasePage} bgOpaque={false} size={'lg'}>

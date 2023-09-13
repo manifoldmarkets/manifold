@@ -10,7 +10,7 @@ export const TOPICS_TO_SUBTOPICS: { [key: string]: TopicInfo[] } = {
     { name: '💻 Technology', groupId: 'IlzY3moWwOcpsVZXCVej' },
     { name: '🤖 AI', groupId: 'yEWvvwFFIqzf8JklMewp' },
     { name: '🪙 Crypto', groupId: 'YuJw0M1xvUHrpiRRuKso' },
-    { name: '🚀 Space', groupId: 'SmJk6RHToaLxLk0I1ZSC' },
+    { name: '🌌 Space', groupId: 'SmJk6RHToaLxLk0I1ZSC' },
     { name: '🪸 Climate', groupId: '97oNExy8iFftY2EgdkLw' },
     { name: '☢️ Nuclear', groupId: '27a193db-f997-4533-86a6-386d9a915045' },
     { name: '🧬 Biotech', groupId: 'zx0Pik5lD4jydGPxbLjB' },
