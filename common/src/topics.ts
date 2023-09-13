@@ -16,7 +16,7 @@ export const TOPICS_TO_SUBTOPICS: { [key: string]: TopicInfo[] } = {
     { name: '🧬 Biotech', groupId: 'zx0Pik5lD4jydGPxbLjB' },
     { name: '☤ Health', groupId: 'JpUqUqRn9sSWxrk0Sq35' },
     { name: '👨‍💻 Programming', groupId: 'PZJMbrLekgJBy7OOBKGT' },
-    { name: '🔬 Science', groupId: 'XMhZ5LbQoLMZiOpQJRnj' },
+    { name: '🧪 Science', groupId: 'XMhZ5LbQoLMZiOpQJRnj' },
     { name: '🧮 Math', groupId: 'S1tbcVt1t5Bd9O5mVCx1' },
   ],
   '💼 Business': [
