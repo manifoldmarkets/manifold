@@ -1,10 +1,7 @@
+import { Dashboard } from 'common/dashboard'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { z } from 'zod'
-import { APIError, Json, MaybeAuthedEndpoint, validate } from './helpers'
-import { convertGroup } from 'common/supabase/groups'
-import { Dashboard } from 'common/dashboard'
-
-const SIMILARITY_THRESHOLD = 0.2
+import { Json, MaybeAuthedEndpoint, validate } from './helpers'
 
 const bodySchema = z.object({
   term: z.string(),
