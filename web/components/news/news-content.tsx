@@ -291,8 +291,9 @@ const Election2024 = createNewsDashboardTab(
   '2024 US Election Updates',
   [
     {
-      url: 'https://www.politico.com/news/2023/09/01/biden-touts-job-numbers-people-are-coming-off-the-sidelines-00113767',
+      url: 'https://www.nbcnews.com/politics/politics-news/hunter-biden-indicted-federal-gun-charges-rcna39623',
     },
+    { slug: 'will-hunter-biden-be-indicted-befor-c928ea76a254' },
     { slug: 'will-a-democrat-win-the-2024-us-pre' },
     { slug: 'who-will-win-the-us-2024-democratic' },
     { slug: 'will-vivek-ramaswamy-win-the-septem' },
@@ -609,11 +610,11 @@ const G20 = createNewsDashboardTab('G20', 'G20 Summit in India (Bharat?)', [
 ])
 
 export const newsContent = [
+  Election2024,
   UFOs,
   Trump,
   G20,
   FLHurricane,
-  Election2024,
   STPSuper,
   UkraineWar,
   ElonVersusZuck,
