@@ -29,7 +29,10 @@ import { getTopContractMetrics } from 'common/supabase/contract-metrics'
 import ContractSharePanel from 'web/components/contract/contract-share-panel'
 import { ExtraContractActionsRow } from 'web/components/contract/extra-contract-actions-row'
 import { PrivateContractPage } from 'web/components/contract/private-contract'
-import { RelatedContractsList } from 'web/components/contract/related-contracts-widget'
+import {
+  RelatedContractsCarousel,
+  RelatedContractsList,
+} from 'web/components/contract/related-contracts-widget'
 import { EditableQuestionTitle } from 'web/components/contract/title-edit'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
@@ -547,6 +550,15 @@ export function ContractPageContent(props: {
               />
             )}
 
+            <RelatedContractsCarousel
+              className="mt-4 mb-2 xl:hidden"
+              contracts={relatedMarkets}
+              onContractClick={(c) =>
+                track('click related market', { contractId: c.id })
+              }
+              loadMore={loadMore}
+            />
+
             {isResolved && resolution !== 'CANCEL' && (
               <>
                 <ContractLeaderboard
@@ -601,14 +613,6 @@ export function ContractPageContent(props: {
         </Col>
       </Row>
 
-      <RelatedContractsList
-        className="mx-auto mt-8 min-w-[300px] max-w-[600px] xl:hidden"
-        contracts={relatedMarkets}
-        onContractClick={(c) =>
-          track('click related market', { contractId: c.id })
-        }
-        loadMore={loadMore}
-      />
       <Spacer className="xl:hidden" h={10} />
       <ScrollToTopButton className="fixed bottom-16 right-2 z-20 lg:bottom-2 xl:hidden" />
     </>

@@ -1,7 +1,7 @@
 import clsx from 'clsx'
-import { Contract, contractPath } from 'common/contract'
 import Link from 'next/link'
 import { memo } from 'react'
+import { range } from 'lodash'
 
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
@@ -10,6 +10,8 @@ import { UserLink } from '../widgets/user-link'
 import { LoadMoreUntilNotVisible } from '../widgets/visibility-observer'
 import { ContractStatusLabel } from './contracts-table'
 import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
+import { Contract, contractPath } from 'common/contract'
+import { Carousel } from '../widgets/carousel'
 
 export const RelatedContractsList = memo(function RelatedContractsList(props: {
   contracts: Contract[]
@@ -40,11 +42,56 @@ export const RelatedContractsList = memo(function RelatedContractsList(props: {
   )
 })
 
+export const RelatedContractsCarousel = memo(
+  function RelatedContractsCarousel(props: {
+    contracts: Contract[]
+    loadMore?: () => Promise<boolean>
+    onContractClick?: (contract: Contract) => void
+    className?: string
+  }) {
+    const { contracts, loadMore, onContractClick, className } = props
+    if (contracts.length === 0) {
+      return null
+    }
+
+    const halfRange = range(Math.floor(contracts.length / 2))
+
+    return (
+      <Col className={clsx(className, 'flex-1')}>
+        <h2 className={clsx('text-ink-600 mb-2 text-lg')}>Related questions</h2>
+        <Carousel loadMore={loadMore}>
+          {halfRange.map((i) => {
+            const contract = contracts[i * 2]
+            const secondContract = contracts[i * 2 + 1]
+            return (
+              <Col key={contract.id} className="snap-center">
+                <RelatedContractCard
+                  className="min-w-[300px]"
+                  contract={contract}
+                  onContractClick={onContractClick}
+                />
+                {secondContract && (
+                  <RelatedContractCard
+                    className="min-w-[300px]"
+                    contract={secondContract}
+                    onContractClick={onContractClick}
+                  />
+                )}
+              </Col>
+            )
+          })}
+        </Carousel>
+      </Col>
+    )
+  }
+)
+
 const RelatedContractCard = memo(function RelatedContractCard(props: {
   contract: Contract
   onContractClick?: (contract: Contract) => void
+  className?: string
 }) {
-  const { onContractClick } = props
+  const { onContractClick, className } = props
 
   const contract =
     useFirebasePublicContract(props.contract.visibility, props.contract.id) ??
@@ -56,7 +103,8 @@ const RelatedContractCard = memo(function RelatedContractCard(props: {
     <Col
       className={clsx(
         'group relative gap-2 whitespace-nowrap rounded-sm py-3 px-4',
-        'bg-canvas-0 focus:bg-ink-300/30 lg:hover:bg-ink-300/30 transition-colors'
+        'bg-canvas-0 focus:bg-ink-300/30 lg:hover:bg-ink-300/30 transition-colors',
+        className
       )}
     >
       <Link
@@ -65,7 +113,11 @@ const RelatedContractCard = memo(function RelatedContractCard(props: {
         onClick={() => onContractClick?.(contract)}
       />
       <div>
-        <span className={clsx('break-anywhere whitespace-normal font-medium')}>
+        <span
+          className={clsx(
+            'break-anywhere line-clamp-3 whitespace-normal font-medium'
+          )}
+        >
           {question}
         </span>
       </div>
