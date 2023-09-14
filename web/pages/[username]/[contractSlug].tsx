@@ -1,12 +1,12 @@
 import { UserIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
-import { first } from 'lodash'
+import { first, zipWith } from 'lodash'
 import Head from 'next/head'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Answer, DpmAnswer } from 'common/answer'
-import { unserializePoints } from 'common/chart'
+import { unserializeMultiPoints, unserializePoints } from 'common/chart'
 import { ContractParams, MaybeAuthedContractParams } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
 import { HOUSE_BOT_USERNAME, isTrustworthy } from 'common/envs/constants'
@@ -119,16 +119,16 @@ export default function ContractPage(props: MaybeAuthedContractParams) {
 function NonPrivateContractPage(props: { contractParams: ContractParams }) {
   const { contract, historyData, pointsString } = props.contractParams
 
+  const points =
+    contract.outcomeType !== 'MULTIPLE_CHOICE'
+      ? unserializePoints(historyData.points as any)
+      : []
+
   const inIframe = useIsIframe()
   if (!contract) {
     return <Custom404 customText="Unable to fetch question" />
   } else if (inIframe) {
-    return (
-      <ContractEmbedPage
-        contract={contract}
-        points={unserializePoints(historyData.points) as any}
-      />
-    )
+    return <ContractEmbedPage contract={contract} points={points} />
   } else
     return (
       <>
@@ -219,20 +219,25 @@ export function ContractPageContent(props: {
   )
 
   const betPoints = useMemo(() => {
-    const points = unserializePoints(contractParams.historyData.points)
-
-    const newPoints =
-      contract.outcomeType === 'MULTIPLE_CHOICE'
-        ? contract.mechanism === 'cpmm-multi-1'
+    if (contract.outcomeType === 'MULTIPLE_CHOICE') {
+      const data = unserializeMultiPoints(
+        contractParams.historyData.points as any
+      )
+      const newData =
+        contract.mechanism === 'cpmm-multi-1'
           ? getMultiBetPoints(contract.answers, newBets)
           : []
-        : newBets.map((bet) => ({
-            x: bet.createdTime,
-            y: bet.probAfter,
-            obj: { userAvatarUrl: bet.userAvatarUrl },
-          }))
 
-    return [...points, ...newPoints]
+      return zipWith(data, newData, (a, b) => [...a, ...b])
+    } else {
+      const points = unserializePoints(contractParams.historyData.points as any)
+      const newPoints = newBets.map((bet) => ({
+        x: bet.createdTime,
+        y: bet.probAfter,
+        obj: { userAvatarUrl: bet.userAvatarUrl },
+      }))
+      return [...points, ...newPoints]
+    }
   }, [contractParams.historyData.points, newBets])
 
   const {

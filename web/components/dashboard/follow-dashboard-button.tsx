@@ -3,9 +3,6 @@ import { useUserFollowsDashboard } from 'web/hooks/use-dashboard-follows'
 import { useIsAuthorized, useUser } from 'web/hooks/use-user'
 import { followDashboard } from 'web/lib/firebase/api'
 import { Tooltip } from '../widgets/tooltip'
-import { Col } from '../layout/col'
-import clsx from 'clsx'
-import e from 'cors'
 
 export function FollowDashboardButton(props: {
   dashboardId: string

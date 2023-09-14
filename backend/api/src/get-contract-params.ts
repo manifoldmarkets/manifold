@@ -76,11 +76,7 @@ export const getcontractparams = MaybeAuthedEndpoint<Ret>(async (req, auth) => {
         })
       : [],
     hasMechanism
-      ? getBetPoints(db, {
-          contractId: contract.id,
-          filterRedemptions: contract.mechanism !== 'cpmm-multi-1',
-          order: 'asc',
-        })
+      ? getBetPoints(db, contract.id, contract.mechanism === 'cpmm-multi-1')
       : [],
     getRecentTopLevelCommentsAndReplies(db, contract.id, 25),
     isCpmm1 ? getCPMMContractUserContractMetrics(contract.id, 100, db) : {},

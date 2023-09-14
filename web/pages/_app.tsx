@@ -71,26 +71,26 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
   useRefreshAllClients()
   useReloadIfClientOld()
 
+  const title = 'Manifold | Bet on news, politics, science, AI, & more!'
+  const description =
+    'Manifold is the largest prediction market platform. Bet on news, politics, science, AI, and more with play-money. Get accurate predictions via the wisdom of the crowd.'
+
   return (
     <>
       <Head>
-        <title>Manifold</title>
+        <title>{title}</title>
 
         <meta
           property="og:title"
           name="twitter:title"
-          content="Manifold"
+          content={title}
           key="title"
         />
-        <meta
-          name="description"
-          content="Bet on anything and see the market consensus on real-world questions."
-          key="description1"
-        />
+        <meta name="description" content={description} key="description1" />
         <meta
           property="og:description"
           name="twitter:description"
-          content="Bet on anything and see the market consensus on real-world questions."
+          content={description}
           key="description2"
         />
         <meta property="og:url" content="https://manifold.markets" key="url" />

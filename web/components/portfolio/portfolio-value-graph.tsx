@@ -3,7 +3,6 @@ import { scaleTime, scaleLinear } from 'd3-scale'
 import { min, max } from 'lodash'
 import dayjs from 'dayjs'
 import { Col } from '../layout/col'
-import { TooltipProps } from 'web/components/charts/helpers'
 import { ControllableSingleValueHistoryChart } from 'web/components/charts/generic-charts'
 import { PortfolioMetrics } from 'common/portfolio-metrics'
 import { HistoryPoint, viewScale } from 'common/chart'
@@ -11,9 +10,8 @@ import { curveLinear } from 'd3-shape'
 
 export type GraphMode = 'profit' | 'value' | 'balance'
 
-export const PortfolioTooltip = (props: TooltipProps<Date, HistoryPoint>) => {
-  const { x, xScale } = props
-  const d = dayjs(xScale.invert(x))
+export const PortfolioTooltip = (props: { date: Date }) => {
+  const d = dayjs(props.date)
   return (
     <Col className="text-xs font-semibold sm:text-sm">
       <div>{d.format('MMM/D/YY')}</div>
@@ -46,16 +44,21 @@ export const PortfolioGraph = (props: {
     return { minDate, maxDate, minValue, maxValue }
   }, [points])
   const negativeThreshold = props.negativeThreshold ?? 0
+
+  const xScale = scaleTime([minDate, maxDate], [0, width])
+  const yScale = scaleLinear([minValue, maxValue], [height, 0])
+
   return (
     <ControllableSingleValueHistoryChart
       w={width}
       h={height}
-      xScale={scaleTime([minDate, maxDate], [0, width])}
-      yScale={scaleLinear([minValue, maxValue], [height, 0])}
+      xScale={xScale}
+      yScale={yScale}
       viewScaleProps={viewScaleProps}
       yKind="Ṁ"
       data={points}
-      Tooltip={PortfolioTooltip}
+      // eslint-disable-next-line react/prop-types
+      Tooltip={(props) => <PortfolioTooltip date={xScale.invert(props.x)} />}
       onMouseOver={onMouseOver}
       curve={curveLinear}
       color={

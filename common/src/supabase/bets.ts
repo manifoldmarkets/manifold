@@ -44,13 +44,14 @@ export const getBets = async (db: SupabaseClient, options?: BetFilter) => {
 
 export const getBetPoints = async <S extends SupabaseClient>(
   db: S,
-  options?: BetFilter
+  contractId: string,
+  isMulti: boolean
 ) => {
   let q = db
     .from('contract_bets')
-    .select('created_time, prob_after, is_redemption, data->answerId')
-    .order('created_time', { ascending: options?.order === 'asc' })
-  q = applyBetsFilter(q, options)
+    .select('created_time, prob_after, data->answerId')
+    .order('created_time', { ascending: true })
+  q = applyBetsFilter(q, { contractId, filterRedemptions: !isMulti })
   const { data } = await run(q)
 
   return data
@@ -58,7 +59,6 @@ export const getBetPoints = async <S extends SupabaseClient>(
     .map((r: any) => ({
       x: tsToMillis(r.created_time),
       y: r.prob_after,
-      isRedemption: r.is_redemption,
       answerId: r.answerId,
     }))
 }

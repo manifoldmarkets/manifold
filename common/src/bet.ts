@@ -1,4 +1,4 @@
-import { groupBy } from 'lodash'
+import { groupBy, mapValues } from 'lodash'
 import { Visibility } from './contract'
 import { Fees } from './fees'
 
@@ -121,25 +121,15 @@ export const calculateMultiBets = (
   betPoints: {
     x: number
     y: number
-    isRedemption: boolean
-    answerId?: string
+    answerId: string
   }[],
   order: AnswerId[]
 ) => {
-  const grouped = groupBy(betPoints, 'x')
+  const grouped = mapValues(groupBy(betPoints, 'answerId'), (bets) =>
+    bets.sort((a, b) => a.x - b.x)
+  )
 
-  // multi bets are represented by one non-redemption alongside redemptions for each other outcome
-
-  const points = Object.entries(grouped)
-    .filter(([, bets]) => bets.some((b) => !b.isRedemption))
-    .map(
-      ([timeStr, bets]) =>
-        [
-          +timeStr,
-          order.map((id) => bets.find((bet) => bet.answerId === id)?.y ?? 0),
-        ] as const
-    )
-    .sort(([a], [b]) => a - b)
-
-  return points as any
+  return order.map((id) =>
+    (grouped[id] ?? []).map((b) => [b.x, b.y] as [number, number])
+  )
 }

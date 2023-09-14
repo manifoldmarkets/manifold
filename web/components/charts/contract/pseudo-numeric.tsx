@@ -28,29 +28,24 @@ const getScaleP = (min: number, max: number, isLogScale: boolean) => {
 }
 
 // same as BinaryPoint
-type NumericPoint = HistoryPoint<{
-  userAvatarUrl?: string
-  isLast?: boolean
-}>
+type NumericPoint = HistoryPoint<{ userAvatarUrl?: string }>
 
 const getBetPoints = (bets: NumericPoint[], scaleP: (p: number) => number) => {
   return bets.map((pt) => ({ x: pt.x, y: scaleP(pt.y), obj: pt.obj }))
 }
 
-const PseudoNumericChartTooltip = (props: TooltipProps<Date, NumericPoint>) => {
-  const { prev, next, x, xScale } = props
+const PseudoNumericChartTooltip = (
+  props: TooltipProps<NumericPoint> & { dateLabel: string }
+) => {
+  const { prev, next, dateLabel } = props
   if (!prev) return null
-  const [start, end] = xScale.domain()
-  const d = xScale.invert(x)
-  const dateLabel =
-    !next || next.obj?.isLast ? 'Now' : formatDateInRange(d, start, end)
 
   return (
     <Row className="items-center gap-2">
       {prev.obj?.userAvatarUrl && (
         <Avatar size="xs" avatarUrl={prev.obj.userAvatarUrl} />
       )}
-      <span className="font-semibold">{dateLabel}</span>
+      <span className="font-semibold">{next ? dateLabel : 'Now'}</span>
       <span className="text-ink-600">{formatLargeNumber(prev.y)}</span>
     </Row>
   )
@@ -92,11 +87,7 @@ export const PseudoNumericContractChart = (props: {
   const now = useMemo(() => Date.now(), [betPoints])
 
   const data = useMemo(
-    () => [
-      { x: start, y: startP },
-      ...betPoints,
-      { x: end ?? now, y: endP, obj: { isLast: true } },
-    ],
+    () => [{ x: start, y: startP }, ...betPoints, { x: end ?? now, y: endP }],
     [betPoints, start, startP, end, endP]
   )
   const rightmostDate = getRightmostVisibleDate(end, last(betPoints)?.x, now)
@@ -115,7 +106,17 @@ export const PseudoNumericContractChart = (props: {
       showZoomer={showZoomer}
       data={data}
       onMouseOver={onMouseOver}
-      Tooltip={PseudoNumericChartTooltip}
+      Tooltip={(props) => (
+        <PseudoNumericChartTooltip
+          {...props}
+          dateLabel={formatDateInRange(
+            // eslint-disable-next-line react/prop-types
+            xScale.invert(props.x),
+            rangeStart,
+            rightmostDate
+          )}
+        />
+      )}
       color={NUMERIC_GRAPH_COLOR}
     />
   )

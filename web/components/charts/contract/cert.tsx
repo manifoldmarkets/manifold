@@ -2,24 +2,18 @@ import { useMemo } from 'react'
 import { last, max } from 'lodash'
 import { CertContract } from 'common/contract'
 import { NUMERIC_GRAPH_COLOR } from 'common/numeric-constants'
-import {
-  formatDateInRange,
-  getRightmostVisibleDate,
-  TooltipProps,
-} from '../helpers'
+import { formatDate, getRightmostVisibleDate, TooltipProps } from '../helpers'
 import { SingleValueHistoryChart } from '../generic-charts'
 import { scaleLinear, scaleTime } from 'd3-scale'
 import { Row } from 'web/components/layout/row'
 import { HistoryPoint } from 'common/chart'
 
-const CertChartTooltip = (props: TooltipProps<Date, HistoryPoint<never>>) => {
-  const { prev, x, xScale } = props
-  const [start, end] = xScale.domain()
-  const d = xScale.invert(x)
+const CertChartTooltip = (props: TooltipProps<HistoryPoint<never>>) => {
+  const { prev } = props
   if (!prev) return null
   return (
     <Row className="items-center gap-2">
-      <span className="font-semibold">{formatDateInRange(d, start, end)}</span>
+      <span className="font-semibold">{formatDate(prev.x)}</span>
       <span className="text-ink-600">{prev.y.toFixed(2)}</span>
     </Row>
   )

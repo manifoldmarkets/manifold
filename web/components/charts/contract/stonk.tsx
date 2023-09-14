@@ -9,7 +9,7 @@ import {
   TooltipProps,
   getDateRange,
   getRightmostVisibleDate,
-  formatDateInRange,
+  formatDate,
 } from '../helpers'
 import { ControllableSingleValueHistoryChart } from '../generic-charts'
 import { Row } from 'web/components/layout/row'
@@ -29,19 +29,15 @@ const getBetPoints = (
   return bets.map((pt) => ({ x: pt.x, y: scaleP(pt.y), obj: pt.obj }))
 }
 
-const StonkChartTooltip = (
-  props: TooltipProps<Date, HistoryPoint<Partial<Bet>>>
-) => {
-  const { prev, x, xScale } = props
-  const [start, end] = xScale.domain()
-  const d = xScale.invert(x)
+const StonkChartTooltip = (props: TooltipProps<HistoryPoint<Partial<Bet>>>) => {
+  const { prev } = props
   if (!prev) return null
   return (
     <Row className="items-center gap-2">
       {prev.obj?.userAvatarUrl && (
         <Avatar size="xs" avatarUrl={prev.obj.userAvatarUrl} />
       )}{' '}
-      <span className="font-semibold">{formatDateInRange(d, start, end)}</span>
+      <span className="font-semibold">{formatDate(prev.x)}</span>
       <span className="text-ink-600">{formatLargeNumber(prev.y)}</span>
     </Row>
   )

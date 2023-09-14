@@ -3,7 +3,7 @@ import { first } from 'lodash'
 import Head from 'next/head'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Answer, DpmAnswer } from 'common/answer'
-import { unserializePoints } from 'common/chart'
+import { unserializeMultiPoints, unserializePoints } from 'common/chart'
 import { ContractParams, MaybeAuthedContractParams } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
 import { HOUSE_BOT_USERNAME, isTrustworthy } from 'common/envs/constants'
@@ -13,7 +13,6 @@ import { ScrollToTopButton } from 'web/components/buttons/scroll-to-top-button'
 import { BackButton } from 'web/components/contract/back-button'
 import { ChangeBannerButton } from 'web/components/contract/change-banner-button'
 import { ContractDescription } from 'web/components/contract/contract-description'
-
 import { ContractLeaderboard } from 'web/components/contract/contract-leaderboard'
 import { PreviewContractOverview } from 'web/components/preview/preview-contract-overview'
 import { ContractTabs } from 'web/components/contract/contract-tabs'
@@ -107,16 +106,16 @@ export function NonPrivateContractPage(props: {
 }) {
   const { contract, historyData, pointsString } = props.contractParams
 
+  const points =
+    contract.outcomeType !== 'MULTIPLE_CHOICE'
+      ? unserializePoints(historyData.points as any)
+      : []
+
   const inIframe = useIsIframe()
   if (!contract) {
     return <Custom404 customText="Unable to fetch question" />
   } else if (inIframe) {
-    return (
-      <ContractEmbedPage
-        contract={contract}
-        points={unserializePoints(historyData.points) as any}
-      />
-    )
+    return <ContractEmbedPage contract={contract} points={points} />
   } else
     return (
       <>
@@ -207,7 +206,10 @@ export function PreviewContractPageContent(props: {
   )
 
   const betPoints = useMemo(() => {
-    const points = unserializePoints(contractParams.historyData.points)
+    const points =
+      contract.outcomeType === 'MULTIPLE_CHOICE'
+        ? unserializeMultiPoints(contractParams.historyData.points as any)
+        : unserializePoints(contractParams.historyData.points as any)
 
     const newPoints =
       contract.outcomeType === 'MULTIPLE_CHOICE'
