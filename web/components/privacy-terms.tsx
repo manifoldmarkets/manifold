@@ -7,20 +7,22 @@ export const PrivacyAndTerms = () => (
       About
     </Link>
     <span className="mx-2">&bull;</span>
-    <Link
+    <a
       href="/terms"
+      target="_blank"
       className="hover:underline"
       onClick={() => track('Click TOS')}
     >
       Terms of service
-    </Link>
+    </a>
     <span className="mx-2">&bull;</span>
-    <Link
+    <a
       href="/privacy"
+      target="_blank"
       className="hover:underline"
       onClick={() => track('Click Privacy')}
     >
       Privacy policy
-    </Link>
+    </a>
   </div>
 )
