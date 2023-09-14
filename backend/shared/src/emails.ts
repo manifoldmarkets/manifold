@@ -510,7 +510,7 @@ export const sendBonusWithInterestingMarketsEmail = async (
 
   await sendTemplateEmail(
     privateUser.email,
-    `Here's ${bonusAmount} free mana 🎉!`,
+    `Interesting questions on Manifold + ${formatMoney(bonusAmount)} bonus`,
     'signup-bonus-with-interesting-markets',
     {
       name: firstName,
