@@ -1,6 +1,6 @@
 import { UserIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
-import { first, mergeWith, zipWith } from 'lodash'
+import { first, mergeWith } from 'lodash'
 import Head from 'next/head'
 import Image from 'next/image'
 import Link from 'next/link'
