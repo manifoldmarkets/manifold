@@ -107,8 +107,8 @@ export const getUsersRecommendedContracts = async (
       (userContracts[userId] = uniqBy(
         sortBy(
           removeSimilarQuestions(
-            userContracts[userId],
-            userContracts[userId],
+            userContracts[userId] ?? [],
+            userContracts[userId] ?? [],
             true
           ) as ContractAndScore[],
           (c) => -(c.importanceScore / 3 + c.relevanceScore)
@@ -120,7 +120,7 @@ export const getUsersRecommendedContracts = async (
   return userContracts
 }
 const getUniqueTrendingContracts = async () => {
-  const trendingContracts = await getTrendingContractsToEmail()
+  const trendingContracts = (await getTrendingContractsToEmail()) ?? []
 
   return removeSimilarQuestions(
     trendingContracts,
