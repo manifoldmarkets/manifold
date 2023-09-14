@@ -5,6 +5,7 @@ import { followDashboard } from 'web/lib/firebase/api'
 import { Tooltip } from '../widgets/tooltip'
 import { Col } from '../layout/col'
 import clsx from 'clsx'
+import e from 'cors'
 
 export function FollowDashboardButton(props: {
   dashboardId: string
@@ -18,21 +19,19 @@ export function FollowDashboardButton(props: {
     dashboardId
   )
   const isAuth = useIsAuthorized()
-  if (
-    !user ||
-    !isAuth
-    || dashboardCreatorId === user?.id
-  ) {
+  if (!user || !isAuth || dashboardCreatorId === user?.id) {
     return null
   }
   return (
     <Tooltip text={'Bookmark'} placement="left-start">
       <button
-        onClick={() =>
+        onClick={(e) => {
+          e.preventDefault()
+          e.stopPropagation()
           followDashboard({ dashboardId: dashboardId }).then((result) => {
             setIsFollowing(result.isFollowing)
           })
-        }
+        }}
       >
         {isFollowing ? (
           <FaBookmark className={'h-5 w-5 text-yellow-500'} />

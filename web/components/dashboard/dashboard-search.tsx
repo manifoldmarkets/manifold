@@ -127,11 +127,14 @@ export function DashboardSearch() {
   }, [inputTerm])
 
   const resultDashboards = state.dashboards
+  //   const dashboards = resultDashboards
 
   const dashboards = isEmpty
     ? resultDashboards?.filter((d) => {
-        !yourDashboards?.some((yd) => d.id == yd.id) &&
-          !yourFollowedDashboards?.some((yfd) => d.id == yfd.id)
+        return !(
+          yourDashboards?.some((yd) => d.id === yd.id) ||
+          yourFollowedDashboards?.some((yfd) => d.id === yfd.id)
+        )
       })
     : resultDashboards
   return (
