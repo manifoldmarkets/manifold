@@ -12,9 +12,6 @@ export default function DashboardPage() {
   useRedirectIfSignedOut()
   const user = useUser()
 
-  if (!DASHBOARD_ENABLED) {
-    return <Custom404 />
-  }
   return (
     <Page trackPageView={'dashboards page'}>
       <Col className="items-center">

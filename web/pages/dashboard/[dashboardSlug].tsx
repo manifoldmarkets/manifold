@@ -10,6 +10,13 @@ import { Row } from 'web/components/layout/row'
 import { Title } from 'web/components/widgets/title'
 import { useUser } from 'web/hooks/use-user'
 import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
+import Custom404 from '../404'
+import { Button } from 'web/components/buttons/button'
+import { Avatar } from 'web/components/widgets/avatar'
+import { UserLink } from 'web/components/widgets/user-link'
+import { EditableTitle } from 'web/components/dashboard/dashboard-editable-title'
+import { AddDashboardItemWidget } from 'web/components/dashboard/add-dashboard-item'
+import { updateDashboard } from 'web/lib/firebase/api'
 
 export async function getStaticProps(ctx: {
   params: { dashboardSlug: string }
@@ -22,7 +29,7 @@ export async function getStaticProps(ctx: {
       dashboardSlug,
       adminDb
     )
-    return { props: { dashboard } }
+    return { props: { initialDashboard: dashboard } }
   } catch (e) {
     if (typeof e === 'object' && e !== null && 'code' in e && e.code === 404) {
       return {
@@ -38,10 +45,20 @@ export async function getStaticPaths() {
   return { paths: [], fallback: 'blocking' }
 }
 
-export default function DashboardPage(props: { dashboard: Dashboard }) {
-  const { dashboard } = props
-  const [items, setItems] = useState<DashboardItem[]>(dashboard.items)
+export default function DashboardPage(props: { initialDashboard: Dashboard }) {
+  const { initialDashboard } = props
+  const [dashboard, setDashboard] = useState<Dashboard>(initialDashboard)
+  const [items, setItems] = useState<DashboardItem[]>(dashboard?.items)
   const user = useUser()
+  const canEdit = dashboard.creator_id === user?.id
+  const [editMode, setEditMode] = useState(false)
+  // const [title, setTitle] = useState(dashboard.title)
+  const [description, setDescription] = useState(dashboard.description)
+
+  if (!dashboard) {
+    return <Custom404 />
+  }
+
   return (
     <Page
       trackPageView={'dashboard slug page'}
@@ -52,12 +69,30 @@ export default function DashboardPage(props: { dashboard: Dashboard }) {
     >
       <Col className="items-center">
         <Col className="w-full max-w-2xl px-1 sm:px-2">
-          <Row className="w-full items-center justify-between">
-            <Title className="mt-4">{dashboard.title}</Title>
-            <FollowDashboardButton
-              dashboardId={dashboard.id}
-              dashboardCreatorId={dashboard.creator_id}
+          <Row className="gap-2">
+            <Avatar
+              username={dashboard.creator_username}
+              avatarUrl={dashboard.creator_avatar_url}
+              size="xs"
             />
+            <UserLink
+              username={dashboard.creator_username}
+              name={dashboard.creator_name}
+            />
+          </Row>
+          <Row className="w-full items-center justify-between">
+            <Title>{dashboard.title}</Title>
+            <Row>
+              <FollowDashboardButton
+                dashboardId={dashboard.id}
+                dashboardCreatorId={dashboard.creator_id}
+              />
+              {canEdit && !editMode && (
+                <Button onClick={() => setEditMode((editMode) => !editMode)}>
+                  Edit
+                </Button>
+              )}
+            </Row>
           </Row>
           <DashboardSidebar description={dashboard.description} />
           <DashboardContent
@@ -74,7 +109,52 @@ export default function DashboardPage(props: { dashboard: Dashboard }) {
                 })
               })
             }}
+            isEditing={editMode}
           />
+          {editMode && (
+            <Col className="gap-4">
+              <AddDashboardItemWidget items={items} setItems={setItems} />
+              <Row className="w-full justify-end gap-2">
+                <Button
+                  color="gray"
+                  onClick={() => {
+                    setDescription(dashboard.description)
+                    setItems(dashboard.items)
+                    setEditMode(false)
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={() => {
+                    if (
+                      description !== dashboard.description ||
+                      items !== dashboard.items
+                    ) {
+                      updateDashboard({
+                        dashboardId: dashboard.id,
+                        description,
+                        items,
+                        title: dashboard.title,
+                      }).then((resultingDashboard) => {
+                        if (
+                          resultingDashboard &&
+                          resultingDashboard.updateDashboard
+                        ) {
+                          setDashboard(
+                            resultingDashboard.updateDashboard as Dashboard
+                          )
+                        }
+                      })
+                    }
+                    setEditMode(false)
+                  }}
+                >
+                  Save
+                </Button>
+              </Row>
+            </Col>
+          )}
         </Col>
       </Col>
     </Page>

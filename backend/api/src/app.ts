@@ -86,6 +86,7 @@ import { getyourdashboards } from './get-your-dashboards'
 import { followdashboard } from './follow-dashboard'
 import { supabasesearchdashboards } from './supabase-search-dashboards'
 import { getyourfolloweddashboards } from './get-your-followed-dashboards'
+import { updatedashboard } from './update-dashboard'
 
 const allowCors: RequestHandler = cors({
   origin: [CORS_ORIGIN_MANIFOLD, CORS_ORIGIN_VERCEL, CORS_ORIGIN_LOCALHOST],
@@ -215,6 +216,7 @@ app.post('/getyourdashboards', ...apiRoute(getyourdashboards))
 app.post('/followdashboard', ...apiRoute(followdashboard))
 app.post('/supabasesearchdashboards', ...apiRoute(supabasesearchdashboards))
 app.post('/getyourfolloweddashboards', ...apiRoute(getyourfolloweddashboards))
+app.post('/updatedashboard', ...apiRoute(updatedashboard))
 
 // Catch 404 errors - this should be the last route
 app.use(allowCors, (req, res) => {
