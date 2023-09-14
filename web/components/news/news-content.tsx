@@ -294,6 +294,8 @@ const Election2024 = createNewsDashboardTab(
       url: 'https://www.nbcnews.com/politics/politics-news/hunter-biden-indicted-federal-gun-charges-rcna39623',
     },
     { slug: 'will-hunter-biden-be-indicted-befor-c928ea76a254' },
+    { url: 'https://www.bbc.com/news/world-us-canada-66779228' },
+    { slug: 'will-joe-biden-get-impeached-in-his' },
     { slug: 'will-a-democrat-win-the-2024-us-pre' },
     { slug: 'who-will-win-the-us-2024-democratic' },
     { slug: 'will-vivek-ramaswamy-win-the-septem' },
