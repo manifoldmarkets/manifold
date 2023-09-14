@@ -11,5 +11,9 @@ create table if not exists
     visibility text default 'public',
     creator_username text not null,
     creator_name text not null,
-    creator_avatar_url text not null
+    creator_avatar_url text not null,
+    importance_score numeric not null default 0
   );
+
+alter table dashboards
+add column title_fts tsvector generated always as (to_tsvector('english', title)) stored;

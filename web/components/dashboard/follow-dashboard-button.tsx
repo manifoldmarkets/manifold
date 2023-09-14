@@ -22,11 +22,13 @@ export function FollowDashboardButton(props: {
   return (
     <Tooltip text={'Bookmark'} placement="left-start">
       <button
-        onClick={() =>
+        onClick={(e) => {
+          e.preventDefault()
+          e.stopPropagation()
           followDashboard({ dashboardId: dashboardId }).then((result) => {
             setIsFollowing(result.isFollowing)
           })
-        }
+        }}
       >
         {isFollowing ? (
           <FaBookmark className={'h-5 w-5 text-yellow-500'} />
