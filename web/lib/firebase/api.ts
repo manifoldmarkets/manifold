@@ -14,7 +14,7 @@ import { Post } from 'common/post'
 import { MaybeAuthedContractParams } from 'common/contract'
 import { Portfolio, PortfolioItem } from 'common/portfolio'
 import { ReportProps } from 'common/report'
-import { DashboardItem } from 'common/dashboard'
+import { Dashboard, DashboardItem } from 'common/dashboard'
 
 export async function call(url: string, method: 'POST' | 'GET', params?: any) {
   const user = auth.currentUser
@@ -487,4 +487,16 @@ export function getYourDashboards() {
 
 export function followDashboard(params: { dashboardId: string }) {
   return call(getApiUrl('followdashboard'), 'POST', params)
+}
+
+export function supabaseSearchDashboards(params: {
+  term: string
+  offset: number
+  limit: number
+}) {
+  return maybeAuthedCall(
+    getApiUrl('supabasesearchdashboards'),
+    'POST',
+    params
+  ) as Promise<Dashboard[]>
 }

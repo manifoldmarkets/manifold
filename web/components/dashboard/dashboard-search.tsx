@@ -1,0 +1,138 @@
+import { useYourDashboards } from 'web/hooks/use-dashboard'
+import { DashboardCards } from './dashboard-cards'
+import { Col } from '../layout/col'
+import { useEvent } from 'web/hooks/use-event'
+import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import { Dashboard } from 'common/dashboard'
+import { useCallback, useEffect, useRef } from 'react'
+import { usePersistentQueryState } from 'web/hooks/use-persistent-query-state'
+import {
+  historyStore,
+  inMemoryStore,
+  usePersistentState,
+} from 'web/hooks/use-persistent-state'
+import { debounce, isEqual, uniqBy } from 'lodash'
+import { removeEmojis } from '../contract/market-groups'
+import { supabaseSearchDashboards } from 'web/lib/firebase/api'
+import { Input } from '../widgets/input'
+import { Spacer } from '../layout/spacer'
+const DASHBOARDS_PER_PAGE = 50
+
+const INITIAL_STATE = {
+  dashboards: undefined,
+  shouldLoadMore: true,
+}
+
+export type DashboardSearchState = {
+  dashboards: Dashboard[] | undefined
+  shouldLoadMore: boolean
+}
+
+export function DashboardSearch() {
+  const yourDashboards = useYourDashboards()
+
+  const performQuery = useEvent(
+    async (currentState, freshQuery?: boolean) =>
+      (await debouncedQuery(currentState, freshQuery)) ?? false
+  )
+  const [state, setState] = usePersistentInMemoryState<DashboardSearchState>(
+    INITIAL_STATE,
+    `dashboard-search`
+  )
+
+  const loadMoreDashboards = () => performQuery(state)
+
+  const searchTerm = useRef<string>('')
+  const [inputTerm, setInputTerm] = usePersistentQueryState('search', '')
+  const searchTermStore = inMemoryStore<string>()
+
+  const requestId = useRef(0)
+  const debouncedQuery = useCallback(
+    debounce(
+      async (currentState, freshQuery?: boolean) =>
+        query(currentState, freshQuery),
+      200
+    ),
+    []
+  )
+
+  const query = async (
+    currentState: DashboardSearchState,
+    freshQuery?: boolean
+  ) => {
+    const id = ++requestId.current
+    const offset = freshQuery
+      ? 0
+      : currentState.dashboards
+      ? currentState.dashboards.length
+      : 0
+
+    if (freshQuery || currentState.shouldLoadMore) {
+      const results = await supabaseSearchDashboards({
+        term: searchTerm.current,
+        offset: offset,
+        limit: DASHBOARDS_PER_PAGE,
+      })
+
+      if (id === requestId.current) {
+        const newDashboards: Dashboard[] = results as Dashboard[]
+        const freshDashboards = freshQuery
+          ? newDashboards
+          : [
+              ...(currentState.dashboards ? currentState.dashboards : []),
+              ...newDashboards,
+            ]
+
+        const shouldLoadMore = newDashboards.length === DASHBOARDS_PER_PAGE
+
+        setState({
+          dashboards: freshDashboards,
+          shouldLoadMore,
+        })
+        if (freshQuery) window.scrollTo(0, 0)
+
+        return shouldLoadMore
+      }
+    }
+    return false
+  }
+
+  // Always do first query when loading search page, unless going back in history.
+  const [firstQuery, setFirstQuery] = usePersistentState(true, {
+    key: `dashboard-supabase-first-query`,
+    store: historyStore(),
+  })
+
+  const onSearchTermChanged = useRef(
+    debounce((term) => {
+      if (!isEqual(searchTerm.current, term) || firstQuery) {
+        setFirstQuery(false)
+        searchTerm.current = term
+        performQuery(INITIAL_STATE, true)
+      }
+    }, 100)
+  ).current
+
+  useEffect(() => {
+    onSearchTermChanged(inputTerm)
+  }, [inputTerm])
+
+  const resultDashboards = state.dashboards
+
+  const dashboards = uniqBy(resultDashboards, (d) => d.id)
+  return (
+    <Col className="gap-1">
+      <Input
+        type="text"
+        inputMode="search"
+        value={inputTerm}
+        onChange={(e) => setInputTerm(e.target.value)}
+        placeholder="Search dashboards"
+        className="w-full"
+      />
+      
+      <DashboardCards dashboards={yourDashboards} />
+      <DashboardCards dashboards={dashboards} />
+    </Col>
+  )
+}
