@@ -114,22 +114,15 @@ export type BetFilter = {
   limit?: number
 }
 
-type AnswerId = string
-
-/** Must include redemptions. Joins all prob shifts from a bet action into single object*/
+/** Must include redemptions. */
 export const calculateMultiBets = (
   betPoints: {
     x: number
     y: number
     answerId: string
-  }[],
-  order: AnswerId[]
+  }[]
 ) => {
-  const grouped = mapValues(groupBy(betPoints, 'answerId'), (bets) =>
+  return mapValues(groupBy(betPoints, 'answerId'), (bets) =>
     bets.sort((a, b) => a.x - b.x)
-  )
-
-  return order.map((id) =>
-    (grouped[id] ?? []).map((b) => [b.x, b.y] as [number, number])
   )
 }

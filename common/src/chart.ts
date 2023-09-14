@@ -2,6 +2,7 @@ import { ScaleContinuousNumeric, ScaleTime } from 'd3-scale'
 import { Dispatch, SetStateAction } from 'react'
 import { removeUndefinedProps } from './util/object'
 import { average } from './util/math'
+import { mapValues } from 'lodash'
 
 export type Point<X, Y, T = unknown> = { x: X; y: Y; obj?: T }
 export type HistoryPoint<T = unknown> = Point<number, number, T>
@@ -9,7 +10,7 @@ export type DistributionPoint<T = unknown> = Point<number, number, T>
 export type ValueKind = 'Ṁ' | 'percent' | 'amount'
 
 /** [x, [y0, y1, ...]] */
-export type MultiSerializedPoint = [number, number][]
+export type MultiSerializedPoints = { [answerId: string]: [number, number][] }
 /** [x, y, obj] */
 export type SerializedPoint<T = unknown> =
   | Readonly<[number, number]>
@@ -19,8 +20,16 @@ export const unserializePoints = <T>(points: SerializedPoint<T>[]) => {
   return points.map(([x, y, obj]) => removeUndefinedProps({ x, y, obj }))
 }
 
-export const unserializeMultiPoints = (data: MultiSerializedPoint[]) => {
-  return data.map((points) => points.map(([x, y]) => ({ x, y })))
+export const unserializeMultiPoints = (data: MultiSerializedPoints) => {
+  return mapValues(data, (points) => points.map(([x, y]) => ({ x, y })))
+}
+
+export const serializeMultiPoints = (data: {
+  [answerId: string]: HistoryPoint[]
+}) => {
+  return mapValues(data, (points) =>
+    points.map(({ x, y }) => [x, y] as [number, number])
+  )
 }
 
 export type viewScale = {

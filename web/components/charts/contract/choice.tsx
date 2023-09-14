@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { groupBy, last, mapValues, sortBy } from 'lodash'
+import { groupBy, last, mapKeys, mapValues, sortBy } from 'lodash'
 import { scaleTime, scaleLinear } from 'd3-scale'
 import { Bet } from 'common/bet'
 import { Answer, DpmAnswer } from 'common/answer'
@@ -75,14 +75,13 @@ const getAnswers = (contract: MultiContract) => {
 }
 
 type Point = HistoryPoint<never>
-export type MultiPoints = Point[][]
+export type MultiPoints = { [answerId: string]: Point[] }
 
 // new multi only
-export const getMultiBetPoints = (answers: Answer[], bets: Bet[]) => {
-  const betsByAnswerId = mapValues(groupBy(bets, 'answerId'), (bets) =>
+export const getMultiBetPoints = (bets: Bet[]) => {
+  return mapValues(groupBy(bets, 'answerId'), (bets) =>
     bets.map((bet) => ({ x: bet.createdTime, y: bet.probAfter }))
   )
-  return answers.map((answer) => betsByAnswerId[answer.id] ?? [])
 }
 
 export function useChartAnswers(contract: MultiContract) {
@@ -91,11 +90,11 @@ export function useChartAnswers(contract: MultiContract) {
 
 export const ChoiceContractChart = (props: {
   contract: MultiContract
-  points?: MultiPoints
+  multiPoints?: MultiPoints
   width: number
   height: number
 }) => {
-  const { contract, points = [], width, height } = props
+  const { contract, multiPoints = {}, width, height } = props
   const isMultipleChoice = contract.outcomeType === 'MULTIPLE_CHOICE'
 
   const [start, end] = getDateRange(contract)
@@ -106,7 +105,7 @@ export const ChoiceContractChart = (props: {
     [answers, contract]
   )
 
-  const now = useMemo(() => Date.now(), [points])
+  const now = useMemo(() => Date.now(), [multiPoints])
 
   const data = useMemo(() => {
     if (!answers.length) return []
@@ -116,20 +115,30 @@ export const ChoiceContractChart = (props: {
       (a) => a.createdTime <= firstAnswerTime + 1000
     )
 
-    const startY: number[] = [
-      ...new Array(startAnswers.length).fill(1 / startAnswers.length),
-      ...new Array(answers.length - startAnswers.length).fill(0),
-    ]
-    const startPoints = startY.map((y) => ({ x: start, y }))
+    const startP = 1 / startAnswers.length
 
-    const ret = points
-    if (isMultipleChoice) ret.map((points, i) => points.unshift(startPoints[i]))
-    ret.map((points, i) => points.push({ x: end ?? now, y: endProbs[i] }))
+    const pointsById = multiPoints
+    if (isMultipleChoice) {
+      mapKeys(pointsById, (points, answerId) => {
+        const y = startAnswers.some((a) => a.id === answerId) ? startP : 0
+        points.unshift({ x: start, y })
+      })
+    }
 
-    return ret
-  }, [answers.length, points, endProbs, start, end, now])
+    mapKeys(pointsById, (points, answerId) => {
+      points.push({
+        x: end ?? now,
+        y: getAnswerProbability(contract, answerId),
+      })
+    })
 
-  const rightmostDate = getRightmostVisibleDate(end, last(points[0])?.x, now)
+    return answers.map((a) => pointsById[a.id] ?? [])
+  }, [answers.length, multiPoints, endProbs, start, end, now])
+
+  const rightestPointX = Math.max(
+    ...Object.values(multiPoints).map((p) => last(p)?.x ?? 0)
+  )
+  const rightmostDate = getRightmostVisibleDate(end, rightestPointX, now)
   const xScale = scaleTime([start, rightmostDate], [0, width])
   const yScale = scaleLinear([0, 1], [height, 0])
 

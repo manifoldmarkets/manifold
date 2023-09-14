@@ -1,6 +1,6 @@
 import { UserIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
-import { first, zipWith } from 'lodash'
+import { first, mergeWith, zipWith } from 'lodash'
 import Head from 'next/head'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -224,11 +224,9 @@ export function ContractPageContent(props: {
         contractParams.historyData.points as any
       )
       const newData =
-        contract.mechanism === 'cpmm-multi-1'
-          ? getMultiBetPoints(contract.answers, newBets)
-          : []
+        contract.mechanism === 'cpmm-multi-1' ? getMultiBetPoints(newBets) : []
 
-      return zipWith(data, newData, (a, b) => [...a, ...b])
+      return mergeWith(data, newData, (a, b) => [...(a ?? []), ...(b ?? [])])
     } else {
       const points = unserializePoints(contractParams.historyData.points as any)
       const newPoints = newBets.map((bet) => ({

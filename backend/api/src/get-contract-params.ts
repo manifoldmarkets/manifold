@@ -1,7 +1,7 @@
 import { calculateMultiBets } from 'common/bet'
 import { getInitialProbability } from 'common/calculate'
 import { Contract, MaybeAuthedContractParams as Ret } from 'common/contract'
-import { binAvg, maxMinBin } from 'common/chart'
+import { binAvg, maxMinBin, serializeMultiPoints } from 'common/chart'
 import { getBets, getBetPoints, getTotalBetCount } from 'common/supabase/bets'
 import { getRecentTopLevelCommentsAndReplies } from 'common/supabase/comments'
 import {
@@ -102,10 +102,7 @@ export const getcontractparams = MaybeAuthedEndpoint<Ret>(async (req, auth) => {
         ...maxMinBin(allBetPoints, 500),
       ].map((p) => [p.x, p.y] as const)
     : isMulti
-    ? calculateMultiBets(
-        allBetPoints,
-        contract.answers.map((a) => a.id)
-      )
+    ? serializeMultiPoints(calculateMultiBets(allBetPoints))
     : []
 
   const ogPoints =

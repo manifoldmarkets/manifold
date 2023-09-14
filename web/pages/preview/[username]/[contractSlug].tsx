@@ -50,7 +50,6 @@ import Custom404 from '../../404'
 import ContractEmbedPage from '../../embed/[username]/[contractSlug]'
 import { ExplainerPanel } from 'web/components/explainer-panel'
 import { SidebarSignUpButton } from 'web/components/buttons/sign-up-button'
-import { getMultiBetPoints } from 'web/components/charts/contract/choice'
 import { useRealtimeBets } from 'web/hooks/use-bets-supabase'
 import { ContractSEO } from 'web/components/contract/contract-seo'
 import { Linkify } from 'web/components/widgets/linkify'
@@ -206,23 +205,8 @@ export function PreviewContractPageContent(props: {
   )
 
   const betPoints = useMemo(() => {
-    const points =
-      contract.outcomeType === 'MULTIPLE_CHOICE'
-        ? unserializeMultiPoints(contractParams.historyData.points as any)
-        : unserializePoints(contractParams.historyData.points as any)
-
-    const newPoints =
-      contract.outcomeType === 'MULTIPLE_CHOICE'
-        ? contract.mechanism === 'cpmm-multi-1'
-          ? getMultiBetPoints(contract.answers, newBets)
-          : []
-        : newBets.map((bet) => ({
-            x: bet.createdTime,
-            y: bet.probAfter,
-            obj: { userAvatarUrl: bet.userAvatarUrl },
-          }))
-
-    return [...points, ...newPoints]
+    // Sinclair is too lazy to re-implement stuff twice. Please consider doing things a better way.
+    return []
   }, [contractParams.historyData.points, newBets])
 
   const {
