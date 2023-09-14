@@ -24,7 +24,6 @@ export const supabasesearchdashboards = MaybeAuthedEndpoint(
       offset,
       limit,
     })
-    console.log(term, offset, limit, searchDashboardSql)
     const dashboards = await pg.map(
       searchDashboardSql,
       [term],
