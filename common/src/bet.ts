@@ -130,6 +130,6 @@ export const calculateMultiBets = (
   )
 
   return order.map((id) =>
-    grouped[id].map((b) => [b.x, b.y] as [number, number])
+    (grouped[id] ?? []).map((b) => [b.x, b.y] as [number, number])
   )
 }
