@@ -1479,23 +1479,24 @@ export const createSignupBonusNotification = async (
   txnId: string,
   bonusAmount: number
 ) => {
-  if (userOptedOutOfBrowserNotifications(privateUser)) return
-  const notification: Notification = {
-    id: crypto.randomUUID(),
-    userId: privateUser.id,
-    reason: 'onboarding_flow',
-    createdTime: Date.now(),
-    isSeen: false,
-    sourceId: txnId,
-    sourceType: 'signup_bonus',
-    sourceUpdateType: 'created',
-    sourceUserName: MANIFOLD_USER_NAME,
-    sourceUserUsername: MANIFOLD_USER_USERNAME,
-    sourceUserAvatarUrl: MANIFOLD_AVATAR_URL,
-    sourceText: bonusAmount.toString(),
+  if (!userOptedOutOfBrowserNotifications(privateUser)) {
+    const notification: Notification = {
+      id: crypto.randomUUID(),
+      userId: privateUser.id,
+      reason: 'onboarding_flow',
+      createdTime: Date.now(),
+      isSeen: false,
+      sourceId: txnId,
+      sourceType: 'signup_bonus',
+      sourceUpdateType: 'created',
+      sourceUserName: MANIFOLD_USER_NAME,
+      sourceUserUsername: MANIFOLD_USER_USERNAME,
+      sourceUserAvatarUrl: MANIFOLD_AVATAR_URL,
+      sourceText: bonusAmount.toString(),
+    }
+    const pg = createSupabaseDirectClient()
+    await insertNotificationToSupabase(notification, pg)
   }
-  const pg = createSupabaseDirectClient()
-  await insertNotificationToSupabase(notification, pg)
 
   // This is email is of both types, so try either
   const { sendToEmail } = getNotificationDestinationsForUser(
