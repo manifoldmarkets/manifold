@@ -55,7 +55,7 @@ function getSearchDashboardSQL(input: {
     query = `
         SELECT dashboards.*
         FROM dashboards,
-        LATERAL websearch_to_tsquery('english', 'test') as query
+        LATERAL websearch_to_tsquery('english', $1) as query
         WHERE dashboards.title_fts @@ query
         ORDER BY importance_score DESC
       `
