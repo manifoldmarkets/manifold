@@ -17,7 +17,6 @@ export const supabasesearchdashboards = MaybeAuthedEndpoint(
     const { term, offset, limit } = validate(bodySchema, req.body)
 
     const pg = createSupabaseDirectClient()
-    const uid = auth?.uid
 
     const searchDashboardSql = getSearchDashboardSQL({
       term,

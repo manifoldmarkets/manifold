@@ -7,20 +7,27 @@ import { UserLink } from '../widgets/user-link'
 import { FollowDashboardButton } from './follow-dashboard-button'
 import clsx from 'clsx'
 import { LoadingIndicator } from '../widgets/loading-indicator'
+import { LoadMoreUntilNotVisible } from '../widgets/visibility-observer'
 
-export function DashboardCards(props: { dashboards?: Dashboard[] }) {
-  const { dashboards } = props
+export function DashboardCards(props: {
+  dashboards?: Dashboard[]
+  loadMore?: () => Promise<boolean>
+}) {
+  const { dashboards, loadMore } = props
   if (!dashboards) {
     return <LoadingIndicator />
   }
   if (dashboards.length === 0) return null
 
   return (
-    <Col className="gap-2">
-      {dashboards.map((dashboard: Dashboard) => (
-        <DashboardCard key={dashboard.id} dashboard={dashboard} />
-      ))}
-    </Col>
+    <>
+      <Col className="gap-2">
+        {dashboards.map((dashboard: Dashboard) => (
+          <DashboardCard key={dashboard.id} dashboard={dashboard} />
+        ))}
+      </Col>
+      {loadMore && <LoadMoreUntilNotVisible loadMore={loadMore} />}
+    </>
   )
 }
 

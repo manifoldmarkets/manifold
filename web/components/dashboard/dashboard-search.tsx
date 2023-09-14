@@ -1,27 +1,24 @@
+import clsx from 'clsx'
+import { Dashboard } from 'common/dashboard'
+import { debounce, isEqual } from 'lodash'
+import { useCallback, useEffect, useRef } from 'react'
 import {
   useYourDashboards,
   useYourFollowedDashboards,
 } from 'web/hooks/use-dashboard'
-import { DashboardCards } from './dashboard-cards'
-import { Col } from '../layout/col'
 import { useEvent } from 'web/hooks/use-event'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
-import { Dashboard } from 'common/dashboard'
-import { useCallback, useEffect, useRef } from 'react'
 import { usePersistentQueryState } from 'web/hooks/use-persistent-query-state'
 import {
   historyStore,
   inMemoryStore,
   usePersistentState,
 } from 'web/hooks/use-persistent-state'
-import { debounce, isEqual, uniqBy } from 'lodash'
-import { removeEmojis } from '../contract/market-groups'
 import { supabaseSearchDashboards } from 'web/lib/firebase/api'
-import { Input } from '../widgets/input'
-import { Spacer } from '../layout/spacer'
+import { Col } from '../layout/col'
 import { Row } from '../layout/row'
-import { LoadingIndicator } from '../widgets/loading-indicator'
-import clsx from 'clsx'
+import { Input } from '../widgets/input'
+import { DashboardCards } from './dashboard-cards'
 const DASHBOARDS_PER_PAGE = 50
 
 const INITIAL_STATE = {
@@ -51,7 +48,6 @@ export function DashboardSearch() {
 
   const searchTerm = useRef<string>('')
   const [inputTerm, setInputTerm] = usePersistentQueryState('search', '')
-  const searchTermStore = inMemoryStore<string>()
 
   const isEmpty = searchTerm.current.length === 0
 
@@ -126,17 +122,14 @@ export function DashboardSearch() {
     onSearchTermChanged(inputTerm)
   }, [inputTerm])
 
-  const resultDashboards = state.dashboards
-  //   const dashboards = resultDashboards
-
   const dashboards = isEmpty
-    ? resultDashboards?.filter((d) => {
+    ? state.dashboards?.filter((d) => {
         return !(
           yourDashboards?.some((yd) => d.id === yd.id) ||
           yourFollowedDashboards?.some((yfd) => d.id === yfd.id)
         )
       })
-    : resultDashboards
+    : state.dashboards
   return (
     <Col className="gap-2">
       <Input
@@ -160,7 +153,7 @@ export function DashboardSearch() {
           <Header header="MORE" className="mt-1 -mb-1" />
         </>
       )}
-      <DashboardCards dashboards={dashboards} />
+      <DashboardCards dashboards={dashboards} loadMore={loadMoreDashboards} />
     </Col>
   )
 }

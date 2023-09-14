@@ -99,7 +99,7 @@ export default function CreateDashboard() {
       />
       <Col
         className={clsx(
-          ' text-ink-1000 mx-auto w-full max-w-2xl py-2 transition-colors'
+          ' text-ink-1000 mx-auto w-full max-w-2xl py-2 px-4 transition-colors sm:px-6'
         )}
       >
         <Title>Create a Dashboard</Title>
