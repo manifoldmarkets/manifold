@@ -1,4 +1,7 @@
-import { useYourDashboards } from 'web/hooks/use-dashboard'
+import {
+  useYourDashboards,
+  useYourFollowedDashboards,
+} from 'web/hooks/use-dashboard'
 import { DashboardCards } from './dashboard-cards'
 import { Col } from '../layout/col'
 import { useEvent } from 'web/hooks/use-event'
@@ -16,6 +19,9 @@ import { removeEmojis } from '../contract/market-groups'
 import { supabaseSearchDashboards } from 'web/lib/firebase/api'
 import { Input } from '../widgets/input'
 import { Spacer } from '../layout/spacer'
+import { Row } from '../layout/row'
+import { LoadingIndicator } from '../widgets/loading-indicator'
+import clsx from 'clsx'
 const DASHBOARDS_PER_PAGE = 50
 
 const INITIAL_STATE = {
@@ -30,6 +36,7 @@ export type DashboardSearchState = {
 
 export function DashboardSearch() {
   const yourDashboards = useYourDashboards()
+  const yourFollowedDashboards = useYourFollowedDashboards()
 
   const performQuery = useEvent(
     async (currentState, freshQuery?: boolean) =>
@@ -45,6 +52,8 @@ export function DashboardSearch() {
   const searchTerm = useRef<string>('')
   const [inputTerm, setInputTerm] = usePersistentQueryState('search', '')
   const searchTermStore = inMemoryStore<string>()
+
+  const isEmpty = searchTerm.current.length === 0
 
   const requestId = useRef(0)
   const debouncedQuery = useCallback(
@@ -119,9 +128,14 @@ export function DashboardSearch() {
 
   const resultDashboards = state.dashboards
 
-  const dashboards = uniqBy(resultDashboards, (d) => d.id)
+  const dashboards = isEmpty
+    ? resultDashboards?.filter((d) => {
+        !yourDashboards?.some((yd) => d.id == yd.id) &&
+          !yourFollowedDashboards?.some((yfd) => d.id == yfd.id)
+      })
+    : resultDashboards
   return (
-    <Col className="gap-1">
+    <Col className="gap-2">
       <Input
         type="text"
         inputMode="search"
@@ -130,9 +144,50 @@ export function DashboardSearch() {
         placeholder="Search dashboards"
         className="w-full"
       />
-      
-      <DashboardCards dashboards={yourDashboards} />
+      {isEmpty && (
+        <>
+          <DashboardSection
+            dashboards={yourDashboards}
+            header="YOUR DASHBOARDS"
+          />
+          <DashboardSection
+            dashboards={yourFollowedDashboards}
+            header="BOOKMARKED"
+          />
+          <Header header="MORE" className="mt-1 -mb-1" />
+        </>
+      )}
       <DashboardCards dashboards={dashboards} />
     </Col>
+  )
+}
+
+function DashboardSection(props: {
+  dashboards: Dashboard[] | undefined
+  header: string
+}) {
+  const { dashboards, header } = props
+  if (!dashboards || dashboards.length < 1) return null
+  return (
+    <Col className="mt-1 gap-1">
+      <Header header={header} />
+      <DashboardCards dashboards={dashboards} />
+    </Col>
+  )
+}
+
+function Header(props: { header: string; className?: string }) {
+  const { header, className } = props
+  return (
+    <Row
+      className={clsx(
+        'text-ink-400 w-full items-center gap-1 text-xs font-semibold',
+        className
+      )}
+    >
+      <hr className="border-ink-300 grow" />
+      {header}
+      <hr className="border-ink-300 grow" />
+    </Row>
   )
 }

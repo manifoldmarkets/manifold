@@ -500,3 +500,7 @@ export function supabaseSearchDashboards(params: {
     params
   ) as Promise<Dashboard[]>
 }
+
+export function getYourFollowedDashboards() {
+  return call(getApiUrl('getyourfolloweddashboards'), 'POST')
+}

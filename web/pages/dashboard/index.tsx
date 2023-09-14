@@ -1,20 +1,12 @@
 import { DASHBOARD_ENABLED } from 'common/envs/constants'
 import { CreateDashboardButton } from 'web/components/dashboard/create-dashboard-button'
+import { DashboardSearch } from 'web/components/dashboard/dashboard-search'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
-import { useIsAuthorized, useUser } from 'web/hooks/use-user'
+import { useUser } from 'web/hooks/use-user'
 import Custom404 from '../404'
-import { useEffect, useState } from 'react'
-import { getYourDashboards } from 'web/lib/firebase/api'
-import { Dashboard } from 'common/dashboard'
-import Link from 'next/link'
-import { Avatar } from 'web/components/widgets/avatar'
-import { UserLink } from 'web/components/widgets/user-link'
-import clsx from 'clsx'
-import { FollowDashboardButton } from 'web/components/dashboard/follow-dashboard-button'
-import { DashboardSearch } from 'web/components/dashboard/dashboard-search'
 
 export default function DashboardPage() {
   useRedirectIfSignedOut()
