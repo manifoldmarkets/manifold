@@ -228,6 +228,7 @@ export function ContractPageContent(props: {
           ? getMultiBetPoints(contract.answers, newBets)
           : []
 
+      console.log(data, newData)
       return zipWith(data, newData, (a, b) => [...a, ...b])
     } else {
       const points = unserializePoints(contractParams.historyData.points as any)
