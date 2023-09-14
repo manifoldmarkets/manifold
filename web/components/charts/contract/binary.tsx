@@ -16,26 +16,20 @@ import { Avatar } from 'web/components/widgets/avatar'
 import { YES_GRAPH_COLOR } from 'common/envs/constants'
 import { HistoryPoint, viewScale } from 'common/chart'
 
-type BinaryPoint = HistoryPoint<{
-  userAvatarUrl?: string
-  isLast?: boolean
-}>
+type BinaryPoint = HistoryPoint<{ userAvatarUrl?: string }>
 
-const BinaryChartTooltip = (props: TooltipProps<Date, BinaryPoint>) => {
-  const { prev, next, x, xScale } = props
+const BinaryChartTooltip = (
+  props: TooltipProps<BinaryPoint> & { dateLabel: string }
+) => {
+  const { prev, next, dateLabel } = props
   if (!prev) return null
-
-  const [start, end] = xScale.domain()
-  const d = xScale.invert(x)
-  const dateLabel =
-    !next || next.obj?.isLast ? 'Now' : formatDateInRange(d, start, end)
 
   return (
     <Row className="items-center gap-2">
       {prev.obj?.userAvatarUrl && (
         <Avatar size="xs" avatarUrl={prev.obj.userAvatarUrl} />
       )}
-      <span className="font-semibold">{dateLabel}</span>
+      <span className="font-semibold">{next ? dateLabel : 'Now'}</span>
       <span className="text-ink-600">{formatPct(prev.y)}</span>
     </Row>
   )
@@ -70,7 +64,7 @@ export const BinaryContractChart = (props: {
   const now = useMemo(() => Date.now(), [betPoints])
 
   const data = useMemo(() => {
-    return [...betPoints, { x: end ?? now, y: endP, obj: { isLast: true } }]
+    return [...betPoints, { x: end ?? now, y: endP }]
   }, [end, endP, betPoints])
 
   const rightmostDate = getRightmostVisibleDate(end, last(betPoints)?.x, now)
@@ -80,6 +74,7 @@ export const BinaryContractChart = (props: {
     [percentBounds?.min ?? 0, percentBounds?.max ?? 1],
     [height, 0]
   )
+
   return (
     <ControllableSingleValueHistoryChart
       w={width}
@@ -92,7 +87,17 @@ export const BinaryContractChart = (props: {
       data={data}
       color={YES_GRAPH_COLOR}
       onMouseOver={onMouseOver}
-      Tooltip={BinaryChartTooltip}
+      Tooltip={(props) => (
+        <BinaryChartTooltip
+          {...props}
+          dateLabel={formatDateInRange(
+            // eslint-disable-next-line react/prop-types
+            xScale.invert(props.x),
+            rangeStart,
+            rightmostDate
+          )}
+        />
+      )}
     />
   )
 }

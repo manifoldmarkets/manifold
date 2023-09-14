@@ -195,18 +195,22 @@ export const SliceMarker = (props: {
   )
 }
 
-export const SVGChart = <X, TT, S extends AxisScale<X>>(props: {
+export const SVGChart = <
+  X,
+  TT extends { x: number; y: number },
+  S extends AxisScale<X>
+>(props: {
   children: ReactNode
   w: number
   h: number
   xAxis: Axis<X>
   yAxis: Axis<number>
-  ttParams?: TooltipParams<TT> | undefined
+  ttParams?: TT | undefined
   fullScale?: S
   onRescale?: (xScale: S | null) => void
   onMouseOver?: (mouseX: number, mouseY: number) => void
   onMouseLeave?: () => void
-  Tooltip?: TooltipComponent<X, TT>
+  Tooltip?: (props: TT) => ReactNode
   negativeThreshold?: number
   noGridlines?: boolean
   className?: string
@@ -287,11 +291,7 @@ export const SVGChart = <X, TT, S extends AxisScale<X>>(props: {
             getTooltipPosition(ttParams.x, ttParams.y, w, h, ttw, tth)
           }
         >
-          {Tooltip({
-            xScale: xAxis.scale(),
-            yScale: yAxis.scale() as ContinuousScale<number>,
-            ...ttParams,
-          })}
+          {Tooltip(ttParams)}
         </TooltipContainer>
       )}
       <svg
@@ -361,19 +361,13 @@ export const getTooltipPosition = (
   return { left, bottom }
 }
 
-export type TooltipParams<T> = {
+export type TooltipProps<T> = {
   x: number
   y: number
   prev: T | undefined
   next: T | undefined
   nearest: T
 }
-export type TooltipProps<X, T> = TooltipParams<T> & {
-  xScale: ContinuousScale<X>
-  yScale?: ContinuousScale<number>
-}
-
-export type TooltipComponent<X, T> = (props: TooltipProps<X, T>) => ReactNode
 
 export const TooltipContainer = (props: {
   calculatePos: (width: number, height: number) => TooltipPosition
@@ -426,10 +420,14 @@ export const formatPct = (n: number) => {
 }
 
 export const formatDate = (
-  date: Date,
-  opts: { includeYear: boolean; includeHour: boolean; includeMinute: boolean }
+  date: Date | number,
+  opts?: {
+    includeYear?: boolean
+    includeHour?: boolean
+    includeMinute?: boolean
+  }
 ) => {
-  const { includeYear, includeHour, includeMinute } = opts
+  const { includeYear, includeHour, includeMinute } = opts ?? {}
   const d = dayjs(date)
   const now = Date.now()
   if (
@@ -455,7 +453,11 @@ export const formatDate = (
   }
 }
 
-export const formatDateInRange = (d: Date, start: Date, end: Date) => {
+export const formatDateInRange = (
+  d: Date | number,
+  start: Date | number,
+  end: Date | number
+) => {
   const opts = {
     includeYear: !dayjs(start).isSame(end, 'year'),
     includeHour: dayjs(start).add(8, 'day').isAfter(end),

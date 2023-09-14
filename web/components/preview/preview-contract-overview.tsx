@@ -12,7 +12,7 @@ import {
 import { YES_GRAPH_COLOR } from 'common/envs/constants'
 import { NumericContractChart } from '../charts/contract/numeric'
 import { BinaryContractChart } from '../charts/contract/binary'
-import { ChoiceContractChart, MultiPoint } from '../charts/contract/choice'
+import { ChoiceContractChart, MultiPoints } from '../charts/contract/choice'
 import { PseudoNumericContractChart } from '../charts/contract/pseudo-numeric'
 import {
   NumericResolutionOrExpectation,
@@ -47,7 +47,7 @@ import { PreviewBinaryResolutionOrChance } from './preview-contract-price'
 export const PreviewContractOverview = memo(
   (props: {
     contract: Contract
-    betPoints: HistoryPoint<Partial<Bet>>[] | MultiPoint[]
+    betPoints: HistoryPoint<Partial<Bet>>[] | MultiPoints
     showResolver: boolean
     onAnswerCommentClick?: (answer: Answer | DpmAnswer) => void
   }) => {
@@ -200,7 +200,7 @@ export function PreviewBinaryChart(props: {
 }
 
 const ChoiceOverview = (props: {
-  points: MultiPoint[]
+  points: MultiPoints
   contract: MultiContract
   showResolver: boolean
   onAnswerCommentClick?: (answer: Answer | DpmAnswer) => void
