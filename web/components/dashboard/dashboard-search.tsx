@@ -11,7 +11,6 @@ import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-s
 import { usePersistentQueryState } from 'web/hooks/use-persistent-query-state'
 import {
   historyStore,
-  inMemoryStore,
   usePersistentState,
 } from 'web/hooks/use-persistent-state'
 import { supabaseSearchDashboards } from 'web/lib/firebase/api'
