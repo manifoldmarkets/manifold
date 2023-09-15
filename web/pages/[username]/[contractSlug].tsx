@@ -326,6 +326,11 @@ export function ContractPageContent(props: {
       {contract.visibility == 'private' && isAdmin && user && (
         <PrivateContractAdminTag contract={contract} user={user} />
       )}
+      {contract.visibility !== 'public' && (
+        <Head>
+          <meta name="robots" content="noindex, nofollow" />
+        </Head>
+      )}
 
       <Row className="w-full items-start justify-center gap-8">
         <Col
