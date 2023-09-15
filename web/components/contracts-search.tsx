@@ -714,7 +714,7 @@ export function SearchFilters(props: {
       />
       {currentCategorySlug == category?.slug && category && (
         <CategoryTag
-          className={'text-primary-500'}
+          className={'text-primary-500 py-0'}
           category={category}
           location={'questions page'}
         >
@@ -726,7 +726,7 @@ export function SearchFilters(props: {
       {currentCategorySlug === 'for-you' && (
         <Row
           className={
-            'text-primary-500 dark:text-ink-400 hover:text-ink-600 hover:bg-primary-400/10 group items-center justify-center whitespace-nowrap rounded px-1 py-0.5 text-right text-sm transition-colors'
+            'text-primary-500 dark:text-ink-400 hover:text-ink-600 hover:bg-primary-400/10 group items-center justify-center whitespace-nowrap rounded px-1 text-right text-sm transition-colors'
           }
         >
           <span className="mr-px opacity-50 transition-colors group-hover:text-inherit">
