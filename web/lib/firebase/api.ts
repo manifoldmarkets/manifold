@@ -286,6 +286,37 @@ export function supabaseSearchContracts(params: {
   ) as Promise<Contract[]>
 }
 
+export function supabaseSearchContractsWithDefaults(params: {
+  term?: string
+  filter?: Filter
+  sort?: Sort
+  contractType?: ContractTypeType
+  offset?: number
+  limit?: number
+  topic?: string
+  fuzzy?: boolean
+  groupId?: string
+  creatorId?: string
+}) {
+  const {
+    term = '',
+    filter = 'all',
+    sort = 'score',
+    contractType = 'ALL',
+    offset = 0,
+    limit = 1000,
+  } = params
+  return supabaseSearchContracts({
+    ...params,
+    term,
+    filter,
+    sort,
+    contractType,
+    offset,
+    limit,
+  })
+}
+
 export function deleteMarket(params: { contractId: string }) {
   return call(getApiUrl('delete-market'), 'POST', params) as Promise<{
     status: 'success'
