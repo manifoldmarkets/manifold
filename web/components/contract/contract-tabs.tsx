@@ -209,7 +209,6 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
     [...props.comments, ...newComments],
     (c) => c.id
   ).filter((c) => !blockedUserIds.includes(c.userId))
-  console.log('comments', comments)
 
   // Supabase use realtime comments
   // const comments = (
