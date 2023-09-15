@@ -126,6 +126,7 @@ export default function DashboardPage(props: { initialDashboard: Dashboard }) {
                   Cancel
                 </Button>
                 <Button
+                  disabled={items.length < 2}
                   onClick={() => {
                     if (items !== dashboard.items) {
                       updateDashboard({
