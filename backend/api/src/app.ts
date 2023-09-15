@@ -58,9 +58,6 @@ import { editcomment } from 'api/edit-comment'
 import { supabasesearchgroups } from './supabase-search-groups'
 import { leagueActivity } from './league-activity'
 import { lootbox } from './loot-box'
-import { createQAndA } from './create-q-and-a'
-import { createQAndAAnswer } from './create-q-and-a-answer'
-import { awardQAndAAnswer } from './award-q-and-a-answer'
 import { createchatmessage } from 'api/create-chat-message'
 import { updatepost } from './update-post'
 import { updategroup } from './update-group'
@@ -184,9 +181,6 @@ app.post('/joingroupthroughinvite', ...apiRoute(joingroupthroughinvite))
 app.post('/joingroup', ...apiRoute(joingroup))
 app.post('/supabasesearchgroups', ...apiRoute(supabasesearchgroups))
 app.post('/league-activity', ...apiRoute(leagueActivity))
-app.post('/create-q-and-a', ...apiRoute(createQAndA))
-app.post('/create-q-and-a-answer', ...apiRoute(createQAndAAnswer))
-app.post('/award-q-and-a-answer', ...apiRoute(awardQAndAAnswer))
 app.post('/award-bounty', ...apiRoute(awardbounty))
 app.post('/add-bounty', ...apiRoute(addbounty))
 app.post('/createanswercpmm', ...apiRoute(createanswercpmm))

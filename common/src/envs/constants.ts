@@ -352,7 +352,6 @@ export const RESERVED_PATHS = [
   'privacy',
   'profile',
   'public',
-  'q-and-a',
   'questions',
   'referral',
   'referrals',
