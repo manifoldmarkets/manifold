@@ -152,7 +152,6 @@ function ContractActions(props: {
               buttonColor={'gray'}
             />
           )}
-        <ContractEditHistoryButton contract={contract} />
         {!isOnlyTrustworthy && (
           <EditDescriptionButton
             setEditing={setEditing}
