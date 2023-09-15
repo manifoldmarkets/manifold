@@ -44,6 +44,7 @@ export default function AdminPage() {
           description={'See what new users are up to'}
           href="/admin/journeys"
         />
+        <LabCard title="🤬 reports" href="/admin/reports" />
         <LabCard title="🎨 design system" href="/styles" />
         <LabCard title="🌑 test new user" href="/admin/test-user" />
         <p className="mb-2 italic">anyone can see this page btw</p>
