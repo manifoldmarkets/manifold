@@ -42,37 +42,38 @@ const Caps = (props: { children: React.ReactNode }) => (
 
 export const WhatIsAPM = () => (
   <ExpandSection title="📈 What is a prediction market?">
-    Prediction markets let you bet on the outcome of future events.
+    Prediction markets let you bet on future events.
     <Break />
-    The price of shares in an outcome vary as people buy and sell it. This
-    reflects the probability of the event occuring.
+    The price of an outcome varies as people buy and sell. This reflects the
+    odds of that outcome.
     <Break />
-    Prediction markets, including ours, have proven to be incredibly accurate at
-    estimating the correct odds.
+    Manifold's probabilities has been proven to be incredibly accurate at
+    estimating the future!
   </ExpandSection>
 )
 
 export const WhatIsMana = () => (
   <ExpandSection title="💰 What is mana (Ṁ)?">
-    • Mana (Ṁ) is the play-money used by to bet on our platform.
+    Mana (Ṁ) is the play-money used by to bet on Manifold.
     <Break />
-    • All users start with Ṁ500 for free and can earn more by winning bets and
-    gaining free bonuses.
-    <Break />• Most of our users never spend real money!
-    <Break />• It cannot be converted to cash, but can be redeemed for real
-    charity donations at a rate of Ṁ100 to $1.
+    You start with Ṁ500 for free. Earn more by winning bets and gaining bonuses.
+    <br />
+    Most users never have to buy mana.
+    <Break />
+    Mana can't be redeemed for cash, but you can donate it to charity at a rate
+    of $1 per Ṁ100.
   </ExpandSection>
 )
 
 export const WhyManifold = () => (
   <ExpandSection title="🤔 Why Manifold?">
-    • <Caps>News</Caps> - Build a deep understanding of current events with
-    precise probabilities, not sensationalist media.
-    <Break />• <Caps>Compete</Caps> with your friends and our vibrant community
-    to win bets and progress up the leagues to earn prizes!
+    • <Caps>News</Caps> - Understand current events with precise probabilities,
+    not sensationalist media.
+    <Break />• <Caps>Compete</Caps> - Progress up the leagues to earn prizes!
     <Break />• <Caps>Ask</Caps> - Create a question about anything you want!
-    <Break />• <Caps>Resolve</Caps> - Users who create a question are
-    responsible for choosing the outcome. This allows scalability and personal
-    questions! Our admins may step in if a market is misresolved.
+    <Break />• <Caps>Venture</Caps> - You judge the outcome of questions you
+    write. Because you're not just a user. You're a creator. An entrepreneur. A
+    business. Your bettors are customers. Your reputation is on the line. But if
+    you ask questions people love, you will earn a lot of mana!
   </ExpandSection>
 )
