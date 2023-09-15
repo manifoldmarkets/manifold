@@ -1,6 +1,5 @@
 import clsx from 'clsx'
 import { Col } from './layout/col'
-import { useState } from 'react'
 import { ChevronDoubleDownIcon } from '@heroicons/react/solid'
 import { Card } from './widgets/card'
 
@@ -18,28 +17,28 @@ export const ExplainerPanel = (props: { className?: string }) => {
 
 const ExpandSection = (props: { title: string; children: React.ReactNode }) => {
   const { title, children } = props
-  const [isExpanded, setIsExpanded] = useState(false)
 
   return (
-    <Card
-      onClick={() => setIsExpanded((open) => !open)}
-      className="mb-4 flex flex-col gap-2 px-4 py-3"
-    >
-      <div className="flex items-center justify-between">
-        <div className="text-lg font-semibold">{title}</div>
-        <ChevronDoubleDownIcon
-          className={clsx(
-            'ml-auto inline-block h-4 w-4',
-            isExpanded && 'rotate-180'
-          )}
-        />
-      </div>
-      {isExpanded && <p className="text-ink-600">{children}</p>}
+    <Card className="mb-4">
+      <details className="group flex flex-col gap-2">
+        <summary className="flex list-none items-center justify-between px-4 py-3 [&::-webkit-details-marker]:hidden">
+          <div className="text-lg font-semibold">{title}</div>
+          <ChevronDoubleDownIcon
+            className="ml-auto inline-block h-4 w-4 transition group-open:-rotate-180"
+            aria-hidden
+          />
+        </summary>
+        <p className="text-ink-600 px-4 pb-3">{children}</p>
+      </details>
     </Card>
   )
 }
 
-const Break = () => <div className="my-2"></div>
+const Break = () => <div className="my-2" />
+
+const Caps = (props: { children: React.ReactNode }) => (
+  <span className="font-bold uppercase">{props.children}</span>
+)
 
 export const WhatIsAPM = () => (
   <ExpandSection title="📈 What is a prediction market?">
@@ -67,13 +66,13 @@ export const WhatIsMana = () => (
 
 export const WhyManifold = () => (
   <ExpandSection title="🤔 Why Manifold?">
-    • <b>NEWS</b> - Build a deep understanding of current events with precise
-    probabilities, not sensationalist media.
-    <Break />• <b>COMPETE</b> with your friends and our vibrant community to win
-    bets and progress up the leagues to earn prizes!
-    <Break />• <b>ASK</b> - Create a question about anything you want!
-    <Break />• <b>RESOLVE</b> - Users who create a question are responsible for
-    choosing the outcome. This allows scalability and personal questions! Our
-    admins may step in if a market is misresolved.
+    • <Caps>News</Caps> - Build a deep understanding of current events with
+    precise probabilities, not sensationalist media.
+    <Break />• <Caps>Compete</Caps> with your friends and our vibrant community
+    to win bets and progress up the leagues to earn prizes!
+    <Break />• <Caps>Ask</Caps> - Create a question about anything you want!
+    <Break />• <Caps>Resolve</Caps> - Users who create a question are
+    responsible for choosing the outcome. This allows scalability and personal
+    questions! Our admins may step in if a market is misresolved.
   </ExpandSection>
 )
