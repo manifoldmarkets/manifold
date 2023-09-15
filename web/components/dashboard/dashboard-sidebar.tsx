@@ -1,8 +1,9 @@
 import { JSONContent } from '@tiptap/core'
 import { JSONEmpty } from '../contract/contract-description'
 import { Col } from '../layout/col'
-import { Content } from '../widgets/editor'
+import { Content, TextEditor, useTextEditor } from '../widgets/editor'
 import clsx from 'clsx'
+import { MAX_DESCRIPTION_LENGTH } from 'common/contract'
 
 export const DashboardSidebar = (props: {
   description?: JSONContent

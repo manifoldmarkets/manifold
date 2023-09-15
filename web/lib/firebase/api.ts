@@ -507,8 +507,6 @@ export function getYourFollowedDashboards() {
 
 export function updateDashboard(params: {
   dashboardId: string
-  title: string
-  description?: JSONContent
   items: DashboardItem[]
 }) {
   return call(getApiUrl('updatedashboard'), 'POST', params)

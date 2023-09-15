@@ -32,7 +32,7 @@ export default function CreateDashboard() {
   )
 
   const editor = useTextEditor({
-    key: 'create dashbord dsecription',
+    key: 'create dashbord description',
     max: MAX_DESCRIPTION_LENGTH,
     placeholder: 'Optional. Provide background info and details.',
   })

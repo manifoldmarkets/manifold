@@ -17,6 +17,9 @@ import { UserLink } from 'web/components/widgets/user-link'
 import { EditableTitle } from 'web/components/dashboard/dashboard-editable-title'
 import { AddDashboardItemWidget } from 'web/components/dashboard/add-dashboard-item'
 import { updateDashboard } from 'web/lib/firebase/api'
+import { TextEditor, useTextEditor } from 'web/components/widgets/editor'
+import { MAX_DESCRIPTION_LENGTH } from 'common/contract'
+import { JSONEmpty } from 'web/components/contract/contract-description'
 
 export async function getStaticProps(ctx: {
   params: { dashboardSlug: string }
@@ -52,9 +55,6 @@ export default function DashboardPage(props: { initialDashboard: Dashboard }) {
   const user = useUser()
   const canEdit = dashboard.creator_id === user?.id
   const [editMode, setEditMode] = useState(false)
-  // const [title, setTitle] = useState(dashboard.title)
-  const [description, setDescription] = useState(dashboard.description)
-
   if (!dashboard) {
     return <Custom404 />
   }
@@ -94,6 +94,7 @@ export default function DashboardPage(props: { initialDashboard: Dashboard }) {
               )}
             </Row>
           </Row>
+
           <DashboardSidebar description={dashboard.description} />
           <DashboardContent
             items={items}
@@ -118,7 +119,6 @@ export default function DashboardPage(props: { initialDashboard: Dashboard }) {
                 <Button
                   color="gray"
                   onClick={() => {
-                    setDescription(dashboard.description)
                     setItems(dashboard.items)
                     setEditMode(false)
                   }}
@@ -127,15 +127,10 @@ export default function DashboardPage(props: { initialDashboard: Dashboard }) {
                 </Button>
                 <Button
                   onClick={() => {
-                    if (
-                      description !== dashboard.description ||
-                      items !== dashboard.items
-                    ) {
+                    if (items !== dashboard.items) {
                       updateDashboard({
                         dashboardId: dashboard.id,
-                        description,
                         items,
-                        title: dashboard.title,
                       }).then((resultingDashboard) => {
                         if (
                           resultingDashboard &&
