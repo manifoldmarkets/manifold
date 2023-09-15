@@ -130,6 +130,9 @@ export const freeQuestionRemaining = (
   createdTime: number | undefined
 ) => {
   if (!createdTime) return 0
+  // hide if account less than one hour old
+  if (createdTime > Date.now() - 60 * 60 * 1000) return 0
+
   const now = getCurrentUtcTime()
   if (freeQuestionsCreated >= MAX_FREE_QUESTIONS) {
     return 0
