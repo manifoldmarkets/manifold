@@ -26,7 +26,7 @@ export type NotificationGroup = {
 
 const NOTIFICATIONS_KEY = 'notifications_1'
 
-export function useNotifications(
+function useNotifications(
   userId: string,
   // Nobody's going through 10 pages of notifications, right?
   count = 10 * NOTIFICATIONS_PER_PAGE
@@ -41,7 +41,7 @@ export function useNotifications(
   return useMemo(() => rows?.map((r) => r.data as Notification), [rows])
 }
 
-export function useUnseenNotifications(
+function useUnseenNotifications(
   userId: string,
   count = 10 * NOTIFICATIONS_PER_PAGE
 ) {
@@ -79,43 +79,34 @@ export function useUnseenNotifications(
   }, [rows])
 }
 
-export function useGroupedNonBalanceChangeNotifications(userId: string) {
-  const notifications = useNotifications(userId)
-
-  const balanceChangeOnlyReasons: NotificationReason[] = ['loan_income']
-  return useMemo(() => {
-    const sortedNotifications =
-      notifications != null
-        ? sortBy(notifications, (n) => -n.createdTime)
-        : undefined
-    const groupedNotifications = sortedNotifications
-      ? groupNotifications(
-          sortedNotifications.filter(
-            (n) => !balanceChangeOnlyReasons.includes(n.reason)
-          )
-        )
-      : undefined
-    const mostRecentNotification = first(sortedNotifications)
-    return {
-      groupedNotifications,
-      mostRecentNotification,
-    }
-  }, [notifications])
-}
-
-export function useGroupedBalanceChangeNotifications(userId: string) {
-  const notifications = useNotifications(userId)
-  return useMemo(() => {
-    if (!notifications) return undefined
-    return groupBalanceChangeNotifications(notifications)
-  }, [notifications])
-}
-
 export function useGroupedUnseenNotifications(userId: string) {
   const notifications = useUnseenNotifications(userId)
   return useMemo(() => {
     return notifications ? groupNotifications(notifications) : undefined
   }, [notifications])
+}
+
+export function useGroupedNotifications(userId: string) {
+  const notifications = useNotifications(userId)
+
+  const { mostRecentNotification, groupedNotifications } =
+    groupNonBalanceChangeNotifications(notifications ?? [])
+
+  const groupedBalanceChangeNotifications = groupBalanceChangeNotifications(
+    notifications ?? []
+  )
+  return useMemo(
+    () => ({
+      mostRecentNotification: notifications
+        ? mostRecentNotification
+        : undefined,
+      groupedNotifications: notifications ? groupedNotifications : undefined,
+      groupedBalanceChangeNotifications: notifications
+        ? groupedBalanceChangeNotifications
+        : undefined,
+    }),
+    [notifications]
+  )
 }
 
 function groupNotifications(notifications: Notification[]) {
@@ -135,6 +126,26 @@ function groupNotifications(notifications: Notification[]) {
       isSeen: value.some((n) => !n.isSeen),
     })
   )
+}
+
+function groupNonBalanceChangeNotifications(notifications: Notification[]) {
+  const balanceChangeOnlyReasons: NotificationReason[] = ['loan_income']
+  const sortedNotifications =
+    notifications != null
+      ? sortBy(notifications, (n) => -n.createdTime)
+      : undefined
+  const groupedNotifications = sortedNotifications
+    ? groupNotifications(
+        sortedNotifications.filter(
+          (n) => !balanceChangeOnlyReasons.includes(n.reason)
+        )
+      )
+    : undefined
+  const mostRecentNotification = first(sortedNotifications)
+  return {
+    groupedNotifications,
+    mostRecentNotification,
+  }
 }
 
 function groupBalanceChangeNotifications(notifications: Notification[]) {
