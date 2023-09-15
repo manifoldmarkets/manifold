@@ -24,7 +24,8 @@ export const DailyLeagueStat = (props: { user: User }) => {
         <div className="text-ink-600 text-xs">
           {DIVISION_NAMES[info.division]}
         </div>
-        {user?.id && <UnseenChatBubble userId={user.id} />}
+        {/* Note: Unseen bubble doesn't seem to ever appear. Someone can debug and reenable.  */}
+        {/* {user?.id && <UnseenChatBubble userId={user.id} />} */}
       </Col>
     </Link>
   )
