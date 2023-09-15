@@ -57,24 +57,26 @@ export const RelatedContractsCarousel = memo(
     const halfRange = range(Math.floor(contracts.length / 2))
 
     return (
-      <Col className={clsx(className, 'flex-1')}>
-        <h2 className={clsx('text-ink-600 mb-2 text-lg')}>Related questions</h2>
+      <Col className={clsx(className, 'flex-1 px-3 py-2')}>
+        <h2 className={clsx('text-ink-800 mb-2 text-lg')}>Related questions</h2>
         <Carousel loadMore={loadMore}>
           {halfRange.map((i) => {
             const contract = contracts[i * 2]
             const secondContract = contracts[i * 2 + 1]
             return (
-              <Col key={contract.id} className="snap-center">
+              <Col key={contract.id} className="snap-start gap-2">
                 <RelatedContractCard
-                  className="min-w-[300px]"
+                  className="min-w-[300px] rounded border"
                   contract={contract}
                   onContractClick={onContractClick}
+                  twoLines
                 />
                 {secondContract && (
                   <RelatedContractCard
-                    className="min-w-[300px]"
+                    className="min-w-[300px] rounded border"
                     contract={secondContract}
                     onContractClick={onContractClick}
+                    twoLines
                   />
                 )}
               </Col>
@@ -89,9 +91,10 @@ export const RelatedContractsCarousel = memo(
 const RelatedContractCard = memo(function RelatedContractCard(props: {
   contract: Contract
   onContractClick?: (contract: Contract) => void
+  twoLines?: boolean
   className?: string
 }) {
-  const { onContractClick, className } = props
+  const { onContractClick, twoLines, className } = props
 
   const contract =
     useFirebasePublicContract(props.contract.visibility, props.contract.id) ??
@@ -115,7 +118,8 @@ const RelatedContractCard = memo(function RelatedContractCard(props: {
       <div>
         <span
           className={clsx(
-            'break-anywhere line-clamp-3 whitespace-normal font-medium'
+            'break-anywhere whitespace-normal font-medium',
+            twoLines ? 'line-clamp-2' : 'line-clamp-3'
           )}
         >
           {question}
