@@ -72,18 +72,18 @@ export function GroupsList(props: {
       <Col
         className={clsx(
           'scrollbar-hide  max-h-[calc(100vh-4rem)] min-h-[35rem] overflow-y-auto overflow-x-visible lg:max-h-[calc(100vh-6rem)]',
-          'bg-canvas-0 h-fit w-[7rem] items-start gap-2 sm:w-[8rem] md:w-[10rem]'
+          'bg-canvas-0 h-fit w-[7rem] items-start sm:w-[8rem] md:w-[10rem]'
         )}
       >
         <Row className={'w-full items-center justify-center'}>
           <Button
-            className={'mt-0.5 h-12 w-full'}
+            className={' h-[3.15rem] w-[8rem] md:w-[10.5rem]'}
             color={'gray-white'}
             size={'md'}
             onClick={() => setShow(!show)}
           >
+            <MdOutlineKeyboardDoubleArrowRight className="mr-1 h-5 w-5" />
             Topics
-            <MdOutlineKeyboardDoubleArrowRight className="ml-1 h-5 w-5" />
           </Button>
         </Row>
         {user && privateUser && (
@@ -265,7 +265,7 @@ export const GroupButton = (props: {
     <button
       onClick={() => setCurrentCategory(group.slug)}
       className={clsx(
-        'relative w-full flex-row flex-wrap px-2 py-4 text-left text-sm ',
+        'relative my-2 w-full flex-row flex-wrap px-2 py-4 text-left text-sm ',
         currentCategorySlug == group.slug ? 'bg-canvas-50 ' : ''
       )}
       key={group.id}

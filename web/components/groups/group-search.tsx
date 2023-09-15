@@ -148,10 +148,11 @@ export default function GroupSearch(props: { persistPrefix: string }) {
 
   const resultGroups = state.groups
 
-  const groups =
+  const groups = (
     groupSearchTerm || !resultGroups
       ? uniqBy(resultGroups, (g) => removeEmojis(g.name).toLowerCase())
       : combineGroupsByImportance(resultGroups, myGroups)
+  ).filter((g) => !privateUser?.blockedGroupSlugs.includes(g.slug))
   const categoryFromRouter = useGroupFromRouter(categorySlug, groups)
 
   useEffect(() => {
@@ -167,10 +168,10 @@ export default function GroupSearch(props: { persistPrefix: string }) {
     <Button
       color={'gray-outline'}
       size={'md'}
-      className={'mx-2'}
+      className={'ml-1 w-[8rem] sm:ml-2 md:w-[10.5rem]'}
       onClick={() => setShow(!show)}
     >
-      <MenuIcon className="mr-1 h-5 w-5" />
+      <MenuIcon className="mr-2 h-5 w-5" />
       Topics
     </Button>
   )
