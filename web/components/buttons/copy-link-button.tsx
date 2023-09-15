@@ -31,13 +31,6 @@ export function CopyLinkOrShareButton(props: {
 
   const onClick = () => {
     if (!url) return
-    if (isNative) {
-      // If we want to extend this: iOS can use a url and a message, Android can use a title and a message.
-      postMessageToNative('share', {
-        message: url,
-      } as NativeShareData)
-    }
-
     copyToClipboard(url)
     toast.success('Link copied!')
     trackShareEvent(eventTrackingName, url)

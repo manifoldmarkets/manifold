@@ -3,7 +3,7 @@ import { ChevronRightIcon } from '@heroicons/react/outline'
 import { SparklesIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { Contract } from 'common/contract'
-import { Group } from 'common/group'
+import { CATEGORY_KEY, Group } from 'common/group'
 import { debounce, startCase, uniqBy } from 'lodash'
 import { useRouter } from 'next/router'
 import { ReactNode, useCallback, useEffect, useRef, useState } from 'react'
@@ -21,6 +21,7 @@ import { Avatar } from '../widgets/avatar'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { searchMarketSorts } from './query-market-sorts'
 import { PageData, searchPages } from './query-pages'
+import { TOPIC_SEARCH_TERM } from 'web/components/groups/group-search'
 
 export interface Option {
   id: string
@@ -373,7 +374,11 @@ const GroupResults = (props: {
   const { search } = props
 
   const title = (
-    <SectionTitle link={`/groups?search=${encodeURIComponent(search ?? '')}`}>
+    <SectionTitle
+      link={`/questions?${TOPIC_SEARCH_TERM}=${encodeURIComponent(
+        search ?? ''
+      )}`}
+    >
       Categories
     </SectionTitle>
   )
@@ -384,7 +389,10 @@ const GroupResults = (props: {
       {props.groups.map((group) => (
         <ResultOption
           key={group.id}
-          value={{ id: group.id, slug: `/group/${group.slug}` }}
+          value={{
+            id: group.id,
+            slug: `/questions?${CATEGORY_KEY}=${group.slug}`,
+          }}
         >
           <div className="flex items-center gap-3">
             <span className="line-clamp-1 grow">{group.name}</span>

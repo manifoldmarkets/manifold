@@ -1,18 +1,10 @@
-import {
-  CheckCircleIcon,
-  LockClosedIcon,
-  PlusCircleIcon,
-  XCircleIcon,
-} from '@heroicons/react/solid'
+import { CheckCircleIcon, XCircleIcon } from '@heroicons/react/solid'
 import { Contract } from 'common/contract'
-import { Group, PrivacyStatusType } from 'common/group'
-import { User } from 'common/user'
-import { useState } from 'react'
+import { Group } from 'common/group'
 import toast from 'react-hot-toast'
 import { addContractToGroup } from 'web/lib/firebase/api'
-import { IconButton } from '../buttons/button'
 import { AddMarketToGroupModal } from './add-market-modal'
-import { GroupRole } from './group-member-modal'
+import { useUser } from 'web/hooks/use-user'
 
 export type AddContractToGroupPermissionType =
   | 'private' // user can add a private contract (only new, only belongs in group)
@@ -20,38 +12,15 @@ export type AddContractToGroupPermissionType =
   | 'any' // user can add a new or existing contract
   | 'none' // user cannot add any contract
 
-function getAddContractToGroupPermission(
-  privacyStatus: PrivacyStatusType,
-  userRole: GroupRole | null | undefined
-): AddContractToGroupPermissionType {
-  if (
-    privacyStatus != 'private' &&
-    (userRole === 'admin' || userRole === 'moderator')
-  ) {
-    return 'any'
-  }
-  if (privacyStatus == 'public') {
-    return 'new'
-  }
-  if (privacyStatus == 'private') {
-    return 'private'
-  }
-  return 'none'
-}
-
-export function AddContractButton(props: {
+export function AddContractToGroupModal(props: {
   group: Group
-  user?: User | null
-  userRole: GroupRole | null | undefined
+  open: boolean
+  setOpen: (open: boolean) => void
   className?: string
+  addPermission: AddContractToGroupPermissionType
 }) {
-  const { group, user, className, userRole } = props
-  const [open, setOpen] = useState(false)
-  const addPermission = getAddContractToGroupPermission(
-    group.privacyStatus,
-    userRole
-  )
-
+  const { group, open, setOpen, addPermission, className } = props
+  const user = useUser()
   async function onSubmit(contracts: Contract[]) {
     await Promise.all(
       contracts.map((contract) =>
@@ -72,21 +41,9 @@ export function AddContractButton(props: {
         })
       )
   }
-  if (user && addPermission != 'none') {
+  if (user) {
     return (
       <div className={className}>
-        <IconButton
-          size="md"
-          onClick={() => setOpen(true)}
-          className="drop-shadow hover:drop-shadow-lg"
-        >
-          <div className="bg-canvas-0 relative h-12 w-12 rounded-full">
-            <PlusCircleIcon className="text-primary-700 absolute -left-2 -top-2 h-16 w-16 drop-shadow" />
-            {group.privacyStatus == 'private' && (
-              <LockClosedIcon className="text-canvas-0 absolute right-[6px] bottom-[4px] h-[16px] w-[16px]" />
-            )}
-          </div>
-        </IconButton>
         <AddMarketToGroupModal
           group={group}
           user={user}

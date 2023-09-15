@@ -7,6 +7,7 @@ import {
   getSearchContractSQL,
   getForYouSQL,
 } from 'shared/supabase/search-contracts'
+import { getGroupIdFromSlug } from 'shared/supabase/groups'
 
 export const supabasesearchcontracts = MaybeAuthedEndpoint(
   async (req, auth) => {
@@ -23,7 +24,11 @@ export const supabasesearchcontracts = MaybeAuthedEndpoint(
     } = validate(bodySchema, req.body)
 
     const isForYou = trueGroupId === 'for-you'
-    const groupId = trueGroupId && !isForYou ? trueGroupId : undefined
+    const groupSlug = trueGroupId && !isForYou ? trueGroupId : undefined
+    const pg = createSupabaseDirectClient()
+    const groupId = groupSlug
+      ? await getGroupIdFromSlug(groupSlug, pg)
+      : undefined
 
     const searchMarketSQL =
       isForYou && !term && sort === 'score' && auth?.uid
@@ -43,7 +48,6 @@ export const supabasesearchcontracts = MaybeAuthedEndpoint(
             hasGroupAccess: await hasGroupAccess(groupId, auth?.uid),
           })
 
-    const pg = createSupabaseDirectClient()
     const contracts = await pg.map(
       searchMarketSQL,
       [term],

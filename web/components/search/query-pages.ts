@@ -18,7 +18,7 @@ const pages: PageData[] = [
   },
   {
     label: 'Categories',
-    slug: '/groups',
+    slug: '/categories',
     keywords: ['category', 'groups'],
   },
   { label: 'Get mana', slug: '/add-funds', keywords: ['buy', 'subscribe'] },

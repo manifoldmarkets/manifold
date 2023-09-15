@@ -8,7 +8,6 @@ import {
 import { orderBy } from 'lodash'
 import Link from 'next/link'
 import { linkClass } from 'web/components/widgets/site-link'
-import { CategoryTag } from 'web/pages/groups'
 import { useState } from 'react'
 import { useUser } from 'web/hooks/use-user'
 import { PencilIcon, PlusIcon } from '@heroicons/react/solid'
@@ -20,6 +19,8 @@ import { isTrustworthy } from 'common/envs/constants'
 import { filterDefined } from 'common/util/array'
 import { Group } from 'common/group'
 import { track } from 'web/lib/service/analytics'
+import { removeEmojis } from 'common/topics'
+import { CategoryTag } from 'web/components/groups/category-tag'
 
 export function MarketGroups(props: { contract: Contract }) {
   const { contract } = props
@@ -143,9 +144,4 @@ export function PublicMarketGroups(props: { contract: Contract }) {
       </Modal>
     </>
   )
-}
-
-export function removeEmojis(input: string): string {
-  const emojiRegex = /[\p{Extended_Pictographic}\u{FE00}-\u{FE0F}]/gu
-  return input.replace(emojiRegex, '').trim()
 }

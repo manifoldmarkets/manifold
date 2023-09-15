@@ -1,4 +1,4 @@
-import { run, SupabaseClient } from 'common/supabase/utils'
+import { run } from 'common/supabase/utils'
 import { chunk, uniqBy } from 'lodash'
 import { GroupRole as GroupRoleType } from 'web/components/groups/group-member-modal'
 import { User } from '../firebase/users'
@@ -165,7 +165,7 @@ export async function getGroupMarkets(groupId: string) {
   return markets.map((m) => m.data as Contract)
 }
 
-export async function getGroupFromSlug(groupSlug: string, db: SupabaseClient) {
+export async function getGroupFromSlug(groupSlug: string) {
   const { data } = await run(db.from('groups').select().eq('slug', groupSlug))
 
   if (data && data.length > 0) {

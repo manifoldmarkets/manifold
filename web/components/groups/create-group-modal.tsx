@@ -1,42 +1,41 @@
 import clsx from 'clsx'
 import { MAX_DESCRIPTION_LENGTH } from 'common/contract'
-import { MAX_GROUP_NAME_LENGTH, PrivacyStatusType } from 'common/group'
+import {
+  CATEGORY_KEY,
+  MAX_GROUP_NAME_LENGTH,
+  PrivacyStatusType,
+} from 'common/group'
 import { User } from 'common/user'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
 import { createGroup } from 'web/lib/firebase/api'
 import { getGroupWithFields } from 'web/lib/supabase/group'
-import { ColorType } from '../buttons/button'
-import { ConfirmationButton } from '../buttons/confirmation-button'
 import { Col } from '../layout/col'
-import { SCROLLABLE_MODAL_CLASS } from '../layout/modal'
-import { TextEditor, useTextEditor } from '../widgets/editor'
+import { Modal, SCROLLABLE_MODAL_CLASS } from '../layout/modal'
+import { useTextEditor } from '../widgets/editor'
 import { Input } from '../widgets/input'
-import { Title } from '../widgets/title'
 import { savePost } from './group-about-section'
 import { PrivacyStatusView } from './group-privacy-modal'
+import { Button } from 'web/components/buttons/button'
+import { Row } from 'web/components/layout/row'
 
 const LOADING_PING_INTERVAL = 200
 
-export function CreateGroupButton(props: {
-  user: User
-  className?: string
-  label?: string
-  onOpenStateChange?: (isOpen: boolean) => void
+export function CreateGroupModal(props: {
+  user: User | null | undefined
+  open: boolean
+  setOpen: (open: boolean) => void
   goToGroupOnSubmit?: boolean
   addGroupIdParamOnSubmit?: boolean
-  icon?: JSX.Element
-  openModalBtnColor?: ColorType
+  className?: string
 }) {
   const {
     user,
     className,
-    label,
-    onOpenStateChange,
     goToGroupOnSubmit,
     addGroupIdParamOnSubmit,
-    icon,
-    openModalBtnColor,
+    setOpen,
+    open,
   } = props
 
   const [name, setName] = useState('')
@@ -93,11 +92,11 @@ export function CreateGroupButton(props: {
           ) {
             clearInterval(intervalId) // Clear the interval
             if (goToGroupOnSubmit) {
-              router.push(`/group/${result.group.slug}`)
+              router.push(`questions?${CATEGORY_KEY}=${result.group.id}`)
             } else if (addGroupIdParamOnSubmit) {
               router.replace({
                 pathname: router.pathname,
-                query: { ...router.query, groupId: result.group.id },
+                query: { ...router.query, groupIds: [result.group.id] },
               })
             }
             setIsSubmitting(false)
@@ -121,39 +120,27 @@ export function CreateGroupButton(props: {
     }
   }
 
-  if (user.isBannedFromPosting) return <></>
+  if (user?.isBannedFromPosting) return <></>
 
   return (
-    <ConfirmationButton
-      openModalBtn={{
-        label: label ? label : 'New Category',
-        icon: icon,
-        className: className,
-        disabled: isSubmitting,
-        color: openModalBtnColor,
-      }}
-      submitBtn={{
-        label: 'Create',
-        color: 'green',
-        isSubmitting,
-      }}
-      onSubmitWithSuccess={onSubmit}
-      onOpenChanged={(isOpen) => {
-        onOpenStateChange?.(isOpen)
-        setName('')
-        editor?.commands.clearContent(true)
-      }}
-      disabled={editor?.storage.upload.mutation.isLoading}
-    >
-      <Col className={clsx('-mx-4 gap-4 px-4', SCROLLABLE_MODAL_CLASS)}>
-        <Title className="!my-0">Create a category</Title>
+    <Modal open={open} setOpen={setOpen}>
+      <Col
+        className={clsx(
+          ' bg-canvas-50 gap-4 rounded-md p-4',
+          className,
+          SCROLLABLE_MODAL_CLASS
+        )}
+      >
+        <Col className="">
+          <span className="text-primary-700 text-2xl">Create a category</span>
 
-        <Col className="text-ink-500">
-          <div>You can add questions to your category after creation.</div>
+          <div className={'text-ink-500 mt-2 text-sm'}>
+            You can add questions to your category after creation.
+          </div>
         </Col>
         {errorText && <div className={'text-error'}>{errorText}</div>}
 
-        <div className="flex w-full flex-col">
+        <Col>
           <label className="mb-2 ml-1 mt-0">Category name</label>
           <Input
             placeholder={'Your category name'}
@@ -162,33 +149,39 @@ export function CreateGroupButton(props: {
             maxLength={MAX_GROUP_NAME_LENGTH}
             onChange={(e) => setName(e.target.value || '')}
           />
-        </div>
+        </Col>
 
-        <div className="flex w-full flex-col">
-          <label className="mb-2 ml-1 mt-0">Privacy</label>
-          <Col>
-            <PrivacyStatusView
-              viewStatus={'public'}
-              isSelected={privacy == 'public'}
-              onClick={() => setPrivacy('public')}
-              size="sm"
-            />
-            <PrivacyStatusView
-              viewStatus={'curated'}
-              isSelected={privacy == 'curated'}
-              onClick={() => setPrivacy('curated')}
-              size="sm"
-            />
-          </Col>
-        </div>
-
-        <div className="flex w-full flex-col">
-          <label className="mb-2 ml-1 mt-0">
-            About <span className="text-ink-400">(optional)</span>
-          </label>
-          <TextEditor editor={editor} />
-        </div>
+        <Col>
+          <label className="mb-2 ml-1 mt-0">Type</label>
+          <PrivacyStatusView
+            viewStatus={'public'}
+            isSelected={privacy == 'public'}
+            onClick={() => setPrivacy('public')}
+            size="sm"
+          />
+          <PrivacyStatusView
+            viewStatus={'curated'}
+            isSelected={privacy == 'curated'}
+            onClick={() => setPrivacy('curated')}
+            size="sm"
+          />
+        </Col>
+        <Col className={''}>
+          <Row className={' justify-between'}>
+            <Button color={'gray-outline'} onClick={() => setOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              loading={isSubmitting}
+              disabled={isSubmitting || name === ''}
+              color={'indigo'}
+              onClick={onSubmit}
+            >
+              Create
+            </Button>
+          </Row>
+        </Col>
       </Col>
-    </ConfirmationButton>
+    </Modal>
   )
 }

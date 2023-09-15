@@ -58,11 +58,11 @@ import { safeLocalStorage } from 'web/lib/util/local'
 import { Col } from '../layout/col'
 import { BuyAmountInput } from '../widgets/amount-input'
 import { getContractTypeThingFromValue } from './create-contract-types'
-import { CategoryTag } from 'web/pages/groups'
 import { ContractVisibilityType, NewQuestionParams } from './new-contract-panel'
 import { VisibilityTheme } from 'web/pages/create'
 import { getContractWithFields } from 'web/lib/supabase/contracts'
 import { filterDefined } from 'common/util/array'
+import { CategoryTag } from 'web/components/groups/category-tag'
 
 export function ContractParamsForm(props: {
   creator: User
