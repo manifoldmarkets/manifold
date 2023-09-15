@@ -45,7 +45,7 @@ export function CreateGroupModal(props: {
   const router = useRouter()
 
   const editor = useTextEditor({
-    key: 'create a category',
+    key: 'create a topic',
     size: 'lg',
     placeholder: 'Tell us what your category is about',
     defaultValue: undefined,
@@ -132,18 +132,18 @@ export function CreateGroupModal(props: {
         )}
       >
         <Col className="">
-          <span className="text-primary-700 text-2xl">Create a category</span>
+          <span className="text-primary-700 text-2xl">Create a topic</span>
 
           <div className={'text-ink-500 mt-2 text-sm'}>
-            You can add questions to your category after creation.
+            You can add questions to your topic after creation.
           </div>
         </Col>
         {errorText && <div className={'text-error'}>{errorText}</div>}
 
         <Col>
-          <label className="mb-2 ml-1 mt-0">Category name</label>
+          <label className="mb-2 ml-1 mt-0">Topic name</label>
           <Input
-            placeholder={'Your category name'}
+            placeholder={'Your topic name'}
             disabled={isSubmitting}
             value={name}
             maxLength={MAX_GROUP_NAME_LENGTH}

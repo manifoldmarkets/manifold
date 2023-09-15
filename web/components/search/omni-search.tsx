@@ -77,7 +77,7 @@ export const OmniSearch = (props: {
               }
             }}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search questions, users, & categories"
+            placeholder="Search questions, users, & topics"
             enterKeyHint="search"
             className={clsx(
               'border-ink-100 focus:border-ink-100 placeholder:text-ink-400 bg-canvas-0 text-ink-1000 border-0 border-b py-4 px-6 text-xl ring-0 ring-transparent focus:ring-transparent',
@@ -111,7 +111,7 @@ const DefaultResults = (props: { recentMarkets: Contract[] }) => {
       <div className="mx-2 my-2 text-xs">
         <SparklesIcon className="text-primary-500 mr-1 inline h-4 w-4 align-text-bottom" />
         Start with <Key>%</Key> for questions, <Key>@</Key> for users, or{' '}
-        <Key>#</Key> for categories
+        <Key>#</Key> for topics
       </div>
     </>
   )
@@ -379,7 +379,7 @@ const GroupResults = (props: {
         search ?? ''
       )}`}
     >
-      Categories
+      Topics
     </SectionTitle>
   )
   if (!props.groups.length) return title

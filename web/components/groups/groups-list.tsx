@@ -122,7 +122,7 @@ export const ForYouButton = (props: {
   const [showCreateGroup, setShowCreateGroup] = useState(false)
   const groupOptionItems = buildArray(
     {
-      name: 'Create a new category',
+      name: 'Create a new topic',
       icon: <PlusCircleIcon className="h-5 w-5" />,
       onClick: () => setShowCreateGroup(true),
     },

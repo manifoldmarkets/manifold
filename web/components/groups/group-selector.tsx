@@ -186,7 +186,7 @@ export function GroupSelector(props: {
                         >
                           <Row className={'items-center gap-1 truncate pl-5'}>
                             <PlusCircleIcon className="mr-2 h-5 w-5 text-teal-500 group-hover:text-teal-300" />
-                            Create a new category
+                            Create a new topic
                           </Row>
                         </span>
                       </>

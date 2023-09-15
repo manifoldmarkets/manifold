@@ -570,8 +570,8 @@ export function ContractParamsForm(props: {
 
       <Col className="gap-3">
         <span className="px-1">
-          Add categories{' '}
-          <InfoTooltip text="Question will be displayed alongside the other questions in the category." />
+          Add topics{' '}
+          <InfoTooltip text="Question will be displayed alongside the other questions in the topic." />
         </span>
         {selectedGroups.length > 0 && (
           <Row className={'flex-wrap gap-2'}>

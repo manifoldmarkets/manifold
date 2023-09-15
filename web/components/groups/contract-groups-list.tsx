@@ -75,7 +75,7 @@ export function ContractGroupsList(props: {
           {canEdit && (
             <Col className={'my-2 items-center justify-between p-0.5'}>
               <Row className="text-ink-400 w-full justify-start text-sm">
-                Add categories
+                Add topics
               </Row>
               <GroupSelector
                 ignoreGroupIds={groups.map((g) => g.id)}
