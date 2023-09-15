@@ -1,12 +1,12 @@
 import { UserIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
-import { first } from 'lodash'
+import { first, mergeWith } from 'lodash'
 import Head from 'next/head'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Answer, DpmAnswer } from 'common/answer'
-import { unserializePoints } from 'common/chart'
+import { unserializeMultiPoints, unserializePoints } from 'common/chart'
 import { ContractParams, MaybeAuthedContractParams } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
 import { HOUSE_BOT_USERNAME, isTrustworthy } from 'common/envs/constants'
@@ -29,7 +29,10 @@ import { getTopContractMetrics } from 'common/supabase/contract-metrics'
 import ContractSharePanel from 'web/components/contract/contract-share-panel'
 import { ExtraContractActionsRow } from 'web/components/contract/extra-contract-actions-row'
 import { PrivateContractPage } from 'web/components/contract/private-contract'
-import { RelatedContractsList } from 'web/components/contract/related-contracts-widget'
+import {
+  RelatedContractsCarousel,
+  RelatedContractsList,
+} from 'web/components/contract/related-contracts-widget'
 import { EditableQuestionTitle } from 'web/components/contract/title-edit'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
@@ -119,16 +122,16 @@ export default function ContractPage(props: MaybeAuthedContractParams) {
 function NonPrivateContractPage(props: { contractParams: ContractParams }) {
   const { contract, historyData, pointsString } = props.contractParams
 
+  const points =
+    contract.outcomeType !== 'MULTIPLE_CHOICE'
+      ? unserializePoints(historyData.points as any)
+      : []
+
   const inIframe = useIsIframe()
   if (!contract) {
     return <Custom404 customText="Unable to fetch question" />
   } else if (inIframe) {
-    return (
-      <ContractEmbedPage
-        contract={contract}
-        points={unserializePoints(historyData.points) as any}
-      />
-    )
+    return <ContractEmbedPage contract={contract} points={points} />
   } else
     return (
       <>
@@ -219,20 +222,23 @@ export function ContractPageContent(props: {
   )
 
   const betPoints = useMemo(() => {
-    const points = unserializePoints(contractParams.historyData.points)
+    if (contract.outcomeType === 'MULTIPLE_CHOICE') {
+      const data = unserializeMultiPoints(
+        contractParams.historyData.points as any
+      )
+      const newData =
+        contract.mechanism === 'cpmm-multi-1' ? getMultiBetPoints(newBets) : []
 
-    const newPoints =
-      contract.outcomeType === 'MULTIPLE_CHOICE'
-        ? contract.mechanism === 'cpmm-multi-1'
-          ? getMultiBetPoints(contract.answers, newBets)
-          : []
-        : newBets.map((bet) => ({
-            x: bet.createdTime,
-            y: bet.probAfter,
-            obj: { userAvatarUrl: bet.userAvatarUrl },
-          }))
-
-    return [...points, ...newPoints]
+      return mergeWith(data, newData, (a, b) => [...(a ?? []), ...(b ?? [])])
+    } else {
+      const points = unserializePoints(contractParams.historyData.points as any)
+      const newPoints = newBets.map((bet) => ({
+        x: bet.createdTime,
+        y: bet.probAfter,
+        obj: { userAvatarUrl: bet.userAvatarUrl },
+      }))
+      return [...points, ...newPoints]
+    }
   }, [contractParams.historyData.points, newBets])
 
   const {
@@ -544,6 +550,15 @@ export function ContractPageContent(props: {
               />
             )}
 
+            <RelatedContractsCarousel
+              className="mt-4 mb-2 xl:hidden"
+              contracts={relatedMarkets}
+              onContractClick={(c) =>
+                track('click related market', { contractId: c.id })
+              }
+              loadMore={loadMore}
+            />
+
             {isResolved && resolution !== 'CANCEL' && (
               <>
                 <ContractLeaderboard
@@ -598,14 +613,6 @@ export function ContractPageContent(props: {
         </Col>
       </Row>
 
-      <RelatedContractsList
-        className="mx-auto mt-8 min-w-[300px] max-w-[600px] xl:hidden"
-        contracts={relatedMarkets}
-        onContractClick={(c) =>
-          track('click related market', { contractId: c.id })
-        }
-        loadMore={loadMore}
-      />
       <Spacer className="xl:hidden" h={10} />
       <ScrollToTopButton className="fixed bottom-16 right-2 z-20 lg:bottom-2 xl:hidden" />
     </>

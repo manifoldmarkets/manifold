@@ -16,6 +16,7 @@ import { Spacer } from '../layout/spacer'
 import { Input } from '../widgets/input'
 import { usePersistentQueryState } from 'web/hooks/use-persistent-query-state'
 import { LoadingIndicator } from '../widgets/loading-indicator'
+import { removeEmojis } from 'web/components/contract/market-groups'
 
 const INITIAL_STATE = {
   groups: undefined,
@@ -34,7 +35,7 @@ export type GroupState = {
 export default function GroupSearch(props: {
   persistPrefix: string
   yourGroupIds?: string[]
-  user?: User | null
+  user: User | null | undefined
 }) {
   const { persistPrefix, yourGroupIds = [], user } = props
 
@@ -132,7 +133,7 @@ export default function GroupSearch(props: {
 
   const groups =
     inputTerm || !resultGroups
-      ? resultGroups
+      ? uniqBy(resultGroups, (g) => removeEmojis(g.name).toLowerCase())
       : combineGroupsByImportance(resultGroups, myGroups)
 
   return (
@@ -146,7 +147,7 @@ export default function GroupSearch(props: {
         className="w-full"
       />
       <Spacer h={1} />
-      {!groups ? (
+      {!groups || user === undefined ? (
         <LoadingIndicator />
       ) : (
         <GroupsList
@@ -173,7 +174,7 @@ const combineGroupsByImportance = (
     ...resultGroups.slice(GROUPS_PER_PAGE - 1),
   ]
 
-  return uniqBy(combined, 'id')
+  return uniqBy(combined, (g) => removeEmojis(g.name).toLowerCase())
 }
 
 const useGroupRoles = (user: User | undefined | null) => {

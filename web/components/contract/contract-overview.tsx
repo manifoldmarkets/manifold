@@ -12,7 +12,7 @@ import {
 import { YES_GRAPH_COLOR } from 'common/envs/constants'
 import { NumericContractChart } from '../charts/contract/numeric'
 import { BinaryContractChart } from '../charts/contract/binary'
-import { ChoiceContractChart, MultiPoint } from '../charts/contract/choice'
+import { ChoiceContractChart, MultiPoints } from '../charts/contract/choice'
 import { PseudoNumericContractChart } from '../charts/contract/pseudo-numeric'
 import {
   BinaryResolutionOrChance,
@@ -46,7 +46,7 @@ import { viewScale } from 'common/chart'
 export const ContractOverview = memo(
   (props: {
     contract: Contract
-    betPoints: HistoryPoint<Partial<Bet>>[] | MultiPoint[]
+    betPoints: HistoryPoint<Partial<Bet>>[] | MultiPoints
     showResolver: boolean
     onAnswerCommentClick?: (answer: Answer | DpmAnswer) => void
   }) => {
@@ -196,7 +196,7 @@ export function BinaryChart(props: {
 }
 
 const ChoiceOverview = (props: {
-  points: MultiPoint[]
+  points: MultiPoints
   contract: MultiContract
   showResolver: boolean
   onAnswerCommentClick?: (answer: Answer | DpmAnswer) => void
@@ -212,19 +212,18 @@ const ChoiceOverview = (props: {
           <CancelLabel />
         </div>
       )}
-      {!!points.length && (
+      {!!Object.keys(points).length && (
         <SizedContainer className="h-[150px] w-full pb-4 pr-10 sm:h-[250px]">
           {(w, h) => (
             <ChoiceContractChart
               width={w}
               height={h}
-              points={points}
+              multiPoints={points}
               contract={contract}
             />
           )}
         </SizedContainer>
       )}
-
       {showResolver ? (
         <AnswersResolvePanel contract={contract} />
       ) : (

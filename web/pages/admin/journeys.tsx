@@ -54,7 +54,7 @@ export default function Journeys() {
   return (
     <Row>
       <NoSEO />
-      <div className="mx-8">
+      <div className="text-ink-900 mx-8">
         <div className={'text-primary-700 my-1 text-2xl'}>User Journeys</div>
         <Row className={'items-center gap-2'}>
           Viewing journeys from {users.length} users ({bannedUsers.length}{' '}

@@ -1,24 +1,20 @@
 import { useMemo } from 'react'
-import { last, sortBy } from 'lodash'
+import { groupBy, last, mapKeys, mapValues, sortBy } from 'lodash'
 import { scaleTime, scaleLinear } from 'd3-scale'
-import { Bet, calculateMultiBets } from 'common/bet'
+import { Bet } from 'common/bet'
 import { Answer, DpmAnswer } from 'common/answer'
 import { MultiContract } from 'common/contract'
 import { getAnswerProbability } from 'common/calculate'
 import {
   TooltipProps,
+  formatDateInRange,
+  formatPct,
   getDateRange,
   getRightmostVisibleDate,
-  formatPct,
-  formatDateInRange,
 } from '../helpers'
 import { MultiValueHistoryChart } from '../generic-charts'
+import { HistoryPoint } from 'common/chart'
 import { Row } from 'web/components/layout/row'
-import { buildArray } from 'common/util/array'
-import {
-  MultiPoint as GenericMultiPoint,
-  unserializePoints,
-} from 'common/chart'
 
 const CHOICE_ANSWER_COLORS = [
   '#99DDFF', // sky
@@ -78,15 +74,13 @@ const getAnswers = (contract: MultiContract) => {
   )
 }
 
-export type MultiPoint = GenericMultiPoint<{ isLast?: boolean }>
+type Point = HistoryPoint<never>
+export type MultiPoints = { [answerId: string]: Point[] }
 
 // new multi only
-export const getMultiBetPoints = (answers: Answer[], bets: Bet[]) => {
-  return unserializePoints(
-    calculateMultiBets(
-      bets.map((b) => ({ x: b.createdTime, y: b.probAfter, ...b })),
-      answers.map((a) => a.id)
-    )
+export const getMultiBetPoints = (bets: Bet[]) => {
+  return mapValues(groupBy(bets, 'answerId'), (bets) =>
+    bets.map((bet) => ({ x: bet.createdTime, y: bet.probAfter }))
   )
 }
 
@@ -96,12 +90,11 @@ export function useChartAnswers(contract: MultiContract) {
 
 export const ChoiceContractChart = (props: {
   contract: MultiContract
-  points?: MultiPoint[]
+  multiPoints?: MultiPoints
   width: number
   height: number
-  onMouseOver?: (p: MultiPoint | undefined) => void
 }) => {
-  const { contract, points = [], width, height, onMouseOver } = props
+  const { contract, multiPoints = {}, width, height } = props
   const isMultipleChoice = contract.outcomeType === 'MULTIPLE_CHOICE'
 
   const [start, end] = getDateRange(contract)
@@ -112,7 +105,7 @@ export const ChoiceContractChart = (props: {
     [answers, contract]
   )
 
-  const now = useMemo(() => Date.now(), [points])
+  const now = useMemo(() => Date.now(), [multiPoints])
 
   const data = useMemo(() => {
     if (!answers.length) return []
@@ -121,19 +114,31 @@ export const ChoiceContractChart = (props: {
     const startAnswers = answers.filter(
       (a) => a.createdTime <= firstAnswerTime + 1000
     )
-    const startY: number[] = [
-      ...new Array(startAnswers.length).fill(1 / startAnswers.length),
-      ...new Array(answers.length - startAnswers.length).fill(0),
-    ]
 
-    return buildArray(isMultipleChoice && { x: start, y: startY }, points, {
-      x: end ?? now,
-      y: endProbs,
-      obj: { isLast: true },
+    const startP = 1 / startAnswers.length
+
+    const pointsById = multiPoints
+    if (isMultipleChoice) {
+      mapKeys(pointsById, (points, answerId) => {
+        const y = startAnswers.some((a) => a.id === answerId) ? startP : 0
+        points.unshift({ x: start, y })
+      })
+    }
+
+    mapKeys(pointsById, (points, answerId) => {
+      points.push({
+        x: end ?? now,
+        y: getAnswerProbability(contract, answerId),
+      })
     })
-  }, [answers.length, points, endProbs, start, end, now])
 
-  const rightmostDate = getRightmostVisibleDate(end, last(points)?.x, now)
+    return answers.map((a) => pointsById[a.id] ?? [])
+  }, [answers.length, multiPoints, endProbs, start, end, now])
+
+  const rightestPointX = Math.max(
+    ...Object.values(multiPoints).map((p) => last(p)?.x ?? 0)
+  )
+  const rightmostDate = getRightmostVisibleDate(end, rightestPointX, now)
   const xScale = scaleTime([start, rightmostDate], [0, width])
   const yScale = scaleLinear([0, 1], [height, 0])
 
@@ -145,33 +150,31 @@ export const ChoiceContractChart = (props: {
       yScale={yScale}
       yKind="percent"
       data={data}
-      onMouseOver={onMouseOver}
-      Tooltip={(props) => <ChoiceTooltip answers={answers} ttProps={props} />}
+      Tooltip={(props) => (
+        <ChoiceTooltip answers={answers} xScale={xScale} ttProps={props} />
+      )}
     />
   )
 }
 
 const ChoiceTooltip = (props: {
-  ttProps: TooltipProps<Date, MultiPoint>
+  ttProps: TooltipProps<HistoryPoint> & { i: number }
+  xScale: any
   answers: (DpmAnswer | Answer)[]
 }) => {
-  const { ttProps, answers } = props
-  const { prev, next, x, y, xScale, yScale } = ttProps
+  const { ttProps, xScale, answers } = props
+  const { prev, next, x, i } = ttProps
 
-  if (!yScale) return null
   if (!prev) return null
 
   const [start, end] = xScale.domain()
 
   const d = xScale.invert(x)
-  const prob = yScale.invert(y)
 
-  const index = cum(prev.y).findIndex((p) => p >= 1 - prob)
-  const answer = answers[index]?.text ?? 'Other'
-  const value = formatPct(prev.y[index])
+  const answer = answers[i]?.text ?? 'Other'
+  const value = formatPct(prev.y)
 
-  const dateLabel =
-    !next || next.obj?.isLast ? 'Now' : formatDateInRange(d, start, end)
+  const dateLabel = !next ? 'Now' : formatDateInRange(d, start, end)
 
   return (
     <>
@@ -184,14 +187,4 @@ const ChoiceTooltip = (props: {
       </div>
     </>
   )
-}
-
-const cum = (numbers: number[]) => {
-  const result = []
-  let sum = 0
-  for (const n of numbers) {
-    sum += n
-    result.push(sum)
-  }
-  return result
 }

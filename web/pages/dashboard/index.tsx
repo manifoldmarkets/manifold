@@ -1,5 +1,6 @@
 import { DASHBOARD_ENABLED } from 'common/envs/constants'
 import { CreateDashboardButton } from 'web/components/dashboard/create-dashboard-button'
+import { DashboardSearch } from 'web/components/dashboard/dashboard-search'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
@@ -14,7 +15,6 @@ export default function DashboardPage() {
   if (!DASHBOARD_ENABLED) {
     return <Custom404 />
   }
-
   return (
     <Page trackPageView={'dashboards page'}>
       <Col className="items-center">
@@ -23,6 +23,7 @@ export default function DashboardPage() {
             <span className={'text-primary-600 text-2xl'}>Dashboards</span>
             {user && <CreateDashboardButton />}
           </Row>
+          <DashboardSearch />
         </Col>
       </Col>
     </Page>

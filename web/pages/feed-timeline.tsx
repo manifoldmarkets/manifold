@@ -125,7 +125,7 @@ function FeedTimelineContent(props: { privateUser: PrivateUser }) {
     return () => setLastSeen(Date.now())
   }, [pageVisible, topIsVisible])
 
-  if (!boosts || !savedFeedItems) return <LoadingIndicator />
+  if (!savedFeedItems) return <LoadingIndicator />
   const newAvatarUrls = uniq(
     filterDefined(newerTimelineItems.map((item) => item.avatarUrl))
   ).slice(0, 3)

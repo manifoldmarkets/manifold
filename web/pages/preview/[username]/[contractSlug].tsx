@@ -13,7 +13,6 @@ import { ScrollToTopButton } from 'web/components/buttons/scroll-to-top-button'
 import { BackButton } from 'web/components/contract/back-button'
 import { ChangeBannerButton } from 'web/components/contract/change-banner-button'
 import { ContractDescription } from 'web/components/contract/contract-description'
-
 import { ContractLeaderboard } from 'web/components/contract/contract-leaderboard'
 import { PreviewContractOverview } from 'web/components/preview/preview-contract-overview'
 import { ContractTabs } from 'web/components/contract/contract-tabs'
@@ -51,7 +50,6 @@ import Custom404 from '../../404'
 import ContractEmbedPage from '../../embed/[username]/[contractSlug]'
 import { ExplainerPanel } from 'web/components/explainer-panel'
 import { SidebarSignUpButton } from 'web/components/buttons/sign-up-button'
-import { getMultiBetPoints } from 'web/components/charts/contract/choice'
 import { useRealtimeBets } from 'web/hooks/use-bets-supabase'
 import { ContractSEO } from 'web/components/contract/contract-seo'
 import { Linkify } from 'web/components/widgets/linkify'
@@ -107,16 +105,16 @@ export function NonPrivateContractPage(props: {
 }) {
   const { contract, historyData, pointsString } = props.contractParams
 
+  const points =
+    contract.outcomeType !== 'MULTIPLE_CHOICE'
+      ? unserializePoints(historyData.points as any)
+      : []
+
   const inIframe = useIsIframe()
   if (!contract) {
     return <Custom404 customText="Unable to fetch question" />
   } else if (inIframe) {
-    return (
-      <ContractEmbedPage
-        contract={contract}
-        points={unserializePoints(historyData.points) as any}
-      />
-    )
+    return <ContractEmbedPage contract={contract} points={points} />
   } else
     return (
       <>
@@ -207,20 +205,8 @@ export function PreviewContractPageContent(props: {
   )
 
   const betPoints = useMemo(() => {
-    const points = unserializePoints(contractParams.historyData.points)
-
-    const newPoints =
-      contract.outcomeType === 'MULTIPLE_CHOICE'
-        ? contract.mechanism === 'cpmm-multi-1'
-          ? getMultiBetPoints(contract.answers, newBets)
-          : []
-        : newBets.map((bet) => ({
-            x: bet.createdTime,
-            y: bet.probAfter,
-            obj: { userAvatarUrl: bet.userAvatarUrl },
-          }))
-
-    return [...points, ...newPoints]
+    // Sinclair is too lazy to re-implement stuff twice. Please consider doing things a better way.
+    return []
   }, [contractParams.historyData.points, newBets])
 
   const {

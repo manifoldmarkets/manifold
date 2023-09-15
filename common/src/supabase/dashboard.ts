@@ -11,3 +11,5 @@ export async function getDashboardFromSlug(slug: string, db: SupabaseClient) {
   }
   return null
 }
+
+

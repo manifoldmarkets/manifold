@@ -14,7 +14,7 @@ import { Post } from 'common/post'
 import { MaybeAuthedContractParams } from 'common/contract'
 import { Portfolio, PortfolioItem } from 'common/portfolio'
 import { ReportProps } from 'common/report'
-import { DashboardItem } from 'common/dashboard'
+import { Dashboard, DashboardItem } from 'common/dashboard'
 
 export async function call(url: string, method: 'POST' | 'GET', params?: any) {
   const user = auth.currentUser
@@ -349,25 +349,6 @@ export function leagueActivity(params: { season: number; cohort: string }) {
   }>
 }
 
-export function createQAndA(params: {
-  question: string
-  description: string
-  bounty: number
-}) {
-  return call(getApiUrl('create-q-and-a'), 'POST', params)
-}
-
-export function createQAndAAnswer(params: {
-  questionId: string
-  text: string
-}) {
-  return call(getApiUrl('create-q-and-a-answer'), 'POST', params)
-}
-
-export function awardQAndAAnswer(params: { answerId: string; amount: number }) {
-  return call(getApiUrl('award-q-and-a-answer'), 'POST', params)
-}
-
 export function awardBounty(params: {
   contractId: string
   commentId: string
@@ -479,4 +460,28 @@ export function createDashboard(params: {
   description?: JSONContent
 }) {
   return call(getApiUrl('createdashboard'), 'POST', params)
+}
+
+export function getYourDashboards() {
+  return call(getApiUrl('getyourdashboards'), 'POST')
+}
+
+export function followDashboard(params: { dashboardId: string }) {
+  return call(getApiUrl('followdashboard'), 'POST', params)
+}
+
+export function supabaseSearchDashboards(params: {
+  term: string
+  offset: number
+  limit: number
+}) {
+  return maybeAuthedCall(
+    getApiUrl('supabasesearchdashboards'),
+    'POST',
+    params
+  ) as Promise<Dashboard[]>
+}
+
+export function getYourFollowedDashboards() {
+  return call(getApiUrl('getyourfolloweddashboards'), 'POST')
 }

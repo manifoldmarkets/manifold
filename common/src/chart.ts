@@ -2,24 +2,34 @@ import { ScaleContinuousNumeric, ScaleTime } from 'd3-scale'
 import { Dispatch, SetStateAction } from 'react'
 import { removeUndefinedProps } from './util/object'
 import { average } from './util/math'
+import { mapValues } from 'lodash'
 
 export type Point<X, Y, T = unknown> = { x: X; y: Y; obj?: T }
-export type MultiPoint<T = unknown> = Point<number, number[], T>
 export type HistoryPoint<T = unknown> = Point<number, number, T>
 export type DistributionPoint<T = unknown> = Point<number, number, T>
 export type ValueKind = 'Ṁ' | 'percent' | 'amount'
 
 /** [x, [y0, y1, ...]] */
-export type MultiSerializedPoint = [number, number[]]
+export type MultiSerializedPoints = { [answerId: string]: [number, number][] }
 /** [x, y, obj] */
 export type SerializedPoint<T = unknown> =
   | Readonly<[number, number]>
   | Readonly<[number, number, T | undefined]>
 
-export const unserializePoints = <T>(
-  points: SerializedPoint<T>[] | MultiSerializedPoint[]
-) => {
+export const unserializePoints = <T>(points: SerializedPoint<T>[]) => {
   return points.map(([x, y, obj]) => removeUndefinedProps({ x, y, obj }))
+}
+
+export const unserializeMultiPoints = (data: MultiSerializedPoints) => {
+  return mapValues(data, (points) => points.map(([x, y]) => ({ x, y })))
+}
+
+export const serializeMultiPoints = (data: {
+  [answerId: string]: HistoryPoint[]
+}) => {
+  return mapValues(data, (points) =>
+    points.map(({ x, y }) => [x, y] as [number, number])
+  )
 }
 
 export type viewScale = {
@@ -95,33 +105,6 @@ export const compressPoints = <P extends HistoryPoint>(
   }
 
   return { points: maxMinBin(toCompress, 500), isCompressed: true }
-}
-
-export const compressMultiPoints = <P extends MultiPoint>(
-  points: P[],
-  min: number,
-  max: number
-) => {
-  // add buffer of 100 points on each side for nice panning.
-  const smallIndex = Math.max(points.findIndex((p) => p.x >= min) - 100, 0)
-  const bigIndex = Math.min(
-    points.findIndex((p) => p.x >= max) + 100,
-    points.length
-  )
-
-  const toCompress = points.slice(smallIndex, bigIndex)
-  if (toCompress.length < 1500) {
-    return { points: toCompress, isCompressed: false }
-  }
-
-  // downsample to 1500 points
-  const downsampled = []
-  const skipLength = Math.ceil(toCompress.length / 1500)
-  for (let i = 0; i < toCompress.length; i += skipLength) {
-    downsampled.push(toCompress[i])
-  }
-
-  return { points: downsampled, isCompressed: true }
 }
 
 export function binAvg<P extends HistoryPoint>(sorted: P[], limit = 100) {

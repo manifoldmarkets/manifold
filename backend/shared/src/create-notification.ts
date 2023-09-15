@@ -59,9 +59,9 @@ import { getGroupMemberIds } from 'common/supabase/groups'
 import { richTextToString } from 'common/util/parse'
 import { JSONContent } from '@tiptap/core'
 import { league_user_info } from 'common/leagues'
-import { getInterestingMarketsForUsers } from 'shared/interesting-markets-email-helpers'
 import { hasUserSeenMarket } from 'shared/helpers/seen-markets'
 import { getUserFollowerIds } from 'shared/supabase/users'
+import { getForYouMarkets } from './supabase/search-contracts'
 
 const firestore = admin.firestore()
 
@@ -1479,23 +1479,24 @@ export const createSignupBonusNotification = async (
   txnId: string,
   bonusAmount: number
 ) => {
-  if (userOptedOutOfBrowserNotifications(privateUser)) return
-  const notification: Notification = {
-    id: crypto.randomUUID(),
-    userId: privateUser.id,
-    reason: 'onboarding_flow',
-    createdTime: Date.now(),
-    isSeen: false,
-    sourceId: txnId,
-    sourceType: 'signup_bonus',
-    sourceUpdateType: 'created',
-    sourceUserName: MANIFOLD_USER_NAME,
-    sourceUserUsername: MANIFOLD_USER_USERNAME,
-    sourceUserAvatarUrl: MANIFOLD_AVATAR_URL,
-    sourceText: bonusAmount.toString(),
+  if (!userOptedOutOfBrowserNotifications(privateUser)) {
+    const notification: Notification = {
+      id: crypto.randomUUID(),
+      userId: privateUser.id,
+      reason: 'onboarding_flow',
+      createdTime: Date.now(),
+      isSeen: false,
+      sourceId: txnId,
+      sourceType: 'signup_bonus',
+      sourceUpdateType: 'created',
+      sourceUserName: MANIFOLD_USER_NAME,
+      sourceUserUsername: MANIFOLD_USER_USERNAME,
+      sourceUserAvatarUrl: MANIFOLD_AVATAR_URL,
+      sourceText: bonusAmount.toString(),
+    }
+    const pg = createSupabaseDirectClient()
+    await insertNotificationToSupabase(notification, pg)
   }
-  const pg = createSupabaseDirectClient()
-  await insertNotificationToSupabase(notification, pg)
 
   // This is email is of both types, so try either
   const { sendToEmail } = getNotificationDestinationsForUser(
@@ -1507,15 +1508,12 @@ export const createSignupBonusNotification = async (
 
   if (!sendToEmail && !trendingSendToEmail) return
 
-  const { contractsToSend } = await getInterestingMarketsForUsers(
-    [privateUser],
-    firestore
-  )
+  const contractsToSend = await getForYouMarkets(privateUser.id)
 
   await sendBonusWithInterestingMarketsEmail(
     user,
     privateUser,
-    contractsToSend[privateUser.id],
+    contractsToSend,
     bonusAmount
   )
 }

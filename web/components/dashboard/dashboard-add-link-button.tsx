@@ -69,6 +69,7 @@ export function DashboardAddLinkButton(props: {
             <Button
               onClick={() => {
                 addLink({ type: 'link', url: linkInput })
+                setLinkInput('')
                 setOpen(false)
               }}
               color="indigo"

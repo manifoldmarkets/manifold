@@ -57,6 +57,7 @@ export async function createMarketHelper(body: any, auth: AuthedUser) {
     description,
     descriptionHtml,
     descriptionMarkdown,
+    descriptionJson,
     closeTime,
     outcomeType,
     groupIds,
@@ -127,7 +128,12 @@ export async function createMarketHelper(body: any, auth: AuthedUser) {
       user,
       question,
       outcomeType,
-      getDescriptionJson(description, descriptionHtml, descriptionMarkdown),
+      getDescriptionJson(
+        description,
+        descriptionHtml,
+        descriptionMarkdown,
+        descriptionJson
+      ),
       initialProb ?? 0,
       ante,
       closeTimestamp,
@@ -275,7 +281,8 @@ const generateContractEmbeddings = async (
 function getDescriptionJson(
   description?: string | JSONContent,
   descriptionHtml?: string,
-  descriptionMarkdown?: string
+  descriptionMarkdown?: string,
+  descriptionJson?: string
 ): JSONContent {
   if (description) {
     if (typeof description === 'string') {
@@ -287,6 +294,8 @@ function getDescriptionJson(
     return htmlToRichText(descriptionHtml)
   } else if (descriptionMarkdown) {
     return htmlToRichText(marked.parse(descriptionMarkdown))
+  } else if (descriptionJson) {
+    return JSON.parse(descriptionJson)
   } else {
     // Use a single empty space as the description
     return htmlToRichText('<p> </p>')
@@ -336,6 +345,7 @@ function validateMarketBody(body: any) {
     description,
     descriptionHtml,
     descriptionMarkdown,
+    descriptionJson,
     closeTime,
     outcomeType,
     groupIds,
@@ -413,6 +423,7 @@ function validateMarketBody(body: any) {
     description,
     descriptionHtml,
     descriptionMarkdown,
+    descriptionJson,
     closeTime,
     outcomeType,
     groupIds,
@@ -522,6 +533,7 @@ const bodySchema = z.object({
   description: contentSchema.or(z.string()).optional(),
   descriptionHtml: z.string().optional(),
   descriptionMarkdown: z.string().optional(),
+  descriptionJson: z.string().optional(),
   closeTime: z
     .union([z.date(), z.number()])
     .refine(
@@ -536,7 +548,15 @@ const bodySchema = z.object({
   utcOffset: z.number().optional(),
 })
 
-export type CreateableOutcomeType = z.infer<typeof bodySchema>['outcomeType']
+export type CreateMarketParams = z.infer<typeof bodySchema> &
+  (
+    | z.infer<typeof binarySchema>
+    | z.infer<typeof numericSchema>
+    | z.infer<typeof multipleChoiceSchema>
+    | z.infer<typeof bountiedQuestionSchema>
+    | z.infer<typeof pollSchema>
+  )
+export type CreateableOutcomeType = CreateMarketParams['outcomeType']
 
 const binarySchema = z.object({
   initialProb: z.number().min(1).max(99),

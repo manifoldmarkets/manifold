@@ -28,12 +28,25 @@ export const createdashboard = authEndpoint(async (req, auth) => {
     slug = `${slug}-${randomString(8)}`
   }
 
+  const { data: user } = await pg.one(`select data from users where id = $1`, [
+    auth.uid,
+  ])
+
   // create if not exists the group invite link row
   const { id } = await pg.one(
-    `insert into dashboards(slug, creator_id, description, title, items)
-      values ($1, $2, $3,$4, $5)
+    `insert into dashboards(slug, creator_id, description, title, items, creator_username, creator_name, creator_avatar_url)
+      values ($1, $2, $3,$4, $5, $6, $7, $8)
       returning id, slug`,
-    [slug, auth.uid, description, title, JSON.stringify(items)]
+    [
+      slug,
+      auth.uid,
+      description,
+      title,
+      JSON.stringify(items),
+      user.username,
+      user.name,
+      user.avatarUrl,
+    ]
   )
 
   // return something

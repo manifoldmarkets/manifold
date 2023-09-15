@@ -9,6 +9,9 @@ export type Dashboard = {
   description: JSONContent
   title: string
   items: DashboardItem[]
+  creator_username: string
+  creator_name: string
+  creator_avatar_url: string
 }
 
 export type DashboardItem = DashboardQuestionItem | DashboardLinkItem

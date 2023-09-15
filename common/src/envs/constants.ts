@@ -139,7 +139,6 @@ export const MOD_USERNAMES = [
   'MatthewBarnett',
   'Jacy',
   'Gabrielle',
-  'KatjaGrace',
   'AndrewG',
   'MarcusAbramovitch',
   'KevinBurke',
@@ -183,6 +182,11 @@ export const VERIFIED_USERNAMES = [
   'GeorgeHotz',
   'ShayneCoplan',
   'SanghyeonSeo',
+  'KatjaGrace',
+  'EmmettShear',
+  'CateHall',
+  'RobertMiles',
+  'TarekMansour',
 ]
 
 export const HOUSE_BOT_USERNAME = 'acc'
@@ -348,10 +352,10 @@ export const RESERVED_PATHS = [
   'mtg',
   'news',
   'notifications',
+  'portfolio',
   'privacy',
   'profile',
   'public',
-  'q-and-a',
   'questions',
   'referral',
   'referrals',

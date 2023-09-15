@@ -21,10 +21,10 @@ import {
   getUserFollowerIds,
   getUsersWithSimilarInterestVectorToNews,
 } from 'shared/supabase/users'
-import { convertObjectToSQLRow } from 'common/supabase/utils'
+import { convertObjectToSQLRow, Row } from 'common/supabase/utils'
 import { DAY_MS } from 'common/util/time'
 import { User } from 'common/user'
-import { fromPairs, uniq } from 'lodash'
+import { fromPairs, groupBy, maxBy, uniq } from 'lodash'
 import { removeUndefinedProps } from 'common/util/object'
 import { PositionChangeData } from 'common/supabase/bets'
 import { filterDefined } from 'common/util/array'
@@ -102,6 +102,26 @@ export const createManualTrendingFeedRow = (
       reasons,
       relevanceScore,
     })
+  )
+}
+
+const matchingFeedRows = async (
+  contractId: string,
+  userIds: string[],
+  seenTime: number,
+  dataTypes: FEED_DATA_TYPES[],
+  pg: SupabaseDirectClient
+) => {
+  return await pg.map(
+    `select *
+            from user_feed
+            where contract_id = $1 and 
+                user_id = ANY($2) and 
+                (created_time > $3 or seen_time > $3) and
+                data_type = ANY($4)
+                `,
+    [contractId, userIds, new Date(seenTime).toISOString(), dataTypes],
+    (row) => row as Row<'user_feed'>
   )
 }
 
@@ -398,8 +418,37 @@ export const addBetDataToUsersFeeds = async (
 ) => {
   const pg = createSupabaseDirectClient()
   const now = Date.now()
-  const followerIds = await getUserFollowerIds(bettor.id, pg)
-  // const followerIds = ['mwaVAaKkabODsH8g5VrtbshsXz03']
+  let followerIds = await getUserFollowerIds(bettor.id, pg)
+  // let followerIds = ['mwaVAaKkabODsH8g5VrtbshsXz03']
+  const oldMatchingPositionChangedRows = await matchingFeedRows(
+    contract.id,
+    followerIds,
+    now - DAY_MS,
+    ['user_position_changed'],
+    pg
+  )
+  const oldRowsByUserId = groupBy(oldMatchingPositionChangedRows, 'user_id')
+  const feedRowIdsToDelete: number[] = []
+  Object.entries(oldRowsByUserId).forEach(([userId, rows]) => {
+    const oldMaxChange = maxBy(rows, (r) =>
+      r.bet_data ? Math.abs((r.bet_data as PositionChangeData).change) : 0
+    )
+    // No old row
+    if (!oldMaxChange) return
+    // Old row is more important, or has already been seen
+    if (
+      Math.abs((oldMaxChange.bet_data as PositionChangeData).change) >=
+        Math.abs(betData.change) ||
+      oldMaxChange.seen_time
+    ) {
+      followerIds = followerIds.filter((id) => id !== userId)
+    }
+    // New row is more important
+    else {
+      feedRowIdsToDelete.push(...rows.map((r) => r.id))
+    }
+  })
+  await deleteRowsFromUserFeed(feedRowIdsToDelete, pg)
   const usersToDistances = await getUsersWithSimilarInterestVectorsToContract(
     contract.id,
     pg,
@@ -437,6 +486,14 @@ export const addBetDataToUsersFeeds = async (
     }),
     pg
   )
+}
+
+const deleteRowsFromUserFeed = async (
+  rowIds: number[],
+  pg: SupabaseDirectClient
+) => {
+  if (rowIds.length === 0) return
+  await pg.none(`delete from user_feed where id = any($1)`, [rowIds])
 }
 
 // Currently creating feed items for:

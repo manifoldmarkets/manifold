@@ -291,8 +291,11 @@ const Election2024 = createNewsDashboardTab(
   '2024 US Election Updates',
   [
     {
-      url: 'https://www.politico.com/news/2023/09/01/biden-touts-job-numbers-people-are-coming-off-the-sidelines-00113767',
+      url: 'https://www.nbcnews.com/politics/politics-news/hunter-biden-indicted-federal-gun-charges-rcna39623',
     },
+    { slug: 'will-hunter-biden-be-indicted-befor-c928ea76a254' },
+    { url: 'https://www.bbc.com/news/world-us-canada-66779228' },
+    { slug: 'will-joe-biden-get-impeached-in-his' },
     { slug: 'will-a-democrat-win-the-2024-us-pre' },
     { slug: 'who-will-win-the-us-2024-democratic' },
     { slug: 'will-vivek-ramaswamy-win-the-septem' },
@@ -419,9 +422,13 @@ const STPSuper = createNewsDashboardTab(
 )
 
 const UFOs = createNewsDashboardTab(
-  'UFOs',
-  'Intel officer claims UFOs recovered',
+  'Aliens',
+  "'Alien bodies' unveiled in Mexico; probably fake",
   [
+    {
+      url: 'https://nypost.com/2023/09/13/supposed-non-human-alien-corpses-shown-in-mexico-congress/',
+    },
+    { slug: 'are-the-mexican-alien-bodies-real-s' },
     {
       url: 'https://www.npr.org/2023/07/27/1190390376/ufo-hearing-non-human-biologics-uaps',
     },
@@ -439,12 +446,32 @@ const UFOs = createNewsDashboardTab(
     { slug: 'if-eliezer-yudkowsky-loses-his-bet' },
   ],
   <Col>
-    <iframe
-      className="mb-4 h-48 w-full"
-      src="https://www.youtube.com/embed/KQ7Dw-739VY?start=2550"
-      title="Grusch UFO testimony"
-      allow=""
-    ></iframe>
+    <div className="mb-4">
+      Claims about the purported 'alien bodies' presented to Mexican Congress,
+      via{' '}
+      <Link
+        href="https://twitter.com/ChrisCYVR/status/1701790411159920899"
+        target="_blank"
+        className="text-indigo-500 underline"
+      >
+        Twitter
+      </Link>
+      :
+    </div>
+
+    <ul className="mb-4 list-inside list-disc text-sm">
+      <li>Recovered in Peru in a diatom mine</li>
+      <li>Found in 2017 between Palpa & Nazca</li>
+      <li>Not part of our terrestrial evolution</li>
+      <li>Carbon dated at approx 1000 years old</li>
+      <li>Not mummies, bodies are intact</li>
+    </ul>
+
+    <img
+      src="https://pbs.twimg.com/media/F535XCra8AEditz?format=jpg&name=large"
+      alt="Alien bodies?"
+      className="mb-4"
+    />
   </Col>
 )
 
@@ -585,15 +612,15 @@ const G20 = createNewsDashboardTab('G20', 'G20 Summit in India (Bharat?)', [
 ])
 
 export const newsContent = [
+  Election2024,
+  UFOs,
   Trump,
   G20,
   FLHurricane,
-  Election2024,
   STPSuper,
   UkraineWar,
   ElonVersusZuck,
   NigerCoup,
   PlaneCrash,
-  UFOs,
   XCom,
 ]

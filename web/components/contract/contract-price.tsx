@@ -39,7 +39,7 @@ export function BinaryResolutionOrChance(props: {
     >
       {resolution ? (
         <>
-          <div className={clsx('text-base')}>
+          <div className={'text-ink-800 text-base'}>
             Resolved
             {resolution === 'MKT' && ' as '}
           </div>
@@ -50,11 +50,9 @@ export function BinaryResolutionOrChance(props: {
         </>
       ) : (
         <>
-          <div className={textColor}>
-            <animated.div>
-              {spring.to((val) => formatPercent(val))}
-            </animated.div>
-          </div>
+          <animated.div className={textColor}>
+            {spring.to((val) => formatPercent(val))}
+          </animated.div>
           <div className={clsx(textColor, 'text-base')}>chance</div>
         </>
       )}

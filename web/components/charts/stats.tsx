@@ -19,7 +19,7 @@ const getPoints = (startDate: number, dailyValues: number[]) => {
   }))
 }
 
-const DailyCountTooltip = (props: TooltipProps<Date, HistoryPoint>) => {
+const DailyCountTooltip = (props: TooltipProps<HistoryPoint>) => {
   const { nearest } = props
   return (
     <Row className="items-center gap-2">
@@ -29,7 +29,7 @@ const DailyCountTooltip = (props: TooltipProps<Date, HistoryPoint>) => {
   )
 }
 
-const DailyPercentTooltip = (props: TooltipProps<Date, HistoryPoint>) => {
+const DailyPercentTooltip = (props: TooltipProps<HistoryPoint>) => {
   const { nearest } = props
   return (
     <Row className="items-center gap-2">

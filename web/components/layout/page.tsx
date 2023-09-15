@@ -1,14 +1,11 @@
 import clsx from 'clsx'
-import { ReactNode, useEffect } from 'react'
+import { ReactNode } from 'react'
 import { BottomNavBar } from '../nav/bottom-nav-bar'
 import Sidebar from '../nav/sidebar'
 import { Toaster } from 'react-hot-toast'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { Col } from './col'
 import { GoogleOneTapLogin } from 'web/lib/firebase/google-onetap-login'
-import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
-import { safeLocalStorage } from 'web/lib/util/local'
-import { ManifestBanner } from '../nav/manifest-banner'
 import { ConfettiOnDemand } from '../confetti-on-demand'
 import { useTracking } from 'web/hooks/use-tracking'
 
@@ -29,7 +26,6 @@ export function Page(props: {
     className,
     hideSidebar,
     mainClassName,
-    manifestBannerEnabled,
   } = props
 
   // eslint-disable-next-line react-hooks/rules-of-hooks
@@ -37,17 +33,6 @@ export function Page(props: {
   const isMobile = useIsMobile()
   const bottomBarPadding = 'pb-[58px] lg:pb-0 '
   const TOAST_BOTTOM_PADDING = isMobile ? 70 : 20
-
-  const [showBanner, setShowBanner] = usePersistentLocalState<
-    boolean | undefined
-  >(undefined, 'show-manifest-banner')
-  useEffect(() => {
-    const shouldHide =
-      safeLocalStorage?.getItem('show-manifest-banner') === 'false'
-    if (!shouldHide) {
-      setShowBanner(true)
-    }
-  }, [showBanner])
 
   return (
     <>
@@ -75,15 +60,11 @@ export function Page(props: {
         <Col className={'flex-1 lg:col-span-8 xl:contents'}>
           <main
             className={clsx(
-              'flex flex-1 flex-col',
-              manifestBannerEnabled && showBanner ? 'lg:mt-0' : 'lg:mt-6',
+              'flex flex-1 flex-col lg:mt-6',
               rightSidebar ? 'col-span-7' : 'col-span-8',
               mainClassName
             )}
           >
-            {manifestBannerEnabled && showBanner && (
-              <ManifestBanner className="mb-3" setShowBanner={setShowBanner} />
-            )}
             {children}
           </main>
           {rightSidebar && (

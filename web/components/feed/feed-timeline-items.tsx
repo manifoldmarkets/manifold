@@ -93,7 +93,7 @@ export const FeedTimelineItems = (props: {
               item={item}
               key={item.id + '-feed-timeline-item'}
               moreItems={item.relatedItems}
-              className="bg-canvas-0 border-canvas-0  w-full overflow-hidden rounded-2xl border drop-shadow-md "
+              className="bg-canvas-0 border-canvas-0  w-full overflow-hidden rounded-2xl border shadow-md"
             >
               <Col className="px-2 pt-3">
                 <ContractsTable contracts={contracts} hideHeader={true} />
@@ -295,8 +295,7 @@ const FeedItemFrame = (props: {
   )
 
   return (
-    <div className={clsx('relative', className)}>
-      <div className={'absolute inset-0'} ref={ref} />
+    <div className={className} ref={ref}>
       {children}
     </div>
   )

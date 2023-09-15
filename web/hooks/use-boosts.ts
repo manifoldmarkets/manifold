@@ -29,6 +29,7 @@ export const useBoosts = (
       TOTAL_BOOSTS_PER_DAY - totalBoostFundsClaimed / AD_REDEEM_REWARD
 
     if (boostsLeft > 0) getBoosts(privateUser, boostsLeft).then(setBoosts)
+    else setBoosts([])
   }
 
   return boosts

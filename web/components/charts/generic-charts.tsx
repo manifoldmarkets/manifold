@@ -3,35 +3,31 @@ import { axisBottom, axisRight } from 'd3-axis'
 import { ScaleContinuousNumeric, ScaleTime } from 'd3-scale'
 import {
   CurveFactory,
-  SeriesPoint,
   curveLinear,
   curveStepAfter,
   curveStepBefore,
-  stack,
-  stackOrderReverse,
 } from 'd3-shape'
-import { range } from 'lodash'
-import { useCallback, useId, useMemo, useState } from 'react'
+import { maxBy, minBy, range } from 'lodash'
+import { ReactNode, useCallback, useId, useMemo, useState } from 'react'
 
 import {
   AxisConstraints,
   DistributionPoint,
   HistoryPoint,
-  MultiPoint,
   Point,
   ValueKind,
-  compressMultiPoints,
   compressPoints,
   viewScale,
 } from 'common/chart'
 import { formatMoneyNumber } from 'common/util/format'
 import { useEvent } from 'web/hooks/use-event'
 import {
+  AreaPath,
   AreaWithTopStroke,
+  LinePath,
   SVGChart,
   SliceMarker,
-  TooltipComponent,
-  TooltipParams,
+  TooltipProps,
   computeColorStops,
   formatPct,
   useViewScale,
@@ -39,14 +35,13 @@ import {
 import { roundToNearestFive } from 'web/lib/util/roundToNearestFive'
 import { nthColor } from './contract/choice'
 import { ZoomSlider } from './zoom-slider'
+import clsx from 'clsx'
 
 const Y_AXIS_CONSTRAINTS: Record<ValueKind, AxisConstraints> = {
   percent: { min: 0, max: 1, minExtent: 0.04 },
   Ṁ: { minExtent: 10 },
   amount: { minExtent: 0.04 },
 }
-
-type SliceExtent = { y0: number; y1: number }
 
 const interpolateY = (
   curve: CurveFactory,
@@ -194,39 +189,40 @@ export const DistributionChart = <P extends DistributionPoint>(props: {
   )
 }
 
-export const MultiValueHistoryChart = <P extends MultiPoint>(props: {
-  data: P[]
+// multi line chart
+export const MultiValueHistoryChart = <P extends HistoryPoint>(props: {
+  data: P[][]
   w: number
   h: number
   xScale: ScaleTime<number, number>
   yScale: ScaleContinuousNumeric<number, number>
   yKind?: ValueKind
   curve?: CurveFactory
-  onMouseOver?: (p: P | undefined) => void
-  Tooltip?: TooltipComponent<Date, P>
+  Tooltip?: (props: TooltipProps<P> & { i: number }) => ReactNode
 }) => {
   const { data, w, h, yScale, yKind, Tooltip } = props
 
-  const [ttParams, setTTParams] = useState<TooltipParams<P>>()
+  const [ttParams, setTTParams] = useState<TooltipProps<P> & { i: number }>()
   const [viewXScale, setViewXScale] = useState<ScaleTime<number, number>>()
   const xScale = viewXScale ?? props.xScale
 
   const [xMin, xMax] = xScale?.domain().map((d) => d.getTime()) ?? [
-    data[0].x,
-    data[data.length - 1].x,
+    minBy(data[0], 'x'),
+    maxBy(data[data.length - 1], 'x'),
   ]
 
-  const { points, isCompressed } = useMemo(
-    () => compressMultiPoints(data, xMin, xMax),
-    [data, xMin, xMax]
-  )
+  const { compressedData, isCompressed } = useMemo(() => {
+    const newData = data.map((points) => compressPoints(points, xMin, xMax))
+    return {
+      compressedData: newData.map((d) => d.points),
+      isCompressed: newData.some((d) => d.isCompressed),
+    }
+  }, [data, xMin, xMax])
 
   const curve = props.curve ?? isCompressed ? curveLinear : curveStepAfter
 
-  type SP = SeriesPoint<P>
-  const px = useCallback((p: SP) => xScale(p.data.x), [xScale])
-  const py0 = useCallback((p: SP) => yScale(p[0]), [yScale])
-  const py1 = useCallback((p: SP) => yScale(p[1]), [yScale])
+  const px = useCallback((p: P) => xScale(p.x), [xScale])
+  const py = useCallback((p: P) => yScale(p.y), [yScale])
 
   const { xAxis, yAxis } = useMemo(() => {
     const [min, max] = yScale.domain()
@@ -246,27 +242,33 @@ export const MultiValueHistoryChart = <P extends MultiPoint>(props: {
     return { xAxis, yAxis }
   }, [w, h, yKind, xScale, yScale])
 
-  const series = useMemo(() => {
-    const d3Stack = stack<P, number>()
-      .keys(range(0, Math.max(0, ...points.map(({ y }) => y.length))))
-      .value(({ y }, k) => y[k])
-      .order(stackOrderReverse)
-    return d3Stack(points)
-  }, [points])
-
-  const selector = dataAtTimeSelector(points, xScale)
+  const selectors = compressedData.map((points) =>
+    dataAtTimeSelector(points, xScale)
+  )
   const onMouseOver = useEvent((mouseX: number, mouseY: number) => {
-    const p = selector(mouseX)
-    props.onMouseOver?.(p.prev)
-    if (p.prev) {
-      setTTParams({ ...p, x: mouseX, y: mouseY })
+    const valueY = yScale.invert(mouseY)
+
+    const ps = selectors.map((s) => s(mouseX))
+
+    let closestIdx = 0
+    ps.forEach((p, i) => {
+      const closePrev = ps[closestIdx].prev
+      const closestDist = closePrev ? Math.abs(closePrev.y - valueY) : 1
+      if (p.prev && Math.abs(p.prev.y - valueY) < closestDist) {
+        closestIdx = i
+      }
+    })
+
+    const p = ps[closestIdx]
+
+    if (p?.prev) {
+      setTTParams({ ...p, i: closestIdx, x: mouseX, y: yScale(p.prev.y) })
     } else {
       setTTParams(undefined)
     }
   })
 
   const onMouseLeave = useEvent(() => {
-    props.onMouseOver?.(undefined)
     setTTParams(undefined)
   })
 
@@ -285,18 +287,41 @@ export const MultiValueHistoryChart = <P extends MultiPoint>(props: {
       noGridlines
       className="group"
     >
-      {series.map((s, i) => (
-        <AreaWithTopStroke
-          key={i}
-          data={s}
-          px={px}
-          py0={py0}
-          py1={py1}
-          curve={curve}
-          color={nthColor(i)}
-          className="opacity-80 hover:!opacity-100 group-hover:opacity-60"
-        />
+      {compressedData.map((points, i) => (
+        <g key={i}>
+          <LinePath
+            key={i}
+            data={points}
+            px={px}
+            py={py}
+            curve={curve}
+            className={clsx(
+              ttParams && ttParams.i !== i && 'stroke-1 opacity-50'
+            )}
+            stroke={nthColor(i)}
+          />
+        </g>
       ))}
+      {/* hover effect put last so it shows on top */}
+      {ttParams && (
+        <AreaPath
+          data={compressedData[ttParams.i]}
+          px={px}
+          py0={yScale(0)}
+          py1={py}
+          curve={curve}
+          fill={nthColor(ttParams.i)}
+          opacity={0.5}
+        />
+      )}
+      {ttParams && (
+        <SliceMarker
+          color="#5BCEFF"
+          x={ttParams.x}
+          y0={yScale(0)}
+          y1={ttParams.y}
+        />
+      )}
     </SVGChart>
   )
 }
@@ -315,7 +340,7 @@ export const ControllableSingleValueHistoryChart = <
   yKind?: ValueKind
   curve?: CurveFactory
   onMouseOver?: (p: P | undefined) => void
-  Tooltip?: TooltipComponent<Date, P>
+  Tooltip?: (props: TooltipProps<P>) => ReactNode
   noAxes?: boolean
   pct?: boolean
   negativeThreshold?: number
@@ -340,7 +365,7 @@ export const ControllableSingleValueHistoryChart = <
 
   const curve = props.curve ?? isCompressed ? curveLinear : curveStepAfter
 
-  const [mouse, setMouse] = useState<TooltipParams<P> & SliceExtent>()
+  const [mouse, setMouse] = useState<TooltipProps<P>>()
 
   const px = useCallback((p: P) => xScale(p.x), [xScale])
   const py0 = yScale(0)
@@ -379,7 +404,7 @@ export const ControllableSingleValueHistoryChart = <
       const y0 = yScale(p.prev.y)
       const y1 = p.next ? yScale(p.next.y) : y0
       const markerY = interpolateY(curve, mouseX, x0, x1, y0, y1)
-      setMouse({ ...p, x: mouseX, y: markerY, y0: py0, y1: markerY })
+      setMouse({ ...p, x: mouseX, y: markerY })
     } else {
       setMouse(undefined)
     }
@@ -452,19 +477,14 @@ export const ControllableSingleValueHistoryChart = <
         )}
         <AreaWithTopStroke
           color={typeof color === 'string' ? color : `url(#${gradientId})`}
-          data={points}
+          data={data}
           px={px}
           py0={py0}
           py1={py1}
           curve={curve ?? curveLinear}
         />
         {mouse && (
-          <SliceMarker
-            color="#5BCEFF"
-            x={mouse.x}
-            y0={mouse.y0}
-            y1={mouse.y1}
-          />
+          <SliceMarker color="#5BCEFF" x={mouse.x} y0={py0} y1={mouse.y} />
         )}
       </SVGChart>
       {showZoomer && (

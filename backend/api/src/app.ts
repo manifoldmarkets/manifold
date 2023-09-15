@@ -58,9 +58,6 @@ import { editcomment } from 'api/edit-comment'
 import { supabasesearchgroups } from './supabase-search-groups'
 import { leagueActivity } from './league-activity'
 import { lootbox } from './loot-box'
-import { createQAndA } from './create-q-and-a'
-import { createQAndAAnswer } from './create-q-and-a-answer'
-import { awardQAndAAnswer } from './award-q-and-a-answer'
 import { createchatmessage } from 'api/create-chat-message'
 import { updatepost } from './update-post'
 import { updategroup } from './update-group'
@@ -82,6 +79,10 @@ import { getsimilargroupstocontract } from 'api/get-similar-groups-to-contract'
 import { followUser } from './follow-user'
 import { report } from './report'
 import { createdashboard } from './create-dashboard'
+import { getyourdashboards } from './get-your-dashboards'
+import { followdashboard } from './follow-dashboard'
+import { supabasesearchdashboards } from './supabase-search-dashboards'
+import { getyourfolloweddashboards } from './get-your-followed-dashboards'
 
 const allowCors: RequestHandler = cors({
   origin: [CORS_ORIGIN_MANIFOLD, CORS_ORIGIN_VERCEL, CORS_ORIGIN_LOCALHOST],
@@ -180,9 +181,6 @@ app.post('/joingroupthroughinvite', ...apiRoute(joingroupthroughinvite))
 app.post('/joingroup', ...apiRoute(joingroup))
 app.post('/supabasesearchgroups', ...apiRoute(supabasesearchgroups))
 app.post('/league-activity', ...apiRoute(leagueActivity))
-app.post('/create-q-and-a', ...apiRoute(createQAndA))
-app.post('/create-q-and-a-answer', ...apiRoute(createQAndAAnswer))
-app.post('/award-q-and-a-answer', ...apiRoute(awardQAndAAnswer))
 app.post('/award-bounty', ...apiRoute(awardbounty))
 app.post('/add-bounty', ...apiRoute(addbounty))
 app.post('/createanswercpmm', ...apiRoute(createanswercpmm))
@@ -207,6 +205,10 @@ app.post('/follow-user', ...apiRoute(followUser))
 app.post('/report', ...apiRoute(report))
 
 app.post('/createdashboard', ...apiRoute(createdashboard))
+app.post('/getyourdashboards', ...apiRoute(getyourdashboards))
+app.post('/followdashboard', ...apiRoute(followdashboard))
+app.post('/supabasesearchdashboards', ...apiRoute(supabasesearchdashboards))
+app.post('/getyourfolloweddashboards', ...apiRoute(getyourfolloweddashboards))
 
 // Catch 404 errors - this should be the last route
 app.use(allowCors, (req, res) => {
