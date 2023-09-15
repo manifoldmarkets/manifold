@@ -1,4 +1,4 @@
-import { ChevronDownIcon } from '@heroicons/react/outline'
+import { ChevronDownIcon, XIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import Router from 'next/router'
 import { ArrowRightIcon } from '@heroicons/react/solid'
@@ -35,6 +35,7 @@ import { useGroupFromRouter } from 'web/hooks/use-group-from-router'
 import { useGroupFromSlug } from 'web/hooks/use-group-supabase'
 import { CATEGORY_KEY } from 'common/group'
 import { CategoryTag } from 'web/components/groups/category-tag'
+import { TOPIC_SEARCH_TERM } from 'web/components/groups/group-search'
 
 const CONTRACTS_PER_PAGE = 40
 
@@ -168,6 +169,7 @@ export function SupabaseContractSearch(props: {
   isWholePage?: boolean
   menuButton?: ReactNode
   hideAvatar?: boolean
+  setTopicSearchTerm?: (term: string) => void
 
   // used to determine if search params should be updated in the URL
   useUrlParams?: boolean
@@ -446,6 +448,7 @@ function SupabaseContractSearchControls(props: {
     [FILTER_KEY]: defaultFilter,
     [CONTRACT_TYPE_KEY]: defaultContractType,
     [CATEGORY_KEY]: '',
+    [TOPIC_SEARCH_TERM]: '',
   }
 
   const [state, setState] = useUrlParams
@@ -566,6 +569,9 @@ function SupabaseContractSearchControls(props: {
             className={'flex flex-row gap-2'}
             includeProbSorts={includeProbSorts}
             currentCategorySlug={category}
+            clearCategory={() => {
+              setState({ [TOPIC_SEARCH_TERM]: '', [CATEGORY_KEY]: '' })
+            }}
           />
         )}
       </Col>
@@ -618,6 +624,7 @@ export function SearchFilters(props: {
   selectContractType: (selection: ContractTypeType) => void
   hideOrderSelector: boolean | undefined
   currentCategorySlug: string | undefined
+  clearCategory: () => void
   className?: string
   includeProbSorts?: boolean
 }) {
@@ -632,6 +639,7 @@ export function SearchFilters(props: {
     className,
     includeProbSorts,
     currentCategorySlug,
+    clearCategory,
   } = props
   const category = useGroupFromSlug(currentCategorySlug ?? '')
   const hideFilter =
@@ -659,7 +667,7 @@ export function SearchFilters(props: {
             selectSort
           )}
           Icon={
-            <Row className=" bg-canvas-100 items-center gap-0.5 rounded-full p-1 ">
+            <Row className=" items-center gap-0.5 ">
               <span className="text-ink-500 whitespace-nowrap text-sm font-medium">
                 {sortLabel}
               </span>
@@ -676,7 +684,7 @@ export function SearchFilters(props: {
         <DropdownMenu
           Items={generateFilterDropdownItems(FILTERS, selectFilter)}
           Icon={
-            <Row className="bg-canvas-100 items-center gap-0.5 rounded-full p-1">
+            <Row className=" items-center gap-0.5 ">
               <span className="text-ink-500 whitespace-nowrap text-sm font-medium">
                 {filterLabel}
               </span>
@@ -692,7 +700,7 @@ export function SearchFilters(props: {
       <DropdownMenu
         Items={generateFilterDropdownItems(CONTRACT_TYPES, selectContractType)}
         Icon={
-          <Row className="bg-canvas-100 items-center gap-0.5 rounded-full p-1">
+          <Row className=" items-center gap-0.5 ">
             <span className="text-ink-500 whitespace-nowrap text-sm font-medium">
               {contractTypeLabel}
             </span>
@@ -704,12 +712,31 @@ export function SearchFilters(props: {
         selectedItemName={contractTypeLabel}
         closeOnClick={true}
       />
-      {currentCategorySlug && category && (
+      {currentCategorySlug == category?.slug && category && (
         <CategoryTag
           className={'text-primary-500'}
           category={category}
           location={'questions page'}
-        />
+        >
+          <button onClick={clearCategory}>
+            <XIcon className="hover:text-ink-700 text-ink-400 -mb-1 ml-1 h-4 w-4" />
+          </button>
+        </CategoryTag>
+      )}
+      {currentCategorySlug === 'for-you' && (
+        <Row
+          className={
+            'text-primary-500 dark:text-ink-400 hover:text-ink-600 hover:bg-primary-400/10 group items-center justify-center whitespace-nowrap rounded px-1 py-0.5 text-right text-sm transition-colors'
+          }
+        >
+          <span className="mr-px opacity-50 transition-colors group-hover:text-inherit">
+            #
+          </span>
+          For you
+          <button onClick={clearCategory}>
+            <XIcon className="hover:text-ink-700 text-ink-400 ml-1 h-4 w-4" />
+          </button>
+        </Row>
       )}
     </div>
   )

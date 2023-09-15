@@ -156,12 +156,12 @@ export default function GroupSearch(props: { persistPrefix: string }) {
 
   useEffect(() => {
     const { isReady } = router
-    if (isReady && !router.query[TOPIC_SEARCH_TERM] && groupSearchTerm !== '') {
+    if (isReady && !router.query[TOPIC_SEARCH_TERM]) {
       setGroupSearchTerm('')
     } else if (isReady && groupSearchTerm && !categorySlug) {
       setShow(true)
     }
-  }, [groupSearchTerm, categorySlug])
+  }, [groupSearchTerm])
 
   const menuButton = show ? null : (
     <Button
@@ -216,7 +216,12 @@ export default function GroupSearch(props: { persistPrefix: string }) {
       <GroupsList
         key={'groups' + groups.length}
         groups={buildArray(
-          categoryFromRouter && (categoryFromRouter as Group),
+          categoryFromRouter &&
+            !groups
+              .map((g) => g.slug)
+              .slice(0, 10)
+              .includes(categoryFromRouter.slug) &&
+            (categoryFromRouter as Group),
           groups
         )}
         currentCategorySlug={categorySlug}
