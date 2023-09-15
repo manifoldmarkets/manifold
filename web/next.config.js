@@ -120,6 +120,16 @@ module.exports = {
         destination: '/questions',
         permanent: true,
       },
+      {
+        source: '/groups',
+        destination: '/questions',
+        permanent: true,
+      },
+      {
+        source: '/group/:id*',
+        destination: '/questions',
+        permanent: true,
+      },
       // NOTE: add any external redirects at common/envs/constants.ts and update native apps.
     ]
   },
