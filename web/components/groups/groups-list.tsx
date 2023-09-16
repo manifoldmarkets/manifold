@@ -43,7 +43,7 @@ import { GroupRole } from 'web/components/groups/group-member-modal'
 import {
   AddContractToGroupModal,
   AddContractToGroupPermissionType,
-} from 'web/components/groups/add-contract-to-group-button'
+} from 'web/components/groups/add-contract-to-group-modal'
 export function GroupsList(props: {
   groups: Group[]
   loadMore?: () => Promise<boolean>

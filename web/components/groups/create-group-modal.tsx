@@ -1,5 +1,4 @@
 import clsx from 'clsx'
-import { MAX_DESCRIPTION_LENGTH } from 'common/contract'
 import {
   CATEGORY_KEY,
   MAX_GROUP_NAME_LENGTH,
@@ -12,9 +11,7 @@ import { createGroup } from 'web/lib/firebase/api'
 import { getGroupWithFields } from 'web/lib/supabase/group'
 import { Col } from '../layout/col'
 import { Modal, SCROLLABLE_MODAL_CLASS } from '../layout/modal'
-import { useTextEditor } from '../widgets/editor'
 import { Input } from '../widgets/input'
-import { savePost } from './group-about-section'
 import { PrivacyStatusView } from './group-privacy-modal'
 import { Button } from 'web/components/buttons/button'
 import { Row } from 'web/components/layout/row'
@@ -44,14 +41,6 @@ export function CreateGroupModal(props: {
   const [privacy, setPrivacy] = useState<PrivacyStatusType>('public')
   const router = useRouter()
 
-  const editor = useTextEditor({
-    key: 'create a topic',
-    size: 'lg',
-    placeholder: 'Tell us what your category is about',
-    defaultValue: undefined,
-    max: MAX_DESCRIPTION_LENGTH,
-  })
-
   const onSubmit = async () => {
     setIsSubmitting(true)
     const newGroup = {
@@ -75,10 +64,6 @@ export function CreateGroupModal(props: {
       setIsSubmitting(false)
       return false
     }
-    if (editor && !editor.isEmpty) {
-      savePost(editor, result.group)
-    }
-    editor?.commands.clearContent(true)
 
     try {
       // Wrap the interval and timeout logic inside a Promise
