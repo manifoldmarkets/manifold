@@ -323,3 +323,11 @@ Yes, please see our [Community Guidelines](https://manifoldmarkets.notion.site/C
 ### Is there an API?
 
 Yep, [check it out](/api)!
+
+### How can I get confetti on my screen?
+
+Press Alt + C (Option + C on Macs) on any page in Manifold.
+
+If you want to celebrate every trade, you can! If you want to celebrate a *loss*, perhaps becuase you learned something valuable, you can! A really good comment, an altruistic subsidy, and anything else you want can be celebrated with confetti.
+
+You can even spam it!
