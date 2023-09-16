@@ -72,3 +72,4 @@ export const GroupsByTopic = {
 }
 // note: changing these breaks old urls. if you do, make sure to update omnisearch and opensearch.xml
 export const CATEGORY_KEY = 'category'
+export type GroupRole = 'admin' | 'moderator' | 'member'

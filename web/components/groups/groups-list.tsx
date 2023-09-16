@@ -1,5 +1,5 @@
 import { Col } from '../layout/col'
-import { CATEGORY_KEY, Group, PrivacyStatusType } from 'common/group'
+import { CATEGORY_KEY, Group, GroupRole, PrivacyStatusType } from 'common/group'
 import { useEffect, useState } from 'react'
 import clsx from 'clsx'
 import { Row } from 'web/components/layout/row'
@@ -39,7 +39,6 @@ import { GroupLeaderboard } from 'web/components/groups/group-leaderboard'
 import { AiOutlineTrophy } from 'react-icons/ai'
 import { copyToClipboard } from 'web/lib/util/copy'
 import { DOMAIN } from 'common/envs/constants'
-import { GroupRole } from 'web/components/groups/group-member-modal'
 import {
   AddContractToGroupModal,
   AddContractToGroupPermissionType,

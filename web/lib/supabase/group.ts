@@ -1,6 +1,6 @@
 import { run } from 'common/supabase/utils'
 import { chunk, uniqBy } from 'lodash'
-import { GroupRole as GroupRoleType } from 'web/components/groups/group-member-modal'
+import { GroupRole as GroupRoleType } from 'common/group'
 import { User } from '../firebase/users'
 import { db } from './db'
 import { Contract } from 'common/contract'
