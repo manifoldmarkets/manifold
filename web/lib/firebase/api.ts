@@ -523,3 +523,7 @@ export function updateDashboard(params: {
 }) {
   return call(getApiUrl('updatedashboard'), 'POST', params)
 }
+
+export function getDashboardFromSlug(params: { slug: string }) {
+  return call(getApiUrl('getdashboardfromslug'), 'POST', params)
+}

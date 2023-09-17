@@ -16,6 +16,7 @@ import { useUser } from 'web/hooks/use-user'
 import { updateDashboard } from 'web/lib/firebase/api'
 import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
 import Custom404 from '../404'
+import { useRouter } from 'next/router'
 
 export async function getStaticProps(ctx: {
   params: { dashboardSlug: string }
@@ -45,6 +46,8 @@ export async function getStaticPaths() {
 }
 
 export default function DashboardPage(props: { initialDashboard: Dashboard }) {
+  const router = useRouter()
+  const dashboardSlug = router.query.dashboardSlug as string
   const { initialDashboard } = props
   const [dashboard, setDashboard] = useState<Dashboard>(initialDashboard)
   const [items, setItems] = useState<DashboardItem[]>(dashboard?.items)
