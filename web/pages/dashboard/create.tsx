@@ -1,9 +1,7 @@
 import { track } from '@amplitude/analytics-browser'
 import clsx from 'clsx'
 import { MAX_DESCRIPTION_LENGTH } from 'common/contract'
-import {
-  DashboardItem,
-} from 'common/dashboard'
+import { DashboardItem } from 'common/dashboard'
 import { removeUndefinedProps } from 'common/util/object'
 import router from 'next/router'
 import { useEffect, useState } from 'react'
