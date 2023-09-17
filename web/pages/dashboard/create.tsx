@@ -11,6 +11,7 @@ import router from 'next/router'
 import { useEffect, useState } from 'react'
 import { SEO } from 'web/components/SEO'
 import { Button } from 'web/components/buttons/button'
+import { AddDashboardItemWidget } from 'web/components/dashboard/add-dashboard-item'
 import { DashboardAddContractButton } from 'web/components/dashboard/dashboard-add-contract-button'
 import { DashboardAddLinkButton } from 'web/components/dashboard/dashboard-add-link-button'
 import { DashboardContent } from 'web/components/dashboard/dashboard-content'
@@ -31,7 +32,7 @@ export default function CreateDashboard() {
   )
 
   const editor = useTextEditor({
-    key: 'create dashbord dsecription',
+    key: 'create dashbord description',
     max: MAX_DESCRIPTION_LENGTH,
     placeholder: 'Optional. Provide background info and details.',
   })
@@ -47,7 +48,7 @@ export default function CreateDashboard() {
     'create dashboard items'
   )
 
-  const isValid = title.length > 0
+  const isValid = title.length > 0 && items.length > 1
 
   useEffect(() => {
     setErrorText('')
@@ -143,19 +144,7 @@ export default function CreateDashboard() {
             isEditing
           />
         )}
-        <Row className="border-ink-200 text-ink-400 items-center gap-4 rounded-lg border-2 border-dashed p-2">
-          <DashboardAddContractButton
-            addQuestions={(questions: DashboardQuestionItem[]) => {
-              setItems((items) => [...items, ...questions])
-            }}
-          />
-          OR
-          <DashboardAddLinkButton
-            addLink={(link: DashboardLinkItem) => {
-              setItems((items) => [...items, link])
-            }}
-          />
-        </Row>
+        <AddDashboardItemWidget items={items} setItems={setItems} />
         <Spacer h={6} />
         <span className={'text-error'}>{errorText}</span>
         <Button

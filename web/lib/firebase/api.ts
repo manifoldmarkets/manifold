@@ -516,3 +516,10 @@ export function supabaseSearchDashboards(params: {
 export function getYourFollowedDashboards() {
   return call(getApiUrl('getyourfolloweddashboards'), 'POST')
 }
+
+export function updateDashboard(params: {
+  dashboardId: string
+  items: DashboardItem[]
+}) {
+  return call(getApiUrl('updatedashboard'), 'POST', params)
+}
