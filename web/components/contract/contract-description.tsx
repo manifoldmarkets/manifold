@@ -152,7 +152,6 @@ function ContractActions(props: {
               buttonColor={'gray'}
             />
           )}
-        <ContractEditHistoryButton contract={contract} />
         {!isOnlyTrustworthy && (
           <EditDescriptionButton
             setEditing={setEditing}
@@ -226,11 +225,14 @@ function AddAnswerButton(props: {
 
 export function JSONEmpty(text: string | JSONContent) {
   if (!text) return true
-
   if (typeof text === 'string') {
     return text === ''
   } else if ('content' in text) {
-    return !(text.content && text.content.length > 0 && text.content[0].content)
+    return !(
+      !!text.content &&
+      text.content.length > 0 &&
+      (!!text.content[0].content || !!text.content[0].attrs)
+    )
   }
   return true
 }

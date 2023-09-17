@@ -1,4 +1,13 @@
-import { groupBy, keyBy, last, mapValues, sortBy, sumBy } from 'lodash'
+import {
+  groupBy,
+  keyBy,
+  last,
+  mapValues,
+  maxBy,
+  sortBy,
+  sumBy,
+  uniqBy,
+} from 'lodash'
 import { memo, useEffect, useMemo, useReducer, useRef, useState } from 'react'
 
 import { Answer, DpmAnswer } from 'common/answer'
@@ -40,7 +49,7 @@ import { Button } from '../buttons/button'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { ArrowRightIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
-import { useRealtimeCommentsOnContract } from 'web/hooks/use-comments-supabase'
+import { useComments } from 'web/hooks/use-comments'
 
 export const EMPTY_USER = '_'
 
@@ -190,16 +199,20 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
   } = props
 
   // Firebase useComments
-  // const comments = (
-  //   useComments(
-  //     contract.id,
-  //     maxBy(props.comments, (c) => c.createdTime)?.createdTime ?? 0
-  //   ) ?? props.comments
-  // ).filter((c) => !blockedUserIds.includes(c.userId))
-
-  const comments = (
-    useRealtimeCommentsOnContract(contract.id) ?? props.comments
+  const newComments =
+    useComments(
+      contract.id,
+      maxBy(props.comments, (c) => c.createdTime)?.createdTime ?? 0
+    ) ?? props.comments
+  const comments = uniqBy(
+    [...props.comments, ...newComments],
+    (c) => c.id
   ).filter((c) => !blockedUserIds.includes(c.userId))
+
+  // Supabase use realtime comments
+  // const comments = (
+  //   useRealtimeCommentsOnContract(contract.id) ?? props.comments
+  // ).filter((c) => !blockedUserIds.includes(c.userId))
 
   const [parentCommentsToRender, setParentCommentsToRender] = useState(
     props.comments.filter((c) => !c.replyToCommentId).length

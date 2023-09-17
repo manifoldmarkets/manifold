@@ -27,8 +27,7 @@ import { Pagination } from 'web/components/widgets/pagination'
 import { Title } from 'web/components/widgets/title'
 import {
   NotificationGroup,
-  useGroupedBalanceChangeNotifications,
-  useGroupedNonBalanceChangeNotifications,
+  useGroupedNotifications,
 } from 'web/hooks/use-notifications'
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
@@ -103,10 +102,11 @@ function NotificationsContent(props: {
   section?: string
 }) {
   const { privateUser, section } = props
-  const { groupedNotifications, mostRecentNotification } =
-    useGroupedNonBalanceChangeNotifications(privateUser.id)
-  const balanceChangeGroupedNotifications =
-    useGroupedBalanceChangeNotifications(privateUser.id)
+  const {
+    groupedNotifications,
+    mostRecentNotification,
+    groupedBalanceChangeNotifications,
+  } = useGroupedNotifications(privateUser.id)
 
   return (
     <div className="relative h-full w-full">
@@ -131,7 +131,7 @@ function NotificationsContent(props: {
                 title: 'Balance Changes',
                 content: (
                   <NotificationsList
-                    groupedNotifications={balanceChangeGroupedNotifications}
+                    groupedNotifications={groupedBalanceChangeNotifications}
                   />
                 ),
               },

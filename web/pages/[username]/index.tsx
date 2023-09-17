@@ -9,6 +9,8 @@ import clsx from 'clsx'
 import { useRouter } from 'next/router'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
+import Head from 'next/head'
+
 import { Post } from 'common/post'
 import { getUserByUsername, User } from 'web/lib/firebase/users'
 import Custom404 from 'web/pages/404'
@@ -96,7 +98,7 @@ export default function UserPage(props: {
   reviewCount?: number
 }) {
   const isAdmin = useAdmin()
-  const { username, user, ...profileProps } = props
+  const { user, ...profileProps } = props
   const privateUser = usePrivateUser()
   const blockedByCurrentUser =
     privateUser?.blockedUserIds.includes(user?.id ?? '_') ?? false
@@ -116,6 +118,9 @@ export default function UserPage(props: {
 const DeletedUser = () => {
   return (
     <Page trackPageView={'deleted user profile'}>
+      <Head>
+        <meta name="robots" content="noindex, nofollow" />
+      </Head>
       <div className="flex h-full flex-col items-center justify-center">
         <Title>Deleted account page</Title>
         <p>This user has been deleted.</p>
@@ -190,6 +195,11 @@ function UserProfile(props: {
         description={user.bio ?? ''}
         url={`/${user.username}`}
       />
+      {(user.isBannedFromPosting || user.userDeleted) && (
+        <Head>
+          <meta name="robots" content="noindex, nofollow" />
+        </Head>
+      )}
       {showConfetti && <FullscreenConfetti />}
 
       <Col className="mx-4 mt-1">

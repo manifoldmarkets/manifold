@@ -326,6 +326,11 @@ export function ContractPageContent(props: {
       {contract.visibility == 'private' && isAdmin && user && (
         <PrivateContractAdminTag contract={contract} user={user} />
       )}
+      {contract.visibility !== 'public' && (
+        <Head>
+          <meta name="robots" content="noindex, nofollow" />
+        </Head>
+      )}
 
       <Row className="w-full items-start justify-center gap-8">
         <Col
@@ -551,7 +556,7 @@ export function ContractPageContent(props: {
             )}
 
             <RelatedContractsCarousel
-              className="mt-4 mb-2 xl:hidden"
+              className="mt-4 mb-2 -ml-4 xl:hidden"
               contracts={relatedMarkets}
               onContractClick={(c) =>
                 track('click related market', { contractId: c.id })

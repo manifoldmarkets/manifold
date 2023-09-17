@@ -1,22 +1,16 @@
 import { track } from '@amplitude/analytics-browser'
 import clsx from 'clsx'
 import { MAX_DESCRIPTION_LENGTH } from 'common/contract'
-import {
-  DashboardItem,
-  DashboardLinkItem,
-  DashboardQuestionItem,
-} from 'common/dashboard'
+import { DashboardItem } from 'common/dashboard'
 import { removeUndefinedProps } from 'common/util/object'
 import router from 'next/router'
 import { useEffect, useState } from 'react'
 import { SEO } from 'web/components/SEO'
 import { Button } from 'web/components/buttons/button'
-import { DashboardAddContractButton } from 'web/components/dashboard/dashboard-add-contract-button'
-import { DashboardAddLinkButton } from 'web/components/dashboard/dashboard-add-link-button'
+import { AddDashboardItemWidget } from 'web/components/dashboard/add-dashboard-item'
 import { DashboardContent } from 'web/components/dashboard/dashboard-content'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
-import { Row } from 'web/components/layout/row'
 import { Spacer } from 'web/components/layout/spacer'
 import { TextEditor, useTextEditor } from 'web/components/widgets/editor'
 import { ExpandingInput } from 'web/components/widgets/expanding-input'
@@ -31,7 +25,7 @@ export default function CreateDashboard() {
   )
 
   const editor = useTextEditor({
-    key: 'create dashbord dsecription',
+    key: 'create dashbord description',
     max: MAX_DESCRIPTION_LENGTH,
     placeholder: 'Optional. Provide background info and details.',
   })
@@ -47,7 +41,7 @@ export default function CreateDashboard() {
     'create dashboard items'
   )
 
-  const isValid = title.length > 0
+  const isValid = title.length > 0 && items.length > 1
 
   useEffect(() => {
     setErrorText('')
@@ -143,19 +137,7 @@ export default function CreateDashboard() {
             isEditing
           />
         )}
-        <Row className="border-ink-200 text-ink-400 items-center gap-4 rounded-lg border-2 border-dashed p-2">
-          <DashboardAddContractButton
-            addQuestions={(questions: DashboardQuestionItem[]) => {
-              setItems((items) => [...items, ...questions])
-            }}
-          />
-          OR
-          <DashboardAddLinkButton
-            addLink={(link: DashboardLinkItem) => {
-              setItems((items) => [...items, link])
-            }}
-          />
-        </Row>
+        <AddDashboardItemWidget items={items} setItems={setItems} />
         <Spacer h={6} />
         <span className={'text-error'}>{errorText}</span>
         <Button
