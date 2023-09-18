@@ -338,22 +338,22 @@ function GroupOptions(props: {
       icon: <PlusCircleIcon className="h-5 w-5" />,
       onClick: () => setShowAddContract(true),
     },
-    isMember &&
-      !isCreator && {
-        name: 'Unfollow topic',
-        icon: <MinusCircleIcon className="h-5 w-5" />,
-        onClick: unfollow,
-      },
+    {
+      name: 'See leaderboards',
+      icon: <AiOutlineTrophy className="h-5 w-5" />,
+      onClick: () => setShowLeaderboards(true),
+    },
     canEdit && {
       name: 'Edit name',
       icon: <PencilIcon className="h-5 w-5" />,
       onClick: () => setEditingName(true),
     },
-    {
-      name: 'See leaderboards',
-      icon: <AiOutlineTrophy className="h-5 w-5" />,
-      onClick: () => setShowLeaderboards(true),
-    }
+    isMember &&
+      !isCreator && {
+        name: 'Unfollow topic',
+        icon: <MinusCircleIcon className="h-5 w-5" />,
+        onClick: unfollow,
+      }
   ) as DropdownItem[]
   return (
     <>

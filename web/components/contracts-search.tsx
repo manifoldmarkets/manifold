@@ -712,7 +712,7 @@ export function SearchFilters(props: {
       />
       {currentCategorySlug == category?.slug && category && (
         <CategoryTag
-          className={'text-primary-500 py-0'}
+          className={'text-primary-500 !py-0'}
           category={category}
           location={'questions page'}
         >
