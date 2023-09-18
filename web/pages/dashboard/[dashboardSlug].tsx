@@ -1,6 +1,6 @@
 import { Dashboard, DashboardItem } from 'common/dashboard'
 import { getDashboardFromSlug } from 'common/supabase/dashboard'
-import { use, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Button } from 'web/components/buttons/button'
 import { AddDashboardItemWidget } from 'web/components/dashboard/add-dashboard-item'
 import { DashboardContent } from 'web/components/dashboard/dashboard-content'
@@ -17,7 +17,6 @@ import { updateDashboard } from 'web/lib/firebase/api'
 import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
 import Custom404 from '../404'
 import { useDashboardFromSlug } from 'web/hooks/use-dashboard'
-import { update } from '@react-spring/web'
 
 export async function getStaticProps(ctx: {
   params: { dashboardSlug: string }
