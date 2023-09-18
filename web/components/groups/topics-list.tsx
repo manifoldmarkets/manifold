@@ -44,6 +44,7 @@ export function TopicsList(props: {
   yourGroupIds?: string[]
   show: boolean
   setShow: (show: boolean) => void
+  className?: string
 }) {
   const {
     topics,
@@ -54,10 +55,14 @@ export function TopicsList(props: {
     setCurrentTopicSlug,
     show,
     setShow,
+    className,
   } = props
   return (
     <Row
-      className={clsx(show ? 'animate-slide-in-from-right block' : 'hidden')}
+      className={clsx(
+        show ? 'animate-slide-in-from-right block' : 'hidden',
+        className
+      )}
     >
       <Col
         className={clsx(
@@ -65,9 +70,9 @@ export function TopicsList(props: {
           'bg-canvas-0 h-fit w-[7rem] items-start sm:w-[8rem] md:w-[10rem]'
         )}
       >
-        <Row className={'w-full items-center justify-center'}>
+        <Row className={'w-full items-center justify-center xl:hidden'}>
           <Button
-            className={' h-[3.15rem] w-[8rem] md:w-[10.5rem]'}
+            className={'h-[3.15rem] w-[8rem] md:w-[10.5rem]'}
             color={'gray-white'}
             size={'md'}
             onClick={() => setShow(!show)}
@@ -123,13 +128,13 @@ export const ForYouButton = (props: {
     }
   ) as DropdownItem[]
   return (
-    <Row className={'w-full'}>
+    <Row className={' w-full'}>
       <button
         onClick={() =>
           setCurrentCategory(currentCategorySlug === 'for-you' ? '' : 'for-you')
         }
         className={clsx(
-          'relative w-full flex-row flex-wrap px-2 py-4 text-left text-sm ',
+          'hover:bg-canvas-50 relative w-full flex-row flex-wrap px-2 py-4 text-left text-sm ',
           currentCategorySlug == 'for-you' ? 'bg-canvas-50 ' : ''
         )}
       >
@@ -271,7 +276,7 @@ export const GroupButton = (props: {
         setCurrentCategory(currentCategorySlug === group.slug ? '' : group.slug)
       }}
       className={clsx(
-        'relative my-2 w-full flex-row flex-wrap px-2 py-4 text-left text-sm ',
+        'hover:bg-canvas-50 relative my-2 w-full flex-row flex-wrap px-2 py-4 text-left text-sm ',
         currentCategorySlug == group.slug ? 'bg-canvas-50 ' : ''
       )}
       key={group.id}

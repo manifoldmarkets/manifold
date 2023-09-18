@@ -81,7 +81,7 @@ export default function QuestionsPage() {
     <Button
       color={'gray-outline'}
       size={'md'}
-      className={'ml-1 w-[8rem] sm:ml-2 md:w-[10.5rem]'}
+      className={'ml-1 w-[8rem] sm:ml-2 md:w-[10.5rem] xl:hidden'}
       onClick={() => setShow(!show)}
     >
       <MenuIcon className="mr-2 h-5 w-5" />
@@ -92,7 +92,23 @@ export default function QuestionsPage() {
   return (
     <>
       {user && <Welcome />}
-      <Page trackPageView={'questions page'}>
+      <Page
+        trackPageView={'questions page'}
+        rightSidebar={
+          <TopicsList
+            key={'groups' + topics.length}
+            topics={topics}
+            currentTopicSlug={categorySlug}
+            setCurrentTopicSlug={setCategorySlug}
+            privateUser={privateUser}
+            user={user}
+            yourGroupIds={yourGroupIds}
+            show={true}
+            setShow={() => {}}
+            className={'mt-14'}
+          />
+        }
+      >
         <SEO
           title={`${currentTopic?.name ?? 'Questions'}`}
           description={`Browse ${currentTopic?.name ?? 'all'} questions`}
@@ -133,6 +149,7 @@ export default function QuestionsPage() {
               />
             </Col>
             <TopicsList
+              className={'xl:hidden'}
               key={'groups' + topics.length}
               topics={topics}
               currentTopicSlug={categorySlug}
