@@ -48,9 +48,13 @@ export default function YCS23Page(props: { contracts: CPMMMultiContract[] }) {
 
   return (
     <Page trackPageView="YC S23">
-      <Title className="px-4 py-3">YC S23</Title>
+      <Title className="!mb-2 px-4 pt-3 lg:px-0">YC S23</Title>
+      <div className="mb-4 ml-4 lg:ml-0">
+        Bet on the exit valuation of each YC company
+      </div>
+
       <Col className="bg-canvas-0 max-w-3xl pb-2">
-        <Row className="justify-between bg-gray-100 px-3 py-2 font-semibold">
+        <Row className="bg-ink-100 justify-between px-3 py-2 font-semibold">
           <div className="pl-[54px]">Company</div>
           <div className="">Valuation</div>
         </Row>
@@ -81,7 +85,7 @@ const CompanyRow = (props: {
   const [expanded, setExpanded] = useState(false)
 
   return (
-    <Col className="hover:bg-indigo-25 active:bg-indigo-25">
+    <Col className="hover:bg-indigo-25 active:bg-indigo-25 dark:hover:bg-indigo-900 dark:active:bg-indigo-900">
       <Link
         href={`/ManifoldMarkets/${contract.slug}`}
         key={contract.id}
@@ -109,7 +113,7 @@ const CompanyRow = (props: {
         </Row>
       </Link>
       {expanded && (
-        <Col className="border-b px-3 pt-2 pb-4">
+        <Col className="border-ink-200 border-b px-3 pt-2 pb-4">
           <AnswersPanel contract={contract} />
         </Col>
       )}
