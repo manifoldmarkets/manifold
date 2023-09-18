@@ -32,6 +32,7 @@ import { Modal } from 'web/components/layout/modal'
 import { GroupSelector } from 'web/components/groups/group-selector'
 import { CreateGroupModal } from 'web/components/groups/create-group-modal'
 import { GroupOptions } from 'web/components/groups/group-options'
+import { useIsMobile } from 'web/hooks/use-is-mobile'
 
 export function TopicsList(props: {
   topics: Group[]
@@ -226,7 +227,7 @@ export const GroupButton = (props: {
     setIsMember((yourGroupIds ?? []).includes(group.id))
   }, [yourGroupIds?.length])
   const [loading, setLoading] = useState(false)
-
+  const isMobile = useIsMobile()
   const isPrivate = group.privacyStatus == 'private'
   const follow = user
     ? withTracking(
@@ -283,7 +284,7 @@ export const GroupButton = (props: {
         }
       />
       <Row className={'w-full items-center justify-between'}>
-        <span>{removeEmojis(group.name)}</span>
+        <span>{isMobile ? removeEmojis(group.name) : group.name}</span>
         {!isPrivate && !isCreator && !isMember && (
           <button
             onClick={(e) => {

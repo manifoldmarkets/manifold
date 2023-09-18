@@ -3,7 +3,7 @@ import { Group } from 'common/group'
 import { Row, run, SupabaseClient } from 'common/supabase/utils'
 import { db } from './db'
 import { Contract } from '../firebase/contracts'
-import { GroupState } from 'web/components/groups/topic-sidebar'
+import { GroupState } from 'web/components/groups/questions-and-topics-sidebar'
 import { supabaseSearchGroups } from '../firebase/api'
 import { convertGroup } from 'common/supabase/groups'
 

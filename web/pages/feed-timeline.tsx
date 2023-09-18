@@ -195,7 +195,10 @@ function FeedTimelineContent(props: { privateUser: PrivateUser }) {
       {savedFeedItems.length === 0 && (
         <div className="text-ink-1000 m-4 flex w-full flex-col items-center justify-center">
           We're fresh out of cards!
-          <Link href="/questions?s=newest&f=open" className="text-primary-700">
+          <Link
+            href="/QuestionsPage?s=newest&f=open"
+            className="text-primary-700"
+          >
             Browse new questions
           </Link>
         </div>
