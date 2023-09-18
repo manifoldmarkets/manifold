@@ -35,6 +35,8 @@ import { useGroupFromRouter } from 'web/hooks/use-group-from-router'
 import { useGroupFromSlug } from 'web/hooks/use-group-supabase'
 import { CATEGORY_KEY } from 'common/group'
 import { CategoryTag } from 'web/components/groups/category-tag'
+import Link from 'next/link'
+import { linkClass } from 'web/components/widgets/site-link'
 
 const CONTRACTS_PER_PAGE = 40
 
@@ -352,18 +354,20 @@ export function SupabaseContractSearch(props: {
             No questions yet
             {searchParams.current?.category && (
               <span className={'ml-1'}>
-                in this topic. {/*<Link*/}
-                {/*  href={*/}
-                {/*    '/create?params=' +*/}
-                {/*    encodeURIComponent(*/}
-                {/*      JSON.stringify({*/}
-                {/*        groupIds: [searchParams.current.category],*/}
-                {/*      })*/}
-                {/*    )*/}
-                {/*  }*/}
-                {/*>*/}
-                {/*  Why not add one?*/}
-                {/*</Link>*/}
+                in this topic.{' '}
+                <Link
+                  className={clsx(linkClass, 'underline')}
+                  href={
+                    '/create?params=' +
+                    encodeURIComponent(
+                      JSON.stringify({
+                        groupSlugs: [searchParams.current.category],
+                      })
+                    )
+                  }
+                >
+                  Why not add one?
+                </Link>
               </span>
             )}
           </div>
@@ -717,7 +721,7 @@ export function SearchFilters(props: {
           location={'questions page'}
         >
           <button onClick={clearCategory}>
-            <XIcon className="hover:text-ink-700 text-ink-400 -mb-1 ml-1 h-4 w-4" />
+            <XIcon className="hover:text-ink-700 text-ink-400 ml-1 h-4 w-4" />
           </button>
         </CategoryTag>
       )}

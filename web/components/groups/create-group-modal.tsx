@@ -77,7 +77,7 @@ export function CreateGroupModal(props: {
           ) {
             clearInterval(intervalId) // Clear the interval
             if (goToGroupOnSubmit) {
-              router.push(`questions?${CATEGORY_KEY}=${result.group.id}`)
+              router.push(`questions?${CATEGORY_KEY}=${result.group.slug}`)
             } else if (addGroupIdParamOnSubmit) {
               router.replace({
                 pathname: router.pathname,

@@ -1,9 +1,9 @@
 import { Col } from '../layout/col'
-import { CATEGORY_KEY, Group, GroupRole, PrivacyStatusType } from 'common/group'
+import { Group } from 'common/group'
 import { useEffect, useState } from 'react'
 import clsx from 'clsx'
 import { Row } from 'web/components/layout/row'
-import { BETTORS, PrivateUser, User } from 'common/user'
+import { PrivateUser, User } from 'common/user'
 import { removeEmojis } from 'common/topics'
 import { useAdmin } from 'web/hooks/use-admin'
 import {
@@ -12,12 +12,11 @@ import {
 } from 'web/hooks/use-group-supabase'
 import { buildArray } from 'common/util/array'
 import {
-  DotsVerticalIcon,
   MinusCircleIcon,
   PencilIcon,
   PlusCircleIcon,
 } from '@heroicons/react/solid'
-import { CogIcon, LinkIcon } from '@heroicons/react/outline'
+import { CogIcon } from '@heroicons/react/outline'
 import DropdownMenu, {
   DropdownItem,
 } from 'web/components/comments/dropdown-menu'
@@ -31,18 +30,9 @@ import { leaveGroup } from 'web/lib/supabase/groups'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { Modal } from 'web/components/layout/modal'
 import { GroupSelector } from 'web/components/groups/group-selector'
-import { EditableGroupTitle } from 'web/components/groups/editable-group-name'
-import router from 'next/router'
 import { CreateGroupModal } from 'web/components/groups/create-group-modal'
-import { getUsers } from 'web/lib/supabase/user'
-import { GroupLeaderboard } from 'web/components/groups/group-leaderboard'
-import { AiOutlineTrophy } from 'react-icons/ai'
-import { copyToClipboard } from 'web/lib/util/copy'
-import { DOMAIN } from 'common/envs/constants'
-import {
-  AddContractToGroupModal,
-  AddContractToGroupPermissionType,
-} from 'web/components/groups/add-contract-to-group-modal'
+import { GroupOptions } from 'web/components/groups/group-options'
+
 export function GroupsList(props: {
   groups: Group[]
   loadMore?: () => Promise<boolean>
@@ -134,7 +124,9 @@ export const ForYouButton = (props: {
   return (
     <Row className={'w-full'}>
       <button
-        onClick={() => setCurrentCategory('for-you')}
+        onClick={() =>
+          setCurrentCategory(currentCategorySlug === 'for-you' ? '' : 'for-you')
+        }
         className={clsx(
           'relative w-full flex-row flex-wrap px-2 py-4 text-left text-sm ',
           currentCategorySlug == 'for-you' ? 'bg-canvas-50 ' : ''
@@ -262,7 +254,9 @@ export const GroupButton = (props: {
     : firebaseLogin
   return (
     <button
-      onClick={() => setCurrentCategory(group.slug)}
+      onClick={() =>
+        setCurrentCategory(currentCategorySlug === group.slug ? '' : group.slug)
+      }
       className={clsx(
         'relative my-2 w-full flex-row flex-wrap px-2 py-4 text-left text-sm ',
         currentCategorySlug == group.slug ? 'bg-canvas-50 ' : ''
@@ -300,188 +294,3 @@ export const GroupButton = (props: {
     </button>
   )
 }
-
-function GroupOptions(props: {
-  group: Group
-  user: User | null | undefined
-  canEdit: boolean
-  isMember: boolean
-  unfollow: () => void
-}) {
-  const { group, canEdit, user, isMember, unfollow } = props
-  const [editingName, setEditingName] = useState(false)
-  const [showLeaderboards, setShowLeaderboards] = useState(false)
-  const [showAddContract, setShowAddContract] = useState(false)
-  const realtimeRole = useRealtimeRole(group?.id)
-  const isManifoldAdmin = useAdmin()
-  const isCreator = group.creatorId == user?.id
-  const userRole = isManifoldAdmin ? 'admin' : realtimeRole
-  const addPermission = getAddContractToGroupPermission(
-    group.privacyStatus,
-    userRole,
-    isCreator
-  )
-
-  const groupOptionItems = buildArray(
-    {
-      name: 'Share topic',
-      icon: <LinkIcon className="h-5 w-5" />,
-      onClick: () => {
-        copyToClipboard(
-          `https://${DOMAIN}/questions/${CATEGORY_KEY}=${group.slug}`
-        )
-        toast.success('Link copied!')
-      },
-    },
-    addPermission != 'none' && {
-      name: 'Add questions to topic',
-      icon: <PlusCircleIcon className="h-5 w-5" />,
-      onClick: () => setShowAddContract(true),
-    },
-    {
-      name: 'See leaderboards',
-      icon: <AiOutlineTrophy className="h-5 w-5" />,
-      onClick: () => setShowLeaderboards(true),
-    },
-    canEdit && {
-      name: 'Edit name',
-      icon: <PencilIcon className="h-5 w-5" />,
-      onClick: () => setEditingName(true),
-    },
-    isMember &&
-      !isCreator && {
-        name: 'Unfollow topic',
-        icon: <MinusCircleIcon className="h-5 w-5" />,
-        onClick: unfollow,
-      }
-  ) as DropdownItem[]
-  return (
-    <>
-      <DropdownMenu
-        closeOnClick={true}
-        Items={groupOptionItems}
-        Icon={<DotsVerticalIcon className={clsx('h-5 w-5')} />}
-        menuWidth={'w-60'}
-        withinOverflowContainer={true}
-      />
-      <Modal open={editingName} setOpen={setEditingName}>
-        <Col className={'bg-canvas-50 rounded-md p-4'}>
-          <span className={'text-lg font-bold'}>Edit Topic Name</span>
-          <div className={''}>
-            <EditableGroupTitle
-              group={group}
-              isEditing={editingName}
-              onFinishEditing={(changed) => {
-                setEditingName(false)
-                if (changed) router.reload()
-              }}
-            />
-          </div>
-        </Col>
-      </Modal>
-      {showLeaderboards && (
-        <GroupLeaderboardModal
-          group={group}
-          open={showLeaderboards}
-          setOpen={setShowLeaderboards}
-        />
-      )}
-      {showAddContract && (
-        <AddContractToGroupModal
-          group={group}
-          open={showAddContract}
-          setOpen={setShowAddContract}
-          addPermission={addPermission}
-        />
-      )}
-    </>
-  )
-}
-
-function getAddContractToGroupPermission(
-  privacyStatus: PrivacyStatusType,
-  userRole: GroupRole | null | undefined,
-  isCreator?: boolean
-): AddContractToGroupPermissionType {
-  if (
-    privacyStatus != 'private' &&
-    (userRole === 'admin' || userRole === 'moderator' || isCreator)
-  ) {
-    return 'any'
-  }
-  if (privacyStatus == 'public') {
-    return 'new'
-  }
-  if (privacyStatus == 'private') {
-    return 'private'
-  }
-  return 'none'
-}
-const GroupLeaderboardModal = (props: {
-  group: Group
-  open: boolean
-  setOpen: (open: boolean) => void
-}) => {
-  const { group, setOpen, open } = props
-
-  const topTraders = useToTopUsers(
-    (group && group.cachedLeaderboard?.topTraders) ?? []
-  )
-
-  const topCreators = useToTopUsers(
-    (group && group.cachedLeaderboard?.topCreators) ?? []
-  )
-  return (
-    <Modal open={open} setOpen={setOpen} size={'lg'}>
-      <Col className={'bg-canvas-50 rounded-md p-4'}>
-        <div className="text-ink-500 mb-4">Updated every 15 minutes</div>
-        <Col className={'min-h-[40rem]'}>
-          {!topTraders || !topCreators ? (
-            <LoadingIndicator />
-          ) : (
-            <>
-              <GroupLeaderboard
-                topUsers={topTraders}
-                title={`🏅 Top ${BETTORS}`}
-                header="Profit"
-                maxToShow={25}
-              />
-              <GroupLeaderboard
-                topUsers={topCreators}
-                title="🏅 Top creators"
-                header="Number of traders"
-                maxToShow={25}
-                noFormatting={true}
-              />
-            </>
-          )}
-        </Col>
-      </Col>
-    </Modal>
-  )
-}
-const toTopUsers = async (
-  cachedUserIds: { userId: string; score: number }[]
-): Promise<{ user: User | null; score: number }[]> => {
-  const userData = await getUsers(cachedUserIds.map((u) => u.userId))
-  const usersById = Object.fromEntries(userData.map((u) => [u.id, u as User]))
-  return cachedUserIds
-    .map((e) => ({
-      user: usersById[e.userId],
-      score: e.score,
-    }))
-    .filter((e) => e.user != null)
-}
-
-function useToTopUsers(
-  cachedUserIds: { userId: string; score: number }[]
-): UserStats[] | null {
-  const [topUsers, setTopUsers] = useState<UserStats[]>([])
-  useEffect(() => {
-    toTopUsers(cachedUserIds).then((result) =>
-      setTopUsers(result as UserStats[])
-    )
-  }, [cachedUserIds])
-  return topUsers && topUsers.length > 0 ? topUsers : null
-}
-type UserStats = { user: User; score: number }

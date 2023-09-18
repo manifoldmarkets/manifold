@@ -53,7 +53,7 @@ import { useTextEditor } from 'web/components/widgets/editor'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { createMarket, getSimilarGroupsToContract } from 'web/lib/firebase/api'
 import { track } from 'web/lib/service/analytics'
-import { getGroup } from 'web/lib/supabase/group'
+import { getGroup, getGroupFromSlug } from 'web/lib/supabase/group'
 import { safeLocalStorage } from 'web/lib/util/local'
 import { Col } from '../layout/col'
 import { BuyAmountInput } from '../widgets/amount-input'
@@ -71,7 +71,10 @@ export function ContractParamsForm(props: {
   params?: NewQuestionParams
 }) {
   const { creator, params, setPrivacy, outcomeType } = props
-  const paramsKey = params?.q ?? '' + params?.groupIds?.join('') ?? ''
+  const paramsKey =
+    (params?.q ?? '') +
+    (params?.groupSlugs?.join('') ?? '') +
+    (params?.groupIds?.join('') ?? '')
   const [minString, setMinString] = usePersistentLocalState(
     params?.min?.toString() ?? '',
     'new-min' + paramsKey
@@ -125,6 +128,15 @@ export function ContractParamsForm(props: {
         setSelectedGroups(filterDefined(groups))
       }
       getAndSetGroups(params.groupIds)
+    }
+    if (params?.groupSlugs) {
+      const getAndSetGroupsViaSlugs = async (groupSlugs: string[]) => {
+        const groups = await Promise.all(
+          groupSlugs.map((s) => getGroupFromSlug(s))
+        )
+        setSelectedGroups(filterDefined(groups))
+      }
+      getAndSetGroupsViaSlugs(params.groupSlugs)
     }
   }, [params?.answers, params?.q, params?.groupIds])
 

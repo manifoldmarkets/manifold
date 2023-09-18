@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { groupPath } from 'common/group'
 import { track } from 'web/lib/service/analytics'
 import { LockClosedIcon } from '@heroicons/react/solid'
+import { Row } from 'web/components/layout/row'
 
 export function CategoryTag(props: {
   category: { slug: string; name: string }
@@ -19,7 +20,7 @@ export function CategoryTag(props: {
   const { category, isPrivate, className, children } = props
 
   return (
-    <span
+    <Row
       className={clsx(
         'text-ink-500 dark:text-ink-400 hover:text-ink-600 hover:bg-primary-400/10 group whitespace-nowrap rounded px-1 py-0.5 text-right text-sm transition-colors',
         className
@@ -46,6 +47,6 @@ export function CategoryTag(props: {
         {category.name}
       </Link>
       {children}
-    </span>
+    </Row>
   )
 }
