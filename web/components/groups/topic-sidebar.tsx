@@ -114,7 +114,6 @@ export default function TopicSidebar() {
           useUrlParams
           isWholePage
           headerClassName={'bg-canvas-0'}
-          showCategories={false}
           menuButton={menuButton}
           hideAvatar={show}
         />

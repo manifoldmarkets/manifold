@@ -30,12 +30,12 @@ export function ContractGroupsList(props: {
   return (
     <Col className={'gap-2'}>
       <span className={'text-primary-700 text-xl'}>
-        <Link href={'/categories/'}>Categories</Link>
+        <Link href={'/categories/'}>To</Link>
       </span>
       <Col className="h-96 justify-between overflow-auto">
         <Col>
           {groups.length === 0 && (
-            <Col className="text-ink-400">No categories yet...</Col>
+            <Col className="text-ink-400">No topics yet...</Col>
           )}
           <Row className="my-2 flex-wrap gap-3">
             {groups.map((g) => {

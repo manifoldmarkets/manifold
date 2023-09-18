@@ -162,12 +162,12 @@ const Results = (props: {
   const marketHitLimit = justMarkets ? 25 : all ? 5 : 0
 
   const [
-    { pageHits, userHits, groupHits, sortHit, marketHits },
+    { pageHits, userHits, topicHits, sortHit, marketHits },
     setSearchResults,
   ] = useState({
     pageHits: [] as PageData[],
     userHits: [] as UserSearchResult[],
-    groupHits: [] as Group[],
+    topicHits: [] as Group[],
     sortHit: null as { sort: Sort; markets: Contract[] } | null,
     marketHits: [] as Contract[],
   })
@@ -183,6 +183,7 @@ const Results = (props: {
 
     Promise.allSettled([
       searchUsers(search, userHitLimit, ['creatorTraders', 'bio']),
+      // add your groups via ilike on top
       searchGroups({ term: search, limit: groupHitLimit }),
       searchContract({
         query: search,
@@ -224,11 +225,11 @@ const Results = (props: {
           recentMarketHits.concat(marketHits),
           'id'
         )
-        const uniqueGroupHits = uniqBy<Group>(groupHits, 'id')
+        const uniqueTopicHits = uniqBy<Group>(groupHits, 'id')
         setSearchResults({
           pageHits,
           userHits,
-          groupHits: uniqueGroupHits,
+          topicHits: uniqueTopicHits,
           sortHit,
           marketHits: uniqueMarketHits,
         })
@@ -249,7 +250,7 @@ const Results = (props: {
   if (
     !pageHits.length &&
     !userHits.length &&
-    !groupHits.length &&
+    !topicHits.length &&
     !marketHits.length
   ) {
     return <div className="my-6 text-center">no results x.x</div>
@@ -261,7 +262,7 @@ const Results = (props: {
       {marketHitLimit > 0 && (
         <MarketResults markets={marketHits} search={search} />
       )}
-      {groupHitLimit > 0 && <GroupResults groups={groupHits} />}
+      {groupHitLimit > 0 && <TopicResults topics={topicHits} />}
       {userHitLimit > 0 && <UserResults users={userHits} />}
       {sortHit && <MarketSortResults {...sortHit} />}
     </>
@@ -417,16 +418,16 @@ const UserResults = (props: { users: UserSearchResult[] }) => {
   )
 }
 
-const GroupResults = (props: { groups: SearchGroupInfo[] }) => {
+const TopicResults = (props: { topics: SearchGroupInfo[] }) => {
   const me = useUser()
   const myGroupIds = useMemberGroupIds(me?.id) ?? []
 
   const title = <SectionTitle>Topics</SectionTitle>
-  if (!props.groups.length) return title
+  if (!props.topics.length) return title
   return (
     <>
       {title}
-      {props.groups.map((group) => (
+      {props.topics.map((group) => (
         <ResultOption
           key={group.id}
           value={{

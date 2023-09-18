@@ -1,12 +1,9 @@
 import { ChevronDownIcon, XIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
-import Router from 'next/router'
-import { ArrowRightIcon } from '@heroicons/react/solid'
 import { debounce, isEqual, sample, uniqBy } from 'lodash'
 import { ReactNode, useEffect, useRef, useState } from 'react'
 
 import { Contract } from 'common/contract'
-import { PillButton } from 'web/components/buttons/pill-button'
 import { useEvent } from 'web/hooks/use-event'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { inMemoryStore } from 'web/hooks/use-persistent-state'
@@ -22,16 +19,11 @@ import { Row } from './layout/row'
 import generateFilterDropdownItems, {
   getLabelFromValue,
 } from './search/search-dropdown-helpers'
-import { Carousel } from './widgets/carousel'
 import { Input } from './widgets/input'
-import { useTrendingGroupsSearchResults } from 'web/components/search/query-groups'
-import { GROUP_SLUGS_TO_HIDE_FROM_PILL_SEARCH } from 'common/envs/constants'
-import { buildArray } from 'common/util/array'
 import {
   usePartialUpdater,
   usePersistentQueriesState,
 } from 'web/hooks/use-persistent-query-state'
-import { useGroupFromRouter } from 'web/hooks/use-group-from-router'
 import { useGroupFromSlug } from 'web/hooks/use-group-supabase'
 import { CATEGORY_KEY } from 'common/group'
 import { CategoryTag } from 'web/components/groups/category-tag'
@@ -178,7 +170,6 @@ export function SupabaseContractSearch(props: {
   emptyState?: ReactNode
   listViewDisabled?: boolean
   contractSearchControlsClassName?: string
-  showCategories?: boolean
   hideSearch?: boolean
   hideFilters?: boolean
 }) {
@@ -199,7 +190,6 @@ export function SupabaseContractSearch(props: {
     autoFocus,
     emptyState,
     listViewDisabled,
-    showCategories,
     hideFilters,
     menuButton,
     hideAvatar,
@@ -339,9 +329,7 @@ export function SupabaseContractSearch(props: {
         onSearchParametersChanged={onSearchParametersChanged}
         autoFocus={autoFocus}
         listViewDisabled={listViewDisabled}
-        showCategories={showCategories}
         hideFilters={hideFilters}
-        excludeGroupSlugs={additionalFilter?.excludeGroupSlugs}
         menuButton={menuButton}
       />
       {contracts && contracts.length === 0 ? (
@@ -411,9 +399,7 @@ function SupabaseContractSearchControls(props: {
   useUrlParams?: boolean
   autoFocus?: boolean
   listViewDisabled?: boolean
-  showCategories?: boolean
   hideFilters?: boolean
-  excludeGroupSlugs?: string[]
   menuButton?: ReactNode
 }) {
   const {
@@ -426,10 +412,8 @@ function SupabaseContractSearchControls(props: {
     useUrlParams,
     autoFocus,
     includeProbSorts,
-    showCategories,
     inputRowClassName,
     hideFilters,
-    excludeGroupSlugs,
     menuButton,
   } = props
 
@@ -452,20 +436,6 @@ function SupabaseContractSearchControls(props: {
   const filterState = state[FILTER_KEY]
   const contractType = state[CONTRACT_TYPE_KEY]
   const category = state[CATEGORY_KEY]
-
-  const categoryPills = showCategories // eslint-disable-next-line react-hooks/rules-of-hooks
-    ? useTrendingGroupsSearchResults(
-        query,
-        15,
-        !!category && category !== 'for-you'
-      ).filter(
-        (g) =>
-          !GROUP_SLUGS_TO_HIDE_FROM_PILL_SEARCH.includes(g.slug) &&
-          (excludeGroupSlugs ? !excludeGroupSlugs.includes(g.slug) : true)
-      )
-    : []
-
-  const categoryFromRouter = useGroupFromRouter(category, categoryPills)
 
   const filter =
     sort === 'close-date'
@@ -499,16 +469,6 @@ function SupabaseContractSearchControls(props: {
       setState({ ct: selection })
     }
     track('select contract type', { contractType: selection })
-  }
-
-  const selectCategory = (newCategory: string) => {
-    const deselecting = newCategory === category
-    if (deselecting) {
-      setState({ category: undefined })
-    } else {
-      setState({ q: '', category: newCategory })
-      track('select search category', { category: newCategory })
-    }
   }
 
   const isAuth = useIsAuthorized()
@@ -565,42 +525,6 @@ function SupabaseContractSearchControls(props: {
           />
         )}
       </Col>
-      {showCategories && (
-        <Carousel className="mt-0.5 h-8">
-          {isAuth && sort === 'score' && !query && (
-            <PillButton
-              key={'pill-for-you'}
-              selected={category === 'for-you'}
-              onSelect={() => selectCategory('for-you')}
-            >
-              ⭐️ For you
-            </PillButton>
-          )}
-
-          {uniqBy(buildArray(categoryFromRouter, ...categoryPills), 'id').map(
-            (g) => (
-              <PillButton
-                key={'pill-' + g}
-                selected={category === g.id}
-                onSelect={() => selectCategory(g.id)}
-              >
-                {g.name}
-              </PillButton>
-            )
-          )}
-
-          {!query && (
-            <PillButton
-              key={'pill-all-categories'}
-              selected={false}
-              onSelect={() => Router.push('/categories')}
-            >
-              See all categories{' '}
-              <ArrowRightIcon className="inline-block h-4 w-4" />
-            </PillButton>
-          )}
-        </Carousel>
-      )}
     </Col>
   )
 }
