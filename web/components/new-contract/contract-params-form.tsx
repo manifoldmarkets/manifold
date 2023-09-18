@@ -62,7 +62,7 @@ import { ContractVisibilityType, NewQuestionParams } from './new-contract-panel'
 import { VisibilityTheme } from 'web/pages/create'
 import { getContractWithFields } from 'web/lib/supabase/contracts'
 import { filterDefined } from 'common/util/array'
-import { CategoryTag } from 'web/components/groups/category-tag'
+import { TopicTag } from 'web/components/groups/topic-tag'
 
 export function ContractParamsForm(props: {
   creator: User
@@ -588,10 +588,10 @@ export function ContractParamsForm(props: {
         {selectedGroups.length > 0 && (
           <Row className={'flex-wrap gap-2'}>
             {selectedGroups.map((group) => (
-              <CategoryTag
+              <TopicTag
                 location={'create page'}
                 key={group.id}
-                category={group}
+                topic={group}
                 isPrivate={group.privacyStatus === 'private'}
                 className="bg-ink-100"
               >
@@ -606,7 +606,7 @@ export function ContractParamsForm(props: {
                 >
                   <XIcon className="hover:text-ink-700 text-ink-400 ml-1 h-4 w-4" />
                 </button>
-              </CategoryTag>
+              </TopicTag>
             ))}
           </Row>
         )}

@@ -18,7 +18,7 @@ import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/outline'
 export async function getStaticProps() {
   const contracts = await supabaseSearchContractsWithDefaults({
     // yc-s23
-    groupId: 'yc-s23',
+    topicSlug: 'yc-s23',
     // Manifold
     creatorId: 'IPTOzEqrpkWmEzh6hwvAyY9PqFb2',
   })

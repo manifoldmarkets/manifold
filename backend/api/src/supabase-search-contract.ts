@@ -19,15 +19,16 @@ export const supabasesearchcontracts = MaybeAuthedEndpoint(
       offset,
       limit,
       fuzzy,
-      groupId: trueGroupId,
+      topicSlug: possibleTopicSlug,
       creatorId,
     } = validate(bodySchema, req.body)
 
-    const isForYou = trueGroupId === 'for-you'
-    const groupSlug = trueGroupId && !isForYou ? trueGroupId : undefined
+    const isForYou = possibleTopicSlug === 'for-you'
+    const topicSlug =
+      possibleTopicSlug && !isForYou ? possibleTopicSlug : undefined
     const pg = createSupabaseDirectClient()
-    const groupId = groupSlug
-      ? await getGroupIdFromSlug(groupSlug, pg)
+    const groupId = topicSlug
+      ? await getGroupIdFromSlug(topicSlug, pg)
       : undefined
 
     const searchMarketSQL =
@@ -98,6 +99,6 @@ const bodySchema = z.object({
   offset: z.number().gte(0),
   limit: z.number().gt(0),
   fuzzy: z.boolean().optional(),
-  groupId: z.string().regex(FIRESTORE_DOC_REF_ID_REGEX).optional(),
+  topicSlug: z.string().regex(FIRESTORE_DOC_REF_ID_REGEX).optional(),
   creatorId: z.string().regex(FIRESTORE_DOC_REF_ID_REGEX).optional(),
 })

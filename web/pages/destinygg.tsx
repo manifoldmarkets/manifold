@@ -30,7 +30,7 @@ export async function getStaticProps() {
       filter: 'open',
       sort: 'score',
       limit: 6,
-      group_id: 'destinygg',
+      topicSlug: 'destinygg',
     })
   ).data
 

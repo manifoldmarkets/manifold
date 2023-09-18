@@ -5,8 +5,8 @@ import { track } from 'web/lib/service/analytics'
 import { LockClosedIcon } from '@heroicons/react/solid'
 import { Row } from 'web/components/layout/row'
 
-export function CategoryTag(props: {
-  category: { slug: string; name: string }
+export function TopicTag(props: {
+  topic: { slug: string; name: string }
   location:
     | 'feed card'
     | 'market page'
@@ -17,7 +17,7 @@ export function CategoryTag(props: {
   className?: string
   children?: React.ReactNode // end element - usually for a remove button
 }) {
-  const { category, isPrivate, className, children } = props
+  const { topic, isPrivate, className, children } = props
 
   return (
     <Row
@@ -28,11 +28,11 @@ export function CategoryTag(props: {
     >
       <Link
         prefetch={false}
-        href={groupPath(category.slug)}
+        href={groupPath(topic.slug)}
         onClick={(e) => {
           e.stopPropagation()
           track(`click category tag on ${location}`, {
-            categoryName: category.name,
+            categoryName: topic.name,
           })
         }}
         className={' max-w-[200px] truncate sm:max-w-[250px]'}
@@ -44,7 +44,7 @@ export function CategoryTag(props: {
             #
           </span>
         )}
-        {category.name}
+        {topic.name}
       </Link>
       {children}
     </Row>

@@ -6,5 +6,4 @@
 <url><loc>https://manifold.markets/leagues</loc><changefreq>daily</changefreq><priority>0.2</priority></url>
 <url><loc>https://manifold.markets/news</loc><changefreq>daily</changefreq><priority>0.2</priority></url>
 <url><loc>https://manifold.markets/charity</loc><changefreq>daily</changefreq><priority>0.2</priority></url>
-<url><loc>https://manifold.markets/categories</loc><changefreq>daily</changefreq><priority>0.2</priority></url>
 </urlset>

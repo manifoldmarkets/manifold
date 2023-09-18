@@ -33,11 +33,11 @@ import { GroupSelector } from 'web/components/groups/group-selector'
 import { CreateGroupModal } from 'web/components/groups/create-group-modal'
 import { GroupOptions } from 'web/components/groups/group-options'
 
-export function GroupsList(props: {
-  groups: Group[]
+export function TopicsList(props: {
+  topics: Group[]
   loadMore?: () => Promise<boolean>
-  currentCategorySlug?: string
-  setCurrentCategory: (categoryId: string) => void
+  currentTopicSlug?: string
+  setCurrentTopicSlug: (slug: string) => void
   privateUser: PrivateUser | null | undefined
   user: User | null | undefined
   yourGroupIds?: string[]
@@ -45,12 +45,12 @@ export function GroupsList(props: {
   setShow: (show: boolean) => void
 }) {
   const {
-    groups,
-    currentCategorySlug,
+    topics,
+    currentTopicSlug,
     yourGroupIds,
     privateUser,
     user,
-    setCurrentCategory,
+    setCurrentTopicSlug,
     show,
     setShow,
   } = props
@@ -77,21 +77,21 @@ export function GroupsList(props: {
         </Row>
         {user && privateUser && (
           <ForYouButton
-            setCurrentCategory={setCurrentCategory}
+            setCurrentCategory={setCurrentTopicSlug}
             privateUser={privateUser}
-            currentCategorySlug={currentCategorySlug}
+            currentCategorySlug={currentTopicSlug}
             user={user}
           />
         )}
-        {groups.length > 0 &&
-          groups.map((group) => (
+        {topics.length > 0 &&
+          topics.map((group) => (
             <GroupButton
               key={group.id}
               group={group}
               yourGroupIds={yourGroupIds}
               user={user}
-              currentCategorySlug={currentCategorySlug}
-              setCurrentCategory={setCurrentCategory}
+              currentCategorySlug={currentTopicSlug}
+              setCurrentCategory={setCurrentTopicSlug}
             />
           ))}
       </Col>
@@ -140,7 +140,7 @@ export const ForYouButton = (props: {
           }
         />
         <Row className={'items-center justify-between'}>
-          <span>Your topics</span>
+          <span>For you</span>
           <DropdownMenu
             Items={groupOptionItems}
             Icon={<CogIcon className=" text-ink-600 h-5 w-5" />}

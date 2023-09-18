@@ -4,7 +4,6 @@ import { User } from 'common/user'
 import toast from 'react-hot-toast'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
-import Link from 'next/link'
 import {
   addContractToGroup,
   removeContractFromGroup,
@@ -13,7 +12,7 @@ import { GroupSelector } from './group-selector'
 import { useGroupsWithContract } from 'web/hooks/use-group-supabase'
 import { useState } from 'react'
 import { XIcon } from '@heroicons/react/outline'
-import { CategoryTag } from 'web/components/groups/category-tag'
+import { TopicTag } from 'web/components/groups/topic-tag'
 
 export function ContractGroupsList(props: {
   contract: Contract
@@ -29,9 +28,7 @@ export function ContractGroupsList(props: {
 
   return (
     <Col className={'gap-2'}>
-      <span className={'text-primary-700 text-xl'}>
-        <Link href={'/categories/'}>To</Link>
-      </span>
+      <span className={'text-primary-700 text-xl'}>Topics</span>
       <Col className="h-96 justify-between overflow-auto">
         <Col>
           {groups.length === 0 && (
@@ -40,10 +37,10 @@ export function ContractGroupsList(props: {
           <Row className="my-2 flex-wrap gap-3">
             {groups.map((g) => {
               return (
-                <CategoryTag
+                <TopicTag
                   location={'categories list'}
                   key={g.id}
-                  category={g}
+                  topic={g}
                   className="bg-ink-100"
                 >
                   {g && canEditGroup(g) && (
@@ -68,7 +65,7 @@ export function ContractGroupsList(props: {
                       <XIcon className="hover:text-ink-700 text-ink-400 ml-1 h-4 w-4" />
                     </button>
                   )}
-                </CategoryTag>
+                </TopicTag>
               )
             })}
           </Row>

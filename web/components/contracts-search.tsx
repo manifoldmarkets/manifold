@@ -25,8 +25,8 @@ import {
   usePersistentQueriesState,
 } from 'web/hooks/use-persistent-query-state'
 import { useGroupFromSlug } from 'web/hooks/use-group-supabase'
-import { CATEGORY_KEY } from 'common/group'
-import { CategoryTag } from 'web/components/groups/category-tag'
+import { TOPIC_KEY } from 'common/group'
+import { TopicTag } from 'web/components/groups/topic-tag'
 import { AddContractToGroupButton } from 'web/components/groups/add-contract-to-group-modal'
 
 const CONTRACTS_PER_PAGE = 40
@@ -109,7 +109,7 @@ export type SupabaseSearchParameters = {
   sort: Sort
   filter: Filter
   contractType: ContractTypeType
-  category: string
+  topicSlug: string
 }
 
 const QUERY_KEY = 'q'
@@ -130,9 +130,8 @@ export const INITIAL_STATE: SearchState = {
 
 export type SupabaseAdditionalFilter = {
   creatorId?: string
-  groupId?: string
   tag?: string
-  groupSlug?: string
+  topicSlug?: string
   excludeContractIds?: string[]
   excludeGroupSlugs?: string[]
   excludeUserIds?: string[]
@@ -216,7 +215,7 @@ export function SupabaseContractSearch(props: {
       if (searchParams.current == null) {
         return false
       }
-      const { query, sort, filter, category, contractType } =
+      const { query, sort, filter, topicSlug, contractType } =
         searchParams.current
       const id = ++requestId.current
       const offset = freshQuery
@@ -233,10 +232,10 @@ export function SupabaseContractSearch(props: {
           contractType: additionalFilter?.contractType ?? contractType,
           offset: offset,
           limit: CONTRACTS_PER_PAGE,
-          group_id:
-            additionalFilter?.groupId ??
-            (category !== '' ? category : undefined),
-          creator_id: additionalFilter?.creatorId,
+          topicSlug:
+            additionalFilter?.topicSlug ??
+            (topicSlug !== '' ? topicSlug : undefined),
+          creatorId: additionalFilter?.creatorId,
         })
 
         if (id === requestId.current) {
@@ -339,10 +338,10 @@ export function SupabaseContractSearch(props: {
         ) : (
           <Col className="text-ink-700 mx-2 my-6 text-center">
             No questions yet.
-            {searchParams.current?.category && (
+            {searchParams.current?.topicSlug && (
               <Row className={'mt-2 w-full items-center justify-center'}>
                 <AddContractToGroupButton
-                  groupSlug={searchParams.current?.category}
+                  groupSlug={searchParams.current?.topicSlug}
                 />
               </Row>
             )}
@@ -422,7 +421,7 @@ function SupabaseContractSearchControls(props: {
     [SORT_KEY]: defaultSort,
     [FILTER_KEY]: defaultFilter,
     [CONTRACT_TYPE_KEY]: defaultContractType,
-    [CATEGORY_KEY]: '',
+    [TOPIC_KEY]: '',
   }
 
   const [state, setState] = useUrlParams
@@ -435,7 +434,7 @@ function SupabaseContractSearchControls(props: {
   const sort = state[SORT_KEY]
   const filterState = state[FILTER_KEY]
   const contractType = state[CONTRACT_TYPE_KEY]
-  const category = state[CATEGORY_KEY]
+  const topicSlug = state[TOPIC_KEY]
 
   const filter =
     sort === 'close-date'
@@ -478,12 +477,12 @@ function SupabaseContractSearchControls(props: {
       onSearchParametersChanged({
         query,
         sort: sort as Sort,
-        category,
+        topicSlug,
         filter: filter as Filter,
         contractType: contractType as ContractTypeType,
       })
     }
-  }, [query, sort, filter, category, contractType, isAuth])
+  }, [query, sort, filter, topicSlug, contractType, isAuth])
 
   return (
     <Col className={clsx('bg-canvas-50 sticky top-0 z-30 ', className)}>
@@ -518,9 +517,9 @@ function SupabaseContractSearchControls(props: {
             hideOrderSelector={hideOrderSelector}
             className={'flex flex-row gap-2'}
             includeProbSorts={includeProbSorts}
-            currentCategorySlug={category}
-            clearCategory={() => {
-              setState({ [CATEGORY_KEY]: '' })
+            currentTopicSlug={topicSlug}
+            clearTopic={() => {
+              setState({ [TOPIC_KEY]: '' })
             }}
           />
         )}
@@ -537,8 +536,8 @@ export function SearchFilters(props: {
   contractType: string
   selectContractType: (selection: ContractTypeType) => void
   hideOrderSelector: boolean | undefined
-  currentCategorySlug: string | undefined
-  clearCategory: () => void
+  currentTopicSlug: string | undefined
+  clearTopic: () => void
   className?: string
   includeProbSorts?: boolean
 }) {
@@ -552,10 +551,10 @@ export function SearchFilters(props: {
     hideOrderSelector,
     className,
     includeProbSorts,
-    currentCategorySlug,
-    clearCategory,
+    currentTopicSlug,
+    clearTopic,
   } = props
-  const category = useGroupFromSlug(currentCategorySlug ?? '')
+  const topic = useGroupFromSlug(currentTopicSlug ?? '')
   const hideFilter =
     sort === 'resolve-date' ||
     sort === 'close-date' ||
@@ -626,18 +625,18 @@ export function SearchFilters(props: {
         selectedItemName={contractTypeLabel}
         closeOnClick={true}
       />
-      {currentCategorySlug == category?.slug && category && (
-        <CategoryTag
+      {currentTopicSlug == topic?.slug && topic && (
+        <TopicTag
           className={'text-primary-500 !py-0'}
-          category={category}
+          topic={topic}
           location={'questions page'}
         >
-          <button onClick={clearCategory}>
+          <button onClick={clearTopic}>
             <XIcon className="hover:text-ink-700 text-ink-400 ml-1 h-4 w-4" />
           </button>
-        </CategoryTag>
+        </TopicTag>
       )}
-      {currentCategorySlug === 'for-you' && (
+      {currentTopicSlug === 'for-you' && (
         <Row
           className={
             'text-primary-500 dark:text-ink-400 hover:text-ink-600 hover:bg-primary-400/10 group items-center justify-center whitespace-nowrap rounded px-1 text-right text-sm transition-colors'
@@ -646,8 +645,8 @@ export function SearchFilters(props: {
           <span className="mr-px opacity-50 transition-colors group-hover:text-inherit">
             #
           </span>
-          Your topics
-          <button onClick={clearCategory}>
+          For you
+          <button onClick={clearTopic}>
             <XIcon className="hover:text-ink-700 text-ink-400 ml-1 h-4 w-4" />
           </button>
         </Row>

@@ -207,8 +207,8 @@ export async function searchContract(props: {
   contractType?: ContractTypeType
   offset?: number
   limit: number
-  group_id?: string
-  creator_id?: string
+  topicSlug?: string
+  creatorId?: string
 }) {
   const {
     query,
@@ -217,8 +217,8 @@ export async function searchContract(props: {
     contractType = 'ALL',
     offset = 0,
     limit,
-    group_id,
-    creator_id,
+    topicSlug,
+    creatorId,
   } = props
 
   const state = props.state ?? {
@@ -240,8 +240,8 @@ export async function searchContract(props: {
       contractType,
       offset,
       limit,
-      groupId: group_id,
-      creatorId: creator_id,
+      topicSlug,
+      creatorId,
     })
     if (contracts) {
       return { fuzzyOffset: 0, data: contracts }
@@ -255,8 +255,8 @@ export async function searchContract(props: {
       sort,
       contractType,
       limit,
-      group_id,
-      creator_id,
+      topicSlug,
+      creatorId,
     })
     return contractFuzzy
   }
@@ -269,8 +269,8 @@ export async function searchContract(props: {
     offset,
     limit,
     fuzzy: false,
-    groupId: group_id,
-    creatorId: creator_id,
+    topicSlug,
+    creatorId: creatorId,
   })
   if (contracts) {
     if (contracts.length == limit) {
@@ -283,8 +283,8 @@ export async function searchContract(props: {
         sort,
         contractType,
         limit: limit - contracts.length,
-        group_id,
-        creator_id,
+        topicSlug,
+        creatorId,
       })
       return {
         fuzzyOffset: fuzzyData.fuzzyOffset,
@@ -301,21 +301,19 @@ export async function searchContractFuzzy(props: {
   filter: Filter
   sort: Sort
   contractType: ContractTypeType
-  topic?: string
   limit: number
-  group_id?: string
-  creator_id?: string
+  topicSlug?: string
+  creatorId?: string
 }) {
   const {
     state,
-    topic,
+    topicSlug,
     query,
     filter,
     sort,
     contractType,
     limit,
-    group_id,
-    creator_id,
+    creatorId,
   } = props
   const contracts = await supabaseSearchContracts({
     term: query,
@@ -325,9 +323,8 @@ export async function searchContractFuzzy(props: {
     offset: state.fuzzyContractOffset,
     limit,
     fuzzy: true,
-    groupId: group_id,
-    creatorId: creator_id,
-    topic,
+    topicSlug,
+    creatorId: creatorId,
   })
   if (contracts) {
     return {
