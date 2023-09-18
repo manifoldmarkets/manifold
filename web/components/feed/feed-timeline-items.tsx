@@ -166,7 +166,7 @@ export function CategoryTags(props: {
   const { categories, className, maxGroups = 3 } = props
   if (!categories || categories.length <= 0) return null
   return (
-    <div className={clsx('w-full', className)}>
+    <Row className={clsx(className)}>
       {categories.slice(0, maxGroups).map((category) => (
         <CategoryTag
           location={'feed card'}
@@ -174,7 +174,7 @@ export function CategoryTags(props: {
           category={category}
         />
       ))}
-    </div>
+    </Row>
   )
 }
 
