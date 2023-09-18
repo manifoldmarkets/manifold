@@ -30,11 +30,6 @@ import Welcome from 'web/components/onboarding/welcome'
 import { Page } from 'web/components/layout/page'
 import { SEO } from 'web/components/SEO'
 import { Title } from 'web/components/widgets/title'
-export type GroupState = {
-  groups: Group[] | undefined
-  fuzzyGroupOffset: number
-  shouldLoadMore: boolean
-}
 
 const GROUPS_PER_PAGE = 100
 export const SHOW_TOPICS_TERM = 'show-topics'
