@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import {
-  getUserFollows,
+  getUserIdFollows,
   getUserFollowers,
   getUserIsFollowing,
 } from 'web/lib/supabase/follows'
@@ -12,7 +12,7 @@ export const useFollows = (userId: string | null | undefined) => {
   const { rows } = useSubscription(
     'user_follows',
     { k: 'user_id', v: userId ?? '_' },
-    () => getUserFollows(userId ?? '_')
+    () => getUserIdFollows(userId ?? '_')
   )
 
   if (!userId) return undefined

@@ -1,6 +1,5 @@
 import { Combobox } from '@headlessui/react'
 import { ChevronRightIcon } from '@heroicons/react/outline'
-import { SparklesIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { Contract } from 'common/contract'
 import { TOPIC_KEY, Group } from 'common/group'
@@ -26,6 +25,8 @@ import { Row } from '../layout/row'
 import { Col } from '../layout/col'
 import { formatLargeNumber } from 'common/util/format'
 import { FollowButton } from 'web/components/buttons/follow-button'
+import { getUserFollows } from 'web/lib/supabase/follows'
+import { User } from 'common/user'
 
 export interface Option {
   id: string
@@ -52,7 +53,7 @@ export const OmniSearch = (props: {
     debounce((newQuery) => setDebouncedQuery(newQuery), 50),
     []
   )
-  const pillOptions = ['All', 'Questions', 'Users', 'Topics']
+  const pillOptions = ['All', 'Questions', 'Users', 'Topics', 'Following']
   const [filter, setFilter] = useState(pillOptions[0])
 
   useEffect(() => {
@@ -111,6 +112,7 @@ export const OmniSearch = (props: {
                 query={debouncedQuery}
                 recentMarkets={recentMarkets}
                 filter={filter}
+                user={user}
               />
             ) : (
               <DefaultResults recentMarkets={recentMarkets} />
@@ -125,44 +127,34 @@ export const OmniSearch = (props: {
 const DefaultResults = (props: { recentMarkets: Contract[] }) => {
   const { recentMarkets } = props
   return (
-    <>
-      <MarketResults
-        title={'Recent questions'}
-        markets={recentMarkets.slice(0, 7)}
-      />
-
-      <div className="mx-2 my-2 text-xs">
-        <SparklesIcon className="text-primary-500 mr-1 inline h-4 w-4 align-text-bottom" />
-        Start with <Key>%</Key> for questions, <Key>@</Key> for users, or{' '}
-        <Key>#</Key> for topics
-      </div>
-    </>
+    <MarketResults
+      title={'Recent questions'}
+      markets={recentMarkets.slice(0, 7)}
+    />
   )
 }
-
-const Key = (props: { children: ReactNode }) => (
-  <code className="bg-ink-300 mx-0.5 rounded p-0.5">{props.children}</code>
-)
 
 const Results = (props: {
   query: string
   recentMarkets: Contract[]
   filter: string
+  user: User | null | undefined
 }) => {
-  const { query, recentMarkets, filter } = props
+  const { query, recentMarkets, filter, user } = props
 
   const search = query
   const all = filter === 'All'
   const justUsers = filter === 'Users'
   const justGroups = filter === 'Topics'
   const justMarkets = filter === 'Questions'
+  const following = filter === 'Following'
 
-  const userHitLimit = justUsers ? 50 : all ? 5 : 0
-  const groupHitLimit = justGroups ? 50 : all ? 2 : 0
+  const userHitLimit = justUsers ? 50 : all ? 5 : following ? 7 : 0
+  const groupHitLimit = justGroups ? 50 : all ? 2 : following ? 7 : 0
   const marketHitLimit = justMarkets ? 25 : all ? 5 : 0
 
   const [
-    { pageHits, userHits, topicHits, sortHit, marketHits },
+    { pageHits, userHits, topicHits, followedUserHits, sortHit, marketHits },
     setSearchResults,
   ] = useState({
     pageHits: [] as PageData[],
@@ -170,27 +162,34 @@ const Results = (props: {
     topicHits: [] as Group[],
     sortHit: null as { sort: Sort; markets: Contract[] } | null,
     marketHits: [] as Contract[],
+    followedUserHits: [] as User[],
   })
   const [loading, setLoading] = useState(false)
 
   // Use nonce to make sure only latest result gets used.
   const nonce = useRef(0)
 
-  useEffect(() => {
-    nonce.current++
-    const thisNonce = nonce.current
-    setLoading(true)
-
-    Promise.allSettled([
-      searchUsers(search, userHitLimit, ['creatorTraders', 'bio']),
+  const doSearch = async (thisNonce: number) => {
+    const [u, g, m, s, f] = await Promise.allSettled([
+      all || justUsers
+        ? searchUsers(search, userHitLimit, ['creatorTraders', 'bio'])
+        : [],
       // add your groups via ilike on top
-      searchGroups({ term: search, limit: groupHitLimit }),
-      searchContract({
-        query: search,
-        filter: 'all',
-        sort: 'score',
-        limit: marketHitLimit,
-      }),
+      all || justGroups || following
+        ? searchGroups({
+            term: search,
+            limit: groupHitLimit,
+            yourGroups: following,
+          })
+        : { data: [] },
+      all || justMarkets
+        ? searchContract({
+            query: search,
+            filter: 'all',
+            sort: 'score',
+            limit: marketHitLimit,
+          })
+        : { data: [] },
       (async () => {
         const sortHits = !all ? [] : searchMarketSorts(search)
         const sort = sortHits[0]
@@ -207,35 +206,52 @@ const Results = (props: {
         }
         return null
       })(),
-    ]).then(([u, g, m, s]) => {
-      const userHits = u.status === 'fulfilled' ? u.value : []
-      const groupHits = g.status === 'fulfilled' ? g.value.data : []
-      const marketHits = m.status === 'fulfilled' ? m.value.data : []
-      const sortHit = s.status === 'fulfilled' ? s.value : null
-      const recentMarketHits =
-        all || justMarkets
-          ? recentMarkets.filter((m) =>
-              m.question.toLowerCase().includes(search.toLowerCase())
-            )
-          : []
+      all || following || justUsers ? getUserFollows(user?.id ?? '_') : [],
+    ])
 
-      if (thisNonce === nonce.current) {
-        const pageHits = !all ? [] : searchPages(search, 2)
-        const uniqueMarketHits = uniqBy<Contract>(
-          recentMarketHits.concat(marketHits),
-          'id'
-        )
-        const uniqueTopicHits = uniqBy<Group>(groupHits, 'id')
-        setSearchResults({
-          pageHits,
-          userHits,
-          topicHits: uniqueTopicHits,
-          sortHit,
-          marketHits: uniqueMarketHits,
-        })
-        setLoading(false)
-      }
-    })
+    const userHits = u.status === 'fulfilled' ? u.value : []
+    const groupHits = g.status === 'fulfilled' ? g.value.data : []
+    const marketHits = m.status === 'fulfilled' ? m.value.data : []
+    const sortHit = s.status === 'fulfilled' ? s.value : null
+    const recentMarketHits =
+      all || justMarkets
+        ? recentMarkets.filter((m) =>
+            m.question.toLowerCase().includes(search.toLowerCase())
+          )
+        : []
+    const followedUsers =
+      f.status === 'fulfilled'
+        ? f.value.filter(
+            (f) =>
+              f.name.toLowerCase().includes(search.toLowerCase()) ||
+              f.username.toLowerCase().includes(search.toLowerCase())
+          )
+        : []
+
+    if (thisNonce === nonce.current) {
+      const pageHits = !all ? [] : searchPages(search, 2)
+      const uniqueMarketHits = uniqBy<Contract>(
+        recentMarketHits.concat(marketHits),
+        'id'
+      )
+      const uniqueTopicHits = uniqBy<Group>(groupHits, 'id')
+      setSearchResults({
+        pageHits,
+        userHits,
+        topicHits: uniqueTopicHits,
+        sortHit,
+        marketHits: uniqueMarketHits,
+        followedUserHits: followedUsers,
+      })
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    nonce.current++
+    const thisNonce = nonce.current
+    setLoading(true)
+    doSearch(thisNonce)
   }, [search, groupHitLimit, marketHitLimit, userHitLimit, all])
 
   if (loading) {
@@ -251,7 +267,8 @@ const Results = (props: {
     !pageHits.length &&
     !userHits.length &&
     !topicHits.length &&
-    !marketHits.length
+    !marketHits.length &&
+    !followedUserHits.length
   ) {
     return <div className="my-6 text-center">no results x.x</div>
   }
@@ -263,7 +280,9 @@ const Results = (props: {
         <MarketResults markets={marketHits} search={search} />
       )}
       {groupHitLimit > 0 && <TopicResults topics={topicHits} />}
-      {userHitLimit > 0 && <UserResults users={userHits} />}
+      {userHitLimit > 0 && (
+        <UserResults users={uniqBy(followedUserHits.concat(userHits), 'id')} />
+      )}
       {sortHit && <MarketSortResults {...sortHit} />}
     </>
   )
