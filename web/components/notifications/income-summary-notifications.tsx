@@ -94,7 +94,7 @@ export function UniqueBettorBonusIncomeNotification(props: {
     relatedNotifications.length > 0 ? relatedNotifications.length : 1
   const answerText =
     relatedNotifications.length > 0
-      ? relatedNotifications[0].data.answerText
+      ? relatedNotifications[0].data?.answerText
       : undefined
 
   return (
