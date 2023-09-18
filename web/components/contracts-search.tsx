@@ -35,8 +35,7 @@ import { useGroupFromRouter } from 'web/hooks/use-group-from-router'
 import { useGroupFromSlug } from 'web/hooks/use-group-supabase'
 import { CATEGORY_KEY } from 'common/group'
 import { CategoryTag } from 'web/components/groups/category-tag'
-import Link from 'next/link'
-import { linkClass } from 'web/components/widgets/site-link'
+import { AddContractToGroupButton } from 'web/components/groups/add-contract-to-group-modal'
 
 const CONTRACTS_PER_PAGE = 40
 
@@ -350,27 +349,16 @@ export function SupabaseContractSearch(props: {
         (searchParams.current?.query ? (
           <NoResults />
         ) : (
-          <div className="text-ink-700 mx-2 my-6 text-center">
-            No questions yet
+          <Col className="text-ink-700 mx-2 my-6 text-center">
+            No questions yet.
             {searchParams.current?.category && (
-              <span className={'ml-1'}>
-                in this topic.{' '}
-                <Link
-                  className={clsx(linkClass, 'underline')}
-                  href={
-                    '/create?params=' +
-                    encodeURIComponent(
-                      JSON.stringify({
-                        groupSlugs: [searchParams.current.category],
-                      })
-                    )
-                  }
-                >
-                  Why not add one?
-                </Link>
-              </span>
+              <Row className={'mt-2 w-full items-center justify-center'}>
+                <AddContractToGroupButton
+                  groupSlug={searchParams.current?.category}
+                />
+              </Row>
             )}
-          </div>
+          </Col>
         ))
       ) : (
         <ContractsList

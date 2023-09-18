@@ -19,8 +19,10 @@ function LeavePrivateGroupButton(props: {
   isMobile?: boolean
   disabled?: boolean
   className?: string
+  size?: SizeType
 }) {
-  const { group, user, setIsMember, isMobile, disabled, className } = props
+  const { group, size, user, setIsMember, isMobile, disabled, className } =
+    props
   const leavePrivateGroup = user
     ? withTracking(() => {
         leaveGroup(group.id, user.id)
@@ -44,6 +46,7 @@ function LeavePrivateGroupButton(props: {
           color: isMobile ? 'none' : 'indigo',
           disabled: disabled,
           label: isMobile ? '' : ' Leave',
+          size: size ?? 'xs',
         }}
         cancelBtn={{
           label: 'Cancel',
@@ -95,6 +98,7 @@ export function JoinOrLeaveGroupButton(props: {
         setIsMember={setIsMember}
         user={user}
         isMobile={isMobile}
+        size={size}
       />
     )
   }

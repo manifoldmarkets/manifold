@@ -198,7 +198,7 @@ function useToTopUsers(
 }
 type UserStats = { user: User; score: number }
 
-function getAddContractToGroupPermission(
+export function getAddContractToGroupPermission(
   privacyStatus: PrivacyStatusType,
   userRole: GroupRole | null | undefined,
   isCreator?: boolean
