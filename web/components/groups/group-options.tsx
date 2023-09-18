@@ -4,17 +4,16 @@ import { useEffect, useState } from 'react'
 import { useRealtimeRole } from 'web/hooks/use-group-supabase'
 import { useAdmin } from 'web/hooks/use-admin'
 import { buildArray } from 'common/util/array'
-import { LinkIcon } from '@heroicons/react/outline'
 import { copyToClipboard } from 'web/lib/util/copy'
 import { DOMAIN } from 'common/envs/constants'
 import toast from 'react-hot-toast'
 import {
+  LinkIcon,
   DotsVerticalIcon,
-  MinusCircleIcon,
   PencilIcon,
   PlusCircleIcon,
 } from '@heroicons/react/solid'
-import { AiOutlineTrophy } from 'react-icons/ai'
+import { AiFillTrophy } from 'react-icons/ai'
 import DropdownMenu, {
   DropdownItem,
 } from 'web/components/comments/dropdown-menu'
@@ -30,6 +29,7 @@ import {
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { GroupLeaderboard } from 'web/components/groups/group-leaderboard'
 import { getUsers } from 'web/lib/supabase/user'
+import { BsFillPersonDashFill } from 'react-icons/bs'
 
 export function GroupOptions(props: {
   group: Group
@@ -54,7 +54,7 @@ export function GroupOptions(props: {
 
   const groupOptionItems = buildArray(
     {
-      name: 'Share topic',
+      name: 'Share',
       icon: <LinkIcon className="h-5 w-5" />,
       onClick: () => {
         copyToClipboard(
@@ -64,13 +64,13 @@ export function GroupOptions(props: {
       },
     },
     addPermission != 'none' && {
-      name: 'Add questions to topic',
+      name: 'Add questions',
       icon: <PlusCircleIcon className="h-5 w-5" />,
       onClick: () => setShowAddContract(true),
     },
     {
-      name: 'See leaderboards',
-      icon: <AiOutlineTrophy className="h-5 w-5" />,
+      name: 'Leaderboards',
+      icon: <AiFillTrophy className="h-5 w-5" />,
       onClick: () => setShowLeaderboards(true),
     },
     canEdit && {
@@ -81,7 +81,7 @@ export function GroupOptions(props: {
     isMember &&
       !isCreator && {
         name: 'Unfollow topic',
-        icon: <MinusCircleIcon className="h-5 w-5" />,
+        icon: <BsFillPersonDashFill className="h-5 w-5" />,
         onClick: unfollow,
       }
   ) as DropdownItem[]
