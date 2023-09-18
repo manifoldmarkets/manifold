@@ -105,7 +105,7 @@ export default function QuestionsPage() {
             yourGroupIds={yourGroupIds}
             show={true}
             setShow={() => {}}
-            className={'mt-14'}
+            className={'mt-14 hidden xl:flex'}
           />
         }
       >

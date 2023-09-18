@@ -135,7 +135,7 @@ export const ForYouButton = (props: {
         }
         className={clsx(
           'hover:bg-canvas-50 relative w-full flex-row flex-wrap px-2 py-4 text-left text-sm ',
-          currentCategorySlug == 'for-you' ? 'bg-canvas-50 ' : ''
+          currentCategorySlug == 'for-you' ? 'bg-primary-50 ' : ''
         )}
       >
         <div
@@ -146,7 +146,7 @@ export const ForYouButton = (props: {
           }
         />
         <Row className={'items-center justify-between'}>
-          <span>For you</span>
+          <span>⭐️ For you</span>
           <DropdownMenu
             Items={groupOptionItems}
             Icon={<CogIcon className=" text-ink-600 h-5 w-5" />}
@@ -277,7 +277,7 @@ export const GroupButton = (props: {
       }}
       className={clsx(
         'hover:bg-canvas-50 relative my-2 w-full flex-row flex-wrap px-2 py-4 text-left text-sm ',
-        currentCategorySlug == group.slug ? 'bg-canvas-50 ' : ''
+        currentCategorySlug == group.slug ? 'bg-primary-50 ' : ''
       )}
       key={group.id}
     >

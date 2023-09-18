@@ -645,7 +645,7 @@ export function SearchFilters(props: {
           <span className="mr-px opacity-50 transition-colors group-hover:text-inherit">
             #
           </span>
-          For you
+          ⭐️ For you
           <button onClick={clearTopic}>
             <XIcon className="hover:text-ink-700 text-ink-400 ml-1 h-4 w-4" />
           </button>
