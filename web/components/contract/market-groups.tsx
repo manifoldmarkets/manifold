@@ -20,7 +20,7 @@ import { filterDefined } from 'common/util/array'
 import { Group, groupPath } from 'common/group'
 import { track } from 'web/lib/service/analytics'
 import { removeEmojis } from 'common/topics'
-import { CategoryTag } from 'web/components/groups/category-tag'
+import { TopicTag } from 'web/components/groups/topic-tag'
 
 export function MarketGroups(props: { contract: Contract }) {
   const { contract } = props
@@ -36,9 +36,9 @@ function PrivateMarketGroups(props: { contract: Contract }) {
   if (contract.groupLinks) {
     return (
       <div className="flex">
-        <CategoryTag
+        <TopicTag
           location={'market page'}
-          category={contract.groupLinks[0]}
+          topic={contract.groupLinks[0]}
           isPrivate
         />
       </div>

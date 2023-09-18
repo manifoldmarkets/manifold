@@ -3,7 +3,7 @@ import { ChevronRightIcon } from '@heroicons/react/outline'
 import { SparklesIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { Contract } from 'common/contract'
-import { CATEGORY_KEY, Group } from 'common/group'
+import { TOPIC_KEY, Group } from 'common/group'
 import { debounce, startCase, uniqBy } from 'lodash'
 import { useRouter } from 'next/router'
 import { ReactNode, useCallback, useEffect, useRef, useState } from 'react'
@@ -432,7 +432,7 @@ const TopicResults = (props: { topics: SearchGroupInfo[] }) => {
           key={group.id}
           value={{
             id: group.id,
-            slug: `/questions?${CATEGORY_KEY}=${group.slug}`,
+            slug: `/questions?${TOPIC_KEY}=${group.slug}`,
           }}
         >
           <Row>

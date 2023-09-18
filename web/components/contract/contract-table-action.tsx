@@ -51,13 +51,15 @@ export function BetButton(props: { contract: Contract; user?: User | null }) {
         >
           Bet
         </Button>
-        <BetDialog
-          contract={contract}
-          initialOutcome="YES"
-          open={open}
-          setOpen={setOpen}
-          trackingLocation="contract table"
-        />
+        {open && (
+          <BetDialog
+            contract={contract}
+            initialOutcome="YES"
+            open={open}
+            setOpen={setOpen}
+            trackingLocation="contract table"
+          />
+        )}
       </>
     )
   }
@@ -95,17 +97,19 @@ export function ResolveButton(props: {
         >
           Resolve
         </Button>
-        <Modal open={open} setOpen={setOpen}>
-          <Col className={MODAL_CLASS}>
-            <Col className="w-full">
-              <SmallResolutionPanel
-                contract={contract}
-                user={user}
-                setOpen={setOpen}
-              />
+        {open && (
+          <Modal open={open} setOpen={setOpen}>
+            <Col className={MODAL_CLASS}>
+              <Col className="w-full">
+                <SmallResolutionPanel
+                  contract={contract}
+                  user={user}
+                  setOpen={setOpen}
+                />
+              </Col>
             </Col>
-          </Col>
-        </Modal>
+          </Modal>
+        )}
       </>
     )
   }

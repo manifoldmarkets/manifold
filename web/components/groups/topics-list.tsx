@@ -33,11 +33,11 @@ import { GroupSelector } from 'web/components/groups/group-selector'
 import { CreateGroupModal } from 'web/components/groups/create-group-modal'
 import { GroupOptions } from 'web/components/groups/group-options'
 
-export function GroupsList(props: {
-  groups: Group[]
+export function TopicsList(props: {
+  topics: Group[]
   loadMore?: () => Promise<boolean>
-  currentCategorySlug?: string
-  setCurrentCategory: (categoryId: string) => void
+  currentTopicSlug?: string
+  setCurrentTopicSlug: (slug: string) => void
   privateUser: PrivateUser | null | undefined
   user: User | null | undefined
   yourGroupIds?: string[]
@@ -45,12 +45,12 @@ export function GroupsList(props: {
   setShow: (show: boolean) => void
 }) {
   const {
-    groups,
-    currentCategorySlug,
+    topics,
+    currentTopicSlug,
     yourGroupIds,
     privateUser,
     user,
-    setCurrentCategory,
+    setCurrentTopicSlug,
     show,
     setShow,
   } = props
@@ -77,21 +77,21 @@ export function GroupsList(props: {
         </Row>
         {user && privateUser && (
           <ForYouButton
-            setCurrentCategory={setCurrentCategory}
+            setCurrentCategory={setCurrentTopicSlug}
             privateUser={privateUser}
-            currentCategorySlug={currentCategorySlug}
+            currentCategorySlug={currentTopicSlug}
             user={user}
           />
         )}
-        {groups.length > 0 &&
-          groups.map((group) => (
+        {topics.length > 0 &&
+          topics.map((group) => (
             <GroupButton
               key={group.id}
               group={group}
               yourGroupIds={yourGroupIds}
               user={user}
-              currentCategorySlug={currentCategorySlug}
-              setCurrentCategory={setCurrentCategory}
+              currentCategorySlug={currentTopicSlug}
+              setCurrentCategory={setCurrentTopicSlug}
             />
           ))}
       </Col>
@@ -140,7 +140,7 @@ export const ForYouButton = (props: {
           }
         />
         <Row className={'items-center justify-between'}>
-          <span>Your topics</span>
+          <span>For you</span>
           <DropdownMenu
             Items={groupOptionItems}
             Icon={<CogIcon className=" text-ink-600 h-5 w-5" />}
@@ -229,28 +229,39 @@ export const GroupButton = (props: {
 
   const isPrivate = group.privacyStatus == 'private'
   const follow = user
-    ? withTracking(() => {
-        setLoading(true)
-        joinGroup({ groupId: group.id })
-          .then(() => {
-            setIsMember(true)
-            toast(`You're now following ${group.name}!`)
-          })
-          .catch((e) => {
-            console.error(e)
-            toast.error('Failed to follow category')
-          })
-          .finally(() => setLoading(false))
-      }, 'join group')
+    ? withTracking(
+        () => {
+          setLoading(true)
+          joinGroup({ groupId: group.id })
+            .then(() => {
+              setIsMember(true)
+              toast(`You're now following ${group.name}!`)
+            })
+            .catch((e) => {
+              console.error(e)
+              toast.error('Failed to follow category')
+            })
+            .finally(() => setLoading(false))
+        },
+        'join group',
+        { slug: group.slug }
+      )
     : firebaseLogin
   const unfollow = user
-    ? withTracking(() => {
-        leaveGroup(group.id, user.id)
-          .then(() => setIsMember(false))
-          .catch(() => {
-            toast.error('Failed to unfollow category')
-          })
-      }, 'leave group')
+    ? withTracking(
+        () => {
+          leaveGroup(group.id, user.id)
+            .then(() => {
+              setIsMember(false)
+              toast(`You're not longer following ${group.name}.`)
+            })
+            .catch(() => {
+              toast.error('Failed to unfollow category')
+            })
+        },
+        'leave group',
+        { slug: group.slug }
+      )
     : firebaseLogin
   return (
     <button
@@ -273,7 +284,12 @@ export const GroupButton = (props: {
       <Row className={'w-full items-center justify-between'}>
         <span>{removeEmojis(group.name)}</span>
         {!isPrivate && !isCreator && !isMember && (
-          <button onClick={follow}>
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              follow()
+            }}
+          >
             {loading ? (
               <LoadingIndicator size={'sm'} />
             ) : (

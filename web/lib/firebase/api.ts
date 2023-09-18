@@ -273,9 +273,8 @@ export function supabaseSearchContracts(params: {
   contractType: ContractTypeType
   offset: number
   limit: number
-  topic?: string
   fuzzy?: boolean
-  groupId?: string
+  topicSlug?: string
   creatorId?: string
 }) {
   return maybeAuthedCall(
@@ -294,7 +293,7 @@ export function supabaseSearchContractsWithDefaults(params: {
   limit?: number
   topic?: string
   fuzzy?: boolean
-  groupId?: string
+  topicSlug?: string
   creatorId?: string
 }) {
   const {

@@ -1,8 +1,8 @@
-import { CATEGORY_KEY, Group } from 'common/group'
+import { TOPIC_KEY, Group } from 'common/group'
 import { User } from 'common/user'
 import { uniqBy } from 'lodash'
 import { useEffect, useState } from 'react'
-import { GroupsList } from 'web/components/groups/groups-list'
+import { TopicsList } from 'web/components/groups/topics-list'
 import { getMyGroupRoles } from 'web/lib/supabase/groups'
 import { usePersistentQueryState } from 'web/hooks/use-persistent-query-state'
 import { Col } from 'web/components/layout/col'
@@ -54,7 +54,7 @@ export default function TopicSidebar() {
   ) as Group[]
 
   const [categorySlug, setCategorySlug] = usePersistentQueryState<string>(
-    CATEGORY_KEY,
+    TOPIC_KEY,
     ''
   )
   const [show, setShow] = useState<boolean>(false)
@@ -109,7 +109,7 @@ export default function TopicSidebar() {
               !user && BLOCKED_BY_DEFAULT_GROUP_SLUGS
             ),
             excludeUserIds: privateUser?.blockedUserIds,
-            groupId: categorySlug !== '' ? categorySlug : undefined,
+            topicSlug: categorySlug !== '' ? categorySlug : undefined,
           }}
           useUrlParams
           isWholePage
@@ -118,11 +118,11 @@ export default function TopicSidebar() {
           hideAvatar={show}
         />
       </Col>
-      <GroupsList
+      <TopicsList
         key={'groups' + topics.length}
-        groups={topics}
-        currentCategorySlug={categorySlug}
-        setCurrentCategory={setCategorySlug}
+        topics={topics}
+        currentTopicSlug={categorySlug}
+        setCurrentTopicSlug={setCategorySlug}
         privateUser={privateUser}
         user={user}
         yourGroupIds={yourGroupIds}

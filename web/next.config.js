@@ -127,7 +127,7 @@ module.exports = {
       },
       {
         source: '/group/:slug*',
-        destination: '/questions?category=:slug*',
+        destination: '/questions?topic=:slug*',
         permanent: true,
       },
       // NOTE: add any external redirects at common/envs/constants.ts and update native apps.

@@ -45,7 +45,7 @@ export type GroupLink = {
 }
 
 export function groupPath(groupSlug: string) {
-  return `/questions?${CATEGORY_KEY}=${groupSlug}`
+  return `/questions?${TOPIC_KEY}=${groupSlug}`
 }
 
 export const GroupsByTopic = {
@@ -71,5 +71,5 @@ export const GroupsByTopic = {
   // grey: ['cgp-grey'],
 }
 // note: changing these breaks old urls. if you do, make sure to update omnisearch and opensearch.xml
-export const CATEGORY_KEY = 'category'
+export const TOPIC_KEY = 'topic'
 export type GroupRole = 'admin' | 'moderator' | 'member'

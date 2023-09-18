@@ -21,7 +21,7 @@ import { useState } from 'react'
 import { Row } from 'web/components/layout/row'
 import { orderBy, sum, uniqBy } from 'lodash'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
-import { CategoryTag } from 'web/components/groups/category-tag'
+import { TopicTag } from 'web/components/groups/topic-tag'
 
 const MAX_PARENT_COMMENTS_PER_FEED_ITEM = 1
 export const MIN_BET_AMOUNT = 20
@@ -168,11 +168,7 @@ export function CategoryTags(props: {
   return (
     <Row className={clsx(className)}>
       {categories.slice(0, maxGroups).map((category) => (
-        <CategoryTag
-          location={'feed card'}
-          key={category.slug}
-          category={category}
-        />
+        <TopicTag location={'feed card'} key={category.slug} topic={category} />
       ))}
     </Row>
   )

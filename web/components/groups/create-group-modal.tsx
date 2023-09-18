@@ -1,6 +1,6 @@
 import clsx from 'clsx'
 import {
-  CATEGORY_KEY,
+  TOPIC_KEY,
   MAX_GROUP_NAME_LENGTH,
   PrivacyStatusType,
 } from 'common/group'
@@ -77,7 +77,7 @@ export function CreateGroupModal(props: {
           ) {
             clearInterval(intervalId) // Clear the interval
             if (goToGroupOnSubmit) {
-              router.push(`questions?${CATEGORY_KEY}=${result.group.slug}`)
+              router.push(`questions?${TOPIC_KEY}=${result.group.slug}`)
             } else if (addGroupIdParamOnSubmit) {
               router.replace({
                 pathname: router.pathname,
