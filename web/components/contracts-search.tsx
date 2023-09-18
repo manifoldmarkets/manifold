@@ -35,7 +35,6 @@ import { useGroupFromRouter } from 'web/hooks/use-group-from-router'
 import { useGroupFromSlug } from 'web/hooks/use-group-supabase'
 import { CATEGORY_KEY } from 'common/group'
 import { CategoryTag } from 'web/components/groups/category-tag'
-import { TOPIC_SEARCH_TERM } from 'web/components/groups/group-search'
 
 const CONTRACTS_PER_PAGE = 40
 
@@ -448,7 +447,6 @@ function SupabaseContractSearchControls(props: {
     [FILTER_KEY]: defaultFilter,
     [CONTRACT_TYPE_KEY]: defaultContractType,
     [CATEGORY_KEY]: '',
-    [TOPIC_SEARCH_TERM]: '',
   }
 
   const [state, setState] = useUrlParams
@@ -570,7 +568,7 @@ function SupabaseContractSearchControls(props: {
             includeProbSorts={includeProbSorts}
             currentCategorySlug={category}
             clearCategory={() => {
-              setState({ [TOPIC_SEARCH_TERM]: '', [CATEGORY_KEY]: '' })
+              setState({ [CATEGORY_KEY]: '' })
             }}
           />
         )}

@@ -22,7 +22,7 @@ export default function Search() {
         />
         <Col className="mx-auto w-full">
           <Title className="hidden lg:flex">Questions</Title>
-          <GroupSearch persistPrefix={'groups-search'} />
+          <GroupSearch />
         </Col>
       </Page>
     </>

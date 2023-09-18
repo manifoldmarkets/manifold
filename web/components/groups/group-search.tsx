@@ -1,11 +1,9 @@
 import { CATEGORY_KEY, Group } from 'common/group'
 import { User } from 'common/user'
-import { isEqual, uniqBy } from 'lodash'
-import { useEffect, useRef, useState } from 'react'
+import { uniqBy } from 'lodash'
+import { useEffect, useState } from 'react'
 import { GroupsList } from 'web/components/groups/groups-list'
-import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
-import { inMemoryStore } from 'web/hooks/use-persistent-state'
-import { getMyGroupRoles, searchGroups } from 'web/lib/supabase/groups'
+import { getMyGroupRoles } from 'web/lib/supabase/groups'
 import { usePersistentQueryState } from 'web/hooks/use-persistent-query-state'
 import { Col } from 'web/components/layout/col'
 import { removeEmojis } from 'common/topics'
@@ -27,8 +25,6 @@ import { useRouter } from 'next/router'
 import { Button } from 'web/components/buttons/button'
 import { MenuIcon } from '@heroicons/react/outline'
 import { useTrendingGroupsSearchResults } from 'web/components/search/query-groups'
-import { useEvent } from 'web/hooks/use-event'
-import { useSafeLayoutEffect } from 'web/hooks/use-safe-layout-effect'
 import { useGroupFromRouter } from 'web/hooks/use-group-from-router'
 export type GroupState = {
   groups: Group[] | undefined
@@ -36,25 +32,13 @@ export type GroupState = {
   shouldLoadMore: boolean
 }
 
-const INITIAL_STATE = {
-  groups: undefined,
-  fuzzyGroupOffset: 0,
-  shouldLoadMore: true,
-}
-
 const GROUPS_PER_PAGE = 100
-export const TOPIC_SEARCH_TERM = 'cs'
+export const SHOW_TOPICS_TERM = 'show-topics'
 
-export default function GroupSearch(props: { persistPrefix: string }) {
-  const { persistPrefix } = props
+export default function GroupSearch() {
   const user = useUser()
   const yourGroupIds = useMemberGroupIds(user?.id)
-  const [state, setState] = usePersistentInMemoryState<GroupState>(
-    INITIAL_STATE,
-    `${persistPrefix}-supabase-search`
-  )
   const isMobile = useIsMobile()
-
   const router = useRouter()
   const { q } = router.query
   // Allow users to browse without keyboard popping up on mobile.
@@ -62,107 +46,37 @@ export default function GroupSearch(props: { persistPrefix: string }) {
 
   const shouldFilterDestiny = useShouldBlockDestiny(user?.id)
 
-  const searchTerm = useRef<string>('')
-  const searchTermStore = inMemoryStore<string>()
-
   const trendingGroups = useTrendingGroupsSearchResults(
     '',
     100,
-    false
+    false,
+    'home-page-trending-topics'
   ) as Group[]
 
-  const [groupSearchTerm, setGroupSearchTerm] = usePersistentQueryState(
-    TOPIC_SEARCH_TERM,
-    ''
-  )
-
-  useSafeLayoutEffect(() => {
-    const params = searchTermStore.get(`${persistPrefix}-params`)
-    if (params !== undefined) {
-      searchTerm.current = params
-    }
-  }, [])
   const [categorySlug, setCategorySlug] = usePersistentQueryState<string>(
     CATEGORY_KEY,
     ''
   )
-  const [show, setShow] = useState(false)
+  const [show, setShow] = useState<boolean>(false)
 
-  // Counts as loaded if you are on the page and a query finished or if you go back in history.
-  const [hasLoadedQuery, setHasLoadedQuery] = usePersistentInMemoryState(
-    false,
-    `${persistPrefix}-group-search-has-loaded`
-  )
-  const unshiftGroups = useEvent(async (freshState: GroupState) => {
-    if (searchTerm.current == null) {
-      return false
-    }
-    if (searchTerm.current == '' && trendingGroups) {
-      setState({
-        fuzzyGroupOffset: 0,
-        groups: trendingGroups,
-        shouldLoadMore: false,
-      })
-      return
-    }
-    const res = await searchGroups({
-      state: freshState,
-      term: searchTerm.current,
-      offset: 0,
-      limit: GROUPS_PER_PAGE,
-    })
-    const newGroups: Group[] = res.data
-    setState((prev) => ({
-      fuzzyGroupOffset: 0,
-      groups: newGroups.concat(trendingGroups ?? prev.groups ?? []),
-      shouldLoadMore: false,
-    }))
-  })
-  const onSearchTermChanged = useRef((params: string) => {
-    if (!isEqual(searchTerm.current, params) || !hasLoadedQuery) {
-      setHasLoadedQuery(true)
-      if (persistPrefix) {
-        searchTermStore.set(`${persistPrefix}-params`, params)
-      }
-      searchTerm.current = params
-      const freshState = {
-        ...INITIAL_STATE,
-      }
-      unshiftGroups(freshState)
-    }
-  }).current
-
-  useEffect(() => {
-    onSearchTermChanged(groupSearchTerm)
-  }, [groupSearchTerm])
-
-  useEffect(() => {
-    if (trendingGroups.length)
-      setState((prev) => ({
-        ...prev,
-        groups: (prev.groups ?? []).concat(trendingGroups),
-      }))
-  }, [trendingGroups.length])
-  const { groups: myGroups } = useGroupRoles(user)
+  const { groups: myTopics } = useGroupRoles(user)
   const privateUser = usePrivateUser()
 
-  const resultGroups = state.groups
-
-  const groups = (
-    groupSearchTerm || !resultGroups
-      ? uniqBy(resultGroups, (g) => removeEmojis(g.name).toLowerCase())
-      : combineGroupsByImportance(resultGroups, myGroups)
+  const topicsByImportance = (
+    categorySlug || !trendingGroups
+      ? uniqBy(trendingGroups, (g) => removeEmojis(g.name).toLowerCase())
+      : combineGroupsByImportance(trendingGroups, myTopics)
   ).filter((g) => !privateUser?.blockedGroupSlugs.includes(g.slug))
-  const categoryFromRouter = useGroupFromRouter(categorySlug, groups)
-
-  useEffect(() => {
-    const { isReady } = router
-    if (isReady && !router.query[TOPIC_SEARCH_TERM]) {
-      setGroupSearchTerm('')
-    } else if (isReady && groupSearchTerm && !categorySlug) {
-      setShow(true)
-    }
-  }, [groupSearchTerm])
+  const topicFromRouter = useGroupFromRouter(categorySlug, topicsByImportance)
+  const topics = buildArray(
+    topicFromRouter &&
+      !topicsByImportance
+        .map((g) => g.slug)
+        .slice(0, 10)
+        .includes(topicFromRouter.slug) &&
+      (topicFromRouter as Group),
+    topicsByImportance
+  )
 
   const menuButton = show ? null : (
     <Button
@@ -205,26 +119,9 @@ export default function GroupSearch(props: { persistPrefix: string }) {
           hideAvatar={show}
         />
       </Col>
-      {/*<Input*/}
-      {/*  type="text"*/}
-      {/*  inputMode="search"*/}
-      {/*  value={inputTerm}*/}
-      {/*  onChange={(e) => setInputTerm(e.target.value)}*/}
-      {/*  placeholder="Search categories"*/}
-      {/*  className={'m-2'}*/}
-      {/*  inputSize={'sm'}*/}
-      {/*/>*/}
       <GroupsList
-        key={'groups' + groups.length}
-        groups={buildArray(
-          categoryFromRouter &&
-            !groups
-              .map((g) => g.slug)
-              .slice(0, 10)
-              .includes(categoryFromRouter.slug) &&
-            (categoryFromRouter as Group),
-          groups
-        )}
+        key={'groups' + topics.length}
+        groups={topics}
         currentCategorySlug={categorySlug}
         setCurrentCategory={setCategorySlug}
         privateUser={privateUser}
