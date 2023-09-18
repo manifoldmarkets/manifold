@@ -1,8 +1,11 @@
 import { JSONContent } from '@tiptap/core'
 import { JSONEmpty } from '../contract/contract-description'
 import { Col } from '../layout/col'
-import { Content } from '../widgets/editor'
+import { Content, TextEditor } from '../widgets/editor'
 import clsx from 'clsx'
+import { Editor } from '@tiptap/react'
+import { useState } from 'react'
+import { Button } from '../buttons/button'
 
 export const DashboardSidebar = (props: {
   description?: JSONContent
@@ -10,7 +13,10 @@ export const DashboardSidebar = (props: {
 }) => {
   const { description, inSidebar } = props
 
-  if (!description || JSONEmpty(description)) return <></>
+  const noDescription = !description || JSONEmpty(description)
+  if (noDescription) {
+    return <></>
+  }
 
   return (
     <Col className={clsx(inSidebar ? 'hidden xl:inline-flex' : 'xl:hidden')}>

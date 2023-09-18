@@ -17,6 +17,14 @@ import { updateDashboard } from 'web/lib/firebase/api'
 import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
 import Custom404 from '../404'
 import { useDashboardFromSlug } from 'web/hooks/use-dashboard'
+import { TextEditor, useTextEditor } from 'web/components/widgets/editor'
+import { MAX_DESCRIPTION_LENGTH } from 'common/contract'
+import { useIsMobile } from 'web/hooks/use-is-mobile'
+import { JSONEmpty } from 'web/components/contract/contract-description'
+import clsx from 'clsx'
+import { JSONContent } from '@tiptap/core'
+import { Editor } from '@tiptap/react'
+import { PlusIcon } from '@heroicons/react/solid'
 
 export async function getStaticProps(ctx: {
   params: { dashboardSlug: string }
@@ -76,12 +84,28 @@ export default function DashboardPage(props: {
     return <Custom404 />
   }
 
+  const editor = useTextEditor({
+    key: `edit dashboard ${slug}`,
+    max: MAX_DESCRIPTION_LENGTH,
+    defaultValue: dashboard.description,
+    placeholder: 'Optional. Provide background info and details.',
+  })
+
+  const isNotXl = useIsMobile(1280)
+
   return (
     <Page
       trackPageView={'dashboard slug page'}
       trackPageProps={{ slug: dashboard.slug, title: dashboard.title }}
       rightSidebar={
-        <DashboardSidebar description={dashboard.description} inSidebar />
+        editMode && !isNotXl ? (
+          <DescriptionEditor
+            editor={editor}
+            description={dashboard.description}
+          />
+        ) : (
+          <DashboardSidebar description={dashboard.description} inSidebar />
+        )
       }
     >
       <Col className="items-center">
@@ -111,8 +135,15 @@ export default function DashboardPage(props: {
               )}
             </Row>
           </Row>
-
-          <DashboardSidebar description={dashboard.description} />
+          {editMode && isNotXl ? (
+            <DescriptionEditor
+              editor={editor}
+              description={dashboard.description}
+              className="mb-4"
+            />
+          ) : (
+            <DashboardSidebar description={dashboard.description} />
+          )}
           <DashboardContent
             items={dashboard.items}
             onRemove={(slugOrUrl: string) => {
@@ -153,25 +184,21 @@ export default function DashboardPage(props: {
                 <Button
                   disabled={dashboard.items.length < 2}
                   onClick={() => {
-                    if (
-                      dashboard !== fetchedDashboard &&
-                      dashboard !== initialDashboard
-                    ) {
-                      updateDashboard({
-                        dashboardId: dashboard.id,
-                        items: dashboard.items,
-                      }).then((resultingDashboard) => {
-                        if (
-                          resultingDashboard &&
-                          resultingDashboard.updateDashboard
-                        ) {
-                          setDashboard(
-                            resultingDashboard.updateDashboard as Dashboard
-                          )
-                        }
-                      })
-                      setEditMode(false)
-                    }
+                    updateDashboard({
+                      dashboardId: dashboard.id,
+                      items: dashboard.items,
+                      description: editor?.getJSON(),
+                    }).then((resultingDashboard) => {
+                      if (
+                        resultingDashboard &&
+                        resultingDashboard.updateDashboard
+                      ) {
+                        setDashboard(
+                          resultingDashboard.updateDashboard as Dashboard
+                        )
+                      }
+                    })
+                    setEditMode(false)
                   }}
                 >
                   Save
@@ -183,4 +210,30 @@ export default function DashboardPage(props: {
       </Col>
     </Page>
   )
+}
+
+function DescriptionEditor(props: {
+  description: JSONContent
+  editor: Editor | null
+  className?: string
+}) {
+  const { description, editor, className } = props
+  const [editDescription, setEditDescription] = useState(false)
+  const noDescription = !description || JSONEmpty(description)
+  if (noDescription && !editDescription) {
+    return (
+      <Button
+        className={clsx(className, 'w-full')}
+        color="gray-outline"
+        onClick={() => setEditDescription(true)}
+      >
+        <PlusIcon className="mr-2 h-5 w-5" />
+        Add description
+      </Button>
+    )
+  }
+  if (editor) {
+    return <TextEditor editor={editor} className={className} />
+  }
+  return <></>
 }
