@@ -80,9 +80,6 @@ export default function DashboardPage(props: {
   const user = useUser()
   const canEdit = dashboard.creator_id === user?.id
   const [editMode, setEditMode] = useState(false)
-  if (!dashboard) {
-    return <Custom404 />
-  }
 
   const editor = useTextEditor({
     key: `edit dashboard ${slug}`,
@@ -92,6 +89,9 @@ export default function DashboardPage(props: {
   })
 
   const isNotXl = useIsMobile(1280)
+  if (!dashboard) {
+    return <Custom404 />
+  }
 
   return (
     <Page
