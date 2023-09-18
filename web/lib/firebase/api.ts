@@ -524,6 +524,6 @@ export function updateDashboard(params: {
   return call(getApiUrl('updatedashboard'), 'POST', params)
 }
 
-export function getDashboardFromSlug(params: { slug: string }) {
+export function getDashboardFromSlug(params: { dashboardSlug: string }) {
   return call(getApiUrl('getdashboardfromslug'), 'POST', params)
 }

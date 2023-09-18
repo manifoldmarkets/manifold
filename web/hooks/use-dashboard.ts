@@ -10,7 +10,7 @@ export function useDashboardFromSlug(slug: string) {
   )
 
   useEffect(() => {
-    getDashboardFromSlug({ slug }).then((result) => {
+    getDashboardFromSlug({ dashboardSlug: slug }).then((result) => {
       setDashboard(result.dashboard as Dashboard)
     })
   }, [slug])
