@@ -22,7 +22,7 @@ import DropdownMenu, {
 } from 'web/components/comments/dropdown-menu'
 import { Button } from 'web/components/buttons/button'
 import { MdOutlineKeyboardDoubleArrowRight } from 'react-icons/md'
-import { withTracking } from 'web/lib/service/analytics'
+import { track, withTracking } from 'web/lib/service/analytics'
 import { joinGroup } from 'web/lib/firebase/api'
 import toast from 'react-hot-toast'
 import { firebaseLogin, updatePrivateUser } from 'web/lib/firebase/users'
@@ -265,9 +265,10 @@ export const GroupButton = (props: {
     : firebaseLogin
   return (
     <button
-      onClick={() =>
+      onClick={() => {
+        if (currentCategorySlug !== group.slug) track('select sidebar topic')
         setCurrentCategory(currentCategorySlug === group.slug ? '' : group.slug)
-      }
+      }}
       className={clsx(
         'relative my-2 w-full flex-row flex-wrap px-2 py-4 text-left text-sm ',
         currentCategorySlug == group.slug ? 'bg-canvas-50 ' : ''
