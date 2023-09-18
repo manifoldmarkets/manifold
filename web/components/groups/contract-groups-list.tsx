@@ -9,11 +9,11 @@ import {
   addContractToGroup,
   removeContractFromGroup,
 } from 'web/lib/firebase/api'
-import { CategoryTag } from 'web/pages/groups'
 import { GroupSelector } from './group-selector'
 import { useGroupsWithContract } from 'web/hooks/use-group-supabase'
 import { useState } from 'react'
 import { XIcon } from '@heroicons/react/outline'
+import { CategoryTag } from 'web/components/groups/category-tag'
 
 export function ContractGroupsList(props: {
   contract: Contract
@@ -30,7 +30,7 @@ export function ContractGroupsList(props: {
   return (
     <Col className={'gap-2'}>
       <span className={'text-primary-700 text-xl'}>
-        <Link href={'/groups/'}>Categories</Link>
+        <Link href={'/categories/'}>Categories</Link>
       </span>
       <Col className="h-96 justify-between overflow-auto">
         <Col>
@@ -75,7 +75,7 @@ export function ContractGroupsList(props: {
           {canEdit && (
             <Col className={'my-2 items-center justify-between p-0.5'}>
               <Row className="text-ink-400 w-full justify-start text-sm">
-                Add categories
+                Add topics
               </Row>
               <GroupSelector
                 ignoreGroupIds={groups.map((g) => g.id)}

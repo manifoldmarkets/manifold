@@ -1,4 +1,4 @@
-import { ChevronDownIcon } from '@heroicons/react/outline'
+import { ChevronDownIcon, XIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import Router from 'next/router'
 import { ArrowRightIcon } from '@heroicons/react/solid'
@@ -26,13 +26,17 @@ import { Carousel } from './widgets/carousel'
 import { Input } from './widgets/input'
 import { useTrendingGroupsSearchResults } from 'web/components/search/query-groups'
 import { GROUP_SLUGS_TO_HIDE_FROM_PILL_SEARCH } from 'common/envs/constants'
-import { getGroup } from 'web/lib/supabase/group'
 import { buildArray } from 'common/util/array'
-import { SearchGroupInfo } from 'web/lib/supabase/groups'
 import {
   usePartialUpdater,
   usePersistentQueriesState,
 } from 'web/hooks/use-persistent-query-state'
+import { useGroupFromRouter } from 'web/hooks/use-group-from-router'
+import { useGroupFromSlug } from 'web/hooks/use-group-supabase'
+import { CATEGORY_KEY } from 'common/group'
+import { CategoryTag } from 'web/components/groups/category-tag'
+import Link from 'next/link'
+import { linkClass } from 'web/components/widgets/site-link'
 
 const CONTRACTS_PER_PAGE = 40
 
@@ -117,8 +121,6 @@ export type SupabaseSearchParameters = {
   category: string
 }
 
-// note: changing these breaks old urls. if you do, make sure to update omnisearch and opensearch.xml
-const CATEGORY_KEY = 'category'
 const QUERY_KEY = 'q'
 const SORT_KEY = 's'
 const FILTER_KEY = 'f'
@@ -166,6 +168,9 @@ export function SupabaseContractSearch(props: {
   headerClassName?: string
   inputRowClassName?: string
   isWholePage?: boolean
+  menuButton?: ReactNode
+  hideAvatar?: boolean
+  setTopicSearchTerm?: (term: string) => void
 
   // used to determine if search params should be updated in the URL
   useUrlParams?: boolean
@@ -197,6 +202,8 @@ export function SupabaseContractSearch(props: {
     listViewDisabled,
     showCategories,
     hideFilters,
+    menuButton,
+    hideAvatar,
   } = props
 
   const [state, setState] = usePersistentInMemoryState<SearchState>(
@@ -336,9 +343,35 @@ export function SupabaseContractSearch(props: {
         showCategories={showCategories}
         hideFilters={hideFilters}
         excludeGroupSlugs={additionalFilter?.excludeGroupSlugs}
+        menuButton={menuButton}
       />
       {contracts && contracts.length === 0 ? (
-        emptyState ?? (searchParams.current?.query ? <NoResults /> : <Empty />)
+        emptyState ??
+        (searchParams.current?.query ? (
+          <NoResults />
+        ) : (
+          <div className="text-ink-700 mx-2 my-6 text-center">
+            No questions yet
+            {searchParams.current?.category && (
+              <span className={'ml-1'}>
+                in this topic.{' '}
+                <Link
+                  className={clsx(linkClass, 'underline')}
+                  href={
+                    '/create?params=' +
+                    encodeURIComponent(
+                      JSON.stringify({
+                        groupSlugs: [searchParams.current.category],
+                      })
+                    )
+                  }
+                >
+                  Why not add one?
+                </Link>
+              </span>
+            )}
+          </div>
+        ))
       ) : (
         <ContractsList
           key={
@@ -353,15 +386,12 @@ export function SupabaseContractSearch(props: {
           highlightContractIds={highlightContractIds}
           headerClassName={clsx(headerClassName, '!top-14')}
           hideActions={hideActions}
+          hideAvatar={hideAvatar}
         />
       )}
     </Col>
   )
 }
-
-const Empty = () => (
-  <div className="text-ink-700 mx-2 my-6 text-center">No questions yet</div>
-)
 
 const NoResults = () => {
   const [message] = useState(
@@ -396,6 +426,7 @@ function SupabaseContractSearchControls(props: {
   showCategories?: boolean
   hideFilters?: boolean
   excludeGroupSlugs?: string[]
+  menuButton?: ReactNode
 }) {
   const {
     className,
@@ -411,6 +442,7 @@ function SupabaseContractSearchControls(props: {
     inputRowClassName,
     hideFilters,
     excludeGroupSlugs,
+    menuButton,
   } = props
 
   const defaults = {
@@ -445,17 +477,7 @@ function SupabaseContractSearchControls(props: {
       )
     : []
 
-  const [categoryFromRouter, setCategoryFromRouter] =
-    useState<SearchGroupInfo>()
-  useEffect(() => {
-    if (category) {
-      if (!categoryPills.some((g) => g.id === category)) {
-        getGroup(category).then((g) => setCategoryFromRouter(g ?? undefined))
-      }
-    } else {
-      setCategoryFromRouter(undefined)
-    }
-  }, [category])
+  const categoryFromRouter = useGroupFromRouter(category, categoryPills)
 
   const filter =
     sort === 'close-date'
@@ -516,24 +538,27 @@ function SupabaseContractSearchControls(props: {
   }, [query, sort, filter, category, contractType, isAuth])
 
   return (
-    <Col className={clsx('bg-canvas-50 sticky top-0 z-30 mb-2', className)}>
+    <Col className={clsx('bg-canvas-50 sticky top-0 z-30 ', className)}>
       <Col
         className={clsx(
           'mb-1 items-stretch gap-2 pb-1 pt-px sm:gap-2',
           inputRowClassName
         )}
       >
-        <Input
-          type="text"
-          inputMode="search"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onBlur={trackCallback('search', { query: query })}
-          placeholder="Search questions"
-          className="w-full"
-          autoFocus={autoFocus}
-          showClearButton={query !== ''}
-        />
+        <Row>
+          <Input
+            type="text"
+            inputMode="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onBlur={trackCallback('search', { query: query })}
+            placeholder="Search questions"
+            className="w-full"
+            autoFocus={autoFocus}
+            showClearButton={query !== ''}
+          />
+          {menuButton}
+        </Row>
         {!hideFilters && (
           <SearchFilters
             filter={filter}
@@ -545,6 +570,10 @@ function SupabaseContractSearchControls(props: {
             hideOrderSelector={hideOrderSelector}
             className={'flex flex-row gap-2'}
             includeProbSorts={includeProbSorts}
+            currentCategorySlug={category}
+            clearCategory={() => {
+              setState({ [CATEGORY_KEY]: '' })
+            }}
           />
         )}
       </Col>
@@ -576,7 +605,7 @@ function SupabaseContractSearchControls(props: {
             <PillButton
               key={'pill-all-categories'}
               selected={false}
-              onSelect={() => Router.push('/groups')}
+              onSelect={() => Router.push('/categories')}
             >
               See all categories{' '}
               <ArrowRightIcon className="inline-block h-4 w-4" />
@@ -596,6 +625,8 @@ export function SearchFilters(props: {
   contractType: string
   selectContractType: (selection: ContractTypeType) => void
   hideOrderSelector: boolean | undefined
+  currentCategorySlug: string | undefined
+  clearCategory: () => void
   className?: string
   includeProbSorts?: boolean
 }) {
@@ -609,8 +640,10 @@ export function SearchFilters(props: {
     hideOrderSelector,
     className,
     includeProbSorts,
+    currentCategorySlug,
+    clearCategory,
   } = props
-
+  const category = useGroupFromSlug(currentCategorySlug ?? '')
   const hideFilter =
     sort === 'resolve-date' ||
     sort === 'close-date' ||
@@ -637,7 +670,7 @@ export function SearchFilters(props: {
           )}
           Icon={
             <Row className=" items-center gap-0.5 ">
-              <span className="whitespace-nowrap text-sm font-medium text-gray-500">
+              <span className="text-ink-500 whitespace-nowrap text-sm font-medium">
                 {sortLabel}
               </span>
               <ChevronDownIcon className="h-4 w-4 text-gray-500" />
@@ -653,8 +686,8 @@ export function SearchFilters(props: {
         <DropdownMenu
           Items={generateFilterDropdownItems(FILTERS, selectFilter)}
           Icon={
-            <Row className="items-center gap-0.5">
-              <span className="truncate whitespace-nowrap text-sm font-medium text-gray-500">
+            <Row className=" items-center gap-0.5 ">
+              <span className="text-ink-500 whitespace-nowrap text-sm font-medium">
                 {filterLabel}
               </span>
               <ChevronDownIcon className="h-4 w-4 text-gray-500" />
@@ -669,8 +702,8 @@ export function SearchFilters(props: {
       <DropdownMenu
         Items={generateFilterDropdownItems(CONTRACT_TYPES, selectContractType)}
         Icon={
-          <Row className="items-center gap-0.5 ">
-            <span className="whitespace-nowrap text-sm font-medium text-gray-500">
+          <Row className=" items-center gap-0.5 ">
+            <span className="text-ink-500 whitespace-nowrap text-sm font-medium">
               {contractTypeLabel}
             </span>
             <ChevronDownIcon className="h-4 w-4 text-gray-500" />
@@ -681,6 +714,32 @@ export function SearchFilters(props: {
         selectedItemName={contractTypeLabel}
         closeOnClick={true}
       />
+      {currentCategorySlug == category?.slug && category && (
+        <CategoryTag
+          className={'text-primary-500 !py-0'}
+          category={category}
+          location={'questions page'}
+        >
+          <button onClick={clearCategory}>
+            <XIcon className="hover:text-ink-700 text-ink-400 ml-1 h-4 w-4" />
+          </button>
+        </CategoryTag>
+      )}
+      {currentCategorySlug === 'for-you' && (
+        <Row
+          className={
+            'text-primary-500 dark:text-ink-400 hover:text-ink-600 hover:bg-primary-400/10 group items-center justify-center whitespace-nowrap rounded px-1 text-right text-sm transition-colors'
+          }
+        >
+          <span className="mr-px opacity-50 transition-colors group-hover:text-inherit">
+            #
+          </span>
+          Your topics
+          <button onClick={clearCategory}>
+            <XIcon className="hover:text-ink-700 text-ink-400 ml-1 h-4 w-4" />
+          </button>
+        </Row>
+      )}
     </div>
   )
 }

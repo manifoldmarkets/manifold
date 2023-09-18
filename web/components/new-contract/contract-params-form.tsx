@@ -53,16 +53,16 @@ import { useTextEditor } from 'web/components/widgets/editor'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { createMarket, getSimilarGroupsToContract } from 'web/lib/firebase/api'
 import { track } from 'web/lib/service/analytics'
-import { getGroup } from 'web/lib/supabase/group'
+import { getGroup, getGroupFromSlug } from 'web/lib/supabase/group'
 import { safeLocalStorage } from 'web/lib/util/local'
 import { Col } from '../layout/col'
 import { BuyAmountInput } from '../widgets/amount-input'
 import { getContractTypeThingFromValue } from './create-contract-types'
-import { CategoryTag } from 'web/pages/groups'
 import { ContractVisibilityType, NewQuestionParams } from './new-contract-panel'
 import { VisibilityTheme } from 'web/pages/create'
 import { getContractWithFields } from 'web/lib/supabase/contracts'
 import { filterDefined } from 'common/util/array'
+import { CategoryTag } from 'web/components/groups/category-tag'
 
 export function ContractParamsForm(props: {
   creator: User
@@ -71,7 +71,10 @@ export function ContractParamsForm(props: {
   params?: NewQuestionParams
 }) {
   const { creator, params, setPrivacy, outcomeType } = props
-  const paramsKey = params?.q ?? '' + params?.groupIds?.join('') ?? ''
+  const paramsKey =
+    (params?.q ?? '') +
+    (params?.groupSlugs?.join('') ?? '') +
+    (params?.groupIds?.join('') ?? '')
   const [minString, setMinString] = usePersistentLocalState(
     params?.min?.toString() ?? '',
     'new-min' + paramsKey
@@ -125,6 +128,15 @@ export function ContractParamsForm(props: {
         setSelectedGroups(filterDefined(groups))
       }
       getAndSetGroups(params.groupIds)
+    }
+    if (params?.groupSlugs) {
+      const getAndSetGroupsViaSlugs = async (groupSlugs: string[]) => {
+        const groups = await Promise.all(
+          groupSlugs.map((s) => getGroupFromSlug(s))
+        )
+        setSelectedGroups(filterDefined(groups))
+      }
+      getAndSetGroupsViaSlugs(params.groupSlugs)
     }
   }, [params?.answers, params?.q, params?.groupIds])
 
@@ -570,8 +582,8 @@ export function ContractParamsForm(props: {
 
       <Col className="gap-3">
         <span className="px-1">
-          Add categories{' '}
-          <InfoTooltip text="Question will be displayed alongside the other questions in the category." />
+          Add topics{' '}
+          <InfoTooltip text="Question will be displayed alongside the other questions in the topic." />
         </span>
         {selectedGroups.length > 0 && (
           <Row className={'flex-wrap gap-2'}>

@@ -1,20 +1,19 @@
 import { auth } from './users'
 import { APIError, getApiUrl } from 'common/api'
 import { JSONContent } from '@tiptap/core'
-import { Group, PrivacyStatusType } from 'common/group'
+import { Group, GroupRole, PrivacyStatusType } from 'common/group'
 import { HideCommentReq } from 'web/pages/api/v0/hide-comment'
 import { Contract } from './contracts'
 export { APIError } from 'common/api'
 import { ContractTypeType, Filter, Sort } from 'web/components/contracts-search'
 import { AD_RATE_LIMIT } from 'common/boost'
-import { GroupRole } from 'web/components/groups/group-member-modal'
-import { Bet } from 'common/bet'
 import { ContractComment } from 'common/comment'
 import { Post } from 'common/post'
 import { MaybeAuthedContractParams } from 'common/contract'
 import { Portfolio, PortfolioItem } from 'common/portfolio'
 import { ReportProps } from 'common/report'
 import { Dashboard, DashboardItem } from 'common/dashboard'
+import { Bet } from 'common/bet'
 
 export async function call(url: string, method: 'POST' | 'GET', params?: any) {
   const user = auth.currentUser

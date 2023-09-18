@@ -64,7 +64,7 @@ function CharityPage(props: { charity: Charity }) {
         />
       }
     >
-      <SEO title={name} description={description} url="/groups" />
+      <SEO title={name} description={description} url="/categories" />
       {showConfetti && <FullscreenConfetti />}
 
       <Col className="mx-1 w-full items-center sm:px-0">

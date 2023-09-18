@@ -96,7 +96,7 @@ export default function Welcome() {
   }
 
   useEffect(() => {
-    if (user?.id) getTrendingCategories(user.id)
+    if (user?.id && user?.shouldShowWelcome) getTrendingCategories(user.id)
   }, [user?.id])
 
   const close = () => {

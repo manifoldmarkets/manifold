@@ -27,7 +27,6 @@ import { Avatar } from './widgets/avatar'
 import { Content } from './widgets/editor'
 import { LoadingIndicator } from './widgets/loading-indicator'
 import { UserLink } from './widgets/user-link'
-import { db } from 'web/lib/supabase/db'
 import { track } from 'web/lib/service/analytics'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 
@@ -57,7 +56,7 @@ export function ActivityLog(props: {
       shouldBlockDestiny && DESTINY_GROUP_SLUGS
     )
 
-    Promise.all(blockedGroupSlugs.map((slug) => getGroupFromSlug(slug, db)))
+    Promise.all(blockedGroupSlugs.map((slug) => getGroupFromSlug(slug)))
       .then((groups) =>
         Promise.all(filterDefined(groups).map((g) => getGroupContractIds(g.id)))
       )

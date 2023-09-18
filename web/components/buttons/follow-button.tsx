@@ -26,7 +26,10 @@ export const onFollowClick = (
   }
 }
 
-export function FollowButton(props: { userId: string; size?: '2xs' | 'sm' }) {
+export function FollowButton(props: {
+  userId: string
+  size?: '2xs' | 'xs' | 'sm'
+}) {
   const { userId, size = 'sm' } = props
   const user = useUser()
   const { isFollowing, setIsFollowing } = useIsFollowing(user?.id, userId)

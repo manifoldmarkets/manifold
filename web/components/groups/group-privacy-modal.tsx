@@ -1,119 +1,13 @@
 import {
   GlobeIcon,
   LockClosedIcon,
-  PencilIcon,
   ShieldCheckIcon,
 } from '@heroicons/react/solid'
 import clsx from 'clsx'
-import { Group, PrivacyStatusType } from 'common/group'
-import { useState } from 'react'
-import toast from 'react-hot-toast'
-import { updateGroupPrivacy } from 'web/lib/firebase/api'
-import { Button } from '../buttons/button'
+import { PrivacyStatusType } from 'common/group'
 import { Col } from '../layout/col'
-import { Modal, MODAL_CLASS } from '../layout/modal'
 import { Row } from '../layout/row'
 import { Tooltip } from '../widgets/tooltip'
-
-export default function GroupPrivacyStatusModal(props: {
-  open: boolean
-  setOpen: (open: boolean) => void
-  status: PrivacyStatusType
-}) {
-  const { open, setOpen, status } = props
-  return (
-    <Modal open={open} setOpen={setOpen}>
-      <Col className={clsx(MODAL_CLASS)}>
-        <div className="-mx-4">
-          <PrivacyStatusView viewStatus={status} isSelected={false} size="md" />
-        </div>
-      </Col>
-    </Modal>
-  )
-}
-
-// should only appear for public/curated groups
-export function AdminGroupPrivacyStatusModal(props: {
-  open: boolean
-  setOpen: (open: boolean) => void
-  group: Group
-}) {
-  const { open, setOpen, group } = props
-  // can't change if group if private
-  if (group.privacyStatus == 'private') {
-    return (
-      <GroupPrivacyStatusModal
-        open={open}
-        setOpen={setOpen}
-        status={'private'}
-      />
-    )
-  }
-  // modal to change group privacy type
-  return (
-    <SelectGroupPrivacyModal
-      open={open}
-      setOpen={setOpen}
-      groupPrivacyStatus={group.privacyStatus}
-      group={group}
-    />
-  )
-}
-
-function SelectGroupPrivacyModal(props: {
-  open: boolean
-  setOpen: (open: boolean) => void
-  groupPrivacyStatus: 'public' | 'curated'
-  group: Group
-}) {
-  const { open, setOpen, groupPrivacyStatus, group } = props
-  const [selectedStatus, setSelectedStatus] = useState<'public' | 'curated'>(
-    groupPrivacyStatus
-  )
-  return (
-    <Modal open={open} setOpen={setOpen}>
-      <Col className={clsx(MODAL_CLASS)}>
-        <PrivacyStatusSelect
-          snippetStatus="public"
-          selectedStatus={selectedStatus}
-          setSelectedStatus={setSelectedStatus}
-        />
-        <PrivacyStatusSelect
-          snippetStatus="curated"
-          selectedStatus={selectedStatus}
-          setSelectedStatus={setSelectedStatus}
-        />
-        <Row className="mt-4 w-full justify-end gap-2">
-          <Button color="gray" onClick={() => setOpen(false)}>
-            Cancel
-          </Button>
-          <ChangePrivacyStatusButton
-            disabled={selectedStatus == group.privacyStatus}
-            group={group}
-            selectedStatus={selectedStatus}
-            setOpen={setOpen}
-          />
-        </Row>
-      </Col>
-    </Modal>
-  )
-}
-
-export function PrivacyStatusSelect(props: {
-  snippetStatus: 'public' | 'curated'
-  selectedStatus: 'public' | 'curated'
-  setSelectedStatus: (selectedStatus: 'public' | 'curated') => void
-}) {
-  const { snippetStatus, selectedStatus, setSelectedStatus } = props
-  return (
-    <PrivacyStatusView
-      viewStatus={snippetStatus}
-      isSelected={snippetStatus == selectedStatus}
-      onClick={() => setSelectedStatus(snippetStatus)}
-      size="md"
-    />
-  )
-}
 
 export function PrivacyStatusView(props: {
   viewStatus: PrivacyStatusType
@@ -162,46 +56,6 @@ export function PrivacyStatusView(props: {
       )}
       <p className="text-ink-700 text-sm">{descriptor}</p>
     </Col>
-  )
-}
-
-export function ChangePrivacyStatusButton(props: {
-  disabled: boolean
-  group: Group
-  selectedStatus: 'public' | 'curated'
-  setOpen: (open: boolean) => void
-}) {
-  const { disabled, group, selectedStatus, setOpen } = props
-  const [loading, setLoading] = useState(false)
-  return (
-    <Button
-      disabled={disabled}
-      onClick={() => {
-        setLoading(true)
-        toast
-          .promise(
-            updateGroupPrivacy({
-              groupId: group.id,
-              privacy: selectedStatus,
-            }),
-            {
-              loading: `Updating privacy to ${selectedStatus}`,
-              success: `Privacy successfully updated to ${selectedStatus}!`,
-              error: `Unable to update category privacy. Try again?`,
-            }
-          )
-          .then(() => setOpen(false))
-          .finally(() => {
-            setLoading(false)
-          })
-      }}
-      loading={loading}
-    >
-      <Row className="items-center gap-1">
-        <PencilIcon className="h-4 w-4" />
-        Change privacy
-      </Row>
-    </Button>
   )
 }
 

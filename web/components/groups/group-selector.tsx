@@ -3,7 +3,7 @@ import { PlusCircleIcon, SelectorIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { Group } from 'common/group'
 import { useEffect, useRef, useState } from 'react'
-import { CreateGroupButton } from 'web/components/groups/create-group-button'
+import { CreateGroupModal } from 'web/components/groups/create-group-modal'
 import { Row } from 'web/components/layout/row'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { useUser } from 'web/hooks/use-user'
@@ -70,7 +70,11 @@ export function GroupSelector(props: {
     })
   }, [user?.id, isContractCreator, query])
 
-  const handleSelectGroup = (group: Group | null) => {
+  const handleSelectGroup = (group: Group | null | 'new') => {
+    if (group === 'new') {
+      setIsCreatingNewGroup(true)
+      return
+    }
     group && setSelectedGroup(group)
     setQuery('') // Clear the input
   }
@@ -148,8 +152,7 @@ export function GroupSelector(props: {
                               </Row>
                               <Row
                                 className={clsx(
-                                  'text-ink-500 items-center gap-2 text-sm',
-                                  'text-ink-500'
+                                  'text-ink-500 items-center gap-2 text-sm'
                                 )}
                               >
                                 {group.privacyStatus != 'public' &&
@@ -164,25 +167,43 @@ export function GroupSelector(props: {
                 )}
 
                 {user && (
-                  <CreateGroupButton
-                    user={user}
-                    onOpenStateChange={setIsCreatingNewGroup}
-                    className={
-                      'text-ink-900 bg-canvas-0 hover:text-ink-0 hover:bg-primary-500 group flex w-full flex-row items-center rounded-none border-0 font-normal transition-colors'
+                  <Combobox.Option
+                    value={'new'}
+                    className={({ active }) =>
+                      clsx(
+                        'relative h-12 cursor-pointer select-none py-2 pr-6 transition-colors',
+                        active ? 'text-ink-0 bg-primary-500' : 'text-ink-900',
+                        loading ? 'animate-pulse' : ''
+                      )
                     }
-                    label={'Create a new Category'}
-                    addGroupIdParamOnSubmit
-                    icon={
-                      <PlusCircleIcon className="mr-2 h-5 w-5 text-teal-500 group-hover:text-teal-300" />
-                    }
-                    openModalBtnColor="gray-white"
-                  />
+                  >
+                    {({}) => (
+                      <>
+                        <span
+                          className={clsx(
+                            'ml-3 mt-1 flex flex-row justify-between'
+                          )}
+                        >
+                          <Row className={'items-center gap-1 truncate pl-5'}>
+                            <PlusCircleIcon className="mr-2 h-5 w-5 text-teal-500 group-hover:text-teal-300" />
+                            Create a new topic
+                          </Row>
+                        </span>
+                      </>
+                    )}
+                  </Combobox.Option>
                 )}
               </Combobox.Options>
             </div>
           </>
         )}
       </Combobox>
+      <CreateGroupModal
+        user={user}
+        open={isCreatingNewGroup}
+        setOpen={setIsCreatingNewGroup}
+        addGroupIdParamOnSubmit
+      />
     </Col>
   )
 }

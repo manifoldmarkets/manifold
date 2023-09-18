@@ -57,6 +57,16 @@ module.exports = {
             transitionTimingFunction: 'cubic-bezier(1, 1, 0.8, 0)',
           },
         },
+        'slide-in-from-right': {
+          '0%': {
+            transform: 'translateX(100%)',
+            transitionTimingFunction: 'cubic-bezier(1, 1, 0.8, 0)',
+          },
+          '100%': {
+            transform: 'translateX(0%)',
+            transitionTimingFunction: 'cubic-bezier(1, 1, 0.8, 0)',
+          },
+        },
         'slide-in-1': {
           '0%': {
             transform: 'translateX(-100%)',
@@ -253,6 +263,7 @@ module.exports = {
         progress: 'progress linear forwards',
         'bounce-left': 'bounce-left 0.8s',
         'bounce-right': 'bounce-right 0.7s',
+        'slide-in-from-right': 'slide-in-from-right 0.1s',
         'slide-in-1': 'slide-in-1 4s',
         'slide-in-2': 'slide-in-2 4s',
         'slide-in-3': 'slide-in-3 4s',

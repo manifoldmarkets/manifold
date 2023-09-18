@@ -12,3 +12,13 @@ export const getMemberGroupSlugs = async (
     (r) => r.slug as string
   )
 }
+export const getGroupIdFromSlug = async (
+  slug: string,
+  pg: SupabaseDirectClient
+): Promise<string> => {
+  return await pg.one(
+    `select id from groups where slug = $1`,
+    [slug],
+    (r) => r.id as string
+  )
+}
