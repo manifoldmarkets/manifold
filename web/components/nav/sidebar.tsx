@@ -126,7 +126,7 @@ const getDesktopNav = (
       showMarkets
         ? {
             name: 'Questions',
-            href: '/questions?category=for-you',
+            href: '/questions?topic=for-you',
             icon: ScaleIcon,
           }
         : { name: 'News', href: '/news', icon: NewspaperIcon },
