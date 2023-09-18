@@ -35,7 +35,7 @@ export type GroupState = {
 const GROUPS_PER_PAGE = 100
 export const SHOW_TOPICS_TERM = 'show-topics'
 
-export default function GroupSearch() {
+export default function TopicSidebar() {
   const user = useUser()
   const yourGroupIds = useMemberGroupIds(user?.id)
   const isMobile = useIsMobile()

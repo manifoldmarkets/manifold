@@ -4,7 +4,7 @@ import { Page } from 'web/components/layout/page'
 import Welcome from 'web/components/onboarding/welcome'
 import { Title } from 'web/components/widgets/title'
 
-import GroupSearch from 'web/components/groups/group-search'
+import TopicSidebar from 'web/components/groups/topic-sidebar'
 import { useUser } from 'web/hooks/use-user'
 
 export default function Search() {
@@ -22,7 +22,7 @@ export default function Search() {
         />
         <Col className="mx-auto w-full">
           <Title className="hidden lg:flex">Questions</Title>
-          <GroupSearch />
+          <TopicSidebar />
         </Col>
       </Page>
     </>
