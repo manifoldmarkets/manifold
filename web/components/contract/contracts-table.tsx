@@ -121,17 +121,23 @@ export function ContractStatusLabel(props: {
   }
 }
 
-function ContractQuestion(props: { contract: Contract; className?: string }) {
-  const { contract, className } = props
+function ContractQuestion(props: {
+  contract: Contract
+  className?: string
+  hideAvatar?: boolean
+}) {
+  const { contract, className, hideAvatar } = props
   return (
     <Row className={clsx('gap-2 sm:gap-4', className)}>
-      <Avatar
-        username={contract.creatorUsername}
-        avatarUrl={contract.creatorAvatarUrl}
-        size="xs"
-        preventDefault={true}
-        className="mt-0.5"
-      />
+      {!hideAvatar && (
+        <Avatar
+          username={contract.creatorUsername}
+          avatarUrl={contract.creatorAvatarUrl}
+          size="xs"
+          preventDefault={true}
+          className="mt-0.5"
+        />
+      )}
       <div>
         <VisibilityIcon contract={contract} />
         {contract.question}
@@ -180,6 +186,7 @@ export function ContractsTable(props: {
   headerClassName?: string
   hideHeader?: boolean
   hideActions?: boolean
+  hideAvatar?: boolean
 }) {
   const {
     contracts,
@@ -188,6 +195,7 @@ export function ContractsTable(props: {
     headerClassName,
     hideHeader,
     hideActions,
+    hideAvatar,
   } = props
 
   const user = useUser()
@@ -228,6 +236,7 @@ export function ContractsTable(props: {
           contract={contract}
           columns={columns}
           highlighted={highlightContractIds?.includes(contract.id)}
+          hideAvatar={hideAvatar}
           faded={
             (isClosed(contract) && contract.creatorId !== user?.id) ||
             contract.isResolved
@@ -247,11 +256,12 @@ function ContractRow(props: {
   highlighted?: boolean
   faded?: boolean
   onClick?: () => void
+  hideAvatar?: boolean
 }) {
   const contract =
     useFirebasePublicContract(props.contract.visibility, props.contract.id) ??
     props.contract
-  const { columns, highlighted, faded, onClick } = props
+  const { columns, hideAvatar, highlighted, faded, onClick } = props
 
   const visibleColumns = columns.map((key) => ({
     key,
@@ -278,6 +288,7 @@ function ContractRow(props: {
         <ContractQuestion
           contract={contract}
           className={'w-full sm:w-[calc(100%-12rem)]'}
+          hideAvatar={hideAvatar}
         />
         <Row className="w-full justify-end sm:w-fit">
           {visibleColumns.map((column) => (

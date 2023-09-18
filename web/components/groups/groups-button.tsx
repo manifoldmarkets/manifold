@@ -6,7 +6,7 @@ import { Row } from 'web/components/layout/row'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { withTracking } from 'web/lib/service/analytics'
 import { leaveGroup, SearchGroupInfo } from 'web/lib/supabase/groups'
-import { Button } from '../buttons/button'
+import { Button, SizeType } from '../buttons/button'
 import { ConfirmationButton } from '../buttons/confirmation-button'
 import { Subtitle } from '../widgets/subtitle'
 import { joinGroup } from 'web/lib/firebase/api'
@@ -19,8 +19,10 @@ function LeavePrivateGroupButton(props: {
   isMobile?: boolean
   disabled?: boolean
   className?: string
+  size?: SizeType
 }) {
-  const { group, user, setIsMember, isMobile, disabled, className } = props
+  const { group, size, user, setIsMember, isMobile, disabled, className } =
+    props
   const leavePrivateGroup = user
     ? withTracking(() => {
         leaveGroup(group.id, user.id)
@@ -44,6 +46,7 @@ function LeavePrivateGroupButton(props: {
           color: isMobile ? 'none' : 'indigo',
           disabled: disabled,
           label: isMobile ? '' : ' Leave',
+          size: size ?? 'xs',
         }}
         cancelBtn={{
           label: 'Cancel',
@@ -78,8 +81,10 @@ export function JoinOrLeaveGroupButton(props: {
   group: SearchGroupInfo
   isMember: boolean | undefined
   user: User | undefined | null
+  size?: SizeType
+  label?: string
 }) {
-  const { group, user } = props
+  const { group, size, user, label } = props
   const isMobile = useIsMobile()
 
   // Handle both non-live and live updating isMember state
@@ -93,6 +98,7 @@ export function JoinOrLeaveGroupButton(props: {
         setIsMember={setIsMember}
         user={user}
         isMobile={isMobile}
+        size={size}
       />
     )
   }
@@ -120,7 +126,7 @@ export function JoinOrLeaveGroupButton(props: {
   if (isMember) {
     return (
       <Button
-        size="xs"
+        size={size ?? 'xs'}
         color="gray-outline"
         onClick={(e) => {
           e.preventDefault()
@@ -128,14 +134,14 @@ export function JoinOrLeaveGroupButton(props: {
           unfollow()
         }}
       >
-        <Row className="gap-1">Unfollow</Row>
+        <Row className="gap-1">Unfollow{label ? ` ${label}` : ''}</Row>
       </Button>
     )
   }
 
   return (
     <Button
-      size="xs"
+      size={size ?? 'xs'}
       color="indigo"
       onClick={(e) => {
         e.preventDefault()
@@ -143,7 +149,7 @@ export function JoinOrLeaveGroupButton(props: {
         follow()
       }}
     >
-      <Row className="gap-1">Follow</Row>
+      <Row className="gap-1">Follow{label ? ` ${label}` : ''}</Row>
     </Button>
   )
 }

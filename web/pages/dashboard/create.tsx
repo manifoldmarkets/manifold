@@ -1,23 +1,16 @@
 import { track } from '@amplitude/analytics-browser'
 import clsx from 'clsx'
 import { MAX_DESCRIPTION_LENGTH } from 'common/contract'
-import {
-  DashboardItem,
-  DashboardLinkItem,
-  DashboardQuestionItem,
-} from 'common/dashboard'
+import { DashboardItem } from 'common/dashboard'
 import { removeUndefinedProps } from 'common/util/object'
 import router from 'next/router'
 import { useEffect, useState } from 'react'
 import { SEO } from 'web/components/SEO'
 import { Button } from 'web/components/buttons/button'
 import { AddDashboardItemWidget } from 'web/components/dashboard/add-dashboard-item'
-import { DashboardAddContractButton } from 'web/components/dashboard/dashboard-add-contract-button'
-import { DashboardAddLinkButton } from 'web/components/dashboard/dashboard-add-link-button'
 import { DashboardContent } from 'web/components/dashboard/dashboard-content'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
-import { Row } from 'web/components/layout/row'
 import { Spacer } from 'web/components/layout/spacer'
 import { TextEditor, useTextEditor } from 'web/components/widgets/editor'
 import { ExpandingInput } from 'web/components/widgets/expanding-input'

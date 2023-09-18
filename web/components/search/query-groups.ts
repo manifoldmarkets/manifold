@@ -7,11 +7,12 @@ import { auth } from 'web/lib/firebase/users'
 export function useTrendingGroupsSearchResults(
   query: string,
   limit: number,
-  lockSearch: boolean
+  lockSearch: boolean,
+  persistKey?: string
 ) {
   const [results, setResults] = usePersistentInMemoryState<SearchGroupInfo[]>(
     [],
-    'trending-groups-market-search'
+    persistKey ?? 'trending-groups-market-search'
   )
 
   const search = async (query: string) => {

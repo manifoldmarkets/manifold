@@ -11,6 +11,7 @@ export function ContractsList(props: {
   highlightContractIds?: string[]
   hideActions?: boolean
   headerClassName?: string
+  hideAvatar?: boolean
 }) {
   const {
     contracts,
@@ -19,6 +20,7 @@ export function ContractsList(props: {
     highlightContractIds,
     hideActions,
     headerClassName,
+    hideAvatar,
   } = props
 
   if (contracts === undefined) {
@@ -33,6 +35,7 @@ export function ContractsList(props: {
         highlightContractIds={highlightContractIds}
         hideActions={hideActions}
         headerClassName={headerClassName}
+        hideAvatar={hideAvatar}
       />
       {loadMore && <LoadMoreUntilNotVisible loadMore={loadMore} />}
     </Col>

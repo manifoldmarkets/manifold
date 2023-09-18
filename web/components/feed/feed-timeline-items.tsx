@@ -19,9 +19,9 @@ import { ContractComment } from 'common/comment'
 import { track } from 'web/lib/service/analytics'
 import { useState } from 'react'
 import { Row } from 'web/components/layout/row'
-import { CategoryTag } from 'web/pages/groups'
 import { orderBy, sum, uniqBy } from 'lodash'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import { CategoryTag } from 'web/components/groups/category-tag'
 
 const MAX_PARENT_COMMENTS_PER_FEED_ITEM = 1
 export const MIN_BET_AMOUNT = 20
@@ -166,7 +166,7 @@ export function CategoryTags(props: {
   const { categories, className, maxGroups = 3 } = props
   if (!categories || categories.length <= 0) return null
   return (
-    <div className={clsx('w-full', className)}>
+    <Row className={clsx(className)}>
       {categories.slice(0, maxGroups).map((category) => (
         <CategoryTag
           location={'feed card'}
@@ -174,7 +174,7 @@ export function CategoryTags(props: {
           category={category}
         />
       ))}
-    </div>
+    </Row>
   )
 }
 

@@ -8,10 +8,13 @@
 // time the clipboard is used (per session).
 import { postMessageToNative } from 'web/components/native-message-listener'
 import { getIsNative } from 'web/lib/native/is-native'
+import { NativeShareData } from 'common/native-share-data'
 
 export function copyToClipboard(text: string) {
   if (getIsNative()) {
-    postMessageToNative('copyToClipboard', text)
+    postMessageToNative('share', {
+      message: text,
+    } as NativeShareData)
   }
   if (navigator.clipboard) {
     navigator.clipboard.writeText(text)

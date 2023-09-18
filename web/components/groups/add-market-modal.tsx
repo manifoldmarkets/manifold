@@ -9,7 +9,7 @@ import { Col } from '../layout/col'
 import { Modal, MODAL_CLASS, SCROLLABLE_MODAL_CLASS } from '../layout/modal'
 import { UncontrolledTabs } from '../layout/tabs'
 import { NewContractPanel } from '../new-contract/new-contract-panel'
-import { AddContractToGroupPermissionType } from './add-contract-to-group-button'
+import { AddContractToGroupPermissionType } from './add-contract-to-group-modal'
 import { NewQuestionParams } from 'web/components/new-contract/new-contract-panel'
 import { DAY_MS } from 'common/util/time'
 

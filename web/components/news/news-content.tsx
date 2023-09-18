@@ -611,7 +611,23 @@ const G20 = createNewsDashboardTab('G20', 'G20 Summit in India (Bharat?)', [
   { slug: 'will-chinese-premier-li-qiang-hold' },
 ])
 
+const LostF35 = createNewsDashboardTab(
+  'Lost F-35',
+  'F-35 lost in accident in South Carolina',
+  [
+    {
+      url: 'https://www.cbsnews.com/news/f-35-mishap-pilot-ejects-north-charleston-s-c/',
+    },
+    { slug: 'will-the-80-million-f35-stealth-fig' },
+    { slug: 'will-the-80-million-f35-stealth-fig-cf7054a91d68' },
+    { slug: 'will-the-lost-f35-be-found-under-wa' },
+    { slug: 'will-the-lost-f35-be-found-in-lake' },
+    { slug: 'will-the-80-million-f35-stealth-fig-7fd73e7ffdae' },
+  ]
+)
+
 export const newsContent = [
+  LostF35,
   Election2024,
   UFOs,
   Trump,

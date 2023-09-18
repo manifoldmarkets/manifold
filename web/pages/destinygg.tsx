@@ -30,7 +30,7 @@ export async function getStaticProps() {
       filter: 'open',
       sort: 'score',
       limit: 6,
-      group_id: 'W2ES30fRo6CCbPNwMTTj',
+      group_id: 'destinygg',
     })
   ).data
 
@@ -134,7 +134,7 @@ export default function DestinyLandingPage(props: {
           <WhatIsMana />
           <LabCard
             title="📈 All Dgg stocks"
-            href="https://manifold.markets/group/destinygg"
+            href="https://manifold.markets/questions?category=destinygg"
           />
         </Col>
 

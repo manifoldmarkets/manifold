@@ -16,18 +16,12 @@ const pages: PageData[] = [
     slug: '/create',
     keywords: ['add', 'make', 'ask'],
   },
-  {
-    label: 'Categories',
-    slug: '/groups',
-    keywords: ['category', 'groups'],
-  },
   { label: 'Get mana', slug: '/add-funds', keywords: ['buy', 'subscribe'] },
   { label: 'Charity', slug: '/charity', keywords: ['donate', 'for good'] },
   { label: 'Referrals', slug: '/referrals', keywords: ['invite', 'share'] },
   { label: 'Live feed', slug: '/live' },
   { label: 'About', slug: '/about' },
   { label: 'Questions', slug: '/questions' },
-  { label: 'Users', slug: '/users' },
 ]
 
 export function searchPages(query: string, limit: number) {

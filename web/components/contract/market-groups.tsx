@@ -8,7 +8,6 @@ import {
 import { orderBy } from 'lodash'
 import Link from 'next/link'
 import { linkClass } from 'web/components/widgets/site-link'
-import { CategoryTag } from 'web/pages/groups'
 import { useState } from 'react'
 import { useUser } from 'web/hooks/use-user'
 import { PencilIcon, PlusIcon } from '@heroicons/react/solid'
@@ -18,8 +17,10 @@ import { ContractGroupsList } from 'web/components/groups/contract-groups-list'
 import { useAdmin } from 'web/hooks/use-admin'
 import { isTrustworthy } from 'common/envs/constants'
 import { filterDefined } from 'common/util/array'
-import { Group } from 'common/group'
+import { Group, groupPath } from 'common/group'
 import { track } from 'web/lib/service/analytics'
+import { removeEmojis } from 'common/topics'
+import { CategoryTag } from 'web/components/groups/category-tag'
 
 export function MarketGroups(props: { contract: Contract }) {
   const { contract } = props
@@ -61,7 +62,7 @@ const ContractGroupBreadcrumbs = (props: { contract: Contract }) => {
         <span key={group.id} className={'text-primary-600 text-sm'}>
           <Link
             className={linkClass}
-            href={`/group/${group.slug}`}
+            href={groupPath(group.slug)}
             onClick={() => {
               track('click category pill on market', {
                 contractId: contract.id,
@@ -116,7 +117,7 @@ export function PublicMarketGroups(props: { contract: Contract }) {
               <PencilIcon className="w-6 px-1" />
             ) : (
               <span className={clsx('flex items-center px-1 text-sm')}>
-                <PlusIcon className="mr-1 h-3 " /> Categories
+                <PlusIcon className="mr-1 h-3 " /> Topics
               </span>
             )}
           </button>
@@ -143,9 +144,4 @@ export function PublicMarketGroups(props: { contract: Contract }) {
       </Modal>
     </>
   )
-}
-
-export function removeEmojis(input: string): string {
-  const emojiRegex = /[\p{Extended_Pictographic}\u{FE00}-\u{FE0F}]/gu
-  return input.replace(emojiRegex, '').trim()
 }

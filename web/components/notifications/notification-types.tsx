@@ -47,6 +47,7 @@ import {
   QuestionOrGroupLink,
 } from './notification-helpers'
 import Link from 'next/link'
+import { groupPath } from 'common/group'
 
 export function NotificationItem(props: {
   notification: Notification
@@ -790,7 +791,7 @@ function NewPrivateMarketNotification(props: {
         {privateGroup && privateGroup.length > 0 ? (
           <Link
             className={clsx(linkClass, 'hover:text-primary-500 font-semibold')}
-            href={`group/${privateGroup[0].slug}`}
+            href={groupPath(privateGroup[0].slug)}
           >
             {privateGroup[0].name}
           </Link>

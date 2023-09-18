@@ -14,6 +14,7 @@ import { capitalize } from 'lodash'
 
 export type NewQuestionParams = {
   groupIds?: string[]
+  groupSlugs?: string[]
   q: string
   description: string
   closeTime: number

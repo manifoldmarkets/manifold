@@ -62,16 +62,14 @@ export const TOPICS_TO_SUBTOPICS: { [key: string]: TopicInfo[] } = {
   ],
 }
 
-export const cleanTopic = (topic: string) =>
-  topic
-    // eslint-disable-next-line no-control-regex
-    .replace(/[^\x00-\x7F]/g, '')
-    .trim()
+export const removeEmojis = (input: string) =>
+  // eslint-disable-next-line no-control-regex
+  input.replace(/[^\x00-\x7F]/g, '').trim()
 
 export const getSubtopics = (topic: string) =>
   TOPICS_TO_SUBTOPICS[topic].map(
     (subtopic) =>
-      [subtopic.name, cleanTopic(subtopic.name), subtopic.groupId] as const
+      [subtopic.name, removeEmojis(subtopic.name), subtopic.groupId] as const
   )
 export const ALL_TOPICS = Object.keys(TOPICS_TO_SUBTOPICS)
   .map((topic) => getSubtopics(topic).map(([_, subtopic]) => subtopic))

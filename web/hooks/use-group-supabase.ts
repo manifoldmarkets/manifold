@@ -1,12 +1,12 @@
 import { Contract } from 'common/contract'
-import { Group } from 'common/group'
+import { Group, GroupRole } from 'common/group'
 import { User } from 'common/user'
 import { useEffect, useState } from 'react'
-import { GroupRole } from 'web/components/groups/group-member-modal'
 import { useSupabasePolling } from 'web/hooks/use-supabase-polling'
 import { getUserIsGroupMember } from 'web/lib/firebase/api'
 import { db } from 'web/lib/supabase/db'
 import {
+  getGroup,
   getGroupFromSlug,
   getGroupMembers,
   getGroupOfRole,
@@ -240,7 +240,10 @@ export async function setTranslatedMemberRole(
 }
 
 export function useGroupFromSlug(groupSlug: string) {
-  return useAsyncData(groupSlug, (slug) => getGroupFromSlug(slug, db))
+  return useAsyncData(groupSlug, (slug) => getGroupFromSlug(slug))
+}
+export function useGroupFromId(groupId: string) {
+  return useAsyncData(groupId, (id) => getGroup(id))
 }
 
 export function useListGroupsBySlug(groupSlugs: string[]) {
