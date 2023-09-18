@@ -17,7 +17,7 @@ import { ContractGroupsList } from 'web/components/groups/contract-groups-list'
 import { useAdmin } from 'web/hooks/use-admin'
 import { isTrustworthy } from 'common/envs/constants'
 import { filterDefined } from 'common/util/array'
-import { Group } from 'common/group'
+import { Group, groupPath } from 'common/group'
 import { track } from 'web/lib/service/analytics'
 import { removeEmojis } from 'common/topics'
 import { CategoryTag } from 'web/components/groups/category-tag'
@@ -62,7 +62,7 @@ const ContractGroupBreadcrumbs = (props: { contract: Contract }) => {
         <span key={group.id} className={'text-primary-600 text-sm'}>
           <Link
             className={linkClass}
-            href={`/group/${group.slug}`}
+            href={groupPath(group.slug)}
             onClick={() => {
               track('click category pill on market', {
                 contractId: contract.id,
