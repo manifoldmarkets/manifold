@@ -33,17 +33,19 @@ export async function getStaticProps() {
 export default function YCS23Page(props: { contracts: CPMMMultiContract[] }) {
   const { contracts } = props
 
-  const companyProps = contracts.map((contract) => {
-    const name = contract.question
-      .split('Exit valuation of ')[1]
-      .split(' (YC S23)?')[0]
-    const valuation = getValuation(contract.answers)
-    return {
-      name,
-      valuation,
-      contract,
-    }
-  })
+  const companyProps = contracts
+    .filter((c) => c.question.includes('Exit valuation of '))
+    .map((contract) => {
+      const name = contract.question
+        .split('Exit valuation of ')[1]
+        .split(' (YC S23)?')[0]
+      const valuation = getValuation(contract.answers)
+      return {
+        name,
+        valuation,
+        contract,
+      }
+    })
   const sortedCompanyProps = sortBy(companyProps, (c) => c.valuation).reverse()
 
   return (
