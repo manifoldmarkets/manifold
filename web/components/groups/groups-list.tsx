@@ -229,28 +229,39 @@ export const GroupButton = (props: {
 
   const isPrivate = group.privacyStatus == 'private'
   const follow = user
-    ? withTracking(() => {
-        setLoading(true)
-        joinGroup({ groupId: group.id })
-          .then(() => {
-            setIsMember(true)
-            toast(`You're now following ${group.name}!`)
-          })
-          .catch((e) => {
-            console.error(e)
-            toast.error('Failed to follow category')
-          })
-          .finally(() => setLoading(false))
-      }, 'join group')
+    ? withTracking(
+        () => {
+          setLoading(true)
+          joinGroup({ groupId: group.id })
+            .then(() => {
+              setIsMember(true)
+              toast(`You're now following ${group.name}!`)
+            })
+            .catch((e) => {
+              console.error(e)
+              toast.error('Failed to follow category')
+            })
+            .finally(() => setLoading(false))
+        },
+        'join group',
+        { slug: group.slug }
+      )
     : firebaseLogin
   const unfollow = user
-    ? withTracking(() => {
-        leaveGroup(group.id, user.id)
-          .then(() => setIsMember(false))
-          .catch(() => {
-            toast.error('Failed to unfollow category')
-          })
-      }, 'leave group')
+    ? withTracking(
+        () => {
+          leaveGroup(group.id, user.id)
+            .then(() => {
+              setIsMember(false)
+              toast(`You're not longer following ${group.name}.`)
+            })
+            .catch(() => {
+              toast.error('Failed to unfollow category')
+            })
+        },
+        'leave group',
+        { slug: group.slug }
+      )
     : firebaseLogin
   return (
     <button
@@ -273,7 +284,12 @@ export const GroupButton = (props: {
       <Row className={'w-full items-center justify-between'}>
         <span>{removeEmojis(group.name)}</span>
         {!isPrivate && !isCreator && !isMember && (
-          <button onClick={follow}>
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              follow()
+            }}
+          >
             {loading ? (
               <LoadingIndicator size={'sm'} />
             ) : (
