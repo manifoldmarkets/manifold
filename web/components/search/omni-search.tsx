@@ -21,7 +21,11 @@ import { Avatar } from '../widgets/avatar'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { searchMarketSorts } from './query-market-sorts'
 import { PageData, searchPages } from './query-pages'
-import { TOPIC_SEARCH_TERM } from 'web/components/groups/group-search'
+import { PillButton } from 'web/components/buttons/pill-button'
+import { Row } from '../layout/row'
+import { Col } from '../layout/col'
+import { formatLargeNumber } from 'common/util/format'
+import { FollowButton } from 'web/components/buttons/follow-button'
 
 export interface Option {
   id: string
@@ -48,6 +52,8 @@ export const OmniSearch = (props: {
     debounce((newQuery) => setDebouncedQuery(newQuery), 50),
     []
   )
+  const pillOptions = ['All', 'Questions', 'Users', 'Topics']
+  const [filter, setFilter] = useState(pillOptions[0])
 
   useEffect(() => {
     debouncedSearch(query)
@@ -84,12 +90,28 @@ export const OmniSearch = (props: {
               inputClassName
             )}
           />
+          <Row className={'mx-4 my-1 gap-2'}>
+            {query &&
+              pillOptions.map((option) => (
+                <PillButton
+                  key={option}
+                  selected={filter === option}
+                  onSelect={() => setFilter(option)}
+                >
+                  {option}
+                </PillButton>
+              ))}
+          </Row>
           <Combobox.Options
             static
             className="text-ink-700 flex flex-col overflow-y-auto px-1"
           >
             {debouncedQuery ? (
-              <Results query={debouncedQuery} recentMarkets={recentMarkets} />
+              <Results
+                query={debouncedQuery}
+                recentMarkets={recentMarkets}
+                filter={filter}
+              />
             ) : (
               <DefaultResults recentMarkets={recentMarkets} />
             )}
@@ -104,9 +126,10 @@ const DefaultResults = (props: { recentMarkets: Contract[] }) => {
   const { recentMarkets } = props
   return (
     <>
-      <GroupResults groups={[]} />
-      <UserResults users={[]} />
-      <MarketResults markets={recentMarkets.slice(0, 7)} />
+      <MarketResults
+        title={'Recent questions'}
+        markets={recentMarkets.slice(0, 7)}
+      />
 
       <div className="mx-2 my-2 text-xs">
         <SparklesIcon className="text-primary-500 mr-1 inline h-4 w-4 align-text-bottom" />
@@ -121,15 +144,22 @@ const Key = (props: { children: ReactNode }) => (
   <code className="bg-ink-300 mx-0.5 rounded p-0.5">{props.children}</code>
 )
 
-const Results = (props: { query: string; recentMarkets: Contract[] }) => {
-  const { query, recentMarkets } = props
+const Results = (props: {
+  query: string
+  recentMarkets: Contract[]
+  filter: string
+}) => {
+  const { query, recentMarkets, filter } = props
 
-  const prefix = query.match(/^(%|#|@)/) ? query.charAt(0) : ''
-  const search = prefix ? query.slice(1) : query
+  const search = query
+  const all = filter === 'All'
+  const justUsers = filter === 'Users'
+  const justGroups = filter === 'Topics'
+  const justMarkets = filter === 'Questions'
 
-  const userHitLimit = !prefix ? 5 : prefix === '@' ? 25 : 0
-  const groupHitLimit = !prefix ? 2 : prefix === '#' ? 25 : 0
-  const marketHitLimit = !prefix ? 5 : prefix === '%' ? 25 : 0
+  const userHitLimit = justUsers ? 50 : all ? 5 : 0
+  const groupHitLimit = justGroups ? 50 : all ? 2 : 0
+  const marketHitLimit = justMarkets ? 25 : all ? 5 : 0
 
   const [
     { pageHits, userHits, groupHits, sortHit, marketHits },
@@ -152,7 +182,7 @@ const Results = (props: { query: string; recentMarkets: Contract[] }) => {
     setLoading(true)
 
     Promise.allSettled([
-      searchUsers(search, userHitLimit),
+      searchUsers(search, userHitLimit, ['creatorTraders', 'bio']),
       searchGroups({ term: search, limit: groupHitLimit }),
       searchContract({
         query: search,
@@ -161,7 +191,7 @@ const Results = (props: { query: string; recentMarkets: Contract[] }) => {
         limit: marketHitLimit,
       }),
       (async () => {
-        const sortHits = prefix ? [] : searchMarketSorts(search)
+        const sortHits = !all ? [] : searchMarketSorts(search)
         const sort = sortHits[0]
         if (sortHits.length) {
           const markets = (
@@ -181,12 +211,15 @@ const Results = (props: { query: string; recentMarkets: Contract[] }) => {
       const groupHits = g.status === 'fulfilled' ? g.value.data : []
       const marketHits = m.status === 'fulfilled' ? m.value.data : []
       const sortHit = s.status === 'fulfilled' ? s.value : null
-      const recentMarketHits = recentMarkets.filter((m) =>
-        m.question.toLowerCase().includes(search.toLowerCase())
-      )
+      const recentMarketHits =
+        all || justMarkets
+          ? recentMarkets.filter((m) =>
+              m.question.toLowerCase().includes(search.toLowerCase())
+            )
+          : []
 
       if (thisNonce === nonce.current) {
-        const pageHits = prefix ? [] : searchPages(search, 2)
+        const pageHits = !all ? [] : searchPages(search, 2)
         const uniqueMarketHits = uniqBy<Contract>(
           recentMarketHits.concat(marketHits),
           'id'
@@ -202,7 +235,7 @@ const Results = (props: { query: string; recentMarkets: Contract[] }) => {
         setLoading(false)
       }
     })
-  }, [search, groupHitLimit, marketHitLimit, userHitLimit, prefix])
+  }, [search, groupHitLimit, marketHitLimit, userHitLimit, all])
 
   if (loading) {
     return (
@@ -225,9 +258,11 @@ const Results = (props: { query: string; recentMarkets: Contract[] }) => {
   return (
     <>
       <PageResults pages={pageHits} />
-      <MarketResults markets={marketHits} search={search} />
-      <GroupResults groups={groupHits} search={search} />
-      <UserResults users={userHits} search={search} />
+      {marketHitLimit > 0 && (
+        <MarketResults markets={marketHits} search={search} />
+      )}
+      {groupHitLimit > 0 && <GroupResults groups={groupHits} />}
+      {userHitLimit > 0 && <UserResults users={userHits} />}
       {sortHit && <MarketSortResults {...sortHit} />}
     </>
   )
@@ -294,13 +329,17 @@ const ResultOption = (props: {
   )
 }
 
-const MarketResults = (props: { markets: Contract[]; search?: string }) => {
-  const markets = props.markets
+const MarketResults = (props: {
+  markets: Contract[]
+  title?: string
+  search?: string
+}) => {
+  const { markets, title } = props
 
   return (
     <>
       <SectionTitle link={marketSearchSlug(props.search ?? '')}>
-        Questions
+        {title ?? 'Questions'}
       </SectionTitle>
       {markets.map((market) => (
         <MarketResult key={market.id} market={market} />
@@ -333,55 +372,56 @@ const MarketResult = (props: { market: Contract }) => {
   )
 }
 
-const UserResults = (props: { users: UserSearchResult[]; search?: string }) => {
-  const title = (
-    <SectionTitle
-      link={`/users?search=${encodeURIComponent(props.search ?? '')}`}
-    >
-      Users
-    </SectionTitle>
-  )
+const UserResults = (props: { users: UserSearchResult[] }) => {
+  const title = <SectionTitle>Users</SectionTitle>
   if (!props.users.length) return title
   return (
     <>
       {title}
-      {props.users.map(({ id, name, username, avatarUrl }) => (
-        <ResultOption key={id} value={{ id, slug: `/${username}` }}>
-          <div className="flex items-center gap-2">
-            <Avatar
-              username={username}
-              avatarUrl={avatarUrl}
-              size="xs"
-              noLink
-            />
-            {name}
-            {username !== name && (
-              <span className="text-ink-400 line-clamp-1">@{username}</span>
-            )}
-          </div>
-        </ResultOption>
-      ))}
+      {props.users.map(
+        ({ id, name, username, avatarUrl, bio, creatorTraders }) => (
+          <ResultOption key={id} value={{ id, slug: `/${username}` }}>
+            <Col>
+              <Row>
+                <Row className={'w-full flex-wrap items-center gap-2'}>
+                  <Avatar
+                    username={username}
+                    avatarUrl={avatarUrl}
+                    size="xs"
+                    noLink
+                  />
+                  {name}
+                  {username !== name && (
+                    <span className="text-ink-400 line-clamp-1">
+                      @{username}
+                    </span>
+                  )}
+                </Row>
+                <FollowButton size={'xs'} userId={id} />
+              </Row>
+              <div className={'line-clamp-1 text-ink-500 text-sm'}>
+                {creatorTraders.allTime > 0 && (
+                  <span className={'mr-1'}>
+                    {formatLargeNumber(creatorTraders.allTime)} traders
+                    {bio && ' •'}
+                  </span>
+                )}
+
+                <span>{bio}</span>
+              </div>
+            </Col>
+          </ResultOption>
+        )
+      )}
     </>
   )
 }
 
-const GroupResults = (props: {
-  groups: SearchGroupInfo[]
-  search?: string
-}) => {
+const GroupResults = (props: { groups: SearchGroupInfo[] }) => {
   const me = useUser()
   const myGroupIds = useMemberGroupIds(me?.id) ?? []
-  const { search } = props
 
-  const title = (
-    <SectionTitle
-      link={`/questions?${TOPIC_SEARCH_TERM}=${encodeURIComponent(
-        search ?? ''
-      )}`}
-    >
-      Topics
-    </SectionTitle>
-  )
+  const title = <SectionTitle>Topics</SectionTitle>
   if (!props.groups.length) return title
   return (
     <>
@@ -394,8 +434,15 @@ const GroupResults = (props: {
             slug: `/questions?${CATEGORY_KEY}=${group.slug}`,
           }}
         >
-          <div className="flex items-center gap-3">
-            <span className="line-clamp-1 grow">{group.name}</span>
+          <Row>
+            <Col className={'w-full'}>
+              <span className="line-clamp-1 ">{group.name}</span>
+              {group.totalMembers > 1 && (
+                <span className={'text-ink-500 text-sm'}>
+                  {group.totalMembers} followers
+                </span>
+              )}
+            </Col>
             <div onClick={(e) => e.stopPropagation()}>
               <JoinOrLeaveGroupButton
                 group={group}
@@ -403,7 +450,7 @@ const GroupResults = (props: {
                 isMember={myGroupIds.includes(group.id)}
               />
             </div>
-          </div>
+          </Row>
         </ResultOption>
       ))}
     </>

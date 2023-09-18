@@ -148,7 +148,7 @@ export const ForYouButton = (props: {
           }
         />
         <Row className={'items-center justify-between'}>
-          <span>For you</span>
+          <span>Your topics</span>
           <DropdownMenu
             Items={groupOptionItems}
             Icon={<CogIcon className=" text-ink-600 h-5 w-5" />}
