@@ -619,6 +619,10 @@ const LostF35 = createNewsDashboardTab(
       url: 'https://www.cbsnews.com/news/f-35-mishap-pilot-ejects-north-charleston-s-c/',
     },
     { slug: 'will-the-80-million-f35-stealth-fig' },
+    { slug: 'will-the-80-million-f35-stealth-fig-cf7054a91d68' },
+    { slug: 'will-the-lost-f35-be-found-under-wa' },
+    { slug: 'will-the-lost-f35-be-found-in-lake' },
+    { slug: 'will-the-80-million-f35-stealth-fig-7fd73e7ffdae' },
   ]
 )
 
