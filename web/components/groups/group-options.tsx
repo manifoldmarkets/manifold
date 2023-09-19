@@ -92,6 +92,7 @@ export function GroupOptions(props: {
         Items={groupOptionItems}
         Icon={<DotsVerticalIcon className={clsx('h-5 w-5')} />}
         withinOverflowContainer={true}
+        buttonClass={'xl:opacity-0 group-hover:opacity-100'}
       />
       <Modal open={editingName} setOpen={setEditingName}>
         <Col className={'bg-canvas-50 rounded-md p-4'}>
