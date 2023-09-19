@@ -1,8 +1,7 @@
 import { TOPIC_KEY, Group, GroupRole, PrivacyStatusType } from 'common/group'
 import { BETTORS, User } from 'common/user'
 import { useEffect, useState } from 'react'
-import { useRealtimeRole } from 'web/hooks/use-group-supabase'
-import { useAdmin } from 'web/hooks/use-admin'
+import { useGroupRole } from 'web/hooks/use-group-supabase'
 import { buildArray } from 'common/util/array'
 import { copyToClipboard } from 'web/lib/util/copy'
 import { DOMAIN } from 'common/envs/constants'
@@ -42,10 +41,8 @@ export function GroupOptions(props: {
   const [editingName, setEditingName] = useState(false)
   const [showLeaderboards, setShowLeaderboards] = useState(false)
   const [showAddContract, setShowAddContract] = useState(false)
-  const realtimeRole = useRealtimeRole(group?.id)
-  const isManifoldAdmin = useAdmin()
+  const userRole = useGroupRole(group.id, user)
   const isCreator = group.creatorId == user?.id
-  const userRole = isManifoldAdmin ? 'admin' : realtimeRole
   const addPermission = getAddContractToGroupPermission(
     group.privacyStatus,
     userRole,
@@ -86,7 +83,7 @@ export function GroupOptions(props: {
       }
   ) as DropdownItem[]
   return (
-    <div onClick={(e) => e.stopPropagation()}>
+    <Col onClick={(e) => e.stopPropagation()}>
       <DropdownMenu
         closeOnClick={true}
         Items={groupOptionItems}
@@ -124,7 +121,7 @@ export function GroupOptions(props: {
           addPermission={addPermission}
         />
       )}
-    </div>
+    </Col>
   )
 }
 

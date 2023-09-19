@@ -20,12 +20,13 @@ import {
 } from 'web/lib/supabase/groups'
 import { useRealtimeChannel } from 'web/lib/supabase/realtime/use-realtime'
 import { useSubscription } from 'web/lib/supabase/realtime/use-subscription'
-import { useAdmin } from './use-admin'
 import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
-import { useIsAuthorized, useUser } from './use-user'
+import { useIsAuthorized } from './use-user'
 import { Row } from 'common/supabase/utils'
 import { convertGroup } from 'common/supabase/groups'
 import { useAsyncData } from 'web/hooks/use-async-data'
+import { difference, orderBy } from 'lodash'
+import { isAdminId } from 'common/envs/constants'
 
 export function useIsGroupMember(groupSlug: string) {
   const [isMember, setIsMember] = usePersistentInMemoryState<
@@ -103,24 +104,52 @@ export const useGroupsWithContract = (
   return groups
 }
 
-export function useRealtimeRole(groupId: string | undefined) {
+export function useMemberGroups(userId: string | undefined | null) {
+  const [groups, setGroups] = usePersistentInMemoryState<Group[] | undefined>(
+    undefined,
+    `member-groups-${userId ?? ''}`
+  )
+
+  const { rows } = useSubscription('group_members', {
+    k: 'member_id',
+    v: userId ?? '_',
+  })
+  const ids = rows?.map((row) => row.group_id) ?? []
+
+  useEffect(() => {
+    if (!userId) return
+    const newIds = difference(ids, groups?.map((g) => g.id) ?? [])
+    const oldIds = difference(groups?.map((g) => g.id) ?? [], ids)
+    if (groups?.length && oldIds.length > 0) {
+      setGroups((groups) => groups?.filter((g) => !oldIds.includes(g.id)))
+    } else if (newIds.length > 0) {
+      db.from('groups')
+        .select('*')
+        .in('id', newIds)
+        .then((result) => {
+          const newGroups = result.data?.map(convertGroup) ?? []
+          setGroups((groups) =>
+            orderBy(
+              [...(groups ?? []), ...newGroups],
+              'importanceScore',
+              'desc'
+            )
+          )
+        })
+    }
+  }, [JSON.stringify(ids)])
+
+  return groups
+}
+
+export function useGroupRole(groupId: string, user: User | null | undefined) {
   const [userRole, setUserRole] = useState<GroupRole | null | undefined>(
     undefined
   )
-  const user = useUser()
-  const isManifoldAdmin = useAdmin()
-  useEffect(() => {
-    if (user && groupId) {
-      setTranslatedMemberRole(groupId, isManifoldAdmin, setUserRole, user)
-    }
-  }, [user, isManifoldAdmin, groupId])
 
-  const channelFilter = { k: 'group_id', v: groupId ?? '_' } as const
-  useRealtimeChannel('*', 'group_members', channelFilter, (change) => {
-    if ((change.new as any).member_id === user?.id) {
-      setTranslatedMemberRole(groupId, isManifoldAdmin, setUserRole, user)
-    }
-  })
+  useEffect(() => {
+    if (user) setTranslatedMemberRole(groupId, setUserRole, user)
+  }, [user, groupId])
 
   return userRole
 }
@@ -213,10 +242,10 @@ export function usePollingNumGroupMembers(groupId: string) {
 
 export async function setTranslatedMemberRole(
   groupId: string | undefined,
-  isManifoldAdmin: boolean,
   setRole: (role: GroupRole | null) => void,
-  user?: User | null
+  user: User | null | undefined
 ) {
+  const isManifoldAdmin = isAdminId(user?.id ?? '_')
   if (isManifoldAdmin) {
     setRole('admin')
   }

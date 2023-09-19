@@ -5,18 +5,14 @@ import clsx from 'clsx'
 import { Row } from 'web/components/layout/row'
 import { PrivateUser, User } from 'common/user'
 import { removeEmojis } from 'common/topics'
-import { useAdmin } from 'web/hooks/use-admin'
 import {
   useListGroupsBySlug,
-  useRealtimeRole,
+  useGroupRole,
+  useMemberGroups,
 } from 'web/hooks/use-group-supabase'
 import { buildArray } from 'common/util/array'
-import {
-  MinusCircleIcon,
-  PencilIcon,
-  PlusCircleIcon,
-} from '@heroicons/react/solid'
-import { CogIcon } from '@heroicons/react/outline'
+import { MinusCircleIcon, PlusCircleIcon } from '@heroicons/react/solid'
+import { CogIcon, PencilIcon } from '@heroicons/react/outline'
 import DropdownMenu, {
   DropdownItem,
 } from 'web/components/comments/dropdown-menu'
@@ -33,6 +29,8 @@ import { GroupSelector } from 'web/components/groups/group-selector'
 import { CreateGroupModal } from 'web/components/groups/create-group-modal'
 import { GroupOptions } from 'web/components/groups/group-options'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
+import { HiNoSymbol } from 'react-icons/hi2'
+import { BsFillPersonDashFill } from 'react-icons/bs'
 
 export function TopicsList(props: {
   topics: Group[]
@@ -41,15 +39,12 @@ export function TopicsList(props: {
   setCurrentTopicSlug: (slug: string) => void
   privateUser: PrivateUser | null | undefined
   user: User | null | undefined
-  yourGroupIds?: string[]
   show: boolean
   setShow: (show: boolean) => void
   className?: string
 }) {
   const {
-    topics,
     currentTopicSlug,
-    yourGroupIds,
     privateUser,
     user,
     setCurrentTopicSlug,
@@ -57,6 +52,11 @@ export function TopicsList(props: {
     setShow,
     className,
   } = props
+  const topics = props.topics.filter(
+    (g) => !privateUser?.blockedGroupSlugs.includes(g.slug)
+  )
+  const yourGroups = useMemberGroups(user?.id)
+  const yourGroupIds = yourGroups?.map((g) => g.id)
   return (
     <Row
       className={clsx(
@@ -91,6 +91,7 @@ export function TopicsList(props: {
             privateUser={privateUser}
             currentCategorySlug={currentTopicSlug}
             user={user}
+            yourGroups={yourGroups}
           />
         )}
         {topics.length > 0 &&
@@ -111,23 +112,36 @@ export function TopicsList(props: {
 
 export const ForYouButton = (props: {
   currentCategorySlug?: string
-  setCurrentCategory: (categoryId: string) => void
+  setCurrentCategory: (categorySlug: string) => void
   privateUser: PrivateUser
   user: User
+  yourGroups: Group[] | undefined
 }) => {
-  const { currentCategorySlug, user, setCurrentCategory, privateUser } = props
+  const {
+    currentCategorySlug,
+    yourGroups,
+    user,
+    setCurrentCategory,
+    privateUser,
+  } = props
   const [showEditingBlockedTopics, setShowEditingBlockedTopics] =
     useState(false)
   const [showCreateGroup, setShowCreateGroup] = useState(false)
+  const [showFollowedTopics, setShowFollowedTopics] = useState(false)
   const groupOptionItems = buildArray(
     {
-      name: 'Create a new topic',
+      name: 'Create new topic',
       icon: <PlusCircleIcon className="h-5 w-5" />,
       onClick: () => setShowCreateGroup(true),
     },
     {
-      name: 'Edit blocked topics',
+      name: 'Followed topics',
       icon: <PencilIcon className="h-5 w-5" />,
+      onClick: () => setShowFollowedTopics(true),
+    },
+    {
+      name: 'Blocked topics',
+      icon: <HiNoSymbol className="h-5 w-5" />,
       onClick: () => setShowEditingBlockedTopics(true),
     }
   ) as DropdownItem[]
@@ -159,17 +173,28 @@ export const ForYouButton = (props: {
           />
         </Row>
       </button>
-      <CreateGroupModal
-        user={user}
-        open={showCreateGroup}
-        setOpen={setShowCreateGroup}
-        goToGroupOnSubmit={true}
-      />
-      {privateUser && (
+      {showCreateGroup && (
+        <CreateGroupModal
+          user={user}
+          open={showCreateGroup}
+          setOpen={setShowCreateGroup}
+          goToGroupOnSubmit={true}
+        />
+      )}
+      {privateUser && showEditingBlockedTopics && (
         <BlockedTopicsModal
           privateUser={privateUser}
           setShowEditingBlockedTopics={setShowEditingBlockedTopics}
           show={showEditingBlockedTopics}
+        />
+      )}
+      {showFollowedTopics && user && (
+        <FollowedTopicsModal
+          user={user}
+          setShow={setShowFollowedTopics}
+          show={showFollowedTopics}
+          setCurrentCategory={setCurrentCategory}
+          groups={yourGroups}
         />
       )}
     </Row>
@@ -205,9 +230,13 @@ const BlockedTopicsModal = (props: {
             className={'mt-2 w-full items-center justify-between'}
           >
             <span>{group.name}</span>
-            <button onClick={() => unBlockGroup(group.slug)}>
+            <Button
+              size={'xs'}
+              color={'gray'}
+              onClick={() => unBlockGroup(group.slug)}
+            >
               <MinusCircleIcon className="h-5 w-5" />
-            </button>
+            </Button>
           </Row>
         ))}
         <GroupSelector
@@ -218,19 +247,72 @@ const BlockedTopicsModal = (props: {
     </Modal>
   )
 }
+const FollowedTopicsModal = (props: {
+  user: User
+  setShow: (show: boolean) => void
+  show: boolean
+  setCurrentCategory: (categorySlug: string) => void
+  groups: Group[] | undefined
+}) => {
+  const { user, show, groups, setCurrentCategory, setShow } = props
+
+  return (
+    <Modal open={show} setOpen={setShow}>
+      <Col className={clsx('bg-canvas-50 min-h-[25rem] rounded-md p-4')}>
+        <span className={'text-lg font-bold'}>Followed Topics</span>
+
+        {!groups ? (
+          <LoadingIndicator />
+        ) : (
+          groups.map((group) => (
+            <Row
+              key={group.id + 'followed-topic'}
+              className={'mt-2 w-full items-center justify-between'}
+            >
+              <button
+                onClick={() => {
+                  setCurrentCategory(group.slug)
+                  setShow(false)
+                }}
+              >
+                {group.name}
+              </button>
+              <Button
+                size={'xs'}
+                color={'gray'}
+                onClick={() => {
+                  console.log('leave group', group.id, user.id)
+                  leaveGroup(group.id, user.id)
+                  track('leave group', { slug: group.slug })
+                }}
+              >
+                <BsFillPersonDashFill className="h-5 w-5" />
+              </Button>
+            </Row>
+          ))
+        )}
+        <GroupSelector
+          setSelectedGroup={(group) => {
+            joinGroup({ groupId: group.id })
+            track('join group', { slug: group.slug })
+          }}
+          isContractCreator={true}
+        />
+      </Col>
+    </Modal>
+  )
+}
 export const GroupButton = (props: {
   group: Group
   yourGroupIds?: string[]
   user: User | null | undefined
   currentCategorySlug?: string
-  setCurrentCategory: (categoryId: string) => void
+  setCurrentCategory: (categorySlug: string) => void
 }) => {
   const { group, yourGroupIds, user, setCurrentCategory, currentCategorySlug } =
     props
   const isCreator = user?.id == group.creatorId
-  const isManifoldAdmin = useAdmin()
-  const realtimeRole = useRealtimeRole(group?.id)
-  const userRole = isManifoldAdmin ? 'admin' : realtimeRole
+  const userRole = useGroupRole(group.id, user)
   const [isMember, setIsMember] = useState(false)
   useEffect(() => {
     setIsMember((yourGroupIds ?? []).includes(group.id))
@@ -300,6 +382,7 @@ export const GroupButton = (props: {
               e.stopPropagation()
               follow()
             }}
+            className={'h-5 w-5'}
           >
             {loading ? (
               <LoadingIndicator size={'sm'} />

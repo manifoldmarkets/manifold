@@ -12,7 +12,6 @@ import {
   useShouldBlockDestiny,
   useUser,
 } from 'web/hooks/use-user'
-import { useMemberGroupIds } from 'web/hooks/use-group-supabase'
 import { Row } from 'web/components/layout/row'
 import { buildArray } from 'common/util/array'
 import {
@@ -36,7 +35,6 @@ export const SHOW_TOPICS_TERM = 'show-topics'
 
 export default function QuestionsPage() {
   const user = useUser()
-  const yourGroupIds = useMemberGroupIds(user?.id)
   const isMobile = useIsMobile()
   const router = useRouter()
   const { q } = router.query
@@ -58,14 +56,13 @@ export default function QuestionsPage() {
   )
   const [show, setShow] = useState<boolean>(false)
 
-  const { groups: myTopics } = useGroupRoles(user)
   const privateUser = usePrivateUser()
+  const { groups: myTopics } = useGroupRoles(user)
 
-  const topicsByImportance = (
+  const topicsByImportance =
     categorySlug || !trendingGroups
       ? uniqBy(trendingGroups, (g) => removeEmojis(g.name).toLowerCase())
       : combineGroupsByImportance(trendingGroups, myTopics)
-  ).filter((g) => !privateUser?.blockedGroupSlugs.includes(g.slug))
   const topicFromRouter = useGroupFromRouter(categorySlug, topicsByImportance)
   const topics = buildArray(
     topicFromRouter &&
@@ -95,18 +92,19 @@ export default function QuestionsPage() {
       <Page
         trackPageView={'questions page'}
         rightSidebar={
-          <TopicsList
-            key={'groups' + topics.length}
-            topics={topics}
-            currentTopicSlug={categorySlug}
-            setCurrentTopicSlug={setCategorySlug}
-            privateUser={privateUser}
-            user={user}
-            yourGroupIds={yourGroupIds}
-            show={true}
-            setShow={() => {}}
-            className={'mt-14 hidden xl:flex'}
-          />
+          !isMobile && (
+            <TopicsList
+              key={'groups' + topics.length}
+              topics={topics}
+              currentTopicSlug={categorySlug}
+              setCurrentTopicSlug={setCategorySlug}
+              privateUser={privateUser}
+              user={user}
+              show={true}
+              setShow={() => {}}
+              className={'mt-14 hidden xl:flex'}
+            />
+          )
         }
       >
         <SEO
@@ -156,7 +154,6 @@ export default function QuestionsPage() {
               setCurrentTopicSlug={setCategorySlug}
               privateUser={privateUser}
               user={user}
-              yourGroupIds={yourGroupIds}
               show={show}
               setShow={setShow}
             />
