@@ -86,7 +86,7 @@ export function GroupOptions(props: {
       }
   ) as DropdownItem[]
   return (
-    <>
+    <div onClick={(e) => e.stopPropagation()}>
       <DropdownMenu
         closeOnClick={true}
         Items={groupOptionItems}
@@ -124,7 +124,7 @@ export function GroupOptions(props: {
           addPermission={addPermission}
         />
       )}
-    </>
+    </div>
   )
 }
 

@@ -276,7 +276,7 @@ export const GroupButton = (props: {
         setCurrentCategory(currentCategorySlug === group.slug ? '' : group.slug)
       }}
       className={clsx(
-        'hover:bg-canvas-50 relative my-2 w-full flex-row flex-wrap px-2 py-4 text-left text-sm ',
+        'hover:bg-canvas-50 relative w-full flex-row flex-wrap py-4 px-2 text-left text-sm ',
         currentCategorySlug == group.slug ? 'bg-primary-50 ' : ''
       )}
       key={group.id}
