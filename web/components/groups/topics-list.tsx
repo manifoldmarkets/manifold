@@ -69,7 +69,7 @@ export function TopicsList(props: {
       <Col
         className={clsx(
           'scrollbar-hide relative max-h-[calc(100vh-4rem)] min-h-[35rem] overflow-y-auto overflow-x-visible lg:max-h-[calc(100vh-6rem)]',
-          'bg-canvas-0 h-fit w-[7rem] items-start sm:w-[8rem] md:w-[10rem]'
+          'bg-canvas-0 h-fit w-[7rem] items-start sm:w-[8rem] md:w-[10rem] xl:w-64'
         )}
       >
         <Row

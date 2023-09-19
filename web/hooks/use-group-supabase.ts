@@ -145,12 +145,12 @@ export function useGroupRole(groupId: string, user: User | null | undefined) {
   const [userRole, setUserRole] = useState<GroupRole | null | undefined>(
     undefined
   )
-
+  const isManifoldAdmin = isAdminId(user?.id ?? '_')
   useEffect(() => {
     if (user) setTranslatedMemberRole(groupId, setUserRole, user)
   }, [user, groupId])
 
-  return userRole
+  return isManifoldAdmin ? 'admin' : userRole
 }
 
 export function useRealtimeGroupMemberIds(groupId: string) {
@@ -244,10 +244,6 @@ export async function setTranslatedMemberRole(
   setRole: (role: GroupRole | null) => void,
   user: User | null | undefined
 ) {
-  const isManifoldAdmin = isAdminId(user?.id ?? '_')
-  if (isManifoldAdmin) {
-    setRole('admin')
-  }
   if (user && groupId) {
     getMemberRole(user, groupId)
       .then((result) => {
