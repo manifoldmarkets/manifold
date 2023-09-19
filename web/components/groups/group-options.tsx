@@ -80,7 +80,7 @@ export function GroupOptions(props: {
     },
     isMember &&
       !isCreator && {
-        name: 'Unfollow topic',
+        name: 'Unfollow',
         icon: <BsFillPersonDashFill className="h-5 w-5" />,
         onClick: unfollow,
       }
@@ -91,7 +91,6 @@ export function GroupOptions(props: {
         closeOnClick={true}
         Items={groupOptionItems}
         Icon={<DotsVerticalIcon className={clsx('h-5 w-5')} />}
-        menuWidth={'w-60'}
         withinOverflowContainer={true}
       />
       <Modal open={editingName} setOpen={setEditingName}>
@@ -144,9 +143,8 @@ const GroupLeaderboardModal = (props: {
   )
   return (
     <Modal open={open} setOpen={setOpen} size={'lg'}>
-      <Col className={'bg-canvas-50 rounded-md p-4'}>
-        <div className="text-ink-500 mb-4">Updated every 15 minutes</div>
-        <Col className={'min-h-[40rem]'}>
+      <Col className={'bg-canvas-50 rounded-xl p-4'}>
+        <div className={'min-h-[40rem]'}>
           {!topTraders || !topCreators ? (
             <LoadingIndicator />
           ) : (
@@ -157,6 +155,7 @@ const GroupLeaderboardModal = (props: {
                 header="Profit"
                 maxToShow={25}
               />
+              <div className="h-8" />
               <GroupLeaderboard
                 topUsers={topCreators}
                 title="🏅 Top creators"
@@ -166,7 +165,10 @@ const GroupLeaderboardModal = (props: {
               />
             </>
           )}
-        </Col>
+        </div>
+        <div className="text-ink-500 mt-4 text-center">
+          Updated every 15 minutes
+        </div>
       </Col>
     </Modal>
   )

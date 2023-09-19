@@ -28,22 +28,22 @@ export function AddMarketToGroupModal(props: {
   }, [group.id])
   return (
     <Modal open={open} setOpen={setOpen} size="lg">
-      <Col className={clsx(MODAL_CLASS, SCROLLABLE_MODAL_CLASS)}>
-        <div className="bg-primary-100 text-primary-800 fixed inset-x-0 top-0 z-40 w-full rounded-t-md py-2 px-8">
-          {group.name}
+      <Col className="bg-canvas-0 gap-4 overflow-hidden rounded-md">
+        <div className="bg-primary-100 text-primary-800 py-2 px-8">
+          Add questions to {group.name}
         </div>
         {addPermission == 'private' && (
-          <Col className="w-full pt-4">
+          <Col className="w-full">
             <NewContractFromGroup group={group} user={user} />
           </Col>
         )}
         {addPermission == 'new' && (
-          <Col className="w-full pt-4">
+          <Col className="w-full">
             <NewContractFromGroup group={group} user={user} />
           </Col>
         )}
         {addPermission == 'any' && (
-          <Col className="-mt-1 w-full pt-4">
+          <Col className="-mt-1 w-full">
             <UncontrolledTabs
               tabs={[
                 {
@@ -62,12 +62,13 @@ export function AddMarketToGroupModal(props: {
                       additionalFilter={{
                         excludeContractIds: groupContractIds,
                       }}
-                      headerClassName="!top-[4rem]"
+                      className={clsx(SCROLLABLE_MODAL_CLASS, 'w-full !px-4')}
+                      headerClassName="!bg-canvas-0"
                     />
                   ),
                 },
               ]}
-              className="bg-canvas-0 sticky top-4 z-40"
+              className="px-4"
             />
           </Col>
         )}
