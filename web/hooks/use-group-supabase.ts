@@ -49,7 +49,9 @@ export function useIsGroupMember(groupSlug: string) {
 export function useMemberGroupIds(
   userId: string | undefined | null
 ): string[] | undefined {
-  const [groupIds, setGroupIds] = useState<string[] | undefined>(undefined)
+  const [groupIds, setGroupIds] = usePersistentInMemoryState<
+    string[] | undefined
+  >(undefined, `member-group-ids-${userId ?? ''}`)
   useEffect(() => {
     if (!userId) return
     db.from('group_members')
@@ -105,10 +107,7 @@ export const useGroupsWithContract = (
 }
 
 export function useMemberGroups(userId: string | undefined | null) {
-  const [groups, setGroups] = usePersistentInMemoryState<Group[] | undefined>(
-    undefined,
-    `member-groups-${userId ?? ''}`
-  )
+  const [groups, setGroups] = useState<Group[] | undefined>(undefined)
 
   const { rows } = useSubscription('group_members', {
     k: 'member_id',

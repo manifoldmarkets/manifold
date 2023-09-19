@@ -9,6 +9,7 @@ import {
   useListGroupsBySlug,
   useGroupRole,
   useMemberGroups,
+  useMemberGroupIds,
 } from 'web/hooks/use-group-supabase'
 import { buildArray } from 'common/util/array'
 import { MinusCircleIcon, PlusCircleIcon } from '@heroicons/react/solid'
@@ -56,11 +57,12 @@ export function TopicsList(props: {
     (g) => !privateUser?.blockedGroupSlugs.includes(g.slug)
   )
   const yourGroups = useMemberGroups(user?.id)
-  const yourGroupIds = yourGroups?.map((g) => g.id)
+  const yourGroupIdsInMemory = useMemberGroupIds(user?.id)
+  const yourGroupIds = yourGroups?.map((g) => g.id) ?? yourGroupIdsInMemory
   return (
     <Row
       className={clsx(
-        show ? 'animate-slide-in-from-right block' : 'hidden',
+        show ? 'animate-slide-in-from-right block xl:animate-none' : 'hidden',
         className
       )}
     >
@@ -304,7 +306,7 @@ const FollowedTopicsModal = (props: {
 }
 export const GroupButton = (props: {
   group: Group
-  yourGroupIds?: string[]
+  yourGroupIds: string[] | undefined
   user: User | null | undefined
   currentCategorySlug?: string
   setCurrentCategory: (categorySlug: string) => void
@@ -313,9 +315,11 @@ export const GroupButton = (props: {
     props
   const isCreator = user?.id == group.creatorId
   const userRole = useGroupRole(group.id, user)
-  const [isMember, setIsMember] = useState(false)
+  const [isMember, setIsMember] = useState(
+    yourGroupIds ? yourGroupIds.includes(group.id) : false
+  )
   useEffect(() => {
-    setIsMember((yourGroupIds ?? []).includes(group.id))
+    if (yourGroupIds) setIsMember(yourGroupIds.includes(group.id))
   }, [yourGroupIds?.length])
   const [loading, setLoading] = useState(false)
   const isMobile = useIsMobile()
@@ -376,7 +380,7 @@ export const GroupButton = (props: {
       />
       <Row className={'break-anywhere w-full items-center justify-between'}>
         <span>{isMobile ? removeEmojis(group.name) : group.name}</span>
-        {!isPrivate && !isCreator && !isMember && (
+        {!isPrivate && !isCreator && !isMember && yourGroupIds && (
           <button
             onClick={(e) => {
               e.stopPropagation()
