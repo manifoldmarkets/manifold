@@ -16,7 +16,7 @@ import { ENV_CONFIG } from 'common/envs/constants'
 import { uniq } from 'lodash'
 import { useUserById, useUsers } from 'web/hooks/use-user-supabase'
 import { UserAvatarAndBadge, UserLink } from 'web/components/widgets/user-link'
-import { XIcon } from '@heroicons/react/outline'
+import { QrcodeIcon, XIcon } from '@heroicons/react/outline'
 import { User } from 'web/lib/firebase/users'
 import { Avatar } from 'web/components/widgets/avatar'
 import { formatMoney } from 'common/util/format'
@@ -25,6 +25,10 @@ import { ExpandingInput } from 'web/components/widgets/expanding-input'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { SEO } from 'web/components/SEO'
 import { useCanSendMana } from 'web/hooks/use-can-send-mana'
+import { QRCode } from 'web/components/widgets/qr-code'
+import { CopyLinkRow } from 'web/components/buttons/copy-link-button'
+import { Title } from 'web/components/widgets/title'
+import { useRouter } from 'next/router'
 
 export default function Payments() {
   const { payments, load } = useManaPayments()
@@ -70,14 +74,27 @@ export const PaymentsContent = (props: {
   const users = useUsers(
     uniq(payments.map((payment) => [payment.fromId, payment.toId]).flat())
   )
-  const [showModal, setShowModal] = useState(false)
+
+  const [showPayModal, setShowPayModal] = useState(false)
+  const [showQRModal, setShowQRModal] = useState(false)
+
+  const router = useRouter()
+  const { a, msg } = router.query
+
   useEffect(() => {
-    if (!showModal) setTimeout(() => refresh(), 100)
-  }, [showModal])
+    if (router.isReady) setShowPayModal(a != undefined)
+  }, [router.isReady])
+
+  useEffect(() => {
+    if (!showPayModal) setTimeout(() => refresh(), 100)
+  }, [showPayModal])
   return (
     <Col className={'w-full'}>
       <Row className={'mb-2 justify-between'}>
-        <Button onClick={() => setShowModal(true)} color={'indigo'}>
+        <Button onClick={() => setShowQRModal(true)} color="gray-outline">
+          <QrcodeIcon className="h-5 w-5" />
+        </Button>
+        <Button onClick={() => setShowPayModal(true)} color={'indigo'}>
           Send Mana
         </Button>
       </Row>
@@ -89,14 +106,29 @@ export const PaymentsContent = (props: {
         <PaymentCards payments={payments} users={users} forUser={forUser} />
       )}
       {user && (
-        <PaymentsModal
-          toUser={
-            forUser ? (forUser.id === user.id ? undefined : forUser) : undefined
-          }
-          fromUser={user}
-          show={showModal}
-          setShow={setShowModal}
-        />
+        <>
+          {router.isReady && (
+            <PaymentsModal
+              toUser={
+                forUser
+                  ? forUser.id === user.id
+                    ? undefined
+                    : forUser
+                  : undefined
+              }
+              fromUser={user}
+              show={showPayModal}
+              setShow={setShowPayModal}
+              defaultMessage={msg as string | undefined}
+              defaultAmount={typeof a === 'string' ? parseInt(a) : undefined}
+            />
+          )}
+          <QRModal
+            user={forUser ?? user}
+            show={showQRModal}
+            setShow={setShowQRModal}
+          />
+        </>
       )}
     </Col>
   )
@@ -176,34 +208,6 @@ const PaymentCards = (props: {
     </Col>
   )
 }
-const amountFromPointOfReferenceUser = (
-  payment: ManaPayTxn,
-  referenceUser: User | null | undefined
-) =>
-  referenceUser && payment.fromId === referenceUser.id
-    ? -payment.amount
-    : payment.amount
-
-function getSortFunction(
-  sortField: 'amount' | 'createdTime',
-  sortDirection: 'asc' | 'desc',
-  referenceUser: User | undefined | null
-) {
-  return (a: ManaPayTxn, b: ManaPayTxn) => {
-    let comparison
-
-    if (sortField === 'createdTime') {
-      comparison =
-        new Date(a[sortField]).getTime() - new Date(b[sortField]).getTime()
-    } else {
-      const amountA = amountFromPointOfReferenceUser(a, referenceUser)
-      const amountB = amountFromPointOfReferenceUser(b, referenceUser)
-      comparison = amountA - amountB
-    }
-
-    return sortDirection === 'asc' ? comparison : -comparison
-  }
-}
 
 export const PaymentsModal = (props: {
   fromUser: User
@@ -211,11 +215,20 @@ export const PaymentsModal = (props: {
   show: boolean
   setShow: (show: boolean) => void
   defaultMessage?: string
+  defaultAmount?: number
   groupId?: string
 }) => {
-  const { fromUser, groupId, defaultMessage, toUser, setShow, show } = props
-  const [amount, setAmount] = useState<number | undefined>(10)
-  const [message, setMessage] = useState(defaultMessage ?? '')
+  const {
+    fromUser,
+    groupId,
+    defaultMessage = '',
+    defaultAmount = 10,
+    toUser,
+    setShow,
+    show,
+  } = props
+  const [amount, setAmount] = useState<number | undefined>(defaultAmount)
+  const [message, setMessage] = useState(defaultMessage)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [toUsers, setToUsers] = useState<UserSearchResult[]>([])
@@ -321,6 +334,53 @@ export const PaymentsModal = (props: {
           </Row>
         </Col>
       </Col>
+    </Modal>
+  )
+}
+
+export const QRModal = (props: {
+  show: boolean
+  setShow: (show: boolean) => void
+  user: User
+}) => {
+  const { show, setShow, user } = props
+
+  const [amount, setAmount] = useState<number | undefined>(10)
+  const [message, setMessage] = useState('')
+
+  const url = `https://${ENV_CONFIG.domain}/${user.username}?tab=managrams&a=${
+    amount ?? 10
+  }&msg=${message}`
+
+  return (
+    <Modal open={show} setOpen={setShow} className="bg-canvas-0 rounded-lg">
+      <div className="flex flex-col items-center p-8">
+        <Title>QR Code</Title>
+
+        <CopyLinkRow
+          url={url}
+          eventTrackingName="copy managram page"
+          linkBoxClassName="mb-4"
+        />
+        <QRCode url={url} width={300} height={300} className="self-center" />
+
+        <details className="flex flex-col self-stretch">
+          <summary className="text-ink-700 mt-4">Advanced Options</summary>
+          <span className="mt-2">Default Amount</span>
+          <AmountInput
+            amount={amount}
+            onChangeAmount={setAmount}
+            placeholder="10"
+          />
+          <span className="mt-2">Default Message</span>
+          <ExpandingInput
+            placeholder="What this transaction is for (e.g. tacos)"
+            className="w-full"
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+          />
+        </details>
+      </div>
     </Modal>
   )
 }
