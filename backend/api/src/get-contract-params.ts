@@ -20,6 +20,7 @@ import { APIError, MaybeAuthedEndpoint, validate } from './helpers'
 import { getIsAdmin } from 'common/supabase/is-admin'
 import { pointsToBase64 } from 'common/util/og'
 import { SupabaseClient } from 'common/supabase/utils'
+import { buildArray } from 'common/util/array'
 
 const bodySchema = z.object({
   contractSlug: z.string(),
@@ -51,6 +52,7 @@ export const getcontractparams = MaybeAuthedEndpoint<Ret>(async (req, auth) => {
   const isCpmm1 = contract.mechanism === 'cpmm-1'
   const hasMechanism = contract.mechanism !== 'none'
   const isMulti = contract.mechanism === 'cpmm-multi-1'
+  const isBinaryDpm = contract.mechanism === 'dpm-2'
 
   const [
     canAccessContract,
@@ -96,14 +98,18 @@ export const getcontractparams = MaybeAuthedEndpoint<Ret>(async (req, auth) => {
       : { state: 'not found' }
   }
 
-  let chartPoints = isCpmm1
-    ? [
-        { x: contract.createdTime, y: getInitialProbability(contract) },
-        ...maxMinBin(allBetPoints, 500),
-      ].map((p) => [p.x, p.y] as const)
-    : isMulti
-    ? serializeMultiPoints(calculateMultiBets(allBetPoints))
-    : []
+  let chartPoints =
+    isCpmm1 || isBinaryDpm
+      ? buildArray<{ x: number; y: number }>(
+          isCpmm1 && {
+            x: contract.createdTime,
+            y: getInitialProbability(contract),
+          },
+          maxMinBin(allBetPoints, 500)
+        ).map((p) => [p.x, p.y] as const)
+      : isMulti
+      ? serializeMultiPoints(calculateMultiBets(allBetPoints))
+      : []
 
   const ogPoints =
     isCpmm1 && contract.visibility !== 'private' ? binAvg(allBetPoints) : []
