@@ -225,7 +225,6 @@ export async function searchContract(props: {
     contracts: undefined,
     fuzzyContractOffset: 0,
     shouldLoadMore: false,
-    showTime: null,
   }
 
   if (limit === 0) {

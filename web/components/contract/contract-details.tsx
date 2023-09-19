@@ -17,8 +17,6 @@ import { UserLink } from '../widgets/user-link'
 import { NO_CLOSE_TIME_TYPES } from 'common/contract'
 import { FollowButton } from '../buttons/follow-button'
 
-export type ShowTime = 'resolve-date' | 'close-date'
-
 export function AuthorInfo(props: { contract: Contract }) {
   const { contract } = props
   const { creatorName, creatorUsername, creatorAvatarUrl, creatorCreatedTime } =
