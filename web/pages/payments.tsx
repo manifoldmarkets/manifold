@@ -92,6 +92,9 @@ export const PaymentsContent = (props: {
     <Col className={'w-full'}>
       <Row className={'mb-2 justify-between'}>
         <Button onClick={() => setShowQRModal(true)} color="gray-outline">
+          {user && user.id === forUser?.id && (
+            <span className="mr-1">Recieve Mana</span>
+          )}
           <QrcodeIcon className="h-5 w-5" />
         </Button>
         <Button onClick={() => setShowPayModal(true)} color={'indigo'}>
@@ -355,7 +358,9 @@ export const QRModal = (props: {
   return (
     <Modal open={show} setOpen={setShow} className="bg-canvas-0 rounded-lg">
       <div className="flex flex-col items-center p-8">
-        <Title>QR Code</Title>
+        <div className="mb-4 text-2xl text-indigo-700">
+          Scan to send mana to {user.name}
+        </div>
 
         <CopyLinkRow
           url={url}
