@@ -263,24 +263,8 @@ export function SupabaseContractSearch(props: {
 
   const loadMoreContracts = () => query(state)
 
-  // Counts as loaded if you are on the page and a query finished or if you go back in history.
-  const [hasLoadedQuery, setHasLoadedQuery] = usePersistentInMemoryState(
-    false,
-    `${persistPrefix}-search-has-loaded`
-  )
-
-  const onSearchParametersChanged = useCallback(
-    debounce(() => {
-      if (!hasLoadedQuery) {
-        setHasLoadedQuery(true)
-        query(INITIAL_STATE, true)
-      }
-    }, 100),
-    []
-  )
-
   useEffect(() => {
-    onSearchParametersChanged()
+    query(INITIAL_STATE, true)
   }, [searchParams])
 
   const contracts = state.contracts
