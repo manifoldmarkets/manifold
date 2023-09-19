@@ -288,7 +288,7 @@ export const GroupButton = (props: {
             : ''
         }
       />
-      <Row className={'w-full items-center justify-between'}>
+      <Row className={'break-anywhere w-full items-center justify-between'}>
         <span>{isMobile ? removeEmojis(group.name) : group.name}</span>
         {!isPrivate && !isCreator && !isMember && (
           <button

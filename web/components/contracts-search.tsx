@@ -524,7 +524,7 @@ export function SearchFilters(props: {
   const contractTypeLabel = getLabelFromValue(CONTRACT_TYPES, contractType)
 
   return (
-    <div className={clsx(className, 'gap-4')}>
+    <div className={clsx(className, 'gap-3')}>
       {!hideOrderSelector && (
         <DropdownMenu
           Items={generateFilterDropdownItems(
@@ -586,7 +586,7 @@ export function SearchFilters(props: {
       />
       {currentTopicSlug == topic?.slug && topic && (
         <TopicTag
-          className={'text-primary-500 !py-0'}
+          className={'text-primary-500 overflow-x-hidden text-ellipsis !py-0'}
           topic={topic}
           location={'questions page'}
         >

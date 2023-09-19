@@ -123,7 +123,7 @@ export default function QuestionsPage() {
           <Row className={'mt-2 pl-2 sm:mt-0'}>
             <Col
               className={
-                'scrollbar-hide relative max-h-[calc(100vh-4rem)] min-h-[35rem] w-full overflow-y-auto overflow-x-visible lg:max-h-[calc(100vh-5.25rem)]'
+                'scrollbar-hide relative max-h-[calc(100vh-4rem)] min-h-[35rem] w-full overflow-y-auto overflow-x-hidden lg:max-h-[calc(100vh-5.25rem)]'
               }
             >
               <SupabaseContractSearch
