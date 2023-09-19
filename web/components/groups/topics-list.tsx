@@ -241,10 +241,7 @@ const BlockedTopicsModal = (props: {
             </Button>
           </Row>
         ))}
-        <GroupSelector
-          setSelectedGroup={(group) => blockGroup(group.slug)}
-          isContractCreator={false}
-        />
+        <GroupSelector setSelectedGroup={(group) => blockGroup(group.slug)} />
       </Col>
     </Modal>
   )
@@ -298,7 +295,6 @@ const FollowedTopicsModal = (props: {
             joinGroup({ groupId: group.id })
             track('join group', { slug: group.slug })
           }}
-          isContractCreator={true}
         />
       </Col>
     </Modal>
