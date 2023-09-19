@@ -652,6 +652,8 @@ const SikhSlayed = createNewsDashboardTab(
     {
       url: 'https://apnews.com/article/canada-india-sikh-trudeau-modi-nijjar-fb390e4a45d167711db4f96681edd0a2',
     },
+    { slug: 'was-the-indian-government-involved' },
+    { slug: 'will-the-indian-government-admit-to' },
     { slug: 'will-canada-or-india-downgrade-bila' },
     { slug: 'will-trudeau-take-back-his-accusati' },
   ]
