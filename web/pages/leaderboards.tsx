@@ -257,7 +257,7 @@ const SelectTopicModal = (props: {
   const { open, group, setOpen, setGroup } = props
   return (
     <Modal open={open} setOpen={setOpen} size={'lg'}>
-      <Col className={'bg-canvas-50 rounded-xl p-4'}>
+      <Col className={'bg-canvas-50 min-h-[25rem] rounded-xl p-4'}>
         <Title className={''}>Filter leaderboards by topic</Title>
         {group && (
           <Row className={'items-center justify-between gap-2'}>
