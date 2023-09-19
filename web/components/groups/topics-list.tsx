@@ -263,7 +263,7 @@ export const GroupButton = (props: {
           leaveGroup(group.id, user.id)
             .then(() => {
               setIsMember(false)
-              toast(`You're not longer following ${group.name}.`)
+              toast(`You're no longer following ${group.name}.`)
             })
             .catch(() => {
               toast.error('Failed to unfollow category')
