@@ -52,7 +52,8 @@ export const getcontractparams = MaybeAuthedEndpoint<Ret>(async (req, auth) => {
   const isCpmm1 = contract.mechanism === 'cpmm-1'
   const hasMechanism = contract.mechanism !== 'none'
   const isMulti = contract.mechanism === 'cpmm-multi-1'
-  const isBinaryDpm = contract.mechanism === 'dpm-2'
+  const isBinaryDpm =
+    contract.outcomeType === 'BINARY' && contract.mechanism === 'dpm-2'
 
   const [
     canAccessContract,
