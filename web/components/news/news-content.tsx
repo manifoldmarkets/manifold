@@ -626,9 +626,42 @@ const LostF35 = createNewsDashboardTab(
   ]
 )
 
+const Armenia = createNewsDashboardTab(
+  'Armenia',
+  'Azerbaijan attacks Nagorno-Karabakh',
+  [
+    {
+      url: 'https://www.cnn.com/2023/09/19/asia/armenia-azerbaijan-nagorno-karabakh-bombardment-intl/index.html',
+    },
+    { slug: 'will-azerbaijan-attack-armenia-in-s' },
+    { slug: 'will-armenia-and-azerbaijan-have-a-9417fe5850fd' },
+    { slug: 'will-nagornokarabakh-secede-from-az' },
+    { slug: 'will-armenia-withdraw-from-the-coll' },
+    { slug: 'will-iran-intervene-in-armeniaazerb' },
+    { slug: 'will-russia-help-armenia-in-the-war' },
+  ]
+)
+
+const SikhSlayed = createNewsDashboardTab(
+  'Canadian Sikh',
+  'Sikh slaying sparks supranational scuffle',
+  [
+    {
+      url: 'https://apnews.com/article/canada-india-sikh-diplomat-trudeau-modi-3c5572d9027769ea6adbd047ec6f462a',
+    },
+    {
+      url: 'https://apnews.com/article/canada-india-sikh-trudeau-modi-nijjar-fb390e4a45d167711db4f96681edd0a2',
+    },
+    { slug: 'will-canada-or-india-downgrade-bila' },
+    { slug: 'will-trudeau-take-back-his-accusati' },
+  ]
+)
+
 export const newsContent = [
-  LostF35,
+  Armenia,
+  SikhSlayed,
   Election2024,
+  LostF35,
   UFOs,
   Trump,
   G20,
