@@ -16,14 +16,13 @@ import { ENV_CONFIG } from 'common/envs/constants'
 import { uniq } from 'lodash'
 import { useUserById, useUsers } from 'web/hooks/use-user-supabase'
 import { UserAvatarAndBadge, UserLink } from 'web/components/widgets/user-link'
-import { ViewListIcon, XIcon } from '@heroicons/react/outline'
+import { XIcon } from '@heroicons/react/outline'
 import { User } from 'web/lib/firebase/users'
 import { Avatar } from 'web/components/widgets/avatar'
 import { formatMoney } from 'common/util/format'
 import { Linkify } from 'web/components/widgets/linkify'
 import { ExpandingInput } from 'web/components/widgets/expanding-input'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
-import SquaresIcon from 'web/lib/icons/squares-icon.svg'
 import { SEO } from 'web/components/SEO'
 import { useCanSendMana } from 'web/hooks/use-can-send-mana'
 
@@ -72,25 +71,12 @@ export const PaymentsContent = (props: {
     uniq(payments.map((payment) => [payment.fromId, payment.toId]).flat())
   )
   const [showModal, setShowModal] = useState(false)
-  const [viewType, setViewType] = useState<'list' | 'card'>('card')
   useEffect(() => {
     if (!showModal) setTimeout(() => refresh(), 100)
   }, [showModal])
   return (
     <Col className={'w-full'}>
       <Row className={'mb-2 justify-between'}>
-        <Button
-          color={'gray-outline'}
-          onClick={() =>
-            viewType === 'list' ? setViewType('card') : setViewType('list')
-          }
-        >
-          {viewType === 'list' ? (
-            <SquaresIcon className={'h-5 w-5'} />
-          ) : (
-            <ViewListIcon className={'h-5 w-5'} />
-          )}
-        </Button>
         <Button onClick={() => setShowModal(true)} color={'indigo'}>
           Send Mana
         </Button>
@@ -99,8 +85,6 @@ export const PaymentsContent = (props: {
         <Col className=" ">
           <span className="text-gray-500">No Payments</span>
         </Col>
-      ) : viewType === 'list' ? (
-        <PaymentsTable payments={payments} users={users} forUser={forUser} />
       ) : (
         <PaymentCards payments={payments} users={users} forUser={forUser} />
       )}
@@ -219,99 +203,6 @@ function getSortFunction(
 
     return sortDirection === 'asc' ? comparison : -comparison
   }
-}
-
-function PaymentsTable(props: {
-  payments: ManaPayTxn[]
-  users: User[] | undefined
-  forUser: User | undefined | null
-}) {
-  const { payments, users, forUser } = props
-  const [sortField, setSortField] = useState<'createdTime' | 'amount'>(
-    'createdTime'
-  )
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc')
-
-  const sortedPayments = [...payments].sort(
-    getSortFunction(sortField, sortDirection, forUser)
-  )
-
-  const handleHeaderClick = (newSortField: 'createdTime' | 'amount') => {
-    if (sortField === newSortField) {
-      // If the user clicked the column that's already sorted, we'll just switch the sort direction.
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
-    } else {
-      // If the user clicked a new column, we'll start by sorting it in ascending order.
-      setSortField(newSortField)
-      setSortDirection('asc')
-    }
-  }
-
-  return (
-    <table className="w-full text-left">
-      <thead>
-        <tr>
-          <th>From</th>
-          <th>To</th>
-          <th
-            className={'cursor-pointer'}
-            onClick={() => handleHeaderClick('amount')}
-          >
-            Amount
-          </th>
-          <th>Message</th>
-          <th
-            className={'cursor-pointer'}
-            onClick={() => handleHeaderClick('createdTime')}
-          >
-            Time
-          </th>
-        </tr>
-      </thead>
-      <tbody>
-        {sortedPayments.map((payment) => {
-          const fromUser = users?.find((u) => u.id === payment.fromId)
-          const toUser = users?.find((u) => u.id === payment.toId)
-          return (
-            <tr key={payment.id}>
-              <td className={''}>
-                {fromUser ? (
-                  <UserLink
-                    name={fromUser.name}
-                    username={fromUser.username}
-                    className={'max-w-[5rem] text-ellipsis'}
-                  />
-                ) : (
-                  <span>Loading...</span>
-                )}
-              </td>{' '}
-              <td>
-                {toUser ? (
-                  <UserLink
-                    name={toUser.name}
-                    username={toUser.username}
-                    className={'max-w-[5rem] text-ellipsis'}
-                  />
-                ) : (
-                  <span>Loading...</span>
-                )}
-              </td>
-              <td className={'text-end'}>
-                {formatMoney(amountFromPointOfReferenceUser(payment, forUser))}
-              </td>
-              <td className={'line-clamp-1 '}>{payment.data.message}</td>
-              <td className={'text-end'}>
-                <RelativeTimestamp
-                  time={payment.createdTime}
-                  shortened={true}
-                />
-              </td>
-            </tr>
-          )
-        })}
-      </tbody>
-    </table>
-  )
 }
 
 export const PaymentsModal = (props: {
