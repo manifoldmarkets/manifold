@@ -27,7 +27,6 @@ import { SEO } from 'web/components/SEO'
 import { useCanSendMana } from 'web/hooks/use-can-send-mana'
 import { QRCode } from 'web/components/widgets/qr-code'
 import { CopyLinkRow } from 'web/components/buttons/copy-link-button'
-import { Title } from 'web/components/widgets/title'
 import { useRouter } from 'next/router'
 
 export default function Payments() {
