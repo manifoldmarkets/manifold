@@ -66,11 +66,15 @@ export function TopicsList(props: {
     >
       <Col
         className={clsx(
-          'scrollbar-hide  max-h-[calc(100vh-4rem)] min-h-[35rem] overflow-y-auto overflow-x-visible lg:max-h-[calc(100vh-6rem)]',
+          'scrollbar-hide relative max-h-[calc(100vh-4rem)] min-h-[35rem] overflow-y-auto overflow-x-visible lg:max-h-[calc(100vh-6rem)]',
           'bg-canvas-0 h-fit w-[7rem] items-start sm:w-[8rem] md:w-[10rem]'
         )}
       >
-        <Row className={'w-full items-center justify-center xl:hidden'}>
+        <Row
+          className={
+            'bg-canvas-0 sticky top-0 z-10 w-full items-center justify-center xl:hidden'
+          }
+        >
           <Button
             className={'h-[3.15rem] w-[8rem] md:w-[10.5rem]'}
             color={'gray-white'}
