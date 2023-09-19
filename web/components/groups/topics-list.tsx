@@ -69,7 +69,8 @@ export function TopicsList(props: {
       <Col
         className={clsx(
           'scrollbar-hide relative max-h-[calc(100vh-4rem)] min-h-[35rem] overflow-y-auto overflow-x-visible lg:max-h-[calc(100vh-6rem)]',
-          'bg-canvas-0 h-fit w-[7rem] items-start sm:w-[8rem] md:w-[10rem] xl:w-64'
+          'bg-canvas-0 h-fit w-[7rem] items-start sm:w-[8rem] md:w-[10rem] xl:w-64 ',
+          currentTopicSlug == 'for-you' ? '' : 'xl:rounded-t-md '
         )}
       >
         <Row
@@ -111,6 +112,7 @@ export function TopicsList(props: {
     </Row>
   )
 }
+const selectedBarClass = 'bg-primary-300 absolute right-0 top-0 h-full w-1.5'
 
 export const ForYouButton = (props: {
   currentCategorySlug?: string
@@ -155,15 +157,11 @@ export const ForYouButton = (props: {
         }
         className={clsx(
           'hover:bg-canvas-50 relative w-full flex-row flex-wrap px-2 py-4 text-left text-sm ',
-          currentCategorySlug == 'for-you' ? 'bg-primary-50 ' : ''
+          currentCategorySlug == 'for-you' ? 'bg-canvas-50 font-semibold ' : ''
         )}
       >
         <div
-          className={
-            currentCategorySlug == 'for-you'
-              ? 'bg-primary-300 absolute right-0 top-0 h-full w-1.5'
-              : ''
-          }
+          className={currentCategorySlug == 'for-you' ? selectedBarClass : ''}
         />
         <Row className={'items-center justify-between'}>
           <span>⭐️ For you</span>
@@ -363,16 +361,12 @@ export const GroupButton = (props: {
       }}
       className={clsx(
         'hover:bg-canvas-50 group relative w-full flex-row flex-wrap py-4 px-2 text-left text-sm ',
-        currentCategorySlug == group.slug ? 'bg-primary-50 ' : ''
+        currentCategorySlug == group.slug ? 'bg-canvas-50 font-semibold ' : ''
       )}
       key={group.id}
     >
       <div
-        className={
-          currentCategorySlug == group.slug
-            ? 'bg-primary-300 absolute right-0 top-0 h-full w-1.5'
-            : ''
-        }
+        className={currentCategorySlug == group.slug ? selectedBarClass : ''}
       />
       <Row className={'break-anywhere w-full items-center justify-between'}>
         <span>{isMobile ? removeEmojis(group.name) : group.name}</span>
