@@ -3,13 +3,14 @@ import { useUserFollowsDashboard } from 'web/hooks/use-dashboard-follows'
 import { useIsAuthorized, useUser } from 'web/hooks/use-user'
 import { followDashboard } from 'web/lib/firebase/api'
 import { Tooltip } from '../widgets/tooltip'
+import { IconButton } from '../buttons/button'
 
 export function FollowDashboardButton(props: {
   dashboardId: string
   dashboardCreatorId: string
-  size?: 'sm' | 'md'
+  ttPlacement: 'left' | 'bottom'
 }) {
-  const { dashboardId, dashboardCreatorId, size = 'md' } = props
+  const { dashboardId, dashboardCreatorId, ttPlacement } = props
   const user = useUser()
   const { isFollowing, setIsFollowing } = useUserFollowsDashboard(
     user?.id,
@@ -20,22 +21,22 @@ export function FollowDashboardButton(props: {
     return null
   }
   return (
-    <Tooltip text={'Bookmark'} placement="left-start">
-      <button
+    <Tooltip text={'Bookmark'} placement={ttPlacement}>
+      <IconButton
         onClick={(e) => {
           e.preventDefault()
-          e.stopPropagation()
           followDashboard({ dashboardId: dashboardId }).then((result) => {
             setIsFollowing(result.isFollowing)
           })
         }}
+        className="!pr-0"
       >
         {isFollowing ? (
           <FaBookmark className={'h-5 w-5 text-yellow-500'} />
         ) : (
           <FaRegBookmark className={'text-ink-500 h-5 w-5'} />
         )}
-      </button>
+      </IconButton>
     </Tooltip>
   )
 }

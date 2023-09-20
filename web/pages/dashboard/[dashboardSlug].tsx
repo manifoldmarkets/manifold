@@ -25,6 +25,8 @@ import clsx from 'clsx'
 import { JSONContent } from '@tiptap/core'
 import { Editor } from '@tiptap/react'
 import { PlusIcon } from '@heroicons/react/solid'
+import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
+import { ENV_CONFIG } from 'common/envs/constants'
 
 export async function getStaticProps(ctx: {
   params: { dashboardSlug: string }
@@ -112,10 +114,17 @@ export default function DashboardPage(props: {
       <Col className="w-full max-w-2xl px-1 sm:px-2">
         <Row className="mb-2 mt-2 items-center justify-between first-letter:w-full sm:mt-4 lg:mt-0">
           <Title className="!mb-0 ">{dashboard.title}</Title>
-          <div>
+          <div className="flex items-center">
+            <CopyLinkOrShareButton
+              url={`https://${ENV_CONFIG.domain}/dashboard/${dashboard.slug}`}
+              eventTrackingName="copy dashboard link"
+              tooltip="Share"
+            />
+
             <FollowDashboardButton
               dashboardId={dashboard.id}
               dashboardCreatorId={dashboard.creator_id}
+              ttPlacement="bottom"
             />
             {canEdit && !editMode && (
               <Button onClick={() => setEditMode((editMode) => !editMode)}>

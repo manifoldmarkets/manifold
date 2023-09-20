@@ -58,7 +58,7 @@ function DashboardCard(props: { dashboard: Dashboard }) {
         <FollowDashboardButton
           dashboardId={dashboard.id}
           dashboardCreatorId={dashboard.creator_id}
-          size={'sm'}
+          ttPlacement="left"
         />
       </Row>
       <div className="text-lg">{dashboard.title}</div>
