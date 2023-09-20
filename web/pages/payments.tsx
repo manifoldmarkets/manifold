@@ -12,7 +12,7 @@ import { UserSearchResult } from 'web/lib/supabase/users'
 import { AmountInput } from 'web/components/widgets/amount-input'
 import { sendMana } from 'web/lib/firebase/api'
 import { useUser } from 'web/hooks/use-user'
-import { ENV_CONFIG } from 'common/envs/constants'
+import { ENV_CONFIG, isAdminId } from 'common/envs/constants'
 import { uniq } from 'lodash'
 import { useUserById, useUsers } from 'web/hooks/use-user-supabase'
 import { UserAvatarAndBadge, UserLink } from 'web/components/widgets/user-link'
@@ -236,6 +236,7 @@ export const PaymentsModal = (props: {
   const [toUsers, setToUsers] = useState<UserSearchResult[]>([])
   const [removedToUser, setRemovedToUser] = useState(false)
   const { canSend, message: cannotSendMessage } = useCanSendMana(fromUser)
+  const isAdmin = isAdminId(fromUser.id)
   useEffect(() => {
     if (toUser) setToUsers([toUser])
   }, [toUser])
@@ -282,11 +283,12 @@ export const PaymentsModal = (props: {
               <span>Amount</span>
               <AmountInput
                 amount={amount}
+                allowNegative={isAdmin}
                 onChangeAmount={setAmount}
                 label={ENV_CONFIG.moneyMoniker}
                 inputClassName={'w-52'}
                 onBlur={() => {
-                  if (amount && amount < 10) {
+                  if (amount && amount < 10 && !isAdmin) {
                     setError('Amount must be 10 or more')
                   } else {
                     setError('')
@@ -328,7 +330,11 @@ export const PaymentsModal = (props: {
                 setLoading(false)
               }}
               disabled={
-                loading || !amount || amount < 10 || !toUsers.length || !canSend
+                loading ||
+                !amount ||
+                (amount < 10 && !isAdmin) ||
+                !toUsers.length ||
+                !canSend
               }
             >
               Send
