@@ -79,6 +79,9 @@ export const PaymentsContent = (props: {
 
   const router = useRouter()
   const { a, msg } = router.query
+  // ios adds a query param that breaks the message.
+  const defaultMessage =
+    msg && (msg as string).replace(/\?nativePlatform=ios/g, '')
 
   useEffect(() => {
     if (router.isReady) setShowPayModal(a != undefined)
@@ -121,7 +124,7 @@ export const PaymentsContent = (props: {
               fromUser={user}
               show={showPayModal}
               setShow={setShowPayModal}
-              defaultMessage={msg as string | undefined}
+              defaultMessage={defaultMessage}
               defaultAmount={typeof a === 'string' ? parseInt(a) : undefined}
             />
           )}
@@ -356,9 +359,10 @@ export const QRModal = (props: {
   const [amount, setAmount] = useState<number | undefined>(10)
   const [message, setMessage] = useState('')
 
-  const url = `https://${ENV_CONFIG.domain}/${user.username}?tab=managrams&a=${
-    amount ?? 10
-  }&msg=${message}`
+  const url =
+    `https://${ENV_CONFIG.domain}/${user.username}?tab=managrams&a=${
+      amount ?? 10
+    }` + (message && `&msg=${encodeURIComponent(message)}`)
 
   return (
     <Modal open={show} setOpen={setShow} className="bg-canvas-0 rounded-lg">
@@ -370,7 +374,7 @@ export const QRModal = (props: {
         <CopyLinkRow
           url={url}
           eventTrackingName="copy managram page"
-          linkBoxClassName="mb-4"
+          linkBoxClassName="mb-4 w-full ellipsis"
         />
         <QRCode url={url} width={300} height={300} className="self-center" />
 
