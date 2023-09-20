@@ -628,11 +628,9 @@ const LostF35 = createNewsDashboardTab(
 
 const Armenia = createNewsDashboardTab(
   'Armenia',
-  'Azerbaijan attacks Nagorno-Karabakh',
+  'Azerbaijan offensive halted',
   [
-    {
-      url: 'https://www.cnn.com/2023/09/19/asia/armenia-azerbaijan-nagorno-karabakh-bombardment-intl/index.html',
-    },
+    { url: 'https://www.bbc.com/news/world-europe-66863702' },
     { slug: 'will-azerbaijan-attack-armenia-in-s' },
     { slug: 'will-armenia-and-azerbaijan-have-a-9417fe5850fd' },
     { slug: 'will-nagornokarabakh-secede-from-az' },
