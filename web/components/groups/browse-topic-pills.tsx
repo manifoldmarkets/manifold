@@ -40,7 +40,7 @@ export const BrowseTopicPills = (props: {
 
         {topics.map((g) => (
           <PillButton
-            key={'pill-' + g}
+            key={'pill-' + g.slug}
             selected={currentTopicSlug === g.slug}
             onSelect={() => setTopicSlug(g.slug)}
           >
