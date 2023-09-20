@@ -238,7 +238,7 @@ export const useFeedTimeline = (
         .in('id', newContractIds)
         .not('visibility', 'eq', 'unlisted')
         .is('resolution_time', null)
-        .gt('close_time', new Date().toISOString())
+        .or(`close_time.gt.${new Date().toISOString()},close_time.is.null`)
         .then((res) =>
           res.data?.map(
             (c) =>
