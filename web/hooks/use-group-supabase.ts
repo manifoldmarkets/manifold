@@ -46,7 +46,7 @@ export function useIsGroupMember(groupSlug: string) {
   return isMember
 }
 
-export function useMemberGroupIds(
+export function useMemberGroupIdsOnLoad(
   userId: string | undefined | null
 ): string[] | undefined {
   const [groupIds, setGroupIds] = usePersistentInMemoryState<
@@ -106,7 +106,7 @@ export const useGroupsWithContract = (
   return groups
 }
 
-export function useMemberGroups(userId: string | undefined | null) {
+export function useRealtimeMemberGroups(userId: string | undefined | null) {
   const [groups, setGroups] = useState<Group[] | undefined>(undefined)
 
   const { rows } = useSubscription('group_members', {

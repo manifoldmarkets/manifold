@@ -19,10 +19,16 @@ import {
   usePartialUpdater,
   usePersistentQueriesState,
 } from 'web/hooks/use-persistent-query-state'
-import { useGroupFromSlug } from 'web/hooks/use-group-supabase'
+import {
+  useGroupFromSlug,
+  useRealtimeMemberGroups,
+} from 'web/hooks/use-group-supabase'
 import { TOPIC_KEY } from 'common/group'
 import { TopicTag } from 'web/components/groups/topic-tag'
 import { AddContractToGroupButton } from 'web/components/groups/add-contract-to-group-modal'
+import { useUser } from 'web/hooks/use-user'
+
+import { GroupOptionsButton } from 'web/components/groups/groups-button'
 
 const CONTRACTS_PER_PAGE = 40
 
@@ -477,7 +483,7 @@ function SupabaseContractSearchControls(props: {
             contractType={contractType}
             selectContractType={selectContractType}
             hideOrderSelector={hideOrderSelector}
-            className={'flex flex-row gap-2'}
+            className={'flex h-6 flex-row gap-2'}
             includeProbSorts={includeProbSorts}
             currentTopicSlug={topicSlug}
             clearTopic={() => updateParams({ [TOPIC_KEY]: '' })}
@@ -523,7 +529,9 @@ export function SearchFilters(props: {
   const filterLabel = getLabelFromValue(FILTERS, filter)
   const sortLabel = getLabelFromValue(SORTS, sort)
   const contractTypeLabel = getLabelFromValue(CONTRACT_TYPES, contractType)
-
+  const user = useUser()
+  const yourGroups = useRealtimeMemberGroups(user?.id)
+  const yourGroupIds = yourGroups?.map((g) => g.id)
   return (
     <div className={clsx(className, 'gap-3')}>
       {!hideOrderSelector && (
@@ -592,8 +600,14 @@ export function SearchFilters(props: {
           location={'questions page'}
         >
           <button onClick={clearTopic}>
-            <XIcon className="hover:text-ink-700 text-ink-400 ml-1 h-4 w-4" />
+            <XIcon className="hover:text-ink-700 text-ink-400 ml-1 hidden h-4 w-4 sm:block" />
           </button>
+          <GroupOptionsButton
+            className={'sm:hidden'}
+            group={topic}
+            yourGroupIds={yourGroupIds}
+            user={user}
+          />
         </TopicTag>
       )}
       {currentTopicSlug === 'for-you' && (

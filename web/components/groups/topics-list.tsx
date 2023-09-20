@@ -1,15 +1,13 @@
 import { Col } from '../layout/col'
 import { Group } from 'common/group'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import clsx from 'clsx'
 import { Row } from 'web/components/layout/row'
 import { PrivateUser, User } from 'common/user'
-import { removeEmojis } from 'common/topics'
 import {
   useListGroupsBySlug,
-  useGroupRole,
-  useMemberGroups,
-  useMemberGroupIds,
+  useMemberGroupIdsOnLoad,
+  useRealtimeMemberGroups,
 } from 'web/hooks/use-group-supabase'
 import { buildArray } from 'common/util/array'
 import { MinusCircleIcon, PlusCircleIcon } from '@heroicons/react/solid'
@@ -19,19 +17,17 @@ import DropdownMenu, {
 } from 'web/components/comments/dropdown-menu'
 import { Button } from 'web/components/buttons/button'
 import { MdOutlineKeyboardDoubleArrowRight } from 'react-icons/md'
-import { track, withTracking } from 'web/lib/service/analytics'
+import { track } from 'web/lib/service/analytics'
 import { joinGroup } from 'web/lib/firebase/api'
-import toast from 'react-hot-toast'
-import { firebaseLogin, updatePrivateUser } from 'web/lib/firebase/users'
+import { updatePrivateUser } from 'web/lib/firebase/users'
 import { leaveGroup } from 'web/lib/supabase/groups'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
-import { Modal } from 'web/components/layout/modal'
+import { Modal, SCROLLABLE_MODAL_CLASS } from 'web/components/layout/modal'
 import { GroupSelector } from 'web/components/groups/group-selector'
 import { CreateGroupModal } from 'web/components/groups/create-group-modal'
-import { GroupOptions } from 'web/components/groups/group-options'
-import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { HiNoSymbol } from 'react-icons/hi2'
 import { BsFillPersonDashFill } from 'react-icons/bs'
+import { GroupOptionsButton } from 'web/components/groups/groups-button'
 
 export function TopicsList(props: {
   topics: Group[]
@@ -56,8 +52,8 @@ export function TopicsList(props: {
   const topics = props.topics.filter(
     (g) => !privateUser?.blockedGroupSlugs.includes(g.slug)
   )
-  const yourGroups = useMemberGroups(user?.id)
-  const yourGroupIdsInMemory = useMemberGroupIds(user?.id)
+  const yourGroups = useRealtimeMemberGroups(user?.id)
+  const yourGroupIdsInMemory = useMemberGroupIdsOnLoad(user?.id)
   const yourGroupIds = yourGroups?.map((g) => g.id) ?? yourGroupIdsInMemory
   return (
     <Row
@@ -99,22 +95,51 @@ export function TopicsList(props: {
         )}
         {topics.length > 0 &&
           topics.map((group) => (
-            <GroupButton
+            <Row
+              className={clsx(
+                'group relative w-full items-center',
+                currentTopicSlug == group.slug ? 'bg-canvas-50' : ''
+              )}
               key={group.id}
-              group={group}
-              yourGroupIds={yourGroupIds}
-              user={user}
-              currentCategorySlug={currentTopicSlug}
-              setCurrentCategory={setCurrentTopicSlug}
-            />
+            >
+              <button
+                onClick={() => {
+                  if (currentTopicSlug !== group.slug)
+                    track('select sidebar topic')
+                  setCurrentTopicSlug(
+                    currentTopicSlug === group.slug ? '' : group.slug
+                  )
+                }}
+                className={clsx(
+                  'hover:bg-canvas-50 flex w-full flex-row py-4 px-2 text-left text-sm',
+                  currentTopicSlug == group.slug
+                    ? 'bg-canvas-50 font-semibold'
+                    : ''
+                )}
+              >
+                <div
+                  className={
+                    currentTopicSlug == group.slug ? selectedBarClass : ''
+                  }
+                />
+                <span>{group.name}</span>
+              </button>
+              <GroupOptionsButton
+                key={group.id}
+                group={group}
+                yourGroupIds={yourGroupIds}
+                user={user}
+              />
+            </Row>
           ))}
       </Col>
     </Row>
   )
 }
-const selectedBarClass = 'bg-primary-300 absolute right-0 top-0 h-full w-1.5'
+export const selectedBarClass =
+  'bg-primary-300 absolute right-0 top-0 h-full w-1.5'
 
-export const ForYouButton = (props: {
+const ForYouButton = (props: {
   currentCategorySlug?: string
   setCurrentCategory: (categorySlug: string) => void
   privateUser: PrivateUser
@@ -221,9 +246,15 @@ const BlockedTopicsModal = (props: {
   }
 
   return (
-    <Modal open={show} setOpen={setShowEditingBlockedTopics}>
+    <Modal
+      open={show}
+      setOpen={setShowEditingBlockedTopics}
+      className={SCROLLABLE_MODAL_CLASS}
+    >
       <Col className={'bg-canvas-50 min-h-[25rem] rounded-md p-4'}>
-        <span className={'text-lg font-bold'}>Blocked Topics</span>
+        {groups?.length ? (
+          <span className={'text-primary-700 text-lg'}>Blocked Topics</span>
+        ) : null}
         {(groups ?? []).map((group) => (
           <Row
             key={group.id}
@@ -239,7 +270,11 @@ const BlockedTopicsModal = (props: {
             </Button>
           </Row>
         ))}
+        <span className={'text-primary-700 mt-2 text-lg'}>
+          Block more topics
+        </span>
         <GroupSelector setSelectedGroup={(group) => blockGroup(group.slug)} />
+        <div className={'mb-[10rem]'} />
       </Col>
     </Modal>
   )
@@ -254,9 +289,9 @@ const FollowedTopicsModal = (props: {
   const { user, show, groups, setCurrentCategory, setShow } = props
 
   return (
-    <Modal open={show} setOpen={setShow}>
+    <Modal open={show} setOpen={setShow} className={SCROLLABLE_MODAL_CLASS}>
       <Col className={clsx('bg-canvas-50 min-h-[25rem] rounded-md p-4')}>
-        <span className={'text-lg font-bold'}>Followed Topics</span>
+        <span className={'text-primary-700 text-lg'}>Followed Topics</span>
 
         {!groups ? (
           <LoadingIndicator />
@@ -288,113 +323,18 @@ const FollowedTopicsModal = (props: {
             </Row>
           ))
         )}
+        <span className={'text-primary-700 mt-2 text-lg'}>
+          Follow more topics
+        </span>
         <GroupSelector
           setSelectedGroup={(group) => {
             joinGroup({ groupId: group.id })
             track('join group', { slug: group.slug })
           }}
+          ignoreGroupIds={groups?.map((g) => g.id)}
         />
+        <div className={'mb-[10rem]'} />
       </Col>
     </Modal>
-  )
-}
-export const GroupButton = (props: {
-  group: Group
-  yourGroupIds: string[] | undefined
-  user: User | null | undefined
-  currentCategorySlug?: string
-  setCurrentCategory: (categorySlug: string) => void
-}) => {
-  const { group, yourGroupIds, user, setCurrentCategory, currentCategorySlug } =
-    props
-  const isCreator = user?.id == group.creatorId
-  const userRole = useGroupRole(group.id, user)
-  const [isMember, setIsMember] = useState(
-    yourGroupIds ? yourGroupIds.includes(group.id) : false
-  )
-  useEffect(() => {
-    if (yourGroupIds) setIsMember(yourGroupIds.includes(group.id))
-  }, [yourGroupIds?.length])
-  const [loading, setLoading] = useState(false)
-  const isMobile = useIsMobile()
-  const isPrivate = group.privacyStatus == 'private'
-  const follow = user
-    ? withTracking(
-        () => {
-          setLoading(true)
-          joinGroup({ groupId: group.id })
-            .then(() => {
-              setIsMember(true)
-              toast(`You're now following ${group.name}!`)
-            })
-            .catch((e) => {
-              console.error(e)
-              toast.error('Failed to follow category')
-            })
-            .finally(() => setLoading(false))
-        },
-        'join group',
-        { slug: group.slug }
-      )
-    : firebaseLogin
-  const unfollow = user
-    ? withTracking(
-        () => {
-          leaveGroup(group.id, user.id)
-            .then(() => {
-              setIsMember(false)
-              toast(`You're no longer following ${group.name}.`)
-            })
-            .catch(() => {
-              toast.error('Failed to unfollow category')
-            })
-        },
-        'leave group',
-        { slug: group.slug }
-      )
-    : firebaseLogin
-  return (
-    <button
-      onClick={() => {
-        if (currentCategorySlug !== group.slug) track('select sidebar topic')
-        setCurrentCategory(currentCategorySlug === group.slug ? '' : group.slug)
-      }}
-      className={clsx(
-        'hover:bg-canvas-50 group relative w-full flex-row flex-wrap py-4 px-2 text-left text-sm ',
-        currentCategorySlug == group.slug ? 'bg-canvas-50 font-semibold ' : ''
-      )}
-      key={group.id}
-    >
-      <div
-        className={currentCategorySlug == group.slug ? selectedBarClass : ''}
-      />
-      <Row className={'break-anywhere w-full items-center justify-between'}>
-        <span>{isMobile ? removeEmojis(group.name) : group.name}</span>
-        {!isPrivate && !isCreator && !isMember && yourGroupIds && (
-          <button
-            onClick={(e) => {
-              e.stopPropagation()
-              follow()
-            }}
-            className={'h-5 w-5'}
-          >
-            {loading ? (
-              <LoadingIndicator size={'sm'} />
-            ) : (
-              <PlusCircleIcon className=" hover:text-primary-500 h-5 w-5" />
-            )}
-          </button>
-        )}
-        {(isCreator || isMember) && (
-          <GroupOptions
-            group={group}
-            user={user}
-            canEdit={userRole === 'admin'}
-            isMember={isMember}
-            unfollow={unfollow}
-          />
-        )}
-      </Row>
-    </button>
   )
 }

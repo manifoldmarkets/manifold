@@ -29,11 +29,10 @@ import { BsFillPersonDashFill } from 'react-icons/bs'
 export function GroupOptions(props: {
   group: Group
   user: User | null | undefined
-  canEdit: boolean
   isMember: boolean
   unfollow: () => void
 }) {
-  const { group, canEdit, user, isMember, unfollow } = props
+  const { group, user, isMember, unfollow } = props
   const [editingName, setEditingName] = useState(false)
   const [showAddContract, setShowAddContract] = useState(false)
   const userRole = useGroupRole(group.id, user)
@@ -60,7 +59,7 @@ export function GroupOptions(props: {
       icon: <PlusCircleIcon className="h-5 w-5" />,
       onClick: () => setShowAddContract(true),
     },
-    canEdit && {
+    userRole === 'admin' && {
       name: 'Edit name',
       icon: <PencilIcon className="h-5 w-5" />,
       onClick: () => setEditingName(true),
@@ -79,7 +78,7 @@ export function GroupOptions(props: {
         Items={groupOptionItems}
         Icon={<DotsVerticalIcon className={clsx('h-5 w-5')} />}
         withinOverflowContainer={true}
-        buttonClass={'xl:opacity-0 group-hover:opacity-100'}
+        buttonClass={'md:opacity-0 group-hover:opacity-100'}
       />
       <Modal open={editingName} setOpen={setEditingName}>
         <Col className={'bg-canvas-50 rounded-md p-4'}>

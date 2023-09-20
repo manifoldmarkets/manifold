@@ -6,7 +6,7 @@ import { TOPIC_KEY, Group } from 'common/group'
 import { debounce, startCase, uniqBy } from 'lodash'
 import { useRouter } from 'next/router'
 import { ReactNode, useCallback, useEffect, useRef, useState } from 'react'
-import { useMemberGroupIds } from 'web/hooks/use-group-supabase'
+import { useMemberGroupIdsOnLoad } from 'web/hooks/use-group-supabase'
 import { useUser } from 'web/hooks/use-user'
 import { useYourRecentContracts } from 'web/hooks/use-your-daily-changed-contracts'
 import { searchContract } from 'web/lib/supabase/contracts'
@@ -439,7 +439,7 @@ const UserResults = (props: { users: UserSearchResult[] }) => {
 
 const TopicResults = (props: { topics: SearchGroupInfo[] }) => {
   const me = useUser()
-  const myGroupIds = useMemberGroupIds(me?.id) ?? []
+  const myGroupIds = useMemberGroupIdsOnLoad(me?.id) ?? []
 
   const title = <SectionTitle>Topics</SectionTitle>
   if (!props.topics.length) return title
