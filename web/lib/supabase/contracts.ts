@@ -374,3 +374,21 @@ export async function getIsPrivateContractMember(
   })
   return data as boolean | null
 }
+export const convertContract = (
+  c: { data: any } & { importance_score: number | null }
+) =>
+  ({
+    ...(c.data as Contract),
+    // importance_score is only updated in Supabase
+    importanceScore: c.importance_score,
+  } as Contract)
+
+export const getTrendingContracts = async (limit: number) => {
+  return await db
+    .from('contracts')
+    .select('data, importance_score')
+    .is('resolution_time', null)
+    .order('importance_score', { ascending: false })
+    .limit(limit)
+    .then((res) => res.data?.map((c) => convertContract(c)))
+}

@@ -6,7 +6,6 @@ import { filterDefined } from 'common/util/array'
 import { FeedContractCard } from 'web/components/contract/feed-contract-card'
 import { Col } from 'web/components/layout/col'
 import { groupCommentsByContractsAndParents } from 'web/hooks/use-additional-feed-items'
-import { BoostsType } from 'web/hooks/use-feed'
 import { DEBUG_FEED_CARDS, FeedTimelineItem } from 'web/hooks/use-feed-timeline'
 import { useIsVisible } from 'web/hooks/use-is-visible'
 import { db } from 'web/lib/supabase/db'
@@ -22,6 +21,7 @@ import { Row } from 'web/components/layout/row'
 import { orderBy, sum, uniqBy } from 'lodash'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { TopicTag } from 'web/components/groups/topic-tag'
+import { BoostsType } from 'web/lib/supabase/ads'
 
 const MAX_PARENT_COMMENTS_PER_FEED_ITEM = 1
 export const MIN_BET_AMOUNT = 20

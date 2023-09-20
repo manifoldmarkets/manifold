@@ -12,6 +12,7 @@ import {
   getIsPrivateContractMember,
   getPublicContractIds,
   getPublicContractRows,
+  getTrendingContracts,
 } from 'web/lib/supabase/contracts'
 import { db } from 'web/lib/supabase/db'
 import { useSubscription } from 'web/lib/supabase/realtime/use-subscription'
@@ -142,4 +143,12 @@ export function useFirebasePublicContract(
     visibility != 'private' ? useContractFirebase(contractId) : undefined // useRealtimeContract(contractId)
 
   return contract
+}
+
+export function useTrendingContracts(limit: number) {
+  const [contracts, setContracts] = useState<Contract[] | undefined>(undefined)
+  useEffect(() => {
+    getTrendingContracts(limit).then(setContracts)
+  }, [limit])
+  return contracts
 }
