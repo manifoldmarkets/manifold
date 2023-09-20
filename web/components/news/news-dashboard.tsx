@@ -43,18 +43,12 @@ export const NewsSidebar = (props: { description?: ReactNode }) => {
 
   return (
     <Col>
-      {description && (
-        <Col className=" text-primary-700 mb-2 hidden xl:inline-flex">
-          Additional Context
-        </Col>
-      )}
-      {description && (
-        <>
-          <Col className="bg-canvas-0 mb-4 gap-2 py-2 px-4 xl:px-6 xl:py-4">
-            {description}
-          </Col>
-        </>
-      )}
+      <Col className="text-primary-700 mb-2 hidden xl:inline-flex">
+        Additional Context
+      </Col>
+      <Col className="bg-canvas-0 mb-4 gap-2 py-2 px-4 xl:px-6 xl:py-4">
+        {description}
+      </Col>
     </Col>
   )
 }

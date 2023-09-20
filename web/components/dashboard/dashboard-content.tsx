@@ -36,7 +36,11 @@ export const DashboardContent = (props: {
           onRemove={onRemove}
           slugOrUrl={preview.url}
         >
-          <DashboardNewsItem {...preview} className="mb-4" key={card.url} />
+          <DashboardNewsItem
+            {...preview}
+            className="mb-4 shadow-md"
+            key={card.url}
+          />
         </DashboardContentFrame>
       )
     }

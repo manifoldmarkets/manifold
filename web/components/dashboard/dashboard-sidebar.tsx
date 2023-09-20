@@ -18,7 +18,7 @@ export const DashboardSidebar = (props: {
   return (
     <Col className={clsx(inSidebar ? 'hidden xl:inline-flex' : 'xl:hidden')}>
       {inSidebar && (
-        <Col className=" text-primary-700 mb-2 hidden xl:inline-flex">
+        <Col className="text-primary-700 mb-2 hidden xl:inline-flex">
           Additional Context
         </Col>
       )}

@@ -97,6 +97,7 @@ export default function DashboardPage(props: {
     <Page
       trackPageView={'dashboard slug page'}
       trackPageProps={{ slug: dashboard.slug, title: dashboard.title }}
+      mainClassName="items-center"
       rightSidebar={
         editMode && !isNotXl ? (
           <DescriptionEditor
@@ -108,105 +109,103 @@ export default function DashboardPage(props: {
         )
       }
     >
-      <Col className="items-center">
-        <Col className="w-full max-w-2xl px-1 sm:px-2">
-          <Row className="gap-2">
-            <Avatar
-              username={dashboard.creator_username}
-              avatarUrl={dashboard.creator_avatar_url}
-              size="xs"
+      <Col className="w-full max-w-2xl px-1 sm:px-2">
+        <Row className="mb-2 mt-2 items-center justify-between first-letter:w-full sm:mt-4 lg:mt-0">
+          <Title className="!mb-0 ">{dashboard.title}</Title>
+          <div>
+            <FollowDashboardButton
+              dashboardId={dashboard.id}
+              dashboardCreatorId={dashboard.creator_id}
             />
-            <UserLink
-              username={dashboard.creator_username}
-              name={dashboard.creator_name}
-            />
-          </Row>
-          <Row className="w-full items-center justify-between">
-            <Title>{dashboard.title}</Title>
-            <Row>
-              <FollowDashboardButton
-                dashboardId={dashboard.id}
-                dashboardCreatorId={dashboard.creator_id}
-              />
-              {canEdit && !editMode && (
-                <Button onClick={() => setEditMode((editMode) => !editMode)}>
-                  Edit
-                </Button>
-              )}
-            </Row>
-          </Row>
-          {editMode && isNotXl ? (
-            <DescriptionEditor
-              editor={editor}
-              description={dashboard.description}
-              className="mb-4"
-            />
-          ) : (
-            <DashboardSidebar description={dashboard.description} />
-          )}
-          <DashboardContent
-            items={dashboard.items}
-            onRemove={(slugOrUrl: string) => {
-              updateItems(
-                dashboard.items.filter((item) => {
-                  if (item.type === 'question') {
-                    return item.slug !== slugOrUrl
-                  } else if (item.type === 'link') {
-                    return item.url !== slugOrUrl
-                  }
-                  return true
-                })
-              )
-            }}
-            isEditing={editMode}
+            {canEdit && !editMode && (
+              <Button onClick={() => setEditMode((editMode) => !editMode)}>
+                Edit
+              </Button>
+            )}
+          </div>
+        </Row>
+        <Row className="mb-8 gap-2">
+          <Avatar
+            username={dashboard.creator_username}
+            avatarUrl={dashboard.creator_avatar_url}
+            size="xs"
           />
-          {editMode && (
-            <Col className="gap-4">
-              <AddDashboardItemWidget
-                items={dashboard.items}
-                setItems={updateItems}
-              />
-              <Row className="w-full justify-end gap-2">
-                <Button
-                  color="gray"
-                  onClick={() => {
-                    // reset items to original state
-                    updateItems(
-                      fetchedDashboard
-                        ? fetchedDashboard.items
-                        : initialDashboard.items
-                    )
-                    setEditMode(false)
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  disabled={dashboard.items.length < 2}
-                  onClick={() => {
-                    updateDashboard({
-                      dashboardId: dashboard.id,
-                      items: dashboard.items,
-                      description: editor?.getJSON(),
-                    }).then((resultingDashboard) => {
-                      if (
-                        resultingDashboard &&
-                        resultingDashboard.updateDashboard
-                      ) {
-                        setDashboard(
-                          resultingDashboard.updateDashboard as Dashboard
-                        )
-                      }
-                    })
-                    setEditMode(false)
-                  }}
-                >
-                  Save
-                </Button>
-              </Row>
-            </Col>
-          )}
-        </Col>
+          <UserLink
+            username={dashboard.creator_username}
+            name={dashboard.creator_name}
+          />
+        </Row>
+        {editMode && isNotXl ? (
+          <DescriptionEditor
+            editor={editor}
+            description={dashboard.description}
+            className="mb-4"
+          />
+        ) : (
+          <DashboardSidebar description={dashboard.description} />
+        )}
+        <DashboardContent
+          items={dashboard.items}
+          onRemove={(slugOrUrl: string) => {
+            updateItems(
+              dashboard.items.filter((item) => {
+                if (item.type === 'question') {
+                  return item.slug !== slugOrUrl
+                } else if (item.type === 'link') {
+                  return item.url !== slugOrUrl
+                }
+                return true
+              })
+            )
+          }}
+          isEditing={editMode}
+        />
+        {editMode && (
+          <Col className="gap-4">
+            <AddDashboardItemWidget
+              items={dashboard.items}
+              setItems={updateItems}
+            />
+            <Row className="w-full justify-end gap-2">
+              <Button
+                color="gray"
+                onClick={() => {
+                  // reset items to original state
+                  updateItems(
+                    fetchedDashboard
+                      ? fetchedDashboard.items
+                      : initialDashboard.items
+                  )
+                  setEditMode(false)
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                disabled={dashboard.items.length < 2}
+                onClick={() => {
+                  updateDashboard({
+                    dashboardId: dashboard.id,
+                    items: dashboard.items,
+                    description: editor?.getJSON(),
+                  }).then((resultingDashboard) => {
+                    if (
+                      resultingDashboard &&
+                      resultingDashboard.updateDashboard
+                    ) {
+                      setDashboard(
+                        resultingDashboard.updateDashboard as Dashboard
+                      )
+                    }
+                  })
+                  setEditMode(false)
+                }}
+              >
+                Save
+              </Button>
+            </Row>
+          </Col>
+        )}
       </Col>
     </Page>
   )
