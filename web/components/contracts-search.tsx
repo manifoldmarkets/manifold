@@ -108,7 +108,7 @@ export type SearchParams = {
 }
 
 const QUERY_KEY = 'q'
-const SORT_KEY = 's'
+export const SORT_KEY = 's'
 const FILTER_KEY = 'f'
 const CONTRACT_TYPE_KEY = 'ct'
 
@@ -149,8 +149,7 @@ export function SupabaseContractSearch(props: {
   isWholePage?: boolean
   menuButton?: ReactNode
   hideAvatar?: boolean
-  setTopicSearchTerm?: (term: string) => void
-
+  rowBelowFilters?: ReactNode
   // used to determine if search params should be updated in the URL
   useUrlParams?: boolean
   includeProbSorts?: boolean
@@ -181,6 +180,7 @@ export function SupabaseContractSearch(props: {
     hideFilters,
     menuButton,
     hideAvatar,
+    rowBelowFilters,
   } = props
 
   const [state, setState] = usePersistentInMemoryState<SearchState>(
@@ -296,6 +296,7 @@ export function SupabaseContractSearch(props: {
         params={searchParams}
         updateParams={setSearchParams}
       />
+      {rowBelowFilters}
       {contracts && contracts.length === 0 ? (
         emptyState ??
         (searchParams[QUERY_KEY] ? (

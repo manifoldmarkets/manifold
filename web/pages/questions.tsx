@@ -29,6 +29,7 @@ import Welcome from 'web/components/onboarding/welcome'
 import { Page } from 'web/components/layout/page'
 import { SEO } from 'web/components/SEO'
 import { Title } from 'web/components/widgets/title'
+import { BrowseTopicPills } from 'web/components/groups/browse-topic-pills'
 
 const GROUPS_PER_PAGE = 100
 export const SHOW_TOPICS_TERM = 'show-topics'
@@ -50,7 +51,7 @@ export default function QuestionsPage() {
     'home-page-trending-topics'
   ) as Group[]
 
-  const [categorySlug, setCategorySlug] = usePersistentQueryState<string>(
+  const [topicSlug, setTopicSlug] = usePersistentQueryState<string>(
     TOPIC_KEY,
     ''
   )
@@ -60,16 +61,13 @@ export default function QuestionsPage() {
   const { groups: myTopics } = useGroupRoles(user)
 
   const topicsByImportance =
-    categorySlug || !trendingGroups
+    topicSlug || !trendingGroups
       ? uniqBy(trendingGroups, (g) => removeEmojis(g.name).toLowerCase())
       : combineGroupsByImportance(trendingGroups, myTopics)
-  const topicFromRouter = useGroupFromRouter(categorySlug, topicsByImportance)
+  const topicFromRouter = useGroupFromRouter(topicSlug)
   const topics = buildArray(
     topicFromRouter &&
-      !topicsByImportance
-        .map((g) => g.slug)
-        .slice(0, 10)
-        .includes(topicFromRouter.slug) &&
+      !topicsByImportance.map((g) => g.id).includes(topicFromRouter.id) &&
       (topicFromRouter as Group),
     topicsByImportance
   )
@@ -78,14 +76,16 @@ export default function QuestionsPage() {
     <Button
       color={'gray-outline'}
       size={'md'}
-      className={'ml-1 w-[8rem] sm:ml-2 md:w-[10.5rem] xl:hidden'}
+      className={
+        'ml-1 hidden w-[8rem] sm:ml-2 sm:flex md:w-[10.5rem] xl:hidden'
+      }
       onClick={() => setShow(!show)}
     >
       <MenuIcon className="mr-2 h-5 w-5" />
       Topics
     </Button>
   )
-  const currentTopic = topics.find((t) => t.slug === categorySlug)
+  const currentTopic = topics.find((t) => t.slug === topicSlug)
   return (
     <>
       {user && <Welcome />}
@@ -96,8 +96,8 @@ export default function QuestionsPage() {
             <TopicsList
               key={'groups' + topics.length}
               topics={topics}
-              currentTopicSlug={categorySlug}
-              setCurrentTopicSlug={setCategorySlug}
+              currentTopicSlug={topicSlug}
+              setCurrentTopicSlug={setTopicSlug}
               privateUser={privateUser}
               user={user}
               show={true}
@@ -132,31 +132,44 @@ export default function QuestionsPage() {
                   excludeGroupSlugs: buildArray(
                     privateUser?.blockedGroupSlugs,
                     shouldFilterDestiny &&
-                      !DESTINY_GROUP_SLUGS.includes(categorySlug) &&
+                      !DESTINY_GROUP_SLUGS.includes(topicSlug) &&
                       DESTINY_GROUP_SLUGS,
                     !user && BLOCKED_BY_DEFAULT_GROUP_SLUGS
                   ),
                   excludeUserIds: privateUser?.blockedUserIds,
-                  topicSlug: categorySlug !== '' ? categorySlug : undefined,
+                  topicSlug: topicSlug !== '' ? topicSlug : undefined,
                 }}
                 useUrlParams
                 isWholePage
                 headerClassName={'bg-canvas-0'}
                 menuButton={menuButton}
                 hideAvatar={show}
+                rowBelowFilters={
+                  isMobile && (
+                    <BrowseTopicPills
+                      topics={topics}
+                      currentTopicSlug={topicSlug}
+                      setTopicSlug={(slug) =>
+                        setTopicSlug(slug === topicSlug ? '' : slug)
+                      }
+                    />
+                  )
+                }
               />
             </Col>
-            <TopicsList
-              className={'xl:hidden'}
-              key={'groups' + topics.length}
-              topics={topics}
-              currentTopicSlug={categorySlug}
-              setCurrentTopicSlug={setCategorySlug}
-              privateUser={privateUser}
-              user={user}
-              show={show}
-              setShow={setShow}
-            />
+            {!isMobile && (
+              <TopicsList
+                className={'xl:hidden'}
+                key={'groups' + topics.length}
+                topics={topics}
+                currentTopicSlug={topicSlug}
+                setCurrentTopicSlug={setTopicSlug}
+                privateUser={privateUser}
+                user={user}
+                show={show}
+                setShow={setShow}
+              />
+            )}
           </Row>
         </Col>
       </Page>
