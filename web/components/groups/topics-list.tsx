@@ -129,6 +129,7 @@ export function TopicsList(props: {
                 group={group}
                 yourGroupIds={yourGroupIds}
                 user={user}
+                className={'mr-2'}
               />
             </Row>
           ))}
@@ -182,14 +183,20 @@ const ForYouButton = (props: {
         }
         className={clsx(
           'hover:bg-canvas-50 relative w-full flex-row flex-wrap px-2 py-4 text-left text-sm ',
-          currentCategorySlug == 'for-you' ? 'bg-canvas-50 font-semibold ' : ''
+          currentCategorySlug == 'for-you' ? 'bg-canvas-50' : ''
         )}
       >
         <div
           className={currentCategorySlug == 'for-you' ? selectedBarClass : ''}
         />
         <Row className={'items-center justify-between'}>
-          <span>⭐️ For you</span>
+          <span
+            className={clsx(
+              currentCategorySlug == 'for-you' ? ' font-semibold ' : ''
+            )}
+          >
+            ⭐️ For you
+          </span>
           <DropdownMenu
             Items={groupOptionItems}
             Icon={<CogIcon className=" text-ink-600 h-5 w-5" />}
