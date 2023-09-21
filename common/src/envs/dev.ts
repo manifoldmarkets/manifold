@@ -29,5 +29,5 @@ export const DEV_CONFIG: EnvConfig = {
     androidClientId:
       '134303100058-mu6dbubhks8khpqi3dq0fokqnkbputiq.apps.googleusercontent.com',
   },
-  adminIds: ['pfKxvtgSEua5DxoIfiPXxR4fAWd2'],
+  adminIds: ['pfKxvtgSEua5DxoIfiPXxR4fAWd2', '6hHpzvRG0pMq8PNJs7RZj2qlZGn2'],
 }
