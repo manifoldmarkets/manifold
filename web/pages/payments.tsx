@@ -202,7 +202,7 @@ const PaymentCards = (props: {
                 }
               >
                 {decreasedBalance ? '-' : '+'}
-                {formatMoney(payment.amount)}
+                {formatMoney(Math.abs(payment.amount))}
               </span>
             </Row>
             <Row className={'ml-1 mt-2'}>
