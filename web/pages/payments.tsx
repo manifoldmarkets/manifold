@@ -150,6 +150,7 @@ const PaymentCards = (props: {
       {payments.map((payment) => {
         const fromUser = users?.find((u) => u.id === payment.fromId)
         const toUser = users?.find((u) => u.id === payment.toId)
+        const decreasedBalance = (payment.fromId === forUser?.id) !== (payment.amount < 0)
         return (
           <Col
             key={payment.id}
@@ -170,7 +171,7 @@ const PaymentCards = (props: {
                           username={fromUser.username}
                         />
                       </span>
-                      <span>paid</span>
+                      <span>{payment.amount < 0 ? 'fined' : 'paid'}</span>
                       <span>
                         <UserLink
                           name={toUser.name}
@@ -195,14 +196,12 @@ const PaymentCards = (props: {
                 className={
                   payment.fromId === payment.toId
                     ? 'text-gray-500'
-                    : (payment.fromId === forUser?.id) !== (payment.amount < 0)
+                    : decreasedBalance
                     ? 'text-scarlet-500'
                     : 'text-teal-500'
                 }
               >
-                {payment.amount < 0
-                   ? 'fine of '
-                   : payment.fromId === forUser?.id ? '-' : '+'}
+                {decreasedBalance ? '-' : '+'}
                 {formatMoney(payment.amount)}
               </span>
             </Row>
