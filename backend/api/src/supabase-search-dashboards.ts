@@ -44,7 +44,7 @@ function getSearchDashboardSQL(input: {
     query = `
         select *
         from dashboards
-        order by importance_score desc
+        order by importance_score desc, created_time desc
       `
   } else {
     query = `
@@ -52,7 +52,7 @@ function getSearchDashboardSQL(input: {
         FROM dashboards,
         LATERAL websearch_to_tsquery('english', $1) as query
         WHERE dashboards.title_fts @@ query
-        ORDER BY importance_score DESC
+        ORDER BY importance_score DESC, created_time DESC
       `
   }
   return query + `LIMIT ${limit} OFFSET ${offset}`
