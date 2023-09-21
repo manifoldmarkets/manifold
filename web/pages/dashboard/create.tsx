@@ -120,22 +120,7 @@ export default function CreateDashboard() {
         <Spacer h={6} />
         <div className="mb-2">Content</div>
         {items.length > 0 && (
-          <DashboardContent
-            items={items}
-            onRemove={(slugOrUrl: string) => {
-              setItems((items) => {
-                return items.filter((item) => {
-                  if (item.type === 'question') {
-                    return item.slug !== slugOrUrl
-                  } else if (item.type === 'link') {
-                    return item.url !== slugOrUrl
-                  }
-                  return true
-                })
-              })
-            }}
-            isEditing
-          />
+          <DashboardContent items={items} setItems={setItems} isEditing />
         )}
         <AddDashboardItemWidget items={items} setItems={setItems} />
         <Spacer h={6} />

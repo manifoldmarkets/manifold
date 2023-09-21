@@ -2,23 +2,29 @@ import { useContracts } from 'web/hooks/use-contract-supabase'
 import { useLinkPreviews } from 'web/hooks/use-link-previews'
 import { DashboardNewsItem } from '../news/dashboard-news-item'
 import { FeedContractCard } from '../contract/feed-contract-card'
-import { Col } from '../layout/col'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { ReactNode } from 'react'
 import { XCircleIcon } from '@heroicons/react/solid'
-import { DashboardItem } from 'common/dashboard'
+import { DashboardItem, DashboardQuestionItem } from 'common/dashboard'
+import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
+import { partition } from 'lodash'
 
 export const DashboardContent = (props: {
   items: DashboardItem[]
-  onRemove: (slugOrUrl: string) => void
+  setItems: (items: DashboardItem[]) => void
   isEditing?: boolean
 }) => {
-  const { items, isEditing, onRemove } = props
+  const { items, isEditing, setItems } = props
 
-  const slugs = items.map((x) => (x as any).slug).filter((x) => !!x)
+  const [questions, links] = partition(
+    items,
+    (x): x is DashboardQuestionItem => x.type === 'question'
+  )
+
+  const slugs = questions.map((q) => q.slug)
   const contracts = useContracts(slugs, 'slug')
 
-  const urls = items.map((x) => (x as any).url).filter((x) => !!x)
+  const urls = links.map((l) => l.url)
   const previews = useLinkPreviews(urls)
   const isLoading =
     (slugs.length > 0 && contracts.length === 0) ||
@@ -29,75 +35,96 @@ export const DashboardContent = (props: {
   ) => {
     if ('url' in card) {
       const preview = previews.find((p) => p.url === card.url)
-      if (!preview) return undefined
+      if (!preview) return null
       return (
-        <DashboardContentFrame
-          isEditing={isEditing}
-          onRemove={onRemove}
-          slugOrUrl={preview.url}
-        >
-          <DashboardNewsItem
-            {...preview}
-            className="mb-4 shadow-md"
-            key={card.url}
-          />
-        </DashboardContentFrame>
+        <DashboardNewsItem {...preview} className="shadow-md" key={card.url} />
       )
     }
 
     if ('slug' in card) {
       const contract = contracts.find((c) => c.slug === card.slug)
-      if (!contract) return undefined
-      return (
-        <DashboardContentFrame
-          isEditing={isEditing}
-          onRemove={onRemove}
-          slugOrUrl={contract.slug}
-        >
-          <FeedContractCard
-            key={contract.id}
-            contract={contract}
-            className="mb-4"
-          />
-        </DashboardContentFrame>
-      )
+      if (!contract) return null
+      return <FeedContractCard key={contract.id} contract={contract} />
     }
   }
 
-  const content = items.map(renderCard).filter((x) => !!x)
-  return <Col>{isLoading ? <LoadingIndicator /> : <>{content}</>}</Col>
+  const onDragEnd = (result: any) => {
+    const { destination, source } = result
+    if (!destination) return
+    const newItems = [...items]
+    const [removed] = newItems.splice(source.index, 1)
+    newItems.splice(destination.index, 0, removed)
+    setItems(newItems)
+  }
+
+  if (isLoading) return <LoadingIndicator />
+
+  return (
+    <DragDropContext
+      onDragStart={() => window.navigator.vibrate?.(100)}
+      onDragEnd={onDragEnd}
+    >
+      <Droppable droppableId="dashboard">
+        {(provided) => (
+          <div
+            ref={provided.innerRef}
+            {...provided.droppableProps}
+            className="flex flex-col"
+          >
+            {items.map((item, index) => (
+              <Draggable
+                isDragDisabled={!isEditing}
+                key={item.type === 'link' ? item.url : item.slug}
+                draggableId={item.type === 'link' ? item.url : item.slug}
+                index={index}
+              >
+                {(provided) => (
+                  <div
+                    ref={provided.innerRef}
+                    {...provided.draggableProps}
+                    {...provided.dragHandleProps}
+                    className="mb-4"
+                  >
+                    <DashboardContentFrame
+                      isEditing={isEditing}
+                      onRemove={() => {
+                        const newItems = [...items]
+                        newItems.splice(index, 1)
+                        setItems(newItems)
+                      }}
+                    >
+                      {renderCard(item)}
+                    </DashboardContentFrame>
+                  </div>
+                )}
+              </Draggable>
+            ))}
+            {provided.placeholder}
+          </div>
+        )}
+      </Droppable>
+    </DragDropContext>
+  )
 }
 
 function DashboardContentFrame(props: {
   children: ReactNode
-  onRemove: (slugOrUrl: string) => void
-  slugOrUrl: string
+  onRemove: () => void
   isEditing?: boolean
 }) {
-  const { children, isEditing, onRemove, slugOrUrl } = props
+  const { children, isEditing, onRemove } = props
   if (!isEditing) {
     return <>{children}</>
   }
   return (
-    <div className={'relative'}>
+    <div className="relative">
       <button
         className="text-ink-500 hover:text-ink-700 absolute -top-2 right-0 z-50 transition-colors"
-        onClick={() => onRemove(slugOrUrl)}
+        onClick={onRemove}
       >
-        <XCircleIcon className=" h-5 w-5" />
+        <XCircleIcon className="h-5 w-5" />
       </button>
-      <div className="relative">
-        <div className="absolute top-0 left-0 right-0 bottom-0 z-40 rounded-lg bg-white opacity-10" />
-        <div
-          className="pointer-events-none"
-          onClick={(e) => {
-            e.preventDefault()
-            e.stopPropagation()
-          }}
-        >
-          {children}
-        </div>
-      </div>
+      <div className="pointer-events-none">{children}</div>
     </div>
   )
 }

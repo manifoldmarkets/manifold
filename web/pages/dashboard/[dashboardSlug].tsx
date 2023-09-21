@@ -155,18 +155,7 @@ export default function DashboardPage(props: {
         )}
         <DashboardContent
           items={dashboard.items}
-          onRemove={(slugOrUrl: string) => {
-            updateItems(
-              dashboard.items.filter((item) => {
-                if (item.type === 'question') {
-                  return item.slug !== slugOrUrl
-                } else if (item.type === 'link') {
-                  return item.url !== slugOrUrl
-                }
-                return true
-              })
-            )
-          }}
+          setItems={updateItems}
           isEditing={editMode}
         />
         {editMode && (
