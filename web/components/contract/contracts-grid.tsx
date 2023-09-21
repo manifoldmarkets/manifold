@@ -1,6 +1,5 @@
 import { Contract } from 'web/lib/firebase/contracts'
 import { Col } from '../layout/col'
-import { ShowTime } from './contract-details'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { LoadMoreUntilNotVisible } from '../widgets/visibility-observer'
 import { FeedContractCard } from './feed-contract-card'
@@ -8,7 +7,6 @@ import { FeedContractCard } from './feed-contract-card'
 export function ContractsGrid(props: {
   contracts: Contract[] | undefined
   loadMore?: () => Promise<boolean>
-  showTime?: ShowTime
   trackingPostfix?: string
   breakpointColumns?: { [key: string]: number }
 }) {

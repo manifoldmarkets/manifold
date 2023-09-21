@@ -22,7 +22,7 @@ export function GroupLeaderboard(props: {
 
   return (
     <Leaderboard
-      className="max-w-xl"
+      className="mt-4"
       entries={topUsers.map((t) => t.user)}
       title={title}
       columns={[

@@ -132,7 +132,6 @@ export function PublicMarketGroups(props: { contract: Contract }) {
           <ContractGroupsList
             canEdit={!!canEdit}
             contract={contract}
-            user={user}
             onlyGroupIds={
               onlyGroups
                 ? filterDefined(onlyGroups.map((g) => g.group_id))

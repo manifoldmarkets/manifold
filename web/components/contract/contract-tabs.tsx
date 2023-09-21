@@ -50,6 +50,7 @@ import { firebaseLogin } from 'web/lib/firebase/users'
 import { ArrowRightIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { useComments } from 'web/hooks/use-comments'
+import { useCommentsOnContract } from 'web/hooks/use-comments-supabase'
 
 export const EMPTY_USER = '_'
 
@@ -202,12 +203,12 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
   const newComments =
     useComments(
       contract.id,
-      maxBy(props.comments, (c) => c.createdTime)?.createdTime ?? 0
-    ) ?? props.comments
-  const comments = uniqBy(
-    [...props.comments, ...newComments],
-    (c) => c.id
-  ).filter((c) => !blockedUserIds.includes(c.userId))
+      maxBy(props.comments, (c) => c.createdTime)?.createdTime ?? Date.now()
+    ) ?? []
+  const oldComments = useCommentsOnContract(contract.id) ?? props.comments
+  const comments = uniqBy([...oldComments, ...newComments], (c) => c.id).filter(
+    (c) => !blockedUserIds.includes(c.userId)
+  )
 
   // Supabase use realtime comments
   // const comments = (

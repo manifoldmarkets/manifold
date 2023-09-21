@@ -14,11 +14,10 @@ import { useIsPageVisible } from 'web/hooks/use-page-visible'
 import { useEffect, useState } from 'react'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { Avatar } from 'web/components/widgets/avatar'
-import { last, range, uniq, uniqBy } from 'lodash'
+import { range, uniq, uniqBy } from 'lodash'
 import { filterDefined } from 'common/util/array'
-import { db } from 'web/lib/supabase/db'
 import { Page } from 'web/components/layout/page'
-import { DAY_MS, HOUR_MS, MINUTE_MS } from 'common/util/time'
+import { DAY_MS, MINUTE_MS } from 'common/util/time'
 import {
   DAYS_TO_USE_FREE_QUESTIONS,
   freeQuestionRemaining,
@@ -26,7 +25,6 @@ import {
 } from 'common/user'
 import { CreateQuestionButton } from 'web/components/buttons/create-question-button'
 import { shortenedFromNow } from 'web/lib/util/shortenedFromNow'
-import { Contract } from 'common/contract'
 
 export default function FeedTimelinePage() {
   return (
@@ -108,7 +106,7 @@ function FeedTimelineContent(props: { privateUser: PrivateUser }) {
     if (topIsVisible && now - lastSeen > 10000) {
       setLoadingMore(true)
       checkForNewer().then((newerTimelineItems) => {
-        addTimelineItems(newerTimelineItems, { new: true })
+        addTimelineItems(newerTimelineItems, { time: 'new' })
         setLoadingMore(false)
       })
     }
@@ -131,27 +129,14 @@ function FeedTimelineContent(props: { privateUser: PrivateUser }) {
   ).slice(0, 3)
   const fetchMoreOlderContent = async () => {
     if (!user) return
-    for (const i of range(0, 2)) {
-      const moreFeedItems = await loadMoreOlder()
-      if (moreFeedItems.length > 5) break
-      if (i == 1) {
-        const excludedContractIds = savedFeedItems.map((i) => i.contractId)
-        const { data } = await db.rpc(
-          'get_recommended_contracts_embeddings_fast',
-          {
-            uid: user.id,
-            n: 20,
-            excluded_contract_ids: filterDefined(excludedContractIds),
-          }
-        )
-        const manualFeedItems = (data ?? []).map((row: any) =>
-          convertContractToManualFeedItem(
-            row.data,
-            (last(savedFeedItems)?.createdTime ?? Date.now()) - HOUR_MS
-          )
-        )
-        addTimelineItems(manualFeedItems, { old: true })
+    const maxTries = 4
+    for (const i of range(0, maxTries)) {
+      let moreFeedItems = []
+      if (i < maxTries / 2) moreFeedItems = await loadMoreOlder(false)
+      else if (i >= maxTries / 2) {
+        moreFeedItems = await loadMoreOlder(true)
       }
+      if (moreFeedItems.length > 5) break
     }
   }
 
@@ -161,7 +146,7 @@ function FeedTimelineContent(props: { privateUser: PrivateUser }) {
         className="pointer-events-none absolute top-0 h-5 w-full select-none "
         onVisibilityUpdated={(visible) => {
           if (visible && !topIsVisible) {
-            addTimelineItems(newerTimelineItems, { new: true })
+            addTimelineItems(newerTimelineItems, { time: 'new' })
             setNewerTimelineItems([])
             setTopIsVisible(true)
           }
@@ -195,10 +180,7 @@ function FeedTimelineContent(props: { privateUser: PrivateUser }) {
       {savedFeedItems.length === 0 && (
         <div className="text-ink-1000 m-4 flex w-full flex-col items-center justify-center">
           We're fresh out of cards!
-          <Link
-            href="/QuestionsPage?s=newest&f=open"
-            className="text-primary-700"
-          >
+          <Link href="/questions?s=newest&f=open" className="text-primary-700">
             Browse new questions
           </Link>
         </div>
@@ -243,22 +225,3 @@ const NewActivityButton = (props: {
     </button>
   )
 }
-
-const convertContractToManualFeedItem = (
-  contract: Contract,
-  createdTime: number
-): FeedTimelineItem =>
-  ({
-    contract,
-    createdTime,
-    id: Math.random(),
-    contractId: contract.id,
-    dataType: 'trending_contract',
-    reason: 'similar_interest_vector_to_contract',
-    supabaseTimestamp: new Date(createdTime).toISOString(),
-    isCopied: true,
-    avatarUrl: contract.creatorAvatarUrl,
-    commentId: null,
-    newsId: null,
-    manuallyCreatedFromContract: true,
-  } as FeedTimelineItem)

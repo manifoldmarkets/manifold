@@ -79,10 +79,11 @@ export type FeedTimelineItem = {
   manuallyCreatedFromContract?: boolean
   relatedItems?: FeedTimelineItem[]
 }
+type times = 'new' | 'old'
 type loadProps = {
-  new?: boolean
-  old?: boolean
+  time: times
   ignoreFeedTimelineItems: FeedTimelineItem[]
+  allowSeen?: boolean
 }
 const baseQuery = (
   userId: string,
@@ -139,12 +140,17 @@ const queryForFeedRows = async (
         'data_type',
         q.dataTypes
       )
-      if (options.new) {
+      if (options.time === 'new') {
         query = query.gt('created_time', newestCreatedTimestamp)
-      } else if (options.old) {
-        query = query
-          .lt('created_time', newestCreatedTimestamp)
-          .is('seen_time', null)
+      } else if (options.time === 'old') {
+        query = query.lt('created_time', newestCreatedTimestamp)
+        if (options.allowSeen) {
+          // We don't want the same top cards over and over when we've run out of new cards,
+          // instead it should be the most recently seen items first
+          query = query.order('seen_time', { ascending: false })
+        } else {
+          query = query.is('seen_time', null)
+        }
       }
       const data = await query
       return data.data
@@ -172,7 +178,8 @@ export const useFeedTimeline = (
   const loadingFirstCards = useRef(false)
 
   const fetchFeedItems = async (userId: string, options: loadProps) => {
-    if (loadingFirstCards.current && options.new) return { timelineItems: [] }
+    if (loadingFirstCards.current && options.time === 'new')
+      return { timelineItems: [] }
 
     const data = await queryForFeedRows(
       userId,
@@ -231,7 +238,7 @@ export const useFeedTimeline = (
         .in('id', newContractIds)
         .not('visibility', 'eq', 'unlisted')
         .is('resolution_time', null)
-        .gt('close_time', new Date().toISOString())
+        .or(`close_time.gt.${new Date().toISOString()},close_time.is.null`)
         .then((res) =>
           res.data?.map(
             (c) =>
@@ -338,10 +345,7 @@ export const useFeedTimeline = (
   }
 
   const addTimelineItems = useEvent(
-    (
-      newFeedItems: FeedTimelineItem[],
-      options: { new?: boolean; old?: boolean }
-    ) => {
+    (newFeedItems: FeedTimelineItem[], options: { time: times }) => {
       // Don't signal we're done loading until we've loaded at least one page
       if (
         loadingFirstCards.current &&
@@ -351,7 +355,7 @@ export const useFeedTimeline = (
         return
 
       const orderedItems = uniqBy(
-        options.new
+        options.time === 'new'
           ? buildArray(newFeedItems, savedFeedItems)
           : buildArray(savedFeedItems, newFeedItems),
         'id'
@@ -361,7 +365,7 @@ export const useFeedTimeline = (
     }
   )
   const loadMore = useEvent(
-    async (options: { old?: boolean; new?: boolean }) => {
+    async (options: { time: times; allowSeen?: boolean }) => {
       if (!userId) return []
 
       const { timelineItems } = await fetchFeedItems(userId, {
@@ -375,9 +379,10 @@ export const useFeedTimeline = (
 
   const tryToLoadManyCardsAtStart = useEvent(async () => {
     loadingFirstCards.current = true
-    for (const _ of range(0, 5)) {
-      const moreFeedItems = await loadMore({ old: true })
+    for (const i of range(0, 5)) {
+      const moreFeedItems = await loadMore({ time: 'old' })
       if (moreFeedItems.length > 10) break
+      if (i === 4) await loadMore({ time: 'old', allowSeen: true })
     }
     loadingFirstCards.current = false
   })
@@ -388,8 +393,9 @@ export const useFeedTimeline = (
   }, [userId])
 
   return {
-    loadMoreOlder: async () => loadMore({ old: true }),
-    checkForNewer: async () => loadMore({ new: true }),
+    loadMoreOlder: async (allowSeen: boolean) =>
+      loadMore({ time: 'old', allowSeen }),
+    checkForNewer: async () => loadMore({ time: 'new' }),
     addTimelineItems,
     boosts: boosts?.filter(
       (b) =>

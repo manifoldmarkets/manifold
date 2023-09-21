@@ -64,8 +64,8 @@ function duplicateContractHref(contract: Contract) {
 
 const getLinkTarget = (href: string, newTab?: boolean) => {
   if (href.startsWith('http')) return '_blank'
-  const { isNative, platform } = getNativePlatform()
+  const { isNative } = getNativePlatform()
   // Native android will open 'a new tab' in the system browser rather than in the app
-  if (isNative && platform === 'android') return '_self'
+  if (isNative) return '_self'
   return newTab ? '_blank' : '_self'
 }

@@ -5,10 +5,9 @@ import toast from 'react-hot-toast'
 import { addContractToGroup } from 'web/lib/firebase/api'
 import { AddMarketToGroupModal } from './add-market-modal'
 import { useUser } from 'web/hooks/use-user'
-import { useGroupFromSlug, useRealtimeRole } from 'web/hooks/use-group-supabase'
+import { useGroupFromSlug, useGroupRole } from 'web/hooks/use-group-supabase'
 import { Button } from 'web/components/buttons/button'
 import { useState } from 'react'
-import { useAdmin } from 'web/hooks/use-admin'
 import { getAddContractToGroupPermission } from 'web/components/groups/group-options'
 
 export type AddContractToGroupPermissionType =
@@ -67,12 +66,10 @@ export const AddContractToGroupButton = (props: { groupSlug: string }) => {
   const { groupSlug } = props
   const group = useGroupFromSlug(groupSlug)
   const [open, setOpen] = useState(false)
-  const realtimeRole = useRealtimeRole(group?.id)
-  const isManifoldAdmin = useAdmin()
   const user = useUser()
+  const userRole = useGroupRole(group?.id ?? '_', user)
   if (!group) return <></>
   const isCreator = group.creatorId == user?.id
-  const userRole = isManifoldAdmin ? 'admin' : realtimeRole
   const addPermission = getAddContractToGroupPermission(
     group.privacyStatus,
     userRole,

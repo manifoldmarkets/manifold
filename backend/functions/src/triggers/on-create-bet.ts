@@ -498,6 +498,10 @@ async function handleReferral(staleUser: User, eventId: string) {
     }
     const referredByUser = referredByUserSnap.data() as User
     console.log(`referredByUser: ${referredByUserId}`)
+    if (referredByUser.isBannedFromPosting) {
+      console.log('referredByUser is banned, not paying out referral')
+      return
+    }
 
     let referredByContract: Contract | undefined = undefined
     if (user.referredByContractId) {
@@ -533,7 +537,7 @@ async function handleReferral(staleUser: User, eventId: string) {
     )
     if (txns.size > 0) {
       // If the referring user already has a referral txn due to referring this user, halt
-      if (txns.docs.some((txn) => txn.data()?.description === user.id)) {
+      if (txns.docs.some((txn) => txn.data()?.description.includes(user.id))) {
         console.log('found referral txn with the same details, aborting')
         return
       }

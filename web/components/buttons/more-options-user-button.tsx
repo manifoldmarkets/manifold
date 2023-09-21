@@ -15,6 +15,7 @@ import { Title } from 'web/components/widgets/title'
 import { Row } from '../layout/row'
 import { PROJECT_ID } from 'common/envs/constants'
 import { SimpleCopyTextButton } from 'web/components/buttons/copy-link-button'
+import { ReferralsButton } from 'web/components/buttons/referrals-button'
 
 export function MoreOptionsUserButton(props: { user: User }) {
   const { user } = props
@@ -55,21 +56,20 @@ export function MoreOptionsUserButton(props: { user: User }) {
           </Title>
           <span className={'ml-1 text-sm'}> joined {createdTime}</span>
           {isAdmin && (
-            <Row className={'px-1'}>
-              <span>
-                <a
-                  className="text-primary-400 mr-2 text-sm hover:underline"
-                  href={firestoreUserConsolePath(user.id)}
-                >
-                  firestore user
-                </a>
-                <a
-                  className="text-primary-400 text-sm hover:underline"
-                  href={firestorePrivateConsolePath(user.id)}
-                >
-                  private user
-                </a>
-              </span>
+            <Row className={'items-center gap-2 px-1'}>
+              <a
+                className="text-primary-400 text-sm hover:underline"
+                href={firestoreUserConsolePath(user.id)}
+              >
+                firestore user
+              </a>
+              <a
+                className="text-primary-400 text-sm hover:underline"
+                href={firestorePrivateConsolePath(user.id)}
+              >
+                private user
+              </a>
+              <ReferralsButton user={user} className={'text-sm'} />
               <SimpleCopyTextButton
                 text={user.id}
                 tooltip="Copy user id"

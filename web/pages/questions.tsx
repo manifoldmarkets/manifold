@@ -12,7 +12,6 @@ import {
   useShouldBlockDestiny,
   useUser,
 } from 'web/hooks/use-user'
-import { useMemberGroupIds } from 'web/hooks/use-group-supabase'
 import { Row } from 'web/components/layout/row'
 import { buildArray } from 'common/util/array'
 import {
@@ -30,13 +29,13 @@ import Welcome from 'web/components/onboarding/welcome'
 import { Page } from 'web/components/layout/page'
 import { SEO } from 'web/components/SEO'
 import { Title } from 'web/components/widgets/title'
+import { BrowseTopicPills } from 'web/components/groups/browse-topic-pills'
 
 const GROUPS_PER_PAGE = 100
 export const SHOW_TOPICS_TERM = 'show-topics'
 
 export default function QuestionsPage() {
   const user = useUser()
-  const yourGroupIds = useMemberGroupIds(user?.id)
   const isMobile = useIsMobile()
   const router = useRouter()
   const { q } = router.query
@@ -52,27 +51,23 @@ export default function QuestionsPage() {
     'home-page-trending-topics'
   ) as Group[]
 
-  const [categorySlug, setCategorySlug] = usePersistentQueryState<string>(
+  const [topicSlug, setTopicSlug] = usePersistentQueryState<string>(
     TOPIC_KEY,
     ''
   )
+  const topicFromRouter = useGroupFromRouter(topicSlug)
   const [show, setShow] = useState<boolean>(false)
 
-  const { groups: myTopics } = useGroupRoles(user)
   const privateUser = usePrivateUser()
+  const { groups: myTopics } = useGroupRoles(user)
 
-  const topicsByImportance = (
-    categorySlug || !trendingGroups
+  const topicsByImportance =
+    topicSlug || !trendingGroups
       ? uniqBy(trendingGroups, (g) => removeEmojis(g.name).toLowerCase())
       : combineGroupsByImportance(trendingGroups, myTopics)
-  ).filter((g) => !privateUser?.blockedGroupSlugs.includes(g.slug))
-  const topicFromRouter = useGroupFromRouter(categorySlug, topicsByImportance)
   const topics = buildArray(
     topicFromRouter &&
-      !topicsByImportance
-        .map((g) => g.slug)
-        .slice(0, 10)
-        .includes(topicFromRouter.slug) &&
+      !topicsByImportance.map((g) => g.id).includes(topicFromRouter.id) &&
       (topicFromRouter as Group),
     topicsByImportance
   )
@@ -81,32 +76,35 @@ export default function QuestionsPage() {
     <Button
       color={'gray-outline'}
       size={'md'}
-      className={'ml-1 w-[8rem] sm:ml-2 md:w-[10.5rem] xl:hidden'}
+      className={
+        'ml-1 hidden w-[8rem] sm:ml-2 sm:flex md:w-[10.5rem] xl:hidden'
+      }
       onClick={() => setShow(!show)}
     >
       <MenuIcon className="mr-2 h-5 w-5" />
       Topics
     </Button>
   )
-  const currentTopic = topics.find((t) => t.slug === categorySlug)
+  const currentTopic = topics.find((t) => t.slug === topicSlug)
   return (
     <>
       {user && <Welcome />}
       <Page
         trackPageView={'questions page'}
         rightSidebar={
-          <TopicsList
-            key={'groups' + topics.length}
-            topics={topics}
-            currentTopicSlug={categorySlug}
-            setCurrentTopicSlug={setCategorySlug}
-            privateUser={privateUser}
-            user={user}
-            yourGroupIds={yourGroupIds}
-            show={true}
-            setShow={() => {}}
-            className={'mt-14'}
-          />
+          !isMobile && (
+            <TopicsList
+              key={'groups' + topics.length}
+              topics={topics}
+              currentTopicSlug={topicSlug}
+              setCurrentTopicSlug={setTopicSlug}
+              privateUser={privateUser}
+              user={user}
+              show={true}
+              setShow={() => {}}
+              className={'mt-14 hidden xl:flex'}
+            />
+          )
         }
       >
         <SEO
@@ -123,7 +121,7 @@ export default function QuestionsPage() {
           <Row className={'mt-2 pl-2 sm:mt-0'}>
             <Col
               className={
-                'scrollbar-hide relative max-h-[calc(100vh-4rem)] min-h-[35rem] w-full overflow-y-auto overflow-x-visible lg:max-h-[calc(100vh-5.25rem)]'
+                'scrollbar-hide relative max-h-[calc(100vh-4rem)] min-h-[35rem] w-full overflow-y-auto overflow-x-hidden lg:max-h-[calc(100vh-5.25rem)]'
               }
             >
               <SupabaseContractSearch
@@ -134,32 +132,44 @@ export default function QuestionsPage() {
                   excludeGroupSlugs: buildArray(
                     privateUser?.blockedGroupSlugs,
                     shouldFilterDestiny &&
-                      !DESTINY_GROUP_SLUGS.includes(categorySlug) &&
+                      !DESTINY_GROUP_SLUGS.includes(topicSlug) &&
                       DESTINY_GROUP_SLUGS,
                     !user && BLOCKED_BY_DEFAULT_GROUP_SLUGS
                   ),
                   excludeUserIds: privateUser?.blockedUserIds,
-                  topicSlug: categorySlug !== '' ? categorySlug : undefined,
+                  topicSlug: topicSlug !== '' ? topicSlug : undefined,
                 }}
                 useUrlParams
                 isWholePage
                 headerClassName={'bg-canvas-0'}
                 menuButton={menuButton}
                 hideAvatar={show}
+                rowBelowFilters={
+                  isMobile && (
+                    <BrowseTopicPills
+                      topics={topics}
+                      currentTopicSlug={topicSlug}
+                      setTopicSlug={(slug) =>
+                        setTopicSlug(slug === topicSlug ? '' : slug)
+                      }
+                    />
+                  )
+                }
               />
             </Col>
-            <TopicsList
-              className={'xl:hidden'}
-              key={'groups' + topics.length}
-              topics={topics}
-              currentTopicSlug={categorySlug}
-              setCurrentTopicSlug={setCategorySlug}
-              privateUser={privateUser}
-              user={user}
-              yourGroupIds={yourGroupIds}
-              show={show}
-              setShow={setShow}
-            />
+            {!isMobile && (
+              <TopicsList
+                className={'xl:hidden'}
+                key={'groups' + topics.length}
+                topics={topics}
+                currentTopicSlug={topicSlug}
+                setCurrentTopicSlug={setTopicSlug}
+                privateUser={privateUser}
+                user={user}
+                show={show}
+                setShow={setShow}
+              />
+            )}
           </Row>
         </Col>
       </Page>

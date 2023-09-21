@@ -1,6 +1,5 @@
 import { Contract } from 'common/contract'
 import { Group } from 'common/group'
-import { User } from 'common/user'
 import toast from 'react-hot-toast'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -16,14 +15,12 @@ import { TopicTag } from 'web/components/groups/topic-tag'
 
 export function ContractGroupsList(props: {
   contract: Contract
-  user: User | null | undefined
   canEdit: boolean
   onlyGroupIds?: string[]
   canEditGroup: (group: Group) => boolean
 }) {
-  const { user, canEditGroup, onlyGroupIds, contract, canEdit } = props
+  const { canEditGroup, onlyGroupIds, contract, canEdit } = props
   const groups = useGroupsWithContract(contract) ?? []
-  const isCreator = contract.creatorId === user?.id
   const [error, setError] = useState<string>('')
 
   return (
@@ -86,7 +83,6 @@ export function ContractGroupsList(props: {
                     setError(e.message)
                   })
                 }
-                isContractCreator={isCreator}
                 onlyGroupIds={onlyGroupIds}
               />
               <span className={'text-sm text-red-400'}>{error}</span>

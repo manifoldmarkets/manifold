@@ -5,24 +5,26 @@ import { z } from 'zod'
 import { authEndpoint, validate } from './helpers'
 
 const schema = z.object({
+  title: z.string(),
   dashboardId: z.string(),
   description: contentSchema.optional(),
   items: z.array(DashboardItemSchema),
 })
 
 export const updatedashboard = authEndpoint(async (req, auth) => {
-  const { dashboardId, description, items } = validate(schema, req.body)
+  const { title, dashboardId, description, items } = validate(schema, req.body)
 
-  log('creating dashboard')
+  log('updating dashboard')
   const pg = createSupabaseDirectClient()
 
   const updatedDashboard = await pg.one(
     `update dashboards
       set items = $1,
-      description=$2
-      where id = $3 and creator_id = $4
+      title=$2,
+      description=$3
+      where id = $4 and creator_id = $5
       returning *`,
-    [JSON.stringify(items), description, dashboardId, auth.uid]
+    [JSON.stringify(items), title, description, dashboardId, auth.uid]
   )
 
   // return updated dashboard

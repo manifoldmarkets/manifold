@@ -17,20 +17,13 @@ import { Col } from '../layout/col'
 
 export function GroupSelector(props: {
   setSelectedGroup: (group: Group) => void
-  isContractCreator: boolean
   label?: string
   ignoreGroupIds?: string[]
   newContract?: boolean
   onlyGroupIds?: string[]
 }) {
-  const {
-    setSelectedGroup,
-    isContractCreator,
-    label,
-    ignoreGroupIds,
-    newContract,
-    onlyGroupIds,
-  } = props
+  const { setSelectedGroup, label, ignoreGroupIds, newContract, onlyGroupIds } =
+    props
   const user = useUser()
   const onlyGroups = useAsyncData(onlyGroupIds, getGroups)
   const [isCreatingNewGroup, setIsCreatingNewGroup] = useState(false)
@@ -68,7 +61,7 @@ export function GroupSelector(props: {
         setLoading(false)
       }
     })
-  }, [user?.id, isContractCreator, query])
+  }, [user?.id, query])
 
   const handleSelectGroup = (group: Group | null | 'new') => {
     if (group === 'new') {

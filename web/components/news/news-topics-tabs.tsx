@@ -6,6 +6,7 @@ import { track } from 'web/lib/service/analytics'
 
 import { buildArray } from 'common/util/array'
 import { newsContent } from 'web/components/news/news-content'
+import { NewsDashboard, NewsSidebar } from './news-dashboard'
 
 export function NewsTopicsTabs(props: {
   homeContent?: ReactNode
@@ -20,7 +21,11 @@ export function NewsTopicsTabs(props: {
       inlineTabIcon: <HomeIcon className="h-4 w-4" />,
       content: homeContent as JSX.Element,
     },
-    ...newsContent
+    newsContent.map((content) => ({
+      title: content.title,
+      content: <NewsDashboard slug={content.slug} />,
+      sidebar: <NewsSidebar slug={content.slug} />,
+    }))
   )
   return (
     <Col className="w-full gap-2 px-1 pb-8 sm:mx-auto sm:gap-6 sm:px-2 lg:pr-4">

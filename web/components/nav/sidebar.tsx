@@ -13,6 +13,7 @@ import {
   SearchIcon,
   LightningBoltIcon,
   LoginIcon,
+  TemplateIcon,
 } from '@heroicons/react/outline'
 // import { GiftIcon, MapIcon, MoonIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
@@ -135,11 +136,8 @@ const getDesktopNav = (
         href: `/notifications`,
         icon: NotificationsIcon,
       },
-      {
-        name: 'Leagues',
-        href: '/leagues',
-        icon: TrophyIcon,
-      }
+      { name: 'Leagues', href: '/leagues', icon: TrophyIcon },
+      { name: 'Dashboards', href: '/dashboard', icon: TemplateIcon }
     )
 
   return buildArray(
@@ -155,6 +153,7 @@ const getMobileNav = (toggleModal: () => void) => {
   return buildArray(
     { name: 'Search', href: '/find', icon: SearchIcon },
     { name: 'Leagues', href: '/leagues', icon: TrophyIcon },
+    { name: 'Dashboards', href: '/dashboard', icon: TemplateIcon },
     { name: 'Live', href: '/live', icon: LightningBoltIcon },
     { name: 'Get mana', icon: CashIcon, onClick: toggleModal },
     { name: 'Share with friends', href: '/referrals', icon: StarIcon } // remove this and I will beat you — SG

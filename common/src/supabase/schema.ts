@@ -411,35 +411,68 @@ export interface Database {
         }
         Relationships: []
       }
+      dashboard_follows: {
+        Row: {
+          created_time: string | null
+          dashboard_id: string
+          follower_id: string
+        }
+        Insert: {
+          created_time?: string | null
+          dashboard_id: string
+          follower_id: string
+        }
+        Update: {
+          created_time?: string | null
+          dashboard_id?: string
+          follower_id?: string
+        }
+        Relationships: []
+      }
       dashboards: {
         Row: {
           created_time: string
+          creator_avatar_url: string
           creator_id: string
+          creator_name: string
+          creator_username: string
           description: Json | null
           id: string
+          importance_score: number
           items: Json | null
           slug: string
           title: string
+          title_fts: unknown | null
           visibility: string | null
         }
         Insert: {
           created_time?: string
+          creator_avatar_url: string
           creator_id: string
+          creator_name: string
+          creator_username: string
           description?: Json | null
           id?: string
+          importance_score?: number
           items?: Json | null
           slug: string
           title: string
+          title_fts?: unknown | null
           visibility?: string | null
         }
         Update: {
           created_time?: string
+          creator_avatar_url?: string
           creator_id?: string
+          creator_name?: string
+          creator_username?: string
           description?: Json | null
           id?: string
+          importance_score?: number
           items?: Json | null
           slug?: string
           title?: string
+          title_fts?: unknown | null
           visibility?: string | null
         }
         Relationships: [
@@ -2672,30 +2705,7 @@ export interface Database {
           rating: number
         }[]
       }
-      get_recommended_contracts_by_score: {
-        Args: {
-          uid: string
-          count: number
-        }
-        Returns: {
-          data: Json
-          score: number
-        }[]
-      }
       get_recommended_contracts_embeddings: {
-        Args: {
-          uid: string
-          n: number
-          excluded_contract_ids: string[]
-        }
-        Returns: {
-          data: Json
-          distance: number
-          relative_dist: number
-          popularity_score: number
-        }[]
-      }
-      get_recommended_contracts_embeddings_fast: {
         Args: {
           uid: string
           n: number
@@ -2721,137 +2731,6 @@ export interface Database {
           distance: number
           relative_dist: number
           popularity_score: number
-        }[]
-      }
-      get_recommended_contracts_embeddings_from_fast: {
-        Args: {
-          uid: string
-          p_embedding: string
-          n: number
-          excluded_contract_ids: string[]
-        }
-        Returns: {
-          data: Json
-          distance: number
-          relative_dist: number
-          popularity_score: number
-        }[]
-      }
-      get_recommended_contracts_embeddings_from_ian: {
-        Args: {
-          uid: string
-          p_embedding: string
-          n: number
-          excluded_contract_ids: string[]
-          max_dist: number
-        }
-        Returns: {
-          data: Json
-          distance: number
-          relative_dist: number
-          popularity_score: number
-        }[]
-      }
-      get_recommended_contracts_embeddings_from_using_comments: {
-        Args: {
-          uid: string
-          p_embedding: string
-          n: number
-          excluded_contract_ids: string[]
-          max_dist: number
-        }
-        Returns: {
-          data: Json
-          distance: number
-          relative_dist: number
-          popularity_score: number
-        }[]
-      }
-      get_recommended_contracts_embeddings_from_using_only_comments: {
-        Args: {
-          uid: string
-          p_embedding: string
-          n: number
-          excluded_contract_ids: string[]
-          max_dist: number
-        }
-        Returns: {
-          data: Json
-          distance: number
-          relative_dist: number
-          popularity_score: number
-          comment_id: string
-        }[]
-      }
-      get_recommended_contracts_embeddings_from2:
-        | {
-            Args: {
-              uid: string
-              p_embedding: string
-              n: number
-              excluded_contract_ids: string[]
-              max_dist: number
-            }
-            Returns: {
-              data: Json
-              distance: number
-              relative_dist: number
-              popularity_score: number
-            }[]
-          }
-        | {
-            Args: {
-              uid: string
-              p_embedding: string
-              n: number
-              excluded_contract_ids: string[]
-            }
-            Returns: {
-              data: Json
-              distance: number
-              relative_dist: number
-              popularity_score: number
-            }[]
-          }
-      get_recommended_contracts_embeddings_topic: {
-        Args: {
-          uid: string
-          p_topic: string
-          n: number
-          excluded_contract_ids: string[]
-        }
-        Returns: {
-          data: Json
-          distance: number
-          relative_dist: number
-          popularity_score: number
-        }[]
-      }
-      get_recommended_contracts_embeddings_using_comments: {
-        Args: {
-          uid: string
-          n: number
-          excluded_contract_ids: string[]
-        }
-        Returns: {
-          data: Json
-          distance: number
-          relative_dist: number
-          popularity_score: number
-        }[]
-      }
-      get_recommended_contracts_embeddings_using_only_comments: {
-        Args: {
-          uid: string
-          n: number
-          excluded_contract_ids: string[]
-        }
-        Returns: {
-          data: Json
-          distance: number
-          relative_dist: number
-          popularity_score: number
-          comment_id: string
         }[]
       }
       get_related_contracts: {
@@ -2896,32 +2775,19 @@ export interface Database {
         Args: Record<PropertyKey, never>
         Returns: number
       }
-      get_top_market_ads:
-        | {
-            Args: {
-              uid: string
-            }
-            Returns: {
-              ad_id: string
-              market_id: string
-              ad_funds: number
-              ad_cost_per_view: number
-              market_data: Json
-            }[]
-          }
-        | {
-            Args: {
-              uid: string
-              distance_threshold: number
-            }
-            Returns: {
-              ad_id: string
-              market_id: string
-              ad_funds: number
-              ad_cost_per_view: number
-              market_data: Json
-            }[]
-          }
+      get_top_market_ads: {
+        Args: {
+          uid: string
+          distance_threshold: number
+        }
+        Returns: {
+          ad_id: string
+          market_id: string
+          ad_funds: number
+          ad_cost_per_view: number
+          market_data: Json
+        }[]
+      }
       get_unique_bettors_since: {
         Args: {
           this_contract_id: string

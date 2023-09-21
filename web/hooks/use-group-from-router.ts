@@ -1,23 +1,20 @@
-import { useEffect, useState } from 'react'
-import { SearchGroupInfo } from 'web/lib/supabase/groups'
+import { useEffect } from 'react'
 import { getGroupFromSlug } from 'web/lib/supabase/group'
+import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import { Group } from 'common/group'
 
-export const useGroupFromRouter = (
-  category: string,
-  groups: SearchGroupInfo[]
-) => {
+export const useGroupFromRouter = (topicSlug: string) => {
   const [categoryFromRouter, setCategoryFromRouter] =
-    useState<SearchGroupInfo>()
+    usePersistentInMemoryState<Group | undefined>(
+      undefined,
+      'categoryFromRouter'
+    )
   useEffect(() => {
-    if (category) {
-      if (!groups.some((g) => g.slug === category)) {
-        getGroupFromSlug(category).then((g) =>
-          setCategoryFromRouter(g ?? undefined)
-        )
-      }
-    } else {
-      setCategoryFromRouter(undefined)
-    }
-  }, [category])
+    if (topicSlug)
+      getGroupFromSlug(topicSlug).then((g) =>
+        setCategoryFromRouter(g ?? undefined)
+      )
+    else setCategoryFromRouter(undefined)
+  }, [topicSlug])
   return categoryFromRouter
 }

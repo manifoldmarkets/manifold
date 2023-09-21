@@ -4,6 +4,7 @@ import {
   InaccessiblePrivateThing,
   LoadingPrivateThing,
 } from '../groups/private-group'
+import Custom404 from 'web/pages/404'
 
 export function PrivateContractPage(props: { contractSlug: string }) {
   const { contractSlug } = props
@@ -11,7 +12,10 @@ export function PrivateContractPage(props: { contractSlug: string }) {
 
   if (contractParameters === undefined) {
     return <LoadingPrivateThing />
-  } else if (contractParameters.state !== 'authed')
+  }
+  // Let admins to see deleted markets
+  else if (contractParameters.state === 'not found') return <Custom404 />
+  else if (contractParameters.state !== 'authed')
     return <InaccessiblePrivateThing thing="market" />
   else {
     return <ContractPageContent contractParams={contractParameters.params} />

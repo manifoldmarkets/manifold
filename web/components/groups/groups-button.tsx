@@ -11,6 +11,11 @@ import { ConfirmationButton } from '../buttons/confirmation-button'
 import { Subtitle } from '../widgets/subtitle'
 import { joinGroup } from 'web/lib/firebase/api'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
+import { Group } from 'common/group'
+import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
+import { PlusCircleIcon } from '@heroicons/react/solid'
+import { GroupOptions } from 'web/components/groups/group-options'
+import { Col } from 'web/components/layout/col'
 
 function LeavePrivateGroupButton(props: {
   group: SearchGroupInfo
@@ -151,5 +156,85 @@ export function JoinOrLeaveGroupButton(props: {
     >
       <Row className="gap-1">Follow{label ? ` ${label}` : ''}</Row>
     </Button>
+  )
+}
+
+export const GroupOptionsButton = (props: {
+  group: Group
+  yourGroupIds: string[] | undefined
+  user: User | null | undefined
+  className?: string
+}) => {
+  const { group, className, yourGroupIds, user } = props
+  const isCreator = user?.id == group.creatorId
+  const [isMember, setIsMember] = useState(
+    yourGroupIds ? yourGroupIds.includes(group.id) : false
+  )
+  useEffect(() => {
+    if (yourGroupIds) setIsMember(yourGroupIds.includes(group.id))
+  }, [yourGroupIds?.length])
+  const [loading, setLoading] = useState(false)
+  const isPrivate = group.privacyStatus == 'private'
+  const follow = user
+    ? withTracking(
+        () => {
+          setLoading(true)
+          joinGroup({ groupId: group.id })
+            .then(() => {
+              setIsMember(true)
+              toast(`You're now following ${group.name}!`)
+            })
+            .catch((e) => {
+              console.error(e)
+              toast.error('Failed to follow category')
+            })
+            .finally(() => setLoading(false))
+        },
+        'join group',
+        { slug: group.slug }
+      )
+    : firebaseLogin
+  const unfollow = user
+    ? withTracking(
+        () => {
+          leaveGroup(group.id, user.id)
+            .then(() => {
+              setIsMember(false)
+              toast(`You're no longer following ${group.name}.`)
+            })
+            .catch(() => {
+              toast.error('Failed to unfollow category')
+            })
+        },
+        'leave group',
+        { slug: group.slug }
+      )
+    : firebaseLogin
+  return (
+    <Col className={className}>
+      {!isPrivate && !isCreator && !isMember && yourGroupIds && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation()
+            follow()
+          }}
+          className={'h-5 w-5'}
+        >
+          {loading ? (
+            <LoadingIndicator size={'sm'} />
+          ) : (
+            <PlusCircleIcon className=" hover:text-primary-500 h-5 w-5" />
+          )}
+        </button>
+      )}
+      {(isCreator || isMember) && (
+        <GroupOptions
+          group={group}
+          user={user}
+          isMember={isMember}
+          unfollow={unfollow}
+        />
+      )}
+    </Col>
   )
 }

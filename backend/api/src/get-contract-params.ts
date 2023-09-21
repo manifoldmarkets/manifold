@@ -20,14 +20,14 @@ import { APIError, MaybeAuthedEndpoint, validate } from './helpers'
 import { getIsAdmin } from 'common/supabase/is-admin'
 import { pointsToBase64 } from 'common/util/og'
 import { SupabaseClient } from 'common/supabase/utils'
+import { buildArray } from 'common/util/array'
 
 const bodySchema = z.object({
   contractSlug: z.string(),
-  fromStaticProps: z.boolean(),
 })
 
 export const getcontractparams = MaybeAuthedEndpoint<Ret>(async (req, auth) => {
-  const { contractSlug, fromStaticProps } = validate(bodySchema, req.body)
+  const { contractSlug } = validate(bodySchema, req.body)
   const db = createSupabaseClient()
   const contract = await getContractFromSlug(contractSlug, db)
 
@@ -51,6 +51,8 @@ export const getcontractparams = MaybeAuthedEndpoint<Ret>(async (req, auth) => {
   const isCpmm1 = contract.mechanism === 'cpmm-1'
   const hasMechanism = contract.mechanism !== 'none'
   const isMulti = contract.mechanism === 'cpmm-multi-1'
+  const isBinaryDpm =
+    contract.outcomeType === 'BINARY' && contract.mechanism === 'dpm-2'
 
   const [
     canAccessContract,
@@ -64,7 +66,7 @@ export const getcontractparams = MaybeAuthedEndpoint<Ret>(async (req, auth) => {
     creator,
     relatedContracts,
   ] = await Promise.all([
-    getCanAccessContract(contract, auth?.uid, fromStaticProps, db),
+    getCanAccessContract(contract, auth?.uid, db),
     hasMechanism ? getTotalBetCount(contract.id, db) : 0,
     hasMechanism
       ? getBets(db, {
@@ -96,14 +98,18 @@ export const getcontractparams = MaybeAuthedEndpoint<Ret>(async (req, auth) => {
       : { state: 'not found' }
   }
 
-  let chartPoints = isCpmm1
-    ? [
-        { x: contract.createdTime, y: getInitialProbability(contract) },
-        ...maxMinBin(allBetPoints, 500),
-      ].map((p) => [p.x, p.y] as const)
-    : isMulti
-    ? serializeMultiPoints(calculateMultiBets(allBetPoints))
-    : []
+  let chartPoints =
+    isCpmm1 || isBinaryDpm
+      ? buildArray<{ x: number; y: number }>(
+          isCpmm1 && {
+            x: contract.createdTime,
+            y: getInitialProbability(contract),
+          },
+          maxMinBin(allBetPoints, 500)
+        ).map((p) => [p.x, p.y] as const)
+      : isMulti
+      ? serializeMultiPoints(calculateMultiBets(allBetPoints))
+      : []
 
   const ogPoints =
     isCpmm1 && contract.visibility !== 'private' ? binAvg(allBetPoints) : []
@@ -132,7 +138,6 @@ export const getcontractparams = MaybeAuthedEndpoint<Ret>(async (req, auth) => {
 const getCanAccessContract = async (
   contract: Contract,
   uid: string | undefined,
-  fromStaticProps: boolean,
   db: SupabaseClient
 ): Promise<boolean> => {
   const groupId = contract.groupLinks?.length
@@ -143,8 +148,7 @@ const getCanAccessContract = async (
   return (
     (!contract.deleted || isAdmin) &&
     (contract.visibility !== 'private' ||
-      (!fromStaticProps &&
-        groupId !== undefined &&
+      (groupId !== undefined &&
         uid !== undefined &&
         (isAdmin || (await getUserIsMember(db, groupId, uid)))))
   )

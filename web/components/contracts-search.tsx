@@ -1,18 +1,13 @@
 import { ChevronDownIcon, XIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
-import { debounce, isEqual, sample, uniqBy } from 'lodash'
+import { sample, uniqBy } from 'lodash'
 import { ReactNode, useEffect, useRef, useState } from 'react'
-
 import { Contract } from 'common/contract'
 import { useEvent } from 'web/hooks/use-event'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
-import { inMemoryStore } from 'web/hooks/use-persistent-state'
-import { useSafeLayoutEffect } from 'web/hooks/use-safe-layout-effect'
-import { useIsAuthorized } from 'web/hooks/use-user'
 import { track, trackCallback } from 'web/lib/service/analytics'
 import { searchContract } from 'web/lib/supabase/contracts'
 import DropdownMenu from './comments/dropdown-menu'
-import { ShowTime } from './contract/contract-details'
 import { ContractsList } from './contract/contracts-list'
 import { Col } from './layout/col'
 import { Row } from './layout/row'
@@ -24,10 +19,16 @@ import {
   usePartialUpdater,
   usePersistentQueriesState,
 } from 'web/hooks/use-persistent-query-state'
-import { useGroupFromSlug } from 'web/hooks/use-group-supabase'
+import {
+  useGroupFromSlug,
+  useRealtimeMemberGroups,
+} from 'web/hooks/use-group-supabase'
 import { TOPIC_KEY } from 'common/group'
 import { TopicTag } from 'web/components/groups/topic-tag'
 import { AddContractToGroupButton } from 'web/components/groups/add-contract-to-group-modal'
+import { useUser } from 'web/hooks/use-user'
+
+import { GroupOptionsButton } from 'web/components/groups/groups-button'
 
 const CONTRACTS_PER_PAGE = 40
 
@@ -104,28 +105,23 @@ export const CONTRACT_TYPES = [
 
 export type ContractTypeType = typeof CONTRACT_TYPES[number]['value']
 
-export type SupabaseSearchParameters = {
-  query: string
-  sort: Sort
-  filter: Filter
-  contractType: ContractTypeType
-  topicSlug: string
+export type SearchParams = {
+  [QUERY_KEY]: string
+  [SORT_KEY]: Sort
+  [FILTER_KEY]: Filter
+  [CONTRACT_TYPE_KEY]: ContractTypeType
+  [TOPIC_KEY]: string
 }
 
 const QUERY_KEY = 'q'
-const SORT_KEY = 's'
+export const SORT_KEY = 's'
 const FILTER_KEY = 'f'
 const CONTRACT_TYPE_KEY = 'ct'
-
-function getShowTime(sort: Sort) {
-  return sort === 'close-date' || sort === 'resolve-date' ? sort : null
-}
 
 export const INITIAL_STATE: SearchState = {
   contracts: undefined,
   fuzzyContractOffset: 0,
   shouldLoadMore: true,
-  showTime: null as ShowTime | null,
 }
 
 export type SupabaseAdditionalFilter = {
@@ -143,7 +139,6 @@ export type SearchState = {
   contracts: Contract[] | undefined
   fuzzyContractOffset: number
   shouldLoadMore: boolean
-  showTime: ShowTime | null
 }
 
 export function SupabaseContractSearch(props: {
@@ -160,8 +155,7 @@ export function SupabaseContractSearch(props: {
   isWholePage?: boolean
   menuButton?: ReactNode
   hideAvatar?: boolean
-  setTopicSearchTerm?: (term: string) => void
-
+  rowBelowFilters?: ReactNode
   // used to determine if search params should be updated in the URL
   useUrlParams?: boolean
   includeProbSorts?: boolean
@@ -192,6 +186,7 @@ export function SupabaseContractSearch(props: {
     hideFilters,
     menuButton,
     hideAvatar,
+    rowBelowFilters,
   } = props
 
   const [state, setState] = usePersistentInMemoryState<SearchState>(
@@ -199,31 +194,33 @@ export function SupabaseContractSearch(props: {
     `${persistPrefix}-supabase-search`
   )
 
-  const searchParams = useRef<SupabaseSearchParameters | null>(null)
-  const searchParamsStore = inMemoryStore<SupabaseSearchParameters>()
   const requestId = useRef(0)
 
-  useSafeLayoutEffect(() => {
-    const params = searchParamsStore.get(`${persistPrefix}-params`)
-    if (params !== undefined) {
-      searchParams.current = params
-    }
-  }, [])
+  const [searchParams, setSearchParams] = useSearchQueryState({
+    defaultSort,
+    defaultFilter,
+    useUrlParams,
+  })
 
   const query = useEvent(
     async (currentState: SearchState, freshQuery?: boolean) => {
-      if (searchParams.current == null) {
-        return false
-      }
-      const { query, sort, filter, topicSlug, contractType } =
-        searchParams.current
-      const id = ++requestId.current
+      const {
+        q: query,
+        s: sort,
+        f: filter,
+        topic: topicSlug,
+        ct: contractType,
+      } = searchParams
+
       const offset = freshQuery
         ? 0
         : currentState.contracts
         ? currentState.contracts.length
         : 0
+
       if (freshQuery || currentState.shouldLoadMore) {
+        const id = ++requestId.current
+
         const results = await searchContract({
           state: currentState,
           query,
@@ -240,7 +237,6 @@ export function SupabaseContractSearch(props: {
 
         if (id === requestId.current) {
           const newContracts: Contract[] = results.data
-          const showTime = getShowTime(sort)
 
           const freshContracts = freshQuery
             ? newContracts
@@ -263,7 +259,6 @@ export function SupabaseContractSearch(props: {
           setState({
             fuzzyContractOffset: newFuzzyContractOffset,
             contracts: freshContractsWithoutDeleted,
-            showTime: showTime,
             shouldLoadMore,
           })
           if (freshQuery && isWholePage) window.scrollTo(0, 0)
@@ -277,28 +272,9 @@ export function SupabaseContractSearch(props: {
 
   const loadMoreContracts = () => query(state)
 
-  // Counts as loaded if you are on the page and a query finished or if you go back in history.
-  const [hasLoadedQuery, setHasLoadedQuery] = usePersistentInMemoryState(
-    false,
-    `${persistPrefix}-search-has-loaded`
-  )
-
-  const onSearchParametersChanged = useRef(
-    debounce((params) => {
-      if (!isEqual(searchParams.current, params) || !hasLoadedQuery) {
-        setHasLoadedQuery(true)
-        if (persistPrefix) {
-          searchParamsStore.set(`${persistPrefix}-params`, params)
-        }
-        searchParams.current = params
-        const freshState = {
-          ...INITIAL_STATE,
-          showTime: getShowTime(params.sort),
-        }
-        query(freshState, true)
-      }
-    }, 100)
-  ).current
+  useEffect(() => {
+    query(INITIAL_STATE, true)
+  }, [searchParams])
 
   const contracts = state.contracts
     ? uniqBy(
@@ -320,41 +296,32 @@ export function SupabaseContractSearch(props: {
       <SupabaseContractSearchControls
         className={headerClassName}
         inputRowClassName={inputRowClassName}
-        defaultSort={defaultSort}
-        defaultFilter={defaultFilter}
         hideOrderSelector={hideOrderSelector}
-        useUrlParams={useUrlParams}
         includeProbSorts={includeProbSorts}
-        onSearchParametersChanged={onSearchParametersChanged}
         autoFocus={autoFocus}
         listViewDisabled={listViewDisabled}
         hideFilters={hideFilters}
         menuButton={menuButton}
+        params={searchParams}
+        updateParams={setSearchParams}
       />
+      {rowBelowFilters}
       {contracts && contracts.length === 0 ? (
         emptyState ??
-        (searchParams.current?.query ? (
+        (searchParams[QUERY_KEY] ? (
           <NoResults />
         ) : (
           <Col className="text-ink-700 mx-2 my-6 text-center">
             No questions yet.
-            {searchParams.current?.topicSlug && (
+            {searchParams[QUERY_KEY] && (
               <Row className={'mt-2 w-full items-center justify-center'}>
-                <AddContractToGroupButton
-                  groupSlug={searchParams.current?.topicSlug}
-                />
+                <AddContractToGroupButton groupSlug={searchParams[TOPIC_KEY]} />
               </Row>
             )}
           </Col>
         ))
       ) : (
         <ContractsList
-          key={
-            searchParams.current?.query ??
-            '' + searchParams.current?.filter ??
-            '' + searchParams.current?.sort ??
-            ''
-          }
           contracts={contracts}
           loadMore={loadMoreContracts}
           onContractClick={onContractClick}
@@ -386,34 +353,17 @@ const NoResults = () => {
   return <div className="text-ink-700 mx-2 my-6 text-center">{message}</div>
 }
 
-function SupabaseContractSearchControls(props: {
-  className?: string
-  inputRowClassName?: string
+const useSearchQueryState = (props: {
   defaultSort?: Sort
   defaultFilter?: Filter
   defaultContractType?: ContractTypeType
-  hideOrderSelector?: boolean
-  includeProbSorts?: boolean
-  onSearchParametersChanged: (params: SupabaseSearchParameters) => void
   useUrlParams?: boolean
-  autoFocus?: boolean
-  listViewDisabled?: boolean
-  hideFilters?: boolean
-  menuButton?: ReactNode
-}) {
+}) => {
   const {
-    className,
     defaultSort = 'score',
     defaultFilter = 'open',
     defaultContractType = 'ALL',
-    hideOrderSelector,
-    onSearchParametersChanged,
     useUrlParams,
-    autoFocus,
-    includeProbSorts,
-    inputRowClassName,
-    hideFilters,
-    menuButton,
   } = props
 
   const defaults = {
@@ -424,65 +374,79 @@ function SupabaseContractSearchControls(props: {
     [TOPIC_KEY]: '',
   }
 
-  const [state, setState] = useUrlParams
-    ? /* eslint-disable-next-line react-hooks/rules-of-hooks */
-      usePersistentQueriesState(defaults)
-    : /* eslint-disable-next-line react-hooks/rules-of-hooks */
-      usePartialUpdater(defaults)
+  const useHook = useUrlParams ? usePersistentQueriesState : usePartialUpdater
+  const [state, setState] = useHook(defaults)
 
-  const query = state[QUERY_KEY]
-  const sort = state[SORT_KEY]
-  const filterState = state[FILTER_KEY]
-  const contractType = state[CONTRACT_TYPE_KEY]
-  const topicSlug = state[TOPIC_KEY]
+  return [state, setState] as const
+}
 
-  const filter =
-    sort === 'close-date'
-      ? 'open'
-      : sort === 'resolve-date'
-      ? 'resolved'
-      : filterState
+function SupabaseContractSearchControls(props: {
+  className?: string
+  inputRowClassName?: string
+  hideOrderSelector?: boolean
+  includeProbSorts?: boolean
+  autoFocus?: boolean
+  listViewDisabled?: boolean
+  hideFilters?: boolean
+  menuButton?: ReactNode
+  params: SearchParams
+  updateParams: (params: Partial<SearchParams>) => void
+}) {
+  const {
+    className,
+    hideOrderSelector,
+    autoFocus,
+    includeProbSorts,
+    inputRowClassName,
+    hideFilters,
+    menuButton,
+    params,
+    updateParams,
+  } = props
+
+  const {
+    q: query,
+    s: sort,
+    f: filter,
+    ct: contractType,
+    topic: topicSlug,
+  } = params
 
   const selectFilter = (selection: Filter) => {
-    if (selection === filterState) return
-    setState({ f: selection })
+    if (selection === filter) return
+
+    updateParams({ f: selection })
     track('select search filter', { filter: selection })
   }
 
   const selectSort = (selection: Sort) => {
     if (selection === sort) return
-    setState({ s: selection })
+
+    if (selection === 'close-date') {
+      updateParams({ s: selection, f: 'open' })
+    } else if (selection === 'resolve-date') {
+      updateParams({ s: selection, f: 'resolved' })
+    } else {
+      updateParams({ s: selection })
+    }
+
     track('select search sort', { sort: selection })
   }
 
-  const setQuery = (query: string) => setState({ q: query })
+  const setQuery = (query: string) => updateParams({ q: query })
 
   const selectContractType = (selection: ContractTypeType) => {
     if (selection === contractType) return
 
     if (selection === 'BOUNTIED_QUESTION' && predictionMarketSorts.has(sort)) {
-      setState({ s: 'bounty-amount', ct: selection })
+      updateParams({ s: 'bounty-amount', ct: selection })
     } else if (selection !== 'BOUNTIED_QUESTION' && bountySorts.has(sort)) {
-      setState({ s: 'score', ct: selection })
+      updateParams({ s: 'score', ct: selection })
     } else {
-      setState({ ct: selection })
+      updateParams({ ct: selection })
     }
     track('select contract type', { contractType: selection })
   }
-
-  const isAuth = useIsAuthorized()
-
-  useEffect(() => {
-    if (isAuth !== undefined) {
-      onSearchParametersChanged({
-        query,
-        sort: sort as Sort,
-        topicSlug,
-        filter: filter as Filter,
-        contractType: contractType as ContractTypeType,
-      })
-    }
-  }, [query, sort, filter, topicSlug, contractType, isAuth])
 
   return (
     <Col className={clsx('bg-canvas-50 sticky top-0 z-30 ', className)}>
@@ -515,12 +479,10 @@ function SupabaseContractSearchControls(props: {
             contractType={contractType}
             selectContractType={selectContractType}
             hideOrderSelector={hideOrderSelector}
-            className={'flex flex-row gap-2'}
+            className={'flex h-6 flex-row gap-2'}
             includeProbSorts={includeProbSorts}
             currentTopicSlug={topicSlug}
-            clearTopic={() => {
-              setState({ [TOPIC_KEY]: '' })
-            }}
+            clearTopic={() => updateParams({ [TOPIC_KEY]: '' })}
           />
         )}
       </Col>
@@ -563,9 +525,11 @@ export function SearchFilters(props: {
   const filterLabel = getLabelFromValue(FILTERS, filter)
   const sortLabel = getLabelFromValue(SORTS, sort)
   const contractTypeLabel = getLabelFromValue(CONTRACT_TYPES, contractType)
-
+  const user = useUser()
+  const yourGroups = useRealtimeMemberGroups(user?.id)
+  const yourGroupIds = yourGroups?.map((g) => g.id)
   return (
-    <div className={clsx(className, 'gap-4')}>
+    <div className={clsx(className, 'gap-3')}>
       {!hideOrderSelector && (
         <DropdownMenu
           Items={generateFilterDropdownItems(
@@ -627,13 +591,19 @@ export function SearchFilters(props: {
       />
       {currentTopicSlug == topic?.slug && topic && (
         <TopicTag
-          className={'text-primary-500 !py-0'}
+          className={'text-primary-500 overflow-x-hidden text-ellipsis !py-0'}
           topic={topic}
           location={'questions page'}
         >
           <button onClick={clearTopic}>
-            <XIcon className="hover:text-ink-700 text-ink-400 ml-1 h-4 w-4" />
+            <XIcon className="hover:text-ink-700 text-ink-400 ml-1 hidden h-4 w-4 sm:block" />
           </button>
+          <GroupOptionsButton
+            className={'sm:hidden'}
+            group={topic}
+            yourGroupIds={yourGroupIds}
+            user={user}
+          />
         </TopicTag>
       )}
       {currentTopicSlug === 'for-you' && (
@@ -645,7 +615,7 @@ export function SearchFilters(props: {
           <span className="mr-px opacity-50 transition-colors group-hover:text-inherit">
             #
           </span>
-          For you
+          ⭐️ For you
           <button onClick={clearTopic}>
             <XIcon className="hover:text-ink-700 text-ink-400 ml-1 h-4 w-4" />
           </button>

@@ -330,7 +330,7 @@ export async function getTrendingContractsToEmail() {
               and not (data -> 'groupSlugs' ?| $1)
               and question not ilike '%stock%'
               and question not ilike '%permanent%'
-              and close_time > current_date + interval '1 day'
+              and ((close_time > current_date + interval '1 day') or close_time is null)
               order by importance_score desc limit 25;`,
     [GROUP_SLUGS_TO_IGNORE_IN_MARKETS_EMAIL],
     (r) => r.data as Contract

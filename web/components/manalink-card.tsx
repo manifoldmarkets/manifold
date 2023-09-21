@@ -10,6 +10,7 @@ import { Claim, Manalink } from 'common/manalink'
 import { useUserById } from 'web/hooks/use-user'
 import { IconButton } from './buttons/button'
 import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
+import Logo from 'web/public/logo.svg'
 
 export type ManalinkInfo = {
   expiresTime: number | null
@@ -67,12 +68,11 @@ export function ManalinkCard(props: {
           </div>
         </Col>
 
-        <img
+        <Logo
           className={clsx(
-            'block h-1/3 w-1/3 self-center transition-all group-hover:rotate-12',
+            'block h-1/3 w-1/3 self-center stroke-white transition-all group-hover:rotate-12',
             preview ? 'my-2' : 'w-1/2 md:mb-6 md:h-1/2'
           )}
-          src="/logo-white.svg"
         />
         <Row className="bg-canvas-0 rounded-b-lg p-4">
           <div
@@ -137,10 +137,7 @@ export function ManalinkCardFromView(props: {
                 : 'Never expires'}
             </div>
           </Col>
-          <img
-            className={clsx('my-auto block w-1/3 select-none self-center py-3')}
-            src="/logo-white.svg"
-          />
+          <Logo className="my-auto block w-1/3 select-none self-center stroke-white py-3" />
         </Col>
         <Row className="bg-canvas-0 relative w-full rounded-b-lg px-4 py-2 align-middle text-lg">
           <div

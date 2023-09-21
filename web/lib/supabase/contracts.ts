@@ -225,7 +225,6 @@ export async function searchContract(props: {
     contracts: undefined,
     fuzzyContractOffset: 0,
     shouldLoadMore: false,
-    showTime: null,
   }
 
   if (limit === 0) {
@@ -374,4 +373,22 @@ export async function getIsPrivateContractMember(
     this_member_id: userId,
   })
   return data as boolean | null
+}
+export const convertContract = (
+  c: { data: any } & { importance_score: number | null }
+) =>
+  ({
+    ...(c.data as Contract),
+    // importance_score is only updated in Supabase
+    importanceScore: c.importance_score,
+  } as Contract)
+
+export const getTrendingContracts = async (limit: number) => {
+  return await db
+    .from('contracts')
+    .select('data, importance_score')
+    .is('resolution_time', null)
+    .order('importance_score', { ascending: false })
+    .limit(limit)
+    .then((res) => res.data?.map((c) => convertContract(c)))
 }

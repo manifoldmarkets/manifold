@@ -327,10 +327,7 @@ export function saveTopic(params: { topic: string }) {
   }>
 }
 
-export function getContractParams(params: {
-  contractSlug: string
-  fromStaticProps: boolean
-}) {
+export function getContractParams(params: { contractSlug: string }) {
   return maybeAuthedCall(
     getApiUrl('getcontractparams'),
     'POST',
@@ -516,6 +513,7 @@ export function getYourFollowedDashboards() {
 }
 
 export function updateDashboard(params: {
+  title: string
   dashboardId: string
   items: DashboardItem[]
   description?: JSONContent

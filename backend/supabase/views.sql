@@ -7,7 +7,7 @@ create or replace view
     where
       resolution_time is null
       and visibility = 'public'
-      and close_time > now() + interval '10 minutes'
+      and ((close_time > now() + interval '10 minutes') or close_time is null)
   );
 
 create or replace view
@@ -29,7 +29,7 @@ create or replace view
     where
       resolution_time is null --    row level security prevents the 'private' contracts from being returned
       and visibility != 'unlisted'
-      and close_time > now() + interval '10 minutes'
+      and ((close_time > now() + interval '10 minutes') or close_time is null)
   );
 
 create or replace view

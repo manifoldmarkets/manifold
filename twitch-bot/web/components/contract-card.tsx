@@ -71,7 +71,7 @@ export default function ContractCard(props: { controlUserID: string; contract: L
   );
 }
 
-function MiscDetails(props: { contract: LiteMarket; showHotVolume?: boolean; showTime?: boolean; hideGroupLink?: boolean }) {
+function MiscDetails(props: { contract: LiteMarket; showHotVolume?: boolean; hideGroupLink?: boolean }) {
   const { contract, showHotVolume } = props;
   const { volume, volume24Hours, isResolved, createdTime } = contract;
 

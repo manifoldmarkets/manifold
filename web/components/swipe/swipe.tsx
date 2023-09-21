@@ -17,7 +17,6 @@ import {
 } from 'web/components/swipe/swipe-helpers'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import Link from 'next/link'
-import { useFeed } from 'web/hooks/use-feed'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { useWindowSize } from 'web/hooks/use-window-size'
 import { firebaseLogin } from 'web/lib/firebase/users'
@@ -28,6 +27,7 @@ import { useEvent } from 'web/hooks/use-event'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { ContractCardView } from 'common/events'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import { useTrendingContracts } from 'web/hooks/use-contract-supabase'
 
 export function Swipe(props: { toggleView?: () => void }) {
   useRedirectIfSignedOut()
@@ -36,9 +36,11 @@ export function Swipe(props: { toggleView?: () => void }) {
 
   const user = useUser()
   const privateUser = usePrivateUser()
-  const { contracts, loadMore } = useFeed(user, privateUser, 'swipe', {
-    binaryOnly: true,
-  })
+  const contracts = useTrendingContracts(100)
+  const loadMore = () => {
+    console.log('swipe is deprecated')
+  }
+
   const feed = contracts as BinaryContract[] | undefined
 
   const [index, setIndex] = usePersistentInMemoryState(0, 'swipe-index')
@@ -276,7 +278,7 @@ export function Swipe(props: { toggleView?: () => void }) {
             <div className="m-4 flex w-full flex-col items-center justify-center">
               We're fresh out of cards!
               <Link
-                href="/QuestionsPage?s=newest&f=open"
+                href="/questions?s=newest&f=open"
                 className="text-primary-700"
               >
                 Browse new questions

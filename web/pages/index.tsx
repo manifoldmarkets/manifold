@@ -40,6 +40,15 @@ export default function Home() {
                   About
                 </Button>
               </Link>
+              <Link href="/questions">
+                <Button
+                  color="gray-white"
+                  size="xs"
+                  className="hidden whitespace-nowrap lg:flex"
+                >
+                  Questions
+                </Button>
+              </Link>
               <Button
                 color="gray-white"
                 size="xs"
@@ -84,7 +93,7 @@ export default function Home() {
                 <Link href="/charity" className="hover:underline">
                   charity
                 </Link>
-                .
+                . One-click sign up.
               </h1>
 
               <Button
