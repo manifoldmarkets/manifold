@@ -200,7 +200,9 @@ const PaymentCards = (props: {
                     : 'text-teal-500'
                 }
               >
-                {payment.fromId === forUser?.id ? '-' : '+'}
+                {payment.amount < 0
+                   ? 'fine of '
+                   : payment.fromId === forUser?.id ? '-' : '+'}
                 {formatMoney(payment.amount)}
               </span>
             </Row>
