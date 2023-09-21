@@ -25,7 +25,7 @@ export const BrowseTopicPills = (props: {
       <Row
         className={clsx(
           'scrollbar-hide gap-0.5 overflow-y-auto',
-          showMore ? 'h-[4.5rem] flex-wrap' : 'h-[2rem]'
+          showMore ? 'h-[6.75rem] flex-wrap' : 'h-[2rem]'
         )}
       >
         {isAuth && (sort == undefined || sort == 'score') && (
