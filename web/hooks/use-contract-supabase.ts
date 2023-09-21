@@ -68,13 +68,11 @@ export const useContractParams = (contractSlug: string | undefined) => {
     const thisParamsRef = paramsRef.current
     if (contractSlug && isAuth !== undefined) {
       setContractParams(undefined)
-      getContractParams({ contractSlug, fromStaticProps: false }).then(
-        (result) => {
-          if (thisParamsRef === paramsRef.current) {
-            setContractParams(result)
-          }
+      getContractParams({ contractSlug }).then((result) => {
+        if (thisParamsRef === paramsRef.current) {
+          setContractParams(result)
         }
-      )
+      })
     }
   }, [contractSlug, isAuth])
 

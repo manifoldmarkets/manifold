@@ -24,11 +24,10 @@ import { buildArray } from 'common/util/array'
 
 const bodySchema = z.object({
   contractSlug: z.string(),
-  fromStaticProps: z.boolean(),
 })
 
 export const getcontractparams = MaybeAuthedEndpoint<Ret>(async (req, auth) => {
-  const { contractSlug, fromStaticProps } = validate(bodySchema, req.body)
+  const { contractSlug } = validate(bodySchema, req.body)
   const db = createSupabaseClient()
   const contract = await getContractFromSlug(contractSlug, db)
 
@@ -67,7 +66,7 @@ export const getcontractparams = MaybeAuthedEndpoint<Ret>(async (req, auth) => {
     creator,
     relatedContracts,
   ] = await Promise.all([
-    getCanAccessContract(contract, auth?.uid, fromStaticProps, db),
+    getCanAccessContract(contract, auth?.uid, db),
     hasMechanism ? getTotalBetCount(contract.id, db) : 0,
     hasMechanism
       ? getBets(db, {
@@ -139,7 +138,6 @@ export const getcontractparams = MaybeAuthedEndpoint<Ret>(async (req, auth) => {
 const getCanAccessContract = async (
   contract: Contract,
   uid: string | undefined,
-  fromStaticProps: boolean,
   db: SupabaseClient
 ): Promise<boolean> => {
   const groupId = contract.groupLinks?.length
@@ -150,8 +148,7 @@ const getCanAccessContract = async (
   return (
     (!contract.deleted || isAdmin) &&
     (contract.visibility !== 'private' ||
-      (!fromStaticProps &&
-        groupId !== undefined &&
+      (groupId !== undefined &&
         uid !== undefined &&
         (isAdmin || (await getUserIsMember(db, groupId, uid)))))
   )

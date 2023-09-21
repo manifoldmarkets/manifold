@@ -41,7 +41,6 @@ import { useSaveContractVisitsLocally } from 'web/hooks/use-save-visits'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { useTracking } from 'web/hooks/use-tracking'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
-import { getContractParams } from 'web/lib/firebase/api'
 import { Contract } from 'web/lib/firebase/contracts'
 import { track } from 'web/lib/service/analytics'
 import { db } from 'web/lib/supabase/db'
@@ -53,27 +52,12 @@ import { SidebarSignUpButton } from 'web/components/buttons/sign-up-button'
 import { useRealtimeBets } from 'web/hooks/use-bets-supabase'
 import { ContractSEO } from 'web/components/contract/contract-seo'
 import { Linkify } from 'web/components/widgets/linkify'
+import { getStaticProps as getStaticPropz } from 'web/pages/[username]/[contractSlug]'
 
 export async function getStaticProps(ctx: {
   params: { username: string; contractSlug: string }
 }) {
-  const { contractSlug } = ctx.params
-
-  try {
-    const props = await getContractParams({
-      contractSlug,
-      fromStaticProps: true,
-    })
-    return { props }
-  } catch (e) {
-    if (typeof e === 'object' && e !== null && 'code' in e && e.code === 404) {
-      return {
-        props: { state: 'not found' },
-        revalidate: 60,
-      }
-    }
-    throw e
-  }
+  return getStaticPropz(ctx)
 }
 
 export async function getStaticPaths() {

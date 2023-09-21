@@ -6,7 +6,13 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Answer, DpmAnswer } from 'common/answer'
-import { unserializeMultiPoints, unserializePoints } from 'common/chart'
+import {
+  binAvg,
+  maxMinBin,
+  serializeMultiPoints,
+  unserializeMultiPoints,
+  unserializePoints,
+} from 'common/chart'
 import { ContractParams, MaybeAuthedContractParams } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
 import { HOUSE_BOT_USERNAME, isTrustworthy } from 'common/envs/constants'
@@ -25,7 +31,11 @@ import { ContractLeaderboard } from 'web/components/contract/contract-leaderboar
 import { ContractOverview } from 'web/components/contract/contract-overview'
 import { ContractTabs } from 'web/components/contract/contract-tabs'
 import { VisibilityIcon } from 'web/components/contract/contracts-table'
-import { getTopContractMetrics } from 'common/supabase/contract-metrics'
+import {
+  getCPMMContractUserContractMetrics,
+  getTopContractMetrics,
+  getTotalContractMetrics,
+} from 'common/supabase/contract-metrics'
 import ContractSharePanel from 'web/components/contract/contract-share-panel'
 import { ExtraContractActionsRow } from 'web/components/contract/extra-contract-actions-row'
 import { PrivateContractPage } from 'web/components/contract/private-contract'
@@ -58,7 +68,6 @@ import { useSaveContractVisitsLocally } from 'web/hooks/use-save-visits'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { useTracking } from 'web/hooks/use-tracking'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
-import { getContractParams } from 'web/lib/firebase/api'
 import { Contract } from 'web/lib/firebase/contracts'
 import { track } from 'web/lib/service/analytics'
 import { db } from 'web/lib/supabase/db'
@@ -72,26 +81,122 @@ import { MarketGroups } from 'web/components/contract/market-groups'
 import { getMultiBetPoints } from 'web/components/charts/contract/choice'
 import { useRealtimeBets } from 'web/hooks/use-bets-supabase'
 import { ContractSEO } from 'web/components/contract/contract-seo'
+import { getContractFromSlug } from 'common/supabase/contracts'
+import { getBetPoints, getBets, getTotalBetCount } from 'common/supabase/bets'
+import { getRecentTopLevelCommentsAndReplies } from 'common/supabase/comments'
+import { getRelatedContracts } from 'common/supabase/related-contracts'
+import { buildArray } from 'common/util/array'
+import { getInitialProbability } from 'common/calculate'
+import { calculateMultiBets } from 'common/bet'
+import { pointsToBase64 } from 'common/util/og'
+import { removeUndefinedProps } from 'common/util/object'
+import { getUser } from 'web/lib/supabase/user'
+import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
 
 export async function getStaticProps(ctx: {
   params: { username: string; contractSlug: string }
 }) {
   const { contractSlug } = ctx.params
+  const e = {
+    props: { state: 'not found' },
+    revalidate: 60,
+  }
+  const adminDb = await initSupabaseAdmin()
+  const contract = (await getContractFromSlug(contractSlug, adminDb)) ?? null
 
-  try {
-    const props = await getContractParams({
-      contractSlug,
-      fromStaticProps: true,
-    })
-    return { props }
-  } catch (e) {
-    if (typeof e === 'object' && e !== null && 'code' in e && e.code === 404) {
-      return {
-        props: { state: 'not found' },
-        revalidate: 60,
-      }
+  if (!contract) return e
+
+  if (contract.visibility === 'private')
+    return {
+      props: { state: 'not authed', slug: contract.slug },
+      revalidate: 60,
     }
-    throw e
+  console.log('contract', contract)
+
+  if (contract.deleted) {
+    return {
+      props: {
+        state: 'not authed',
+        slug: contract.slug,
+        visibility: contract.visibility,
+      },
+    }
+  }
+
+  const isCpmm1 = contract.mechanism === 'cpmm-1'
+  const hasMechanism = contract.mechanism !== 'none'
+  const isMulti = contract.mechanism === 'cpmm-multi-1'
+  const isBinaryDpm =
+    contract.outcomeType === 'BINARY' && contract.mechanism === 'dpm-2'
+
+  const [
+    totalBets,
+    betsToPass,
+    allBetPoints,
+    comments,
+    userPositionsByOutcome,
+    topContractMetrics,
+    totalPositions,
+    creator,
+    relatedContracts,
+  ] = await Promise.all([
+    hasMechanism ? getTotalBetCount(contract.id, db) : 0,
+    hasMechanism
+      ? getBets(db, {
+          contractId: contract.id,
+          limit: 100,
+          order: 'desc',
+          filterAntes: true,
+          filterRedemptions: true,
+        })
+      : [],
+    hasMechanism
+      ? getBetPoints(db, contract.id, contract.mechanism === 'cpmm-multi-1')
+      : [],
+    getRecentTopLevelCommentsAndReplies(db, contract.id, 25),
+    isCpmm1 ? getCPMMContractUserContractMetrics(contract.id, 100, db) : {},
+    contract.resolution ? getTopContractMetrics(contract.id, 10, db) : [],
+    isCpmm1 ? getTotalContractMetrics(contract.id, db) : 0,
+    getUser(contract.creatorId),
+    getRelatedContracts(contract, 20, db, true),
+  ])
+
+  const chartPoints =
+    isCpmm1 || isBinaryDpm
+      ? buildArray<{ x: number; y: number }>(
+          isCpmm1 && {
+            x: contract.createdTime,
+            y: getInitialProbability(contract),
+          },
+          maxMinBin(allBetPoints, 500)
+        ).map((p) => [p.x, p.y] as const)
+      : isMulti
+      ? serializeMultiPoints(calculateMultiBets(allBetPoints))
+      : []
+
+  const ogPoints = isCpmm1 ? binAvg(allBetPoints) : []
+  const pointsString = pointsToBase64(ogPoints.map((p) => [p.x, p.y] as const))
+
+  return {
+    props: {
+      state: 'authed',
+      params: removeUndefinedProps({
+        outcomeType: contract.outcomeType,
+        contract,
+        historyData: {
+          bets: betsToPass,
+          points: chartPoints,
+        },
+        pointsString,
+        comments,
+        userPositionsByOutcome,
+        totalPositions,
+        totalBets,
+        topContractMetrics,
+        creatorTwitter: creator,
+        relatedContracts,
+      }),
+    },
   }
 }
 

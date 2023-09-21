@@ -327,10 +327,7 @@ export function saveTopic(params: { topic: string }) {
   }>
 }
 
-export function getContractParams(params: {
-  contractSlug: string
-  fromStaticProps: boolean
-}) {
+export function getContractParams(params: { contractSlug: string }) {
   return maybeAuthedCall(
     getApiUrl('getcontractparams'),
     'POST',
