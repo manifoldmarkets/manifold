@@ -11,7 +11,7 @@ import { partition } from 'lodash'
 
 export const DashboardContent = (props: {
   items: DashboardItem[]
-  setItems: (items: DashboardItem[]) => void
+  setItems?: (items: DashboardItem[]) => void
   isEditing?: boolean
 }) => {
   const { items, isEditing, setItems } = props
@@ -54,7 +54,7 @@ export const DashboardContent = (props: {
     const newItems = [...items]
     const [removed] = newItems.splice(source.index, 1)
     newItems.splice(destination.index, 0, removed)
-    setItems(newItems)
+    setItems?.(newItems)
   }
 
   if (isLoading) return <LoadingIndicator />
@@ -90,7 +90,7 @@ export const DashboardContent = (props: {
                       onRemove={() => {
                         const newItems = [...items]
                         newItems.splice(index, 1)
-                        setItems(newItems)
+                        setItems?.(newItems)
                       }}
                     >
                       {renderCard(item)}
