@@ -195,7 +195,7 @@ const PaymentCards = (props: {
                 className={
                   payment.fromId === payment.toId
                     ? 'text-gray-500'
-                    : payment.fromId === forUser?.id
+                    : (payment.fromId === forUser?.id) !== (payment.amount < 0)
                     ? 'text-scarlet-500'
                     : 'text-teal-500'
                 }
