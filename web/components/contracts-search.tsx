@@ -211,13 +211,16 @@ export function SupabaseContractSearch(props: {
         topic: topicSlug,
         ct: contractType,
       } = searchParams
-      const id = ++requestId.current
+
       const offset = freshQuery
         ? 0
         : currentState.contracts
         ? currentState.contracts.length
         : 0
+
       if (freshQuery || currentState.shouldLoadMore) {
+        const id = ++requestId.current
+
         const results = await searchContract({
           state: currentState,
           query,
@@ -319,13 +322,6 @@ export function SupabaseContractSearch(props: {
         ))
       ) : (
         <ContractsList
-          key={
-            searchParams[QUERY_KEY] +
-            searchParams[SORT_KEY] +
-            searchParams[SORT_KEY] +
-            searchParams[CONTRACT_TYPE_KEY] +
-            searchParams[TOPIC_KEY]
-          }
           contracts={contracts}
           loadMore={loadMoreContracts}
           onContractClick={onContractClick}
