@@ -279,7 +279,6 @@ export function SupabaseContractSearch(props: {
 
   useEffect(() => {
     if (searchParams && !isEqual(searchParams, lastSearch)) {
-      console.log('search params changed', searchParams)
       query(FRESH_SEARCH_CHANGED_STATE, true)
     }
   }, [JSON.stringify(searchParams)])
