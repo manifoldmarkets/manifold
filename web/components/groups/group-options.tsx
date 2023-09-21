@@ -25,6 +25,7 @@ import {
   AddContractToGroupPermissionType,
 } from 'web/components/groups/add-contract-to-group-modal'
 import { BsFillPersonDashFill } from 'react-icons/bs'
+import { AiFillTrophy } from 'react-icons/ai'
 
 export function GroupOptions(props: {
   group: Group
@@ -58,6 +59,11 @@ export function GroupOptions(props: {
       name: 'Add questions',
       icon: <PlusCircleIcon className="h-5 w-5" />,
       onClick: () => setShowAddContract(true),
+    },
+    {
+      name: 'Leaderboards',
+      icon: <AiFillTrophy className="h-5 w-5" />,
+      onClick: () => router.push(`/leaderboards?${TOPIC_KEY}=${group.slug}`),
     },
     userRole === 'admin' && {
       name: 'Edit name',

@@ -20,14 +20,17 @@ import {
   getTopCreators,
   getTopTraders,
 } from 'web/lib/supabase/users'
-import { Group } from 'common/group'
+import { Group, TOPIC_KEY } from 'common/group'
 import { getUsers } from 'web/lib/supabase/user'
 import { Row } from 'web/components/layout/row'
 import { GroupSelector } from 'web/components/groups/group-selector'
 import DropdownMenu from 'web/components/comments/dropdown-menu'
 import { Modal } from 'web/components/layout/modal'
-import { TagIcon, XIcon } from '@heroicons/react/outline'
+import { PencilIcon, TagIcon, XIcon } from '@heroicons/react/outline'
 import { DotsVerticalIcon } from '@heroicons/react/solid'
+import { usePersistentQueryState } from 'web/hooks/use-persistent-query-state'
+import { useGroupFromRouter } from 'web/hooks/use-group-from-router'
+import { BackButton } from 'web/components/contract/back-button'
 
 export async function getStaticProps() {
   const allTime = await queryLeaderboardUsers('allTime')
@@ -93,7 +96,12 @@ export default function Leaderboards(props: {
   }, [user?.creatorTraders, user?.profitCached])
 
   const { topReferrals } = props
+  const [topicSlug, setTopicSlug] = usePersistentQueryState(TOPIC_KEY, '')
+  const topicFromRouter = useGroupFromRouter(topicSlug)
   const [topic, setTopic] = useState<Group>()
+  useEffect(() => {
+    setTopic(topicFromRouter)
+  }, [topicFromRouter])
   const topTopicTraders = useToTopUsers(
     topic && topic.cachedLeaderboard?.topTraders
   )?.map((c) => ({
@@ -162,18 +170,26 @@ export default function Leaderboards(props: {
         url="/leaderboards"
       />
       <Col className="mb-4 p-2">
-        <Row className={'mb-4 items-center justify-between'}>
-          <Title className={'!mb-0'}>
-            Leaderboards <InfoTooltip text="Updated every 15 minutes" />
-          </Title>
+        <Row className={'mb-4 items-center justify-between '}>
+          <Row className={'items-center gap-2'}>
+            <BackButton className={'md:hidden'} />
+            <Title className={'!mb-0'}>
+              Leaderboards <InfoTooltip text="Updated every 15 minutes" />
+            </Title>
+          </Row>
           <DropdownMenu
             Icon={<DotsVerticalIcon className={'h-5 w-5'} />}
             menuWidth={'w-48'}
             Items={[
               {
-                name: 'Filter by topic',
+                name: topic ? 'Change topic' : 'Filter by topic',
                 onClick: () => setShowSelectGroupModal(true),
-                icon: (
+                icon: topic ? (
+                  <PencilIcon
+                    className="text-ink-400 h-5 w-5"
+                    aria-hidden="true"
+                  />
+                ) : (
                   <TagIcon
                     className="text-ink-400 h-5 w-5"
                     aria-hidden="true"
@@ -241,7 +257,9 @@ export default function Leaderboards(props: {
       <SelectTopicModal
         open={showSelectGroupModal}
         setOpen={setShowSelectGroupModal}
-        setGroup={setTopic}
+        setGroup={(group) => {
+          setTopicSlug(group?.slug ?? '')
+        }}
         group={topic}
       />
     </Page>

@@ -55,6 +55,7 @@ export default function QuestionsPage() {
     TOPIC_KEY,
     ''
   )
+  const topicFromRouter = useGroupFromRouter(topicSlug)
   const [show, setShow] = useState<boolean>(false)
 
   const privateUser = usePrivateUser()
@@ -64,7 +65,6 @@ export default function QuestionsPage() {
     topicSlug || !trendingGroups
       ? uniqBy(trendingGroups, (g) => removeEmojis(g.name).toLowerCase())
       : combineGroupsByImportance(trendingGroups, myTopics)
-  const topicFromRouter = useGroupFromRouter(topicSlug)
   const topics = buildArray(
     topicFromRouter &&
       !topicsByImportance.map((g) => g.id).includes(topicFromRouter.id) &&
