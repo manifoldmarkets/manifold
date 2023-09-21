@@ -28,6 +28,8 @@ import { PlusIcon } from '@heroicons/react/solid'
 import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { ExpandingInput } from 'web/components/widgets/expanding-input'
+import { SEO } from 'web/components/SEO'
+import { richTextToString } from 'common/util/parse'
 
 export async function getStaticProps(ctx: {
   params: { dashboardSlug: string }
@@ -119,6 +121,14 @@ export default function DashboardPage(props: {
         )
       }
     >
+      <SEO
+        title={dashboard.title}
+        description={
+          JSONEmpty(dashboard.description)
+            ? `dashboard created by ${dashboard.creator_name}`
+            : richTextToString(dashboard.description)
+        }
+      />
       <Col className="w-full max-w-2xl px-1 sm:px-2">
         <Row className="mb-2 mt-2 items-center justify-between first-letter:w-full sm:mt-4 lg:mt-0">
           {editMode ? (
