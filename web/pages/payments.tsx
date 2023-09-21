@@ -150,7 +150,8 @@ const PaymentCards = (props: {
       {payments.map((payment) => {
         const fromUser = users?.find((u) => u.id === payment.fromId)
         const toUser = users?.find((u) => u.id === payment.toId)
-        const decreasedBalance = (payment.fromId === forUser?.id) !== (payment.amount < 0)
+        const decreasedBalance =
+          (payment.fromId === forUser?.id) !== payment.amount < 0
         return (
           <Col
             key={payment.id}
