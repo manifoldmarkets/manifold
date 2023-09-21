@@ -63,7 +63,6 @@ export function AddMarketToGroupModal(props: {
                         excludeContractIds: groupContractIds,
                       }}
                       className={clsx(SCROLLABLE_MODAL_CLASS, 'w-full !px-4')}
-                      headerClassName="!bg-canvas-0"
                     />
                   ),
                 },

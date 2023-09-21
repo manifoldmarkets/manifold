@@ -1,10 +1,7 @@
-import clsx from 'clsx'
 import { useState } from 'react'
 import { BsQuestionLg } from 'react-icons/bs'
 import { Button } from '../buttons/button'
-import { SelectMarkets } from '../contract-select-modal'
-import { Col } from '../layout/col'
-import { MODAL_CLASS, Modal, SCROLLABLE_MODAL_CLASS } from '../layout/modal'
+import { SelectMarketsModal } from '../contract-select-modal'
 import { DashboardQuestionItem } from 'common/dashboard'
 
 export function DashboardAddContractButton(props: {
@@ -24,25 +21,19 @@ export function DashboardAddContractButton(props: {
           Add question
         </div>
       </Button>
-      <Modal open={open} setOpen={setOpen}>
-        <Col className={clsx(MODAL_CLASS, 'relative')}>
-          <div className="bg-canvas-0 absolute top-0 left-0 right-0 h-10" />
-
-          <SelectMarkets
-            submitLabel={(len) => `Add ${len} question${len !== 1 ? 's' : ''}`}
-            onSubmit={(contracts) => {
-              addQuestions(
-                contracts.map((contract) => {
-                  return { type: 'question', slug: contract.slug }
-                })
-              )
-              setOpen(false)
-            }}
-            setOpen={setOpen}
-            className={clsx('w-full', SCROLLABLE_MODAL_CLASS)}
-          />
-        </Col>
-      </Modal>
+      <SelectMarketsModal
+        open={open}
+        setOpen={setOpen}
+        submitLabel={(len) => `Add ${len} question${len !== 1 ? 's' : ''}`}
+        onSubmit={(contracts) => {
+          addQuestions(
+            contracts.map((contract) => {
+              return { type: 'question', slug: contract.slug }
+            })
+          )
+          setOpen(false)
+        }}
+      />
     </>
   )
 }
