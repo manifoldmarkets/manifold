@@ -1,0 +1,1 @@
+create unique index idx_dashboard_slug on dashboards (slug);
