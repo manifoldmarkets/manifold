@@ -2101,7 +2101,7 @@
   dependencies:
     client-only "^0.0.1"
 
-"@hello-pangea/dnd@false16.3.0":
+"@hello-pangea/dnd@16.3.0":
   version "16.3.0"
   resolved "https://registry.yarnpkg.com/@hello-pangea/dnd/-/dnd-16.3.0.tgz#3776212f812df4e8e69c42831ec8ab7ff3a087d6"
   integrity sha512-RYQ/K8shtJoyNPvFWz0gfXIK7HF3P3mL9UZFGMuHB0ljRSXVgMjVFI/FxcZmakMzw6tO7NflWLriwTNBow/4vw==
@@ -2633,7 +2633,7 @@
     "@babel/runtime" "^7.13.10"
     "@radix-ui/react-slot" "1.0.2"
 
-"@radix-ui/react-slider@false1.1.2":
+"@radix-ui/react-slider@1.1.2":
   version "1.1.2"
   resolved "https://registry.yarnpkg.com/@radix-ui/react-slider/-/react-slider-1.1.2.tgz#330ff2a0e1f6c19aace76590004f229a7e8fbe6c"
   integrity sha512-NKs15MJylfzVsCagVSWKhGGLNR1W9qWs+HtgbmjjVUB3B9+lb3PYoXxVju3kOrpf0VKyVCtZp+iTwVoqpa1Chw==
