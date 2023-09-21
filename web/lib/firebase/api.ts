@@ -516,6 +516,7 @@ export function getYourFollowedDashboards() {
 }
 
 export function updateDashboard(params: {
+  title: string
   dashboardId: string
   items: DashboardItem[]
   description?: JSONContent

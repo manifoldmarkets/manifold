@@ -27,6 +27,7 @@ import { Editor } from '@tiptap/react'
 import { PlusIcon } from '@heroicons/react/solid'
 import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
 import { ENV_CONFIG } from 'common/envs/constants'
+import { ExpandingInput } from 'web/components/widgets/expanding-input'
 
 export async function getStaticProps(ctx: {
   params: { dashboardSlug: string }
@@ -79,6 +80,13 @@ export default function DashboardPage(props: {
     }
   }
 
+  const updateTitle = (newTitle: string) => {
+    if (dashboard) {
+      const updatedDashboard = { ...dashboard, title: newTitle }
+      setDashboard(updatedDashboard)
+    }
+  }
+
   const user = useUser()
   const canEdit = dashboard.creator_id === user?.id
   const [editMode, setEditMode] = useState(false)
@@ -113,7 +121,18 @@ export default function DashboardPage(props: {
     >
       <Col className="w-full max-w-2xl px-1 sm:px-2">
         <Row className="mb-2 mt-2 items-center justify-between first-letter:w-full sm:mt-4 lg:mt-0">
-          <Title className="!mb-0 ">{dashboard.title}</Title>
+          {editMode ? (
+            <ExpandingInput
+              placeholder={'Dashboard Title'}
+              autoFocus
+              maxLength={150}
+              value={dashboard.title}
+              className="w-full"
+              onChange={(e) => updateTitle(e.target.value)}
+            />
+          ) : (
+            <Title className="!mb-0 ">{dashboard.title}</Title>
+          )}
           <div className="flex items-center">
             <CopyLinkOrShareButton
               url={`https://${ENV_CONFIG.domain}/dashboard/${dashboard.slug}`}
@@ -184,6 +203,7 @@ export default function DashboardPage(props: {
                 onClick={() => {
                   updateDashboard({
                     dashboardId: dashboard.id,
+                    title: dashboard.title,
                     items: dashboard.items,
                     description: editor?.getJSON(),
                   }).then((resultingDashboard) => {
