@@ -50,7 +50,7 @@ export function GroupOptions(props: {
       icon: <LinkIcon className="h-5 w-5" />,
       onClick: () => {
         copyToClipboard(
-          `https://${DOMAIN}/questions/${TOPIC_KEY}=${group.slug}`
+          `https://${DOMAIN}/questions?${TOPIC_KEY}=${group.slug}`
         )
         toast.success('Link copied!')
       },
