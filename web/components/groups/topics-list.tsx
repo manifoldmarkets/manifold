@@ -97,39 +97,39 @@ export function TopicsList(props: {
           topics.map((group) => (
             <Row
               className={clsx(
-                'group relative w-full items-center',
+                'hover:bg-canvas-50 group relative w-full cursor-pointer items-center py-4 px-2',
                 currentTopicSlug == group.slug ? 'bg-canvas-50' : ''
               )}
+              onClick={() => {
+                if (currentTopicSlug !== group.slug)
+                  track('select sidebar topic')
+                setCurrentTopicSlug(
+                  currentTopicSlug === group.slug ? '' : group.slug
+                )
+              }}
               key={group.id}
             >
-              <button
-                onClick={() => {
-                  if (currentTopicSlug !== group.slug)
-                    track('select sidebar topic')
-                  setCurrentTopicSlug(
-                    currentTopicSlug === group.slug ? '' : group.slug
-                  )
-                }}
+              <div
+                className={
+                  currentTopicSlug == group.slug ? selectedBarClass : ''
+                }
+              />
+              <span
                 className={clsx(
-                  'hover:bg-canvas-50 flex w-full flex-row py-4 px-2 text-left text-sm',
+                  ' flex w-full flex-row text-left text-sm',
                   currentTopicSlug == group.slug
                     ? 'bg-canvas-50 font-semibold'
                     : ''
                 )}
               >
-                <div
-                  className={
-                    currentTopicSlug == group.slug ? selectedBarClass : ''
-                  }
-                />
-                <span>{group.name}</span>
-              </button>
+                {group.name}
+              </span>
               <GroupOptionsButton
                 key={group.id}
                 group={group}
                 yourGroupIds={yourGroupIds}
                 user={user}
-                className={'mr-2'}
+                className={'mr-1'}
               />
             </Row>
           ))}
@@ -176,35 +176,32 @@ const ForYouButton = (props: {
     }
   ) as DropdownItem[]
   return (
-    <Row className={' w-full'}>
-      <button
-        onClick={() =>
-          setCurrentCategory(currentCategorySlug === 'for-you' ? '' : 'for-you')
-        }
+    <Row
+      className={clsx(
+        'hover:bg-canvas-50 relative w-full  cursor-pointer px-2 py-4',
+        currentCategorySlug == 'for-you' ? 'bg-canvas-50' : ''
+      )}
+      onClick={() =>
+        setCurrentCategory(currentCategorySlug === 'for-you' ? '' : 'for-you')
+      }
+    >
+      <div
+        className={currentCategorySlug == 'for-you' ? selectedBarClass : ''}
+      />
+      <span
         className={clsx(
-          'hover:bg-canvas-50 relative w-full flex-row flex-wrap px-2 py-4 text-left text-sm ',
-          currentCategorySlug == 'for-you' ? 'bg-canvas-50' : ''
+          'w-full flex-row flex-wrap text-left text-sm ',
+          currentCategorySlug == 'for-you' ? ' font-semibold ' : ''
         )}
       >
-        <div
-          className={currentCategorySlug == 'for-you' ? selectedBarClass : ''}
-        />
-        <Row className={'items-center justify-between'}>
-          <span
-            className={clsx(
-              currentCategorySlug == 'for-you' ? ' font-semibold ' : ''
-            )}
-          >
-            ⭐️ For you
-          </span>
-          <DropdownMenu
-            Items={groupOptionItems}
-            Icon={<CogIcon className=" text-ink-600 h-5 w-5" />}
-            menuWidth={'w-60'}
-            withinOverflowContainer={true}
-          />
-        </Row>
-      </button>
+        ⭐️ For you
+      </span>
+      <DropdownMenu
+        Items={groupOptionItems}
+        Icon={<CogIcon className=" text-ink-600 h-5 w-5" />}
+        menuWidth={'w-60'}
+        withinOverflowContainer={true}
+      />
       {showCreateGroup && (
         <CreateGroupModal
           user={user}
