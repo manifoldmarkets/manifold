@@ -1,10 +1,9 @@
-import { TOPIC_KEY, Group } from 'common/group'
+import { TOPIC_KEY, Group, DEFAULT_TOPIC } from 'common/group'
 import { User } from 'common/user'
 import { uniqBy } from 'lodash'
 import { useEffect, useState } from 'react'
 import { TopicsList } from 'web/components/groups/topics-list'
 import { getMyGroupRoles } from 'web/lib/supabase/groups'
-import { usePersistentQueryState } from 'web/hooks/use-persistent-query-state'
 import { Col } from 'web/components/layout/col'
 import { removeEmojis } from 'common/topics'
 import {
@@ -30,10 +29,13 @@ import { Page } from 'web/components/layout/page'
 import { SEO } from 'web/components/SEO'
 import { Title } from 'web/components/widgets/title'
 import { BrowseTopicPills } from 'web/components/groups/browse-topic-pills'
+import clsx from 'clsx'
+import { usePersistentQueryState } from 'web/hooks/use-persistent-query-state'
 
 const GROUPS_PER_PAGE = 100
 export const SHOW_TOPICS_TERM = 'show-topics'
 
+// TODO: use static props for non for-you topic slugs
 export default function QuestionsPage() {
   const user = useUser()
   const isMobile = useIsMobile()
@@ -53,7 +55,7 @@ export default function QuestionsPage() {
 
   const [topicSlug, setTopicSlug] = usePersistentQueryState<string>(
     TOPIC_KEY,
-    ''
+    DEFAULT_TOPIC
   )
   const topicFromRouter = useGroupFromRouter(topicSlug)
   const [show, setShow] = useState<boolean>(false)
@@ -102,7 +104,7 @@ export default function QuestionsPage() {
               user={user}
               show={true}
               setShow={() => {}}
-              className={'mt-14 hidden xl:flex'}
+              className={'hidden xl:flex'}
             />
           )
         }
@@ -118,11 +120,12 @@ export default function QuestionsPage() {
           {currentTopic?.name ?? 'Questions'}
         </Title>
         <Col>
-          <Row className={'mt-2 pl-2 sm:mt-0'}>
+          <Row className={'mt-2 w-full pl-2 sm:mt-0'}>
             <Col
-              className={
-                'scrollbar-hide relative max-h-[calc(100vh-4rem)] min-h-[35rem] w-full overflow-y-auto overflow-x-hidden lg:max-h-[calc(100vh-5.25rem)]'
-              }
+              className={clsx(
+                'relative w-full',
+                show ? 'sm:mr-10 lg:mr-0' : ''
+              )}
             >
               <SupabaseContractSearch
                 persistPrefix="search"
@@ -132,7 +135,7 @@ export default function QuestionsPage() {
                   excludeGroupSlugs: buildArray(
                     privateUser?.blockedGroupSlugs,
                     shouldFilterDestiny &&
-                      !DESTINY_GROUP_SLUGS.includes(topicSlug) &&
+                      !DESTINY_GROUP_SLUGS.includes(topicSlug ?? '') &&
                       DESTINY_GROUP_SLUGS,
                     !user && BLOCKED_BY_DEFAULT_GROUP_SLUGS
                   ),

@@ -16,7 +16,7 @@ export default function Journeys() {
     Record<string, rowfor<'user_events'>[]>
   >({})
   const [hoursFromNowQ, setHoursFromNowQ] = usePersistentQueryState('h', '5')
-  const hoursFromNow = parseInt(hoursFromNowQ)
+  const hoursFromNow = parseInt(hoursFromNowQ ?? '5')
   const [users, setUsers] = useState<User[]>([])
   const [bannedUsers, setBannedUsers] = useState<User[]>([])
 

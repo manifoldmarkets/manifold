@@ -55,86 +55,80 @@ export function TopicsList(props: {
   const yourGroups = useRealtimeMemberGroups(user?.id)
   const yourGroupIdsInMemory = useMemberGroupIdsOnLoad(user?.id)
   const yourGroupIds = yourGroups?.map((g) => g.id) ?? yourGroupIdsInMemory
+  const widthClasses =
+    'xl:min-w-64 min-w-[7rem] sm:min-w-[8rem] md:min-w-[10.5rem]'
   return (
-    <Row
+    <Col
       className={clsx(
         show ? 'animate-slide-in-from-right block xl:animate-none' : 'hidden',
-        className
+        className,
+        'scrollbar-hide sticky top-0 right-10 max-h-screen overflow-y-auto sm:max-w-min xl:max-w-none',
+        'bg-canvas-0 items-start',
+        currentTopicSlug == 'for-you' ? '' : 'xl:rounded-t-md '
       )}
     >
-      <Col
-        className={clsx(
-          'scrollbar-hide relative max-h-[calc(100vh-4rem)] min-h-[35rem] overflow-y-auto overflow-x-visible lg:max-h-[calc(100vh-6rem)]',
-          'bg-canvas-0 h-fit w-[7rem] items-start sm:w-[8rem] md:w-[10rem] xl:w-64 ',
-          currentTopicSlug == 'for-you' ? '' : 'xl:rounded-t-md '
-        )}
+      <Row
+        className={
+          'bg-canvas-0 sticky top-0 z-10 w-full items-center justify-center xl:hidden'
+        }
       >
-        <Row
-          className={
-            'bg-canvas-0 sticky top-0 z-10 w-full items-center justify-center xl:hidden'
-          }
+        <Button
+          className={clsx('h-[3.15rem]', widthClasses)}
+          color={'gray-white'}
+          size={'md'}
+          onClick={() => setShow(!show)}
         >
-          <Button
-            className={'h-[3.15rem] w-[8rem] md:w-[10.5rem]'}
-            color={'gray-white'}
-            size={'md'}
-            onClick={() => setShow(!show)}
+          <MdOutlineKeyboardDoubleArrowRight className="mr-1 h-5 w-5" />
+          Topics
+        </Button>
+      </Row>
+      {user && privateUser && (
+        <ForYouButton
+          setCurrentCategory={setCurrentTopicSlug}
+          privateUser={privateUser}
+          currentCategorySlug={currentTopicSlug}
+          user={user}
+          yourGroups={yourGroups}
+        />
+      )}
+      {topics.length > 0 &&
+        topics.map((group) => (
+          <Row
+            className={clsx(
+              'hover:bg-canvas-50 group relative w-full cursor-pointer items-center py-4 px-2',
+              currentTopicSlug == group.slug ? 'bg-canvas-50' : ''
+            )}
+            onClick={() => {
+              if (currentTopicSlug !== group.slug) track('select sidebar topic')
+              setCurrentTopicSlug(
+                currentTopicSlug === group.slug ? '' : group.slug
+              )
+            }}
+            key={group.id}
           >
-            <MdOutlineKeyboardDoubleArrowRight className="mr-1 h-5 w-5" />
-            Topics
-          </Button>
-        </Row>
-        {user && privateUser && (
-          <ForYouButton
-            setCurrentCategory={setCurrentTopicSlug}
-            privateUser={privateUser}
-            currentCategorySlug={currentTopicSlug}
-            user={user}
-            yourGroups={yourGroups}
-          />
-        )}
-        {topics.length > 0 &&
-          topics.map((group) => (
-            <Row
+            <div
+              className={currentTopicSlug == group.slug ? selectedBarClass : ''}
+            />
+            <span
               className={clsx(
-                'hover:bg-canvas-50 group relative w-full cursor-pointer items-center py-4 px-2',
-                currentTopicSlug == group.slug ? 'bg-canvas-50' : ''
+                ' flex w-full flex-row text-left text-sm',
+                currentTopicSlug == group.slug
+                  ? 'bg-canvas-50 font-semibold'
+                  : ''
               )}
-              onClick={() => {
-                if (currentTopicSlug !== group.slug)
-                  track('select sidebar topic')
-                setCurrentTopicSlug(
-                  currentTopicSlug === group.slug ? '' : group.slug
-                )
-              }}
-              key={group.id}
             >
-              <div
-                className={
-                  currentTopicSlug == group.slug ? selectedBarClass : ''
-                }
-              />
-              <span
-                className={clsx(
-                  ' flex w-full flex-row text-left text-sm',
-                  currentTopicSlug == group.slug
-                    ? 'bg-canvas-50 font-semibold'
-                    : ''
-                )}
-              >
-                {group.name}
-              </span>
-              <GroupOptionsButton
-                key={group.id}
-                group={group}
-                yourGroupIds={yourGroupIds}
-                user={user}
-                className={'mr-1'}
-              />
-            </Row>
-          ))}
-      </Col>
-    </Row>
+              {group.name}
+            </span>
+            <GroupOptionsButton
+              key={group.id}
+              group={group}
+              yourGroupIds={yourGroupIds}
+              user={user}
+              className={'mr-1'}
+            />
+          </Row>
+        ))}
+    </Col>
   )
 }
 export const selectedBarClass =
@@ -201,6 +195,7 @@ const ForYouButton = (props: {
         Icon={<CogIcon className=" text-ink-600 h-5 w-5" />}
         menuWidth={'w-60'}
         withinOverflowContainer={true}
+        className={'mr-1'}
       />
       {showCreateGroup && (
         <CreateGroupModal

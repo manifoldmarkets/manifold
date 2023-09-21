@@ -9,7 +9,7 @@ export default function Find() {
     <Page trackPageView={'omnisearch page'}>
       <OmniSearch
         inputClassName="sticky top-0 left-0 right-0 !rounded-full !border !border-ink-400"
-        query={query}
+        query={query ?? ''}
         setQuery={setQuery}
       />
     </Page>

@@ -1,6 +1,6 @@
 import { ChevronDownIcon, XIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
-import { sample, uniqBy } from 'lodash'
+import { isEqual, sample, uniqBy } from 'lodash'
 import { ReactNode, useEffect, useRef, useState } from 'react'
 import { Contract } from 'common/contract'
 import { useEvent } from 'web/hooks/use-event'
@@ -23,7 +23,7 @@ import {
   useGroupFromSlug,
   useRealtimeMemberGroups,
 } from 'web/hooks/use-group-supabase'
-import { TOPIC_KEY } from 'common/group'
+import { DEFAULT_TOPIC, TOPIC_KEY } from 'common/group'
 import { TopicTag } from 'web/components/groups/topic-tag'
 import { AddContractToGroupButton } from 'web/components/groups/add-contract-to-group-modal'
 import { useUser } from 'web/hooks/use-user'
@@ -118,7 +118,7 @@ export const SORT_KEY = 's'
 const FILTER_KEY = 'f'
 const CONTRACT_TYPE_KEY = 'ct'
 
-export const INITIAL_STATE: SearchState = {
+export const FRESH_SEARCH_CHANGED_STATE: SearchState = {
   contracts: undefined,
   fuzzyContractOffset: 0,
   shouldLoadMore: true,
@@ -190,20 +190,24 @@ export function SupabaseContractSearch(props: {
   } = props
 
   const [state, setState] = usePersistentInMemoryState<SearchState>(
-    INITIAL_STATE,
+    FRESH_SEARCH_CHANGED_STATE,
     `${persistPrefix}-supabase-search`
   )
 
   const requestId = useRef(0)
 
-  const [searchParams, setSearchParams] = useSearchQueryState({
+  const [searchParams, setSearchParams, defaults] = useSearchQueryState({
     defaultSort,
     defaultFilter,
     useUrlParams,
   })
+  const [lastSearch, setLastSearch] = usePersistentInMemoryState<
+    typeof searchParams
+  >(undefined, `${persistPrefix}-search-has-loaded`)
 
   const query = useEvent(
     async (currentState: SearchState, freshQuery?: boolean) => {
+      if (!searchParams) return true
       const {
         q: query,
         s: sort,
@@ -211,6 +215,7 @@ export function SupabaseContractSearch(props: {
         topic: topicSlug,
         ct: contractType,
       } = searchParams
+      setLastSearch(searchParams)
 
       const offset = freshQuery
         ? 0
@@ -273,8 +278,11 @@ export function SupabaseContractSearch(props: {
   const loadMoreContracts = () => query(state)
 
   useEffect(() => {
-    query(INITIAL_STATE, true)
-  }, [searchParams])
+    if (searchParams && !isEqual(searchParams, lastSearch)) {
+      console.log('search params changed', searchParams)
+      query(FRESH_SEARCH_CHANGED_STATE, true)
+    }
+  }, [JSON.stringify(searchParams)])
 
   const contracts = state.contracts
     ? uniqBy(
@@ -302,18 +310,18 @@ export function SupabaseContractSearch(props: {
         listViewDisabled={listViewDisabled}
         hideFilters={hideFilters}
         menuButton={menuButton}
-        params={searchParams}
+        params={searchParams ?? defaults}
         updateParams={setSearchParams}
       />
       {rowBelowFilters}
       {contracts && contracts.length === 0 ? (
         emptyState ??
-        (searchParams[QUERY_KEY] ? (
+        (searchParams?.[QUERY_KEY] ? (
           <NoResults />
         ) : (
           <Col className="text-ink-700 mx-2 my-6 text-center">
             No questions yet.
-            {searchParams[QUERY_KEY] && (
+            {searchParams?.[TOPIC_KEY] && (
               <Row className={'mt-2 w-full items-center justify-center'}>
                 <AddContractToGroupButton groupSlug={searchParams[TOPIC_KEY]} />
               </Row>
@@ -371,13 +379,13 @@ const useSearchQueryState = (props: {
     [SORT_KEY]: defaultSort,
     [FILTER_KEY]: defaultFilter,
     [CONTRACT_TYPE_KEY]: defaultContractType,
-    [TOPIC_KEY]: '',
+    [TOPIC_KEY]: DEFAULT_TOPIC,
   }
 
   const useHook = useUrlParams ? usePersistentQueriesState : usePartialUpdater
   const [state, setState] = useHook(defaults)
 
-  return [state, setState] as const
+  return [state, setState, defaults] as const
 }
 
 function SupabaseContractSearchControls(props: {

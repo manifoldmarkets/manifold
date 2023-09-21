@@ -12,7 +12,7 @@ import { useRouter } from 'next/router'
 export const BrowseTopicPills = (props: {
   topics: Group[]
   setTopicSlug: (slug: string) => void
-  currentTopicSlug: string
+  currentTopicSlug: string | undefined
 }) => {
   const { topics, setTopicSlug, currentTopicSlug } = props
   const isAuth = useIsAuthorized()
@@ -21,10 +21,10 @@ export const BrowseTopicPills = (props: {
   const sort = router.query[SORT_KEY] as string
 
   return (
-    <Col className={'relative mt-0.5 overflow-x-hidden sm:hidden'}>
+    <Col className={'relative mt-0.5 sm:hidden'}>
       <Row
         className={clsx(
-          'scrollbar-hide gap-0.5 overflow-y-auto',
+          'scrollbar-hide w-[98vw] gap-0.5 overflow-auto',
           showMore ? 'h-[6.75rem] flex-wrap' : 'h-[2rem]'
         )}
       >
@@ -48,7 +48,7 @@ export const BrowseTopicPills = (props: {
           </PillButton>
         ))}
       </Row>
-      <div className="absolute -right-1.5 top-0 z-10 flex w-10 cursor-pointer select-none items-center justify-center overflow-x-hidden">
+      <div className="absolute right-0 top-0 z-10 flex w-10 cursor-pointer select-none items-center justify-center overflow-x-hidden">
         {showMore ? (
           <ChevronDownIcon
             onClick={() => setShowMore(false)}

@@ -147,7 +147,7 @@ export function UserBetsTable(props: { user: User }) {
     return <NoBets user={user} />
 
   const contracts =
-    query !== ''
+    query && query !== ''
       ? initialContracts.filter((c) =>
           searchInAny(query, ...[c.question, c.creatorName, c.creatorUsername])
         )

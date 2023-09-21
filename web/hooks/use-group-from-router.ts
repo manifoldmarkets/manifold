@@ -3,7 +3,7 @@ import { getGroupFromSlug } from 'web/lib/supabase/group'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { Group } from 'common/group'
 
-export const useGroupFromRouter = (topicSlug: string) => {
+export const useGroupFromRouter = (topicSlug: string | undefined) => {
   const [categoryFromRouter, setCategoryFromRouter] =
     usePersistentInMemoryState<Group | undefined>(
       undefined,
