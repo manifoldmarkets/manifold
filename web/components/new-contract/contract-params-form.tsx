@@ -14,6 +14,7 @@ import {
   Visibility,
   add_answers_mode,
   contractPath,
+  contractUrl,
 } from 'common/contract'
 import {
   MINIMUM_BOUNTY,
@@ -365,7 +366,7 @@ export function ContractParamsForm(props: {
       const newContract = (await createMarket(createProps)) as Contract
 
       // wait for supabase
-      const supabaseContract = await waitForSupabaseContract(newContract.id)
+      const supabaseContract = await waitForSupabaseContract(newContract)
 
       track('create market', {
         slug: newContract.slug,
@@ -853,18 +854,22 @@ async function fetchContract(contractId: string) {
   }
 }
 
-async function waitForSupabaseContract(contractId: string) {
+async function waitForSupabaseContract(contract: Contract) {
   let retries = 100
 
   const delay = (ms: number) =>
     new Promise((resolve) => setTimeout(resolve, ms))
 
   while (retries > 0) {
-    const contract = await fetchContract(contractId)
-    if (contract) return contract
+    const c = await fetchContract(contract.id)
+    if (c) return c
     retries--
     await delay(100) // wait for 100 milliseconds after each try
   }
 
-  throw new Error('Contract failed to replicate to supabase')
+  throw new Error(
+    `We created your market, but it's taking a while to appear. Check this link in a minute: ${contractUrl(
+      contract
+    )}`
+  )
 }
