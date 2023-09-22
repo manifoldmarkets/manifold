@@ -19,8 +19,11 @@ import {
   usePartialUpdater,
   usePersistentQueriesState,
 } from 'web/hooks/use-persistent-query-state'
-import { useRealtimeMemberGroups } from 'web/hooks/use-group-supabase'
-import { Group } from 'common/group'
+import {
+  useGroupFromSlug,
+  useRealtimeMemberGroups,
+} from 'web/hooks/use-group-supabase'
+import { DEFAULT_TOPIC, TOPIC_KEY } from 'common/group'
 import { TopicTag } from 'web/components/groups/topic-tag'
 import { AddContractToGroupButton } from 'web/components/groups/add-contract-to-group-modal'
 import { useUser } from 'web/hooks/use-user'
@@ -107,6 +110,7 @@ export type SearchParams = {
   [SORT_KEY]: Sort
   [FILTER_KEY]: Filter
   [CONTRACT_TYPE_KEY]: ContractTypeType
+  [TOPIC_KEY]: string
 }
 
 const QUERY_KEY = 'q'
@@ -123,9 +127,11 @@ export const FRESH_SEARCH_CHANGED_STATE: SearchState = {
 export type SupabaseAdditionalFilter = {
   creatorId?: string
   tag?: string
+  topicSlug?: string
   excludeContractIds?: string[]
   excludeGroupSlugs?: string[]
   excludeUserIds?: string[]
+  nonQueryFacetFilters?: string[]
   contractType?: ContractTypeType
 }
 
@@ -150,9 +156,6 @@ export function SupabaseContractSearch(props: {
   menuButton?: ReactNode
   hideAvatar?: boolean
   rowBelowFilters?: ReactNode
-  topicSlug?: string
-  topic?: Group | null
-  clearTopic?: () => void
   // used to determine if search params should be updated in the URL
   useUrlParams?: boolean
   includeProbSorts?: boolean
@@ -184,9 +187,6 @@ export function SupabaseContractSearch(props: {
     menuButton,
     hideAvatar,
     rowBelowFilters,
-    topic,
-    topicSlug,
-    clearTopic,
   } = props
 
   const [state, setState] = usePersistentInMemoryState<SearchState>(
@@ -208,7 +208,13 @@ export function SupabaseContractSearch(props: {
   const query = useEvent(
     async (currentState: SearchState, freshQuery?: boolean) => {
       if (!searchParams) return true
-      const { q: query, s: sort, f: filter, ct: contractType } = searchParams
+      const {
+        q: query,
+        s: sort,
+        f: filter,
+        topic: topicSlug,
+        ct: contractType,
+      } = searchParams
       setLastSearch(searchParams)
 
       const offset = freshQuery
@@ -228,7 +234,9 @@ export function SupabaseContractSearch(props: {
           contractType: additionalFilter?.contractType ?? contractType,
           offset: offset,
           limit: CONTRACTS_PER_PAGE,
-          topicSlug: topic?.slug,
+          topicSlug:
+            additionalFilter?.topicSlug ??
+            (topicSlug !== '' ? topicSlug : undefined),
           creatorId: additionalFilter?.creatorId,
         })
 
@@ -303,9 +311,6 @@ export function SupabaseContractSearch(props: {
         menuButton={menuButton}
         params={searchParams ?? defaults}
         updateParams={setSearchParams}
-        currentTopicSlug={topicSlug}
-        clearTopic={clearTopic}
-        topic={topic}
       />
       {rowBelowFilters}
       {contracts && contracts.length === 0 ? (
@@ -315,9 +320,9 @@ export function SupabaseContractSearch(props: {
         ) : (
           <Col className="text-ink-700 mx-2 my-6 text-center">
             No questions yet.
-            {topic && (
+            {searchParams?.[TOPIC_KEY] && (
               <Row className={'mt-2 w-full items-center justify-center'}>
-                <AddContractToGroupButton groupSlug={topic.slug} />
+                <AddContractToGroupButton groupSlug={searchParams[TOPIC_KEY]} />
               </Row>
             )}
           </Col>
@@ -373,6 +378,7 @@ const useSearchQueryState = (props: {
     [SORT_KEY]: defaultSort,
     [FILTER_KEY]: defaultFilter,
     [CONTRACT_TYPE_KEY]: defaultContractType,
+    [TOPIC_KEY]: DEFAULT_TOPIC,
   }
 
   const useHook = useUrlParams ? usePersistentQueriesState : usePartialUpdater
@@ -392,9 +398,6 @@ function SupabaseContractSearchControls(props: {
   menuButton?: ReactNode
   params: SearchParams
   updateParams: (params: Partial<SearchParams>) => void
-  topic: Group | undefined | null
-  currentTopicSlug: string | undefined
-  clearTopic?: () => void
 }) {
   const {
     className,
@@ -406,12 +409,15 @@ function SupabaseContractSearchControls(props: {
     menuButton,
     params,
     updateParams,
-    topic,
-    currentTopicSlug,
-    clearTopic,
   } = props
 
-  const { q: query, s: sort, f: filter, ct: contractType } = params
+  const {
+    q: query,
+    s: sort,
+    f: filter,
+    ct: contractType,
+    topic: topicSlug,
+  } = params
 
   const selectFilter = (selection: Filter) => {
     if (selection === filter) return
@@ -482,9 +488,8 @@ function SupabaseContractSearchControls(props: {
             hideOrderSelector={hideOrderSelector}
             className={'flex h-6 flex-row gap-2'}
             includeProbSorts={includeProbSorts}
-            topic={topic}
-            currentTopicSlug={currentTopicSlug}
-            clearTopic={clearTopic}
+            currentTopicSlug={topicSlug}
+            clearTopic={() => updateParams({ [TOPIC_KEY]: '' })}
           />
         )}
       </Col>
@@ -500,9 +505,8 @@ export function SearchFilters(props: {
   contractType: string
   selectContractType: (selection: ContractTypeType) => void
   hideOrderSelector: boolean | undefined
-  topic: Group | undefined | null
   currentTopicSlug: string | undefined
-  clearTopic?: () => void
+  clearTopic: () => void
   className?: string
   includeProbSorts?: boolean
 }) {
@@ -516,10 +520,10 @@ export function SearchFilters(props: {
     hideOrderSelector,
     className,
     includeProbSorts,
-    topic,
     currentTopicSlug,
     clearTopic,
   } = props
+  const topic = useGroupFromSlug(currentTopicSlug ?? '')
   const hideFilter =
     sort === 'resolve-date' ||
     sort === 'close-date' ||

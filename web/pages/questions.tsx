@@ -23,6 +23,7 @@ import { useRouter } from 'next/router'
 import { Button } from 'web/components/buttons/button'
 import { MenuIcon } from '@heroicons/react/outline'
 import { useTrendingGroupsSearchResults } from 'web/components/search/query-groups'
+import { useGroupFromRouter } from 'web/hooks/use-group-from-router'
 import Welcome from 'web/components/onboarding/welcome'
 import { Page } from 'web/components/layout/page'
 import { SEO } from 'web/components/SEO'
@@ -30,27 +31,12 @@ import { Title } from 'web/components/widgets/title'
 import { BrowseTopicPills } from 'web/components/groups/browse-topic-pills'
 import clsx from 'clsx'
 import { usePersistentQueryState } from 'web/hooks/use-persistent-query-state'
-import { getGroupFromSlug } from 'web/lib/supabase/group'
-import { GetServerSidePropsContext } from 'next/types'
 
 const GROUPS_PER_PAGE = 100
 export const SHOW_TOPICS_TERM = 'show-topics'
-export async function getServerSideProps(ctx: GetServerSidePropsContext) {
-  let topic = null
-  if (Object.keys(ctx.query).includes(TOPIC_KEY)) {
-    const slug = ctx.query[TOPIC_KEY] as string
-    topic =
-      slug !== 'for-you' && slug !== '' ? await getGroupFromSlug(slug) : null
-  }
-  return {
-    props: {
-      topic,
-    },
-  }
-}
 
-export default function QuestionsPage(props: { topic: Group | null }) {
-  const { topic } = props
+// TODO: use static props for non for-you topic slugs
+export default function QuestionsPage() {
   const user = useUser()
   const isMobile = useIsMobile()
   const router = useRouter()
@@ -71,6 +57,7 @@ export default function QuestionsPage(props: { topic: Group | null }) {
     TOPIC_KEY,
     DEFAULT_TOPIC
   )
+  const topicFromRouter = useGroupFromRouter(topicSlug)
   const [show, setShow] = useState<boolean>(false)
 
   const privateUser = usePrivateUser()
@@ -81,9 +68,9 @@ export default function QuestionsPage(props: { topic: Group | null }) {
       ? uniqBy(trendingGroups, (g) => removeEmojis(g.name).toLowerCase())
       : combineGroupsByImportance(trendingGroups, myTopics)
   const topics = buildArray(
-    topic && !topicsByImportance.map((g) => g.id).includes(topic.id)
-      ? topic
-      : null,
+    topicFromRouter &&
+      !topicsByImportance.map((g) => g.id).includes(topicFromRouter.id) &&
+      (topicFromRouter as Group),
     topicsByImportance
   )
 
@@ -100,9 +87,7 @@ export default function QuestionsPage(props: { topic: Group | null }) {
       Topics
     </Button>
   )
-  const currentTopic =
-    topicSlug !== undefined ? topics.find((t) => t.slug === topicSlug) : topic
-
+  const currentTopic = topics.find((t) => t.slug === topicSlug)
   return (
     <>
       {user && <Welcome />}
@@ -155,6 +140,7 @@ export default function QuestionsPage(props: { topic: Group | null }) {
                     !user && BLOCKED_BY_DEFAULT_GROUP_SLUGS
                   ),
                   excludeUserIds: privateUser?.blockedUserIds,
+                  topicSlug: topicSlug !== '' ? topicSlug : undefined,
                 }}
                 useUrlParams
                 isWholePage
@@ -172,9 +158,6 @@ export default function QuestionsPage(props: { topic: Group | null }) {
                     />
                   )
                 }
-                topic={currentTopic}
-                topicSlug={topicSlug}
-                clearTopic={() => setTopicSlug('')}
               />
             </Col>
             {!isMobile && (
