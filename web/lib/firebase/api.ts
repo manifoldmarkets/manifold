@@ -522,5 +522,5 @@ export function updateDashboard(params: {
 }
 
 export function getDashboardFromSlug(params: { dashboardSlug: string }) {
-  return call(getApiUrl('getdashboardfromslug'), 'POST', params)
+  return maybeAuthedCall(getApiUrl('getdashboardfromslug'), 'POST', params)
 }
