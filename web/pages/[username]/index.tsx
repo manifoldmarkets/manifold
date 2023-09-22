@@ -71,6 +71,7 @@ import { ENV_CONFIG } from 'common/envs/constants'
 import { copyToClipboard } from 'web/lib/util/copy'
 import toast from 'react-hot-toast'
 import { trackShareEvent } from 'web/lib/service/analytics'
+import { referralQuery } from 'common/util/share'
 
 export const getStaticProps = async (props: {
   params: {
@@ -285,7 +286,7 @@ function UserProfile(props: {
         <Col className={'mt-1'}>
           <ProfilePublicStats
             user={user}
-            isCurrentUser={isCurrentUser}
+            currentUser={currentUser}
             rating={rating}
             reviewCount={reviewCount}
           />
@@ -411,12 +412,13 @@ type FollowsDialogTab = 'following' | 'followers'
 
 function ProfilePublicStats(props: {
   user: User
-  isCurrentUser: boolean
+  currentUser: User | undefined | null
   rating?: number
   reviewCount?: number
   className?: string
 }) {
-  const { user, className, isCurrentUser, rating, reviewCount = 0 } = props
+  const { user, className, currentUser, rating, reviewCount = 0 } = props
+  const isCurrentUser = user.id === currentUser?.id
   const [reviewsOpen, setReviewsOpen] = useState(false)
   const [followsOpen, setFollowsOpen] = useState(false)
   const [followsTab, setFollowsTab] = useState<FollowsDialogTab>('following')
@@ -488,7 +490,7 @@ function ProfilePublicStats(props: {
         <ChartBarIcon className="mr-1 mb-1 inline h-4 w-4" />
         Calibration
       </Link>
-      <ShareButton user={user} />
+      <ShareButton user={user} currentUser={currentUser} />
 
       <FollowsDialog
         user={user}
@@ -512,9 +514,15 @@ function ProfilePublicStats(props: {
   )
 }
 
-const ShareButton = (props: { user: User }) => {
-  const { user } = props
-  const url = `https://${ENV_CONFIG.domain}/${user.username}`
+const ShareButton = (props: {
+  user: User
+  currentUser: User | undefined | null
+}) => {
+  const { user, currentUser } = props
+  const isSameUser = currentUser?.id === user.id
+  const url = `https://${ENV_CONFIG.domain}/${user.username}${
+    !isSameUser && currentUser ? referralQuery(currentUser.username) : ''
+  }`
   const [isOpen, setIsOpen] = useState(false)
   const onClick = () => {
     if (!url) return
