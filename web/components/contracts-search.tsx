@@ -30,6 +30,8 @@ import { useUser } from 'web/hooks/use-user'
 
 import { GroupOptionsButton } from 'web/components/groups/groups-button'
 
+import { ForYouDropdown } from 'web/components/groups/for-you-dropdown'
+
 const CONTRACTS_PER_PAGE = 40
 
 export const SORTS = [
@@ -127,7 +129,6 @@ export const FRESH_SEARCH_CHANGED_STATE: SearchState = {
 export type SupabaseAdditionalFilter = {
   creatorId?: string
   tag?: string
-  topicSlug?: string
   excludeContractIds?: string[]
   excludeGroupSlugs?: string[]
   excludeUserIds?: string[]
@@ -234,9 +235,7 @@ export function SupabaseContractSearch(props: {
           contractType: additionalFilter?.contractType ?? contractType,
           offset: offset,
           limit: CONTRACTS_PER_PAGE,
-          topicSlug:
-            additionalFilter?.topicSlug ??
-            (topicSlug !== '' ? topicSlug : undefined),
+          topicSlug: topicSlug !== '' ? topicSlug : undefined,
           creatorId: additionalFilter?.creatorId,
         })
 
@@ -456,7 +455,7 @@ function SupabaseContractSearchControls(props: {
   }
 
   return (
-    <Col className={clsx('bg-canvas-50 sticky top-0 z-30 ', className)}>
+    <Col className={clsx('bg-canvas-50 sticky top-0 z-20 ', className)}>
       <Col
         className={clsx(
           'mb-1 items-stretch gap-2 pb-1 pt-px sm:gap-2',
@@ -489,7 +488,7 @@ function SupabaseContractSearchControls(props: {
             className={'flex h-6 flex-row gap-2'}
             includeProbSorts={includeProbSorts}
             currentTopicSlug={topicSlug}
-            clearTopic={() => updateParams({ [TOPIC_KEY]: '' })}
+            setTopic={(slug) => updateParams({ [TOPIC_KEY]: slug })}
           />
         )}
       </Col>
@@ -506,7 +505,7 @@ export function SearchFilters(props: {
   selectContractType: (selection: ContractTypeType) => void
   hideOrderSelector: boolean | undefined
   currentTopicSlug: string | undefined
-  clearTopic: () => void
+  setTopic: (slug: string) => void
   className?: string
   includeProbSorts?: boolean
 }) {
@@ -521,7 +520,7 @@ export function SearchFilters(props: {
     className,
     includeProbSorts,
     currentTopicSlug,
-    clearTopic,
+    setTopic,
   } = props
   const topic = useGroupFromSlug(currentTopicSlug ?? '')
   const hideFilter =
@@ -539,7 +538,7 @@ export function SearchFilters(props: {
     <div className={clsx(className, 'gap-3')}>
       {!hideOrderSelector && (
         <DropdownMenu
-          Items={generateFilterDropdownItems(
+          items={generateFilterDropdownItems(
             contractType == 'BOUNTIED_QUESTION'
               ? BOUNTY_MARKET_SORTS
               : contractType == 'POLL'
@@ -550,7 +549,7 @@ export function SearchFilters(props: {
               : PREDICTION_MARKET_SORTS,
             selectSort
           )}
-          Icon={
+          icon={
             <Row className=" items-center gap-0.5 ">
               <span className="text-ink-500 whitespace-nowrap text-sm font-medium">
                 {sortLabel}
@@ -566,8 +565,8 @@ export function SearchFilters(props: {
       )}
       {!hideFilter && (
         <DropdownMenu
-          Items={generateFilterDropdownItems(FILTERS, selectFilter)}
-          Icon={
+          items={generateFilterDropdownItems(FILTERS, selectFilter)}
+          icon={
             <Row className=" items-center gap-0.5 ">
               <span className="text-ink-500 whitespace-nowrap text-sm font-medium">
                 {filterLabel}
@@ -582,8 +581,8 @@ export function SearchFilters(props: {
         />
       )}
       <DropdownMenu
-        Items={generateFilterDropdownItems(CONTRACT_TYPES, selectContractType)}
-        Icon={
+        items={generateFilterDropdownItems(CONTRACT_TYPES, selectContractType)}
+        icon={
           <Row className=" items-center gap-0.5 ">
             <span className="text-ink-500 whitespace-nowrap text-sm font-medium">
               {contractTypeLabel}
@@ -602,7 +601,7 @@ export function SearchFilters(props: {
           topic={topic}
           location={'questions page'}
         >
-          <button onClick={clearTopic}>
+          <button onClick={() => setTopic('')}>
             <XIcon className="hover:text-ink-700 text-ink-400 ml-1 hidden h-4 w-4 sm:block" />
           </button>
           <GroupOptionsButton
@@ -623,9 +622,17 @@ export function SearchFilters(props: {
             #
           </span>
           ⭐️ For you
-          <button onClick={clearTopic}>
-            <XIcon className="hover:text-ink-700 text-ink-400 ml-1 h-4 w-4" />
+          <button onClick={() => setTopic('')}>
+            <XIcon className="hover:text-ink-700 text-ink-400 ml-1 hidden h-4 w-4 sm:block" />
           </button>
+          {user && (
+            <ForYouDropdown
+              setCurrentCategory={setTopic}
+              user={user}
+              yourGroups={yourGroups}
+              className={'ml-1 sm:hidden'}
+            />
+          )}
         </Row>
       )}
     </div>

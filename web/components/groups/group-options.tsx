@@ -81,8 +81,8 @@ export function GroupOptions(props: {
     <Col onClick={(e) => e.stopPropagation()}>
       <DropdownMenu
         closeOnClick={true}
-        Items={groupOptionItems}
-        Icon={<DotsVerticalIcon className={clsx('h-5 w-5')} />}
+        items={groupOptionItems}
+        icon={<DotsVerticalIcon className={clsx('h-5 w-5')} />}
         withinOverflowContainer={true}
         buttonClass={'md:opacity-0 group-hover:opacity-100'}
       />

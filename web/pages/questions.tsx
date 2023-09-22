@@ -140,7 +140,6 @@ export default function QuestionsPage() {
                     !user && BLOCKED_BY_DEFAULT_GROUP_SLUGS
                   ),
                   excludeUserIds: privateUser?.blockedUserIds,
-                  topicSlug: topicSlug !== '' ? topicSlug : undefined,
                 }}
                 useUrlParams
                 isWholePage

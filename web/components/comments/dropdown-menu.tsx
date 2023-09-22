@@ -12,8 +12,8 @@ export type DropdownItem = {
 
 // NOTE: you can't conditionally render any of the items from a useEffect hook, or you'll get hydration errors
 export default function DropdownMenu(props: {
-  Items: DropdownItem[]
-  Icon?: ReactNode
+  items: DropdownItem[]
+  icon?: ReactNode
   menuWidth?: string
   buttonClass?: string
   className?: string
@@ -24,9 +24,8 @@ export default function DropdownMenu(props: {
   withinOverflowContainer?: boolean
 }) {
   const {
-    Items,
+    items,
     menuItemsClass,
-    Icon,
     menuWidth,
     buttonClass,
     className,
@@ -41,7 +40,7 @@ export default function DropdownMenu(props: {
   const { styles, attributes } = usePopper(referenceElement, popperElement, {
     strategy: withinOverflowContainer ? 'fixed' : 'absolute',
   })
-  const icon = Icon ?? (
+  const icon = props.icon ?? (
     <DotsHorizontalIcon className="h-5 w-5" aria-hidden="true" />
   )
   return (
@@ -75,7 +74,7 @@ export default function DropdownMenu(props: {
                 'py-1'
               )}
             >
-              {Items.map((item) => (
+              {items.map((item) => (
                 <div key={item.name}>
                   <button
                     onClick={(e) => {

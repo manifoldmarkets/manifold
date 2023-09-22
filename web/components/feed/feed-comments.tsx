@@ -366,13 +366,13 @@ export function DotMenu(props: {
       />
       <DropdownMenu
         menuWidth={'w-36'}
-        Icon={
+        icon={
           <DotsHorizontalIcon
             className="mt-[0.12rem] h-4 w-4"
             aria-hidden="true"
           />
         }
-        Items={buildArray(
+        items={buildArray(
           {
             name: 'Copy link',
             icon: <FiLink className="h-5 w-5" />,

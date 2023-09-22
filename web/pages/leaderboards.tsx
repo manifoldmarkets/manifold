@@ -178,9 +178,9 @@ export default function Leaderboards(props: {
             </Title>
           </Row>
           <DropdownMenu
-            Icon={<DotsVerticalIcon className={'h-5 w-5'} />}
+            icon={<DotsVerticalIcon className={'h-5 w-5'} />}
             menuWidth={'w-48'}
-            Items={[
+            items={[
               {
                 name: topic ? 'Change topic' : 'Filter by topic',
                 onClick: () => setShowSelectGroupModal(true),
