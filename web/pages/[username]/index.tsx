@@ -62,6 +62,15 @@ import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { removeUndefinedProps } from 'common/util/object'
 import { Review } from 'web/components/reviews/review'
 import { db } from 'web/lib/supabase/db'
+import {
+  CopyLinkOrShareButton,
+  CopyLinkRow,
+} from 'web/components/buttons/copy-link-button'
+import { QRCode } from 'web/components/widgets/qr-code'
+import { ENV_CONFIG } from 'common/envs/constants'
+import { copyToClipboard } from 'web/lib/util/copy'
+import toast from 'react-hot-toast'
+import { trackShareEvent } from 'web/lib/service/analytics'
 
 export const getStaticProps = async (props: {
   params: {
@@ -102,8 +111,6 @@ export default function UserPage(props: {
   const privateUser = usePrivateUser()
   const blockedByCurrentUser =
     privateUser?.blockedUserIds.includes(user?.id ?? '_') ?? false
-
-  useSaveReferral()
 
   if (!user) return <Custom404 />
   else if (user.userDeleted && !isAdmin) return <DeletedUser />
@@ -148,6 +155,9 @@ function UserProfile(props: {
 
   const router = useRouter()
   const currentUser = useUser()
+  useSaveReferral(currentUser, {
+    defaultReferrerUsername: user?.username,
+  })
   const isCurrentUser = user.id === currentUser?.id
   const [showConfetti, setShowConfetti] = useState(false)
   const [followsYou, setFollowsYou] = useState(false)
@@ -478,6 +488,7 @@ function ProfilePublicStats(props: {
         <ChartBarIcon className="mr-1 mb-1 inline h-4 w-4" />
         Calibration
       </Link>
+      <ShareButton user={user} />
 
       <FollowsDialog
         user={user}
@@ -497,6 +508,41 @@ function ProfilePublicStats(props: {
       {isCurrentUser && (
         <UserLikedContractsButton user={user} className={className} />
       )} */}
+    </Row>
+  )
+}
+
+const ShareButton = (props: { user: User }) => {
+  const { user } = props
+  const url = `https://${ENV_CONFIG.domain}/${user.username}`
+  const [isOpen, setIsOpen] = useState(false)
+  const onClick = () => {
+    if (!url) return
+    copyToClipboard(url)
+    toast.success('Link copied!')
+    trackShareEvent('share user page', url)
+  }
+  return (
+    <Row className={'items-center'}>
+      <CopyLinkOrShareButton
+        url={url}
+        iconClassName={'h-3'}
+        className={'!p-1'}
+        eventTrackingName={'share user page'}
+        tooltip={'Copy link to profile'}
+        size={'2xs'}
+      />
+      <TextButton onClick={onClick}>
+        <span>Share</span>
+      </TextButton>
+
+      <Modal open={isOpen} setOpen={setIsOpen}>
+        <Col className="bg-canvas-0 max-h-[90vh] rounded pt-6">
+          <div className="px-6 pb-1 text-center text-xl">{user.name}</div>
+          <CopyLinkRow url={url} eventTrackingName="copy referral link" />
+          <QRCode url={url} className="mt-4 self-center" />
+        </Col>
+      </Modal>
     </Row>
   )
 }
