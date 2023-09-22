@@ -3,7 +3,7 @@ import { Visibility } from './contract'
 
 export const MAX_COMMENT_LENGTH = 10000
 
-export type AnyCommentType = OnContract | OnPost
+export type AnyCommentType = OnContract | OnPost | OnDashboard
 
 // Currently, comments are created after the bet, not atomically with the bet.
 // They're uniquely identified by the pair contractId/betId.
@@ -64,5 +64,14 @@ export type OnPost = {
   postId: string
 }
 
+export type OnDashboard = {
+  commentType: 'dashboard'
+  dashboardId: string
+  // denormalized from dashboard
+  dashboardSlug: string
+  dashboardTitle: string
+}
+
 export type ContractComment = Comment<OnContract>
 export type PostComment = Comment<OnPost>
+export type DashboardComment = Comment<OnDashboard>

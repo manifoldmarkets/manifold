@@ -524,3 +524,20 @@ export function updateDashboard(params: {
 export function getDashboardFromSlug(params: { dashboardSlug: string }) {
   return call(getApiUrl('getdashboardfromslug'), 'POST', params)
 }
+
+export function createDashboardComment(params: {
+  dashboard: Dashboard
+  content: JSONContent
+  reply_to_comment_id?: string
+  visibility?: string
+}) {
+  const { dashboard, reply_to_comment_id, content, visibility } = params
+  return call(getApiUrl('createdashboard'), 'POST', {
+    dashboard_id: dashboard.id,
+    dashboard_slug: dashboard.slug,
+    dashboard_title: dashboard.title,
+    reply_to_comment_id,
+    content,
+    visibility,
+  })
+}

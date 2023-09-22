@@ -30,6 +30,7 @@ import { ENV_CONFIG } from 'common/envs/constants'
 import { ExpandingInput } from 'web/components/widgets/expanding-input'
 import { SEO } from 'web/components/SEO'
 import { richTextToString } from 'common/util/parse'
+import { DashboardComments } from 'web/components/dashboard/dashboard-comments'
 
 export async function getStaticProps(ctx: {
   params: { dashboardSlug: string }
@@ -234,6 +235,7 @@ export default function DashboardPage(props: {
             </Row>
           </Col>
         )}
+        {!editMode && <DashboardComments dashboard={dashboard} />}
       </Col>
     </Page>
   )
