@@ -97,7 +97,7 @@ export const BOT_USERNAMES = [
   'rita',
   'uhh',
   'ArkPoint',
-  'EliBot'
+  'EliBot',
 ]
 
 export const CORE_USERNAMES = [
