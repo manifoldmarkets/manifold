@@ -44,7 +44,7 @@ export const EmojiList = forwardRef(
     return (
       <div className="w-42 bg-canvas-0 ring-ink-1000 absolute z-10 overflow-x-hidden rounded-md py-1 shadow-lg ring-1 ring-opacity-5 focus:outline-none">
         {!items.length ? (
-          <span className="m-1 whitespace-nowrap">No results...</span>
+          <span className="text-ink-900 m-1 whitespace-nowrap">No results</span>
         ) : (
           items.map((item, i) => (
             <button
