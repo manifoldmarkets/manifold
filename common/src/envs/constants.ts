@@ -187,7 +187,7 @@ export const VERIFIED_USERNAMES = [
   'KatjaGrace',
   'EmmettShear',
   'CateHall',
-  'RobertMiles',
+  'RobertSKMiles',
   'TarekMansour',
 ]
 
