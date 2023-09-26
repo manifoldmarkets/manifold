@@ -1,5 +1,4 @@
 export const newsContent = [
-  { title: 'Manifest', slug: 'manifest' },
   { title: 'Gov shutdown', slug: 'government-shutdown' },
   { title: 'Ukraine war', slug: 'war-in-ukraine' },
   { title: 'Canadian sikh', slug: 'sikh-slaying-sparks-supranational-s' },
