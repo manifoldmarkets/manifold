@@ -85,6 +85,7 @@ import { supabasesearchdashboards } from './supabase-search-dashboards'
 import { getyourfolloweddashboards } from './get-your-followed-dashboards'
 import { updatedashboard } from './update-dashboard'
 import { getdashboardfromslug } from './get-dashboard-from-slug'
+import { unresolve } from './unresolve'
 
 const allowCors: RequestHandler = cors({
   origin: [CORS_ORIGIN_MANIFOLD, CORS_ORIGIN_VERCEL, CORS_ORIGIN_LOCALHOST],
@@ -205,6 +206,7 @@ app.post(
 app.post('/claimdestinysub', ...apiRoute(claimdestinysub))
 app.post('/follow-user', ...apiRoute(followUser))
 app.post('/report', ...apiRoute(report))
+app.post('/unresolve', ...apiRoute(unresolve))
 
 app.post('/createdashboard', ...apiRoute(createdashboard))
 app.post('/getyourdashboards', ...apiRoute(getyourdashboards))
