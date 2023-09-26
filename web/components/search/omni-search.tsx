@@ -257,7 +257,7 @@ const Results = (props: {
   if (loading) {
     return (
       <LoadingIndicator
-        className="absolute right-6 bottom-1/2 translate-y-1/2"
+        className="absolute right-6 top-4"
         spinnerClassName="!border-ink-300 !border-r-transparent"
       />
     )
