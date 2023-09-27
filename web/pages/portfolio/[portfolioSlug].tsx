@@ -23,6 +23,10 @@ import { useState } from 'react'
 import { Button } from 'web/components/buttons/button'
 import toast from 'react-hot-toast'
 import { ContractsTable } from 'web/components/contract/contracts-table'
+import {
+  probColumn,
+  traderColumn,
+} from 'web/components/contract/contract-table-col-formats'
 
 export async function getStaticProps(props: {
   params: { portfolioSlug: string }
@@ -185,7 +189,10 @@ const PortfolioView = (props: {
           <div className="text-ink-800 text-2xl">
             Buy <BinaryOutcomeLabel outcome={'YES'} /> in
           </div>
-          <ContractsTable contracts={yesContracts} hideActions />
+          <ContractsTable
+            contracts={yesContracts}
+            columns={[traderColumn, probColumn]}
+          />
         </Col>
       )}
       {noContracts.length > 0 && (
@@ -193,7 +200,10 @@ const PortfolioView = (props: {
           <div className="text-ink-800 text-2xl">
             Buy <BinaryOutcomeLabel outcome={'NO'} /> in
           </div>
-          <ContractsTable contracts={noContracts} hideActions />
+          <ContractsTable
+            contracts={noContracts}
+            columns={[traderColumn, probColumn]}
+          />
         </Col>
       )}
     </div>

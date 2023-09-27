@@ -1,4 +1,4 @@
-import { ChatIcon, LockClosedIcon, UserIcon } from '@heroicons/react/solid'
+import { LockClosedIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { getDisplayProbability } from 'common/calculate'
 import { Contract, contractPath } from 'common/contract'
@@ -14,11 +14,14 @@ import { ContractMinibar } from '../charts/minibar'
 import { Row } from '../layout/row'
 import { BinaryContractOutcomeLabel } from '../outcome-label'
 import { Avatar } from '../widgets/avatar'
-import { Action } from './contract-table-action'
 import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
 import { Col } from '../layout/col'
-import { useNumContractComments } from 'web/hooks/use-comments-supabase'
-import { buildArray } from 'common/util/array'
+import {
+  actionColumn,
+  probColumn,
+  traderColumn,
+  ColumnFormat,
+} from './contract-table-col-formats'
 
 export function ContractsTable(props: {
   contracts: Contract[]
@@ -26,7 +29,7 @@ export function ContractsTable(props: {
   highlightContractIds?: string[]
   headerClassName?: string
   hideHeader?: boolean
-  hideActions?: boolean
+  columns?: ColumnFormat[]
   hideAvatar?: boolean
 }) {
   const {
@@ -35,13 +38,11 @@ export function ContractsTable(props: {
     highlightContractIds,
     headerClassName,
     hideHeader,
-    hideActions,
+    columns = [traderColumn, probColumn, actionColumn],
     hideAvatar,
   } = props
 
   const user = useUser()
-
-  const columns = buildArray(['traders', 'prob', !hideActions && 'action'])
 
   return (
     <Col className="w-full">
@@ -56,15 +57,15 @@ export function ContractsTable(props: {
             Question
           </div>
           <Row>
-            {columns.map((key) => (
+            {columns.map(({ header }) => (
               <div
-                key={key}
+                key={header}
                 className={clsx(
                   'text-left',
-                  key == 'action' ? 'w-[3rem]' : 'w-[4rem]'
+                  header == 'Action' ? 'w-[3rem]' : 'w-[4rem]'
                 )}
               >
-                {contractColumns[key].header}
+                {header}
               </div>
             ))}
           </Row>
@@ -93,7 +94,7 @@ export function ContractsTable(props: {
 
 function ContractRow(props: {
   contract: Contract
-  columns: ColumnKey[]
+  columns: ColumnFormat[]
   highlighted?: boolean
   faded?: boolean
   onClick?: () => void
@@ -103,12 +104,6 @@ function ContractRow(props: {
     useFirebasePublicContract(props.contract.visibility, props.contract.id) ??
     props.contract
   const { columns, hideAvatar, highlighted, faded, onClick } = props
-
-  const visibleColumns = columns.map((key) => ({
-    key,
-    ...contractColumns[key],
-  }))
-
   return (
     <Link
       href={contractPath(contract)}
@@ -132,17 +127,16 @@ function ContractRow(props: {
           hideAvatar={hideAvatar}
         />
         <Row className="w-full justify-end sm:w-fit">
-          {visibleColumns.map((column) => (
-            <Row
-              key={contract.id + column.key}
+          {columns.map((column) => (
+            <div
+              key={contract.id + column.header}
               className={clsx(
-                'group relative cursor-pointer text-left',
                 faded && 'text-ink-500',
-                column.key == 'action' ? 'w-[3rem]' : 'w-[4rem]'
+                column.header == 'Action' ? 'w-[3rem]' : 'w-[4rem]'
               )}
             >
               {column.content(contract)}
-            </Row>
+            </div>
           ))}
         </Row>
       </div>
@@ -276,39 +270,6 @@ function ContractQuestion(props: {
   )
 }
 
-const contractColumns = {
-  traders: {
-    header: 'Traders',
-    content: (contract: Contract) =>
-      contract.outcomeType == 'BOUNTIED_QUESTION' ? (
-        <div className="h-min align-top opacity-70 sm:opacity-100">
-          <BountiedContractComments contractId={contract.id} />
-        </div>
-      ) : (
-        <div className="h-min align-top opacity-70 sm:opacity-100">
-          <Row className="align-center shrink-0 items-center gap-0.5">
-            <UserIcon className="h-4 w-4" />
-            {shortenNumber(contract.uniqueBettorCount ?? 0)}
-          </Row>
-        </div>
-      ),
-  },
-  prob: {
-    header: 'Stat',
-    content: (contract: Contract) => (
-      <div className="font-semibold ">
-        <ContractStatusLabel contract={contract} />
-      </div>
-    ),
-  },
-  action: {
-    header: 'Action',
-    content: (contract: Contract) => <Action contract={contract} />,
-  },
-} as const
-
-type ColumnKey = keyof typeof contractColumns
-
 export function VisibilityIcon(props: {
   contract: Contract
   isLarge?: boolean
@@ -327,15 +288,4 @@ export function VisibilityIcon(props: {
   if (contract.visibility === 'unlisted') <IoUnlink className={iconClassName} />
 
   return <></>
-}
-
-export function BountiedContractComments(props: { contractId: string }) {
-  const { contractId } = props
-  const numComments = useNumContractComments(contractId)
-  return (
-    <Row className="align-center shrink-0 items-center gap-0.5">
-      <ChatIcon className="h-4 w-4" />
-      {numComments}
-    </Row>
-  )
 }
