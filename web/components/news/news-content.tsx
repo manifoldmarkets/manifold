@@ -1,4 +1,5 @@
 export const newsContent = [
+  { title: 'GOP debate', slug: 'second-gop-primary-debate' },
   { title: 'Gov shutdown', slug: 'government-shutdown' },
   { title: 'Ukraine war', slug: 'war-in-ukraine' },
   { title: 'Canadian sikh', slug: 'sikh-slaying-sparks-supranational-s' },
