@@ -46,7 +46,7 @@ export default function QuestionsPage() {
 
   const shouldFilterDestiny = useShouldBlockDestiny(user?.id)
 
-  const trendingGroups = useTrendingTopicsSearchResults(
+  const trendingTopics = useTrendingTopicsSearchResults(
     '',
     100,
     false,
@@ -64,9 +64,9 @@ export default function QuestionsPage() {
   const { groups: myTopics } = useGroupRoles(user)
 
   const topicsByImportance =
-    topicSlug || !trendingGroups
-      ? uniqBy(trendingGroups, (g) => removeEmojis(g.name).toLowerCase())
-      : combineGroupsByImportance(trendingGroups, myTopics)
+    topicSlug || !trendingTopics
+      ? uniqBy(trendingTopics, (g) => removeEmojis(g.name).toLowerCase())
+      : combineGroupsByImportance(trendingTopics, myTopics)
   const topics = buildArray(
     topicFromRouter &&
       !topicsByImportance.map((g) => g.id).includes(topicFromRouter.id) &&
@@ -120,7 +120,7 @@ export default function QuestionsPage() {
           {currentTopic?.name ?? 'Questions'}
         </Title>
         <Col>
-          <Row className={'mt-2 w-full pl-2 sm:mt-0'}>
+          <Row className={'mt-2 w-full sm:mt-0'}>
             <Col
               className={clsx(
                 'relative w-full',

@@ -21,7 +21,7 @@ export const BrowseTopicPills = (props: {
   const sort = router.query[SORT_KEY] as string
 
   return (
-    <Col className={'relative mt-0.5 w-full sm:hidden'}>
+    <Col className={'bg-canvas-0 relative w-full sm:hidden'}>
       <Row
         className={clsx(
           'scrollbar-hide gap-0.5 overflow-auto',
