@@ -174,7 +174,7 @@ export const VERIFIED_USERNAMES = [
   'PaulChristiano',
   'BuckShlegeris',
   'Natalia',
-  'Zero',
+  'zero',
   'OzzieGooen',
   'OliverHabryka',
   'Alicorn',
