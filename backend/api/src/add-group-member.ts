@@ -6,6 +6,8 @@ import { APIError, authEndpoint, validate } from './helpers'
 import { createAddedToGroupNotification } from 'shared/create-notification'
 import { removeUndefinedProps } from 'common/util/object'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { getPrivateUser } from 'shared/utils'
+import { FieldValue } from 'firebase-admin/firestore'
 
 const bodySchema = z.object({
   groupId: z.string(),
@@ -25,11 +27,11 @@ export async function addGroupMemberHelper(
   role?: string,
   isLink = false
 ) {
-  const db = createSupabaseDirectClient()
+  const pg = createSupabaseDirectClient()
 
   // the old firebase code did this as a transaction to prevent race conditions
   // and idk if that's still necessary but I did it here too
-  return db.tx(async (tx) => {
+  return pg.tx(async (tx) => {
     const requester = await tx.oneOrNone(
       `select gm.role, u.data
       from group_members gm join users u
@@ -51,6 +53,14 @@ export async function addGroupMemberHelper(
     if (!group) throw new APIError(404, 'Group cannot be found')
     if (newMemberExists)
       throw new APIError(403, 'User already exists in group!')
+
+    const privateUser = await getPrivateUser(userId)
+    if (privateUser && privateUser.blockedGroupSlugs.includes(group.slug)) {
+      const firestore = admin.firestore()
+      await firestore.doc(`private-users/${userId}`).update({
+        blockedGroupSlugs: FieldValue.arrayRemove(group.slug),
+      })
+    }
 
     const isAdminRequest = isAdminId(myId)
 
