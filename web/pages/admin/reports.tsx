@@ -11,6 +11,7 @@ import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { Avatar } from 'web/components/widgets/avatar'
 import { Content } from 'web/components/widgets/editor'
 import { Title } from 'web/components/widgets/title'
+import { Tooltip } from 'web/components/widgets/tooltip'
 import { PostBanBadge, UserLink } from 'web/components/widgets/user-link'
 import { getComment, getCommentsOnPost } from 'web/lib/supabase/comments'
 import { getContract } from 'web/lib/supabase/contracts'
@@ -87,7 +88,20 @@ export default function Reports(props: { reports: LiteReport[] }) {
             )}
 
             <div className="mt-2">
-              {reports.length > 1 && <>by {reports.length} users</>}
+              {reports.length > 1 && (
+                <Tooltip
+                  hasSafePolygon
+                  text={
+                    <div className="flex flex-col">
+                      {reports.map((r) => (
+                        <div key={r.id}>{r.reportedById}</div>
+                      ))}
+                    </div>
+                  }
+                >
+                  by {reports.length} users
+                </Tooltip>
+              )}
               {/* TODO: show reporting users? */}
               {reports
                 .filter((report) => report.reasonsDescription)
