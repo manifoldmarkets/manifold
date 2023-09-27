@@ -81,25 +81,22 @@ export function buttonClass(size: SizeType, color: ColorType | 'none') {
 export const Button = forwardRef(function Button(
   props: {
     className?: string
-    onClick?: MouseEventHandler<any> | undefined
-    children?: ReactNode
     size?: SizeType
     color?: ColorType
     type?: 'button' | 'reset' | 'submit'
-    disabled?: boolean
     loading?: boolean
-  },
+  } & JSX.IntrinsicElements['button'],
   ref: Ref<HTMLButtonElement>
 ) {
   const {
     children,
     className,
-    onClick,
     size = 'md',
     color = 'indigo',
     type = 'button',
     disabled = false,
     loading,
+    ...rest
   } = props
 
   return (
@@ -107,8 +104,8 @@ export const Button = forwardRef(function Button(
       type={type}
       className={clsx(buttonClass(size, color), className)}
       disabled={disabled || loading}
-      onClick={onClick}
       ref={ref}
+      {...rest}
     >
       {loading && (
         <LoadingIndicator
