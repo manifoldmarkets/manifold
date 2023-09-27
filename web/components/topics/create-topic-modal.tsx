@@ -1,11 +1,6 @@
 import clsx from 'clsx'
-import {
-  TOPIC_KEY,
-  MAX_GROUP_NAME_LENGTH,
-  PrivacyStatusType,
-} from 'common/group'
+import { MAX_GROUP_NAME_LENGTH, PrivacyStatusType, Group } from 'common/group'
 import { User } from 'common/user'
-import { useRouter } from 'next/router'
 import { useState } from 'react'
 import { createGroup } from 'web/lib/firebase/api'
 import { getGroupWithFields } from 'web/lib/supabase/group'
@@ -22,24 +17,16 @@ export function CreateTopicModal(props: {
   user: User | null | undefined
   open: boolean
   setOpen: (open: boolean) => void
-  goToGroupOnSubmit?: boolean
-  addGroupIdParamOnSubmit?: boolean
+  onCreate?: (group: Group) => void
   className?: string
+  startingTitle?: string
 }) {
-  const {
-    user,
-    className,
-    goToGroupOnSubmit,
-    addGroupIdParamOnSubmit,
-    setOpen,
-    open,
-  } = props
+  const { user, startingTitle, className, setOpen, open, onCreate } = props
 
-  const [name, setName] = useState('')
+  const [name, setName] = useState(startingTitle ?? '')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [errorText, setErrorText] = useState('')
   const [privacy, setPrivacy] = useState<PrivacyStatusType>('public')
-  const router = useRouter()
 
   const onSubmit = async () => {
     setIsSubmitting(true)
@@ -76,14 +63,7 @@ export function CreateTopicModal(props: {
             groupWithFields.privacyStatus
           ) {
             clearInterval(intervalId) // Clear the interval
-            if (goToGroupOnSubmit) {
-              router.push(`questions?${TOPIC_KEY}=${result.group.slug}`)
-            } else if (addGroupIdParamOnSubmit) {
-              router.replace({
-                pathname: router.pathname,
-                query: { ...router.query, groupIds: [result.group.id] },
-              })
-            }
+            onCreate?.(result.group)
             setIsSubmitting(false)
             resolve(true)
           }

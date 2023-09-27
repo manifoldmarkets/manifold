@@ -21,9 +21,16 @@ export function TopicSelector(props: {
   ignoreGroupIds?: string[]
   newContract?: boolean
   onlyGroupIds?: string[]
+  onCreateTopic?: (group: Group) => void
 }) {
-  const { setSelectedGroup, label, ignoreGroupIds, newContract, onlyGroupIds } =
-    props
+  const {
+    setSelectedGroup,
+    label,
+    onCreateTopic,
+    ignoreGroupIds,
+    newContract,
+    onlyGroupIds,
+  } = props
   const user = useUser()
   const onlyGroups = useAsyncData(onlyGroupIds, getGroups)
   const [isCreatingNewGroup, setIsCreatingNewGroup] = useState(false)
@@ -191,12 +198,19 @@ export function TopicSelector(props: {
           </>
         )}
       </Combobox>
-      <CreateTopicModal
-        user={user}
-        open={isCreatingNewGroup}
-        setOpen={setIsCreatingNewGroup}
-        addGroupIdParamOnSubmit
-      />
+      {isCreatingNewGroup && (
+        <CreateTopicModal
+          user={user}
+          startingTitle={query}
+          open={isCreatingNewGroup}
+          setOpen={setIsCreatingNewGroup}
+          onCreate={(group) => {
+            handleSelectGroup(group)
+            onCreateTopic?.(group)
+            setIsCreatingNewGroup(false)
+          }}
+        />
+      )}
     </Col>
   )
 }

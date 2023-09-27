@@ -1,5 +1,5 @@
 import { PrivateUser, User } from 'common/user'
-import { Group } from 'common/group'
+import { Group, TOPIC_KEY } from 'common/group'
 import { Modal, SCROLLABLE_MODAL_CLASS } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
 import clsx from 'clsx'
@@ -27,6 +27,7 @@ import DropdownMenu, {
 import { CreateTopicModal } from 'web/components/topics/create-topic-modal'
 import { useListGroupsBySlug } from 'web/hooks/use-group-supabase'
 import { updatePrivateUser } from 'web/lib/firebase/users'
+import router from 'next/router'
 
 export const ForYouDropdown = (props: {
   setCurrentCategory: (categorySlug: string) => void
@@ -71,7 +72,9 @@ export const ForYouDropdown = (props: {
           user={user}
           open={showCreateGroup}
           setOpen={setShowCreateGroup}
-          goToGroupOnSubmit={true}
+          onCreate={(group) => {
+            router.push(`questions?${TOPIC_KEY}=${group.slug}`)
+          }}
         />
       )}
       {privateUser && showEditingBlockedTopics && (
