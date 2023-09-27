@@ -273,7 +273,7 @@ const BottomActionRow = (props: {
           totalLikes={contract.likedByUserCount ?? 0}
           contract={contract}
           contentText={question}
-          className="px-0"
+          className={'hover:!bg-canvas-0 px-0'}
           trackingLocation={'contract card (feed)'}
           placement="top"
         />

@@ -146,8 +146,7 @@ export function IconButton(props: {
       type={type}
       className={clsx(
         'inline-flex items-center justify-center transition-colors disabled:cursor-not-allowed',
-        sizeClasses[size],
-        'text-ink-500 hover:text-ink-600 disabled:text-ink-200',
+        buttonClass(size, 'gray-white'),
         className
       )}
       disabled={disabled || loading}

@@ -141,13 +141,16 @@ export function useRealtimeMemberGroups(userId: string | undefined | null) {
   return groups
 }
 
-export function useGroupRole(groupId: string, user: User | null | undefined) {
+export function useGroupRole(
+  groupId: string | undefined,
+  user: User | null | undefined
+) {
   const [userRole, setUserRole] = useState<GroupRole | null | undefined>(
     undefined
   )
   const isManifoldAdmin = isAdminId(user?.id ?? '_')
   useEffect(() => {
-    if (user) setTranslatedMemberRole(groupId, setUserRole, user)
+    if (user && groupId) setTranslatedMemberRole(groupId, setUserRole, user)
   }, [user, groupId])
 
   return isManifoldAdmin ? 'admin' : userRole

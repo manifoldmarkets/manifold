@@ -9,6 +9,7 @@ import { useGroupFromSlug, useGroupRole } from 'web/hooks/use-group-supabase'
 import { Button } from 'web/components/buttons/button'
 import { useState } from 'react'
 import { getAddContractToGroupPermission } from 'web/components/topics/topic-options'
+import { User } from 'common/user'
 
 export type AddContractToGroupPermissionType =
   | 'private' // user can add a private contract (only new, only belongs in group)
@@ -20,11 +21,17 @@ export function AddContractToGroupModal(props: {
   group: Group
   open: boolean
   setOpen: (open: boolean) => void
+  user: User
   className?: string
-  addPermission: AddContractToGroupPermissionType
 }) {
-  const { group, open, setOpen, addPermission, className } = props
-  const user = useUser()
+  const { group, open, user, setOpen, className } = props
+  const userRole = useGroupRole(group.id, user)
+  const isCreator = group.creatorId == user.id
+  const addPermission = getAddContractToGroupPermission(
+    group.privacyStatus,
+    userRole,
+    isCreator
+  )
   async function onSubmit(contracts: Contract[]) {
     await Promise.all(
       contracts.map((contract) =>
@@ -69,23 +76,22 @@ export const AddContractToGroupButton = (props: { groupSlug: string }) => {
   const user = useUser()
   const userRole = useGroupRole(group?.id ?? '_', user)
   if (!group) return <></>
-  const isCreator = group.creatorId == user?.id
   const addPermission = getAddContractToGroupPermission(
     group.privacyStatus,
     userRole,
-    isCreator
+    group.creatorId == user?.id
   )
   return (
     <>
       {addPermission !== 'none' && (
         <Button onClick={() => setOpen(true)}>Add a question</Button>
       )}
-      {group && (
+      {group && user && (
         <AddContractToGroupModal
           group={group}
           open={open}
           setOpen={setOpen}
-          addPermission={addPermission}
+          user={user}
         />
       )}
     </>

@@ -68,9 +68,6 @@ import {
 } from 'web/components/buttons/copy-link-button'
 import { QRCode } from 'web/components/widgets/qr-code'
 import { ENV_CONFIG } from 'common/envs/constants'
-import { copyToClipboard } from 'web/lib/util/copy'
-import toast from 'react-hot-toast'
-import { trackShareEvent } from 'web/lib/service/analytics'
 import { referralQuery } from 'common/util/share'
 
 export const getStaticProps = async (props: {
@@ -524,25 +521,19 @@ const ShareButton = (props: {
     !isSameUser && currentUser ? referralQuery(currentUser.username) : ''
   }`
   const [isOpen, setIsOpen] = useState(false)
-  const onClick = () => {
-    if (!url) return
-    copyToClipboard(url)
-    toast.success('Link copied!')
-    trackShareEvent('share user page', url)
-  }
+
   return (
     <Row className={'items-center'}>
       <CopyLinkOrShareButton
         url={url}
         iconClassName={'h-3'}
-        className={'!p-1'}
+        className={'gap-1 p-0'}
         eventTrackingName={'share user page'}
         tooltip={'Copy link to profile'}
         size={'2xs'}
-      />
-      <TextButton onClick={onClick}>
-        <span>Share</span>
-      </TextButton>
+      >
+        <span className={'text-sm'}>Share</span>
+      </CopyLinkOrShareButton>
 
       <Modal open={isOpen} setOpen={setIsOpen}>
         <Col className="bg-canvas-0 max-h-[90vh] rounded pt-6">

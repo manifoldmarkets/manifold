@@ -101,12 +101,12 @@ export function TopicOptions(props: {
           </div>
         </Col>
       </Modal>
-      {showAddContract && (
+      {showAddContract && user && (
         <AddContractToGroupModal
           group={group}
           open={showAddContract}
           setOpen={setShowAddContract}
-          addPermission={addPermission}
+          user={user}
         />
       )}
     </Col>

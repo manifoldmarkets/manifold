@@ -597,7 +597,9 @@ export function SearchFilters(props: {
       />
       {currentTopicSlug == topic?.slug && topic && (
         <TopicTag
-          className={'text-primary-500 overflow-x-hidden text-ellipsis !py-0'}
+          className={
+            'text-primary-500 overflow-x-hidden text-ellipsis !py-0 lg:hidden'
+          }
           topic={topic}
           location={'questions page'}
         >
@@ -615,7 +617,7 @@ export function SearchFilters(props: {
       {currentTopicSlug === 'for-you' && (
         <Row
           className={
-            'text-primary-500 dark:text-ink-400 hover:text-ink-600 hover:bg-primary-400/10 group items-center justify-center whitespace-nowrap rounded px-1 text-right text-sm transition-colors'
+            'text-primary-500 dark:text-ink-400 hover:text-ink-600 hover:bg-primary-400/10 group items-center justify-center whitespace-nowrap rounded px-1 text-right text-sm transition-colors lg:hidden'
           }
         >
           <span className="mr-px opacity-50 transition-colors group-hover:text-inherit">

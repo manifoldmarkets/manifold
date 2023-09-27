@@ -27,10 +27,10 @@ import { useGroupFromRouter } from 'web/hooks/use-group-from-router'
 import Welcome from 'web/components/onboarding/welcome'
 import { Page } from 'web/components/layout/page'
 import { SEO } from 'web/components/SEO'
-import { Title } from 'web/components/widgets/title'
 import { BrowseTopicPills } from 'web/components/topics/browse-topic-pills'
 import clsx from 'clsx'
 import { usePersistentQueryState } from 'web/hooks/use-persistent-query-state'
+import { QuestionsTopicTitle } from 'web/components/topics/questions-topic-title'
 
 const GROUPS_PER_PAGE = 100
 export const SHOW_TOPICS_TERM = 'show-topics'
@@ -88,6 +88,7 @@ export default function QuestionsPage() {
     </Button>
   )
   const currentTopic = topics.find((t) => t.slug === topicSlug)
+
   return (
     <>
       {user && <Welcome />}
@@ -116,11 +117,13 @@ export default function QuestionsPage() {
             currentTopic ? `?${TOPIC_KEY}=${currentTopic.slug}` : ''
           }`}
         />
-        <Title className="hidden lg:flex">
-          {currentTopic?.name ?? 'Questions'}
-        </Title>
+        <QuestionsTopicTitle
+          currentTopic={currentTopic}
+          topicSlug={topicSlug}
+          user={user}
+        />
         <Col>
-          <Row className={'mt-2 w-full sm:mt-0'}>
+          <Row className={'w-full'}>
             <Col
               className={clsx(
                 'relative w-full',
@@ -143,7 +146,7 @@ export default function QuestionsPage() {
                 }}
                 useUrlParams
                 isWholePage
-                headerClassName={'bg-canvas-0'}
+                headerClassName={'bg-canvas-0 lg:bg-canvas-50 pt-2 px-2'}
                 menuButton={menuButton}
                 hideAvatar={show}
                 rowBelowFilters={

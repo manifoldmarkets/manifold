@@ -1,9 +1,14 @@
-import { useState } from 'react'
+import { ComponentProps, useState } from 'react'
 import { copyToClipboard } from 'web/lib/util/copy'
 import { track, trackShareEvent } from 'web/lib/service/analytics'
 import { Tooltip } from '../widgets/tooltip'
 import clsx from 'clsx'
-import { IconButton, SizeType } from 'web/components/buttons/button'
+import {
+  Button,
+  ColorType,
+  IconButton,
+  SizeType,
+} from 'web/components/buttons/button'
 import toast from 'react-hot-toast'
 import LinkIcon from 'web/lib/icons/link-icon.svg'
 import { postMessageToNative } from 'web/components/native-message-listener'
@@ -25,10 +30,20 @@ export function CopyLinkOrShareButton(props: {
   className?: string
   iconClassName?: string
   size?: SizeType
+  children?: React.ReactNode
+  color?: ColorType
 }) {
-  const { url, size, eventTrackingName, className, iconClassName, tooltip } =
-    props
-  // TODO: this is resulting in hydration errors on mobile dev
+  const {
+    url,
+    size,
+    children,
+    eventTrackingName,
+    className,
+    iconClassName,
+    tooltip,
+    color,
+  } = props
+  // NOTE: this results in hydration errors on mobile dev
   const { isNative, platform } = getNativePlatform()
   const { os } = useBrowserOS()
 
@@ -40,12 +55,18 @@ export function CopyLinkOrShareButton(props: {
   }
 
   return (
-    <Tooltip text={tooltip ?? 'Copy link'} noTap placement="bottom">
-      <IconButton
+    <ToolTipOrDiv
+      hasChildren={!!children}
+      text={tooltip ?? 'Copy link'}
+      noTap
+      placement="bottom"
+    >
+      <Button
         onClick={onClick}
         className={className}
         disabled={!url}
         size={size}
+        color={color ?? 'gray-white'}
       >
         {(isNative && platform === 'ios') || os === 'ios' ? (
           <ArrowUpSquareIcon className={clsx(iconClassName ?? 'h-[1.4rem]')} />
@@ -57,14 +78,27 @@ export function CopyLinkOrShareButton(props: {
         ) : (
           <LinkIcon
             strokeWidth={'2.5'}
-            className={clsx(iconClassName ?? 'h-5')}
+            className={clsx(iconClassName ?? 'h-[1.2rem]')}
             aria-hidden="true"
           />
         )}
-      </IconButton>
-    </Tooltip>
+        {children}
+      </Button>
+    </ToolTipOrDiv>
   )
 }
+
+const ToolTipOrDiv = (
+  props: { hasChildren: boolean } & ComponentProps<typeof Tooltip>
+) =>
+  props.hasChildren ? (
+    <div>{props.children}</div>
+  ) : (
+    <Tooltip text={props.text} noTap placement="bottom">
+      {' '}
+      {props.children}
+    </Tooltip>
+  )
 
 export const CopyLinkRow = (props: {
   url?: string // required if not loading
