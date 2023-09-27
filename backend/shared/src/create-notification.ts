@@ -1002,7 +1002,7 @@ export const createNewContractNotification = async (
   const pg = createSupabaseDirectClient()
   const sendNotificationsIfSettingsAllow = async (
     userId: string,
-    reason: notification_reason_types
+    reason: notification_preference
   ) => {
     const privateUser = await getPrivateUser(userId)
     if (!privateUser) return
@@ -1012,7 +1012,7 @@ export const createNewContractNotification = async (
       reason
     )
     // Users only get new contracts in their feed unless they're mentioned
-    if (sendToBrowser && reason !== 'contract_from_followed_user') {
+    if (sendToBrowser) {
       const notification: Notification = {
         id: idempotencyKey,
         userId: userId,
@@ -1035,8 +1035,7 @@ export const createNewContractNotification = async (
       }
       await insertNotificationToSupabase(notification, pg)
     }
-    if (!sendToEmail) return
-    if (reason === 'contract_from_followed_user')
+    if (sendToEmail && reason === 'contract_from_followed_user')
       await sendNewFollowedMarketEmail(reason, userId, privateUser, contract)
   }
   const followerUserIds = await getUserFollowerIds(contractCreator.id, pg)

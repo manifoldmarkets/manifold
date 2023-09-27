@@ -1,7 +1,7 @@
 import clsx from 'clsx'
 import { Notification, ReactionNotificationTypes } from 'common/notification'
 import { PrivateUser } from 'common/user'
-import { sortBy } from 'lodash'
+import { groupBy, sortBy } from 'lodash'
 import { useRouter } from 'next/router'
 import { Fragment, ReactNode, useEffect, useMemo, useState } from 'react'
 import { Col } from 'web/components/layout/col'
@@ -106,7 +106,11 @@ function NotificationsContent(props: {
     groupedNotifications,
     mostRecentNotification,
     groupedBalanceChangeNotifications,
+    groupedNewMarketNotifications,
   } = useGroupedNotifications(privateUser.id)
+  const [unseenNewMarketNotifs, setNewMarketNotifsAsSeen] = useState(
+    groupedNewMarketNotifications?.filter((n) => !n.isSeen).length ?? 0
+  )
 
   return (
     <div className="relative h-full w-full">
@@ -114,11 +118,15 @@ function NotificationsContent(props: {
         {privateUser && (
           <QueryUncontrolledTabs
             trackingName={'notification tabs'}
-            labelClassName={'pb-2 pt-1 '}
+            labelClassName={'relative pb-2 pt-1 '}
             className={'mb-0 sm:mb-2'}
+            onClick={(title) =>
+              title === 'Followed' ? setNewMarketNotifsAsSeen(0) : null
+            }
+            labelsParentClassName={'gap-2'}
             tabs={[
               {
-                title: 'Notifications',
+                title: 'General',
                 content: (
                   <NotificationsList
                     privateUser={privateUser}
@@ -128,7 +136,28 @@ function NotificationsContent(props: {
                 ),
               },
               {
-                title: 'Balance Changes',
+                title: 'Followed',
+                inlineTabIcon:
+                  unseenNewMarketNotifs > 0 ? (
+                    <div
+                      className={
+                        'text-ink-0 bg-primary-500 absolute -left-3.5 min-w-[15px] rounded-full p-[2px] text-center text-[10px] leading-3'
+                      }
+                    >
+                      {unseenNewMarketNotifs}
+                    </div>
+                  ) : undefined,
+                content: (
+                  <NotificationsList
+                    groupedNotifications={groupedNewMarketNotifications}
+                    emptyTitle={
+                      'You don’t have any new question notifications from followed users, yet. Try following some users to see more.'
+                    }
+                  />
+                ),
+              },
+              {
+                title: 'Transactions',
                 content: (
                   <NotificationsList
                     groupedNotifications={groupedBalanceChangeNotifications}
@@ -198,8 +227,14 @@ function NotificationsList(props: {
   groupedNotifications: NotificationGroup[] | undefined
   privateUser?: PrivateUser
   mostRecentNotification?: Notification
+  emptyTitle?: string
 }) {
-  const { privateUser, groupedNotifications, mostRecentNotification } = props
+  const {
+    privateUser,
+    emptyTitle,
+    groupedNotifications,
+    mostRecentNotification,
+  } = props
   const isAuthorized = useIsAuthorized()
   const [page, setPage] = useState(0)
 
@@ -228,8 +263,10 @@ function NotificationsList(props: {
         <LoadingIndicator />
       ) : paginatedGroupedNotifications.length === 0 ? (
         <div className={'mt-2'}>
-          You don't have any notifications, yet. Try changing your settings to
-          see more.
+          {emptyTitle
+            ? emptyTitle
+            : `You don't have any notifications, yet. Try changing your settings to
+          see more.`}
         </div>
       ) : (
         <RenderNotificationGroups
@@ -260,6 +297,9 @@ function NotificationGroupItem(props: {
   const [groupHighlighted] = useState(notifications.some((n) => !n.isSeen))
   const { sourceTitle, sourceContractTitle } = notifications[0]
   const incomeTypesToSum = ['bonus', 'tip', 'tip_and_like']
+  const uniques = Object.keys(
+    groupBy(notifications, (n) => n.sourceUserUsername)
+  ).length
   const combinedNotifs = sortBy(
     combineReactionNotifications(
       notifications.filter((n) =>
@@ -284,16 +324,25 @@ function NotificationGroupItem(props: {
   const header = (
     <ParentNotificationHeader
       header={
-        sourceTitle || sourceContractTitle ? (
+        notifications.some(
+          (n) => n.reason === 'contract_from_followed_user'
+        ) ? (
+          <span>
+            {notifications.length} new questions from {uniques} followed user
+            {uniques > 1 ? 's' : ''}
+          </span>
+        ) : sourceTitle || sourceContractTitle ? (
           <>
-            Activity on{' '}
+            {uniques} user{uniques > 1 ? `s` : ``} on{' '}
             <QuestionOrGroupLink
               notification={notifications[0]}
               truncatedLength={'xl'}
             />
           </>
         ) : (
-          <span>Other Activity</span>
+          <span>
+            Other activity from {uniques} user{uniques > 1 ? 's' : ''}
+          </span>
         )
       }
       highlighted={groupHighlighted}

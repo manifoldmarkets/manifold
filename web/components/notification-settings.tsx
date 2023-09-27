@@ -71,7 +71,6 @@ const emailsEnabled: Array<notification_preference> = [
   'profit_loss_updates',
   'opt_out_all',
   // TODO: add these
-  // biggest winner, here are the rest of your markets
 
   // 'referral_bonuses',
   // 'on_new_follow',
@@ -83,7 +82,6 @@ const browserDisabled: Array<notification_preference> = [
   'trending_markets',
   'onboarding_flow',
   'thank_you_for_purchases',
-  'contract_from_followed_user',
 ]
 
 const mobilePushEnabled: Array<notification_preference> = [

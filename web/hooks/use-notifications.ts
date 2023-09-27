@@ -3,7 +3,7 @@ import {
   Notification,
   NotificationReason,
 } from 'common/notification'
-import { first, groupBy, sortBy } from 'lodash'
+import { Dictionary, first, groupBy, sortBy } from 'lodash'
 import { useEffect, useMemo } from 'react'
 import { NOTIFICATIONS_PER_PAGE } from 'web/components/notifications/notification-helpers'
 import {
@@ -82,90 +82,113 @@ function useUnseenNotifications(
 export function useGroupedUnseenNotifications(userId: string) {
   const notifications = useUnseenNotifications(userId)
   return useMemo(() => {
-    return notifications ? groupNotifications(notifications) : undefined
+    return notifications ? groupNotificationsForIcon(notifications) : undefined
   }, [notifications])
 }
 
 export function useGroupedNotifications(userId: string) {
   const notifications = useNotifications(userId)
+  const sortedNotifications = notifications
+    ? sortBy(notifications, (n) => -n.createdTime)
+    : undefined
 
-  const { mostRecentNotification, groupedNotifications } =
-    groupNonBalanceChangeNotifications(notifications ?? [])
+  const [groupedNotifications, mostRecentNotification] =
+    groupGeneralNotifications(sortedNotifications, [
+      'loan_income',
+      'contract_from_followed_user',
+    ])
 
-  const groupedBalanceChangeNotifications = groupBalanceChangeNotifications(
-    notifications ?? []
-  )
+  const groupedBalanceChangeNotifications =
+    groupBalanceChangeNotifications(sortedNotifications)
+  const groupedNewMarketNotifications =
+    groupNewMarketNotifications(sortedNotifications)
+
   return useMemo(
     () => ({
-      mostRecentNotification: notifications
-        ? mostRecentNotification
-        : undefined,
-      groupedNotifications: notifications ? groupedNotifications : undefined,
-      groupedBalanceChangeNotifications: notifications
-        ? groupedBalanceChangeNotifications
-        : undefined,
+      mostRecentNotification,
+      groupedNotifications,
+      groupedBalanceChangeNotifications,
+      groupedNewMarketNotifications,
     }),
     [notifications]
   )
 }
 
-function groupNotifications(notifications: Notification[]) {
+const groupNotifications = (
+  notifications: Dictionary<Notification[]>
+): NotificationGroup[] => {
+  return Object.entries(notifications).map(([key, value]) => ({
+    notifications: value,
+    groupedById: key,
+    isSeen: value.every((n) => n.isSeen),
+  }))
+}
+
+function groupNotificationsForIcon(notifications: Notification[]) {
   const sortedNotifications = sortBy(notifications, (n) => -n.createdTime)
-  const notificationGroupsByDayAndContract = groupBy(
+  const notificationGroupsByDayOrDayAndContract = groupBy(
     sortedNotifications,
+    (notification) =>
+      notification.reason === 'contract_from_followed_user'
+        ? new Date(notification.createdTime).toDateString()
+        : new Date(notification.createdTime).toDateString() +
+          notification.sourceContractId +
+          notification.sourceTitle
+  )
+
+  return groupNotifications(notificationGroupsByDayOrDayAndContract)
+}
+
+function groupGeneralNotifications(
+  sortedNotifications: Notification[] | undefined,
+  except: NotificationReason[]
+) {
+  if (!sortedNotifications) return []
+
+  const groupedNotificationsByDayAndContract = groupBy(
+    sortedNotifications.filter((n) => !except.includes(n.reason)),
     (notification) =>
       new Date(notification.createdTime).toDateString() +
       notification.sourceContractId +
       notification.sourceTitle
   )
-
-  return Object.entries(notificationGroupsByDayAndContract).map(
-    ([key, value]) => ({
-      notifications: value,
-      groupedById: key,
-      isSeen: value.some((n) => !n.isSeen),
-    })
-  )
-}
-
-function groupNonBalanceChangeNotifications(notifications: Notification[]) {
-  const balanceChangeOnlyReasons: NotificationReason[] = ['loan_income']
-  const sortedNotifications =
-    notifications != null
-      ? sortBy(notifications, (n) => -n.createdTime)
-      : undefined
-  const groupedNotifications = sortedNotifications
-    ? groupNotifications(
-        sortedNotifications.filter(
-          (n) => !balanceChangeOnlyReasons.includes(n.reason)
-        )
-      )
-    : undefined
   const mostRecentNotification = first(sortedNotifications)
-  return {
-    groupedNotifications,
-    mostRecentNotification,
-  }
+  const groupedNotifications = groupNotifications(
+    groupedNotificationsByDayAndContract
+  )
+
+  return [groupedNotifications, mostRecentNotification] as const
 }
 
-function groupBalanceChangeNotifications(notifications: Notification[]) {
-  const sortedNotifications = sortBy(
-    notifications,
-    (n) => -n.createdTime
-  ).filter((n) => BalanceChangeNotificationTypes.includes(n.reason))
+function groupBalanceChangeNotifications(
+  sortedNotifications: Notification[] | undefined
+) {
+  if (!sortedNotifications) return undefined
+  const filteredNotifications = sortedNotifications.filter((n) =>
+    BalanceChangeNotificationTypes.includes(n.reason)
+  )
   const notificationGroupsByDayAndContract = groupBy(
-    sortedNotifications,
+    filteredNotifications,
     (notification) =>
       new Date(notification.createdTime).toDateString() +
       notification.sourceContractId +
       notification.sourceTitle
   )
 
-  return Object.entries(notificationGroupsByDayAndContract).map(
-    ([key, value]) => ({
-      notifications: value,
-      groupedById: key,
-      isSeen: value.some((n) => !n.isSeen),
-    })
+  return groupNotifications(notificationGroupsByDayAndContract)
+}
+
+function groupNewMarketNotifications(
+  sortedNotifications: Notification[] | undefined
+) {
+  if (!sortedNotifications) return undefined
+  const filteredNotifications = sortedNotifications.filter(
+    (n) => n.reason === 'contract_from_followed_user'
   )
+  const notificationGroupsByDay = groupBy(
+    filteredNotifications,
+    (notification) => new Date(notification.createdTime).toDateString()
+  )
+
+  return groupNotifications(notificationGroupsByDay)
 }

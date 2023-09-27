@@ -7,7 +7,6 @@ import { useRouter } from 'next/router'
 import { useGroupedUnseenNotifications } from 'web/hooks/use-notifications'
 import { PrivateUser } from 'common/user'
 import { NOTIFICATIONS_PER_PAGE } from './notifications/notification-helpers'
-import { keyBy } from 'lodash'
 
 export function NotificationsIcon(props: { className?: string }) {
   const privateUser = usePrivateUser()
@@ -32,28 +31,19 @@ export function SolidNotificationsIcon(props: { className?: string }) {
 }
 
 function UnseenNotificationsBubble(props: { privateUser: PrivateUser }) {
-  const { isReady, pathname, asPath } = useRouter()
+  const { isReady, pathname } = useRouter()
   const { privateUser } = props
   const [seen, setSeen] = useState(false)
-  const unseenSourceIdsToNotificationIds = keyBy(
-    (useGroupedUnseenNotifications(privateUser.id) ?? []).flatMap(
-      (n) => n.notifications
-    ),
-    (n) => n.sourceId
-  )
+  const unseenSourceIdsToNotificationIds =
+    useGroupedUnseenNotifications(privateUser.id) ?? []
+
   const unseenNotifs = Object.keys(unseenSourceIdsToNotificationIds).length
 
   useEffect(() => {
-    if (isReady) {
+    if (isReady && pathname.endsWith('notifications')) {
       setSeen(pathname.endsWith('notifications'))
     }
-    if (unseenNotifs === 0) return
-    // If a user navigates to an unseen notification's source id, mark it as seen
-    const possibleSourceId = asPath.split('#')[1]
-    if (unseenSourceIdsToNotificationIds[possibleSourceId]) {
-      // TODO: mark the notification as seen
-    }
-  }, [asPath, isReady, pathname, privateUser.id, unseenNotifs])
+  }, [isReady, pathname])
 
   if (unseenNotifs === 0 || seen) {
     return null
