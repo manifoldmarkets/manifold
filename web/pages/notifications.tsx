@@ -121,9 +121,9 @@ function NotificationsContent(props: {
             labelClassName={'relative pb-2 pt-1 '}
             className={'mb-0 sm:mb-2'}
             onClick={(title) =>
-              title === 'Followed' ? setNewMarketNotifsAsSeen(0) : null
+              title === 'Following' ? setNewMarketNotifsAsSeen(0) : null
             }
-            labelsParentClassName={'gap-2'}
+            labelsParentClassName={'gap-3'}
             tabs={[
               {
                 title: 'General',
@@ -136,12 +136,12 @@ function NotificationsContent(props: {
                 ),
               },
               {
-                title: 'Followed',
+                title: 'Following',
                 inlineTabIcon:
                   unseenNewMarketNotifs > 0 ? (
                     <div
                       className={
-                        'text-ink-0 bg-primary-500 absolute -left-3.5 min-w-[15px] rounded-full p-[2px] text-center text-[10px] leading-3'
+                        'text-ink-0 bg-primary-500 absolute -left-4 min-w-[15px] rounded-full p-[2px] text-center text-[10px] leading-3'
                       }
                     >
                       {unseenNewMarketNotifs}
@@ -328,8 +328,8 @@ function NotificationGroupItem(props: {
           (n) => n.reason === 'contract_from_followed_user'
         ) ? (
           <span>
-            {notifications.length} new questions from {uniques} followed user
-            {uniques > 1 ? 's' : ''}
+            {notifications.length} new questions from{' '}
+            {notifications[0].sourceUserName}
           </span>
         ) : sourceTitle || sourceContractTitle ? (
           <>

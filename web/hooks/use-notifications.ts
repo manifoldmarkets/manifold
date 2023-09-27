@@ -187,7 +187,9 @@ function groupNewMarketNotifications(
   )
   const notificationGroupsByDay = groupBy(
     filteredNotifications,
-    (notification) => new Date(notification.createdTime).toDateString()
+    (notification) =>
+      new Date(notification.createdTime).toDateString() +
+      notification.sourceUserUsername
   )
 
   return groupNotifications(notificationGroupsByDay)
