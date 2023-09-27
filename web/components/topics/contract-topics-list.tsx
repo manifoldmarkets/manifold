@@ -7,13 +7,13 @@ import {
   addContractToGroup,
   removeContractFromGroup,
 } from 'web/lib/firebase/api'
-import { GroupSelector } from './group-selector'
+import { TopicSelector } from './topic-selector'
 import { useGroupsWithContract } from 'web/hooks/use-group-supabase'
 import { useState } from 'react'
 import { XIcon } from '@heroicons/react/outline'
-import { TopicTag } from 'web/components/groups/topic-tag'
+import { TopicTag } from 'web/components/topics/topic-tag'
 
-export function ContractGroupsList(props: {
+export function ContractTopicsList(props: {
   contract: Contract
   canEdit: boolean
   onlyGroupIds?: string[]
@@ -71,7 +71,7 @@ export function ContractGroupsList(props: {
               <Row className="text-ink-400 w-full justify-start text-sm">
                 Add topics
               </Row>
-              <GroupSelector
+              <TopicSelector
                 ignoreGroupIds={groups.map((g) => g.id)}
                 setSelectedGroup={(group) =>
                   group &&

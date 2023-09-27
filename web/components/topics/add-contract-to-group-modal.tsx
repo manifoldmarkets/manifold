@@ -8,7 +8,7 @@ import { useUser } from 'web/hooks/use-user'
 import { useGroupFromSlug, useGroupRole } from 'web/hooks/use-group-supabase'
 import { Button } from 'web/components/buttons/button'
 import { useState } from 'react'
-import { getAddContractToGroupPermission } from 'web/components/groups/group-options'
+import { getAddContractToGroupPermission } from 'web/components/topics/topic-options'
 
 export type AddContractToGroupPermissionType =
   | 'private' // user can add a private contract (only new, only belongs in group)

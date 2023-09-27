@@ -26,7 +26,7 @@ import { formatMoney } from 'common/util/format'
 import { AddFundsModal } from 'web/components/add-funds-modal'
 import { MultipleChoiceAnswers } from 'web/components/answers/multiple-choice-answers'
 import { Button } from 'web/components/buttons/button'
-import { GroupSelector } from 'web/components/groups/group-selector'
+import { TopicSelector } from 'web/components/topics/topic-selector'
 import { Row } from 'web/components/layout/row'
 import { Checkbox } from 'web/components/widgets/checkbox'
 import { ChoicesToggleGroup } from 'web/components/widgets/choices-toggle-group'
@@ -63,7 +63,7 @@ import { ContractVisibilityType, NewQuestionParams } from './new-contract-panel'
 import { VisibilityTheme } from 'web/pages/create'
 import { getContractWithFields } from 'web/lib/supabase/contracts'
 import { filterDefined } from 'common/util/array'
-import { TopicTag } from 'web/components/groups/topic-tag'
+import { TopicTag } from 'web/components/topics/topic-tag'
 
 export function ContractParamsForm(props: {
   creator: User
@@ -611,7 +611,7 @@ export function ContractParamsForm(props: {
             ))}
           </Row>
         )}
-        <GroupSelector
+        <TopicSelector
           setSelectedGroup={(group) => {
             if (
               (selectedGroups.length > 0 &&

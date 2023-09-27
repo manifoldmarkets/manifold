@@ -2,7 +2,7 @@ import { TOPIC_KEY, Group, DEFAULT_TOPIC } from 'common/group'
 import { User } from 'common/user'
 import { uniqBy } from 'lodash'
 import { useEffect, useState } from 'react'
-import { TopicsList } from 'web/components/groups/topics-list'
+import { TopicsList } from 'web/components/topics/topics-list'
 import { getMyGroupRoles } from 'web/lib/supabase/groups'
 import { Col } from 'web/components/layout/col'
 import { removeEmojis } from 'common/topics'
@@ -22,13 +22,13 @@ import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useRouter } from 'next/router'
 import { Button } from 'web/components/buttons/button'
 import { MenuIcon } from '@heroicons/react/outline'
-import { useTrendingGroupsSearchResults } from 'web/components/search/query-groups'
+import { useTrendingTopicsSearchResults } from 'web/components/search/query-topics'
 import { useGroupFromRouter } from 'web/hooks/use-group-from-router'
 import Welcome from 'web/components/onboarding/welcome'
 import { Page } from 'web/components/layout/page'
 import { SEO } from 'web/components/SEO'
 import { Title } from 'web/components/widgets/title'
-import { BrowseTopicPills } from 'web/components/groups/browse-topic-pills'
+import { BrowseTopicPills } from 'web/components/topics/browse-topic-pills'
 import clsx from 'clsx'
 import { usePersistentQueryState } from 'web/hooks/use-persistent-query-state'
 
@@ -46,7 +46,7 @@ export default function QuestionsPage() {
 
   const shouldFilterDestiny = useShouldBlockDestiny(user?.id)
 
-  const trendingGroups = useTrendingGroupsSearchResults(
+  const trendingGroups = useTrendingTopicsSearchResults(
     '',
     100,
     false,

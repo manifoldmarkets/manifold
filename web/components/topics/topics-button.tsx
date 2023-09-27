@@ -14,10 +14,10 @@ import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { Group } from 'common/group'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { PlusCircleIcon } from '@heroicons/react/solid'
-import { GroupOptions } from 'web/components/groups/group-options'
+import { TopicOptions } from 'web/components/topics/topic-options'
 import { Col } from 'web/components/layout/col'
 
-function LeavePrivateGroupButton(props: {
+function LeavePrivateTopicButton(props: {
   group: SearchGroupInfo
   user: User | undefined | null
   setIsMember: (isMember: boolean) => void
@@ -82,7 +82,7 @@ export function LeavePrivateGroupModal() {
   )
 }
 
-export function JoinOrLeaveGroupButton(props: {
+export function FollowOrUnfolowTopicButton(props: {
   group: SearchGroupInfo
   isMember: boolean | undefined
   user: User | undefined | null
@@ -98,7 +98,7 @@ export function JoinOrLeaveGroupButton(props: {
 
   if (group.privacyStatus === 'private') {
     return (
-      <LeavePrivateGroupButton
+      <LeavePrivateTopicButton
         group={group}
         setIsMember={setIsMember}
         user={user}
@@ -159,7 +159,7 @@ export function JoinOrLeaveGroupButton(props: {
   )
 }
 
-export const GroupOptionsButton = (props: {
+export const TopicOptionsButton = (props: {
   group: Group
   yourGroupIds: string[] | undefined
   user: User | null | undefined
@@ -228,7 +228,7 @@ export const GroupOptionsButton = (props: {
         </button>
       )}
       {(isCreator || isMember) && (
-        <GroupOptions
+        <TopicOptions
           group={group}
           user={user}
           isMember={isMember}

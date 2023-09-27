@@ -32,7 +32,7 @@ import { PrizesModal } from 'web/components/leagues/prizes-modal'
 import { LeagueFeed } from 'web/components/leagues/league-feed'
 import { QueryUncontrolledTabs } from 'web/components/layout/tabs'
 import { SEO } from 'web/components/SEO'
-import { LeagueChat } from 'web/components/groups/league-chat'
+import { LeagueChat } from 'web/components/topics/league-chat'
 import {
   getLeagueChatChannelId,
   getSeasonDivisionCohort,

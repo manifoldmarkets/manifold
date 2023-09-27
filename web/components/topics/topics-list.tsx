@@ -10,8 +10,8 @@ import {
 import { Button } from 'web/components/buttons/button'
 import { MdOutlineKeyboardDoubleArrowRight } from 'react-icons/md'
 import { track } from 'web/lib/service/analytics'
-import { GroupOptionsButton } from 'web/components/groups/groups-button'
-import { ForYouDropdown } from 'web/components/groups/for-you-dropdown'
+import { TopicOptionsButton } from 'web/components/topics/topics-button'
+import { ForYouDropdown } from 'web/components/topics/for-you-dropdown'
 
 export function TopicsList(props: {
   topics: Group[]
@@ -102,7 +102,7 @@ export function TopicsList(props: {
             >
               {group.name}
             </span>
-            <GroupOptionsButton
+            <TopicOptionsButton
               key={group.id}
               group={group}
               yourGroupIds={yourGroupIds}

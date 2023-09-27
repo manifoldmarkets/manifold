@@ -18,16 +18,16 @@ import DropdownMenu, {
 import clsx from 'clsx'
 import { Modal } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
-import { EditableGroupTitle } from 'web/components/groups/editable-group-name'
+import { EditableTopicName } from 'web/components/topics/editable-topic-name'
 import router from 'next/router'
 import {
   AddContractToGroupModal,
   AddContractToGroupPermissionType,
-} from 'web/components/groups/add-contract-to-group-modal'
+} from 'web/components/topics/add-contract-to-group-modal'
 import { BsFillPersonDashFill } from 'react-icons/bs'
 import { AiFillTrophy } from 'react-icons/ai'
 
-export function GroupOptions(props: {
+export function TopicOptions(props: {
   group: Group
   user: User | null | undefined
   isMember: boolean
@@ -90,7 +90,7 @@ export function GroupOptions(props: {
         <Col className={'bg-canvas-50 rounded-md p-4'}>
           <span className={'text-lg font-bold'}>Edit Topic Name</span>
           <div className={''}>
-            <EditableGroupTitle
+            <EditableTopicName
               group={group}
               isEditing={editingName}
               onFinishEditing={(changed) => {

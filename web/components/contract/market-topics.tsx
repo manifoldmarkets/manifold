@@ -13,21 +13,21 @@ import { useUser } from 'web/hooks/use-user'
 import { PencilIcon, PlusIcon } from '@heroicons/react/solid'
 import { Modal } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
-import { ContractGroupsList } from 'web/components/groups/contract-groups-list'
+import { ContractTopicsList } from 'web/components/topics/contract-topics-list'
 import { useAdmin } from 'web/hooks/use-admin'
 import { isTrustworthy } from 'common/envs/constants'
 import { filterDefined } from 'common/util/array'
 import { Group, groupPath } from 'common/group'
 import { track } from 'web/lib/service/analytics'
 import { removeEmojis } from 'common/topics'
-import { TopicTag } from 'web/components/groups/topic-tag'
+import { TopicTag } from 'web/components/topics/topic-tag'
 
-export function MarketGroups(props: { contract: Contract }) {
+export function MarketTopics(props: { contract: Contract }) {
   const { contract } = props
   if (contract.visibility === 'private') {
     return <PrivateMarketGroups contract={contract} />
   } else {
-    return <PublicMarketGroups contract={contract} />
+    return <PublicMarketTopics contract={contract} />
   }
 }
 
@@ -47,7 +47,7 @@ function PrivateMarketGroups(props: { contract: Contract }) {
   return <></>
 }
 
-const ContractGroupBreadcrumbs = (props: { contract: Contract }) => {
+const ContractTopicBreadcrumbs = (props: { contract: Contract }) => {
   const { contract } = props
   const groups = orderBy(
     useGroupsWithContract(contract) ?? [],
@@ -81,7 +81,7 @@ const ContractGroupBreadcrumbs = (props: { contract: Contract }) => {
   )
 }
 
-export function PublicMarketGroups(props: { contract: Contract }) {
+export function PublicMarketTopics(props: { contract: Contract }) {
   const [open, setOpen] = useState(false)
   const { contract } = props
   const user = useUser()
@@ -103,7 +103,7 @@ export function PublicMarketGroups(props: { contract: Contract }) {
   return (
     <>
       <Row className={'group h-6 gap-1'}>
-        <ContractGroupBreadcrumbs contract={contract} />
+        <ContractTopicBreadcrumbs contract={contract} />
         {user && canEdit && (
           <button
             onClick={(e) => {
@@ -129,7 +129,7 @@ export function PublicMarketGroups(props: { contract: Contract }) {
             'bg-canvas-0 max-h-[70vh] min-h-[20rem] overflow-auto rounded p-6'
           }
         >
-          <ContractGroupsList
+          <ContractTopicsList
             canEdit={!!canEdit}
             contract={contract}
             onlyGroupIds={

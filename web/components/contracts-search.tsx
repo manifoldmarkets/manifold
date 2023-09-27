@@ -24,13 +24,13 @@ import {
   useRealtimeMemberGroups,
 } from 'web/hooks/use-group-supabase'
 import { DEFAULT_TOPIC, TOPIC_KEY } from 'common/group'
-import { TopicTag } from 'web/components/groups/topic-tag'
-import { AddContractToGroupButton } from 'web/components/groups/add-contract-to-group-modal'
+import { TopicTag } from 'web/components/topics/topic-tag'
+import { AddContractToGroupButton } from 'web/components/topics/add-contract-to-group-modal'
 import { useUser } from 'web/hooks/use-user'
 
-import { GroupOptionsButton } from 'web/components/groups/groups-button'
+import { TopicOptionsButton } from 'web/components/topics/topics-button'
 
-import { ForYouDropdown } from 'web/components/groups/for-you-dropdown'
+import { ForYouDropdown } from 'web/components/topics/for-you-dropdown'
 
 const CONTRACTS_PER_PAGE = 40
 
@@ -604,7 +604,7 @@ export function SearchFilters(props: {
           <button onClick={() => setTopic('')}>
             <XIcon className="hover:text-ink-700 text-ink-400 ml-1 hidden h-4 w-4 sm:block" />
           </button>
-          <GroupOptionsButton
+          <TopicOptionsButton
             className={'sm:hidden'}
             group={topic}
             yourGroupIds={yourGroupIds}

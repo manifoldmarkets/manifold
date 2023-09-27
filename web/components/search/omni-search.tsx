@@ -14,7 +14,7 @@ import { db } from 'web/lib/supabase/db'
 import { SearchGroupInfo, searchGroups } from 'web/lib/supabase/groups'
 import { UserSearchResult, searchUsers } from 'web/lib/supabase/users'
 import { ContractStatusLabel } from '../contract/contracts-table'
-import { JoinOrLeaveGroupButton } from '../groups/groups-button'
+import { FollowOrUnfolowTopicButton } from 'web/components/topics/topics-button'
 import { SORTS, Sort } from '../contracts-search'
 import { Avatar } from '../widgets/avatar'
 import { LoadingIndicator } from '../widgets/loading-indicator'
@@ -464,7 +464,7 @@ const TopicResults = (props: { topics: SearchGroupInfo[] }) => {
               )}
             </Col>
             <div onClick={(e) => e.stopPropagation()}>
-              <JoinOrLeaveGroupButton
+              <FollowOrUnfolowTopicButton
                 group={group}
                 user={me}
                 isMember={myGroupIds.includes(group.id)}

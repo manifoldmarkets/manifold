@@ -9,7 +9,7 @@ import { Button } from 'web/components/buttons/button'
 import { leaveGroup } from 'web/lib/supabase/groups'
 import { track } from 'web/lib/service/analytics'
 import { BsFillPersonDashFill } from 'react-icons/bs'
-import { GroupSelector } from 'web/components/groups/group-selector'
+import { TopicSelector } from 'web/components/topics/topic-selector'
 import { joinGroup } from 'web/lib/firebase/api'
 import { useState } from 'react'
 import { usePrivateUser } from 'web/hooks/use-user'
@@ -24,7 +24,7 @@ import { HiNoSymbol } from 'react-icons/hi2'
 import DropdownMenu, {
   DropdownItem,
 } from 'web/components/comments/dropdown-menu'
-import { CreateGroupModal } from 'web/components/groups/create-group-modal'
+import { CreateTopicModal } from 'web/components/topics/create-topic-modal'
 import { useListGroupsBySlug } from 'web/hooks/use-group-supabase'
 import { updatePrivateUser } from 'web/lib/firebase/users'
 
@@ -67,7 +67,7 @@ export const ForYouDropdown = (props: {
         className={className}
       />
       {showCreateGroup && (
-        <CreateGroupModal
+        <CreateTopicModal
           user={user}
           open={showCreateGroup}
           setOpen={setShowCreateGroup}
@@ -140,7 +140,7 @@ const BlockedTopicsModal = (props: {
         <span className={'text-primary-700 mt-2 text-lg'}>
           Block more topics
         </span>
-        <GroupSelector setSelectedGroup={(group) => blockGroup(group.slug)} />
+        <TopicSelector setSelectedGroup={(group) => blockGroup(group.slug)} />
         <div className={'mb-[10rem]'} />
       </Col>
     </Modal>
@@ -193,7 +193,7 @@ const FollowedTopicsModal = (props: {
         <span className={'text-primary-700 mt-2 text-lg'}>
           Follow more topics
         </span>
-        <GroupSelector
+        <TopicSelector
           setSelectedGroup={(group) => {
             joinGroup({ groupId: group.id })
             track('join group', { slug: group.slug })

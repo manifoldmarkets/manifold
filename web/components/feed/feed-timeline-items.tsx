@@ -20,7 +20,7 @@ import { useState } from 'react'
 import { Row } from 'web/components/layout/row'
 import { orderBy, sum, uniqBy } from 'lodash'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
-import { TopicTag } from 'web/components/groups/topic-tag'
+import { TopicTag } from 'web/components/topics/topic-tag'
 import { BoostsType } from 'web/lib/supabase/ads'
 
 const MAX_PARENT_COMMENTS_PER_FEED_ITEM = 1

@@ -7,7 +7,7 @@ import { Group, MAX_GROUP_NAME_LENGTH } from 'common/group'
 import { updateGroup } from 'web/lib/firebase/api'
 import { Row } from 'web/components/layout/row'
 
-export const EditableGroupTitle = (props: {
+export const EditableTopicName = (props: {
   group: Group
   isEditing: boolean
   onFinishEditing: (changed: boolean) => void

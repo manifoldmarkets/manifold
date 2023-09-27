@@ -4,7 +4,7 @@ import { SearchGroupInfo, searchGroups } from 'web/lib/supabase/groups'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { auth } from 'web/lib/firebase/users'
 
-export function useTrendingGroupsSearchResults(
+export function useTrendingTopicsSearchResults(
   query: string,
   limit: number,
   lockSearch: boolean,

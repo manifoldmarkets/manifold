@@ -12,13 +12,13 @@ import { getGroupWithFields } from 'web/lib/supabase/group'
 import { Col } from '../layout/col'
 import { Modal, SCROLLABLE_MODAL_CLASS } from '../layout/modal'
 import { Input } from '../widgets/input'
-import { PrivacyStatusView } from './group-privacy-modal'
+import { PrivacyStatusView } from './topic-privacy-modal'
 import { Button } from 'web/components/buttons/button'
 import { Row } from 'web/components/layout/row'
 
 const LOADING_PING_INTERVAL = 200
 
-export function CreateGroupModal(props: {
+export function CreateTopicModal(props: {
   user: User | null | undefined
   open: boolean
   setOpen: (open: boolean) => void
