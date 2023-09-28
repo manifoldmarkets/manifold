@@ -88,10 +88,9 @@ export function ContractTabs(props: {
     if (replyToBet) setActiveIndex(0)
   }, [replyToBet])
 
-  const commentTitle =
-    totalComments === 0
-      ? 'Comments'
-      : `${shortFormatNumber(totalComments)} Comments`
+  const commentsTitle =
+    (totalComments > 0 ? `${shortFormatNumber(totalComments)} ` : '') +
+    'Comments'
 
   const user = useUser()
 
@@ -103,8 +102,8 @@ export function ContractTabs(props: {
       order: 'asc',
     }) ?? []
 
-  const betsTitle =
-    totalBets === 0 ? 'Trades' : `${shortFormatNumber(totalBets)} Trades`
+  const tradesTitle =
+    (totalBets > 0 ? `${shortFormatNumber(totalBets)} ` : '') + 'Trades'
 
   const visibleUserBets = userBets.filter(
     (bet) => bet.amount !== 0 && !bet.isRedemption
@@ -113,22 +112,36 @@ export function ContractTabs(props: {
   const isMobile = useIsMobile()
 
   const yourBetsTitle =
-    (visibleUserBets.length === 0 ? '' : `${visibleUserBets.length} `) +
+    (visibleUserBets.length > 0 ? `${visibleUserBets.length} ` : '') +
     (isMobile ? 'You' : 'Your Trades')
 
-  const positionsTitle = shortFormatNumber(totalPositions) + ' Positions'
+  const positionsTitle =
+    (totalPositions > 0 ? `${shortFormatNumber(totalPositions)} ` : '') +
+    'Positions'
 
   return (
     <ControlledTabs
       className="mb-4"
-      trackingName="contract tabs"
       activeIndex={activeIndex}
-      onClick={(_title, i) => {
+      onClick={(title, i) => {
         setActiveIndex(i)
+        track(
+          `click ${
+            title === commentsTitle
+              ? 'comments'
+              : title === tradesTitle
+              ? 'trades'
+              : title === yourBetsTitle
+              ? 'your trades'
+              : title === positionsTitle
+              ? 'positions'
+              : 'contract'
+          } tab`
+        )
       }}
       tabs={buildArray(
         {
-          title: commentTitle,
+          title: commentsTitle,
           content: (
             <CommentsTabContent
               contract={contract}
@@ -155,7 +168,7 @@ export function ContractTabs(props: {
             ),
           },
         totalBets > 0 && {
-          title: betsTitle,
+          title: tradesTitle,
           content: (
             <Col className={'gap-4'}>
               <BetsTabContent
