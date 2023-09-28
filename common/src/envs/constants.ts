@@ -264,15 +264,31 @@ export const GROUP_SLUGS_TO_IGNORE_FOR_NEWS = DEEMPHASIZED_GROUP_SLUGS.filter(
   (slug) => ['uk', 'uk-politics'].includes(slug)
 )
 
-export const GROUP_SLUGS_TO_HIDE_FROM_PILL_SEARCH = [
+export const LIKELY_DUPLICATIVE_GROUP_SLUGS_ON_TOPICS_LIST = [
+  // politics, 2024-presidential-election, magaland, donald-trump
+  'us-politics',
+  'republican-party',
+  '2024-republican-primaries',
+  'presidential-politics',
+  // lk-99
+  'superconductivity',
+  // ai
+  'openai',
+  'technical-ai-timelines',
+  // crypto-speculation
+  'crypto-prices',
+  // musk-mania
+  'elon-musk',
+  // ignore all manifold groups
+  'manifold-user-retention',
+  'manifold-6748e065087e',
+  'manifold-leagues',
+  'manifold-features-25bad7c7792e',
+  'manifold-users',
+  // generally not helpful for browsing
   'new-years-resolutions-2024',
-  'metamarkets',
-  'magaland',
-  'metaforecasting',
-  'nonpredictive-profits',
-  '-sircryptomind-crypto-stock',
-  'selfresolving',
 ]
+
 export const GROUP_SLUGS_TO_HIDE_FROM_WELCOME_FLOW = [
   'new-years-resolutions-2024',
   'metamarkets',

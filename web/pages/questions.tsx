@@ -1,9 +1,7 @@
 import { TOPIC_KEY, Group, DEFAULT_TOPIC } from 'common/group'
-import { User } from 'common/user'
-import { uniqBy } from 'lodash'
+import { orderBy, uniqBy } from 'lodash'
 import { useEffect, useState } from 'react'
 import { TopicsList } from 'web/components/topics/topics-list'
-import { getMyGroupRoles } from 'web/lib/supabase/groups'
 import { Col } from 'web/components/layout/col'
 import { removeEmojis } from 'common/topics'
 import {
@@ -22,7 +20,10 @@ import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useRouter } from 'next/router'
 import { Button } from 'web/components/buttons/button'
 import { MenuIcon } from '@heroicons/react/outline'
-import { useTrendingTopicsSearchResults } from 'web/components/search/query-topics'
+import {
+  useTrendingTopics,
+  useUserTrendingTopics,
+} from 'web/components/search/query-topics'
 import { useGroupFromRouter } from 'web/hooks/use-group-from-router'
 import Welcome from 'web/components/onboarding/welcome'
 import { Page } from 'web/components/layout/page'
@@ -31,8 +32,8 @@ import { BrowseTopicPills } from 'web/components/topics/browse-topic-pills'
 import clsx from 'clsx'
 import { usePersistentQueryState } from 'web/hooks/use-persistent-query-state'
 import { QuestionsTopicTitle } from 'web/components/topics/questions-topic-title'
+import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 
-const GROUPS_PER_PAGE = 100
 export const SHOW_TOPICS_TERM = 'show-topics'
 
 // TODO: use static props for non for-you topic slugs
@@ -43,51 +44,54 @@ export default function QuestionsPage() {
   const { q } = router.query
   // Allow users to browse without keyboard popping up on mobile.
   const autoFocus = !isMobile && !q
+  const [showTopicsSidebar, setShowTopicsSidebar] = useState<boolean>(false)
+  const privateUser = usePrivateUser()
 
   const shouldFilterDestiny = useShouldBlockDestiny(user?.id)
 
-  const trendingTopics = useTrendingTopicsSearchResults(
-    '',
-    100,
-    false,
+  const trendingTopics = useTrendingTopics(
+    80,
     'home-page-trending-topics'
   ) as Group[]
+  const userTrendingTopics = useUserTrendingTopics(user, 20)
 
   const [topicSlug, setTopicSlug] = usePersistentQueryState<string>(
     TOPIC_KEY,
     DEFAULT_TOPIC
   )
-  const topicFromRouter = useGroupFromRouter(topicSlug)
-  const [show, setShow] = useState<boolean>(false)
-
-  const privateUser = usePrivateUser()
-  const { groups: myTopics } = useGroupRoles(user)
-
-  const topicsByImportance =
-    topicSlug || !trendingTopics
-      ? uniqBy(trendingTopics, (g) => removeEmojis(g.name).toLowerCase())
-      : combineGroupsByImportance(trendingTopics, myTopics)
-  const topics = buildArray(
-    topicFromRouter &&
-      !topicsByImportance.map((g) => g.id).includes(topicFromRouter.id) &&
-      (topicFromRouter as Group),
-    topicsByImportance
+  const topicsByImportance = combineGroupsByImportance(
+    trendingTopics ?? [],
+    userTrendingTopics ?? []
   )
+  const topicFromRouter = useGroupFromRouter(topicSlug)
+  const [topicsFromRouter, setTopicsFromRouter] = usePersistentInMemoryState<
+    Group[]
+  >([], 'topics-from-router')
 
-  const menuButton = show ? null : (
+  useEffect(() => {
+    const newTopic =
+      topicFromRouter &&
+      !topicsByImportance.map((g) => g.id).includes(topicFromRouter.id) &&
+      !topicsFromRouter.map((g) => g.id).includes(topicFromRouter.id)
+    if (newTopic) setTopicsFromRouter((topics) => [...topics, topicFromRouter])
+  }, [topicFromRouter])
+
+  const topics = buildArray(topicsFromRouter, topicsByImportance)
+  const currentTopic = topics.find((t) => t.slug === topicSlug)
+
+  const menuButton = showTopicsSidebar ? null : (
     <Button
       color={'gray-outline'}
       size={'md'}
       className={
         'ml-1 hidden w-[8rem] sm:ml-2 sm:flex md:w-[10.5rem] xl:hidden'
       }
-      onClick={() => setShow(!show)}
+      onClick={() => setShowTopicsSidebar(!showTopicsSidebar)}
     >
       <MenuIcon className="mr-2 h-5 w-5" />
       Topics
     </Button>
   )
-  const currentTopic = topics.find((t) => t.slug === topicSlug)
 
   return (
     <>
@@ -127,7 +131,7 @@ export default function QuestionsPage() {
             <Col
               className={clsx(
                 'relative w-full',
-                show ? 'sm:mr-10 lg:mr-0' : ''
+                showTopicsSidebar ? 'sm:mr-10 lg:mr-0' : ''
               )}
             >
               <SupabaseContractSearch
@@ -148,7 +152,7 @@ export default function QuestionsPage() {
                 isWholePage
                 headerClassName={'bg-canvas-0 lg:bg-canvas-50 pt-2 px-2'}
                 menuButton={menuButton}
-                hideAvatar={show}
+                hideAvatar={showTopicsSidebar}
                 rowBelowFilters={
                   isMobile && (
                     <BrowseTopicPills
@@ -171,8 +175,8 @@ export default function QuestionsPage() {
                 setCurrentTopicSlug={setTopicSlug}
                 privateUser={privateUser}
                 user={user}
-                show={show}
-                setShow={setShow}
+                show={showTopicsSidebar}
+                setShow={setShowTopicsSidebar}
               />
             )}
           </Row>
@@ -186,44 +190,17 @@ const combineGroupsByImportance = (
   resultGroups: Group[],
   myGroups: Group[]
 ) => {
-  const combined = [
-    ...resultGroups.slice(0, GROUPS_PER_PAGE),
-    ...myGroups,
-    ...resultGroups.slice(GROUPS_PER_PAGE - 1),
-  ]
+  const combined = orderBy(
+    [
+      ...myGroups.map((g) => ({
+        ...g,
+        importanceScore: g.importanceScore * 1.1,
+      })),
+      ...resultGroups.filter((g) => !myGroups.map((g) => g.id).includes(g.id)),
+    ],
+    'importanceScore',
+    'desc'
+  )
 
   return uniqBy(combined, (g) => removeEmojis(g.name).toLowerCase())
-}
-
-const useGroupRoles = (user: User | undefined | null) => {
-  const [roles, setRoles] =
-    useState<Awaited<ReturnType<typeof getMyGroupRoles>>>()
-
-  useEffect(() => {
-    if (user)
-      getMyGroupRoles(user.id).then((roles) =>
-        setRoles(
-          roles?.sort(
-            (a, b) =>
-              (b.role === 'admin' ? 2 : b.role === 'moderator' ? 1 : 0) -
-              (a.role === 'admin' ? 2 : a.role === 'moderator' ? 1 : 0)
-          )
-        )
-      )
-  }, [])
-
-  const groups: Group[] =
-    roles?.map((g) => ({
-      id: g.group_id!,
-      name: g.group_name!,
-      slug: g.group_slug!,
-      privacyStatus: g.privacy_status as any,
-      totalMembers: g.total_members!,
-      creatorId: g.creator_id!,
-      createdTime: g.createdtime!,
-      postIds: [],
-      importanceScore: 0,
-    })) ?? []
-
-  return { roles, groups }
 }
