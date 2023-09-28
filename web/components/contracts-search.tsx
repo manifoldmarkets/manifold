@@ -213,13 +213,14 @@ export function SupabaseContractSearch(props: {
           />
           {menuButton}
         </Row>
-        <SupabaseContractFilters
-          hideOrderSelector={hideOrderSelector}
-          includeProbSorts={includeProbSorts}
-          hideFilters={hideFilters}
-          params={searchParams ?? defaults}
-          updateParams={setSearchParams}
-        />
+        {!hideFilters && (
+          <ContractFilters
+            hideOrderSelector={hideOrderSelector}
+            includeProbSorts={includeProbSorts}
+            params={searchParams ?? defaults}
+            updateParams={setSearchParams}
+          />
+        )}
       </Col>
       {rowBelowFilters}
       {contracts && contracts.length === 0 ? (
@@ -426,11 +427,10 @@ const useSearchQueryState = (props: {
   return [state, setState, defaults] as const
 }
 
-function SupabaseContractFilters(props: {
+function ContractFilters(props: {
   className?: string
   hideOrderSelector?: boolean
   includeProbSorts?: boolean
-  hideFilters?: boolean
   params: SearchParams
   updateParams: (params: Partial<SearchParams>) => void
 }) {
@@ -438,7 +438,6 @@ function SupabaseContractFilters(props: {
     className,
     hideOrderSelector,
     includeProbSorts,
-    hideFilters,
     params,
     updateParams,
   } = props
@@ -478,60 +477,7 @@ function SupabaseContractFilters(props: {
     }
     track('select contract type', { contractType: selection })
   }
-
-  return (
-    <Col
-      className={clsx(
-        'mb-1 items-stretch gap-2 pb-1 pt-px sm:gap-2',
-        className
-      )}
-    >
-      {!hideFilters && (
-        <SearchFilters
-          filter={filter}
-          selectFilter={selectFilter}
-          sort={sort}
-          selectSort={selectSort}
-          contractType={contractType}
-          selectContractType={selectContractType}
-          hideOrderSelector={hideOrderSelector}
-          className={'flex h-6 flex-row gap-2'}
-          includeProbSorts={includeProbSorts}
-          currentTopicSlug={topicSlug}
-          setTopic={(slug) => updateParams({ [TOPIC_KEY]: slug })}
-        />
-      )}
-    </Col>
-  )
-}
-
-export function SearchFilters(props: {
-  filter: string
-  selectFilter: (selection: Filter) => void
-  sort: string
-  selectSort: (selection: Sort) => void
-  contractType: string
-  selectContractType: (selection: ContractTypeType) => void
-  hideOrderSelector: boolean | undefined
-  currentTopicSlug: string | undefined
-  setTopic: (slug: string) => void
-  className?: string
-  includeProbSorts?: boolean
-}) {
-  const {
-    filter,
-    selectFilter,
-    sort,
-    selectSort,
-    contractType,
-    selectContractType,
-    hideOrderSelector,
-    className,
-    includeProbSorts,
-    currentTopicSlug,
-    setTopic,
-  } = props
-  const topic = useGroupFromSlug(currentTopicSlug ?? '')
+  const topic = useGroupFromSlug(topicSlug ?? '')
   const hideFilter =
     sort === 'resolve-date' ||
     sort === 'close-date' ||
@@ -543,109 +489,121 @@ export function SearchFilters(props: {
   const user = useUser()
   const yourGroups = useRealtimeMemberGroups(user?.id)
   const yourGroupIds = yourGroups?.map((g) => g.id)
+  const setTopic = (slug: string) => updateParams({ [TOPIC_KEY]: slug })
+
   return (
-    <div className={clsx(className, 'gap-3')}>
-      {!hideOrderSelector && (
+    <Col
+      className={clsx(
+        'mb-1 items-stretch gap-2 pb-1 pt-px sm:gap-2',
+        className
+      )}
+    >
+      <Row className={'h-6 gap-2'}>
+        {!hideOrderSelector && (
+          <DropdownMenu
+            items={generateFilterDropdownItems(
+              contractType == 'BOUNTIED_QUESTION'
+                ? BOUNTY_MARKET_SORTS
+                : contractType == 'POLL'
+                ? POLL_SORTS
+                : includeProbSorts &&
+                  (contractType === 'ALL' || contractType === 'BINARY')
+                ? PREDICTION_MARKET_PROB_SORTS
+                : PREDICTION_MARKET_SORTS,
+              selectSort
+            )}
+            icon={
+              <Row className=" items-center gap-0.5 ">
+                <span className="text-ink-500 whitespace-nowrap text-sm font-medium">
+                  {sortLabel}
+                </span>
+                <ChevronDownIcon className="h-4 w-4 text-gray-500" />
+              </Row>
+            }
+            menuWidth={'w-36'}
+            menuItemsClass="left-0 right-auto"
+            selectedItemName={sortLabel}
+            closeOnClick={true}
+          />
+        )}
+        {!hideFilter && (
+          <DropdownMenu
+            items={generateFilterDropdownItems(FILTERS, selectFilter)}
+            icon={
+              <Row className=" items-center gap-0.5 ">
+                <span className="text-ink-500 whitespace-nowrap text-sm font-medium">
+                  {filterLabel}
+                </span>
+                <ChevronDownIcon className="h-4 w-4 text-gray-500" />
+              </Row>
+            }
+            menuItemsClass="left-0 right-auto"
+            menuWidth={'w-40'}
+            selectedItemName={filterLabel}
+            closeOnClick={true}
+          />
+        )}
         <DropdownMenu
           items={generateFilterDropdownItems(
-            contractType == 'BOUNTIED_QUESTION'
-              ? BOUNTY_MARKET_SORTS
-              : contractType == 'POLL'
-              ? POLL_SORTS
-              : includeProbSorts &&
-                (contractType === 'ALL' || contractType === 'BINARY')
-              ? PREDICTION_MARKET_PROB_SORTS
-              : PREDICTION_MARKET_SORTS,
-            selectSort
+            CONTRACT_TYPES,
+            selectContractType
           )}
           icon={
             <Row className=" items-center gap-0.5 ">
               <span className="text-ink-500 whitespace-nowrap text-sm font-medium">
-                {sortLabel}
+                {contractTypeLabel}
               </span>
               <ChevronDownIcon className="h-4 w-4 text-gray-500" />
             </Row>
           }
           menuWidth={'w-36'}
           menuItemsClass="left-0 right-auto"
-          selectedItemName={sortLabel}
+          selectedItemName={contractTypeLabel}
           closeOnClick={true}
         />
-      )}
-      {!hideFilter && (
-        <DropdownMenu
-          items={generateFilterDropdownItems(FILTERS, selectFilter)}
-          icon={
-            <Row className=" items-center gap-0.5 ">
-              <span className="text-ink-500 whitespace-nowrap text-sm font-medium">
-                {filterLabel}
-              </span>
-              <ChevronDownIcon className="h-4 w-4 text-gray-500" />
-            </Row>
-          }
-          menuItemsClass="left-0 right-auto"
-          menuWidth={'w-40'}
-          selectedItemName={filterLabel}
-          closeOnClick={true}
-        />
-      )}
-      <DropdownMenu
-        items={generateFilterDropdownItems(CONTRACT_TYPES, selectContractType)}
-        icon={
-          <Row className=" items-center gap-0.5 ">
-            <span className="text-ink-500 whitespace-nowrap text-sm font-medium">
-              {contractTypeLabel}
-            </span>
-            <ChevronDownIcon className="h-4 w-4 text-gray-500" />
-          </Row>
-        }
-        menuWidth={'w-36'}
-        menuItemsClass="left-0 right-auto"
-        selectedItemName={contractTypeLabel}
-        closeOnClick={true}
-      />
-      {currentTopicSlug == topic?.slug && topic && (
-        <TopicTag
-          className={
-            'text-primary-500 overflow-x-hidden text-ellipsis !py-0 lg:hidden'
-          }
-          topic={topic}
-          location={'questions page'}
-        >
-          <button onClick={() => setTopic('')}>
-            <XIcon className="hover:text-ink-700 text-ink-400 ml-1 hidden h-4 w-4 sm:block" />
-          </button>
-          <TopicOptionsButton
-            className={'sm:hidden'}
-            group={topic}
-            yourGroupIds={yourGroupIds}
-            user={user}
-          />
-        </TopicTag>
-      )}
-      {currentTopicSlug === 'for-you' && (
-        <Row
-          className={
-            'text-primary-500 dark:text-ink-400 hover:text-ink-600 hover:bg-primary-400/10 group items-center justify-center whitespace-nowrap rounded px-1 text-right text-sm transition-colors lg:hidden'
-          }
-        >
-          <span className="mr-px opacity-50 transition-colors group-hover:text-inherit">
-            #
-          </span>
-          ⭐️ For you
-          <button onClick={() => setTopic('')}>
-            <XIcon className="hover:text-ink-700 text-ink-400 ml-1 hidden h-4 w-4 sm:block" />
-          </button>
-          {user && (
-            <ForYouDropdown
-              setCurrentCategory={setTopic}
+        {topicSlug == topic?.slug && topic && (
+          <TopicTag
+            className={
+              'text-primary-500 overflow-x-hidden text-ellipsis !py-0 lg:hidden'
+            }
+            topic={topic}
+            location={'questions page'}
+          >
+            <button onClick={() => setTopic('')}>
+              <XIcon className="hover:text-ink-700 text-ink-400 ml-1 hidden h-4 w-4 sm:block" />
+            </button>
+            <TopicOptionsButton
+              className={'sm:hidden'}
+              group={topic}
+              yourGroupIds={yourGroupIds}
               user={user}
-              yourGroups={yourGroups}
-              className={'ml-1 sm:hidden'}
             />
-          )}
-        </Row>
-      )}
-    </div>
+          </TopicTag>
+        )}
+        {topicSlug === 'for-you' && (
+          <Row
+            className={
+              'text-primary-500 dark:text-ink-400 hover:text-ink-600 hover:bg-primary-400/10 group items-center justify-center whitespace-nowrap rounded px-1 text-right text-sm transition-colors lg:hidden'
+            }
+          >
+            <span className="mr-px opacity-50 transition-colors group-hover:text-inherit">
+              #
+            </span>
+            ⭐️ For you
+            <button onClick={() => setTopic('')}>
+              <XIcon className="hover:text-ink-700 text-ink-400 ml-1 hidden h-4 w-4 sm:block" />
+            </button>
+            {user && (
+              <ForYouDropdown
+                setCurrentCategory={setTopic}
+                user={user}
+                yourGroups={yourGroups}
+                className={'ml-1 sm:hidden'}
+              />
+            )}
+          </Row>
+        )}
+      </Row>
+    </Col>
   )
 }
