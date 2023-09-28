@@ -129,7 +129,7 @@ export const LikeButton = memo(function LikeButton(props: {
           size={size}
           className={clsx(
             'text-ink-500 flex flex-row items-center disabled:cursor-not-allowed',
-            totalLikes === 0 && !user && 'disabled:opacity-50',
+            'disabled:text-ink-500',
             className
           )}
           {...likeLongPress}
