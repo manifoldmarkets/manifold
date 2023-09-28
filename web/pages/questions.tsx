@@ -152,7 +152,7 @@ export default function QuestionsPage() {
                 isWholePage
                 headerClassName={'bg-canvas-0 lg:bg-canvas-50 pt-2 px-2'}
                 menuButton={menuButton}
-                hideAvatar={showTopicsSidebar}
+                hideAvatar={false}
                 rowBelowFilters={
                   isMobile && (
                     <BrowseTopicPills
