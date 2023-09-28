@@ -62,6 +62,13 @@ import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { removeUndefinedProps } from 'common/util/object'
 import { Review } from 'web/components/reviews/review'
 import { db } from 'web/lib/supabase/db'
+import {
+  CopyLinkOrShareButton,
+  CopyLinkRow,
+} from 'web/components/buttons/copy-link-button'
+import { QRCode } from 'web/components/widgets/qr-code'
+import { ENV_CONFIG } from 'common/envs/constants'
+import { referralQuery } from 'common/util/share'
 
 export const getStaticProps = async (props: {
   params: {
@@ -102,8 +109,6 @@ export default function UserPage(props: {
   const privateUser = usePrivateUser()
   const blockedByCurrentUser =
     privateUser?.blockedUserIds.includes(user?.id ?? '_') ?? false
-
-  useSaveReferral()
 
   if (!user) return <Custom404 />
   else if (user.userDeleted && !isAdmin) return <DeletedUser />
@@ -148,6 +153,9 @@ function UserProfile(props: {
 
   const router = useRouter()
   const currentUser = useUser()
+  useSaveReferral(currentUser, {
+    defaultReferrerUsername: user?.username,
+  })
   const isCurrentUser = user.id === currentUser?.id
   const [showConfetti, setShowConfetti] = useState(false)
   const [followsYou, setFollowsYou] = useState(false)
@@ -275,7 +283,7 @@ function UserProfile(props: {
         <Col className={'mt-1'}>
           <ProfilePublicStats
             user={user}
-            isCurrentUser={isCurrentUser}
+            currentUser={currentUser}
             rating={rating}
             reviewCount={reviewCount}
           />
@@ -401,12 +409,13 @@ type FollowsDialogTab = 'following' | 'followers'
 
 function ProfilePublicStats(props: {
   user: User
-  isCurrentUser: boolean
+  currentUser: User | undefined | null
   rating?: number
   reviewCount?: number
   className?: string
 }) {
-  const { user, className, isCurrentUser, rating, reviewCount = 0 } = props
+  const { user, className, currentUser, rating, reviewCount = 0 } = props
+  const isCurrentUser = user.id === currentUser?.id
   const [reviewsOpen, setReviewsOpen] = useState(false)
   const [followsOpen, setFollowsOpen] = useState(false)
   const [followsTab, setFollowsTab] = useState<FollowsDialogTab>('following')
@@ -478,6 +487,7 @@ function ProfilePublicStats(props: {
         <ChartBarIcon className="mr-1 mb-1 inline h-4 w-4" />
         Calibration
       </Link>
+      <ShareButton user={user} currentUser={currentUser} />
 
       <FollowsDialog
         user={user}
@@ -497,6 +507,41 @@ function ProfilePublicStats(props: {
       {isCurrentUser && (
         <UserLikedContractsButton user={user} className={className} />
       )} */}
+    </Row>
+  )
+}
+
+const ShareButton = (props: {
+  user: User
+  currentUser: User | undefined | null
+}) => {
+  const { user, currentUser } = props
+  const isSameUser = currentUser?.id === user.id
+  const url = `https://${ENV_CONFIG.domain}/${user.username}${
+    !isSameUser && currentUser ? referralQuery(currentUser.username) : ''
+  }`
+  const [isOpen, setIsOpen] = useState(false)
+
+  return (
+    <Row className={'items-center'}>
+      <CopyLinkOrShareButton
+        url={url}
+        iconClassName={'h-3'}
+        className={'gap-1 p-0'}
+        eventTrackingName={'share user page'}
+        tooltip={'Copy link to profile'}
+        size={'2xs'}
+      >
+        <span className={'text-sm'}>Share</span>
+      </CopyLinkOrShareButton>
+
+      <Modal open={isOpen} setOpen={setIsOpen}>
+        <Col className="bg-canvas-0 max-h-[90vh] rounded pt-6">
+          <div className="px-6 pb-1 text-center text-xl">{user.name}</div>
+          <CopyLinkRow url={url} eventTrackingName="copy referral link" />
+          <QRCode url={url} className="mt-4 self-center" />
+        </Col>
+      </Modal>
     </Row>
   )
 }

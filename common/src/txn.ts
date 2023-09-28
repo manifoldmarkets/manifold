@@ -39,7 +39,13 @@ type AnyTxnType =
   | ManaPay
   | LeagueBid
 
-export type SourceType = 'USER' | 'CONTRACT' | 'CHARITY' | 'BANK' | 'AD' | 'LEAGUE'
+export type SourceType =
+  | 'USER'
+  | 'CONTRACT'
+  | 'CHARITY'
+  | 'BANK'
+  | 'AD'
+  | 'LEAGUE'
 
 export type Txn<T extends AnyTxnType = AnyTxnType> = {
   id: string
@@ -198,9 +204,10 @@ type ContractResolutionPayout = {
   category: 'CONTRACT_RESOLUTION_PAYOUT'
   token: 'M$'
   data: {
-    /** @deprecated **/
+    /** @deprecated - we use CONTRACT_UNDO_RESOLUTION_PAYOUT **/
     reverted?: boolean
     deposit?: number
+    payoutStartTime?: number
   }
 }
 
@@ -348,7 +355,6 @@ type LeagueBid = {
     cohort: string
   }
 }
-
 
 export type DonationTxn = Txn & Donation
 export type TipTxn = Txn & Tip

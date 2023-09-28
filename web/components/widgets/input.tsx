@@ -41,13 +41,13 @@ export const Input = forwardRef(
         />
         {showClearButton && (
           <IconButton
-            className={'absolute right-0 top-2'}
-            size={'sm'}
+            className={'absolute right-3 top-5 p-0'}
+            size={'2xs'}
             onClick={() => {
               if (rest.onChange) rest.onChange({ target: { value: '' } } as any)
             }}
           >
-            <XIcon className={'h-5 w-5'} />
+            <XIcon className={'h-5 w-5 rounded-full'} />
           </IconButton>
         )}
       </>

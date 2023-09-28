@@ -98,6 +98,7 @@ export const BOT_USERNAMES = [
   'uhh',
   'ArkPoint',
   'EliBot',
+  'manifestussy',
 ]
 
 export const CORE_USERNAMES = [
@@ -174,7 +175,7 @@ export const VERIFIED_USERNAMES = [
   'PaulChristiano',
   'BuckShlegeris',
   'Natalia',
-  'Zero',
+  'zero',
   'OzzieGooen',
   'OliverHabryka',
   'Alicorn',
@@ -187,8 +188,10 @@ export const VERIFIED_USERNAMES = [
   'KatjaGrace',
   'EmmettShear',
   'CateHall',
-  'RobertMiles',
+  'RobertSKMiles',
   'TarekMansour',
+  'DylanMatthews',
+  'RobinHanson',
 ]
 
 export const HOUSE_BOT_USERNAME = 'acc'
@@ -262,15 +265,31 @@ export const GROUP_SLUGS_TO_IGNORE_FOR_NEWS = DEEMPHASIZED_GROUP_SLUGS.filter(
   (slug) => ['uk', 'uk-politics'].includes(slug)
 )
 
-export const GROUP_SLUGS_TO_HIDE_FROM_PILL_SEARCH = [
+export const LIKELY_DUPLICATIVE_GROUP_SLUGS_ON_TOPICS_LIST = [
+  // politics, 2024-presidential-election, magaland, donald-trump
+  'us-politics',
+  'republican-party',
+  '2024-republican-primaries',
+  'presidential-politics',
+  // lk-99
+  'superconductivity',
+  // ai
+  'openai',
+  'technical-ai-timelines',
+  // crypto-speculation
+  'crypto-prices',
+  // musk-mania
+  'elon-musk',
+  // ignore all manifold groups
+  'manifold-user-retention',
+  'manifold-6748e065087e',
+  'manifold-leagues',
+  'manifold-features-25bad7c7792e',
+  'manifold-users',
+  // generally not helpful for browsing
   'new-years-resolutions-2024',
-  'metamarkets',
-  'magaland',
-  'metaforecasting',
-  'nonpredictive-profits',
-  '-sircryptomind-crypto-stock',
-  'selfresolving',
 ]
+
 export const GROUP_SLUGS_TO_HIDE_FROM_WELCOME_FLOW = [
   'new-years-resolutions-2024',
   'metamarkets',
@@ -303,8 +322,6 @@ export const DISCORD_BOT_INVITE_LINK =
 
 export const YES_GRAPH_COLOR = '#11b981'
 
-export const BACKGROUND_COLOR = 'bg-canvas-50'
-
 export const RESERVED_PATHS = [
   '_next',
   'about',
@@ -325,6 +342,7 @@ export const RESERVED_PATHS = [
   'cowp',
   'create',
   'date-docs',
+  'dashboard',
   'discord',
   'discord-bot',
   'dream',
@@ -350,6 +368,7 @@ export const RESERVED_PATHS = [
   'login',
   'lootbox',
   'mana-auction',
+  'manifest',
   'markets',
   'mtg',
   'news',
@@ -367,7 +386,6 @@ export const RESERVED_PATHS = [
   'sign-in-waiting',
   'sitemap',
   'slack',
-  'static',
   'stats',
   'styles',
   'swipe',

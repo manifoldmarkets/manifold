@@ -18,7 +18,7 @@ import { User } from 'common/user'
 import { removeUndefinedProps } from 'common/util/object'
 import { createContractResolvedNotifications } from './create-notification'
 import { updateContractMetricsForUsers } from './helpers/user-contract-metrics'
-import { TxnData, runTxn, runContractPayoutTxn } from './txn/run-txn'
+import { runTxn, runContractPayoutTxn } from './txn/run-txn'
 import {
   revalidateStaticProps,
   isProd,
@@ -277,7 +277,7 @@ export const payUsersTransactions = async (
   const firestore = admin.firestore()
   const mergedPayouts = checkAndMergePayouts(payouts)
   const payoutChunks = chunk(mergedPayouts, 250)
-
+  const payoutStartTime = Date.now()
   for (const payoutChunk of payoutChunks) {
     await firestore.runTransaction(async (transaction) => {
       payoutChunk.forEach(({ userId, payout, deposit }) => {
@@ -292,7 +292,7 @@ export const payUsersTransactions = async (
           toId: userId,
           amount: payout,
           token: 'M$',
-          data: { deposit: deposit ?? 0 },
+          data: { deposit: deposit ?? 0, payoutStartTime },
           description: 'Contract payout for resolution: ' + contractId,
         } as ContractResolutionPayoutTxn
         runContractPayoutTxn(transaction, payoutTxn)

@@ -14,6 +14,7 @@ import {
   Visibility,
   add_answers_mode,
   contractPath,
+  contractUrl,
 } from 'common/contract'
 import {
   MINIMUM_BOUNTY,
@@ -25,7 +26,7 @@ import { formatMoney } from 'common/util/format'
 import { AddFundsModal } from 'web/components/add-funds-modal'
 import { MultipleChoiceAnswers } from 'web/components/answers/multiple-choice-answers'
 import { Button } from 'web/components/buttons/button'
-import { GroupSelector } from 'web/components/groups/group-selector'
+import { TopicSelector } from 'web/components/topics/topic-selector'
 import { Row } from 'web/components/layout/row'
 import { Checkbox } from 'web/components/widgets/checkbox'
 import { ChoicesToggleGroup } from 'web/components/widgets/choices-toggle-group'
@@ -62,7 +63,7 @@ import { ContractVisibilityType, NewQuestionParams } from './new-contract-panel'
 import { VisibilityTheme } from 'web/pages/create'
 import { getContractWithFields } from 'web/lib/supabase/contracts'
 import { filterDefined } from 'common/util/array'
-import { TopicTag } from 'web/components/groups/topic-tag'
+import { TopicTag } from 'web/components/topics/topic-tag'
 
 export function ContractParamsForm(props: {
   creator: User
@@ -365,7 +366,7 @@ export function ContractParamsForm(props: {
       const newContract = (await createMarket(createProps)) as Contract
 
       // wait for supabase
-      const supabaseContract = await waitForSupabaseContract(newContract.id)
+      const supabaseContract = await waitForSupabaseContract(newContract)
 
       track('create market', {
         slug: newContract.slug,
@@ -610,7 +611,7 @@ export function ContractParamsForm(props: {
             ))}
           </Row>
         )}
-        <GroupSelector
+        <TopicSelector
           setSelectedGroup={(group) => {
             if (
               (selectedGroups.length > 0 &&
@@ -853,18 +854,22 @@ async function fetchContract(contractId: string) {
   }
 }
 
-async function waitForSupabaseContract(contractId: string) {
+async function waitForSupabaseContract(contract: Contract) {
   let retries = 100
 
   const delay = (ms: number) =>
     new Promise((resolve) => setTimeout(resolve, ms))
 
   while (retries > 0) {
-    const contract = await fetchContract(contractId)
-    if (contract) return contract
+    const c = await fetchContract(contract.id)
+    if (c) return c
     retries--
     await delay(100) // wait for 100 milliseconds after each try
   }
 
-  throw new Error('Contract failed to replicate to supabase')
+  throw new Error(
+    `We created your market, but it's taking a while to appear. Check this link in a minute: ${contractUrl(
+      contract
+    )}`
+  )
 }

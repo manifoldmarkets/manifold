@@ -23,7 +23,7 @@ import {
 import { Group, TOPIC_KEY } from 'common/group'
 import { getUsers } from 'web/lib/supabase/user'
 import { Row } from 'web/components/layout/row'
-import { GroupSelector } from 'web/components/groups/group-selector'
+import { TopicSelector } from 'web/components/topics/topic-selector'
 import DropdownMenu from 'web/components/comments/dropdown-menu'
 import { Modal } from 'web/components/layout/modal'
 import { PencilIcon, TagIcon, XIcon } from '@heroicons/react/outline'
@@ -178,9 +178,9 @@ export default function Leaderboards(props: {
             </Title>
           </Row>
           <DropdownMenu
-            Icon={<DotsVerticalIcon className={'h-5 w-5'} />}
+            icon={<DotsVerticalIcon className={'h-5 w-5'} />}
             menuWidth={'w-48'}
-            Items={[
+            items={[
               {
                 name: topic ? 'Change topic' : 'Filter by topic',
                 onClick: () => setShowSelectGroupModal(true),
@@ -292,7 +292,7 @@ const SelectTopicModal = (props: {
           </Row>
         )}
         <Col className={''}>
-          <GroupSelector
+          <TopicSelector
             setSelectedGroup={(group) => {
               setGroup(group)
               setOpen(false)

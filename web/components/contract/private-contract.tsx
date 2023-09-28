@@ -3,7 +3,7 @@ import { ContractPageContent } from 'web/pages/[username]/[contractSlug]'
 import {
   InaccessiblePrivateThing,
   LoadingPrivateThing,
-} from '../groups/private-group'
+} from 'web/components/topics/private-topic'
 import Custom404 from 'web/pages/404'
 
 export function PrivateContractPage(props: { contractSlug: string }) {

@@ -26,10 +26,12 @@ import { JSONContent } from '@tiptap/core'
 import { Editor } from '@tiptap/react'
 import { PlusIcon } from '@heroicons/react/solid'
 import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
-import { ENV_CONFIG } from 'common/envs/constants'
+import { ENV_CONFIG, isAdminId } from 'common/envs/constants'
 import { ExpandingInput } from 'web/components/widgets/expanding-input'
 import { SEO } from 'web/components/SEO'
 import { richTextToString } from 'common/util/parse'
+import { RelativeTimestamp } from 'web/components/relative-timestamp'
+import { tsToMillis } from 'common/supabase/utils'
 
 export async function getStaticProps(ctx: {
   params: { dashboardSlug: string }
@@ -90,7 +92,9 @@ export default function DashboardPage(props: {
   }
 
   const user = useUser()
-  const canEdit = dashboard.creator_id === user?.id
+  const isCreator = dashboard.creator_id === user?.id
+  const isOnlyAdmin = !isCreator && user && isAdminId(user.id)
+
   const [editMode, setEditMode] = useState(false)
 
   const editor = useTextEditor({
@@ -155,14 +159,21 @@ export default function DashboardPage(props: {
               dashboardCreatorId={dashboard.creator_id}
               ttPlacement="bottom"
             />
-            {canEdit && !editMode && (
-              <Button onClick={() => setEditMode((editMode) => !editMode)}>
-                Edit
+            {isCreator && !editMode && (
+              <Button onClick={() => setEditMode(true)}>Edit</Button>
+            )}
+            {isOnlyAdmin && !editMode && (
+              <Button
+                color="red"
+                className="ml-6"
+                onClick={() => setEditMode(true)}
+              >
+                Edit as Admin
               </Button>
             )}
           </div>
         </Row>
-        <Row className="mb-8 gap-2">
+        <Row className="mb-8 items-center gap-2">
           <Avatar
             username={dashboard.creator_username}
             avatarUrl={dashboard.creator_avatar_url}
@@ -172,6 +183,12 @@ export default function DashboardPage(props: {
             username={dashboard.creator_username}
             name={dashboard.creator_name}
           />
+          <span className="text-ink-400 ml-4 text-sm">
+            Updated
+            <RelativeTimestamp
+              time={tsToMillis(dashboard.created_time as any)}
+            />
+          </span>
         </Row>
         {editMode && isNotXl ? (
           <DescriptionEditor

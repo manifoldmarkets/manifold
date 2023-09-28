@@ -3,27 +3,34 @@ import { PlusCircleIcon, SelectorIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { Group } from 'common/group'
 import { useEffect, useRef, useState } from 'react'
-import { CreateGroupModal } from 'web/components/groups/create-group-modal'
+import { CreateTopicModal } from 'web/components/topics/create-topic-modal'
 import { Row } from 'web/components/layout/row'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { useUser } from 'web/hooks/use-user'
 import { getGroups, searchGroups } from 'web/lib/supabase/groups'
 import { LoadingIndicator } from '../widgets/loading-indicator'
-import { PRIVACY_STATUS_ITEMS } from './group-privacy-modal'
+import { PRIVACY_STATUS_ITEMS } from './topic-privacy-modal'
 import { uniqBy } from 'lodash'
 
 import { useAsyncData } from 'web/hooks/use-async-data'
 import { Col } from '../layout/col'
 
-export function GroupSelector(props: {
+export function TopicSelector(props: {
   setSelectedGroup: (group: Group) => void
   label?: string
   ignoreGroupIds?: string[]
   newContract?: boolean
   onlyGroupIds?: string[]
+  onCreateTopic?: (group: Group) => void
 }) {
-  const { setSelectedGroup, label, ignoreGroupIds, newContract, onlyGroupIds } =
-    props
+  const {
+    setSelectedGroup,
+    label,
+    onCreateTopic,
+    ignoreGroupIds,
+    newContract,
+    onlyGroupIds,
+  } = props
   const user = useUser()
   const onlyGroups = useAsyncData(onlyGroupIds, getGroups)
   const [isCreatingNewGroup, setIsCreatingNewGroup] = useState(false)
@@ -191,12 +198,19 @@ export function GroupSelector(props: {
           </>
         )}
       </Combobox>
-      <CreateGroupModal
-        user={user}
-        open={isCreatingNewGroup}
-        setOpen={setIsCreatingNewGroup}
-        addGroupIdParamOnSubmit
-      />
+      {isCreatingNewGroup && (
+        <CreateTopicModal
+          user={user}
+          startingTitle={query}
+          open={isCreatingNewGroup}
+          setOpen={setIsCreatingNewGroup}
+          onCreate={(group) => {
+            handleSelectGroup(group)
+            onCreateTopic?.(group)
+            setIsCreatingNewGroup(false)
+          }}
+        />
+      )}
     </Col>
   )
 }

@@ -204,9 +204,8 @@ export function removeContractFromGroup(params: {
   return call(getApiUrl('removecontractfromgroup'), 'POST', params)
 }
 
-export function unresolveMarket(params: { marketId: string }) {
-  const { marketId } = params
-  return call(`/api/v0/market/${marketId}/unresolve`, 'POST', params)
+export function unresolveMarket(params: { contractId: string }) {
+  return call(getApiUrl('unresolve'), 'POST', params)
 }
 
 export function hideComment(params: HideCommentReq) {
@@ -522,5 +521,5 @@ export function updateDashboard(params: {
 }
 
 export function getDashboardFromSlug(params: { dashboardSlug: string }) {
-  return call(getApiUrl('getdashboardfromslug'), 'POST', params)
+  return maybeAuthedCall(getApiUrl('getdashboardfromslug'), 'POST', params)
 }

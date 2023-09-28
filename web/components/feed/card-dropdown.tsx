@@ -71,8 +71,8 @@ export function FeedDropdown(props: {
   ) as DropdownItem[]
   return (
     <DropdownMenu
-      Items={feedCardOptions}
-      Icon={<DotsVerticalIcon className={clsx('h-5 w-5')} />}
+      items={feedCardOptions}
+      icon={<DotsVerticalIcon className={clsx('h-5 w-5')} />}
       menuWidth={'w-60'}
       menuItemsClass="bg-canvas-50"
     />

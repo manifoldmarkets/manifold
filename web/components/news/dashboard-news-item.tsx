@@ -72,7 +72,7 @@ export const DashboardNewsItemPlaceholder = () => {
   return (
     <div
       className={clsx(
-        'border-ink-500 bg-canvas-0 hover:border-primary-300 focus:border-primary-300 relative flex w-full w-full animate-pulse flex-col overflow-hidden rounded-xl border transition-colors sm:flex-row'
+        'border-ink-500 bg-canvas-0 hover:border-primary-300 focus:border-primary-300 relative flex w-full animate-pulse flex-col overflow-hidden rounded-xl border transition-colors sm:flex-row'
       )}
     >
       <div className=" bg-ink-500 m-0 h-[120px] sm:w-1/3" />

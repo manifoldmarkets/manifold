@@ -77,7 +77,7 @@ import ContractEmbedPage from '../embed/[username]/[contractSlug]'
 import { ExplainerPanel } from 'web/components/explainer-panel'
 import { SidebarSignUpButton } from 'web/components/buttons/sign-up-button'
 import { linkClass } from 'web/components/widgets/site-link'
-import { MarketGroups } from 'web/components/contract/market-groups'
+import { MarketTopics } from 'web/components/contract/market-topics'
 import { getMultiBetPoints } from 'web/components/charts/contract/choice'
 import { useRealtimeBets } from 'web/hooks/use-bets-supabase'
 import { ContractSEO } from 'web/components/contract/contract-seo'
@@ -535,7 +535,7 @@ export function ContractPageContent(props: {
                     canEdit={isAdmin || isCreator}
                   />
                 </div>
-                <MarketGroups contract={contract} />
+                <MarketTopics contract={contract} />
               </Col>
 
               <div className="text-ink-600 flex items-center justify-between text-sm">

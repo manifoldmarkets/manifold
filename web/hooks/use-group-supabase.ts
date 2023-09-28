@@ -141,13 +141,16 @@ export function useRealtimeMemberGroups(userId: string | undefined | null) {
   return groups
 }
 
-export function useGroupRole(groupId: string, user: User | null | undefined) {
+export function useGroupRole(
+  groupId: string | undefined,
+  user: User | null | undefined
+) {
   const [userRole, setUserRole] = useState<GroupRole | null | undefined>(
     undefined
   )
   const isManifoldAdmin = isAdminId(user?.id ?? '_')
   useEffect(() => {
-    if (user) setTranslatedMemberRole(groupId, setUserRole, user)
+    if (user && groupId) setTranslatedMemberRole(groupId, setUserRole, user)
   }, [user, groupId])
 
   return isManifoldAdmin ? 'admin' : userRole
@@ -280,4 +283,37 @@ export function useMyGroupRoles(userId: string | undefined) {
 
 export function useGroupsWhereUserHasRole(userId: string | undefined) {
   return useAsyncData(userId, getGroupsWhereUserHasRole)
+}
+
+export const useGroupRoles = (user: User | undefined | null) => {
+  const [roles, setRoles] =
+    useState<Awaited<ReturnType<typeof getMyGroupRoles>>>()
+
+  useEffect(() => {
+    if (user)
+      getMyGroupRoles(user.id).then((roles) =>
+        setRoles(
+          roles?.sort(
+            (a, b) =>
+              (b.role === 'admin' ? 2 : b.role === 'moderator' ? 1 : 0) -
+              (a.role === 'admin' ? 2 : a.role === 'moderator' ? 1 : 0)
+          )
+        )
+      )
+  }, [])
+
+  const groups: Group[] =
+    roles?.map((g) => ({
+      id: g.group_id!,
+      name: g.group_name!,
+      slug: g.group_slug!,
+      privacyStatus: g.privacy_status as any,
+      totalMembers: g.total_members!,
+      creatorId: g.creator_id!,
+      createdTime: g.createdtime!,
+      postIds: [],
+      importanceScore: 0,
+    })) ?? []
+
+  return { roles, groups }
 }

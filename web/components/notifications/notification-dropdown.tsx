@@ -28,8 +28,8 @@ export default function NotificationDropdown(props: {
   if (notificationDropdownItems.length > 0) {
     return (
       <DropdownMenu
-        Items={notificationDropdownItems}
-        Icon={
+        items={notificationDropdownItems}
+        icon={
           <DotsVerticalIcon
             className={clsx('my-1 h-4 w-4 md:invisible md:group-hover:visible')}
           />

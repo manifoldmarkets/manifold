@@ -70,11 +70,11 @@ export function Modal(props: {
         <Transition.Child
           as={Fragment}
           enter="ease-in sm:ease-out duration-150"
-          enterFrom="sm:opacity-0 translate-y-full sm:translate-y-0 sm:scale-95"
-          enterTo="opacity-100 translate-y-0 sm:scale-100"
+          enterFrom="opacity-0 sm:scale-95"
+          enterTo="opacity-100 sm:scale-100"
           leave="ease-out sm:ease-in duration-75"
-          leaveFrom="opacity-100 translate-y-0 sm:scale-100"
-          leaveTo="sm:opacity-0 translate-y-full sm:translate-y-0 sm:scale-95"
+          leaveFrom="opacity-100 sm:scale-100"
+          leaveTo="opacity-0 sm:scale-95"
         >
           <div className="fixed inset-0 overflow-y-auto pt-20 sm:p-0">
             <div

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { Row } from 'web/components/layout/row'
 import { firebaseLogin } from 'web/lib/firebase/users'
-import { withTracking } from 'web/lib/service/analytics'
+import { track, withTracking } from 'web/lib/service/analytics'
 import { leaveGroup, SearchGroupInfo } from 'web/lib/supabase/groups'
 import { Button, SizeType } from '../buttons/button'
 import { ConfirmationButton } from '../buttons/confirmation-button'
@@ -14,10 +14,10 @@ import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { Group } from 'common/group'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { PlusCircleIcon } from '@heroicons/react/solid'
-import { GroupOptions } from 'web/components/groups/group-options'
+import { TopicOptions } from 'web/components/topics/topic-options'
 import { Col } from 'web/components/layout/col'
 
-function LeavePrivateGroupButton(props: {
+function LeavePrivateTopicButton(props: {
   group: SearchGroupInfo
   user: User | undefined | null
   setIsMember: (isMember: boolean) => void
@@ -82,7 +82,7 @@ export function LeavePrivateGroupModal() {
   )
 }
 
-export function JoinOrLeaveGroupButton(props: {
+export function FollowOrUnfolowTopicButton(props: {
   group: SearchGroupInfo
   isMember: boolean | undefined
   user: User | undefined | null
@@ -98,7 +98,7 @@ export function JoinOrLeaveGroupButton(props: {
 
   if (group.privacyStatus === 'private') {
     return (
-      <LeavePrivateGroupButton
+      <LeavePrivateTopicButton
         group={group}
         setIsMember={setIsMember}
         user={user}
@@ -158,8 +158,36 @@ export function JoinOrLeaveGroupButton(props: {
     </Button>
   )
 }
-
-export const GroupOptionsButton = (props: {
+export const followTopic = async (
+  user: User | null | undefined,
+  group: Group
+) => {
+  if (!user) return firebaseLogin()
+  await joinGroup({ groupId: group.id })
+    .then(() => {
+      toast(`You're now following ${group.name}!`)
+    })
+    .catch((e) => {
+      console.error(e)
+      toast.error('Failed to follow category')
+    })
+  track('join group', { slug: group.slug })
+}
+export const unfollowTopic = async (
+  user: User | null | undefined,
+  group: Group
+) => {
+  if (!user) return firebaseLogin()
+  await leaveGroup(group.id, user.id)
+    .then(() => {
+      toast(`You're no longer following ${group.name}.`)
+    })
+    .catch(() => {
+      toast.error('Failed to unfollow category')
+    })
+  track('leave group', { slug: group.slug })
+}
+export const TopicOptionsButton = (props: {
   group: Group
   yourGroupIds: string[] | undefined
   user: User | null | undefined
@@ -175,48 +203,17 @@ export const GroupOptionsButton = (props: {
   }, [yourGroupIds?.length])
   const [loading, setLoading] = useState(false)
   const isPrivate = group.privacyStatus == 'private'
-  const follow = user
-    ? withTracking(
-        () => {
-          setLoading(true)
-          joinGroup({ groupId: group.id })
-            .then(() => {
-              setIsMember(true)
-              toast(`You're now following ${group.name}!`)
-            })
-            .catch((e) => {
-              console.error(e)
-              toast.error('Failed to follow category')
-            })
-            .finally(() => setLoading(false))
-        },
-        'join group',
-        { slug: group.slug }
-      )
-    : firebaseLogin
-  const unfollow = user
-    ? withTracking(
-        () => {
-          leaveGroup(group.id, user.id)
-            .then(() => {
-              setIsMember(false)
-              toast(`You're no longer following ${group.name}.`)
-            })
-            .catch(() => {
-              toast.error('Failed to unfollow category')
-            })
-        },
-        'leave group',
-        { slug: group.slug }
-      )
-    : firebaseLogin
+
   return (
     <Col className={className}>
       {!isPrivate && !isCreator && !isMember && yourGroupIds && (
         <button
           onClick={(e) => {
             e.stopPropagation()
-            follow()
+            setLoading(true)
+            followTopic(user, group)
+              .then(() => setIsMember(true))
+              .finally(() => setLoading(false))
           }}
           className={'h-5 w-5'}
         >
@@ -228,11 +225,18 @@ export const GroupOptionsButton = (props: {
         </button>
       )}
       {(isCreator || isMember) && (
-        <GroupOptions
+        <TopicOptions
           group={group}
           user={user}
           isMember={isMember}
-          unfollow={unfollow}
+          unfollow={() => {
+            setLoading(true)
+            unfollowTopic(user, group)
+              .then(() => {
+                setIsMember(false)
+              })
+              .finally(() => setLoading(false))
+          }}
         />
       )}
     </Col>

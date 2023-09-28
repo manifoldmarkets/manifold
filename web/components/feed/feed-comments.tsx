@@ -366,13 +366,13 @@ export function DotMenu(props: {
       />
       <DropdownMenu
         menuWidth={'w-36'}
-        Icon={
+        icon={
           <DotsHorizontalIcon
             className="mt-[0.12rem] h-4 w-4"
             aria-hidden="true"
           />
         }
-        Items={buildArray(
+        items={buildArray(
           {
             name: 'Copy link',
             icon: <FiLink className="h-5 w-5" />,
@@ -493,6 +493,7 @@ function CommentActions(props: {
               e.stopPropagation()
               onReplyClick(comment)
             }}
+            className={'text-ink-500'}
           >
             <ReplyIcon className="h-5 w-5 " />
           </IconButton>
@@ -506,6 +507,7 @@ function CommentActions(props: {
           contentType={'comment'}
           totalLikes={comment.likes ?? 0}
           contract={contract}
+          size={'xs'}
           contentText={richTextToString(comment.content)}
           className={
             isBlocked(privateUser, comment.userId) ? 'pointer-events-none' : ''

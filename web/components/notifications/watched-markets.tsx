@@ -6,13 +6,18 @@ import { Modal } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Input } from 'web/components/widgets/input'
-import Link from 'next/link'
-import { XIcon } from '@heroicons/react/outline'
 import {
   getWatchedContracts,
   getWatchedContractsCount,
 } from 'web/lib/supabase/contracts'
 import { unfollowMarket } from 'web/components/buttons/follow-market-button'
+import { ContractsTable } from '../contract/contracts-table'
+import {
+  probColumn,
+  traderColumn,
+} from '../contract/contract-table-col-formats'
+import { LoadingIndicator } from '../widgets/loading-indicator'
+import { Button } from '../buttons/button'
 
 export const UserWatchedContractsButton = memo(
   function UserLikedContractsButton(props: { user: User; className?: string }) {
@@ -66,41 +71,37 @@ export const UserWatchedContractsButton = memo(
               />
             </Row>
             <Col className={'gap-4'}>
-              {filteredWatchedContracts?.map((watchedContract) => (
-                <Row
-                  key={watchedContract.slug}
-                  className={'items-center justify-between gap-2'}
-                >
-                  <Col className={'w-full'}>
-                    <Link
-                      href={
-                        watchedContract.creatorUsername +
-                        '/' +
-                        watchedContract.slug
-                      }
-                      className={'line-clamp-2 text-primary-700 text-sm'}
-                    >
-                      {watchedContract.question}
-                    </Link>
-                  </Col>
-                  <XIcon
-                    className="ml-2 h-5 w-5 shrink-0 cursor-pointer"
-                    onClick={async () => {
-                      await unfollowMarket(
-                        watchedContract.id,
-                        watchedContract.slug,
-                        user
-                      )
-                      setWatchedContracts(
-                        filteredWatchedContracts.filter(
-                          (c) => c.id !== watchedContract.id
-                        )
-                      )
-                      setWatchedContractsCount(watchedContractsCount - 1)
-                    }}
-                  />
-                </Row>
-              ))}
+              {!filteredWatchedContracts && <LoadingIndicator />}
+              <ContractsTable
+                contracts={filteredWatchedContracts ?? ([] as any)}
+                hideHeader
+                columns={[
+                  traderColumn,
+                  probColumn,
+                  {
+                    header: 'Unwatch',
+                    content: (contract) => (
+                      <Button
+                        size="2xs"
+                        color="gray-outline"
+                        onClick={async (e) => {
+                          e.stopPropagation()
+                          e.preventDefault()
+                          await unfollowMarket(contract.id, contract.slug, user)
+                          setWatchedContracts(
+                            filteredWatchedContracts?.filter(
+                              (c) => c.id !== contract.id
+                            )
+                          )
+                          setWatchedContractsCount(watchedContractsCount - 1)
+                        }}
+                      >
+                        Unwatch
+                      </Button>
+                    ),
+                  },
+                ]}
+              />
             </Col>
           </Col>
         </Modal>

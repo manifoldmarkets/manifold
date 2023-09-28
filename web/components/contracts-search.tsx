@@ -24,11 +24,13 @@ import {
   useRealtimeMemberGroups,
 } from 'web/hooks/use-group-supabase'
 import { DEFAULT_TOPIC, TOPIC_KEY } from 'common/group'
-import { TopicTag } from 'web/components/groups/topic-tag'
-import { AddContractToGroupButton } from 'web/components/groups/add-contract-to-group-modal'
+import { TopicTag } from 'web/components/topics/topic-tag'
+import { AddContractToGroupButton } from 'web/components/topics/add-contract-to-group-modal'
 import { useUser } from 'web/hooks/use-user'
 
-import { GroupOptionsButton } from 'web/components/groups/groups-button'
+import { TopicOptionsButton } from 'web/components/topics/topics-button'
+
+import { ForYouDropdown } from 'web/components/topics/for-you-dropdown'
 
 const CONTRACTS_PER_PAGE = 40
 
@@ -118,16 +120,9 @@ export const SORT_KEY = 's'
 const FILTER_KEY = 'f'
 const CONTRACT_TYPE_KEY = 'ct'
 
-export const FRESH_SEARCH_CHANGED_STATE: SearchState = {
-  contracts: undefined,
-  fuzzyContractOffset: 0,
-  shouldLoadMore: true,
-}
-
 export type SupabaseAdditionalFilter = {
   creatorId?: string
   tag?: string
-  topicSlug?: string
   excludeContractIds?: string[]
   excludeGroupSlugs?: string[]
   excludeUserIds?: string[]
@@ -151,7 +146,6 @@ export function SupabaseContractSearch(props: {
   hideOrderSelector?: boolean
   hideActions?: boolean
   headerClassName?: string
-  inputRowClassName?: string
   isWholePage?: boolean
   menuButton?: ReactNode
   hideAvatar?: boolean
@@ -161,8 +155,6 @@ export function SupabaseContractSearch(props: {
   includeProbSorts?: boolean
   autoFocus?: boolean
   emptyState?: ReactNode
-  listViewDisabled?: boolean
-  contractSearchControlsClassName?: string
   hideSearch?: boolean
   hideFilters?: boolean
 }) {
@@ -175,143 +167,71 @@ export function SupabaseContractSearch(props: {
     hideActions,
     highlightContractIds,
     headerClassName,
-    inputRowClassName,
     persistPrefix,
     includeProbSorts,
     isWholePage,
     useUrlParams,
     autoFocus,
     emptyState,
-    listViewDisabled,
     hideFilters,
     menuButton,
     hideAvatar,
     rowBelowFilters,
   } = props
 
-  const [state, setState] = usePersistentInMemoryState<SearchState>(
-    FRESH_SEARCH_CHANGED_STATE,
-    `${persistPrefix}-supabase-search`
-  )
-
-  const requestId = useRef(0)
-
   const [searchParams, setSearchParams, defaults] = useSearchQueryState({
     defaultSort,
     defaultFilter,
     useUrlParams,
   })
+
   const [lastSearch, setLastSearch] = usePersistentInMemoryState<
     typeof searchParams
-  >(undefined, `${persistPrefix}-search-has-loaded`)
-
-  const query = useEvent(
-    async (currentState: SearchState, freshQuery?: boolean) => {
-      if (!searchParams) return true
-      const {
-        q: query,
-        s: sort,
-        f: filter,
-        topic: topicSlug,
-        ct: contractType,
-      } = searchParams
-      setLastSearch(searchParams)
-
-      const offset = freshQuery
-        ? 0
-        : currentState.contracts
-        ? currentState.contracts.length
-        : 0
-
-      if (freshQuery || currentState.shouldLoadMore) {
-        const id = ++requestId.current
-
-        const results = await searchContract({
-          state: currentState,
-          query,
-          filter,
-          sort,
-          contractType: additionalFilter?.contractType ?? contractType,
-          offset: offset,
-          limit: CONTRACTS_PER_PAGE,
-          topicSlug:
-            additionalFilter?.topicSlug ??
-            (topicSlug !== '' ? topicSlug : undefined),
-          creatorId: additionalFilter?.creatorId,
-        })
-
-        if (id === requestId.current) {
-          const newContracts: Contract[] = results.data
-
-          const freshContracts = freshQuery
-            ? newContracts
-            : [
-                ...(currentState.contracts ? currentState.contracts : []),
-                ...newContracts,
-              ]
-
-          // TODO: When `deleted` is a native supabase column, filter
-          // out deleted contracts in backend.
-          const freshContractsWithoutDeleted = freshContracts.filter(
-            (contract) => !contract.deleted
-          )
-
-          const newFuzzyContractOffset =
-            results.fuzzyOffset + currentState.fuzzyContractOffset
-
-          const shouldLoadMore = newContracts.length === CONTRACTS_PER_PAGE
-
-          setState({
-            fuzzyContractOffset: newFuzzyContractOffset,
-            contracts: freshContractsWithoutDeleted,
-            shouldLoadMore,
-          })
-          if (freshQuery && isWholePage) window.scrollTo(0, 0)
-
-          return shouldLoadMore
-        }
-      }
-      return false
-    }
-  )
-
-  const loadMoreContracts = () => query(state)
+  >(undefined, `${persistPrefix}-last-search`)
 
   useEffect(() => {
     if (searchParams && !isEqual(searchParams, lastSearch)) {
-      query(FRESH_SEARCH_CHANGED_STATE, true)
+      queryContracts(FRESH_SEARCH_CHANGED_STATE, true)
     }
   }, [JSON.stringify(searchParams)])
 
-  const contracts = state.contracts
-    ? uniqBy(
-        state.contracts.filter((c) => {
-          return (
-            !additionalFilter?.excludeContractIds?.includes(c.id) &&
-            !additionalFilter?.excludeGroupSlugs?.some((slug) =>
-              c.groupSlugs?.includes(slug)
-            ) &&
-            !additionalFilter?.excludeUserIds?.includes(c.creatorId)
-          )
-        }),
-        'id'
-      )
-    : undefined
+  const { contracts, loadMoreContracts, queryContracts } = useContractSearch(
+    persistPrefix,
+    setLastSearch,
+    searchParams,
+    additionalFilter,
+    isWholePage
+  )
+
+  const setQuery = (query: string) => setSearchParams({ q: query })
+  const query = searchParams?.[QUERY_KEY] ?? ''
 
   return (
     <Col>
-      <SupabaseContractSearchControls
-        className={headerClassName}
-        inputRowClassName={inputRowClassName}
-        hideOrderSelector={hideOrderSelector}
-        includeProbSorts={includeProbSorts}
-        autoFocus={autoFocus}
-        listViewDisabled={listViewDisabled}
-        hideFilters={hideFilters}
-        menuButton={menuButton}
-        params={searchParams ?? defaults}
-        updateParams={setSearchParams}
-      />
+      <Col className={clsx('bg-canvas-50 sticky top-0 z-20 ', headerClassName)}>
+        <Row>
+          <Input
+            type="text"
+            inputMode="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onBlur={trackCallback('search', { query: query })}
+            placeholder="Search questions"
+            className="w-full"
+            autoFocus={autoFocus}
+            showClearButton={query !== ''}
+          />
+          {menuButton}
+        </Row>
+        {!hideFilters && (
+          <ContractFilters
+            hideOrderSelector={hideOrderSelector}
+            includeProbSorts={includeProbSorts}
+            params={searchParams ?? defaults}
+            updateParams={setSearchParams}
+          />
+        )}
+      </Col>
       {rowBelowFilters}
       {contracts && contracts.length === 0 ? (
         emptyState ??
@@ -360,6 +280,118 @@ const NoResults = () => {
   return <div className="text-ink-700 mx-2 my-6 text-center">{message}</div>
 }
 
+const FRESH_SEARCH_CHANGED_STATE: SearchState = {
+  contracts: undefined,
+  fuzzyContractOffset: 0,
+  shouldLoadMore: true,
+}
+
+const useContractSearch = (
+  persistPrefix: string,
+  setLastSearch: (searchParams: SearchParams) => void,
+  searchParams: SearchParams | undefined,
+  additionalFilter?: SupabaseAdditionalFilter,
+  isWholePage?: boolean
+) => {
+  const [state, setState] = usePersistentInMemoryState<SearchState>(
+    FRESH_SEARCH_CHANGED_STATE,
+    `${persistPrefix}-supabase-contract-search`
+  )
+
+  const requestId = useRef(0)
+
+  const queryContracts = useEvent(
+    async (currentState: SearchState, freshQuery?: boolean) => {
+      if (!searchParams) return true
+      const {
+        q: query,
+        s: sort,
+        f: filter,
+        topic: topicSlug,
+        ct: contractType,
+      } = searchParams
+      setLastSearch(searchParams)
+
+      const offset = freshQuery
+        ? 0
+        : currentState.contracts
+        ? currentState.contracts.length
+        : 0
+
+      if (freshQuery || currentState.shouldLoadMore) {
+        const id = ++requestId.current
+
+        const results = await searchContract({
+          state: currentState,
+          query,
+          filter,
+          sort,
+          contractType: additionalFilter?.contractType ?? contractType,
+          offset: offset,
+          limit: CONTRACTS_PER_PAGE,
+          topicSlug: topicSlug !== '' ? topicSlug : undefined,
+          creatorId: additionalFilter?.creatorId,
+        })
+
+        if (id === requestId.current) {
+          const newContracts: Contract[] = results.data
+
+          const freshContracts = freshQuery
+            ? newContracts
+            : [
+                ...(currentState.contracts ? currentState.contracts : []),
+                ...newContracts,
+              ]
+
+          // TODO: When `deleted` is a native supabase column, filter
+          // out deleted contracts in backend.
+          const freshContractsWithoutDeleted = freshContracts.filter(
+            (contract) => !contract.deleted
+          )
+
+          const newFuzzyContractOffset =
+            results.fuzzyOffset + currentState.fuzzyContractOffset
+
+          const shouldLoadMore = newContracts.length === CONTRACTS_PER_PAGE
+
+          setState({
+            fuzzyContractOffset: newFuzzyContractOffset,
+            contracts: freshContractsWithoutDeleted,
+            shouldLoadMore,
+          })
+          if (freshQuery && isWholePage) window.scrollTo(0, 0)
+
+          return shouldLoadMore
+        }
+      }
+      return false
+    }
+  )
+
+  const loadMoreContracts = () => queryContracts(state)
+
+  const contracts = state.contracts
+    ? uniqBy(
+        state.contracts.filter((c) => {
+          return (
+            !additionalFilter?.excludeContractIds?.includes(c.id) &&
+            !additionalFilter?.excludeGroupSlugs?.some((slug) =>
+              c.groupSlugs?.includes(slug)
+            ) &&
+            !additionalFilter?.excludeUserIds?.includes(c.creatorId)
+          )
+        }),
+        'id'
+      )
+    : undefined
+
+  return {
+    contracts,
+    loadMoreContracts,
+    queryContracts,
+  }
+}
+
 const useSearchQueryState = (props: {
   defaultSort?: Sort
   defaultFilter?: Filter
@@ -387,37 +419,22 @@ const useSearchQueryState = (props: {
   return [state, setState, defaults] as const
 }
 
-function SupabaseContractSearchControls(props: {
+function ContractFilters(props: {
   className?: string
-  inputRowClassName?: string
   hideOrderSelector?: boolean
   includeProbSorts?: boolean
-  autoFocus?: boolean
-  listViewDisabled?: boolean
-  hideFilters?: boolean
-  menuButton?: ReactNode
   params: SearchParams
   updateParams: (params: Partial<SearchParams>) => void
 }) {
   const {
     className,
     hideOrderSelector,
-    autoFocus,
     includeProbSorts,
-    inputRowClassName,
-    hideFilters,
-    menuButton,
     params,
     updateParams,
   } = props
 
-  const {
-    q: query,
-    s: sort,
-    f: filter,
-    ct: contractType,
-    topic: topicSlug,
-  } = params
+  const { s: sort, f: filter, ct: contractType, topic: topicSlug } = params
 
   const selectFilter = (selection: Filter) => {
     if (selection === filter) return
@@ -440,8 +457,6 @@ function SupabaseContractSearchControls(props: {
     track('select search sort', { sort: selection })
   }
 
-  const setQuery = (query: string) => updateParams({ q: query })
-
   const selectContractType = (selection: ContractTypeType) => {
     if (selection === contractType) return
 
@@ -454,76 +469,7 @@ function SupabaseContractSearchControls(props: {
     }
     track('select contract type', { contractType: selection })
   }
-
-  return (
-    <Col className={clsx('bg-canvas-50 sticky top-0 z-30 ', className)}>
-      <Col
-        className={clsx(
-          'mb-1 items-stretch gap-2 pb-1 pt-px sm:gap-2',
-          inputRowClassName
-        )}
-      >
-        <Row>
-          <Input
-            type="text"
-            inputMode="search"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            onBlur={trackCallback('search', { query: query })}
-            placeholder="Search questions"
-            className="w-full"
-            autoFocus={autoFocus}
-            showClearButton={query !== ''}
-          />
-          {menuButton}
-        </Row>
-        {!hideFilters && (
-          <SearchFilters
-            filter={filter}
-            selectFilter={selectFilter}
-            sort={sort}
-            selectSort={selectSort}
-            contractType={contractType}
-            selectContractType={selectContractType}
-            hideOrderSelector={hideOrderSelector}
-            className={'flex h-6 flex-row gap-2'}
-            includeProbSorts={includeProbSorts}
-            currentTopicSlug={topicSlug}
-            clearTopic={() => updateParams({ [TOPIC_KEY]: '' })}
-          />
-        )}
-      </Col>
-    </Col>
-  )
-}
-
-export function SearchFilters(props: {
-  filter: string
-  selectFilter: (selection: Filter) => void
-  sort: string
-  selectSort: (selection: Sort) => void
-  contractType: string
-  selectContractType: (selection: ContractTypeType) => void
-  hideOrderSelector: boolean | undefined
-  currentTopicSlug: string | undefined
-  clearTopic: () => void
-  className?: string
-  includeProbSorts?: boolean
-}) {
-  const {
-    filter,
-    selectFilter,
-    sort,
-    selectSort,
-    contractType,
-    selectContractType,
-    hideOrderSelector,
-    className,
-    includeProbSorts,
-    currentTopicSlug,
-    clearTopic,
-  } = props
-  const topic = useGroupFromSlug(currentTopicSlug ?? '')
+  const topic = useGroupFromSlug(topicSlug ?? '')
   const hideFilter =
     sort === 'resolve-date' ||
     sort === 'close-date' ||
@@ -535,99 +481,121 @@ export function SearchFilters(props: {
   const user = useUser()
   const yourGroups = useRealtimeMemberGroups(user?.id)
   const yourGroupIds = yourGroups?.map((g) => g.id)
+  const setTopic = (slug: string) => updateParams({ [TOPIC_KEY]: slug })
+
   return (
-    <div className={clsx(className, 'gap-3')}>
-      {!hideOrderSelector && (
+    <Col
+      className={clsx(
+        'mb-1 items-stretch gap-2 pb-1 pt-px sm:gap-2',
+        className
+      )}
+    >
+      <Row className={'h-6 gap-2'}>
+        {!hideOrderSelector && (
+          <DropdownMenu
+            items={generateFilterDropdownItems(
+              contractType == 'BOUNTIED_QUESTION'
+                ? BOUNTY_MARKET_SORTS
+                : contractType == 'POLL'
+                ? POLL_SORTS
+                : includeProbSorts &&
+                  (contractType === 'ALL' || contractType === 'BINARY')
+                ? PREDICTION_MARKET_PROB_SORTS
+                : PREDICTION_MARKET_SORTS,
+              selectSort
+            )}
+            icon={
+              <Row className=" items-center gap-0.5 ">
+                <span className="text-ink-500 whitespace-nowrap text-sm font-medium">
+                  {sortLabel}
+                </span>
+                <ChevronDownIcon className="h-4 w-4 text-gray-500" />
+              </Row>
+            }
+            menuWidth={'w-36'}
+            menuItemsClass="left-0 right-auto"
+            selectedItemName={sortLabel}
+            closeOnClick={true}
+          />
+        )}
+        {!hideFilter && (
+          <DropdownMenu
+            items={generateFilterDropdownItems(FILTERS, selectFilter)}
+            icon={
+              <Row className=" items-center gap-0.5 ">
+                <span className="text-ink-500 whitespace-nowrap text-sm font-medium">
+                  {filterLabel}
+                </span>
+                <ChevronDownIcon className="h-4 w-4 text-gray-500" />
+              </Row>
+            }
+            menuItemsClass="left-0 right-auto"
+            menuWidth={'w-40'}
+            selectedItemName={filterLabel}
+            closeOnClick={true}
+          />
+        )}
         <DropdownMenu
-          Items={generateFilterDropdownItems(
-            contractType == 'BOUNTIED_QUESTION'
-              ? BOUNTY_MARKET_SORTS
-              : contractType == 'POLL'
-              ? POLL_SORTS
-              : includeProbSorts &&
-                (contractType === 'ALL' || contractType === 'BINARY')
-              ? PREDICTION_MARKET_PROB_SORTS
-              : PREDICTION_MARKET_SORTS,
-            selectSort
+          items={generateFilterDropdownItems(
+            CONTRACT_TYPES,
+            selectContractType
           )}
-          Icon={
+          icon={
             <Row className=" items-center gap-0.5 ">
               <span className="text-ink-500 whitespace-nowrap text-sm font-medium">
-                {sortLabel}
+                {contractTypeLabel}
               </span>
               <ChevronDownIcon className="h-4 w-4 text-gray-500" />
             </Row>
           }
           menuWidth={'w-36'}
           menuItemsClass="left-0 right-auto"
-          selectedItemName={sortLabel}
+          selectedItemName={contractTypeLabel}
           closeOnClick={true}
         />
-      )}
-      {!hideFilter && (
-        <DropdownMenu
-          Items={generateFilterDropdownItems(FILTERS, selectFilter)}
-          Icon={
-            <Row className=" items-center gap-0.5 ">
-              <span className="text-ink-500 whitespace-nowrap text-sm font-medium">
-                {filterLabel}
-              </span>
-              <ChevronDownIcon className="h-4 w-4 text-gray-500" />
-            </Row>
-          }
-          menuItemsClass="left-0 right-auto"
-          menuWidth={'w-40'}
-          selectedItemName={filterLabel}
-          closeOnClick={true}
-        />
-      )}
-      <DropdownMenu
-        Items={generateFilterDropdownItems(CONTRACT_TYPES, selectContractType)}
-        Icon={
-          <Row className=" items-center gap-0.5 ">
-            <span className="text-ink-500 whitespace-nowrap text-sm font-medium">
-              {contractTypeLabel}
+        {topicSlug == topic?.slug && topic && (
+          <TopicTag
+            className={
+              'text-primary-500 overflow-x-hidden text-ellipsis !py-0 lg:hidden'
+            }
+            topic={topic}
+            location={'questions page'}
+          >
+            <button onClick={() => setTopic('')}>
+              <XIcon className="hover:text-ink-700 text-ink-400 ml-1 hidden h-4 w-4 sm:block" />
+            </button>
+            <TopicOptionsButton
+              className={'sm:hidden'}
+              group={topic}
+              yourGroupIds={yourGroupIds}
+              user={user}
+            />
+          </TopicTag>
+        )}
+        {topicSlug === 'for-you' && (
+          <Row
+            className={
+              'text-primary-500 dark:text-ink-400 hover:text-ink-600 hover:bg-primary-400/10 group items-center justify-center whitespace-nowrap rounded px-1 text-right text-sm transition-colors lg:hidden'
+            }
+          >
+            <span className="mr-px opacity-50 transition-colors group-hover:text-inherit">
+              #
             </span>
-            <ChevronDownIcon className="h-4 w-4 text-gray-500" />
+            ⭐️ For you
+            <button onClick={() => setTopic('')}>
+              <XIcon className="hover:text-ink-700 text-ink-400 ml-1 hidden h-4 w-4 sm:block" />
+            </button>
+            {user && (
+              <ForYouDropdown
+                setCurrentCategory={setTopic}
+                user={user}
+                yourGroups={yourGroups}
+                className={'ml-1 sm:hidden'}
+              />
+            )}
           </Row>
-        }
-        menuWidth={'w-36'}
-        menuItemsClass="left-0 right-auto"
-        selectedItemName={contractTypeLabel}
-        closeOnClick={true}
-      />
-      {currentTopicSlug == topic?.slug && topic && (
-        <TopicTag
-          className={'text-primary-500 overflow-x-hidden text-ellipsis !py-0'}
-          topic={topic}
-          location={'questions page'}
-        >
-          <button onClick={clearTopic}>
-            <XIcon className="hover:text-ink-700 text-ink-400 ml-1 hidden h-4 w-4 sm:block" />
-          </button>
-          <GroupOptionsButton
-            className={'sm:hidden'}
-            group={topic}
-            yourGroupIds={yourGroupIds}
-            user={user}
-          />
-        </TopicTag>
-      )}
-      {currentTopicSlug === 'for-you' && (
-        <Row
-          className={
-            'text-primary-500 dark:text-ink-400 hover:text-ink-600 hover:bg-primary-400/10 group items-center justify-center whitespace-nowrap rounded px-1 text-right text-sm transition-colors'
-          }
-        >
-          <span className="mr-px opacity-50 transition-colors group-hover:text-inherit">
-            #
-          </span>
-          ⭐️ For you
-          <button onClick={clearTopic}>
-            <XIcon className="hover:text-ink-700 text-ink-400 ml-1 h-4 w-4" />
-          </button>
-        </Row>
-      )}
-    </div>
+        )}
+      </Row>
+    </Col>
   )
 }

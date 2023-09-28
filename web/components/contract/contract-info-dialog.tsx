@@ -288,7 +288,7 @@ export const Stats = (props: {
                       onClick={() => {
                         if (unresolving) return
                         setUnresolving(true)
-                        unresolveMarket({ marketId: id }).then(() => {
+                        unresolveMarket({ contractId: id }).then(() => {
                           setUnresolving(false)
                           setUnresolveText('')
                         })

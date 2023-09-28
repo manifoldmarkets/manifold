@@ -1,5 +1,5 @@
 import { Html, Head, Main, NextScript } from 'next/document'
-import { BACKGROUND_COLOR, ENV_CONFIG } from 'common/envs/constants'
+import { ENV_CONFIG } from 'common/envs/constants'
 
 export default function Document() {
   return (
@@ -7,7 +7,7 @@ export default function Document() {
       <Head>
         <link rel="icon" href={ENV_CONFIG.faviconPath} />
       </Head>
-      <body className={BACKGROUND_COLOR}>
+      <body className="bg-canvas-50 text-ink-1000">
         <Main />
         <NextScript />
       </body>

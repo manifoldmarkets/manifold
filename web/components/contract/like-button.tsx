@@ -17,6 +17,7 @@ import { Avatar } from '../widgets/avatar'
 import { Tooltip } from '../widgets/tooltip'
 import { UserLink } from '../widgets/user-link'
 import { LoadingIndicator } from '../widgets/loading-indicator'
+import { Button, SizeType } from 'web/components/buttons/button'
 
 const LIKES_SHOWN = 3
 
@@ -34,6 +35,7 @@ export const LikeButton = memo(function LikeButton(props: {
   className?: string
   isSwipe?: boolean
   placement?: 'top' | 'bottom'
+  size?: SizeType
 }) {
   const {
     user,
@@ -46,6 +48,7 @@ export const LikeButton = memo(function LikeButton(props: {
     isSwipe,
     trackingLocation,
     placement = 'bottom',
+    size,
   } = props
   const userLiked = useIsLiked(user?.id, contentType, contentId)
   const disabled = !user || contentCreatorId === user?.id
@@ -120,12 +123,13 @@ export const LikeButton = memo(function LikeButton(props: {
         noTap
         hasSafePolygon={showList}
       >
-        <button
+        <Button
+          color={'gray-white'}
           disabled={disabled}
+          size={size}
           className={clsx(
-            'text-ink-500 flex flex-row items-center py-1.5 px-2 disabled:cursor-not-allowed',
-            totalLikes === 0 && !user && 'disabled:opacity-50',
-            !disabled && 'hover:text-ink-600',
+            'text-ink-500 flex flex-row items-center disabled:cursor-not-allowed',
+            'disabled:text-ink-500',
             className
           )}
           {...likeLongPress}
@@ -143,7 +147,7 @@ export const LikeButton = memo(function LikeButton(props: {
               {totalLikes}
             </div>
           )}
-        </button>
+        </Button>
       </Tooltip>
       {modalOpen && (
         <UserLikedFullList
