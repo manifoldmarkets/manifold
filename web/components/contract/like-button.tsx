@@ -18,6 +18,7 @@ import { Tooltip } from '../widgets/tooltip'
 import { UserLink } from '../widgets/user-link'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { Button, SizeType } from 'web/components/buttons/button'
+import toast from 'react-hot-toast'
 
 const LIKES_SHOWN = 3
 
@@ -51,7 +52,8 @@ export const LikeButton = memo(function LikeButton(props: {
     size,
   } = props
   const userLiked = useIsLiked(user?.id, contentType, contentId)
-  const disabled = !user || contentCreatorId === user?.id
+  const disabled = !user
+  const isMe = contentCreatorId === user?.id
   const [liked, setLiked] = useState(false)
   const [modalOpen, setModalOpen] = useState(false)
   const [totalLikes, setTotalLikes] = useState(props.totalLikes)
@@ -95,7 +97,11 @@ export const LikeButton = memo(function LikeButton(props: {
     },
     () => {
       if (!disabled) {
-        handleLiked(!liked)
+        if (isMe) {
+          toast("Of course you'd like yourself", { icon: '🙄' })
+        } else {
+          handleLiked(!liked)
+        }
       }
     }
   )
