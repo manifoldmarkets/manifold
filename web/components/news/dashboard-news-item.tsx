@@ -1,6 +1,4 @@
 import clsx from 'clsx'
-
-import Link from 'next/link'
 import { Col } from 'web/components/layout/col'
 import { track } from 'web/lib/service/analytics'
 import { Row } from '../layout/row'
@@ -28,8 +26,10 @@ export const DashboardNewsItem = (props: {
     siteName,
   } = props
   const date = Date.parse(published_time as any)
+  const imgSrc = image ?? urlToImage
+
   return (
-    <Link
+    <a
       href={url}
       onClick={() => track('click news article', { article: title })}
       rel="noreferrer"
@@ -39,15 +39,17 @@ export const DashboardNewsItem = (props: {
         className
       )}
     >
-      <img
-        className=" m-0 object-cover sm:w-1/3"
-        src={image ?? urlToImage}
-        alt={title}
-        height={200}
-      />
-      <Col className=" border-canvas-0 w-full bg-opacity-80 py-2 px-4 sm:pr-6 ">
+      {imgSrc && (
+        <img
+          className="object-cover sm:w-1/3"
+          src={imgSrc}
+          alt=""
+          height={200}
+        />
+      )}
+      <Col className="border-canvas-0 w-full bg-opacity-80 py-2 px-4 sm:pr-6 ">
         <Row className="text-ink-500 w-full justify-between text-sm">
-          <div>{siteName ? siteName : ''}</div>
+          <div>{siteName}</div>
           {published_time && (
             <span>
               published
@@ -64,7 +66,7 @@ export const DashboardNewsItem = (props: {
         <div className="line-clamp-2 text-lg">{title}</div>
         <div className="line-clamp-3 text-sm">{description}</div>
       </Col>
-    </Link>
+    </a>
   )
 }
 

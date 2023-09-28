@@ -46,17 +46,20 @@ export function DashboardAddLinkButton(props: {
             autoFocus
             maxLength={2048}
             value={linkInput}
-            onChange={(e) => setLinkInput(e.target.value || '')}
+            onChange={(e) => setLinkInput(e.target.value)}
             className="w-full"
           />
-          {!preview || preview.error ? (
-            <DashboardNewsItemPlaceholder />
-          ) : (
-            <div className="relative">
-              <div className="absolute top-0 bottom-0 right-0 left-0 z-40 rounded-lg bg-white opacity-10" />
-              <DashboardNewsItem {...preview} />
-            </div>
-          )}
+          {linkInput &&
+            (!preview ? (
+              <DashboardNewsItemPlaceholder />
+            ) : preview.error ? (
+              <div className="text-error p-8">{preview.error}</div>
+            ) : (
+              <div className="relative">
+                <div className="absolute inset-0 z-40 rounded-lg bg-white opacity-10" />
+                <DashboardNewsItem {...preview} />
+              </div>
+            ))}
           <Row className="w-full justify-end gap-4">
             <Button
               onClick={() => {

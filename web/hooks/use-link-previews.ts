@@ -17,7 +17,11 @@ export const useLinkPreviews = (urls: string[]) => {
 export const useLinkPreview = (url: string) => {
   const [preview, setPreview] = useState<News | undefined>(undefined)
   useEffect(() => {
-    cachedLinkPreview(url).then((p) => setPreview(p))
+    if (url) {
+      cachedLinkPreview(url).then((p) => setPreview(p))
+    } else {
+      setPreview(undefined)
+    }
   }, [url])
   return preview
 }
