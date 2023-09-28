@@ -179,20 +179,30 @@ export function SupabaseContractSearch(props: {
     rowBelowFilters,
   } = props
 
-  const {
-    contracts,
-    loadMoreContracts,
-    searchParams,
-    setSearchParams,
-    defaults,
-  } = useContractSearch(
-    persistPrefix,
+  const [searchParams, setSearchParams, defaults] = useSearchQueryState({
     defaultSort,
     defaultFilter,
-    additionalFilter,
     useUrlParams,
+  })
+
+  const [lastSearch, setLastSearch] = usePersistentInMemoryState<
+    typeof searchParams
+  >(undefined, `${persistPrefix}-last-search`)
+
+  useEffect(() => {
+    if (searchParams && !isEqual(searchParams, lastSearch)) {
+      queryContracts(FRESH_SEARCH_CHANGED_STATE, true)
+    }
+  }, [JSON.stringify(searchParams)])
+
+  const { contracts, loadMoreContracts, queryContracts } = useContractSearch(
+    persistPrefix,
+    setLastSearch,
+    searchParams,
+    additionalFilter,
     isWholePage
   )
+
   const setQuery = (query: string) => setSearchParams({ q: query })
   const query = searchParams?.[QUERY_KEY] ?? ''
 
@@ -278,10 +288,9 @@ const FRESH_SEARCH_CHANGED_STATE: SearchState = {
 
 const useContractSearch = (
   persistPrefix: string,
-  defaultSort?: Sort,
-  defaultFilter?: Filter,
+  setLastSearch: (searchParams: SearchParams) => void,
+  searchParams: SearchParams | undefined,
   additionalFilter?: SupabaseAdditionalFilter,
-  useUrlParams?: boolean,
   isWholePage?: boolean
 ) => {
   const [state, setState] = usePersistentInMemoryState<SearchState>(
@@ -291,16 +300,7 @@ const useContractSearch = (
 
   const requestId = useRef(0)
 
-  const [searchParams, setSearchParams, defaults] = useSearchQueryState({
-    defaultSort,
-    defaultFilter,
-    useUrlParams,
-  })
-  const [lastSearch, setLastSearch] = usePersistentInMemoryState<
-    typeof searchParams
-  >(undefined, `${persistPrefix}-search-has-loaded`)
-
-  const query = useEvent(
+  const queryContracts = useEvent(
     async (currentState: SearchState, freshQuery?: boolean) => {
       if (!searchParams) return true
       const {
@@ -368,13 +368,7 @@ const useContractSearch = (
     }
   )
 
-  const loadMoreContracts = () => query(state)
-
-  useEffect(() => {
-    if (searchParams && !isEqual(searchParams, lastSearch)) {
-      query(FRESH_SEARCH_CHANGED_STATE, true)
-    }
-  }, [JSON.stringify(searchParams)])
+  const loadMoreContracts = () => queryContracts(state)
 
   const contracts = state.contracts
     ? uniqBy(
@@ -394,9 +388,7 @@ const useContractSearch = (
   return {
     contracts,
     loadMoreContracts,
-    searchParams,
-    setSearchParams,
-    defaults,
+    queryContracts,
   }
 }
 
