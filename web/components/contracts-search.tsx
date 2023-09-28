@@ -120,12 +120,6 @@ export const SORT_KEY = 's'
 const FILTER_KEY = 'f'
 const CONTRACT_TYPE_KEY = 'ct'
 
-export const FRESH_SEARCH_CHANGED_STATE: SearchState = {
-  contracts: undefined,
-  fuzzyContractOffset: 0,
-  shouldLoadMore: true,
-}
-
 export type SupabaseAdditionalFilter = {
   creatorId?: string
   tag?: string
@@ -152,7 +146,6 @@ export function SupabaseContractSearch(props: {
   hideOrderSelector?: boolean
   hideActions?: boolean
   headerClassName?: string
-  inputRowClassName?: string
   isWholePage?: boolean
   menuButton?: ReactNode
   hideAvatar?: boolean
@@ -162,8 +155,6 @@ export function SupabaseContractSearch(props: {
   includeProbSorts?: boolean
   autoFocus?: boolean
   emptyState?: ReactNode
-  listViewDisabled?: boolean
-  contractSearchControlsClassName?: string
   hideSearch?: boolean
   hideFilters?: boolean
 }) {
@@ -176,23 +167,126 @@ export function SupabaseContractSearch(props: {
     hideActions,
     highlightContractIds,
     headerClassName,
-    inputRowClassName,
     persistPrefix,
     includeProbSorts,
     isWholePage,
     useUrlParams,
     autoFocus,
     emptyState,
-    listViewDisabled,
     hideFilters,
     menuButton,
     hideAvatar,
     rowBelowFilters,
   } = props
 
+  const {
+    contracts,
+    loadMoreContracts,
+    searchParams,
+    setSearchParams,
+    defaults,
+  } = useContractSearch(
+    persistPrefix,
+    defaultSort,
+    defaultFilter,
+    additionalFilter,
+    useUrlParams,
+    isWholePage
+  )
+  const setQuery = (query: string) => setSearchParams({ q: query })
+  const query = searchParams?.[QUERY_KEY] ?? ''
+
+  return (
+    <Col>
+      <Col className={clsx('bg-canvas-50 sticky top-0 z-20 ', headerClassName)}>
+        <Row>
+          <Input
+            type="text"
+            inputMode="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onBlur={trackCallback('search', { query: query })}
+            placeholder="Search questions"
+            className="w-full"
+            autoFocus={autoFocus}
+            showClearButton={query !== ''}
+          />
+          {menuButton}
+        </Row>
+        {!hideFilters && (
+          <ContractFilters
+            hideOrderSelector={hideOrderSelector}
+            includeProbSorts={includeProbSorts}
+            params={searchParams ?? defaults}
+            updateParams={setSearchParams}
+          />
+        )}
+      </Col>
+      {rowBelowFilters}
+      {contracts && contracts.length === 0 ? (
+        emptyState ??
+        (searchParams?.[QUERY_KEY] ? (
+          <NoResults />
+        ) : (
+          <Col className="text-ink-700 mx-2 my-6 text-center">
+            No questions yet.
+            {searchParams?.[TOPIC_KEY] && (
+              <Row className={'mt-2 w-full items-center justify-center'}>
+                <AddContractToGroupButton groupSlug={searchParams[TOPIC_KEY]} />
+              </Row>
+            )}
+          </Col>
+        ))
+      ) : (
+        <ContractsList
+          contracts={contracts}
+          loadMore={loadMoreContracts}
+          onContractClick={onContractClick}
+          highlightContractIds={highlightContractIds}
+          headerClassName={clsx(headerClassName, '!top-14')}
+          hideActions={hideActions}
+          hideAvatar={hideAvatar}
+        />
+      )}
+    </Col>
+  )
+}
+
+const NoResults = () => {
+  const [message] = useState(
+    sample([
+      'no questions found x.x',
+      'no questions found u_u',
+      'no questions found T_T',
+      'no questions found :c',
+      'no questions found :(',
+      'no questions found :(',
+      'no questions found :(',
+      'that search is too bananas for me 🍌',
+      'only nothingness',
+    ])
+  )
+
+  return <div className="text-ink-700 mx-2 my-6 text-center">{message}</div>
+}
+
+const FRESH_SEARCH_CHANGED_STATE: SearchState = {
+  contracts: undefined,
+  fuzzyContractOffset: 0,
+  shouldLoadMore: true,
+}
+
+const useContractSearch = (
+  persistPrefix: string,
+  defaultSort?: Sort,
+  defaultFilter?: Filter,
+  additionalFilter?: SupabaseAdditionalFilter,
+  useUrlParams?: boolean,
+  isWholePage?: boolean
+) => {
   const [state, setState] = usePersistentInMemoryState<SearchState>(
     FRESH_SEARCH_CHANGED_STATE,
-    `${persistPrefix}-supabase-search`
+    `${persistPrefix}-supabase-contract-search`
   )
 
   const requestId = useRef(0)
@@ -297,66 +391,13 @@ export function SupabaseContractSearch(props: {
       )
     : undefined
 
-  return (
-    <Col>
-      <SupabaseContractSearchControls
-        className={headerClassName}
-        inputRowClassName={inputRowClassName}
-        hideOrderSelector={hideOrderSelector}
-        includeProbSorts={includeProbSorts}
-        autoFocus={autoFocus}
-        listViewDisabled={listViewDisabled}
-        hideFilters={hideFilters}
-        menuButton={menuButton}
-        params={searchParams ?? defaults}
-        updateParams={setSearchParams}
-      />
-      {rowBelowFilters}
-      {contracts && contracts.length === 0 ? (
-        emptyState ??
-        (searchParams?.[QUERY_KEY] ? (
-          <NoResults />
-        ) : (
-          <Col className="text-ink-700 mx-2 my-6 text-center">
-            No questions yet.
-            {searchParams?.[TOPIC_KEY] && (
-              <Row className={'mt-2 w-full items-center justify-center'}>
-                <AddContractToGroupButton groupSlug={searchParams[TOPIC_KEY]} />
-              </Row>
-            )}
-          </Col>
-        ))
-      ) : (
-        <ContractsList
-          contracts={contracts}
-          loadMore={loadMoreContracts}
-          onContractClick={onContractClick}
-          highlightContractIds={highlightContractIds}
-          headerClassName={clsx(headerClassName, '!top-14')}
-          hideActions={hideActions}
-          hideAvatar={hideAvatar}
-        />
-      )}
-    </Col>
-  )
-}
-
-const NoResults = () => {
-  const [message] = useState(
-    sample([
-      'no questions found x.x',
-      'no questions found u_u',
-      'no questions found T_T',
-      'no questions found :c',
-      'no questions found :(',
-      'no questions found :(',
-      'no questions found :(',
-      'that search is too bananas for me 🍌',
-      'only nothingness',
-    ])
-  )
-
-  return <div className="text-ink-700 mx-2 my-6 text-center">{message}</div>
+  return {
+    contracts,
+    loadMoreContracts,
+    searchParams,
+    setSearchParams,
+    defaults,
+  }
 }
 
 const useSearchQueryState = (props: {
@@ -386,37 +427,22 @@ const useSearchQueryState = (props: {
   return [state, setState, defaults] as const
 }
 
-function SupabaseContractSearchControls(props: {
+function ContractFilters(props: {
   className?: string
-  inputRowClassName?: string
   hideOrderSelector?: boolean
   includeProbSorts?: boolean
-  autoFocus?: boolean
-  listViewDisabled?: boolean
-  hideFilters?: boolean
-  menuButton?: ReactNode
   params: SearchParams
   updateParams: (params: Partial<SearchParams>) => void
 }) {
   const {
     className,
     hideOrderSelector,
-    autoFocus,
     includeProbSorts,
-    inputRowClassName,
-    hideFilters,
-    menuButton,
     params,
     updateParams,
   } = props
 
-  const {
-    q: query,
-    s: sort,
-    f: filter,
-    ct: contractType,
-    topic: topicSlug,
-  } = params
+  const { s: sort, f: filter, ct: contractType, topic: topicSlug } = params
 
   const selectFilter = (selection: Filter) => {
     if (selection === filter) return
@@ -439,8 +465,6 @@ function SupabaseContractSearchControls(props: {
     track('select search sort', { sort: selection })
   }
 
-  const setQuery = (query: string) => updateParams({ q: query })
-
   const selectContractType = (selection: ContractTypeType) => {
     if (selection === contractType) return
 
@@ -453,76 +477,7 @@ function SupabaseContractSearchControls(props: {
     }
     track('select contract type', { contractType: selection })
   }
-
-  return (
-    <Col className={clsx('bg-canvas-50 sticky top-0 z-20 ', className)}>
-      <Col
-        className={clsx(
-          'mb-1 items-stretch gap-2 pb-1 pt-px sm:gap-2',
-          inputRowClassName
-        )}
-      >
-        <Row>
-          <Input
-            type="text"
-            inputMode="search"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            onBlur={trackCallback('search', { query: query })}
-            placeholder="Search questions"
-            className="w-full"
-            autoFocus={autoFocus}
-            showClearButton={query !== ''}
-          />
-          {menuButton}
-        </Row>
-        {!hideFilters && (
-          <SearchFilters
-            filter={filter}
-            selectFilter={selectFilter}
-            sort={sort}
-            selectSort={selectSort}
-            contractType={contractType}
-            selectContractType={selectContractType}
-            hideOrderSelector={hideOrderSelector}
-            className={'flex h-6 flex-row gap-2'}
-            includeProbSorts={includeProbSorts}
-            currentTopicSlug={topicSlug}
-            setTopic={(slug) => updateParams({ [TOPIC_KEY]: slug })}
-          />
-        )}
-      </Col>
-    </Col>
-  )
-}
-
-export function SearchFilters(props: {
-  filter: string
-  selectFilter: (selection: Filter) => void
-  sort: string
-  selectSort: (selection: Sort) => void
-  contractType: string
-  selectContractType: (selection: ContractTypeType) => void
-  hideOrderSelector: boolean | undefined
-  currentTopicSlug: string | undefined
-  setTopic: (slug: string) => void
-  className?: string
-  includeProbSorts?: boolean
-}) {
-  const {
-    filter,
-    selectFilter,
-    sort,
-    selectSort,
-    contractType,
-    selectContractType,
-    hideOrderSelector,
-    className,
-    includeProbSorts,
-    currentTopicSlug,
-    setTopic,
-  } = props
-  const topic = useGroupFromSlug(currentTopicSlug ?? '')
+  const topic = useGroupFromSlug(topicSlug ?? '')
   const hideFilter =
     sort === 'resolve-date' ||
     sort === 'close-date' ||
@@ -534,109 +489,121 @@ export function SearchFilters(props: {
   const user = useUser()
   const yourGroups = useRealtimeMemberGroups(user?.id)
   const yourGroupIds = yourGroups?.map((g) => g.id)
+  const setTopic = (slug: string) => updateParams({ [TOPIC_KEY]: slug })
+
   return (
-    <div className={clsx(className, 'gap-3')}>
-      {!hideOrderSelector && (
+    <Col
+      className={clsx(
+        'mb-1 items-stretch gap-2 pb-1 pt-px sm:gap-2',
+        className
+      )}
+    >
+      <Row className={'h-6 gap-2'}>
+        {!hideOrderSelector && (
+          <DropdownMenu
+            items={generateFilterDropdownItems(
+              contractType == 'BOUNTIED_QUESTION'
+                ? BOUNTY_MARKET_SORTS
+                : contractType == 'POLL'
+                ? POLL_SORTS
+                : includeProbSorts &&
+                  (contractType === 'ALL' || contractType === 'BINARY')
+                ? PREDICTION_MARKET_PROB_SORTS
+                : PREDICTION_MARKET_SORTS,
+              selectSort
+            )}
+            icon={
+              <Row className=" items-center gap-0.5 ">
+                <span className="text-ink-500 whitespace-nowrap text-sm font-medium">
+                  {sortLabel}
+                </span>
+                <ChevronDownIcon className="h-4 w-4 text-gray-500" />
+              </Row>
+            }
+            menuWidth={'w-36'}
+            menuItemsClass="left-0 right-auto"
+            selectedItemName={sortLabel}
+            closeOnClick={true}
+          />
+        )}
+        {!hideFilter && (
+          <DropdownMenu
+            items={generateFilterDropdownItems(FILTERS, selectFilter)}
+            icon={
+              <Row className=" items-center gap-0.5 ">
+                <span className="text-ink-500 whitespace-nowrap text-sm font-medium">
+                  {filterLabel}
+                </span>
+                <ChevronDownIcon className="h-4 w-4 text-gray-500" />
+              </Row>
+            }
+            menuItemsClass="left-0 right-auto"
+            menuWidth={'w-40'}
+            selectedItemName={filterLabel}
+            closeOnClick={true}
+          />
+        )}
         <DropdownMenu
           items={generateFilterDropdownItems(
-            contractType == 'BOUNTIED_QUESTION'
-              ? BOUNTY_MARKET_SORTS
-              : contractType == 'POLL'
-              ? POLL_SORTS
-              : includeProbSorts &&
-                (contractType === 'ALL' || contractType === 'BINARY')
-              ? PREDICTION_MARKET_PROB_SORTS
-              : PREDICTION_MARKET_SORTS,
-            selectSort
+            CONTRACT_TYPES,
+            selectContractType
           )}
           icon={
             <Row className=" items-center gap-0.5 ">
               <span className="text-ink-500 whitespace-nowrap text-sm font-medium">
-                {sortLabel}
+                {contractTypeLabel}
               </span>
               <ChevronDownIcon className="h-4 w-4 text-gray-500" />
             </Row>
           }
           menuWidth={'w-36'}
           menuItemsClass="left-0 right-auto"
-          selectedItemName={sortLabel}
+          selectedItemName={contractTypeLabel}
           closeOnClick={true}
         />
-      )}
-      {!hideFilter && (
-        <DropdownMenu
-          items={generateFilterDropdownItems(FILTERS, selectFilter)}
-          icon={
-            <Row className=" items-center gap-0.5 ">
-              <span className="text-ink-500 whitespace-nowrap text-sm font-medium">
-                {filterLabel}
-              </span>
-              <ChevronDownIcon className="h-4 w-4 text-gray-500" />
-            </Row>
-          }
-          menuItemsClass="left-0 right-auto"
-          menuWidth={'w-40'}
-          selectedItemName={filterLabel}
-          closeOnClick={true}
-        />
-      )}
-      <DropdownMenu
-        items={generateFilterDropdownItems(CONTRACT_TYPES, selectContractType)}
-        icon={
-          <Row className=" items-center gap-0.5 ">
-            <span className="text-ink-500 whitespace-nowrap text-sm font-medium">
-              {contractTypeLabel}
-            </span>
-            <ChevronDownIcon className="h-4 w-4 text-gray-500" />
-          </Row>
-        }
-        menuWidth={'w-36'}
-        menuItemsClass="left-0 right-auto"
-        selectedItemName={contractTypeLabel}
-        closeOnClick={true}
-      />
-      {currentTopicSlug == topic?.slug && topic && (
-        <TopicTag
-          className={
-            'text-primary-500 overflow-x-hidden text-ellipsis !py-0 lg:hidden'
-          }
-          topic={topic}
-          location={'questions page'}
-        >
-          <button onClick={() => setTopic('')}>
-            <XIcon className="hover:text-ink-700 text-ink-400 ml-1 hidden h-4 w-4 sm:block" />
-          </button>
-          <TopicOptionsButton
-            className={'sm:hidden'}
-            group={topic}
-            yourGroupIds={yourGroupIds}
-            user={user}
-          />
-        </TopicTag>
-      )}
-      {currentTopicSlug === 'for-you' && (
-        <Row
-          className={
-            'text-primary-500 dark:text-ink-400 hover:text-ink-600 hover:bg-primary-400/10 group items-center justify-center whitespace-nowrap rounded px-1 text-right text-sm transition-colors lg:hidden'
-          }
-        >
-          <span className="mr-px opacity-50 transition-colors group-hover:text-inherit">
-            #
-          </span>
-          ⭐️ For you
-          <button onClick={() => setTopic('')}>
-            <XIcon className="hover:text-ink-700 text-ink-400 ml-1 hidden h-4 w-4 sm:block" />
-          </button>
-          {user && (
-            <ForYouDropdown
-              setCurrentCategory={setTopic}
+        {topicSlug == topic?.slug && topic && (
+          <TopicTag
+            className={
+              'text-primary-500 overflow-x-hidden text-ellipsis !py-0 lg:hidden'
+            }
+            topic={topic}
+            location={'questions page'}
+          >
+            <button onClick={() => setTopic('')}>
+              <XIcon className="hover:text-ink-700 text-ink-400 ml-1 hidden h-4 w-4 sm:block" />
+            </button>
+            <TopicOptionsButton
+              className={'sm:hidden'}
+              group={topic}
+              yourGroupIds={yourGroupIds}
               user={user}
-              yourGroups={yourGroups}
-              className={'ml-1 sm:hidden'}
             />
-          )}
-        </Row>
-      )}
-    </div>
+          </TopicTag>
+        )}
+        {topicSlug === 'for-you' && (
+          <Row
+            className={
+              'text-primary-500 dark:text-ink-400 hover:text-ink-600 hover:bg-primary-400/10 group items-center justify-center whitespace-nowrap rounded px-1 text-right text-sm transition-colors lg:hidden'
+            }
+          >
+            <span className="mr-px opacity-50 transition-colors group-hover:text-inherit">
+              #
+            </span>
+            ⭐️ For you
+            <button onClick={() => setTopic('')}>
+              <XIcon className="hover:text-ink-700 text-ink-400 ml-1 hidden h-4 w-4 sm:block" />
+            </button>
+            {user && (
+              <ForYouDropdown
+                setCurrentCategory={setTopic}
+                user={user}
+                yourGroups={yourGroups}
+                className={'ml-1 sm:hidden'}
+              />
+            )}
+          </Row>
+        )}
+      </Row>
+    </Col>
   )
 }
