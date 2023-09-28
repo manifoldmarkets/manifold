@@ -120,12 +120,6 @@ export const SORT_KEY = 's'
 const FILTER_KEY = 'f'
 const CONTRACT_TYPE_KEY = 'ct'
 
-export const FRESH_SEARCH_CHANGED_STATE: SearchState = {
-  contracts: undefined,
-  fuzzyContractOffset: 0,
-  shouldLoadMore: true,
-}
-
 export type SupabaseAdditionalFilter = {
   creatorId?: string
   tag?: string
@@ -152,7 +146,6 @@ export function SupabaseContractSearch(props: {
   hideOrderSelector?: boolean
   hideActions?: boolean
   headerClassName?: string
-  inputRowClassName?: string
   isWholePage?: boolean
   menuButton?: ReactNode
   hideAvatar?: boolean
@@ -162,8 +155,6 @@ export function SupabaseContractSearch(props: {
   includeProbSorts?: boolean
   autoFocus?: boolean
   emptyState?: ReactNode
-  listViewDisabled?: boolean
-  contractSearchControlsClassName?: string
   hideSearch?: boolean
   hideFilters?: boolean
 }) {
@@ -176,23 +167,125 @@ export function SupabaseContractSearch(props: {
     hideActions,
     highlightContractIds,
     headerClassName,
-    inputRowClassName,
     persistPrefix,
     includeProbSorts,
     isWholePage,
     useUrlParams,
     autoFocus,
     emptyState,
-    listViewDisabled,
     hideFilters,
     menuButton,
     hideAvatar,
     rowBelowFilters,
   } = props
 
+  const {
+    contracts,
+    loadMoreContracts,
+    searchParams,
+    setSearchParams,
+    defaults,
+  } = useContractSearch(
+    persistPrefix,
+    defaultSort,
+    defaultFilter,
+    additionalFilter,
+    useUrlParams,
+    isWholePage
+  )
+  const setQuery = (query: string) => setSearchParams({ q: query })
+  const query = searchParams?.[QUERY_KEY] ?? ''
+
+  return (
+    <Col>
+      <Col className={clsx('bg-canvas-50 sticky top-0 z-20 ', headerClassName)}>
+        <Row>
+          <Input
+            type="text"
+            inputMode="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onBlur={trackCallback('search', { query: query })}
+            placeholder="Search questions"
+            className="w-full"
+            autoFocus={autoFocus}
+            showClearButton={query !== ''}
+          />
+          {menuButton}
+        </Row>
+        <SupabaseContractFilters
+          hideOrderSelector={hideOrderSelector}
+          includeProbSorts={includeProbSorts}
+          hideFilters={hideFilters}
+          params={searchParams ?? defaults}
+          updateParams={setSearchParams}
+        />
+      </Col>
+      {rowBelowFilters}
+      {contracts && contracts.length === 0 ? (
+        emptyState ??
+        (searchParams?.[QUERY_KEY] ? (
+          <NoResults />
+        ) : (
+          <Col className="text-ink-700 mx-2 my-6 text-center">
+            No questions yet.
+            {searchParams?.[TOPIC_KEY] && (
+              <Row className={'mt-2 w-full items-center justify-center'}>
+                <AddContractToGroupButton groupSlug={searchParams[TOPIC_KEY]} />
+              </Row>
+            )}
+          </Col>
+        ))
+      ) : (
+        <ContractsList
+          contracts={contracts}
+          loadMore={loadMoreContracts}
+          onContractClick={onContractClick}
+          highlightContractIds={highlightContractIds}
+          headerClassName={clsx(headerClassName, '!top-14')}
+          hideActions={hideActions}
+          hideAvatar={hideAvatar}
+        />
+      )}
+    </Col>
+  )
+}
+
+const NoResults = () => {
+  const [message] = useState(
+    sample([
+      'no questions found x.x',
+      'no questions found u_u',
+      'no questions found T_T',
+      'no questions found :c',
+      'no questions found :(',
+      'no questions found :(',
+      'no questions found :(',
+      'that search is too bananas for me 🍌',
+      'only nothingness',
+    ])
+  )
+
+  return <div className="text-ink-700 mx-2 my-6 text-center">{message}</div>
+}
+
+const FRESH_SEARCH_CHANGED_STATE: SearchState = {
+  contracts: undefined,
+  fuzzyContractOffset: 0,
+  shouldLoadMore: true,
+}
+
+const useContractSearch = (
+  persistPrefix: string,
+  defaultSort?: Sort,
+  defaultFilter?: Filter,
+  additionalFilter?: SupabaseAdditionalFilter,
+  useUrlParams?: boolean,
+  isWholePage?: boolean
+) => {
   const [state, setState] = usePersistentInMemoryState<SearchState>(
     FRESH_SEARCH_CHANGED_STATE,
-    `${persistPrefix}-supabase-search`
+    `${persistPrefix}-supabase-contract-search`
   )
 
   const requestId = useRef(0)
@@ -297,66 +390,13 @@ export function SupabaseContractSearch(props: {
       )
     : undefined
 
-  return (
-    <Col>
-      <SupabaseContractSearchControls
-        className={headerClassName}
-        inputRowClassName={inputRowClassName}
-        hideOrderSelector={hideOrderSelector}
-        includeProbSorts={includeProbSorts}
-        autoFocus={autoFocus}
-        listViewDisabled={listViewDisabled}
-        hideFilters={hideFilters}
-        menuButton={menuButton}
-        params={searchParams ?? defaults}
-        updateParams={setSearchParams}
-      />
-      {rowBelowFilters}
-      {contracts && contracts.length === 0 ? (
-        emptyState ??
-        (searchParams?.[QUERY_KEY] ? (
-          <NoResults />
-        ) : (
-          <Col className="text-ink-700 mx-2 my-6 text-center">
-            No questions yet.
-            {searchParams?.[TOPIC_KEY] && (
-              <Row className={'mt-2 w-full items-center justify-center'}>
-                <AddContractToGroupButton groupSlug={searchParams[TOPIC_KEY]} />
-              </Row>
-            )}
-          </Col>
-        ))
-      ) : (
-        <ContractsList
-          contracts={contracts}
-          loadMore={loadMoreContracts}
-          onContractClick={onContractClick}
-          highlightContractIds={highlightContractIds}
-          headerClassName={clsx(headerClassName, '!top-14')}
-          hideActions={hideActions}
-          hideAvatar={hideAvatar}
-        />
-      )}
-    </Col>
-  )
-}
-
-const NoResults = () => {
-  const [message] = useState(
-    sample([
-      'no questions found x.x',
-      'no questions found u_u',
-      'no questions found T_T',
-      'no questions found :c',
-      'no questions found :(',
-      'no questions found :(',
-      'no questions found :(',
-      'that search is too bananas for me 🍌',
-      'only nothingness',
-    ])
-  )
-
-  return <div className="text-ink-700 mx-2 my-6 text-center">{message}</div>
+  return {
+    contracts,
+    loadMoreContracts,
+    searchParams,
+    setSearchParams,
+    defaults,
+  }
 }
 
 const useSearchQueryState = (props: {
@@ -386,37 +426,24 @@ const useSearchQueryState = (props: {
   return [state, setState, defaults] as const
 }
 
-function SupabaseContractSearchControls(props: {
+function SupabaseContractFilters(props: {
   className?: string
-  inputRowClassName?: string
   hideOrderSelector?: boolean
   includeProbSorts?: boolean
-  autoFocus?: boolean
-  listViewDisabled?: boolean
   hideFilters?: boolean
-  menuButton?: ReactNode
   params: SearchParams
   updateParams: (params: Partial<SearchParams>) => void
 }) {
   const {
     className,
     hideOrderSelector,
-    autoFocus,
     includeProbSorts,
-    inputRowClassName,
     hideFilters,
-    menuButton,
     params,
     updateParams,
   } = props
 
-  const {
-    q: query,
-    s: sort,
-    f: filter,
-    ct: contractType,
-    topic: topicSlug,
-  } = params
+  const { s: sort, f: filter, ct: contractType, topic: topicSlug } = params
 
   const selectFilter = (selection: Filter) => {
     if (selection === filter) return
@@ -439,8 +466,6 @@ function SupabaseContractSearchControls(props: {
     track('select search sort', { sort: selection })
   }
 
-  const setQuery = (query: string) => updateParams({ q: query })
-
   const selectContractType = (selection: ContractTypeType) => {
     if (selection === contractType) return
 
@@ -455,43 +480,27 @@ function SupabaseContractSearchControls(props: {
   }
 
   return (
-    <Col className={clsx('bg-canvas-50 sticky top-0 z-20 ', className)}>
-      <Col
-        className={clsx(
-          'mb-1 items-stretch gap-2 pb-1 pt-px sm:gap-2',
-          inputRowClassName
-        )}
-      >
-        <Row>
-          <Input
-            type="text"
-            inputMode="search"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            onBlur={trackCallback('search', { query: query })}
-            placeholder="Search questions"
-            className="w-full"
-            autoFocus={autoFocus}
-            showClearButton={query !== ''}
-          />
-          {menuButton}
-        </Row>
-        {!hideFilters && (
-          <SearchFilters
-            filter={filter}
-            selectFilter={selectFilter}
-            sort={sort}
-            selectSort={selectSort}
-            contractType={contractType}
-            selectContractType={selectContractType}
-            hideOrderSelector={hideOrderSelector}
-            className={'flex h-6 flex-row gap-2'}
-            includeProbSorts={includeProbSorts}
-            currentTopicSlug={topicSlug}
-            setTopic={(slug) => updateParams({ [TOPIC_KEY]: slug })}
-          />
-        )}
-      </Col>
+    <Col
+      className={clsx(
+        'mb-1 items-stretch gap-2 pb-1 pt-px sm:gap-2',
+        className
+      )}
+    >
+      {!hideFilters && (
+        <SearchFilters
+          filter={filter}
+          selectFilter={selectFilter}
+          sort={sort}
+          selectSort={selectSort}
+          contractType={contractType}
+          selectContractType={selectContractType}
+          hideOrderSelector={hideOrderSelector}
+          className={'flex h-6 flex-row gap-2'}
+          includeProbSorts={includeProbSorts}
+          currentTopicSlug={topicSlug}
+          setTopic={(slug) => updateParams({ [TOPIC_KEY]: slug })}
+        />
+      )}
     </Col>
   )
 }
