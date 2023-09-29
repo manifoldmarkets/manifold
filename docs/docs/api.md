@@ -889,7 +889,7 @@ Requires no authorization.
 
 - Example request
   ```
-  https://manifold.markets/api/v0/bets?username=ManifoldMarkets&contractSlug=will-i-be-able-to-place-a-limit-ord
+  https://manifold.markets/api/v0/bets?username=Manifold&contractSlug=will-i-be-able-to-place-a-limit-ord
   ```
 - Response type: A `Bet[]`.
 
@@ -958,8 +958,87 @@ Requires no authorization.
   </p>
   </details>
 
-## Changelog
+### `GET /v0/managrams`
 
+Gets a list of managrams, ordered by creation time descending.  
+
+Parameters
+
+- `userId`: Required. Returns managrams sent to this user.
+- `limit`: Optional. How many managrams to return. The maximum and the default are 1000.
+- `before`: Optional. The `createdTime` before which you want managrams 
+
+Requires no authorization.
+
+Example request
+  ```
+  https://manifold.markets/api/v0/managrams?userId=IPTOzEqrpkWmEzh6hwvAyY9PqFb2
+  ```
+<details><summary>Example response</summary><p>
+
+  ```json
+  [
+      {
+          "id": "INKcoBUVT914i1XUJ6rG",
+          "data": {
+              "groupId": "e097e0c5-3ce0-4eb2-9ca7-6554f86b84cd",
+              "message": "Puzzles for Progress",
+              "visibility": "public"
+          },
+          "toId": "AJwLWoo3xue32XIiAVrL5SyR1WB2",
+          "token": "M$",
+          "amount": 2500,
+          "fromId": "jO7sUhIDTQbAJ3w86akzncTlpRG2",
+          "toType": "USER",
+          "category": "MANA_PAYMENT",
+          "fromType": "USER",
+          "createdTime": 1695665438987,
+          "description": "Mana payment 2500 from MichaelWheatley to jO7sUhIDTQbAJ3w86akzncTlpRG2"
+      },
+      {
+          "id": "crFuofkDd8gcpbEEFfcY",
+          "data": {
+              "groupId": "b8fea716-186b-4bef-9a19-7bc90c16c9e9",
+              "message": "Thank you for running the music and the great time!! ",
+              "visibility": "public"
+          },
+          "toId": "AJwLWoo3xue32XIiAVrL5SyR1WB2",
+          "token": "M$",
+          "amount": 500,
+          "fromId": "uLhlcRUBUpSnmqp2L0PJRuxbvku2",
+          "toType": "USER",
+          "category": "MANA_PAYMENT",
+          "fromType": "USER",
+          "createdTime": 1695604111711,
+          "description": "Mana payment 500 from AdriaGarrigaAlonso to uLhlcRUBUpSnmqp2L0PJRuxbvku2"
+      }
+  ]
+  ```
+</p>
+</details>  
+
+### `POST /v0/managram`
+
+Send a managram to another user.
+
+Parameters
+
+- `toIds`: Required. An array of user ids to send managrams to.
+- `amount`: Required. The amount of mana (must be >= 10) to send to each user.
+- `message`: Optional. A message to include with the managram.
+
+
+Example body
+```json
+{
+    "amount":10,
+    "toIds":["AJwLWoo3xue32XIiAVrL5SyR1WB2"],
+    "message":"hi!"
+}
+```
+
+## Changelog
+- 2023-09-29: Add `/managrams` and `/managram` endpoints
 - 2023-05-15: Change the response of the `/market/{marketId}/sell` POST endpoint from
   `{"status": "success"}` to a full `Bet`, with an additional `"status": "success"` field.
 - 2023-04-03: Add `/market/[marketId]/group` POST endpoint.
