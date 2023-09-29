@@ -331,7 +331,8 @@ export function SupabaseSearch(props: {
                 onChange={(e) => setQuery(e.target.value)}
                 onBlur={trackCallback('search', { query: queryAsString })}
                 placeholder={
-                  !showSearchTypes && !currentTopicSlug
+                  (!showSearchTypes && !currentTopicSlug) ||
+                  currentTopicSlug === 'for-you'
                     ? 'Search questions, users, and topics'
                     : searchTypeAsString === 'Users'
                     ? 'Search users'
