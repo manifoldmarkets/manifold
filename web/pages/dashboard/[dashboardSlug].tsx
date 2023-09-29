@@ -115,7 +115,7 @@ export default function DashboardPage(props: {
     <Page
       trackPageView={'dashboard slug page'}
       trackPageProps={{ slug: dashboard.slug, title: dashboard.title }}
-      mainClassName="items-center"
+      className="items-center"
     >
       <SEO
         title={dashboard.title}

@@ -47,20 +47,24 @@ export function TopicsList(props: {
   return (
     <Col
       className={clsx(
-        show ? 'animate-slide-in-from-right block xl:animate-none' : 'hidden',
+        show
+          ? 'animate-slide-in-from-right block xl:animate-none'
+          : 'hidden xl:flex',
         className,
         'scrollbar-hide sticky top-0 right-10 max-h-screen overflow-y-auto sm:max-w-min xl:max-w-none',
-        'items-start',
         currentTopicSlug == 'for-you' ? '' : 'xl:rounded-t-md '
       )}
     >
-      <Row
+      <div
         className={
-          'sticky top-0 z-10 w-full items-center justify-center xl:hidden'
+          'bg-canvas-50 sticky top-0 z-10 w-full items-center justify-center'
         }
       >
+        <div className="text-primary-700 hidden w-full pb-2 pl-2 xl:block">
+          Topics
+        </div>
         <Button
-          className={clsx('h-[3.15rem]', widthClasses)}
+          className={clsx('h-[3.15rem] xl:hidden', widthClasses)}
           color={'gray-white'}
           size={'md'}
           onClick={() => setShow(!show)}
@@ -68,7 +72,7 @@ export function TopicsList(props: {
           <MdOutlineKeyboardDoubleArrowRight className="mr-1 h-5 w-5" />
           Topics
         </Button>
-      </Row>
+      </div>
       {user && (
         <SidebarItem
           key={'all-questions'}

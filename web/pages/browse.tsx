@@ -96,29 +96,7 @@ export default function BrowsePage() {
   return (
     <>
       {user && <Welcome />}
-      <Page
-        trackPageView={'questions page'}
-        rightSidebar={
-          !isMobile && (
-            <Col>
-              <span className={'text-primary-700 mb-2 ml-2 text-lg'}>
-                Topics
-              </span>
-              <TopicsList
-                key={'groups' + topics.length}
-                topics={topics}
-                currentTopicSlug={topicSlug}
-                setCurrentTopicSlug={setTopicSlug}
-                privateUser={privateUser}
-                user={user}
-                show={true}
-                setShow={() => {}}
-                className={'hidden xl:flex'}
-              />
-            </Col>
-          )
-        }
-      >
+      <Page trackPageView={'questions page'} className="xl:col-span-10">
         <SEO
           title={`${currentTopic?.name ?? 'Browse'}`}
           description={`Browse ${currentTopic?.name ?? 'all'} questions`}
@@ -172,7 +150,6 @@ export default function BrowsePage() {
             </Col>
             {!isMobile && (
               <TopicsList
-                className={'xl:hidden'}
                 key={'groups' + topics.length}
                 topics={topics}
                 currentTopicSlug={topicSlug}

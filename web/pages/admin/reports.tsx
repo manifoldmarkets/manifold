@@ -37,7 +37,7 @@ export default function Reports(props: { reports: LiteReport[] }) {
   const reportsByContent = Object.values(groupBy(props.reports, 'contentId'))
 
   return (
-    <Page trackPageView={false} mainClassName="px-2">
+    <Page trackPageView={false} className="px-2">
       <NoSEO />
       <Title>Reports</Title>
       {reportsByContent.map((reports) => {

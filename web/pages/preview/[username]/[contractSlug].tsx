@@ -70,11 +70,7 @@ export default function PreviewContractPage(props: MaybeAuthedContractParams) {
   }
 
   return (
-    <Page
-      className="!max-w-[1400px]"
-      mainClassName="!col-span-10"
-      trackPageView={false}
-    >
+    <Page className="xl:col-span-10" trackPageView={false}>
       {props.state === 'not authed' ? (
         <PrivateContractPage contractSlug={props.slug} />
       ) : (
