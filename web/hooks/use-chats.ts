@@ -1,6 +1,6 @@
 import { db } from 'web/lib/supabase/db'
 import { ChatMessage } from 'common/chat-message'
-import { mapTypes, Row, run, tsToMillis } from 'common/supabase/utils'
+import { convertSQLtoTS, Row, run, tsToMillis } from 'common/supabase/utils'
 import { useSubscription } from 'web/lib/supabase/realtime/use-subscription'
 import { useEffect, useState } from 'react'
 import { first, last } from 'lodash'
@@ -34,7 +34,7 @@ export function useRealtimeChatsOnLeague(channelId: string, limit: number) {
   return rows?.map(convertChatMessage)
 }
 const convertChatMessage = (row: Row<'chat_messages'>) =>
-  mapTypes<'chat_messages', ChatMessage>(row, {
+  convertSQLtoTS<'chat_messages', ChatMessage>(row, {
     created_time: tsToMillis as any,
   })
 

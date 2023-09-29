@@ -146,7 +146,10 @@ type TypeConverter<R extends Selectable, T extends Record<string, any>> = {
  * Changes snake_case to camelCase.
  * You can also specify conversion functions for each column, or set it to false to filter it.
  */
-export const mapTypes = <R extends Selectable, T extends Record<string, any>>(
+export const convertSQLtoTS = <
+  R extends Selectable,
+  T extends Record<string, any>
+>(
   sqlData: Partial<Row<R> & { data: any }>,
   converters: TypeConverter<R, T>
 ) => {

@@ -5,7 +5,7 @@ import { useEffect, useRef } from 'react'
 import { buildArray, filterDefined } from 'common/util/array'
 import { useEvent } from './use-event'
 import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
-import { mapTypes, Row, run, tsToMillis } from 'common/supabase/utils'
+import { convertSQLtoTS, Row, run, tsToMillis } from 'common/supabase/utils'
 import { db } from 'web/lib/supabase/db'
 import {
   countBy,
@@ -407,7 +407,7 @@ export const useFeedTimeline = (
 
 const getBaseTimelineItem = (item: Row<'user_feed'>) =>
   removeUndefinedProps({
-    ...mapTypes<'user_feed', FeedTimelineItem>(item, {
+    ...convertSQLtoTS<'user_feed', FeedTimelineItem>(item, {
       created_time: (ts) => tsToMillis(ts),
     }),
     supabaseTimestamp: item.created_time,

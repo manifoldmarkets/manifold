@@ -1,4 +1,4 @@
-import { mapTypes, run } from 'common/supabase/utils'
+import { convertSQLtoTS, run } from 'common/supabase/utils'
 import { db } from './db'
 import { User } from 'common/user'
 
@@ -28,7 +28,7 @@ export async function getUserFollows(userId: string) {
   )
   const ids = data?.map((d) => d.follow_id)
   const { data: userData } = await run(db.from('users').select().in('id', ids))
-  return userData?.map((d) => mapTypes<'users', User>(d, {}))
+  return userData?.map((d) => convertSQLtoTS<'users', User>(d, {}))
 }
 
 export async function getUserFollowers(userId: string) {

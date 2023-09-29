@@ -1,5 +1,5 @@
 import { DateDoc, Post } from 'common/post'
-import { Row, mapTypes, run } from 'common/supabase/utils'
+import { Row, convertSQLtoTS, run } from 'common/supabase/utils'
 import { db } from './db'
 import { getUserByUsername } from 'web/lib/supabase/users'
 
@@ -79,7 +79,7 @@ export async function getDateDoc(username: string) {
 }
 
 const convertPost = (sqlPost: Row<'posts'>) =>
-  mapTypes<'posts', Post>(sqlPost, {
+  convertSQLtoTS<'posts', Post>(sqlPost, {
     fs_updated_time: false,
     created_time: false, // grab from data
   })

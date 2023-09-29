@@ -4,7 +4,7 @@ import {
   millisToTs,
   selectJson,
   SupabaseClient,
-  mapTypes,
+  convertSQLtoTS,
   Row,
   tsToMillis,
 } from './utils'
@@ -113,6 +113,6 @@ export const getAnswersForContracts = async (
 }
 
 export const convertAnswer = (row: Row<'answers'>) =>
-  mapTypes<'answers', Answer>(row, {
+  convertSQLtoTS<'answers', Answer>(row, {
     created_time: (maybeTs) => (maybeTs != null ? tsToMillis(maybeTs) : 0),
   })
