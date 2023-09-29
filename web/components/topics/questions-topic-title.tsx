@@ -1,6 +1,6 @@
 import { Group, TOPIC_KEY } from 'common/group'
 import { Title } from 'web/components/widgets/title'
-import { PlusCircleIcon, XIcon } from '@heroicons/react/outline'
+import { PlusCircleIcon } from '@heroicons/react/outline'
 import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
 import { DOMAIN } from 'common/envs/constants'
 import { Button } from 'web/components/buttons/button'
@@ -10,6 +10,7 @@ import { Row } from 'web/components/layout/row'
 import { useRealtimeMemberGroups } from 'web/hooks/use-group-supabase'
 import { User } from 'common/user'
 import { useState } from 'react'
+import { ArrowLeftIcon } from '@heroicons/react/solid'
 
 export const QuestionsTopicTitle = (props: {
   currentTopic: Group | undefined
@@ -25,6 +26,15 @@ export const QuestionsTopicTitle = (props: {
 
   return (
     <Row className={'mb-3 hidden items-center lg:flex'}>
+      {currentTopic && (
+        <Button
+          color={'gray-white'}
+          className={'mr-1 whitespace-nowrap'}
+          onClick={() => setTopicSlug('')}
+        >
+          <ArrowLeftIcon className={'h-5 w-5'} />
+        </Button>
+      )}
       <Title className="relative !mb-1 mr-6">
         {currentTopic?.name ??
           (topicSlug === 'for-you' ? '⭐️ For you' : 'Browse')}
@@ -73,14 +83,6 @@ export const QuestionsTopicTitle = (props: {
               Follow
             </Button>
           )}
-          <Button
-            color={'gray-white'}
-            className={'whitespace-nowrap'}
-            onClick={() => setTopicSlug('')}
-          >
-            <XIcon className={'mx-1 h-5 w-5'} />
-            All questions
-          </Button>
         </>
       )}
     </Row>

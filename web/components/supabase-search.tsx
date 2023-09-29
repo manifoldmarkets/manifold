@@ -320,7 +320,7 @@ export function SupabaseSearch(props: {
                 onChange={(e) => setQuery(e.target.value)}
                 onBlur={trackCallback('search', { query: queryAsString })}
                 placeholder={
-                  !showSearchTypes
+                  !showSearchTypes && !currentTopicSlug
                     ? 'Search questions, users, and topics'
                     : searchTypeAsString === 'Users'
                     ? 'Search users'
@@ -353,6 +353,11 @@ export function SupabaseSearch(props: {
             includeProbSorts={includeProbSorts}
             params={searchParams ?? defaults}
             updateParams={setSearchParams}
+            className={
+              searchTypeAsString !== '' && searchTypeAsString !== 'Questions'
+                ? 'invisible'
+                : ''
+            }
           />
         )}
       </Col>
