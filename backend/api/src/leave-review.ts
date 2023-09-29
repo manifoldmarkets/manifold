@@ -38,7 +38,7 @@ export const leavereview = authEndpoint(async (req, auth) => {
     throw new APIError(500, `Error fetching creator`)
   }
 
-  if ((user.data as any).isBannedFromPosting) {
+  if ((user.data as any).data.isBannedFromPosting) {
     throw new APIError(403, `You are banned`)
   }
 
