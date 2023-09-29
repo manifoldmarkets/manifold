@@ -19,7 +19,7 @@ import { SupabaseSearch } from 'web/components/supabase-search'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useRouter } from 'next/router'
 import { Button } from 'web/components/buttons/button'
-import { MenuIcon } from '@heroicons/react/outline'
+import { FilterIcon } from '@heroicons/react/outline'
 import {
   useTrendingTopics,
   useUserTrendingTopics,
@@ -88,7 +88,7 @@ export default function BrowsePage() {
       }
       onClick={() => setShowTopicsSidebar(!showTopicsSidebar)}
     >
-      <MenuIcon className="mr-2 h-5 w-5" />
+      <FilterIcon className="mr-2 h-5 w-5" />
       Topics
     </Button>
   )
@@ -100,17 +100,22 @@ export default function BrowsePage() {
         trackPageView={'questions page'}
         rightSidebar={
           !isMobile && (
-            <TopicsList
-              key={'groups' + topics.length}
-              topics={topics}
-              currentTopicSlug={topicSlug}
-              setCurrentTopicSlug={setTopicSlug}
-              privateUser={privateUser}
-              user={user}
-              show={true}
-              setShow={() => {}}
-              className={'hidden xl:flex'}
-            />
+            <Col>
+              <span className={'text-primary-700 mb-2 ml-2 text-lg'}>
+                Filter by topic
+              </span>
+              <TopicsList
+                key={'groups' + topics.length}
+                topics={topics}
+                currentTopicSlug={topicSlug}
+                setCurrentTopicSlug={setTopicSlug}
+                privateUser={privateUser}
+                user={user}
+                show={true}
+                setShow={() => {}}
+                className={'hidden xl:flex'}
+              />
+            </Col>
           )
         }
       >

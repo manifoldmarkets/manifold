@@ -84,7 +84,7 @@ export function TopicOptions(props: {
         icon={<DotsVerticalIcon className={clsx('h-5 w-5')} />}
         withinOverflowContainer={true}
         buttonClass={clsx(
-          !selected ? 'md:opacity-0 group-hover:opacity-100' : 'opacity-100'
+          !selected ? 'opacity-0 group-hover:opacity-100' : 'opacity-100'
         )}
       />
       <Modal open={editingName} setOpen={setEditingName}>
