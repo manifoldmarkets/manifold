@@ -39,13 +39,15 @@ export default async function handler(
     let query = db
       .from('txns')
       .select('data')
-      .contains('data', {
-        category: 'MANA_PAYMENT',
-        toId: userId,
-      })
       .order('data->createdTime', { ascending: false } as any)
       .limit(limit)
     if (before) query = query.lt('data->createdTime', before)
+    if (userId)
+      query = query.contains('data', {
+        category: 'MANA_PAYMENT',
+        toId: userId,
+      })
+    else query = query.contains('data', { category: 'MANA_PAYMENT' })
     const { data } = await run(query)
     const grams = data.map((txn) => txn.data as ManaPayTxn) ?? []
     res.setHeader('Cache-Control', 'max-age=1, public')

@@ -964,7 +964,7 @@ Gets a list of managrams, ordered by creation time descending.
 
 Parameters
 
-- `userId`: Required. Returns managrams sent to this user.
+- `userId`: Optional. Returns managrams sent to this user.
 - `limit`: Optional. How many managrams to return. The maximum and the default are 1000.
 - `before`: Optional. The `createdTime` before which you want managrams 
 
