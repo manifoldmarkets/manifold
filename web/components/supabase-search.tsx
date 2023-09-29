@@ -297,7 +297,8 @@ export function SupabaseSearch(props: {
   useEffect(() => {
     if (!searchParams || isEqual(searchParams, lastSearch)) return
     const { t: searchType } = searchParams
-    if (searchType === '') queryContracts(FRESH_SEARCH_CHANGED_STATE, true)
+    if (searchType === '' || searchType === 'Questions')
+      queryContracts(FRESH_SEARCH_CHANGED_STATE, true)
     else if (searchType === 'Users') queryUsers(queryAsString)
     else if (searchType === 'Topics') queryTopics(queryAsString)
   }, [JSON.stringify(searchParams)])

@@ -102,7 +102,7 @@ export default function BrowsePage() {
           !isMobile && (
             <Col>
               <span className={'text-primary-700 mb-2 ml-2 text-lg'}>
-                Filter by topic
+                Topic
               </span>
               <TopicsList
                 key={'groups' + topics.length}
