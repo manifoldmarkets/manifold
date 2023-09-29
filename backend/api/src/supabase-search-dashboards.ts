@@ -1,4 +1,4 @@
-import { Dashboard } from 'common/dashboard'
+import { convertDashboardSqltoTS } from 'common/dashboard'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { z } from 'zod'
 import { Json, MaybeAuthedEndpoint, validate } from './helpers'
@@ -9,26 +9,24 @@ const bodySchema = z.object({
   limit: z.number().gt(0),
 })
 
-export const supabasesearchdashboards = MaybeAuthedEndpoint(
-  async (req, auth) => {
-    const { term, offset, limit } = validate(bodySchema, req.body)
+export const supabasesearchdashboards = MaybeAuthedEndpoint(async (req) => {
+  const { term, offset, limit } = validate(bodySchema, req.body)
 
-    const pg = createSupabaseDirectClient()
+  const pg = createSupabaseDirectClient()
 
-    const searchDashboardSql = getSearchDashboardSQL({
-      term,
-      offset,
-      limit,
-    })
-    const dashboards = await pg.map(
-      searchDashboardSql,
-      [term],
-      (d) => d as Dashboard
-    )
+  const searchDashboardSql = getSearchDashboardSQL({
+    term,
+    offset,
+    limit,
+  })
+  const dashboards = await pg.map(
+    searchDashboardSql,
+    [term],
+    convertDashboardSqltoTS
+  )
 
-    return (dashboards ?? []) as unknown as Json
-  }
-)
+  return (dashboards ?? []) as unknown as Json
+})
 
 function getSearchDashboardSQL(input: {
   term: string

@@ -32,8 +32,15 @@ export function DashboardCards(props: {
 }
 
 function DashboardCard(props: { dashboard: Dashboard }) {
-  const { dashboard } = props
-  const { slug, creator_avatar_url, creator_username, creator_name } = dashboard
+  const {
+    id,
+    title,
+    slug,
+    creatorId,
+    creatorAvatarUrl,
+    creatorUsername,
+    creatorName,
+  } = props.dashboard
   return (
     <Link
       href={`/dashboard/${slug}`}
@@ -44,24 +51,24 @@ function DashboardCard(props: { dashboard: Dashboard }) {
           <Avatar
             size={'xs'}
             className={'mr-0.5'}
-            avatarUrl={creator_avatar_url}
-            username={creator_username}
+            avatarUrl={creatorAvatarUrl}
+            username={creatorUsername}
           />
           <UserLink
-            name={creator_name}
-            username={creator_username}
+            name={creatorName}
+            username={creatorUsername}
             className={clsx(
               'w-full max-w-[10rem] text-ellipsis sm:max-w-[12rem]'
             )}
           />
         </Row>
         <FollowDashboardButton
-          dashboardId={dashboard.id}
-          dashboardCreatorId={dashboard.creator_id}
+          dashboardId={id}
+          dashboardCreatorId={creatorId}
           ttPlacement="left"
         />
       </Row>
-      <div className="text-lg">{dashboard.title}</div>
+      <div className="text-lg">{title}</div>
     </Link>
   )
 }

@@ -1,5 +1,8 @@
-import { Dashboard, DashboardItem } from 'common/dashboard'
-import { getDashboardFromSlug } from 'common/supabase/dashboard'
+import {
+  Dashboard,
+  DashboardItem,
+  convertDashboardSqltoTS,
+} from 'common/dashboard'
 import { useEffect, useState } from 'react'
 import { Button } from 'web/components/buttons/button'
 import { AddDashboardItemWidget } from 'web/components/dashboard/add-dashboard-item'
@@ -31,19 +34,20 @@ import { ExpandingInput } from 'web/components/widgets/expanding-input'
 import { SEO } from 'web/components/SEO'
 import { richTextToString } from 'common/util/parse'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
-import { tsToMillis } from 'common/supabase/utils'
+import { run } from 'common/supabase/utils'
 
 export async function getStaticProps(ctx: {
   params: { dashboardSlug: string }
 }) {
   const { dashboardSlug } = ctx.params
-  const adminDb = await initSupabaseAdmin()
+  const db = await initSupabaseAdmin()
 
   try {
-    const dashboard: Dashboard = await getDashboardFromSlug(
-      dashboardSlug,
-      adminDb
+    const { data } = await run(
+      db.from('dashboards').select('*').eq('slug', dashboardSlug).single()
     )
+    const dashboard = convertDashboardSqltoTS(data)
+
     return { props: { initialDashboard: dashboard, slug: dashboardSlug } }
   } catch (e) {
     if (typeof e === 'object' && e !== null && 'code' in e && e.code === 404) {
@@ -92,7 +96,7 @@ export default function DashboardPage(props: {
   }
 
   const user = useUser()
-  const isCreator = dashboard.creator_id === user?.id
+  const isCreator = dashboard.creatorId === user?.id
   const isOnlyAdmin = !isCreator && user && isAdminId(user.id)
 
   const [editMode, setEditMode] = useState(false)
@@ -129,7 +133,7 @@ export default function DashboardPage(props: {
         title={dashboard.title}
         description={
           JSONEmpty(dashboard.description)
-            ? `dashboard created by ${dashboard.creator_name}`
+            ? `dashboard created by ${dashboard.creatorName}`
             : richTextToString(dashboard.description)
         }
       />
@@ -156,7 +160,7 @@ export default function DashboardPage(props: {
 
             <FollowDashboardButton
               dashboardId={dashboard.id}
-              dashboardCreatorId={dashboard.creator_id}
+              dashboardCreatorId={dashboard.creatorId}
               ttPlacement="bottom"
             />
             {isCreator && !editMode && (
@@ -175,19 +179,17 @@ export default function DashboardPage(props: {
         </Row>
         <Row className="mb-8 items-center gap-2">
           <Avatar
-            username={dashboard.creator_username}
-            avatarUrl={dashboard.creator_avatar_url}
+            username={dashboard.creatorUsername}
+            avatarUrl={dashboard.creatorAvatarUrl}
             size="xs"
           />
           <UserLink
-            username={dashboard.creator_username}
-            name={dashboard.creator_name}
+            username={dashboard.creatorUsername}
+            name={dashboard.creatorName}
           />
           <span className="text-ink-400 ml-4 text-sm">
             Updated
-            <RelativeTimestamp
-              time={tsToMillis(dashboard.created_time as any)}
-            />
+            <RelativeTimestamp time={dashboard.createdTime} />
           </span>
         </Row>
         {editMode && isNotXl ? (

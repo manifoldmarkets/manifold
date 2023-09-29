@@ -1,12 +1,9 @@
-import {
-  createSupabaseClient,
-  createSupabaseDirectClient,
-} from 'shared/supabase/init'
-import { z } from 'zod'
-import { authEndpoint, validate } from './helpers'
+import { createSupabaseClient } from 'shared/supabase/init'
+import { authEndpoint } from './helpers'
 import { run } from 'common/supabase/utils'
+import { convertDashboardSqltoTS } from 'common/dashboard'
 
-export const getyourdashboards = authEndpoint(async (req, auth) => {
+export const getyourdashboards = authEndpoint(async (_, auth) => {
   if (!auth.uid) {
     return { dashboards: [] }
   }
@@ -15,8 +12,5 @@ export const getyourdashboards = authEndpoint(async (req, auth) => {
     db.from('dashboards').select('*').eq('creator_id', auth.uid)
   )
 
-  if (data && data.length > 0) {
-    return { dashboards: data }
-  }
-  return { dashboards: [] }
+  return { dashboards: data.map(convertDashboardSqltoTS) }
 })
