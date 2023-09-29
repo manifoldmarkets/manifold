@@ -8,8 +8,8 @@ import { MODAL_CLASS, Modal } from './layout/modal'
 import { Row } from './layout/row'
 import {
   SupabaseAdditionalFilter,
-  SupabaseContractSearch,
-} from './contracts-search'
+  SupabaseSearch,
+} from 'web/components/supabase-search'
 import { LoadingIndicator } from './widgets/loading-indicator'
 
 export function SelectMarketsModal(props: {
@@ -74,7 +74,7 @@ export function SelectMarkets(props: {
           <LoadingIndicator />
         </div>
       )}
-      <SupabaseContractSearch
+      <SupabaseSearch
         persistPrefix="contract-select-modal"
         hideOrderSelector
         onContractClick={addContract}
@@ -89,6 +89,7 @@ export function SelectMarkets(props: {
           excludeUserIds: privateUser?.blockedUserIds,
         }}
         headerClassName={'!bg-canvas-0'}
+        contractsOnly
       />
       <Row className="bg-canvas-0 fixed inset-x-0 bottom-0 justify-end px-8 py-2">
         {!loading && (

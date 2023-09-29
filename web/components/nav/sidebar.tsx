@@ -3,7 +3,6 @@ import {
   DeviceMobileIcon,
   HomeIcon,
   LogoutIcon,
-  ScaleIcon,
   MoonIcon,
   SunIcon,
   SparklesIcon,
@@ -34,7 +33,6 @@ import { MobileAppsQRCodeDialog } from '../buttons/mobile-apps-qr-code-button'
 import { SidebarSignUpButton } from '../buttons/sign-up-button'
 import { ManifoldLogo } from './manifold-logo'
 import { ProfileSummary } from './profile-summary'
-import { SearchButton } from './search-button'
 import { SidebarItem } from './sidebar-item'
 
 export default function Sidebar(props: {
@@ -75,8 +73,6 @@ export default function Sidebar(props: {
       {user === undefined && <div className="h-[56px]" />}
 
       {user && !isMobile && <ProfileSummary user={user} />}
-
-      {!isMobile && !!user && <SearchButton className="mb-5" />}
 
       <div className="mb-4 flex flex-col gap-1">
         {navOptions.map((item) => (
@@ -126,9 +122,9 @@ const getDesktopNav = (
       { name: 'Home', href: '/home', icon: HomeIcon },
       showMarkets
         ? {
-            name: 'Questions',
-            href: '/questions?topic=for-you',
-            icon: ScaleIcon,
+            name: 'Browse',
+            href: '/browse?topic=for-you',
+            icon: SearchIcon,
           }
         : { name: 'News', href: '/news', icon: NewspaperIcon },
       {
@@ -141,7 +137,7 @@ const getDesktopNav = (
     )
 
   return buildArray(
-    { name: 'Questions', href: '/questions', icon: ScaleIcon },
+    { name: 'Browse', href: '/browse', icon: SearchIcon },
     { name: 'News', href: '/news', icon: NewspaperIcon },
     { name: 'About', href: '/about', icon: QuestionMarkCircleIcon },
     { name: 'App', onClick: openDownloadApp, icon: DeviceMobileIcon }
@@ -151,7 +147,6 @@ const getDesktopNav = (
 // No sidebar when signed out
 const getMobileNav = (toggleModal: () => void) => {
   return buildArray(
-    { name: 'Search', href: '/find', icon: SearchIcon },
     { name: 'Leagues', href: '/leagues', icon: TrophyIcon },
     { name: 'Dashboards', href: '/dashboard', icon: TemplateIcon },
     { name: 'Live', href: '/live', icon: LightningBoltIcon },

@@ -870,7 +870,7 @@ order by greatest(
     similarity(query, name),
     similarity(query, username)
   ) desc,
-  data->>'lastBetTime' desc nulls last
+  coalesce(data->'creatorTraders'->'allTime',0) desc nulls last
 limit count $$ language sql stable;
 
 create

@@ -11,7 +11,7 @@ import {
   getTotalContractsCreated,
 } from 'web/lib/supabase/users'
 import { db } from 'web/lib/supabase/db'
-import { SupabaseContractSearch } from '../contracts-search'
+import { SupabaseSearch } from 'web/components/supabase-search'
 import { useUser } from 'web/hooks/use-user'
 import { CreateQuestionButton } from '../buttons/create-question-button'
 import { useRouter } from 'next/router'
@@ -85,7 +85,7 @@ export function UserContractsList(props: { creator: User }) {
           }
         />
       </Row>
-      <SupabaseContractSearch
+      <SupabaseSearch
         defaultFilter="all"
         defaultSort="newest"
         additionalFilter={{
@@ -105,6 +105,7 @@ export function UserContractsList(props: { creator: User }) {
             )}
           </>
         }
+        contractsOnly
       />
     </Col>
   )

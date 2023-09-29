@@ -15,7 +15,6 @@ import { SearchGroupInfo, searchGroups } from 'web/lib/supabase/groups'
 import { UserSearchResult, searchUsers } from 'web/lib/supabase/users'
 import { ContractStatusLabel } from '../contract/contracts-table'
 import { FollowOrUnfolowTopicButton } from 'web/components/topics/topics-button'
-import { SORTS, Sort } from '../contracts-search'
 import { Avatar } from '../widgets/avatar'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { searchMarketSorts } from './query-market-sorts'
@@ -27,6 +26,7 @@ import { formatLargeNumber } from 'common/util/format'
 import { FollowButton } from 'web/components/buttons/follow-button'
 import { getUserFollows } from 'web/lib/supabase/follows'
 import { User } from 'common/user'
+import { SORTS, Sort } from 'web/components/supabase-search'
 
 export interface Option {
   id: string
@@ -179,7 +179,7 @@ const Results = (props: {
         ? searchGroups({
             term: search,
             limit: groupHitLimit,
-            yourGroups: following,
+            searchYourTopics: following,
           })
         : { data: [] },
       all || justMarkets
@@ -451,7 +451,7 @@ const TopicResults = (props: { topics: SearchGroupInfo[] }) => {
           key={group.id}
           value={{
             id: group.id,
-            slug: `/questions?${TOPIC_KEY}=${group.slug}`,
+            slug: `/browse?${TOPIC_KEY}=${group.slug}`,
           }}
         >
           <Row>
@@ -508,7 +508,7 @@ const MarketSortResults = (props: { sort: Sort; markets: Contract[] }) => {
 
   return (
     <>
-      <SectionTitle link={`/questions?s=${sort}`}>{label}</SectionTitle>
+      <SectionTitle link={`/browse?s=${sort}`}>{label}</SectionTitle>
       <div className="flex">
         <div className="bg-ink-200 my-1 ml-2 mr-3 w-1" />
         <div className="flex flex-col gap-2">
@@ -521,5 +521,4 @@ const MarketSortResults = (props: { sort: Sort; markets: Contract[] }) => {
   )
 }
 
-const marketSearchSlug = (query: string) =>
-  `/questions?s=score&f=all&q=${query}`
+const marketSearchSlug = (query: string) => `/browse?s=score&f=all&q=${query}`

@@ -1,6 +1,6 @@
 import { Group, TOPIC_KEY } from 'common/group'
 import { Title } from 'web/components/widgets/title'
-import { PlusCircleIcon } from '@heroicons/react/outline'
+import { PlusCircleIcon, XIcon } from '@heroicons/react/outline'
 import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
 import { DOMAIN } from 'common/envs/constants'
 import { Button } from 'web/components/buttons/button'
@@ -15,8 +15,9 @@ export const QuestionsTopicTitle = (props: {
   currentTopic: Group | undefined
   topicSlug: string | undefined
   user: User | null | undefined
+  setTopicSlug: (slug: string) => void
 }) => {
-  const { currentTopic, user, topicSlug } = props
+  const { currentTopic, user, topicSlug, setTopicSlug } = props
   const yourGroups = useRealtimeMemberGroups(user?.id)
   const yourGroupIds = yourGroups?.map((g) => g.id)
   const [showAddContract, setShowAddContract] = useState(false)
@@ -26,15 +27,15 @@ export const QuestionsTopicTitle = (props: {
     <Row className={'mb-3 hidden items-center lg:flex'}>
       <Title className="relative !mb-1 mr-6">
         {currentTopic?.name ??
-          (topicSlug === 'for-you' ? '⭐️ For you' : 'Questions')}
+          (topicSlug === 'for-you' ? '⭐️ For you' : 'Browse')}
       </Title>
       {currentTopic && (
         <>
           <CopyLinkOrShareButton
-            url={`https://${DOMAIN}/questions?${TOPIC_KEY}=${
+            url={`https://${DOMAIN}/browse?${TOPIC_KEY}=${
               currentTopic?.slug ?? ''
             }`}
-            className={'gap-1'}
+            className={'gap-1 whitespace-nowrap'}
             eventTrackingName={'copy questions page link'}
           >
             Share
@@ -43,6 +44,7 @@ export const QuestionsTopicTitle = (props: {
             <>
               <Button
                 color={'gray-white'}
+                className={'whitespace-nowrap'}
                 onClick={() => setShowAddContract(true)}
               >
                 <PlusCircleIcon className={'mx-1 h-5 w-5'} />
@@ -60,6 +62,7 @@ export const QuestionsTopicTitle = (props: {
           ) : (
             <Button
               color={'gray-white'}
+              className={'whitespace-nowrap'}
               loading={loading}
               onClick={() => {
                 setLoading(true)
@@ -70,6 +73,14 @@ export const QuestionsTopicTitle = (props: {
               Follow
             </Button>
           )}
+          <Button
+            color={'gray-white'}
+            className={'whitespace-nowrap'}
+            onClick={() => setTopicSlug('')}
+          >
+            <XIcon className={'mx-1 h-5 w-5'} />
+            All questions
+          </Button>
         </>
       )}
     </Row>

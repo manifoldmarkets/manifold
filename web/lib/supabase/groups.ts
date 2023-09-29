@@ -33,7 +33,7 @@ export async function searchGroups(props: {
   term: string
   offset?: number
   limit: number
-  yourGroups?: boolean
+  searchYourTopics?: boolean
   addingToContract?: boolean
   newContract?: boolean
 }) {
@@ -41,7 +41,7 @@ export async function searchGroups(props: {
     term,
     offset = 0,
     limit,
-    yourGroups,
+    searchYourTopics,
     addingToContract,
     newContract,
   } = props
@@ -60,7 +60,7 @@ export async function searchGroups(props: {
       term: '',
       offset: offset,
       limit: limit,
-      yourGroups,
+      yourGroups: searchYourTopics,
       addingToContract: addingToContract ?? false,
       newContract: newContract ?? false,
     })
@@ -73,7 +73,7 @@ export async function searchGroups(props: {
       term,
       state,
       limit,
-      yourGroups,
+      yourGroups: searchYourTopics,
       addingToContract: addingToContract ?? false,
       newContract: newContract ?? false,
     })
@@ -85,7 +85,7 @@ export async function searchGroups(props: {
     offset,
     limit,
     fuzzy: false,
-    yourGroups,
+    yourGroups: searchYourTopics,
     addingToContract: addingToContract ?? false,
     newContract: newContract ?? false,
   })
@@ -98,7 +98,7 @@ export async function searchGroups(props: {
         state,
         term,
         limit: limit - groups.length,
-        yourGroups: yourGroups,
+        yourGroups: searchYourTopics,
         addingToContract: addingToContract ?? false,
         newContract: newContract ?? false,
       })

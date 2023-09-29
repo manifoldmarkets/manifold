@@ -3,10 +3,12 @@ import {
   getUserIdFollows,
   getUserFollowers,
   getUserIsFollowing,
+  getUserFollows,
 } from 'web/lib/supabase/follows'
 import { useSubscription } from 'web/lib/supabase/realtime/use-subscription'
 import { usePersistentLocalState } from './use-persistent-local-state'
 import { db } from 'web/lib/supabase/db'
+import { User } from 'common/user'
 
 export const useFollows = (userId: string | null | undefined) => {
   const { rows } = useSubscription(
@@ -40,6 +42,7 @@ export const useIsFollowing = (
   }, [userId, followId])
   return { isFollowing, setIsFollowing }
 }
+
 export const useFollowedIdsSupabase = (userId: string | undefined) => {
   const [followedIds, setFollowedIds] = usePersistentLocalState<
     string[] | undefined
@@ -53,4 +56,13 @@ export const useFollowedIdsSupabase = (userId: string | undefined) => {
       })
   }, [userId])
   return followedIds
+}
+
+export const useFollowedUsersOnLoad = (userId: string | undefined) => {
+  const [followedUsers, setFollowedUsers] = useState<User[] | undefined>()
+
+  useEffect(() => {
+    if (userId && !followedUsers) getUserFollows(userId).then(setFollowedUsers)
+  }, [userId])
+  return followedUsers
 }

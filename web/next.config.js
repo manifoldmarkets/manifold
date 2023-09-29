@@ -112,22 +112,40 @@ module.exports = {
       },
       {
         source: '/markets',
-        destination: '/questions',
+        destination: '/browse',
         permanent: true,
       },
       {
         source: '/search',
-        destination: '/questions',
+        destination: '/browse',
         permanent: true,
       },
       {
         source: '/groups',
-        destination: '/questions',
+        destination: '/browse',
         permanent: true,
       },
       {
         source: '/group/:slug*',
-        destination: '/questions?topic=:slug*',
+        destination: '/browse?topic=:slug*',
+        permanent: true,
+      },
+      {
+        source: '/questions:slug*',
+        has: [
+          {
+            type: 'query',
+            key: 'topic',
+            // Using a named capture group to capture the value of 'topic'
+            value: '(?<slug>.*)',
+          },
+        ],
+        permanent: true,
+        destination: '/browse?topic=:slug', // Using the captured value here
+      },
+      {
+        source: '/questions',
+        destination: '/browse',
         permanent: true,
       },
       // NOTE: add any external redirects at common/envs/constants.ts and update native apps.

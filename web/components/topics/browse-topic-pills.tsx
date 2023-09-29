@@ -6,7 +6,7 @@ import { ChevronRightIcon, ChevronDownIcon } from '@heroicons/react/solid'
 import { useState } from 'react'
 import clsx from 'clsx'
 import { Col } from 'web/components/layout/col'
-import { SORT_KEY } from 'web/components/contracts-search'
+import { SORT_KEY } from 'web/components/supabase-search'
 import { useRouter } from 'next/router'
 
 export const BrowseTopicPills = (props: {
@@ -21,7 +21,7 @@ export const BrowseTopicPills = (props: {
   const sort = router.query[SORT_KEY] as string
 
   return (
-    <Col className={'bg-canvas-0 relative w-full pl-1 sm:hidden'}>
+    <Col className={'bg-canvas-0 relative w-full pl-1 pb-1 sm:hidden'}>
       <Row
         className={clsx(
           'scrollbar-hide gap-0.5 overflow-auto',

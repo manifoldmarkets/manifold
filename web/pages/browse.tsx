@@ -15,7 +15,7 @@ import {
   BLOCKED_BY_DEFAULT_GROUP_SLUGS,
   DESTINY_GROUP_SLUGS,
 } from 'common/envs/constants'
-import { SupabaseContractSearch } from 'web/components/contracts-search'
+import { SupabaseSearch } from 'web/components/supabase-search'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useRouter } from 'next/router'
 import { Button } from 'web/components/buttons/button'
@@ -37,7 +37,7 @@ import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-s
 export const SHOW_TOPICS_TERM = 'show-topics'
 
 // TODO: use static props for non for-you topic slugs
-export default function QuestionsPage() {
+export default function BrowsePage() {
   const user = useUser()
   const isMobile = useIsMobile()
   const router = useRouter()
@@ -53,7 +53,7 @@ export default function QuestionsPage() {
     80,
     'home-page-trending-topics'
   ) as Group[]
-  const userTrendingTopics = useUserTrendingTopics(user, 20)
+  const userTrendingTopics = useUserTrendingTopics(user, 50)
 
   const [topicSlug, setTopicSlug] = usePersistentQueryState<string>(
     TOPIC_KEY,
@@ -117,7 +117,7 @@ export default function QuestionsPage() {
         <SEO
           title={`${currentTopic?.name ?? 'Questions'}`}
           description={`Browse ${currentTopic?.name ?? 'all'} questions`}
-          url={`/questions${
+          url={`/browse${
             currentTopic ? `?${TOPIC_KEY}=${currentTopic.slug}` : ''
           }`}
         />
@@ -125,6 +125,7 @@ export default function QuestionsPage() {
           currentTopic={currentTopic}
           topicSlug={topicSlug}
           user={user}
+          setTopicSlug={setTopicSlug}
         />
         <Col>
           <Row className={'w-full'}>
@@ -134,7 +135,7 @@ export default function QuestionsPage() {
                 showTopicsSidebar ? 'sm:mr-10 lg:mr-0' : ''
               )}
             >
-              <SupabaseContractSearch
+              <SupabaseSearch
                 persistPrefix="search"
                 autoFocus={autoFocus}
                 additionalFilter={{
@@ -150,9 +151,8 @@ export default function QuestionsPage() {
                 }}
                 useUrlParams
                 isWholePage
-                headerClassName={'bg-canvas-0 lg:bg-canvas-50 pt-2 px-2'}
+                headerClassName={'bg-canvas-0 lg:bg-canvas-50 pt-0 px-2'}
                 menuButton={menuButton}
-                hideAvatar={false}
                 rowBelowFilters={
                   isMobile && (
                     <BrowseTopicPills

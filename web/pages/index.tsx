@@ -40,7 +40,7 @@ export default function Home() {
                   About
                 </Button>
               </Link>
-              <Link href="/questions">
+              <Link href="/browse">
                 <Button
                   color="gray-white"
                   size="xs"

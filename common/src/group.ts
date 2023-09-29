@@ -45,7 +45,7 @@ export type GroupLink = {
 }
 
 export function groupPath(groupSlug: string) {
-  return `/questions?${TOPIC_KEY}=${groupSlug}`
+  return `/browse?${TOPIC_KEY}=${groupSlug}`
 }
 
 export const GroupsByTopic = {

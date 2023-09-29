@@ -1,4 +1,4 @@
-import { ChevronDownIcon, XIcon } from '@heroicons/react/outline'
+import { ArrowLeftIcon, ChevronDownIcon, XIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { isEqual, sample, uniqBy } from 'lodash'
 import { ReactNode, useEffect, useRef, useState } from 'react'
@@ -21,16 +21,33 @@ import {
 } from 'web/hooks/use-persistent-query-state'
 import {
   useGroupFromSlug,
+  useMemberGroupIdsOnLoad,
   useRealtimeMemberGroups,
 } from 'web/hooks/use-group-supabase'
-import { DEFAULT_TOPIC, TOPIC_KEY } from 'common/group'
+import { DEFAULT_TOPIC, Group, TOPIC_KEY } from 'common/group'
 import { TopicTag } from 'web/components/topics/topic-tag'
 import { AddContractToGroupButton } from 'web/components/topics/add-contract-to-group-modal'
 import { useUser } from 'web/hooks/use-user'
 
-import { TopicOptionsButton } from 'web/components/topics/topics-button'
+import {
+  FollowOrUnfolowTopicButton,
+  TopicOptionsButton,
+} from 'web/components/topics/topics-button'
 
 import { ForYouDropdown } from 'web/components/topics/for-you-dropdown'
+import { PillButton } from 'web/components/buttons/pill-button'
+import { searchUsers, UserSearchResult } from 'web/lib/supabase/users'
+import { searchGroups } from 'web/lib/supabase/groups'
+import { convertGroup } from 'common/supabase/groups'
+import { FollowButton } from 'web/components/buttons/follow-button'
+import { shortFormatNumber } from 'common/util/format'
+import { StackedUserNames } from 'web/components/widgets/user-link'
+import { User } from 'common/user'
+import { Avatar } from 'web/components/widgets/avatar'
+import { Button, IconButton } from 'web/components/buttons/button'
+import Link from 'next/link'
+import { useFollowedUsersOnLoad } from 'web/hooks/use-follows'
+import { parseJsonContentToText } from 'common/util/parse'
 
 const CONTRACTS_PER_PAGE = 40
 
@@ -106,6 +123,7 @@ export const CONTRACT_TYPES = [
 ] as const
 
 export type ContractTypeType = typeof CONTRACT_TYPES[number]['value']
+type SearchType = '' | 'Topics' | 'Users' | 'Questions'
 
 export type SearchParams = {
   [QUERY_KEY]: string
@@ -113,12 +131,14 @@ export type SearchParams = {
   [FILTER_KEY]: Filter
   [CONTRACT_TYPE_KEY]: ContractTypeType
   [TOPIC_KEY]: string
+  [SEARCH_TYPE_KEY]: SearchType
 }
 
 const QUERY_KEY = 'q'
 export const SORT_KEY = 's'
 const FILTER_KEY = 'f'
 const CONTRACT_TYPE_KEY = 'ct'
+const SEARCH_TYPE_KEY = 't'
 
 export type SupabaseAdditionalFilter = {
   creatorId?: string
@@ -136,7 +156,7 @@ export type SearchState = {
   shouldLoadMore: boolean
 }
 
-export function SupabaseContractSearch(props: {
+export function SupabaseSearch(props: {
   persistPrefix: string
   defaultSort?: Sort
   defaultFilter?: Filter
@@ -148,7 +168,6 @@ export function SupabaseContractSearch(props: {
   headerClassName?: string
   isWholePage?: boolean
   menuButton?: ReactNode
-  hideAvatar?: boolean
   rowBelowFilters?: ReactNode
   // used to determine if search params should be updated in the URL
   useUrlParams?: boolean
@@ -156,7 +175,10 @@ export function SupabaseContractSearch(props: {
   autoFocus?: boolean
   emptyState?: ReactNode
   hideSearch?: boolean
-  hideFilters?: boolean
+  hideContractFilters?: boolean
+  defaultSearchType?: SearchType
+  yourTopics?: Group[]
+  contractsOnly?: boolean
 }) {
   const {
     defaultSort,
@@ -172,28 +194,35 @@ export function SupabaseContractSearch(props: {
     isWholePage,
     useUrlParams,
     autoFocus,
-    emptyState,
-    hideFilters,
+    hideContractFilters,
     menuButton,
-    hideAvatar,
     rowBelowFilters,
+    defaultSearchType,
+    yourTopics,
+    contractsOnly,
   } = props
 
   const [searchParams, setSearchParams, defaults] = useSearchQueryState({
     defaultSort,
     defaultFilter,
     useUrlParams,
+    defaultSearchType,
   })
+  const user = useUser()
+  const followingUsers = useFollowedUsersOnLoad(user?.id)
 
   const [lastSearch, setLastSearch] = usePersistentInMemoryState<
     typeof searchParams
   >(undefined, `${persistPrefix}-last-search`)
+  const queryAsString = searchParams?.[QUERY_KEY] ?? ''
+  const searchTypeAsString = searchParams?.[SEARCH_TYPE_KEY] ?? ''
+  const currentTopicSlug = searchParams?.[TOPIC_KEY]
 
-  useEffect(() => {
-    if (searchParams && !isEqual(searchParams, lastSearch)) {
-      queryContracts(FRESH_SEARCH_CHANGED_STATE, true)
-    }
-  }, [JSON.stringify(searchParams)])
+  const [userResults, setUserResults] = useState<UserSearchResult[]>()
+  const [topicResults, setTopicResults] = useState<Group[]>()
+  const [showSearchTypeState, setShowSearchTypeState] = useState(
+    queryAsString === '' || searchTypeAsString !== '' || !!currentTopicSlug
+  )
 
   const { contracts, loadMoreContracts, queryContracts } = useContractSearch(
     persistPrefix,
@@ -202,29 +231,124 @@ export function SupabaseContractSearch(props: {
     additionalFilter,
     isWholePage
   )
+  const pillOptions: SearchType[] = ['Questions', 'Users', 'Topics']
+  const setQuery = (query: string) => setSearchParams({ [QUERY_KEY]: query })
+  const setSearchType = (t: SearchType) =>
+    setSearchParams({ [SEARCH_TYPE_KEY]: t })
+  const showSearchTypes =
+    ((showSearchTypeState &&
+      (!currentTopicSlug || currentTopicSlug === 'for-you') &&
+      queryAsString !== '') ||
+      searchTypeAsString !== '') &&
+    !contractsOnly
 
-  const setQuery = (query: string) => setSearchParams({ q: query })
-  const query = searchParams?.[QUERY_KEY] ?? ''
+  useEffect(() => {
+    if (searchParams?.[QUERY_KEY] === '') setShowSearchTypeState(true)
+  }, [searchParams?.[QUERY_KEY]])
+
+  useEffect(() => {
+    if (
+      currentTopicSlug &&
+      currentTopicSlug !== 'for-you' &&
+      showSearchTypeState
+    ) {
+      setShowSearchTypeState(false)
+      setSearchParams({ [SEARCH_TYPE_KEY]: '' })
+    }
+  }, [currentTopicSlug])
+
+  useEffect(() => {
+    if (!searchParams || isEqual(searchParams, lastSearch)) return
+    const { t: searchType } = searchParams
+    if (searchType === '') queryContracts(FRESH_SEARCH_CHANGED_STATE, true)
+    else if (searchType === 'Users')
+      searchUsers(queryAsString, 100, [
+        'creatorTraders',
+        'bio',
+        'createdTime',
+        'isBannedFromPosting',
+      ]).then((results) => {
+        const followedUsers =
+          followingUsers?.filter(
+            (f) =>
+              f.name.toLowerCase().includes(queryAsString.toLowerCase()) ||
+              f.username.toLowerCase().includes(queryAsString.toLowerCase())
+          ) ?? []
+        setUserResults(uniqBy(followedUsers.concat(results), 'id'))
+      })
+    else if (searchType === 'Topics')
+      searchGroups({
+        term: queryAsString,
+        limit: 100,
+      }).then((results) => {
+        const groupResults = results.data.map(convertGroup)
+        const followedTopics =
+          yourTopics?.filter(
+            (f) =>
+              f.name.toLowerCase().includes(queryAsString.toLowerCase()) ||
+              f.slug.toLowerCase().includes(queryAsString.toLowerCase())
+          ) ?? []
+        setTopicResults(uniqBy(followedTopics.concat(groupResults), 'name'))
+      })
+  }, [JSON.stringify(searchParams)])
+
+  const emptyContractsState =
+    props.emptyState ??
+    (searchParams?.[QUERY_KEY] ? (
+      <NoResults />
+    ) : (
+      <Col className="text-ink-700 mx-2 my-6 text-center">
+        No questions yet.
+        {searchParams?.[TOPIC_KEY] && (
+          <Row className={'mt-2 w-full items-center justify-center'}>
+            <AddContractToGroupButton groupSlug={searchParams[TOPIC_KEY]} />
+          </Row>
+        )}
+      </Col>
+    ))
 
   return (
     <Col>
       <Col className={clsx('bg-canvas-50 sticky top-0 z-20 ', headerClassName)}>
         <Row>
-          <Input
-            type="text"
-            inputMode="search"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            onBlur={trackCallback('search', { query: query })}
-            placeholder="Search questions"
-            className="w-full"
-            autoFocus={autoFocus}
-            showClearButton={query !== ''}
-          />
+          <Col className={'w-full'}>
+            <Row className={'relative'}>
+              <Input
+                type="text"
+                inputMode="search"
+                value={queryAsString}
+                onChange={(e) => setQuery(e.target.value)}
+                onBlur={trackCallback('search', { query: queryAsString })}
+                placeholder={
+                  !showSearchTypes
+                    ? 'Search questions, users, and topics'
+                    : searchTypeAsString === 'Users'
+                    ? 'Search users'
+                    : searchTypeAsString === 'Topics'
+                    ? 'Search topics'
+                    : 'Search questions'
+                }
+                className="w-full"
+                autoFocus={autoFocus}
+              />
+              {queryAsString !== '' && (
+                <IconButton
+                  className={'absolute right-2 top-2.5 p-0'}
+                  size={'2xs'}
+                  onClick={() => {
+                    setSearchParams({ [QUERY_KEY]: '' })
+                  }}
+                >
+                  <XIcon className={'h-5 w-5 rounded-full'} />
+                </IconButton>
+              )}
+            </Row>
+          </Col>
           {menuButton}
         </Row>
-        {!hideFilters && (
+        {!hideContractFilters && (
           <ContractFilters
+            user={user}
             hideOrderSelector={hideOrderSelector}
             includeProbSorts={includeProbSorts}
             params={searchParams ?? defaults}
@@ -232,32 +356,160 @@ export function SupabaseContractSearch(props: {
           />
         )}
       </Col>
-      {rowBelowFilters}
-      {contracts && contracts.length === 0 ? (
-        emptyState ??
-        (searchParams?.[QUERY_KEY] ? (
-          <NoResults />
-        ) : (
-          <Col className="text-ink-700 mx-2 my-6 text-center">
-            No questions yet.
-            {searchParams?.[TOPIC_KEY] && (
-              <Row className={'mt-2 w-full items-center justify-center'}>
-                <AddContractToGroupButton groupSlug={searchParams[TOPIC_KEY]} />
-              </Row>
-            )}
-          </Col>
-        ))
+      {showSearchTypes ? (
+        <Row className={'bg-canvas-0 lg:bg-canvas-50 gap-1 pb-1'}>
+          <Button
+            size={'sm'}
+            color={'gray-white'}
+            className={' ml-1 rounded-full'}
+            onClick={() => {
+              setShowSearchTypeState(false)
+              setSearchType('')
+            }}
+          >
+            <ArrowLeftIcon className={'h-4 w-4'} />
+          </Button>
+          {pillOptions.map((option) => (
+            <PillButton
+              key={option}
+              selected={
+                searchTypeAsString === option ||
+                (option === 'Questions' && searchTypeAsString === '')
+              }
+              onSelect={() => setSearchType(option)}
+            >
+              {option}
+            </PillButton>
+          ))}
+        </Row>
       ) : (
-        <ContractsList
-          contracts={contracts}
-          loadMore={loadMoreContracts}
-          onContractClick={onContractClick}
-          highlightContractIds={highlightContractIds}
-          headerClassName={clsx(headerClassName, '!top-14')}
-          hideActions={hideActions}
-          hideAvatar={hideAvatar}
-        />
+        rowBelowFilters
       )}
+      {searchTypeAsString === '' || searchTypeAsString === 'Questions' ? (
+        contracts && contracts.length === 0 ? (
+          emptyContractsState
+        ) : (
+          <ContractsList
+            contracts={contracts}
+            loadMore={loadMoreContracts}
+            onContractClick={onContractClick}
+            highlightContractIds={highlightContractIds}
+            headerClassName={clsx(headerClassName, '!top-14')}
+            hideActions={hideActions}
+          />
+        )
+      ) : searchTypeAsString === 'Users' ? (
+        userResults && userResults.length === 0 ? (
+          <Col className="text-ink-700 mx-2 my-6 text-center">
+            No users found.
+            {/* Find users from your contacts!*/}
+          </Col>
+        ) : (
+          <UserResults users={userResults ?? []} />
+        )
+      ) : searchTypeAsString === 'Topics' ? (
+        topicResults && topicResults.length === 0 ? (
+          <Col className="text-ink-700 mx-2 my-6 text-center">
+            No topics found.
+            {/*  Create a new topic! */}
+          </Col>
+        ) : (
+          <TopicResults topics={topicResults ?? []} />
+        )
+      ) : null}
+    </Col>
+  )
+}
+
+const UserResults = (props: { users: UserSearchResult[] }) => {
+  return (
+    <Col className={'mt-1 w-full gap-1'}>
+      {props.users.map(
+        ({
+          id,
+          name,
+          username,
+          avatarUrl,
+          bio,
+          createdTime,
+          creatorTraders,
+        }) => (
+          <Link key={id} href={`/${username}`}>
+            <Row className={'hover:bg-canvas-100 p-1'}>
+              <Col className={'w-full'}>
+                <Row className={'justify-between'}>
+                  <Row className={'gap-1'}>
+                    <Avatar
+                      username={username}
+                      avatarUrl={avatarUrl}
+                      className={'mt-1'}
+                    />
+                    <StackedUserNames
+                      user={
+                        { id, name, username, avatarUrl, createdTime } as User
+                      }
+                      followsYou={false}
+                      className={'font-normal sm:text-lg'}
+                      usernameClassName={'sm:text-sm font-normal'}
+                    />
+                  </Row>
+                  <FollowButton size={'xs'} userId={id} />
+                </Row>
+                <div className={'line-clamp-2 text-ink-500 ml-1 text-sm'}>
+                  {creatorTraders.allTime > 0 && (
+                    <span className={'mr-1'}>
+                      {shortFormatNumber(creatorTraders.allTime)} traders
+                      {bio && ' •'}
+                    </span>
+                  )}
+                  <span>{bio}</span>
+                </div>
+              </Col>
+            </Row>
+          </Link>
+        )
+      )}
+    </Col>
+  )
+}
+
+const TopicResults = (props: { topics: Group[] }) => {
+  const { topics } = props
+  const me = useUser()
+  const myGroupIds = useMemberGroupIdsOnLoad(me?.id) ?? []
+
+  return (
+    <Col className={'mt-1 w-full gap-1'}>
+      {topics.map((group) => (
+        <Link
+          key={group.id}
+          href={`/browse?${TOPIC_KEY}=${group.slug}&${SEARCH_TYPE_KEY}=&${QUERY_KEY}=`}
+        >
+          <Row className={'hover:bg-canvas-100 min-h-[4rem] p-1 pl-2 pt-2.5'}>
+            <Col className={' w-full'}>
+              <span className="line-clamp-1 sm:text-lg">{group.name}</span>
+              <Row className={'line-clamp-2 text-ink-500 gap-1 text-sm'}>
+                {group.totalMembers > 1 && (
+                  <span>
+                    {group.totalMembers} followers
+                    {group.about && ' • '}
+                  </span>
+                )}
+                {group.about && (
+                  <span>{parseJsonContentToText(group.about)}</span>
+                )}
+              </Row>
+            </Col>
+            <div>
+              <FollowOrUnfolowTopicButton
+                group={group}
+                user={me}
+                isMember={myGroupIds.includes(group.id)}
+              />
+            </div>
+          </Row>
+        </Link>
+      ))}
     </Col>
   )
 }
@@ -396,12 +648,14 @@ const useSearchQueryState = (props: {
   defaultSort?: Sort
   defaultFilter?: Filter
   defaultContractType?: ContractTypeType
+  defaultSearchType?: SearchType
   useUrlParams?: boolean
 }) => {
   const {
     defaultSort = 'score',
     defaultFilter = 'open',
     defaultContractType = 'ALL',
+    defaultSearchType = '',
     useUrlParams,
   } = props
 
@@ -411,6 +665,7 @@ const useSearchQueryState = (props: {
     [FILTER_KEY]: defaultFilter,
     [CONTRACT_TYPE_KEY]: defaultContractType,
     [TOPIC_KEY]: DEFAULT_TOPIC,
+    [SEARCH_TYPE_KEY]: defaultSearchType,
   }
 
   const useHook = useUrlParams ? usePersistentQueriesState : usePartialUpdater
@@ -424,6 +679,7 @@ function ContractFilters(props: {
   hideOrderSelector?: boolean
   includeProbSorts?: boolean
   params: SearchParams
+  user: User | null | undefined
   updateParams: (params: Partial<SearchParams>) => void
 }) {
   const {
@@ -432,6 +688,7 @@ function ContractFilters(props: {
     includeProbSorts,
     params,
     updateParams,
+    user,
   } = props
 
   const { s: sort, f: filter, ct: contractType, topic: topicSlug } = params
@@ -478,7 +735,7 @@ function ContractFilters(props: {
   const filterLabel = getLabelFromValue(FILTERS, filter)
   const sortLabel = getLabelFromValue(SORTS, sort)
   const contractTypeLabel = getLabelFromValue(CONTRACT_TYPES, contractType)
-  const user = useUser()
+
   const yourGroups = useRealtimeMemberGroups(user?.id)
   const yourGroupIds = yourGroups?.map((g) => g.id)
   const setTopic = (slug: string) => updateParams({ [TOPIC_KEY]: slug })

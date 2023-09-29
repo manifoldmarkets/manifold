@@ -42,7 +42,10 @@ export function FollowButton(props: {
       size={size}
       color={isFollowing ? 'gray-outline' : 'indigo'}
       className={clsx('my-auto', size === 'sm' && 'min-w-[84px]')}
-      onClick={() => onFollowClick(userId, isFollowing, setIsFollowing)}
+      onClick={(e) => {
+        e.preventDefault()
+        onFollowClick(userId, isFollowing, setIsFollowing)
+      }}
     >
       {isFollowing ? 'Following' : 'Follow'}
     </Button>

@@ -40,11 +40,7 @@ import { Avatar } from 'web/components/widgets/avatar'
 import ImageWithBlurredShadow from 'web/components/widgets/image-with-blurred-shadow'
 import { Linkify } from 'web/components/widgets/linkify'
 import { linkClass } from 'web/components/widgets/site-link'
-import {
-  isFresh,
-  PostBanBadge,
-  UserBadge,
-} from 'web/components/widgets/user-link'
+import { StackedUserNames } from 'web/components/widgets/user-link'
 import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { UserLikedContractsButton } from 'web/components/profile/user-liked-contracts-button'
@@ -235,38 +231,12 @@ function UserProfile(props: {
                 </Link>
               )}
             </Col>
-            <Col>
-              <div className={'inline-flex flex-row items-center gap-1 pt-1'}>
-                <span className="break-anywhere font-bold sm:text-xl">
-                  {user.name}
-                </span>
-                {
-                  <UserBadge
-                    username={user.username}
-                    fresh={isFresh(user.createdTime)}
-                  />
-                }
-                {user.isBannedFromPosting && <PostBanBadge />}
-              </div>
-              <Row
-                className={
-                  'max-w-[8rem] flex-shrink flex-wrap gap-2 sm:max-w-none'
-                }
-              >
-                <span className={'text-ink-400  text-sm sm:text-base'}>
-                  @{user.username}{' '}
-                </span>
-                {followsYou && (
-                  <span
-                    className={
-                      'bg-canvas-100 w-fit self-center rounded-md p-0.5 px-1 text-xs'
-                    }
-                  >
-                    Follows you
-                  </span>
-                )}
-              </Row>
-            </Col>
+            <StackedUserNames
+              usernameClassName={'sm:text-base'}
+              className={'font-bold sm:text-xl'}
+              user={user}
+              followsYou={followsYou}
+            />
           </Row>
           {isCurrentUser ? (
             <Row className={'items-center gap-1 sm:gap-2'}>

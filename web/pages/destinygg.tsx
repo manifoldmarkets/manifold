@@ -134,7 +134,7 @@ export default function DestinyLandingPage(props: {
           <WhatIsMana />
           <LabCard
             title="📈 All Dgg stocks"
-            href="https://manifold.markets/questions?topic=destinygg"
+            href="https://manifold.markets/browse?topic=destinygg"
           />
         </Col>
 

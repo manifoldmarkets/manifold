@@ -135,7 +135,6 @@ export function FollowOrUnfolowTopicButton(props: {
         color="gray-outline"
         onClick={(e) => {
           e.preventDefault()
-          e.stopPropagation()
           unfollow()
         }}
       >
@@ -150,7 +149,6 @@ export function FollowOrUnfolowTopicButton(props: {
       color="indigo"
       onClick={(e) => {
         e.preventDefault()
-        e.stopPropagation()
         follow()
       }}
     >

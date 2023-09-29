@@ -5,7 +5,7 @@ import {
   MenuAlt3Icon,
   NewspaperIcon,
   QuestionMarkCircleIcon,
-  ScaleIcon,
+  SearchIcon,
   UserCircleIcon,
 } from '@heroicons/react/solid'
 import { animated } from '@react-spring/web'
@@ -36,7 +36,7 @@ const touchItemClass = 'bg-primary-100'
 function getNavigation(user: User) {
   return [
     { name: 'Home', href: '/home', icon: HomeIcon },
-    { name: 'Questions', href: '/questions?topic=for-you', icon: ScaleIcon },
+    { name: 'Browse', href: '/browse?topic=for-you', icon: SearchIcon },
     {
       name: 'Profile',
       href: `/${user.username}`,
@@ -50,7 +50,7 @@ function getNavigation(user: User) {
 }
 
 const signedOutNavigation = () => [
-  { name: 'Questions', href: '/questions', icon: ScaleIcon },
+  { name: 'Browse', href: '/browse', icon: SearchIcon },
   { name: 'News', href: '/news', icon: NewspaperIcon },
   { name: 'About', href: '/about', icon: QuestionMarkCircleIcon },
   // {

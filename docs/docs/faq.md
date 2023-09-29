@@ -70,7 +70,7 @@ You can find all other available quests by navigating to your profile page and c
   Receive M250 for each person who signs up when you share a market or group! Make sure they use your link and place at least one trade after signing up.
 
 - **Claiming bounties** - 
-  [Bounty markets](https://manifold.markets/questions?ct=BOUNTIED_QUESTION&s=bounty-amount) enable the bounty creator to grant mana to respondents. This is both an easy way for users to make mana, and a great method of getting answers to questions or help with a task. At the time of writing, the largest bounty available is ["What will be the first Manifold question to be #1 on Hacker News?"](https://manifold.markets/SG/what-will-be-the-first-manifold-que-031e9cb3a36a?r=R2Vu) with an avaialable reward of M25,000 ($250 usd for charity).
+  [Bounty markets](https://manifold.markets/browse?ct=BOUNTIED_QUESTION&s=bounty-amount) enable the bounty creator to grant mana to respondents. This is both an easy way for users to make mana, and a great method of getting answers to questions or help with a task. At the time of writing, the largest bounty available is ["What will be the first Manifold question to be #1 on Hacker News?"](https://manifold.markets/SG/what-will-be-the-first-manifold-que-031e9cb3a36a?r=R2Vu) with an avaialable reward of M25,000 ($250 usd for charity).
 
 - **Leagues** -
   [Manifold Leagues](https://manifold.markets/leagues) are a fun way to compete with people globally who predict at a similar skill/intensity. They are a month long competition with significant rewards, so keep an eye on opportunities to advance in your league!
@@ -157,9 +157,9 @@ Here are some other tips to get you started:
   Similar to a stock market, probabilities can be overvalued and undervalued. If you bet (buy shares) at one end of the spectrum and subsequently other users buy even more shares of that same type, the value of your own shares will increase. Sometimes it will be most profitable to wait for the market to resolve but often it can be wise to sell your shares and take the immediate profits. This can also be a great way to free up Mana if you are lacking funds and see a better opportunity.
 - **Create innovative answers** - 
   Certain free response markets provide room for creativity! The answers themselves can often affect the outcome based on how compelling they are. Being the first to bet on an answer generally gives the best odds!
-- [**Sort by close date**](https://manifold.markets/questions?s=close-date) - 
+- [**Sort by close date**](https://manifold.markets/browse?s=close-date) - 
   This will show you the markets that will close the soonest. Most of these markets will tend to have converged to one extreme leaving not much room for profit. However, you will find some that haven’t. These are great to bet on as you won’t have to wait a long time for a potential return on investment.
-- [**Sort by newest**](https://manifold.markets/questions?s=newest) - 
+- [**Sort by newest**](https://manifold.markets/browse?s=newest) - 
   This may allow you to find markets which haven’t had enough bets to converge to an accurate probability allowing you to snatch up some cheap shares.
 - **Follow successful traders** - 
   This increases your exposure to winning strategies. Watching how some of the [top traders on Manifold Markets](https://manifold.markets/leaderboards) use their mana can provide a good indication of what works. If you're ever curious how someone made a large profit on a market with a small position, or predicted an event, ask them!

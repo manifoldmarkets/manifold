@@ -637,7 +637,7 @@ export function ContractPageContent(props: {
               {outcomeType === 'BOUNTIED_QUESTION' && (
                 <Link
                   className={clsx(linkClass, 'text-primary-500 ml-2 text-sm')}
-                  href={`/questions?s=score&f=open&ct=BOUNTIED_QUESTION`}
+                  href={`/browse?s=score&f=open&ct=BOUNTIED_QUESTION`}
                 >
                   See all bounties &rarr;
                 </Link>

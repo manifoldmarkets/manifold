@@ -49,9 +49,7 @@ export function TopicOptions(props: {
       name: 'Share',
       icon: <LinkIcon className="h-5 w-5" />,
       onClick: () => {
-        copyToClipboard(
-          `https://${DOMAIN}/questions?${TOPIC_KEY}=${group.slug}`
-        )
+        copyToClipboard(`https://${DOMAIN}/browse?${TOPIC_KEY}=${group.slug}`)
         toast.success('Link copied!')
       },
     },
