@@ -56,13 +56,6 @@ function CharityPage(props: { charity: Charity }) {
     <Page
       trackPageView={'charity slug page'}
       trackPageProps={{ charityName: charity.name }}
-      rightSidebar={
-        <DonationBox
-          user={user}
-          charity={charity}
-          setShowConfetti={setShowConfetti}
-        />
-      }
     >
       <SEO title={name} description={description} url="/browse" />
       {showConfetti && <FullscreenConfetti />}
@@ -72,7 +65,7 @@ function CharityPage(props: { charity: Charity }) {
           <Title>{name}</Title>
           <Row className="justify-between">
             {photo && (
-              <div className="relative w-40 rounded-2xl">
+              <div className="relative w-40 rounded bg-white">
                 <Image src={photo} alt="" layout="fill" objectFit="contain" />
               </div>
             )}
@@ -83,11 +76,16 @@ function CharityPage(props: { charity: Charity }) {
               numSupporters={numSupporters}
             />
           </Row>
-          <h2 className="text-primary-700 mt-7 mb-2 text-xl">About</h2>
+          <DonationBox
+            user={user}
+            charity={charity}
+            setShowConfetti={setShowConfetti}
+          />
           <CollapsibleContent
             content={description}
             stateKey={`isCollapsed-charity-${charity.id}`}
           />
+          <Spacer h={8} />
           {newToOld.map((txn) => (
             <Donation key={txn.id} txn={txn} />
           ))}
@@ -163,11 +161,9 @@ function DonationBox(props: {
   }
 
   return (
-    <div className="bg-canvas-0 rounded-lg py-6 px-8 shadow-lg">
-      <Title>Donate</Title>
-      <label className="text-ink-500 mb-2 block text-sm" htmlFor="donate-input">
-        Amount
-      </label>
+    <div className="bg-canvas-50 my-4 rounded-lg py-2 px-4">
+      <h2 className="text-primary-600 !mt-0 mb-4 text-2xl">Donate</h2>
+      <label className="text-ink-700 mb-2 block text-sm">Amount</label>
       <BuyAmountInput
         inputClassName="w-full max-w-none donate-input"
         minimumAmount={MIN_DONATION_MANA}
@@ -191,6 +187,7 @@ function DonationBox(props: {
         <Button
           type="submit"
           color="green"
+          size="xl"
           className="w-full"
           disabled={donateDisabled}
           loading={isSubmitting}

@@ -121,10 +121,10 @@ export default function Charity(props: {
         <Col className="">
           <Title>Manifold for Charity</Title>
 
-          <span className="text-ink-600 mt-8">
+          <span className="text-ink-500">
             Convert your {ENV_CONFIG.moneyMoniker} earnings into real charitable
             donations at a ratio of{' '}
-            <strong className="semibold">{formatMoney(100)} : $1</strong>.
+            <span className="semibold">{formatMoney(100)} : $1</span>.
             <a
               href="https://manifoldmarkets.notion.site/Charitable-donation-program-668d55f4ded147cf8cf1282a007fb005"
               target="_blank"
@@ -172,22 +172,15 @@ export default function Charity(props: {
           </div>
         )}
 
-        <div className="to-primary-400 mt-10 w-full rounded-xl bg-gradient-to-r from-pink-300 via-purple-300 p-5">
-          <iframe
-            height="405"
-            src="https://manifold.markets/embed/SG/will-manifold-have-100k-in-donation"
-            title="How many $ will be donated through Manifold's Giving Tuesday?"
-            frameBorder="0"
-            className="bg-canvas-0 w-full rounded-xl p-4"
-          />
-        </div>
-
         <div className="prose text-ink-500 mt-10 max-w-none">
           <span className="text-lg font-semibold">Notes</span>
           <ul>
             <li>
               Don't see your favorite 501c3 charity? Contact us at{' '}
-              <a href="mailto:charity@manifold.markets?subject=Add%20Charity">
+              <a
+                href="mailto:charity@manifold.markets?subject=Add%20Charity"
+                className="text-primary-500"
+              >
                 charity@manifold.markets
               </a>
               !
