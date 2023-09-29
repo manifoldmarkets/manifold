@@ -21,7 +21,7 @@ const pages: PageData[] = [
   { label: 'Referrals', slug: '/referrals', keywords: ['invite', 'share'] },
   { label: 'Live feed', slug: '/live' },
   { label: 'About', slug: '/about' },
-  { label: 'Questions', slug: '/browse' },
+  { label: 'Browse', slug: '/browse' },
 ]
 
 export function searchPages(query: string, limit: number) {

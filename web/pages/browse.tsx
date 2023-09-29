@@ -115,7 +115,7 @@ export default function BrowsePage() {
         }
       >
         <SEO
-          title={`${currentTopic?.name ?? 'Questions'}`}
+          title={`${currentTopic?.name ?? 'Browse'}`}
           description={`Browse ${currentTopic?.name ?? 'all'} questions`}
           url={`/browse${
             currentTopic ? `?${TOPIC_KEY}=${currentTopic.slug}` : ''
