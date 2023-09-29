@@ -330,6 +330,7 @@ export const RESERVED_PATHS = [
   'ads',
   'analytics',
   'api',
+  'browse',
   'calibration',
   'card',
   'cards',
