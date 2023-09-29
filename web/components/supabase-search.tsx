@@ -254,6 +254,12 @@ export function SupabaseSearch(props: {
     ) {
       setShowSearchTypeState(false)
       setSearchParams({ [SEARCH_TYPE_KEY]: '' })
+    } else if (
+      !showSearchTypes &&
+      currentTopicSlug === '' &&
+      queryAsString === ''
+    ) {
+      setShowSearchTypeState(true)
     }
   }, [currentTopicSlug])
 
