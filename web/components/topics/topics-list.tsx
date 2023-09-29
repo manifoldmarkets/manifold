@@ -12,8 +12,14 @@ import { MdOutlineKeyboardDoubleArrowRight } from 'react-icons/md'
 import { track } from 'web/lib/service/analytics'
 import { TopicOptionsButton } from 'web/components/topics/topics-button'
 import { ForYouDropdown } from 'web/components/topics/for-you-dropdown'
+import {
+  SIDE_BAR_ITEM_HOVER_CLASS,
+  SIDEBAR_SELECTED_ITEM_CLASS,
+  SIDEBAR_UNSELECTED_ITEM_CLASS,
+} from 'web/components/nav/sidebar-item'
 
-const selectedItemClass = 'bg-ink-200 dark:bg-ink-100 text-ink-900'
+const ROW_CLASS =
+  'group relative w-full cursor-pointer items-center rounded-md py-4 px-2'
 export function TopicsList(props: {
   topics: Group[]
   loadMore?: () => Promise<boolean>
@@ -79,8 +85,11 @@ export function TopicsList(props: {
         topics.map((group) => (
           <Row
             className={clsx(
-              'hover:bg-canvas-100 group relative w-full cursor-pointer items-center rounded-md py-4 px-2',
-              currentTopicSlug == group.slug ? selectedItemClass : ''
+              ROW_CLASS,
+              SIDE_BAR_ITEM_HOVER_CLASS,
+              currentTopicSlug == group.slug
+                ? SIDEBAR_SELECTED_ITEM_CLASS
+                : SIDEBAR_UNSELECTED_ITEM_CLASS
             )}
             onClick={() => {
               if (currentTopicSlug !== group.slug) track('select sidebar topic')
@@ -125,8 +134,11 @@ const ForYouButton = (props: {
   return (
     <Row
       className={clsx(
-        'hover:bg-canvas-100 group relative w-full cursor-pointer rounded-md px-2 py-4',
-        currentCategorySlug == 'for-you' ? selectedItemClass : ''
+        ROW_CLASS,
+        SIDE_BAR_ITEM_HOVER_CLASS,
+        currentCategorySlug == 'for-you'
+          ? SIDEBAR_SELECTED_ITEM_CLASS
+          : SIDEBAR_UNSELECTED_ITEM_CLASS
       )}
       onClick={() =>
         setCurrentCategory(currentCategorySlug === 'for-you' ? '' : 'for-you')
