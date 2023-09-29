@@ -748,11 +748,11 @@ function ContractFilters(props: {
   return (
     <Col
       className={clsx(
-        'mb-1 items-stretch gap-2 pb-1 pt-px sm:gap-2',
+        'my-1 items-stretch gap-2 pb-1 pt-px sm:gap-2',
         className
       )}
     >
-      <Row className={'h-6 gap-2'}>
+      <Row className={'h-6 gap-3'}>
         {!hideOrderSelector && (
           <DropdownMenu
             items={generateFilterDropdownItems(
