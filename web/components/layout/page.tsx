@@ -18,10 +18,10 @@ export function Page(props: {
   children?: ReactNode
   hideSidebar?: boolean
   mainClassName?: string
-  manifestBannerEnabled?: boolean
 }) {
   const {
     trackPageView,
+    trackPageProps,
     children,
     rightSidebar,
     className,
@@ -30,7 +30,7 @@ export function Page(props: {
   } = props
 
   // eslint-disable-next-line react-hooks/rules-of-hooks
-  trackPageView && useTracking(`view ${trackPageView}`)
+  trackPageView && useTracking(`view ${trackPageView}`, trackPageProps)
   const isMobile = useIsMobile()
   const bottomBarPadding = 'pb-[58px] lg:pb-0 '
   const TOAST_BOTTOM_PADDING = isMobile ? 70 : 20
