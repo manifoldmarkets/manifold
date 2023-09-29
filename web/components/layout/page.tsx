@@ -32,8 +32,6 @@ export function Page(props: {
   // eslint-disable-next-line react-hooks/rules-of-hooks
   trackPageView && useTracking(`view ${trackPageView}`, trackPageProps)
   const isMobile = useIsMobile()
-  const bottomBarPadding = 'pb-[58px] lg:pb-0 '
-  const TOAST_BOTTOM_PADDING = isMobile ? 70 : 20
 
   return (
     <>
@@ -42,15 +40,13 @@ export function Page(props: {
       <Col
         className={clsx(
           className,
-          bottomBarPadding,
+          'pb-[58px] lg:pb-0', // bottom bar padding
           'text-ink-1000 mx-auto min-h-screen w-full lg:grid lg:grid-cols-12 lg:gap-x-2 xl:max-w-7xl xl:gap-x-8'
         )}
       >
         <Toaster
           position={isMobile ? 'bottom-center' : 'top-center'}
-          containerStyle={{
-            bottom: TOAST_BOTTOM_PADDING,
-          }}
+          containerClassName="!bottom-[70px]"
         />
         {hideSidebar ? (
           <div className="sticky top-0 hidden self-start pl-2 lg:col-span-2 lg:flex" />
