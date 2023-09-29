@@ -50,6 +50,8 @@ import { useFollowedUsersOnLoad } from 'web/hooks/use-follows'
 import { parseJsonContentToText } from 'common/util/parse'
 
 const CONTRACTS_PER_PAGE = 40
+const USERS_PER_PAGE = 100
+const TOPICS_PER_PAGE = 100
 
 export const SORTS = [
   { label: 'Trending', value: 'score' },
@@ -234,7 +236,7 @@ export function SupabaseSearch(props: {
   const pillOptions: SearchType[] = ['Questions', 'Users', 'Topics']
   const setQuery = (query: string) => setSearchParams({ [QUERY_KEY]: query })
   const setSearchType = (t: SearchType) =>
-    setSearchParams({ [SEARCH_TYPE_KEY]: t })
+    setSearchParams({ [SEARCH_TYPE_KEY]: searchTypeAsString === t ? '' : t })
   const showSearchTypes =
     ((showSearchTypeState &&
       (!currentTopicSlug || currentTopicSlug === 'for-you') &&
@@ -264,7 +266,7 @@ export function SupabaseSearch(props: {
   }, [currentTopicSlug])
 
   const queryUsers = useEvent(async (query: string) => {
-    const results = await searchUsers(query, 100, [
+    const results = await searchUsers(query, USERS_PER_PAGE, [
       'creatorTraders',
       'bio',
       'createdTime',
@@ -282,7 +284,7 @@ export function SupabaseSearch(props: {
   const queryTopics = useEvent(async (query: string) => {
     const results = await searchGroups({
       term: query,
-      limit: 100,
+      limit: TOPICS_PER_PAGE,
     })
     const groupResults = results.data.map(convertGroup)
     const followedTopics =
@@ -296,11 +298,9 @@ export function SupabaseSearch(props: {
 
   useEffect(() => {
     if (!searchParams || isEqual(searchParams, lastSearch)) return
-    const { t: searchType } = searchParams
-    if (searchType === '' || searchType === 'Questions')
-      queryContracts(FRESH_SEARCH_CHANGED_STATE, true)
-    else if (searchType === 'Users') queryUsers(queryAsString)
-    else if (searchType === 'Topics') queryTopics(queryAsString)
+    queryContracts(FRESH_SEARCH_CHANGED_STATE, true)
+    queryUsers(queryAsString)
+    queryTopics(queryAsString)
   }, [JSON.stringify(searchParams)])
 
   const emptyContractsState =
@@ -377,7 +377,7 @@ export function SupabaseSearch(props: {
           <Button
             size={'sm'}
             color={'gray-white'}
-            className={' ml-1 rounded-full'}
+            className={' ml-1 rounded-full sm:hidden'}
             onClick={() => {
               setShowSearchTypeState(false)
               setSearchType('')
@@ -385,18 +385,30 @@ export function SupabaseSearch(props: {
           >
             <ArrowLeftIcon className={'h-4 w-4'} />
           </Button>
-          {pillOptions.map((option) => (
-            <PillButton
-              key={option}
-              selected={
-                searchTypeAsString === option ||
-                (option === 'Questions' && searchTypeAsString === '')
-              }
-              onSelect={() => setSearchType(option)}
-            >
-              {option}
-            </PillButton>
-          ))}
+          {pillOptions.map((option) => {
+            const numHits = Math.min(
+              option === 'Questions'
+                ? contracts?.length ?? 0
+                : option === 'Users'
+                ? userResults?.length ?? 0
+                : topicResults?.length ?? 0,
+              100
+            )
+            const hitsTitle =
+              numHits >= 100 ? '100+ ' : numHits > 0 ? numHits + ' ' : ''
+            return (
+              <PillButton
+                key={option}
+                selected={
+                  searchTypeAsString === option ||
+                  (option === 'Questions' && searchTypeAsString === '')
+                }
+                onSelect={() => setSearchType(option)}
+              >
+                {hitsTitle + option}
+              </PillButton>
+            )
+          })}
         </Row>
       ) : (
         rowBelowFilters
