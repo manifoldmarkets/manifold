@@ -1,4 +1,3 @@
-import { ReactNode, useState } from 'react'
 import { SEO } from 'web/components/SEO'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
@@ -12,10 +11,8 @@ export default function NewsPage() {
   useSaveReferral()
   useSaveCampaign()
 
-  const [sidebar, setSidebar] = useState<ReactNode>(<></>)
-
   return (
-    <Page trackPageView={'news page'} rightSidebar={sidebar}>
+    <Page trackPageView={'news page'}>
       <SEO
         title="News"
         description="Breaking news meets the wisdom of the crowd"
@@ -25,7 +22,7 @@ export default function NewsPage() {
           <Title className="!mb-0">News</Title>
         </Row>
 
-        <NewsTopicsTabs setSidebar={setSidebar} />
+        <NewsTopicsTabs />
       </Col>
     </Page>
   )

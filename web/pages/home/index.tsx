@@ -1,4 +1,3 @@
-import { ReactNode, useState } from 'react'
 import { SEO } from 'web/components/SEO'
 import { DailyStats } from 'web/components/daily-stats'
 import { Page } from 'web/components/layout/page'
@@ -34,8 +33,6 @@ export default function Home() {
 function HomeDashboard() {
   const user = useUser()
 
-  const [sidebar, setSidebar] = useState<ReactNode>(<></>)
-
   return (
     <>
       <SEO
@@ -46,7 +43,6 @@ function HomeDashboard() {
       <Page
         trackPageView={'home'}
         trackPageProps={{ kind: 'desktop' }}
-        rightSidebar={sidebar}
         manifestBannerEnabled
       >
         <Row className="mx-4 mb-2 items-center justify-between gap-4">
@@ -57,10 +53,7 @@ function HomeDashboard() {
           <DailyStats user={user} />
         </Row>
 
-        <NewsTopicsTabs
-          homeContent={<FeedTimeline />}
-          setSidebar={setSidebar}
-        />
+        <NewsTopicsTabs homeContent={<FeedTimeline />} />
       </Page>
     </>
   )

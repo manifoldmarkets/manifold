@@ -6,14 +6,13 @@ import { track } from 'web/lib/service/analytics'
 
 import { buildArray } from 'common/util/array'
 import { newsContent } from 'web/components/news/news-content'
-import { NewsDashboard, NewsSidebar } from './news-dashboard'
+import { NewsDashboard } from './news-dashboard'
 
 export function NewsTopicsTabs(props: {
   homeContent?: ReactNode
   dontScroll?: boolean
-  setSidebar?: (sidebarContent: ReactNode) => void
 }) {
-  const { homeContent, dontScroll, setSidebar } = props
+  const { homeContent, dontScroll } = props
 
   const topics = buildArray<Tab>(
     !!homeContent && {
@@ -24,7 +23,6 @@ export function NewsTopicsTabs(props: {
     newsContent.map((content) => ({
       title: content.title,
       content: <NewsDashboard slug={content.slug} />,
-      sidebar: <NewsSidebar slug={content.slug} />,
     }))
   )
   return (
@@ -39,18 +37,6 @@ export function NewsTopicsTabs(props: {
             track('news topic clicked', { tab: tab.title })
           },
         }))}
-        onClick={
-          setSidebar
-            ? (_tabTitle, index) => {
-                const sidebar = topics[index].sidebar
-                if (sidebar) {
-                  setSidebar(topics[index].sidebar)
-                } else {
-                  setSidebar(<></>)
-                }
-              }
-            : undefined
-        }
       />
     </Col>
   )

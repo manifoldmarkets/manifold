@@ -12,6 +12,7 @@ import { useTracking } from 'web/hooks/use-tracking'
 export function Page(props: {
   trackPageView: string | false
   trackPageProps?: Record<string, any>
+  /**  @deprecated */
   rightSidebar?: ReactNode
   className?: string
   children?: ReactNode

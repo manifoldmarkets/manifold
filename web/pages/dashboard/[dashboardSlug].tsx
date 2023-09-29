@@ -7,7 +7,7 @@ import { useEffect, useState } from 'react'
 import { Button } from 'web/components/buttons/button'
 import { AddDashboardItemWidget } from 'web/components/dashboard/add-dashboard-item'
 import { DashboardContent } from 'web/components/dashboard/dashboard-content'
-import { DashboardSidebar } from 'web/components/dashboard/dashboard-sidebar'
+import { DashboardDescription } from 'web/components/dashboard/dashboard-description'
 import { FollowDashboardButton } from 'web/components/dashboard/follow-dashboard-button'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
@@ -108,7 +108,6 @@ export default function DashboardPage(props: {
     placeholder: 'Optional. Provide background info and details.',
   })
 
-  const isNotXl = useIsMobile(1280)
   if (!dashboard) {
     return <Custom404 />
   }
@@ -118,16 +117,6 @@ export default function DashboardPage(props: {
       trackPageView={'dashboard slug page'}
       trackPageProps={{ slug: dashboard.slug, title: dashboard.title }}
       mainClassName="items-center"
-      rightSidebar={
-        editMode && !isNotXl ? (
-          <DescriptionEditor
-            editor={editor}
-            description={dashboard.description}
-          />
-        ) : (
-          <DashboardSidebar description={dashboard.description} inSidebar />
-        )
-      }
     >
       <SEO
         title={dashboard.title}
@@ -192,14 +181,14 @@ export default function DashboardPage(props: {
             <RelativeTimestamp time={dashboard.createdTime} />
           </span>
         </Row>
-        {editMode && isNotXl ? (
+        {editMode ? (
           <DescriptionEditor
             editor={editor}
             description={dashboard.description}
             className="mb-4"
           />
         ) : (
-          <DashboardSidebar description={dashboard.description} />
+          <DashboardDescription description={dashboard.description} />
         )}
         <DashboardContent
           items={dashboard.items}
