@@ -10,15 +10,13 @@ import { Row } from 'web/components/layout/row'
 import { useRealtimeMemberGroups } from 'web/hooks/use-group-supabase'
 import { User } from 'common/user'
 import { useState } from 'react'
-import { ArrowLeftIcon } from '@heroicons/react/solid'
 
 export const QuestionsTopicTitle = (props: {
   currentTopic: Group | undefined
   topicSlug: string | undefined
   user: User | null | undefined
-  setTopicSlug: (slug: string) => void
 }) => {
-  const { currentTopic, user, topicSlug, setTopicSlug } = props
+  const { currentTopic, user, topicSlug } = props
   const yourGroups = useRealtimeMemberGroups(user?.id)
   const yourGroupIds = yourGroups?.map((g) => g.id)
   const [showAddContract, setShowAddContract] = useState(false)
@@ -26,15 +24,6 @@ export const QuestionsTopicTitle = (props: {
 
   return (
     <Row className={'mb-3 hidden items-center lg:flex'}>
-      {currentTopic && (
-        <Button
-          color={'gray-white'}
-          className={'mr-1 whitespace-nowrap'}
-          onClick={() => setTopicSlug('')}
-        >
-          <ArrowLeftIcon className={'h-5 w-5'} />
-        </Button>
-      )}
       <Title className="relative !mb-1 mr-6">
         {currentTopic?.name ??
           (topicSlug === 'for-you' ? '⭐️ For you' : 'Browse')}

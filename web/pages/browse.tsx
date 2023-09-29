@@ -1,5 +1,5 @@
 import { TOPIC_KEY, Group, DEFAULT_TOPIC } from 'common/group'
-import { orderBy, uniqBy } from 'lodash'
+import { uniqBy } from 'lodash'
 import { useEffect, useState } from 'react'
 import { TopicsList } from 'web/components/topics/topics-list'
 import { Col } from 'web/components/layout/col'
@@ -130,7 +130,6 @@ export default function BrowsePage() {
           currentTopic={currentTopic}
           topicSlug={topicSlug}
           user={user}
-          setTopicSlug={setTopicSlug}
         />
         <Col>
           <Row className={'w-full'}>
@@ -195,17 +194,10 @@ const combineGroupsByImportance = (
   resultGroups: Group[],
   myGroups: Group[]
 ) => {
-  const combined = orderBy(
-    [
-      ...myGroups.map((g) => ({
-        ...g,
-        importanceScore: g.importanceScore * 1.1,
-      })),
-      ...resultGroups.filter((g) => !myGroups.map((g) => g.id).includes(g.id)),
-    ],
-    'importanceScore',
-    'desc'
-  )
+  const combined = [
+    ...myGroups,
+    ...resultGroups.filter((g) => !myGroups.map((g) => g.id).includes(g.id)),
+  ]
 
   return uniqBy(combined, (g) => removeEmojis(g.name).toLowerCase())
 }

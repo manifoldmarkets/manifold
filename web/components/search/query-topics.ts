@@ -53,6 +53,7 @@ export function useUserTrendingTopics(
         .select()
         .in('id', ids)
         .order('importance_score', { ascending: false })
+        .gt('importance_score', 0.3)
         .limit(limit)
     )
     if (data) setResults(data.map((group) => convertGroup(group)))

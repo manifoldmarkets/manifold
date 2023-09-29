@@ -13,9 +13,9 @@ import { joinGroup } from 'web/lib/firebase/api'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { Group } from 'common/group'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
-import { PlusCircleIcon } from '@heroicons/react/solid'
 import { TopicOptions } from 'web/components/topics/topic-options'
 import { Col } from 'web/components/layout/col'
+import { BookmarkIcon } from '@heroicons/react/outline'
 
 function LeavePrivateTopicButton(props: {
   group: SearchGroupInfo
@@ -163,7 +163,7 @@ export const followTopic = async (
   if (!user) return firebaseLogin()
   await joinGroup({ groupId: group.id })
     .then(() => {
-      toast(`You're now following ${group.name}!`)
+      toast(`You'll see markets related to ${group.name} on your home feed!`)
     })
     .catch((e) => {
       console.error(e)
@@ -178,7 +178,7 @@ export const unfollowTopic = async (
   if (!user) return firebaseLogin()
   await leaveGroup(group.id, user.id)
     .then(() => {
-      toast(`You're no longer following ${group.name}.`)
+      toast(`You won't see markets related to ${group.name} on your home feed.`)
     })
     .catch(() => {
       toast.error('Failed to unfollow category')
@@ -219,7 +219,9 @@ export const TopicOptionsButton = (props: {
           {loading ? (
             <LoadingIndicator size={'sm'} />
           ) : (
-            <PlusCircleIcon className="text-ink-600 hover:text-primary-500 h-5 w-5" />
+            <BookmarkIcon
+              className={'text-ink-600 hover:fill-ink-600 h-5 w-5'}
+            />
           )}
         </button>
       )}
