@@ -50,7 +50,7 @@ export default function DropdownMenu(props: {
           <Popover.Button
             ref={setReferenceElement}
             className={clsx(
-              'text-ink-400 hover:text-ink-600 flex items-center',
+              'text-ink-500 hover:text-ink-800 flex items-center',
               buttonClass
             )}
             onClick={(e: any) => {

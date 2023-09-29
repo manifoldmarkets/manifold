@@ -13,6 +13,7 @@ import { track } from 'web/lib/service/analytics'
 import { TopicOptionsButton } from 'web/components/topics/topics-button'
 import { ForYouDropdown } from 'web/components/topics/for-you-dropdown'
 
+const selectedItemClass = 'bg-ink-200 dark:bg-ink-100 text-ink-900'
 export function TopicsList(props: {
   topics: Group[]
   loadMore?: () => Promise<boolean>
@@ -47,13 +48,13 @@ export function TopicsList(props: {
         show ? 'animate-slide-in-from-right block xl:animate-none' : 'hidden',
         className,
         'scrollbar-hide sticky top-0 right-10 max-h-screen overflow-y-auto sm:max-w-min xl:max-w-none',
-        'bg-canvas-0 items-start',
+        'items-start',
         currentTopicSlug == 'for-you' ? '' : 'xl:rounded-t-md '
       )}
     >
       <Row
         className={
-          'bg-canvas-0 sticky top-0 z-10 w-full items-center justify-center xl:hidden'
+          'sticky top-0 z-10 w-full items-center justify-center xl:hidden'
         }
       >
         <Button
@@ -78,8 +79,8 @@ export function TopicsList(props: {
         topics.map((group) => (
           <Row
             className={clsx(
-              'hover:bg-canvas-50 group relative w-full cursor-pointer items-center py-4 px-2',
-              currentTopicSlug == group.slug ? 'bg-canvas-50' : ''
+              'hover:bg-canvas-100 group relative w-full cursor-pointer items-center rounded-md py-4 px-2',
+              currentTopicSlug == group.slug ? selectedItemClass : ''
             )}
             onClick={() => {
               if (currentTopicSlug !== group.slug) track('select sidebar topic')
@@ -89,15 +90,10 @@ export function TopicsList(props: {
             }}
             key={group.id}
           >
-            <div
-              className={currentTopicSlug == group.slug ? selectedBarClass : ''}
-            />
             <span
               className={clsx(
                 ' flex w-full flex-row text-left text-sm',
-                currentTopicSlug == group.slug
-                  ? 'bg-canvas-50 font-semibold'
-                  : ''
+                currentTopicSlug == group.slug ? 'font-semibold' : ''
               )}
             >
               {group.name}
@@ -108,6 +104,7 @@ export function TopicsList(props: {
               yourGroupIds={yourGroupIds}
               user={user}
               className={'mr-1'}
+              selected={currentTopicSlug == group.slug}
             />
           </Row>
         ))}
@@ -128,16 +125,13 @@ const ForYouButton = (props: {
   return (
     <Row
       className={clsx(
-        'hover:bg-canvas-50 relative w-full  cursor-pointer px-2 py-4',
-        currentCategorySlug == 'for-you' ? 'bg-canvas-50' : ''
+        'hover:bg-canvas-100 group relative w-full cursor-pointer rounded-md px-2 py-4',
+        currentCategorySlug == 'for-you' ? selectedItemClass : ''
       )}
       onClick={() =>
         setCurrentCategory(currentCategorySlug === 'for-you' ? '' : 'for-you')
       }
     >
-      <div
-        className={currentCategorySlug == 'for-you' ? selectedBarClass : ''}
-      />
       <span
         className={clsx(
           'w-full flex-row flex-wrap text-left text-sm ',
@@ -150,7 +144,12 @@ const ForYouButton = (props: {
         setCurrentCategory={setCurrentCategory}
         user={user}
         yourGroups={yourGroups}
-        className={'mr-1'}
+        className={clsx(
+          'mr-1',
+          currentCategorySlug !== 'for-you'
+            ? 'group-hover:opacity-100 md:opacity-0'
+            : 'opacity-100'
+        )}
       />
     </Row>
   )

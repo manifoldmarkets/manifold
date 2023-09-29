@@ -190,8 +190,9 @@ export const TopicOptionsButton = (props: {
   yourGroupIds: string[] | undefined
   user: User | null | undefined
   className?: string
+  selected: boolean
 }) => {
-  const { group, className, yourGroupIds, user } = props
+  const { group, selected, className, yourGroupIds, user } = props
   const isCreator = user?.id == group.creatorId
   const [isMember, setIsMember] = useState(
     yourGroupIds ? yourGroupIds.includes(group.id) : false
@@ -218,7 +219,7 @@ export const TopicOptionsButton = (props: {
           {loading ? (
             <LoadingIndicator size={'sm'} />
           ) : (
-            <PlusCircleIcon className=" hover:text-primary-500 h-5 w-5" />
+            <PlusCircleIcon className="text-ink-600 hover:text-primary-500 h-5 w-5" />
           )}
         </button>
       )}
@@ -235,6 +236,7 @@ export const TopicOptionsButton = (props: {
               })
               .finally(() => setLoading(false))
           }}
+          selected={selected}
         />
       )}
     </Col>

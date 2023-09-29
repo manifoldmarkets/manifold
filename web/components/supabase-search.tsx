@@ -831,6 +831,7 @@ function ContractFilters(props: {
               group={topic}
               yourGroupIds={yourGroupIds}
               user={user}
+              selected={true}
             />
           </TopicTag>
         )}

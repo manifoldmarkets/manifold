@@ -32,8 +32,9 @@ export function TopicOptions(props: {
   user: User | null | undefined
   isMember: boolean
   unfollow: () => void
+  selected?: boolean
 }) {
-  const { group, user, isMember, unfollow } = props
+  const { group, selected, user, isMember, unfollow } = props
   const [editingName, setEditingName] = useState(false)
   const [showAddContract, setShowAddContract] = useState(false)
   const userRole = useGroupRole(group.id, user)
@@ -82,7 +83,9 @@ export function TopicOptions(props: {
         items={groupOptionItems}
         icon={<DotsVerticalIcon className={clsx('h-5 w-5')} />}
         withinOverflowContainer={true}
-        buttonClass={'md:opacity-0 group-hover:opacity-100'}
+        buttonClass={clsx(
+          !selected ? 'md:opacity-0 group-hover:opacity-100' : 'opacity-100'
+        )}
       />
       <Modal open={editingName} setOpen={setEditingName}>
         <Col className={'bg-canvas-50 rounded-md p-4'}>
