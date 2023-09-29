@@ -964,15 +964,16 @@ Gets a list of managrams, ordered by creation time descending.
 
 Parameters
 
-- `userId`: Optional. Returns managrams sent to this user.
-- `limit`: Optional. How many managrams to return. The maximum and the default are 1000.
+- `toId`: Optional. Returns managrams sent to this user.
+- `fromId`: Optional. Returns managrams sent from this user.
+- `limit`: Optional. How many managrams to return. The maximum and the default are 100.
 - `before`: Optional. The `createdTime` before which you want managrams 
 
 Requires no authorization.
 
 Example request
   ```
-  https://manifold.markets/api/v0/managrams?userId=IPTOzEqrpkWmEzh6hwvAyY9PqFb2
+  https://manifold.markets/api/v0/managrams?toId=IPTOzEqrpkWmEzh6hwvAyY9PqFb2
   ```
 <details><summary>Example response</summary><p>
 

@@ -8,12 +8,13 @@ import { run } from 'common/supabase/utils'
 import { ManaPayTxn } from 'common/txn'
 const queryParams = z
   .object({
-    userId: z.string().optional(),
+    toId: z.string().optional(),
+    fromId: z.string().optional(),
     limit: z
       .number()
-      .default(1000)
+      .default(100)
       .or(z.string().regex(/\d+/).transform(Number))
-      .refine((n) => n >= 0 && n <= 1000, 'Limit must be between 0 and 1000'),
+      .refine((n) => n >= 0 && n <= 100, 'Limit must be between 0 and 100'),
     before: z.string().optional(),
   })
   .strict()
@@ -35,19 +36,16 @@ export default async function handler(
     return res.status(500).json({ error: 'Unknown error during validation' })
   }
   try {
-    const { userId, before, limit } = params
+    const { toId, fromId, before, limit } = params
     let query = db
       .from('txns')
       .select('data')
+      .eq('data->>category', 'MANA_PAYMENT')
       .order('data->createdTime', { ascending: false } as any)
       .limit(limit)
     if (before) query = query.lt('data->createdTime', before)
-    if (userId)
-      query = query.contains('data', {
-        category: 'MANA_PAYMENT',
-        toId: userId,
-      })
-    else query = query.contains('data', { category: 'MANA_PAYMENT' })
+    if (toId) query = query.eq('data->>toId', toId)
+    if (fromId) query = query.eq('data->>fromId', fromId)
     const { data } = await run(query)
     const grams = data.map((txn) => txn.data as ManaPayTxn) ?? []
     res.setHeader('Cache-Control', 'max-age=1, public')
