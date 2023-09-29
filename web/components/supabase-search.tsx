@@ -263,39 +263,43 @@ export function SupabaseSearch(props: {
     }
   }, [currentTopicSlug])
 
+  const queryUsers = useEvent(async (query: string) => {
+    const results = await searchUsers(query, 100, [
+      'creatorTraders',
+      'bio',
+      'createdTime',
+      'isBannedFromPosting',
+    ])
+    const followedUsers =
+      followingUsers?.filter(
+        (f) =>
+          f.name.toLowerCase().includes(query.toLowerCase()) ||
+          f.username.toLowerCase().includes(query.toLowerCase())
+      ) ?? []
+    setUserResults(uniqBy(followedUsers.concat(results), 'id'))
+  })
+
+  const queryTopics = useEvent(async (query: string) => {
+    const results = await searchGroups({
+      term: query,
+      limit: 100,
+    })
+    const groupResults = results.data.map(convertGroup)
+    const followedTopics =
+      yourTopics?.filter(
+        (f) =>
+          f.name.toLowerCase().includes(query.toLowerCase()) ||
+          f.slug.toLowerCase().includes(query.toLowerCase())
+      ) ?? []
+    setTopicResults(uniqBy(followedTopics.concat(groupResults), 'name'))
+  })
+
   useEffect(() => {
     if (!searchParams || isEqual(searchParams, lastSearch)) return
     const { t: searchType } = searchParams
     if (searchType === '') queryContracts(FRESH_SEARCH_CHANGED_STATE, true)
-    else if (searchType === 'Users')
-      searchUsers(queryAsString, 100, [
-        'creatorTraders',
-        'bio',
-        'createdTime',
-        'isBannedFromPosting',
-      ]).then((results) => {
-        const followedUsers =
-          followingUsers?.filter(
-            (f) =>
-              f.name.toLowerCase().includes(queryAsString.toLowerCase()) ||
-              f.username.toLowerCase().includes(queryAsString.toLowerCase())
-          ) ?? []
-        setUserResults(uniqBy(followedUsers.concat(results), 'id'))
-      })
-    else if (searchType === 'Topics')
-      searchGroups({
-        term: queryAsString,
-        limit: 100,
-      }).then((results) => {
-        const groupResults = results.data.map(convertGroup)
-        const followedTopics =
-          yourTopics?.filter(
-            (f) =>
-              f.name.toLowerCase().includes(queryAsString.toLowerCase()) ||
-              f.slug.toLowerCase().includes(queryAsString.toLowerCase())
-          ) ?? []
-        setTopicResults(uniqBy(followedTopics.concat(groupResults), 'name'))
-      })
+    else if (searchType === 'Users') queryUsers(queryAsString)
+    else if (searchType === 'Topics') queryTopics(queryAsString)
   }, [JSON.stringify(searchParams)])
 
   const emptyContractsState =
