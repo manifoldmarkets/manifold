@@ -2,7 +2,7 @@ import * as admin from 'firebase-admin'
 import { z } from 'zod'
 import { groupBy, partition, sumBy } from 'lodash'
 
-import { Contract } from 'common/contract'
+import { CPMMMultiContract, Contract } from 'common/contract'
 import { User } from 'common/user'
 import { CandidateBet, getBetDownToOneMultiBetInfo } from 'common/new-bet'
 import { Answer, MAX_ANSWER_LENGTH, MAX_ANSWERS } from 'common/answer'
@@ -31,268 +31,304 @@ export const createanswercpmm = authEndpoint(async (req, auth) => {
   console.log('Received', contractId, text)
 
   // Run as transaction to prevent race conditions.
-  const newAnswerId = await firestore.runTransaction(async (transaction) => {
-    const contractDoc = firestore.doc(`contracts/${contractId}`)
-    const contractSnap = await transaction.get(contractDoc)
-    if (!contractSnap.exists) throw new APIError(404, 'Contract not found')
-    const contract = contractSnap.data() as Contract
+  const { newAnswerId, contract } = await firestore.runTransaction(
+    async (transaction) => {
+      const contractDoc = firestore.doc(`contracts/${contractId}`)
+      const contractSnap = await transaction.get(contractDoc)
+      if (!contractSnap.exists) throw new APIError(404, 'Contract not found')
+      const contract = contractSnap.data() as Contract
 
-    if (contract.mechanism !== 'cpmm-multi-1')
-      throw new APIError(403, 'Requires a cpmm multiple choice contract')
+      if (contract.mechanism !== 'cpmm-multi-1')
+        throw new APIError(403, 'Requires a cpmm multiple choice contract')
 
-    const { closeTime, addAnswersMode } = contract
-    if (closeTime && Date.now() > closeTime)
-      throw new APIError(403, 'Trading is closed')
+      const { closeTime, addAnswersMode, shouldAnswersSumToOne } = contract
+      if (closeTime && Date.now() > closeTime)
+        throw new APIError(403, 'Trading is closed')
 
-    if (!addAnswersMode || addAnswersMode === 'DISABLED') {
-      throw new APIError(400, 'Adding answers is disabled')
-    }
-    if (
-      contract.addAnswersMode === 'ONLY_CREATOR' &&
-      contract.creatorId !== auth.uid &&
-      !isAdminId(auth.uid)
-    ) {
-      throw new APIError(
-        403,
-        'Only the creator or an admin can create an answer'
-      )
-    }
-
-    const userDoc = firestore.doc(`users/${auth.uid}`)
-    const userSnap = await transaction.get(userDoc)
-    if (!userSnap.exists) throw new APIError(401, 'Your account was not found')
-    const user = userSnap.data() as User
-
-    if (user.balance < ANSWER_COST)
-      throw new APIError(403, 'Insufficient balance, need M' + ANSWER_COST)
-
-    const answersSnap = await transaction.get(
-      firestore.collection(`contracts/${contractId}/answersCpmm`)
-    )
-    const answers = answersSnap.docs.map((doc) => doc.data() as Answer)
-    const [otherAnswers, answersWithoutOther] = partition(
-      answers,
-      (a) => a.isOther
-    )
-    const otherAnswer = otherAnswers[0]
-    if (!otherAnswer) {
-      throw new APIError(
-        500,
-        '"Other" answer not found, and is required for adding new answers.'
-      )
-    }
-
-    if (answers.length >= MAX_ANSWERS) {
-      throw new APIError(
-        403,
-        `Cannot add an answer: Maximum number (${MAX_ANSWERS}) of answers reached.`
-      )
-    }
-
-    const id = randomString()
-    const newAnswerDoc = contractDoc.collection('answersCpmm').doc(id)
-    const n = answers.length
-
-    // 1. Create a mana budget including ANSWER_COST, and shares from Other.
-    // 2. Keep track of excess Yes and No shares of Other. Other has been divided
-    // into three pieces: mana, excessYesShares, excessNoShares.
-    // 3a. Recreate liquidity for the new answer and other by spending mana.
-    // 3b. Add excessYesShares to both other and the new answer's pools.
-    // These Yes shares can be copied because, conceptually, if the new answer is split out of Other,
-    // then original yes shares in Other should pay out if either it or Other is chosen.
-    // Note that the new answer has up to ANSWER_COST liquidity, while the remainder of liquidity,
-    // which could be a lot, is spent on the other answer.
-    // 4. Convert excess No shares in Other into Yes shares in all the previous answers and add them
-    // to previous answers' pools.
-    // 5. Probability sum is now greater than 1. Bet it down equally.
-    // Proof of >1 prob sum:
-    // a. If there are excess Yes shares, then old answer probs are unchanged, so
-    // prob of new answer + prob of other answer must be > than previous prob of other answer. Empirically true...
-    // b. If there are excess No shares, then new answer & other answer each has 50% prob.
-    // 6. Betting it down to 1 produces mana, which we then insert as subsidy.
-    const mana = ANSWER_COST + Math.min(otherAnswer.poolYes, otherAnswer.poolNo)
-    const excessYesShares = Math.max(
-      0,
-      otherAnswer.poolYes - otherAnswer.poolNo
-    )
-    const excessNoShares = Math.max(0, otherAnswer.poolNo - otherAnswer.poolYes)
-
-    const answerCostOrHalf = Math.min(ANSWER_COST, mana / 2)
-    const newAnswerPool = {
-      YES: answerCostOrHalf + excessYesShares,
-      NO: answerCostOrHalf,
-    }
-    const newOtherPool = {
-      YES: mana - answerCostOrHalf + excessYesShares,
-      NO: mana - answerCostOrHalf,
-    }
-
-    const newAnswerProb = getCpmmProbability(newAnswerPool, 0.5)
-    const otherProb = getCpmmProbability(newOtherPool, 0.5)
-
-    const newAnswer: Answer = {
-      id,
-      index: n - 1,
-      contractId,
-      createdTime: Date.now(),
-      userId: user.id,
-      text,
-      isOther: false,
-      poolYes: newAnswerPool.YES,
-      poolNo: newAnswerPool.NO,
-      prob: newAnswerProb,
-      totalLiquidity: answerCostOrHalf,
-      subsidyPool: 0,
-    }
-
-    const updatedOtherAnswerProps = {
-      totalLiquidity: newOtherPool.NO,
-      index: n,
-    }
-
-    const updatedOtherAnswer = {
-      ...otherAnswer,
-      ...updatedOtherAnswerProps,
-      poolYes: newOtherPool.YES,
-      poolNo: newOtherPool.NO,
-      prob: otherProb,
-    }
-
-    const updatedPreviousAnswers = answersWithoutOther.map((a) => ({
-      ...a,
-      poolYes: a.poolYes + excessNoShares,
-    }))
-
-    const answersWithNewAnswer = [
-      ...updatedPreviousAnswers,
-      newAnswer,
-      updatedOtherAnswer,
-    ]
-    const { unfilledBets, balanceByUserId } =
-      await getUnfilledBetsAndUserBalances(transaction, contractDoc)
-
-    // Cancel limit orders on Other answer.
-    const [unfilledBetsOnOther, unfilledBetsExcludingOther] = partition(
-      unfilledBets,
-      (b) => b.answerId === otherAnswer.id
-    )
-
-    const { betResults, extraMana } = getBetDownToOneMultiBetInfo(
-      contract,
-      answersWithNewAnswer,
-      unfilledBetsExcludingOther,
-      balanceByUserId
-    )
-
-    console.log('New answer', newAnswer)
-    console.log('Other answer', updatedOtherAnswer)
-    console.log('extraMana', extraMana)
-    console.log(
-      'bet amounts',
-      betResults.map((r) =>
-        sumBy(r.takers.slice(0, r.takers.length - 1), (t) => t.amount)
-      ),
-      'shares',
-      betResults.map((r) =>
-        sumBy(r.takers.slice(0, r.takers.length - 1), (t) => t.shares)
-      )
-    )
-
-    transaction.create(newAnswerDoc, newAnswer)
-    transaction.update(
-      contractDoc.collection('answersCpmm').doc(otherAnswer.id),
-      updatedOtherAnswerProps
-    )
-
-    const poolsByAnswer = Object.fromEntries(
-      betResults.map((r) => [
-        r.answer.id,
-        r.cpmmState.pool as { YES: number; NO: number },
-      ])
-    )
-    for (const [answerId, pool] of Object.entries(poolsByAnswer)) {
-      const { YES: poolYes, NO: poolNo } = pool
-      const prob = poolNo / (poolYes + poolNo)
-      console.log(
-        'After arbitrage answer',
-        newAnswer.text,
-        'with',
-        poolYes,
-        poolNo,
-        'prob',
-        prob
-      )
-    }
-    const newPoolsByAnswer = addCpmmMultiLiquidity(poolsByAnswer, extraMana)
-
-    for (const result of betResults) {
-      const { answer, bet, makers, ordersToCancel } = result
-      const betDoc = contractDoc.collection('bets').doc()
-      transaction.create(betDoc, {
-        id: betDoc.id,
-        userId: user.id,
-        userAvatarUrl: user.avatarUrl,
-        userUsername: user.username,
-        userName: user.name,
-        isApi: false,
-        ...bet,
-      })
-      const pool = newPoolsByAnswer[answer.id]
-      const { YES: poolYes, NO: poolNo } = pool
-      const prob = getCpmmProbability(pool, 0.5)
-      console.log(
-        'Updating answer',
-        answer.text,
-        'with',
-        poolYes,
-        poolNo,
-        'prob',
-        prob
-      )
-      transaction.update(contractDoc.collection('answersCpmm').doc(answer.id), {
-        poolYes,
-        poolNo,
-        prob,
-      })
-      updateMakers(makers, betDoc.id, contractDoc, transaction)
-      for (const bet of ordersToCancel) {
-        transaction.update(contractDoc.collection('bets').doc(bet.id), {
-          isCancelled: true,
-        })
+      if (!addAnswersMode || addAnswersMode === 'DISABLED') {
+        throw new APIError(400, 'Adding answers is disabled')
       }
-    }
+      if (
+        contract.addAnswersMode === 'ONLY_CREATOR' &&
+        contract.creatorId !== auth.uid &&
+        !isAdminId(auth.uid)
+      ) {
+        throw new APIError(
+          403,
+          'Only the creator or an admin can create an answer'
+        )
+      }
 
-    for (const bet of unfilledBetsOnOther) {
+      const userDoc = firestore.doc(`users/${auth.uid}`)
+      const userSnap = await transaction.get(userDoc)
+      if (!userSnap.exists)
+        throw new APIError(401, 'Your account was not found')
+      const user = userSnap.data() as User
+
+      if (user.balance < ANSWER_COST)
+        throw new APIError(403, 'Insufficient balance, need M' + ANSWER_COST)
+
+      const answersSnap = await transaction.get(
+        firestore.collection(`contracts/${contractId}/answersCpmm`)
+      )
+      const answers = answersSnap.docs.map((doc) => doc.data() as Answer)
+      if (answers.length >= MAX_ANSWERS) {
+        throw new APIError(
+          403,
+          `Cannot add an answer: Maximum number (${MAX_ANSWERS}) of answers reached.`
+        )
+      }
+
+      const id = randomString()
+      const n = answers.length
+      const newAnswer: Answer = {
+        id,
+        index: n - 1,
+        contractId,
+        createdTime: Date.now(),
+        userId: user.id,
+        text,
+        isOther: false,
+        poolYes: ANSWER_COST,
+        poolNo: ANSWER_COST,
+        prob: 0.5,
+        totalLiquidity: ANSWER_COST,
+        subsidyPool: 0,
+      }
+
+      if (shouldAnswersSumToOne) {
+        await createAnswerAndSumAnswersToOne(
+          transaction,
+          user,
+          contract,
+          answers,
+          newAnswer
+        )
+      } else {
+        const newAnswerDoc = contractDoc
+          .collection('answersCpmm')
+          .doc(newAnswer.id)
+        transaction.create(newAnswerDoc, newAnswer)
+      }
+
+      transaction.update(userDoc, {
+        balance: FieldValue.increment(-ANSWER_COST),
+        totalDeposits: FieldValue.increment(-ANSWER_COST),
+      })
+      transaction.update(contractDoc, {
+        totalLiquidity: FieldValue.increment(ANSWER_COST),
+      })
+      const liquidityDoc = firestore
+        .collection(`contracts/${contract.id}/liquidity`)
+        .doc()
+      const lp = getCpmmInitialLiquidity(
+        user.id,
+        contract,
+        liquidityDoc.id,
+        ANSWER_COST
+      )
+      transaction.create(liquidityDoc, lp)
+
+      return { newAnswerId: newAnswer.id, contract }
+    }
+  )
+
+  const { shouldAnswersSumToOne, addAnswersMode } = contract
+  if (shouldAnswersSumToOne && addAnswersMode !== 'DISABLED') {
+    await convertOtherAnswerShares(contractId, newAnswerId)
+  }
+  return { newAnswerId }
+})
+
+async function createAnswerAndSumAnswersToOne(
+  transaction: FirebaseFirestore.Transaction,
+  user: User,
+  contract: CPMMMultiContract,
+  answers: Answer[],
+  newAnswer: Answer
+) {
+  const [otherAnswers, answersWithoutOther] = partition(
+    answers,
+    (a) => a.isOther
+  )
+  const otherAnswer = otherAnswers[0]
+  if (!otherAnswer) {
+    throw new APIError(
+      500,
+      '"Other" answer not found, and is required for adding new answers.'
+    )
+  }
+
+  const contractDoc = firestore.doc(`contracts/${contract.id}`)
+  const newAnswerDoc = contractDoc.collection('answersCpmm').doc(newAnswer.id)
+
+  // 1. Create a mana budget including ANSWER_COST, and shares from Other.
+  // 2. Keep track of excess Yes and No shares of Other. Other has been divided
+  // into three pieces: mana, excessYesShares, excessNoShares.
+  // 3a. Recreate liquidity for the new answer and other by spending mana.
+  // 3b. Add excessYesShares to both other and the new answer's pools.
+  // These Yes shares can be copied because, conceptually, if the new answer is split out of Other,
+  // then original yes shares in Other should pay out if either it or Other is chosen.
+  // Note that the new answer has up to ANSWER_COST liquidity, while the remainder of liquidity,
+  // which could be a lot, is spent on the other answer.
+  // 4. Convert excess No shares in Other into Yes shares in all the previous answers and add them
+  // to previous answers' pools.
+  // 5. Probability sum is now greater than 1. Bet it down equally.
+  // Proof of >1 prob sum:
+  // a. If there are excess Yes shares, then old answer probs are unchanged, so
+  // prob of new answer + prob of other answer must be > than previous prob of other answer. Empirically true...
+  // b. If there are excess No shares, then new answer & other answer each has 50% prob.
+  // 6. Betting it down to 1 produces mana, which we then insert as subsidy.
+  const mana = ANSWER_COST + Math.min(otherAnswer.poolYes, otherAnswer.poolNo)
+  const excessYesShares = Math.max(0, otherAnswer.poolYes - otherAnswer.poolNo)
+  const excessNoShares = Math.max(0, otherAnswer.poolNo - otherAnswer.poolYes)
+
+  const answerCostOrHalf = Math.min(ANSWER_COST, mana / 2)
+  const newAnswerPool = {
+    YES: answerCostOrHalf + excessYesShares,
+    NO: answerCostOrHalf,
+  }
+  const newOtherPool = {
+    YES: mana - answerCostOrHalf + excessYesShares,
+    NO: mana - answerCostOrHalf,
+  }
+
+  const newAnswerProb = getCpmmProbability(newAnswerPool, 0.5)
+  const otherProb = getCpmmProbability(newOtherPool, 0.5)
+  const n = answers.length
+
+  newAnswer = {
+    ...newAnswer,
+    index: n - 1,
+    poolYes: newAnswerPool.YES,
+    poolNo: newAnswerPool.NO,
+    prob: newAnswerProb,
+    totalLiquidity: answerCostOrHalf,
+  }
+
+  const updatedOtherAnswerProps = {
+    totalLiquidity: newOtherPool.NO,
+    index: n,
+  }
+
+  const updatedOtherAnswer = {
+    ...otherAnswer,
+    ...updatedOtherAnswerProps,
+    poolYes: newOtherPool.YES,
+    poolNo: newOtherPool.NO,
+    prob: otherProb,
+  }
+
+  const updatedPreviousAnswers = answersWithoutOther.map((a) => ({
+    ...a,
+    poolYes: a.poolYes + excessNoShares,
+  }))
+
+  const answersWithNewAnswer = [
+    ...updatedPreviousAnswers,
+    newAnswer,
+    updatedOtherAnswer,
+  ]
+  const { unfilledBets, balanceByUserId } =
+    await getUnfilledBetsAndUserBalances(transaction, contractDoc)
+
+  // Cancel limit orders on Other answer.
+  const [unfilledBetsOnOther, unfilledBetsExcludingOther] = partition(
+    unfilledBets,
+    (b) => b.answerId === otherAnswer.id
+  )
+
+  const { betResults, extraMana } = getBetDownToOneMultiBetInfo(
+    contract,
+    answersWithNewAnswer,
+    unfilledBetsExcludingOther,
+    balanceByUserId
+  )
+
+  console.log('New answer', newAnswer)
+  console.log('Other answer', updatedOtherAnswer)
+  console.log('extraMana', extraMana)
+  console.log(
+    'bet amounts',
+    betResults.map((r) =>
+      sumBy(r.takers.slice(0, r.takers.length - 1), (t) => t.amount)
+    ),
+    'shares',
+    betResults.map((r) =>
+      sumBy(r.takers.slice(0, r.takers.length - 1), (t) => t.shares)
+    )
+  )
+
+  transaction.create(newAnswerDoc, newAnswer)
+  transaction.update(
+    contractDoc.collection('answersCpmm').doc(otherAnswer.id),
+    updatedOtherAnswerProps
+  )
+
+  const poolsByAnswer = Object.fromEntries(
+    betResults.map((r) => [
+      r.answer.id,
+      r.cpmmState.pool as { YES: number; NO: number },
+    ])
+  )
+  for (const [answerId, pool] of Object.entries(poolsByAnswer)) {
+    const { YES: poolYes, NO: poolNo } = pool
+    const prob = poolNo / (poolYes + poolNo)
+    console.log(
+      'After arbitrage answer',
+      newAnswer.text,
+      'with',
+      poolYes,
+      poolNo,
+      'prob',
+      prob
+    )
+  }
+  const newPoolsByAnswer = addCpmmMultiLiquidity(poolsByAnswer, extraMana)
+
+  for (const result of betResults) {
+    const { answer, bet, makers, ordersToCancel } = result
+    const betDoc = contractDoc.collection('bets').doc()
+    transaction.create(betDoc, {
+      id: betDoc.id,
+      userId: user.id,
+      userAvatarUrl: user.avatarUrl,
+      userUsername: user.username,
+      userName: user.name,
+      isApi: false,
+      ...bet,
+    })
+    const pool = newPoolsByAnswer[answer.id]
+    const { YES: poolYes, NO: poolNo } = pool
+    const prob = getCpmmProbability(pool, 0.5)
+    console.log(
+      'Updating answer',
+      answer.text,
+      'with',
+      poolYes,
+      poolNo,
+      'prob',
+      prob
+    )
+    transaction.update(contractDoc.collection('answersCpmm').doc(answer.id), {
+      poolYes,
+      poolNo,
+      prob,
+    })
+    updateMakers(makers, betDoc.id, contractDoc, transaction)
+    for (const bet of ordersToCancel) {
       transaction.update(contractDoc.collection('bets').doc(bet.id), {
         isCancelled: true,
       })
     }
+  }
 
-    transaction.update(userDoc, {
-      balance: FieldValue.increment(-ANSWER_COST),
-      totalDeposits: FieldValue.increment(-ANSWER_COST),
+  for (const bet of unfilledBetsOnOther) {
+    transaction.update(contractDoc.collection('bets').doc(bet.id), {
+      isCancelled: true,
     })
-    transaction.update(contractDoc, {
-      totalLiquidity: FieldValue.increment(ANSWER_COST),
-    })
-    const liquidityDoc = firestore
-      .collection(`contracts/${contract.id}/liquidity`)
-      .doc()
-    const lp = getCpmmInitialLiquidity(
-      user.id,
-      contract,
-      liquidityDoc.id,
-      ANSWER_COST
-    )
-    transaction.create(liquidityDoc, lp)
-
-    return newAnswer.id
-  })
-
-  const answers = await convertOtherAnswerShares(contractId, newAnswerId)
-
-  return { answer: answers.find((a) => a.id === newAnswerId)!, answers }
-})
+  }
+}
 
 const firestore = admin.firestore()
 
