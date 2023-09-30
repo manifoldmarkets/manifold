@@ -146,7 +146,7 @@ function AntePrice(props: { outcome: OutcomeType }) {
       </div>
     )
   }
-  if (outcome == 'MULTIPLE_CHOICE' || outcome == 'FREE_RESPONSE') {
+  if (outcome == 'MULTIPLE_CHOICE') {
     return <div className="text-ink-500 text-xs">{ante} / option</div>
   }
   return <div className="text-ink-500 text-xs">{ante}</div>

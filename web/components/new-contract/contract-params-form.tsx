@@ -106,9 +106,9 @@ export function ContractParamsForm(props: {
     params?.answers ? params.answers : defaultAnswers,
     'new-answers-with-other' + paramsKey
   )
-  const [addAnswersMode, setAddAnswersMode] = useState<add_answers_mode>(
-    outcomeType === 'FREE_RESPONSE' ? 'ANYONE' : 'DISABLED'
-  )
+  const [addAnswersMode, setAddAnswersMode] =
+    useState<add_answers_mode>('DISABLED')
+  const [shouldAnswersSumToOne, setShouldAnswersSumToOne] = useState(true)
 
   const numAnswers =
     addAnswersMode === 'DISABLED' ? answers.length : answers.length + 1
@@ -250,10 +250,7 @@ export function ContractParamsForm(props: {
 
   const isValidQuestion = question.length > 0
 
-  const hasAnswers =
-    outcomeType === 'MULTIPLE_CHOICE' ||
-    outcomeType === 'FREE_RESPONSE' ||
-    outcomeType === 'POLL'
+  const hasAnswers = outcomeType === 'MULTIPLE_CHOICE' || outcomeType === 'POLL'
   const isValidMultipleChoice =
     !hasAnswers || answers.every((answer) => answer.trim().length > 0)
 
@@ -344,8 +341,7 @@ export function ContractParamsForm(props: {
     try {
       const createProps = removeUndefinedProps({
         question,
-        outcomeType:
-          outcomeType === 'FREE_RESPONSE' ? 'MULTIPLE_CHOICE' : outcomeType,
+        outcomeType,
         description: editor?.getJSON(),
         initialProb: 50,
         ante,
@@ -356,8 +352,8 @@ export function ContractParamsForm(props: {
         isLogScale,
         groupIds: selectedGroups.map((g) => g.id),
         answers,
-        addAnswersMode:
-          outcomeType === 'FREE_RESPONSE' ? 'ANYONE' : addAnswersMode,
+        addAnswersMode,
+        shouldAnswersSumToOne,
         visibility,
         utcOffset: new Date().getTimezoneOffset(),
         totalBounty:
@@ -431,7 +427,7 @@ export function ContractParamsForm(props: {
   const [fundsModalOpen, setFundsModalOpen] = useState(false)
 
   const isMulti =
-    outcomeType === 'MULTIPLE_CHOICE' || outcomeType === 'FREE_RESPONSE'
+    outcomeType === 'MULTIPLE_CHOICE'
 
   return (
     <Col className="gap-6">
@@ -454,16 +450,10 @@ export function ContractParamsForm(props: {
         <MultipleChoiceAnswers
           answers={answers}
           setAnswers={setAnswers}
-          includeOtherAnswer={
-            addAnswersMode !== 'DISABLED' &&
-            (outcomeType === 'MULTIPLE_CHOICE' || answers.length > 0)
-          }
-          setIncludeOtherAnswer={
-            outcomeType === 'FREE_RESPONSE' || outcomeType === 'POLL'
-              ? undefined
-              : (include) =>
-                  setAddAnswersMode(include ? 'ONLY_CREATOR' : 'DISABLED')
-          }
+          addAnswersMode={addAnswersMode}
+          setAddAnswersMode={setAddAnswersMode}
+          shouldAnswersSumToOne={shouldAnswersSumToOne}
+          setShouldAnswersSumToOne={setShouldAnswersSumToOne}
           outcomeType={outcomeType}
           placeholder={isMulti ? 'Type your answer..' : undefined}
         />
