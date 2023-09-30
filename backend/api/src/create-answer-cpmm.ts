@@ -83,7 +83,7 @@ export const createanswercpmm = authEndpoint(async (req, auth) => {
       const n = answers.length
       const newAnswer: Answer = {
         id,
-        index: n - 1,
+        index: n,
         contractId,
         createdTime: Date.now(),
         userId: user.id,
