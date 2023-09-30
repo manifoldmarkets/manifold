@@ -63,6 +63,8 @@ export function AnswersPanel(props: {
       : outcomeType === 'FREE_RESPONSE'
       ? 'ANYONE'
       : 'DISABLED'
+  const _shouldAnswersSumToOne =
+    'shouldAnswersSumToOne' in contract ? contract.shouldAnswersSumToOne : true
 
   const [showSmallAnswers, setShowSmallAnswers] = useState(isMultipleChoice)
 
