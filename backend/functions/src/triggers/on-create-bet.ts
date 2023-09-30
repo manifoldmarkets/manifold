@@ -7,6 +7,7 @@ import {
   getBettingStreakResetTimeBeforeNow,
   getUser,
   getValues,
+  isProd,
   log,
 } from 'shared/utils'
 import {
@@ -69,7 +70,7 @@ export const onCreateBet = functions
     secrets,
     memory: '512MB',
     timeoutSeconds: 540,
-    minInstances: 10,
+    minInstances: isProd() ? 10 : 0,
   })
   .firestore.document('contracts/{contractId}/bets/{betId}')
   .onCreate(async (change, context) => {
