@@ -79,24 +79,10 @@ export default function BrowsePage() {
   const topics = buildArray(topicsFromRouter, topicsByImportance)
   const currentTopic = topics.find((t) => t.slug === topicSlug)
 
-  const menuButton = showTopicsSidebar ? null : (
-    <Button
-      color={'gray-outline'}
-      size={'md'}
-      className={
-        'ml-1 hidden w-[8rem] sm:ml-2 sm:flex md:w-[10.5rem] xl:hidden'
-      }
-      onClick={() => setShowTopicsSidebar(!showTopicsSidebar)}
-    >
-      <FilterIcon className="mr-2 h-5 w-5" />
-      Topics
-    </Button>
-  )
-
   return (
     <>
       {user && <Welcome />}
-      <Page trackPageView={'questions page'} className="xl:col-span-10">
+      <Page trackPageView={'questions page'} className="lg:col-span-10">
         <SEO
           title={`${currentTopic?.name ?? 'Browse'}`}
           description={`Browse ${currentTopic?.name ?? 'all'} questions`}
@@ -109,14 +95,9 @@ export default function BrowsePage() {
           topicSlug={topicSlug}
           user={user}
         />
-        <Col>
-          <Row className={'w-full'}>
-            <Col
-              className={clsx(
-                'relative w-full',
-                showTopicsSidebar ? 'sm:mr-10 lg:mr-0' : ''
-              )}
-            >
+        <Col className={'w-full'}>
+          <Row className={'lg:grid lg:grid-cols-12'}>
+            <Col className={clsx('relative lg:col-span-8')}>
               <SupabaseSearch
                 persistPrefix="search"
                 autoFocus={autoFocus}
@@ -134,7 +115,21 @@ export default function BrowsePage() {
                 useUrlParams
                 isWholePage
                 headerClassName={'bg-canvas-0 lg:bg-canvas-50 pt-0 px-2'}
-                menuButton={menuButton}
+                menuButton={
+                  showTopicsSidebar ? null : (
+                    <Button
+                      color={'gray-outline'}
+                      size={'md'}
+                      className={
+                        'ml-1 hidden sm:ml-2 sm:flex sm:w-[8rem] md:w-[12rem] lg:hidden'
+                      }
+                      onClick={() => setShowTopicsSidebar(!showTopicsSidebar)}
+                    >
+                      <FilterIcon className="mr-2 h-5 w-5" />
+                      Topics
+                    </Button>
+                  )
+                }
                 rowBelowFilters={
                   isMobile && (
                     <BrowseTopicPills
@@ -158,6 +153,9 @@ export default function BrowsePage() {
                 user={user}
                 show={showTopicsSidebar}
                 setShow={setShowTopicsSidebar}
+                className={clsx(
+                  'col-span-3 min-w-[7rem] sm:min-w-[8rem]  md:min-w-[10.5rem] lg:ml-3 xl:ml-8'
+                )}
               />
             )}
           </Row>

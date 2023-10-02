@@ -42,29 +42,28 @@ export function TopicsList(props: {
     (g) => !privateUser?.blockedGroupSlugs.includes(g.slug)
   )
   const yourGroups = useRealtimeMemberGroups(user?.id)
-  const widthClasses =
-    'xl:min-w-64 min-w-[7rem] sm:min-w-[8rem] md:min-w-[10.5rem]'
+
   return (
     <Col
       className={clsx(
         show
-          ? 'animate-slide-in-from-right block xl:animate-none'
-          : 'hidden xl:flex',
+          ? 'animate-slide-in-from-right block lg:animate-none'
+          : 'hidden lg:flex',
         className,
-        'scrollbar-hide sticky top-0 right-10 max-h-screen overflow-y-auto sm:max-w-min xl:max-w-none',
-        currentTopicSlug == 'for-you' ? '' : 'xl:rounded-t-md '
+        'scrollbar-hide sticky top-0 right-0 max-h-screen overflow-y-auto sm:max-w-min lg:max-w-none',
+        currentTopicSlug == 'for-you' ? '' : 'lg:rounded-t-md'
       )}
     >
-      <div
+      <Row
         className={
           'bg-canvas-50 sticky top-0 z-10 w-full items-center justify-center'
         }
       >
-        <div className="text-primary-700 hidden w-full pb-2 pl-2 xl:block">
+        <div className="text-primary-700 hidden w-full pb-2 pl-2 lg:block">
           Topics
         </div>
         <Button
-          className={clsx('h-[3.15rem] xl:hidden', widthClasses)}
+          className={clsx('h-[3.15rem] w-full lg:hidden')}
           color={'gray-white'}
           size={'md'}
           onClick={() => setShow(!show)}
@@ -72,7 +71,7 @@ export function TopicsList(props: {
           <MdOutlineKeyboardDoubleArrowRight className="mr-1 h-5 w-5" />
           Topics
         </Button>
-      </div>
+      </Row>
       {user && (
         <SidebarItem
           key={'all-questions'}
