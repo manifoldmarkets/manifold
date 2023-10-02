@@ -27,23 +27,23 @@ export function ContractsList(props: {
     headerClassName,
   } = props
 
-  if (contracts === undefined) {
-    return <LoadingIndicator />
-  }
-
   return (
     <Col>
-      <ContractsTable
-        contracts={contracts}
-        onContractClick={onContractClick}
-        highlightContractIds={highlightContractIds}
-        columns={buildArray([
-          traderColumn,
-          probColumn,
-          !hideActions && actionColumn,
-        ])}
-        headerClassName={headerClassName}
-      />
+      {contracts === undefined ? (
+        <LoadingIndicator />
+      ) : (
+        <ContractsTable
+          contracts={contracts}
+          onContractClick={onContractClick}
+          highlightContractIds={highlightContractIds}
+          columns={buildArray([
+            traderColumn,
+            probColumn,
+            !hideActions && actionColumn,
+          ])}
+          headerClassName={headerClassName}
+        />
+      )}
       {loadMore && <LoadMoreUntilNotVisible loadMore={loadMore} />}
     </Col>
   )

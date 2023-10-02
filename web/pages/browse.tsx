@@ -97,7 +97,7 @@ export default function BrowsePage() {
         />
         <Col className={'w-full'}>
           <Row className={'lg:grid lg:grid-cols-12'}>
-            <Col className={clsx('relative lg:col-span-8')}>
+            <Col className={clsx('relative w-full lg:col-span-8')}>
               <SupabaseSearch
                 persistPrefix="search"
                 autoFocus={autoFocus}
