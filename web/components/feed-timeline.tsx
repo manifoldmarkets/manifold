@@ -16,7 +16,6 @@ import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { Avatar } from 'web/components/widgets/avatar'
 import { range, uniq, uniqBy } from 'lodash'
 import { filterDefined } from 'common/util/array'
-import { Page } from 'web/components/layout/page'
 import { DAY_MS, MINUTE_MS } from 'common/util/time'
 import {
   DAYS_TO_USE_FREE_QUESTIONS,
@@ -26,13 +25,6 @@ import {
 import { CreateQuestionButton } from 'web/components/buttons/create-question-button'
 import { shortenedFromNow } from 'web/lib/util/shortenedFromNow'
 
-export default function FeedTimelinePage() {
-  return (
-    <Page trackPageView={'feed timeline page'}>
-      <FeedTimeline />
-    </Page>
-  )
-}
 export function FeedTimeline() {
   const privateUser = usePrivateUser()
   const user = useUser()

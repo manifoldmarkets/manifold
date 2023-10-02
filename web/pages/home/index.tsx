@@ -12,7 +12,7 @@ import { useIsClient } from 'web/hooks/use-is-client'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { useUser } from 'web/hooks/use-user'
-import { FeedTimeline } from 'web/pages/feed-timeline'
+import { FeedTimeline } from 'web/components/feed-timeline'
 
 export default function Home() {
   const isClient = useIsClient()
