@@ -10,7 +10,7 @@ export function NewsDashboard(props: { slug: string }) {
   if (!dashboard) return <LoadingIndicator />
 
   return (
-    <div>
+    <div className="mx-auto w-full max-w-2xl">
       <Title>{dashboard.title}</Title>
       <DashboardDescription description={dashboard.description} />
       <DashboardContent items={dashboard.items} />

@@ -641,7 +641,7 @@ export function ContractPageContent(props: {
             </Row>
 
             {showExplainerPanel && (
-              <ExplainerPanel className="bg-canvas-50 -mx-4 flex rounded-lg p-4 pb-0 xl:hidden" />
+              <ExplainerPanel className="bg-canvas-50 -mx-8 p-4 pb-0 xl:hidden" />
             )}
 
             {!user && <SidebarSignUpButton className="mb-4 flex md:hidden" />}

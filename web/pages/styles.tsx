@@ -24,10 +24,11 @@ export default function StylePage() {
     <Page trackPageView={'styles page'} className="gap-2">
       <div>
         <Title>Design System</Title>
-        <div>
-          A reference for all the common widgets we use on our site. For
-          instance, the component above is <code>Title</code>.
-        </div>
+        <ol className="text-ink-900 list-inside list-decimal">
+          <li>keep line lengths between 45 and 75 ch</li>
+          <li>use classNames. say no to "just one more prop bro"</li>
+          <li>don't do anything that would make Inga scowl</li>
+        </ol>
       </div>
       <Subtitle>Buttons</Subtitle>
       <ButtonSection />

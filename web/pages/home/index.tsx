@@ -41,11 +41,11 @@ function HomeDashboard() {
       />
       <Welcome />
       <Page trackPageView={'home'} trackPageProps={{ kind: 'desktop' }}>
-        <Row className="mx-4 mb-2 items-center justify-between gap-4">
-          <div className="flex sm:hidden">
+        <Row className="mx-3 mb-2 items-center justify-between gap-4">
+          <div className="flex md:hidden">
             {user ? <ProfileSummary user={user} /> : <Spacer w={4} />}
           </div>
-          <Title className="!mb-0 hidden sm:flex">Home</Title>
+          <Title className="!mb-0 hidden md:flex">Home</Title>
           <DailyStats user={user} />
         </Row>
 

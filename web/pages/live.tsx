@@ -23,8 +23,8 @@ export default function LivePage() {
         url="/live"
       />
 
-      <Col className="gap-4 sm:px-4 sm:pb-4">
-        <Title className="mx-2 !mb-0 mt-2 sm:mx-0 lg:mt-0">Live feed</Title>
+      <Col className="w-full max-w-3xl gap-4 self-center sm:pb-4">
+        <Title className="!mb-0">Live feed</Title>
         <Col className="gap-4">
           <LivePillOptions pill={pill} setPill={setPill} />
           <ActivityLog count={30} pill={pill} />

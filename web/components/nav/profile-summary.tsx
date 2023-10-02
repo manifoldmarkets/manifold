@@ -9,9 +9,10 @@ import { Avatar } from '../widgets/avatar'
 import { trackCallback } from 'web/lib/service/analytics'
 import { AddFundsModal } from '../add-funds-modal'
 import { useAnimatedNumber } from 'web/hooks/use-animated-number'
+import clsx from 'clsx'
 
-export function ProfileSummary(props: { user: User }) {
-  const { user } = props
+export function ProfileSummary(props: { user: User; className?: string }) {
+  const { user, className } = props
 
   const [buyModalOpen, setBuyModalOpen] = useState(false)
   const balance = useAnimatedNumber(user.balance)
@@ -20,7 +21,10 @@ export function ProfileSummary(props: { user: User }) {
     <Link
       href={`/${user.username}`}
       onClick={trackCallback('sidebar: profile')}
-      className="text-ink-700 hover:bg-ink-100 hover:text-ink-900 group mb-3 flex flex-shrink-0 flex-row items-center gap-4 rounded-md py-3"
+      className={clsx(
+        'text-ink-700 hover:bg-ink-100 hover:text-ink-900 group flex flex-shrink-0 flex-row items-center gap-4 rounded-md py-3',
+        className
+      )}
     >
       <Avatar avatarUrl={user.avatarUrl} username={user.username} noLink />
       <div className="truncate">

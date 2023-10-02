@@ -66,13 +66,13 @@ export default function Sidebar(props: {
   return (
     <nav
       aria-label="Sidebar"
-      className={clsx('flex h-screen flex-col xl:ml-2', className)}
+      className={clsx('flex h-screen flex-col', className)}
     >
       <ManifoldLogo className="pt-6 pb-3" />
 
       {user === undefined && <div className="h-[56px]" />}
 
-      {user && !isMobile && <ProfileSummary user={user} />}
+      {user && !isMobile && <ProfileSummary user={user} className="mb-3" />}
 
       <div className="mb-4 flex flex-col gap-1">
         {navOptions.map((item) => (

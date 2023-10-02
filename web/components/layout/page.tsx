@@ -30,7 +30,7 @@ export function Page(props: {
       <Col
         className={clsx(
           'pb-[58px] lg:pb-0', // bottom bar padding
-          'text-ink-1000 mx-auto min-h-screen w-full max-w-[1400px] lg:grid lg:grid-cols-12 lg:gap-x-2 xl:gap-x-8'
+          'text-ink-1000 mx-auto min-h-screen w-full max-w-[1440px] lg:grid lg:grid-cols-12'
         )}
       >
         <Toaster
@@ -38,13 +38,13 @@ export function Page(props: {
           containerClassName="!bottom-[70px]"
         />
         {hideSidebar ? (
-          <div className="sticky top-0 hidden self-start pl-2 lg:col-span-2 lg:flex" />
+          <div className="lg:col-span-2 lg:flex" />
         ) : (
-          <Sidebar className="sticky top-0 hidden self-start pl-2 lg:col-span-2 lg:flex" />
+          <Sidebar className="sticky top-0 hidden self-start px-2 lg:col-span-2 lg:flex xl:px-4" />
         )}
         <main
           className={clsx(
-            'flex flex-1 flex-col lg:mt-6',
+            'flex flex-1 flex-col px-2 lg:mt-6 xl:px-4',
             'col-span-8',
             className
           )}
