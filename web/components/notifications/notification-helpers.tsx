@@ -184,7 +184,7 @@ export function NotificationFrame(props: {
         <Col className="w-fit">{icon}</Col>
         <Col className="font w-full">
           <span>{children}</span>
-          <div className="line-clamp-3 mt-1 text-xs md:text-sm">{subtitle}</div>
+          <div className="mt-1 line-clamp-3 text-xs md:text-sm">{subtitle}</div>
           {isMobile && (
             <Row className="mt-1 items-center gap-1 self-end">
               {highlighted && (
