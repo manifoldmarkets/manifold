@@ -218,7 +218,7 @@ export default function ProfilePage(props: {
               </Row>
             )}
             {errorName && (
-              <span className="text-sm text-red-500">{errorName}</span>
+              <span className="text-error text-sm">{errorName}</span>
             )}
           </Col>
 
@@ -243,7 +243,7 @@ export default function ProfilePage(props: {
               </Row>
             )}
             {errorUsername && (
-              <span className="text-sm text-red-500">{errorUsername}</span>
+              <span className="text-error text-sm">{errorUsername}</span>
             )}
           </Col>
           {(

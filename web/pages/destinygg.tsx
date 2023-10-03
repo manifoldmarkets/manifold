@@ -117,7 +117,7 @@ export default function DestinyLandingPage(props: {
             </Row>
           )
         )}
-        {error && <div className="mt-2 text-sm text-red-500">{error}</div>}
+        {error && <div className="text-error mt-2 text-sm">{error}</div>}
 
         <div className="mt-4 pt-6 sm:mt-0">
           Total subs claimed: {subCount + (isSuccess ? 1 : 0)} / 1,000

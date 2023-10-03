@@ -16,7 +16,7 @@ import { groupBy } from 'lodash'
 const notification_base_style = 'relative text-sm transition-colors'
 export const NESTED_NOTIFICATION_STYLE = clsx(
   notification_base_style,
-  'hover:bg-primary-50 p-2'
+  'hover:bg-primary-100 p-2'
 )
 export const PARENT_NOTIFICATION_STYLE = clsx(
   notification_base_style,
@@ -24,7 +24,7 @@ export const PARENT_NOTIFICATION_STYLE = clsx(
 )
 export const NOTIFICATION_STYLE = clsx(
   notification_base_style,
-  'p-2 hover:bg-primary-50'
+  'hover:bg-primary-10 p-2'
 )
 export const NOTIFICATIONS_PER_PAGE = 30
 function getHighlightClass(highlight: boolean) {
@@ -257,9 +257,7 @@ export function NotificationFrame(props: {
         <NotificationDropdown notification={notification} />
       </div>
       <div className="-mr-2 flex w-4 items-center justify-center">
-        {highlighted && (
-          <div className="bg-highlight-blue h-3 w-3 rounded-full" />
-        )}
+        {highlighted && <div className="bg-primary-50 h-3 w-3 rounded-full" />}
       </div>
     </Row>
   )

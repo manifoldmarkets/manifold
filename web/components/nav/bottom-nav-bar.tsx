@@ -214,7 +214,8 @@ export function MobileSidebar(props: {
             leaveFrom="opacity-100"
             leaveTo="opacity-0"
           >
-            <Dialog.Overlay className="bg-canvas-100 fixed inset-0 bg-opacity-75" />
+            {/* background cover */}
+            <Dialog.Overlay className="bg-canvas-100/75 fixed inset-0" />
           </Transition.Child>
           <Transition.Child
             as={Fragment}

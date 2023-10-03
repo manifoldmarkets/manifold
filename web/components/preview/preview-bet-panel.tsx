@@ -278,7 +278,7 @@ export function PreviewBuyPanel(props: {
         className={clsx(
           !singularView
             ? outcome === 'NO'
-              ? 'bg-red-500/10'
+              ? 'bg-scarlet-500/10'
               : outcome === 'YES'
               ? 'bg-teal-500/10'
               : 'hidden'

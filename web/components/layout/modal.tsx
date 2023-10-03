@@ -16,7 +16,6 @@ export function Modal(props: {
   position?: 'center' | 'top' | 'bottom'
   noAutoFocus?: boolean
   className?: string
-  bgOpaque?: boolean
 }) {
   const {
     children,
@@ -26,7 +25,6 @@ export function Modal(props: {
     size = 'md',
     className,
     noAutoFocus,
-    bgOpaque,
   } = props
 
   const sizeClass = {
@@ -59,12 +57,8 @@ export function Modal(props: {
           leaveFrom="opacity-100"
           leaveTo="opacity-0"
         >
-          <div
-            className={clsx(
-              'bg-canvas-100 fixed inset-0  transition-opacity ',
-              bgOpaque ? 'bg-opacity-100' : 'bg-opacity-75'
-            )}
-          />
+          {/* background cover */}
+          <div className="bg-canvas-100/75 fixed inset-0" />
         </Transition.Child>
 
         <Transition.Child

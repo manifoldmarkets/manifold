@@ -10,11 +10,6 @@ export type Item = {
   onClick?: () => void
   icon?: React.ComponentType<{ className?: string }>
 }
-export const SIDEBAR_SELECTED_ITEM_CLASS =
-  'bg-ink-200 dark:bg-ink-100 text-ink-900'
-export const SIDEBAR_UNSELECTED_ITEM_CLASS = 'text-ink-600'
-export const SIDE_BAR_ITEM_HOVER_CLASS =
-  'hover:bg-indigo-50 dark:hover:bg-indigo-900/50'
 
 export function SidebarItem(props: { item: Item; currentPage?: string }) {
   const { item, currentPage } = props
@@ -28,10 +23,9 @@ export function SidebarItem(props: { item: Item; currentPage?: string }) {
       onClick={trackCallback('sidebar: ' + item.name)}
       className={clsx(
         isCurrentPage
-          ? SIDEBAR_SELECTED_ITEM_CLASS
-          : SIDEBAR_UNSELECTED_ITEM_CLASS,
-        'group flex items-center rounded-md px-3 py-2 text-sm font-medium',
-        SIDE_BAR_ITEM_HOVER_CLASS
+          ? 'bg-ink-200 text-ink-900'
+          : 'text-ink-600 hover:bg-primary-100',
+        'group flex items-center rounded-md px-3 py-2 text-sm font-medium'
       )}
       aria-current={item.href == currentPage ? 'page' : undefined}
     >

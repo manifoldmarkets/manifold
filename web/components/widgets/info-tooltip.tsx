@@ -23,7 +23,7 @@ export function InfoTooltip(props: {
       {children ? (
         <span
           className={clsx(
-            'cursor-help border-b border-dotted border-gray-600',
+            'border-ink-600 cursor-help border-b border-dotted',
             className
           )}
         >

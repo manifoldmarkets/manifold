@@ -1,10 +1,10 @@
 import { Contract, resolution } from 'common/contract'
 
 const OUTCOME_TO_COLOR_TEXT = {
-  YES: 'text-teal-600 dark:text-teal-100',
-  NO: 'text-scarlet-600 dark:text-scarlet-100',
+  YES: 'text-teal-600',
+  NO: 'text-scarlet-600 ',
   CANCEL: 'text-ink-400',
-  MKT: 'text-sky-600 dark:text-sky-100',
+  MKT: 'text-blue-600 dark:text-blue-200',
 }
 
 export function getTextColor(contract: Contract) {

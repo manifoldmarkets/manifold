@@ -85,7 +85,7 @@ export function ContractTopicsList(props: {
                 }
                 onlyGroupIds={onlyGroupIds}
               />
-              <span className={'text-sm text-red-400'}>{error}</span>
+              <span className={'text-error text-sm'}>{error}</span>
             </Col>
           )}
         </Col>

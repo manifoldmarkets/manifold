@@ -101,7 +101,7 @@ export const CohortTable = (props: {
                     <tr>
                       <td colSpan={2}>
                         <Col className="mb-2 w-full items-center gap-1">
-                          <div className="text-xs text-gray-600">
+                          <div className="text-ink-500 text-xs">
                             ▲ Promotes to {nextNextDivisionName}
                           </div>
                           <div className="border-ink-300 w-full border-t-2 border-dashed" />
@@ -113,7 +113,7 @@ export const CohortTable = (props: {
                     <tr>
                       <td colSpan={2}>
                         <Col className="mb-2 w-full items-center gap-1">
-                          <div className="text-xs text-gray-600">
+                          <div className="text-ink-500 text-xs">
                             ▲ Promotes to {nextDivisionName}
                           </div>
                           <div className="border-ink-300 w-full border-t-2 border-dashed" />
@@ -127,7 +127,7 @@ export const CohortTable = (props: {
                         <td colSpan={2}>
                           <Col className="mt-2 w-full items-center gap-1">
                             <div className="border-ink-300 w-full border-t-2 border-dashed" />
-                            <div className="text-xs text-gray-600">
+                            <div className="text-ink-500 text-xs">
                               ▼ Demotes to {prevDivisionName}
                             </div>
                           </Col>

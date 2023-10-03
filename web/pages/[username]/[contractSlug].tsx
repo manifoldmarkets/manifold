@@ -456,7 +456,7 @@ export function ContractPageContent(props: {
             )}
             <Row
               className={clsx(
-                ' sticky -top-px z-50 mt-px flex h-12 w-full py-2 px-4 transition-colors',
+                'sticky -top-px z-50 mt-px flex h-12 w-full py-2 px-4 transition-colors',
                 headerStuck
                   ? 'dark:bg-canvas-50/80 bg-white/80 backdrop-blur-sm'
                   : ''

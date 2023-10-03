@@ -170,7 +170,7 @@ const TimerBar = (props: { duration: number }) => {
   return (
     <div className="bg-canvas-0 absolute inset-0 flex overflow-hidden">
       <div
-        className="animate-progress bg-canvas-100"
+        className="animate-progress bg-canvas-50"
         style={{ animationDuration: `${duration}s` }}
       />
     </div>

@@ -695,7 +695,7 @@ function FeedCommentHeader(props: {
           {!inTimeline && <DotMenu comment={comment} contract={contract} />}
         </Row>
         {bountyAwarded && bountyAwarded > 0 && (
-          <span className="select-none text-teal-600 dark:text-teal-400">
+          <span className="select-none text-teal-600">
             +{formatMoney(bountyAwarded)}
           </span>
         )}

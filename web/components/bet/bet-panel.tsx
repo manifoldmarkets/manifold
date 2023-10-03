@@ -286,9 +286,9 @@ export function BuyPanel(props: {
         className={clsx(
           !singularView
             ? outcome === 'NO'
-              ? 'bg-red-500/10'
+              ? 'bg-scarlet-50'
               : outcome === 'YES'
-              ? 'bg-teal-500/10'
+              ? 'bg-teal-50'
               : 'hidden'
             : '',
           'rounded-xl',

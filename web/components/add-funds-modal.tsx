@@ -150,7 +150,7 @@ export function BuyManaTab(props: { onClose: () => void }) {
           </form>
         )}
       </div>
-      <Row className="mt-2 text-sm text-red-500">{error}</Row>
+      <Row className="text-error mt-2 text-sm">{error}</Row>
     </>
   )
 }

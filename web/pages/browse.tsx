@@ -122,7 +122,7 @@ export default function BrowsePage() {
                 useUrlParams
                 isWholePage
                 showTopicTag={headerStuck}
-                headerClassName={'bg-canvas-0 lg:bg-canvas-50 pt-0'}
+                headerClassName={'pt-0 px-2 bg-canvas-0 lg:bg-canvas-50'}
                 menuButton={
                   showTopicsSidebar ? null : (
                     <Button

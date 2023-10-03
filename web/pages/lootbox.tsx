@@ -159,7 +159,7 @@ export default function LootBoxPage() {
           </Button>
 
           {error && (
-            <div className={'text-red-700'}>
+            <div className={'text-error'}>
               Something went wrong, please try again later.
             </div>
           )}

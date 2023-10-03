@@ -79,25 +79,25 @@ const bountySorts = new Set(['bounty-amount'])
 
 const probSorts = new Set(['prob-descending', 'prob-ascending'])
 
-export const BOUNTY_MARKET_SORTS = SORTS.filter(
+const BOUNTY_MARKET_SORTS = SORTS.filter(
   (item) => !predictionMarketSorts.has(item.value)
 )
 
-export const POLL_SORTS = BOUNTY_MARKET_SORTS.filter(
+const POLL_SORTS = BOUNTY_MARKET_SORTS.filter(
   (item) => !bountySorts.has(item.value)
 )
 
-export const PREDICTION_MARKET_SORTS = SORTS.filter(
+const PREDICTION_MARKET_SORTS = SORTS.filter(
   (item) => !bountySorts.has(item.value) && !probSorts.has(item.value)
 )
 
-export const PREDICTION_MARKET_PROB_SORTS = SORTS.filter(
+const PREDICTION_MARKET_PROB_SORTS = SORTS.filter(
   (item) => !bountySorts.has(item.value)
 )
 
 export type Sort = typeof SORTS[number]['value']
 
-export const FILTERS = [
+const FILTERS = [
   { label: 'Any status', value: 'all' },
   { label: 'Open', value: 'open' },
   { label: 'Closing this month', value: 'closing-this-month' },
@@ -108,7 +108,7 @@ export const FILTERS = [
 
 export type Filter = typeof FILTERS[number]['value']
 
-export const CONTRACT_TYPES = [
+const CONTRACT_TYPES = [
   { label: 'Any type', value: 'ALL' },
   { label: 'Yes/No', value: 'BINARY' },
   { label: 'Multiple Choice', value: 'MULTIPLE_CHOICE' },
@@ -476,7 +476,7 @@ const UserResults = (props: { users: UserSearchResult[] }) => {
           creatorTraders,
         }) => (
           <Link key={id} href={`/${username}`}>
-            <Row className={'hover:bg-canvas-100 p-1'}>
+            <Row className={'hover:bg-primary-100 p-1'}>
               <Col className={'w-full'}>
                 <Row className={'justify-between'}>
                   <Row className={'gap-1'}>
@@ -489,7 +489,6 @@ const UserResults = (props: { users: UserSearchResult[] }) => {
                       user={
                         { id, name, username, avatarUrl, createdTime } as User
                       }
-                      followsYou={false}
                       className={'font-normal sm:text-lg'}
                       usernameClassName={'sm:text-sm font-normal'}
                     />
@@ -525,7 +524,7 @@ const TopicResults = (props: { topics: Group[]; yourTopicIds: string[] }) => {
           key={group.id}
           href={`/browse?${TOPIC_KEY}=${group.slug}&${SEARCH_TYPE_KEY}=&${QUERY_KEY}=`}
         >
-          <Row className={'hover:bg-canvas-100 min-h-[4rem] p-1 pl-2 pt-2.5'}>
+          <Row className={'hover:bg-primary-100 min-h-[4rem] p-1 pl-2 pt-2.5'}>
             <Col className={' w-full'}>
               <span className="line-clamp-1 sm:text-lg">{group.name}</span>
               <Row className={'line-clamp-2 text-ink-500 gap-1 text-sm'}>
@@ -799,11 +798,11 @@ function ContractFilters(props: {
               selectSort
             )}
             icon={
-              <Row className=" items-center gap-0.5 ">
-                <span className="text-ink-500 whitespace-nowrap text-sm font-medium">
+              <Row className=" text-ink-500 items-center gap-0.5">
+                <span className="whitespace-nowrap text-sm font-medium">
                   {sortLabel}
                 </span>
-                <ChevronDownIcon className="h-4 w-4 text-gray-500" />
+                <ChevronDownIcon className="h-4 w-4" />
               </Row>
             }
             menuWidth={'w-36'}
@@ -816,11 +815,11 @@ function ContractFilters(props: {
           <DropdownMenu
             items={generateFilterDropdownItems(FILTERS, selectFilter)}
             icon={
-              <Row className=" items-center gap-0.5 ">
-                <span className="text-ink-500 whitespace-nowrap text-sm font-medium">
+              <Row className="text-ink-500 items-center gap-0.5">
+                <span className="whitespace-nowrap text-sm font-medium">
                   {filterLabel}
                 </span>
-                <ChevronDownIcon className="h-4 w-4 text-gray-500" />
+                <ChevronDownIcon className="h-4 w-4" />
               </Row>
             }
             menuItemsClass="left-0 right-auto"
@@ -835,11 +834,11 @@ function ContractFilters(props: {
             selectContractType
           )}
           icon={
-            <Row className=" items-center gap-0.5 ">
-              <span className="text-ink-500 whitespace-nowrap text-sm font-medium">
+            <Row className="text-ink-500 items-center gap-0.5">
+              <span className="whitespace-nowrap text-sm font-medium">
                 {contractTypeLabel}
               </span>
-              <ChevronDownIcon className="h-4 w-4 text-gray-500" />
+              <ChevronDownIcon className="h-4 w-4" />
             </Row>
           }
           menuWidth={'w-36'}

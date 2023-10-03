@@ -159,7 +159,7 @@ function BetsTable(props: {
         />
       </Row>
 
-      <div className="text-center text-xs text-gray-400">
+      <div className="text-ink-400 text-center text-xs">
         3 largest bets for each bucket
       </div>
 

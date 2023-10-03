@@ -104,9 +104,7 @@ export const PaymentsContent = (props: {
         </Button>
       </Row>
       {payments.length === 0 ? (
-        <Col className=" ">
-          <span className="text-gray-500">No Payments</span>
-        </Col>
+        <span className="text-ink-500">No Payments</span>
       ) : (
         <PaymentCards payments={payments} users={users} forUser={forUser} />
       )}
@@ -153,13 +151,10 @@ const PaymentCards = (props: {
         const decreasedBalance =
           (payment.fromId === forUser?.id) !== payment.amount < 0
         return (
-          <Col
-            key={payment.id}
-            className={'bg-canvas-100 w-full rounded-md p-2'}
-          >
+          <Col key={payment.id} className="bg-canvas-0 w-full rounded-md p-2">
             <Row className={'justify-between'}>
               {fromUser && toUser ? (
-                <Row>
+                <Row className="gap-1">
                   <Avatar
                     avatarUrl={fromUser.avatarUrl}
                     username={fromUser.username}
@@ -196,7 +191,7 @@ const PaymentCards = (props: {
               <span
                 className={
                   payment.fromId === payment.toId
-                    ? 'text-gray-500'
+                    ? 'text-ink-500'
                     : decreasedBalance
                     ? 'text-scarlet-500'
                     : 'text-teal-500'
@@ -249,9 +244,7 @@ export const PaymentsModal = (props: {
     <Modal open={show} setOpen={setShow}>
       <Col className={'bg-canvas-0 rounded-md p-4'}>
         <div className="my-2 text-xl">Send Mana</div>
-        <Row className={'text-red-500'}>
-          {!canSend ? cannotSendMessage : ''}
-        </Row>
+        <Row className={'text-error'}>{!canSend ? cannotSendMessage : ''}</Row>
         <Col className={'gap-3'}>
           <Row className={'items-center justify-between'}>
             <Col>
@@ -310,7 +303,7 @@ export const PaymentsModal = (props: {
                 onChange={(e) => setMessage(e.target.value)}
                 className={'w-full'}
               />
-              {error && <span className={'text-red-500'}>{error}</span>}
+              {error && <span className={'text-error'}>{error}</span>}
             </Col>
           </Row>
           <Row className={'justify-end'}>

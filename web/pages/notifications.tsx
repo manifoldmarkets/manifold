@@ -76,23 +76,20 @@ export default function NotificationsPage() {
 function NotificationsAppBanner(props: { userId: string }) {
   const { userId } = props
   return (
-    <Row className="bg-primary-50 relative mb-2 rounded-md py-2 px-4 text-sm">
-      <XIcon
+    <Row className="bg-primary-100 relative mb-2 justify-between rounded-md py-2 px-4 text-sm">
+      <Row className={'text-ink-600 items-center gap-3 text-sm sm:text-base'}>
+        Get the app for the best experience
+        <AppBadgesOrGetAppButton />
+      </Row>
+      <button
         onClick={() =>
           updatePrivateUser(userId, {
             hasSeenAppBannerInNotificationsOn: Date.now(),
           })
         }
-        className={
-          'bg-canvas-100 absolute -top-1 -right-1 h-4 w-4 cursor-pointer rounded-full sm:p-0.5'
-        }
-      />
-      <span className={'text-ink-600 text-sm sm:text-base'}>
-        <Row className={'items-center gap-2'}>
-          Get the app for the best experience
-          <AppBadgesOrGetAppButton />
-        </Row>
-      </span>
+      >
+        <XIcon className="text-ink-600 hover:text-ink-800 h-6 w-6" />
+      </button>
     </Row>
   )
 }

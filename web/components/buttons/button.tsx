@@ -45,10 +45,10 @@ export function buttonClass(size: SizeType, color: ColorType | 'none') {
     sizeClasses[size],
     color === 'green' && [solid, 'bg-teal-500 hover:bg-teal-600'],
     color === 'green-outline' && [outline, 'text-teal-500 hover:bg-teal-500'],
-    color === 'red' && [solid, 'bg-scarlet-300 hover:bg-scarlet-400'],
+    color === 'red' && [solid, 'bg-scarlet-500 hover:bg-scarlet-600'],
     color === 'red-outline' && [
       outline,
-      'text-scarlet-300 hover:bg-scarlet-300',
+      'text-scarlet-500 hover:bg-scarlet-500',
     ],
     color === 'yellow' && [solid, 'bg-yellow-400 hover:bg-yellow-500'],
     color === 'yellow-outline' && [
@@ -56,10 +56,7 @@ export function buttonClass(size: SizeType, color: ColorType | 'none') {
       'text-yellow-500 hover:bg-yellow-500',
     ],
     color === 'blue' && [solid, 'bg-blue-400 hover:bg-blue-500'],
-    color === 'indigo' && [
-      solid,
-      'bg-primary-500 hover:bg-primary-600 enabled:hover:dark:bg-indigo-500',
-    ],
+    color === 'indigo' && [solid, 'bg-primary-500 hover:bg-primary-600'],
     color === 'indigo-outline' && [
       outline,
       'text-primary-500 hover:bg-primary-500',

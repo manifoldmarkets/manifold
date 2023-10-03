@@ -52,7 +52,7 @@ export function GIFModal(props: {
           className="sticky top-0 h-8 w-full"
         />
         <Col className="h-[60ch]">
-          {error && <div className="text-red-500">{error}</div>}
+          {error && <div className="text-error">{error}</div>}
           {loading && <LoadingIndicator size="lg" />}
           {!loading && gifResults.length > 0 && (
             <Masonry

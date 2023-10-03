@@ -13,12 +13,12 @@ export function AlertBox(props: {
   return (
     <Col
       className={clsx(
-        'w-full rounded-md border border-amber-400 bg-amber-50/20 p-4',
+        'border-warning bg-warning/10 w-full rounded-md border p-4',
         className
       )}
     >
       <Row className="flex-shrink-0">
-        <ExclamationIcon className="h-5 w-5 text-amber-400" aria-hidden />
+        <ExclamationIcon className="fill-warning h-5 w-5" aria-hidden />
 
         <div className="ml-3">
           <h3 className="text-ink-800 text-sm font-medium">{title}</h3>

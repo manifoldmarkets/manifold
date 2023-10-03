@@ -49,19 +49,19 @@ export const BrowseTopicPills = (props: {
           </PillButton>
         ))}
       </Row>
-      <div className="absolute right-0 top-0 z-10 flex w-10 cursor-pointer select-none items-center justify-center overflow-x-hidden">
-        {showMore ? (
-          <ChevronDownIcon
-            onClick={() => setShowMore(false)}
-            className="bg-primary-50 text-primary-700 h-7 w-7 rounded-full"
-          />
-        ) : (
-          <ChevronRightIcon
-            onClick={() => setShowMore(true)}
-            className="bg-primary-50 text-primary-700 h-7 w-7 rounded-full"
-          />
-        )}
-      </div>
+      <button
+        className="bg-primary-50 hover:bg-primary-200 absolute right-0 top-0 z-10 mr-1.5 cursor-pointer select-none overflow-hidden rounded-full transition-colors"
+        onClick={() => setShowMore((showMore) => !showMore)}
+      >
+        <ChevronRightIcon
+          className={clsx(
+            'text-primary-800 h-7 w-7 transition-transform duration-75',
+            showMore && 'rotate-90'
+          )}
+          aria-hidden
+        />
+        <div className="sr-only">{showMore ? 'Contract' : 'Expand'}</div>
+      </button>
     </Col>
   )
 }

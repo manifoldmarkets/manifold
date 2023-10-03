@@ -94,7 +94,6 @@ export function QuestsModal(props: {
             {`🧭 ${totalQuestsCompleted}/${totalQuests}`} completed
           </span>
           <ProgressBar
-            color={'bg-indigo-500'}
             value={totalQuestsCompleted / totalQuests}
             max={1}
             className={'mb-1 w-1/2'}
