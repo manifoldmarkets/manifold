@@ -1,4 +1,5 @@
 export const newsContent = [
+  { title: 'House Speaker', slug: 'house-prepares-to-oust-speaker-mcca' },
   { title: 'Gov shutdown', slug: 'government-shutdown' },
   { title: 'Kosovo', slug: 'kosovo' },
   { title: 'Ukraine war', slug: 'war-in-ukraine' },
