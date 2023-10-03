@@ -257,9 +257,7 @@ export function NotificationFrame(props: {
         <NotificationDropdown notification={notification} />
       </div>
       <div className="-mr-2 flex w-4 items-center justify-center">
-        {highlighted && (
-          <div className="bg-highlight-blue h-3 w-3 rounded-full" />
-        )}
+        {highlighted && <div className="bg-primary-50 h-3 w-3 rounded-full" />}
       </div>
     </Row>
   )

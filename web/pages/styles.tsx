@@ -6,6 +6,7 @@ import {
 } from 'web/components/buttons/copy-link-button'
 import { Page } from 'web/components/layout/page'
 import { StarPicker } from 'web/components/reviews/stars'
+import { ColorSection } from 'web/components/styles/colors'
 import { AlertBox } from 'web/components/widgets/alert-box'
 import { AmountInput } from 'web/components/widgets/amount-input'
 import { ChoicesToggleGroup } from 'web/components/widgets/choices-toggle-group'
@@ -30,6 +31,7 @@ export default function StylePage() {
           <li>don't do anything that would make Inga scowl</li>
         </ol>
       </div>
+      <ColorSection />
       <Subtitle>Buttons</Subtitle>
       <ButtonSection />
       <Subtitle>Toggles</Subtitle>
