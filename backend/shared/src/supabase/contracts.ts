@@ -16,6 +16,7 @@ import {
 import { log } from 'shared/utils'
 import { DEEMPHASIZED_GROUP_SLUGS, isAdminId } from 'common/envs/constants'
 import { NON_PREDICTIVE_GROUP_ID } from 'common/supabase/groups'
+import { convertContract } from 'common/supabase/contracts'
 
 export const getUniqueBettorIds = async (
   contractId: string,
@@ -41,7 +42,7 @@ export const getContractsDirect = async (
   return await pg.map(
     `select data, importance_score from contracts where id in ($1:list)`,
     [contractIds],
-    (r) => ({ ...r.data, importanceScore: r.importance_score } as Contract)
+    (r) => convertContract(r)
   )
 }
 

@@ -5,7 +5,6 @@ import { first, keyBy } from 'lodash'
 import { Bet, LimitBet } from 'common/bet'
 import {
   getBettingStreakResetTimeBeforeNow,
-  getUser,
   getUserSupabase,
   getValues,
   log,
@@ -74,11 +73,9 @@ export const onCreateBet = functions
 
     const bet = change.data() as Bet
     if (bet.isChallenge) return
+    const pg = createSupabaseDirectClient()
 
-    const contracts = await getContractsDirect(
-      [contractId],
-      createSupabaseDirectClient()
-    )
+    const contracts = await getContractsDirect([contractId], pg)
     const contract = first(contracts)
     if (!contract) return
 
@@ -120,8 +117,6 @@ export const onCreateBet = functions
     // They may be selling out of a position completely, so only add them if they're buying
     if (bet.amount >= 0 && !bet.isSold)
       await addUserToContractFollowers(contractId, bettor.id)
-
-    const pg = createSupabaseDirectClient()
 
     // Follow suggestion should be before betting streak update (which updates lastBetTime)
     if (!bettor.lastBetTime && !bettor.referredByUserId)
@@ -433,7 +428,7 @@ const notifyUsersOfLimitFills = async (
   ).flat()
 
   const betUsers = await Promise.all(
-    matchedBets.map((bet) => getUser(bet.userId))
+    matchedBets.map((bet) => getUserSupabase(bet.userId))
   )
   const betUsersById = keyBy(filterDefined(betUsers), 'id')
 
