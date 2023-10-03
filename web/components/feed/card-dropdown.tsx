@@ -52,9 +52,9 @@ export function FeedDropdown(props: {
     user && {
       name: isFollowing ? `Unfollow ${creatorName}` : `Follow ${creatorName}`,
       icon: isFollowing ? (
-        <MinusCircleIcon className="h-5 w-5 text-gray-400" aria-hidden="true" />
+        <MinusCircleIcon className="h-5 w-5" aria-hidden />
       ) : (
-        <PlusCircleIcon className="h-5 w-5 text-gray-400" aria-hidden="true" />
+        <PlusCircleIcon className="h-5 w-5" aria-hidden />
       ),
       onClick: () => onFollowClick(creatorId, isFollowing, setIsFollowing),
     },
@@ -62,9 +62,9 @@ export function FeedDropdown(props: {
       toggleInteresting && {
         name: interesting ? 'Show less of this' : 'Undo show less of this',
         icon: interesting ? (
-          <TiVolumeMute className="h-5 w-5 text-gray-400" aria-hidden="true" />
+          <TiVolumeMute className="h-5 w-5" aria-hidden />
         ) : (
-          <TiVolume className="h-5 w-5 text-gray-400" aria-hidden="true" />
+          <TiVolume className="h-5 w-5" aria-hidden />
         ),
         onClick: () => markUninteresting(),
       }

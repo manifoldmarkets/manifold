@@ -23,13 +23,13 @@ export function PrizesModal(props: {
             finishing rank.
           </div>
         </Col>
-        <Col className="overflow-x-scroll px-3 sm:px-4">
-          <table className="table-auto border-collapse border border-gray-300">
+        <Col className="overflow-x-auto px-3 sm:px-4">
+          <table className="[&_*]:border-ink-200 table-auto border-collapse [&_*]:border">
             <thead>
               <tr>
-                <th className="border border-gray-300 px-4 py-2">Rank</th>
+                <th className="px-4 py-2">Rank</th>
                 {divisions.map(([, divisionName], i) => (
-                  <th key={i} className="border border-gray-300 px-4 py-2">
+                  <th key={i} className="px-4 py-2">
                     {divisionName}
                   </th>
                 ))}
@@ -42,14 +42,9 @@ export function PrizesModal(props: {
                   .length
               ).map((i) => (
                 <tr key={i}>
-                  <td className="border border-gray-300 px-4 py-2 text-center font-black">
-                    {i + 1}
-                  </td>
+                  <td className="px-4 py-2 text-center font-black">{i + 1}</td>
                   {prizesByDivisionAndRank.map((divisonPrizes, j) => (
-                    <td
-                      key={j}
-                      className="border border-gray-300 px-4 py-2 text-center"
-                    >
+                    <td key={j} className="px-4 py-2 text-center">
                       {divisonPrizes[i]}
                     </td>
                   ))}

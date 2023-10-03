@@ -104,7 +104,7 @@ export const PaymentsContent = (props: {
         </Button>
       </Row>
       {payments.length === 0 ? (
-        <span className="text-gray-500">No Payments</span>
+        <span className="text-ink-500">No Payments</span>
       ) : (
         <PaymentCards payments={payments} users={users} forUser={forUser} />
       )}
@@ -191,7 +191,7 @@ const PaymentCards = (props: {
               <span
                 className={
                   payment.fromId === payment.toId
-                    ? 'text-gray-500'
+                    ? 'text-ink-500'
                     : decreasedBalance
                     ? 'text-scarlet-500'
                     : 'text-teal-500'

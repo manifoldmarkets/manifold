@@ -117,7 +117,7 @@ export const LeagueChat = (props: {
             ))
           )}
           {messages.length === 0 && (
-            <div className="p-2 text-gray-500">
+            <div className="text-ink-500 p-2">
               No messages yet. Say something why don't ya?
             </div>
           )}

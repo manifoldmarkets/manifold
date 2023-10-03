@@ -84,25 +84,25 @@ const bountySorts = new Set(['bounty-amount'])
 
 const probSorts = new Set(['prob-descending', 'prob-ascending'])
 
-export const BOUNTY_MARKET_SORTS = SORTS.filter(
+const BOUNTY_MARKET_SORTS = SORTS.filter(
   (item) => !predictionMarketSorts.has(item.value)
 )
 
-export const POLL_SORTS = BOUNTY_MARKET_SORTS.filter(
+const POLL_SORTS = BOUNTY_MARKET_SORTS.filter(
   (item) => !bountySorts.has(item.value)
 )
 
-export const PREDICTION_MARKET_SORTS = SORTS.filter(
+const PREDICTION_MARKET_SORTS = SORTS.filter(
   (item) => !bountySorts.has(item.value) && !probSorts.has(item.value)
 )
 
-export const PREDICTION_MARKET_PROB_SORTS = SORTS.filter(
+const PREDICTION_MARKET_PROB_SORTS = SORTS.filter(
   (item) => !bountySorts.has(item.value)
 )
 
 export type Sort = typeof SORTS[number]['value']
 
-export const FILTERS = [
+const FILTERS = [
   { label: 'Any status', value: 'all' },
   { label: 'Open', value: 'open' },
   { label: 'Closing this month', value: 'closing-this-month' },
@@ -113,7 +113,7 @@ export const FILTERS = [
 
 export type Filter = typeof FILTERS[number]['value']
 
-export const CONTRACT_TYPES = [
+const CONTRACT_TYPES = [
   { label: 'Any type', value: 'ALL' },
   { label: 'Yes/No', value: 'BINARY' },
   { label: 'Multiple Choice', value: 'MULTIPLE_CHOICE' },
@@ -790,11 +790,11 @@ function ContractFilters(props: {
               selectSort
             )}
             icon={
-              <Row className=" items-center gap-0.5 ">
-                <span className="text-ink-500 whitespace-nowrap text-sm font-medium">
+              <Row className=" text-ink-500 items-center gap-0.5">
+                <span className="whitespace-nowrap text-sm font-medium">
                   {sortLabel}
                 </span>
-                <ChevronDownIcon className="h-4 w-4 text-gray-500" />
+                <ChevronDownIcon className="h-4 w-4" />
               </Row>
             }
             menuWidth={'w-36'}
@@ -807,11 +807,11 @@ function ContractFilters(props: {
           <DropdownMenu
             items={generateFilterDropdownItems(FILTERS, selectFilter)}
             icon={
-              <Row className=" items-center gap-0.5 ">
-                <span className="text-ink-500 whitespace-nowrap text-sm font-medium">
+              <Row className="text-ink-500 items-center gap-0.5">
+                <span className="whitespace-nowrap text-sm font-medium">
                   {filterLabel}
                 </span>
-                <ChevronDownIcon className="h-4 w-4 text-gray-500" />
+                <ChevronDownIcon className="h-4 w-4" />
               </Row>
             }
             menuItemsClass="left-0 right-auto"
@@ -826,11 +826,11 @@ function ContractFilters(props: {
             selectContractType
           )}
           icon={
-            <Row className=" items-center gap-0.5 ">
-              <span className="text-ink-500 whitespace-nowrap text-sm font-medium">
+            <Row className="text-ink-500 items-center gap-0.5">
+              <span className="whitespace-nowrap text-sm font-medium">
                 {contractTypeLabel}
               </span>
-              <ChevronDownIcon className="h-4 w-4 text-gray-500" />
+              <ChevronDownIcon className="h-4 w-4" />
             </Row>
           }
           menuWidth={'w-36'}
