@@ -164,15 +164,12 @@ export function ActivityLog(props: {
     <Col className={clsx('gap-4', className)}>
       {!allLoaded && <LoadingIndicator />}
       {allLoaded && (
-        <Col className="border-ink-400 divide-ink-400 divide-y-[0.5px] rounded-sm border-[0.5px]">
+        <Col className="border-ink-300 divide-ink-300 divide-y-[0.5px] rounded-sm border-[0.5px]">
           {groups.map(({ parentId, items }) => {
             const contract = contractsById[parentId] as Contract
 
             return (
-              <Col
-                key={parentId}
-                className="bg-canvas-0 focus:bg-canvas-100 lg:hover:bg-canvas-100 gap-2 px-4 py-3"
-              >
+              <Col key={parentId} className="bg-canvas-0 gap-2 px-4 py-3">
                 <ContractMention contract={contract} />
                 {items.map((item) =>
                   'amount' in item ? (

@@ -1,5 +1,4 @@
 import clsx from 'clsx'
-const GRAY_COLOR = 'bg-canvas-100 text-ink-500'
 
 export function ProfitBadge(props: {
   profitPercent: number
@@ -10,7 +9,7 @@ export function ProfitBadge(props: {
   const { profitPercent, grayColor, round, className } = props
   if (!profitPercent) return null
   const colors = grayColor
-    ? GRAY_COLOR
+    ? 'bg-ink-200 text-ink-500'
     : profitPercent > 0
     ? 'bg-teal-100 text-teal-700'
     : 'bg-scarlet-100 text-scarlet-700'

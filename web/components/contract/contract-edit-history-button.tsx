@@ -80,25 +80,27 @@ export const ContractEditHistoryButton = (props: {
         See history
       </Button>
       <Modal size={'lg'} open={showEditHistory} setOpen={setShowEditHistory}>
-        <div className={'bg-canvas-100 border-canvas-50 rounded border p-4'}>
+        <div className={'bg-canvas-50 rounded p-4'}>
           <Title>Edit history</Title>
           <Col className="gap-4">
             {edits?.map((edit, i) => (
-              <Col key={edit.id} className="bg-canvas-0 gap-2 p-2">
-                <div className="text-ink-500 text-sm">
+              <div key={edit.id}>
+                <div className="text-ink-500 mb-1 px-2 text-sm">
                   {i === edits.length - 1 ? 'Created' : 'Saved'}{' '}
                   {formatTimeShort(editTimes[i])}
                 </div>
 
-                <div className={'text-ink-1000 text-xl font-medium'}>
-                  {edit.question}
-                </div>
-                <ContractDescription contract={edit} defaultCollapse={true} />
-                <CloseOrResolveTime
-                  className="text-ink-700 text-sm"
-                  contract={edit}
-                />
-              </Col>
+                <Col className="bg-canvas-0 gap-2 rounded-lg p-2">
+                  <div className={'text-ink-1000 text-xl font-medium'}>
+                    {edit.question}
+                  </div>
+                  <ContractDescription contract={edit} defaultCollapse={true} />
+                  <CloseOrResolveTime
+                    className="text-ink-700 text-sm"
+                    contract={edit}
+                  />
+                </Col>
+              </div>
             ))}
           </Col>
         </div>

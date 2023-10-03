@@ -129,7 +129,6 @@ export default function Welcome() {
     return (
       <TopicSelectorDialog
         skippable={false}
-        opaque={false}
         trendingCategories={trendingCategories}
         userInterestedCategories={userInterestedCategories}
         userBetInCategories={userBetInCategories}
@@ -137,7 +136,7 @@ export default function Welcome() {
     )
 
   return (
-    <Modal open={open} setOpen={increasePage} bgOpaque={false} size={'lg'}>
+    <Modal open={open} setOpen={increasePage} size={'lg'}>
       <Col className="bg-canvas-0 place-content-between rounded-md px-8 py-6 text-sm md:text-lg">
         {availablePages[page]}
         <Col>

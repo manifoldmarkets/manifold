@@ -114,7 +114,7 @@ export default function BrowsePage() {
                 }}
                 useUrlParams
                 isWholePage
-                headerClassName={'bg-canvas-0 lg:bg-canvas-50 pt-0 px-2'}
+                headerClassName={'pt-0 px-2'}
                 menuButton={
                   showTopicsSidebar ? null : (
                     <Button

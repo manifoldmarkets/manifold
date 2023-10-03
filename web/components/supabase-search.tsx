@@ -464,7 +464,7 @@ const UserResults = (props: { users: UserSearchResult[] }) => {
           creatorTraders,
         }) => (
           <Link key={id} href={`/${username}`}>
-            <Row className={'hover:bg-canvas-100 p-1'}>
+            <Row className={'hover:bg-primary-100 p-1'}>
               <Col className={'w-full'}>
                 <Row className={'justify-between'}>
                   <Row className={'gap-1'}>
@@ -477,7 +477,6 @@ const UserResults = (props: { users: UserSearchResult[] }) => {
                       user={
                         { id, name, username, avatarUrl, createdTime } as User
                       }
-                      followsYou={false}
                       className={'font-normal sm:text-lg'}
                       usernameClassName={'sm:text-sm font-normal'}
                     />
@@ -514,7 +513,7 @@ const TopicResults = (props: { topics: Group[] }) => {
           key={group.id}
           href={`/browse?${TOPIC_KEY}=${group.slug}&${SEARCH_TYPE_KEY}=&${QUERY_KEY}=`}
         >
-          <Row className={'hover:bg-canvas-100 min-h-[4rem] p-1 pl-2 pt-2.5'}>
+          <Row className={'hover:bg-primary-100 min-h-[4rem] p-1 pl-2 pt-2.5'}>
             <Col className={' w-full'}>
               <span className="line-clamp-1 sm:text-lg">{group.name}</span>
               <Row className={'line-clamp-2 text-ink-500 gap-1 text-sm'}>

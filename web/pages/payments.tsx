@@ -104,9 +104,7 @@ export const PaymentsContent = (props: {
         </Button>
       </Row>
       {payments.length === 0 ? (
-        <Col className=" ">
-          <span className="text-gray-500">No Payments</span>
-        </Col>
+        <span className="text-gray-500">No Payments</span>
       ) : (
         <PaymentCards payments={payments} users={users} forUser={forUser} />
       )}
@@ -153,13 +151,10 @@ const PaymentCards = (props: {
         const decreasedBalance =
           (payment.fromId === forUser?.id) !== payment.amount < 0
         return (
-          <Col
-            key={payment.id}
-            className={'bg-canvas-100 w-full rounded-md p-2'}
-          >
+          <Col key={payment.id} className="bg-canvas-0 w-full rounded-md p-2">
             <Row className={'justify-between'}>
               {fromUser && toUser ? (
-                <Row>
+                <Row className="gap-1">
                   <Avatar
                     avatarUrl={fromUser.avatarUrl}
                     username={fromUser.username}

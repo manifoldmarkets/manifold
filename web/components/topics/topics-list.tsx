@@ -9,11 +9,6 @@ import { MdOutlineKeyboardDoubleArrowRight } from 'react-icons/md'
 import { track } from 'web/lib/service/analytics'
 import { TopicOptionsButton } from 'web/components/topics/topics-button'
 import { ForYouDropdown } from 'web/components/topics/for-you-dropdown'
-import {
-  SIDE_BAR_ITEM_HOVER_CLASS,
-  SIDEBAR_SELECTED_ITEM_CLASS,
-  SIDEBAR_UNSELECTED_ITEM_CLASS,
-} from 'web/components/nav/sidebar-item'
 import { ReactNode } from 'react'
 
 const ROW_CLASS =
@@ -141,10 +136,9 @@ const SidebarItem = (props: {
     <Row
       className={clsx(
         ROW_CLASS,
-        SIDE_BAR_ITEM_HOVER_CLASS,
         currentTopicSlug == slug
-          ? SIDEBAR_SELECTED_ITEM_CLASS
-          : SIDEBAR_UNSELECTED_ITEM_CLASS
+          ? 'bg-ink-200 text-ink-900'
+          : 'text-ink-600 hover:bg-primary-50'
       )}
       onClick={() => {
         if (currentTopicSlug !== slug) track('select topics item', { slug })

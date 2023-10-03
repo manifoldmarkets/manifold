@@ -17,14 +17,12 @@ import { leaveGroup } from 'web/lib/supabase/groups'
 
 export function TopicSelectorDialog(props: {
   skippable: boolean
-  opaque: boolean
   trendingCategories: Group[]
   userInterestedCategories: Group[]
   userBetInCategories: Group[]
 }) {
   const {
     skippable,
-    opaque,
     userInterestedCategories,
     trendingCategories,
     userBetInCategories,
@@ -93,7 +91,6 @@ export function TopicSelectorDialog(props: {
       setOpen={skippable ? closeDialog : noop}
       className="bg-canvas-0 overflow-hidden rounded-md"
       size={'lg'}
-      bgOpaque={opaque}
     >
       <Col className="h-[32rem] overflow-y-auto">
         <div className="bg-canvas-0 sticky top-0 py-4 px-5">
