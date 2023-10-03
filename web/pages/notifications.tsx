@@ -328,7 +328,6 @@ function NotificationGroupItem(props: {
     (n) =>
       n.reason === 'quest_payout' || n.sourceType === 'betting_streak_bonus'
   )
-  console.log({ questNotifs })
   const header = (
     <ParentNotificationHeader
       header={
