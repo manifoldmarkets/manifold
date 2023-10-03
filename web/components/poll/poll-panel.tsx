@@ -134,7 +134,7 @@ export function SeeVotesButton(props: {
         </Tooltip>
       )}
       <button
-        className="disabled:text-ink-900/60 disabled:pointer-none group whitespace-nowrap transition-colors hover:text-indigo-800 disabled:cursor-not-allowed hover:dark:text-indigo-300"
+        className="disabled:text-ink-900/60 disabled:pointer-none hover:text-primary-700 group whitespace-nowrap transition-colors disabled:cursor-not-allowed"
         onClick={(e) => {
           e.preventDefault()
           setOpen(true)

@@ -22,7 +22,7 @@ export function TopicTag(props: {
   return (
     <Row
       className={clsx(
-        'text-ink-500 dark:text-ink-400 hover:text-ink-600 hover:bg-primary-400/10 group items-center gap-1' +
+        'text-ink-400 hover:text-ink-600 hover:bg-primary-400/10 group items-center gap-1' +
           'whitespace-nowrap rounded px-1 py-0.5 text-right text-sm transition-colors',
         className
       )}

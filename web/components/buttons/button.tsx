@@ -56,10 +56,7 @@ export function buttonClass(size: SizeType, color: ColorType | 'none') {
       'text-yellow-500 hover:bg-yellow-500',
     ],
     color === 'blue' && [solid, 'bg-blue-400 hover:bg-blue-500'],
-    color === 'indigo' && [
-      solid,
-      'bg-primary-500 hover:bg-primary-600 enabled:hover:dark:bg-indigo-500',
-    ],
+    color === 'indigo' && [solid, 'bg-primary-500 hover:bg-primary-600'],
     color === 'indigo-outline' && [
       outline,
       'text-primary-500 hover:bg-primary-500',
