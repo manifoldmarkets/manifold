@@ -12,6 +12,7 @@ import { RelativeTimestampNoTooltip } from '../relative-timestamp'
 import { truncateText } from '../widgets/truncate'
 import NotificationDropdown from './notification-dropdown'
 import { groupBy } from 'lodash'
+import { SparklesIcon } from '@heroicons/react/solid'
 
 const notification_base_style = 'relative text-sm transition-colors'
 export const NESTED_NOTIFICATION_STYLE = clsx(
@@ -28,7 +29,7 @@ export const NOTIFICATION_STYLE = clsx(
 )
 export const NOTIFICATIONS_PER_PAGE = 30
 function getHighlightClass(highlight: boolean) {
-  return highlight ? 'text-ink-1000 bg-canvas-0' : 'text-ink-800'
+  return highlight ? 'text-ink-1000 bg-primary-50' : 'text-ink-800'
 }
 export const NUM_SUMMARY_LINES = 3
 
@@ -183,19 +184,23 @@ export function NotificationFrame(props: {
         <Col className="w-fit">{icon}</Col>
         <Col className="font w-full">
           <span>{children}</span>
-          <div className="mt-1 line-clamp-3 text-xs md:text-sm">{subtitle}</div>
+          <div className="line-clamp-3 mt-1 text-xs md:text-sm">{subtitle}</div>
           {isMobile && (
-            <div className="w-fit">
+            <Row className="mt-1 items-center gap-1 self-end">
+              {highlighted && (
+                <SparklesIcon className="text-primary-600 h-4 w-4" />
+              )}
               <RelativeTimestampNoTooltip
                 time={notification.createdTime}
                 className="text-xs"
               />
-            </div>
+            </Row>
           )}
         </Col>
       </Row>
       {!isMobile && (
-        <Row className="mx-1 w-40 justify-end">
+        <Row className="mx-1 w-40 items-center justify-end gap-1">
+          {highlighted && <SparklesIcon className="text-primary-600 h-4 w-4" />}
           <RelativeTimestampNoTooltip
             time={notification.createdTime}
             className="text-xs"
@@ -245,12 +250,8 @@ export function NotificationFrame(props: {
         </Col>
       )}
 
-      {/* frame end */}
       <div className="self-start">
         <NotificationDropdown notification={notification} />
-      </div>
-      <div className="-mr-2 flex w-4 items-center justify-center">
-        {highlighted && <div className="bg-primary-600 h-3 w-3 rounded-full" />}
       </div>
     </Row>
   )
