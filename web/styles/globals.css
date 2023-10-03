@@ -8,21 +8,22 @@
   }
   :root {
     --color-ink-0: 255 255 255;
-    --color-ink-50: 251 251 255;
-    --color-ink-100: 244 244 251;
-    --color-ink-200: 231 231 244;
-    --color-ink-300: 216 216 235;
-    --color-ink-400: 177 177 199;
-    --color-ink-500: 145 145 167;
-    --color-ink-600: 102 102 124;
-    --color-ink-700: 74 74 104;
-    --color-ink-800: 45 45 84;
-    --color-ink-900: 17 17 64;
+    --color-ink-50: 248 248 252;
+    --color-ink-100: 236 237 248;
+    --color-ink-200: 221 222 238;
+    --color-ink-300: 194 195 219;
+    --color-ink-400: 158 159 189;
+    --color-ink-500: 118 118 147;
+    --color-ink-600: 86 86 118;
+    --color-ink-700: 61 61 92;
+    --color-ink-800: 39 39 73;
+    --color-ink-900: 22 21 55;
+    --color-ink-950: 10 8 43;
     --color-ink-1000: 0 0 0;
 
-    --color-canvas-0: 253 255 255;
-    --color-canvas-50: 255 248 249;
-    --color-canvas-100: 240 240 245;
+    --color-canvas-0: 253 254 255;
+    --color-canvas-50: 244 243 251;
+    --color-canvas-100: 210 212 224;
 
     --color-primary-50: 238 242 255;
     --color-primary-100: 224 231 255;
@@ -62,16 +63,17 @@
   }
   .dark {
     --color-ink-1000: 255 255 255;
-    --color-ink-900: 251 251 255;
-    --color-ink-800: 244 244 251;
-    --color-ink-700: 231 231 244;
-    --color-ink-600: 216 216 235;
-    --color-ink-500: 177 177 199;
-    --color-ink-400: 145 145 167;
-    --color-ink-300: 102 102 124;
-    --color-ink-200: 74 74 104;
-    --color-ink-100: 45 45 84;
-    --color-ink-50: 17 17 64;
+    --color-ink-950: 248 248 252;
+    --color-ink-900: 236 237 248;
+    --color-ink-800: 221 222 238;
+    --color-ink-700: 194 195 219;
+    --color-ink-600: 158 159 189;
+    --color-ink-500: 118 118 147;
+    --color-ink-400: 86 86 118;
+    --color-ink-300: 61 61 92;
+    --color-ink-200: 39 39 73;
+    --color-ink-100: 22 21 55;
+    --color-ink-50: 10 8 43;
     --color-ink-0: 0 0 0;
 
     --color-canvas-0: 30 41 59;

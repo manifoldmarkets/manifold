@@ -25,7 +25,6 @@ export const ColorSection = () => {
           <Swatch color="bg-canvas-100" />
         </Section>
         <Section label="Ink">
-          <Swatch color="bg-ink-0" />
           <Swatch color="bg-ink-50" />
           <Swatch color="bg-ink-100" />
           <Swatch color="bg-ink-200" />
@@ -36,10 +35,9 @@ export const ColorSection = () => {
           <Swatch color="bg-ink-700" />
           <Swatch color="bg-ink-800" />
           <Swatch color="bg-ink-900" />
-          <Swatch color="bg-ink-1000" />
+          <Swatch color="bg-ink-950" />
         </Section>
         <Section label="Gray">
-          <Swatch color="bg-white" label="white" />
           <Swatch color="bg-gray-50" />
           <Swatch color="bg-gray-100" />
           <Swatch color="bg-gray-200" />
@@ -107,6 +105,8 @@ export const ColorSection = () => {
         <Section label="Misc">
           <Swatch color="bg-warning" label="warning" />
           <Swatch color="bg-error" label="error" />
+          <Swatch color="bg-ink-0" label="ink-0" />
+          <Swatch color="bg-ink-1000" label="ink-1000" />
         </Section>
       </div>
     </>
@@ -120,7 +120,7 @@ const Section = (props: { label: string; children: ReactNode }) => {
       <div className="text-ink-900 text-sm font-semibold 2xl:col-end-1 2xl:pt-2.5">
         {label}
       </div>
-      <div className="mt-3 grid grid-cols-6 gap-x-2 sm:mt-2 sm:grid-cols-12 2xl:mt-0">
+      <div className="mt-3 grid grid-cols-6 gap-x-2 sm:mt-2 sm:grid-cols-11 2xl:mt-0">
         {children}
       </div>
     </div>
@@ -142,9 +142,7 @@ const Swatch = (props: { color: string; label?: string }) => {
       className="cursor-pointer"
     >
       <div className={clsx('mb-1 h-10 rounded', color)} />
-      <div className="text-ink-900 w-6 text-xs font-medium 2xl:w-full">
-        {label}
-      </div>
+      <div className="text-ink-900 text-xs font-medium">{label}</div>
     </div>
   )
 }
