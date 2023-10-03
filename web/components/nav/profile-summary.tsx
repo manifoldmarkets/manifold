@@ -22,12 +22,14 @@ export function ProfileSummary(props: { user: User; className?: string }) {
       href={`/${user.username}`}
       onClick={trackCallback('sidebar: profile')}
       className={clsx(
-        'text-ink-700 hover:bg-primary-100 hover:text-ink-900 group flex flex-shrink-0 flex-row items-center gap-4 rounded-md py-3',
+        'text-ink-700 hover:bg-primary-100 hover:text-ink-900 group flex w-full shrink-0 flex-row items-center truncate rounded-md py-3',
         className
       )}
     >
+      <div className="w-2 shrink" />
       <Avatar avatarUrl={user.avatarUrl} username={user.username} noLink />
-      <div className="truncate">
+      <div className="mr-1 w-2 shrink-[2]" />
+      <div className="shrink-0 grow">
         <div>{user.name}</div>
         <div className="flex items-center text-sm">
           <span className="mr-2">
@@ -46,6 +48,7 @@ export function ProfileSummary(props: { user: User; className?: string }) {
           <AddFundsModal open={buyModalOpen} setOpen={setBuyModalOpen} />
         </div>
       </div>
+      <div className="w-2 shrink" />
     </Link>
   )
 }
