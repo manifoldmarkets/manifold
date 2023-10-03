@@ -66,14 +66,14 @@ export const RelatedContractsCarousel = memo(
             return (
               <Col key={contract.id} className="snap-start gap-2">
                 <RelatedContractCard
-                  className="min-w-[300px] rounded border"
+                  className="border-ink-300 min-w-[300px] rounded-xl border-2"
                   contract={contract}
                   onContractClick={onContractClick}
                   twoLines
                 />
                 {secondContract && (
                   <RelatedContractCard
-                    className="min-w-[300px] rounded border"
+                    className="border-ink-300 min-w-[300px] rounded-xl border-2"
                     contract={secondContract}
                     onContractClick={onContractClick}
                     twoLines
@@ -103,45 +103,46 @@ const RelatedContractCard = memo(function RelatedContractCard(props: {
     contract
 
   return (
-    <Col
+    <Link
       className={clsx(
-        'group relative gap-2 whitespace-nowrap rounded-sm py-3 px-4',
-        'bg-canvas-0 focus:bg-ink-300/30 lg:hover:bg-ink-300/30 transition-colors',
+        'whitespace-nowrap py-3 px-4 outline-none',
+        'bg-canvas-0 focus:bg-ink-200 lg:hover:bg-ink-200 transition-colors',
         className
       )}
+      href={contractPath(contract)}
+      onClick={() => onContractClick?.(contract)}
     >
-      <Link
-        href={contractPath(contract)}
-        className="absolute top-0 left-0 h-full w-full"
-        onClick={() => onContractClick?.(contract)}
-      />
-      <div>
-        <span
-          className={clsx(
-            'break-anywhere whitespace-normal font-medium',
-            twoLines ? 'line-clamp-2' : 'line-clamp-3'
-          )}
-        >
-          {question}
-        </span>
+      <div
+        className={clsx(
+          'break-anywhere mb-2 whitespace-normal font-medium',
+          twoLines ? 'line-clamp-2' : 'line-clamp-3'
+        )}
+      >
+        {question}
       </div>
-      <Row className="z-10 gap-2">
-        <Avatar
-          username={creatorUsername}
-          avatarUrl={creatorAvatarUrl}
-          size="xs"
-        />
-        <UserLink
-          name={contract.creatorName}
-          username={contract.creatorUsername}
-          className="text-ink-400 text-sm"
-          createdTime={creatorCreatedTime}
-        />
+      <Row className="w-full items-end justify-between">
+        <Row className="items-center gap-2">
+          <Avatar
+            username={creatorUsername}
+            avatarUrl={creatorAvatarUrl}
+            size="xs"
+            noLink
+          />
+          <UserLink
+            name={contract.creatorName}
+            username={contract.creatorUsername}
+            className="text-ink-400 text-sm"
+            createdTime={creatorCreatedTime}
+            noLink
+          />
+        </Row>
 
-        <div className="ml-auto font-semibold">
-          <ContractStatusLabel contract={contract} chanceLabel />
-        </div>
+        <ContractStatusLabel
+          contract={contract}
+          chanceLabel
+          className="font-semibold"
+        />
       </Row>
-    </Col>
+    </Link>
   )
 })
