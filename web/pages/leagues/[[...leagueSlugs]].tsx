@@ -345,10 +345,8 @@ function LeaguesInnerPage(props: {
 
   const leagueChannelId = getLeagueChatChannelId(season, division, cohort)
 
-  const [containerRef, setContainerRef] = useState<HTMLDivElement | null>(null)
   return (
     <>
-      <div className={'h-0'} ref={setContainerRef} />
       <QueryUncontrolledTabs
         trackingName="league tabs"
         labelClassName={'!pb-3 !pt-0'}
@@ -377,7 +375,6 @@ function LeaguesInnerPage(props: {
               />
             ),
           },
-
           {
             title: 'Activity',
             content: <LeagueFeed season={season} cohort={cohort} />,
@@ -387,13 +384,7 @@ function LeaguesInnerPage(props: {
             inlineTabIcon: showNotif && (
               <ChatIcon className="h-5 w-5 text-blue-600" />
             ),
-            content: (
-              <LeagueChat
-                user={user}
-                channelId={leagueChannelId}
-                offsetTop={(containerRef?.offsetTop ?? 0) + 47}
-              />
-            ),
+            content: <LeagueChat user={user} channelId={leagueChannelId} />,
           },
         ]}
       />

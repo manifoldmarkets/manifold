@@ -4,18 +4,15 @@ import { useEffect, useState, useMemo } from 'react'
 import { track } from 'web/lib/service/analytics'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { forEach, last } from 'lodash'
-import { useWindowSize } from 'web/hooks/use-window-size'
 import { useIsAuthorized } from 'web/hooks/use-user'
 import { ChatMessage } from 'common/chat-message'
 import { useTextEditor } from 'web/components/widgets/editor'
 import { createChatMessage } from 'web/lib/firebase/api'
 import { ChatMessageItem } from 'web/components/chat-message'
-import { Avatar } from 'web/components/widgets/avatar'
 import { CommentInputTextArea } from 'web/components/comments/comment-input'
 import { useRealtimeChatsOnLeague } from 'web/hooks/use-chats'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { MINUTE_MS } from 'common/util/time'
-import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { run } from 'common/supabase/utils'
 import { db } from 'web/lib/supabase/db'
 import { useIsVisible } from 'web/hooks/use-is-visible'
@@ -23,9 +20,8 @@ import { useIsVisible } from 'web/hooks/use-is-visible'
 export const LeagueChat = (props: {
   user: User | null | undefined
   channelId: string
-  offsetTop?: number
 }) => {
-  const { user, offsetTop, channelId } = props
+  const { user, channelId } = props
   const [visible, setVisible] = useState(false)
   const authed = useIsAuthorized()
   const realtimeMessages = useRealtimeChatsOnLeague(channelId, 100)
@@ -44,15 +40,6 @@ export const LeagueChat = (props: {
     useState<HTMLDivElement | null>(null)
   const [scrollerRef, setScrollerRef] = useState<HTMLDivElement | null>(null)
   const [replyToUser, setReplyToUser] = useState<any>()
-
-  const { height } = useWindowSize()
-  const isMobile = useIsMobile()
-  // Subtract bottom bar when it's showing (less than lg screen)
-  const bottomBarHeight = isMobile ? 60 : 0
-  const remainingHeight = (height ?? 0) - (offsetTop || 320) - bottomBarHeight
-  useEffect(() => {
-    if (isMobile) focusInput()
-  }, [isMobile])
 
   // array of groups, where each group is an array of messages that are displayed as one
   const groupedMessages = useMemo(() => {
@@ -104,22 +91,14 @@ export const LeagueChat = (props: {
     editor.commands.clearContent()
     setIsSubmitting(false)
     setReplyToUser(undefined)
-    focusInput()
-  }
-  function focusInput() {
-    editor?.commands.focus()
+    editor?.commands?.focus()
   }
 
   return (
     <>
-      <div ref={ref} className={'h-1'} />
-      <Col style={{ height: remainingHeight }}>
-        <Col
-          ref={setScrollerRef}
-          className={
-            'h-full w-full space-y-1 overflow-x-hidden overflow-y-scroll pt-1'
-          }
-        >
+      <div ref={ref} />
+      <Col className="w-full">
+        <Col ref={setScrollerRef} className={'gap-2 pb-2'}>
           {realtimeMessages === undefined ? (
             <LoadingIndicator />
           ) : (
@@ -144,25 +123,16 @@ export const LeagueChat = (props: {
           )}
         </Col>
         {user && (
-          <div className="flex w-full justify-start gap-2 p-2">
-            <div className="mt-1 hidden sm:block">
-              <Avatar
-                username={user?.username}
-                avatarUrl={user?.avatarUrl}
-                size={'sm'}
-              />
-            </div>
-            <div className={'flex-1'}>
-              <CommentInputTextArea
-                editor={editor}
-                user={user}
-                submit={submitMessage}
-                isSubmitting={isSubmitting}
-                size={'xs'}
-                replyTo={replyToUser}
-                submitOnEnter={true}
-              />
-            </div>
+          <div className="bg-canvas-50 sticky bottom-[56px] flex w-full justify-start gap-2 pb-1 lg:bottom-0">
+            <CommentInputTextArea
+              editor={editor}
+              user={user}
+              submit={submitMessage}
+              isSubmitting={isSubmitting}
+              size={'xs'}
+              replyTo={replyToUser}
+              submitOnEnter={true}
+            />
           </div>
         )}
       </Col>
