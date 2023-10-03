@@ -124,3 +124,31 @@ export const convertContract = (
     // importance_score is only updated in Supabase
     importanceScore: c.importance_score,
   } as Contract)
+
+export const followContract = async (
+  db: SupabaseClient,
+  contractId: string,
+  userId: string
+) => {
+  return db.from('contract_follows').upsert({
+    contract_id: contractId,
+    follow_id: userId,
+    data: {
+      createdTime: Date.now(),
+      id: userId,
+    },
+    fs_updated_time: new Date().toISOString(),
+  })
+}
+
+export const unfollowContract = async (
+  db: SupabaseClient,
+  contractId: string,
+  userId: string
+) => {
+  return db
+    .from('contract_follows')
+    .delete()
+    .eq('contract_id', contractId)
+    .eq('follow_id', userId)
+}
