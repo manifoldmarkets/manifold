@@ -141,74 +141,44 @@ export function CalibrationChart(props: {
   const px = (p: Point) => xScale(p.x)
   const py = (p: Point) => yScale(p.y)
 
-  const [tooltip, setTooltip] = useState<Point | null>(null)
+  const [point, setPoint] = useState<Point | null>(null)
 
   return (
-    <SVGChart w={width} h={height} xAxis={xAxis} yAxis={yAxis}>
+    <SVGChart
+      w={width}
+      h={height}
+      xAxis={xAxis}
+      yAxis={yAxis}
+      ttParams={point ? { x: px(point), y: py(point), point } : undefined}
+      Tooltip={({ point }) => {
+        return (
+          <div>
+            ({formatPct(point.x)}, {formatPct(point.y)})
+          </div>
+        )
+      }}
+    >
       {/* points */}
       {points.map((p, i) => (
         <circle
           key={i}
           cx={px(p)}
           cy={py(p)}
-          r={10}
-          className="fill-indigo-700 dark:fill-indigo-100"
-          onMouseEnter={() => setTooltip(p)}
-          onMouseLeave={() => setTooltip(null)}
+          r={6}
+          className="fill-primary-700"
+          onMouseEnter={() => setPoint(p)}
+          onMouseLeave={() => setPoint(null)}
           style={{ cursor: 'pointer' }}
         />
       ))}
-      {/* tooltip */}
-      {tooltip && (
-        <>
-          {tooltip.x > 0.9 ? (
-            <>
-              <rect
-                x={px(tooltip) - 110}
-                y={py(tooltip) - 10}
-                width={100}
-                height={20}
-                fill="white"
-                style={{ zIndex: 100 }}
-              />
-              <text
-                x={px(tooltip) - 60}
-                y={py(tooltip) + 5}
-                textAnchor="middle"
-                style={{ fill: 'blue', zIndex: 100 }}
-              >
-                ({formatPct(tooltip.x)}, {formatPct(tooltip.y)})
-              </text>
-            </>
-          ) : (
-            <>
-              <rect
-                x={px(tooltip) - 30}
-                y={py(tooltip) - 25}
-                width={100}
-                height={20}
-                fill="white"
-                style={{ zIndex: 100 }}
-              />
-              <text
-                x={px(tooltip)}
-                y={py(tooltip) - 10}
-                textAnchor="bottom"
-                style={{ fill: 'blue', zIndex: 100 }}
-              >
-                ({formatPct(tooltip.x)}, {formatPct(tooltip.y)})
-              </text>
-            </>
-          )}
-        </>
-      )}
+
       {/* line x = y */}
       <line
         x1={xScale(0)}
         y1={yScale(0)}
         x2={xScale(1)}
         y2={yScale(1)}
-        stroke="rgb(99 102 241)"
+        className="stroke-primary-800"
         strokeWidth={1}
         strokeDasharray="4 8"
       />
