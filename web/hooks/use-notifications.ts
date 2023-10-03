@@ -147,10 +147,11 @@ function groupGeneralNotifications(
 
   const groupedNotificationsByDayAndContract = groupBy(
     sortedNotifications.filter((n) => !except.includes(n.reason)),
-    (notification) =>
-      new Date(notification.createdTime).toDateString() +
-      notification.sourceContractId +
-      notification.sourceTitle
+    (n) =>
+      new Date(n.createdTime).toDateString() +
+      (n.sourceType === 'betting_streak_bonus' || n.reason === 'quest_payout'
+        ? 'quest_payout'
+        : n.sourceTitle ?? n.sourceContractId ?? '')
   )
   const mostRecentNotification = first(sortedNotifications)
   const groupedNotifications = groupNotifications(

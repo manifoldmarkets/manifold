@@ -20,6 +20,7 @@ import { Bet } from 'common/bet'
 import { floatingEqual } from 'common/util/math'
 import { noFees } from 'common/fees'
 import { getCpmmInitialLiquidity } from 'common/antes'
+import { addUserToContractFollowers } from 'shared/follow-market'
 
 const bodySchema = z.object({
   contractId: z.string().max(MAX_ANSWER_LENGTH),
@@ -288,7 +289,7 @@ export const createanswercpmm = authEndpoint(async (req, auth) => {
 
     return newAnswer.id
   })
-
+  await addUserToContractFollowers(contractId, auth.uid)
   const answers = await convertOtherAnswerShares(contractId, newAnswerId)
 
   return { answer: answers.find((a) => a.id === newAnswerId)!, answers }

@@ -1,18 +1,23 @@
-import { CPMMContract, Contract, Visibility } from 'common/contract'
+import { Contract, CPMMContract, Visibility } from 'common/contract'
 import {
-  SupabaseClient,
   millisToTs,
   run,
-  selectJson,
   selectFrom,
+  selectJson,
+  SupabaseClient,
   Tables,
 } from 'common/supabase/utils'
 import { filterDefined } from 'common/util/array'
-import { ContractTypeType, Sort, Filter } from 'web/components/supabase-search'
-import { SearchState } from 'web/components/supabase-search'
+import {
+  ContractTypeType,
+  Filter,
+  SearchState,
+  Sort,
+} from 'web/components/supabase-search'
 import { supabaseSearchContracts } from '../firebase/api'
 import { db } from './db'
 import { chunk, flatten, keyBy } from 'lodash'
+import { convertContract } from 'common/supabase/contracts'
 
 // A function to retrieve all contracts a user has bet on.
 export async function getUserBetContracts(
@@ -374,14 +379,6 @@ export async function getIsPrivateContractMember(
   })
   return data as boolean | null
 }
-export const convertContract = (
-  c: { data: any } & { importance_score: number | null }
-) =>
-  ({
-    ...(c.data as Contract),
-    // importance_score is only updated in Supabase
-    importanceScore: c.importance_score,
-  } as Contract)
 
 export const getTrendingContracts = async (limit: number) => {
   return await db

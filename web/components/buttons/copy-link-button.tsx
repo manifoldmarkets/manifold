@@ -78,7 +78,7 @@ export function CopyLinkOrShareButton(props: {
         ) : (
           <LinkIcon
             strokeWidth={'2.5'}
-            className={clsx(iconClassName ?? 'h-[1.2rem]')}
+            className={clsx(iconClassName ?? 'h-[1.1rem]')}
             aria-hidden="true"
           />
         )}

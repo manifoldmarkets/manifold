@@ -17,17 +17,9 @@ export const WatchMarketModal = (props: {
         <Col className={'gap-2'}>
           <span className={'text-primary-700'}>• What is watching?</span>
           <span className={'ml-2'}>
-            Watching a question means you'll receive notifications from activity
-            on it. You automatically start watching a question if you comment on
-            it, bet on it, or click the watch button.
-          </span>
-          <span className={'text-primary-700'}>
-            • What types of notifications will I receive?
-          </span>
-          <span className={'ml-2'}>
-            New comments, answers, and updates to the question. See the
-            notifications settings pages to customize which types of
-            notifications you receive on watched questions.
+            Watching a question means you'll receive a notification when it
+            resolves. You automatically start watching a question if you comment
+            on it, bet on it, or click the watch button.
           </span>
         </Col>
       </Col>

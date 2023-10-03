@@ -123,40 +123,21 @@ const queryForFeedRows = async (
       )
       .flat()
   )
-
-  const queriesByType: { dataTypes: FEED_DATA_TYPES[]; limit: number }[] = [
-    {
-      dataTypes: ['contract_probability_changed', 'trending_contract'],
-      limit: 15,
-    },
-    { dataTypes: ['new_comment'], limit: 10 },
-    { dataTypes: ['new_subsidy', 'news_with_related_contracts'], limit: 10 },
-    { dataTypes: ['new_contract'], limit: 10 },
-    { dataTypes: ['user_position_changed'], limit: 5 },
-  ]
-  const results = await Promise.all(
-    queriesByType.map(async (q) => {
-      let query = baseQuery(userId, privateUser, ignoreContractIds, q.limit).in(
-        'data_type',
-        q.dataTypes
-      )
-      if (options.time === 'new') {
-        query = query.gt('created_time', newestCreatedTimestamp)
-      } else if (options.time === 'old') {
-        query = query.lt('created_time', newestCreatedTimestamp)
-        if (options.allowSeen) {
-          // We don't want the same top cards over and over when we've run out of new cards,
-          // instead it should be the most recently seen items first
-          query = query.order('seen_time', { ascending: false })
-        } else {
-          query = query.is('seen_time', null)
-        }
-      }
-      const data = await query
-      return data.data
-    })
-  )
-  return filterDefined(results.flat())
+  let query = baseQuery(userId, privateUser, ignoreContractIds, 50)
+  if (options.time === 'new') {
+    query = query.gt('created_time', newestCreatedTimestamp)
+  } else if (options.time === 'old') {
+    query = query.lt('created_time', newestCreatedTimestamp)
+    if (options.allowSeen) {
+      // We don't want the same top cards over and over when we've run out of new cards,
+      // instead it should be the most recently seen items first
+      query = query.order('seen_time', { ascending: false })
+    } else {
+      query = query.is('seen_time', null)
+    }
+  }
+  const results = await query
+  return filterDefined(results.data?.map((d) => d as Row<'user_feed'>) ?? [])
 }
 export const useFeedTimeline = (
   user: User | null | undefined,

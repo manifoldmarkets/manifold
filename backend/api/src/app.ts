@@ -86,6 +86,7 @@ import { getyourfolloweddashboards } from './get-your-followed-dashboards'
 import { updatedashboard } from './update-dashboard'
 import { getdashboardfromslug } from './get-dashboard-from-slug'
 import { unresolve } from './unresolve'
+import { referuser } from 'api/refer-user'
 
 const allowCors: RequestHandler = cors({
   origin: [CORS_ORIGIN_MANIFOLD, CORS_ORIGIN_VERCEL, CORS_ORIGIN_LOCALHOST],
@@ -193,6 +194,7 @@ app.post('/buyportfolio', ...apiRoute(buyportfolio))
 app.post('/searchgiphy', ...apiRoute(searchgiphy))
 app.post('/manachantweet', ...apiRoute(manachantweet))
 app.post('/send-mana', ...apiRoute(sendmana))
+app.post('/refer-user', ...apiRoute(referuser))
 app.post('/leave-review', ...apiRoute(leavereview))
 app.post(
   '/get-user-contract-metrics-with-contracts',

@@ -86,7 +86,7 @@ export function TopicsList(props: {
           setCurrentTopicSlug={setCurrentTopicSlug}
           optionsItem={
             <ForYouDropdown
-              setCurrentCategory={setCurrentTopicSlug}
+              setCurrentTopic={setCurrentTopicSlug}
               user={user}
               yourGroups={yourGroups}
               className={clsx(

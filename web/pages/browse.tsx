@@ -33,6 +33,7 @@ import clsx from 'clsx'
 import { usePersistentQueryState } from 'web/hooks/use-persistent-query-state'
 import { QuestionsTopicTitle } from 'web/components/topics/questions-topic-title'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import { useHeaderIsStuck } from 'web/hooks/use-header-is-stuck'
 
 export const SHOW_TOPICS_TERM = 'show-topics'
 
@@ -78,11 +79,15 @@ export default function BrowsePage() {
 
   const topics = buildArray(topicsFromRouter, topicsByImportance)
   const currentTopic = topics.find((t) => t.slug === topicSlug)
+  const { ref, headerStuck } = useHeaderIsStuck()
 
   return (
     <>
       {user && <Welcome />}
-      <Page trackPageView={'questions page'} className="lg:col-span-10">
+      <Page
+        trackPageView={'questions page'}
+        className="bg-canvas-0 lg:bg-canvas-50 lg:col-span-10"
+      >
         <SEO
           title={`${currentTopic?.name ?? 'Browse'}`}
           description={`Browse ${currentTopic?.name ?? 'all'} questions`}
@@ -90,12 +95,14 @@ export default function BrowsePage() {
             currentTopic ? `?${TOPIC_KEY}=${currentTopic.slug}` : ''
           }`}
         />
-        <QuestionsTopicTitle
-          currentTopic={currentTopic}
-          topicSlug={topicSlug}
-          user={user}
-        />
-        <Col className={'w-full'}>
+        <Col className={'w-full px-2'}>
+          <QuestionsTopicTitle
+            currentTopic={currentTopic}
+            topicSlug={topicSlug}
+            user={user}
+            setTopicSlug={setTopicSlug}
+            ref={ref}
+          />
           <Row className={'lg:grid lg:grid-cols-12'}>
             <Col className={clsx('relative w-full lg:col-span-8')}>
               <SupabaseSearch
@@ -114,6 +121,7 @@ export default function BrowsePage() {
                 }}
                 useUrlParams
                 isWholePage
+                showTopicTag={headerStuck}
                 headerClassName={'pt-0 px-2'}
                 menuButton={
                   showTopicsSidebar ? null : (
@@ -133,6 +141,7 @@ export default function BrowsePage() {
                 rowBelowFilters={
                   isMobile && (
                     <BrowseTopicPills
+                      className={'relative w-full pb-1 sm:hidden'}
                       topics={topics}
                       currentTopicSlug={topicSlug}
                       setTopicSlug={(slug) =>

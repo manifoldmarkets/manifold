@@ -92,6 +92,7 @@ import { pointsToBase64 } from 'common/util/og'
 import { removeUndefinedProps } from 'common/util/object'
 import { getUser } from 'web/lib/supabase/user'
 import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
+import { useHeaderIsStuck } from 'web/hooks/use-header-is-stuck'
 
 export async function getStaticProps(ctx: {
   params: { username: string; contractSlug: string }
@@ -399,18 +400,7 @@ export function ContractPageContent(props: {
   )
 
   // detect whether header is stuck by observing if title is visible
-  const titleRef = useRef<any>(null)
-  const [headerStuck, setStuck] = useState(false)
-  useEffect(() => {
-    const element = titleRef.current
-    if (!element) return
-    const observer = new IntersectionObserver(
-      ([e]) => setStuck(e.intersectionRatio < 1),
-      { threshold: 1 }
-    )
-    observer.observe(element)
-    return () => observer.unobserve(element)
-  }, [titleRef])
+  const { ref: titleRef, headerStuck } = useHeaderIsStuck()
 
   const showExplainerPanel =
     user === null ||

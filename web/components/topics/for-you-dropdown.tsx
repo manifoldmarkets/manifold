@@ -30,12 +30,12 @@ import { updatePrivateUser } from 'web/lib/firebase/users'
 import router from 'next/router'
 
 export const ForYouDropdown = (props: {
-  setCurrentCategory: (categorySlug: string) => void
+  setCurrentTopic: (topicSlug: string) => void
   user: User
   yourGroups: Group[] | undefined
   className?: string
 }) => {
-  const { yourGroups, user, setCurrentCategory, className } = props
+  const { yourGroups, user, setCurrentTopic, className } = props
   const [showEditingBlockedTopics, setShowEditingBlockedTopics] =
     useState(false)
   const [showCreateGroup, setShowCreateGroup] = useState(false)
@@ -89,7 +89,7 @@ export const ForYouDropdown = (props: {
           user={user}
           setShow={setShowFollowedTopics}
           show={showFollowedTopics}
-          setCurrentCategory={setCurrentCategory}
+          setCurrentCategory={setCurrentTopic}
           groups={yourGroups}
         />
       )}
