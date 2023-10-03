@@ -21,7 +21,7 @@ export const useSaveReferral = (
 
     const referrerOrDefault = referrer || options?.defaultReferrerUsername
 
-    if (!user && router.isReady && referrerOrDefault) {
+    if (user === null && router.isReady && referrerOrDefault) {
       writeReferralInfo(referrerOrDefault, {
         contractId: options?.contractId,
         explicitReferrer: referrer,

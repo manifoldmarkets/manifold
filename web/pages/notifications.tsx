@@ -339,6 +339,8 @@ function NotificationGroupItem(props: {
               truncatedLength={'xl'}
             />
           </>
+        ) : notifications.some((n) => n.reason === 'onboarding_flow') ? (
+          <span>Welcome to Manifold</span>
         ) : (
           <span>
             Other activity from {uniques} user{uniques > 1 ? 's' : ''}

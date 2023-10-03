@@ -140,7 +140,7 @@ const QUERY_KEY = 'q'
 export const SORT_KEY = 's'
 const FILTER_KEY = 'f'
 const CONTRACT_TYPE_KEY = 'ct'
-const SEARCH_TYPE_KEY = 't'
+export const SEARCH_TYPE_KEY = 't'
 
 export type SupabaseAdditionalFilter = {
   creatorId?: string
@@ -220,10 +220,27 @@ export function SupabaseSearch(props: {
   const searchTypeAsString = searchParams?.[SEARCH_TYPE_KEY] ?? ''
   const currentTopicSlug = searchParams?.[TOPIC_KEY]
 
-  const [userResults, setUserResults] = useState<UserSearchResult[]>()
-  const [topicResults, setTopicResults] = useState<Group[]>()
+  const [queriedUserResults, setQueriedUserResults] =
+    usePersistentInMemoryState<UserSearchResult[] | undefined>(
+      undefined,
+      `${persistPrefix}-queried-user-results`
+    )
+  const [topicResults, setTopicResults] = usePersistentInMemoryState<
+    Group[] | undefined
+  >(undefined, `${persistPrefix}-topic-results`)
   const [showSearchTypeState, setShowSearchTypeState] = useState(
     queryAsString === '' || searchTypeAsString !== '' || !!currentTopicSlug
+  )
+
+  const userResults = uniqBy(
+    (
+      followingUsers?.filter(
+        (f) =>
+          f.name.toLowerCase().includes(queryAsString.toLowerCase()) ||
+          f.username.toLowerCase().includes(queryAsString.toLowerCase())
+      ) ?? []
+    ).concat(queriedUserResults ?? []),
+    'id'
   )
 
   const { contracts, loadMoreContracts, queryContracts } = useContractSearch(
@@ -272,13 +289,7 @@ export function SupabaseSearch(props: {
       'createdTime',
       'isBannedFromPosting',
     ])
-    const followedUsers =
-      followingUsers?.filter(
-        (f) =>
-          f.name.toLowerCase().includes(query.toLowerCase()) ||
-          f.username.toLowerCase().includes(query.toLowerCase())
-      ) ?? []
-    setUserResults(uniqBy(followedUsers.concat(results), 'id'))
+    setQueriedUserResults(results)
   })
 
   const queryTopics = useEvent(async (query: string) => {

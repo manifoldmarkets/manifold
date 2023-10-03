@@ -523,3 +523,10 @@ export function updateDashboard(params: {
 export function getDashboardFromSlug(params: { dashboardSlug: string }) {
   return maybeAuthedCall(getApiUrl('getdashboardfromslug'), 'POST', params)
 }
+
+export function referUser(params: {
+  referredByUsername: string
+  contractId?: string
+}) {
+  return call(getApiUrl('refer-user'), 'POST', params)
+}

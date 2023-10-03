@@ -1,11 +1,11 @@
 import { chunk, groupBy } from 'lodash'
 import {
-  run,
+  convertSQLtoTS,
   millisToTs,
+  Row,
+  run,
   selectJson,
   SupabaseClient,
-  convertSQLtoTS,
-  Row,
   tsToMillis,
 } from './utils'
 import { Contract } from '../contract'
@@ -116,3 +116,11 @@ export const convertAnswer = (row: Row<'answers'>) =>
   convertSQLtoTS<'answers', Answer>(row, {
     created_time: (maybeTs) => (maybeTs != null ? tsToMillis(maybeTs) : 0),
   })
+export const convertContract = (
+  c: { data: any } & { importance_score: number | null }
+) =>
+  ({
+    ...(c.data as Contract),
+    // importance_score is only updated in Supabase
+    importanceScore: c.importance_score,
+  } as Contract)

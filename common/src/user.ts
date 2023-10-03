@@ -147,3 +147,5 @@ export function getCurrentUtcTime(): Date {
   const utcDate = currentDate.toISOString()
   return new Date(utcDate)
 }
+
+export const MINUTES_ALLOWED_TO_REFER = 60

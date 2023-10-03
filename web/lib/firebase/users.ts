@@ -1,7 +1,11 @@
 import { Contract } from 'common/contract'
-import { PrivateUser, User, UserAndPrivateUser } from 'common/user'
+import {
+  MINUTES_ALLOWED_TO_REFER,
+  PrivateUser,
+  User,
+  UserAndPrivateUser,
+} from 'common/user'
 import { filterDefined } from 'common/util/array'
-import { removeUndefinedProps } from 'common/util/object'
 import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
 import { GoogleAuthProvider, getAuth, signInWithPopup } from 'firebase/auth'
@@ -23,11 +27,11 @@ import {
 import { postMessageToNative } from 'web/components/native-message-listener'
 import { getIsNative } from 'web/lib/native/is-native'
 import { nativeSignOut } from 'web/lib/native/native-messages'
-import { track } from '../service/analytics'
 import { safeLocalStorage } from '../util/local'
-import { addGroupMember } from './api'
+import { referUser } from './api'
 import { app, db } from './init'
 import { coll, getValues, listenForValue } from './utils'
+import { removeUndefinedProps } from 'common/util/object'
 
 dayjs.extend(utc)
 
@@ -143,55 +147,33 @@ export function writeReferralInfo(
   }
 }
 
-export async function setCachedReferralInfoForUser(user: User | null) {
-  if (!user || user.referredByUserId) return
-  // if the user wasn't created in the last minute, don't bother
-  const now = dayjs().utc()
-  const userCreatedTime = dayjs(user.createdTime)
-  if (now.diff(userCreatedTime, 'minute') > 5) return
+export async function setCachedReferralInfoForUser(user: User) {
+  if (!canSetReferrer(user)) return
 
   const local = safeLocalStorage
   const cachedReferralUsername = local?.getItem(CACHED_REFERRAL_USERNAME_KEY)
   const cachedReferralContractId = local?.getItem(
     CACHED_REFERRAL_CONTRACT_ID_KEY
   )
-  const cachedReferralGroupId = local?.getItem(CACHED_REFERRAL_GROUP_ID_KEY)
-
+  if (!cachedReferralUsername) return
+  console.log(
+    `User created in last ${MINUTES_ALLOWED_TO_REFER} minutes, setting referral info`
+  )
   // get user via username
-  if (cachedReferralUsername)
-    getUserByUsername(cachedReferralUsername).then((referredByUser) => {
-      if (!referredByUser) return
-      // update user's referralId
-      updateUser(
-        user.id,
-        removeUndefinedProps({
-          referredByUserId: referredByUser.id,
-          referredByContractId: cachedReferralContractId
-            ? cachedReferralContractId
-            : undefined,
-          referredByGroupId: cachedReferralGroupId
-            ? cachedReferralGroupId
-            : undefined,
-        })
-      )
-        .catch((err) => {
-          console.log('error setting referral details', err)
-        })
-        .then(() => {
-          track('Referral', {
-            userId: user.id,
-            referredByUserId: referredByUser.id,
-            referredByContractId: cachedReferralContractId,
-            referredByGroupId: cachedReferralGroupId,
-          })
-
-          local?.removeItem(CACHED_REFERRAL_GROUP_ID_KEY)
-          local?.removeItem(CACHED_REFERRAL_USERNAME_KEY)
-          local?.removeItem(CACHED_REFERRAL_CONTRACT_ID_KEY)
-
-          if (cachedReferralGroupId)
-            addGroupMember({ groupId: cachedReferralGroupId, userId: user.id })
-        })
+  referUser(
+    removeUndefinedProps({
+      referredByUsername: cachedReferralUsername,
+      contractId: cachedReferralContractId ?? undefined,
+    })
+  )
+    .then((resp) => {
+      console.log('referral resp', resp)
+      local?.removeItem(CACHED_REFERRAL_GROUP_ID_KEY)
+      local?.removeItem(CACHED_REFERRAL_USERNAME_KEY)
+      local?.removeItem(CACHED_REFERRAL_CONTRACT_ID_KEY)
+    })
+    .catch((err) => {
+      console.log('error setting referral details', err)
     })
 }
 
@@ -300,4 +282,11 @@ export const isContractBlocked = (
     blockedByUserIds?.includes(contract.creatorId) ||
     blockedUserIds?.includes(contract.creatorId)
   )
+}
+
+export const canSetReferrer = (user: User) => {
+  if (user.referredByUserId) return false
+  const now = dayjs().utc()
+  const userCreatedTime = dayjs(user.createdTime)
+  return now.diff(userCreatedTime, 'minute') < MINUTES_ALLOWED_TO_REFER
 }

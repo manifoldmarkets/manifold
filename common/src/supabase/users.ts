@@ -1,5 +1,6 @@
 import { chunk, keyBy } from 'lodash'
-import { run, selectFrom, SupabaseClient } from './utils'
+import { Row, run, selectFrom, SupabaseClient } from './utils'
+import { User } from 'common/user'
 
 export const getUsernameById = async (
   userIds: string[],
@@ -21,4 +22,14 @@ export const getUsernameById = async (
     ),
     'id'
   )
+}
+
+export const convertUser = (row: Row<'users'> | null): User | null => {
+  if (!row) return null
+  return {
+    ...(row.data as User),
+    id: row.id,
+    username: row.username,
+    name: row.name,
+  } as User
 }

@@ -9,6 +9,7 @@ import { useSubscription } from 'web/lib/supabase/realtime/use-subscription'
 import { usePersistentLocalState } from './use-persistent-local-state'
 import { db } from 'web/lib/supabase/db'
 import { User } from 'common/user'
+import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 
 export const useFollows = (userId: string | null | undefined) => {
   const { rows } = useSubscription(
@@ -59,10 +60,12 @@ export const useFollowedIdsSupabase = (userId: string | undefined) => {
 }
 
 export const useFollowedUsersOnLoad = (userId: string | undefined) => {
-  const [followedUsers, setFollowedUsers] = useState<User[] | undefined>()
+  const [followedUsers, setFollowedUsers] = usePersistentInMemoryState<
+    User[] | undefined
+  >(undefined, `user-followed-users-${userId}`)
 
   useEffect(() => {
-    if (userId && !followedUsers) getUserFollows(userId).then(setFollowedUsers)
+    if (userId) getUserFollows(userId).then(setFollowedUsers)
   }, [userId])
   return followedUsers
 }
