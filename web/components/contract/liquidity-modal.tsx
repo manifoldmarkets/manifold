@@ -101,7 +101,7 @@ function AddLiquidityPanel(props: {
         </Button>
       </Row>
 
-      {error && <div className="text-red-500">{error}</div>}
+      {error && <div className="text-error">{error}</div>}
 
       {isSuccess && amount && (
         <div>Success! Added {formatMoney(amount)} in liquidity.</div>

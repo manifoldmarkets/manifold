@@ -48,7 +48,7 @@ export function AddContractToGroupModal(props: {
       )
       .catch(() =>
         toast('Error adding questions. Try again?', {
-          icon: <XCircleIcon className={'h-5 w-5 text-red-500'} />,
+          icon: <XCircleIcon className={'text-error h-5 w-5'} />,
         })
       )
   }

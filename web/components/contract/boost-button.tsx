@@ -147,7 +147,7 @@ function BoostFormRow(props: { contract: Contract }) {
               inputClassName="mr-2 w-36"
             />
           </Row>
-          {error && <div className="text-right text-red-500">{error}</div>}
+          {error && <div className="text-error text-right">{error}</div>}
         </>
       )}
 

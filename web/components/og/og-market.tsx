@@ -160,7 +160,7 @@ function Resolution(props: { resolution: string; label?: string }) {
 
   const color = {
     YES: 'text-teal-500',
-    NO: 'text-red-500',
+    NO: 'text-scarlet-500',
     MKT: 'text-blue-500',
     CANCEL: 'text-yellow-500',
   }[resolution]

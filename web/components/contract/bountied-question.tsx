@@ -84,7 +84,7 @@ export function BountyLeft(props: {
     return (
       <Col className="text-ink-500">
         <Row className="items-center gap-2 font-normal">
-          <span className="text-lg font-semibold text-teal-600 dark:text-teal-400">
+          <span className="text-lg font-semibold text-teal-600">
             {formatMoney(bountyLeft)}
           </span>
           <span> / {totalBounty}</span>{' '}
@@ -95,7 +95,7 @@ export function BountyLeft(props: {
   }
   return (
     <span>
-      <span className="font-semibold text-teal-600 dark:text-teal-400">
+      <span className="font-semibold text-teal-600">
         {formatMoney(bountyLeft)}
       </span>
       <span className="text-ink-500 text-xs"> / {totalBounty} bounty left</span>{' '}

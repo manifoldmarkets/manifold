@@ -144,7 +144,7 @@ export const LikeButton = memo(function LikeButton(props: {
             <HeartIcon
               className={clsx(
                 'h-6 w-6',
-                liked && 'fill-pink-400 stroke-pink-400'
+                liked && 'fill-scarlet-300 stroke-scarlet-400'
               )}
             />
           </div>

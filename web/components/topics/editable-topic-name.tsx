@@ -44,7 +44,7 @@ export const EditableTopicName = (props: {
         <CheckIcon className="h-4 w-4 text-teal-600" />
       </IconButton>
       <IconButton onClick={() => onFinishEditing(false)} size="xs">
-        <XIcon className="h-4 w-4 text-red-400" />
+        <XIcon className="text-scarlet-600 h-4 w-4" />
       </IconButton>
     </Row>
   ) : (

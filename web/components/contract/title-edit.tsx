@@ -50,7 +50,7 @@ export const EditableQuestionTitle = (props: {
         <CheckIcon className="h-4 w-4 text-teal-600" />
       </IconButton>
       <IconButton onClick={() => setEditing(false)} size="xs">
-        <XIcon className="h-4 w-4 text-red-400" />
+        <XIcon className="text-scarlet-400 h-4 w-4" />
       </IconButton>
     </div>
   ) : (

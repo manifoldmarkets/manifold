@@ -1379,7 +1379,7 @@ function BountyAwardedNotification(props: {
             username={notification.sourceUserUsername}
           />
           awarded you a{' '}
-          <span className="font-semibold text-teal-600 dark:text-teal-400">
+          <span className="font-semibold text-teal-600">
             {formatMoney(+notification?.sourceText)}
           </span>{' '}
           bounty
@@ -1423,7 +1423,7 @@ function BountyAddedNotification(props: {
             username={notification.sourceUserUsername}
           />{' '}
           added{' '}
-          <span className="font-semibold text-teal-600 dark:text-teal-400">
+          <span className="font-semibold text-teal-600">
             {formatMoney(+notification?.sourceText)}
           </span>{' '}
           to your bountied question{' '}

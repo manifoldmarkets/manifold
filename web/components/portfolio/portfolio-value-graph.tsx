@@ -63,7 +63,7 @@ export const PortfolioGraph = (props: {
       curve={curveLinear}
       color={
         mode === 'profit'
-          ? (p: HistoryPoint) => (p.y >= 0 ? '#14b8a6' : '#FFA799')
+          ? (p: HistoryPoint) => (p.y >= 0 ? '#14b8a6' : '#F75836')
           : mode === 'balance'
           ? '#3B82F6'
           : '#4f46e5'

@@ -73,9 +73,7 @@ function ProbabilityChange(props: { probChange: number }) {
     <span
       className={clsx(
         'text-ink-500 my-auto items-center gap-1 text-sm',
-        positiveChange
-          ? ' text-teal-600 dark:text-teal-300'
-          : 'dark:text-scarlet-200 text-scarlet-600'
+        positiveChange ? 'text-teal-600' : 'text-scarlet-600'
       )}
     >
       <span className="font-bold">
