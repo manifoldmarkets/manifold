@@ -254,7 +254,7 @@ export default function Leagues(props: { rows: league_user_info[] }) {
             <text className="">
               Compete for{' '}
               <span
-                className="cursor-pointer border-b border-dotted border-blue-600 text-blue-600 hover:text-blue-800"
+                className="border-primary-600 text-primary-600 hover:text-primary-800 cursor-help border-b border-dotted"
                 onClick={togglePrizesModal}
               >
                 prizes
