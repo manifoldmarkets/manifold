@@ -324,6 +324,11 @@ function NotificationGroupItem(props: {
   const onboardingNotifs = notifications.some(
     (n) => n.reason === 'onboarding_flow'
   )
+  const questNotifs = notifications.some(
+    (n) =>
+      n.reason === 'quest_payout' || n.sourceType === 'betting_streak_bonus'
+  )
+  console.log({ questNotifs })
   const header = (
     <ParentNotificationHeader
       header={
@@ -334,6 +339,13 @@ function NotificationGroupItem(props: {
             {notifications.length} new questions from{' '}
             {notifications[0].sourceUserName}
           </span>
+        ) : onboardingNotifs ? (
+          <span>Welcome to Manifold</span>
+        ) : questNotifs ? (
+          <span>
+            {notifications.length} quest{notifications.length > 1 ? 's' : ''}{' '}
+            completed
+          </span>
         ) : sourceTitle || sourceContractTitle ? (
           <>
             {uniques} user{uniques > 1 ? `s` : ``} on{' '}
@@ -342,8 +354,6 @@ function NotificationGroupItem(props: {
               truncatedLength={'xl'}
             />
           </>
-        ) : onboardingNotifs ? (
-          <span>Welcome to Manifold</span>
         ) : (
           <span>
             Other activity from {uniques} user{uniques > 1 ? 's' : ''}
