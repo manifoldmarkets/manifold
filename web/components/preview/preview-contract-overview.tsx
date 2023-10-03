@@ -239,7 +239,7 @@ const ChoiceOverview = (props: {
           />
           <CreateAnswerPanel contract={contract} />
           <UserBetsSummary
-            className="border-ink-200 mt-2 !mb-2 "
+            className="border-ink-200 !mb-2 mt-2 "
             contract={contract}
           />
         </>

@@ -104,7 +104,7 @@ export function MultipleChoiceAnswers(props: {
         </Row>
       )}
       {outcomeType === 'FREE_RESPONSE' && (
-        <div className="text-primary-500 ml-1 mb-2 text-sm">
+        <div className="text-primary-500 mb-2 ml-1 text-sm">
           Users can submit their own answers to this question.
         </div>
       )}

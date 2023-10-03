@@ -65,7 +65,7 @@ export function Slider(props: {
                   'h-2 w-2 rounded-full'
                 )}
               />
-              <span className="text-ink-400 absolute top-4 left-1/2 -translate-x-1/2 text-xs">
+              <span className="text-ink-400 absolute left-1/2 top-4 -translate-x-1/2 text-xs">
                 {label}
               </span>
             </div>

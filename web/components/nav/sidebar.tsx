@@ -68,7 +68,7 @@ export default function Sidebar(props: {
       aria-label="Sidebar"
       className={clsx('flex h-screen flex-col', className)}
     >
-      <ManifoldLogo className="pt-6 pb-3" />
+      <ManifoldLogo className="pb-3 pt-6" />
 
       {user === undefined && <div className="h-[56px]" />}
 
@@ -89,7 +89,7 @@ export default function Sidebar(props: {
 
         {createMarketButton}
       </div>
-      <div className="mt-auto mb-6 flex flex-col gap-1">
+      <div className="mb-6 mt-auto flex flex-col gap-1">
         {user !== null && (
           <AppBadgesOrGetAppButton hideOnDesktop className="mb-2" />
         )}

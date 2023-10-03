@@ -442,7 +442,7 @@ export function ContractInfoDialog(props: {
                       person that signs up.
                     </>
                   ) : (
-                    <div className="text-ink-500 mt-4 mb-2 text-base">
+                    <div className="text-ink-500 mb-2 mt-4 text-base">
                       Invite traders to participate in this question and earn a{' '}
                       {formatMoney(REFERRAL_AMOUNT)} referral bonus for each new
                       trader that signs up.

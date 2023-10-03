@@ -149,7 +149,7 @@ export function DashboardSearch() {
             dashboards={yourFollowedDashboards}
             header="BOOKMARKED"
           />
-          <Header header="MORE" className="mt-1 -mb-1" />
+          <Header header="MORE" className="-mb-1 mt-1" />
         </>
       )}
       <DashboardCards dashboards={dashboards} loadMore={loadMoreDashboards} />

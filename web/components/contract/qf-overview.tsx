@@ -92,10 +92,10 @@ function QfAnswer(props: {
         background: `linear-gradient(to right, ${color}90 ${colorWidth}%, #FBFBFF ${colorWidth}%)`,
       }}
     >
-      <Row className="z-20 items-center justify-between gap-2 py-2 px-3">
+      <Row className="z-20 items-center justify-between gap-2 px-3 py-2">
         <Row>
           <Avatar
-            className="mt-0.5 mr-2 h-5 w-5 self-start border border-transparent transition-transform hover:border-none"
+            className="mr-2 mt-0.5 h-5 w-5 self-start border border-transparent transition-transform hover:border-none"
             username={username}
             avatarUrl={avatarUrl}
           />

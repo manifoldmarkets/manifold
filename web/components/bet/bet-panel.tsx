@@ -296,7 +296,7 @@ export function BuyPanel(props: {
           singularView && option === 'LIMIT' ? 'hidden' : ''
         )}
       >
-        <div className="text-ink-700 mt-2 mb-1 text-sm">Amount</div>
+        <div className="text-ink-700 mb-1 mt-2 text-sm">Amount</div>
 
         <BuyAmountInput
           inputClassName="w-full max-w-none"

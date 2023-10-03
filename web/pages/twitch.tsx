@@ -398,7 +398,7 @@ function SetUpBot(props: {
       <Col className="gap-4">
         <img
           src="/twitch-bot-obs-screenshot.jpg"
-          className="rounded-md border-t border-l border-r shadow-md"
+          className="rounded-md border-l border-r border-t shadow-md"
         ></img>
         To add the bot to your stream make sure you have logged in then follow
         the steps below.

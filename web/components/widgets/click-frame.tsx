@@ -27,7 +27,7 @@ export const ClickFrame = forwardRef(
           // pointer-events:none causes click events to fall through to parent.
           // we put pointer-events:auto on links, buttons, and elements with class stop-prop,
           // so they get caught by the stopPropagation below
-          className="pointer-events-none contents [&_a]:pointer-events-auto [&_button]:pointer-events-auto [&_.stop-prop]:pointer-events-auto"
+          className="pointer-events-none contents [&_.stop-prop]:pointer-events-auto [&_a]:pointer-events-auto [&_button]:pointer-events-auto"
           onClick={(e) => e.stopPropagation()}
         >
           {children}

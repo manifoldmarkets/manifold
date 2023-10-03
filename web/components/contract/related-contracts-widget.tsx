@@ -105,7 +105,7 @@ const RelatedContractCard = memo(function RelatedContractCard(props: {
   return (
     <Link
       className={clsx(
-        'whitespace-nowrap py-3 px-4 outline-none',
+        'whitespace-nowrap px-4 py-3 outline-none',
         'bg-canvas-0 focus:bg-ink-200 lg:hover:bg-ink-200 transition-colors',
         className
       )}

@@ -436,7 +436,7 @@ export function ContractParamsForm(props: {
   return (
     <Col className="gap-6">
       <Col>
-        <label className="px-1 pt-2 pb-3">
+        <label className="px-1 pb-3 pt-2">
           Question<span className={'text-scarlet-500'}>*</span>
         </label>
 
@@ -493,12 +493,12 @@ export function ContractParamsForm(props: {
         </Col>
       )}
       {outcomeType === 'STONK' && (
-        <div className="text-primary-500 mt-1 ml-1 text-sm">
+        <div className="text-primary-500 ml-1 mt-1 text-sm">
           Tradeable shares of a stock based on sentiment. Never resolves.
         </div>
       )}
       {outcomeType === 'PSEUDO_NUMERIC' && (
-        <div className="text-primary-500 mt-1 ml-1 text-sm">
+        <div className="text-primary-500 ml-1 mt-1 text-sm">
           Predict the value of a number.
         </div>
       )}
@@ -544,7 +544,7 @@ export function ContractParamsForm(props: {
             />
 
             {min !== undefined && max !== undefined && min >= max && (
-              <div className="text-scarlet-500 mt-2 mb-2 text-sm">
+              <div className="text-scarlet-500 mb-2 mt-2 text-sm">
                 The maximum value must be greater than the minimum.
               </div>
             )}
@@ -573,7 +573,7 @@ export function ContractParamsForm(props: {
               max !== undefined &&
               min < max &&
               (initialValue <= min || initialValue >= max) && (
-                <div className="text-scarlet-500 mt-2 mb-2 text-sm">
+                <div className="text-scarlet-500 mb-2 mt-2 text-sm">
                   Initial value must be in between {min} and {max}.{' '}
                 </div>
               )}
@@ -790,7 +790,7 @@ export function ContractParamsForm(props: {
         <div className="text-ink-500 pl-1"></div>
 
         {ante > balance && (
-          <div className="mb-2 mt-2 mr-auto self-center whitespace-nowrap text-xs font-medium tracking-wide">
+          <div className="mb-2 mr-auto mt-2 self-center whitespace-nowrap text-xs font-medium tracking-wide">
             <span className="text-scarlet-500 mr-2">Insufficient balance</span>
             <Button
               size="xs"

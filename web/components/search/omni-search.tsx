@@ -87,7 +87,7 @@ export const OmniSearch = (props: {
             placeholder="Search questions, users, & topics"
             enterKeyHint="search"
             className={clsx(
-              'border-ink-100 focus:border-ink-100 placeholder:text-ink-400 bg-canvas-0 text-ink-1000 border-0 border-b py-4 px-6 text-xl ring-0 ring-transparent focus:ring-transparent',
+              'border-ink-100 focus:border-ink-100 placeholder:text-ink-400 bg-canvas-0 text-ink-1000 border-0 border-b px-6 py-4 text-xl ring-0 ring-transparent focus:ring-transparent',
               inputClassName
             )}
           />
@@ -419,7 +419,7 @@ const UserResults = (props: { users: UserSearchResult[] }) => {
                 </Row>
                 <FollowButton size={'xs'} userId={id} />
               </Row>
-              <div className={'line-clamp-1 text-ink-500 text-sm'}>
+              <div className={'text-ink-500 line-clamp-1 text-sm'}>
                 {creatorTraders.allTime > 0 && (
                   <span className={'mr-1'}>
                     {formatLargeNumber(creatorTraders.allTime)} traders

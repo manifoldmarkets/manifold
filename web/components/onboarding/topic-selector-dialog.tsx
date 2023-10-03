@@ -93,7 +93,7 @@ export function TopicSelectorDialog(props: {
       size={'lg'}
     >
       <Col className="h-[32rem] overflow-y-auto">
-        <div className="bg-canvas-0 sticky top-0 py-4 px-5">
+        <div className="bg-canvas-0 sticky top-0 px-5 py-4">
           <p className="text-primary-700 mb-2 text-2xl">What interests you?</p>
           <p>Select 3 or more categories to personalize your experience</p>
         </div>

@@ -38,7 +38,7 @@ export function PostCommentThread(props: {
   return (
     <Col className="relative w-full items-stretch gap-3 pb-4">
       <span
-        className="bg-ink-200 absolute top-5 left-4 -ml-px h-[calc(100%-2rem)] w-0.5"
+        className="bg-ink-200 absolute left-4 top-5 -ml-px h-[calc(100%-2rem)] w-0.5"
         aria-hidden="true"
       />
       {[parentComment].concat(threadComments).map((comment, commentIdx) => (

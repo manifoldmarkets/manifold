@@ -368,7 +368,7 @@ export function NotificationItem(props: {
       isChildOfGroup={isChildOfGroup}
       icon={<></>}
     >
-      <div className={'mt-1 ml-1 md:text-base'}>
+      <div className={'ml-1 mt-1 md:text-base'}>
         <NotificationTextLabel notification={notification} />
       </div>
     </NotificationFrame>

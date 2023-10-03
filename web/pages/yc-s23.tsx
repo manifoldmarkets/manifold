@@ -94,7 +94,7 @@ const CompanyRow = (props: {
         key={contract.id}
         onClick={(e) => e.stopPropagation()}
       >
-        <Row className="cursor-pointer select-none justify-between py-2 px-3">
+        <Row className="cursor-pointer select-none justify-between px-3 py-2">
           <Row className="items-baseline gap-2">
             <div
               className="self-center"
@@ -116,7 +116,7 @@ const CompanyRow = (props: {
         </Row>
       </Link>
       {expanded && (
-        <Col className="border-ink-200 border-b px-3 pt-2 pb-4">
+        <Col className="border-ink-200 border-b px-3 pb-4 pt-2">
           <AnswersPanel contract={contract} />
         </Col>
       )}

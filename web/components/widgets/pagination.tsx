@@ -98,7 +98,7 @@ export function Pagination(props: {
   return (
     <nav
       className={clsx(
-        'flex w-full items-center bg-inherit pt-2 pb-4',
+        'flex w-full items-center bg-inherit pb-4 pt-2',
         className
       )}
       aria-label="Pagination"

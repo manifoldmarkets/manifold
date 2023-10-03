@@ -60,7 +60,7 @@ export function OgWeeklyUpdate(props: WeeklyPortfolioUpdateOGCardProps) {
       </div>
 
       {/* We render the profit last so it appears over the graph*/}
-      <div className="absolute top-44 left-20 flex w-full flex-row justify-between">
+      <div className="absolute left-20 top-44 flex w-full flex-row justify-between">
         {ProfitDiv(parseInt(weeklyProfit), date)}
       </div>
     </div>

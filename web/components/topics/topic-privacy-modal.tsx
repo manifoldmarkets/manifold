@@ -20,7 +20,7 @@ export function PrivacyStatusView(props: {
   return (
     <Col
       className={clsx(
-        'cursor-pointer rounded-lg py-2 px-4',
+        'cursor-pointer rounded-lg px-4 py-2',
         isSelected
           ? 'from-primary-100 ring-primary-500 bg-gradient-to-br to-transparent ring-2'
           : '',

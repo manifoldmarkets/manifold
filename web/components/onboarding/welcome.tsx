@@ -196,7 +196,7 @@ function WhatIsManifoldPage() {
 function PredictionMarketPage() {
   return (
     <>
-      <div className="text-primary-700 mt-3 mb-6 text-center text-2xl font-normal">
+      <div className="text-primary-700 mb-6 mt-3 text-center text-2xl font-normal">
         How it works
       </div>
       <div className="mt-2 text-lg">
@@ -252,7 +252,7 @@ export function CharityPage(props: { className?: string }) {
         className="my-4 h-full w-full rounded-md object-contain"
         alt=""
       />
-      <p className="mt-2 mb-2 text-left text-lg">
+      <p className="mb-2 mt-2 text-left text-lg">
         You can turn your mana earnings into a real donation to charity, at a
         100:1 ratio. E.g. when you donate{' '}
         <span className="font-semibold">{formatMoney(1000)}</span> to Givewell,

@@ -47,7 +47,7 @@ export const DashboardNewsItem = (props: {
           height={200}
         />
       )}
-      <Col className="border-canvas-0 w-full bg-opacity-80 py-2 px-4 sm:pr-6 ">
+      <Col className="border-canvas-0 w-full bg-opacity-80 px-4 py-2 sm:pr-6 ">
         <Row className="text-ink-500 w-full justify-between text-sm">
           <div>{siteName}</div>
           {published_time && (
@@ -78,7 +78,7 @@ export const DashboardNewsItemPlaceholder = () => {
       )}
     >
       <div className=" bg-ink-500 m-0 h-[120px] sm:w-1/3" />
-      <Col className=" border-canvas-0 w-full bg-opacity-80 py-2 px-4 sm:pr-6">
+      <Col className=" border-canvas-0 w-full bg-opacity-80 px-4 py-2 sm:pr-6">
         <div className="bg-ink-600 mb-2 h-3 w-12" />
 
         <div className="bg-ink-600 mb-2 h-6" />

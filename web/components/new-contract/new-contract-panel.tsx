@@ -63,7 +63,7 @@ export function NewContractPanel(props: {
         setState={setState}
         privacy={privacy}
       />
-      <Col className={clsx('py-2 px-6')}>
+      <Col className={clsx('px-6 py-2')}>
         {state == 'choosing contract' && (
           <ChoosingContractForm
             outcomeType={outcomeType}
@@ -93,7 +93,7 @@ function CreateStepTracker(props: {
   return (
     <Row
       className={clsx(
-        'text-ink-400 bg-canvas-0 border-1 border-ink-200 sticky z-10 w-full items-center gap-1 border-b pt-4 pb-2',
+        'text-ink-400 bg-canvas-0 border-1 border-ink-200 sticky z-10 w-full items-center gap-1 border-b pb-2 pt-4',
         'top-0 px-6'
       )}
     >

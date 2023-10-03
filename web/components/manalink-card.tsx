@@ -53,7 +53,7 @@ export function ManalinkCard(props: {
           getManalinkGradient(info)
         )}
       >
-        <Col className="text-ink-100 mx-4 mt-2 -mb-4 text-right text-sm">
+        <Col className="text-ink-100 mx-4 -mb-4 mt-2 text-right text-sm">
           <div>
             {maxUses != null
               ? `${maxUses - uses}/${maxUses} uses left`
@@ -85,7 +85,7 @@ export function ManalinkCard(props: {
           </div>
         </Row>
       </Col>
-      <div className="text-md text-ink-500 mt-2 mb-4">{message}</div>
+      <div className="text-md text-ink-500 mb-4 mt-2">{message}</div>
     </Col>
   )
 }
@@ -123,7 +123,7 @@ export function ManalinkCardFromView(props: {
               link={link}
             />
           )}
-          <Col className="text-ink-100 mx-4 mt-2 -mb-4 text-right text-xs">
+          <Col className="text-ink-100 mx-4 -mb-4 mt-2 text-right text-xs">
             <div>
               {maxUses != null
                 ? `${maxUses - claims.length}/${maxUses} uses left`
@@ -169,7 +169,7 @@ export function ManalinkCardFromView(props: {
           </IconButton>
         </Row>
       </Col>
-      <div className="text-ink-500 mt-2 mb-4 text-xs md:text-sm">
+      <div className="text-ink-500 mb-4 mt-2 text-xs md:text-sm">
         {message || ''}
       </div>
     </Col>

@@ -57,7 +57,7 @@ export function MarketCard(props: {
       {faceup ? (
         <>
           <Image
-            className="absolute top-0 left-0"
+            className="absolute left-0 top-0"
             src={
               contract.coverImageUrl ||
               `https://picsum.photos/seed/${contract.id}/200/200`
@@ -67,22 +67,22 @@ export function MarketCard(props: {
             alt={contract.question}
           />
           <Image
-            className="absolute top-0 left-0"
+            className="absolute left-0 top-0"
             src={'/cards/frame_red.png'}
             width={200}
             height={200}
             alt="Card frame"
           />
-          <div className="line-clamp-1 absolute top-[145px] left-0 w-full bg-transparent text-center text-2xl font-extrabold text-white drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,1)]">
+          <div className="absolute left-0 top-[145px] line-clamp-1 w-full bg-transparent text-center text-2xl font-extrabold text-white drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,1)]">
             <ContractStatusLabel contract={contract} />
           </div>
-          <div className="line-clamp-4 absolute top-[200px] left-[20px] w-[160px] text-center text-sm leading-3 text-black">
+          <div className="absolute left-[20px] top-[200px] line-clamp-4 w-[160px] text-center text-sm leading-3 text-black">
             {contract.question}
           </div>
         </>
       ) : (
         <Image
-          className="absolute top-0 left-0"
+          className="absolute left-0 top-0"
           src={'/cards/back_red.png'}
           width={200}
           height={200}

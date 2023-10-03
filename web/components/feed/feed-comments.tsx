@@ -129,7 +129,7 @@ export function FeedCommentThread(props: {
           ))}
       {seeReplies && threadComments.length > collapseToIndex && (
         <Row
-          className={'justify-end sm:mt-1 sm:-mb-2'}
+          className={'justify-end sm:-mb-2 sm:mt-1'}
           key={parentComment.id + 'see-replies-feed-button'}
         >
           <Button
@@ -221,10 +221,10 @@ export const FeedComment = memo(function FeedComment(props: {
             />
           </Row>
           {isParent && seeReplies && hasReplies && (
-            <div className="bg-ink-200 absolute -top-0 left-4 bottom-0 w-0.5" />
+            <div className="bg-ink-200 absolute -top-0 bottom-0 left-4 w-0.5" />
           )}
           {!isParent && (
-            <div className="bg-ink-200 absolute -top-1 left-4 bottom-0 w-0.5 group-last:hidden" />
+            <div className="bg-ink-200 absolute -top-1 bottom-0 left-4 w-0.5 group-last:hidden" />
           )}
         </Col>
         <Col
@@ -758,9 +758,9 @@ export function CommentOnBetRow(props: {
   return (
     <Row className="ml-4 text-sm">
       <Col className="h-grow justify-end">
-        <div className="border-ink-300 h-4 w-6 rounded-tl-lg border-2 border-r-0 border-b-0" />
+        <div className="border-ink-300 h-4 w-6 rounded-tl-lg border-2 border-b-0 border-r-0" />
       </Col>
-      <Row className="bg-ink-200 text-ink-600 gap-1 whitespace-nowrap py-1 px-4">
+      <Row className="bg-ink-200 text-ink-600 gap-1 whitespace-nowrap px-4 py-1">
         <UserLink
           username={bettorUsername}
           name={bettorName}
@@ -775,7 +775,7 @@ export function CommentOnBetRow(props: {
         />
         {clearReply && (
           <button onClick={clearReply}>
-            <XCircleIcon className={'absolute -top-1.5 -right-3 h-5 w-5'} />
+            <XCircleIcon className={'absolute -right-3 -top-1.5 h-5 w-5'} />
           </button>
         )}
       </Row>

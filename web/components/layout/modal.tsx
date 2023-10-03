@@ -79,7 +79,7 @@ export function Modal(props: {
             >
               <Dialog.Panel
                 className={clsx(
-                  'w-full transform transition-all sm:my-8 sm:mx-6',
+                  'w-full transform transition-all sm:mx-6 sm:my-8',
                   sizeClass,
                   className
                 )}

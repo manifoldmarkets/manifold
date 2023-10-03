@@ -13,7 +13,7 @@ export default function DashboardPage() {
   return (
     <Page trackPageView={'dashboards page'} className="items-center">
       <Col className="w-full max-w-2xl">
-        <Row className="mt-1 mb-3 items-start justify-between">
+        <Row className="mb-3 mt-1 items-start justify-between">
           <h1 className="text-primary-700 text-2xl">Dashboards</h1>
           {user && <CreateDashboardButton />}
         </Row>

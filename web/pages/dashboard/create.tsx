@@ -93,12 +93,12 @@ export default function CreateDashboard() {
       />
       <Col
         className={clsx(
-          ' text-ink-1000 mx-auto w-full max-w-2xl py-2 px-4 transition-colors sm:px-6'
+          ' text-ink-1000 mx-auto w-full max-w-2xl px-4 py-2 transition-colors sm:px-6'
         )}
       >
         <Title>Create a Dashboard</Title>
         <Col>
-          <label className="px-1 pt-2 pb-3">
+          <label className="px-1 pb-3 pt-2">
             Title<span className={'text-scarlet-500'}>*</span>
           </label>
 

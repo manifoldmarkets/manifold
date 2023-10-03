@@ -29,7 +29,7 @@ export function AddMarketToGroupModal(props: {
   return (
     <Modal open={open} setOpen={setOpen} size="lg">
       <Col className="bg-canvas-0 gap-4 overflow-hidden rounded-md">
-        <div className="bg-primary-100 text-primary-800 py-2 px-8">
+        <div className="bg-primary-100 text-primary-800 px-8 py-2">
           Add questions to {group.name}
         </div>
         {addPermission == 'private' && (

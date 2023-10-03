@@ -197,7 +197,7 @@ export const AnswerBar = (props: {
         </Row>
         <div
           className={clsx(
-            'absolute left-0 right-0 bottom-0 -z-10 h-full rounded transition-all ',
+            'absolute bottom-0 left-0 right-0 -z-10 h-full rounded transition-all ',
             hideBar ? 'bg-ink-200' : 'bg-canvas-50'
           )}
         >

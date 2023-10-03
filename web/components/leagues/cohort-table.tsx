@@ -55,7 +55,7 @@ export const CohortTable = (props: {
     <table>
       <thead className={clsx('text-ink-600 text-left text-sm font-semibold')}>
         <tr>
-          <th className={clsx('pl-10 pr-2 pb-1')}>User</th>
+          <th className={clsx('pb-1 pl-10 pr-2')}>User</th>
           <th className={clsx('px-2 pb-1 text-right sm:pr-10')}>
             <InfoTooltip
               text={

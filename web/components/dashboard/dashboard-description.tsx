@@ -14,7 +14,7 @@ export const DashboardDescription = (props: {
   }
 
   return (
-    <Col className="bg-canvas-0 mb-4 rounded-2xl py-2 px-4 shadow-md xl:px-6 xl:py-4">
+    <Col className="bg-canvas-0 mb-4 rounded-2xl px-4 py-2 shadow-md xl:px-6 xl:py-4">
       <Content content={description} size="lg" />
     </Col>
   )

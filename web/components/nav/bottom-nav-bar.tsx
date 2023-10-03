@@ -98,7 +98,7 @@ export function BottomNavBar() {
             className={clsx(itemClass, sidebarOpen ? selectedItemClass : '')}
             onClick={() => setSidebarOpen(true)}
           >
-            <MenuAlt3Icon className="my-1 mx-auto h-6 w-6" aria-hidden="true" />
+            <MenuAlt3Icon className="mx-auto my-1 h-6 w-6" aria-hidden="true" />
             More
           </div>
           <MobileSidebar
@@ -161,7 +161,7 @@ function NavBarItem(props: {
         onTouchStart={() => setTouched(true)}
         onTouchEnd={() => setTouched(false)}
       >
-        {item.icon && <item.icon className="my-1 mx-auto h-6 w-6" />}
+        {item.icon && <item.icon className="mx-auto my-1 h-6 w-6" />}
         {children}
         {item.name}
       </button>
@@ -184,7 +184,7 @@ function NavBarItem(props: {
       onTouchStart={() => setTouched(true)}
       onTouchEnd={() => setTouched(false)}
     >
-      {item.icon && <item.icon className="my-1 mx-auto h-6 w-6" />}
+      {item.icon && <item.icon className="mx-auto my-1 h-6 w-6" />}
       {children}
       {item.name}
     </Link>

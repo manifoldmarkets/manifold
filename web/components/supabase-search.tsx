@@ -495,7 +495,7 @@ const UserResults = (props: { users: UserSearchResult[] }) => {
                   </Row>
                   <FollowButton size={'xs'} userId={id} />
                 </Row>
-                <div className={'line-clamp-2 text-ink-500 ml-1 text-sm'}>
+                <div className={'text-ink-500 ml-1 line-clamp-2 text-sm'}>
                   {creatorTraders.allTime > 0 && (
                     <span className={'mr-1'}>
                       {shortFormatNumber(creatorTraders.allTime)} traders
@@ -527,7 +527,7 @@ const TopicResults = (props: { topics: Group[]; yourTopicIds: string[] }) => {
           <Row className={'hover:bg-primary-100 min-h-[4rem] p-1 pl-2 pt-2.5'}>
             <Col className={' w-full'}>
               <span className="line-clamp-1 sm:text-lg">{group.name}</span>
-              <Row className={'line-clamp-2 text-ink-500 gap-1 text-sm'}>
+              <Row className={'text-ink-500 line-clamp-2 gap-1 text-sm'}>
                 {group.totalMembers > 1 && (
                   <span>
                     {group.totalMembers} followers

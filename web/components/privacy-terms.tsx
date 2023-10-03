@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { track } from 'web/lib/service/analytics'
 
 export const PrivacyAndTerms = () => (
-  <div className="text-ink-400 mt-8 mb-4 w-full text-center text-sm">
+  <div className="text-ink-400 mb-4 mt-8 w-full text-center text-sm">
     <Link href="/about" className="hover:underline">
       About
     </Link>

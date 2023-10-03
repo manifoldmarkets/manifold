@@ -439,7 +439,7 @@ export function ContractPageContent(props: {
             )}
           >
             {coverImageUrl && (
-              <div className="absolute bottom-0 left-0 right-0 -top-10 -z-10">
+              <div className="absolute -top-10 bottom-0 left-0 right-0 -z-10">
                 <Image
                   fill
                   alt=""
@@ -450,13 +450,13 @@ export function ContractPageContent(props: {
                 />
                 <ChangeBannerButton
                   contract={contract}
-                  className="absolute top-12 right-4"
+                  className="absolute right-4 top-12"
                 />
               </div>
             )}
             <Row
               className={clsx(
-                'sticky -top-px z-50 mt-px flex h-12 w-full py-2 px-4 transition-colors',
+                'sticky -top-px z-50 mt-px flex h-12 w-full px-4 py-2 transition-colors',
                 headerStuck
                   ? 'dark:bg-canvas-50/80 bg-white/80 backdrop-blur-sm'
                   : ''
@@ -646,7 +646,7 @@ export function ContractPageContent(props: {
             )}
 
             <RelatedContractsCarousel
-              className="mt-4 mb-2 -ml-4 xl:hidden"
+              className="-ml-4 mb-2 mt-4 xl:hidden"
               contracts={relatedMarkets}
               onContractClick={(c) =>
                 track('click related market', { contractId: c.id })

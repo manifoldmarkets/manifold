@@ -244,7 +244,7 @@ const MarketCell = (props: {
       <ContractMention
         contract={c}
         probChange={change}
-        className={'line-clamp-6 sm:line-clamp-4 !whitespace-normal'}
+        className={'line-clamp-6 !whitespace-normal sm:line-clamp-4'}
       />
     </td>
   )

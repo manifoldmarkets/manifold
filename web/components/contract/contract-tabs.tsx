@@ -341,7 +341,7 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
                 }
               : undefined
           }
-          className="mb-4 mt-px mr-px"
+          className="mb-4 mr-px mt-px"
           contract={contract}
           clearReply={clearReply}
           trackingLocation={'contract page'}

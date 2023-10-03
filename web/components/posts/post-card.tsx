@@ -23,7 +23,7 @@ export function PostCard(props: {
   return (
     <Card
       className={clsx(
-        'group relative flex gap-2 py-2 px-4',
+        'group relative flex gap-2 px-4 py-2',
         highlight && '!bg-primary-100 outline-primary-400 outline outline-2'
       )}
     >
@@ -49,13 +49,13 @@ export function PostCard(props: {
           {post.title}
         </div>
         <Linkify
-          className="line-clamp-5 text-ink-600 text-sm"
+          className="text-ink-600 line-clamp-5 text-sm"
           text={richTextToString(post.content)}
         />
       </Col>
       {onPostClick ? (
         <a
-          className="absolute top-0 left-0 right-0 bottom-0"
+          className="absolute bottom-0 left-0 right-0 top-0"
           onClick={(e) => {
             // Let the browser handle the link click (opens in new tab).
             if (e.ctrlKey || e.metaKey) return
@@ -79,7 +79,7 @@ export function PostCard(props: {
                 postId: post.id,
               }
           }}
-          className="absolute top-0 left-0 right-0 bottom-0"
+          className="absolute bottom-0 left-0 right-0 top-0"
         />
       )}
     </Card>

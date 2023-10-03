@@ -569,7 +569,7 @@ function BetsTable(props: {
                       ) : (
                         <Col className={'mt-1 w-full gap-1'}>
                           <BetsSummary
-                            className="mt-6 !mb-6 flex"
+                            className="!mb-6 mt-6 flex"
                             contract={contract}
                             metrics={metricsByContractId[contract.id]}
                             hideTweet

@@ -151,7 +151,7 @@ export function SwipeBetPanel(props: {
         )}
       </Row>
       {isStatusAFailure(betStatus) && (
-        <div className="line-clamp-1 text-error absolute -bottom-6 left-[calc(50%-136px)] w-[272px] text-xs">
+        <div className="text-error absolute -bottom-6 left-[calc(50%-136px)] line-clamp-1 w-[272px] text-xs">
           ERROR: {betStatus}
         </div>
       )}

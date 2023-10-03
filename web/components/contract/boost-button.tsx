@@ -303,7 +303,7 @@ function FeedAnalytics(props: { contractId: string }) {
 
 const TableItem = (props: { label: ReactNode; value?: ReactNode }) => (
   <tr>
-    <td className="!pt-0 !pl-0">{props.label}</td>
-    <td className="!pt-0 !pl-0">{props.value ?? '...'}</td>
+    <td className="!pl-0 !pt-0">{props.label}</td>
+    <td className="!pl-0 !pt-0">{props.value ?? '...'}</td>
   </tr>
 )

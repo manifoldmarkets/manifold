@@ -76,7 +76,7 @@ export default function NotificationsPage() {
 function NotificationsAppBanner(props: { userId: string }) {
   const { userId } = props
   return (
-    <Row className="bg-primary-100 relative mb-2 justify-between rounded-md py-2 px-4 text-sm">
+    <Row className="bg-primary-100 relative mb-2 justify-between rounded-md px-4 py-2 text-sm">
       <Row className={'text-ink-600 items-center gap-3 text-sm sm:text-base'}>
         Get the app for the best experience
         <AppBadgesOrGetAppButton />

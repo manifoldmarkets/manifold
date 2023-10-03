@@ -45,7 +45,7 @@ export function TopicsList(props: {
           ? 'animate-slide-in-from-right block lg:animate-none'
           : 'hidden lg:flex',
         className,
-        'scrollbar-hide sticky top-0 right-0 max-h-screen overflow-y-auto sm:max-w-min lg:max-w-none',
+        'scrollbar-hide sticky right-0 top-0 max-h-screen overflow-y-auto sm:max-w-min lg:max-w-none',
         currentTopicSlug == 'for-you' ? '' : 'lg:rounded-t-md'
       )}
     >
