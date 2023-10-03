@@ -62,15 +62,15 @@ export function buttonClass(size: SizeType, color: ColorType | 'none') {
       'text-primary-500 hover:bg-primary-500',
     ],
     color === 'gray' &&
-      'bg-ink-200 text-ink-600 disabled:bg-ink-100 hover:bg-ink-300 hover:text-ink-700',
+      'bg-ink-300 text-ink-600 disabled:bg-ink-200 disabled:text-white hover:bg-ink-400 hover:text-ink-700',
     color === 'gray-outline' && [outline, 'text-ink-500 hover:bg-ink-500'],
-    color === 'gradient' && [gradient, 'from-primary-500 to-blue-500'],
+    color === 'gradient' && [gradient, 'from-primary-500 to-blue-400'],
     color === 'gradient-pink' && [gradient, 'from-primary-500 to-fuchsia-500'],
     color === 'gray-white' &&
       'text-ink-600 enabled:hover:bg-ink-200 disabled:text-ink-300',
     color === 'gold' && [
       gradient,
-      'bg-gradient-to-br from-yellow-400 via-yellow-100 to-yellow-300 dark:from-yellow-500 dark:via-yellow-200 dark:to-yellow-600 text-gray-900',
+      'enabled:!bg-gradient-to-br from-yellow-400 via-yellow-100 to-yellow-300 dark:from-yellow-600 dark:via-yellow-200 dark:to-yellow-400 !text-gray-900',
     ]
   )
 }
