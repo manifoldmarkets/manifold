@@ -13,15 +13,16 @@ export const BrowseTopicPills = (props: {
   topics: Group[]
   setTopicSlug: (slug: string) => void
   currentTopicSlug: string | undefined
+  className?: string
 }) => {
-  const { topics, setTopicSlug, currentTopicSlug } = props
+  const { topics, className, setTopicSlug, currentTopicSlug } = props
   const isAuth = useIsAuthorized()
   const [showMore, setShowMore] = useState<boolean>(false)
   const router = useRouter()
   const sort = router.query[SORT_KEY] as string
 
   return (
-    <Col className={'bg-canvas-0 relative w-full pl-1 pb-1 sm:hidden'}>
+    <Col className={className}>
       <Row
         className={clsx(
           'scrollbar-hide gap-0.5 overflow-auto',

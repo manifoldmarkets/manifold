@@ -49,7 +49,7 @@ export function ContractsTable(props: {
       {!hideHeader && (
         <Row
           className={clsx(
-            'bg-canvas-50 text-ink-500 sticky top-0 z-10 w-full justify-end px-2 py-1 text-sm font-semibold sm:justify-between',
+            'text-ink-500 sticky top-0 z-10 w-full justify-end px-2 py-1 text-sm font-semibold sm:justify-between',
             headerClassName
           )}
         >

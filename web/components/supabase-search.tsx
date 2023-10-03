@@ -21,20 +21,15 @@ import {
 } from 'web/hooks/use-persistent-query-state'
 import {
   useGroupFromSlug,
-  useMemberGroupIdsOnLoad,
-  useRealtimeMemberGroups,
+  useRealtimeMemberGroupIds,
 } from 'web/hooks/use-group-supabase'
 import { DEFAULT_TOPIC, Group, TOPIC_KEY } from 'common/group'
 import { TopicTag } from 'web/components/topics/topic-tag'
 import { AddContractToGroupButton } from 'web/components/topics/add-contract-to-group-modal'
 import { useUser } from 'web/hooks/use-user'
 
-import {
-  FollowOrUnfolowTopicButton,
-  TopicOptionsButton,
-} from 'web/components/topics/topics-button'
+import { FollowOrUnfolowTopicButton } from 'web/components/topics/topics-button'
 
-import { ForYouDropdown } from 'web/components/topics/for-you-dropdown'
 import { PillButton } from 'web/components/buttons/pill-button'
 import { searchUsers, UserSearchResult } from 'web/lib/supabase/users'
 import { searchGroups } from 'web/lib/supabase/groups'
@@ -181,6 +176,7 @@ export function SupabaseSearch(props: {
   defaultSearchType?: SearchType
   yourTopics?: Group[]
   contractsOnly?: boolean
+  showTopicTag?: boolean
 }) {
   const {
     defaultSort,
@@ -202,6 +198,7 @@ export function SupabaseSearch(props: {
     defaultSearchType,
     yourTopics,
     contractsOnly,
+    showTopicTag,
   } = props
 
   const [searchParams, setSearchParams, defaults] = useSearchQueryState({
@@ -212,6 +209,7 @@ export function SupabaseSearch(props: {
   })
   const user = useUser()
   const followingUsers = useFollowedUsersOnLoad(user?.id)
+  const follwingTopics = useRealtimeMemberGroupIds(user?.id)
 
   const [lastSearch, setLastSearch] = usePersistentInMemoryState<
     typeof searchParams
@@ -331,7 +329,7 @@ export function SupabaseSearch(props: {
 
   return (
     <Col>
-      <Col className={clsx('bg-canvas-50 sticky top-0 z-20 ', headerClassName)}>
+      <Col className={clsx('sticky top-0 z-20 ', headerClassName)}>
         <Row>
           <Col className={'w-full'}>
             <Row className={'relative'}>
@@ -371,7 +369,6 @@ export function SupabaseSearch(props: {
         </Row>
         {!hideContractFilters && (
           <ContractFilters
-            user={user}
             hideOrderSelector={hideOrderSelector}
             includeProbSorts={includeProbSorts}
             params={searchParams ?? defaults}
@@ -381,6 +378,7 @@ export function SupabaseSearch(props: {
                 ? 'invisible'
                 : ''
             }
+            showTopicTag={showTopicTag}
           />
         )}
       </Col>
@@ -454,7 +452,10 @@ export function SupabaseSearch(props: {
             {/*  Create a new topic! */}
           </Col>
         ) : (
-          <TopicResults topics={topicResults ?? []} />
+          <TopicResults
+            topics={topicResults ?? []}
+            yourTopicIds={follwingTopics ?? []}
+          />
         )
       ) : null}
     </Col>
@@ -513,10 +514,9 @@ const UserResults = (props: { users: UserSearchResult[] }) => {
   )
 }
 
-const TopicResults = (props: { topics: Group[] }) => {
-  const { topics } = props
+const TopicResults = (props: { topics: Group[]; yourTopicIds: string[] }) => {
+  const { topics, yourTopicIds } = props
   const me = useUser()
-  const myGroupIds = useMemberGroupIdsOnLoad(me?.id) ?? []
 
   return (
     <Col className={'mt-1 w-full gap-1'}>
@@ -544,7 +544,7 @@ const TopicResults = (props: { topics: Group[] }) => {
               <FollowOrUnfolowTopicButton
                 group={group}
                 user={me}
-                isMember={myGroupIds.includes(group.id)}
+                isMember={yourTopicIds.includes(group.id)}
               />
             </div>
           </Row>
@@ -719,8 +719,8 @@ function ContractFilters(props: {
   hideOrderSelector?: boolean
   includeProbSorts?: boolean
   params: SearchParams
-  user: User | null | undefined
   updateParams: (params: Partial<SearchParams>) => void
+  showTopicTag?: boolean
 }) {
   const {
     className,
@@ -728,7 +728,7 @@ function ContractFilters(props: {
     includeProbSorts,
     params,
     updateParams,
-    user,
+    showTopicTag,
   } = props
 
   const { s: sort, f: filter, ct: contractType, topic: topicSlug } = params
@@ -766,7 +766,6 @@ function ContractFilters(props: {
     }
     track('select contract type', { contractType: selection })
   }
-  const topic = useGroupFromSlug(topicSlug ?? '')
   const hideFilter =
     sort === 'resolve-date' ||
     sort === 'close-date' ||
@@ -775,9 +774,7 @@ function ContractFilters(props: {
   const filterLabel = getLabelFromValue(FILTERS, filter)
   const sortLabel = getLabelFromValue(SORTS, sort)
   const contractTypeLabel = getLabelFromValue(CONTRACT_TYPES, contractType)
-
-  const yourGroups = useRealtimeMemberGroups(user?.id)
-  const yourGroupIds = yourGroups?.map((g) => g.id)
+  const topic = useGroupFromSlug(topicSlug ?? '')
   const setTopic = (slug: string) => updateParams({ [TOPIC_KEY]: slug })
 
   return (
@@ -850,7 +847,7 @@ function ContractFilters(props: {
           selectedItemName={contractTypeLabel}
           closeOnClick={true}
         />
-        {topicSlug == topic?.slug && topic && (
+        {topicSlug == topic?.slug && topic && showTopicTag && (
           <TopicTag
             className={
               'text-primary-500 overflow-x-hidden text-ellipsis !py-0 lg:hidden'
@@ -859,18 +856,11 @@ function ContractFilters(props: {
             location={'questions page'}
           >
             <button onClick={() => setTopic('')}>
-              <XIcon className="hover:text-ink-700 text-ink-400 ml-1 hidden h-4 w-4 sm:block" />
+              <XIcon className="hover:text-ink-700 text-ink-400 ml-1  h-4 w-4" />
             </button>
-            <TopicOptionsButton
-              className={'sm:hidden'}
-              group={topic}
-              yourGroupIds={yourGroupIds}
-              user={user}
-              selected={true}
-            />
           </TopicTag>
         )}
-        {topicSlug === 'for-you' && (
+        {topicSlug === 'for-you' && showTopicTag && (
           <Row
             className={
               'text-primary-500 dark:text-ink-400 hover:text-ink-600 hover:bg-primary-400/10 group items-center justify-center whitespace-nowrap rounded px-1 text-right text-sm transition-colors lg:hidden'
@@ -881,16 +871,8 @@ function ContractFilters(props: {
             </span>
             ⭐️ For you
             <button onClick={() => setTopic('')}>
-              <XIcon className="hover:text-ink-700 text-ink-400 ml-1 hidden h-4 w-4 sm:block" />
+              <XIcon className="hover:text-ink-700 text-ink-400 ml-1 h-4 w-4" />
             </button>
-            {user && (
-              <ForYouDropdown
-                setCurrentCategory={setTopic}
-                user={user}
-                yourGroups={yourGroups}
-                className={'ml-1 sm:hidden'}
-              />
-            )}
           </Row>
         )}
       </Row>
