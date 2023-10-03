@@ -58,7 +58,7 @@ export default function NotificationsPage() {
 
   return (
     <Page trackPageView={'notifications page'}>
-      <Col className="mx-auto w-full p-2 pb-0">
+      <div className="w-full">
         <Title className="hidden lg:block">Notifications</Title>
         <SEO title="Notifications" description="Manifold user notifications" />
         {shouldShowBanner && <NotificationsAppBanner userId={privateUser.id} />}
@@ -68,7 +68,7 @@ export default function NotificationsPage() {
             section={navigateToSection}
           />
         ) : null}
-      </Col>
+      </div>
     </Page>
   )
 }
@@ -110,65 +110,63 @@ function NotificationsContent(props: {
   )
 
   return (
-    <div className="relative h-full w-full">
-      <div className="relative">
-        {privateUser && (
-          <QueryUncontrolledTabs
-            trackingName={'notification tabs'}
-            labelClassName={'relative pb-2 pt-1 '}
-            className={'mb-0 sm:mb-2'}
-            onClick={(title) =>
-              title === 'Following' ? setNewMarketNotifsAsSeen(0) : null
-            }
-            labelsParentClassName={'gap-3'}
-            tabs={[
-              {
-                title: 'General',
-                content: (
-                  <NotificationsList
-                    privateUser={privateUser}
-                    groupedNotifications={groupedNotifications}
-                    mostRecentNotification={mostRecentNotification}
-                  />
-                ),
-              },
-              {
-                title: 'Following',
-                inlineTabIcon:
-                  unseenNewMarketNotifs > 0 ? (
-                    <div
-                      className={
-                        'text-ink-0 bg-primary-500 absolute -left-4 min-w-[15px] rounded-full p-[2px] text-center text-[10px] leading-3'
-                      }
-                    >
-                      {unseenNewMarketNotifs}
-                    </div>
-                  ) : undefined,
-                content: (
-                  <NotificationsList
-                    groupedNotifications={groupedNewMarketNotifications}
-                    emptyTitle={
-                      'You don’t have any new question notifications from followed users, yet. Try following some users to see more.'
+    <div className="relative mt-2 h-full w-full">
+      {privateUser && (
+        <QueryUncontrolledTabs
+          trackingName={'notification tabs'}
+          labelClassName={'relative pb-2 pt-1 '}
+          className={'mb-0 sm:mb-2'}
+          onClick={(title) =>
+            title === 'Following' ? setNewMarketNotifsAsSeen(0) : null
+          }
+          labelsParentClassName={'gap-3'}
+          tabs={[
+            {
+              title: 'General',
+              content: (
+                <NotificationsList
+                  privateUser={privateUser}
+                  groupedNotifications={groupedNotifications}
+                  mostRecentNotification={mostRecentNotification}
+                />
+              ),
+            },
+            {
+              title: 'Following',
+              inlineTabIcon:
+                unseenNewMarketNotifs > 0 ? (
+                  <div
+                    className={
+                      'text-ink-0 bg-primary-500 absolute -left-4 min-w-[15px] rounded-full p-[2px] text-center text-[10px] leading-3'
                     }
-                  />
-                ),
-              },
-              {
-                title: 'Transactions',
-                content: (
-                  <NotificationsList
-                    groupedNotifications={groupedBalanceChangeNotifications}
-                  />
-                ),
-              },
-              {
-                title: 'Settings',
-                content: <NotificationSettings navigateToSection={section} />,
-              },
-            ]}
-          />
-        )}
-      </div>
+                  >
+                    {unseenNewMarketNotifs}
+                  </div>
+                ) : undefined,
+              content: (
+                <NotificationsList
+                  groupedNotifications={groupedNewMarketNotifications}
+                  emptyTitle={
+                    'You don’t have any new question notifications from followed users, yet. Try following some users to see more.'
+                  }
+                />
+              ),
+            },
+            {
+              title: 'Transactions',
+              content: (
+                <NotificationsList
+                  groupedNotifications={groupedBalanceChangeNotifications}
+                />
+              ),
+            },
+            {
+              title: 'Settings',
+              content: <NotificationSettings navigateToSection={section} />,
+            },
+          ]}
+        />
+      )}
     </div>
   )
 }

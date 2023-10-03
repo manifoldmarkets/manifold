@@ -28,7 +28,7 @@ export const NOTIFICATION_STYLE = clsx(
 )
 export const NOTIFICATIONS_PER_PAGE = 30
 function getHighlightClass(highlight: boolean) {
-  return highlight ? 'text-ink-1000' : 'text-ink-600'
+  return highlight ? 'text-ink-1000 bg-canvas-0' : 'text-ink-800'
 }
 export const NUM_SUMMARY_LINES = 3
 
@@ -176,40 +176,33 @@ export function NotificationFrame(props: {
     customBackground,
   } = props
   const isMobile = useIsMobile()
-  const highlightClass = getHighlightClass(highlighted)
 
   const frameObject = (
-    <>
-      <Row
-        className={clsx(highlightClass, 'cursor-pointer text-sm md:text-base')}
-      >
-        <Row className="w-full gap-3">
-          <Col className="w-fit">{icon}</Col>
-          <Col className="font w-full">
-            <span>{children}</span>
-            <div className="mt-1 line-clamp-3 text-xs md:text-sm">
-              {subtitle}
+    <Row className={clsx('cursor-pointer text-sm md:text-base')}>
+      <Row className="w-full gap-3">
+        <Col className="w-fit">{icon}</Col>
+        <Col className="font w-full">
+          <span>{children}</span>
+          <div className="line-clamp-3 mt-1 text-xs md:text-sm">{subtitle}</div>
+          {isMobile && (
+            <div className="w-fit">
+              <RelativeTimestampNoTooltip
+                time={notification.createdTime}
+                className="text-xs"
+              />
             </div>
-            {isMobile && (
-              <div className="-mt-0.5 w-fit md:-mt-1">
-                <RelativeTimestampNoTooltip
-                  time={notification.createdTime}
-                  className={clsx(highlightClass, ' text-xs')}
-                />
-              </div>
-            )}
-          </Col>
-        </Row>
-        {!isMobile && (
-          <Row className="mx-1 w-40 justify-end">
-            <RelativeTimestampNoTooltip
-              time={notification.createdTime}
-              className={clsx(highlightClass, ' text-xs')}
-            />
-          </Row>
-        )}
+          )}
+        </Col>
       </Row>
-    </>
+      {!isMobile && (
+        <Row className="mx-1 w-40 justify-end">
+          <RelativeTimestampNoTooltip
+            time={notification.createdTime}
+            className="text-xs"
+          />
+        </Row>
+      )}
+    </Row>
   )
 
   return (
@@ -257,7 +250,7 @@ export function NotificationFrame(props: {
         <NotificationDropdown notification={notification} />
       </div>
       <div className="-mr-2 flex w-4 items-center justify-center">
-        {highlighted && <div className="bg-primary-50 h-3 w-3 rounded-full" />}
+        {highlighted && <div className="bg-primary-600 h-3 w-3 rounded-full" />}
       </div>
     </Row>
   )
@@ -271,8 +264,8 @@ export function ParentNotificationHeader(props: {
   const highlightedClass = getHighlightClass(highlighted)
 
   return (
-    <Row className={clsx('mx-2 items-center justify-start')}>
-      <div className={clsx(highlightedClass, 'line-clamp-3')}>{header}</div>
+    <Row className={clsx('items-center justify-start px-2', highlightedClass)}>
+      <div className={'line-clamp-3'}>{header}</div>
     </Row>
   )
 }
