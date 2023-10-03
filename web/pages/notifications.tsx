@@ -321,6 +321,9 @@ function NotificationGroupItem(props: {
 
     'createdTime'
   ).reverse()
+  const onboardingNotifs = notifications.some(
+    (n) => n.reason === 'onboarding_flow'
+  )
   const header = (
     <ParentNotificationHeader
       header={
@@ -339,7 +342,7 @@ function NotificationGroupItem(props: {
               truncatedLength={'xl'}
             />
           </>
-        ) : notifications.some((n) => n.reason === 'onboarding_flow') ? (
+        ) : onboardingNotifs ? (
           <span>Welcome to Manifold</span>
         ) : (
           <span>
@@ -355,6 +358,7 @@ function NotificationGroupItem(props: {
     <NotificationGroupItemComponent
       notifications={combinedNotifs}
       header={header}
+      lines={onboardingNotifs ? 5 : NUM_SUMMARY_LINES}
     />
   )
 }
@@ -363,11 +367,12 @@ export function NotificationGroupItemComponent(props: {
   notifications: Notification[]
   header: ReactNode
   className?: string
+  lines: number
 }) {
-  const { notifications, className, header } = props
+  const { notifications, lines, className, header } = props
   const numNotifications = notifications.length
 
-  const needsExpanding = numNotifications > NUM_SUMMARY_LINES
+  const needsExpanding = numNotifications > lines
   const [expanded, setExpanded] = useState(false)
   const onExpandHandler = (event: React.MouseEvent<HTMLDivElement>) => {
     if (event.ctrlKey || event.metaKey) return
@@ -376,7 +381,7 @@ export function NotificationGroupItemComponent(props: {
 
   const shownNotifications = expanded
     ? notifications
-    : notifications.slice(0, NUM_SUMMARY_LINES)
+    : notifications.slice(0, lines)
   return (
     <div className={clsx(PARENT_NOTIFICATION_STYLE, className)}>
       {header}
@@ -395,7 +400,7 @@ export function NotificationGroupItemComponent(props: {
             <ShowMoreLessButton
               onClick={onExpandHandler}
               isCollapsed={!expanded}
-              howManyMore={numNotifications - NUM_SUMMARY_LINES}
+              howManyMore={numNotifications - lines}
             />
           </Row>
         )}
