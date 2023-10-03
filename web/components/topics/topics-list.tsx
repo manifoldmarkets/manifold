@@ -138,7 +138,7 @@ const SidebarItem = (props: {
         ROW_CLASS,
         currentTopicSlug == slug
           ? 'bg-ink-200 text-ink-900'
-          : 'text-ink-600 hover:bg-primary-50'
+          : 'text-ink-600 hover:bg-primary-100'
       )}
       onClick={() => {
         if (currentTopicSlug !== slug) track('select topics item', { slug })

@@ -88,7 +88,7 @@ const CompanyRow = (props: {
   const [expanded, setExpanded] = useState(false)
 
   return (
-    <Col className="hover:bg-primary-50 active:bg-primary-50">
+    <Col className="hover:bg-primary-100 active:bg-primary-100">
       <Link
         href={`/ManifoldMarkets/${contract.slug}`}
         key={contract.id}

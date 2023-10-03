@@ -138,8 +138,8 @@ export const PortfolioValueSection = memo(
               ? 'green'
               : 'red'
             : graphMode === 'balance'
-            ? 'blue'
-            : 'indigo'
+            ? 'indigo'
+            : 'indigo-dark'
         }
         profitElement={
           <div

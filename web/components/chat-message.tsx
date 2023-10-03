@@ -30,7 +30,7 @@ export const ChatMessageItem = forwardRef(
         className={clsx(
           'max-w-[90%] rounded-2xl p-3',
           isMe
-            ? 'bg-primary-50 items-end self-end rounded-br-none'
+            ? 'bg-primary-100 items-end self-end rounded-br-none'
             : 'bg-canvas-0 items-start self-start rounded-bl-none'
         )}
         ref={ref}

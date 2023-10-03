@@ -22,7 +22,7 @@ export function ProfileSummary(props: { user: User; className?: string }) {
       href={`/${user.username}`}
       onClick={trackCallback('sidebar: profile')}
       className={clsx(
-        'text-ink-700 hover:bg-primary-50 hover:text-ink-900 group flex flex-shrink-0 flex-row items-center gap-4 rounded-md py-3',
+        'text-ink-700 hover:bg-primary-100 hover:text-ink-900 group flex flex-shrink-0 flex-row items-center gap-4 rounded-md py-3',
         className
       )}
     >
