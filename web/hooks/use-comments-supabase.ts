@@ -2,7 +2,6 @@ import { Comment, ContractComment, PostComment } from 'common/comment'
 import { useEffect, useState } from 'react'
 import {
   convertContractComment,
-  getAllCommentRows,
   getCommentRows,
   getCommentsOnContract,
   getNumContractComments,
@@ -14,6 +13,7 @@ import { uniqBy } from 'lodash'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { isBlocked, usePrivateUser } from 'web/hooks/use-user'
 import { useSubscription } from 'web/lib/supabase/realtime/use-subscription'
+import { Row } from 'common/supabase/utils'
 
 export function useNumContractComments(contractId: string) {
   const [numComments, setNumComments] = useState<number>(0)
@@ -99,10 +99,10 @@ export function useRealtimeCommentsOnContract(contractId: string) {
   return rows?.map(convertContractComment)
 }
 
-export function useRealtimeComments(limit: number): Comment[] {
-  const { rows } = useSubscription('contract_comments', undefined, () =>
-    getAllCommentRows(limit)
-  )
+export function useRealtimeComments(
+  fetcher: () => Promise<Row<'contract_comments'>[]>
+): Comment[] {
+  const { rows } = useSubscription('contract_comments', undefined, fetcher)
   return (rows ?? []).map((r) => r.data as Comment)
 }
 

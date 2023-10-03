@@ -37,7 +37,7 @@ export async function getUserBetContracts(
   }
 }
 
-export async function getPublicContractIds(contractIds: string[]) {
+export async function getPublicContractsByIds(contractIds: string[]) {
   const contractLists = await Promise.all(
     chunk(contractIds, 100).map(async (ids) => {
       const { data } = await run(
@@ -45,6 +45,55 @@ export async function getPublicContractIds(contractIds: string[]) {
       )
       if (data && data.length > 0) {
         return data.map((d) => d.data as Contract)
+      } else {
+        return []
+      }
+    })
+  )
+  const contractsById = keyBy(flatten(contractLists), 'id')
+  return filterDefined(contractIds.map((id) => contractsById[id]))
+}
+export async function getPublicContractIdsInTopics(
+  contractIds: string[],
+  topicSlugs: string[],
+  ignoreSlugs?: string[]
+) {
+  const contractLists = await Promise.all(
+    chunk(contractIds, 100).map(async (ids) => {
+      const { data } = await run(
+        db.rpc('get_contracts_in_group_slugs' as any, {
+          contract_ids: ids,
+          group_slugs: topicSlugs,
+          ignore_slugs: ignoreSlugs,
+        })
+      )
+      if (data && data.length > 0) {
+        return data.map((d) => convertContract(d))
+      } else {
+        return []
+      }
+    })
+  )
+  const contractsById = keyBy(flatten(contractLists), 'id')
+  return filterDefined(contractIds.map((id) => contractsById[id]))
+}
+// TODO get recently active contracts in topics
+export async function getRecentContractsOnTopics(
+  contractIds: string[],
+  topicSlugs: string[],
+  ignoreSlugs?: string[]
+) {
+  const contractLists = await Promise.all(
+    chunk(contractIds, 100).map(async (ids) => {
+      const { data } = await run(
+        db.rpc('get_contracts_in_group_slugs' as any, {
+          contract_ids: ids,
+          group_slugs: topicSlugs,
+          ignore_slugs: ignoreSlugs,
+        })
+      )
+      if (data && data.length > 0) {
+        return data.map((d) => convertContract(d))
       } else {
         return []
       }
@@ -94,19 +143,14 @@ export const getContractWithFields = async (id: string) => {
 }
 
 // Only fetches contracts with 'public' visibility
-export const getPublicContractRows = async (options: {
+export const getRecentPublicContractRows = async (options: {
   limit: number
-  beforeTime?: number
-  order?: 'asc' | 'desc'
 }) => {
-  let q = db.from('public_contracts').select('*')
-  q = q.order('created_time', {
-    ascending: options?.order === 'asc',
-  } as any)
-  if (options.beforeTime) {
-    q = q.lt('created_time', millisToTs(options.beforeTime))
-  }
-  q = q.limit(options.limit)
+  const q = db
+    .from('public_contracts')
+    .select('*')
+    .order('created_time', { ascending: false })
+    .limit(options.limit)
   const { data } = await run(q)
   return data as Tables['contracts']['Row'][]
 }

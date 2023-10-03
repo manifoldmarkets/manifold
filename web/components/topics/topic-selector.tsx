@@ -22,6 +22,7 @@ export function TopicSelector(props: {
   newContract?: boolean
   onlyGroupIds?: string[]
   onCreateTopic?: (group: Group) => void
+  className?: string
 }) {
   const {
     setSelectedGroup,
@@ -30,6 +31,7 @@ export function TopicSelector(props: {
     ignoreGroupIds,
     newContract,
     onlyGroupIds,
+    className,
   } = props
   const user = useUser()
   const onlyGroups = useAsyncData(onlyGroupIds, getGroups)
@@ -80,7 +82,7 @@ export function TopicSelector(props: {
   }
 
   return (
-    <Col className="w-full items-start">
+    <Col className={clsx('w-full items-start', className)}>
       <Combobox
         as="div"
         value={null}

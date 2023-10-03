@@ -90,6 +90,7 @@ export async function calculateImportanceScore(
         thisWeekTradersByContract[contract.id] ?? 0
       )
 
+    // NOTE: These scores aren't updated in firestore, so are never accurate in the data blob
     if (
       contract.importanceScore !== importanceScore ||
       contract.popularityScore !== popularityScore ||
@@ -246,7 +247,6 @@ export const computeContractScores = (
   const liquidityScore = isResolved
     ? 0
     : normalize(clamp(1 / contract.elasticity, 0, 100), 100)
-
 
   let uncertainness = 0
 
