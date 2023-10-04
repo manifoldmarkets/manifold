@@ -108,7 +108,7 @@ export const CORE_USERNAMES = [
   'ian',
   'Sinclair',
   'Alice',
-  'DavidChee',
+  'SirSalty',
   'mqp',
   'IngaWei',
   'rachel',
@@ -151,6 +151,15 @@ export const MOD_USERNAMES = [
   'Mira',
   'evergreenemily',
   'SneakySly',
+  'Eliza',
+  'SirCryptomind',
+  'Joshua',
+  'jskf',
+  'JospehNoonan',
+  'CodeandSolder',
+  'Stralor',
+  'WieDan',
+  'StrayClimb',
 ]
 
 export const VERIFIED_USERNAMES = [
