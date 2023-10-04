@@ -16,7 +16,7 @@ import {
 } from 'web/components/supabase-search'
 import { supabaseSearchContracts } from '../firebase/api'
 import { db } from './db'
-import { chunk, flatten, keyBy } from 'lodash'
+import { chunk, uniqBy } from 'lodash'
 import { convertContract } from 'common/supabase/contracts'
 
 // A function to retrieve all contracts a user has bet on.
@@ -50,8 +50,7 @@ export async function getPublicContractsByIds(contractIds: string[]) {
       }
     })
   )
-  const contractsById = keyBy(flatten(contractLists), 'id')
-  return filterDefined(contractIds.map((id) => contractsById[id]))
+  return uniqBy(contractLists.flat(), 'id')
 }
 export async function getPublicContractIdsInTopics(
   contractIds: string[],
@@ -74,10 +73,9 @@ export async function getPublicContractIdsInTopics(
       }
     })
   )
-  const contractsById = keyBy(flatten(contractLists), 'id')
-  return filterDefined(contractIds.map((id) => contractsById[id]))
+  return uniqBy(contractLists.flat(), 'id')
 }
-// TODO get recently active contracts in topics
+
 export async function getRecentContractsOnTopics(
   topicSlugs: string[],
   ignoreSlugs: string[],
