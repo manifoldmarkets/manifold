@@ -549,7 +549,7 @@ export function ContractPageContent(props: {
 
                     <CloseOrResolveTime
                       contract={contract}
-                      editable={isCreator || isAdmin}
+                      editable={isCreator || isAdmin || trustworthy}
                     />
                   </div>
                 )}

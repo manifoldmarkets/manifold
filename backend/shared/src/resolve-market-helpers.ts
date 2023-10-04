@@ -29,7 +29,8 @@ import {
 import { getLoanPayouts, getPayouts, groupPayoutsByUser } from 'common/payouts'
 import { APIError } from 'common/api'
 import { CORE_USERNAMES } from 'common/envs/constants'
-import { track } from 'shared/analytics'
+import { trackPublicEvent } from 'shared/analytics'
+import { recordContractEdit } from 'shared/record-contract-edit'
 
 export type ResolutionParams = {
   outcome: string
@@ -65,18 +66,19 @@ export const resolveMarketHelper = async (
     probabilityInt
   )
 
+  const updatedAttrs = removeUndefinedProps({
+    isResolved: true,
+    resolution: outcome,
+    resolutionValue: value,
+    resolutionTime,
+    closeTime: newCloseTime,
+    resolutionProbability,
+    resolutions,
+    collectedFees,
+  })
   const contract = {
     ...unresolvedContract,
-    ...removeUndefinedProps({
-      isResolved: true,
-      resolution: outcome,
-      resolutionValue: value,
-      resolutionTime,
-      closeTime: newCloseTime,
-      resolutionProbability,
-      resolutions,
-      collectedFees,
-    }),
+    ...updatedAttrs,
     subsidyPool: 0,
   } as Contract
 
@@ -120,10 +122,16 @@ export const resolveMarketHelper = async (
     groupBy(bets, (bet) => bet.userId),
     (bets) => getContractBetMetrics(contract, bets)
   )
-  await track(resolver.id, 'resolve market', true, {
+  await trackPublicEvent(resolver.id, 'resolve market', {
     resolution: outcome,
     contractId,
   })
+
+  await recordContractEdit(
+    unresolvedContract,
+    resolver.id,
+    Object.keys(updatedAttrs)
+  )
 
   await createContractResolvedNotifications(
     contract,

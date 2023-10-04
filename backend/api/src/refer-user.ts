@@ -21,7 +21,7 @@ import * as crypto from 'crypto'
 import { runTxnFromBank } from 'shared/txn/run-txn'
 import { MINUTE_MS } from 'common/util/time'
 import { removeUndefinedProps } from 'common/util/object'
-import { track } from 'shared/analytics'
+import { trackPublicEvent } from 'shared/analytics'
 
 const bodySchema = z.object({
   referredByUsername: z.string(),
@@ -61,7 +61,7 @@ export const referuser = authEndpoint(async (req, auth) => {
     log(`referredByContract: ${referredByContract.slug}`)
   }
   await handleReferral(newUser.id, referredByUser.id, referredByContract)
-  track(newUser.id, 'Referral', true, {
+  trackPublicEvent(newUser.id, 'Referral', {
     referredByUserId: referredByUser.id,
     referredByContractId: contractId,
   })

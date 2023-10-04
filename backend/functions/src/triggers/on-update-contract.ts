@@ -12,6 +12,7 @@ import {
   createSupabaseDirectClient,
 } from 'shared/supabase/init'
 import { upsertGroupEmbedding } from 'shared/helpers/embeddings'
+import { buildArray } from 'common/util/array'
 
 export const onUpdateContract = functions
   .runWith({ secrets })
@@ -20,24 +21,27 @@ export const onUpdateContract = functions
     const contract = change.after.data() as Contract
     const previousContract = change.before.data() as Contract
     const { eventId } = context
-    const { closeTime, question, description, resolution, groupLinks } =
-      contract
+    const { closeTime, question, description, groupLinks } = contract
 
     const db = createSupabaseClient()
     const pg = createSupabaseDirectClient()
 
     if (
       !isEqual(previousContract.description, description) ||
-      !isEqual(previousContract.question, question) ||
-      !isEqual(previousContract.closeTime, closeTime) ||
-      !isEqual(previousContract.resolution, resolution)
+      !isEqual(previousContract.question, question)
     ) {
+      // TODO: add resolution and close time edits to upateMarket api call
       await run(
         db.from('contract_edits').insert({
           contract_id: contract.id,
           editor_id: contract.creatorId,
           data: previousContract,
           idempotency_key: eventId,
+          updated_keys: buildArray([
+            !isEqual(previousContract.description, description) &&
+              'description',
+            !isEqual(previousContract.question, question) && 'question',
+          ]),
         })
       )
     }

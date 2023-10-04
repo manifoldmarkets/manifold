@@ -530,3 +530,15 @@ export function referUser(params: {
 }) {
   return call(getApiUrl('refer-user'), 'POST', params)
 }
+
+export function updateMarket(params: {
+  contractId: string
+  visibility?: 'public' | 'unlisted'
+  closeTime?: number
+}) {
+  return call(getApiUrl('update-market'), 'POST', params)
+}
+
+export function banUser(params: { userId: string; unban?: boolean }) {
+  return call(getApiUrl('ban-user'), 'POST', params)
+}

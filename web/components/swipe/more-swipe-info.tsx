@@ -149,7 +149,7 @@ function MoreSwipeInfoDialog(props: {
 
         <Content content={descriptionString} />
         <Spacer h={4} />
-        <Stats contract={contract} hideAdvanced />
+        <Stats setOpen={setOpen} contract={contract} hideAdvanced />
         <Spacer h={4} />
         <UserBetsSummary contract={contract} />
       </Col>

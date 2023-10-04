@@ -13,6 +13,7 @@ import { isAdminId, isTrustworthy } from 'common/envs/constants'
 import { APIError, authEndpoint, validate } from './helpers'
 import { resolveMarketHelper } from 'shared/resolve-market-helpers'
 import { Answer } from 'common/answer'
+import { throwErrorIfNotMod } from 'shared/helpers/auth'
 
 const bodySchema = z.object({
   contractId: z.string(),
@@ -98,26 +99,17 @@ export const resolvemarket = authEndpoint(async (req, auth) => {
     throw new APIError(403, 'STONK contracts cannot be resolved')
   }
   const caller = await getUser(auth.uid)
-
-  const isTrusted = isTrustworthy(caller?.username)
-  const isAdmin = isAdminId(auth.uid)
-
-  if (creatorId !== auth.uid && !isAdmin && !isTrusted)
-    throw new APIError(403, 'User is not authorized to resolve this contract')
+  if (!caller) throw new APIError(400, 'Caller not found')
+  if (creatorId !== auth.uid) await throwErrorIfNotMod(auth.uid)
 
   if (contract.resolution) throw new APIError(403, 'Contract already resolved')
 
-  const creator = await getUser(creatorId)
+  const creator = caller.id === creatorId ? caller : await getUser(creatorId)
   if (!creator) throw new APIError(500, 'Creator not found')
 
   const resolutionParams = getResolutionParams(contract, req.body)
 
-  return await resolveMarketHelper(
-    contract,
-    caller ?? creator,
-    creator,
-    resolutionParams
-  )
+  return await resolveMarketHelper(contract, caller, creator, resolutionParams)
 })
 
 function getResolutionParams(contract: Contract, body: string) {

@@ -1,5 +1,4 @@
 import { usePrivateUser } from 'web/hooks/use-user'
-import { updateUser } from 'web/lib/firebase/users'
 import { Button } from 'web/components/buttons/button'
 import { Modal } from 'web/components/layout/modal'
 import { useState } from 'react'
@@ -7,7 +6,7 @@ import { Col } from 'web/components/layout/col'
 import { User } from 'common/user'
 import clsx from 'clsx'
 import { DotsHorizontalIcon } from '@heroicons/react/outline'
-import { useAdmin } from 'web/hooks/use-admin'
+import { useAdmin, useTrusted } from 'web/hooks/use-admin'
 import { UncontrolledTabs } from 'web/components/layout/tabs'
 import { BlockUser } from 'web/components/profile/block-user'
 import { ReportUser } from 'web/components/profile/report-user'
@@ -16,14 +15,16 @@ import { Row } from '../layout/row'
 import { PROJECT_ID } from 'common/envs/constants'
 import { SimpleCopyTextButton } from 'web/components/buttons/copy-link-button'
 import { ReferralsButton } from 'web/components/buttons/referrals-button'
+import { banUser } from 'web/lib/firebase/api'
 
 export function MoreOptionsUserButton(props: { user: User }) {
   const { user } = props
   const { id: userId, name } = user
-  const currentUser = usePrivateUser()
+  const currentPrivateUser = usePrivateUser()
   const [isModalOpen, setIsModalOpen] = useState(false)
   const isAdmin = useAdmin()
-  if (!currentUser || currentUser.id === userId) return null
+  const isTrusted = useTrusted()
+  if (!currentPrivateUser || currentPrivateUser.id === userId) return null
   const createdTime = new Date(user.createdTime).toLocaleDateString('en-us', {
     year: 'numeric',
     month: 'short',
@@ -41,12 +42,13 @@ export function MoreOptionsUserButton(props: { user: User }) {
         <Col className={'bg-canvas-0 text-ink-1000 rounded-md p-4 '}>
           <Title className={'!mb-2 flex justify-between'}>
             {name}
-            {isAdmin && (
+            {(isAdmin || isTrusted) && (
               <Button
                 color={'red'}
                 onClick={() => {
-                  updateUser(userId, {
-                    isBannedFromPosting: !(user.isBannedFromPosting ?? false),
+                  banUser({
+                    userId,
+                    unban: user.isBannedFromPosting ?? false,
                   })
                 }}
               >
@@ -85,7 +87,7 @@ export function MoreOptionsUserButton(props: { user: User }) {
                 content: (
                   <BlockUser
                     user={user}
-                    currentUser={currentUser}
+                    currentUser={currentPrivateUser}
                     closeModal={() => setIsModalOpen(false)}
                   />
                 ),

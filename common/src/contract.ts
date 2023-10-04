@@ -362,6 +362,8 @@ export const CPMM_MIN_POOL_QTY = 0.01
 export type Visibility = 'public' | 'unlisted' | 'private'
 export const VISIBILITIES = ['public', 'unlisted', 'private'] as const
 
+export const MINUTES_ALLOWED_TO_UNRESOLVE = 10
+
 export function contractPath(contract: Contract) {
   return `/${contract.creatorUsername}/${contract.slug}`
 }

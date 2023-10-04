@@ -1,7 +1,7 @@
 import { APIError, authEndpoint, validate } from './helpers'
 import { z } from 'zod'
 import { getPrivateUser, getUser, isProd, log } from 'shared/utils'
-import { track } from 'shared/analytics'
+import { trackPublicEvent } from 'shared/analytics'
 import * as admin from 'firebase-admin'
 import { IapTransaction, PurchaseData } from 'common/iap'
 import { ManaPurchaseTxn } from 'common/txn'
@@ -125,10 +125,9 @@ export const validateiap = authEndpoint(async (req, auth) => {
 
   await sendThankYouEmail(user, privateUser)
   log('iap revenue', revenue)
-  await track(
+  await trackPublicEvent(
     userId,
     'M$ purchase',
-    true,
     { amount: payout, transactionId },
     { revenue }
   )

@@ -17,5 +17,6 @@ create policy "public read" on audit_events for
     select
     using (true);
 create index if not exists audit_events_name on audit_events (user_id, name);
+create index if not exists audit_events_contract on audit_events (contract_id);
 alter table audit_events
     cluster on audit_events_name;

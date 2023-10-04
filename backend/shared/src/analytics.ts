@@ -14,7 +14,21 @@ const amp = Amplitude.init(key ?? '')
 export const track = async (
   userId: string,
   eventName: string,
-  publicEvent: boolean,
+  eventProperties?: any,
+  amplitudeProperties?: Partial<Amplitude.Event>
+) => {
+  return await tryOrLogError(
+    amp.logEvent({
+      event_type: eventName,
+      user_id: userId,
+      event_properties: eventProperties,
+      ...amplitudeProperties,
+    })
+  )
+}
+export const trackPublicEvent = async (
+  userId: string,
+  eventName: string,
   eventProperties?: any,
   amplitudeProperties?: Partial<Amplitude.Event>
 ) => {
@@ -28,9 +42,7 @@ export const track = async (
         event_properties: eventProperties,
         ...amplitudeProperties,
       }),
-      publicEvent
-        ? trackAuditEvent(userId, eventName, contractId, commentId, data)
-        : null,
+      trackAuditEvent(userId, eventName, contractId, commentId, data),
     ])
   )
 }
