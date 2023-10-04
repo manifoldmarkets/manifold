@@ -12,6 +12,7 @@ import {
   range,
   sortBy,
   uniq,
+  uniqBy,
 } from 'lodash'
 import { ReactNode, memo, useEffect, useState } from 'react'
 import { useRealtimeBets } from 'web/hooks/use-bets-supabase'
@@ -68,6 +69,7 @@ export function ActivityLog(props: {
   const [recentTopicalComments, setRecentTopicalComments] =
     useState<ContractComment[]>()
   const [loading, setLoading] = useState(false)
+
   const getRecentTopicalContent = async (topicSlugs: string[]) => {
     setLoading(true)
     const recentContracts = await getRecentContractsOnTopics(
@@ -121,8 +123,14 @@ export function ActivityLog(props: {
       c.visibility === 'public' &&
       c.groupSlugs?.some((slug) => topicSlugs?.includes(slug))
   )
-  const bets = (realtimeBets ?? []).concat(recentTopicalBets ?? [])
-  const comments = (realtimeComments ?? []).concat(recentTopicalComments ?? [])
+  const bets = uniqBy(
+    (realtimeBets ?? []).concat(recentTopicalBets ?? []),
+    'id'
+  )
+  const comments = uniqBy(
+    (realtimeComments ?? []).concat(recentTopicalComments ?? []),
+    'id'
+  )
 
   const activeContractIds = uniq([
     ...bets.map((b) => b.contractId),
@@ -140,15 +148,15 @@ export function ActivityLog(props: {
       : true
   )
 
-  const ignoredContractIds = difference(
-    activeContractIds,
-    activeContracts?.map((c) => c.id) ?? []
-  )
-
   const [contracts, unlistedContracts] = partition(
     filterDefined(activeContracts ?? []).concat(newContracts ?? []),
     (c) => c.visibility === 'public'
   )
+
+  const ignoredContractIds = difference(
+    activeContractIds,
+    activeContracts?.map((c) => c.id) ?? []
+  ).concat(unlistedContracts.map((c) => c.id))
 
   const items = sortBy(
     pill === 'all'
@@ -163,10 +171,7 @@ export function ActivityLog(props: {
     .reverse()
     .filter((i) =>
       // filter out comments and bets on ignored/off-topic contracts
-      'contractId' in i
-        ? !unlistedContracts.some((c) => c.id === i.contractId) &&
-          !ignoredContractIds.includes(i.contractId)
-        : true
+      'contractId' in i ? !ignoredContractIds.includes(i.contractId) : true
     )
   const contractsById = keyBy(contracts, 'id')
 
@@ -180,7 +185,13 @@ export function ActivityLog(props: {
     ) ?? 0
   const itemsSubset = items.slice(startIndex, startIndex + count)
   const allLoaded =
-    realtimeBets && realtimeComments && contracts && activeContracts
+    realtimeBets &&
+    realtimeComments &&
+    contracts &&
+    activeContracts &&
+    itemsSubset.every((item) =>
+      'contractId' in item ? contractsById[item.contractId] : true
+    )
 
   const groups = orderBy(
     Object.entries(
