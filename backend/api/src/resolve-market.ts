@@ -9,7 +9,6 @@ import {
   RESOLUTIONS,
 } from 'common/contract'
 import { getUser } from 'shared/utils'
-import { isAdminId, isTrustworthy } from 'common/envs/constants'
 import { APIError, authEndpoint, validate } from './helpers'
 import { resolveMarketHelper } from 'shared/resolve-market-helpers'
 import { Answer } from 'common/answer'
