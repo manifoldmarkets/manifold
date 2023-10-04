@@ -123,7 +123,6 @@ export function IconButton(props: {
   size?: SizeType
   type?: 'button' | 'reset' | 'submit'
   disabled?: boolean
-  loading?: boolean
 }) {
   const {
     children,
@@ -132,21 +131,18 @@ export function IconButton(props: {
     size = 'md',
     type = 'button',
     disabled = false,
-    loading,
   } = props
 
   return (
-    <button
+    <Button
       type={type}
-      className={clsx(
-        'inline-flex items-center justify-center transition-colors disabled:cursor-not-allowed',
-        buttonClass(size, 'gray-white'),
-        className
-      )}
-      disabled={disabled || loading}
+      size={size}
+      color="gray-white"
+      className={className}
+      disabled={disabled}
       onClick={onClick}
     >
       {children}
-    </button>
+    </Button>
   )
 }

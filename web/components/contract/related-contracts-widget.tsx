@@ -106,7 +106,7 @@ const RelatedContractCard = memo(function RelatedContractCard(props: {
     <Link
       className={clsx(
         'whitespace-nowrap px-4 py-3 outline-none',
-        'bg-canvas-0 focus:bg-ink-200 lg:hover:bg-ink-200 transition-colors',
+        'bg-canvas-0 lg:hover:bg-primary-50 focus:bg-primary-50 transition-colors',
         className
       )}
       href={contractPath(contract)}
@@ -121,7 +121,7 @@ const RelatedContractCard = memo(function RelatedContractCard(props: {
         {question}
       </div>
       <Row className="w-full items-end justify-between">
-        <Row className="items-center gap-2">
+        <Row className="items-center gap-1.5">
           <Avatar
             username={creatorUsername}
             avatarUrl={creatorAvatarUrl}
@@ -131,7 +131,7 @@ const RelatedContractCard = memo(function RelatedContractCard(props: {
           <UserLink
             name={contract.creatorName}
             username={contract.creatorUsername}
-            className="text-ink-400 text-sm"
+            className="text-ink-500 text-sm"
             createdTime={creatorCreatedTime}
             noLink
           />
