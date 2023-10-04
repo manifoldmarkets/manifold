@@ -104,14 +104,13 @@ export const ContractEditHistoryButton = (props: {
                 </Row>
                 {edit.updatedKeys && (
                   <div className="text-ink-500 mb-1 text-sm">
-                    <span> Updated: </span>
-                    {edit.updatedKeys.join(', ')}
+                    <span> They updated: </span>
+                    {edit.updatedKeys.includes('isResolved')
+                      ? `resolution`
+                      : edit.updatedKeys.join(', ')}{' '}
+                    on {formatTimeShort(edit.editCreated)}
                   </div>
                 )}
-                <div className="text-ink-500 mb-1 text-sm">
-                  {i === edits.length - 1 ? 'Created' : 'Saved'}{' '}
-                  {formatTimeShort(editTimes[i])}
-                </div>
 
                 <Col className="bg-canvas-0 gap-2 rounded-lg p-1">
                   <div className={'text-ink-1000 text-xl font-medium'}>
