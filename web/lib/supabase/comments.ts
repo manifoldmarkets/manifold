@@ -5,7 +5,6 @@ import { JSONContent } from '@tiptap/core'
 import { Post } from 'common/post'
 import { User } from 'common/user'
 import { track } from '../service/analytics'
-import { DAY_MS } from 'common/util/time'
 import { chunk } from 'lodash'
 
 export async function getComment(commentId: string) {
@@ -45,7 +44,10 @@ export async function getCommentRows(contractId: string) {
   )
   return data
 }
-export async function getRecentCommentRowsOnContracts(contractIds: string[]) {
+export async function getRecentCommentsOnContracts(
+  contractIds: string[],
+  limit: number
+) {
   const chunks = chunk(contractIds, 100)
   const rows = await Promise.all(
     chunks.map(async (ids: string[]) => {
@@ -54,13 +56,13 @@ export async function getRecentCommentRowsOnContracts(contractIds: string[]) {
           .from('contract_comments')
           .select()
           .in('contract_id', ids)
-          .gt('created_time', new Date(Date.now() - DAY_MS).toISOString())
+          .limit(limit)
           .order('created_time', { ascending: false })
       )
       return data
     })
   )
-  return rows.flat()
+  return rows.flat().map((r) => convertContractComment(r))
 }
 
 export async function getCommentsOnContract(

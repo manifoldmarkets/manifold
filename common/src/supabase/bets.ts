@@ -1,10 +1,10 @@
 import { SupabaseClient } from '@supabase/supabase-js'
 import { millisToTs, run, selectJson, tsToMillis } from './utils'
-import { BetFilter } from 'common/bet'
+import { Bet, BetFilter } from 'common/bet'
 import { User } from 'common/user'
 import { getContractBetMetrics } from 'common/calculate'
 import { Contract } from 'common/contract'
-import { groupBy, maxBy, minBy } from 'lodash'
+import { chunk, groupBy, maxBy, minBy } from 'lodash'
 import { removeUndefinedProps } from 'common/util/object'
 
 export const CONTRACT_BET_FILTER: BetFilter = {
@@ -32,6 +32,23 @@ export const getBetRows = async (db: SupabaseClient, options?: BetFilter) => {
   q = applyBetsFilter(q, options)
   const { data } = await run(q)
   return data
+}
+
+export async function getBetsOnContracts(
+  db: SupabaseClient,
+  contractIds: string[],
+  options?: Omit<BetFilter, 'contractId'>
+) {
+  const chunks = chunk(contractIds, 100)
+  const rows = await Promise.all(
+    chunks.map(async (ids: string[]) => {
+      let q = db.from('contract_bets').select('data').in('contract_id', ids)
+      q = applyBetsFilter(q, options)
+      const { data } = await run(q)
+      return data
+    })
+  )
+  return rows.flat().map((r) => r.data as Bet)
 }
 
 export const getBets = async (db: SupabaseClient, options?: BetFilter) => {

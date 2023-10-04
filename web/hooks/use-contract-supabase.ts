@@ -36,8 +36,8 @@ export const usePublicContracts = (
       contracts?.map((c) => c.id) ?? []
     )
     if (newIds.length == 0) return
-    if (topicSlugs || ignoreSlugs) {
-      getPublicContractIdsInTopics(newIds, topicSlugs ?? [], ignoreSlugs).then(
+    if (topicSlugs) {
+      getPublicContractIdsInTopics(newIds, topicSlugs, ignoreSlugs).then(
         (result) => {
           setContracts((old) => uniqBy([...result, ...(old ?? [])], 'id'))
         }

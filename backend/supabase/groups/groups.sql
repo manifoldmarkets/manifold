@@ -9,6 +9,17 @@ where id = any(contract_ids)
 $$;
 
 create
+    or replace function get_recently_active_contracts_in_group_slugs ( group_slugs text[], ignore_slugs text[], max int) returns
+    table( data JSON, importance_score numeric) stable parallel safe language sql as $$
+select data, importance_score
+from contracts
+where (contracts.data -> 'groupSlugs' ?| group_slugs)
+  and not (contracts.data -> 'groupSlugs' ?| ignore_slugs)
+    order by data->'lastUpdatedTime' desc
+limit max
+$$;
+
+create
     or replace function is_group_admin (this_group_id text, this_user_id text) returns boolean immutable parallel safe language sql as $$
 select EXISTS (
     SELECT 1

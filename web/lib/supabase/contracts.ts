@@ -79,28 +79,22 @@ export async function getPublicContractIdsInTopics(
 }
 // TODO get recently active contracts in topics
 export async function getRecentContractsOnTopics(
-  contractIds: string[],
   topicSlugs: string[],
-  ignoreSlugs?: string[]
+  ignoreSlugs: string[],
+  limit: number
 ) {
-  const contractLists = await Promise.all(
-    chunk(contractIds, 100).map(async (ids) => {
-      const { data } = await run(
-        db.rpc('get_contracts_in_group_slugs' as any, {
-          contract_ids: ids,
-          group_slugs: topicSlugs,
-          ignore_slugs: ignoreSlugs,
-        })
-      )
-      if (data && data.length > 0) {
-        return data.map((d) => convertContract(d))
-      } else {
-        return []
-      }
+  const { data } = await run(
+    db.rpc('get_recently_active_contracts_in_group_slugs' as any, {
+      group_slugs: topicSlugs,
+      ignore_slugs: ignoreSlugs,
+      max: limit,
     })
   )
-  const contractsById = keyBy(flatten(contractLists), 'id')
-  return filterDefined(contractIds.map((id) => contractsById[id]))
+  if (data && data.length > 0) {
+    return data.map((d) => convertContract(d))
+  } else {
+    return []
+  }
 }
 
 export async function getContracts(

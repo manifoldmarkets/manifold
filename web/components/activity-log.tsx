@@ -13,7 +13,7 @@ import {
   sortBy,
   uniq,
 } from 'lodash'
-import { ReactNode, memo } from 'react'
+import { ReactNode, memo, useEffect, useState } from 'react'
 import { useRealtimeBets } from 'web/hooks/use-bets-supabase'
 import { useRealtimeComments } from 'web/hooks/use-comments-supabase'
 import {
@@ -36,7 +36,11 @@ import { Content } from './widgets/editor'
 import { LoadingIndicator } from './widgets/loading-indicator'
 import { UserLink } from './widgets/user-link'
 import { track } from 'web/lib/service/analytics'
-import { getAllCommentRows } from 'web/lib/supabase/comments'
+import { getRecentCommentsOnContracts } from 'web/lib/supabase/comments'
+import { getRecentContractsOnTopics } from 'web/lib/supabase/contracts'
+import { getBetsOnContracts } from 'common/supabase/bets'
+import { db } from 'web/lib/supabase/db'
+import { Bet } from 'common/bet'
 
 const EXTRA_USERNAMES_TO_EXCLUDE = ['Charlie', 'GamblingGandalf']
 
@@ -56,13 +60,42 @@ export function ActivityLog(props: {
   const blockedGroupSlugs = buildArray(
     privateUser?.blockedGroupSlugs ?? [],
     shouldBlockDestiny && DESTINY_GROUP_SLUGS
-  )
+  ).filter((t) => !topicSlugs?.includes(t))
   const blockedContractIds = privateUser?.blockedContractIds ?? []
   const blockedUserIds = privateUser?.blockedUserIds ?? []
 
-  // TODO: could change the initial query to factor in topicSlugs
-  const bets = useRealtimeBets({
-    limit: count * 3 + 20,
+  const [recentTopicalBets, setRecentTopicalBets] = useState<Bet[]>()
+  const [recentTopicalComments, setRecentTopicalComments] =
+    useState<ContractComment[]>()
+  const [loading, setLoading] = useState(false)
+  const getRecentTopicalContent = async (topicSlugs: string[]) => {
+    setLoading(true)
+    const recentContracts = await getRecentContractsOnTopics(
+      topicSlugs,
+      blockedGroupSlugs,
+      count
+    )
+    const recentContractIds = recentContracts.map((c) => c.id)
+    const recentBets = await getBetsOnContracts(db, recentContractIds, {
+      limit: count * 3,
+      filterRedemptions: true,
+      order: 'desc',
+    })
+    const recentComments = await getRecentCommentsOnContracts(
+      recentContractIds,
+      count
+    )
+    setRecentTopicalBets(recentBets)
+    setRecentTopicalComments(recentComments)
+    setLoading(false)
+  }
+
+  useEffect(() => {
+    if (topicSlugs) getRecentTopicalContent(topicSlugs)
+  }, [topicSlugs])
+
+  const realtimeBets = useRealtimeBets({
+    limit: count * 3,
     filterRedemptions: true,
     order: 'desc',
   })?.filter(
@@ -73,15 +106,12 @@ export function ActivityLog(props: {
       !EXTRA_USERNAMES_TO_EXCLUDE.includes(bet.userUsername)
   )
 
-  // TODO: could change the initial query to factor in topicSlugs
-  const comments = useRealtimeComments(() =>
-    getAllCommentRows(count * 3)
-  )?.filter(
+  const realtimeComments = useRealtimeComments(count * 3)?.filter(
     (c) =>
       c.commentType === 'contract' &&
       !blockedContractIds.includes(c.contractId) &&
       !blockedUserIds.includes(c.userId)
-  ) as ContractComment[]
+  )
 
   // TODO: could change the initial query to factor in topicSlugs
   const newContracts = useRealtimeNewContracts(count * 3)?.filter(
@@ -91,6 +121,8 @@ export function ActivityLog(props: {
       c.visibility === 'public' &&
       c.groupSlugs?.some((slug) => topicSlugs?.includes(slug))
   )
+  const bets = (realtimeBets ?? []).concat(recentTopicalBets ?? [])
+  const comments = (realtimeComments ?? []).concat(recentTopicalComments ?? [])
 
   const activeContractIds = uniq([
     ...bets.map((b) => b.contractId),
@@ -101,10 +133,11 @@ export function ActivityLog(props: {
     activeContractIds,
     topicSlugs,
     blockedGroupSlugs
-  )?.filter(
-    (c) =>
-      c.groupSlugs?.some((slug) => topicSlugs?.includes(slug)) &&
-      !c.groupSlugs?.some((slug) => blockedGroupSlugs.includes(slug))
+  )?.filter((c) =>
+    topicSlugs
+      ? c.groupSlugs?.some((slug) => topicSlugs?.includes(slug)) &&
+        !c.groupSlugs?.some((slug) => blockedGroupSlugs.includes(slug))
+      : true
   )
 
   const ignoredContractIds = difference(
@@ -146,7 +179,8 @@ export function ActivityLog(props: {
         )
     ) ?? 0
   const itemsSubset = items.slice(startIndex, startIndex + count)
-  const allLoaded = bets && comments && contracts && activeContracts
+  const allLoaded =
+    realtimeBets && realtimeComments && contracts && activeContracts
 
   const groups = orderBy(
     Object.entries(
@@ -165,7 +199,7 @@ export function ActivityLog(props: {
 
   return (
     <Col className={clsx('gap-4', className)}>
-      {!allLoaded && <LoadingIndicator />}
+      {!allLoaded || (loading && <LoadingIndicator />)}
       {allLoaded && (
         <Col className="border-ink-400 divide-ink-400 divide-y-[0.5px] rounded-sm border-[0.5px]">
           {groups.map(({ parentId, items }) => {
