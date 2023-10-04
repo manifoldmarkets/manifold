@@ -155,7 +155,7 @@ export const MOD_USERNAMES = [
   'SirCryptomind',
   'Joshua',
   'jskf',
-  'JospehNoonan',
+  'JosephNoonan',
   'CodeandSolder',
   'Stralor',
   'WieDan',
