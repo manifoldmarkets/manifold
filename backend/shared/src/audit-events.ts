@@ -1,7 +1,5 @@
-import { createSupabaseClient } from 'shared/supabase/init'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { tryOrLogError } from 'shared/helpers/try-or-log-error'
-import { run } from 'common/supabase/utils'
-import { removeUndefinedProps } from 'common/util/object'
 
 export const trackAuditEvent = async (
   userId: string,
@@ -10,18 +8,12 @@ export const trackAuditEvent = async (
   commentId?: string,
   otherProps?: Record<string, any>
 ) => {
-  const db = createSupabaseClient()
+  const pg = createSupabaseDirectClient()
   return await tryOrLogError(
-    run(
-      db.from('audit_events').insert(
-        removeUndefinedProps({
-          name,
-          user_id: userId,
-          contract_id: contractId,
-          comment_id: commentId,
-          data: otherProps,
-        })
-      )
+    pg.none(
+      `insert into audit_events (name,user_id, contract_id, comment_id, data) 
+                values ($1, $2, $3, $4, $5) on conflict do nothing`,
+      [name, userId, contractId, commentId, otherProps]
     )
   )
 }

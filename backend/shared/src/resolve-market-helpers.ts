@@ -29,7 +29,7 @@ import {
 import { getLoanPayouts, getPayouts, groupPayoutsByUser } from 'common/payouts'
 import { APIError } from 'common/api'
 import { CORE_USERNAMES } from 'common/envs/constants'
-import { trackAuditEvent } from 'shared/audit-events'
+import { track } from 'shared/analytics'
 
 export type ResolutionParams = {
   outcome: string
@@ -120,9 +120,9 @@ export const resolveMarketHelper = async (
     groupBy(bets, (bet) => bet.userId),
     (bets) => getContractBetMetrics(contract, bets)
   )
-
-  await trackAuditEvent(resolver.id, 'resolve market', contractId, undefined, {
+  await track(resolver.id, 'resolve market', true, {
     resolution: outcome,
+    contractId,
   })
 
   await createContractResolvedNotifications(

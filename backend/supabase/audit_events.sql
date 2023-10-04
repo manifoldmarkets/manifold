@@ -1,7 +1,7 @@
 create table if not exists
     audit_events (
                      id bigint generated always as identity primary key,
-                     ts timestamptz not null default now(),
+                     created_time timestamptz not null default now(),
                      name text not null,
                      user_id text not null,
                      contract_id text null,

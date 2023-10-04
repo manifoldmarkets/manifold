@@ -57,6 +57,36 @@ export interface Database {
         }
         Relationships: []
       }
+      audit_events: {
+        Row: {
+          comment_id: string | null
+          contract_id: string | null
+          created_time: string
+          data: Json | null
+          id: number
+          name: string
+          user_id: string
+        }
+        Insert: {
+          comment_id?: string | null
+          contract_id?: string | null
+          created_time?: string
+          data?: Json | null
+          id?: never
+          name: string
+          user_id: string
+        }
+        Update: {
+          comment_id?: string | null
+          contract_id?: string | null
+          created_time?: string
+          data?: Json | null
+          id?: never
+          name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       chat_messages: {
         Row: {
           channel_id: string
