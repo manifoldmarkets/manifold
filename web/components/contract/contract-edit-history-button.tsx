@@ -10,7 +10,15 @@ import { ContractDescription } from 'web/components/contract/contract-descriptio
 import { CloseOrResolveTime } from 'web/components/contract/contract-details'
 import { uniqBy } from 'lodash'
 import { formatTimeShort } from 'web/lib/util/time'
+import { Row } from '../layout/row'
+import { UserFromId } from 'web/components/user-from-id'
 
+type ContractEdit = Contract & {
+  updatedKeys?: string[]
+  editCreated: number
+  idempotencyKey: string
+  editorId: string
+}
 export const ContractEditHistoryButton = (props: {
   contract: Contract
   className?: string
@@ -18,7 +26,7 @@ export const ContractEditHistoryButton = (props: {
   const { contract, className } = props
   const [showEditHistory, setShowEditHistory] = useState(false)
   const [contractHasEdits, setContractHasEdits] = useState(false)
-  const [edits, setEdits] = useState<Contract[] | undefined>(undefined)
+  const [edits, setEdits] = useState<ContractEdit[] | undefined>(undefined)
   const [editTimes, setEditTimes] = useState<number[]>([])
 
   const getCount = async () => {
@@ -47,17 +55,19 @@ export const ContractEditHistoryButton = (props: {
         const contract = edit.data as Contract
         return {
           ...contract,
-          versionDeletedTime: new Date(edit.created_time).valueOf(),
+          editCreated: new Date(edit.created_time).valueOf(),
           idempotencyKey: edit.idempotency_key
             ? edit.idempotency_key
-            : Math.random(),
-        }
+            : Math.random().toString(),
+          updatedKeys: edit.updated_keys,
+          editorId: edit.editor_id,
+        } as ContractEdit
       }),
       'idempotencyKey'
     )
 
     setEditTimes([
-      ...contracts.map((c) => c.versionDeletedTime).slice(1),
+      ...contracts.map((c) => c.editCreated).slice(1),
       contract.createdTime,
     ])
 
@@ -89,16 +99,27 @@ export const ContractEditHistoryButton = (props: {
                   {i === edits.length - 1 ? 'Created' : 'Saved'}{' '}
                   {formatTimeShort(editTimes[i])}
                 </div>
+                <div className="text-ink-500 mb-1 px-2 text-sm">
+                  <span> Updated: </span>
+                  {edit.updatedKeys?.join(', ')}
+                </div>
 
                 <Col className="bg-canvas-0 gap-2 rounded-lg p-2">
                   <div className={'text-ink-1000 text-xl font-medium'}>
                     {edit.question}
                   </div>
                   <ContractDescription contract={edit} defaultCollapse={true} />
-                  <CloseOrResolveTime
-                    className="text-ink-700 text-sm"
-                    contract={edit}
-                  />
+                  <Row className={'gap-2'}>
+                    <CloseOrResolveTime
+                      className="text-ink-700 text-sm"
+                      contract={edit}
+                    />
+                    {edit.resolution && edit.resolution}
+                  </Row>
+                  <Row className={'items-center gap-2'}>
+                    Editor:
+                    <UserFromId userId={edit.editorId} />
+                  </Row>
                 </Col>
               </div>
             ))}

@@ -266,6 +266,7 @@ export interface Database {
           editor_id: string
           id: number
           idempotency_key: string | null
+          updated_keys: string[] | null
         }
         Insert: {
           contract_id: string
@@ -274,6 +275,7 @@ export interface Database {
           editor_id: string
           id?: number
           idempotency_key?: string | null
+          updated_keys?: string[] | null
         }
         Update: {
           contract_id?: string
@@ -282,6 +284,7 @@ export interface Database {
           editor_id?: string
           id?: number
           idempotency_key?: string | null
+          updated_keys?: string[] | null
         }
         Relationships: []
       }
