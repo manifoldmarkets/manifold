@@ -94,17 +94,26 @@ export const ContractEditHistoryButton = (props: {
           <Title>Edit history</Title>
           <Col className="gap-4">
             {edits?.map((edit, i) => (
-              <div key={edit.id}>
-                <div className="text-ink-500 mb-1 px-2 text-sm">
+              <div key={edit.id} className={'px-2'}>
+                <Row className={'items-center gap-2 '}>
+                  <UserFromId userId={edit.editorId} />{' '}
+                  <span>
+                    produced the {i === 0 ? 'current ' : 'above '} edit from the
+                    previous version below.
+                  </span>
+                </Row>
+                {edit.updatedKeys && (
+                  <div className="text-ink-500 mb-1 text-sm">
+                    <span> Updated: </span>
+                    {edit.updatedKeys.join(', ')}
+                  </div>
+                )}
+                <div className="text-ink-500 mb-1 text-sm">
                   {i === edits.length - 1 ? 'Created' : 'Saved'}{' '}
                   {formatTimeShort(editTimes[i])}
                 </div>
-                <div className="text-ink-500 mb-1 px-2 text-sm">
-                  <span> Updated: </span>
-                  {edit.updatedKeys?.join(', ')}
-                </div>
 
-                <Col className="bg-canvas-0 gap-2 rounded-lg p-2">
+                <Col className="bg-canvas-0 gap-2 rounded-lg p-1">
                   <div className={'text-ink-1000 text-xl font-medium'}>
                     {edit.question}
                   </div>
@@ -115,10 +124,6 @@ export const ContractEditHistoryButton = (props: {
                       contract={edit}
                     />
                     {edit.resolution && edit.resolution}
-                  </Row>
-                  <Row className={'items-center gap-2'}>
-                    Editor:
-                    <UserFromId userId={edit.editorId} />
                   </Row>
                 </Col>
               </div>
