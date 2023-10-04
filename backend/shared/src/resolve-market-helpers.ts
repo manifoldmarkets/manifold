@@ -29,6 +29,7 @@ import {
 import { getLoanPayouts, getPayouts, groupPayoutsByUser } from 'common/payouts'
 import { APIError } from 'common/api'
 import { CORE_USERNAMES } from 'common/envs/constants'
+import { trackAuditEvent } from 'shared/audit-events'
 
 export type ResolutionParams = {
   outcome: string
@@ -102,10 +103,6 @@ export const resolveMarketHelper = async (
     )
   }
 
-  // mqp: it would be nice to do this but would require some refactoring
-  // const updates = await computeContractMetricUpdates(contract, Date.now())
-  // contract = { ...contract, ...(updates as any) }
-
   // Should we combine all the payouts into one txn?
   const contractDoc = firestore.doc(`contracts/${contractId}`)
   await payUsersTransactions(payouts, contractId)
@@ -123,6 +120,10 @@ export const resolveMarketHelper = async (
     groupBy(bets, (bet) => bet.userId),
     (bets) => getContractBetMetrics(contract, bets)
   )
+
+  await trackAuditEvent(resolver.id, 'resolve market', contractId, undefined, {
+    resolution: outcome,
+  })
 
   await createContractResolvedNotifications(
     contract,

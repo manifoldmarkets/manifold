@@ -9,7 +9,6 @@ import { ResolveConfirmationButton } from '../buttons/confirmation-button'
 import { removeUndefinedProps } from 'common/util/object'
 import { BETTORS } from 'common/user'
 import { Button } from '../buttons/button'
-import { useAdmin } from 'web/hooks/use-admin'
 import { useUser } from 'web/hooks/use-user'
 import { ResolutionAnswerItem } from './answer-item'
 
@@ -55,7 +54,6 @@ function getAnswerResolveButtonLabel(
 }
 
 function AnswersResolveOptions(props: {
-  isAdmin: boolean
   isCreator: boolean
   contract: MultiContract
   resolveOption: 'CHOOSE_ONE' | 'CHOOSE_MULTIPLE' | 'CANCEL' | undefined
@@ -70,7 +68,6 @@ function AnswersResolveOptions(props: {
     resolveOption,
     setResolveOption,
     chosenAnswers,
-    isAdmin,
     isCreator,
     isInModal,
   } = props
@@ -151,9 +148,13 @@ function AnswersResolveOptions(props: {
   return (
     <Col className="gap-4 rounded">
       <Row className="justify-between">
-        {!isInModal && <div>Resolve your question</div>}
+        {!isInModal && (
+          <div>
+            Resolve {isCreator ? 'your' : contract.creatorName + `'s`} question
+          </div>
+        )}
         {isInModal && <div>Resolve "{contract.question}"</div>}
-        {isAdmin && !isCreator && (
+        {!isCreator && (
           <span className="bg-scarlet-500/20 text-scarlet-500 rounded p-1 text-xs">
             ADMIN
           </span>
@@ -244,7 +245,6 @@ export const AnswersResolvePanel = (props: { contract: MultiContract }) => {
 
   const { answers } = contract
 
-  const isAdmin = useAdmin()
   const user = useUser()
 
   const [resolveOption, setResolveOption] = useState<
@@ -292,7 +292,6 @@ export const AnswersResolvePanel = (props: { contract: MultiContract }) => {
   return (
     <>
       <AnswersResolveOptions
-        isAdmin={isAdmin}
         isCreator={user?.id === contract.creatorId}
         contract={contract}
         resolveOption={resolveOption}

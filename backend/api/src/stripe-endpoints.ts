@@ -180,6 +180,7 @@ const issueMoneys = async (session: StripeSession) => {
     await track(
       userId,
       'M$ purchase',
+      true,
       { amount: deposit, sessionId },
       { revenue: deposit / 100 }
     )

@@ -587,18 +587,16 @@ export function ContractPageContent(props: {
               (outcomeType === 'PSEUDO_NUMERIC' ? (
                 <GradientContainer className="my-2">
                   <NumericResolutionPanel
-                    isAdmin={isAdmin}
                     creator={user}
-                    isCreator={!isAdmin}
+                    isCreator={user.id === contract.creatorId}
                     contract={contract}
                   />
                 </GradientContainer>
               ) : outcomeType === 'BINARY' ? (
                 <GradientContainer className="my-2">
                   <ResolutionPanel
-                    isAdmin={isAdmin || trustworthy}
                     creator={user}
-                    isCreator={!isAdmin}
+                    isCreator={user.id === contract.creatorId}
                     contract={contract}
                   />
                 </GradientContainer>

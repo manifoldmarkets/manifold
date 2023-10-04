@@ -128,6 +128,7 @@ export const validateiap = authEndpoint(async (req, auth) => {
   await track(
     userId,
     'M$ purchase',
+    true,
     { amount: payout, transactionId },
     { revenue }
   )

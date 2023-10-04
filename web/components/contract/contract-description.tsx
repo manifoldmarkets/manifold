@@ -32,13 +32,12 @@ export function ContractDescription(props: {
     toggleResolver,
     showEditHistory,
   } = props
-  const { creatorId, closeTime } = contract
+  const { creatorId } = contract
 
   const isAdmin = useAdmin()
   const user = useUser()
   const isCreator = user?.id === creatorId
-  const isClosed = !!(closeTime && closeTime < Date.now())
-  const trustworthy = isTrustworthy(user?.username) && isClosed
+  const trustworthy = isTrustworthy(user?.username)
 
   const showContractActions =
     user &&
@@ -174,7 +173,11 @@ function ContractActions(props: {
             size="2xs"
             onClick={toggleResolver}
           >
-            Resolve
+            {isOnlyAdmin
+              ? 'Admin resolve'
+              : isOnlyTrustworthy
+              ? 'Trustworthy resolve'
+              : 'Resolve'}
           </Button>
         )}
       </Row>

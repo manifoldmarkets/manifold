@@ -1,14 +1,13 @@
 import * as Sprig from 'web/lib/service/sprig'
 
 import { ENV, ENV_CONFIG } from 'common/envs/constants'
-import { run } from 'common/supabase/utils'
-import { Json } from 'common/supabase/schema'
 import { db } from 'web/lib/supabase/db'
 import { removeUndefinedProps } from 'common/util/object'
 import { getIsNative } from '../native/is-native'
 import { ShareEvent } from 'common/events'
 import { completeQuest } from 'web/lib/firebase/api'
 import { QuestType } from 'common/quest'
+import { EventData, insertUserEvent } from 'common/supabase/analytics'
 
 const loadAmplitude = () => import('@amplitude/analytics-browser')
 let amplitudeLib: ReturnType<typeof loadAmplitude> | undefined
@@ -18,7 +17,6 @@ type EventIds = {
   commentId?: string | null
   adId?: string | null
 }
-type EventData = Record<string, Json | undefined>
 
 export const initAmplitude = async () => {
   if (amplitudeLib == null) {
@@ -28,40 +26,6 @@ export const initAmplitude = async () => {
   } else {
     return await amplitudeLib
   }
-}
-
-async function insertSupabaseEvent(
-  name: string,
-  data: EventData,
-  userId?: string | null,
-  contractId?: string | null,
-  commentId?: string | null,
-  adId?: string | null
-) {
-  if (
-    (name === 'view market' || name === 'view market card') &&
-    userId &&
-    contractId
-  ) {
-    return run(
-      db.from('user_seen_markets').insert({
-        user_id: userId,
-        contract_id: contractId,
-        data: removeUndefinedProps(data) as Record<string, Json>,
-        type: name,
-      })
-    )
-  }
-  return run(
-    db.from('user_events').insert({
-      name,
-      data: removeUndefinedProps(data) as Record<string, Json>,
-      user_id: userId,
-      contract_id: contractId,
-      comment_id: commentId,
-      ad_id: adId,
-    })
-  )
 }
 
 export async function track(name: string, properties?: EventIds & EventData) {
@@ -86,7 +50,7 @@ export async function track(name: string, properties?: EventIds & EventData) {
     const { contractId, adId, commentId, ...data } = allProperties
     await Promise.all([
       amplitude.track(name, removeUndefinedProps(allProperties)).promise,
-      insertSupabaseEvent(name, data, userId, contractId, commentId, adId),
+      insertUserEvent(name, data, db, userId, contractId, commentId, adId),
     ])
   } catch (e) {
     console.log('error tracking event:', e)

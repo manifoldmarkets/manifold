@@ -61,8 +61,7 @@ export const referuser = authEndpoint(async (req, auth) => {
     log(`referredByContract: ${referredByContract.slug}`)
   }
   await handleReferral(newUser.id, referredByUser.id, referredByContract)
-  track(newUser.id, 'Referral', {
-    userId: newUser.id,
+  track(newUser.id, 'Referral', true, {
     referredByUserId: referredByUser.id,
     referredByContractId: contractId,
   })

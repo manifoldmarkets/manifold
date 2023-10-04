@@ -166,7 +166,13 @@ export const createuser = authEndpoint(async (req, auth) => {
     0.5
   )
 
-  await track(auth.uid, 'create user', { username: user.username }, { ip })
+  await track(
+    auth.uid,
+    'create user',
+    false,
+    { username: user.username },
+    { ip }
+  )
 
   if (process.env.FB_ACCESS_TOKEN)
     await trackSignupFB(

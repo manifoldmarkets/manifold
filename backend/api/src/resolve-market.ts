@@ -99,11 +99,11 @@ export const resolvemarket = authEndpoint(async (req, auth) => {
   }
   const caller = await getUser(auth.uid)
 
-  const isClosed = !!(contract.closeTime && contract.closeTime < Date.now())
-  const trustworthyResolvable = isTrustworthy(caller?.username) && isClosed
+  const isTrusted = isTrustworthy(caller?.username)
+  const isAdmin = isAdminId(auth.uid)
 
-  if (creatorId !== auth.uid && !isAdminId(auth.uid) && !trustworthyResolvable)
-    throw new APIError(403, 'User is not creator of contract')
+  if (creatorId !== auth.uid && !isAdmin && !isTrusted)
+    throw new APIError(403, 'User is not authorized to resolve this contract')
 
   if (contract.resolution) throw new APIError(403, 'Contract already resolved')
 
