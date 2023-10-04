@@ -61,14 +61,14 @@ export async function getPublicContractIdsInTopics(
   const contractLists = await Promise.all(
     chunk(contractIds, 100).map(async (ids) => {
       const { data } = await run(
-        db.rpc('get_contracts_in_group_slugs' as any, {
+        db.rpc('get_contracts_in_group_slugs', {
           contract_ids: ids,
           group_slugs: topicSlugs,
-          ignore_slugs: ignoreSlugs,
+          ignore_slugs: ignoreSlugs ?? [],
         })
       )
       if (data && data.length > 0) {
-        return data.map((d) => convertContract(d))
+        return data.flat().map((d) => convertContract(d))
       } else {
         return []
       }
@@ -84,14 +84,14 @@ export async function getRecentContractsOnTopics(
   limit: number
 ) {
   const { data } = await run(
-    db.rpc('get_recently_active_contracts_in_group_slugs' as any, {
+    db.rpc('get_recently_active_contracts_in_group_slugs', {
       group_slugs: topicSlugs,
       ignore_slugs: ignoreSlugs,
       max: limit,
     })
   )
   if (data && data.length > 0) {
-    return data.map((d) => convertContract(d))
+    return data.flat().map((d) => convertContract(d))
   } else {
     return []
   }

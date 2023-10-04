@@ -10,6 +10,7 @@ import {
 } from './utils'
 import { Contract } from '../contract'
 import { Answer } from 'common/answer'
+import { Json } from 'common/supabase/schema'
 
 export const getContractFromSlug = async (
   contractSlug: string,
@@ -116,9 +117,10 @@ export const convertAnswer = (row: Row<'answers'>) =>
   convertSQLtoTS<'answers', Answer>(row, {
     created_time: (maybeTs) => (maybeTs != null ? tsToMillis(maybeTs) : 0),
   })
-export const convertContract = (
-  c: { data: any } & { importance_score: number | null }
-) =>
+export const convertContract = (c: {
+  data: any | Json
+  importance_score: number | null
+}) =>
   ({
     ...(c.data as Contract),
     // importance_score is only updated in Supabase

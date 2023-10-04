@@ -1969,12 +1969,16 @@ export interface Database {
           created_time: string | null
           creator_id: string | null
           data: Json | null
+          description_fts: unknown | null
           fs_updated_time: string | null
           id: string | null
+          importance_score: number | null
           mechanism: string | null
           outcome_type: string | null
           popularity_score: number | null
           question: string | null
+          question_fts: unknown | null
+          question_nostop_fts: unknown | null
           resolution: string | null
           resolution_probability: number | null
           resolution_time: string | null
@@ -1986,12 +1990,16 @@ export interface Database {
           created_time?: string | null
           creator_id?: string | null
           data?: Json | null
+          description_fts?: unknown | null
           fs_updated_time?: string | null
           id?: string | null
+          importance_score?: number | null
           mechanism?: string | null
           outcome_type?: string | null
           popularity_score?: number | null
           question?: string | null
+          question_fts?: unknown | null
+          question_nostop_fts?: unknown | null
           resolution?: string | null
           resolution_probability?: number | null
           resolution_time?: string | null
@@ -2003,12 +2011,16 @@ export interface Database {
           created_time?: string | null
           creator_id?: string | null
           data?: Json | null
+          description_fts?: unknown | null
           fs_updated_time?: string | null
           id?: string | null
+          importance_score?: number | null
           mechanism?: string | null
           outcome_type?: string | null
           popularity_score?: number | null
           question?: string | null
+          question_fts?: unknown | null
+          question_nostop_fts?: unknown | null
           resolution?: string | null
           resolution_probability?: number | null
           resolution_time?: string | null
@@ -2143,12 +2155,16 @@ export interface Database {
           created_time: string | null
           creator_id: string | null
           data: Json | null
+          description_fts: unknown | null
           fs_updated_time: string | null
           id: string | null
+          importance_score: number | null
           mechanism: string | null
           outcome_type: string | null
           popularity_score: number | null
           question: string | null
+          question_fts: unknown | null
+          question_nostop_fts: unknown | null
           resolution: string | null
           resolution_probability: number | null
           resolution_time: string | null
@@ -2160,12 +2176,16 @@ export interface Database {
           created_time?: string | null
           creator_id?: string | null
           data?: Json | null
+          description_fts?: unknown | null
           fs_updated_time?: string | null
           id?: string | null
+          importance_score?: number | null
           mechanism?: string | null
           outcome_type?: string | null
           popularity_score?: number | null
           question?: string | null
+          question_fts?: unknown | null
+          question_nostop_fts?: unknown | null
           resolution?: string | null
           resolution_probability?: number | null
           resolution_time?: string | null
@@ -2177,12 +2197,16 @@ export interface Database {
           created_time?: string | null
           creator_id?: string | null
           data?: Json | null
+          description_fts?: unknown | null
           fs_updated_time?: string | null
           id?: string | null
+          importance_score?: number | null
           mechanism?: string | null
           outcome_type?: string | null
           popularity_score?: number | null
           question?: string | null
+          question_fts?: unknown | null
+          question_nostop_fts?: unknown | null
           resolution?: string | null
           resolution_probability?: number | null
           resolution_time?: string | null
@@ -2516,6 +2540,17 @@ export interface Database {
           contracts: Json
         }[]
       }
+      get_contracts_in_group_slugs: {
+        Args: {
+          contract_ids: string[]
+          group_slugs: string[]
+          ignore_slugs: string[]
+        }
+        Returns: {
+          data: Json
+          importance_score: number
+        }[]
+      }
       get_contracts_with_unseen_liked_comments: {
         Args: {
           available_contract_ids: string[]
@@ -2703,6 +2738,17 @@ export interface Database {
         Returns: {
           count: number
           rating: number
+        }[]
+      }
+      get_recently_active_contracts_in_group_slugs: {
+        Args: {
+          group_slugs: string[]
+          ignore_slugs: string[]
+          max: number
+        }
+        Returns: {
+          data: Json
+          importance_score: number
         }[]
       }
       get_recommended_contracts_embeddings: {
@@ -3000,6 +3046,12 @@ export interface Database {
         }
         Returns: boolean
       }
+      is_valid_contract_2: {
+        Args: {
+          ct: unknown
+        }
+        Returns: boolean
+      }
       ivfflathandler: {
         Args: {
           "": unknown
@@ -3191,6 +3243,20 @@ export interface Database {
         }[]
       }
       search_users: {
+        Args: {
+          query: string
+          count: number
+        }
+        Returns: {
+          data: Json
+          fs_updated_time: string
+          id: string
+          name: string
+          name_username_vector: unknown | null
+          username: string
+        }[]
+      }
+      search_users_2: {
         Args: {
           query: string
           count: number
