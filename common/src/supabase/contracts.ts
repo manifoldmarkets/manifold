@@ -118,7 +118,7 @@ export const convertAnswer = (row: Row<'answers'>) =>
     created_time: (maybeTs) => (maybeTs != null ? tsToMillis(maybeTs) : 0),
   })
 export const convertContract = (c: {
-  data: any | Json
+  data: Json
   importance_score: number | null
 }) =>
   ({
