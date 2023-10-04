@@ -126,7 +126,7 @@ export default function DashboardPage(props: {
         }
       />
       <Col className="w-full max-w-2xl px-1 sm:px-2">
-        <Row className="mb-2 mt-2 items-center justify-between first-letter:w-full sm:mt-4 lg:mt-0">
+        <Row className="my-2 items-center justify-between sm:mt-4 lg:mt-0">
           {editMode ? (
             <ExpandingInput
               placeholder={'Dashboard Title'}
@@ -174,6 +174,7 @@ export default function DashboardPage(props: {
           <UserLink
             username={dashboard.creatorUsername}
             name={dashboard.creatorName}
+            className="text-ink-700"
           />
           <span className="text-ink-400 ml-4 text-sm">
             Updated
