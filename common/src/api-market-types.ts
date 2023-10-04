@@ -24,6 +24,7 @@ export type LiteMarket = {
   // Market attributes. All times are in milliseconds since epoch
   closeTime?: number
   question: string
+  slug: string
   url: string
   outcomeType: string
   mechanism: string
@@ -111,6 +112,7 @@ export function toLiteMarket(contract: Contract): LiteMarket {
         ? Math.min(resolutionTime, closeTime)
         : closeTime,
     question,
+    slug,
     url: `https://${DOMAIN}/${creatorUsername}/${slug}`,
     pool: 'pool' in contract ? contract.pool : undefined,
     probability,
