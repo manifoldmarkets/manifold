@@ -10,11 +10,11 @@ import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { z } from 'zod'
 import { validate, authEndpoint, APIError } from 'api/helpers'
 import { trackPublicEvent } from 'shared/analytics'
-import { throwErrorIfNotMod } from 'shared/helpers/auth'
-import { getContractSupabase, log } from 'shared/utils'
+import { getContractSupabase, getUserSupabase, log } from 'shared/utils'
 import { MINUTE_MS } from 'common/util/time'
 import { MINUTES_ALLOWED_TO_UNRESOLVE } from 'common/contract'
 import { recordContractEdit } from 'shared/record-contract-edit'
+import { isAdminId, isTrustworthy } from 'common/envs/constants'
 
 const firestore = admin.firestore()
 const bodySchema = z.object({
@@ -39,16 +39,18 @@ export const unresolve = authEndpoint(async (req, auth) => {
       `Contract ${contractId} was resolved before payouts were unresolvable transactions.`
     )
   const pg = createSupabaseDirectClient()
-  if (contract.creatorId !== auth.uid) await throwErrorIfNotMod(auth.uid)
+  const user = await getUserSupabase(auth.uid)
+  if (!user) throw new APIError(400, `User ${auth.uid} not found.`)
+  const isMod = isTrustworthy(user.username) || isAdminId(auth.uid)
+  if (contract.creatorId !== auth.uid && !isMod)
+    throw new APIError(403, `User ${auth.uid} must be a mod to unresolve.`)
   else if (
     contract.creatorId === auth.uid &&
-    resolutionTime < Date.now() - MINUTES_ALLOWED_TO_UNRESOLVE * MINUTE_MS
+    resolutionTime < Date.now() - MINUTES_ALLOWED_TO_UNRESOLVE * MINUTE_MS &&
+    !isMod
   ) {
-    throw new APIError(
-      400,
-      `Contract ${contractId} was resolved more than 10 minutes ago.`
-    )
-  } else if (contract.creatorId === auth.uid) {
+    throw new APIError(400, `Contract was resolved more than 10 minutes ago.`)
+  } else if (contract.creatorId === auth.uid && !isMod) {
     // check if last resolution was by admin or mod, and if so, don't allow unresolution
     const lastResolution = await pg.oneOrNone(
       `select * from audit_events where contract_id = $1
@@ -57,10 +59,7 @@ export const unresolve = authEndpoint(async (req, auth) => {
       [contractId]
     )
     if (lastResolution && lastResolution.user_id !== auth.uid) {
-      throw new APIError(
-        400,
-        `Contract most recently resolved by a mod or admin.`
-      )
+      throw new APIError(400, `Contract most recently resolved by a mod.`)
     }
   }
 
