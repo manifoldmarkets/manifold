@@ -17,9 +17,12 @@ export function useRealtimeChannel<T extends TableName, E extends Event>(
   filter: Filter<T> | null | undefined,
   onChange: (change: Change<T, E>) => void,
   onStatus?: (status: SubscriptionStatus, err?: Error) => void,
-  onEnabled?: (enabled: boolean) => void
+  onEnabled?: (enabled: boolean) => void,
+  manualFilterString?: string
 ) {
-  const filterString = filter ? buildFilterString(filter) : undefined
+  const filterString = filter
+    ? buildFilterString(filter)
+    : manualFilterString ?? undefined
   const channelId = `${table}-${useId()}`
   const channel = useRef<RealtimeChannel | undefined>()
   const isVisible = useIsPageVisible()

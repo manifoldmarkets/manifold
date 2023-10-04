@@ -3,20 +3,29 @@ import { ContractComment } from 'common/comment'
 import { Contract } from 'common/contract'
 import { BOT_USERNAMES, DESTINY_GROUP_SLUGS } from 'common/envs/constants'
 import { buildArray, filterDefined } from 'common/util/array'
-import { groupBy, keyBy, orderBy, partition, range, sortBy, uniq } from 'lodash'
-import { ReactNode, memo, useEffect } from 'react'
+import {
+  difference,
+  groupBy,
+  keyBy,
+  orderBy,
+  partition,
+  range,
+  sortBy,
+  uniq,
+  uniqBy,
+} from 'lodash'
+import { ReactNode, memo, useEffect, useState } from 'react'
 import { useRealtimeBets } from 'web/hooks/use-bets-supabase'
 import { useRealtimeComments } from 'web/hooks/use-comments-supabase'
 import {
   usePublicContracts,
-  useRealtimeContracts,
+  useRealtimeNewContracts,
 } from 'web/hooks/use-contract-supabase'
 import {
   usePrivateUser,
   useShouldBlockDestiny,
   useUser,
 } from 'web/hooks/use-user'
-import { getGroupContractIds, getGroupFromSlug } from 'web/lib/supabase/group'
 import { PillButton } from './buttons/pill-button'
 import { ContractMention } from './contract/contract-mention'
 import { FeedBet } from './feed/feed-bets'
@@ -28,7 +37,11 @@ import { Content } from './widgets/editor'
 import { LoadingIndicator } from './widgets/loading-indicator'
 import { UserLink } from './widgets/user-link'
 import { track } from 'web/lib/service/analytics'
-import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import { getRecentCommentsOnContracts } from 'web/lib/supabase/comments'
+import { getRecentContractsOnTopics } from 'web/lib/supabase/contracts'
+import { getBetsOnContracts } from 'common/supabase/bets'
+import { db } from 'web/lib/supabase/db'
+import { Bet } from 'common/bet'
 
 const EXTRA_USERNAMES_TO_EXCLUDE = ['Charlie', 'GamblingGandalf']
 
@@ -37,77 +50,113 @@ export function ActivityLog(props: {
   pill: PillOptions
   rightPanel?: ReactNode
   className?: string
+  topicSlugs?: string[]
 }) {
-  const { count, pill, className } = props
+  const { count, topicSlugs, pill, className } = props
 
   const privateUser = usePrivateUser()
   const user = useUser()
   const shouldBlockDestiny = useShouldBlockDestiny(user?.id)
 
-  const [blockedGroupContractIds, setBlockedGroupContractIds] =
-    usePersistentInMemoryState<string[] | undefined>(
-      undefined,
-      'blockedGroupContractIds'
-    )
-
-  useEffect(() => {
-    const blockedGroupSlugs = buildArray(
-      privateUser?.blockedGroupSlugs ?? [],
-      shouldBlockDestiny && DESTINY_GROUP_SLUGS
-    )
-
-    Promise.all(blockedGroupSlugs.map((slug) => getGroupFromSlug(slug)))
-      .then((groups) =>
-        Promise.all(filterDefined(groups).map((g) => getGroupContractIds(g.id)))
-      )
-      .then((cids) => setBlockedGroupContractIds(cids.flat()))
-  }, [privateUser, setBlockedGroupContractIds, shouldBlockDestiny])
-
-  const blockedContractIds = buildArray(
-    blockedGroupContractIds,
-    privateUser?.blockedContractIds
-  )
+  const blockedGroupSlugs = buildArray(
+    privateUser?.blockedGroupSlugs ?? [],
+    shouldBlockDestiny && DESTINY_GROUP_SLUGS
+  ).filter((t) => !topicSlugs?.includes(t))
+  const blockedContractIds = privateUser?.blockedContractIds ?? []
   const blockedUserIds = privateUser?.blockedUserIds ?? []
 
-  const rawBets = useRealtimeBets({
-    limit: count * 3 + 20,
+  const [recentTopicalBets, setRecentTopicalBets] = useState<Bet[]>()
+  const [recentTopicalComments, setRecentTopicalComments] =
+    useState<ContractComment[]>()
+  const [loading, setLoading] = useState(false)
+
+  const getRecentTopicalContent = async (topicSlugs: string[]) => {
+    setLoading(true)
+    const recentContracts = await getRecentContractsOnTopics(
+      topicSlugs,
+      blockedGroupSlugs,
+      count
+    )
+    const recentContractIds = recentContracts.map((c) => c.id)
+    const recentBets = await getBetsOnContracts(db, recentContractIds, {
+      limit: count * 3,
+      filterRedemptions: true,
+      order: 'desc',
+    })
+    const recentComments = await getRecentCommentsOnContracts(
+      recentContractIds,
+      count
+    )
+    setRecentTopicalBets(recentBets)
+    setRecentTopicalComments(recentComments)
+    setLoading(false)
+  }
+
+  useEffect(() => {
+    if (topicSlugs) getRecentTopicalContent(topicSlugs)
+  }, [topicSlugs])
+
+  const realtimeBets = useRealtimeBets({
+    limit: count * 3,
     filterRedemptions: true,
     order: 'desc',
-  })
-  const bets = (rawBets ?? []).filter(
+  })?.filter(
     (bet) =>
       !blockedContractIds.includes(bet.contractId) &&
       !blockedUserIds.includes(bet.userId) &&
       !BOT_USERNAMES.includes(bet.userUsername) &&
       !EXTRA_USERNAMES_TO_EXCLUDE.includes(bet.userUsername)
   )
-  const rawComments = useRealtimeComments(count * 3)
-  const comments = (rawComments ?? []).filter(
+
+  const realtimeComments = useRealtimeComments(count * 3)?.filter(
     (c) =>
       c.commentType === 'contract' &&
       !blockedContractIds.includes(c.contractId) &&
       !blockedUserIds.includes(c.userId)
-  ) as ContractComment[]
+  )
 
-  const rawContracts = useRealtimeContracts(count * 3)
-  const newContracts = (rawContracts ?? []).filter(
+  // TODO: could change the initial query to factor in topicSlugs
+  const newContracts = useRealtimeNewContracts(count * 3)?.filter(
     (c) =>
       !blockedContractIds.includes(c.id) &&
       !blockedUserIds.includes(c.creatorId) &&
-      c.visibility === 'public'
+      c.visibility === 'public' &&
+      c.groupSlugs?.some((slug) => topicSlugs?.includes(slug))
+  )
+  const bets = uniqBy(
+    (realtimeBets ?? []).concat(recentTopicalBets ?? []),
+    'id'
+  )
+  const comments = uniqBy(
+    (realtimeComments ?? []).concat(recentTopicalComments ?? []),
+    'id'
   )
 
-  const allContracts = usePublicContracts(
-    uniq([
-      ...bets.map((b) => b.contractId),
-      ...comments.map((c) => c.contractId),
-    ])
+  const activeContractIds = uniq([
+    ...bets.map((b) => b.contractId),
+    ...comments.map((c) => c.contractId),
+  ])
+
+  const activeContracts = usePublicContracts(
+    activeContractIds,
+    topicSlugs,
+    blockedGroupSlugs
+  )?.filter((c) =>
+    topicSlugs
+      ? c.groupSlugs?.some((slug) => topicSlugs?.includes(slug)) &&
+        !c.groupSlugs?.some((slug) => blockedGroupSlugs.includes(slug))
+      : true
   )
 
   const [contracts, unlistedContracts] = partition(
-    filterDefined(allContracts ?? []).concat(newContracts ?? []),
+    filterDefined(activeContracts ?? []).concat(newContracts ?? []),
     (c) => c.visibility === 'public'
   )
+
+  const ignoredContractIds = difference(
+    activeContractIds,
+    activeContracts?.map((c) => c.id) ?? []
+  ).concat(unlistedContracts.map((c) => c.id))
 
   const items = sortBy(
     pill === 'all'
@@ -121,9 +170,8 @@ export function ActivityLog(props: {
   )
     .reverse()
     .filter((i) =>
-      'contractId' in i
-        ? !unlistedContracts.some((c) => c.id === i.contractId)
-        : true
+      // filter out comments and bets on ignored/off-topic contracts
+      'contractId' in i ? !ignoredContractIds.includes(i.contractId) : true
     )
   const contractsById = keyBy(contracts, 'id')
 
@@ -137,10 +185,10 @@ export function ActivityLog(props: {
     ) ?? 0
   const itemsSubset = items.slice(startIndex, startIndex + count)
   const allLoaded =
-    rawBets &&
-    rawComments &&
-    rawContracts &&
-    blockedGroupContractIds &&
+    realtimeBets &&
+    realtimeComments &&
+    contracts &&
+    activeContracts &&
     itemsSubset.every((item) =>
       'contractId' in item ? contractsById[item.contractId] : true
     )
@@ -162,7 +210,7 @@ export function ActivityLog(props: {
 
   return (
     <Col className={clsx('gap-4', className)}>
-      {!allLoaded && <LoadingIndicator />}
+      {!allLoaded || (loading && <LoadingIndicator />)}
       {allLoaded && (
         <Col className="border-ink-300 divide-ink-300 divide-y-[0.5px] rounded-sm border-[0.5px]">
           {groups.map(({ parentId, items }) => {
