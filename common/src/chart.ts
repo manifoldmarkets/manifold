@@ -1,8 +1,7 @@
 import { ScaleContinuousNumeric, ScaleTime } from 'd3-scale'
 import { Dispatch, SetStateAction } from 'react'
 import { removeUndefinedProps } from './util/object'
-import { average } from './util/math'
-import { mapValues } from 'lodash'
+import { first, last, mapValues, meanBy } from 'lodash'
 
 export type Point<X, Y, T = unknown> = { x: X; y: Y; obj?: T }
 export type HistoryPoint<T = unknown> = Point<number, number, T>
@@ -113,17 +112,21 @@ export function binAvg<P extends HistoryPoint>(sorted: P[], limit = 100) {
     return sorted
   }
 
-  const min = sorted[0].x
-  const max = sorted[sorted.length - 1].x
+  const min = first(sorted)?.x ?? 0
+  const max = last(sorted)?.x ?? 0
   const binWidth = Math.ceil((max - min) / limit)
 
   const newPoints = []
+  let lastAvgY = sorted[0].y
 
   for (let i = 0; i < limit; i++) {
     const binStart = min + i * binWidth
     const binEnd = binStart + binWidth
     const binPoints = sorted.filter((p) => p.x >= binStart && p.x < binEnd)
-    newPoints.push({ x: binEnd, y: average(binPoints.map((p) => p.y)) })
+    if (binPoints.length > 0) {
+      lastAvgY = meanBy(binPoints, 'y')
+    }
+    newPoints.push({ x: binEnd, y: lastAvgY })
   }
 
   return newPoints
