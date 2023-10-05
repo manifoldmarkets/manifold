@@ -62,14 +62,14 @@ export function OgMarket(props: OgCardProps) {
                   'mr-6 flex h-24 w-2/5 items-center justify-center rounded-md bg-green-500 pt-2'
                 }
               >
-                Yes {((data[data.length - 1]?.y ?? 0.5) * 100).toFixed(0)}¢
+                Yes {((data[data.length - 1]?.y ?? 0.5) * 100).toFixed(0)}%
               </div>
               <div
                 className={
                   'ml-6 flex h-24 w-2/5 items-center justify-center rounded-md bg-red-600 pt-2'
                 }
               >
-                No {((1 - (data[data.length - 1]?.y ?? 0.5)) * 100).toFixed(0)}¢
+                No {((1 - (data[data.length - 1]?.y ?? 0.5)) * 100).toFixed(0)}%
               </div>
             </div>
           ) : resolution ? (
