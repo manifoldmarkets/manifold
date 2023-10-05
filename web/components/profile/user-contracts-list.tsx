@@ -95,7 +95,7 @@ export function UserContractsList(props: { creator: User }) {
         useUrlParams
         emptyState={
           <>
-            <div className="text-ink-700 mx-2 my-6 text-center">
+            <div className="text-ink-700 mx-2 mt-3 text-center">
               No questions found
             </div>
             {creator.id === user?.id && (
