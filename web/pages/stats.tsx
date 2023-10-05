@@ -250,7 +250,7 @@ export function CustomAnalytics(props: Stats) {
       />
 
       <Spacer h={8} />
-      <Title>New user retention</Title>
+      {/* <Title>New user retention</Title>
       <p className="text-ink-500">
         What fraction of new users are still active after the given time period?
       </p>
@@ -295,7 +295,7 @@ export function CustomAnalytics(props: Stats) {
           },
         ]}
       />
-      <Spacer h={8} />
+      <Spacer h={8} /> */}
 
       <Title>Daily activity</Title>
 
@@ -338,7 +338,7 @@ export function CustomAnalytics(props: Stats) {
 
       <Spacer h={8} />
 
-      <Title>Activation rate</Title>
+      {/* <Title>Activation rate</Title>
       <p className="text-ink-500">
         Out of all new users, how many placed at least one bet?
       </p>
@@ -372,7 +372,7 @@ export function CustomAnalytics(props: Stats) {
           },
         ]}
       />
-      <Spacer h={8} />
+      <Spacer h={8} /> */}
 
       <Title>Ratio of Active Users</Title>
       <Tabs
