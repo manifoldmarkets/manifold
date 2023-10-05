@@ -252,7 +252,7 @@ export function BuyPanel(props: {
     <Col>
       <Row
         className={clsx(
-          'mb-2 w-full items-center gap-3',
+          'mb-2 w-full items-center gap-2',
           singularView ? 'hidden' : ''
         )}
       >
@@ -275,8 +275,8 @@ export function BuyPanel(props: {
           <Button
             color={seeLimit ? 'indigo' : 'indigo-outline'}
             onClick={() => onOptionChoice('LIMIT')}
-            className="px-3 text-lg sm:px-6"
-            size="xl"
+            className="px-2 text-lg sm:px-6"
+            size="lg"
           >
             %
           </Button>

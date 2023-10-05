@@ -224,7 +224,7 @@ const NoBets = ({ user }: { user: User }) => {
     <>
       {user.id === me?.id && (
         <Link href="/home" className="text-primary-500 hover:underline">
-          Find a prediction market!
+          Find a question to trade on!
         </Link>
       )}
     </>
