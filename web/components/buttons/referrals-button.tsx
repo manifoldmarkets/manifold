@@ -22,6 +22,8 @@ import { CopyLinkRow } from 'web/components/buttons/copy-link-button'
 import { QRCode } from 'web/components/widgets/qr-code'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { canSetReferrer } from 'web/lib/firebase/users'
+import { formatMoney } from 'common/util/format'
+import { REFERRAL_AMOUNT } from 'common/economy'
 
 export const ReferralsButton = memo(function ReferralsButton(props: {
   user: User
@@ -69,10 +71,12 @@ export function ReferralsDialog(props: {
     <Modal open={isOpen} setOpen={setIsOpen}>
       <Col className="bg-canvas-0 rounded p-6">
         <span className={'text-primary-700 pb-2 text-xl'}>
-          Share your referral code
+          Refer a friend for{' '}
+          <span className={'text-teal-500'}>
+            ${formatMoney(REFERRAL_AMOUNT)}
+          </span>{' '}
+          each!
         </span>
-        <QRCode url={url} className="my-2 self-center" />
-        <CopyLinkRow url={url} eventTrackingName="copy referral link" />
         <Tabs
           className="my-2"
           tabs={[
@@ -81,13 +85,14 @@ export function ReferralsDialog(props: {
               content: (
                 <>
                   {user.id === currentUser?.id && canSetReferrer(user) ? (
-                    <Col className={''}>
-                      <span>Attribute your referrer</span>
+                    <Col className={'mt-1'}>
+                      <span>Know who referred you?</span>
                       <FilterSelectUsers
                         setSelectedUsers={setReferredBy}
                         selectedUsers={referredBy}
                         ignoreUserIds={[currentUser.id]}
                         showSelectedUsersTitle={false}
+                        showUserUsername={true}
                         maxUsers={1}
                       />
                       {referredBy.length > 0 && (
@@ -155,9 +160,13 @@ export function ReferralsDialog(props: {
               ),
             },
             {
-              title: 'Your referrals',
+              title: `Your ${
+                referredUsers && referredUsers.length > 0
+                  ? referredUsers.length
+                  : ''
+              } referrals`,
               content: (
-                <Col className="gap-2">
+                <Col className="max-h-60 gap-2 overflow-y-scroll">
                   {referredUsers === undefined ? (
                     <LoadingIndicator />
                   ) : referredUsers.length === 0 ? (
@@ -185,6 +194,18 @@ export function ReferralsDialog(props: {
                       </Row>
                     ))
                   )}
+                </Col>
+              ),
+            },
+            {
+              title: 'Share',
+              content: (
+                <Col className="gap-2">
+                  <QRCode url={url} className="my-2 self-center" />
+                  <CopyLinkRow
+                    url={url}
+                    eventTrackingName="copy referral link"
+                  />
                 </Col>
               ),
             },

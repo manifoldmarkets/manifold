@@ -16,6 +16,7 @@ export function FilterSelectUsers(props: {
   ignoreUserIds: string[]
   showSelectedUsersTitle?: boolean
   selectedUsersClassName?: string
+  showUserUsername?: boolean
   maxUsers?: number
 }) {
   const {
@@ -24,6 +25,7 @@ export function FilterSelectUsers(props: {
     setSelectedUsers,
     showSelectedUsersTitle,
     selectedUsersClassName,
+    showUserUsername,
     maxUsers,
   } = props
   const [query, setQuery] = useState('')
@@ -115,6 +117,11 @@ export function FilterSelectUsers(props: {
                                 className={'mr-2'}
                               />
                               {user.name}
+                              {showUserUsername && (
+                                <span className={'text-ink-500 ml-1'}>
+                                  @{user.username}
+                                </span>
+                              )}
                             </button>
                           )}
                         </Menu.Item>
