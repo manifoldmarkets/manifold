@@ -57,8 +57,10 @@ export function AddMarketToGroupModal(props: {
                       submitLabel={(len) =>
                         `Add ${len} question${len !== 1 ? 's' : ''}`
                       }
-                      onSubmit={onAddMarkets}
-                      setOpen={setOpen}
+                      onSubmit={async (contracts) => {
+                        if (contracts.length) await onAddMarkets(contracts)
+                        setOpen(false)
+                      }}
                       additionalFilter={{
                         excludeContractIds: groupContractIds,
                       }}

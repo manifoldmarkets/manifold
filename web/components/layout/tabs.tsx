@@ -9,7 +9,6 @@ import { Carousel } from 'web/components/widgets/carousel'
 
 export type Tab = {
   title: string
-  sidebar?: ReactNode
   content: ReactNode
   stackedTabIcon?: ReactNode
   inlineTabIcon?: ReactNode

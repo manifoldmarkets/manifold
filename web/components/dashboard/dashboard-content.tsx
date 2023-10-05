@@ -3,11 +3,12 @@ import { useLinkPreviews } from 'web/hooks/use-link-previews'
 import { DashboardNewsItem } from '../news/dashboard-news-item'
 import { FeedContractCard } from '../contract/feed-contract-card'
 import { LoadingIndicator } from '../widgets/loading-indicator'
-import { ReactNode } from 'react'
+import { ReactNode, useState } from 'react'
 import { XCircleIcon } from '@heroicons/react/solid'
 import { DashboardItem, DashboardQuestionItem } from 'common/dashboard'
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
 import { partition } from 'lodash'
+import { AddItemFloatyButton } from './add-dashboard-item'
 
 export const DashboardContent = (props: {
   items: DashboardItem[]
@@ -57,6 +58,9 @@ export const DashboardContent = (props: {
     setItems?.(newItems)
   }
 
+  const [hoverIndex, setHoverIndex] = useState<number>()
+  const [hoverTop, setHoverTop] = useState<number>()
+
   if (isLoading) return <LoadingIndicator />
 
   return (
@@ -65,11 +69,11 @@ export const DashboardContent = (props: {
       onDragEnd={onDragEnd}
     >
       <Droppable droppableId="dashboard">
-        {(provided) => (
+        {(provided, snapshot) => (
           <div
             ref={provided.innerRef}
             {...provided.droppableProps}
-            className="flex flex-col"
+            className="relative flex flex-col"
           >
             {items.map((item, index) => (
               <Draggable
@@ -82,23 +86,59 @@ export const DashboardContent = (props: {
                   <div
                     ref={provided.innerRef}
                     {...provided.draggableProps}
-                    {...provided.dragHandleProps}
-                    className="mb-4"
+                    className="relative mb-4"
+                    onMouseMove={(e) => {
+                      if (
+                        e.nativeEvent.offsetY <
+                        e.currentTarget.offsetHeight / 2
+                      ) {
+                        setHoverIndex(index)
+                        setHoverTop(e.currentTarget.offsetTop - 8)
+                      } else {
+                        setHoverIndex(index + 1)
+                        setHoverTop(
+                          e.currentTarget.offsetTop +
+                            e.currentTarget.offsetHeight +
+                            4
+                        )
+                      }
+                    }}
                   >
-                    <DashboardContentFrame
-                      isEditing={isEditing}
-                      onRemove={() => {
-                        const newItems = [...items]
-                        newItems.splice(index, 1)
-                        setItems?.(newItems)
-                      }}
-                    >
-                      {renderCard(item)}
-                    </DashboardContentFrame>
+                    <div {...provided.dragHandleProps}>
+                      <DashboardContentFrame
+                        isEditing={isEditing}
+                        onRemove={() => {
+                          const newItems = [...items]
+                          newItems.splice(index, 1)
+                          setItems?.(newItems)
+                        }}
+                      >
+                        {renderCard(item)}
+                      </DashboardContentFrame>
+                    </div>
                   </div>
                 )}
               </Draggable>
             ))}
+            {isEditing &&
+              !snapshot.isDraggingOver &&
+              hoverIndex != null &&
+              hoverTop != null && (
+                <div
+                  className="absolute -right-2 hidden -translate-y-1/2 translate-x-full transition-all md:block lg:-right-8"
+                  style={{ top: hoverTop }}
+                >
+                  <AddItemFloatyButton
+                    key="floaty button"
+                    position={hoverIndex}
+                    items={items}
+                    setItems={setItems}
+                    topics={[]}
+                    setTopics={() => {}}
+                  />
+                </div>
+              )}
+
             {provided.placeholder}
           </div>
         )}
