@@ -40,7 +40,7 @@ export function Page(props: {
         {hideSidebar ? (
           <div className="lg:col-span-2 lg:flex" />
         ) : (
-          <Sidebar className="sticky top-0 hidden self-start px-2 lg:col-span-2 lg:flex xl:px-4" />
+          <Sidebar className="sticky top-0 hidden self-start pl-2 lg:col-span-2 lg:flex xl:px-2" />
         )}
         <main
           className={clsx(
