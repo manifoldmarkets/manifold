@@ -494,7 +494,7 @@ const UserResults = (props: { users: UserSearchResult[] }) => {
                   </Row>
                   <FollowButton size={'xs'} userId={id} />
                 </Row>
-                <div className={'text-ink-500 line-clamp-2 ml-1 text-sm'}>
+                <div className={'text-ink-500 ml-1 line-clamp-2 text-sm'}>
                   {creatorTraders.allTime > 0 && (
                     <span className={'mr-1'}>
                       {shortFormatNumber(creatorTraders.allTime)} traders
