@@ -98,13 +98,13 @@ export function TopicSelector(props: {
                 <InfoTooltip text="Question will be displayed alongside the other questions in the category." />
               </Combobox.Label>
             )}
-            <div className="relative mt-2 w-full">
+            <div className="relative w-full">
               <Combobox.Button as="div">
                 <Combobox.Input
                   className="border-ink-300 bg-canvas-0 focus:border-primary-500 focus:ring-primary-500 w-full rounded-md border p-3 pl-4 pr-20 text-sm shadow-sm focus:outline-none focus:ring-1"
                   onChange={(e) => setQuery(e.target.value)}
                   displayValue={(group: Group) => group && group.name}
-                  placeholder={'E.g. Science, Politics'}
+                  placeholder={'e.g. Science, Politics'}
                 />
               </Combobox.Button>
               <Combobox.Button className="absolute inset-y-0 right-0 flex items-center rounded-r-md px-2 focus:outline-none">
@@ -132,36 +132,22 @@ export function TopicSelector(props: {
                         value={group}
                         className={({ active }) =>
                           clsx(
-                            'relative h-12 cursor-pointer select-none py-2 pr-6 transition-colors',
+                            'relative flex h-12 cursor-pointer select-none items-center justify-between py-2 px-6 transition-colors',
                             active
-                              ? 'text-ink-0 bg-primary-500'
+                              ? 'bg-primary-200 text-ink-1000'
                               : 'text-ink-900',
                             loading ? 'animate-pulse' : ''
                           )
                         }
                       >
-                        {({}) => (
+                        {() => (
                           <>
-                            <span
-                              className={clsx(
-                                'ml-3 mt-1 flex flex-row justify-between'
-                              )}
-                            >
-                              <Row
-                                className={'items-center gap-1 truncate pl-5'}
-                              >
-                                {group.name}
+                            <div className={'truncate'}>{group.name}</div>
+                            {group.privacyStatus != 'public' && (
+                              <Row className={'text-ink-500'}>
+                                {PRIVACY_STATUS_ITEMS[group.privacyStatus].icon}
                               </Row>
-                              <Row
-                                className={clsx(
-                                  'text-ink-500 items-center gap-2 text-sm'
-                                )}
-                              >
-                                {group.privacyStatus != 'public' &&
-                                  PRIVACY_STATUS_ITEMS[group.privacyStatus]
-                                    .icon}
-                              </Row>
-                            </span>
+                            )}
                           </>
                         )}
                       </Combobox.Option>
@@ -173,25 +159,19 @@ export function TopicSelector(props: {
                     value={'new'}
                     className={({ active }) =>
                       clsx(
-                        'relative h-12 cursor-pointer select-none py-2 pr-6 transition-colors',
-                        active ? 'text-ink-0 bg-primary-500' : 'text-ink-900',
+                        'relative flex h-12 cursor-pointer select-none items-center justify-between py-2 px-6 transition-colors',
+                        active
+                          ? 'bg-primary-200 text-ink-1000'
+                          : 'text-ink-900',
                         loading ? 'animate-pulse' : ''
                       )
                     }
                   >
-                    {({}) => (
-                      <>
-                        <span
-                          className={clsx(
-                            'ml-3 mt-1 flex flex-row justify-between'
-                          )}
-                        >
-                          <Row className={'items-center gap-1 truncate pl-5'}>
-                            <PlusCircleIcon className="mr-2 h-5 w-5 text-teal-500 group-hover:text-teal-300" />
-                            Create a new topic
-                          </Row>
-                        </span>
-                      </>
+                    {() => (
+                      <Row className={'items-center gap-1 truncate'}>
+                        <PlusCircleIcon className="mr-2 h-5 w-5 text-teal-500" />
+                        Create a new topic
+                      </Row>
                     )}
                   </Combobox.Option>
                 )}

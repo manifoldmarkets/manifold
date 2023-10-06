@@ -12,7 +12,7 @@ import { BsQuestionLg } from 'react-icons/bs'
 import { Button } from '../buttons/button'
 import { ControlledTabs } from '../layout/tabs'
 import clsx from 'clsx'
-import { TopicSelector } from '../topics/topic-selector'
+import { DashboardSetTopics } from './dashboard-set-topics'
 
 export function AddItemCard(props: {
   items: DashboardItem[]
@@ -85,7 +85,7 @@ const AddDashboardModal = (props: {
   topics: string[]
   setTopics: (topics: string[]) => void
 }) => {
-  const { open, setOpen, tab, setTab, insertItems, setTopics } = props
+  const { open, setOpen, tab, setTab, insertItems, topics, setTopics } = props
 
   return (
     <Modal
@@ -123,7 +123,11 @@ const AddDashboardModal = (props: {
           {
             title: 'Edit topics',
             content: (
-              <TopicSelector setSelectedGroup={(topic) => setTopics([topic])} />
+              <DashboardSetTopics
+                topics={topics}
+                setTopics={setTopics}
+                onClose={() => setOpen(false)}
+              />
             ),
           },
         ]}

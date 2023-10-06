@@ -36,7 +36,7 @@ export default function LivePage() {
           </Title>
           <TopicSelector
             setSelectedGroup={(group) => setTopics([group])}
-            className={'w-56'}
+            className={'!w-56'}
           />
         </Row>
         <Col className="gap-4">
