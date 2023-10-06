@@ -216,19 +216,7 @@ const ChoiceOverview = (props: {
           <CancelLabel />
         </div>
       )}
-      {!!Object.keys(points).length && (
-        <SizedContainer className="h-[150px] w-full pb-4 pr-10 sm:h-[250px]">
-          {(w, h) => (
-            <ChoiceContractChart
-              width={w}
-              height={h}
-              multiPoints={points}
-              contract={contract}
-            />
-          )}
-        </SizedContainer>
-      )}
-
+      Ask Sinclair to fix this
       {showResolver ? (
         <AnswersResolvePanel contract={contract} />
       ) : (

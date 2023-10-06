@@ -1,9 +1,9 @@
 import { useMemo } from 'react'
-import { groupBy, last, mapKeys, mapValues, sortBy } from 'lodash'
+import { cloneDeep, groupBy, last, mapKeys, mapValues, sortBy } from 'lodash'
 import { scaleTime, scaleLinear } from 'd3-scale'
 import { Bet } from 'common/bet'
 import { Answer, DpmAnswer } from 'common/answer'
-import { MultiContract } from 'common/contract'
+import { CPMMMultiContract, MultiContract } from 'common/contract'
 import { getAnswerProbability } from 'common/calculate'
 import {
   TooltipProps,
@@ -89,13 +89,12 @@ export function useChartAnswers(contract: MultiContract) {
 }
 
 export const ChoiceContractChart = (props: {
-  contract: MultiContract
+  contract: CPMMMultiContract
   multiPoints?: MultiPoints
   width: number
   height: number
 }) => {
   const { contract, multiPoints = {}, width, height } = props
-  const isMultipleChoice = contract.outcomeType === 'MULTIPLE_CHOICE'
 
   const [start, end] = getDateRange(contract)
   const answers = useChartAnswers(contract)
@@ -117,13 +116,11 @@ export const ChoiceContractChart = (props: {
 
     const startP = 1 / startAnswers.length
 
-    const pointsById = multiPoints
-    if (isMultipleChoice) {
-      mapKeys(pointsById, (points, answerId) => {
-        const y = startAnswers.some((a) => a.id === answerId) ? startP : 0
-        points.unshift({ x: start, y })
-      })
-    }
+    const pointsById = cloneDeep(multiPoints)
+    mapKeys(pointsById, (points, answerId) => {
+      const y = startAnswers.some((a) => a.id === answerId) ? startP : 0
+      points.unshift({ x: start, y })
+    })
 
     mapKeys(pointsById, (points, answerId) => {
       points.push({

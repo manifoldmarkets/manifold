@@ -212,7 +212,7 @@ const ChoiceOverview = (props: {
           <CancelLabel />
         </div>
       )}
-      {!!Object.keys(points).length && (
+      {!!Object.keys(points).length && contract.mechanism == 'cpmm-multi-1' && (
         <SizedContainer className="h-[150px] w-full pb-4 pr-10 sm:h-[250px]">
           {(w, h) => (
             <ChoiceContractChart
