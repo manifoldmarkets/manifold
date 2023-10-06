@@ -158,13 +158,13 @@ function DashboardContentFrame(props: {
   }
   return (
     <div className="relative">
+      <div className="pointer-events-none">{children}</div>
       <button
-        className="text-ink-500 hover:text-ink-700 absolute -top-2 right-0 z-50 transition-colors"
+        className="text-ink-500 hover:text-ink-700 absolute -top-2 right-0  transition-colors"
         onClick={onRemove}
       >
         <XCircleIcon className="h-5 w-5" />
       </button>
-      <div className="pointer-events-none">{children}</div>
     </div>
   )
 }

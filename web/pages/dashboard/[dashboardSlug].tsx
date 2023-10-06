@@ -168,22 +168,64 @@ export default function DashboardPage(props: {
             </>
           )}
         </Row>
-        <Row className="mb-8 items-center gap-2">
-          <Avatar
-            username={dashboard.creatorUsername}
-            avatarUrl={dashboard.creatorAvatarUrl}
-            size="xs"
-          />
-          <UserLink
-            username={dashboard.creatorUsername}
-            name={dashboard.creatorName}
-            className="text-ink-700"
-          />
-          <span className="text-ink-400 ml-4 text-sm">
-            Updated
-            <RelativeTimestamp time={dashboard.createdTime} />
-          </span>
-        </Row>
+        {editMode ? (
+          <Row className="bg-canvas-50 sticky top-0 z-20 mb-2 w-full items-center justify-end gap-2 self-start py-1">
+            <Button
+              color="gray"
+              onClick={() => {
+                // reset items to original state
+                updateItems(
+                  fetchedDashboard
+                    ? fetchedDashboard.items
+                    : initialDashboard.items
+                )
+                setEditMode(false)
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              disabled={dashboard.items.length < 2}
+              onClick={() => {
+                updateDashboard({
+                  dashboardId: dashboard.id,
+                  title: dashboard.title,
+                  items: dashboard.items,
+                  description: editor?.getJSON(),
+                }).then((resultingDashboard) => {
+                  if (
+                    resultingDashboard &&
+                    resultingDashboard.updateDashboard
+                  ) {
+                    setDashboard(
+                      resultingDashboard.updateDashboard as Dashboard
+                    )
+                  }
+                })
+                setEditMode(false)
+              }}
+            >
+              Save
+            </Button>
+          </Row>
+        ) : (
+          <Row className="mb-8 items-center gap-2">
+            <Avatar
+              username={dashboard.creatorUsername}
+              avatarUrl={dashboard.creatorAvatarUrl}
+              size="xs"
+            />
+            <UserLink
+              username={dashboard.creatorUsername}
+              name={dashboard.creatorName}
+              className="text-ink-700"
+            />
+            <span className="text-ink-400 ml-4 text-sm">
+              Updated
+              <RelativeTimestamp time={dashboard.createdTime} />
+            </span>
+          </Row>
+        )}
         {editMode ? (
           <DescriptionEditor
             editor={editor}
@@ -199,48 +241,9 @@ export default function DashboardPage(props: {
           isEditing={editMode}
         />
         {editMode && (
-          <Col className="mb-4 gap-4">
+          <div className="mb-4">
             <AddItemCard items={dashboard.items} setItems={updateItems} />
-            <Row className="w-full justify-end gap-2">
-              <Button
-                color="gray"
-                onClick={() => {
-                  // reset items to original state
-                  updateItems(
-                    fetchedDashboard
-                      ? fetchedDashboard.items
-                      : initialDashboard.items
-                  )
-                  setEditMode(false)
-                }}
-              >
-                Cancel
-              </Button>
-              <Button
-                disabled={dashboard.items.length < 2}
-                onClick={() => {
-                  updateDashboard({
-                    dashboardId: dashboard.id,
-                    title: dashboard.title,
-                    items: dashboard.items,
-                    description: editor?.getJSON(),
-                  }).then((resultingDashboard) => {
-                    if (
-                      resultingDashboard &&
-                      resultingDashboard.updateDashboard
-                    ) {
-                      setDashboard(
-                        resultingDashboard.updateDashboard as Dashboard
-                      )
-                    }
-                  })
-                  setEditMode(false)
-                }}
-              >
-                Save
-              </Button>
-            </Row>
-          </Col>
+          </div>
         )}
       </Col>
     </Page>
