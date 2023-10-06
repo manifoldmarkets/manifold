@@ -11,8 +11,6 @@ import { TopicOptionsButton } from 'web/components/topics/topics-button'
 import { ForYouDropdown } from 'web/components/topics/for-you-dropdown'
 import { ReactNode } from 'react'
 
-const ROW_CLASS =
-  'group relative w-full cursor-pointer items-center rounded-md py-4 px-2'
 export function TopicsList(props: {
   topics: Group[]
   loadMore?: () => Promise<boolean>
@@ -45,8 +43,7 @@ export function TopicsList(props: {
           ? 'animate-slide-in-from-right block lg:animate-none'
           : 'hidden lg:flex',
         className,
-        'scrollbar-hide sticky right-0 top-0 max-h-screen overflow-y-auto sm:max-w-min lg:max-w-none',
-        currentTopicSlug == 'for-you' ? '' : 'lg:rounded-t-md'
+        'scrollbar-hide sticky right-0 top-0 max-h-screen gap-1 overflow-y-auto'
       )}
     >
       <Row
@@ -122,6 +119,7 @@ export function TopicsList(props: {
     </Col>
   )
 }
+
 const SidebarItem = (props: {
   slug: string
   name: string
@@ -135,9 +133,9 @@ const SidebarItem = (props: {
   return (
     <Row
       className={clsx(
-        ROW_CLASS,
+        'w-full cursor-pointer items-center justify-between rounded-md py-2 px-2.5',
         currentTopicSlug == slug
-          ? 'bg-ink-200 text-ink-900'
+          ? 'bg-ink-200 text-ink-900 font-semibold'
           : 'text-ink-600 hover:bg-primary-100'
       )}
       onClick={() => {
@@ -145,14 +143,7 @@ const SidebarItem = (props: {
         setCurrentTopicSlug(currentTopicSlug === slug ? '' : slug)
       }}
     >
-      <span
-        className={clsx(
-          ' flex w-full flex-row text-left text-sm',
-          currentTopicSlug == slug ? 'font-semibold' : ''
-        )}
-      >
-        {name}
-      </span>
+      {name}
       {optionsItem}
     </Row>
   )

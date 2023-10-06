@@ -35,8 +35,6 @@ import { QuestionsTopicTitle } from 'web/components/topics/questions-topic-title
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { useHeaderIsStuck } from 'web/hooks/use-header-is-stuck'
 
-export const SHOW_TOPICS_TERM = 'show-topics'
-
 // TODO: use static props for non for-you topic slugs
 export default function BrowsePage() {
   const user = useUser()
@@ -95,80 +93,81 @@ export default function BrowsePage() {
             currentTopic ? `?${TOPIC_KEY}=${currentTopic.slug}` : ''
           }`}
         />
-        <Col className={'w-full px-2'}>
-          <QuestionsTopicTitle
-            currentTopic={currentTopic}
-            topicSlug={topicSlug}
-            user={user}
-            setTopicSlug={setTopicSlug}
-            ref={ref}
-          />
-          <Row className={'lg:grid lg:grid-cols-12'}>
-            <Col className={clsx('relative w-full lg:col-span-8')}>
-              <SupabaseSearch
-                persistPrefix="search"
-                autoFocus={autoFocus}
-                additionalFilter={{
-                  excludeContractIds: privateUser?.blockedContractIds,
-                  excludeGroupSlugs: buildArray(
-                    privateUser?.blockedGroupSlugs,
-                    shouldFilterDestiny &&
-                      !DESTINY_GROUP_SLUGS.includes(topicSlug ?? '') &&
-                      DESTINY_GROUP_SLUGS,
-                    !user && BLOCKED_BY_DEFAULT_GROUP_SLUGS
-                  ),
-                  excludeUserIds: privateUser?.blockedUserIds,
-                }}
-                useUrlParams
-                isWholePage
-                showTopicTag={headerStuck}
-                headerClassName={'pt-0 px-2 bg-canvas-0 lg:bg-canvas-50'}
-                menuButton={
-                  showTopicsSidebar ? null : (
-                    <Button
-                      color={'gray-outline'}
-                      size={'md'}
-                      className={
-                        'ml-1 hidden sm:ml-2 sm:flex sm:w-[8rem] md:w-[12rem] lg:hidden'
-                      }
-                      onClick={() => setShowTopicsSidebar(!showTopicsSidebar)}
-                    >
-                      <FilterIcon className="mr-2 h-5 w-5" />
-                      Topics
-                    </Button>
-                  )
-                }
-                rowBelowFilters={
-                  isMobile && (
-                    <BrowseTopicPills
-                      className={'relative w-full pb-1 sm:hidden'}
-                      topics={topics}
-                      currentTopicSlug={topicSlug}
-                      setTopicSlug={(slug) =>
-                        setTopicSlug(slug === topicSlug ? '' : slug)
-                      }
-                    />
-                  )
-                }
-              />
-            </Col>
-            {!isMobile && (
-              <TopicsList
-                key={'groups' + topics.length}
-                topics={topics}
-                currentTopicSlug={topicSlug}
-                setCurrentTopicSlug={setTopicSlug}
-                privateUser={privateUser}
-                user={user}
-                show={showTopicsSidebar}
-                setShow={setShowTopicsSidebar}
-                className={clsx(
-                  'col-span-3 min-w-[7rem] sm:min-w-[8rem]  md:min-w-[10.5rem] lg:ml-3 xl:ml-8'
-                )}
-              />
-            )}
-          </Row>
-        </Col>
+
+        <QuestionsTopicTitle
+          currentTopic={currentTopic}
+          topicSlug={topicSlug}
+          user={user}
+          setTopicSlug={setTopicSlug}
+          ref={ref}
+        />
+        <div className={'flex lg:grid lg:grid-cols-10'}>
+          <Col
+            className={clsx('relative col-span-8 mx-auto w-full xl:col-span-7')}
+          >
+            <SupabaseSearch
+              persistPrefix="search"
+              autoFocus={autoFocus}
+              additionalFilter={{
+                excludeContractIds: privateUser?.blockedContractIds,
+                excludeGroupSlugs: buildArray(
+                  privateUser?.blockedGroupSlugs,
+                  shouldFilterDestiny &&
+                    !DESTINY_GROUP_SLUGS.includes(topicSlug ?? '') &&
+                    DESTINY_GROUP_SLUGS,
+                  !user && BLOCKED_BY_DEFAULT_GROUP_SLUGS
+                ),
+                excludeUserIds: privateUser?.blockedUserIds,
+              }}
+              useUrlParams
+              isWholePage
+              showTopicTag={headerStuck}
+              headerClassName={'pt-0 px-2 bg-canvas-0 lg:bg-canvas-50'}
+              menuButton={
+                showTopicsSidebar ? null : (
+                  <Button
+                    color={'gray-outline'}
+                    size={'md'}
+                    className={
+                      'ml-1 hidden sm:ml-2 sm:flex sm:w-[8rem] md:w-[12rem] lg:hidden'
+                    }
+                    onClick={() => setShowTopicsSidebar(!showTopicsSidebar)}
+                  >
+                    <FilterIcon className="mr-2 h-5 w-5" />
+                    Topics
+                  </Button>
+                )
+              }
+              rowBelowFilters={
+                isMobile && (
+                  <BrowseTopicPills
+                    className={'relative w-full pb-1 sm:hidden'}
+                    topics={topics}
+                    currentTopicSlug={topicSlug}
+                    setTopicSlug={(slug) =>
+                      setTopicSlug(slug === topicSlug ? '' : slug)
+                    }
+                  />
+                )
+              }
+            />
+          </Col>
+          {!isMobile && (
+            <TopicsList
+              key={'groups' + topics.length}
+              topics={topics}
+              currentTopicSlug={topicSlug}
+              setCurrentTopicSlug={setTopicSlug}
+              privateUser={privateUser}
+              user={user}
+              show={showTopicsSidebar}
+              setShow={setShowTopicsSidebar}
+              className={clsx(
+                'col-span-2 min-w-[7rem] sm:min-w-[8rem]  md:min-w-[10.5rem] lg:mx-2'
+              )}
+            />
+          )}
+        </div>
       </Page>
     </>
   )
