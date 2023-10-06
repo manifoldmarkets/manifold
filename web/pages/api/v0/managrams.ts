@@ -37,7 +37,7 @@ export default async function handler(
     return res.status(500).json({ error: 'Unknown error during validation' })
   }
   try {
-    const { toId, fromId, before, limit } = params
+    const { toId, fromId, before, after, limit } = params
     let query = db
       .from('txns')
       .select('data')
