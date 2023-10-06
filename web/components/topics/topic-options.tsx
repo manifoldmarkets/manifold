@@ -3,9 +3,6 @@ import { User } from 'common/user'
 import { useState } from 'react'
 import { useGroupRole } from 'web/hooks/use-group-supabase'
 import { buildArray } from 'common/util/array'
-import { copyToClipboard } from 'web/lib/util/copy'
-import { DOMAIN } from 'common/envs/constants'
-import toast from 'react-hot-toast'
 import { DotsVerticalIcon, PencilIcon } from '@heroicons/react/solid'
 import DropdownMenu, {
   DropdownItem,

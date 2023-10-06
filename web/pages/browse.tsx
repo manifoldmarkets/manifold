@@ -9,7 +9,6 @@ import {
   useShouldBlockDestiny,
   useUser,
 } from 'web/hooks/use-user'
-import { Row } from 'web/components/layout/row'
 import { buildArray } from 'common/util/array'
 import {
   BLOCKED_BY_DEFAULT_GROUP_SLUGS,

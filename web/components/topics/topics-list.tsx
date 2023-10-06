@@ -7,7 +7,6 @@ import { Button } from 'web/components/buttons/button'
 import { MdOutlineKeyboardDoubleArrowRight } from 'react-icons/md'
 import { track } from 'web/lib/service/analytics'
 import { ForYouDropdown } from 'web/components/topics/for-you-dropdown'
-import { Spacer } from '../layout/spacer'
 
 export function TopicsList(props: {
   topics: Group[]
