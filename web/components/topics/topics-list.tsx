@@ -113,7 +113,7 @@ const SidebarItem = (props: {
   return (
     <Row
       className={clsx(
-        'w-full cursor-pointer items-center justify-between rounded-md py-2 px-2.5',
+        'w-full cursor-pointer items-center justify-between rounded-md px-2.5 py-2',
         currentTopicSlug == slug
           ? 'bg-ink-200 text-ink-900 font-semibold'
           : 'text-ink-600 hover:bg-primary-100'
