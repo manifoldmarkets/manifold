@@ -159,7 +159,7 @@ export function FollowOrUnfolowTopicButton(props: {
     >
       <Row className="gap-1">
         <BookmarkIcon
-          className={'text-canvas-0 group-hover:fill-canvas-0 h-5 w-5'}
+          className={'h-5 w-5 transition-colors group-hover:fill-white'}
         />
         Follow{label ? ` ${label}` : ''}
       </Row>

@@ -383,7 +383,7 @@ export function SupabaseSearch(props: {
         )}
       </Col>
       {showSearchTypes ? (
-        <Row className={'bg-canvas-0 lg:bg-canvas-50 gap-1 pb-1'}>
+        <Row className={'bg-canvas-0 md:bg-canvas-50 gap-1 pb-1'}>
           <Button
             size={'sm'}
             color={'gray-white'}
@@ -495,7 +495,7 @@ const UserResults = (props: { users: UserSearchResult[] }) => {
                   </Row>
                   <FollowButton size={'xs'} userId={id} />
                 </Row>
-                <div className={'text-ink-500 ml-1 line-clamp-2 text-sm'}>
+                <div className={'text-ink-500 line-clamp-2 ml-1 text-sm'}>
                   {creatorTraders.allTime > 0 && (
                     <span className={'mr-1'}>
                       {shortFormatNumber(creatorTraders.allTime)} traders
@@ -529,13 +529,7 @@ const TopicResults = (props: { topics: Group[]; yourTopicIds: string[] }) => {
               <span className="line-clamp-1 sm:text-lg">{group.name}</span>
               <Row className={'text-ink-500 line-clamp-2 gap-1 text-sm'}>
                 {group.totalMembers > 1 && (
-                  <span>
-                    {group.totalMembers} followers
-                    {group.about && ' • '}
-                  </span>
-                )}
-                {group.about && (
-                  <span>{parseJsonContentToText(group.about)}</span>
+                  <span>{group.totalMembers} followers</span>
                 )}
               </Row>
             </Col>
