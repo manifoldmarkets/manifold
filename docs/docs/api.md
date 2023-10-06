@@ -967,7 +967,8 @@ Parameters
 - `toId`: Optional. Returns managrams sent to this user.
 - `fromId`: Optional. Returns managrams sent from this user.
 - `limit`: Optional. How many managrams to return. The maximum and the default are 100.
-- `before`: Optional. The `createdTime` before which you want managrams 
+- `before`: Optional. The `createdTime` before which you want managrams
+- `after`: Optional. The `createdTime` after which you want managrams 
 
 Requires no authorization.
 
