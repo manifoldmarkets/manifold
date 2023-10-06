@@ -1,4 +1,3 @@
-import { Col } from '../layout/col'
 import { Group } from 'common/group'
 import clsx from 'clsx'
 import { Row } from 'web/components/layout/row'
@@ -7,9 +6,8 @@ import { useRealtimeMemberGroups } from 'web/hooks/use-group-supabase'
 import { Button } from 'web/components/buttons/button'
 import { MdOutlineKeyboardDoubleArrowRight } from 'react-icons/md'
 import { track } from 'web/lib/service/analytics'
-import { TopicOptionsButton } from 'web/components/topics/topics-button'
 import { ForYouDropdown } from 'web/components/topics/for-you-dropdown'
-import { ReactNode } from 'react'
+import { Spacer } from '../layout/spacer'
 
 export function TopicsList(props: {
   topics: Group[]
@@ -37,13 +35,13 @@ export function TopicsList(props: {
   const yourGroups = useRealtimeMemberGroups(user?.id)
 
   return (
-    <Col
+    <div
       className={clsx(
         show
           ? 'animate-slide-in-from-right block lg:animate-none'
-          : 'hidden lg:flex',
+          : 'hidden md:block',
         className,
-        'scrollbar-hide sticky right-0 top-0 max-h-screen gap-1 overflow-y-auto'
+        'scrollbar-hide bg-canvas-50 fixed right-0 top-0 z-20 max-h-screen overflow-y-auto px-2 md:sticky'
       )}
     >
       <Row
@@ -51,11 +49,19 @@ export function TopicsList(props: {
           'bg-canvas-50 sticky top-0 z-10 w-full items-center justify-center'
         }
       >
-        <div className="text-primary-700 hidden w-full pb-2 pl-2 lg:block">
+        <div className="text-primary-700 hidden w-full items-center justify-between px-2 pb-2 md:flex">
           Topics
+          {user && (
+            <ForYouDropdown
+              setCurrentTopic={setCurrentTopicSlug}
+              user={user}
+              yourGroups={yourGroups}
+              className="mr-1"
+            />
+          )}
         </div>
         <Button
-          className={clsx('h-[3.15rem] w-full lg:hidden')}
+          className={clsx('h-[3.15rem] w-full md:hidden')}
           color={'gray-white'}
           size={'md'}
           onClick={() => setShow(!show)}
@@ -71,7 +77,6 @@ export function TopicsList(props: {
           name={'🌎 All questions'}
           currentTopicSlug={currentTopicSlug}
           setCurrentTopicSlug={setCurrentTopicSlug}
-          optionsItem={<></>}
         />
       )}
       {user && (
@@ -81,19 +86,6 @@ export function TopicsList(props: {
           name={'⭐️ For you'}
           currentTopicSlug={currentTopicSlug}
           setCurrentTopicSlug={setCurrentTopicSlug}
-          optionsItem={
-            <ForYouDropdown
-              setCurrentTopic={setCurrentTopicSlug}
-              user={user}
-              yourGroups={yourGroups}
-              className={clsx(
-                'mr-1',
-                currentTopicSlug !== 'for-you'
-                  ? 'opacity-0 group-hover:opacity-100'
-                  : 'opacity-100'
-              )}
-            />
-          }
         />
       )}
       {topics.length > 0 &&
@@ -104,19 +96,9 @@ export function TopicsList(props: {
             name={group.name}
             currentTopicSlug={currentTopicSlug}
             setCurrentTopicSlug={setCurrentTopicSlug}
-            optionsItem={
-              <TopicOptionsButton
-                key={group.id}
-                group={group}
-                yourGroupIds={yourGroups?.map((g) => g.id)}
-                user={user}
-                className={'mr-1'}
-                selected={currentTopicSlug == group.slug}
-              />
-            }
           />
         ))}
-    </Col>
+    </div>
   )
 }
 
@@ -125,10 +107,8 @@ const SidebarItem = (props: {
   name: string
   currentTopicSlug: string | undefined
   setCurrentTopicSlug: (slug: string) => void
-  optionsItem: ReactNode
 }) => {
-  const { slug, name, currentTopicSlug, setCurrentTopicSlug, optionsItem } =
-    props
+  const { slug, name, currentTopicSlug, setCurrentTopicSlug } = props
 
   return (
     <Row
@@ -144,7 +124,6 @@ const SidebarItem = (props: {
       }}
     >
       {name}
-      {optionsItem}
     </Row>
   )
 }

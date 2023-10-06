@@ -10,10 +10,7 @@ import {
   TopicOptionsButton,
 } from 'web/components/topics/topics-button'
 import { Row } from 'web/components/layout/row'
-import {
-  useGroupFromSlug,
-  useRealtimeMemberGroups,
-} from 'web/hooks/use-group-supabase'
+import { useRealtimeMemberGroups } from 'web/hooks/use-group-supabase'
 import { User } from 'common/user'
 import { forwardRef, Ref, useState } from 'react'
 import { ForYouDropdown } from 'web/components/topics/for-you-dropdown'
@@ -34,17 +31,18 @@ export const QuestionsTopicTitle = forwardRef(
     const yourGroupIds = yourGroups?.map((g) => g.id)
     const [showAddContract, setShowAddContract] = useState(false)
     const [loading, setLoading] = useState(false)
-    const topic = useGroupFromSlug(topicSlug ?? '')
     const isMobile = useIsMobile()
     const isFollowing =
       currentTopic && (yourGroupIds ?? []).includes(currentTopic.id)
     return (
       <Row
-        className={'my-1 flex-col sm:mb-3 sm:flex-row sm:items-center'}
+        className={
+          'col-span-8 my-1 flex-col px-2 sm:mb-3 sm:flex-row sm:items-center xl:col-span-7'
+        }
         ref={ref}
       >
-        <Row className={' ml-2 items-center gap-2 sm:mr-6'}>
-          <Title className=" !mb-1 ">
+        <Row className={'items-center gap-2 sm:mr-5'}>
+          <Title className="!mb-1 ">
             {currentTopic?.name ??
               (topicSlug === 'for-you' ? '⭐️ For you' : 'Browse')}
           </Title>
@@ -53,21 +51,12 @@ export const QuestionsTopicTitle = forwardRef(
               setCurrentTopic={setTopicSlug}
               user={user}
               yourGroups={yourGroups}
-              className={'sm:hidden'}
-            />
-          )}
-          {topic && isFollowing && (
-            <TopicOptionsButton
-              className={'sm:hidden'}
-              group={topic}
-              yourGroupIds={yourGroupIds}
-              user={user}
-              selected={true}
+              className={'lg:hidden'}
             />
           )}
         </Row>
         {currentTopic && (
-          <Row className={'-ml-1'}>
+          <Row className="grow items-center">
             <CopyLinkOrShareButton
               url={`https://${DOMAIN}/browse?${TOPIC_KEY}=${
                 currentTopic?.slug ?? ''
@@ -115,6 +104,12 @@ export const QuestionsTopicTitle = forwardRef(
                 Follow
               </Button>
             )}
+            <div className="grow" />
+            <TopicOptionsButton
+              group={currentTopic}
+              yourGroupIds={yourGroupIds}
+              user={user}
+            />
           </Row>
         )}
       </Row>
