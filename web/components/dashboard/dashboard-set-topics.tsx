@@ -48,12 +48,17 @@ export function DashboardSetTopics(props: {
         }
       />
 
-      <div className="mt-2 mb-3 text-center">
-        Questions in the selected topics will show below your dashboard
+      <div className="mb-3 mt-2 text-center">
+        {/* Questions in the selected topics will show below your dashboard */}
+        You can't actually add topics yet but I'll try to ship it tommorrow 😖
+        <br />- Sinclair
       </div>
 
       <Row className="justify-end gap-1">
-        <Button color="gray" onClick={onClose}>
+        <Button color="indigo" onClick={onClose}>
+          Close
+        </Button>
+        {/* <Button color="gray" onClick={onClose}>
           Cancel
         </Button>
         <Button
@@ -63,7 +68,7 @@ export function DashboardSetTopics(props: {
           }}
         >
           Save
-        </Button>
+        </Button> */}
       </Row>
     </>
   )
