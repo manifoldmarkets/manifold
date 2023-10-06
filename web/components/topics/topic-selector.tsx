@@ -132,7 +132,7 @@ export function TopicSelector(props: {
                         value={group}
                         className={({ active }) =>
                           clsx(
-                            'relative flex h-12 cursor-pointer select-none items-center justify-between py-2 px-6 transition-colors',
+                            'relative flex h-12 cursor-pointer select-none items-center justify-between px-6 py-2 transition-colors',
                             active
                               ? 'bg-primary-200 text-ink-1000'
                               : 'text-ink-900',
@@ -159,7 +159,7 @@ export function TopicSelector(props: {
                     value={'new'}
                     className={({ active }) =>
                       clsx(
-                        'relative flex h-12 cursor-pointer select-none items-center justify-between py-2 px-6 transition-colors',
+                        'relative flex h-12 cursor-pointer select-none items-center justify-between px-6 py-2 transition-colors',
                         active
                           ? 'bg-primary-200 text-ink-1000'
                           : 'text-ink-900',
