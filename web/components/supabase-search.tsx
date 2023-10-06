@@ -42,7 +42,6 @@ import { Avatar } from 'web/components/widgets/avatar'
 import { Button, IconButton } from 'web/components/buttons/button'
 import Link from 'next/link'
 import { useFollowedUsersOnLoad } from 'web/hooks/use-follows'
-import { parseJsonContentToText } from 'common/util/parse'
 
 const CONTRACTS_PER_PAGE = 40
 const USERS_PER_PAGE = 100
