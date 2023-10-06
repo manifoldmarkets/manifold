@@ -5,7 +5,7 @@ import {
 } from 'common/dashboard'
 import { useEffect, useState } from 'react'
 import { Button } from 'web/components/buttons/button'
-import { AddDashboardItemWidget } from 'web/components/dashboard/add-dashboard-item'
+import { AddItemCard } from 'web/components/dashboard/add-dashboard-item'
 import { DashboardContent } from 'web/components/dashboard/dashboard-content'
 import { DashboardDescription } from 'web/components/dashboard/dashboard-description'
 import { FollowDashboardButton } from 'web/components/dashboard/follow-dashboard-button'
@@ -137,33 +137,36 @@ export default function DashboardPage(props: {
               onChange={(e) => updateTitle(e.target.value)}
             />
           ) : (
-            <Title className="!mb-0 ">{dashboard.title}</Title>
-          )}
-          <div className="flex items-center">
-            <CopyLinkOrShareButton
-              url={`https://${ENV_CONFIG.domain}/dashboard/${dashboard.slug}`}
-              eventTrackingName="copy dashboard link"
-              tooltip="Share"
-            />
+            <>
+              <Title className="!mb-0 ">{dashboard.title}</Title>
 
-            <FollowDashboardButton
-              dashboardId={dashboard.id}
-              dashboardCreatorId={dashboard.creatorId}
-              ttPlacement="bottom"
-            />
-            {isCreator && !editMode && (
-              <Button onClick={() => setEditMode(true)}>Edit</Button>
-            )}
-            {isOnlyAdmin && !editMode && (
-              <Button
-                color="red"
-                className="ml-6"
-                onClick={() => setEditMode(true)}
-              >
-                Edit as Admin
-              </Button>
-            )}
-          </div>
+              <div className="flex items-center">
+                <CopyLinkOrShareButton
+                  url={`https://${ENV_CONFIG.domain}/dashboard/${dashboard.slug}`}
+                  eventTrackingName="copy dashboard link"
+                  tooltip="Share"
+                />
+
+                <FollowDashboardButton
+                  dashboardId={dashboard.id}
+                  dashboardCreatorId={dashboard.creatorId}
+                  ttPlacement="bottom"
+                />
+                {isCreator && (
+                  <Button onClick={() => setEditMode(true)}>Edit</Button>
+                )}
+                {isOnlyAdmin && (
+                  <Button
+                    color="red"
+                    className="ml-6"
+                    onClick={() => setEditMode(true)}
+                  >
+                    Edit as Admin
+                  </Button>
+                )}
+              </div>
+            </>
+          )}
         </Row>
         <Row className="mb-8 items-center gap-2">
           <Avatar
@@ -196,11 +199,8 @@ export default function DashboardPage(props: {
           isEditing={editMode}
         />
         {editMode && (
-          <Col className="gap-4">
-            <AddDashboardItemWidget
-              items={dashboard.items}
-              setItems={updateItems}
-            />
+          <Col className="mb-4 gap-4">
+            <AddItemCard items={dashboard.items} setItems={updateItems} />
             <Row className="w-full justify-end gap-2">
               <Button
                 color="gray"
@@ -262,7 +262,7 @@ function DescriptionEditor(props: {
         color="gray-outline"
         onClick={() => setEditDescription(true)}
       >
-        <PlusIcon className="mr-2 h-5 w-5" />
+        <PlusIcon className="mr-2 h-6 w-6" />
         Add description
       </Button>
     )

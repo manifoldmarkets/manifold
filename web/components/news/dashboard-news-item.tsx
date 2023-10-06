@@ -70,14 +70,15 @@ export const DashboardNewsItem = (props: {
   )
 }
 
-export const DashboardNewsItemPlaceholder = () => {
+export const DashboardNewsItemPlaceholder = (props: { pulse?: boolean }) => {
   return (
     <div
       className={clsx(
-        'border-ink-500 bg-canvas-0 hover:border-primary-300 focus:border-primary-300 relative flex w-full animate-pulse flex-col overflow-hidden rounded-xl border transition-colors sm:flex-row'
+        props.pulse ? 'animate-pulse' : 'opacity-70',
+        'border-ink-500 bg-canvas-0 relative flex w-full flex-col overflow-hidden rounded-xl border transition-colors sm:flex-row'
       )}
     >
-      <div className=" bg-ink-500 m-0 h-[120px] sm:w-1/3" />
+      <div className="bg-ink-500 m-0 h-[120px] sm:w-1/3" />
       <Col className=" border-canvas-0 w-full bg-opacity-80 px-4 py-2 sm:pr-6">
         <div className="bg-ink-600 mb-2 h-3 w-12" />
 
