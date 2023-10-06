@@ -16,6 +16,7 @@ const queryParams = z
       .or(z.string().regex(/\d+/).transform(Number))
       .refine((n) => n >= 0 && n <= 100, 'Limit must be between 0 and 100'),
     before: z.string().optional(),
+    after: z.string().optional(),
   })
   .strict()
 
@@ -44,6 +45,7 @@ export default async function handler(
       .order('data->createdTime', { ascending: false } as any)
       .limit(limit)
     if (before) query = query.lt('data->createdTime', before)
+    if (after) query = query.gt('data->createdTime', after)
     if (toId) query = query.eq('data->>toId', toId)
     if (fromId) query = query.eq('data->>fromId', fromId)
     const { data } = await run(query)
