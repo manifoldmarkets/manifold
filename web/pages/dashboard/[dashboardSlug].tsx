@@ -1,7 +1,4 @@
-import {
-  Dashboard,
-  DashboardItem,
-} from 'common/dashboard'
+import { Dashboard, DashboardItem } from 'common/dashboard'
 import { useEffect, useState } from 'react'
 import { Button } from 'web/components/buttons/button'
 import { AddItemCard } from 'web/components/dashboard/add-dashboard-item'
@@ -31,8 +28,6 @@ import { ExpandingInput } from 'web/components/widgets/expanding-input'
 import { SEO } from 'web/components/SEO'
 import { richTextToString } from 'common/util/parse'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
-
-
 
 export async function getStaticProps(ctx: {
   params: { dashboardSlug: string }
