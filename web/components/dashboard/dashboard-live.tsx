@@ -8,7 +8,7 @@ export function DashboardLive(props: { topics: string[] }) {
   const groups = useGroupsFromIds(props.topics)
   const [pill, setPill] = useState<PillOptions>('all')
 
-  if (!groups) return <></>
+  if (!groups?.length) return <></>
 
   return (
     <Col>
