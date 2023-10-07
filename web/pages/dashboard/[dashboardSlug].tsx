@@ -1,7 +1,6 @@
 import {
   Dashboard,
   DashboardItem,
-  convertDashboardSqltoTS,
 } from 'common/dashboard'
 import { useEffect, useState } from 'react'
 import { Button } from 'web/components/buttons/button'
@@ -17,7 +16,6 @@ import { Title } from 'web/components/widgets/title'
 import { UserLink } from 'web/components/widgets/user-link'
 import { useUser } from 'web/hooks/use-user'
 import { getDashboardFromSlug, updateDashboard } from 'web/lib/firebase/api'
-import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
 import Custom404 from '../404'
 import { useDashboardFromSlug } from 'web/hooks/use-dashboard'
 import { TextEditor, useTextEditor } from 'web/components/widgets/editor'
@@ -33,15 +31,8 @@ import { ExpandingInput } from 'web/components/widgets/expanding-input'
 import { SEO } from 'web/components/SEO'
 import { richTextToString } from 'common/util/parse'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
-import { initial } from 'lodash'
-import LivePage from '../live'
-import { useGroupsFromIds } from 'web/hooks/use-group-supabase'
-import {
-  ActivityLog,
-  LivePillOptions,
-  PillOptions,
-} from 'web/components/activity-log'
-import { Subtitle } from 'web/components/widgets/subtitle'
+
+
 
 export async function getStaticProps(ctx: {
   params: { dashboardSlug: string }
