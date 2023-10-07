@@ -5,15 +5,17 @@ import { APIError, authEndpoint, validate } from './helpers'
 import { DashboardItemSchema, contentSchema } from 'shared/zod-types'
 import { slugify } from 'common/util/slugify'
 import { randomString } from 'common/util/random'
+import { updateDashboardGroups } from 'shared/supabase/dashboard'
 
 const schema = z.object({
   title: z.string(),
   description: contentSchema.optional(),
   items: z.array(DashboardItemSchema),
+  topics: z.array(z.string()),
 })
 
 export const createdashboard = authEndpoint(async (req, auth) => {
-  const { title, description, items } = validate(schema, req.body)
+  const { title, description, items, topics } = validate(schema, req.body)
 
   log('creating dashboard')
   const pg = createSupabaseDirectClient()
@@ -48,6 +50,8 @@ export const createdashboard = authEndpoint(async (req, auth) => {
       user.avatarUrl,
     ]
   )
+
+  await pg.tx((txn) => updateDashboardGroups(id, topics, txn))
 
   // return something
   return { id: id, slug: slug }

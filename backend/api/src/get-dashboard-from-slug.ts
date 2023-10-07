@@ -11,9 +11,19 @@ const bodySchema = z.object({
 export const getdashboardfromslug = MaybeAuthedEndpoint(async (req) => {
   const { dashboardSlug } = validate(bodySchema, req.body)
   const db = createSupabaseClient()
-  const { data } = await run(
+  const dash = await run(
     db.from('dashboards').select('*').eq('slug', dashboardSlug).single()
   )
 
-  return { dashboard: convertDashboardSqltoTS(data) }
+  const groups = await run(
+    db
+      .from('dashboard_groups')
+      .select('group_id')
+      .eq('dashboard_id', dash.data.id)
+  )
+
+  return {
+    ...convertDashboardSqltoTS(dash.data),
+    topics: groups.data.map((d) => d.group_id),
+  }
 })

@@ -16,7 +16,7 @@ import { Avatar } from 'web/components/widgets/avatar'
 import { Title } from 'web/components/widgets/title'
 import { UserLink } from 'web/components/widgets/user-link'
 import { useUser } from 'web/hooks/use-user'
-import { updateDashboard } from 'web/lib/firebase/api'
+import { getDashboardFromSlug, updateDashboard } from 'web/lib/firebase/api'
 import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
 import Custom404 from '../404'
 import { useDashboardFromSlug } from 'web/hooks/use-dashboard'
@@ -33,19 +33,23 @@ import { ExpandingInput } from 'web/components/widgets/expanding-input'
 import { SEO } from 'web/components/SEO'
 import { richTextToString } from 'common/util/parse'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
-import { run } from 'common/supabase/utils'
+import { initial } from 'lodash'
+import LivePage from '../live'
+import { useGroupsFromIds } from 'web/hooks/use-group-supabase'
+import {
+  ActivityLog,
+  LivePillOptions,
+  PillOptions,
+} from 'web/components/activity-log'
+import { Subtitle } from 'web/components/widgets/subtitle'
 
 export async function getStaticProps(ctx: {
   params: { dashboardSlug: string }
 }) {
   const { dashboardSlug } = ctx.params
-  const db = await initSupabaseAdmin()
 
   try {
-    const { data } = await run(
-      db.from('dashboards').select('*').eq('slug', dashboardSlug).single()
-    )
-    const dashboard = convertDashboardSqltoTS(data)
+    const dashboard = await getDashboardFromSlug({ dashboardSlug })
 
     return { props: { initialDashboard: dashboard, slug: dashboardSlug } }
   } catch (e) {
@@ -69,9 +73,7 @@ export default function DashboardPage(props: {
 }) {
   const { initialDashboard, slug } = props
   const fetchedDashboard = useDashboardFromSlug(slug)
-  const [dashboard, setDashboard] = useState<Dashboard>(
-    fetchedDashboard ?? initialDashboard
-  )
+  const [dashboard, setDashboard] = useState<Dashboard>(initialDashboard)
 
   // Update the dashboard state if a new fetchedDashboard becomes available
   useEffect(() => {
@@ -90,6 +92,13 @@ export default function DashboardPage(props: {
   const updateTitle = (newTitle: string) => {
     if (dashboard) {
       const updatedDashboard = { ...dashboard, title: newTitle }
+      setDashboard(updatedDashboard)
+    }
+  }
+
+  const updateTopics = (newTopics: string[]) => {
+    if (dashboard) {
+      const updatedDashboard = { ...dashboard, topics: newTopics }
       setDashboard(updatedDashboard)
     }
   }
@@ -192,6 +201,7 @@ export default function DashboardPage(props: {
                   title: dashboard.title,
                   items: dashboard.items,
                   description: editor?.getJSON(),
+                  topics: dashboard.topics,
                 }).then((resultingDashboard) => {
                   if (
                     resultingDashboard &&
@@ -235,16 +245,23 @@ export default function DashboardPage(props: {
         ) : (
           <DashboardDescription description={dashboard.description} />
         )}
+        {editMode && (
+          <div className="mb-4">
+            <AddItemCard
+              items={dashboard.items}
+              setItems={updateItems}
+              topics={dashboard.topics}
+              setTopics={updateTopics}
+            />
+          </div>
+        )}
         <DashboardContent
           items={dashboard.items}
           setItems={updateItems}
+          topics={dashboard.topics}
+          setTopics={updateTopics}
           isEditing={editMode}
         />
-        {editMode && (
-          <div className="mb-4">
-            <AddItemCard items={dashboard.items} setItems={updateItems} />
-          </div>
-        )}
       </Col>
     </Page>
   )

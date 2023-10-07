@@ -1,7 +1,8 @@
 import { JSONContent } from '@tiptap/core'
 import { Row, convertSQLtoTS, tsToMillis } from './supabase/utils'
 
-export type Dashboard = {
+// corresponds to SQL
+export type BaseDashboard = {
   id: string
   slug: string
   creatorId: string
@@ -12,6 +13,10 @@ export type Dashboard = {
   creatorUsername: string
   creatorName: string
   creatorAvatarUrl: string
+}
+
+export type Dashboard = BaseDashboard & {
+  topics: string[]
 }
 
 export type DashboardItem = DashboardQuestionItem | DashboardLinkItem
@@ -28,7 +33,7 @@ export type DashboardLinkItem = {
 
 export const convertDashboardSqltoTS = (
   sqlDashboard: Row<'dashboards'>
-): Dashboard => {
+): BaseDashboard => {
   return convertSQLtoTS<'dashboards', Dashboard>(sqlDashboard, {
     created_time: tsToMillis,
   })

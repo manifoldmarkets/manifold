@@ -1,10 +1,12 @@
 import { Group } from 'common/group'
 import { TopicSelector } from '../topics/topic-selector'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { XIcon } from '@heroicons/react/solid'
 import { Row } from '../layout/row'
 import { TopicTag } from '../topics/topic-tag'
 import { Button } from '../buttons/button'
+import { useGroupsFromIds } from 'web/hooks/use-group-supabase'
+import { LoadingIndicator } from '../widgets/loading-indicator'
 
 export function DashboardSetTopics(props: {
   topics: string[]
@@ -13,10 +15,15 @@ export function DashboardSetTopics(props: {
 }) {
   const { topics, setTopics, onClose } = props
 
-  // TODO: set default based on groups already
-  // useGroupFromId
+  const groups = useGroupsFromIds(topics)
+  const [selectedGroups, setSelectedGroups] = useState<Group[]>()
+  useEffect(() => {
+    if (groups && !selectedGroups) {
+      setSelectedGroups(groups)
+    }
+  }, [groups])
 
-  const [selectedGroups, setSelectedGroups] = useState<Group[]>([])
+  if (!selectedGroups) return <LoadingIndicator />
 
   return (
     <>
@@ -49,16 +56,11 @@ export function DashboardSetTopics(props: {
       />
 
       <div className="mb-3 mt-2 text-center">
-        {/* Questions in the selected topics will show below your dashboard */}
-        You can't actually add topics yet but I'll try to ship it tommorrow 😖
-        <br />- Sinclair
+        Activity in these topics will show in a feed below your dashboard
       </div>
 
       <Row className="justify-end gap-1">
-        <Button color="indigo" onClick={onClose}>
-          Close
-        </Button>
-        {/* <Button color="gray" onClick={onClose}>
+        <Button color="gray" onClick={onClose}>
           Cancel
         </Button>
         <Button
@@ -68,7 +70,7 @@ export function DashboardSetTopics(props: {
           }}
         >
           Save
-        </Button> */}
+        </Button>
       </Row>
     </>
   )

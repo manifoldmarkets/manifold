@@ -52,7 +52,7 @@ export function NewsDashboard(props: { slug: string }) {
       </Row>
 
       <DashboardDescription description={dashboard.description} />
-      <DashboardContent items={dashboard.items} />
+      <DashboardContent items={dashboard.items} topics={dashboard.topics} />
     </div>
   )
 }

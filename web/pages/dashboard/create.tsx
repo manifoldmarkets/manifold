@@ -41,6 +41,11 @@ export default function CreateDashboard() {
     'create dashboard items'
   )
 
+  const [topics, setTopics] = usePersistentLocalState<string[]>(
+    [],
+    'create dashboard topics'
+  )
+
   const isValid = title.length > 0 && items.length > 1
 
   useEffect(() => {
@@ -63,6 +68,7 @@ export default function CreateDashboard() {
         title,
         description: editor?.getJSON(),
         items,
+        topics,
       })
       const newDashboard = await createDashboard(createProps)
 
@@ -118,10 +124,22 @@ export default function CreateDashboard() {
 
         <TextEditor editor={editor} className="mb-4" />
 
+        <AddItemCard
+          items={items}
+          setItems={setItems}
+          topics={topics}
+          setTopics={setTopics}
+        />
+
         {items.length > 0 && (
-          <DashboardContent items={items} setItems={setItems} isEditing />
+          <DashboardContent
+            items={items}
+            setItems={setItems}
+            topics={topics}
+            setTopics={setTopics}
+            isEditing
+          />
         )}
-        <AddItemCard items={items} setItems={setItems} />
         <Spacer h={6} />
         <span className="text-error">{errorText}</span>
 

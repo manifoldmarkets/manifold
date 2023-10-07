@@ -9,13 +9,16 @@ import { DashboardItem, DashboardQuestionItem } from 'common/dashboard'
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
 import { partition } from 'lodash'
 import { AddItemFloatyButton } from './add-dashboard-item'
+import { DashboardLive } from './dashboard-live'
 
 export const DashboardContent = (props: {
   items: DashboardItem[]
   setItems?: (items: DashboardItem[]) => void
+  topics: string[]
+  setTopics?: (topics: string[]) => void
   isEditing?: boolean
 }) => {
-  const { items, isEditing, setItems } = props
+  const { items, isEditing, setItems, topics = [], setTopics } = props
 
   const [questions, links] = partition(
     items,
@@ -64,86 +67,89 @@ export const DashboardContent = (props: {
   if (isLoading) return <LoadingIndicator />
 
   return (
-    <DragDropContext
-      onDragStart={() => window.navigator.vibrate?.(100)}
-      onDragEnd={onDragEnd}
-    >
-      <Droppable droppableId="dashboard">
-        {(provided, snapshot) => (
-          <div
-            ref={provided.innerRef}
-            {...provided.droppableProps}
-            className="relative flex flex-col"
-          >
-            {items.map((item, index) => (
-              <Draggable
-                isDragDisabled={!isEditing}
-                key={item.type === 'link' ? item.url : item.slug}
-                draggableId={item.type === 'link' ? item.url : item.slug}
-                index={index}
-              >
-                {(provided) => (
-                  <div
-                    ref={provided.innerRef}
-                    {...provided.draggableProps}
-                    className="relative mb-4"
-                    onMouseMove={(e) => {
-                      if (
-                        e.nativeEvent.offsetY <
-                        e.currentTarget.offsetHeight / 2
-                      ) {
-                        setHoverIndex(index)
-                        setHoverTop(e.currentTarget.offsetTop - 8)
-                      } else {
-                        setHoverIndex(index + 1)
-                        setHoverTop(
-                          e.currentTarget.offsetTop +
-                            e.currentTarget.offsetHeight +
-                            4
-                        )
-                      }
-                    }}
-                  >
-                    <div {...provided.dragHandleProps}>
-                      <DashboardContentFrame
-                        isEditing={isEditing}
-                        onRemove={() => {
-                          const newItems = [...items]
-                          newItems.splice(index, 1)
-                          setItems?.(newItems)
-                        }}
-                      >
-                        {renderCard(item)}
-                      </DashboardContentFrame>
+    <>
+      <DragDropContext
+        onDragStart={() => window.navigator.vibrate?.(100)}
+        onDragEnd={onDragEnd}
+      >
+        <Droppable droppableId="dashboard">
+          {(provided, snapshot) => (
+            <div
+              ref={provided.innerRef}
+              {...provided.droppableProps}
+              className="relative flex flex-col"
+            >
+              {items.map((item, index) => (
+                <Draggable
+                  isDragDisabled={!isEditing}
+                  key={item.type === 'link' ? item.url : item.slug}
+                  draggableId={item.type === 'link' ? item.url : item.slug}
+                  index={index}
+                >
+                  {(provided) => (
+                    <div
+                      ref={provided.innerRef}
+                      {...provided.draggableProps}
+                      className="relative mb-4"
+                      onMouseMove={(e) => {
+                        if (
+                          e.nativeEvent.offsetY <
+                          e.currentTarget.offsetHeight / 2
+                        ) {
+                          setHoverIndex(index)
+                          setHoverTop(e.currentTarget.offsetTop - 8)
+                        } else {
+                          setHoverIndex(index + 1)
+                          setHoverTop(
+                            e.currentTarget.offsetTop +
+                              e.currentTarget.offsetHeight +
+                              4
+                          )
+                        }
+                      }}
+                    >
+                      <div {...provided.dragHandleProps}>
+                        <DashboardContentFrame
+                          isEditing={isEditing}
+                          onRemove={() => {
+                            const newItems = [...items]
+                            newItems.splice(index, 1)
+                            setItems?.(newItems)
+                          }}
+                        >
+                          {renderCard(item)}
+                        </DashboardContentFrame>
+                      </div>
                     </div>
+                  )}
+                </Draggable>
+              ))}
+              {isEditing &&
+                !snapshot.isDraggingOver &&
+                hoverIndex != null &&
+                hoverTop != null && (
+                  <div
+                    className="absolute -right-2 hidden -translate-y-1/2 translate-x-full transition-all md:block lg:-right-8"
+                    style={{ top: hoverTop }}
+                  >
+                    <AddItemFloatyButton
+                      key="floaty button"
+                      position={hoverIndex}
+                      items={items}
+                      setItems={setItems}
+                      topics={topics}
+                      setTopics={setTopics}
+                    />
                   </div>
                 )}
-              </Draggable>
-            ))}
-            {isEditing &&
-              !snapshot.isDraggingOver &&
-              hoverIndex != null &&
-              hoverTop != null && (
-                <div
-                  className="absolute -right-2 hidden -translate-y-1/2 translate-x-full transition-all md:block lg:-right-8"
-                  style={{ top: hoverTop }}
-                >
-                  <AddItemFloatyButton
-                    key="floaty button"
-                    position={hoverIndex}
-                    items={items}
-                    setItems={setItems}
-                    topics={[]}
-                    setTopics={() => {}}
-                  />
-                </div>
-              )}
 
-            {provided.placeholder}
-          </div>
-        )}
-      </Droppable>
-    </DragDropContext>
+              {provided.placeholder}
+            </div>
+          )}
+        </Droppable>
+      </DragDropContext>
+      <DashboardLive topics={topics} />
+    </>
   )
 }
 

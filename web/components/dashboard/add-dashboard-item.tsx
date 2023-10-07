@@ -17,8 +17,10 @@ import { DashboardSetTopics } from './dashboard-set-topics'
 export function AddItemCard(props: {
   items: DashboardItem[]
   setItems: (items: DashboardItem[]) => void
+  topics: string[]
+  setTopics: (topics: string[]) => void
 }) {
-  const { items, setItems } = props
+  const { items, setItems, topics, setTopics } = props
 
   const [open, setOpen] = useState(false)
   const [tab, setTab] = useState<0 | 1 | 2>(0)
@@ -67,10 +69,10 @@ export function AddItemCard(props: {
         tab={tab}
         setTab={setTab}
         insertItems={(newItems) => {
-          setItems([...items, ...newItems])
+          setItems([...newItems, ...items])
         }}
-        topics={[]}
-        setTopics={() => {}}
+        topics={topics}
+        setTopics={setTopics}
       />
     </div>
   )
@@ -140,8 +142,8 @@ export const AddItemFloatyButton = (props: {
   position: number
   items: DashboardItem[]
   setItems?: (items: DashboardItem[]) => void
-  topics: any
-  setTopics: any
+  topics: string[]
+  setTopics?: (topics: string[]) => void
   className?: string
 }) => {
   const { position, items, setItems, topics, setTopics, className } = props
@@ -171,7 +173,7 @@ export const AddItemFloatyButton = (props: {
           setItems?.(copy)
         }}
         topics={topics}
-        setTopics={setTopics}
+        setTopics={(topics) => setTopics?.(topics)}
       />
     </>
   )
