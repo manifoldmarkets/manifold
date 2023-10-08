@@ -11,7 +11,7 @@ export function DashboardLive(props: { topics: string[] }) {
   return (
     <Col>
       <Subtitle>Recent Activity</Subtitle>
-      <ActivityLog count={30} topicSlugs={groups?.map((t) => t.slug)} />
+      <ActivityLog count={100} topicSlugs={groups?.map((t) => t.slug)} />
     </Col>
   )
 }
