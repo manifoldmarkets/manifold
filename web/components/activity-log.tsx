@@ -47,12 +47,10 @@ const EXTRA_USERNAMES_TO_EXCLUDE = ['Charlie', 'GamblingGandalf']
 
 export function ActivityLog(props: {
   count: number
-  pill: PillOptions
-  rightPanel?: ReactNode
   className?: string
   topicSlugs?: string[]
 }) {
-  const { count, topicSlugs, pill, className } = props
+  const { count, topicSlugs, className } = props
 
   const privateUser = usePrivateUser()
   const user = useUser()
@@ -64,6 +62,8 @@ export function ActivityLog(props: {
   ).filter((t) => !topicSlugs?.includes(t))
   const blockedContractIds = privateUser?.blockedContractIds ?? []
   const blockedUserIds = privateUser?.blockedUserIds ?? []
+
+  const [pill, setPill] = useState<PillOptions>('all')
 
   const [recentTopicalBets, setRecentTopicalBets] = useState<Bet[]>()
   const [recentTopicalComments, setRecentTopicalComments] =
@@ -210,9 +210,12 @@ export function ActivityLog(props: {
 
   return (
     <Col className={clsx('gap-4', className)}>
-      {!allLoaded || (loading && <LoadingIndicator />)}
+      <LivePillOptions pill={pill} setPill={setPill}>
+        {loading && <LoadingIndicator size="sm" />}
+      </LivePillOptions>
+      {!allLoaded && <LoadingIndicator />}
       {allLoaded && (
-        <Col className="border-ink-300 divide-ink-300 divide-y-[0.5px] rounded-sm border-[0.5px]">
+        <Col className="gap-0.5">
           {groups.map(({ parentId, items }) => {
             const contract = contractsById[parentId] as Contract
 
@@ -243,12 +246,13 @@ export function ActivityLog(props: {
   )
 }
 
-export type PillOptions = 'all' | 'questions' | 'comments' | 'trades'
-export const LivePillOptions = (props: {
+type PillOptions = 'all' | 'questions' | 'comments' | 'trades'
+const LivePillOptions = (props: {
   pill: PillOptions
   setPill: (pill: PillOptions) => void
+  children?: ReactNode
 }) => {
-  const { pill, setPill } = props
+  const { pill, setPill, children } = props
 
   const selectPill = (pill: PillOptions) => {
     setPill(pill)
@@ -285,6 +289,7 @@ export const LivePillOptions = (props: {
       >
         Trades
       </PillButton>
+      {children}
     </Row>
   )
 }
@@ -293,15 +298,15 @@ const MarketCreatedLog = memo((props: { contract: Contract }) => {
     props.contract
 
   return (
-    <Row className="text-ink-500 items-center gap-2 text-sm">
+    <Row className="text-ink-600 items-center gap-2 text-sm">
       <Avatar
         avatarUrl={creatorAvatarUrl}
         username={creatorUsername}
         size="xs"
       />
       <UserLink name={creatorName} username={creatorUsername} />
-      <Row>
-        <div className="text-ink-400">created</div>
+      <Row className="text-ink-400">
+        created
         <RelativeTimestamp time={createdTime} />
       </Row>
     </Row>
@@ -322,10 +327,10 @@ const CommentLog = memo(function FeedComment(props: {
         className="text-ink-500 mb-1 items-center gap-2 text-sm"
       >
         <Avatar size="xs" username={userUsername} avatarUrl={userAvatarUrl} />
-        <div>
-          <UserLink name={userName} username={userUsername} /> commented{' '}
-          <RelativeTimestamp time={createdTime} />
-        </div>
+        <span>
+          <UserLink name={userName} username={userUsername} /> commented
+        </span>
+        <RelativeTimestamp time={createdTime} />
       </Row>
       <Content size="sm" className="grow" content={content || text} />
     </Col>
