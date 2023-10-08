@@ -46,7 +46,7 @@ export function NewsDashboard(props: { slug: string }) {
           className="text-ink-700"
         />
         <span className="text-ink-400 ml-4 text-sm">
-          Updated
+          Edited
           <RelativeTimestamp time={dashboard.createdTime} />
         </span>
       </Row>
