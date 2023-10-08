@@ -17,7 +17,11 @@ import {
   PrivateUser,
   User,
 } from 'common/user'
-import { Contract, MultiContract } from 'common/contract'
+import {
+  Contract,
+  MultiContract,
+  renderResolution,
+} from 'common/contract'
 import { getPrivateUser, getUser, getValues, log } from 'shared/utils'
 import { Comment } from 'common/comment'
 import { groupBy, keyBy, mapValues, minBy, sum, uniq } from 'lodash'
@@ -1118,6 +1122,7 @@ export const createContractResolvedNotifications = async (
   outcome: string,
   probabilityInt: number | undefined,
   resolutionValue: number | undefined,
+  answerId: string | undefined,
   resolutionData: {
     userIdToContractMetrics: {
       [userId: string]: ReturnType<typeof getContractBetMetrics>
@@ -1129,7 +1134,19 @@ export const createContractResolvedNotifications = async (
   }
 ) => {
   let resolutionText = outcome ?? contract.question
-  if (
+
+  const isIndependentMulti =
+    contract.outcomeType === 'MULTIPLE_CHOICE' &&
+    contract.mechanism === 'cpmm-multi-1' &&
+    !contract.shouldAnswersSumToOne
+
+  if (isIndependentMulti) {
+    const answer = contract.answers.find((answer) => answer.id === answerId)
+    resolutionText = `${answer?.text ?? ''}: ${renderResolution(
+      outcome,
+      probabilityInt !== undefined ? probabilityInt / 100 : answer?.prob
+    )}`
+  } else if (
     contract.outcomeType === 'FREE_RESPONSE' ||
     contract.outcomeType === 'MULTIPLE_CHOICE'
   ) {
@@ -1183,14 +1200,15 @@ export const createContractResolvedNotifications = async (
       sourceContractSlug: contract.slug,
       sourceSlug: contract.slug,
       sourceTitle: contract.question,
-      data: {
+      data: removeUndefinedProps({
         outcome,
+        answerId,
         userInvestment: userIdToContractMetrics?.[userId]?.invested ?? 0,
         userPayout: userPayouts[userId] ?? 0,
         profitRank: sortedProfits.findIndex((p) => p.userId === userId) + 1,
         totalShareholders: sortedProfits.length,
         profit: userIdToContractMetrics?.[userId]?.profit ?? 0,
-      } as ContractResolutionData,
+      }) as ContractResolutionData,
     }
   }
 
@@ -1223,7 +1241,8 @@ export const createContractResolvedNotifications = async (
         contract,
         outcome,
         resolutionProbability,
-        resolutions
+        resolutions,
+        answerId
       )
 
     if (sendToMobile) {

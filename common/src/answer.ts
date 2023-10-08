@@ -19,6 +19,7 @@ export type Answer = {
 
   resolution?: 'YES' | 'NO' | 'N/A' | 'MKT'
   resolutionTime?: number
+  resolutionProbability?: number
 }
 
 export type DpmAnswer = {
