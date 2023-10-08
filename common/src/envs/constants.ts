@@ -100,6 +100,7 @@ export const BOT_USERNAMES = [
   'EliBot',
   'manifestussy',
   'mirrorbot',
+  'JakeBot',
 ]
 
 export const CORE_USERNAMES = [
