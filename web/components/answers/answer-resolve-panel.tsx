@@ -1,4 +1,4 @@
-import { sum } from 'lodash'
+import { sortBy, sum } from 'lodash'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import clsx from 'clsx'
@@ -500,13 +500,20 @@ export const IndependentAnswersResolvePanel = (props: {
 }) => {
   const { contract } = props
 
-  const { answers } = contract
-
   const isAdmin = useAdmin()
+
+  const { answers } = contract
+  const sortedAnswers = [
+    ...sortBy(
+      answers,
+      (a) => (a.resolution ? -a.subsidyPool : -Infinity),
+      (a) => -1 * a.prob
+    ),
+  ]
 
   return (
     <>
-      {answers.map((answer) => (
+      {sortedAnswers.map((answer) => (
         <IndependentResolutionAnswerItem
           key={answer.id}
           contract={contract}
@@ -529,7 +536,7 @@ function IndependentResolutionAnswerItem(props: {
   isAdmin: boolean
   isInModal?: boolean
 }) {
-  const { contract, answer, color, isAdmin, isInModal } = props
+  const { contract, answer, color, isAdmin } = props
   const answerCreator = useUserByIdOrAnswer(answer)
   const user = useUser()
   const isCreator = user?.id === contract.creatorId

@@ -288,21 +288,16 @@ export const AnswerStatusAndBetButtons = (props: {
   const user = useUser()
 
   const isDpm = contract.mechanism === 'dpm-2'
-  const chosenAnswer = contract.resolution === answer.id
   const answerResolution =
-    'resolution' in answer
-      ? answer.resolution
-      : chosenAnswer
-      ? 'YES'
-      : undefined
+    'resolution' in answer ? answer.resolution : undefined
 
   const prob = getAnswerProbability(contract, answer.id)
   const resolvedProb =
-    answerResolution == undefined
-      ? undefined
-      : answerResolution === answer.id
-      ? 1
-      : (resolutions?.[answer.id] ?? 0) / 100
+    answerResolution === 'MKT' && 'resolutionProbability' in answer
+      ? answer.resolutionProbability ?? answer.prob
+      : resolutions
+      ? (resolutions?.[answer.id] ?? 0) / 100
+      : undefined
 
   const sharesSum = sumBy(userBets, (bet) =>
     bet.outcome === 'YES' ? bet.shares : -bet.shares

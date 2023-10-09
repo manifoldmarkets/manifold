@@ -1220,7 +1220,6 @@ export const createContractResolvedNotifications = async (
 
     // Browser notifications
     if (sendToBrowser) {
-      console.log('sending to browser')
       await insertNotificationToSupabase(
         constructNotification(userId, reason),
         pg
