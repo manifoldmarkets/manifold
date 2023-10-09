@@ -229,14 +229,14 @@ export function MiniResolutionPanel(props: {
           ADMIN
         </div>
       )}
-      <Col>
+      <Col className="gap-2">
         <YesNoCancelSelector
           className="mx-2 my-2 px-2"
           selected={outcome}
           onSelect={setOutcome}
         />
         {outcome === 'MKT' && (
-          <Row className="mt-2 flex-wrap items-center gap-2">
+          <Row className="flex-wrap items-center gap-2">
             <span>Resolve to an intermediate probability</span>{' '}
             <ProbabilityInput
               prob={prob}
@@ -245,8 +245,11 @@ export function MiniResolutionPanel(props: {
             />
           </Row>
         )}
+        {outcome === 'CANCEL' && (
+          <div>Cancel all trades and return money back to {BETTORS}</div>
+        )}
         {error && (
-          <div className="text-scarlet-500 mt-2 self-start rounded p-1 text-xs">
+          <div className="text-scarlet-500 self-start rounded p-1 text-xs">
             {error}
           </div>
         )}
