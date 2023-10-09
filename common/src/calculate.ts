@@ -95,7 +95,12 @@ export function getAnswerProbability(
     const answer = contract.answers.find((a) => a.id === answerId)
     if (!answer) return 0
 
-    const { poolYes, poolNo } = answer
+    const { poolYes, poolNo, resolution, resolutionProbability } = answer
+    if (resolution) {
+      if (resolution === 'MKT') return resolutionProbability ?? answer.prob
+      if (resolution === 'YES') return 1
+      if (resolution === 'NO') return 0
+    }
     const pool = { YES: poolYes, NO: poolNo }
     return getCpmmProbability(pool, 0.5)
   }

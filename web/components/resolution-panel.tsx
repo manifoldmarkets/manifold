@@ -5,13 +5,16 @@ import { YesNoCancelSelector } from './bet/yes-no-selector'
 import { Spacer } from './layout/spacer'
 import { ResolveConfirmationButton } from './buttons/confirmation-button'
 import { APIError, resolveMarket } from 'web/lib/firebase/api'
-import { getProbability } from 'common/calculate'
-import { BinaryContract, resolution } from 'common/contract'
+import { getAnswerProbability, getProbability } from 'common/calculate'
+import { BinaryContract, CPMMMultiContract, resolution } from 'common/contract'
 import { BETTORS, PLURAL_BETS } from 'common/user'
 import { Row } from 'web/components/layout/row'
 import { capitalize } from 'lodash'
 import { ProbabilityInput } from './widgets/probability-input'
 import { Button } from './buttons/button'
+import { Answer } from 'common/answer'
+import { Col } from './layout/col'
+import { removeUndefinedProps } from 'common/util/object'
 
 function getResolveButtonColor(outcome: resolution | undefined) {
   return outcome === 'YES'
@@ -168,5 +171,94 @@ export function ResolutionPanel(props: {
         )}
       </Row>
     </>
+  )
+}
+
+export function MiniResolutionPanel(props: {
+  contract: CPMMMultiContract
+  answer: Answer
+  isAdmin: boolean
+  isCreator: boolean
+  modalSetOpen?: (open: boolean) => void
+}) {
+  const { contract, answer, isAdmin, isCreator, modalSetOpen } = props
+
+  const [outcome, setOutcome] = useState<resolution | undefined>()
+
+  const [prob, setProb] = useState<number | undefined>(
+    Math.round(getAnswerProbability(contract, answer.id) * 100)
+  )
+
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [error, setError] = useState<string | undefined>(undefined)
+
+  const resolve = async () => {
+    if (!outcome) return
+
+    setIsSubmitting(true)
+
+    try {
+      const result = await resolveMarket(
+        removeUndefinedProps({
+          outcome,
+          contractId: contract.id,
+          probabilityInt: prob,
+          answerId: answer.id,
+        })
+      )
+      console.log('resolved', outcome, 'result:', result)
+    } catch (e) {
+      if (e instanceof APIError) {
+        setError(e.toString())
+      } else {
+        console.error(e)
+        setError('Error resolving question')
+      }
+    }
+
+    setIsSubmitting(false)
+    if (modalSetOpen) {
+      modalSetOpen(false)
+    }
+  }
+
+  return (
+    <Row className="mt-1 justify-between gap-4">
+      {isAdmin && !isCreator && (
+        <div className="bg-scarlet-50 text-scarlet-500 self-start rounded p-1 text-xs">
+          ADMIN
+        </div>
+      )}
+      <Col>
+        <YesNoCancelSelector
+          className="mx-2 my-2 px-2"
+          selected={outcome}
+          onSelect={setOutcome}
+        />
+        {outcome === 'MKT' && (
+          <Row className="mt-2 flex-wrap items-center gap-2">
+            <span>Resolve to an intermediate probability</span>{' '}
+            <ProbabilityInput
+              prob={prob}
+              onChange={setProb}
+              className="!h-11 w-20"
+            />
+          </Row>
+        )}
+        {error && (
+          <div className="text-scarlet-500 mt-2 self-start rounded p-1 text-xs">
+            {error}
+          </div>
+        )}
+      </Col>
+      <ResolveConfirmationButton
+        color={getResolveButtonColor(outcome)}
+        label={getResolveButtonLabel(outcome, prob)}
+        marketTitle={`${contract.question} - ${answer.text}`}
+        disabled={!outcome}
+        onResolve={resolve}
+        isSubmitting={isSubmitting}
+      />
+    </Row>
   )
 }

@@ -67,7 +67,7 @@ export function YesNoCancelSelector(props: {
   const { selected, onSelect } = props
 
   const btnClassName =
-    'px-0 !py-2 flex-1 first:rounded-l-xl last:rounded-r-xl rounded-r-none rounded-l-none'
+    '!py-2 flex-1 first:rounded-l-xl last:rounded-r-xl rounded-r-none rounded-l-none'
 
   return (
     <Row className="gap-1">
