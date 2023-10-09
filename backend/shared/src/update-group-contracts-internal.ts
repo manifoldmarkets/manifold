@@ -5,6 +5,7 @@ import { GroupLink } from 'common/group'
 import { createSupabaseClient, SupabaseDirectClient } from './supabase/init'
 import { NON_PREDICTIVE_GROUP_ID } from 'common/supabase/groups'
 import { recordContractEdit } from 'shared/record-contract-edit'
+import { trackPublicEvent } from 'shared/analytics'
 
 const firestore = admin.firestore()
 
@@ -62,6 +63,17 @@ export async function addGroupToContract(
       await recordContractEdit(contract, recordEdit.userId, ['nonPredictive'])
     }
   }
+
+  await trackPublicEvent(
+    recordEdit?.userId ?? contract.creatorId,
+    'add market to topic',
+    {
+      contractId: contract.id,
+      groupSlug: group.slug,
+      inCreateMarket: !recordEdit,
+    }
+  )
+
   return !(linkedToGroupAlready && addedToGroupAlready)
 }
 
@@ -97,4 +109,8 @@ export async function removeGroupFromContract(
     })
     await recordContractEdit(contract, userId, ['nonPredictive'])
   }
+  await trackPublicEvent(userId, 'remove market from topic', {
+    contractId: contract.id,
+    groupSlug: group.slug,
+  })
 }
