@@ -92,7 +92,7 @@ export const onCreateContract = functions
       'new_contract',
       [contractCreator.id],
       {
-        idempotencyKey: eventId,
+        idempotencyKey: contract.id + '_new_contract',
       }
     )
     const groupIds = (contract.groupLinks ?? []).map((gl) => gl.groupId)

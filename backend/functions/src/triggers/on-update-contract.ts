@@ -13,6 +13,7 @@ import {
 } from 'shared/supabase/init'
 import { upsertGroupEmbedding } from 'shared/helpers/embeddings'
 import { buildArray } from 'common/util/array'
+import { addContractToFeed } from 'shared/create-feed'
 
 export const onUpdateContract = functions
   .runWith({ secrets })
@@ -30,7 +31,6 @@ export const onUpdateContract = functions
       !isEqual(previousContract.description, description) ||
       !isEqual(previousContract.question, question)
     ) {
-      // TODO: add resolution and close time edits to upateMarket api call
       await run(
         db.from('contract_edits').insert({
           contract_id: contract.id,
@@ -59,6 +59,17 @@ export const onUpdateContract = functions
         upsertGroupEmbedding(pg, groupId)
       )
     )
+    if (newGroupIds.length > 0) {
+      await addContractToFeed(
+        contract,
+        ['contract_in_group_you_are_in'],
+        'new_contract',
+        [contract.creatorId],
+        {
+          idempotencyKey: contract.id + '_new_contract',
+        }
+      )
+    }
 
     if (
       (previousContract.closeTime !== closeTime ||
