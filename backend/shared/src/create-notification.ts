@@ -17,11 +17,7 @@ import {
   PrivateUser,
   User,
 } from 'common/user'
-import {
-  Contract,
-  MultiContract,
-  renderResolution,
-} from 'common/contract'
+import { Contract, MultiContract, renderResolution } from 'common/contract'
 import { getPrivateUser, getUser, getValues, log } from 'shared/utils'
 import { Comment } from 'common/comment'
 import { groupBy, keyBy, mapValues, minBy, sum, uniq } from 'lodash'
@@ -1162,6 +1158,7 @@ export const createContractResolvedNotifications = async (
     if (resolutionText === 'MKT' && resolutionValue)
       resolutionText = `${resolutionValue}`
   }
+
   const {
     userIdToContractMetrics,
     userPayouts,
@@ -1223,6 +1220,7 @@ export const createContractResolvedNotifications = async (
 
     // Browser notifications
     if (sendToBrowser) {
+      console.log('sending to browser')
       await insertNotificationToSupabase(
         constructNotification(userId, reason),
         pg

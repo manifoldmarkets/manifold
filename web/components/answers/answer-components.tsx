@@ -288,8 +288,13 @@ export const AnswerStatusAndBetButtons = (props: {
   const user = useUser()
 
   const isDpm = contract.mechanism === 'dpm-2'
+  const chosenAnswer = contract.resolution === answer.id
   const answerResolution =
-    'resolution' in answer ? answer.resolution : undefined
+    'resolution' in answer
+      ? answer.resolution
+      : chosenAnswer
+      ? 'YES'
+      : undefined
 
   const prob = getAnswerProbability(contract, answer.id)
   const resolvedProb =
@@ -308,12 +313,10 @@ export const AnswerStatusAndBetButtons = (props: {
     'resolution' in answer ? answer : undefined
   )
 
-  if (answerResolution || contract.resolution) {
+  if (answerResolution) {
     return (
       <Row className="items-center gap-1.5 font-semibold">
-        <div className={'text-ink-800 text-base'}>
-          Resolved
-        </div>
+        <div className={'text-ink-800 text-base'}>Resolved</div>
         {answerResolution === 'MKT' && 'resolutionProbability' in answer ? (
           <ProbPercentLabel
             prob={answer.resolutionProbability ?? answer.prob}
