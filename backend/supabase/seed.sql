@@ -396,8 +396,6 @@ create policy "public read" on contracts for
 select
   using (true);
 
-create index if not exists contracts_data_gin on contracts using GIN (data);
-
 create index if not exists contracts_slug on contracts (slug);
 
 create index if not exists contracts_creator_id on contracts (creator_id, created_time);
@@ -427,6 +425,8 @@ create index if not exists contracts_sample_filtering on contracts (
   visibility,
   ((data ->> 'uniqueBettorCount'))
 );
+
+create index contracts_on_importance_score_and_resolution_time_idx on contracts(importance_score, resolution_time);
 
 alter table contracts
 cluster on contracts_creator_id;
