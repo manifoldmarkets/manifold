@@ -16,7 +16,9 @@ export function OgMarket(props: OgCardProps) {
     points,
     bountyLeft,
   } = props
-
+  const probabilityAsFloat = probability
+    ? parseFloat(probability.replace('%', ''))
+    : undefined
   const data = points ? (base64toPoints(points) as Point[]) : []
   const numTraders = Number(props.numTraders ?? 0)
 
@@ -55,21 +57,21 @@ export function OgMarket(props: OgCardProps) {
             (showGraph ? 'top-[22rem]' : 'top-[23rem]')
           }
         >
-          {probability && !resolution ? (
+          {probabilityAsFloat && !resolution ? (
             <div className={'flex justify-center text-5xl text-white'}>
               <div
                 className={
                   'mr-6 flex h-24 w-2/5 items-center justify-center rounded-md bg-green-500 pt-2'
                 }
               >
-                Yes {((data[data.length - 1]?.y ?? 0.5) * 100).toFixed(0)}%
+                Yes {probabilityAsFloat.toFixed(0)}%
               </div>
               <div
                 className={
                   'ml-6 flex h-24 w-2/5 items-center justify-center rounded-md bg-red-600 pt-2'
                 }
               >
-                No {((1 - (data[data.length - 1]?.y ?? 0.5)) * 100).toFixed(0)}%
+                No {(100 - probabilityAsFloat).toFixed(0)}%
               </div>
             </div>
           ) : resolution ? (
