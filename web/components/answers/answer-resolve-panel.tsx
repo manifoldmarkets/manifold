@@ -32,6 +32,7 @@ import {
   AnswerLabel,
   AnswerStatusAndBetButtons,
 } from './answer-components'
+import { useAdmin } from 'web/hooks/use-admin'
 
 function getAnswerResolveButtonColor(
   resolveOption: string | undefined,
