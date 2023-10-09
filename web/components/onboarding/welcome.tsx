@@ -19,7 +19,12 @@ import { run } from 'common/supabase/utils'
 import { db } from 'web/lib/supabase/db'
 import { GROUP_SLUGS_TO_HIDE_FROM_WELCOME_FLOW } from 'common/envs/constants'
 import { Group } from 'common/group'
-import { getSubtopics, TOPICS_TO_SUBTOPICS } from 'common/topics'
+import {
+  ALL_TOPICS,
+  getSubtopics,
+  removeEmojis,
+  TOPICS_TO_SUBTOPICS,
+} from 'common/topics'
 import { uniqBy } from 'lodash'
 
 export default function Welcome() {
@@ -66,6 +71,11 @@ export default function Welcome() {
             'slug',
             'in',
             `(${GROUP_SLUGS_TO_HIDE_FROM_WELCOME_FLOW.join(',')})`
+          )
+          .not(
+            'name',
+            'in',
+            `(${ALL_TOPICS.map((t) => removeEmojis(t)).join(',')})`
           )
           .filter('slug', 'not.ilike', '%manifold%')
           .filter('slug', 'not.ilike', '%sccsq%')

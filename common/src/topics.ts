@@ -39,6 +39,7 @@ export const TOPICS_TO_SUBTOPICS: { [key: string]: TopicInfo[] } = {
     { name: '🏎️ F1', groupId: 'ZdXq6X0Q8kZtA0Iyty7Q' },
     { name: '🎾 Tennis', groupId: '1mvN9vIVIopcWiAsXhzp' },
     { name: '🚲 Cycling', groupId: '2yisxJryUq9V5sG7P6Gy' },
+    { name: '⚾ Baseball', groupId: '786nRQzgVyUnuUtaLTGW' },
   ],
   '🍿 Media': [
     { name: '🍿 Movies', groupId: 'KSeNIu7AWgiBBM5FqVuB' },
@@ -51,13 +52,13 @@ export const TOPICS_TO_SUBTOPICS: { [key: string]: TopicInfo[] } = {
   '🌍 World': [
     { name: '🇷🇺 Russia', groupId: 'TIpf6j0hLpifpXN93FxE' },
     { name: '🇨🇳 China', groupId: 'oWTzfoeemQGkSoPFn2T7' },
-
     { name: '🇪🇺 Europe', groupId: 'ue52QI4BQgJgAJJNjLHr' },
     { name: '🇮🇳 India', groupId: 'Y2J00UcVhr3wKq2lAOAy' },
     { name: '🇷🇺🇺🇦 Russia & Ukraine', groupId: 'OxcXOuxXvwsXtC0Dx5sr' },
     { name: '🌎 Latin America', groupId: 'DX94A1LQmpckcVdz5Hb3' },
     { name: '🌍 Middle East', groupId: 'xg8wCPeM9JP6gD0igBrA' },
     { name: '🌍 Africa', groupId: 'dFsZaGwyohGDVkJi1C3E' },
+    { name: '🌏 Asia', groupId: 'bPTxMZhUYsIUXsWT969d' },
   ],
   '🪂 Lifestyle': [
     { name: '💪 Personal Development', groupId: 'izQp87CKagOVJp9Olm1p' },
