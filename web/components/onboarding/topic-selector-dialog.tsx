@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { noop, uniq } from 'lodash'
 
 import { Col } from 'web/components/layout/col'
-import { usePrivateUser, useUser } from 'web/hooks/use-user'
+import { useUser } from 'web/hooks/use-user'
 import { Modal } from 'web/components/layout/modal'
 import { PillButton } from 'web/components/buttons/pill-button'
 import { Button } from 'web/components/buttons/button'
@@ -10,9 +10,7 @@ import { getSubtopics, removeEmojis, TOPICS_TO_SUBTOPICS } from 'common/topics'
 import { joinGroup, updateUserEmbedding } from 'web/lib/firebase/api'
 import { Group } from 'common/group'
 import { Row } from 'web/components/layout/row'
-import ShortToggle from '../widgets/short-toggle'
-import { InfoTooltip } from '../widgets/info-tooltip'
-import { updatePrivateUser, updateUser } from 'web/lib/firebase/users'
+import { updateUser } from 'web/lib/firebase/users'
 import { leaveGroup } from 'web/lib/supabase/groups'
 
 export function TopicSelectorDialog(props: {
@@ -29,7 +27,6 @@ export function TopicSelectorDialog(props: {
   } = props
 
   const user = useUser()
-  const privateUser = usePrivateUser()
 
   const [userSelectedCategories, setUserSelectedCategories] = useState<
     string[] | undefined
@@ -120,30 +117,6 @@ export function TopicSelectorDialog(props: {
             </Row>
           </div>
         ))}
-
-        <div className="my-4 px-5" key={'nsfw'}>
-          <div className="text-primary-700 text-md">
-            Show NSFW content{' '}
-            <InfoTooltip text="Not-safe-for-work (NSFW) means sexually gratuitous, offensive, or other content unsuitable for viewing at work or in public places." />
-          </div>
-          <ShortToggle
-            on={!privateUser?.blockedGroupSlugs.includes('nsfw')}
-            setOn={(enabled) => {
-              const filteredSlugs =
-                privateUser?.blockedGroupSlugs.filter(
-                  (slug) => slug !== 'nsfw'
-                ) ?? []
-
-              const blockedGroupSlugs = !enabled
-                ? filteredSlugs.concat(['nsfw'])
-                : filteredSlugs
-
-              updatePrivateUser(privateUser?.id ?? '', {
-                blockedGroupSlugs,
-              })
-            }}
-          />
-        </div>
 
         <div className="from-canvas-0 pointer-events-none sticky bottom-0 bg-gradient-to-t to-transparent text-right">
           <span className="pointer-events-auto inline-flex gap-2 p-6 pt-2">
