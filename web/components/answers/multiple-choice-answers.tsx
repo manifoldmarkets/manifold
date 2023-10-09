@@ -131,7 +131,7 @@ export function MultipleChoiceAnswers(props: {
           <div>
             <InfoTooltip
               text={
-                'If "One", then one answer will resolve to YES and all the others will resolve to NO. If "Variable", then any number of answers can resolve to YES.'
+                'If "One", then one answer will resolve to YES and all the others will resolve to NO. Otherwise, any number of answers can resolve to YES — they are independent.'
               }
             />
           </div>
@@ -140,7 +140,7 @@ export function MultipleChoiceAnswers(props: {
           currentChoice={shouldAnswersSumToOne ? 'true' : 'false'}
           choicesMap={{
             One: 'true',
-            Variable: 'false',
+            'Any number': 'false',
           }}
           setChoice={(choice) => setShouldAnswersSumToOne(choice === 'true')}
         />
