@@ -10,6 +10,7 @@ import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
 import { partition } from 'lodash'
 import { AddItemFloatyButton } from './add-dashboard-item'
 import { DashboardLive } from './dashboard-live'
+import { useIsVisible } from 'web/hooks/use-is-visible'
 
 export const DashboardContent = (props: {
   items: DashboardItem[]
@@ -33,6 +34,13 @@ export const DashboardContent = (props: {
   const isLoading =
     (slugs.length > 0 && contracts.length === 0) ||
     (urls.length > 0 && previews.length === 0)
+
+  const [loadLiveFeed, setLoadLiveFeed] = useState(false)
+  const { ref: loadLiveRef } = useIsVisible(
+    () => setLoadLiveFeed(true),
+    true,
+    !isLoading
+  )
 
   const renderCard = (
     card: { url: string } | { slug: string } | { content: any }
@@ -68,6 +76,7 @@ export const DashboardContent = (props: {
 
   return (
     <>
+      <div ref={loadLiveRef} />
       <DragDropContext
         onDragStart={() => window.navigator.vibrate?.(100)}
         onDragEnd={onDragEnd}
@@ -148,7 +157,7 @@ export const DashboardContent = (props: {
           )}
         </Droppable>
       </DragDropContext>
-      <DashboardLive topics={topics} />
+      {loadLiveFeed && <DashboardLive topics={topics} />}
     </>
   )
 }
