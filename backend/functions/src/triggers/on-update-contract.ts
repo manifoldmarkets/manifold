@@ -50,16 +50,17 @@ export const onUpdateContract = functions
     const previousGroupIds = (previousContract.groupLinks ?? []).map(
       (gl) => gl.groupId
     )
-    const newGroupIds = (groupLinks ?? []).map((gl) => gl.groupId)
-    const differentGroupIds = difference(previousGroupIds, newGroupIds).concat(
-      difference(newGroupIds, previousGroupIds)
+    const currentGroupIds = (groupLinks ?? []).map((gl) => gl.groupId)
+    const onlyNewGroupIds = difference(currentGroupIds, previousGroupIds)
+    const differentGroupIds = onlyNewGroupIds.concat(
+      difference(previousGroupIds, currentGroupIds)
     )
     await Promise.all(
       differentGroupIds.map(async (groupId) =>
         upsertGroupEmbedding(pg, groupId)
       )
     )
-    if (newGroupIds.length > 0) {
+    if (onlyNewGroupIds.length > 0) {
       await addContractToFeed(
         contract,
         ['contract_in_group_you_are_in'],
