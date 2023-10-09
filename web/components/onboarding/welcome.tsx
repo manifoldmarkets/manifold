@@ -67,7 +67,8 @@ export default function Welcome() {
             'in',
             `(${GROUP_SLUGS_TO_HIDE_FROM_WELCOME_FLOW.join(',')})`
           )
-          .or(`slug.not.ilike.%manifold%`)
+          .filter('slug', 'not.ilike', '%manifold%')
+          .filter('slug', 'not.ilike', '%sccsq%')
           .order('importance_score', { ascending: false })
           .limit(15)
       ),

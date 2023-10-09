@@ -322,7 +322,9 @@ export const GROUP_SLUGS_TO_HIDE_FROM_WELCOME_FLOW = [
   '2024-us-presidential-election', // same
   'elon-musk', // listed as Elon Musk
   'elon-musk-14d9d9498c7e',
-  'crypto-prices', // same as crypto
+  'crypto-prices', // same as crypto,
+  'technical-ai-timelines', // same as ai
+  'presidential-politics', // same as politics
 ]
 
 export const EXTERNAL_REDIRECTS = ['/umami']
