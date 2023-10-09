@@ -45,10 +45,10 @@ export function buttonClass(size: SizeType, color: ColorType | 'none') {
     sizeClasses[size],
     color === 'green' && [solid, 'bg-teal-500 hover:bg-teal-600'],
     color === 'green-outline' && [outline, 'text-teal-500 hover:bg-teal-500'],
-    color === 'red' && [solid, 'bg-scarlet-300 hover:bg-scarlet-400'],
+    color === 'red' && [solid, 'bg-scarlet-500 hover:bg-scarlet-600'],
     color === 'red-outline' && [
       outline,
-      'text-scarlet-300 hover:bg-scarlet-300',
+      'text-scarlet-500 hover:bg-scarlet-500',
     ],
     color === 'yellow' && [solid, 'bg-yellow-400 hover:bg-yellow-500'],
     color === 'yellow-outline' && [
@@ -56,24 +56,21 @@ export function buttonClass(size: SizeType, color: ColorType | 'none') {
       'text-yellow-500 hover:bg-yellow-500',
     ],
     color === 'blue' && [solid, 'bg-blue-400 hover:bg-blue-500'],
-    color === 'indigo' && [
-      solid,
-      'bg-primary-500 hover:bg-primary-600 enabled:hover:dark:bg-indigo-500',
-    ],
+    color === 'indigo' && [solid, 'bg-primary-500 hover:bg-primary-600'],
     color === 'indigo-outline' && [
       outline,
       'text-primary-500 hover:bg-primary-500',
     ],
     color === 'gray' &&
-      'bg-ink-200 text-ink-600 disabled:bg-ink-100 hover:bg-ink-300 hover:text-ink-700',
+      'bg-ink-300 text-ink-600 disabled:bg-ink-200 disabled:text-white hover:bg-ink-400 hover:text-ink-700',
     color === 'gray-outline' && [outline, 'text-ink-500 hover:bg-ink-500'],
-    color === 'gradient' && [gradient, 'from-primary-500 to-blue-500'],
+    color === 'gradient' && [gradient, 'from-primary-500 to-blue-400'],
     color === 'gradient-pink' && [gradient, 'from-primary-500 to-fuchsia-500'],
     color === 'gray-white' &&
       'text-ink-600 enabled:hover:bg-ink-200 disabled:text-ink-300',
     color === 'gold' && [
       gradient,
-      'bg-gradient-to-br from-yellow-400 via-yellow-100 to-yellow-300 dark:from-yellow-500 dark:via-yellow-200 dark:to-yellow-600 text-gray-900',
+      'enabled:!bg-gradient-to-br from-yellow-400 via-yellow-100 to-yellow-300 dark:from-yellow-600 dark:via-yellow-200 dark:to-yellow-400 !text-gray-900',
     ]
   )
 }
@@ -126,7 +123,6 @@ export function IconButton(props: {
   size?: SizeType
   type?: 'button' | 'reset' | 'submit'
   disabled?: boolean
-  loading?: boolean
 }) {
   const {
     children,
@@ -135,21 +131,18 @@ export function IconButton(props: {
     size = 'md',
     type = 'button',
     disabled = false,
-    loading,
   } = props
 
   return (
-    <button
+    <Button
       type={type}
-      className={clsx(
-        'inline-flex items-center justify-center transition-colors disabled:cursor-not-allowed',
-        buttonClass(size, 'gray-white'),
-        className
-      )}
-      disabled={disabled || loading}
+      size={size}
+      color="gray-white"
+      className={className}
+      disabled={disabled}
       onClick={onClick}
     >
       {children}
-    </button>
+    </Button>
   )
 }

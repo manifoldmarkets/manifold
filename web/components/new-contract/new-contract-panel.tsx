@@ -61,10 +61,9 @@ export function NewContractPanel(props: {
       <CreateStepTracker
         outcomeType={outcomeType}
         setState={setState}
-        state={state}
         privacy={privacy}
       />
-      <Col className={clsx('py-2 px-6')}>
+      <Col className={clsx('px-6 py-2')}>
         {state == 'choosing contract' && (
           <ChoosingContractForm
             outcomeType={outcomeType}
@@ -88,28 +87,22 @@ export function NewContractPanel(props: {
 function CreateStepTracker(props: {
   outcomeType: OutcomeType | undefined
   setState: (state: CreateContractStateType) => void
-  state: CreateContractStateType
   privacy: VisibilityTheme
 }) {
-  const { outcomeType, setState, state, privacy } = props
+  const { outcomeType, setState, privacy } = props
   return (
     <Row
       className={clsx(
-        'text-ink-400 bg-canvas-0 border-1 border-ink-200 sticky z-10 w-full items-center gap-1 border-b pt-4 pb-2',
+        'text-ink-400 bg-canvas-0 border-1 border-ink-200 sticky z-10 w-full items-center gap-1 border-b pb-2 pt-4',
         'top-0 px-6'
       )}
     >
-      <CreateStepButton
-        className={clsx('text-primary-500')}
-        selected={state == 'choosing contract'}
-        onClick={() => setState('choosing contract')}
-      >
+      <CreateStepButton onClick={() => setState('choosing contract')}>
         Choose question type
       </CreateStepButton>
       <ChevronRightIcon className={clsx('h-5 w-5')} />
       <CreateStepButton
         disabled={!outcomeType}
-        selected={state == 'filling contract params'}
         onClick={() => {
           if (outcomeType) {
             setState('filling contract params')
@@ -130,17 +123,14 @@ function CreateStepButton(props: {
   onClick: () => void
   className?: string
   children: ReactNode
-  selected: boolean
   disabled?: boolean
 }) {
-  const { onClick, children, className, selected, disabled } = props
+  const { onClick, children, className, disabled } = props
   return (
     <button
       className={clsx(
         className,
-        'disabled:text-ink-400 transition-all disabled:cursor-not-allowed',
-        selected ? 'text-primary-500 font-semibold' : '',
-        disabled ? '' : 'hover:text-indigo-400 dark:hover:text-indigo-300'
+        'disabled:text-ink-400 text-primary-600 enabled:hover:text-primary-800 transition-all  disabled:cursor-not-allowed'
       )}
       onClick={onClick}
       disabled={disabled}

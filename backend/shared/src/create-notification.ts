@@ -18,7 +18,13 @@ import {
   User,
 } from 'common/user'
 import { Contract, MultiContract, renderResolution } from 'common/contract'
-import { getPrivateUser, getUser, getValues, log } from 'shared/utils'
+import {
+  getPrivateUser,
+  getUser,
+  getUserSupabase,
+  getValues,
+  log,
+} from 'shared/utils'
 import { Comment } from 'common/comment'
 import { groupBy, keyBy, mapValues, minBy, sum, uniq } from 'lodash'
 import { Bet, LimitBet } from 'common/bet'
@@ -599,13 +605,12 @@ export const createLimitBetCanceledNotification = async (
 }
 
 export const createReferralNotification = async (
-  toUser: User,
+  toUserId: string,
   referredUser: User,
   bonusAmount: string,
-  referredByContract?: Contract,
-  referredByGroup?: { slug: string; name: string }
+  referredByContract?: Contract
 ) => {
-  const privateUser = await getPrivateUser(toUser.id)
+  const privateUser = await getPrivateUser(toUserId)
   if (!privateUser) return
   const { sendToBrowser } = getNotificationDestinationsForUser(
     privateUser,
@@ -615,12 +620,11 @@ export const createReferralNotification = async (
 
   const notification: Notification = {
     id: referredUser.id + '-signup-referral-bonus',
-    userId: toUser.id,
-    reason: referredByGroup
-      ? 'user_joined_from_your_group_invite'
-      : referredByContract?.creatorId === toUser.id
-      ? 'user_joined_to_bet_on_your_market'
-      : 'you_referred_user',
+    userId: toUserId,
+    reason:
+      referredByContract?.creatorId === toUserId
+        ? 'user_joined_to_bet_on_your_market'
+        : 'you_referred_user',
     createdTime: Date.now(),
     isSeen: false,
     sourceId: referredUser.id,
@@ -632,19 +636,11 @@ export const createReferralNotification = async (
     sourceUserAvatarUrl: referredUser.avatarUrl,
     sourceText: bonusAmount,
     // Only pass the contract referral details if they weren't referred to a group
-    sourceContractCreatorUsername: !referredByGroup
-      ? referredByContract?.creatorUsername
-      : undefined,
-    sourceContractTitle: !referredByGroup
-      ? referredByContract?.question
-      : undefined,
-    sourceContractSlug: !referredByGroup ? referredByContract?.slug : undefined,
-    sourceSlug: referredByGroup
-      ? groupPath(referredByGroup.slug)
-      : referredByContract?.slug,
-    sourceTitle: referredByGroup
-      ? referredByGroup.name
-      : referredByContract?.question,
+    sourceContractCreatorUsername: referredByContract?.creatorUsername,
+    sourceContractTitle: referredByContract?.question,
+    sourceContractSlug: referredByContract?.slug,
+    sourceSlug: referredByContract?.slug,
+    sourceTitle: referredByContract?.question,
   }
   const pg = createSupabaseDirectClient()
   await insertNotificationToSupabase(notification, pg)
@@ -1793,4 +1789,87 @@ export const createPollClosedNotification = async (
   await notifyContractCreator()
   log('notifying followers')
   await notifyContractFollowers()
+}
+
+export const createReferralsProgramNotification = async (
+  userId: string,
+  pg: SupabaseDirectClient
+) => {
+  const privateUser = await getPrivateUser(userId)
+  if (!privateUser) return
+
+  if (!userOptedOutOfBrowserNotifications(privateUser)) {
+    const notification: Notification = {
+      id: userId + 'referrals-program',
+      userId: privateUser.id,
+      reason: 'onboarding_flow',
+      createdTime: Date.now(),
+      isSeen: false,
+      sourceId: crypto.randomUUID(),
+      sourceType: 'referral_program',
+      sourceUpdateType: 'created',
+      sourceUserName: '',
+      sourceUserUsername: '',
+      sourceUserAvatarUrl: '',
+      sourceText: '',
+    }
+    await insertNotificationToSupabase(notification, pg)
+  }
+}
+export const createFollowAfterReferralNotification = async (
+  userId: string,
+  referredByUser: User,
+  pg: SupabaseDirectClient
+) => {
+  const privateUser = await getPrivateUser(userId)
+  if (!privateUser) return
+  const id = crypto.randomUUID()
+
+  if (!userOptedOutOfBrowserNotifications(privateUser)) {
+    const notification: Notification = {
+      id,
+      userId: privateUser.id,
+      reason: 'onboarding_flow',
+      createdTime: Date.now(),
+      isSeen: false,
+      sourceId: id,
+      sourceType: 'follow',
+      sourceUpdateType: 'created',
+      sourceUserName: referredByUser.name,
+      sourceUserUsername: referredByUser.username,
+      sourceUserAvatarUrl: referredByUser.avatarUrl,
+      sourceText: '',
+    }
+    await insertNotificationToSupabase(notification, pg)
+  }
+}
+
+export const createFollowSuggestionNotification = async (
+  userId: string,
+  contract: Contract,
+  pg: SupabaseDirectClient
+) => {
+  const privateUser = await getPrivateUser(userId)
+  if (!privateUser) return
+  const id = crypto.randomUUID()
+  const contractCreator = await getUserSupabase(contract.creatorId)
+  if (!contractCreator) return
+
+  if (!userOptedOutOfBrowserNotifications(privateUser)) {
+    const notification: Notification = {
+      id,
+      userId: privateUser.id,
+      reason: 'onboarding_flow',
+      createdTime: Date.now(),
+      isSeen: false,
+      sourceId: id,
+      sourceType: 'follow_suggestion',
+      sourceUpdateType: 'created',
+      sourceUserName: contractCreator.name,
+      sourceUserUsername: contractCreator.username,
+      sourceUserAvatarUrl: contractCreator.avatarUrl,
+      sourceText: '',
+    }
+    await insertNotificationToSupabase(notification, pg)
+  }
 }

@@ -3,15 +3,7 @@ import { User } from 'common/user'
 import { useState } from 'react'
 import { useGroupRole } from 'web/hooks/use-group-supabase'
 import { buildArray } from 'common/util/array'
-import { copyToClipboard } from 'web/lib/util/copy'
-import { DOMAIN } from 'common/envs/constants'
-import toast from 'react-hot-toast'
-import {
-  DotsVerticalIcon,
-  LinkIcon,
-  PencilIcon,
-  PlusCircleIcon,
-} from '@heroicons/react/solid'
+import { DotsVerticalIcon, PencilIcon } from '@heroicons/react/solid'
 import DropdownMenu, {
   DropdownItem,
 } from 'web/components/comments/dropdown-menu'
@@ -32,33 +24,14 @@ export function TopicOptions(props: {
   user: User | null | undefined
   isMember: boolean
   unfollow: () => void
-  selected?: boolean
 }) {
-  const { group, selected, user, isMember, unfollow } = props
+  const { group, user, isMember, unfollow } = props
   const [editingName, setEditingName] = useState(false)
   const [showAddContract, setShowAddContract] = useState(false)
   const userRole = useGroupRole(group.id, user)
   const isCreator = group.creatorId == user?.id
-  const addPermission = getAddContractToGroupPermission(
-    group.privacyStatus,
-    userRole,
-    isCreator
-  )
 
   const groupOptionItems = buildArray(
-    {
-      name: 'Share',
-      icon: <LinkIcon className="h-5 w-5" />,
-      onClick: () => {
-        copyToClipboard(`https://${DOMAIN}/browse?${TOPIC_KEY}=${group.slug}`)
-        toast.success('Link copied!')
-      },
-    },
-    addPermission != 'none' && {
-      name: 'Add questions',
-      icon: <PlusCircleIcon className="h-5 w-5" />,
-      onClick: () => setShowAddContract(true),
-    },
     {
       name: 'Leaderboards',
       icon: <AiFillTrophy className="h-5 w-5" />,
@@ -83,9 +56,6 @@ export function TopicOptions(props: {
         items={groupOptionItems}
         icon={<DotsVerticalIcon className={clsx('h-5 w-5')} />}
         withinOverflowContainer={true}
-        buttonClass={clsx(
-          !selected ? 'opacity-0 group-hover:opacity-100' : 'opacity-100'
-        )}
       />
       <Modal open={editingName} setOpen={setEditingName}>
         <Col className={'bg-canvas-50 rounded-md p-4'}>

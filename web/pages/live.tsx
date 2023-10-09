@@ -1,20 +1,17 @@
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { Title } from 'web/components/widgets/title'
-import {
-  ActivityLog,
-  LivePillOptions,
-  PillOptions,
-} from 'web/components/activity-log'
-import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import { ActivityLog } from 'web/components/activity-log'
 import { SEO } from 'web/components/SEO'
+import { Row } from 'web/components/layout/row'
+import { TopicSelector } from 'web/components/topics/topic-selector'
+import { useState } from 'react'
+import { Group } from 'common/group'
+import { first } from 'lodash'
 
 export default function LivePage() {
-  const [pill, setPill] = usePersistentInMemoryState<PillOptions>(
-    'all',
-    'live-pill'
-  )
-
+  const [topics, setTopics] = useState<Group[]>()
+  const topic = first(topics)
   return (
     <Page trackPageView={'live page'}>
       <SEO
@@ -23,12 +20,17 @@ export default function LivePage() {
         url="/live"
       />
 
-      <Col className="gap-4 sm:px-4 sm:pb-4">
-        <Title className="mx-2 !mb-0 mt-2 sm:mx-0 lg:mt-0">Live feed</Title>
-        <Col className="gap-4">
-          <LivePillOptions pill={pill} setPill={setPill} />
-          <ActivityLog count={30} pill={pill} />
-        </Col>
+      <Col className="w-full max-w-3xl gap-4 self-center sm:pb-4">
+        <Row className={'w-full items-center justify-between '}>
+          <Title className="!mb-0 shrink-0">
+            {topic ? topic.name + ' live' : 'Live'} feed
+          </Title>
+          <TopicSelector
+            setSelectedGroup={(group) => setTopics([group])}
+            className={'!w-56'}
+          />
+        </Row>
+        <ActivityLog count={30} topicSlugs={topics?.map((t) => t.slug)} />
       </Col>
     </Page>
   )

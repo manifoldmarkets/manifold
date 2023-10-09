@@ -115,8 +115,7 @@ export default function CardsPage() {
 
   return (
     <Page
-      className={clsx('!max-w-7xl p-2', fancyFont.variable)}
-      mainClassName="!col-span-10"
+      className={clsx('!col-span-10 p-2', fancyFont.variable)}
       trackPageView={'cards game page'}
     >
       <Row className="justify-between">

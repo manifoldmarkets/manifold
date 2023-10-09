@@ -105,7 +105,7 @@ function OutcomeButton(props: {
   return (
     <button
       className={clsx(
-        'hover:ring-primary-200 cursor-pointer rounded-lg py-2 px-4 text-left transition-all hover:ring-2',
+        'hover:ring-primary-200 cursor-pointer rounded-lg px-4 py-2 text-left transition-all hover:ring-2',
         className,
         outcomeType == value || touch
           ? selectClassName

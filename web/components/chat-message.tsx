@@ -23,53 +23,38 @@ export const ChatMessageItem = forwardRef(
     const chat = first(chats)
     if (!chat) return null
     const { userUsername, userAvatarUrl, userId, userName } = chat
+    const isMe = user?.id === userId
+
     return (
       <Col
-        ref={ref}
         className={clsx(
-          'p-0.5',
-          user?.id === userId ? 'items-end' : 'items-start'
+          'max-w-[90%] rounded-2xl p-3',
+          isMe
+            ? 'bg-primary-100 items-end self-end rounded-br-none'
+            : 'bg-canvas-0 items-start self-start rounded-bl-none'
         )}
+        ref={ref}
       >
-        <Col
-          className={clsx(
-            'bg-canvas-100 max-w-[90%] rounded-md px-2 py-1.5',
-            user?.id === userId ? 'items-end' : 'items-start'
-          )}
-        >
-          <Row className={'items-center gap-2'}>
-            <Avatar
-              size={'xs'}
-              avatarUrl={userAvatarUrl}
-              username={userUsername}
-            />
-            <UserLink
-              className={clsx('text-sm')}
-              name={userName}
-              username={userUsername}
-            />
-            <span className={'text-sm'}>
-              <RelativeTimestamp time={chat.createdTime} />
-            </span>
-          </Row>
-          {chats.map((chat) => (
-            <Row key={chat.id + 'content'} className={'ml-1'}>
-              <Content content={chat.content} />
-            </Row>
-          ))}
-          <Row>
-            {user?.id !== chats[0].userId && onReplyClick && (
-              <button
-                className={
-                  'self-start py-1 text-xs font-bold text-gray-500 hover:underline'
-                }
-                onClick={() => onReplyClick(chat)}
-              >
-                Reply
-              </button>
-            )}
-          </Row>
-        </Col>
+        <Row className={'mb-1 items-center gap-1 text-sm'}>
+          <Avatar
+            size={'2xs'}
+            avatarUrl={userAvatarUrl}
+            username={userUsername}
+          />
+          <UserLink name={userName} username={userUsername} />
+          <RelativeTimestamp time={chat.createdTime} />
+        </Row>
+        {chats.map((chat) => (
+          <Content content={chat.content} key={chat.id} />
+        ))}
+        {!isMe && onReplyClick && (
+          <button
+            className={'text-ink-500 mt-1 text-xs font-bold hover:underline'}
+            onClick={() => onReplyClick(chat)}
+          >
+            Reply
+          </button>
+        )}
       </Col>
     )
   }

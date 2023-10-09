@@ -65,7 +65,7 @@ export const NewsArticle = (props: {
               </span>
             )}
           </Row>
-          <div className="line-clamp-2 group-hover:text-primary-700 text-lg transition-colors">
+          <div className="group-hover:text-primary-700 line-clamp-2 text-lg transition-colors">
             {title}
           </div>
           <Spacer h={1.5} />

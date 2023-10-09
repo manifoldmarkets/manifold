@@ -14,11 +14,13 @@ import {
   QuerySnapshot,
   Transaction,
 } from 'firebase-admin/firestore'
-import { groupBy, mapValues, sumBy } from 'lodash'
+import { first, groupBy, mapValues, sumBy } from 'lodash'
 import { BETTING_STREAK_RESET_HOUR } from 'common/economy'
 import { DAY_MS } from 'common/util/time'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { GROUP_SLUGS_TO_IGNORE_IN_MARKETS_EMAIL } from 'common/envs/constants'
+import { convertUser } from 'common/supabase/users'
+import { convertContract } from 'common/supabase/contracts'
 
 export const log = (...args: unknown[]) => {
   console.log(`[${new Date().toISOString()}]`, ...args)
@@ -206,9 +208,28 @@ export const getValues = async <T>(query: admin.firestore.Query) => {
 export const getContract = (contractId: string) => {
   return getDoc<Contract>('contracts', contractId)
 }
+export const getContractSupabase = async (contractId: string) => {
+  const pg = createSupabaseDirectClient()
+  const res = await pg.map(
+    `select * from postgres.public.contracts where id = $1`,
+    [contractId],
+    (row) => convertContract(row)
+  )
+  return first(res)
+}
 
 export const getUser = (userId: string) => {
   return getDoc<User>('users', userId)
+}
+
+export const getUserSupabase = async (userId: string) => {
+  const pg = createSupabaseDirectClient()
+  const res = await pg.map(
+    `select * from users where id = $1`,
+    [userId],
+    (row) => convertUser(row)
+  )
+  return first(res)
 }
 
 export const getPrivateUser = (userId: string) => {

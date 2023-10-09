@@ -1,19 +1,24 @@
-import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { createSupabaseDirectClient, pgp } from 'shared/supabase/init'
 import { log } from 'shared/utils'
 import { DashboardItemSchema, contentSchema } from 'shared/zod-types'
 import { z } from 'zod'
 import { authEndpoint, validate } from './helpers'
 import { isAdminId } from 'common/envs/constants'
+import { updateDashboardGroups } from 'shared/supabase/dashboard'
 
 const schema = z.object({
   title: z.string(),
   dashboardId: z.string(),
   description: contentSchema.optional(),
   items: z.array(DashboardItemSchema),
+  topics: z.array(z.string()),
 })
 
 export const updatedashboard = authEndpoint(async (req, auth) => {
-  const { title, dashboardId, description, items } = validate(schema, req.body)
+  const { title, dashboardId, description, items, topics } = validate(
+    schema,
+    req.body
+  )
 
   log('updating dashboard')
 
@@ -21,16 +26,22 @@ export const updatedashboard = authEndpoint(async (req, auth) => {
 
   const pg = createSupabaseDirectClient()
 
-  const updatedDashboard = await pg.one(
-    `update dashboards
+  const updatedDashboard = await pg.tx((txn) => {
+    const dashboard = txn.one(
+      `update dashboards
       set items = $1,
       title=$2,
       description=$3
       where id = $4 ${isAdmin ? '' : 'and creator_id = $5'}
       returning *`,
-    [JSON.stringify(items), title, description, dashboardId, auth.uid]
-  )
+      [JSON.stringify(items), title, description, dashboardId, auth.uid]
+    )
+
+    updateDashboardGroups(dashboardId, topics, txn)
+
+    return dashboard
+  })
 
   // return updated dashboard
-  return { updateDashboard: updatedDashboard }
+  return { updateDashboard: { ...updatedDashboard, topics } }
 })

@@ -12,7 +12,7 @@ import {
 import { YES_GRAPH_COLOR } from 'common/envs/constants'
 import { NumericContractChart } from '../charts/contract/numeric'
 import { BinaryContractChart } from '../charts/contract/binary'
-import { ChoiceContractChart, MultiPoints } from '../charts/contract/choice'
+import { MultiPoints } from '../charts/contract/choice'
 import { PseudoNumericContractChart } from '../charts/contract/pseudo-numeric'
 import {
   NumericResolutionOrExpectation,
@@ -216,19 +216,7 @@ const ChoiceOverview = (props: {
           <CancelLabel />
         </div>
       )}
-      {!!Object.keys(points).length && (
-        <SizedContainer className="h-[150px] w-full pb-4 pr-10 sm:h-[250px]">
-          {(w, h) => (
-            <ChoiceContractChart
-              width={w}
-              height={h}
-              multiPoints={points}
-              contract={contract}
-            />
-          )}
-        </SizedContainer>
-      )}
-
+      Ask Sinclair to fix this
       {showResolver ? (
         <AnswersResolvePanel contract={contract} />
       ) : (
@@ -239,7 +227,7 @@ const ChoiceOverview = (props: {
           />
           <CreateAnswerPanel contract={contract} />
           <UserBetsSummary
-            className="border-ink-200 mt-2 !mb-2 "
+            className="border-ink-200 !mb-2 mt-2 "
             contract={contract}
           />
         </>

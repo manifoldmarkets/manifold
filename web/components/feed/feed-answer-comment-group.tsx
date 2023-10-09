@@ -4,7 +4,7 @@ import {
   FreeResponseContract,
   MultipleChoiceContract,
 } from 'common/contract'
-import { useEffect, useRef, useState } from 'react'
+import { Fragment, useEffect, useRef, useState } from 'react'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { CopyLinkDateTimeComponent } from 'web/components/feed/copy-link-date-time'
@@ -116,11 +116,11 @@ export function FreeResponseComments(props: {
         )
         if (answer === undefined) {
           console.error('Could not find answer that matches ID')
-          return <></>
+          return null
         }
         const color = getAnswerColor(answer, answersArray)
         return (
-          <>
+          <Fragment key={parent.id}>
             <Row className="relative">
               <div className="absolute -bottom-1 left-1.5 z-20">
                 <Curve size={32} strokeWidth={1} color="#D8D8EB" />
@@ -145,7 +145,7 @@ export function FreeResponseComments(props: {
                 trackingLocation={'contract page'}
               />
             </div>
-          </>
+          </Fragment>
         )
       })}
     </>

@@ -25,13 +25,12 @@ function getNumericResolveButtonLabel(
 }
 
 export function NumericResolutionPanel(props: {
-  isAdmin: boolean
   isCreator: boolean
   creator: User
   contract: PseudoNumericContract
   modalSetOpen?: (open: boolean) => void
 }) {
-  const { contract, isAdmin, isCreator, modalSetOpen } = props
+  const { contract, isCreator, modalSetOpen } = props
   const { min, max, outcomeType, question } = contract
 
   const [outcomeMode, setOutcomeMode] = useState<
@@ -91,12 +90,16 @@ export function NumericResolutionPanel(props: {
 
   return (
     <>
-      {isAdmin && !isCreator && (
+      {!isCreator && (
         <span className="bg-scarlet-500/20 text-scarlet-500 absolute right-4 top-4 rounded p-1 text-xs">
           ADMIN
         </span>
       )}
-      {!modalSetOpen && <div className="mb-6">Resolve your market</div>}
+      {!modalSetOpen && (
+        <div className="mb-6">
+          Resolve {isCreator ? 'your' : contract.creatorName + `'s`} question
+        </div>
+      )}
       {modalSetOpen && (
         <div className="mb-6">Resolve "{contract.question}"</div>
       )}

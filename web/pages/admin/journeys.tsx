@@ -10,6 +10,7 @@ import { Button } from 'web/components/buttons/button'
 import { User } from 'common/user'
 import { UserAvatarAndBadge } from 'web/components/widgets/user-link'
 import { usePersistentQueryState } from 'web/hooks/use-persistent-query-state'
+import clsx from 'clsx'
 
 export default function Journeys() {
   const [eventsByUser, setEventsByUser] = useState<
@@ -17,7 +18,7 @@ export default function Journeys() {
   >({})
   const [hoursFromNowQ, setHoursFromNowQ] = usePersistentQueryState('h', '5')
   const hoursFromNow = parseInt(hoursFromNowQ ?? '5')
-  const [users, setUsers] = useState<User[]>([])
+  const [unBannedUsers, setUnBannedUsers] = useState<User[]>([])
   const [bannedUsers, setBannedUsers] = useState<User[]>([])
 
   const getEvents = async () => {
@@ -40,7 +41,7 @@ export default function Journeys() {
     )
     const users = userData.data.map((d) => d.data as User)
     setBannedUsers(users.filter((u) => u.isBannedFromPosting))
-    setUsers(users.filter((u) => !u.isBannedFromPosting))
+    setUnBannedUsers(users.filter((u) => !u.isBannedFromPosting))
   }
 
   useEffect(() => {
@@ -51,14 +52,21 @@ export default function Journeys() {
     getEvents()
   }, [hoursFromNow])
 
+  const userIdsThatBet = unBannedUsers
+    .filter(
+      (u) => eventsByUser[u.id].filter((e) => e.name === 'bet').length > 0
+    )
+    .map((u) => u.id)
+
   return (
     <Row>
       <NoSEO />
       <div className="text-ink-900 mx-8">
         <div className={'text-primary-700 my-1 text-2xl'}>User Journeys</div>
         <Row className={'items-center gap-2'}>
-          Viewing journeys from {users.length} users ({bannedUsers.length}{' '}
-          banned) created: {hoursFromNow}h ago
+          Viewing journeys from {unBannedUsers.length} users. You're not seeing{' '}
+          {bannedUsers.length} more that are banned. Showing users created:{' '}
+          {hoursFromNow}h ago.
           <Button
             color={'indigo-outline'}
             size={'xs'}
@@ -68,6 +76,11 @@ export default function Journeys() {
           >
             +1h
           </Button>
+        </Row>
+        <Row>
+          Fraction of users that bet:{' '}
+          {(userIdsThatBet.length / unBannedUsers.length).toPrecision(2)}. If a
+          user is highlighted, check if they're a spammer.
         </Row>
         <Row className={'flex-wrap gap-2 scroll-auto'}>
           {Object.keys(eventsByUser).map((userId) => {
@@ -82,11 +95,18 @@ export default function Journeys() {
               eventGroups[groupKey].push(event)
               eventName = event.name
             })
-            const user = users.find((u) => u.id === userId)
+            const user = unBannedUsers.find((u) => u.id === userId)
 
             return (
               <Col className={'mt-4 min-w-[15rem]'} key={userId}>
-                <Row>
+                <Row
+                  className={clsx(
+                    'rounded-md p-1',
+                    user && !userIdsThatBet.includes(user.id)
+                      ? 'bg-amber-100'
+                      : ''
+                  )}
+                >
                   {user ? (
                     <UserAvatarAndBadge
                       name={user.name}

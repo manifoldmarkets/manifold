@@ -147,7 +147,7 @@ function BoostFormRow(props: { contract: Contract }) {
               inputClassName="mr-2 w-36"
             />
           </Row>
-          {error && <div className="text-right text-red-500">{error}</div>}
+          {error && <div className="text-error text-right">{error}</div>}
         </>
       )}
 
@@ -303,7 +303,7 @@ function FeedAnalytics(props: { contractId: string }) {
 
 const TableItem = (props: { label: ReactNode; value?: ReactNode }) => (
   <tr>
-    <td className="!pt-0 !pl-0">{props.label}</td>
-    <td className="!pt-0 !pl-0">{props.value ?? '...'}</td>
+    <td className="!pl-0 !pt-0">{props.label}</td>
+    <td className="!pl-0 !pt-0">{props.value ?? '...'}</td>
   </tr>
 )

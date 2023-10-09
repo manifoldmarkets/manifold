@@ -242,7 +242,7 @@ export const StackedUserNames = (props: {
         {followsYou && (
           <span
             className={
-              'bg-canvas-100 w-fit self-center rounded-md p-0.5 px-1 text-xs'
+              'bg-ink-200 w-fit self-center rounded-md p-0.5 px-1 text-xs'
             }
           >
             Follows you

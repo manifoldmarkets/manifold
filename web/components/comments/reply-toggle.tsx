@@ -30,7 +30,7 @@ export function ReplyToggle(props: {
         </Row>
       </div>
       {childrenBountyTotal && childrenBountyTotal > 0 ? (
-        <span className="text-teal-600 opacity-70 dark:text-teal-400">
+        <span className="text-teal-600 opacity-70">
           +{formatMoney(childrenBountyTotal)}
         </span>
       ) : (

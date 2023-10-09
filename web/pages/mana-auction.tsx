@@ -283,8 +283,8 @@ export default function ManaAuctionPage() {
   const timeRemaining = getCountdown(time, CUTOFF_TIME)
 
   return (
-    <Page className="px-4" trackPageView={'mana auction'}>
-      <Col className="gap-4 sm:px-4 sm:pb-4">
+    <Page trackPageView={'mana auction'}>
+      <Col className="gap-4 px-4 sm:px-8 sm:pb-4">
         <SEO
           title="Mana auction"
           description="To celebrate April 1st and to give back to the community, Manifold is

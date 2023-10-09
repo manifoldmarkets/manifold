@@ -22,7 +22,7 @@ export function GreenCard(props: {
         />
       ) : (
         <Image
-          className="absolute top-0 left-0"
+          className="absolute left-0 top-0"
           src={'/cards/back_green.png'}
           width={200}
           height={400}
@@ -43,23 +43,23 @@ export function FaceupGreenCard(props: {
   return (
     <div>
       <Image
-        className="absolute top-0 left-0"
+        className="absolute left-0 top-0"
         src={upscaleUrl}
         width={200}
         height={200}
         alt="Avatar"
       />
       <Image
-        className="absolute top-0 left-0"
+        className="absolute left-0 top-0"
         src={'/cards/frame_green.png'}
         width={200}
         height={400}
         alt="Frame"
       />
-      <div className="line-clamp-1 absolute top-[165px] left-0 w-full bg-transparent text-center text-2xl font-extrabold text-white drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,1)]">
+      <div className="absolute left-0 top-[165px] line-clamp-1 w-full bg-transparent text-center text-2xl font-extrabold text-white drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,1)]">
         {title}
       </div>
-      <div className="line-clamp-4 absolute top-[210px] left-[15px] w-[170px] text-center text-sm leading-3 text-black">
+      <div className="absolute left-[15px] top-[210px] line-clamp-4 w-[170px] text-center text-sm leading-3 text-black">
         {description}
       </div>
     </div>

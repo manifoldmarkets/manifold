@@ -50,7 +50,7 @@ export function AddFundsModal(props: {
             title: "I'm Broke",
             content: (
               <>
-                <div className="mt-6 mb-4">Other ways to get mana:</div>
+                <div className="mb-4 mt-6">Other ways to get mana:</div>
                 <OtherWaysToGetMana />
               </>
             ),
@@ -97,7 +97,7 @@ export function BuyManaTab(props: { onClose: () => void }) {
 
   return (
     <>
-      <div className="mt-6 mb-4">
+      <div className="mb-4 mt-6">
         Buy mana ({ENV_CONFIG.moneyMoniker}) to trade in your favorite
         questions.
         <div className="italic">Not redeemable for cash.</div>
@@ -150,7 +150,7 @@ export function BuyManaTab(props: { onClose: () => void }) {
           </form>
         )}
       </div>
-      <Row className="mt-2 text-sm text-red-500">{error}</Row>
+      <Row className="text-error mt-2 text-sm">{error}</Row>
     </>
   )
 }

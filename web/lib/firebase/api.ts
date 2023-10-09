@@ -12,7 +12,7 @@ import { Post } from 'common/post'
 import { MaybeAuthedContractParams } from 'common/contract'
 import { Portfolio, PortfolioItem } from 'common/portfolio'
 import { ReportProps } from 'common/report'
-import { Dashboard, DashboardItem } from 'common/dashboard'
+import { BaseDashboard, Dashboard, DashboardItem } from 'common/dashboard'
 import { Bet } from 'common/bet'
 
 export async function call(url: string, method: 'POST' | 'GET', params?: any) {
@@ -483,6 +483,7 @@ export function createDashboard(params: {
   title: string
   items: DashboardItem[]
   description?: JSONContent
+  topics: string[]
 }) {
   return call(getApiUrl('createdashboard'), 'POST', params)
 }
@@ -504,7 +505,7 @@ export function supabaseSearchDashboards(params: {
     getApiUrl('supabasesearchdashboards'),
     'POST',
     params
-  ) as Promise<Dashboard[]>
+  ) as Promise<BaseDashboard[]>
 }
 
 export function getYourFollowedDashboards() {
@@ -515,11 +516,35 @@ export function updateDashboard(params: {
   title: string
   dashboardId: string
   items: DashboardItem[]
+  topics?: string[]
   description?: JSONContent
 }) {
   return call(getApiUrl('updatedashboard'), 'POST', params)
 }
 
 export function getDashboardFromSlug(params: { dashboardSlug: string }) {
-  return maybeAuthedCall(getApiUrl('getdashboardfromslug'), 'POST', params)
+  return maybeAuthedCall(
+    getApiUrl('getdashboardfromslug'),
+    'POST',
+    params
+  ) as Promise<Dashboard>
+}
+
+export function referUser(params: {
+  referredByUsername: string
+  contractId?: string
+}) {
+  return call(getApiUrl('refer-user'), 'POST', params)
+}
+
+export function updateMarket(params: {
+  contractId: string
+  visibility?: 'public' | 'unlisted'
+  closeTime?: number
+}) {
+  return call(getApiUrl('update-market'), 'POST', params)
+}
+
+export function banUser(params: { userId: string; unban?: boolean }) {
+  return call(getApiUrl('ban-user'), 'POST', params)
 }

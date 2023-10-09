@@ -88,13 +88,13 @@ const CompanyRow = (props: {
   const [expanded, setExpanded] = useState(false)
 
   return (
-    <Col className="hover:bg-indigo-25 active:bg-indigo-25 dark:hover:bg-indigo-900 dark:active:bg-indigo-900">
+    <Col className="hover:bg-primary-100 active:bg-primary-100">
       <Link
         href={`/ManifoldMarkets/${contract.slug}`}
         key={contract.id}
         onClick={(e) => e.stopPropagation()}
       >
-        <Row className="cursor-pointer select-none justify-between py-2 px-3">
+        <Row className="cursor-pointer select-none justify-between px-3 py-2">
           <Row className="items-baseline gap-2">
             <div
               className="self-center"
@@ -116,7 +116,7 @@ const CompanyRow = (props: {
         </Row>
       </Link>
       {expanded && (
-        <Col className="border-ink-200 border-b px-3 pt-2 pb-4">
+        <Col className="border-ink-200 border-b px-3 pb-4 pt-2">
           <AnswersPanel contract={contract} />
         </Col>
       )}

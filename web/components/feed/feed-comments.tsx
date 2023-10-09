@@ -2,7 +2,12 @@ import { Editor } from '@tiptap/react'
 import clsx from 'clsx'
 import { memo, ReactNode, useEffect, useRef, useState } from 'react'
 
-import { EyeOffIcon, FlagIcon, PencilIcon } from '@heroicons/react/outline'
+import {
+  EyeOffIcon,
+  FlagIcon,
+  LinkIcon,
+  PencilIcon,
+} from '@heroicons/react/outline'
 import {
   DotsHorizontalIcon,
   ReplyIcon,
@@ -50,8 +55,7 @@ import { InfoTooltip } from '../widgets/info-tooltip'
 import { Tooltip } from '../widgets/tooltip'
 import { isAdminId } from 'common/envs/constants'
 import { PaymentsModal } from 'web/pages/payments'
-import { FiLink } from 'react-icons/fi'
-import { GiPayMoney } from 'react-icons/gi'
+import TipJar from 'web/public/custom-components/tipJar'
 
 export type ReplyToUserInfo = { id: string; username: string }
 
@@ -65,6 +69,7 @@ export function FeedCommentThread(props: {
   idInUrl?: string
   showReplies?: boolean
   childrenBountyTotal?: number
+  className?: string
 }) {
   const {
     contract,
@@ -76,6 +81,7 @@ export function FeedCommentThread(props: {
     idInUrl,
     showReplies,
     childrenBountyTotal,
+    className,
   } = props
   const [replyToUserInfo, setReplyToUserInfo] = useState<ReplyToUserInfo>()
 
@@ -98,7 +104,7 @@ export function FeedCommentThread(props: {
       : Infinity
   )
   return (
-    <Col className="mt-3 w-full items-stretch gap-3">
+    <Col className={clsx('mt-3 w-full items-stretch gap-3', className)}>
       <ParentFeedComment
         key={parentComment.id}
         contract={contract}
@@ -129,7 +135,7 @@ export function FeedCommentThread(props: {
           ))}
       {seeReplies && threadComments.length > collapseToIndex && (
         <Row
-          className={'justify-end sm:mt-1 sm:-mb-2'}
+          className={'justify-end sm:-mb-2 sm:mt-1'}
           key={parentComment.id + 'see-replies-feed-button'}
         >
           <Button
@@ -221,10 +227,10 @@ export const FeedComment = memo(function FeedComment(props: {
             />
           </Row>
           {isParent && seeReplies && hasReplies && (
-            <div className="bg-ink-200 absolute -top-0 left-4 bottom-0 w-0.5" />
+            <div className="bg-ink-200 absolute -top-0 bottom-0 left-4 w-0.5" />
           )}
           {!isParent && (
-            <div className="bg-ink-200 absolute -top-1 left-4 bottom-0 w-0.5 group-last:hidden" />
+            <div className="bg-ink-200 absolute -top-1 bottom-0 left-4 w-0.5 group-last:hidden" />
           )}
         </Col>
         <Col
@@ -375,7 +381,7 @@ export function DotMenu(props: {
         items={buildArray(
           {
             name: 'Copy link',
-            icon: <FiLink className="h-5 w-5" />,
+            icon: <LinkIcon className="h-5 w-5" />,
             onClick: () => {
               copyLinkToComment(
                 contract.creatorUsername,
@@ -387,7 +393,7 @@ export function DotMenu(props: {
           user &&
             comment.userId !== user.id && {
               name: 'Tip',
-              icon: <GiPayMoney className="h-5 w-5" />,
+              icon: <TipJar size={20} color="currentcolor" />,
               onClick: () => setTipping(true),
             },
           user &&
@@ -695,7 +701,7 @@ function FeedCommentHeader(props: {
           {!inTimeline && <DotMenu comment={comment} contract={contract} />}
         </Row>
         {bountyAwarded && bountyAwarded > 0 && (
-          <span className="select-none text-teal-600 dark:text-teal-400">
+          <span className="select-none text-teal-600">
             +{formatMoney(bountyAwarded)}
           </span>
         )}
@@ -758,9 +764,9 @@ export function CommentOnBetRow(props: {
   return (
     <Row className="ml-4 text-sm">
       <Col className="h-grow justify-end">
-        <div className="border-ink-300 h-4 w-6 rounded-tl-lg border-2 border-r-0 border-b-0" />
+        <div className="border-ink-300 h-4 w-6 rounded-tl-lg border-2 border-b-0 border-r-0" />
       </Col>
-      <Row className="bg-ink-200 text-ink-600 gap-1 whitespace-nowrap py-1 px-4">
+      <Row className="bg-ink-200 text-ink-600 gap-1 whitespace-nowrap px-4 py-1">
         <UserLink
           username={bettorUsername}
           name={bettorName}
@@ -775,7 +781,7 @@ export function CommentOnBetRow(props: {
         />
         {clearReply && (
           <button onClick={clearReply}>
-            <XCircleIcon className={'absolute -top-1.5 -right-3 h-5 w-5'} />
+            <XCircleIcon className={'absolute -right-3 -top-1.5 h-5 w-5'} />
           </button>
         )}
       </Row>

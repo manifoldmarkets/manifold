@@ -2,7 +2,7 @@ import { PencilIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import dayjs from 'dayjs'
 import { Row } from '../layout/row'
-import { Contract, updateContract } from 'web/lib/firebase/contracts'
+import { Contract } from 'web/lib/firebase/contracts'
 import { DateTimeTooltip } from '../widgets/datetime-tooltip'
 import { fromNow } from 'web/lib/util/time'
 import { useState } from 'react'
@@ -16,6 +16,7 @@ import { Avatar } from '../widgets/avatar'
 import { UserLink } from '../widgets/user-link'
 import { NO_CLOSE_TIME_TYPES } from 'common/contract'
 import { FollowButton } from '../buttons/follow-button'
+import { updateMarket } from 'web/lib/firebase/api'
 
 export function AuthorInfo(props: { contract: Contract }) {
   const { contract } = props
@@ -103,7 +104,7 @@ function EditableCloseDate(props: {
     ? dayjs(`${closeDate}T${closeHoursMinutes}`).valueOf()
     : undefined
 
-  function onSave(customTime?: number) {
+  async function onSave(customTime?: number) {
     if (customTime) {
       newCloseTime = customTime
       setCloseDate(dayjs(newCloseTime).format('YYYY-MM-DD'))
@@ -113,7 +114,8 @@ function EditableCloseDate(props: {
 
     setIsEditingCloseTime(false)
     if (newCloseTime !== closeTime) {
-      updateContract(contract.id, {
+      await updateMarket({
+        contractId: contract.id,
         closeTime: newCloseTime,
       })
     }

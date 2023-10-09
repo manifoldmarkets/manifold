@@ -55,8 +55,8 @@ export const CohortTable = (props: {
     <table>
       <thead className={clsx('text-ink-600 text-left text-sm font-semibold')}>
         <tr>
-          <th className={clsx('pl-10 pr-2 pb-1')}>User</th>
-          <th className={clsx('px-2 pb-1 text-right')}>
+          <th className={clsx('pb-1 pl-10 pr-2')}>User</th>
+          <th className={clsx('px-2 pb-1 text-right sm:pr-10')}>
             <InfoTooltip
               text={
                 'Includes both realized and unrealized profits from bets placed this month plus quest rewards and unique trader bonuses.'
@@ -101,7 +101,7 @@ export const CohortTable = (props: {
                     <tr>
                       <td colSpan={2}>
                         <Col className="mb-2 w-full items-center gap-1">
-                          <div className="text-xs text-gray-600">
+                          <div className="text-ink-500 text-xs">
                             ▲ Promotes to {nextNextDivisionName}
                           </div>
                           <div className="border-ink-300 w-full border-t-2 border-dashed" />
@@ -113,7 +113,7 @@ export const CohortTable = (props: {
                     <tr>
                       <td colSpan={2}>
                         <Col className="mb-2 w-full items-center gap-1">
-                          <div className="text-xs text-gray-600">
+                          <div className="text-ink-500 text-xs">
                             ▲ Promotes to {nextDivisionName}
                           </div>
                           <div className="border-ink-300 w-full border-t-2 border-dashed" />
@@ -127,7 +127,7 @@ export const CohortTable = (props: {
                         <td colSpan={2}>
                           <Col className="mt-2 w-full items-center gap-1">
                             <div className="border-ink-300 w-full border-t-2 border-dashed" />
-                            <div className="text-xs text-gray-600">
+                            <div className="text-ink-500 text-xs">
                               ▼ Demotes to {prevDivisionName}
                             </div>
                           </Col>
@@ -170,19 +170,14 @@ const UserRow = (props: {
   return (
     <tr
       className={clsx(
-        'hover:bg-canvas-100 group cursor-pointer',
-        isHighlighted && `bg-canvas-100 sticky bottom-[58px] sm:bottom-0`
+        'hover:bg-primary-100 group cursor-pointer',
+        isHighlighted && 'bg-primary-100 sticky bottom-[58px] lg:bottom-0'
       )}
       onClick={() => {
         setShowDialog(true)
       }}
     >
-      <td
-        className={clsx(
-          'pl-2 group-hover:bg-indigo-400/20',
-          isHighlighted && 'bg-indigo-400/20'
-        )}
-      >
+      <td className="pl-2">
         <Row className="my-2 items-center gap-4">
           <Tooltip
             text={
@@ -216,14 +211,7 @@ const UserRow = (props: {
           />
         </Row>
       </td>
-      <td
-        className={clsx(
-          isHighlighted && 'bg-indigo-400/20',
-          'pr-2 text-right group-hover:bg-indigo-400/20'
-        )}
-      >
-        {formatMoney(mana_earned)}
-      </td>
+      <td className="pr-2 text-right sm:pr-10">{formatMoney(mana_earned)}</td>
 
       {showDialog && (
         <ManaEarnedBreakdown

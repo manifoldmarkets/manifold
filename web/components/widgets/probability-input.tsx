@@ -60,7 +60,7 @@ export function ProbabilityInput(props: {
         }}
         error={error}
       />
-      <span className="text-ink-400 absolute top-1/2 right-4 my-auto -translate-y-1/2">
+      <span className="text-ink-400 absolute right-4 top-1/2 my-auto -translate-y-1/2">
         %
       </span>
     </Col>

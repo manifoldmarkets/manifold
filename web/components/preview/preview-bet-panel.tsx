@@ -278,7 +278,7 @@ export function PreviewBuyPanel(props: {
         className={clsx(
           !singularView
             ? outcome === 'NO'
-              ? 'bg-red-500/10'
+              ? 'bg-scarlet-500/10'
               : outcome === 'YES'
               ? 'bg-teal-500/10'
               : 'hidden'
@@ -288,7 +288,7 @@ export function PreviewBuyPanel(props: {
           singularView && option === 'LIMIT' ? 'hidden' : ''
         )}
       >
-        <div className="text-ink-700 mt-2 mb-1 text-sm">Amount</div>
+        <div className="text-ink-700 mb-1 mt-2 text-sm">Amount</div>
 
         <BuyAmountInput
           inputClassName="w-full max-w-none"

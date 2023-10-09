@@ -16,7 +16,6 @@ import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { Avatar } from 'web/components/widgets/avatar'
 import { range, uniq, uniqBy } from 'lodash'
 import { filterDefined } from 'common/util/array'
-import { Page } from 'web/components/layout/page'
 import { DAY_MS, MINUTE_MS } from 'common/util/time'
 import {
   DAYS_TO_USE_FREE_QUESTIONS,
@@ -26,13 +25,6 @@ import {
 import { CreateQuestionButton } from 'web/components/buttons/create-question-button'
 import { shortenedFromNow } from 'web/lib/util/shortenedFromNow'
 
-export default function FeedTimelinePage() {
-  return (
-    <Page trackPageView={'feed timeline page'}>
-      <FeedTimeline />
-    </Page>
-  )
-}
 export function FeedTimeline() {
   const privateUser = usePrivateUser()
   const user = useUser()
@@ -41,39 +33,35 @@ export function FeedTimeline() {
     user?.createdTime
   )
   return (
-    <Col className="mx-auto w-full gap-2 pb-4 sm:px-2 lg:pr-4">
-      <Col className={clsx('gap-6')}>
-        <Col>
-          {user && remaining > 0 && (
-            <Row className="text-ink-600 mb-2 items-center justify-between gap-2 rounded-md bg-green-200 p-2 text-sm">
-              <span className={'text-gray-700'}>
-                🎉 You've got {remaining} free questions! Use them before they
-                expire in{' '}
-                {shortenedFromNow(
-                  user.createdTime + DAY_MS * DAYS_TO_USE_FREE_QUESTIONS
-                )}
-                .
-              </span>
-              <CreateQuestionButton className={'max-w-[10rem]'} />
-            </Row>
-          )}
-          {privateUser && <FeedTimelineContent privateUser={privateUser} />}
-          <button
-            type="button"
-            className={clsx(
-              'focus:ring-primary-500 fixed  right-3 z-20 inline-flex items-center rounded-full border  border-transparent  p-4 shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 lg:hidden',
-              'disabled:bg-ink-300 text-ink-0 from-primary-500 hover:from-primary-700 to-blue-500 hover:to-blue-700 enabled:bg-gradient-to-r',
-              'bottom-[64px]'
+    <Col className="w-full items-center pb-4 sm:px-2">
+      {user && remaining > 0 && (
+        <Row className="text-ink-600 mb-2 items-center justify-between gap-2 rounded-md bg-green-200 p-2 text-sm">
+          <span className={'text-ink-700'}>
+            🎉 You've got {remaining} free questions! Use them before they
+            expire in{' '}
+            {shortenedFromNow(
+              user.createdTime + DAY_MS * DAYS_TO_USE_FREE_QUESTIONS
             )}
-            onClick={() => {
-              Router.push('/create')
-              track('mobile create button')
-            }}
-          >
-            <PencilAltIcon className="h-6 w-6" aria-hidden="true" />
-          </button>
-        </Col>
-      </Col>
+            .
+          </span>
+          <CreateQuestionButton className={'max-w-[10rem]'} />
+        </Row>
+      )}
+      {privateUser && <FeedTimelineContent privateUser={privateUser} />}
+      <button
+        type="button"
+        className={clsx(
+          'focus:ring-primary-500 fixed  right-3 z-20 inline-flex items-center rounded-full border  border-transparent  p-4 shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 lg:hidden',
+          'disabled:bg-ink-300 text-ink-0 from-primary-500 hover:from-primary-700 to-blue-500 hover:to-blue-700 enabled:bg-gradient-to-r',
+          'bottom-[64px]'
+        )}
+        onClick={() => {
+          Router.push('/create')
+          track('mobile create button')
+        }}
+      >
+        <PencilAltIcon className="h-6 w-6" aria-hidden="true" />
+      </button>
     </Col>
   )
 }
@@ -141,7 +129,7 @@ function FeedTimelineContent(props: { privateUser: PrivateUser }) {
   }
 
   return (
-    <Col className={'relative w-full gap-4'}>
+    <Col className={'relative w-full max-w-3xl gap-4'}>
       <VisibilityObserver
         className="pointer-events-none absolute top-0 h-5 w-full select-none "
         onVisibilityUpdated={(visible) => {
@@ -205,7 +193,7 @@ const NewActivityButton = (props: {
   return (
     <button
       className={clsx(
-        'bg-canvas-50 border-ink-200 hover:bg-ink-200 rounded-full border-2 py-2 pr-3 pl-2 text-sm transition-colors',
+        'bg-canvas-50 border-ink-200 hover:bg-ink-200 rounded-full border-2 py-2 pl-2 pr-3 text-sm transition-colors',
         'sticky top-7 z-20 self-center'
       )}
       onClick={scrollToTop}

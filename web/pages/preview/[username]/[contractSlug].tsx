@@ -70,11 +70,7 @@ export default function PreviewContractPage(props: MaybeAuthedContractParams) {
   }
 
   return (
-    <Page
-      className="!max-w-[1400px]"
-      mainClassName="!col-span-10"
-      trackPageView={false}
-    >
+    <Page className="xl:col-span-10" trackPageView={false}>
       {props.state === 'not authed' ? (
         <PrivateContractPage contractSlug={props.slug} />
       ) : (
@@ -250,20 +246,6 @@ export function PreviewContractPageContent(props: {
     relatedContracts
   )
 
-  // detect whether header is stuck by observing if title is visible
-  const titleRef = useRef<any>(null)
-  const [headerStuck, setStuck] = useState(false)
-  useEffect(() => {
-    const element = titleRef.current
-    if (!element) return
-    const observer = new IntersectionObserver(
-      ([e]) => setStuck(e.intersectionRatio < 1),
-      { threshold: 1 }
-    )
-    observer.observe(element)
-    return () => observer.unobserve(element)
-  }, [titleRef])
-
   const showExplainerPanel =
     user === null ||
     (user && user.createdTime > Date.now() - 24 * 60 * 60 * 1000)
@@ -287,63 +269,6 @@ export function PreviewContractPageContent(props: {
             'sticky bottom-0 min-h-screen self-end'
           )}
         >
-          {/* <div
-            className={clsx(
-              'sticky z-50 flex items-end',
-              !coverImageUrl
-                ? 'bg-canvas-0 top-0 w-full'
-                : ' top-[-92px] h-[140px]'
-            )}
-          >
-            {coverImageUrl && (
-              <div className="absolute bottom-0 left-0 right-0 -top-10 -z-10">
-                <Image
-                  fill
-                  alt=""
-                  sizes="100vw"
-                  className="object-cover"
-                  src={coverImageUrl}
-                  priority={true}
-                />
-                <ChangeBannerButton
-                  contract={contract}
-                  className="absolute top-12 right-4"
-                />
-              </div>
-            )}
-            <Row
-              className={clsx(
-                ' sticky -top-px z-50 mt-px flex h-12 w-full py-2 px-4 transition-colors',
-                headerStuck
-                  ? 'dark:bg-canvas-50/80 bg-white/80 backdrop-blur-sm'
-                  : ''
-              )}
-            >
-            <Row className=" mr-4 grow">
-                {(headerStuck || !coverImageUrl) && (
-                  <Col className="my-auto">
-                    <BackButton />
-                  </Col>
-                )}
-                {headerStuck && (
-                  <span className="text-ink-1000 ml-4 mt-1 w-full min-w-0 overflow-hidden break-all">
-                    <VisibilityIcon contract={contract} /> {contract.question}
-                  </span>
-                )}
-              </Row>
-
-              {(headerStuck || !coverImageUrl) && (
-                <ExtraContractActionsRow contract={contract}>
-                  {!coverImageUrl && isCreator && (
-                    <ChangeBannerButton
-                      contract={contract}
-                      className="ml-3 first:ml-0"
-                    />
-                  )}
-                </ExtraContractActionsRow>
-              )}
-            </Row>
-          </div> */}
           <Col
             className={clsx(
               'mb-4 p-4 pt-0 md:pb-8 lg:px-8',
@@ -367,7 +292,7 @@ export function PreviewContractPageContent(props: {
                     </ExtraContractActionsRow>
                   </Row>
                 )}
-                <div className="mt-6" ref={titleRef}>
+                <div className="mt-6">
                   <VisibilityIcon
                     contract={contract}
                     isLarge

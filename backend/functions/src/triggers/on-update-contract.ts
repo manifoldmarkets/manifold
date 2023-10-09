@@ -12,6 +12,8 @@ import {
   createSupabaseDirectClient,
 } from 'shared/supabase/init'
 import { upsertGroupEmbedding } from 'shared/helpers/embeddings'
+import { buildArray } from 'common/util/array'
+import { addContractToFeed } from 'shared/create-feed'
 
 export const onUpdateContract = functions
   .runWith({ secrets })
@@ -20,17 +22,14 @@ export const onUpdateContract = functions
     const contract = change.after.data() as Contract
     const previousContract = change.before.data() as Contract
     const { eventId } = context
-    const { closeTime, question, description, resolution, groupLinks } =
-      contract
+    const { closeTime, question, description, groupLinks } = contract
 
     const db = createSupabaseClient()
     const pg = createSupabaseDirectClient()
 
     if (
       !isEqual(previousContract.description, description) ||
-      !isEqual(previousContract.question, question) ||
-      !isEqual(previousContract.closeTime, closeTime) ||
-      !isEqual(previousContract.resolution, resolution)
+      !isEqual(previousContract.question, question)
     ) {
       await run(
         db.from('contract_edits').insert({
@@ -38,6 +37,11 @@ export const onUpdateContract = functions
           editor_id: contract.creatorId,
           data: previousContract,
           idempotency_key: eventId,
+          updated_keys: buildArray([
+            !isEqual(previousContract.description, description) &&
+              'description',
+            !isEqual(previousContract.question, question) && 'question',
+          ]),
         })
       )
     }
@@ -46,15 +50,27 @@ export const onUpdateContract = functions
     const previousGroupIds = (previousContract.groupLinks ?? []).map(
       (gl) => gl.groupId
     )
-    const newGroupIds = (groupLinks ?? []).map((gl) => gl.groupId)
-    const differentGroupIds = difference(previousGroupIds, newGroupIds).concat(
-      difference(newGroupIds, previousGroupIds)
+    const currentGroupIds = (groupLinks ?? []).map((gl) => gl.groupId)
+    const onlyNewGroupIds = difference(currentGroupIds, previousGroupIds)
+    const differentGroupIds = onlyNewGroupIds.concat(
+      difference(previousGroupIds, currentGroupIds)
     )
     await Promise.all(
       differentGroupIds.map(async (groupId) =>
         upsertGroupEmbedding(pg, groupId)
       )
     )
+    if (onlyNewGroupIds.length > 0) {
+      await addContractToFeed(
+        contract,
+        ['contract_in_group_you_are_in'],
+        'new_contract',
+        [contract.creatorId],
+        {
+          idempotencyKey: contract.id + '_new_contract',
+        }
+      )
+    }
 
     if (
       (previousContract.closeTime !== closeTime ||

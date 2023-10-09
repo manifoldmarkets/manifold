@@ -3,18 +3,12 @@ import * as RxSlider from '@radix-ui/react-slider'
 import { ReactNode } from 'react'
 
 const colors = {
-  green: [
-    'bg-teal-500',
-    'focus:outline-teal-600/30 bg-teal-600 dark:bg-teal-300',
-  ],
+  green: ['bg-teal-400', 'focus:outline-teal-600/30 bg-teal-600'],
   'light-green': [
     'bg-emerald-200/50 dark:bg-emerald-800/50',
-    'focus:outline-emerald-200/20 bg-emerald-200 dark:bg-teal-800',
+    'focus:outline-emerald-200/20 bg-emerald-200 dark:bg-teal-200',
   ],
-  red: [
-    'bg-scarlet-300 dark:bg-scarlet-600',
-    'focus:outline-scarlet-600/30 bg-scarlet-600 dark:bg-scarlet-400',
-  ],
+  red: ['bg-scarlet-400', 'focus:outline-scarlet-600/30 bg-scarlet-600'],
   indigo: ['bg-primary-300', 'focus:outline-primary-500/30 bg-primary-500'],
   // light: ['primary-200', 'primary-300']
 } as const
@@ -67,11 +61,11 @@ export function Slider(props: {
             >
               <div
                 className={clsx(
-                  amount >= value ? trackClasses : 'bg-ink-200',
+                  amount >= value ? trackClasses : 'bg-ink-400',
                   'h-2 w-2 rounded-full'
                 )}
               />
-              <span className="text-ink-400 absolute top-4 left-1/2 -translate-x-1/2 text-xs">
+              <span className="text-ink-400 absolute left-1/2 top-4 -translate-x-1/2 text-xs">
                 {label}
               </span>
             </div>
@@ -135,7 +129,7 @@ export function RangeSlider(props: {
 const Track = (props: { className: string; children?: ReactNode }) => {
   const { className, children } = props
   return (
-    <RxSlider.Track className="bg-ink-200 relative h-1 grow rounded-full">
+    <RxSlider.Track className="bg-ink-300 relative h-1 grow rounded-full">
       {children}
       <RxSlider.Range
         className={clsx(className, 'absolute h-full rounded-full')}

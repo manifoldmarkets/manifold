@@ -1,7 +1,6 @@
 import { Contract } from 'common/contract'
 import { User } from 'common/user'
 import { useState } from 'react'
-import { useAdmin } from 'web/hooks/use-admin'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { BetDialog } from '../bet/bet-dialog'
 import { Button } from '../buttons/button'
@@ -123,20 +122,17 @@ export function SmallResolutionPanel(props: {
 }) {
   const { contract, user, setOpen } = props
   const outcomeType = contract.outcomeType
-  const isAdmin = useAdmin()
   return outcomeType === 'PSEUDO_NUMERIC' ? (
     <NumericResolutionPanel
-      isAdmin={!!isAdmin}
       creator={user}
-      isCreator={!isAdmin}
+      isCreator={user.id === contract.creatorId}
       contract={contract}
       modalSetOpen={setOpen}
     />
   ) : outcomeType === 'BINARY' ? (
     <ResolutionPanel
-      isAdmin={!!isAdmin}
       creator={user}
-      isCreator={!isAdmin}
+      isCreator={user.id === contract.creatorId}
       contract={contract}
       modalSetOpen={setOpen}
     />

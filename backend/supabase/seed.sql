@@ -396,8 +396,6 @@ create policy "public read" on contracts for
 select
   using (true);
 
-create index if not exists contracts_data_gin on contracts using GIN (data);
-
 create index if not exists contracts_slug on contracts (slug);
 
 create index if not exists contracts_creator_id on contracts (creator_id, created_time);
@@ -427,6 +425,8 @@ create index if not exists contracts_sample_filtering on contracts (
   visibility,
   ((data ->> 'uniqueBettorCount'))
 );
+
+create index contracts_on_importance_score_and_resolution_time_idx on contracts(importance_score, resolution_time);
 
 alter table contracts
 cluster on contracts_creator_id;
@@ -627,27 +627,6 @@ alter table contract_comments
 cluster on contract_comments_pkey;
 
 create table if not exists
-  contract_edits (
-    id serial primary key,
-    contract_id text not null,
-    editor_id text not null,
-    data jsonb not null,
-    -- if created from a db trigger
-    idempotency_key text,
-    created_time timestamptz not null default now()
-  );
-
-alter table contract_edits enable row level security;
-
-drop policy if exists "public read" on contract_edits;
-
-create policy "public read" on contract_edits for
-select
-  using (true);
-
-create index if not exists contract_edits_contract_id_idx on contract_edits (contract_id);
-
-create table if not exists
   contract_comment_edits (
     id serial primary key,
     contract_id text not null,
@@ -755,10 +734,17 @@ create index if not exists contract_follows_idx on contract_follows (follow_id);
 alter table contract_follows enable row level security;
 
 drop policy if exists "public read" on contract_follows;
+drop policy if exists "user can insert" on contract_follows;
+drop policy if exists "user can delete" on contract_follows;
 
 create policy "public read" on contract_follows for
 select
   using (true);
+create policy "user can insert" on contract_follows for insert
+    with check (firebase_uid() = follow_id);
+create policy "user can delete" on contract_follows for delete
+    using (firebase_uid() = follow_id);
+
 
 alter table contract_follows
 cluster on contract_follows_pkey;

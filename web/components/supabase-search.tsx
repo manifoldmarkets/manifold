@@ -21,20 +21,15 @@ import {
 } from 'web/hooks/use-persistent-query-state'
 import {
   useGroupFromSlug,
-  useMemberGroupIdsOnLoad,
-  useRealtimeMemberGroups,
+  useRealtimeMemberGroupIds,
 } from 'web/hooks/use-group-supabase'
 import { DEFAULT_TOPIC, Group, TOPIC_KEY } from 'common/group'
 import { TopicTag } from 'web/components/topics/topic-tag'
 import { AddContractToGroupButton } from 'web/components/topics/add-contract-to-group-modal'
 import { useUser } from 'web/hooks/use-user'
 
-import {
-  FollowOrUnfolowTopicButton,
-  TopicOptionsButton,
-} from 'web/components/topics/topics-button'
+import { FollowOrUnfolowTopicButton } from 'web/components/topics/topics-button'
 
-import { ForYouDropdown } from 'web/components/topics/for-you-dropdown'
 import { PillButton } from 'web/components/buttons/pill-button'
 import { searchUsers, UserSearchResult } from 'web/lib/supabase/users'
 import { searchGroups } from 'web/lib/supabase/groups'
@@ -47,7 +42,6 @@ import { Avatar } from 'web/components/widgets/avatar'
 import { Button, IconButton } from 'web/components/buttons/button'
 import Link from 'next/link'
 import { useFollowedUsersOnLoad } from 'web/hooks/use-follows'
-import { parseJsonContentToText } from 'common/util/parse'
 
 const CONTRACTS_PER_PAGE = 40
 const USERS_PER_PAGE = 100
@@ -84,25 +78,25 @@ const bountySorts = new Set(['bounty-amount'])
 
 const probSorts = new Set(['prob-descending', 'prob-ascending'])
 
-export const BOUNTY_MARKET_SORTS = SORTS.filter(
+const BOUNTY_MARKET_SORTS = SORTS.filter(
   (item) => !predictionMarketSorts.has(item.value)
 )
 
-export const POLL_SORTS = BOUNTY_MARKET_SORTS.filter(
+const POLL_SORTS = BOUNTY_MARKET_SORTS.filter(
   (item) => !bountySorts.has(item.value)
 )
 
-export const PREDICTION_MARKET_SORTS = SORTS.filter(
+const PREDICTION_MARKET_SORTS = SORTS.filter(
   (item) => !bountySorts.has(item.value) && !probSorts.has(item.value)
 )
 
-export const PREDICTION_MARKET_PROB_SORTS = SORTS.filter(
+const PREDICTION_MARKET_PROB_SORTS = SORTS.filter(
   (item) => !bountySorts.has(item.value)
 )
 
 export type Sort = typeof SORTS[number]['value']
 
-export const FILTERS = [
+const FILTERS = [
   { label: 'Any status', value: 'all' },
   { label: 'Open', value: 'open' },
   { label: 'Closing this month', value: 'closing-this-month' },
@@ -113,7 +107,7 @@ export const FILTERS = [
 
 export type Filter = typeof FILTERS[number]['value']
 
-export const CONTRACT_TYPES = [
+const CONTRACT_TYPES = [
   { label: 'Any type', value: 'ALL' },
   { label: 'Yes/No', value: 'BINARY' },
   { label: 'Multiple Choice', value: 'MULTIPLE_CHOICE' },
@@ -140,7 +134,7 @@ const QUERY_KEY = 'q'
 export const SORT_KEY = 's'
 const FILTER_KEY = 'f'
 const CONTRACT_TYPE_KEY = 'ct'
-const SEARCH_TYPE_KEY = 't'
+export const SEARCH_TYPE_KEY = 't'
 
 export type SupabaseAdditionalFilter = {
   creatorId?: string
@@ -181,6 +175,7 @@ export function SupabaseSearch(props: {
   defaultSearchType?: SearchType
   yourTopics?: Group[]
   contractsOnly?: boolean
+  showTopicTag?: boolean
 }) {
   const {
     defaultSort,
@@ -202,6 +197,7 @@ export function SupabaseSearch(props: {
     defaultSearchType,
     yourTopics,
     contractsOnly,
+    showTopicTag,
   } = props
 
   const [searchParams, setSearchParams, defaults] = useSearchQueryState({
@@ -212,6 +208,7 @@ export function SupabaseSearch(props: {
   })
   const user = useUser()
   const followingUsers = useFollowedUsersOnLoad(user?.id)
+  const follwingTopics = useRealtimeMemberGroupIds(user?.id)
 
   const [lastSearch, setLastSearch] = usePersistentInMemoryState<
     typeof searchParams
@@ -220,10 +217,27 @@ export function SupabaseSearch(props: {
   const searchTypeAsString = searchParams?.[SEARCH_TYPE_KEY] ?? ''
   const currentTopicSlug = searchParams?.[TOPIC_KEY]
 
-  const [userResults, setUserResults] = useState<UserSearchResult[]>()
-  const [topicResults, setTopicResults] = useState<Group[]>()
+  const [queriedUserResults, setQueriedUserResults] =
+    usePersistentInMemoryState<UserSearchResult[] | undefined>(
+      undefined,
+      `${persistPrefix}-queried-user-results`
+    )
+  const [topicResults, setTopicResults] = usePersistentInMemoryState<
+    Group[] | undefined
+  >(undefined, `${persistPrefix}-topic-results`)
   const [showSearchTypeState, setShowSearchTypeState] = useState(
     queryAsString === '' || searchTypeAsString !== '' || !!currentTopicSlug
+  )
+
+  const userResults = uniqBy(
+    (
+      followingUsers?.filter(
+        (f) =>
+          f.name.toLowerCase().includes(queryAsString.toLowerCase()) ||
+          f.username.toLowerCase().includes(queryAsString.toLowerCase())
+      ) ?? []
+    ).concat(queriedUserResults ?? []),
+    'id'
   )
 
   const { contracts, loadMoreContracts, queryContracts } = useContractSearch(
@@ -272,13 +286,7 @@ export function SupabaseSearch(props: {
       'createdTime',
       'isBannedFromPosting',
     ])
-    const followedUsers =
-      followingUsers?.filter(
-        (f) =>
-          f.name.toLowerCase().includes(query.toLowerCase()) ||
-          f.username.toLowerCase().includes(query.toLowerCase())
-      ) ?? []
-    setUserResults(uniqBy(followedUsers.concat(results), 'id'))
+    setQueriedUserResults(results)
   })
 
   const queryTopics = useEvent(async (query: string) => {
@@ -320,7 +328,7 @@ export function SupabaseSearch(props: {
 
   return (
     <Col>
-      <Col className={clsx('bg-canvas-50 sticky top-0 z-20 ', headerClassName)}>
+      <Col className={clsx('sticky top-0 z-20 ', headerClassName)}>
         <Row>
           <Col className={'w-full'}>
             <Row className={'relative'}>
@@ -360,7 +368,6 @@ export function SupabaseSearch(props: {
         </Row>
         {!hideContractFilters && (
           <ContractFilters
-            user={user}
             hideOrderSelector={hideOrderSelector}
             includeProbSorts={includeProbSorts}
             params={searchParams ?? defaults}
@@ -370,11 +377,12 @@ export function SupabaseSearch(props: {
                 ? 'invisible'
                 : ''
             }
+            showTopicTag={showTopicTag}
           />
         )}
       </Col>
       {showSearchTypes ? (
-        <Row className={'bg-canvas-0 lg:bg-canvas-50 gap-1 pb-1'}>
+        <Row className={'bg-canvas-0 md:bg-canvas-50 gap-1 pb-1'}>
           <Button
             size={'sm'}
             color={'gray-white'}
@@ -443,7 +451,10 @@ export function SupabaseSearch(props: {
             {/*  Create a new topic! */}
           </Col>
         ) : (
-          <TopicResults topics={topicResults ?? []} />
+          <TopicResults
+            topics={topicResults ?? []}
+            yourTopicIds={follwingTopics ?? []}
+          />
         )
       ) : null}
     </Col>
@@ -464,7 +475,7 @@ const UserResults = (props: { users: UserSearchResult[] }) => {
           creatorTraders,
         }) => (
           <Link key={id} href={`/${username}`}>
-            <Row className={'hover:bg-canvas-100 p-1'}>
+            <Row className={'hover:bg-primary-100 p-1'}>
               <Col className={'w-full'}>
                 <Row className={'justify-between'}>
                   <Row className={'gap-1'}>
@@ -477,14 +488,13 @@ const UserResults = (props: { users: UserSearchResult[] }) => {
                       user={
                         { id, name, username, avatarUrl, createdTime } as User
                       }
-                      followsYou={false}
                       className={'font-normal sm:text-lg'}
                       usernameClassName={'sm:text-sm font-normal'}
                     />
                   </Row>
                   <FollowButton size={'xs'} userId={id} />
                 </Row>
-                <div className={'line-clamp-2 text-ink-500 ml-1 text-sm'}>
+                <div className={'text-ink-500 ml-1 line-clamp-2 text-sm'}>
                   {creatorTraders.allTime > 0 && (
                     <span className={'mr-1'}>
                       {shortFormatNumber(creatorTraders.allTime)} traders
@@ -502,10 +512,9 @@ const UserResults = (props: { users: UserSearchResult[] }) => {
   )
 }
 
-const TopicResults = (props: { topics: Group[] }) => {
-  const { topics } = props
+const TopicResults = (props: { topics: Group[]; yourTopicIds: string[] }) => {
+  const { topics, yourTopicIds } = props
   const me = useUser()
-  const myGroupIds = useMemberGroupIdsOnLoad(me?.id) ?? []
 
   return (
     <Col className={'mt-1 w-full gap-1'}>
@@ -514,18 +523,12 @@ const TopicResults = (props: { topics: Group[] }) => {
           key={group.id}
           href={`/browse?${TOPIC_KEY}=${group.slug}&${SEARCH_TYPE_KEY}=&${QUERY_KEY}=`}
         >
-          <Row className={'hover:bg-canvas-100 min-h-[4rem] p-1 pl-2 pt-2.5'}>
+          <Row className={'hover:bg-primary-100 min-h-[4rem] p-1 pl-2 pt-2.5'}>
             <Col className={' w-full'}>
               <span className="line-clamp-1 sm:text-lg">{group.name}</span>
-              <Row className={'line-clamp-2 text-ink-500 gap-1 text-sm'}>
+              <Row className={'text-ink-500 line-clamp-2 gap-1 text-sm'}>
                 {group.totalMembers > 1 && (
-                  <span>
-                    {group.totalMembers} followers
-                    {group.about && ' • '}
-                  </span>
-                )}
-                {group.about && (
-                  <span>{parseJsonContentToText(group.about)}</span>
+                  <span>{group.totalMembers} followers</span>
                 )}
               </Row>
             </Col>
@@ -533,7 +536,7 @@ const TopicResults = (props: { topics: Group[] }) => {
               <FollowOrUnfolowTopicButton
                 group={group}
                 user={me}
-                isMember={myGroupIds.includes(group.id)}
+                isMember={yourTopicIds.includes(group.id)}
               />
             </div>
           </Row>
@@ -708,8 +711,8 @@ function ContractFilters(props: {
   hideOrderSelector?: boolean
   includeProbSorts?: boolean
   params: SearchParams
-  user: User | null | undefined
   updateParams: (params: Partial<SearchParams>) => void
+  showTopicTag?: boolean
 }) {
   const {
     className,
@@ -717,7 +720,7 @@ function ContractFilters(props: {
     includeProbSorts,
     params,
     updateParams,
-    user,
+    showTopicTag,
   } = props
 
   const { s: sort, f: filter, ct: contractType, topic: topicSlug } = params
@@ -755,7 +758,6 @@ function ContractFilters(props: {
     }
     track('select contract type', { contractType: selection })
   }
-  const topic = useGroupFromSlug(topicSlug ?? '')
   const hideFilter =
     sort === 'resolve-date' ||
     sort === 'close-date' ||
@@ -764,9 +766,7 @@ function ContractFilters(props: {
   const filterLabel = getLabelFromValue(FILTERS, filter)
   const sortLabel = getLabelFromValue(SORTS, sort)
   const contractTypeLabel = getLabelFromValue(CONTRACT_TYPES, contractType)
-
-  const yourGroups = useRealtimeMemberGroups(user?.id)
-  const yourGroupIds = yourGroups?.map((g) => g.id)
+  const topic = useGroupFromSlug(topicSlug ?? '')
   const setTopic = (slug: string) => updateParams({ [TOPIC_KEY]: slug })
 
   return (
@@ -791,11 +791,11 @@ function ContractFilters(props: {
               selectSort
             )}
             icon={
-              <Row className=" items-center gap-0.5 ">
-                <span className="text-ink-500 whitespace-nowrap text-sm font-medium">
+              <Row className=" text-ink-500 items-center gap-0.5">
+                <span className="whitespace-nowrap text-sm font-medium">
                   {sortLabel}
                 </span>
-                <ChevronDownIcon className="h-4 w-4 text-gray-500" />
+                <ChevronDownIcon className="h-4 w-4" />
               </Row>
             }
             menuWidth={'w-36'}
@@ -808,11 +808,11 @@ function ContractFilters(props: {
           <DropdownMenu
             items={generateFilterDropdownItems(FILTERS, selectFilter)}
             icon={
-              <Row className=" items-center gap-0.5 ">
-                <span className="text-ink-500 whitespace-nowrap text-sm font-medium">
+              <Row className="text-ink-500 items-center gap-0.5">
+                <span className="whitespace-nowrap text-sm font-medium">
                   {filterLabel}
                 </span>
-                <ChevronDownIcon className="h-4 w-4 text-gray-500" />
+                <ChevronDownIcon className="h-4 w-4" />
               </Row>
             }
             menuItemsClass="left-0 right-auto"
@@ -827,11 +827,11 @@ function ContractFilters(props: {
             selectContractType
           )}
           icon={
-            <Row className=" items-center gap-0.5 ">
-              <span className="text-ink-500 whitespace-nowrap text-sm font-medium">
+            <Row className="text-ink-500 items-center gap-0.5">
+              <span className="whitespace-nowrap text-sm font-medium">
                 {contractTypeLabel}
               </span>
-              <ChevronDownIcon className="h-4 w-4 text-gray-500" />
+              <ChevronDownIcon className="h-4 w-4" />
             </Row>
           }
           menuWidth={'w-36'}
@@ -839,7 +839,7 @@ function ContractFilters(props: {
           selectedItemName={contractTypeLabel}
           closeOnClick={true}
         />
-        {topicSlug == topic?.slug && topic && (
+        {topicSlug == topic?.slug && topic && showTopicTag && (
           <TopicTag
             className={
               'text-primary-500 overflow-x-hidden text-ellipsis !py-0 lg:hidden'
@@ -848,18 +848,11 @@ function ContractFilters(props: {
             location={'questions page'}
           >
             <button onClick={() => setTopic('')}>
-              <XIcon className="hover:text-ink-700 text-ink-400 ml-1 hidden h-4 w-4 sm:block" />
+              <XIcon className="hover:text-ink-700 text-ink-400 ml-1  h-4 w-4" />
             </button>
-            <TopicOptionsButton
-              className={'sm:hidden'}
-              group={topic}
-              yourGroupIds={yourGroupIds}
-              user={user}
-              selected={true}
-            />
           </TopicTag>
         )}
-        {topicSlug === 'for-you' && (
+        {topicSlug === 'for-you' && showTopicTag && (
           <Row
             className={
               'text-primary-500 dark:text-ink-400 hover:text-ink-600 hover:bg-primary-400/10 group items-center justify-center whitespace-nowrap rounded px-1 text-right text-sm transition-colors lg:hidden'
@@ -870,16 +863,8 @@ function ContractFilters(props: {
             </span>
             ⭐️ For you
             <button onClick={() => setTopic('')}>
-              <XIcon className="hover:text-ink-700 text-ink-400 ml-1 hidden h-4 w-4 sm:block" />
+              <XIcon className="hover:text-ink-700 text-ink-400 ml-1 h-4 w-4" />
             </button>
-            {user && (
-              <ForYouDropdown
-                setCurrentCategory={setTopic}
-                user={user}
-                yourGroups={yourGroups}
-                className={'ml-1 sm:hidden'}
-              />
-            )}
           </Row>
         )}
       </Row>

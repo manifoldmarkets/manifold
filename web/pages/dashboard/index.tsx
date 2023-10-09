@@ -11,15 +11,13 @@ export default function DashboardPage() {
   const user = useUser()
 
   return (
-    <Page trackPageView={'dashboards page'}>
-      <Col className="items-center">
-        <Col className="w-full max-w-2xl px-4 sm:px-2">
-          <Row className="mt-1 mb-3 items-start justify-between">
-            <span className={'text-primary-600 text-2xl'}>Dashboards</span>
-            {user && <CreateDashboardButton />}
-          </Row>
-          <DashboardSearch />
-        </Col>
+    <Page trackPageView={'dashboards page'} className="items-center">
+      <Col className="w-full max-w-2xl">
+        <Row className="mb-3 mt-1 items-start justify-between">
+          <h1 className="text-primary-700 text-2xl">Dashboards</h1>
+          {user && <CreateDashboardButton />}
+        </Row>
+        <DashboardSearch />
       </Col>
     </Page>
   )

@@ -3,13 +3,12 @@ import clsx from 'clsx'
 
 const colorClasses = {
   'indigo-dark':
-    'text-ink-900 hover:bg-primary-50 aria-checked:bg-primary-500 aria-checked:text-white',
+    'text-ink-500 hover:bg-primary-100 hover:text-ink-700 aria-checked:bg-primary-500 aria-checked:text-white',
   indigo:
-    'text-ink-500 hover:bg-ink-100 aria-checked:bg-primary-100 aria-checked:text-primary-900',
+    'text-ink-500 hover:bg-ink-50 aria-checked:bg-primary-100 aria-checked:text-primary-900',
   green:
-    'text-ink-500 hover:bg-ink-100 aria-checked:bg-teal-500/30 aria-checked:text-teal-600',
-  blue: 'text-ink-500 hover:bg-ink-100 aria-checked:bg-blue-500/30 aria-checked:text-blue-600',
-  red: 'hover:bg-ink-100 aria-checked:bg-scarlet-100 aria-checked:text-scarlet-600',
+    'text-ink-500 hover:bg-teal-50 aria-checked:bg-teal-300/40 aria-checked:text-teal-800',
+  red: 'text-ink-500 hover:bg-scarlet-50 aria-checked:bg-scarlet-100 aria-checked:text-scarlet-800',
 }
 
 export type ColorType = keyof typeof colorClasses

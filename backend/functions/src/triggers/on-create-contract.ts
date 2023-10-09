@@ -15,6 +15,7 @@ import { isContractLikelyNonPredictive } from 'shared/supabase/contracts'
 import { addGroupToContract } from 'shared/update-group-contracts-internal'
 import { NON_PREDICTIVE_GROUP_ID } from 'common/supabase/groups'
 import { upsertGroupEmbedding } from 'shared/helpers/embeddings'
+import { HOUSE_LIQUIDITY_PROVIDER_ID } from 'common/antes'
 
 export const onCreateContract = functions
   .runWith({
@@ -74,7 +75,8 @@ export const onCreateContract = functions
             slug: 'nonpredictive',
             name: 'Non-Predictive',
           },
-          pg
+          pg,
+          { userId: HOUSE_LIQUIDITY_PROVIDER_ID }
         )
         log('Added contract to non-predictive group', added)
       }
@@ -90,7 +92,7 @@ export const onCreateContract = functions
       'new_contract',
       [contractCreator.id],
       {
-        idempotencyKey: eventId,
+        idempotencyKey: contract.id + '_new_contract',
       }
     )
     const groupIds = (contract.groupLinks ?? []).map((gl) => gl.groupId)

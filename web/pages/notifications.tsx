@@ -58,7 +58,7 @@ export default function NotificationsPage() {
 
   return (
     <Page trackPageView={'notifications page'}>
-      <Col className="mx-auto w-full p-2 pb-0">
+      <div className="w-full">
         <Title className="hidden lg:block">Notifications</Title>
         <SEO title="Notifications" description="Manifold user notifications" />
         {shouldShowBanner && <NotificationsAppBanner userId={privateUser.id} />}
@@ -68,7 +68,7 @@ export default function NotificationsPage() {
             section={navigateToSection}
           />
         ) : null}
-      </Col>
+      </div>
     </Page>
   )
 }
@@ -76,23 +76,20 @@ export default function NotificationsPage() {
 function NotificationsAppBanner(props: { userId: string }) {
   const { userId } = props
   return (
-    <Row className="bg-primary-50 relative mb-2 rounded-md py-2 px-4 text-sm">
-      <XIcon
+    <Row className="bg-primary-100 relative mb-2 justify-between rounded-md px-4 py-2 text-sm">
+      <Row className={'text-ink-600 items-center gap-3 text-sm sm:text-base'}>
+        Get the app for the best experience
+        <AppBadgesOrGetAppButton />
+      </Row>
+      <button
         onClick={() =>
           updatePrivateUser(userId, {
             hasSeenAppBannerInNotificationsOn: Date.now(),
           })
         }
-        className={
-          'bg-canvas-100 absolute -top-1 -right-1 h-4 w-4 cursor-pointer rounded-full sm:p-0.5'
-        }
-      />
-      <span className={'text-ink-600 text-sm sm:text-base'}>
-        <Row className={'items-center gap-2'}>
-          Get the app for the best experience
-          <AppBadgesOrGetAppButton />
-        </Row>
-      </span>
+      >
+        <XIcon className="text-ink-600 hover:text-ink-800 h-6 w-6" />
+      </button>
     </Row>
   )
 }
@@ -113,65 +110,63 @@ function NotificationsContent(props: {
   )
 
   return (
-    <div className="relative h-full w-full">
-      <div className="relative">
-        {privateUser && (
-          <QueryUncontrolledTabs
-            trackingName={'notification tabs'}
-            labelClassName={'relative pb-2 pt-1 '}
-            className={'mb-0 sm:mb-2'}
-            onClick={(title) =>
-              title === 'Following' ? setNewMarketNotifsAsSeen(0) : null
-            }
-            labelsParentClassName={'gap-3'}
-            tabs={[
-              {
-                title: 'General',
-                content: (
-                  <NotificationsList
-                    privateUser={privateUser}
-                    groupedNotifications={groupedNotifications}
-                    mostRecentNotification={mostRecentNotification}
-                  />
-                ),
-              },
-              {
-                title: 'Following',
-                inlineTabIcon:
-                  unseenNewMarketNotifs > 0 ? (
-                    <div
-                      className={
-                        'text-ink-0 bg-primary-500 absolute -left-4 min-w-[15px] rounded-full p-[2px] text-center text-[10px] leading-3'
-                      }
-                    >
-                      {unseenNewMarketNotifs}
-                    </div>
-                  ) : undefined,
-                content: (
-                  <NotificationsList
-                    groupedNotifications={groupedNewMarketNotifications}
-                    emptyTitle={
-                      'You don’t have any new question notifications from followed users, yet. Try following some users to see more.'
+    <div className="relative mt-2 h-full w-full">
+      {privateUser && (
+        <QueryUncontrolledTabs
+          trackingName={'notification tabs'}
+          labelClassName={'relative pb-2 pt-1 '}
+          className={'mb-0 sm:mb-2'}
+          onClick={(title) =>
+            title === 'Following' ? setNewMarketNotifsAsSeen(0) : null
+          }
+          labelsParentClassName={'gap-3'}
+          tabs={[
+            {
+              title: 'General',
+              content: (
+                <NotificationsList
+                  privateUser={privateUser}
+                  groupedNotifications={groupedNotifications}
+                  mostRecentNotification={mostRecentNotification}
+                />
+              ),
+            },
+            {
+              title: 'Following',
+              inlineTabIcon:
+                unseenNewMarketNotifs > 0 ? (
+                  <div
+                    className={
+                      'text-ink-0 bg-primary-500 absolute -left-4 min-w-[15px] rounded-full p-[2px] text-center text-[10px] leading-3'
                     }
-                  />
-                ),
-              },
-              {
-                title: 'Transactions',
-                content: (
-                  <NotificationsList
-                    groupedNotifications={groupedBalanceChangeNotifications}
-                  />
-                ),
-              },
-              {
-                title: 'Settings',
-                content: <NotificationSettings navigateToSection={section} />,
-              },
-            ]}
-          />
-        )}
-      </div>
+                  >
+                    {unseenNewMarketNotifs}
+                  </div>
+                ) : undefined,
+              content: (
+                <NotificationsList
+                  groupedNotifications={groupedNewMarketNotifications}
+                  emptyTitle={
+                    'You don’t have any new question notifications from followed users, yet. Try following some users to see more.'
+                  }
+                />
+              ),
+            },
+            {
+              title: 'Transactions',
+              content: (
+                <NotificationsList
+                  groupedNotifications={groupedBalanceChangeNotifications}
+                />
+              ),
+            },
+            {
+              title: 'Settings',
+              content: <NotificationSettings navigateToSection={section} />,
+            },
+          ]}
+        />
+      )}
     </div>
   )
 }
@@ -321,6 +316,13 @@ function NotificationGroupItem(props: {
 
     'createdTime'
   ).reverse()
+  const onboardingNotifs = notifications.some(
+    (n) => n.reason === 'onboarding_flow'
+  )
+  const questNotifs = notifications.some(
+    (n) =>
+      n.reason === 'quest_payout' || n.sourceType === 'betting_streak_bonus'
+  )
   const header = (
     <ParentNotificationHeader
       header={
@@ -330,6 +332,13 @@ function NotificationGroupItem(props: {
           <span>
             {notifications.length} new questions from{' '}
             {notifications[0].sourceUserName}
+          </span>
+        ) : onboardingNotifs ? (
+          <span>Welcome to Manifold</span>
+        ) : questNotifs ? (
+          <span>
+            {notifications.length} quest{notifications.length > 1 ? 's' : ''}{' '}
+            completed
           </span>
         ) : sourceTitle || sourceContractTitle ? (
           <>
@@ -353,6 +362,7 @@ function NotificationGroupItem(props: {
     <NotificationGroupItemComponent
       notifications={combinedNotifs}
       header={header}
+      lines={onboardingNotifs ? 5 : NUM_SUMMARY_LINES}
     />
   )
 }
@@ -361,11 +371,12 @@ export function NotificationGroupItemComponent(props: {
   notifications: Notification[]
   header: ReactNode
   className?: string
+  lines: number
 }) {
-  const { notifications, className, header } = props
+  const { notifications, lines, className, header } = props
   const numNotifications = notifications.length
 
-  const needsExpanding = numNotifications > NUM_SUMMARY_LINES
+  const needsExpanding = numNotifications > lines
   const [expanded, setExpanded] = useState(false)
   const onExpandHandler = (event: React.MouseEvent<HTMLDivElement>) => {
     if (event.ctrlKey || event.metaKey) return
@@ -374,7 +385,7 @@ export function NotificationGroupItemComponent(props: {
 
   const shownNotifications = expanded
     ? notifications
-    : notifications.slice(0, NUM_SUMMARY_LINES)
+    : notifications.slice(0, lines)
   return (
     <div className={clsx(PARENT_NOTIFICATION_STYLE, className)}>
       {header}
@@ -393,7 +404,7 @@ export function NotificationGroupItemComponent(props: {
             <ShowMoreLessButton
               onClick={onExpandHandler}
               isCollapsed={!expanded}
-              howManyMore={numNotifications - NUM_SUMMARY_LINES}
+              howManyMore={numNotifications - lines}
             />
           </Row>
         )}

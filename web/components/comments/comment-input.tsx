@@ -177,8 +177,8 @@ export function AnswerCommentInput(props: {
             trackingLocation={'contract page'}
           />
           <button onClick={onCancelAnswerResponse}>
-            <div className="bg-canvas-0 absolute -top-1 -right-2 h-4 w-4 rounded-full" />
-            <XCircleIcon className="text-ink-500 hover:text-ink-600 absolute -top-1 -right-2 h-5 w-5" />
+            <div className="bg-canvas-0 absolute -right-2 -top-1 h-4 w-4 rounded-full" />
+            <XCircleIcon className="text-ink-500 hover:text-ink-600 absolute -right-2 -top-1 h-5 w-5" />
           </button>
         </div>
       </Col>

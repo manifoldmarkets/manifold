@@ -1,8 +1,7 @@
 import { OgCardProps } from 'common/contract-seo'
 import clsx from 'clsx'
-import { Sparkline } from './graph'
+import { ProbGraph } from './graph'
 import { base64toPoints, Point } from 'common/edge/og'
-import { NUMERIC_GRAPH_COLOR } from 'common/numeric-constants'
 
 // See https://github.com/vercel/satori#documentation for styling restrictions
 export function OgMarket(props: OgCardProps) {
@@ -17,56 +16,65 @@ export function OgMarket(props: OgCardProps) {
     points,
     bountyLeft,
   } = props
-
+  const probabilityAsFloat = probability
+    ? parseFloat(probability.replace('%', ''))
+    : undefined
   const data = points ? (base64toPoints(points) as Point[]) : []
-  const volume = Number(props.volume ?? 0)
   const numTraders = Number(props.numTraders ?? 0)
 
   const showGraph = data && data.length > 5
 
   return (
-    <div className="flex h-full w-full flex-col items-stretch justify-between bg-white py-8">
+    <div className="relative flex h-full w-full flex-col items-stretch justify-between bg-white pt-8">
       <div
         className={clsx(
-          'flex overflow-hidden px-24 leading-tight text-indigo-700',
-          showGraph ? 'text-5xl' : 'max-h-[300px] text-6xl'
+          'flex overflow-hidden px-16 leading-tight text-indigo-700',
+          showGraph ? 'h-[190px]  text-5xl' : 'h-[300px]  text-6xl'
         )}
       >
         {question}
       </div>
       {topAnswer ? (
-        <div className="flex w-full flex-row items-center justify-between px-24">
+        <div className="flex w-full flex-row items-center justify-between px-16">
           <Answer {...props} />
         </div>
       ) : showGraph ? (
-        <div className="flex w-full pr-24">
-          <Sparkline
+        <div className=" flex w-full justify-center">
+          <ProbGraph
+            color={numericValue ? '#14bbFF' : undefined}
             data={data}
-            height={300}
-            aspectRatio={3.2}
-            min={0}
-            max={1}
-            className="mr-4"
-            color={numericValue ? NUMERIC_GRAPH_COLOR : '#14b8a6'}
+            height={250}
+            aspectRatio={5}
           />
-          {resolution ? (
-            <Resolution
-              resolution={resolution}
-              label={numericValue ?? probability}
-            />
-          ) : (
-            <TimeProb
-              date={data[data.length - 1].x}
-              prob={data[data.length - 1].y}
-              label={numericValue}
-            />
-          )}
         </div>
       ) : bountyLeft ? (
         <BountyLeft bountyLeft={bountyLeft} />
-      ) : (
-        <div className="flex w-full flex-row items-center justify-end px-24">
-          {resolution ? (
+      ) : null}
+      {!topAnswer && (probability || numericValue || resolution) && (
+        <div
+          className={
+            'absolute flex h-fit w-full justify-center ' +
+            (showGraph ? 'top-[22rem]' : 'top-[23rem]')
+          }
+        >
+          {probabilityAsFloat && !resolution ? (
+            <div className={'flex justify-center text-5xl text-white'}>
+              <div
+                className={
+                  'mr-6 flex h-24 w-2/5 items-center justify-center rounded-md bg-green-500 pt-2'
+                }
+              >
+                Yes {probabilityAsFloat.toFixed(0)}%
+              </div>
+              <div
+                className={
+                  'ml-6 flex h-24 w-2/5 items-center justify-center rounded-md bg-red-600 pt-2'
+                }
+              >
+                No {(100 - probabilityAsFloat).toFixed(0)}%
+              </div>
+            </div>
+          ) : resolution ? (
             <Resolution
               resolution={resolution}
               label={numericValue ?? probability}
@@ -80,9 +88,9 @@ export function OgMarket(props: OgCardProps) {
       )}
 
       {/* Bottom row */}
-      <div className="flex w-full flex-row items-center justify-between px-24 text-3xl text-gray-600">
+      <div className="flex w-full flex-row items-center justify-between px-8 text-3xl text-gray-600">
         {/* Details */}
-        <div className="flex items-center">
+        <div className="flex pt-4">
           <div className="mr-6 flex items-center">
             {/* Profile image */}
             {creatorAvatarUrl && (
@@ -94,27 +102,23 @@ export function OgMarket(props: OgCardProps) {
             <span>{creatorName}</span>
           </div>
 
-          {!!volume && (
-            <span className="mr-6">$M{volume.toLocaleString('en-US')} bet</span>
-          )}
-
           {!!numTraders && (
-            <span className="mr-6">
+            <div className={'flex items-center'}>
               {numTraders.toLocaleString('en-US')} traders
-            </span>
+            </div>
           )}
         </div>
 
         {/* Manifold logo */}
-        <div className="flex items-center">
+        <div className="flex items-center pb-2">
           <img
-            className="mr-3 h-12 w-12"
+            className="mr-3 h-28 w-28"
             src="https://manifold.markets/logo.svg"
-            width="40"
-            height="40"
+            width="60"
+            height="60"
           />
           <span
-            className="text-4xl lowercase"
+            className="text-6xl lowercase"
             style={{ fontFamily: 'Major Mono Display' }}
           >
             Manifold
@@ -152,54 +156,26 @@ function Resolution(props: { resolution: string; label?: string }) {
   const { resolution, label } = props
 
   const text = {
-    YES: 'YES',
-    NO: 'NO',
-    MKT: label ?? 'MANY',
-    CANCEL: 'N/A',
+    YES: 'Yes',
+    NO: 'No',
+    MKT: label ?? 'Many',
+    CANCEL: 'Canceled',
   }[resolution]
 
   const color = {
-    YES: 'text-teal-500',
-    NO: 'text-red-500',
-    MKT: 'text-blue-500',
-    CANCEL: 'text-yellow-500',
+    YES: 'bg-teal-600',
+    NO: 'bg-red-600',
+    MKT: 'bg-blue-500',
+    CANCEL: 'bg-amber-400',
   }[resolution]
 
   return (
-    <div className={`flex flex-col ${color} items-center justify-center`}>
-      <span className="text-4xl">resolved</span>
-      <span className="text-6xl">{text}</span>
+    <div
+      className={`flex min-w-[30rem] flex-col rounded-lg px-24 pb-2 pt-4 text-white ${color} items-center justify-center`}
+    >
+      <span className="text-7xl">{text}</span>
     </div>
   )
-}
-
-function TimeProb(props: { date: number; prob: number; label?: string }) {
-  const { date, prob, label } = props
-
-  return (
-    <div className="relative flex w-32">
-      <div
-        className="absolute right-0 flex flex-col items-center"
-        style={{ top: `${(1 - prob) * 100 - 20}%` }}
-      >
-        <span className="text-6xl">{label ?? formatPercent(prob)}</span>
-        <span className="text-2xl">{dateFormat(date)}</span>
-      </div>
-    </div>
-  )
-}
-
-const dateFormat = Intl.DateTimeFormat('en-US', {
-  month: 'short',
-  day: 'numeric',
-}).format
-
-// copied from format.ts
-function formatPercent(zeroToOne: number) {
-  // Show 1 decimal place if <2% or >98%, giving more resolution on the tails
-  const decimalPlaces = zeroToOne < 0.02 || zeroToOne > 0.98 ? 1 : 0
-  const percent = zeroToOne * 100
-  return percent.toFixed(decimalPlaces) + '%'
 }
 
 function BountyLeft(props: { bountyLeft: string }) {

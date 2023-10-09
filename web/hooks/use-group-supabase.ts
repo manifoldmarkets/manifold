@@ -273,6 +273,11 @@ export function useGroupFromId(groupId: string) {
   return useAsyncData(groupId, (id) => getGroup(id))
 }
 
+export function useGroupsFromIds(groupIds: string[]) {
+  const groups = useAsyncData(groupIds, (ids) => Promise.all(ids.map(getGroup)))
+  return groups ? groups.filter((g): g is Group => !!g) : groups
+}
+
 export function useListGroupsBySlug(groupSlugs: string[]) {
   return useAsyncData(groupSlugs, listGroupsBySlug)
 }

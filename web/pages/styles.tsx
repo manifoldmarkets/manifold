@@ -6,6 +6,7 @@ import {
 } from 'web/components/buttons/copy-link-button'
 import { Page } from 'web/components/layout/page'
 import { StarPicker } from 'web/components/reviews/stars'
+import { ColorSection } from 'web/components/styles/colors'
 import { AlertBox } from 'web/components/widgets/alert-box'
 import { AmountInput } from 'web/components/widgets/amount-input'
 import { ChoicesToggleGroup } from 'web/components/widgets/choices-toggle-group'
@@ -24,11 +25,13 @@ export default function StylePage() {
     <Page trackPageView={'styles page'} className="gap-2">
       <div>
         <Title>Design System</Title>
-        <div>
-          A reference for all the common widgets we use on our site. For
-          instance, the component above is <code>Title</code>.
-        </div>
+        <ol className="text-ink-900 list-inside list-decimal">
+          <li>keep line lengths between 45 and 75 ch</li>
+          <li>use classNames. say no to "just one more prop bro"</li>
+          <li>don't do anything that would make Inga scowl</li>
+        </ol>
       </div>
+      <ColorSection />
       <Subtitle>Buttons</Subtitle>
       <ButtonSection />
       <Subtitle>Toggles</Subtitle>

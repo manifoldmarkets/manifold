@@ -37,7 +37,7 @@ export default function FeedContractCardDescription(props: {
         <Content content={contract.description} />
       </div>
       {isOverflowing && (
-        <Col className="from-canvas-0 via-canvas-0 via-30% absolute bottom-0 right-0 left-0 h-12 justify-end bg-gradient-to-t to-transparent">
+        <Col className="from-canvas-0 via-canvas-0 absolute bottom-0 left-0 right-0 h-12 justify-end bg-gradient-to-t via-30% to-transparent">
           <Row className="w-full justify-end">
             <Link
               href={contractPath(contract)}

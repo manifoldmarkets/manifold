@@ -139,7 +139,7 @@ export const FeedTimelineItems = (props: {
                 {...news}
               />
               {item.contracts && item.contracts.length > 0 && (
-                <Col className="px-2 pt-2 pb-3">
+                <Col className="px-2 pb-3 pt-2">
                   <span className="text-ink-500 text-sm">
                     Related Questions
                   </span>

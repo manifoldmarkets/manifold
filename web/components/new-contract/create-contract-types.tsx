@@ -78,7 +78,7 @@ export const NON_PREDICTIVE_CONTRACT_TYPES = {
         <CgPoll className="h-12 w-12" />
       </Col>
     ),
-    className: 'hover:ring-fuchsia-500/50',
+    className: 'hover:!ring-fuchsia-500/50',
     backgroundColor: 'bg-fuchsia-500/5',
     selectClassName:
       'dark:from-fuchsia-500/20 from-fuchsia-500/30 ring-fuchsia-500 bg-gradient-to-br to-transparent ring-2',

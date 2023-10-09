@@ -223,7 +223,7 @@ function UserProfile(props: {
               />
               {isCurrentUser && (
                 <Link
-                  className=" bg-primary-600 shadow-primary-300 hover:bg-primary-700 text-ink-0 absolute right-0 bottom-0 h-6 w-6 rounded-full p-1.5 shadow-sm"
+                  className=" bg-primary-600 shadow-primary-300 hover:bg-primary-700 text-ink-0 absolute bottom-0 right-0 h-6 w-6 rounded-full p-1.5 shadow-sm"
                   href="/profile"
                   onClick={(e) => e.stopPropagation()}
                 >
@@ -430,7 +430,7 @@ function ProfilePublicStats(props: {
             user.id
           )}
         >
-          <TrophyIcon className="mr-1 mb-1 inline h-4 w-4" />
+          <TrophyIcon className="mb-1 mr-1 inline h-4 w-4" />
           <span className={clsx('font-semibold')}>
             {DIVISION_NAMES[leagueInfo.division ?? '']}
           </span>{' '}
@@ -454,7 +454,7 @@ function ProfilePublicStats(props: {
         href={'/' + user.username + '/calibration'}
         className={clsx(linkClass, 'text-sm')}
       >
-        <ChartBarIcon className="mr-1 mb-1 inline h-4 w-4" />
+        <ChartBarIcon className="mb-1 mr-1 inline h-4 w-4" />
         Calibration
       </Link>
       <ShareButton user={user} currentUser={currentUser} />

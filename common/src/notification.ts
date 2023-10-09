@@ -66,6 +66,8 @@ export type notification_source_types =
   | 'league_change'
   | 'bounty_added'
   | 'mana_payment'
+  | 'referral_program'
+  | 'follow_suggestion'
 
 export type notification_source_update_types =
   | 'created'

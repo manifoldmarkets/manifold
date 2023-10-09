@@ -31,7 +31,7 @@ export const completeCalculatedQuest = async (
   questType: 'SHARES'
 ) => {
   const db = createSupabaseClient()
-  const count = await getCurrentCountForQuest(user, questType, db)
+  const count = await getCurrentCountForQuest(user.id, questType, db)
   const oldEntry = await getQuestScore(user.id, questType, db)
   return await completeQuestInternal(user, questType, oldEntry.score, count)
 }
@@ -69,12 +69,12 @@ export const completeCalculatedQuestFromTrigger = async (
   )
 }
 
-export const completeReferralsQuest = async (user: User) => {
+export const completeReferralsQuest = async (userId: string) => {
   // Bc we don't issue a payout here, (onCreateBet does that) we don't need an idempotency key
   const db = createSupabaseClient()
   const questDetails = QUEST_DETAILS['REFERRALS']
-  const count = await getCurrentCountForQuest(user, 'REFERRALS', db)
-  await setQuestScoreValue(user.id, questDetails.scoreId, count, db)
+  const count = await getCurrentCountForQuest(userId, 'REFERRALS', db)
+  await setQuestScoreValue(userId, questDetails.scoreId, count, db)
 }
 
 const completeQuestInternal = async (
@@ -111,19 +111,19 @@ const completeQuestInternal = async (
 }
 
 const getCurrentCountForQuest = async (
-  user: User,
+  userId: string,
   questType: 'SHARES' | 'REFERRALS',
   db: SupabaseClient
 ): Promise<number> => {
   if (questType === 'SHARES') {
     return await getUniqueUserShareEventsCount(
-      user.id,
+      userId,
       START_OF_DAY,
       Date.now(),
       db
     )
   } else if (questType === 'REFERRALS') {
-    return await getReferralCount(user.id, START_OF_WEEK, db)
+    return await getReferralCount(userId, START_OF_WEEK, db)
   } else return 0
 }
 

@@ -4,6 +4,7 @@ import { groupPath } from 'common/group'
 import { track } from 'web/lib/service/analytics'
 import { LockClosedIcon } from '@heroicons/react/solid'
 import { Row } from 'web/components/layout/row'
+import { removeEmojis } from 'common/topics'
 
 export function TopicTag(props: {
   topic: { slug: string; name: string }
@@ -19,11 +20,13 @@ export function TopicTag(props: {
 }) {
   const { topic, isPrivate, className, children } = props
 
+  const noEmojis = removeEmojis(topic.name)
+
   return (
     <Row
       className={clsx(
-        'text-ink-500 dark:text-ink-400 hover:text-ink-600 hover:bg-primary-400/10 group items-center gap-1' +
-          'whitespace-nowrap rounded px-1 py-0.5 text-right text-sm transition-colors',
+        'text-ink-500 hover:text-ink-700 hover:bg-primary-100 group items-center gap-1' +
+          'whitespace-nowrap rounded px-1 py-0.5 text-sm transition-colors',
         className
       )}
     >
@@ -36,16 +39,16 @@ export function TopicTag(props: {
             categoryName: topic.name,
           })
         }}
-        className={' max-w-[200px] truncate sm:max-w-[250px]'}
+        className={'max-w-[200px] truncate sm:max-w-[250px]'}
       >
         {isPrivate ? (
           <LockClosedIcon className="my-auto mr-0.5 h-3 w-3" />
         ) : (
-          <span className="mr-px opacity-50 transition-colors group-hover:text-inherit">
+          <span className="mr-px opacity-50 transition-opacity group-hover:opacity-100">
             #
           </span>
         )}
-        {topic.name}
+        {noEmojis || topic.name}
       </Link>
       {children}
     </Row>

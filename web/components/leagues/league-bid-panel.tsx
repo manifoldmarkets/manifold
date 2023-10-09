@@ -62,7 +62,7 @@ export const LeagueBidPanel = (props: {
             onChangeAmount={setAmount}
             error={!!error}
           />
-          <div className="text-sm text-red-500">{error}</div>
+          <div className="text-error text-sm">{error}</div>
         </Col>
 
         <Button

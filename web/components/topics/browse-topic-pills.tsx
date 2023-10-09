@@ -2,7 +2,7 @@ import { Group } from 'common/group'
 import { PillButton } from 'web/components/buttons/pill-button'
 import { useIsAuthorized } from 'web/hooks/use-user'
 import { Row } from 'web/components/layout/row'
-import { ChevronRightIcon, ChevronDownIcon } from '@heroicons/react/solid'
+import { ChevronRightIcon } from '@heroicons/react/solid'
 import { useState } from 'react'
 import clsx from 'clsx'
 import { Col } from 'web/components/layout/col'
@@ -13,15 +13,16 @@ export const BrowseTopicPills = (props: {
   topics: Group[]
   setTopicSlug: (slug: string) => void
   currentTopicSlug: string | undefined
+  className?: string
 }) => {
-  const { topics, setTopicSlug, currentTopicSlug } = props
+  const { topics, className, setTopicSlug, currentTopicSlug } = props
   const isAuth = useIsAuthorized()
   const [showMore, setShowMore] = useState<boolean>(false)
   const router = useRouter()
   const sort = router.query[SORT_KEY] as string
 
   return (
-    <Col className={'bg-canvas-0 relative w-full pl-1 pb-1 sm:hidden'}>
+    <Col className={className}>
       <Row
         className={clsx(
           'scrollbar-hide gap-0.5 overflow-auto',
@@ -48,19 +49,19 @@ export const BrowseTopicPills = (props: {
           </PillButton>
         ))}
       </Row>
-      <div className="absolute right-0 top-0 z-10 flex w-10 cursor-pointer select-none items-center justify-center overflow-x-hidden">
-        {showMore ? (
-          <ChevronDownIcon
-            onClick={() => setShowMore(false)}
-            className="bg-primary-50 text-primary-700 h-7 w-7 rounded-full"
-          />
-        ) : (
-          <ChevronRightIcon
-            onClick={() => setShowMore(true)}
-            className="bg-primary-50 text-primary-700 h-7 w-7 rounded-full"
-          />
-        )}
-      </div>
+      <button
+        className="bg-primary-50 hover:bg-primary-200 absolute right-0 top-0 z-10 mr-1.5 cursor-pointer select-none overflow-hidden rounded-full transition-colors"
+        onClick={() => setShowMore((showMore) => !showMore)}
+      >
+        <ChevronRightIcon
+          className={clsx(
+            'text-primary-800 h-7 w-7 transition-transform duration-75',
+            showMore && 'rotate-90'
+          )}
+          aria-hidden
+        />
+        <div className="sr-only">{showMore ? 'Contract' : 'Expand'}</div>
+      </button>
     </Col>
   )
 }

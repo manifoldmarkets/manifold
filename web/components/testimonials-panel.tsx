@@ -41,9 +41,9 @@ export function TestimonialsPanel() {
             'relative z-30 h-[5%] w-full rounded-t-xl bg-indigo-200 sm:h-full sm:w-2/5 sm:rounded-l-xl sm:rounded-r-none'
           )}
         >
-          <div className="group absolute top-8 left-8 z-30 sm:top-32">
+          <div className="group absolute left-8 top-8 z-30 sm:top-32">
             <Button
-              className="absolute bottom-1.5 -left-1.5 z-10 transition-all ease-in-out focus:bottom-0.5 focus:-left-0.5 group-hover:bottom-2 group-hover:-left-2 focus:group-hover:bottom-0.5 focus:group-hover:-left-0.5"
+              className="absolute -left-1.5 bottom-1.5 z-10 transition-all ease-in-out focus:-left-0.5 focus:bottom-0.5 group-hover:-left-2 group-hover:bottom-2 focus:group-hover:-left-0.5 focus:group-hover:bottom-0.5"
               onClick={withTracking(firebaseLogin, 'landing page button click')}
               color="gradient-pink"
               size={isMobile ? 'xl' : '2xl'}
@@ -61,7 +61,7 @@ export function TestimonialsPanel() {
               Sign up now!
             </div>
           </div>
-          <div className="absolute top-6 left-8 sm:top-48 md:left-8">
+          <div className="absolute left-8 top-6 sm:top-48 md:left-8">
             <div className="hidden text-right text-sm text-black sm:inline">
               And get{'   '}
               <span className="relative z-10 font-semibold">
@@ -73,7 +73,7 @@ export function TestimonialsPanel() {
             </div>
           </div>
         </div>
-        <div className="relative h-[95%] w-full rounded-b-xl bg-indigo-700 sm:h-full sm:w-3/5 sm:rounded-r-xl sm:rounded-l-none">
+        <div className="relative h-[95%] w-full rounded-b-xl bg-indigo-700 sm:h-full sm:w-3/5 sm:rounded-l-none sm:rounded-r-xl">
           {hasTestimonials && (
             <Testimonial
               key={testimonialList[pageNumber].testimonial}
@@ -86,7 +86,7 @@ export function TestimonialsPanel() {
             </div>
           )}
           {isMobile && (
-            <div className="absolute right-0 -top-0.5 z-10 w-full items-center">
+            <div className="absolute -top-0.5 right-0 z-10 w-full items-center">
               <SquiggleHorizontal className={clsx('text-indigo-200')} />
             </div>
           )}
@@ -99,7 +99,7 @@ export function TestimonialsPanel() {
             <div
               className={clsx(
                 'z-50 ',
-                isMobile ? 'mt-32 ml-1 flex flex-col' : 'ml-40 flex flex-row'
+                isMobile ? 'ml-1 mt-32 flex flex-col' : 'ml-40 flex flex-row'
               )}
             >
               {testimonialList.map((testimonial, index) => (
@@ -129,7 +129,7 @@ function Testimonial(props: {
 }) {
   const { testimonial, name, credit, icon, src } = props
   return (
-    <div className="animate-slide-up-1 sm:animate-slide-in-1 absolute top-[20%] left-8 z-20 w-4/5 select-none text-white sm:top-2 sm:z-0">
+    <div className="animate-slide-up-1 sm:animate-slide-in-1 absolute left-8 top-[20%] z-20 w-4/5 select-none text-white sm:top-2 sm:z-0">
       <QuoteIcon className="h-10 w-10 text-teal-200" />
       <div className="ml-8">{testimonial}</div>
       <Row className="justify-end">

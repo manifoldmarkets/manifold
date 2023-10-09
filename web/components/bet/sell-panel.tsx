@@ -243,7 +243,7 @@ export function SellPanel(props: {
           </button>
         }
       />
-      <div className="text-error mt-1 mb-2 h-1 text-xs">{error}</div>
+      <div className="text-error mb-2 mt-1 h-1 text-xs">{error}</div>
 
       <Col className="mt-3 w-full gap-3 text-sm">
         {!isStonk && (

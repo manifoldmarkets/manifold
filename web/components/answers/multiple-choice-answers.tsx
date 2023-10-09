@@ -90,7 +90,6 @@ export function MultipleChoiceAnswers(props: {
           </div>
         </Row>
       )}
-
       {numAnswers < MAX_ANSWERS && (
         <Row className="justify-end">
           <button

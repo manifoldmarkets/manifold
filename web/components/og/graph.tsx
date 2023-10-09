@@ -115,3 +115,63 @@ export function Sparkline(props: {
     </svg>
   )
 }
+
+export function ProbGraph(props: {
+  data: Point[]
+  height: number
+  /** scaled width / height */
+  aspectRatio?: number
+  color?: string
+}) {
+  const { data, height, color, aspectRatio = 1 } = props
+  const w = height * aspectRatio
+  const h = height
+  const visibleRange = [data[0].x, data[data.length - 1].x]
+  const minY = Math.min(...data.map((p) => p.y))
+  const maxY = Math.max(...data.map((p) => p.y))
+  const curve = curveLinear
+  const fillStretchFactor = 4
+  const xScale = scaleTime(visibleRange, [0, w])
+  const yScale = scaleLinear([minY, maxY], [h / 3, 0])
+  const px = (p: Point) => xScale(p.x)
+  const adjustedPy0 = yScale(minY) * fillStretchFactor
+  const py1 = (p: Point) => yScale(p.y)
+  // const clipId = ':rnm:'
+  const gradientId = ':rnc:'
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  const da = area(px, adjustedPy0, py1).curve(curve)(data)!
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  const dl = line(px, py1).curve(curve)(data)!
+
+  return (
+    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`}>
+      <defs>
+        <linearGradient
+          gradientUnits="userSpaceOnUse"
+          id={gradientId}
+          x1="0%"
+          y1="0%"
+          x2="0%"
+          y2="100%"
+        >
+          <stop offset="0%" stopColor={color ?? '#14b866'} stopOpacity="1" />
+          <stop
+            offset="100%"
+            stopColor={color ?? '#14b866'}
+            stopOpacity="0.25"
+          />
+        </linearGradient>
+      </defs>
+
+      <g>
+        <path d={da} fill={`url(#${gradientId})`} opacity={0.1} />
+        <path
+          d={dl}
+          stroke={`url(#${gradientId})`}
+          strokeWidth={4}
+          fill="none"
+        />
+      </g>
+    </svg>
+  )
+}

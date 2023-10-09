@@ -19,7 +19,7 @@ export function CharityCard(props: { charity: Charity }) {
   return (
     <Link href={`/charity/${slug}`} className="flex-1">
       <Card className="!rounded-2xl">
-        <Row className="mt-6 mb-2">{tags?.includes('New') && <NewBadge />}</Row>
+        <Row className="mb-2 mt-6">{tags?.includes('New') && <NewBadge />}</Row>
         <div className="px-8">
           <figure className="relative h-32 rounded bg-white">
             {photo ? (

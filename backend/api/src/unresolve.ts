@@ -1,4 +1,3 @@
-import { isAdminId } from 'common/envs/constants'
 import * as admin from 'firebase-admin'
 import {
   ContractResolutionPayoutTxn,
@@ -8,28 +7,71 @@ import { removeUndefinedProps } from 'common/util/object'
 import { FieldValue } from 'firebase-admin/firestore'
 import { chunk, max } from 'lodash'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { getUser } from 'shared/utils'
-import { APIError } from 'common/api'
 import { z } from 'zod'
-import { validate, authEndpoint } from 'api/helpers'
+import { validate, authEndpoint, APIError } from 'api/helpers'
+import { trackPublicEvent } from 'shared/analytics'
+import { getContractSupabase, getUserSupabase, log } from 'shared/utils'
+import { MINUTE_MS } from 'common/util/time'
+import { MINUTES_ALLOWED_TO_UNRESOLVE } from 'common/contract'
+import { recordContractEdit } from 'shared/record-contract-edit'
+import { isAdminId, isTrustworthy } from 'common/envs/constants'
 
+const firestore = admin.firestore()
 const bodySchema = z.object({
   contractId: z.string(),
 })
+const TXNS_PR_MERGED_ON = 1675693800000 // #PR 1476
 
 export const unresolve = authEndpoint(async (req, auth) => {
   const { contractId } = validate(bodySchema, req.body)
 
-  const user = await getUser(auth.uid)
-  if (!isAdminId(user?.id ?? '_')) {
-    throw new APIError(403, `User ${user?.id} must be an admin to unresolve.`)
+  const contract = await getContractSupabase(contractId)
+
+  if (!contract) throw new APIError(404, `Contract ${contractId} not found`)
+
+  const resolutionTime = contract.resolutionTime
+  if (!contract.isResolved || !resolutionTime)
+    throw new APIError(400, `Contract ${contractId} is not resolved`)
+
+  if (resolutionTime < TXNS_PR_MERGED_ON)
+    throw new APIError(
+      400,
+      `Contract ${contractId} was resolved before payouts were unresolvable transactions.`
+    )
+  const pg = createSupabaseDirectClient()
+  const user = await getUserSupabase(auth.uid)
+  if (!user) throw new APIError(400, `User ${auth.uid} not found.`)
+  const isMod = isTrustworthy(user.username) || isAdminId(auth.uid)
+  if (contract.creatorId !== auth.uid && !isMod)
+    throw new APIError(403, `User ${auth.uid} must be a mod to unresolve.`)
+  else if (
+    contract.creatorId === auth.uid &&
+    resolutionTime < Date.now() - MINUTES_ALLOWED_TO_UNRESOLVE * MINUTE_MS &&
+    !isMod
+  ) {
+    throw new APIError(400, `Contract was resolved more than 10 minutes ago.`)
+  } else if (contract.creatorId === auth.uid && !isMod) {
+    // check if last resolution was by admin or mod, and if so, don't allow unresolution
+    const lastResolution = await pg.oneOrNone(
+      `select * from audit_events where contract_id = $1
+                             and name = 'resolve market'
+                           order by created_time desc limit 1`,
+      [contractId]
+    )
+    if (lastResolution && lastResolution.user_id !== auth.uid) {
+      throw new APIError(400, `Contract most recently resolved by a mod.`)
+    }
   }
-  await undoResolution(contractId)
+
+  await trackPublicEvent(auth.uid, 'unresolve market', {
+    contractId,
+  })
+  const updatedAttrs = await undoResolution(contractId)
+  await recordContractEdit(contract, auth.uid, Object.keys(updatedAttrs))
+
   return { success: true }
 })
-const firestore = admin.firestore()
 
-// Copied from /backend/scripts/undo-resolution.ts
 const undoResolution = async (contractId: string) => {
   const pg = createSupabaseDirectClient()
   const uniqueStartTimes = await pg.map(
@@ -60,8 +102,8 @@ const undoResolution = async (contractId: string) => {
       (r) => r.data as ContractResolutionPayoutTxn
     )
   }
-  console.log('Reverting txns', txns.length)
-  console.log('With max payout start time', maxPayoutStartTime)
+  log('Reverting txns', txns.length)
+  log('With max payout start time', maxPayoutStartTime)
   const chunkedTxns = chunk(txns, 250)
   for (const chunk of chunkedTxns) {
     await firestore.runTransaction(async (transaction) => {
@@ -70,17 +112,19 @@ const undoResolution = async (contractId: string) => {
       }
     })
   }
-  console.log('reverted txns')
-
-  await firestore.doc(`contracts/${contractId}`).update({
+  log('reverted txns')
+  const updatedAttrs = {
     isResolved: false,
     resolutionTime: admin.firestore.FieldValue.delete(),
     resolution: admin.firestore.FieldValue.delete(),
     resolutions: admin.firestore.FieldValue.delete(),
     resolutionProbability: admin.firestore.FieldValue.delete(),
     closeTime: Date.now(),
-  })
-  console.log('updated contract')
+  }
+  await firestore.doc(`contracts/${contractId}`).update(updatedAttrs)
+
+  log('updated contract')
+  return updatedAttrs
 }
 
 export function undoContractPayoutTxn(

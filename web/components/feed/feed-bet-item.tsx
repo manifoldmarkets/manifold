@@ -36,41 +36,40 @@ export const FeedBetsItem = (props: {
       : 0
 
   return (
-    <div className={'text-ink-800 flex items-center gap-1 py-3'}>
-      <Avatar size={'xs'} avatarUrl={avatarUrl} username={username} />
-      <UserLink
-        name={name}
-        username={username}
-        className={clsx('max-w-[10rem] text-ellipsis sm:max-w-[12rem]')}
-      />
-      <span>
-        {previous?.outcome && saleAmount > 0 && (
-          <span>
-            {`sold their ${formatMoney(saleAmount)} on `}
-            <OutcomeLabel
-              contract={contract}
-              outcome={previous.outcome}
-              truncate={'short'}
-            />
-          </span>
-        )}
-        {saleAmount > 0 && purchaseAmount > 0 && <span>{' and '}</span>}
-        {current?.outcome && purchaseAmount > 0 && (
-          <span>
-            {`bought ${formatMoney(purchaseAmount)} `}
-            <span className="font-semibold">
-              <OutcomeLabel
-                contract={contract}
-                outcome={current.outcome}
-                truncate={'short'}
-              />
-            </span>
-          </span>
-        )}
-        {/*from {formatPercent(beforeProb)} to {formatPercent(afterProb)}*/}
-        {answers && answers.length > 0 && <span> of {answers[0].text}</span>}
-        <RelativeTimestamp time={betData.endTime} />
+    <div className={'text-ink-800 flex flex-wrap gap-1 py-3'}>
+      <span className={'inline-flex w-fit flex-row'}>
+        <Avatar size={'xs'} avatarUrl={avatarUrl} username={username} />
+        <UserLink
+          name={name}
+          username={username}
+          className={clsx('ml-1 max-w-[10rem] text-ellipsis sm:max-w-[12rem]')}
+        />
       </span>
+      {previous?.outcome && saleAmount > 0 && (
+        <>
+          {`sold their ${formatMoney(saleAmount)} on `}
+          <OutcomeLabel
+            contract={contract}
+            outcome={previous.outcome}
+            truncate={'short'}
+          />
+        </>
+      )}
+      {saleAmount > 0 && purchaseAmount > 0 && <span>{' and '}</span>}
+      {current?.outcome && purchaseAmount > 0 && (
+        <>
+          {`bought ${formatMoney(purchaseAmount)} `}
+          <OutcomeLabel
+            contract={contract}
+            outcome={current.outcome}
+            truncate={'short'}
+          />
+        </>
+      )}
+
+      {/*from {formatPercent(beforeProb)} to {formatPercent(afterProb)}*/}
+      {answers && answers.length > 0 && <> of {answers[0].text}</>}
+      <RelativeTimestamp time={betData.endTime} />
     </div>
   )
 }

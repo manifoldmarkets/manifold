@@ -240,7 +240,7 @@ export function FeedContractCard(props: {
 
 // ensures that the correct spacing is between buttons
 const BottomRowButtonWrapper = (props: { children: React.ReactNode }) => {
-  return <Row className="w-14 justify-start">{props.children}</Row>
+  return <Row className="min-w-14 justify-start">{props.children}</Row>
 }
 
 const BottomActionRow = (props: {

@@ -9,6 +9,7 @@ import { sendWelcomeEmail } from 'shared/emails'
 import { secrets } from 'common/secrets'
 import { addNewUserToLeague } from 'shared/generate-leagues'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { createReferralsProgramNotification } from 'shared/create-notification'
 
 export const onCreateUser = functions
   .runWith({ secrets })
@@ -20,6 +21,7 @@ export const onCreateUser = functions
 
     const pg = createSupabaseDirectClient()
     await addNewUserToLeague(pg, user.id)
+    await createReferralsProgramNotification(user.id, pg)
 
     await sendWelcomeEmail(user, privateUser)
   })

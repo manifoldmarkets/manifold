@@ -7,6 +7,8 @@ import { Row } from 'web/components/layout/row'
 import { UserLink } from 'web/components/widgets/user-link'
 import { Input } from './widgets/input'
 import { searchUsers, UserSearchResult } from 'web/lib/supabase/users'
+import { Col } from 'web/components/layout/col'
+import { Button } from 'web/components/buttons/button'
 
 export function FilterSelectUsers(props: {
   setSelectedUsers: (users: UserSearchResult[]) => void
@@ -14,6 +16,7 @@ export function FilterSelectUsers(props: {
   ignoreUserIds: string[]
   showSelectedUsersTitle?: boolean
   selectedUsersClassName?: string
+  showUserUsername?: boolean
   maxUsers?: number
 }) {
   const {
@@ -22,6 +25,7 @@ export function FilterSelectUsers(props: {
     setSelectedUsers,
     showSelectedUsersTitle,
     selectedUsersClassName,
+    showUserUsername,
     maxUsers,
   } = props
   const [query, setQuery] = useState('')
@@ -56,23 +60,23 @@ export function FilterSelectUsers(props: {
     <div>
       {shouldShow && (
         <>
-          <div className="relative mt-1 rounded-md">
+          <Col className="relative mt-1 rounded-md">
             <Input
               type="text"
               name="user name"
               id="user name"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              className=" max-w-xs pl-3"
+              className=" max-w-xs"
               placeholder="e.g. Ian Philips"
             />
-          </div>
+          </Col>
           {queryReady && (
             <Menu
               as="div"
               className={clsx(
-                'relative inline-block w-52 max-w-xs overflow-y-scroll text-right',
-                queryReady && 'h-36'
+                'relative inline-block w-full max-w-xs overflow-y-scroll text-right',
+                queryReady && 'h-56'
               )}
             >
               {({}) => (
@@ -99,7 +103,7 @@ export function FilterSelectUsers(props: {
                                 active
                                   ? 'bg-ink-100 text-ink-900'
                                   : 'text-ink-700',
-                                'group flex items-center px-4 py-2 text-sm'
+                                'group flex w-full items-center px-4 py-2 text-sm'
                               )}
                               onClick={() => {
                                 setQuery('')
@@ -113,6 +117,11 @@ export function FilterSelectUsers(props: {
                                 className={'mr-2'}
                               />
                               {user.name}
+                              {showUserUsername && (
+                                <span className={'text-ink-500 ml-1'}>
+                                  @{user.username}
+                                </span>
+                              )}
                             </button>
                           )}
                         </Menu.Item>
@@ -132,7 +141,7 @@ export function FilterSelectUsers(props: {
           )}
           <Row className={clsx('mt-2 flex-wrap gap-2', selectedUsersClassName)}>
             {selectedUsers.map((user) => (
-              <Row key={user.id} className={'items-center'}>
+              <Row key={user.id} className={'items-center gap-1'}>
                 <Avatar
                   username={user.username}
                   avatarUrl={user.avatarUrl}
@@ -140,18 +149,20 @@ export function FilterSelectUsers(props: {
                 />
                 <UserLink
                   username={user.username}
-                  className="ml-2"
+                  className="ml-1"
                   name={user.name}
                 />
-                <XIcon
+                <Button
                   onClick={() =>
                     setSelectedUsers([
                       ...selectedUsers.filter(({ id }) => id != user.id),
                     ])
                   }
-                  className=" text-ink-400 hover:text-ink-700 h-5 w-5 cursor-pointer rounded-full"
-                  aria-hidden="true"
-                />
+                  color={'gray-white'}
+                  size={'xs'}
+                >
+                  <XIcon className="h-5 w-5" aria-hidden="true" />
+                </Button>
               </Row>
             ))}
           </Row>

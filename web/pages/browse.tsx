@@ -9,7 +9,6 @@ import {
   useShouldBlockDestiny,
   useUser,
 } from 'web/hooks/use-user'
-import { Row } from 'web/components/layout/row'
 import { buildArray } from 'common/util/array'
 import {
   BLOCKED_BY_DEFAULT_GROUP_SLUGS,
@@ -33,8 +32,7 @@ import clsx from 'clsx'
 import { usePersistentQueryState } from 'web/hooks/use-persistent-query-state'
 import { QuestionsTopicTitle } from 'web/components/topics/questions-topic-title'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
-
-export const SHOW_TOPICS_TERM = 'show-topics'
+import { useHeaderIsStuck } from 'web/hooks/use-header-is-stuck'
 
 // TODO: use static props for non for-you topic slugs
 export default function BrowsePage() {
@@ -78,46 +76,14 @@ export default function BrowsePage() {
 
   const topics = buildArray(topicsFromRouter, topicsByImportance)
   const currentTopic = topics.find((t) => t.slug === topicSlug)
-
-  const menuButton = showTopicsSidebar ? null : (
-    <Button
-      color={'gray-outline'}
-      size={'md'}
-      className={
-        'ml-1 hidden w-[8rem] sm:ml-2 sm:flex md:w-[10.5rem] xl:hidden'
-      }
-      onClick={() => setShowTopicsSidebar(!showTopicsSidebar)}
-    >
-      <FilterIcon className="mr-2 h-5 w-5" />
-      Topics
-    </Button>
-  )
+  const { ref, headerStuck } = useHeaderIsStuck()
 
   return (
     <>
       {user && <Welcome />}
       <Page
         trackPageView={'questions page'}
-        rightSidebar={
-          !isMobile && (
-            <Col>
-              <span className={'text-primary-700 mb-2 ml-2 text-lg'}>
-                Topics
-              </span>
-              <TopicsList
-                key={'groups' + topics.length}
-                topics={topics}
-                currentTopicSlug={topicSlug}
-                setCurrentTopicSlug={setTopicSlug}
-                privateUser={privateUser}
-                user={user}
-                show={true}
-                setShow={() => {}}
-                className={'hidden xl:flex'}
-              />
-            </Col>
-          )
-        }
+        className="bg-canvas-0 md:bg-canvas-50 lg:col-span-10"
       >
         <SEO
           title={`${currentTopic?.name ?? 'Browse'}`}
@@ -126,17 +92,19 @@ export default function BrowsePage() {
             currentTopic ? `?${TOPIC_KEY}=${currentTopic.slug}` : ''
           }`}
         />
-        <QuestionsTopicTitle
-          currentTopic={currentTopic}
-          topicSlug={topicSlug}
-          user={user}
-        />
-        <Col>
-          <Row className={'w-full'}>
+
+        <div className={'md:grid md:grid-cols-10'}>
+          <QuestionsTopicTitle
+            currentTopic={currentTopic}
+            topicSlug={topicSlug}
+            user={user}
+            setTopicSlug={setTopicSlug}
+            ref={ref}
+          />
+          <div className="flex md:contents">
             <Col
               className={clsx(
-                'relative w-full',
-                showTopicsSidebar ? 'sm:mr-10 lg:mr-0' : ''
+                'relative col-span-8 mx-auto w-full xl:col-span-7'
               )}
             >
               <SupabaseSearch
@@ -155,11 +123,27 @@ export default function BrowsePage() {
                 }}
                 useUrlParams
                 isWholePage
-                headerClassName={'bg-canvas-0 lg:bg-canvas-50 pt-0 px-2'}
-                menuButton={menuButton}
+                showTopicTag={headerStuck}
+                headerClassName={'pt-0 px-2 bg-canvas-0 md:bg-canvas-50'}
+                menuButton={
+                  showTopicsSidebar ? null : (
+                    <Button
+                      color={'gray-outline'}
+                      size={'md'}
+                      className={
+                        'ml-1 hidden sm:ml-2 sm:flex sm:w-[12rem] md:hidden'
+                      }
+                      onClick={() => setShowTopicsSidebar(!showTopicsSidebar)}
+                    >
+                      <FilterIcon className="mr-2 h-5 w-5" />
+                      Topics
+                    </Button>
+                  )
+                }
                 rowBelowFilters={
                   isMobile && (
                     <BrowseTopicPills
+                      className={'relative w-full pb-1 sm:hidden'}
                       topics={topics}
                       currentTopicSlug={topicSlug}
                       setTopicSlug={(slug) =>
@@ -172,7 +156,6 @@ export default function BrowsePage() {
             </Col>
             {!isMobile && (
               <TopicsList
-                className={'xl:hidden'}
                 key={'groups' + topics.length}
                 topics={topics}
                 currentTopicSlug={topicSlug}
@@ -181,10 +164,11 @@ export default function BrowsePage() {
                 user={user}
                 show={showTopicsSidebar}
                 setShow={setShowTopicsSidebar}
+                className={clsx('col-span-2 w-[12rem] md:w-full xl:col-span-3')}
               />
             )}
-          </Row>
-        </Col>
+          </div>
+        </div>
       </Page>
     </>
   )

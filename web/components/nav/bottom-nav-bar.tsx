@@ -83,7 +83,7 @@ export function BottomNavBar() {
   const navigationOptions = user ? getNavigation(user) : signedOutNavigation()
 
   return (
-    <nav className="border-ink-200 text-ink-700 bg-canvas-0 fixed inset-x-0 bottom-0 z-50 flex select-none items-center justify-between border-t-2 text-xs lg:hidden">
+    <nav className="border-ink-200 dark:border-ink-300 text-ink-700 bg-canvas-0 fixed inset-x-0 bottom-0 z-50 flex select-none items-center justify-between border-t-2 text-xs lg:hidden">
       {navigationOptions.map((item) => (
         <NavBarItem
           key={item.name}
@@ -98,7 +98,7 @@ export function BottomNavBar() {
             className={clsx(itemClass, sidebarOpen ? selectedItemClass : '')}
             onClick={() => setSidebarOpen(true)}
           >
-            <MenuAlt3Icon className="my-1 mx-auto h-6 w-6" aria-hidden="true" />
+            <MenuAlt3Icon className="mx-auto my-1 h-6 w-6" aria-hidden="true" />
             More
           </div>
           <MobileSidebar
@@ -161,7 +161,7 @@ function NavBarItem(props: {
         onTouchStart={() => setTouched(true)}
         onTouchEnd={() => setTouched(false)}
       >
-        {item.icon && <item.icon className="my-1 mx-auto h-6 w-6" />}
+        {item.icon && <item.icon className="mx-auto my-1 h-6 w-6" />}
         {children}
         {item.name}
       </button>
@@ -184,7 +184,7 @@ function NavBarItem(props: {
       onTouchStart={() => setTouched(true)}
       onTouchEnd={() => setTouched(false)}
     >
-      {item.icon && <item.icon className="my-1 mx-auto h-6 w-6" />}
+      {item.icon && <item.icon className="mx-auto my-1 h-6 w-6" />}
       {children}
       {item.name}
     </Link>
@@ -214,7 +214,8 @@ export function MobileSidebar(props: {
             leaveFrom="opacity-100"
             leaveTo="opacity-0"
           >
-            <Dialog.Overlay className="bg-canvas-100 fixed inset-0 bg-opacity-75" />
+            {/* background cover */}
+            <Dialog.Overlay className="bg-canvas-100/75 fixed inset-0" />
           </Transition.Child>
           <Transition.Child
             as={Fragment}

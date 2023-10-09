@@ -200,8 +200,8 @@ export default function Leagues(props: { rows: league_user_info[] }) {
         url="/leagues"
       />
 
-      <Col className="mx-auto w-full max-w-lg gap-2 pt-2 sm:pt-0">
-        <Col className="px-2 sm:mt-2 sm:px-0">
+      <Col className="mx-auto w-full max-w-xl gap-2 pt-2 sm:pt-0">
+        <Col className="sm:mt-2 lg:mt-0">
           <Row className="mb-2 items-center gap-4">
             <Title className="!mb-0 hidden sm:block">Leagues</Title>
             <Col className="items-center gap-1">
@@ -252,9 +252,9 @@ export default function Leagues(props: { rows: league_user_info[] }) {
 
           <Row className="mb-2 mt-2 items-center gap-3">
             <text className="">
-              Compete against similar users for{' '}
+              Compete for{' '}
               <span
-                className="cursor-pointer border-b border-dotted border-blue-600 text-blue-600 hover:text-blue-800"
+                className="border-primary-600 text-primary-600 hover:text-primary-800 cursor-help border-b border-dotted"
                 onClick={togglePrizesModal}
               >
                 prizes
@@ -345,10 +345,8 @@ function LeaguesInnerPage(props: {
 
   const leagueChannelId = getLeagueChatChannelId(season, division, cohort)
 
-  const [containerRef, setContainerRef] = useState<HTMLDivElement | null>(null)
   return (
     <>
-      <div className={'h-0'} ref={setContainerRef} />
       <QueryUncontrolledTabs
         trackingName="league tabs"
         labelClassName={'!pb-3 !pt-0'}
@@ -377,7 +375,6 @@ function LeaguesInnerPage(props: {
               />
             ),
           },
-
           {
             title: 'Activity',
             content: <LeagueFeed season={season} cohort={cohort} />,
@@ -387,13 +384,7 @@ function LeaguesInnerPage(props: {
             inlineTabIcon: showNotif && (
               <ChatIcon className="h-5 w-5 text-blue-600" />
             ),
-            content: (
-              <LeagueChat
-                user={user}
-                channelId={leagueChannelId}
-                offsetTop={(containerRef?.offsetTop ?? 0) + 47}
-              />
-            ),
+            content: <LeagueChat user={user} channelId={leagueChannelId} />,
           },
         ]}
       />

@@ -30,6 +30,8 @@ import { getLoanPayouts, getPayouts, groupPayoutsByUser } from 'common/payouts'
 import { APIError } from 'common/api'
 import { CORE_USERNAMES } from 'common/envs/constants'
 import { Query } from 'firebase-admin/firestore'
+import { trackPublicEvent } from 'shared/analytics'
+import { recordContractEdit } from 'shared/record-contract-edit'
 
 export type ResolutionParams = {
   outcome: string
@@ -67,7 +69,7 @@ export const resolveMarketHelper = async (
     answerId
   )
 
-  let resolveProps = {
+  let updatedAttrs = removeUndefinedProps({
     isResolved: true,
     resolution: outcome,
     resolutionValue: value,
@@ -76,7 +78,7 @@ export const resolveMarketHelper = async (
     resolutionProbability,
     resolutions,
     collectedFees,
-  }
+  })
 
   if (unresolvedContract.mechanism === 'cpmm-multi-1' && answerId) {
     // Only resolve the contract if all other answers are resolved.
@@ -85,16 +87,16 @@ export const resolveMarketHelper = async (
         .filter((a) => a.id !== answerId)
         .every((a) => a.resolution)
     )
-      resolveProps = {
-        ...resolveProps,
+      updatedAttrs = {
+        ...updatedAttrs,
         resolution: 'MKT',
       }
-    else resolveProps = {} as any
+    else updatedAttrs = {} as any
   }
 
   const contract = {
     ...unresolvedContract,
-    ...removeUndefinedProps(resolveProps),
+    ...updatedAttrs,
     subsidyPool: 0,
   } as Contract
 
@@ -120,10 +122,6 @@ export const resolveMarketHelper = async (
       'Negative payouts too large for resolution. Contact admin.'
     )
   }
-
-  // mqp: it would be nice to do this but would require some refactoring
-  // const updates = await computeContractMetricUpdates(contract, Date.now())
-  // contract = { ...contract, ...(updates as any) }
 
   // Should we combine all the payouts into one txn?
   const contractDoc = firestore.doc(`contracts/${contractId}`)
@@ -156,6 +154,16 @@ export const resolveMarketHelper = async (
   const userIdToContractMetrics = mapValues(
     groupBy(bets, (bet) => bet.userId),
     (bets) => getContractBetMetrics(contract, bets)
+  )
+  await trackPublicEvent(resolver.id, 'resolve market', {
+    resolution: outcome,
+    contractId,
+  })
+
+  await recordContractEdit(
+    unresolvedContract,
+    resolver.id,
+    Object.keys(updatedAttrs)
   )
 
   await createContractResolvedNotifications(

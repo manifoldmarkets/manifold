@@ -37,7 +37,7 @@ export const Review = (props: {
             className="text-ink-500"
           />
         </div>
-        <div className="-ml-0.5 -mb-1 space-x-2">
+        <div className="-mb-1 -ml-0.5 space-x-2">
           <StarDisplay rating={rating} />
           <ContractMention contract={contract} />
         </div>

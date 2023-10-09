@@ -69,7 +69,9 @@ export const addcontracttogroup = authEndpoint(async (req, auth) => {
     )
   }
   const pg = createSupabaseDirectClient()
-  const isNew = await addGroupToContract(contract, group, pg)
+  const isNew = await addGroupToContract(contract, group, pg, {
+    userId: auth.uid,
+  })
 
   return { status: 'success', existed: !isNew }
 })

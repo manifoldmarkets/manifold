@@ -1,11 +1,7 @@
-import {
-  Dashboard,
-  DashboardItem,
-  convertDashboardSqltoTS,
-} from 'common/dashboard'
+import { Dashboard, DashboardItem } from 'common/dashboard'
 import { useEffect, useState } from 'react'
 import { Button } from 'web/components/buttons/button'
-import { AddDashboardItemWidget } from 'web/components/dashboard/add-dashboard-item'
+import { AddItemCard } from 'web/components/dashboard/add-dashboard-item'
 import { DashboardContent } from 'web/components/dashboard/dashboard-content'
 import { DashboardDescription } from 'web/components/dashboard/dashboard-description'
 import { FollowDashboardButton } from 'web/components/dashboard/follow-dashboard-button'
@@ -16,8 +12,7 @@ import { Avatar } from 'web/components/widgets/avatar'
 import { Title } from 'web/components/widgets/title'
 import { UserLink } from 'web/components/widgets/user-link'
 import { useUser } from 'web/hooks/use-user'
-import { updateDashboard } from 'web/lib/firebase/api'
-import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
+import { getDashboardFromSlug, updateDashboard } from 'web/lib/firebase/api'
 import Custom404 from '../404'
 import { useDashboardFromSlug } from 'web/hooks/use-dashboard'
 import { TextEditor, useTextEditor } from 'web/components/widgets/editor'
@@ -33,19 +28,14 @@ import { ExpandingInput } from 'web/components/widgets/expanding-input'
 import { SEO } from 'web/components/SEO'
 import { richTextToString } from 'common/util/parse'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
-import { run } from 'common/supabase/utils'
 
 export async function getStaticProps(ctx: {
   params: { dashboardSlug: string }
 }) {
   const { dashboardSlug } = ctx.params
-  const db = await initSupabaseAdmin()
 
   try {
-    const { data } = await run(
-      db.from('dashboards').select('*').eq('slug', dashboardSlug).single()
-    )
-    const dashboard = convertDashboardSqltoTS(data)
+    const dashboard = await getDashboardFromSlug({ dashboardSlug })
 
     return { props: { initialDashboard: dashboard, slug: dashboardSlug } }
   } catch (e) {
@@ -69,9 +59,7 @@ export default function DashboardPage(props: {
 }) {
   const { initialDashboard, slug } = props
   const fetchedDashboard = useDashboardFromSlug(slug)
-  const [dashboard, setDashboard] = useState<Dashboard>(
-    fetchedDashboard ?? initialDashboard
-  )
+  const [dashboard, setDashboard] = useState<Dashboard>(initialDashboard)
 
   // Update the dashboard state if a new fetchedDashboard becomes available
   useEffect(() => {
@@ -90,6 +78,13 @@ export default function DashboardPage(props: {
   const updateTitle = (newTitle: string) => {
     if (dashboard) {
       const updatedDashboard = { ...dashboard, title: newTitle }
+      setDashboard(updatedDashboard)
+    }
+  }
+
+  const updateTopics = (newTopics: string[]) => {
+    if (dashboard) {
+      const updatedDashboard = { ...dashboard, topics: newTopics }
       setDashboard(updatedDashboard)
     }
   }
@@ -115,7 +110,7 @@ export default function DashboardPage(props: {
     <Page
       trackPageView={'dashboard slug page'}
       trackPageProps={{ slug: dashboard.slug, title: dashboard.title }}
-      mainClassName="items-center"
+      className="items-center"
     >
       <SEO
         title={dashboard.title}
@@ -126,7 +121,7 @@ export default function DashboardPage(props: {
         }
       />
       <Col className="w-full max-w-2xl px-1 sm:px-2">
-        <Row className="mb-2 mt-2 items-center justify-between first-letter:w-full sm:mt-4 lg:mt-0">
+        <Row className="my-2 items-center justify-between sm:mt-4 lg:mt-0">
           {editMode ? (
             <ExpandingInput
               placeholder={'Dashboard Title'}
@@ -137,49 +132,96 @@ export default function DashboardPage(props: {
               onChange={(e) => updateTitle(e.target.value)}
             />
           ) : (
-            <Title className="!mb-0 ">{dashboard.title}</Title>
-          )}
-          <div className="flex items-center">
-            <CopyLinkOrShareButton
-              url={`https://${ENV_CONFIG.domain}/dashboard/${dashboard.slug}`}
-              eventTrackingName="copy dashboard link"
-              tooltip="Share"
-            />
+            <>
+              <Title className="!mb-0 ">{dashboard.title}</Title>
 
-            <FollowDashboardButton
-              dashboardId={dashboard.id}
-              dashboardCreatorId={dashboard.creatorId}
-              ttPlacement="bottom"
+              <div className="flex items-center">
+                <CopyLinkOrShareButton
+                  url={`https://${ENV_CONFIG.domain}/dashboard/${dashboard.slug}`}
+                  eventTrackingName="copy dashboard link"
+                  tooltip="Share"
+                />
+
+                <FollowDashboardButton
+                  dashboardId={dashboard.id}
+                  dashboardCreatorId={dashboard.creatorId}
+                  ttPlacement="bottom"
+                />
+                {isCreator && (
+                  <Button onClick={() => setEditMode(true)}>Edit</Button>
+                )}
+                {isOnlyAdmin && (
+                  <Button
+                    color="red"
+                    className="ml-6"
+                    onClick={() => setEditMode(true)}
+                  >
+                    Edit as Admin
+                  </Button>
+                )}
+              </div>
+            </>
+          )}
+        </Row>
+        {editMode ? (
+          <Row className="bg-canvas-50 sticky top-0 z-20 mb-2 w-full items-center justify-end gap-2 self-start py-1">
+            <Button
+              color="gray"
+              onClick={() => {
+                // reset items to original state
+                updateItems(
+                  fetchedDashboard
+                    ? fetchedDashboard.items
+                    : initialDashboard.items
+                )
+                setEditMode(false)
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              disabled={dashboard.items.length < 2}
+              onClick={() => {
+                updateDashboard({
+                  dashboardId: dashboard.id,
+                  title: dashboard.title,
+                  items: dashboard.items,
+                  description: editor?.getJSON(),
+                  topics: dashboard.topics,
+                }).then((resultingDashboard) => {
+                  if (
+                    resultingDashboard &&
+                    resultingDashboard.updateDashboard
+                  ) {
+                    setDashboard(
+                      resultingDashboard.updateDashboard as Dashboard
+                    )
+                  }
+                })
+                setEditMode(false)
+              }}
+            >
+              Save
+            </Button>
+          </Row>
+        ) : (
+          <Row className="mb-8 items-center gap-2">
+            <Avatar
+              username={dashboard.creatorUsername}
+              avatarUrl={dashboard.creatorAvatarUrl}
+              size="xs"
             />
-            {isCreator && !editMode && (
-              <Button onClick={() => setEditMode(true)}>Edit</Button>
-            )}
-            {isOnlyAdmin && !editMode && (
-              <Button
-                color="red"
-                className="ml-6"
-                onClick={() => setEditMode(true)}
-              >
-                Edit as Admin
-              </Button>
-            )}
-          </div>
-        </Row>
-        <Row className="mb-8 items-center gap-2">
-          <Avatar
-            username={dashboard.creatorUsername}
-            avatarUrl={dashboard.creatorAvatarUrl}
-            size="xs"
-          />
-          <UserLink
-            username={dashboard.creatorUsername}
-            name={dashboard.creatorName}
-          />
-          <span className="text-ink-400 ml-4 text-sm">
-            Updated
-            <RelativeTimestamp time={dashboard.createdTime} />
-          </span>
-        </Row>
+            <UserLink
+              username={dashboard.creatorUsername}
+              name={dashboard.creatorName}
+              className="text-ink-700"
+            />
+            <span className="text-ink-400 ml-4 text-sm">
+              Edited
+              <RelativeTimestamp time={dashboard.createdTime} />
+            </span>
+          </Row>
+        )}
         {editMode ? (
           <DescriptionEditor
             editor={editor}
@@ -189,58 +231,23 @@ export default function DashboardPage(props: {
         ) : (
           <DashboardDescription description={dashboard.description} />
         )}
+        {editMode && (
+          <div className="mb-4">
+            <AddItemCard
+              items={dashboard.items}
+              setItems={updateItems}
+              topics={dashboard.topics}
+              setTopics={updateTopics}
+            />
+          </div>
+        )}
         <DashboardContent
           items={dashboard.items}
           setItems={updateItems}
+          topics={dashboard.topics}
+          setTopics={updateTopics}
           isEditing={editMode}
         />
-        {editMode && (
-          <Col className="gap-4">
-            <AddDashboardItemWidget
-              items={dashboard.items}
-              setItems={updateItems}
-            />
-            <Row className="w-full justify-end gap-2">
-              <Button
-                color="gray"
-                onClick={() => {
-                  // reset items to original state
-                  updateItems(
-                    fetchedDashboard
-                      ? fetchedDashboard.items
-                      : initialDashboard.items
-                  )
-                  setEditMode(false)
-                }}
-              >
-                Cancel
-              </Button>
-              <Button
-                disabled={dashboard.items.length < 2}
-                onClick={() => {
-                  updateDashboard({
-                    dashboardId: dashboard.id,
-                    title: dashboard.title,
-                    items: dashboard.items,
-                    description: editor?.getJSON(),
-                  }).then((resultingDashboard) => {
-                    if (
-                      resultingDashboard &&
-                      resultingDashboard.updateDashboard
-                    ) {
-                      setDashboard(
-                        resultingDashboard.updateDashboard as Dashboard
-                      )
-                    }
-                  })
-                  setEditMode(false)
-                }}
-              >
-                Save
-              </Button>
-            </Row>
-          </Col>
-        )}
       </Col>
     </Page>
   )
@@ -261,7 +268,7 @@ function DescriptionEditor(props: {
         color="gray-outline"
         onClick={() => setEditDescription(true)}
       >
-        <PlusIcon className="mr-2 h-5 w-5" />
+        <PlusIcon className="mr-2 h-6 w-6" />
         Add description
       </Button>
     )

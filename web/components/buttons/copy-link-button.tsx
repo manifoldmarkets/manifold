@@ -78,7 +78,7 @@ export function CopyLinkOrShareButton(props: {
         ) : (
           <LinkIcon
             strokeWidth={'2.5'}
-            className={clsx(iconClassName ?? 'h-[1.2rem]')}
+            className={clsx(iconClassName ?? 'h-[1.1rem]')}
             aria-hidden="true"
           />
         )}
@@ -136,7 +136,7 @@ export const CopyLinkRow = (props: {
   return (
     <button
       className={clsx(
-        'flex select-none items-center justify-between rounded border px-4 py-2 text-sm transition-colors duration-700',
+        'border-ink-300 flex select-none items-center justify-between rounded border px-4 py-2 text-sm transition-colors duration-700',
         bgPressed
           ? 'bg-primary-50 text-primary-500 transition-none'
           : 'bg-canvas-50 text-ink-500',

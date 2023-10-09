@@ -1,7 +1,11 @@
 import { CheckIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { ELASTICITY_BET_AMOUNT } from 'common/calculate-metrics'
-import { Contract, contractPool } from 'common/contract'
+import {
+  Contract,
+  contractPool,
+  MINUTES_ALLOWED_TO_UNRESOLVE,
+} from 'common/contract'
 import { REFERRAL_AMOUNT } from 'common/economy'
 import { ENV_CONFIG, firestoreConsolePath } from 'common/envs/constants'
 import { BETTORS, User } from 'common/user'
@@ -13,12 +17,12 @@ import { toast } from 'react-hot-toast'
 import { TiVolumeMute } from 'react-icons/ti'
 import { BlockMarketButton } from 'web/components/buttons/block-market-button'
 import { FollowMarketButton } from 'web/components/buttons/follow-market-button'
-import { useAdmin, useDev } from 'web/hooks/use-admin'
+import { useAdminOrTrusted, useDev } from 'web/hooks/use-admin'
 import {
   unresolveMarket,
+  updateMarket,
   updateUserDisinterestEmbedding,
 } from 'web/lib/firebase/api'
-import { updateContract } from 'web/lib/firebase/contracts'
 import { formatTime } from 'web/lib/util/time'
 import { Button } from '../buttons/button'
 import { CopyLinkOrShareButton, CopyLinkRow } from '../buttons/copy-link-button'
@@ -38,25 +42,32 @@ import { Table } from '../widgets/table'
 import { AddLiquidityButton } from './add-liquidity-button'
 import { BoostButton } from './boost-button'
 import { AddBountyButton } from './bountied-question'
+import dayjs from 'dayjs'
 
 export const Stats = (props: {
   contract: Contract
   user?: User | null | undefined
   hideAdvanced?: boolean
+  setOpen: (open: boolean) => void
 }) => {
-  const { contract, user, hideAdvanced } = props
+  const { contract, setOpen, user, hideAdvanced } = props
 
   const isDev = useDev()
-  const isAdmin = useAdmin()
+  const isMod = useAdminOrTrusted()
   const isCreator = user?.id === contract.creatorId
   const isPublic = contract.visibility === 'public'
   const wasUnlistedByCreator = contract.unlistedById
     ? contract.unlistedById === contract.creatorId
     : false
-
+  const now = dayjs().utc()
+  const creatorCanUnresolve =
+    contract.resolutionTime &&
+    isCreator &&
+    now.diff(dayjs(contract.resolutionTime), 'minute') <
+      MINUTES_ALLOWED_TO_UNRESOLVE
   const [unresolveText, setUnresolveText] = useState('')
   const [unresolving, setUnresolving] = useState(false)
-
+  const [error, setError] = useState('')
   const {
     createdTime,
     closeTime,
@@ -240,7 +251,7 @@ export const Stats = (props: {
         )}
 
         {/* Show a path to Firebase if user is an admin, or we're on localhost */}
-        {!hideAdvanced && (isAdmin || isDev) && (
+        {!hideAdvanced && (isMod || isDev) && (
           <>
             <tr className="bg-scarlet-500/20">
               <td>Firestore link</td>
@@ -271,43 +282,50 @@ export const Stats = (props: {
                 />
               </td>
             </tr>
-            {contract.isResolved && (
-              <tr className="bg-scarlet-500/20">
-                <td>Unresolve</td>
-                <td>
-                  <Row className={'gap-2'}>
-                    {/* To prevent accidental unresolve, users must type in 'UNRESOLVE' first */}
-                    <Input
-                      className="w-40 text-xs"
-                      type="text"
-                      placeholder="UNRESOLVE"
-                      value={unresolveText}
-                      onChange={(e) => setUnresolveText(e.target.value)}
-                    />
-                    <Button
-                      onClick={() => {
-                        if (unresolving) return
-                        setUnresolving(true)
-                        unresolveMarket({ contractId: id }).then(() => {
-                          setUnresolving(false)
-                          setUnresolveText('')
-                        })
-                      }}
-                      disabled={unresolveText !== 'UNRESOLVE' || unresolving}
-                      size="2xs"
-                      color="red"
-                    >
-                      <CheckIcon className=" text-ink-100 h-4 w-4" />
-                    </Button>
-                  </Row>
-                </td>
-              </tr>
-            )}
           </>
+        )}
+        {contract.isResolved && (isMod || creatorCanUnresolve) && (
+          <tr className="bg-scarlet-500/20">
+            <td>Unresolve</td>
+            <td>
+              <Row className={'gap-2'}>
+                {/* To prevent accidental unresolve, users must type in 'UNRESOLVE' first */}
+                <Input
+                  className="w-40 text-xs"
+                  type="text"
+                  placeholder="UNRESOLVE"
+                  value={unresolveText}
+                  onChange={(e) => setUnresolveText(e.target.value)}
+                />
+                <Button
+                  onClick={() => {
+                    if (unresolving) return
+                    setUnresolving(true)
+                    unresolveMarket({ contractId: id })
+                      .then(() => {
+                        setUnresolving(false)
+                        setUnresolveText('')
+                        setOpen(false)
+                      })
+                      .catch((e) => {
+                        setUnresolving(false)
+                        setError(e.message)
+                      })
+                  }}
+                  disabled={unresolveText !== 'UNRESOLVE' || unresolving}
+                  size="2xs"
+                  color="red"
+                >
+                  <CheckIcon className=" text-ink-100 h-4 w-4" />
+                </Button>
+              </Row>
+              <span className={'text-warning'}>{error}</span>
+            </td>
+          </tr>
         )}
 
         {!hideAdvanced && contract.visibility != 'private' && (
-          <tr className={clsx(isAdmin && 'bg-scarlet-500/20')}>
+          <tr className={clsx(isMod && 'bg-scarlet-500/20')}>
             <td>
               Publicly listed{' '}
               <InfoTooltip
@@ -322,14 +340,14 @@ export const Stats = (props: {
               <ShortToggle
                 disabled={
                   isPublic
-                    ? !(isCreator || isAdmin)
-                    : !(isAdmin || (isCreator && wasUnlistedByCreator))
+                    ? !(isCreator || isMod)
+                    : !(isMod || (isCreator && wasUnlistedByCreator))
                 }
                 on={isPublic}
                 setOn={(pub) =>
-                  updateContract(id, {
+                  updateMarket({
+                    contractId: contract.id,
                     visibility: pub ? 'public' : 'unlisted',
-                    unlistedById: pub ? '' : user?.id,
                   })
                 }
               />
@@ -337,7 +355,7 @@ export const Stats = (props: {
           </tr>
         )}
         {!hideAdvanced && isBettingContract && (
-          <tr className={clsx(isAdmin && 'bg-scarlet-500/20')}>
+          <tr className={clsx(isMod && 'bg-scarlet-500/20')}>
             <td>
               Non predictive
               <InfoTooltip
@@ -388,7 +406,12 @@ export function ContractInfoDialog(props: {
               title: 'Stats',
               content: (
                 <Col>
-                  <Stats contract={contract} user={user} hideAdvanced={!user} />
+                  <Stats
+                    setOpen={setOpen}
+                    contract={contract}
+                    user={user}
+                    hideAdvanced={!user}
+                  />
 
                   {!!user && (
                     <>
@@ -442,7 +465,7 @@ export function ContractInfoDialog(props: {
                       person that signs up.
                     </>
                   ) : (
-                    <div className="text-ink-500 mt-4 mb-2 text-base">
+                    <div className="text-ink-500 mb-2 mt-4 text-base">
                       Invite traders to participate in this question and earn a{' '}
                       {formatMoney(REFERRAL_AMOUNT)} referral bonus for each new
                       trader that signs up.

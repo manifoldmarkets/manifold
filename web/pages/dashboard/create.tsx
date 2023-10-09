@@ -7,7 +7,7 @@ import router from 'next/router'
 import { useEffect, useState } from 'react'
 import { SEO } from 'web/components/SEO'
 import { Button } from 'web/components/buttons/button'
-import { AddDashboardItemWidget } from 'web/components/dashboard/add-dashboard-item'
+import { AddItemCard } from 'web/components/dashboard/add-dashboard-item'
 import { DashboardContent } from 'web/components/dashboard/dashboard-content'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
@@ -41,10 +41,17 @@ export default function CreateDashboard() {
     'create dashboard items'
   )
 
+  const [topics, setTopics] = usePersistentLocalState<string[]>(
+    [],
+    'create dashboard topics'
+  )
+
   const isValid = title.length > 0 && items.length > 1
 
   useEffect(() => {
-    setErrorText('')
+    if (isValid) {
+      setErrorText('')
+    }
   }, [isValid])
 
   const resetProperties = () => {
@@ -61,6 +68,7 @@ export default function CreateDashboard() {
         title,
         description: editor?.getJSON(),
         items,
+        topics,
       })
       const newDashboard = await createDashboard(createProps)
 
@@ -93,12 +101,12 @@ export default function CreateDashboard() {
       />
       <Col
         className={clsx(
-          ' text-ink-1000 mx-auto w-full max-w-2xl py-2 px-4 transition-colors sm:px-6'
+          ' text-ink-1000 mx-auto w-full max-w-2xl px-4 py-2 transition-colors sm:px-6'
         )}
       >
         <Title>Create a Dashboard</Title>
         <Col>
-          <label className="px-1 pt-2 pb-3">
+          <label className="pb-2">
             Title<span className={'text-scarlet-500'}>*</span>
           </label>
 
@@ -111,22 +119,32 @@ export default function CreateDashboard() {
           />
         </Col>
         <Spacer h={6} />
-        <Col>
-          <label className="gap-2 px-1 py-2">
-            <span className="mb-1">Description</span>
-          </label>
-          <TextEditor editor={editor} />
-        </Col>
-        <Spacer h={6} />
+
         <div className="mb-2">Content</div>
+
+        <TextEditor editor={editor} className="mb-4" />
+
+        <AddItemCard
+          items={items}
+          setItems={setItems}
+          topics={topics}
+          setTopics={setTopics}
+        />
+
         {items.length > 0 && (
-          <DashboardContent items={items} setItems={setItems} isEditing />
+          <DashboardContent
+            items={items}
+            setItems={setItems}
+            topics={topics}
+            setTopics={setTopics}
+            isEditing
+          />
         )}
-        <AddDashboardItemWidget items={items} setItems={setItems} />
         <Spacer h={6} />
-        <span className={'text-error'}>{errorText}</span>
+        <span className="text-error">{errorText}</span>
+
         <Button
-          className="w-full"
+          className="mb-4 mt-2 w-full"
           type="submit"
           color={submitState === 'DONE' ? 'green' : 'indigo'}
           size="xl"
@@ -138,7 +156,7 @@ export default function CreateDashboard() {
           }}
         >
           {submitState === 'EDITING'
-            ? 'Create Dashboard'
+            ? 'Create dashboard'
             : submitState === 'LOADING'
             ? 'Creating...'
             : 'Created!'}

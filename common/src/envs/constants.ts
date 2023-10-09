@@ -99,6 +99,8 @@ export const BOT_USERNAMES = [
   'ArkPoint',
   'EliBot',
   'manifestussy',
+  'mirrorbot',
+  'JakeBot',
 ]
 
 export const CORE_USERNAMES = [
@@ -108,7 +110,7 @@ export const CORE_USERNAMES = [
   'ian',
   'Sinclair',
   'Alice',
-  'DavidChee',
+  'SirSalty',
   'mqp',
   'IngaWei',
   'rachel',
@@ -151,6 +153,15 @@ export const MOD_USERNAMES = [
   'Mira',
   'evergreenemily',
   'SneakySly',
+  'Eliza',
+  'SirCryptomind',
+  'Joshua',
+  'jskf',
+  'JosephNoonan',
+  'CodeandSolder',
+  'Stralor',
+  'WieDan',
+  'StrayClimb',
 ]
 
 export const VERIFIED_USERNAMES = [
@@ -311,7 +322,9 @@ export const GROUP_SLUGS_TO_HIDE_FROM_WELCOME_FLOW = [
   '2024-us-presidential-election', // same
   'elon-musk', // listed as Elon Musk
   'elon-musk-14d9d9498c7e',
-  'crypto-prices', // same as crypto
+  'crypto-prices', // same as crypto,
+  'technical-ai-timelines', // same as ai
+  'presidential-politics', // same as politics
 ]
 
 export const EXTERNAL_REDIRECTS = ['/umami']

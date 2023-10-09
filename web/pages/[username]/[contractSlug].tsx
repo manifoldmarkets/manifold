@@ -92,6 +92,7 @@ import { pointsToBase64 } from 'common/util/og'
 import { removeUndefinedProps } from 'common/util/object'
 import { getUser } from 'web/lib/supabase/user'
 import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
+import { useHeaderIsStuck } from 'web/hooks/use-header-is-stuck'
 
 export async function getStaticProps(ctx: {
   params: { username: string; contractSlug: string }
@@ -209,11 +210,7 @@ export default function ContractPage(props: MaybeAuthedContractParams) {
   }
 
   return (
-    <Page
-      trackPageView={false}
-      className="!max-w-[1400px]"
-      mainClassName="!col-span-10"
-    >
+    <Page trackPageView={false} className="xl:col-span-10">
       {props.state === 'not authed' ? (
         <PrivateContractPage contractSlug={props.slug} />
       ) : (
@@ -403,18 +400,7 @@ export function ContractPageContent(props: {
   )
 
   // detect whether header is stuck by observing if title is visible
-  const titleRef = useRef<any>(null)
-  const [headerStuck, setStuck] = useState(false)
-  useEffect(() => {
-    const element = titleRef.current
-    if (!element) return
-    const observer = new IntersectionObserver(
-      ([e]) => setStuck(e.intersectionRatio < 1),
-      { threshold: 1 }
-    )
-    observer.observe(element)
-    return () => observer.unobserve(element)
-  }, [titleRef])
+  const { ref: titleRef, headerStuck } = useHeaderIsStuck()
 
   const showExplainerPanel =
     user === null ||
@@ -439,7 +425,7 @@ export function ContractPageContent(props: {
       <Row className="w-full items-start justify-center gap-8">
         <Col
           className={clsx(
-            'bg-canvas-0 w-full max-w-3xl rounded-b  xl:w-[70%]',
+            'bg-canvas-0 w-full max-w-3xl rounded-b xl:w-[70%]',
             // Keep content in view when scrolling related questions on desktop.
             'sticky bottom-0 min-h-screen self-end'
           )}
@@ -453,7 +439,7 @@ export function ContractPageContent(props: {
             )}
           >
             {coverImageUrl && (
-              <div className="absolute bottom-0 left-0 right-0 -top-10 -z-10">
+              <div className="absolute -top-10 bottom-0 left-0 right-0 -z-10">
                 <Image
                   fill
                   alt=""
@@ -464,13 +450,13 @@ export function ContractPageContent(props: {
                 />
                 <ChangeBannerButton
                   contract={contract}
-                  className="absolute top-12 right-4"
+                  className="absolute right-4 top-12"
                 />
               </div>
             )}
             <Row
               className={clsx(
-                ' sticky -top-px z-50 mt-px flex h-12 w-full py-2 px-4 transition-colors',
+                'sticky -top-px z-50 mt-px flex h-12 w-full px-4 py-2 transition-colors',
                 headerStuck
                   ? 'dark:bg-canvas-50/80 bg-white/80 backdrop-blur-sm'
                   : ''
@@ -563,7 +549,7 @@ export function ContractPageContent(props: {
 
                     <CloseOrResolveTime
                       contract={contract}
-                      editable={isCreator || isAdmin}
+                      editable={isCreator || isAdmin || trustworthy}
                     />
                   </div>
                 )}
@@ -601,18 +587,16 @@ export function ContractPageContent(props: {
               (outcomeType === 'PSEUDO_NUMERIC' ? (
                 <GradientContainer className="my-2">
                   <NumericResolutionPanel
-                    isAdmin={isAdmin}
                     creator={user}
-                    isCreator={!isAdmin}
+                    isCreator={user.id === contract.creatorId}
                     contract={contract}
                   />
                 </GradientContainer>
               ) : outcomeType === 'BINARY' ? (
                 <GradientContainer className="my-2">
                   <ResolutionPanel
-                    isAdmin={isAdmin || trustworthy}
                     creator={user}
-                    isCreator={!isAdmin}
+                    isCreator={user.id === contract.creatorId}
                     contract={contract}
                   />
                 </GradientContainer>
@@ -645,7 +629,7 @@ export function ContractPageContent(props: {
             </Row>
 
             {showExplainerPanel && (
-              <ExplainerPanel className="bg-canvas-50 -mx-4 flex rounded-lg p-4 pb-0 xl:hidden" />
+              <ExplainerPanel className="bg-canvas-50 -mx-8 p-4 pb-0 xl:hidden" />
             )}
 
             {!user && <SidebarSignUpButton className="mb-4 flex md:hidden" />}
@@ -660,7 +644,7 @@ export function ContractPageContent(props: {
             )}
 
             <RelatedContractsCarousel
-              className="mt-4 mb-2 -ml-4 xl:hidden"
+              className="-ml-4 mb-2 mt-4 xl:hidden"
               contracts={relatedMarkets}
               onContractClick={(c) =>
                 track('click related market', { contractId: c.id })

@@ -88,7 +88,8 @@ export function useSubscription<T extends TableName>(
   table: T,
   filter?: Filter<T>,
   fetcher?: () => PromiseLike<Row<T>[]>,
-  preload?: Row<T>[]
+  preload?: Row<T>[],
+  filterString?: string
 ) {
   const fetch = fetcher ?? (() => fetchSnapshot(table, filter))
   const reducer = useMemo(() => getReducer(table), [table])
@@ -129,7 +130,15 @@ export function useSubscription<T extends TableName>(
     dispatch({ type: enabled ? 'ENABLED' : 'DISABLED' })
   })
 
-  useRealtimeChannel('*', table, filter, onChange, onStatus, onEnabled)
+  useRealtimeChannel(
+    '*',
+    table,
+    filter,
+    onChange,
+    onStatus,
+    onEnabled,
+    filterString
+  )
   return state
 }
 

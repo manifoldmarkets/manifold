@@ -97,7 +97,7 @@ export const SwipeCard = memo(
             toggleView={toggleView}
           />
 
-          <div className="line-clamp-6 mt-6 overflow-ellipsis">
+          <div className="mt-6 line-clamp-6 overflow-ellipsis">
             <Link
               href={contractPath(contract)}
               className={clsx(

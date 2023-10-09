@@ -66,13 +66,13 @@ export default function Sidebar(props: {
   return (
     <nav
       aria-label="Sidebar"
-      className={clsx('flex h-screen flex-col xl:ml-2', className)}
+      className={clsx('flex h-screen flex-col', className)}
     >
-      <ManifoldLogo className="pt-6 pb-3" />
+      <ManifoldLogo className="pb-3 pt-6" />
 
       {user === undefined && <div className="h-[56px]" />}
 
-      {user && !isMobile && <ProfileSummary user={user} />}
+      {user && !isMobile && <ProfileSummary user={user} className="mb-3" />}
 
       <div className="mb-4 flex flex-col gap-1">
         {navOptions.map((item) => (
@@ -89,7 +89,7 @@ export default function Sidebar(props: {
 
         {createMarketButton}
       </div>
-      <div className="mt-auto mb-6 flex flex-col gap-1">
+      <div className="mb-6 mt-auto flex flex-col gap-1">
         {user !== null && (
           <AppBadgesOrGetAppButton hideOnDesktop className="mb-2" />
         )}

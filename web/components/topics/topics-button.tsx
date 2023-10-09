@@ -12,9 +12,7 @@ import { Subtitle } from '../widgets/subtitle'
 import { joinGroup } from 'web/lib/firebase/api'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { Group } from 'common/group'
-import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { TopicOptions } from 'web/components/topics/topic-options'
-import { Col } from 'web/components/layout/col'
 import { BookmarkIcon } from '@heroicons/react/outline'
 
 function LeavePrivateTopicButton(props: {
@@ -94,7 +92,9 @@ export function FollowOrUnfolowTopicButton(props: {
 
   // Handle both non-live and live updating isMember state
   const [isMember, setIsMember] = useState(props.isMember)
-  useEffect(() => setIsMember(props.isMember), [props.isMember])
+  useEffect(() => {
+    setIsMember(props.isMember)
+  }, [props.isMember])
 
   if (group.privacyStatus === 'private') {
     return (
@@ -133,12 +133,16 @@ export function FollowOrUnfolowTopicButton(props: {
       <Button
         size={size ?? 'xs'}
         color="gray-outline"
+        className={'group'}
         onClick={(e) => {
           e.preventDefault()
           unfollow()
         }}
       >
-        <Row className="gap-1">Unfollow{label ? ` ${label}` : ''}</Row>
+        <Row className="gap-1">
+          <BookmarkIcon className={'group-hover:fill-ink-500 h-5 w-5'} />
+          Unfollow{label ? ` ${label}` : ''}
+        </Row>
       </Button>
     )
   }
@@ -147,12 +151,18 @@ export function FollowOrUnfolowTopicButton(props: {
     <Button
       size={size ?? 'xs'}
       color="indigo"
+      className={'group'}
       onClick={(e) => {
         e.preventDefault()
         follow()
       }}
     >
-      <Row className="gap-1">Follow{label ? ` ${label}` : ''}</Row>
+      <Row className="gap-1">
+        <BookmarkIcon
+          className={'h-5 w-5 transition-colors group-hover:fill-white'}
+        />
+        Follow{label ? ` ${label}` : ''}
+      </Row>
     </Button>
   )
 }
@@ -190,57 +200,27 @@ export const TopicOptionsButton = (props: {
   yourGroupIds: string[] | undefined
   user: User | null | undefined
   className?: string
-  selected: boolean
 }) => {
-  const { group, selected, className, yourGroupIds, user } = props
-  const isCreator = user?.id == group.creatorId
+  const { group, className, yourGroupIds, user } = props
   const [isMember, setIsMember] = useState(
     yourGroupIds ? yourGroupIds.includes(group.id) : false
   )
   useEffect(() => {
     if (yourGroupIds) setIsMember(yourGroupIds.includes(group.id))
   }, [yourGroupIds?.length])
-  const [loading, setLoading] = useState(false)
-  const isPrivate = group.privacyStatus == 'private'
 
   return (
-    <Col className={className}>
-      {!isPrivate && !isCreator && !isMember && yourGroupIds && (
-        <button
-          onClick={(e) => {
-            e.stopPropagation()
-            setLoading(true)
-            followTopic(user, group)
-              .then(() => setIsMember(true))
-              .finally(() => setLoading(false))
-          }}
-          className={'h-5 w-5'}
-        >
-          {loading ? (
-            <LoadingIndicator size={'sm'} />
-          ) : (
-            <BookmarkIcon
-              className={'text-ink-600 hover:fill-ink-600 h-5 w-5'}
-            />
-          )}
-        </button>
-      )}
-      {(isCreator || isMember) && (
-        <TopicOptions
-          group={group}
-          user={user}
-          isMember={isMember}
-          unfollow={() => {
-            setLoading(true)
-            unfollowTopic(user, group)
-              .then(() => {
-                setIsMember(false)
-              })
-              .finally(() => setLoading(false))
-          }}
-          selected={selected}
-        />
-      )}
-    </Col>
+    <span className={className}>
+      <TopicOptions
+        group={group}
+        user={user}
+        isMember={isMember}
+        unfollow={() => {
+          unfollowTopic(user, group).then(() => {
+            setIsMember(false)
+          })
+        }}
+      />
+    </span>
   )
 }

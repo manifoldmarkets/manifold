@@ -14,8 +14,7 @@ import { PencilIcon, PlusIcon } from '@heroicons/react/solid'
 import { Modal } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
 import { ContractTopicsList } from 'web/components/topics/contract-topics-list'
-import { useAdmin } from 'web/hooks/use-admin'
-import { isTrustworthy } from 'common/envs/constants'
+import { useAdminOrTrusted } from 'web/hooks/use-admin'
 import { filterDefined } from 'common/util/array'
 import { Group, groupPath } from 'common/group'
 import { track } from 'web/lib/service/analytics'
@@ -87,17 +86,13 @@ export function PublicMarketTopics(props: { contract: Contract }) {
   const user = useUser()
   const isCreator = contract.creatorId === user?.id
   const adminGroups = useGroupsWhereUserHasRole(user?.id)
-  const isAdmin = useAdmin()
-  const trust = isTrustworthy(user?.username)
-
-  const canEdit =
-    isAdmin || isCreator || trust || (adminGroups && adminGroups.length > 0)
-  const onlyGroups = !isAdmin && !isCreator && !trust ? adminGroups : undefined
+  const isMod = useAdminOrTrusted()
+  const canEdit = isMod || isCreator || (adminGroups && adminGroups.length > 0)
+  const onlyGroups = !isMod && !isCreator ? adminGroups : undefined
 
   const canEditGroup = (group: Group) =>
     isCreator ||
-    trust ||
-    isAdmin ||
+    isMod ||
     // if user has admin role in that group
     !!(adminGroups && adminGroups.some((g) => g.group_id === group.id))
   return (

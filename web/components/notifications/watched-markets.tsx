@@ -61,7 +61,7 @@ export const UserWatchedContractsButton = memo(
         </TextButton>
         <Modal open={isOpen} setOpen={setIsOpen} size={'lg'}>
           <Col className="bg-canvas-0 rounded p-6">
-            <Row className={'ml-2 mb-4 items-center justify-between gap-4 '}>
+            <Row className={'mb-4 ml-2 items-center justify-between gap-4 '}>
               <span className={'text-xl'}>Watched questions</span>
               <Input
                 placeholder="Search questions"

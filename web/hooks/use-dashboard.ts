@@ -5,13 +5,11 @@ import { getDashboardFromSlug, getYourDashboards } from 'web/lib/firebase/api'
 import { getYourFollowedDashboards } from 'web/lib/firebase/api'
 
 export function useDashboardFromSlug(slug: string) {
-  const [dashboard, setDashboard] = useState<Dashboard | undefined | null>(
-    undefined
-  )
+  const [dashboard, setDashboard] = useState<Dashboard>()
 
   useEffect(() => {
     getDashboardFromSlug({ dashboardSlug: slug }).then((result) => {
-      setDashboard(result.dashboard as Dashboard)
+      setDashboard(result as Dashboard)
     })
   }, [slug])
 

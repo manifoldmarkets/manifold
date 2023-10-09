@@ -19,7 +19,12 @@ import { run } from 'common/supabase/utils'
 import { db } from 'web/lib/supabase/db'
 import { GROUP_SLUGS_TO_HIDE_FROM_WELCOME_FLOW } from 'common/envs/constants'
 import { Group } from 'common/group'
-import { getSubtopics, TOPICS_TO_SUBTOPICS } from 'common/topics'
+import {
+  ALL_TOPICS,
+  getSubtopics,
+  removeEmojis,
+  TOPICS_TO_SUBTOPICS,
+} from 'common/topics'
 import { uniqBy } from 'lodash'
 
 export default function Welcome() {
@@ -67,7 +72,13 @@ export default function Welcome() {
             'in',
             `(${GROUP_SLUGS_TO_HIDE_FROM_WELCOME_FLOW.join(',')})`
           )
-          .or(`slug.not.ilike.%manifold%`)
+          .not(
+            'name',
+            'in',
+            `(${ALL_TOPICS.map((t) => removeEmojis(t)).join(',')})`
+          )
+          .filter('slug', 'not.ilike', '%manifold%')
+          .filter('slug', 'not.ilike', '%sccsq%')
           .order('importance_score', { ascending: false })
           .limit(15)
       ),
@@ -129,7 +140,6 @@ export default function Welcome() {
     return (
       <TopicSelectorDialog
         skippable={false}
-        opaque={false}
         trendingCategories={trendingCategories}
         userInterestedCategories={userInterestedCategories}
         userBetInCategories={userBetInCategories}
@@ -137,7 +147,7 @@ export default function Welcome() {
     )
 
   return (
-    <Modal open={open} setOpen={increasePage} bgOpaque={false} size={'lg'}>
+    <Modal open={open} setOpen={increasePage} size={'lg'}>
       <Col className="bg-canvas-0 place-content-between rounded-md px-8 py-6 text-sm md:text-lg">
         {availablePages[page]}
         <Col>
@@ -197,7 +207,7 @@ function WhatIsManifoldPage() {
 function PredictionMarketPage() {
   return (
     <>
-      <div className="text-primary-700 mt-3 mb-6 text-center text-2xl font-normal">
+      <div className="text-primary-700 mb-6 mt-3 text-center text-2xl font-normal">
         How it works
       </div>
       <div className="mt-2 text-lg">
@@ -253,7 +263,7 @@ export function CharityPage(props: { className?: string }) {
         className="my-4 h-full w-full rounded-md object-contain"
         alt=""
       />
-      <p className="mt-2 mb-2 text-left text-lg">
+      <p className="mb-2 mt-2 text-left text-lg">
         You can turn your mana earnings into a real donation to charity, at a
         100:1 ratio. E.g. when you donate{' '}
         <span className="font-semibold">{formatMoney(1000)}</span> to Givewell,

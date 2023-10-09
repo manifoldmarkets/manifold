@@ -56,18 +56,18 @@ export function Carousel(props: {
       </Row>
       {!atFront && (
         <div
-          className="hover:bg-primary-100/30 absolute left-0 top-0 bottom-0 z-10 flex w-10 cursor-pointer select-none items-center justify-center"
+          className="hover:bg-ink-100/70 group absolute bottom-0 left-0 top-0 z-10 flex w-10 cursor-pointer select-none items-center justify-center transition-colors"
           onMouseDown={scrollLeft}
         >
-          <ChevronLeftIcon className="bg-primary-50 text-primary-700 h-7 w-7 rounded-full" />
+          <ChevronLeftIcon className="bg-primary-50 text-primary-800 h-7 w-7 rounded-full transition-colors group-hover:bg-transparent" />
         </div>
       )}
       {!atBack && (
         <div
-          className="hover:bg-primary-100/30 absolute right-0 top-0 bottom-0 z-10 flex w-10 cursor-pointer select-none items-center justify-center"
+          className="hover:bg-ink-100/70 group absolute bottom-0 right-0 top-0 z-10 flex w-10 cursor-pointer select-none items-center justify-center transition-colors"
           onMouseDown={scrollRight}
         >
-          <ChevronRightIcon className="bg-primary-50 text-primary-700 h-7 w-7 rounded-full" />
+          <ChevronRightIcon className="bg-primary-50 text-primary-800 h-7 w-7 rounded-full transition-colors group-hover:bg-transparent" />
         </div>
       )}
     </div>

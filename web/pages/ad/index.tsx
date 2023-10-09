@@ -78,7 +78,7 @@ function Ad(props: { ad: AdType; onNext: () => void }) {
         <Content size="lg" content={ad.content} />
       </div>
 
-      <div className="mx-4 mt-1 mb-4 flex justify-between">
+      <div className="mx-4 mb-4 mt-1 flex justify-between">
         <div>
           <span className="text-ink-500 mr-1">Created by</span>
           <UserLink username={ad.creatorUsername} name={ad.creatorName} />
@@ -139,7 +139,7 @@ export const TimerClaimBox = (props: {
       ) : (
         <>
           <TimerBar duration={WAIT_TIME} />
-          <div className="z-10 flex w-full items-center justify-between py-4 px-6">
+          <div className="z-10 flex w-full items-center justify-between px-6 py-4">
             <span>
               Claim {formatMoney(ad.costPerView)} in {timeLeft + 1} seconds
             </span>
@@ -170,7 +170,7 @@ const TimerBar = (props: { duration: number }) => {
   return (
     <div className="bg-canvas-0 absolute inset-0 flex overflow-hidden">
       <div
-        className="animate-progress bg-canvas-100"
+        className="animate-progress bg-canvas-50"
         style={{ animationDuration: `${duration}s` }}
       />
     </div>

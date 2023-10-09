@@ -74,7 +74,7 @@ function UploadButton(props: { upload: UploadMutation }) {
         <PhotographIcon className="h-5 w-5" aria-hidden="true" />
         {upload?.isLoading && (
           <LoadingIndicator
-            className="absolute top-0 left-0 bottom-0 right-0"
+            className="absolute bottom-0 left-0 right-0 top-0"
             spinnerClassName="!h-6 !w-6 !border-2"
           />
         )}

@@ -40,13 +40,12 @@ function getResolveButtonLabel(
 }
 
 export function ResolutionPanel(props: {
-  isAdmin: boolean
   isCreator: boolean
   creator: User
   contract: BinaryContract
   modalSetOpen?: (open: boolean) => void
 }) {
-  const { contract, isAdmin, isCreator, modalSetOpen } = props
+  const { contract, isCreator, modalSetOpen } = props
 
   // const earnedFees =
   //   contract.mechanism === 'dpm-2'
@@ -91,14 +90,14 @@ export function ResolutionPanel(props: {
 
   return (
     <>
-      {isAdmin && !isCreator && (
+      {!isCreator && (
         <span className="bg-scarlet-50 text-scarlet-500 absolute right-4 top-4 rounded p-1 text-xs">
           ADMIN
         </span>
       )}
       {!modalSetOpen && (
         <div className="mb-6">
-          Resolve {isCreator ? 'your' : "this user's"} question
+          Resolve {isCreator ? 'your' : contract.creatorName + `'s`} question
         </div>
       )}
       {modalSetOpen && (

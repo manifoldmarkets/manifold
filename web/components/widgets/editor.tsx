@@ -87,7 +87,7 @@ const proseClass = (size: 'sm' | 'md' | 'lg') =>
     size === 'sm' ? 'prose-sm' : 'text-md',
     size !== 'lg' && 'prose-p:my-0 prose-ul:my-0 prose-ol:my-0 prose-li:my-0',
     '[&>p]:prose-li:my-0',
-    'text-ink-900 prose-blockquote:text-teal-700 dark:prose-blockquote:text-teal-100',
+    'text-ink-900 prose-blockquote:text-teal-700',
     'break-anywhere'
   )
 

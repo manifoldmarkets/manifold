@@ -32,7 +32,6 @@ export function SelectMarketsModal(props: {
         <SelectMarkets
           submitLabel={submitLabel}
           onSubmit={onSubmit}
-          setOpen={setOpen}
           className="grow overflow-y-auto"
         />
       </Col>
@@ -43,11 +42,10 @@ export function SelectMarketsModal(props: {
 export function SelectMarkets(props: {
   submitLabel: (length: number) => string
   onSubmit: (contracts: Contract[]) => void | Promise<void>
-  setOpen: (open: boolean) => void
   className?: string
   additionalFilter?: SupabaseAdditionalFilter
 }) {
-  const { submitLabel, onSubmit, setOpen, className, additionalFilter } = props
+  const { submitLabel, onSubmit, className, additionalFilter } = props
 
   const privateUser = usePrivateUser()
   const [contracts, setContracts] = useState<Contract[]>([])
@@ -63,7 +61,6 @@ export function SelectMarkets(props: {
     setLoading(true)
     await onSubmit(contracts)
     setLoading(false)
-    setOpen(false)
     setContracts([])
   }
 
@@ -99,7 +96,7 @@ export function SelectMarkets(props: {
                 if (contracts.length > 0) {
                   setContracts([])
                 } else {
-                  setOpen(false)
+                  onSubmit([])
                 }
               }}
               color="gray"

@@ -1,4 +1,4 @@
-import { Comment, ContractComment, PostComment } from 'common/comment'
+import { ContractComment, PostComment } from 'common/comment'
 import { useEffect, useState } from 'react'
 import {
   convertContractComment,
@@ -99,11 +99,13 @@ export function useRealtimeCommentsOnContract(contractId: string) {
   return rows?.map(convertContractComment)
 }
 
-export function useRealtimeComments(limit: number): Comment[] {
+export function useRealtimeComments(
+  limit: number
+): ContractComment[] | undefined {
   const { rows } = useSubscription('contract_comments', undefined, () =>
     getAllCommentRows(limit)
   )
-  return (rows ?? []).map((r) => r.data as Comment)
+  return rows?.map((r) => r.data as ContractComment)
 }
 
 export const useRealtimePostComments = (postId: string) => {

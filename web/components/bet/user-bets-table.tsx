@@ -221,20 +221,18 @@ export function UserBetsTable(props: { user: User }) {
 const NoBets = ({ user }: { user: User }) => {
   const me = useUser()
   return (
-    <div className="text-ink-500">
+    <>
       {user.id === me?.id && (
-        <>
-          <Link href="/home" className="text-primary-500 hover:underline">
-            Find a prediction market!
-          </Link>
-        </>
+        <Link href="/home" className="text-primary-500 mt-2 hover:underline">
+          Find a question to trade on!
+        </Link>
       )}
-    </div>
+    </>
   )
 }
 const NoMatchingBets = () => (
-  <div className="text-ink-500 py-4 text-center">
-    No bets matching the current filter
+  <div className="text-ink-700 py-4 text-center">
+    No bets match the current filter
   </div>
 )
 
@@ -334,28 +332,23 @@ function BetsTable(props: {
         }
         return (
           <Row className={'justify-left relative items-center'}>
-            <ContractStatusLabel
-              className={clsx(
-                c.isResolved ? '' : 'text-indigo-500',
-                'font-bold'
-              )}
-              contract={c}
-            />
-            <span className={'text-ink-500 text-xs'}>
-              {change !== undefined ? change : ''}
-            </span>
+            <ContractStatusLabel className={'font-bold'} contract={c} />
+            {change != undefined && (
+              <span className={'text-ink-500 ml-1 text-xs'}>{change}</span>
+            )}
           </Row>
         )
       },
     },
     {
-      header: { sort: 'newest', label: 'Bet' },
+      header: { sort: 'newest', label: 'Time' },
       span: isMobile ? 2 : 1,
       renderCell: (c: Contract) => (
         <Row className={'justify-end'}>
           <RelativeTimestamp
             time={metricsByContractId[c.id].lastBetTime}
-            shortened={true}
+            shortened
+            className="text-ink-500"
           />
         </Row>
       ),
@@ -373,7 +366,7 @@ function BetsTable(props: {
         })
         return (
           <Row className={'justify-end'}>
-            <span className={'text-ink-400'}>{dateString}</span>
+            <span className={'text-ink-500'}>{dateString}</span>
           </Row>
         )
       },
@@ -527,7 +520,7 @@ function BetsTable(props: {
               <Row
                 key={contract.id + 'bets-table-row'}
                 className={
-                  'border-ink-300 hover:bg-canvas-50 cursor-pointer border-b py-2'
+                  'border-ink-200 hover:bg-canvas-50 cursor-pointer border-b py-2'
                 }
                 onClick={() => setNewExpandedId(contract.id)}
               >
@@ -543,7 +536,7 @@ function BetsTable(props: {
                         {contract.question}
                       </Link>
                       <UserLink
-                        className={'text-ink-500 w-fit text-sm'}
+                        className={'text-ink-600 w-fit text-sm'}
                         name={contract.creatorName}
                         username={contract.creatorUsername}
                       />
@@ -569,7 +562,7 @@ function BetsTable(props: {
                       ) : (
                         <Col className={'mt-1 w-full gap-1'}>
                           <BetsSummary
-                            className="mt-6 !mb-6 flex"
+                            className="!mb-6 mt-6 flex"
                             contract={contract}
                             metrics={metricsByContractId[contract.id]}
                             hideTweet

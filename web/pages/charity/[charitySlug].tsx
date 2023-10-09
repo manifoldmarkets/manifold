@@ -161,7 +161,7 @@ function DonationBox(props: {
   }
 
   return (
-    <div className="bg-canvas-50 my-4 rounded-lg py-2 px-4">
+    <div className="bg-canvas-50 my-4 rounded-lg px-4 py-2">
       <h2 className="text-primary-600 !mt-0 mb-4 text-2xl">Donate</h2>
       <label className="text-ink-700 mb-2 block text-sm">Amount</label>
       <BuyAmountInput

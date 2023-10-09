@@ -82,12 +82,12 @@ export default function CalibrationPage(props: {
           )}
 
           <div className="bg-canvas-0 relative w-full max-w-[600px] self-center rounded-md p-4 pr-12">
-            <div className="absolute top-0 bottom-0 right-4 flex items-center">
+            <div className="absolute bottom-0 right-4 top-0 flex items-center">
               <span className="text-ink-800 text-sm [writing-mode:vertical-rl]">
                 Resolution probability
               </span>
             </div>
-            <SizedContainer className="aspect-square w-full pr-8 pb-8">
+            <SizedContainer className="aspect-square w-full pb-8 pr-8">
               {(w, h) => (
                 <CalibrationChart
                   yesPoints={yesPoints}
@@ -159,7 +159,7 @@ function BetsTable(props: {
         />
       </Row>
 
-      <div className="text-center text-xs text-gray-400">
+      <div className="text-ink-400 text-center text-xs">
         3 largest bets for each bucket
       </div>
 

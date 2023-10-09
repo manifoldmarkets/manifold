@@ -1,4 +1,3 @@
-import { Col } from '../layout/col'
 import { Group } from 'common/group'
 import clsx from 'clsx'
 import { Row } from 'web/components/layout/row'
@@ -7,17 +6,8 @@ import { useRealtimeMemberGroups } from 'web/hooks/use-group-supabase'
 import { Button } from 'web/components/buttons/button'
 import { MdOutlineKeyboardDoubleArrowRight } from 'react-icons/md'
 import { track } from 'web/lib/service/analytics'
-import { TopicOptionsButton } from 'web/components/topics/topics-button'
 import { ForYouDropdown } from 'web/components/topics/for-you-dropdown'
-import {
-  SIDE_BAR_ITEM_HOVER_CLASS,
-  SIDEBAR_SELECTED_ITEM_CLASS,
-  SIDEBAR_UNSELECTED_ITEM_CLASS,
-} from 'web/components/nav/sidebar-item'
-import { ReactNode } from 'react'
 
-const ROW_CLASS =
-  'group relative w-full cursor-pointer items-center rounded-md py-4 px-2'
 export function TopicsList(props: {
   topics: Group[]
   loadMore?: () => Promise<boolean>
@@ -42,25 +32,35 @@ export function TopicsList(props: {
     (g) => !privateUser?.blockedGroupSlugs.includes(g.slug)
   )
   const yourGroups = useRealtimeMemberGroups(user?.id)
-  const widthClasses =
-    'xl:min-w-64 min-w-[7rem] sm:min-w-[8rem] md:min-w-[10.5rem]'
+
   return (
-    <Col
+    <div
       className={clsx(
-        show ? 'animate-slide-in-from-right block xl:animate-none' : 'hidden',
+        show
+          ? 'animate-slide-in-from-right block lg:animate-none'
+          : 'hidden md:block',
         className,
-        'scrollbar-hide sticky top-0 right-10 max-h-screen overflow-y-auto sm:max-w-min xl:max-w-none',
-        'items-start',
-        currentTopicSlug == 'for-you' ? '' : 'xl:rounded-t-md '
+        'scrollbar-hide bg-canvas-50 fixed right-0 top-0 z-20 max-h-screen overflow-y-auto px-2 md:sticky'
       )}
     >
       <Row
         className={
-          'sticky top-0 z-10 w-full items-center justify-center xl:hidden'
+          'bg-canvas-50 sticky top-0 z-10 w-full items-center justify-center'
         }
       >
+        <div className="text-primary-700 hidden w-full items-center justify-between px-2 pb-2 md:flex">
+          Topics
+          {user && (
+            <ForYouDropdown
+              setCurrentTopic={setCurrentTopicSlug}
+              user={user}
+              yourGroups={yourGroups}
+              className="mr-1"
+            />
+          )}
+        </div>
         <Button
-          className={clsx('h-[3.15rem]', widthClasses)}
+          className={clsx('h-[3.15rem] w-full md:hidden')}
           color={'gray-white'}
           size={'md'}
           onClick={() => setShow(!show)}
@@ -76,7 +76,6 @@ export function TopicsList(props: {
           name={'🌎 All questions'}
           currentTopicSlug={currentTopicSlug}
           setCurrentTopicSlug={setCurrentTopicSlug}
-          optionsItem={<></>}
         />
       )}
       {user && (
@@ -86,19 +85,6 @@ export function TopicsList(props: {
           name={'⭐️ For you'}
           currentTopicSlug={currentTopicSlug}
           setCurrentTopicSlug={setCurrentTopicSlug}
-          optionsItem={
-            <ForYouDropdown
-              setCurrentCategory={setCurrentTopicSlug}
-              user={user}
-              yourGroups={yourGroups}
-              className={clsx(
-                'mr-1',
-                currentTopicSlug !== 'for-you'
-                  ? 'opacity-0 group-hover:opacity-100'
-                  : 'opacity-100'
-              )}
-            />
-          }
         />
       )}
       {topics.length > 0 &&
@@ -109,54 +95,34 @@ export function TopicsList(props: {
             name={group.name}
             currentTopicSlug={currentTopicSlug}
             setCurrentTopicSlug={setCurrentTopicSlug}
-            optionsItem={
-              <TopicOptionsButton
-                key={group.id}
-                group={group}
-                yourGroupIds={yourGroups?.map((g) => g.id)}
-                user={user}
-                className={'mr-1'}
-                selected={currentTopicSlug == group.slug}
-              />
-            }
           />
         ))}
-    </Col>
+    </div>
   )
 }
+
 const SidebarItem = (props: {
   slug: string
   name: string
   currentTopicSlug: string | undefined
   setCurrentTopicSlug: (slug: string) => void
-  optionsItem: ReactNode
 }) => {
-  const { slug, name, currentTopicSlug, setCurrentTopicSlug, optionsItem } =
-    props
+  const { slug, name, currentTopicSlug, setCurrentTopicSlug } = props
 
   return (
     <Row
       className={clsx(
-        ROW_CLASS,
-        SIDE_BAR_ITEM_HOVER_CLASS,
+        'w-full cursor-pointer items-center justify-between rounded-md px-2.5 py-2',
         currentTopicSlug == slug
-          ? SIDEBAR_SELECTED_ITEM_CLASS
-          : SIDEBAR_UNSELECTED_ITEM_CLASS
+          ? 'bg-ink-200 text-ink-900 font-semibold'
+          : 'text-ink-600 hover:bg-primary-100'
       )}
       onClick={() => {
         if (currentTopicSlug !== slug) track('select topics item', { slug })
         setCurrentTopicSlug(currentTopicSlug === slug ? '' : slug)
       }}
     >
-      <span
-        className={clsx(
-          ' flex w-full flex-row text-left text-sm',
-          currentTopicSlug == slug ? 'font-semibold' : ''
-        )}
-      >
-        {name}
-      </span>
-      {optionsItem}
+      {name}
     </Row>
   )
 }

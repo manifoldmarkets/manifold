@@ -61,17 +61,19 @@ export default function AboutPage() {
           on anything.
         </div>
 
-        <WhatIsAPM />
+        <Col className="w-full max-w-[60ch]">
+          <WhatIsAPM />
 
-        <WhatIsMana />
+          <WhatIsMana />
 
-        <WhyManifold />
+          <WhyManifold />
 
-        <LabCard
-          title="🙋‍♂️ Learn more in our FAQ"
-          href="https://docs.manifold.markets/faq"
-          target="_blank"
-        />
+          <LabCard
+            title="🙋‍♂️ Learn more in our FAQ"
+            href="https://docs.manifold.markets/faq"
+            target="_blank"
+          />
+        </Col>
 
         <Subtitle>🌎 Stay connected</Subtitle>
         <LabSection>
@@ -150,11 +152,6 @@ export default function AboutPage() {
             title="⚡️ Live feed"
             description="Latest market activity"
             href="/live"
-          />
-          <LabCard
-            title="📰 News"
-            description="Breaking news + questions"
-            href="/news"
           />
           <LabCard
             title="🏆 Leaderboards"
