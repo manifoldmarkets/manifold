@@ -2,7 +2,12 @@ import { Editor } from '@tiptap/react'
 import clsx from 'clsx'
 import { memo, ReactNode, useEffect, useRef, useState } from 'react'
 
-import { EyeOffIcon, FlagIcon, PencilIcon } from '@heroicons/react/outline'
+import {
+  EyeOffIcon,
+  FlagIcon,
+  LinkIcon,
+  PencilIcon,
+} from '@heroicons/react/outline'
 import {
   DotsHorizontalIcon,
   ReplyIcon,
@@ -50,8 +55,7 @@ import { InfoTooltip } from '../widgets/info-tooltip'
 import { Tooltip } from '../widgets/tooltip'
 import { isAdminId } from 'common/envs/constants'
 import { PaymentsModal } from 'web/pages/payments'
-import { FiLink } from 'react-icons/fi'
-import { GiPayMoney } from 'react-icons/gi'
+import TipJar from 'web/public/custom-components/tipJar'
 
 export type ReplyToUserInfo = { id: string; username: string }
 
@@ -65,6 +69,7 @@ export function FeedCommentThread(props: {
   idInUrl?: string
   showReplies?: boolean
   childrenBountyTotal?: number
+  className?: string
 }) {
   const {
     contract,
@@ -76,6 +81,7 @@ export function FeedCommentThread(props: {
     idInUrl,
     showReplies,
     childrenBountyTotal,
+    className,
   } = props
   const [replyToUserInfo, setReplyToUserInfo] = useState<ReplyToUserInfo>()
 
@@ -98,7 +104,7 @@ export function FeedCommentThread(props: {
       : Infinity
   )
   return (
-    <Col className="mt-3 w-full items-stretch gap-3">
+    <Col className={clsx('mt-3 w-full items-stretch gap-3', className)}>
       <ParentFeedComment
         key={parentComment.id}
         contract={contract}
@@ -375,7 +381,7 @@ export function DotMenu(props: {
         items={buildArray(
           {
             name: 'Copy link',
-            icon: <FiLink className="h-5 w-5" />,
+            icon: <LinkIcon className="h-5 w-5" />,
             onClick: () => {
               copyLinkToComment(
                 contract.creatorUsername,
@@ -387,7 +393,7 @@ export function DotMenu(props: {
           user &&
             comment.userId !== user.id && {
               name: 'Tip',
-              icon: <GiPayMoney className="h-5 w-5" />,
+              icon: <TipJar size={20} color="currentcolor" />,
               onClick: () => setTipping(true),
             },
           user &&
