@@ -426,8 +426,7 @@ export function ContractParamsForm(props: {
 
   const [fundsModalOpen, setFundsModalOpen] = useState(false)
 
-  const isMulti =
-    outcomeType === 'MULTIPLE_CHOICE'
+  const isMulti = outcomeType === 'MULTIPLE_CHOICE'
 
   return (
     <Col className="gap-6">

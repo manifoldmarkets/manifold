@@ -66,7 +66,7 @@ export function AnswersPanel(props: {
 
   const sortByProb = addAnswersMode === 'ANYONE' || answers.length > maxAnswers
   const sortedAnswers = sortBy(answers, [
-    // Winners for shouldAnswersSumToOne 
+    // Winners for shouldAnswersSumToOne
     (answer) => (resolutions ? -1 * resolutions[answer.id] : answer),
     // Winners for independent binary
     (answer) =>
