@@ -141,6 +141,11 @@ export const sellshares = authEndpoint(async (req, auth) => {
             403,
             'Cannot bet until at least two answers are added.'
           )
+        if (!contract.shouldAnswersSumToOne)
+          throw new APIError(
+            403,
+            'Sorry, selling is not implemented yet for this market type. Please check back tomorrow!'
+          )
 
         return {
           newP: 0.5,
