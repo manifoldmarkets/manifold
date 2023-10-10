@@ -102,48 +102,58 @@ export function MultipleChoiceAnswers(props: {
         </Row>
       )}
 
-      <Col className="mb-4 items-start gap-2">
-        <Row className="items-center gap-2">
-          <div className="cursor-pointer">Who can add new answers later?</div>
-          <div>
-            <InfoTooltip
-              text={
-                'Determines who will be able to add new answers after question creation. If enabled, then an "Other" answer will be included.'
-              }
+      {outcomeType !== 'POLL' && (
+        <>
+          <Col className="mb-4 items-start gap-2">
+            <Row className="items-center gap-2">
+              <div className="cursor-pointer">
+                Who can add new answers later?
+              </div>
+              <div>
+                <InfoTooltip
+                  text={
+                    'Determines who will be able to add new answers after question creation. If enabled, then an "Other" answer will be included.'
+                  }
+                />
+              </div>
+            </Row>
+            <ChoicesToggleGroup
+              currentChoice={addAnswersMode}
+              choicesMap={{
+                'No one': 'DISABLED',
+                You: 'ONLY_CREATOR',
+                Anyone: 'ANYONE',
+              }}
+              setChoice={(c) => setAddAnswersMode(c as any)}
             />
-          </div>
-        </Row>
-        <ChoicesToggleGroup
-          currentChoice={addAnswersMode}
-          choicesMap={{
-            'No one': 'DISABLED',
-            You: 'ONLY_CREATOR',
-            Anyone: 'ANYONE',
-          }}
-          setChoice={(c) => setAddAnswersMode(c as any)}
-        />
-      </Col>
+          </Col>
 
-      <Col className="items-start gap-2">
-        <Row className="items-center gap-2">
-          <div className="cursor-pointer">How many answers will be chosen?</div>
-          <div>
-            <InfoTooltip
-              text={
-                'If "One", then one answer will resolve to YES and all the others will resolve to NO. Otherwise, any number of answers can resolve to YES — they are independent.'
+          <Col className="items-start gap-2">
+            <Row className="items-center gap-2">
+              <div className="cursor-pointer">
+                How many answers will be chosen?
+              </div>
+              <div>
+                <InfoTooltip
+                  text={
+                    'If "One", then one answer will resolve to YES and all the others will resolve to NO. Otherwise, any number of answers can resolve to YES — they are independent.'
+                  }
+                />
+              </div>
+            </Row>
+            <ChoicesToggleGroup
+              currentChoice={shouldAnswersSumToOne ? 'true' : 'false'}
+              choicesMap={{
+                One: 'true',
+                'Any number': 'false',
+              }}
+              setChoice={(choice) =>
+                setShouldAnswersSumToOne(choice === 'true')
               }
             />
-          </div>
-        </Row>
-        <ChoicesToggleGroup
-          currentChoice={shouldAnswersSumToOne ? 'true' : 'false'}
-          choicesMap={{
-            One: 'true',
-            'Any number': 'false',
-          }}
-          setChoice={(choice) => setShouldAnswersSumToOne(choice === 'true')}
-        />
-      </Col>
+          </Col>
+        </>
+      )}
     </Col>
   )
 }
