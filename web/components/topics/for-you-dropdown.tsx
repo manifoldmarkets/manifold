@@ -1,5 +1,5 @@
 import { PrivateUser, User } from 'common/user'
-import { Group, TOPIC_KEY } from 'common/group'
+import { Group } from 'common/group'
 import { Modal, SCROLLABLE_MODAL_CLASS } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
 import clsx from 'clsx'
@@ -13,13 +13,8 @@ import { TopicSelector } from 'web/components/topics/topic-selector'
 import { joinGroup } from 'web/lib/firebase/api'
 import { useState } from 'react'
 import { usePrivateUser } from 'web/hooks/use-user'
-import { buildArray } from 'common/util/array'
-import {
-  DotsVerticalIcon,
-  MinusCircleIcon,
-  PlusCircleIcon,
-} from '@heroicons/react/solid'
-import { PencilIcon } from '@heroicons/react/outline'
+import { DotsVerticalIcon, MinusCircleIcon } from '@heroicons/react/solid'
+import { PlusCircleIcon } from '@heroicons/react/outline'
 import { HiNoSymbol } from 'react-icons/hi2'
 import DropdownMenu, {
   DropdownItem,
@@ -27,37 +22,30 @@ import DropdownMenu, {
 import { CreateTopicModal } from 'web/components/topics/create-topic-modal'
 import { useListGroupsBySlug } from 'web/hooks/use-group-supabase'
 import { updatePrivateUser } from 'web/lib/firebase/users'
-import router from 'next/router'
 
 export const ForYouDropdown = (props: {
   setCurrentTopic: (topicSlug: string) => void
   user: User
-  yourGroups: Group[] | undefined
   className?: string
 }) => {
-  const { yourGroups, user, setCurrentTopic, className } = props
+  const { user, setCurrentTopic, className } = props
   const [showEditingBlockedTopics, setShowEditingBlockedTopics] =
     useState(false)
   const [showCreateGroup, setShowCreateGroup] = useState(false)
-  const [showFollowedTopics, setShowFollowedTopics] = useState(false)
   const privateUser = usePrivateUser()
-  const groupOptionItems = buildArray(
+  const groupOptionItems = [
     {
       name: 'Create new topic',
       icon: <PlusCircleIcon className="h-5 w-5" />,
       onClick: () => setShowCreateGroup(true),
     },
     {
-      name: 'Followed topics',
-      icon: <PencilIcon className="h-5 w-5" />,
-      onClick: () => setShowFollowedTopics(true),
-    },
-    {
       name: 'Blocked topics',
       icon: <HiNoSymbol className="h-5 w-5" />,
       onClick: () => setShowEditingBlockedTopics(true),
-    }
-  ) as DropdownItem[]
+    },
+  ] as DropdownItem[]
+
   return (
     <>
       <DropdownMenu
@@ -73,7 +61,7 @@ export const ForYouDropdown = (props: {
           open={showCreateGroup}
           setOpen={setShowCreateGroup}
           onCreate={(group) => {
-            router.push(`questions?${TOPIC_KEY}=${group.slug}`)
+            setCurrentTopic(group.slug)
           }}
         />
       )}
@@ -82,15 +70,6 @@ export const ForYouDropdown = (props: {
           privateUser={privateUser}
           setShowEditingBlockedTopics={setShowEditingBlockedTopics}
           show={showEditingBlockedTopics}
-        />
-      )}
-      {showFollowedTopics && user && (
-        <FollowedTopicsModal
-          user={user}
-          setShow={setShowFollowedTopics}
-          show={showFollowedTopics}
-          setCurrentCategory={setCurrentTopic}
-          groups={yourGroups}
         />
       )}
     </>
@@ -149,14 +128,15 @@ const BlockedTopicsModal = (props: {
     </Modal>
   )
 }
-const FollowedTopicsModal = (props: {
+
+export const FollowedTopicsModal = (props: {
   user: User
   setShow: (show: boolean) => void
   show: boolean
-  setCurrentCategory: (categorySlug: string) => void
+  setCurrentTopicSlug: (topicSlug: string) => void
   groups: Group[] | undefined
 }) => {
-  const { user, show, groups, setCurrentCategory, setShow } = props
+  const { user, show, groups, setCurrentTopicSlug, setShow } = props
 
   return (
     <Modal open={show} setOpen={setShow} className={SCROLLABLE_MODAL_CLASS}>
@@ -173,7 +153,7 @@ const FollowedTopicsModal = (props: {
             >
               <button
                 onClick={() => {
-                  setCurrentCategory(group.slug)
+                  setCurrentTopicSlug(group.slug)
                   setShow(false)
                 }}
               >

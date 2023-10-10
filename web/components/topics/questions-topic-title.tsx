@@ -1,6 +1,10 @@
 import { Group, TOPIC_KEY } from 'common/group'
-import { Title } from 'web/components/widgets/title'
-import { BookmarkIcon, PlusCircleIcon } from '@heroicons/react/outline'
+import {
+  ArrowLeftIcon,
+  BookmarkIcon,
+  PencilIcon,
+  PlusCircleIcon,
+} from '@heroicons/react/outline'
 import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
 import { DOMAIN } from 'common/envs/constants'
 import { Button } from 'web/components/buttons/button'
@@ -13,8 +17,12 @@ import { Row } from 'web/components/layout/row'
 import { useRealtimeMemberGroups } from 'web/hooks/use-group-supabase'
 import { User } from 'common/user'
 import { forwardRef, Ref, useState } from 'react'
-import { ForYouDropdown } from 'web/components/topics/for-you-dropdown'
+import {
+  FollowedTopicsModal,
+  ForYouDropdown,
+} from 'web/components/topics/for-you-dropdown'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
+import { useRouter } from 'next/router'
 
 export const QuestionsTopicTitle = forwardRef(
   (
@@ -34,29 +42,68 @@ export const QuestionsTopicTitle = forwardRef(
     const isMobile = useIsMobile()
     const isFollowing =
       currentTopic && (yourGroupIds ?? []).includes(currentTopic.id)
+    const [showFollowedTopics, setShowFollowedTopics] = useState(false)
+    const router = useRouter()
+
+    const buttonTopics = [
+      {
+        name: 'Followed topics',
+        icon: <PencilIcon className="h-5 w-5" />,
+        onClick: () => setShowFollowedTopics(true),
+      },
+    ]
+
     return (
       <Row
         className={
-          'col-span-8 my-1 flex-col px-2 sm:mb-3 sm:flex-row sm:items-center xl:col-span-7'
+          'col-span-8 my-1 flex-col gap-1 px-2 sm:mb-3 sm:flex-row sm:items-center xl:col-span-7'
         }
         ref={ref}
       >
-        <Row className={'items-center gap-2 sm:mr-5'}>
-          <Title className="!mb-1 ">
-            {currentTopic?.name ??
-              (topicSlug === 'for-you' ? '⭐️ For you' : 'Browse')}
-          </Title>
-          {user && topicSlug === 'for-you' && (
+        <Row className={'items-center justify-between gap-2'}>
+          <Row className={'mb-1 items-center gap-1'}>
+            <Button size={'sm'} color={'gray-white'} onClick={router.back}>
+              <ArrowLeftIcon className={'h-5 w-5'} />
+            </Button>
+            <span className="text-primary-700 !mb-0 line-clamp-1 text-2xl">
+              {currentTopic?.name ??
+                (topicSlug === 'for-you' ? '⭐️ For you' : 'Browse')}
+            </span>
+          </Row>
+          {user && topicSlug === 'for-you' ? (
             <ForYouDropdown
               setCurrentTopic={setTopicSlug}
               user={user}
-              yourGroups={yourGroups}
-              className={'lg:hidden'}
+              className={'sm:hidden'}
             />
-          )}
+          ) : currentTopic ? (
+            <TopicOptionsButton
+              group={currentTopic}
+              yourGroupIds={yourGroupIds}
+              user={user}
+              className={'sm:hidden'}
+            />
+          ) : null}
         </Row>
+        {topicSlug === 'for-you' && (
+          <Row className={'items-center justify-between gap-2'}>
+            {buttonTopics.map((item) => (
+              <Button
+                key={item.name}
+                size={'sm'}
+                color={'gray-white'}
+                onClick={item.onClick}
+              >
+                <Row className={'items-center gap-1'}>
+                  {item.icon}
+                  {item.name}
+                </Row>
+              </Button>
+            ))}
+          </Row>
+        )}
         {currentTopic && (
-          <Row className="grow items-center">
+          <Row className="items-center">
             <CopyLinkOrShareButton
               url={`https://${DOMAIN}/browse?${TOPIC_KEY}=${
                 currentTopic?.slug ?? ''
@@ -75,7 +122,7 @@ export const QuestionsTopicTitle = forwardRef(
                   className={'whitespace-nowrap'}
                   onClick={() => setShowAddContract(true)}
                 >
-                  <PlusCircleIcon className={'mx-1 h-5 w-5'} />
+                  <PlusCircleIcon className={'mr-1 h-5 w-5'} />
                   Add questions
                 </Button>
                 {showAddContract && user && (
@@ -100,18 +147,35 @@ export const QuestionsTopicTitle = forwardRef(
                   )
                 }}
               >
-                {!loading && <BookmarkIcon className={'mx-1 h-5 w-5'} />}
+                {!loading && <BookmarkIcon className={'mr-1 h-5 w-5'} />}
                 Follow
               </Button>
             )}
-            <div className="grow" />
-            <TopicOptionsButton
-              group={currentTopic}
-              yourGroupIds={yourGroupIds}
-              user={user}
-            />
           </Row>
         )}
+        {showFollowedTopics && user && (
+          <FollowedTopicsModal
+            user={user}
+            setShow={setShowFollowedTopics}
+            show={showFollowedTopics}
+            setCurrentTopicSlug={setTopicSlug}
+            groups={yourGroups}
+          />
+        )}
+        {user && topicSlug === 'for-you' ? (
+          <ForYouDropdown
+            setCurrentTopic={setTopicSlug}
+            user={user}
+            className={'hidden sm:block'}
+          />
+        ) : currentTopic ? (
+          <TopicOptionsButton
+            group={currentTopic}
+            yourGroupIds={yourGroupIds}
+            user={user}
+            className={'hidden sm:block'}
+          />
+        ) : null}
       </Row>
     )
   }

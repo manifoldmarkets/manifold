@@ -2,7 +2,6 @@ import { Group } from 'common/group'
 import clsx from 'clsx'
 import { Row } from 'web/components/layout/row'
 import { PrivateUser, User } from 'common/user'
-import { useRealtimeMemberGroups } from 'web/hooks/use-group-supabase'
 import { Button } from 'web/components/buttons/button'
 import { MdOutlineKeyboardDoubleArrowRight } from 'react-icons/md'
 import { track } from 'web/lib/service/analytics'
@@ -31,7 +30,6 @@ export function TopicsList(props: {
   const topics = props.topics.filter(
     (g) => !privateUser?.blockedGroupSlugs.includes(g.slug)
   )
-  const yourGroups = useRealtimeMemberGroups(user?.id)
 
   return (
     <div
@@ -54,7 +52,6 @@ export function TopicsList(props: {
             <ForYouDropdown
               setCurrentTopic={setCurrentTopicSlug}
               user={user}
-              yourGroups={yourGroups}
               className="mr-1"
             />
           )}
