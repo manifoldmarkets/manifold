@@ -166,7 +166,7 @@ export const QuestionsTopicTitle = forwardRef(
           <ForYouDropdown
             setCurrentTopic={setTopicSlug}
             user={user}
-            className={'hidden sm:block'}
+            className={'hidden sm:block md:hidden'}
           />
         ) : currentTopic ? (
           <TopicOptionsButton
