@@ -58,7 +58,10 @@ const ContractTopicBreadcrumbs = (props: { contract: Contract }) => {
   return (
     <Row className={clsx('line-clamp-1')}>
       {groups.map((group, i) => (
-        <span key={group.id} className={'text-primary-600 text-sm'}>
+        <span
+          key={group.id}
+          className={'text-primary-600 whitespace-nowrap text-sm'}
+        >
           <Link
             className={linkClass}
             href={groupPath(group.slug)}
