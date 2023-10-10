@@ -1,7 +1,12 @@
 import { sumBy, groupBy, mapValues } from 'lodash'
 
 import { Bet } from './bet'
-import { Contract, CPMMContract, CPMMMultiContract, StillOpenDPMContract } from './contract'
+import {
+  Contract,
+  CPMMContract,
+  CPMMMultiContract,
+  StillOpenDPMContract,
+} from './contract'
 import { Fees } from './fees'
 import { LiquidityProvision } from './liquidity-provision'
 import {
@@ -79,12 +84,16 @@ export const getPayouts = (
     if (!answer) {
       throw new Error('getPayouts: answer not found')
     }
+    const mappedLiquidities = liquidities.map((l) => ({
+      ...l,
+      amount: l.amount / contract.answers.length,
+    }))
     return getFixedPayouts(
       outcome,
       contract as any,
       bets,
-      liquidities,
-      resolutionProbability ?? answer.prob,
+      mappedLiquidities,
+      resolutionProbability ?? answer.prob
     )
   }
   if (contract.mechanism === 'cpmm-multi-1') {
@@ -102,10 +111,12 @@ export const getPayouts = (
 
 export const getFixedPayouts = (
   outcome: string | undefined,
-  contract: CPMMContract | (CPMMMultiContract & { shouldAnswersSumToOne: false }),
+  contract:
+    | CPMMContract
+    | (CPMMMultiContract & { shouldAnswersSumToOne: false }),
   bets: Bet[],
   liquidities: LiquidityProvision[],
-  resolutionProbability: number,
+  resolutionProbability: number
 ) => {
   switch (outcome) {
     case 'YES':
