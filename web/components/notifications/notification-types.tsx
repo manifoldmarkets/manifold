@@ -1618,7 +1618,7 @@ function ReviewNotification(props: {
         <span
           className={clsx(
             rating > 3
-              ? 'rounded-md bg-gradient-to-br from-amber-100 to-amber-400 px-2 '
+              ? 'rounded-md bg-gradient-to-br from-amber-100 to-amber-400 px-2 dark:text-gray-500'
               : ''
           )}
         >
