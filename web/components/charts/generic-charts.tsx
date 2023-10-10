@@ -196,14 +196,17 @@ export const MultiValueHistoryChart = <P extends HistoryPoint>(props: {
   h: number
   xScale: ScaleTime<number, number>
   yScale: ScaleContinuousNumeric<number, number>
+  viewScaleProps: viewScale
+  showZoomer?: boolean
   yKind?: ValueKind
   curve?: CurveFactory
   Tooltip?: (props: TooltipProps<P> & { i: number }) => ReactNode
 }) => {
-  const { data, w, h, yScale, yKind, Tooltip } = props
+  const { data, w, h, yScale, yKind, Tooltip, showZoomer } = props
+
+  const { viewXScale, setViewXScale } = props.viewScaleProps
 
   const [ttParams, setTTParams] = useState<TooltipProps<P> & { i: number }>()
-  const [viewXScale, setViewXScale] = useState<ScaleTime<number, number>>()
   const xScale = viewXScale ?? props.xScale
 
   const [xMin, xMax] = xScale?.domain().map((d) => d.getTime()) ?? [
@@ -272,60 +275,78 @@ export const MultiValueHistoryChart = <P extends HistoryPoint>(props: {
     setTTParams(undefined)
   })
 
+  const rescale = useCallback((newXScale: ScaleTime<number, number> | null) => {
+    if (newXScale) {
+      setViewXScale(() => newXScale)
+    } else {
+      setViewXScale(undefined)
+    }
+  }, [])
+
   return (
-    <SVGChart
-      w={w}
-      h={h}
-      xAxis={xAxis}
-      yAxis={yAxis}
-      ttParams={ttParams}
-      fullScale={props.xScale}
-      onRescale={(scale) => setViewXScale(scale ? () => scale : undefined)}
-      onMouseOver={onMouseOver}
-      onMouseLeave={onMouseLeave}
-      Tooltip={Tooltip}
-      noGridlines
-      className="group"
-    >
-      {compressedData.map((points, i) => (
-        <g key={i}>
-          <LinePath
-            key={i}
-            data={points}
+    <>
+      <SVGChart
+        w={w}
+        h={h}
+        xAxis={xAxis}
+        yAxis={yAxis}
+        ttParams={ttParams}
+        fullScale={props.xScale}
+        onRescale={(scale) => setViewXScale(scale ? () => scale : undefined)}
+        onMouseOver={onMouseOver}
+        onMouseLeave={onMouseLeave}
+        Tooltip={Tooltip}
+        noGridlines
+        className="group"
+      >
+        {compressedData.map((points, i) => (
+          <g key={i}>
+            <LinePath
+              key={i}
+              data={points}
+              px={px}
+              py={py}
+              curve={curve}
+              className={clsx(
+                'brightness-[95%]',
+                ttParams && ttParams.i !== i
+                  ? 'stroke-1 opacity-50'
+                  : 'stroke-[2px]'
+              )}
+              stroke={nthColor(i)}
+            />
+          </g>
+        ))}
+        {/* hover effect put last so it shows on top */}
+        {ttParams && (
+          <AreaPath
+            data={compressedData[ttParams.i]}
             px={px}
-            py={py}
+            py0={yScale(0)}
+            py1={py}
             curve={curve}
-            className={clsx(
-              'brightness-[95%]',
-              ttParams && ttParams.i !== i
-                ? 'stroke-1 opacity-50'
-                : 'stroke-[2px]'
-            )}
-            stroke={nthColor(i)}
+            fill={nthColor(ttParams.i)}
+            opacity={0.5}
           />
-        </g>
-      ))}
-      {/* hover effect put last so it shows on top */}
-      {ttParams && (
-        <AreaPath
-          data={compressedData[ttParams.i]}
-          px={px}
-          py0={yScale(0)}
-          py1={py}
-          curve={curve}
-          fill={nthColor(ttParams.i)}
-          opacity={0.5}
+        )}
+        {ttParams && (
+          <SliceMarker
+            color="#5BCEFF"
+            x={ttParams.x}
+            y0={yScale(0)}
+            y1={ttParams.y}
+          />
+        )}
+      </SVGChart>
+      {showZoomer && (
+        <ZoomSlider
+          fullScale={props.xScale}
+          visibleScale={xScale}
+          setVisibleScale={rescale}
+          className="relative top-4"
         />
       )}
-      {ttParams && (
-        <SliceMarker
-          color="#5BCEFF"
-          x={ttParams.x}
-          y0={yScale(0)}
-          y1={ttParams.y}
-        />
-      )}
-    </SVGChart>
+    </>
   )
 }
 
@@ -496,6 +517,7 @@ export const ControllableSingleValueHistoryChart = <
           visibleScale={xScale}
           setVisibleScale={rescale}
           className="relative top-4"
+          color="light-green"
         />
       )}
     </>

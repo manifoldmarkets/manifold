@@ -206,6 +206,10 @@ const ChoiceOverview = (props: {
 }) => {
   const { points, contract, showResolver, onAnswerCommentClick } = props
 
+  const [showZoomer, setShowZoomer] = useState(false)
+  const { viewScale, currentTimePeriod, setTimePeriod, start, maxRange } =
+    useTimePicker(contract)
+
   if (!onAnswerCommentClick) return null
 
   const shouldAnswersSumToOne =
@@ -213,16 +217,37 @@ const ChoiceOverview = (props: {
 
   return (
     <>
-      {contract.resolution === 'CANCEL' && (
-        <div className="flex items-end gap-2 text-2xl sm:text-3xl">
-          <span className="text-base">Resolved</span>
-          <CancelLabel />
-        </div>
-      )}
+      <Row className="justify-between gap-2">
+        {contract.resolution === 'CANCEL' ? (
+          <div className="flex items-end gap-2 text-2xl sm:text-3xl">
+            <span className="text-base">Resolved</span>
+            <CancelLabel />
+          </div>
+        ) : (
+          <div />
+        )}
+        <TimeRangePicker
+          currentTimePeriod={currentTimePeriod}
+          setCurrentTimePeriod={(p) => {
+            setTimePeriod(p)
+            setShowZoomer(true)
+          }}
+          maxRange={maxRange}
+          color="indigo"
+        />
+      </Row>
       {!!Object.keys(points).length && contract.mechanism == 'cpmm-multi-1' && (
-        <SizedContainer className="h-[150px] w-full pb-4 pr-10 sm:h-[250px]">
+        <SizedContainer
+          className={clsx(
+            'h-[150px] w-full pb-4 pr-10 sm:h-[250px]',
+            showZoomer && 'mb-8'
+          )}
+        >
           {(w, h) => (
             <ChoiceContractChart
+              showZoomer={showZoomer}
+              viewScaleProps={viewScale}
+              controlledStart={start}
               width={w}
               height={h}
               multiPoints={points}

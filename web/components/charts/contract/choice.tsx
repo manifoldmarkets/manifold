@@ -13,7 +13,7 @@ import {
   getRightmostVisibleDate,
 } from '../helpers'
 import { MultiValueHistoryChart } from '../generic-charts'
-import { HistoryPoint } from 'common/chart'
+import { HistoryPoint, viewScale } from 'common/chart'
 import { Row } from 'web/components/layout/row'
 
 const CHOICE_ANSWER_COLORS = [
@@ -93,10 +93,22 @@ export const ChoiceContractChart = (props: {
   multiPoints?: MultiPoints
   width: number
   height: number
+  viewScaleProps: viewScale
+  controlledStart?: number
+  showZoomer?: boolean
 }) => {
-  const { contract, multiPoints = {}, width, height } = props
+  const {
+    contract,
+    multiPoints = {},
+    width,
+    height,
+    viewScaleProps,
+    controlledStart,
+    showZoomer,
+  } = props
 
   const [start, end] = getDateRange(contract)
+  const rangeStart = controlledStart ?? start
   const answers = useChartAnswers(contract)
 
   const endProbs = useMemo(
@@ -136,7 +148,7 @@ export const ChoiceContractChart = (props: {
     ...Object.values(multiPoints).map((p) => last(p)?.x ?? 0)
   )
   const rightmostDate = getRightmostVisibleDate(end, rightestPointX, now)
-  const xScale = scaleTime([start, rightmostDate], [0, width])
+  const xScale = scaleTime([rangeStart, rightmostDate], [0, width])
   const yScale = scaleLinear([0, 1], [height, 0])
 
   return (
@@ -145,6 +157,8 @@ export const ChoiceContractChart = (props: {
       h={height}
       xScale={xScale}
       yScale={yScale}
+      viewScaleProps={viewScaleProps}
+      showZoomer={showZoomer}
       yKind="percent"
       data={data}
       Tooltip={(props) => (
