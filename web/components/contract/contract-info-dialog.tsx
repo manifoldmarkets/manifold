@@ -19,6 +19,8 @@ import { BlockMarketButton } from 'web/components/buttons/block-market-button'
 import { FollowMarketButton } from 'web/components/buttons/follow-market-button'
 import { useAdminOrTrusted, useDev } from 'web/hooks/use-admin'
 import {
+  addContractToGroup,
+  removeContractFromGroup,
   unresolveMarket,
   updateMarket,
   updateUserDisinterestEmbedding,
@@ -43,6 +45,7 @@ import { AddLiquidityButton } from './add-liquidity-button'
 import { BoostButton } from './boost-button'
 import { AddBountyButton } from './bountied-question'
 import dayjs from 'dayjs'
+import { NON_PREDICTIVE_GROUP_ID } from 'common/supabase/groups'
 
 export const Stats = (props: {
   contract: Contract
@@ -360,17 +363,41 @@ export const Stats = (props: {
               Non predictive
               <InfoTooltip
                 text={
-                  contract.nonPredictive === true
-                    ? 'Profits from leagues disabled'
-                    : 'Normal prediction market'
+                  'If marked as non-predictive, profits do not contribute to leagues.'
                 }
               />
             </td>
             <td>
               <ShortToggle
-                disabled={true}
+                disabled={!isMod}
                 on={contract.nonPredictive === true}
-                setOn={() => null}
+                setOn={(on) => {
+                  toast.promise(
+                    !on
+                      ? removeContractFromGroup({
+                          contractId: contract.id,
+                          groupId: NON_PREDICTIVE_GROUP_ID,
+                        })
+                      : addContractToGroup({
+                          contractId: contract.id,
+                          groupId: NON_PREDICTIVE_GROUP_ID,
+                        }).catch((e) => {
+                          console.error(e.message)
+                          throw e
+                        }),
+                    {
+                      loading: `${
+                        !on ? 'Removing' : 'Adding'
+                      } question to non-predictive group...`,
+                      success: `Successfully ${
+                        !on ? 'removed' : 'added'
+                      } question to non-predictive group!`,
+                      error: `Error ${
+                        !on ? 'removing' : 'adding'
+                      } category. Try again?`,
+                    }
+                  )
+                }}
               />
             </td>
           </tr>
