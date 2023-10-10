@@ -183,7 +183,7 @@ const getMultipleChoiceProps = (
   ante: number
 ) => {
   const answersWithOther = answers.concat(
-    addAnswersMode === 'DISABLED' ? [] : ['Other']
+    !shouldAnswersSumToOne || addAnswersMode === 'DISABLED' ? [] : ['Other']
   )
   const answerObjects = createAnswers(
     contractId,
@@ -255,7 +255,10 @@ function createAnswers(
       prob,
       totalLiquidity: getMultiCpmmLiquidity({ YES: poolYes, NO: poolNo }),
       subsidyPool: 0,
-      isOther: addAnswersMode !== 'DISABLED' && i === answers.length - 1,
+      isOther:
+        shouldAnswersSumToOne &&
+        addAnswersMode !== 'DISABLED' &&
+        i === answers.length - 1,
     }
     return answer
   })

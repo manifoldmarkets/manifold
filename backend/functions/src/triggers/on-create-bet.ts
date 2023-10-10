@@ -7,6 +7,7 @@ import {
   getBettingStreakResetTimeBeforeNow,
   getUserSupabase,
   getValues,
+  isProd,
   log,
 } from 'shared/utils'
 import {
@@ -62,7 +63,7 @@ export const onCreateBet = functions
     secrets,
     memory: '512MB',
     timeoutSeconds: 540,
-    minInstances: 10,
+    minInstances: isProd() ? 10 : 0,
   })
   .firestore.document('contracts/{contractId}/bets/{betId}')
   .onCreate(async (change, context) => {
@@ -370,12 +371,15 @@ export const giveUniqueBettorAndLiquidityBonus = async (
   if (contract.mechanism === 'cpmm-1') {
     await addHouseSubsidy(contract.id, UNIQUE_BETTOR_LIQUIDITY)
   } else if (contract.mechanism === 'cpmm-multi-1' && answerId) {
-    // There are two ways to subsidize multi answer contracts:
-    // 1. Subsidize all answers (and gain efficiency b/c only one answer resolves YES.)
-    // 2. Subsidize one answer (and throw away excess YES or NO shares to maintain probability.)
-    // The second if preferred if the probability is not extreme, because it increases
-    // liquidity in a more traded answer. (Liquidity in less traded or unlikely answers is not that important.)
-    if (bet.probAfter < 0.15 || bet.probAfter > 0.95) {
+    if (
+      contract.shouldAnswersSumToOne &&
+      (bet.probAfter < 0.15 || bet.probAfter > 0.95)
+    ) {
+      // There are two ways to subsidize multi answer contracts when they sum to one:
+      // 1. Subsidize all answers (and gain efficiency b/c only one answer resolves YES.)
+      // 2. Subsidize one answer (and throw away excess YES or NO shares to maintain probability.)
+      // The second if preferred if the probability is not extreme, because it increases
+      // liquidity in a more traded answer. (Liquidity in less traded or unlikely answers is not that important.)
       await addHouseSubsidy(contract.id, UNIQUE_BETTOR_LIQUIDITY)
     } else {
       await addHouseSubsidyToAnswer(

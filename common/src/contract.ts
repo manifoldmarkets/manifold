@@ -313,6 +313,17 @@ export const CREATEABLE_OUTCOME_TYPES = [
   'POLL',
 ] as const
 
+export const renderResolution = (resolution: string, prob?: number) => {
+  return (
+    {
+      YES: 'YES',
+      NO: 'NO',
+      CANCEL: 'N/A',
+      MKT: formatPercent(prob ?? 0),
+    }[resolution] || resolution
+  )
+}
+
 export function contractPathWithoutContract(
   creatorUsername: string,
   slug: string
@@ -346,11 +357,12 @@ export function getBinaryProbPercent(contract: BinaryContract) {
   return formatPercent(getDisplayProbability(contract))
 }
 
-export function tradingAllowed(contract: Contract) {
+export function tradingAllowed(contract: Contract, answer?: Answer) {
   return (
     !contract.isResolved &&
     (!contract.closeTime || contract.closeTime > Date.now()) &&
-    contract.mechanism !== 'none'
+    contract.mechanism !== 'none' &&
+    (!answer || !answer.resolution)
   )
 }
 

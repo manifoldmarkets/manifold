@@ -1,3 +1,4 @@
+import { resolution } from './contract'
 
 export type Answer = {
   id: string
@@ -16,6 +17,10 @@ export type Answer = {
 
   // Is this 'Other', the answer that represents all other answers, including answers added in the future.
   isOther?: boolean
+
+  resolution?: resolution
+  resolutionTime?: number
+  resolutionProbability?: number
 }
 
 export type DpmAnswer = {

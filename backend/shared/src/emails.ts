@@ -1,13 +1,9 @@
 import { DOMAIN, ENV_CONFIG } from 'common/envs/constants'
 import { Bet } from 'common/bet'
 import { getProbability } from 'common/calculate'
-import { Contract, MultiContract } from 'common/contract'
+import { Contract, MultiContract, renderResolution } from 'common/contract'
 import { PrivateUser, User } from 'common/user'
-import {
-  formatLargeNumber,
-  formatMoney,
-  formatPercent,
-} from 'common/util/format'
+import { formatLargeNumber, formatMoney } from 'common/util/format'
 import { formatNumericProbability } from 'common/pseudo-numeric'
 import { sendTemplateEmail, sendTextEmail } from './send-email'
 import { contractUrl, getUser, log } from 'shared/utils'
@@ -56,7 +52,8 @@ export const sendMarketResolutionEmail = async (
   contract: Contract,
   resolution: string,
   resolutionProbability?: number,
-  resolutions?: { [outcome: string]: number }
+  resolutions?: { [outcome: string]: number },
+  answerId?: string
 ) => {
   const { sendToEmail, unsubscribeUrl } = getNotificationDestinationsForUser(
     privateUser,
@@ -71,7 +68,8 @@ export const sendMarketResolutionEmail = async (
     contract,
     resolution,
     resolutionProbability,
-    resolutions
+    resolutions,
+    answerId
   )
 
   const subject = `Resolved ${outcome}: ${contract.question}`
@@ -126,22 +124,15 @@ const toDisplayResolution = (
   contract: Contract,
   resolution: string,
   resolutionProbability?: number,
-  resolutions?: { [outcome: string]: number }
+  resolutions?: { [outcome: string]: number },
+  answerId?: string
 ) => {
   if (contract.outcomeType === 'CERT') {
     return resolution + ' (CERT)'
   }
   if (contract.outcomeType === 'BINARY') {
     const prob = resolutionProbability ?? getProbability(contract)
-
-    const display = {
-      YES: 'YES',
-      NO: 'NO',
-      CANCEL: 'N/A',
-      MKT: formatPercent(prob ?? 0),
-    }[resolution]
-
-    return display || resolution
+    return renderResolution(resolution, prob)
   }
 
   if (contract.outcomeType === 'PSEUDO_NUMERIC') {
@@ -160,6 +151,19 @@ const toDisplayResolution = (
     return formatNumericProbability(getProbability(contract), contract)
   }
 
+  const isIndependentMulti =
+    contract.outcomeType === 'MULTIPLE_CHOICE' &&
+    contract.mechanism === 'cpmm-multi-1' &&
+    !contract.shouldAnswersSumToOne
+  if (isIndependentMulti && answerId) {
+    const answer = contract.answers.find((a) => a.id === answerId)
+    if (answer) {
+      return `${answer.text} ${renderResolution(
+        resolution,
+        resolutionProbability ?? answer.prob
+      )}`
+    }
+  }
   if ((resolution === 'MKT' && resolutions) || resolution === 'CHOOSE_MULTIPLE')
     return 'MULTI'
   if (resolution === 'CANCEL') return 'N/A'

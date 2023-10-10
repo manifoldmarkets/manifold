@@ -21,6 +21,9 @@ const bodySchema = z.object({
 const binarySchema = z.object({
   outcome: z.enum(RESOLUTIONS),
   probabilityInt: z.number().gte(0).lte(100).optional(),
+
+  // To resolve one answer of multiple choice. Only independent answers supported (shouldAnswersSumToOne = false)
+  answerId: z.string().optional(),
 })
 
 const freeResponseSchema = z.union([
@@ -113,8 +116,27 @@ export const resolvemarket = authEndpoint(async (req, auth) => {
 
 function getResolutionParams(contract: Contract, body: string) {
   const { outcomeType } = contract
-
-  if (outcomeType === 'NUMERIC') {
+  if (
+    outcomeType === 'BINARY' ||
+    (outcomeType === 'MULTIPLE_CHOICE' &&
+      contract.mechanism === 'cpmm-multi-1' &&
+      !contract.shouldAnswersSumToOne)
+  ) {
+    const binaryParams = validate(binarySchema, body)
+    if (binaryParams.answerId && outcomeType !== 'MULTIPLE_CHOICE') {
+      throw new APIError(
+        400,
+        'answerId field is only allowed for multiple choice markets'
+      )
+    }
+    if (binaryParams.answerId && outcomeType === 'MULTIPLE_CHOICE')
+      validateAnswerCpmm(contract, binaryParams.answerId)
+    return {
+      ...binaryParams,
+      value: undefined,
+      resolutions: undefined,
+    }
+  } else if (outcomeType === 'NUMERIC') {
     return {
       ...validate(numericSchema, body),
       resolutions: undefined,
@@ -204,12 +226,6 @@ function getResolutionParams(contract: Contract, body: string) {
           probabilityInt: undefined,
         }
       }
-    }
-  } else if (outcomeType === 'BINARY') {
-    return {
-      ...validate(binarySchema, body),
-      value: undefined,
-      resolutions: undefined,
     }
   }
   throw new APIError(500, `Invalid outcome type: ${outcomeType}`)

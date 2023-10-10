@@ -36,7 +36,10 @@ import { QfOverview } from './qf-overview'
 import { AnswersPanel } from '../answers/answers-panel'
 import { Answer, DpmAnswer } from 'common/answer'
 import { UserBetsSummary } from '../bet/bet-summary'
-import { AnswersResolvePanel } from '../answers/answer-resolve-panel'
+import {
+  AnswersResolvePanel,
+  IndependentAnswersResolvePanel,
+} from '../answers/answer-resolve-panel'
 import { CancelLabel } from '../outcome-label'
 import { PollPanel } from '../poll/poll-panel'
 import { CreateAnswerPanel } from '../answers/create-answer-panel'
@@ -204,6 +207,10 @@ const ChoiceOverview = (props: {
   const { points, contract, showResolver, onAnswerCommentClick } = props
 
   if (!onAnswerCommentClick) return null
+
+  const shouldAnswersSumToOne =
+    'shouldAnswersSumToOne' in contract ? contract.shouldAnswersSumToOne : true
+
   return (
     <>
       {contract.resolution === 'CANCEL' && (
@@ -225,7 +232,11 @@ const ChoiceOverview = (props: {
         </SizedContainer>
       )}
       {showResolver ? (
-        <AnswersResolvePanel contract={contract} />
+        !shouldAnswersSumToOne && contract.mechanism === 'cpmm-multi-1' ? (
+          <IndependentAnswersResolvePanel contract={contract} />
+        ) : (
+          <AnswersResolvePanel contract={contract} />
+        )
       ) : (
         <>
           <AnswersPanel

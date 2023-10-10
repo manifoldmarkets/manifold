@@ -10,7 +10,7 @@ import {
 import { formatLargeNumber, formatPercent } from 'common/util/format'
 import { Bet } from 'common/bet'
 import { STONK_NO, STONK_YES } from 'common/stonk'
-import { AnswerLabel } from './answers/answer-item'
+import { AnswerLabel } from './answers/answer-components'
 
 export function OutcomeLabel(props: {
   contract: Contract

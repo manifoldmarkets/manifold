@@ -29,12 +29,14 @@ import {
 import { getLoanPayouts, getPayouts, groupPayoutsByUser } from 'common/payouts'
 import { APIError } from 'common/api'
 import { CORE_USERNAMES } from 'common/envs/constants'
+import { Query } from 'firebase-admin/firestore'
 import { trackPublicEvent } from 'shared/analytics'
 import { recordContractEdit } from 'shared/record-contract-edit'
 
 export type ResolutionParams = {
   outcome: string
   probabilityInt?: number
+  answerId?: string
   value?: number
   resolutions?: { [key: string]: number }
 }
@@ -43,7 +45,7 @@ export const resolveMarketHelper = async (
   unresolvedContract: Contract,
   resolver: User,
   creator: User,
-  { value, resolutions, probabilityInt, outcome }: ResolutionParams
+  { value, resolutions, probabilityInt, outcome, answerId }: ResolutionParams
 ) => {
   const { closeTime, id: contractId } = unresolvedContract
 
@@ -63,10 +65,11 @@ export const resolveMarketHelper = async (
     outcome,
     unresolvedContract,
     resolutions,
-    probabilityInt
+    probabilityInt,
+    answerId
   )
 
-  const updatedAttrs = removeUndefinedProps({
+  let updatedAttrs = removeUndefinedProps({
     isResolved: true,
     resolution: outcome,
     resolutionValue: value,
@@ -76,6 +79,21 @@ export const resolveMarketHelper = async (
     resolutions,
     collectedFees,
   })
+
+  if (unresolvedContract.mechanism === 'cpmm-multi-1' && answerId) {
+    // Only resolve the contract if all other answers are resolved.
+    if (
+      unresolvedContract.answers
+        .filter((a) => a.id !== answerId)
+        .every((a) => a.resolution)
+    )
+      updatedAttrs = {
+        ...updatedAttrs,
+        resolution: 'MKT',
+      }
+    else updatedAttrs = {} as any
+  }
+
   const contract = {
     ...unresolvedContract,
     ...updatedAttrs,
@@ -108,12 +126,27 @@ export const resolveMarketHelper = async (
   // Should we combine all the payouts into one txn?
   const contractDoc = firestore.doc(`contracts/${contractId}`)
   await payUsersTransactions(payouts, contractId)
+
+  if (answerId) {
+    const answerDoc = firestore.doc(
+      `contracts/${contractId}/answersCpmm/${answerId}`
+    )
+    await answerDoc.update(
+      removeUndefinedProps({
+        resolution: outcome,
+        resolutionTime,
+        resolutionProbability,
+      })
+    )
+  }
   await contractDoc.update(contract)
 
   console.log('contract ', contractId, 'resolved to:', outcome)
 
-  await updateContractMetricsForUsers(contract, bets)
-  await undoUniqueBettorRewardsIfCancelResolution(contract, outcome)
+  if (!answerId) {
+    await updateContractMetricsForUsers(contract, bets)
+    await undoUniqueBettorRewardsIfCancelResolution(contract, outcome)
+  }
   await revalidateStaticProps(contractPath(contract))
 
   const userPayoutsWithoutLoans = groupPayoutsByUser(payoutsWithoutLoans)
@@ -140,6 +173,7 @@ export const resolveMarketHelper = async (
     outcome,
     probabilityInt,
     value,
+    answerId,
     {
       userIdToContractMetrics,
       userPayouts: userPayoutsWithoutLoans,
@@ -156,7 +190,8 @@ export const getDataAndPayoutInfo = async (
   outcome: string | undefined,
   unresolvedContract: Contract,
   resolutions: { [key: string]: number } | undefined,
-  probabilityInt: number | undefined
+  probabilityInt: number | undefined,
+  answerId: string | undefined
 ) => {
   const { id: contractId, creatorId } = unresolvedContract
   const liquiditiesSnap = await firestore
@@ -167,10 +202,13 @@ export const getDataAndPayoutInfo = async (
     (doc) => doc.data() as LiquidityProvision
   )
 
-  const betsSnap = await firestore
-    .collection(`contracts/${contractId}/bets`)
-    .get()
-
+  let betsQuery: Query<any> = firestore.collection(
+    `contracts/${contractId}/bets`
+  )
+  if (answerId) {
+    betsQuery = betsQuery.where('answerId', '==', answerId)
+  }
+  const betsSnap = await betsQuery.get()
   const bets = betsSnap.docs.map((doc) => doc.data() as Bet)
 
   const resolutionProbability =
@@ -196,7 +234,8 @@ export const getDataAndPayoutInfo = async (
     bets,
     liquidities,
     resolutionProbs,
-    resolutionProbability
+    resolutionProbability,
+    answerId
   )
   const payoutsWithoutLoans = [
     { userId: creatorId, payout: creatorPayout, deposit: creatorPayout },

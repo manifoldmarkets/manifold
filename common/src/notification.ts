@@ -328,6 +328,7 @@ export type ContractResolutionData = {
   profitRank?: number
   totalShareholders?: number
   profit?: number
+  answerId?: string
 }
 
 export type UniqueBettorData = {

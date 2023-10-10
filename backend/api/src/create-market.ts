@@ -399,11 +399,6 @@ function validateMarketBody(body: any) {
       multipleChoiceSchema,
       body
     ))
-    if (shouldAnswersSumToOne === false)
-      throw new APIError(
-        403,
-        'Multiple choice answers that do not sum to one are not implemented.'
-      )
     if (answers.length < 2 && addAnswersMode === 'DISABLED')
       throw new APIError(
         400,

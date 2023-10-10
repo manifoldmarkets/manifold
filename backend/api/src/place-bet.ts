@@ -161,6 +161,7 @@ export const placeBetMain = async (
         outcomeType === 'MULTIPLE_CHOICE' &&
         mechanism == 'cpmm-multi-1'
       ) {
+        const { shouldAnswersSumToOne } = contract
         const {
           answerId,
           outcome = 'YES',
@@ -173,7 +174,7 @@ export const placeBetMain = async (
         const answers = answersSnap.docs.map((doc) => doc.data() as Answer)
         const answer = answers.find((a) => a.id === answerId)
         if (!answer) throw new APIError(404, 'Answer not found')
-        if (answers.length < 2)
+        if (shouldAnswersSumToOne && answers.length < 2)
           throw new APIError(
             403,
             'Cannot bet until at least two answers are added.'
@@ -195,7 +196,12 @@ export const placeBetMain = async (
         }
 
         const { unfilledBets, balanceByUserId } =
-          await getUnfilledBetsAndUserBalances(trans, contractDoc)
+          await getUnfilledBetsAndUserBalances(
+            trans,
+            contractDoc,
+            // Fetch all limit orders if answers should sum to one.
+            shouldAnswersSumToOne ? undefined : answerId
+          )
 
         return getNewMultiCpmmBetInfo(
           contract,
@@ -362,18 +368,28 @@ export const placeBetMain = async (
 
 const firestore = admin.firestore()
 
-const getUnfilledBetsQuery = (contractDoc: DocumentReference) => {
-  return contractDoc
+const getUnfilledBetsQuery = (
+  contractDoc: DocumentReference,
+  answerId?: string
+) => {
+  const q = contractDoc
     .collection('bets')
     .where('isFilled', '==', false)
     .where('isCancelled', '==', false) as Query<LimitBet>
+  if (answerId) {
+    return q.where('answerId', '==', answerId)
+  }
+  return q
 }
 
 export const getUnfilledBetsAndUserBalances = async (
   trans: Transaction,
-  contractDoc: DocumentReference
+  contractDoc: DocumentReference,
+  answerId?: string
 ) => {
-  const unfilledBetsSnap = await trans.get(getUnfilledBetsQuery(contractDoc))
+  const unfilledBetsSnap = await trans.get(
+    getUnfilledBetsQuery(contractDoc, answerId)
+  )
   const unfilledBets = unfilledBetsSnap.docs.map((doc) => doc.data())
 
   // Get balance of all users with open limit orders.

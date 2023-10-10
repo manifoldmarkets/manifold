@@ -6,12 +6,7 @@ import clsx from 'clsx'
 import { Answer, DpmAnswer } from 'common/answer'
 import { Bet } from 'common/bet'
 import { getAnswerProbability, getContractBetMetrics } from 'common/calculate'
-import {
-  CPMMMultiContract,
-  MultiContract,
-  contractPath,
-  tradingAllowed,
-} from 'common/contract'
+import { CPMMMultiContract, MultiContract, contractPath } from 'common/contract'
 import { formatMoney } from 'common/util/format'
 import Link from 'next/link'
 import { Button } from 'web/components/buttons/button'
@@ -22,15 +17,12 @@ import { useUserByIdOrAnswer } from 'web/hooks/use-user-supabase'
 import { nthColor, useChartAnswers } from '../charts/contract/choice'
 import { Col } from '../layout/col'
 import { NoLabel, YesLabel } from '../outcome-label'
-import { AnswerBar, AnswerLabel } from './answer-item'
 import {
   AddComment,
-  ClosedProb,
-  DPMMultiBettor,
-  MultiBettor,
-  MultiSeller,
-  OpenProb,
-} from './answer-options'
+  AnswerBar,
+  AnswerLabel,
+  AnswerStatusAndBetButtons,
+} from './answer-components'
 import { floatingEqual } from 'common/util/math'
 import { InfoTooltip } from '../widgets/info-tooltip'
 
@@ -63,6 +55,8 @@ export function AnswersPanel(props: {
       : outcomeType === 'FREE_RESPONSE'
       ? 'ANYONE'
       : 'DISABLED'
+  const shouldAnswersSumToOne =
+    'shouldAnswersSumToOne' in contract ? contract.shouldAnswersSumToOne : true
 
   const [showSmallAnswers, setShowSmallAnswers] = useState(isMultipleChoice)
 
@@ -72,8 +66,13 @@ export function AnswersPanel(props: {
 
   const sortByProb = addAnswersMode === 'ANYONE' || answers.length > maxAnswers
   const sortedAnswers = sortBy(answers, [
-    // winners before losers
-    (answer) => (resolutions ? -1 * resolutions[answer.id] : 0),
+    // Winners for shouldAnswersSumToOne 
+    (answer) => (resolutions ? -1 * resolutions[answer.id] : answer),
+    // Winners for independent binary
+    (answer) =>
+      'resolution' in answer && answer.resolution
+        ? -answer.subsidyPool
+        : -Infinity,
     // then by prob or index
     (answer) =>
       !sortByProb && 'index' in answer ? answer.index : -1 * answer.prob,
@@ -98,12 +97,13 @@ export function AnswersPanel(props: {
 
   const moreCount = answers.length - answersToShow.length
 
+  // Note: Hide answers if there is just one "Other" answer.
+  const showNoAnswers =
+    answers.length === 0 || (shouldAnswersSumToOne && answers.length === 1)
+
   return (
     <Col className="mx-[2px] gap-3">
-      {/* Note: Answers can be length 1 if it is "Other".
-          In that case, we'll wait until another answer is added before showing any answers.
-      */}
-      {answers.length !== 1 && (
+      {!showNoAnswers && (
         <Col className="gap-2">
           {answersToShow.map((answer) => (
             <Answer
@@ -139,8 +139,7 @@ export function AnswersPanel(props: {
         </Col>
       )}
 
-      {(answers.length === 0 ||
-        (answers.length === 1 && outcomeType === 'MULTIPLE_CHOICE')) && (
+      {showNoAnswers && (
         <div className="text-ink-500 pb-4">No answers yet...</div>
       )}
     </Col>
@@ -160,7 +159,6 @@ function Answer(props: {
   const prob = getAnswerProbability(contract, answer.id)
 
   const isCpmm = contract.mechanism === 'cpmm-multi-1'
-  const isDpm = contract.mechanism === 'dpm-2'
   const isFreeResponse = contract.outcomeType === 'FREE_RESPONSE'
   const isOther = 'isOther' in answer && answer.isOther
   const addAnswersMode =
@@ -182,7 +180,6 @@ function Answer(props: {
     bet.outcome === 'YES' ? bet.shares : -bet.shares
   )
   const hasBets = userBets && !floatingEqual(sharesSum, 0)
-  const user = useUser()
 
   return (
     <AnswerBar
@@ -215,31 +212,11 @@ function Answer(props: {
       }
       end={
         <>
-          {!tradingAllowed(contract) ? (
-            <ClosedProb prob={prob} resolvedProb={resolvedProb} />
-          ) : (
-            <>
-              <OpenProb prob={prob} />
-              {isDpm ? (
-                <DPMMultiBettor answer={answer as any} contract={contract} />
-              ) : (
-                <>
-                  <MultiBettor
-                    answer={answer as any}
-                    contract={contract as any}
-                  />
-                  {user && hasBets && (
-                    <MultiSeller
-                      answer={answer as any}
-                      contract={contract as any}
-                      userBets={userBets}
-                      user={user}
-                    />
-                  )}
-                </>
-              )}
-            </>
-          )}
+          <AnswerStatusAndBetButtons
+            contract={contract}
+            answer={answer}
+            userBets={userBets ?? []}
+          />
           {onAnswerCommentClick && isFreeResponse && (
             <AddComment onClick={() => onAnswerCommentClick(answer)} />
           )}

@@ -5,7 +5,6 @@ import {
   BsUiChecks,
 } from 'react-icons/bs'
 import { GiReceiveMoney } from 'react-icons/gi'
-import { TfiWrite } from 'react-icons/tfi'
 import { Col } from '../layout/col'
 import { CgPoll } from 'react-icons/cg'
 
@@ -32,18 +31,6 @@ export const PREDICTIVE_CONTRACT_TYPES = {
     visual: (
       <Col className="text-primary-400 relative my-auto h-12 w-12">
         <BsUiChecks className="h-12 w-12" />
-      </Col>
-    ),
-  },
-  free_response: {
-    label: 'Free response',
-    value: 'FREE_RESPONSE',
-    name: 'free response',
-    descriptor: 'A question that anyone can write an answer to.',
-    example: 'What is the true cause of the UAPs?',
-    visual: (
-      <Col className="text-primary-400 relative my-auto h-12 w-12">
-        <TfiWrite className="h-12 w-12" />
       </Col>
     ),
   },

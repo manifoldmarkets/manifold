@@ -1,6 +1,13 @@
-import { sum } from 'lodash'
+import { sortBy, sum } from 'lodash'
 import { useEffect, useState } from 'react'
-import { MultiContract } from 'common/contract'
+import Link from 'next/link'
+import clsx from 'clsx'
+
+import {
+  CPMMMultiContract,
+  MultiContract,
+  tradingAllowed,
+} from 'common/contract'
 import { Col } from '../layout/col'
 import { APIError, resolveMarket } from 'web/lib/firebase/api'
 import { Row } from '../layout/row'
@@ -10,7 +17,22 @@ import { removeUndefinedProps } from 'common/util/object'
 import { BETTORS } from 'common/user'
 import { Button } from '../buttons/button'
 import { useUser } from 'web/hooks/use-user'
-import { ResolutionAnswerItem } from './answer-item'
+import { getAnswerColor } from './answers-panel'
+import { DpmAnswer, Answer } from 'common/answer'
+import { getAnswerProbability } from 'common/calculate'
+import { formatPercent } from 'common/util/format'
+import { useUserByIdOrAnswer } from 'web/hooks/use-user-supabase'
+import { MiniResolutionPanel } from '../resolution-panel'
+import { Avatar, EmptyAvatar } from '../widgets/avatar'
+import { InfoTooltip } from '../widgets/info-tooltip'
+import { Input } from '../widgets/input'
+import { Linkify } from '../widgets/linkify'
+import {
+  AnswerBar,
+  AnswerLabel,
+  AnswerStatusAndBetButtons,
+} from './answer-components'
+import { useAdmin } from 'web/hooks/use-admin'
 
 function getAnswerResolveButtonColor(
   resolveOption: string | undefined,
@@ -249,7 +271,7 @@ export const AnswersResolvePanel = (props: { contract: MultiContract }) => {
 
   const [resolveOption, setResolveOption] = useState<
     'CHOOSE_ONE' | 'CHOOSE_MULTIPLE' | 'CANCEL' | undefined
-  >()
+  >('CHOOSE_ONE')
   const [chosenAnswers, setChosenAnswers] = useState<{
     [answerId: string]: number
   }>({})
@@ -311,5 +333,264 @@ export const AnswersResolvePanel = (props: { contract: MultiContract }) => {
         />
       ))}
     </>
+  )
+}
+
+export function ResolutionAnswerItem(props: {
+  answer: DpmAnswer | Answer
+  contract: MultiContract
+  showChoice: 'radio' | 'checkbox' | undefined
+  chosenProb: number | undefined
+  totalChosenProb?: number
+  onChoose: (answerId: string, prob: number) => void
+  onDeselect: (answerId: string) => void
+  isInModal?: boolean
+}) {
+  const {
+    answer,
+    contract,
+    showChoice,
+    chosenProb,
+    totalChosenProb,
+    onChoose,
+    onDeselect,
+    isInModal,
+  } = props
+  const { resolution, resolutions, outcomeType } = contract
+  const { text } = answer
+  const user = useUserByIdOrAnswer(answer)
+  const isChosen = chosenProb !== undefined
+
+  const prob = getAnswerProbability(contract, answer.id)
+  const roundedProb = Math.round(prob * 100)
+  const probPercent = formatPercent(prob)
+  const wasResolvedTo =
+    resolution === answer.id || (resolutions && resolutions[answer.id])
+
+  return (
+    <div
+      className={clsx(
+        'flex flex-col gap-4 rounded p-4',
+        isInModal ? '' : 'sm:flex-row',
+        wasResolvedTo
+          ? resolution === 'MKT'
+            ? 'mb-2 bg-blue-500/20'
+            : 'flex flex-col gap-4 rounded bg-teal-500/20 p-4'
+          : chosenProb === undefined
+          ? 'bg-canvas-50'
+          : showChoice === 'radio'
+          ? 'bg-teal-500/20'
+          : 'bg-blue-500/20'
+      )}
+    >
+      <Col className="flex-1 gap-3">
+        <div className="whitespace-pre-line">
+          <Linkify text={text} />
+        </div>
+
+        {outcomeType === 'FREE_RESPONSE' && (
+          <Row className="text-ink-500 items-center gap-2 text-sm">
+            {user ? (
+              <Link className="relative" href={`/${user.username}`}>
+                <Row className="items-center gap-2">
+                  <Avatar avatarUrl={user.avatarUrl} size="2xs" />
+                  <div className="truncate">{user.name}</div>
+                </Row>
+              </Link>
+            ) : (
+              <EmptyAvatar />
+            )}
+          </Row>
+        )}
+      </Col>
+
+      <Row
+        className={clsx(
+          'items-center justify-end gap-4 self-end',
+          isInModal ? '' : 'sm:self-start'
+        )}
+      >
+        {!wasResolvedTo &&
+          (showChoice === 'checkbox' ? (
+            <Input
+              className="w-24 justify-self-end !text-2xl"
+              type="number"
+              placeholder={`${roundedProb}`}
+              maxLength={9}
+              value={chosenProb ? Math.round(chosenProb) : ''}
+              onChange={(e) => {
+                const { value } = e.target
+                const numberValue = value
+                  ? parseInt(value.replace(/[^\d]/, ''))
+                  : 0
+                if (!isNaN(numberValue)) onChoose(answer.id, numberValue)
+              }}
+            />
+          ) : (
+            <div
+              className={clsx(
+                'text-2xl',
+                tradingAllowed(contract) ? 'text-teal-500' : 'text-ink-500'
+              )}
+            >
+              {probPercent}
+            </div>
+          ))}
+        {showChoice ? (
+          <div className="flex flex-col py-1">
+            <Row className="cursor-pointer items-center gap-2 px-1 py-2">
+              <span className="">Choose this answer</span>
+              {showChoice === 'radio' && (
+                <input
+                  className={clsx('radio', chosenProb && '!bg-teal-500')}
+                  type="radio"
+                  name="opt"
+                  checked={isChosen}
+                  onChange={() => onChoose(answer.id, 1)}
+                  value={answer.id}
+                />
+              )}
+              {showChoice === 'checkbox' && (
+                <input
+                  className={clsx('checkbox', chosenProb && '!bg-blue-500')}
+                  type="checkbox"
+                  name="opt"
+                  checked={isChosen}
+                  onChange={() => {
+                    if (isChosen) onDeselect(answer.id)
+                    else {
+                      onChoose(answer.id, 100 * prob)
+                    }
+                  }}
+                  value={answer.id}
+                />
+              )}
+            </Row>
+            {showChoice === 'checkbox' && (
+              <div className="ml-1">
+                {chosenProb && totalChosenProb
+                  ? Math.round((100 * chosenProb) / totalChosenProb)
+                  : 0}
+                % share
+              </div>
+            )}
+          </div>
+        ) : (
+          wasResolvedTo && (
+            <Col className="items-end">
+              <div
+                className={clsx(
+                  'text-xl',
+                  resolution === 'MKT' ? 'text-blue-700' : 'text-teal-500'
+                )}
+              >
+                Chosen{' '}
+                {resolutions ? `${Math.round(resolutions[answer.id])}%` : ''}
+              </div>
+            </Col>
+          )
+        )}
+      </Row>
+    </div>
+  )
+}
+
+export const IndependentAnswersResolvePanel = (props: {
+  contract: CPMMMultiContract
+}) => {
+  const { contract } = props
+
+  const isAdmin = useAdmin()
+
+  const { answers, addAnswersMode } = contract
+  const sortedAnswers = [
+    ...sortBy(
+      answers,
+      (a) => (a.resolution ? -a.subsidyPool : -Infinity),
+      (a) => (addAnswersMode === 'ANYONE' ? -1 * a.prob : a.index)
+    ),
+  ]
+
+  return (
+    <>
+      {sortedAnswers.map((answer) => (
+        <IndependentResolutionAnswerItem
+          key={answer.id}
+          contract={contract}
+          answer={answer}
+          color={getAnswerColor(
+            answer,
+            contract.answers.map((a) => a.text)
+          )}
+          isAdmin={isAdmin}
+        />
+      ))}
+    </>
+  )
+}
+
+function IndependentResolutionAnswerItem(props: {
+  contract: CPMMMultiContract
+  answer: Answer
+  color: string
+  isAdmin: boolean
+  isInModal?: boolean
+}) {
+  const { contract, answer, color, isAdmin } = props
+  const answerCreator = useUserByIdOrAnswer(answer)
+  const user = useUser()
+  const isCreator = user?.id === contract.creatorId
+
+  const prob = getAnswerProbability(contract, answer.id)
+
+  const isOther = 'isOther' in answer && answer.isOther
+  const addAnswersMode = contract.addAnswersMode ?? 'DISABLED'
+
+  return (
+    <AnswerBar
+      color={color}
+      prob={prob}
+      label={
+        isOther ? (
+          <span>
+            Other{' '}
+            <InfoTooltip
+              className="!text-ink-600"
+              text="Represents all answers not listed. New answers are split out of this answer."
+            />
+          </span>
+        ) : (
+          <AnswerLabel
+            text={answer.text}
+            index={'index' in answer ? answer.index : undefined}
+            createdTime={answer.createdTime}
+            creator={
+              addAnswersMode === 'ANYONE' ? answerCreator ?? false : undefined
+            }
+            className={clsx(
+              'items-center text-sm !leading-none sm:flex sm:text-base'
+            )}
+          />
+        )
+      }
+      end={
+        <AnswerStatusAndBetButtons
+          contract={contract}
+          answer={answer}
+          userBets={[]}
+          noBetButtons
+        />
+      }
+      bottom={
+        !answer.resolution && (
+          <MiniResolutionPanel
+            contract={contract}
+            answer={answer}
+            isAdmin={isAdmin}
+            isCreator={isCreator}
+          />
+        )
+      }
+    />
   )
 }

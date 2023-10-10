@@ -4,23 +4,27 @@ import { MAX_ANSWERS, MAX_ANSWER_LENGTH } from 'common/answer'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { ExpandingInput } from '../widgets/expanding-input'
-import ShortToggle from '../widgets/short-toggle'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import { OutcomeType } from 'common/contract'
+import { ChoicesToggleGroup } from '../widgets/choices-toggle-group'
 
 export function MultipleChoiceAnswers(props: {
   answers: string[]
   setAnswers: (answers: string[]) => void
-  includeOtherAnswer: boolean
-  setIncludeOtherAnswer: ((include: boolean) => void) | undefined
+  addAnswersMode: 'DISABLED' | 'ONLY_CREATOR' | 'ANYONE'
+  setAddAnswersMode: (mode: 'DISABLED' | 'ONLY_CREATOR' | 'ANYONE') => void
+  shouldAnswersSumToOne: boolean
+  setShouldAnswersSumToOne: (shouldAnswersSumToOne: boolean) => void
   outcomeType: OutcomeType
   placeholder?: string
 }) {
   const {
     answers,
     setAnswers,
-    includeOtherAnswer,
-    setIncludeOtherAnswer,
+    addAnswersMode,
+    setAddAnswersMode,
+    shouldAnswersSumToOne,
+    setShouldAnswersSumToOne,
     outcomeType,
     placeholder,
   } = props
@@ -37,28 +41,11 @@ export function MultipleChoiceAnswers(props: {
 
   const addAnswer = () => setAnswer(answers.length, '')
 
-  const numAnswers = answers.length + (includeOtherAnswer ? 1 : 0)
+  const hasOther = shouldAnswersSumToOne && addAnswersMode !== 'DISABLED'
+  const numAnswers = answers.length + (hasOther ? 1 : 0)
 
   return (
     <Col className="gap-2">
-      {setIncludeOtherAnswer && (
-        <Row className="mb-4 items-center gap-2">
-          <ShortToggle on={includeOtherAnswer} setOn={setIncludeOtherAnswer} />
-          <div
-            className="cursor-pointer"
-            onClick={() => setIncludeOtherAnswer(!includeOtherAnswer)}
-          >
-            Allow yourself to add new answers later
-          </div>
-          <div>
-            <InfoTooltip
-              text={
-                'If enabled, you will be able to add new answers after question creation, and an "Other" answer will be included.'
-              }
-            />
-          </div>
-        </Row>
-      )}
       {answers.slice(0, answers.length).map((answer, i) => (
         <Row className="items-center gap-2 align-middle" key={i}>
           {i + 1}.{' '}
@@ -70,9 +57,9 @@ export function MultipleChoiceAnswers(props: {
             rows={1}
             maxLength={MAX_ANSWER_LENGTH}
           />
-          {(setIncludeOtherAnswer == undefined ||
+          {(!shouldAnswersSumToOne ||
             numAnswers > 2 ||
-            (numAnswers > 1 && includeOtherAnswer)) && (
+            (numAnswers > 1 && addAnswersMode !== 'DISABLED')) && (
             <button
               onClick={() => removeAnswer(i)}
               type="button"
@@ -84,7 +71,7 @@ export function MultipleChoiceAnswers(props: {
         </Row>
       ))}
 
-      {includeOtherAnswer && (
+      {hasOther && (
         <Row className="items-center gap-2">
           {answers.length + 1}.{' '}
           <ExpandingInput
@@ -103,11 +90,6 @@ export function MultipleChoiceAnswers(props: {
           </div>
         </Row>
       )}
-      {outcomeType === 'FREE_RESPONSE' && (
-        <div className="text-primary-500 mb-2 ml-1 text-sm">
-          Users can submit their own answers to this question.
-        </div>
-      )}
       {numAnswers < MAX_ANSWERS && (
         <Row className="justify-end">
           <button
@@ -119,6 +101,49 @@ export function MultipleChoiceAnswers(props: {
           </button>
         </Row>
       )}
+
+      <Col className="mb-4 items-start gap-2">
+        <Row className="items-center gap-2">
+          <div className="cursor-pointer">Who can add new answers later?</div>
+          <div>
+            <InfoTooltip
+              text={
+                'Determines who will be able to add new answers after question creation. If enabled, then an "Other" answer will be included.'
+              }
+            />
+          </div>
+        </Row>
+        <ChoicesToggleGroup
+          currentChoice={addAnswersMode}
+          choicesMap={{
+            'No one': 'DISABLED',
+            You: 'ONLY_CREATOR',
+            Anyone: 'ANYONE',
+          }}
+          setChoice={(c) => setAddAnswersMode(c as any)}
+        />
+      </Col>
+
+      <Col className="items-start gap-2">
+        <Row className="items-center gap-2">
+          <div className="cursor-pointer">How many answers will be chosen?</div>
+          <div>
+            <InfoTooltip
+              text={
+                'If "One", then one answer will resolve to YES and all the others will resolve to NO. Otherwise, any number of answers can resolve to YES — they are independent.'
+              }
+            />
+          </div>
+        </Row>
+        <ChoicesToggleGroup
+          currentChoice={shouldAnswersSumToOne ? 'true' : 'false'}
+          choicesMap={{
+            One: 'true',
+            'Any number': 'false',
+          }}
+          setChoice={(choice) => setShouldAnswersSumToOne(choice === 'true')}
+        />
+      </Col>
     </Col>
   )
 }
