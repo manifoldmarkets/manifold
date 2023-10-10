@@ -8,12 +8,12 @@ import {
   notification_preference,
 } from 'common/user-notification-preferences'
 import { filterDefined } from 'common/util/array'
+import { chunk } from 'lodash'
 
 const firestore = admin.firestore()
 
 // Add your new pref here, and be sure to add the default as well
-const NEW_PREFERENCE_KEY: notification_preference =
-  'poll_close_on_watched_markets'
+const NEW_PREFERENCE_KEY: notification_preference = 'review_on_your_market'
 
 async function main() {
   const privateUsers = filterDefined(await getAllPrivateUsers())
@@ -21,17 +21,23 @@ async function main() {
   //   await getPrivateUser('AJwLWoo3xue32XIiAVrL5SyR1WB2'),
   // ])
   const defaults = getDefaultNotificationPreferences(!isProd())
-  console.log('Updating', privateUsers.length, 'users')
   let count = 0
-  await Promise.all(
-    privateUsers.map(async (privateUser) => {
-      if (!privateUser.id) return
-      const currentUserPreferences = privateUser.notificationPreferences
-        ? privateUser.notificationPreferences
-        : defaults
-      if (currentUserPreferences[NEW_PREFERENCE_KEY] === undefined) {
-        currentUserPreferences[NEW_PREFERENCE_KEY] =
-          defaults[NEW_PREFERENCE_KEY]
+  const chunks = chunk(
+    privateUsers.filter(
+      (privateUser) =>
+        privateUser.notificationPreferences?.[NEW_PREFERENCE_KEY] === undefined
+    ),
+    250
+  )
+  const total = chunks.length * 250
+  console.log('Updating', total, 'users')
+  for (const chunk of chunks) {
+    await Promise.all(
+      chunk.map(async (privateUser) => {
+        if (!privateUser.id) return
+        const currentUserPreferences = privateUser.notificationPreferences
+          ? privateUser.notificationPreferences
+          : defaults
         try {
           await firestore
             .collection('private-users')
@@ -39,18 +45,18 @@ async function main() {
             .update({
               notificationPreferences: {
                 ...currentUserPreferences,
+                [NEW_PREFERENCE_KEY]: defaults[NEW_PREFERENCE_KEY],
               },
             })
         } catch (e) {
           console.log(e)
           console.log('Error updating user', privateUser.id)
         }
-      }
-      count++
-      if (count % 100 === 0)
-        console.log('Updated', count, 'users of', privateUsers.length)
-    })
-  )
+        count++
+        if (count % 100 === 0) console.log('Updated', count, 'users of', total)
+      })
+    )
+  }
 }
 
 if (require.main === module) main().then(() => process.exit())

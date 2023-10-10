@@ -8,6 +8,7 @@ import {
   Notification,
   NOTIFICATION_DESCRIPTIONS,
   notification_reason_types,
+  ReviewNotificationData,
   UniqueBettorData,
 } from 'common/notification'
 import {
@@ -1869,6 +1870,46 @@ export const createFollowSuggestionNotification = async (
       sourceUserUsername: contractCreator.username,
       sourceUserAvatarUrl: contractCreator.avatarUrl,
       sourceText: '',
+    }
+    await insertNotificationToSupabase(notification, pg)
+  }
+}
+export const createMarketReviewedNotification = async (
+  userId: string,
+  reviewer: User,
+  contract: Contract,
+  rating: number,
+  review: string,
+  pg: SupabaseDirectClient
+) => {
+  const privateUser = await getPrivateUser(userId)
+  if (!privateUser) return
+  const id = crypto.randomUUID()
+
+  if (!userOptedOutOfBrowserNotifications(privateUser)) {
+    const notification: Notification = {
+      id,
+      userId: privateUser.id,
+      reason: 'review_on_your_market',
+      createdTime: Date.now(),
+      isSeen: false,
+      sourceId: id,
+      sourceType: 'market_review',
+      sourceUpdateType: 'created',
+      sourceUserName: reviewer.name,
+      sourceUserUsername: reviewer.username,
+      sourceUserAvatarUrl: reviewer.avatarUrl,
+      sourceContractId: contract.id,
+      sourceContractSlug: contract.slug,
+      sourceContractTitle: contract.question,
+      sourceContractCreatorUsername: contract.creatorUsername,
+      sourceTitle: contract.question,
+      sourceSlug: contract.slug,
+      sourceText: '',
+      data: {
+        rating,
+        review,
+      } as ReviewNotificationData,
     }
     await insertNotificationToSupabase(notification, pg)
   }

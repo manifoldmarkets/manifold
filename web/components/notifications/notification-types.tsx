@@ -5,6 +5,7 @@ import {
   getSourceUrl,
   Notification,
   ReactionNotificationTypes,
+  ReviewNotificationData,
 } from 'common/notification'
 import { formatMoney } from 'common/util/format'
 import { floatingEqual } from 'common/util/math'
@@ -151,8 +152,7 @@ export function NotificationItem(props: {
         setHighlighted={setHighlighted}
       />
     )
-  }
-  if (reason === 'contract_from_followed_user') {
+  } else if (reason === 'contract_from_followed_user') {
     return (
       <NewMarketNotification
         notification={notification}
@@ -161,8 +161,7 @@ export function NotificationItem(props: {
         setHighlighted={setHighlighted}
       />
     )
-  }
-  if (reason === 'contract_from_private_group') {
+  } else if (reason === 'contract_from_private_group') {
     return (
       <NewPrivateMarketNotification
         notification={notification}
@@ -213,8 +212,7 @@ export function NotificationItem(props: {
         isChildOfGroup={isChildOfGroup}
       />
     )
-  }
-  if (sourceType === 'contract' && sourceUpdateType === 'updated') {
+  } else if (sourceType === 'contract' && sourceUpdateType === 'updated') {
     return (
       <MarketUpdateNotification
         notification={notification}
@@ -223,8 +221,7 @@ export function NotificationItem(props: {
         setHighlighted={setHighlighted}
       />
     )
-  }
-  if (sourceType === 'contract' && sourceUpdateType === 'resolved') {
+  } else if (sourceType === 'contract' && sourceUpdateType === 'resolved') {
     return (
       <MarketResolvedNotification
         highlighted={highlighted}
@@ -233,8 +230,7 @@ export function NotificationItem(props: {
         setHighlighted={setHighlighted}
       />
     )
-  }
-  if (sourceType === 'contract' && sourceUpdateType === 'closed') {
+  } else if (sourceType === 'contract' && sourceUpdateType === 'closed') {
     return (
       <MarketClosedNotification
         notification={notification}
@@ -357,6 +353,15 @@ export function NotificationItem(props: {
         isChildOfGroup={isChildOfGroup}
         highlighted={highlighted}
         setHighlighted={setHighlighted}
+      />
+    )
+  } else if (reason === 'review_on_your_market') {
+    return (
+      <ReviewNotification
+        notification={notification}
+        highlighted={highlighted}
+        setHighlighted={setHighlighted}
+        isChildOfGroup={isChildOfGroup}
       />
     )
   }
@@ -1567,24 +1572,66 @@ function VotedNotification(props: {
         <AvatarNotificationIcon notification={notification} symbol={'🗳️'} />
       }
     >
-      <>
-        <span>
-          <UserLink
-            name={notification.sourceUserName}
-            username={notification.sourceUserUsername}
-          />{' '}
-          voted on <b>{notification.sourceText}</b>
-          {!isChildOfGroup && (
-            <span>
-              {' '}
-              on{' '}
-              <PrimaryNotificationLink
-                text={notification.sourceContractTitle}
-              />
-            </span>
+      <span>
+        <UserLink
+          name={notification.sourceUserName}
+          username={notification.sourceUserUsername}
+        />{' '}
+        voted on <b>{notification.sourceText}</b>
+        {!isChildOfGroup && (
+          <span>
+            {' '}
+            on{' '}
+            <PrimaryNotificationLink text={notification.sourceContractTitle} />
+          </span>
+        )}
+      </span>
+    </NotificationFrame>
+  )
+}
+function ReviewNotification(props: {
+  notification: Notification
+  highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
+  isChildOfGroup?: boolean
+}) {
+  const { notification, highlighted, setHighlighted, isChildOfGroup } = props
+  const { rating, review } = notification.data as ReviewNotificationData
+  return (
+    <NotificationFrame
+      notification={notification}
+      isChildOfGroup={isChildOfGroup}
+      highlighted={highlighted}
+      setHighlighted={setHighlighted}
+      link={getSourceUrl(notification)}
+      icon={
+        <AvatarNotificationIcon notification={notification} symbol={'⭐️'} />
+      }
+      subtitle={review}
+    >
+      <span>
+        <UserLink
+          name={notification.sourceUserName}
+          username={notification.sourceUserUsername}
+        />{' '}
+        gave you{' '}
+        <span
+          className={clsx(
+            rating > 3
+              ? 'rounded-md bg-gradient-to-br from-amber-100 to-amber-400 px-2 '
+              : ''
           )}
+        >
+          {rating} star{rating > 1 ? 's' : ''}
         </span>
-      </>
+        {!isChildOfGroup && (
+          <span>
+            {' '}
+            on{' '}
+            <PrimaryNotificationLink text={notification.sourceContractTitle} />
+          </span>
+        )}
+      </span>
     </NotificationFrame>
   )
 }

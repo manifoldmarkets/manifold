@@ -1,7 +1,14 @@
 import { z } from 'zod'
 import { APIError, authEndpoint, validate } from './helpers'
-import { createSupabaseClient } from 'shared/supabase/init'
+import {
+  createSupabaseClient,
+  createSupabaseDirectClient,
+} from 'shared/supabase/init'
 import { contentSchema } from 'shared/zod-types'
+import { createMarketReviewedNotification } from 'shared/create-notification'
+import { User } from 'common/user'
+import { Contract } from 'common/contract'
+import { parseJsonContentToText, richTextToString } from 'common/util/parse'
 
 const schema = z.object({
   marketId: z.string(),
@@ -13,17 +20,17 @@ export const leavereview = authEndpoint(async (req, auth) => {
   const { marketId, review, rating } = validate(schema, req.body)
   const db = createSupabaseClient()
 
-  const contract = await db
+  const { data, error } = await db
     .from('contracts')
-    .select('creator_id')
+    .select('*')
     .eq('id', marketId)
     .single()
 
-  if (contract.error) {
+  if (error) {
     throw new APIError(404, `No market found with id ${marketId}`)
   }
 
-  const creatorId = contract.data.creator_id
+  const creatorId = data.creator_id
   if (!creatorId) {
     throw new APIError(500, `Market has no creator`)
   }
@@ -32,13 +39,17 @@ export const leavereview = authEndpoint(async (req, auth) => {
     throw new APIError(403, `You can't review your own market`)
   }
 
-  const user = await db.from('users').select('data').eq('id', auth.uid).single()
+  const userData = await db
+    .from('users')
+    .select('data')
+    .eq('id', auth.uid)
+    .single()
 
-  if (user.error) {
+  if (userData.error) {
     throw new APIError(500, `Error fetching creator`)
   }
-
-  if ((user.data as any).data.isBannedFromPosting) {
+  const reviewer = userData.data.data as User
+  if (reviewer.isBannedFromPosting) {
     throw new APIError(403, `You are banned`)
   }
 
@@ -49,6 +60,16 @@ export const leavereview = authEndpoint(async (req, auth) => {
     rating,
     content: review,
   })
+  const contract = data.data as Contract
+
+  await createMarketReviewedNotification(
+    creatorId,
+    reviewer,
+    contract,
+    rating,
+    parseJsonContentToText(review ?? ''),
+    createSupabaseDirectClient()
+  )
 
   return { success: true }
 })

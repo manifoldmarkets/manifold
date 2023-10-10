@@ -68,6 +68,7 @@ export type notification_source_types =
   | 'mana_payment'
   | 'referral_program'
   | 'follow_suggestion'
+  | 'market_review'
 
 export type notification_source_update_types =
   | 'created'
@@ -297,6 +298,10 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
     simple: 'Your poll closes',
     detailed: 'When a poll you created closes',
   },
+  review_on_your_market: {
+    simple: 'Reviews on your questions',
+    detailed: 'When a user reviews your question after resolution',
+  },
 }
 
 export type BettingStreakData = {
@@ -338,6 +343,11 @@ export type UniqueBettorData = {
   min?: number
   max?: number
   isLogScale?: boolean
+}
+
+export type ReviewNotificationData = {
+  rating: number
+  review: string
 }
 
 export function getSourceIdForLinkComponent(

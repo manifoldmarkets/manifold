@@ -145,6 +145,7 @@ const yourMarkets: SectionData = {
     'bounty_added',
     'vote_on_your_contract',
     'your_poll_closed',
+    'review_on_your_market',
   ],
 }
 const bonuses: SectionData = {
