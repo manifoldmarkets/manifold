@@ -217,7 +217,7 @@ function Answer(props: {
             answer={answer}
             userBets={userBets ?? []}
           />
-          {onAnswerCommentClick && isFreeResponse && (
+          {onAnswerCommentClick && (
             <AddComment onClick={() => onAnswerCommentClick(answer)} />
           )}
         </>
