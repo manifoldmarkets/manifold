@@ -83,10 +83,6 @@ export function ContractTabs(props: {
   const [totalPositions, setTotalPositions] = useState(props.totalPositions)
   const [totalComments, setTotalComments] = useState(comments.length)
 
-  const clearReply = () => {
-    setReplyTo?.(undefined)
-  }
-
   const commentsTitle =
     (totalComments > 0 ? `${shortFormatNumber(totalComments)} ` : '') +
     'Comments'

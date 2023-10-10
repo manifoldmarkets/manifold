@@ -747,7 +747,9 @@ function CommentReplyHeader(props: {
     )
   }
   if (answerOutcome && 'answers' in contract) {
-    const answer = contract.answers.find((a) => a.id === answerOutcome)
+    const answer = (contract.answers as (DpmAnswer | Answer)[]).find(
+      (a) => a.id === answerOutcome
+    )
     if (answer)
       return <CommentOnAnswerRow answer={answer} contract={contract as any} />
   }
