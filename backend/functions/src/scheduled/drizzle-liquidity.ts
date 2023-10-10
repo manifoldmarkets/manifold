@@ -7,7 +7,8 @@ import { APIError } from 'common/api'
 import {
   addCpmmLiquidity,
   addCpmmLiquidityFixedP,
-  addCpmmMultiLiquidity,
+  addCpmmMultiLiquidityAnswersSumToOne,
+  addCpmmMultiLiquidityToAnswersIndependently,
   getCpmmProbability,
 } from 'common/calculate-cpmm'
 import { formatMoneyWithDecimals } from 'common/util/format'
@@ -66,7 +67,9 @@ const drizzleMarket = async (contractId: string) => {
       const poolsByAnswer = Object.fromEntries(
         answers.map((a) => [a.id, { YES: a.poolYes, NO: a.poolNo }])
       )
-      const newPools = addCpmmMultiLiquidity(poolsByAnswer, amount)
+      const newPools = contract.shouldAnswersSumToOne
+        ? addCpmmMultiLiquidityAnswersSumToOne(poolsByAnswer, amount)
+        : addCpmmMultiLiquidityToAnswersIndependently(poolsByAnswer, amount)
 
       // Only update the first 495 answers to avoid exceeding the 500 document limit.
       const poolEntries = Object.entries(newPools).slice(0, 495)

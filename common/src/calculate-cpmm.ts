@@ -442,7 +442,17 @@ export function addCpmmLiquidityFixedP(
   return { newPool, liquidity, sharesThrownAway }
 }
 
-export function addCpmmMultiLiquidity(
+export function addCpmmMultiLiquidityToAnswersIndependently(
+  pools: { [answerId: string]: { YES: number; NO: number } },
+  amount: number
+) {
+  const amountPerAnswer = amount / Object.keys(pools).length
+  return mapValues(pools, (pool) =>
+    addCpmmLiquidityFixedP(pool, amountPerAnswer).newPool
+  )
+}
+
+export function addCpmmMultiLiquidityAnswersSumToOne(
   pools: { [answerId: string]: { YES: number; NO: number } },
   amount: number
 ) {

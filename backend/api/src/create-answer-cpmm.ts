@@ -12,7 +12,7 @@ import { randomString } from 'common/util/random'
 import { getUnfilledBetsAndUserBalances, updateMakers } from './place-bet'
 import { FieldValue } from 'firebase-admin/firestore'
 import {
-  addCpmmMultiLiquidity,
+  addCpmmMultiLiquidityAnswersSumToOne,
   getCpmmProbability,
 } from 'common/calculate-cpmm'
 import { isAdminId } from 'common/envs/constants'
@@ -286,7 +286,10 @@ async function createAnswerAndSumAnswersToOne(
       prob
     )
   }
-  const newPoolsByAnswer = addCpmmMultiLiquidity(poolsByAnswer, extraMana)
+  const newPoolsByAnswer = addCpmmMultiLiquidityAnswersSumToOne(
+    poolsByAnswer,
+    extraMana
+  )
 
   for (const result of betResults) {
     const { answer, bet, makers, ordersToCancel } = result
