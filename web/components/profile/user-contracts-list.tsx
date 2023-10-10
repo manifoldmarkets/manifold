@@ -35,8 +35,8 @@ export function UserContractsList(props: { creator: User }) {
   const user = useUser()
   const router = useRouter()
   const seeClosed = () => {
-    router.replace({ query: { ...router.query, f: 'closed' } }, undefined, {
-      shallow: true,
+    router.push({ query: { ...router.query, f: 'closed' } }, undefined, {
+      shallow: false,
     })
   }
 
