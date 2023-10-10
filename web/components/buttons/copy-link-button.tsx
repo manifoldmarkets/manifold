@@ -50,7 +50,7 @@ export function CopyLinkOrShareButton(props: {
   const onClick = () => {
     if (!url) return
     copyToClipboard(url)
-    toast.success('Link copied!')
+    if (!isNative) toast.success('Link copied!')
     trackShareEvent(eventTrackingName, url)
   }
 
@@ -125,7 +125,7 @@ export const CopyLinkRow = (props: {
     setTimeout(() => setBgPressed(false), 300)
     setTimeout(() => setIconPressed(false), 1000)
     copyToClipboard(url)
-    toast.success('Link copied!')
+    if (!isNative) toast.success('Link copied!')
 
     trackShareEvent(eventTrackingName, url)
   }
@@ -185,7 +185,7 @@ export function SimpleCopyTextButton(props: {
     }
 
     copyToClipboard(text)
-    toast.success('Link copied!')
+    if (!isNative) toast.success('Link copied!')
     track(eventTrackingName, { text })
   }
 

@@ -8,8 +8,6 @@ import { REFERRAL_AMOUNT, UNIQUE_BETTOR_BONUS_AMOUNT } from 'common/economy'
 import { Button } from '../buttons/button'
 import { LinkIcon } from '@heroicons/react/outline'
 import { getIsNative } from 'web/lib/native/is-native'
-import { postMessageToNative } from '../native-message-listener'
-import { NativeShareData } from 'common/native-share-data'
 import { copyToClipboard } from 'web/lib/util/copy'
 import { trackShareEvent } from 'web/lib/service/analytics'
 import toast from 'react-hot-toast'
@@ -71,15 +69,8 @@ const getOnClick = (contract: Contract, username?: string) => {
 
   return () => {
     if (!url) return
-    if (isNative) {
-      // If we want to extend this: iOS can use a url and a message, Android can use a title and a message.
-      postMessageToNative('share', {
-        message: url,
-      } as NativeShareData)
-    } else {
-      copyToClipboard(url)
-      toast.success('Link copied!')
-    }
+    copyToClipboard(url)
+    if (!isNative) toast.success('Link copied!')
 
     trackShareEvent('copy market link', url)
   }
