@@ -110,8 +110,8 @@ export function ContractParamsForm(props: {
     useState<add_answers_mode>('DISABLED')
   const [shouldAnswersSumToOne, setShouldAnswersSumToOne] = useState(true)
 
-  const numAnswers =
-    addAnswersMode === 'DISABLED' ? answers.length : answers.length + 1
+  const hasOtherAnswer = addAnswersMode !== 'DISABLED' && shouldAnswersSumToOne
+  const numAnswers = hasOtherAnswer ? answers.length + 1 : answers.length
 
   useEffect(() => {
     if (params?.answers) {

@@ -88,8 +88,9 @@ export async function createMarketHelper(body: any, auth: AuthedUser) {
 
   const contractRef = firestore.collection('contracts').doc()
 
+  const hasOtherAnswer = addAnswersMode !== 'DISABLED' && shouldAnswersSumToOne
   const numAnswers =
-    (answers?.length ?? 0) + (addAnswersMode === 'DISABLED' ? 0 : 1)
+    (answers?.length ?? 0) + (hasOtherAnswer ? 1 : 0)
   const ante = totalBounty ?? getAnte(outcomeType, numAnswers)
 
   if (ante < 1) throw new APIError(400, 'Ante must be at least 1')
