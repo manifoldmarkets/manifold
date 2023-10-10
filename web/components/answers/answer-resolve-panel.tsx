@@ -502,12 +502,12 @@ export const IndependentAnswersResolvePanel = (props: {
 
   const isAdmin = useAdmin()
 
-  const { answers } = contract
+  const { answers, addAnswersMode } = contract
   const sortedAnswers = [
     ...sortBy(
       answers,
       (a) => (a.resolution ? -a.subsidyPool : -Infinity),
-      (a) => -1 * a.prob
+      (a) => (addAnswersMode === 'ANYONE' ? -1 * a.prob : a.index)
     ),
   ]
 
