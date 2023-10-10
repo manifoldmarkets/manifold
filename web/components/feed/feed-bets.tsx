@@ -55,12 +55,7 @@ export const FeedBet = memo(function FeedBet(props: {
             className="flex-1"
           />
         </Row>
-        <BetActions
-          onReply={onReply}
-          bet={bet}
-          betLikes={0}
-          contract={contract}
-        />
+        <BetActions onReply={onReply} bet={bet} contract={contract} />
       </Row>
     </Col>
   )
@@ -160,8 +155,6 @@ export function BetStatusText(props: {
 function BetActions(props: {
   onReply?: (bet: Bet) => void
   bet: Bet
-  betLikes: number
-  showLike?: boolean
   contract: Contract
 }) {
   const { onReply, bet, contract } = props

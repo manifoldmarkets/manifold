@@ -97,13 +97,13 @@ function CommentsDialog(props: {
     <Modal
       open={open}
       setOpen={setOpen}
-      className={clsx(MODAL_CLASS)}
+      className={clsx('bg-canvas-0 rounded-lg pl-2 pr-4 pt-4')}
       size={'lg'}
     >
-      <div className="mb-2">
+      <div className="mb-2 ml-2">
         Comments on <span className="font-bold">{contract.question}</span>
       </div>
-      <Col className={SCROLLABLE_MODAL_CLASS}>
+      <Col className={clsx(SCROLLABLE_MODAL_CLASS, 'scrollbar-hide')}>
         <CommentsTabContent
           contract={contract}
           comments={comments}

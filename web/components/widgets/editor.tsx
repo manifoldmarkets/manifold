@@ -112,14 +112,18 @@ export function useTextEditor(props: {
   const save = useCallback(debounce(saveContent, 500), [])
   const editorClass = clsx(
     proseClass(size),
-    'outline-none py-[.5em] px-4 h-full',
+    'outline-none py-[.5em] px-4',
     'prose-img:select-auto',
     '[&_.ProseMirror-selectednode]:outline-dotted [&_*]:outline-primary-300' // selected img, embeds
   )
 
   const editor = useEditor({
     editorProps: {
-      attributes: { class: editorClass, spellcheck: simple ? 'true' : 'false' },
+      attributes: {
+        class: editorClass,
+        spellcheck: simple ? 'true' : 'false',
+        style: `min-height: ${1 + 1.625 * (simple ? 2 : 3)}em`, // 1em padding + 1.625 lines per row
+      },
     },
     onUpdate: !key
       ? noop
@@ -202,17 +206,14 @@ function isValidIframe(text: string) {
   return /^<iframe.*<\/iframe>$/.test(text)
 }
 
-export type EditorSize = 'xs'
-
 export function TextEditor(props: {
   editor: Editor | null
   simple?: boolean // show heading in toolbar
   hideToolbar?: boolean // hide toolbar
   children?: ReactNode // additional toolbar buttons
   className?: string
-  size?: EditorSize
 }) {
-  const { editor, simple, hideToolbar, children, className, size } = props
+  const { editor, simple, hideToolbar, children, className } = props
 
   return (
     // matches input styling
@@ -223,16 +224,7 @@ export function TextEditor(props: {
       )}
     >
       <FloatingFormatMenu editor={editor} advanced={!simple} />
-      <div
-        className={clsx(
-          size == 'xs'
-            ? 'min-h-[2em]'
-            : children
-            ? 'min-h-[4.25em]'
-            : 'min-h-[7.5em]', // 1 em padding + line height (1.625) * line count
-          'grid max-h-[69vh] overflow-auto'
-        )}
-      >
+      <div className={clsx('max-h-[69vh] overflow-auto')}>
         <EditorContent editor={editor} />
       </div>
       {!hideToolbar ? (

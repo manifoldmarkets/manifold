@@ -96,6 +96,7 @@ export default function DashboardPage(props: {
   const [editMode, setEditMode] = useState(false)
 
   const editor = useTextEditor({
+    size: 'lg',
     key: `edit dashboard ${slug}`,
     max: MAX_DESCRIPTION_LENGTH,
     defaultValue: dashboard.description,

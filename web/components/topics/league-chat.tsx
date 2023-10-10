@@ -129,7 +129,6 @@ export const LeagueChat = (props: {
               user={user}
               submit={submitMessage}
               isSubmitting={isSubmitting}
-              size={'xs'}
               replyTo={replyToUser}
               submitOnEnter={true}
             />

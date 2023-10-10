@@ -59,7 +59,6 @@ import {
   useFirebasePublicContract,
   useIsPrivateContractMember,
 } from 'web/hooks/use-contract-supabase'
-import { useEvent } from 'web/hooks/use-event'
 import { useIsIframe } from 'web/hooks/use-is-iframe'
 import { useRelatedMarkets } from 'web/hooks/use-related-contracts'
 import { useSaveCampaign } from 'web/hooks/use-save-campaign'
@@ -87,7 +86,7 @@ import { getRecentTopLevelCommentsAndReplies } from 'common/supabase/comments'
 import { getRelatedContracts } from 'common/supabase/related-contracts'
 import { buildArray } from 'common/util/array'
 import { getInitialProbability } from 'common/calculate'
-import { calculateMultiBets } from 'common/bet'
+import { Bet, calculateMultiBets } from 'common/bet'
 import { pointsToBase64 } from 'common/util/og'
 import { removeUndefinedProps } from 'common/util/object'
 import { getUser } from 'web/lib/supabase/user'
@@ -378,21 +377,21 @@ export function ContractPageContent(props: {
     contractId: contract.id,
   })
 
-  const [answerResponse, setAnswerResponse] = useState<
-    Answer | DpmAnswer | undefined
-  >(undefined)
+  const [replyTo, setReplyTo] = useState<Answer | DpmAnswer | Bet>()
+
   const tabsContainerRef = useRef<null | HTMLDivElement>(null)
   const [activeTabIndex, setActiveTabIndex] = useState<number>(0)
-  const onAnswerCommentClick = useEvent((answer: Answer | DpmAnswer) => {
-    setAnswerResponse(answer)
-    if (tabsContainerRef.current) {
-      scrollIntoViewCentered(tabsContainerRef.current)
+
+  useEffect(() => {
+    if (replyTo) {
       setActiveTabIndex(0)
-    } else {
-      console.error('no ref to scroll to')
+      if (tabsContainerRef.current) {
+        scrollIntoViewCentered(tabsContainerRef.current)
+      } else {
+        console.error('no ref to scroll to')
+      }
     }
-  })
-  const onCancelAnswerResponse = useEvent(() => setAnswerResponse(undefined))
+  }, [replyTo])
 
   const { contracts: relatedMarkets, loadMore } = useRelatedMarkets(
     contract,
@@ -559,7 +558,7 @@ export function ContractPageContent(props: {
                 contract={contract}
                 betPoints={betPoints as any}
                 showResolver={showResolver}
-                onAnswerCommentClick={onAnswerCommentClick}
+                onAnswerCommentClick={setReplyTo}
               />
             </Col>
 
@@ -675,8 +674,8 @@ export function ContractPageContent(props: {
                 comments={comments}
                 userPositionsByOutcome={userPositionsByOutcome}
                 totalPositions={totalPositions}
-                answerResponse={answerResponse}
-                onCancelAnswerResponse={onCancelAnswerResponse}
+                replyTo={replyTo}
+                setReplyTo={setReplyTo}
                 blockedUserIds={blockedUserIds}
                 activeIndex={activeTabIndex}
                 setActiveIndex={setActiveTabIndex}

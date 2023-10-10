@@ -34,7 +34,6 @@ import { useUser } from 'web/hooks/use-user'
 import TriangleDownFillIcon from 'web/lib/icons/triangle-down-fill-icon.svg'
 import { track, withTracking } from 'web/lib/service/analytics'
 import { getOlderBets } from 'web/lib/supabase/bets'
-import { FreeResponseComments } from '../feed/feed-answer-comment-group'
 import { FeedBet } from '../feed/feed-bets'
 import { ContractCommentInput, FeedCommentThread } from '../feed/feed-comments'
 import { FeedLiquidity } from '../feed/feed-liquidity'
@@ -59,8 +58,9 @@ export function ContractTabs(props: {
   bets: Bet[]
   comments: ContractComment[]
   userPositionsByOutcome: ContractMetricsByOutcome
-  answerResponse?: Answer | DpmAnswer | undefined
-  onCancelAnswerResponse?: () => void
+  replyTo?: Answer | DpmAnswer | Bet
+  setReplyTo?: (replyTo?: Answer | DpmAnswer | Bet) => void
+  cancelReplyToAnswer?: () => void
   blockedUserIds: string[]
   activeIndex: number
   setActiveIndex: (i: number) => void
@@ -71,8 +71,8 @@ export function ContractTabs(props: {
     contract,
     comments,
     bets,
-    answerResponse,
-    onCancelAnswerResponse,
+    replyTo,
+    setReplyTo,
     blockedUserIds,
     activeIndex,
     setActiveIndex,
@@ -82,11 +82,10 @@ export function ContractTabs(props: {
 
   const [totalPositions, setTotalPositions] = useState(props.totalPositions)
   const [totalComments, setTotalComments] = useState(comments.length)
-  const [replyToBet, setReplyToBet] = useState<Bet | undefined>(undefined)
-  const clearReply = useEvent(() => setReplyToBet(undefined))
-  useEffect(() => {
-    if (replyToBet) setActiveIndex(0)
-  }, [replyToBet])
+
+  const clearReply = () => {
+    setReplyTo?.(undefined)
+  }
 
   const commentsTitle =
     (totalComments > 0 ? `${shortFormatNumber(totalComments)} ` : '') +
@@ -147,11 +146,10 @@ export function ContractTabs(props: {
               contract={contract}
               comments={comments}
               setCommentsLength={setTotalComments}
-              answerResponse={answerResponse}
-              onCancelAnswerResponse={onCancelAnswerResponse}
               blockedUserIds={blockedUserIds}
-              betResponse={replyToBet}
-              clearReply={clearReply}
+              replyTo={replyTo}
+              clearReply={() => setReplyTo?.(undefined)}
+              className="-ml-2 -mr-1"
             />
           ),
         },
@@ -175,7 +173,7 @@ export function ContractTabs(props: {
                 contract={contract}
                 bets={bets}
                 totalBets={totalBets}
-                setReplyToBet={setReplyToBet}
+                setReplyToBet={setReplyTo}
               />
             </Col>
           ),
@@ -197,19 +195,17 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
   comments: ContractComment[]
   blockedUserIds: string[]
   setCommentsLength?: (length: number) => void
-  onCancelAnswerResponse?: () => void
-  answerResponse?: Answer | DpmAnswer
-  betResponse?: Bet
+  replyTo?: Answer | DpmAnswer | Bet
   clearReply?: () => void
+  className?: string
 }) {
   const {
     contract,
-    answerResponse,
-    onCancelAnswerResponse,
     blockedUserIds,
     setCommentsLength,
-    betResponse,
+    replyTo,
     clearReply,
+    className,
   } = props
 
   // Firebase useComments
@@ -329,15 +325,15 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
   })
 
   return (
-    <>
+    <Col className={className}>
       {user && (
         <ContractCommentInput
-          replyToBet={betResponse}
+          replyTo={replyTo}
           replyToUserInfo={
-            betResponse
+            replyTo && 'userUsername' in replyTo
               ? {
-                  username: betResponse.userUsername,
-                  id: betResponse.userId,
+                  username: replyTo.userUsername,
+                  id: replyTo.userId,
                 }
               : undefined
           }
@@ -367,37 +363,24 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
           }
         />
       )}
-      {contract.outcomeType === 'FREE_RESPONSE' && (
-        <FreeResponseComments
+      {parentComments.slice(0, parentCommentsToRender).map((parent) => (
+        <FeedCommentThread
+          key={parent.id}
           contract={contract}
-          answerResponse={answerResponse}
-          onCancelAnswerResponse={onCancelAnswerResponse}
-          topLevelComments={parentComments.slice(0, parentCommentsToRender)}
-          commentsByParent={commentsByParent}
+          parentComment={parent}
+          threadComments={commentsByParent[parent.id] ?? []}
+          trackingLocation={'contract page'}
+          idInUrl={hashInUrl}
+          showReplies={
+            !isBountiedQuestion || (!!user && user.id === contract.creatorId)
+          }
+          childrenBountyTotal={
+            contract.outcomeType == 'BOUNTIED_QUESTION'
+              ? childrensBounties[parent.id]
+              : undefined
+          }
         />
-      )}
-      {contract.outcomeType !== 'FREE_RESPONSE' &&
-        parentComments
-          .slice(0, parentCommentsToRender)
-          .map((parent) => (
-            <FeedCommentThread
-              key={parent.id}
-              contract={contract}
-              parentComment={parent}
-              threadComments={commentsByParent[parent.id] ?? []}
-              trackingLocation={'contract page'}
-              idInUrl={hashInUrl}
-              showReplies={
-                !isBountiedQuestion ||
-                (!!user && user.id === contract.creatorId)
-              }
-              childrenBountyTotal={
-                contract.outcomeType == 'BOUNTIED_QUESTION'
-                  ? childrensBounties[parent.id]
-                  : undefined
-              }
-            />
-          ))}
+      ))}
 
       <div className="relative w-full">
         <VisibilityObserver
@@ -419,7 +402,7 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
           Sign up to comment <ArrowRightIcon className="ml-2 h-4 w-4" />
         </Button>
       )}
-    </>
+    </Col>
   )
 })
 
