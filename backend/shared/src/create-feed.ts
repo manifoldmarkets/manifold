@@ -10,6 +10,7 @@ import {
 } from 'shared/supabase/contracts'
 import { Contract, CPMMContract } from 'common/contract'
 import {
+  ALL_FEED_USER_ID,
   CONTRACT_FEED_REASON_TYPES,
   FEED_DATA_TYPES,
   FEED_REASON_TYPES,
@@ -58,6 +59,12 @@ export const bulkInsertDataToUserFeed = async (
 
   const feedRows = Object.entries(usersToReasonsInterestedInContract)
     .filter(([userId]) => !userIdsToExclude.includes(userId))
+    .concat([
+      [
+        ALL_FEED_USER_ID,
+        { reasons: ['similar_interest_vector_to_contract'], relevanceScore: 1 },
+      ],
+    ])
     .map(([userId, reasonAndScore]) =>
       convertObjectToSQLRow<any, 'user_feed'>({
         ...dataProps,
@@ -84,24 +91,25 @@ export const bulkInsertDataToUserFeed = async (
 export const createManualTrendingFeedRow = (
   contracts: Contract[],
   forUserId: string,
-  relevanceScore: number
+  estimatedRelevance: number
 ) => {
   const now = Date.now()
   const reasons: FEED_REASON_TYPES[] = [
     'similar_interest_vector_to_contract',
     'contract_in_group_you_are_in',
   ]
-  return contracts.map((contract) =>
-    convertObjectToSQLRow<any, 'user_feed'>({
-      contractId: contract.id,
-      creatorId: contract.creatorId,
-      userId: forUserId,
-      eventTime: new Date(now).toISOString(),
-      reason: 'similar_interest_vector_to_contract',
-      dataType: 'trending_contract',
-      reasons,
-      relevanceScore,
-    })
+  return contracts.map(
+    (contract) =>
+      convertObjectToSQLRow<any, 'user_feed'>({
+        contractId: contract.id,
+        creatorId: contract.creatorId,
+        userId: forUserId,
+        eventTime: new Date(now).toISOString(),
+        reason: 'similar_interest_vector_to_contract',
+        dataType: 'trending_contract',
+        reasons,
+        relevanceScore: contract.importanceScore * estimatedRelevance,
+      }) as Row<'user_feed'>
   )
 }
 

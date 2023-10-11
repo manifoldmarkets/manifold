@@ -29,7 +29,7 @@ import {
   createSupabaseDirectClient,
   SupabaseDirectClient,
 } from 'shared/supabase/init'
-import { spiceUpNewUsersFeedBasedOnTheirInterests } from 'shared/supabase/users'
+import { generateNewUserFeedFromContracts } from 'shared/supabase/users'
 import { DEFAULT_FEED_USER_ID } from 'common/feed'
 
 import { getImportantContractsForNewUsers } from 'shared/supabase/contracts'
@@ -155,7 +155,7 @@ export const createuser = authEndpoint(async (req, auth) => {
   await addContractsToSeenMarketsTable(auth.uid, visitedContractIds, pg)
   await upsertNewUserEmbeddings(auth.uid, visitedContractIds, pg)
   const interestingContractIds = await getImportantContractsForNewUsers(100, pg)
-  await spiceUpNewUsersFeedBasedOnTheirInterests(
+  await generateNewUserFeedFromContracts(
     auth.uid,
     pg,
     DEFAULT_FEED_USER_ID, // Should we just use the ALL_FEED_USER_ID now that we have tailored contract ids?
