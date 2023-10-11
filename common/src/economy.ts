@@ -21,7 +21,7 @@ export const getAnte = (
   const ante = ANTES[outcomeType as keyof typeof ANTES] ?? FIXED_ANTE
 
   if (outcomeType === 'MULTIPLE_CHOICE' || outcomeType === 'FREE_RESPONSE') {
-    return ante * (numAnswers ?? 0)
+    return Math.max(ante * (numAnswers ?? 0), 10)
   }
 
   return ante
