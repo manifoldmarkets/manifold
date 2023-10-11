@@ -391,7 +391,9 @@ export const Stats = (props: {
                       } question to non-predictive group...`,
                       success: `Successfully ${
                         !on ? 'removed' : 'added'
-                      } question to non-predictive group!`,
+                      } question ${
+                        !on ? 'from' : 'to'
+                      } non-predictive group!`,
                       error: `Error ${
                         !on ? 'removing' : 'adding'
                       } category. Try again?`,
