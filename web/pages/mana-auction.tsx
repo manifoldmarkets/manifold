@@ -299,7 +299,7 @@ export default function ManaAuctionPage() {
           hosting an auction for {formatMoney(10000)}.
         </div>
 
-        <GradientContainer className="mb-8 p-4">
+        <GradientContainer className="mb-8">
           <Row className="gap-4 sm:gap-8">
             <div className="text-ink-700 text-center text-xl">
               Highest bid{' '}
