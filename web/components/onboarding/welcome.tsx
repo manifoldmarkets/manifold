@@ -25,7 +25,7 @@ import {
   removeEmojis,
   TOPICS_TO_SUBTOPICS,
 } from 'common/topics'
-import { uniqBy } from 'lodash'
+import { orderBy, uniqBy } from 'lodash'
 
 export default function Welcome() {
   const user = useUser()
@@ -49,24 +49,26 @@ export default function Welcome() {
     if (user?.shouldShowWelcome) setOpen(true)
   }, [user?.shouldShowWelcome])
 
-  const [userInterestedCategories, setUserInterestedCategories] = useState<
-    Group[]
-  >([])
-  const [userBetInCategories, setUserBetInCategories] = useState<Group[]>([])
-  const [trendingCategories, setTrendingCategories] = useState<Group[]>([])
+  const [userInterestedTopics, setUserInterestedTopics] = useState<Group[]>([])
+  const [userBetInTopics, setUserBetInTopics] = useState<Group[]>([])
+  const [trendingTopics, setTrendingTopics] = useState<Group[]>([])
 
   const getTrendingCategories = async (userId: string) => {
-    const hardCodedCategoryIds = Object.keys(TOPICS_TO_SUBTOPICS)
+    const hardCodedTopicIds = Object.keys(TOPICS_TO_SUBTOPICS)
       .map((topic) => getSubtopics(topic))
       .flat()
       .map(([_, __, groupId]) => groupId)
-    const [userInterestedGroups, trendingGroups] = await Promise.all([
-      run(db.rpc('get_groups_from_user_seen_markets', { uid: userId })),
+    const [userInterestedTopicsRes, trendingTopicsRes] = await Promise.all([
+      run(
+        db.rpc('get_groups_and_scores_from_user_seen_markets', {
+          uid: userId,
+        })
+      ),
       run(
         db
           .from('groups')
           .select('id,data')
-          .not('id', 'in', `(${hardCodedCategoryIds.join(',')})`)
+          .not('id', 'in', `(${hardCodedTopicIds.join(',')})`)
           .not(
             'slug',
             'in',
@@ -83,26 +85,32 @@ export default function Welcome() {
           .limit(15)
       ),
     ])
-    const userCategories = userInterestedGroups.data
-      ?.flat()
-      .map((groupData) => ({
+    const userInterestedTopics = orderBy(
+      userInterestedTopicsRes.data?.flat().map((groupData) => ({
         ...(groupData?.data as Group),
         id: groupData.id,
         hasBet: groupData.has_bet,
-      }))
-    const userHasBet = userCategories?.some((g) => g.hasBet)
-    const trendingCategories = trendingGroups.data?.map((groupData) => ({
+        importanceScore: groupData.importance_score,
+      })),
+      'importanceScore',
+      'desc'
+    )
+    const trendingTopics = trendingTopicsRes.data?.map((groupData) => ({
       ...(groupData?.data as Group),
       id: groupData.id,
     }))
 
-    setTrendingCategories(
-      uniqBy([...(userCategories ?? []), ...(trendingCategories ?? [])], 'id')
+    setTrendingTopics(
+      uniqBy([...userInterestedTopics, ...trendingTopics], (g) =>
+        removeEmojis(g.name)
+      ).slice(0, 15)
     )
-    if (userHasBet) {
-      setUserBetInCategories(userCategories ?? [])
+    if (userInterestedTopics.some((g) => g.hasBet)) {
+      setUserBetInTopics(
+        userInterestedTopics.filter((g) => g.hasBet).slice(0, 5)
+      )
     } else {
-      setUserInterestedCategories(userCategories)
+      setUserInterestedTopics(userInterestedTopics.slice(0, 5))
     }
   }
 
@@ -140,9 +148,9 @@ export default function Welcome() {
     return (
       <TopicSelectorDialog
         skippable={false}
-        trendingCategories={trendingCategories}
-        userInterestedCategories={userInterestedCategories}
-        userBetInCategories={userBetInCategories}
+        trendingTopics={trendingTopics}
+        userInterestedTopics={userInterestedTopics}
+        userBetInTopics={userBetInTopics}
       />
     )
 

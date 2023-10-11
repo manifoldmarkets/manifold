@@ -15,41 +15,35 @@ import { leaveGroup } from 'web/lib/supabase/groups'
 
 export function TopicSelectorDialog(props: {
   skippable: boolean
-  trendingCategories: Group[]
-  userInterestedCategories: Group[]
-  userBetInCategories: Group[]
+  trendingTopics: Group[]
+  userInterestedTopics: Group[]
+  userBetInTopics: Group[]
 }) {
-  const {
-    skippable,
-    userInterestedCategories,
-    trendingCategories,
-    userBetInCategories,
-  } = props
+  const { skippable, userInterestedTopics, trendingTopics, userBetInTopics } =
+    props
 
   const user = useUser()
 
-  const [userSelectedCategories, setUserSelectedCategories] = useState<
+  const [userSelectedTopics, setUserSelectedTopics] = useState<
     string[] | undefined
   >()
 
   const topics = Object.keys(TOPICS_TO_SUBTOPICS)
 
   useEffect(() => {
-    if (userBetInCategories.length > 0) {
-      userBetInCategories.forEach((group) => selectCategory(group.id))
-    } else if (userInterestedCategories.length > 0) {
-      userInterestedCategories.forEach((group) => selectCategory(group.id))
+    if (userBetInTopics.length > 0) {
+      userBetInTopics.forEach((group) => selectTopic(group.id))
+    } else if (userInterestedTopics.length > 0) {
+      userInterestedTopics.forEach((group) => selectTopic(group.id))
     }
   }, [])
 
-  const selectCategory = (groupId: string) => {
-    if (selectedCategories.includes(groupId)) {
+  const selectTopic = (groupId: string) => {
+    if (selectedTopics.includes(groupId)) {
       if (user) leaveGroup(groupId, user.id)
-      setUserSelectedCategories((cats) =>
-        (cats ?? []).filter((t) => t !== groupId)
-      )
+      setUserSelectedTopics((tops) => (tops ?? []).filter((t) => t !== groupId))
     } else {
-      setUserSelectedCategories((cats) => uniq([...(cats ?? []), groupId]))
+      setUserSelectedTopics((tops) => uniq([...(tops ?? []), groupId]))
       if (user) joinGroup({ groupId })
     }
   }
@@ -66,19 +60,19 @@ export function TopicSelectorDialog(props: {
     window.location.reload()
     // setOpen(false)
   }
-  const selectedCategories: string[] = userSelectedCategories ?? []
+  const selectedTopics: string[] = userSelectedTopics ?? []
 
   const pillButton = (
-    categoryWithEmoji: string,
-    categoryName: string,
+    topicWithEmoji: string,
+    topicName: string,
     groupId: string
   ) => (
     <PillButton
-      key={categoryName}
-      selected={selectedCategories.includes(groupId)}
-      onSelect={() => selectCategory(groupId)}
+      key={topicName}
+      selected={selectedTopics.includes(groupId)}
+      onSelect={() => selectTopic(groupId)}
     >
-      {categoryWithEmoji}
+      {topicWithEmoji}
     </PillButton>
   )
 
@@ -92,12 +86,12 @@ export function TopicSelectorDialog(props: {
       <Col className="h-[32rem] overflow-y-auto">
         <div className="bg-canvas-0 sticky top-0 px-5 py-4">
           <p className="text-primary-700 mb-2 text-2xl">What interests you?</p>
-          <p>Select 3 or more categories to personalize your experience</p>
+          <p>Select 3 or more topics to personalize your experience</p>
         </div>
         <Col className={'mb-4 px-5'}>
           <div className="text-primary-700 mb-1 text-sm">Trending now</div>
           <Row className={'flex-wrap gap-1 '}>
-            {trendingCategories.map((group) => (
+            {trendingTopics.map((group) => (
               <div className="" key={group.id + '-section'}>
                 {pillButton(group.name, removeEmojis(group.name), group.id)}
               </div>
@@ -131,7 +125,7 @@ export function TopicSelectorDialog(props: {
             )}
             <Button
               onClick={() => closeDialog(false)}
-              disabled={(userSelectedCategories ?? []).length <= 2}
+              disabled={(userSelectedTopics ?? []).length <= 2}
               loading={isLoading}
             >
               Done

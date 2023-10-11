@@ -21,18 +21,19 @@ create index if not exists group_contracts_contract_id on group_contracts (contr
 alter table group_contracts
     cluster on group_contracts_pkey;
 
-create type group_with_bet_flag as (
+create type group_with_score_and_bet_flag as (
    id text,
    data jsonb,
+   importance_score numeric,
    has_bet boolean
 );
 
-create or replace function get_groups_from_user_seen_markets(uid text)
-    returns setof group_with_bet_flag
+create or replace function get_groups_and_scores_from_user_seen_markets(uid text)
+    returns setof group_with_score_and_bet_flag
     language sql
 as
 $$
-select (g.id, g.data, false)::group_with_bet_flag
+select (g.id, g.data, g.importance_score, false)::group_with_score_and_bet_flag
 from
     groups g
         join group_contracts gc on g.id = gc.group_id
@@ -41,7 +42,7 @@ where
         sm.user_id = uid
   and sm.type  = 'view market'
 union
-select (g.id, g.data, true)::group_with_bet_flag
+select (g.id, g.data, g.importance_score, true)::group_with_score_and_bet_flag
 from
     groups g
         join group_contracts gc on g.id = gc.group_id
