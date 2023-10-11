@@ -308,10 +308,10 @@ export const MultiValueHistoryChart = <P extends HistoryPoint>(props: {
               py={py}
               curve={curve}
               className={clsx(
-                'brightness-[95%]',
+                'transition-all',
                 ttParams && ttParams.i !== i
                   ? 'stroke-1 opacity-50'
-                  : 'stroke-[2px]'
+                  : 'stroke-2'
               )}
               stroke={nthColor(i)}
             />

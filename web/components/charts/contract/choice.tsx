@@ -21,42 +21,43 @@ const CHOICE_ANSWER_COLORS = [
   '#FFDD99', // sand
   '#FFAABB', // pink
   '#77AADD', // navy
-  '#9932CC', // 🍆
-  '#C70020', // blood red
+  '#CD46EA', // 🍆
+  '#F23542', // blood red
   '#FF8C00', // orange
   '#44BB99', // forest
   '#FFD700', // gold
-  '#7FFF00', // chartreuse
-  '#EE8866', // orange-red
-  '#9F00C5', // Grimace
-  '#FF8900', // octarine
-  '#EEDD88', // yellow
-  '#3498DB', // Blue
-  '#2ECC71', // Green
-  '#F1C40F', // Yellow
-  '#9B59B6', // Purple
-  '#E67E22', // Orange
-  '#90BE6D', // Green
-  '#FFA500', // Orange
-  '#FFC0CB', // Pink
-  '#FF69B4', // Hot Pink
-  '#F9C74F', // Yellow
-  '#FF6B6B', // Red
-  '#FF9F1C', // Orange
-  '#D3A8FF', // Purple
-  '#FFCCD5', // Pink
-  '#6EE7B7', // Cyan
-  '#F97171', // Salmon
-  '#A3DE83', // Pistachio
-  '#FFD166', // Apricot
-  '#B8D8B8', // Pale Green
-  '#FF85A1', // Watermelon
-  '#AFE3E7', // Baby Blue
-  '#FFBF69', // Peach
-  '#C3CED0', // Silver Blue
-  '#FFA69E', // Coral
-  '#DBD56E', // Mustard
+  '#7EEE03', // chartreuse
+  '#F76B40', // orange-red
+  '#C195F0', // Grimace shake purple
+  '#0C7AE1', // octarine??
+  '#E3E369', // yellow
+  '#3F9FFF',
+  '#2ECC71',
+  '#F1C40F', // dehydrated yellow
+  '#E04AC0',
+  '#CCB374', // drab tan
+  '#96E047',
+  '#FFA500',
+  '#F0C0DE',
+  '#FF69B4',
+  '#F9C74F',
+  '#F93028',
+  '#F49F1C',
+  '#DEADFE',
+  '#EFD1CC',
+  '#5EE7B7',
+  '#F96969',
+  '#A3DE83',
+  '#FFD166',
+  '#BAEBE4',
+  '#FF85A1',
+  '#45EDEA',
+  '#FFBF69',
+  '#AED0D6',
+  '#FFA69E',
+  '#DBD56E',
 ]
+
 // const CHOICE_OTHER_COLOR = '#B1B1C7'
 
 export const nthColor = (index: number) =>

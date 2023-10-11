@@ -181,6 +181,8 @@ function Answer(props: {
   )
   const hasBets = userBets && !floatingEqual(sharesSum, 0)
 
+  const textColorClass = resolvedProb === 0 ? 'text-ink-700' : 'text-ink-900'
+
   return (
     <AnswerBar
       color={color}
@@ -188,7 +190,7 @@ function Answer(props: {
       resolvedProb={resolvedProb}
       label={
         isOther ? (
-          <span>
+          <span className={textColorClass}>
             Other{' '}
             <InfoTooltip
               className="!text-ink-600"
@@ -205,7 +207,7 @@ function Answer(props: {
             }
             className={clsx(
               'items-center text-sm !leading-none sm:flex sm:text-base',
-              resolvedProb === 0 ? 'text-ink-600' : 'text-ink-900'
+              textColorClass
             )}
           />
         )

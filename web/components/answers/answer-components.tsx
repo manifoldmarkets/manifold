@@ -67,7 +67,7 @@ export const AnswerBar = (props: {
           {/* main bar */}
           {!hideBar && (
             <div
-              className="h-full rounded opacity-70 dark:opacity-40"
+              className="h-full rounded dark:brightness-75"
               style={{
                 width: `max(8px, ${prob * 100}%)`,
                 background: color,
@@ -137,7 +137,7 @@ export const AnswerLabel = (props: {
 export const AddComment = (props: { onClick: () => void }) => {
   return (
     <IconButton onClick={props.onClick} className="!p-1">
-      <ChatIcon className="h-5 w-5" />
+      <ChatIcon className="fill-ink-100 h-5 w-5" />
     </IconButton>
   )
 }
@@ -161,6 +161,8 @@ export const DPMMultiBettor = (props: {
 
       <Button
         size="2xs"
+        color="indigo-outline"
+        className="bg-primary-50"
         onClick={(e) => {
           e.preventDefault()
           setOpen(true)
@@ -202,7 +204,7 @@ export const MultiBettor = (props: {
       <Button
         size="2xs"
         color="indigo-outline"
-        className="whitespace-nowrap"
+        className="bg-primary-50"
         onClick={() => setOutcome('YES')}
       >
         Bet
@@ -239,7 +241,7 @@ export const MultiSeller = (props: {
       <Button
         size="2xs"
         color="indigo-outline"
-        className="whitespace-nowrap"
+        className="bg-primary-50"
         onClick={() => setOpen(true)}
       >
         Sell

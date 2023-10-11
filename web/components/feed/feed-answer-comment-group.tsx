@@ -45,7 +45,7 @@ function CommentsAnswer(props: {
 
   return (
     <Row>
-      <div className="w-2" style={{ background: color }} />
+      <div className="w-2 dark:brightness-75" style={{ background: color }} />
       <Col className="bg-ink-100 w-fit py-1 pl-2 pr-2">
         <Row className="gap-2">
           <div className="text-ink-400 text-xs">
