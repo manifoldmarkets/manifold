@@ -1,7 +1,4 @@
-import {
-  ChevronDoubleDownIcon,
-  ChevronDoubleUpIcon,
-} from '@heroicons/react/solid'
+import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/solid'
 import { JSONContent } from '@tiptap/react'
 import clsx from 'clsx'
 import { MouseEventHandler, useRef, useState } from 'react'
@@ -32,14 +29,14 @@ export function ShowMoreLessButton(props: {
       onClick={onClick}
     >
       <Row className="items-center gap-0.5">
+        {isCollapsed ? (
+          <ChevronDownIcon className="h-4 w-4" />
+        ) : (
+          <ChevronUpIcon className="h-4 w-4" />
+        )}
         {isCollapsed
           ? `Show ${howManyMoreText}more ${moreWhat}`
           : `Show less ${moreWhat}`}
-        {isCollapsed ? (
-          <ChevronDoubleDownIcon className="h-4 w-4" />
-        ) : (
-          <ChevronDoubleUpIcon className="h-4 w-4" />
-        )}
       </Row>
     </button>
   )

@@ -14,20 +14,8 @@ import NotificationDropdown from './notification-dropdown'
 import { groupBy } from 'lodash'
 import { SparklesIcon } from '@heroicons/react/solid'
 
-const notification_base_style = 'relative text-sm transition-colors'
-export const NESTED_NOTIFICATION_STYLE = clsx(
-  notification_base_style,
-  'hover:bg-primary-100 p-2'
-)
-export const PARENT_NOTIFICATION_STYLE = clsx(
-  notification_base_style,
-  'pt-3 pb-2'
-)
-export const NOTIFICATION_STYLE = clsx(
-  notification_base_style,
-  'hover:bg-primary-10 p-2'
-)
 export const NOTIFICATIONS_PER_PAGE = 30
+
 function getHighlightClass(highlight: boolean) {
   return highlight ? 'text-ink-1000 bg-primary-50' : 'text-ink-800'
 }
@@ -166,7 +154,6 @@ export function NotificationFrame(props: {
 }) {
   const {
     notification,
-    isChildOfGroup,
     highlighted,
     setHighlighted,
     children,
@@ -179,9 +166,9 @@ export function NotificationFrame(props: {
   const isMobile = useIsMobile()
 
   const frameObject = (
-    <Row className={clsx('cursor-pointer text-sm md:text-base')}>
-      <Row className="w-full gap-3">
-        <Col className="w-fit">{icon}</Col>
+    <Row className="cursor-pointer text-sm md:text-base">
+      <Row className="w-full items-start gap-3">
+        {icon}
         <Col className="font w-full">
           <span>{children}</span>
           <div className="mt-1 line-clamp-3 text-xs md:text-sm">{subtitle}</div>
@@ -197,24 +184,25 @@ export function NotificationFrame(props: {
             </Row>
           )}
         </Col>
+        {!isMobile && (
+          <Row className="w-32 items-center justify-end gap-1 pr-1">
+            {highlighted && (
+              <SparklesIcon className="text-primary-600 h-4 w-4" />
+            )}
+            <RelativeTimestampNoTooltip
+              time={notification.createdTime}
+              className="text-xs"
+            />
+          </Row>
+        )}
       </Row>
-      {!isMobile && (
-        <Row className="mx-1 w-40 items-center justify-end gap-1">
-          {highlighted && <SparklesIcon className="text-primary-600 h-4 w-4" />}
-          <RelativeTimestampNoTooltip
-            time={notification.createdTime}
-            className="text-xs"
-          />
-        </Row>
-      )}
     </Row>
   )
 
   return (
     <Row
       className={clsx(
-        'group relative',
-        isChildOfGroup ? NESTED_NOTIFICATION_STYLE : NOTIFICATION_STYLE,
+        'hover:bg-primary-100 group p-2 transition-colors',
         getHighlightClass(highlighted)
       )}
     >
@@ -258,16 +246,16 @@ export function NotificationFrame(props: {
 }
 
 export function ParentNotificationHeader(props: {
-  header: ReactNode
+  children: ReactNode
   highlighted: boolean
 }) {
-  const { header, highlighted } = props
+  const { children, highlighted } = props
   const highlightedClass = getHighlightClass(highlighted)
 
   return (
-    <Row className={clsx('items-center justify-start px-2', highlightedClass)}>
-      <div className={'line-clamp-3'}>{header}</div>
-    </Row>
+    <div className={clsx('line-clamp-3 px-2 pt-3', highlightedClass)}>
+      {children}
+    </div>
   )
 }
 export function combineReactionNotifications(notifications: Notification[]) {

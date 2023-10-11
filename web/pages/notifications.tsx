@@ -15,7 +15,6 @@ import {
   NOTIFICATIONS_PER_PAGE,
   NUM_SUMMARY_LINES,
   ParentNotificationHeader,
-  PARENT_NOTIFICATION_STYLE,
   QuestionOrGroupLink,
 } from 'web/components/notifications/notification-helpers'
 import { markAllNotifications } from 'web/lib/firebase/api'
@@ -179,9 +178,7 @@ function RenderNotificationGroups(props: {
 }) {
   const { notificationGroups, page, setPage, totalItems } = props
 
-  const grayLine = (
-    <div className="bg-ink-300 mx-auto h-[1.5px] w-[calc(100%-1rem)]" />
-  )
+  const grayLine = <div className="bg-ink-300 mx-2 box-border h-[1.5px]" />
   return (
     <>
       {notificationGroups.map((notification) => (
@@ -323,57 +320,52 @@ function NotificationGroupItem(props: {
     (n) =>
       n.reason === 'quest_payout' || n.sourceType === 'betting_streak_bonus'
   )
-  const header = (
-    <ParentNotificationHeader
-      header={
-        notifications.some(
-          (n) => n.reason === 'contract_from_followed_user'
-        ) ? (
-          <span>
-            {notifications.length} new questions from{' '}
-            {notifications[0].sourceUserName}
-          </span>
-        ) : onboardingNotifs ? (
-          <span>Welcome to Manifold</span>
-        ) : questNotifs ? (
-          <span>
-            {notifications.length} quest{notifications.length > 1 ? 's' : ''}{' '}
-            completed
-          </span>
-        ) : sourceTitle || sourceContractTitle ? (
-          <>
-            {uniques} user{uniques > 1 ? `s` : ``} on{' '}
-            <QuestionOrGroupLink
-              notification={notifications[0]}
-              truncatedLength={'xl'}
-            />
-          </>
-        ) : (
-          <span>
-            Other activity from {uniques} user{uniques > 1 ? 's' : ''}
-          </span>
-        )
-      }
-      highlighted={groupHighlighted}
-    />
-  )
 
   return (
     <NotificationGroupItemComponent
       notifications={combinedNotifs}
-      header={header}
       lines={onboardingNotifs ? 5 : NUM_SUMMARY_LINES}
+      header={
+        <ParentNotificationHeader highlighted={groupHighlighted}>
+          {notifications.some(
+            (n) => n.reason === 'contract_from_followed_user'
+          ) ? (
+            <>
+              {notifications.length} new questions from{' '}
+              {notifications[0].sourceUserName}
+            </>
+          ) : onboardingNotifs ? (
+            <>Welcome to Manifold</>
+          ) : questNotifs ? (
+            <>
+              {notifications.length} quest
+              {notifications.length > 1 ? 's' : ''} completed
+            </>
+          ) : sourceTitle || sourceContractTitle ? (
+            <>
+              {uniques} user{uniques > 1 ? `s` : ``} on{' '}
+              <QuestionOrGroupLink
+                notification={notifications[0]}
+                truncatedLength={'xl'}
+              />
+            </>
+          ) : (
+            <>
+              Other activity from {uniques} user{uniques > 1 ? 's' : ''}
+            </>
+          )}
+        </ParentNotificationHeader>
+      }
     />
   )
 }
 
-export function NotificationGroupItemComponent(props: {
+function NotificationGroupItemComponent(props: {
   notifications: Notification[]
   header: ReactNode
-  className?: string
   lines: number
 }) {
-  const { notifications, lines, className, header } = props
+  const { notifications, lines, header } = props
   const numNotifications = notifications.length
 
   const needsExpanding = numNotifications > lines
@@ -387,20 +379,19 @@ export function NotificationGroupItemComponent(props: {
     ? notifications
     : notifications.slice(0, lines)
   return (
-    <div className={clsx(PARENT_NOTIFICATION_STYLE, className)}>
+    <div className="pb-2">
       {header}
-      <div className={clsx(' whitespace-pre-line')}>
+      <div className="whitespace-pre-line">
         {shownNotifications.map((notification) => {
           return (
             <NotificationItem
               notification={notification}
               key={notification.id}
-              isChildOfGroup={true}
             />
           )
         })}
         {needsExpanding && (
-          <Row className={clsx('w-full items-center justify-end gap-1')}>
+          <Row className={clsx('w-full justify-end pr-2')}>
             <ShowMoreLessButton
               onClick={onExpandHandler}
               isCollapsed={!expanded}
