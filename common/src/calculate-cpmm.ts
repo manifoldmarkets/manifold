@@ -226,7 +226,7 @@ export function calculateAmountToBuySharesFixedP(
   return currAmount + fillAmount
 }
 
-export function calculateCpmmMultiSale(
+export function calculateCpmmMultiSumsToOneSale(
   answers: Answer[],
   answerToSell: Answer,
   shares: number,
@@ -447,8 +447,9 @@ export function addCpmmMultiLiquidityToAnswersIndependently(
   amount: number
 ) {
   const amountPerAnswer = amount / Object.keys(pools).length
-  return mapValues(pools, (pool) =>
-    addCpmmLiquidityFixedP(pool, amountPerAnswer).newPool
+  return mapValues(
+    pools,
+    (pool) => addCpmmLiquidityFixedP(pool, amountPerAnswer).newPool
   )
 }
 

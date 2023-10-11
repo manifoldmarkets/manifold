@@ -117,7 +117,20 @@ export const sellshares = authEndpoint(async (req, auth) => {
       ordersToCancel,
       otherResultsWithBet,
     } = await (async () => {
-      if (mechanism === 'cpmm-1') {
+      if (
+        mechanism === 'cpmm-1' ||
+        (mechanism === 'cpmm-multi-1' && !contract.shouldAnswersSumToOne)
+      ) {
+        let answer
+        if (answerId) {
+          const answerSnap = await transaction.get(
+            contractDoc.collection('answersCpmm').doc(answerId)
+          )
+          answer = answerSnap.data() as Answer
+          if (!answer) {
+            throw new APIError(404, 'Answer not found')
+          }
+        }
         return {
           otherResultsWithBet: [],
           ...getCpmmSellBetInfo(
@@ -126,7 +139,8 @@ export const sellshares = authEndpoint(async (req, auth) => {
             contract,
             unfilledBets,
             balanceByUserId,
-            loanPaid
+            loanPaid,
+            answer
           ),
         }
       } else {
@@ -140,11 +154,6 @@ export const sellshares = authEndpoint(async (req, auth) => {
           throw new APIError(
             403,
             'Cannot bet until at least two answers are added.'
-          )
-        if (!contract.shouldAnswersSumToOne)
-          throw new APIError(
-            403,
-            'Sorry, selling is not implemented yet for this market type. Please check back tomorrow!'
           )
 
         return {
