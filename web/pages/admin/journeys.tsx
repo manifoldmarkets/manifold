@@ -12,6 +12,13 @@ import { UserAvatarAndBadge } from 'web/components/widgets/user-link'
 import { usePersistentQueryState } from 'web/hooks/use-persistent-query-state'
 import clsx from 'clsx'
 
+const isUserLikelySpammer = (user: User, hasBet: boolean) => {
+  return (
+    !hasBet &&
+    ((user.bio ?? '').length > 10 || (user.freeQuestionsCreated ?? 0) > 0)
+  )
+}
+
 export default function Journeys() {
   const [eventsByUser, setEventsByUser] = useState<
     Record<string, rowfor<'user_events'>[]>
@@ -102,7 +109,8 @@ export default function Journeys() {
                 <Row
                   className={clsx(
                     'rounded-md p-1',
-                    user && !userIdsThatBet.includes(user.id)
+                    user &&
+                      isUserLikelySpammer(user, userIdsThatBet.includes(userId))
                       ? 'bg-amber-100'
                       : ''
                   )}
