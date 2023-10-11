@@ -71,7 +71,7 @@ export function PollPanel(props: {
         return (
           <AnswerBar
             key={option.id}
-            color={'#6366f1b3'}
+            color={'#818cf8'} // indigo-400
             prob={prob}
             resolvedProb={
               contract.isResolved &&

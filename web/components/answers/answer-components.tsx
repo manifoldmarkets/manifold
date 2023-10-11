@@ -67,7 +67,7 @@ export const AnswerBar = (props: {
           {/* main bar */}
           {!hideBar && (
             <div
-              className="h-full rounded dark:brightness-75"
+              className="isolate h-full rounded dark:brightness-75"
               style={{
                 width: `max(8px, ${prob * 100}%)`,
                 background: color,
