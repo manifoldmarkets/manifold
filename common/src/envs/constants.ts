@@ -165,6 +165,7 @@ export const MOD_USERNAMES = [
   'Stralor',
   'WieDan',
   'StrayClimb',
+  'Gen',
 ]
 
 export const VERIFIED_USERNAMES = [
