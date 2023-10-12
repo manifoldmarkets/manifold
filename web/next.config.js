@@ -156,6 +156,10 @@ module.exports = {
       ...(process.env.IS_MANIFOLD_LOVE
         ? [
             {
+              source: '/',
+              destination: '/love',
+            },
+            {
               source: '/:path*',
               destination: '/love/:path*',
             },
