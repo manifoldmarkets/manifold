@@ -577,7 +577,6 @@ export function ContractPageContent(props: {
               contract={contract}
               highlightResolver={!isResolved && isClosed && !showResolver}
               toggleResolver={() => setShowResolver((shown) => !shown)}
-              showEditHistory={true}
             />
 
             {showResolver &&

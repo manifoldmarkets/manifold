@@ -6,17 +6,22 @@ import { useEffect, useState } from 'react'
 import { Modal } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
 import { Title } from 'web/components/widgets/title'
-import { ContractDescription } from 'web/components/contract/contract-description'
-import { CloseOrResolveTime } from 'web/components/contract/contract-details'
-import { uniqBy } from 'lodash'
+import { CloseDate } from 'web/components/contract/contract-details'
+import { isEqual, uniqBy } from 'lodash'
 import { formatTimeShort } from 'web/lib/util/time'
 import { Row } from '../layout/row'
 import { UserFromId } from 'web/components/user-from-id'
+import { CollapsibleContent } from '../widgets/collapsible-content'
+import { JSONContent } from '@tiptap/core'
 
-type ContractEdit = Contract & {
-  updatedKeys?: string[]
+type ContractEdit = {
+  id: string
+  question?: string
+  description?: string | JSONContent
+  closeTime?: number
+  resolution?: string | false
+  updatedKeys: string[] | null
   editCreated: number
-  idempotencyKey: string
   editorId: string
 }
 export const ContractEditHistoryButton = (props: {
@@ -27,7 +32,6 @@ export const ContractEditHistoryButton = (props: {
   const [showEditHistory, setShowEditHistory] = useState(false)
   const [contractHasEdits, setContractHasEdits] = useState(false)
   const [edits, setEdits] = useState<ContractEdit[] | undefined>(undefined)
-  const [editTimes, setEditTimes] = useState<number[]>([])
 
   const getCount = async () => {
     const { count } = await db
@@ -49,8 +53,7 @@ export const ContractEditHistoryButton = (props: {
         .order('created_time', { ascending: false })
     )
 
-    // created_time is the time the row is created, but the row's content is the content before the edit, aka created_time is when the content is deleted and replaced
-    const contracts = uniqBy(
+    const rawEdits = uniqBy(
       data.map((edit) => {
         const contract = edit.data as Contract
         return {
@@ -61,17 +64,60 @@ export const ContractEditHistoryButton = (props: {
             : Math.random().toString(),
           updatedKeys: edit.updated_keys,
           editorId: edit.editor_id,
-        } as ContractEdit
+        }
       }),
       'idempotencyKey'
     )
 
-    setEditTimes([
-      ...contracts.map((c) => c.editCreated).slice(1),
-      contract.createdTime,
-    ])
+    // throwaway
+    rawEdits.unshift({
+      ...contract,
+      editCreated: Date.now(),
+      idempotencyKey: Math.random().toString(),
+      updatedKeys: null,
+      editorId: contract.creatorId,
+    })
 
-    setEdits(contracts)
+    // each row's contract (title, desc, close) is from before the edit, but created_time, updatedKeys, and editorId are at the time of the edit
+    const edits: ContractEdit[] = []
+
+    for (let i = 0; i < rawEdits.length; i++) {
+      const edit = rawEdits[i]
+      const prev = rawEdits[i + 1]
+
+      if (prev) {
+        edits.push({
+          id: edit.id,
+          question: edit.question != prev.question ? edit.question : undefined,
+          description: !isEqual(edit.description, prev.description)
+            ? edit.description
+            : undefined,
+          closeTime:
+            edit.closeTime != prev.closeTime ? edit.closeTime : undefined,
+          resolution:
+            edit.resolution != prev.resolution
+              ? edit.resolution ?? false
+              : undefined,
+          updatedKeys: prev.updatedKeys,
+          editCreated: prev.editCreated,
+          editorId: prev.editorId,
+        })
+      } else {
+        // market created
+        edits.push({
+          id: edit.id,
+          question: edit.question,
+          description: edit.description,
+          closeTime: edit.closeTime,
+          resolution: edit.resolution,
+          updatedKeys: null,
+          editCreated: contract.createdTime,
+          editorId: contract.creatorId,
+        })
+      }
+    }
+
+    setEdits(edits)
   }
   useEffect(() => {
     if (showEditHistory && edits === undefined) {
@@ -91,42 +137,57 @@ export const ContractEditHistoryButton = (props: {
       </Button>
       <Modal size={'lg'} open={showEditHistory} setOpen={setShowEditHistory}>
         <div className={'bg-canvas-50 rounded p-4'}>
-          <Title>Edit history</Title>
-          <Col className="gap-4">
-            {edits?.map((edit, i) => (
-              <div key={edit.id} className={'px-2'}>
-                <Row className={'items-center gap-2 '}>
-                  <UserFromId userId={edit.editorId} />{' '}
-                  <span>
-                    produced the {i === 0 ? 'current ' : 'above '} edit from the
-                    previous version below.
-                  </span>
-                </Row>
-                {edit.updatedKeys && (
-                  <div className="text-ink-500 mb-1 text-sm">
-                    <span> They updated: </span>
-                    {edit.updatedKeys.includes('isResolved')
-                      ? `resolution`
-                      : edit.updatedKeys.join(', ')}{' '}
-                    on {formatTimeShort(edit.editCreated)}
-                  </div>
-                )}
+          <Title>Question History</Title>
 
-                <Col className="bg-canvas-0 gap-2 rounded-lg p-1">
-                  <div className={'text-ink-1000 text-xl font-medium'}>
-                    {edit.question}
-                  </div>
-                  <ContractDescription contract={edit} defaultCollapse={true} />
-                  <Row className={'gap-2'}>
-                    <CloseOrResolveTime
-                      className="text-ink-700 text-sm"
-                      contract={edit}
-                    />
-                    {edit.resolution && edit.resolution}
+          <Col className="gap-4 px-2">
+            {edits?.map((edit, i) => {
+              return (
+                <div key={edit.id}>
+                  <Row className={'items-center gap-1 text-sm'}>
+                    <UserFromId userId={edit.editorId} />
+
+                    <div className="text-ink-500 flex gap-1 ">
+                      {i === edits.length - 1 ? 'created' : 'updated'}
+                      <span>on {formatTimeShort(edit.editCreated)}</span>
+                    </div>
                   </Row>
-                </Col>
-              </div>
-            ))}
+
+                  <Col className="gap-1">
+                    {edit.question && (
+                      <div className="text-ink-1000 text-xl font-medium">
+                        {edit.question}
+                      </div>
+                    )}
+                    {edit.description && (
+                      <div className="bg-canvas-0 rounded-lg p-2">
+                        <CollapsibleContent
+                          content={edit.description}
+                          stateKey={`isCollapsed-contract-${edit.id}`}
+                          defaultCollapse
+                        />
+                      </div>
+                    )}
+                    {edit.closeTime && !edit.resolution && (
+                      <CloseDate
+                        closeTime={edit.closeTime}
+                        contract={contract}
+                      />
+                    )}
+
+                    {edit.resolution != null &&
+                      (edit.resolution ? (
+                        <div>Resolved {edit.resolution}</div>
+                      ) : (
+                        <div>Unresolved</div>
+                      ))}
+
+                    {edit.updatedKeys?.includes('nonPredictive') && (
+                      <div>Toggled Non-Predictive</div>
+                    )}
+                  </Col>
+                </div>
+              )
+            })}
           </Col>
         </div>
       </Modal>

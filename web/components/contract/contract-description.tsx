@@ -21,17 +21,8 @@ export function ContractDescription(props: {
   highlightResolver?: boolean
   toggleResolver?: () => void
   className?: string
-  showEditHistory?: boolean
-  defaultCollapse?: boolean
 }) {
-  const {
-    contract,
-    className,
-    defaultCollapse,
-    highlightResolver,
-    toggleResolver,
-    showEditHistory,
-  } = props
+  const { contract, className, highlightResolver, toggleResolver } = props
   const { creatorId } = contract
 
   const isAdmin = useAdmin()
@@ -48,7 +39,7 @@ export function ContractDescription(props: {
   return (
     <div className={clsx('text-ink-700', className)}>
       {showContractActions ? (
-        <ContractActions
+        <ContractDescAndActions
           contract={contract}
           isOnlyAdmin={isAdmin && !isCreator}
           isOnlyTrustworthy={trustworthy && !isCreator}
@@ -60,10 +51,9 @@ export function ContractDescription(props: {
           <CollapsibleContent
             content={contract.description}
             stateKey={`isCollapsed-contract-${contract.id}`}
-            defaultCollapse={defaultCollapse}
             hideButton={!user}
           />
-          {showEditHistory && !!user && (
+          {!!user && (
             <div className="flex w-full justify-end">
               <ContractEditHistoryButton contract={contract} className="mt-1" />
             </div>
@@ -74,7 +64,7 @@ export function ContractDescription(props: {
   )
 }
 
-function ContractActions(props: {
+function ContractDescAndActions(props: {
   contract: Contract
   isOnlyAdmin?: boolean
   isOnlyTrustworthy?: boolean

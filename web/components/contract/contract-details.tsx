@@ -67,7 +67,7 @@ export function CloseOrResolveTime(props: {
       )}
 
       {!isResolved && (
-        <EditableCloseDate
+        <CloseDate
           closeTime={closeTime}
           contract={contract}
           editable={!!editable}
@@ -77,10 +77,10 @@ export function CloseOrResolveTime(props: {
   )
 }
 
-function EditableCloseDate(props: {
+export function CloseDate(props: {
   closeTime: number | undefined
   contract: Contract
-  editable: boolean
+  editable?: boolean
 }) {
   const { closeTime, contract, editable } = props
 
