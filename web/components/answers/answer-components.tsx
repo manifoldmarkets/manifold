@@ -81,9 +81,7 @@ export const AnswerBar = (props: {
           )}
         </div>
       </Col>
-      {bottom && (
-        <div className="mt-0.5 self-end sm:mx-3 sm:mt-0">{bottom}</div>
-      )}
+      {bottom && <div className="self-end">{bottom}</div>}
     </Col>
   )
 }

@@ -64,10 +64,12 @@ export function YesNoCancelSelector(props: {
   onSelect: (selected: resolution) => void
   className?: string
 }) {
-  const { selected, onSelect } = props
+  const { selected, onSelect, className } = props
 
-  const btnClassName =
-    '!py-2 flex-1 first:rounded-l-xl last:rounded-r-xl rounded-r-none rounded-l-none'
+  const btnClassName = clsx(
+    '!py-2 flex-1 first:rounded-l-xl last:rounded-r-xl rounded-r-none rounded-l-none',
+    className
+  )
 
   return (
     <Row className="gap-1">

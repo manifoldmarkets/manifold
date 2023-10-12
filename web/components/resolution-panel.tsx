@@ -103,11 +103,7 @@ export function ResolutionPanel(props: {
       {modalSetOpen && (
         <div className="mb-6">Resolve "{contract.question}"</div>
       )}
-      <YesNoCancelSelector
-        className="mx-auto my-2"
-        selected={outcome}
-        onSelect={setOutcome}
-      />
+      <YesNoCancelSelector selected={outcome} onSelect={setOutcome} />
 
       <Spacer h={4} />
       {!!error && <div className="text-scarlet-500">{error}</div>}
@@ -222,30 +218,27 @@ export function MiniResolutionPanel(props: {
   }
 
   return (
-    <Row className="mt-1 justify-between gap-4">
+    <Row className="mt-2 gap-4">
       {isAdmin && !isCreator && (
         <div className="bg-scarlet-50 text-scarlet-500 self-start rounded p-1 text-xs">
           ADMIN
         </div>
       )}
-      <Col className="gap-2">
-        <YesNoCancelSelector
-          className="mx-2 my-2 px-2"
-          selected={outcome}
-          onSelect={setOutcome}
-        />
+      <Col className="items-center gap-1">
+        <YesNoCancelSelector selected={outcome} onSelect={setOutcome} />
         {outcome === 'MKT' && (
-          <Row className="flex-wrap items-center gap-2">
-            <span>Resolve to an intermediate probability</span>{' '}
+          <Row className="flex-wrap items-center gap-1">
+            Resolve to
             <ProbabilityInput
               prob={prob}
               onChange={setProb}
-              className="!h-11 w-20"
+              className="w-20"
+              inputClassName="!h-6"
             />
           </Row>
         )}
         {outcome === 'CANCEL' && (
-          <div>Cancel all trades and return money back to {BETTORS}</div>
+          <div className="text-warning">Cancel trades and return money</div>
         )}
         {error && (
           <div className="text-scarlet-500 self-start rounded p-1 text-xs">

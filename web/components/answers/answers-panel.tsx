@@ -227,7 +227,13 @@ function Answer(props: {
       bottom={
         !resolution &&
         hasBets &&
-        isCpmm && <AnswerPosition contract={contract} userBets={userBets} />
+        isCpmm && (
+          <AnswerPosition
+            contract={contract}
+            userBets={userBets}
+            className="mt-0.5 sm:mx-3 sm:mt-0"
+          />
+        )
       }
     />
   )
