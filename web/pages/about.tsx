@@ -190,6 +190,11 @@ export default function AboutPage() {
             description="Community-created projects built on Manifold"
             href="https://manifoldmarkets.notion.site/Awesome-Manifold-4b93a64528674290989ef8a9f696b460"
           />
+          <LabCard
+            title="💌 Dating"
+            description="Browse dating profiles (old; new service will appear soon)"
+            href="/date-docs"
+          />
         </LabSection>
 
         {user && (
@@ -307,11 +312,6 @@ export default function AboutPage() {
                 title="💭 Dream"
                 description="Generate an image with AI"
                 href="/dream"
-              />
-              <LabCard
-                title="💌 Dating"
-                description="Browse dating profiles and bet on relationships"
-                href="/date-docs"
               />
               <LabCard
                 title="🃏 Magic the Guessering"
