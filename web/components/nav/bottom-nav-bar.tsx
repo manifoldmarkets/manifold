@@ -25,6 +25,7 @@ import { User } from 'common/user'
 import { Col } from '../layout/col'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { useAnimatedNumber } from 'web/hooks/use-animated-number'
+import { UnseenMessagesBubble } from 'web/components/messaging/messages-icon'
 
 export const BOTTOM_NAV_BAR_HEIGHT = 58
 
@@ -95,9 +96,14 @@ export function BottomNavBar() {
       {!!user && (
         <>
           <div
-            className={clsx(itemClass, sidebarOpen ? selectedItemClass : '')}
+            className={clsx(
+              itemClass,
+              'relative',
+              sidebarOpen ? selectedItemClass : ''
+            )}
             onClick={() => setSidebarOpen(true)}
           >
+            <UnseenMessagesBubble />
             <MenuAlt3Icon className="mx-auto my-1 h-6 w-6" aria-hidden="true" />
             More
           </div>

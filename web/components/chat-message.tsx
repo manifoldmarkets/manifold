@@ -14,16 +14,29 @@ export const ChatMessageItem = forwardRef(
   (
     props: {
       chats: ChatMessage[]
-      user: User | undefined | null
+      currentUser: User | undefined | null
+      otherUser?: User | null
       onReplyClick?: (chat: ChatMessage) => void
     },
     ref: React.Ref<HTMLDivElement>
   ) => {
-    const { chats, user, onReplyClick } = props
+    const { chats, currentUser, otherUser, onReplyClick } = props
     const chat = first(chats)
     if (!chat) return null
-    const { userUsername, userAvatarUrl, userId, userName } = chat
-    const isMe = user?.id === userId
+    const isMe = currentUser?.id === chat.userId
+    const {
+      username: userUsername,
+      avatarUrl: userAvatarUrl,
+      name: userName,
+    } = !isMe && otherUser
+      ? otherUser
+      : isMe && currentUser
+      ? currentUser
+      : {
+          username: chat.userUsername,
+          avatarUrl: chat.userAvatarUrl,
+          name: chat.userName,
+        }
 
     return (
       <Col
@@ -41,7 +54,7 @@ export const ChatMessageItem = forwardRef(
             avatarUrl={userAvatarUrl}
             username={userUsername}
           />
-          <UserLink name={userName} username={userUsername} />
+          <UserLink name={userName ?? ''} username={userUsername ?? ''} />
           <RelativeTimestamp time={chat.createdTime} />
         </Row>
         {chats.map((chat) => (

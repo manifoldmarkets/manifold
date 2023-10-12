@@ -34,6 +34,7 @@ import { SidebarSignUpButton } from '../buttons/sign-up-button'
 import { ManifoldLogo } from './manifold-logo'
 import { ProfileSummary } from './profile-summary'
 import { SidebarItem } from './sidebar-item'
+import { PrivateMessagesIcon } from 'web/components/messaging/messages-icon'
 
 export default function Sidebar(props: {
   className?: string
@@ -132,6 +133,11 @@ const getDesktopNav = (
         href: `/notifications`,
         icon: NotificationsIcon,
       },
+      {
+        name: 'Messages',
+        href: '/messages',
+        icon: PrivateMessagesIcon,
+      },
       { name: 'Leagues', href: '/leagues', icon: TrophyIcon },
       { name: 'Dashboards', href: '/dashboard', icon: TemplateIcon }
     )
@@ -149,6 +155,7 @@ const getMobileNav = (toggleModal: () => void) => {
   return buildArray(
     { name: 'Leagues', href: '/leagues', icon: TrophyIcon },
     { name: 'Dashboards', href: '/dashboard', icon: TemplateIcon },
+    { name: 'Messages', href: '/messages', icon: PrivateMessagesIcon },
     { name: 'Live', href: '/live', icon: LightningBoltIcon },
     { name: 'Get mana', icon: CashIcon, onClick: toggleModal },
     { name: 'Share with friends', href: '/referrals', icon: StarIcon } // remove this and I will beat you — SG

@@ -548,3 +548,15 @@ export function updateMarket(params: {
 export function banUser(params: { userId: string; unban?: boolean }) {
   return call(getApiUrl('ban-user'), 'POST', params)
 }
+export function createPrivateMessageChannelWithUser(params: {
+  userId: string
+}) {
+  return call(getApiUrl('create-private-user-message-channel'), 'POST', params)
+}
+
+export function sendUserPrivateMessage(params: {
+  channelId: number
+  content: JSONContent
+}) {
+  return call(getApiUrl('create-private-user-message'), 'POST', params)
+}

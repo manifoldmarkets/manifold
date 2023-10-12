@@ -147,12 +147,13 @@ export function usePersistentSubscription<T extends TableName>(
   table: T,
   store?: Store,
   filter?: Filter<T>,
-  fetcher?: () => PromiseLike<Row<T>[]>
+  fetcher?: () => PromiseLike<Row<T>[]>,
+  filterString?: string
 ) {
   const isClient = useIsClient()
   const json = isClient ? store?.getItem(key) : undefined
   const rows = json != null ? (JSON.parse(json) as Row<T>[]) : undefined
-  const state = useSubscription(table, filter, fetcher, rows)
+  const state = useSubscription(table, filter, fetcher, rows, filterString)
 
   useEffect(() => {
     if (state.status === 'live') {

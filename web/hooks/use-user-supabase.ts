@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import { getUser, getUsers } from 'web/lib/supabase/user'
 import { useEffectCheckEquality } from './use-effect-check-equality'
 import { Answer, DpmAnswer } from 'common/answer'
+import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 
 export function useUserById(userId: string | undefined) {
   const [user, setUser] = useState<User | null | undefined>(undefined)
@@ -30,6 +31,24 @@ export function useUsers(userIds: string[]) {
   }, [userIds])
 
   return users
+}
+export function useUsersInStore(userIds: string[]) {
+  const [users, setUsers] = usePersistentInMemoryState<User[] | undefined>(
+    undefined,
+    'use-users-in-store'
+  )
+
+  useEffectCheckEquality(() => {
+    const userIdsToFetch = userIds.filter(
+      (id) => !users?.find((user) => user.id === id)
+    )
+    if (userIdsToFetch.length === 0) return
+    getUsers(userIdsToFetch).then((newUsers) => {
+      setUsers((currentUsers) => (currentUsers || []).concat(newUsers))
+    })
+  }, [userIds])
+
+  return users?.filter((user) => userIds.includes(user.id))
 }
 
 export function useUserByIdOrAnswer(answer: Answer | DpmAnswer) {

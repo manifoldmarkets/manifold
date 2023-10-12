@@ -1141,6 +1141,96 @@ export interface Database {
         }
         Relationships: []
       }
+      private_user_message_channel_members: {
+        Row: {
+          channel_id: number
+          created_time: string
+          id: number
+          role: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          channel_id: number
+          created_time?: string
+          id?: never
+          role?: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          channel_id?: number
+          created_time?: string
+          id?: never
+          role?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      private_user_message_channels: {
+        Row: {
+          created_time: string
+          id: number
+          last_updated_time: string
+        }
+        Insert: {
+          created_time?: string
+          id?: never
+          last_updated_time?: string
+        }
+        Update: {
+          created_time?: string
+          id?: never
+          last_updated_time?: string
+        }
+        Relationships: []
+      }
+      private_user_messages: {
+        Row: {
+          channel_id: number
+          content: Json
+          created_time: string
+          id: number
+          user_id: string
+        }
+        Insert: {
+          channel_id: number
+          content: Json
+          created_time?: string
+          id?: never
+          user_id: string
+        }
+        Update: {
+          channel_id?: number
+          content?: Json
+          created_time?: string
+          id?: never
+          user_id?: string
+        }
+        Relationships: []
+      }
+      private_user_seen_message_channels: {
+        Row: {
+          channel_id: number
+          created_time: string
+          id: number
+          user_id: string
+        }
+        Insert: {
+          channel_id: number
+          created_time?: string
+          id?: never
+          user_id: string
+        }
+        Update: {
+          channel_id?: number
+          created_time?: string
+          id?: never
+          user_id?: string
+        }
+        Relationships: []
+      }
       q_and_a_answers: {
         Row: {
           award: number
