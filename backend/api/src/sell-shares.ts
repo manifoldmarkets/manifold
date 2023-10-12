@@ -121,6 +121,12 @@ export const sellshares = authEndpoint(async (req, auth) => {
         mechanism === 'cpmm-1' ||
         (mechanism === 'cpmm-multi-1' && !contract.shouldAnswersSumToOne)
       ) {
+        if (mechanism === 'cpmm-multi-1') {
+          throw new APIError(
+            403,
+            'Sorry, selling is not implemented yet for this market type. Please check back tomorrow!'
+          )
+        }
         let answer
         if (answerId) {
           const answerSnap = await transaction.get(
