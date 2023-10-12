@@ -1,6 +1,7 @@
 #!/bin/bash
 
 ENV=${1:-dev}
+PROJECT=$2
 case $ENV in
     dev)
       FIREBASE_PROJECT=dev
@@ -17,6 +18,10 @@ case $ENV in
       echo "Invalid environment; must be dev or prod."
       exit 1
 esac
+
+if [ "$PROJECT" == "love" ]; then
+    export IS_MANIFOLD_LOVE=true
+fi
 
 firebase use $FIREBASE_PROJECT
 

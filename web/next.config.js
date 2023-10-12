@@ -151,4 +151,16 @@ module.exports = {
       // NOTE: add any external redirects at common/envs/constants.ts and update native apps.
     ]
   },
+  async rewrites() {
+    return [
+      ...(process.env.IS_MANIFOLD_LOVE
+        ? [
+            {
+              source: '/:path*',
+              destination: '/love/:path*',
+            },
+          ]
+        : []),
+    ]
+  },
 }
