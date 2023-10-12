@@ -29,6 +29,9 @@ export const FollowMarketButton = (props: {
         setFollowing((res.data?.length ?? 0) > 0)
       })
   }, [user?.id, open])
+
+  if (user === null) return null
+
   return (
     <Button
       loading={following === undefined}

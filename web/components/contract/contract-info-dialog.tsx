@@ -416,8 +416,6 @@ export function ContractInfoDialog(props: {
 }) {
   const { contract, user, open, setOpen } = props
 
-  const shareUrl = getShareUrl(contract, user?.username)
-
   return (
     <Modal open={open} setOpen={setOpen}>
       <Col className="bg-canvas-0 gap-4 rounded p-6">
@@ -428,98 +426,38 @@ export function ContractInfoDialog(props: {
           <FollowMarketButton contract={contract} user={user} />
         </Row>
 
-        <Tabs
-          tabs={[
-            {
-              title: 'Stats',
-              content: (
-                <Col>
-                  <Stats
-                    setOpen={setOpen}
-                    contract={contract}
-                    user={user}
-                    hideAdvanced={!user}
-                  />
+        <Col>
+          <Stats
+            setOpen={setOpen}
+            contract={contract}
+            user={user}
+            hideAdvanced={!user}
+          />
 
-                  {!!user && (
-                    <>
-                      <Row className="mt-4 flex-wrap gap-2">
-                        <BoostButton
-                          size="sm"
-                          contract={contract}
-                          color="indigo-outline"
-                        />
-                        {(contract.mechanism === 'cpmm-1' ||
-                          contract.mechanism === 'cpmm-multi-1') && (
-                          <AddLiquidityButton contract={contract} />
-                        )}
-                        <DuplicateContractButton contract={contract} />
-                        {contract.outcomeType == 'BOUNTIED_QUESTION' && (
-                          <AddBountyButton contract={contract} />
-                        )}
-                        <ContractHistoryButton contract={contract} />
-                      </Row>
-                      <Row className="mt-4 flex-wrap gap-2">
-                        <ReportButton
-                          report={{
-                            contentId: contract.id,
-                            contentType: 'contract',
-                            contentOwnerId: contract.creatorId,
-                          }}
-                        />
+          {!!user && (
+            <>
+              <Row className="mt-4 flex-wrap gap-2">
+                <DuplicateContractButton contract={contract} />
+                {contract.outcomeType == 'BOUNTIED_QUESTION' && (
+                  <AddBountyButton contract={contract} />
+                )}
+                <ContractHistoryButton contract={contract} />
+              </Row>
+              <Row className="mt-4 flex-wrap gap-2">
+                <ReportButton
+                  report={{
+                    contentId: contract.id,
+                    contentType: 'contract',
+                    contentOwnerId: contract.creatorId,
+                  }}
+                />
 
-                        <BlockMarketButton contract={contract} />
-                        <DisinterestedButton contract={contract} user={user} />
-                      </Row>
-                    </>
-                  )}
-                </Col>
-              ),
-            },
-            {
-              title: 'Share',
-              content: (
-                <Col className="max-h-[400px]">
-                  <QRCode
-                    url={shareUrl}
-                    width={250}
-                    height={250}
-                    className="self-center"
-                  />
-
-                  {contract.mechanism == 'none' ? (
-                    <>
-                      Invite your friends to join, and earn a{' '}
-                      {formatMoney(REFERRAL_AMOUNT)} referral bonus for each new
-                      person that signs up.
-                    </>
-                  ) : (
-                    <div className="text-ink-500 mb-2 mt-4 text-base">
-                      Invite traders to participate in this question and earn a{' '}
-                      {formatMoney(REFERRAL_AMOUNT)} referral bonus for each new
-                      trader that signs up.
-                    </div>
-                  )}
-
-                  <CopyLinkRow
-                    url={getShareUrl(contract, user?.username)}
-                    eventTrackingName="copy market link"
-                  />
-                  <Row className="mt-4 flex-wrap gap-2">
-                    <TweetButton
-                      tweetText={getShareUrl(contract, user?.username)}
-                    />
-
-                    <ShareEmbedButton
-                      contract={contract}
-                      className="hidden md:flex"
-                    />
-                  </Row>
-                </Col>
-              ),
-            },
-          ]}
-        />
+                <BlockMarketButton contract={contract} />
+                <DisinterestedButton contract={contract} user={user} />
+              </Row>
+            </>
+          )}
+        </Col>
 
         <Row className="items-center justify-start gap-4 rounded-md "></Row>
       </Col>

@@ -22,11 +22,10 @@ import { useQuery } from 'web/hooks/use-query'
 
 export function BoostButton(props: {
   contract: Contract
-  size?: SizeType
   color?: ColorType
   className?: string
 }) {
-  const { contract, size, color, className } = props
+  const { contract, color, className } = props
   const [open, setOpen] = useState(false)
 
   const disabled =
@@ -39,7 +38,7 @@ export function BoostButton(props: {
   return (
     <Button
       onClick={() => setOpen(true)}
-      size={size}
+      size="lg"
       color={color}
       className={className}
     >
@@ -62,11 +61,8 @@ export function BoostDialog(props: {
         <Title className="!mb-2">🚀 Boost this question</Title>
 
         <div className="text-ink-500 mb-2 text-base">
-          Pay to boost this question in the feed.{' '}
-          <InfoTooltip
-            text="Boosted questions are displayed to users with relevant interests. Users earn a redeemable reward
-          in exchange for clicking on the question."
-          />
+          Pay to boost this question higher in people's feeds.{' '}
+          <InfoTooltip text="Boosted questions target user interests. Users earn a reward for clicking on the question." />
         </div>
 
         <BoostFormRow contract={contract} />

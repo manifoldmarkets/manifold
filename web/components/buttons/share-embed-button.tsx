@@ -24,8 +24,8 @@ export function ShareEmbedButton(props: {
 
   return (
     <Button
-      size="sm"
       color="gray-outline"
+      size="xs"
       className={clsx('gap-1', className)}
       onClick={() => {
         copyToClipboard(embedContractCode(contract))
@@ -34,7 +34,7 @@ export function ShareEmbedButton(props: {
       }}
     >
       {codeIcon}
-      Embed
+      <span className="sr-only">Embed</span>
     </Button>
   )
 }

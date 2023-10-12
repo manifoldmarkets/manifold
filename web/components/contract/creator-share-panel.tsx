@@ -13,14 +13,21 @@ import { trackShareEvent } from 'web/lib/service/analytics'
 import toast from 'react-hot-toast'
 import { Row } from '../layout/row'
 import { useUser } from 'web/hooks/use-user'
+import { ShareQRButton } from '../buttons/share-qr-button'
+import { ShareEmbedButton } from '../buttons/share-embed-button'
+import { AddLiquidityButton } from './add-liquidity-button'
+import { ShareIcon } from '@heroicons/react/solid'
+import clsx from 'clsx'
 
 export function CreatorShareBoostPanel(props: { contract: Contract }) {
   const { contract } = props
 
   return (
     <GradientContainer className="mb-8 flex w-full">
-      <div className="mb-2 flex items-center gap-2">
-        <BoostButton contract={contract} color="gradient-pink" size="lg" />
+      <div className="mb-2 flex flex-wrap gap-2">
+        <BoostButton contract={contract} color="gradient-pink" />
+        <AddLiquidityButton contract={contract} />
+        <ShareLinkButton contract={contract} />
 
         <TweetButton
           tweetText={
@@ -28,10 +35,8 @@ export function CreatorShareBoostPanel(props: { contract: Contract }) {
             getShareUrl(contract, contract.creatorUsername)
           }
         />
-        <Button color="indigo-outline" size="lg" onClick={getOnClick(contract)}>
-          <LinkIcon className={'mr-1 h-4 w-4'} aria-hidden="true" />
-          Share
-        </Button>
+        <ShareQRButton contract={contract} className="hidden sm:block" />
+        <ShareEmbedButton contract={contract} className="hidden sm:block" />
       </div>
 
       {contract.outcomeType !== 'POLL' && (
@@ -49,29 +54,49 @@ export function NonCreatorSharePanel(props: { contract: Contract }) {
   const user = useUser()
 
   return (
-    <Row className="my-4 gap-4">
-      <Button
-        color="indigo-outline"
-        size="lg"
-        onClick={getOnClick(contract, user?.username)}
-      >
-        <LinkIcon className={'mr-1 h-4 w-4'} aria-hidden="true" />
-        Share
-      </Button>
+    <Row className="my-4 flex-wrap gap-4">
+      <BoostButton contract={contract} color="indigo-outline" />
+      <AddLiquidityButton contract={contract} />
+      <ShareLinkButton
+        contract={contract}
+        username={user?.username}
+        className="hidden sm:flex"
+      />
       <TweetButton tweetText={getShareUrl(contract, user?.username)} />
     </Row>
   )
 }
 
-const getOnClick = (contract: Contract, username?: string) => {
+const ShareLinkButton = (props: {
+  contract: Contract
+  username?: string
+  className?: string
+}) => {
+  const { contract, username, className } = props
   const isNative = getIsNative()
   const url = getShareUrl(contract, username ?? contract.creatorUsername)
 
-  return () => {
+  const onClick = () => {
     if (!url) return
     copyToClipboard(url)
     if (!isNative) toast.success('Link copied!')
 
     trackShareEvent('copy market link', url)
   }
+
+  return (
+    <Button
+      color="indigo-outline"
+      size="lg"
+      onClick={onClick}
+      className={clsx('gap-1', className)}
+    >
+      {isNative ? (
+        <ShareIcon className={'h-4 w-4'} aria-hidden />
+      ) : (
+        <LinkIcon className={'h-4 w-4'} aria-hidden />
+      )}
+      Share
+    </Button>
+  )
 }

@@ -6,7 +6,6 @@ import { addSubsidy } from 'web/lib/firebase/api'
 import { track } from 'web/lib/service/analytics'
 import { AmountInput } from '../widgets/amount-input'
 import { Button } from '../buttons/button'
-import { InfoTooltip } from '../widgets/info-tooltip'
 import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
 import { Row } from '../layout/row'
@@ -24,9 +23,17 @@ export function LiquidityModal(props: {
   return (
     <Modal open={isOpen} setOpen={setOpen} size="sm">
       <Col className="bg-canvas-0 gap-2.5  rounded p-4 pb-8 sm:gap-4">
-        <Title className="!mb-2">💧 Add liquidity</Title>
+        <Title className="!mb-2">💦 Subsidy</Title>
 
-        <div>Total liquidity subsidies: {formatMoney(totalLiquidity)}</div>
+        <div>
+          The higher the stakes, the more winners make.
+          <br />
+          For a small price, make this market precise!
+        </div>
+        <div>
+          Total prize pool:{' '}
+          <span className="font-semibold">{formatMoney(totalLiquidity)}</span>
+        </div>
         <AddLiquidityPanel contract={contract} />
       </Col>
     </Modal>
@@ -81,12 +88,6 @@ function AddLiquidityPanel(props: {
 
   return (
     <>
-      <div className="text-ink-500 mb-4">
-        Contribute your {ENV_CONFIG.moneyMoniker} to make this question more
-        accurate by subsidizing trading.{' '}
-        <InfoTooltip text="Liquidity is how much money traders can make if they're right. The higher the stakes for traders, the greater the incentive to find the correct probability." />
-      </div>
-
       <Row>
         <AmountInput
           amount={amount}
@@ -97,7 +98,7 @@ function AddLiquidityPanel(props: {
           inputClassName="w-28 mr-4"
         />
         <Button onClick={submit} disabled={isLoading || !!error}>
-          Add
+          Contribute 😎
         </Button>
       </Row>
 

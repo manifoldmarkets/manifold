@@ -13,10 +13,7 @@ export function DuplicateContractButton(props: { contract: Contract }) {
   const href = duplicateContractHref(contract)
   return (
     <Link
-      className={clsx(
-        buttonClass('sm', 'none'),
-        'hover:text-ink-0 gap-1 border-2 border-violet-400 text-violet-400 hover:bg-violet-400'
-      )}
+      className={clsx(buttonClass('sm', 'indigo-outline'))}
       href={href}
       onClick={trackCallback('duplicate market')}
       target={getLinkTarget(href, true)}
