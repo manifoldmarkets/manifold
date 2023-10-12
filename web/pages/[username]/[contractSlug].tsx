@@ -37,7 +37,7 @@ import {
   getTotalContractMetrics,
 } from 'common/supabase/contract-metrics'
 import ContractSharePanel from 'web/components/contract/contract-share-panel'
-import { ExtraContractActionsRow } from 'web/components/contract/extra-contract-actions-row'
+import { HeaderActions } from 'web/components/contract/header-actions'
 import { PrivateContractPage } from 'web/components/contract/private-contract'
 import {
   RelatedContractsCarousel,
@@ -92,6 +92,8 @@ import { removeUndefinedProps } from 'common/util/object'
 import { getUser } from 'web/lib/supabase/user'
 import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
 import { useHeaderIsStuck } from 'web/hooks/use-header-is-stuck'
+import { ContractHistoryButton } from 'web/components/contract/contract-edit-history-button'
+import { DangerZone } from 'web/components/contract/danger-zone'
 
 export async function getStaticProps(ctx: {
   params: { username: string; contractSlug: string }
@@ -355,22 +357,7 @@ export function ContractPageContent(props: {
   const isCreator = creatorId === user?.id
   const isClosed = !!(closeTime && closeTime < Date.now())
   const trustworthy = isTrustworthy(user?.username)
-
-  // show the resolver by default if the market is closed and you can resolve it
   const [showResolver, setShowResolver] = useState(false)
-
-  useEffect(() => {
-    // Close resolve panel if you just resolved it.
-    if (isResolved) setShowResolver(false)
-    else if (
-      (isCreator || isAdmin || trustworthy) &&
-      (closeTime ?? 0) < Date.now() &&
-      outcomeType !== 'STONK' &&
-      contract.mechanism !== 'none'
-    ) {
-      setShowResolver(true)
-    }
-  }, [isAdmin, isCreator, trustworthy, closeTime, isResolved])
 
   useSaveReferral(user, {
     defaultReferrerUsername: contract.creatorUsername,
@@ -475,14 +462,14 @@ export function ContractPageContent(props: {
               </Row>
 
               {(headerStuck || !coverImageUrl) && (
-                <ExtraContractActionsRow contract={contract}>
+                <HeaderActions contract={contract}>
                   {!coverImageUrl && isCreator && (
                     <ChangeBannerButton
                       contract={contract}
                       className="ml-3 first:ml-0"
                     />
                   )}
-                </ExtraContractActionsRow>
+                </HeaderActions>
               )}
             </Row>
           </div>
@@ -499,14 +486,14 @@ export function ContractPageContent(props: {
                     <Col className="my-auto">
                       <BackButton />
                     </Col>
-                    <ExtraContractActionsRow contract={contract}>
+                    <HeaderActions contract={contract}>
                       {!coverImageUrl && isCreator && (
                         <ChangeBannerButton
                           contract={contract}
                           className="ml-3 first:ml-0"
                         />
                       )}
-                    </ExtraContractActionsRow>
+                    </HeaderActions>
                   </Row>
                 )}
                 <div ref={titleRef}>
@@ -562,23 +549,6 @@ export function ContractPageContent(props: {
               />
             </Col>
 
-            {isCreator &&
-              isResolved &&
-              resolution === 'CANCEL' &&
-              (!uniqueBettorCount || uniqueBettorCount < 2) && (
-                <DeleteMarketButton
-                  className="mt-4 self-end"
-                  contractId={contract.id}
-                />
-              )}
-
-            <ContractDescription
-              className="mt-2"
-              contract={contract}
-              highlightResolver={!isResolved && isClosed && !showResolver}
-              toggleResolver={() => setShowResolver((shown) => !shown)}
-            />
-
             {showResolver &&
               user &&
               !resolution &&
@@ -599,6 +569,14 @@ export function ContractPageContent(props: {
                   />
                 </GradientContainer>
               ) : null)}
+
+            <DangerZone
+              contract={contract}
+              showResolver={showResolver}
+              setShowResolver={setShowResolver}
+            />
+
+            <ContractDescription contract={contract} />
 
             {isResolved &&
               // resolved less than week ago

@@ -1,7 +1,7 @@
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/solid'
 import { JSONContent } from '@tiptap/react'
 import clsx from 'clsx'
-import { MouseEventHandler, useRef, useState } from 'react'
+import { MouseEventHandler, useEffect, useRef, useState } from 'react'
 import { useSafeLayoutEffect } from 'web/hooks/use-safe-layout-effect'
 import { Row } from '../layout/row'
 import { Content } from './editor'
@@ -46,10 +46,9 @@ export function CollapsibleContent(props: {
   content: JSONContent | string
   stateKey: string
   defaultCollapse?: boolean
-  children?: React.ReactNode
-  hideButton?: boolean
+  hideCollapse?: boolean
 }) {
-  const { content, stateKey, defaultCollapse, children, hideButton } = props
+  const { content, stateKey, defaultCollapse, hideCollapse } = props
   const [shouldAllowCollapseOfContent, setShouldAllowCollapseOfContent] =
     useState(false)
   const contentRef = useRef<HTMLDivElement>(null)
@@ -61,22 +60,18 @@ export function CollapsibleContent(props: {
       }
     }
   }, [contentRef.current?.offsetHeight])
-  if (shouldAllowCollapseOfContent) {
+  if (shouldAllowCollapseOfContent && !hideCollapse) {
     return (
       <ActuallyCollapsibleContent
         content={content}
         stateKey={stateKey}
         defaultCollapse={defaultCollapse}
-        hideButton={hideButton}
-      >
-        {children}
-      </ActuallyCollapsibleContent>
+      />
     )
   }
   return (
     <div ref={contentRef}>
       <Content content={content} />
-      <div className="text-right">{children}</div>
     </div>
   )
 }
@@ -86,53 +81,33 @@ function ActuallyCollapsibleContent(props: {
   content: JSONContent | string
   stateKey: string
   defaultCollapse?: boolean
-  children?: React.ReactNode
-  hideButton?: boolean
 }) {
-  const { content, stateKey, defaultCollapse, children, hideButton } = props
-  const [collapsed, setCollapsed] = usePersistentLocalState<boolean>(
+  const { content, stateKey, defaultCollapse } = props
+  const [isCollapsed, setCollapsed] = usePersistentLocalState<boolean>(
     defaultCollapse ?? false,
     stateKey
   )
-  const [overrideCollaped, setOverrideCollaped] = useState(defaultCollapse)
-  const isCollapsed = overrideCollaped ?? collapsed
-
-  const button = (
-    <ShowMoreLessButton
-      className="ml-2 bg-transparent"
-      onClick={() => {
-        if (!isCollapsed)
-          window.scrollTo({
-            top: 0,
-            behavior: 'smooth',
-          })
-        setCollapsed(!isCollapsed)
-        setOverrideCollaped(!isCollapsed)
-      }}
-      isCollapsed={isCollapsed}
-    />
-  )
+  useEffect(() => {
+    if (defaultCollapse !== undefined) setCollapsed(defaultCollapse)
+  }, [])
 
   return (
     <div>
       <div
         style={{ height: isCollapsed ? COLLAPSIBLE_HEIGHT : 'auto' }}
-        className={clsx(
-          'transition-height relative w-full overflow-hidden rounded-b-md'
-        )}
+        className="relative w-full overflow-hidden"
       >
-        <div>
-          {!hideButton && <Row className="justify-end">{button}</Row>}
-          <Content content={content} />
-        </div>
+        <Row className="justify-end gap-2">
+          <ShowMoreLessButton
+            onClick={() => setCollapsed(!isCollapsed)}
+            isCollapsed={isCollapsed}
+          />
+        </Row>
+        <Content content={content} />
+
         {isCollapsed && (
-          <>
-            <div className="absolute bottom-0 w-full">
-              <div className="from-canvas-100 h-8 bg-gradient-to-t" />
-            </div>
-          </>
+          <div className="from-canvas-100 absolute bottom-0 h-8 w-full rounded-b-md bg-gradient-to-t" />
         )}
-        {!isCollapsed && <div className="text-right">{children}</div>}
       </div>
     </div>
   )

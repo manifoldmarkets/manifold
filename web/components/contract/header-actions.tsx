@@ -10,7 +10,7 @@ import { Row } from '../layout/row'
 import { Tooltip } from '../widgets/tooltip'
 import { LikeButton } from './like-button'
 
-export function ExtraContractActionsRow(props: {
+export function HeaderActions(props: {
   contract: Contract
   children?: ReactNode
 }) {

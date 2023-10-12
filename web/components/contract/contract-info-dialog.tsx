@@ -46,6 +46,7 @@ import { BoostButton } from './boost-button'
 import { AddBountyButton } from './bountied-question'
 import dayjs from 'dayjs'
 import { NON_PREDICTIVE_GROUP_ID } from 'common/supabase/groups'
+import { ContractHistoryButton } from './contract-edit-history-button'
 
 export const Stats = (props: {
   contract: Contract
@@ -456,6 +457,7 @@ export function ContractInfoDialog(props: {
                         {contract.outcomeType == 'BOUNTIED_QUESTION' && (
                           <AddBountyButton contract={contract} />
                         )}
+                        <ContractHistoryButton contract={contract} />
                       </Row>
                       <Row className="mt-4 flex-wrap gap-2">
                         <ReportButton

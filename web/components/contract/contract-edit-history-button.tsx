@@ -24,7 +24,7 @@ type ContractEdit = {
   editCreated: number
   editorId: string
 }
-export const ContractEditHistoryButton = (props: {
+export const ContractHistoryButton = (props: {
   contract: Contract
   className?: string
 }) => {
@@ -128,12 +128,11 @@ export const ContractEditHistoryButton = (props: {
   return (
     <>
       <Button
-        color="gray"
-        size={'2xs'}
+        color="gray-outline"
         onClick={() => setShowEditHistory(true)}
         className={className}
       >
-        See history
+        History
       </Button>
       <Modal size={'lg'} open={showEditHistory} setOpen={setShowEditHistory}>
         <div className={'bg-canvas-50 rounded p-4'}>

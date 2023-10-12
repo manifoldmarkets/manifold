@@ -16,7 +16,7 @@ export function SignedInBinaryMobileBetting(props: {
   const { contract, user } = props
 
   return (
-    <Col className="my-3 w-full px-1">
+    <Col className="my-3 w-full">
       <BuyPanel
         inModal={false}
         contract={contract as CPMMBinaryContract}
