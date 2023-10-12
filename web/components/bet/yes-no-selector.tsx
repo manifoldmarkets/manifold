@@ -114,31 +114,31 @@ export function ChooseCancelSelector(props: {
   const { selected, onSelect } = props
 
   const btnClassName =
-    'flex-1 font-medium sm:first:rounded-l-xl sm:last:rounded-r-xl sm:rounded-none whitespace-nowrap'
+    '!py-2 flex-1 sm:first:rounded-l-xl sm:last:rounded-r-xl sm:rounded-none whitespace-nowrap'
 
   return (
     <div className="flex flex-col gap-1 sm:flex-row">
       <Button
         color={selected === 'CHOOSE_ONE' ? 'green' : 'gray'}
-        size="xl"
+        size="lg"
         onClick={() => onSelect('CHOOSE_ONE')}
         className={btnClassName}
       >
-        Choose answer
+        Choose one
       </Button>
 
       <Button
         color={selected === 'CHOOSE_MULTIPLE' ? 'blue' : 'gray'}
-        size="xl"
+        size="lg"
         onClick={() => onSelect('CHOOSE_MULTIPLE')}
         className={btnClassName}
       >
-        Choose multiple
+        Choose many
       </Button>
 
       <Button
         color={selected === 'CANCEL' ? 'yellow' : 'gray'}
-        size="xl"
+        size="lg"
         onClick={() => onSelect('CANCEL')}
         className={btnClassName}
       >

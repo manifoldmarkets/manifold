@@ -58,7 +58,12 @@ export const AnswerBar = (props: {
           {/* bar outline if resolved */}
           {!!resolvedProb && !hideBar && (
             <div
-              className="absolute top-0 h-full rounded bg-purple-100 ring-1 ring-purple-500 dark:bg-purple-900 sm:ring-2"
+              className={clsx(
+                'absolute top-0 h-full rounded ring-1 ring-purple-500 sm:ring-2',
+                resolvedProb > prob
+                  ? 'bg-purple-100 dark:bg-purple-900'
+                  : 'z-10'
+              )}
               style={{
                 width: `${resolvedProb * 100}%`,
               }}

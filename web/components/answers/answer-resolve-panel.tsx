@@ -31,8 +31,12 @@ import {
   AnswerBar,
   AnswerLabel,
   AnswerStatusAndBetButtons,
+  ClosedProb,
+  OpenProb,
 } from './answer-components'
 import { useAdmin } from 'web/hooks/use-admin'
+import { GradientContainer } from '../widgets/gradient-container'
+import { AmountInput } from '../widgets/amount-input'
 
 function getAnswerResolveButtonColor(
   resolveOption: string | undefined,
@@ -168,7 +172,7 @@ function AnswersResolveOptions(props: {
   }
 
   return (
-    <Col className="gap-4 rounded">
+    <>
       <Row className="justify-between">
         {!isInModal && (
           <div>
@@ -182,7 +186,7 @@ function AnswersResolveOptions(props: {
           </span>
         )}
       </Row>
-      <div className="flex flex-col items-stretch justify-center gap-4 sm:flex-row sm:flex-wrap md:justify-between">
+      <div className="flex flex-col items-stretch justify-center gap-4 sm:flex-row sm:flex-wrap sm:justify-between">
         <ChooseCancelSelector
           selected={resolveOption}
           onSelect={setResolveOption}
@@ -258,7 +262,7 @@ function AnswersResolveOptions(props: {
 
       {!!error && <div className="text-scarlet-500">{error}</div>}
       {!!warning && <div className="text-warning">{warning}</div>}
-    </Col>
+    </>
   )
 }
 
@@ -282,15 +286,18 @@ export const AnswersResolvePanel = (props: { contract: MultiContract }) => {
 
   const chosenTotal = sum(Object.values(chosenAnswers))
 
-  const onChoose = (answerId: string, prob: number) => {
+  const onChoose = (answerId: string, prob?: number) => {
     if (resolveOption === 'CHOOSE_ONE') {
-      setChosenAnswers({ [answerId]: prob })
+      setChosenAnswers({ [answerId]: 100 })
     } else {
       setChosenAnswers((chosenAnswers) => {
-        return {
-          ...chosenAnswers,
-          [answerId]: prob,
+        const copy = { ...chosenAnswers }
+        if (prob === undefined) {
+          delete copy[answerId]
+        } else {
+          copy[answerId] = prob
         }
+        return copy
       })
     }
   }
@@ -312,27 +319,31 @@ export const AnswersResolvePanel = (props: { contract: MultiContract }) => {
     : undefined
 
   return (
-    <>
-      <AnswersResolveOptions
-        isCreator={user?.id === contract.creatorId}
-        contract={contract}
-        resolveOption={resolveOption}
-        setResolveOption={setResolveOption}
-        chosenAnswers={chosenAnswers}
-      />
-      {answers.map((answer) => (
-        <ResolutionAnswerItem
-          key={answer.id}
-          answer={answer}
+    <GradientContainer>
+      <Col className="gap-3">
+        <AnswersResolveOptions
+          isCreator={user?.id === contract.creatorId}
           contract={contract}
-          showChoice={showChoice}
-          chosenProb={chosenAnswers[answer.id]}
-          totalChosenProb={chosenTotal}
-          onChoose={onChoose}
-          onDeselect={onDeselect}
+          resolveOption={resolveOption}
+          setResolveOption={setResolveOption}
+          chosenAnswers={chosenAnswers}
         />
-      ))}
-    </>
+        <Col className="gap-2">
+          {answers.map((answer) => (
+            <ResolutionAnswerItem
+              key={answer.id}
+              answer={answer}
+              contract={contract}
+              showChoice={showChoice}
+              chosenProb={chosenAnswers[answer.id]}
+              totalChosenProb={chosenTotal}
+              onChoose={onChoose}
+              onDeselect={onDeselect}
+            />
+          ))}
+        </Col>
+      </Col>
+    </GradientContainer>
   )
 }
 
@@ -342,7 +353,7 @@ export function ResolutionAnswerItem(props: {
   showChoice: 'radio' | 'checkbox' | undefined
   chosenProb: number | undefined
   totalChosenProb?: number
-  onChoose: (answerId: string, prob: number) => void
+  onChoose: (answerId: string, prob?: number) => void
   onDeselect: (answerId: string) => void
   isInModal?: boolean
 }) {
@@ -354,144 +365,89 @@ export function ResolutionAnswerItem(props: {
     totalChosenProb,
     onChoose,
     onDeselect,
-    isInModal,
   } = props
-  const { resolution, resolutions, outcomeType } = contract
   const { text } = answer
   const user = useUserByIdOrAnswer(answer)
   const isChosen = chosenProb !== undefined
 
   const prob = getAnswerProbability(contract, answer.id)
-  const roundedProb = Math.round(prob * 100)
-  const probPercent = formatPercent(prob)
-  const wasResolvedTo =
-    resolution === answer.id || (resolutions && resolutions[answer.id])
+
+  const chosenShare =
+    chosenProb && totalChosenProb ? chosenProb / totalChosenProb : 0
+
+  const color = getAnswerColor(
+    answer,
+    contract.answers.map((a) => a.text)
+  )
+
+  const addAnswersMode =
+    'addAnswersMode' in contract
+      ? contract.addAnswersMode ?? 'DISABLED'
+      : contract.outcomeType === 'FREE_RESPONSE'
+      ? 'ANYONE'
+      : 'DISABLED'
 
   return (
-    <div
-      className={clsx(
-        'flex flex-col gap-4 rounded p-4',
-        isInModal ? '' : 'sm:flex-row',
-        wasResolvedTo
-          ? resolution === 'MKT'
-            ? 'mb-2 bg-blue-500/20'
-            : 'flex flex-col gap-4 rounded bg-teal-500/20 p-4'
-          : chosenProb === undefined
-          ? 'bg-canvas-50'
-          : showChoice === 'radio'
-          ? 'bg-teal-500/20'
-          : 'bg-blue-500/20'
-      )}
-    >
-      <Col className="flex-1 gap-3">
-        <div className="whitespace-pre-line">
-          <Linkify text={text} />
-        </div>
-
-        {outcomeType === 'FREE_RESPONSE' && (
-          <Row className="text-ink-500 items-center gap-2 text-sm">
-            {user ? (
-              <Link className="relative" href={`/${user.username}`}>
-                <Row className="items-center gap-2">
-                  <Avatar avatarUrl={user.avatarUrl} size="2xs" />
-                  <div className="truncate">{user.name}</div>
-                </Row>
-              </Link>
-            ) : (
-              <EmptyAvatar />
-            )}
-          </Row>
-        )}
-      </Col>
-
-      <Row
-        className={clsx(
-          'items-center justify-end gap-4 self-end',
-          isInModal ? '' : 'sm:self-start'
-        )}
-      >
-        {!wasResolvedTo &&
-          (showChoice === 'checkbox' ? (
-            <Input
-              className="w-24 justify-self-end !text-2xl"
-              type="number"
-              placeholder={`${roundedProb}`}
-              maxLength={9}
-              value={chosenProb ? Math.round(chosenProb) : ''}
-              onChange={(e) => {
-                const { value } = e.target
-                const numberValue = value
-                  ? parseInt(value.replace(/[^\d]/, ''))
-                  : 0
-                if (!isNaN(numberValue)) onChoose(answer.id, numberValue)
-              }}
-            />
+    <AnswerBar
+      color={color}
+      prob={prob}
+      resolvedProb={chosenShare}
+      label={
+        <AnswerLabel
+          text={text}
+          index={'index' in answer ? answer.index : undefined}
+          createdTime={answer.createdTime}
+          creator={addAnswersMode === 'ANYONE' ? user ?? false : undefined}
+        />
+      }
+      end={
+        <>
+          {chosenShare ? (
+            <ClosedProb prob={prob} resolvedProb={chosenShare} />
           ) : (
-            <div
-              className={clsx(
-                'text-2xl',
-                tradingAllowed(contract) ? 'text-teal-500' : 'text-ink-500'
-              )}
-            >
-              {probPercent}
-            </div>
-          ))}
-        {showChoice ? (
-          <div className="flex flex-col py-1">
-            <Row className="cursor-pointer items-center gap-2 px-1 py-2">
-              <span className="">Choose this answer</span>
-              {showChoice === 'radio' && (
-                <input
-                  className={clsx('radio', chosenProb && '!bg-teal-500')}
-                  type="radio"
-                  name="opt"
-                  checked={isChosen}
-                  onChange={() => onChoose(answer.id, 1)}
-                  value={answer.id}
-                />
-              )}
-              {showChoice === 'checkbox' && (
-                <input
-                  className={clsx('checkbox', chosenProb && '!bg-blue-500')}
-                  type="checkbox"
-                  name="opt"
-                  checked={isChosen}
-                  onChange={() => {
-                    if (isChosen) onDeselect(answer.id)
-                    else {
-                      onChoose(answer.id, 100 * prob)
-                    }
-                  }}
-                  value={answer.id}
-                />
-              )}
-            </Row>
-            {showChoice === 'checkbox' && (
-              <div className="ml-1">
-                {chosenProb && totalChosenProb
-                  ? Math.round((100 * chosenProb) / totalChosenProb)
-                  : 0}
-                % share
-              </div>
+            <OpenProb prob={prob} />
+          )}
+
+          {showChoice === 'checkbox' && (
+            <AmountInput
+              inputClassName="w-16 h-7 !px-2"
+              label=""
+              amount={chosenProb ? Math.round(chosenProb) : undefined}
+              onChangeAmount={(value) =>
+                onChoose(answer.id, value ? value : undefined)
+              }
+            />
+          )}
+          <>
+            {showChoice === 'radio' && (
+              <input
+                className={clsx('checked:!bg-purple-500')}
+                type="radio"
+                name="opt"
+                checked={isChosen}
+                onChange={() => onChoose(answer.id, 1)}
+                value={answer.id}
+              />
             )}
-          </div>
-        ) : (
-          wasResolvedTo && (
-            <Col className="items-end">
-              <div
-                className={clsx(
-                  'text-xl',
-                  resolution === 'MKT' ? 'text-blue-700' : 'text-teal-500'
-                )}
-              >
-                Chosen{' '}
-                {resolutions ? `${Math.round(resolutions[answer.id])}%` : ''}
-              </div>
-            </Col>
-          )
-        )}
-      </Row>
-    </div>
+            {showChoice === 'checkbox' && (
+              <input
+                className={clsx('checked:!bg-purple-500')}
+                type="checkbox"
+                name="opt"
+                checked={isChosen}
+                onChange={() => {
+                  if (isChosen) onDeselect(answer.id)
+                  else {
+                    onChoose(answer.id, Math.max(100 * prob, 1))
+                  }
+                }}
+                value={answer.id}
+              />
+            )}
+          </>
+        </>
+      }
+    />
   )
 }
 
