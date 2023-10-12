@@ -1,12 +1,10 @@
 import { sortBy, sum } from 'lodash'
 import { useEffect, useState } from 'react'
-import Link from 'next/link'
 import clsx from 'clsx'
 
 import {
   CPMMMultiContract,
   MultiContract,
-  tradingAllowed,
 } from 'common/contract'
 import { Col } from '../layout/col'
 import { APIError, resolveMarket } from 'web/lib/firebase/api'
@@ -20,13 +18,9 @@ import { useUser } from 'web/hooks/use-user'
 import { getAnswerColor } from './answers-panel'
 import { DpmAnswer, Answer } from 'common/answer'
 import { getAnswerProbability } from 'common/calculate'
-import { formatPercent } from 'common/util/format'
 import { useUserByIdOrAnswer } from 'web/hooks/use-user-supabase'
 import { MiniResolutionPanel } from '../resolution-panel'
-import { Avatar, EmptyAvatar } from '../widgets/avatar'
 import { InfoTooltip } from '../widgets/info-tooltip'
-import { Input } from '../widgets/input'
-import { Linkify } from '../widgets/linkify'
 import {
   AnswerBar,
   AnswerLabel,
