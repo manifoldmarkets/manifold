@@ -34,11 +34,8 @@ import { ExpandingInput } from '../widgets/expanding-input'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { ANSWER_COST } from 'common/economy'
 
-export function CreateAnswerCpmmPanel(props: {
-  contract: CPMMMultiContract
-  onFinish?: () => void
-}) {
-  const { contract, onFinish } = props
+export function CreateAnswerCpmmPanel(props: { contract: CPMMMultiContract }) {
+  const { contract } = props
   const user = useUser()
   const [text, setText] = usePersistentInMemoryState(
     '',
@@ -67,7 +64,6 @@ export function CreateAnswerCpmmPanel(props: {
       } catch (e) {}
 
       setIsSubmitting(false)
-      if (onFinish) onFinish()
     }
   }
 
@@ -112,7 +108,6 @@ export function CreateAnswerCpmmPanel(props: {
         placeholder="Add another answer"
         rows={1}
         maxLength={MAX_ANSWER_LENGTH}
-        autoFocus={!!onFinish}
       />
       {answerError ? (
         <AnswerError key={1} level="error" text={answerError} />
@@ -123,12 +118,7 @@ export function CreateAnswerCpmmPanel(props: {
           text={`Did you mean to bet on "${possibleDuplicateAnswer}"?`}
         />
       ) : undefined}
-      <Row className={'justify-end gap-2'}>
-        {onFinish && (
-          <Button color="gray" onClick={onFinish}>
-            Cancel
-          </Button>
-        )}
+      <Row className={'justify-end'}>
         <Button
           loading={isSubmitting}
           disabled={!canSubmit}
@@ -357,22 +347,20 @@ export function CreateAnswerPanel(props: { contract: Contract }) {
   const privateUser = usePrivateUser()
 
   if (
-    addAnswersMode !== 'ANYONE' ||
-    !user ||
-    !tradingAllowed(contract) ||
-    privateUser?.blockedByUserIds.includes(contract.creatorId)
+    user &&
+    (addAnswersMode === 'ANYONE' ||
+      (addAnswersMode === 'ONLY_CREATOR' && user.id === contract.creatorId)) &&
+    tradingAllowed(contract) &&
+    !privateUser?.blockedByUserIds.includes(contract.creatorId)
   ) {
-    return null
+    return contract.mechanism === 'cpmm-multi-1' ? (
+      <CreateAnswerCpmmPanel contract={contract} />
+    ) : (
+      <CreateAnswerDpmPanel contract={contract as FreeResponseContract} />
+    )
   }
 
-  if (
-    contract.outcomeType === 'MULTIPLE_CHOICE' &&
-    contract.mechanism === 'cpmm-multi-1'
-  ) {
-    return <CreateAnswerCpmmPanel contract={contract} />
-  } else {
-    return <CreateAnswerDpmPanel contract={contract as FreeResponseContract} />
-  }
+  return null
 }
 
 const AnswerError = (props: { text: string; level: 'warning' | 'error' }) => {

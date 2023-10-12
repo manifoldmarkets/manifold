@@ -14,7 +14,6 @@ import { isTrustworthy } from 'common/envs/constants'
 import { ContractEditHistoryButton } from 'web/components/contract/contract-edit-history-button'
 import { PencilIcon, PlusIcon } from '@heroicons/react/solid'
 import { Editor, JSONContent } from '@tiptap/core'
-import { CreateAnswerCpmmPanel } from '../answers/create-answer-panel'
 
 export function ContractDescription(props: {
   contract: Contract
@@ -79,7 +78,6 @@ function ContractDescAndActions(props: {
     toggleResolver,
   } = props
   const [editing, setEditing] = useState(false)
-  const [editingAnswer, setEditingAnswer] = useState(false)
 
   const editor = useTextEditor({
     max: MAX_DESCRIPTION_LENGTH,
@@ -91,17 +89,6 @@ function ContractDescAndActions(props: {
   async function saveDescription() {
     if (!editor) return
     await updateContract(contract.id, { description: editor.getJSON() })
-  }
-
-  if (editingAnswer && contract.mechanism === 'cpmm-multi-1') {
-    return (
-      <CreateAnswerCpmmPanel
-        contract={contract}
-        onFinish={() => {
-          setEditingAnswer(false)
-        }}
-      />
-    )
   }
 
   return editing ? (
@@ -133,14 +120,6 @@ function ContractDescAndActions(props: {
       )}
       <Row className="mt-2 flex-wrap items-center justify-end gap-2 text-xs">
         {isOnlyAdmin && 'Admin '}
-        {!isOnlyTrustworthy &&
-          contract.mechanism === 'cpmm-multi-1' &&
-          contract.addAnswersMode === 'ONLY_CREATOR' && (
-            <AddAnswerButton
-              setEditing={setEditingAnswer}
-              buttonColor={'gray'}
-            />
-          )}
         {!isOnlyTrustworthy && (
           <EditDescriptionButton
             setEditing={setEditing}
