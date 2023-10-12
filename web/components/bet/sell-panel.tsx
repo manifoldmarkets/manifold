@@ -65,9 +65,12 @@ export function SellPanel(props: {
       ? contract.answers.find((a) => a.id === answerId)
       : undefined
 
-  const { unfilledBets, balanceByUserId } = useUnfilledBetsAndBalanceByUserId(
-    contract.id
-  )
+  const { unfilledBets: allUnfilledBets, balanceByUserId } =
+    useUnfilledBetsAndBalanceByUserId(contract.id)
+
+  const unfilledBets = answerId
+    ? allUnfilledBets.filter((b) => b.answerId === answerId)
+    : allUnfilledBets
 
   const [displayAmount, setDisplayAmount] = useState<number | undefined>(() => {
     const probChange = isMultiSumsToOne
