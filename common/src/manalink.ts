@@ -1,5 +1,6 @@
 import { User } from './user'
 import { last } from 'lodash'
+import { BOT_USERNAMES } from 'common/envs/constants'
 import { getPortfolioHistory } from 'common/supabase/portfolio-metrics'
 import { DAY_MS } from 'common/util/time'
 import { SupabaseClient } from 'common/supabase/utils'
@@ -48,9 +49,7 @@ export async function canSendMana(user: User, db: SupabaseClient) {
   )
 
   return (
-    // Exception for new Manifest ticket purchasers
-    (user.balance > 20000 && Date.now() < new Date(1695625200000).valueOf()) ||
-    (user.createdTime < ageThreshold &&
+    ((user.createdTime < ageThreshold || BOT_USERNAMES.includes(user.username)) &&
       (user.balance > 1000 ||
         user.profitCached.allTime > 500 ||
         (portfolioHistory?.investmentValue ?? 0) > 1000 ||
