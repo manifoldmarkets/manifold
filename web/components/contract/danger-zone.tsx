@@ -44,12 +44,13 @@ export function DangerZone(props: {
   useEffect(() => {
     // Close resolve panel if you just resolved it.
     if (isResolved) setShowResolver(false)
-    else if ((canResolve && !closeTime) || isClosed) {
+    // open by default if it is closed
+    else if (canResolve && isClosed) {
       setShowResolver(true)
     }
   }, [isAdmin, isCreator, trustworthy, closeTime, isResolved])
 
-  const highlightResolver = !isResolved && isClosed && !showResolver
+  const highlightResolver = isClosed && !showResolver
 
   if (!user) return null
   if (!canDelete && !canResolve) return null
