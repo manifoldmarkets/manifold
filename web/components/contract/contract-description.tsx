@@ -1,6 +1,5 @@
 import clsx from 'clsx'
 import { ReactNode, useState } from 'react'
-
 import { Contract, MAX_DESCRIPTION_LENGTH } from 'common/contract'
 import { useAdmin } from 'web/hooks/use-admin'
 import { useUser } from 'web/hooks/use-user'
@@ -172,25 +171,6 @@ function EditDescriptionButton(props: {
       }}
     >
       {icon} {text}
-    </Button>
-  )
-}
-
-function AddAnswerButton(props: {
-  setEditing: (editing: boolean) => void
-  buttonColor?: ColorType
-}) {
-  const { buttonColor, setEditing } = props
-
-  return (
-    <Button
-      color={buttonColor ?? 'gray-white'}
-      size="2xs"
-      onClick={() => {
-        setEditing(true)
-      }}
-    >
-      <PlusIcon className="mr-1 inline h-4 w-4" /> Add answer
     </Button>
   )
 }
