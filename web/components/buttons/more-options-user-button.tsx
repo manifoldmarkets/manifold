@@ -32,7 +32,11 @@ export function MoreOptionsUserButton(props: { user: User }) {
 
   return (
     <>
-      <Button color={'gray-white'} onClick={() => setIsModalOpen(true)}>
+      <Button
+        color={'gray-white'}
+        size={'xs'}
+        onClick={() => setIsModalOpen(true)}
+      >
         <DotsHorizontalIcon
           className={clsx('h-5 w-5 flex-shrink-0')}
           aria-hidden="true"

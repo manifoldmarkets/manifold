@@ -90,8 +90,17 @@ export function CommentInputTextArea(props: {
   submit: () => void
   isSubmitting: boolean
   submitOnEnter?: boolean
+  hideToolbar?: boolean
 }) {
-  const { user, submitOnEnter, editor, submit, isSubmitting, replyTo } = props
+  const {
+    user,
+    hideToolbar,
+    submitOnEnter,
+    editor,
+    submit,
+    isSubmitting,
+    replyTo,
+  } = props
   useEffect(() => {
     editor?.setEditable(!isSubmitting)
   }, [isSubmitting, editor])
@@ -137,7 +146,7 @@ export function CommentInputTextArea(props: {
   }, [replyTo, editor])
 
   return (
-    <TextEditor editor={editor} simple>
+    <TextEditor editor={editor} simple hideToolbar={hideToolbar}>
       {user && !isSubmitting && (
         <button
           className="text-ink-400 hover:text-ink-600 active:bg-ink-300 disabled:text-ink-300 px-4 transition-colors"

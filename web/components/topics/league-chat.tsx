@@ -16,6 +16,7 @@ import { MINUTE_MS } from 'common/util/time'
 import { run } from 'common/supabase/utils'
 import { db } from 'web/lib/supabase/db'
 import { useIsVisible } from 'web/hooks/use-is-visible'
+import clsx from 'clsx'
 
 export const LeagueChat = (props: {
   user: User | null | undefined
@@ -38,7 +39,6 @@ export const LeagueChat = (props: {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [scrollToBottomRef, setScrollToBottomRef] =
     useState<HTMLDivElement | null>(null)
-  const [scrollerRef, setScrollerRef] = useState<HTMLDivElement | null>(null)
   const [replyToUser, setReplyToUser] = useState<any>()
 
   // array of groups, where each group is an array of messages that are displayed as one
@@ -63,14 +63,9 @@ export const LeagueChat = (props: {
     return tempGrouped
   }, [messages.length])
   useEffect(() => {
-    if (scrollToBottomRef && scrollerRef && visible && realtimeMessages?.length)
-      scrollerRef.scrollTo({ top: scrollToBottomRef.offsetTop || 0 })
-  }, [
-    scrollToBottomRef,
-    scrollerRef,
-    JSON.stringify(realtimeMessages),
-    visible,
-  ])
+    if (scrollToBottomRef && visible && realtimeMessages?.length)
+      scrollToBottomRef.scrollIntoView()
+  }, [scrollToBottomRef, JSON.stringify(realtimeMessages), visible])
 
   function onReplyClick(message: ChatMessage) {
     setReplyToUser({ id: message.userId, username: message.userUsername })
@@ -98,7 +93,13 @@ export const LeagueChat = (props: {
     <>
       <div ref={ref} />
       <Col className="w-full">
-        <Col ref={setScrollerRef} className={'gap-2 pb-2'}>
+        <Col
+          className={clsx(
+            'gap-2 overflow-y-scroll pb-2 ',
+            'max-h-[calc(100vh-13rem)] min-h-[calc(100vh-13rem)]',
+            'lg:max-h-[calc(100vh-11rem)] lg:min-h-[calc(100vh-11rem)]'
+          )}
+        >
           {realtimeMessages === undefined ? (
             <LoadingIndicator />
           ) : (
@@ -106,7 +107,7 @@ export const LeagueChat = (props: {
               <ChatMessageItem
                 key={messages[0].id}
                 chats={messages}
-                user={user}
+                currentUser={user}
                 onReplyClick={onReplyClick}
                 ref={
                   i === groupedMessages.length - 1

@@ -65,6 +65,8 @@ import {
 import { QRCode } from 'web/components/widgets/qr-code'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { referralQuery } from 'common/util/share'
+import { SendMessageButton } from 'web/components/messaging/send-message-button'
+import { useIsMobile } from 'web/hooks/use-is-mobile'
 
 export const getStaticProps = async (props: {
   params: {
@@ -146,7 +148,7 @@ function UserProfile(props: {
 }) {
   const { rating, reviewCount } = props
   const user = useUserById(props.user.id) ?? props.user
-
+  const isMobile = useIsMobile()
   const router = useRouter()
   const currentUser = useUser()
   useSaveReferral(currentUser, {
@@ -207,7 +209,12 @@ function UserProfile(props: {
       {showConfetti && <FullscreenConfetti />}
 
       <Col className="mx-4 mt-1">
-        <Row className="flex-wrap justify-between gap-2 py-1">
+        <Row
+          className={clsx(
+            'flex-wrap gap-2 py-1',
+            isMobile ? '' : 'justify-between'
+          )}
+        >
           <Row className={clsx('gap-2')}>
             <Col className={'relative max-h-14'}>
               <ImageWithBlurredShadow
@@ -233,7 +240,7 @@ function UserProfile(props: {
             </Col>
             <StackedUserNames
               usernameClassName={'sm:text-base'}
-              className={'font-bold sm:text-xl'}
+              className={'font-bold sm:mr-0 sm:text-xl'}
               user={user}
               followsYou={followsYou}
             />
@@ -243,8 +250,21 @@ function UserProfile(props: {
               <DailyLeagueStat user={user} />
               <QuestsOrStreak user={user} />
             </Row>
+          ) : isMobile ? (
+            <>
+              <div className={'my-auto'}>
+                {currentUser && <SendMessageButton toUser={user} />}
+              </div>
+              <div className={'my-auto'}>
+                <FollowButton userId={user.id} />
+              </div>
+              <div className={'my-auto'}>
+                <MoreOptionsUserButton user={user} />
+              </div>
+            </>
           ) : (
             <Row className="items-center gap-1 sm:gap-2">
+              {currentUser && <SendMessageButton toUser={user} />}
               <FollowButton userId={user.id} />
               <MoreOptionsUserButton user={user} />
             </Row>

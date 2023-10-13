@@ -89,6 +89,8 @@ import { unresolve } from './unresolve'
 import { referuser } from 'api/refer-user'
 import { banuser } from 'api/ban-user'
 import { updatemarket } from 'api/update-market'
+import { createprivateusermessage } from 'api/create-private-user-message'
+import { createprivateusermessagechannel } from 'api/create-private-user-message-channel'
 
 const allowCors: RequestHandler = cors({
   origin: [CORS_ORIGIN_MANIFOLD, CORS_ORIGIN_VERCEL, CORS_ORIGIN_LOCALHOST],
@@ -221,6 +223,11 @@ app.post('/updatedashboard', ...apiRoute(updatedashboard))
 app.post('/getdashboardfromslug', ...apiRoute(getdashboardfromslug))
 app.post('/ban-user', ...apiRoute(banuser))
 app.post('/update-market', ...apiRoute(updatemarket))
+app.post('/create-private-user-message', ...apiRoute(createprivateusermessage))
+app.post(
+  '/create-private-user-message-channel',
+  ...apiRoute(createprivateusermessagechannel)
+)
 
 // Catch 404 errors - this should be the last route
 app.use(allowCors, (req, res) => {
