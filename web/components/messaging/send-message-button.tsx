@@ -2,6 +2,7 @@ import { User } from 'common/user'
 import { Button } from 'web/components/buttons/button'
 import { createPrivateMessageChannelWithUser } from 'web/lib/firebase/api'
 import { useRouter } from 'next/router'
+import { BiEnvelope } from 'react-icons/bi'
 
 export const SendMessageButton = (props: { toUser: User }) => {
   const { toUser } = props
@@ -16,8 +17,8 @@ export const SendMessageButton = (props: { toUser: User }) => {
   }
 
   return (
-    <Button className={''} onClick={sendMessage}>
-      Send Message
+    <Button size={'sm'} onClick={sendMessage}>
+      <BiEnvelope className={'h-5 w-5'} />
     </Button>
   )
 }

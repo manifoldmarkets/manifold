@@ -28,6 +28,8 @@ import { useUsersInStore } from 'web/hooks/use-user-supabase'
 import { BackButton } from 'web/components/contract/back-button'
 import { Row } from 'web/components/layout/row'
 import clsx from 'clsx'
+import Link from 'next/link'
+import { linkClass } from 'web/components/widgets/site-link'
 
 export const getServerSideProps = redirectIfLoggedOut('/')
 
@@ -148,7 +150,9 @@ export const PrivateChat = (props: { user: User; channelId: number }) => {
       <Col className={''}>
         <Row className={'mb-3 items-center gap-2 '}>
           <BackButton />
-          <Title className={'!mb-0'}>{otherUser?.name ?? ''}</Title>
+          <Link className={linkClass} href={`/${otherUser?.username ?? ''}`}>
+            <Title className={'!mb-0'}>{otherUser?.name ?? ''}</Title>
+          </Link>
         </Row>
         <Row className={'w-full border-b-2'} />
       </Col>
