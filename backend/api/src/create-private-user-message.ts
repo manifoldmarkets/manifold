@@ -1,12 +1,7 @@
 import { z } from 'zod'
 import { APIError, authEndpoint, validate } from 'api/helpers'
-import * as admin from 'firebase-admin'
-import { removeUndefinedProps } from 'common/util/object'
-import { getUser, getUserSupabase } from 'shared/utils'
-import {
-  createSupabaseClient,
-  createSupabaseDirectClient,
-} from 'shared/supabase/init'
+import { getUserSupabase } from 'shared/utils'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { Json } from 'common/supabase/schema'
 import { contentSchema } from 'shared/zod-types'
 
