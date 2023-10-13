@@ -19,7 +19,7 @@ export function UnseenMessagesBubble() {
   }
   return (
     <InternalUnseenMessagesBubble
-      iconClassName={'left-5'}
+      iconClassName={'-mr-4'}
       privateUser={privateUser}
     />
   )
