@@ -13,11 +13,10 @@ import { trackShareEvent } from 'web/lib/service/analytics'
 import toast from 'react-hot-toast'
 import { Row } from '../layout/row'
 import { useUser } from 'web/hooks/use-user'
-import { ShareQRButton } from '../buttons/share-qr-button'
-import { ShareEmbedButton } from '../buttons/share-embed-button'
 import { AddLiquidityButton } from './add-liquidity-button'
 import { ShareIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
+import { ShareQRButton } from '../buttons/share-qr-button'
 
 export function CreatorShareBoostPanel(props: { contract: Contract }) {
   const { contract } = props
@@ -34,9 +33,9 @@ export function CreatorShareBoostPanel(props: { contract: Contract }) {
             'I created a question. ' +
             getShareUrl(contract, contract.creatorUsername)
           }
+          className="hidden sm:flex"
         />
-        <ShareQRButton contract={contract} className="hidden sm:block" />
-        <ShareEmbedButton contract={contract} className="hidden sm:block" />
+        <ShareQRButton contract={contract} className="hidden sm:flex" />
       </div>
 
       {contract.outcomeType !== 'POLL' && (
@@ -60,9 +59,12 @@ export function NonCreatorSharePanel(props: { contract: Contract }) {
       <ShareLinkButton
         contract={contract}
         username={user?.username}
+      />
+      <TweetButton
+        tweetText={getShareUrl(contract, user?.username)}
         className="hidden sm:flex"
       />
-      <TweetButton tweetText={getShareUrl(contract, user?.username)} />
+      <ShareQRButton contract={contract} className="hidden sm:flex" />
     </Row>
   )
 }

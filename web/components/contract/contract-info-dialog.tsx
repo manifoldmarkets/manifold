@@ -39,6 +39,9 @@ import { AddBountyButton } from './bountied-question'
 import dayjs from 'dayjs'
 import { NON_PREDICTIVE_GROUP_ID } from 'common/supabase/groups'
 import { ContractHistoryButton } from './contract-edit-history-button'
+import { ShareEmbedButton } from '../buttons/share-embed-button'
+import { QRCode } from '../widgets/qr-code'
+import { getShareUrl } from 'common/util/share'
 
 export const Stats = (props: {
   contract: Contract
@@ -407,6 +410,7 @@ export function ContractInfoDialog(props: {
   setOpen: (open: boolean) => void
 }) {
   const { contract, user, open, setOpen } = props
+  const shareUrl = getShareUrl(contract, user?.username)
 
   return (
     <Modal open={open} setOpen={setOpen}>
@@ -434,6 +438,8 @@ export function ContractInfoDialog(props: {
                   <AddBountyButton contract={contract} />
                 )}
                 <ContractHistoryButton contract={contract} />
+                {/* <ShareQRButton contract={contract} /> */}
+                <ShareEmbedButton contract={contract} />
               </Row>
               <Row className="mt-4 flex-wrap gap-2">
                 <ReportButton
@@ -450,6 +456,15 @@ export function ContractInfoDialog(props: {
             </>
           )}
         </Col>
+
+        <div className="flex flex-col items-center">
+          <QRCode
+            url={shareUrl}
+            width={250}
+            height={250}
+            className="self-center"
+          />
+        </div>
 
         <Row className="items-center justify-start gap-4 rounded-md "></Row>
       </Col>

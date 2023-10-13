@@ -27,7 +27,7 @@ export function ShareQRButton(props: {
         onClick={() => setOpen(true)}
       >
         <QrcodeIcon className="h-4 w-4" aria-hidden />
-        <span className="sr-only">Embed</span>
+        <span>QR</span>
       </Button>
       <Modal size="sm" open={open} setOpen={setOpen}>
         <div className="flex flex-col items-center">

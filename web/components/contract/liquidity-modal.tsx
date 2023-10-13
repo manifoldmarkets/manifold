@@ -32,7 +32,7 @@ export function LiquidityModal(props: {
           Contribute mana to this market to incentivize traders to make the
           probability accurate.
         </div>
-        <div className='mb-4'>
+        <div className="mb-4">
           Total subsidy pool:{' '}
           <span className="font-semibold">{formatMoney(totalLiquidity)}</span>
         </div>

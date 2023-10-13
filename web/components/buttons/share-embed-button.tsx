@@ -34,7 +34,7 @@ export function ShareEmbedButton(props: {
       }}
     >
       {codeIcon}
-      <span className="sr-only">Embed</span>
+      <span>Embed</span>
     </Button>
   )
 }
