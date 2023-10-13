@@ -153,7 +153,6 @@ export const MOD_USERNAMES = [
   'PeterWildeford',
   'ScottLawrence',
   'NoaNabeshima',
-  'Mira',
   'evergreenemily',
   'SneakySly',
   'Eliza',
