@@ -7,7 +7,7 @@ import {
   useRealtimePrivateMessages,
   useHasUnseenPrivateMessage,
 } from 'web/hooks/use-private-messages'
-import { useIsAuthorized, useUser } from 'web/hooks/use-user'
+import { useIsAuthorized, usePrivateUser, useUser } from 'web/hooks/use-user'
 import Link from 'next/link'
 import { useUsersInStore } from 'web/hooks/use-user-supabase'
 import { Col } from 'web/components/layout/col'
@@ -21,7 +21,7 @@ export const getServerSideProps = redirectIfLoggedOut('/')
 
 export default function MessagesPage() {
   redirectIfLoggedOut('/')
-
+  const privateUser = usePrivateUser()
   const currentUser = useUser()
   const isAuthed = useIsAuthorized()
   const channelIds = usePrivateMessageChannelIds(currentUser?.id, isAuthed)
@@ -30,7 +30,10 @@ export default function MessagesPage() {
     isAuthed,
     channelIds
   )
-  const users = useUsersInStore(Object.values(channelIdsToUserIds ?? {}))
+  const users = useUsersInStore(
+    Object.values(channelIdsToUserIds ?? {})
+  )?.filter((u) => !privateUser?.blockedUserIds.includes(u.id))
+
   return (
     <Page trackPageView={'messages page'} className={'bg-canvas-0 p-2'}>
       <Title>Messages</Title>

@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { APIError, authEndpoint, validate } from 'api/helpers'
-import { getUserSupabase } from 'shared/utils'
+import { getPrivateUser, getUserSupabase } from 'shared/utils'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 
 const postSchema = z.object({
@@ -15,6 +15,10 @@ export const createprivateusermessagechannel = authEndpoint(
     const creator = await getUserSupabase(auth.uid)
     if (!creator) throw new APIError(401, 'Your account was not found')
     if (creator.isBannedFromPosting) throw new APIError(403, 'You are banned')
+    const toPrivateUser = await getPrivateUser(userId)
+    if (!toPrivateUser) throw new APIError(404, 'Other user not found')
+    if (toPrivateUser.blockedUserIds.includes(auth.uid))
+      throw new APIError(403, 'You are blocked by that user')
 
     // For now, we'll stick with one message channel per user pair
     const currentChannel = await pg.oneOrNone(
