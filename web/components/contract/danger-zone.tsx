@@ -6,13 +6,24 @@ import { useUser } from 'web/hooks/use-user'
 import { Button } from '../buttons/button'
 import { DeleteMarketButton } from '../buttons/delete-market-button'
 import { Row } from '../layout/row'
+import { WEEK_MS } from 'common/util/time'
 
 export function DangerZone(props: {
   contract: Contract
   showResolver: boolean
   setShowResolver: (showResolver: boolean) => void
+  showReview: boolean
+  setShowReview: (showReview: boolean) => void
+  userHasBet: boolean
 }) {
-  const { contract, showResolver, setShowResolver } = props
+  const {
+    contract,
+    showResolver,
+    setShowResolver,
+    showReview,
+    setShowReview,
+    userHasBet,
+  } = props
   const {
     closeTime,
     creatorId,
@@ -29,6 +40,13 @@ export function DangerZone(props: {
   const isClosed = !!closeTime && closeTime < Date.now()
   const trustworthy = isTrustworthy(user?.username)
 
+  const canReview =
+    !!user &&
+    !isCreator &&
+    isResolved &&
+    outcomeType !== 'STONK' &&
+    mechanism !== 'none'
+
   const canDelete =
     isCreator &&
     isResolved &&
@@ -42,6 +60,17 @@ export function DangerZone(props: {
     mechanism !== 'none'
 
   useEffect(() => {
+    if (
+      canReview &&
+      userHasBet &&
+      // resolved less than week ago
+      Date.now() - (contract.resolutionTime ?? 0) < WEEK_MS
+    ) {
+      setShowReview(true)
+    }
+  }, [canReview, userHasBet, contract.resolutionTime])
+
+  useEffect(() => {
     // Close resolve panel if you just resolved it.
     if (isResolved) setShowResolver(false)
     // open by default if it is closed
@@ -53,10 +82,21 @@ export function DangerZone(props: {
   const highlightResolver = isClosed && !showResolver
 
   if (!user) return null
-  if (!canDelete && !canResolve) return null
+  if (!canReview && !canDelete && !canResolve) return null
 
   return (
     <Row className="my-2 w-full flex-wrap justify-end gap-2">
+      {canReview && !showReview && (
+        <Button
+          color="gray"
+          size="2xs"
+          className="self-end"
+          onClick={() => setShowReview(true)}
+        >
+          Review
+        </Button>
+      )}
+
       {canDelete && <DeleteMarketButton contractId={contract.id} />}
       {canResolve && (
         <Button

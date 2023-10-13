@@ -1,4 +1,4 @@
-import { UserIcon } from '@heroicons/react/solid'
+import { UserIcon, XIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { first, mergeWith } from 'lodash'
 import Head from 'next/head'
@@ -93,7 +93,6 @@ import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
 import { useHeaderIsStuck } from 'web/hooks/use-header-is-stuck'
 import { DangerZone } from 'web/components/contract/danger-zone'
 import { formatMoney, shortFormatNumber } from 'common/util/format'
-
 export async function getStaticProps(ctx: {
   params: { username: string; contractSlug: string }
 }) {
@@ -358,6 +357,8 @@ export function ContractPageContent(props: {
   const trustworthy = isTrustworthy(user?.username)
   const [showResolver, setShowResolver] = useState(false)
 
+  const [showReview, setShowReview] = useState(false)
+
   useSaveReferral(user, {
     defaultReferrerUsername: contract.creatorUsername,
     contractId: contract.id,
@@ -563,7 +564,21 @@ export function ContractPageContent(props: {
                 onAnswerCommentClick={setReplyTo}
               />
             </Col>
-
+            {showReview && user && (
+              <div className="relative my-2">
+                <ReviewPanel
+                  marketId={contract.id}
+                  author={contract.creatorName}
+                  user={user}
+                />
+                <button
+                  className="text-ink-400 hover:text-ink-600 absolute right-0 top-0 p-4"
+                  onClick={() => setShowReview(false)}
+                >
+                  <XIcon className="h-5 w-5" />
+                </button>
+              </div>
+            )}
             {showResolver &&
               user &&
               !resolution &&
@@ -589,25 +604,11 @@ export function ContractPageContent(props: {
               contract={contract}
               showResolver={showResolver}
               setShowResolver={setShowResolver}
+              showReview={showReview}
+              setShowReview={setShowReview}
+              userHasBet={!!contractMetrics}
             />
-
             <ContractDescription contract={contract} />
-
-            {isResolved &&
-              // resolved less than week ago
-              (Date.now() - (contract.resolutionTime ?? 0)) / 1000 <
-                60 * 60 * 24 * 7 &&
-              user &&
-              user.id !== contract.creatorId &&
-              contract.outcomeType !== 'POLL' && (
-                <ReviewPanel
-                  marketId={contract.id}
-                  author={contract.creatorName}
-                  user={user}
-                  className="my-2"
-                />
-              )}
-
             <Row className="my-2 flex-wrap items-center justify-between gap-y-2">
               {outcomeType === 'BOUNTIED_QUESTION' && (
                 <Link
@@ -618,13 +619,10 @@ export function ContractPageContent(props: {
                 </Link>
               )}
             </Row>
-
             {showExplainerPanel && (
               <ExplainerPanel className="bg-canvas-50 -mx-4 p-4 pb-0 xl:hidden" />
             )}
-
             {!user && <SidebarSignUpButton className="mb-4 flex md:hidden" />}
-
             {!!user && contract.outcomeType !== 'BOUNTIED_QUESTION' && (
               <ContractSharePanel
                 isClosed={isClosed}
@@ -633,7 +631,6 @@ export function ContractPageContent(props: {
                 contract={contract}
               />
             )}
-
             <RelatedContractsCarousel
               className="-ml-4 mb-2 mt-4 xl:hidden"
               contracts={relatedMarkets}
@@ -642,7 +639,6 @@ export function ContractPageContent(props: {
               }
               loadMore={loadMore}
             />
-
             {isResolved && resolution !== 'CANCEL' && (
               <>
                 <ContractLeaderboard
@@ -656,7 +652,6 @@ export function ContractPageContent(props: {
                 <Spacer h={12} />
               </>
             )}
-
             <div ref={tabsContainerRef}>
               <ContractTabs
                 // Pass cached contract so it won't rerender so many times.
