@@ -81,7 +81,13 @@ const MessageChannelRow = (props: {
             </Row>
             <Row>
               <span className={'text-sm text-gray-400'}>
-                {chat && <Content content={chat.content} key={chat.id} />}
+                {chat && (
+                  <Content
+                    className={'max-h-20 overflow-hidden'}
+                    content={chat.content}
+                    key={chat.id}
+                  />
+                )}
               </span>
             </Row>
           </Col>
