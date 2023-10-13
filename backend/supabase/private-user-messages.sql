@@ -24,17 +24,9 @@ create table if not exists
 
 alter table private_user_message_channel_members enable row level security;
 
--- drop policy if exists "public read" on private_user_message_channel_members;
--- create policy "public read" on private_user_message_channel_members using (true);
-
-drop policy if exists "private read" on private_user_message_channel_members;
-create policy "private read" on private_user_message_channel_members
-    using (firebase_uid() is not null and can_access_private_messages(channel_id, firebase_uid()));
-
 drop policy if exists "self read" on private_user_message_channel_members;
 create policy "self read" on private_user_message_channel_members
     using (user_id = firebase_uid());
-
 
 -- SECURITY
 create
@@ -46,6 +38,11 @@ select exists (
       and private_user_message_channel_members.user_id = $2
 )
 $$;
+
+-- ENABLE SECURITY ON CHANNEL MEMBERS
+drop policy if exists "private read" on private_user_message_channel_members;
+create policy "private read" on private_user_message_channel_members
+    using (firebase_uid() is not null and can_access_private_messages(channel_id, firebase_uid()));
 
 
 -- MESSAGES
