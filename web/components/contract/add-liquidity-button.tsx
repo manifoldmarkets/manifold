@@ -26,7 +26,7 @@ export function AddLiquidityButton(props: {
         className={className}
         onClick={() => setOpen(true)}
       >
-        💦 Sub
+        💧 Subsidize
       </Button>
       <LiquidityModal contract={contract} isOpen={open} setOpen={setOpen} />
     </>

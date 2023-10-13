@@ -21,17 +21,19 @@ export function LiquidityModal(props: {
   const { totalLiquidity } = contract
 
   return (
-    <Modal open={isOpen} setOpen={setOpen} size="sm">
+    <Modal open={isOpen} setOpen={setOpen} size="md">
       <Col className="bg-canvas-0 gap-2.5  rounded p-4 pb-8 sm:gap-4">
-        <Title className="!mb-2">💦 Subsidy</Title>
+        <Title className="!mb-2">💧 Subsidize this market</Title>
 
-        <div>
+        <div className="text-lg italic text-gray-700">
           The higher the stakes, the more winners make.
-          <br />
-          For a small price, make this market precise!
         </div>
         <div>
-          Total prize pool:{' '}
+          Contribute mana to this market to incentivize traders to make the
+          probability accurate.
+        </div>
+        <div className='mb-4'>
+          Total subsidy pool:{' '}
           <span className="font-semibold">{formatMoney(totalLiquidity)}</span>
         </div>
         <AddLiquidityPanel contract={contract} />
@@ -95,7 +97,7 @@ function AddLiquidityPanel(props: {
           label={ENV_CONFIG.moneyMoniker}
           error={!!error}
           disabled={isLoading}
-          inputClassName="w-28 mr-4"
+          inputClassName="w-32 mr-4"
         />
         <Button onClick={submit} disabled={isLoading || !!error}>
           Contribute 😎
