@@ -42,10 +42,7 @@ export default function PrivateMessagesPage() {
   const { channelId } = router.query as { channelId: string }
   const channelIds = usePrivateMessageChannelIds(user?.id, isAuthed)
   const loaded = isAuthed && channelIds !== undefined && channelId
-  useEffect(() => {
-    if (loaded && !channelIds.includes(parseInt(channelId)))
-      router.push('/messages')
-  }, [channelIds, channelId])
+
   return (
     <Page trackPageView={'private messages page'}>
       {user && loaded && channelIds.includes(parseInt(channelId)) ? (
