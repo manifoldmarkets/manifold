@@ -5,6 +5,7 @@ import { Contract, CPMMContract } from 'common/contract'
 import { User } from 'common/user'
 import { getNewLiquidityProvision } from 'common/add-liquidity'
 import { APIError, authEndpoint, validate } from './helpers'
+import { SUBSIDY_FEE } from 'common/economy'
 
 const bodySchema = z.object({
   contractId: z.string(),
@@ -44,10 +45,12 @@ export const addsubsidy = authEndpoint(async (req, auth) => {
       .collection(`contracts/${contractId}/liquidity`)
       .doc()
 
+    const subsidyAmount = (1 - SUBSIDY_FEE) * amount
+
     const { newLiquidityProvision, newTotalLiquidity, newSubsidyPool } =
       getNewLiquidityProvision(
         user.id,
-        amount,
+        subsidyAmount,
         contract,
         newLiquidityProvisionDoc.id
       )

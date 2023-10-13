@@ -1,5 +1,5 @@
 import { CPMMContract, CPMMMultiContract } from 'common/contract'
-import { formatMoney } from 'common/util/format'
+import { formatMoney, formatPercent } from 'common/util/format'
 import { useState } from 'react'
 import { useUser } from 'web/hooks/use-user'
 import { addSubsidy } from 'web/lib/firebase/api'
@@ -11,6 +11,8 @@ import { Modal } from '../layout/modal'
 import { Row } from '../layout/row'
 import { Title } from '../widgets/title'
 import { ENV_CONFIG } from 'common/envs/constants'
+import { InfoTooltip } from '../widgets/info-tooltip'
+import { SUBSIDY_FEE } from 'common/economy'
 
 export function LiquidityModal(props: {
   contract: CPMMContract | CPMMMultiContract
@@ -30,7 +32,12 @@ export function LiquidityModal(props: {
         </div>
         <div>
           Contribute mana to this market to incentivize traders to make the
-          probability accurate.
+          probability accurate.{' '}
+          <InfoTooltip
+            text={`Your mana contributions will be added to the liquidity subsidy pool after a ${formatPercent(
+              SUBSIDY_FEE
+            )} fee is assessed.`}
+          />
         </div>
         <div className="mb-4">
           Total subsidy pool:{' '}
