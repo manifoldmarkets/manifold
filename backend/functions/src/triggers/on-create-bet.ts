@@ -21,7 +21,10 @@ import { Contract } from 'common/contract'
 import {
   BETTING_STREAK_BONUS_AMOUNT,
   BETTING_STREAK_BONUS_MAX,
+  MAX_TRADERS_FOR_BIG_BONUS,
   MAX_TRADERS_FOR_BONUS,
+  SMALL_UNIQUE_BETTOR_BONUS_AMOUNT,
+  SMALL_UNIQUE_BETTOR_LIQUIDITY,
   UNIQUE_BETTOR_BONUS_AMOUNT,
   UNIQUE_BETTOR_LIQUIDITY,
 } from 'common/economy'
@@ -346,7 +349,9 @@ export const giveUniqueBettorAndLiquidityBonus = async (
     })
 
     const bonusAmount =
-      contract.mechanism === 'cpmm-multi-1'
+      uniqueBettorIds.length > MAX_TRADERS_FOR_BIG_BONUS
+        ? SMALL_UNIQUE_BETTOR_BONUS_AMOUNT
+        : contract.mechanism === 'cpmm-multi-1'
         ? Math.ceil(UNIQUE_BETTOR_BONUS_AMOUNT / 2)
         : UNIQUE_BETTOR_BONUS_AMOUNT
 
@@ -368,8 +373,13 @@ export const giveUniqueBettorAndLiquidityBonus = async (
   })
   if (!result) return
 
+  const subsidy =
+    uniqueBettorIds.length <= MAX_TRADERS_FOR_BIG_BONUS
+      ? UNIQUE_BETTOR_LIQUIDITY
+      : SMALL_UNIQUE_BETTOR_LIQUIDITY
+
   if (contract.mechanism === 'cpmm-1') {
-    await addHouseSubsidy(contract.id, UNIQUE_BETTOR_LIQUIDITY)
+    await addHouseSubsidy(contract.id, subsidy)
   } else if (contract.mechanism === 'cpmm-multi-1' && answerId) {
     if (
       contract.shouldAnswersSumToOne &&
@@ -380,13 +390,9 @@ export const giveUniqueBettorAndLiquidityBonus = async (
       // 2. Subsidize one answer (and throw away excess YES or NO shares to maintain probability.)
       // The second if preferred if the probability is not extreme, because it increases
       // liquidity in a more traded answer. (Liquidity in less traded or unlikely answers is not that important.)
-      await addHouseSubsidy(contract.id, UNIQUE_BETTOR_LIQUIDITY)
+      await addHouseSubsidy(contract.id, subsidy)
     } else {
-      await addHouseSubsidyToAnswer(
-        contract.id,
-        answerId,
-        UNIQUE_BETTOR_LIQUIDITY
-      )
+      await addHouseSubsidyToAnswer(contract.id, answerId, subsidy)
     }
   }
 
