@@ -92,6 +92,7 @@ import { getUser } from 'web/lib/supabase/user'
 import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
 import { useHeaderIsStuck } from 'web/hooks/use-header-is-stuck'
 import { DangerZone } from 'web/components/contract/danger-zone'
+import { formatMoney, shortFormatNumber } from 'common/util/format'
 
 export async function getStaticProps(ctx: {
   params: { username: string; contractSlug: string }
@@ -519,6 +520,22 @@ export function ContractPageContent(props: {
                   />
                 ) : (
                   <div className="flex gap-4">
+                    {(contract.mechanism === 'cpmm-1' ||
+                      contract.mechanism === 'cpmm-multi-1') && (
+                      <Tooltip
+                        text={`Liquidity subsidy pool: ${formatMoney(
+                          contract.totalLiquidity
+                        )}`}
+                        placement="bottom"
+                        noTap
+                        className="flex flex-row items-center gap-1"
+                      >
+                        <div className="grayscale">
+                          💧 Ṁ{shortFormatNumber(contract.totalLiquidity)}
+                        </div>
+                      </Tooltip>
+                    )}
+
                     <Tooltip
                       text={
                         contract.outcomeType == 'POLL' ? 'Voters' : 'Traders'

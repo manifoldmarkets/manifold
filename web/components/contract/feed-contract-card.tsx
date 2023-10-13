@@ -4,7 +4,7 @@ import { Contract, contractPath } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
 import { ContractCardView } from 'common/events'
 import { User } from 'common/user'
-import { formatMoney } from 'common/util/format'
+import { formatMoney, shortFormatNumber } from 'common/util/format'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { ClaimButton } from 'web/components/ad/claim-ad-button'
@@ -36,6 +36,7 @@ import { TradesButton } from './trades-button'
 import { FeedDropdown } from '../feed/card-dropdown'
 import { CategoryTags } from '../feed/feed-timeline-items'
 import { JSONEmpty } from 'web/components/contract/contract-description'
+import { Tooltip } from '../widgets/tooltip'
 
 export function FeedContractCard(props: {
   contract: Contract
@@ -261,6 +262,27 @@ const BottomActionRow = (props: {
       <BottomRowButtonWrapper>
         <TradesButton contract={contract} />
       </BottomRowButtonWrapper>
+
+      <BottomRowButtonWrapper>
+        <div>
+          {(contract.mechanism === 'cpmm-1' ||
+            contract.mechanism === 'cpmm-multi-1') && (
+            <Tooltip
+              text={`Liquidity subsidy pool: ${formatMoney(
+                contract.totalLiquidity
+              )}`}
+              placement="bottom"
+              noTap
+              className="flex flex-row items-center gap-1"
+            >
+              <div className="text-ink-500 text-sm grayscale">
+                💧 Ṁ{shortFormatNumber(contract.totalLiquidity)}
+              </div>
+            </Tooltip>
+          )}
+        </div>
+      </BottomRowButtonWrapper>
+
       <BottomRowButtonWrapper>
         <CommentsButton contract={contract} user={user} />
       </BottomRowButtonWrapper>
