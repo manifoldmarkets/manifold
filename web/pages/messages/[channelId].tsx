@@ -54,6 +54,7 @@ export default function PrivateMessagesPage() {
   )
 }
 
+// TODO: We may want to refactor this to share code with league-chat.tsx
 export const PrivateChat = (props: { user: User; channelId: number }) => {
   const { user, channelId } = props
   const [visible, setVisible] = useState(false)
