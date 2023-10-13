@@ -28,7 +28,6 @@ import {
   SVGChart,
   SliceMarker,
   TooltipProps,
-  computeColorStops,
   formatPct,
   useViewScale,
 } from './helpers'
@@ -100,12 +99,7 @@ const constrainExtent = (
   }
 }
 
-const getTickValues = (
-  min: number,
-  max: number,
-  n: number,
-  negativeThreshold?: number
-) => {
+const getTickValues = (min: number, max: number, n: number) => {
   let step = (max - min) / (n - 1)
   let theMin = min
   let theMax = max
@@ -119,12 +113,7 @@ const getTickValues = (
     ...range(1, n - 1).map((i) => theMin + step * i),
     theMax,
   ]
-  if (negativeThreshold) {
-    return defaultRange
-      .filter((n) => Math.abs(negativeThreshold - n) > Math.max(step / 4, 1))
-      .concat(negativeThreshold)
-      .sort((a, b) => a - b)
-  }
+
   return defaultRange
 }
 
@@ -356,7 +345,9 @@ export const ControllableSingleValueHistoryChart = <
   data: P[]
   w: number
   h: number
-  color: string | ((p: P) => string)
+  color: string | [top: string, bottom: string]
+  /** y value above which is top color, below which is bottom color */
+  negativeThreshold?: number
   xScale: ScaleTime<number, number>
   yScale: ScaleContinuousNumeric<number, number>
   viewScaleProps: viewScale
@@ -365,12 +356,17 @@ export const ControllableSingleValueHistoryChart = <
   curve?: CurveFactory
   onMouseOver?: (p: P | undefined) => void
   Tooltip?: (props: TooltipProps<P>) => ReactNode
-  noAxes?: boolean
   pct?: boolean
-  negativeThreshold?: number
 }) => {
-  const { data, w, h, color, Tooltip, noAxes, negativeThreshold, showZoomer } =
-    props
+  const {
+    data,
+    w,
+    h,
+    color,
+    Tooltip,
+    negativeThreshold = 0,
+    showZoomer,
+  } = props
   const { viewXScale, setViewXScale, viewYScale, setViewYScale } =
     props.viewScaleProps
   const yKind = props.yKind ?? 'amount'
@@ -392,15 +388,13 @@ export const ControllableSingleValueHistoryChart = <
   const [mouse, setMouse] = useState<TooltipProps<P>>()
 
   const px = useCallback((p: P) => xScale(p.x), [xScale])
-  const py0 = yScale(0)
+  const py0 = yScale(negativeThreshold)
   const py1 = useCallback((p: P) => yScale(p.y), [yScale])
   const { xAxis, yAxis } = useMemo(() => {
     const [min, max] = yScale.domain()
-    const nTicks = noAxes ? 0 : h < 200 ? 3 : 5
-    const customTickValues = noAxes
-      ? []
-      : getTickValues(min, max, nTicks, negativeThreshold)
-    const xAxis = axisBottom<Date>(xScale).ticks(noAxes ? 0 : w / 100)
+    const nTicks = h < 200 ? 3 : 5
+    const customTickValues = getTickValues(min, max, nTicks)
+    const xAxis = axisBottom<Date>(xScale).ticks(w / 100)
     const yAxis =
       yKind === 'percent'
         ? axisRight<number>(yScale)
@@ -416,7 +410,7 @@ export const ControllableSingleValueHistoryChart = <
               .tickFormat((n) => formatMoneyNumber(n))
         : axisRight<number>(yScale).ticks(nTicks)
     return { xAxis, yAxis }
-  }, [w, h, yKind, xScale, yScale, noAxes])
+  }, [w, h, yKind, xScale, yScale])
 
   const selector = dataAtTimeSelector(points, xScale)
   const onMouseOver = useEvent((mouseX: number) => {
@@ -469,11 +463,7 @@ export const ControllableSingleValueHistoryChart = <
   }, [])
 
   const gradientId = useId()
-  const stops = useMemo(
-    () =>
-      typeof color !== 'string' ? computeColorStops(points, color, px) : null,
-    [color, points, px]
-  )
+  const chartTheshold = yScale(negativeThreshold)
 
   return (
     <>
@@ -488,14 +478,18 @@ export const ControllableSingleValueHistoryChart = <
         onMouseOver={onMouseOver}
         onMouseLeave={onMouseLeave}
         Tooltip={Tooltip}
-        negativeThreshold={negativeThreshold}
       >
-        {stops && (
+        {typeof color !== 'string' && (
           <defs>
-            <linearGradient gradientUnits="userSpaceOnUse" id={gradientId}>
-              {stops.map((s, i) => (
-                <stop key={i} offset={`${s.x / w}`} stopColor={s.color} />
-              ))}
+            <linearGradient
+              gradientUnits="userSpaceOnUse"
+              id={gradientId}
+              gradientTransform="rotate(90)"
+            >
+              <stop offset={0} stopColor={color[0]} />
+              <stop offset={chartTheshold / w} stopColor={color[0]} />
+              <stop offset={chartTheshold / w} stopColor={color[1]} />
+              <stop offset={1} stopColor={color[1]} />
             </linearGradient>
           </defs>
         )}

@@ -16,7 +16,6 @@ import React, {
 import { Contract } from 'common/contract'
 import { useMeasureSize } from 'web/hooks/use-measure-size'
 import { clamp } from 'lodash'
-import { HistoryPoint } from 'common/chart'
 import { ScaleTime, ScaleContinuousNumeric } from 'd3-scale'
 
 export interface ContinuousScale<T> extends AxisScale<T> {
@@ -37,64 +36,34 @@ export const XAxis = <X,>(props: { w: number; h: number; axis: Axis<X> }) => {
   return <g ref={axisRef} transform={`translate(0, ${h})`} />
 }
 
-export const SimpleYAxis = <Y,>(props: { w: number; axis: Axis<Y> }) => {
-  const { w, axis } = props
-  const axisRef = useRef<SVGGElement>(null)
-  useEffect(() => {
-    if (axisRef.current != null) {
-      select(axisRef.current)
-        .call(axis)
-        .select('.domain')
-        .attr('stroke-width', 0)
-    }
-  }, [w, axis])
-  return <g ref={axisRef} transform={`translate(${w}, 0)`} />
-}
-
-// horizontal gridlines
 export const YAxis = <Y,>(props: {
   w: number
-  h: number
   axis: Axis<Y>
-  negativeThreshold?: number
+  noGridlines?: boolean
 }) => {
-  const { w, h, axis, negativeThreshold = 0 } = props
+  const { w, axis, noGridlines } = props
   const axisRef = useRef<SVGGElement>(null)
 
   useEffect(() => {
     if (axisRef.current != null) {
-      select(axisRef.current)
-        .call(axis)
-        .call((g) =>
-          g.selectAll('.tick').each(function (d) {
-            const tick = select(this)
-            if (negativeThreshold && d === negativeThreshold) {
-              const color = negativeThreshold >= 0 ? '#0d9488' : '#FF2400'
-              tick
-                .select('line') // Change stroke of the line
-                .attr('x2', w)
-                .attr('stroke-opacity', 1)
-                .attr('stroke-dasharray', '10,5') // Make the line dotted
-                .attr('transform', `translate(-${w}, 0)`)
-                .attr('stroke', color)
+      const brush = select(axisRef.current).call(axis)
 
-              tick
-                .select('text') // Change font of the text
-                .style('font-weight', 'bold') // Adjust this to your needs
-                .attr('fill', color)
-            } else {
-              tick
-                .select('line')
-                .attr('x2', w)
-                .attr('stroke-opacity', 0.1)
-                .attr('transform', `translate(-${w}, 0)`)
-            }
+      if (!noGridlines) {
+        brush.call((g) =>
+          g.selectAll('.tick').each(function () {
+            const tick = select(this)
+
+            tick
+              .select('line')
+              .attr('x2', w)
+              .attr('stroke-opacity', 0.1)
+              .attr('transform', `translate(-${w}, 0)`)
           })
         )
-        .select('.domain')
-        .attr('stroke-width', 0)
+      }
+      brush.select('.domain').attr('stroke-width', 0)
     }
-  }, [w, h, axis, negativeThreshold])
+  }, [w, axis])
 
   return <g ref={axisRef} transform={`translate(${w}, 0)`} />
 }
@@ -211,7 +180,6 @@ export const SVGChart = <
   onMouseOver?: (mouseX: number, mouseY: number) => void
   onMouseLeave?: () => void
   Tooltip?: (props: TT) => ReactNode
-  negativeThreshold?: number
   noGridlines?: boolean
   className?: string
 }) => {
@@ -227,7 +195,6 @@ export const SVGChart = <
     onMouseOver,
     onMouseLeave,
     Tooltip,
-    negativeThreshold,
     noGridlines,
     className,
   } = props
@@ -322,16 +289,8 @@ export const SVGChart = <
 
         <g>
           <XAxis axis={xAxis} w={w} h={h} />
-          {noGridlines ? (
-            <SimpleYAxis axis={yAxis} w={w} />
-          ) : (
-            <YAxis
-              axis={yAxis}
-              w={w}
-              h={h}
-              negativeThreshold={negativeThreshold}
-            />
-          )}
+
+          <YAxis axis={yAxis} w={w} noGridlines={noGridlines} />
           {/* clip to stop pointer events outside of graph, and mask for the blur to indicate zoom */}
           <g clipPath="url(#clip)">
             <g mask="url(#mask)">{children}</g>
@@ -464,39 +423,6 @@ export const formatDateInRange = (
     includeMinute: dayjs(end).diff(start, 'hours') < 2,
   }
   return formatDate(d, opts)
-}
-
-// assumes linear interpolation
-export const computeColorStops = <P extends HistoryPoint>(
-  data: P[],
-  pc: (p: P) => string,
-  px: (p: P) => number
-) => {
-  const segments: { x: number; color: string }[] = []
-
-  if (data.length === 0) return segments
-
-  segments.push({ x: px(data[0]), color: pc(data[0]) })
-
-  for (let i = 1; i < data.length - 1; i++) {
-    const prev = data[i - 1]
-    const curr = data[i]
-    if (pc(prev) !== pc(curr)) {
-      // given a line through points (x0, y0) and (x1, y1), find the x value where y = 0 (intersects with x axis)
-      const xIntersect =
-        prev.x + (prev.y * (curr.x - prev.x)) / (prev.y - curr.y)
-
-      segments.push({ x: px({ ...prev, x: xIntersect }), color: pc(curr) })
-    }
-  }
-
-  const stops: { x: number; color: string }[] = []
-  stops.push({ x: segments[0].x, color: segments[0].color })
-  for (const s of segments.slice(1)) {
-    stops.push({ x: s.x, color: stops[stops.length - 1].color })
-    stops.push({ x: s.x, color: s.color })
-  }
-  return stops
 }
 
 export const useViewScale = () => {

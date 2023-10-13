@@ -134,9 +134,7 @@ export const PortfolioValueSection = memo(
         setCurrentTimePeriod={setTimePeriod}
         switcherColor={
           graphMode === 'profit'
-            ? totalProfit > 0
-              ? 'green'
-              : 'red'
+            ? 'green'
             : graphMode === 'balance'
             ? 'indigo'
             : 'indigo-dark'

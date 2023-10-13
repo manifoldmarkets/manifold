@@ -31,7 +31,15 @@ export const PortfolioGraph = (props: {
   onMouseOver?: (p: HistoryPoint<Partial<PortfolioMetrics>> | undefined) => void
   negativeThreshold?: number
 }) => {
-  const { mode, points, onMouseOver, width, height, viewScaleProps } = props
+  const {
+    mode,
+    points,
+    onMouseOver,
+    width,
+    height,
+    viewScaleProps,
+    negativeThreshold,
+  } = props
   const { minDate, maxDate, minValue, maxValue } = useMemo(() => {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const minDate = min(points.map((d) => d.x))!
@@ -43,7 +51,6 @@ export const PortfolioGraph = (props: {
     const maxValue = max(points.map((d) => d.y))!
     return { minDate, maxDate, minValue, maxValue }
   }, [points])
-  const negativeThreshold = props.negativeThreshold ?? 0
 
   const xScale = scaleTime([minDate, maxDate], [0, width])
   const yScale = scaleLinear([minValue, maxValue], [height, 0])
@@ -63,7 +70,7 @@ export const PortfolioGraph = (props: {
       curve={curveLinear}
       color={
         mode === 'profit'
-          ? (p: HistoryPoint) => (p.y >= 0 ? '#14b8a6' : '#F75836')
+          ? ['#14b8a6', '#F75836']
           : mode === 'balance'
           ? '#3B82F6'
           : '#4f46e5'
