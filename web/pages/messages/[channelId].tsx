@@ -90,7 +90,6 @@ export const PrivateChat = (props: { user: User; channelId: number }) => {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [scrollToBottomRef, setScrollToBottomRef] =
     useState<HTMLDivElement | null>(null)
-  const [replyToUser, setReplyToUser] = useState<any>()
 
   // array of groups, where each group is an array of messages that are displayed as one
   const groupedMessages = useMemo(() => {
@@ -113,14 +112,11 @@ export const PrivateChat = (props: { user: User; channelId: number }) => {
 
     return tempGrouped
   }, [messages.length])
+
   useEffect(() => {
     if (scrollToBottomRef && visible && realtimeMessages?.length)
       scrollToBottomRef.scrollIntoView()
   }, [scrollToBottomRef, realtimeMessages?.length, visible])
-
-  function onReplyClick(message: ChatMessage) {
-    setReplyToUser({ id: message.userId, username: message.userUsername })
-  }
 
   async function submitMessage() {
     if (!user) {
@@ -139,7 +135,6 @@ export const PrivateChat = (props: { user: User; channelId: number }) => {
     })
     editor.commands.clearContent()
     setIsSubmitting(false)
-    setReplyToUser(undefined)
     editor?.commands?.focus()
   }
 
@@ -171,7 +166,6 @@ export const PrivateChat = (props: { user: User; channelId: number }) => {
                 key={messages[0].id}
                 chats={messages}
                 currentUser={user}
-                onReplyClick={onReplyClick}
                 ref={
                   i === groupedMessages.length - 1
                     ? setScrollToBottomRef
@@ -194,7 +188,6 @@ export const PrivateChat = (props: { user: User; channelId: number }) => {
           user={user}
           submit={submitMessage}
           isSubmitting={isSubmitting}
-          replyTo={replyToUser}
           submitOnEnter={true}
           hideToolbar={true}
         />
