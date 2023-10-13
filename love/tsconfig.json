@@ -16,12 +16,14 @@
     "incremental": true,
     "paths": {
       "common/*": ["../common/src/*"],
-      "web/*": ["./*"]
+      "web/*": ["../web/*"],
+      "love/*": ["./*"],
+      "react": ["./node_modules/@types/react"]
     }
   },
   "watchOptions": {
     "excludeDirectories": [".next"]
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", "../common/src/**/*.ts"],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", "../common/src/**/*.ts", "../web/**/*.ts"],
   "exclude": ["node_modules"]
 }
