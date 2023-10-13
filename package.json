@@ -9,6 +9,7 @@
     "backend/scripts",
     "backend/shared",
     "web",
+    "love",
     "backend/discord-bot"
   ],
   "scripts": {
