@@ -114,7 +114,10 @@ function AddLiquidityPanel(props: {
       {error && <div className="text-error">{error}</div>}
 
       {isSuccess && amount && (
-        <div>Success! Added {formatMoney(amount)} in liquidity.</div>
+        <div>
+          Success! Added {formatMoney((1 - SUBSIDY_FEE) * amount)} to the
+          subsidy pool, after fees.
+        </div>
       )}
 
       {isLoading && <div>Processing...</div>}
