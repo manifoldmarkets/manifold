@@ -1,0 +1,10 @@
+# *
+User-agent: *
+Allow: /
+
+# Host
+Host: https://manifold.love
+
+# Sitemaps
+Sitemap: https://manifold.love/server-sitemap.xml
+Sitemap: https://manifold.love/sitemap.xml
