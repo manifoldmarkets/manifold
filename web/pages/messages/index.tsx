@@ -17,6 +17,8 @@ import { User } from 'common/user'
 import { Content } from 'web/components/widgets/editor'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import clsx from 'clsx'
+import { SEARCH_TYPE_KEY } from 'web/components/supabase-search'
+import { linkClass } from 'web/components/widgets/site-link'
 export const getServerSideProps = redirectIfLoggedOut('/')
 
 export default function MessagesPage() {
@@ -38,6 +40,17 @@ export default function MessagesPage() {
     <Page trackPageView={'messages page'} className={'bg-canvas-0 p-2'}>
       <Title>Messages</Title>
       <Col className={'w-full gap-2 overflow-hidden'}>
+        {currentUser && channelIds.length === 0 && (
+          <div className={'mt-4 text-center text-gray-400'}>
+            You have no messages, yet.{' '}
+            <Link
+              className={linkClass}
+              href={`/browse?${SEARCH_TYPE_KEY}=Users`}
+            >
+              Find someone to chat with.
+            </Link>
+          </div>
+        )}
         {currentUser &&
           channelIds.map((channelId) => {
             const userId = channelIdsToUserIds?.[channelId]
