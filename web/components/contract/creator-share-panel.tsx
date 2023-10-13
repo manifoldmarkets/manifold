@@ -56,10 +56,7 @@ export function NonCreatorSharePanel(props: { contract: Contract }) {
     <Row className="my-4 flex-wrap gap-4">
       <BoostButton contract={contract} color="indigo-outline" />
       <AddLiquidityButton contract={contract} />
-      <ShareLinkButton
-        contract={contract}
-        username={user?.username}
-      />
+      <ShareLinkButton contract={contract} username={user?.username} />
       <TweetButton
         tweetText={getShareUrl(contract, user?.username)}
         className="hidden sm:flex"
