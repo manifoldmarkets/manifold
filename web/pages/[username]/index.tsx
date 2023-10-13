@@ -349,7 +349,9 @@ function UserProfile(props: {
                     <Spacer h={4} />
                     <PortfolioValueSection
                       userId={user.id}
-                      defaultTimePeriod={'weekly'}
+                      defaultTimePeriod={
+                        currentUser?.id === user.id ? 'daily' : 'monthly'
+                      }
                       lastUpdatedTime={user.metricsLastUpdated}
                       isCurrentUser={isCurrentUser}
                     />
