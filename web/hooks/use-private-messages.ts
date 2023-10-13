@@ -137,8 +137,7 @@ export const useUnseenPrivateMessageChannels = (
 
 export const usePrivateMessageChannelIds = (
   userId: string | undefined,
-  isAuthed: boolean | undefined,
-  channelId?: string
+  isAuthed: boolean | undefined
 ) => {
   const [channelIds, setChannelIds] = usePersistentLocalState<number[]>(
     [],
@@ -146,8 +145,8 @@ export const usePrivateMessageChannelIds = (
   )
   useEffect(() => {
     if (userId && isAuthed)
-      getChatMessageChannelIds(userId, 100, channelId).then(setChannelIds)
-  }, [userId, isAuthed, channelId])
+      getChatMessageChannelIds(userId, 100).then(setChannelIds)
+  }, [userId, isAuthed])
   return channelIds
 }
 
@@ -160,10 +159,15 @@ export const useOtherUserIdsInPrivateMessageChannelIds = (
     Record<number, string> | undefined
   >(undefined, `private-message-channel-ids-to-user-ids-${userId}`)
   useEffect(() => {
-    if (userId && isAuthed && channelIds)
+    if (
+      userId &&
+      isAuthed &&
+      channelIds &&
+      channelIds.some((c) => chanelIdToUserIds?.[c] === undefined)
+    )
       getOtherUserIdsInPrivateMessageChannelIds(userId, channelIds, 100).then(
         setChanelIdToUserIds
       )
-  }, [userId, isAuthed, channelIds])
+  }, [userId, isAuthed, channelIds?.length])
   return chanelIdToUserIds
 }

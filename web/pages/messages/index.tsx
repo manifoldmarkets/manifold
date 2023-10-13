@@ -17,9 +17,11 @@ import { User } from 'common/user'
 import { Content } from 'web/components/widgets/editor'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import clsx from 'clsx'
+export const getServerSideProps = redirectIfLoggedOut('/')
 
 export default function MessagesPage() {
   redirectIfLoggedOut('/')
+
   const currentUser = useUser()
   const isAuthed = useIsAuthorized()
   const channelIds = usePrivateMessageChannelIds(currentUser?.id, isAuthed)
@@ -30,14 +32,12 @@ export default function MessagesPage() {
   )
   const users = useUsersInStore(Object.values(channelIdsToUserIds ?? {}))
   return (
-    <Page trackPageView={'messages page'} className={'bg-canvas-0'}>
-      <Title>Private Messages</Title>
+    <Page trackPageView={'messages page'} className={'bg-canvas-0 p-2'}>
+      <Title>Messages</Title>
       <Col className={'w-full gap-2 overflow-hidden'}>
-        {channelIds &&
-          currentUser &&
-          channelIdsToUserIds &&
+        {currentUser &&
           channelIds.map((channelId) => {
-            const userId = channelIdsToUserIds[channelId]
+            const userId = channelIdsToUserIds?.[channelId]
             const user = users?.find((u) => u.id === userId)
             if (!user) return null
             return (

@@ -29,6 +29,8 @@ import { BackButton } from 'web/components/contract/back-button'
 import { Row } from 'web/components/layout/row'
 import clsx from 'clsx'
 
+export const getServerSideProps = redirectIfLoggedOut('/')
+
 export default function PrivateMessagesPage() {
   redirectIfLoggedOut('/')
 
@@ -36,7 +38,7 @@ export default function PrivateMessagesPage() {
   const user = useUser()
   const isAuthed = useIsAuthorized()
   const { channelId } = router.query as { channelId: string }
-  const channelIds = usePrivateMessageChannelIds(user?.id, isAuthed, channelId)
+  const channelIds = usePrivateMessageChannelIds(user?.id, isAuthed)
   const loaded = isAuthed && channelIds !== undefined && channelId
   useEffect(() => {
     if (loaded && !channelIds.includes(parseInt(channelId)))
