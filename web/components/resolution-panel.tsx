@@ -1,12 +1,15 @@
 import { useState } from 'react'
-
-import { User } from 'web/lib/firebase/users'
 import { YesNoCancelSelector } from './bet/yes-no-selector'
 import { Spacer } from './layout/spacer'
 import { ResolveConfirmationButton } from './buttons/confirmation-button'
 import { APIError, resolveMarket } from 'web/lib/firebase/api'
 import { getAnswerProbability, getProbability } from 'common/calculate'
-import { BinaryContract, CPMMMultiContract, resolution } from 'common/contract'
+import {
+  BinaryContract,
+  CPMMMultiContract,
+  Contract,
+  resolution,
+} from 'common/contract'
 import { BETTORS } from 'common/user'
 import { Row } from 'web/components/layout/row'
 import { ProbabilityInput } from './widgets/probability-input'
@@ -14,6 +17,8 @@ import { Button } from './buttons/button'
 import { Answer } from 'common/answer'
 import { Col } from './layout/col'
 import { removeUndefinedProps } from 'common/util/object'
+import { XIcon } from '@heroicons/react/solid'
+import { useUser } from 'web/hooks/use-user'
 
 function getResolveButtonColor(outcome: resolution | undefined) {
   return outcome === 'YES'
@@ -39,12 +44,12 @@ function getResolveButtonLabel(
 }
 
 export function ResolutionPanel(props: {
-  isCreator: boolean
-  creator: User
   contract: BinaryContract
-  modalSetOpen?: (open: boolean) => void
+  inModal?: boolean
+  onClose: () => void
 }) {
-  const { contract, isCreator, modalSetOpen } = props
+  const { contract, inModal, onClose } = props
+  const isCreator = useUser()?.id === contract.creatorId
 
   const [outcome, setOutcome] = useState<resolution | undefined>()
 
@@ -77,26 +82,18 @@ export function ResolutionPanel(props: {
     }
 
     setIsSubmitting(false)
-    if (modalSetOpen) {
-      modalSetOpen(false)
-    }
+    onClose()
   }
 
   return (
     <>
-      {!isCreator && (
-        <span className="bg-scarlet-50 text-scarlet-500 absolute right-4 top-4 rounded p-1 text-xs">
-          ADMIN
-        </span>
-      )}
-      {!modalSetOpen && (
-        <div className="mb-6">
-          Resolve {isCreator ? 'your' : contract.creatorName + `'s`} question
-        </div>
-      )}
-      {modalSetOpen && (
-        <div className="mb-6">Resolve "{contract.question}"</div>
-      )}
+      <ResolveHeader
+        contract={contract}
+        isCreator={isCreator}
+        onClose={onClose}
+        fullTitle={inModal}
+      />
+
       <YesNoCancelSelector selected={outcome} onSelect={setOutcome} />
 
       <Spacer h={4} />
@@ -125,7 +122,7 @@ export function ResolutionPanel(props: {
             </span>
           )}
         </div>
-        {!modalSetOpen && (
+        {!inModal && (
           <ResolveConfirmationButton
             color={getResolveButtonColor(outcome)}
             label={getResolveButtonLabel(outcome, prob)}
@@ -135,7 +132,7 @@ export function ResolutionPanel(props: {
             isSubmitting={isSubmitting}
           />
         )}
-        {modalSetOpen && (
+        {inModal && (
           <Button
             color={getResolveButtonColor(outcome)}
             disabled={!outcome || isSubmitting}
@@ -147,6 +144,41 @@ export function ResolutionPanel(props: {
         )}
       </Row>
     </>
+  )
+}
+
+export function ResolveHeader(props: {
+  fullTitle?: boolean
+  contract: Contract
+  isCreator: boolean
+  onClose: () => void
+}) {
+  const { fullTitle, contract, isCreator, onClose } = props
+
+  return (
+    <div className="mb-6 flex items-start justify-between">
+      <div>
+        {!isCreator && (
+          <span className="mr-2 rounded bg-purple-100 p-1 align-baseline text-xs uppercase text-purple-600 dark:bg-purple-900 dark:text-purple-300">
+            Mod
+          </span>
+        )}
+        Resolve{' '}
+        {fullTitle
+          ? `"${contract.question}"`
+          : isCreator
+          ? 'your question'
+          : contract.creatorName + `'s question`}
+      </div>
+      {
+        <button
+          className="text-ink-500 hover:text-ink-700 py-1 pl-2 transition-colors"
+          onClick={onClose}
+        >
+          <XIcon className="h-5 w-5" />
+        </button>
+      }
+    </div>
   )
 }
 

@@ -51,9 +51,16 @@ export const ContractOverview = memo(
     contract: Contract
     betPoints: HistoryPoint<Partial<Bet>>[] | MultiPoints
     showResolver: boolean
+    setShowResolver: (show: boolean) => void
     onAnswerCommentClick?: (answer: Answer | DpmAnswer) => void
   }) => {
-    const { betPoints, contract, showResolver, onAnswerCommentClick } = props
+    const {
+      betPoints,
+      contract,
+      showResolver,
+      setShowResolver,
+      onAnswerCommentClick,
+    } = props
 
     switch (contract.outcomeType) {
       case 'BINARY':
@@ -80,6 +87,7 @@ export const ContractOverview = memo(
             contract={contract}
             points={betPoints as any}
             showResolver={showResolver}
+            setShowResolver={setShowResolver}
             onAnswerCommentClick={onAnswerCommentClick}
           />
         )
@@ -202,9 +210,16 @@ const ChoiceOverview = (props: {
   points: MultiPoints
   contract: MultiContract
   showResolver: boolean
+  setShowResolver: (show: boolean) => void
   onAnswerCommentClick?: (answer: Answer | DpmAnswer) => void
 }) => {
-  const { points, contract, showResolver, onAnswerCommentClick } = props
+  const {
+    points,
+    contract,
+    showResolver,
+    setShowResolver,
+    onAnswerCommentClick,
+  } = props
 
   const [showZoomer, setShowZoomer] = useState(false)
   const { viewScale, currentTimePeriod, setTimePeriod, start, maxRange } =
@@ -260,7 +275,10 @@ const ChoiceOverview = (props: {
         !shouldAnswersSumToOne && contract.mechanism === 'cpmm-multi-1' ? (
           <IndependentAnswersResolvePanel contract={contract} />
         ) : (
-          <AnswersResolvePanel contract={contract} />
+          <AnswersResolvePanel
+            contract={contract}
+            onClose={() => setShowResolver(false)}
+          />
         )
       ) : (
         <>

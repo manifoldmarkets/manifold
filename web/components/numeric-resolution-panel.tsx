@@ -1,6 +1,4 @@
 import { useState } from 'react'
-
-import { User } from 'web/lib/firebase/users'
 import { NumberCancelSelector } from './bet/yes-no-selector'
 import { Spacer } from './layout/spacer'
 import { ResolveConfirmationButton } from './buttons/confirmation-button'
@@ -10,6 +8,8 @@ import { getPseudoProbability } from 'common/pseudo-numeric'
 import { BETTORS } from 'common/user'
 import { Button } from './buttons/button'
 import { AmountInput } from './widgets/amount-input'
+import { ResolveHeader } from './resolution-panel'
+import { useUser } from 'web/hooks/use-user'
 
 function getNumericResolveButtonColor(
   outcomeMode: 'NUMBER' | 'CANCEL' | undefined
@@ -25,13 +25,13 @@ function getNumericResolveButtonLabel(
 }
 
 export function NumericResolutionPanel(props: {
-  isCreator: boolean
-  creator: User
   contract: PseudoNumericContract
-  modalSetOpen?: (open: boolean) => void
+  inModal?: boolean
+  onClose: () => void
 }) {
-  const { contract, isCreator, modalSetOpen } = props
+  const { contract, inModal, onClose } = props
   const { min, max, outcomeType, question } = contract
+  const isCreator = useUser()?.id === contract.creatorId
 
   const [outcomeMode, setOutcomeMode] = useState<'NUMBER' | 'CANCEL'>('NUMBER')
   const [value, setValue] = useState<number | undefined>()
@@ -78,9 +78,7 @@ export function NumericResolutionPanel(props: {
     }
 
     setIsSubmitting(false)
-    if (modalSetOpen) {
-      modalSetOpen(false)
-    }
+    onClose()
   }
   const buttonDisabled =
     outcomeMode === undefined ||
@@ -88,19 +86,12 @@ export function NumericResolutionPanel(props: {
 
   return (
     <>
-      {!isCreator && (
-        <span className="bg-scarlet-500/20 text-scarlet-500 absolute right-4 top-4 rounded p-1 text-xs">
-          ADMIN
-        </span>
-      )}
-      {!modalSetOpen && (
-        <div className="mb-6">
-          Resolve {isCreator ? 'your' : contract.creatorName + `'s`} question
-        </div>
-      )}
-      {modalSetOpen && (
-        <div className="mb-6">Resolve "{contract.question}"</div>
-      )}
+      <ResolveHeader
+        contract={contract}
+        isCreator={isCreator}
+        onClose={onClose}
+        fullTitle={inModal}
+      />
 
       <NumberCancelSelector selected={outcomeMode} onSelect={setOutcomeMode} />
 
@@ -129,17 +120,7 @@ export function NumericResolutionPanel(props: {
           }
         </div>
 
-        {!modalSetOpen && (
-          <ResolveConfirmationButton
-            onResolve={resolve}
-            isSubmitting={isSubmitting}
-            color={getNumericResolveButtonColor(outcomeMode)}
-            label={getNumericResolveButtonLabel(outcomeMode, value)}
-            marketTitle={question}
-            disabled={buttonDisabled}
-          />
-        )}
-        {modalSetOpen && (
+        {inModal ? (
           <Button
             color={getNumericResolveButtonColor(outcomeMode)}
             disabled={buttonDisabled || isSubmitting}
@@ -148,6 +129,15 @@ export function NumericResolutionPanel(props: {
           >
             Resolve <>{getNumericResolveButtonLabel(outcomeMode, value)}</>
           </Button>
+        ) : (
+          <ResolveConfirmationButton
+            onResolve={resolve}
+            isSubmitting={isSubmitting}
+            color={getNumericResolveButtonColor(outcomeMode)}
+            label={getNumericResolveButtonLabel(outcomeMode, value)}
+            marketTitle={question}
+            disabled={buttonDisabled}
+          />
         )}
       </div>
       {!!error && <div className="text-scarlet-500">{error}</div>}

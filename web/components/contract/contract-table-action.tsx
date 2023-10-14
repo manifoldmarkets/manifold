@@ -16,17 +16,17 @@ import clsx from 'clsx'
 
 export function Action(props: { contract: Contract }) {
   const { contract } = props
-  const user = useUser()
   return (
     <Row className="h-min flex-wrap gap-2 align-top">
-      <BetButton contract={contract} user={user} />
-      <ResolveButton contract={contract} user={user} />
+      <BetButton contract={contract} />
+      <ResolveButton contract={contract} />
     </Row>
   )
 }
 
 export function BetButton(props: { contract: Contract; user?: User | null }) {
-  const { contract, user } = props
+  const { contract } = props
+  const user = useUser()
   const [open, setOpen] = useState(false)
   if (
     !isClosed(contract) &&
@@ -66,11 +66,9 @@ export function BetButton(props: { contract: Contract; user?: User | null }) {
   return <></>
 }
 
-export function ResolveButton(props: {
-  contract: Contract
-  user?: User | null
-}) {
-  const { contract, user } = props
+export function ResolveButton(props: { contract: Contract }) {
+  const { contract } = props
+  const user = useUser()
   const [open, setOpen] = useState(false)
   const isClosed = contract.closeTime && contract.closeTime < Date.now()
   if (
@@ -100,11 +98,7 @@ export function ResolveButton(props: {
         {open && (
           <Modal open={open} setOpen={setOpen} size="md">
             <Col className={clsx(MODAL_CLASS, 'items-stretch !gap-0')}>
-              <SmallResolutionPanel
-                contract={contract}
-                user={user}
-                setOpen={setOpen}
-              />
+              <SmallResolutionPanel contract={contract} setOpen={setOpen} />
             </Col>
           </Modal>
         )}
@@ -116,28 +110,29 @@ export function ResolveButton(props: {
 
 export function SmallResolutionPanel(props: {
   contract: Contract
-  user: User
   setOpen: (open: boolean) => void
 }) {
-  const { contract, user, setOpen } = props
+  const { contract, setOpen } = props
   const outcomeType = contract.outcomeType
   return outcomeType === 'PSEUDO_NUMERIC' ? (
     <NumericResolutionPanel
-      creator={user}
-      isCreator={user.id === contract.creatorId}
       contract={contract}
-      modalSetOpen={setOpen}
+      onClose={() => setOpen(false)}
+      inModal
     />
   ) : outcomeType === 'BINARY' ? (
     <ResolutionPanel
-      creator={user}
-      isCreator={user.id === contract.creatorId}
       contract={contract}
-      modalSetOpen={setOpen}
+      onClose={() => setOpen(false)}
+      inModal
     />
   ) : outcomeType === 'FREE_RESPONSE' || outcomeType === 'MULTIPLE_CHOICE' ? (
     <Col className="w-full">
-      <AnswersResolvePanel contract={contract} />
+      <AnswersResolvePanel
+        contract={contract}
+        onClose={() => setOpen(false)}
+        inModal
+      />
     </Col>
   ) : (
     <></>

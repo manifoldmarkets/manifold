@@ -16,7 +16,7 @@ import { getAnswerColor } from './answers-panel'
 import { DpmAnswer, Answer } from 'common/answer'
 import { getAnswerProbability } from 'common/calculate'
 import { useUserByIdOrAnswer } from 'web/hooks/use-user-supabase'
-import { MiniResolutionPanel } from '../resolution-panel'
+import { MiniResolutionPanel, ResolveHeader } from '../resolution-panel'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import {
   AnswerBar,
@@ -71,7 +71,6 @@ function getAnswerResolveButtonLabel(
 }
 
 function AnswersResolveOptions(props: {
-  isCreator: boolean
   contract: MultiContract
   resolveOption: 'CHOOSE_ONE' | 'CHOOSE_MULTIPLE' | 'CANCEL'
   setResolveOption: (
@@ -85,7 +84,6 @@ function AnswersResolveOptions(props: {
     resolveOption,
     setResolveOption,
     chosenAnswers,
-    isCreator,
     isInModal,
   } = props
   const isCpmm = contract.mechanism === 'cpmm-multi-1'
@@ -154,19 +152,6 @@ function AnswersResolveOptions(props: {
 
   return (
     <>
-      <Row className="justify-between">
-        {!isInModal && (
-          <div>
-            Resolve {isCreator ? 'your' : contract.creatorName + `'s`} question
-          </div>
-        )}
-        {isInModal && <div>Resolve "{contract.question}"</div>}
-        {!isCreator && (
-          <span className="bg-scarlet-500/20 text-scarlet-500 rounded p-1 text-xs">
-            ADMIN
-          </span>
-        )}
-      </Row>
       <div className="flex flex-col items-stretch justify-center gap-4 sm:flex-row sm:flex-wrap sm:justify-between">
         <ChooseCancelSelector
           selected={resolveOption}
@@ -236,9 +221,12 @@ function AnswersResolveOptions(props: {
   )
 }
 
-export const AnswersResolvePanel = (props: { contract: MultiContract }) => {
-  const { contract } = props
-
+export const AnswersResolvePanel = (props: {
+  contract: MultiContract
+  onClose: () => void
+  inModal?: boolean
+}) => {
+  const { contract, onClose, inModal } = props
   const { answers } = contract
 
   const user = useUser()
@@ -291,8 +279,13 @@ export const AnswersResolvePanel = (props: { contract: MultiContract }) => {
   return (
     <GradientContainer>
       <Col className="gap-3">
-        <AnswersResolveOptions
+        <ResolveHeader
+          contract={contract}
           isCreator={user?.id === contract.creatorId}
+          onClose={onClose}
+          fullTitle={!inModal}
+        />
+        <AnswersResolveOptions
           contract={contract}
           resolveOption={resolveOption}
           setResolveOption={setResolveOption}

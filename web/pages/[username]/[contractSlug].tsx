@@ -577,6 +577,7 @@ export function ContractPageContent(props: {
                 contract={contract}
                 betPoints={betPoints as any}
                 showResolver={showResolver}
+                setShowResolver={setShowResolver}
                 onAnswerCommentClick={setReplyTo}
               />
             </Col>
@@ -600,17 +601,15 @@ export function ContractPageContent(props: {
               (outcomeType === 'PSEUDO_NUMERIC' ? (
                 <GradientContainer className="my-2">
                   <NumericResolutionPanel
-                    creator={user}
-                    isCreator={user.id === contract.creatorId}
                     contract={contract}
+                    onClose={() => setShowResolver(false)}
                   />
                 </GradientContainer>
               ) : outcomeType === 'BINARY' ? (
                 <GradientContainer className="my-2">
                   <ResolutionPanel
-                    creator={user}
-                    isCreator={user.id === contract.creatorId}
                     contract={contract}
+                    onClose={() => setShowResolver(false)}
                   />
                 </GradientContainer>
               ) : null)}

@@ -205,7 +205,7 @@ const ChoiceOverview = (props: {
   showResolver: boolean
   onAnswerCommentClick?: (answer: Answer | DpmAnswer) => void
 }) => {
-  const { points, contract, showResolver, onAnswerCommentClick } = props
+  const { contract, onAnswerCommentClick } = props
 
   if (!onAnswerCommentClick) return null
   return (
@@ -217,21 +217,6 @@ const ChoiceOverview = (props: {
         </div>
       )}
       Ask Sinclair to fix this
-      {showResolver ? (
-        <AnswersResolvePanel contract={contract} />
-      ) : (
-        <>
-          <AnswersPanel
-            contract={contract}
-            onAnswerCommentClick={onAnswerCommentClick}
-          />
-          <CreateAnswerPanel contract={contract} />
-          <UserBetsSummary
-            className="border-ink-200 !mb-2 mt-2 "
-            contract={contract}
-          />
-        </>
-      )}
     </>
   )
 }

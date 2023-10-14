@@ -98,15 +98,13 @@ export function DangerZone(props: {
       )}
 
       {canDelete && <DeleteMarketButton contractId={contract.id} />}
-      {canResolve && (
+      {canResolve && !showResolver && (
         <Button
           color={highlightResolver ? 'red' : 'gray'}
           size="2xs"
           onClick={() => setShowResolver(!showResolver)}
         >
-          {showResolver
-            ? 'Cancel resolve'
-            : isCreator
+          {isCreator
             ? 'Resolve'
             : isAdmin
             ? 'Admin resolve'
