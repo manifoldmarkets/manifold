@@ -15,11 +15,11 @@ export const traderColumn = {
   header: 'Traders',
   content: (contract: Contract) =>
     contract.outcomeType == 'BOUNTIED_QUESTION' ? (
-      <div className="h-min align-top opacity-70 sm:opacity-100">
+      <div className="h-min align-top opacity-70">
         <BountiedContractComments contractId={contract.id} />
       </div>
     ) : (
-      <div className="h-min align-top opacity-70 sm:opacity-100">
+      <div className="h-min align-top opacity-70">
         <Row className="align-center shrink-0 items-center gap-0.5">
           <UserIcon className="h-4 w-4" />
           {shortenNumber(contract.uniqueBettorCount ?? 0)}
