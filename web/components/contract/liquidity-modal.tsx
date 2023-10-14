@@ -31,10 +31,10 @@ export function LiquidityModal(props: {
           The higher the stakes, the more winners make.
         </div>
         <div>
-          Contribute mana to this market to incentivize traders to make the
-          probability accurate.{' '}
+          Pay traders to answer your question! Subsidies incentivize traders to
+          make the probability accurate.{' '}
           <InfoTooltip
-            text={`Your mana contributions will be added to the liquidity subsidy pool after a ${formatPercent(
+            text={`Your mana will be added to the subsidy pool after a ${formatPercent(
               SUBSIDY_FEE
             )} fee is assessed.`}
           />
@@ -107,7 +107,7 @@ function AddLiquidityPanel(props: {
           inputClassName="w-32 mr-4"
         />
         <Button onClick={submit} disabled={isLoading || !!error}>
-          Contribute 😎
+          Pay
         </Button>
       </Row>
 
