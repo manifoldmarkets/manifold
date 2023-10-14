@@ -253,7 +253,7 @@ function UserProfile(props: {
           ) : isMobile ? (
             <>
               <div className={'my-auto'}>
-                {currentUser && <SendMessageButton toUser={user} />}
+                <SendMessageButton toUser={user} currentUser={currentUser} />
               </div>
               <div className={'my-auto'}>
                 <FollowButton userId={user.id} />
@@ -264,7 +264,7 @@ function UserProfile(props: {
             </>
           ) : (
             <Row className="items-center gap-1 sm:gap-2">
-              {currentUser && <SendMessageButton toUser={user} />}
+              <SendMessageButton toUser={user} currentUser={currentUser} />
               <FollowButton userId={user.id} />
               <MoreOptionsUserButton user={user} />
             </Row>

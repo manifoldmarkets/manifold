@@ -156,7 +156,7 @@ export const useOtherUserIdsInPrivateMessageChannelIds = (
   channelIds: number[] | undefined
 ) => {
   const [chanelIdToUserIds, setChanelIdToUserIds] = usePersistentLocalState<
-    Record<number, string> | undefined
+    Record<number, string[]> | undefined
   >(undefined, `private-message-channel-ids-to-user-ids-${userId}`)
   useEffect(() => {
     if (

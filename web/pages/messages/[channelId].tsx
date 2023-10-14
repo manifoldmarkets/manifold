@@ -72,7 +72,7 @@ export const PrivateChat = (props: { user: User; channelId: number }) => {
       otherUserFromMessages.length
         ? otherUserFromMessages
         : otherUserFromChannel?.[channelId]
-        ? [otherUserFromChannel[channelId]]
+        ? otherUserFromChannel?.[channelId]
         : []
     )
   )

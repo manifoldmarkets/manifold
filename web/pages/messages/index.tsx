@@ -19,6 +19,7 @@ import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import clsx from 'clsx'
 import { SEARCH_TYPE_KEY } from 'web/components/supabase-search'
 import { linkClass } from 'web/components/widgets/site-link'
+import { first } from 'lodash'
 export const getServerSideProps = redirectIfLoggedOut('/')
 
 export default function MessagesPage() {
@@ -33,7 +34,7 @@ export default function MessagesPage() {
     channelIds
   )
   const users = useUsersInStore(
-    Object.values(channelIdsToUserIds ?? {})
+    Object.values(channelIdsToUserIds ?? {}).flat()
   )?.filter((u) => !privateUser?.blockedUserIds.includes(u.id))
 
   return (
@@ -53,7 +54,7 @@ export default function MessagesPage() {
         )}
         {currentUser &&
           channelIds.map((channelId) => {
-            const userId = channelIdsToUserIds?.[channelId]
+            const userId = first(channelIdsToUserIds?.[channelId])
             const user = users?.find((u) => u.id === userId)
             if (!user) return null
             return (

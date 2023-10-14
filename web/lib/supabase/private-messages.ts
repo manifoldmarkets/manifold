@@ -78,6 +78,7 @@ export const getOtherUserIdsInPrivateMessageChannelIds = async (
   channelIds: number[],
   limit: number
 ) => {
+  const channelIdToUserIds: Record<number, string[]> = {}
   const q = db
     .from('private_user_message_channel_members')
     .select('channel_id, user_id')
@@ -86,7 +87,11 @@ export const getOtherUserIdsInPrivateMessageChannelIds = async (
     .order('created_time', { ascending: false })
     .limit(limit)
   const { data } = await run(q)
-  return Object.fromEntries(
-    data.map((d) => [d.channel_id, d.user_id])
-  ) as Record<number, string>
+
+  data.forEach((d) =>
+    channelIdToUserIds[d.channel_id] === undefined
+      ? (channelIdToUserIds[d.channel_id] = [d.user_id])
+      : channelIdToUserIds[d.channel_id].push(d.user_id)
+  )
+  return channelIdToUserIds
 }

@@ -157,7 +157,9 @@ export function CommentInputTextArea(props: {
         </button>
       )}
 
-      {isSubmitting && <LoadingIndicator spinnerClassName="border-ink-500" />}
+      {isSubmitting && (
+        <LoadingIndicator size={'md'} spinnerClassName="border-ink-500" />
+      )}
     </TextEditor>
   )
 }
