@@ -494,6 +494,7 @@ create table if not exists
     contract_id text not null,
     bet_id text not null,
     user_id text,
+    answer_id text,
     created_time timestamptz,
     amount numeric,
     shares numeric,
@@ -534,6 +535,7 @@ begin
     new.is_redemption := ((new.data) -> 'isRedemption')::boolean;
     new.is_challenge := ((new.data) -> 'isChallenge')::boolean;
     new.visibility := ((new.data) ->> 'visibility')::text;
+    new.answer_id := ((new.data) ->> 'answerId')::text;
   end if;
   return new;
 end
@@ -561,6 +563,9 @@ create index if not exists contract_bets_contract_user_id on contract_bets (cont
 
 /* serving the user bets API */
 create index if not exists contract_bets_user_id on contract_bets (user_id, created_time desc);
+
+/* serving the user bets API */
+create index if not exists contract_bets_answer_id on contract_bets (answer_id);
 
 create index if not exists contract_bets_user_outstanding_limit_orders on contract_bets (
   user_id,
