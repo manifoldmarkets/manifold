@@ -89,8 +89,9 @@ export function ControlledTabs(props: TabProps & { activeIndex: number }) {
         ))}
       </Carousel>
       {tabs
-        .filter((_, i) => renderAllTabs || hasRenderedIndexRef.current.has(i))
-        .map((tab, i) => (
+        .map((tab, i) => ({ tab, i }))
+        .filter(({ i }) => renderAllTabs || hasRenderedIndexRef.current.has(i))
+        .map(({ tab, i }) => (
           <div
             key={i}
             className={clsx(
