@@ -29,7 +29,7 @@ import { Modal } from 'web/components/layout/modal'
 import { PencilIcon, TagIcon, XIcon } from '@heroicons/react/outline'
 import { DotsVerticalIcon } from '@heroicons/react/solid'
 import { usePersistentQueryState } from 'web/hooks/use-persistent-query-state'
-import { useGroupFromRouter } from 'web/hooks/use-group-from-router'
+import { useTopicFromRouter } from 'web/hooks/use-topic-from-router'
 import { BackButton } from 'web/components/contract/back-button'
 
 export async function getStaticProps() {
@@ -97,7 +97,7 @@ export default function Leaderboards(props: {
 
   const { topReferrals } = props
   const [topicSlug, setTopicSlug] = usePersistentQueryState(TOPIC_KEY, '')
-  const topicFromRouter = useGroupFromRouter(topicSlug)
+  const topicFromRouter = useTopicFromRouter(topicSlug)
   const [topic, setTopic] = useState<Group>()
   useEffect(() => {
     setTopic(topicFromRouter)

@@ -1,17 +1,15 @@
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
-import { Title } from 'web/components/widgets/title'
 import { ActivityLog } from 'web/components/activity-log'
 import { SEO } from 'web/components/SEO'
 import { Row } from 'web/components/layout/row'
 import { TopicSelector } from 'web/components/topics/topic-selector'
-import { useState } from 'react'
-import { Group } from 'common/group'
-import { first } from 'lodash'
+import { usePersistentQueryState } from 'web/hooks/use-persistent-query-state'
+import { useTopicFromRouter } from 'web/hooks/use-topic-from-router'
 
 export default function LivePage() {
-  const [topics, setTopics] = useState<Group[]>()
-  const topic = first(topics)
+  const [topicSlug, setTopicSlug] = usePersistentQueryState('topic', '')
+  const topicFromRouter = useTopicFromRouter(topicSlug)
   return (
     <Page trackPageView={'live page'}>
       <SEO
@@ -21,16 +19,23 @@ export default function LivePage() {
       />
 
       <Col className="w-full max-w-3xl gap-4 self-center sm:pb-4">
-        <Row className={'w-full items-center justify-between '}>
-          <Title className="!mb-0 shrink-0">
-            {topic ? topic.name + ' live' : 'Live'} feed
-          </Title>
+        <Row
+          className={
+            'w-full items-center justify-between pt-1 sm:justify-start sm:gap-4'
+          }
+        >
+          <span className="text-primary-700 line-clamp-1 shrink px-1 text-2xl">
+            {topicFromRouter ? topicFromRouter.name : 'Live'} feed
+          </span>
           <TopicSelector
-            setSelectedGroup={(group) => setTopics([group])}
-            className={'!w-56'}
+            setSelectedGroup={(group) => {
+              setTopicSlug(group.slug)
+            }}
+            className={'!w-40 shrink-0 sm:!w-56'}
+            placeholder={'Filter by topic'}
           />
         </Row>
-        <ActivityLog count={30} topicSlugs={topics?.map((t) => t.slug)} />
+        <ActivityLog count={30} topicSlugs={topicSlug ? [topicSlug] : []} />
       </Col>
     </Page>
   )

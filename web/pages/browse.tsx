@@ -23,7 +23,7 @@ import {
   useTrendingTopics,
   useUserTrendingTopics,
 } from 'web/components/search/query-topics'
-import { useGroupFromRouter } from 'web/hooks/use-group-from-router'
+import { useTopicFromRouter } from 'web/hooks/use-topic-from-router'
 import Welcome from 'web/components/onboarding/welcome'
 import { Page } from 'web/components/layout/page'
 import { SEO } from 'web/components/SEO'
@@ -62,7 +62,7 @@ export default function BrowsePage() {
     trendingTopics ?? [],
     userTrendingTopics ?? []
   )
-  const topicFromRouter = useGroupFromRouter(topicSlug)
+  const topicFromRouter = useTopicFromRouter(topicSlug)
   const [topicsFromRouter, setTopicsFromRouter] = usePersistentInMemoryState<
     Group[]
   >([], 'topics-from-router')

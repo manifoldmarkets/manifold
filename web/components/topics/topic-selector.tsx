@@ -23,6 +23,7 @@ export function TopicSelector(props: {
   onlyGroupIds?: string[]
   onCreateTopic?: (group: Group) => void
   className?: string
+  placeholder?: string
 }) {
   const {
     setSelectedGroup,
@@ -32,6 +33,7 @@ export function TopicSelector(props: {
     newContract,
     onlyGroupIds,
     className,
+    placeholder,
   } = props
   const user = useUser()
   const onlyGroups = useAsyncData(onlyGroupIds, getGroups)
@@ -101,10 +103,10 @@ export function TopicSelector(props: {
             <div className="relative w-full">
               <Combobox.Button as="div">
                 <Combobox.Input
-                  className="border-ink-300 bg-canvas-0 focus:border-primary-500 focus:ring-primary-500 w-full rounded-md border p-3 pl-4 pr-20 text-sm shadow-sm focus:outline-none focus:ring-1"
+                  className="border-ink-300 bg-canvas-0 focus:border-primary-500 focus:ring-primary-500 w-full rounded-md border p-3 pl-4  text-sm shadow-sm focus:outline-none focus:ring-1"
                   onChange={(e) => setQuery(e.target.value)}
                   displayValue={(group: Group) => group && group.name}
-                  placeholder={'e.g. Science, Politics'}
+                  placeholder={placeholder ?? 'e.g. Science, Politics'}
                 />
               </Combobox.Button>
               <Combobox.Button className="absolute inset-y-0 right-0 flex items-center rounded-r-md px-2 focus:outline-none">
