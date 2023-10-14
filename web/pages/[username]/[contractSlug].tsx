@@ -597,7 +597,6 @@ export function ContractPageContent(props: {
             )}
             {showResolver &&
               user &&
-              !resolution &&
               (outcomeType === 'PSEUDO_NUMERIC' ? (
                 <GradientContainer className="my-2">
                   <NumericResolutionPanel

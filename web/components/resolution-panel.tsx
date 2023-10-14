@@ -7,9 +7,8 @@ import { ResolveConfirmationButton } from './buttons/confirmation-button'
 import { APIError, resolveMarket } from 'web/lib/firebase/api'
 import { getAnswerProbability, getProbability } from 'common/calculate'
 import { BinaryContract, CPMMMultiContract, resolution } from 'common/contract'
-import { BETTORS, PLURAL_BETS } from 'common/user'
+import { BETTORS } from 'common/user'
 import { Row } from 'web/components/layout/row'
-import { capitalize } from 'lodash'
 import { ProbabilityInput } from './widgets/probability-input'
 import { Button } from './buttons/button'
 import { Answer } from 'common/answer'
@@ -46,11 +45,6 @@ export function ResolutionPanel(props: {
   modalSetOpen?: (open: boolean) => void
 }) {
   const { contract, isCreator, modalSetOpen } = props
-
-  // const earnedFees =
-  //   contract.mechanism === 'dpm-2'
-  //     ? `${DPM_CREATOR_FEE * 100}% of trader profits`
-  //     : `${formatMoney(contract.collectedFees.creatorFee)} in fees`
 
   const [outcome, setOutcome] = useState<resolution | undefined>()
 
@@ -108,39 +102,26 @@ export function ResolutionPanel(props: {
       <Spacer h={4} />
       {!!error && <div className="text-scarlet-500">{error}</div>}
 
-      <Row className={'items-center justify-between'}>
+      <Row className={'items-center justify-between gap-3'}>
         <div className="text-sm">
           {outcome === 'YES' ? (
-            <>
-              Winnings will be paid out to {BETTORS} who bought YES.
-              {/* <br />
-            <br />
-            You will earn {earnedFees}. */}
-            </>
+            <>Pay out {BETTORS} who bought YES.</>
           ) : outcome === 'NO' ? (
-            <>
-              Winnings will be paid out to {BETTORS} who bought NO.
-              {/* <br />
-            <br />
-            You will earn {earnedFees}. */}
-            </>
+            <>Pay out {BETTORS} who bought NO.</>
           ) : outcome === 'CANCEL' ? (
-            <>Cancel all trades and return money back to {BETTORS}.</>
+            <>Cancel all trades and return mana back to {BETTORS}.</>
           ) : outcome === 'MKT' ? (
             <Row className="flex-wrap items-center gap-2">
-              <span>
-                {capitalize(PLURAL_BETS)} will be paid out at the probability
-                you specify:
-              </span>{' '}
+              <span>Pay out at this probability:</span>{' '}
               <ProbabilityInput
                 prob={prob}
                 onChange={setProb}
-                className="mr-3 !h-11 w-28"
+                className="!h-11 w-28"
               />
             </Row>
           ) : (
             <span className="text-ink-500">
-              Resolving this question will immediately pay out {BETTORS}.
+              Pick the true answer and pay out {BETTORS} that got it right.
             </span>
           )}
         </div>
@@ -161,7 +142,7 @@ export function ResolutionPanel(props: {
             loading={isSubmitting}
             onClick={resolve}
           >
-            Resolve <>{getResolveButtonLabel(outcome, prob)}</>
+            Resolve to {getResolveButtonLabel(outcome, prob)}
           </Button>
         )}
       </Row>
@@ -238,7 +219,7 @@ export function MiniResolutionPanel(props: {
           </Row>
         )}
         {outcome === 'CANCEL' && (
-          <div className="text-warning">Cancel trades and return money</div>
+          <div className="text-warning">Cancel trades and return mana</div>
         )}
         {error && (
           <div className="text-scarlet-500 self-start rounded p-1 text-xs">

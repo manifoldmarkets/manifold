@@ -73,9 +73,9 @@ function getAnswerResolveButtonLabel(
 function AnswersResolveOptions(props: {
   isCreator: boolean
   contract: MultiContract
-  resolveOption: 'CHOOSE_ONE' | 'CHOOSE_MULTIPLE' | 'CANCEL' | undefined
+  resolveOption: 'CHOOSE_ONE' | 'CHOOSE_MULTIPLE' | 'CANCEL'
   setResolveOption: (
-    option: 'CHOOSE_ONE' | 'CHOOSE_MULTIPLE' | 'CANCEL' | undefined
+    option: 'CHOOSE_ONE' | 'CHOOSE_MULTIPLE' | 'CANCEL'
   ) => void
   chosenAnswers: { [answerId: string]: number }
   isInModal?: boolean
@@ -93,7 +93,6 @@ function AnswersResolveOptions(props: {
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | undefined>(undefined)
-  const [warning, setWarning] = useState<string | undefined>(undefined)
 
   const answer = isCpmm
     ? contract.answers.find((a) => a.id === answerIds[0])
@@ -102,14 +101,6 @@ function AnswersResolveOptions(props: {
           parseInt(answerIds[0])
       ]
   const chosenText = answer?.text ?? 'an answer'
-
-  useEffect(() => {
-    if (resolveOption === 'CANCEL') {
-      setWarning(`Cancel all trades and return money back to ${BETTORS}.`)
-    } else {
-      setWarning(undefined)
-    }
-  }, [resolveOption])
 
   const onResolve = async () => {
     if (resolveOption === 'CHOOSE_ONE' && answerIds.length !== 1) return
@@ -158,7 +149,6 @@ function AnswersResolveOptions(props: {
       }
     }
 
-    setResolveOption(undefined)
     setIsSubmitting(false)
   }
 
@@ -184,19 +174,6 @@ function AnswersResolveOptions(props: {
         />
 
         <Row className="justify-end gap-1">
-          {resolveOption && (
-            <Button
-              color="gray-white"
-              size="xl"
-              className="font-medium"
-              onClick={() => {
-                setResolveOption(undefined)
-              }}
-            >
-              Clear
-            </Button>
-          )}
-
           {!isInModal && (
             <ResolveConfirmationButton
               color={getAnswerResolveButtonColor(
@@ -252,7 +229,9 @@ function AnswersResolveOptions(props: {
       </div>
 
       {!!error && <div className="text-scarlet-500">{error}</div>}
-      {!!warning && <div className="text-warning">{warning}</div>}
+      {resolveOption === 'CANCEL' && (
+        <div className="text-warning">{`Cancel all trades and return mana back to ${BETTORS}.`}</div>
+      )}
     </>
   )
 }
@@ -265,7 +244,7 @@ export const AnswersResolvePanel = (props: { contract: MultiContract }) => {
   const user = useUser()
 
   const [resolveOption, setResolveOption] = useState<
-    'CHOOSE_ONE' | 'CHOOSE_MULTIPLE' | 'CANCEL' | undefined
+    'CHOOSE_ONE' | 'CHOOSE_MULTIPLE' | 'CANCEL'
   >('CHOOSE_ONE')
   const [chosenAnswers, setChosenAnswers] = useState<{
     [answerId: string]: number

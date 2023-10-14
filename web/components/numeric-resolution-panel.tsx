@@ -33,9 +33,7 @@ export function NumericResolutionPanel(props: {
   const { contract, isCreator, modalSetOpen } = props
   const { min, max, outcomeType, question } = contract
 
-  const [outcomeMode, setOutcomeMode] = useState<
-    'NUMBER' | 'CANCEL' | undefined
-  >()
+  const [outcomeMode, setOutcomeMode] = useState<'NUMBER' | 'CANCEL'>('NUMBER')
   const [value, setValue] = useState<number | undefined>()
 
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -108,27 +106,27 @@ export function NumericResolutionPanel(props: {
 
       <Spacer h={4} />
 
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2 text-sm">
-          {outcomeMode === 'CANCEL' ? (
-            <>Cancel all trades and return money back to {BETTORS}.</>
-          ) : outcomeMode === 'NUMBER' ? (
-            <>
-              Traders will be paid out at the value you specify:
-              <AmountInput
-                amount={value}
-                onChangeAmount={setValue}
-                disabled={isSubmitting}
-                error={value !== undefined && (value < min || value > max)}
-                allowNegative
-                label=""
-                className="mr-3"
-                inputClassName="w-28"
-              />
-            </>
-          ) : (
-            <>Resolving this market will immediately pay out {BETTORS}.</>
-          )}
+          {
+            outcomeMode === 'CANCEL' ? (
+              <>Cancel all trades and return mana back to {BETTORS}.</>
+            ) : outcomeMode === 'NUMBER' ? (
+              <>
+                Pay out {BETTORS} who brought the market closer to the correct
+                value.
+                <AmountInput
+                  amount={value}
+                  onChangeAmount={setValue}
+                  disabled={isSubmitting}
+                  error={value !== undefined && (value < min || value > max)}
+                  allowNegative
+                  label=""
+                  inputClassName="!h-11 w-28"
+                />
+              </>
+            ) : null // never
+          }
         </div>
 
         {!modalSetOpen && (

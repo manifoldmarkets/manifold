@@ -95,7 +95,7 @@ export function YesNoCancelSelector(props: {
         onClick={() => onSelect('MKT')}
         className={btnClassName}
       >
-        PROB
+        %
       </Button>
 
       <Button
@@ -147,23 +147,6 @@ export function ChooseCancelSelector(props: {
         N/A
       </Button>
     </div>
-  )
-}
-
-export function BuyButton(props: { className?: string; onClick?: () => void }) {
-  const { className, onClick } = props
-  // Note: styles coppied from YesNoSelector
-  return (
-    <button
-      className={clsx(
-        'hover:bg-teal-600-focus hover:border-teal-600-focus hover:text-ink-0 inline-flex flex-1  items-center justify-center rounded-lg border-2 border-teal-600 p-2',
-        'bg-transparent text-lg text-teal-500',
-        className
-      )}
-      onClick={onClick}
-    >
-      Buy
-    </button>
   )
 }
 

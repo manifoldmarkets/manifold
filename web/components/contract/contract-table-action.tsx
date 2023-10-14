@@ -12,6 +12,7 @@ import { ResolutionPanel } from '../resolution-panel'
 import { isClosed } from './contracts-table'
 import { AnswersResolvePanel } from '../answers/answer-resolve-panel'
 import { useUser } from 'web/hooks/use-user'
+import clsx from 'clsx'
 
 export function Action(props: { contract: Contract }) {
   const { contract } = props
@@ -97,15 +98,13 @@ export function ResolveButton(props: {
           Resolve
         </Button>
         {open && (
-          <Modal open={open} setOpen={setOpen}>
-            <Col className={MODAL_CLASS}>
-              <Col className="w-full">
-                <SmallResolutionPanel
-                  contract={contract}
-                  user={user}
-                  setOpen={setOpen}
-                />
-              </Col>
+          <Modal open={open} setOpen={setOpen} size="md">
+            <Col className={clsx(MODAL_CLASS, 'items-stretch !gap-0')}>
+              <SmallResolutionPanel
+                contract={contract}
+                user={user}
+                setOpen={setOpen}
+              />
             </Col>
           </Modal>
         )}
