@@ -37,7 +37,7 @@ export default function MessagesPage() {
   )?.filter((u) => !privateUser?.blockedUserIds.includes(u.id))
 
   return (
-    <Page trackPageView={'messages page'} className={'bg-canvas-0 p-2'}>
+    <Page trackPageView={'messages page'} className={'p-2'}>
       <Title>Messages</Title>
       <Col className={'w-full gap-2 overflow-hidden'}>
         {currentUser && channelIds.length === 0 && (
@@ -110,7 +110,7 @@ const MessageChannelRow = (props: {
           {unseen && (
             <div
               className={clsx(
-                'text-ink-0 bg-primary-500 h-4 min-w-[15px] rounded-full p-[2px] text-center text-[10px] '
+                'text-canvas-0 bg-primary-500 h-4 min-w-[15px] rounded-full p-[2px] text-center text-[10px] '
               )}
             />
           )}
