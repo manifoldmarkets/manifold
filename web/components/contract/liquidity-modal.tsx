@@ -27,7 +27,7 @@ export function LiquidityModal(props: {
       <Col className="bg-canvas-0 gap-2.5  rounded p-4 pb-8 sm:gap-4">
         <Title className="!mb-2">💧 Subsidize this market</Title>
 
-        <div className="text-lg italic text-gray-700">
+        <div className="text-lg italic text-ink-600">
           The higher the stakes, the more winners make.
         </div>
         <div>
