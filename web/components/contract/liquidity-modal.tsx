@@ -11,7 +11,6 @@ import { Modal } from '../layout/modal'
 import { Row } from '../layout/row'
 import { Title } from '../widgets/title'
 import { ENV_CONFIG } from 'common/envs/constants'
-import { InfoTooltip } from '../widgets/info-tooltip'
 import { SUBSIDY_FEE } from 'common/economy'
 
 export function LiquidityModal(props: {
