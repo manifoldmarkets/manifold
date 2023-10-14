@@ -29,12 +29,14 @@ export const PortfolioValueSection = memo(
       useState<Period>(defaultTimePeriod)
     const portfolioHistory = usePortfolioHistory(userId, currentTimePeriod)
     const [graphMode, setGraphMode] = useState<GraphMode>('profit')
+
+    const first = portfolioHistory?.[0]
+    const firstProfit = first
+      ? first.balance + first.investmentValue - first.totalDeposits
+      : 0
+
     const graphPoints = useMemo(() => {
       if (!portfolioHistory?.length) return []
-
-      const first = portfolioHistory[0]
-      const firstValue =
-        first.balance + first.investmentValue - first.totalDeposits
 
       return portfolioHistory.map((p) => ({
         x: p.timestamp,
@@ -43,7 +45,7 @@ export const PortfolioValueSection = memo(
             ? p.balance
             : graphMode === 'value'
             ? p.balance + p.investmentValue
-            : p.balance + p.investmentValue - p.totalDeposits - firstValue,
+            : p.balance + p.investmentValue - p.totalDeposits - firstProfit,
         obj: p,
       }))
     }, [portfolioHistory, graphMode])
@@ -126,10 +128,10 @@ export const PortfolioValueSection = memo(
       )
     }
 
-    const { balance, investmentValue } = lastPortfolioMetrics
+    const { balance, investmentValue, totalDeposits } = lastPortfolioMetrics
     const totalValue = balance + investmentValue
-    const profit = last(graphPoints)!.y
 
+    const profit = totalValue - totalDeposits - firstProfit
     return (
       <PortfolioValueSkeleton
         userId={userId}
@@ -164,10 +166,8 @@ export const PortfolioValueSection = memo(
         }
         balanceElement={
           <div className={clsx('text-lg text-blue-600 sm:text-xl')}>
-            {graphMode === 'balance'
+            {graphMode === 'balance' && graphDisplayNumber
               ? graphDisplayNumber
-                ? graphDisplayNumber
-                : formatMoney(balance)
               : formatMoney(balance)}
           </div>
         }
