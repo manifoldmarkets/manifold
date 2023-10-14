@@ -32,12 +32,7 @@ export function LiquidityModal(props: {
         </div>
         <div>
           Pay traders to answer your question! Subsidies incentivize traders to
-          make the probability accurate.{' '}
-          <InfoTooltip
-            text={`Your mana will be added to the subsidy pool after a ${formatPercent(
-              SUBSIDY_FEE
-            )} fee is assessed.`}
-          />
+          make the probability accurate.
         </div>
         <div className="mb-4">
           Total subsidy pool:{' '}
@@ -110,6 +105,10 @@ function AddLiquidityPanel(props: {
           Pay
         </Button>
       </Row>
+
+      <div className="text-ink-600 text-xs">
+        Note: Manifold charges a {formatPercent(SUBSIDY_FEE)} fee on subsidies.
+      </div>
 
       {error && <div className="text-error">{error}</div>}
 
