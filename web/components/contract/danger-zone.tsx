@@ -109,7 +109,7 @@ export function DangerZone(props: {
             : isAdmin
             ? 'Admin resolve'
             : trustworthy
-            ? 'Trustworthy resolve'
+            ? 'Mod resolve'
             : ''}
         </Button>
       )}

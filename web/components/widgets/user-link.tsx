@@ -180,7 +180,7 @@ function ModBadge() {
   return (
     <Tooltip text="Trustworthy. ish." placement="right">
       <ShieldCheckIcon
-        className="text-primary-700 h-4 w-4"
+        className="h-4 w-4 text-purple-700 dark:text-purple-400"
         aria-hidden="true"
       />
     </Tooltip>
@@ -191,10 +191,7 @@ function ModBadge() {
 function VerifiedBadge() {
   return (
     <Tooltip text="It's really me!" placement="right">
-      <BadgeCheckIcon
-        className="h-4 w-4 text-purple-700 dark:text-purple-400"
-        aria-hidden
-      />
+      <BadgeCheckIcon className="text-primary-700 h-4 w-4" aria-hidden />
     </Tooltip>
   )
 }
