@@ -35,7 +35,10 @@ export default function LivePage() {
             placeholder={'Filter by topic'}
           />
         </Row>
-        <ActivityLog count={30} topicSlugs={topicSlug ? [topicSlug] : []} />
+        <ActivityLog
+          count={30}
+          topicSlugs={topicSlug ? [topicSlug] : undefined}
+        />
       </Col>
     </Page>
   )
