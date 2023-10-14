@@ -96,8 +96,8 @@ export const LeagueChat = (props: {
         <Col
           className={clsx(
             'gap-2 overflow-y-scroll pb-2 ',
-            'max-h-[calc(100vh-13rem)] min-h-[calc(100vh-13rem)]',
-            'lg:max-h-[calc(100vh-11rem)] lg:min-h-[calc(100vh-11rem)]'
+            'max-h-[calc(100vh-23.5rem)] min-h-[calc(100vh-23.5rem)]',
+            'lg:max-h-[calc(100vh-21rem)] lg:min-h-[calc(100vh-21rem)]'
           )}
         >
           {realtimeMessages === undefined ? (
