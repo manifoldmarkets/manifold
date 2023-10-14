@@ -1,4 +1,4 @@
-import { UserIcon, XIcon } from '@heroicons/react/solid'
+import { UserIcon, XIcon, ChartBarIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { first, mergeWith } from 'lodash'
 import Head from 'next/head'
@@ -92,7 +92,11 @@ import { getUser } from 'web/lib/supabase/user'
 import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
 import { useHeaderIsStuck } from 'web/hooks/use-header-is-stuck'
 import { DangerZone } from 'web/components/contract/danger-zone'
-import { formatMoney, shortFormatNumber } from 'common/util/format'
+import {
+  formatMoney,
+  formatWithCommas,
+  shortFormatNumber,
+} from 'common/util/format'
 export async function getStaticProps(ctx: {
   params: { username: string; contractSlug: string }
 }) {
@@ -521,10 +525,34 @@ export function ContractPageContent(props: {
                   />
                 ) : (
                   <div className="flex gap-4">
+                    <Tooltip
+                      text={
+                        contract.outcomeType == 'POLL' ? 'Voters' : 'Traders'
+                      }
+                      placement="bottom"
+                      noTap
+                      className="flex flex-row items-center gap-1"
+                    >
+                      <UserIcon className="text-ink-500 h-4 w-4" />
+                      <div>{formatWithCommas(uniqueBettorCount ?? 0)}</div>
+                    </Tooltip>
+
+                    {!!contract.volume && (
+                      <Tooltip
+                        text={`Trading volume: ${formatMoney(contract.volume)}`}
+                        placement="bottom"
+                        noTap
+                        className="hidden flex-row items-center gap-1 sm:flex"
+                      >
+                        <ChartBarIcon className="text-ink-500 h-4 w-4" />Ṁ
+                        {shortFormatNumber(contract.volume)}
+                      </Tooltip>
+                    )}
+
                     {(contract.mechanism === 'cpmm-1' ||
                       contract.mechanism === 'cpmm-multi-1') && (
                       <Tooltip
-                        text={`Liquidity subsidy pool: ${formatMoney(
+                        text={`Subsidy pool: ${formatMoney(
                           contract.totalLiquidity
                         )}`}
                         placement="bottom"
@@ -536,18 +564,6 @@ export function ContractPageContent(props: {
                         </div>
                       </Tooltip>
                     )}
-
-                    <Tooltip
-                      text={
-                        contract.outcomeType == 'POLL' ? 'Voters' : 'Traders'
-                      }
-                      placement="bottom"
-                      noTap
-                      className="flex flex-row items-center gap-1"
-                    >
-                      <UserIcon className="text-ink-500 h-4 w-4" />
-                      <div>{uniqueBettorCount ?? 0}</div>
-                    </Tooltip>
 
                     <CloseOrResolveTime
                       contract={contract}

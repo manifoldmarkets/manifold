@@ -190,7 +190,7 @@ export function CloseDate(props: {
           closeTime && (
             <DateTimeTooltip
               text={
-                closeTime <= Date.now() ? 'Trading ended:' : 'Trading ends:'
+                closeTime <= Date.now() ? 'Market closed:' : 'Market closes:'
               }
               time={closeTime}
               placement="bottom-end"
