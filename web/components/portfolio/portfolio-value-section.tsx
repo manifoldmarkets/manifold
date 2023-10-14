@@ -231,7 +231,7 @@ function PortfolioValueSkeleton(props: {
   const profitLabel = {
     daily: 'Profit 1D',
     weekly: 'Profit 1W',
-    monthly: 'Proit 1M',
+    monthly: 'Profit 1M',
     allTime: 'Profit',
   }[currentTimePeriod]
 
