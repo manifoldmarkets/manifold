@@ -1,6 +1,6 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
-import { groupBy, mapValues, uniq } from 'lodash'
+import { groupBy, mapValues, sumBy, uniq } from 'lodash'
 
 import { log, revalidateStaticProps } from 'shared/utils'
 import { Bet } from 'common/bet'
@@ -87,7 +87,12 @@ export async function updateUserMetricsCore() {
     userIds,
     monthAgo
   )
-  log('Loaded bets.')
+  log(
+    `Loaded ${sumBy(
+      Object.values(metricRelevantBets),
+      (bets) => bets.length
+    )} bets.`
+  )
 
   log('Loading contracts...')
   const allBets = Object.values(metricRelevantBets).flat()
@@ -100,7 +105,8 @@ export async function updateUserMetricsCore() {
 
   for (const [contractId, answers] of Object.entries(answersByContractId)) {
     // Denormalize answers onto the contract.
-    (contractsById[contractId] as CPMMMultiContract).answers = answers
+    // eslint-disable-next-line no-extra-semi
+    ;(contractsById[contractId] as CPMMMultiContract).answers = answers
   }
 
   log(`Loaded ${contracts.length} contracts.`)
@@ -223,7 +229,11 @@ const getMetricRelevantUserBets = async (
     `select cb.data
     from contract_bets as cb
     join contracts as c on cb.contract_id = c.id
-    where cb.user_id in ($1:list) and (c.resolution_time is null or c.resolution_time > $2)
+    left join answers as a on cb.answer_id = a.id
+    where
+      cb.user_id in ($1:list)
+      and (c.resolution_time is null or c.resolution_time > $2)
+      and (a is null or a.data->'resolution' is null)
     order by cb.created_time asc`,
     [userIds, new Date(since).toISOString()]
   )
