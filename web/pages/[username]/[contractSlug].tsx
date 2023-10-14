@@ -510,7 +510,7 @@ export function ContractPageContent(props: {
                 <MarketTopics contract={contract} />
               </Col>
 
-              <div className="text-ink-600 flex items-center justify-between text-sm">
+              <div className="text-ink-600 flex flex-wrap items-center justify-between gap-y-1 text-sm">
                 <AuthorInfo contract={contract} />
 
                 {contract.outcomeType == 'BOUNTIED_QUESTION' ? (

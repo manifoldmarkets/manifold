@@ -195,9 +195,9 @@ export function CloseDate(props: {
               time={closeTime}
               placement="bottom-end"
               noTap
-              className="flex items-center"
+              className="flex items-center grayscale"
             >
-              {dayjs().isBefore(closeTime) ? 'closes' : 'closed'}{' '}
+              {dayjs().isBefore(closeTime) ? '⏳' : '⌛️'}{' '}
               {isSameDay
                 ? fromNow(closeTime)
                 : isSameYear || isSoon
@@ -207,7 +207,7 @@ export function CloseDate(props: {
           )
         )}
         {editable && (
-          <PencilIcon className="sm:group-hover:fill-ink-600 h-4 w-4 sm:fill-transparent" />
+          <PencilIcon className="sm:group-hover:fill-ink-600 hidden h-4 w-4 sm:flex sm:fill-transparent" />
         )}
       </Row>
     </>
