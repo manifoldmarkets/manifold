@@ -111,7 +111,6 @@ const CONTRACT_TYPES = [
   { label: 'Any type', value: 'ALL' },
   { label: 'Yes/No', value: 'BINARY' },
   { label: 'Multiple Choice', value: 'MULTIPLE_CHOICE' },
-  { label: 'Free Response', value: 'FREE_RESPONSE' },
   { label: 'Numeric', value: 'PSEUDO_NUMERIC' },
   { label: 'Bounty', value: 'BOUNTIED_QUESTION' },
   { label: 'Stock', value: 'STONK' },
