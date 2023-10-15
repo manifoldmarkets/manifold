@@ -285,7 +285,7 @@ export function SupabaseSearch(props: {
       'createdTime',
       'isBannedFromPosting',
     ])
-    setQueriedUserResults(results)
+    return results
   })
 
   const queryTopics = useEvent(async (query: string) => {
@@ -300,14 +300,21 @@ export function SupabaseSearch(props: {
           f.name.toLowerCase().includes(query.toLowerCase()) ||
           f.slug.toLowerCase().includes(query.toLowerCase())
       ) ?? []
-    setTopicResults(uniqBy(followedTopics.concat(groupResults), 'name'))
+    return uniqBy(followedTopics.concat(groupResults), 'name')
   })
 
+  const searchCountRef = useRef(0)
   useEffect(() => {
     if (!searchParams || isEqual(searchParams, lastSearch)) return
+    const searchCount = ++searchCountRef.current
+
     queryContracts(FRESH_SEARCH_CHANGED_STATE, true)
-    queryUsers(queryAsString)
-    queryTopics(queryAsString)
+    queryUsers(queryAsString).then((results) => {
+      if (searchCount === searchCountRef.current) setQueriedUserResults(results)
+    })
+    queryTopics(queryAsString).then((results) => {
+      if (searchCount === searchCountRef.current) setTopicResults(results)
+    })
   }, [JSON.stringify(searchParams)])
 
   const emptyContractsState =
