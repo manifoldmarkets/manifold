@@ -1,9 +1,6 @@
 import clsx from 'clsx'
 import { ELASTICITY_BET_AMOUNT } from 'common/calculate-metrics'
-import {
-  Contract,
-  contractPool,
-} from 'common/contract'
+import { Contract, contractPool } from 'common/contract'
 import {
   ENV_CONFIG,
   firestoreConsolePath,
@@ -17,9 +14,7 @@ import { toast } from 'react-hot-toast'
 import { TiVolumeMute } from 'react-icons/ti'
 import { BlockMarketButton } from 'web/components/buttons/block-market-button'
 import { FollowMarketButton } from 'web/components/buttons/follow-market-button'
-import {
-  useDev,
-} from 'web/hooks/use-admin'
+import { useDev } from 'web/hooks/use-admin'
 import {
   addContractToGroup,
   removeContractFromGroup,
