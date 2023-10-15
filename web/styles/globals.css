@@ -153,7 +153,8 @@
 
 @font-face {
   font-family: 'icomoon';
-  src: url('../public/fonts/icomoon.eot?v49ui9#iefix') format('embedded-opentype'),
+  src: url('../public/fonts/icomoon.eot?v49ui9#iefix')
+      format('embedded-opentype'),
     url('../public/fonts/icomoon.ttf?v49ui9') format('truetype'),
     url('../public/fonts/icomoon.woff?v49ui9') format('woff'),
     url('../public/fonts/icomoon.svg?v49ui9#icomoon') format('svg');
