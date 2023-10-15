@@ -40,6 +40,10 @@ export const AUTH_COOKIE_NAME = `FBUSER_${PROJECT_ID.toUpperCase().replace(
 export const CORS_ORIGIN_MANIFOLD = new RegExp(
   '^https?://(?:[a-zA-Z0-9\\-]+\\.)*' + escapeRegExp(ENV_CONFIG.domain) + '$'
 )
+// Manifold's domain or any subdomains thereof
+export const CORS_ORIGIN_MANIFOLD_LOVE = new RegExp(
+  '^https?://(?:[a-zA-Z0-9\\-]+\\.)*' + escapeRegExp(ENV_CONFIG.loveDomain) + '$'
+)
 // Vercel deployments, used for testing.
 export const CORS_ORIGIN_VERCEL = new RegExp(
   '^https?://[a-zA-Z0-9\\-]+' + escapeRegExp('mantic.vercel.app') + '$'
