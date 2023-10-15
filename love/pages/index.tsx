@@ -1,5 +1,3 @@
-import Link from 'next/link'
-
 import { Page } from 'web/components/layout/page'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
