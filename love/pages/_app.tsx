@@ -69,7 +69,6 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
   useEffect(printBuildInfo, [])
   useHasLoaded()
   useRefreshAllClients()
-  useReloadIfClientOld()
 
   const title = 'Manifold.love — Bet on love!'
   const description =
