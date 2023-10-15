@@ -560,3 +560,9 @@ export function sendUserPrivateMessage(params: {
 }) {
   return call(getApiUrl('create-private-user-message'), 'POST', params)
 }
+export function createLover(params: any) {
+  return call(getApiUrl('create-lover'), 'POST', params)
+}
+export function updateLover(params: any) {
+  return call(getApiUrl('update-lover'), 'POST', params)
+}
