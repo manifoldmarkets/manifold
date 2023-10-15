@@ -16,7 +16,6 @@ import { useUser } from 'web/hooks/use-user'
 import { AddLiquidityButton } from './add-liquidity-button'
 import { ShareIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
-import { ShareQRButton } from '../buttons/share-qr-button'
 import { AddBountyButton } from './bountied-question'
 
 export function CreatorShareBoostPanel(props: { contract: Contract }) {

@@ -1,10 +1,8 @@
-import { CheckIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { ELASTICITY_BET_AMOUNT } from 'common/calculate-metrics'
 import {
   Contract,
   contractPool,
-  MINUTES_ALLOWED_TO_UNRESOLVE,
 } from 'common/contract'
 import {
   ENV_CONFIG,
@@ -15,16 +13,12 @@ import {
 import { BETTORS, User } from 'common/user'
 import { formatMoney } from 'common/util/format'
 import { capitalize, sumBy } from 'lodash'
-import { useState } from 'react'
 import { toast } from 'react-hot-toast'
 import { TiVolumeMute } from 'react-icons/ti'
 import { BlockMarketButton } from 'web/components/buttons/block-market-button'
 import { FollowMarketButton } from 'web/components/buttons/follow-market-button'
 import {
-  useAdmin,
-  useAdminOrTrusted,
   useDev,
-  useTrusted,
 } from 'web/hooks/use-admin'
 import {
   addContractToGroup,
