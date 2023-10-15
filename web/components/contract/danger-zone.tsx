@@ -1,4 +1,4 @@
-import { Contract } from 'common/contract'
+import { Contract, MINUTES_ALLOWED_TO_UNRESOLVE } from 'common/contract'
 import { isTrustworthy } from 'common/envs/constants'
 import { useEffect } from 'react'
 import { useAdmin } from 'web/hooks/use-admin'
@@ -7,6 +7,8 @@ import { Button } from '../buttons/button'
 import { DeleteMarketButton } from '../buttons/delete-market-button'
 import { Row } from '../layout/row'
 import { WEEK_MS } from 'common/util/time'
+import dayjs from 'dayjs'
+import { UnresolveButton } from '../buttons/unresolve-button'
 
 export function DangerZone(props: {
   contract: Contract
@@ -31,6 +33,7 @@ export function DangerZone(props: {
     mechanism,
     isResolved,
     resolution,
+    resolutionTime,
     uniqueBettorCount,
   } = contract
 
@@ -59,6 +62,15 @@ export function DangerZone(props: {
     outcomeType !== 'STONK' &&
     mechanism !== 'none'
 
+  const now = dayjs().utc()
+  const creatorCanUnresolve =
+    isCreator &&
+    resolutionTime &&
+    now.diff(dayjs(resolutionTime), 'minute') < MINUTES_ALLOWED_TO_UNRESOLVE
+
+  const canUnresolve =
+    (isAdmin || trustworthy || (isCreator && creatorCanUnresolve)) && isResolved
+
   useEffect(() => {
     if (
       canReview &&
@@ -82,7 +94,7 @@ export function DangerZone(props: {
   const highlightResolver = isClosed && !showResolver
 
   if (!user) return null
-  if (!canReview && !canDelete && !canResolve) return null
+  if (!canReview && !canDelete && !canResolve && !canUnresolve) return null
 
   return (
     <Row className="my-2 w-full flex-wrap justify-end gap-2">
@@ -113,6 +125,7 @@ export function DangerZone(props: {
             : ''}
         </Button>
       )}
+      {canUnresolve && <UnresolveButton contractId={contract.id} />}
     </Row>
   )
 }

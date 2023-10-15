@@ -129,6 +129,7 @@ export const ContractHistoryButton = (props: {
     <>
       <Button
         color="gray-outline"
+        size="sm"
         onClick={() => setShowEditHistory(true)}
         className={className}
       >

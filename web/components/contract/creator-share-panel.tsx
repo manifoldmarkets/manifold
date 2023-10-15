@@ -17,6 +17,7 @@ import { AddLiquidityButton } from './add-liquidity-button'
 import { ShareIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { ShareQRButton } from '../buttons/share-qr-button'
+import { AddBountyButton } from './bountied-question'
 
 export function CreatorShareBoostPanel(props: { contract: Contract }) {
   const { contract } = props
@@ -26,6 +27,9 @@ export function CreatorShareBoostPanel(props: { contract: Contract }) {
       <div className="mb-2 flex flex-wrap gap-2">
         <BoostButton contract={contract} color="gradient-pink" />
         <AddLiquidityButton contract={contract} />
+        {contract.outcomeType == 'BOUNTIED_QUESTION' && (
+          <AddBountyButton contract={contract} />
+        )}
         <ShareLinkButton contract={contract} />
 
         <TweetButton
@@ -35,7 +39,6 @@ export function CreatorShareBoostPanel(props: { contract: Contract }) {
           }
           className="hidden sm:flex"
         />
-        <ShareQRButton contract={contract} className="hidden sm:flex" />
       </div>
 
       {contract.outcomeType !== 'POLL' && (
@@ -56,12 +59,14 @@ export function NonCreatorSharePanel(props: { contract: Contract }) {
     <Row className="my-4 flex-wrap gap-4">
       <BoostButton contract={contract} color="indigo-outline" />
       <AddLiquidityButton contract={contract} />
+      {contract.outcomeType == 'BOUNTIED_QUESTION' && (
+        <AddBountyButton contract={contract} />
+      )}
       <ShareLinkButton contract={contract} username={user?.username} />
       <TweetButton
         tweetText={getShareUrl(contract, user?.username)}
         className="hidden sm:flex"
       />
-      <ShareQRButton contract={contract} className="hidden sm:flex" />
     </Row>
   )
 }

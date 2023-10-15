@@ -1,4 +1,3 @@
-import { DuplicateIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { Contract } from 'common/contract'
 import { getMappedValue } from 'common/pseudo-numeric'
@@ -18,8 +17,7 @@ export function DuplicateContractButton(props: { contract: Contract }) {
       onClick={trackCallback('duplicate market')}
       target={getLinkTarget(href, true)}
     >
-      <DuplicateIcon className="h-4 w-4" aria-hidden="true" />
-      <div>Duplicate</div>
+      Duplicate
     </Link>
   )
 }

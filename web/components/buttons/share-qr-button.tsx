@@ -1,4 +1,3 @@
-import { QrcodeIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { Contract } from 'common/contract'
 import { getShareUrl } from 'common/util/share'
@@ -26,8 +25,7 @@ export function ShareQRButton(props: {
         className={clsx('gap-1', className)}
         onClick={() => setOpen(true)}
       >
-        <QrcodeIcon className="h-4 w-4" aria-hidden />
-        <span>QR</span>
+        QR
       </Button>
       <Modal size="sm" open={open} setOpen={setOpen}>
         <div className="flex flex-col items-center">

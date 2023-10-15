@@ -6,7 +6,12 @@ import {
   contractPool,
   MINUTES_ALLOWED_TO_UNRESOLVE,
 } from 'common/contract'
-import { ENV_CONFIG, firestoreConsolePath } from 'common/envs/constants'
+import {
+  ENV_CONFIG,
+  firestoreConsolePath,
+  isAdminId,
+  isTrustworthy,
+} from 'common/envs/constants'
 import { BETTORS, User } from 'common/user'
 import { formatMoney } from 'common/util/format'
 import { capitalize, sumBy } from 'lodash'
@@ -15,11 +20,15 @@ import { toast } from 'react-hot-toast'
 import { TiVolumeMute } from 'react-icons/ti'
 import { BlockMarketButton } from 'web/components/buttons/block-market-button'
 import { FollowMarketButton } from 'web/components/buttons/follow-market-button'
-import { useAdminOrTrusted, useDev } from 'web/hooks/use-admin'
+import {
+  useAdmin,
+  useAdminOrTrusted,
+  useDev,
+  useTrusted,
+} from 'web/hooks/use-admin'
 import {
   addContractToGroup,
   removeContractFromGroup,
-  unresolveMarket,
   updateMarket,
   updateUserDisinterestEmbedding,
 } from 'web/lib/firebase/api'
@@ -28,45 +37,33 @@ import { Button } from '../buttons/button'
 import { CopyLinkOrShareButton } from '../buttons/copy-link-button'
 import { DuplicateContractButton } from '../buttons/duplicate-contract-button'
 import { ReportButton } from '../buttons/report-button'
-import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
 import { Row } from '../layout/row'
 import { InfoTooltip } from '../widgets/info-tooltip'
-import { Input } from '../widgets/input'
 import ShortToggle from '../widgets/short-toggle'
 import { Table } from '../widgets/table'
-import { AddBountyButton } from './bountied-question'
-import dayjs from 'dayjs'
 import { NON_PREDICTIVE_GROUP_ID } from 'common/supabase/groups'
 import { ContractHistoryButton } from './contract-edit-history-button'
 import { ShareEmbedButton } from '../buttons/share-embed-button'
-import { QRCode } from '../widgets/qr-code'
-import { getShareUrl } from 'common/util/share'
+import { ShareQRButton } from '../buttons/share-qr-button'
 
 export const Stats = (props: {
   contract: Contract
   user?: User | null | undefined
   hideAdvanced?: boolean
-  setOpen: (open: boolean) => void
 }) => {
-  const { contract, setOpen, user, hideAdvanced } = props
+  const { contract, user, hideAdvanced } = props
 
   const isDev = useDev()
-  const isMod = useAdminOrTrusted()
+  const isAdmin = !!user && isAdminId(user?.id)
+  const isTrusty = !!user && isTrustworthy(user?.username)
+  const isMod = isAdmin || isTrusty
   const isCreator = user?.id === contract.creatorId
   const isPublic = contract.visibility === 'public'
   const wasUnlistedByCreator = contract.unlistedById
     ? contract.unlistedById === contract.creatorId
     : false
-  const now = dayjs().utc()
-  const creatorCanUnresolve =
-    contract.resolutionTime &&
-    isCreator &&
-    now.diff(dayjs(contract.resolutionTime), 'minute') <
-      MINUTES_ALLOWED_TO_UNRESOLVE
-  const [unresolveText, setUnresolveText] = useState('')
-  const [unresolving, setUnresolving] = useState(false)
-  const [error, setError] = useState('')
+
   const {
     createdTime,
     closeTime,
@@ -89,43 +86,42 @@ export const Stats = (props: {
       ? 'Bounty'
       : outcomeType === 'POLL'
       ? 'Poll'
-      : 'Numeric'
+      : outcomeType === 'NUMERIC' || outcomeType === 'PSEUDO_NUMERIC'
+      ? 'Numeric'
+      : outcomeType.toLowerCase()
+
+  const mechanismDisplay =
+    mechanism === 'cpmm-1'
+      ? {
+          label: 'Fixed',
+          desc: `Each YES share is worth ${ENV_CONFIG.moneyMoniker}1 if YES wins`,
+        }
+      : mechanism === 'cpmm-2' || mechanism === 'cpmm-multi-1'
+      ? {
+          label: 'Fixed',
+          desc: `Each share in an outcome is worth ${ENV_CONFIG.moneyMoniker}1 if it is chosen`,
+        }
+      : mechanism == 'dpm-2'
+      ? { label: 'Parimutuel', desc: 'Each share is a fraction of the pool' }
+      : { label: 'Mistake', desc: "Likely one of Austin's bad ideas" }
 
   const isBettingContract = contract.mechanism !== 'none'
   return (
     <Table>
       <tbody>
-        {!hideAdvanced && (
-          <tr>
-            <td>Type</td>
-            <td className="flex gap-1">
-              {typeDisplay}
-              <div className="mx-1 select-none">&middot;</div>
-              {mechanism === 'cpmm-1' ? (
-                <>
-                  Fixed{' '}
-                  <InfoTooltip
-                    text={`Each YES share is worth ${ENV_CONFIG.moneyMoniker}1 if YES wins.`}
-                  />
-                </>
-              ) : mechanism === 'cpmm-2' || mechanism === 'cpmm-multi-1' ? (
-                <>
-                  Fixed{' '}
-                  <InfoTooltip
-                    text={`Each share in an outcome is worth ${ENV_CONFIG.moneyMoniker}1 if it is chosen.`}
-                  />
-                </>
-              ) : mechanism == 'none' ? (
-                <></>
-              ) : (
-                <>
-                  Parimutuel{' '}
-                  <InfoTooltip text="Each share is a fraction of the pool. " />
-                </>
-              )}
-            </td>
-          </tr>
-        )}
+        <tr>
+          <td>Type</td>
+          <td className="flex gap-1">
+            {typeDisplay}
+            {mechanismDisplay && (
+              <>
+                <div className="mx-1 select-none">&middot;</div>
+                {mechanismDisplay.label}{' '}
+                <InfoTooltip text={mechanismDisplay.desc} />
+              </>
+            )}
+          </td>
+        </tr>
 
         <tr>
           <td>Question created</td>
@@ -250,81 +246,38 @@ export const Stats = (props: {
         )}
 
         {/* Show a path to Firebase if user is an admin, or we're on localhost */}
-        {!hideAdvanced && (isMod || isDev) && (
+        {!hideAdvanced && (isAdmin || isDev) && (
           <>
-            <tr className="bg-scarlet-500/20">
+            <tr className="bg-purple-500/30">
               <td>Firestore link</td>
               <td>
                 <a
                   href={firestoreConsolePath(id)}
                   target="_blank"
-                  className="text-primary-400"
+                  className="text-primary-600"
                   rel="noreferrer"
                 >
                   {id}
                 </a>
-                <CopyLinkOrShareButton
-                  url={id}
-                  tooltip="Copy link to contract id"
-                  eventTrackingName={'admin copy contract id'}
-                />
               </td>
             </tr>
-            <tr className="bg-scarlet-500/20">
+            <tr className="bg-purple-500/30">
               <td>SQL query</td>
               <td>
-                <span>select * from contracts...</span>
+                <span className="trucnate">select * from contracts...</span>
                 <CopyLinkOrShareButton
                   url={`select * from contracts where id = '${id}';`}
                   tooltip="Copy sql query to contract id"
                   eventTrackingName={'admin copy contract id'}
+                  className="!py-0 align-middle"
                 />
               </td>
             </tr>
           </>
         )}
-        {contract.isResolved && (isMod || creatorCanUnresolve) && (
-          <tr className="bg-scarlet-500/20">
-            <td>Unresolve</td>
-            <td>
-              <Row className={'gap-2'}>
-                {/* To prevent accidental unresolve, users must type in 'UNRESOLVE' first */}
-                <Input
-                  className="w-40 text-xs"
-                  type="text"
-                  placeholder="UNRESOLVE"
-                  value={unresolveText}
-                  onChange={(e) => setUnresolveText(e.target.value)}
-                />
-                <Button
-                  onClick={() => {
-                    if (unresolving) return
-                    setUnresolving(true)
-                    unresolveMarket({ contractId: id })
-                      .then(() => {
-                        setUnresolving(false)
-                        setUnresolveText('')
-                        setOpen(false)
-                      })
-                      .catch((e) => {
-                        setUnresolving(false)
-                        setError(e.message)
-                      })
-                  }}
-                  disabled={unresolveText !== 'UNRESOLVE' || unresolving}
-                  size="2xs"
-                  color="red"
-                >
-                  <CheckIcon className=" text-ink-100 h-4 w-4" />
-                </Button>
-              </Row>
-              <span className={'text-warning'}>{error}</span>
-            </td>
-          </tr>
-        )}
 
         {!hideAdvanced && contract.visibility != 'private' && (
-          <tr className={clsx(isMod && 'bg-scarlet-500/20')}>
+          <tr className={clsx(isMod && 'bg-purple-500/30')}>
             <td>
               Publicly listed{' '}
               <InfoTooltip
@@ -337,6 +290,7 @@ export const Stats = (props: {
             </td>
             <td>
               <ShortToggle
+                className="align-middle"
                 disabled={
                   isPublic
                     ? !(isCreator || isMod)
@@ -354,22 +308,23 @@ export const Stats = (props: {
           </tr>
         )}
         {!hideAdvanced && isBettingContract && (
-          <tr className={clsx(isMod && 'bg-scarlet-500/20')}>
+          <tr className={clsx(isMod && 'bg-purple-500/30')}>
             <td>
-              Non predictive
+              In leagues{' '}
               <InfoTooltip
                 text={
-                  'If marked as non-predictive, profits do not contribute to leagues.'
+                  'Whether profit count torward leagues - typically off for non-predictive questions'
                 }
               />
             </td>
             <td>
               <ShortToggle
+                className="align-middle"
                 disabled={!isMod}
-                on={contract.nonPredictive === true}
+                on={!contract.nonPredictive}
                 setOn={(on) => {
                   toast.promise(
-                    !on
+                    on
                       ? removeContractFromGroup({
                           contractId: contract.id,
                           groupId: NON_PREDICTIVE_GROUP_ID,
@@ -383,13 +338,13 @@ export const Stats = (props: {
                         }),
                     {
                       loading: `${
-                        !on ? 'Removing' : 'Adding'
+                        on ? 'Removing' : 'Adding'
                       } question to non-predictive group...`,
                       success: `Successfully ${
-                        !on ? 'removed' : 'added'
+                        on ? 'removed' : 'added'
                       } question to non-predictive group!`,
                       error: `Error ${
-                        !on ? 'removing' : 'adding'
+                        on ? 'removing' : 'adding'
                       } category. Try again?`,
                     }
                   )
@@ -410,64 +365,40 @@ export function ContractInfoDialog(props: {
   setOpen: (open: boolean) => void
 }) {
   const { contract, user, open, setOpen } = props
-  const shareUrl = getShareUrl(contract, user?.username)
 
   return (
-    <Modal open={open} setOpen={setOpen}>
-      <Col className="bg-canvas-0 gap-4 rounded p-6">
-        <Row className={'items-center justify-between'}>
-          <div className="text-primary-700 line-clamp-2">
-            {contract.question}
-          </div>
-          <FollowMarketButton contract={contract} user={user} />
-        </Row>
+    <Modal
+      open={open}
+      setOpen={setOpen}
+      className="bg-canvas-0 flex flex-col gap-4 rounded p-6"
+    >
+      <FollowMarketButton contract={contract} user={user} />
 
-        <Col>
-          <Stats
-            setOpen={setOpen}
-            contract={contract}
-            user={user}
-            hideAdvanced={!user}
-          />
+      <Stats contract={contract} user={user} hideAdvanced={!user} />
 
-          {!!user && (
-            <>
-              <Row className="mt-4 flex-wrap gap-2">
-                <DuplicateContractButton contract={contract} />
-                {contract.outcomeType == 'BOUNTIED_QUESTION' && (
-                  <AddBountyButton contract={contract} />
-                )}
-                <ContractHistoryButton contract={contract} />
-                {/* <ShareQRButton contract={contract} /> */}
-                <ShareEmbedButton contract={contract} />
-              </Row>
-              <Row className="mt-4 flex-wrap gap-2">
-                <ReportButton
-                  report={{
-                    contentId: contract.id,
-                    contentType: 'contract',
-                    contentOwnerId: contract.creatorId,
-                  }}
-                />
+      {!!user && (
+        <>
+          <Row className="flex-wrap gap-2">
+            <DuplicateContractButton contract={contract} />
 
-                <BlockMarketButton contract={contract} />
-                <DisinterestedButton contract={contract} user={user} />
-              </Row>
-            </>
-          )}
-        </Col>
+            <ContractHistoryButton contract={contract} />
+            <ShareQRButton contract={contract} />
+            <ShareEmbedButton contract={contract} />
+          </Row>
+          <Row className="flex-wrap gap-2">
+            <ReportButton
+              report={{
+                contentId: contract.id,
+                contentType: 'contract',
+                contentOwnerId: contract.creatorId,
+              }}
+            />
 
-        <div className="flex flex-col items-center">
-          <QRCode
-            url={shareUrl}
-            width={250}
-            height={250}
-            className="self-center"
-          />
-        </div>
-
-        <Row className="items-center justify-start gap-4 rounded-md "></Row>
-      </Col>
+            <BlockMarketButton contract={contract} />
+            <DisinterestedButton contract={contract} user={user} />
+          </Row>
+        </>
+      )}
     </Modal>
   )
 }

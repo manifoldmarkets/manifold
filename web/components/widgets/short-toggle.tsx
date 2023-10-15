@@ -7,8 +7,9 @@ export default function ShortToggle(props: {
   setOn: (enabled: boolean) => void
   disabled?: boolean
   onChange?: (enabled: boolean) => void
+  className?: string
 }) {
-  const { on, setOn, disabled } = props
+  const { on, setOn, disabled, onChange, className } = props
 
   return (
     <Switch
@@ -16,13 +17,12 @@ export default function ShortToggle(props: {
       checked={on}
       onChange={(e: boolean) => {
         setOn(e)
-        if (props.onChange) {
-          props.onChange(e)
-        }
+        onChange?.(e)
       }}
       className={clsx(
         'ring-primary-500 ring-offset-canvas-50 group relative inline-flex h-5 w-10 flex-shrink-0 items-center justify-center rounded-full !outline-none ring-offset-2 focus:ring-2',
-        !disabled ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'
+        !disabled ? 'cursor-pointer' : 'cursor-not-allowed opacity-50',
+        className
       )}
     >
       <span
