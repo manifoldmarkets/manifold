@@ -630,21 +630,12 @@ export function ContractPageContent(props: {
               userHasBet={!!contractMetrics}
             />
             <ContractDescription contract={contract} />
-            <Row className="my-2 flex-wrap items-center justify-between gap-y-2">
-              {outcomeType === 'BOUNTIED_QUESTION' && (
-                <Link
-                  className={clsx(linkClass, 'text-primary-500 ml-2 text-sm')}
-                  href={`/browse?s=score&f=open&ct=BOUNTIED_QUESTION`}
-                >
-                  See all bounties &rarr;
-                </Link>
-              )}
-            </Row>
+            <Row className="my-2 flex-wrap items-center justify-between gap-y-2"></Row>
             {showExplainerPanel && (
               <ExplainerPanel className="bg-canvas-50 -mx-4 p-4 pb-0 xl:hidden" />
             )}
             {!user && <SidebarSignUpButton className="mb-4 flex md:hidden" />}
-            {!!user && contract.outcomeType !== 'BOUNTIED_QUESTION' && (
+            {!!user && (
               <ContractSharePanel
                 isClosed={isClosed}
                 isCreator={isCreator}
@@ -652,14 +643,16 @@ export function ContractPageContent(props: {
                 contract={contract}
               />
             )}
-            <RelatedContractsCarousel
-              className="-ml-4 mb-2 mt-4 xl:hidden"
-              contracts={relatedMarkets}
-              onContractClick={(c) =>
-                track('click related market', { contractId: c.id })
-              }
-              loadMore={loadMore}
-            />
+            {contract.outcomeType !== 'BOUNTIED_QUESTION' && (
+              <RelatedContractsCarousel
+                className="-ml-4 mb-2 mt-4 xl:hidden"
+                contracts={relatedMarkets}
+                onContractClick={(c) =>
+                  track('click related market', { contractId: c.id })
+                }
+                loadMore={loadMore}
+              />
+            )}
             {isResolved && resolution !== 'CANCEL' && (
               <>
                 <ContractLeaderboard
@@ -689,13 +682,14 @@ export function ContractPageContent(props: {
                 setActiveIndex={setActiveTabIndex}
               />
             </div>
-            {contract.outcomeType == 'BOUNTIED_QUESTION' && (
-              <ContractSharePanel
-                isClosed={isClosed}
-                isCreator={isCreator}
-                showResolver={showResolver}
-                contract={contract}
-                className={'mt-6 w-full'}
+            {contract.outcomeType === 'BOUNTIED_QUESTION' && (
+              <RelatedContractsCarousel
+                className="-ml-4 mb-2 mt-4 xl:hidden"
+                contracts={relatedMarkets}
+                onContractClick={(c) =>
+                  track('click related market', { contractId: c.id })
+                }
+                loadMore={loadMore}
               />
             )}
           </Col>
