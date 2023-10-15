@@ -1,16 +1,17 @@
-// pages/form.tsx
+import clsx from 'clsx'
+import { set } from 'lodash'
+
 import { useState } from 'react'
 import { Col } from 'web/components/layout/col'
 import { Input } from 'web/components/widgets/input'
 import { Button } from 'web/components/buttons/button'
-import { set } from 'lodash'
 import { Title } from 'web/components/widgets/title'
-import clsx from 'clsx'
 import { ChoicesToggleGroup } from 'web/components/widgets/choices-toggle-group'
 import { Checkbox } from 'web/components/widgets/checkbox'
 import { Row } from 'web/components/layout/row'
 import { createLover, updateLover } from 'web/lib/firebase/api'
 import { useLover } from 'web/hooks/use-lover'
+
 export default function SignupPage() {
   const [step, setStep] = useState(0)
   const lover = useLover()
