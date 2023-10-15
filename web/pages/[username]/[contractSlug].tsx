@@ -101,7 +101,7 @@ import {
   formatWithCommas,
   shortFormatNumber,
 } from 'common/util/format'
-import { TbDroplet, TbDropletDollar, TbMoneybag } from 'react-icons/tb'
+import { TbDroplet } from 'react-icons/tb'
 export async function getStaticProps(ctx: {
   params: { username: string; contractSlug: string }
 }) {
