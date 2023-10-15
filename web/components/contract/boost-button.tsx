@@ -59,8 +59,8 @@ export function BoostDialog(props: {
       <Col className="bg-canvas-0 gap-2.5  rounded p-4 pb-8 sm:gap-4">
         <Title className="!mb-2">🚀 Boost this question</Title>
 
-        <div className="text-ink-500 mb-2 text-base">
-          Pay to boost this question higher in people's feeds.{' '}
+        <div className="text-ink-600 mb-2">
+          Boost this question higher in people's feeds.{' '}
           <InfoTooltip text="Boosted questions target user interests. Users earn a reward for clicking on the question." />
         </div>
 
@@ -118,7 +118,6 @@ function BoostFormRow(props: { contract: Contract }) {
   return (
     <>
       <Row className="items-center justify-between">
-        Boost amount{' '}
         <AmountInput
           amount={totalCost}
           onChangeAmount={setTotalCost}

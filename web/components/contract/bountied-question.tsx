@@ -218,7 +218,7 @@ export function AddBountyButton(props: {
       </Button>
       <Modal open={open} setOpen={setOpen}>
         <Col className={MODAL_CLASS}>
-          <span>Add more bounty to this question</span>
+          <h1 className="text-xl">Add to the bounty</h1>
           <BuyAmountInput
             parentClassName="w-full"
             inputClassName="w-full max-w-none"
@@ -226,13 +226,12 @@ export function AddBountyButton(props: {
             onChange={(newAmount) => setAmount(newAmount)}
             error={error}
             setError={setError}
-            minimumAmount={1}
             sliderOptions={{ show: true, wrap: false }}
           />
           <Button
             size="lg"
             className="w-full"
-            disabled={!!error}
+            disabled={!!error || !amount}
             onClick={onAddBounty}
           >
             Add {amount ? formatMoney(amount) : ''}

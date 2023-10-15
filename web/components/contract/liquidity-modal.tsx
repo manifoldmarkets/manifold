@@ -1,16 +1,13 @@
 import { CPMMContract, CPMMMultiContract } from 'common/contract'
 import { formatMoney, formatPercent } from 'common/util/format'
 import { useState } from 'react'
-import { useUser } from 'web/hooks/use-user'
 import { addSubsidy } from 'web/lib/firebase/api'
 import { track } from 'web/lib/service/analytics'
-import { AmountInput } from '../widgets/amount-input'
+import { BuyAmountInput } from '../widgets/amount-input'
 import { Button } from '../buttons/button'
 import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
-import { Row } from '../layout/row'
 import { Title } from '../widgets/title'
-import { ENV_CONFIG } from 'common/envs/constants'
 import { SUBSIDY_FEE } from 'common/economy'
 
 export function LiquidityModal(props: {
@@ -23,21 +20,21 @@ export function LiquidityModal(props: {
 
   return (
     <Modal open={isOpen} setOpen={setOpen} size="md">
-      <Col className="bg-canvas-0 gap-2.5  rounded p-4 pb-8 sm:gap-4">
+      <Col className="bg-canvas-0 gap-3  rounded p-4 pb-8 sm:gap-4">
         <Title className="!mb-2">💧 Subsidize this market</Title>
 
-        <div className="text-ink-600 text-lg italic">
-          The higher the stakes, the more winners make.
+        <div className="text-ink-600">
+          The higher the stakes, the more winners make!
+          <br />
+          Pay traders to make the probability more precise.
         </div>
         <div>
-          Pay traders to answer your question! Subsidies incentivize traders to
-          make the probability accurate.
+          <div className="mb-2">
+            Total subsidy pool:{' '}
+            <span className="font-semibold">{formatMoney(totalLiquidity)}</span>
+          </div>
+          <AddLiquidityPanel contract={contract} />
         </div>
-        <div className="mb-4">
-          Total subsidy pool:{' '}
-          <span className="font-semibold">{formatMoney(totalLiquidity)}</span>
-        </div>
-        <AddLiquidityPanel contract={contract} />
       </Col>
     </Modal>
   )
@@ -49,8 +46,6 @@ function AddLiquidityPanel(props: {
   const { contract } = props
   const { id: contractId, slug } = contract
 
-  const user = useUser()
-
   const [amount, setAmount] = useState<number | undefined>(undefined)
   const [error, setError] = useState<string | undefined>(undefined)
   const [isSuccess, setIsSuccess] = useState(false)
@@ -59,17 +54,6 @@ function AddLiquidityPanel(props: {
   const onAmountChange = (amount: number | undefined) => {
     setIsSuccess(false)
     setAmount(amount)
-
-    // Check for errors.
-    if (amount !== undefined) {
-      if (user && user.balance < amount) {
-        setError('Insufficient balance')
-      } else if (amount < 1) {
-        setError('Minimum amount: ' + formatMoney(1))
-      } else {
-        setError(undefined)
-      }
-    }
   }
 
   const submit = () => {
@@ -90,26 +74,25 @@ function AddLiquidityPanel(props: {
   }
 
   return (
-    <>
-      <Row>
-        <AmountInput
-          amount={amount}
-          onChangeAmount={onAmountChange}
-          label={ENV_CONFIG.moneyMoniker}
-          error={!!error}
-          disabled={isLoading}
-          inputClassName="w-32 mr-4"
-        />
-        <Button onClick={submit} disabled={isLoading || !!error}>
-          Pay
-        </Button>
-      </Row>
+    <Col className="w-full">
+      <BuyAmountInput
+        parentClassName="w-full mb-3"
+        inputClassName="w-full max-w-none"
+        amount={amount}
+        onChange={onAmountChange}
+        error={error}
+        setError={setError}
+        disabled={isLoading}
+        sliderOptions={{ show: true, wrap: false }}
+      />
 
-      <div className="text-ink-600 text-xs">
+      <Button onClick={submit} disabled={isLoading || !!error || !amount}>
+        Add {amount ? formatMoney((1 - SUBSIDY_FEE) * amount) : ''} subsidy
+      </Button>
+
+      <div className="text-ink-600 mt-0.5 text-xs">
         Note: Manifold charges a {formatPercent(SUBSIDY_FEE)} fee on subsidies.
       </div>
-
-      {error && <div className="text-error">{error}</div>}
 
       {isSuccess && amount && (
         <div>
@@ -119,6 +102,6 @@ function AddLiquidityPanel(props: {
       )}
 
       {isLoading && <div>Processing...</div>}
-    </>
+    </Col>
   )
 }
