@@ -3,7 +3,7 @@ import { formatMoney } from 'common/util/format'
 import { AmountInput } from '../widgets/amount-input'
 import { ReactNode, useState } from 'react'
 import { boostMarket } from 'web/lib/firebase/api'
-import { Button, ColorType } from '../buttons/button'
+import { Button } from '../buttons/button'
 import toast from 'react-hot-toast'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { DEFAULT_AD_COST_PER_VIEW, MIN_AD_COST_PER_VIEW } from 'common/boost'
@@ -19,13 +19,11 @@ import { ENV_CONFIG } from 'common/envs/constants'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import { track } from 'web/lib/service/analytics'
 import { useQuery } from 'web/hooks/use-query'
+import { TbRocket } from 'react-icons/tb'
+import clsx from 'clsx'
 
-export function BoostButton(props: {
-  contract: Contract
-  color?: ColorType
-  className?: string
-}) {
-  const { contract, color, className } = props
+export function BoostButton(props: { contract: Contract; className?: string }) {
+  const { contract, className } = props
   const [open, setOpen] = useState(false)
 
   const disabled =
@@ -39,10 +37,11 @@ export function BoostButton(props: {
     <Button
       onClick={() => setOpen(true)}
       size="lg"
-      color={color}
-      className={className}
+      color="indigo-outline"
+      className={clsx(className, 'group')}
     >
-      🚀 Boost
+      <TbRocket className="fill-scarlet-300 stroke-scarlet-600 mr-1 h-5 w-5 group-hover:stroke-current" />
+      Boost
       <BoostDialog contract={contract} isOpen={open} setOpen={setOpen} />
     </Button>
   )

@@ -17,6 +17,7 @@ import { UserLink } from '../widgets/user-link'
 import { NO_CLOSE_TIME_TYPES } from 'common/contract'
 import { FollowButton } from '../buttons/follow-button'
 import { updateMarket } from 'web/lib/firebase/api'
+import { FaHourglassEnd, FaHourglassHalf } from 'react-icons/fa6'
 
 export function AuthorInfo(props: { contract: Contract }) {
   const { contract } = props
@@ -127,6 +128,7 @@ export function CloseDate(props: {
     !closeTime ??
     (NO_CLOSE_TIME_TYPES.includes(contract.outcomeType) &&
       dayjs(closeTime).isAfter(almostForeverTime))
+
   return (
     <>
       <Modal
@@ -190,14 +192,21 @@ export function CloseDate(props: {
           closeTime && (
             <DateTimeTooltip
               text={
-                closeTime <= Date.now() ? 'Market closed:' : 'Market closes:'
+                contract.outcomeType === 'POLL'
+                  ? 'Poll '
+                  : 'Market ' +
+                    (closeTime <= Date.now() ? 'closed:' : 'closes:')
               }
               time={closeTime}
               placement="bottom-end"
               noTap
-              className="flex items-center grayscale"
+              className="flex items-center gap-1"
             >
-              {dayjs().isBefore(closeTime) ? '⏳' : '⌛️'}{' '}
+              {dayjs().isBefore(closeTime) ? (
+                <FaHourglassHalf className="fill-ink-500 h-4 w-4" />
+              ) : (
+                <FaHourglassEnd className="fill-ink-500 h-4 w-4" />
+              )}
               {isSameDay
                 ? fromNow(closeTime)
                 : isSameYear || isSoon

@@ -15,7 +15,11 @@ import {
 } from 'common/chart'
 import { ContractParams, MaybeAuthedContractParams } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
-import { HOUSE_BOT_USERNAME, isTrustworthy } from 'common/envs/constants'
+import {
+  ENV_CONFIG,
+  HOUSE_BOT_USERNAME,
+  isTrustworthy,
+} from 'common/envs/constants'
 import { User } from 'common/user'
 import { ScrollToTopButton } from 'web/components/buttons/scroll-to-top-button'
 import { BackButton } from 'web/components/contract/back-button'
@@ -97,6 +101,7 @@ import {
   formatWithCommas,
   shortFormatNumber,
 } from 'common/util/format'
+import { TbDroplet, TbDropletDollar, TbMoneybag } from 'react-icons/tb'
 export async function getStaticProps(ctx: {
   params: { username: string; contractSlug: string }
 }) {
@@ -559,8 +564,10 @@ export function ContractPageContent(props: {
                         noTap
                         className="flex flex-row items-center gap-1"
                       >
-                        <div className="grayscale">
-                          💧 Ṁ{shortFormatNumber(contract.totalLiquidity)}
+                        <TbDroplet className="stroke-ink-500 h-4 w-4 stroke-[3]" />
+                        <div>
+                          {ENV_CONFIG.moneyMoniker}
+                          {shortFormatNumber(contract.totalLiquidity)}
                         </div>
                       </Tooltip>
                     )}

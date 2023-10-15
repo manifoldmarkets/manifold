@@ -24,7 +24,7 @@ export function CreatorShareBoostPanel(props: { contract: Contract }) {
   return (
     <GradientContainer className="mb-8 flex w-full">
       <div className="mb-2 flex flex-wrap gap-2">
-        <BoostButton contract={contract} color="gradient-pink" />
+        <BoostButton contract={contract} />
         <AddLiquidityButton contract={contract} />
         {contract.outcomeType == 'BOUNTIED_QUESTION' && (
           <AddBountyButton contract={contract} />
@@ -56,7 +56,7 @@ export function NonCreatorSharePanel(props: { contract: Contract }) {
 
   return (
     <Row className="my-4 flex-wrap gap-4">
-      <BoostButton contract={contract} color="indigo-outline" />
+      <BoostButton contract={contract} />
       <AddLiquidityButton contract={contract} />
       {contract.outcomeType == 'BOUNTIED_QUESTION' && (
         <AddBountyButton contract={contract} />

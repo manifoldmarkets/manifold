@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Button } from 'web/components/buttons/button'
 import { Contract } from 'common/contract'
 import { LiquidityModal } from './liquidity-modal'
+import { TbDropletHeart } from 'react-icons/tb'
 
 export function AddLiquidityButton(props: {
   contract: Contract
@@ -26,7 +27,8 @@ export function AddLiquidityButton(props: {
         className={className}
         onClick={() => setOpen(true)}
       >
-        💧 Subsidize
+        <TbDropletHeart className={'mr-1 h-5 w-5 fill-blue-300'} aria-hidden />
+        Subsidize
       </Button>
       <LiquidityModal contract={contract} isOpen={open} setOpen={setOpen} />
     </>
