@@ -76,13 +76,13 @@ export const PortfolioValueSection = memo(
       <div className="text-ink-500 animate-pulse text-lg sm:text-xl">---</div>
     )
 
-    const showDisclaimer = graphPoints || !lastUpdatedTime
     if (
-      !graphPoints ||
+      !portfolioHistory ||
       graphPoints.length <= 1 ||
       !lastUpdatedTime ||
       !lastPortfolioMetrics
     ) {
+      const showDisclaimer = portfolioHistory || !lastUpdatedTime
       return (
         <PortfolioValueSkeleton
           userId={userId}
