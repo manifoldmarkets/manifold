@@ -173,7 +173,8 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
   fbq('track', 'PageView');`,
         }}
       />
-      <GoogleOneTapSetup />
+      {/* LOVE TODO: Reenable one tap setup */}
+      {/* <GoogleOneTapSetup /> */}
     </>
   )
 }
