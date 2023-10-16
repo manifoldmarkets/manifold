@@ -297,7 +297,7 @@ export const MultiValueHistoryChart = <P extends HistoryPoint>(props: {
               py={py}
               curve={curve}
               className={clsx(
-                'transition-all',
+                'transition-[stroke-width]',
                 ttParams && ttParams.i !== i
                   ? 'stroke-1 opacity-50'
                   : 'stroke-2'
