@@ -121,28 +121,33 @@ export const onCreateBet = functions
      *  Handle bonuses, other stuff for non-bot users below:
      */
 
-    // They may be selling out of a position completely, so only add them if they're buying
-    if (bet.amount >= 0 && !bet.isSold)
-      await addUserToContractFollowers(contractId, bettor.id)
-
     // Follow suggestion should be before betting streak update (which updates lastBetTime)
-    if (!bettor.lastBetTime && !bettor.referredByUserId)
-      await createFollowSuggestionNotification(bettor.id, contract, pg)
-    await updateBettingStreak(bettor, bet, contract, eventId)
+    !bettor.lastBetTime &&
+      !bettor.referredByUserId &&
+      (await createFollowSuggestionNotification(bettor.id, contract, pg))
 
-    await giveUniqueBettorAndLiquidityBonus(contract, eventId, bettor, bet)
-    await updateUniqueBettors(contract, bet)
+    await Promise.all([
+      // They may be selling out of a position completely, so only add them if they're buying
+      bet.amount >= 0 &&
+        !bet.isSold &&
+        addUserToContractFollowers(contractId, bettor.id),
 
-    await updateUserInterestEmbedding(pg, bettor.id)
+      updateBettingStreak(bettor, bet, contract, eventId),
 
-    await addToLeagueIfNotInOne(pg, bettor.id)
+      giveUniqueBettorAndLiquidityBonus(contract, eventId, bettor, bet),
+      updateUniqueBettors(contract, bet),
 
-    if ((bettor?.lastBetTime ?? 0) < bet.createdTime)
-      await firestore
-        .doc(`users/${bettor.id}`)
-        .update({ lastBetTime: bet.createdTime })
+      updateUserInterestEmbedding(pg, bettor.id),
 
-    await addBetToFollowersFeeds(bettor, contract, bet)
+      addToLeagueIfNotInOne(pg, bettor.id),
+
+      (bettor?.lastBetTime ?? 0) < bet.createdTime &&
+        firestore
+          .doc(`users/${bettor.id}`)
+          .update({ lastBetTime: bet.createdTime }),
+
+      addBetToFollowersFeeds(bettor, contract, bet),
+    ])
   })
 
 const MED_BALANCE_PERCENTAGE_FOR_FEED = 0.005
