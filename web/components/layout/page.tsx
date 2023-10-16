@@ -15,9 +15,16 @@ export function Page(props: {
   className?: string
   children?: ReactNode
   hideSidebar?: boolean
+  hideBottomBar?: boolean
 }) {
-  const { trackPageView, trackPageProps, children, className, hideSidebar } =
-    props
+  const {
+    trackPageView,
+    trackPageProps,
+    children,
+    className,
+    hideSidebar,
+    hideBottomBar,
+  } = props
 
   // eslint-disable-next-line react-hooks/rules-of-hooks
   trackPageView && useTracking(`view ${trackPageView}`, trackPageProps)
@@ -52,7 +59,7 @@ export function Page(props: {
           {children}
         </main>
       </Col>
-      <BottomNavBar />
+      {!hideBottomBar && <BottomNavBar />}
     </>
   )
 }

@@ -11,7 +11,7 @@ import { db } from 'web/lib/supabase/db'
 
 export default function ManifoldLove() {
   return (
-    <Page trackPageView={'signed out home page'} hideSidebar>
+    <Page trackPageView={'signed out home page'} hideSidebar hideBottomBar>
       <Col className="mx-auto w-full gap-8 px-4 pt-4 sm:pt-0">
         <Col className="gap-4">
           <Row className="border-scarlet-800 max-w-md items-center gap-2 border-b border-solid p-2">
@@ -88,7 +88,7 @@ function EmailForm() {
       <h1 className="mb-4 text-xl">Get notified when we launch</h1>
       <Row className="gap-2">
         <Input
-        className="text-ink-1000 invalid:text-ink-1000"
+          className="text-ink-1000 invalid:text-ink-1000"
           placeholder="Email"
           type="email"
           value={email}
