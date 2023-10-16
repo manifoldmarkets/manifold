@@ -883,6 +883,97 @@ We began in 1996 by archiving the Internet itself, a medium that was just beginn
     When this day comes, people in developing countries will get the same quality eye care the rest of the world takes for granted – and we won’t stop until this is done.`,
   },
   {
+    name: 'New Vocations',
+    website: 'https://www.newvocations.org',
+    photo: 'https://i.imgur.com/1IeaDZP.png',
+    preview:
+      'New Vocations focuses on the rehabilitation, retraining, and rehoming of retired racehorses.',
+    description:
+      'New Vocations is dedicated to offering retiring racehorses a second career through a comprehensive rehabilitation, retraining, and adoption program, ensuring these athletes find suitable homes beyond the track.',
+  },
+  {
+    name: 'Stable Recovery',
+    website: 'https://www.stablerecovery.net',
+    photo: 'https://i.imgur.com/bgDjte0.png',
+    preview:
+      'Stable Recovery provides therapeutic programs using horses for men in recovery from addiction.',
+    description:
+      'Stable Recovery bridges the world of equine therapy and addiction recovery, offering transformative programs that harness the healing power of horses. They not only help men in the early stages of addiction to get the help they need by creating a support system, but teach them employable skills and provide them with the opportunities they need for a second chance.',
+  },
+  {
+    name: 'Thoroughbred Retirement Foundation',
+    website: 'https://www.trfinc.org',
+    photo: 'https://i.imgur.com/AsVq4XW.png',
+    preview:
+      'The foundation is dedicated to saving thoroughbred horses from possible neglect, abuse, or slaughter.',
+    description:
+      'The Thoroughbred Retirement Foundation ensures a safe retirement for thoroughbreds that are no longer fit for racing, providing them with the care and attention they need for a peaceful life.',
+  },
+  {
+    name: 'The Thoroughbred Aftercare Alliance',
+    website: 'https://www.thoroughbredaftercare.org',
+    photo: 'https://i.imgur.com/Jm7IZS9.png',
+    preview:
+      'An alliance working to ensure a secure future for thoroughbreds after their racing careers.',
+    description:
+      'The Thoroughbred Aftercare Alliance accredits, inspects, and awards grants to approved aftercare organizations to retire, retrain, and rehome thoroughbreds.',
+  },
+  {
+    name: 'Old Friends',
+    website: 'https://www.oldfriendsequine.org',
+    photo: 'https://i.imgur.com/HBsmGjb.png',
+    preview:
+      'A sanctuary for retired thoroughbreds ensuring they live out their days with dignity.',
+    description:
+      'Old Friends provides a dignified retirement to thoroughbreds whose racing and breeding careers have come to an end, offering a space where they can be celebrated and remembered.',
+  },
+  {
+    name: 'New York Racetrack Chaplaincy',
+    website: 'https://www.rtcany.org',
+    photo: 'https://i.imgur.com/USPYiYm.png',
+    preview:
+      "Spiritual and welfare support for the backstretch community in New York's racetracks.",
+    description:
+      'New York Racetrack Chaplaincy serves the spiritual, emotional, and physical needs of the men and women working behind the scenes in the horse racing industry.',
+  },
+  {
+    name: 'Belmont Child Care Association',
+    website: 'https://www.belmontchildcare.org',
+    photo: 'https://i.imgur.com/NrhJMrI.png',
+    preview:
+      'Offering child care and educational services for the children of New York’s backstretch workers.',
+    description:
+      "The Belmont Child Care Association provides quality education and child care services to meet the unique needs of equine workers' children.",
+  },
+  {
+    name: 'Thoroughbred Charities of America',
+    website: 'https://www.tca.org',
+    photo: 'https://i.imgur.com/3VH6d5I.png',
+    preview:
+      'Supporting thoroughbreds throughout and after their racing careers and those who care for them.',
+    description:
+      'Thoroughbred Charities of America offers funding to non-profit organizations that work towards improving the lives of thoroughbred racehorses and the people who work with them.',
+  },
+  {
+    name: 'The Jockey Club Safety Net Foundation',
+    website: 'https://www.tjcfoundation.org',
+    photo: 'https://i.imgur.com/tKgqULC.png',
+    preview:
+      'Providing financial relief and assistance to the horse racing community.',
+    description:
+      'The foundation aids members of the thoroughbred industry and their families who are in need, offering various forms of financial assistance during challenging times.',
+  },
+  {
+    name: 'Grayson-Jockey Club Research Foundation',
+    website: 'https://www.grayson-jockeyclub.org',
+    photo: 'https://i.imgur.com/QsZYyc9.png',
+    preview:
+      'Advancing research to enhance the health and soundness of horses.',
+    description:
+      'The Grayson-Jockey Club Research Foundation funds veterinary research that benefits all breeds of horses, aiming to better understand equine health issues and find solutions.',
+  },
+
+  {
     name: 'The Shrimp Welfare Project',
     website: 'https://www.shrimpwelfareproject.org/',
     photo: 'https://i.imgur.com/1TugXgS.png',
