@@ -1,6 +1,7 @@
 import { groupBy, mapValues } from 'lodash'
 import { Visibility } from './contract'
 import { Fees } from './fees'
+import { maxMinBin } from './chart'
 
 /************************************************
 
@@ -99,11 +100,9 @@ export type fill = {
   isSale?: boolean
 }
 
-export type Loading<T> = T | 'loading'
-
 export type BetFilter = {
   contractId?: string
-  userId?: Loading<string>
+  userId?: string
   filterChallenges?: boolean
   filterRedemptions?: boolean
   filterAntes?: boolean
@@ -114,7 +113,6 @@ export type BetFilter = {
   limit?: number
 }
 
-/** Must include redemptions. */
 export const calculateMultiBets = (
   betPoints: {
     x: number
@@ -123,6 +121,9 @@ export const calculateMultiBets = (
   }[]
 ) => {
   return mapValues(groupBy(betPoints, 'answerId'), (bets) =>
-    bets.sort((a, b) => a.x - b.x)
+    maxMinBin(
+      bets.sort((a, b) => a.x - b.x),
+      500
+    )
   )
 }

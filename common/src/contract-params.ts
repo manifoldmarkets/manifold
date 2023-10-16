@@ -78,7 +78,10 @@ export async function getContractParams(
             x: contract.createdTime,
             y: getInitialProbability(contract),
           },
-          maxMinBin(allBetPoints, 500)
+          maxMinBin(
+            allBetPoints.sort((a, b) => a.x - b.x),
+            500
+          )
         ).map((p) => [p.x, p.y] as const)
       : isMulti
       ? serializeMultiPoints(calculateMultiBets(allBetPoints))
