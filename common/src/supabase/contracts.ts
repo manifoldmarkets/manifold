@@ -12,6 +12,7 @@ import { Contract } from '../contract'
 import { Answer } from 'common/answer'
 import { Json } from 'common/supabase/schema'
 
+export const CONTRACTS_PER_SEARCH_PAGE = 40
 export const getContractFromSlug = async (
   contractSlug: string,
   db: SupabaseClient

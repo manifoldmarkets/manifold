@@ -42,8 +42,8 @@ import { Avatar } from 'web/components/widgets/avatar'
 import { Button, IconButton } from 'web/components/buttons/button'
 import Link from 'next/link'
 import { useFollowedUsersOnLoad } from 'web/hooks/use-follows'
+import { CONTRACTS_PER_SEARCH_PAGE } from 'common/supabase/contracts'
 
-const CONTRACTS_PER_PAGE = 40
 const USERS_PER_PAGE = 100
 const TOPICS_PER_PAGE = 100
 
@@ -618,7 +618,7 @@ const useContractSearch = (
           sort,
           contractType: additionalFilter?.contractType ?? contractType,
           offset: offset,
-          limit: CONTRACTS_PER_PAGE,
+          limit: CONTRACTS_PER_SEARCH_PAGE,
           topicSlug: topicSlug !== '' ? topicSlug : undefined,
           creatorId: additionalFilter?.creatorId,
         })
@@ -642,7 +642,8 @@ const useContractSearch = (
           const newFuzzyContractOffset =
             results.fuzzyOffset + currentState.fuzzyContractOffset
 
-          const shouldLoadMore = newContracts.length === CONTRACTS_PER_PAGE
+          const shouldLoadMore =
+            newContracts.length === CONTRACTS_PER_SEARCH_PAGE
 
           setState({
             fuzzyContractOffset: newFuzzyContractOffset,

@@ -9,6 +9,7 @@ import {
   where,
 } from 'shared/supabase/sql-builder'
 import { getContractPrivacyWhereSQLFilter } from 'shared/supabase/contracts'
+import { CONTRACTS_PER_SEARCH_PAGE } from 'common/supabase/contracts'
 
 export async function getForYouMarkets(userId: string, limit = 25) {
   const searchMarketSQL = getForYouSQL(userId, 'all', 'ALL', limit, 0)
@@ -78,7 +79,8 @@ from user_interest,
          join contract_embeddings ON contracts.id = contract_embeddings.contract_id
         LEFT JOIN user_follows ON contracts.creator_id = user_follows.follow_id
     ${whereClause}
-  and importance_score > 0.2
+  -- TODO: perhaps we should pass the backend some other indicator of the page we're on
+  and importance_score > ${offset === CONTRACTS_PER_SEARCH_PAGE ? 0.35 : 0.25}
   AND NOT EXISTS (
     SELECT 1
     FROM user_disinterests
