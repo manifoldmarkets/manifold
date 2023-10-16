@@ -6,7 +6,6 @@ import { Col } from 'web/components/layout/col'
 import { removeEmojis } from 'common/topics'
 import {
   usePrivateUser,
-  useShouldBlockDestiny,
   useUser,
 } from 'web/hooks/use-user'
 import { buildArray } from 'common/util/array'
@@ -45,7 +44,7 @@ export default function BrowsePage() {
   const [showTopicsSidebar, setShowTopicsSidebar] = useState<boolean>(false)
   const privateUser = usePrivateUser()
 
-  const shouldFilterDestiny = useShouldBlockDestiny(user?.id)
+  const shouldFilterDestiny = false // useShouldBlockDestiny(user?.id)
 
   const trendingTopics = useTrendingTopics(
     80,
