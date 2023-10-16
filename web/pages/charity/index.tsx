@@ -23,7 +23,6 @@ import { User } from 'common/user'
 import { SEO } from 'web/components/SEO'
 import { Input } from 'web/components/widgets/input'
 import { ENV_CONFIG } from 'common/envs/constants'
-import { InfoBox } from 'web/components/widgets/info-box'
 import { AlertBox } from 'web/components/widgets/alert-box'
 
 export async function getStaticProps() {
