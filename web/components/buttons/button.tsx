@@ -35,7 +35,7 @@ const baseButtonClasses =
   'font-md inline-flex items-center justify-center rounded-md ring-inset transition-colors disabled:cursor-not-allowed text-center'
 
 const solid = 'disabled:bg-ink-300 text-white'
-const outline =
+export const outline =
   'ring-2 ring-current hover:ring-transparent disabled:ring-ink-300 disabled:text-ink-300 enabled:hover:text-ink-0 disabled:bg-inherit'
 const gradient = [solid, 'enabled:bg-gradient-to-r hover:saturate-150']
 
