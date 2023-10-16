@@ -87,7 +87,7 @@ const getReducer =
 export function useSubscription<T extends TableName>(
   table: T,
   filter?: Filter<T>,
-  fetcher?: () => PromiseLike<Row<T>[]>,
+  fetcher?: () => PromiseLike<Row<T>[] | undefined>,
   preload?: Row<T>[],
   filterString?: string
 ) {
@@ -108,7 +108,7 @@ export function useSubscription<T extends TableName>(
       case 'SUBSCRIBED': {
         dispatch({ type: 'SUBSCRIBED' })
         fetch().then((snapshot) => {
-          dispatch({ type: 'FETCHED', snapshot })
+          if (snapshot != undefined) dispatch({ type: 'FETCHED', snapshot })
         })
         break
       }
@@ -147,7 +147,7 @@ export function usePersistentSubscription<T extends TableName>(
   table: T,
   store?: Store,
   filter?: Filter<T>,
-  fetcher?: () => PromiseLike<Row<T>[]>,
+  fetcher?: () => PromiseLike<Row<T>[] | undefined>,
   filterString?: string
 ) {
   const isClient = useIsClient()
