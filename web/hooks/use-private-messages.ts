@@ -109,18 +109,26 @@ export const useUnseenPrivateMessageChannels = (
     (m) => m.channelId
   )
 
-  // const {isReady, pathname} = useRouter()
-  useEffect(() => {
+  const fetchLastSeenTimes = async () => {
     if (!isAuthed) return
+
     // TODO: we should probably just query for the new message channel's last seen time, not all of them
-    channelIds.map((channelId) => {
-      run(getChannelLastSeenTimeQuery(channelId, userId)).then(({ data }) =>
-        setLastSeenChatTimeByChannelId((prev) => ({
-          ...prev,
-          [channelId]: tsToMillis(first(data)?.created_time ?? '0'),
-        }))
-      )
-    })
+    const results = await Promise.all(
+      channelIds.map(async (channelId) => {
+        const { data } = await run(
+          getChannelLastSeenTimeQuery(channelId, userId)
+        )
+        return { channelId, time: tsToMillis(first(data)?.created_time ?? '0') }
+      })
+    )
+
+    const newState: Record<number, number> = {}
+    results.forEach(({ channelId, time }) => (newState[channelId] = time))
+    setLastSeenChatTimeByChannelId(newState)
+  }
+
+  useEffect(() => {
+    fetchLastSeenTimes()
   }, [isAuthed, messageRows?.length])
 
   if (!lastSeenChatTimeByChannelId) return []

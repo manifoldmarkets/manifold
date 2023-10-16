@@ -47,13 +47,13 @@ function InternalUnseenMessagesBubble(props: {
   className?: string
 }) {
   const { privateUser, className, iconClassName } = props
-  const { isReady, pathname } = useRouter()
+  const { isReady, asPath } = useRouter()
   const [lastSeenTime, setLastSeenTime] = usePersistentLocalState(
     0,
     'last-seen-private-messages-page'
   )
   useEffect(() => {
-    if (isReady && pathname.endsWith('/messages')) {
+    if (isReady && asPath.endsWith('/messages')) {
       setLastSeenTime(Date.now())
       return
     }
@@ -69,11 +69,10 @@ function InternalUnseenMessagesBubble(props: {
     ).then(({ data }) => {
       setLastSeenTime(new Date(data[0]?.ts ?? 0).valueOf())
     })
-  }, [isReady, pathname])
-
+  }, [isReady, asPath])
   const unseenMessages = useUnseenPrivateMessageChannels(privateUser.id, true)
     .filter((message) => message.createdTime > lastSeenTime)
-    .filter((message) => pathname.endsWith(`/messages/${message.channelId}`))
+    .filter((message) => !asPath.endsWith(`/messages/${message.channelId}`))
 
   if (unseenMessages.length === 0) return null
 
