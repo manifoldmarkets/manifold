@@ -4,10 +4,7 @@ import { useEffect, useState } from 'react'
 import { TopicsList } from 'web/components/topics/topics-list'
 import { Col } from 'web/components/layout/col'
 import { removeEmojis } from 'common/topics'
-import {
-  usePrivateUser,
-  useUser,
-} from 'web/hooks/use-user'
+import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { buildArray } from 'common/util/array'
 import {
   BLOCKED_BY_DEFAULT_GROUP_SLUGS,
