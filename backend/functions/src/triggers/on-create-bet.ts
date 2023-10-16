@@ -102,6 +102,9 @@ export const onCreateBet = functions
       await updateContractMetrics(contract, [bettor, ...(notifiedUsers ?? [])])
     }
 
+    // Note: Anything that applies to redemption bets should be above this line.
+    if (bet.isRedemption) return
+
     const isApiOrBot = bet.isApi || BOT_USERNAMES.includes(bettor.username)
     if (isApiOrBot) {
       // assess flat fee for bots
