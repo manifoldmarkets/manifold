@@ -23,6 +23,8 @@ import { User } from 'common/user'
 import { SEO } from 'web/components/SEO'
 import { Input } from 'web/components/widgets/input'
 import { ENV_CONFIG } from 'common/envs/constants'
+import { InfoBox } from 'web/components/widgets/info-box'
+import { AlertBox } from 'web/components/widgets/alert-box'
 
 export async function getStaticProps() {
   let txns = await getAllCharityTxns()
@@ -134,6 +136,18 @@ export default function Charity(props: {
               Read more here.
             </a>
           </span>
+          <AlertBox title="2024 changes" className="mt-4 max-w-2xl">
+            Starting January 1st, 2024 Manifold user donations will be{' '}
+            <a
+              href="https://manifoldmarkets.notion.site/The-New-Deal-for-Manifold-s-Charity-Program-1527421b89224370a30dc1c7820c23ec"
+              target="_blank"
+              rel="noreferrer"
+              className="text-primary-700"
+            >
+              capped at $10,000 per month
+            </a>
+            .
+          </AlertBox>
           <DonatedStats
             stats={[
               {
