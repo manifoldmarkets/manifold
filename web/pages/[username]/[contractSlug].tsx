@@ -164,38 +164,31 @@ function NonPrivateContractPage(props: { contractParams: ContractParams }) {
     return (
       <>
         <ContractSEO contract={contract} points={pointsString} />
-        <ContractPageContent
-          key={contract.id}
-          contractParams={props.contractParams}
-        />
+        <ContractPageContent key={contract.id} {...props.contractParams} />
       </>
     )
 }
 
-export function ContractPageContent(props: {
-  contractParams: ContractParams & { contract: Contract }
-}) {
-  const { contractParams } = props
+export function ContractPageContent(props: ContractParams) {
   const {
     userPositionsByOutcome,
     comments,
     totalPositions,
-    creatorTwitter,
     relatedContracts,
-  } = contractParams
+    historyData,
+  } = props
+
   const contract =
-    useFirebasePublicContract(
-      contractParams.contract.visibility,
-      contractParams.contract.id
-    ) ?? contractParams.contract
-  if (
-    'answers' in contractParams.contract &&
-    contract.mechanism === 'cpmm-multi-1'
-  ) {
-    ;(contract as any).answers =
-      // eslint-disable-next-line react-hooks/rules-of-hooks
-      useAnswersCpmm(contract.id) ?? contractParams.contract.answers
+    useFirebasePublicContract(props.contract.visibility, props.contract.id) ??
+    props.contract
+  if (contract.mechanism === 'cpmm-multi-1') {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const answers = useAnswersCpmm(contract.id)
+    if (answers) {
+      contract.answers = answers
+    }
   }
+
   const cachedContract = useMemo(
     () => contract,
     [
@@ -205,13 +198,14 @@ export function ContractPageContent(props: {
       'answers' in contract ? contract.answers : undefined,
     ]
   )
+
   const user = useUser()
   const contractMetrics = useSavedContractMetrics(contract)
   const privateUser = usePrivateUser()
   const blockedUserIds = privateUser?.blockedUserIds ?? []
   const [topContractMetrics, setTopContractMetrics] = useState<
     ContractMetric[]
-  >(contractParams.topContractMetrics)
+  >(props.topContractMetrics)
 
   useEffect(() => {
     // If the contract resolves while the user is on the page, get the top contract metrics
@@ -233,7 +227,7 @@ export function ContractPageContent(props: {
   useSaveContractVisitsLocally(user === null, contract.id)
 
   // Static props load bets in descending order by time
-  const lastBetTime = first(contractParams.historyData.bets)?.createdTime
+  const lastBetTime = first(historyData.bets)?.createdTime
 
   const newBets =
     useRealtimeBets({
@@ -243,23 +237,26 @@ export function ContractPageContent(props: {
       order: 'asc',
     }) ?? []
   const newBetsWithoutRedemptions = newBets.filter((bet) => !bet.isRedemption)
-  const totalBets = contractParams.totalBets + newBetsWithoutRedemptions.length
+  const totalBets = props.totalBets + newBetsWithoutRedemptions.length
   const bets = useMemo(
-    () => [...contractParams.historyData.bets, ...newBetsWithoutRedemptions],
-    [contractParams.historyData.bets, newBets]
+    () => [...historyData.bets, ...newBetsWithoutRedemptions],
+    [historyData.bets, newBets]
   )
 
   const betPoints = useMemo(() => {
-    if (contract.outcomeType === 'MULTIPLE_CHOICE') {
+    if (
+      contract.outcomeType === 'MULTIPLE_CHOICE' ||
+      contract.outcomeType === 'FREE_RESPONSE'
+    ) {
       const data = unserializeMultiPoints(
-        contractParams.historyData.points as any
+        historyData.points as MultiSerializedPoints
       )
       const newData =
         contract.mechanism === 'cpmm-multi-1' ? getMultiBetPoints(newBets) : []
 
       return mergeWith(data, newData, (a, b) => [...(a ?? []), ...(b ?? [])])
     } else {
-      const points = unserializePoints(contractParams.historyData.points as any)
+      const points = unserializePoints(historyData.points as any)
       const newPoints = newBets.map((bet) => ({
         x: bet.createdTime,
         y: bet.probAfter,
@@ -267,7 +264,7 @@ export function ContractPageContent(props: {
       }))
       return [...points, ...newPoints]
     }
-  }, [contractParams.historyData.points, newBets])
+  }, [historyData.points, newBets])
 
   const {
     isResolved,
