@@ -6,9 +6,7 @@ import Image from 'next/image'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Answer, DpmAnswer } from 'common/answer'
 import {
-  binAvg,
-  maxMinBin,
-  serializeMultiPoints,
+  MultiSerializedPoints,
   unserializeMultiPoints,
   unserializePoints,
 } from 'common/chart'
@@ -33,11 +31,7 @@ import { ContractLeaderboard } from 'web/components/contract/contract-leaderboar
 import { ContractOverview } from 'web/components/contract/contract-overview'
 import { ContractTabs } from 'web/components/contract/contract-tabs'
 import { VisibilityIcon } from 'web/components/contract/contracts-table'
-import {
-  getCPMMContractUserContractMetrics,
-  getTopContractMetrics,
-  getTotalContractMetrics,
-} from 'common/supabase/contract-metrics'
+import { getTopContractMetrics } from 'common/supabase/contract-metrics'
 import ContractSharePanel from 'web/components/contract/contract-share-panel'
 import { HeaderActions } from 'web/components/contract/header-actions'
 import { PrivateContractPage } from 'web/components/contract/private-contract'
@@ -90,7 +84,6 @@ import { getInitialProbability } from 'common/calculate'
 import { Bet, calculateMultiBets } from 'common/bet'
 import { pointsToBase64 } from 'common/util/og'
 import { removeUndefinedProps } from 'common/util/object'
-import { getUser } from 'web/lib/supabase/user'
 import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
 import { useHeaderIsStuck } from 'web/hooks/use-header-is-stuck'
 import { DangerZone } from 'web/components/contract/danger-zone'
@@ -100,6 +93,7 @@ import {
   shortFormatNumber,
 } from 'common/util/format'
 import { TbDroplet } from 'react-icons/tb'
+import { getContractParams } from 'common/contract-params'
 export async function getStaticProps(ctx: {
   params: { username: string; contractSlug: string }
 }) {
@@ -129,81 +123,8 @@ export async function getStaticProps(ctx: {
     }
   }
 
-  const isCpmm1 = contract.mechanism === 'cpmm-1'
-  const hasMechanism = contract.mechanism !== 'none'
-  const isMulti = contract.mechanism === 'cpmm-multi-1'
-  const isBinaryDpm =
-    contract.outcomeType === 'BINARY' && contract.mechanism === 'dpm-2'
-
-  const [
-    totalBets,
-    betsToPass,
-    allBetPoints,
-    comments,
-    userPositionsByOutcome,
-    topContractMetrics,
-    totalPositions,
-    creator,
-    relatedContracts,
-  ] = await Promise.all([
-    hasMechanism ? getTotalBetCount(contract.id, db) : 0,
-    hasMechanism
-      ? getBets(db, {
-          contractId: contract.id,
-          limit: 100,
-          order: 'desc',
-          filterAntes: true,
-          filterRedemptions: true,
-        })
-      : [],
-    hasMechanism
-      ? getBetPoints(db, contract.id, contract.mechanism === 'cpmm-multi-1')
-      : [],
-    getRecentTopLevelCommentsAndReplies(db, contract.id, 25),
-    isCpmm1 ? getCPMMContractUserContractMetrics(contract.id, 100, db) : {},
-    contract.resolution ? getTopContractMetrics(contract.id, 10, db) : [],
-    isCpmm1 ? getTotalContractMetrics(contract.id, db) : 0,
-    getUser(contract.creatorId),
-    getRelatedContracts(contract, 20, db, true),
-  ])
-
-  const chartPoints =
-    isCpmm1 || isBinaryDpm
-      ? buildArray<{ x: number; y: number }>(
-          isCpmm1 && {
-            x: contract.createdTime,
-            y: getInitialProbability(contract),
-          },
-          maxMinBin(allBetPoints, 500)
-        ).map((p) => [p.x, p.y] as const)
-      : isMulti
-      ? serializeMultiPoints(calculateMultiBets(allBetPoints))
-      : []
-
-  const ogPoints = isCpmm1 ? binAvg(allBetPoints) : []
-  const pointsString = pointsToBase64(ogPoints.map((p) => [p.x, p.y] as const))
-
-  return {
-    props: {
-      state: 'authed',
-      params: removeUndefinedProps({
-        outcomeType: contract.outcomeType,
-        contract,
-        historyData: {
-          bets: betsToPass,
-          points: chartPoints,
-        },
-        pointsString,
-        comments,
-        userPositionsByOutcome,
-        totalPositions,
-        totalBets,
-        topContractMetrics,
-        creatorTwitter: creator,
-        relatedContracts,
-      }),
-    },
-  }
+  const props = await getContractParams(contract, adminDb)
+  return { props }
 }
 
 export async function getStaticPaths() {
@@ -401,11 +322,6 @@ export function ContractPageContent(props: {
 
   return (
     <>
-      {creatorTwitter && (
-        <Head>
-          <meta name="twitter:creator" content={`@${creatorTwitter}`} />
-        </Head>
-      )}
       {contract.visibility == 'private' && isAdmin && user && (
         <PrivateContractAdminTag contract={contract} user={user} />
       )}

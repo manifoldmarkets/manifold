@@ -392,7 +392,6 @@ export type ContractParams = {
   totalPositions: number
   totalBets: number
   topContractMetrics: ContractMetric[]
-  creatorTwitter?: string
   relatedContracts: Contract[]
 }
 
