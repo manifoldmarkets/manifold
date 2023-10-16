@@ -8,12 +8,14 @@ export default function SignupPage() {
   const [step, setStep] = useState(0)
   const lover = useLover()
   return (
-    <Col className={'p-2'}>
-      {step == 0 && !lover ? (
-        <RequiredLoveUserForm onSuccess={() => setStep(1)} />
-      ) : (
-        <OptionalLoveUserForm />
-      )}
+    <Col className="items-center">
+      <Col className={'bg-canvas-0 w-full max-w-2xl px-6 py-4'}>
+        {step == 0 && !lover ? (
+          <RequiredLoveUserForm onSuccess={() => setStep(1)} />
+        ) : (
+          <OptionalLoveUserForm />
+        )}
+      </Col>
     </Col>
   )
 }
