@@ -126,15 +126,15 @@ export const onCreateBet = functions
       !bettor.referredByUserId &&
       (await createFollowSuggestionNotification(bettor.id, contract, pg))
 
+    await updateBettingStreak(bettor, bet, contract, eventId)
+    await giveUniqueBettorAndLiquidityBonus(contract, eventId, bettor, bet)
+
     await Promise.all([
       // They may be selling out of a position completely, so only add them if they're buying
       bet.amount >= 0 &&
         !bet.isSold &&
         addUserToContractFollowers(contractId, bettor.id),
 
-      updateBettingStreak(bettor, bet, contract, eventId),
-
-      giveUniqueBettorAndLiquidityBonus(contract, eventId, bettor, bet),
       updateUniqueBettors(contract, bet),
 
       updateUserInterestEmbedding(pg, bettor.id),
