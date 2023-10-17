@@ -159,7 +159,6 @@ export function SupabaseSearch(props: {
   additionalFilter?: SupabaseAdditionalFilter
   highlightContractIds?: string[]
   onContractClick?: (contract: Contract) => void
-  onUserClick?: (user: User) => void
   hideOrderSelector?: boolean
   hideActions?: boolean
   headerClassName?: string
@@ -177,13 +176,19 @@ export function SupabaseSearch(props: {
   yourTopics?: Group[]
   contractsOnly?: boolean
   showTopicTag?: boolean
-  hideSearchTypes? : boolean
+  hideSearchTypes?: boolean
+  userResultProps?: {
+    onUserClick?: (user: User) => void
+    showFollowButton?: boolean
+    loadingUserId?: string
+  }
 }) {
   const {
     defaultSort,
     defaultFilter,
     additionalFilter,
     onContractClick,
+    userResultProps,
     hideOrderSelector,
     hideActions,
     highlightContractIds,
@@ -200,7 +205,7 @@ export function SupabaseSearch(props: {
     yourTopics,
     contractsOnly,
     showTopicTag,
-    hideSearchTypes
+    hideSearchTypes,
   } = props
 
   const [searchParams, setSearchParams, defaults] = useSearchQueryState({
@@ -255,7 +260,7 @@ export function SupabaseSearch(props: {
   const setSearchType = (t: SearchType) =>
     setSearchParams({ [SEARCH_TYPE_KEY]: searchTypeAsString === t ? '' : t })
   const showSearchTypes =
-  !hideSearchTypes && 
+    !hideSearchTypes &&
     ((showSearchTypeState &&
       (!currentTopicSlug || currentTopicSlug === 'for-you') &&
       queryAsString !== '') ||
@@ -453,7 +458,10 @@ export function SupabaseSearch(props: {
             {/* Find users from your contacts!*/}
           </Col>
         ) : (
-          <UserResults users={userResults ?? []} />
+          <UserResults
+            users={userResults ?? []}
+            userResultProps={userResultProps}
+          />
         )
       ) : searchTypeAsString === 'Topics' ? (
         topicResults && topicResults.length === 0 ? (
@@ -471,7 +479,6 @@ export function SupabaseSearch(props: {
     </Col>
   )
 }
-
 
 const TopicResults = (props: { topics: Group[]; yourTopicIds: string[] }) => {
   const { topics, yourTopicIds } = props
