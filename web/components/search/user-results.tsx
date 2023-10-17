@@ -19,7 +19,7 @@ export const UserResults = (props: {
   }
 }) => {
   const { users, userResultProps = {} } = props
-  const { onUserClick, showFollowButton, loadingUserId } = userResultProps
+  const { onUserClick, loadingUserId } = userResultProps
   return (
     <Col className={'mt-1 w-full gap-1'}>
       {users.map((user) => {
@@ -34,7 +34,7 @@ export const UserResults = (props: {
               }}
               className={clsx(loadingUserId ? 'pointer-events-none' : '')}
             >
-              <UserResult user={user} loadingUserId={loadingUserId} />
+              <UserResult user={user} userResultProps={userResultProps} />
             </div>
           )
         } else {
@@ -51,12 +51,17 @@ export const UserResults = (props: {
 
 function UserResult(props: {
   user: User
-  showFollow?: boolean
-  loadingUserId?: string
+  userResultProps?: {
+    onUserClick?: (user: User) => void
+    showFollowButton?: boolean
+    loadingUserId?: string
+  }
 }) {
-  const { user, showFollow, loadingUserId } = props
+  const { user, userResultProps = {} } = props
   const { id, name, username, avatarUrl, bio, createdTime, creatorTraders } =
     user
+
+  const { showFollowButton, loadingUserId } = userResultProps
   return (
     <Row className={'hover:bg-primary-100 p-1'}>
       <Col className={'w-full'}>
@@ -74,7 +79,7 @@ function UserResult(props: {
             />
           </Row>
           <Row className="gap-1">
-            {showFollow && <FollowButton size={'xs'} userId={id} />}
+            {showFollowButton && <FollowButton size={'xs'} userId={id} />}
             {loadingUserId === id && <LoadingIndicator />}
           </Row>
         </Row>
