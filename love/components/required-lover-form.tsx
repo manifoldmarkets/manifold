@@ -50,7 +50,7 @@ export const RequiredLoveUserForm = (props: { onSuccess: () => void }) => {
       <Title>Required questions</Title>
       <Col className={'gap-8'}>
         <Col className={clsx(colClassName)}>
-          <label className={clsx(labelClassName)}>Where do you live?</label>
+          <label className={clsx(labelClassName)}>Your location</label>
           <ChoicesToggleGroup
             currentChoice={formState['city']}
             choicesMap={{
@@ -63,7 +63,7 @@ export const RequiredLoveUserForm = (props: { onSuccess: () => void }) => {
         </Col>
 
         <Col className={clsx(colClassName)}>
-          <label className={clsx(labelClassName)}>When were you born?</label>
+          <label className={clsx(labelClassName)}>Date of birth</label>
           <Input
             type="date"
             onChange={(e) =>
@@ -74,7 +74,7 @@ export const RequiredLoveUserForm = (props: { onSuccess: () => void }) => {
         </Col>
 
         <Col className={clsx(colClassName)}>
-          <label className={clsx(labelClassName)}>What is your gender?</label>
+          <label className={clsx(labelClassName)}>Gender</label>
           <ChoicesToggleGroup
             currentChoice={formState['gender']}
             choicesMap={{
@@ -91,7 +91,7 @@ export const RequiredLoveUserForm = (props: { onSuccess: () => void }) => {
 
         <Col className={clsx(colClassName)}>
           <label className={clsx(labelClassName)}>
-            What gender(s) are you interested in?
+            Gender you are interested in
           </label>
           <MultiCheckbox
             choices={{
@@ -109,7 +109,7 @@ export const RequiredLoveUserForm = (props: { onSuccess: () => void }) => {
 
         <Col className={clsx(colClassName)}>
           <label className={clsx(labelClassName)}>
-            What relationship style(s) are you interested in?
+            Relationship style
           </label>
           <MultiCheckbox
             choices={{
@@ -139,7 +139,7 @@ export const RequiredLoveUserForm = (props: { onSuccess: () => void }) => {
 
         <Col className={clsx(colClassName)}>
           <label className={clsx(labelClassName)}>
-            How many alcoholic bevvies do you drink per month?
+            Number of alcoholic beverages consumed per month
           </label>
           <Input
             type="number"
@@ -154,7 +154,7 @@ export const RequiredLoveUserForm = (props: { onSuccess: () => void }) => {
 
         <Col className={clsx(colClassName)}>
           <label className={clsx(labelClassName)}>
-            What is your preferred partner's minimum and maximum age?
+            Preferred minimum and maximum age of partner
           </label>
           <Row className={'gap-2'}>
             <Col>
@@ -188,13 +188,14 @@ export const RequiredLoveUserForm = (props: { onSuccess: () => void }) => {
 
         <Col className={clsx(colClassName)}>
           <label className={clsx(labelClassName)}>
-            How many kids do you currently have?
+            Current number of kids
           </label>
           <Input
             type="number"
             onChange={(e) => handleChange('has_kids', Number(e.target.value))}
             className={'w-20'}
             min={0}
+            defaultValue={0}
             placeholder={'0'}
           />
         </Col>

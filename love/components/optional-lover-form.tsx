@@ -86,15 +86,18 @@ export const OptionalLoveUserForm = () => {
 
         <Col className={clsx(colClassName)}>
           <label className={clsx(labelClassName)}>
-            What are your political beliefs?
+            Political beliefs
           </label>
           <MultiCheckbox
             choices={{
-              Libertarian: 'libertarian',
-              Conservative: 'conservative',
               Liberal: 'liberal',
+              Socialist: 'socialist',
+              Libertarian: 'libertarian',
               Moderate: 'moderate',
+              Conservative: 'conservative',
               Anarchist: 'anarchist',
+              Apolitical: 'apolitical',
+              Other: 'other',
             }}
             selected={formState['political_beliefs']}
             onChange={(selected) => handleChange('political_beliefs', selected)}
@@ -102,7 +105,7 @@ export const OptionalLoveUserForm = () => {
         </Col>
 
         <Col className={clsx(colClassName)}>
-          <label className={clsx(labelClassName)}>How tall are you?</label>
+          <label className={clsx(labelClassName)}>Height</label>
           <Row className={'gap-2'}>
             <Col>
               <span>Feet</span>
@@ -129,7 +132,7 @@ export const OptionalLoveUserForm = () => {
         </Col>
 
         <Col className={clsx(colClassName)}>
-          <label className={clsx(labelClassName)}>Where were you born?</label>
+          <label className={clsx(labelClassName)}>Location of birth</label>
           <Input
             type="text"
             onChange={(e) => handleChange('born_in_location', e.target.value)}
@@ -150,7 +153,7 @@ export const OptionalLoveUserForm = () => {
 
         <Col className={clsx(colClassName)}>
           <label className={clsx(labelClassName)}>
-            What ethnicity/origin(s) are you?
+            Ethnicity/origin(s)
           </label>
           <MultiCheckbox
             choices={{
@@ -170,7 +173,7 @@ export const OptionalLoveUserForm = () => {
 
         <Col className={clsx(colClassName)}>
           <label className={clsx(labelClassName)}>
-            What is the highest education level you've achieved?
+            Highest education level
           </label>
           <ChoicesToggleGroup
             currentChoice={formState['education_level']}
