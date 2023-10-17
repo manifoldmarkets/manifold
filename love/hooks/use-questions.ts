@@ -10,7 +10,7 @@ export const useQuestions = () => {
         .from('love_questions')
         .select('*')
         .order('importance_score', { ascending: false })
-    ).then(({ data }) => setQuestions(data as Row<'love_questions'>[]))
+    ).then(({ data }) => setQuestions(data))
   }, [])
   return questions
 }
