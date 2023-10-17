@@ -206,7 +206,7 @@ export const FeedComment = memo(function FeedComment(props: {
       <Row ref={ref} className={clsx(isParent ? 'gap-2' : 'gap-1')}>
         <Row className="relative">
           {!isParent && (
-            <div className="border-ink-100 -mt-4 ml-4 h-6 w-4 rounded-bl-xl border-b-2 border-l-2" />
+            <div className="border-ink-100 dark:border-ink-300 -mt-4 ml-4 h-6 w-4 rounded-bl-xl border-b-2 border-l-2" />
           )}
           <Avatar
             username={userUsername}
@@ -216,7 +216,7 @@ export const FeedComment = memo(function FeedComment(props: {
           />
           <div
             className={clsx(
-              'bg-ink-100 absolute bottom-0 left-4 w-0.5 group-last:hidden',
+              'bg-ink-100 absolute bottom-0 left-4 w-0.5 group-last:hidden dark:bg-ink-300 ',
               isParent ? 'top-0' : '-top-1'
             )}
           />
@@ -227,7 +227,7 @@ export const FeedComment = memo(function FeedComment(props: {
             'grow rounded-lg rounded-tl-none px-3 pb-0.5 pt-1 transition-colors',
             highlighted
               ? 'bg-primary-100 border-primary-300 border-2'
-              : 'bg-canvas-50 dark:bg-ink-50'
+              : 'bg-canvas-50 '
           )}
         >
           <FeedCommentHeader
