@@ -1,6 +1,5 @@
 import { Dashboard } from 'common/dashboard'
 import { Col } from '../layout/col'
-import Link from 'next/link'
 import { Row } from '../layout/row'
 import { Avatar } from '../widgets/avatar'
 import { UserLink } from '../widgets/user-link'
@@ -8,12 +7,15 @@ import { FollowDashboardButton } from './follow-dashboard-button'
 import clsx from 'clsx'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { LoadMoreUntilNotVisible } from '../widgets/visibility-observer'
+import { ClickFrame } from '../widgets/click-frame'
+import { useRouter } from 'next/router'
 
 export function DashboardCards(props: {
   dashboards?: Dashboard[]
   loadMore?: () => Promise<boolean>
 }) {
   const { dashboards, loadMore } = props
+
   if (!dashboards) {
     return <LoadingIndicator />
   }
@@ -41,9 +43,11 @@ function DashboardCard(props: { dashboard: Dashboard }) {
     creatorUsername,
     creatorName,
   } = props.dashboard
+  const router = useRouter()
+
   return (
-    <Link
-      href={`/dashboard/${slug}`}
+    <ClickFrame
+      onClick={() => router.push(`/dashboard/${slug}`)}
       className=" bg-canvas-0 border-canvas-0 hover:border-primary-300 flex flex-col gap-2 rounded-lg border px-4 py-2 transition-colors"
     >
       <Row className="w-full items-center justify-between">
@@ -69,6 +73,6 @@ function DashboardCard(props: { dashboard: Dashboard }) {
         />
       </Row>
       <div className="text-lg">{title}</div>
-    </Link>
+    </ClickFrame>
   )
 }
