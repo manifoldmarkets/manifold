@@ -14,7 +14,7 @@ export const UserResults = (props: {
   users: UserSearchResult[]
   userResultProps?: {
     onUserClick?: (user: User) => void
-    showFollowButton?: boolean
+    hideFollowButton?: boolean
     loadingUserId?: string
   }
 }) => {
@@ -53,7 +53,7 @@ function UserResult(props: {
   user: User
   userResultProps?: {
     onUserClick?: (user: User) => void
-    showFollowButton?: boolean
+    hideFollowButton?: boolean
     loadingUserId?: string
   }
 }) {
@@ -61,7 +61,7 @@ function UserResult(props: {
   const { id, name, username, avatarUrl, bio, createdTime, creatorTraders } =
     user
 
-  const { showFollowButton, loadingUserId } = userResultProps
+  const { hideFollowButton, loadingUserId } = userResultProps
   return (
     <Row className={'hover:bg-primary-100 p-1'}>
       <Col className={'w-full'}>
@@ -79,7 +79,7 @@ function UserResult(props: {
             />
           </Row>
           <Row className="gap-1">
-            {showFollowButton && <FollowButton size={'xs'} userId={id} />}
+            {!hideFollowButton && <FollowButton size={'xs'} userId={id} />}
             {loadingUserId === id && <LoadingIndicator />}
           </Row>
         </Row>

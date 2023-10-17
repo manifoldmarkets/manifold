@@ -60,7 +60,7 @@ function MessageModal(props: {
             onUserClick: (user: User) => {
               createChannel(user)
             },
-            showFollowButton: false,
+            hideFollowButton: true,
             loadingUserId: loadingUserId,
           }}
         />

@@ -179,7 +179,7 @@ export function SupabaseSearch(props: {
   hideSearchTypes?: boolean
   userResultProps?: {
     onUserClick?: (user: User) => void
-    showFollowButton?: boolean
+    hideFollowButton?: boolean
     loadingUserId?: string
   }
 }) {
