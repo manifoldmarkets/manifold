@@ -28,6 +28,7 @@ import { ExpandingInput } from 'web/components/widgets/expanding-input'
 import { SEO } from 'web/components/SEO'
 import { richTextToString } from 'common/util/parse'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
+import { useWarnUnsavedChanges } from 'web/hooks/use-warn-unsaved-changes'
 
 export async function getStaticProps(ctx: {
   params: { dashboardSlug: string }
@@ -121,6 +122,7 @@ function FoundDashbordPage(props: {
   const isOnlyAdmin = !isCreator && user && isAdminId(user.id)
 
   const [editMode, setEditMode] = useState(false)
+  useWarnUnsavedChanges(editMode)
 
   const editor = useTextEditor({
     size: 'lg',
