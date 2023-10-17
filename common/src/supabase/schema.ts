@@ -864,6 +864,171 @@ export interface Database {
         }
         Relationships: []
       }
+      love_answers: {
+        Row: {
+          created_time: string
+          creator_id: string
+          free_response: string | null
+          id: number
+          integer: number | null
+          multiple_choice: number | null
+          question_id: number
+        }
+        Insert: {
+          created_time?: string
+          creator_id: string
+          free_response?: string | null
+          id?: never
+          integer?: number | null
+          multiple_choice?: number | null
+          question_id: number
+        }
+        Update: {
+          created_time?: string
+          creator_id?: string
+          free_response?: string | null
+          id?: never
+          integer?: number | null
+          multiple_choice?: number | null
+          question_id?: number
+        }
+        Relationships: []
+      }
+      love_questions: {
+        Row: {
+          answer_type: string
+          created_time: string
+          creator_id: string
+          id: number
+          importance_score: number
+          multiple_choice_options: Json | null
+          question: string
+        }
+        Insert: {
+          answer_type?: string
+          created_time?: string
+          creator_id: string
+          id?: never
+          importance_score?: number
+          multiple_choice_options?: Json | null
+          question: string
+        }
+        Update: {
+          answer_type?: string
+          created_time?: string
+          creator_id?: string
+          id?: never
+          importance_score?: number
+          multiple_choice_options?: Json | null
+          question?: string
+        }
+        Relationships: []
+      }
+      love_waitlist: {
+        Row: {
+          created_time: string
+          email: string
+          id: number
+        }
+        Insert: {
+          created_time?: string
+          email: string
+          id?: never
+        }
+        Update: {
+          created_time?: string
+          email?: string
+          id?: never
+        }
+        Relationships: []
+      }
+      lovers: {
+        Row: {
+          birthdate: string
+          born_in_location: string | null
+          city: string
+          created_time: string
+          drinks_per_month: number
+          education_level: string | null
+          ethnicity: string[] | null
+          gender: string
+          has_kids: number
+          has_pets: boolean | null
+          height_in_inches: number | null
+          id: number
+          is_smoker: boolean
+          is_vegetarian_or_vegan: boolean
+          last_online_time: string
+          photo_urls: string[] | null
+          pinned_url: string | null
+          political_beliefs: string[] | null
+          pref_age_max: number
+          pref_age_min: number
+          pref_gender: string[]
+          pref_relation_styles: string[]
+          religious_belief_strength: number | null
+          religious_beliefs: string[] | null
+          user_id: string
+          wants_kids_strength: number
+        }
+        Insert: {
+          birthdate: string
+          born_in_location?: string | null
+          city: string
+          created_time?: string
+          drinks_per_month?: number
+          education_level?: string | null
+          ethnicity?: string[] | null
+          gender: string
+          has_kids?: number
+          has_pets?: boolean | null
+          height_in_inches?: number | null
+          id?: never
+          is_smoker?: boolean
+          is_vegetarian_or_vegan?: boolean
+          last_online_time?: string
+          photo_urls?: string[] | null
+          pinned_url?: string | null
+          political_beliefs?: string[] | null
+          pref_age_max?: number
+          pref_age_min?: number
+          pref_gender: string[]
+          pref_relation_styles: string[]
+          religious_belief_strength?: number | null
+          religious_beliefs?: string[] | null
+          user_id: string
+          wants_kids_strength?: number
+        }
+        Update: {
+          birthdate?: string
+          born_in_location?: string | null
+          city?: string
+          created_time?: string
+          drinks_per_month?: number
+          education_level?: string | null
+          ethnicity?: string[] | null
+          gender?: string
+          has_kids?: number
+          has_pets?: boolean | null
+          height_in_inches?: number | null
+          id?: never
+          is_smoker?: boolean
+          is_vegetarian_or_vegan?: boolean
+          last_online_time?: string
+          photo_urls?: string[] | null
+          pinned_url?: string | null
+          political_beliefs?: string[] | null
+          pref_age_max?: number
+          pref_age_min?: number
+          pref_gender?: string[]
+          pref_relation_styles?: string[]
+          religious_belief_strength?: number | null
+          religious_beliefs?: string[] | null
+          user_id?: string
+          wants_kids_strength?: number
+        }
+        Relationships: []
+      }
       manalinks: {
         Row: {
           data: Json
