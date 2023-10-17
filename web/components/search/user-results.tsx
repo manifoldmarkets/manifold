@@ -40,7 +40,7 @@ export const UserResults = (props: {
         } else {
           return (
             <Link key={user.id} href={`/${user.username}`}>
-              <UserResult user={user} />
+              <UserResult user={user} userResultProps={userResultProps} />
             </Link>
           )
         }
@@ -80,7 +80,7 @@ function UserResult(props: {
           </Row>
           <Row className="gap-1">
             {!hideFollowButton && <FollowButton size={'xs'} userId={id} />}
-            {loadingUserId === id && <LoadingIndicator />}
+            {!!loadingUserId && loadingUserId === id && <LoadingIndicator />}
           </Row>
         </Row>
         <div className={'text-ink-500 ml-1 line-clamp-2 text-sm'}>
