@@ -10,31 +10,41 @@ import { Input } from 'web/components/widgets/input'
 import { ChoicesToggleGroup } from 'web/components/widgets/choices-toggle-group'
 import { Button } from 'web/components/buttons/button'
 import { colClassName, labelClassName } from 'love/pages/signup'
+import { uploadImage } from 'web/lib/firebase/storage'
+import { Lover } from 'love/hooks/use-lover'
+import { useRouter } from 'next/router'
 
-export const OptionalLoveUserForm = () => {
+export const OptionalLoveUserForm = (props: { lover: Lover }) => {
+  const { lover } = props
+  const { user } = lover
+
   const [formState, setFormState] = useState({
-    ethnicity: [],
-    born_in_location: '',
-    height_in_inches: 0,
-    has_pets: false,
-    education_level: '',
-    photo_urls: [],
-    pinned_url: '',
-    religious_belief_strength: 0,
-    religious_beliefs: [],
-    political_beliefs: [],
+    ethnicity: lover.ethnicity,
+    born_in_location: lover.born_in_location,
+    height_in_inches: lover.height_in_inches,
+    has_pets: lover.has_pets,
+    education_level: lover.education_level,
+    photo_urls: lover.photo_urls,
+    pinned_url: lover.pinned_url,
+    religious_belief_strength: lover.religious_belief_strength,
+    religious_beliefs: lover.religious_beliefs,
+    political_beliefs: lover.political_beliefs,
   })
   const [heightFeet, setHeightFeet] = useState(0)
 
   const handleChange = (key: keyof typeof formState, value: any) => {
     setFormState((prevState) => set({ ...prevState }, key, value))
   }
+  const router = useRouter()
+  const [uploadingImages, setUploadingImages] = useState(false)
+  const [filePreviews, setFilePreviews] = useState<string[]>(
+    formState.photo_urls ?? []
+  )
 
-  const [filePreviews, setFilePreviews] = useState<string[]>([])
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
     if (!files) return
+    setUploadingImages(true)
 
     // Convert files to an array and take only the first 6 files
     const selectedFiles = Array.from(files).slice(0, 6)
@@ -44,7 +54,14 @@ export const OptionalLoveUserForm = () => {
 
     // Update the state
     setFilePreviews(fileURLs)
-    handleChange('photo_urls', fileURLs)
+    const urls = await Promise.all(
+      selectedFiles.map((f) => uploadImage(user.username, f, 'love-images'))
+    ).catch((e) => {
+      console.error(e)
+      return []
+    })
+    handleChange('photo_urls', urls)
+    setUploadingImages(false)
   }
 
   const handleSubmit = async () => {
@@ -57,6 +74,7 @@ export const OptionalLoveUserForm = () => {
     })
     if (res) {
       console.log('success')
+      router.push('/love-questions')
     }
   }
 
@@ -71,6 +89,7 @@ export const OptionalLoveUserForm = () => {
             onChange={handleFileChange}
             multiple // Allows multiple files to be selected
             className={'w-52'}
+            disabled={uploadingImages}
           />
           <div className="flex gap-2">
             {filePreviews.map((url, index) => (
@@ -85,9 +104,7 @@ export const OptionalLoveUserForm = () => {
         </Col>
 
         <Col className={clsx(colClassName)}>
-          <label className={clsx(labelClassName)}>
-            Political beliefs
-          </label>
+          <label className={clsx(labelClassName)}>Political beliefs</label>
           <MultiCheckbox
             choices={{
               Liberal: 'liberal',
@@ -99,7 +116,7 @@ export const OptionalLoveUserForm = () => {
               Apolitical: 'apolitical',
               Other: 'other',
             }}
-            selected={formState['political_beliefs']}
+            selected={formState['political_beliefs'] ?? []}
             onChange={(selected) => handleChange('political_beliefs', selected)}
           />
         </Col>
@@ -142,7 +159,7 @@ export const OptionalLoveUserForm = () => {
         <Col className={clsx(colClassName)}>
           <label className={clsx(labelClassName)}>Do you have pets?</label>
           <ChoicesToggleGroup
-            currentChoice={formState['has_pets']}
+            currentChoice={formState['has_pets'] ?? ''}
             choicesMap={{
               Yes: true,
               No: false,
@@ -152,9 +169,7 @@ export const OptionalLoveUserForm = () => {
         </Col>
 
         <Col className={clsx(colClassName)}>
-          <label className={clsx(labelClassName)}>
-            Ethnicity/origin(s)
-          </label>
+          <label className={clsx(labelClassName)}>Ethnicity/origin(s)</label>
           <MultiCheckbox
             choices={{
               African: 'african',
@@ -166,7 +181,7 @@ export const OptionalLoveUserForm = () => {
               'Pacific Islander': 'pacific_islander',
               Other: 'other',
             }}
-            selected={formState['ethnicity']}
+            selected={formState['ethnicity'] ?? []}
             onChange={(selected) => handleChange('ethnicity', selected)}
           />
         </Col>
@@ -176,7 +191,7 @@ export const OptionalLoveUserForm = () => {
             Highest education level
           </label>
           <ChoicesToggleGroup
-            currentChoice={formState['education_level']}
+            currentChoice={formState['education_level'] ?? ''}
             choicesMap={{
               'High School': 'high-school',
               Bachelors: 'bachelors',

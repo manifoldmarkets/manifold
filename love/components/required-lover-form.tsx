@@ -90,9 +90,7 @@ export const RequiredLoveUserForm = (props: { onSuccess: () => void }) => {
         </Col>
 
         <Col className={clsx(colClassName)}>
-          <label className={clsx(labelClassName)}>
-            Gender you are interested in
-          </label>
+          <label className={clsx(labelClassName)}>Interested in</label>
           <MultiCheckbox
             choices={{
               Male: 'male',
@@ -108,9 +106,7 @@ export const RequiredLoveUserForm = (props: { onSuccess: () => void }) => {
         </Col>
 
         <Col className={clsx(colClassName)}>
-          <label className={clsx(labelClassName)}>
-            Relationship style
-          </label>
+          <label className={clsx(labelClassName)}>Relationship style</label>
           <MultiCheckbox
             choices={{
               Monogamous: 'mono',
@@ -139,7 +135,7 @@ export const RequiredLoveUserForm = (props: { onSuccess: () => void }) => {
 
         <Col className={clsx(colClassName)}>
           <label className={clsx(labelClassName)}>
-            Number of alcoholic beverages consumed per month
+            Alcoholic beverages consumed per month
           </label>
           <Input
             type="number"
@@ -154,7 +150,7 @@ export const RequiredLoveUserForm = (props: { onSuccess: () => void }) => {
 
         <Col className={clsx(colClassName)}>
           <label className={clsx(labelClassName)}>
-            Preferred minimum and maximum age of partner
+            Minimum and maximum age of partner
           </label>
           <Row className={'gap-2'}>
             <Col>
@@ -187,9 +183,7 @@ export const RequiredLoveUserForm = (props: { onSuccess: () => void }) => {
         </Col>
 
         <Col className={clsx(colClassName)}>
-          <label className={clsx(labelClassName)}>
-            Current number of kids
-          </label>
+          <label className={clsx(labelClassName)}>Current number of kids</label>
           <Input
             type="number"
             onChange={(e) => handleChange('has_kids', Number(e.target.value))}

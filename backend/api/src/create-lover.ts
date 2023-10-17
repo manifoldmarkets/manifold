@@ -11,6 +11,7 @@ const genderType = z.union([
   z.literal('trans-female'),
   z.literal('trans-male'),
   z.literal('non-binary'),
+  z.literal('other'),
 ])
 const genderTypes = z.array(genderType)
 
@@ -27,7 +28,7 @@ const loveUsersSchema = z.object({
       z.literal('mono'),
       z.literal('poly'),
       z.literal('open'),
-      // Add other styles here
+      z.literal('other'),
     ])
   ),
   is_smoker: z.boolean(),
