@@ -1,7 +1,6 @@
 import { Title } from 'web/components/widgets/title'
 import { Col } from 'web/components/layout/col'
 import { Row as rowFor, run } from 'common/supabase/utils'
-import { Row } from 'web/components/layout/row'
 import { useQuestions } from 'love/hooks/use-questions'
 import { useEffect, useState } from 'react'
 import { Pagination } from 'web/components/widgets/pagination'
@@ -12,7 +11,6 @@ import { Input } from 'web/components/widgets/input'
 import { RadioToggleGroup } from 'web/components/widgets/radio-toggle-group'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { ExpandingInput } from 'web/components/widgets/expanding-input'
-import clsx from 'clsx'
 
 export const QuestionsForm = () => {
   const questions = useQuestions()
@@ -23,15 +21,17 @@ export const QuestionsForm = () => {
   return (
     <>
       <Title>Questions</Title>
-      <Col className={'gap-8'}>
-        {user &&
-          isAuthed &&
-          questions
-            .slice(
-              questionsPerPage * page,
-              questionsPerPage * page + questionsPerPage
-            )
-            .map((row) => <QuestionRow user={user} key={row.id} row={row} />)}
+      <Col className={'min-h-[calc(100vh-3rem)] justify-between'}>
+        <Col className={'gap-2'}>
+          {user &&
+            isAuthed &&
+            questions
+              .slice(
+                questionsPerPage * page,
+                questionsPerPage * page + questionsPerPage
+              )
+              .map((row) => <QuestionRow user={user} key={row.id} row={row} />)}
+        </Col>
         <Pagination
           page={page}
           itemsPerPage={questionsPerPage}
@@ -84,48 +84,39 @@ const QuestionRow = (props: { row: rowFor<'love_questions'>; user: User }) => {
     )
   }
   return (
-    <Row className={'p-2'}>
-      <Col
-        className={clsx(
-          'gap-2',
-          answer_type === 'free_response' ? 'w-full max-w-xl' : ''
-        )}
-      >
-        <span>{question}</span>
-        {answer_type === 'free_response' ? (
-          <ExpandingInput
-            className={'w-full'}
-            rows={3}
-            value={form.free_response ?? ''}
-            onChange={(e) =>
-              setForm({ ...form, free_response: e.target.value })
-            }
-            onBlur={submitAnswer}
-          />
-        ) : answer_type === 'multiple_choice' && row.multiple_choice_options ? (
-          <RadioToggleGroup
-            className={'w-44'}
-            choicesMap={options}
-            setChoice={(choice) => {
-              setForm({ ...form, multiple_choice: choice })
-              submitAnswer()
-            }}
-            currentChoice={form.multiple_choice ?? -1}
-          />
-        ) : answer_type === 'integer' ? (
-          <Input
-            type={'number'}
-            className={'w-20'}
-            max={1000}
-            min={0}
-            onChange={(e) =>
-              setForm({ ...form, integer: Number(e.target.value) })
-            }
-            value={form.integer ?? undefined}
-            onBlur={submitAnswer}
-          />
-        ) : null}
-      </Col>
-    </Row>
+    <Col className={'w-full gap-2 p-2 sm:items-center'}>
+      <span>{question}</span>
+      {answer_type === 'free_response' ? (
+        <ExpandingInput
+          className={'w-full max-w-xl'}
+          rows={3}
+          value={form.free_response ?? ''}
+          onChange={(e) => setForm({ ...form, free_response: e.target.value })}
+          onBlur={submitAnswer}
+        />
+      ) : answer_type === 'multiple_choice' && row.multiple_choice_options ? (
+        <RadioToggleGroup
+          className={'w-44'}
+          choicesMap={options}
+          setChoice={(choice) => {
+            setForm({ ...form, multiple_choice: choice })
+            submitAnswer()
+          }}
+          currentChoice={form.multiple_choice ?? -1}
+        />
+      ) : answer_type === 'integer' ? (
+        <Input
+          type={'number'}
+          className={'w-20'}
+          max={1000}
+          min={0}
+          onChange={(e) =>
+            setForm({ ...form, integer: Number(e.target.value) })
+          }
+          value={form.integer ?? undefined}
+          onBlur={submitAnswer}
+        />
+      ) : null}
+    </Col>
   )
 }
