@@ -21,7 +21,7 @@ import { JSONEmpty } from 'web/components/contract/contract-description'
 import clsx from 'clsx'
 import { JSONContent } from '@tiptap/core'
 import { Editor } from '@tiptap/react'
-import { PlusIcon } from '@heroicons/react/solid'
+import { PlusIcon, XCircleIcon } from '@heroicons/react/solid'
 import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
 import { ENV_CONFIG, isAdminId } from 'common/envs/constants'
 import { ExpandingInput } from 'web/components/widgets/expanding-input'
@@ -96,26 +96,14 @@ function FoundDashbordPage(props: {
     }
   }, [fetchedDashboard])
 
-  const updateItems = (newItems: DashboardItem[]) => {
-    if (dashboard) {
-      const updatedDashboard = { ...dashboard, items: newItems }
-      setDashboard(updatedDashboard)
-    }
-  }
+  const updateItems = (newItems: DashboardItem[]) =>
+    setDashboard({ ...dashboard, items: newItems })
 
-  const updateTitle = (newTitle: string) => {
-    if (dashboard) {
-      const updatedDashboard = { ...dashboard, title: newTitle }
-      setDashboard(updatedDashboard)
-    }
-  }
+  const updateTitle = (newTitle: string) =>
+    setDashboard({ ...dashboard, title: newTitle })
 
-  const updateTopics = (newTopics: string[]) => {
-    if (dashboard) {
-      const updatedDashboard = { ...dashboard, topics: newTopics }
-      setDashboard(updatedDashboard)
-    }
-  }
+  const updateTopics = (newTopics: string[]) =>
+    setDashboard({ ...dashboard, topics: newTopics })
 
   const user = useUser()
   const isCreator = dashboard.creatorId === user?.id
@@ -132,9 +120,8 @@ function FoundDashbordPage(props: {
     placeholder: 'Optional. Provide background info and details.',
   })
 
-  if (!dashboard) {
-    return <Custom404 />
-  }
+  const [showDescription, setShowDescription] = useState(false)
+  const reallyShowDesc = editor && (!editor.isEmpty || showDescription)
 
   return (
     <Page
@@ -253,11 +240,13 @@ function FoundDashbordPage(props: {
           </Row>
         )}
         {editMode ? (
-          <DescriptionEditor
-            editor={editor}
-            description={dashboard.description}
-            className="mb-4"
-          />
+          reallyShowDesc && (
+            <DescriptionEditor
+              editor={editor}
+              className="mb-4"
+              onClose={() => setShowDescription(false)}
+            />
+          )
         ) : (
           <DashboardDescription description={dashboard.description} />
         )}
@@ -268,6 +257,9 @@ function FoundDashbordPage(props: {
               setItems={updateItems}
               topics={dashboard.topics}
               setTopics={updateTopics}
+              createDescription={
+                reallyShowDesc ? undefined : () => setShowDescription(true)
+              }
             />
           </div>
         )}
@@ -284,27 +276,23 @@ function FoundDashbordPage(props: {
 }
 
 function DescriptionEditor(props: {
-  description: JSONContent
-  editor: Editor | null
+  editor: Editor
   className?: string
+  onClose: () => void
 }) {
-  const { description, editor, className } = props
-  const [editDescription, setEditDescription] = useState(false)
-  const noDescription = !description || JSONEmpty(description)
-  if (noDescription && !editDescription) {
-    return (
-      <Button
-        className={clsx(className, 'w-full')}
-        color="gray-outline"
-        onClick={() => setEditDescription(true)}
+  const { editor, className, onClose } = props
+  return (
+    <div className={clsx('relative', className)}>
+      <button
+        className="text-ink-500 hover:text-ink-700 absolute -top-2 right-0 z-10 transition-colors"
+        onClick={() => {
+          onClose?.()
+          editor.commands.clearContent()
+        }}
       >
-        <PlusIcon className="mr-2 h-6 w-6" />
-        Add description
-      </Button>
-    )
-  }
-  if (editor) {
-    return <TextEditor editor={editor} className={className} />
-  }
-  return <></>
+        <XCircleIcon className="h-5 w-5" />
+      </button>
+      <TextEditor editor={editor} />
+    </div>
+  )
 }
