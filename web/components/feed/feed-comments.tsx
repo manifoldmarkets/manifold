@@ -216,7 +216,7 @@ export const FeedComment = memo(function FeedComment(props: {
           />
           <div
             className={clsx(
-              'bg-ink-100 absolute bottom-0 left-4 w-0.5 group-last:hidden dark:bg-ink-300 ',
+              'bg-ink-100 dark:bg-ink-300 absolute bottom-0 left-4 w-0.5 group-last:hidden ',
               isParent ? 'top-0' : '-top-1'
             )}
           />
