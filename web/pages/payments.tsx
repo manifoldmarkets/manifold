@@ -95,7 +95,7 @@ export const PaymentsContent = (props: {
       <Row className={'mb-2 justify-between'}>
         <Button onClick={() => setShowQRModal(true)} color="gray-outline">
           {user && user.id === forUser?.id && (
-            <span className="mr-1">Recieve Mana</span>
+            <span className="mr-1">Receive Mana</span>
           )}
           <QrcodeIcon className="h-5 w-5" />
         </Button>
