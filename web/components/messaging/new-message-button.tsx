@@ -15,7 +15,7 @@ export default function NewMessageButton() {
     <>
       <Button className="h-fit gap-1" onClick={() => setOpen(true)}>
         <PlusIcon className="h-5 w-5" aria-hidden="true" />
-        New Chat
+        New Message
       </Button>
       <MessageModal open={open} setOpen={setOpen} />
     </>
