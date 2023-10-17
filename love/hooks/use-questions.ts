@@ -1,16 +1,25 @@
 import { useEffect, useState } from 'react'
-import { Row, run } from 'common/supabase/utils'
-import { db } from 'web/lib/supabase/db'
+import { Row } from 'common/supabase/utils'
+import {
+  getAllQuestions,
+  getUserAnswersAndQuestions,
+} from 'love/lib/supabase/questions'
 
 export const useQuestions = () => {
   const [questions, setQuestions] = useState<Row<'love_questions'>[]>([])
   useEffect(() => {
-    run(
-      db
-        .from('love_questions')
-        .select('*')
-        .order('importance_score', { ascending: false })
-    ).then(({ data }) => setQuestions(data))
+    getAllQuestions().then(setQuestions)
   }, [])
   return questions
+}
+export const useUserAnswersAndQuestions = (userId: string) => {
+  const [answers, setAnswers] = useState<Row<'love_answers'>[]>([])
+  const [questions, setQuestions] = useState<Row<'love_questions'>[]>([])
+  useEffect(() => {
+    getUserAnswersAndQuestions(userId).then(({ answers, questions }) => {
+      setAnswers(answers)
+      setQuestions(questions)
+    })
+  }, [userId])
+  return { answers, questions }
 }
