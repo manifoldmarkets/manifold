@@ -46,7 +46,7 @@ export function ClaimButton(props: {
         try {
           await onClaim()
           await redeemBoost({ adId })
-          toast.success(`+${formatMoney(reward)}`)
+          toast.success(`Boost claimed! +${formatMoney(reward)}`)
           setClaimed(true)
           track('claim boost', { adId })
         } catch (err) {
