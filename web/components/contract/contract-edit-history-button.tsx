@@ -181,8 +181,11 @@ export const ContractHistoryButton = (props: {
                         <div>Unresolved</div>
                       ))}
 
-                    {edit.updatedKeys?.includes('nonPredictive') && (
-                      <div>Toggled Non-Predictive</div>
+                    {edit.updatedKeys?.includes('isRanked') && (
+                      <div>Toggled ranked</div>
+                    )}
+                    {edit.updatedKeys?.includes('isSubsidised') && (
+                      <div>Toggled subsidised</div>
                     )}
                   </Col>
                 </div>

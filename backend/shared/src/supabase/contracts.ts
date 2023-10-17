@@ -15,7 +15,6 @@ import {
 } from 'shared/supabase/vectors'
 import { log } from 'shared/utils'
 import { DEEMPHASIZED_GROUP_SLUGS, isAdminId } from 'common/envs/constants'
-import { NON_PREDICTIVE_GROUP_ID } from 'common/supabase/groups'
 import { convertContract } from 'common/supabase/contracts'
 
 export const getUniqueBettorIds = async (
@@ -296,24 +295,24 @@ export const getUserToReasonsInterestedInContractAndUser = async (
   )
 }
 
-export const isContractLikelyNonPredictive = async (
-  contract: Contract,
-  pg: SupabaseDirectClient
-): Promise<boolean> => {
-  if (contract.question.trim().toLowerCase().includes('daily coinflip'))
-    return true
-  return (
-    await pg.map(
-      `
-    select
-    ((select embedding from contract_embeddings where contract_id = $1)
-         <=>
-        (select embedding from group_embeddings where group_id = $2)) as distance`,
-      [contract.id, NON_PREDICTIVE_GROUP_ID],
-      (row) => row.distance < 0.11
-    )
-  )[0]
-}
+// export const isContractLikelyNonPredictive = async (
+//   contract: Contract,
+//   pg: SupabaseDirectClient
+// ): Promise<boolean> => {
+//   if (contract.question.trim().toLowerCase().includes('daily coinflip'))
+//     return true
+//   return (
+//     await pg.map(
+//       `
+//     select
+//     ((select embedding from contract_embeddings where contract_id = $1)
+//          <=>
+//         (select embedding from group_embeddings where group_id = $2)) as distance`,
+//       [contract.id, UNRANKED_GROUP_ID],
+//       (row) => row.distance < 0.11
+//     )
+//   )[0]
+// }
 
 export const getContractPrivacyWhereSQLFilter = (
   uid: string | undefined,

@@ -3,7 +3,10 @@ import * as admin from 'firebase-admin'
 import { Contract } from 'common/contract'
 import { GroupLink } from 'common/group'
 import { createSupabaseClient, SupabaseDirectClient } from './supabase/init'
-import { NON_PREDICTIVE_GROUP_ID } from 'common/supabase/groups'
+import {
+  UNRANKED_GROUP_ID,
+  UNSUBSIDIZED_GROUP_ID,
+} from 'common/supabase/groups'
 import { recordContractEdit } from 'shared/record-contract-edit'
 import { trackPublicEvent } from 'shared/analytics'
 
@@ -55,12 +58,21 @@ export async function addGroupToContract(
       })
   }
 
-  if (group.id === NON_PREDICTIVE_GROUP_ID && !contract.nonPredictive) {
+  if (group.id === UNRANKED_GROUP_ID && !contract.isRanked) {
     await firestore.collection('contracts').doc(contract.id).update({
-      nonPredictive: true,
+      isRanked: false,
     })
     if (recordEdit) {
-      await recordContractEdit(contract, recordEdit.userId, ['nonPredictive'])
+      await recordContractEdit(contract, recordEdit.userId, ['isRanked'])
+    }
+  }
+
+  if (group.id === UNSUBSIDIZED_GROUP_ID && !contract.isSubsidised) {
+    await firestore.collection('contracts').doc(contract.id).update({
+      isSubsidised: false,
+    })
+    if (recordEdit) {
+      await recordContractEdit(contract, recordEdit.userId, ['isSubsidised'])
     }
   }
 
@@ -103,11 +115,17 @@ export async function removeGroupFromContract(
       groupLinks: newLinks,
     })
 
-  if (group.id === NON_PREDICTIVE_GROUP_ID && contract.nonPredictive) {
+  if (group.id === UNRANKED_GROUP_ID && contract.isRanked) {
     await firestore.collection('contracts').doc(contract.id).update({
-      nonPredictive: false,
+      isRanked: true,
     })
-    await recordContractEdit(contract, userId, ['nonPredictive'])
+    await recordContractEdit(contract, userId, ['isRanked'])
+  }
+  if (group.id === UNSUBSIDIZED_GROUP_ID && contract.isSubsidised) {
+    await firestore.collection('contracts').doc(contract.id).update({
+      isSubsidised: true,
+    })
+    await recordContractEdit(contract, userId, ['isRanked'])
   }
   await trackPublicEvent(userId, 'remove market from topic', {
     contractId: contract.id,

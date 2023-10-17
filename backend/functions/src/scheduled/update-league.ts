@@ -173,7 +173,7 @@ export async function updateLeagueCore() {
       if (
         contract &&
         contract.visibility === 'public' &&
-        !contract.nonPredictive &&
+        !contract.isRanked &&
         !EXCLUDED_CONTRACT_SLUGS.has(contract.slug)
       ) {
         const { profit } = getProfitMetrics(contract, contractBets)

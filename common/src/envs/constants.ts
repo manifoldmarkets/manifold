@@ -42,7 +42,9 @@ export const CORS_ORIGIN_MANIFOLD = new RegExp(
 )
 // Manifold's domain or any subdomains thereof
 export const CORS_ORIGIN_MANIFOLD_LOVE = new RegExp(
-  '^https?://(?:[a-zA-Z0-9\\-]+\\.)*' + escapeRegExp(ENV_CONFIG.loveDomain) + '$'
+  '^https?://(?:[a-zA-Z0-9\\-]+\\.)*' +
+    escapeRegExp(ENV_CONFIG.loveDomain) +
+    '$'
 )
 // Vercel deployments, used for testing.
 export const CORS_ORIGIN_VERCEL = new RegExp(
@@ -241,7 +243,7 @@ export const GROUP_SLUGS_TO_IGNORE_IN_MARKETS_EMAIL = [
   'manifold-features-25bad7c7792e',
   'bugs',
   'manifold-leagues',
-  'nonpredictive',
+  'unranked',
 ]
 
 export const DEEMPHASIZED_GROUP_SLUGS = [
@@ -317,7 +319,7 @@ export const GROUP_SLUGS_TO_HIDE_FROM_WELCOME_FLOW = [
   '-sircryptomind-crypto-stock',
   'selfresolving',
   'fun',
-  'nonpredictive',
+  'unranked',
   'bugs',
   'rationalussy',
   'personal',

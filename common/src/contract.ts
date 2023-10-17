@@ -111,7 +111,8 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
   isTwitchContract?: boolean
 
   coverImageUrl?: string
-  nonPredictive?: boolean // If true, don't include profits in leagues, etc.
+  isRanked?: boolean
+  isSubsidised?: boolean
 } & T
 
 export type DPMContract = Contract & DPM
