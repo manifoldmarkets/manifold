@@ -210,6 +210,7 @@ export function FeedContractCard(props: {
           <Col className={'w-full items-center'}>
             <ClaimButton
               {...promotedData}
+              onClaim={() => router.push(path)}
               className={'z-10 my-2 whitespace-nowrap'}
             />
           </Col>
