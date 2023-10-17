@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Col } from 'web/components/layout/col'
-import { useLover } from 'web/hooks/use-lover'
+import { useLover } from 'love/hooks/use-lover'
 import { RequiredLoveUserForm } from 'love/components/required-lover-form'
 import { OptionalLoveUserForm } from 'love/components/optional-lover-form'
 
