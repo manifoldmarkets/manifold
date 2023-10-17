@@ -144,6 +144,7 @@ export interface Database {
       contract_bets: {
         Row: {
           amount: number | null
+          answer_id: string | null
           bet_id: string
           contract_id: string
           created_time: string | null
@@ -162,6 +163,7 @@ export interface Database {
         }
         Insert: {
           amount?: number | null
+          answer_id?: string | null
           bet_id: string
           contract_id: string
           created_time?: string | null
@@ -180,6 +182,7 @@ export interface Database {
         }
         Update: {
           amount?: number | null
+          answer_id?: string | null
           bet_id?: string
           contract_id?: string
           created_time?: string | null
@@ -864,66 +867,6 @@ export interface Database {
         }
         Relationships: []
       }
-      love_answers: {
-        Row: {
-          created_time: string
-          creator_id: string
-          free_response: string | null
-          id: number
-          integer: number | null
-          multiple_choice: number | null
-          question_id: number
-        }
-        Insert: {
-          created_time?: string
-          creator_id: string
-          free_response?: string | null
-          id?: never
-          integer?: number | null
-          multiple_choice?: number | null
-          question_id: number
-        }
-        Update: {
-          created_time?: string
-          creator_id?: string
-          free_response?: string | null
-          id?: never
-          integer?: number | null
-          multiple_choice?: number | null
-          question_id?: number
-        }
-        Relationships: []
-      }
-      love_questions: {
-        Row: {
-          answer_type: string
-          created_time: string
-          creator_id: string
-          id: number
-          importance_score: number
-          multiple_choice_options: Json | null
-          question: string
-        }
-        Insert: {
-          answer_type?: string
-          created_time?: string
-          creator_id: string
-          id?: never
-          importance_score?: number
-          multiple_choice_options?: Json | null
-          question: string
-        }
-        Update: {
-          answer_type?: string
-          created_time?: string
-          creator_id?: string
-          id?: never
-          importance_score?: number
-          multiple_choice_options?: Json | null
-          question?: string
-        }
-        Relationships: []
-      }
       love_waitlist: {
         Row: {
           created_time: string
@@ -1276,36 +1219,6 @@ export interface Database {
         }
         Relationships: []
       }
-      q_and_a: {
-        Row: {
-          bounty: number
-          created_time: string
-          deleted: boolean
-          description: string
-          id: string
-          question: string
-          user_id: string
-        }
-        Insert: {
-          bounty: number
-          created_time?: string
-          deleted?: boolean
-          description: string
-          id: string
-          question: string
-          user_id: string
-        }
-        Update: {
-          bounty?: number
-          created_time?: string
-          deleted?: boolean
-          description?: string
-          id?: string
-          question?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       private_user_message_channel_members: {
         Row: {
           channel_id: number
@@ -1392,6 +1305,36 @@ export interface Database {
           channel_id?: number
           created_time?: string
           id?: never
+          user_id?: string
+        }
+        Relationships: []
+      }
+      q_and_a: {
+        Row: {
+          bounty: number
+          created_time: string
+          deleted: boolean
+          description: string
+          id: string
+          question: string
+          user_id: string
+        }
+        Insert: {
+          bounty: number
+          created_time?: string
+          deleted?: boolean
+          description: string
+          id: string
+          question: string
+          user_id: string
+        }
+        Update: {
+          bounty?: number
+          created_time?: string
+          deleted?: boolean
+          description?: string
+          id?: string
+          question?: string
           user_id?: string
         }
         Relationships: []
@@ -2680,6 +2623,13 @@ export interface Database {
         Args: {
           this_contract_id: string
           this_member_id: string
+        }
+        Returns: boolean
+      }
+      can_access_private_messages: {
+        Args: {
+          channel_id: number
+          user_id: string
         }
         Returns: boolean
       }
