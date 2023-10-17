@@ -122,7 +122,7 @@ module.exports = {
       },
       {
         source: '/groups',
-        destination: '/browse',
+        destination: '/browse?t=Topics',
         permanent: true,
       },
       {
