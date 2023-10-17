@@ -20,6 +20,9 @@ import clsx from 'clsx'
 import { SEARCH_TYPE_KEY } from 'web/components/supabase-search'
 import { linkClass } from 'web/components/widgets/site-link'
 import { first } from 'lodash'
+import { Button } from 'web/components/buttons/button'
+import { PlusCircleIcon, PlusIcon } from '@heroicons/react/solid'
+import NewMessageButton from 'web/components/messaging/new-message-button'
 export const getServerSideProps = redirectIfLoggedOut('/')
 
 export default function MessagesPage() {
@@ -39,17 +42,14 @@ export default function MessagesPage() {
 
   return (
     <Page trackPageView={'messages page'} className={'p-2'}>
-      <Title>Messages</Title>
+      <Row className="justify-between">
+        <Title>Messages</Title>
+        <NewMessageButton />
+      </Row>
       <Col className={'w-full gap-2 overflow-hidden'}>
         {currentUser && channelIds.length === 0 && (
           <div className={'mt-4 text-center text-gray-400'}>
-            You have no messages, yet.{' '}
-            <Link
-              className={linkClass}
-              href={`/browse?${SEARCH_TYPE_KEY}=Users`}
-            >
-              Find someone to chat with.
-            </Link>
+            You have no messages, yet.
           </div>
         )}
         {currentUser &&
