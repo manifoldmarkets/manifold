@@ -11,7 +11,6 @@ import { MODAL_CLASS, Modal } from '../layout/modal'
 import { Row } from '../layout/row'
 import { BuyAmountInput } from '../widgets/amount-input'
 import { InfoTooltip } from '../widgets/info-tooltip'
-import { FaMoneyBillWave } from 'react-icons/fa6'
 import { TbMoneybag } from 'react-icons/tb'
 
 const loadLottie = () => import('react-lottie')

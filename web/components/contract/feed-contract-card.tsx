@@ -36,9 +36,8 @@ import { TradesButton } from './trades-button'
 import { FeedDropdown } from '../feed/card-dropdown'
 import { CategoryTags } from '../feed/feed-timeline-items'
 import { JSONEmpty } from 'web/components/contract/contract-description'
-import { ENV, ENV_CONFIG } from 'common/envs/constants'
+import { ENV_CONFIG } from 'common/envs/constants'
 import { TbDropletHeart, TbMoneybag } from 'react-icons/tb'
-import { FaMoneyBillWave } from 'react-icons/fa6'
 
 export function FeedContractCard(props: {
   contract: Contract
