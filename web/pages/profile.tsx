@@ -1,9 +1,8 @@
 import { RefreshIcon } from '@heroicons/react/outline'
 import { TrashIcon } from '@heroicons/react/solid'
 import { PrivateUser, User } from 'common/user'
-import { cleanDisplayName, cleanUsername } from 'common/util/clean-username'
 import Link from 'next/link'
-import { useState } from 'react'
+import { ReactNode, useState } from 'react'
 import { buttonClass } from 'web/components/buttons/button'
 import { ConfirmationButton } from 'web/components/buttons/confirmation-button'
 import { ExpandingInput } from 'web/components/widgets/expanding-input'
@@ -30,15 +29,16 @@ import router from 'next/router'
 import { useUser } from 'web/hooks/use-user'
 import ShortToggle from 'web/components/widgets/short-toggle'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
+import { useEditableUserInfo } from 'web/hooks/use-editable-user-info'
 
 export const getServerSideProps = redirectIfLoggedOut('/', async (_, creds) => {
   return { props: { auth: await getUserAndPrivateUser(creds.uid) } }
 })
 
-function EditUserField(props: {
+export function EditUserField(props: {
   user: User
   field: 'bio' | 'website' | 'twitterHandle' | 'discordHandle'
-  label: string
+  label: ReactNode
 }) {
   const { user, field, label } = props
   const [value, setValue] = useState(user[field] ?? '')
@@ -49,9 +49,8 @@ function EditUserField(props: {
   }
 
   return (
-    <div>
-      <label className="mb-1 block">{label}</label>
-
+    <Col>
+      {label}
       {field === 'bio' ? (
         <ExpandingInput
           className="w-full"
@@ -67,7 +66,7 @@ function EditUserField(props: {
           onBlur={updateField}
         />
       )}
-    </div>
+    </Col>
   )
 }
 
@@ -78,55 +77,20 @@ export default function ProfilePage(props: {
   const user = useUser() ?? props.auth.user
   const [avatarUrl, setAvatarUrl] = useState(user.avatarUrl || '')
   const [avatarLoading, setAvatarLoading] = useState(false)
-  const [name, setName] = useState(user.name)
-  const [username, setUsername] = useState(user.username)
   const [apiKey, setApiKey] = useState(privateUser.apiKey || '')
   const [deleteAccountConfirmation, setDeleteAccountConfirmation] = useState('')
-  const [loadingName, setLoadingName] = useState(false)
-  const [loadingUsername, setLoadingUsername] = useState(false)
-  const [errorName, setErrorName] = useState('')
-  const [errorUsername, setErrorUsername] = useState('')
   const [betWarnings, setBetWarnings] = useState(!user.optOutBetWarnings)
-  const updateDisplayName = async () => {
-    const newName = cleanDisplayName(name)
-    if (newName === user.name) return
-    setLoadingName(true)
-    setErrorName('')
-    if (!newName) return setName(user.name)
 
-    setName(newName)
-    await changeUserInfo({ name: newName })
-      .then(() => {
-        setErrorName('')
-        setName(newName)
-      })
-      .catch((reason) => {
-        setErrorName(reason.message)
-        setName(user.name)
-      })
-    setLoadingName(false)
-  }
-
-  const updateUsername = async () => {
-    const newUsername = cleanUsername(username)
-    if (newUsername === user.username) return
-
-    if (!newUsername) return setUsername(user.username)
-    setLoadingUsername(true)
-    setErrorUsername('')
-    setUsername(newUsername)
-    await changeUserInfo({ username: newUsername })
-      .then(() => {
-        setErrorUsername('')
-        setUsername(newUsername)
-      })
-      .catch((reason) => {
-        setErrorUsername(reason.message)
-        setUsername(user.username)
-      })
-    setLoadingUsername(false)
-  }
-
+  const { updateUsername, updateDisplayName, userInfo, updateUserState } =
+    useEditableUserInfo(user)
+  const {
+    name,
+    username,
+    errorUsername,
+    loadingUsername,
+    loadingName,
+    errorName,
+  } = userInfo
   const updateApiKey = async (e?: React.MouseEvent) => {
     const newApiKey = await generateNewApiKey(user.id)
     setApiKey(newApiKey ?? '')
@@ -206,7 +170,7 @@ export default function ProfilePage(props: {
                 placeholder="Display name"
                 value={name}
                 onChange={(e) => {
-                  setName(e.target.value || '')
+                  updateUserState({ name: e.target.value || '' })
                 }}
                 onBlur={updateDisplayName}
               />
@@ -231,7 +195,7 @@ export default function ProfilePage(props: {
                 placeholder="Username"
                 value={username}
                 onChange={(e) => {
-                  setUsername(e.target.value || '')
+                  updateUserState({ username: e.target.value || '' })
                 }}
                 onBlur={updateUsername}
               />
@@ -258,7 +222,7 @@ export default function ProfilePage(props: {
               key={field}
               user={user}
               field={field}
-              label={label}
+              label={<label className="mb-1 block">{label}</label>}
             />
           ))}
 
