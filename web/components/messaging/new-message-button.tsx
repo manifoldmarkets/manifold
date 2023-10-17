@@ -7,6 +7,7 @@ import { SupabaseSearch } from '../supabase-search'
 import { User } from 'common/user'
 import { createPrivateMessageChannelWithUser } from 'web/lib/firebase/api'
 import { useRouter } from 'next/router'
+import clsx from 'clsx'
 
 export default function NewMessageButton() {
   const [open, setOpen] = useState(false)
@@ -47,7 +48,8 @@ function MessageModal(props: {
   }
   return (
     <Modal open={open} setOpen={setOpen}>
-      <Col className={MODAL_CLASS}>
+      <Col className={clsx(MODAL_CLASS, 'h-[40rem] overflow-scroll')}>
+        <div className="bg-canvas-0 rounded-t- absolute top-0 h-20 w-full rounded-t-md" />
         <SupabaseSearch
           persistPrefix="message-search"
           headerClassName={'pt-0'}
