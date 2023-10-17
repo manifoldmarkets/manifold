@@ -37,6 +37,8 @@ import { FeedDropdown } from '../feed/card-dropdown'
 import { CategoryTags } from '../feed/feed-timeline-items'
 import { JSONEmpty } from 'web/components/contract/contract-description'
 import { Tooltip } from '../widgets/tooltip'
+import { ENV_CONFIG } from 'common/envs/constants'
+import { TbDropletHeart } from 'react-icons/tb'
 
 export function FeedContractCard(props: {
   contract: Contract
@@ -241,7 +243,7 @@ export function FeedContractCard(props: {
 
 // ensures that the correct spacing is between buttons
 const BottomRowButtonWrapper = (props: { children: React.ReactNode }) => {
-  return <Row className="min-w-14 justify-start">{props.children}</Row>
+  return <Row className="basis-10 justify-start">{props.children}</Row>
 }
 
 const BottomActionRow = (props: {
@@ -255,7 +257,7 @@ const BottomActionRow = (props: {
   return (
     <Row
       className={clsx(
-        'items-center justify-between pt-2',
+        'justify-between pt-2',
         underline ? 'border-1 border-ink-200 border-b pb-3' : 'pb-2'
       )}
     >
@@ -263,25 +265,20 @@ const BottomActionRow = (props: {
         <TradesButton contract={contract} />
       </BottomRowButtonWrapper>
 
-      <BottomRowButtonWrapper>
-        <div>
+      {'totalLiquidity' in contract && (
+        <BottomRowButtonWrapper>
           {(contract.mechanism === 'cpmm-1' ||
-            contract.mechanism === 'cpmm-multi-1') && (
-            <Tooltip
-              text={`Liquidity subsidy pool: ${formatMoney(
-                contract.totalLiquidity
-              )}`}
-              placement="bottom"
-              noTap
-              className="flex flex-row items-center gap-1"
-            >
-              <div className="text-ink-500 text-sm grayscale">
-                💧 Ṁ{shortFormatNumber(contract.totalLiquidity)}
+            contract.outcomeType === 'MULTIPLE_CHOICE') && (
+            <div className="text-ink-500 z-10 flex items-center gap-1.5 text-sm">
+              <TbDropletHeart className="h-6 w-6 stroke-2" />
+              <div>
+                {ENV_CONFIG.moneyMoniker}
+                {shortFormatNumber(contract.totalLiquidity)}
               </div>
-            </Tooltip>
+            </div>
           )}
-        </div>
-      </BottomRowButtonWrapper>
+        </BottomRowButtonWrapper>
+      )}
 
       <BottomRowButtonWrapper>
         <CommentsButton contract={contract} user={user} />
@@ -295,7 +292,7 @@ const BottomActionRow = (props: {
           totalLikes={contract.likedByUserCount ?? 0}
           contract={contract}
           contentText={question}
-          className={'hover:!bg-canvas-0 px-0'}
+          className={'hover:!bg-canvas-0 !px-0'}
           trackingLocation={'contract card (feed)'}
           placement="top"
         />

@@ -37,6 +37,7 @@ export const LikeButton = memo(function LikeButton(props: {
   isSwipe?: boolean
   placement?: 'top' | 'bottom'
   size?: SizeType
+  disabled?: boolean
 }) {
   const {
     user,
@@ -52,7 +53,7 @@ export const LikeButton = memo(function LikeButton(props: {
     size,
   } = props
   const userLiked = useIsLiked(user?.id, contentType, contentId)
-  const disabled = !user
+  const disabled = props.disabled || !user
   const isMe = contentCreatorId === user?.id
   const [liked, setLiked] = useState(false)
   const [modalOpen, setModalOpen] = useState(false)

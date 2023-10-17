@@ -41,7 +41,7 @@ export const DashboardNewsItem = (props: {
     >
       {imgSrc && (
         <img
-          className="object-cover sm:w-1/3"
+          className="h-[200px] object-cover sm:h-auto sm:w-1/3"
           src={imgSrc}
           alt=""
           height={200}

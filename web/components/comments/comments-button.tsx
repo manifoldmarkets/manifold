@@ -58,10 +58,10 @@ export function CommentsButton(props: {
   const totalComments = useNumContractComments(contract.id)
 
   return (
-    <Tooltip text={`Comments`} placement="top" className={'z-10'}>
+    <Tooltip text={`Comments`} placement="top" noTap>
       <button
         disabled={totalComments === 0 && !user}
-        className="hover:text-ink-600 text-ink-500 flex items-center gap-1.5 disabled:opacity-50"
+        className="hover:text-ink-600 text-ink-500 flex h-full items-center gap-1.5 disabled:opacity-50"
         onClick={(e) => {
           e.preventDefault()
           setOpen(true)

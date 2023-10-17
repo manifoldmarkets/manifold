@@ -24,21 +24,20 @@ export function HeaderActions(props: {
     <Row className="items-center">
       {children}
 
-      <div className={'flex items-center'}>
-        <LikeButton
-          user={user}
-          contract={contract}
-          contentId={contract.id}
-          contentType="contract"
-          contentCreatorId={contract.creatorId}
-          totalLikes={contract.likedByUserCount ?? 0}
-          contentText={contract.question}
-          className={clsx(
-            isBlocked(privateUser, contract.creatorId) && 'pointer-events-none'
-          )}
-          trackingLocation={'contract page'}
-        />
-      </div>
+      {!isBlocked(privateUser, contract.creatorId) && (
+        <div className="flex items-center">
+          <LikeButton
+            user={user}
+            contract={contract}
+            contentId={contract.id}
+            contentType="contract"
+            contentCreatorId={contract.creatorId}
+            totalLikes={contract.likedByUserCount ?? 0}
+            contentText={contract.question}
+            trackingLocation={'contract page'}
+          />
+        </div>
+      )}
 
       <CopyLinkOrShareButton
         url={getShareUrl(contract, user?.username)}

@@ -28,27 +28,25 @@ export function TradesButton(props: { contract: Contract }) {
   }, [contract.uniqueBettorCount])
   const isPoll = contract.outcomeType === 'POLL'
   return (
-    <button
-      disabled={uniqueTraders === 0}
-      className={clsx(
-        'text-ink-500 transition-transform disabled:cursor-not-allowed'
-      )}
-      onClick={(e) => {
-        track('click feed card traders button', { contractId: contract.id })
-        e.preventDefault()
-        setModalOpen(true)
-      }}
-    >
-      <Row className="relative gap-1.5 text-sm">
-        <Tooltip
-          text={'Traders'}
-          placement={'top'}
-          className={clsx('flex flex-row items-center justify-center gap-1.5')}
+    <>
+      <Tooltip text="Traders" placement="top" noTap>
+        <button
+          disabled={uniqueTraders === 0}
+          className={clsx(
+            'text-ink-500 flex h-full flex-row items-center justify-center gap-1.5 transition-transform disabled:cursor-not-allowed'
+          )}
+          onClick={(e) => {
+            track('click feed card traders button', { contractId: contract.id })
+            e.preventDefault()
+            setModalOpen(true)
+          }}
         >
-          <UserIcon className={clsx(' h-5')} />
-          <div>{uniqueTraders > 0 ? uniqueTraders : ''}</div>
-        </Tooltip>
-      </Row>
+          <Row className="relative gap-1.5 text-sm">
+            <UserIcon className={clsx(' h-5')} />
+            <div>{uniqueTraders > 0 ? uniqueTraders : ''}</div>
+          </Row>
+        </button>
+      </Tooltip>
       <Modal
         open={modalOpen}
         setOpen={setModalOpen}
@@ -69,7 +67,7 @@ export function TradesButton(props: { contract: Contract }) {
           </div>
         )}
       </Modal>
-    </button>
+    </>
   )
 }
 

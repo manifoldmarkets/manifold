@@ -494,9 +494,7 @@ function CommentActions(props: {
         contract={contract}
         size={'xs'}
         contentText={richTextToString(comment.content)}
-        className={
-          isBlocked(privateUser, comment.userId) ? 'pointer-events-none' : ''
-        }
+        disabled={isBlocked(privateUser, comment.userId)}
         trackingLocation={trackingLocation}
       />
     </Row>
