@@ -63,7 +63,7 @@ const signedOutNavigation = () => [
 ]
 
 // From https://codepen.io/chris__sev/pen/QWGvYbL
-export function BottomNavBar() {
+export function BottomNavBar(props: { navigationOptions?: Item[] }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   const router = useRouter()
@@ -81,7 +81,9 @@ export function BottomNavBar() {
     return null
   }
 
-  const navigationOptions = user ? getNavigation(user) : signedOutNavigation()
+  const navigationOptions =
+    props.navigationOptions ??
+    (user ? getNavigation(user) : signedOutNavigation())
 
   return (
     <nav className="border-ink-200 dark:border-ink-300 text-ink-700 bg-canvas-0 fixed inset-x-0 bottom-0 z-50 flex select-none items-center justify-between border-t-2 text-xs lg:hidden">

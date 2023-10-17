@@ -24,10 +24,10 @@ import { FollowButton } from 'web/components/buttons/follow-button'
 import { MoreOptionsUserButton } from 'web/components/buttons/more-options-user-button'
 import { Linkify } from 'web/components/widgets/linkify'
 import { LinkIcon } from '@heroicons/react/solid'
-import { Page } from 'web/components/layout/page'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useUser } from 'web/hooks/use-user'
 import { fromNow } from 'web/lib/util/time'
+import { LovePage } from 'love/components/love-page'
 
 export const getStaticProps = async (props: {
   params: {
@@ -74,7 +74,7 @@ export default function UserPage(props: {
   }
 
   return (
-    <Page
+    <LovePage
       key={user.id}
       trackPageView={'user page'}
       trackPageProps={{ username: user.username }}
@@ -236,7 +236,7 @@ export default function UserPage(props: {
           </Col>
         )}
       </Col>
-    </Page>
+    </LovePage>
   )
 }
 const LoverAttributes = (props: { lover: Lover }) => {
