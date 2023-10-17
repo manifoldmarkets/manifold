@@ -33,9 +33,13 @@ import { useTopicFromRouter } from 'web/hooks/use-topic-from-router'
 import { BackButton } from 'web/components/contract/back-button'
 
 export async function getStaticProps() {
-  const allTime = await queryLeaderboardUsers('allTime')
+  const allTime = await queryLeaderboardUsers('allTime').catch(() => ({
+    topTraders: [],
+    topCreators: [],
+  }))
 
-  const topReferrals = await getTopReferrals(db)
+  const topReferrals = await getTopReferrals(db).catch(() => [])
+
   return {
     props: {
       allTime,
@@ -65,6 +69,7 @@ type Ranking = {
   tradersRank: number
   referralsRank: number
 }
+
 export default function Leaderboards(props: {
   allTime: Leaderboard
   topReferrals: Awaited<ReturnType<typeof getTopReferrals>>
