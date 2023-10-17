@@ -13,7 +13,7 @@ export function ManifoldLogo(props: { className?: string; twoLine?: boolean }) {
     <Link
       href={user ? '/home' : '/'}
       className={clsx(
-        'group flex w-full flex-row items-center gap-0.5 px-1',
+        'group flex w-full flex-row items-center gap-0.5 px-1 outline-none',
         className
       )}
     >
