@@ -11,6 +11,8 @@ import { MODAL_CLASS, Modal } from '../layout/modal'
 import { Row } from '../layout/row'
 import { BuyAmountInput } from '../widgets/amount-input'
 import { InfoTooltip } from '../widgets/info-tooltip'
+import { FaMoneyBillWave } from 'react-icons/fa6'
+import { TbMoneybag } from 'react-icons/tb'
 
 const loadLottie = () => import('react-lottie')
 const loadAwardJson = () => import('../../public/lottie/award.json')
@@ -210,11 +212,12 @@ export function AddBountyButton(props: {
   return (
     <>
       <Button
-        className={clsx(buttonClassName)}
+        className={clsx(buttonClassName, 'group gap-1')}
         color={'green-outline'}
         onClick={() => setOpen(true)}
       >
-        💸 Add bounty
+        <TbMoneybag className="h-5 w-5 fill-teal-300 stroke-teal-600 group-hover:fill-none group-hover:stroke-current" />
+        Add bounty
       </Button>
       <Modal open={open} setOpen={setOpen}>
         <Col className={MODAL_CLASS}>

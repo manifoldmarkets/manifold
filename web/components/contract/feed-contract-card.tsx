@@ -36,8 +36,9 @@ import { TradesButton } from './trades-button'
 import { FeedDropdown } from '../feed/card-dropdown'
 import { CategoryTags } from '../feed/feed-timeline-items'
 import { JSONEmpty } from 'web/components/contract/contract-description'
-import { ENV_CONFIG } from 'common/envs/constants'
-import { TbDropletHeart } from 'react-icons/tb'
+import { ENV, ENV_CONFIG } from 'common/envs/constants'
+import { TbDropletHeart, TbMoneybag } from 'react-icons/tb'
+import { FaMoneyBillWave } from 'react-icons/fa6'
 
 export function FeedContractCard(props: {
   contract: Contract
@@ -265,10 +266,22 @@ const BottomActionRow = (props: {
         <TradesButton contract={contract} />
       </BottomRowButtonWrapper>
 
+      {contract.outcomeType === 'BOUNTIED_QUESTION' && (
+        <BottomRowButtonWrapper>
+          <div className="text-ink-500 z-10 flex items-center gap-1.5 text-sm">
+            <TbMoneybag className="h-6 w-6 stroke-2" />
+            <div>
+              {ENV_CONFIG.moneyMoniker}
+              {shortFormatNumber(contract.bountyLeft)}
+            </div>
+          </div>
+        </BottomRowButtonWrapper>
+      )}
+
+      {/* cpmm markets */}
       {'totalLiquidity' in contract && (
         <BottomRowButtonWrapper>
-          {(contract.mechanism === 'cpmm-1' ||
-            contract.outcomeType === 'MULTIPLE_CHOICE') && (
+          {
             <div className="text-ink-500 z-10 flex items-center gap-1.5 text-sm">
               <TbDropletHeart className="h-6 w-6 stroke-2" />
               <div>
@@ -276,7 +289,7 @@ const BottomActionRow = (props: {
                 {shortFormatNumber(contract.totalLiquidity)}
               </div>
             </div>
-          )}
+          }
         </BottomRowButtonWrapper>
       )}
 
