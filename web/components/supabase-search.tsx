@@ -43,6 +43,7 @@ import { Button, IconButton } from 'web/components/buttons/button'
 import Link from 'next/link'
 import { useFollowedUsersOnLoad } from 'web/hooks/use-follows'
 import { CONTRACTS_PER_SEARCH_PAGE } from 'common/supabase/contracts'
+import { UserResults } from './search/user-results'
 
 const USERS_PER_PAGE = 100
 const TOPICS_PER_PAGE = 100
@@ -158,6 +159,7 @@ export function SupabaseSearch(props: {
   additionalFilter?: SupabaseAdditionalFilter
   highlightContractIds?: string[]
   onContractClick?: (contract: Contract) => void
+  onUserClick?: (user: User) => void
   hideOrderSelector?: boolean
   hideActions?: boolean
   headerClassName?: string
@@ -175,6 +177,7 @@ export function SupabaseSearch(props: {
   yourTopics?: Group[]
   contractsOnly?: boolean
   showTopicTag?: boolean
+  hideSearchTypes? : boolean
 }) {
   const {
     defaultSort,
@@ -197,6 +200,7 @@ export function SupabaseSearch(props: {
     yourTopics,
     contractsOnly,
     showTopicTag,
+    hideSearchTypes
   } = props
 
   const [searchParams, setSearchParams, defaults] = useSearchQueryState({
@@ -251,6 +255,7 @@ export function SupabaseSearch(props: {
   const setSearchType = (t: SearchType) =>
     setSearchParams({ [SEARCH_TYPE_KEY]: searchTypeAsString === t ? '' : t })
   const showSearchTypes =
+  !hideSearchTypes && 
     ((showSearchTypeState &&
       (!currentTopicSlug || currentTopicSlug === 'for-you') &&
       queryAsString !== '') ||
@@ -467,56 +472,6 @@ export function SupabaseSearch(props: {
   )
 }
 
-const UserResults = (props: { users: UserSearchResult[] }) => {
-  return (
-    <Col className={'mt-1 w-full gap-1'}>
-      {props.users.map(
-        ({
-          id,
-          name,
-          username,
-          avatarUrl,
-          bio,
-          createdTime,
-          creatorTraders,
-        }) => (
-          <Link key={id} href={`/${username}`}>
-            <Row className={'hover:bg-primary-100 p-1'}>
-              <Col className={'w-full'}>
-                <Row className={'justify-between'}>
-                  <Row className={'gap-1'}>
-                    <Avatar
-                      username={username}
-                      avatarUrl={avatarUrl}
-                      className={'mt-1'}
-                    />
-                    <StackedUserNames
-                      user={
-                        { id, name, username, avatarUrl, createdTime } as User
-                      }
-                      className={'font-normal sm:text-lg'}
-                      usernameClassName={'sm:text-sm font-normal'}
-                    />
-                  </Row>
-                  <FollowButton size={'xs'} userId={id} />
-                </Row>
-                <div className={'text-ink-500 ml-1 line-clamp-2 text-sm'}>
-                  {creatorTraders.allTime > 0 && (
-                    <span className={'mr-1'}>
-                      {shortFormatNumber(creatorTraders.allTime)} traders
-                      {bio && ' •'}
-                    </span>
-                  )}
-                  <span>{bio}</span>
-                </div>
-              </Col>
-            </Row>
-          </Link>
-        )
-      )}
-    </Col>
-  )
-}
 
 const TopicResults = (props: { topics: Group[]; yourTopicIds: string[] }) => {
   const { topics, yourTopicIds } = props
