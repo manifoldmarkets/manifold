@@ -44,18 +44,12 @@ export default function MessagesPage() {
     <Page trackPageView={'messages page'} className={'p-2'}>
       <Row className="justify-between">
         <Title>Messages</Title>
-        <NewMessageButton/>
-        </Row>
+        <NewMessageButton />
+      </Row>
       <Col className={'w-full gap-2 overflow-hidden'}>
         {currentUser && channelIds.length === 0 && (
           <div className={'mt-4 text-center text-gray-400'}>
-            You have no messages, yet.{' '}
-            <Link
-              className={linkClass}
-              href={`/browse?${SEARCH_TYPE_KEY}=Users`}
-            >
-              Find someone to chat with.
-            </Link>
+            You have no messages, yet.
           </div>
         )}
         {currentUser &&
