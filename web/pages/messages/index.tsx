@@ -17,11 +17,7 @@ import { User } from 'common/user'
 import { Content } from 'web/components/widgets/editor'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import clsx from 'clsx'
-import { SEARCH_TYPE_KEY } from 'web/components/supabase-search'
-import { linkClass } from 'web/components/widgets/site-link'
 import { first } from 'lodash'
-import { Button } from 'web/components/buttons/button'
-import { PlusCircleIcon, PlusIcon } from '@heroicons/react/solid'
 import NewMessageButton from 'web/components/messaging/new-message-button'
 export const getServerSideProps = redirectIfLoggedOut('/')
 
