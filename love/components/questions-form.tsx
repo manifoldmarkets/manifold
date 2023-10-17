@@ -11,6 +11,9 @@ import { Input } from 'web/components/widgets/input'
 import { RadioToggleGroup } from 'web/components/widgets/radio-toggle-group'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { ExpandingInput } from 'web/components/widgets/expanding-input'
+import { useRouter } from 'next/router'
+import { Row } from 'web/components/layout/row'
+import { Button } from 'web/components/buttons/button'
 
 export const QuestionsForm = () => {
   const questions = useQuestions()
@@ -18,10 +21,11 @@ export const QuestionsForm = () => {
   const user = useUser()
   const [page, setPage] = useState(0)
   const questionsPerPage = 3
+  const router = useRouter()
   return (
-    <>
+    <Col className={'p-2'}>
       <Title>Questions</Title>
-      <Col className={'min-h-[calc(100vh-3rem)] justify-between'}>
+      <Col className={'min-h-[calc(100vh-4rem)] justify-between'}>
         <Col className={'gap-2'}>
           {user &&
             isAuthed &&
@@ -32,14 +36,29 @@ export const QuestionsForm = () => {
               )
               .map((row) => <QuestionRow user={user} key={row.id} row={row} />)}
         </Col>
-        <Pagination
-          page={page}
-          itemsPerPage={questionsPerPage}
-          totalItems={questions.length}
-          setPage={setPage}
-        />
+        <Row>
+          <Col className={'w-full'}>
+            <Pagination
+              page={page}
+              itemsPerPage={questionsPerPage}
+              totalItems={questions.length}
+              setPage={setPage}
+            />
+            <Row className={'justify-end'}>
+              <Button
+                className={'-auto'}
+                color={'gray-outline'}
+                onClick={() =>
+                  router.push('/' + (user ? user.username : 'browse'))
+                }
+              >
+                Done
+              </Button>
+            </Row>
+          </Col>
+        </Row>
       </Col>
-    </>
+    </Col>
   )
 }
 type loveAnswer = rowFor<'love_answers'>
@@ -75,14 +94,32 @@ const QuestionRow = (props: { row: rowFor<'love_questions'>; user: User }) => {
     fetchPrevious()
   }, [row.id])
 
-  const submitAnswer = async () => {
-    if (!form) return
+  const filterKeys = (
+    obj: Record<string, any>,
+    predicate: (key: string, value: any) => boolean
+  ): Record<string, any> => {
+    const filteredEntries = Object.entries(obj).filter(([key, value]) =>
+      predicate(key, value)
+    )
+    return Object.fromEntries(filteredEntries)
+  }
+
+  const submitAnswer = async (currentForm?: loveAnswerState) => {
+    const updatedForm = currentForm ?? form
+    if (!updatedForm) return
+    const input = {
+      ...filterKeys(
+        updatedForm,
+        (key, _) => !['id', 'created_time'].includes(key)
+      ),
+    }
     await run(
       db
         .from('love_answers')
-        .upsert([{ ...form }], { onConflict: 'question_id,creator_id' })
+        .upsert(input, { onConflict: 'question_id,creator_id' })
     )
   }
+
   return (
     <Col className={'w-full gap-2 p-2 sm:items-center'}>
       <span>{question}</span>
@@ -92,15 +129,17 @@ const QuestionRow = (props: { row: rowFor<'love_questions'>; user: User }) => {
           rows={3}
           value={form.free_response ?? ''}
           onChange={(e) => setForm({ ...form, free_response: e.target.value })}
-          onBlur={submitAnswer}
+          onBlur={() => submitAnswer()}
         />
       ) : answer_type === 'multiple_choice' && row.multiple_choice_options ? (
         <RadioToggleGroup
           className={'w-44'}
           choicesMap={options}
           setChoice={(choice) => {
-            setForm({ ...form, multiple_choice: choice })
-            submitAnswer()
+            console.log(choice)
+            const updatedForm = { ...form, multiple_choice: choice }
+            setForm(updatedForm)
+            submitAnswer(updatedForm)
           }}
           currentChoice={form.multiple_choice ?? -1}
         />
@@ -114,7 +153,7 @@ const QuestionRow = (props: { row: rowFor<'love_questions'>; user: User }) => {
             setForm({ ...form, integer: Number(e.target.value) })
           }
           value={form.integer ?? undefined}
-          onBlur={submitAnswer}
+          onBlur={() => submitAnswer()}
         />
       ) : null}
     </Col>

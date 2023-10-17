@@ -278,9 +278,9 @@ export const OptionalLoveUserForm = (props: { lover: Lover }) => {
             setChoice={(c) => handleChange('education_level', c)}
           />
         </Col>
-        <div>
-          <Button onClick={handleSubmit}>Submit</Button>
-        </div>
+        <Row className={'justify-end'}>
+          <Button onClick={handleSubmit}>Next</Button>
+        </Row>
       </Col>
     </>
   )
