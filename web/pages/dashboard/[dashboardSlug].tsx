@@ -37,7 +37,13 @@ export async function getStaticProps(ctx: {
   try {
     const dashboard = await getDashboardFromSlug({ dashboardSlug })
 
-    return { props: { initialDashboard: dashboard, slug: dashboardSlug } }
+    return {
+      props: {
+        state: 'success',
+        initialDashboard: dashboard,
+        slug: dashboardSlug,
+      },
+    }
   } catch (e) {
     if (typeof e === 'object' && e !== null && 'code' in e && e.code === 404) {
       return {
@@ -53,7 +59,28 @@ export async function getStaticPaths() {
   return { paths: [], fallback: 'blocking' }
 }
 
-export default function DashboardPage(props: {
+export default function DashboardPage(
+  props:
+    | {
+        state: 'success'
+        initialDashboard: Dashboard
+        slug: string
+      }
+    | { state: 'not found' }
+) {
+  if (props.state === 'not found') {
+    return <Custom404 />
+  } else {
+    return (
+      <FoundDashbordPage
+        initialDashboard={props.initialDashboard}
+        slug={props.slug}
+      />
+    )
+  }
+}
+
+function FoundDashbordPage(props: {
   initialDashboard: Dashboard
   slug: string
 }) {
