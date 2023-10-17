@@ -33,11 +33,9 @@ export const updatelover = authEndpoint(async (req, auth) => {
 
   const { data, error } = await db
     .from('lovers')
-    .update([
-      {
-        ...parsedBody,
-      },
-    ])
+    .update({
+      ...parsedBody,
+    })
     .eq('id', existingUser.id)
   if (error) {
     log('Error updating user', error)

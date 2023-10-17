@@ -110,9 +110,13 @@ export function Pagination(props: {
           nextOrPrev="prev"
         />
         <Row className="gap-2">
-          {pageNumbers.map((pageNumber) => (
+          {pageNumbers.map((pageNumber, index) => (
             <PageNumbers
-              key={pageNumber}
+              key={
+                pageNumber === PAGE_ELLIPSES
+                  ? `${pageNumber}-${index}`
+                  : pageNumber
+              }
               pageNumber={pageNumber}
               setPage={onClick}
               page={page}
