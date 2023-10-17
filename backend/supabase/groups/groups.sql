@@ -2,20 +2,20 @@ create
     or replace function get_contracts_in_group_slugs (contract_ids text[], group_slugs text[], ignore_slugs text[]) returns
     table( data JSON, importance_score numeric) stable parallel safe language sql as $$
 select data, importance_score
-from contracts
+from public_contracts
 where id = any(contract_ids)
-  and (contracts.data -> 'groupSlugs' ?| group_slugs)
-  and not (contracts.data -> 'groupSlugs' ?| ignore_slugs)
+  and (public_contracts.data -> 'groupSlugs' ?| group_slugs)
+  and not (public_contracts.data -> 'groupSlugs' ?| ignore_slugs)
 $$;
 
 create
     or replace function get_recently_active_contracts_in_group_slugs ( group_slugs text[], ignore_slugs text[], max int) returns
     table( data JSON, importance_score numeric) stable parallel safe language sql as $$
 select data, importance_score
-from contracts
-where (contracts.data -> 'groupSlugs' ?| group_slugs)
-  and not (contracts.data -> 'groupSlugs' ?| ignore_slugs)
-    order by data->'lastUpdatedTime' desc
+from public_contracts
+where (public_contracts.data -> 'groupSlugs' ?| group_slugs)
+  and not (public_contracts.data -> 'groupSlugs' ?| ignore_slugs)
+order by ((data->>'lastUpdatedTime')::bigint) desc
 limit max
 $$;
 

@@ -428,6 +428,11 @@ create index if not exists contracts_sample_filtering on contracts (
 
 create index contracts_on_importance_score_and_resolution_time_idx on contracts(importance_score, resolution_time);
 
+create index contracts_last_updated_time on contracts(((data ->> 'lastUpdatedTime')::bigint) desc);
+
+create index contracts_group_slugs_public on contracts using gin((data -> 'groupSlugs'))
+    where visibility = 'public';
+
 alter table contracts
 cluster on contracts_creator_id;
 

@@ -38,7 +38,7 @@ import { LoadingIndicator } from './widgets/loading-indicator'
 import { UserLink } from './widgets/user-link'
 import { track } from 'web/lib/service/analytics'
 import { getRecentCommentsOnContracts } from 'web/lib/supabase/comments'
-import { getRecentContractsOnTopics } from 'web/lib/supabase/contracts'
+import { getRecentActiveContractsOnTopics } from 'web/lib/supabase/contracts'
 import { getBetsOnContracts } from 'common/supabase/bets'
 import { db } from 'web/lib/supabase/db'
 import { Bet } from 'common/bet'
@@ -72,7 +72,7 @@ export function ActivityLog(props: {
 
   const getRecentTopicalContent = async (topicSlugs: string[]) => {
     setLoading(true)
-    const recentContracts = await getRecentContractsOnTopics(
+    const recentContracts = await getRecentActiveContractsOnTopics(
       topicSlugs,
       blockedGroupSlugs,
       count
