@@ -96,7 +96,7 @@ const generateDivisions = (
 
     const cohortRows = rowsByCohort[cohort]
 
-    let change = getDivisionChange(division, rank, cohortRows.length)
+    let change = getDivisionChange(division, rank, mana_earned, cohortRows.length)
     if (change > 0 && mana_earned <= 0) change = 0
 
     const newDivision = division + change

@@ -7,35 +7,56 @@ import { useRouter } from 'next/router'
 import { useGroupedUnseenNotifications } from 'web/hooks/use-notifications'
 import { PrivateUser } from 'common/user'
 import { NOTIFICATIONS_PER_PAGE } from './notifications/notification-helpers'
+import { NotificationReason } from 'common/notification'
 
-export function NotificationsIcon(props: { className?: string }) {
+export function NotificationsIcon(props: {
+  className?: string
+  ignoreTypes?: NotificationReason[]
+}) {
   const privateUser = usePrivateUser()
+  const { ignoreTypes, className } = props
 
   return (
     <Row className="relative justify-center">
-      {privateUser && <UnseenNotificationsBubble privateUser={privateUser} />}
-      <BellIcon className={props.className} />
+      {privateUser && (
+        <UnseenNotificationsBubble
+          ignoreTypes={ignoreTypes}
+          privateUser={privateUser}
+        />
+      )}
+      <BellIcon className={className} />
     </Row>
   )
 }
 
-export function SolidNotificationsIcon(props: { className?: string }) {
+export function SolidNotificationsIcon(props: {
+  className?: string
+  ignoreTypes?: NotificationReason[]
+}) {
   const privateUser = usePrivateUser()
-
+  const { ignoreTypes, className } = props
   return (
     <Row className="relative justify-center">
-      {privateUser && <UnseenNotificationsBubble privateUser={privateUser} />}
-      <SolidBellIcon className={props.className} />
+      {privateUser && (
+        <UnseenNotificationsBubble
+          ignoreTypes={ignoreTypes}
+          privateUser={privateUser}
+        />
+      )}
+      <SolidBellIcon className={className} />
     </Row>
   )
 }
 
-function UnseenNotificationsBubble(props: { privateUser: PrivateUser }) {
+function UnseenNotificationsBubble(props: {
+  privateUser: PrivateUser
+  ignoreTypes?: NotificationReason[]
+}) {
   const { isReady, pathname } = useRouter()
-  const { privateUser } = props
+  const { privateUser, ignoreTypes } = props
   const [seen, setSeen] = useState(false)
   const unseenSourceIdsToNotificationIds =
-    useGroupedUnseenNotifications(privateUser.id) ?? []
+    useGroupedUnseenNotifications(privateUser.id, ignoreTypes) ?? []
 
   const unseenNotifs = Object.keys(unseenSourceIdsToNotificationIds).length
 

@@ -130,10 +130,17 @@ export const getDemotionAndPromotionCountBySeason = (
 export const getDivisionChange = (
   division: number,
   rank: number,
+  manaEarned: number,
   cohortSize: number
 ) => {
   const { demotion, promotion, doublePromotion } =
     getDemotionAndPromotionCount(division)
+
+  // Require 100 mana earned to advance from Bronze.
+  if (division === 1 && manaEarned < 100) {
+    return 0
+  }
+
   if (rank <= doublePromotion) {
     return 2
   }

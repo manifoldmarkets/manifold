@@ -50,17 +50,23 @@ export const createlover = authEndpoint(async (req, auth) => {
     throw new APIError(400, 'User already exists')
   }
 
-  const { data, error } = await db.from('lovers').insert([
-    {
-      ...parsedBody,
-      user_id: auth.uid,
-    },
-  ])
+  const { data, error } = await db
+    .from('lovers')
+    .insert([
+      {
+        ...parsedBody,
+        user_id: auth.uid,
+      },
+    ])
+    .select()
+
   if (error) {
     log('Error creating user', error)
     throw new APIError(500, 'Error creating user')
   }
+  log('Created user', data[0])
   return {
     success: true,
+    lover: data[0],
   }
 })

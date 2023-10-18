@@ -14,8 +14,6 @@ import clsx from 'clsx'
 import { Col } from 'web/components/layout/col'
 import ImageWithBlurredShadow from 'web/components/widgets/image-with-blurred-shadow'
 import { Avatar } from 'web/components/widgets/avatar'
-import Link from 'next/link'
-import { PencilIcon } from '@heroicons/react/outline'
 import { StackedUserNames } from 'web/components/widgets/user-link'
 import { DailyLeagueStat } from 'web/components/daily-league-stat'
 import { QuestsOrStreak } from 'web/components/quests-or-streak'
@@ -28,6 +26,9 @@ import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useUser } from 'web/hooks/use-user'
 import { fromNow } from 'web/lib/util/time'
 import { LovePage } from 'love/components/love-page'
+import { Button } from 'web/components/buttons/button'
+import { useRouter } from 'next/router'
+import { PencilIcon } from '@heroicons/react/outline'
 
 export const getStaticProps = async (props: {
   params: {
@@ -68,7 +69,7 @@ export default function UserPage(props: {
   const isMobile = useIsMobile()
   const currentUser = useUser()
   const isCurrentUser = currentUser?.id === user?.id
-
+  const router = useRouter()
   if (!user) {
     return <div>404</div>
   }
@@ -111,15 +112,6 @@ export default function UserPage(props: {
                     />
                   }
                 />
-                {isCurrentUser && (
-                  <Link
-                    className=" bg-primary-600 shadow-primary-300 hover:bg-primary-700 text-ink-0 absolute bottom-0 right-0 h-6 w-6 rounded-full p-1.5 shadow-sm"
-                    href="/signup"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <PencilIcon className="text-ink-0 h-3.5 w-3.5 " />
-                  </Link>
-                )}
               </Col>
               <StackedUserNames
                 usernameClassName={'sm:text-base'}
@@ -129,6 +121,14 @@ export default function UserPage(props: {
             </Row>
             {isCurrentUser ? (
               <Row className={'items-center gap-1 sm:gap-2'}>
+                <Button
+                  color={'gray-outline'}
+                  className={'h-12'}
+                  onClick={() => router.push('signup')}
+                >
+                  <PencilIcon className="mr-2 h-4 w-4" />
+                  Edit
+                </Button>
                 <DailyLeagueStat user={user} />
                 <QuestsOrStreak user={user} />
               </Row>
@@ -196,44 +196,81 @@ export default function UserPage(props: {
             </Row>
           </Col>
         </Col>
-        {lover && <LoverAttributes lover={lover} />}
-        {answers.length > 0 && (
-          <Col className={''}>
-            <Row className={'text-xl font-bold'}>Answers</Row>
-            <Row className={'flex-wrap gap-4'}>
-              {answers
-                .filter(
-                  (a) => a.multiple_choice ?? a.free_response ?? a.integer
-                )
-                .map((answer) => {
-                  const question = questions.find(
-                    (q) => q.id === answer.question_id
-                  )
-                  if (!question) return null
-                  const options = question.multiple_choice_options as Record<
-                    string,
-                    number
+        {lover ? (
+          <>
+            <LoverAttributes lover={lover} />
+            {answers.length > 0 ? (
+              <Col className={'mt-2 gap-2'}>
+                <Row className={'items-center gap-2'}>
+                  <span className={'text-xl font-bold'}>Answers</span>
+                  <Button
+                    color={'gray-outline'}
+                    className={''}
+                    onClick={() => router.push('love-questions')}
                   >
-                  const optionKey = options
-                    ? Object.keys(options).find(
-                        (k) => options[k] === answer.multiple_choice
+                    <PencilIcon className="mr-2 h-4 w-4" />
+                    Edit
+                  </Button>
+                </Row>
+                <Row className={'flex-wrap gap-4'}>
+                  {answers
+                    .filter(
+                      (a) => a.multiple_choice ?? a.free_response ?? a.integer
+                    )
+                    .map((answer) => {
+                      const question = questions.find(
+                        (q) => q.id === answer.question_id
                       )
-                    : null
+                      if (!question) return null
+                      const options =
+                        question.multiple_choice_options as Record<
+                          string,
+                          number
+                        >
+                      const optionKey = options
+                        ? Object.keys(options).find(
+                            (k) => options[k] === answer.multiple_choice
+                          )
+                        : null
 
-                  return (
-                    <Col
-                      key={question.id}
-                      className={'bg-canvas-0 flex-grow rounded-md p-2'}
-                    >
-                      <Row className={'font-bold'}>{question.question}</Row>
-                      <Row>
-                        {answer.free_response ?? optionKey ?? answer.integer}
-                      </Row>
-                    </Col>
-                  )
-                })}
-            </Row>
-          </Col>
+                      return (
+                        <Col
+                          key={question.id}
+                          className={'bg-canvas-0 flex-grow rounded-md p-2'}
+                        >
+                          <Row className={'font-bold'}>{question.question}</Row>
+                          <Row>
+                            {answer.free_response ??
+                              optionKey ??
+                              answer.integer}
+                          </Row>
+                        </Col>
+                      )
+                    })}
+                </Row>
+              </Col>
+            ) : (
+              isCurrentUser && (
+                <Col className={'mt-4 w-full items-center'}>
+                  <Row>
+                    <Button onClick={() => router.push('love-questions')}>
+                      Answer questions
+                    </Button>
+                  </Row>
+                </Col>
+              )
+            )}
+          </>
+        ) : (
+          isCurrentUser && (
+            <Col className={'mt-4 w-full items-center'}>
+              <Row>
+                <Button onClick={() => router.push('signup')}>
+                  Create a profile
+                </Button>
+              </Row>
+            </Col>
+          )
         )}
       </Col>
     </LovePage>

@@ -14,7 +14,6 @@ import {
   useHasUnseenPrivateMessage,
   useNonEmptyPrivateMessageChannelIds,
   useOtherUserIdsInPrivateMessageChannelIds,
-  usePrivateMessageChannelIds,
   useRealtimePrivateMessages,
 } from 'web/hooks/use-private-messages'
 import { useIsAuthorized, usePrivateUser, useUser } from 'web/hooks/use-user'

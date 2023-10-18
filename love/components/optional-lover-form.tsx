@@ -16,23 +16,24 @@ import { useRouter } from 'next/router'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { EditUserField } from 'web/pages/profile'
 import { useEditableUserInfo } from 'web/hooks/use-editable-user-info'
-
+import { removeUndefinedProps } from 'common/util/object'
+export const optionalAttributes = (lover: Lover) => ({
+  ethnicity: lover.ethnicity,
+  born_in_location: lover.born_in_location,
+  height_in_inches: lover.height_in_inches,
+  has_pets: lover.has_pets,
+  education_level: lover.education_level,
+  photo_urls: lover.photo_urls,
+  pinned_url: lover.pinned_url,
+  religious_belief_strength: lover.religious_belief_strength,
+  religious_beliefs: lover.religious_beliefs,
+  political_beliefs: lover.political_beliefs,
+})
 export const OptionalLoveUserForm = (props: { lover: Lover }) => {
   const { lover } = props
   const { user } = lover
 
-  const [formState, setFormState] = useState({
-    ethnicity: lover.ethnicity,
-    born_in_location: lover.born_in_location,
-    height_in_inches: lover.height_in_inches,
-    has_pets: lover.has_pets,
-    education_level: lover.education_level,
-    photo_urls: lover.photo_urls,
-    pinned_url: lover.pinned_url,
-    religious_belief_strength: lover.religious_belief_strength,
-    religious_beliefs: lover.religious_beliefs,
-    political_beliefs: lover.political_beliefs,
-  })
+  const [formState, setFormState] = useState(optionalAttributes(lover))
   const [heightFeet, setHeightFeet] = useState(0)
 
   const handleChange = (key: keyof typeof formState, value: any) => {
@@ -68,10 +69,14 @@ export const OptionalLoveUserForm = (props: { lover: Lover }) => {
   }
 
   const handleSubmit = async () => {
+    if (!Object.values(optionalAttributes(formState as Lover)).some((v) => v))
+      return router.push('/love-questions')
     // Do something with the form state, such as sending it to an API
-    const res = await updateLover({
-      ...formState,
-    }).catch((e) => {
+    const res = await updateLover(
+      removeUndefinedProps({
+        ...formState,
+      })
+    ).catch((e) => {
       console.error(e)
       return false
     })

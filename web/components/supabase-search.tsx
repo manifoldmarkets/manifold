@@ -34,11 +34,7 @@ import { PillButton } from 'web/components/buttons/pill-button'
 import { searchUsers, UserSearchResult } from 'web/lib/supabase/users'
 import { searchGroups } from 'web/lib/supabase/groups'
 import { convertGroup } from 'common/supabase/groups'
-import { FollowButton } from 'web/components/buttons/follow-button'
-import { shortFormatNumber } from 'common/util/format'
-import { StackedUserNames } from 'web/components/widgets/user-link'
 import { User } from 'common/user'
-import { Avatar } from 'web/components/widgets/avatar'
 import { Button, IconButton } from 'web/components/buttons/button'
 import Link from 'next/link'
 import { useFollowedUsersOnLoad } from 'web/hooks/use-follows'
@@ -343,7 +339,7 @@ export function SupabaseSearch(props: {
     ))
 
   return (
-    <Col>
+    <Col className="w-full">
       <Col className={clsx('sticky top-0 z-20 ', headerClassName)}>
         <Row>
           <Col className={'w-full'}>
