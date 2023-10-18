@@ -1,5 +1,6 @@
 import clsx from 'clsx'
 import { User } from 'common/user'
+import { parseJsonContentToText } from 'common/util/parse'
 import { first } from 'lodash'
 import Link from 'next/link'
 import { Col } from 'web/components/layout/col'
@@ -80,7 +81,6 @@ const MessageChannelRow = (props: {
   const { toUser, currentUser, channelId } = props
   const messages = useRealtimePrivateMessages(channelId, true)
   const unseen = useHasUnseenPrivateMessage(currentUser.id, channelId, messages)
-
   const chat = messages?.[0]
   return (
     <>
@@ -95,29 +95,34 @@ const MessageChannelRow = (props: {
           <Col className={'w-full'}>
             <Row className={'items-center justify-between'}>
               <span className={'font-semibold'}>{toUser?.name}</span>
-              <span className={'text-xs text-gray-400'}>
+              <span className={'text-ink-400 text-xs'}>
                 {chat && <RelativeTimestamp time={chat.createdTime} />}
               </span>
             </Row>
-            <Row>
-              <span className={'text-sm text-gray-400'}>
-                {chat && (
-                  <Content
-                    className={'max-h-20 overflow-hidden'}
-                    content={chat.content}
-                    key={chat.id}
-                  />
-                )}
-              </span>
+            <Row className="items-center justify-between gap-1">
+              {!chat && (
+                <div className="bg-ink-500 h-4 w-2/3 animate-pulse py-1" />
+              )}
+              {chat && (
+                <span
+                  className={clsx(
+                    'line-clamp-1 text-sm',
+                    unseen ? '' : 'text-ink-500'
+                  )}
+                >
+                  {chat.userId == currentUser.id && 'You: '}
+                  {parseJsonContentToText(chat.content)}
+                </span>
+              )}
+              {unseen && (
+                <div
+                  className={clsx(
+                    'text-canvas-0 bg-primary-500 h-4 min-w-[15px] rounded-full p-[2px] text-center text-[10px] '
+                  )}
+                />
+              )}
             </Row>
           </Col>
-          {unseen && (
-            <div
-              className={clsx(
-                'text-canvas-0 bg-primary-500 h-4 min-w-[15px] rounded-full p-[2px] text-center text-[10px] '
-              )}
-            />
-          )}
         </Row>
       </Link>
     </>
