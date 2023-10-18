@@ -1,13 +1,14 @@
-import { createSupabaseDirectClient, pgp } from 'shared/supabase/init'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { log } from 'shared/utils'
 import { DashboardItemSchema, contentSchema } from 'shared/zod-types'
 import { z } from 'zod'
 import { authEndpoint, validate } from './helpers'
 import { isAdminId } from 'common/envs/constants'
 import { updateDashboardGroups } from 'shared/supabase/dashboard'
+import { MAX_DASHBOARD_TITLE_LENGTH } from 'common/dashboard'
 
 const schema = z.object({
-  title: z.string(),
+  title: z.string().min(1).max(MAX_DASHBOARD_TITLE_LENGTH),
   dashboardId: z.string(),
   description: contentSchema.optional(),
   items: z.array(DashboardItemSchema),

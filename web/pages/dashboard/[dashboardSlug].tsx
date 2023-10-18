@@ -1,4 +1,8 @@
-import { Dashboard, DashboardItem } from 'common/dashboard'
+import {
+  Dashboard,
+  DashboardItem,
+  MAX_DASHBOARD_TITLE_LENGTH,
+} from 'common/dashboard'
 import { useEffect, useState } from 'react'
 import { Button } from 'web/components/buttons/button'
 import { AddItemCard } from 'web/components/dashboard/add-dashboard-item'
@@ -28,6 +32,7 @@ import { SEO } from 'web/components/SEO'
 import { richTextToString } from 'common/util/parse'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { useWarnUnsavedChanges } from 'web/hooks/use-warn-unsaved-changes'
+import { InputWithLimit } from 'web/components/dashboard/input-with-limit'
 
 export async function getStaticProps(ctx: {
   params: { dashboardSlug: string }
@@ -137,18 +142,17 @@ function FoundDashbordPage(props: {
         }
       />
       <Col className="w-full max-w-2xl px-1 sm:px-2">
-        <Row className="my-2 items-center justify-between sm:mt-4 lg:mt-0">
+        <div className="my-2 sm:mt-4 lg:mt-0">
           {editMode ? (
-            <ExpandingInput
+            <InputWithLimit
               placeholder={'Dashboard Title'}
-              autoFocus
-              maxLength={150}
-              value={dashboard.title}
-              className="w-full"
-              onChange={(e) => updateTitle(e.target.value)}
+              text={dashboard.title}
+              setText={updateTitle}
+              limit={MAX_DASHBOARD_TITLE_LENGTH}
+              className="!w-full !text-lg"
             />
           ) : (
-            <>
+            <Row className="items-center justify-between">
               <Title className="!mb-0 ">{dashboard.title}</Title>
 
               <div className="flex items-center">
@@ -176,9 +180,9 @@ function FoundDashbordPage(props: {
                   </Button>
                 )}
               </div>
-            </>
+            </Row>
           )}
-        </Row>
+        </div>
         {editMode ? (
           <Row className="bg-canvas-50 sticky top-0 z-20 mb-2 w-full items-center justify-end gap-2 self-start py-1">
             <Button
