@@ -10,8 +10,8 @@ create table if not exists
       -- required
       birthdate timestamp not null,
       city text not null,
-      gender text not null, -- m,f,tf,tm,nb
-      pref_gender text[] not null, -- m,f,tf,tm,nb
+      gender text not null, -- male, female, trans-male
+      pref_gender text[] not null, -- male, trans-female
       pref_age_min int not null default 18,
       pref_age_max int not null default 100,
       pref_relation_styles text[] not null, -- mono, poly, open, etc

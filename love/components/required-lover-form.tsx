@@ -12,6 +12,8 @@ import { colClassName, labelClassName } from 'love/pages/signup'
 import { MultiCheckbox } from 'web/components/multi-checkbox'
 import { Lover } from 'love/hooks/use-lover'
 import { User } from 'common/user'
+import { RadioToggleGroup } from 'web/components/widgets/radio-toggle-group'
+import { MultipleChoiceOptions } from 'common/love/multiple-choice'
 
 export const RequiredLoveUserForm = (props: {
   user: User
@@ -30,8 +32,16 @@ export const RequiredLoveUserForm = (props: {
     drinks_per_month: 0,
     is_vegetarian_or_vegan: false,
     has_kids: 0,
-    wants_kids_strength: 0,
+    wants_kids_strength: 2,
   })
+
+  const canContinue = Object.values(formState).every((v) =>
+    typeof v == 'string'
+      ? v !== ''
+      : Array.isArray(v)
+      ? v.length > 0
+      : v !== undefined
+  )
 
   const handleChange = (key: keyof typeof formState, value: any) => {
     setFormState((prevState) => set({ ...prevState }, key, value))
@@ -200,23 +210,22 @@ export const RequiredLoveUserForm = (props: {
         </Col>
 
         <Col className={clsx(colClassName)}>
-          <label className={clsx(labelClassName)}>
-            On a scale of 0-5 how strongly do you want to have kids?
-          </label>
-          <Input
-            type="number"
-            onChange={(e) =>
-              handleChange('wants_kids_strength', Number(e.target.value))
-            }
-            className={'w-20'}
-            min={0}
-            max={5}
-            placeholder={'3'}
+          <label className={clsx(labelClassName)}>You want to have kids</label>
+          <RadioToggleGroup
+            className={'w-44'}
+            choicesMap={MultipleChoiceOptions}
+            setChoice={(choice) => {
+              console.log(choice)
+              handleChange('wants_kids_strength', choice)
+            }}
+            currentChoice={formState.wants_kids_strength ?? -1}
           />
         </Col>
 
         <Row className={'justify-end'}>
-          <Button onClick={handleSubmit}>Next</Button>
+          <Button disabled={!canContinue} onClick={handleSubmit}>
+            Next
+          </Button>
         </Row>
       </Col>
     </>

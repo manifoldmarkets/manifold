@@ -16,13 +16,7 @@ if (require.main === module) {
       'Your room is neat.',
       'You have been loved enough.',
     ]
-    const mcOptions = {
-      'Strongly disagree': 0,
-      Disagree: 1,
-      Neutral: 2,
-      Agree: 3,
-      'Strongly agree': 4,
-    }
+
     const integerQuestions = ['How many hours do you typically work in a week?']
 
     const freeResponseQuestions = [
