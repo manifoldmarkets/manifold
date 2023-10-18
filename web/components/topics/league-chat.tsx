@@ -109,6 +109,11 @@ export const LeagueChat = (props: {
                 chats={messages}
                 currentUser={user}
                 onReplyClick={onReplyClick}
+                beforeSameUser={
+                  groupedMessages[i + 1]
+                    ? groupedMessages[i + 1][0].userId === messages[0].userId
+                    : false
+                }
                 ref={
                   i === groupedMessages.length - 1
                     ? setScrollToBottomRef

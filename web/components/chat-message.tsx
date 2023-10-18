@@ -17,7 +17,7 @@ export const ChatMessageItem = forwardRef(
       currentUser: User | undefined | null
       otherUser?: User | null
       onReplyClick?: (chat: ChatMessage) => void
-      beforeSameUser: boolean
+      beforeSameUser?: boolean
     },
     ref: React.Ref<HTMLDivElement>
   ) => {
@@ -64,7 +64,7 @@ export const ChatMessageItem = forwardRef(
         </Col>
         {!isMe && (
           <MessageAvatar
-            beforeSameUser={beforeSameUser}
+            beforeSameUser={!!beforeSameUser}
             userAvatarUrl={userAvatarUrl}
             username={userUsername}
           />
