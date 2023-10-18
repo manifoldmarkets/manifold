@@ -188,12 +188,8 @@ function FoundDashbordPage(props: {
             <Button
               color="gray"
               onClick={() => {
-                // reset items to original state
-                updateItems(
-                  fetchedDashboard
-                    ? fetchedDashboard.items
-                    : initialDashboard.items
-                )
+                // reset to original state
+                setDashboard(fetchedDashboard || initialDashboard)
                 setEditMode(false)
               }}
             >
