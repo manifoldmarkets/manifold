@@ -14,6 +14,7 @@ import {
   useHasUnseenPrivateMessage,
   useNonEmptyPrivateMessageChannelIds,
   useOtherUserIdsInPrivateMessageChannelIds,
+  usePrivateMessageChannelIds,
   useRealtimePrivateMessages,
 } from 'web/hooks/use-private-messages'
 import { useIsAuthorized, usePrivateUser, useUser } from 'web/hooks/use-user'
@@ -30,6 +31,9 @@ export default function MessagesPage() {
     currentUser?.id,
     isAuthed
   )
+
+  // const channelIds = usePrivateMessageChannelIds(currentUser?.id, isAuthed)
+
   const channelIdsToUserIds = useOtherUserIdsInPrivateMessageChannelIds(
     currentUser?.id,
     isAuthed,
@@ -46,12 +50,13 @@ export default function MessagesPage() {
         <NewMessageButton />
       </Row>
       <Col className={'w-full gap-2 overflow-hidden'}>
-        {currentUser && channelIds.length === 0 && (
+        {currentUser && isAuthed && channelIds.length === 0 && (
           <div className={'mt-4 text-center text-gray-400'}>
             You have no messages, yet.
           </div>
         )}
         {currentUser &&
+          isAuthed &&
           channelIds.map((channelId) => {
             const userId = first(channelIdsToUserIds?.[channelId])
             const user = users?.find((u) => u.id === userId)
@@ -77,6 +82,7 @@ const MessageChannelRow = (props: {
   const { toUser, currentUser, channelId } = props
   const messages = useRealtimePrivateMessages(channelId, true)
   const unseen = useHasUnseenPrivateMessage(currentUser.id, channelId, messages)
+
   const chat = messages?.[0]
   return (
     <>
