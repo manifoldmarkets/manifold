@@ -48,11 +48,11 @@ function MessageModal(props: {
   }
   return (
     <Modal open={open} setOpen={setOpen}>
-      <Col className={clsx(MODAL_CLASS, 'h-[40rem] overflow-scroll')}>
+      <Col className={clsx(MODAL_CLASS, 'h-[40rem] overflow-y-scroll')}>
         <div className="bg-canvas-0 rounded-t- absolute top-0 h-20 w-full rounded-t-md" />
         <SupabaseSearch
           persistPrefix="message-search"
-          headerClassName={'pt-0'}
+          headerClassName={'pt-0 '}
           defaultSearchType="Users"
           hideContractFilters
           hideSearchTypes

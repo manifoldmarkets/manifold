@@ -339,7 +339,7 @@ export function SupabaseSearch(props: {
     ))
 
   return (
-    <Col>
+    <Col className="w-full">
       <Col className={clsx('sticky top-0 z-20 ', headerClassName)}>
         <Row>
           <Col className={'w-full'}>
