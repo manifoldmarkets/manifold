@@ -31,7 +31,12 @@ export function useRealtimePrivateMessagesPolling(
     .select('*')
     .eq('channel_id', channelId)
   const newRowsOnlyQ = (row: Row<'private_user_messages'> | undefined) =>
-    allRowsQ.gt('id', row?.id ?? 0)
+    // You can't use allRowsQ here because it keeps tacking on another gt clause
+    db
+      .from('private_user_messages')
+      .select('*')
+      .eq('channel_id', channelId)
+      .gt('id', row?.id ?? 0)
 
   const results = usePersistentSupabasePolling(
     allRowsQ,
