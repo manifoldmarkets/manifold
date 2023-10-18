@@ -2,6 +2,7 @@ import { Page } from 'web/components/layout/page'
 import { Title } from 'web/components/widgets/title'
 import { useRouter } from 'next/router'
 import {
+  useNonEmptyPrivateMessageChannelIds,
   useOtherUserIdsInPrivateMessageChannelIds,
   usePrivateMessageChannelIds,
   useRealtimePrivateMessages,

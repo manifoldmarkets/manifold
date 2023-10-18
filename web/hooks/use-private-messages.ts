@@ -12,6 +12,7 @@ import {
   getChatMessageChannelIds,
   getChatMessages,
   getMessageChannelMemberships,
+  getNonEmptyChatMessageChannelIds,
   getOtherUserIdsInPrivateMessageChannelIds,
 } from 'web/lib/supabase/private-messages'
 
@@ -154,6 +155,21 @@ export const usePrivateMessageChannelIds = (
   useEffect(() => {
     if (userId && isAuthed)
       getChatMessageChannelIds(userId, 100).then(setChannelIds)
+  }, [userId, isAuthed])
+  return channelIds
+}
+
+export const useNonEmptyPrivateMessageChannelIds = (
+  userId: string | undefined,
+  isAuthed: boolean | undefined
+) => {
+  const [channelIds, setChannelIds] = usePersistentLocalState<number[]>(
+    [],
+    `non-empty-private-message-channel-ids-${userId}`
+  )
+  useEffect(() => {
+    if (userId && isAuthed)
+      getNonEmptyChatMessageChannelIds(userId, 100).then(setChannelIds)
   }, [userId, isAuthed])
   return channelIds
 }
