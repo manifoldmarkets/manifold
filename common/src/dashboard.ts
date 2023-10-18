@@ -1,6 +1,8 @@
 import { JSONContent } from '@tiptap/core'
 import { Row, convertSQLtoTS, tsToMillis } from './supabase/utils'
 
+export const MAX_DASHBOARD_TITLE_LENGTH = 40
+
 // corresponds to SQL
 export type BaseDashboard = {
   id: string

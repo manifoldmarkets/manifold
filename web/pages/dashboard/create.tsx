@@ -1,7 +1,7 @@
 import { track } from '@amplitude/analytics-browser'
 import clsx from 'clsx'
 import { MAX_DESCRIPTION_LENGTH } from 'common/contract'
-import { DashboardItem } from 'common/dashboard'
+import { DashboardItem, MAX_DASHBOARD_TITLE_LENGTH } from 'common/dashboard'
 import { removeUndefinedProps } from 'common/util/object'
 import router from 'next/router'
 import { useEffect, useState } from 'react'
@@ -9,11 +9,12 @@ import { SEO } from 'web/components/SEO'
 import { Button } from 'web/components/buttons/button'
 import { AddItemCard } from 'web/components/dashboard/add-dashboard-item'
 import { DashboardContent } from 'web/components/dashboard/dashboard-content'
+import { InputWithLimit } from 'web/components/dashboard/input-with-limit'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { Spacer } from 'web/components/layout/spacer'
 import { TextEditor, useTextEditor } from 'web/components/widgets/editor'
-import { ExpandingInput } from 'web/components/widgets/expanding-input'
+import { Input } from 'web/components/widgets/input'
 import { Title } from 'web/components/widgets/title'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { createDashboard } from 'web/lib/firebase/api'
@@ -46,7 +47,10 @@ export default function CreateDashboard() {
     'create dashboard topics'
   )
 
-  const isValid = title.length > 0 && items.length > 1
+  const isValid =
+    title.length > 0 &&
+    title.length <= MAX_DASHBOARD_TITLE_LENGTH &&
+    items.length > 1
 
   useEffect(() => {
     if (isValid) {
@@ -105,23 +109,21 @@ export default function CreateDashboard() {
         )}
       >
         <Title>Create a Dashboard</Title>
-        <Col>
-          <label className="pb-2">
-            Title<span className={'text-scarlet-500'}>*</span>
-          </label>
 
-          <ExpandingInput
-            placeholder={'Dashboard Title'}
-            autoFocus
-            maxLength={150}
-            value={title}
-            onChange={(e) => setTitle(e.target.value || '')}
-          />
-        </Col>
+        <label className="mb-2">
+          Title<span className={'text-scarlet-500'}>*</span>
+        </label>
+        <InputWithLimit
+          text={title}
+          setText={setTitle}
+          limit={MAX_DASHBOARD_TITLE_LENGTH}
+          className="w-full !text-lg"
+          placeholder={'Dashboard Title'}
+        />
+
         <Spacer h={6} />
 
-        <div className="mb-2">Content</div>
-
+        <label className="mb-2">Content</label>
         <TextEditor editor={editor} className="mb-4" />
 
         <AddItemCard
