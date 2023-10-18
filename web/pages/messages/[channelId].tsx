@@ -30,6 +30,7 @@ import { Row } from 'web/components/layout/row'
 import clsx from 'clsx'
 import Link from 'next/link'
 import { linkClass } from 'web/components/widgets/site-link'
+import { Avatar } from 'web/components/widgets/avatar'
 
 export const getServerSideProps = redirectIfLoggedOut('/')
 
@@ -144,20 +145,25 @@ export const PrivateChat = (props: { user: User; channelId: number }) => {
   }
 
   return (
-    <Col>
+    <Col className="h-full px-2 xl:px-0">
       <Col className={''}>
-        <Row className={'mb-3 items-center gap-2 '}>
+        <Row className={'border-ink-200 items-center gap-1 border-b py-2'}>
           <BackButton />
+          <Avatar
+            size="xs"
+            avatarUrl={otherUser?.avatarUrl}
+            className="mx-1"
+            username={otherUser?.username}
+          />
           <Link className={linkClass} href={`/${otherUser?.username ?? ''}`}>
-            <Title className={'!mb-0'}>{otherUser?.name ?? ''}</Title>
+            <span className={'!mb-0'}>{otherUser?.name ?? ''}</span>
           </Link>
         </Row>
-        <Row className={'w-full border-b-2'} />
       </Col>
       <div ref={ref} />
       <Col
         className={clsx(
-          'gap-2 overflow-y-scroll pb-2 ',
+          'gap-2 overflow-y-scroll py-2 ',
           'max-h-[calc(100vh-13rem)] min-h-[calc(100vh-13rem)]',
           'lg:max-h-[calc(100vh-11rem)] lg:min-h-[calc(100vh-11rem)]'
         )}
@@ -177,6 +183,11 @@ export const PrivateChat = (props: { user: User; channelId: number }) => {
                     : undefined
                 }
                 otherUser={otherUser}
+                beforeSameUser={
+                  groupedMessages[i + 1]
+                    ? groupedMessages[i + 1][0].userId === messages[0].userId
+                    : false
+                }
               />
             )
           })
@@ -187,7 +198,7 @@ export const PrivateChat = (props: { user: User; channelId: number }) => {
           </div>
         )}
       </Col>
-      <div className="bg-canvas-50 sticky bottom-[56px] flex w-full justify-start gap-2 pb-1 lg:bottom-0">
+      <div className="bg-canvas-50 sticky bottom-[56px] flex w-full justify-start gap-2 pb-2 lg:bottom-0">
         <CommentInputTextArea
           editor={editor}
           user={user}
