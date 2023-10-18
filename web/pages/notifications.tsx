@@ -215,7 +215,7 @@ function RenderNotificationGroups(props: {
   )
 }
 
-function NotificationsList(props: {
+export function NotificationsList(props: {
   groupedNotifications: NotificationGroup[] | undefined
   privateUser?: PrivateUser
   mostRecentNotification?: Notification

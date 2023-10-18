@@ -63,7 +63,10 @@ const signedOutNavigation = () => [
 ]
 
 // From https://codepen.io/chris__sev/pen/QWGvYbL
-export function BottomNavBar(props: { navigationOptions?: Item[] }) {
+export function BottomNavBar(props: {
+  navigationOptions?: Item[]
+  sidebarNavigationOptions?: Item[]
+}) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   const router = useRouter()
@@ -112,6 +115,7 @@ export function BottomNavBar(props: { navigationOptions?: Item[] }) {
           <MobileSidebar
             sidebarOpen={sidebarOpen}
             setSidebarOpen={setSidebarOpen}
+            sidebarNavigationOptions={props.sidebarNavigationOptions}
           />
         </>
       )}
@@ -203,6 +207,7 @@ function NavBarItem(props: {
 export function MobileSidebar(props: {
   sidebarOpen: boolean
   setSidebarOpen: (open: boolean) => void
+  sidebarNavigationOptions?: Item[]
 }) {
   const { sidebarOpen, setSidebarOpen } = props
   return (
@@ -236,7 +241,10 @@ export function MobileSidebar(props: {
           >
             <div className="bg-canvas-0 relative flex w-full max-w-xs flex-1 flex-col">
               <div className="mx-2 h-0 flex-1 overflow-y-auto">
-                <Sidebar isMobile />
+                <Sidebar
+                  navigationOptions={props.sidebarNavigationOptions}
+                  isMobile
+                />
               </div>
             </div>
           </Transition.Child>

@@ -14,8 +14,6 @@ import clsx from 'clsx'
 import { Col } from 'web/components/layout/col'
 import ImageWithBlurredShadow from 'web/components/widgets/image-with-blurred-shadow'
 import { Avatar } from 'web/components/widgets/avatar'
-import Link from 'next/link'
-import { PencilIcon } from '@heroicons/react/outline'
 import { StackedUserNames } from 'web/components/widgets/user-link'
 import { DailyLeagueStat } from 'web/components/daily-league-stat'
 import { QuestsOrStreak } from 'web/components/quests-or-streak'
@@ -30,6 +28,7 @@ import { fromNow } from 'web/lib/util/time'
 import { LovePage } from 'love/components/love-page'
 import { Button } from 'web/components/buttons/button'
 import { useRouter } from 'next/router'
+import { PencilIcon } from '@heroicons/react/outline'
 
 export const getStaticProps = async (props: {
   params: {
@@ -113,15 +112,6 @@ export default function UserPage(props: {
                     />
                   }
                 />
-                {isCurrentUser && (
-                  <Link
-                    className=" bg-primary-600 shadow-primary-300 hover:bg-primary-700 text-ink-0 absolute bottom-0 right-0 h-6 w-6 rounded-full p-1.5 shadow-sm"
-                    href="/signup"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <PencilIcon className="text-ink-0 h-3.5 w-3.5 " />
-                  </Link>
-                )}
               </Col>
               <StackedUserNames
                 usernameClassName={'sm:text-base'}
@@ -131,6 +121,14 @@ export default function UserPage(props: {
             </Row>
             {isCurrentUser ? (
               <Row className={'items-center gap-1 sm:gap-2'}>
+                <Button
+                  color={'gray-outline'}
+                  className={'h-12'}
+                  onClick={() => router.push('signup')}
+                >
+                  <PencilIcon className="mr-2 h-4 w-4" />
+                  Edit
+                </Button>
                 <DailyLeagueStat user={user} />
                 <QuestsOrStreak user={user} />
               </Row>
@@ -202,8 +200,18 @@ export default function UserPage(props: {
           <>
             <LoverAttributes lover={lover} />
             {answers.length > 0 ? (
-              <Col className={''}>
-                <Row className={'text-xl font-bold'}>Answers</Row>
+              <Col className={'mt-2 gap-2'}>
+                <Row className={'items-center gap-2'}>
+                  <span className={'text-xl font-bold'}>Answers</span>
+                  <Button
+                    color={'gray-outline'}
+                    className={''}
+                    onClick={() => router.push('love-questions')}
+                  >
+                    <PencilIcon className="mr-2 h-4 w-4" />
+                    Edit
+                  </Button>
+                </Row>
                 <Row className={'flex-wrap gap-4'}>
                   {answers
                     .filter(

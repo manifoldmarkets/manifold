@@ -33,12 +33,13 @@ import { MobileAppsQRCodeDialog } from '../buttons/mobile-apps-qr-code-button'
 import { SidebarSignUpButton } from '../buttons/sign-up-button'
 import { ManifoldLogo } from './manifold-logo'
 import { ProfileSummary } from './profile-summary'
-import { SidebarItem } from './sidebar-item'
+import { Item, SidebarItem } from './sidebar-item'
 import { PrivateMessagesIcon } from 'web/components/messaging/messages-icon'
 
 export default function Sidebar(props: {
   className?: string
   isMobile?: boolean
+  navigationOptions?: Item[]
 }) {
   const { className, isMobile } = props
   const router = useRouter()
@@ -53,8 +54,9 @@ export default function Sidebar(props: {
   const toggleTheme = () => {
     changeTheme(theme === 'auto' ? 'dark' : theme === 'dark' ? 'light' : 'auto')
   }
-
-  const navOptions = isMobile
+  const navOptions = props.navigationOptions?.length
+    ? props.navigationOptions
+    : isMobile
     ? getMobileNav(() => setIsAddFundsModalOpen(!isAddFundsModalOpen))
     : getDesktopNav(!!user, () => setIsModalOpen(true), true)
 

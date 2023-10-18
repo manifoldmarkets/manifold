@@ -79,15 +79,25 @@ function useUnseenNotifications(
   }, [rows])
 }
 
-export function useGroupedUnseenNotifications(userId: string) {
-  const notifications = useUnseenNotifications(userId)
+export function useGroupedUnseenNotifications(
+  userId: string,
+  ignoreTypes?: NotificationReason[]
+) {
+  const notifications = useUnseenNotifications(userId)?.filter(
+    (n) => !ignoreTypes?.includes(n.reason)
+  )
   return useMemo(() => {
     return notifications ? groupNotificationsForIcon(notifications) : undefined
   }, [notifications])
 }
 
-export function useGroupedNotifications(userId: string) {
-  const notifications = useNotifications(userId)
+export function useGroupedNotifications(
+  userId: string,
+  ignoreTypes?: NotificationReason[]
+) {
+  const notifications = useNotifications(userId)?.filter(
+    (n) => !ignoreTypes?.includes(n.reason)
+  )
   const sortedNotifications = notifications
     ? sortBy(notifications, (n) => -n.createdTime)
     : undefined
