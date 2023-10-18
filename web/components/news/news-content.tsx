@@ -5,12 +5,9 @@ export const newsContent = [
   { title: 'SBF trial', slug: 'sbf-trial' },
   { title: 'Gov shutdown', slug: 'government-shutdown' },
   { title: 'US 2024', slug: '2024-us-election-updates' },
-  { title: 'Canadian sikh', slug: 'sikh-slaying-sparks-supranational-s' },
   { title: 'UEFA', slug: 'uefa-champions-league' },
   { title: 'Trump', slug: 'trump-indicted' },
-  { title: 'Armenia', slug: 'azerbaijan-offensive-halted' },
   { title: 'Kosovo', slug: 'kosovo' },
-  { title: 'Superconductor', slug: 'scientists-announce-room-temp-super' },
   { title: 'New Zealand 2023', slug: '2023-new-zealand-general-election' },
   { title: 'Poland 2023', slug: 'polish-elections-referendum-2023' },
 ]
