@@ -80,12 +80,14 @@ function MessageAvatar(props: {
   username?: string
 }) {
   const { beforeSameUser, userAvatarUrl, username } = props
-  if (beforeSameUser) {
-    return <div className="w-10" />
-  }
   return (
-    <Col className="grow-y justify-end">
-      <Avatar avatarUrl={userAvatarUrl} username={username} />
+    <Col
+      className={clsx(
+        beforeSameUser ? 'pointer-events-none invisible' : '',
+        'grow-y justify-end pb-2 pr-1'
+      )}
+    >
+      <Avatar avatarUrl={userAvatarUrl} username={username} size="xs" />
     </Col>
   )
 }
