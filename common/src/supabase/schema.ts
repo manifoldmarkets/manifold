@@ -896,7 +896,7 @@ export interface Database {
           question_id?: number
         }
         Relationships: []
-      },
+      }
       love_questions: {
         Row: {
           answer_type: string
@@ -3777,6 +3777,15 @@ export interface Database {
           '': unknown[]
         }
         Returns: number
+      }
+      get_non_empty_private_message_channel_ids: {
+        Args: {
+          p_user_id: string
+          p_limit?: number
+        }
+        Returns: {
+          id: number
+        }
       }
     }
     Enums: {
