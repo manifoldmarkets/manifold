@@ -140,7 +140,7 @@ const getDesktopNav = (
         href: '/messages',
         icon: PrivateMessagesIcon,
       },
-      { name: 'Leagues', href: '/leagues', icon: TrophyIcon },
+      { name: 'Leagues', href: '/leagues', icon: TrophyIcon }
       // Disable for now.
       // { name: 'Dashboards', href: '/dashboard', icon: TemplateIcon }
     )
