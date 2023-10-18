@@ -4,7 +4,7 @@ import { useRouter } from 'next/router'
 import {
   useOtherUserIdsInPrivateMessageChannelIds,
   usePrivateMessageChannelIds,
-  useRealtimePrivateMessages,
+  useRealtimePrivateMessagesPolling,
 } from 'web/hooks/use-private-messages'
 import { Col } from 'web/components/layout/col'
 import { User } from 'common/user'
@@ -58,7 +58,11 @@ export default function PrivateMessagesPage() {
 export const PrivateChat = (props: { user: User; channelId: number }) => {
   const { user, channelId } = props
   const [visible, setVisible] = useState(false)
-  const realtimeMessages = useRealtimePrivateMessages(channelId, true)
+  const realtimeMessages = useRealtimePrivateMessagesPolling(
+    channelId,
+    true,
+    100
+  )
   const otherUserFromMessages = (realtimeMessages ?? [])
     .filter((message) => message.userId !== user.id)
     .map((message) => message.userId)
@@ -82,10 +86,11 @@ export const PrivateChat = (props: { user: User; channelId: number }) => {
     size: 'sm',
     placeholder: 'Send a message',
   })
-  const { ref } = useIsVisible(() => {
-    user && setAsSeen(user, channelId)
-    setVisible(true)
-  }, true)
+  const { ref } = useIsVisible(() => setVisible(true), true)
+
+  useEffect(() => {
+    setAsSeen(user, channelId)
+  }, [messages.length])
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [scrollToBottomRef, setScrollToBottomRef] =
@@ -196,10 +201,11 @@ export const PrivateChat = (props: { user: User; channelId: number }) => {
   )
 }
 
-const setAsSeen = async (user: User, privatechannelId: number) =>
-  run(
+const setAsSeen = async (user: User, privatechannelId: number) => {
+  return run(
     db.from('private_user_seen_message_channels').insert({
       user_id: user.id,
       channel_id: privatechannelId,
     })
   )
+}

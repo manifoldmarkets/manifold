@@ -2,7 +2,6 @@ import { Contract } from 'common/contract'
 import { Group, GroupRole } from 'common/group'
 import { User } from 'common/user'
 import { useEffect, useState } from 'react'
-import { useSupabasePolling } from 'web/hooks/use-supabase-polling'
 import { getUserIsGroupMember } from 'web/lib/firebase/api'
 import { db } from 'web/lib/supabase/db'
 import {
@@ -232,14 +231,6 @@ export function useRealtimeGroupMembers(
   })
 
   return { admins, moderators, members, loadMore }
-}
-
-export function usePollingNumGroupMembers(groupId: string) {
-  const q = db
-    .from('group_members')
-    .select('*', { head: true, count: 'exact' })
-    .eq('group_id', groupId)
-  return useSupabasePolling(q)?.count
 }
 
 export async function setTranslatedMemberRole(

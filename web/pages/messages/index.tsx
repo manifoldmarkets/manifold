@@ -14,7 +14,7 @@ import {
   useHasUnseenPrivateMessage,
   useNonEmptyPrivateMessageChannelIds,
   useOtherUserIdsInPrivateMessageChannelIds,
-  useRealtimePrivateMessages,
+  useRealtimePrivateMessagesPolling,
 } from 'web/hooks/use-private-messages'
 import { useIsAuthorized, usePrivateUser, useUser } from 'web/hooks/use-user'
 import { useUsersInStore } from 'web/hooks/use-user-supabase'
@@ -77,7 +77,7 @@ const MessageChannelRow = (props: {
   channelId: number
 }) => {
   const { toUser, currentUser, channelId } = props
-  const messages = useRealtimePrivateMessages(channelId, true)
+  const messages = useRealtimePrivateMessagesPolling(channelId, true, 2000)
   const unseen = useHasUnseenPrivateMessage(currentUser.id, channelId, messages)
 
   const chat = messages?.[0]

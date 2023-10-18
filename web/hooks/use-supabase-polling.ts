@@ -12,6 +12,7 @@ export type PollingOptions = {
 type PollingState =
   | { state: 'waiting'; version: number; timeout?: undefined }
   | { state: 'polling'; version: number; timeout: NodeJS.Timeout }
+  | { state: 'error'; version: number; timeout?: NodeJS.Timeout }
 
 export function useSupabasePolling<T>(
   q: PostgrestBuilder<T>,
@@ -26,18 +27,25 @@ export function useSupabasePolling<T>(
   const updateResults = useMemo(
     () => () => {
       const version = state.current.version
-      run(q).then((r) => {
-        // if the version changed, then the deps changed, so throw out these results
-        // and stop polling with this version of the query
-        if (state.current.version == version) {
-          setResults(r)
-          state.current = {
-            state: 'polling',
-            version,
-            timeout: setTimeout(updateResults, ms),
+      run(q)
+        .then((r) => {
+          if (state.current.version == version) {
+            setResults(r)
+            state.current = {
+              state: 'polling',
+              version,
+              timeout: setTimeout(updateResults, ms),
+            }
           }
-        }
-      })
+        })
+        .catch((e) => {
+          console.error(e)
+          state.current = {
+            state: 'error',
+            version,
+            timeout: setTimeout(updateResults, 1000), // wait a bit longer on error
+          }
+        })
     },
     [q, opts]
   )
@@ -46,7 +54,6 @@ export function useSupabasePolling<T>(
     setResults(undefined) // if we changed the deps, we have no results
     updateResults()
     return () => {
-      // either unmounting, or restarting the effect because the deps changed
       if (state.current.timeout != null) {
         clearTimeout(state.current.timeout)
       }

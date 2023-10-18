@@ -10,28 +10,29 @@ import {
   convertChatMessage,
   getChannelLastSeenTimeQuery,
   getChatMessageChannelIds,
-  getChatMessages,
   getMessageChannelMemberships,
   getNonEmptyChatMessageChannelIds,
   getOtherUserIdsInPrivateMessageChannelIds,
 } from 'web/lib/supabase/private-messages'
+import { useSupabasePolling } from 'web/hooks/use-supabase-polling'
+import { db } from 'web/lib/supabase/db'
 
 // NOTE: must be authorized (useIsAuthorized) to use this hook
-export function useRealtimePrivateMessages(
+export function useRealtimePrivateMessagesPolling(
   channelId: number,
-  isAuthed: boolean
+  isAuthed: boolean,
+  ms: number
 ) {
   if (!isAuthed) {
     console.error('useRealtimePrivateMessages must be authorized')
   }
-  const { rows } = usePersistentSubscription(
-    `private-user-messages-${channelId}`,
-    'private_user_messages',
-    safeLocalStorage,
-    { k: 'channel_id', v: channelId },
-    () => getChatMessages(channelId, 100)
-  )
-  return orderBy(rows?.map(convertChatMessage), 'createdTime', 'desc')
+  const q = db
+    .from('private_user_messages')
+    .select('*')
+    .eq('channel_id', channelId)
+
+  const results = useSupabasePolling(q, { ms, deps: [channelId] })
+  return orderBy(results?.data?.map(convertChatMessage), 'createdTime', 'desc')
 }
 
 // NOTE: must be authorized (useIsAuthorized) to use this hook
