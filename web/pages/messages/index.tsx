@@ -9,7 +9,6 @@ import { Row } from 'web/components/layout/row'
 import NewMessageButton from 'web/components/messaging/new-message-button'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { Avatar } from 'web/components/widgets/avatar'
-import { Content } from 'web/components/widgets/editor'
 import { Title } from 'web/components/widgets/title'
 import {
   useHasUnseenPrivateMessage,
