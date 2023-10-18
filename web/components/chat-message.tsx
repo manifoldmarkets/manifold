@@ -18,11 +18,18 @@ export const ChatMessageItem = forwardRef(
       otherUser?: User | null
       onReplyClick?: (chat: ChatMessage) => void
       beforeSameUser?: boolean
+      firstOfUser?: boolean
     },
     ref: React.Ref<HTMLDivElement>
   ) => {
-    const { chats, currentUser, otherUser, onReplyClick, beforeSameUser } =
-      props
+    const {
+      chats,
+      currentUser,
+      otherUser,
+      onReplyClick,
+      beforeSameUser,
+      firstOfUser,
+    } = props
     const chat = first(chats)
     if (!chat) return null
     const isMe = currentUser?.id === chat.userId
@@ -50,17 +57,24 @@ export const ChatMessageItem = forwardRef(
             className="text-xs"
           />
         </Col>
-        <Col
-          className={clsx(
-            'max-w-[calc(100vw-6rem)] rounded-2xl p-3 drop-shadow-sm md:max-w-[80%]',
-            isMe
-              ? 'bg-primary-100 items-end self-end rounded-br-none'
-              : 'bg-canvas-0 items-start self-start rounded-bl-none'
+        <Col className="max-w-[calc(100vw-6rem)] md:max-w-[80%]">
+          {firstOfUser && !otherUser && (
+            <span className="text-ink-500 dark:text-ink-600 mt-1 pl-3 text-sm">
+              {chat.userName}
+            </span>
           )}
-        >
-          {chats.map((chat) => (
-            <Content content={chat.content} key={chat.id} />
-          ))}
+          <Col
+            className={clsx(
+              'rounded-2xl p-3 drop-shadow-sm',
+              isMe
+                ? 'bg-primary-100 items-end self-end rounded-br-none'
+                : 'bg-canvas-0 items-start self-start rounded-bl-none'
+            )}
+          >
+            {chats.map((chat) => (
+              <Content content={chat.content} key={chat.id} />
+            ))}
+          </Col>
         </Col>
         {!isMe && (
           <MessageAvatar
