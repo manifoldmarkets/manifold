@@ -85,11 +85,6 @@ module.exports = {
         permanent: false,
       },
       {
-        source: '/versus',
-        destination: '/VersusBot?tab=markets',
-        permanent: false,
-      },
-      {
         source: '/privacy',
         destination: '/privacy.html',
         permanent: true,
