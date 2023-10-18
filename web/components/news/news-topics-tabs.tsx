@@ -30,12 +30,10 @@ export function NewsTopicsTabs(props: {
         className={'bg-canvas-50 sticky top-0 z-20 px-1'}
         trackingName="news tabs"
         scrollToTop={!dontScroll}
-        tabs={topics.map((tab) => ({
-          ...tab,
-          onClick: () => {
-            track('news topic clicked', { tab: tab.title })
-          },
-        }))}
+        tabs={topics}
+        onClick={(tabTitle) => {
+          track('news topic clicked', { tab: tabTitle })
+        }}
       />
     </Col>
   )
