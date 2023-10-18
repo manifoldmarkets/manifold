@@ -59,7 +59,6 @@ import { editcomment } from 'api/edit-comment'
 import { supabasesearchgroups } from './supabase-search-groups'
 import { leagueActivity } from './league-activity'
 import { lootbox } from './loot-box'
-import { createchatmessage } from 'api/create-chat-message'
 import { updatepost } from './update-post'
 import { updategroup } from './update-group'
 import { updateUserDisinterestEmbedding } from 'api/update-user-disinterests'
@@ -143,7 +142,6 @@ app.post('/changeuserinfo', ...apiRoute(changeuserinfo))
 app.post('/createuser', ...apiRoute(createuser))
 app.post('/createanswer', ...apiRoute(createanswer))
 app.post('/createcomment', ...apiRoute(createcomment))
-app.post('/create-chat-message', ...apiRoute(createchatmessage))
 app.post('/editcomment', ...apiRoute(editcomment))
 app.post('/swapcert', ...apiRoute(swapcert))
 app.post('/dividendcert', ...apiRoute(dividendcert))

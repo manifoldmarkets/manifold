@@ -1,6 +1,6 @@
-import { Dispatch, SetStateAction, useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { groupBy, sortBy } from 'lodash'
-import { ChatIcon, ClockIcon } from '@heroicons/react/outline'
+import { ClockIcon } from '@heroicons/react/outline'
 import { useRouter } from 'next/router'
 
 import {
@@ -32,12 +32,6 @@ import { PrizesModal } from 'web/components/leagues/prizes-modal'
 import { LeagueFeed } from 'web/components/leagues/league-feed'
 import { QueryUncontrolledTabs } from 'web/components/layout/tabs'
 import { SEO } from 'web/components/SEO'
-import { LeagueChat } from 'web/components/topics/league-chat'
-import {
-  getLeagueChatChannelId,
-  getSeasonDivisionCohort,
-} from 'common/league-chat'
-import { useAllUnseenChatsForLeages } from 'web/hooks/use-chats'
 import { Countdown } from 'web/components/widgets/countdown'
 import { formatTime, getCountdownStringHoursMinutes } from 'web/lib/util/time'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
@@ -176,22 +170,6 @@ export default function Leagues(props: { rows: league_user_info[] }) {
   const userDivision = userRow?.division
   const userCohort = userRow?.cohort
 
-  const [unseenLeagueChats, setUnseenLeagueChats] = useAllUnseenChatsForLeages(
-    user?.id,
-    [],
-    {
-      season,
-      division,
-      cohort: cohort ?? '--',
-    }
-  )
-  const unseenCohortChats = unseenLeagueChats.map(
-    (c) => getSeasonDivisionCohort(c).cohort
-  )
-
-  const showNotif = (cohort: string) =>
-    query.tab !== 'chat' && unseenCohortChats.includes(cohort)
-
   return (
     <Page trackPageView={'leagues'}>
       <SEO
@@ -274,11 +252,6 @@ export default function Leagues(props: { rows: league_user_info[] }) {
                 {divisions.map((division) => (
                   <option key={division} value={division}>
                     {division === userDivision ? MARKER : ''}{' '}
-                    {unseenLeagueChats
-                      .map((c) => getSeasonDivisionCohort(c).division)
-                      .includes(division) &&
-                      query.tab != 'chat' &&
-                      '🔵'}{' '}
                     {DIVISION_NAMES[division]}
                   </option>
                 ))}
@@ -292,7 +265,6 @@ export default function Leagues(props: { rows: league_user_info[] }) {
                 {divisionToCohorts[division]?.map((cohort) => (
                   <option key={cohort} value={cohort}>
                     {cohort === userCohort ? MARKER : ''} {toLabel(cohort)}
-                    {showNotif(cohort) && '🔵'}{' '}
                   </option>
                 ))}
               </Select>
@@ -307,8 +279,6 @@ export default function Leagues(props: { rows: league_user_info[] }) {
             division={division}
             cohort={cohort}
             highlightedUserId={highlightedUserId}
-            setUnseenLeagueChats={setUnseenLeagueChats}
-            showNotif={showNotif(cohort)}
           />
         ) : (
           <LoadingIndicator />
@@ -324,41 +294,18 @@ function LeaguesInnerPage(props: {
   division: number
   cohort: string
   highlightedUserId: string | undefined
-  setUnseenLeagueChats: Dispatch<SetStateAction<string[]>>
-  showNotif: boolean
 }) {
-  const {
-    seasonRows,
-    season,
-    division,
-    cohort,
-    highlightedUserId,
-    setUnseenLeagueChats,
-    showNotif,
-  } = props
+  const { seasonRows, season, division, cohort, highlightedUserId } = props
   const cohorts = groupBy(seasonRows, 'cohort')
-
-  const user = useUser()
 
   const { demotion, promotion, doublePromotion } =
     getDemotionAndPromotionCountBySeason(season, division)
-
-  const leagueChannelId = getLeagueChatChannelId(season, division, cohort)
 
   return (
     <>
       <QueryUncontrolledTabs
         trackingName="league tabs"
         labelClassName={'!pb-3 !pt-0'}
-        onClick={(tab) => {
-          if (tab === 'Chat') {
-            setUnseenLeagueChats((unseenLeagueChats) =>
-              unseenLeagueChats.filter(
-                (c) => c != getLeagueChatChannelId(season, division, cohort)
-              )
-            )
-          }
-        }}
         key={`${season}-${division}-${cohort}`}
         tabs={[
           {
@@ -378,13 +325,6 @@ function LeaguesInnerPage(props: {
           {
             title: 'Activity',
             content: <LeagueFeed season={season} cohort={cohort} />,
-          },
-          {
-            title: 'Chat',
-            inlineTabIcon: showNotif && (
-              <ChatIcon className="h-5 w-5 text-blue-600" />
-            ),
-            content: <LeagueChat user={user} channelId={leagueChannelId} />,
           },
         ]}
       />

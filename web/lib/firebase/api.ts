@@ -460,13 +460,6 @@ export function bidForLeague(params: {
   return call(getApiUrl('bidforleague'), 'POST', params)
 }
 
-export function createChatMessage(params: {
-  channelId: string
-  content: JSONContent
-}) {
-  return call(getApiUrl('create-chat-message'), 'POST', params)
-}
-
 export function followUser(userId: string) {
   return call(getApiUrl('follow-user'), 'POST', { userId, follow: true })
 }
