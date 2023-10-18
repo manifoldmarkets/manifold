@@ -50,7 +50,7 @@ export default function MessagesPage() {
       </Row>
       <Col className={'w-full overflow-hidden'}>
         {currentUser && isAuthed && channelIds.length === 0 && (
-          <div className={'text-ink-400 mt-4 text-center'}>
+          <div className={'text-ink-500 dark:text-ink-600 mt-4 text-center'}>
             You have no messages, yet.
           </div>
         )}
@@ -98,7 +98,7 @@ const MessageChannelRow = (props: {
         <Col className={'w-full'}>
           <Row className={'items-center justify-between'}>
             <span className={'font-semibold'}>{toUser?.name}</span>
-            <span className={'text-ink-500 text-xs'}>
+            <span className={'text-ink-400 dark:text-ink-500 text-xs'}>
               {chat && <RelativeTimestamp time={chat.createdTime} />}
             </span>
           </Row>

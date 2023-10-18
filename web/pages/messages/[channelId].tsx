@@ -178,7 +178,7 @@ export const PrivateChat = (props: { user: User; channelId: number }) => {
           })
         )}
         {messages.length === 0 && (
-          <div className="text-ink-500 p-2">
+          <div className="text-ink-500 dark:text-ink-600 p-2">
             No messages yet. Say something why don't ya?
           </div>
         )}
@@ -190,7 +190,6 @@ export const PrivateChat = (props: { user: User; channelId: number }) => {
           submit={submitMessage}
           isSubmitting={isSubmitting}
           submitOnEnter={true}
-          // hideToolbar={true}
         />
       </div>
     </Col>
