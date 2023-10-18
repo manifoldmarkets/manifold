@@ -201,7 +201,7 @@ export default function UserPage(props: {
         {lover ? (
           <>
             <LoverAttributes lover={lover} />
-            {answers.length > 0 && (
+            {answers.length > 0 ? (
               <Col className={''}>
                 <Row className={'text-xl font-bold'}>Answers</Row>
                 <Row className={'flex-wrap gap-4'}>
@@ -241,6 +241,16 @@ export default function UserPage(props: {
                     })}
                 </Row>
               </Col>
+            ) : (
+              isCurrentUser && (
+                <Col className={'mt-4 w-full items-center'}>
+                  <Row>
+                    <Button onClick={() => router.push('love-questions')}>
+                      Answer questions
+                    </Button>
+                  </Row>
+                </Col>
+              )
             )}
           </>
         ) : (
