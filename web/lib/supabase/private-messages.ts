@@ -56,20 +56,37 @@ export const getChatMessageChannelIds = async (
   limit: number,
   channelId?: string
 ) => {
-  const memberhips = (await getMessageChannelMemberships(userId, limit)).map(
+  const memberships = (await getMessageChannelMemberships(userId, limit)).map(
     (m) => m.channel_id
   )
-  if (channelId) return memberhips
+  if (channelId) return memberships
   else {
     const orderedIds = await run(
       db
         .from('private_user_message_channels')
         .select('id')
-        .in('id', memberhips)
+        .in('id', memberships)
         .order('last_updated_time', { ascending: false })
     )
     return orderedIds.data.map((d) => d.id)
   }
+}
+
+export const getNonEmptyChatMessageChannelIds = async (
+  userId: string,
+  limit?: number
+) => {
+  const orderedNonEmptyIds = await db.rpc(
+    'get_non_empty_private_message_channel_ids',
+    {
+      p_user_id: userId,
+      p_limit: limit,
+    }
+  )
+  if (orderedNonEmptyIds.data) {
+    return orderedNonEmptyIds.data.map((d) => d.id)
+  }
+  return []
 }
 
 // NOTE: must be authorized (useIsAuthorized) to use this function

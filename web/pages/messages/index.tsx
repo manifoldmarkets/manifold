@@ -1,28 +1,25 @@
-import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
+import clsx from 'clsx'
+import { User } from 'common/user'
+import { first } from 'lodash'
+import Link from 'next/link'
+import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
+import { Row } from 'web/components/layout/row'
+import NewMessageButton from 'web/components/messaging/new-message-button'
+import { RelativeTimestamp } from 'web/components/relative-timestamp'
+import { Avatar } from 'web/components/widgets/avatar'
+import { Content } from 'web/components/widgets/editor'
 import { Title } from 'web/components/widgets/title'
 import {
-  usePrivateMessageChannelIds,
-  useOtherUserIdsInPrivateMessageChannelIds,
-  useRealtimePrivateMessages,
   useHasUnseenPrivateMessage,
+  useNonEmptyPrivateMessageChannelIds,
+  useOtherUserIdsInPrivateMessageChannelIds,
+  usePrivateMessageChannelIds,
+  useRealtimePrivateMessages,
 } from 'web/hooks/use-private-messages'
 import { useIsAuthorized, usePrivateUser, useUser } from 'web/hooks/use-user'
-import Link from 'next/link'
 import { useUsersInStore } from 'web/hooks/use-user-supabase'
-import { Col } from 'web/components/layout/col'
-import { Row } from 'web/components/layout/row'
-import { Avatar } from 'web/components/widgets/avatar'
-import { User } from 'common/user'
-import { Content } from 'web/components/widgets/editor'
-import { RelativeTimestamp } from 'web/components/relative-timestamp'
-import clsx from 'clsx'
-import { SEARCH_TYPE_KEY } from 'web/components/supabase-search'
-import { linkClass } from 'web/components/widgets/site-link'
-import { first } from 'lodash'
-import { Button } from 'web/components/buttons/button'
-import { PlusCircleIcon, PlusIcon } from '@heroicons/react/solid'
-import NewMessageButton from 'web/components/messaging/new-message-button'
+import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
 export const getServerSideProps = redirectIfLoggedOut('/')
 
 export default function MessagesPage() {
@@ -30,7 +27,10 @@ export default function MessagesPage() {
   const privateUser = usePrivateUser()
   const currentUser = useUser()
   const isAuthed = useIsAuthorized()
-  const channelIds = usePrivateMessageChannelIds(currentUser?.id, isAuthed)
+  const channelIds = useNonEmptyPrivateMessageChannelIds(
+    currentUser?.id,
+    isAuthed
+  )
   const channelIdsToUserIds = useOtherUserIdsInPrivateMessageChannelIds(
     currentUser?.id,
     isAuthed,
