@@ -117,7 +117,9 @@ export function CommentInputTextArea(props: {
             !event.shiftKey &&
             (!submitOnEnter ? event.ctrlKey || event.metaKey : true) &&
             // mention list is closed
-            !(view.state as any).mention$.active
+            !(view.state as any).mention$.active &&
+            // emoji list is closed
+            !(view.state as any).emoji$7.active
           ) {
             submit()
             event.preventDefault()
