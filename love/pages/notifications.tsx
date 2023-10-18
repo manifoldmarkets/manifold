@@ -3,7 +3,6 @@ import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { useEffect, useState } from 'react'
 import { getNativePlatform } from 'web/lib/native/is-native'
 import { useRouter } from 'next/router'
-import { Page } from 'web/components/layout/page'
 import { Title } from 'web/components/widgets/title'
 import { SEO } from 'web/components/SEO'
 import { Row } from 'web/components/layout/row'
@@ -16,6 +15,7 @@ import { QueryUncontrolledTabs } from 'web/components/layout/tabs'
 import { NotificationSettings } from 'web/components/notification-settings'
 import { NotificationsList } from 'web/pages/notifications'
 import { NotificationReason } from 'common/notification'
+import { LovePage } from 'love/components/love-page'
 export const NOTIFICATIONS_TO_IGNORE: NotificationReason[] = ['league_changed']
 export default function NotificationsPage() {
   const privateUser = usePrivateUser()
@@ -36,7 +36,7 @@ export default function NotificationsPage() {
     privateUser && !privateUser.hasSeenAppBannerInNotificationsOn && !isNative
 
   return (
-    <Page trackPageView={'notifications page'}>
+    <LovePage trackPageView={'notifications page'}>
       <div className="w-full">
         <Title className="hidden lg:block">Notifications</Title>
         <SEO title="Notifications" description="Manifold user notifications" />
@@ -48,7 +48,7 @@ export default function NotificationsPage() {
           />
         ) : null}
       </div>
-    </Page>
+    </LovePage>
   )
 }
 
