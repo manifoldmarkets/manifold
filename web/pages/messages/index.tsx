@@ -48,9 +48,9 @@ export default function MessagesPage() {
         <Title>Messages</Title>
         <NewMessageButton />
       </Row>
-      <Col className={'w-full gap-2 overflow-hidden'}>
+      <Col className={'w-full overflow-hidden'}>
         {currentUser && isAuthed && channelIds.length === 0 && (
-          <div className={'mt-4 text-center text-gray-400'}>
+          <div className={'text-ink-400 mt-4 text-center'}>
             You have no messages, yet.
           </div>
         )}
@@ -83,48 +83,50 @@ const MessageChannelRow = (props: {
   const unseen = useHasUnseenPrivateMessage(currentUser.id, channelId, messages)
   const chat = messages?.[0]
   return (
-    <>
-      <div className={'ml-14 w-full border-t'} />
-      <Link key={channelId} href={'/messages/' + channelId}>
-        <Row className={'hover:bg-canvas-50 items-center gap-2 rounded-md p-1'}>
-          <Avatar
-            username={toUser?.username ?? ''}
-            avatarUrl={toUser?.avatarUrl}
-            noLink={true}
-          />
-          <Col className={'w-full'}>
-            <Row className={'items-center justify-between'}>
-              <span className={'font-semibold'}>{toUser?.name}</span>
-              <span className={'text-ink-400 text-xs'}>
-                {chat && <RelativeTimestamp time={chat.createdTime} />}
+    <Link
+      className="hover:bg-canvas-0 rounded p-2 transition-colors"
+      key={channelId}
+      href={'/messages/' + channelId}
+    >
+      <Row className={'items-center gap-3 rounded-md'}>
+        <Avatar
+          username={toUser?.username ?? ''}
+          avatarUrl={toUser?.avatarUrl}
+          noLink={true}
+          size="lg"
+        />
+        <Col className={'w-full'}>
+          <Row className={'items-center justify-between'}>
+            <span className={'font-semibold'}>{toUser?.name}</span>
+            <span className={'text-ink-500 text-xs'}>
+              {chat && <RelativeTimestamp time={chat.createdTime} />}
+            </span>
+          </Row>
+          <Row className="items-center justify-between gap-1">
+            {!chat && (
+              <div className="bg-ink-500 dark:bg-ink-600 h-4 w-2/3 animate-pulse py-1" />
+            )}
+            {chat && (
+              <span
+                className={clsx(
+                  'line-clamp-1 text-sm',
+                  unseen ? '' : 'text-ink-500 dark:text-ink-600'
+                )}
+              >
+                {chat.userId == currentUser.id && 'You: '}
+                {parseJsonContentToText(chat.content)}
               </span>
-            </Row>
-            <Row className="items-center justify-between gap-1">
-              {!chat && (
-                <div className="bg-ink-500 h-4 w-2/3 animate-pulse py-1" />
-              )}
-              {chat && (
-                <span
-                  className={clsx(
-                    'line-clamp-1 text-sm',
-                    unseen ? '' : 'text-ink-500'
-                  )}
-                >
-                  {chat.userId == currentUser.id && 'You: '}
-                  {parseJsonContentToText(chat.content)}
-                </span>
-              )}
-              {unseen && (
-                <div
-                  className={clsx(
-                    'text-canvas-0 bg-primary-500 h-4 min-w-[15px] rounded-full p-[2px] text-center text-[10px] '
-                  )}
-                />
-              )}
-            </Row>
-          </Col>
-        </Row>
-      </Link>
-    </>
+            )}
+            {unseen && (
+              <div
+                className={clsx(
+                  'text-canvas-0 bg-primary-500 h-4 min-w-[15px] rounded-full p-[2px] text-center text-[10px] '
+                )}
+              />
+            )}
+          </Row>
+        </Col>
+      </Row>
+    </Link>
   )
 }
