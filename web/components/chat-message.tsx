@@ -52,7 +52,7 @@ export const ChatMessageItem = forwardRef(
         </Col>
         <Col
           className={clsx(
-            'max-w-[90%] rounded-2xl p-3',
+            'max-w-[90%] rounded-2xl p-3 drop-shadow-sm',
             isMe
               ? 'bg-primary-100 items-end self-end rounded-br-none'
               : 'bg-canvas-0 items-start self-start rounded-bl-none'
