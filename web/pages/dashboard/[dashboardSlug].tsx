@@ -2,6 +2,7 @@ import {
   Dashboard,
   DashboardItem,
   MAX_DASHBOARD_TITLE_LENGTH,
+  convertDashboardSqltoTS,
 } from 'common/dashboard'
 import { useEffect, useState } from 'react'
 import { Button } from 'web/components/buttons/button'
@@ -203,13 +204,10 @@ function FoundDashbordPage(props: {
                   items: dashboard.items,
                   description: editor?.getJSON(),
                   topics: dashboard.topics,
-                }).then((resultingDashboard) => {
-                  if (
-                    resultingDashboard &&
-                    resultingDashboard.updateDashboard
-                  ) {
+                }).then((data) => {
+                  if (data?.updateDashboard) {
                     setDashboard(
-                      resultingDashboard.updateDashboard as Dashboard
+                      convertDashboardSqltoTS(data.updateDashboard) as any
                     )
                   }
                 })
