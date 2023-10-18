@@ -32,8 +32,6 @@ export default function MessagesPage() {
     isAuthed
   )
 
-  // const channelIds = usePrivateMessageChannelIds(currentUser?.id, isAuthed)
-
   const channelIdsToUserIds = useOtherUserIdsInPrivateMessageChannelIds(
     currentUser?.id,
     isAuthed,
