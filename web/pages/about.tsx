@@ -158,6 +158,11 @@ export default function AboutPage() {
             href="/leaderboards"
             description="Global profit rankings"
           />
+          <LabCard
+            title="️🔖 Dashboards"
+            description="Custom display of markets and articles"
+            href="/dashboard"
+          />
           {user && (
             <LabCard
               title="💸 Manalinks"
@@ -191,9 +196,9 @@ export default function AboutPage() {
             href="https://manifoldmarkets.notion.site/Awesome-Manifold-4b93a64528674290989ef8a9f696b460"
           />
           <LabCard
-            title="💌 Dating"
-            description="Browse dating profiles (old; new service will appear soon)"
-            href="/date-docs"
+            title="💌 Manifold.love"
+            description="Coming soon — crowd source your long term matches"
+            href="https://manifold.love"
           />
         </LabSection>
 

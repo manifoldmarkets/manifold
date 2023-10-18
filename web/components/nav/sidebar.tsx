@@ -141,7 +141,8 @@ const getDesktopNav = (
         icon: PrivateMessagesIcon,
       },
       { name: 'Leagues', href: '/leagues', icon: TrophyIcon },
-      { name: 'Dashboards', href: '/dashboard', icon: TemplateIcon }
+      // Disable for now.
+      // { name: 'Dashboards', href: '/dashboard', icon: TemplateIcon }
     )
 
   return buildArray(
