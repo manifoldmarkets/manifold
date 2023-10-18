@@ -1,5 +1,5 @@
 import { ChatMessage } from 'common/chat-message'
-import { run, tsToMillis } from 'common/supabase/utils'
+import { Row, run, tsToMillis } from 'common/supabase/utils'
 import { usePersistentSubscription } from 'web/lib/supabase/realtime/use-subscription'
 import { useEffect, useState } from 'react'
 import { first, groupBy, orderBy } from 'lodash'
@@ -14,7 +14,7 @@ import {
   getNonEmptyChatMessageChannelIds,
   getOtherUserIdsInPrivateMessageChannelIds,
 } from 'web/lib/supabase/private-messages'
-import { useSupabasePolling } from 'web/hooks/use-supabase-polling'
+import { usePersistentSupabasePolling } from 'web/hooks/use-persistent-supabase-polling'
 import { db } from 'web/lib/supabase/db'
 
 // NOTE: must be authorized (useIsAuthorized) to use this hook
@@ -26,12 +26,23 @@ export function useRealtimePrivateMessagesPolling(
   if (!isAuthed) {
     console.error('useRealtimePrivateMessages must be authorized')
   }
-  const q = db
+  const allRowsQ = db
     .from('private_user_messages')
     .select('*')
     .eq('channel_id', channelId)
+  const newRowsOnlyQ = (row: Row<'private_user_messages'> | undefined) =>
+    allRowsQ.gt('id', row?.id ?? 0)
 
-  const results = useSupabasePolling(q, { ms, deps: [channelId] })
+  const results = usePersistentSupabasePolling(
+    allRowsQ,
+    newRowsOnlyQ,
+    'id',
+    `private-messages-${channelId}`,
+    {
+      ms,
+      deps: [channelId],
+    }
+  )
   return orderBy(results?.data?.map(convertChatMessage), 'createdTime', 'desc')
 }
 
