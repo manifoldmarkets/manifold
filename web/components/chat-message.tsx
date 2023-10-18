@@ -41,10 +41,7 @@ export const ChatMessageItem = forwardRef(
         }
 
     return (
-      <Row
-        className={clsx(' gap-2 ', isMe ? '' : 'flex-row-reverse')}
-        ref={ref}
-      >
+      <Row className={clsx('gap-1', isMe ? '' : 'flex-row-reverse')} ref={ref}>
         <Row className="grow" />
         <Col className="grow-y justify-end py-3">
           <RelativeTimestamp
