@@ -145,7 +145,7 @@ export const PrivateChat = (props: { user: User; channelId: number }) => {
   }
 
   return (
-    <Col className="h-full px-2 xl:px-0">
+    <Col className=" px-2 xl:px-0">
       <Col className={''}>
         <Row className={'border-ink-200 items-center gap-1 border-b py-2'}>
           <BackButton />
@@ -164,7 +164,7 @@ export const PrivateChat = (props: { user: User; channelId: number }) => {
       <Col
         className={clsx(
           'gap-2 overflow-y-scroll py-2 ',
-          'max-h-[calc(100vh-13rem)] min-h-[calc(100vh-13rem)]',
+          'max-h-[calc(100vh-216px)] min-h-[calc(100vh-216px)]',
           'lg:max-h-[calc(100vh-11rem)] lg:min-h-[calc(100vh-11rem)]'
         )}
       >
