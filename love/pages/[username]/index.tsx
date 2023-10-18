@@ -28,6 +28,8 @@ import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useUser } from 'web/hooks/use-user'
 import { fromNow } from 'web/lib/util/time'
 import { LovePage } from 'love/components/love-page'
+import { Button } from 'web/components/buttons/button'
+import { useRouter } from 'next/router'
 
 export const getStaticProps = async (props: {
   params: {
@@ -68,7 +70,7 @@ export default function UserPage(props: {
   const isMobile = useIsMobile()
   const currentUser = useUser()
   const isCurrentUser = currentUser?.id === user?.id
-
+  const router = useRouter()
   if (!user) {
     return <div>404</div>
   }
@@ -196,44 +198,61 @@ export default function UserPage(props: {
             </Row>
           </Col>
         </Col>
-        {lover && <LoverAttributes lover={lover} />}
-        {answers.length > 0 && (
-          <Col className={''}>
-            <Row className={'text-xl font-bold'}>Answers</Row>
-            <Row className={'flex-wrap gap-4'}>
-              {answers
-                .filter(
-                  (a) => a.multiple_choice ?? a.free_response ?? a.integer
-                )
-                .map((answer) => {
-                  const question = questions.find(
-                    (q) => q.id === answer.question_id
-                  )
-                  if (!question) return null
-                  const options = question.multiple_choice_options as Record<
-                    string,
-                    number
-                  >
-                  const optionKey = options
-                    ? Object.keys(options).find(
-                        (k) => options[k] === answer.multiple_choice
+        {lover ? (
+          <>
+            <LoverAttributes lover={lover} />
+            {answers.length > 0 && (
+              <Col className={''}>
+                <Row className={'text-xl font-bold'}>Answers</Row>
+                <Row className={'flex-wrap gap-4'}>
+                  {answers
+                    .filter(
+                      (a) => a.multiple_choice ?? a.free_response ?? a.integer
+                    )
+                    .map((answer) => {
+                      const question = questions.find(
+                        (q) => q.id === answer.question_id
                       )
-                    : null
+                      if (!question) return null
+                      const options =
+                        question.multiple_choice_options as Record<
+                          string,
+                          number
+                        >
+                      const optionKey = options
+                        ? Object.keys(options).find(
+                            (k) => options[k] === answer.multiple_choice
+                          )
+                        : null
 
-                  return (
-                    <Col
-                      key={question.id}
-                      className={'bg-canvas-0 flex-grow rounded-md p-2'}
-                    >
-                      <Row className={'font-bold'}>{question.question}</Row>
-                      <Row>
-                        {answer.free_response ?? optionKey ?? answer.integer}
-                      </Row>
-                    </Col>
-                  )
-                })}
-            </Row>
-          </Col>
+                      return (
+                        <Col
+                          key={question.id}
+                          className={'bg-canvas-0 flex-grow rounded-md p-2'}
+                        >
+                          <Row className={'font-bold'}>{question.question}</Row>
+                          <Row>
+                            {answer.free_response ??
+                              optionKey ??
+                              answer.integer}
+                          </Row>
+                        </Col>
+                      )
+                    })}
+                </Row>
+              </Col>
+            )}
+          </>
+        ) : (
+          isCurrentUser && (
+            <Col className={'mt-4 w-full items-center'}>
+              <Row>
+                <Button onClick={() => router.push('signup')}>
+                  Create a profile
+                </Button>
+              </Row>
+            </Col>
+          )
         )}
       </Col>
     </LovePage>

@@ -10,9 +10,14 @@ import { Row } from 'web/components/layout/row'
 import { Button } from 'web/components/buttons/button'
 import { colClassName, labelClassName } from 'love/pages/signup'
 import { MultiCheckbox } from 'web/components/multi-checkbox'
+import { Lover } from 'love/hooks/use-lover'
+import { User } from 'common/user'
 
-export const RequiredLoveUserForm = (props: { onSuccess: () => void }) => {
-  const { onSuccess } = props
+export const RequiredLoveUserForm = (props: {
+  user: User
+  onSuccess: (lover: Lover) => void
+}) => {
+  const { user, onSuccess } = props
   const [formState, setFormState] = useState({
     birthdate: '',
     city: '',
@@ -38,10 +43,10 @@ export const RequiredLoveUserForm = (props: { onSuccess: () => void }) => {
       ...formState,
     }).catch((e) => {
       console.error(e)
-      return false
+      return null
     })
-    if (res) {
-      onSuccess()
+    if (res && res.lover) {
+      onSuccess({ ...res.lover, user } as Lover)
     }
   }
 
@@ -210,9 +215,9 @@ export const RequiredLoveUserForm = (props: { onSuccess: () => void }) => {
           />
         </Col>
 
-        <div>
-          <Button onClick={handleSubmit}>Submit</Button>
-        </div>
+        <Row className={'justify-end'}>
+          <Button onClick={handleSubmit}>Next</Button>
+        </Row>
       </Col>
     </>
   )

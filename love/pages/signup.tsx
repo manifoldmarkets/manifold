@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Col } from 'web/components/layout/col'
-import { useLover } from 'love/hooks/use-lover'
+import { Lover, useLover } from 'love/hooks/use-lover'
 import { RequiredLoveUserForm } from 'love/components/required-lover-form'
 import { OptionalLoveUserForm } from 'love/components/optional-lover-form'
 import { useUser } from 'web/hooks/use-user'
@@ -12,10 +12,10 @@ import { Row } from 'web/components/layout/row'
 import clsx from 'clsx'
 
 export default function SignupPage() {
-  const [step, setStep] = useState(0)
+  const [newLover, setNewLover] = useState<Lover>()
   const lover = useLover()
   const user = useUser()
-
+  console.log(lover)
   return (
     <Col className="items-center">
       <Col className={'bg-canvas-0 w-full max-w-2xl px-6 py-4'}>
@@ -29,10 +29,15 @@ export default function SignupPage() {
               <GoogleSignInButton onClick={firebaseLogin} />
             </Row>
           </Col>
-        ) : step == 0 && !lover ? (
-          <RequiredLoveUserForm onSuccess={() => setStep(1)} />
+        ) : !newLover && lover === null ? (
+          <RequiredLoveUserForm
+            user={user}
+            onSuccess={(lover) => setNewLover(lover)}
+          />
+        ) : newLover || lover ? (
+          <OptionalLoveUserForm lover={(newLover || lover) as Lover} />
         ) : (
-          lover && <OptionalLoveUserForm lover={lover} />
+          <LoadingIndicator />
         )}
       </Col>
     </Col>
