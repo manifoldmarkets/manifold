@@ -36,6 +36,7 @@ export const RequiredLoveUserForm = (props: {
     has_kids: 0,
     wants_kids_strength: 2,
   })
+  const [showCityInput, setShowCityInput] = useState(false)
 
   const canContinue = Object.values(formState).every((v) =>
     typeof v == 'string'
@@ -92,7 +93,6 @@ export const RequiredLoveUserForm = (props: {
           {loadingName && (
             <Row className={'mt-2 items-center gap-4'}>
               <LoadingIndicator />
-              <span>Loading... This may take a while.</span>
             </Row>
           )}
           {errorName && <span className="text-error text-sm">{errorName}</span>}
@@ -115,7 +115,6 @@ export const RequiredLoveUserForm = (props: {
           {loadingUsername && (
             <Row className={'mt-2 items-center gap-4'}>
               <LoadingIndicator />
-              <span>Loading... This may take a while.</span>
             </Row>
           )}
           {errorUsername && (
@@ -125,12 +124,33 @@ export const RequiredLoveUserForm = (props: {
 
         <Col className={clsx(colClassName)}>
           <label className={clsx(labelClassName)}>Your location</label>
-          <Input
-            type="text"
-            onChange={(e) => handleChange('city', e.target.value)}
-            className={'w-56'}
-            placeholder={'e.g. San Francisco'}
+          <ChoicesToggleGroup
+            currentChoice={formState['city']}
+            choicesMap={{
+              'San Francisco': 'San Francisco',
+              'New York City': 'New York City',
+              London: 'London',
+              Other: 'Other',
+            }}
+            setChoice={(c) => {
+              if (c === 'Other') {
+                handleChange('city', '')
+                setShowCityInput(true)
+              } else {
+                setShowCityInput(false)
+                handleChange('city', c)
+              }
+            }}
           />
+          {showCityInput && (
+            <Input
+              type="text"
+              value={formState['city']}
+              onChange={(e) => handleChange('city', e.target.value)}
+              className={'w-56'}
+              placeholder={'e.g. DC'}
+            />
+          )}
         </Col>
 
         <Col className={clsx(colClassName)}>
