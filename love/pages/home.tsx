@@ -1,4 +1,3 @@
-import { useTopicFromRouter } from 'web/hooks/use-topic-from-router'
 import { SEO } from 'web/components/SEO'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -6,8 +5,6 @@ import { ActivityLog } from 'web/components/activity-log'
 import { LovePage } from 'love/components/love-page'
 
 export default function HomePage() {
-  const topicSlug = 'manifoldlove'
-  const topicFromRouter = useTopicFromRouter(topicSlug)
   return (
     <LovePage trackPageView={'live page'}>
       <SEO
@@ -23,12 +20,12 @@ export default function HomePage() {
           }
         >
           <span className="text-primary-700 line-clamp-1 shrink px-1 text-2xl">
-            {topicFromRouter ? topicFromRouter.name : 'Live'} feed
+            {'Manifold.Love'} live feed
           </span>
         </Row>
         <ActivityLog
           count={30}
-          topicSlugs={topicSlug ? [topicSlug] : undefined}
+          topicSlugs={['manifoldlove', 'manifoldlove-relationships']}
         />
       </Col>
     </LovePage>
