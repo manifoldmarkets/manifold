@@ -1,5 +1,4 @@
-// Filters.tsx
-import { useState, FC } from 'react'
+import { useEffect, useState } from 'react'
 import { Row } from 'web/components/layout/row'
 import { Col } from 'web/components/layout/col'
 import { Button } from 'web/components/buttons/button'
@@ -9,34 +8,99 @@ import { Checkbox } from 'web/components/widgets/checkbox'
 import clsx from 'clsx'
 import { ChoicesToggleGroup } from 'web/components/widgets/choices-toggle-group'
 import { MultiCheckbox } from 'web/components/multi-checkbox'
+import { Lover } from 'love/hooks/use-lover'
+import { calculateAge } from 'love/components/calculate-age'
+import { User } from 'common/user'
+import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/outline'
 
-interface FiltersProps {
-  onApplyFilters: (filters: Partial<rowFor<'lovers'>>) => void
-}
 const labelClassName = 'font-semibold'
-export const Filters: FC<FiltersProps> = ({ onApplyFilters }) => {
-  const [filters, setFilters] = useState<Partial<rowFor<'lovers'>>>({
-    gender: undefined,
-    pref_age_max: undefined,
-    pref_age_min: undefined,
-    city: undefined,
-    has_kids: false,
-    wants_kids_strength: -1,
-    is_smoker: false,
-    pref_relation_styles: undefined,
-  } as any)
+const initialFilters = {
+  name: undefined,
+  gender: undefined,
+  pref_age_max: undefined,
+  pref_age_min: undefined,
+  city: undefined,
+  has_kids: undefined,
+  wants_kids_strength: -1,
+  is_smoker: undefined,
+  pref_relation_styles: undefined,
+}
+export const Filters = (props: {
+  allLovers: Lover[] | undefined
+  setLovers: (lovers: Lover[] | undefined) => void
+}) => {
+  const { allLovers, setLovers } = props
+  const [filters, setFilters] =
+    useState<Partial<rowFor<'lovers'> & User>>(initialFilters)
 
-  const updateFilter = (newState: Partial<rowFor<'lovers'>>) => {
+  const updateFilter = (newState: Partial<rowFor<'lovers'> & User>) => {
     setFilters((prevState) => ({ ...prevState, ...newState }))
   }
+  const clearFilters = () => {
+    setFilters(initialFilters)
+    setLovers(allLovers)
+  }
+  useEffect(() => {
+    applyFilters()
+  }, [JSON.stringify(filters)])
 
   const applyFilters = () => {
-    onApplyFilters(filters)
+    const filteredLovers = allLovers?.filter((lover) => {
+      if (
+        filters.pref_age_min &&
+        calculateAge(lover.birthdate) < filters.pref_age_min
+      ) {
+        return false
+      } else if (
+        filters.pref_age_max &&
+        calculateAge(lover.birthdate) > filters.pref_age_max
+      ) {
+        return false
+      } else if (filters.city && lover.city !== filters.city) {
+        return false
+      } else if (
+        filters.is_smoker !== undefined &&
+        lover.is_smoker !== filters.is_smoker
+      ) {
+        return false
+      } else if (
+        filters.wants_kids_strength !== undefined &&
+        filters.wants_kids_strength !== -1 &&
+        (filters.wants_kids_strength >= 2
+          ? lover.wants_kids_strength < filters.wants_kids_strength
+          : lover.wants_kids_strength > filters.wants_kids_strength)
+      ) {
+        return false
+      } else if (
+        filters.has_kids !== undefined &&
+        (lover.has_kids ?? 0) < filters.has_kids
+      ) {
+        return false
+      } else if (
+        filters.pref_relation_styles !== undefined &&
+        filters.pref_relation_styles.some(
+          (s) => !lover.pref_relation_styles.includes(s)
+        )
+      ) {
+        return false
+      } else if (
+        filters.name &&
+        !lover.user.name.toLowerCase().includes(filters.name.toLowerCase())
+      ) {
+        return false
+      } else if (filters.gender && lover.gender !== filters.gender) {
+        return false
+      }
+
+      return true
+    })
+    setLovers(filteredLovers)
+    console.log(filteredLovers)
   }
   const cities: { [key: string]: string } = {
-    'San Francisco': 'sf',
-    'New York City': 'nyc',
-    London: 'london',
+    'San Francisco': 'San Francisco',
+    'New York City': 'New York City',
+    London: 'London',
     All: '',
   }
   const [showFilters, setShowFilters] = useState(false)
@@ -45,13 +109,22 @@ export const Filters: FC<FiltersProps> = ({ onApplyFilters }) => {
   return (
     <Row className="bg-canvas-0 w-full gap-2 p-2">
       <Col className={'w-full'}>
-        <Row className={'mb-2 justify-between'}>
-          <span className=" text-xl">Filters</span>
+        <Row className={'mb-2 justify-between gap-2'}>
+          <Input
+            placeholder={'Search name'}
+            className={'w-full max-w-xs'}
+            onChange={(e) => updateFilter({ name: e.target.value })}
+          />
           <Button
             color={'gray-outline'}
             onClick={() => setShowFilters(!showFilters)}
           >
-            {showFilters ? 'Hide filters' : 'Show filters'}
+            {showFilters ? (
+              <ChevronUpIcon className={'mr-2 h-4 w-4'} />
+            ) : (
+              <ChevronDownIcon className={'mr-2 h-4 w-4'} />
+            )}
+            {showFilters ? 'Filters' : 'Filters'}
           </Button>
         </Row>
         {showFilters && (
@@ -166,8 +239,10 @@ export const Filters: FC<FiltersProps> = ({ onApplyFilters }) => {
                 </Row>
               </Col>
             </Row>
-            <Row className={'justify-end'}>
-              <Button onClick={applyFilters}>Apply Filters</Button>
+            <Row className={'justify-end gap-4'}>
+              <Button color={'gray-white'} onClick={clearFilters}>
+                Clear filters
+              </Button>
             </Row>
           </>
         )}

@@ -10,9 +10,10 @@ import { UserLink } from 'web/components/widgets/user-link'
 import { LovePage } from 'love/components/love-page'
 import { Filters } from 'love/components/filters'
 import { useEffect, useState } from 'react'
-import { Row as rowFor } from 'common/supabase/utils'
 import { buildArray } from 'common/util/array'
 import { PhotosModal } from 'love/components/photos-modal'
+import { calculateAge } from 'love/components/calculate-age'
+import { Title } from 'web/components/widgets/title'
 
 export default function ProfilesPage() {
   const allLovers = useLovers()
@@ -23,68 +24,21 @@ export default function ProfilesPage() {
   const [showPhotosModal, setShowPhotosModal] = useState(false)
   const [selectedPhotos, setSelectedPhotos] = useState<string[]>()
 
-  const applyFilters = (filters: Partial<rowFor<'lovers'>>) => {
-    const filteredLovers = allLovers?.filter((lover) => {
-      console.log(filters)
-      if (
-        filters.pref_age_min &&
-        calculateAge(lover.birthdate) < filters.pref_age_min
-      ) {
-        return false
-      } else if (
-        filters.pref_age_max &&
-        calculateAge(lover.birthdate) > filters.pref_age_max
-      ) {
-        return false
-      } else if (filters.city && lover.city !== filters.city) {
-        return false
-      } else if (
-        filters.is_smoker !== undefined &&
-        lover.is_smoker !== filters.is_smoker
-      ) {
-        return false
-      } else if (
-        filters.wants_kids_strength !== undefined &&
-        filters.wants_kids_strength !== -1 &&
-        (filters.wants_kids_strength >= 2
-          ? lover.wants_kids_strength < filters.wants_kids_strength
-          : lover.wants_kids_strength > filters.wants_kids_strength)
-      ) {
-        return false
-      } else if (
-        filters.has_kids !== undefined &&
-        (lover.has_kids ?? 0) < filters.has_kids
-      ) {
-        return false
-      } else if (
-        filters.pref_relation_styles !== undefined &&
-        filters.pref_relation_styles.some(
-          (s) => !lover.pref_relation_styles.includes(s)
-        )
-      ) {
-        return false
-      }
-      return true
-    })
-    setLovers(filteredLovers)
-    console.log(filteredLovers)
-  }
   return (
     <LovePage className={'p-2'} trackPageView={'user profiles'}>
       <Col className="items-center">
-        <Filters onApplyFilters={applyFilters} />
+        <Col className={'bg-canvas-0 w-full p-2'}>
+          <Title className="!mb-2 text-3xl">Lovers</Title>
+          <Filters allLovers={allLovers} setLovers={setLovers} />
 
-        <Col className={'bg-canvas-0  w-full overflow-x-scroll p-2'}>
-          <span className="mb-4 text-3xl">Lovers</span>
-
-          <div className="grid-cols-6 gap-4">
+          <Col className=" grid-cols-6 gap-4 overflow-x-scroll">
             {lovers === undefined ? (
               <LoadingIndicator />
             ) : (
               <Table>
                 <thead>
                   <tr>
-                    <th></th>
+                    <th>Photo</th>
                     <th>Name</th>
                     <th>Gender</th>
                     <th>Age</th>
@@ -119,9 +73,9 @@ export default function ProfilesPage() {
                             }}
                           >
                             <Image
-                              className="h-10 w-10 rounded-full"
-                              width={100}
-                              height={100}
+                              className="h-5 w-5 rounded-full"
+                              height={20}
+                              width={20}
                               alt={pinned_url}
                               src={pinned_url}
                             />
@@ -140,7 +94,7 @@ export default function ProfilesPage() {
                 )}
               </Table>
             )}
-          </div>
+          </Col>
         </Col>
         <PhotosModal
           photos={selectedPhotos ?? []}
@@ -150,20 +104,4 @@ export default function ProfilesPage() {
       </Col>
     </LovePage>
   )
-}
-
-function calculateAge(birthdate: string) {
-  const birthDate = new Date(birthdate)
-  const today = new Date()
-  let age = today.getFullYear() - birthDate.getFullYear()
-  const monthDifference = today.getMonth() - birthDate.getMonth()
-
-  if (
-    monthDifference < 0 ||
-    (monthDifference === 0 && today.getDate() < birthDate.getDate())
-  ) {
-    age--
-  }
-
-  return age
 }
