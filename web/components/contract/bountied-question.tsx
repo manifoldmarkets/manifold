@@ -4,7 +4,7 @@ import { BountiedQuestionContract } from 'common/contract'
 import { User } from 'common/user'
 import { formatMoney } from 'common/util/format'
 import { forwardRef, useEffect, useState } from 'react'
-import { addBounty, awardBounty } from 'web/lib/firebase/api'
+import { addBounty, awardBounty, cancelBounty } from 'web/lib/firebase/api'
 import { Button } from '../buttons/button'
 import { Col } from '../layout/col'
 import { MODAL_CLASS, Modal } from '../layout/modal'
@@ -258,16 +258,13 @@ export function CancelBountyButton(props: {
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   async function onCancel() {
-    // if (amount) {
-    //   addBounty({
-    //     contractId: contract.id,
-    //     amount: amount,
-    //   }).then((_result) => {
-    //     setOpen(false)
-    //   })
-    // }
-    console.log('hi')
+    cancelBounty({
+      contractId: contract.id,
+    }).then((_result) => {
+      console.log(contract)
+    })
   }
+
   return (
     <ConfirmationButton
       openModalBtn={{

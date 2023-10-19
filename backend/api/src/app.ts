@@ -64,6 +64,7 @@ import { updategroup } from './update-group'
 import { updateUserDisinterestEmbedding } from 'api/update-user-disinterests'
 import { awardbounty } from './award-bounty'
 import { addbounty } from './add-bounty'
+import { cancelbounty } from './cancel-bounty'
 import { createanswercpmm } from './create-answer-cpmm'
 import { createportfolio } from './create-portfolio'
 import { updateportfolio } from './update-portfolio'
@@ -197,6 +198,7 @@ app.post('/joingroup', ...apiRoute(joingroup))
 app.post('/supabasesearchgroups', ...apiRoute(supabasesearchgroups))
 app.post('/league-activity', ...apiRoute(leagueActivity))
 app.post('/award-bounty', ...apiRoute(awardbounty))
+app.post('/cancel-bounty', ...apiRoute(cancelbounty))
 app.post('/add-bounty', ...apiRoute(addbounty))
 app.post('/createanswercpmm', ...apiRoute(createanswercpmm))
 app.post('/createportfolio', ...apiRoute(createportfolio))

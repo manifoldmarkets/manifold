@@ -383,6 +383,10 @@ export function awardBounty(params: {
   return call(getApiUrl('award-bounty'), 'POST', params)
 }
 
+export function cancelBounty(params: { contractId: string }) {
+  return call(getApiUrl('cancel-bounty'), 'POST', params)
+}
+
 export function addBounty(params: { contractId: string; amount: number }) {
   return call(getApiUrl('add-bounty'), 'POST', params)
 }

@@ -30,7 +30,7 @@ export const cancelbounty = authEndpoint(async (req, auth) => {
 
     const userDoc = firestore.doc(`users/${auth.uid}`)
 
-    const amount = contract.bountyLeft
+    console.log(contract)
 
     const { status, txn } = await runCancelBountyTxn(
       transaction,
@@ -46,8 +46,6 @@ export const cancelbounty = authEndpoint(async (req, auth) => {
       contractDoc,
       userDoc
     )
-
-
 
     // await createBountyAddedNotification(
     //   contract.creatorId,
