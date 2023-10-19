@@ -114,6 +114,10 @@ export function ContractParamsForm(props: {
   const numAnswers = hasOtherAnswer ? answers.length + 1 : answers.length
 
   useEffect(() => {
+    if (params?.q) setQuestion(params?.q ?? '')
+  }, [params?.q])
+
+  useEffect(() => {
     if (params?.answers) {
       setAnswers(params.answers)
     } else if (answers.length && answers.every((a) => a.trim().length === 0)) {
@@ -122,7 +126,9 @@ export function ContractParamsForm(props: {
       if (answers.length === 0) setAnswers(defaultAnswers)
       else setAnswers(answers.concat(['']))
     }
-    if (params?.q) setQuestion(params?.q ?? '')
+  }, [JSON.stringify(params?.answers)])
+
+  useEffect(() => {
     if (params?.groupIds) {
       const getAndSetGroups = async (groupIds: string[]) => {
         const groups = await Promise.all(groupIds.map((id) => getGroup(id)))
@@ -139,7 +145,7 @@ export function ContractParamsForm(props: {
       }
       getAndSetGroupsViaSlugs(params.groupSlugs)
     }
-  }, [params?.answers, params?.q, params?.groupIds])
+  }, [JSON.stringify(params?.groupIds)])
 
   useEffect(() => {
     if (addAnswersMode === 'DISABLED' && answers.length < 2) {

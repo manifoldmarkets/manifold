@@ -86,7 +86,7 @@ module.exports = {
       },
       {
         source: '/versus',
-        destination: '/VersusBot?tab=markets',
+        destination: '/VersusBot?tab=questions',
         permanent: false,
       },
       {

@@ -379,9 +379,18 @@ function NotificationGroupItemComponent(props: {
     ? notifications
     : notifications.slice(0, lines)
   return (
-    <div className="pb-2">
+    <div>
       {header}
-      <div className="whitespace-pre-line">
+      <div className="relative whitespace-pre-line last:[&>*]:pb-6 sm:last:[&>*]:pb-4">
+        {needsExpanding && (
+          <div className={clsx('absolute bottom-0 right-4')}>
+            <ShowMoreLessButton
+              onClick={onExpandHandler}
+              isCollapsed={!expanded}
+              howManyMore={numNotifications - lines}
+            />
+          </div>
+        )}
         {shownNotifications.map((notification) => {
           return (
             <NotificationItem
@@ -390,15 +399,6 @@ function NotificationGroupItemComponent(props: {
             />
           )
         })}
-        {needsExpanding && (
-          <Row className={clsx('w-full justify-end pr-2')}>
-            <ShowMoreLessButton
-              onClick={onExpandHandler}
-              isCollapsed={!expanded}
-              howManyMore={numNotifications - lines}
-            />
-          </Row>
-        )}
       </div>
     </div>
   )

@@ -82,6 +82,19 @@ export function CommentInput(props: {
     </Row>
   )
 }
+const emojiMenuActive = (view: { state: any }) => {
+  const regex = /^emoji\$.*$/ // emoji$ can have random numbers following it....❤️ tiptap
+  let active = false
+
+  for (const key in view.state) {
+    if (regex.test(key)) {
+      active = (view.state as any)[key].active
+      if (active) break
+    }
+  }
+
+  return active
+}
 
 export function CommentInputTextArea(props: {
   user: User | undefined | null
@@ -117,7 +130,9 @@ export function CommentInputTextArea(props: {
             !event.shiftKey &&
             (!submitOnEnter ? event.ctrlKey || event.metaKey : true) &&
             // mention list is closed
-            !(view.state as any).mention$.active
+            !(view.state as any).mention$.active &&
+            // emoji list is closed
+            !emojiMenuActive(view)
           ) {
             submit()
             event.preventDefault()
