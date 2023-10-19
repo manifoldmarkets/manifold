@@ -36,6 +36,7 @@ type AnyTxnType =
   | BountyPosted
   | BountyAwarded
   | BountyAdded
+  | BountyCanceled
   | ManaPay
   | LeagueBid
 
@@ -332,6 +333,13 @@ type BountyAwarded = {
   token: 'M$'
 }
 
+type BountyCanceled = {
+  category: 'BOUNTY_CANCELED'
+  fromType: 'CONTRACT'
+  toType: 'USER'
+  token: 'M$'
+}
+
 type ManaPay = {
   category: 'MANA_PAYMENT'
   fromType: 'USER'
@@ -390,5 +398,6 @@ export type LeaguePrizeTxn = Txn & LeaguePrize
 export type BountyAwardedTxn = Txn & BountyAwarded
 export type BountyPostedTxn = Txn & BountyPosted
 export type BountyAddedTxn = Txn & BountyAdded
+export type BountyCanceledTxn = Txn & BountyCanceled
 export type ManaPayTxn = Txn & ManaPay
 export type LeagueBidTxn = Txn & LeagueBid

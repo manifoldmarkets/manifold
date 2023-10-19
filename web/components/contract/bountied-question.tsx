@@ -12,6 +12,11 @@ import { Row } from '../layout/row'
 import { BuyAmountInput } from '../widgets/amount-input'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import { TbMoneybag } from 'react-icons/tb'
+import { WarningConfirmationButton } from '../buttons/warning-confirmation-button'
+import { ConfirmationButton } from '../buttons/confirmation-button'
+import { AiOutlineQuestion, AiOutlineQuestionCircle } from 'react-icons/ai'
+import { BiCross } from 'react-icons/bi'
+import { FaXmark } from 'react-icons/fa6'
 
 const loadLottie = () => import('react-lottie')
 const loadAwardJson = () => import('../../public/lottie/award.json')
@@ -241,5 +246,59 @@ export function AddBountyButton(props: {
         </Col>
       </Modal>
     </>
+  )
+}
+
+export function CancelBountyButton(props: {
+  contract: BountiedQuestionContract
+  buttonClassName?: string
+  disabled?: boolean
+}) {
+  const { contract, buttonClassName, disabled } = props
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  async function onCancel() {
+    // if (amount) {
+    //   addBounty({
+    //     contractId: contract.id,
+    //     amount: amount,
+    //   }).then((_result) => {
+    //     setOpen(false)
+    //   })
+    // }
+    console.log('hi')
+  }
+  return (
+    <ConfirmationButton
+      openModalBtn={{
+        label: 'Cancel Bounty',
+        size: 'sm',
+        color: 'gray-outline',
+        disabled: isSubmitting || disabled,
+        icon: <FaXmark className="mr-1 h-5 w-5" />,
+      }}
+      cancelBtn={{
+        label: 'Go back',
+        color: 'gray',
+        disabled: isSubmitting,
+      }}
+      submitBtn={{
+        label: 'Yes, Cancel Bounty',
+        color: 'indigo',
+        isSubmitting,
+      }}
+      onSubmit={onCancel}
+    >
+      <Row className="items-center gap-2 text-xl">
+        <div className="text-3xl">🤔</div>
+        Are you sure?
+      </Row>
+
+      <p>
+        If you decide to cancel this bounty, the remaining money will be
+        returned to you. Please take a moment to ensure that everyone who
+        contributed has been fairly compensated.
+      </p>
+    </ConfirmationButton>
   )
 }
