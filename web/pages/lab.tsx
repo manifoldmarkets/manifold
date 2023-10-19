@@ -7,6 +7,7 @@ import { Page } from 'web/components/layout/page'
 import { Card } from 'web/components/widgets/card'
 import { Subtitle } from 'web/components/widgets/subtitle'
 import { Title } from 'web/components/widgets/title'
+import { useAdmin } from 'web/hooks/use-admin'
 
 export default function LabsPage() {
   return (
@@ -16,7 +17,7 @@ export default function LabsPage() {
         <Title>🧪 The Lab</Title>
         <div className="bg-primary-100 text-ink-700 mb-2 flex items-center self-start overflow-hidden rounded-lg">
           <LabLink href="/about">About</LabLink>
-          <LabLink href="/admin">Admin</LabLink>
+          {useAdmin() && <LabLink href="/admin">Admin</LabLink>}
           <LabLink href="/stats">Stats</LabLink>
           <LabLink href="https://manifoldmarkets.notion.site/About-4a1e35b5cedf43998161609eea887679">
             Notion

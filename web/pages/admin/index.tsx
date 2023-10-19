@@ -3,10 +3,13 @@ import { Title } from 'web/components/widgets/title'
 import { LabCard } from '../lab'
 import { NoSEO } from 'web/components/NoSEO'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
-import Link from 'next/link'
+import { useAdmin } from 'web/hooks/use-admin'
 
 export default function AdminPage() {
   useRedirectIfSignedOut()
+
+  const isAdmin = useAdmin()
+  if (!isAdmin) return <></>
 
   return (
     <Page trackPageView={'admin page'}>
@@ -45,9 +48,6 @@ export default function AdminPage() {
         <LabCard title="🤬 reports" href="/admin/reports" />
         <LabCard title="🎨 design system" href="/styles" />
         <LabCard title="🌑 test new user" href="/admin/test-user" />
-        <Link className="mb-2 italic" href="/lab">
-          anyone can see this page btw
-        </Link>
       </div>
     </Page>
   )
