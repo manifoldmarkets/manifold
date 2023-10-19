@@ -29,6 +29,7 @@ import { LovePage } from 'love/components/love-page'
 import { Button } from 'web/components/buttons/button'
 import { useRouter } from 'next/router'
 import { PencilIcon } from '@heroicons/react/outline'
+import { AddYourselfAsMatchButton } from 'love/components/match-buttons'
 
 export const getStaticProps = async (props: {
   params: {
@@ -198,6 +199,13 @@ export default function UserPage(props: {
         </Col>
         {lover ? (
           <>
+            {currentUser && currentUser.id !== user.id && (
+              <AddYourselfAsMatchButton
+                className="self-start"
+                currentUserId={currentUser.id}
+                matchUserId={user.id}
+              />
+            )}
             <LoverAttributes lover={lover} />
             {answers.length > 0 ? (
               <Col className={'mt-2 gap-2'}>

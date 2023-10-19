@@ -559,3 +559,11 @@ export function createLover(params: any) {
 export function updateLover(params: any) {
   return call(getApiUrl('update-lover'), 'POST', params)
 }
+
+export function createMatch(params: {
+  userId1: string
+  userId2: string
+  betAmount: number
+}) {
+  return call(getApiUrl('create-match'), 'POST', params)
+}

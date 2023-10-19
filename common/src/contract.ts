@@ -112,6 +112,10 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
 
   coverImageUrl?: string
   nonPredictive?: boolean // If true, don't include profits in leagues, etc.
+
+  // Manifold.love
+  loverUserId1?: string // The user id's of the pair of lovers referenced in the question.
+  loverUserId2?: string // The user id's of the pair of lovers referenced in the question.
 } & T
 
 export type DPMContract = Contract & DPM

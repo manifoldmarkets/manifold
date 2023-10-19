@@ -46,6 +46,7 @@ import { contentSchema } from 'shared/zod-types'
 import { createNewContractFromPrivateGroupNotification } from 'shared/create-notification'
 import { addGroupToContract } from 'shared/update-group-contracts-internal'
 import { SupabaseClient } from 'common/supabase/utils'
+import { manifoldLoveUserId } from './create-match'
 
 export const createmarket = authEndpoint(async (req, auth) => {
   return createMarketHelper(req.body, auth)
@@ -72,11 +73,19 @@ export async function createMarketHelper(body: any, auth: AuthedUser) {
     addAnswersMode,
     shouldAnswersSumToOne,
     totalBounty,
+    loverUserId1,
+    loverUserId2,
   } = validateMarketBody(body)
 
   const userId = auth.uid
   const user = await getUser(userId)
   if (!user) throw new APIError(401, 'Your account was not found')
+
+  if (loverUserId1 || loverUserId2) {
+    if (auth.uid !== manifoldLoveUserId) {
+      throw new Error('Only Manifold Love account can create love contracts.')
+    }
+  }
 
   let groups = groupIds
     ? await Promise.all(
@@ -89,8 +98,7 @@ export async function createMarketHelper(body: any, auth: AuthedUser) {
   const contractRef = firestore.collection('contracts').doc()
 
   const hasOtherAnswer = addAnswersMode !== 'DISABLED' && shouldAnswersSumToOne
-  const numAnswers =
-    (answers?.length ?? 0) + (hasOtherAnswer ? 1 : 0)
+  const numAnswers = (answers?.length ?? 0) + (hasOtherAnswer ? 1 : 0)
   const ante = totalBounty ?? getAnte(outcomeType, numAnswers)
 
   if (ante < 1) throw new APIError(400, 'Ante must be at least 1')
@@ -145,7 +153,9 @@ export async function createMarketHelper(body: any, auth: AuthedUser) {
       isLogScale ?? false,
       answers ?? [],
       addAnswersMode,
-      shouldAnswersSumToOne
+      shouldAnswersSumToOne,
+      loverUserId1,
+      loverUserId2
     )
 
     const houseId = isProd()
@@ -353,6 +363,8 @@ function validateMarketBody(body: any) {
     visibility = 'public',
     isTwitchContract,
     utcOffset,
+    loverUserId1,
+    loverUserId2,
   } = validate(bodySchema, body)
 
   let min: number | undefined,
@@ -434,6 +446,8 @@ function validateMarketBody(body: any) {
     addAnswersMode,
     shouldAnswersSumToOne,
     totalBounty,
+    loverUserId1,
+    loverUserId2,
   }
 }
 
@@ -542,6 +556,8 @@ const bodySchema = z.object({
   visibility: z.enum(VISIBILITIES).optional(),
   isTwitchContract: z.boolean().optional(),
   utcOffset: z.number().optional(),
+  loverUserId1: z.string().optional(),
+  loverUserId2: z.string().optional(),
 })
 
 export type CreateMarketParams = z.infer<typeof bodySchema> &

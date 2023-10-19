@@ -45,7 +45,11 @@ export function getNewContract(
   isLogScale: boolean,
   answers: string[],
   addAnswersMode: add_answers_mode | undefined,
-  shouldAnswersSumToOne: boolean | undefined
+  shouldAnswersSumToOne: boolean | undefined,
+
+  // Manifold.love
+  loverUserId1: string | undefined,
+  loverUserId2: string | undefined
 ) {
   const createdTime = Date.now()
 
@@ -105,6 +109,8 @@ export function getNewContract(
     },
 
     isTwitchContract,
+    loverUserId1,
+    loverUserId2,
   })
 
   return contract as Contract

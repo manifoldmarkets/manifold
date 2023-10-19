@@ -11,53 +11,60 @@ import { getGroupIdFromSlug } from 'shared/supabase/groups'
 
 export const supabasesearchcontracts = MaybeAuthedEndpoint(
   async (req, auth) => {
-    const {
-      term,
-      filter,
-      sort,
-      contractType,
-      offset,
-      limit,
-      fuzzy,
-      topicSlug: possibleTopicSlug,
-      creatorId,
-    } = validate(bodySchema, req.body)
-
-    const isForYou = possibleTopicSlug === 'for-you'
-    const topicSlug =
-      possibleTopicSlug && !isForYou ? possibleTopicSlug : undefined
-    const pg = createSupabaseDirectClient()
-    const groupId = topicSlug
-      ? await getGroupIdFromSlug(topicSlug, pg)
-      : undefined
-
-    const searchMarketSQL =
-      isForYou && !term && sort === 'score' && auth?.uid
-        ? getForYouSQL(auth.uid, filter, contractType, limit, offset)
-        : getSearchContractSQL({
-            term,
-            filter,
-            sort,
-            contractType,
-            offset,
-            limit,
-            fuzzy,
-            groupId,
-            creatorId,
-            uid: auth?.uid,
-            isForYou,
-            hasGroupAccess: await hasGroupAccess(groupId, auth?.uid),
-          })
-
-    const contracts = await pg.map(
-      searchMarketSQL,
-      [term],
-      (r) => r.data as Contract
-    )
-
-    return (contracts ?? []) as unknown as Json
+    return await searchContracts(req.body, auth?.uid)
   }
 )
+
+export const searchContracts = async (
+  body: z.infer<typeof bodySchema>,
+  userId: string | undefined
+) => {
+  const {
+    term,
+    filter,
+    sort,
+    contractType,
+    offset,
+    limit,
+    fuzzy,
+    topicSlug: possibleTopicSlug,
+    creatorId,
+  } = validate(bodySchema, body)
+
+  const isForYou = possibleTopicSlug === 'for-you'
+  const topicSlug =
+    possibleTopicSlug && !isForYou ? possibleTopicSlug : undefined
+  const pg = createSupabaseDirectClient()
+  const groupId = topicSlug
+    ? await getGroupIdFromSlug(topicSlug, pg)
+    : undefined
+
+  const searchMarketSQL =
+    isForYou && !term && sort === 'score' && userId
+      ? getForYouSQL(userId, filter, contractType, limit, offset)
+      : getSearchContractSQL({
+          term,
+          filter,
+          sort,
+          contractType,
+          offset,
+          limit,
+          fuzzy,
+          groupId,
+          creatorId,
+          uid: userId,
+          isForYou,
+          hasGroupAccess: await hasGroupAccess(groupId, userId),
+        })
+
+  const contracts = await pg.map(
+    searchMarketSQL,
+    [term],
+    (r) => r.data as Contract
+  )
+
+  return (contracts ?? []) as unknown as Json
+}
 
 export const FIRESTORE_DOC_REF_ID_REGEX = /^[a-zA-Z0-9_-]{1,}$/
 
