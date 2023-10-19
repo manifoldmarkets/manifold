@@ -1,7 +1,7 @@
 import clsx from 'clsx'
 import { useState } from 'react'
 import { Button } from 'web/components/buttons/button'
-import { createMatch } from 'web/lib/firebase/api'
+import { createMatch } from 'web/lib/firebase/love/api'
 
 export const AddYourselfAsMatchButton = (props: {
   currentUserId: string
