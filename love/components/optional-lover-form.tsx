@@ -13,9 +13,7 @@ import { colClassName, labelClassName } from 'love/pages/signup'
 import { uploadImage } from 'web/lib/firebase/storage'
 import { Lover } from 'love/hooks/use-lover'
 import { useRouter } from 'next/router'
-import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { EditUserField } from 'web/pages/profile'
-import { useEditableUserInfo } from 'web/hooks/use-editable-user-info'
 import { removeNullOrUndefinedProps } from 'common/util/object'
 export const optionalAttributes = (lover: Lover) => ({
   ethnicity: lover.ethnicity,
@@ -85,75 +83,18 @@ export const OptionalLoveUserForm = (props: { lover: Lover }) => {
       router.push('/love-questions')
     }
   }
-  const { updateUsername, updateDisplayName, userInfo, updateUserState } =
-    useEditableUserInfo(user)
-  const {
-    name,
-    username,
-    errorUsername,
-    loadingUsername,
-    loadingName,
-    errorName,
-  } = userInfo
+
   return (
     <>
       <Title>Optional questions</Title>
       <Col className={'gap-8'}>
-        <Col>
-          <label className={clsx(labelClassName)}>Display name</label>
-          <Row className={'items-center gap-2'}>
-            <Input
-              disabled={loadingName}
-              type="text"
-              placeholder="Display name"
-              value={name}
-              onChange={(e) => {
-                updateUserState({ name: e.target.value || '' })
-              }}
-              onBlur={updateDisplayName}
-            />
-          </Row>
-          {loadingName && (
-            <Row className={'mt-2 items-center gap-4'}>
-              <LoadingIndicator />
-              <span>Loading... This may take a while.</span>
-            </Row>
-          )}
-          {errorName && <span className="text-error text-sm">{errorName}</span>}
-        </Col>
-
-        <Col>
-          <label className={clsx(labelClassName)}>Username</label>
-          <Row>
-            <Input
-              disabled={loadingUsername}
-              type="text"
-              placeholder="Username"
-              value={username}
-              onChange={(e) => {
-                updateUserState({ username: e.target.value || '' })
-              }}
-              onBlur={updateUsername}
-            />
-          </Row>
-          {loadingUsername && (
-            <Row className={'mt-2 items-center gap-4'}>
-              <LoadingIndicator />
-              <span>Loading... This may take a while.</span>
-            </Row>
-          )}
-          {errorUsername && (
-            <span className="text-error text-sm">{errorUsername}</span>
-          )}
-        </Col>
-
         <Col className={clsx(colClassName)}>
           <label className={clsx(labelClassName)}>Upload some pics!</label>
           <input
             type="file"
             onChange={handleFileChange}
             multiple // Allows multiple files to be selected
-            className={'w-52'}
+            className={'w-64'}
             disabled={uploadingImages}
           />
           <div className="flex gap-2">

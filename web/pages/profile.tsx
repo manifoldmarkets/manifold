@@ -61,6 +61,7 @@ export function EditUserField(props: {
       ) : (
         <Input
           type="text"
+          className={'w-96'}
           value={value}
           onChange={(e) => setValue(e.target.value || '')}
           onBlur={updateField}

@@ -14,6 +14,8 @@ import { Lover } from 'love/hooks/use-lover'
 import { User } from 'common/user'
 import { RadioToggleGroup } from 'web/components/widgets/radio-toggle-group'
 import { MultipleChoiceOptions } from 'common/love/multiple-choice'
+import { useEditableUserInfo } from 'web/hooks/use-editable-user-info'
+import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 
 export const RequiredLoveUserForm = (props: {
   user: User
@@ -59,21 +61,75 @@ export const RequiredLoveUserForm = (props: {
       onSuccess({ ...res.lover, user } as Lover)
     }
   }
-
+  const { updateUsername, updateDisplayName, userInfo, updateUserState } =
+    useEditableUserInfo(user)
+  const {
+    name,
+    username,
+    errorUsername,
+    loadingUsername,
+    loadingName,
+    errorName,
+  } = userInfo
   return (
     <>
       <Title>Required questions</Title>
       <Col className={'gap-8'}>
+        <Col>
+          <label className={clsx(labelClassName)}>Display name</label>
+          <Row className={'items-center gap-2'}>
+            <Input
+              disabled={loadingName}
+              type="text"
+              placeholder="Display name"
+              value={name}
+              onChange={(e) => {
+                updateUserState({ name: e.target.value || '' })
+              }}
+              onBlur={updateDisplayName}
+            />
+          </Row>
+          {loadingName && (
+            <Row className={'mt-2 items-center gap-4'}>
+              <LoadingIndicator />
+              <span>Loading... This may take a while.</span>
+            </Row>
+          )}
+          {errorName && <span className="text-error text-sm">{errorName}</span>}
+        </Col>
+
+        <Col>
+          <label className={clsx(labelClassName)}>Username</label>
+          <Row>
+            <Input
+              disabled={loadingUsername}
+              type="text"
+              placeholder="Username"
+              value={username}
+              onChange={(e) => {
+                updateUserState({ username: e.target.value || '' })
+              }}
+              onBlur={updateUsername}
+            />
+          </Row>
+          {loadingUsername && (
+            <Row className={'mt-2 items-center gap-4'}>
+              <LoadingIndicator />
+              <span>Loading... This may take a while.</span>
+            </Row>
+          )}
+          {errorUsername && (
+            <span className="text-error text-sm">{errorUsername}</span>
+          )}
+        </Col>
+
         <Col className={clsx(colClassName)}>
           <label className={clsx(labelClassName)}>Your location</label>
-          <ChoicesToggleGroup
-            currentChoice={formState['city']}
-            choicesMap={{
-              'San Francisco': 'sf',
-              'New York City': 'nyc',
-              London: 'london',
-            }}
-            setChoice={(c) => handleChange('city', c)}
+          <Input
+            type="text"
+            onChange={(e) => handleChange('city', e.target.value)}
+            className={'w-56'}
+            placeholder={'e.g. San Francisco'}
           />
         </Col>
 
@@ -159,7 +215,7 @@ export const RequiredLoveUserForm = (props: {
             }
             className={'w-20'}
             min={0}
-            placeholder={'0'}
+            value={formState['drinks_per_month']}
           />
         </Col>
 
@@ -178,7 +234,7 @@ export const RequiredLoveUserForm = (props: {
                 className={'w-20'}
                 min={18}
                 max={999}
-                placeholder={'18'}
+                value={formState['pref_age_min']}
               />
             </Col>
             <Col>
@@ -191,7 +247,7 @@ export const RequiredLoveUserForm = (props: {
                 className={'w-20'}
                 min={formState['pref_age_min']}
                 max={1000}
-                placeholder={'100'}
+                value={formState['pref_age_max']}
               />
             </Col>
           </Row>
@@ -204,8 +260,7 @@ export const RequiredLoveUserForm = (props: {
             onChange={(e) => handleChange('has_kids', Number(e.target.value))}
             className={'w-20'}
             min={0}
-            defaultValue={0}
-            placeholder={'0'}
+            value={formState['has_kids']}
           />
         </Col>
 
