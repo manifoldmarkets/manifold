@@ -1,5 +1,5 @@
 import { Col } from 'web/components/layout/col'
-import { groupBy } from 'lodash'
+import { groupBy, orderBy } from 'lodash'
 import { useRealtimeCommentsOnLover } from 'love/hooks/use-comments-on-lover'
 import {
   LoverCommentInput,
@@ -15,7 +15,6 @@ export const LoverCommentSection = (props: { onUser: User }) => {
   const parentComments = comments.filter((c) => !c.replyToCommentId)
   const currentUser = useUser()
   const commentsByParent = groupBy(comments, (c) => c.replyToCommentId ?? '_')
-  console.log(parentComments)
   return (
     <Col className={'bg-canvas-0 mt-4 rounded-md p-2'}>
       <Title>Comments</Title>
@@ -26,7 +25,7 @@ export const LoverCommentSection = (props: { onUser: User }) => {
           trackingLocation={'contract page'}
         />
       )}
-      {parentComments.map((c) => (
+      {orderBy(parentComments, 'createdTime', 'desc').map((c) => (
         <LoverProfileCommentThread
           key={c.id + 'thread'}
           trackingLocation={onUser.name + 'comments  section'}

@@ -76,7 +76,7 @@ type recipients_to_reason_texts = {
   [userId: string]: { reason: notification_reason_types }
 }
 
-const insertNotificationToSupabase = async (
+export const insertNotificationToSupabase = async (
   notification: Notification,
   pg: SupabaseDirectClient
 ) => {

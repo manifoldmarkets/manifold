@@ -69,6 +69,7 @@ export type notification_source_types =
   | 'referral_program'
   | 'follow_suggestion'
   | 'market_review'
+  | 'comment_on_lover'
 
 export type notification_source_update_types =
   | 'created'

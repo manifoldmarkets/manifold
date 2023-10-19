@@ -3,8 +3,18 @@ import { MAX_COMMENT_JSON_LENGTH } from 'api/create-comment'
 import { z } from 'zod'
 import { contentSchema } from 'shared/zod-types'
 import { JSONContent } from '@tiptap/core'
-import { getPrivateUser, getUser } from 'shared/utils'
-import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { getPrivateUser, getUser, getUserSupabase } from 'shared/utils'
+import {
+  createSupabaseDirectClient,
+  SupabaseDirectClient,
+} from 'shared/supabase/init'
+import { getNotificationDestinationsForUser } from 'common/user-notification-preferences'
+import { Notification } from 'common/notification'
+import { insertNotificationToSupabase } from 'shared/create-notification'
+import { User } from 'common/user'
+import { createPushNotification } from 'shared/create-push-notification'
+import { richTextToString } from 'common/util/parse'
+import * as crypto from 'crypto'
 
 const postSchema = z.object({
   userId: z.string(),
@@ -23,8 +33,12 @@ export const createcommentonlover = authEndpoint(async (req, auth) => {
     auth.uid,
     submittedContent
   )
+
+  const onUser = await getUserSupabase(userId)
+  if (!onUser) throw new APIError(404, 'User not found')
+
   const pg = createSupabaseDirectClient()
-  const { data: comment } = await pg.oneOrNone(
+  const comment = await pg.oneOrNone(
     `insert into lover_comments (user_id, user_name, user_username, user_avatar_url, on_user_id, content, reply_to_comment_id)
         values ($1, $2, $3, $4, $5, $6, $7) returning *`,
     [
@@ -38,7 +52,15 @@ export const createcommentonlover = authEndpoint(async (req, auth) => {
     ]
   )
 
-  return { status: 'success', comment }
+  await createNewCommentOnLoverNotification(
+    onUser,
+    creator,
+    richTextToString(content),
+    comment.id,
+    pg
+  )
+
+  return { status: 'success' }
 })
 
 const validateComment = async (
@@ -64,4 +86,45 @@ const validateComment = async (
     )
   }
   return { content, creator }
+}
+
+const createNewCommentOnLoverNotification = async (
+  onUser: User,
+  creator: User,
+  sourceText: string,
+  commentId: number,
+  pg: SupabaseDirectClient
+) => {
+  const privateUser = await getPrivateUser(onUser.id)
+  if (!privateUser) return
+  const id = crypto.randomUUID()
+  const reason = 'tagged_user' // not really true, but it's pretty close
+  const { sendToBrowser, sendToMobile, notificationPreference } =
+    getNotificationDestinationsForUser(privateUser, reason)
+  const notification: Notification = {
+    id,
+    userId: privateUser.id,
+    reason,
+    createdTime: Date.now(),
+    isSeen: false,
+    sourceId: commentId.toString(),
+    sourceType: 'comment_on_lover',
+    sourceUpdateType: 'created',
+    sourceUserName: creator.name,
+    sourceUserUsername: creator.username,
+    sourceUserAvatarUrl: creator.avatarUrl,
+    sourceText: sourceText,
+    sourceSlug: onUser.username,
+  }
+  if (sendToBrowser) {
+    await insertNotificationToSupabase(notification, pg)
+  }
+  if (sendToMobile) {
+    await createPushNotification(
+      notification,
+      privateUser,
+      `${creator.name} commented on your profile`,
+      sourceText
+    )
+  }
 }
