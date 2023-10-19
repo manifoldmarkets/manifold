@@ -19,6 +19,15 @@ import {
   WhyManifold,
 } from 'web/components/explainer-panel'
 import { LabCard, LabSection } from './lab'
+import Link from 'next/link'
+import { MailIcon, NewspaperIcon } from '@heroicons/react/outline'
+import {
+  TbBrandAndroid,
+  TbBrandApple,
+  TbBrandDiscord,
+  TbBrandGithub,
+  TbBrandTwitter,
+} from 'react-icons/tb'
 
 export default function AboutPage() {
   const { isNative, platform } = getNativePlatform()
@@ -65,47 +74,46 @@ export default function AboutPage() {
           />
         </Col>
 
-        <Subtitle>🌎 Stay connected</Subtitle>
-        <LabSection>
-          {!isNative && (
-            <>
-              <MobileAppsQRCodeDialog
-                isModalOpen={isModalOpen}
-                setIsModalOpen={setIsModalOpen}
-              />
-              <LabCard
-                title="📱 Mobile app"
-                description="Download the iOS/Android app"
-                {...appCallback}
-              />
-            </>
-          )}
-          <LabCard
-            title="💬 Discord"
-            href="https://discord.com/invite/eHQBNBqXuh"
-            description="Chat with the community and team"
-            target="_blank"
-          />
-          <LabCard
-            title="📰 Newsletter"
-            href="https://news.manifold.markets/"
-            description="Get updates on new features and questions"
-            target="_blank"
-          />
-          <LabCard
-            title="🪺 Twitter"
-            href="https://twitter.com/ManifoldMarkets"
-            description="Follow us for updates and memes"
-            target="_blank"
-          />
-          <LabCard
-            title="✉️️ Email"
-            href="mailto:info@manifold.markets"
-            description="Contact us at info@manifold.markets for support"
-          />
-        </LabSection>
+        <MobileAppsQRCodeDialog
+          isModalOpen={isModalOpen}
+          setIsModalOpen={setIsModalOpen}
+        />
 
-        <Subtitle>📄 Pages</Subtitle>
+        <div className="mb-6 mt-2 grid grid-cols-2 justify-between sm:grid-cols-3 md:flex">
+          {!isNative && (
+            <SocialLink
+              Icon={!isMobile || isIOS() ? TbBrandApple : TbBrandAndroid}
+              {...appCallback}
+            >
+              Mobile App
+            </SocialLink>
+          )}
+          <SocialLink
+            Icon={TbBrandDiscord}
+            href="https://discord.com/invite/eHQBNBqXuh"
+          >
+            Discord
+          </SocialLink>
+          <SocialLink Icon={NewspaperIcon} href="https://news.manifold.markets">
+            Newsletter
+          </SocialLink>
+          <SocialLink
+            Icon={TbBrandTwitter}
+            href="https://twitter.com/ManifoldMarkets"
+          >
+            Twitter
+          </SocialLink>
+          <SocialLink Icon={MailIcon} href="mailto:info@manifold.markets">
+            Email
+          </SocialLink>
+          <SocialLink
+            Icon={TbBrandGithub}
+            href="https://github.com/manifoldmarkets/manifold"
+          >
+            Github
+          </SocialLink>
+        </div>
+
         <div className="grid gap-x-2 md:grid-cols-3">
           {user && (
             <LabCard
@@ -151,5 +159,24 @@ export default function AboutPage() {
       </Col>
       <PrivacyTermsLab />
     </Page>
+  )
+}
+
+const SocialLink = (props: {
+  href: string
+  onClick?: () => void
+  Icon: any
+  children: React.ReactNode
+}) => {
+  const { href, onClick, Icon, children } = props
+  return (
+    <Link
+      href={href}
+      onClick={onClick}
+      className="text-ink-800 hover:text-primary-800 hover:bg-primary-100 flex items-center justify-center gap-1.5 whitespace-nowrap rounded p-2 transition-colors"
+    >
+      <Icon className="h-6 w-6" />
+      {children}
+    </Link>
   )
 }
