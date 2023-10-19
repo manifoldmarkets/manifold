@@ -156,6 +156,10 @@ export async function runCancelBountyTxn(
 ) {
   const { amount } = txnData
 
+  const newTxnDoc = firestore.collection(`txns/`).doc()
+  const txn = { id: newTxnDoc.id, createdTime: Date.now(), ...txnData }
+  fbTransaction.create(newTxnDoc, removeUndefinedProps(txn))
+
   // update user
   fbTransaction.update(userRef, {
     balance: FieldValue.increment(amount),
@@ -164,13 +168,10 @@ export async function runCancelBountyTxn(
 
   // update bountied contract
   fbTransaction.update(contractRef, {
-    totalBounty: FieldValue.increment(-amount),
     bountyLeft: FieldValue.increment(-amount),
+    bountyTxns: FieldValue.arrayUnion(newTxnDoc.id),
+    closeTime: Date.now(),
   })
-
-  const newTxnDoc = firestore.collection(`txns/`).doc()
-  const txn = { id: newTxnDoc.id, createdTime: Date.now(), ...txnData }
-  fbTransaction.create(newTxnDoc, removeUndefinedProps(txn))
 
   return { status: 'success', txn }
 }

@@ -47,14 +47,14 @@ export const cancelbounty = authEndpoint(async (req, auth) => {
       userDoc
     )
 
-    // if (contract && contract.creatorId !== auth.uid) {
-    //   await createBountyAddedNotification(
-    //     contract.creatorId,
-    //     contract,
-    //     auth.uid,
-    //     amount
-    //   )
-    // }
+
+
+    // await createBountyAddedNotification(
+    //   contract.creatorId,
+    //   contract,
+    //   auth.uid,
+    //   amount
+    // )
     return txn
   })
 })

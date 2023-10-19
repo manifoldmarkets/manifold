@@ -1591,6 +1591,37 @@ export const createBountyAddedNotification = async (
   await insertNotificationToSupabase(notification, pg)
 }
 
+export const createBountyCanceledNotification = async (
+  userId: string,
+  bountyContract: Contract,
+  txnId: string,
+  bountyAmount: number
+) => {
+  const privateUser = await getPrivateUser(userId)
+  const sender = await getUser(txnId)
+  if (!privateUser || !sender) return
+  if (userOptedOutOfBrowserNotifications(privateUser)) return
+  const notification: Notification = {
+    id: crypto.randomUUID(),
+    userId: userId,
+    reason: 'bounty_added',
+    createdTime: Date.now(),
+    isSeen: false,
+    sourceId: txnId,
+    sourceType: 'user',
+    sourceUserName: sender.name,
+    sourceUserUsername: sender.username,
+    sourceUserAvatarUrl: sender.avatarUrl ?? '',
+    sourceContractCreatorUsername: bountyContract.creatorUsername,
+    sourceText: bountyAmount.toString(),
+    sourceContractTitle: bountyContract.question,
+    sourceContractSlug: bountyContract.slug,
+    sourceContractId: bountyContract.id,
+  }
+  const pg = createSupabaseDirectClient()
+  await insertNotificationToSupabase(notification, pg)
+}
+
 export const createVotedOnPollNotification = async (
   voterId: string,
   sourceText: string,
