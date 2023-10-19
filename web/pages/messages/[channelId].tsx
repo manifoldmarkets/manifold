@@ -23,19 +23,16 @@ import { MINUTE_MS } from 'common/util/time'
 import { run } from 'common/supabase/utils'
 import { db } from 'web/lib/supabase/db'
 import { useIsVisible } from 'web/hooks/use-is-visible'
-import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
 import { useUsersInStore } from 'web/hooks/use-user-supabase'
 import { BackButton } from 'web/components/contract/back-button'
 import { Row } from 'web/components/layout/row'
 import clsx from 'clsx'
 import Link from 'next/link'
 import { linkClass } from 'web/components/widgets/site-link'
-
-export const getServerSideProps = redirectIfLoggedOut('/')
+import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 
 export default function PrivateMessagesPage() {
-  redirectIfLoggedOut('/')
-
+  useRedirectIfSignedOut()
   const router = useRouter()
   const user = useUser()
   const isAuthed = useIsAuthorized()
@@ -145,7 +142,7 @@ export const PrivateChat = (props: { user: User; channelId: number }) => {
   return (
     <Col>
       <Col className={''}>
-        <Row className={'mb-3 items-center gap-2 '}>
+        <Row className={'mb-2 items-center gap-2 '}>
           <BackButton />
           <Link className={linkClass} href={`/${otherUser?.username ?? ''}`}>
             <Title className={'!mb-0'}>{otherUser?.name ?? ''}</Title>
