@@ -1,4 +1,4 @@
-import { ArrowRightIcon, ChevronDoubleDownIcon } from '@heroicons/react/outline'
+import { ArrowRightIcon, ChevronDownIcon } from '@heroicons/react/outline'
 import { groupBy, sortBy, sumBy } from 'lodash'
 import { useState } from 'react'
 
@@ -58,7 +58,9 @@ export function AnswersPanel(props: {
   const shouldAnswersSumToOne =
     'shouldAnswersSumToOne' in contract ? contract.shouldAnswersSumToOne : true
 
-  const [showSmallAnswers, setShowSmallAnswers] = useState(isMultipleChoice)
+  const [showSmallAnswers, setShowSmallAnswers] = useState(
+    addAnswersMode !== 'ANYONE'
+  )
 
   const answers = contract.answers
     .filter((a) => isMultipleChoice || ('number' in a && a.number !== 0))
@@ -132,8 +134,8 @@ export function AnswersPanel(props: {
                 onClick={() => setShowSmallAnswers(true)}
                 size="xs"
               >
-                {moreCount} more {moreCount === 1 ? 'answer' : 'answers'}
-                <ChevronDoubleDownIcon className="ml-1 h-4 w-4" />
+                <ChevronDownIcon className="mr-1 h-4 w-4" />
+                Show {moreCount} more {moreCount === 1 ? 'answer' : 'answers'}
               </Button>
             ))}
         </Col>
