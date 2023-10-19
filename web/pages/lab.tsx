@@ -1,5 +1,4 @@
 import { ExternalLinkIcon } from '@heroicons/react/solid'
-import { DOMAIN } from 'common/envs/constants'
 import { formatMoney } from 'common/util/format'
 import Link from 'next/link'
 import Masonry from 'react-masonry-css'
