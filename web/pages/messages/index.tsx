@@ -18,11 +18,10 @@ import {
 } from 'web/hooks/use-private-messages'
 import { useIsAuthorized, usePrivateUser, useUser } from 'web/hooks/use-user'
 import { useUsersInStore } from 'web/hooks/use-user-supabase'
-import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
-export const getServerSideProps = redirectIfLoggedOut('/')
+import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 
 export default function MessagesPage() {
-  redirectIfLoggedOut('/')
+  useRedirectIfSignedOut()
   const privateUser = usePrivateUser()
   const currentUser = useUser()
   const isAuthed = useIsAuthorized()

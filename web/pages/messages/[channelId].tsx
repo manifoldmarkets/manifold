@@ -23,20 +23,17 @@ import { MINUTE_MS } from 'common/util/time'
 import { run } from 'common/supabase/utils'
 import { db } from 'web/lib/supabase/db'
 import { useIsVisible } from 'web/hooks/use-is-visible'
-import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
 import { useUsersInStore } from 'web/hooks/use-user-supabase'
 import { BackButton } from 'web/components/contract/back-button'
 import { Row } from 'web/components/layout/row'
 import clsx from 'clsx'
 import Link from 'next/link'
 import { linkClass } from 'web/components/widgets/site-link'
+import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { Avatar } from 'web/components/widgets/avatar'
 
-export const getServerSideProps = redirectIfLoggedOut('/')
-
 export default function PrivateMessagesPage() {
-  redirectIfLoggedOut('/')
-
+  useRedirectIfSignedOut()
   const router = useRouter()
   const user = useUser()
   const isAuthed = useIsAuthorized()
