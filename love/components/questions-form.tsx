@@ -23,9 +23,13 @@ export const QuestionsForm = () => {
   const questionsPerPage = 3
   const router = useRouter()
   return (
-    <Col className={'p-2'}>
-      <Title>Questions</Title>
-      <Col className={'min-h-[calc(100vh-4rem)] justify-between'}>
+    <Col className={'w-full items-center'}>
+      <Col
+        className={
+          ' bg-canvas-0 min-h-[calc(100vh-4rem)] w-full max-w-2xl justify-between px-6 py-4'
+        }
+      >
+        <Title>Questions</Title>
         <Col className={'gap-2'}>
           {user &&
             isAuthed &&
