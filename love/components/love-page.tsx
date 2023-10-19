@@ -31,6 +31,7 @@ import { PrivateMessagesIcon } from 'web/components/messaging/messages-icon'
 import { AddFundsModal } from 'web/components/add-funds-modal'
 import { MobileAppsQRCodeDialog } from 'web/components/buttons/mobile-apps-qr-code-button'
 import { NOTIFICATIONS_TO_IGNORE } from 'love/pages/notifications'
+import { useOnline } from 'love/hooks/use-online'
 
 export function LovePage(props: {
   trackPageView: string | false
@@ -60,7 +61,8 @@ export function LovePage(props: {
       : getDesktopNav(!!user, () => setIsModalOpen(true))
     : []
   // eslint-disable-next-line react-hooks/rules-of-hooks
-  trackPageView && useTracking(`view ${trackPageView}`, trackPageProps)
+  trackPageView && useTracking(`view love ${trackPageView}`, trackPageProps)
+  useOnline()
   const [isAddFundsModalOpen, setIsAddFundsModalOpen] = useState(false)
 
   return (

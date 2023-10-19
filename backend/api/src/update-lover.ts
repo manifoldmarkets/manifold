@@ -15,6 +15,7 @@ const loveUsersSchema = z.object({
   height_in_inches: z.number().optional(),
   has_pets: z.boolean().optional(),
   education_level: z.string().optional(),
+  last_online_time: z.string().optional(),
 })
 
 export const updatelover = authEndpoint(async (req, auth) => {
@@ -28,6 +29,7 @@ export const updatelover = authEndpoint(async (req, auth) => {
   if (!existingUser) {
     throw new APIError(400, 'User not found')
   }
+  !parsedBody.last_online_time && log('Updating user', auth.uid, parsedBody)
 
   if (parsedBody.pinned_url) {
     const firestore = admin.firestore()

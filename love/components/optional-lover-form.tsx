@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { set, uniq } from 'lodash'
-import { updateLover } from 'web/lib/firebase/api'
 import { Title } from 'web/components/widgets/title'
 import { Col } from 'web/components/layout/col'
 import clsx from 'clsx'
@@ -18,6 +17,7 @@ import { EditUserField } from 'web/pages/profile'
 import { removeNullOrUndefinedProps } from 'common/util/object'
 import Image from 'next/image'
 import { buildArray } from 'common/util/array'
+import { updateLover } from 'web/lib/firebase/love/api'
 export const optionalAttributes = (lover: Lover) => ({
   ethnicity: lover.ethnicity,
   born_in_location: lover.born_in_location,

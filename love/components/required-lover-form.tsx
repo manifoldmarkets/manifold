@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { set } from 'lodash'
-import { createLover } from 'web/lib/firebase/api'
 import { Title } from 'web/components/widgets/title'
 import { Col } from 'web/components/layout/col'
 import clsx from 'clsx'
@@ -16,6 +15,7 @@ import { RadioToggleGroup } from 'web/components/widgets/radio-toggle-group'
 import { MultipleChoiceOptions } from 'common/love/multiple-choice'
 import { useEditableUserInfo } from 'web/hooks/use-editable-user-info'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
+import { createLover } from 'web/lib/firebase/love/api'
 
 export const RequiredLoveUserForm = (props: {
   user: User

@@ -4,7 +4,6 @@ import { JSONContent } from '@tiptap/core'
 import { Group, GroupRole, PrivacyStatusType } from 'common/group'
 import { HideCommentReq } from 'web/pages/api/v0/hide-comment'
 import { Contract } from './contracts'
-export { APIError } from 'common/api'
 import { ContractTypeType, Filter, Sort } from 'web/components/supabase-search'
 import { AD_RATE_LIMIT } from 'common/boost'
 import { ContractComment } from 'common/comment'
@@ -14,6 +13,8 @@ import { Portfolio, PortfolioItem } from 'common/portfolio'
 import { ReportProps } from 'common/report'
 import { BaseDashboard, Dashboard, DashboardItem } from 'common/dashboard'
 import { Bet } from 'common/bet'
+
+export { APIError } from 'common/api'
 
 export async function call(url: string, method: 'POST' | 'GET', params?: any) {
   const user = auth.currentUser
@@ -552,18 +553,4 @@ export function sendUserPrivateMessage(params: {
   content: JSONContent
 }) {
   return call(getApiUrl('create-private-user-message'), 'POST', params)
-}
-export function createLover(params: any) {
-  return call(getApiUrl('create-lover'), 'POST', params)
-}
-export function updateLover(params: any) {
-  return call(getApiUrl('update-lover'), 'POST', params)
-}
-
-export function createMatch(params: {
-  userId1: string
-  userId2: string
-  betAmount: number
-}) {
-  return call(getApiUrl('create-match'), 'POST', params)
 }
