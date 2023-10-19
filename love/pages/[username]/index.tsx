@@ -30,6 +30,11 @@ import { Button } from 'web/components/buttons/button'
 import { useRouter } from 'next/router'
 import { PencilIcon } from '@heroicons/react/outline'
 import { AddYourselfAsMatchButton } from 'love/components/match-buttons'
+import { useState } from 'react'
+import Image from 'next/image'
+import { buildArray } from 'common/util/array'
+import { uniq } from 'lodash'
+import { PhotosModal } from 'love/components/photos-modal'
 
 export const getStaticProps = async (props: {
   params: {
@@ -71,6 +76,9 @@ export default function UserPage(props: {
   const currentUser = useUser()
   const isCurrentUser = currentUser?.id === user?.id
   const router = useRouter()
+  const [showPhotosModal, setShowPhotosModal] = useState(false)
+  const [selectedPhoto, setSelectedPhoto] = useState<string>()
+
   if (!user) {
     return <div>404</div>
   }
@@ -199,6 +207,57 @@ export default function UserPage(props: {
         </Col>
         {lover ? (
           <>
+            {lover.photo_urls && (
+              <Row className={'flex-wrap items-end'}>
+                {buildArray(lover.pinned_url, lover.photo_urls).map(
+                  (url, index) => {
+                    return (
+                      <div
+                        key={index}
+                        className={clsx(
+                          'relative cursor-pointer rounded-md  p-2',
+                          'hover:border-teal-900'
+                        )}
+                        onClick={() => {
+                          setSelectedPhoto(url)
+                          setShowPhotosModal(true)
+                        }}
+                      >
+                        {url === lover.pinned_url ? (
+                          <Image
+                            src={url}
+                            width={256}
+                            height={256}
+                            alt={`preview ${index}`}
+                            className="h-64 w-64 rounded-sm object-cover"
+                          />
+                        ) : (
+                          <Image
+                            src={url}
+                            width={160}
+                            height={160}
+                            alt={`preview ${index}`}
+                            className="h-40 w-40 rounded-sm object-cover"
+                          />
+                        )}
+                      </div>
+                    )
+                  }
+                )}
+                <PhotosModal
+                  photos={uniq(
+                    buildArray(
+                      selectedPhoto,
+                      lover.pinned_url,
+                      lover.photo_urls
+                    )
+                  )}
+                  open={showPhotosModal}
+                  setOpen={setShowPhotosModal}
+                />
+              </Row>
+            )}
+
             {currentUser && currentUser.id !== user.id && (
               <AddYourselfAsMatchButton
                 className="self-start"

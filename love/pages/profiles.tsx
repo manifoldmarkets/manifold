@@ -11,6 +11,8 @@ import { LovePage } from 'love/components/love-page'
 import { Filters } from 'love/components/filters'
 import { useEffect, useState } from 'react'
 import { Row as rowFor } from 'common/supabase/utils'
+import { buildArray } from 'common/util/array'
+import { PhotosModal } from 'love/components/photos-modal'
 
 export default function ProfilesPage() {
   const allLovers = useLovers()
@@ -18,6 +20,9 @@ export default function ProfilesPage() {
   useEffect(() => {
     if (!lovers) setLovers(allLovers)
   }, [allLovers])
+  const [showPhotosModal, setShowPhotosModal] = useState(false)
+  const [selectedPhotos, setSelectedPhotos] = useState<string[]>()
+
   const applyFilters = (filters: Partial<rowFor<'lovers'>>) => {
     const filteredLovers = allLovers?.filter((lover) => {
       console.log(filters)
@@ -94,19 +99,33 @@ export default function ProfilesPage() {
                     photo_urls,
                     gender,
                     birthdate,
+                    pinned_url,
                     city,
                     last_online_time,
                   }) => (
                     <tr key={id} className={clsx()}>
                       <td>
-                        {photo_urls && photo_urls[0] && (
-                          <Image
-                            className="h-10 w-10 rounded-full"
-                            width={100}
-                            height={100}
-                            alt={photo_urls[0]}
-                            src={photo_urls[0]}
-                          />
+                        {pinned_url && (
+                          <div
+                            className={clsx(
+                              'relative cursor-pointer rounded-md  p-2',
+                              'hover:border-teal-900'
+                            )}
+                            onClick={() => {
+                              setSelectedPhotos(
+                                buildArray(pinned_url, photo_urls)
+                              )
+                              setShowPhotosModal(true)
+                            }}
+                          >
+                            <Image
+                              className="h-10 w-10 rounded-full"
+                              width={100}
+                              height={100}
+                              alt={pinned_url}
+                              src={pinned_url}
+                            />
+                          </div>
                         )}
                       </td>
                       <td>
@@ -123,6 +142,11 @@ export default function ProfilesPage() {
             )}
           </div>
         </Col>
+        <PhotosModal
+          photos={selectedPhotos ?? []}
+          open={showPhotosModal}
+          setOpen={setShowPhotosModal}
+        />
       </Col>
     </LovePage>
   )

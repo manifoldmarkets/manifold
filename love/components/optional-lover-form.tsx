@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { set } from 'lodash'
+import { set, uniq } from 'lodash'
 import { updateLover } from 'web/lib/firebase/api'
 import { Title } from 'web/components/widgets/title'
 import { Col } from 'web/components/layout/col'
@@ -13,8 +13,11 @@ import { colClassName, labelClassName } from 'love/pages/signup'
 import { uploadImage } from 'web/lib/firebase/storage'
 import { Lover } from 'love/hooks/use-lover'
 import { useRouter } from 'next/router'
+import { CheckCircleIcon } from '@heroicons/react/outline'
 import { EditUserField } from 'web/pages/profile'
 import { removeNullOrUndefinedProps } from 'common/util/object'
+import Image from 'next/image'
+import { buildArray } from 'common/util/array'
 export const optionalAttributes = (lover: Lover) => ({
   ethnicity: lover.ethnicity,
   born_in_location: lover.born_in_location,
@@ -39,9 +42,6 @@ export const OptionalLoveUserForm = (props: { lover: Lover }) => {
   }
   const router = useRouter()
   const [uploadingImages, setUploadingImages] = useState(false)
-  const [filePreviews, setFilePreviews] = useState<string[]>(
-    formState.photo_urls ?? []
-  )
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
@@ -51,17 +51,13 @@ export const OptionalLoveUserForm = (props: { lover: Lover }) => {
     // Convert files to an array and take only the first 6 files
     const selectedFiles = Array.from(files).slice(0, 6)
 
-    // Convert files to URLs for preview
-    const fileURLs = selectedFiles.map((file) => URL.createObjectURL(file))
-
-    // Update the state
-    setFilePreviews(fileURLs)
     const urls = await Promise.all(
       selectedFiles.map((f) => uploadImage(user.username, f, 'love-images'))
     ).catch((e) => {
       console.error(e)
       return []
     })
+    handleChange('pinned_url', urls[0])
     handleChange('photo_urls', urls)
     setUploadingImages(false)
   }
@@ -97,22 +93,60 @@ export const OptionalLoveUserForm = (props: { lover: Lover }) => {
             className={'w-64'}
             disabled={uploadingImages}
           />
-          <div className="flex gap-2">
-            {filePreviews.map((url, index) => (
-              <img
-                key={index}
-                src={url}
-                alt={`preview ${index}`}
-                className="h-20 w-20 object-cover"
-              />
-            ))}
-          </div>
+          <Row className="flex-wrap gap-2">
+            {uniq(buildArray(formState.pinned_url, formState.photo_urls))?.map(
+              (url, index) => {
+                const isPinned = url === formState.pinned_url
+                return (
+                  <div
+                    key={index}
+                    className={clsx(
+                      'relative cursor-pointer rounded-md border-2 p-2',
+                      isPinned ? 'border-teal-500' : 'border-canvas-100',
+                      'hover:border-teal-900'
+                    )}
+                    onClick={() => {
+                      handleChange(
+                        'photo_urls',
+                        uniq(
+                          buildArray(formState.pinned_url, formState.photo_urls)
+                        )
+                      )
+                      handleChange('pinned_url', url)
+                    }}
+                  >
+                    {isPinned && (
+                      <div
+                        className={clsx(' absolute right-0 top-0 rounded-full')}
+                      >
+                        <CheckCircleIcon
+                          className={
+                            ' bg-canvas-0 h-6 w-6 rounded-full text-teal-500'
+                          }
+                        />
+                      </div>
+                    )}
+                    <Image
+                      src={url}
+                      width={80}
+                      height={80}
+                      alt={`preview ${index}`}
+                      className="h-20 w-20 object-cover"
+                    />
+                  </div>
+                )
+              }
+            )}
+          </Row>
+          <span className={'text-ink-500 text-xs italic'}>
+            The highlighted image is your profile picture
+          </span>
         </Col>
 
         {(
           [
             ['bio', 'Condense yourself into a sentence'],
-            ['website', 'Website'],
+            ['website', 'Website (or date doc link)'],
             ['twitterHandle', 'Twitter'],
           ] as const
         ).map(([field, label]) => (

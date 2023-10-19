@@ -1,10 +1,11 @@
 import { z } from 'zod'
-import { APIError, authEndpoint, validate } from 'api/helpers'
+import { APIError, authEndpoint } from 'api/helpers'
 import {
   createSupabaseClient,
   createSupabaseDirectClient,
 } from 'shared/supabase/init'
 import { log } from 'shared/utils'
+import * as admin from 'firebase-admin'
 
 const loveUsersSchema = z.object({
   political_beliefs: z.array(z.string()).optional(),
@@ -31,17 +32,31 @@ export const updatelover = authEndpoint(async (req, auth) => {
     throw new APIError(400, 'User not found')
   }
 
+  if (parsedBody.pinned_url) {
+    const firestore = admin.firestore()
+    await firestore.doc('users/' + auth.uid).update({
+      avatarUrl: parsedBody.pinned_url,
+    })
+    if (parsedBody.photo_urls) {
+      parsedBody.photo_urls = parsedBody.photo_urls.filter(
+        (url) => url !== parsedBody.pinned_url
+      )
+    }
+  }
+
   const { data, error } = await db
     .from('lovers')
     .update({
       ...parsedBody,
     })
     .eq('id', existingUser.id)
+    .select()
   if (error) {
     log('Error updating user', error)
     throw new APIError(500, 'Error updating user')
   }
   return {
     success: true,
+    lover: data[0],
   }
 })
