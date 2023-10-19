@@ -76,13 +76,13 @@ module.exports = {
       },
       {
         source: '/labs',
-        destination: '/about',
+        destination: '/lab',
         permanent: true,
       },
       {
         source: '/sitemap',
         destination: '/about',
-        permanent: false,
+        permanent: true,
       },
       {
         source: '/versus',

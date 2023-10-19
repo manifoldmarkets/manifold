@@ -1,34 +1,24 @@
-import { REFERRAL_AMOUNT } from 'common/economy'
-import {
-  APPLE_APP_URL,
-  DOMAIN,
-  ENV_CONFIG,
-  GOOGLE_PLAY_APP_URL,
-} from 'common/envs/constants'
-import { formatMoney } from 'common/util/format'
-import Link from 'next/link'
+import { APPLE_APP_URL, GOOGLE_PLAY_APP_URL } from 'common/envs/constants'
 import { useState } from 'react'
-import Masonry from 'react-masonry-css'
 import { MobileAppsQRCodeDialog } from 'web/components/buttons/mobile-apps-qr-code-button'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { Spacer } from 'web/components/layout/spacer'
 import { ManifoldLogo } from 'web/components/nav/manifold-logo'
-import { PrivacyAndTerms } from 'web/components/privacy-terms'
+import { PrivacyTermsLab } from 'web/components/privacy-terms'
 import { SEO } from 'web/components/SEO'
-import { Card } from 'web/components/widgets/card'
 import { Subtitle } from 'web/components/widgets/subtitle'
 import { Title } from 'web/components/widgets/title'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useUser } from 'web/hooks/use-user'
 import { getNativePlatform } from 'web/lib/native/is-native'
 import { isIOS } from 'web/lib/util/device'
-import { ExternalLinkIcon } from '@heroicons/react/outline'
 import {
   WhatIsAPM,
   WhatIsMana,
   WhyManifold,
 } from 'web/components/explainer-panel'
+import { LabCard, LabSection } from './lab'
 
 export default function AboutPage() {
   const { isNative, platform } = getNativePlatform()
@@ -50,7 +40,7 @@ export default function AboutPage() {
 
   return (
     <Page trackPageView={'about page'}>
-      <SEO title="About" description="About Manifold" url="/sitemap" />
+      <SEO title="About" description="About Manifold" />
 
       <Col className="p-4">
         <Title className="hidden sm:flex">About</Title>
@@ -116,18 +106,35 @@ export default function AboutPage() {
         </LabSection>
 
         <Subtitle>📄 Pages</Subtitle>
-        <LabSection>
+        <div className="grid gap-x-2 md:grid-cols-3">
           {user && (
-            <>
-              <LabCard
-                title="🤗‍ Referrals"
-                description={`Refer a friend to earn ${formatMoney(
-                  REFERRAL_AMOUNT
-                )}`}
-                href="/referrals"
-              />
-            </>
+            <LabCard
+              title="🤗‍ Refer a friend"
+              // description={`Earn ${formatMoney(REFERRAL_AMOUNT)}`}
+              href="/referrals"
+            />
           )}
+
+          {user && (!isNative || (isNative && platform !== 'ios')) && (
+            <LabCard title="💰 Get Mana" href="/add-funds" />
+          )}
+          {user && <LabCard title="💸 Send mana" href="/payments" />}
+          <LabCard title="⚡️ Live feed" href="/live" />
+          <LabCard title="🏆 Leaderboards" href="/leaderboards" />
+          <LabCard title="️🔖 Dashboards" href="/dashboard" />
+        </div>
+
+        <LabSection>
+          <LabCard
+            title="📜 Community guidelines"
+            description="General expectations and account rules"
+            href="https://manifoldmarkets.notion.site/Community-Guidelines-f6c77b1af41749828df7dae5e8735400"
+          />
+          <LabCard
+            title="📏 Platform calibration"
+            description="Manifold's overall track record"
+            href="/calibration"
+          />
 
           {(!isNative || (isNative && platform !== 'ios')) && (
             <LabCard
@@ -136,239 +143,13 @@ export default function AboutPage() {
               href="/charity"
             />
           )}
-
-          {user && (
-            <>
-              {(!isNative || (isNative && platform !== 'ios')) && (
-                <LabCard
-                  title="💰 Get Mana"
-                  href="/add-funds"
-                  description={`Top up your account with ${ENV_CONFIG.moneyMoniker}`}
-                />
-              )}
-            </>
-          )}
-          <LabCard
-            title="⚡️ Live feed"
-            description="Latest market activity"
-            href="/live"
-          />
-          <LabCard
-            title="🏆 Leaderboards"
-            href="/leaderboards"
-            description="Global profit rankings"
-          />
-          <LabCard
-            title="️🔖 Dashboards"
-            description="Custom display of markets and articles"
-            href="/dashboard"
-          />
-          {user && (
-            <LabCard
-              title="💸 Manalinks"
-              description={`Send ${ENV_CONFIG.moneyMoniker} to anyone`}
-              href="/links"
-            />
-          )}
-          <LabCard
-            title="💸 Managrams"
-            description={`Send ${ENV_CONFIG.moneyMoniker} to any user`}
-            href="/payments"
-          />
-          <LabCard
-            title="🥩 Fresh meat"
-            description="Questions created by new users"
-            href="/newbies"
-          />
-          <LabCard
-            title="📏 Platform calibration"
-            description="Manifold's overall track record"
-            href="/calibration"
-          />
-          <LabCard
-            title="📜 Community guidelines"
-            description="General expectations and account rules"
-            href="https://manifoldmarkets.notion.site/Community-Guidelines-f6c77b1af41749828df7dae5e8735400"
-          />
-          <LabCard
-            title="😎 Awesome Manifold"
-            description="Community-created projects built on Manifold"
-            href="https://manifoldmarkets.notion.site/Awesome-Manifold-4b93a64528674290989ef8a9f696b460"
-          />
-          <LabCard
-            title="💌 Manifold.love"
-            description="Coming soon — crowd source your long term matches"
-            href="https://manifold.love"
-          />
+          {/* TODO: replace with another page to be even. or remove one */}
+          <LabCard title="🐮 Moolinda" description="???" href="/cowp" />
         </LabSection>
 
-        {user && (
-          <>
-            <Subtitle>🧪 Experiments</Subtitle>
-            <LabSection>
-              <LabCard
-                title="🎁 Loot Box"
-                description="Invest in random questions"
-                href="/lootbox"
-              />
-
-              {user && (
-                <LabCard
-                  title="📂 Portfolios"
-                  description="Curate in a set of positions to invest in"
-                  href="/portfolio"
-                />
-              )}
-
-              <LabCard
-                title="🎤 Mana-chan"
-                description="Tweets from our anime spokesgirl"
-                href="/manachan"
-              />
-            </LabSection>
-
-            <Subtitle>👨‍💻️ Developers</Subtitle>
-            <LabSection>
-              <LabCard
-                title="🤖 API"
-                description="Use Manifold programmatically"
-                href="https://docs.manifold.markets/api"
-              />
-              <LabCard
-                title="😻 Github"
-                description="We're open source!"
-                href="https://github.com/manifoldmarkets/manifold"
-              />
-              <LabCard
-                title="🎁 Bounties"
-                description="Earn mana for contributing"
-                href="https://manifoldmarkets.notion.site/Manifold-Bounties-5cd9c4045422461dbe84b4339f93e98f"
-              />
-              <LabCard
-                title="🔁 Maniswap"
-                description="Learn about our AMM"
-                href="https://manifoldmarkets.notion.site/Maniswap-ce406e1e897d417cbd491071ea8a0c39"
-              />
-              <LabCard
-                title="💬 Discord bot"
-                description="Create, trade, & share questions from Discord"
-                href="/discord-bot"
-              />
-              <LabCard
-                title="🎮 Twitch bot"
-                description="Embed questions in your stream"
-                href="/twitch"
-              />
-              <LabCard
-                title="📈 Stats"
-                description="See how Manifold is doing"
-                href="/stats"
-              />
-            </LabSection>
-
-            <Subtitle>🪦 Graveyard</Subtitle>
-            <div className="mb-4 italic">
-              Dead and undead projects, haunting this page until we resurrect or
-              exorcise them.
-            </div>
-            <LabSection>
-              <LabCard
-                title="👻 Ancient questions"
-                description="Markets as dead as these projects"
-                href="/ancient"
-              />
-              <LabCard
-                title="🏆 CSPI/Salem tournament"
-                description="Seperate site hosting special contest"
-                href="https://salemcenter.manifold.markets/"
-                target="_blank"
-              />
-              <LabCard
-                title="🔥 Swipe"
-                description="Swipe-to-bet UI. Try via iOS/Android app."
-                {...(isNative ? { href: '/swipe' } : appCallback)}
-              />
-              <LabCard
-                title="✏ Posts"
-                description="Go long on longform"
-                href="/latestposts"
-              />
-              <LabCard
-                title="🎱 Oddball"
-                description="Guess the probability of events"
-                href="https://oddball-pi.vercel.app/"
-              />
-              <LabCard
-                title="⚔️ Versus"
-                description="Create mana-battles between two ideas"
-                href="/VersusBot?tab=questions"
-              />
-              <LabCard
-                title="🎴 Manifold: The Gambling"
-                description="Match each question to its creator"
-                href="/cards"
-              />
-              <LabCard
-                title="💰 Mana auction"
-                description={`A dollar auction but for ${formatMoney(10000)}`}
-                href="/mana-auction"
-              />
-              <LabCard
-                title="💭 Dream"
-                description="Generate an image with AI"
-                href="/dream"
-              />
-              <LabCard
-                title="🃏 Magic the Guessering"
-                description="Match MTG card names to their art"
-                href={`https://${DOMAIN}/mtg/index.html`}
-              />
-              <LabCard
-                title="👀 Classified Ads"
-                description="An old version of question boosts that let you advertise anything. View ads for mana!"
-                href="/ad"
-              />
-              <LabCard title="🐮 Moolinda" description="???" href="/cowp" />
-            </LabSection>
-          </>
-        )}
         <Spacer h={8} />
       </Col>
-      <PrivacyAndTerms />
+      <PrivacyTermsLab />
     </Page>
   )
 }
-
-export const LabCard = (props: {
-  title: string
-  description?: string
-  href: string
-  onClick?: () => void
-  target?: string
-}) => {
-  const { title, description, href, onClick, target } = props
-
-  return (
-    <Link href={href} onClick={onClick} target={target} className="mb-4 block">
-      <Card className="flex flex-col gap-2 px-4 py-3">
-        <div className="flex items-center justify-between">
-          <div className="text-lg font-semibold">{title}</div>
-          {target && (
-            <ExternalLinkIcon className="ml-auto inline-block h-4 w-4" />
-          )}
-        </div>
-        {description && <p className="text-ink-600">{description}</p>}
-      </Card>
-    </Link>
-  )
-}
-
-const LabSection = (props: { children: React.ReactNode }) => (
-  <Masonry
-    breakpointCols={{ default: 2, 768: 1 }}
-    className="-ml-4 flex w-auto"
-    columnClassName="pl-4 bg-clip-padding"
-  >
-    {props.children}
-  </Masonry>
-)

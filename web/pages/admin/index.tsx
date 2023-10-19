@@ -1,8 +1,9 @@
 import { Page } from 'web/components/layout/page'
 import { Title } from 'web/components/widgets/title'
-import { LabCard } from '../about'
+import { LabCard } from '../lab'
 import { NoSEO } from 'web/components/NoSEO'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
+import Link from 'next/link'
 
 export default function AdminPage() {
   useRedirectIfSignedOut()
@@ -39,15 +40,14 @@ export default function AdminPage() {
           title="💤 postgres logs"
           href="https://app.supabase.com/project/pxidrgkatumlvfqaxcll/logs/postgres-logs"
         />
-        <LabCard
-          title="🗺️ user journeys"
-          description={'See what new users are up to'}
-          href="/admin/journeys"
-        />
+        <LabCard title="🗺️ user journeys" href="/admin/journeys" />
+        <LabCard title="🥩 new user questions" href="/newbies" />
         <LabCard title="🤬 reports" href="/admin/reports" />
         <LabCard title="🎨 design system" href="/styles" />
         <LabCard title="🌑 test new user" href="/admin/test-user" />
-        <p className="mb-2 italic">anyone can see this page btw</p>
+        <Link className="mb-2 italic" href="/lab">
+          anyone can see this page btw
+        </Link>
       </div>
     </Page>
   )

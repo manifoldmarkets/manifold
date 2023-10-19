@@ -8,7 +8,7 @@ import { TestimonialsPanel } from 'web/components/testimonials-panel'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { Button } from 'web/components/buttons/button'
 import { redirectIfLoggedIn } from 'web/lib/firebase/server-auth'
-import { PrivacyAndTerms } from 'web/components/privacy-terms'
+import { AboutPrivacyTerms } from 'web/components/privacy-terms'
 import { formatMoney } from 'common/util/format'
 import { NewsTopicsTabs } from 'web/components/news/news-topics-tabs'
 import { useRedirectIfSignedIn } from 'web/hooks/use-redirect-if-signed-in'
@@ -124,7 +124,7 @@ export default function Home() {
 
         <TestimonialsPanel />
 
-        <PrivacyAndTerms />
+        <AboutPrivacyTerms />
       </Col>
     </Page>
   )
