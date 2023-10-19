@@ -11,6 +11,7 @@ import { User } from 'common/user'
 import { UserAvatarAndBadge } from 'web/components/widgets/user-link'
 import { usePersistentQueryState } from 'web/hooks/use-persistent-query-state'
 import clsx from 'clsx'
+import { useAdmin } from 'web/hooks/use-admin'
 
 const isUserLikelySpammer = (user: User, hasBet: boolean) => {
   return (
@@ -64,6 +65,9 @@ export default function Journeys() {
       (u) => eventsByUser[u.id].filter((e) => e.name === 'bet').length > 0
     )
     .map((u) => u.id)
+
+  const isAdmin = useAdmin()
+  if (!isAdmin) return <></>
 
   return (
     <Row>
