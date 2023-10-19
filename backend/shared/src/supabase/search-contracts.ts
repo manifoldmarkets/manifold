@@ -78,7 +78,7 @@ from user_interest,
          join contract_embeddings ON contracts.id = contract_embeddings.contract_id
         LEFT JOIN user_follows ON contracts.creator_id = user_follows.follow_id
     ${whereClause}
-  and importance_score > ${offset === 0 ? 0.35 : 0.25}
+  and importance_score > ${offset === 0 ? 0.5 : 0.25}
   AND NOT EXISTS (
     SELECT 1
     FROM user_disinterests
