@@ -27,9 +27,14 @@ import { LoverComment } from 'common/love/love-comment'
 import { CommentInput } from 'web/components/comments/comment-input'
 import { Editor } from '@tiptap/react'
 import { track } from 'web/lib/service/analytics'
-import { createCommentOnLover } from 'web/lib/firebase/love/api'
+import {
+  createCommentOnLover,
+  hideCommentOnLover,
+} from 'web/lib/firebase/love/api'
 import { ReplyToUserInfo } from 'web/components/feed/feed-comments'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
+import { useAdmin } from 'web/hooks/use-admin'
+import { EyeOffIcon } from '@heroicons/react/outline'
 
 export function LoverProfileCommentThread(props: {
   onUser: User
@@ -146,16 +151,16 @@ const ProfileComment = memo(function FeedComment(props: {
 }) {
   const {
     onUser,
-    comment,
     highlighted,
     onReplyClick,
     children,
     trackingLocation,
     isParent,
   } = props
-  const { userUsername, userAvatarUrl } = comment
   const ref = useRef<HTMLDivElement>(null)
-  const owner = onUser.id === comment.userId
+  const [comment, setComment] = useState(props.comment)
+  const { userUsername, userAvatarUrl, userId, hidden } = comment
+  const owner = onUser.id === userId
 
   useEffect(() => {
     if (highlighted && ref.current) {
@@ -196,9 +201,21 @@ const ProfileComment = memo(function FeedComment(props: {
             comment={comment}
             onUser={onUser}
             isParent={isParent}
+            onHide={() => setComment({ ...comment, hidden: !comment.hidden })}
           />
 
-          <HideableContent comment={comment} />
+          {hidden ? (
+            <span className={'text-ink-500 text-sm italic'}>
+              Comment hidden
+            </span>
+          ) : (
+            <Content
+              size="sm"
+              className="mt-1 grow"
+              content={comment.content}
+            />
+          )}
+
           <Row>
             {children}
             <CommentActions
@@ -255,32 +272,19 @@ const ParentProfileComment = memo(function ParentFeedComment(props: {
   )
 })
 
-function HideableContent(props: { comment: LoverComment }) {
-  const { comment } = props
-  const { text, content } = comment
-  const [showHidden, setShowHidden] = useState(false)
-  return comment.hidden && !showHidden ? (
-    <div
-      className="hover text-ink-600 text-sm font-thin italic hover:cursor-pointer"
-      onClick={() => {
-        setShowHidden(!showHidden)
-      }}
-    >
-      Comment hidden
-    </div>
-  ) : (
-    <Content size="sm" className="mt-1 grow" content={content || text} />
-  )
-}
-
-function DotMenu(props: { onUser: User; comment: LoverComment }) {
-  const { comment, onUser } = props
+function DotMenu(props: {
+  onUser: User
+  comment: LoverComment
+  onHide: () => void
+}) {
+  const { comment, onHide, onUser } = props
   const [isModalOpen, setIsModalOpen] = useState(false)
   const user = useUser()
-  // const privateUser = usePrivateUser()
-  // const isCurrentUser = user?.id === onUser.id
-  // const isAdmin = useAdmin()
+  const isCurrentUser = user?.id === comment.userId
+  const isOwner = onUser.id === user?.id
+  const isAdmin = useAdmin()
   const [tipping, setTipping] = useState(false)
+
   return (
     <>
       <ReportModal
@@ -297,6 +301,7 @@ function DotMenu(props: { onUser: User; comment: LoverComment }) {
       />
       <DropdownMenu
         menuWidth={'w-36'}
+        closeOnClick={true}
         icon={
           <DotsHorizontalIcon
             className="mt-[0.12rem] h-4 w-4"
@@ -318,19 +323,35 @@ function DotMenu(props: { onUser: User; comment: LoverComment }) {
                 if (user?.id !== comment.userId) setIsModalOpen(true)
                 else toast.error(`You can't report your own comment`)
               },
-            }
-          // (isAdmin || isCurrentUser) && {
-          //   name: comment.hidden ? 'Unhide' : 'Hide',
-          //   icon: <EyeOffIcon className="h-5 w-5 text-red-500" />,
-          //   onClick: async () => {
-          //     const commentPath = `contracts/${contract.id}/comments/${comment.id}`
-          //     try {
-          //       await hideComment({ commentPath })
-          //     } catch (e: any) {
-          //       toast.error(`Error hiding comment: ${e}`)
-          //     }
-          //   },
-          // }
+            },
+          (isAdmin || isCurrentUser || isOwner) && {
+            name: comment.hidden ? 'Unhide' : 'Hide',
+            icon: <EyeOffIcon className="h-5 w-5 text-red-500" />,
+            onClick: async () => {
+              onHide()
+              await toast.promise(
+                hideCommentOnLover({
+                  commentId: comment.id,
+                  hide: !comment.hidden,
+                }),
+                {
+                  loading: comment.hidden
+                    ? 'Unhiding comment...'
+                    : 'Hiding comment...',
+                  success: () => {
+                    return comment.hidden
+                      ? 'Comment unhidden'
+                      : 'Comment hidden'
+                  },
+                  error: () => {
+                    return comment.hidden
+                      ? 'Error unhiding comment'
+                      : 'Error hiding comment'
+                  },
+                }
+              )
+            },
+          }
         )}
       />
 
@@ -431,9 +452,10 @@ export function LoverCommentInput(props: {
 function FeedCommentHeader(props: {
   onUser: User
   comment: LoverComment
+  onHide: () => void
   isParent?: boolean
 }) {
-  const { comment, onUser } = props
+  const { comment, onUser, onHide } = props
   const { userUsername, userName } = comment
 
   return (
@@ -448,7 +470,7 @@ function FeedCommentHeader(props: {
             />
           </span>
           <RelativeTimestamp shortened={true} time={comment.createdTime} />
-          <DotMenu comment={comment} onUser={onUser} />
+          <DotMenu onHide={onHide} comment={comment} onUser={onUser} />
         </Row>
       </Row>
     </Col>

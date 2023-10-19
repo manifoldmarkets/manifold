@@ -25,3 +25,9 @@ export function createCommentOnLover(params: {
 }) {
   return call(getApiUrl('create-comment-on-lover'), 'POST', params)
 }
+export function hideCommentOnLover(params: {
+  commentId: string
+  hide: boolean
+}) {
+  return call(getApiUrl('hide-comment-on-lover'), 'POST', params)
+}

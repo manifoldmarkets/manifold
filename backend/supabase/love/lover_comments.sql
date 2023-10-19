@@ -8,7 +8,8 @@ create table if not exists
        on_user_id text not null,
        created_time        timestamptz not null default now(),
        content             jsonb not null,
-       reply_to_comment_id bigint
+       reply_to_comment_id bigint,
+       hidden boolean not null default false
 );
 
 

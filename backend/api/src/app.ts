@@ -95,6 +95,7 @@ import { createlover } from 'api/love/create-lover'
 import { updatelover } from 'api/love/update-lover'
 import { createMatch } from 'api/love/create-match'
 import { createcommentonlover } from 'api/love/create-comment-on-lover'
+import { hidecommentonlover } from 'api/love/hide-comment-on-lover'
 
 const allowCors: RequestHandler = cors({
   origin: [
@@ -240,6 +241,7 @@ app.post('/create-lover', ...apiRoute(createlover))
 app.post('/update-lover', ...apiRoute(updatelover))
 app.post('/create-match', ...apiRoute(createMatch))
 app.post('/create-comment-on-lover', ...apiRoute(createcommentonlover))
+app.post('/hide-comment-on-lover', ...apiRoute(hidecommentonlover))
 
 // Catch 404 errors - this should be the last route
 app.use(allowCors, (req, res) => {

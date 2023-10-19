@@ -1,5 +1,4 @@
 import { APIError, authEndpoint, validate } from 'api/helpers'
-import * as admin from 'firebase-admin'
 import { MAX_COMMENT_JSON_LENGTH } from 'api/create-comment'
 import { z } from 'zod'
 import { contentSchema } from 'shared/zod-types'
@@ -13,7 +12,6 @@ const postSchema = z.object({
   replyToCommentId: z.number().optional(),
 })
 export const createcommentonlover = authEndpoint(async (req, auth) => {
-  const firestore = admin.firestore()
   const {
     userId,
     content: submittedContent,
