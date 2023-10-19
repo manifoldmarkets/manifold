@@ -158,7 +158,7 @@ export const PrivateChat = (props: { user: User; channelId: number }) => {
       <div ref={ref} />
       <Col
         className={clsx(
-          'gap-2 overflow-y-scroll py-2 ',
+          'gap-1 overflow-y-scroll py-2 ',
           'max-h-[calc(100vh-216px)] min-h-[calc(100vh-216px)]',
           'lg:max-h-[calc(100vh-184px)] lg:min-h-[calc(100vh-184px)]'
         )}
@@ -182,6 +182,11 @@ export const PrivateChat = (props: { user: User; channelId: number }) => {
                   groupedMessages[i + 1]
                     ? groupedMessages[i + 1][0].userId === messages[0].userId
                     : false
+                }
+                firstOfUser={
+                  groupedMessages[i - 1]
+                    ? groupedMessages[i - 1][0].userId !== messages[0].userId
+                    : true
                 }
               />
             )

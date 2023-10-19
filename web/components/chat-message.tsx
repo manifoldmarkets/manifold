@@ -16,8 +16,8 @@ export const ChatMessageItem = forwardRef(
       currentUser: User | undefined | null
       otherUser?: User | null
       onReplyClick?: (chat: ChatMessage) => void
-      beforeSameUser?: boolean
-      firstOfUser?: boolean
+      beforeSameUser: boolean
+      firstOfUser: boolean
     },
     ref: React.Ref<HTMLDivElement>
   ) => {
@@ -47,9 +47,16 @@ export const ChatMessageItem = forwardRef(
         }
 
     return (
-      <Row className={clsx('gap-1', isMe ? '' : 'flex-row-reverse')} ref={ref}>
+      <Row
+        className={clsx(
+          'gap-1',
+          isMe ? '' : 'flex-row-reverse',
+          firstOfUser ? 'mt-3' : ''
+        )}
+        ref={ref}
+      >
         <Row className="grow" />
-        <Col className={clsx(isMe ? 'pr-1' : '', 'grow-y justify-end py-3')}>
+        <Col className={clsx(isMe ? 'pr-1' : '', 'grow-y justify-end pb-2')}>
           <RelativeTimestamp
             time={chat.createdTime}
             shortened
@@ -64,7 +71,7 @@ export const ChatMessageItem = forwardRef(
           )}
           <Col
             className={clsx(
-              'rounded-2xl p-3 drop-shadow-sm',
+              'rounded-3xl px-3 py-2 drop-shadow-sm',
               isMe
                 ? 'bg-primary-100 items-end self-end rounded-br-none'
                 : 'bg-canvas-0 items-start self-start rounded-bl-none'
