@@ -16,7 +16,7 @@ import { useRouter } from 'next/router'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { EditUserField } from 'web/pages/profile'
 import { useEditableUserInfo } from 'web/hooks/use-editable-user-info'
-import { removeUndefinedProps } from 'common/util/object'
+import { removeNullOrUndefinedProps } from 'common/util/object'
 export const optionalAttributes = (lover: Lover) => ({
   ethnicity: lover.ethnicity,
   born_in_location: lover.born_in_location,
@@ -73,7 +73,7 @@ export const OptionalLoveUserForm = (props: { lover: Lover }) => {
       return router.push('/love-questions')
     // Do something with the form state, such as sending it to an API
     const res = await updateLover(
-      removeUndefinedProps({
+      removeNullOrUndefinedProps({
         ...formState,
       })
     ).catch((e) => {

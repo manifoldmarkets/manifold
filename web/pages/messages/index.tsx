@@ -70,7 +70,7 @@ export default function MessagesPage() {
     </Page>
   )
 }
-const MessageChannelRow = (props: {
+export const MessageChannelRow = (props: {
   toUser: User
   currentUser: User
   channelId: number

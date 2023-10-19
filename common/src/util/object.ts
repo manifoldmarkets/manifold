@@ -9,6 +9,16 @@ export const removeUndefinedProps = <T extends object>(obj: T): T => {
 
   return newObj
 }
+export const removeNullOrUndefinedProps = <T extends object>(obj: T): T => {
+  const newObj: any = {}
+
+  for (const key of Object.keys(obj)) {
+    if ((obj as any)[key] !== undefined && (obj as any)[key] !== null)
+      newObj[key] = (obj as any)[key]
+  }
+
+  return newObj
+}
 
 export const addObjects = <T extends { [key: string]: number }>(
   obj1: T,
