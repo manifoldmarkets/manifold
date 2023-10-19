@@ -91,9 +91,10 @@ import { banuser } from 'api/ban-user'
 import { updatemarket } from 'api/update-market'
 import { createprivateusermessage } from 'api/create-private-user-message'
 import { createprivateusermessagechannel } from 'api/create-private-user-message-channel'
-import { createlover } from 'api/create-lover'
-import { updatelover } from 'api/update-lover'
-import { createMatch } from 'api/create-match'
+import { createlover } from 'api/love/create-lover'
+import { updatelover } from 'api/love/update-lover'
+import { createMatch } from 'api/love/create-match'
+import { createcommentonlover } from 'api/love/create-comment-on-lover'
 
 const allowCors: RequestHandler = cors({
   origin: [
@@ -238,6 +239,7 @@ app.post(
 app.post('/create-lover', ...apiRoute(createlover))
 app.post('/update-lover', ...apiRoute(updatelover))
 app.post('/create-match', ...apiRoute(createMatch))
+app.post('/create-comment-on-lover', ...apiRoute(createcommentonlover))
 
 // Catch 404 errors - this should be the last route
 app.use(allowCors, (req, res) => {

@@ -945,6 +945,42 @@ export interface Database {
         }
         Relationships: []
       }
+      lover_comments: {
+        Row: {
+          content: Json
+          created_time: string
+          user_avatar_url: string
+          user_id: string
+          user_name: string
+          user_username: string
+          id: number
+          on_user_id: string
+          reply_to_comment_id: number | null
+        }
+        Insert: {
+          content: Json
+          created_time?: string
+          user_avatar_url: string
+          user_id: string
+          user_name: string
+          user_username: string
+          id?: never
+          on_user_id: string
+          reply_to_comment_id?: number | null
+        }
+        Update: {
+          content?: Json
+          created_time?: string
+          user_avatar_url?: string
+          user_id?: string
+          user_name?: string
+          user_username?: string
+          id?: never
+          on_user_id?: string
+          reply_to_comment_id?: number | null
+        }
+        Relationships: []
+      }
       lovers: {
         Row: {
           birthdate: string

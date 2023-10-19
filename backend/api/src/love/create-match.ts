@@ -5,9 +5,9 @@ import {
   createSupabaseDirectClient,
 } from 'shared/supabase/init'
 import { getUser, isProd } from 'shared/utils'
-import { createMarketHelper } from './create-market'
+import { createMarketHelper } from '../create-market'
 import { Contract } from 'common/contract'
-import { placeBetMain } from './place-bet'
+import { placeBetMain } from '../place-bet'
 
 const createMatchSchema = z.object({
   userId1: z.string(),

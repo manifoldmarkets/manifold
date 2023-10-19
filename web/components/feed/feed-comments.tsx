@@ -563,7 +563,8 @@ export function ContractCommentInput(props: {
   const onSubmitComment = useEvent(async (editor: Editor) => {
     if (!user) {
       track('sign in to comment')
-      return await firebaseLogin()
+      await firebaseLogin()
+      return
     }
     await createCommentOnContract({
       contractId: contract.id,

@@ -16,7 +16,7 @@ export function CommentInput(props: {
   replyToUserInfo?: ReplyToUserInfo
   // Reply to another comment
   parentCommentId?: string
-  onSubmitComment?: (editor: Editor) => void
+  onSubmitComment?: (editor: Editor) => Promise<void>
   // unique id for autosave
   pageId: string
   className?: string
@@ -56,7 +56,12 @@ export function CommentInput(props: {
       editor.commands.deleteRange({ from: endPos - 1, to: endPos })
     }
 
-    onSubmitComment?.(editor)
+    if (onSubmitComment) {
+      await onSubmitComment?.(editor).catch((e) => {
+        console.error(e)
+        setIsSubmitting(false)
+      })
+    }
     setIsSubmitting(false)
     editor.commands.clearContent(true)
     // force clear save, because it can fail if editor unrenders
@@ -173,7 +178,11 @@ export function CommentInputTextArea(props: {
       )}
 
       {isSubmitting && (
-        <LoadingIndicator size={'md'} spinnerClassName="border-ink-500" />
+        <LoadingIndicator
+          size={'md'}
+          className={'px-4'}
+          spinnerClassName="border-ink-500"
+        />
       )}
     </TextEditor>
   )

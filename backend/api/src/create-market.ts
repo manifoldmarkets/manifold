@@ -46,7 +46,7 @@ import { contentSchema } from 'shared/zod-types'
 import { createNewContractFromPrivateGroupNotification } from 'shared/create-notification'
 import { addGroupToContract } from 'shared/update-group-contracts-internal'
 import { SupabaseClient } from 'common/supabase/utils'
-import { manifoldLoveUserId } from './create-match'
+import { manifoldLoveUserId } from './love/create-match'
 
 export const createmarket = authEndpoint(async (req, auth) => {
   return createMarketHelper(req.body, auth)

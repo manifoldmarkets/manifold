@@ -35,6 +35,7 @@ import Image from 'next/image'
 import { buildArray } from 'common/util/array'
 import { uniq } from 'lodash'
 import { PhotosModal } from 'love/components/photos-modal'
+import { LoverCommentSection } from 'love/components/lover-comment-section'
 
 export const getStaticProps = async (props: {
   params: {
@@ -340,6 +341,7 @@ export default function UserPage(props: {
           )
         )}
       </Col>
+      <LoverCommentSection onUser={user} />
     </LovePage>
   )
 }
