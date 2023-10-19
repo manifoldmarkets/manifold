@@ -164,8 +164,8 @@ export const PrivateChat = (props: { user: User; channelId: number }) => {
       <Col
         className={clsx(
           'gap-2 overflow-y-scroll py-2 ',
-          'max-h-[calc(100vh-14rem)] min-h-[calc(100vh-14rem)]',
-          'lg:max-h-[calc(100vh-12rem)] lg:min-h-[calc(100vh-12rem)]'
+          'max-h-[calc(100vh-216px)] min-h-[calc(100vh-216px)]',
+          'lg:max-h-[calc(100vh-184px)] lg:min-h-[calc(100vh-184px)]'
         )}
       >
         {realtimeMessages === undefined ? (
