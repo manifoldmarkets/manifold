@@ -11,11 +11,14 @@ import { getProbability } from 'common/calculate'
 import { formatPercent } from 'common/util/format'
 import { UserLink } from 'web/components/widgets/user-link'
 import { Button } from 'web/components/buttons/button'
+import { RejectButton } from './reject-button'
+import { useUser } from 'web/hooks/use-user'
 
 export const Matches = (props: { userId: string }) => {
   const { userId } = props
   const lovers = useLovers()
   const matches = useMatches(userId)
+  const user = useUser()
 
   if (!lovers || !matches) return <LoadingIndicator />
 
@@ -28,15 +31,17 @@ export const Matches = (props: { userId: string }) => {
   const potentialLovers = lovers.filter(
     (lover) => !matchesSet.has(lover.user_id)
   )
+  const currentMatches = matches.filter((c) => !c.isResolved)
+  const areYourMatches = userId === user?.id
 
   return (
     <Col className="bg-canvas-0 max-w-sm gap-4 rounded px-4 py-3">
-      {matches && matches.length > 0 && (
+      {currentMatches.length > 0 && (
         <Col className="gap-2">
           <div className="text-lg font-semibold">
             Chance of 6 month relationship
           </div>
-          {matches.map((contract) => {
+          {currentMatches.map((contract) => {
             const matchedLoverId =
               contract.loverUserId1 === userId
                 ? contract.loverUserId2
@@ -50,6 +55,7 @@ export const Matches = (props: { userId: string }) => {
                   key={contract.id}
                   contract={contract}
                   lover={matchedLover}
+                  isYourMatch={areYourMatches}
                 />
               )
             )
@@ -64,8 +70,12 @@ export const Matches = (props: { userId: string }) => {
   )
 }
 
-const MatchContract = (props: { contract: BinaryContract; lover: Lover }) => {
-  const { contract, lover } = props
+const MatchContract = (props: {
+  contract: BinaryContract
+  lover: Lover
+  isYourMatch: boolean
+}) => {
+  const { contract, lover, isYourMatch } = props
   const prob = getProbability(contract)
   const { user } = lover
   return (
@@ -80,6 +90,7 @@ const MatchContract = (props: { contract: BinaryContract; lover: Lover }) => {
         >
           View
         </Button>
+        {isYourMatch && <RejectButton lover={lover} />}
       </Row>
     </Row>
   )

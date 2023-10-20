@@ -10,6 +10,10 @@ export function updateLover(params: any) {
   return call(getApiUrl('update-lover'), 'POST', params)
 }
 
+export function rejectLover(params: { userId: string }) {
+  return call(getApiUrl('reject-lover'), 'POST', params)
+}
+
 export function createMatch(params: {
   userId1: string
   userId2: string
