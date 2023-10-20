@@ -148,6 +148,7 @@ export const ChoiceContractChart = (props: {
     })
 
     answers.forEach((a) => {
+      if (!pointsById[a.id]) pointsById[a.id] = []
       pointsById[a.id].push({
         x: end ?? now,
         y: getAnswerProbability(contract, a.id),
