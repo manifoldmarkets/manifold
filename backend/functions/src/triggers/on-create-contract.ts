@@ -11,7 +11,6 @@ import { completeCalculatedQuestFromTrigger } from 'shared/complete-quest-intern
 import { addContractToFeed } from 'shared/create-feed'
 import { createNewContractNotification } from 'shared/create-notification'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { isContractLikelyNonPredictive } from 'shared/supabase/contracts'
 import { addGroupToContract } from 'shared/update-group-contracts-internal'
 import { NON_PREDICTIVE_GROUP_ID } from 'common/supabase/groups'
 import { upsertGroupEmbedding } from 'shared/helpers/embeddings'
