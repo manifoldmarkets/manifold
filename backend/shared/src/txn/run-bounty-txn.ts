@@ -152,7 +152,8 @@ export async function runCancelBountyTxn(
   fbTransaction: admin.firestore.Transaction,
   txnData: Omit<BountyCanceledTxn, 'id' | 'createdTime'>,
   contractRef: admin.firestore.DocumentReference,
-  userRef: admin.firestore.DocumentReference
+  userRef: admin.firestore.DocumentReference,
+  contractCloseTime?: number
 ) {
   const { amount } = txnData
 
@@ -170,7 +171,7 @@ export async function runCancelBountyTxn(
   fbTransaction.update(contractRef, {
     bountyLeft: FieldValue.increment(-amount),
     bountyTxns: FieldValue.arrayUnion(newTxnDoc.id),
-    closeTime: Date.now(),
+    closeTime: contractCloseTime ?? Date.now(),
   })
 
   return { status: 'success', txn }

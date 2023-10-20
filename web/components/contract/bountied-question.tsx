@@ -258,11 +258,13 @@ export function CancelBountyButton(props: {
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   async function onCancel() {
+    setIsSubmitting(true)
     cancelBounty({
       contractId: contract.id,
     }).then((_result) => {
       console.log(contract)
     })
+    setIsSubmitting(false)
   }
 
   return (
