@@ -62,10 +62,7 @@ export const onCreateContract = functions
         // Wait 5 seconds, hopefully the embedding will be there by then
         await new Promise((resolve) => setTimeout(resolve, 5000))
       }
-      const likelyNonPredictive = await isContractLikelyNonPredictive(
-        contract,
-        pg
-      )
+      const likelyNonPredictive = false
       log('likelyNonPredictive:', likelyNonPredictive)
       if (likelyNonPredictive) {
         const added = await addGroupToContract(
