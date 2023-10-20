@@ -18,6 +18,7 @@ import { User } from 'common/user'
 import { Row } from 'web/components/layout/row'
 import { shortenedFromNow } from 'web/lib/util/shortenedFromNow'
 import { Row as SupabaseRow } from 'common/supabase/utils'
+import { UserIcon } from '@heroicons/react/solid'
 
 export default function ProfilesPage() {
   const allLovers = useLovers()
@@ -83,12 +84,18 @@ function ProfilePreview(props: {
         setShowPhotosModal(true)
       }}
     >
-      <Image
-        src={pinned_url ?? ''}
-        fill
-        alt={`${user.username}`}
-        className="h-full w-full object-cover"
-      />
+      {pinned_url ? (
+        <Image
+          src={pinned_url}
+          fill
+          alt={`${user.username}`}
+          className="h-full w-full object-cover"
+        />
+      ) : (
+        <Col className="h-full w-full items-center justify-center bg-gray-600">
+          <UserIcon className="h-20 w-20" />
+        </Col>
+      )}
       <Col className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/70 via-black/70 to-transparent px-4 pt-6">
         <Row>
           <div className="line-clamp-1 max-w-[calc(100%-2rem)] font-semibold">
