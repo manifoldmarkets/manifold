@@ -1,4 +1,5 @@
-import { BinaryContract } from 'common/contract'
+import Router from 'next/router'
+import { BinaryContract, contractPath } from 'common/contract'
 import { useLovers } from 'love/hooks/use-lovers'
 import { useMatches } from 'love/hooks/use-matches'
 import { Col } from 'web/components/layout/col'
@@ -9,6 +10,7 @@ import { Row } from 'web/components/layout/row'
 import { getProbability } from 'common/calculate'
 import { formatPercent } from 'common/util/format'
 import { UserLink } from 'web/components/widgets/user-link'
+import { Button } from 'web/components/buttons/button'
 
 export const Matches = (props: { userId: string }) => {
   const { userId } = props
@@ -69,7 +71,16 @@ const MatchContract = (props: { contract: BinaryContract; lover: Lover }) => {
   return (
     <Row className="justify-between">
       <UserLink name={user.name} username={user.username} />
-      <div className="font-semibold">{formatPercent(prob)}</div>
+      <Row className="items-center gap-2">
+        <div className="font-semibold">{formatPercent(prob)}</div>
+        <Button
+          size="xs"
+          color="indigo-outline"
+          onClick={() => Router.push(contractPath(contract))}
+        >
+          View
+        </Button>
+      </Row>
     </Row>
   )
 }
