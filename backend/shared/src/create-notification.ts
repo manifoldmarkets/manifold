@@ -54,7 +54,7 @@ import { Reaction } from 'common/reaction'
 import { GroupMember } from 'common/group-member'
 import { QuestType } from 'common/quest'
 import { QuestRewardTxn } from 'common/txn'
-import { getMoneyNumber } from 'common/util/format'
+import { formatMoney, getMoneyNumber } from 'common/util/format'
 import {
   createSupabaseClient,
   createSupabaseDirectClient,
@@ -559,12 +559,16 @@ export const createLimitBetCanceledNotification = async (
   fillAmount: number,
   contract: Contract
 ) => {
-  const privateUser = await getPrivateUser(toUserId)
-  if (!privateUser) return
-  const { sendToBrowser } = getNotificationDestinationsForUser(
-    privateUser,
-    'bet_fill'
-  )
+  const notifyContractFollowers = async () => {
+    await Promise.all(
+      Object.keys(contractFollowersIds).map((userId) => {
+        if (userId !== sourceContract.creatorId) {
+          sendNotificationsIfSettingsPermit(userId, 'poll_you_follow_closed')
+        }
+      })
+    )
+  }
+
   if (!sendToBrowser) return
 
   const remainingAmount =
@@ -1592,34 +1596,75 @@ export const createBountyAddedNotification = async (
 }
 
 export const createBountyCanceledNotification = async (
-  userId: string,
-  bountyContract: Contract,
-  txnId: string,
-  bountyAmount: number
+  contract: Contract,
+  amountLeft: number
 ) => {
-  const privateUser = await getPrivateUser(userId)
-  const sender = await getUser(txnId)
-  if (!privateUser || !sender) return
-  if (userOptedOutOfBrowserNotifications(privateUser)) return
-  const notification: Notification = {
-    id: crypto.randomUUID(),
-    userId: userId,
-    reason: 'bounty_added',
-    createdTime: Date.now(),
-    isSeen: false,
-    sourceId: txnId,
-    sourceType: 'user',
-    sourceUserName: sender.name,
-    sourceUserUsername: sender.username,
-    sourceUserAvatarUrl: sender.avatarUrl ?? '',
-    sourceContractCreatorUsername: bountyContract.creatorUsername,
-    sourceText: bountyAmount.toString(),
-    sourceContractTitle: bountyContract.question,
-    sourceContractSlug: bountyContract.slug,
-    sourceContractId: bountyContract.id,
-  }
   const pg = createSupabaseDirectClient()
-  await insertNotificationToSupabase(notification, pg)
+
+  const followerIds = await pg.manyOrNone<{ follow_id: string }>(
+    `select follow_id from contract_follows where contract_id = $1`,
+    [contract.id]
+  )
+  const contractFollowersIds = mapValues(
+    keyBy(followerIds, 'follow_id'),
+    () => true
+  )
+  const constructNotification = (
+    userId: string,
+    reason: notification_reason_types
+  ): Notification => {
+    return {
+      id: crypto.randomUUID(),
+      userId,
+      reason,
+      createdTime: Date.now(),
+      isSeen: false,
+      sourceId: contract.id,
+      sourceType: 'contract',
+      sourceUpdateType: 'canceled',
+      sourceContractId: contract.id,
+      sourceUserName: contract.creatorName,
+      sourceUserUsername: contract.creatorUsername,
+      sourceUserAvatarUrl: contract.creatorAvatarUrl ?? '',
+      sourceText: formatMoney(amountLeft),
+      sourceContractCreatorUsername: contract.creatorUsername,
+      sourceContractTitle: contract.question,
+      sourceContractSlug: contract.slug,
+      sourceSlug: contract.slug,
+      sourceTitle: contract.question,
+    }
+  }
+
+  const sendNotificationsIfSettingsPermit = async (
+    userId: string,
+    reason: notification_reason_types
+  ) => {
+    const privateUser = await getPrivateUser(userId)
+    if (!privateUser) return
+    const { sendToBrowser, sendToEmail, sendToMobile } =
+      getNotificationDestinationsForUser(privateUser, reason)
+
+    // Browser notifications
+    if (sendToBrowser) {
+      await insertNotificationToSupabase(
+        constructNotification(userId, reason),
+        pg
+      )
+    }
+  }
+
+  const notifyContractFollowers = async () => {
+    await Promise.all(
+      Object.keys(contractFollowersIds).map((userId) => {
+        if (userId !== contract.creatorId) {
+          sendNotificationsIfSettingsPermit(userId, 'bounty_canceled')
+        }
+      })
+    )
+  }
+
+  log('notifying followers')
+  await notifyContractFollowers()
 }
 
 export const createVotedOnPollNotification = async (
