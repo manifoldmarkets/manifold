@@ -22,7 +22,7 @@ import { getIsAdmin } from 'common/supabase/is-admin'
 import { pointsToBase64 } from 'common/util/og'
 import { SupabaseClient } from 'common/supabase/utils'
 import { buildArray } from 'common/util/array'
-import { groupBy, mapValues } from 'lodash'
+import { groupBy } from 'lodash'
 
 export async function getContractParams(
   contract: Contract,
