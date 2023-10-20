@@ -12,7 +12,6 @@ import { removeUndefinedProps } from 'common/util/object'
 import { BETTORS } from 'common/user'
 import { Button } from '../buttons/button'
 import { useUser } from 'web/hooks/use-user'
-import { getAnswerColor } from './answers-panel'
 import { DpmAnswer, Answer } from 'common/answer'
 import { getAnswerProbability } from 'common/calculate'
 import { useUserByIdOrAnswer } from 'web/hooks/use-user-supabase'
@@ -28,6 +27,7 @@ import {
 import { useAdmin } from 'web/hooks/use-admin'
 import { GradientContainer } from '../widgets/gradient-container'
 import { AmountInput } from '../widgets/amount-input'
+import { getAnswerColor } from '../charts/contract/choice'
 
 function getAnswerResolveButtonColor(
   resolveOption: string | undefined,
@@ -340,7 +340,7 @@ export function ResolutionAnswerItem(props: {
 
   const color = getAnswerColor(
     answer,
-    contract.answers.map((a) => a.text)
+    contract.answers.map((a) => a.id)
   )
 
   const addAnswersMode =
@@ -437,10 +437,7 @@ export const IndependentAnswersResolvePanel = (props: {
           key={answer.id}
           contract={contract}
           answer={answer}
-          color={getAnswerColor(
-            answer,
-            contract.answers.map((a) => a.text)
-          )}
+          color={getAnswerColor(answer, [])}
           isAdmin={isAdmin}
         />
       ))}
@@ -466,50 +463,50 @@ function IndependentResolutionAnswerItem(props: {
   const addAnswersMode = contract.addAnswersMode ?? 'DISABLED'
 
   return (
-    <AnswerBar
-      color={color}
-      prob={prob}
-      label={
-        isOther ? (
-          <span>
-            Other{' '}
-            <InfoTooltip
-              className="!text-ink-600"
-              text="Represents all answers not listed. New answers are split out of this answer."
+    <Col>
+      <AnswerBar
+        color={color}
+        prob={prob}
+        label={
+          isOther ? (
+            <span>
+              Other{' '}
+              <InfoTooltip
+                className="!text-ink-600"
+                text="Represents all answers not listed. New answers are split out of this answer."
+              />
+            </span>
+          ) : (
+            <AnswerLabel
+              text={answer.text}
+              index={'index' in answer ? answer.index : undefined}
+              createdTime={answer.createdTime}
+              creator={
+                addAnswersMode === 'ANYONE' ? answerCreator ?? false : undefined
+              }
+              className={clsx(
+                'items-center text-sm !leading-none sm:flex sm:text-base'
+              )}
             />
-          </span>
-        ) : (
-          <AnswerLabel
-            text={answer.text}
-            index={'index' in answer ? answer.index : undefined}
-            createdTime={answer.createdTime}
-            creator={
-              addAnswersMode === 'ANYONE' ? answerCreator ?? false : undefined
-            }
-            className={clsx(
-              'items-center text-sm !leading-none sm:flex sm:text-base'
-            )}
-          />
-        )
-      }
-      end={
-        <AnswerStatusAndBetButtons
-          contract={contract}
-          answer={answer}
-          userBets={[]}
-          noBetButtons
-        />
-      }
-      bottom={
-        !answer.resolution && (
-          <MiniResolutionPanel
+          )
+        }
+        end={
+          <AnswerStatusAndBetButtons
             contract={contract}
             answer={answer}
-            isAdmin={isAdmin}
-            isCreator={isCreator}
+            userBets={[]}
+            noBetButtons
           />
-        )
-      }
-    />
+        }
+      />
+      {!answer.resolution && (
+        <MiniResolutionPanel
+          contract={contract}
+          answer={answer}
+          isAdmin={isAdmin}
+          isCreator={isCreator}
+        />
+      )}
+    </Col>
   )
 }

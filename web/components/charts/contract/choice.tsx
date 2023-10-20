@@ -15,6 +15,8 @@ import {
 import { MultiValueHistoryChart } from '../generic-charts'
 import { HistoryPoint, viewScale } from 'common/chart'
 import { Row } from 'web/components/layout/row'
+import { pick } from 'lodash'
+import { buildArray } from 'common/util/array'
 
 const CHOICE_ANSWER_COLORS = [
   '#99DDFF', // sky
@@ -58,10 +60,22 @@ const CHOICE_ANSWER_COLORS = [
   '#DBD56E',
 ]
 
-// const CHOICE_OTHER_COLOR = '#B1B1C7'
+export const CHOICE_OTHER_COLOR = '#C2C3DB'
 
 export const nthColor = (index: number) =>
   CHOICE_ANSWER_COLORS[index % CHOICE_ANSWER_COLORS.length]
+
+export function getAnswerColor(
+  answer: Answer | DpmAnswer,
+  answerIdOrder: string[]
+) {
+  const index =
+    'index' in answer ? answer.index : answerIdOrder.indexOf(answer.text)
+
+  return 'isOther' in answer && answer.isOther
+    ? CHOICE_OTHER_COLOR
+    : nthColor(index)
+}
 
 const getAnswers = (contract: MultiContract) => {
   const { answers, outcomeType } = contract
@@ -97,6 +111,8 @@ export const ChoiceContractChart = (props: {
   viewScaleProps: viewScale
   controlledStart?: number
   showZoomer?: boolean
+  highlightAnswerId?: string
+  checkedAnswerIds?: string[]
 }) => {
   const {
     contract,
@@ -106,44 +122,53 @@ export const ChoiceContractChart = (props: {
     viewScaleProps,
     controlledStart,
     showZoomer,
+    highlightAnswerId,
+    checkedAnswerIds,
   } = props
 
   const [start, end] = getDateRange(contract)
   const rangeStart = controlledStart ?? start
   const answers = useChartAnswers(contract)
 
-  const endProbs = useMemo(
-    () => answers.map((a) => getAnswerProbability(contract, a.id)),
-    [answers, contract]
-  )
-
   const now = useMemo(() => Date.now(), [multiPoints])
 
   const data = useMemo(() => {
-    if (!answers.length) return []
+    if (!answers.length) return {}
 
     const firstAnswerTime = answers[0].createdTime
     const startAnswers = answers.filter(
       (a) => a.createdTime <= firstAnswerTime + 1000
     )
 
-    const startP = 1 / startAnswers.length
-
     const pointsById = cloneDeep(multiPoints)
-    mapKeys(pointsById, (points, answerId) => {
-      const y = startAnswers.some((a) => a.id === answerId) ? startP : 0
-      points.unshift({ x: start, y })
+
+    const startP = 1 / startAnswers.length
+    startAnswers.forEach((a) => {
+      pointsById[a.id].unshift({ x: start, y: startP })
     })
 
-    mapKeys(pointsById, (points, answerId) => {
-      points.push({
+    answers.forEach((a) => {
+      pointsById[a.id].push({
         x: end ?? now,
-        y: getAnswerProbability(contract, answerId),
+        y: getAnswerProbability(contract, a.id),
       })
     })
 
-    return answers.map((a) => pointsById[a.id] ?? [])
-  }, [answers.length, multiPoints, endProbs, start, end, now])
+    const entries = answers.map(
+      (a) =>
+        [
+          a.id,
+          {
+            points: pointsById[a.id],
+            color: getAnswerColor(
+              a,
+              answers.map((a) => a.text)
+            ),
+          },
+        ] as const
+    )
+    return Object.fromEntries(entries)
+  }, [answers.length, multiPoints, start, end, now])
 
   const rightestPointX = Math.max(
     ...Object.values(multiPoints).map((p) => last(p)?.x ?? 0)
@@ -161,7 +186,12 @@ export const ChoiceContractChart = (props: {
       viewScaleProps={viewScaleProps}
       showZoomer={showZoomer}
       yKind="percent"
-      data={data}
+      data={
+        checkedAnswerIds?.length
+          ? pick(data, buildArray(checkedAnswerIds, highlightAnswerId))
+          : data
+      }
+      hoveringId={highlightAnswerId}
       Tooltip={(props) => (
         <ChoiceTooltip answers={answers} xScale={xScale} ttProps={props} />
       )}
@@ -170,12 +200,12 @@ export const ChoiceContractChart = (props: {
 }
 
 const ChoiceTooltip = (props: {
-  ttProps: TooltipProps<HistoryPoint> & { i: number }
+  ttProps: TooltipProps<HistoryPoint> & { ans: string }
   xScale: any
   answers: (DpmAnswer | Answer)[]
 }) => {
   const { ttProps, xScale, answers } = props
-  const { prev, next, x, i } = ttProps
+  const { prev, next, x, ans } = ttProps
 
   if (!prev) return null
 
@@ -183,7 +213,7 @@ const ChoiceTooltip = (props: {
 
   const d = xScale.invert(x)
 
-  const answer = answers[i]?.text ?? 'Other'
+  const answer = answers.find((a) => a.id === ans)?.text ?? 'Other'
   const value = formatPct(prev.y)
 
   const dateLabel = !next ? 'Now' : formatDateInRange(d, start, end)
