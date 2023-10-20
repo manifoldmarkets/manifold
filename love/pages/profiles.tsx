@@ -86,7 +86,7 @@ function ProfilePreview(props: {
       <Image
         src={pinned_url ?? ''}
         fill
-        alt={`preview`}
+        alt={`${user.username}`}
         className="h-full w-full object-cover"
       />
       <Col className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/70 via-black/70 to-transparent px-4 pt-6">
