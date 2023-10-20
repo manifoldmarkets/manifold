@@ -2,8 +2,7 @@ import { BinaryContract } from 'common/contract'
 import { useLovers } from 'love/hooks/use-lovers'
 import { useMatches } from 'love/hooks/use-matches'
 import { Col } from 'web/components/layout/col'
-import { useUser } from 'web/hooks/use-user'
-import { AddYourselfAsMatchButton } from './match-buttons'
+import { AddAMatchButton } from './match-buttons'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { Lover } from 'love/hooks/use-lover'
 import { Row } from 'web/components/layout/row'
@@ -15,15 +14,17 @@ export const Matches = (props: { userId: string }) => {
   const { userId } = props
   const lovers = useLovers()
   const matches = useMatches(userId)
-  const currentUser = useUser()
 
   if (!lovers || !matches) return <LoadingIndicator />
 
-  const currentUserId = currentUser?.id
-  const youAreMatched = matches.find(
-    (contract) =>
-      contract.loverUserId1 === currentUserId ||
-      contract.loverUserId2 === currentUserId
+  const lover = lovers.find((lover) => lover.user_id === userId)
+
+  const matchesSet = new Set([
+    ...matches.map((contract) => contract.loverUserId1),
+    ...matches.map((contract) => contract.loverUserId2),
+  ])
+  const potentialLovers = lovers.filter(
+    (lover) => !matchesSet.has(lover.user_id)
   )
 
   return (
@@ -54,12 +55,8 @@ export const Matches = (props: { userId: string }) => {
         </Col>
       )}
 
-      {currentUser && currentUser.id !== userId && !youAreMatched && (
-        <AddYourselfAsMatchButton
-          className="self-start"
-          currentUserId={currentUser.id}
-          matchUserId={userId}
-        />
+      {lover && (
+        <AddAMatchButton lover={lover} potentialLovers={potentialLovers} />
       )}
     </Col>
   )
