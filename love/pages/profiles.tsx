@@ -25,10 +25,10 @@ export default function ProfilesPage() {
   const [selectedPhotos, setSelectedPhotos] = useState<string[]>()
 
   return (
-    <LovePage className={'p-2'} trackPageView={'user profiles'}>
+    <LovePage trackPageView={'user profiles'}>
       <Col className="items-center">
-        <Col className={'bg-canvas-0 w-full p-2'}>
-          <Title className="!mb-2 text-3xl">Lovers</Title>
+        <Col className={'bg-canvas-0 w-full px-6 py-4 rounded'}>
+          <Title className="!mb-2 text-3xl">Profiles</Title>
           <Filters allLovers={allLovers} setLovers={setLovers} />
 
           <Col className=" grid-cols-6 gap-4 overflow-x-scroll">

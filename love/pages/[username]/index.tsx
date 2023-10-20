@@ -29,13 +29,13 @@ import { LovePage } from 'love/components/love-page'
 import { Button } from 'web/components/buttons/button'
 import { useRouter } from 'next/router'
 import { PencilIcon } from '@heroicons/react/outline'
-import { AddYourselfAsMatchButton } from 'love/components/match-buttons'
 import { useState } from 'react'
 import Image from 'next/image'
 import { buildArray } from 'common/util/array'
 import { uniq } from 'lodash'
 import { PhotosModal } from 'love/components/photos-modal'
 import { LoverCommentSection } from 'love/components/lover-comment-section'
+import { Matches } from 'love/components/matches'
 
 export const getStaticProps = async (props: {
   params: {
@@ -125,7 +125,7 @@ export default function UserPage(props: {
               </Col>
               <StackedUserNames
                 usernameClassName={'sm:text-base'}
-                className={'font-bold sm:mr-0 sm:text-xl'}
+                className={'font-semibold sm:mr-0 sm:text-xl'}
                 user={user}
               />
             </Row>
@@ -216,7 +216,7 @@ export default function UserPage(props: {
                       <div
                         key={index}
                         className={clsx(
-                          'relative cursor-pointer rounded-md  p-2',
+                          'relative cursor-pointer rounded-md px-3 py-2',
                           'hover:border-teal-900'
                         )}
                         onClick={() => {
@@ -259,20 +259,16 @@ export default function UserPage(props: {
               </Row>
             )}
 
-            {currentUser && currentUser.id !== user.id && (
-              <AddYourselfAsMatchButton
-                className="self-start"
-                currentUserId={currentUser.id}
-                matchUserId={user.id}
-              />
-            )}
+            <Matches userId={user.id} />
+
             <LoverAttributes lover={lover} />
             {answers.length > 0 ? (
               <Col className={'mt-2 gap-2'}>
                 <Row className={'items-center gap-2'}>
-                  <span className={'text-xl font-bold'}>Answers</span>
+                  <span className={'text-xl font-semibold'}>Answers</span>
                   <Button
                     color={'gray-outline'}
+                    size="xs"
                     className={''}
                     onClick={() => router.push('love-questions')}
                   >
@@ -280,7 +276,7 @@ export default function UserPage(props: {
                     Edit
                   </Button>
                 </Row>
-                <Row className={'flex-wrap gap-4'}>
+                <Row className={'flex-wrap gap-3'}>
                   {answers
                     .filter(
                       (a) => a.multiple_choice ?? a.free_response ?? a.integer
@@ -304,9 +300,13 @@ export default function UserPage(props: {
                       return (
                         <Col
                           key={question.id}
-                          className={'bg-canvas-0 flex-grow rounded-md p-2'}
+                          className={
+                            'bg-canvas-0 flex-grow rounded-md px-3 py-2'
+                          }
                         >
-                          <Row className={'font-bold'}>{question.question}</Row>
+                          <Row className={'font-semibold'}>
+                            {question.question}
+                          </Row>
                           <Row>
                             {answer.free_response ??
                               optionKey ??
@@ -372,9 +372,9 @@ const LoverAttributes = (props: { lover: Lover }) => {
     wants_kids_strength: 'Desire for kids',
   }
 
-  const cardClassName = 'p-2 bg-canvas-0 h-20 w-40 gap-1 rounded-md'
+  const cardClassName = 'px-3 py-2 bg-canvas-0 w-40 gap-1 rounded-md'
   return (
-    <Row className={'flex-wrap gap-4'}>
+    <Row className={'flex-wrap gap-3'}>
       {Object.keys(loverPropsTitles).map((k) => {
         const key = k as keyof Omit<Lover, 'user'>
         if (!loverPropsTitles[key] || lover[key] === undefined) return null
@@ -389,14 +389,14 @@ const LoverAttributes = (props: { lover: Lover }) => {
 
         return (
           <Col key={key} className={cardClassName}>
-            <Row className={'font-bold'}>{loverPropsTitles[key]}</Row>
+            <Row className={'font-semibold'}>{loverPropsTitles[key]}</Row>
             <Row>{formattedValue}</Row>
           </Col>
         )
       })}
       {/* Special case for min and max age range */}
       <Col className={cardClassName}>
-        <Row className={'font-bold'}>Preferred Age Range</Row>
+        <Row className={'font-semibold'}>Preferred Age Range</Row>
         <Row>{`${lover.pref_age_min} - ${lover.pref_age_max}`}</Row>
       </Col>
     </Row>

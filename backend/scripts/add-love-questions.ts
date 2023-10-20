@@ -6,7 +6,7 @@ if (require.main === module) {
       `Your parents’ opinion of your partner matters to you.`,
       'You are willing to meet someone from Manifold.love in person.',
       `You are happy you with your life.`,
-      'It is important to you is it that people be on time.',
+      'It is important to you that people be on time.',
       'You enjoy going to art museums.',
       'You are extroverted.',
       'You are a morning person.',

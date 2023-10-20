@@ -16,8 +16,8 @@ export const LoverCommentSection = (props: { onUser: User }) => {
   const currentUser = useUser()
   const commentsByParent = groupBy(comments, (c) => c.replyToCommentId ?? '_')
   return (
-    <Col className={'bg-canvas-0 mt-4 rounded-md p-2'}>
-      <Title>Comments</Title>
+    <Col className={'bg-canvas-0 mt-4 rounded-md px-3 py-2'}>
+      <Title className="!text-ink-1000">Comments</Title>
       {currentUser && (
         <LoverCommentInput
           className="mb-4 mr-px mt-px"

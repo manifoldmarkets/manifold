@@ -145,7 +145,7 @@ const getDesktopNav = (loggedIn: boolean, openDownloadApp: () => void) => {
   if (loggedIn)
     return buildArray(
       { name: 'Home', href: '/home', icon: HomeIcon },
-      { name: 'Browse', href: '/profiles', icon: SearchIcon },
+      { name: 'Profiles', href: '/profiles', icon: SearchIcon },
       {
         name: 'Notifications',
         href: `/notifications`,
