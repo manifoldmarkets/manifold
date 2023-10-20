@@ -53,12 +53,32 @@ export const createMatch = authEndpoint(async (req, auth) => {
   if (!lover2) {
     throw new APIError(400, `User ${userId2} does not have a love profile.`)
   }
-  const privateUser = await getPrivateUser(userId2)
-  if (!privateUser) {
+
+  const [privateUser1, privateUser2] = await Promise.all([
+    getPrivateUser(userId1),
+    getPrivateUser(userId2),
+  ])
+
+  if (!privateUser1) {
+    throw new APIError(400, `Private user ${userId1} not found.`)
+  }
+  if (privateUser1.blockedUserIds?.includes(userId2)) {
+    throw new APIError(400, `User ${userId2} is blocked by ${userId1}.`)
+  }
+  if (!privateUser2) {
     throw new APIError(400, `Private user ${userId2} not found.`)
   }
-  if (privateUser.blockedUserIds?.includes(userId1)) {
+  if (privateUser2.blockedUserIds?.includes(userId1)) {
     throw new APIError(400, `User ${userId1} is blocked by ${userId2}.`)
+  }
+  if (
+    privateUser1.blockedUserIds?.includes(auth.uid) ||
+    privateUser2.blockedUserIds?.includes(auth.uid)
+  ) {
+    throw new APIError(
+      400,
+      `User ${auth.uid} is blocked by ${userId1} or ${userId2}.`
+    )
   }
 
   const pg = createSupabaseDirectClient()
@@ -108,13 +128,24 @@ export const createMatch = authEndpoint(async (req, auth) => {
     matchCreator.id,
     true
   )
-  await createNewMatchNotification(
-    user2,
-    matchCreator,
-    `Check out @${user1.username}`,
-    contract,
-    pg
-  )
+  if (matchCreator.id !== user1.id) {
+    await createNewMatchNotification(
+      user1,
+      matchCreator,
+      `Check out @${user2.username}`,
+      contract,
+      pg
+    )
+  }
+  if (matchCreator.id !== user2.id) {
+    await createNewMatchNotification(
+      user2,
+      matchCreator,
+      `Check out @${user1.username}`,
+      contract,
+      pg
+    )
+  }
 
   return {
     success: true,
