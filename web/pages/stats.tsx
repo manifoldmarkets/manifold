@@ -14,7 +14,10 @@ import { getIsNative } from 'web/lib/native/is-native'
 import { SEO } from 'web/components/SEO'
 
 export const getStaticProps = async () => {
-  const stats = await getStats()
+  const stats = await getStats().catch((e) => {
+    console.error('Failed to get stats', e)
+    return ({})
+  })
   return {
     props: stats,
     revalidate: 60 * 60, // One hour
