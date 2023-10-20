@@ -58,7 +58,6 @@ import { joingroup } from './join-group'
 import { editcomment } from 'api/edit-comment'
 import { supabasesearchgroups } from './supabase-search-groups'
 import { leagueActivity } from './league-activity'
-import { lootbox } from './loot-box'
 import { updatepost } from './update-post'
 import { updategroup } from './update-group'
 import { updateUserDisinterestEmbedding } from 'api/update-user-disinterests'
@@ -139,7 +138,6 @@ app.get('/health', ...apiRoute(health))
 app.get('/getcurrentuser', ...apiRoute(getcurrentuser))
 app.get('/unsubscribe', ...apiRoute(unsubscribe))
 
-app.post('/lootbox', ...apiRoute(lootbox))
 app.post('/transact', ...apiRoute(transact))
 app.post('/changeuserinfo', ...apiRoute(changeuserinfo))
 app.post('/createuser', ...apiRoute(createuser))

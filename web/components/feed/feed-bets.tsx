@@ -22,7 +22,6 @@ import { ReplyIcon } from '@heroicons/react/solid'
 import { track } from 'web/lib/service/analytics'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { InfoTooltip } from '../widgets/info-tooltip'
-import Link from 'next/link'
 
 export const FeedBet = memo(function FeedBet(props: {
   contract: Contract
@@ -141,11 +140,6 @@ export function BetStatusText(props: {
             : `from ${fromProb} to ${toProb}`}
         </>
       )}{' '}
-      {isChallenge && (
-        <InfoTooltip text="Loot box purchase">
-          <Link href="/lootbox">🎁</Link>
-        </InfoTooltip>
-      )}
       {isApi && <InfoTooltip text="Placed via the API">🤖</InfoTooltip>}
       {!inTimeline && <RelativeTimestamp time={createdTime} shortened={true} />}
     </div>

@@ -42,6 +42,7 @@ import { convertAnswer } from 'common/supabase/contracts'
 import { compareTwoStrings } from 'string-similarity'
 import dayjs from 'dayjs'
 import { useBoosts } from 'web/hooks/use-boosts'
+import { useIsAuthorized } from 'web/hooks/use-user'
 
 export const DEBUG_FEED_CARDS =
   typeof window != 'undefined' &&
@@ -144,6 +145,7 @@ export const useFeedTimeline = (
   privateUser: PrivateUser,
   key: string
 ) => {
+  const isAuthed = useIsAuthorized()
   const boosts = useBoosts(privateUser, key)
   const followedIds = useFollowedIdsSupabase(privateUser.id)
   if (DEBUG_FEED_CARDS)
@@ -369,9 +371,9 @@ export const useFeedTimeline = (
   })
 
   useEffect(() => {
-    if (savedFeedItems?.length || !userId) return
+    if (savedFeedItems?.length || !userId || !isAuthed) return
     tryToLoadManyCardsAtStart()
-  }, [userId])
+  }, [userId, isAuthed])
 
   return {
     loadMoreOlder: async (allowSeen: boolean) =>

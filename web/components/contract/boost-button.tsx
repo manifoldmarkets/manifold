@@ -195,15 +195,6 @@ function FeedAnalytics(props: { contractId: string }) {
         .eq('contract_id', contractId)
   )
 
-  const clickQuery = useQuery(
-    async () =>
-      await db
-        .from('user_events')
-        .select('*', { count: 'exact' })
-        .eq('name', 'click market card feed')
-        .eq('contract_id', contractId)
-  )
-
   const redeemQuery = useQuery(
     async () =>
       await db
@@ -213,12 +204,7 @@ function FeedAnalytics(props: { contractId: string }) {
         .eq('data->>fromId', adQuery.data?.data?.[0]?.id)
   )
 
-  if (
-    adQuery.error ||
-    viewQuery.error ||
-    clickQuery.error ||
-    redeemQuery.error
-  ) {
+  if (adQuery.error || viewQuery.error || redeemQuery.error) {
     return (
       <div className="bg-scarlet-100 mb-2 rounded-md p-4">
         Error loading analytics
@@ -235,18 +221,12 @@ function FeedAnalytics(props: { contractId: string }) {
     (v) => (v.data as ContractCardView).isPromoted
   )
 
-  const clickData = clickQuery.data
-  const promotedClickData = clickData?.data?.filter(
-    (v) => (v.data as any).isPromoted
-  )
-
   return (
     <div className="mt-4">
       <div className="mb-2 text-lg">
         Feed Analytics
         {(adQuery.isLoading ||
           viewQuery.isLoading ||
-          clickQuery.isLoading ||
           redeemQuery.isLoading) && (
           <LoadingIndicator size="sm" className="ml-4 !inline-flex" />
         )}
@@ -282,13 +262,6 @@ function FeedAnalytics(props: { contractId: string }) {
         )}
         {isBoosted && (
           <TableItem label="Boost clicks" value={redeemQuery.data?.count} />
-        )}
-        <TableItem label="Clickthroughs" value={clickData?.count} />
-        {isBoosted && (
-          <TableItem
-            label="Boost clickthroughs"
-            value={promotedClickData?.length}
-          />
         )}
       </Table>
     </div>
