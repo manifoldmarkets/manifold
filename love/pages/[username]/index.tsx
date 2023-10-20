@@ -15,7 +15,6 @@ import { Col } from 'web/components/layout/col'
 import ImageWithBlurredShadow from 'web/components/widgets/image-with-blurred-shadow'
 import { Avatar } from 'web/components/widgets/avatar'
 import { StackedUserNames } from 'web/components/widgets/user-link'
-import { DailyLeagueStat } from 'web/components/daily-league-stat'
 import { QuestsOrStreak } from 'web/components/quests-or-streak'
 import { SendMessageButton } from 'web/components/messaging/send-message-button'
 import { FollowButton } from 'web/components/buttons/follow-button'
@@ -141,7 +140,6 @@ export default function UserPage(props: {
                     Edit
                   </Button>
                 )}
-                <DailyLeagueStat user={user} />
                 <QuestsOrStreak user={user} />
               </Row>
             ) : isMobile ? (

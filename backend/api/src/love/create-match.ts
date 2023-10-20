@@ -104,6 +104,7 @@ export const createMatch = authEndpoint(async (req, auth) => {
       outcomeType: 'BINARY',
       groupIds: [manifoldLoveRelationshipsGroupId],
       visibility: 'public',
+      closeTime: new Date('2100-01-01'),
       initialProb: 15,
       loverUserId1: userId1,
       loverUserId2: userId2,
