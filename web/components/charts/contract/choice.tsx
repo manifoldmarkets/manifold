@@ -143,9 +143,9 @@ export const ChoiceContractChart = (props: {
     const pointsById = cloneDeep(multiPoints)
 
     const startP = 1 / startAnswers.length
-    startAnswers.forEach((a) => {
-      pointsById[a.id].unshift({ x: start, y: startP })
-    })
+    startAnswers.forEach((a) =>
+      (pointsById[a.id] ?? []).unshift({ x: start, y: startP })
+    )
 
     answers.forEach((a) => {
       if (!pointsById[a.id]) pointsById[a.id] = []
