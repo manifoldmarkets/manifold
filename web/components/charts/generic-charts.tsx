@@ -7,7 +7,7 @@ import {
   curveStepAfter,
   curveStepBefore,
 } from 'd3-shape'
-import { maxBy, minBy, range, mapValues, last } from 'lodash'
+import { range, mapValues, last } from 'lodash'
 import { ReactNode, useCallback, useId, useMemo, useState } from 'react'
 
 import {
@@ -32,7 +32,6 @@ import {
   useViewScale,
 } from './helpers'
 import { roundToNearestFive } from 'web/lib/util/roundToNearestFive'
-import { nthColor } from './contract/choice'
 import { ZoomSlider } from './zoom-slider'
 import clsx from 'clsx'
 

@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { cloneDeep, groupBy, last, mapKeys, mapValues, sortBy } from 'lodash'
+import { cloneDeep, groupBy, last, mapValues, sortBy } from 'lodash'
 import { scaleTime, scaleLinear } from 'd3-scale'
 import { Bet } from 'common/bet'
 import { Answer, DpmAnswer } from 'common/answer'

@@ -29,7 +29,6 @@ import {
 } from './answer-components'
 import { floatingEqual } from 'common/util/math'
 import { InfoTooltip } from '../widgets/info-tooltip'
-import { ChartPieIcon } from '@heroicons/react/solid'
 
 export function AnswersPanel(props: {
   contract: MultiContract
