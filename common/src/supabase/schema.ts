@@ -1405,6 +1405,24 @@ export interface Database {
         }
         Relationships: []
       }
+      private_users: {
+        Row: {
+          data: Json
+          fs_updated_time: string
+          id: string
+        }
+        Insert: {
+          data: Json
+          fs_updated_time: string
+          id: string
+        }
+        Update: {
+          data?: Json
+          fs_updated_time?: string
+          id?: string
+        }
+        Relationships: []
+      }
       q_and_a: {
         Row: {
           bounty: number
