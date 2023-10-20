@@ -33,13 +33,8 @@ import { VisibilityIcon } from 'web/components/contract/contracts-table'
 import { getTopContractMetrics } from 'common/supabase/contract-metrics'
 import ContractSharePanel from 'web/components/contract/contract-share-panel'
 import { HeaderActions } from 'web/components/contract/header-actions'
-import {
-  RelatedContractsCarousel,
-  RelatedContractsList,
-} from 'web/components/contract/related-contracts-widget'
 import { EditableQuestionTitle } from 'web/components/contract/title-edit'
 import { Col } from 'web/components/layout/col'
-import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
 import { Spacer } from 'web/components/layout/spacer'
 import { NumericResolutionPanel } from 'web/components/numeric-resolution-panel'
@@ -51,14 +46,12 @@ import { useAdmin } from 'web/hooks/use-admin'
 import { useAnswersCpmm } from 'web/hooks/use-answers'
 import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
 import { useIsIframe } from 'web/hooks/use-is-iframe'
-import { useRelatedMarkets } from 'web/hooks/use-related-contracts'
 import { useSaveCampaign } from 'web/hooks/use-save-campaign'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { useSaveContractVisitsLocally } from 'web/hooks/use-save-visits'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { useTracking } from 'web/hooks/use-tracking'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
-import { track } from 'web/lib/service/analytics'
 import { db } from 'web/lib/supabase/db'
 import { scrollIntoViewCentered } from 'web/lib/util/scroll'
 import Custom404 from '../404'
@@ -81,6 +74,7 @@ import {
 } from 'common/util/format'
 import { TbDroplet } from 'react-icons/tb'
 import { getContractParams } from 'common/contract-params'
+import { LovePage } from 'love/components/love-page'
 export async function getStaticProps(ctx: {
   params: { username: string; contractSlug: string }
 }) {
@@ -125,9 +119,9 @@ export default function ContractPage(props: MaybeAuthedContractParams) {
   }
 
   return (
-    <Page trackPageView={false} className="xl:col-span-10">
+    <LovePage trackPageView={false} className="xl:col-span-10">
       <NonPrivateContractPage contractParams={props.params} />
-    </Page>
+    </LovePage>
   )
 }
 
@@ -154,13 +148,8 @@ function NonPrivateContractPage(props: { contractParams: ContractParams }) {
 }
 
 export function ContractPageContent(props: ContractParams) {
-  const {
-    userPositionsByOutcome,
-    comments,
-    totalPositions,
-    relatedContracts,
-    historyData,
-  } = props
+  const { userPositionsByOutcome, comments, totalPositions, historyData } =
+    props
 
   const contract =
     useFirebasePublicContract(props.contract.visibility, props.contract.id) ??
@@ -288,11 +277,6 @@ export function ContractPageContent(props: ContractParams) {
       }
     }
   }, [replyTo])
-
-  const { contracts: relatedMarkets, loadMore } = useRelatedMarkets(
-    contract,
-    relatedContracts
-  )
 
   // detect whether header is stuck by observing if title is visible
   const { ref: titleRef, headerStuck } = useHeaderIsStuck()
@@ -535,16 +519,6 @@ export function ContractPageContent(props: ContractParams) {
                 contract={contract}
               />
             )}
-            {contract.outcomeType !== 'BOUNTIED_QUESTION' && (
-              <RelatedContractsCarousel
-                className="-ml-4 mb-2 mt-4 xl:hidden"
-                contracts={relatedMarkets}
-                onContractClick={(c) =>
-                  track('click related market', { contractId: c.id })
-                }
-                loadMore={loadMore}
-              />
-            )}
             {isResolved && resolution !== 'CANCEL' && (
               <>
                 <ContractLeaderboard
@@ -574,28 +548,11 @@ export function ContractPageContent(props: ContractParams) {
                 setActiveIndex={setActiveTabIndex}
               />
             </div>
-            {contract.outcomeType === 'BOUNTIED_QUESTION' && (
-              <RelatedContractsCarousel
-                className="-ml-4 mb-2 mt-4 xl:hidden"
-                contracts={relatedMarkets}
-                onContractClick={(c) =>
-                  track('click related market', { contractId: c.id })
-                }
-                loadMore={loadMore}
-              />
-            )}
           </Col>
         </Col>
         <Col className="hidden min-h-full max-w-[375px] xl:flex">
           {showExplainerPanel && <ExplainerPanel />}
-
-          <RelatedContractsList
-            contracts={relatedMarkets}
-            onContractClick={(c) =>
-              track('click related market', { contractId: c.id })
-            }
-            loadMore={loadMore}
-          />
+          <div className="w-[300px]" />
         </Col>
       </Row>
 
