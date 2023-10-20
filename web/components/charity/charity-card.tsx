@@ -1,20 +1,16 @@
 import { StarIcon } from '@heroicons/react/solid'
-import { sumBy } from 'lodash'
 import Link from 'next/link'
 import Image from 'next/legacy/image'
 import { Charity } from 'common/charity'
-import { useCharityTxns } from 'web/hooks/use-charity-txns'
 import { formatMoneyUSD } from 'common/util/format'
 import { Row } from '../layout/row'
 import { Col } from '../layout/col'
 import { Card } from '../widgets/card'
 
-export function CharityCard(props: { charity: Charity }) {
-  const { charity } = props
-  const { slug, photo, preview, id, tags } = charity
-
-  const txns = useCharityTxns(id)
-  const raised = sumBy(txns, (txn) => txn.amount)
+export function CharityCard(props: { charity: Charity, raised: number }) {
+  const { charity, raised } = props
+  const { slug, photo, preview, tags } = charity
+  const raisedUSD = Math.floor(raised / 100);
 
   return (
     <Link href={`/charity/${slug}`} className="flex-1">
@@ -31,12 +27,12 @@ export function CharityCard(props: { charity: Charity }) {
         </div>
         <Col className="p-8">
           <div className="line-clamp-4 text-sm">{preview}</div>
-          {raised > 0 && (
+          {raisedUSD > 0 && (
             <>
               <Row className="text-ink-900 mt-4 flex-1 items-end justify-center gap-6">
                 <Row className="items-baseline gap-1">
                   <span className="text-3xl font-semibold">
-                    {formatMoneyUSD(raised / 100)}
+                    {formatMoneyUSD(raisedUSD)}
                   </span>
                   raised
                 </Row>
