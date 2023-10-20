@@ -70,7 +70,7 @@ export default function LandingPage(props: {
                   size="xs"
                   className="hidden whitespace-nowrap lg:flex"
                 >
-                  Questions
+                  Markets
                 </Button>
               </Link>
               <Button
