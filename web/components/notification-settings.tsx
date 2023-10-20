@@ -133,6 +133,7 @@ const updates: SectionData = {
     'resolutions_on_watched_markets_with_shares_in',
     'all_votes_on_watched_markets',
     'poll_close_on_watched_markets',
+    'bounty_canceled',
   ],
 }
 const yourMarkets: SectionData = {

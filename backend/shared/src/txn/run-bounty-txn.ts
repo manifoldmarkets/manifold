@@ -171,7 +171,10 @@ export async function runCancelBountyTxn(
   fbTransaction.update(contractRef, {
     bountyLeft: FieldValue.increment(-amount),
     bountyTxns: FieldValue.arrayUnion(newTxnDoc.id),
-    closeTime: contractCloseTime ?? Date.now(),
+    closeTime:
+      !contractCloseTime || contractCloseTime > Date.now()
+        ? Date.now()
+        : contractCloseTime,
   })
 
   return { status: 'success', txn }

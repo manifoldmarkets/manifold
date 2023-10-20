@@ -284,6 +284,10 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
     simple: 'Bounties added to your question',
     detailed: 'When another user adds a bounty to your question',
   },
+  bounty_canceled: {
+    simple: 'A bounty you follow is canceled',
+    detailed: 'When the creator of a bounty cancels it',
+  },
   all_votes_on_watched_markets: {
     simple: 'Votes on polls you follow',
     detailed: 'When a user votes on a poll you follow',

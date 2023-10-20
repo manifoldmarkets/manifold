@@ -559,16 +559,12 @@ export const createLimitBetCanceledNotification = async (
   fillAmount: number,
   contract: Contract
 ) => {
-  const notifyContractFollowers = async () => {
-    await Promise.all(
-      Object.keys(contractFollowersIds).map((userId) => {
-        if (userId !== sourceContract.creatorId) {
-          sendNotificationsIfSettingsPermit(userId, 'poll_you_follow_closed')
-        }
-      })
-    )
-  }
-
+  const privateUser = await getPrivateUser(toUserId)
+  if (!privateUser) return
+  const { sendToBrowser } = getNotificationDestinationsForUser(
+    privateUser,
+    'bet_fill'
+  )
   if (!sendToBrowser) return
 
   const remainingAmount =
@@ -1595,6 +1591,7 @@ export const createBountyAddedNotification = async (
   await insertNotificationToSupabase(notification, pg)
 }
 
+// TODO: clean up look of this
 export const createBountyCanceledNotification = async (
   contract: Contract,
   amountLeft: number
@@ -1611,7 +1608,7 @@ export const createBountyCanceledNotification = async (
   )
   const constructNotification = (
     userId: string,
-    reason: notification_reason_types
+    reason: notification_preference
   ): Notification => {
     return {
       id: crypto.randomUUID(),
@@ -1621,7 +1618,6 @@ export const createBountyCanceledNotification = async (
       isSeen: false,
       sourceId: contract.id,
       sourceType: 'contract',
-      sourceUpdateType: 'canceled',
       sourceContractId: contract.id,
       sourceUserName: contract.creatorName,
       sourceUserUsername: contract.creatorUsername,
@@ -1641,13 +1637,15 @@ export const createBountyCanceledNotification = async (
   ) => {
     const privateUser = await getPrivateUser(userId)
     if (!privateUser) return
-    const { sendToBrowser, sendToEmail, sendToMobile } =
-      getNotificationDestinationsForUser(privateUser, reason)
+    const { sendToBrowser } = getNotificationDestinationsForUser(
+      privateUser,
+      reason
+    )
 
     // Browser notifications
     if (sendToBrowser) {
       await insertNotificationToSupabase(
-        constructNotification(userId, reason),
+        constructNotification(userId, 'bounty_canceled'),
         pg
       )
     }
