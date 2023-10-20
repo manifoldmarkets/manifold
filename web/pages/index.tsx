@@ -23,17 +23,15 @@ import { CPMMBinaryContract, Contract } from 'common/contract'
 import { db } from 'web/lib/supabase/db'
 import { DEEMPHASIZED_GROUP_SLUGS } from 'common/envs/constants'
 
+const excluded = [...DEEMPHASIZED_GROUP_SLUGS, 'manifold-6748e065087e']
+
 export const getServerSideProps = redirectIfLoggedIn('/home', async (_) => {
   const { data } = await db.from('trending_contracts').select('data').limit(20)
   const contracts = (data ?? []).map((d) => d.data) as Contract[]
   const trendingContracts = contracts
     .filter(
-      (c) =>
-        !c.groupSlugs?.some((slug) =>
-          DEEMPHASIZED_GROUP_SLUGS.includes(slug as any)
-        )
+      (c) => !c.groupSlugs?.some((slug) => excluded.includes(slug as any))
     )
-    .filter((c) => c.coverImageUrl)
     .filter((c) => c.outcomeType !== 'STONK')
     .slice(0, 7)
   return {
