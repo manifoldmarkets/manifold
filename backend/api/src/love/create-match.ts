@@ -19,8 +19,10 @@ import { createPushNotification } from 'shared/create-push-notification'
 const createMatchSchema = z.object({
   userId1: z.string(),
   userId2: z.string(),
-  betAmount: z.number().min(10),
+  betAmount: z.number().min(20),
 })
+
+const MATCH_CREATION_FEE = 10
 
 export const createMatch = authEndpoint(async (req, auth) => {
   const { userId1, userId2, betAmount } = validate(createMatchSchema, req.body)
@@ -98,7 +100,7 @@ export const createMatch = authEndpoint(async (req, auth) => {
     {
       question: `Will @${user1.username} and @${user2.username} date for six months?`,
       descriptionMarkdown: ``,
-      extraLiquidity: 1950,
+      extraLiquidity: 950,
       outcomeType: 'BINARY',
       groupIds: [manifoldLoveRelationshipsGroupId],
       visibility: 'public',
@@ -112,7 +114,7 @@ export const createMatch = authEndpoint(async (req, auth) => {
   await placeBetMain(
     {
       contractId: contract.id,
-      amount: 21000,
+      amount: 10000,
       outcome: 'NO',
     },
     manifoldLoveUserId,
@@ -122,7 +124,7 @@ export const createMatch = authEndpoint(async (req, auth) => {
   await placeBetMain(
     {
       contractId: contract.id,
-      amount: betAmount,
+      amount: betAmount - MATCH_CREATION_FEE,
       outcome: 'YES',
     },
     matchCreator.id,

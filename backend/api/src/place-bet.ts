@@ -232,6 +232,13 @@ export const placeBetMain = async (
       throw new APIError(403, 'Trade too large for current liquidity pool.')
     }
 
+    if (contract.loverUserId1 && newPool && newP) {
+      const prob = getCpmmProbability(newPool, newP)
+      if (prob < 0.01) {
+        throw new APIError(403, 'Cannot bet lower than 1% probability in relationship markets.')
+      }
+    }
+
     const betDoc = contractDoc.collection('bets').doc()
 
     trans.create(betDoc, {
