@@ -137,24 +137,6 @@ export function CustomAnalytics(props: Stats) {
           },
         ]}
       />
-      {/* We'd like to embed these in a separate tab, but unfortunately Umami doesn't seem to support iframe embeds atm */}
-      <InfoBox title="" className="bg-ink-100 mt-4">
-        <span>
-          For pageview and visitor stats, see{' '}
-          {isNative ? (
-            <a
-              href={
-                'https://analytics.umami.is/share/ARwUIC9GWLNyowjq/Manifold%20Markets'
-              }
-              className={'text-primary-700'}
-            >
-              our umami page
-            </a>
-          ) : (
-            <Linkify text={'https://manifold.markets/umami'} />
-          )}
-        </span>
-      </InfoBox>
 
       <Spacer h={8} />
 
