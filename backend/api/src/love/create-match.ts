@@ -78,7 +78,7 @@ export const createMatch = authEndpoint(async (req, auth) => {
     {
       question: `Will @${user1.username} and @${user2.username} date for six months?`,
       descriptionMarkdown: ``,
-      // closeTime: undefined,
+      extraLiquidity: 1950,
       outcomeType: 'BINARY',
       groupIds: [manifoldLoveRelationshipsGroupId],
       visibility: 'public',
@@ -92,7 +92,7 @@ export const createMatch = authEndpoint(async (req, auth) => {
   await placeBetMain(
     {
       contractId: contract.id,
-      amount: 500,
+      amount: 21000,
       outcome: 'NO',
     },
     manifoldLoveUserId,

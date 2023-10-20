@@ -20,7 +20,6 @@ import { randomString } from './util/random'
 import { PollOption } from './poll-option'
 import { Answer } from './answer'
 import { getMultiCpmmLiquidity } from './calculate-cpmm'
-import { ANSWER_COST } from './economy'
 
 export const NEW_MARKET_IMPORTANCE_SCORE = 0.25
 
@@ -224,8 +223,8 @@ function createAnswers(
   const ids = answers.map(() => randomString())
 
   let prob = 0.5
-  let poolYes = ANSWER_COST
-  let poolNo = ANSWER_COST
+  let poolYes = ante / answers.length
+  let poolNo = ante / answers.length
 
   if (shouldAnswersSumToOne && answers.length > 1) {
     const n = answers.length
