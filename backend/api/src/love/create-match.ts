@@ -129,22 +129,10 @@ export const createMatch = authEndpoint(async (req, auth) => {
     true
   )
   if (matchCreator.id !== user1.id) {
-    await createNewMatchNotification(
-      user1,
-      matchCreator,
-      `Check out @${user2.username}`,
-      contract,
-      pg
-    )
+    await createNewMatchNotification(user1, matchCreator, user2, contract, pg)
   }
   if (matchCreator.id !== user2.id) {
-    await createNewMatchNotification(
-      user2,
-      matchCreator,
-      `Check out @${user1.username}`,
-      contract,
-      pg
-    )
+    await createNewMatchNotification(user2, matchCreator, user1, contract, pg)
   }
 
   return {
@@ -162,7 +150,7 @@ const manifoldLoveRelationshipsGroupId = isProd()
 const createNewMatchNotification = async (
   forUser: User,
   creator: User,
-  sourceText: string,
+  matchedUser: User,
   contract: Contract,
   pg: SupabaseDirectClient
 ) => {
@@ -172,6 +160,7 @@ const createNewMatchNotification = async (
   const reason = 'tagged_user' // not really true, but it's pretty close
   const { sendToBrowser, sendToMobile, notificationPreference } =
     getNotificationDestinationsForUser(privateUser, reason)
+  const sourceText = `Check out @${matchedUser.username} now!`
   const notification: Notification = {
     id,
     userId: privateUser.id,
@@ -184,11 +173,17 @@ const createNewMatchNotification = async (
     sourceUserName: creator.name,
     sourceUserUsername: creator.username,
     sourceUserAvatarUrl: creator.avatarUrl,
-    sourceText: sourceText,
+    sourceText,
     sourceContractSlug: contract.slug,
     sourceContractId: contract.id,
     sourceContractTitle: contract.question,
     sourceContractCreatorUsername: contract.creatorUsername,
+    data: {
+      matchUserId: matchedUser.id,
+      matchUserUsername: matchedUser.username,
+      matchUserAvatarUrl: matchedUser.avatarUrl,
+      matchUserName: matchedUser.name,
+    },
   }
   if (sendToBrowser) {
     await insertNotificationToSupabase(notification, pg)

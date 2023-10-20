@@ -53,8 +53,12 @@ export function NewMatchNotification(props: {
   isChildOfGroup?: boolean
 }) {
   const { notification, isChildOfGroup, highlighted, setHighlighted } = props
-  const { sourceContractTitle, sourceUserName, sourceUserUsername } =
-    notification
+  const {
+    sourceContractTitle,
+    sourceText,
+    sourceUserName,
+    sourceUserUsername,
+  } = notification
   return (
     <NotificationFrame
       notification={notification}
@@ -65,6 +69,11 @@ export function NewMatchNotification(props: {
         <AvatarNotificationIcon notification={notification} symbol={'🌟'} />
       }
       link={getSourceUrl(notification)}
+      subtitle={
+        <div className="line-clamp-2">
+          <Linkify text={sourceText} />
+        </div>
+      }
     >
       <div className="line-clamp-3">
         <UserLink
