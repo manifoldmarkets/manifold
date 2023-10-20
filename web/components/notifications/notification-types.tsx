@@ -59,7 +59,10 @@ import {
 } from 'common/user'
 import { SEARCH_TYPE_KEY } from 'web/components/supabase-search'
 import { canSetReferrer } from 'web/lib/firebase/users'
-import { CommentOnLoverNotification } from 'manifold-love/components/love-notification-types'
+import {
+  CommentOnLoverNotification,
+  NewMatchNotification,
+} from 'manifold-love/components/love-notification-types'
 
 export function NotificationItem(props: {
   notification: Notification
@@ -183,6 +186,15 @@ export function NotificationItem(props: {
   } else if (sourceType === 'comment_on_lover') {
     return (
       <CommentOnLoverNotification
+        notification={notification}
+        isChildOfGroup={isChildOfGroup}
+        highlighted={highlighted}
+        setHighlighted={setHighlighted}
+      />
+    )
+  } else if (sourceType === 'new_match') {
+    return (
+      <NewMatchNotification
         notification={notification}
         isChildOfGroup={isChildOfGroup}
         highlighted={highlighted}

@@ -70,6 +70,7 @@ export type notification_source_types =
   | 'follow_suggestion'
   | 'market_review'
   | 'comment_on_lover'
+  | 'new_match'
 
 export type notification_source_update_types =
   | 'created'
