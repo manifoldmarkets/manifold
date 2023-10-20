@@ -235,7 +235,10 @@ export const placeBetMain = async (
     if (contract.loverUserId1 && newPool && newP) {
       const prob = getCpmmProbability(newPool, newP)
       if (prob < 0.01) {
-        throw new APIError(403, 'Cannot bet lower than 1% probability in relationship markets.')
+        throw new APIError(
+          403,
+          'Cannot bet lower than 1% probability in relationship markets.'
+        )
       }
     }
 
@@ -305,26 +308,34 @@ export const placeBetMain = async (
       if (otherBetResults) {
         for (const result of otherBetResults) {
           const { answer, bet, cpmmState, makers, ordersToCancel } = result
-          const betDoc = contractDoc.collection('bets').doc()
-          trans.create(betDoc, {
-            id: betDoc.id,
-            userId: user.id,
-            userAvatarUrl: user.avatarUrl,
-            userUsername: user.username,
-            userName: user.name,
-            isApi,
-            ...bet,
-          })
-          const { YES: poolYes, NO: poolNo } = cpmmState.pool
-          const prob = getCpmmProbability(cpmmState.pool, 0.5)
-          trans.update(
-            contractDoc.collection('answersCpmm').doc(answer.id),
-            removeUndefinedProps({
-              poolYes,
-              poolNo,
-              prob,
+          const { probBefore, probAfter } = bet
+          const smallEnoughToIgnore =
+            probBefore < 0.001 &&
+            probAfter < 0.001 &&
+            Math.abs(probAfter - probBefore) < 0.00001
+
+          if (!smallEnoughToIgnore || Math.random() < 0.01) {
+            const betDoc = contractDoc.collection('bets').doc()
+            trans.create(betDoc, {
+              id: betDoc.id,
+              userId: user.id,
+              userAvatarUrl: user.avatarUrl,
+              userUsername: user.username,
+              userName: user.name,
+              isApi,
+              ...bet,
             })
-          )
+            const { YES: poolYes, NO: poolNo } = cpmmState.pool
+            const prob = getCpmmProbability(cpmmState.pool, 0.5)
+            trans.update(
+              contractDoc.collection('answersCpmm').doc(answer.id),
+              removeUndefinedProps({
+                poolYes,
+                poolNo,
+                prob,
+              })
+            )
+          }
           updateMakers(makers, betDoc.id, contractDoc, trans)
           for (const bet of ordersToCancel) {
             trans.update(contractDoc.collection('bets').doc(bet.id), {
