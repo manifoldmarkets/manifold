@@ -16,7 +16,7 @@ import { SEO } from 'web/components/SEO'
 export const getStaticProps = async () => {
   const stats = await getStats().catch((e) => {
     console.error('Failed to get stats', e)
-    return ({})
+    return {}
   })
   return {
     props: stats,
