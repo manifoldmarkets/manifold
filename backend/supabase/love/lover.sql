@@ -20,6 +20,9 @@ create table if not exists
       is_vegetarian_or_vegan boolean not null default false,
       has_kids int not null default 0,
       wants_kids_strength int not null default 0, -- 0 is doesn't want any kids
+      looking_for_matches boolean not null default true,
+      visibility text not null default 'public', -- public, unlisted
+      messaging_status text not null default 'open', -- open, closed, out-only
 
       -- optional
       political_beliefs text[],

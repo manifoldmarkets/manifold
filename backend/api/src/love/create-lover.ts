@@ -36,6 +36,7 @@ const loveUsersSchema = z.object({
   is_vegetarian_or_vegan: z.boolean(),
   has_kids: z.number().min(0),
   wants_kids_strength: z.number().min(0),
+  looking_for_matches: z.boolean(),
 })
 
 export const createlover = authEndpoint(async (req, auth) => {

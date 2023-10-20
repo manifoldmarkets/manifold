@@ -131,14 +131,16 @@ export default function UserPage(props: {
             </Row>
             {isCurrentUser ? (
               <Row className={'items-center gap-1 sm:gap-2'}>
-                <Button
-                  color={'gray-outline'}
-                  className={'h-12'}
-                  onClick={() => router.push('signup')}
-                >
-                  <PencilIcon className="mr-2 h-4 w-4" />
-                  Edit
-                </Button>
+                {lover && (
+                  <Button
+                    color={'gray-outline'}
+                    className={'h-12'}
+                    onClick={() => router.push('signup')}
+                  >
+                    <PencilIcon className="mr-2 h-4 w-4" />
+                    Edit
+                  </Button>
+                )}
                 <DailyLeagueStat user={user} />
                 <QuestsOrStreak user={user} />
               </Row>
