@@ -1,7 +1,7 @@
 import * as functions from 'firebase-functions'
 import { JSONContent } from '@tiptap/core'
 
-import { getUser, log } from 'shared/utils'
+import { getUser } from 'shared/utils'
 import { Contract } from 'common/contract'
 import { parseMentions, richTextToString } from 'common/util/parse'
 import { addUserToContractFollowers } from 'shared/follow-market'
@@ -11,10 +11,7 @@ import { completeCalculatedQuestFromTrigger } from 'shared/complete-quest-intern
 import { addContractToFeed } from 'shared/create-feed'
 import { createNewContractNotification } from 'shared/create-notification'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { addGroupToContract } from 'shared/update-group-contracts-internal'
-import { NON_PREDICTIVE_GROUP_ID } from 'common/supabase/groups'
 import { upsertGroupEmbedding } from 'shared/helpers/embeddings'
-import { HOUSE_LIQUIDITY_PROVIDER_ID } from 'common/antes'
 
 export const onCreateContract = functions
   .runWith({
@@ -47,36 +44,6 @@ export const onCreateContract = functions
       mentioned
     )
     const pg = createSupabaseDirectClient()
-    if (contract.visibility !== 'private') {
-      const contractEmbedding = await pg.oneOrNone<{ embedding: string }>(
-        `select embedding
-         from contract_embeddings
-         where contract_id = $1`,
-        [contract.id]
-      )
-      const contractHasEmbedding =
-        (contractEmbedding?.embedding ?? []).length > 0
-      log('contractHasEmbedding:', contractHasEmbedding)
-      if (!contractHasEmbedding) {
-        // Wait 5 seconds, hopefully the embedding will be there by then
-        await new Promise((resolve) => setTimeout(resolve, 5000))
-      }
-      const likelyNonPredictive = false
-      log('likelyNonPredictive:', likelyNonPredictive)
-      if (likelyNonPredictive) {
-        const added = await addGroupToContract(
-          contract,
-          {
-            id: NON_PREDICTIVE_GROUP_ID,
-            slug: 'nonpredictive',
-            name: 'Non-Predictive',
-          },
-          pg,
-          { userId: HOUSE_LIQUIDITY_PROVIDER_ID }
-        )
-        log('Added contract to non-predictive group', added)
-      }
-    }
     if (contract.visibility === 'unlisted') return
     await addContractToFeed(
       contract,
