@@ -424,7 +424,7 @@ export function ContractParamsForm(props: {
     setCategorizedQuestion(trimmed)
     try {
       const { groups } = await getSimilarGroupsToContract({ question })
-      setSelectedGroups(groups)
+      if (groups) setSelectedGroups(groups)
     } catch (e) {
       console.error('error getting similar groups', e)
     }
@@ -581,7 +581,7 @@ export function ContractParamsForm(props: {
           Add topics{' '}
           <InfoTooltip text="Question will be displayed alongside the other questions in the topic." />
         </span>
-        {selectedGroups.length > 0 && (
+        {selectedGroups && selectedGroups.length > 0 && (
           <Row className={'flex-wrap gap-2'}>
             {selectedGroups.map((group) => (
               <TopicTag
