@@ -197,10 +197,7 @@ export const MultiValueHistoryChart = <P extends HistoryPoint>(props: {
 
   const [ttParams, setTTParams] = useState<TooltipProps<P> & { ans: string }>()
   const xScale = viewXScale ?? props.xScale
-
-  const [xMin, xMax] = xScale.domain().map((d) => d.getTime())
-
-  const curve = props.curve ?? curveLinear
+  const curve = props.curve ?? curveStepAfter
 
   const px = useCallback((p: P) => xScale(p.x), [xScale])
   const py = useCallback((p: P) => yScale(p.y), [yScale])
@@ -231,7 +228,13 @@ export const MultiValueHistoryChart = <P extends HistoryPoint>(props: {
           color,
           id,
         }))
-        .sort((a, b) => last(a.points)!.y - last(b.points)!.y),
+        .sort((a, b) => {
+          const endA = last(a.points)
+          const endB = last(b.points)
+          if (!endA) return -1
+          if (!endB) return 1
+          return endA.y - endB.y
+        }),
     [data]
   )
 
@@ -240,13 +243,14 @@ export const MultiValueHistoryChart = <P extends HistoryPoint>(props: {
   )
   const onMouseOver = useEvent((mouseX: number, mouseY: number) => {
     const valueY = yScale.invert(mouseY)
+
     const ps = sortedLines.map((data) => selectors[data.id](mouseX))
 
     let closestIdx = 0
     ps.forEach((p, i) => {
       const closePrev = ps[closestIdx].prev
       const closestDist = closePrev ? Math.abs(closePrev.y - valueY) : 1
-      if (p.prev && Math.abs(p.prev.y - valueY) < closestDist) {
+      if (p.prev && p.next && Math.abs(p.prev.y - valueY) < closestDist) {
         closestIdx = i
       }
     })

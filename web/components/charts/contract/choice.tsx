@@ -133,42 +133,32 @@ export const ChoiceContractChart = (props: {
   const now = useMemo(() => Date.now(), [multiPoints])
 
   const data = useMemo(() => {
-    if (!answers.length) return {}
-
-    const firstAnswerTime = answers[0].createdTime
-    const startAnswers = answers.filter(
-      (a) => a.createdTime <= firstAnswerTime + 1000
-    )
-
-    const pointsById = cloneDeep(multiPoints)
-
-    const startP = 1 / startAnswers.length
-    startAnswers.forEach((a) =>
-      (pointsById[a.id] ?? []).unshift({ x: start, y: startP })
-    )
+    const answerOrder = answers.map((a) => a.text)
+    const ret = {} as Record<string, { points: Point[]; color: string }>
 
     answers.forEach((a) => {
-      if (!pointsById[a.id]) pointsById[a.id] = []
-      pointsById[a.id].push({
-        x: end ?? now,
-        y: getAnswerProbability(contract, a.id),
-      })
+      const points = cloneDeep(multiPoints[a.id] ?? [])
+
+      if ('resolution' in a) {
+        if (a.resolutionTime) {
+          points.push({
+            x: a.resolutionTime,
+            y: getAnswerProbability(contract, a.id),
+          })
+        }
+      } else {
+        points.push({
+          x: end ?? now,
+          y: getAnswerProbability(contract, a.id),
+        })
+      }
+
+      const color = getAnswerColor(a, answerOrder)
+
+      ret[a.id] = { points, color }
     })
 
-    const entries = answers.map(
-      (a) =>
-        [
-          a.id,
-          {
-            points: pointsById[a.id],
-            color: getAnswerColor(
-              a,
-              answers.map((a) => a.text)
-            ),
-          },
-        ] as const
-    )
-    return Object.fromEntries(entries)
+    return ret
   }, [answers.length, multiPoints, start, end, now])
 
   const rightestPointX = Math.max(
