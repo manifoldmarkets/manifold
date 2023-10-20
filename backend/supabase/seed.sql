@@ -41,6 +41,21 @@ $$;
 /******************************************/
 /* 1. tables containing firestore content */
 /******************************************/
+
+create table if not exists private_users (
+  id text not null primary key,
+  data jsonb not null,
+  fs_updated_time timestamp not null,
+);
+
+alter table private_users enable row level security;
+
+drop policy if exists "private read" on private_users;
+create policy "private read" on private_users for select
+  using (firebase_uid() = id);
+
+alter table private_users cluster on private_users_pkey;
+
 create table if not exists
   user_portfolio_history (
     user_id text not null,
@@ -1331,6 +1346,7 @@ begin
   return case
     table_id
            when 'users' then cast((null, 'id') as table_spec)
+           when 'private_users' then cast((null, 'id') as table_spec)
            when 'user_reactions' then cast(('user_id', 'reaction_id') as table_spec)
            when 'contracts' then cast((null, 'id') as table_spec)
            when 'contract_answers' then cast(('contract_id', 'answer_id') as table_spec)
