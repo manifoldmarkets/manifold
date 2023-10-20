@@ -5,15 +5,16 @@ import {
   LoverCommentInput,
   LoverProfileCommentThread,
 } from 'love/components/lover-comments'
-import { useUser } from 'web/hooks/use-user'
 import { User } from 'common/user'
 import { Title } from 'web/components/widgets/title'
 
-export const LoverCommentSection = (props: { onUser: User }) => {
-  const { onUser } = props
+export const LoverCommentSection = (props: {
+  onUser: User
+  currentUser: User | null | undefined
+}) => {
+  const { onUser, currentUser } = props
   const comments = useRealtimeCommentsOnLover(onUser.id) ?? []
   const parentComments = comments.filter((c) => !c.replyToCommentId)
-  const currentUser = useUser()
   const commentsByParent = groupBy(comments, (c) => c.replyToCommentId ?? '_')
   return (
     <Col className={'bg-canvas-0 mt-4 rounded-md px-3 py-2'}>

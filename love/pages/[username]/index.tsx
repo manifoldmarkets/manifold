@@ -1,4 +1,4 @@
-import { getUserByUsername, User } from 'web/lib/firebase/users'
+import { firebaseLogin, getUserByUsername, User } from 'web/lib/firebase/users'
 import { removeUndefinedProps } from 'common/util/object'
 import { Lover } from 'love/hooks/use-lover'
 import { getLover } from 'love/lib/supabase/lovers'
@@ -208,7 +208,17 @@ export default function UserPage(props: {
             </Row>
           </Col>
         </Col>
-        {lover ? (
+
+        {!currentUser ? (
+          <Col className={'bg-canvas-0 items-center justify-center p-4'}>
+            <Row className={' items-center justify-center gap-2'}>
+              <Button color={'gradient'} onClick={firebaseLogin}>
+                Sign up
+              </Button>{' '}
+              to see {user.name}'s profile!
+            </Row>
+          </Col>
+        ) : lover ? (
           <>
             {lover.photo_urls && (
               <Row className={'flex-wrap items-end'}>
@@ -343,7 +353,9 @@ export default function UserPage(props: {
           )
         )}
       </Col>
-      <LoverCommentSection onUser={user} />
+      {currentUser && (
+        <LoverCommentSection onUser={user} currentUser={currentUser} />
+      )}
     </LovePage>
   )
 }
