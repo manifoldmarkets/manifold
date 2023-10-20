@@ -12,6 +12,7 @@ import { addContractToFeed } from 'shared/create-feed'
 import { createNewContractNotification } from 'shared/create-notification'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { upsertGroupEmbedding } from 'shared/helpers/embeddings'
+import { generateContractEmbeddings } from 'shared/supabase/contracts'
 
 export const onCreateContract = functions
   .runWith({
@@ -44,6 +45,15 @@ export const onCreateContract = functions
       mentioned
     )
     const pg = createSupabaseDirectClient()
+
+    const embedding = await pg.oneOrNone(
+      `select embedding
+              from contract_embeddings
+              where contract_id = $1`,
+      [contract.id]
+    )
+    if (!embedding) await generateContractEmbeddings(contract, pg)
+
     if (contract.visibility === 'unlisted') return
     await addContractToFeed(
       contract,

@@ -33,7 +33,7 @@ import {
 } from 'common/user'
 import { randomString } from 'common/util/random'
 import { slugify } from 'common/util/slugify'
-import { generateEmbeddings, getCloseDate } from 'shared/helpers/openai-utils'
+import { getCloseDate } from 'shared/helpers/openai-utils'
 import { getUser, htmlToRichText, isProd } from 'shared/utils'
 import { canUserAddGroupToMarket } from './add-contract-to-group'
 import { APIError, AuthedUser, authEndpoint, validate } from './helpers'
@@ -45,8 +45,8 @@ import {
 import { contentSchema } from 'shared/zod-types'
 import { createNewContractFromPrivateGroupNotification } from 'shared/create-notification'
 import { addGroupToContract } from 'shared/update-group-contracts-internal'
-import { SupabaseClient } from 'common/supabase/utils'
 import { manifoldLoveUserId } from './love/create-match'
+import { generateContractEmbeddings } from 'shared/supabase/contracts'
 
 export const createmarket = authEndpoint(async (req, auth) => {
   return createMarketHelper(req.body, auth)
@@ -204,9 +204,8 @@ export async function createMarketHelper(body: any, auth: AuthedUser) {
   }
 
   await generateAntes(userId, contract, outcomeType, ante)
-  const db = createSupabaseClient()
 
-  await generateContractEmbeddings(contract, db)
+  await generateContractEmbeddings(contract, pg)
 
   return contract
 }
@@ -277,18 +276,6 @@ const runCreateMarketTxn = async (
     })
 
   return contract
-}
-
-const generateContractEmbeddings = async (
-  contract: Contract,
-  db: SupabaseClient
-) => {
-  const embedding = await generateEmbeddings(contract.question)
-  if (!embedding) return
-
-  await db
-    .from('contract_embeddings')
-    .insert({ contract_id: contract.id, embedding: embedding as any })
 }
 
 function getDescriptionJson(
