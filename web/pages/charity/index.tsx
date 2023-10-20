@@ -1,20 +1,12 @@
-import {
-  mapValues,
-  groupBy,
-  sumBy,
-  sum,
-  sortBy,
-  debounce,
-  uniqBy,
-} from 'lodash'
+import { debounce } from 'lodash'
 import { useState, useMemo } from 'react'
-import { charities, Charity as CharityType } from 'common/charity'
+import { Charity as CharityType } from 'common/charity'
 import { CharityCard } from 'web/components/charity/charity-card'
 import { Col } from 'web/components/layout/col'
 import { Spacer } from 'web/components/layout/spacer'
 import { Page } from 'web/components/layout/page'
 import { Title } from 'web/components/widgets/title'
-import { getAllCharityTxns } from 'web/lib/firebase/txns'
+import { getCharityStats } from 'web/lib/supabase/txns'
 import { formatMoney, manaToUSD } from 'common/util/format'
 import { searchInAny } from 'common/util/parse'
 import { getUser } from 'web/lib/firebase/users'
@@ -26,26 +18,10 @@ import { ENV_CONFIG } from 'common/envs/constants'
 import { AlertBox } from 'web/components/widgets/alert-box'
 
 export async function getStaticProps() {
-  let txns = await getAllCharityTxns()
-  // Sort by newest txns first
-  txns = sortBy(txns, 'createdTime').reverse()
-  const totals = mapValues(groupBy(txns, 'toId'), (txns) =>
-    sumBy(txns, (txn) => txn.amount)
-  )
-  const totalRaised = sum(Object.values(totals))
-  const sortedCharities = sortBy(charities, [(charity) => -totals[charity.id]])
-  const numDonors = uniqBy(txns, (txn) => txn.fromId).length
-  const mostRecentDonor = txns[0] ? await getUser(txns[0].fromId) : null
-  const mostRecentCharity = txns[0]?.toId ?? ''
-
+  let { mostRecentDonorId, ...rest } = await getCharityStats()
+  let mostRecentDonor = await getUser(mostRecentDonorId)
   return {
-    props: {
-      totalRaised,
-      charities: sortedCharities,
-      numDonors,
-      mostRecentDonor,
-      mostRecentCharity,
-    },
+    props: { mostRecentDonor, ...rest },
     revalidate: 60,
   }
 }
@@ -84,22 +60,22 @@ function DonatedStats(props: { stats: Stat[] }) {
 
 export default function Charity(props: {
   totalRaised: number
-  charities: CharityType[]
+  sortedCharities: CharityType[]
   numDonors: number
   mostRecentDonor?: User | null
-  mostRecentCharity?: string
+  mostRecentCharityId?: string
 }) {
-  const { totalRaised, charities, mostRecentCharity, mostRecentDonor } = props
+  const { totalRaised, sortedCharities, mostRecentCharityId, mostRecentDonor } = props
 
   const [query, setQuery] = useState('')
   const debouncedQuery = debounce(setQuery, 50)
   const recentCharityName =
-    charities.find((charity) => charity.id === mostRecentCharity)?.name ??
+    sortedCharities.find((charity) => charity.id === mostRecentCharityId)?.name ??
     'Nobody'
 
   const filterCharities = useMemo(
     () =>
-      charities.filter(
+      sortedCharities.filter(
         (charity) =>
           searchInAny(
             query,
@@ -108,7 +84,7 @@ export default function Charity(props: {
             charity.description
           ) || (charity.tags as string[])?.includes(query.toLowerCase())
       ),
-    [charities, query]
+    [sortedCharities, query]
   )
 
   return (
@@ -161,7 +137,7 @@ export default function Charity(props: {
               {
                 name: 'Most recent donation',
                 stat: recentCharityName,
-                url: `/charity/${mostRecentCharity}`,
+                url: `/charity/${mostRecentCharityId}`,
               },
             ]}
           />
