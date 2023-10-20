@@ -1,12 +1,7 @@
 import Image from 'next/image'
-import clsx from 'clsx'
-
 import { useLovers } from 'love/hooks/use-lovers'
 import { Col } from 'web/components/layout/col'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
-import { Table } from 'web/components/widgets/table'
-import { fromNow } from 'web/lib/util/time'
-import { UserLink } from 'web/components/widgets/user-link'
 import { LovePage } from 'love/components/love-page'
 import { Filters } from 'love/components/filters'
 import { useEffect, useState } from 'react'
@@ -42,6 +37,7 @@ export default function ProfilesPage() {
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
               {lovers.map((lover) => (
                 <ProfilePreview
+                  key={lover.id}
                   lover={lover}
                   setSelectedPhotos={setSelectedPhotos}
                   setShowPhotosModal={setShowPhotosModal}
