@@ -13,6 +13,7 @@ import { Lover } from 'love/hooks/use-lover'
 import { useState } from 'react'
 import { updateLover } from 'web/lib/firebase/love/api'
 import { Tooltip } from 'web/components/widgets/tooltip'
+import { toast } from 'react-hot-toast'
 
 export const LoverCommentSection = (props: {
   onUser: User
@@ -28,18 +29,36 @@ export const LoverCommentSection = (props: {
     <Col className={'bg-canvas-0 mt-4 rounded-md px-3 py-2'}>
       <Row className={'mb-4 justify-between'}>
         <Title className=" !text-ink-1000 !mb-0">Comments</Title>
-        <Tooltip text={'Enable comments from others'}>
-          <ShortToggle
-            on={lover.comments_enabled}
-            setOn={(on) => {
-              const update = { ...lover, comments_enabled: on }
-              setLover(update)
-              updateLover({
-                ...update,
-              })
-            }}
-          />
-        </Tooltip>
+        {currentUser?.id === lover.user_id && (
+          <Tooltip
+            text={
+              (lover.comments_enabled ? 'Disable' : 'Enable') +
+              ' comments from others'
+            }
+          >
+            <ShortToggle
+              on={lover.comments_enabled}
+              setOn={(on) => {
+                const update = { ...lover, comments_enabled: on }
+                setLover(update)
+                toast.promise(
+                  updateLover({
+                    ...update,
+                  }),
+                  {
+                    loading: on
+                      ? 'Enabling comments from others'
+                      : 'Disabling comments from others',
+                    success: on
+                      ? 'Comments enabled from others'
+                      : 'Comments disabled from others',
+                    error: 'Failed to update comment status',
+                  }
+                )
+              }}
+            />
+          </Tooltip>
+        )}
       </Row>
       {currentUser &&
         (lover.comments_enabled ||
