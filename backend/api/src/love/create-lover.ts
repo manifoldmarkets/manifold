@@ -42,6 +42,7 @@ export const createlover = authEndpoint(async (req, auth) => {
   if (existingUser) {
     throw new APIError(400, 'User already exists')
   }
+  // TODO: add manifold user to manifold.love group
 
   const { data, error } = await db
     .from('lovers')
