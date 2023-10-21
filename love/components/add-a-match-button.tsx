@@ -1,5 +1,4 @@
 import clsx from 'clsx'
-import Router from 'next/router'
 import { filterDefined } from 'common/util/array'
 import { Lover } from 'love/hooks/use-lover'
 import { useState } from 'react'
@@ -10,7 +9,6 @@ import { Row } from 'web/components/layout/row'
 import { BuyAmountInput } from 'web/components/widgets/amount-input'
 import { useUser } from 'web/hooks/use-user'
 import { createMatch } from 'web/lib/firebase/love/api'
-import { contractPath } from 'common/contract'
 
 export const AddAMatchButton = (props: {
   lover: Lover
@@ -40,7 +38,7 @@ export const AddAMatchButton = (props: {
     console.log('result', result)
 
     if (result.success) {
-      await Router.push(contractPath(result.contract))
+      window.location.reload()
     }
   }
   if (!lover.looking_for_matches)

@@ -13,6 +13,7 @@ import { UserLink } from 'web/components/widgets/user-link'
 import { Button } from 'web/components/buttons/button'
 import { RejectButton } from './reject-button'
 import { useUser } from 'web/hooks/use-user'
+import { Avatar } from 'web/components/widgets/avatar'
 
 export const Matches = (props: { userId: string }) => {
   const { userId } = props
@@ -35,7 +36,7 @@ export const Matches = (props: { userId: string }) => {
   const areYourMatches = userId === user?.id
 
   return (
-    <Col className="bg-canvas-0 max-w-sm gap-4 rounded px-4 py-3">
+    <Col className="bg-canvas-0 max-w-lg gap-4 rounded px-4 py-3">
       {currentMatches.length > 0 && (
         <Col className="gap-2">
           <div className="text-lg font-semibold">
@@ -77,10 +78,15 @@ const MatchContract = (props: {
 }) => {
   const { contract, lover, isYourMatch } = props
   const prob = getProbability(contract)
-  const { user } = lover
+  const { user, pinned_url } = lover
   return (
     <Row className="justify-between">
-      <UserLink name={user.name} username={user.username} />
+      <Row className="gap-2">
+        {pinned_url && (
+          <Avatar avatarUrl={pinned_url} username={user.username} />
+        )}
+        <UserLink name={user.name} username={user.username} />
+      </Row>
       <Row className="items-center gap-2">
         <div className="font-semibold">{formatPercent(prob)}</div>
         <Button
@@ -88,7 +94,7 @@ const MatchContract = (props: {
           color="indigo-outline"
           onClick={() => Router.push(contractPath(contract))}
         >
-          View
+          Bet
         </Button>
         {isYourMatch && <RejectButton lover={lover} />}
       </Row>
