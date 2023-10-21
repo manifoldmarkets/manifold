@@ -13,7 +13,7 @@ import { User } from 'common/user'
 import { Row } from 'web/components/layout/row'
 import { shortenedFromNow } from 'web/lib/util/shortenedFromNow'
 import { Row as SupabaseRow } from 'common/supabase/utils'
-import { UserIcon } from '@heroicons/react/solid'
+import { UserIcon, PhotographIcon } from '@heroicons/react/solid'
 import Link from 'next/link'
 
 export default function ProfilesPage() {
@@ -74,25 +74,26 @@ function ProfilePreview(props: {
     last_online_time,
   } = props.lover
   return (
-    <Col
-      className="relative h-60 w-full overflow-hidden rounded text-white transition-all hover:z-40 hover:scale-110 hover:drop-shadow"
-      onClick={() => {
-        setSelectedPhotos(buildArray(pinned_url, photo_urls))
-        setShowPhotosModal(true)
-      }}
-    >
-      {pinned_url ? (
-        <Image
-          src={pinned_url}
-          fill
-          alt={`${user.username}`}
-          className="h-full w-full object-cover"
-        />
-      ) : (
-        <Col className="bg-ink-300 h-full w-full items-center justify-center">
-          <UserIcon className="h-20 w-20" />
-        </Col>
-      )}
+    <Col className="relative h-60 w-full overflow-hidden rounded text-white transition-all hover:z-40 hover:scale-110 hover:drop-shadow">
+      <Link
+        onClick={(e) => {
+          e.stopPropagation()
+        }}
+        href={`/${user.username}`}
+      >
+        {pinned_url ? (
+          <Image
+            src={pinned_url}
+            fill
+            alt={`${user.username}`}
+            className="h-full w-full object-cover"
+          />
+        ) : (
+          <Col className="bg-ink-300 h-full w-full items-center justify-center">
+            <UserIcon className="h-20 w-20" />
+          </Col>
+        )}
+      </Link>
       <Col className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/70 via-black/70 to-transparent px-4 pt-6">
         <Row>
           <Link
@@ -111,11 +112,22 @@ function ProfilePreview(props: {
         </Row>
       </Col>
 
-      <Row className="absolute inset-x-0 top-0 justify-end px-4 pt-2 text-xs">
-        <span className="rounded-full bg-gray-600 bg-opacity-50 px-2 py-0.5">
+      <Col className="absolute inset-x-0 top-0 items-end px-4 pt-2 text-xs">
+        <div className="rounded-full bg-gray-600 bg-opacity-50 px-2 py-0.5">
           Active <b>{shortenedFromNow(new Date(last_online_time).getTime())}</b>
-        </span>
-      </Row>
+        </div>
+      </Col>
+      <Col
+        className="absolute inset-x-0 bottom-0 cursor-pointer items-end px-4 pb-16 text-xs"
+        onClick={() => {
+          setSelectedPhotos(buildArray(pinned_url, photo_urls))
+          setShowPhotosModal(true)
+        }}
+      >
+        <div className="rounded-full bg-gray-600 bg-opacity-50 px-3 py-0.5">
+          <PhotographIcon className="h-4 w-4 " />{' '}
+        </div>
+      </Col>
     </Col>
   )
 }
