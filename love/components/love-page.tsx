@@ -32,6 +32,7 @@ import { AddFundsModal } from 'web/components/add-funds-modal'
 import { MobileAppsQRCodeDialog } from 'web/components/buttons/mobile-apps-qr-code-button'
 import { NOTIFICATIONS_TO_IGNORE } from 'love/pages/notifications'
 import { useOnline } from 'love/hooks/use-online'
+import LoveSidebar from './love-sidebar'
 
 export function LovePage(props: {
   trackPageView: string | false
@@ -81,7 +82,7 @@ export function LovePage(props: {
         {hideSidebar ? (
           <div className="lg:col-span-2 lg:flex" />
         ) : (
-          <Sidebar
+          <LoveSidebar
             navigationOptions={sidebarNavigationOptions}
             className="sticky top-0 hidden self-start px-2 lg:col-span-2 lg:flex"
           />
