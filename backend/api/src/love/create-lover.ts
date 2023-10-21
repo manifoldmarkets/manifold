@@ -1,9 +1,6 @@
 import { z } from 'zod'
 import { APIError, authEndpoint, validate } from 'api/helpers'
-import {
-  createSupabaseClient,
-  createSupabaseDirectClient,
-} from 'shared/supabase/init'
+import { createSupabaseClient } from 'shared/supabase/init'
 import { log } from 'shared/utils'
 const genderType = z.union([
   z.literal('male'),
