@@ -99,8 +99,10 @@ const createNewCommentOnLoverNotification = async (
   if (!privateUser) return
   const id = crypto.randomUUID()
   const reason = 'tagged_user' // not really true, but it's pretty close
-  const { sendToBrowser, sendToMobile, notificationPreference } =
-    getNotificationDestinationsForUser(privateUser, reason)
+  const { sendToBrowser, sendToMobile } = getNotificationDestinationsForUser(
+    privateUser,
+    reason
+  )
   const notification: Notification = {
     id,
     userId: privateUser.id,

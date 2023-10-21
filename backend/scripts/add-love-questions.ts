@@ -1,4 +1,5 @@
 import { runScript } from './run-script'
+import { MultipleChoiceOptions } from 'common/love/multiple-choice'
 
 if (require.main === module) {
   runScript(async ({ pg }) => {
@@ -42,7 +43,7 @@ if (require.main === module) {
       `How close and warm is your family? Do you feel your childhood was happier than most other people’s?`,
     ]
     await Promise.all(
-      freeResponseQuestions.map(async (question) =>
+      mcQuestions.map(async (question) =>
         pg.none(
           `insert into love_questions (question,
                             importance_score,
@@ -51,7 +52,14 @@ if (require.main === module) {
                             multiple_choice_options
                             )
                             values ($1, $2, $3, $4, $5)`,
-          [question, 0.5, 'AJwLWoo3xue32XIiAVrL5SyR1WB2', 'free_response', null]
+          // [question, 0.5, 'AJwLWoo3xue32XIiAVrL5SyR1WB2', 'free_response', null]
+          [
+            question,
+            0.5,
+            'AJwLWoo3xue32XIiAVrL5SyR1WB2',
+            'multiple_choice',
+            MultipleChoiceOptions,
+          ]
         )
       )
     )
