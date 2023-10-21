@@ -35,6 +35,7 @@ import { uniq } from 'lodash'
 import { PhotosModal } from 'love/components/photos-modal'
 import { LoverCommentSection } from 'love/components/lover-comment-section'
 import { Matches } from 'love/components/matches'
+import { Carousel } from 'web/components/widgets/carousel'
 
 export const getStaticProps = async (props: {
   params: {
@@ -219,54 +220,25 @@ export default function UserPage(props: {
         ) : lover ? (
           <>
             {lover.photo_urls && (
-              <Row className={'flex-wrap items-end'}>
+              <Carousel>
                 {buildArray(lover.pinned_url, lover.photo_urls).map(
                   (url, index) => {
                     return (
                       <div
-                        key={index}
-                        className={clsx(
-                          'relative cursor-pointer rounded-md px-3 py-2',
-                          'hover:border-teal-900'
-                        )}
-                        onClick={() => {
-                          setSelectedPhoto(url)
-                          setShowPhotosModal(true)
-                        }}
+                        key={url}
+                        className="relative h-80 min-w-[250px] flex-none snap-start gap-1 overflow-hidden rounded"
                       >
-                        {url === lover.pinned_url ? (
-                          <Image
-                            src={url}
-                            width={256}
-                            height={256}
-                            alt={`preview ${index}`}
-                            className="h-64 w-64 rounded-sm object-cover"
-                          />
-                        ) : (
-                          <Image
-                            src={url}
-                            width={160}
-                            height={160}
-                            alt={`preview ${index}`}
-                            className="h-40 w-40 rounded-sm object-cover"
-                          />
-                        )}
+                        <Image
+                          src={url}
+                          fill
+                          alt={`preview ${index}`}
+                          className="w-full object-cover"
+                        />
                       </div>
                     )
                   }
                 )}
-                <PhotosModal
-                  photos={uniq(
-                    buildArray(
-                      selectedPhoto,
-                      lover.pinned_url,
-                      lover.photo_urls
-                    )
-                  )}
-                  open={showPhotosModal}
-                  setOpen={setShowPhotosModal}
-                />
-              </Row>
+              </Carousel>
             )}
 
             <Matches userId={user.id} />
@@ -360,6 +332,7 @@ export default function UserPage(props: {
     </LovePage>
   )
 }
+
 const LoverAttributes = (props: { lover: Lover }) => {
   const { lover } = props
 
