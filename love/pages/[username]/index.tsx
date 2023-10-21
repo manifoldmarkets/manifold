@@ -36,6 +36,7 @@ import { PhotosModal } from 'love/components/photos-modal'
 import { LoverCommentSection } from 'love/components/lover-comment-section'
 import { Matches } from 'love/components/matches'
 import { Carousel } from 'web/components/widgets/carousel'
+import ProfileCarousel from 'love/components/profile-carousel'
 
 export const getStaticProps = async (props: {
   params: {
@@ -219,27 +220,7 @@ export default function UserPage(props: {
           </Col>
         ) : lover ? (
           <>
-            {lover.photo_urls && (
-              <Carousel>
-                {buildArray(lover.pinned_url, lover.photo_urls).map(
-                  (url, index) => {
-                    return (
-                      <div
-                        key={url}
-                        className="relative h-80 min-w-[250px] flex-none snap-start gap-1 overflow-hidden rounded"
-                      >
-                        <Image
-                          src={url}
-                          fill
-                          alt={`preview ${index}`}
-                          className="w-full object-cover"
-                        />
-                      </div>
-                    )
-                  }
-                )}
-              </Carousel>
-            )}
+            {lover.photo_urls && <ProfileCarousel lover={lover} />}
 
             <Matches userId={user.id} />
 
