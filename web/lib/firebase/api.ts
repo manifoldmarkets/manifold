@@ -516,6 +516,10 @@ export function updateDashboard(params: {
   return call(getApiUrl('updatedashboard'), 'POST', params)
 }
 
+export function deleteDashboard(params: { dashboardId: string }) {
+  return call(getApiUrl('delete-dashboard'), 'POST', params)
+}
+
 export function getDashboardFromSlug(params: { dashboardSlug: string }) {
   return maybeAuthedCall(
     getApiUrl('getdashboardfromslug'),

@@ -42,6 +42,7 @@ function getSearchDashboardSQL(input: {
     query = `
         select *
         from dashboards
+        where visibility = 'public'
         order by importance_score desc, created_time desc
       `
   } else {
@@ -50,6 +51,7 @@ function getSearchDashboardSQL(input: {
         FROM dashboards,
         LATERAL websearch_to_tsquery('english', $1) as query
         WHERE dashboards.title_fts @@ query
+        AND visibility = 'public'
         ORDER BY importance_score DESC, created_time DESC
       `
   }

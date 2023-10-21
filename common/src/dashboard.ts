@@ -15,6 +15,7 @@ export type BaseDashboard = {
   creatorUsername: string
   creatorName: string
   creatorAvatarUrl: string
+  visibility: 'public' | 'deleted'
 }
 
 export type Dashboard = BaseDashboard & {

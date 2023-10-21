@@ -83,6 +83,7 @@ import { followdashboard } from './follow-dashboard'
 import { supabasesearchdashboards } from './supabase-search-dashboards'
 import { getyourfolloweddashboards } from './get-your-followed-dashboards'
 import { updatedashboard } from './update-dashboard'
+import { deletedashboard } from './delete-dashboard'
 import { getdashboardfromslug } from './get-dashboard-from-slug'
 import { unresolve } from './unresolve'
 import { referuser } from 'api/refer-user'
@@ -228,6 +229,7 @@ app.post('/followdashboard', ...apiRoute(followdashboard))
 app.post('/supabasesearchdashboards', ...apiRoute(supabasesearchdashboards))
 app.post('/getyourfolloweddashboards', ...apiRoute(getyourfolloweddashboards))
 app.post('/updatedashboard', ...apiRoute(updatedashboard))
+app.post('/delete-dashboard', ...apiRoute(deletedashboard))
 app.post('/getdashboardfromslug', ...apiRoute(getdashboardfromslug))
 app.post('/ban-user', ...apiRoute(banuser))
 app.post('/update-market', ...apiRoute(updatemarket))
