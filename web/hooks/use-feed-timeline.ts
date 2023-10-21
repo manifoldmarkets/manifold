@@ -171,6 +171,10 @@ export const useFeedTimeline = (
       newestCreatedTimestamp.current
     )
 
+    if (data.length == 0) {
+      return { timelineItems: [] }
+    }
+
     const newFeedRows = data.map((d) => {
       const createdTimeAdjusted =
         1 - dayjs().diff(dayjs(d.created_time), 'day') / 20
