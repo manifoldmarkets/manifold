@@ -49,8 +49,10 @@ export function ActivityLog(props: {
   count: number
   className?: string
   topicSlugs?: string[]
+  blockedUserIds?: string[]
+  hideQuestions?: boolean
 }) {
-  const { count, topicSlugs, className } = props
+  const { count, topicSlugs, hideQuestions, className } = props
 
   const privateUser = usePrivateUser()
   const user = useUser()
@@ -61,7 +63,9 @@ export function ActivityLog(props: {
     shouldBlockDestiny && DESTINY_GROUP_SLUGS
   ).filter((t) => !topicSlugs?.includes(t))
   const blockedContractIds = privateUser?.blockedContractIds ?? []
-  const blockedUserIds = privateUser?.blockedUserIds ?? []
+  const blockedUserIds = (privateUser?.blockedUserIds ?? []).concat(
+    props.blockedUserIds ?? []
+  )
 
   const [pill, setPill] = useState<PillOptions>('all')
 
@@ -100,20 +104,9 @@ export function ActivityLog(props: {
     limit: count * 3,
     filterRedemptions: true,
     order: 'desc',
-  })?.filter(
-    (bet) =>
-      !blockedContractIds.includes(bet.contractId) &&
-      !blockedUserIds.includes(bet.userId) &&
-      !BOT_USERNAMES.includes(bet.userUsername) &&
-      !EXTRA_USERNAMES_TO_EXCLUDE.includes(bet.userUsername)
-  )
+  })
 
-  const realtimeComments = useRealtimeComments(count * 3)?.filter(
-    (c) =>
-      c.commentType === 'contract' &&
-      !blockedContractIds.includes(c.contractId) &&
-      !blockedUserIds.includes(c.userId)
-  )
+  const realtimeComments = useRealtimeComments(count * 3)
 
   // TODO: could change the initial query to factor in topicSlugs
   const newContracts = useRealtimeNewContracts(count * 3)?.filter(
@@ -126,10 +119,21 @@ export function ActivityLog(props: {
   const bets = uniqBy(
     (realtimeBets ?? []).concat(recentTopicalBets ?? []),
     'id'
+  ).filter(
+    (bet) =>
+      !blockedContractIds.includes(bet.contractId) &&
+      !blockedUserIds.includes(bet.userId) &&
+      !BOT_USERNAMES.includes(bet.userUsername) &&
+      !EXTRA_USERNAMES_TO_EXCLUDE.includes(bet.userUsername)
   )
   const comments = uniqBy(
     (realtimeComments ?? []).concat(recentTopicalComments ?? []),
     'id'
+  ).filter(
+    (c) =>
+      c.commentType === 'contract' &&
+      !blockedContractIds.includes(c.contractId) &&
+      !blockedUserIds.includes(c.userId)
   )
 
   const activeContractIds = uniq([
@@ -210,7 +214,11 @@ export function ActivityLog(props: {
 
   return (
     <Col className={clsx('gap-4', className)}>
-      <LivePillOptions pill={pill} setPill={setPill}>
+      <LivePillOptions
+        pill={pill}
+        setPill={setPill}
+        hideQuestions={hideQuestions}
+      >
         {loading && <LoadingIndicator size="sm" />}
       </LivePillOptions>
       {!allLoaded && <LoadingIndicator />}
@@ -250,9 +258,10 @@ type PillOptions = 'all' | 'questions' | 'comments' | 'trades'
 const LivePillOptions = (props: {
   pill: PillOptions
   setPill: (pill: PillOptions) => void
+  hideQuestions?: boolean
   children?: ReactNode
 }) => {
-  const { pill, setPill, children } = props
+  const { pill, setPill, hideQuestions, children } = props
 
   const selectPill = (pill: PillOptions) => {
     setPill(pill)
@@ -268,13 +277,15 @@ const LivePillOptions = (props: {
       >
         All
       </PillButton>
-      <PillButton
-        selected={pill === 'questions'}
-        onSelect={() => selectPill('questions')}
-        xs
-      >
-        Questions
-      </PillButton>
+      {!hideQuestions && (
+        <PillButton
+          selected={pill === 'questions'}
+          onSelect={() => selectPill('questions')}
+          xs
+        >
+          Questions
+        </PillButton>
+      )}
       <PillButton
         selected={pill === 'comments'}
         onSelect={() => selectPill('comments')}
