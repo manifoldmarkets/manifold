@@ -1,5 +1,11 @@
-import { firebaseLogin, getUserByUsername, User } from 'web/lib/firebase/users'
+import { PencilIcon } from '@heroicons/react/outline'
+import { LinkIcon } from '@heroicons/react/solid'
+import clsx from 'clsx'
 import { removeUndefinedProps } from 'common/util/object'
+import { LovePage } from 'love/components/love-page'
+import { LoverCommentSection } from 'love/components/lover-comment-section'
+import { Matches } from 'love/components/matches'
+import ProfileCarousel from 'love/components/profile-carousel'
 import { Lover } from 'love/hooks/use-lover'
 import { getLoverRow } from 'love/lib/supabase/lovers'
 import {
@@ -7,36 +13,25 @@ import {
   getUserAnswersAndQuestions,
   Question,
 } from 'love/lib/supabase/questions'
-import { SEO } from 'web/components/SEO'
 import Head from 'next/head'
-import { Row } from 'web/components/layout/row'
-import clsx from 'clsx'
-import { Col } from 'web/components/layout/col'
-import ImageWithBlurredShadow from 'web/components/widgets/image-with-blurred-shadow'
-import { Avatar } from 'web/components/widgets/avatar'
-import { StackedUserNames } from 'web/components/widgets/user-link'
-import { QuestsOrStreak } from 'web/components/quests-or-streak'
-import { SendMessageButton } from 'web/components/messaging/send-message-button'
+import { useRouter } from 'next/router'
+import { useState } from 'react'
+import { Button } from 'web/components/buttons/button'
 import { FollowButton } from 'web/components/buttons/follow-button'
 import { MoreOptionsUserButton } from 'web/components/buttons/more-options-user-button'
+import { Col } from 'web/components/layout/col'
+import { Row } from 'web/components/layout/row'
+import { SendMessageButton } from 'web/components/messaging/send-message-button'
+import { QuestsOrStreak } from 'web/components/quests-or-streak'
+import { SEO } from 'web/components/SEO'
+import { Avatar } from 'web/components/widgets/avatar'
+import ImageWithBlurredShadow from 'web/components/widgets/image-with-blurred-shadow'
 import { Linkify } from 'web/components/widgets/linkify'
-import { LinkIcon } from '@heroicons/react/solid'
+import { StackedUserNames } from 'web/components/widgets/user-link'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useUser } from 'web/hooks/use-user'
+import { firebaseLogin, getUserByUsername, User } from 'web/lib/firebase/users'
 import { fromNow } from 'web/lib/util/time'
-import { LovePage } from 'love/components/love-page'
-import { Button } from 'web/components/buttons/button'
-import { useRouter } from 'next/router'
-import { PencilIcon } from '@heroicons/react/outline'
-import { useState } from 'react'
-import Image from 'next/image'
-import { buildArray } from 'common/util/array'
-import { uniq } from 'lodash'
-import { PhotosModal } from 'love/components/photos-modal'
-import { LoverCommentSection } from 'love/components/lover-comment-section'
-import { Matches } from 'love/components/matches'
-import { Carousel } from 'web/components/widgets/carousel'
-import ProfileCarousel from 'love/components/profile-carousel'
 
 export const getStaticProps = async (props: {
   params: {
@@ -78,8 +73,6 @@ export default function UserPage(props: {
   const currentUser = useUser()
   const isCurrentUser = currentUser?.id === user?.id
   const router = useRouter()
-  const [showPhotosModal, setShowPhotosModal] = useState(false)
-  const [selectedPhoto, setSelectedPhoto] = useState<string>()
 
   if (!user) {
     return <div>404</div>
