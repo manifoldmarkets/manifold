@@ -144,10 +144,12 @@ export const createMatch = authEndpoint(async (req, auth) => {
   }
 })
 
-export const manifoldLoveUserId = isProd() ? '' : 'RlXR2xa4EFfAzdCbSe45wkcdarh1'
+export const manifoldLoveUserId = isProd()
+  ? 'tRZZ6ihugZQLXPf6aPRneGpWLmz1'
+  : 'RlXR2xa4EFfAzdCbSe45wkcdarh1'
 
 const manifoldLoveRelationshipsGroupId = isProd()
-  ? ''
+  ? '2e9a87df-94e3-458c-bc5f-81e891b13101'
   : '77df8782-34b7-4daa-89f4-a75c8ea844d4'
 
 const createNewMatchNotification = async (
