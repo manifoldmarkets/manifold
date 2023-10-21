@@ -1,32 +1,32 @@
-import clsx from 'clsx'
-import { ReactNode, useState } from 'react'
-import { Toaster } from 'react-hot-toast'
-import { useIsMobile } from 'web/hooks/use-is-mobile'
-import { GoogleOneTapLogin } from 'web/lib/firebase/google-onetap-login'
-import { useTracking } from 'web/hooks/use-tracking'
-import { Col } from 'web/components/layout/col'
-import { BottomNavBar } from 'web/components/nav/bottom-nav-bar'
-import Sidebar from 'web/components/nav/sidebar'
-import { useUser } from 'web/hooks/use-user'
-import { User } from 'common/user'
+import { CashIcon, DeviceMobileIcon, HomeIcon } from '@heroicons/react/outline'
 import {
-  HomeIcon as SolidHomeIcon,
   QuestionMarkCircleIcon,
+  HomeIcon as SolidHomeIcon,
   UserCircleIcon,
   ViewListIcon,
 } from '@heroicons/react/solid'
+import clsx from 'clsx'
+import { User } from 'common/user'
+import { buildArray } from 'common/util/array'
+import { useOnline } from 'love/hooks/use-online'
+import { NOTIFICATIONS_TO_IGNORE } from 'love/pages/notifications'
+import { ReactNode, useState } from 'react'
+import { Toaster } from 'react-hot-toast'
+import { AddFundsModal } from 'web/components/add-funds-modal'
+import { MobileAppsQRCodeDialog } from 'web/components/buttons/mobile-apps-qr-code-button'
+import { Col } from 'web/components/layout/col'
+import { PrivateMessagesIcon } from 'web/components/messaging/messages-icon'
+import { BottomNavBar } from 'web/components/nav/bottom-nav-bar'
 import {
   NotificationsIcon,
   SolidNotificationsIcon,
 } from 'web/components/notifications-icon'
+import { useIsMobile } from 'web/hooks/use-is-mobile'
+import { useTracking } from 'web/hooks/use-tracking'
+import { useUser } from 'web/hooks/use-user'
+import { GoogleOneTapLogin } from 'web/lib/firebase/google-onetap-login'
 import { firebaseLogin } from 'web/lib/firebase/users'
-import { buildArray } from 'common/util/array'
-import { CashIcon, DeviceMobileIcon, HomeIcon } from '@heroicons/react/outline'
-import { PrivateMessagesIcon } from 'web/components/messaging/messages-icon'
-import { AddFundsModal } from 'web/components/add-funds-modal'
-import { MobileAppsQRCodeDialog } from 'web/components/buttons/mobile-apps-qr-code-button'
-import { NOTIFICATIONS_TO_IGNORE } from 'love/pages/notifications'
-import { useOnline } from 'love/hooks/use-online'
+import Sidebar from 'web/components/nav/sidebar'
 
 export function LovePage(props: {
   trackPageView: string | false
@@ -78,8 +78,9 @@ export function LovePage(props: {
         ) : (
           <Sidebar
             navigationOptions={sidebarNavigationOptions}
-            hideCreateQuestionButton
             className="sticky top-0 hidden self-start px-2 lg:col-span-2 lg:flex"
+            loveSidebar
+            hideCreateQuestionButton
           />
         )}
         <main
