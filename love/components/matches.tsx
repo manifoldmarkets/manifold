@@ -25,6 +25,9 @@ export const Matches = (props: { userId: string }) => {
   const matches = useMatches(userId)
   const user = useUser()
 
+  const truncatedSize = 5
+  const [expanded, setExpanded] = useState(false)
+
   if (!lovers || !matches) return <LoadingIndicator />
 
   const lover = lovers.find((lover) => lover.user_id === userId)
@@ -46,7 +49,10 @@ export const Matches = (props: { userId: string }) => {
           <div className="text-lg font-semibold">
             Chance of 6 month relationship
           </div>
-          {currentMatches.map((contract) => {
+          {(expanded
+            ? currentMatches
+            : currentMatches.slice(0, truncatedSize)
+          ).map((contract) => {
             const matchedLoverId =
               contract.loverUserId1 === userId
                 ? contract.loverUserId2
@@ -65,6 +71,16 @@ export const Matches = (props: { userId: string }) => {
               )
             )
           })}
+          {!expanded && currentMatches.length > truncatedSize && (
+            <Button
+              className="self-start"
+              size="xs"
+              color="indigo-outline"
+              onClick={() => setExpanded(true)}
+            >
+              Show {currentMatches.length - truncatedSize} more
+            </Button>
+          )}
         </Col>
       )}
 
@@ -84,8 +100,8 @@ const MatchContract = (props: {
   const prob = getProbability(contract)
   const { user, pinned_url } = lover
   return (
-    <Row className="justify-between">
-      <Row className="gap-2">
+    <Row className="items-center justify-between">
+      <Row className="items-center gap-2">
         {pinned_url && (
           <Avatar avatarUrl={pinned_url} username={user.username} />
         )}
