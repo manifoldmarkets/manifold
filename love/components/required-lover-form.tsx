@@ -57,8 +57,6 @@ export const RequiredLoveUserForm = (props: {
     !loadingUsername &&
     !loadingName
 
-  const handleChange = setLoverState
-
   return (
     <>
       <Title>Required questions</Title>
@@ -117,7 +115,7 @@ export const RequiredLoveUserForm = (props: {
               Yes: true,
               No: false,
             }}
-            setChoice={(c) => handleChange('looking_for_matches', c)}
+            setChoice={(c) => setLoverState('looking_for_matches', c)}
           />
         </Col>
         {(loverState.looking_for_matches || loverCreatedAlready) && (
@@ -134,11 +132,11 @@ export const RequiredLoveUserForm = (props: {
                 }}
                 setChoice={(c) => {
                   if (c === 'Other') {
-                    handleChange('city', '')
+                    setLoverState('city', '')
                     setShowCityInput(true)
                   } else {
                     setShowCityInput(false)
-                    handleChange('city', c)
+                    setLoverState('city', c)
                   }
                 }}
               />
@@ -146,7 +144,7 @@ export const RequiredLoveUserForm = (props: {
                 <Input
                   type="text"
                   value={loverState['city']}
-                  onChange={(e) => handleChange('city', e.target.value)}
+                  onChange={(e) => setLoverState('city', e.target.value)}
                   className={'w-56'}
                   placeholder={'e.g. DC'}
                 />
@@ -158,7 +156,7 @@ export const RequiredLoveUserForm = (props: {
               <Input
                 type="date"
                 onChange={(e) =>
-                  handleChange(
+                  setLoverState(
                     'birthdate',
                     new Date(e.target.value).toISOString()
                   )
@@ -180,7 +178,7 @@ export const RequiredLoveUserForm = (props: {
                   'Trans-male': 'trans-male',
                   Other: 'other',
                 }}
-                setChoice={(c) => handleChange('gender', c)}
+                setChoice={(c) => setLoverState('gender', c)}
               />
             </Col>
 
@@ -196,7 +194,7 @@ export const RequiredLoveUserForm = (props: {
                   Other: 'other',
                 }}
                 selected={loverState['pref_gender']}
-                onChange={(selected) => handleChange('pref_gender', selected)}
+                onChange={(selected) => setLoverState('pref_gender', selected)}
               />
             </Col>
 
@@ -211,7 +209,7 @@ export const RequiredLoveUserForm = (props: {
                 }}
                 selected={loverState['pref_relation_styles']}
                 onChange={(selected) =>
-                  handleChange('pref_relation_styles', selected)
+                  setLoverState('pref_relation_styles', selected)
                 }
               />
             </Col>
@@ -224,7 +222,7 @@ export const RequiredLoveUserForm = (props: {
                   Yes: true,
                   No: false,
                 }}
-                setChoice={(c) => handleChange('is_smoker', c)}
+                setChoice={(c) => setLoverState('is_smoker', c)}
               />
             </Col>
 
@@ -235,7 +233,7 @@ export const RequiredLoveUserForm = (props: {
               <Input
                 type="number"
                 onChange={(e) =>
-                  handleChange('drinks_per_month', Number(e.target.value))
+                  setLoverState('drinks_per_month', Number(e.target.value))
                 }
                 className={'w-20'}
                 min={0}
@@ -253,7 +251,7 @@ export const RequiredLoveUserForm = (props: {
                   <Input
                     type="number"
                     onChange={(e) =>
-                      handleChange('pref_age_min', Number(e.target.value))
+                      setLoverState('pref_age_min', Number(e.target.value))
                     }
                     className={'w-20'}
                     min={18}
@@ -266,7 +264,7 @@ export const RequiredLoveUserForm = (props: {
                   <Input
                     type="number"
                     onChange={(e) =>
-                      handleChange('pref_age_max', Number(e.target.value))
+                      setLoverState('pref_age_max', Number(e.target.value))
                     }
                     className={'w-20'}
                     min={loverState['pref_age_min']}
@@ -284,7 +282,7 @@ export const RequiredLoveUserForm = (props: {
               <Input
                 type="number"
                 onChange={(e) =>
-                  handleChange('has_kids', Number(e.target.value))
+                  setLoverState('has_kids', Number(e.target.value))
                 }
                 className={'w-20'}
                 min={0}
@@ -301,7 +299,7 @@ export const RequiredLoveUserForm = (props: {
                 choicesMap={MultipleChoiceOptions}
                 setChoice={(choice) => {
                   console.log(choice)
-                  handleChange('wants_kids_strength', choice)
+                  setLoverState('wants_kids_strength', choice)
                 }}
                 currentChoice={loverState.wants_kids_strength ?? -1}
               />

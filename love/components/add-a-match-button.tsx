@@ -43,6 +43,12 @@ export const AddAMatchButton = (props: {
       await Router.push(contractPath(result.contract))
     }
   }
+  if (!lover.looking_for_matches)
+    return (
+      <div className="text-ink-500 text-sm">
+        Not looking for more matches right now
+      </div>
+    )
 
   return (
     <>

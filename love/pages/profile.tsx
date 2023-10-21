@@ -27,20 +27,26 @@ export default function ProfilePage(props: {
     birthdate: dayjs(loverRow.birthdate).format('YYYY-MM-DD'),
     user,
   })
+  console.log(lover)
+  const setLoverState = (key: keyof rowFor<'lovers'>, value: any) => {
+    setLover((prevState) => ({ ...prevState, [key]: value }))
+  }
 
   return (
     <Col className="items-center">
       <Col className={'bg-canvas-0 w-full max-w-2xl px-6 py-4'}>
         <RequiredLoveUserForm
           user={user}
-          setLoverState={(key, value) => {
-            setLover((prevState) => ({ ...prevState, [key]: value }))
-          }}
+          setLoverState={setLoverState}
           loverState={lover}
           loverCreatedAlready={true}
         />
         <div className={'h-4'} />
-        <OptionalLoveUserForm lover={lover} butonLabel={'Save'} />
+        <OptionalLoveUserForm
+          lover={lover}
+          setLoverState={setLoverState}
+          butonLabel={'Save'}
+        />
       </Col>
     </Col>
   )

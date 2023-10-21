@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { set, uniq } from 'lodash'
+import { uniq } from 'lodash'
 import { Title } from 'web/components/widgets/title'
 import { Col } from 'web/components/layout/col'
 import clsx from 'clsx'
@@ -18,29 +18,18 @@ import { removeNullOrUndefinedProps } from 'common/util/object'
 import Image from 'next/image'
 import { buildArray } from 'common/util/array'
 import { updateLover } from 'web/lib/firebase/love/api'
-import { initialOptionalState } from 'common/love/lover'
-
-const optionalKeys = Object.keys(
-  initialOptionalState
-) as (keyof typeof initialOptionalState)[]
+import { Row as rowFor } from 'common/supabase/utils'
 
 export const OptionalLoveUserForm = (props: {
   lover: Lover
+  setLoverState: (key: keyof rowFor<'lovers'>, value: any) => void
   butonLabel?: string
 }) => {
-  const { lover, butonLabel } = props
+  const { lover, butonLabel, setLoverState } = props
   const { user } = lover
 
-  const [formState, setFormState] = useState({
-    ...initialOptionalState,
-    ...lover,
-  })
-  const [heightFeet, setHeightFeet] = useState(0)
-
-  const handleChange = (key: keyof typeof formState, value: any) => {
-    setFormState((prevState) => set({ ...prevState }, key, value))
-  }
   const router = useRouter()
+  const [heightFeet, setHeightFeet] = useState(0)
   const [uploadingImages, setUploadingImages] = useState(false)
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -57,15 +46,15 @@ export const OptionalLoveUserForm = (props: {
       console.error(e)
       return []
     })
-    handleChange('pinned_url', urls[0])
-    handleChange('photo_urls', urls)
+    setLoverState('pinned_url', urls[0])
+    setLoverState('photo_urls', urls)
     setUploadingImages(false)
   }
 
   const handleSubmit = async () => {
     const res = await updateLover(
       removeNullOrUndefinedProps({
-        ...formState,
+        ...lover,
       })
     ).catch((e) => {
       console.error(e)
@@ -91,9 +80,9 @@ export const OptionalLoveUserForm = (props: {
             disabled={uploadingImages}
           />
           <Row className="flex-wrap gap-2">
-            {uniq(buildArray(formState.pinned_url, formState.photo_urls))?.map(
+            {uniq(buildArray(lover.pinned_url, lover.photo_urls))?.map(
               (url, index) => {
-                const isPinned = url === formState.pinned_url
+                const isPinned = url === lover.pinned_url
                 return (
                   <div
                     key={index}
@@ -103,13 +92,11 @@ export const OptionalLoveUserForm = (props: {
                       'hover:border-teal-900'
                     )}
                     onClick={() => {
-                      handleChange(
+                      setLoverState(
                         'photo_urls',
-                        uniq(
-                          buildArray(formState.pinned_url, formState.photo_urls)
-                        )
+                        uniq(buildArray(lover.pinned_url, lover.photo_urls))
                       )
-                      handleChange('pinned_url', url)
+                      setLoverState('pinned_url', url)
                     }}
                   >
                     {isPinned && (
@@ -170,8 +157,10 @@ export const OptionalLoveUserForm = (props: {
               Apolitical: 'apolitical',
               Other: 'other',
             }}
-            selected={formState['political_beliefs'] ?? []}
-            onChange={(selected) => handleChange('political_beliefs', selected)}
+            selected={lover['political_beliefs'] ?? []}
+            onChange={(selected) =>
+              setLoverState('political_beliefs', selected)
+            }
           />
         </Col>
 
@@ -191,7 +180,7 @@ export const OptionalLoveUserForm = (props: {
               <Input
                 type="number"
                 onChange={(e) =>
-                  handleChange(
+                  setLoverState(
                     'height_in_inches',
                     Number(e.target.value) + heightFeet * 12
                   )
@@ -206,19 +195,19 @@ export const OptionalLoveUserForm = (props: {
           <label className={clsx(labelClassName)}>Location of birth</label>
           <Input
             type="text"
-            onChange={(e) => handleChange('born_in_location', e.target.value)}
+            onChange={(e) => setLoverState('born_in_location', e.target.value)}
             className={'w-52'}
           />
         </Col>
         <Col className={clsx(colClassName)}>
           <label className={clsx(labelClassName)}>Do you have pets?</label>
           <ChoicesToggleGroup
-            currentChoice={formState['has_pets'] ?? ''}
+            currentChoice={lover['has_pets'] ?? ''}
             choicesMap={{
               Yes: true,
               No: false,
             }}
-            setChoice={(c) => handleChange('has_pets', c)}
+            setChoice={(c) => setLoverState('has_pets', c)}
           />
         </Col>
 
@@ -235,8 +224,8 @@ export const OptionalLoveUserForm = (props: {
               'Pacific Islander': 'pacific_islander',
               Other: 'other',
             }}
-            selected={formState['ethnicity'] ?? []}
-            onChange={(selected) => handleChange('ethnicity', selected)}
+            selected={lover['ethnicity'] ?? []}
+            onChange={(selected) => setLoverState('ethnicity', selected)}
           />
         </Col>
 
@@ -245,14 +234,14 @@ export const OptionalLoveUserForm = (props: {
             Highest education level
           </label>
           <ChoicesToggleGroup
-            currentChoice={formState['education_level'] ?? ''}
+            currentChoice={lover['education_level'] ?? ''}
             choicesMap={{
               'High School': 'high-school',
               Bachelors: 'bachelors',
               Masters: 'masters',
               Doctorate: 'doctorate',
             }}
-            setChoice={(c) => handleChange('education_level', c)}
+            setChoice={(c) => setLoverState('education_level', c)}
           />
         </Col>
         <Row className={'justify-end'}>
