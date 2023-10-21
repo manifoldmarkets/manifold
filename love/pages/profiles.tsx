@@ -14,6 +14,7 @@ import { Row } from 'web/components/layout/row'
 import { shortenedFromNow } from 'web/lib/util/shortenedFromNow'
 import { Row as SupabaseRow } from 'common/supabase/utils'
 import { UserIcon } from '@heroicons/react/solid'
+import Link from 'next/link'
 
 export default function ProfilesPage() {
   const allLovers = useLovers()
@@ -94,9 +95,15 @@ function ProfilePreview(props: {
       )}
       <Col className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/70 via-black/70 to-transparent px-4 pt-6">
         <Row>
-          <div className="line-clamp-1 max-w-[calc(100%-2rem)] font-semibold">
+          <Link
+            onClick={(e) => {
+              e.stopPropagation()
+            }}
+            href={`/${user.username}`}
+            className="line-clamp-1 max-w-[calc(100%-2rem)] font-semibold hover:text-pink-300"
+          >
             {user.name}
-          </div>
+          </Link>
           , {calculateAge(birthdate)}
         </Row>
         <Row className="gap-1 text-xs">
