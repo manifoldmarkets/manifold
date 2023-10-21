@@ -76,7 +76,7 @@ function ProfilePreview(props: {
   return (
     <Col
       className="relative h-60 w-full overflow-hidden rounded text-white transition-all hover:z-40 hover:scale-110 hover:drop-shadow"
-      onClick={(e) => {
+      onClick={() => {
         setSelectedPhotos(buildArray(pinned_url, photo_urls))
         setShowPhotosModal(true)
       }}
