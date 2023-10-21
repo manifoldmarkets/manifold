@@ -1,6 +1,6 @@
 import { debounce, sortBy, sum } from 'lodash'
 import { useState, useMemo } from 'react'
-import { charities, Charity as CharityType } from 'common/charity'
+import { charities } from 'common/charity'
 import { CharityCard } from 'web/components/charity/charity-card'
 import { Col } from 'web/components/layout/col'
 import { Spacer } from 'web/components/layout/spacer'
