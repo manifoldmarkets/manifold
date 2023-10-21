@@ -6,7 +6,10 @@ import { Col } from 'web/components/layout/col'
 import { Spacer } from 'web/components/layout/spacer'
 import { Page } from 'web/components/layout/page'
 import { Title } from 'web/components/widgets/title'
-import { getDonationsByCharity, getMostRecentDonation } from 'web/lib/supabase/txns'
+import {
+  getDonationsByCharity,
+  getMostRecentDonation,
+} from 'web/lib/supabase/txns'
 import { formatMoney, manaToUSD } from 'common/util/format'
 import { searchInAny } from 'common/util/parse'
 import { getUser } from 'web/lib/firebase/users'
@@ -20,13 +23,13 @@ import { AlertBox } from 'web/components/widgets/alert-box'
 export async function getStaticProps() {
   const [totalsByCharity, mostRecentDonation] = await Promise.all([
     getDonationsByCharity(),
-    getMostRecentDonation()
+    getMostRecentDonation(),
   ])
   return {
     props: {
       totalsByCharity,
       mostRecentCharityId: mostRecentDonation.toId,
-      mostRecentDonor: await getUser(mostRecentDonation.fromId)
+      mostRecentDonor: await getUser(mostRecentDonation.fromId),
     },
     revalidate: 60,
   }
@@ -65,37 +68,34 @@ function DonatedStats(props: { stats: Stat[] }) {
 }
 
 export default function Charity(props: {
-  totalsByCharity: { [k: string]: number },
+  totalsByCharity: { [k: string]: number }
   mostRecentDonor?: User | null
   mostRecentCharityId?: string
 }) {
   const { totalsByCharity, mostRecentCharityId, mostRecentDonor } = props
 
   const [query, setQuery] = useState('')
-  const totalRaised = sum(Object.values(totalsByCharity));
+  const totalRaised = sum(Object.values(totalsByCharity))
   const debouncedQuery = debounce(setQuery, 50)
   const recentCharityName =
     charities.find((charity) => charity.id === mostRecentCharityId)?.name ??
     'Nobody'
 
-  const filterCharities = useMemo(
-    () => {
-      const sortedCharities = sortBy(charities, [
-        c => -(totalsByCharity[c.id] ?? 0),
-        c => c.name
-      ])
-      return sortedCharities.filter(
-        (charity) =>
-          searchInAny(
-            query,
-            charity.name,
-            charity.preview,
-            charity.description
-          ) || (charity.tags as string[])?.includes(query.toLowerCase())
-      )
-    },
-    [charities, totalsByCharity, query]
-  )
+  const filterCharities = useMemo(() => {
+    const sortedCharities = sortBy(charities, [
+      (c) => -(totalsByCharity[c.id] ?? 0),
+      (c) => c.name,
+    ])
+    return sortedCharities.filter(
+      (charity) =>
+        searchInAny(
+          query,
+          charity.name,
+          charity.preview,
+          charity.description
+        ) || (charity.tags as string[])?.includes(query.toLowerCase())
+    )
+  }, [charities, totalsByCharity, query])
 
   return (
     <Page trackPageView={'charity'}>

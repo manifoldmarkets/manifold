@@ -7,10 +7,10 @@ import { Row } from '../layout/row'
 import { Col } from '../layout/col'
 import { Card } from '../widgets/card'
 
-export function CharityCard(props: { charity: Charity, raised: number }) {
+export function CharityCard(props: { charity: Charity; raised: number }) {
   const { charity, raised } = props
   const { slug, photo, preview, tags } = charity
-  const raisedUSD = Math.floor(raised / 100);
+  const raisedUSD = Math.floor(raised / 100)
 
   return (
     <Link href={`/charity/${slug}`} className="flex-1">
