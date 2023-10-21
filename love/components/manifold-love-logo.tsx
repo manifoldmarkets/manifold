@@ -8,7 +8,7 @@ export default function ManifoldLoveLogo() {
   const user = useUser()
   return (
     <Link
-      href={user ? '/home' : '/'}
+      href={user ? '/profiles' : '/'}
       className=" flex flex-row gap-1 pb-3 pt-6"
     >
       <LoveLogo

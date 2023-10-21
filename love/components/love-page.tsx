@@ -98,6 +98,7 @@ export function LovePage(props: {
           sidebarNavigationOptions={sidebarNavigationOptions}
           navigationOptions={navigationOptions}
           hideCreateQuestionButton
+          isManifoldLove
         />
       )}
       <AddFundsModal
@@ -116,7 +117,7 @@ export function LovePage(props: {
 function getBottomNavigation(user: User) {
   return buildArray(
     { name: 'Profiles', href: '/profiles', icon: SolidHomeIcon },
-    { name: 'Updates', href: '/home', icon: ViewListIcon },
+    { name: 'Updates', href: '/updates', icon: ViewListIcon },
     {
       name: 'Profile',
       href: `/${user.username}`,
@@ -143,7 +144,7 @@ const getDesktopNav = (loggedIn: boolean, openDownloadApp: () => void) => {
   if (loggedIn)
     return buildArray(
       { name: 'Profiles', href: '/profiles', icon: HomeIcon },
-      { name: 'Updates', href: '/home', icon: ViewListIcon },
+      { name: 'Updates', href: '/updates', icon: ViewListIcon },
       {
         name: 'Notifications',
         href: `/notifications`,

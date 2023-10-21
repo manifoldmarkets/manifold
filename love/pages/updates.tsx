@@ -4,7 +4,7 @@ import { Row } from 'web/components/layout/row'
 import { ActivityLog } from 'web/components/activity-log'
 import { LovePage } from 'love/components/love-page'
 
-export default function HomePage() {
+export default function UpdatesPage() {
   return (
     <LovePage trackPageView={'live page'}>
       <SEO
