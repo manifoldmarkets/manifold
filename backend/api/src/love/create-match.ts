@@ -99,7 +99,11 @@ export const createMatch = authEndpoint(async (req, auth) => {
   const contract = await createMarketHelper(
     {
       question: `Will @${user1.username} and @${user2.username} date for six months?`,
-      descriptionMarkdown: ``,
+      descriptionMarkdown: `Check out the profiles of these two and bet on their long term compatibility!
+
+[${user1.name}](https://manifold.love/${user1.username})
+
+[${user2.name}](https://manifold.love/${user2.username})`,
       extraLiquidity: 950,
       outcomeType: 'BINARY',
       groupIds: [manifoldLoveRelationshipsGroupId],
