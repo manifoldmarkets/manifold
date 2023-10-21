@@ -1,7 +1,7 @@
 import { firebaseLogin, getUserByUsername, User } from 'web/lib/firebase/users'
 import { removeUndefinedProps } from 'common/util/object'
 import { Lover } from 'love/hooks/use-lover'
-import { getLover } from 'love/lib/supabase/lovers'
+import { getLoverRow } from 'love/lib/supabase/lovers'
 import {
   Answer,
   getUserAnswersAndQuestions,
@@ -15,7 +15,6 @@ import { Col } from 'web/components/layout/col'
 import ImageWithBlurredShadow from 'web/components/widgets/image-with-blurred-shadow'
 import { Avatar } from 'web/components/widgets/avatar'
 import { StackedUserNames } from 'web/components/widgets/user-link'
-import { DailyLeagueStat } from 'web/components/daily-league-stat'
 import { QuestsOrStreak } from 'web/components/quests-or-streak'
 import { SendMessageButton } from 'web/components/messaging/send-message-button'
 import { FollowButton } from 'web/components/buttons/follow-button'
@@ -44,7 +43,7 @@ export const getStaticProps = async (props: {
 }) => {
   const { username } = props.params
   const user = await getUserByUsername(username)
-  const lover = user ? await getLover(user.id).catch(() => null) : null
+  const lover = user ? await getLoverRow(user.id).catch(() => null) : null
   const { questions, answers } = user
     ? await getUserAnswersAndQuestions(user.id)
     : { answers: [], questions: [] }
@@ -135,13 +134,12 @@ export default function UserPage(props: {
                   <Button
                     color={'gray-outline'}
                     className={'h-12'}
-                    onClick={() => router.push('signup')}
+                    onClick={() => router.push('profile')}
                   >
                     <PencilIcon className="mr-2 h-4 w-4" />
                     Edit
                   </Button>
                 )}
-                <DailyLeagueStat user={user} />
                 <QuestsOrStreak user={user} />
               </Row>
             ) : isMobile ? (
@@ -329,16 +327,19 @@ export default function UserPage(props: {
                     })}
                 </Row>
               </Col>
+            ) : isCurrentUser ? (
+              <Col className={'mt-4 w-full items-center'}>
+                <Row>
+                  <Button onClick={() => router.push('love-questions')}>
+                    Answer questions
+                  </Button>
+                </Row>
+              </Col>
             ) : (
-              isCurrentUser && (
-                <Col className={'mt-4 w-full items-center'}>
-                  <Row>
-                    <Button onClick={() => router.push('love-questions')}>
-                      Answer questions
-                    </Button>
-                  </Row>
-                </Col>
-              )
+              <Col className={'mt-2 gap-2'}>
+                <span className={'text-xl font-semibold'}>Answers</span>
+                <span className={'text-ink-500 text-sm'}>Nothing yet :(</span>
+              </Col>
             )}
           </>
         ) : (

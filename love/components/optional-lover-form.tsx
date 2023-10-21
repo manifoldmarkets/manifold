@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { set, uniq } from 'lodash'
+import { uniq } from 'lodash'
 import { Title } from 'web/components/widgets/title'
 import { Col } from 'web/components/layout/col'
 import clsx from 'clsx'
@@ -18,29 +18,18 @@ import { removeNullOrUndefinedProps } from 'common/util/object'
 import Image from 'next/image'
 import { buildArray } from 'common/util/array'
 import { updateLover } from 'web/lib/firebase/love/api'
-export const optionalAttributes = (lover: Lover) => ({
-  ethnicity: lover.ethnicity,
-  born_in_location: lover.born_in_location,
-  height_in_inches: lover.height_in_inches,
-  has_pets: lover.has_pets,
-  education_level: lover.education_level,
-  photo_urls: lover.photo_urls,
-  pinned_url: lover.pinned_url,
-  religious_belief_strength: lover.religious_belief_strength,
-  religious_beliefs: lover.religious_beliefs,
-  political_beliefs: lover.political_beliefs,
-})
-export const OptionalLoveUserForm = (props: { lover: Lover }) => {
-  const { lover } = props
+import { Row as rowFor } from 'common/supabase/utils'
+
+export const OptionalLoveUserForm = (props: {
+  lover: Lover
+  setLoverState: (key: keyof rowFor<'lovers'>, value: any) => void
+  butonLabel?: string
+}) => {
+  const { lover, butonLabel, setLoverState } = props
   const { user } = lover
 
-  const [formState, setFormState] = useState(optionalAttributes(lover))
-  const [heightFeet, setHeightFeet] = useState(0)
-
-  const handleChange = (key: keyof typeof formState, value: any) => {
-    setFormState((prevState) => set({ ...prevState }, key, value))
-  }
   const router = useRouter()
+  const [heightFeet, setHeightFeet] = useState(0)
   const [uploadingImages, setUploadingImages] = useState(false)
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -57,18 +46,15 @@ export const OptionalLoveUserForm = (props: { lover: Lover }) => {
       console.error(e)
       return []
     })
-    handleChange('pinned_url', urls[0])
-    handleChange('photo_urls', urls)
+    setLoverState('pinned_url', urls[0])
+    setLoverState('photo_urls', urls)
     setUploadingImages(false)
   }
 
   const handleSubmit = async () => {
-    if (!Object.values(optionalAttributes(formState as Lover)).some((v) => v))
-      return router.push('/love-questions')
-    // Do something with the form state, such as sending it to an API
     const res = await updateLover(
       removeNullOrUndefinedProps({
-        ...formState,
+        ...lover,
       })
     ).catch((e) => {
       console.error(e)
@@ -94,9 +80,9 @@ export const OptionalLoveUserForm = (props: { lover: Lover }) => {
             disabled={uploadingImages}
           />
           <Row className="flex-wrap gap-2">
-            {uniq(buildArray(formState.pinned_url, formState.photo_urls))?.map(
+            {uniq(buildArray(lover.pinned_url, lover.photo_urls))?.map(
               (url, index) => {
-                const isPinned = url === formState.pinned_url
+                const isPinned = url === lover.pinned_url
                 return (
                   <div
                     key={index}
@@ -106,13 +92,11 @@ export const OptionalLoveUserForm = (props: { lover: Lover }) => {
                       'hover:border-teal-900'
                     )}
                     onClick={() => {
-                      handleChange(
+                      setLoverState(
                         'photo_urls',
-                        uniq(
-                          buildArray(formState.pinned_url, formState.photo_urls)
-                        )
+                        uniq(buildArray(lover.pinned_url, lover.photo_urls))
                       )
-                      handleChange('pinned_url', url)
+                      setLoverState('pinned_url', url)
                     }}
                   >
                     {isPinned && (
@@ -173,8 +157,10 @@ export const OptionalLoveUserForm = (props: { lover: Lover }) => {
               Apolitical: 'apolitical',
               Other: 'other',
             }}
-            selected={formState['political_beliefs'] ?? []}
-            onChange={(selected) => handleChange('political_beliefs', selected)}
+            selected={lover['political_beliefs'] ?? []}
+            onChange={(selected) =>
+              setLoverState('political_beliefs', selected)
+            }
           />
         </Col>
 
@@ -194,7 +180,7 @@ export const OptionalLoveUserForm = (props: { lover: Lover }) => {
               <Input
                 type="number"
                 onChange={(e) =>
-                  handleChange(
+                  setLoverState(
                     'height_in_inches',
                     Number(e.target.value) + heightFeet * 12
                   )
@@ -209,19 +195,19 @@ export const OptionalLoveUserForm = (props: { lover: Lover }) => {
           <label className={clsx(labelClassName)}>Location of birth</label>
           <Input
             type="text"
-            onChange={(e) => handleChange('born_in_location', e.target.value)}
+            onChange={(e) => setLoverState('born_in_location', e.target.value)}
             className={'w-52'}
           />
         </Col>
         <Col className={clsx(colClassName)}>
           <label className={clsx(labelClassName)}>Do you have pets?</label>
           <ChoicesToggleGroup
-            currentChoice={formState['has_pets'] ?? ''}
+            currentChoice={lover['has_pets'] ?? ''}
             choicesMap={{
               Yes: true,
               No: false,
             }}
-            setChoice={(c) => handleChange('has_pets', c)}
+            setChoice={(c) => setLoverState('has_pets', c)}
           />
         </Col>
 
@@ -238,8 +224,8 @@ export const OptionalLoveUserForm = (props: { lover: Lover }) => {
               'Pacific Islander': 'pacific_islander',
               Other: 'other',
             }}
-            selected={formState['ethnicity'] ?? []}
-            onChange={(selected) => handleChange('ethnicity', selected)}
+            selected={lover['ethnicity'] ?? []}
+            onChange={(selected) => setLoverState('ethnicity', selected)}
           />
         </Col>
 
@@ -248,18 +234,18 @@ export const OptionalLoveUserForm = (props: { lover: Lover }) => {
             Highest education level
           </label>
           <ChoicesToggleGroup
-            currentChoice={formState['education_level'] ?? ''}
+            currentChoice={lover['education_level'] ?? ''}
             choicesMap={{
               'High School': 'high-school',
               Bachelors: 'bachelors',
               Masters: 'masters',
               Doctorate: 'doctorate',
             }}
-            setChoice={(c) => handleChange('education_level', c)}
+            setChoice={(c) => setLoverState('education_level', c)}
           />
         </Col>
         <Row className={'justify-end'}>
-          <Button onClick={handleSubmit}>Next</Button>
+          <Button onClick={handleSubmit}>{butonLabel ?? 'Next'}</Button>
         </Row>
       </Col>
     </>

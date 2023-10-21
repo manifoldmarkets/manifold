@@ -28,7 +28,10 @@ export default function AdminPage() {
         </div>
 
         <LabCard title="💹 stats" href="/stats" />
-        <LabCard title="🍚 umami" href="/umami" />
+        <LabCard
+          title="🍚 umami"
+          href="https://analytics.eu.umami.is/websites/ee5d6afd-5009-405b-a69f-04e3e4e3a685"
+        />
         <LabCard
           title="🍥 grafana"
           description="db performance"

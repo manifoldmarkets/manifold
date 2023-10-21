@@ -40,8 +40,9 @@ export default function Sidebar(props: {
   className?: string
   isMobile?: boolean
   navigationOptions?: Item[]
+  hideCreateQuestionButton?: boolean
 }) {
-  const { className, isMobile } = props
+  const { className, isMobile, hideCreateQuestionButton } = props
   const router = useRouter()
   const currentPage = router.pathname
 
@@ -62,9 +63,11 @@ export default function Sidebar(props: {
 
   const bottomNavOptions = bottomNav(!!user, theme, toggleTheme)
 
-  const createMarketButton = user && !user.isBannedFromPosting && (
-    <CreateQuestionButton key="create-market-button" className={'mt-4'} />
-  )
+  const createMarketButton = !hideCreateQuestionButton &&
+    user &&
+    !user.isBannedFromPosting && (
+      <CreateQuestionButton key="create-market-button" className={'mt-4'} />
+    )
 
   return (
     <nav

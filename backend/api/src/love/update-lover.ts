@@ -3,8 +3,9 @@ import { APIError, authEndpoint } from 'api/helpers'
 import { createSupabaseClient } from 'shared/supabase/init'
 import { log } from 'shared/utils'
 import * as admin from 'firebase-admin'
+import { baseLoversSchema } from 'api/love/create-lover'
 
-const loveUsersSchema = z.object({
+const optionaLoversSchema = z.object({
   political_beliefs: z.array(z.string()).optional(),
   religious_belief_strength: z.number().optional(),
   religious_beliefs: z.array(z.string()).optional(),
@@ -18,8 +19,11 @@ const loveUsersSchema = z.object({
   last_online_time: z.string().optional(),
 })
 
+const combinedLoveUsersSchema = baseLoversSchema.merge(optionaLoversSchema)
+
 export const updatelover = authEndpoint(async (req, auth) => {
-  const parsedBody = loveUsersSchema.parse(req.body)
+  const parsedBody = combinedLoveUsersSchema.parse(req.body)
+  log('parsedBody', parsedBody)
   const db = createSupabaseClient()
   const { data: existingUser } = await db
     .from('lovers')

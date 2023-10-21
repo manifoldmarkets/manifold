@@ -1,14 +1,9 @@
-import {
-  CashIcon,
-  DeviceMobileIcon,
-  HomeIcon,
-  StarIcon,
-} from '@heroicons/react/outline'
+import { CashIcon, DeviceMobileIcon, HomeIcon } from '@heroicons/react/outline'
 import {
   QuestionMarkCircleIcon,
-  SearchIcon,
   HomeIcon as SolidHomeIcon,
   UserCircleIcon,
+  ViewListIcon,
 } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { User } from 'common/user'
@@ -100,6 +95,7 @@ export function LovePage(props: {
         <BottomNavBar
           sidebarNavigationOptions={sidebarNavigationOptions}
           navigationOptions={navigationOptions}
+          hideCreateQuestionButton
         />
       )}
       <AddFundsModal
@@ -117,8 +113,8 @@ export function LovePage(props: {
 
 function getBottomNavigation(user: User) {
   return buildArray(
-    { name: 'Home', href: '/home', icon: SolidHomeIcon },
-    { name: 'Browse', href: '/profiles', icon: SearchIcon },
+    { name: 'Profiles', href: '/profiles', icon: SolidHomeIcon },
+    { name: 'Updates', href: '/home', icon: ViewListIcon },
     {
       name: 'Profile',
       href: `/${user.username}`,
@@ -137,15 +133,15 @@ function getBottomNavigation(user: User) {
 }
 
 const signedOutNavigation = () => [
-  { name: 'Browse', href: '/profiles', icon: SearchIcon },
+  { name: 'Profiles', href: '/profiles', icon: HomeIcon },
   { name: 'About', href: '/about', icon: QuestionMarkCircleIcon },
   { name: 'Sign in', onClick: firebaseLogin, icon: UserCircleIcon },
 ]
 const getDesktopNav = (loggedIn: boolean, openDownloadApp: () => void) => {
   if (loggedIn)
     return buildArray(
-      { name: 'Home', href: '/home', icon: HomeIcon },
-      { name: 'Profiles', href: '/profiles', icon: SearchIcon },
+      { name: 'Profiles', href: '/profiles', icon: HomeIcon },
+      { name: 'Updates', href: '/home', icon: ViewListIcon },
       {
         name: 'Notifications',
         href: `/notifications`,
@@ -161,7 +157,7 @@ const getDesktopNav = (loggedIn: boolean, openDownloadApp: () => void) => {
     )
 
   return buildArray(
-    { name: 'Browse', href: '/profiles', icon: SearchIcon },
+    { name: 'Profiles', href: '/profiles', icon: HomeIcon },
     { name: 'About', href: '/about', icon: QuestionMarkCircleIcon },
     { name: 'App', onClick: openDownloadApp, icon: DeviceMobileIcon }
   )
@@ -171,7 +167,7 @@ const getDesktopNav = (loggedIn: boolean, openDownloadApp: () => void) => {
 const getSidebarNavigation = (toggleModal: () => void) => {
   return buildArray(
     { name: 'Messages', href: '/messages', icon: PrivateMessagesIcon },
-    { name: 'Get mana', icon: CashIcon, onClick: toggleModal },
-    { name: 'Share with friends', href: '/referrals', icon: StarIcon } // remove this and I will beat you — SG
+    { name: 'Get mana', icon: CashIcon, onClick: toggleModal }
+    // { name: 'Share with friends', href: '/referrals', icon: StarIcon } // remove this and I will beat you — SG
   )
 }

@@ -1,4 +1,4 @@
-import { track } from '@amplitude/analytics-browser'
+import { track } from 'web/lib/service/analytics'
 import clsx from 'clsx'
 import { formatMoney } from 'common/util/format'
 import { useEffect, useState } from 'react'

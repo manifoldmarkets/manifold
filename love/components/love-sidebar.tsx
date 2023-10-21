@@ -36,7 +36,7 @@ import { Item, SidebarItem } from 'web/components/nav/sidebar-item'
 import { PrivateMessagesIcon } from 'web/components/messaging/messages-icon'
 import ManifoldLoveLogo from './manifold-love-logo'
 
-export default function Sidebar(props: {
+export default function LoveSidebar(props: {
   className?: string
   isMobile?: boolean
   navigationOptions?: Item[]
@@ -62,10 +62,6 @@ export default function Sidebar(props: {
 
   const bottomNavOptions = bottomNav(!!user, theme, toggleTheme)
 
-  const createMarketButton = user && !user.isBannedFromPosting && (
-    <CreateQuestionButton key="create-market-button" className={'mt-4'} />
-  )
-
   return (
     <nav
       aria-label="Sidebar"
@@ -78,9 +74,9 @@ export default function Sidebar(props: {
       {user && !isMobile && <ProfileSummary user={user} className="mb-3" />}
 
       <div className="mb-4 flex flex-col gap-1">
-        {/* {navOptions.map((item) => (
+        {navOptions.map((item) => (
           <SidebarItem key={item.name} item={item} currentPage={currentPage} />
-        ))} */}
+        ))}
 
         <MobileAppsQRCodeDialog
           key="mobile-apps-qr-code"
@@ -89,8 +85,6 @@ export default function Sidebar(props: {
         />
 
         {user === null && <SidebarSignUpButton />}
-
-        {createMarketButton}
       </div>
       <div className="mb-6 mt-auto flex flex-col gap-1">
         {user !== null && (

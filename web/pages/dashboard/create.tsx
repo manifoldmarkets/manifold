@@ -1,4 +1,4 @@
-import { track } from '@amplitude/analytics-browser'
+import { track } from 'web/lib/service/analytics'
 import clsx from 'clsx'
 import { MAX_DESCRIPTION_LENGTH } from 'common/contract'
 import { DashboardItem, MAX_DASHBOARD_TITLE_LENGTH } from 'common/dashboard'

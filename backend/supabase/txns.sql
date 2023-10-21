@@ -12,3 +12,11 @@ with daily_totals as (
 select total from daily_totals
 order by total desc;
 $$ language sql;
+
+create or replace function get_donations_by_charity() returns table (charity_id text, total numeric) as $$
+    select data->>'toId' as charity_id, sum((data->'amount')::numeric) as total
+    from txns
+    where data->>'category' = 'CHARITY'
+    group by data->>'toId'
+    order by total desc
+$$ language sql;

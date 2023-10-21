@@ -8,7 +8,7 @@ export const useRedirectIfSignedOut = () => {
   useEffect(() => {
     if (user !== null) return
     // Go to landing page if not logged in.
-    if (getIsNative()) Router.push('/sign-in-waiting')
-    else Router.push('/')
+    if (getIsNative()) Router.replace('/sign-in-waiting')
+    else Router.replace('/')
   }, [user])
 }
