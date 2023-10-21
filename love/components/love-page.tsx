@@ -26,7 +26,7 @@ import { useTracking } from 'web/hooks/use-tracking'
 import { useUser } from 'web/hooks/use-user'
 import { GoogleOneTapLogin } from 'web/lib/firebase/google-onetap-login'
 import { firebaseLogin } from 'web/lib/firebase/users'
-import LoveSidebar from './love-sidebar'
+import Sidebar from 'web/components/nav/sidebar'
 
 export function LovePage(props: {
   trackPageView: string | false
@@ -76,9 +76,10 @@ export function LovePage(props: {
         {hideSidebar ? (
           <div className="lg:col-span-2 lg:flex" />
         ) : (
-          <LoveSidebar
+          <Sidebar
             navigationOptions={sidebarNavigationOptions}
             className="sticky top-0 hidden self-start px-2 lg:col-span-2 lg:flex"
+            loveSidebar
           />
         )}
         <main
