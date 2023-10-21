@@ -58,7 +58,6 @@ import Custom404 from '../404'
 import ContractEmbedPage from 'web/pages/embed/[username]/[contractSlug]'
 import { ExplainerPanel } from 'web/components/explainer-panel'
 import { SidebarSignUpButton } from 'web/components/buttons/sign-up-button'
-import { MarketTopics } from 'web/components/contract/market-topics'
 import { getMultiBetPoints } from 'web/components/charts/contract/choice'
 import { useRealtimeBets } from 'web/hooks/use-bets-supabase'
 import { ContractSEO } from 'web/components/contract/contract-seo'
@@ -392,7 +391,6 @@ export function ContractPageContent(props: ContractParams) {
                     canEdit={isAdmin || isCreator}
                   />
                 </div>
-                <MarketTopics contract={contract} />
               </Col>
 
               <div className="text-ink-600 flex flex-wrap items-center justify-between gap-y-1 text-sm">
