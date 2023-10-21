@@ -68,7 +68,7 @@ export const OptionalLoveUserForm = (props: {
 
   return (
     <>
-      <Title>Optional questions</Title>
+      <Title>More about me</Title>
       <Col className={'gap-8'}>
         <Col className={clsx(colClassName)}>
           <label className={clsx(labelClassName)}>Upload some pics!</label>

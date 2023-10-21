@@ -72,7 +72,7 @@ export const RequiredLoveUserForm = (props: {
 
   return (
     <>
-      <Title>Required questions</Title>
+      <Title>The Basics</Title>
       <Col className={'gap-8'}>
         <Col>
           <label className={clsx(labelClassName)}>Display name</label>
