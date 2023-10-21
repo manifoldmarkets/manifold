@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { Col } from 'web/components/layout/col'
-import { Lover } from 'love/hooks/use-lover'
 import { RequiredLoveUserForm } from 'love/components/required-lover-form'
 import { OptionalLoveUserForm } from 'love/components/optional-lover-form'
 import { useUser } from 'web/hooks/use-user'
@@ -16,7 +15,7 @@ import { initialRequiredState, initialOptionalState } from 'common/love/lover'
 import { Row as rowFor } from 'common/supabase/utils'
 
 export default function SignupPage() {
-  const [newLover, setNewLover] = useState<Lover>()
+  const [step, setStep] = useState(0)
   const user = useUser()
   const router = useRouter()
   // Omit the id, created_time?
@@ -40,7 +39,7 @@ export default function SignupPage() {
               <GoogleSignInButton onClick={firebaseLogin} />
             </Row>
           </Col>
-        ) : !newLover ? (
+        ) : step === 0 ? (
           <RequiredLoveUserForm
             user={user}
             setLoverState={setLoverState}
@@ -57,14 +56,15 @@ export default function SignupPage() {
                 return null
               })
               if (res && res.lover) {
-                setNewLover({ ...res.lover, user } as Lover)
+                setLoverForm(res.lover)
+                setStep(1)
               }
             }}
           />
-        ) : newLover ? (
+        ) : step === 1 ? (
           <OptionalLoveUserForm
             setLoverState={setLoverState}
-            lover={newLover}
+            lover={{ ...loverForm, user }}
           />
         ) : (
           <LoadingIndicator />

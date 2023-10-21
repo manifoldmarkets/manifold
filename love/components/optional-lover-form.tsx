@@ -197,6 +197,7 @@ export const OptionalLoveUserForm = (props: {
             type="text"
             onChange={(e) => setLoverState('born_in_location', e.target.value)}
             className={'w-52'}
+            value={lover['born_in_location'] ?? ''}
           />
         </Col>
         <Col className={clsx(colClassName)}>

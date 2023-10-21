@@ -15,6 +15,7 @@ import { useEditableUserInfo } from 'web/hooks/use-editable-user-info'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { initialRequiredState } from 'common/love/lover'
 import { Row as rowFor } from 'common/supabase/utils'
+import dayjs from 'dayjs'
 
 const requiredKeys = Object.keys(
   initialRequiredState
@@ -158,7 +159,9 @@ export const RequiredLoveUserForm = (props: {
                 onChange={(e) =>
                   setLoverState(
                     'birthdate',
-                    new Date(e.target.value).toISOString()
+                    dayjs(new Date(e.target.value).toISOString()).format(
+                      'YYYY-MM-DD'
+                    )
                   )
                 }
                 className={'w-40'}
