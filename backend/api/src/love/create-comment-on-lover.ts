@@ -51,14 +51,14 @@ export const createcommentonlover = authEndpoint(async (req, auth) => {
       replyToCommentId,
     ]
   )
-
-  await createNewCommentOnLoverNotification(
-    onUser,
-    creator,
-    richTextToString(content),
-    comment.id,
-    pg
-  )
+  if (onUser.id !== creator.id)
+    await createNewCommentOnLoverNotification(
+      onUser,
+      creator,
+      richTextToString(content),
+      comment.id,
+      pg
+    )
 
   return { status: 'success' }
 })
