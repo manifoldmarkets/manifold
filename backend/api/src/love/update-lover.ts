@@ -17,6 +17,14 @@ const optionaLoversSchema = z.object({
   has_pets: z.boolean().optional(),
   education_level: z.string().optional(),
   last_online_time: z.string().optional(),
+  is_smoker: z.boolean().optional(),
+  drinks_per_month: z.number().min(0).optional(),
+  is_vegetarian_or_vegan: z.boolean().optional(),
+  has_kids: z.number().min(0).optional(),
+  university: z.string().optional(),
+  occupation_title: z.string().optional(),
+  occupation: z.string().optional(),
+  company: z.string().optional(),
 })
 
 const combinedLoveUsersSchema = baseLoversSchema.merge(optionaLoversSchema)

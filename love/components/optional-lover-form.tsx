@@ -149,18 +149,56 @@ export const OptionalLoveUserForm = (props: {
           <MultiCheckbox
             choices={{
               Liberal: 'liberal',
-              Socialist: 'socialist',
-              Libertarian: 'libertarian',
               Moderate: 'moderate',
               Conservative: 'conservative',
-              Anarchist: 'anarchist',
-              Apolitical: 'apolitical',
+              Socialist: 'socialist',
+              Libertarian: 'libertarian',
+              'E/acc': 'e/acc',
+              'Pause AI': 'pause ai',
               Other: 'other',
             }}
             selected={lover['political_beliefs'] ?? []}
             onChange={(selected) =>
               setLoverState('political_beliefs', selected)
             }
+          />
+        </Col>
+
+        <Col className={clsx(colClassName)}>
+          <label className={clsx(labelClassName)}>Current number of kids</label>
+          <Input
+            type="number"
+            onChange={(e) => setLoverState('has_kids', Number(e.target.value))}
+            className={'w-20'}
+            min={0}
+            value={lover['has_kids'] ?? undefined}
+          />
+        </Col>
+
+        <Col className={clsx(colClassName)}>
+          <label className={clsx(labelClassName)}>Do you smoke?</label>
+          <ChoicesToggleGroup
+            currentChoice={lover['is_smoker'] ?? -1}
+            choicesMap={{
+              Yes: true,
+              No: false,
+            }}
+            setChoice={(c) => setLoverState('is_smoker', c)}
+          />
+        </Col>
+
+        <Col className={clsx(colClassName)}>
+          <label className={clsx(labelClassName)}>
+            Alcoholic beverages consumed per month
+          </label>
+          <Input
+            type="number"
+            onChange={(e) =>
+              setLoverState('drinks_per_month', Number(e.target.value))
+            }
+            className={'w-20'}
+            min={0}
+            value={lover['drinks_per_month'] ?? undefined}
           />
         </Col>
 
@@ -200,17 +238,6 @@ export const OptionalLoveUserForm = (props: {
             value={lover['born_in_location'] ?? ''}
           />
         </Col>
-        <Col className={clsx(colClassName)}>
-          <label className={clsx(labelClassName)}>Do you have pets?</label>
-          <ChoicesToggleGroup
-            currentChoice={lover['has_pets'] ?? ''}
-            choicesMap={{
-              Yes: true,
-              No: false,
-            }}
-            setChoice={(c) => setLoverState('has_pets', c)}
-          />
-        </Col>
 
         <Col className={clsx(colClassName)}>
           <label className={clsx(labelClassName)}>Ethnicity/origin(s)</label>
@@ -243,6 +270,44 @@ export const OptionalLoveUserForm = (props: {
               Doctorate: 'doctorate',
             }}
             setChoice={(c) => setLoverState('education_level', c)}
+          />
+        </Col>
+        <Col className={clsx(colClassName)}>
+          <label className={clsx(labelClassName)}>University</label>
+          <Input
+            type="text"
+            onChange={(e) => setLoverState('university', e.target.value)}
+            className={'w-52'}
+            value={lover['university'] ?? ''}
+          />
+        </Col>
+        <Col className={clsx(colClassName)}>
+          <label className={clsx(labelClassName)}>Company</label>
+          <Input
+            type="text"
+            onChange={(e) => setLoverState('company', e.target.value)}
+            className={'w-52'}
+            value={lover['company'] ?? ''}
+          />
+        </Col>
+        <Col className={clsx(colClassName)}>
+          <label className={clsx(labelClassName)}>Occupation</label>
+          <Input
+            type="text"
+            onChange={(e) => setLoverState('occupation', e.target.value)}
+            className={'w-52'}
+            value={lover['occupation'] ?? ''}
+          />
+        </Col>
+        <Col className={clsx(colClassName)}>
+          <label className={clsx(labelClassName)}>
+            Title at {lover['occupation'] ?? 'occupation'}
+          </label>
+          <Input
+            type="text"
+            onChange={(e) => setLoverState('occupation_title', e.target.value)}
+            className={'w-52'}
+            value={lover['occupation_title'] ?? ''}
           />
         </Col>
         <Row className={'justify-end'}>

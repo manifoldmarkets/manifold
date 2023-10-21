@@ -11,7 +11,6 @@ const genderType = z.union([
   z.literal('trans-female'),
   z.literal('trans-male'),
   z.literal('non-binary'),
-  z.literal('other'),
 ])
 const genderTypes = z.array(genderType)
 
@@ -31,10 +30,6 @@ export const baseLoversSchema = z.object({
       z.literal('other'),
     ])
   ),
-  is_smoker: z.boolean(),
-  drinks_per_month: z.number().min(0),
-  is_vegetarian_or_vegan: z.boolean(),
-  has_kids: z.number().min(0),
   wants_kids_strength: z.number().min(0),
   looking_for_matches: z.boolean(),
 })

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Title } from 'web/components/widgets/title'
 import { Col } from 'web/components/layout/col'
 import clsx from 'clsx'
@@ -16,6 +16,7 @@ import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { initialRequiredState } from 'common/love/lover'
 import { Row as rowFor } from 'common/supabase/utils'
 import dayjs from 'dayjs'
+import { Checkbox } from 'web/components/widgets/checkbox'
 
 const requiredKeys = Object.keys(
   initialRequiredState
@@ -30,7 +31,7 @@ export const RequiredLoveUserForm = (props: {
 }) => {
   const { user, onSubmit, loverCreatedAlready, setLoverState, loverState } =
     props
-
+  const [trans, setTrans] = useState<boolean>()
   const [showCityInput, setShowCityInput] = useState(false)
   const { updateUsername, updateDisplayName, userInfo, updateUserState } =
     useEditableUserInfo(user)
@@ -58,6 +59,17 @@ export const RequiredLoveUserForm = (props: {
     !loadingUsername &&
     !loadingName
 
+  useEffect(() => {
+    const currentState = loverState['gender']
+    if (currentState === 'non-binary') {
+      setTrans(undefined)
+    } else if (trans && !currentState.includes('trans-')) {
+      setLoverState('gender', 'trans-' + currentState.replace('trans-', ''))
+    } else if (!trans && currentState.includes('trans-')) {
+      setLoverState('gender', currentState.replace('trans-', ''))
+    }
+  }, [trans, loverState['gender']])
+
   return (
     <>
       <Title>Required questions</Title>
@@ -75,18 +87,14 @@ export const RequiredLoveUserForm = (props: {
               }}
               onBlur={updateDisplayName}
             />
+            {loadingName && <LoadingIndicator className={'ml-2'} />}
           </Row>
-          {loadingName && (
-            <Row className={'mt-2 items-center gap-4'}>
-              <LoadingIndicator />
-            </Row>
-          )}
           {errorName && <span className="text-error text-sm">{errorName}</span>}
         </Col>
 
         <Col>
           <label className={clsx(labelClassName)}>Username</label>
-          <Row>
+          <Row className={'items-center gap-2'}>
             <Input
               disabled={loadingUsername}
               type="text"
@@ -97,12 +105,8 @@ export const RequiredLoveUserForm = (props: {
               }}
               onBlur={updateUsername}
             />
+            {loadingUsername && <LoadingIndicator className={'ml-2'} />}
           </Row>
-          {loadingUsername && (
-            <Row className={'mt-2 items-center gap-4'}>
-              <LoadingIndicator />
-            </Row>
-          )}
           {errorUsername && (
             <span className="text-error text-sm">{errorUsername}</span>
           )}
@@ -169,21 +173,27 @@ export const RequiredLoveUserForm = (props: {
               />
             </Col>
 
-            <Col className={clsx(colClassName)}>
-              <label className={clsx(labelClassName)}>Gender</label>
-              <ChoicesToggleGroup
-                currentChoice={loverState['gender']}
-                choicesMap={{
-                  Male: 'male',
-                  Female: 'female',
-                  'Non-binary': 'non-binary',
-                  'Trans-female': 'trans-female',
-                  'Trans-male': 'trans-male',
-                  Other: 'other',
-                }}
-                setChoice={(c) => setLoverState('gender', c)}
+            <Row className={'items-center gap-2'}>
+              <Col className={'gap-1'}>
+                <label className={clsx(labelClassName)}>Gender</label>
+                <ChoicesToggleGroup
+                  currentChoice={loverState['gender'].replace('trans-', '')}
+                  choicesMap={{
+                    Male: 'male',
+                    Female: 'female',
+                    'Non-binary': 'non-binary',
+                  }}
+                  setChoice={(c) => setLoverState('gender', c)}
+                />
+              </Col>
+              <Checkbox
+                className={'mt-7'}
+                label={'Trans'}
+                toggle={setTrans}
+                checked={trans ?? false}
+                disabled={loverState['gender'] === 'non-binary'}
               />
-            </Col>
+            </Row>
 
             <Col className={clsx(colClassName)}>
               <label className={clsx(labelClassName)}>Interested in</label>
@@ -194,7 +204,6 @@ export const RequiredLoveUserForm = (props: {
                   'Non-binary': 'non-binary',
                   'Trans-female': 'trans-female',
                   'Trans-male': 'trans-male',
-                  Other: 'other',
                 }}
                 selected={loverState['pref_gender']}
                 onChange={(selected) => setLoverState('pref_gender', selected)}
@@ -214,33 +223,6 @@ export const RequiredLoveUserForm = (props: {
                 onChange={(selected) =>
                   setLoverState('pref_relation_styles', selected)
                 }
-              />
-            </Col>
-
-            <Col className={clsx(colClassName)}>
-              <label className={clsx(labelClassName)}>Do you smoke?</label>
-              <ChoicesToggleGroup
-                currentChoice={loverState['is_smoker']}
-                choicesMap={{
-                  Yes: true,
-                  No: false,
-                }}
-                setChoice={(c) => setLoverState('is_smoker', c)}
-              />
-            </Col>
-
-            <Col className={clsx(colClassName)}>
-              <label className={clsx(labelClassName)}>
-                Alcoholic beverages consumed per month
-              </label>
-              <Input
-                type="number"
-                onChange={(e) =>
-                  setLoverState('drinks_per_month', Number(e.target.value))
-                }
-                className={'w-20'}
-                min={0}
-                value={loverState['drinks_per_month']}
               />
             </Col>
 
@@ -280,28 +262,12 @@ export const RequiredLoveUserForm = (props: {
 
             <Col className={clsx(colClassName)}>
               <label className={clsx(labelClassName)}>
-                Current number of kids
-              </label>
-              <Input
-                type="number"
-                onChange={(e) =>
-                  setLoverState('has_kids', Number(e.target.value))
-                }
-                className={'w-20'}
-                min={0}
-                value={loverState['has_kids']}
-              />
-            </Col>
-
-            <Col className={clsx(colClassName)}>
-              <label className={clsx(labelClassName)}>
                 You want to have kids
               </label>
               <RadioToggleGroup
                 className={'w-44'}
                 choicesMap={MultipleChoiceOptions}
                 setChoice={(choice) => {
-                  console.log(choice)
                   setLoverState('wants_kids_strength', choice)
                 }}
                 currentChoice={loverState.wants_kids_strength ?? -1}

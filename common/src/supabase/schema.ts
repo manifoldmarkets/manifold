@@ -989,20 +989,22 @@ export interface Database {
           birthdate: string
           born_in_location: string | null
           city: string
+          company: string | null
           created_time: string
-          drinks_per_month: number
+          drinks_per_month: number | null
           education_level: string | null
           ethnicity: string[] | null
           gender: string
-          has_kids: number
-          has_pets: boolean | null
+          has_kids: number | null
           height_in_inches: number | null
           id: number
-          is_smoker: boolean
-          is_vegetarian_or_vegan: boolean
+          is_smoker: boolean | null
+          is_vegetarian_or_vegan: boolean | null
           last_online_time: string
           looking_for_matches: boolean
           messaging_status: string
+          occupation: string | null
+          occupation_title: string | null
           photo_urls: string[] | null
           pinned_url: string | null
           political_beliefs: string[] | null
@@ -1012,6 +1014,7 @@ export interface Database {
           pref_relation_styles: string[]
           religious_belief_strength: number | null
           religious_beliefs: string[] | null
+          university: string | null
           user_id: string
           visibility: string
           wants_kids_strength: number
@@ -1020,20 +1023,22 @@ export interface Database {
           birthdate: string
           born_in_location?: string | null
           city: string
+          company?: string | null
           created_time?: string
-          drinks_per_month?: number
+          drinks_per_month?: number | null
           education_level?: string | null
           ethnicity?: string[] | null
           gender: string
-          has_kids?: number
-          has_pets?: boolean | null
+          has_kids?: number | null
           height_in_inches?: number | null
           id?: never
-          is_smoker?: boolean
-          is_vegetarian_or_vegan?: boolean
+          is_smoker?: boolean | null
+          is_vegetarian_or_vegan?: boolean | null
           last_online_time?: string
           looking_for_matches?: boolean
           messaging_status?: string
+          occupation?: string | null
+          occupation_title?: string | null
           photo_urls?: string[] | null
           pinned_url?: string | null
           political_beliefs?: string[] | null
@@ -1043,6 +1048,7 @@ export interface Database {
           pref_relation_styles: string[]
           religious_belief_strength?: number | null
           religious_beliefs?: string[] | null
+          university?: string | null
           user_id: string
           visibility?: string
           wants_kids_strength?: number
@@ -1051,20 +1057,22 @@ export interface Database {
           birthdate?: string
           born_in_location?: string | null
           city?: string
+          company?: string | null
           created_time?: string
-          drinks_per_month?: number
+          drinks_per_month?: number | null
           education_level?: string | null
           ethnicity?: string[] | null
           gender?: string
-          has_kids?: number
-          has_pets?: boolean | null
+          has_kids?: number | null
           height_in_inches?: number | null
           id?: never
-          is_smoker?: boolean
-          is_vegetarian_or_vegan?: boolean
+          is_smoker?: boolean | null
+          is_vegetarian_or_vegan?: boolean | null
           last_online_time?: string
           looking_for_matches?: boolean
           messaging_status?: string
+          occupation?: string | null
+          occupation_title?: string | null
           photo_urls?: string[] | null
           pinned_url?: string | null
           political_beliefs?: string[] | null
@@ -1074,6 +1082,7 @@ export interface Database {
           pref_relation_styles?: string[]
           religious_belief_strength?: number | null
           religious_beliefs?: string[] | null
+          university?: string | null
           user_id?: string
           visibility?: string
           wants_kids_strength?: number
@@ -3001,7 +3010,7 @@ export interface Database {
         Args: {
           table_id: string
         }
-        Returns: Database["public"]["CompositeTypes"]["table_spec"]
+        Returns: Database['public']['CompositeTypes']['table_spec']
       }
       get_donations_by_charity: {
         Args: Record<PropertyKey, never>

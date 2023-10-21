@@ -11,7 +11,7 @@ import { Row } from 'web/components/layout/row'
 import clsx from 'clsx'
 import { createLover } from 'web/lib/firebase/love/api'
 import { useRouter } from 'next/router'
-import { initialRequiredState, initialOptionalState } from 'common/love/lover'
+import { initialRequiredState } from 'common/love/lover'
 import { Row as rowFor } from 'common/supabase/utils'
 
 export default function SignupPage() {
@@ -21,7 +21,6 @@ export default function SignupPage() {
   // Omit the id, created_time?
   const [loverForm, setLoverForm] = useState<rowFor<'lovers'>>({
     ...initialRequiredState,
-    ...initialOptionalState,
   } as any)
   const setLoverState = (key: keyof rowFor<'lovers'>, value: any) => {
     setLoverForm((prevState) => ({ ...prevState, [key]: value }))
@@ -58,6 +57,7 @@ export default function SignupPage() {
               if (res && res.lover) {
                 setLoverForm(res.lover)
                 setStep(1)
+                scrollTo(0, 0)
               }
             }}
           />
