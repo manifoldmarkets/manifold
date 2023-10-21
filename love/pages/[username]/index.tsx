@@ -1,4 +1,8 @@
-import { PencilIcon } from '@heroicons/react/outline'
+import {
+  ChevronDownIcon,
+  ChevronUpIcon,
+  PencilIcon,
+} from '@heroicons/react/outline'
 import { removeUndefinedProps } from 'common/util/object'
 import { LovePage } from 'love/components/love-page'
 import { LoverCommentSection } from 'love/components/lover-comment-section'
@@ -21,6 +25,9 @@ import { SEO } from 'web/components/SEO'
 import { useUser } from 'web/hooks/use-user'
 import { firebaseLogin, getUserByUsername, User } from 'web/lib/firebase/users'
 import { fromNow } from 'web/lib/util/time'
+import { useRef, useState } from 'react'
+import clsx from 'clsx'
+import { useSafeLayoutEffect } from 'web/hooks/use-safe-layout-effect'
 
 export const getStaticProps = async (props: {
   params: {
@@ -199,7 +206,9 @@ export default function UserPage(props: {
 const LoverAttributes = (props: { lover: Lover }) => {
   const { lover } = props
 
-  const loverPropsTitles: { [key: string]: string } = {
+  const loverPropsTitles: {
+    [key in keyof Partial<Omit<Lover, 'user'>>]: string
+  } = {
     last_online_time: 'Last online',
     city: 'City',
     gender: 'Gender',
@@ -211,7 +220,6 @@ const LoverAttributes = (props: { lover: Lover }) => {
     education_level: 'Education level',
     ethnicity: 'Ethnicity',
     has_kids: 'Number of kids',
-    has_pets: 'Has pets',
     born_in_location: 'Birthplace',
     height_in_inches: 'Height (inches)',
     is_smoker: 'Smokes',
@@ -220,15 +228,42 @@ const LoverAttributes = (props: { lover: Lover }) => {
     religious_belief_strength: 'Strength of religious belief',
     religious_beliefs: 'Religious beliefs',
     wants_kids_strength: 'Desire for kids',
+    company: 'Company',
+    looking_for_matches: '',
+    messaging_status: '',
+    occupation: 'Occupation',
+    occupation_title: 'Title',
+    university: 'University',
   }
+  const [showMore, setShowMore] = useState(false)
+  const [shouldAllowCollapseOfContent, setShouldAllowCollapseOfContent] =
+    useState(false)
+  const contentRef = useRef<HTMLDivElement>(null)
 
+  useSafeLayoutEffect(() => {
+    if (contentRef.current) {
+      if (contentRef.current.offsetHeight > 180) {
+        setShouldAllowCollapseOfContent(true)
+      }
+    }
+  }, [contentRef.current?.offsetHeight])
   const cardClassName = 'px-3 py-2 bg-canvas-0 w-40 gap-1 rounded-md'
   return (
-    <Row className={'flex-wrap gap-3'}>
+    <Row
+      className={clsx(
+        'relative flex-wrap gap-3 overflow-hidden',
+        showMore ? 'h-full' : 'max-h-24 '
+      )}
+      ref={contentRef}
+    >
       {Object.keys(loverPropsTitles).map((k) => {
         const key = k as keyof Omit<Lover, 'user'>
-        if (!loverPropsTitles[key] || lover[key] === undefined) return null
-
+        if (
+          !loverPropsTitles[key] ||
+          lover[key] === undefined ||
+          lover[key] === null
+        )
+          return null
         const formattedValue = formatValue(key, lover[key])
         if (formattedValue === null || formattedValue.length === 0) return null
         if (
@@ -249,6 +284,25 @@ const LoverAttributes = (props: { lover: Lover }) => {
         <Row className={'font-semibold'}>Preferred Age Range</Row>
         <Row>{`${lover.pref_age_min} - ${lover.pref_age_max}`}</Row>
       </Col>
+      {!showMore && shouldAllowCollapseOfContent && (
+        <>
+          <div className="from-canvas-50 absolute bottom-0 h-8 w-full rounded-b-md bg-gradient-to-t" />
+        </>
+      )}
+      {shouldAllowCollapseOfContent && (
+        <Button
+          color={'gray-outline'}
+          className={'absolute bottom-0 right-0'}
+          onClick={() => setShowMore(!showMore)}
+        >
+          {showMore ? (
+            <ChevronUpIcon className="mr-2 h-4 w-4" />
+          ) : (
+            <ChevronDownIcon className="mr-2 h-4 w-4" />
+          )}
+          Show {showMore ? 'less' : 'more'}
+        </Button>
+      )}
     </Row>
   )
 }

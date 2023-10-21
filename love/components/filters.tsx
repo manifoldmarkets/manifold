@@ -73,6 +73,7 @@ export const Filters = (props: {
         return false
       } else if (
         filters.has_kids !== undefined &&
+        filters.has_kids !== null &&
         (lover.has_kids ?? 0) < filters.has_kids
       ) {
         return false
