@@ -19,6 +19,7 @@ create table if not exists
       looking_for_matches boolean not null default true,
       visibility text not null default 'public', -- public, unlisted
       messaging_status text not null default 'open', -- open, closed, out-only
+      comments_enabled boolean not null default true,
 
       -- optional
       has_kids int,

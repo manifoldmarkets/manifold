@@ -1018,6 +1018,7 @@ export interface Database {
           user_id: string
           visibility: string
           wants_kids_strength: number
+          comments_enabled: boolean
         }
         Insert: {
           birthdate: string
@@ -1052,6 +1053,7 @@ export interface Database {
           user_id: string
           visibility?: string
           wants_kids_strength?: number
+          comments_enabled?: boolean
         }
         Update: {
           birthdate?: string
@@ -1086,6 +1088,7 @@ export interface Database {
           user_id?: string
           visibility?: string
           wants_kids_strength?: number
+          comments_enabled?: boolean
         }
         Relationships: []
       }

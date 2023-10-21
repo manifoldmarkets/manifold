@@ -14,7 +14,6 @@ import { Lover } from 'love/hooks/use-lover'
 import { useRouter } from 'next/router'
 import { CheckCircleIcon } from '@heroicons/react/outline'
 import { EditUserField } from 'web/pages/profile'
-import { removeNullOrUndefinedProps } from 'common/util/object'
 import Image from 'next/image'
 import { buildArray } from 'common/util/array'
 import { updateLover } from 'web/lib/firebase/love/api'
@@ -52,11 +51,9 @@ export const OptionalLoveUserForm = (props: {
   }
 
   const handleSubmit = async () => {
-    const res = await updateLover(
-      removeNullOrUndefinedProps({
-        ...lover,
-      })
-    ).catch((e) => {
+    const res = await updateLover({
+      ...lover,
+    }).catch((e) => {
       console.error(e)
       return false
     })

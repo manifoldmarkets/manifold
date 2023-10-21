@@ -196,8 +196,12 @@ export default function UserPage(props: {
           )
         )}
       </Col>
-      {currentUser && (
-        <LoverCommentSection onUser={user} currentUser={currentUser} />
+      {currentUser && lover && (
+        <LoverCommentSection
+          onUser={user}
+          lover={lover}
+          currentUser={currentUser}
+        />
       )}
     </LovePage>
   )
@@ -235,7 +239,7 @@ const LoverAttributes = (props: { lover: Lover }) => {
     occupation_title: 'Title',
     university: 'University',
   }
-  const [showMore, setShowMore] = useState(false)
+  const [showMore, setShowMore] = useState(true)
   const [shouldAllowCollapseOfContent, setShouldAllowCollapseOfContent] =
     useState(false)
   const contentRef = useRef<HTMLDivElement>(null)
@@ -244,6 +248,7 @@ const LoverAttributes = (props: { lover: Lover }) => {
     if (contentRef.current) {
       if (contentRef.current.offsetHeight > 180) {
         setShouldAllowCollapseOfContent(true)
+        setShowMore(false)
       }
     }
   }, [contentRef.current?.offsetHeight])
