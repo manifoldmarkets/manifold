@@ -7,6 +7,8 @@ import { Col } from 'web/components/layout/col'
 import { Modal, SCROLLABLE_MODAL_CLASS } from 'web/components/layout/modal'
 import { Row } from 'web/components/layout/row'
 import { BuyAmountInput } from 'web/components/widgets/amount-input'
+import { Avatar } from 'web/components/widgets/avatar'
+import { UserLink } from 'web/components/widgets/user-link'
 import { useUser } from 'web/hooks/use-user'
 import { createMatch } from 'web/lib/firebase/love/api'
 
@@ -125,7 +127,18 @@ const AddMatchDialog = (props: {
                   selected && 'bg-primary-100'
                 )}
               >
-                <div>{lover.user.name}</div>
+                <Row className="gap-2">
+                  {lover.pinned_url && (
+                    <Avatar
+                      avatarUrl={lover.pinned_url}
+                      username={lover.user.username}
+                    />
+                  )}
+                  <UserLink
+                    name={lover.user.name}
+                    username={lover.user.username}
+                  />
+                </Row>
                 <Button
                   size="xs"
                   color="indigo-outline"

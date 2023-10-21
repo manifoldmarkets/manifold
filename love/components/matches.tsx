@@ -1,5 +1,6 @@
-import Router from 'next/router'
-import { BinaryContract, contractPath } from 'common/contract'
+import clsx from 'clsx'
+import { useState } from 'react'
+import { BinaryContract, CPMMBinaryContract } from 'common/contract'
 import { useLovers } from 'love/hooks/use-lovers'
 import { useMatches } from 'love/hooks/use-matches'
 import { Col } from 'web/components/layout/col'
@@ -14,6 +15,9 @@ import { Button } from 'web/components/buttons/button'
 import { RejectButton } from './reject-button'
 import { useUser } from 'web/hooks/use-user'
 import { Avatar } from 'web/components/widgets/avatar'
+import { MODAL_CLASS, Modal } from 'web/components/layout/modal'
+import { BuyPanel } from 'web/components/bet/bet-panel'
+import { Subtitle } from 'web/components/widgets/subtitle'
 
 export const Matches = (props: { userId: string }) => {
   const { userId } = props
@@ -89,15 +93,44 @@ const MatchContract = (props: {
       </Row>
       <Row className="items-center gap-2">
         <div className="font-semibold">{formatPercent(prob)}</div>
-        <Button
-          size="xs"
-          color="indigo-outline"
-          onClick={() => Router.push(contractPath(contract))}
-        >
-          Bet
-        </Button>
+        <BetButton contract={contract} lover={lover} />
         {isYourMatch && <RejectButton lover={lover} />}
       </Row>
     </Row>
+  )
+}
+
+const BetButton = (props: { contract: BinaryContract; lover: Lover }) => {
+  const { contract } = props
+  const user = useUser()
+  const [open, setOpen] = useState(false)
+  return (
+    <>
+      <Button size="xs" color="indigo-outline" onClick={() => setOpen(true)}>
+        Bet
+      </Button>
+      <Modal
+        open={open}
+        setOpen={setOpen}
+        className={clsx(
+          MODAL_CLASS,
+          'pointer-events-auto max-h-[32rem] overflow-auto'
+        )}
+      >
+        <Col>
+          <Subtitle className="!mb-4 !mt-0 !text-xl">
+            {contract.question}
+          </Subtitle>
+          <BuyPanel
+            contract={contract as CPMMBinaryContract}
+            user={user}
+            initialOutcome={'YES'}
+            onBuySuccess={() => setTimeout(() => setOpen(false), 500)}
+            location={'love profile'}
+            inModal={true}
+          />
+        </Col>
+      </Modal>
+    </>
   )
 }
