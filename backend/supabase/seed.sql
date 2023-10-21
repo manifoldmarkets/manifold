@@ -404,6 +404,10 @@ create index contracts_last_updated_time on contracts(((data ->> 'lastUpdatedTim
 create index contracts_group_slugs_public on contracts using gin((data -> 'groupSlugs'))
     where visibility = 'public';
 
+create index concurrently idx_lover_user_id1 on contracts ((data ->> 'loverUserId1')) where data->>'loverUserId1' is not null;
+create index concurrently idx_lover_user_id2 on contracts ((data ->> 'loverUserId2')) where data->>'loverUserId2' is not null;
+
+
 alter table contracts
 cluster on contracts_creator_id;
 

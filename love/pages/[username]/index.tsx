@@ -36,7 +36,12 @@ export const getStaticProps = async (props: {
 }) => {
   const { username } = props.params
   const user = await getUserByUsername(username)
-  const lover = user ? await getLoverRow(user.id).catch(() => null) : null
+  const lover = user
+    ? await getLoverRow(user.id).catch((e) => {
+        console.error(e)
+        return null
+      })
+    : null
   const { questions, answers } = user
     ? await getUserAnswersAndQuestions(user.id)
     : { answers: [], questions: [] }
