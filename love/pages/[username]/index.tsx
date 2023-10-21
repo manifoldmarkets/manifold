@@ -1,9 +1,8 @@
 import { PencilIcon } from '@heroicons/react/outline'
-import { LinkIcon } from '@heroicons/react/solid'
-import clsx from 'clsx'
 import { removeUndefinedProps } from 'common/util/object'
 import { LovePage } from 'love/components/love-page'
 import { LoverCommentSection } from 'love/components/lover-comment-section'
+import LoverProfileHeader from 'love/components/lover-profile-header'
 import { Matches } from 'love/components/matches'
 import ProfileCarousel from 'love/components/profile-carousel'
 import { Lover } from 'love/hooks/use-lover'
@@ -15,20 +14,10 @@ import {
 } from 'love/lib/supabase/questions'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
-import { useState } from 'react'
 import { Button } from 'web/components/buttons/button'
-import { FollowButton } from 'web/components/buttons/follow-button'
-import { MoreOptionsUserButton } from 'web/components/buttons/more-options-user-button'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
-import { SendMessageButton } from 'web/components/messaging/send-message-button'
-import { QuestsOrStreak } from 'web/components/quests-or-streak'
 import { SEO } from 'web/components/SEO'
-import { Avatar } from 'web/components/widgets/avatar'
-import ImageWithBlurredShadow from 'web/components/widgets/image-with-blurred-shadow'
-import { Linkify } from 'web/components/widgets/linkify'
-import { StackedUserNames } from 'web/components/widgets/user-link'
-import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useUser } from 'web/hooks/use-user'
 import { firebaseLogin, getUserByUsername, User } from 'web/lib/firebase/users'
 import { fromNow } from 'web/lib/util/time'
@@ -69,7 +58,6 @@ export default function UserPage(props: {
   answers: Answer[]
 }) {
   const { user, lover, answers, questions } = props
-  const isMobile = useIsMobile()
   const currentUser = useUser()
   const isCurrentUser = currentUser?.id === user?.id
   const router = useRouter()
@@ -96,112 +84,6 @@ export default function UserPage(props: {
         </Head>
       )}
       <Col className={'gap-4'}>
-        <Col className="mx-4 mt-1">
-          <Row
-            className={clsx(
-              'flex-wrap gap-2 py-1',
-              isMobile ? '' : 'justify-between'
-            )}
-          >
-            <Row className={clsx('gap-2')}>
-              <Col className={'relative max-h-14'}>
-                <ImageWithBlurredShadow
-                  image={
-                    <Avatar
-                      username={user.username}
-                      avatarUrl={user.avatarUrl}
-                      size={'lg'}
-                      className="bg-ink-1000"
-                      noLink
-                    />
-                  }
-                />
-              </Col>
-              <StackedUserNames
-                usernameClassName={'sm:text-base'}
-                className={'font-semibold sm:mr-0 sm:text-xl'}
-                user={user}
-              />
-            </Row>
-            {isCurrentUser ? (
-              <Row className={'items-center gap-1 sm:gap-2'}>
-                {lover && (
-                  <Button
-                    color={'gray-outline'}
-                    className={'h-12'}
-                    onClick={() => router.push('profile')}
-                  >
-                    <PencilIcon className="mr-2 h-4 w-4" />
-                    Edit
-                  </Button>
-                )}
-                <QuestsOrStreak user={user} />
-              </Row>
-            ) : isMobile ? (
-              <>
-                <div className={'my-auto'}>
-                  <SendMessageButton toUser={user} currentUser={currentUser} />
-                </div>
-                <div className={'my-auto'}>
-                  <FollowButton userId={user.id} />
-                </div>
-                <div className={'my-auto'}>
-                  <MoreOptionsUserButton user={user} />
-                </div>
-              </>
-            ) : (
-              <Row className="items-center gap-1 sm:gap-2">
-                <SendMessageButton toUser={user} currentUser={currentUser} />
-                <FollowButton userId={user.id} />
-                <MoreOptionsUserButton user={user} />
-              </Row>
-            )}
-          </Row>
-          <Col className={'mt-1'}>
-            {user.bio && (
-              <div className="sm:text-md mt-1 text-sm">
-                <Linkify text={user.bio}></Linkify>
-              </div>
-            )}
-            <Row className="text-ink-400 mt-2 flex-wrap items-center gap-2 sm:gap-4">
-              {user.website && (
-                <a
-                  href={
-                    'https://' +
-                    user.website.replace('http://', '').replace('https://', '')
-                  }
-                >
-                  <Row className="items-center gap-1">
-                    <LinkIcon className="h-4 w-4" />
-                    <span className="text-ink-400 text-sm">{user.website}</span>
-                  </Row>
-                </a>
-              )}
-
-              {user.twitterHandle && (
-                <a
-                  href={`https://twitter.com/${user.twitterHandle
-                    .replace('https://www.twitter.com/', '')
-                    .replace('https://twitter.com/', '')
-                    .replace('www.twitter.com/', '')
-                    .replace('twitter.com/', '')}`}
-                >
-                  <Row className="items-center gap-1">
-                    <img
-                      src="/twitter-logo.svg"
-                      className="h-4 w-4"
-                      alt="Twitter"
-                    />
-                    <span className="text-ink-400 text-sm">
-                      {user.twitterHandle}
-                    </span>
-                  </Row>
-                </a>
-              )}
-            </Row>
-          </Col>
-        </Col>
-
         {!currentUser ? (
           <Col className={'bg-canvas-0 items-center justify-center p-4'}>
             <Row className={' items-center justify-center gap-2'}>
@@ -214,6 +96,13 @@ export default function UserPage(props: {
         ) : lover ? (
           <>
             {lover.photo_urls && <ProfileCarousel lover={lover} />}
+            <LoverProfileHeader
+              isCurrentUser={isCurrentUser}
+              currentUser={currentUser}
+              user={user}
+              lover={lover}
+              router={router}
+            />
 
             <Matches userId={user.id} />
 
