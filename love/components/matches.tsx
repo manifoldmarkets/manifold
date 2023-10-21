@@ -50,7 +50,7 @@ export const Matches = (props: { userId: string }) => {
 
   return (
     <Col className="bg-canvas-0 max-w-lg gap-4 rounded px-4 py-3">
-      {currentMatches.length > 0 && (
+      {currentMatches.length > 0 ? (
         <Col className="gap-2">
           <div className="text-lg font-semibold">
             Chance of 6 month relationship
@@ -88,6 +88,8 @@ export const Matches = (props: { userId: string }) => {
             </Button>
           )}
         </Col>
+      ) : (
+        <span className={'text-ink-500 text-sm'}>No matches yet.</span>
       )}
 
       {lover && (
