@@ -327,16 +327,19 @@ export default function UserPage(props: {
                     })}
                 </Row>
               </Col>
+            ) : isCurrentUser ? (
+              <Col className={'mt-4 w-full items-center'}>
+                <Row>
+                  <Button onClick={() => router.push('love-questions')}>
+                    Answer questions
+                  </Button>
+                </Row>
+              </Col>
             ) : (
-              isCurrentUser && (
-                <Col className={'mt-4 w-full items-center'}>
-                  <Row>
-                    <Button onClick={() => router.push('love-questions')}>
-                      Answer questions
-                    </Button>
-                  </Row>
-                </Col>
-              )
+              <Col className={'mt-2 gap-2'}>
+                <span className={'text-xl font-semibold'}>Answers</span>
+                <span className={'text-ink-500 text-sm'}>Nothing yet :(</span>
+              </Col>
             )}
           </>
         ) : (
