@@ -98,7 +98,6 @@ function ProfilePreview(props: {
           <Link
             onClick={(e) => {
               e.stopPropagation()
-              // e.preventDefault()
             }}
             href={`/${user.username}`}
             className="line-clamp-1 max-w-[calc(100%-2rem)] font-semibold hover:text-pink-300"
