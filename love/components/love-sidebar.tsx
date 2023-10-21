@@ -34,12 +34,9 @@ import { SidebarSignUpButton } from 'web/components/buttons/sign-up-button'
 import { ProfileSummary } from 'web/components/nav/profile-summary'
 import { Item, SidebarItem } from 'web/components/nav/sidebar-item'
 import { PrivateMessagesIcon } from 'web/components/messaging/messages-icon'
-import Image from 'next/image'
-import { ENV } from 'common/envs/constants'
-import { Row } from 'web/components/layout/row'
-import LoveLogo from 'public/manifold_love_logo.svg'
+import ManifoldLoveLogo from './manifold-love-logo'
 
-export default function LoveSidebar(props: {
+export default function Sidebar(props: {
   className?: string
   isMobile?: boolean
   navigationOptions?: Item[]
@@ -74,28 +71,16 @@ export default function LoveSidebar(props: {
       aria-label="Sidebar"
       className={clsx('flex h-screen flex-col', className)}
     >
-      <Row className=" gap-1 pb-3 pt-6">
-        <LoveLogo
-          className="h-10 w-10 shrink-0 transition-transform group-hover:rotate-12 dark:stroke-pink-300"
-          aria-hidden
-        />
-        <div className={clsx('my-auto text-xl font-thin')}>
-          {ENV == 'DEV' ? 'devifold' : 'manifold'}
-          <span className="mx-[1px]">.</span>
-          <span className="font-semibold text-pink-800 dark:text-pink-300">
-            love
-          </span>
-        </div>
-      </Row>
+      <ManifoldLoveLogo />
 
       {user === undefined && <div className="h-[56px]" />}
 
       {user && !isMobile && <ProfileSummary user={user} className="mb-3" />}
 
       <div className="mb-4 flex flex-col gap-1">
-        {navOptions.map((item) => (
+        {/* {navOptions.map((item) => (
           <SidebarItem key={item.name} item={item} currentPage={currentPage} />
-        ))}
+        ))} */}
 
         <MobileAppsQRCodeDialog
           key="mobile-apps-qr-code"
