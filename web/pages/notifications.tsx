@@ -36,6 +36,7 @@ import { updatePrivateUser } from 'web/lib/firebase/users'
 import { getNativePlatform } from 'web/lib/native/is-native'
 import { AppBadgesOrGetAppButton } from 'web/components/buttons/app-badges-or-get-app-button'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
+import { track } from 'web/lib/service/analytics'
 
 export default function NotificationsPage() {
   const privateUser = usePrivateUser()
@@ -81,11 +82,12 @@ function NotificationsAppBanner(props: { userId: string }) {
         <AppBadgesOrGetAppButton />
       </Row>
       <button
-        onClick={() =>
+        onClick={() => {
+          track('close app banner')
           updatePrivateUser(userId, {
             hasSeenAppBannerInNotificationsOn: Date.now(),
           })
-        }
+        }}
       >
         <XIcon className="text-ink-600 hover:text-ink-800 h-6 w-6" />
       </button>
@@ -335,7 +337,7 @@ function NotificationGroupItem(props: {
               {notifications[0].sourceUserName}
             </>
           ) : onboardingNotifs ? (
-            <>Welcome to Manifold</>
+            <>Welcome to Manifold!</>
           ) : questNotifs ? (
             <>
               {notifications.length} quest
