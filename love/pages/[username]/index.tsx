@@ -200,7 +200,6 @@ const LoverAttributes = (props: { lover: Lover }) => {
   const { lover } = props
 
   const loverPropsTitles: { [key: string]: string } = {
-    birthdate: 'Age',
     last_online_time: 'Last online',
     city: 'City',
     gender: 'Gender',
