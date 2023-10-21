@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import LoveLogo from 'public/manifold_love_logo.svg'
+import LoveLogo from '../public/manifold_love_logo.svg'
 import { useUser } from 'web/hooks/use-user'
 import clsx from 'clsx'
 import { ENV } from 'common/envs/constants'
