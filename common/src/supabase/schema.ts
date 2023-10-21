@@ -3001,7 +3001,14 @@ export interface Database {
         Args: {
           table_id: string
         }
-        Returns: Database['public']['CompositeTypes']['table_spec']
+        Returns: Database["public"]["CompositeTypes"]["table_spec"]
+      }
+      get_donations_by_charity: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          charity_id: string
+          total: number
+        }[]
       }
       get_engaged_users: {
         Args: Record<PropertyKey, never>
