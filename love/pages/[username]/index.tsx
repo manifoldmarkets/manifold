@@ -69,10 +69,13 @@ export default function UserPage(props: {
   questions: Question[]
   answers: Answer[]
 }) {
-  const { user, lover, answers, questions } = props
+  const { user, lover, questions } = props
   const currentUser = useUser()
   const isCurrentUser = currentUser?.id === user?.id
   const router = useRouter()
+  const answers = props.answers.filter(
+    (a) => a.multiple_choice ?? a.free_response ?? a.integer
+  )
 
   if (!user) {
     return <div>404</div>
@@ -115,14 +118,12 @@ export default function UserPage(props: {
               lover={lover}
               router={router}
             />
-
             <Matches userId={user.id} />
-
             <LoverAttributes lover={lover} />
-            {answers.length > 0 ? (
-              <Col className={'mt-2 gap-2'}>
-                <Row className={'items-center gap-2'}>
-                  <span className={'text-xl font-semibold'}>Answers</span>
+            <Col className={'mt-2 gap-2'}>
+              <Row className={'items-center gap-2'}>
+                <span className={'text-xl font-semibold'}>Answers</span>
+                {isCurrentUser && answers.length > 0 && (
                   <Button
                     color={'gray-outline'}
                     size="xs"
@@ -132,62 +133,52 @@ export default function UserPage(props: {
                     <PencilIcon className="mr-2 h-4 w-4" />
                     Edit
                   </Button>
-                </Row>
-                <Row className={'flex-wrap gap-3'}>
-                  {answers
-                    .filter(
-                      (a) => a.multiple_choice ?? a.free_response ?? a.integer
+                )}
+              </Row>
+              <Row className={'flex-wrap gap-3'}>
+                {answers.length > 0 ? (
+                  answers.map((answer) => {
+                    const question = questions.find(
+                      (q) => q.id === answer.question_id
                     )
-                    .map((answer) => {
-                      const question = questions.find(
-                        (q) => q.id === answer.question_id
-                      )
-                      if (!question) return null
-                      const options =
-                        question.multiple_choice_options as Record<
-                          string,
-                          number
-                        >
-                      const optionKey = options
-                        ? Object.keys(options).find(
-                            (k) => options[k] === answer.multiple_choice
-                          )
-                        : null
+                    if (!question) return null
+                    const options = question.multiple_choice_options as Record<
+                      string,
+                      number
+                    >
+                    const optionKey = options
+                      ? Object.keys(options).find(
+                          (k) => options[k] === answer.multiple_choice
+                        )
+                      : null
 
-                      return (
-                        <Col
-                          key={question.id}
-                          className={
-                            'bg-canvas-0 flex-grow rounded-md px-3 py-2'
-                          }
-                        >
-                          <Row className={'font-semibold'}>
-                            {question.question}
-                          </Row>
-                          <Row>
-                            {answer.free_response ??
-                              optionKey ??
-                              answer.integer}
-                          </Row>
-                        </Col>
-                      )
-                    })}
-                </Row>
-              </Col>
-            ) : isCurrentUser ? (
-              <Col className={'mt-4 w-full items-center'}>
-                <Row>
-                  <Button onClick={() => router.push('love-questions')}>
-                    Answer questions
-                  </Button>
-                </Row>
-              </Col>
-            ) : (
-              <Col className={'mt-2 gap-2'}>
-                <span className={'text-xl font-semibold'}>Answers</span>
-                <span className={'text-ink-500 text-sm'}>Nothing yet :(</span>
-              </Col>
-            )}
+                    return (
+                      <Col
+                        key={question.id}
+                        className={'bg-canvas-0 flex-grow rounded-md px-3 py-2'}
+                      >
+                        <Row className={'font-semibold'}>
+                          {question.question}
+                        </Row>
+                        <Row>
+                          {answer.free_response ?? optionKey ?? answer.integer}
+                        </Row>
+                      </Col>
+                    )
+                  })
+                ) : isCurrentUser ? (
+                  <Col className={'mt-4 w-full items-center'}>
+                    <Row>
+                      <Button onClick={() => router.push('love-questions')}>
+                        Answer questions
+                      </Button>
+                    </Row>
+                  </Col>
+                ) : (
+                  <span className={'text-ink-500 text-sm'}>Nothing yet :(</span>
+                )}
+              </Row>
+            </Col>
           </>
         ) : (
           isCurrentUser && (
