@@ -54,7 +54,7 @@ export const QuestionsForm = () => {
                   router.push('/' + (user ? user.username : 'browse'))
                 }
               >
-                Done
+                Save & continue
               </Button>
             </Row>
           </Col>
