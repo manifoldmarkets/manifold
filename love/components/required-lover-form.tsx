@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { set } from 'lodash'
 import { Title } from 'web/components/widgets/title'
 import { Col } from 'web/components/layout/col'
 import clsx from 'clsx'
@@ -9,39 +8,32 @@ import { Row } from 'web/components/layout/row'
 import { Button } from 'web/components/buttons/button'
 import { colClassName, labelClassName } from 'love/pages/signup'
 import { MultiCheckbox } from 'web/components/multi-checkbox'
-import { Lover } from 'love/hooks/use-lover'
 import { User } from 'common/user'
 import { RadioToggleGroup } from 'web/components/widgets/radio-toggle-group'
 import { MultipleChoiceOptions } from 'common/love/multiple-choice'
 import { useEditableUserInfo } from 'web/hooks/use-editable-user-info'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
-import { createLover } from 'web/lib/firebase/love/api'
-import { useRouter } from 'next/router'
+import { initialRequiredState } from 'common/love/lover'
+import { Row as rowFor } from 'common/supabase/utils'
+
+const requiredKeys = Object.keys(
+  initialRequiredState
+) as (keyof typeof initialRequiredState)[]
 
 export const RequiredLoveUserForm = (props: {
   user: User
-  onSuccess: (lover: Lover) => void
+  loverState: rowFor<'lovers'>
+  setLoverState: (key: keyof rowFor<'lovers'>, value: any) => void
+  onSubmit?: () => void
+  loverCreatedAlready?: boolean
 }) => {
-  const { user, onSuccess } = props
-  const router = useRouter()
-  const [formState, setFormState] = useState({
-    birthdate: '',
-    city: '',
-    gender: '',
-    pref_gender: [],
-    pref_age_min: 18,
-    pref_age_max: 100,
-    pref_relation_styles: [],
-    is_smoker: false,
-    drinks_per_month: 0,
-    is_vegetarian_or_vegan: false,
-    has_kids: 0,
-    wants_kids_strength: 2,
-    looking_for_matches: true,
-  })
+  const { user, onSubmit, loverCreatedAlready, setLoverState, loverState } =
+    props
+
   const [showCityInput, setShowCityInput] = useState(false)
   const { updateUsername, updateDisplayName, userInfo, updateUserState } =
     useEditableUserInfo(user)
+
   const {
     name,
     username,
@@ -50,38 +42,22 @@ export const RequiredLoveUserForm = (props: {
     loadingName,
     errorName,
   } = userInfo
+
   const canContinue =
-    (!formState.looking_for_matches ||
-      Object.values(formState).every((v) =>
-        typeof v == 'string'
-          ? v !== ''
-          : Array.isArray(v)
-          ? v.length > 0
-          : v !== undefined
-      )) &&
+    (!loverState.looking_for_matches ||
+      requiredKeys
+        .map((k) => loverState[k])
+        .every((v) =>
+          typeof v == 'string'
+            ? v !== ''
+            : Array.isArray(v)
+            ? v.length > 0
+            : v !== undefined
+        )) &&
     !loadingUsername &&
     !loadingName
 
-  const handleChange = (key: keyof typeof formState, value: any) => {
-    setFormState((prevState) => set({ ...prevState }, key, value))
-  }
-
-  const handleSubmit = async () => {
-    if (!formState.looking_for_matches) {
-      router.push('profiles')
-      return
-    }
-    // Do something with the form state, such as sending it to an API
-    const res = await createLover({
-      ...formState,
-    }).catch((e) => {
-      console.error(e)
-      return null
-    })
-    if (res && res.lover) {
-      onSuccess({ ...res.lover, user } as Lover)
-    }
-  }
+  const handleChange = setLoverState
 
   return (
     <>
@@ -136,7 +112,7 @@ export const RequiredLoveUserForm = (props: {
         <Col className={clsx(colClassName)}>
           <label className={clsx(labelClassName)}>Looking for matches</label>
           <ChoicesToggleGroup
-            currentChoice={formState.looking_for_matches}
+            currentChoice={loverState.looking_for_matches}
             choicesMap={{
               Yes: true,
               No: false,
@@ -144,12 +120,12 @@ export const RequiredLoveUserForm = (props: {
             setChoice={(c) => handleChange('looking_for_matches', c)}
           />
         </Col>
-        {formState.looking_for_matches && (
+        {(loverState.looking_for_matches || loverCreatedAlready) && (
           <>
             <Col className={clsx(colClassName)}>
               <label className={clsx(labelClassName)}>Your location</label>
               <ChoicesToggleGroup
-                currentChoice={formState['city']}
+                currentChoice={loverState['city']}
                 choicesMap={{
                   'San Francisco': 'San Francisco',
                   'New York City': 'New York City',
@@ -169,7 +145,7 @@ export const RequiredLoveUserForm = (props: {
               {showCityInput && (
                 <Input
                   type="text"
-                  value={formState['city']}
+                  value={loverState['city']}
                   onChange={(e) => handleChange('city', e.target.value)}
                   className={'w-56'}
                   placeholder={'e.g. DC'}
@@ -188,13 +164,14 @@ export const RequiredLoveUserForm = (props: {
                   )
                 }
                 className={'w-40'}
+                value={loverState['birthdate']}
               />
             </Col>
 
             <Col className={clsx(colClassName)}>
               <label className={clsx(labelClassName)}>Gender</label>
               <ChoicesToggleGroup
-                currentChoice={formState['gender']}
+                currentChoice={loverState['gender']}
                 choicesMap={{
                   Male: 'male',
                   Female: 'female',
@@ -218,7 +195,7 @@ export const RequiredLoveUserForm = (props: {
                   'Trans-male': 'trans-male',
                   Other: 'other',
                 }}
-                selected={formState['pref_gender']}
+                selected={loverState['pref_gender']}
                 onChange={(selected) => handleChange('pref_gender', selected)}
               />
             </Col>
@@ -232,7 +209,7 @@ export const RequiredLoveUserForm = (props: {
                   'Open Relationship': 'open',
                   Other: 'other',
                 }}
-                selected={formState['pref_relation_styles']}
+                selected={loverState['pref_relation_styles']}
                 onChange={(selected) =>
                   handleChange('pref_relation_styles', selected)
                 }
@@ -242,7 +219,7 @@ export const RequiredLoveUserForm = (props: {
             <Col className={clsx(colClassName)}>
               <label className={clsx(labelClassName)}>Do you smoke?</label>
               <ChoicesToggleGroup
-                currentChoice={formState['is_smoker']}
+                currentChoice={loverState['is_smoker']}
                 choicesMap={{
                   Yes: true,
                   No: false,
@@ -262,7 +239,7 @@ export const RequiredLoveUserForm = (props: {
                 }
                 className={'w-20'}
                 min={0}
-                value={formState['drinks_per_month']}
+                value={loverState['drinks_per_month']}
               />
             </Col>
 
@@ -281,7 +258,7 @@ export const RequiredLoveUserForm = (props: {
                     className={'w-20'}
                     min={18}
                     max={999}
-                    value={formState['pref_age_min']}
+                    value={loverState['pref_age_min']}
                   />
                 </Col>
                 <Col>
@@ -292,9 +269,9 @@ export const RequiredLoveUserForm = (props: {
                       handleChange('pref_age_max', Number(e.target.value))
                     }
                     className={'w-20'}
-                    min={formState['pref_age_min']}
+                    min={loverState['pref_age_min']}
                     max={1000}
-                    value={formState['pref_age_max']}
+                    value={loverState['pref_age_max']}
                   />
                 </Col>
               </Row>
@@ -311,7 +288,7 @@ export const RequiredLoveUserForm = (props: {
                 }
                 className={'w-20'}
                 min={0}
-                value={formState['has_kids']}
+                value={loverState['has_kids']}
               />
             </Col>
 
@@ -326,17 +303,19 @@ export const RequiredLoveUserForm = (props: {
                   console.log(choice)
                   handleChange('wants_kids_strength', choice)
                 }}
-                currentChoice={formState.wants_kids_strength ?? -1}
+                currentChoice={loverState.wants_kids_strength ?? -1}
               />
             </Col>
           </>
         )}
 
-        <Row className={'justify-end'}>
-          <Button disabled={!canContinue} onClick={handleSubmit}>
-            Next
-          </Button>
-        </Row>
+        {onSubmit && (
+          <Row className={'justify-end'}>
+            <Button disabled={!canContinue} onClick={onSubmit}>
+              Next
+            </Button>
+          </Row>
+        )}
       </Col>
     </>
   )

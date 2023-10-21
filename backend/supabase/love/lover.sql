@@ -42,4 +42,8 @@ alter table lovers enable row level security;
 drop policy if exists "public read" on lovers;
 create policy  "public read" on lovers using (true);
 
+drop policy if exists "self update" on lovers;
+create policy  "self update" on lovers for update
+    with check (user_id = firebase_uid());
+
 create index if not exists lovers_user_id_idx on lovers(user_id);

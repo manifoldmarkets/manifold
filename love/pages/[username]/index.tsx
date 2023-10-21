@@ -1,7 +1,7 @@
 import { firebaseLogin, getUserByUsername, User } from 'web/lib/firebase/users'
 import { removeUndefinedProps } from 'common/util/object'
 import { Lover } from 'love/hooks/use-lover'
-import { getLover } from 'love/lib/supabase/lovers'
+import { getLoverRow } from 'love/lib/supabase/lovers'
 import {
   Answer,
   getUserAnswersAndQuestions,
@@ -43,7 +43,7 @@ export const getStaticProps = async (props: {
 }) => {
   const { username } = props.params
   const user = await getUserByUsername(username)
-  const lover = user ? await getLover(user.id).catch(() => null) : null
+  const lover = user ? await getLoverRow(user.id).catch(() => null) : null
   const { questions, answers } = user
     ? await getUserAnswersAndQuestions(user.id)
     : { answers: [], questions: [] }
@@ -134,7 +134,7 @@ export default function UserPage(props: {
                   <Button
                     color={'gray-outline'}
                     className={'h-12'}
-                    onClick={() => router.push('signup')}
+                    onClick={() => router.push('profile')}
                   >
                     <PencilIcon className="mr-2 h-4 w-4" />
                     Edit

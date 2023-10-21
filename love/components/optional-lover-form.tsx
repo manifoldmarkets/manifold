@@ -18,23 +18,23 @@ import { removeNullOrUndefinedProps } from 'common/util/object'
 import Image from 'next/image'
 import { buildArray } from 'common/util/array'
 import { updateLover } from 'web/lib/firebase/love/api'
-export const optionalAttributes = (lover: Lover) => ({
-  ethnicity: lover.ethnicity,
-  born_in_location: lover.born_in_location,
-  height_in_inches: lover.height_in_inches,
-  has_pets: lover.has_pets,
-  education_level: lover.education_level,
-  photo_urls: lover.photo_urls,
-  pinned_url: lover.pinned_url,
-  religious_belief_strength: lover.religious_belief_strength,
-  religious_beliefs: lover.religious_beliefs,
-  political_beliefs: lover.political_beliefs,
-})
-export const OptionalLoveUserForm = (props: { lover: Lover }) => {
-  const { lover } = props
+import { initialOptionalState } from 'common/love/lover'
+
+const optionalKeys = Object.keys(
+  initialOptionalState
+) as (keyof typeof initialOptionalState)[]
+
+export const OptionalLoveUserForm = (props: {
+  lover: Lover
+  butonLabel?: string
+}) => {
+  const { lover, butonLabel } = props
   const { user } = lover
 
-  const [formState, setFormState] = useState(optionalAttributes(lover))
+  const [formState, setFormState] = useState({
+    ...initialOptionalState,
+    ...lover,
+  })
   const [heightFeet, setHeightFeet] = useState(0)
 
   const handleChange = (key: keyof typeof formState, value: any) => {
@@ -63,9 +63,6 @@ export const OptionalLoveUserForm = (props: { lover: Lover }) => {
   }
 
   const handleSubmit = async () => {
-    if (!Object.values(optionalAttributes(formState as Lover)).some((v) => v))
-      return router.push('/love-questions')
-    // Do something with the form state, such as sending it to an API
     const res = await updateLover(
       removeNullOrUndefinedProps({
         ...formState,
@@ -259,7 +256,7 @@ export const OptionalLoveUserForm = (props: { lover: Lover }) => {
           />
         </Col>
         <Row className={'justify-end'}>
-          <Button onClick={handleSubmit}>Next</Button>
+          <Button onClick={handleSubmit}>{butonLabel ?? 'Next'}</Button>
         </Row>
       </Col>
     </>

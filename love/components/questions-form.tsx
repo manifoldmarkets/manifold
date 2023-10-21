@@ -4,7 +4,7 @@ import { Row as rowFor, run } from 'common/supabase/utils'
 import { useQuestions } from 'love/hooks/use-questions'
 import { useEffect, useState } from 'react'
 import { Pagination } from 'web/components/widgets/pagination'
-import { useIsAuthorized, useUser } from 'web/hooks/use-user'
+import { useUser } from 'web/hooks/use-user'
 import { db } from 'web/lib/supabase/db'
 import { User } from 'common/user'
 import { Input } from 'web/components/widgets/input'
@@ -17,7 +17,6 @@ import { Button } from 'web/components/buttons/button'
 
 export const QuestionsForm = () => {
   const questions = useQuestions()
-  const isAuthed = useIsAuthorized()
   const user = useUser()
   const [page, setPage] = useState(0)
   const questionsPerPage = 3
@@ -32,7 +31,6 @@ export const QuestionsForm = () => {
         <Title>Questions</Title>
         <Col className={'gap-2'}>
           {user &&
-            isAuthed &&
             questions
               .slice(
                 questionsPerPage * page,
