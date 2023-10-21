@@ -1,6 +1,11 @@
 import clsx from 'clsx'
+import Link from 'next/link'
 import { useState } from 'react'
-import { BinaryContract, CPMMBinaryContract } from 'common/contract'
+import {
+  BinaryContract,
+  CPMMBinaryContract,
+  contractPath,
+} from 'common/contract'
 import { useLovers } from 'love/hooks/use-lovers'
 import { useMatches } from 'love/hooks/use-matches'
 import { Col } from 'web/components/layout/col'
@@ -18,6 +23,7 @@ import { Avatar } from 'web/components/widgets/avatar'
 import { MODAL_CLASS, Modal } from 'web/components/layout/modal'
 import { BuyPanel } from 'web/components/bet/bet-panel'
 import { Subtitle } from 'web/components/widgets/subtitle'
+import { linkClass } from 'web/components/widgets/site-link'
 
 export const Matches = (props: { userId: string }) => {
   const { userId } = props
@@ -134,9 +140,11 @@ const BetButton = (props: { contract: BinaryContract; lover: Lover }) => {
         )}
       >
         <Col>
-          <Subtitle className="!mb-4 !mt-0 !text-xl">
-            {contract.question}
-          </Subtitle>
+          <Link href={contractPath(contract)}>
+            <Subtitle className={clsx('!mb-4 !mt-0 !text-xl', linkClass)}>
+              {contract.question}
+            </Subtitle>
+          </Link>
           <BuyPanel
             contract={contract as CPMMBinaryContract}
             user={user}
