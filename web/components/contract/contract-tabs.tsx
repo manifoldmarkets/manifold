@@ -1,13 +1,4 @@
-import {
-  groupBy,
-  keyBy,
-  last,
-  mapValues,
-  maxBy,
-  sortBy,
-  sumBy,
-  uniqBy,
-} from 'lodash'
+import { groupBy, keyBy, last, mapValues, sortBy, sumBy } from 'lodash'
 import { memo, useEffect, useMemo, useReducer, useRef, useState } from 'react'
 
 import { Answer, DpmAnswer } from 'common/answer'
@@ -49,7 +40,6 @@ import { firebaseLogin } from 'web/lib/firebase/users'
 import { ArrowRightIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { useComments } from 'web/hooks/use-comments'
-import { useCommentsOnContract } from 'web/hooks/use-comments-supabase'
 
 export const EMPTY_USER = '_'
 
@@ -205,13 +195,7 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
   } = props
 
   // Firebase useComments
-  const newComments =
-    useComments(
-      contract.id,
-      maxBy(props.comments, (c) => c.createdTime)?.createdTime ?? Date.now()
-    ) ?? []
-  const oldComments = useCommentsOnContract(contract.id) ?? props.comments
-  const comments = uniqBy([...oldComments, ...newComments], (c) => c.id).filter(
+  const comments = (useComments(contract.id, 0) ?? props.comments).filter(
     (c) => !blockedUserIds.includes(c.userId)
   )
 
