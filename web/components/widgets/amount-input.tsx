@@ -143,6 +143,7 @@ export function BuyAmountInput(props: {
     className,
     inputClassName,
     minimumAmount,
+    quickAddAmount = 10,
     inputRef,
     binaryOutcome,
     maximumAmount,
@@ -170,6 +171,22 @@ export function BuyAmountInput(props: {
     }
   })
 
+  const quickAddButton = (
+    <button
+      className={clsx(
+        quickAddMoreButtonClassName,
+        binaryOutcome === 'YES'
+          ? 'text-teal-500 hover:bg-teal-100'
+          : binaryOutcome === 'NO'
+          ? 'text-scarlet-300 hover:bg-scarlet-50'
+          : 'text-ink-500 hover:bg-ink-200'
+      )}
+      onClick={() => onChange((amount ?? 0) + quickAddAmount)}
+    >
+      +{quickAddAmount}
+    </button>
+  )
+
   return (
     <>
       <Col className={parentClassName}>
@@ -188,7 +205,7 @@ export function BuyAmountInput(props: {
             className={className}
             inputClassName={clsx('pr-12', inputClassName)}
             inputRef={inputRef}
-            quickAddMoreButton={undefined}
+            quickAddMoreButton={maximumAmount ? undefined : quickAddButton}
           />
           {show && (
             <BetSlider
