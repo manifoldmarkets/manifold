@@ -1,14 +1,13 @@
 import * as functions from 'firebase-functions'
 import { onRequest } from 'firebase-functions/v2/https'
 import * as admin from 'firebase-admin'
-import { groupBy, chunk } from 'lodash'
+import { groupBy, chunk, shuffle } from 'lodash'
 import { invokeFunction, log, payUser, writeAsync } from 'shared/utils'
 import { Bet } from 'common/bet'
 import { Contract } from 'common/contract'
 import { User } from 'common/user'
 import { getUserLoanUpdates, isUserEligibleForLoan } from 'common/loans'
 import { createLoanIncomeNotification } from 'shared/create-notification'
-import { mapAsync } from 'common/util/promise'
 import { PortfolioMetrics } from 'common/portfolio-metrics'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { secrets } from 'common/secrets'
@@ -118,40 +117,41 @@ export async function updateLoansCore() {
     // Only pay out loans that are >= M1.
     .filter((p) => p.result.payout >= 1)
 
-  const updateChunks = chunk(userUpdates, 100)
+  const updateChunks = chunk(shuffle(userUpdates), 200)
 
-  await mapAsync(
-    updateChunks,
-    async (_, i) => {
-      const updateChunk = updateChunks[i]
-      log(`Paying out ${i + 1}/${updateChunks.length} chunk of loans...`)
+  let i = 0
+  for (const updateChunk of updateChunks) {
+    log(`Paying out ${i + 1}/${updateChunks.length} chunk of loans...`)
 
-      const userBetUpdates = await Promise.all(
-        updateChunk.map(async ({ user, result }) => {
-          const { updates, payout } = result
+    const userBetUpdates = await Promise.all(
+      updateChunk.map(async ({ user, result }) => {
+        const { updates, payout } = result
 
-          await payUser(user.id, payout)
-          await createLoanIncomeNotification(user, key, payout)
+        await payUser(user.id, payout)
+        await createLoanIncomeNotification(user, key, payout)
 
-          return updates.map((update) => ({
-            doc: firestore
-              .collection('contracts')
-              .doc(update.contractId)
-              .collection('bets')
-              .doc(update.betId),
-            fields: {
-              loanAmount: update.loanTotal,
-            },
-          }))
-        })
-      )
+        return updates.map((update) => ({
+          doc: firestore
+            .collection('contracts')
+            .doc(update.contractId)
+            .collection('bets')
+            .doc(update.betId),
+          fields: {
+            loanAmount: update.loanTotal,
+          },
+        }))
+      })
+    )
 
-      const betUpdates = userBetUpdates.flat()
-      log(`Writing ${betUpdates.length} bet updates for chunk ${i + 1}/${updateChunks.length}...`)
-      await writeAsync(firestore, betUpdates)
-    },
-    10
-  )
+    const betUpdates = userBetUpdates.flat()
+    log(
+      `Writing ${betUpdates.length} bet updates for chunk ${i + 1}/${
+        updateChunks.length
+      }...`
+    )
+    await writeAsync(firestore, betUpdates)
+    i++
+  }
 
   log(`${userUpdates.length} user loans paid out!`)
 }
