@@ -258,7 +258,7 @@ export function CancelBountyButton(props: {
     setIsSubmitting(true)
     cancelBounty({
       contractId: contract.id,
-    }).finally(()=>{
+    }).finally(() => {
       setIsSubmitting(false)
     })
   }
