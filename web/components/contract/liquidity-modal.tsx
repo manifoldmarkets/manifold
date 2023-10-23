@@ -9,6 +9,7 @@ import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
 import { Title } from '../widgets/title'
 import { SUBSIDY_FEE } from 'common/economy'
+import { Row } from '../layout/row'
 
 export function LiquidityModal(props: {
   contract: CPMMContract | CPMMMultiContract
@@ -56,13 +57,15 @@ function AddLiquidityPanel(props: {
     setAmount(amount)
   }
 
+  const payAmount = Math.ceil((1 / (1 - SUBSIDY_FEE)) * (amount ?? 0))
+
   const submit = () => {
     if (!amount) return
 
     setIsLoading(true)
     setIsSuccess(false)
 
-    addSubsidy({ amount, contractId })
+    addSubsidy({ amount: payAmount, contractId })
       .then((_) => {
         setIsSuccess(true)
         setError(undefined)
@@ -75,29 +78,42 @@ function AddLiquidityPanel(props: {
 
   return (
     <Col className="w-full">
-      <BuyAmountInput
-        parentClassName="w-full mb-3"
-        inputClassName="w-full max-w-none"
-        amount={amount}
-        onChange={onAmountChange}
-        error={error}
-        setError={setError}
-        disabled={isLoading}
-        sliderOptions={{ show: true, wrap: false }}
-      />
+      <Row className="mb-4">
+        <BuyAmountInput
+          inputClassName="w-40 mr-2"
+          amount={amount}
+          onChange={onAmountChange}
+          error={error}
+          setError={setError}
+          disabled={isLoading}
+          // don't use slider: useless for larger amounts
+          sliderOptions={{ show: false, wrap: false }}
+        />
 
-      <Button onClick={submit} disabled={isLoading || !!error || !amount}>
-        Add {amount ? formatMoney((1 - SUBSIDY_FEE) * amount) : ''} subsidy
-      </Button>
+        <Button
+          onClick={submit}
+          disabled={isLoading || !!error || !amount}
+          size="sm"
+        >
+          Subsidize
+        </Button>
+      </Row>
 
-      <div className="text-ink-600 mt-0.5 text-xs">
-        Note: Manifold charges a {formatPercent(SUBSIDY_FEE)} fee on subsidies.
-      </div>
+      {amount ? (
+        <div className="text-ink-700 text-xs">
+          Pay {formatMoney(payAmount)} to add {formatMoney(amount)} to the
+          subsidy pool after fees.
+        </div>
+      ) : (
+        <div className="text-ink-700 text-xs">
+          Note: Manifold charges a {formatPercent(SUBSIDY_FEE)} fee on
+          subsidies.
+        </div>
+      )}
 
       {isSuccess && amount && (
         <div>
-          Success! Added {formatMoney((1 - SUBSIDY_FEE) * amount)} to the
-          subsidy pool, after fees.
+          Success! Added {formatMoney(amount)} to the subsidy pool, after fees.
         </div>
       )}
 
