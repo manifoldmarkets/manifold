@@ -74,13 +74,8 @@ function ProfilePreview(props: {
     last_online_time,
   } = props.lover
   return (
-    <Col className="relative h-60 w-full overflow-hidden rounded text-white transition-all hover:z-40 hover:scale-110 hover:drop-shadow">
-      <Link
-        onClick={(e) => {
-          e.stopPropagation()
-        }}
-        href={`/${user.username}`}
-      >
+    <Link href={`/${user.username}`}>
+      <Col className="relative h-60 w-full overflow-hidden rounded text-white transition-all hover:z-40 hover:scale-110 hover:drop-shadow">
         {pinned_url ? (
           <Image
             src={pinned_url}
@@ -93,31 +88,31 @@ function ProfilePreview(props: {
             <UserIcon className="h-20 w-20" />
           </Col>
         )}
-      </Link>
-      <Col className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/70 via-black/70 to-transparent px-4 pt-6">
-        <Row>
-          <Link
-            onClick={(e) => {
-              e.stopPropagation()
-            }}
-            href={`/${user.username}`}
-            className="line-clamp-1 max-w-[calc(100%-2rem)] font-semibold hover:text-pink-300"
-          >
-            {user.name}
-          </Link>
-          , {calculateAge(birthdate)}
-        </Row>
-        <Row className="gap-1 text-xs">
-          {gender} • {city}
-        </Row>
-      </Col>
+        <Col className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/70 via-black/70 to-transparent px-4 pt-6">
+          <Row>
+            <Link
+              onClick={(e) => {
+                e.stopPropagation()
+              }}
+              href={`/${user.username}`}
+              className="line-clamp-1 max-w-[calc(100%-2rem)] font-semibold hover:text-pink-300"
+            >
+              {user.name}
+            </Link>
+            , {calculateAge(birthdate)}
+          </Row>
+          <Row className="gap-1 text-xs">
+            {gender} • {city}
+          </Row>
+        </Col>
 
-      <Col className="absolute inset-x-0 top-0 items-end px-4 pt-2 text-xs">
-        <div className="rounded-full bg-gray-600 bg-opacity-50 px-2 py-0.5">
-          Active <b>{shortenedFromNow(new Date(last_online_time).getTime())}</b>
-        </div>
-      </Col>
-      <Col
+        <Col className="absolute inset-x-0 top-0 items-end px-4 pt-2 text-xs">
+          <div className="rounded-full bg-gray-600 bg-opacity-50 px-2 py-0.5">
+            Active{' '}
+            <b>{shortenedFromNow(new Date(last_online_time).getTime())}</b>
+          </div>
+        </Col>
+        {/* <Col
         className="absolute inset-x-0 bottom-0 cursor-pointer items-end px-4 pb-16 text-xs"
         onClick={() => {
           setSelectedPhotos(buildArray(pinned_url, photo_urls))
@@ -127,7 +122,8 @@ function ProfilePreview(props: {
         <div className="rounded-full bg-gray-600 bg-opacity-50 px-3 py-0.5">
           <PhotographIcon className="h-4 w-4 " />{' '}
         </div>
+      </Col> */}
       </Col>
-    </Col>
+    </Link>
   )
 }
