@@ -513,7 +513,6 @@ export function ContractPageContent(props: ContractParams) {
                 <ReviewPanel
                   marketId={contract.id}
                   author={contract.creatorName}
-                  userId={user.id}
                   onSubmit={(rating: Rating) => {
                     setJustNowReview(rating)
                   }}
@@ -555,7 +554,6 @@ export function ContractPageContent(props: ContractParams) {
                 <ReviewPanel
                   marketId={contract.id}
                   author={contract.creatorName}
-                  userId={user.id}
                   onSubmit={(rating: Rating) => {
                     setJustNowReview(rating)
                   }}

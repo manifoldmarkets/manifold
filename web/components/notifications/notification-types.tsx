@@ -774,7 +774,6 @@ export function MarketResolvedNotification(props: {
         <ReviewPanel
           marketId={notification.sourceId}
           author={notification.sourceUserName}
-          userId={notification.userId}
           className="my-2"
           onSubmit={(rating: Rating) => {
             setJustNowReview(rating)

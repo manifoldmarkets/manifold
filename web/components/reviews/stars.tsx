@@ -1,29 +1,25 @@
 import { StarIcon as StarOutline } from '@heroicons/react/outline'
-import { CheckIcon, StarIcon } from '@heroicons/react/solid'
-import { clamp, range } from 'lodash'
-import { GradientContainer } from '../widgets/gradient-container'
-import { useEffect, useState } from 'react'
-import { Button } from '../buttons/button'
-import { leaveReview } from 'web/lib/firebase/api'
-import { TextEditor, useTextEditor } from '../widgets/editor'
-import { Col } from '../layout/col'
+import { StarIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
-import { useMutation } from 'web/hooks/use-mutation'
+import { range } from 'lodash'
+import { useState } from 'react'
 import toast from 'react-hot-toast'
-import { User } from 'common/user'
-import { getMyReviewOnContract } from 'web/lib/supabase/reviews'
-import { Contract } from 'common/contract'
+import { useMutation } from 'web/hooks/use-mutation'
+import { leaveReview } from 'web/lib/firebase/api'
+import { Button } from '../buttons/button'
+import { Col } from '../layout/col'
+import { TextEditor, useTextEditor } from '../widgets/editor'
+import { GradientContainer } from '../widgets/gradient-container'
 
 export type Rating = 0 | 1 | 2 | 3 | 4 | 5
 
 export const ReviewPanel = (props: {
   marketId: string
   author: string
-  userId: string
   className?: string
   onSubmit: (rating: Rating) => void
 }) => {
-  const { marketId, author, userId, className, onSubmit } = props
+  const { marketId, author, className, onSubmit } = props
   const [rating, setRating] = useState<Rating>(0)
 
   const editor = useTextEditor({
