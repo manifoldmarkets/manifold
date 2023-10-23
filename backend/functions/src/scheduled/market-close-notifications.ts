@@ -51,8 +51,6 @@ export async function sendMarketCloseEmails() {
       contract.closeTime
     )
 
-    if (contract.outcomeType === 'BOUNTIED_QUESTION') continue
-
     const user = await getUserByUsername(contract.creatorUsername)
     if (!user) continue
 
