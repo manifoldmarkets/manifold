@@ -3,8 +3,9 @@ import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { ActivityLog } from 'web/components/activity-log'
 import { LovePage } from 'love/components/love-page'
+import { ENV } from 'common/envs/constants'
 
-export default function HomePage() {
+export default function UpdatesPage() {
   return (
     <LovePage trackPageView={'live page'}>
       <SEO
@@ -20,14 +21,21 @@ export default function HomePage() {
           }
         >
           <span className="text-primary-700 line-clamp-1 shrink px-1 text-2xl">
-            {'Manifold.Love'} live feed
+            Updates
           </span>
         </Row>
         <ActivityLog
           count={30}
           topicSlugs={['manifoldlove', 'manifoldlove-relationships']}
+          blockedUserIds={[manifoldLoveUserId]}
+          hideQuestions
         />
       </Col>
     </LovePage>
   )
 }
+
+const manifoldLoveUserId =
+  ENV === 'PROD'
+    ? 'tRZZ6ihugZQLXPf6aPRneGpWLmz1'
+    : 'RlXR2xa4EFfAzdCbSe45wkcdarh1'

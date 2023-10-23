@@ -66,7 +66,10 @@ const signedOutNavigation = () => [
 export function BottomNavBar(props: {
   navigationOptions?: Item[]
   sidebarNavigationOptions?: Item[]
+  hideCreateQuestionButton?: boolean
+  isManifoldLove?: boolean
 }) {
+  const { hideCreateQuestionButton, isManifoldLove } = props
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   const router = useRouter()
@@ -116,6 +119,8 @@ export function BottomNavBar(props: {
             sidebarOpen={sidebarOpen}
             setSidebarOpen={setSidebarOpen}
             sidebarNavigationOptions={props.sidebarNavigationOptions}
+            hideCreateQuestionButton={hideCreateQuestionButton}
+            isManifoldLove={isManifoldLove}
           />
         </>
       )}
@@ -208,8 +213,15 @@ export function MobileSidebar(props: {
   sidebarOpen: boolean
   setSidebarOpen: (open: boolean) => void
   sidebarNavigationOptions?: Item[]
+  hideCreateQuestionButton?: boolean
+  isManifoldLove?: boolean
 }) {
-  const { sidebarOpen, setSidebarOpen } = props
+  const {
+    sidebarOpen,
+    setSidebarOpen,
+    hideCreateQuestionButton,
+    isManifoldLove,
+  } = props
   return (
     <div>
       <Transition.Root show={sidebarOpen} as={Fragment}>
@@ -244,6 +256,8 @@ export function MobileSidebar(props: {
                 <Sidebar
                   navigationOptions={props.sidebarNavigationOptions}
                   isMobile
+                  hideCreateQuestionButton={hideCreateQuestionButton}
+                  loveSidebar={isManifoldLove}
                 />
               </div>
             </div>

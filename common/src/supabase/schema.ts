@@ -945,23 +945,66 @@ export interface Database {
         }
         Relationships: []
       }
+      lover_comments: {
+        Row: {
+          content: Json
+          created_time: string
+          hidden: boolean
+          id: number
+          on_user_id: string
+          reply_to_comment_id: number | null
+          user_avatar_url: string
+          user_id: string
+          user_name: string
+          user_username: string
+        }
+        Insert: {
+          content: Json
+          created_time?: string
+          hidden?: boolean
+          id?: never
+          on_user_id: string
+          reply_to_comment_id?: number | null
+          user_avatar_url: string
+          user_id: string
+          user_name: string
+          user_username: string
+        }
+        Update: {
+          content?: Json
+          created_time?: string
+          hidden?: boolean
+          id?: never
+          on_user_id?: string
+          reply_to_comment_id?: number | null
+          user_avatar_url?: string
+          user_id?: string
+          user_name?: string
+          user_username?: string
+        }
+        Relationships: []
+      }
       lovers: {
         Row: {
           birthdate: string
           born_in_location: string | null
           city: string
+          company: string | null
           created_time: string
-          drinks_per_month: number
+          drinks_per_month: number | null
           education_level: string | null
           ethnicity: string[] | null
           gender: string
-          has_kids: number
-          has_pets: boolean | null
+          has_kids: number | null
           height_in_inches: number | null
           id: number
-          is_smoker: boolean
-          is_vegetarian_or_vegan: boolean
+          is_smoker: boolean | null
+          is_vegetarian_or_vegan: boolean | null
           last_online_time: string
+          looking_for_matches: boolean
+          messaging_status: string
+          occupation: string | null
+          occupation_title: string | null
           photo_urls: string[] | null
           pinned_url: string | null
           political_beliefs: string[] | null
@@ -971,25 +1014,32 @@ export interface Database {
           pref_relation_styles: string[]
           religious_belief_strength: number | null
           religious_beliefs: string[] | null
+          university: string | null
           user_id: string
+          visibility: string
           wants_kids_strength: number
+          comments_enabled: boolean
         }
         Insert: {
           birthdate: string
           born_in_location?: string | null
           city: string
+          company?: string | null
           created_time?: string
-          drinks_per_month?: number
+          drinks_per_month?: number | null
           education_level?: string | null
           ethnicity?: string[] | null
           gender: string
-          has_kids?: number
-          has_pets?: boolean | null
+          has_kids?: number | null
           height_in_inches?: number | null
           id?: never
-          is_smoker?: boolean
-          is_vegetarian_or_vegan?: boolean
+          is_smoker?: boolean | null
+          is_vegetarian_or_vegan?: boolean | null
           last_online_time?: string
+          looking_for_matches?: boolean
+          messaging_status?: string
+          occupation?: string | null
+          occupation_title?: string | null
           photo_urls?: string[] | null
           pinned_url?: string | null
           political_beliefs?: string[] | null
@@ -999,25 +1049,32 @@ export interface Database {
           pref_relation_styles: string[]
           religious_belief_strength?: number | null
           religious_beliefs?: string[] | null
+          university?: string | null
           user_id: string
+          visibility?: string
           wants_kids_strength?: number
+          comments_enabled?: boolean
         }
         Update: {
           birthdate?: string
           born_in_location?: string | null
           city?: string
+          company?: string | null
           created_time?: string
-          drinks_per_month?: number
+          drinks_per_month?: number | null
           education_level?: string | null
           ethnicity?: string[] | null
           gender?: string
-          has_kids?: number
-          has_pets?: boolean | null
+          has_kids?: number | null
           height_in_inches?: number | null
           id?: never
-          is_smoker?: boolean
-          is_vegetarian_or_vegan?: boolean
+          is_smoker?: boolean | null
+          is_vegetarian_or_vegan?: boolean | null
           last_online_time?: string
+          looking_for_matches?: boolean
+          messaging_status?: string
+          occupation?: string | null
+          occupation_title?: string | null
           photo_urls?: string[] | null
           pinned_url?: string | null
           political_beliefs?: string[] | null
@@ -1027,8 +1084,11 @@ export interface Database {
           pref_relation_styles?: string[]
           religious_belief_strength?: number | null
           religious_beliefs?: string[] | null
+          university?: string | null
           user_id?: string
+          visibility?: string
           wants_kids_strength?: number
+          comments_enabled?: boolean
         }
         Relationships: []
       }
@@ -1366,6 +1426,24 @@ export interface Database {
           created_time?: string
           id?: never
           user_id?: string
+        }
+        Relationships: []
+      }
+      private_users: {
+        Row: {
+          data: Json
+          fs_updated_time: string
+          id: string
+        }
+        Insert: {
+          data: Json
+          fs_updated_time: string
+          id: string
+        }
+        Update: {
+          data?: Json
+          fs_updated_time?: string
+          id?: string
         }
         Relationships: []
       }
@@ -2936,6 +3014,13 @@ export interface Database {
           table_id: string
         }
         Returns: Database['public']['CompositeTypes']['table_spec']
+      }
+      get_donations_by_charity: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          charity_id: string
+          total: number
+        }[]
       }
       get_engaged_users: {
         Args: Record<PropertyKey, never>

@@ -1,3 +1,4 @@
+import { sortBy } from 'lodash'
 import { useEffect, useState } from 'react'
 import { Row } from 'web/components/layout/row'
 import { Col } from 'web/components/layout/col'
@@ -41,11 +42,19 @@ export const Filters = (props: {
     setLovers(allLovers)
   }
   useEffect(() => {
-    applyFilters()
-  }, [JSON.stringify(filters)])
+    if (allLovers) {
+      applyFilters()
+    }
+  }, [JSON.stringify(filters), allLovers?.map((l) => l.id).join(',')])
 
   const applyFilters = () => {
-    const filteredLovers = allLovers?.filter((lover) => {
+    const sortedLovers = sortBy(
+      allLovers,
+      (lover) => (lover.pinned_url ? 0 : 1),
+      (lover) => -1 * new Date(lover.created_time).getTime()
+    )
+    const filteredLovers = sortedLovers?.filter((lover) => {
+      if (lover.user.name === 'deleted') return false
       if (
         filters.pref_age_min &&
         calculateAge(lover.birthdate) < filters.pref_age_min
@@ -73,6 +82,7 @@ export const Filters = (props: {
         return false
       } else if (
         filters.has_kids !== undefined &&
+        filters.has_kids !== null &&
         (lover.has_kids ?? 0) < filters.has_kids
       ) {
         return false

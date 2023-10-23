@@ -12,6 +12,7 @@ import { UserAvatarAndBadge } from 'web/components/widgets/user-link'
 import { usePersistentQueryState } from 'web/hooks/use-persistent-query-state'
 import clsx from 'clsx'
 import { useAdmin } from 'web/hooks/use-admin'
+import { useIsAuthorized } from 'web/hooks/use-user'
 
 const isUserLikelySpammer = (user: User, hasBet: boolean) => {
   return (
@@ -28,12 +29,21 @@ export default function Journeys() {
   const hoursFromNow = parseInt(hoursFromNowQ ?? '5')
   const [unBannedUsers, setUnBannedUsers] = useState<User[]>([])
   const [bannedUsers, setBannedUsers] = useState<User[]>([])
+  const isAuthed = useIsAuthorized()
 
   const getEvents = async () => {
+    const start = Date.now() - hoursFromNow * HOUR_MS
+    const users = await run(
+      db.from('users').select('id').gt('data->createdTime', start)
+    )
     const events = await run(
-      db.rpc('get_user_journeys' as any, {
-        start_time: Date.now() - hoursFromNow * HOUR_MS,
-      })
+      db
+        .from('user_events')
+        .select('*')
+        .in(
+          'user_id',
+          users.data.map((u) => u.id)
+        )
     )
     const eventsByUser = groupBy(
       orderBy(events.data as rowfor<'user_events'>[], 'ts', 'asc'),
@@ -57,8 +67,9 @@ export default function Journeys() {
   }, [JSON.stringify(Object.keys(eventsByUser))])
 
   useEffect(() => {
+    if (!isAuthed) return
     getEvents()
-  }, [hoursFromNow])
+  }, [hoursFromNow, isAuthed])
 
   const userIdsThatBet = unBannedUsers
     .filter(

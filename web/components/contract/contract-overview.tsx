@@ -52,7 +52,7 @@ export const ContractOverview = memo(
     betPoints: HistoryPoint<Partial<Bet>>[] | MultiPoints
     showResolver: boolean
     setShowResolver: (show: boolean) => void
-    onAnswerCommentClick?: (answer: Answer | DpmAnswer) => void
+    onAnswerCommentClick: (answer: Answer | DpmAnswer) => void
   }) => {
     const {
       betPoints,
@@ -211,7 +211,7 @@ const ChoiceOverview = (props: {
   contract: MultiContract
   showResolver: boolean
   setShowResolver: (show: boolean) => void
-  onAnswerCommentClick?: (answer: Answer | DpmAnswer) => void
+  onAnswerCommentClick: (answer: Answer | DpmAnswer) => void
 }) => {
   const {
     points,
@@ -225,7 +225,8 @@ const ChoiceOverview = (props: {
   const { viewScale, currentTimePeriod, setTimePeriod, start, maxRange } =
     useTimePicker(contract)
 
-  if (!onAnswerCommentClick) return null
+  const [hoverAnswerId, setHoverAnswerId] = useState<string>()
+  const [checkedAnswerIds, setCheckedAnswerIds] = useState<string[]>([])
 
   const shouldAnswersSumToOne =
     'shouldAnswersSumToOne' in contract ? contract.shouldAnswersSumToOne : true
@@ -267,6 +268,8 @@ const ChoiceOverview = (props: {
               height={h}
               multiPoints={points}
               contract={contract}
+              highlightAnswerId={hoverAnswerId}
+              checkedAnswerIds={checkedAnswerIds}
             />
           )}
         </SizedContainer>
@@ -285,6 +288,15 @@ const ChoiceOverview = (props: {
           <AnswersPanel
             contract={contract}
             onAnswerCommentClick={onAnswerCommentClick}
+            onAnswerHover={(ans) => setHoverAnswerId(ans?.id)}
+            onAnswerClick={({ id }) =>
+              setCheckedAnswerIds((answers) =>
+                answers.includes(id)
+                  ? answers.filter((a) => a !== id)
+                  : [...answers, id]
+              )
+            }
+            selected={checkedAnswerIds}
           />
           <CreateAnswerPanel contract={contract} />
           <UserBetsSummary

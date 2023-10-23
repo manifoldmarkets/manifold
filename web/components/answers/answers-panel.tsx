@@ -1,4 +1,8 @@
-import { ArrowRightIcon, ChevronDoubleDownIcon } from '@heroicons/react/outline'
+import {
+  ArrowRightIcon,
+  ChevronDownIcon,
+  PresentationChartLineIcon,
+} from '@heroicons/react/outline'
 import { groupBy, sortBy, sumBy } from 'lodash'
 import { useState } from 'react'
 
@@ -14,7 +18,7 @@ import { Row } from 'web/components/layout/row'
 import { useUser } from 'web/hooks/use-user'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
 import { useUserByIdOrAnswer } from 'web/hooks/use-user-supabase'
-import { nthColor, useChartAnswers } from '../charts/contract/choice'
+import { getAnswerColor, useChartAnswers } from '../charts/contract/choice'
 import { Col } from '../layout/col'
 import { NoLabel, YesLabel } from '../outcome-label'
 import {
@@ -26,24 +30,21 @@ import {
 import { floatingEqual } from 'common/util/math'
 import { InfoTooltip } from '../widgets/info-tooltip'
 
-export function getAnswerColor(
-  answer: Answer | DpmAnswer,
-  answersArray: string[]
-) {
-  const index =
-    'index' in answer ? answer.index : answersArray.indexOf(answer.text)
-  return nthColor(index)
-}
-
 export function AnswersPanel(props: {
   contract: MultiContract
   onAnswerCommentClick?: (answer: Answer | DpmAnswer) => void
+  onAnswerHover?: (answer: Answer | DpmAnswer | undefined) => void
+  onAnswerClick?: (answer: Answer | DpmAnswer) => void
+  selected?: string[] // answer ids
   linkToContract?: boolean
   maxAnswers?: number
 }) {
   const {
     contract,
     onAnswerCommentClick,
+    onAnswerHover,
+    onAnswerClick,
+    selected,
     linkToContract,
     maxAnswers = Infinity,
   } = props
@@ -58,7 +59,9 @@ export function AnswersPanel(props: {
   const shouldAnswersSumToOne =
     'shouldAnswersSumToOne' in contract ? contract.shouldAnswersSumToOne : true
 
-  const [showSmallAnswers, setShowSmallAnswers] = useState(isMultipleChoice)
+  const [showSmallAnswers, setShowSmallAnswers] = useState(
+    addAnswersMode !== 'ANYONE'
+  )
 
   const answers = contract.answers
     .filter((a) => isMultipleChoice || ('number' in a && a.number !== 0))
@@ -88,9 +91,7 @@ export function AnswersPanel(props: {
 
   const user = useUser()
 
-  const answersArray = useChartAnswers(contract).map(
-    (answer, _index) => answer.text
-  )
+  const answersArray = useChartAnswers(contract).map((answer) => answer.text)
 
   const userBets = useUserContractBets(user?.id, contract.id)
   const userBetsByAnswer = groupBy(userBets, (bet) => bet.answerId)
@@ -110,7 +111,12 @@ export function AnswersPanel(props: {
               key={answer.id}
               answer={answer}
               contract={contract}
-              onAnswerCommentClick={onAnswerCommentClick}
+              onCommentClick={() => onAnswerCommentClick?.(answer)}
+              onHover={(hovering) =>
+                onAnswerHover?.(hovering ? answer : undefined)
+              }
+              onClick={() => onAnswerClick?.(answer)}
+              selected={selected?.includes(answer.id)}
               color={getAnswerColor(answer, answersArray)}
               userBets={userBetsByAnswer[answer.id]}
             />
@@ -132,8 +138,8 @@ export function AnswersPanel(props: {
                 onClick={() => setShowSmallAnswers(true)}
                 size="xs"
               >
-                {moreCount} more {moreCount === 1 ? 'answer' : 'answers'}
-                <ChevronDoubleDownIcon className="ml-1 h-4 w-4" />
+                <ChevronDownIcon className="mr-1 h-4 w-4" />
+                Show {moreCount} more {moreCount === 1 ? 'answer' : 'answers'}
               </Button>
             ))}
         </Col>
@@ -150,10 +156,22 @@ function Answer(props: {
   contract: MultiContract
   answer: Answer | DpmAnswer
   color: string
-  onAnswerCommentClick?: (answer: Answer | DpmAnswer) => void
+  onCommentClick?: () => void
+  onHover?: (hovering: boolean) => void
+  onClick?: () => void
+  selected?: boolean
   userBets?: Bet[]
 }) {
-  const { answer, contract, onAnswerCommentClick, color, userBets } = props
+  const {
+    answer,
+    contract,
+    onCommentClick,
+    onHover,
+    onClick,
+    selected,
+    color,
+    userBets,
+  } = props
 
   const answerCreator = useUserByIdOrAnswer(answer)
   const prob = getAnswerProbability(contract, answer.id)
@@ -184,58 +202,66 @@ function Answer(props: {
   const textColorClass = resolvedProb === 0 ? 'text-ink-700' : 'text-ink-900'
 
   return (
-    <AnswerBar
-      color={color}
-      prob={prob}
-      resolvedProb={resolvedProb}
-      label={
-        isOther ? (
-          <span className={textColorClass}>
-            Other{' '}
-            <InfoTooltip
-              className="!text-ink-600"
-              text="Represents all answers not listed. New answers are split out of this answer."
+    <Col>
+      <AnswerBar
+        color={color}
+        prob={prob}
+        resolvedProb={resolvedProb}
+        onHover={onHover}
+        onClick={onClick}
+        className={clsx(
+          'cursor-pointer',
+          selected && 'ring-primary-600 rounded ring-2'
+        )}
+        label={
+          isOther ? (
+            <span className={textColorClass}>
+              Other{' '}
+              <InfoTooltip
+                className="!text-ink-600 dark:!text-ink-700"
+                text="Represents all answers not listed. New answers are split out of this answer."
+              />
+            </span>
+          ) : (
+            <AnswerLabel
+              text={answer.text}
+              index={'index' in answer ? answer.index : undefined}
+              createdTime={answer.createdTime}
+              creator={
+                addAnswersMode === 'ANYONE' ? answerCreator ?? false : undefined
+              }
+              className={clsx(
+                'items-center text-sm !leading-none sm:flex sm:text-base',
+                textColorClass
+              )}
             />
-          </span>
-        ) : (
-          <AnswerLabel
-            text={answer.text}
-            index={'index' in answer ? answer.index : undefined}
-            createdTime={answer.createdTime}
-            creator={
-              addAnswersMode === 'ANYONE' ? answerCreator ?? false : undefined
-            }
-            className={clsx(
-              'items-center text-sm !leading-none sm:flex sm:text-base',
-              textColorClass
+          )
+        }
+        end={
+          <>
+            {selected && (
+              <PresentationChartLineIcon
+                className="h-5 w-5 text-black"
+                style={{ fill: color }}
+              />
             )}
-          />
-        )
-      }
-      end={
-        <>
-          <AnswerStatusAndBetButtons
-            contract={contract}
-            answer={answer}
-            userBets={userBets ?? []}
-          />
-          {onAnswerCommentClick && (
-            <AddComment onClick={() => onAnswerCommentClick(answer)} />
-          )}
-        </>
-      }
-      bottom={
-        !resolution &&
-        hasBets &&
-        isCpmm && (
-          <AnswerPosition
-            contract={contract}
-            userBets={userBets}
-            className="mt-0.5 sm:mx-3 sm:mt-0"
-          />
-        )
-      }
-    />
+            <AnswerStatusAndBetButtons
+              contract={contract}
+              answer={answer}
+              userBets={userBets ?? []}
+            />
+            {onCommentClick && <AddComment onClick={onCommentClick} />}
+          </>
+        }
+      />
+      {!resolution && hasBets && isCpmm && (
+        <AnswerPosition
+          contract={contract}
+          userBets={userBets}
+          className="mt-0.5 self-end sm:mx-3 sm:mt-0"
+        />
+      )}
+    </Col>
   )
 }
 

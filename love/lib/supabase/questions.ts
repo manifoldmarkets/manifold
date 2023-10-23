@@ -4,10 +4,7 @@ export type Question = Row<'love_questions'>
 export type Answer = Row<'love_answers'>
 export const getAllQuestions = async () => {
   const res = await run(
-    db
-      .from('love_questions')
-      .select('*')
-      .order('importance_score', { ascending: false })
+    db.from('love_questions').select('*').order('created_time')
   )
   return res.data
 }

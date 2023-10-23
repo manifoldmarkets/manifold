@@ -23,7 +23,13 @@ export function Checkbox(props: {
           />
         </div>
         <div className="ml-3">
-          <label htmlFor={label} className="text-ink-700 font-medium">
+          <label
+            htmlFor={label}
+            className={clsx(
+              ' font-medium',
+              disabled ? 'text-ink-300' : 'text-ink-700'
+            )}
+          >
             {label}
           </label>
         </div>

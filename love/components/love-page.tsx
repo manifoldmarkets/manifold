@@ -1,37 +1,32 @@
+import { CashIcon, DeviceMobileIcon, HomeIcon } from '@heroicons/react/outline'
+import {
+  QuestionMarkCircleIcon,
+  HomeIcon as SolidHomeIcon,
+  UserCircleIcon,
+  ViewListIcon,
+} from '@heroicons/react/solid'
 import clsx from 'clsx'
+import { User } from 'common/user'
+import { buildArray } from 'common/util/array'
+import { useOnline } from 'love/hooks/use-online'
+import { NOTIFICATIONS_TO_IGNORE } from 'love/pages/notifications'
 import { ReactNode, useState } from 'react'
 import { Toaster } from 'react-hot-toast'
-import { useIsMobile } from 'web/hooks/use-is-mobile'
-import { GoogleOneTapLogin } from 'web/lib/firebase/google-onetap-login'
-import { useTracking } from 'web/hooks/use-tracking'
+import { AddFundsModal } from 'web/components/add-funds-modal'
+import { MobileAppsQRCodeDialog } from 'web/components/buttons/mobile-apps-qr-code-button'
 import { Col } from 'web/components/layout/col'
+import { PrivateMessagesIcon } from 'web/components/messaging/messages-icon'
 import { BottomNavBar } from 'web/components/nav/bottom-nav-bar'
-import Sidebar from 'web/components/nav/sidebar'
-import { useUser } from 'web/hooks/use-user'
-import { User } from 'common/user'
-import {
-  HomeIcon as SolidHomeIcon,
-  QuestionMarkCircleIcon,
-  SearchIcon,
-  UserCircleIcon,
-} from '@heroicons/react/solid'
 import {
   NotificationsIcon,
   SolidNotificationsIcon,
 } from 'web/components/notifications-icon'
+import { useIsMobile } from 'web/hooks/use-is-mobile'
+import { useTracking } from 'web/hooks/use-tracking'
+import { useUser } from 'web/hooks/use-user'
+import { GoogleOneTapLogin } from 'web/lib/firebase/google-onetap-login'
 import { firebaseLogin } from 'web/lib/firebase/users'
-import { buildArray } from 'common/util/array'
-import {
-  CashIcon,
-  DeviceMobileIcon,
-  StarIcon,
-  HomeIcon,
-} from '@heroicons/react/outline'
-import { PrivateMessagesIcon } from 'web/components/messaging/messages-icon'
-import { AddFundsModal } from 'web/components/add-funds-modal'
-import { MobileAppsQRCodeDialog } from 'web/components/buttons/mobile-apps-qr-code-button'
-import { NOTIFICATIONS_TO_IGNORE } from 'love/pages/notifications'
-import { useOnline } from 'love/hooks/use-online'
+import Sidebar from 'web/components/nav/sidebar'
 
 export function LovePage(props: {
   trackPageView: string | false
@@ -84,6 +79,8 @@ export function LovePage(props: {
           <Sidebar
             navigationOptions={sidebarNavigationOptions}
             className="sticky top-0 hidden self-start px-2 lg:col-span-2 lg:flex"
+            loveSidebar
+            hideCreateQuestionButton
           />
         )}
         <main
@@ -100,6 +97,8 @@ export function LovePage(props: {
         <BottomNavBar
           sidebarNavigationOptions={sidebarNavigationOptions}
           navigationOptions={navigationOptions}
+          hideCreateQuestionButton
+          isManifoldLove
         />
       )}
       <AddFundsModal
@@ -117,8 +116,8 @@ export function LovePage(props: {
 
 function getBottomNavigation(user: User) {
   return buildArray(
-    { name: 'Home', href: '/home', icon: SolidHomeIcon },
-    { name: 'Browse', href: '/profiles', icon: SearchIcon },
+    { name: 'Profiles', href: '/profiles', icon: SolidHomeIcon },
+    { name: 'Updates', href: '/updates', icon: ViewListIcon },
     {
       name: 'Profile',
       href: `/${user.username}`,
@@ -137,15 +136,15 @@ function getBottomNavigation(user: User) {
 }
 
 const signedOutNavigation = () => [
-  { name: 'Browse', href: '/profiles', icon: SearchIcon },
+  { name: 'Profiles', href: '/profiles', icon: HomeIcon },
   { name: 'About', href: '/about', icon: QuestionMarkCircleIcon },
   { name: 'Sign in', onClick: firebaseLogin, icon: UserCircleIcon },
 ]
 const getDesktopNav = (loggedIn: boolean, openDownloadApp: () => void) => {
   if (loggedIn)
     return buildArray(
-      { name: 'Home', href: '/home', icon: HomeIcon },
-      { name: 'Browse', href: '/profiles', icon: SearchIcon },
+      { name: 'Profiles', href: '/profiles', icon: HomeIcon },
+      { name: 'Updates', href: '/updates', icon: ViewListIcon },
       {
         name: 'Notifications',
         href: `/notifications`,
@@ -161,7 +160,7 @@ const getDesktopNav = (loggedIn: boolean, openDownloadApp: () => void) => {
     )
 
   return buildArray(
-    { name: 'Browse', href: '/profiles', icon: SearchIcon },
+    { name: 'Profiles', href: '/profiles', icon: HomeIcon },
     { name: 'About', href: '/about', icon: QuestionMarkCircleIcon },
     { name: 'App', onClick: openDownloadApp, icon: DeviceMobileIcon }
   )
@@ -171,7 +170,7 @@ const getDesktopNav = (loggedIn: boolean, openDownloadApp: () => void) => {
 const getSidebarNavigation = (toggleModal: () => void) => {
   return buildArray(
     { name: 'Messages', href: '/messages', icon: PrivateMessagesIcon },
-    { name: 'Get mana', icon: CashIcon, onClick: toggleModal },
-    { name: 'Share with friends', href: '/referrals', icon: StarIcon } // remove this and I will beat you — SG
+    { name: 'Get mana', icon: CashIcon, onClick: toggleModal }
+    // { name: 'Share with friends', href: '/referrals', icon: StarIcon } // remove this and I will beat you — SG
   )
 }

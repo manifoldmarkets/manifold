@@ -17,6 +17,7 @@ import { log } from 'shared/utils'
 import { DEEMPHASIZED_GROUP_SLUGS, isAdminId } from 'common/envs/constants'
 import { NON_PREDICTIVE_GROUP_ID } from 'common/supabase/groups'
 import { convertContract } from 'common/supabase/contracts'
+import { generateEmbeddings } from 'shared/helpers/openai-utils'
 
 export const getUniqueBettorIds = async (
   contractId: string,
@@ -383,4 +384,20 @@ export const getImportantContractsForNewUsers = async (
   }
 
   return contractIds
+}
+export const generateContractEmbeddings = async (
+  contract: Contract,
+  pg: SupabaseDirectClient
+) => {
+  const embedding = await generateEmbeddings(contract.question)
+  if (!embedding) return
+
+  return await pg.one(
+    `insert into contract_embeddings (contract_id, embedding)
+            values ($1, $2)
+            on conflict (contract_id) do nothing
+            returning embedding
+          `,
+    [contract.id, embedding]
+  )
 }

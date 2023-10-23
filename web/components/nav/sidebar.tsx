@@ -35,13 +35,16 @@ import { ManifoldLogo } from './manifold-logo'
 import { ProfileSummary } from './profile-summary'
 import { Item, SidebarItem } from './sidebar-item'
 import { PrivateMessagesIcon } from 'web/components/messaging/messages-icon'
+import ManifoldLoveLogo from '../../../love/components/manifold-love-logo'
 
 export default function Sidebar(props: {
   className?: string
   isMobile?: boolean
   navigationOptions?: Item[]
+  loveSidebar?: boolean
+  hideCreateQuestionButton?: boolean
 }) {
-  const { className, isMobile } = props
+  const { className, isMobile, loveSidebar, hideCreateQuestionButton } = props
   const router = useRouter()
   const currentPage = router.pathname
 
@@ -62,16 +65,22 @@ export default function Sidebar(props: {
 
   const bottomNavOptions = bottomNav(!!user, theme, toggleTheme)
 
-  const createMarketButton = user && !user.isBannedFromPosting && (
-    <CreateQuestionButton key="create-market-button" className={'mt-4'} />
-  )
+  const createMarketButton = !hideCreateQuestionButton &&
+    user &&
+    !user.isBannedFromPosting && (
+      <CreateQuestionButton key="create-market-button" className={'mt-4'} />
+    )
 
   return (
     <nav
       aria-label="Sidebar"
       className={clsx('flex h-screen flex-col', className)}
     >
-      <ManifoldLogo className="pb-3 pt-6" />
+      {loveSidebar ? (
+        <ManifoldLoveLogo />
+      ) : (
+        <ManifoldLogo className="pb-3 pt-6" />
+      )}
 
       {user === undefined && <div className="h-[56px]" />}
 

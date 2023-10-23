@@ -9,10 +9,6 @@ import {
   getNumUserComments,
   getPostCommentRows,
 } from 'web/lib/supabase/comments'
-import { db } from 'web/lib/supabase/db'
-import { uniqBy } from 'lodash'
-import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
-import { isBlocked, usePrivateUser } from 'web/hooks/use-user'
 import { useSubscription } from 'web/lib/supabase/realtime/use-subscription'
 
 export function useNumContractComments(contractId: string) {
@@ -27,42 +23,6 @@ export function useNumContractComments(contractId: string) {
   }, [contractId])
 
   return numComments
-}
-
-export function useUnseenReplyChainCommentsOnContracts(
-  contractIds: string[],
-  userId: string
-) {
-  const [comments, setComments] = usePersistentInMemoryState<ContractComment[]>(
-    [],
-    `recent-feed-replies-${userId}`
-  )
-  const privateUser = usePrivateUser()
-
-  useEffect(() => {
-    if (contractIds.length > 0) {
-      db.rpc('get_unseen_reply_chain_comments_matching_contracts', {
-        contract_ids: contractIds,
-        current_user_id: userId,
-      }).then((result) => {
-        const { data, error } = result
-        if (error || !data) {
-          console.log(error)
-          return null
-        }
-        setComments((prev) =>
-          uniqBy(
-            [...data.map((d: any) => d.data as ContractComment), ...prev],
-            (c) => c.id
-          )
-        )
-      })
-    }
-  }, [JSON.stringify(contractIds)])
-
-  return comments.filter(
-    (c) => c.hidden != true && !isBlocked(privateUser, c.userId)
-  )
 }
 
 export function useNumUserComments(userId: string) {

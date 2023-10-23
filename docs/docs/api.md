@@ -80,10 +80,12 @@ Returns the authenticated user.
 
 ### `GET /v0/groups`
 
-Gets all groups, in no particular order.
+Gets all groups, in order of descending creation time, 500 at a time.
 
 Parameters:
 
+- `beforeTime`: Optional. If specified, only groups created before this time
+  will be returned.
 - `availableToUserId`: Optional. if specified, only groups that the user can
   join and groups they've already joined will be returned.
 
@@ -713,7 +715,7 @@ Parameters:
   - Note: string descriptions do **not** turn into links, mentions, formatted text. You may instead use `descriptionMarkdown` or `descriptionHtml` for rich text formatting.
 - `closeTime`: Optional. The time at which the market will close, represented as milliseconds since the epoch. Defaults to 7 days from now.
 - `visibility`: Optional. One of `public` (default) or `unlisted`. Controls whether the market can be shown on homepage and in search results.
-- `groupId`: Optional. A group to create this market under.
+- `groupIds`: Optional. An array of topic/group ids to categorize this market under.
 
 For binary markets, you must also provide:
 

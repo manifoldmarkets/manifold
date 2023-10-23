@@ -10,13 +10,14 @@ import { PLURAL_BETS } from 'common/user'
 import { capitalize } from 'lodash'
 import { formatLargeNumber } from 'common/util/format'
 import { formatWithCommas } from 'common/util/format'
-import { InfoBox } from 'web/components/widgets/info-box'
-import { Linkify } from 'web/components/widgets/linkify'
 import { getIsNative } from 'web/lib/native/is-native'
 import { SEO } from 'web/components/SEO'
 
 export const getStaticProps = async () => {
-  const stats = await getStats()
+  const stats = await getStats().catch((e) => {
+    console.error('Failed to get stats', e)
+    return {}
+  })
   return {
     props: stats,
     revalidate: 60 * 60, // One hour
@@ -137,24 +138,6 @@ export function CustomAnalytics(props: Stats) {
           },
         ]}
       />
-      {/* We'd like to embed these in a separate tab, but unfortunately Umami doesn't seem to support iframe embeds atm */}
-      <InfoBox title="" className="bg-ink-100 mt-4">
-        <span>
-          For pageview and visitor stats, see{' '}
-          {isNative ? (
-            <a
-              href={
-                'https://analytics.umami.is/share/ARwUIC9GWLNyowjq/Manifold%20Markets'
-              }
-              className={'text-primary-700'}
-            >
-              our umami page
-            </a>
-          ) : (
-            <Linkify text={'https://manifold.markets/umami'} />
-          )}
-        </span>
-      </InfoBox>
 
       <Spacer h={8} />
 

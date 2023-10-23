@@ -15,13 +15,17 @@ create table if not exists
       pref_age_min int not null default 18,
       pref_age_max int not null default 100,
       pref_relation_styles text[] not null, -- mono, poly, open, etc
-      is_smoker boolean not null default false,
-      drinks_per_month int not null default 0,
-      is_vegetarian_or_vegan boolean not null default false,
-      has_kids int not null default 0,
       wants_kids_strength int not null default 0, -- 0 is doesn't want any kids
+      looking_for_matches boolean not null default true,
+      visibility text not null default 'public', -- public, unlisted
+      messaging_status text not null default 'open', -- open, closed, out-only
+      comments_enabled boolean not null default true,
 
       -- optional
+      has_kids int,
+      is_smoker boolean,
+      drinks_per_month int,
+      is_vegetarian_or_vegan boolean,
       political_beliefs text[],
       religious_belief_strength int, -- 0 is none
       religious_beliefs text[],
@@ -30,13 +34,20 @@ create table if not exists
       ethnicity text[],
       born_in_location text,
       height_in_inches int,
-      has_pets boolean,
-      education_level text
+      education_level text,
+      university text,
+      occupation text,
+      occupation_title text,
+      company text
 );
 
 alter table lovers enable row level security;
 
 drop policy if exists "public read" on lovers;
 create policy  "public read" on lovers using (true);
+
+drop policy if exists "self update" on lovers;
+create policy  "self update" on lovers for update
+    with check (user_id = firebase_uid());
 
 create index if not exists lovers_user_id_idx on lovers(user_id);

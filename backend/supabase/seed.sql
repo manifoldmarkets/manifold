@@ -41,6 +41,21 @@ $$;
 /******************************************/
 /* 1. tables containing firestore content */
 /******************************************/
+
+create table if not exists private_users (
+  id text not null primary key,
+  data jsonb not null,
+  fs_updated_time timestamp not null,
+);
+
+alter table private_users enable row level security;
+
+drop policy if exists "private read" on private_users;
+create policy "private read" on private_users for select
+  using (firebase_uid() = id);
+
+alter table private_users cluster on private_users_pkey;
+
 create table if not exists
   user_portfolio_history (
     user_id text not null,
@@ -190,50 +205,6 @@ create index if not exists user_disinterests_user_id_contract_id on user_disinte
 
 alter table user_disinterests
 cluster on user_disinterests_user_id;
-
-create table if not exists
-  user_events (
-    id bigint generated always as identity primary key,
-    ts timestamptz not null default now(),
-    name text not null,
-    user_id text null,
-    contract_id text null,
-    comment_id text null,
-    ad_id text null,
-    data jsonb not null
-  );
-
-alter table user_events enable row level security;
-
-drop policy if exists "public read" on user_events;
-
-create policy "public read" on user_events for
-select
-  using (true);
-
--- mqp: we should fix this up so that users can only insert their own events.
--- but right now it's blocked because our application code is too dumb to wait
--- for auth to be done until it starts sending events
-drop policy if exists "user can insert" on user_events;
-
-create policy "user can insert" on user_events for insert
-with
-  check (true);
-
-create index if not exists user_events_name on user_events (user_id, name);
-
-create index if not exists user_events_ts on user_events (user_id, ts);
-
-create index if not exists user_events_ad_skips on user_events (name, ad_id)
-where
-  name = 'Skip ad';
-
-create index if not exists user_events_comment_view on user_events (user_id, name, comment_id);
-
-create index if not exists user_events_contract_name on user_events (user_id, contract_id, name);
-
-alter table user_events
-cluster on user_events_name;
 
 create table if not exists
   user_seen_markets (
@@ -432,6 +403,10 @@ create index contracts_last_updated_time on contracts(((data ->> 'lastUpdatedTim
 
 create index contracts_group_slugs_public on contracts using gin((data -> 'groupSlugs'))
     where visibility = 'public';
+
+create index concurrently idx_lover_user_id1 on contracts ((data ->> 'loverUserId1')) where data->>'loverUserId1' is not null;
+create index concurrently idx_lover_user_id2 on contracts ((data ->> 'loverUserId2')) where data->>'loverUserId2' is not null;
+
 
 alter table contracts
 cluster on contracts_creator_id;
@@ -1331,6 +1306,7 @@ begin
   return case
     table_id
            when 'users' then cast((null, 'id') as table_spec)
+           when 'private_users' then cast((null, 'id') as table_spec)
            when 'user_reactions' then cast(('user_id', 'reaction_id') as table_spec)
            when 'contracts' then cast((null, 'id') as table_spec)
            when 'contract_answers' then cast(('contract_id', 'answer_id') as table_spec)

@@ -138,6 +138,11 @@ module.exports = {
         destination: '/browse',
         permanent: true,
       },
+      {
+        source: '/home',
+        destination: '/profiles',
+        permanent: true,
+      },
       // NOTE: add any external redirects at common/envs/constants.ts and update native apps.
     ]
   },

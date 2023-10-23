@@ -4,9 +4,10 @@ import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { z } from 'zod'
 import { APIError, authEndpoint, validate } from './helpers'
 import { MarketAdCreateTxn } from 'common/txn'
-import { log } from 'shared/utils'
+import { getContractSupabase, log } from 'shared/utils'
 import { MIN_AD_COST_PER_VIEW } from 'common/boost'
 import { runTxn } from 'shared/txn/run-txn'
+import { generateContractEmbeddings } from 'shared/supabase/contracts'
 
 const schema = z.object({
   marketId: z.string(),
@@ -24,13 +25,20 @@ export const boostmarket = authEndpoint(async (req, auth) => {
   log('boosting market')
   const pg = createSupabaseDirectClient()
 
-  const { embedding } = await pg.one(
+  const contractEmbedding = await pg.oneOrNone(
     `select embedding
     from contract_embeddings
     where contract_id = $1`,
     [marketId]
   )
-
+  let embedding = contractEmbedding?.embedding
+  if (!contractEmbedding) {
+    log('Error: no embedding found for market. Generating one now.')
+    const contract = await getContractSupabase(marketId)
+    if (!contract) throw new APIError(404, 'Market not found')
+    embedding = (await generateContractEmbeddings(contract, pg)).embedding
+    if (!embedding) throw new APIError(500, 'Error generating embedding')
+  }
   const firestore = admin.firestore()
 
   log(

@@ -42,7 +42,9 @@ export const CORS_ORIGIN_MANIFOLD = new RegExp(
 )
 // Manifold's domain or any subdomains thereof
 export const CORS_ORIGIN_MANIFOLD_LOVE = new RegExp(
-  '^https?://(?:[a-zA-Z0-9\\-]+\\.)*' + escapeRegExp(ENV_CONFIG.loveDomain) + '$'
+  '^https?://(?:[a-zA-Z0-9\\-]+\\.)*' +
+    escapeRegExp(ENV_CONFIG.loveDomain) +
+    '$'
 )
 // Vercel deployments, used for testing.
 export const CORS_ORIGIN_VERCEL = new RegExp(
@@ -395,6 +397,7 @@ export const RESERVED_PATHS = [
   'mtg',
   'news',
   'notifications',
+  'payments',
   'portfolio',
   'privacy',
   'profile',

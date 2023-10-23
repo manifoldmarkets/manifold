@@ -17,7 +17,11 @@ import { Avatar } from 'web/components/widgets/avatar'
 import { Title } from 'web/components/widgets/title'
 import { UserLink } from 'web/components/widgets/user-link'
 import { useUser } from 'web/hooks/use-user'
-import { getDashboardFromSlug, updateDashboard } from 'web/lib/firebase/api'
+import {
+  deleteDashboard,
+  getDashboardFromSlug,
+  updateDashboard,
+} from 'web/lib/firebase/api'
 import Custom404 from '../404'
 import { useDashboardFromSlug } from 'web/hooks/use-dashboard'
 import { TextEditor, useTextEditor } from 'web/components/widgets/editor'
@@ -33,6 +37,7 @@ import { richTextToString } from 'common/util/parse'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { useWarnUnsavedChanges } from 'web/hooks/use-warn-unsaved-changes'
 import { InputWithLimit } from 'web/components/dashboard/input-with-limit'
+import Head from 'next/head'
 
 export async function getStaticProps(ctx: {
   params: { dashboardSlug: string }
@@ -141,6 +146,17 @@ function FoundDashbordPage(props: {
             : richTextToString(dashboard.description)
         }
       />
+      {dashboard.visibility === 'deleted' && (
+        <>
+          <Head>
+            <meta name="robots" content="noindex, nofollow" />
+          </Head>
+          <div className="bg-error w-full rounded p-6 text-center text-lg text-white">
+            Deleted by admins
+          </div>
+        </>
+      )}
+
       <Col className="w-full max-w-2xl px-1 sm:px-2">
         <div className="my-2 sm:mt-4 lg:mt-0">
           {editMode ? (
@@ -185,6 +201,18 @@ function FoundDashbordPage(props: {
         </div>
         {editMode ? (
           <Row className="bg-canvas-50 sticky top-0 z-20 mb-2 w-full items-center justify-end gap-2 self-start py-1">
+            {isOnlyAdmin && (
+              <Button
+                color="red"
+                className="mr-auto"
+                onClick={() => {
+                  deleteDashboard({ dashboardId: dashboard.id })
+                  setEditMode(false)
+                }}
+              >
+                Delete dashboard
+              </Button>
+            )}
             <Button
               color="gray"
               onClick={() => {

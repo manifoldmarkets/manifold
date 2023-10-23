@@ -182,7 +182,6 @@ export const FeedComment = memo(function FeedComment(props: {
 }) {
   const {
     contract,
-    comment,
     highlighted,
     onReplyClick,
     children,
@@ -190,6 +189,7 @@ export const FeedComment = memo(function FeedComment(props: {
     inTimeline,
     isParent,
   } = props
+  const [comment, setComment] = useState(props.comment)
   const { userUsername, userAvatarUrl } = comment
   const ref = useRef<HTMLDivElement>(null)
   const marketCreator = contract.creatorId === comment.userId
@@ -235,6 +235,7 @@ export const FeedComment = memo(function FeedComment(props: {
             contract={contract}
             inTimeline={inTimeline}
             isParent={isParent}
+            onHide={() => setComment({ ...comment, hidden: !comment.hidden })}
           />
 
           <HideableContent comment={comment} />
@@ -328,8 +329,9 @@ function HideableContent(props: { comment: ContractComment }) {
 export function DotMenu(props: {
   comment: ContractComment
   contract: Contract
+  onHide: () => void
 }) {
-  const { comment, contract } = props
+  const { comment, contract, onHide } = props
   const [isModalOpen, setIsModalOpen] = useState(false)
   const user = useUser()
   const privateUser = usePrivateUser()
@@ -397,11 +399,20 @@ export function DotMenu(props: {
             icon: <EyeOffIcon className="h-5 w-5 text-red-500" />,
             onClick: async () => {
               const commentPath = `contracts/${contract.id}/comments/${comment.id}`
-              try {
-                await hideComment({ commentPath })
-              } catch (e: any) {
-                toast.error(`Error hiding comment: ${e}`)
-              }
+              onHide()
+              await toast.promise(hideComment({ commentPath }), {
+                loading: comment.hidden
+                  ? 'Unhiding comment...'
+                  : 'Hiding comment...',
+                success: () => {
+                  return comment.hidden ? 'Comment unhidden' : 'Comment hidden'
+                },
+                error: () => {
+                  return comment.hidden
+                    ? 'Error unhiding comment'
+                    : 'Error hiding comment'
+                },
+              })
             },
           }
         )}
@@ -563,7 +574,8 @@ export function ContractCommentInput(props: {
   const onSubmitComment = useEvent(async (editor: Editor) => {
     if (!user) {
       track('sign in to comment')
-      return await firebaseLogin()
+      await firebaseLogin()
+      return
     }
     await createCommentOnContract({
       contractId: contract.id,
@@ -627,10 +639,11 @@ export function ContractCommentInput(props: {
 function FeedCommentHeader(props: {
   comment: ContractComment
   contract: Contract
+  onHide: () => void
   inTimeline?: boolean
   isParent?: boolean
 }) {
-  const { comment, contract, inTimeline } = props
+  const { comment, contract, inTimeline, onHide } = props
   const {
     userUsername,
     userName,
@@ -697,7 +710,9 @@ function FeedCommentHeader(props: {
               </InfoTooltip>
             )}
           </span>
-          {!inTimeline && <DotMenu comment={comment} contract={contract} />}
+          {!inTimeline && (
+            <DotMenu onHide={onHide} comment={comment} contract={contract} />
+          )}
         </Row>
         {bountyAwarded && bountyAwarded > 0 && (
           <span className="select-none text-teal-600">

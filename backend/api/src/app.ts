@@ -50,7 +50,7 @@ import { supabasesearchcontracts } from './supabase-search-contract'
 import { deleteMarket } from './delete-market'
 import { saveTopic } from './save-topic'
 import { getcontractparams } from './get-contract-params'
-import { boostmarket } from './create-market-ad'
+import { boostmarket } from './boost-market'
 import { redeemboost } from './redeem-market-ad-reward'
 import { creategroupinvite } from './create-group-invite'
 import { joingroupthroughinvite } from './join-group-through-invite'
@@ -58,7 +58,6 @@ import { joingroup } from './join-group'
 import { editcomment } from 'api/edit-comment'
 import { supabasesearchgroups } from './supabase-search-groups'
 import { leagueActivity } from './league-activity'
-import { lootbox } from './loot-box'
 import { updatepost } from './update-post'
 import { updategroup } from './update-group'
 import { updateUserDisinterestEmbedding } from 'api/update-user-disinterests'
@@ -85,6 +84,7 @@ import { followdashboard } from './follow-dashboard'
 import { supabasesearchdashboards } from './supabase-search-dashboards'
 import { getyourfolloweddashboards } from './get-your-followed-dashboards'
 import { updatedashboard } from './update-dashboard'
+import { deletedashboard } from './delete-dashboard'
 import { getdashboardfromslug } from './get-dashboard-from-slug'
 import { unresolve } from './unresolve'
 import { referuser } from 'api/refer-user'
@@ -92,9 +92,12 @@ import { banuser } from 'api/ban-user'
 import { updatemarket } from 'api/update-market'
 import { createprivateusermessage } from 'api/create-private-user-message'
 import { createprivateusermessagechannel } from 'api/create-private-user-message-channel'
-import { createlover } from 'api/create-lover'
-import { updatelover } from 'api/update-lover'
-import { createMatch } from 'api/create-match'
+import { createlover } from 'api/love/create-lover'
+import { updatelover } from 'api/love/update-lover'
+import { createMatch } from 'api/love/create-match'
+import { createcommentonlover } from 'api/love/create-comment-on-lover'
+import { hidecommentonlover } from 'api/love/hide-comment-on-lover'
+import { rejectLover } from './love/reject-lover'
 
 const allowCors: RequestHandler = cors({
   origin: [
@@ -138,7 +141,6 @@ app.get('/health', ...apiRoute(health))
 app.get('/getcurrentuser', ...apiRoute(getcurrentuser))
 app.get('/unsubscribe', ...apiRoute(unsubscribe))
 
-app.post('/lootbox', ...apiRoute(lootbox))
 app.post('/transact', ...apiRoute(transact))
 app.post('/changeuserinfo', ...apiRoute(changeuserinfo))
 app.post('/createuser', ...apiRoute(createuser))
@@ -229,6 +231,7 @@ app.post('/followdashboard', ...apiRoute(followdashboard))
 app.post('/supabasesearchdashboards', ...apiRoute(supabasesearchdashboards))
 app.post('/getyourfolloweddashboards', ...apiRoute(getyourfolloweddashboards))
 app.post('/updatedashboard', ...apiRoute(updatedashboard))
+app.post('/delete-dashboard', ...apiRoute(deletedashboard))
 app.post('/getdashboardfromslug', ...apiRoute(getdashboardfromslug))
 app.post('/ban-user', ...apiRoute(banuser))
 app.post('/update-market', ...apiRoute(updatemarket))
@@ -239,7 +242,10 @@ app.post(
 )
 app.post('/create-lover', ...apiRoute(createlover))
 app.post('/update-lover', ...apiRoute(updatelover))
+app.post('/reject-lover', ...apiRoute(rejectLover))
 app.post('/create-match', ...apiRoute(createMatch))
+app.post('/create-comment-on-lover', ...apiRoute(createcommentonlover))
+app.post('/hide-comment-on-lover', ...apiRoute(hidecommentonlover))
 
 // Catch 404 errors - this should be the last route
 app.use(allowCors, (req, res) => {

@@ -80,8 +80,8 @@ export const getBetPoints = async <S extends SupabaseClient>(
     .filter((r: any) => r.prob_after != r.prob_before)
     .map((r: any) => ({
       x: tsToMillis(r.created_time),
-      y: r.prob_after,
-      answerId: r.answerId,
+      y: r.prob_after as number,
+      answerId: r.answerId as string,
     }))
 }
 

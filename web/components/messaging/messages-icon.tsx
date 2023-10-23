@@ -48,6 +48,7 @@ function InternalUnseenMessagesBubble(props: {
 }) {
   const { privateUser, className, iconClassName } = props
   const { isReady, asPath } = useRouter()
+  const isAuthed = useIsAuthorized()
   const [lastSeenTime, setLastSeenTime] = usePersistentLocalState(
     0,
     'last-seen-private-messages-page'
@@ -57,6 +58,7 @@ function InternalUnseenMessagesBubble(props: {
       setLastSeenTime(Date.now())
       return
     }
+    if (!isAuthed) return
     // on every path change, check the last time we saw the messages page
     run(
       db
@@ -69,7 +71,8 @@ function InternalUnseenMessagesBubble(props: {
     ).then(({ data }) => {
       setLastSeenTime(new Date(data[0]?.ts ?? 0).valueOf())
     })
-  }, [isReady, asPath])
+  }, [isReady, asPath, isAuthed])
+
   const unseenMessages = useUnseenPrivateMessageChannels(privateUser.id, true)
     .filter((message) => message.createdTime > lastSeenTime)
     .filter((message) => !asPath.endsWith(`/messages/${message.channelId}`))

@@ -1,6 +1,12 @@
-import { calculateMultiBets } from 'common/bet'
-import { getInitialProbability } from 'common/calculate'
-import { Contract, MaybeAuthedContractParams } from 'common/contract'
+import {
+  getInitialAnswerProbability,
+  getInitialProbability,
+} from 'common/calculate'
+import {
+  CPMMMultiContract,
+  Contract,
+  MaybeAuthedContractParams,
+} from 'common/contract'
 import { binAvg, maxMinBin, serializeMultiPoints } from 'common/chart'
 import { getBets, getBetPoints, getTotalBetCount } from 'common/supabase/bets'
 import { getRecentTopLevelCommentsAndReplies } from 'common/supabase/comments'
@@ -16,6 +22,7 @@ import { getIsAdmin } from 'common/supabase/is-admin'
 import { pointsToBase64 } from 'common/util/og'
 import { SupabaseClient } from 'common/supabase/utils'
 import { buildArray } from 'common/util/array'
+import { groupBy } from 'lodash'
 
 export async function getContractParams(
   contract: Contract,
@@ -73,18 +80,9 @@ export async function getContractParams(
 
   const chartPoints =
     isCpmm1 || isBinaryDpm
-      ? buildArray<{ x: number; y: number }>(
-          isCpmm1 && {
-            x: contract.createdTime,
-            y: getInitialProbability(contract),
-          },
-          maxMinBin(
-            allBetPoints.sort((a, b) => a.x - b.x),
-            500
-          )
-        ).map((p) => [p.x, p.y] as const)
+      ? getSingleBetPoints(allBetPoints, contract)
       : isMulti
-      ? serializeMultiPoints(calculateMultiBets(allBetPoints))
+      ? getMultiBetPoints(allBetPoints, contract)
       : []
 
   const ogPoints =
@@ -109,6 +107,45 @@ export async function getContractParams(
       relatedContracts,
     }),
   }
+}
+
+const getSingleBetPoints = (
+  betPoints: { x: number; y: number }[],
+  contract: Contract
+) => {
+  betPoints.sort((a, b) => a.x - b.x)
+  const points = buildArray<{ x: number; y: number }>(
+    contract.mechanism === 'cpmm-1' && {
+      x: contract.createdTime,
+      y: getInitialProbability(contract),
+    },
+    maxMinBin(betPoints, 500)
+  )
+  return points.map((p) => [p.x, p.y] as const)
+}
+
+const getMultiBetPoints = (
+  betPoints: { x: number; y: number; answerId: string }[],
+  contract: CPMMMultiContract
+) => {
+  const { answers } = contract
+
+  const rawPointsByAns = groupBy(betPoints, 'answerId')
+
+  const pointsByAns = {} as { [answerId: string]: { x: number; y: number }[] }
+  answers.forEach((ans) => {
+    const startY = getInitialAnswerProbability(contract, ans)
+
+    const points = rawPointsByAns[ans.id] ?? []
+    points.sort((a, b) => a.x - b.x)
+
+    pointsByAns[ans.id] = buildArray<{ x: number; y: number }>(
+      startY != undefined && { x: ans.createdTime, y: startY },
+      maxMinBin(points, 500)
+    )
+  })
+
+  return serializeMultiPoints(pointsByAns)
 }
 
 const getCanAccessContract = async (

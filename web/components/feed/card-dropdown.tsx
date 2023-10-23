@@ -1,3 +1,5 @@
+import clsx from 'clsx'
+
 import { buildArray } from 'common/util/array'
 import DropdownMenu, { DropdownItem } from '../comments/dropdown-menu'
 import { useIsFollowing } from 'web/hooks/use-follows'
@@ -13,7 +15,6 @@ import { Contract } from 'common/contract'
 import { FeedTimelineItem } from 'web/hooks/use-feed-timeline'
 import toast from 'react-hot-toast'
 import { TiVolume, TiVolumeMute } from 'react-icons/ti'
-import clsx from 'clsx'
 
 export function FeedDropdown(props: {
   contract: Contract
@@ -69,6 +70,9 @@ export function FeedDropdown(props: {
         onClick: () => markUninteresting(),
       }
   ) as DropdownItem[]
+
+  if (!user) return <></>
+
   return (
     <DropdownMenu
       items={feedCardOptions}

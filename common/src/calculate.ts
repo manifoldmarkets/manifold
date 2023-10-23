@@ -115,6 +115,45 @@ export function getAnswerProbability(
   )
 }
 
+export function getInitialAnswerProbability(
+  contract: MultiContract,
+  answer: Answer | DpmAnswer
+) {
+  if (contract.mechanism === 'cpmm-multi-1') {
+    if (!contract.shouldAnswersSumToOne) {
+      return 0.5
+    } else {
+      if (contract.addAnswersMode === 'DISABLED') {
+        return 1 / contract.answers.length
+      } else {
+        const answers = contract.answers as Answer[]
+        const initialTime = answers.find((a) => a.isOther)?.createdTime
+
+        if (answer.createdTime === initialTime) {
+          const numberOfInitialAnswers = sumBy(answers, (a) =>
+            a.createdTime === initialTime ? 1 : 0
+          )
+          return 1 / numberOfInitialAnswers
+        }
+        return undefined
+      }
+    }
+  }
+
+  if (contract.mechanism === 'dpm-2') {
+    return undefined
+  }
+
+  if (contract.mechanism === 'cpmm-2') {
+    return 1 / contract.answers.length
+  }
+
+  throw new Error(
+    'getAnswerInitialProbability not implemented for mechanism ' +
+      (contract as any).mechanism
+  )
+}
+
 export function getOutcomeProbabilityAfterBet(
   contract: Contract,
   outcome: string,
