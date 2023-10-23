@@ -90,6 +90,7 @@ import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
 import Link from 'next/link'
 import { DangerZone } from 'web/components/contract/danger-zone'
 import { ContractDescription } from 'web/components/contract/contract-description'
+import { linkClass } from 'web/components/widgets/site-link'
 export async function getStaticProps(ctx: {
   params: { username: string; contractSlug: string }
 }) {
@@ -494,7 +495,6 @@ export function ContractPageContent(props: ContractParams) {
                 contract={contract}
                 betPoints={betPoints as any}
                 showResolver={showResolver}
-                onAnswerCommentClick={onAnswerCommentClick}
                 resolutionRating={
                   userHasReviewed ? (
                     <Row className="text-ink-500 items-center gap-0.5 text-sm italic">
@@ -505,7 +505,6 @@ export function ContractPageContent(props: ContractParams) {
                   ) : null
                 }
                 setShowResolver={setShowResolver}
-                onAnswerCommentClick={setReplyTo}
               />
             </Col>
             {showReview && user && (
@@ -514,6 +513,9 @@ export function ContractPageContent(props: ContractParams) {
                   marketId={contract.id}
                   author={contract.creatorName}
                   userId={user.id}
+                  onSubmit={(rating: Rating) => {
+                    setJustNowReview(rating)
+                  }}
                 />
                 <button
                   className="text-ink-400 hover:text-ink-600 absolute right-0 top-0 p-4"

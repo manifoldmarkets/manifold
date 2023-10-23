@@ -1,15 +1,14 @@
 import { JSONContent } from '@tiptap/core'
 import { useContract } from 'web/hooks/use-contract-supabase'
 import { useUserById } from 'web/hooks/use-user-supabase'
+import { JSONEmpty } from '../contract/contract-description'
 import { ContractMention } from '../contract/contract-mention'
-import { Col } from '../layout/col'
+import { Row } from '../layout/row'
 import { RelativeTimestamp } from '../relative-timestamp'
 import { Avatar } from '../widgets/avatar'
 import { Content } from '../widgets/editor'
 import { UserLink } from '../widgets/user-link'
 import { Rating, StarDisplay } from './stars'
-import { Row } from '../layout/row'
-import { JSONEmpty } from '../contract/contract-description'
 
 export const Review = (props: {
   userId: string

@@ -410,7 +410,7 @@ function ProfilePublicStats(props: {
   rating?: number
   className?: string
 }) {
-  const { user, className, currentUser, rating, reviewCount = 0 } = props
+  const { user, className, currentUser } = props
   const isCurrentUser = user.id === currentUser?.id
   const [reviewsOpen, setReviewsOpen] = useState(false)
   const [followsOpen, setFollowsOpen] = useState(false)
