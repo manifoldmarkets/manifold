@@ -2,8 +2,8 @@ import Link from 'next/link'
 import clsx from 'clsx'
 import { useUser } from 'web/hooks/use-user'
 import { ENV } from 'common/envs/constants'
-import Logo from 'public/logo-bat-blue.png'
-import LogoDark from 'public/logo-bat-white.png'
+import Logo from 'public/simple-bat-blue.png'
+import LogoDark from 'public/simple-bat-white.png'
 import Image from 'next/image'
 
 export function ManifoldLogo(props: { className?: string; twoLine?: boolean }) {
