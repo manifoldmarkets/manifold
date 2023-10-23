@@ -130,6 +130,15 @@ export function NotificationItem(props: {
         isChildOfGroup={isChildOfGroup}
       />
     )
+  } else if (reason === 'bounty_canceled') {
+    return (
+      <BountyCanceledNotification
+        notification={notification}
+        highlighted={highlighted}
+        setHighlighted={setHighlighted}
+        isChildOfGroup={isChildOfGroup}
+      />
+    )
   } else if (sourceType === 'user' && sourceUpdateType === 'updated') {
     return (
       <UserJoinedNotification
@@ -1572,6 +1581,41 @@ function BountyAddedNotification(props: {
           )}
         </span>
       </>
+    </NotificationFrame>
+  )
+}
+
+function BountyCanceledNotification(props: {
+  notification: Notification
+  highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
+  isChildOfGroup?: boolean
+}) {
+  const { notification, highlighted, setHighlighted, isChildOfGroup } = props
+  return (
+    <NotificationFrame
+      notification={notification}
+      isChildOfGroup={isChildOfGroup}
+      highlighted={highlighted}
+      setHighlighted={setHighlighted}
+      link={getSourceUrl(notification)}
+      icon={
+        <AvatarNotificationIcon notification={notification} symbol={'❌'} />
+      }
+      subtitle={`with ${notification.sourceText} bounty left unpaid`}
+    >
+      <span>
+        <UserLink
+          name={notification.sourceUserName}
+          username={notification.sourceUserUsername}
+        />{' '}
+        canceled bounty{' '}
+        {!isChildOfGroup && (
+          <span>
+            <PrimaryNotificationLink text={notification.sourceContractTitle} />
+          </span>
+        )}
+      </span>
     </NotificationFrame>
   )
 }

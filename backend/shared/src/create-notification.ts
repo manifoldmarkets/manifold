@@ -1591,7 +1591,6 @@ export const createBountyAddedNotification = async (
   await insertNotificationToSupabase(notification, pg)
 }
 
-// TODO: clean up look of this
 export const createBountyCanceledNotification = async (
   contract: Contract,
   amountLeft: number

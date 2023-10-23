@@ -1,5 +1,8 @@
 import * as admin from 'firebase-admin'
-import { createBountyAddedNotification } from 'shared/create-notification'
+import {
+  createBountyAddedNotification,
+  createBountyCanceledNotification,
+} from 'shared/create-notification'
 import { runCancelBountyTxn } from 'shared/txn/run-bounty-txn'
 import { z } from 'zod'
 import { APIError, authEndpoint, validate } from './helpers'
@@ -30,6 +33,8 @@ export const cancelbounty = authEndpoint(async (req, auth) => {
 
     const userDoc = firestore.doc(`users/${auth.uid}`)
 
+    const bountyLeft = contract.bountyLeft
+
     const { status, txn } = await runCancelBountyTxn(
       transaction,
       {
@@ -39,12 +44,14 @@ export const cancelbounty = authEndpoint(async (req, auth) => {
         toId: auth.uid,
         toType: 'USER',
         token: 'M$',
-        amount: contract.bountyLeft,
+        amount: bountyLeft,
       },
       contractDoc,
       userDoc,
       contract.closeTime
     )
+
+    await createBountyCanceledNotification(contract, bountyLeft)
     return txn
   })
 })
