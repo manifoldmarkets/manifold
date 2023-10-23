@@ -1,3 +1,4 @@
+import { sortBy } from 'lodash'
 import { useEffect, useState } from 'react'
 import { Row } from 'web/components/layout/row'
 import { Col } from 'web/components/layout/col'
@@ -45,7 +46,13 @@ export const Filters = (props: {
   }, [JSON.stringify(filters)])
 
   const applyFilters = () => {
-    const filteredLovers = allLovers?.filter((lover) => {
+    const sortedLovers = sortBy(
+      allLovers,
+      (lover) => (lover.pinned_url ? 0 : 1),
+      (lover) => -1 * new Date(lover.created_time).getTime()
+    )
+    const filteredLovers = sortedLovers?.filter((lover) => {
+      if (lover.user.name === 'deleted') return false
       if (
         filters.pref_age_min &&
         calculateAge(lover.birthdate) < filters.pref_age_min
