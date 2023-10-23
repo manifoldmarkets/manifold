@@ -42,8 +42,10 @@ export const Filters = (props: {
     setLovers(allLovers)
   }
   useEffect(() => {
-    applyFilters()
-  }, [JSON.stringify(filters)])
+    if (allLovers) {
+      applyFilters()
+    }
+  }, [JSON.stringify(filters), allLovers?.map((l) => l.id).join(',')])
 
   const applyFilters = () => {
     const sortedLovers = sortBy(

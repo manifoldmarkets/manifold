@@ -1,11 +1,11 @@
 import Image from 'next/image'
+import Link from 'next/link'
+import { useState } from 'react'
 import { useLovers } from 'love/hooks/use-lovers'
 import { Col } from 'web/components/layout/col'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { LovePage } from 'love/components/love-page'
 import { Filters } from 'love/components/filters'
-import { useEffect, useState } from 'react'
-import { buildArray } from 'common/util/array'
 import { PhotosModal } from 'love/components/photos-modal'
 import { calculateAge } from 'love/components/calculate-age'
 import { Title } from 'web/components/widgets/title'
@@ -13,15 +13,12 @@ import { User } from 'common/user'
 import { Row } from 'web/components/layout/row'
 import { shortenedFromNow } from 'web/lib/util/shortenedFromNow'
 import { Row as SupabaseRow } from 'common/supabase/utils'
-import { UserIcon, PhotographIcon } from '@heroicons/react/solid'
-import Link from 'next/link'
+import { UserIcon } from '@heroicons/react/solid'
+import { Lover } from 'love/hooks/use-lover'
 
 export default function ProfilesPage() {
   const allLovers = useLovers()
-  const [lovers, setLovers] = useState(allLovers)
-  useEffect(() => {
-    if (!lovers) setLovers(allLovers)
-  }, [allLovers])
+  const [lovers, setLovers] = useState<Lover[] | undefined>(undefined)
   const [showPhotosModal, setShowPhotosModal] = useState(false)
   const [selectedPhotos, setSelectedPhotos] = useState<string[]>()
 
@@ -90,15 +87,9 @@ function ProfilePreview(props: {
         )}
         <Col className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/70 via-black/70 to-transparent px-4 pt-6">
           <Row>
-            <Link
-              onClick={(e) => {
-                e.stopPropagation()
-              }}
-              href={`/${user.username}`}
-              className="line-clamp-1 max-w-[calc(100%-2rem)] font-semibold hover:text-pink-300"
-            >
+            <div className="line-clamp-1 max-w-[calc(100%-2rem)] font-semibold hover:text-pink-300">
               {user.name}
-            </Link>
+            </div>
             , {calculateAge(birthdate)}
           </Row>
           <Row className="gap-1 text-xs">
