@@ -17,6 +17,7 @@ export function DangerZone(props: {
   showReview: boolean
   setShowReview: (showReview: boolean) => void
   userHasBet: boolean
+  hasReviewed?: boolean
 }) {
   const {
     contract,
@@ -25,6 +26,7 @@ export function DangerZone(props: {
     showReview,
     setShowReview,
     userHasBet,
+    hasReviewed,
   } = props
   const {
     closeTime,
@@ -48,7 +50,8 @@ export function DangerZone(props: {
     !isCreator &&
     isResolved &&
     outcomeType !== 'STONK' &&
-    mechanism !== 'none'
+    mechanism !== 'none' &&
+    !hasReviewed
 
   const canDelete =
     isCreator &&

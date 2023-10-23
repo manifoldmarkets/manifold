@@ -482,6 +482,7 @@ export function ContractPageContent(props: ContractParams) {
                   author={contract.creatorName}
                   onSubmit={(rating: Rating) => {
                     setJustNowReview(rating)
+                    setShowReview(false)
                   }}
                 />
                 <button
