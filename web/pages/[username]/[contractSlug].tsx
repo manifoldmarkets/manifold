@@ -579,7 +579,7 @@ export function ContractPageContent(props: ContractParams) {
               showReview={showReview}
               setShowReview={setShowReview}
               userHasBet={!!contractMetrics}
-              hasReviewed={!!justNowReview || !!userReview}
+              hasReviewed={!!userHasReviewed}
             />
             <ContractDescription contract={contract} />
             <Row className="my-2 flex-wrap items-center justify-between gap-y-2"></Row>
