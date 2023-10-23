@@ -4,19 +4,16 @@ import { BountiedQuestionContract } from 'common/contract'
 import { User } from 'common/user'
 import { formatMoney } from 'common/util/format'
 import { forwardRef, useEffect, useState } from 'react'
+import { FaXmark } from 'react-icons/fa6'
+import { TbMoneybag } from 'react-icons/tb'
 import { addBounty, awardBounty, cancelBounty } from 'web/lib/firebase/api'
 import { Button } from '../buttons/button'
+import { ConfirmationButton } from '../buttons/confirmation-button'
 import { Col } from '../layout/col'
 import { MODAL_CLASS, Modal } from '../layout/modal'
 import { Row } from '../layout/row'
 import { BuyAmountInput } from '../widgets/amount-input'
 import { InfoTooltip } from '../widgets/info-tooltip'
-import { TbMoneybag } from 'react-icons/tb'
-import { WarningConfirmationButton } from '../buttons/warning-confirmation-button'
-import { ConfirmationButton } from '../buttons/confirmation-button'
-import { AiOutlineQuestion, AiOutlineQuestionCircle } from 'react-icons/ai'
-import { BiCross } from 'react-icons/bi'
-import { FaXmark } from 'react-icons/fa6'
 
 const loadLottie = () => import('react-lottie')
 const loadAwardJson = () => import('../../public/lottie/award.json')
@@ -261,10 +258,9 @@ export function CancelBountyButton(props: {
     setIsSubmitting(true)
     cancelBounty({
       contractId: contract.id,
-    }).then((_result) => {
-      console.log(contract)
+    }).finally(()=>{
+      setIsSubmitting(false)
     })
-    setIsSubmitting(false)
   }
 
   return (
