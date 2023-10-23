@@ -713,7 +713,7 @@ Parameters:
   - Note: string descriptions do **not** turn into links, mentions, formatted text. You may instead use `descriptionMarkdown` or `descriptionHtml` for rich text formatting.
 - `closeTime`: Optional. The time at which the market will close, represented as milliseconds since the epoch. Defaults to 7 days from now.
 - `visibility`: Optional. One of `public` (default) or `unlisted`. Controls whether the market can be shown on homepage and in search results.
-- `groupId`: Optional. A group to create this market under.
+- `groupIds`: Optional. An array of topic/group ids to categorize this market under.
 
 For binary markets, you must also provide:
 
