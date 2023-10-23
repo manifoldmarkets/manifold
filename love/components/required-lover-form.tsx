@@ -17,6 +17,7 @@ import { initialRequiredState } from 'common/love/lover'
 import { Row as rowFor } from 'common/supabase/utils'
 import dayjs from 'dayjs'
 import { Checkbox } from 'web/components/widgets/checkbox'
+import { range } from 'lodash'
 
 const requiredKeys = Object.keys(
   initialRequiredState
@@ -157,20 +158,103 @@ export const RequiredLoveUserForm = (props: {
             </Col>
 
             <Col className={clsx(colClassName)}>
-              <label className={clsx(labelClassName)}>Date of birth</label>
-              <Input
-                type="date"
-                onChange={(e) =>
-                  setLoverState(
-                    'birthdate',
-                    dayjs(new Date(e.target.value).toISOString()).format(
-                      'YYYY-MM-DD'
-                    )
-                  )
-                }
-                className={'w-40'}
-                value={loverState['birthdate']}
-              />
+              <label className={clsx(labelClassName)}>Birthdate</label>
+              <Row className={'gap-2'}>
+                <Col className={clsx(colClassName)}>
+                  <label className={clsx('text-base font-semibold')}>
+                    Month
+                  </label>
+                  <select
+                    value={dayjs(loverState['birthdate']).format('MMMM')}
+                    onChange={(e) => {
+                      const birthDate = dayjs(loverState['birthdate'])
+                      setLoverState(
+                        'birthdate',
+                        dayjs(
+                          `${
+                            e.target.value
+                          } ${birthDate.date()} ${birthDate.year()}`,
+                          'MMMM D YYYY'
+                        ).format('YYYY-MM-DD')
+                      )
+                    }}
+                    className={'border-ink-300 w-32 rounded-md'}
+                  >
+                    {[
+                      'January',
+                      'February',
+                      'March',
+                      'April',
+                      'May',
+                      'June',
+                      'July',
+                      'August',
+                      'September',
+                      'October',
+                      'November',
+                      'December',
+                    ].map((m) => (
+                      <option key={m} value={m}>
+                        {m}
+                      </option>
+                    ))}
+                  </select>
+                </Col>
+                <Col className={clsx(colClassName)}>
+                  <label className={clsx('text-base font-semibold')}>Day</label>
+                  <select
+                    value={dayjs(loverState['birthdate']).date()}
+                    onChange={(e) => {
+                      const birthDate = dayjs(loverState['birthdate'])
+                      setLoverState(
+                        'birthdate',
+                        dayjs(
+                          `${birthDate.month() + 1} ${
+                            e.target.value
+                          } ${birthDate.year()}`
+                        ).format('YYYY-MM-DD')
+                      )
+                    }}
+                    className={'w-18 border-ink-300 rounded-md'}
+                  >
+                    {range(1, 32).map((m) => (
+                      <option key={m} value={m}>
+                        {m}
+                      </option>
+                    ))}
+                  </select>
+                </Col>
+                <Col className={clsx(colClassName)}>
+                  <label className={clsx('text-base font-semibold')}>
+                    Year
+                  </label>
+                  <select
+                    value={dayjs(loverState['birthdate']).year()}
+                    onChange={(e) => {
+                      const birthDate = dayjs(loverState['birthdate'])
+                      setLoverState(
+                        'birthdate',
+                        dayjs(
+                          `${birthDate.month() + 1} ${birthDate.date()} ${
+                            e.target.value
+                          }`,
+                          'MMMM D YYYY'
+                        ).format('YYYY-MM-DD')
+                      )
+                    }}
+                    className={'border-ink-300 w-24 rounded-md'}
+                  >
+                    {range(
+                      dayjs().subtract(100, 'year').year(),
+                      dayjs().subtract(18, 'year').year()
+                    ).map((m) => (
+                      <option key={m} value={m}>
+                        {m}
+                      </option>
+                    ))}
+                  </select>
+                </Col>
+              </Row>
             </Col>
 
             <Row className={'items-center gap-2'}>
@@ -227,35 +311,39 @@ export const RequiredLoveUserForm = (props: {
             </Col>
 
             <Col className={clsx(colClassName)}>
-              <label className={clsx(labelClassName)}>
-                Minimum and maximum age of partner
-              </label>
+              <label className={clsx(labelClassName)}>Partner age range</label>
               <Row className={'gap-2'}>
                 <Col>
                   <span>Min</span>
-                  <Input
-                    type="number"
+                  <select
+                    value={loverState['pref_age_min']}
                     onChange={(e) =>
                       setLoverState('pref_age_min', Number(e.target.value))
                     }
-                    className={'w-20'}
-                    min={18}
-                    max={999}
-                    value={loverState['pref_age_min']}
-                  />
+                    className={'w-18 border-ink-300 rounded-md'}
+                  >
+                    {range(18, 100).map((m) => (
+                      <option key={m} value={m}>
+                        {m}
+                      </option>
+                    ))}
+                  </select>
                 </Col>
                 <Col>
                   <span>Max</span>
-                  <Input
-                    type="number"
+                  <select
+                    value={loverState['pref_age_max']}
                     onChange={(e) =>
                       setLoverState('pref_age_max', Number(e.target.value))
                     }
-                    className={'w-20'}
-                    min={loverState['pref_age_min']}
-                    max={1000}
-                    value={loverState['pref_age_max']}
-                  />
+                    className={'w-18 border-ink-300 rounded-md'}
+                  >
+                    {range(18, 100).map((m) => (
+                      <option key={m} value={m}>
+                        {m}
+                      </option>
+                    ))}
+                  </select>
                 </Col>
               </Row>
             </Col>

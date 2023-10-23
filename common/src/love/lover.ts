@@ -1,5 +1,7 @@
+import * as dayjs from 'dayjs'
+
 export const initialRequiredState = {
-  birthdate: '',
+  birthdate: dayjs().subtract(18, 'year').format('YYYY-MM-DD'),
   city: '',
   gender: '',
   pref_gender: [],
