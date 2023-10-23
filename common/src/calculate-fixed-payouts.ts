@@ -41,14 +41,17 @@ function calculateBetPayoutMulti(contract: CPMMMultiContract, bet: Bet) {
   let prob = 0
   const { answerId } = bet
   if (answerId) {
-    const { resolutions } = contract
-    if (resolutions) {
+    const { answers, resolutions } = contract
+    const answer = answers.find((a) => a.id === answerId)
+    if (answer && answer.resolution) {
+      const { resolution, resolutionProbability } = answer
+      if (resolutionProbability) prob = resolutionProbability
+      else prob = resolution === 'YES' ? 1 : 0
+    } else if (resolutions) {
       const probTotal = sum(Object.values(resolutions))
       prob = (resolutions[answerId] ?? 0) / probTotal
-    } else {
-      const { answers } = contract
-      const answer = answers.find((a) => a.id === answerId)
-      if (answer) prob = answer.prob
+    } else if (answer) {
+      prob = answer.prob
     }
   }
   const { outcome, shares } = bet

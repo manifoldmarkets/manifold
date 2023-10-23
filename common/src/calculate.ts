@@ -318,8 +318,12 @@ export function getInvested(contract: Contract, yourBets: Bet[]) {
   return getDpmInvested(yourBets)
 }
 
-function getCpmmOrDpmProfit(contract: Contract, yourBets: Bet[]) {
-  const { resolution } = contract
+function getCpmmOrDpmProfit(
+  contract: Contract,
+  yourBets: Bet[],
+  answer?: Answer
+) {
+  const resolution = answer?.resolution ?? contract.resolution
 
   let totalInvested = 0
   let payout = 0
@@ -376,8 +380,11 @@ export function getProfitMetrics(contract: Contract, yourBets: Bet[]) {
   const { mechanism } = contract
   if (mechanism === 'cpmm-multi-1') {
     const betsByAnswerId = groupBy(yourBets, 'answerId')
-    const profitMetricsPerAnswer = Object.values(betsByAnswerId).map((bets) =>
-      getCpmmOrDpmProfit(contract, bets)
+    const profitMetricsPerAnswer = Object.entries(betsByAnswerId).map(
+      ([answerId, bets]) => {
+        const answer = contract.answers.find((a) => a.id === answerId)
+        return getCpmmOrDpmProfit(contract, bets, answer)
+      }
     )
     const profit = sumBy(profitMetricsPerAnswer, 'profit')
     const totalInvested = sumBy(profitMetricsPerAnswer, 'totalInvested')
