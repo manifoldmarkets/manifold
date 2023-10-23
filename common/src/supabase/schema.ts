@@ -3169,7 +3169,6 @@ export interface Database {
           count: number
         }[]
       }
-      get_recommended_contracts_by_score: {
       get_recently_active_contracts_in_group_slugs: {
         Args: {
           group_slugs: string[]

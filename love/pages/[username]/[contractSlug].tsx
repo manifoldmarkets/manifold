@@ -1,4 +1,4 @@
-import { UserIcon, XIcon, ChartBarIcon } from '@heroicons/react/solid'
+import { UserIcon, XIcon, ChartBarIcon, StarIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { first, mergeWith } from 'lodash'
 import Head from 'next/head'
@@ -39,7 +39,7 @@ import { Row } from 'web/components/layout/row'
 import { Spacer } from 'web/components/layout/spacer'
 import { NumericResolutionPanel } from 'web/components/numeric-resolution-panel'
 import { ResolutionPanel } from 'web/components/resolution-panel'
-import { ReviewPanel } from 'web/components/reviews/stars'
+import { Rating, ReviewPanel } from 'web/components/reviews/stars'
 import { GradientContainer } from 'web/components/widgets/gradient-container'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { useAdmin } from 'web/hooks/use-admin'
@@ -74,6 +74,7 @@ import {
 import { TbDroplet } from 'react-icons/tb'
 import { getContractParams } from 'common/contract-params'
 import { LovePage } from 'love/components/love-page'
+import { useReview } from 'web/hooks/use-review'
 export async function getStaticProps(ctx: {
   params: { username: string; contractSlug: string }
 }) {
@@ -253,6 +254,9 @@ export function ContractPageContent(props: ContractParams) {
   const isClosed = !!(closeTime && closeTime < Date.now())
   const trustworthy = isTrustworthy(user?.username)
   const [showResolver, setShowResolver] = useState(false)
+  const [justNowReview, setJustNowReview] = useState<null | Rating>(null)
+  const userReview = useReview(contract.id, user?.id)
+  const userHasReviewed = userReview || justNowReview
 
   const [showReview, setShowReview] = useState(false)
 
@@ -458,6 +462,15 @@ export function ContractPageContent(props: ContractParams) {
                 contract={contract}
                 betPoints={betPoints as any}
                 showResolver={showResolver}
+                resolutionRating={
+                  userHasReviewed ? (
+                    <Row className="text-ink-500 items-center gap-0.5 text-sm italic">
+                      You rated this resolution{' '}
+                      {justNowReview ?? userReview?.rating}{' '}
+                      <StarIcon className="h-4 w-4" />
+                    </Row>
+                  ) : null
+                }
                 setShowResolver={setShowResolver}
                 onAnswerCommentClick={setReplyTo}
               />
@@ -467,7 +480,10 @@ export function ContractPageContent(props: ContractParams) {
                 <ReviewPanel
                   marketId={contract.id}
                   author={contract.creatorName}
-                  user={user}
+                  user={user.id}
+                  onSubmit={(rating: Rating) => {
+                    setJustNowReview(rating)
+                  }}
                 />
                 <button
                   className="text-ink-400 hover:text-ink-600 absolute right-0 top-0 p-4"
