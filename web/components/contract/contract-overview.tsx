@@ -54,6 +54,7 @@ export const ContractOverview = memo(
     showResolver: boolean
     resolutionRating?: ReactNode
     setShowResolver: (show: boolean) => void
+    onAnswerCommentClick: (answer: Answer | DpmAnswer) => void
   }) => {
     const {
       betPoints,
@@ -61,6 +62,7 @@ export const ContractOverview = memo(
       showResolver,
       resolutionRating,
       setShowResolver,
+      onAnswerCommentClick,
     } = props
 
     switch (contract.outcomeType) {
@@ -100,6 +102,7 @@ export const ContractOverview = memo(
             showResolver={showResolver}
             setShowResolver={setShowResolver}
             resolutionRating={resolutionRating}
+            onAnswerCommentClick={onAnswerCommentClick}
           />
         )
       case 'STONK':
@@ -231,9 +234,16 @@ const ChoiceOverview = (props: {
   showResolver: boolean
   resolutionRating?: ReactNode
   setShowResolver: (show: boolean) => void
+  onAnswerCommentClick: (answer: Answer | DpmAnswer) => void
 }) => {
-  const { points, contract, showResolver, resolutionRating, setShowResolver } =
-    props
+  const {
+    points,
+    contract,
+    showResolver,
+    resolutionRating,
+    setShowResolver,
+    onAnswerCommentClick,
+  } = props
 
   const [showZoomer, setShowZoomer] = useState(false)
   const { viewScale, currentTimePeriod, setTimePeriod, start, maxRange } =
@@ -302,6 +312,7 @@ const ChoiceOverview = (props: {
           {resolutionRating}
           <AnswersPanel
             contract={contract}
+            onAnswerCommentClick={onAnswerCommentClick}
             onAnswerHover={(ans) => setHoverAnswerId(ans?.id)}
             onAnswerClick={({ id }) =>
               setCheckedAnswerIds((answers) =>

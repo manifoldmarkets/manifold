@@ -505,6 +505,7 @@ export function ContractPageContent(props: ContractParams) {
                   ) : null
                 }
                 setShowResolver={setShowResolver}
+                onAnswerCommentClick={setReplyTo}
               />
             </Col>
             {showReview && user && (
