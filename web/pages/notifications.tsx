@@ -398,6 +398,7 @@ function NotificationGroupItemComponent(props: {
             <NotificationItem
               notification={notification}
               key={notification.id}
+              isChildOfGroup={shownNotifications.length > 1}
             />
           )
         })}

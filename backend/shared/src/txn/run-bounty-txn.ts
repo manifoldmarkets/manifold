@@ -1,4 +1,9 @@
-import { BountyAddedTxn, BountyAwardedTxn, BountyPostedTxn } from 'common/txn'
+import {
+  BountyAddedTxn,
+  BountyAwardedTxn,
+  BountyCanceledTxn,
+  BountyPostedTxn,
+} from 'common/txn'
 import * as admin from 'firebase-admin'
 import { FieldValue } from 'firebase-admin/firestore'
 import { removeUndefinedProps } from 'common/util/object'
@@ -138,6 +143,38 @@ export async function runAwardBountyTxn(
   fbTransaction.update(contractDoc, {
     bountyLeft: FieldValue.increment(-amount),
     bountyTxns: FieldValue.arrayUnion(newTxnDoc.id),
+  })
+
+  return { status: 'success', txn }
+}
+
+export async function runCancelBountyTxn(
+  fbTransaction: admin.firestore.Transaction,
+  txnData: Omit<BountyCanceledTxn, 'id' | 'createdTime'>,
+  contractRef: admin.firestore.DocumentReference,
+  userRef: admin.firestore.DocumentReference,
+  contractCloseTime?: number
+) {
+  const { amount } = txnData
+
+  const newTxnDoc = firestore.collection(`txns/`).doc()
+  const txn = { id: newTxnDoc.id, createdTime: Date.now(), ...txnData }
+  fbTransaction.create(newTxnDoc, removeUndefinedProps(txn))
+
+  // update user
+  fbTransaction.update(userRef, {
+    balance: FieldValue.increment(amount),
+    totalDeposits: FieldValue.increment(amount),
+  })
+
+  // update bountied contract
+  fbTransaction.update(contractRef, {
+    bountyLeft: FieldValue.increment(-amount),
+    bountyTxns: FieldValue.arrayUnion(newTxnDoc.id),
+    closeTime:
+      !contractCloseTime || contractCloseTime > Date.now()
+        ? Date.now()
+        : contractCloseTime,
   })
 
   return { status: 'success', txn }

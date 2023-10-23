@@ -16,7 +16,7 @@ import { useUser } from 'web/hooks/use-user'
 import { AddLiquidityButton } from './add-liquidity-button'
 import { ShareIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
-import { AddBountyButton } from './bountied-question'
+import { AddBountyButton, CancelBountyButton } from './bountied-question'
 
 export function CreatorShareBoostPanel(props: { contract: Contract }) {
   const { contract } = props
@@ -38,6 +38,10 @@ export function CreatorShareBoostPanel(props: { contract: Contract }) {
           }
           className="hidden sm:flex"
         />
+
+        {contract.outcomeType == 'BOUNTIED_QUESTION' && (
+          <CancelBountyButton contract={contract} />
+        )}
       </div>
 
       {contract.outcomeType !== 'POLL' && (

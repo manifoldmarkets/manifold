@@ -78,6 +78,7 @@ export type notification_source_update_types =
   | 'resolved'
   | 'deleted'
   | 'closed'
+  | 'canceled'
 
 /** @deprecated - use a notification_preference (in user-notification-preferences.ts) */
 export type notification_reason_types =
@@ -119,6 +120,7 @@ export type notification_reason_types =
   | 'added_to_group'
   | 'bounty_awarded'
   | 'bounty_added'
+  | 'bounty_canceled'
   | 'mana_payment_received'
   | 'poll_you_follow_closed'
   | 'your_poll_closed'
@@ -283,6 +285,10 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
   bounty_added: {
     simple: 'Bounties added to your question',
     detailed: 'When another user adds a bounty to your question',
+  },
+  bounty_canceled: {
+    simple: 'A bounty you follow is canceled',
+    detailed: 'When the creator of a bounty cancels it',
   },
   all_votes_on_watched_markets: {
     simple: 'Votes on polls you follow',
