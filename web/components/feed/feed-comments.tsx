@@ -1,6 +1,6 @@
 import { Editor } from '@tiptap/react'
 import clsx from 'clsx'
-import { memo, ReactNode, useEffect, useRef, useState } from 'react'
+import { memo, ReactNode, useEffect, useReducer, useRef, useState } from 'react'
 
 import {
   EyeOffIcon,
@@ -58,6 +58,8 @@ import { PaymentsModal } from 'web/pages/payments'
 import TipJar from 'web/public/custom-components/tipJar'
 import { Answer, DpmAnswer } from 'common/answer'
 import { CommentOnAnswerRow } from './feed-answer-comment-group'
+import { usePartialUpdater } from 'web/hooks/use-partial-updater'
+import { update } from '@react-spring/web'
 
 export type ReplyToUserInfo = { id: string; username: string }
 
@@ -189,7 +191,10 @@ export const FeedComment = memo(function FeedComment(props: {
     inTimeline,
     isParent,
   } = props
-  const [comment, setComment] = useState(props.comment)
+  // for optimistic updates
+  const [comment, updateComment] = usePartialUpdater(props.comment)
+  useEffect(() => updateComment(props.comment), [props.comment])
+
   const { userUsername, userAvatarUrl } = comment
   const ref = useRef<HTMLDivElement>(null)
   const marketCreator = contract.creatorId === comment.userId
@@ -232,10 +237,10 @@ export const FeedComment = memo(function FeedComment(props: {
         >
           <FeedCommentHeader
             comment={comment}
+            updateComment={updateComment}
             contract={contract}
             inTimeline={inTimeline}
             isParent={isParent}
-            onHide={() => setComment({ ...comment, hidden: !comment.hidden })}
           />
 
           <HideableContent comment={comment} />
@@ -243,6 +248,7 @@ export const FeedComment = memo(function FeedComment(props: {
             {children}
             <CommentActions
               onReplyClick={onReplyClick}
+              onAward={(total) => updateComment({ bountyAwarded: total })}
               comment={comment}
               contract={contract}
               trackingLocation={trackingLocation}
@@ -328,10 +334,10 @@ function HideableContent(props: { comment: ContractComment }) {
 
 export function DotMenu(props: {
   comment: ContractComment
+  updateComment: (update: Partial<ContractComment>) => void
   contract: Contract
-  onHide: () => void
 }) {
-  const { comment, contract, onHide } = props
+  const { comment, updateComment, contract } = props
   const [isModalOpen, setIsModalOpen] = useState(false)
   const user = useUser()
   const privateUser = usePrivateUser()
@@ -399,20 +405,18 @@ export function DotMenu(props: {
             icon: <EyeOffIcon className="h-5 w-5 text-red-500" />,
             onClick: async () => {
               const commentPath = `contracts/${contract.id}/comments/${comment.id}`
-              onHide()
-              await toast.promise(hideComment({ commentPath }), {
-                loading: comment.hidden
-                  ? 'Unhiding comment...'
-                  : 'Hiding comment...',
-                success: () => {
-                  return comment.hidden ? 'Comment unhidden' : 'Comment hidden'
-                },
-                error: () => {
-                  return comment.hidden
-                    ? 'Error unhiding comment'
-                    : 'Error hiding comment'
-                },
-              })
+              const wasHidden = comment.hidden
+              updateComment({ hidden: !wasHidden })
+
+              try {
+                await hideComment({ commentPath })
+              } catch (e) {
+                toast.error(
+                  wasHidden ? 'Error unhiding comment' : 'Error hiding comment'
+                )
+                // undo optimistic update
+                updateComment({ hidden: wasHidden })
+              }
             },
           }
         )}
@@ -421,6 +425,7 @@ export function DotMenu(props: {
         <EditCommentModal
           user={user}
           comment={comment}
+          setContent={(content) => updateComment({ content })}
           contract={contract}
           open={editingComment}
           setOpen={setEditingComment}
@@ -455,11 +460,12 @@ export function DotMenu(props: {
 
 function CommentActions(props: {
   onReplyClick?: (comment: ContractComment) => void
+  onAward: (bountyTotal: number) => void
   comment: ContractComment
   contract: Contract
   trackingLocation: string
 }) {
-  const { onReplyClick, comment, contract, trackingLocation } = props
+  const { onReplyClick, onAward, comment, contract, trackingLocation } = props
   const user = useUser()
   const privateUser = usePrivateUser()
 
@@ -476,6 +482,7 @@ function CommentActions(props: {
         <AwardBountyButton
           contract={contract}
           comment={comment}
+          onAward={onAward}
           user={user}
           disabled={contract.bountyLeft <= 0}
           buttonClassName={'mr-1'}
@@ -638,12 +645,12 @@ export function ContractCommentInput(props: {
 
 function FeedCommentHeader(props: {
   comment: ContractComment
+  updateComment: (comment: Partial<ContractComment>) => void
   contract: Contract
-  onHide: () => void
   inTimeline?: boolean
   isParent?: boolean
 }) {
-  const { comment, contract, inTimeline, onHide } = props
+  const { comment, updateComment, contract, inTimeline } = props
   const {
     userUsername,
     userName,
@@ -711,7 +718,11 @@ function FeedCommentHeader(props: {
             )}
           </span>
           {!inTimeline && (
-            <DotMenu onHide={onHide} comment={comment} contract={contract} />
+            <DotMenu
+              updateComment={updateComment}
+              comment={comment}
+              contract={contract}
+            />
           )}
         </Row>
         {bountyAwarded && bountyAwarded > 0 && (

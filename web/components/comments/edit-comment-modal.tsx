@@ -11,16 +11,18 @@ import { safeLocalStorage } from 'web/lib/util/local'
 import { getApiUrl } from 'common/api'
 import { call } from 'web/lib/firebase/api'
 import { Title } from 'web/components/widgets/title'
+import { JSONContent } from '@tiptap/core'
 
 export const EditCommentModal = (props: {
   comment: Comment
+  setContent: (content: JSONContent) => void
   contract: Contract
   open: boolean
   setOpen: (open: boolean) => void
   user: User
 }) => {
   const key = `edit comment ${props.comment.id}`
-  const { comment, user, contract, open, setOpen } = props
+  const { comment, user, contract, setContent, open, setOpen } = props
   const [isSubmitting, setIsSubmitting] = useState(false)
   const editor = useTextEditor({
     key,
@@ -41,11 +43,16 @@ export const EditCommentModal = (props: {
       const endPos = editor.state.selection.from
       editor.commands.deleteRange({ from: endPos - 1, to: endPos })
     }
+
+    const content = editor.getJSON()
+
     await call(getApiUrl('editcomment'), 'POST', {
       commentId: comment.id,
-      content: editor.getJSON(),
+      content: content,
       contractId: contract.id,
     })
+
+    setContent(content)
 
     setIsSubmitting(false)
     editor.commands.clearContent(true)

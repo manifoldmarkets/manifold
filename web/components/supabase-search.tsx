@@ -15,10 +15,8 @@ import generateFilterDropdownItems, {
   getLabelFromValue,
 } from './search/search-dropdown-helpers'
 import { Input } from './widgets/input'
-import {
-  usePartialUpdater,
-  usePersistentQueriesState,
-} from 'web/hooks/use-persistent-query-state'
+import { usePersistentQueriesState } from 'web/hooks/use-persistent-query-state'
+import { usePartialUpdater } from 'web/hooks/use-partial-updater'
 import {
   useGroupFromSlug,
   useRealtimeMemberGroupIds,

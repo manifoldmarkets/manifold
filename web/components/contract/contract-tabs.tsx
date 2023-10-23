@@ -40,6 +40,7 @@ import { firebaseLogin } from 'web/lib/firebase/users'
 import { ArrowRightIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { useComments } from 'web/hooks/use-comments'
+import { useRealtimeCommentsOnContract } from 'web/hooks/use-comments-supabase'
 
 export const EMPTY_USER = '_'
 
@@ -195,14 +196,14 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
   } = props
 
   // Firebase useComments
-  const comments = (useComments(contract.id, 0) ?? props.comments).filter(
-    (c) => !blockedUserIds.includes(c.userId)
-  )
+  // const comments = (useComments(contract.id, 0) ?? props.comments).filter(
+  //   (c) => !blockedUserIds.includes(c.userId)
+  // )
 
   // Supabase use realtime comments
-  // const comments = (
-  //   useRealtimeCommentsOnContract(contract.id) ?? props.comments
-  // ).filter((c) => !blockedUserIds.includes(c.userId))
+  const comments = (
+    useRealtimeCommentsOnContract(contract.id) ?? props.comments
+  ).filter((c) => !blockedUserIds.includes(c.userId))
 
   const [parentCommentsToRender, setParentCommentsToRender] = useState(
     props.comments.filter((c) => !c.replyToCommentId).length

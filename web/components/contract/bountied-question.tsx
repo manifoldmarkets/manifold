@@ -115,14 +115,16 @@ export function BountyLeft(props: {
 export function AwardBountyButton(props: {
   contract: BountiedQuestionContract
   comment: ContractComment
+  onAward: (bountyTotal: number) => void
   user: User
   disabled: boolean
   buttonClassName?: string
 }) {
-  const { contract, comment, user, disabled, buttonClassName } = props
+  const { contract, comment, onAward, user, disabled, buttonClassName } = props
   const [open, setOpen] = useState(false)
   const [error, setError] = useState<string | undefined>(undefined)
   const { bountyLeft } = contract
+  const { bountyAwarded } = comment
   const [amount, setAmount] = useState<number | undefined>(bountyLeft)
   const [loading, setLoading] = useState(false)
   if (!user || user.id !== contract.creatorId) {
@@ -132,14 +134,14 @@ export function AwardBountyButton(props: {
   async function onAwardBounty() {
     if (amount) {
       setLoading(true)
-      const newDefault = bountyLeft - amount
       awardBounty({
         contractId: contract.id,
         commentId: comment.id,
         amount: amount,
       }).then((_result) => {
         setOpen(false)
-        setAmount(newDefault)
+        setAmount(bountyLeft - amount)
+        onAward((bountyAwarded ?? 0) + amount)
         setLoading(false)
       })
     }

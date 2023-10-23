@@ -1,5 +1,6 @@
 import { useRouter } from 'next/dist/client/router'
-import { useEffect, useReducer, useState } from 'react'
+import { useEffect, useState } from 'react'
+import { usePartialUpdater } from './use-partial-updater'
 
 type UrlParams = Record<string, string | undefined>
 
@@ -38,13 +39,6 @@ export const usePersistentQueriesState = <T extends UrlParams>(
   }
 
   return [!routerHasLoaded ? undefined : state, setQueryState]
-}
-
-export const usePartialUpdater = <T extends UrlParams>(defaultValue: T) => {
-  return useReducer(
-    (state: T, update: Partial<T>) => ({ ...state, ...update }),
-    defaultValue
-  )
 }
 
 export const usePersistentQueryState = <K extends string>(
