@@ -44,12 +44,13 @@ export function CreatorShareBoostPanel(props: { contract: Contract }) {
         )}
       </div>
 
-      {contract.outcomeType !== 'POLL' && (
-        <div className="text-ink-500 text-base">
-          Earn {formatMoney(REFERRAL_AMOUNT)} for each sign up and{' '}
-          {formatMoney(UNIQUE_BETTOR_BONUS_AMOUNT)} for each trader.
-        </div>
-      )}
+      {contract.outcomeType !== 'POLL' &&
+        contract.outcomeType !== 'BOUNTIED_QUESTION' && (
+          <div className="text-ink-500 text-base">
+            Earn {formatMoney(REFERRAL_AMOUNT)} for each sign up and{' '}
+            {formatMoney(UNIQUE_BETTOR_BONUS_AMOUNT)} for each trader.
+          </div>
+        )}
     </GradientContainer>
   )
 }
