@@ -173,8 +173,7 @@ export const RequiredLoveUserForm = (props: {
                         dayjs(
                           `${
                             e.target.value
-                          } ${birthDate.date()} ${birthDate.year()}`,
-                          'MMMM D YYYY'
+                          } ${birthDate.date()} ${birthDate.year()}`
                         ).format('YYYY-MM-DD')
                       )
                     }}
@@ -237,8 +236,7 @@ export const RequiredLoveUserForm = (props: {
                         dayjs(
                           `${birthDate.month() + 1} ${birthDate.date()} ${
                             e.target.value
-                          }`,
-                          'MMMM D YYYY'
+                          }`
                         ).format('YYYY-MM-DD')
                       )
                     }}
