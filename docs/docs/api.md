@@ -80,10 +80,12 @@ Returns the authenticated user.
 
 ### `GET /v0/groups`
 
-Gets all groups, in no particular order.
+Gets all groups, in order of descending creation time, 500 at a time.
 
 Parameters:
 
+- `beforeTime`: Optional. If specified, only groups created before this time
+  will be returned.
 - `availableToUserId`: Optional. if specified, only groups that the user can
   join and groups they've already joined will be returned.
 
