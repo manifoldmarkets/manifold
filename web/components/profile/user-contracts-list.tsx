@@ -1,7 +1,7 @@
 import clsx from 'clsx'
 import { getUnresolvedContractsCount } from 'common/supabase/contracts'
 import { User } from 'common/user'
-import { formatWithCommas, shortFormatNumber } from 'common/util/format'
+import { shortFormatNumber } from 'common/util/format'
 import { ReactNode, useEffect, useState } from 'react'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -15,8 +15,7 @@ import { SupabaseSearch } from 'web/components/supabase-search'
 import { useUser } from 'web/hooks/use-user'
 import { CreateQuestionButton } from '../buttons/create-question-button'
 import { useRouter } from 'next/router'
-import { UserReviews, UserReviewsModal } from '../reviews/user-reviews'
-import { InfoBox } from '../widgets/info-box'
+import { UserReviews } from '../reviews/user-reviews'
 
 export function UserContractsList(props: {
   creator: User

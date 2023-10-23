@@ -87,10 +87,8 @@ import {
 import { TbDroplet } from 'react-icons/tb'
 import { useHeaderIsStuck } from 'web/hooks/use-header-is-stuck'
 import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
-import Link from 'next/link'
 import { DangerZone } from 'web/components/contract/danger-zone'
 import { ContractDescription } from 'web/components/contract/contract-description'
-import { linkClass } from 'web/components/widgets/site-link'
 export async function getStaticProps(ctx: {
   params: { username: string; contractSlug: string }
 }) {

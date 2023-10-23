@@ -35,7 +35,7 @@ import { Avatar } from 'web/components/widgets/avatar'
 import { UserLink } from 'web/components/widgets/user-link'
 import { useContract } from 'web/hooks/use-contract-supabase'
 import { useGroupsWithContract } from 'web/hooks/use-group-supabase'
-import { Rating, ReviewPanel, StarRating } from '../reviews/stars'
+import { Rating, ReviewPanel } from '../reviews/stars'
 import { Linkify } from '../widgets/linkify'
 import { linkClass } from '../widgets/site-link'
 import {
