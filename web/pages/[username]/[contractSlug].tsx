@@ -544,34 +544,6 @@ export function ContractPageContent(props: ContractParams) {
                 </GradientContainer>
               ) : null)}
 
-            {isResolved &&
-              !userHasReviewed &&
-              // resolved less than week ago
-              (Date.now() - (contract.resolutionTime ?? 0)) / 1000 <
-                60 * 60 * 24 * 7 &&
-              user &&
-              user.id !== contract.creatorId &&
-              contract.outcomeType !== 'POLL' && (
-                <ReviewPanel
-                  marketId={contract.id}
-                  author={contract.creatorName}
-                  onSubmit={(rating: Rating) => {
-                    setJustNowReview(rating)
-                  }}
-                />
-              )}
-
-            <Row className="my-2 flex-wrap items-center justify-between gap-y-2">
-              {outcomeType === 'BOUNTIED_QUESTION' && (
-                <Link
-                  className={clsx(linkClass, 'text-primary-500 ml-2 text-sm')}
-                  href={`/questions?s=score&f=open&ct=BOUNTIED_QUESTION`}
-                >
-                  See all bounties &rarr;
-                </Link>
-              )}
-            </Row>
-
             <DangerZone
               contract={contract}
               showResolver={showResolver}
