@@ -1,4 +1,4 @@
-import { memo, useState } from 'react'
+import { ReactNode, memo, useState } from 'react'
 import { Bet } from 'common/bet'
 import { HistoryPoint } from 'common/chart'
 import {
@@ -45,12 +45,14 @@ import { PollPanel } from '../poll/poll-panel'
 import { CreateAnswerPanel } from '../answers/create-answer-panel'
 import clsx from 'clsx'
 import { viewScale } from 'common/chart'
+import { Col } from '../layout/col'
 
 export const ContractOverview = memo(
   (props: {
     contract: Contract
     betPoints: HistoryPoint<Partial<Bet>>[] | MultiPoints
     showResolver: boolean
+    resolutionRating?: ReactNode
     setShowResolver: (show: boolean) => void
     onAnswerCommentClick: (answer: Answer | DpmAnswer) => void
   }) => {
@@ -58,6 +60,7 @@ export const ContractOverview = memo(
       betPoints,
       contract,
       showResolver,
+      resolutionRating,
       setShowResolver,
       onAnswerCommentClick,
     } = props
@@ -65,15 +68,25 @@ export const ContractOverview = memo(
     switch (contract.outcomeType) {
       case 'BINARY':
         return (
-          <BinaryOverview betPoints={betPoints as any} contract={contract} />
+          <BinaryOverview
+            betPoints={betPoints as any}
+            contract={contract}
+            resolutionRating={resolutionRating}
+          />
         )
       case 'NUMERIC':
-        return <NumericOverview contract={contract} />
+        return (
+          <NumericOverview
+            contract={contract}
+            resolutionRating={resolutionRating}
+          />
+        )
       case 'PSEUDO_NUMERIC':
         return (
           <PseudoNumericOverview
             contract={contract}
             betPoints={betPoints as any}
+            resolutionRating={resolutionRating}
           />
         )
       case 'CERT':
@@ -88,6 +101,7 @@ export const ContractOverview = memo(
             points={betPoints as any}
             showResolver={showResolver}
             setShowResolver={setShowResolver}
+            resolutionRating={resolutionRating}
             onAnswerCommentClick={onAnswerCommentClick}
           />
         )
@@ -103,11 +117,15 @@ export const ContractOverview = memo(
   }
 )
 
-const NumericOverview = (props: { contract: NumericContract }) => {
-  const { contract } = props
+const NumericOverview = (props: {
+  contract: NumericContract
+  resolutionRating?: ReactNode
+}) => {
+  const { contract, resolutionRating } = props
   return (
     <>
       <NumericResolutionOrExpectation contract={contract} />
+      {resolutionRating}
       <SizedContainer className="h-[150px] w-full pb-4 pr-10 sm:h-[250px]">
         {(w, h) => (
           <NumericContractChart width={w} height={h} contract={contract} />
@@ -120,8 +138,9 @@ const NumericOverview = (props: { contract: NumericContract }) => {
 export const BinaryOverview = (props: {
   contract: BinaryContract
   betPoints: HistoryPoint<Partial<Bet>>[]
+  resolutionRating?: ReactNode
 }) => {
-  const { contract, betPoints } = props
+  const { contract, betPoints, resolutionRating } = props
   const user = useUser()
 
   const [showZoomer, setShowZoomer] = useState(false)
@@ -132,7 +151,10 @@ export const BinaryOverview = (props: {
   return (
     <>
       <Row className="items-end justify-between gap-4">
-        <BinaryResolutionOrChance contract={contract} />
+        <Col>
+          <BinaryResolutionOrChance contract={contract} />
+          {resolutionRating}
+        </Col>
         <TimeRangePicker
           currentTimePeriod={currentTimePeriod}
           setCurrentTimePeriod={(p) => {
@@ -210,6 +232,7 @@ const ChoiceOverview = (props: {
   points: MultiPoints
   contract: MultiContract
   showResolver: boolean
+  resolutionRating?: ReactNode
   setShowResolver: (show: boolean) => void
   onAnswerCommentClick: (answer: Answer | DpmAnswer) => void
 }) => {
@@ -217,6 +240,7 @@ const ChoiceOverview = (props: {
     points,
     contract,
     showResolver,
+    resolutionRating,
     setShowResolver,
     onAnswerCommentClick,
   } = props
@@ -285,6 +309,7 @@ const ChoiceOverview = (props: {
         )
       ) : (
         <>
+          {resolutionRating}
           <AnswersPanel
             contract={contract}
             onAnswerCommentClick={onAnswerCommentClick}
@@ -312,8 +337,9 @@ const ChoiceOverview = (props: {
 const PseudoNumericOverview = (props: {
   contract: PseudoNumericContract
   betPoints: HistoryPoint<Partial<Bet>>[]
+  resolutionRating?: ReactNode
 }) => {
-  const { contract, betPoints } = props
+  const { contract, betPoints, resolutionRating } = props
   const { viewScale, currentTimePeriod, setTimePeriod, start, maxRange } =
     useTimePicker(contract)
   const user = useUser()
@@ -321,7 +347,10 @@ const PseudoNumericOverview = (props: {
   return (
     <>
       <Row className="items-end justify-between gap-4">
-        <PseudoNumericResolutionOrExpectation contract={contract} />
+        <Col>
+          <PseudoNumericResolutionOrExpectation contract={contract} />
+          {resolutionRating}
+        </Col>
         <TimeRangePicker
           currentTimePeriod={currentTimePeriod}
           setCurrentTimePeriod={setTimePeriod}

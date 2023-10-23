@@ -5,7 +5,7 @@ import {
   CopyLinkRow,
 } from 'web/components/buttons/copy-link-button'
 import { Page } from 'web/components/layout/page'
-import { StarPicker } from 'web/components/reviews/stars'
+import { Rating, StarRating } from 'web/components/reviews/stars'
 import { ColorSection } from 'web/components/styles/colors'
 import { AlertBox } from 'web/components/widgets/alert-box'
 import { AmountInput } from 'web/components/widgets/amount-input'
@@ -253,5 +253,10 @@ function SliderExample() {
 
 function Rating() {
   const [rating, setRating] = useState<number>()
-  return <StarPicker rating={rating as any} setRating={setRating} />
+  return (
+    <StarRating
+      rating={rating as any}
+      onClick={(rating: Rating) => setRating(rating)}
+    />
+  )
 }

@@ -7,26 +7,27 @@ import {
 } from '@heroicons/react/outline'
 import { ChartBarIcon, LinkIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
-import { useRouter } from 'next/router'
-import Link from 'next/link'
-import { useEffect, useState } from 'react'
-import Head from 'next/head'
-
+import { DIVISION_NAMES, getLeaguePath } from 'common/leagues'
 import { Post } from 'common/post'
-import { getUserByUsername, User } from 'web/lib/firebase/users'
-import Custom404 from 'web/pages/404'
-import { BlockedUser } from 'web/components/profile/blocked-user'
-import { usePrivateUser } from 'web/hooks/use-user'
-import { Title } from 'web/components/widgets/title'
-import { MoreOptionsUserButton } from 'web/components/buttons/more-options-user-button'
-import { UserContractsList } from 'web/components/profile/user-contracts-list'
-import { useFollowers, useFollows } from 'web/hooks/use-follows'
-import { usePrefetchUsers, useUser, useUserById } from 'web/hooks/use-user'
-import { useDiscoverUsers } from 'web/hooks/use-users'
+import { removeUndefinedProps } from 'common/util/object'
+import Head from 'next/head'
+import Link from 'next/link'
+import { useRouter } from 'next/router'
+import { useEffect, useState } from 'react'
+import { SEO } from 'web/components/SEO'
+
+import { ENV_CONFIG } from 'common/envs/constants'
+import { referralQuery } from 'common/util/share'
 import { UserBetsTable } from 'web/components/bet/user-bets-table'
-import { TextButton } from 'web/components/buttons/text-button'
+import {
+  CopyLinkOrShareButton,
+  CopyLinkRow,
+} from 'web/components/buttons/copy-link-button'
 import { FollowButton } from 'web/components/buttons/follow-button'
+import { MoreOptionsUserButton } from 'web/components/buttons/more-options-user-button'
+import { TextButton } from 'web/components/buttons/text-button'
 import { UserCommentsList } from 'web/components/comments/comments-list'
+import { DailyLeagueStat } from 'web/components/daily-league-stat'
 import { FollowList } from 'web/components/follow-list'
 import { Col } from 'web/components/layout/col'
 import { Modal } from 'web/components/layout/modal'
@@ -34,39 +35,39 @@ import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
 import { Spacer } from 'web/components/layout/spacer'
 import { QueryUncontrolledTabs, Tabs } from 'web/components/layout/tabs'
+import { SendMessageButton } from 'web/components/messaging/send-message-button'
 import { PortfolioValueSection } from 'web/components/portfolio/portfolio-value-section'
-import { SEO } from 'web/components/SEO'
+import { BlockedUser } from 'web/components/profile/blocked-user'
+import { UserContractsList } from 'web/components/profile/user-contracts-list'
+import { UserLikedContractsButton } from 'web/components/profile/user-liked-contracts-button'
+import { QuestsOrStreak } from 'web/components/quests-or-streak'
 import { Avatar } from 'web/components/widgets/avatar'
+import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
 import ImageWithBlurredShadow from 'web/components/widgets/image-with-blurred-shadow'
 import { Linkify } from 'web/components/widgets/linkify'
-import { linkClass } from 'web/components/widgets/site-link'
-import { StackedUserNames } from 'web/components/widgets/user-link'
-import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
-import { useSaveReferral } from 'web/hooks/use-save-referral'
-import { UserLikedContractsButton } from 'web/components/profile/user-liked-contracts-button'
-import { getPostsByUser } from 'web/lib/supabase/post'
-import { useLeagueInfo } from 'web/hooks/use-leagues'
-import { DIVISION_NAMES, getLeaguePath } from 'common/leagues'
-import TrophyIcon from 'web/lib/icons/trophy-icon.svg'
-import { DailyLeagueStat } from 'web/components/daily-league-stat'
-import { QuestsOrStreak } from 'web/components/quests-or-streak'
-import { useAdmin } from 'web/hooks/use-admin'
-import { UserPayments } from 'web/pages/payments'
-import { useQuery } from 'web/hooks/use-query'
-import { getUserRating, getUserReviews } from 'web/lib/supabase/reviews'
-import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
-import { removeUndefinedProps } from 'common/util/object'
-import { Review } from 'web/components/reviews/review'
-import { db } from 'web/lib/supabase/db'
-import {
-  CopyLinkOrShareButton,
-  CopyLinkRow,
-} from 'web/components/buttons/copy-link-button'
 import { QRCode } from 'web/components/widgets/qr-code'
-import { ENV_CONFIG } from 'common/envs/constants'
-import { referralQuery } from 'common/util/share'
-import { SendMessageButton } from 'web/components/messaging/send-message-button'
+import { linkClass } from 'web/components/widgets/site-link'
+import { Title } from 'web/components/widgets/title'
+import { StackedUserNames } from 'web/components/widgets/user-link'
+import { useAdmin } from 'web/hooks/use-admin'
+import { useFollowers, useFollows } from 'web/hooks/use-follows'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
+import { useLeagueInfo } from 'web/hooks/use-leagues'
+import { useSaveReferral } from 'web/hooks/use-save-referral'
+import {
+  usePrefetchUsers,
+  usePrivateUser,
+  useUser,
+  useUserById,
+} from 'web/hooks/use-user'
+import { useDiscoverUsers } from 'web/hooks/use-users'
+import { User, getUserByUsername } from 'web/lib/firebase/users'
+import TrophyIcon from 'web/lib/icons/trophy-icon.svg'
+import { db } from 'web/lib/supabase/db'
+import { getPostsByUser } from 'web/lib/supabase/post'
+import { getAverageUserRating } from 'web/lib/supabase/reviews'
+import Custom404 from 'web/pages/404'
+import { UserPayments } from 'web/pages/payments'
 
 export const getStaticProps = async (props: {
   params: {
@@ -77,14 +78,15 @@ export const getStaticProps = async (props: {
   const user = await getUserByUsername(username)
   const posts = user ? await getPostsByUser(user.id) : []
 
-  const { count, rating } = (user ? await getUserRating(user.id) : null) ?? {}
+  const { avg_rating, count } =
+    (user ? await getAverageUserRating(user.id) : null) ?? {}
 
   return {
     props: removeUndefinedProps({
       user,
       username,
       posts,
-      rating,
+      rating: avg_rating,
       reviewCount: count,
     }),
     revalidate: 60 * 5, // Regenerate after 5 minutes
@@ -275,7 +277,6 @@ function UserProfile(props: {
             user={user}
             currentUser={currentUser}
             rating={rating}
-            reviewCount={reviewCount}
           />
           {user.bio && (
             <div className="sm:text-md mt-1 text-sm">
@@ -366,7 +367,11 @@ function UserProfile(props: {
                 content: (
                   <>
                     <Spacer h={4} />
-                    <UserContractsList creator={user} />
+                    <UserContractsList
+                      creator={user}
+                      rating={rating}
+                      reviewCount={reviewCount}
+                    />
                   </>
                 ),
               },
@@ -403,10 +408,9 @@ function ProfilePublicStats(props: {
   user: User
   currentUser: User | undefined | null
   rating?: number
-  reviewCount?: number
   className?: string
 }) {
-  const { user, className, currentUser, rating, reviewCount = 0 } = props
+  const { user, className, currentUser } = props
   const isCurrentUser = user.id === currentUser?.id
   const [reviewsOpen, setReviewsOpen] = useState(false)
   const [followsOpen, setFollowsOpen] = useState(false)
@@ -460,18 +464,6 @@ function ProfilePublicStats(props: {
         </Link>
       )}
 
-      {reviewCount > 0 && (
-        <button
-          className="group flex gap-0.5"
-          onClick={() => setReviewsOpen(true)}
-        >
-          <span className="decoration-primary-400 decoration-2 group-hover:underline">
-            <span className="font-semibold">{reviewCount}</span> Review
-            {reviewCount === 1 ? '' : 's'}
-          </span>
-        </button>
-      )}
-
       <Link
         href={'/' + user.username + '/calibration'}
         className={clsx(linkClass, 'text-sm')}
@@ -489,16 +481,6 @@ function ProfilePublicStats(props: {
         isOpen={followsOpen}
         setIsOpen={setFollowsOpen}
       />
-      <ReviewsDialog
-        isOpen={reviewsOpen}
-        setIsOpen={setReviewsOpen}
-        userId={user.id}
-        rating={rating ?? 4}
-      />
-      {/*{isCurrentUser && <ReferralsButton user={user} className={className} />}
-      {isCurrentUser && (
-        <UserLikedContractsButton user={user} className={className} />
-      )} */}
     </Row>
   )
 }
@@ -586,56 +568,6 @@ function FollowsDialog(props: {
           defaultIndex={defaultTab === 'following' ? 0 : 1}
         />
       </Col>
-    </Modal>
-  )
-}
-
-function ReviewsDialog(props: {
-  isOpen: boolean
-  setIsOpen: (isOpen: boolean) => void
-  userId: string
-  rating: number
-}) {
-  const { isOpen, setIsOpen, userId, rating } = props
-
-  const reviews = useQuery(() => getUserReviews(userId))
-
-  const ratingLabel =
-    rating > 4.8 ? (
-      <span className="font-semibold text-green-600">Exceptional</span>
-    ) : rating > 4.5 ? (
-      <span className="font-semibold text-green-600">Great</span>
-    ) : rating > 3.3 ? (
-      <span className="font-semibold text-green-600">Good</span>
-    ) : rating > 2.5 ? (
-      <span className="font-semibold text-yellow-600">Okay</span>
-    ) : rating > 2 ? (
-      <span className="font-semibold text-red-600">Poor</span>
-    ) : (
-      <span className="font-semibold text-red-600">Very Poor</span>
-    )
-
-  return (
-    <Modal open={isOpen} setOpen={setIsOpen}>
-      <div className="bg-canvas-0 max-h-[90vh] overflow-y-auto rounded p-6">
-        <Title>Reviews</Title>
-
-        <div className="mb-4">Resolution reliability: {ratingLabel}</div>
-        {reviews.isLoading && <LoadingIndicator className="text-center" />}
-
-        <Col className="divide-ink-300 divide-y-2">
-          {reviews.data?.map((review, i) => (
-            <Review
-              key={i}
-              userId={review.reviewer_id}
-              rating={review.rating}
-              created={review.created_time}
-              contractId={review.market_id}
-              text={review.content as any}
-            />
-          ))}
-        </Col>
-      </div>
     </Modal>
   )
 }

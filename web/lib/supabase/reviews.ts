@@ -1,8 +1,18 @@
+import { Json } from 'common/supabase/schema'
 import { db } from './db'
 import { Row, run, tsToMillis } from 'common/supabase/utils'
 
 export const getUserRating = async (userId: string) => {
   const stuff = await db.rpc('get_rating', { user_id: userId }).single()
+  const { data } = stuff
+
+  return data as any
+}
+
+export const getAverageUserRating = async (userId: string) => {
+  const stuff = await db
+    .rpc('get_rating_info', { p_vendor_id: userId })
+    .single()
   const { data } = stuff
 
   return data as any
@@ -32,6 +42,15 @@ export const getMyReviewOnContract = async (
     .single()
 
   return data && convertReview(data)
+}
+
+export type Review = {
+  created_time: number
+  content: Json
+  market_id: string
+  rating: number
+  reviewer_id: string
+  vendor_id: string
 }
 
 const convertReview = (review: Row<'reviews'>) => ({

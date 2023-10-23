@@ -1,9 +1,5 @@
-import { UserIcon, XIcon, ChartBarIcon } from '@heroicons/react/solid'
+import { ChartBarIcon, StarIcon, UserIcon, XIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
-import { first, mergeWith } from 'lodash'
-import Head from 'next/head'
-import Image from 'next/image'
-import { useEffect, useMemo, useRef, useState } from 'react'
 import { Answer, DpmAnswer } from 'common/answer'
 import {
   MultiSerializedPoints,
@@ -17,46 +13,56 @@ import {
   HOUSE_BOT_USERNAME,
   isTrustworthy,
 } from 'common/envs/constants'
+import { getTopContractMetrics } from 'common/supabase/contract-metrics'
 import { User } from 'common/user'
+import { first, mergeWith } from 'lodash'
+import Head from 'next/head'
+import Image from 'next/image'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { ScrollToTopButton } from 'web/components/buttons/scroll-to-top-button'
+import { SidebarSignUpButton } from 'web/components/buttons/sign-up-button'
+import { getMultiBetPoints } from 'web/components/charts/contract/choice'
 import { BackButton } from 'web/components/contract/back-button'
 import { BountyLeft } from 'web/components/contract/bountied-question'
 import { ChangeBannerButton } from 'web/components/contract/change-banner-button'
-import { ContractDescription } from 'web/components/contract/contract-description'
 import {
   AuthorInfo,
   CloseOrResolveTime,
 } from 'web/components/contract/contract-details'
 import { ContractLeaderboard } from 'web/components/contract/contract-leaderboard'
 import { ContractOverview } from 'web/components/contract/contract-overview'
+import { ContractSEO } from 'web/components/contract/contract-seo'
+import ContractSharePanel from 'web/components/contract/contract-share-panel'
 import { ContractTabs } from 'web/components/contract/contract-tabs'
 import { VisibilityIcon } from 'web/components/contract/contracts-table'
-import { getTopContractMetrics } from 'common/supabase/contract-metrics'
-import ContractSharePanel from 'web/components/contract/contract-share-panel'
 import { HeaderActions } from 'web/components/contract/header-actions'
+import { MarketTopics } from 'web/components/contract/market-topics'
 import { PrivateContractPage } from 'web/components/contract/private-contract'
 import {
   RelatedContractsCarousel,
   RelatedContractsList,
 } from 'web/components/contract/related-contracts-widget'
 import { EditableQuestionTitle } from 'web/components/contract/title-edit'
+import { ExplainerPanel } from 'web/components/explainer-panel'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
 import { Spacer } from 'web/components/layout/spacer'
 import { NumericResolutionPanel } from 'web/components/numeric-resolution-panel'
 import { ResolutionPanel } from 'web/components/resolution-panel'
-import { ReviewPanel } from 'web/components/reviews/stars'
+import { Rating, ReviewPanel } from 'web/components/reviews/stars'
 import { GradientContainer } from 'web/components/widgets/gradient-container'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { useAdmin } from 'web/hooks/use-admin'
 import { useAnswersCpmm } from 'web/hooks/use-answers'
+import { useRealtimeBets } from 'web/hooks/use-bets-supabase'
 import {
   useFirebasePublicContract,
   useIsPrivateContractMember,
 } from 'web/hooks/use-contract-supabase'
 import { useIsIframe } from 'web/hooks/use-is-iframe'
 import { useRelatedMarkets } from 'web/hooks/use-related-contracts'
+import { useReview } from 'web/hooks/use-review'
 import { useSaveCampaign } from 'web/hooks/use-save-campaign'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { useSaveContractVisitsLocally } from 'web/hooks/use-save-visits'
@@ -69,24 +75,22 @@ import { db } from 'web/lib/supabase/db'
 import { scrollIntoViewCentered } from 'web/lib/util/scroll'
 import Custom404 from '../404'
 import ContractEmbedPage from '../embed/[username]/[contractSlug]'
-import { ExplainerPanel } from 'web/components/explainer-panel'
-import { SidebarSignUpButton } from 'web/components/buttons/sign-up-button'
-import { MarketTopics } from 'web/components/contract/market-topics'
-import { getMultiBetPoints } from 'web/components/charts/contract/choice'
-import { useRealtimeBets } from 'web/hooks/use-bets-supabase'
-import { ContractSEO } from 'web/components/contract/contract-seo'
-import { getContractFromSlug } from 'common/supabase/contracts'
+
 import { Bet } from 'common/bet'
-import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
-import { useHeaderIsStuck } from 'web/hooks/use-header-is-stuck'
-import { DangerZone } from 'web/components/contract/danger-zone'
+import { getContractParams } from 'common/contract-params'
+import { getContractFromSlug } from 'common/supabase/contracts'
 import {
   formatMoney,
   formatWithCommas,
   shortFormatNumber,
 } from 'common/util/format'
 import { TbDroplet } from 'react-icons/tb'
-import { getContractParams } from 'common/contract-params'
+import { useHeaderIsStuck } from 'web/hooks/use-header-is-stuck'
+import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
+import Link from 'next/link'
+import { DangerZone } from 'web/components/contract/danger-zone'
+import { ContractDescription } from 'web/components/contract/contract-description'
+import { linkClass } from 'web/components/widgets/site-link'
 export async function getStaticProps(ctx: {
   params: { username: string; contractSlug: string }
 }) {
@@ -310,6 +314,10 @@ export function ContractPageContent(props: ContractParams) {
     user === null ||
     (user && user.createdTime > Date.now() - 24 * 60 * 60 * 1000)
 
+  const [justNowReview, setJustNowReview] = useState<null | Rating>(null)
+  const userReview = useReview(contract.id, user?.id)
+  const userHasReviewed = userReview || justNowReview
+
   return (
     <>
       {contract.visibility == 'private' && isAdmin && user && (
@@ -483,11 +491,19 @@ export function ContractPageContent(props: ContractParams) {
                   </div>
                 )}
               </div>
-
               <ContractOverview
                 contract={contract}
                 betPoints={betPoints as any}
                 showResolver={showResolver}
+                resolutionRating={
+                  userHasReviewed ? (
+                    <Row className="text-ink-500 items-center gap-0.5 text-sm italic">
+                      You rated this resolution{' '}
+                      {justNowReview ?? userReview?.rating}{' '}
+                      <StarIcon className="h-4 w-4" />
+                    </Row>
+                  ) : null
+                }
                 setShowResolver={setShowResolver}
                 onAnswerCommentClick={setReplyTo}
               />
@@ -497,7 +513,10 @@ export function ContractPageContent(props: ContractParams) {
                 <ReviewPanel
                   marketId={contract.id}
                   author={contract.creatorName}
-                  user={user}
+                  onSubmit={(rating: Rating) => {
+                    setJustNowReview(rating)
+                    setShowReview(false)
+                  }}
                 />
                 <button
                   className="text-ink-400 hover:text-ink-600 absolute right-0 top-0 p-4"
@@ -532,6 +551,7 @@ export function ContractPageContent(props: ContractParams) {
               showReview={showReview}
               setShowReview={setShowReview}
               userHasBet={!!contractMetrics}
+              hasReviewed={!!userHasReviewed}
             />
             <ContractDescription contract={contract} />
             <Row className="my-2 flex-wrap items-center justify-between gap-y-2"></Row>
