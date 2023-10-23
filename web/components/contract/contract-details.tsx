@@ -143,7 +143,7 @@ export function CloseDate(props: {
             {contract.outcomeType === 'POLL' ? 'Voting' : 'Trading'} will halt
             at this time
           </div>
-          <Row className="items-stretch gap-2">
+          <Row className="flex-wrap items-stretch gap-2">
             <Input
               type="date"
               className="dark:date-range-input-white shrink-0 sm:w-fit"
