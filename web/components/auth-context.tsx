@@ -61,7 +61,7 @@ const stripUserData = (user: object) => {
   return JSON.stringify(stripped)
 }
 
-export const setUserCookie = (data: object | undefined) => {
+const setUserCookie = (data: object | undefined) => {
   const stripped = data ? stripUserData(data) : ''
   setCookie(AUTH_COOKIE_NAME, stripped, [
     ['path', '/'],
@@ -140,7 +140,6 @@ export function AuthProvider(props: {
               visitedContractIds: getSavedContractVisitsLocally(),
             })) as UserAndPrivateUser
 
-            setCachedReferralInfoForUser(newUser.user)
             onAuthLoad(fbUser, newUser)
           } else {
             onAuthLoad(fbUser, currentAuthUser)
@@ -189,6 +188,14 @@ export function AuthProvider(props: {
       setUserProperty('username', username)
     }
   }, [username])
+
+  useEffect(() => {
+    if (!authUser) return
+    const { user, authLoaded } = authUser
+    if (authLoaded && user) {
+      setCachedReferralInfoForUser(user)
+    }
+  }, [authUser?.authLoaded, authUser?.user?.id])
 
   return (
     <AuthContext.Provider value={authUser}>{children}</AuthContext.Provider>

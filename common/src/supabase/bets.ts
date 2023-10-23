@@ -1,10 +1,10 @@
 import { SupabaseClient } from '@supabase/supabase-js'
 import { millisToTs, run, selectJson, tsToMillis } from './utils'
-import { BetFilter } from 'common/bet'
+import { Bet, BetFilter } from 'common/bet'
 import { User } from 'common/user'
 import { getContractBetMetrics } from 'common/calculate'
 import { Contract } from 'common/contract'
-import { groupBy, maxBy, minBy } from 'lodash'
+import { chunk, groupBy, maxBy, minBy } from 'lodash'
 import { removeUndefinedProps } from 'common/util/object'
 
 export const CONTRACT_BET_FILTER: BetFilter = {
@@ -34,6 +34,23 @@ export const getBetRows = async (db: SupabaseClient, options?: BetFilter) => {
   return data
 }
 
+export async function getBetsOnContracts(
+  db: SupabaseClient,
+  contractIds: string[],
+  options?: Omit<BetFilter, 'contractId'>
+) {
+  const chunks = chunk(contractIds, 100)
+  const rows = await Promise.all(
+    chunks.map(async (ids: string[]) => {
+      let q = db.from('contract_bets').select('data').in('contract_id', ids)
+      q = applyBetsFilter(q, options)
+      const { data } = await run(q)
+      return data
+    })
+  )
+  return rows.flat().map((r) => r.data as Bet)
+}
+
 export const getBets = async (db: SupabaseClient, options?: BetFilter) => {
   let q = selectJson(db, 'contract_bets')
   q = q.order('created_time', { ascending: options?.order === 'asc' })
@@ -42,26 +59,29 @@ export const getBets = async (db: SupabaseClient, options?: BetFilter) => {
   return data.map((r) => r.data)
 }
 
+// gets 50,000 unsorted random bets
 export const getBetPoints = async <S extends SupabaseClient>(
   db: S,
-  options?: BetFilter
+  contractId: string,
+  isMulti: boolean
 ) => {
   let q = db
     .from('contract_bets')
-    .select(
-      'created_time, prob_after, is_redemption, data->answerId, data->limitProb'
-    )
-    .order('created_time', { ascending: options?.order === 'asc' })
-  q = applyBetsFilter(q, options)
+    .select('created_time, prob_before, prob_after, data->answerId')
+    .order('bet_id')
+  q = applyBetsFilter(q, {
+    contractId,
+    filterRedemptions: !isMulti,
+    limit: 50000,
+  })
   const { data } = await run(q)
 
   return data
-    .filter((r: any) => r.limitProb == null)
+    .filter((r: any) => r.prob_after != r.prob_before)
     .map((r: any) => ({
       x: tsToMillis(r.created_time),
-      y: r.prob_after,
-      isRedemption: r.is_redemption,
-      answerId: r.answerId,
+      y: r.prob_after as number,
+      answerId: r.answerId as string,
     }))
 }
 

@@ -5,6 +5,7 @@ import {
   CORS_ORIGIN_MANIFOLD,
   CORS_ORIGIN_LOCALHOST,
   CORS_ORIGIN_VERCEL,
+  CORS_ORIGIN_MANIFOLD_LOVE,
 } from 'common/envs/constants'
 import { log } from 'shared/utils'
 import { APIError } from 'common/api'
@@ -49,7 +50,7 @@ import { supabasesearchcontracts } from './supabase-search-contract'
 import { deleteMarket } from './delete-market'
 import { saveTopic } from './save-topic'
 import { getcontractparams } from './get-contract-params'
-import { boostmarket } from './create-market-ad'
+import { boostmarket } from './boost-market'
 import { redeemboost } from './redeem-market-ad-reward'
 import { creategroupinvite } from './create-group-invite'
 import { joingroupthroughinvite } from './join-group-through-invite'
@@ -57,16 +58,12 @@ import { joingroup } from './join-group'
 import { editcomment } from 'api/edit-comment'
 import { supabasesearchgroups } from './supabase-search-groups'
 import { leagueActivity } from './league-activity'
-import { lootbox } from './loot-box'
-import { createQAndA } from './create-q-and-a'
-import { createQAndAAnswer } from './create-q-and-a-answer'
-import { awardQAndAAnswer } from './award-q-and-a-answer'
-import { createchatmessage } from 'api/create-chat-message'
 import { updatepost } from './update-post'
 import { updategroup } from './update-group'
 import { updateUserDisinterestEmbedding } from 'api/update-user-disinterests'
 import { awardbounty } from './award-bounty'
 import { addbounty } from './add-bounty'
+import { cancelbounty } from './cancel-bounty'
 import { createanswercpmm } from './create-answer-cpmm'
 import { createportfolio } from './create-portfolio'
 import { updateportfolio } from './update-portfolio'
@@ -82,9 +79,33 @@ import { getsimilargroupstocontract } from 'api/get-similar-groups-to-contract'
 import { followUser } from './follow-user'
 import { report } from './report'
 import { createdashboard } from './create-dashboard'
+import { getyourdashboards } from './get-your-dashboards'
+import { followdashboard } from './follow-dashboard'
+import { supabasesearchdashboards } from './supabase-search-dashboards'
+import { getyourfolloweddashboards } from './get-your-followed-dashboards'
+import { updatedashboard } from './update-dashboard'
+import { deletedashboard } from './delete-dashboard'
+import { getdashboardfromslug } from './get-dashboard-from-slug'
+import { unresolve } from './unresolve'
+import { referuser } from 'api/refer-user'
+import { banuser } from 'api/ban-user'
+import { updatemarket } from 'api/update-market'
+import { createprivateusermessage } from 'api/create-private-user-message'
+import { createprivateusermessagechannel } from 'api/create-private-user-message-channel'
+import { createlover } from 'api/love/create-lover'
+import { updatelover } from 'api/love/update-lover'
+import { createMatch } from 'api/love/create-match'
+import { createcommentonlover } from 'api/love/create-comment-on-lover'
+import { hidecommentonlover } from 'api/love/hide-comment-on-lover'
+import { rejectLover } from './love/reject-lover'
 
 const allowCors: RequestHandler = cors({
-  origin: [CORS_ORIGIN_MANIFOLD, CORS_ORIGIN_VERCEL, CORS_ORIGIN_LOCALHOST],
+  origin: [
+    CORS_ORIGIN_MANIFOLD,
+    CORS_ORIGIN_MANIFOLD_LOVE,
+    CORS_ORIGIN_VERCEL,
+    CORS_ORIGIN_LOCALHOST,
+  ],
 })
 
 const requestLogger: RequestHandler = (req, _res, next) => {
@@ -120,13 +141,11 @@ app.get('/health', ...apiRoute(health))
 app.get('/getcurrentuser', ...apiRoute(getcurrentuser))
 app.get('/unsubscribe', ...apiRoute(unsubscribe))
 
-app.post('/lootbox', ...apiRoute(lootbox))
 app.post('/transact', ...apiRoute(transact))
 app.post('/changeuserinfo', ...apiRoute(changeuserinfo))
 app.post('/createuser', ...apiRoute(createuser))
 app.post('/createanswer', ...apiRoute(createanswer))
 app.post('/createcomment', ...apiRoute(createcomment))
-app.post('/create-chat-message', ...apiRoute(createchatmessage))
 app.post('/editcomment', ...apiRoute(editcomment))
 app.post('/swapcert', ...apiRoute(swapcert))
 app.post('/dividendcert', ...apiRoute(dividendcert))
@@ -180,10 +199,8 @@ app.post('/joingroupthroughinvite', ...apiRoute(joingroupthroughinvite))
 app.post('/joingroup', ...apiRoute(joingroup))
 app.post('/supabasesearchgroups', ...apiRoute(supabasesearchgroups))
 app.post('/league-activity', ...apiRoute(leagueActivity))
-app.post('/create-q-and-a', ...apiRoute(createQAndA))
-app.post('/create-q-and-a-answer', ...apiRoute(createQAndAAnswer))
-app.post('/award-q-and-a-answer', ...apiRoute(awardQAndAAnswer))
 app.post('/award-bounty', ...apiRoute(awardbounty))
+app.post('/cancel-bounty', ...apiRoute(cancelbounty))
 app.post('/add-bounty', ...apiRoute(addbounty))
 app.post('/createanswercpmm', ...apiRoute(createanswercpmm))
 app.post('/createportfolio', ...apiRoute(createportfolio))
@@ -192,6 +209,7 @@ app.post('/buyportfolio', ...apiRoute(buyportfolio))
 app.post('/searchgiphy', ...apiRoute(searchgiphy))
 app.post('/manachantweet', ...apiRoute(manachantweet))
 app.post('/send-mana', ...apiRoute(sendmana))
+app.post('/refer-user', ...apiRoute(referuser))
 app.post('/leave-review', ...apiRoute(leavereview))
 app.post(
   '/get-user-contract-metrics-with-contracts',
@@ -205,8 +223,29 @@ app.post(
 app.post('/claimdestinysub', ...apiRoute(claimdestinysub))
 app.post('/follow-user', ...apiRoute(followUser))
 app.post('/report', ...apiRoute(report))
+app.post('/unresolve', ...apiRoute(unresolve))
 
 app.post('/createdashboard', ...apiRoute(createdashboard))
+app.post('/getyourdashboards', ...apiRoute(getyourdashboards))
+app.post('/followdashboard', ...apiRoute(followdashboard))
+app.post('/supabasesearchdashboards', ...apiRoute(supabasesearchdashboards))
+app.post('/getyourfolloweddashboards', ...apiRoute(getyourfolloweddashboards))
+app.post('/updatedashboard', ...apiRoute(updatedashboard))
+app.post('/delete-dashboard', ...apiRoute(deletedashboard))
+app.post('/getdashboardfromslug', ...apiRoute(getdashboardfromslug))
+app.post('/ban-user', ...apiRoute(banuser))
+app.post('/update-market', ...apiRoute(updatemarket))
+app.post('/create-private-user-message', ...apiRoute(createprivateusermessage))
+app.post(
+  '/create-private-user-message-channel',
+  ...apiRoute(createprivateusermessagechannel)
+)
+app.post('/create-lover', ...apiRoute(createlover))
+app.post('/update-lover', ...apiRoute(updatelover))
+app.post('/reject-lover', ...apiRoute(rejectLover))
+app.post('/create-match', ...apiRoute(createMatch))
+app.post('/create-comment-on-lover', ...apiRoute(createcommentonlover))
+app.post('/hide-comment-on-lover', ...apiRoute(hidecommentonlover))
 
 // Catch 404 errors - this should be the last route
 app.use(allowCors, (req, res) => {

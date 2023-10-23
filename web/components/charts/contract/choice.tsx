@@ -1,70 +1,81 @@
 import { useMemo } from 'react'
-import { last, sortBy } from 'lodash'
+import { cloneDeep, groupBy, last, mapValues, sortBy } from 'lodash'
 import { scaleTime, scaleLinear } from 'd3-scale'
-import { Bet, calculateMultiBets } from 'common/bet'
+import { Bet } from 'common/bet'
 import { Answer, DpmAnswer } from 'common/answer'
-import { MultiContract } from 'common/contract'
+import { CPMMMultiContract, MultiContract } from 'common/contract'
 import { getAnswerProbability } from 'common/calculate'
 import {
   TooltipProps,
+  formatDateInRange,
+  formatPct,
   getDateRange,
   getRightmostVisibleDate,
-  formatPct,
-  formatDateInRange,
 } from '../helpers'
 import { MultiValueHistoryChart } from '../generic-charts'
+import { HistoryPoint, viewScale } from 'common/chart'
 import { Row } from 'web/components/layout/row'
+import { pick } from 'lodash'
 import { buildArray } from 'common/util/array'
-import {
-  MultiPoint as GenericMultiPoint,
-  unserializePoints,
-} from 'common/chart'
 
 const CHOICE_ANSWER_COLORS = [
   '#99DDFF', // sky
   '#FFDD99', // sand
   '#FFAABB', // pink
   '#77AADD', // navy
-  '#9932CC', // 🍆
-  '#C70020', // blood red
+  '#CD46EA', // 🍆
+  '#F23542', // blood red
   '#FF8C00', // orange
   '#44BB99', // forest
   '#FFD700', // gold
-  '#7FFF00', // chartreuse
-  '#EE8866', // orange-red
-  '#9F00C5', // Grimace
-  '#FF8900', // octarine
-  '#EEDD88', // yellow
-  '#3498DB', // Blue
-  '#2ECC71', // Green
-  '#F1C40F', // Yellow
-  '#9B59B6', // Purple
-  '#E67E22', // Orange
-  '#90BE6D', // Green
-  '#FFA500', // Orange
-  '#FFC0CB', // Pink
-  '#FF69B4', // Hot Pink
-  '#F9C74F', // Yellow
-  '#FF6B6B', // Red
-  '#FF9F1C', // Orange
-  '#D3A8FF', // Purple
-  '#FFCCD5', // Pink
-  '#6EE7B7', // Cyan
-  '#F97171', // Salmon
-  '#A3DE83', // Pistachio
-  '#FFD166', // Apricot
-  '#B8D8B8', // Pale Green
-  '#FF85A1', // Watermelon
-  '#AFE3E7', // Baby Blue
-  '#FFBF69', // Peach
-  '#C3CED0', // Silver Blue
-  '#FFA69E', // Coral
-  '#DBD56E', // Mustard
+  '#7EEE03', // chartreuse
+  '#F76B40', // orange-red
+  '#C195F0', // Grimace shake purple
+  '#0C7AE1', // octarine??
+  '#E3E369', // yellow
+  '#3F9FFF',
+  '#2ECC71',
+  '#F1C40F', // dehydrated yellow
+  '#E04AC0',
+  '#CCB374', // drab tan
+  '#96E047',
+  '#FFA500',
+  '#F0C0DE',
+  '#FF69B4',
+  '#F9C74F',
+  '#F93028',
+  '#F49F1C',
+  '#DEADFE',
+  '#EFD1CC',
+  '#5EE7B7',
+  '#F96969',
+  '#A3DE83',
+  '#FFD166',
+  '#BAEBE4',
+  '#FF85A1',
+  '#45EDEA',
+  '#FFBF69',
+  '#AED0D6',
+  '#FFA69E',
+  '#DBD56E',
 ]
-// const CHOICE_OTHER_COLOR = '#B1B1C7'
+
+export const CHOICE_OTHER_COLOR = '#C2C3DB'
 
 export const nthColor = (index: number) =>
   CHOICE_ANSWER_COLORS[index % CHOICE_ANSWER_COLORS.length]
+
+export function getAnswerColor(
+  answer: Answer | DpmAnswer,
+  answerIdOrder: string[]
+) {
+  const index =
+    'index' in answer ? answer.index : answerIdOrder.indexOf(answer.text)
+
+  return 'isOther' in answer && answer.isOther
+    ? CHOICE_OTHER_COLOR
+    : nthColor(index)
+}
 
 const getAnswers = (contract: MultiContract) => {
   const { answers, outcomeType } = contract
@@ -78,15 +89,13 @@ const getAnswers = (contract: MultiContract) => {
   )
 }
 
-export type MultiPoint = GenericMultiPoint<{ isLast?: boolean }>
+type Point = HistoryPoint<never>
+export type MultiPoints = { [answerId: string]: Point[] }
 
 // new multi only
-export const getMultiBetPoints = (answers: Answer[], bets: Bet[]) => {
-  return unserializePoints(
-    calculateMultiBets(
-      bets.map((b) => ({ x: b.createdTime, y: b.probAfter, ...b })),
-      answers.map((a) => a.id)
-    )
+export const getMultiBetPoints = (bets: Bet[]) => {
+  return mapValues(groupBy(bets, 'answerId'), (bets) =>
+    bets.map((bet) => ({ x: bet.createdTime, y: bet.probAfter }))
   )
 }
 
@@ -95,46 +104,68 @@ export function useChartAnswers(contract: MultiContract) {
 }
 
 export const ChoiceContractChart = (props: {
-  contract: MultiContract
-  points?: MultiPoint[]
+  contract: CPMMMultiContract
+  multiPoints?: MultiPoints
   width: number
   height: number
-  onMouseOver?: (p: MultiPoint | undefined) => void
+  viewScaleProps: viewScale
+  controlledStart?: number
+  showZoomer?: boolean
+  highlightAnswerId?: string
+  checkedAnswerIds?: string[]
 }) => {
-  const { contract, points = [], width, height, onMouseOver } = props
-  const isMultipleChoice = contract.outcomeType === 'MULTIPLE_CHOICE'
+  const {
+    contract,
+    multiPoints = {},
+    width,
+    height,
+    viewScaleProps,
+    controlledStart,
+    showZoomer,
+    highlightAnswerId,
+    checkedAnswerIds,
+  } = props
 
   const [start, end] = getDateRange(contract)
+  const rangeStart = controlledStart ?? start
   const answers = useChartAnswers(contract)
 
-  const endProbs = useMemo(
-    () => answers.map((a) => getAnswerProbability(contract, a.id)),
-    [answers, contract]
-  )
-
-  const now = useMemo(() => Date.now(), [points])
+  const now = useMemo(() => Date.now(), [multiPoints])
 
   const data = useMemo(() => {
-    if (!answers.length) return []
+    const answerOrder = answers.map((a) => a.text)
+    const ret = {} as Record<string, { points: Point[]; color: string }>
 
-    const firstAnswerTime = answers[0].createdTime
-    const startAnswers = answers.filter(
-      (a) => a.createdTime <= firstAnswerTime + 1000
-    )
-    const startY: number[] = [
-      ...new Array(startAnswers.length).fill(1 / startAnswers.length),
-      ...new Array(answers.length - startAnswers.length).fill(0),
-    ]
+    answers.forEach((a) => {
+      const points = cloneDeep(multiPoints[a.id] ?? [])
 
-    return buildArray(isMultipleChoice && { x: start, y: startY }, points, {
-      x: end ?? now,
-      y: endProbs,
-      obj: { isLast: true },
+      if ('resolution' in a) {
+        if (a.resolutionTime) {
+          points.push({
+            x: a.resolutionTime,
+            y: getAnswerProbability(contract, a.id),
+          })
+        }
+      } else {
+        points.push({
+          x: end ?? now,
+          y: getAnswerProbability(contract, a.id),
+        })
+      }
+
+      const color = getAnswerColor(a, answerOrder)
+
+      ret[a.id] = { points, color }
     })
-  }, [answers.length, points, endProbs, start, end, now])
 
-  const rightmostDate = getRightmostVisibleDate(end, last(points)?.x, now)
-  const xScale = scaleTime([start, rightmostDate], [0, width])
+    return ret
+  }, [answers.length, multiPoints, start, end, now])
+
+  const rightestPointX = Math.max(
+    ...Object.values(multiPoints).map((p) => last(p)?.x ?? 0)
+  )
+  const rightmostDate = getRightmostVisibleDate(end, rightestPointX, now)
+  const xScale = scaleTime([rangeStart, rightmostDate], [0, width])
   const yScale = scaleLinear([0, 1], [height, 0])
 
   return (
@@ -143,35 +174,40 @@ export const ChoiceContractChart = (props: {
       h={height}
       xScale={xScale}
       yScale={yScale}
+      viewScaleProps={viewScaleProps}
+      showZoomer={showZoomer}
       yKind="percent"
-      data={data}
-      onMouseOver={onMouseOver}
-      Tooltip={(props) => <ChoiceTooltip answers={answers} ttProps={props} />}
+      data={
+        checkedAnswerIds?.length
+          ? pick(data, buildArray(checkedAnswerIds, highlightAnswerId))
+          : data
+      }
+      hoveringId={highlightAnswerId}
+      Tooltip={(props) => (
+        <ChoiceTooltip answers={answers} xScale={xScale} ttProps={props} />
+      )}
     />
   )
 }
 
 const ChoiceTooltip = (props: {
-  ttProps: TooltipProps<Date, MultiPoint>
+  ttProps: TooltipProps<HistoryPoint> & { ans: string }
+  xScale: any
   answers: (DpmAnswer | Answer)[]
 }) => {
-  const { ttProps, answers } = props
-  const { prev, next, x, y, xScale, yScale } = ttProps
+  const { ttProps, xScale, answers } = props
+  const { prev, next, x, ans } = ttProps
 
-  if (!yScale) return null
   if (!prev) return null
 
   const [start, end] = xScale.domain()
 
   const d = xScale.invert(x)
-  const prob = yScale.invert(y)
 
-  const index = cum(prev.y).findIndex((p) => p >= 1 - prob)
-  const answer = answers[index]?.text ?? 'Other'
-  const value = formatPct(prev.y[index])
+  const answer = answers.find((a) => a.id === ans)?.text ?? 'Other'
+  const value = formatPct(prev.y)
 
-  const dateLabel =
-    !next || next.obj?.isLast ? 'Now' : formatDateInRange(d, start, end)
+  const dateLabel = !next ? 'Now' : formatDateInRange(d, start, end)
 
   return (
     <>
@@ -184,14 +220,4 @@ const ChoiceTooltip = (props: {
       </div>
     </>
   )
-}
-
-const cum = (numbers: number[]) => {
-  const result = []
-  let sum = 0
-  for (const n of numbers) {
-    sum += n
-    result.push(sum)
-  }
-  return result
 }

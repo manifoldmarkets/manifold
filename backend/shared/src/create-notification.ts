@@ -8,6 +8,7 @@ import {
   Notification,
   NOTIFICATION_DESCRIPTIONS,
   notification_reason_types,
+  ReviewNotificationData,
   UniqueBettorData,
 } from 'common/notification'
 import {
@@ -17,8 +18,14 @@ import {
   PrivateUser,
   User,
 } from 'common/user'
-import { Contract, MultiContract } from 'common/contract'
-import { getPrivateUser, getUser, getValues, log } from 'shared/utils'
+import { Contract, MultiContract, renderResolution } from 'common/contract'
+import {
+  getPrivateUser,
+  getUser,
+  getUserSupabase,
+  getValues,
+  log,
+} from 'shared/utils'
 import { Comment } from 'common/comment'
 import { groupBy, keyBy, mapValues, minBy, sum, uniq } from 'lodash'
 import { Bet, LimitBet } from 'common/bet'
@@ -47,7 +54,7 @@ import { Reaction } from 'common/reaction'
 import { GroupMember } from 'common/group-member'
 import { QuestType } from 'common/quest'
 import { QuestRewardTxn } from 'common/txn'
-import { getMoneyNumber } from 'common/util/format'
+import { formatMoney, getMoneyNumber } from 'common/util/format'
 import {
   createSupabaseClient,
   createSupabaseDirectClient,
@@ -59,9 +66,9 @@ import { getGroupMemberIds } from 'common/supabase/groups'
 import { richTextToString } from 'common/util/parse'
 import { JSONContent } from '@tiptap/core'
 import { league_user_info } from 'common/leagues'
-import { getInterestingMarketsForUsers } from 'shared/interesting-markets-email-helpers'
 import { hasUserSeenMarket } from 'shared/helpers/seen-markets'
 import { getUserFollowerIds } from 'shared/supabase/users'
+import { getForYouMarkets } from './supabase/search-contracts'
 
 const firestore = admin.firestore()
 
@@ -69,7 +76,7 @@ type recipients_to_reason_texts = {
   [userId: string]: { reason: notification_reason_types }
 }
 
-const insertNotificationToSupabase = async (
+export const insertNotificationToSupabase = async (
   notification: Notification,
   pg: SupabaseDirectClient
 ) => {
@@ -87,7 +94,7 @@ export const createFollowOrMarketSubsidizedNotification = async (
   sourceId: string,
   sourceType: 'liquidity' | 'follow',
   sourceUpdateType: 'created',
-  sourceUser: User,
+  sourceUser: Pick<User, 'name' | 'username' | 'avatarUrl'>,
   idempotencyKey: string,
   sourceText: string,
   miscData?: {
@@ -102,8 +109,7 @@ export const createFollowOrMarketSubsidizedNotification = async (
     userToReasonTexts: recipients_to_reason_texts
   ) => {
     return (
-      sourceUser.id != userId &&
-      !Object.keys(userToReasonTexts).includes(userId)
+      sourceId != userId && !Object.keys(userToReasonTexts).includes(userId)
     )
   }
 
@@ -600,13 +606,12 @@ export const createLimitBetCanceledNotification = async (
 }
 
 export const createReferralNotification = async (
-  toUser: User,
+  toUserId: string,
   referredUser: User,
   bonusAmount: string,
-  referredByContract?: Contract,
-  referredByGroup?: { slug: string; name: string }
+  referredByContract?: Contract
 ) => {
-  const privateUser = await getPrivateUser(toUser.id)
+  const privateUser = await getPrivateUser(toUserId)
   if (!privateUser) return
   const { sendToBrowser } = getNotificationDestinationsForUser(
     privateUser,
@@ -616,12 +621,11 @@ export const createReferralNotification = async (
 
   const notification: Notification = {
     id: referredUser.id + '-signup-referral-bonus',
-    userId: toUser.id,
-    reason: referredByGroup
-      ? 'user_joined_from_your_group_invite'
-      : referredByContract?.creatorId === toUser.id
-      ? 'user_joined_to_bet_on_your_market'
-      : 'you_referred_user',
+    userId: toUserId,
+    reason:
+      referredByContract?.creatorId === toUserId
+        ? 'user_joined_to_bet_on_your_market'
+        : 'you_referred_user',
     createdTime: Date.now(),
     isSeen: false,
     sourceId: referredUser.id,
@@ -633,19 +637,11 @@ export const createReferralNotification = async (
     sourceUserAvatarUrl: referredUser.avatarUrl,
     sourceText: bonusAmount,
     // Only pass the contract referral details if they weren't referred to a group
-    sourceContractCreatorUsername: !referredByGroup
-      ? referredByContract?.creatorUsername
-      : undefined,
-    sourceContractTitle: !referredByGroup
-      ? referredByContract?.question
-      : undefined,
-    sourceContractSlug: !referredByGroup ? referredByContract?.slug : undefined,
-    sourceSlug: referredByGroup
-      ? groupPath(referredByGroup.slug)
-      : referredByContract?.slug,
-    sourceTitle: referredByGroup
-      ? referredByGroup.name
-      : referredByContract?.question,
+    sourceContractCreatorUsername: referredByContract?.creatorUsername,
+    sourceContractTitle: referredByContract?.question,
+    sourceContractSlug: referredByContract?.slug,
+    sourceSlug: referredByContract?.slug,
+    sourceTitle: referredByContract?.question,
   }
   const pg = createSupabaseDirectClient()
   await insertNotificationToSupabase(notification, pg)
@@ -1003,7 +999,7 @@ export const createNewContractNotification = async (
   const pg = createSupabaseDirectClient()
   const sendNotificationsIfSettingsAllow = async (
     userId: string,
-    reason: notification_reason_types
+    reason: notification_preference
   ) => {
     const privateUser = await getPrivateUser(userId)
     if (!privateUser) return
@@ -1013,7 +1009,7 @@ export const createNewContractNotification = async (
       reason
     )
     // Users only get new contracts in their feed unless they're mentioned
-    if (sendToBrowser && reason !== 'contract_from_followed_user') {
+    if (sendToBrowser) {
       const notification: Notification = {
         id: idempotencyKey,
         userId: userId,
@@ -1036,8 +1032,7 @@ export const createNewContractNotification = async (
       }
       await insertNotificationToSupabase(notification, pg)
     }
-    if (!sendToEmail) return
-    if (reason === 'contract_from_followed_user')
+    if (sendToEmail && reason === 'contract_from_followed_user')
       await sendNewFollowedMarketEmail(reason, userId, privateUser, contract)
   }
   const followerUserIds = await getUserFollowerIds(contractCreator.id, pg)
@@ -1120,6 +1115,7 @@ export const createContractResolvedNotifications = async (
   outcome: string,
   probabilityInt: number | undefined,
   resolutionValue: number | undefined,
+  answerId: string | undefined,
   resolutionData: {
     userIdToContractMetrics: {
       [userId: string]: ReturnType<typeof getContractBetMetrics>
@@ -1131,7 +1127,19 @@ export const createContractResolvedNotifications = async (
   }
 ) => {
   let resolutionText = outcome ?? contract.question
-  if (
+
+  const isIndependentMulti =
+    contract.outcomeType === 'MULTIPLE_CHOICE' &&
+    contract.mechanism === 'cpmm-multi-1' &&
+    !contract.shouldAnswersSumToOne
+
+  if (isIndependentMulti) {
+    const answer = contract.answers.find((answer) => answer.id === answerId)
+    resolutionText = `${answer?.text ?? ''}: ${renderResolution(
+      outcome,
+      probabilityInt !== undefined ? probabilityInt / 100 : answer?.prob
+    )}`
+  } else if (
     contract.outcomeType === 'FREE_RESPONSE' ||
     contract.outcomeType === 'MULTIPLE_CHOICE'
   ) {
@@ -1147,6 +1155,7 @@ export const createContractResolvedNotifications = async (
     if (resolutionText === 'MKT' && resolutionValue)
       resolutionText = `${resolutionValue}`
   }
+
   const {
     userIdToContractMetrics,
     userPayouts,
@@ -1185,14 +1194,15 @@ export const createContractResolvedNotifications = async (
       sourceContractSlug: contract.slug,
       sourceSlug: contract.slug,
       sourceTitle: contract.question,
-      data: {
+      data: removeUndefinedProps({
         outcome,
+        answerId,
         userInvestment: userIdToContractMetrics?.[userId]?.invested ?? 0,
         userPayout: userPayouts[userId] ?? 0,
         profitRank: sortedProfits.findIndex((p) => p.userId === userId) + 1,
         totalShareholders: sortedProfits.length,
         profit: userIdToContractMetrics?.[userId]?.profit ?? 0,
-      } as ContractResolutionData,
+      }) as ContractResolutionData,
     }
   }
 
@@ -1225,7 +1235,8 @@ export const createContractResolvedNotifications = async (
         contract,
         outcome,
         resolutionProbability,
-        resolutions
+        resolutions,
+        answerId
       )
 
     if (sendToMobile) {
@@ -1480,23 +1491,24 @@ export const createSignupBonusNotification = async (
   txnId: string,
   bonusAmount: number
 ) => {
-  if (userOptedOutOfBrowserNotifications(privateUser)) return
-  const notification: Notification = {
-    id: crypto.randomUUID(),
-    userId: privateUser.id,
-    reason: 'onboarding_flow',
-    createdTime: Date.now(),
-    isSeen: false,
-    sourceId: txnId,
-    sourceType: 'signup_bonus',
-    sourceUpdateType: 'created',
-    sourceUserName: MANIFOLD_USER_NAME,
-    sourceUserUsername: MANIFOLD_USER_USERNAME,
-    sourceUserAvatarUrl: MANIFOLD_AVATAR_URL,
-    sourceText: bonusAmount.toString(),
+  if (!userOptedOutOfBrowserNotifications(privateUser)) {
+    const notification: Notification = {
+      id: crypto.randomUUID(),
+      userId: privateUser.id,
+      reason: 'onboarding_flow',
+      createdTime: Date.now(),
+      isSeen: false,
+      sourceId: txnId,
+      sourceType: 'signup_bonus',
+      sourceUpdateType: 'created',
+      sourceUserName: MANIFOLD_USER_NAME,
+      sourceUserUsername: MANIFOLD_USER_USERNAME,
+      sourceUserAvatarUrl: MANIFOLD_AVATAR_URL,
+      sourceText: bonusAmount.toString(),
+    }
+    const pg = createSupabaseDirectClient()
+    await insertNotificationToSupabase(notification, pg)
   }
-  const pg = createSupabaseDirectClient()
-  await insertNotificationToSupabase(notification, pg)
 
   // This is email is of both types, so try either
   const { sendToEmail } = getNotificationDestinationsForUser(
@@ -1508,15 +1520,12 @@ export const createSignupBonusNotification = async (
 
   if (!sendToEmail && !trendingSendToEmail) return
 
-  const { contractsToSend } = await getInterestingMarketsForUsers(
-    [privateUser],
-    firestore
-  )
+  const contractsToSend = await getForYouMarkets(privateUser.id)
 
   await sendBonusWithInterestingMarketsEmail(
     user,
     privateUser,
-    contractsToSend[privateUser.id],
+    contractsToSend,
     bonusAmount
   )
 }
@@ -1580,6 +1589,79 @@ export const createBountyAddedNotification = async (
   }
   const pg = createSupabaseDirectClient()
   await insertNotificationToSupabase(notification, pg)
+}
+
+export const createBountyCanceledNotification = async (
+  contract: Contract,
+  amountLeft: number
+) => {
+  const pg = createSupabaseDirectClient()
+
+  const followerIds = await pg.manyOrNone<{ follow_id: string }>(
+    `select follow_id from contract_follows where contract_id = $1`,
+    [contract.id]
+  )
+  const contractFollowersIds = mapValues(
+    keyBy(followerIds, 'follow_id'),
+    () => true
+  )
+  const constructNotification = (
+    userId: string,
+    reason: notification_preference
+  ): Notification => {
+    return {
+      id: crypto.randomUUID(),
+      userId,
+      reason,
+      createdTime: Date.now(),
+      isSeen: false,
+      sourceId: contract.id,
+      sourceType: 'contract',
+      sourceContractId: contract.id,
+      sourceUserName: contract.creatorName,
+      sourceUserUsername: contract.creatorUsername,
+      sourceUserAvatarUrl: contract.creatorAvatarUrl ?? '',
+      sourceText: formatMoney(amountLeft),
+      sourceContractCreatorUsername: contract.creatorUsername,
+      sourceContractTitle: contract.question,
+      sourceContractSlug: contract.slug,
+      sourceSlug: contract.slug,
+      sourceTitle: contract.question,
+    }
+  }
+
+  const sendNotificationsIfSettingsPermit = async (
+    userId: string,
+    reason: notification_reason_types
+  ) => {
+    const privateUser = await getPrivateUser(userId)
+    if (!privateUser) return
+    const { sendToBrowser } = getNotificationDestinationsForUser(
+      privateUser,
+      reason
+    )
+
+    // Browser notifications
+    if (sendToBrowser) {
+      await insertNotificationToSupabase(
+        constructNotification(userId, 'bounty_canceled'),
+        pg
+      )
+    }
+  }
+
+  const notifyContractFollowers = async () => {
+    await Promise.all(
+      Object.keys(contractFollowersIds).map((userId) => {
+        if (userId !== contract.creatorId) {
+          sendNotificationsIfSettingsPermit(userId, 'bounty_canceled')
+        }
+      })
+    )
+  }
+
+  log('notifying followers')
+  await notifyContractFollowers()
 }
 
 export const createVotedOnPollNotification = async (
@@ -1781,4 +1863,127 @@ export const createPollClosedNotification = async (
   await notifyContractCreator()
   log('notifying followers')
   await notifyContractFollowers()
+}
+
+export const createReferralsProgramNotification = async (
+  userId: string,
+  pg: SupabaseDirectClient
+) => {
+  const privateUser = await getPrivateUser(userId)
+  if (!privateUser) return
+
+  if (!userOptedOutOfBrowserNotifications(privateUser)) {
+    const notification: Notification = {
+      id: userId + 'referrals-program',
+      userId: privateUser.id,
+      reason: 'onboarding_flow',
+      createdTime: Date.now(),
+      isSeen: false,
+      sourceId: crypto.randomUUID(),
+      sourceType: 'referral_program',
+      sourceUpdateType: 'created',
+      sourceUserName: '',
+      sourceUserUsername: '',
+      sourceUserAvatarUrl: '',
+      sourceText: '',
+    }
+    await insertNotificationToSupabase(notification, pg)
+  }
+}
+export const createFollowAfterReferralNotification = async (
+  userId: string,
+  referredByUser: User,
+  pg: SupabaseDirectClient
+) => {
+  const privateUser = await getPrivateUser(userId)
+  if (!privateUser) return
+  const id = crypto.randomUUID()
+
+  if (!userOptedOutOfBrowserNotifications(privateUser)) {
+    const notification: Notification = {
+      id,
+      userId: privateUser.id,
+      reason: 'onboarding_flow',
+      createdTime: Date.now(),
+      isSeen: false,
+      sourceId: id,
+      sourceType: 'follow',
+      sourceUpdateType: 'created',
+      sourceUserName: referredByUser.name,
+      sourceUserUsername: referredByUser.username,
+      sourceUserAvatarUrl: referredByUser.avatarUrl,
+      sourceText: '',
+    }
+    await insertNotificationToSupabase(notification, pg)
+  }
+}
+
+export const createFollowSuggestionNotification = async (
+  userId: string,
+  contract: Contract,
+  pg: SupabaseDirectClient
+) => {
+  const privateUser = await getPrivateUser(userId)
+  if (!privateUser) return
+  const id = crypto.randomUUID()
+  const contractCreator = await getUserSupabase(contract.creatorId)
+  if (!contractCreator) return
+
+  if (!userOptedOutOfBrowserNotifications(privateUser)) {
+    const notification: Notification = {
+      id,
+      userId: privateUser.id,
+      reason: 'onboarding_flow',
+      createdTime: Date.now(),
+      isSeen: false,
+      sourceId: id,
+      sourceType: 'follow_suggestion',
+      sourceUpdateType: 'created',
+      sourceUserName: contractCreator.name,
+      sourceUserUsername: contractCreator.username,
+      sourceUserAvatarUrl: contractCreator.avatarUrl,
+      sourceText: '',
+    }
+    await insertNotificationToSupabase(notification, pg)
+  }
+}
+export const createMarketReviewedNotification = async (
+  userId: string,
+  reviewer: User,
+  contract: Contract,
+  rating: number,
+  review: string,
+  pg: SupabaseDirectClient
+) => {
+  const privateUser = await getPrivateUser(userId)
+  if (!privateUser) return
+  const id = crypto.randomUUID()
+
+  if (!userOptedOutOfBrowserNotifications(privateUser)) {
+    const notification: Notification = {
+      id,
+      userId: privateUser.id,
+      reason: 'review_on_your_market',
+      createdTime: Date.now(),
+      isSeen: false,
+      sourceId: id,
+      sourceType: 'market_review',
+      sourceUpdateType: 'created',
+      sourceUserName: reviewer.name,
+      sourceUserUsername: reviewer.username,
+      sourceUserAvatarUrl: reviewer.avatarUrl,
+      sourceContractId: contract.id,
+      sourceContractSlug: contract.slug,
+      sourceContractTitle: contract.question,
+      sourceContractCreatorUsername: contract.creatorUsername,
+      sourceTitle: contract.question,
+      sourceSlug: contract.slug,
+      sourceText: '',
+      data: {
+        rating,
+        review,
+      } as ReviewNotificationData,
+    }
+    await insertNotificationToSupabase(notification, pg)
+  }
 }

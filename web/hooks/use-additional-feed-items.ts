@@ -1,11 +1,4 @@
-import { User } from 'common/user'
-import { useUnseenReplyChainCommentsOnContracts } from 'web/hooks/use-comments-supabase'
-import { DAY_MS } from 'common/util/time'
-import { groupBy, orderBy, sortBy, uniqBy } from 'lodash'
-import { useEffect } from 'react'
-import { Bet } from 'common/bet'
-import { getBetsOnContracts } from 'web/lib/supabase/bets'
-import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import { groupBy, orderBy, sortBy } from 'lodash'
 import { ContractComment } from 'common/comment'
 export const IGNORE_COMMENT_FEED_CONTENT = ['gridCardsComponent']
 export const groupCommentsByContractsAndParents = (
@@ -38,39 +31,4 @@ export const groupCommentsByContractsAndParents = (
     parentCommentsByContractId,
     childCommentsByParentCommentId,
   }
-}
-export const useFeedComments = (
-  user: User | null | undefined,
-  contractIds: string[]
-) => {
-  const unseenCommentThreads = useUnseenReplyChainCommentsOnContracts(
-    contractIds,
-    user?.id ?? '_'
-  )
-
-  return groupCommentsByContractsAndParents(unseenCommentThreads)
-}
-
-export const useFeedBets = (
-  user: User | null | undefined,
-  contractIds: string[]
-) => {
-  const [bets, setBets] = usePersistentInMemoryState<Bet[]>(
-    [],
-    `recent-feed-bets-${user?.id ?? '_'}`
-  )
-  useEffect(() => {
-    if (contractIds.length > 0) {
-      getBetsOnContracts(contractIds, {
-        afterTime: Date.now() - DAY_MS,
-        filterAntes: true,
-        filterChallenges: false,
-        filterRedemptions: true,
-      }).then((result) => {
-        if (user) result = result.filter((b) => b.userId !== user.id)
-        setBets((prev) => uniqBy([...prev, ...result], (b) => b.id))
-      })
-    }
-  }, [JSON.stringify(contractIds), user])
-  return bets
 }

@@ -1,6 +1,6 @@
 import clsx from 'clsx'
 import { useRouter, NextRouter } from 'next/router'
-import { ReactNode, useEffect, useState } from 'react'
+import { ReactNode, useEffect, useRef, useState } from 'react'
 import { track } from 'web/lib/service/analytics'
 import { Col } from './col'
 import { Tooltip } from 'web/components/widgets/tooltip'
@@ -9,7 +9,6 @@ import { Carousel } from 'web/components/widgets/carousel'
 
 export type Tab = {
   title: string
-  sidebar?: ReactNode
   content: ReactNode
   stackedTabIcon?: ReactNode
   inlineTabIcon?: ReactNode
@@ -22,8 +21,10 @@ type TabProps = {
   labelClassName?: string
   onClick?: (tabTitle: string, index: number) => void
   className?: string
-  currentPageForAnalytics?: string
   labelsParentClassName?: string
+  trackingName?: string
+  // Default is to lazy render tabs as they are selected. If true, it will render all tabs at once.
+  renderAllTabs?: boolean
 }
 
 export function ControlledTabs(props: TabProps & { activeIndex: number }) {
@@ -33,9 +34,14 @@ export function ControlledTabs(props: TabProps & { activeIndex: number }) {
     labelClassName,
     onClick,
     className,
-    currentPageForAnalytics,
+    renderAllTabs,
     labelsParentClassName,
+    trackingName,
   } = props
+
+  const hasRenderedIndexRef = useRef(new Set<number>())
+  hasRenderedIndexRef.current.add(activeIndex)
+
   return (
     <>
       <Carousel
@@ -49,11 +55,14 @@ export function ControlledTabs(props: TabProps & { activeIndex: number }) {
             key={tab.title}
             onClick={(e) => {
               e.preventDefault()
-              track('Clicked Tab', {
-                title: tab.title,
-                currentPage: currentPageForAnalytics,
-              })
+
               onClick?.(tab.title, i)
+
+              if (trackingName) {
+                track(trackingName, {
+                  tab: tab.title,
+                })
+              }
             }}
             className={clsx(
               activeIndex === i
@@ -79,17 +88,20 @@ export function ControlledTabs(props: TabProps & { activeIndex: number }) {
           </a>
         ))}
       </Carousel>
-      {tabs.map((tab, i) => (
-        <div
-          key={i}
-          className={clsx(
-            i === activeIndex ? 'contents' : 'hidden',
-            tab.className
-          )}
-        >
-          {tab.content}
-        </div>
-      ))}
+      {tabs
+        .map((tab, i) => ({ tab, i }))
+        .filter(({ i }) => renderAllTabs || hasRenderedIndexRef.current.has(i))
+        .map(({ tab, i }) => (
+          <div
+            key={i}
+            className={clsx(
+              i === activeIndex ? 'contents' : 'hidden',
+              tab.className
+            )}
+          >
+            {tab.content}
+          </div>
+        ))}
     </>
   )
 }

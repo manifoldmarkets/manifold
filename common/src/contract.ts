@@ -1,6 +1,6 @@
 import { Answer, DpmAnswer } from './answer'
 import { Bet } from './bet'
-import { MultiSerializedPoint, SerializedPoint } from './chart'
+import { MultiSerializedPoints, SerializedPoint } from './chart'
 import { Fees } from './fees'
 import { JSONContent } from '@tiptap/core'
 import { GroupLink } from 'common/group'
@@ -112,6 +112,10 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
 
   coverImageUrl?: string
   nonPredictive?: boolean // If true, don't include profits in leagues, etc.
+
+  // Manifold.love
+  loverUserId1?: string // The user id's of the pair of lovers referenced in the question.
+  loverUserId2?: string // The user id's of the pair of lovers referenced in the question.
 } & T
 
 export type DPMContract = Contract & DPM
@@ -313,6 +317,17 @@ export const CREATEABLE_OUTCOME_TYPES = [
   'POLL',
 ] as const
 
+export const renderResolution = (resolution: string, prob?: number) => {
+  return (
+    {
+      YES: 'YES',
+      NO: 'NO',
+      CANCEL: 'N/A',
+      MKT: formatPercent(prob ?? 0),
+    }[resolution] || resolution
+  )
+}
+
 export function contractPathWithoutContract(
   creatorUsername: string,
   slug: string
@@ -346,11 +361,12 @@ export function getBinaryProbPercent(contract: BinaryContract) {
   return formatPercent(getDisplayProbability(contract))
 }
 
-export function tradingAllowed(contract: Contract) {
+export function tradingAllowed(contract: Contract, answer?: Answer) {
   return (
     !contract.isResolved &&
     (!contract.closeTime || contract.closeTime > Date.now()) &&
-    contract.mechanism !== 'none'
+    contract.mechanism !== 'none' &&
+    (!answer || !answer.resolution)
   )
 }
 
@@ -362,6 +378,8 @@ export const CPMM_MIN_POOL_QTY = 0.01
 export type Visibility = 'public' | 'unlisted' | 'private'
 export const VISIBILITIES = ['public', 'unlisted', 'private'] as const
 
+export const MINUTES_ALLOWED_TO_UNRESOLVE = 10
+
 export function contractPath(contract: Contract) {
   return `/${contract.creatorUsername}/${contract.slug}`
 }
@@ -370,7 +388,7 @@ export type ContractParams = {
   contract: Contract
   historyData: {
     bets: Bet[]
-    points: MultiSerializedPoint[] | SerializedPoint<Partial<Bet>>[]
+    points: MultiSerializedPoints | SerializedPoint<Partial<Bet>>[]
   }
   pointsString?: string
   comments: ContractComment[]
@@ -378,7 +396,6 @@ export type ContractParams = {
   totalPositions: number
   totalBets: number
   topContractMetrics: ContractMetric[]
-  creatorTwitter?: string
   relatedContracts: Contract[]
 }
 

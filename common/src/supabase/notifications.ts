@@ -11,7 +11,7 @@ export async function getNotifications(
     .eq('user_id', userId)
     .order('data->createdTime', { ascending: false } as any)
     .limit(limit)
-  return data?.map((d: Row<'user_notifications'>) => d) ?? []
+  return data?.map((d: Row<'user_notifications'>) => d)
 }
 
 export async function getUnseenNotifications(

@@ -6,14 +6,11 @@ import toast from 'react-hot-toast'
 import { Button } from 'web/components/buttons/button'
 import { WatchMarketModal } from 'web/components/contract/watch-market-modal'
 import { Row } from 'web/components/layout/row'
-import {
-  Contract,
-  followContract,
-  unFollowContract,
-} from 'web/lib/firebase/contracts'
+import { Contract } from 'web/lib/firebase/contracts'
 import { firebaseLogin, updateUser } from 'web/lib/firebase/users'
 import { track } from 'web/lib/service/analytics'
 import { db } from 'web/lib/supabase/db'
+import { followContract, unfollowContract } from 'common/supabase/contracts'
 
 export const FollowMarketButton = (props: {
   contract: Contract
@@ -32,6 +29,9 @@ export const FollowMarketButton = (props: {
         setFollowing((res.data?.length ?? 0) > 0)
       })
   }, [user?.id, open])
+
+  if (user === null) return null
+
   return (
     <Button
       loading={following === undefined}
@@ -80,7 +80,7 @@ export async function unfollowMarket(
   contractSlug: string,
   user: User
 ) {
-  await unFollowContract(contractId, user.id)
+  await unfollowContract(db, contractId, user.id)
   toast("You'll no longer receive notifications from this question", {
     icon: <CheckIcon className={'h-5 w-5 text-teal-500'} />,
   })
@@ -94,7 +94,7 @@ export async function followMarket(
   contractslug: string,
   user: User
 ) {
-  await followContract(contractid, user.id)
+  await followContract(db, contractid, user.id)
   toast("You'll now receive notifications from this question!", {
     icon: <CheckIcon className={'h-5 w-5 text-teal-500'} />,
   })

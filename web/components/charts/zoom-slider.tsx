@@ -12,8 +12,9 @@ export const ZoomSlider = (props: {
   visibleScale: ScaleTime<number, number>
   setVisibleScale: (newScale: ScaleTime<number, number>) => void
   className?: string
+  color?: 'light-green' | 'indigo'
 }) => {
-  const { fullScale, visibleScale, setVisibleScale, className } = props
+  const { fullScale, visibleScale, setVisibleScale, className, color } = props
   const [min, max] = fullScale.domain()
   const [low, hi] = visibleScale.domain()
 
@@ -31,7 +32,7 @@ export const ZoomSlider = (props: {
             fullScale.copy().domain([new Date(newLow), new Date(newHigh)])
           )
         }
-        color="light-green"
+        color={color}
       />
       <Row className="justify-between text-xs">
         <div>{formatDateInRange(min, min, max)}</div>

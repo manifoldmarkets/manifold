@@ -3,7 +3,7 @@ import { ChatIcon } from '@heroicons/react/outline'
 import { ChatIcon as ChatIconSolid } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { Contract } from 'common/contract'
-import { Modal, MODAL_CLASS, SCROLLABLE_MODAL_CLASS } from '../layout/modal'
+import { Modal, SCROLLABLE_MODAL_CLASS } from '../layout/modal'
 import { Col } from '../layout/col'
 import { CommentsTabContent } from '../contract/contract-tabs'
 import { usePrivateUser } from 'web/hooks/use-user'
@@ -58,14 +58,14 @@ export function CommentsButton(props: {
   const totalComments = useNumContractComments(contract.id)
 
   return (
-    <Tooltip text={`Comments`} placement="top" className={'z-10'}>
+    <Tooltip text={`Comments`} placement="top" noTap>
       <button
         disabled={totalComments === 0 && !user}
-        className="hover:text-ink-600 text-ink-500 flex items-center gap-1.5 disabled:opacity-50"
+        className="hover:text-ink-600 text-ink-500 flex h-full items-center gap-1.5 disabled:opacity-50"
         onClick={(e) => {
           e.preventDefault()
           setOpen(true)
-          track('view comments', { contractId: contract.id })
+          track('click feed card comments button', { contractId: contract.id })
         }}
       >
         <ChatIcon className="h-6 w-6" />
@@ -97,13 +97,13 @@ function CommentsDialog(props: {
     <Modal
       open={open}
       setOpen={setOpen}
-      className={clsx(MODAL_CLASS)}
+      className={clsx('bg-canvas-0 rounded-lg pl-2 pr-4 pt-4')}
       size={'lg'}
     >
-      <div className="mb-2">
+      <div className="mb-2 ml-2">
         Comments on <span className="font-bold">{contract.question}</span>
       </div>
-      <Col className={SCROLLABLE_MODAL_CLASS}>
+      <Col className={clsx(SCROLLABLE_MODAL_CLASS, 'scrollbar-hide')}>
         <CommentsTabContent
           contract={contract}
           comments={comments}

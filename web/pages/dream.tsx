@@ -34,7 +34,7 @@ export default function App() {
   const { placeholderPrompt, placeholderUrl } = PLACEHOLDERS[2]
 
   return (
-    <Page className="">
+    <Page trackPageView={'dream page'}>
       <SEO
         title="Dream"
         description="Ask our AI to generate a custom image"

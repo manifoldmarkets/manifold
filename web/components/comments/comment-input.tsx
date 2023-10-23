@@ -1,80 +1,46 @@
-import { PaperAirplaneIcon, XCircleIcon } from '@heroicons/react/solid'
+import { PaperAirplaneIcon } from '@heroicons/react/solid'
 import { Editor } from '@tiptap/react'
 import clsx from 'clsx'
-import { Answer, DpmAnswer } from 'common/answer'
-import { Contract } from 'common/contract'
 import { User } from 'common/user'
 import { useEffect, useState } from 'react'
 import { useUser } from 'web/hooks/use-user'
 import { MAX_COMMENT_LENGTH } from 'common/comment'
-import Curve from 'web/public/custom-components/curve'
-import { getAnswerColor } from '../answers/answers-panel'
 import { Avatar } from '../widgets/avatar'
-import { EditorSize, TextEditor, useTextEditor } from '../widgets/editor'
-import { CommentsAnswer } from '../feed/feed-answer-comment-group'
-import {
-  CommentOnBetRow,
-  ContractCommentInput,
-  ReplyToUserInfo,
-} from '../feed/feed-comments'
-import { Col } from '../layout/col'
+import { TextEditor, useTextEditor } from '../widgets/editor'
+import { ReplyToUserInfo } from '../feed/feed-comments'
 import { Row } from '../layout/row'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { safeLocalStorage } from 'web/lib/util/local'
-import { Bet } from 'common/bet'
-import { useScrollToRefWithHeaderOffset } from 'web/hooks/use-scroll-to-ref-with-header'
-import { useUserByIdOrAnswer } from 'web/hooks/use-user-supabase'
 
 export function CommentInput(props: {
   replyToUserInfo?: ReplyToUserInfo
-  // Reply to a free response answer
-  parentAnswerOutcome?: string
   // Reply to another comment
   parentCommentId?: string
-  // Reply to a bet
-  replyToBet?: Bet
-  clearReply?: () => void
-  contract?: Contract
-  onSubmitComment?: (editor: Editor) => void
+  onSubmitComment?: (editor: Editor) => Promise<void>
   // unique id for autosave
   pageId: string
   className?: string
   blocked?: boolean
-  size?: EditorSize
+  placeholder?: string
 }) {
   const {
-    parentAnswerOutcome,
     parentCommentId,
     replyToUserInfo,
     onSubmitComment,
     pageId,
+    className,
     blocked,
-    replyToBet,
-    clearReply,
-    contract,
-    size,
+    placeholder = 'Write a comment...',
   } = props
   const user = useUser()
 
-  const { ref, scrollToRef } = useScrollToRefWithHeaderOffset()
-  useEffect(() => {
-    if (replyToBet) setTimeout(scrollToRef, 20)
-  }, [replyToBet])
-
-  const key = `comment ${pageId} ${
-    parentCommentId ?? parentAnswerOutcome ?? ''
-  }`
+  const key = `comment ${pageId} ${parentCommentId ?? ''}`
 
   const editor = useTextEditor({
     key,
     size: 'sm',
     max: MAX_COMMENT_LENGTH,
-    placeholder:
-      !!parentCommentId || !!parentAnswerOutcome
-        ? 'Write a reply...'
-        : contract?.outcomeType == 'BOUNTIED_QUESTION'
-        ? 'Write an answer or comment...'
-        : 'Write a comment...',
+    placeholder,
   })
 
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -90,7 +56,12 @@ export function CommentInput(props: {
       editor.commands.deleteRange({ from: endPos - 1, to: endPos })
     }
 
-    onSubmitComment?.(editor)
+    if (onSubmitComment) {
+      await onSubmitComment?.(editor).catch((e) => {
+        console.error(e)
+        setIsSubmitting(false)
+      })
+    }
     setIsSubmitting(false)
     editor.commands.clearContent(true)
     // force clear save, because it can fail if editor unrenders
@@ -104,86 +75,30 @@ export function CommentInput(props: {
       You blocked the creator or they blocked you, so you can't comment.
     </div>
   ) : (
-    <Col>
-      {replyToBet && contract && (
-        <CommentOnBetRow
-          betAmount={replyToBet.amount}
-          betOutcome={replyToBet.outcome}
-          bettorName={replyToBet.userName}
-          bettorUsername={replyToBet.userUsername}
-          contract={contract}
-          clearReply={clearReply}
-          className={'ml-10 mt-6 w-full'}
-        />
-      )}
-      <Row className={clsx(props.className, 'mb-2 gap-1 sm:gap-2')}>
-        <Avatar
-          avatarUrl={user?.avatarUrl}
-          username={user?.username}
-          size="sm"
-          className="mt-1"
-        />
-        <div className="min-w-0 flex-1 pl-0.5 text-sm" ref={ref}>
-          <CommentInputTextArea
-            editor={editor}
-            replyTo={replyToUserInfo}
-            user={user}
-            submit={submitComment}
-            isSubmitting={isSubmitting}
-            size={size}
-          />
-        </div>
-      </Row>
-    </Col>
+    <Row className={clsx(className, 'mb-2 w-full gap-1 sm:gap-2')}>
+      <Avatar avatarUrl={user?.avatarUrl} username={user?.username} size="sm" />
+      <CommentInputTextArea
+        editor={editor}
+        replyTo={replyToUserInfo}
+        user={user}
+        submit={submitComment}
+        isSubmitting={isSubmitting}
+      />
+    </Row>
   )
 }
-export function AnswerCommentInput(props: {
-  contract: Contract
-  answerResponse: Answer | DpmAnswer
-  onCancelAnswerResponse?: () => void
-  answersArray: string[]
-}) {
-  const { contract, answerResponse, onCancelAnswerResponse, answersArray } =
-    props
-  const user = useUserByIdOrAnswer(answerResponse)
-  const replyTo = user
-    ? {
-        id: answerResponse.id,
-        username: user.username,
-      }
-    : undefined
-  const color = getAnswerColor(answerResponse, answersArray)
-  return (
-    <>
-      <Col>
-        <Row className="relative">
-          <div className="absolute -bottom-1 left-1.5 z-20">
-            <Curve size={32} strokeWidth={1} color="#D8D8EB" />
-          </div>
-          <div className="ml-[38px]">
-            <CommentsAnswer
-              answer={answerResponse}
-              contract={contract}
-              color={color}
-            />
-          </div>
-        </Row>
-        <div className="relative w-full pt-1">
-          <ContractCommentInput
-            contract={contract}
-            replyToAnswerId={answerResponse.id}
-            replyToUserInfo={replyTo}
-            clearReply={onCancelAnswerResponse}
-            trackingLocation={'contract page'}
-          />
-          <button onClick={onCancelAnswerResponse}>
-            <div className="bg-canvas-0 absolute -top-1 -right-2 h-4 w-4 rounded-full" />
-            <XCircleIcon className="text-ink-500 hover:text-ink-600 absolute -top-1 -right-2 h-5 w-5" />
-          </button>
-        </div>
-      </Col>
-    </>
-  )
+const emojiMenuActive = (view: { state: any }) => {
+  const regex = /^emoji\$.*$/ // emoji$ can have random numbers following it....❤️ tiptap
+  let active = false
+
+  for (const key in view.state) {
+    if (regex.test(key)) {
+      active = (view.state as any)[key].active
+      if (active) break
+    }
+  }
+
+  return active
 }
 
 export function CommentInputTextArea(props: {
@@ -193,10 +108,17 @@ export function CommentInputTextArea(props: {
   submit: () => void
   isSubmitting: boolean
   submitOnEnter?: boolean
-  size?: EditorSize
+  hideToolbar?: boolean
 }) {
-  const { user, submitOnEnter, editor, submit, isSubmitting, replyTo, size } =
-    props
+  const {
+    user,
+    hideToolbar,
+    submitOnEnter,
+    editor,
+    submit,
+    isSubmitting,
+    replyTo,
+  } = props
   useEffect(() => {
     editor?.setEditable(!isSubmitting)
   }, [isSubmitting, editor])
@@ -213,7 +135,9 @@ export function CommentInputTextArea(props: {
             !event.shiftKey &&
             (!submitOnEnter ? event.ctrlKey || event.metaKey : true) &&
             // mention list is closed
-            !(view.state as any).mention$.active
+            !(view.state as any).mention$.active &&
+            // emoji list is closed
+            !emojiMenuActive(view)
           ) {
             submit()
             event.preventDefault()
@@ -242,7 +166,7 @@ export function CommentInputTextArea(props: {
   }, [replyTo, editor])
 
   return (
-    <TextEditor editor={editor} simple size={size}>
+    <TextEditor editor={editor} simple hideToolbar={hideToolbar}>
       {user && !isSubmitting && (
         <button
           className="text-ink-400 hover:text-ink-600 active:bg-ink-300 disabled:text-ink-300 px-4 transition-colors"
@@ -253,7 +177,13 @@ export function CommentInputTextArea(props: {
         </button>
       )}
 
-      {isSubmitting && <LoadingIndicator spinnerClassName="border-ink-500" />}
+      {isSubmitting && (
+        <LoadingIndicator
+          size={'md'}
+          className={'px-4'}
+          spinnerClassName="border-ink-500"
+        />
+      )}
     </TextEditor>
   )
 }

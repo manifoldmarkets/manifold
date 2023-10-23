@@ -11,7 +11,7 @@ import {
 import { log } from 'shared/utils'
 import { BountiedQuestionContract, Contract } from 'common/contract'
 import { getRecentContractLikes } from 'shared/supabase/likes'
-import { clamp, sortBy } from 'lodash'
+import { clamp, max, sortBy } from 'lodash'
 import { logit } from 'common/util/math'
 
 import { BOT_USERNAMES } from 'common/envs/constants'
@@ -90,6 +90,7 @@ export async function calculateImportanceScore(
         thisWeekTradersByContract[contract.id] ?? 0
       )
 
+    // NOTE: These scores aren't updated in firestore, so are never accurate in the data blob
     if (
       contract.importanceScore !== importanceScore ||
       contract.popularityScore !== popularityScore ||
@@ -247,7 +248,6 @@ export const computeContractScores = (
     ? 0
     : normalize(clamp(1 / contract.elasticity, 0, 100), 100)
 
-
   let uncertainness = 0
 
   if (!isResolved) {
@@ -255,9 +255,14 @@ export const computeContractScores = (
       const { prob } = contract
       uncertainness = normalize(prob * (1 - prob), 0.25)
     } else if (contract.mechanism === 'cpmm-multi-1') {
-      const { answers } = contract
+      const { answers, shouldAnswersSumToOne } = contract
       const probs = sortBy(answers.map((a) => a.prob)).reverse()
-      if (probs.length < 3) {
+      if (probs.length === 0) {
+        uncertainness = 0
+      } else if (!shouldAnswersSumToOne) {
+        // for independent binary markets
+        uncertainness = max(probs.map((p) => normalize(p * (1 - p), 0.25))) ?? 0
+      } else if (probs.length < 3) {
         const prob = probs[0]
         uncertainness = normalize(prob * (1 - prob), 0.25)
       } else {

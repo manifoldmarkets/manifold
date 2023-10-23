@@ -15,7 +15,7 @@ import { query, where } from 'firebase/firestore'
 import { chunk, orderBy, sortBy, sum } from 'lodash'
 import { useMemo } from 'react'
 import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
-import { useViewScale } from 'web/components/charts/generic-charts'
+import { useViewScale } from 'web/components/charts/helpers'
 import { ContractsGrid } from 'web/components/contract/contracts-grid'
 import { ProfitChangeTable } from 'web/components/daily-profit'
 import { Col } from 'web/components/layout/col'
@@ -158,7 +158,10 @@ export default function RangePerformancePage(props: {
     creatorName: user.name,
   } as WeeklyPortfolioUpdateOGCardProps
   return (
-    <Page>
+    <Page
+      trackPageView={'weekly portfolio update page'}
+      trackPageProps={{ username: user.username }}
+    >
       <SEO
         title={date + ' profit for ' + user.name}
         description={`${user.name} made M$${formatMoneyNumber(

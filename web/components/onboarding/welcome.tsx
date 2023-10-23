@@ -15,6 +15,17 @@ import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
 import { Row } from '../layout/row'
 import { TopicSelectorDialog } from './topic-selector-dialog'
+import { run } from 'common/supabase/utils'
+import { db } from 'web/lib/supabase/db'
+import { GROUP_SLUGS_TO_HIDE_FROM_WELCOME_FLOW } from 'common/envs/constants'
+import { Group } from 'common/group'
+import {
+  ALL_TOPICS,
+  getSubtopics,
+  removeEmojis,
+  TOPICS_TO_SUBTOPICS,
+} from 'common/topics'
+import { orderBy, uniqBy } from 'lodash'
 
 export default function Welcome() {
   const user = useUser()
@@ -38,13 +49,81 @@ export default function Welcome() {
     if (user?.shouldShowWelcome) setOpen(true)
   }, [user?.shouldShowWelcome])
 
+  const [userInterestedTopics, setUserInterestedTopics] = useState<Group[]>([])
+  const [userBetInTopics, setUserBetInTopics] = useState<Group[]>([])
+  const [trendingTopics, setTrendingTopics] = useState<Group[]>([])
+
+  const getTrendingCategories = async (userId: string) => {
+    const hardCodedTopicIds = Object.keys(TOPICS_TO_SUBTOPICS)
+      .map((topic) => getSubtopics(topic))
+      .flat()
+      .map(([_, __, groupId]) => groupId)
+    const [userInterestedTopicsRes, trendingTopicsRes] = await Promise.all([
+      run(
+        db.rpc('get_groups_and_scores_from_user_seen_markets', {
+          uid: userId,
+        })
+      ),
+      run(
+        db
+          .from('groups')
+          .select('id,data')
+          .not('id', 'in', `(${hardCodedTopicIds.join(',')})`)
+          .not(
+            'slug',
+            'in',
+            `(${GROUP_SLUGS_TO_HIDE_FROM_WELCOME_FLOW.join(',')})`
+          )
+          .not(
+            'name',
+            'in',
+            `(${ALL_TOPICS.map((t) => removeEmojis(t)).join(',')})`
+          )
+          .filter('slug', 'not.ilike', '%manifold%')
+          .filter('slug', 'not.ilike', '%sccsq%')
+          .order('importance_score', { ascending: false })
+          .limit(15)
+      ),
+    ])
+    const userInterestedTopics = orderBy(
+      userInterestedTopicsRes.data?.flat().map((groupData) => ({
+        ...(groupData?.data as Group),
+        id: groupData.id,
+        hasBet: groupData.has_bet,
+        importanceScore: groupData.importance_score,
+      })),
+      'importanceScore',
+      'desc'
+    )
+    const trendingTopics = trendingTopicsRes.data?.map((groupData) => ({
+      ...(groupData?.data as Group),
+      id: groupData.id,
+    }))
+
+    setTrendingTopics(
+      uniqBy([...userInterestedTopics, ...trendingTopics], (g) =>
+        removeEmojis(g.name)
+      ).slice(0, 15)
+    )
+    if (userInterestedTopics.some((g) => g.hasBet)) {
+      setUserBetInTopics(
+        userInterestedTopics.filter((g) => g.hasBet).slice(0, 5)
+      )
+    } else {
+      setUserInterestedTopics(userInterestedTopics.slice(0, 5))
+    }
+  }
+
+  useEffect(() => {
+    if (user?.id && user?.shouldShowWelcome) getTrendingCategories(user.id)
+  }, [user?.id])
+
   const close = () => {
     setOpen(false)
     setPage(0)
-    if (user?.shouldShowWelcome) {
-      updateUser(user.id, { shouldShowWelcome: false })
-      setGroupSelectorOpen(true)
-    }
+
+    setGroupSelectorOpen(true)
+
     if (showSignedOutUser) setShowSignedOutUser(false)
   }
   function increasePage() {
@@ -66,10 +145,17 @@ export default function Welcome() {
   if (!shouldShowWelcomeModals) return <></>
 
   if (groupSelectorOpen)
-    return <TopicSelectorDialog skippable={false} opaque={false} />
+    return (
+      <TopicSelectorDialog
+        skippable={false}
+        trendingTopics={trendingTopics}
+        userInterestedTopics={userInterestedTopics}
+        userBetInTopics={userBetInTopics}
+      />
+    )
 
   return (
-    <Modal open={open} setOpen={increasePage} bgOpaque={false} size={'lg'}>
+    <Modal open={open} setOpen={increasePage} size={'lg'}>
       <Col className="bg-canvas-0 place-content-between rounded-md px-8 py-6 text-sm md:text-lg">
         {availablePages[page]}
         <Col>
@@ -118,8 +204,8 @@ function WhatIsManifoldPage() {
         Welcome to Manifold
       </div>
       <p className="mb-4 text-lg">
-        Manifold is a new way to get news and answers to real-world questions.
-        Compete with your friends by betting on literally anything.
+        Manifold is a play-money prediction market platform where you can bet on
+        anything.
       </p>
       <p> </p>
     </>
@@ -129,12 +215,12 @@ function WhatIsManifoldPage() {
 function PredictionMarketPage() {
   return (
     <>
-      <div className="text-primary-700 mt-3 mb-6 text-center text-2xl font-normal">
+      <div className="text-primary-700 mb-6 mt-3 text-center text-2xl font-normal">
         How it works
       </div>
       <div className="mt-2 text-lg">
-        Create a question on anything. Bet on the right answer. The probability
-        is the market's best estimate.
+        Create a question on anything. Bet on the right answer. Traders putting
+        their money where their mouth is produces accurate predictions.
       </div>
       <Image
         src="/welcome/manifold-example.gif"
@@ -185,7 +271,7 @@ export function CharityPage(props: { className?: string }) {
         className="my-4 h-full w-full rounded-md object-contain"
         alt=""
       />
-      <p className="mt-2 mb-2 text-left text-lg">
+      <p className="mb-2 mt-2 text-left text-lg">
         You can turn your mana earnings into a real donation to charity, at a
         100:1 ratio. E.g. when you donate{' '}
         <span className="font-semibold">{formatMoney(1000)}</span> to Givewell,

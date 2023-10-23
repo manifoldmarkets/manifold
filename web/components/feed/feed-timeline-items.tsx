@@ -6,7 +6,6 @@ import { filterDefined } from 'common/util/array'
 import { FeedContractCard } from 'web/components/contract/feed-contract-card'
 import { Col } from 'web/components/layout/col'
 import { groupCommentsByContractsAndParents } from 'web/hooks/use-additional-feed-items'
-import { BoostsType } from 'web/hooks/use-feed'
 import { DEBUG_FEED_CARDS, FeedTimelineItem } from 'web/hooks/use-feed-timeline'
 import { useIsVisible } from 'web/hooks/use-is-visible'
 import { db } from 'web/lib/supabase/db'
@@ -19,8 +18,10 @@ import { ContractComment } from 'common/comment'
 import { track } from 'web/lib/service/analytics'
 import { useState } from 'react'
 import { Row } from 'web/components/layout/row'
-import { GroupTag } from 'web/pages/groups'
-import { orderBy, uniqBy } from 'lodash'
+import { orderBy, sum, uniqBy } from 'lodash'
+import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import { TopicTag } from 'web/components/topics/topic-tag'
+import { BoostsType } from 'web/lib/supabase/ads'
 
 const MAX_PARENT_COMMENTS_PER_FEED_ITEM = 1
 export const MIN_BET_AMOUNT = 20
@@ -92,13 +93,13 @@ export const FeedTimelineItems = (props: {
               item={item}
               key={item.id + '-feed-timeline-item'}
               moreItems={item.relatedItems}
-              className="bg-canvas-0 border-canvas-0  w-full overflow-hidden rounded-2xl border drop-shadow-md "
+              className="bg-canvas-0 border-canvas-0  w-full overflow-hidden rounded-2xl border shadow-md"
             >
               <Col className="px-2 pt-3">
                 <ContractsTable contracts={contracts} hideHeader={true} />
               </Col>
-              <GroupTags
-                groups={uniqBy(
+              <CategoryTags
+                categories={uniqBy(
                   contracts.map((c) => c.groupLinks ?? []).flat(),
                   'slug'
                 )}
@@ -138,7 +139,7 @@ export const FeedTimelineItems = (props: {
                 {...news}
               />
               {item.contracts && item.contracts.length > 0 && (
-                <Col className="px-2 pt-2 pb-3">
+                <Col className="px-2 pb-3 pt-2">
                   <span className="text-ink-500 text-sm">
                     Related Questions
                   </span>
@@ -148,7 +149,7 @@ export const FeedTimelineItems = (props: {
                   />
                 </Col>
               )}
-              <GroupTags groups={item.groups} className="mx-4 mb-3" />
+              <CategoryTags categories={item.groups} className="mx-4 mb-3" />
             </FeedItemFrame>
           )
         }
@@ -157,19 +158,19 @@ export const FeedTimelineItems = (props: {
   )
 }
 
-export function GroupTags(props: {
-  groups?: { slug: string; name: string }[]
+export function CategoryTags(props: {
+  categories?: { slug: string; name: string }[]
   className?: string
   maxGroups?: number
 }) {
-  const { groups, className, maxGroups = 3 } = props
-  if (!groups || groups.length <= 0) return null
+  const { categories, className, maxGroups = 3 } = props
+  if (!categories || categories.length <= 0) return null
   return (
-    <div className={clsx('w-full', className)}>
-      {groups.slice(0, maxGroups).map((group) => (
-        <GroupTag key={group.slug} group={group} />
+    <Row className={clsx(className)}>
+      {categories.slice(0, maxGroups).map((category) => (
+        <TopicTag location={'feed card'} key={category.slug} topic={category} />
       ))}
-    </div>
+    </Row>
   )
 }
 
@@ -192,7 +193,7 @@ const FeedContractAndRelatedItems = (props: {
   const [hidden, setHidden] = useState(false)
 
   return (
-    <FeedItemFrame item={item} className={'relative min-w-0'}>
+    <FeedItemFrame item={item}>
       {!hidden ? (
         <FeedContractCard
           contract={contract}
@@ -246,28 +247,52 @@ const FeedItemFrame = (props: {
 }) => {
   const { moreItems, item, children, className } = props
   const items = filterDefined([item, ...(moreItems ?? [])])
-  const maybeVisibleHook = useIsVisible(
-    () =>
-      DEBUG_FEED_CARDS
-        ? null
-        : items.map(async (i) =>
-            run(
-              db
-                .from('user_feed')
-                .update({ seen_time: new Date().toISOString() })
-                .eq('id', i.id)
-            ).then(() =>
-              track('view feed item', { id: i.id, type: i.dataType })
-            )
-          ),
-    true,
-    items.length > 0
+  const [seenStart, setSeenStart] = useState(0)
+  const [seenDuration, setSeenDuration] = usePersistentInMemoryState(
+    sum(items.map((i) => i.seenDuration ?? 0)),
+    `feed-items-${items
+      .map((i) => i.id)
+      .sort()
+      .join('-')}-seen-duration`
+  )
+
+  const { ref } = useIsVisible(
+    () => {
+      if (DEBUG_FEED_CARDS) return
+      setSeenStart(Date.now())
+      if (seenDuration === 0) {
+        items.forEach(async (i) => {
+          run(
+            db
+              .from('user_feed')
+              .update({ seen_time: new Date().toISOString() })
+              .eq('id', i.id)
+          )
+          track('view feed item', { id: i.id, type: i.dataType })
+        })
+      }
+    },
+    false,
+    items.length > 0,
+    () => {
+      if (DEBUG_FEED_CARDS) return
+      const newSeenDuration =
+        (Date.now() - seenStart) / items.length + seenDuration
+      items.forEach(async (i) => {
+        run(
+          db
+            .from('user_feed')
+            .update({ seen_duration: newSeenDuration })
+            .eq('id', i.id)
+        )
+      })
+      setSeenDuration(newSeenDuration)
+    }
   )
 
   return (
-    <div className={className}>
+    <div className={className} ref={ref}>
       {children}
-      <div className={'h-0'} ref={maybeVisibleHook?.ref} />
     </div>
   )
 }

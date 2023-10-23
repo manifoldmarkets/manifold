@@ -1,36 +1,49 @@
-import { StarIcon, UserIcon } from '@heroicons/react/solid'
+import { ChartBarIcon, StarIcon, UserIcon, XIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
-import { first } from 'lodash'
-import Head from 'next/head'
-import Image from 'next/image'
-import Link from 'next/link'
-import { useEffect, useMemo, useRef, useState } from 'react'
 import { Answer, DpmAnswer } from 'common/answer'
-import { unserializePoints } from 'common/chart'
+import {
+  MultiSerializedPoints,
+  unserializeMultiPoints,
+  unserializePoints,
+} from 'common/chart'
 import { ContractParams, MaybeAuthedContractParams } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
-import { HOUSE_BOT_USERNAME, isTrustworthy } from 'common/envs/constants'
+import {
+  ENV_CONFIG,
+  HOUSE_BOT_USERNAME,
+  isTrustworthy,
+} from 'common/envs/constants'
+import { getTopContractMetrics } from 'common/supabase/contract-metrics'
 import { User } from 'common/user'
-import { DeleteMarketButton } from 'web/components/buttons/delete-market-button'
+import { first, mergeWith } from 'lodash'
+import Head from 'next/head'
+import Image from 'next/image'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { ScrollToTopButton } from 'web/components/buttons/scroll-to-top-button'
+import { SidebarSignUpButton } from 'web/components/buttons/sign-up-button'
+import { getMultiBetPoints } from 'web/components/charts/contract/choice'
 import { BackButton } from 'web/components/contract/back-button'
 import { BountyLeft } from 'web/components/contract/bountied-question'
 import { ChangeBannerButton } from 'web/components/contract/change-banner-button'
-import { ContractDescription } from 'web/components/contract/contract-description'
 import {
   AuthorInfo,
   CloseOrResolveTime,
 } from 'web/components/contract/contract-details'
 import { ContractLeaderboard } from 'web/components/contract/contract-leaderboard'
 import { ContractOverview } from 'web/components/contract/contract-overview'
+import { ContractSEO } from 'web/components/contract/contract-seo'
+import ContractSharePanel from 'web/components/contract/contract-share-panel'
 import { ContractTabs } from 'web/components/contract/contract-tabs'
 import { VisibilityIcon } from 'web/components/contract/contracts-table'
-import { getTopContractMetrics } from 'common/supabase/contract-metrics'
-import ContractSharePanel from 'web/components/contract/contract-share-panel'
-import { ExtraContractActionsRow } from 'web/components/contract/extra-contract-actions-row'
+import { HeaderActions } from 'web/components/contract/header-actions'
+import { MarketTopics } from 'web/components/contract/market-topics'
 import { PrivateContractPage } from 'web/components/contract/private-contract'
-import { RelatedContractsList } from 'web/components/contract/related-contracts-widget'
+import {
+  RelatedContractsCarousel,
+  RelatedContractsList,
+} from 'web/components/contract/related-contracts-widget'
 import { EditableQuestionTitle } from 'web/components/contract/title-edit'
+import { ExplainerPanel } from 'web/components/explainer-panel'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
@@ -42,55 +55,72 @@ import { GradientContainer } from 'web/components/widgets/gradient-container'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { useAdmin } from 'web/hooks/use-admin'
 import { useAnswersCpmm } from 'web/hooks/use-answers'
+import { useRealtimeBets } from 'web/hooks/use-bets-supabase'
 import {
   useFirebasePublicContract,
   useIsPrivateContractMember,
 } from 'web/hooks/use-contract-supabase'
-import { useEvent } from 'web/hooks/use-event'
 import { useIsIframe } from 'web/hooks/use-is-iframe'
 import { useRelatedMarkets } from 'web/hooks/use-related-contracts'
+import { useReview } from 'web/hooks/use-review'
 import { useSaveCampaign } from 'web/hooks/use-save-campaign'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { useSaveContractVisitsLocally } from 'web/hooks/use-save-visits'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { useTracking } from 'web/hooks/use-tracking'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
-import { getContractParams } from 'web/lib/firebase/api'
 import { Contract } from 'web/lib/firebase/contracts'
 import { track } from 'web/lib/service/analytics'
 import { db } from 'web/lib/supabase/db'
 import { scrollIntoViewCentered } from 'web/lib/util/scroll'
 import Custom404 from '../404'
 import ContractEmbedPage from '../embed/[username]/[contractSlug]'
-import { ExplainerPanel } from 'web/components/explainer-panel'
-import { SidebarSignUpButton } from 'web/components/buttons/sign-up-button'
-import { linkClass } from 'web/components/widgets/site-link'
-import { MarketGroups } from 'web/components/contract/market-groups'
-import { getMultiBetPoints } from 'web/components/charts/contract/choice'
-import { useRealtimeBets } from 'web/hooks/use-bets-supabase'
-import { ContractSEO } from 'web/components/contract/contract-seo'
-import { useReview } from 'web/hooks/use-review'
 
+import { Bet } from 'common/bet'
+import { getContractParams } from 'common/contract-params'
+import { getContractFromSlug } from 'common/supabase/contracts'
+import {
+  formatMoney,
+  formatWithCommas,
+  shortFormatNumber,
+} from 'common/util/format'
+import { TbDroplet } from 'react-icons/tb'
+import { useHeaderIsStuck } from 'web/hooks/use-header-is-stuck'
+import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
+import Link from 'next/link'
+import { DangerZone } from 'web/components/contract/danger-zone'
+import { ContractDescription } from 'web/components/contract/contract-description'
 export async function getStaticProps(ctx: {
   params: { username: string; contractSlug: string }
 }) {
   const { contractSlug } = ctx.params
+  const adminDb = await initSupabaseAdmin()
+  const contract = (await getContractFromSlug(contractSlug, adminDb)) ?? null
 
-  try {
-    const props = await getContractParams({
-      contractSlug,
-      fromStaticProps: true,
-    })
-    return { props }
-  } catch (e) {
-    if (typeof e === 'object' && e !== null && 'code' in e && e.code === 404) {
-      return {
-        props: { state: 'not found' },
-        revalidate: 60,
-      }
+  if (!contract)
+    return {
+      props: { state: 'not found' },
+      revalidate: 60,
     }
-    throw e
+
+  if (contract.visibility === 'private')
+    return {
+      props: { state: 'not authed', slug: contract.slug },
+      revalidate: 60,
+    }
+
+  if (contract.deleted) {
+    return {
+      props: {
+        state: 'not authed',
+        slug: contract.slug,
+        visibility: contract.visibility,
+      },
+    }
   }
+
+  const props = await getContractParams(contract, adminDb)
+  return { props }
 }
 
 export async function getStaticPaths() {
@@ -103,7 +133,7 @@ export default function ContractPage(props: MaybeAuthedContractParams) {
   }
 
   return (
-    <Page className="!max-w-[1400px]" mainClassName="!col-span-10">
+    <Page trackPageView={false} className="xl:col-span-10">
       {props.state === 'not authed' ? (
         <PrivateContractPage contractSlug={props.slug} />
       ) : (
@@ -113,57 +143,48 @@ export default function ContractPage(props: MaybeAuthedContractParams) {
   )
 }
 
-export function NonPrivateContractPage(props: {
-  contractParams: ContractParams
-}) {
+function NonPrivateContractPage(props: { contractParams: ContractParams }) {
   const { contract, historyData, pointsString } = props.contractParams
+
+  const points =
+    contract.outcomeType !== 'MULTIPLE_CHOICE'
+      ? unserializePoints(historyData.points as any)
+      : []
 
   const inIframe = useIsIframe()
   if (!contract) {
     return <Custom404 customText="Unable to fetch question" />
   } else if (inIframe) {
-    return (
-      <ContractEmbedPage
-        contract={contract}
-        points={unserializePoints(historyData.points) as any}
-      />
-    )
+    return <ContractEmbedPage contract={contract} points={points} />
   } else
     return (
       <>
         <ContractSEO contract={contract} points={pointsString} />
-        <ContractPageContent
-          key={contract.id}
-          contractParams={props.contractParams}
-        />
+        <ContractPageContent key={contract.id} {...props.contractParams} />
       </>
     )
 }
 
-export function ContractPageContent(props: {
-  contractParams: ContractParams & { contract: Contract }
-}) {
-  const { contractParams } = props
+export function ContractPageContent(props: ContractParams) {
   const {
     userPositionsByOutcome,
     comments,
     totalPositions,
-    creatorTwitter,
     relatedContracts,
-  } = contractParams
+    historyData,
+  } = props
+
   const contract =
-    useFirebasePublicContract(
-      contractParams.contract.visibility,
-      contractParams.contract.id
-    ) ?? contractParams.contract
-  if (
-    'answers' in contractParams.contract &&
-    contract.mechanism === 'cpmm-multi-1'
-  ) {
-    ;(contract as any).answers =
-      // eslint-disable-next-line react-hooks/rules-of-hooks
-      useAnswersCpmm(contract.id) ?? contractParams.contract.answers
+    useFirebasePublicContract(props.contract.visibility, props.contract.id) ??
+    props.contract
+  if (contract.mechanism === 'cpmm-multi-1') {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const answers = useAnswersCpmm(contract.id)
+    if (answers) {
+      contract.answers = answers
+    }
   }
+
   const cachedContract = useMemo(
     () => contract,
     [
@@ -173,13 +194,14 @@ export function ContractPageContent(props: {
       'answers' in contract ? contract.answers : undefined,
     ]
   )
+
   const user = useUser()
   const contractMetrics = useSavedContractMetrics(contract)
   const privateUser = usePrivateUser()
   const blockedUserIds = privateUser?.blockedUserIds ?? []
   const [topContractMetrics, setTopContractMetrics] = useState<
     ContractMetric[]
-  >(contractParams.topContractMetrics)
+  >(props.topContractMetrics)
 
   useEffect(() => {
     // If the contract resolves while the user is on the page, get the top contract metrics
@@ -201,7 +223,7 @@ export function ContractPageContent(props: {
   useSaveContractVisitsLocally(user === null, contract.id)
 
   // Static props load bets in descending order by time
-  const lastBetTime = first(contractParams.historyData.bets)?.createdTime
+  const lastBetTime = first(historyData.bets)?.createdTime
 
   const newBets =
     useRealtimeBets({
@@ -211,28 +233,34 @@ export function ContractPageContent(props: {
       order: 'asc',
     }) ?? []
   const newBetsWithoutRedemptions = newBets.filter((bet) => !bet.isRedemption)
-  const totalBets = contractParams.totalBets + newBetsWithoutRedemptions.length
+  const totalBets = props.totalBets + newBetsWithoutRedemptions.length
   const bets = useMemo(
-    () => [...contractParams.historyData.bets, ...newBetsWithoutRedemptions],
-    [contractParams.historyData.bets, newBets]
+    () => [...historyData.bets, ...newBetsWithoutRedemptions],
+    [historyData.bets, newBets]
   )
 
   const betPoints = useMemo(() => {
-    const points = unserializePoints(contractParams.historyData.points)
+    if (
+      contract.outcomeType === 'MULTIPLE_CHOICE' ||
+      contract.outcomeType === 'FREE_RESPONSE'
+    ) {
+      const data = unserializeMultiPoints(
+        historyData.points as MultiSerializedPoints
+      )
+      const newData =
+        contract.mechanism === 'cpmm-multi-1' ? getMultiBetPoints(newBets) : []
 
-    const newPoints =
-      contract.outcomeType === 'MULTIPLE_CHOICE'
-        ? contract.mechanism === 'cpmm-multi-1'
-          ? getMultiBetPoints(contract.answers, newBets)
-          : []
-        : newBets.map((bet) => ({
-            x: bet.createdTime,
-            y: bet.probAfter,
-            obj: { userAvatarUrl: bet.userAvatarUrl },
-          }))
-
-    return [...points, ...newPoints]
-  }, [contractParams.historyData.points, newBets])
+      return mergeWith(data, newData, (a, b) => [...(a ?? []), ...(b ?? [])])
+    } else {
+      const points = unserializePoints(historyData.points as any)
+      const newPoints = newBets.map((bet) => ({
+        x: bet.createdTime,
+        y: bet.probAfter,
+        obj: { userAvatarUrl: bet.userAvatarUrl },
+      }))
+      return [...points, ...newPoints]
+    }
+  }, [historyData.points, newBets])
 
   const {
     isResolved,
@@ -248,43 +276,30 @@ export function ContractPageContent(props: {
   const isCreator = creatorId === user?.id
   const isClosed = !!(closeTime && closeTime < Date.now())
   const trustworthy = isTrustworthy(user?.username)
-
-  // show the resolver by default if the market is closed and you can resolve it
   const [showResolver, setShowResolver] = useState(false)
 
-  useEffect(() => {
-    // Close resolve panel if you just resolved it.
-    if (isResolved) setShowResolver(false)
-    else if (
-      (isCreator || isAdmin || trustworthy) &&
-      (closeTime ?? 0) < Date.now() &&
-      outcomeType !== 'STONK' &&
-      contract.mechanism !== 'none'
-    ) {
-      setShowResolver(true)
-    }
-  }, [isAdmin, isCreator, trustworthy, closeTime, isResolved])
+  const [showReview, setShowReview] = useState(false)
 
   useSaveReferral(user, {
     defaultReferrerUsername: contract.creatorUsername,
     contractId: contract.id,
   })
 
-  const [answerResponse, setAnswerResponse] = useState<
-    Answer | DpmAnswer | undefined
-  >(undefined)
+  const [replyTo, setReplyTo] = useState<Answer | DpmAnswer | Bet>()
+
   const tabsContainerRef = useRef<null | HTMLDivElement>(null)
   const [activeTabIndex, setActiveTabIndex] = useState<number>(0)
-  const onAnswerCommentClick = useEvent((answer: Answer | DpmAnswer) => {
-    setAnswerResponse(answer)
-    if (tabsContainerRef.current) {
-      scrollIntoViewCentered(tabsContainerRef.current)
+
+  useEffect(() => {
+    if (replyTo) {
       setActiveTabIndex(0)
-    } else {
-      console.error('no ref to scroll to')
+      if (tabsContainerRef.current) {
+        scrollIntoViewCentered(tabsContainerRef.current)
+      } else {
+        console.error('no ref to scroll to')
+      }
     }
-  })
-  const onCancelAnswerResponse = useEvent(() => setAnswerResponse(undefined))
+  }, [replyTo])
 
   const { contracts: relatedMarkets, loadMore } = useRelatedMarkets(
     contract,
@@ -292,18 +307,7 @@ export function ContractPageContent(props: {
   )
 
   // detect whether header is stuck by observing if title is visible
-  const titleRef = useRef<any>(null)
-  const [headerStuck, setStuck] = useState(false)
-  useEffect(() => {
-    const element = titleRef.current
-    if (!element) return
-    const observer = new IntersectionObserver(
-      ([e]) => setStuck(e.intersectionRatio < 1),
-      { threshold: 1 }
-    )
-    observer.observe(element)
-    return () => observer.unobserve(element)
-  }, [titleRef])
+  const { ref: titleRef, headerStuck } = useHeaderIsStuck()
 
   const showExplainerPanel =
     user === null ||
@@ -315,19 +319,19 @@ export function ContractPageContent(props: {
 
   return (
     <>
-      {creatorTwitter && (
-        <Head>
-          <meta name="twitter:creator" content={`@${creatorTwitter}`} />
-        </Head>
-      )}
       {contract.visibility == 'private' && isAdmin && user && (
         <PrivateContractAdminTag contract={contract} user={user} />
+      )}
+      {contract.visibility !== 'public' && (
+        <Head>
+          <meta name="robots" content="noindex, nofollow" />
+        </Head>
       )}
 
       <Row className="w-full items-start justify-center gap-8">
         <Col
           className={clsx(
-            'bg-canvas-0 w-full max-w-3xl rounded-b  xl:w-[70%]',
+            'bg-canvas-0 w-full max-w-3xl rounded-b xl:w-[70%]',
             // Keep content in view when scrolling related questions on desktop.
             'sticky bottom-0 min-h-screen self-end'
           )}
@@ -341,7 +345,7 @@ export function ContractPageContent(props: {
             )}
           >
             {coverImageUrl && (
-              <div className="absolute bottom-0 left-0 right-0 -top-10 -z-10">
+              <div className="absolute -top-10 bottom-0 left-0 right-0 -z-10">
                 <Image
                   fill
                   alt=""
@@ -352,13 +356,13 @@ export function ContractPageContent(props: {
                 />
                 <ChangeBannerButton
                   contract={contract}
-                  className="absolute top-12 right-4"
+                  className="absolute right-4 top-12"
                 />
               </div>
             )}
             <Row
               className={clsx(
-                ' sticky -top-px z-50 mt-px flex h-12 w-full py-2 px-4 transition-colors',
+                'sticky -top-px z-50 mt-px flex h-12 w-full px-4 py-2 transition-colors',
                 headerStuck
                   ? 'dark:bg-canvas-50/80 bg-white/80 backdrop-blur-sm'
                   : ''
@@ -378,14 +382,14 @@ export function ContractPageContent(props: {
               </Row>
 
               {(headerStuck || !coverImageUrl) && (
-                <ExtraContractActionsRow contract={contract}>
+                <HeaderActions contract={contract}>
                   {!coverImageUrl && isCreator && (
                     <ChangeBannerButton
                       contract={contract}
                       className="ml-3 first:ml-0"
                     />
                   )}
-                </ExtraContractActionsRow>
+                </HeaderActions>
               )}
             </Row>
           </div>
@@ -402,14 +406,14 @@ export function ContractPageContent(props: {
                     <Col className="my-auto">
                       <BackButton />
                     </Col>
-                    <ExtraContractActionsRow contract={contract}>
+                    <HeaderActions contract={contract}>
                       {!coverImageUrl && isCreator && (
                         <ChangeBannerButton
                           contract={contract}
                           className="ml-3 first:ml-0"
                         />
                       )}
-                    </ExtraContractActionsRow>
+                    </HeaderActions>
                   </Row>
                 )}
                 <div ref={titleRef}>
@@ -423,10 +427,10 @@ export function ContractPageContent(props: {
                     canEdit={isAdmin || isCreator}
                   />
                 </div>
-                <MarketGroups contract={contract} />
+                <MarketTopics contract={contract} />
               </Col>
 
-              <div className="text-ink-600 flex items-center justify-between text-sm">
+              <div className="text-ink-600 flex flex-wrap items-center justify-between gap-y-1 text-sm">
                 <AuthorInfo contract={contract} />
 
                 {contract.outcomeType == 'BOUNTIED_QUESTION' ? (
@@ -446,12 +450,42 @@ export function ContractPageContent(props: {
                       className="flex flex-row items-center gap-1"
                     >
                       <UserIcon className="text-ink-500 h-4 w-4" />
-                      <div>{uniqueBettorCount ?? 0}</div>
+                      <div>{formatWithCommas(uniqueBettorCount ?? 0)}</div>
                     </Tooltip>
+
+                    {!!contract.volume && (
+                      <Tooltip
+                        text={`Trading volume: ${formatMoney(contract.volume)}`}
+                        placement="bottom"
+                        noTap
+                        className="hidden flex-row items-center gap-1 sm:flex"
+                      >
+                        <ChartBarIcon className="text-ink-500 h-4 w-4" />Ṁ
+                        {shortFormatNumber(contract.volume)}
+                      </Tooltip>
+                    )}
+
+                    {(contract.mechanism === 'cpmm-1' ||
+                      contract.mechanism === 'cpmm-multi-1') && (
+                      <Tooltip
+                        text={`Subsidy pool: ${formatMoney(
+                          contract.totalLiquidity
+                        )}`}
+                        placement="bottom"
+                        noTap
+                        className="flex flex-row items-center gap-1"
+                      >
+                        <TbDroplet className="stroke-ink-500 h-4 w-4 stroke-[3]" />
+                        <div>
+                          {ENV_CONFIG.moneyMoniker}
+                          {shortFormatNumber(contract.totalLiquidity)}
+                        </div>
+                      </Tooltip>
+                    )}
 
                     <CloseOrResolveTime
                       contract={contract}
-                      editable={isCreator || isAdmin}
+                      editable={isCreator || isAdmin || trustworthy}
                     />
                   </div>
                 )}
@@ -470,46 +504,39 @@ export function ContractPageContent(props: {
                     </Row>
                   ) : null
                 }
+                setShowResolver={setShowResolver}
+                onAnswerCommentClick={setReplyTo}
               />
             </Col>
-
-            {isCreator &&
-              isResolved &&
-              resolution === 'CANCEL' &&
-              (!uniqueBettorCount || uniqueBettorCount < 2) && (
-                <DeleteMarketButton
-                  className="mt-4 self-end"
-                  contractId={contract.id}
+            {showReview && user && (
+              <div className="relative my-2">
+                <ReviewPanel
+                  marketId={contract.id}
+                  author={contract.creatorName}
+                  userId={user.id}
                 />
-              )}
-
-            <ContractDescription
-              className="mt-2"
-              contract={contract}
-              highlightResolver={!isResolved && isClosed && !showResolver}
-              toggleResolver={() => setShowResolver((shown) => !shown)}
-              showEditHistory={true}
-            />
-
+                <button
+                  className="text-ink-400 hover:text-ink-600 absolute right-0 top-0 p-4"
+                  onClick={() => setShowReview(false)}
+                >
+                  <XIcon className="h-5 w-5" />
+                </button>
+              </div>
+            )}
             {showResolver &&
               user &&
-              !resolution &&
               (outcomeType === 'PSEUDO_NUMERIC' ? (
                 <GradientContainer className="my-2">
                   <NumericResolutionPanel
-                    isAdmin={isAdmin}
-                    creator={user}
-                    isCreator={!isAdmin}
                     contract={contract}
+                    onClose={() => setShowResolver(false)}
                   />
                 </GradientContainer>
               ) : outcomeType === 'BINARY' ? (
                 <GradientContainer className="my-2">
                   <ResolutionPanel
-                    isAdmin={isAdmin || trustworthy}
-                    creator={user}
-                    isCreator={!isAdmin}
                     contract={contract}
+                    onClose={() => setShowResolver(false)}
                   />
                 </GradientContainer>
               ) : null)}
@@ -543,13 +570,21 @@ export function ContractPageContent(props: {
               )}
             </Row>
 
+            <DangerZone
+              contract={contract}
+              showResolver={showResolver}
+              setShowResolver={setShowResolver}
+              showReview={showReview}
+              setShowReview={setShowReview}
+              userHasBet={!!contractMetrics}
+            />
+            <ContractDescription contract={contract} />
+            <Row className="my-2 flex-wrap items-center justify-between gap-y-2"></Row>
             {showExplainerPanel && (
-              <ExplainerPanel className="bg-canvas-50 -mx-4 flex rounded-lg p-4 pb-0 xl:hidden" />
+              <ExplainerPanel className="bg-canvas-50 -mx-4 p-4 pb-0 xl:hidden" />
             )}
-
             {!user && <SidebarSignUpButton className="mb-4 flex md:hidden" />}
-
-            {!!user && contract.outcomeType !== 'BOUNTIED_QUESTION' && (
+            {!!user && (
               <ContractSharePanel
                 isClosed={isClosed}
                 isCreator={isCreator}
@@ -557,7 +592,16 @@ export function ContractPageContent(props: {
                 contract={contract}
               />
             )}
-
+            {contract.outcomeType !== 'BOUNTIED_QUESTION' && (
+              <RelatedContractsCarousel
+                className="-ml-4 mb-2 mt-4 xl:hidden"
+                contracts={relatedMarkets}
+                onContractClick={(c) =>
+                  track('click related market', { contractId: c.id })
+                }
+                loadMore={loadMore}
+              />
+            )}
             {isResolved && resolution !== 'CANCEL' && (
               <>
                 <ContractLeaderboard
@@ -571,7 +615,6 @@ export function ContractPageContent(props: {
                 <Spacer h={12} />
               </>
             )}
-
             <div ref={tabsContainerRef}>
               <ContractTabs
                 // Pass cached contract so it won't rerender so many times.
@@ -581,20 +624,21 @@ export function ContractPageContent(props: {
                 comments={comments}
                 userPositionsByOutcome={userPositionsByOutcome}
                 totalPositions={totalPositions}
-                answerResponse={answerResponse}
-                onCancelAnswerResponse={onCancelAnswerResponse}
+                replyTo={replyTo}
+                setReplyTo={setReplyTo}
                 blockedUserIds={blockedUserIds}
                 activeIndex={activeTabIndex}
                 setActiveIndex={setActiveTabIndex}
               />
             </div>
-            {contract.outcomeType == 'BOUNTIED_QUESTION' && (
-              <ContractSharePanel
-                isClosed={isClosed}
-                isCreator={isCreator}
-                showResolver={showResolver}
-                contract={contract}
-                className={'mt-6 w-full'}
+            {contract.outcomeType === 'BOUNTIED_QUESTION' && (
+              <RelatedContractsCarousel
+                className="-ml-4 mb-2 mt-4 xl:hidden"
+                contracts={relatedMarkets}
+                onContractClick={(c) =>
+                  track('click related market', { contractId: c.id })
+                }
+                loadMore={loadMore}
               />
             )}
           </Col>
@@ -612,14 +656,6 @@ export function ContractPageContent(props: {
         </Col>
       </Row>
 
-      <RelatedContractsList
-        className="mx-auto mt-8 min-w-[300px] max-w-[600px] xl:hidden"
-        contracts={relatedMarkets}
-        onContractClick={(c) =>
-          track('click related market', { contractId: c.id })
-        }
-        loadMore={loadMore}
-      />
       <Spacer className="xl:hidden" h={10} />
       <ScrollToTopButton className="fixed bottom-16 right-2 z-20 lg:bottom-2 xl:hidden" />
     </>

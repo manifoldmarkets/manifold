@@ -5,7 +5,7 @@ import {
   getDpmOutcomeProbability,
 } from './calculate-dpm'
 import {
-  calculateCpmmMultiSale,
+  calculateCpmmMultiSumsToOneSale,
   calculateCpmmSale,
   getCpmmProbability,
 } from './calculate-cpmm'
@@ -92,22 +92,33 @@ export const getSellBetInfo = (bet: Bet, contract: DPMContract) => {
 export const getCpmmSellBetInfo = (
   shares: number,
   outcome: 'YES' | 'NO',
-  contract: CPMMContract,
+  contract: CPMMContract | CPMMMultiContract,
   unfilledBets: LimitBet[],
   balanceByUserId: { [userId: string]: number },
-  loanPaid: number
+  loanPaid: number,
+  answer?: Answer
 ) => {
-  const { pool, p } = contract
+  if (contract.mechanism === 'cpmm-multi-1' && !answer) {
+    throw new Error('getCpmmSellBetInfo: answer required for cpmm-multi-1')
+  }
+
+  const startCpmmState =
+    contract.mechanism === 'cpmm-1'
+      ? contract
+      : {
+          pool: { YES: answer!.poolYes, NO: answer!.poolNo },
+          p: 0.5,
+        }
 
   const { cpmmState, fees, makers, takers, ordersToCancel } = calculateCpmmSale(
-    contract,
+    startCpmmState,
     shares,
     outcome,
     unfilledBets,
     balanceByUserId
   )
 
-  const probBefore = getCpmmProbability(pool, p)
+  const probBefore = getCpmmProbability(startCpmmState.pool, startCpmmState.p)
   const probAfter = getCpmmProbability(cpmmState.pool, cpmmState.p)
 
   const takerAmount = sumBy(takers, 'amount')
@@ -123,7 +134,7 @@ export const getCpmmSellBetInfo = (
     fees.creatorFee
   )
 
-  const newBet: CandidateBet<Bet> = {
+  const newBet: CandidateBet<Bet> = removeUndefinedProps({
     contractId: contract.id,
     amount: takerAmount,
     shares: takerShares,
@@ -141,7 +152,8 @@ export const getCpmmSellBetInfo = (
     isRedemption: false,
     isChallenge: false,
     visibility: contract.visibility,
-  }
+    answerId: answer?.id,
+  })
 
   return {
     newBet,
@@ -165,7 +177,7 @@ export const getCpmmMultiSellBetInfo = (
   balanceByUserId: { [userId: string]: number },
   loanPaid: number
 ) => {
-  const { newBetResult, otherBetResults } = calculateCpmmMultiSale(
+  const { newBetResult, otherBetResults } = calculateCpmmMultiSumsToOneSale(
     answers,
     answerToSell,
     shares,

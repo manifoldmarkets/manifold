@@ -1,5 +1,5 @@
 import { SupabaseClient } from '@supabase/supabase-js'
-import { Row, mapTypes, run } from 'common/supabase/utils'
+import { Row, convertSQLtoTS, run } from 'common/supabase/utils'
 import { Group } from 'common/group'
 
 export const NON_PREDICTIVE_GROUP_ID = 'f141b8ca-eac3-4400-962a-72973b3ceb62'
@@ -40,7 +40,7 @@ export async function getGroupMemberIds(db: SupabaseClient, groupId: string) {
 export const convertGroup = (
   sqlGroup: Partial<Row<'groups'>> & { id: string }
 ) =>
-  mapTypes<'groups', Group>(sqlGroup, {
+  convertSQLtoTS<'groups', Group>(sqlGroup, {
     fs_updated_time: false,
     name_fts: false,
   })

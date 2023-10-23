@@ -1,9 +1,14 @@
-import { useState } from 'react'
+import { ComponentProps, useState } from 'react'
 import { copyToClipboard } from 'web/lib/util/copy'
 import { track, trackShareEvent } from 'web/lib/service/analytics'
 import { Tooltip } from '../widgets/tooltip'
 import clsx from 'clsx'
-import { IconButton } from 'web/components/buttons/button'
+import {
+  Button,
+  ColorType,
+  IconButton,
+  SizeType,
+} from 'web/components/buttons/button'
 import toast from 'react-hot-toast'
 import LinkIcon from 'web/lib/icons/link-icon.svg'
 import { postMessageToNative } from 'web/components/native-message-listener'
@@ -23,40 +28,77 @@ export function CopyLinkOrShareButton(props: {
   eventTrackingName: string // was type ShareEventName — why??
   tooltip?: string
   className?: string
+  iconClassName?: string
+  size?: SizeType
+  children?: React.ReactNode
+  color?: ColorType
 }) {
-  const { url, eventTrackingName, className, tooltip } = props
-  // TODO: this is resulting in hydration errors on mobile dev
+  const {
+    url,
+    size,
+    children,
+    eventTrackingName,
+    className,
+    iconClassName,
+    tooltip,
+    color,
+  } = props
+  // NOTE: this results in hydration errors on mobile dev
   const { isNative, platform } = getNativePlatform()
   const { os } = useBrowserOS()
 
   const onClick = () => {
     if (!url) return
-    if (isNative) {
-      // If we want to extend this: iOS can use a url and a message, Android can use a title and a message.
-      postMessageToNative('share', {
-        message: url,
-      } as NativeShareData)
-    }
-
     copyToClipboard(url)
-    toast.success('Link copied!')
+    if (!isNative) toast.success('Link copied!')
     trackShareEvent(eventTrackingName, url)
   }
 
   return (
-    <IconButton onClick={onClick} className={className} disabled={!url}>
-      <Tooltip text={tooltip ?? 'Copy link'} noTap placement="bottom">
+    <ToolTipOrDiv
+      hasChildren={!!children}
+      text={tooltip ?? 'Copy link'}
+      noTap
+      placement="bottom"
+    >
+      <Button
+        onClick={onClick}
+        className={className}
+        disabled={!url}
+        size={size}
+        color={color ?? 'gray-white'}
+      >
         {(isNative && platform === 'ios') || os === 'ios' ? (
-          <ArrowUpSquareIcon className={'h-[1.4rem]'} />
+          <ArrowUpSquareIcon className={clsx(iconClassName ?? 'h-[1.4rem]')} />
         ) : (isNative && platform === 'android') || os === 'android' ? (
-          <ShareIcon strokeWidth={'2.5'} className={'h-[1.4rem]'} />
+          <ShareIcon
+            strokeWidth={'2.5'}
+            className={clsx(iconClassName ?? 'h-[1.4rem]')}
+          />
         ) : (
-          <LinkIcon strokeWidth={'2.5'} className={'h-5'} aria-hidden="true" />
+          <LinkIcon
+            strokeWidth={'2.5'}
+            className={clsx(iconClassName ?? 'h-[1.1rem]')}
+            aria-hidden="true"
+          />
         )}
-      </Tooltip>
-    </IconButton>
+        {children}
+      </Button>
+    </ToolTipOrDiv>
   )
 }
+
+const ToolTipOrDiv = (
+  props: { hasChildren: boolean } & ComponentProps<typeof Tooltip>
+) =>
+  props.hasChildren ? (
+    <div>{props.children}</div>
+  ) : (
+    <Tooltip text={props.text} noTap placement="bottom">
+      {' '}
+      {props.children}
+    </Tooltip>
+  )
 
 export const CopyLinkRow = (props: {
   url?: string // required if not loading
@@ -77,19 +119,13 @@ export const CopyLinkRow = (props: {
 
   const onClick = () => {
     if (!url) return
-    if (isNative) {
-      // If we want to extend this: iOS can use a url and a message, Android can use a title and a message.
-      postMessageToNative('share', {
-        message: url,
-      } as NativeShareData)
-    }
 
     setBgPressed(true)
     setIconPressed(true)
     setTimeout(() => setBgPressed(false), 300)
     setTimeout(() => setIconPressed(false), 1000)
     copyToClipboard(url)
-    toast.success('Link copied!')
+    if (!isNative) toast.success('Link copied!')
 
     trackShareEvent(eventTrackingName, url)
   }
@@ -100,7 +136,7 @@ export const CopyLinkRow = (props: {
   return (
     <button
       className={clsx(
-        'flex select-none items-center justify-between rounded border px-4 py-2 text-sm transition-colors duration-700',
+        'border-ink-300 flex select-none items-center justify-between rounded border px-4 py-2 text-sm transition-colors duration-700',
         bgPressed
           ? 'bg-primary-50 text-primary-500 transition-none'
           : 'bg-canvas-50 text-ink-500',
@@ -149,7 +185,7 @@ export function SimpleCopyTextButton(props: {
     }
 
     copyToClipboard(text)
-    toast.success('Link copied!')
+    if (!isNative) toast.success('Link copied!')
     track(eventTrackingName, { text })
   }
 

@@ -42,7 +42,7 @@ import { removeUndefinedProps } from 'common/util/object'
 import { calculateCpmmMultiArbitrageBet } from 'common/calculate-cpmm-arbitrage'
 import LimitOrderPanel from './limit-order-panel'
 
-export type binaryOutcomes = 'YES' | 'NO' | undefined
+export type BinaryOutcomes = 'YES' | 'NO' | undefined
 
 export function BuyPanel(props: {
   contract:
@@ -55,7 +55,7 @@ export function BuyPanel(props: {
   inModal: boolean
   onBuySuccess?: () => void
   singularView?: 'YES' | 'NO' | 'LIMIT'
-  initialOutcome?: binaryOutcomes | 'LIMIT'
+  initialOutcome?: BinaryOutcomes | 'LIMIT'
   location?: string
 }) {
   const {
@@ -78,7 +78,7 @@ export function BuyPanel(props: {
 
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
   const isStonk = contract.outcomeType === 'STONK'
-  const [option, setOption] = useState<binaryOutcomes | 'LIMIT'>(initialOutcome)
+  const [option, setOption] = useState<BinaryOutcomes | 'LIMIT'>(initialOutcome)
   const { unfilledBets: allUnfilledBets, balanceByUserId } =
     useUnfilledBetsAndBalanceByUserId(contract.id)
 
@@ -252,7 +252,7 @@ export function BuyPanel(props: {
     <Col>
       <Row
         className={clsx(
-          'mb-2 w-full items-center gap-3',
+          'mb-2 w-full items-center gap-2',
           singularView ? 'hidden' : ''
         )}
       >
@@ -275,8 +275,8 @@ export function BuyPanel(props: {
           <Button
             color={seeLimit ? 'indigo' : 'indigo-outline'}
             onClick={() => onOptionChoice('LIMIT')}
-            className="px-3 text-lg sm:px-6"
-            size="xl"
+            className="px-2 text-lg sm:px-6"
+            size="lg"
           >
             %
           </Button>
@@ -286,9 +286,9 @@ export function BuyPanel(props: {
         className={clsx(
           !singularView
             ? outcome === 'NO'
-              ? 'bg-red-500/10'
+              ? 'bg-scarlet-50'
               : outcome === 'YES'
-              ? 'bg-teal-500/10'
+              ? 'bg-teal-50'
               : 'hidden'
             : '',
           'rounded-xl',
@@ -296,7 +296,7 @@ export function BuyPanel(props: {
           singularView && option === 'LIMIT' ? 'hidden' : ''
         )}
       >
-        <div className="text-ink-700 mt-2 mb-1 text-sm">Amount</div>
+        <div className="text-ink-700 mb-1 mt-2 text-sm">Amount</div>
 
         <BuyAmountInput
           inputClassName="w-full max-w-none"

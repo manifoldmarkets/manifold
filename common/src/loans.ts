@@ -1,6 +1,6 @@
 import { Dictionary, sumBy, minBy, groupBy } from 'lodash'
 import { Bet } from './bet'
-import { getMinimalInvested } from './calculate'
+import { getProfitMetrics, getSimpleCpmmInvested } from './calculate'
 import {
   Contract,
   CPMMContract,
@@ -9,6 +9,7 @@ import {
 } from './contract'
 import { filterDefined } from './util/array'
 import { PortfolioMetrics } from 'common/portfolio-metrics'
+import { calculateDpmRawShareValue } from './calculate-dpm'
 
 export const LOAN_DAILY_RATE = 0.04
 
@@ -30,8 +31,8 @@ export const isUserEligibleForLoan = (
 ) => {
   if (!portfolio) return true
 
-  const { balance, investmentValue } = portfolio
-  return balance + investmentValue > 0
+  const { investmentValue } = portfolio
+  return investmentValue > 0
 }
 
 const calculateLoanBetUpdates = (
@@ -66,11 +67,13 @@ const getCpmmContractLoanUpdate = (
   contract: CPMMContract | CPMMMultiContract,
   bets: Bet[]
 ) => {
-  const invested = getMinimalInvested(contract, bets)
+  const invested = getSimpleCpmmInvested(bets)
+  const { payout: currentValue } = getProfitMetrics(contract, bets)
   const loanAmount = sumBy(bets, (bet) => bet.loanAmount ?? 0)
-  const oldestBet = minBy(bets, (bet) => bet.createdTime)
 
-  const newLoan = calculateNewLoan(invested, loanAmount)
+  const loanBasis = Math.min(invested, currentValue)
+  const newLoan = calculateNewLoan(loanBasis, loanAmount)
+  const oldestBet = minBy(bets, (bet) => bet.createdTime)
   if (!isFinite(newLoan) || newLoan <= 0 || !oldestBet) return undefined
 
   const loanTotal = (oldestBet.loanAmount ?? 0) + newLoan
@@ -89,7 +92,13 @@ const getDpmContractLoanUpdate = (contract: DPMContract, bets: Bet[]) => {
 
   return openBets.map((bet) => {
     const loanAmount = bet.loanAmount ?? 0
-    const newLoan = calculateNewLoan(bet.amount, loanAmount)
+    const value = calculateDpmRawShareValue(
+      contract.totalShares,
+      bet.shares,
+      bet.outcome
+    )
+    const loanBasis = Math.min(value, bet.amount)
+    const newLoan = calculateNewLoan(loanBasis, loanAmount)
     const loanTotal = loanAmount + newLoan
 
     if (!isFinite(newLoan) || newLoan <= 0) return undefined

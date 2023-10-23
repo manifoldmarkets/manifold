@@ -1,4 +1,8 @@
-import { ArrowRightIcon, ChevronDoubleDownIcon } from '@heroicons/react/outline'
+import {
+  ArrowRightIcon,
+  ChevronDownIcon,
+  PresentationChartLineIcon,
+} from '@heroicons/react/outline'
 import { groupBy, sortBy, sumBy } from 'lodash'
 import { useState } from 'react'
 
@@ -6,12 +10,7 @@ import clsx from 'clsx'
 import { Answer, DpmAnswer } from 'common/answer'
 import { Bet } from 'common/bet'
 import { getAnswerProbability, getContractBetMetrics } from 'common/calculate'
-import {
-  CPMMMultiContract,
-  MultiContract,
-  contractPath,
-  tradingAllowed,
-} from 'common/contract'
+import { CPMMMultiContract, MultiContract, contractPath } from 'common/contract'
 import { formatMoney } from 'common/util/format'
 import Link from 'next/link'
 import { Button } from 'web/components/buttons/button'
@@ -19,39 +18,33 @@ import { Row } from 'web/components/layout/row'
 import { useUser } from 'web/hooks/use-user'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
 import { useUserByIdOrAnswer } from 'web/hooks/use-user-supabase'
-import { nthColor, useChartAnswers } from '../charts/contract/choice'
+import { getAnswerColor, useChartAnswers } from '../charts/contract/choice'
 import { Col } from '../layout/col'
 import { NoLabel, YesLabel } from '../outcome-label'
-import { AnswerBar, AnswerLabel } from './answer-item'
 import {
   AddComment,
-  ClosedProb,
-  DPMMultiBettor,
-  MultiBettor,
-  MultiSeller,
-  OpenProb,
-} from './answer-options'
+  AnswerBar,
+  AnswerLabel,
+  AnswerStatusAndBetButtons,
+} from './answer-components'
 import { floatingEqual } from 'common/util/math'
 import { InfoTooltip } from '../widgets/info-tooltip'
-
-export function getAnswerColor(
-  answer: Answer | DpmAnswer,
-  answersArray: string[]
-) {
-  const index =
-    'index' in answer ? answer.index : answersArray.indexOf(answer.text)
-  return nthColor(index)
-}
 
 export function AnswersPanel(props: {
   contract: MultiContract
   onAnswerCommentClick?: (answer: Answer | DpmAnswer) => void
+  onAnswerHover?: (answer: Answer | DpmAnswer | undefined) => void
+  onAnswerClick?: (answer: Answer | DpmAnswer) => void
+  selected?: string[] // answer ids
   linkToContract?: boolean
   maxAnswers?: number
 }) {
   const {
     contract,
     onAnswerCommentClick,
+    onAnswerHover,
+    onAnswerClick,
+    selected,
     linkToContract,
     maxAnswers = Infinity,
   } = props
@@ -63,8 +56,12 @@ export function AnswersPanel(props: {
       : outcomeType === 'FREE_RESPONSE'
       ? 'ANYONE'
       : 'DISABLED'
+  const shouldAnswersSumToOne =
+    'shouldAnswersSumToOne' in contract ? contract.shouldAnswersSumToOne : true
 
-  const [showSmallAnswers, setShowSmallAnswers] = useState(isMultipleChoice)
+  const [showSmallAnswers, setShowSmallAnswers] = useState(
+    addAnswersMode !== 'ANYONE'
+  )
 
   const answers = contract.answers
     .filter((a) => isMultipleChoice || ('number' in a && a.number !== 0))
@@ -72,8 +69,13 @@ export function AnswersPanel(props: {
 
   const sortByProb = addAnswersMode === 'ANYONE' || answers.length > maxAnswers
   const sortedAnswers = sortBy(answers, [
-    // winners before losers
-    (answer) => (resolutions ? -1 * resolutions[answer.id] : 0),
+    // Winners for shouldAnswersSumToOne
+    (answer) => (resolutions ? -1 * resolutions[answer.id] : answer),
+    // Winners for independent binary
+    (answer) =>
+      'resolution' in answer && answer.resolution
+        ? -answer.subsidyPool
+        : -Infinity,
     // then by prob or index
     (answer) =>
       !sortByProb && 'index' in answer ? answer.index : -1 * answer.prob,
@@ -89,28 +91,32 @@ export function AnswersPanel(props: {
 
   const user = useUser()
 
-  const answersArray = useChartAnswers(contract).map(
-    (answer, _index) => answer.text
-  )
+  const answersArray = useChartAnswers(contract).map((answer) => answer.text)
 
   const userBets = useUserContractBets(user?.id, contract.id)
   const userBetsByAnswer = groupBy(userBets, (bet) => bet.answerId)
 
   const moreCount = answers.length - answersToShow.length
 
+  // Note: Hide answers if there is just one "Other" answer.
+  const showNoAnswers =
+    answers.length === 0 || (shouldAnswersSumToOne && answers.length === 1)
+
   return (
     <Col className="mx-[2px] gap-3">
-      {/* Note: Answers can be length 1 if it is "Other".
-          In that case, we'll wait until another answer is added before showing any answers.
-      */}
-      {answers.length !== 1 && (
+      {!showNoAnswers && (
         <Col className="gap-2">
           {answersToShow.map((answer) => (
             <Answer
               key={answer.id}
               answer={answer}
               contract={contract}
-              onAnswerCommentClick={onAnswerCommentClick}
+              onCommentClick={() => onAnswerCommentClick?.(answer)}
+              onHover={(hovering) =>
+                onAnswerHover?.(hovering ? answer : undefined)
+              }
+              onClick={() => onAnswerClick?.(answer)}
+              selected={selected?.includes(answer.id)}
               color={getAnswerColor(answer, answersArray)}
               userBets={userBetsByAnswer[answer.id]}
             />
@@ -132,15 +138,14 @@ export function AnswersPanel(props: {
                 onClick={() => setShowSmallAnswers(true)}
                 size="xs"
               >
-                {moreCount} more {moreCount === 1 ? 'answer' : 'answers'}
-                <ChevronDoubleDownIcon className="ml-1 h-4 w-4" />
+                <ChevronDownIcon className="mr-1 h-4 w-4" />
+                Show {moreCount} more {moreCount === 1 ? 'answer' : 'answers'}
               </Button>
             ))}
         </Col>
       )}
 
-      {(answers.length === 0 ||
-        (answers.length === 1 && outcomeType === 'MULTIPLE_CHOICE')) && (
+      {showNoAnswers && (
         <div className="text-ink-500 pb-4">No answers yet...</div>
       )}
     </Col>
@@ -151,16 +156,27 @@ function Answer(props: {
   contract: MultiContract
   answer: Answer | DpmAnswer
   color: string
-  onAnswerCommentClick?: (answer: Answer | DpmAnswer) => void
+  onCommentClick?: () => void
+  onHover?: (hovering: boolean) => void
+  onClick?: () => void
+  selected?: boolean
   userBets?: Bet[]
 }) {
-  const { answer, contract, onAnswerCommentClick, color, userBets } = props
+  const {
+    answer,
+    contract,
+    onCommentClick,
+    onHover,
+    onClick,
+    selected,
+    color,
+    userBets,
+  } = props
 
   const answerCreator = useUserByIdOrAnswer(answer)
   const prob = getAnswerProbability(contract, answer.id)
 
   const isCpmm = contract.mechanism === 'cpmm-multi-1'
-  const isDpm = contract.mechanism === 'dpm-2'
   const isFreeResponse = contract.outcomeType === 'FREE_RESPONSE'
   const isOther = 'isOther' in answer && answer.isOther
   const addAnswersMode =
@@ -182,75 +198,70 @@ function Answer(props: {
     bet.outcome === 'YES' ? bet.shares : -bet.shares
   )
   const hasBets = userBets && !floatingEqual(sharesSum, 0)
-  const user = useUser()
+
+  const textColorClass = resolvedProb === 0 ? 'text-ink-700' : 'text-ink-900'
 
   return (
-    <AnswerBar
-      color={color}
-      prob={prob}
-      resolvedProb={resolvedProb}
-      label={
-        isOther ? (
-          <span>
-            Other{' '}
-            <InfoTooltip
-              className="!text-ink-600"
-              text="Represents all answers not listed. New answers are split out of this answer."
-            />
-          </span>
-        ) : (
-          <AnswerLabel
-            text={answer.text}
-            index={'index' in answer ? answer.index : undefined}
-            createdTime={answer.createdTime}
-            creator={
-              addAnswersMode === 'ANYONE' ? answerCreator ?? false : undefined
-            }
-            className={clsx(
-              'items-center text-sm !leading-none sm:flex sm:text-base',
-              resolvedProb === 0 ? 'text-ink-600' : 'text-ink-900'
-            )}
-          />
-        )
-      }
-      end={
-        <>
-          {!tradingAllowed(contract) ? (
-            <ClosedProb prob={prob} resolvedProb={resolvedProb} />
+    <Col>
+      <AnswerBar
+        color={color}
+        prob={prob}
+        resolvedProb={resolvedProb}
+        onHover={onHover}
+        onClick={onClick}
+        className={clsx(
+          'cursor-pointer',
+          selected && 'ring-primary-600 rounded ring-2'
+        )}
+        label={
+          isOther ? (
+            <span className={textColorClass}>
+              Other{' '}
+              <InfoTooltip
+                className="!text-ink-600 dark:!text-ink-700"
+                text="Represents all answers not listed. New answers are split out of this answer."
+              />
+            </span>
           ) : (
-            <>
-              <OpenProb prob={prob} />
-              {isDpm ? (
-                <DPMMultiBettor answer={answer as any} contract={contract} />
-              ) : (
-                <>
-                  <MultiBettor
-                    answer={answer as any}
-                    contract={contract as any}
-                  />
-                  {user && hasBets && (
-                    <MultiSeller
-                      answer={answer as any}
-                      contract={contract as any}
-                      userBets={userBets}
-                      user={user}
-                    />
-                  )}
-                </>
+            <AnswerLabel
+              text={answer.text}
+              index={'index' in answer ? answer.index : undefined}
+              createdTime={answer.createdTime}
+              creator={
+                addAnswersMode === 'ANYONE' ? answerCreator ?? false : undefined
+              }
+              className={clsx(
+                'items-center text-sm !leading-none sm:flex sm:text-base',
+                textColorClass
               )}
-            </>
-          )}
-          {onAnswerCommentClick && isFreeResponse && (
-            <AddComment onClick={() => onAnswerCommentClick(answer)} />
-          )}
-        </>
-      }
-      bottom={
-        !resolution &&
-        hasBets &&
-        isCpmm && <AnswerPosition contract={contract} userBets={userBets} />
-      }
-    />
+            />
+          )
+        }
+        end={
+          <>
+            {selected && (
+              <PresentationChartLineIcon
+                className="h-5 w-5 text-black"
+                style={{ fill: color }}
+              />
+            )}
+            <AnswerStatusAndBetButtons
+              contract={contract}
+              answer={answer}
+              userBets={userBets ?? []}
+            />
+            {onCommentClick && <AddComment onClick={onCommentClick} />}
+          </>
+        }
+      />
+      {!resolution && hasBets && isCpmm && (
+        <AnswerPosition
+          contract={contract}
+          userBets={userBets}
+          className="mt-0.5 self-end sm:mx-3 sm:mt-0"
+        />
+      )}
+    </Col>
   )
 }
 

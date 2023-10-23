@@ -5,32 +5,31 @@ import { first, keyBy } from 'lodash'
 import { Bet, LimitBet } from 'common/bet'
 import {
   getBettingStreakResetTimeBeforeNow,
-  getUser,
+  getUserSupabase,
   getValues,
+  isProd,
   log,
 } from 'shared/utils'
 import {
   createBetFillNotification,
   createBettingStreakBonusNotification,
+  createFollowSuggestionNotification,
   createUniqueBettorBonusNotification,
-  createReferralNotification,
 } from 'shared/create-notification'
 import { filterDefined } from 'common/util/array'
 import { Contract } from 'common/contract'
 import {
   BETTING_STREAK_BONUS_AMOUNT,
   BETTING_STREAK_BONUS_MAX,
+  MAX_TRADERS_FOR_BIG_BONUS,
   MAX_TRADERS_FOR_BONUS,
+  SMALL_UNIQUE_BETTOR_BONUS_AMOUNT,
+  SMALL_UNIQUE_BETTOR_LIQUIDITY,
   UNIQUE_BETTOR_BONUS_AMOUNT,
   UNIQUE_BETTOR_LIQUIDITY,
-  REFERRAL_AMOUNT,
 } from 'common/economy'
 import { User } from 'common/user'
-import {
-  BettingStreakBonusTxn,
-  UniqueBettorBonusTxn,
-  ReferralTxn,
-} from 'common/txn'
+import { BettingStreakBonusTxn, UniqueBettorBonusTxn } from 'common/txn'
 import {
   addHouseSubsidy,
   addHouseSubsidyToAnswer,
@@ -39,13 +38,11 @@ import { BOT_USERNAMES } from 'common/envs/constants'
 import { addUserToContractFollowers } from 'shared/follow-market'
 import { calculateUserMetrics } from 'common/calculate-metrics'
 import { runTxnFromBank } from 'shared/txn/run-txn'
-import { GroupResponse } from 'common/group'
 import {
   createSupabaseClient,
   createSupabaseDirectClient,
 } from 'shared/supabase/init'
 import { secrets } from 'common/secrets'
-import { completeReferralsQuest } from 'shared/complete-quest-internal'
 import { addToLeagueIfNotInOne } from 'shared/generate-leagues'
 import { FieldValue } from 'firebase-admin/firestore'
 import { FLAT_TRADE_FEE } from 'common/fees'
@@ -65,7 +62,12 @@ import { MINUTE_MS } from 'common/util/time'
 const firestore = admin.firestore()
 
 export const onCreateBet = functions
-  .runWith({ secrets, memory: '512MB', timeoutSeconds: 540 })
+  .runWith({
+    secrets,
+    memory: '512MB',
+    timeoutSeconds: 540,
+    minInstances: isProd() ? 10 : 0,
+  })
   .firestore.document('contracts/{contractId}/bets/{betId}')
   .onCreate(async (change, context) => {
     const { contractId } = context.params as { contractId: string }
@@ -75,11 +77,9 @@ export const onCreateBet = functions
 
     const bet = change.data() as Bet
     if (bet.isChallenge) return
+    const pg = createSupabaseDirectClient()
 
-    const contracts = await getContractsDirect(
-      [contractId],
-      createSupabaseDirectClient()
-    )
+    const contracts = await getContractsDirect([contractId], pg)
     const contract = first(contracts)
     if (!contract) return
 
@@ -88,7 +88,7 @@ export const onCreateBet = functions
       lastUpdatedTime: Date.now(),
     })
 
-    const bettor = await getUser(bet.userId)
+    const bettor = await getUserSupabase(bet.userId)
     if (!bettor) return
 
     const notifiedUsers = await notifyUsersOfLimitFills(
@@ -101,6 +101,9 @@ export const onCreateBet = functions
     if (bet.shares !== 0) {
       await updateContractMetrics(contract, [bettor, ...(notifiedUsers ?? [])])
     }
+
+    // Note: Anything that applies to redemption bets should be above this line.
+    if (bet.isRedemption) return
 
     const isApiOrBot = bet.isApi || BOT_USERNAMES.includes(bettor.username)
     if (isApiOrBot) {
@@ -118,28 +121,33 @@ export const onCreateBet = functions
      *  Handle bonuses, other stuff for non-bot users below:
      */
 
-    // They may be selling out of a position completely, so only add them if they're buying
-    if (bet.amount >= 0 && !bet.isSold)
-      await addUserToContractFollowers(contractId, bettor.id)
+    // Follow suggestion should be before betting streak update (which updates lastBetTime)
+    !bettor.lastBetTime &&
+      !bettor.referredByUserId &&
+      (await createFollowSuggestionNotification(bettor.id, contract, pg))
 
-    // Referrals should always be handled before the betting streak bc they both use lastBetTime
-    await handleReferral(bettor, eventId)
     await updateBettingStreak(bettor, bet, contract, eventId)
-
     await giveUniqueBettorAndLiquidityBonus(contract, eventId, bettor, bet)
-    await updateUniqueBettors(contract, bet)
 
-    const pg = createSupabaseDirectClient()
-    await updateUserInterestEmbedding(pg, bettor.id)
+    await Promise.all([
+      // They may be selling out of a position completely, so only add them if they're buying
+      bet.amount >= 0 &&
+        !bet.isSold &&
+        addUserToContractFollowers(contractId, bettor.id),
 
-    await addToLeagueIfNotInOne(pg, bettor.id)
+      updateUniqueBettors(contract, bet),
 
-    if ((bettor?.lastBetTime ?? 0) < bet.createdTime)
-      await firestore
-        .doc(`users/${bettor.id}`)
-        .update({ lastBetTime: bet.createdTime })
+      updateUserInterestEmbedding(pg, bettor.id),
 
-    await addBetToFollowersFeeds(bettor, contract, bet)
+      addToLeagueIfNotInOne(pg, bettor.id),
+
+      (bettor?.lastBetTime ?? 0) < bet.createdTime &&
+        firestore
+          .doc(`users/${bettor.id}`)
+          .update({ lastBetTime: bet.createdTime }),
+
+      addBetToFollowersFeeds(bettor, contract, bet),
+    ])
   })
 
 const MED_BALANCE_PERCENTAGE_FOR_FEED = 0.005
@@ -153,7 +161,7 @@ const addBetToFollowersFeeds = async (
   contract: Contract,
   bet: Bet
 ) => {
-  if (bettor.followerCountCached <= 0 || contract.mechanism === 'dpm-2') return
+  if (contract.mechanism === 'dpm-2') return
   const positionChange = await getUserMostChangedPosition(
     bettor,
     contract,
@@ -186,14 +194,18 @@ const updateBettingStreak = async (
   contract: Contract,
   eventId: string
 ) => {
-  const { newBettingStreak } = await firestore.runTransaction(async (trans) => {
+  const result = await firestore.runTransaction(async (trans) => {
     const userDoc = firestore.collection('users').doc(user.id)
     const bettor = (await trans.get(userDoc)).data() as User
     const betStreakResetTime = getBettingStreakResetTimeBeforeNow()
     const lastBetTime = bettor?.lastBetTime ?? 0
 
     // If they've already bet after the reset time
-    if (lastBetTime > betStreakResetTime) return { newBettingStreak: undefined }
+    if (lastBetTime > betStreakResetTime)
+      return {
+        message: 'User has already bet after the reset time',
+        status: 'error',
+      }
 
     const newBettingStreak = (bettor?.currentBettingStreak ?? 0) + 1
     // Otherwise, add 1 to their betting streak
@@ -201,10 +213,6 @@ const updateBettingStreak = async (
       currentBettingStreak: newBettingStreak,
       lastBetTime: bet.createdTime,
     })
-    return { newBettingStreak }
-  })
-  if (!newBettingStreak) return
-  const result = await firestore.runTransaction(async (trans) => {
     // Send them the bonus times their streak
     const bonusAmount = Math.min(
       BETTING_STREAK_BONUS_AMOUNT * newBettingStreak,
@@ -229,8 +237,9 @@ const updateBettingStreak = async (
       data: bonusTxnDetails,
     }
     const { message, txn, status } = await runTxnFromBank(trans, bonusTxn)
-    return { message, txn, status, bonusAmount }
+    return { message, txn, status, bonusAmount, newBettingStreak }
   })
+
   if (result.status != 'success') {
     log("betting streak bonus txn couldn't be made")
     log('status:', result.status)
@@ -244,7 +253,7 @@ const updateBettingStreak = async (
       bet,
       contract,
       result.bonusAmount,
-      newBettingStreak,
+      result.newBettingStreak,
       eventId
     )
   }
@@ -348,7 +357,9 @@ export const giveUniqueBettorAndLiquidityBonus = async (
     })
 
     const bonusAmount =
-      contract.mechanism === 'cpmm-multi-1'
+      uniqueBettorIds.length > MAX_TRADERS_FOR_BIG_BONUS
+        ? SMALL_UNIQUE_BETTOR_BONUS_AMOUNT
+        : contract.mechanism === 'cpmm-multi-1'
         ? Math.ceil(UNIQUE_BETTOR_BONUS_AMOUNT / 2)
         : UNIQUE_BETTOR_BONUS_AMOUNT
 
@@ -370,22 +381,26 @@ export const giveUniqueBettorAndLiquidityBonus = async (
   })
   if (!result) return
 
+  const subsidy =
+    uniqueBettorIds.length <= MAX_TRADERS_FOR_BIG_BONUS
+      ? UNIQUE_BETTOR_LIQUIDITY
+      : SMALL_UNIQUE_BETTOR_LIQUIDITY
+
   if (contract.mechanism === 'cpmm-1') {
-    await addHouseSubsidy(contract.id, UNIQUE_BETTOR_LIQUIDITY)
+    await addHouseSubsidy(contract.id, subsidy)
   } else if (contract.mechanism === 'cpmm-multi-1' && answerId) {
-    // There are two ways to subsidize multi answer contracts:
-    // 1. Subsidize all answers (and gain efficiency b/c only one answer resolves YES.)
-    // 2. Subsidize one answer (and throw away excess YES or NO shares to maintain probability.)
-    // The second if preferred if the probability is not extreme, because it increases
-    // liquidity in a more traded answer. (Liquidity in less traded or unlikely answers is not that important.)
-    if (bet.probAfter < 0.15 || bet.probAfter > 0.95) {
-      await addHouseSubsidy(contract.id, UNIQUE_BETTOR_LIQUIDITY)
+    if (
+      contract.shouldAnswersSumToOne &&
+      (bet.probAfter < 0.15 || bet.probAfter > 0.95)
+    ) {
+      // There are two ways to subsidize multi answer contracts when they sum to one:
+      // 1. Subsidize all answers (and gain efficiency b/c only one answer resolves YES.)
+      // 2. Subsidize one answer (and throw away excess YES or NO shares to maintain probability.)
+      // The second if preferred if the probability is not extreme, because it increases
+      // liquidity in a more traded answer. (Liquidity in less traded or unlikely answers is not that important.)
+      await addHouseSubsidy(contract.id, subsidy)
     } else {
-      await addHouseSubsidyToAnswer(
-        contract.id,
-        answerId,
-        UNIQUE_BETTOR_LIQUIDITY
-      )
+      await addHouseSubsidyToAnswer(contract.id, answerId, subsidy)
     }
   }
 
@@ -431,7 +446,7 @@ const notifyUsersOfLimitFills = async (
   ).flat()
 
   const betUsers = await Promise.all(
-    matchedBets.map((bet) => getUser(bet.userId))
+    matchedBets.map((bet) => getUserSupabase(bet.userId))
   )
   const betUsersById = keyBy(filterDefined(betUsers), 'id')
 
@@ -469,107 +484,4 @@ const updateContractMetrics = async (contract: Contract, users: User[]) => {
   )
 
   await bulkUpdateContractMetrics(metrics)
-}
-
-async function handleReferral(staleUser: User, eventId: string) {
-  // Only create a referral txn if the user has a referredByUserId
-  if (!staleUser.referredByUserId || staleUser.lastBetTime) return
-
-  const referredByUserId = staleUser.referredByUserId
-
-  await firestore.runTransaction(async (transaction) => {
-    const userDoc = firestore.doc(`users/${staleUser.id}`)
-    const user = (await transaction.get(userDoc)).data() as User
-
-    // Double-check the last bet time in the transaction bc otherwise we'll hand out multiple referral bonuses
-    if (user.lastBetTime !== undefined) return
-
-    // get user that referred this user
-    const referredByUserDoc = firestore.doc(`users/${referredByUserId}`)
-    const referredByUserSnap = await transaction.get(referredByUserDoc)
-    if (!referredByUserSnap.exists) {
-      console.log(`User ${referredByUserId} not found`)
-      return
-    }
-    const referredByUser = referredByUserSnap.data() as User
-    console.log(`referredByUser: ${referredByUserId}`)
-
-    let referredByContract: Contract | undefined = undefined
-    if (user.referredByContractId) {
-      const referredByContractDoc = firestore.doc(
-        `contracts/${user.referredByContractId}`
-      )
-      referredByContract = await transaction
-        .get(referredByContractDoc)
-        .then((snap) => snap.data() as Contract)
-    }
-    console.log(`referredByContract: ${referredByContract?.slug}`)
-
-    let referredByGroup: GroupResponse | undefined = undefined
-    if (user.referredByGroupId) {
-      const db = createSupabaseClient()
-      const groupQuery = await db
-        .from('groups')
-        .select()
-        .eq('id', user.referredByGroupId)
-        .limit(1)
-
-      if (groupQuery.data?.length) {
-        referredByGroup = groupQuery.data[0]
-        console.log(`referredByGroup: ${referredByGroup.slug}`)
-      }
-    }
-
-    const txns = await transaction.get(
-      firestore
-        .collection('txns')
-        .where('toId', '==', referredByUserId)
-        .where('category', '==', 'REFERRAL')
-    )
-    if (txns.size > 0) {
-      // If the referring user already has a referral txn due to referring this user, halt
-      if (txns.docs.some((txn) => txn.data()?.description === user.id)) {
-        console.log('found referral txn with the same details, aborting')
-        return
-      }
-    }
-    console.log('creating referral txns')
-
-    // if they're updating their referredId, create a txn for both
-    const txn: ReferralTxn = {
-      id: eventId,
-      createdTime: Date.now(),
-      fromId: 'BANK',
-      fromType: 'BANK',
-      toId: referredByUserId,
-      toType: 'USER',
-      amount: REFERRAL_AMOUNT,
-      token: 'M$',
-      category: 'REFERRAL',
-      description: `Referred new user id: ${user.id} for ${REFERRAL_AMOUNT}`,
-    }
-
-    const txnDoc = firestore.collection(`txns/`).doc(txn.id)
-    transaction.set(txnDoc, txn)
-    console.log('created referral with txn id:', txn.id)
-
-    transaction.update(referredByUserDoc, {
-      balance: FieldValue.increment(REFERRAL_AMOUNT),
-      totalDeposits: FieldValue.increment(REFERRAL_AMOUNT),
-    })
-
-    // Set lastBetTime to 0 the first time they bet so they still get a streak bonus, but we don't hand out multiple referral txns
-    transaction.update(userDoc, {
-      lastBetTime: 0,
-    })
-
-    await createReferralNotification(
-      referredByUser,
-      user,
-      txn.amount.toString(),
-      referredByContract,
-      referredByGroup
-    )
-    await completeReferralsQuest(referredByUser)
-  })
 }

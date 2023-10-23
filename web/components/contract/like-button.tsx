@@ -17,11 +17,12 @@ import { Avatar } from '../widgets/avatar'
 import { Tooltip } from '../widgets/tooltip'
 import { UserLink } from '../widgets/user-link'
 import { LoadingIndicator } from '../widgets/loading-indicator'
+import { Button, SizeType } from 'web/components/buttons/button'
+import toast from 'react-hot-toast'
 
 const LIKES_SHOWN = 3
 
 const ButtonReactionType = 'like' as ReactionTypes
-export type LikeButtonSizeType = 'sm' | 'md' | 'xl'
 
 export const LikeButton = memo(function LikeButton(props: {
   contentId: string
@@ -33,10 +34,10 @@ export const LikeButton = memo(function LikeButton(props: {
   contentText: string
   trackingLocation: string
   className?: string
-  size?: LikeButtonSizeType
-  color?: 'gray' | 'white'
   isSwipe?: boolean
   placement?: 'top' | 'bottom'
+  size?: SizeType
+  disabled?: boolean
 }) {
   const {
     user,
@@ -46,14 +47,14 @@ export const LikeButton = memo(function LikeButton(props: {
     contract,
     contentText,
     className,
-    size = 'md',
-    color = 'gray',
     isSwipe,
     trackingLocation,
     placement = 'bottom',
+    size,
   } = props
   const userLiked = useIsLiked(user?.id, contentType, contentId)
-  const disabled = !user || contentCreatorId === user?.id
+  const disabled = props.disabled || !user
+  const isMe = contentCreatorId === user?.id
   const [liked, setLiked] = useState(false)
   const [modalOpen, setModalOpen] = useState(false)
   const [totalLikes, setTotalLikes] = useState(props.totalLikes)
@@ -97,7 +98,11 @@ export const LikeButton = memo(function LikeButton(props: {
     },
     () => {
       if (!disabled) {
-        handleLiked(!liked)
+        if (isMe) {
+          toast("Of course you'd like yourself", { icon: '🙄' })
+        } else {
+          handleLiked(!liked)
+        }
       }
     }
   )
@@ -125,55 +130,32 @@ export const LikeButton = memo(function LikeButton(props: {
         noTap
         hasSafePolygon={showList}
       >
-        <button
+        <Button
+          color={'gray-white'}
           disabled={disabled}
+          size={size}
           className={clsx(
-            'flex flex-row items-center transition-transform disabled:cursor-not-allowed',
-            color === 'white' ? 'text-ink-0' : 'text-ink-500 ',
-            totalLikes === 0 &&
-              !user &&
-              color === 'gray' &&
-              'disabled:opacity-50',
-            !disabled && color === 'gray' ? 'hover:text-ink-600' : '',
-            size === 'sm' && 'w-8 px-1',
-            size === 'md' && ' px-2',
-            size === 'xl' && ' px-4',
+            'text-ink-500 flex flex-row items-center disabled:cursor-not-allowed',
+            'disabled:text-ink-500',
             className
           )}
-          onClick={(e) => {
-            e.preventDefault()
-            e.stopPropagation()
-          }}
           {...likeLongPress}
         >
           <div className="relative">
             <HeartIcon
               className={clsx(
-                size === 'sm' && 'h-4 w-4',
-                size === 'md' && 'h-6 w-6',
-                size === 'xl' && 'h-12 w-12',
-                liked
-                  ? 'fill-pink-400 stroke-pink-400'
-                  : color === 'white' && 'fill-white stroke-white'
+                'h-6 w-6',
+                liked &&
+                  'fill-scarlet-200 stroke-scarlet-300 dark:stroke-scarlet-600'
               )}
             />
           </div>
           {totalLikes > 0 && (
-            <div
-              className={clsx(
-                ' my-auto h-5 pl-1 disabled:opacity-50',
-                size === 'xl'
-                  ? 'text-lg'
-                  : size === 'sm'
-                  ? 'mt-[6px] text-xs'
-                  : 'text-sm',
-                color === 'white' ? 'text-white' : 'text-ink-500'
-              )}
-            >
+            <div className="text-ink-500 my-auto h-5 pl-1 text-sm disabled:opacity-50">
               {totalLikes}
             </div>
           )}
-        </button>
+        </Button>
       </Tooltip>
       {modalOpen && (
         <UserLikedFullList

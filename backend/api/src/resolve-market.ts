@@ -9,10 +9,10 @@ import {
   RESOLUTIONS,
 } from 'common/contract'
 import { getUser } from 'shared/utils'
-import { isAdminId, isTrustworthy } from 'common/envs/constants'
 import { APIError, authEndpoint, validate } from './helpers'
 import { resolveMarketHelper } from 'shared/resolve-market-helpers'
 import { Answer } from 'common/answer'
+import { throwErrorIfNotMod } from 'shared/helpers/auth'
 
 const bodySchema = z.object({
   contractId: z.string(),
@@ -21,6 +21,9 @@ const bodySchema = z.object({
 const binarySchema = z.object({
   outcome: z.enum(RESOLUTIONS),
   probabilityInt: z.number().gte(0).lte(100).optional(),
+
+  // To resolve one answer of multiple choice. Only independent answers supported (shouldAnswersSumToOne = false)
+  answerId: z.string().optional(),
 })
 
 const freeResponseSchema = z.union([
@@ -98,32 +101,42 @@ export const resolvemarket = authEndpoint(async (req, auth) => {
     throw new APIError(403, 'STONK contracts cannot be resolved')
   }
   const caller = await getUser(auth.uid)
-
-  const isClosed = !!(contract.closeTime && contract.closeTime < Date.now())
-  const trustworthyResolvable = isTrustworthy(caller?.username) && isClosed
-
-  if (creatorId !== auth.uid && !isAdminId(auth.uid) && !trustworthyResolvable)
-    throw new APIError(403, 'User is not creator of contract')
+  if (!caller) throw new APIError(400, 'Caller not found')
+  if (creatorId !== auth.uid) await throwErrorIfNotMod(auth.uid)
 
   if (contract.resolution) throw new APIError(403, 'Contract already resolved')
 
-  const creator = await getUser(creatorId)
+  const creator = caller.id === creatorId ? caller : await getUser(creatorId)
   if (!creator) throw new APIError(500, 'Creator not found')
 
   const resolutionParams = getResolutionParams(contract, req.body)
 
-  return await resolveMarketHelper(
-    contract,
-    caller ?? creator,
-    creator,
-    resolutionParams
-  )
+  return await resolveMarketHelper(contract, caller, creator, resolutionParams)
 })
 
 function getResolutionParams(contract: Contract, body: string) {
   const { outcomeType } = contract
-
-  if (outcomeType === 'NUMERIC') {
+  if (
+    outcomeType === 'BINARY' ||
+    (outcomeType === 'MULTIPLE_CHOICE' &&
+      contract.mechanism === 'cpmm-multi-1' &&
+      !contract.shouldAnswersSumToOne)
+  ) {
+    const binaryParams = validate(binarySchema, body)
+    if (binaryParams.answerId && outcomeType !== 'MULTIPLE_CHOICE') {
+      throw new APIError(
+        400,
+        'answerId field is only allowed for multiple choice markets'
+      )
+    }
+    if (binaryParams.answerId && outcomeType === 'MULTIPLE_CHOICE')
+      validateAnswerCpmm(contract, binaryParams.answerId)
+    return {
+      ...binaryParams,
+      value: undefined,
+      resolutions: undefined,
+    }
+  } else if (outcomeType === 'NUMERIC') {
     return {
       ...validate(numericSchema, body),
       resolutions: undefined,
@@ -213,12 +226,6 @@ function getResolutionParams(contract: Contract, body: string) {
           probabilityInt: undefined,
         }
       }
-    }
-  } else if (outcomeType === 'BINARY') {
-    return {
-      ...validate(binarySchema, body),
-      value: undefined,
-      resolutions: undefined,
     }
   }
   throw new APIError(500, `Invalid outcome type: ${outcomeType}`)

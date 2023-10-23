@@ -167,6 +167,8 @@ async function importDatabase(
     await clearFailedWrites()
   }
 
+  if (shouldImport('private_users'))
+    await importCollection(pg, firestore.collection('private-users'), 'private_users', 500)
   if (shouldImport('users'))
     await importCollection(pg, firestore.collection('users'), 'users', 500)
   if (shouldImport('user_portfolio_history'))

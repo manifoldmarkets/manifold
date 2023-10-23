@@ -4,7 +4,7 @@ import { Contract, contractPath } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
 import { ContractCardView } from 'common/events'
 import { User } from 'common/user'
-import { formatMoney } from 'common/util/format'
+import { formatMoney, shortFormatNumber } from 'common/util/format'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { ClaimButton } from 'web/components/ad/claim-ad-button'
@@ -34,8 +34,10 @@ import { ClickFrame } from '../widgets/click-frame'
 import { LikeButton } from './like-button'
 import { TradesButton } from './trades-button'
 import { FeedDropdown } from '../feed/card-dropdown'
-import { GroupTags } from '../feed/feed-timeline-items'
-import { JSONEmpty } from './contract-description'
+import { CategoryTags } from '../feed/feed-timeline-items'
+import { JSONEmpty } from 'web/components/contract/contract-description'
+import { ENV_CONFIG } from 'common/envs/constants'
+import { TbDropletHeart, TbMoneybag } from 'react-icons/tb'
 
 export function FeedContractCard(props: {
   contract: Contract
@@ -90,7 +92,7 @@ export function FeedContractCard(props: {
         slug: contract.slug,
         isPromoted: !!promotedData,
       } as ContractCardView),
-    true
+    false
   )
 
   const { probChange } = getMarketMovementInfo(
@@ -107,13 +109,7 @@ export function FeedContractCard(props: {
       isPromoted: !!promotedData,
     })
 
-  const nonTextDescription =
-    !small &&
-    typeof contract.description !== 'string' &&
-    contract.description.content &&
-    contract.description.content.some(
-      (item) => item.type === 'image' || item.type === 'embed'
-    )
+  const nonTextDescription = !JSONEmpty(contract.description)
 
   return (
     <ClickFrame
@@ -123,7 +119,7 @@ export function FeedContractCard(props: {
         'cursor-pointer ',
         'border-canvas-0 hover:border-primary-300 focus:border-primary-300 border transition-colors',
         'flex w-full flex-col gap-0.5 px-4',
-        small ? 'bg-canvas-50' : 'bg-canvas-0 drop-shadow-md sm:px-6'
+        small ? 'bg-canvas-50' : 'bg-canvas-0 shadow-md sm:px-6'
       )}
       onClick={(e) => {
         trackClick()
@@ -173,6 +169,7 @@ export function FeedContractCard(props: {
           <Link
             className="hover:text-primary-700 grow items-start transition-colors sm:text-lg"
             href={path}
+            onClick={trackClick}
           >
             <VisibilityIcon contract={contract} /> {contract.question}
           </Link>
@@ -213,6 +210,7 @@ export function FeedContractCard(props: {
           <Col className={'w-full items-center'}>
             <ClaimButton
               {...promotedData}
+              onClaim={() => router.push(path)}
               className={'z-10 my-2 whitespace-nowrap'}
             />
           </Col>
@@ -222,16 +220,14 @@ export function FeedContractCard(props: {
           <YourMetricsFooter metrics={metrics} />
         )}
 
-        {!JSONEmpty(contract.description) &&
-          !small &&
-          (item?.dataType == 'new_contract' || nonTextDescription) && (
-            <FeedContractCardDescription
-              contract={contract}
-              nonTextDescription={nonTextDescription}
-            />
-          )}
+        {!small && item?.dataType == 'new_contract' && nonTextDescription && (
+          <FeedContractCardDescription
+            contract={contract}
+            nonTextDescription={nonTextDescription}
+          />
+        )}
 
-        <GroupTags groups={contract.groupLinks} />
+        <CategoryTags categories={contract.groupLinks} />
         <Col>
           <BottomActionRow
             contract={contract}
@@ -247,7 +243,7 @@ export function FeedContractCard(props: {
 
 // ensures that the correct spacing is between buttons
 const BottomRowButtonWrapper = (props: { children: React.ReactNode }) => {
-  return <Row className="w-14 justify-start">{props.children}</Row>
+  return <Row className="basis-10 justify-start">{props.children}</Row>
 }
 
 const BottomActionRow = (props: {
@@ -261,13 +257,41 @@ const BottomActionRow = (props: {
   return (
     <Row
       className={clsx(
-        'items-center justify-between pt-2',
+        'justify-between pt-2',
         underline ? 'border-1 border-ink-200 border-b pb-3' : 'pb-2'
       )}
     >
       <BottomRowButtonWrapper>
         <TradesButton contract={contract} />
       </BottomRowButtonWrapper>
+
+      {contract.outcomeType === 'BOUNTIED_QUESTION' && (
+        <BottomRowButtonWrapper>
+          <div className="text-ink-500 z-10 flex items-center gap-1.5 text-sm">
+            <TbMoneybag className="h-6 w-6 stroke-2" />
+            <div>
+              {ENV_CONFIG.moneyMoniker}
+              {shortFormatNumber(contract.bountyLeft)}
+            </div>
+          </div>
+        </BottomRowButtonWrapper>
+      )}
+
+      {/* cpmm markets */}
+      {'totalLiquidity' in contract && (
+        <BottomRowButtonWrapper>
+          {
+            <div className="text-ink-500 z-10 flex items-center gap-1.5 text-sm">
+              <TbDropletHeart className="h-6 w-6 stroke-2" />
+              <div>
+                {ENV_CONFIG.moneyMoniker}
+                {shortFormatNumber(contract.totalLiquidity)}
+              </div>
+            </div>
+          }
+        </BottomRowButtonWrapper>
+      )}
+
       <BottomRowButtonWrapper>
         <CommentsButton contract={contract} user={user} />
       </BottomRowButtonWrapper>
@@ -280,9 +304,7 @@ const BottomActionRow = (props: {
           totalLikes={contract.likedByUserCount ?? 0}
           contract={contract}
           contentText={question}
-          size="md"
-          color="gray"
-          className="px-0"
+          className={'hover:!bg-canvas-0 !px-0'}
           trackingLocation={'contract card (feed)'}
           placement="top"
         />

@@ -6,6 +6,7 @@ import { useIsClient } from 'web/hooks/use-is-client'
 import { trackShareEvent } from 'web/lib/service/analytics'
 import { copyToClipboard } from 'web/lib/util/copy'
 import { shortenedFromNow } from 'web/lib/util/shortenedFromNow'
+import { getIsNative } from 'web/lib/native/is-native'
 
 export function copyLinkToComment(
   contractCreatorUsername: string,
@@ -18,7 +19,7 @@ export function copyLinkToComment(
     commentId
   )
   copyToClipboard(commentUrl)
-  toast('Link copied to clipboard!')
+  if (!getIsNative()) toast('Link copied to clipboard!')
   trackShareEvent('copy comment link', commentUrl)
 }
 

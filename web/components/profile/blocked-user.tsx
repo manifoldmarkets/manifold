@@ -13,7 +13,7 @@ export function BlockedUser(props: { user: User; privateUser: PrivateUser }) {
   const { user } = props
 
   return (
-    <Page key={user.id}>
+    <Page trackPageView={'blocked user page'} key={user.id}>
       <SEO
         title={`${user.name} (@${user.username})`}
         description={user.bio ?? ''}

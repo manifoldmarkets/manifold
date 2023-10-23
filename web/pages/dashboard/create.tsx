@@ -1,16 +1,19 @@
-import { track } from '@amplitude/analytics-browser'
+import { track } from 'web/lib/service/analytics'
 import clsx from 'clsx'
 import { MAX_DESCRIPTION_LENGTH } from 'common/contract'
+import { DashboardItem, MAX_DASHBOARD_TITLE_LENGTH } from 'common/dashboard'
 import { removeUndefinedProps } from 'common/util/object'
 import router from 'next/router'
 import { useEffect, useState } from 'react'
 import { SEO } from 'web/components/SEO'
 import { Button } from 'web/components/buttons/button'
+import { AddItemCard } from 'web/components/dashboard/add-dashboard-item'
+import { DashboardContent } from 'web/components/dashboard/dashboard-content'
+import { InputWithLimit } from 'web/components/dashboard/input-with-limit'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { Spacer } from 'web/components/layout/spacer'
 import { TextEditor, useTextEditor } from 'web/components/widgets/editor'
-import { ExpandingInput } from 'web/components/widgets/expanding-input'
 import { Title } from 'web/components/widgets/title'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { createDashboard } from 'web/lib/firebase/api'
@@ -22,7 +25,7 @@ export default function CreateDashboard() {
   )
 
   const editor = useTextEditor({
-    key: 'create dashbord dsecription',
+    key: 'create dashbord description',
     max: MAX_DESCRIPTION_LENGTH,
     placeholder: 'Optional. Provide background info and details.',
   })
@@ -33,15 +36,31 @@ export default function CreateDashboard() {
 
   const [errorText, setErrorText] = useState<string>('')
 
-  const isValid = title.length > 0
+  const [items, setItems] = usePersistentLocalState<DashboardItem[]>(
+    [],
+    'create dashboard items'
+  )
+
+  const [topics, setTopics] = usePersistentLocalState<string[]>(
+    [],
+    'create dashboard topics'
+  )
+
+  const isValid =
+    title.length > 0 &&
+    title.length <= MAX_DASHBOARD_TITLE_LENGTH &&
+    items.length > 1
 
   useEffect(() => {
-    setErrorText('')
+    if (isValid) {
+      setErrorText('')
+    }
   }, [isValid])
 
   const resetProperties = () => {
     editor?.commands.clearContent(true)
     setTitle('')
+    setItems([])
   }
 
   async function submit() {
@@ -51,6 +70,8 @@ export default function CreateDashboard() {
       const createProps = removeUndefinedProps({
         title,
         description: editor?.getJSON(),
+        items,
+        topics,
       })
       const newDashboard = await createDashboard(createProps)
 
@@ -75,7 +96,7 @@ export default function CreateDashboard() {
   }
 
   return (
-    <Page>
+    <Page trackPageView={'create dashboard page'}>
       <SEO
         title="Create a dashboard"
         description="Create a collection of prediction markets."
@@ -83,36 +104,48 @@ export default function CreateDashboard() {
       />
       <Col
         className={clsx(
-          ' text-ink-1000 bg-canvas-0 mx-auto w-full max-w-2xl py-2 px-6 transition-colors'
+          ' text-ink-1000 mx-auto w-full max-w-2xl px-4 py-2 transition-colors sm:px-6'
         )}
       >
         <Title>Create a Dashboard</Title>
-        <Col>
-          <label className="px-1 pt-2 pb-3">
-            Title<span className={'text-scarlet-500'}>*</span>
-          </label>
 
-          <ExpandingInput
-            placeholder={'Dashboard Title'}
-            autoFocus
-            maxLength={150}
-            value={title}
-            onChange={(e) => setTitle(e.target.value || '')}
-            className="bg-canvas-50"
+        <label className="mb-2">
+          Title<span className={'text-scarlet-500'}>*</span>
+        </label>
+        <InputWithLimit
+          text={title}
+          setText={setTitle}
+          limit={MAX_DASHBOARD_TITLE_LENGTH}
+          className="w-full !text-lg"
+          placeholder={'Dashboard Title'}
+        />
+
+        <Spacer h={6} />
+
+        <label className="mb-2">Content</label>
+        <TextEditor editor={editor} className="mb-4" />
+
+        <AddItemCard
+          items={items}
+          setItems={setItems}
+          topics={topics}
+          setTopics={setTopics}
+        />
+
+        {items.length > 0 && (
+          <DashboardContent
+            items={items}
+            setItems={setItems}
+            topics={topics}
+            setTopics={setTopics}
+            isEditing
           />
-        </Col>
+        )}
         <Spacer h={6} />
-        <Col>
-          <label className="gap-2 px-1 py-2">
-            <span className="mb-1">Description</span>
-          </label>
-          <TextEditor editor={editor} className="bg-canvas-50" />
-        </Col>
-        <Spacer h={6} />
-        <span className={'text-error'}>{errorText}</span>
+        <span className="text-error">{errorText}</span>
 
         <Button
-          className="w-full"
+          className="mb-4 mt-2 w-full"
           type="submit"
           color={submitState === 'DONE' ? 'green' : 'indigo'}
           size="xl"
@@ -124,7 +157,7 @@ export default function CreateDashboard() {
           }}
         >
           {submitState === 'EDITING'
-            ? 'Create Dashboard'
+            ? 'Create dashboard'
             : submitState === 'LOADING'
             ? 'Creating...'
             : 'Created!'}

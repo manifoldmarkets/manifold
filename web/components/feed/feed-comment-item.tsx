@@ -1,6 +1,6 @@
 import { ContractComment } from 'common/comment'
 import { Contract, contractPath } from 'common/contract'
-import { FeedCommentThread, isReplyToBet } from './feed-comments'
+import { FeedCommentThread } from './feed-comments'
 import { Col } from '../layout/col'
 import clsx from 'clsx'
 import { ClickFrame } from '../widgets/click-frame'
@@ -15,7 +15,7 @@ export const FeedCommentItem = (props: {
 }) => {
   const { contract, commentThreads } = props
   const firstCommentIsReplyToBet =
-    commentThreads[0] && isReplyToBet(commentThreads[0].parentComment)
+    commentThreads[0]?.parentComment?.bettorUsername !== undefined
 
   const router = useRouter()
 

@@ -11,20 +11,16 @@ export function Donation(props: { txn: DonationTxn }) {
 
   return (
     <div className="mb-2 flow-root pr-2 md:pr-0">
-      <div className="relative flex items-center space-x-3">
+      <div className="text-ink-700 relative flex items-center gap-x-2">
         <Avatar
           username={user?.username}
           avatarUrl={user?.avatarUrl}
-          size="sm"
+          size="xs"
         />
         <div className="min-w-0 flex-1">
-          <p className="text-ink-500 mt-0.5 text-sm">
+          <p className="mt-0.5 text-sm">
             {user ? (
-              <UserLink
-                className="text-ink-500"
-                username={user.username}
-                name={user.name}
-              />
+              <UserLink username={user.username} name={user.name} />
             ) : (
               <>Someone</>
             )}{' '}

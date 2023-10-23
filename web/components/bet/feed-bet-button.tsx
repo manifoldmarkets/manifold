@@ -5,7 +5,7 @@ import { User, firebaseLogin } from 'web/lib/firebase/users'
 import { Button } from '../buttons/button'
 import { Col } from '../layout/col'
 import { MODAL_CLASS, Modal } from '../layout/modal'
-import { BuyPanel, binaryOutcomes } from './bet-panel'
+import { BuyPanel, BinaryOutcomes } from './bet-panel'
 
 export function BetButton(props: {
   contract: CPMMBinaryContract
@@ -16,7 +16,7 @@ export function BetButton(props: {
   const { closeTime } = contract
   const isClosed = closeTime && closeTime < Date.now()
   const [dialogueThatIsOpen, setDialogueThatIsOpen] =
-    useState<binaryOutcomes>(undefined)
+    useState<BinaryOutcomes>(undefined)
   if (isClosed) return null
 
   return (
@@ -33,8 +33,8 @@ export function BetButton(props: {
 }
 
 function FeedBetButton(props: {
-  dialogueThatIsOpen: binaryOutcomes
-  setDialogueThatIsOpen: (outcome: binaryOutcomes) => void
+  dialogueThatIsOpen: BinaryOutcomes
+  setDialogueThatIsOpen: (outcome: BinaryOutcomes) => void
   contract: CPMMBinaryContract
   outcome: 'YES' | 'NO'
   user?: User | null | undefined
@@ -70,7 +70,7 @@ function FeedBetButton(props: {
         )}
       >
         <Col>
-          <div className="mt-0 mb-4 text-xl">{contract.question}</div>
+          <div className="mb-4 mt-0 text-xl">{contract.question}</div>
           <BuyPanel
             contract={contract}
             user={user}

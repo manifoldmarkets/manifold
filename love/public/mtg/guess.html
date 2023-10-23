@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <!-- Google Tag Manager -->
+    <script>
+      ;(function (w, d, s, l, i) {
+        w[l] = w[l] || []
+        w[l].push({
+          'gtm.start': new Date().getTime(),
+          event: 'gtm.js',
+        })
+        var f = d.getElementsByTagName(s)[0],
+          j = d.createElement(s),
+          dl = l !== 'dataLayer' ? '&l=' + l : ''
+        j.async = true
+        j.src = 'https://www.googletagmanager.com/gtm.js?id=' + i + dl
+        f.parentNode.insertBefore(j, f)
+      })(window, document, 'script', 'dataLayer', 'GTM-M3MBVGG')
+    </script>
+    <!-- End Google Tag Manager -->
+    <meta charset="UTF-8" />
+    <script type="text/javascript" src="app.js"></script>
+    <style type="text/css">
+      body {
+        position: relative;
+      }
+
+      .play-page {
+        display: flex;
+        flex-direction: row-reverse;
+        font-family: Georgia, 'Times New Roman', Times, serif;
+      }
+
+      h1 {
+        font-family: Verdana, Geneva, Tahoma, sans-serif;
+        text-align: center;
+        display: flex;
+        flex-direction: row;
+      }
+
+      .new-game-button {
+        font-size: 14px;
+        margin: 0;
+      }
+
+      form {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        margin-right: 240px;
+      }
+
+      .cards-container {
+        display: flex;
+        flex-wrap: wrap;
+        flex-direction: row;
+        justify-content: center;
+      }
+
+      .card {
+        width: 300px;
+        height: 259px;
+        border: 5px solid lightgrey;
+        margin: 5px;
+        align-items: flex-end;
+        box-sizing: border-box;
+        border-radius: 11px;
+        position: relative;
+        display: flex;
+        justify-content: center;
+        /*background-size: contain;*/
+        background-size: 292px;
+        background-repeat: no-repeat;
+        transition: height 1s, background-image 1s, border 0.4s 0.6s;
+        background-position-y: calc(50% - 18px);
+      }
+
+      .card:not([data-name^='name'])::after {
+        content: '';
+        height: 34px;
+        background: white;
+        width: 100%;
+      }
+
+      .answer-page .card:not([data-name^='name'])::after {
+        display: none;
+      }
+
+      .answer-page .card {
+        height: 453px;
+        /*padding-top: 310px;*/
+        /*background-size: cover;*/
+        overflow: hidden;
+        border-color: rgb(0, 146, 156);
+      }
+
+      .answer-page .card.incorrect {
+        border-color: rgb(216, 27, 96);
+      }
+
+      .names-bank {
+        position: fixed;
+        padding: 10px 10px 40px;
+      }
+
+      .names-bank .name {
+        margin: 6px 0;
+      }
+
+      .answer-page .names-bank .name {
+        display: none;
+      }
+
+      .answer-page .names-bank .word-count {
+        display: none;
+      }
+
+      .word-count {
+        text-align: center;
+        font-style: italic;
+        color: #444;
+      }
+
+      .score {
+        width: 100%;
+        text-align: center;
+        background-color: rgb(255, 193, 7);
+        width: 200px;
+        font-family: Verdana, Geneva, Tahoma, sans-serif;
+        opacity: 0;
+      }
+
+      .names-bank .score {
+        overflow: hidden;
+        height: 0;
+      }
+
+      .answer-page .names-bank .score {
+        height: auto;
+        display: block;
+        opacity: 1;
+        transition: opacity 1.2s 0.2s;
+        padding: 20px;
+      }
+
+      .name {
+        width: 230px;
+        min-height: 36px;
+        border-radius: 2px;
+        background-color: lightgrey;
+        padding: 8px 12px 2px;
+        box-sizing: border-box;
+      }
+
+      .card .name {
+        border-radius: 0 0 5px 5px;
+        width: 300px;
+      }
+
+      #submit {
+        margin-top: 10px;
+        padding: 8px 20px;
+        background-color: cadetblue;
+        border: none;
+        border-radius: 3px;
+        font-size: 1.1em;
+        color: white;
+        cursor: pointer;
+      }
+
+      #submit:hover {
+        background-color: rgb(0, 146, 156);
+      }
+
+      #newGame {
+        padding: 8px 20px;
+        background-color: lightpink;
+        border: none;
+        /* position: absolute; */
+        top: 5px;
+        left: 20px;
+        border-radius: 3px;
+        font-size: 0.7em;
+        cursor: pointer;
+      }
+
+      #newGame:hover {
+        background-color: coral;
+      }
+
+      .selected {
+        background-color: orange;
+      }
+
+      @media screen and (orientation: landscape) and (max-height: 680px) {
+        /* CSS applied when the device is in landscape mode*/
+        .names-bank {
+          padding: 0;
+          top: 0;
+          max-height: 100vh;
+          overflow: scroll;
+        }
+
+        body {
+          font-size: 20px;
+        }
+
+        .word-count {
+          font-size: 14px;
+        }
+
+        h1 {
+          margin-right: 240px;
+        }
+
+        .answer-page .card {
+          height: 353px;
+        }
+
+        .card {
+          width: 230px;
+          height: 208px;
+          background-size: 220px;
+        }
+      }
+
+      @media screen and (orientation: portrait) and (max-width: 1100px) {
+        body {
+          font-size: 1.8em;
+        }
+
+        .play-page {
+          flex-direction: column;
+        }
+
+        .names-bank {
+          flex-direction: row;
+          display: flex;
+          flex-wrap: wrap;
+          /* position: fixed; */
+          padding: 10px 10px 40px;
+          position: sticky;
+          top: 0;
+          z-index: 100;
+          background: white;
+        }
+
+        .answer-page .names-bank {
+          min-width: 100%;
+          justify-content: center;
+        }
+
+        form {
+          margin: 0;
+        }
+
+        .names-bank .name {
+          margin: 6px;
+        }
+
+        .names-bank .score {
+          width: 0;
+        }
+
+        .answer-page .names-bank .score {
+          width: auto;
+        }
+
+        .word-count {
+          position: absolute;
+          margin-top: -20px;
+        }
+
+        .name {
+          width: 300px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Google Tag Manager (noscript) -->
+    <noscript>
+      <iframe
+        src="https://www.googletagmanager.com/ns.html?id=GTM-M3MBVGG"
+        height="0"
+        width="0"
+        style="display: none; visibility: hidden"
+      ></iframe>
+    </noscript>
+    <!-- End Google Tag Manager (noscript) -->
+
+    <h1>
+      <form method="get" class="new-game-button" action="index.html">
+        <input type="submit" id="newGame" value="New Game" />
+      </form>
+      <div style="flex-grow: 1">
+        <span id="guess-type"></span>: <span id="round-number"></span
+        ><span style="display: inline-block; width: 90px">&nbsp;</span>
+      </div>
+    </h1>
+
+    <div class="play-page">
+      <div
+        class="names-bank"
+        ondrop="returnDrop(event)"
+        ondragover="event.preventDefault()"
+      >
+        <div class="score">
+          YOUR SCORE
+          <div>Correct Answers This Round: <span id="score-amount"></span></div>
+          <div>
+            Correct Answers In Total: <span id="score-amount-total"></span>
+          </div>
+          <div>Overall Percent: <span id="score-percent"></span>%</div>
+        </div>
+        <div class="word-count"><span id="words-left"></span></div>
+        <div
+          class="name"
+          draggable="true"
+          ondragstart="drag(event)"
+          onClick="selectName(event)"
+          id="name-1"
+        >
+          Name 1
+        </div>
+        <div
+          class="name"
+          draggable="true"
+          ondragstart="drag(event)"
+          onClick="selectName(event)"
+          id="name-2"
+        >
+          Name 2
+        </div>
+        <div
+          class="name"
+          draggable="true"
+          ondragstart="drag(event)"
+          onClick="selectName(event)"
+          id="name-3"
+        >
+          Name 3
+        </div>
+        <div
+          class="name"
+          draggable="true"
+          ondragstart="drag(event)"
+          onClick="selectName(event)"
+          id="name-4"
+        >
+          Name 4
+        </div>
+        <div
+          class="name"
+          draggable="true"
+          ondragstart="drag(event)"
+          onClick="selectName(event)"
+          id="name-5"
+        >
+          Name 5
+        </div>
+        <div
+          class="name"
+          draggable="true"
+          ondragstart="drag(event)"
+          onClick="selectName(event)"
+          id="name-6"
+        >
+          Name 6
+        </div>
+        <div
+          class="name"
+          draggable="true"
+          ondragstart="drag(event)"
+          onClick="selectName(event)"
+          id="name-7"
+        >
+          Name 7
+        </div>
+        <div
+          class="name"
+          draggable="true"
+          ondragstart="drag(event)"
+          onClick="selectName(event)"
+          id="name-8"
+        >
+          Name 8
+        </div>
+        <div
+          class="name"
+          draggable="true"
+          ondragstart="drag(event)"
+          onClick="selectName(event)"
+          id="name-9"
+        >
+          Name 9
+        </div>
+        <div
+          class="name"
+          draggable="true"
+          ondragstart="drag(event)"
+          onClick="selectName(event)"
+          id="name-10"
+        >
+          Name 10
+        </div>
+        <div
+          class="name"
+          draggable="true"
+          ondragstart="drag(event)"
+          onClick="selectName(event)"
+          id="name-11"
+        >
+          Name 11
+        </div>
+        <div
+          class="name"
+          draggable="true"
+          ondragstart="drag(event)"
+          onClick="selectName(event)"
+          id="name-12"
+        >
+          Name 12
+        </div>
+        <div
+          class="name"
+          draggable="true"
+          ondragstart="drag(event)"
+          onClick="selectName(event)"
+          id="name-13"
+        >
+          Name 13
+        </div>
+        <div
+          class="name"
+          draggable="true"
+          ondragstart="drag(event)"
+          onClick="selectName(event)"
+          id="name-14"
+        >
+          Name 14
+        </div>
+        <div
+          class="name"
+          draggable="true"
+          ondragstart="drag(event)"
+          onClick="selectName(event)"
+          id="name-15"
+        >
+          Name 15
+        </div>
+      </div>
+      <form onsubmit="toggleMode(event)">
+        <div class="cards-container">
+          <div
+            class="card"
+            ondrop="drop(event,1)"
+            ondragover="allowDrop(event,1)"
+            onclick="dropSelected(event, 1)"
+            id="card-1"
+          ></div>
+          <div
+            class="card"
+            ondrop="drop(event,2)"
+            ondragover="allowDrop(event,2)"
+            onclick="dropSelected(event, 2)"
+            id="card-2"
+          ></div>
+          <div
+            class="card"
+            ondrop="drop(event,3)"
+            ondragover="allowDrop(event,3)"
+            onclick="dropSelected(event, 3)"
+            id="card-3"
+          ></div>
+          <div
+            class="card"
+            ondrop="drop(event,4)"
+            ondragover="allowDrop(event,4)"
+            onclick="dropSelected(event, 4)"
+            id="card-4"
+          ></div>
+          <div
+            class="card"
+            ondrop="drop(event,5)"
+            ondragover="allowDrop(event,5)"
+            onclick="dropSelected(event, 5)"
+            id="card-5"
+          ></div>
+          <div
+            class="card"
+            ondrop="drop(event, 6)"
+            ondragover="allowDrop(event,6)"
+            onclick="dropSelected(event,6)"
+            id="card-6"
+          ></div>
+          <div
+            class="card"
+            ondrop="drop(event,7)"
+            ondragover="allowDrop(event,7)"
+            onclick="dropSelected(event, 7)"
+            id="card-7"
+          ></div>
+          <div
+            class="card"
+            ondrop="drop(event,8)"
+            ondragover="allowDrop(event,8)"
+            onclick="dropSelected(event, 8)"
+            id="card-8"
+          ></div>
+          <div
+            class="card"
+            ondrop="drop(event,9)"
+            ondragover="allowDrop(event,9)"
+            onclick="dropSelected(event, 9)"
+            id="card-9"
+          ></div>
+          <div
+            class="card"
+            ondrop="drop(event,10)"
+            ondragover="allowDrop(event,10)"
+            onclick="dropSelected(event, 10)"
+            id="card-10"
+          ></div>
+          <div
+            class="card"
+            ondrop="drop(event,11)"
+            ondragover="allowDrop(event,11)"
+            onclick="dropSelected(event, 11)"
+            id="card-11"
+          ></div>
+          <div
+            class="card"
+            ondrop="drop(event,12)"
+            ondragover="allowDrop(event,12)"
+            onclick="dropSelected(event, 12)"
+            id="card-12"
+          ></div>
+        </div>
+        <input type="submit" id="submit" value="Submit" />
+      </form>
+    </div>
+
+    <div
+      style="position: absolute; top: 0; left: 0; right: 0; color: grey"
+    ></div>
+    <div style="margin: -40px 0 0; height: 60px">
+      <a href="https://paypal.me/idamayer">Donate, buy us a boba 🧋</a>
+    </div>
+
+    <div
+      style="
+        font-size: 0.9em;
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        color: grey;
+        font-style: italic;
+      "
+    >
+      made by
+      <a
+        style="color: rgb(0, 146, 156); font-style: italic"
+        href="https://idamayer.com"
+        >Ida Mayer</a
+      >
+      &
+      <a
+        style="color: rgb(0, 146, 156); font-style: italic"
+        href="mailto:alexlien.alien@gmail.com"
+        >Alex Lien</a
+      >, 2022
+    </div>
+  </body>
+</html>

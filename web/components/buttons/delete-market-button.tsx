@@ -13,6 +13,7 @@ export const DeleteMarketButton = (props: {
   return (
     <Button
       className={className}
+      size="2xs"
       color="red"
       loading={loading}
       disabled={loading}

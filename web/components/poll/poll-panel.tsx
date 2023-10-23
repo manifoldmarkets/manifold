@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useUser } from 'web/hooks/use-user'
 import { castPollVote } from 'web/lib/firebase/api'
 import { firebaseLogin } from 'web/lib/firebase/users'
-import { AnswerBar } from '../answers/answer-item'
+import { AnswerBar } from '../answers/answer-components'
 import { Button } from '../buttons/button'
 import { Col } from '../layout/col'
 import { sumBy } from 'lodash'
@@ -71,7 +71,7 @@ export function PollPanel(props: {
         return (
           <AnswerBar
             key={option.id}
-            color={'#6366f1b3'}
+            color={'#818cf8'} // indigo-400
             prob={prob}
             resolvedProb={
               contract.isResolved &&
@@ -134,7 +134,7 @@ export function SeeVotesButton(props: {
         </Tooltip>
       )}
       <button
-        className="disabled:text-ink-900/60 disabled:pointer-none group whitespace-nowrap transition-colors hover:text-indigo-800 disabled:cursor-not-allowed hover:dark:text-indigo-300"
+        className="disabled:text-ink-900/60 disabled:pointer-none hover:text-primary-700 group whitespace-nowrap transition-colors disabled:cursor-not-allowed"
         onClick={(e) => {
           e.preventDefault()
           setOpen(true)

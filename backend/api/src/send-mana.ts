@@ -9,9 +9,10 @@ import { createManaPaymentNotification } from 'shared/create-notification'
 import * as crypto from 'crypto'
 import { createSupabaseClient } from 'shared/supabase/init'
 import { MAX_ID_LENGTH } from 'common/group'
+import { isAdminId } from 'common/envs/constants'
 
 const bodySchema = z.object({
-  amount: z.number().gt(0).finite(),
+  amount: z.number().finite(),
   toIds: z.array(z.string()),
   message: z.string(),
   groupId: z.string().max(MAX_ID_LENGTH).optional(),
@@ -27,7 +28,12 @@ export const sendmana = authEndpoint(async (req, auth) => {
   const fromId = auth.uid
   // Run as transaction to prevent race conditions.
   return await firestore.runTransaction(async (transaction) => {
-    // Look up the manalink
+    if (!isAdminId(fromId) && amount < 10) {
+      throw new APIError(400, 'Only admins can send less than 10 mana')
+    }
+    if (toIds.includes(fromId)) {
+      throw new APIError(400, 'Cannot send mana to yourself.')
+    }
     const fromDoc = firestore.doc(`users/${fromId}`)
     const fromSnap = await transaction.get(fromDoc)
     if (!fromSnap.exists) {

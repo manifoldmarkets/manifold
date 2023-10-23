@@ -3,7 +3,7 @@ import {
   Notification,
   NotificationReason,
 } from 'common/notification'
-import { first, groupBy, sortBy } from 'lodash'
+import { Dictionary, first, groupBy, sortBy } from 'lodash'
 import { useEffect, useMemo } from 'react'
 import { NOTIFICATIONS_PER_PAGE } from 'web/components/notifications/notification-helpers'
 import {
@@ -26,7 +26,7 @@ export type NotificationGroup = {
 
 const NOTIFICATIONS_KEY = 'notifications_1'
 
-export function useNotifications(
+function useNotifications(
   userId: string,
   // Nobody's going through 10 pages of notifications, right?
   count = 10 * NOTIFICATIONS_PER_PAGE
@@ -41,7 +41,7 @@ export function useNotifications(
   return useMemo(() => rows?.map((r) => r.data as Notification), [rows])
 }
 
-export function useUnseenNotifications(
+function useUnseenNotifications(
   userId: string,
   count = 10 * NOTIFICATIONS_PER_PAGE
 ) {
@@ -79,82 +79,129 @@ export function useUnseenNotifications(
   }, [rows])
 }
 
-export function useGroupedNonBalanceChangeNotifications(userId: string) {
-  const notifications = useNotifications(userId)
-
-  const balanceChangeOnlyReasons: NotificationReason[] = ['loan_income']
+export function useGroupedUnseenNotifications(
+  userId: string,
+  ignoreTypes?: NotificationReason[]
+) {
+  const notifications = useUnseenNotifications(userId)?.filter(
+    (n) => !ignoreTypes?.includes(n.reason)
+  )
   return useMemo(() => {
-    const sortedNotifications =
-      notifications != null
-        ? sortBy(notifications, (n) => -n.createdTime)
-        : undefined
-    const groupedNotifications = sortedNotifications
-      ? groupNotifications(
-          sortedNotifications.filter(
-            (n) => !balanceChangeOnlyReasons.includes(n.reason)
-          )
-        )
-      : undefined
-    const mostRecentNotification = first(sortedNotifications)
-    return {
-      groupedNotifications,
+    return notifications ? groupNotificationsForIcon(notifications) : undefined
+  }, [notifications])
+}
+
+export function useGroupedNotifications(
+  userId: string,
+  ignoreTypes?: NotificationReason[]
+) {
+  const notifications = useNotifications(userId)?.filter(
+    (n) => !ignoreTypes?.includes(n.reason)
+  )
+  const sortedNotifications = notifications
+    ? sortBy(notifications, (n) => -n.createdTime)
+    : undefined
+
+  const [groupedNotifications, mostRecentNotification] =
+    groupGeneralNotifications(sortedNotifications, [
+      'loan_income',
+      'contract_from_followed_user',
+    ])
+
+  const groupedBalanceChangeNotifications =
+    groupBalanceChangeNotifications(sortedNotifications)
+  const groupedNewMarketNotifications =
+    groupNewMarketNotifications(sortedNotifications)
+
+  return useMemo(
+    () => ({
       mostRecentNotification,
-    }
-  }, [notifications])
+      groupedNotifications,
+      groupedBalanceChangeNotifications,
+      groupedNewMarketNotifications,
+    }),
+    [notifications]
+  )
 }
 
-export function useGroupedBalanceChangeNotifications(userId: string) {
-  const notifications = useNotifications(userId)
-  return useMemo(() => {
-    if (!notifications) return undefined
-    return groupBalanceChangeNotifications(notifications)
-  }, [notifications])
+const groupNotifications = (
+  notifications: Dictionary<Notification[]>
+): NotificationGroup[] => {
+  return Object.entries(notifications).map(([key, value]) => ({
+    notifications: value,
+    groupedById: key,
+    isSeen: value.every((n) => n.isSeen),
+  }))
 }
 
-export function useGroupedUnseenNotifications(userId: string) {
-  const notifications = useUnseenNotifications(userId)
-  return useMemo(() => {
-    return notifications ? groupNotifications(notifications) : undefined
-  }, [notifications])
-}
-
-function groupNotifications(notifications: Notification[]) {
+function groupNotificationsForIcon(notifications: Notification[]) {
   const sortedNotifications = sortBy(notifications, (n) => -n.createdTime)
-  const notificationGroupsByDayAndContract = groupBy(
+  const notificationGroupsByDayOrDayAndContract = groupBy(
     sortedNotifications,
     (notification) =>
-      new Date(notification.createdTime).toDateString() +
-      notification.sourceContractId +
-      notification.sourceTitle
+      notification.reason === 'contract_from_followed_user'
+        ? new Date(notification.createdTime).toDateString()
+        : new Date(notification.createdTime).toDateString() +
+          notification.sourceContractId +
+          notification.sourceTitle
   )
 
-  return Object.entries(notificationGroupsByDayAndContract).map(
-    ([key, value]) => ({
-      notifications: value,
-      groupedById: key,
-      isSeen: value.some((n) => !n.isSeen),
-    })
-  )
+  return groupNotifications(notificationGroupsByDayOrDayAndContract)
 }
 
-function groupBalanceChangeNotifications(notifications: Notification[]) {
-  const sortedNotifications = sortBy(
-    notifications,
-    (n) => -n.createdTime
-  ).filter((n) => BalanceChangeNotificationTypes.includes(n.reason))
+function groupGeneralNotifications(
+  sortedNotifications: Notification[] | undefined,
+  except: NotificationReason[]
+) {
+  if (!sortedNotifications) return []
+
+  const groupedNotificationsByDayAndContract = groupBy(
+    sortedNotifications.filter((n) => !except.includes(n.reason)),
+    (n) =>
+      new Date(n.createdTime).toDateString() +
+      (n.sourceType === 'betting_streak_bonus' || n.reason === 'quest_payout'
+        ? 'quest_payout'
+        : `${n.sourceTitle}${n.sourceContractId}`)
+  )
+  const mostRecentNotification = first(sortedNotifications)
+  const groupedNotifications = groupNotifications(
+    groupedNotificationsByDayAndContract
+  )
+
+  return [groupedNotifications, mostRecentNotification] as const
+}
+
+function groupBalanceChangeNotifications(
+  sortedNotifications: Notification[] | undefined
+) {
+  if (!sortedNotifications) return undefined
+  const filteredNotifications = sortedNotifications.filter((n) =>
+    BalanceChangeNotificationTypes.includes(n.reason)
+  )
   const notificationGroupsByDayAndContract = groupBy(
-    sortedNotifications,
+    filteredNotifications,
     (notification) =>
       new Date(notification.createdTime).toDateString() +
       notification.sourceContractId +
       notification.sourceTitle
   )
 
-  return Object.entries(notificationGroupsByDayAndContract).map(
-    ([key, value]) => ({
-      notifications: value,
-      groupedById: key,
-      isSeen: value.some((n) => !n.isSeen),
-    })
+  return groupNotifications(notificationGroupsByDayAndContract)
+}
+
+function groupNewMarketNotifications(
+  sortedNotifications: Notification[] | undefined
+) {
+  if (!sortedNotifications) return undefined
+  const filteredNotifications = sortedNotifications.filter(
+    (n) => n.reason === 'contract_from_followed_user'
   )
+  const notificationGroupsByDay = groupBy(
+    filteredNotifications,
+    (notification) =>
+      new Date(notification.createdTime).toDateString() +
+      notification.sourceUserUsername
+  )
+
+  return groupNotifications(notificationGroupsByDay)
 }

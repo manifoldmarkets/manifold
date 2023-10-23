@@ -8,12 +8,16 @@ const ONE_YEAR_SECS = 60 * 60 * 24 * 365
 export const uploadImage = async (
   username: string,
   file: File,
+  prefix?: string,
   onProgress?: (progress: number, isRunning: boolean) => void
 ) => {
   // Replace filename with a nanoid to avoid collisions
   const [, ext] = file.name.split('.')
   const filename = `${nanoid(10)}.${ext}`
-  const storageRef = ref(storage, `user-images/${username}/${filename}`)
+  const storageRef = ref(
+    storage,
+    `user-images/${username}${prefix ? '/' + prefix : ''}/${filename}`
+  )
 
   if (file.size > 20 * 1024 ** 2) {
     return Promise.reject('File is over 20 MB')

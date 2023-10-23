@@ -1,4 +1,3 @@
-import { ReactNode, useState } from 'react'
 import { SEO } from 'web/components/SEO'
 import { DailyStats } from 'web/components/daily-stats'
 import { Page } from 'web/components/layout/page'
@@ -12,20 +11,18 @@ import { Title } from 'web/components/widgets/title'
 import { useIsClient } from 'web/hooks/use-is-client'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
-import { useTracking } from 'web/hooks/use-tracking'
 import { useUser } from 'web/hooks/use-user'
-import { FeedTimeline } from 'web/pages/feed-timeline'
+import { FeedTimeline } from 'web/components/feed-timeline'
 
 export default function Home() {
   const isClient = useIsClient()
 
   useRedirectIfSignedOut()
   useSaveReferral()
-  useTracking('view home', { kind: 'desktop' })
 
   if (!isClient)
     return (
-      <Page>
+      <Page trackPageView={'home'} trackPageProps={{ kind: 'desktop' }}>
         <LoadingIndicator className="mt-6" />
       </Page>
     )
@@ -36,8 +33,6 @@ export default function Home() {
 function HomeDashboard() {
   const user = useUser()
 
-  const [sidebar, setSidebar] = useState<ReactNode>(<></>)
-
   return (
     <>
       <SEO
@@ -45,19 +40,16 @@ function HomeDashboard() {
         description="Breaking news meets the wisdom of the crowd"
       />
       <Welcome />
-      <Page rightSidebar={sidebar} manifestBannerEnabled>
-        <Row className="mx-4 mb-2 items-center justify-between gap-4">
-          <div className="flex sm:hidden">
+      <Page trackPageView={'home'} trackPageProps={{ kind: 'desktop' }}>
+        <Row className="mx-3 mb-2 items-center justify-between gap-4">
+          <div className="flex md:hidden">
             {user ? <ProfileSummary user={user} /> : <Spacer w={4} />}
           </div>
-          <Title className="!mb-0 hidden sm:flex">Home</Title>
+          <Title className="!mb-0 hidden md:flex">Home</Title>
           <DailyStats user={user} />
         </Row>
 
-        <NewsTopicsTabs
-          homeContent={<FeedTimeline />}
-          setSidebar={setSidebar}
-        />
+        <NewsTopicsTabs homeContent={<FeedTimeline />} />
       </Page>
     </>
   )

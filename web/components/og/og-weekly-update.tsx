@@ -60,7 +60,7 @@ export function OgWeeklyUpdate(props: WeeklyPortfolioUpdateOGCardProps) {
       </div>
 
       {/* We render the profit last so it appears over the graph*/}
-      <div className="absolute top-44 left-20 flex w-full flex-row justify-between">
+      <div className="absolute left-20 top-44 flex w-full flex-row justify-between">
         {ProfitDiv(parseInt(weeklyProfit), date)}
       </div>
     </div>
@@ -68,7 +68,7 @@ export function OgWeeklyUpdate(props: WeeklyPortfolioUpdateOGCardProps) {
 }
 
 function ProfitDiv(profit: number, date: string) {
-  const color = profit > 0 ? 'text-teal-500' : 'text-red-600'
+  const color = profit > 0 ? 'text-teal-500' : 'text-scarlet-500'
   return (
     <div className={'bg-canvas-0 flex flex-col rounded-md p-2 ' + color}>
       <div className="flex flex-row text-8xl">M${profit}</div>

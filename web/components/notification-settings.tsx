@@ -71,7 +71,6 @@ const emailsEnabled: Array<notification_preference> = [
   'profit_loss_updates',
   'opt_out_all',
   // TODO: add these
-  // biggest winner, here are the rest of your markets
 
   // 'referral_bonuses',
   // 'on_new_follow',
@@ -83,7 +82,6 @@ const browserDisabled: Array<notification_preference> = [
   'trending_markets',
   'onboarding_flow',
   'thank_you_for_purchases',
-  'contract_from_followed_user',
 ]
 
 const mobilePushEnabled: Array<notification_preference> = [
@@ -135,6 +133,7 @@ const updates: SectionData = {
     'resolutions_on_watched_markets_with_shares_in',
     'all_votes_on_watched_markets',
     'poll_close_on_watched_markets',
+    'bounty_canceled',
   ],
 }
 const yourMarkets: SectionData = {
@@ -147,6 +146,7 @@ const yourMarkets: SectionData = {
     'bounty_added',
     'vote_on_your_contract',
     'your_poll_closed',
+    'review_on_your_market',
   ],
 }
 const bonuses: SectionData = {

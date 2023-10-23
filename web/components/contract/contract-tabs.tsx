@@ -25,7 +25,6 @@ import { useUser } from 'web/hooks/use-user'
 import TriangleDownFillIcon from 'web/lib/icons/triangle-down-fill-icon.svg'
 import { track, withTracking } from 'web/lib/service/analytics'
 import { getOlderBets } from 'web/lib/supabase/bets'
-import { FreeResponseComments } from '../feed/feed-answer-comment-group'
 import { FeedBet } from '../feed/feed-bets'
 import { ContractCommentInput, FeedCommentThread } from '../feed/feed-comments'
 import { FeedLiquidity } from '../feed/feed-liquidity'
@@ -40,7 +39,7 @@ import { Button } from '../buttons/button'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { ArrowRightIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
-import { useRealtimeCommentsOnContract } from 'web/hooks/use-comments-supabase'
+import { useComments } from 'web/hooks/use-comments'
 
 export const EMPTY_USER = '_'
 
@@ -49,8 +48,9 @@ export function ContractTabs(props: {
   bets: Bet[]
   comments: ContractComment[]
   userPositionsByOutcome: ContractMetricsByOutcome
-  answerResponse?: Answer | DpmAnswer | undefined
-  onCancelAnswerResponse?: () => void
+  replyTo?: Answer | DpmAnswer | Bet
+  setReplyTo?: (replyTo?: Answer | DpmAnswer | Bet) => void
+  cancelReplyToAnswer?: () => void
   blockedUserIds: string[]
   activeIndex: number
   setActiveIndex: (i: number) => void
@@ -61,8 +61,8 @@ export function ContractTabs(props: {
     contract,
     comments,
     bets,
-    answerResponse,
-    onCancelAnswerResponse,
+    replyTo,
+    setReplyTo,
     blockedUserIds,
     activeIndex,
     setActiveIndex,
@@ -72,16 +72,10 @@ export function ContractTabs(props: {
 
   const [totalPositions, setTotalPositions] = useState(props.totalPositions)
   const [totalComments, setTotalComments] = useState(comments.length)
-  const [replyToBet, setReplyToBet] = useState<Bet | undefined>(undefined)
-  const clearReply = useEvent(() => setReplyToBet(undefined))
-  useEffect(() => {
-    if (replyToBet) setActiveIndex(0)
-  }, [replyToBet])
 
-  const commentTitle =
-    totalComments === 0
-      ? 'Comments'
-      : `${shortFormatNumber(totalComments)} Comments`
+  const commentsTitle =
+    (totalComments > 0 ? `${shortFormatNumber(totalComments)} ` : '') +
+    'Comments'
 
   const user = useUser()
 
@@ -93,8 +87,8 @@ export function ContractTabs(props: {
       order: 'asc',
     }) ?? []
 
-  const betsTitle =
-    totalBets === 0 ? 'Trades' : `${shortFormatNumber(totalBets)} Trades`
+  const tradesTitle =
+    (totalBets > 0 ? `${shortFormatNumber(totalBets)} ` : '') + 'Trades'
 
   const visibleUserBets = userBets.filter(
     (bet) => bet.amount !== 0 && !bet.isRedemption
@@ -103,32 +97,45 @@ export function ContractTabs(props: {
   const isMobile = useIsMobile()
 
   const yourBetsTitle =
-    (visibleUserBets.length === 0 ? '' : `${visibleUserBets.length} `) +
+    (visibleUserBets.length > 0 ? `${visibleUserBets.length} ` : '') +
     (isMobile ? 'You' : 'Your Trades')
 
-  const positionsTitle = shortFormatNumber(totalPositions) + ' Positions'
+  const positionsTitle =
+    (totalPositions > 0 ? `${shortFormatNumber(totalPositions)} ` : '') +
+    'Positions'
 
   return (
     <ControlledTabs
       className="mb-4"
-      currentPageForAnalytics={'contract'}
       activeIndex={activeIndex}
-      onClick={(_title, i) => {
+      onClick={(title, i) => {
         setActiveIndex(i)
+        track(
+          `click ${
+            title === commentsTitle
+              ? 'comments'
+              : title === tradesTitle
+              ? 'trades'
+              : title === yourBetsTitle
+              ? 'your trades'
+              : title === positionsTitle
+              ? 'positions'
+              : 'contract'
+          } tab`
+        )
       }}
       tabs={buildArray(
         {
-          title: commentTitle,
+          title: commentsTitle,
           content: (
             <CommentsTabContent
               contract={contract}
               comments={comments}
               setCommentsLength={setTotalComments}
-              answerResponse={answerResponse}
-              onCancelAnswerResponse={onCancelAnswerResponse}
               blockedUserIds={blockedUserIds}
-              betResponse={replyToBet}
-              clearReply={clearReply}
+              replyTo={replyTo}
+              clearReply={() => setReplyTo?.(undefined)}
+              className="-ml-2 -mr-1"
             />
           ),
         },
@@ -145,14 +152,14 @@ export function ContractTabs(props: {
             ),
           },
         totalBets > 0 && {
-          title: betsTitle,
+          title: tradesTitle,
           content: (
             <Col className={'gap-4'}>
               <BetsTabContent
                 contract={contract}
                 bets={bets}
                 totalBets={totalBets}
-                setReplyToBet={setReplyToBet}
+                setReplyToBet={setReplyTo}
               />
             </Col>
           ),
@@ -174,32 +181,28 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
   comments: ContractComment[]
   blockedUserIds: string[]
   setCommentsLength?: (length: number) => void
-  onCancelAnswerResponse?: () => void
-  answerResponse?: Answer | DpmAnswer
-  betResponse?: Bet
+  replyTo?: Answer | DpmAnswer | Bet
   clearReply?: () => void
+  className?: string
 }) {
   const {
     contract,
-    answerResponse,
-    onCancelAnswerResponse,
     blockedUserIds,
     setCommentsLength,
-    betResponse,
+    replyTo,
     clearReply,
+    className,
   } = props
 
   // Firebase useComments
-  // const comments = (
-  //   useComments(
-  //     contract.id,
-  //     maxBy(props.comments, (c) => c.createdTime)?.createdTime ?? 0
-  //   ) ?? props.comments
-  // ).filter((c) => !blockedUserIds.includes(c.userId))
+  const comments = (useComments(contract.id, 0) ?? props.comments).filter(
+    (c) => !blockedUserIds.includes(c.userId)
+  )
 
-  const comments = (
-    useRealtimeCommentsOnContract(contract.id) ?? props.comments
-  ).filter((c) => !blockedUserIds.includes(c.userId))
+  // Supabase use realtime comments
+  // const comments = (
+  //   useRealtimeCommentsOnContract(contract.id) ?? props.comments
+  // ).filter((c) => !blockedUserIds.includes(c.userId))
 
   const [parentCommentsToRender, setParentCommentsToRender] = useState(
     props.comments.filter((c) => !c.replyToCommentId).length
@@ -302,19 +305,19 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
   })
 
   return (
-    <>
+    <Col className={className}>
       {user && (
         <ContractCommentInput
-          replyToBet={betResponse}
+          replyTo={replyTo}
           replyToUserInfo={
-            betResponse
+            replyTo && 'userUsername' in replyTo
               ? {
-                  username: betResponse.userUsername,
-                  id: betResponse.userId,
+                  username: replyTo.userUsername,
+                  id: replyTo.userId,
                 }
               : undefined
           }
-          className="mb-4 mt-px mr-px"
+          className="mb-4 mr-px mt-px"
           contract={contract}
           clearReply={clearReply}
           trackingLocation={'contract page'}
@@ -340,37 +343,24 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
           }
         />
       )}
-      {contract.outcomeType === 'FREE_RESPONSE' && (
-        <FreeResponseComments
+      {parentComments.slice(0, parentCommentsToRender).map((parent) => (
+        <FeedCommentThread
+          key={parent.id}
           contract={contract}
-          answerResponse={answerResponse}
-          onCancelAnswerResponse={onCancelAnswerResponse}
-          topLevelComments={parentComments.slice(0, parentCommentsToRender)}
-          commentsByParent={commentsByParent}
+          parentComment={parent}
+          threadComments={commentsByParent[parent.id] ?? []}
+          trackingLocation={'contract page'}
+          idInUrl={hashInUrl}
+          showReplies={
+            !isBountiedQuestion || (!!user && user.id === contract.creatorId)
+          }
+          childrenBountyTotal={
+            contract.outcomeType == 'BOUNTIED_QUESTION'
+              ? childrensBounties[parent.id]
+              : undefined
+          }
         />
-      )}
-      {contract.outcomeType !== 'FREE_RESPONSE' &&
-        parentComments
-          .slice(0, parentCommentsToRender)
-          .map((parent) => (
-            <FeedCommentThread
-              key={parent.id}
-              contract={contract}
-              parentComment={parent}
-              threadComments={commentsByParent[parent.id] ?? []}
-              trackingLocation={'contract page'}
-              idInUrl={hashInUrl}
-              showReplies={
-                !isBountiedQuestion ||
-                (!!user && user.id === contract.creatorId)
-              }
-              childrenBountyTotal={
-                contract.outcomeType == 'BOUNTIED_QUESTION'
-                  ? childrensBounties[parent.id]
-                  : undefined
-              }
-            />
-          ))}
+      ))}
 
       <div className="relative w-full">
         <VisibilityObserver
@@ -392,7 +382,7 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
           Sign up to comment <ArrowRightIcon className="ml-2 h-4 w-4" />
         </Button>
       )}
-    </>
+    </Col>
   )
 })
 

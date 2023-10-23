@@ -30,7 +30,6 @@ export type FEED_REASON_TYPES =
   | 'similar_interest_vector_to_news_vector'
 
 export const NEW_USER_FEED_DATA_TYPES: FEED_DATA_TYPES[] = [
-  'news_with_related_contracts',
   'new_contract',
   'contract_probability_changed',
   'trending_contract',
@@ -39,11 +38,11 @@ export const NEW_USER_FEED_DATA_TYPES: FEED_DATA_TYPES[] = [
 
 export const BASE_FEED_DATA_TYPE_SCORES: { [key in FEED_DATA_TYPES]: number } =
   {
-    new_comment: 0.1,
+    new_comment: 0.05,
     new_contract: 0.15,
     new_subsidy: 0.1,
     news_with_related_contracts: 0.1,
-    user_position_changed: 0.1,
+    user_position_changed: 0.05,
     contract_probability_changed: 0.2, // todo: multiply by magnitude of prob change
     trending_contract: 0.2,
   }
@@ -54,7 +53,7 @@ export const BASE_FEED_REASON_TYPE_SCORES: {
   follow_contract: 0.4,
   liked_contract: 0.2,
   contract_in_group_you_are_in: 0.2,
-  similar_interest_vector_to_contract: 0, // factored in by multiplying by interest distance
+  similar_interest_vector_to_contract: 0, // score calculated using interest distance
   follow_user: 0.3,
   similar_interest_vector_to_news_vector: 0.1,
 }
@@ -87,14 +86,18 @@ export type CreatorDetails = {
   avatarUrl: string
 }
 
-export const INTEREST_DISTANCE_THRESHOLDS: Record<FEED_DATA_TYPES, number> = {
-  contract_probability_changed: 0.125,
-  trending_contract: 0.125,
-  new_contract: 0.11,
-  new_comment: 0.11,
-  news_with_related_contracts: 0.17, // used to compare user interest vector to news title embedding
-  new_subsidy: 0.12,
-  user_position_changed: 1, // only targets followed users
+export const INTEREST_DISTANCE_THRESHOLDS: Record<
+  FEED_DATA_TYPES | 'ad',
+  number
+> = {
+  contract_probability_changed: 0.13,
+  trending_contract: 0.15,
+  new_contract: 0.125,
+  new_comment: 0.115,
+  news_with_related_contracts: 0.175, // used to compare user interest vector to news title embedding
+  new_subsidy: 0.15,
+  user_position_changed: 1, // only targets followed users,
+  ad: 0.175,
 }
 
 export const FeedExplanationDictionary: Record<

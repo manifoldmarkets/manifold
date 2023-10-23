@@ -3,6 +3,7 @@ import { EnvConfig, PROD_CONFIG } from './prod'
 export const DEV_CONFIG: EnvConfig = {
   ...PROD_CONFIG,
   domain: 'dev.manifold.markets',
+  loveDomain: 'dev.manifold.love',
   firebaseConfig: {
     apiKey: 'AIzaSyBoq3rzUa8Ekyo3ZaTnlycQYPRCA26VpOw',
     authDomain: 'dev-mantic-markets.firebaseapp.com',
@@ -29,5 +30,5 @@ export const DEV_CONFIG: EnvConfig = {
     androidClientId:
       '134303100058-mu6dbubhks8khpqi3dq0fokqnkbputiq.apps.googleusercontent.com',
   },
-  adminIds: ['pfKxvtgSEua5DxoIfiPXxR4fAWd2'],
+  adminIds: ['pfKxvtgSEua5DxoIfiPXxR4fAWd2', '6hHpzvRG0pMq8PNJs7RZj2qlZGn2'],
 }

@@ -1,7 +1,12 @@
 import { sumBy, groupBy, mapValues } from 'lodash'
 
 import { Bet } from './bet'
-import { Contract, CPMMContract, StillOpenDPMContract } from './contract'
+import {
+  Contract,
+  CPMMContract,
+  CPMMMultiContract,
+  StillOpenDPMContract,
+} from './contract'
 import { Fees } from './fees'
 import { LiquidityProvision } from './liquidity-provision'
 import {
@@ -15,6 +20,7 @@ import {
   getMultiFixedPayouts,
   getStandardFixedPayouts,
 } from './payouts-fixed'
+import { getProbability } from './calculate'
 
 export type Payout = {
   userId: string
@@ -53,20 +59,42 @@ export const getPayouts = (
   resolutions?: {
     [outcome: string]: number
   },
-  resolutionProbability?: number
+  resolutionProbability?: number,
+  answerId?: string
 ): PayoutInfo => {
   if (contract.mechanism === 'cpmm-1') {
+    const prob = getProbability(contract)
     return getFixedPayouts(
       outcome,
       contract,
       bets,
       liquidities,
-      resolutions,
-      resolutionProbability
+      resolutionProbability ?? prob
     )
   }
   if (contract.mechanism === 'dpm-2') {
     return getDpmPayouts(outcome, contract as any, bets, resolutions)
+  }
+  if (
+    contract.mechanism === 'cpmm-multi-1' &&
+    !contract.shouldAnswersSumToOne &&
+    answerId
+  ) {
+    const answer = contract.answers.find((a) => a.id === answerId)
+    if (!answer) {
+      throw new Error('getPayouts: answer not found')
+    }
+    const mappedLiquidities = liquidities.map((l) => ({
+      ...l,
+      amount: l.amount / contract.answers.length,
+    }))
+    return getFixedPayouts(
+      outcome,
+      contract as any,
+      bets,
+      mappedLiquidities,
+      resolutionProbability ?? answer.prob
+    )
   }
   if (contract.mechanism === 'cpmm-multi-1') {
     if (outcome === 'CANCEL') {
@@ -83,13 +111,12 @@ export const getPayouts = (
 
 export const getFixedPayouts = (
   outcome: string | undefined,
-  contract: CPMMContract,
+  contract:
+    | CPMMContract
+    | (CPMMMultiContract & { shouldAnswersSumToOne: false }),
   bets: Bet[],
   liquidities: LiquidityProvision[],
-  resolutions?: {
-    [outcome: string]: number
-  },
-  resolutionProbability?: number
+  resolutionProbability: number
 ) => {
   switch (outcome) {
     case 'YES':
@@ -100,7 +127,6 @@ export const getFixedPayouts = (
         contract,
         bets,
         liquidities,
-        resolutions,
         resolutionProbability
       )
     default:

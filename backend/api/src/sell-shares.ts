@@ -41,21 +41,30 @@ export const sellshares = authEndpoint(async (req, auth) => {
     log(
       `Checking for limit orders and bets in sellshares for user ${auth.uid} on contract id ${contractId}.`
     )
-    const [
-      [contractSnap, userSnap],
-      userBetsSnap,
-      { unfilledBets, balanceByUserId },
-    ] = await Promise.all([
-      transaction.getAll(contractDoc, userDoc),
-      transaction.get(betsQ),
-      getUnfilledBetsAndUserBalances(transaction, contractDoc),
-    ])
+    const [contractSnap, userSnap] = await transaction.getAll(
+      contractDoc,
+      userDoc
+    )
+
     if (!contractSnap.exists) throw new APIError(404, 'Contract not found')
     if (!userSnap.exists) throw new APIError(401, 'Your account was not found')
-    const userBets = userBetsSnap.docs.map((doc) => doc.data() as Bet)
-
     const contract = contractSnap.data() as Contract
     const user = userSnap.data() as User
+
+    const isIndependentMulti =
+      contract.mechanism === 'cpmm-multi-1' && !contract.shouldAnswersSumToOne
+
+    const [userBetsSnap, { unfilledBets, balanceByUserId }] = await Promise.all(
+      [
+        transaction.get(betsQ),
+        getUnfilledBetsAndUserBalances(
+          transaction,
+          contractDoc,
+          answerId && isIndependentMulti ? answerId : undefined
+        ),
+      ]
+    )
+    const userBets = userBetsSnap.docs.map((doc) => doc.data() as Bet)
 
     const { closeTime, mechanism, volume } = contract
 
@@ -117,7 +126,20 @@ export const sellshares = authEndpoint(async (req, auth) => {
       ordersToCancel,
       otherResultsWithBet,
     } = await (async () => {
-      if (mechanism === 'cpmm-1') {
+      if (
+        mechanism === 'cpmm-1' ||
+        (mechanism === 'cpmm-multi-1' && !contract.shouldAnswersSumToOne)
+      ) {
+        let answer
+        if (answerId) {
+          const answerSnap = await transaction.get(
+            contractDoc.collection('answersCpmm').doc(answerId)
+          )
+          answer = answerSnap.data() as Answer
+          if (!answer) {
+            throw new APIError(404, 'Answer not found')
+          }
+        }
         return {
           otherResultsWithBet: [],
           ...getCpmmSellBetInfo(
@@ -126,7 +148,8 @@ export const sellshares = authEndpoint(async (req, auth) => {
             contract,
             unfilledBets,
             balanceByUserId,
-            loanPaid
+            loanPaid,
+            answer
           ),
         }
       } else {

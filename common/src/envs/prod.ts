@@ -1,5 +1,6 @@
 export type EnvConfig = {
   domain: string
+  loveDomain: string
   firebaseConfig: FirebaseConfig
   amplitudeApiKey: string
   supabaseInstanceId: string
@@ -43,6 +44,7 @@ type FirebaseConfig = {
 
 export const PROD_CONFIG: EnvConfig = {
   domain: 'manifold.markets',
+  loveDomain: 'manifold.love',
   amplitudeApiKey: '2d6509fd4185ebb8be29709842752a15',
   supabaseInstanceId: 'pxidrgkatumlvfqaxcll',
   supabaseAnonKey:

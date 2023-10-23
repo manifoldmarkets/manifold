@@ -12,25 +12,27 @@ import { UserSearchResult } from 'web/lib/supabase/users'
 import { AmountInput } from 'web/components/widgets/amount-input'
 import { sendMana } from 'web/lib/firebase/api'
 import { useUser } from 'web/hooks/use-user'
-import { ENV_CONFIG } from 'common/envs/constants'
+import { ENV_CONFIG, isAdminId } from 'common/envs/constants'
 import { uniq } from 'lodash'
 import { useUserById, useUsers } from 'web/hooks/use-user-supabase'
 import { UserAvatarAndBadge, UserLink } from 'web/components/widgets/user-link'
-import { ViewListIcon, XIcon } from '@heroicons/react/outline'
+import { QrcodeIcon, XIcon } from '@heroicons/react/outline'
 import { User } from 'web/lib/firebase/users'
 import { Avatar } from 'web/components/widgets/avatar'
 import { formatMoney } from 'common/util/format'
 import { Linkify } from 'web/components/widgets/linkify'
 import { ExpandingInput } from 'web/components/widgets/expanding-input'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
-import SquaresIcon from 'web/lib/icons/squares-icon.svg'
 import { SEO } from 'web/components/SEO'
 import { useCanSendMana } from 'web/hooks/use-can-send-mana'
+import { QRCode } from 'web/components/widgets/qr-code'
+import { CopyLinkRow } from 'web/components/buttons/copy-link-button'
+import { useRouter } from 'next/router'
 
 export default function Payments() {
   const { payments, load } = useManaPayments()
   return (
-    <Page>
+    <Page trackPageView={'managrams page'}>
       <SEO
         title="Managrams"
         description="See all mana transfers (managrams!) between users."
@@ -71,48 +73,65 @@ export const PaymentsContent = (props: {
   const users = useUsers(
     uniq(payments.map((payment) => [payment.fromId, payment.toId]).flat())
   )
-  const [showModal, setShowModal] = useState(false)
-  const [viewType, setViewType] = useState<'list' | 'card'>('card')
+
+  const [showPayModal, setShowPayModal] = useState(false)
+  const [showQRModal, setShowQRModal] = useState(false)
+
+  const router = useRouter()
+  const { a, msg } = router.query
+  // ios adds a query param that breaks the message.
+  const defaultMessage =
+    msg && (msg as string).replace(/\?nativePlatform=ios/g, '')
+
   useEffect(() => {
-    if (!showModal) setTimeout(() => refresh(), 100)
-  }, [showModal])
+    if (router.isReady) setShowPayModal(a != undefined)
+  }, [router.isReady])
+
+  useEffect(() => {
+    if (!showPayModal) setTimeout(() => refresh(), 100)
+  }, [showPayModal])
   return (
     <Col className={'w-full'}>
       <Row className={'mb-2 justify-between'}>
-        <Button
-          color={'gray-outline'}
-          onClick={() =>
-            viewType === 'list' ? setViewType('card') : setViewType('list')
-          }
-        >
-          {viewType === 'list' ? (
-            <SquaresIcon className={'h-5 w-5'} />
-          ) : (
-            <ViewListIcon className={'h-5 w-5'} />
+        <Button onClick={() => setShowQRModal(true)} color="gray-outline">
+          {user && user.id === forUser?.id && (
+            <span className="mr-1">Receive Mana</span>
           )}
+          <QrcodeIcon className="h-5 w-5" />
         </Button>
-        <Button onClick={() => setShowModal(true)} color={'indigo'}>
+        <Button onClick={() => setShowPayModal(true)} color={'indigo'}>
           Send Mana
         </Button>
       </Row>
       {payments.length === 0 ? (
-        <Col className=" ">
-          <span className="text-gray-500">No Payments</span>
-        </Col>
-      ) : viewType === 'list' ? (
-        <PaymentsTable payments={payments} users={users} forUser={forUser} />
+        <span className="text-ink-500">No Payments</span>
       ) : (
         <PaymentCards payments={payments} users={users} forUser={forUser} />
       )}
       {user && (
-        <PaymentsModal
-          toUser={
-            forUser ? (forUser.id === user.id ? undefined : forUser) : undefined
-          }
-          fromUser={user}
-          show={showModal}
-          setShow={setShowModal}
-        />
+        <>
+          {router.isReady && (
+            <PaymentsModal
+              toUser={
+                forUser
+                  ? forUser.id === user.id
+                    ? undefined
+                    : forUser
+                  : undefined
+              }
+              fromUser={user}
+              show={showPayModal}
+              setShow={setShowPayModal}
+              defaultMessage={defaultMessage}
+              defaultAmount={typeof a === 'string' ? parseInt(a) : undefined}
+            />
+          )}
+          <QRModal
+            user={forUser ?? user}
+            show={showQRModal}
+            setShow={setShowQRModal}
+          />
+        </>
       )}
     </Col>
   )
@@ -129,14 +148,13 @@ const PaymentCards = (props: {
       {payments.map((payment) => {
         const fromUser = users?.find((u) => u.id === payment.fromId)
         const toUser = users?.find((u) => u.id === payment.toId)
+        const decreasedBalance =
+          (payment.fromId === forUser?.id) !== payment.amount < 0
         return (
-          <Col
-            key={payment.id}
-            className={'bg-canvas-100 w-full rounded-md p-2'}
-          >
+          <Col key={payment.id} className="bg-canvas-0 w-full rounded-md p-2">
             <Row className={'justify-between'}>
               {fromUser && toUser ? (
-                <Row>
+                <Row className="gap-1">
                   <Avatar
                     avatarUrl={fromUser.avatarUrl}
                     username={fromUser.username}
@@ -149,7 +167,7 @@ const PaymentCards = (props: {
                           username={fromUser.username}
                         />
                       </span>
-                      <span>paid</span>
+                      <span>{payment.amount < 0 ? 'fined' : 'paid'}</span>
                       <span>
                         <UserLink
                           name={toUser.name}
@@ -173,14 +191,14 @@ const PaymentCards = (props: {
               <span
                 className={
                   payment.fromId === payment.toId
-                    ? 'text-gray-500'
-                    : payment.fromId === forUser?.id
+                    ? 'text-ink-500'
+                    : decreasedBalance
                     ? 'text-scarlet-500'
                     : 'text-teal-500'
                 }
               >
-                {payment.fromId === forUser?.id ? '-' : '+'}
-                {formatMoney(payment.amount)}
+                {decreasedBalance ? '-' : '+'}
+                {formatMoney(Math.abs(payment.amount))}
               </span>
             </Row>
             <Row className={'ml-1 mt-2'}>
@@ -192,127 +210,6 @@ const PaymentCards = (props: {
     </Col>
   )
 }
-const amountFromPointOfReferenceUser = (
-  payment: ManaPayTxn,
-  referenceUser: User | null | undefined
-) =>
-  referenceUser && payment.fromId === referenceUser.id
-    ? -payment.amount
-    : payment.amount
-
-function getSortFunction(
-  sortField: 'amount' | 'createdTime',
-  sortDirection: 'asc' | 'desc',
-  referenceUser: User | undefined | null
-) {
-  return (a: ManaPayTxn, b: ManaPayTxn) => {
-    let comparison
-
-    if (sortField === 'createdTime') {
-      comparison =
-        new Date(a[sortField]).getTime() - new Date(b[sortField]).getTime()
-    } else {
-      const amountA = amountFromPointOfReferenceUser(a, referenceUser)
-      const amountB = amountFromPointOfReferenceUser(b, referenceUser)
-      comparison = amountA - amountB
-    }
-
-    return sortDirection === 'asc' ? comparison : -comparison
-  }
-}
-
-function PaymentsTable(props: {
-  payments: ManaPayTxn[]
-  users: User[] | undefined
-  forUser: User | undefined | null
-}) {
-  const { payments, users, forUser } = props
-  const [sortField, setSortField] = useState<'createdTime' | 'amount'>(
-    'createdTime'
-  )
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc')
-
-  const sortedPayments = [...payments].sort(
-    getSortFunction(sortField, sortDirection, forUser)
-  )
-
-  const handleHeaderClick = (newSortField: 'createdTime' | 'amount') => {
-    if (sortField === newSortField) {
-      // If the user clicked the column that's already sorted, we'll just switch the sort direction.
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
-    } else {
-      // If the user clicked a new column, we'll start by sorting it in ascending order.
-      setSortField(newSortField)
-      setSortDirection('asc')
-    }
-  }
-
-  return (
-    <table className="w-full text-left">
-      <thead>
-        <tr>
-          <th>From</th>
-          <th>To</th>
-          <th
-            className={'cursor-pointer'}
-            onClick={() => handleHeaderClick('amount')}
-          >
-            Amount
-          </th>
-          <th>Message</th>
-          <th
-            className={'cursor-pointer'}
-            onClick={() => handleHeaderClick('createdTime')}
-          >
-            Time
-          </th>
-        </tr>
-      </thead>
-      <tbody>
-        {sortedPayments.map((payment) => {
-          const fromUser = users?.find((u) => u.id === payment.fromId)
-          const toUser = users?.find((u) => u.id === payment.toId)
-          return (
-            <tr key={payment.id}>
-              <td className={''}>
-                {fromUser ? (
-                  <UserLink
-                    name={fromUser.name}
-                    username={fromUser.username}
-                    className={'max-w-[5rem] text-ellipsis'}
-                  />
-                ) : (
-                  <span>Loading...</span>
-                )}
-              </td>{' '}
-              <td>
-                {toUser ? (
-                  <UserLink
-                    name={toUser.name}
-                    username={toUser.username}
-                    className={'max-w-[5rem] text-ellipsis'}
-                  />
-                ) : (
-                  <span>Loading...</span>
-                )}
-              </td>
-              <td className={'text-end'}>
-                {formatMoney(amountFromPointOfReferenceUser(payment, forUser))}
-              </td>
-              <td className={'line-clamp-1 '}>{payment.data.message}</td>
-              <td className={'text-end'}>
-                <RelativeTimestamp
-                  time={payment.createdTime}
-                  shortened={true}
-                />
-              </td>
-            </tr>
-          )
-        })}
-      </tbody>
-    </table>
-  )
-}
 
 export const PaymentsModal = (props: {
   fromUser: User
@@ -320,16 +217,26 @@ export const PaymentsModal = (props: {
   show: boolean
   setShow: (show: boolean) => void
   defaultMessage?: string
+  defaultAmount?: number
   groupId?: string
 }) => {
-  const { fromUser, groupId, defaultMessage, toUser, setShow, show } = props
-  const [amount, setAmount] = useState<number | undefined>(10)
-  const [message, setMessage] = useState(defaultMessage ?? '')
+  const {
+    fromUser,
+    groupId,
+    defaultMessage = '',
+    defaultAmount = 10,
+    toUser,
+    setShow,
+    show,
+  } = props
+  const [amount, setAmount] = useState<number | undefined>(defaultAmount)
+  const [message, setMessage] = useState(defaultMessage)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [toUsers, setToUsers] = useState<UserSearchResult[]>([])
   const [removedToUser, setRemovedToUser] = useState(false)
   const { canSend, message: cannotSendMessage } = useCanSendMana(fromUser)
+  const isAdmin = isAdminId(fromUser.id)
   useEffect(() => {
     if (toUser) setToUsers([toUser])
   }, [toUser])
@@ -337,9 +244,7 @@ export const PaymentsModal = (props: {
     <Modal open={show} setOpen={setShow}>
       <Col className={'bg-canvas-0 rounded-md p-4'}>
         <div className="my-2 text-xl">Send Mana</div>
-        <Row className={'text-red-500'}>
-          {!canSend ? cannotSendMessage : ''}
-        </Row>
+        <Row className={'text-error'}>{!canSend ? cannotSendMessage : ''}</Row>
         <Col className={'gap-3'}>
           <Row className={'items-center justify-between'}>
             <Col>
@@ -376,11 +281,12 @@ export const PaymentsModal = (props: {
               <span>Amount</span>
               <AmountInput
                 amount={amount}
+                allowNegative={isAdmin}
                 onChangeAmount={setAmount}
                 label={ENV_CONFIG.moneyMoniker}
                 inputClassName={'w-52'}
                 onBlur={() => {
-                  if (amount && amount < 10) {
+                  if (amount && amount < 10 && !isAdmin) {
                     setError('Amount must be 10 or more')
                   } else {
                     setError('')
@@ -397,7 +303,7 @@ export const PaymentsModal = (props: {
                 onChange={(e) => setMessage(e.target.value)}
                 className={'w-full'}
               />
-              {error && <span className={'text-red-500'}>{error}</span>}
+              {error && <span className={'text-error'}>{error}</span>}
             </Col>
           </Row>
           <Row className={'justify-end'}>
@@ -422,7 +328,11 @@ export const PaymentsModal = (props: {
                 setLoading(false)
               }}
               disabled={
-                loading || !amount || amount < 10 || !toUsers.length || !canSend
+                loading ||
+                !amount ||
+                (amount < 10 && !isAdmin) ||
+                !toUsers.length ||
+                !canSend
               }
             >
               Send
@@ -430,6 +340,56 @@ export const PaymentsModal = (props: {
           </Row>
         </Col>
       </Col>
+    </Modal>
+  )
+}
+
+export const QRModal = (props: {
+  show: boolean
+  setShow: (show: boolean) => void
+  user: User
+}) => {
+  const { show, setShow, user } = props
+
+  const [amount, setAmount] = useState<number | undefined>(10)
+  const [message, setMessage] = useState('')
+
+  const url =
+    `https://${ENV_CONFIG.domain}/${user.username}?tab=managrams&a=${
+      amount ?? 10
+    }` + (message && `&msg=${encodeURIComponent(message)}`)
+
+  return (
+    <Modal open={show} setOpen={setShow} className="bg-canvas-0 rounded-lg">
+      <div className="flex flex-col items-center p-8">
+        <div className="mb-4 text-2xl text-indigo-700">
+          Scan to send mana to {user.name}
+        </div>
+
+        <CopyLinkRow
+          url={url}
+          eventTrackingName="copy managram page"
+          linkBoxClassName="mb-4 w-full ellipsis"
+        />
+        <QRCode url={url} width={300} height={300} className="self-center" />
+
+        <details className="flex flex-col self-stretch">
+          <summary className="text-ink-700 mt-4">Advanced Options</summary>
+          <span className="mt-2">Default Amount</span>
+          <AmountInput
+            amount={amount}
+            onChangeAmount={setAmount}
+            placeholder="10"
+          />
+          <span className="mt-2">Default Message</span>
+          <ExpandingInput
+            placeholder="What this transaction is for (e.g. tacos)"
+            className="w-full"
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+          />
+        </details>
+      </div>
     </Modal>
   )
 }

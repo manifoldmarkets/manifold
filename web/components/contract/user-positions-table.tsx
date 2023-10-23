@@ -293,7 +293,7 @@ const PositionRow = memo(function PositionRow(props: {
       </Row>
       <span
         className={clsx(
-          outcome === 'YES' ? 'text-teal-500' : 'text-red-700',
+          outcome === 'YES' ? 'text-teal-500' : 'text-scarlet-600',
           'shrink-0'
         )}
       >

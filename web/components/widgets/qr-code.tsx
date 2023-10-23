@@ -4,13 +4,12 @@ export function QRCode(props: {
   width?: number
   height?: number
 }) {
-  const { url, className, width, height } = {
-    width: 200,
-    height: 200,
-    ...props,
-  }
+  const { url, className, width = 200, height = 200 } = props
 
-  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${width}x${height}&data=${url}`
+  // url-encode the url
+  const urlEncoded = encodeURIComponent(url)
+
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${width}x${height}&data=${urlEncoded}`
 
   return <img src={qrUrl} width={width} height={height} className={className} />
 }

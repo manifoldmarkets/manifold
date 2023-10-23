@@ -2,7 +2,6 @@ import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Page } from 'web/components/layout/page'
 import { Title } from 'web/components/widgets/title'
-import { useTracking } from 'web/hooks/use-tracking'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import Masonry from 'react-masonry-css'
 import { Post } from 'common/post'
@@ -23,12 +22,11 @@ export async function getStaticProps() {
 }
 
 export default function LatestPostsPage(props: { posts: Post[] }) {
-  useTracking('view latest posts page')
   const { posts } = props
   const user = useUser()
 
   return (
-    <Page>
+    <Page trackPageView={'latest posts page'}>
       <Col className="pm:mx-10 gap-4 sm:px-4 sm:pb-4">
         <Row className="mt-4 items-start justify-between sm:mt-0">
           <Col>

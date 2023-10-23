@@ -87,8 +87,9 @@ const getReducer =
 export function useSubscription<T extends TableName>(
   table: T,
   filter?: Filter<T>,
-  fetcher?: () => PromiseLike<Row<T>[]>,
-  preload?: Row<T>[]
+  fetcher?: () => PromiseLike<Row<T>[] | undefined>,
+  preload?: Row<T>[],
+  filterString?: string
 ) {
   const fetch = fetcher ?? (() => fetchSnapshot(table, filter))
   const reducer = useMemo(() => getReducer(table), [table])
@@ -107,7 +108,7 @@ export function useSubscription<T extends TableName>(
       case 'SUBSCRIBED': {
         dispatch({ type: 'SUBSCRIBED' })
         fetch().then((snapshot) => {
-          dispatch({ type: 'FETCHED', snapshot })
+          if (snapshot != undefined) dispatch({ type: 'FETCHED', snapshot })
         })
         break
       }
@@ -129,7 +130,15 @@ export function useSubscription<T extends TableName>(
     dispatch({ type: enabled ? 'ENABLED' : 'DISABLED' })
   })
 
-  useRealtimeChannel('*', table, filter, onChange, onStatus, onEnabled)
+  useRealtimeChannel(
+    '*',
+    table,
+    filter,
+    onChange,
+    onStatus,
+    onEnabled,
+    filterString
+  )
   return state
 }
 
@@ -138,12 +147,13 @@ export function usePersistentSubscription<T extends TableName>(
   table: T,
   store?: Store,
   filter?: Filter<T>,
-  fetcher?: () => PromiseLike<Row<T>[]>
+  fetcher?: () => PromiseLike<Row<T>[] | undefined>,
+  filterString?: string
 ) {
   const isClient = useIsClient()
   const json = isClient ? store?.getItem(key) : undefined
   const rows = json != null ? (JSON.parse(json) as Row<T>[]) : undefined
-  const state = useSubscription(table, filter, fetcher, rows)
+  const state = useSubscription(table, filter, fetcher, rows, filterString)
 
   useEffect(() => {
     if (state.status === 'live') {

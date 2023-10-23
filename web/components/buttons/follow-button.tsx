@@ -3,6 +3,7 @@ import { isBlocked, usePrivateUser, useUser } from 'web/hooks/use-user'
 import { followUser, unfollowUser } from 'web/lib/firebase/api'
 import { track } from 'web/lib/service/analytics'
 import { Button } from './button'
+import clsx from 'clsx'
 
 export const onFollowClick = (
   userId: string,
@@ -25,8 +26,11 @@ export const onFollowClick = (
   }
 }
 
-export function FollowButton(props: { userId: string }) {
-  const { userId } = props
+export function FollowButton(props: {
+  userId: string
+  size?: '2xs' | 'xs' | 'sm'
+}) {
+  const { userId, size = 'sm' } = props
   const user = useUser()
   const { isFollowing, setIsFollowing } = useIsFollowing(user?.id, userId)
   const privateUser = usePrivateUser()
@@ -35,10 +39,13 @@ export function FollowButton(props: { userId: string }) {
 
   return (
     <Button
-      size="sm"
+      size={size}
       color={isFollowing ? 'gray-outline' : 'indigo'}
-      className="my-auto"
-      onClick={() => onFollowClick(userId, isFollowing, setIsFollowing)}
+      className={clsx('my-auto', size === 'sm' && 'min-w-[84px]')}
+      onClick={(e) => {
+        e.preventDefault()
+        onFollowClick(userId, isFollowing, setIsFollowing)
+      }}
     >
       {isFollowing ? 'Following' : 'Follow'}
     </Button>

@@ -1,4 +1,5 @@
 import {
+  CashIcon,
   ChatAlt2Icon,
   CurrencyDollarIcon,
   PencilIcon,
@@ -9,12 +10,19 @@ import clsx from 'clsx'
 import { DIVISION_NAMES, getLeaguePath } from 'common/leagues'
 import { Post } from 'common/post'
 import { removeUndefinedProps } from 'common/util/object'
+import Head from 'next/head'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
-import { FaMoneyBillTransfer } from 'react-icons/fa6'
 import { SEO } from 'web/components/SEO'
+
+import { ENV_CONFIG } from 'common/envs/constants'
+import { referralQuery } from 'common/util/share'
 import { UserBetsTable } from 'web/components/bet/user-bets-table'
+import {
+  CopyLinkOrShareButton,
+  CopyLinkRow,
+} from 'web/components/buttons/copy-link-button'
 import { FollowButton } from 'web/components/buttons/follow-button'
 import { MoreOptionsUserButton } from 'web/components/buttons/more-options-user-button'
 import { TextButton } from 'web/components/buttons/text-button'
@@ -27,6 +35,7 @@ import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
 import { Spacer } from 'web/components/layout/spacer'
 import { QueryUncontrolledTabs, Tabs } from 'web/components/layout/tabs'
+import { SendMessageButton } from 'web/components/messaging/send-message-button'
 import { PortfolioValueSection } from 'web/components/portfolio/portfolio-value-section'
 import { BlockedUser } from 'web/components/profile/blocked-user'
 import { UserContractsList } from 'web/components/profile/user-contracts-list'
@@ -36,18 +45,15 @@ import { Avatar } from 'web/components/widgets/avatar'
 import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
 import ImageWithBlurredShadow from 'web/components/widgets/image-with-blurred-shadow'
 import { Linkify } from 'web/components/widgets/linkify'
+import { QRCode } from 'web/components/widgets/qr-code'
 import { linkClass } from 'web/components/widgets/site-link'
 import { Title } from 'web/components/widgets/title'
-import {
-  PostBanBadge,
-  UserBadge,
-  isFresh,
-} from 'web/components/widgets/user-link'
+import { StackedUserNames } from 'web/components/widgets/user-link'
 import { useAdmin } from 'web/hooks/use-admin'
 import { useFollowers, useFollows } from 'web/hooks/use-follows'
+import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useLeagueInfo } from 'web/hooks/use-leagues'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
-import { useTracking } from 'web/hooks/use-tracking'
 import {
   usePrefetchUsers,
   usePrivateUser,
@@ -59,7 +65,7 @@ import { User, getUserByUsername } from 'web/lib/firebase/users'
 import TrophyIcon from 'web/lib/icons/trophy-icon.svg'
 import { db } from 'web/lib/supabase/db'
 import { getPostsByUser } from 'web/lib/supabase/post'
-import { getAverageUserRating, getUserRating } from 'web/lib/supabase/reviews'
+import { getAverageUserRating } from 'web/lib/supabase/reviews'
 import Custom404 from 'web/pages/404'
 import { UserPayments } from 'web/pages/payments'
 
@@ -99,13 +105,10 @@ export default function UserPage(props: {
   reviewCount?: number
 }) {
   const isAdmin = useAdmin()
-  const { username, user, ...profileProps } = props
+  const { user, ...profileProps } = props
   const privateUser = usePrivateUser()
   const blockedByCurrentUser =
     privateUser?.blockedUserIds.includes(user?.id ?? '_') ?? false
-
-  useTracking('view user profile', { username })
-  useSaveReferral()
 
   if (!user) return <Custom404 />
   else if (user.userDeleted && !isAdmin) return <DeletedUser />
@@ -119,7 +122,10 @@ export default function UserPage(props: {
 
 const DeletedUser = () => {
   return (
-    <Page>
+    <Page trackPageView={'deleted user profile'}>
+      <Head>
+        <meta name="robots" content="noindex, nofollow" />
+      </Head>
       <div className="flex h-full flex-col items-center justify-center">
         <Title>Deleted account page</Title>
         <p>This user has been deleted.</p>
@@ -144,9 +150,12 @@ function UserProfile(props: {
 }) {
   const { rating, reviewCount } = props
   const user = useUserById(props.user.id) ?? props.user
-
+  const isMobile = useIsMobile()
   const router = useRouter()
   const currentUser = useUser()
+  useSaveReferral(currentUser, {
+    defaultReferrerUsername: user?.username,
+  })
   const isCurrentUser = user.id === currentUser?.id
   const [showConfetti, setShowConfetti] = useState(false)
   const [followsYou, setFollowsYou] = useState(false)
@@ -184,16 +193,30 @@ function UserProfile(props: {
   }, [currentUser?.id, user?.id])
 
   return (
-    <Page key={user.id}>
+    <Page
+      key={user.id}
+      trackPageView={'user page'}
+      trackPageProps={{ username: user.username }}
+    >
       <SEO
         title={`${user.name} (@${user.username})`}
         description={user.bio ?? ''}
         url={`/${user.username}`}
       />
+      {(user.isBannedFromPosting || user.userDeleted) && (
+        <Head>
+          <meta name="robots" content="noindex, nofollow" />
+        </Head>
+      )}
       {showConfetti && <FullscreenConfetti />}
 
       <Col className="mx-4 mt-1">
-        <Row className="flex-wrap justify-between gap-2 py-1">
+        <Row
+          className={clsx(
+            'flex-wrap gap-2 py-1',
+            isMobile ? '' : 'justify-between'
+          )}
+        >
           <Row className={clsx('gap-2')}>
             <Col className={'relative max-h-14'}>
               <ImageWithBlurredShadow
@@ -209,7 +232,7 @@ function UserProfile(props: {
               />
               {isCurrentUser && (
                 <Link
-                  className=" bg-primary-600 shadow-primary-300 hover:bg-primary-700 text-ink-0 absolute right-0 bottom-0 h-6 w-6 rounded-full p-1.5 shadow-sm"
+                  className=" bg-primary-600 shadow-primary-300 hover:bg-primary-700 text-ink-0 absolute bottom-0 right-0 h-6 w-6 rounded-full p-1.5 shadow-sm"
                   href="/profile"
                   onClick={(e) => e.stopPropagation()}
                 >
@@ -217,46 +240,33 @@ function UserProfile(props: {
                 </Link>
               )}
             </Col>
-            <Col>
-              <div className={'inline-flex flex-row items-center gap-1 pt-1'}>
-                <span className="break-anywhere font-bold sm:text-xl">
-                  {user.name}
-                </span>
-                {
-                  <UserBadge
-                    username={user.username}
-                    fresh={isFresh(user.createdTime)}
-                  />
-                }
-                {user.isBannedFromPosting && <PostBanBadge />}
-              </div>
-              <Row
-                className={
-                  'max-w-[8rem] flex-shrink flex-wrap gap-2 sm:max-w-none'
-                }
-              >
-                <span className={'text-ink-400  text-sm sm:text-base'}>
-                  @{user.username}{' '}
-                </span>
-                {followsYou && (
-                  <span
-                    className={
-                      'bg-canvas-100 w-fit self-center rounded-md p-0.5 px-1 text-xs'
-                    }
-                  >
-                    Follows you
-                  </span>
-                )}
-              </Row>
-            </Col>
+            <StackedUserNames
+              usernameClassName={'sm:text-base'}
+              className={'font-bold sm:mr-0 sm:text-xl'}
+              user={user}
+              followsYou={followsYou}
+            />
           </Row>
           {isCurrentUser ? (
             <Row className={'items-center gap-1 sm:gap-2'}>
               <DailyLeagueStat user={user} />
               <QuestsOrStreak user={user} />
             </Row>
+          ) : isMobile ? (
+            <>
+              <div className={'my-auto'}>
+                <SendMessageButton toUser={user} currentUser={currentUser} />
+              </div>
+              <div className={'my-auto'}>
+                <FollowButton userId={user.id} />
+              </div>
+              <div className={'my-auto'}>
+                <MoreOptionsUserButton user={user} />
+              </div>
+            </>
           ) : (
             <Row className="items-center gap-1 sm:gap-2">
+              <SendMessageButton toUser={user} currentUser={currentUser} />
               <FollowButton userId={user.id} />
               <MoreOptionsUserButton user={user} />
             </Row>
@@ -265,7 +275,7 @@ function UserProfile(props: {
         <Col className={'mt-1'}>
           <ProfilePublicStats
             user={user}
-            isCurrentUser={isCurrentUser}
+            currentUser={currentUser}
             rating={rating}
           />
           {user.bio && (
@@ -328,7 +338,7 @@ function UserProfile(props: {
 
         <Col className="mt-2">
           <QueryUncontrolledTabs
-            currentPageForAnalytics={'profile'}
+            trackingName={'profile tabs'}
             labelsParentClassName={'gap-0 sm:gap-4'}
             labelClassName={'pb-2 pt-1 sm:pt-4 '}
             tabs={[
@@ -340,7 +350,9 @@ function UserProfile(props: {
                     <Spacer h={4} />
                     <PortfolioValueSection
                       userId={user.id}
-                      defaultTimePeriod={'weekly'}
+                      defaultTimePeriod={
+                        currentUser?.id === user.id ? 'daily' : 'monthly'
+                      }
                       lastUpdatedTime={user.metricsLastUpdated}
                       isCurrentUser={isCurrentUser}
                     />
@@ -374,9 +386,7 @@ function UserProfile(props: {
               },
               {
                 title: 'Managrams',
-                stackedTabIcon: (
-                  <FaMoneyBillTransfer className="h-5 w-[1.1rem]" />
-                ),
+                stackedTabIcon: <CashIcon className="h-5" />,
                 content: (
                   <>
                     <Spacer h={4} />
@@ -396,11 +406,13 @@ type FollowsDialogTab = 'following' | 'followers'
 
 function ProfilePublicStats(props: {
   user: User
-  isCurrentUser: boolean
+  currentUser: User | undefined | null
   rating?: number
   className?: string
 }) {
-  const { user, className, isCurrentUser } = props
+  const { user, className, currentUser, rating, reviewCount = 0 } = props
+  const isCurrentUser = user.id === currentUser?.id
+  const [reviewsOpen, setReviewsOpen] = useState(false)
   const [followsOpen, setFollowsOpen] = useState(false)
   const [followsTab, setFollowsTab] = useState<FollowsDialogTab>('following')
   const followingIds = useFollows(user.id)
@@ -444,7 +456,7 @@ function ProfilePublicStats(props: {
             user.id
           )}
         >
-          <TrophyIcon className="mr-1 mb-1 inline h-4 w-4" />
+          <TrophyIcon className="mb-1 mr-1 inline h-4 w-4" />
           <span className={clsx('font-semibold')}>
             {DIVISION_NAMES[leagueInfo.division ?? '']}
           </span>{' '}
@@ -454,11 +466,12 @@ function ProfilePublicStats(props: {
 
       <Link
         href={'/' + user.username + '/calibration'}
-        className={clsx(linkClass, 'cursor-pointer text-sm')}
+        className={clsx(linkClass, 'text-sm')}
       >
-        <ChartBarIcon className="mr-1 mb-1 inline h-4 w-4" />
+        <ChartBarIcon className="mb-1 mr-1 inline h-4 w-4" />
         Calibration
       </Link>
+      <ShareButton user={user} currentUser={currentUser} />
 
       <FollowsDialog
         user={user}
@@ -468,6 +481,41 @@ function ProfilePublicStats(props: {
         isOpen={followsOpen}
         setIsOpen={setFollowsOpen}
       />
+    </Row>
+  )
+}
+
+const ShareButton = (props: {
+  user: User
+  currentUser: User | undefined | null
+}) => {
+  const { user, currentUser } = props
+  const isSameUser = currentUser?.id === user.id
+  const url = `https://${ENV_CONFIG.domain}/${user.username}${
+    !isSameUser && currentUser ? referralQuery(currentUser.username) : ''
+  }`
+  const [isOpen, setIsOpen] = useState(false)
+
+  return (
+    <Row className={'items-center'}>
+      <CopyLinkOrShareButton
+        url={url}
+        iconClassName={'h-3'}
+        className={'gap-1 p-0'}
+        eventTrackingName={'share user page'}
+        tooltip={'Copy link to profile'}
+        size={'2xs'}
+      >
+        <span className={'text-sm'}>Share</span>
+      </CopyLinkOrShareButton>
+
+      <Modal open={isOpen} setOpen={setIsOpen}>
+        <Col className="bg-canvas-0 max-h-[90vh] rounded pt-6">
+          <div className="px-6 pb-1 text-center text-xl">{user.name}</div>
+          <CopyLinkRow url={url} eventTrackingName="copy referral link" />
+          <QRCode url={url} className="mt-4 self-center" />
+        </Col>
+      </Modal>
     </Row>
   )
 }

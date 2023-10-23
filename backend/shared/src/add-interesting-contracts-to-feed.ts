@@ -26,7 +26,7 @@ const rowToContract = (row: any) =>
     importanceScore: row.importance_score,
   } as Contract)
 
-export const MINUTE_INTERVAL = 60
+export const MINUTE_INTERVAL = 30
 let lastLoadedTime = 0
 
 export async function addInterestingContractsToFeed(
@@ -36,38 +36,21 @@ export async function addInterestingContractsToFeed(
 ) {
   if (Object.keys(userInterestEmbeddings).length === 0)
     await loadUserEmbeddingsToStore(pg)
+  const contracts = await pg.map(
+    `select data, importance_score from contracts 
+            where importance_score >= 0.225
+            order by importance_score desc 
+            `,
+    [],
+    rowToContract
+  )
+  log(`Found ${contracts.length} contracts to add to feed`)
+
+  const contractIds = contracts.map((c) => c.id)
   const now = Date.now()
-  const lastUpdatedTime = now - MINUTE_INTERVAL * MINUTE_MS
   const hourAgo = now - HOUR_MS
   const dayAgo = now - DAY_MS
   const weekAgo = now - 7 * DAY_MS
-  const activeContracts = await pg.map(
-    `select data, importance_score from contracts 
-            where ((data->'lastUpdatedTime')::numeric) > $1
-            order by importance_score desc`,
-    [lastUpdatedTime],
-    rowToContract
-  )
-  // We have to downgrade previously active contracts to allow the new ones to bubble up
-  const previouslyActiveContracts = await pg.map(
-    `select data, importance_score from contracts 
-            where importance_score > 0.2
-            and id not in ($1:list)
-            order by importance_score desc 
-            `,
-    [activeContracts.map((c) => c.id)],
-    rowToContract
-  )
-
-  const activeContractIds = activeContracts.map((c) => c.id)
-  const previouslyActiveContractsFiltered = (
-    previouslyActiveContracts ?? []
-  ).filter((c) => !activeContractIds.includes(c.id))
-
-  const contracts = activeContracts.concat(previouslyActiveContractsFiltered)
-  const contractIds = contracts.map((c) => c.id)
-  log(`Found ${contracts.length} contracts to score`)
-
   const todayComments = await getTodayComments(db)
   const todayLikesByContract = await getRecentContractLikes(db, dayAgo)
   const thisWeekLikesByContract = await getRecentContractLikes(db, weekAgo)
@@ -92,7 +75,6 @@ export async function addInterestingContractsToFeed(
       log('Refreshing user embeddings')
       await loadUserEmbeddingsToStore(pg, lastLoadedTime)
     }
-    // scores themselves are not updated in importance-score
     const { todayScore, logOddsChange, thisWeekScore, importanceScore } =
       computeContractScores(
         now,

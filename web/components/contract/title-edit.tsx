@@ -50,20 +50,20 @@ export const EditableQuestionTitle = (props: {
         <CheckIcon className="h-4 w-4 text-teal-600" />
       </IconButton>
       <IconButton onClick={() => setEditing(false)} size="xs">
-        <XIcon className="h-4 w-4 text-red-400" />
+        <XIcon className="text-scarlet-400 h-4 w-4" />
       </IconButton>
     </div>
   ) : (
-    <span className="group text-xl font-medium sm:text-2xl">
-      <Linkify className="" text={contract.question} />
+    <div className="group text-xl font-medium sm:text-2xl">
+      <Linkify text={contract.question} />
       {canEdit && (
         <button
           onClick={edit}
-          className="ml-1 p-1 sm:hidden sm:group-hover:inline"
+          className="align-center hover:bg-ink-100 hover:text-ink-600 text-ink-500 ml-1 rounded p-1 transition-colors sm:hidden sm:group-hover:inline"
         >
-          <PencilIcon className="text-ink-500 hover:text-ink-600 h-5 w-5" />
+          <PencilIcon className="h-5 w-5" />
         </button>
       )}
-    </span>
+    </div>
   )
 }

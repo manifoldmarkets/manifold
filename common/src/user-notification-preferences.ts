@@ -27,6 +27,7 @@ export type notification_preferences = {
   subsidized_your_market: notification_destination_types[]
   vote_on_your_contract: notification_destination_types[]
   your_poll_closed: notification_destination_types[]
+  review_on_your_market: notification_destination_types[]
 
   // Market updates
   resolutions_on_watched_markets: notification_destination_types[]
@@ -37,6 +38,7 @@ export type notification_preferences = {
   probability_updates_on_watched_markets: notification_destination_types[]
   bounty_awarded: notification_destination_types[]
   bounty_added: notification_destination_types[]
+  bounty_canceled: notification_destination_types[]
 
   // Balance Changes
   loan_income: notification_destination_types[]
@@ -118,6 +120,7 @@ export const getDefaultNotificationPreferences = (isDev?: boolean) => {
     subsidized_your_market: constructPref(true, true, false),
     vote_on_your_contract: constructPref(true, true, false),
     your_poll_closed: constructPref(true, true, false),
+    review_on_your_market: constructPref(true, false, false),
 
     // Market updates
     resolutions_on_watched_markets: constructPref(true, true, true),
@@ -135,6 +138,7 @@ export const getDefaultNotificationPreferences = (isDev?: boolean) => {
     ),
     bounty_awarded: constructPref(true, false, false),
     bounty_added: constructPref(true, false, false),
+    bounty_canceled: constructPref(true, false, false),
     poll_close_on_watched_markets: constructPref(true, false, false),
 
     //Balance Changes

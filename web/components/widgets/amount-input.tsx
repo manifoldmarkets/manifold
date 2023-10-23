@@ -5,7 +5,7 @@ import { ReactNode, useEffect, useState } from 'react'
 import { BetSlider } from 'web/components/bet/bet-slider'
 import { useUser } from 'web/hooks/use-user'
 import { AddFundsModal } from '../add-funds-modal'
-import { binaryOutcomes } from '../bet/bet-panel'
+import { BinaryOutcomes } from '../bet/bet-panel'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { Input } from './input'
@@ -120,7 +120,7 @@ export function BuyAmountInput(props: {
   inputClassName?: string
   // Needed to focus the amount input
   inputRef?: React.MutableRefObject<any>
-  binaryOutcome?: binaryOutcomes
+  binaryOutcome?: BinaryOutcomes
   sliderOptions?: {
     show: boolean
     wrap: boolean
@@ -143,7 +143,6 @@ export function BuyAmountInput(props: {
     className,
     inputClassName,
     minimumAmount,
-    quickAddAmount = 10,
     inputRef,
     binaryOutcome,
     maximumAmount,
@@ -171,22 +170,6 @@ export function BuyAmountInput(props: {
     }
   })
 
-  const quickAddButton = (
-    <button
-      className={clsx(
-        quickAddMoreButtonClassName,
-        binaryOutcome === 'YES'
-          ? 'text-teal-500 hover:bg-teal-100'
-          : binaryOutcome === 'NO'
-          ? 'text-scarlet-300 hover:bg-scarlet-50'
-          : 'text-ink-500 hover:bg-ink-200'
-      )}
-      onClick={() => onChange((amount ?? 0) + quickAddAmount)}
-    >
-      +{quickAddAmount}
-    </button>
-  )
-
   return (
     <>
       <Col className={parentClassName}>
@@ -205,7 +188,7 @@ export function BuyAmountInput(props: {
             className={className}
             inputClassName={clsx('pr-12', inputClassName)}
             inputRef={inputRef}
-            quickAddMoreButton={maximumAmount ? undefined : quickAddButton}
+            quickAddMoreButton={undefined}
           />
           {show && (
             <BetSlider

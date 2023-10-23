@@ -30,11 +30,6 @@ import { SEO } from 'web/components/SEO'
 import { EditInPlaceInput } from 'web/components/widgets/edit-in-place'
 import { richTextToString } from 'common/util/parse'
 import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
-import { getUsersWhoSkipped, getUsersWhoWatched } from 'web/lib/supabase/ads'
-import { formatMoney } from 'common/util/format'
-import { Ad } from 'common/ad'
-import { TimerClaimBox } from 'web/pages/ad'
-import { useRouter } from 'next/router'
 import { getCommentsOnPost } from 'web/lib/supabase/comments'
 import { useRealtimePostComments } from 'web/hooks/use-comments-supabase'
 
@@ -45,14 +40,8 @@ export async function getStaticProps(props: { params: { slug: string } }) {
   const creator = post ? await getUser(post.creatorId) : null
   const comments = post && (await getCommentsOnPost(post.id))
 
-  let watched: string[] = []
-  let skipped: string[] = []
-  if (post?.type === 'ad') {
-    ;[watched, skipped] = await Promise.all([
-      getUsersWhoWatched(post.id),
-      getUsersWhoSkipped(post.id),
-    ])
-  }
+  const watched: string[] = []
+  const skipped: string[] = []
 
   return {
     props: {
@@ -93,7 +82,7 @@ export default function PostPage(props: {
   const canEdit = !!user && user.id === post.creatorId
 
   return (
-    <Page>
+    <Page trackPageView={'post slug page'}>
       <SEO
         title={post.title}
         description={richTextToString(post.content)}
@@ -134,61 +123,12 @@ export default function PostPage(props: {
           </div>
         </div>
 
-        {post.type === 'ad' && (
-          <AdSection
-            ad={post as Ad}
-            watchedCount={watched.length}
-            skippedCount={skipped.length}
-            userCanClaim={
-              !!user &&
-              post.creatorId !== user.id &&
-              !watched.includes(user.id ?? '')
-            }
-          />
-        )}
-
         <Spacer h={4} />
         <div className="rounded-lg px-6 py-4 sm:py-0">
           <PostCommentsActivity post={post} comments={comments} tips={tips} />
         </div>
       </div>
     </Page>
-  )
-}
-
-function AdSection(props: {
-  ad: Ad
-  skippedCount: number
-  watchedCount: number
-  userCanClaim: boolean
-}) {
-  const { ad, skippedCount, watchedCount, userCanClaim } = props
-  const router = useRouter()
-
-  return (
-    <>
-      {userCanClaim && ad.funds > ad.costPerView && (
-        <>
-          <div className="mt-4 w-full text-center">
-            This post is promoted! Reward for reading:
-          </div>
-          <TimerClaimBox
-            ad={ad}
-            onNext={() => router.push('/ad')}
-            className="mt-2"
-          />
-        </>
-      )}
-      <div className="bg-canvas-0 mt-4 flex justify-between gap-4 rounded-md p-4">
-        <span>Ad Analytics</span>
-        <span>
-          {watchedCount} watches, {skippedCount} skips
-        </span>
-        <span>
-          {formatMoney(ad.funds)} left at {formatMoney(ad.costPerView)} per view
-        </span>
-      </div>
-    </>
   )
 }
 

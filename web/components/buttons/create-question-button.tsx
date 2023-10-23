@@ -9,11 +9,13 @@ export const CreateQuestionButton = (props: { className?: string }) => {
       href="/create"
       className={clsx(
         buttonClass('xl', 'gradient'),
-        'w-full bg-gradient-to-r px-3 text-white',
+        'w-full whitespace-nowrap bg-gradient-to-r text-white',
         className
       )}
     >
-      Create a question
+      <span>
+        Create <span className="lg:hidden xl:inline">a</span> question
+      </span>
     </Link>
   )
 }

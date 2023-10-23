@@ -2,7 +2,12 @@ import { Editor } from '@tiptap/react'
 import clsx from 'clsx'
 import { memo, ReactNode, useEffect, useRef, useState } from 'react'
 
-import { EyeOffIcon, FlagIcon, PencilIcon } from '@heroicons/react/outline'
+import {
+  EyeOffIcon,
+  FlagIcon,
+  LinkIcon,
+  PencilIcon,
+} from '@heroicons/react/outline'
 import {
   DotsHorizontalIcon,
   ReplyIcon,
@@ -50,12 +55,11 @@ import { InfoTooltip } from '../widgets/info-tooltip'
 import { Tooltip } from '../widgets/tooltip'
 import { isAdminId } from 'common/envs/constants'
 import { PaymentsModal } from 'web/pages/payments'
-import { FiLink } from 'react-icons/fi'
-import { GiPayMoney } from 'react-icons/gi'
+import TipJar from 'web/public/custom-components/tipJar'
+import { Answer, DpmAnswer } from 'common/answer'
+import { CommentOnAnswerRow } from './feed-answer-comment-group'
 
 export type ReplyToUserInfo = { id: string; username: string }
-export const isReplyToBet = (comment: ContractComment) =>
-  comment.bettorUsername !== undefined
 
 export function FeedCommentThread(props: {
   contract: Contract
@@ -67,6 +71,7 @@ export function FeedCommentThread(props: {
   idInUrl?: string
   showReplies?: boolean
   childrenBountyTotal?: number
+  className?: string
 }) {
   const {
     contract,
@@ -78,6 +83,7 @@ export function FeedCommentThread(props: {
     idInUrl,
     showReplies,
     childrenBountyTotal,
+    className,
   } = props
   const [replyToUserInfo, setReplyToUserInfo] = useState<ReplyToUserInfo>()
 
@@ -95,16 +101,17 @@ export function FeedCommentThread(props: {
     setReplyToUserInfo({ id: comment.id, username: comment.userUsername })
   })
   const [collapseToIndex, setCollapseToIndex] = useState<number>(
-    collapseMiddle && threadComments.length > 2 ? threadComments.length - 2 : -1
+    collapseMiddle && threadComments.length > 2
+      ? threadComments.length - 2
+      : Infinity
   )
   return (
-    <Col className="mt-3 w-full items-stretch gap-3">
+    <Col className={clsx('mt-3 items-stretch gap-3', className)}>
       <ParentFeedComment
         key={parentComment.id}
         contract={contract}
         comment={parentComment}
         highlighted={idInUrl === parentComment.id}
-        showLike={true}
         seeReplies={seeReplies}
         numReplies={threadComments.length}
         onSeeReplyClick={onSeeRepliesClick}
@@ -114,84 +121,75 @@ export function FeedCommentThread(props: {
         childrenBountyTotal={childrenBountyTotal}
       />
       {seeReplies &&
-        threadComments.map((comment, _commentIdx) =>
-          _commentIdx < collapseToIndex ? null : _commentIdx ===
-            collapseToIndex ? (
-            <Row
-              className={'justify-end sm:mt-1 sm:-mb-2'}
-              key={parentComment.id + 'see-replies-feed-button'}
-            >
-              <Button
-                size={'xs'}
-                color={'gray-white'}
-                onClick={() => {
-                  setCollapseToIndex(-1)
-                }}
-              >
-                <Col>
-                  <TriangleFillIcon className={'mr-2 h-2'} />
-                  <TriangleDownFillIcon className={'mr-2 h-2'} />
-                </Col>
-                See {threadComments.length - 1} replies
-              </Button>
-            </Row>
-          ) : (
+        threadComments
+          .slice(0, collapseToIndex)
+          .map((comment) => (
             <FeedComment
               key={comment.id}
               contract={contract}
               comment={comment}
               highlighted={idInUrl === comment.id}
-              showLike={true}
               onReplyClick={onReplyClick}
               trackingLocation={trackingLocation}
-              isLastReplyInThread={_commentIdx === threadComments.length - 1}
             />
-          )
-        )}
+          ))}
+      {seeReplies && threadComments.length > collapseToIndex && (
+        <Row
+          className={'justify-end sm:-mb-2 sm:mt-1'}
+          key={parentComment.id + 'see-replies-feed-button'}
+        >
+          <Button
+            size={'xs'}
+            color={'gray-white'}
+            onClick={() => {
+              setCollapseToIndex(Infinity)
+            }}
+          >
+            <Col>
+              <TriangleFillIcon className={'mr-2 h-2'} />
+              <TriangleDownFillIcon className={'mr-2 h-2'} />
+            </Col>
+            See {threadComments.length - 1} replies
+          </Button>
+        </Row>
+      )}
       {replyToUserInfo && (
-        <Col className="stop-prop relative ml-6">
+        <div className="stop-prop flex">
+          <div className="border-ink-100 -mt-3 ml-4 h-7 w-4 rounded-bl-xl border-b-2 border-l-2" />
           <ContractCommentInput
             contract={contract}
             parentCommentId={parentComment.id}
             replyToUserInfo={replyToUserInfo}
             clearReply={clearReply}
             trackingLocation={trackingLocation}
+            className="w-full min-w-0 grow"
           />
-        </Col>
+        </div>
       )}
     </Col>
   )
 }
+
 export const FeedComment = memo(function FeedComment(props: {
   contract: Contract
   comment: ContractComment
   trackingLocation: string
   highlighted?: boolean
-  showLike?: boolean
-  seeReplies?: boolean
-  hasReplies?: boolean
   onReplyClick?: (comment: ContractComment) => void
   children?: ReactNode
-  className?: string
   inTimeline?: boolean
   isParent?: boolean
-  isLastReplyInThread?: boolean
 }) {
   const {
     contract,
-    className,
-    comment,
     highlighted,
-    showLike,
-    seeReplies,
-    hasReplies,
     onReplyClick,
     children,
     trackingLocation,
     inTimeline,
     isParent,
-    isLastReplyInThread,
   } = props
+  const [comment, setComment] = useState(props.comment)
   const { userUsername, userAvatarUrl } = comment
   const ref = useRef<HTMLDivElement>(null)
   const marketCreator = contract.creatorId === comment.userId
@@ -203,39 +201,33 @@ export const FeedComment = memo(function FeedComment(props: {
   }, [highlighted])
 
   return (
-    <Col>
-      {isReplyToBet(comment) && (
-        <FeedCommentReplyHeader comment={comment} contract={contract} />
-      )}
-      <Row ref={ref} className={clsx(className ? className : 'gap-2')}>
-        <Col className="relative">
-          <Row>
-            {!isParent && (
-              <div className="border-ink-200 -mt-4 ml-4 h-6 w-4 rounded-bl-xl border-b-2 border-l-2" />
+    <Col className="group">
+      <CommentReplyHeader comment={comment} contract={contract} />
+      <Row ref={ref} className={clsx(isParent ? 'gap-2' : 'gap-1')}>
+        <Row className="relative">
+          {!isParent && (
+            <div className="border-ink-100 dark:border-ink-300 -mt-4 ml-4 h-6 w-4 rounded-bl-xl border-b-2 border-l-2" />
+          )}
+          <Avatar
+            username={userUsername}
+            size={isParent ? 'sm' : '2xs'}
+            avatarUrl={userAvatarUrl}
+            className={clsx(marketCreator && 'shadow shadow-amber-300', 'z-10')}
+          />
+          <div
+            className={clsx(
+              'bg-ink-100 dark:bg-ink-300 absolute bottom-0 left-4 w-0.5 group-last:hidden ',
+              isParent ? 'top-0' : '-top-1'
             )}
-            <Avatar
-              username={userUsername}
-              size={isParent ? 'sm' : '2xs'}
-              avatarUrl={userAvatarUrl}
-              className={clsx(
-                marketCreator ? 'shadow shadow-amber-300' : '',
-                'z-10'
-              )}
-            />
-          </Row>
-          {isParent && seeReplies && hasReplies && (
-            <div className="bg-ink-200 absolute -top-0 left-4 bottom-0 w-0.5" />
-          )}
-          {!isParent && !isLastReplyInThread && (
-            <div className="bg-ink-200 absolute -top-1 left-4 bottom-0 w-0.5" />
-          )}
-        </Col>
+          />
+        </Row>
+
         <Col
           className={clsx(
-            'group w-full rounded-xl rounded-tl-none px-4 py-1 transition-colors',
+            'grow rounded-lg rounded-tl-none px-3 pb-0.5 pt-1 transition-colors',
             highlighted
               ? 'bg-primary-100 border-primary-300 border-2'
-              : 'bg-ink-100'
+              : 'bg-canvas-50'
           )}
         >
           <FeedCommentHeader
@@ -243,15 +235,15 @@ export const FeedComment = memo(function FeedComment(props: {
             contract={contract}
             inTimeline={inTimeline}
             isParent={isParent}
+            onHide={() => setComment({ ...comment, hidden: !comment.hidden })}
           />
 
           <HideableContent comment={comment} />
-          <Row className={children ? 'justify-between' : 'justify-end'}>
+          <Row>
             {children}
             <CommentActions
               onReplyClick={onReplyClick}
               comment={comment}
-              showLike={showLike}
               contract={contract}
               trackingLocation={trackingLocation}
             />
@@ -262,11 +254,10 @@ export const FeedComment = memo(function FeedComment(props: {
   )
 })
 
-export const ParentFeedComment = memo(function ParentFeedComment(props: {
+const ParentFeedComment = memo(function ParentFeedComment(props: {
   contract: Contract
   comment: ContractComment
   highlighted?: boolean
-  showLike?: boolean
   seeReplies: boolean
   numReplies: number
   onReplyClick?: (comment: ContractComment) => void
@@ -279,7 +270,6 @@ export const ParentFeedComment = memo(function ParentFeedComment(props: {
     contract,
     comment,
     highlighted,
-    showLike,
     onReplyClick,
     onSeeReplyClick,
     seeReplies,
@@ -288,26 +278,21 @@ export const ParentFeedComment = memo(function ParentFeedComment(props: {
     inTimeline,
     childrenBountyTotal,
   } = props
-  const { userUsername } = comment
   const { ref } = useIsVisible(
     () =>
       track('view comment thread', {
         contractId: contract.id,
         commentId: comment.id,
       } as CommentView),
-    true
+    false
   )
-  const commentKind = userUsername === 'ManifoldDream' ? 'ub-dream-comment' : ''
+
   return (
     <FeedComment
       contract={contract}
       comment={comment}
-      seeReplies={seeReplies}
-      hasReplies={numReplies > 0}
       onReplyClick={onReplyClick}
       highlighted={highlighted}
-      showLike={showLike}
-      className={clsx('gap-2', commentKind)}
       trackingLocation={trackingLocation}
       inTimeline={inTimeline}
       isParent={true}
@@ -344,8 +329,9 @@ function HideableContent(props: { comment: ContractComment }) {
 export function DotMenu(props: {
   comment: ContractComment
   contract: Contract
+  onHide: () => void
 }) {
-  const { comment, contract } = props
+  const { comment, contract, onHide } = props
   const [isModalOpen, setIsModalOpen] = useState(false)
   const user = useUser()
   const privateUser = usePrivateUser()
@@ -369,16 +355,16 @@ export function DotMenu(props: {
       />
       <DropdownMenu
         menuWidth={'w-36'}
-        Icon={
+        icon={
           <DotsHorizontalIcon
             className="mt-[0.12rem] h-4 w-4"
             aria-hidden="true"
           />
         }
-        Items={buildArray(
+        items={buildArray(
           {
             name: 'Copy link',
-            icon: <FiLink className="h-5 w-5" />,
+            icon: <LinkIcon className="h-5 w-5" />,
             onClick: () => {
               copyLinkToComment(
                 contract.creatorUsername,
@@ -390,7 +376,7 @@ export function DotMenu(props: {
           user &&
             comment.userId !== user.id && {
               name: 'Tip',
-              icon: <GiPayMoney className="h-5 w-5" />,
+              icon: <TipJar size={20} color="currentcolor" />,
               onClick: () => setTipping(true),
             },
           user &&
@@ -413,11 +399,20 @@ export function DotMenu(props: {
             icon: <EyeOffIcon className="h-5 w-5 text-red-500" />,
             onClick: async () => {
               const commentPath = `contracts/${contract.id}/comments/${comment.id}`
-              try {
-                await hideComment({ commentPath })
-              } catch (e: any) {
-                toast.error(`Error hiding comment: ${e}`)
-              }
+              onHide()
+              await toast.promise(hideComment({ commentPath }), {
+                loading: comment.hidden
+                  ? 'Unhiding comment...'
+                  : 'Hiding comment...',
+                success: () => {
+                  return comment.hidden ? 'Comment unhidden' : 'Comment hidden'
+                },
+                error: () => {
+                  return comment.hidden
+                    ? 'Error unhiding comment'
+                    : 'Error hiding comment'
+                },
+              })
             },
           }
         )}
@@ -458,14 +453,13 @@ export function DotMenu(props: {
   )
 }
 
-export function CommentActions(props: {
+function CommentActions(props: {
   onReplyClick?: (comment: ContractComment) => void
   comment: ContractComment
   contract: Contract
   trackingLocation: string
-  showLike?: boolean
 }) {
-  const { onReplyClick, comment, showLike, contract, trackingLocation } = props
+  const { onReplyClick, comment, contract, trackingLocation } = props
   const user = useUser()
   const privateUser = usePrivateUser()
 
@@ -496,27 +490,24 @@ export function CommentActions(props: {
               e.stopPropagation()
               onReplyClick(comment)
             }}
+            className={'text-ink-500'}
           >
             <ReplyIcon className="h-5 w-5 " />
           </IconButton>
         </Tooltip>
       )}
-      {showLike && (
-        <LikeButton
-          contentCreatorId={comment.userId}
-          contentId={comment.id}
-          user={user}
-          contentType={'comment'}
-          totalLikes={comment.likes ?? 0}
-          contract={contract}
-          contentText={richTextToString(comment.content)}
-          className={
-            isBlocked(privateUser, comment.userId) ? 'pointer-events-none' : ''
-          }
-          size={'md'}
-          trackingLocation={trackingLocation}
-        />
-      )}
+      <LikeButton
+        contentCreatorId={comment.userId}
+        contentId={comment.id}
+        user={user}
+        contentType={'comment'}
+        totalLikes={comment.likes ?? 0}
+        contract={contract}
+        size={'xs'}
+        contentText={richTextToString(comment.content)}
+        disabled={isBlocked(privateUser, comment.userId)}
+        trackingLocation={trackingLocation}
+      />
     </Row>
   )
 }
@@ -560,8 +551,7 @@ function CommentStatus(props: {
 export function ContractCommentInput(props: {
   contract: Contract
   className?: string
-  replyToAnswerId?: string
-  replyToBet?: Bet
+  replyTo?: Answer | DpmAnswer | Bet
   replyToUserInfo?: ReplyToUserInfo
   parentCommentId?: string
   clearReply?: () => void
@@ -571,33 +561,36 @@ export function ContractCommentInput(props: {
   const privateUser = usePrivateUser()
   const {
     contract,
-    replyToBet,
-    replyToAnswerId,
+    replyTo,
     parentCommentId,
     replyToUserInfo,
     className,
     clearReply,
     trackingLocation,
   } = props
+  const isReplyToBet = replyTo != null && 'amount' in replyTo
+  const isReplyToAnswer = replyTo && !isReplyToBet
+
   const onSubmitComment = useEvent(async (editor: Editor) => {
     if (!user) {
       track('sign in to comment')
-      return await firebaseLogin()
+      await firebaseLogin()
+      return
     }
     await createCommentOnContract({
       contractId: contract.id,
       content: editor.getJSON(),
-      replyToAnswerId: replyToAnswerId,
+      replyToAnswerId: isReplyToAnswer ? replyTo.id : undefined,
       replyToCommentId: parentCommentId,
-      replyToBetId: replyToBet?.id,
+      replyToBetId: isReplyToBet ? replyTo.id : undefined,
     })
     clearReply?.()
     track('comment', {
       location: trackingLocation,
-      replyTo: replyToAnswerId
-        ? 'answer'
-        : replyToBet
+      replyTo: isReplyToBet
         ? 'bet'
+        : isReplyToAnswer
+        ? 'answer'
         : replyToUserInfo
         ? 'user'
         : undefined,
@@ -605,29 +598,52 @@ export function ContractCommentInput(props: {
   })
 
   return (
-    <CommentInput
-      contract={contract}
-      replyToUserInfo={replyToUserInfo}
-      replyToBet={replyToBet}
-      parentAnswerOutcome={replyToAnswerId}
-      parentCommentId={parentCommentId}
-      onSubmitComment={onSubmitComment}
-      clearReply={clearReply}
-      pageId={contract.id}
-      className={className}
-      blocked={isBlocked(privateUser, contract.creatorId)}
-      size={contract.outcomeType == 'BOUNTIED_QUESTION' ? 'xs' : undefined}
-    />
+    <>
+      {isReplyToBet ? (
+        <CommentOnBetRow
+          betAmount={replyTo.amount}
+          betOutcome={replyTo.outcome}
+          bettorName={replyTo.userName}
+          bettorUsername={replyTo.userUsername}
+          contract={contract}
+          clearReply={clearReply}
+          className={'ml-10 mt-6 w-full'}
+        />
+      ) : replyTo ? (
+        <CommentOnAnswerRow
+          answer={replyTo}
+          contract={contract as any}
+          clear={clearReply}
+        />
+      ) : null}
+
+      <CommentInput
+        replyToUserInfo={replyToUserInfo}
+        parentCommentId={parentCommentId}
+        onSubmitComment={onSubmitComment}
+        pageId={contract.id}
+        className={className}
+        blocked={isBlocked(privateUser, contract.creatorId)}
+        placeholder={
+          replyTo || parentCommentId
+            ? 'Write a reply ...'
+            : contract.outcomeType === 'BOUNTIED_QUESTION'
+            ? 'Write an answer or comment'
+            : undefined
+        }
+      />
+    </>
   )
 }
 
 function FeedCommentHeader(props: {
   comment: ContractComment
   contract: Contract
+  onHide: () => void
   inTimeline?: boolean
   isParent?: boolean
 }) {
-  const { comment, contract, inTimeline } = props
+  const { comment, contract, inTimeline, onHide } = props
   const {
     userUsername,
     userName,
@@ -694,10 +710,12 @@ function FeedCommentHeader(props: {
               </InfoTooltip>
             )}
           </span>
-          {!inTimeline && <DotMenu comment={comment} contract={contract} />}
+          {!inTimeline && (
+            <DotMenu onHide={onHide} comment={comment} contract={contract} />
+          )}
         </Row>
         {bountyAwarded && bountyAwarded > 0 && (
-          <span className="select-none text-teal-600 dark:text-teal-400">
+          <span className="select-none text-teal-600">
             +{formatMoney(bountyAwarded)}
           </span>
         )}
@@ -716,24 +734,40 @@ const getBoughtMoney = (betAmount: number | undefined) => {
   return { bought, money }
 }
 
-function FeedCommentReplyHeader(props: {
+function CommentReplyHeader(props: {
   comment: ContractComment
   contract: Contract
 }) {
   const { comment, contract } = props
-  const { bettorName, bettorUsername, betOutcome, betAnswerId, betAmount } =
-    comment
-  if (!bettorUsername || !bettorName || !betOutcome || !betAmount) return null
-  return (
-    <CommentOnBetRow
-      betOutcome={betOutcome}
-      betAnswerId={betAnswerId}
-      betAmount={betAmount}
-      bettorName={bettorName}
-      bettorUsername={bettorUsername}
-      contract={contract}
-    />
-  )
+  const {
+    bettorName,
+    bettorUsername,
+    betOutcome,
+    betAnswerId,
+    betAmount,
+    answerOutcome,
+  } = comment
+  if (bettorUsername && bettorName && betOutcome && betAmount) {
+    return (
+      <CommentOnBetRow
+        betOutcome={betOutcome}
+        betAnswerId={betAnswerId}
+        betAmount={betAmount}
+        bettorName={bettorName}
+        bettorUsername={bettorUsername}
+        contract={contract}
+      />
+    )
+  }
+  if (answerOutcome && 'answers' in contract) {
+    const answer = (contract.answers as (DpmAnswer | Answer)[]).find(
+      (a) => a.id === answerOutcome
+    )
+    if (answer)
+      return <CommentOnAnswerRow answer={answer} contract={contract as any} />
+  }
+
+  return null
 }
 
 export function CommentOnBetRow(props: {
@@ -758,11 +792,9 @@ export function CommentOnBetRow(props: {
   const { bought, money } = getBoughtMoney(betAmount)
 
   return (
-    <Row className="ml-4 text-sm">
-      <Col className="h-grow justify-end">
-        <div className="border-ink-300 h-4 w-6 rounded-tl-lg border-2 border-r-0 border-b-0" />
-      </Col>
-      <Row className="bg-ink-200 text-ink-600 gap-1 whitespace-nowrap py-1 px-4">
+    <Row className="ml-4 items-end text-sm">
+      <div className="border-ink-100 h-4 w-6 rounded-tl-xl border-2 border-b-0 border-r-0" />
+      <Row className="bg-ink-100 text-ink-600 relative items-center gap-1 whitespace-nowrap px-4 py-1">
         <UserLink
           username={bettorUsername}
           name={bettorName}
@@ -776,8 +808,13 @@ export function CommentOnBetRow(props: {
           truncate="short"
         />
         {clearReply && (
-          <button onClick={clearReply}>
-            <XCircleIcon className={'absolute -top-1.5 -right-3 h-5 w-5'} />
+          <button
+            onClick={clearReply}
+            className={
+              'bg-canvas-0 text-ink-500 hover:text-ink-600 absolute -right-2 -top-1.5 rounded-full'
+            }
+          >
+            <XCircleIcon className="h-4 w-4" />
           </button>
         )}
       </Row>

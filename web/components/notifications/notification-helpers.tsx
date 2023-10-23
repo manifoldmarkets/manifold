@@ -9,26 +9,15 @@ import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { track } from 'web/lib/service/analytics'
 import { Row } from '../layout/row'
 import { RelativeTimestampNoTooltip } from '../relative-timestamp'
-import { truncateLengthType, truncateText } from '../widgets/truncate'
+import { truncateText } from '../widgets/truncate'
 import NotificationDropdown from './notification-dropdown'
 import { groupBy } from 'lodash'
+import { SparklesIcon } from '@heroicons/react/solid'
 
-const notification_base_style = 'relative text-sm transition-colors'
-export const NESTED_NOTIFICATION_STYLE = clsx(
-  notification_base_style,
-  'hover:bg-primary-50 p-2'
-)
-export const PARENT_NOTIFICATION_STYLE = clsx(
-  notification_base_style,
-  'pt-3 pb-2'
-)
-export const NOTIFICATION_STYLE = clsx(
-  notification_base_style,
-  'p-2 hover:bg-primary-50'
-)
 export const NOTIFICATIONS_PER_PAGE = 30
+
 function getHighlightClass(highlight: boolean) {
-  return highlight ? 'text-ink-1000' : 'text-ink-600'
+  return highlight ? 'text-ink-1000 bg-primary-50' : 'text-ink-800'
 }
 export const NUM_SUMMARY_LINES = 3
 
@@ -36,7 +25,7 @@ export const NOTIFICATION_ICON_SIZE = 'md'
 
 export function PrimaryNotificationLink(props: {
   text: string | undefined
-  truncatedLength?: truncateLengthType
+  truncatedLength?: 'sm' | 'md' | 'lg' | 'xl' | 'none'
 }) {
   const { text, truncatedLength } = props
   if (!text) {
@@ -51,7 +40,7 @@ export function PrimaryNotificationLink(props: {
 
 export function QuestionOrGroupLink(props: {
   notification: Notification
-  truncatedLength?: truncateLengthType
+  truncatedLength?: 'sm' | 'md' | 'lg' | 'xl' | 'none'
   ignoreClick?: boolean
 }) {
   const { notification, ignoreClick, truncatedLength } = props
@@ -165,7 +154,6 @@ export function NotificationFrame(props: {
 }) {
   const {
     notification,
-    isChildOfGroup,
     highlighted,
     setHighlighted,
     children,
@@ -176,47 +164,37 @@ export function NotificationFrame(props: {
     customBackground,
   } = props
   const isMobile = useIsMobile()
-  const highlightClass = getHighlightClass(highlighted)
 
   const frameObject = (
-    <>
-      <Row
-        className={clsx(highlightClass, 'cursor-pointer text-sm md:text-base')}
-      >
-        <Row className="w-full gap-3">
-          <Col className="w-fit">{icon}</Col>
-          <Col className="font w-full">
-            <span>{children}</span>
-            <div className="line-clamp-3 mt-1 text-xs md:text-sm">
-              {subtitle}
-            </div>
-            {isMobile && (
-              <div className="-mt-0.5 w-fit md:-mt-1">
-                <RelativeTimestampNoTooltip
-                  time={notification.createdTime}
-                  className={clsx(highlightClass, ' text-xs')}
-                />
-              </div>
+    <Row className="cursor-pointer text-sm md:text-base">
+      <Row className="w-full items-start gap-3">
+        {icon}
+        <Col className="font w-full">
+          <span>{children}</span>
+          <div className="mt-1 line-clamp-3 text-xs md:text-sm">{subtitle}</div>
+        </Col>
+
+        <Row className="mt-1 items-center justify-end gap-1 pr-1 sm:w-36">
+          {highlighted && !isMobile && (
+            <SparklesIcon className="text-primary-600 h-4 w-4" />
+          )}
+          <RelativeTimestampNoTooltip
+            time={notification.createdTime}
+            shortened={isMobile}
+            className={clsx(
+              'text-xs',
+              highlighted ? 'text-primary-600' : 'text-ink-700'
             )}
-          </Col>
+          />
         </Row>
-        {!isMobile && (
-          <Row className="mx-1 w-40 justify-end">
-            <RelativeTimestampNoTooltip
-              time={notification.createdTime}
-              className={clsx(highlightClass, ' text-xs')}
-            />
-          </Row>
-        )}
       </Row>
-    </>
+    </Row>
   )
 
   return (
     <Row
       className={clsx(
-        'group relative',
-        isChildOfGroup ? NESTED_NOTIFICATION_STYLE : NOTIFICATION_STYLE,
+        'hover:bg-primary-100 group p-2 transition-colors',
         getHighlightClass(highlighted)
       )}
     >
@@ -252,30 +230,24 @@ export function NotificationFrame(props: {
         </Col>
       )}
 
-      {/* frame end */}
       <div className="self-start">
         <NotificationDropdown notification={notification} />
-      </div>
-      <div className="-mr-2 flex w-4 items-center justify-center">
-        {highlighted && (
-          <div className="bg-highlight-blue h-3 w-3 rounded-full" />
-        )}
       </div>
     </Row>
   )
 }
 
 export function ParentNotificationHeader(props: {
-  header: ReactNode
+  children: ReactNode
   highlighted: boolean
 }) {
-  const { header, highlighted } = props
+  const { children, highlighted } = props
   const highlightedClass = getHighlightClass(highlighted)
 
   return (
-    <Row className={clsx('mx-2 items-center justify-start')}>
-      <div className={clsx(highlightedClass, 'line-clamp-3')}>{header}</div>
-    </Row>
+    <div className={clsx('line-clamp-3 px-2 pt-3', highlightedClass)}>
+      {children}
+    </div>
   )
 }
 export function combineReactionNotifications(notifications: Notification[]) {

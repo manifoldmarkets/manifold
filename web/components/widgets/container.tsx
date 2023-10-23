@@ -13,7 +13,7 @@ export const Container = (props: {
   return (
     <Col
       className={clsx(
-        'border-ink-300 m-0 mb-4 rounded-lg border object-contain py-1 px-3',
+        'border-ink-300 m-0 mb-4 rounded-lg border object-contain px-3 py-1',
         className
       )}
     >

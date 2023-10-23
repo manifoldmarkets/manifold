@@ -11,7 +11,7 @@ import {
   getTotalContractsCreated,
 } from 'web/lib/supabase/users'
 import { db } from 'web/lib/supabase/db'
-import { SupabaseContractSearch } from '../contracts-search'
+import { SupabaseSearch } from 'web/components/supabase-search'
 import { useUser } from 'web/hooks/use-user'
 import { CreateQuestionButton } from '../buttons/create-question-button'
 import { useRouter } from 'next/router'
@@ -41,8 +41,8 @@ export function UserContractsList(props: {
   const user = useUser()
   const router = useRouter()
   const seeClosed = () => {
-    router.replace({ query: { ...router.query, f: 'closed' } }, undefined, {
-      shallow: true,
+    router.push({ query: { ...router.query, f: 'closed' } }, undefined, {
+      shallow: false,
     })
   }
 
@@ -101,7 +101,7 @@ export function UserContractsList(props: {
           }
         />
       </Row>
-      <SupabaseContractSearch
+      <SupabaseSearch
         defaultFilter="all"
         defaultSort="newest"
         additionalFilter={{
@@ -111,7 +111,7 @@ export function UserContractsList(props: {
         useUrlParams
         emptyState={
           <>
-            <div className="text-ink-700 mx-2 my-6 text-center">
+            <div className="text-ink-700 mx-2 mt-3 text-center">
               No questions found
             </div>
             {creator.id === user?.id && (
@@ -121,6 +121,7 @@ export function UserContractsList(props: {
             )}
           </>
         }
+        contractsOnly
       />
     </Col>
   )

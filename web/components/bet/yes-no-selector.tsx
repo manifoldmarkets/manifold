@@ -64,10 +64,12 @@ export function YesNoCancelSelector(props: {
   onSelect: (selected: resolution) => void
   className?: string
 }) {
-  const { selected, onSelect } = props
+  const { selected, onSelect, className } = props
 
-  const btnClassName =
-    'px-0 !py-2 flex-1 first:rounded-l-xl last:rounded-r-xl rounded-r-none rounded-l-none'
+  const btnClassName = clsx(
+    '!py-2 flex-1 first:rounded-l-xl last:rounded-r-xl rounded-r-none rounded-l-none',
+    className
+  )
 
   return (
     <Row className="gap-1">
@@ -93,7 +95,7 @@ export function YesNoCancelSelector(props: {
         onClick={() => onSelect('MKT')}
         className={btnClassName}
       >
-        PROB
+        %
       </Button>
 
       <Button
@@ -114,54 +116,37 @@ export function ChooseCancelSelector(props: {
   const { selected, onSelect } = props
 
   const btnClassName =
-    'flex-1 font-medium sm:first:rounded-l-xl sm:last:rounded-r-xl sm:rounded-none whitespace-nowrap'
+    '!py-2 flex-1 sm:first:rounded-l-xl sm:last:rounded-r-xl sm:rounded-none whitespace-nowrap'
 
   return (
     <div className="flex flex-col gap-1 sm:flex-row">
       <Button
         color={selected === 'CHOOSE_ONE' ? 'green' : 'gray'}
-        size="xl"
+        size="lg"
         onClick={() => onSelect('CHOOSE_ONE')}
         className={btnClassName}
       >
-        Choose answer
+        Choose one
       </Button>
 
       <Button
         color={selected === 'CHOOSE_MULTIPLE' ? 'blue' : 'gray'}
-        size="xl"
+        size="lg"
         onClick={() => onSelect('CHOOSE_MULTIPLE')}
         className={btnClassName}
       >
-        Choose multiple
+        Choose many
       </Button>
 
       <Button
         color={selected === 'CANCEL' ? 'yellow' : 'gray'}
-        size="xl"
+        size="lg"
         onClick={() => onSelect('CANCEL')}
         className={btnClassName}
       >
         N/A
       </Button>
     </div>
-  )
-}
-
-export function BuyButton(props: { className?: string; onClick?: () => void }) {
-  const { className, onClick } = props
-  // Note: styles coppied from YesNoSelector
-  return (
-    <button
-      className={clsx(
-        'hover:bg-teal-600-focus hover:border-teal-600-focus hover:text-ink-0 inline-flex flex-1  items-center justify-center rounded-lg border-2 border-teal-600 p-2',
-        'bg-transparent text-lg text-teal-500',
-        className
-      )}
-      onClick={onClick}
-    >
-      Buy
-    </button>
   )
 }
 

@@ -1,6 +1,4 @@
 import { useState } from 'react'
-
-import { User } from 'web/lib/firebase/users'
 import { NumberCancelSelector } from './bet/yes-no-selector'
 import { Spacer } from './layout/spacer'
 import { ResolveConfirmationButton } from './buttons/confirmation-button'
@@ -10,6 +8,8 @@ import { getPseudoProbability } from 'common/pseudo-numeric'
 import { BETTORS } from 'common/user'
 import { Button } from './buttons/button'
 import { AmountInput } from './widgets/amount-input'
+import { ResolveHeader } from './resolution-panel'
+import { useUser } from 'web/hooks/use-user'
 
 function getNumericResolveButtonColor(
   outcomeMode: 'NUMBER' | 'CANCEL' | undefined
@@ -25,18 +25,15 @@ function getNumericResolveButtonLabel(
 }
 
 export function NumericResolutionPanel(props: {
-  isAdmin: boolean
-  isCreator: boolean
-  creator: User
   contract: PseudoNumericContract
-  modalSetOpen?: (open: boolean) => void
+  inModal?: boolean
+  onClose: () => void
 }) {
-  const { contract, isAdmin, isCreator, modalSetOpen } = props
+  const { contract, inModal, onClose } = props
   const { min, max, outcomeType, question } = contract
+  const isCreator = useUser()?.id === contract.creatorId
 
-  const [outcomeMode, setOutcomeMode] = useState<
-    'NUMBER' | 'CANCEL' | undefined
-  >()
+  const [outcomeMode, setOutcomeMode] = useState<'NUMBER' | 'CANCEL'>('NUMBER')
   const [value, setValue] = useState<number | undefined>()
 
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -81,9 +78,7 @@ export function NumericResolutionPanel(props: {
     }
 
     setIsSubmitting(false)
-    if (modalSetOpen) {
-      modalSetOpen(false)
-    }
+    onClose()
   }
   const buttonDisabled =
     outcomeMode === undefined ||
@@ -91,54 +86,41 @@ export function NumericResolutionPanel(props: {
 
   return (
     <>
-      {isAdmin && !isCreator && (
-        <span className="bg-scarlet-500/20 text-scarlet-500 absolute right-4 top-4 rounded p-1 text-xs">
-          ADMIN
-        </span>
-      )}
-      {!modalSetOpen && <div className="mb-6">Resolve your market</div>}
-      {modalSetOpen && (
-        <div className="mb-6">Resolve "{contract.question}"</div>
-      )}
+      <ResolveHeader
+        contract={contract}
+        isCreator={isCreator}
+        onClose={onClose}
+        fullTitle={inModal}
+      />
 
       <NumberCancelSelector selected={outcomeMode} onSelect={setOutcomeMode} />
 
       <Spacer h={4} />
 
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2 text-sm">
-          {outcomeMode === 'CANCEL' ? (
-            <>Cancel all trades and return money back to {BETTORS}.</>
-          ) : outcomeMode === 'NUMBER' ? (
-            <>
-              Traders will be paid out at the value you specify:
-              <AmountInput
-                amount={value}
-                onChangeAmount={setValue}
-                disabled={isSubmitting}
-                error={value !== undefined && (value < min || value > max)}
-                allowNegative
-                label=""
-                className="mr-3"
-                inputClassName="w-28"
-              />
-            </>
-          ) : (
-            <>Resolving this market will immediately pay out {BETTORS}.</>
-          )}
+          {
+            outcomeMode === 'CANCEL' ? (
+              <>Cancel all trades and return mana back to {BETTORS}.</>
+            ) : outcomeMode === 'NUMBER' ? (
+              <>
+                Pay out {BETTORS} who brought the market closer to the correct
+                value.
+                <AmountInput
+                  amount={value}
+                  onChangeAmount={setValue}
+                  disabled={isSubmitting}
+                  error={value !== undefined && (value < min || value > max)}
+                  allowNegative
+                  label=""
+                  inputClassName="!h-11 w-28"
+                />
+              </>
+            ) : null // never
+          }
         </div>
 
-        {!modalSetOpen && (
-          <ResolveConfirmationButton
-            onResolve={resolve}
-            isSubmitting={isSubmitting}
-            color={getNumericResolveButtonColor(outcomeMode)}
-            label={getNumericResolveButtonLabel(outcomeMode, value)}
-            marketTitle={question}
-            disabled={buttonDisabled}
-          />
-        )}
-        {modalSetOpen && (
+        {inModal ? (
           <Button
             color={getNumericResolveButtonColor(outcomeMode)}
             disabled={buttonDisabled || isSubmitting}
@@ -147,6 +129,15 @@ export function NumericResolutionPanel(props: {
           >
             Resolve <>{getNumericResolveButtonLabel(outcomeMode, value)}</>
           </Button>
+        ) : (
+          <ResolveConfirmationButton
+            onResolve={resolve}
+            isSubmitting={isSubmitting}
+            color={getNumericResolveButtonColor(outcomeMode)}
+            label={getNumericResolveButtonLabel(outcomeMode, value)}
+            marketTitle={question}
+            disabled={buttonDisabled}
+          />
         )}
       </div>
       {!!error && <div className="text-scarlet-500">{error}</div>}

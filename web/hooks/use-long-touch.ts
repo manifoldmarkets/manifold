@@ -61,5 +61,9 @@ export default function useLongTouch(
     onTouchEnd: () => {
       setMouseState('endTouch')
     },
+    onClick: (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
+      e.preventDefault()
+      e.stopPropagation()
+    },
   }
 }

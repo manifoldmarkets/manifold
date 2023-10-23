@@ -2,7 +2,7 @@ import { Row } from './supabase/utils'
 
 export type season = typeof SEASONS[number]
 
-export const SEASONS = [1, 2, 3, 4, 5] as const
+export const SEASONS = [1, 2, 3, 4, 5, 6] as const
 export const CURRENT_SEASON = SEASONS[SEASONS.length - 1]
 
 export const LEAGUES_START = new Date('2023-05-01T00:00:00-07:00') // Pacific Daylight Time (PDT) as time zone offset
@@ -12,6 +12,7 @@ const SEASON_END_TIMES = [
   new Date('2023-07-01T12:22:53-07:00'),
   new Date('2023-08-01T17:05:29-07:00'),
   new Date('2023-09-01T20:20:04-07:00'),
+  new Date('2023-10-01T11:17:16-07:00'),
 ]
 
 export const getSeasonMonth = (season: number) => {
@@ -94,10 +95,10 @@ export const getDemotionAndPromotionCount = (division: number) => {
     return { demotion: 5, promotion: 6, doublePromotion: 0 }
   }
   if (division === 4) {
-    return { demotion: 5, promotion: 5, doublePromotion: 0 }
+    return { demotion: 10, promotion: 5, doublePromotion: 0 }
   }
   if (division === 5) {
-    return { demotion: 8, promotion: 3, doublePromotion: 0 }
+    return { demotion: 12, promotion: 3, doublePromotion: 0 }
   }
   if (division === 6) {
     return { demotion: 25, promotion: 0, doublePromotion: 0 }
@@ -109,12 +110,18 @@ export const getDemotionAndPromotionCountBySeason = (
   season: number,
   division: number
 ) => {
+  if (season === 5) {
+    if (division === 4) return { demotion: 5, promotion: 5, doublePromotion: 0 }
+    if (division === 5) return { demotion: 8, promotion: 3, doublePromotion: 0 }
+  }
   if (season === 4) {
+    if (division === 4) return { demotion: 5, promotion: 5, doublePromotion: 0 }
     if (division === 5) return { demotion: 7, promotion: 4, doublePromotion: 0 }
     if (division === 6)
       return { demotion: 17, promotion: 0, doublePromotion: 0 }
   }
-  if (season === 3) {
+  if (season < 4) {
+    if (division === 4) return { demotion: 5, promotion: 5, doublePromotion: 0 }
     if (division === 5) return { demotion: 6, promotion: 5, doublePromotion: 0 }
   }
   return getDemotionAndPromotionCount(division)
@@ -123,10 +130,17 @@ export const getDemotionAndPromotionCountBySeason = (
 export const getDivisionChange = (
   division: number,
   rank: number,
+  manaEarned: number,
   cohortSize: number
 ) => {
   const { demotion, promotion, doublePromotion } =
     getDemotionAndPromotionCount(division)
+
+  // Require 100 mana earned to advance from Bronze.
+  if (division === 1 && manaEarned < 100) {
+    return 0
+  }
+
   if (rank <= doublePromotion) {
     return 2
   }

@@ -4,16 +4,16 @@ import { useState } from 'react'
 import { usePrivateUser } from 'web/hooks/use-user'
 import { Button } from './buttons/button'
 import { Col } from './layout/col'
-import { Modal } from './layout/modal'
+import { MODAL_CLASS, Modal } from './layout/modal'
 import { Row } from './layout/row'
 import {
   SupabaseAdditionalFilter,
-  SupabaseContractSearch,
-} from './contracts-search'
+  SupabaseSearch,
+} from 'web/components/supabase-search'
 import { LoadingIndicator } from './widgets/loading-indicator'
 
 export function SelectMarketsModal(props: {
-  title: string
+  title?: string
   description?: React.ReactNode
   open: boolean
   setOpen: (open: boolean) => void
@@ -23,14 +23,15 @@ export function SelectMarketsModal(props: {
   const { title, description, open, setOpen, submitLabel, onSubmit } = props
 
   return (
-    <Modal open={open} setOpen={setOpen} className={'sm:p-0'} size={'lg'}>
-      <Col className="bg-canvas-0 text-ink-1000 relative h-[85vh] w-full gap-4 rounded-md p-8">
-        <div className={'text-primary-700 pb-0 text-xl'}>{title}</div>
+    <Modal open={open} setOpen={setOpen} size={'lg'}>
+      <Col className={clsx(MODAL_CLASS, 'relative h-[85vh]')}>
+        {title && (
+          <div className={'text-primary-700 pb-0 text-xl'}>{title}</div>
+        )}
         {description}
         <SelectMarkets
           submitLabel={submitLabel}
           onSubmit={onSubmit}
-          setOpen={setOpen}
           className="grow overflow-y-auto"
         />
       </Col>
@@ -41,19 +42,10 @@ export function SelectMarketsModal(props: {
 export function SelectMarkets(props: {
   submitLabel: (length: number) => string
   onSubmit: (contracts: Contract[]) => void | Promise<void>
-  setOpen: (open: boolean) => void
   className?: string
   additionalFilter?: SupabaseAdditionalFilter
-  headerClassName?: string
 }) {
-  const {
-    submitLabel,
-    onSubmit,
-    setOpen,
-    className,
-    additionalFilter,
-    headerClassName,
-  } = props
+  const { submitLabel, onSubmit, className, additionalFilter } = props
 
   const privateUser = usePrivateUser()
   const [contracts, setContracts] = useState<Contract[]>([])
@@ -69,7 +61,6 @@ export function SelectMarkets(props: {
     setLoading(true)
     await onSubmit(contracts)
     setLoading(false)
-    setOpen(false)
     setContracts([])
   }
 
@@ -80,7 +71,7 @@ export function SelectMarkets(props: {
           <LoadingIndicator />
         </div>
       )}
-      <SupabaseContractSearch
+      <SupabaseSearch
         persistPrefix="contract-select-modal"
         hideOrderSelector
         onContractClick={addContract}
@@ -94,7 +85,8 @@ export function SelectMarkets(props: {
           excludeGroupSlugs: privateUser?.blockedGroupSlugs,
           excludeUserIds: privateUser?.blockedUserIds,
         }}
-        headerClassName={clsx('bg-canvas-0', headerClassName)}
+        headerClassName={'!bg-canvas-0'}
+        contractsOnly
       />
       <Row className="bg-canvas-0 fixed inset-x-0 bottom-0 justify-end px-8 py-2">
         {!loading && (
@@ -104,7 +96,7 @@ export function SelectMarkets(props: {
                 if (contracts.length > 0) {
                   setContracts([])
                 } else {
-                  setOpen(false)
+                  onSubmit([])
                 }
               }}
               color="gray"

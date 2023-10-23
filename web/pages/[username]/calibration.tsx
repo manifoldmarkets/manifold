@@ -63,7 +63,10 @@ export default function CalibrationPage(props: {
   const { user, yesPoints, noPoints, score } = props
 
   return (
-    <Page>
+    <Page
+      trackPageView={'user calibration page'}
+      trackPageProps={{ username: user?.username }}
+    >
       <SEO
         title={`${user?.name}'s calibration`}
         description="Personal calibration results"
@@ -79,12 +82,12 @@ export default function CalibrationPage(props: {
           )}
 
           <div className="bg-canvas-0 relative w-full max-w-[600px] self-center rounded-md p-4 pr-12">
-            <div className="absolute top-0 bottom-0 right-4 flex items-center">
+            <div className="absolute bottom-0 right-4 top-0 flex items-center">
               <span className="text-ink-800 text-sm [writing-mode:vertical-rl]">
                 Resolution probability
               </span>
             </div>
-            <SizedContainer className="aspect-square w-full pr-8 pb-8">
+            <SizedContainer className="aspect-square w-full pb-8 pr-8">
               {(w, h) => (
                 <CalibrationChart
                   yesPoints={yesPoints}
@@ -156,7 +159,7 @@ function BetsTable(props: {
         />
       </Row>
 
-      <div className="text-center text-xs text-gray-400">
+      <div className="text-ink-400 text-center text-xs">
         3 largest bets for each bucket
       </div>
 
@@ -183,7 +186,7 @@ function BetsTable(props: {
 
 export const points = [1, 3, 5, ...range(10, 100, 10), 95, 97, 99]
 
-export const getCalibrationPoints = (betsData: [Contract, LimitBet[]][]) => {
+const getCalibrationPoints = (betsData: [Contract, LimitBet[]][]) => {
   const yesProbBuckets: Dictionary<number> = {}
   const yesCountBuckets: Dictionary<number> = {}
   const yesBetsBuckets: Record<number, [Contract, Bet][]> = {}
@@ -256,7 +259,7 @@ const getXY = (probBuckets: Dictionary<number>) => {
   return xy
 }
 
-export const calculateScore = (
+const calculateScore = (
   yesBuckets: Dictionary<number>,
   noBuckets: Dictionary<number>
 ) => {
@@ -283,7 +286,7 @@ export const calculateScore = (
   return (-100 * Math.round(raw * 1e4)) / 1e4
 }
 
-export const getGrade = (score: number) => {
+const getGrade = (score: number) => {
   if (score > -0.05) return 'S'
   if (score >= -0.15) return 'A+'
   if (score >= -0.5) return 'A'

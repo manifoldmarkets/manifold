@@ -1,28 +1,23 @@
-import { DuplicateIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { Contract } from 'common/contract'
 import { getMappedValue } from 'common/pseudo-numeric'
 import { trackCallback } from 'web/lib/service/analytics'
 import { buttonClass } from './button'
 import Link from 'next/link'
-import { getLinkTarget } from 'web/components/widgets/site-link'
 import { NewQuestionParams } from 'web/components/new-contract/new-contract-panel'
+import { getNativePlatform } from 'web/lib/native/is-native'
 
 export function DuplicateContractButton(props: { contract: Contract }) {
   const { contract } = props
   const href = duplicateContractHref(contract)
   return (
     <Link
-      className={clsx(
-        buttonClass('sm', 'none'),
-        'hover:text-ink-0 gap-1 border-2 border-violet-400 text-violet-400 hover:bg-violet-400'
-      )}
+      className={clsx(buttonClass('sm', 'indigo-outline'))}
       href={href}
       onClick={trackCallback('duplicate market')}
       target={getLinkTarget(href, true)}
     >
-      <DuplicateIcon className="h-4 w-4" aria-hidden="true" />
-      <div>Duplicate</div>
+      Duplicate
     </Link>
   )
 }
@@ -60,4 +55,12 @@ function duplicateContractHref(contract: Contract) {
   }
 
   return `/create?params=` + encodeURIComponent(JSON.stringify(params))
+}
+
+const getLinkTarget = (href: string, newTab?: boolean) => {
+  if (href.startsWith('http')) return '_blank'
+  const { isNative } = getNativePlatform()
+  // Native android will open 'a new tab' in the system browser rather than in the app
+  if (isNative) return '_self'
+  return newTab ? '_blank' : '_self'
 }

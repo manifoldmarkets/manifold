@@ -12,7 +12,7 @@ import { useEvent } from 'web/hooks/use-event'
 import PlaceholderGraph from 'web/lib/icons/placeholder-graph.svg'
 import { TimeRangePicker } from '../charts/time-range-picker'
 import { ColorType } from '../widgets/choices-toggle-group'
-import { useViewScale } from '../charts/generic-charts'
+import { useViewScale } from '../charts/helpers'
 import { AddFundsButton } from '../profile/add-funds-button'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { track } from 'web/lib/service/analytics'
@@ -29,20 +29,26 @@ export const PortfolioValueSection = memo(
       useState<Period>(defaultTimePeriod)
     const portfolioHistory = usePortfolioHistory(userId, currentTimePeriod)
     const [graphMode, setGraphMode] = useState<GraphMode>('profit')
-    const graphPoints = useMemo(
-      () =>
-        portfolioHistory?.map((p) => ({
-          x: p.timestamp,
-          y:
-            graphMode === 'balance'
-              ? p.balance
-              : p.balance +
-                p.investmentValue -
-                (graphMode === 'profit' ? p.totalDeposits : 0),
-          obj: p,
-        })),
-      [portfolioHistory, graphMode]
-    )
+
+    const first = portfolioHistory?.[0]
+    const firstProfit = first
+      ? first.balance + first.investmentValue - first.totalDeposits
+      : 0
+
+    const graphPoints = useMemo(() => {
+      if (!portfolioHistory?.length) return []
+
+      return portfolioHistory.map((p) => ({
+        x: p.timestamp,
+        y:
+          graphMode === 'balance'
+            ? p.balance
+            : graphMode === 'value'
+            ? p.balance + p.investmentValue
+            : p.balance + p.investmentValue - p.totalDeposits - firstProfit,
+        obj: p,
+      }))
+    }, [portfolioHistory, graphMode])
 
     const [graphDisplayNumber, setGraphDisplayNumber] = useState<
       number | string | null
@@ -70,13 +76,13 @@ export const PortfolioValueSection = memo(
       <div className="text-ink-500 animate-pulse text-lg sm:text-xl">---</div>
     )
 
-    const showDisclaimer = graphPoints || !lastUpdatedTime
     if (
-      !graphPoints ||
+      !portfolioHistory ||
       graphPoints.length <= 1 ||
       !lastUpdatedTime ||
       !lastPortfolioMetrics
     ) {
+      const showDisclaimer = portfolioHistory || !lastUpdatedTime
       return (
         <PortfolioValueSkeleton
           userId={userId}
@@ -124,7 +130,8 @@ export const PortfolioValueSection = memo(
 
     const { balance, investmentValue, totalDeposits } = lastPortfolioMetrics
     const totalValue = balance + investmentValue
-    const totalProfit = totalValue - totalDeposits
+
+    const profit = totalValue - totalDeposits - firstProfit
     return (
       <PortfolioValueSkeleton
         userId={userId}
@@ -134,52 +141,40 @@ export const PortfolioValueSection = memo(
         setCurrentTimePeriod={setTimePeriod}
         switcherColor={
           graphMode === 'profit'
-            ? totalProfit > 0
-              ? 'green'
-              : 'red'
+            ? 'green'
             : graphMode === 'balance'
-            ? 'blue'
-            : 'indigo'
+            ? 'indigo'
+            : 'indigo-dark'
         }
         profitElement={
           <div
             className={clsx(
-              graphMode === 'profit'
-                ? graphDisplayNumber
-                  ? graphDisplayNumber.toString().includes('-')
-                    ? 'text-scarlet-500'
-                    : 'text-teal-500'
-                  : totalProfit >= 0
-                  ? 'text-teal-500'
-                  : 'text-scarlet-500'
-                : totalProfit >= 0
-                ? 'text-teal-500'
-                : 'text-scarlet-500',
+              graphMode === 'profit' && graphDisplayNumber
+                ? graphDisplayNumber.toString().includes('-')
+                  ? 'text-scarlet-500'
+                  : 'text-teal-500'
+                : profit < 0
+                ? 'text-scarlet-500'
+                : 'text-teal-500',
               'text-lg sm:text-xl'
             )}
           >
-            {graphMode === 'profit'
+            {graphMode === 'profit' && graphDisplayNumber
               ? graphDisplayNumber
-                ? graphDisplayNumber
-                : formatMoney(totalProfit)
-              : formatMoney(totalProfit)}
+              : formatMoney(profit)}
           </div>
         }
         balanceElement={
           <div className={clsx('text-lg text-blue-600 sm:text-xl')}>
-            {graphMode === 'balance'
+            {graphMode === 'balance' && graphDisplayNumber
               ? graphDisplayNumber
-                ? graphDisplayNumber
-                : formatMoney(balance)
               : formatMoney(balance)}
           </div>
         }
         valueElement={
           <div className={clsx('text-primary-600 text-lg sm:text-xl')}>
-            {graphMode === 'value'
+            {graphMode === 'value' && graphDisplayNumber
               ? graphDisplayNumber
-                ? graphDisplayNumber
-                : formatMoney(totalValue)
               : formatMoney(totalValue)}
           </div>
         }
@@ -192,11 +187,6 @@ export const PortfolioValueSection = memo(
             height={height}
             viewScaleProps={graphView}
             onMouseOver={handleGraphDisplayChange}
-            negativeThreshold={
-              graphMode == 'profit' && currentTimePeriod != 'allTime'
-                ? graphPoints[0].y
-                : undefined
-            }
           />
         )}
         placement={isMobile ? 'bottom' : undefined}
@@ -205,7 +195,7 @@ export const PortfolioValueSection = memo(
   }
 )
 
-export function PortfolioValueSkeleton(props: {
+function PortfolioValueSkeleton(props: {
   graphMode: GraphMode
   onClickNumber: (mode: GraphMode) => void
   currentTimePeriod: Period
@@ -237,6 +227,14 @@ export function PortfolioValueSkeleton(props: {
     placement,
     className,
   } = props
+
+  const profitLabel = {
+    daily: 'Profit 1D',
+    weekly: 'Profit 1W',
+    monthly: 'Profit 1M',
+    allTime: 'Profit',
+  }[currentTimePeriod]
+
   return (
     <>
       <Row
@@ -257,7 +255,7 @@ export function PortfolioValueSkeleton(props: {
             track('Trading Profits Clicked')
           }}
         >
-          <div className="text-ink-600 text-xs sm:text-sm">Profit</div>
+          <div className="text-ink-600 text-xs sm:text-sm">{profitLabel}</div>
           {profitElement}
         </Col>
 

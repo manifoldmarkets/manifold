@@ -4,7 +4,6 @@ import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { SEO } from 'web/components/SEO'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
-import { useTracking } from 'web/hooks/use-tracking'
 import { Row } from 'web/components/layout/row'
 import { Title } from 'web/components/widgets/title'
 import { Button } from 'web/components/buttons/button'
@@ -20,7 +19,7 @@ import { Contract } from 'common/contract'
 import { searchContract } from 'web/lib/supabase/contracts'
 import { getTotalSubs } from 'web/lib/firebase/utils'
 import { WhatIsMana } from 'web/components/explainer-panel'
-import { LabCard } from './about'
+import { LabCard } from './lab'
 
 export async function getStaticProps() {
   const subCount = await getTotalSubs()
@@ -31,7 +30,7 @@ export async function getStaticProps() {
       filter: 'open',
       sort: 'score',
       limit: 6,
-      group_id: 'W2ES30fRo6CCbPNwMTTj',
+      topicSlug: 'destinygg',
     })
   ).data
 
@@ -51,7 +50,6 @@ export default function DestinyLandingPage(props: {
   const { subCount, trendingContracts } = props
 
   useSaveReferral()
-  useTracking('view destiny landing page')
 
   const [destinyUsername, setDestinyUsername] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -80,7 +78,7 @@ export default function DestinyLandingPage(props: {
   const disabled = isSubmitting || !privateUser || !user || user.balance < 1000
 
   return (
-    <Page>
+    <Page trackPageView={'destiny landing page'}>
       <SEO
         title="Destiny on Manifold"
         description="Get more out of Twitch with play-money betting questions."
@@ -119,7 +117,7 @@ export default function DestinyLandingPage(props: {
             </Row>
           )
         )}
-        {error && <div className="mt-2 text-sm text-red-500">{error}</div>}
+        {error && <div className="text-error mt-2 text-sm">{error}</div>}
 
         <div className="mt-4 pt-6 sm:mt-0">
           Total subs claimed: {subCount + (isSuccess ? 1 : 0)} / 1,000
@@ -136,7 +134,7 @@ export default function DestinyLandingPage(props: {
           <WhatIsMana />
           <LabCard
             title="📈 All Dgg stocks"
-            href="https://manifold.markets/group/destinygg"
+            href="https://manifold.markets/browse?topic=destinygg"
           />
         </Col>
 

@@ -18,7 +18,7 @@ const ContractMention = (attrs: any) => {
       ) : label ? (
         <Link
           href={label}
-          className="!text-primary-700 hover:bg-primary-50 rounded-sm"
+          className="!text-primary-700 hover:bg-primary-100 rounded-sm"
         >
           {label}
         </Link>

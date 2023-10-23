@@ -10,25 +10,43 @@ import {
   getContractFromSlug,
   getContracts,
   getIsPrivateContractMember,
-  getPublicContractIds,
-  getPublicContractRows,
+  getPublicContractIdsInTopics,
+  getPublicContractsByIds,
+  getRecentPublicContractRows,
+  getTrendingContracts,
 } from 'web/lib/supabase/contracts'
 import { db } from 'web/lib/supabase/db'
 import { useSubscription } from 'web/lib/supabase/realtime/use-subscription'
 import { useEffectCheckEquality } from './use-effect-check-equality'
 import { useIsAuthorized } from './use-user'
 import { useContractFirebase } from './use-contract-firebase'
+import { difference, uniqBy } from 'lodash'
 
-export const usePublicContracts = (contractIds: string[] | undefined) => {
+export const usePublicContracts = (
+  contractIds: string[] | undefined,
+  topicSlugs?: string[],
+  ignoreSlugs?: string[]
+) => {
   const [contracts, setContracts] = useState<Contract[] | undefined>()
 
   useEffectCheckEquality(() => {
-    if (contractIds) {
-      getPublicContractIds(contractIds).then((result) => {
-        setContracts(result)
+    // Only query new ids
+    const newIds = difference(
+      contractIds ?? [],
+      contracts?.map((c) => c.id) ?? []
+    )
+    if (newIds.length == 0) return
+    if (topicSlugs) {
+      getPublicContractIdsInTopics(newIds, topicSlugs, ignoreSlugs).then(
+        (result) => {
+          setContracts((old) => uniqBy([...result, ...(old ?? [])], 'id'))
+        }
+      )
+    } else
+      getPublicContractsByIds(newIds).then((result) => {
+        setContracts((old) => uniqBy([...result, ...(old ?? [])], 'id'))
       })
-    }
-  }, [contractIds])
+  }, [contractIds, topicSlugs, ignoreSlugs])
 
   return contracts
 }
@@ -67,13 +85,11 @@ export const useContractParams = (contractSlug: string | undefined) => {
     const thisParamsRef = paramsRef.current
     if (contractSlug && isAuth !== undefined) {
       setContractParams(undefined)
-      getContractParams({ contractSlug, fromStaticProps: false }).then(
-        (result) => {
-          if (thisParamsRef === paramsRef.current) {
-            setContractParams(result)
-          }
+      getContractParams({ contractSlug }).then((result) => {
+        if (thisParamsRef === paramsRef.current) {
+          setContractParams(result)
         }
-      )
+      })
     }
   }, [contractSlug, isAuth])
 
@@ -127,9 +143,14 @@ export const useContract = (contractId: string | undefined) => {
   return contract
 }
 
-export function useRealtimeContracts(limit: number) {
-  const { rows } = useSubscription('contracts', undefined, () =>
-    getPublicContractRows({ limit, order: 'desc' })
+export function useRealtimeNewContracts(limit: number) {
+  const [startTime] = useState<string>(new Date().toISOString())
+  const { rows } = useSubscription(
+    'contracts',
+    undefined,
+    () => getRecentPublicContractRows({ limit }),
+    undefined,
+    `created_time=gte.${startTime})}`
   )
   return (rows ?? []).map((r) => r.data as Contract)
 }
@@ -142,4 +163,12 @@ export function useFirebasePublicContract(
     visibility != 'private' ? useContractFirebase(contractId) : undefined // useRealtimeContract(contractId)
 
   return contract
+}
+
+export function useTrendingContracts(limit: number) {
+  const [contracts, setContracts] = useState<Contract[] | undefined>(undefined)
+  useEffect(() => {
+    getTrendingContracts(limit).then(setContracts)
+  }, [limit])
+  return contracts
 }

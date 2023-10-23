@@ -2,11 +2,15 @@ import { DESTINY_GROUP_SLUGS } from 'common/envs/constants'
 import { Group } from 'common/group'
 import { Row, run, SupabaseClient } from 'common/supabase/utils'
 import { db } from './db'
-import { Contract } from '../firebase/contracts'
-import { groupStateType } from 'web/components/groups/group-search'
+import { Contract } from 'common/contract'
 import { supabaseSearchGroups } from '../firebase/api'
 import { convertGroup } from 'common/supabase/groups'
 
+export type GroupState = {
+  groups: Group[] | undefined
+  fuzzyGroupOffset: number
+  shouldLoadMore: boolean
+}
 export type SearchGroupInfo = Pick<
   Group,
   'id' | 'name' | 'slug' | 'totalMembers' | 'privacyStatus' | 'creatorId'
@@ -25,11 +29,11 @@ export async function getGroupContracts(groupId: string) {
 }
 
 export async function searchGroups(props: {
-  state?: groupStateType
+  state?: GroupState
   term: string
   offset?: number
   limit: number
-  yourGroups?: boolean
+  searchYourTopics?: boolean
   addingToContract?: boolean
   newContract?: boolean
 }) {
@@ -37,7 +41,7 @@ export async function searchGroups(props: {
     term,
     offset = 0,
     limit,
-    yourGroups,
+    searchYourTopics,
     addingToContract,
     newContract,
   } = props
@@ -56,7 +60,7 @@ export async function searchGroups(props: {
       term: '',
       offset: offset,
       limit: limit,
-      yourGroups,
+      yourGroups: searchYourTopics,
       addingToContract: addingToContract ?? false,
       newContract: newContract ?? false,
     })
@@ -69,7 +73,7 @@ export async function searchGroups(props: {
       term,
       state,
       limit,
-      yourGroups,
+      yourGroups: searchYourTopics,
       addingToContract: addingToContract ?? false,
       newContract: newContract ?? false,
     })
@@ -81,7 +85,7 @@ export async function searchGroups(props: {
     offset,
     limit,
     fuzzy: false,
-    yourGroups,
+    yourGroups: searchYourTopics,
     addingToContract: addingToContract ?? false,
     newContract: newContract ?? false,
   })
@@ -94,7 +98,7 @@ export async function searchGroups(props: {
         state,
         term,
         limit: limit - groups.length,
-        yourGroups: yourGroups,
+        yourGroups: searchYourTopics,
         addingToContract: addingToContract ?? false,
         newContract: newContract ?? false,
       })
@@ -108,7 +112,7 @@ export async function searchGroups(props: {
 }
 
 export async function searchGroupsFuzzy(props: {
-  state: groupStateType
+  state: GroupState
   term: string
   limit: number
   yourGroups?: boolean
@@ -203,10 +207,19 @@ export async function getMyGroupRoles(userId: string) {
 }
 
 // gets all public groups
-export async function getPublicGroups() {
-  const { data } = await run(
-    db.from('groups').select().eq('privacy_status', 'public').order('name')
-  )
+export async function getPublicGroups(limit?: number, beforeTime?: number) {
+  let q = db
+    .from('groups')
+    .select()
+    .eq('privacy_status', 'public')
+    .order('data->createdTime', { ascending: false } as any)
+  if (limit) {
+    q = q.limit(limit)
+  }
+  if (beforeTime) {
+    q = q.lt('data->createdTime', beforeTime)
+  }
+  const { data } = await run(q)
 
   return data.map(convertGroup)
 }

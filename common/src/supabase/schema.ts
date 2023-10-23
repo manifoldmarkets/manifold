@@ -57,6 +57,36 @@ export interface Database {
         }
         Relationships: []
       }
+      audit_events: {
+        Row: {
+          comment_id: string | null
+          contract_id: string | null
+          created_time: string
+          data: Json | null
+          id: number
+          name: string
+          user_id: string
+        }
+        Insert: {
+          comment_id?: string | null
+          contract_id?: string | null
+          created_time?: string
+          data?: Json | null
+          id?: never
+          name: string
+          user_id: string
+        }
+        Update: {
+          comment_id?: string | null
+          contract_id?: string | null
+          created_time?: string
+          data?: Json | null
+          id?: never
+          name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       chat_messages: {
         Row: {
           channel_id: string
@@ -114,6 +144,7 @@ export interface Database {
       contract_bets: {
         Row: {
           amount: number | null
+          answer_id: string | null
           bet_id: string
           contract_id: string
           created_time: string | null
@@ -132,6 +163,7 @@ export interface Database {
         }
         Insert: {
           amount?: number | null
+          answer_id?: string | null
           bet_id: string
           contract_id: string
           created_time?: string | null
@@ -150,6 +182,7 @@ export interface Database {
         }
         Update: {
           amount?: number | null
+          answer_id?: string | null
           bet_id?: string
           contract_id?: string
           created_time?: string | null
@@ -236,6 +269,7 @@ export interface Database {
           editor_id: string
           id: number
           idempotency_key: string | null
+          updated_keys: string[] | null
         }
         Insert: {
           contract_id: string
@@ -244,6 +278,7 @@ export interface Database {
           editor_id: string
           id?: number
           idempotency_key?: string | null
+          updated_keys?: string[] | null
         }
         Update: {
           contract_id?: string
@@ -252,6 +287,7 @@ export interface Database {
           editor_id?: string
           id?: number
           idempotency_key?: string | null
+          updated_keys?: string[] | null
         }
         Relationships: []
       }
@@ -410,6 +446,137 @@ export interface Database {
           visibility?: string | null
         }
         Relationships: []
+      }
+      dashboard_follows: {
+        Row: {
+          created_time: string | null
+          dashboard_id: string
+          follower_id: string
+        }
+        Insert: {
+          created_time?: string | null
+          dashboard_id: string
+          follower_id: string
+        }
+        Update: {
+          created_time?: string | null
+          dashboard_id?: string
+          follower_id?: string
+        }
+        Relationships: []
+      }
+      dashboard_groups: {
+        Row: {
+          dashboard_id: string
+          group_id: string
+        }
+        Insert: {
+          dashboard_id: string
+          group_id: string
+        }
+        Update: {
+          dashboard_id?: string
+          group_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'dashboard_groups_dashboard_id_fkey'
+            columns: ['dashboard_id']
+            referencedRelation: 'dashboards'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'dashboard_groups_group_id_fkey'
+            columns: ['group_id']
+            referencedRelation: 'groups'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'dashboard_groups_group_id_fkey'
+            columns: ['group_id']
+            referencedRelation: 'group_role'
+            referencedColumns: ['group_id']
+          },
+          {
+            foreignKeyName: 'dashboard_groups_group_id_fkey'
+            columns: ['group_id']
+            referencedRelation: 'groups_rbac'
+            referencedColumns: ['id']
+          }
+        ]
+      }
+      dashboards: {
+        Row: {
+          created_time: string
+          creator_avatar_url: string
+          creator_id: string
+          creator_name: string
+          creator_username: string
+          description: Json | null
+          id: string
+          importance_score: number
+          items: Json | null
+          slug: string
+          title: string
+          title_fts: unknown | null
+          visibility: string | null
+        }
+        Insert: {
+          created_time?: string
+          creator_avatar_url: string
+          creator_id: string
+          creator_name: string
+          creator_username: string
+          description?: Json | null
+          id?: string
+          importance_score?: number
+          items?: Json | null
+          slug: string
+          title: string
+          title_fts?: unknown | null
+          visibility?: string | null
+        }
+        Update: {
+          created_time?: string
+          creator_avatar_url?: string
+          creator_id?: string
+          creator_name?: string
+          creator_username?: string
+          description?: Json | null
+          id?: string
+          importance_score?: number
+          items?: Json | null
+          slug?: string
+          title?: string
+          title_fts?: unknown | null
+          visibility?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'dashboards_creator_id_fkey'
+            columns: ['creator_id']
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'dashboards_creator_id_fkey'
+            columns: ['creator_id']
+            referencedRelation: 'user_groups'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'dashboards_creator_id_fkey'
+            columns: ['creator_id']
+            referencedRelation: 'user_referrals'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'dashboards_creator_id_fkey'
+            columns: ['creator_id']
+            referencedRelation: 'user_referrals_profit'
+            referencedColumns: ['id']
+          }
+        ]
       }
       discord_messages_markets: {
         Row: {
@@ -700,6 +867,231 @@ export interface Database {
         }
         Relationships: []
       }
+      love_answers: {
+        Row: {
+          created_time: string
+          creator_id: string
+          free_response: string | null
+          id: number
+          integer: number | null
+          multiple_choice: number | null
+          question_id: number
+        }
+        Insert: {
+          created_time?: string
+          creator_id: string
+          free_response?: string | null
+          id?: never
+          integer?: number | null
+          multiple_choice?: number | null
+          question_id: number
+        }
+        Update: {
+          created_time?: string
+          creator_id?: string
+          free_response?: string | null
+          id?: never
+          integer?: number | null
+          multiple_choice?: number | null
+          question_id?: number
+        }
+        Relationships: []
+      }
+      love_questions: {
+        Row: {
+          answer_type: string
+          created_time: string
+          creator_id: string
+          id: number
+          importance_score: number
+          multiple_choice_options: Json | null
+          question: string
+        }
+        Insert: {
+          answer_type?: string
+          created_time?: string
+          creator_id: string
+          id?: never
+          importance_score?: number
+          multiple_choice_options?: Json | null
+          question: string
+        }
+        Update: {
+          answer_type?: string
+          created_time?: string
+          creator_id?: string
+          id?: never
+          importance_score?: number
+          multiple_choice_options?: Json | null
+          question?: string
+        }
+        Relationships: []
+      }
+      love_waitlist: {
+        Row: {
+          created_time: string
+          email: string
+          id: number
+        }
+        Insert: {
+          created_time?: string
+          email: string
+          id?: never
+        }
+        Update: {
+          created_time?: string
+          email?: string
+          id?: never
+        }
+        Relationships: []
+      }
+      lover_comments: {
+        Row: {
+          content: Json
+          created_time: string
+          hidden: boolean
+          id: number
+          on_user_id: string
+          reply_to_comment_id: number | null
+          user_avatar_url: string
+          user_id: string
+          user_name: string
+          user_username: string
+        }
+        Insert: {
+          content: Json
+          created_time?: string
+          hidden?: boolean
+          id?: never
+          on_user_id: string
+          reply_to_comment_id?: number | null
+          user_avatar_url: string
+          user_id: string
+          user_name: string
+          user_username: string
+        }
+        Update: {
+          content?: Json
+          created_time?: string
+          hidden?: boolean
+          id?: never
+          on_user_id?: string
+          reply_to_comment_id?: number | null
+          user_avatar_url?: string
+          user_id?: string
+          user_name?: string
+          user_username?: string
+        }
+        Relationships: []
+      }
+      lovers: {
+        Row: {
+          birthdate: string
+          born_in_location: string | null
+          city: string
+          company: string | null
+          created_time: string
+          drinks_per_month: number | null
+          education_level: string | null
+          ethnicity: string[] | null
+          gender: string
+          has_kids: number | null
+          height_in_inches: number | null
+          id: number
+          is_smoker: boolean | null
+          is_vegetarian_or_vegan: boolean | null
+          last_online_time: string
+          looking_for_matches: boolean
+          messaging_status: string
+          occupation: string | null
+          occupation_title: string | null
+          photo_urls: string[] | null
+          pinned_url: string | null
+          political_beliefs: string[] | null
+          pref_age_max: number
+          pref_age_min: number
+          pref_gender: string[]
+          pref_relation_styles: string[]
+          religious_belief_strength: number | null
+          religious_beliefs: string[] | null
+          university: string | null
+          user_id: string
+          visibility: string
+          wants_kids_strength: number
+          comments_enabled: boolean
+        }
+        Insert: {
+          birthdate: string
+          born_in_location?: string | null
+          city: string
+          company?: string | null
+          created_time?: string
+          drinks_per_month?: number | null
+          education_level?: string | null
+          ethnicity?: string[] | null
+          gender: string
+          has_kids?: number | null
+          height_in_inches?: number | null
+          id?: never
+          is_smoker?: boolean | null
+          is_vegetarian_or_vegan?: boolean | null
+          last_online_time?: string
+          looking_for_matches?: boolean
+          messaging_status?: string
+          occupation?: string | null
+          occupation_title?: string | null
+          photo_urls?: string[] | null
+          pinned_url?: string | null
+          political_beliefs?: string[] | null
+          pref_age_max?: number
+          pref_age_min?: number
+          pref_gender: string[]
+          pref_relation_styles: string[]
+          religious_belief_strength?: number | null
+          religious_beliefs?: string[] | null
+          university?: string | null
+          user_id: string
+          visibility?: string
+          wants_kids_strength?: number
+          comments_enabled?: boolean
+        }
+        Update: {
+          birthdate?: string
+          born_in_location?: string | null
+          city?: string
+          company?: string | null
+          created_time?: string
+          drinks_per_month?: number | null
+          education_level?: string | null
+          ethnicity?: string[] | null
+          gender?: string
+          has_kids?: number | null
+          height_in_inches?: number | null
+          id?: never
+          is_smoker?: boolean | null
+          is_vegetarian_or_vegan?: boolean | null
+          last_online_time?: string
+          looking_for_matches?: boolean
+          messaging_status?: string
+          occupation?: string | null
+          occupation_title?: string | null
+          photo_urls?: string[] | null
+          pinned_url?: string | null
+          political_beliefs?: string[] | null
+          pref_age_max?: number
+          pref_age_min?: number
+          pref_gender?: string[]
+          pref_relation_styles?: string[]
+          religious_belief_strength?: number | null
+          religious_beliefs?: string[] | null
+          university?: string | null
+          user_id?: string
+          visibility?: string
+          wants_kids_strength?: number
+          comments_enabled?: boolean
+        }
+        Relationships: []
+      }
       manalinks: {
         Row: {
           data: Json
@@ -944,6 +1336,114 @@ export interface Database {
           group_id?: string | null
           id?: string
           visibility?: string | null
+        }
+        Relationships: []
+      }
+      private_user_message_channel_members: {
+        Row: {
+          channel_id: number
+          created_time: string
+          id: number
+          role: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          channel_id: number
+          created_time?: string
+          id?: never
+          role?: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          channel_id?: number
+          created_time?: string
+          id?: never
+          role?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      private_user_message_channels: {
+        Row: {
+          created_time: string
+          id: number
+          last_updated_time: string
+        }
+        Insert: {
+          created_time?: string
+          id?: never
+          last_updated_time?: string
+        }
+        Update: {
+          created_time?: string
+          id?: never
+          last_updated_time?: string
+        }
+        Relationships: []
+      }
+      private_user_messages: {
+        Row: {
+          channel_id: number
+          content: Json
+          created_time: string
+          id: number
+          user_id: string
+        }
+        Insert: {
+          channel_id: number
+          content: Json
+          created_time?: string
+          id?: never
+          user_id: string
+        }
+        Update: {
+          channel_id?: number
+          content?: Json
+          created_time?: string
+          id?: never
+          user_id?: string
+        }
+        Relationships: []
+      }
+      private_user_seen_message_channels: {
+        Row: {
+          channel_id: number
+          created_time: string
+          id: number
+          user_id: string
+        }
+        Insert: {
+          channel_id: number
+          created_time?: string
+          id?: never
+          user_id: string
+        }
+        Update: {
+          channel_id?: number
+          created_time?: string
+          id?: never
+          user_id?: string
+        }
+        Relationships: []
+      }
+      private_users: {
+        Row: {
+          data: Json
+          fs_updated_time: string
+          id: string
+        }
+        Insert: {
+          data: Json
+          fs_updated_time: string
+          id: string
+        }
+        Update: {
+          data?: Json
+          fs_updated_time?: string
+          id?: string
         }
         Relationships: []
       }
@@ -1339,7 +1839,8 @@ export interface Database {
           reaction_id: string | null
           reason: string
           reasons: string[] | null
-          relevance_score: number
+          relevance_score: number | null
+          seen_duration: number | null
           seen_time: string | null
           user_id: string
         }
@@ -1362,6 +1863,7 @@ export interface Database {
           reason: string
           reasons?: string[] | null
           relevance_score?: number | null
+          seen_duration?: number | null
           seen_time?: string | null
           user_id: string
         }
@@ -1384,6 +1886,7 @@ export interface Database {
           reason?: string
           reasons?: string[] | null
           relevance_score?: number | null
+          seen_duration?: number | null
           seen_time?: string | null
           user_id?: string
         }
@@ -1875,12 +2378,16 @@ export interface Database {
           created_time: string | null
           creator_id: string | null
           data: Json | null
+          description_fts: unknown | null
           fs_updated_time: string | null
           id: string | null
+          importance_score: number | null
           mechanism: string | null
           outcome_type: string | null
           popularity_score: number | null
           question: string | null
+          question_fts: unknown | null
+          question_nostop_fts: unknown | null
           resolution: string | null
           resolution_probability: number | null
           resolution_time: string | null
@@ -1892,12 +2399,16 @@ export interface Database {
           created_time?: string | null
           creator_id?: string | null
           data?: Json | null
+          description_fts?: unknown | null
           fs_updated_time?: string | null
           id?: string | null
+          importance_score?: number | null
           mechanism?: string | null
           outcome_type?: string | null
           popularity_score?: number | null
           question?: string | null
+          question_fts?: unknown | null
+          question_nostop_fts?: unknown | null
           resolution?: string | null
           resolution_probability?: number | null
           resolution_time?: string | null
@@ -1909,12 +2420,16 @@ export interface Database {
           created_time?: string | null
           creator_id?: string | null
           data?: Json | null
+          description_fts?: unknown | null
           fs_updated_time?: string | null
           id?: string | null
+          importance_score?: number | null
           mechanism?: string | null
           outcome_type?: string | null
           popularity_score?: number | null
           question?: string | null
+          question_fts?: unknown | null
+          question_nostop_fts?: unknown | null
           resolution?: string | null
           resolution_probability?: number | null
           resolution_time?: string | null
@@ -2049,12 +2564,16 @@ export interface Database {
           created_time: string | null
           creator_id: string | null
           data: Json | null
+          description_fts: unknown | null
           fs_updated_time: string | null
           id: string | null
+          importance_score: number | null
           mechanism: string | null
           outcome_type: string | null
           popularity_score: number | null
           question: string | null
+          question_fts: unknown | null
+          question_nostop_fts: unknown | null
           resolution: string | null
           resolution_probability: number | null
           resolution_time: string | null
@@ -2066,12 +2585,16 @@ export interface Database {
           created_time?: string | null
           creator_id?: string | null
           data?: Json | null
+          description_fts?: unknown | null
           fs_updated_time?: string | null
           id?: string | null
+          importance_score?: number | null
           mechanism?: string | null
           outcome_type?: string | null
           popularity_score?: number | null
           question?: string | null
+          question_fts?: unknown | null
+          question_nostop_fts?: unknown | null
           resolution?: string | null
           resolution_probability?: number | null
           resolution_time?: string | null
@@ -2083,12 +2606,16 @@ export interface Database {
           created_time?: string | null
           creator_id?: string | null
           data?: Json | null
+          description_fts?: unknown | null
           fs_updated_time?: string | null
           id?: string | null
+          importance_score?: number | null
           mechanism?: string | null
           outcome_type?: string | null
           popularity_score?: number | null
           question?: string | null
+          question_fts?: unknown | null
+          question_nostop_fts?: unknown | null
           resolution?: string | null
           resolution_probability?: number | null
           resolution_time?: string | null
@@ -2171,7 +2698,6 @@ export interface Database {
       user_groups: {
         Row: {
           avatarurl: string | null
-          follower_count: number | null
           groups: string[] | null
           id: string | null
           name: string | null
@@ -2235,6 +2761,13 @@ export interface Database {
         Args: {
           this_contract_id: string
           this_member_id: string
+        }
+        Returns: boolean
+      }
+      can_access_private_messages: {
+        Args: {
+          channel_id: number
+          user_id: string
         }
         Returns: boolean
       }
@@ -2423,6 +2956,17 @@ export interface Database {
           contracts: Json
         }[]
       }
+      get_contracts_in_group_slugs: {
+        Args: {
+          contract_ids: string[]
+          group_slugs: string[]
+          ignore_slugs: string[]
+        }
+        Returns: {
+          data: Json
+          importance_score: number
+        }[]
+      }
       get_contracts_with_unseen_liked_comments: {
         Args: {
           available_contract_ids: string[]
@@ -2457,11 +3001,26 @@ export interface Database {
             }
             Returns: number
           }
+      get_daily_claimed_boosts: {
+        Args: {
+          user_id: string
+        }
+        Returns: {
+          total: number
+        }[]
+      }
       get_document_table_spec: {
         Args: {
           table_id: string
         }
         Returns: Database['public']['CompositeTypes']['table_spec']
+      }
+      get_donations_by_charity: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          charity_id: string
+          total: number
+        }[]
       }
       get_engaged_users: {
         Args: Record<PropertyKey, never>
@@ -2484,6 +3043,18 @@ export interface Database {
         Returns: {
           data: Json
         }[]
+      }
+      get_groups_and_scores_from_user_seen_markets: {
+        Args: {
+          uid: string
+        }
+        Returns: Database['public']['CompositeTypes']['group_with_score_and_bet_flag'][]
+      }
+      get_groups_from_user_seen_markets: {
+        Args: {
+          uid: string
+        }
+        Returns: Database['public']['CompositeTypes']['group_with_bet_flag'][]
       }
       get_last_week_long_link: {
         Args: {
@@ -2599,29 +3170,18 @@ export interface Database {
         }[]
       }
       get_recommended_contracts_by_score: {
+      get_recently_active_contracts_in_group_slugs: {
         Args: {
-          uid: string
-          count: number
+          group_slugs: string[]
+          ignore_slugs: string[]
+          max: number
         }
         Returns: {
           data: Json
-          score: number
+          importance_score: number
         }[]
       }
       get_recommended_contracts_embeddings: {
-        Args: {
-          uid: string
-          n: number
-          excluded_contract_ids: string[]
-        }
-        Returns: {
-          data: Json
-          distance: number
-          relative_dist: number
-          popularity_score: number
-        }[]
-      }
-      get_recommended_contracts_embeddings_fast: {
         Args: {
           uid: string
           n: number
@@ -2647,137 +3207,6 @@ export interface Database {
           distance: number
           relative_dist: number
           popularity_score: number
-        }[]
-      }
-      get_recommended_contracts_embeddings_from_fast: {
-        Args: {
-          uid: string
-          p_embedding: string
-          n: number
-          excluded_contract_ids: string[]
-        }
-        Returns: {
-          data: Json
-          distance: number
-          relative_dist: number
-          popularity_score: number
-        }[]
-      }
-      get_recommended_contracts_embeddings_from_ian: {
-        Args: {
-          uid: string
-          p_embedding: string
-          n: number
-          excluded_contract_ids: string[]
-          max_dist: number
-        }
-        Returns: {
-          data: Json
-          distance: number
-          relative_dist: number
-          popularity_score: number
-        }[]
-      }
-      get_recommended_contracts_embeddings_from_using_comments: {
-        Args: {
-          uid: string
-          p_embedding: string
-          n: number
-          excluded_contract_ids: string[]
-          max_dist: number
-        }
-        Returns: {
-          data: Json
-          distance: number
-          relative_dist: number
-          popularity_score: number
-        }[]
-      }
-      get_recommended_contracts_embeddings_from_using_only_comments: {
-        Args: {
-          uid: string
-          p_embedding: string
-          n: number
-          excluded_contract_ids: string[]
-          max_dist: number
-        }
-        Returns: {
-          data: Json
-          distance: number
-          relative_dist: number
-          popularity_score: number
-          comment_id: string
-        }[]
-      }
-      get_recommended_contracts_embeddings_from2:
-        | {
-            Args: {
-              uid: string
-              p_embedding: string
-              n: number
-              excluded_contract_ids: string[]
-              max_dist: number
-            }
-            Returns: {
-              data: Json
-              distance: number
-              relative_dist: number
-              popularity_score: number
-            }[]
-          }
-        | {
-            Args: {
-              uid: string
-              p_embedding: string
-              n: number
-              excluded_contract_ids: string[]
-            }
-            Returns: {
-              data: Json
-              distance: number
-              relative_dist: number
-              popularity_score: number
-            }[]
-          }
-      get_recommended_contracts_embeddings_topic: {
-        Args: {
-          uid: string
-          p_topic: string
-          n: number
-          excluded_contract_ids: string[]
-        }
-        Returns: {
-          data: Json
-          distance: number
-          relative_dist: number
-          popularity_score: number
-        }[]
-      }
-      get_recommended_contracts_embeddings_using_comments: {
-        Args: {
-          uid: string
-          n: number
-          excluded_contract_ids: string[]
-        }
-        Returns: {
-          data: Json
-          distance: number
-          relative_dist: number
-          popularity_score: number
-        }[]
-      }
-      get_recommended_contracts_embeddings_using_only_comments: {
-        Args: {
-          uid: string
-          n: number
-          excluded_contract_ids: string[]
-        }
-        Returns: {
-          data: Json
-          distance: number
-          relative_dist: number
-          popularity_score: number
-          comment_id: string
         }[]
       }
       get_related_contracts: {
@@ -2825,6 +3254,7 @@ export interface Database {
       get_top_market_ads: {
         Args: {
           uid: string
+          distance_threshold: number
         }
         Returns: {
           ad_id: string
@@ -2889,6 +3319,37 @@ export interface Database {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      get_user_journeys:
+        | {
+            Args: {
+              interv: unknown
+            }
+            Returns: {
+              ad_id: string | null
+              comment_id: string | null
+              contract_id: string | null
+              data: Json
+              id: number
+              name: string
+              ts: string | null
+              user_id: string | null
+            }[]
+          }
+        | {
+            Args: {
+              start_time: number
+            }
+            Returns: {
+              ad_id: string | null
+              comment_id: string | null
+              contract_id: string | null
+              data: Json
+              id: number
+              name: string
+              ts: string | null
+              user_id: string | null
+            }[]
+          }
       get_your_contract_ids:
         | {
             Args: {
@@ -3010,6 +3471,12 @@ export interface Database {
         Returns: boolean
       }
       is_valid_contract: {
+        Args: {
+          ct: unknown
+        }
+        Returns: boolean
+      }
+      is_valid_contract_2: {
         Args: {
           ct: unknown
         }
@@ -3219,6 +3686,20 @@ export interface Database {
           username: string
         }[]
       }
+      search_users_2: {
+        Args: {
+          query: string
+          count: number
+        }
+        Returns: {
+          data: Json
+          fs_updated_time: string
+          id: string
+          name: string
+          name_username_vector: unknown | null
+          username: string
+        }[]
+      }
       set_limit: {
         Args: {
           '': number
@@ -3383,6 +3864,15 @@ export interface Database {
         }
         Returns: number
       }
+      get_non_empty_private_message_channel_ids: {
+        Args: {
+          p_user_id: string
+          p_limit?: number
+        }
+        Returns: {
+          id: number
+        }
+      }
     }
     Enums: {
       [_ in never]: never
@@ -3393,6 +3883,17 @@ export interface Database {
       }
       contract_score: {
         contract_id: string
+      }
+      group_with_bet_flag: {
+        id: string
+        data: Json
+        has_bet: boolean
+      }
+      group_with_score_and_bet_flag: {
+        id: string
+        data: Json
+        importance_score: number
+        has_bet: boolean
       }
       jsonb_data: {
         data: Json

@@ -1,10 +1,11 @@
 import { ContractComment, PostComment } from 'common/comment'
-import { Row, mapTypes, run, tsToMillis } from 'common/supabase/utils'
+import { Row, convertSQLtoTS, run, tsToMillis } from 'common/supabase/utils'
 import { db } from './db'
 import { JSONContent } from '@tiptap/core'
 import { Post } from 'common/post'
 import { User } from 'common/user'
 import { track } from '../service/analytics'
+import { chunk } from 'lodash'
 
 export async function getComment(commentId: string) {
   const res = await db
@@ -42,6 +43,26 @@ export async function getCommentRows(contractId: string) {
       .order('created_time', { ascending: false })
   )
   return data
+}
+export async function getRecentCommentsOnContracts(
+  contractIds: string[],
+  limit: number
+) {
+  const chunks = chunk(contractIds, 100)
+  const rows = await Promise.all(
+    chunks.map(async (ids: string[]) => {
+      const { data } = await run(
+        db
+          .from('contract_comments')
+          .select()
+          .in('contract_id', ids)
+          .limit(limit)
+          .order('created_time', { ascending: false })
+      )
+      return data
+    })
+  )
+  return rows.flat().map((r) => convertContractComment(r))
 }
 
 export async function getCommentsOnContract(
@@ -95,7 +116,7 @@ export async function getNumUserComments(userId: string) {
 }
 
 export const convertContractComment = (row: Row<'contract_comments'>) =>
-  mapTypes<'contract_comments', ContractComment>(row, {
+  convertSQLtoTS<'contract_comments', ContractComment>(row, {
     fs_updated_time: false,
     created_time: tsToMillis as any,
   })

@@ -5,6 +5,7 @@ import {
   getSourceUrl,
   Notification,
   ReactionNotificationTypes,
+  ReviewNotificationData,
 } from 'common/notification'
 import { formatMoney } from 'common/util/format'
 import { floatingEqual } from 'common/util/math'
@@ -51,6 +52,21 @@ import { Modal } from '../layout/modal'
 import { Button } from '../buttons/button'
 import { StarIcon } from '@heroicons/react/solid'
 import { useReview } from 'web/hooks/use-review'
+import { groupPath } from 'common/group'
+import { REFERRAL_AMOUNT } from 'common/economy'
+import { ReferralsDialog } from 'web/components/buttons/referrals-button'
+import { useUser } from 'web/hooks/use-user'
+import {
+  MANIFOLD_AVATAR_URL,
+  MANIFOLD_USER_NAME,
+  MANIFOLD_USER_USERNAME,
+} from 'common/user'
+import { SEARCH_TYPE_KEY } from 'web/components/supabase-search'
+import { canSetReferrer } from 'web/lib/firebase/users'
+import {
+  CommentOnLoverNotification,
+  NewMatchNotification,
+} from 'manifold-love/components/love-notification-types'
 
 export function NotificationItem(props: {
   notification: Notification
@@ -93,7 +109,7 @@ export function NotificationItem(props: {
         setHighlighted={setHighlighted}
       />
     )
-  } else if (sourceType === 'loan') {
+  } else if (reason === 'loan_income') {
     return (
       <LoanIncomeNotification
         notification={notification}
@@ -101,7 +117,7 @@ export function NotificationItem(props: {
         setHighlighted={setHighlighted}
       />
     )
-  } else if (sourceType === 'mana_payment') {
+  } else if (reason === 'mana_payment_received') {
     return (
       <ManaPaymentReceievedNotification
         notification={notification}
@@ -109,17 +125,25 @@ export function NotificationItem(props: {
         setHighlighted={setHighlighted}
       />
     )
-  } else if (sourceType === 'user') {
-    if (reason === 'bounty_added') {
-      return (
-        <BountyAddedNotification
-          notification={notification}
-          highlighted={highlighted}
-          setHighlighted={setHighlighted}
-          isChildOfGroup={isChildOfGroup}
-        />
-      )
-    }
+  } else if (reason === 'bounty_added') {
+    return (
+      <BountyAddedNotification
+        notification={notification}
+        highlighted={highlighted}
+        setHighlighted={setHighlighted}
+        isChildOfGroup={isChildOfGroup}
+      />
+    )
+  } else if (reason === 'bounty_canceled') {
+    return (
+      <BountyCanceledNotification
+        notification={notification}
+        highlighted={highlighted}
+        setHighlighted={setHighlighted}
+        isChildOfGroup={isChildOfGroup}
+      />
+    )
+  } else if (sourceType === 'user' && sourceUpdateType === 'updated') {
     return (
       <UserJoinedNotification
         notification={notification}
@@ -145,100 +169,18 @@ export function NotificationItem(props: {
         setHighlighted={setHighlighted}
       />
     )
-  } else if (sourceType === 'contract') {
-    if (sourceUpdateType === 'resolved') {
-      return (
-        <MarketResolvedNotification
-          highlighted={highlighted}
-          notification={notification}
-          isChildOfGroup={isChildOfGroup}
-          setHighlighted={setHighlighted}
-        />
-      )
-    }
-    if (sourceUpdateType === 'closed') {
-      return (
-        <MarketClosedNotification
-          notification={notification}
-          isChildOfGroup={isChildOfGroup}
-          highlighted={highlighted}
-          setHighlighted={setHighlighted}
-        />
-      )
-    }
-    if (reason === 'contract_from_followed_user') {
-      return (
-        <NewMarketNotification
-          notification={notification}
-          isChildOfGroup={isChildOfGroup}
-          highlighted={highlighted}
-          setHighlighted={setHighlighted}
-        />
-      )
-    }
-    if (reason === 'contract_from_private_group') {
-      return (
-        <NewPrivateMarketNotification
-          notification={notification}
-          isChildOfGroup={isChildOfGroup}
-          highlighted={highlighted}
-          setHighlighted={setHighlighted}
-        />
-      )
-    } else if (reason === 'tagged_user') {
-      return (
-        <TaggedUserNotification
-          notification={notification}
-          isChildOfGroup={isChildOfGroup}
-          highlighted={highlighted}
-          setHighlighted={setHighlighted}
-        />
-      )
-    } else if (reason === 'bounty_awarded') {
-      return (
-        <BountyAwardedNotification
-          notification={notification}
-          highlighted={highlighted}
-          setHighlighted={setHighlighted}
-          isChildOfGroup={isChildOfGroup}
-        />
-      )
-    } else if (
-      reason === 'vote_on_your_contract' ||
-      reason === 'all_votes_on_watched_markets'
-    ) {
-      return (
-        <VotedNotification
-          notification={notification}
-          highlighted={highlighted}
-          setHighlighted={setHighlighted}
-          isChildOfGroup={isChildOfGroup}
-        />
-      )
-    } else if (
-      reason == 'poll_close_on_watched_markets' ||
-      reason == 'your_poll_closed'
-    ) {
-      return (
-        <PollClosedNotification
-          notification={notification}
-          highlighted={highlighted}
-          setHighlighted={setHighlighted}
-          isChildOfGroup={isChildOfGroup}
-        />
-      )
-    }
+  } else if (reason === 'contract_from_followed_user') {
     return (
-      <MarketUpdateNotification
+      <NewMarketNotification
         notification={notification}
         isChildOfGroup={isChildOfGroup}
         highlighted={highlighted}
         setHighlighted={setHighlighted}
       />
     )
-  } else if (sourceType === 'signup_bonus') {
+  } else if (reason === 'contract_from_private_group') {
     return (
-      <SignupBonusNotification
+      <NewPrivateMarketNotification
         notification={notification}
         isChildOfGroup={isChildOfGroup}
         highlighted={highlighted}
@@ -254,6 +196,102 @@ export function NotificationItem(props: {
         setHighlighted={setHighlighted}
       />
     )
+  } else if (sourceType === 'comment_on_lover') {
+    return (
+      <CommentOnLoverNotification
+        notification={notification}
+        isChildOfGroup={isChildOfGroup}
+        highlighted={highlighted}
+        setHighlighted={setHighlighted}
+      />
+    )
+  } else if (sourceType === 'new_match') {
+    return (
+      <NewMatchNotification
+        notification={notification}
+        isChildOfGroup={isChildOfGroup}
+        highlighted={highlighted}
+        setHighlighted={setHighlighted}
+      />
+    )
+  } else if (reason === 'tagged_user') {
+    return (
+      <TaggedUserNotification
+        notification={notification}
+        isChildOfGroup={isChildOfGroup}
+        highlighted={highlighted}
+        setHighlighted={setHighlighted}
+      />
+    )
+  } else if (reason === 'bounty_awarded') {
+    return (
+      <BountyAwardedNotification
+        notification={notification}
+        highlighted={highlighted}
+        setHighlighted={setHighlighted}
+        isChildOfGroup={isChildOfGroup}
+      />
+    )
+  } else if (
+    reason === 'vote_on_your_contract' ||
+    reason === 'all_votes_on_watched_markets'
+  ) {
+    return (
+      <VotedNotification
+        notification={notification}
+        highlighted={highlighted}
+        setHighlighted={setHighlighted}
+        isChildOfGroup={isChildOfGroup}
+      />
+    )
+  } else if (
+    reason == 'poll_close_on_watched_markets' ||
+    reason == 'your_poll_closed'
+  ) {
+    return (
+      <PollClosedNotification
+        notification={notification}
+        highlighted={highlighted}
+        setHighlighted={setHighlighted}
+        isChildOfGroup={isChildOfGroup}
+      />
+    )
+  } else if (sourceType === 'contract' && sourceUpdateType === 'updated') {
+    return (
+      <MarketUpdateNotification
+        notification={notification}
+        isChildOfGroup={isChildOfGroup}
+        highlighted={highlighted}
+        setHighlighted={setHighlighted}
+      />
+    )
+  } else if (sourceType === 'contract' && sourceUpdateType === 'resolved') {
+    return (
+      <MarketResolvedNotification
+        highlighted={highlighted}
+        notification={notification}
+        isChildOfGroup={isChildOfGroup}
+        setHighlighted={setHighlighted}
+      />
+    )
+  } else if (sourceType === 'contract' && sourceUpdateType === 'closed') {
+    return (
+      <MarketClosedNotification
+        notification={notification}
+        isChildOfGroup={isChildOfGroup}
+        highlighted={highlighted}
+        setHighlighted={setHighlighted}
+      />
+    )
+  } else if (sourceType === 'signup_bonus') {
+    return (
+      <SignupBonusNotification
+        notification={notification}
+        isChildOfGroup={isChildOfGroup}
+        highlighted={highlighted}
+        setHighlighted={setHighlighted}
+      />
+    )
   } else if (sourceType === 'answer') {
     return (
       <AnswerNotification
@@ -263,7 +301,7 @@ export function NotificationItem(props: {
         setHighlighted={setHighlighted}
       />
     )
-  } else if (sourceType === 'follow') {
+  } else if (reason === 'on_new_follow') {
     return (
       <FollowNotification
         notification={notification}
@@ -272,7 +310,7 @@ export function NotificationItem(props: {
         setHighlighted={setHighlighted}
       />
     )
-  } else if (sourceType === 'league_change') {
+  } else if (reason === 'league_changed') {
     return (
       <LeagueChangedNotification
         notification={notification}
@@ -281,7 +319,7 @@ export function NotificationItem(props: {
         setHighlighted={setHighlighted}
       />
     )
-  } else if (sourceType === 'liquidity') {
+  } else if (reason === 'subsidized_your_market') {
     return (
       <LiquidityNotification
         notification={notification}
@@ -290,28 +328,18 @@ export function NotificationItem(props: {
         setHighlighted={setHighlighted}
       />
     )
-  } else if (sourceType === 'group') {
-    if (reason === 'group_role_changed') {
-      return (
-        <GroupRoleChangedNotification
-          notification={notification}
-          isChildOfGroup={isChildOfGroup}
-          highlighted={highlighted}
-          setHighlighted={setHighlighted}
-        />
-      )
-    }
+  } else if (reason === 'group_role_changed') {
     return (
-      <GroupAddNotification
+      <GroupRoleChangedNotification
         notification={notification}
         isChildOfGroup={isChildOfGroup}
         highlighted={highlighted}
         setHighlighted={setHighlighted}
       />
     )
-  } else if (sourceType === 'challenge') {
+  } else if (reason === 'added_to_group') {
     return (
-      <ChallengeNotification
+      <GroupAddNotification
         notification={notification}
         isChildOfGroup={isChildOfGroup}
         highlighted={highlighted}
@@ -335,6 +363,42 @@ export function NotificationItem(props: {
         setHighlighted={setHighlighted}
       />
     )
+  } else if (sourceType === 'referral_program') {
+    return (
+      <ReferralProgramNotification
+        notification={notification}
+        highlighted={highlighted}
+        setHighlighted={setHighlighted}
+        isChildOfGroup={isChildOfGroup}
+      />
+    )
+  } else if (sourceType === 'follow_suggestion') {
+    return (
+      <FollowSuggestionNotification
+        notification={notification}
+        highlighted={highlighted}
+        setHighlighted={setHighlighted}
+        isChildOfGroup={isChildOfGroup}
+      />
+    )
+  } else if (reason === 'onboarding_flow' && sourceType === 'follow') {
+    return (
+      <FollowFromReferralNotification
+        notification={notification}
+        isChildOfGroup={isChildOfGroup}
+        highlighted={highlighted}
+        setHighlighted={setHighlighted}
+      />
+    )
+  } else if (reason === 'review_on_your_market') {
+    return (
+      <ReviewNotification
+        notification={notification}
+        highlighted={highlighted}
+        setHighlighted={setHighlighted}
+        isChildOfGroup={isChildOfGroup}
+      />
+    )
   }
   return (
     <NotificationFrame
@@ -344,7 +408,7 @@ export function NotificationItem(props: {
       isChildOfGroup={isChildOfGroup}
       icon={<></>}
     >
-      <div className={'mt-1 ml-1 md:text-base'}>
+      <div className={'ml-1 mt-1 md:text-base'}>
         <NotificationTextLabel notification={notification} />
       </div>
     </NotificationFrame>
@@ -832,7 +896,7 @@ function NewPrivateMarketNotification(props: {
         {privateGroup && privateGroup.length > 0 ? (
           <Link
             className={clsx(linkClass, 'hover:text-primary-500 font-semibold')}
-            href={`group/${privateGroup[0].slug}`}
+            href={groupPath(privateGroup[0].slug)}
           >
             {privateGroup[0].name}
           </Link>
@@ -1266,59 +1330,6 @@ function GroupAddNotification(props: {
   )
 }
 
-function ChallengeNotification(props: {
-  notification: Notification
-  highlighted: boolean
-  setHighlighted: (highlighted: boolean) => void
-  isChildOfGroup?: boolean
-}) {
-  const { notification, isChildOfGroup, highlighted, setHighlighted } = props
-  const {
-    sourceUserName,
-    sourceUserUsername,
-    sourceContractTitle,
-    sourceText,
-  } = notification
-  return (
-    <NotificationFrame
-      notification={notification}
-      isChildOfGroup={isChildOfGroup}
-      highlighted={highlighted}
-      setHighlighted={setHighlighted}
-      icon={
-        <AvatarNotificationIcon notification={notification} symbol={'⚔️'} />
-      }
-      link={getSourceUrl(notification)}
-    >
-      <>
-        <UserLink
-          name={sourceUserName || ''}
-          username={sourceUserUsername || ''}
-          className={'hover:text-primary-500 relative flex-shrink-0'}
-        />{' '}
-        accepted your challenge{' '}
-        {!isChildOfGroup && (
-          <span>
-            on{' '}
-            <PrimaryNotificationLink
-              text={sourceContractTitle}
-              truncatedLength="xl"
-            />{' '}
-          </span>
-        )}
-        {sourceText && (
-          <span>
-            for{' '}
-            <span className="text-teal-500">
-              {formatMoney(parseInt(sourceText))}
-            </span>
-          </span>
-        )}
-      </>
-    </NotificationFrame>
-  )
-}
-
 function GroupRoleChangedNotification(props: {
   notification: Notification
   highlighted: boolean
@@ -1357,6 +1368,141 @@ function GroupRoleChangedNotification(props: {
   )
 }
 
+function ReferralProgramNotification(props: {
+  notification: Notification
+  highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
+  isChildOfGroup?: boolean
+}) {
+  const { notification, highlighted, setHighlighted } = props
+  const [showModal, setShowModal] = useState(false)
+  const user = useUser()
+
+  return (
+    <NotificationFrame
+      notification={notification}
+      isChildOfGroup={false}
+      highlighted={highlighted}
+      setHighlighted={setHighlighted}
+      onClick={() => setShowModal(true)}
+      icon={
+        <AvatarNotificationIcon
+          notification={
+            {
+              sourceUserName: MANIFOLD_USER_NAME,
+              sourceUserUsername: MANIFOLD_USER_USERNAME,
+              sourceUserAvatarUrl: MANIFOLD_AVATAR_URL,
+            } as Notification
+          }
+          symbol={'💸'}
+        />
+      }
+      subtitle={
+        user && canSetReferrer(user) ? (
+          <span>Did a friend refer you? Tap here to attribute them!</span>
+        ) : (
+          <span>Tap here to see your referral code!</span>
+        )
+      }
+    >
+      <span>
+        Want free mana? Refer friends and get{' '}
+        <span className="text-teal-500">{formatMoney(REFERRAL_AMOUNT)}</span> on
+        every sign up!
+      </span>
+      {user && (
+        <ReferralsDialog
+          user={user}
+          isOpen={showModal}
+          setIsOpen={setShowModal}
+        />
+      )}
+    </NotificationFrame>
+  )
+}
+
+function FollowFromReferralNotification(props: {
+  notification: Notification
+  highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
+  isChildOfGroup?: boolean
+}) {
+  const { notification, isChildOfGroup, highlighted, setHighlighted } = props
+  const { sourceUserName, sourceUserUsername } = notification
+  return (
+    <NotificationFrame
+      notification={notification}
+      isChildOfGroup={isChildOfGroup}
+      highlighted={highlighted}
+      setHighlighted={setHighlighted}
+      icon={
+        <AvatarNotificationIcon
+          notification={notification}
+          symbol={
+            <Col className="from-ink-400 to-ink-200 h-5 w-5 items-center rounded-lg bg-gradient-to-br text-sm">
+              ➕
+            </Col>
+          }
+        />
+      }
+      link={`/browse?${SEARCH_TYPE_KEY}=Users`}
+      subtitle={`Tap here to find more people to follow!`}
+    >
+      <>
+        <span>
+          You're now following{' '}
+          <UserLink
+            name={sourceUserName || ''}
+            username={sourceUserUsername || ''}
+            className={'hover:text-primary-500 relative flex-shrink-0'}
+          />{' '}
+          (your referrer)
+        </span>
+      </>
+    </NotificationFrame>
+  )
+}
+function FollowSuggestionNotification(props: {
+  notification: Notification
+  highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
+  isChildOfGroup?: boolean
+}) {
+  const { notification, isChildOfGroup, highlighted, setHighlighted } = props
+  const { sourceUserName, sourceUserUsername } = notification
+  return (
+    <NotificationFrame
+      notification={notification}
+      isChildOfGroup={isChildOfGroup}
+      highlighted={highlighted}
+      setHighlighted={setHighlighted}
+      icon={
+        <AvatarNotificationIcon
+          notification={notification}
+          symbol={
+            <Col className="from-ink-400 to-ink-200 h-5 w-5 items-center rounded-lg bg-gradient-to-br text-sm">
+              ➕
+            </Col>
+          }
+        />
+      }
+      link={`/browse?${SEARCH_TYPE_KEY}=Users`}
+      subtitle={`Or, tap here to find more people to follow!`}
+    >
+      <>
+        <span>
+          Want to follow{' '}
+          <UserLink
+            name={sourceUserName || ''}
+            username={sourceUserUsername || ''}
+            className={'hover:text-primary-500 relative flex-shrink-0'}
+          />
+          ? You just bet on their question!
+        </span>
+      </>
+    </NotificationFrame>
+  )
+}
 function WeeklyUpdateNotification(props: {
   notification: Notification
   highlighted: boolean
@@ -1420,7 +1566,7 @@ function BountyAwardedNotification(props: {
             username={notification.sourceUserUsername}
           />
           awarded you a{' '}
-          <span className="font-semibold text-teal-600 dark:text-teal-400">
+          <span className="font-semibold text-teal-600">
             {formatMoney(+notification?.sourceText)}
           </span>{' '}
           bounty
@@ -1464,7 +1610,7 @@ function BountyAddedNotification(props: {
             username={notification.sourceUserUsername}
           />{' '}
           added{' '}
-          <span className="font-semibold text-teal-600 dark:text-teal-400">
+          <span className="font-semibold text-teal-600">
             {formatMoney(+notification?.sourceText)}
           </span>{' '}
           to your bountied question{' '}
@@ -1477,6 +1623,41 @@ function BountyAddedNotification(props: {
           )}
         </span>
       </>
+    </NotificationFrame>
+  )
+}
+
+function BountyCanceledNotification(props: {
+  notification: Notification
+  highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
+  isChildOfGroup?: boolean
+}) {
+  const { notification, highlighted, setHighlighted, isChildOfGroup } = props
+  return (
+    <NotificationFrame
+      notification={notification}
+      isChildOfGroup={isChildOfGroup}
+      highlighted={highlighted}
+      setHighlighted={setHighlighted}
+      link={getSourceUrl(notification)}
+      icon={
+        <AvatarNotificationIcon notification={notification} symbol={'❌'} />
+      }
+      subtitle={`with ${notification.sourceText} bounty left unpaid`}
+    >
+      <span>
+        <UserLink
+          name={notification.sourceUserName}
+          username={notification.sourceUserUsername}
+        />{' '}
+        canceled bounty{' '}
+        {!isChildOfGroup && (
+          <span>
+            <PrimaryNotificationLink text={notification.sourceContractTitle} />
+          </span>
+        )}
+      </span>
     </NotificationFrame>
   )
 }
@@ -1499,24 +1680,66 @@ function VotedNotification(props: {
         <AvatarNotificationIcon notification={notification} symbol={'🗳️'} />
       }
     >
-      <>
-        <span>
-          <UserLink
-            name={notification.sourceUserName}
-            username={notification.sourceUserUsername}
-          />{' '}
-          voted on <b>{notification.sourceText}</b>
-          {!isChildOfGroup && (
-            <span>
-              {' '}
-              on{' '}
-              <PrimaryNotificationLink
-                text={notification.sourceContractTitle}
-              />
-            </span>
+      <span>
+        <UserLink
+          name={notification.sourceUserName}
+          username={notification.sourceUserUsername}
+        />{' '}
+        voted on <b>{notification.sourceText}</b>
+        {!isChildOfGroup && (
+          <span>
+            {' '}
+            on{' '}
+            <PrimaryNotificationLink text={notification.sourceContractTitle} />
+          </span>
+        )}
+      </span>
+    </NotificationFrame>
+  )
+}
+function ReviewNotification(props: {
+  notification: Notification
+  highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
+  isChildOfGroup?: boolean
+}) {
+  const { notification, highlighted, setHighlighted, isChildOfGroup } = props
+  const { rating, review } = notification.data as ReviewNotificationData
+  return (
+    <NotificationFrame
+      notification={notification}
+      isChildOfGroup={isChildOfGroup}
+      highlighted={highlighted}
+      setHighlighted={setHighlighted}
+      link={getSourceUrl(notification)}
+      icon={
+        <AvatarNotificationIcon notification={notification} symbol={'⭐️'} />
+      }
+      subtitle={review}
+    >
+      <span>
+        <UserLink
+          name={notification.sourceUserName}
+          username={notification.sourceUserUsername}
+        />{' '}
+        gave you{' '}
+        <span
+          className={clsx(
+            rating > 3
+              ? 'rounded-md bg-gradient-to-br from-amber-100 to-amber-400 px-2 dark:text-gray-500'
+              : ''
           )}
+        >
+          {rating} star{rating > 1 ? 's' : ''}
         </span>
-      </>
+        {!isChildOfGroup && (
+          <span>
+            {' '}
+            on{' '}
+            <PrimaryNotificationLink text={notification.sourceContractTitle} />
+          </span>
+        )}
+      </span>
     </NotificationFrame>
   )
 }

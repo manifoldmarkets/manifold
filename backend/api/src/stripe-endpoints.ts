@@ -4,7 +4,7 @@ import { Request, Response } from 'express'
 
 import { getPrivateUser, getUser, isProd, log } from 'shared/utils'
 import { sendThankYouEmail } from 'shared/emails'
-import { track } from 'shared/analytics'
+import { trackPublicEvent } from 'shared/analytics'
 import { APIError } from './helpers'
 import { runTxnFromBank } from 'shared/txn/run-txn'
 
@@ -177,7 +177,7 @@ const issueMoneys = async (session: StripeSession) => {
     await sendThankYouEmail(user, privateUser)
     log('stripe revenue', deposit / 100)
 
-    await track(
+    await trackPublicEvent(
       userId,
       'M$ purchase',
       { amount: deposit, sessionId },

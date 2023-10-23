@@ -64,7 +64,6 @@ export function toLiteUser(user: User): LiteUser {
     profitCached,
     isBannedFromPosting,
     userDeleted,
-    followerCountCached,
     currentBettingStreak,
     lastBetTime,
   } = user
@@ -92,7 +91,6 @@ export function toLiteUser(user: User): LiteUser {
     isTrustworthy,
     isBannedFromPosting,
     userDeleted,
-    followerCountCached,
     currentBettingStreak,
     lastBetTime,
   })

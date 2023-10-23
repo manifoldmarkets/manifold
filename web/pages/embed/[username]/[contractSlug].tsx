@@ -11,7 +11,7 @@ import { BinaryContractChart } from 'web/components/charts/contract/binary'
 import { NumericContractChart } from 'web/components/charts/contract/numeric'
 import { PseudoNumericContractChart } from 'web/components/charts/contract/pseudo-numeric'
 import { StonkContractChart } from 'web/components/charts/contract/stonk'
-import { useViewScale } from 'web/components/charts/generic-charts'
+import { useViewScale } from 'web/components/charts/helpers'
 import { CloseOrResolveTime } from 'web/components/contract/contract-details'
 import {
   BinaryResolutionOrChance,
@@ -271,7 +271,7 @@ function ContractSmolView(props: {
             src={'/money-bag.svg'}
             alt={''}
           />
-          <Col className="absolute top-12 bottom-0 left-0 right-0">
+          <Col className="absolute bottom-0 left-0 right-0 top-12">
             <Col className="mx-auto my-auto text-center">
               <div className="text-ink-1000 text-3xl">
                 {formatMoney(contract.bountyLeft)}

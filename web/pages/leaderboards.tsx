@@ -5,27 +5,41 @@ import { Period, User } from 'web/lib/firebase/users'
 import { formatMoney, formatWithCommas } from 'common/util/format'
 import { useEffect, useState } from 'react'
 import { Title } from 'web/components/widgets/title'
-import { useTracking } from 'web/hooks/use-tracking'
 import { SEO } from 'web/components/SEO'
 import { BETTORS } from 'common/user'
 import { useUser } from 'web/hooks/use-user'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import {
-  getUserReferralsInfo,
   getTopReferrals,
+  getUserReferralsInfo,
 } from 'common/supabase/referrals'
 import { db } from 'web/lib/supabase/db'
 import {
-  getTopTraders,
-  getTopCreators,
-  getProfitRank,
   getCreatorRank,
+  getProfitRank,
+  getTopCreators,
+  getTopTraders,
 } from 'web/lib/supabase/users'
+import { Group, TOPIC_KEY } from 'common/group'
+import { getUsers } from 'web/lib/supabase/user'
+import { Row } from 'web/components/layout/row'
+import { TopicSelector } from 'web/components/topics/topic-selector'
+import DropdownMenu from 'web/components/comments/dropdown-menu'
+import { Modal } from 'web/components/layout/modal'
+import { PencilIcon, TagIcon, XIcon } from '@heroicons/react/outline'
+import { DotsVerticalIcon } from '@heroicons/react/solid'
+import { usePersistentQueryState } from 'web/hooks/use-persistent-query-state'
+import { useTopicFromRouter } from 'web/hooks/use-topic-from-router'
+import { BackButton } from 'web/components/contract/back-button'
 
 export async function getStaticProps() {
-  const allTime = await queryLeaderboardUsers('allTime')
+  const allTime = await queryLeaderboardUsers('allTime').catch(() => ({
+    topTraders: [],
+    topCreators: [],
+  }))
 
-  const topReferrals = await getTopReferrals(db)
+  const topReferrals = await getTopReferrals(db).catch(() => [])
+
   return {
     props: {
       allTime,
@@ -46,29 +60,30 @@ const queryLeaderboardUsers = async (period: Period) => {
   }
 }
 
-type leaderboard = {
+type Leaderboard = {
   topTraders: User[]
   topCreators: User[]
 }
-type ranking = {
+type Ranking = {
   profitRank: number
   tradersRank: number
   referralsRank: number
 }
+
 export default function Leaderboards(props: {
-  allTime: leaderboard
+  allTime: Leaderboard
   topReferrals: Awaited<ReturnType<typeof getTopReferrals>>
 }) {
-  const [myRanks, setMyRanks] = useState<ranking>()
+  const [myRanks, setMyRanks] = useState<Ranking>()
   const [userReferralInfo, setUserReferralInfo] =
     useState<Awaited<ReturnType<typeof getUserReferralsInfo>>>()
-
+  const [showSelectGroupModal, setShowSelectGroupModal] = useState(false)
   const user = useUser()
 
   useEffect(() => {
     if (!user?.profitCached) return
     ;(async () => {
-      const rankings = {} as ranking
+      const rankings = {} as Ranking
       const myProfit = user.profitCached?.allTime
       if (myProfit != null) {
         rankings.profitRank = await getProfitRank(myProfit, 'allTime')
@@ -86,20 +101,46 @@ export default function Leaderboards(props: {
   }, [user?.creatorTraders, user?.profitCached])
 
   const { topReferrals } = props
+  const [topicSlug, setTopicSlug] = usePersistentQueryState(TOPIC_KEY, '')
+  const topicFromRouter = useTopicFromRouter(topicSlug)
+  const [topic, setTopic] = useState<Group>()
+  useEffect(() => {
+    setTopic(topicFromRouter)
+  }, [topicFromRouter])
+  const topTopicTraders = useToTopUsers(
+    topic && topic.cachedLeaderboard?.topTraders
+  )?.map((c) => ({
+    ...c.user,
+    profitCached: {
+      allTime: c.score,
+    },
+  }))
 
-  useTracking('view leaderboards')
+  const topTopicCreators = useToTopUsers(
+    topic && topic.cachedLeaderboard?.topCreators
+  )?.map((c) => ({
+    ...c.user,
+    creatorTraders: {
+      allTime: c.score,
+    },
+  }))
 
   const { topTraders, topCreators } = props.allTime
 
-  const topTraderEntries = topTraders.map((user, i) => ({
+  const topTraderEntries = (
+    topic && topTopicTraders ? topTopicTraders : topTraders
+  ).map((user, i) => ({
     ...user,
     rank: i + 1,
   }))
-  const topCreatorEntries = topCreators.map((user, i) => ({
+  const topCreatorEntries = (
+    topic && topTopicCreators ? topTopicCreators : topCreators
+  ).map((user, i) => ({
     ...user,
     rank: i + 1,
   }))
-  if (user && myRanks != null) {
+
+  if (user && myRanks != null && !topic) {
     if (
       myRanks.profitRank != null &&
       !topTraderEntries.find((x) => x.id === user.id)
@@ -127,20 +168,46 @@ export default function Leaderboards(props: {
   }
 
   return (
-    <Page>
+    <Page trackPageView={'leaderboards'}>
       <SEO
         title="Leaderboards"
         description={`Manifold's leaderboards show the top ${BETTORS}, question creators, and referrers.`}
         url="/leaderboards"
       />
       <Col className="mb-4 p-2">
-        <Title className={'hidden md:block'}>
-          Leaderboards <InfoTooltip text="Updated every 15 minutes" />
-        </Title>
+        <Row className={'mb-4 items-center justify-between '}>
+          <Row className={'items-center gap-2'}>
+            <BackButton className={'md:hidden'} />
+            <Title className={'!mb-0'}>
+              Leaderboards <InfoTooltip text="Updated every 15 minutes" />
+            </Title>
+          </Row>
+          <DropdownMenu
+            icon={<DotsVerticalIcon className={'h-5 w-5'} />}
+            menuWidth={'w-48'}
+            items={[
+              {
+                name: topic ? 'Change topic' : 'Filter by topic',
+                onClick: () => setShowSelectGroupModal(true),
+                icon: topic ? (
+                  <PencilIcon
+                    className="text-ink-400 h-5 w-5"
+                    aria-hidden="true"
+                  />
+                ) : (
+                  <TagIcon
+                    className="text-ink-400 h-5 w-5"
+                    aria-hidden="true"
+                  />
+                ),
+              },
+            ]}
+          />
+        </Row>
 
         <Col className="items-center gap-10 lg:flex-row lg:items-start">
           <Leaderboard
-            title={`🏅 Top ${BETTORS}`}
+            title={`🏅 ${topic?.name ?? 'Top'} ${BETTORS}`}
             entries={topTraderEntries}
             columns={[
               {
@@ -152,7 +219,7 @@ export default function Leaderboards(props: {
           />
 
           <Leaderboard
-            title="🏅 Top creators"
+            title={`🏅 ${topic?.name ?? 'Top'} creators`}
             entries={topCreatorEntries}
             columns={[
               {
@@ -164,32 +231,108 @@ export default function Leaderboards(props: {
             highlightUsername={user?.username}
           />
         </Col>
-        <Col className="mx-4 my-10 items-center gap-10 lg:mx-0 lg:w-[35rem] lg:flex-row">
-          <Leaderboard
-            title="🏅 Top Referrers"
-            entries={topReferrals}
-            columns={[
-              {
-                header: 'Referrals',
-                renderCell: (user) => user.totalReferrals,
-              },
-              {
-                header: (
-                  <span>
-                    Referred profits
-                    <InfoTooltip
-                      text={'Total profit earned by referred users'}
-                    />
-                  </span>
-                ),
-                renderCell: (user) =>
-                  formatMoney(user.totalReferredProfit ?? 0),
-              },
-            ]}
-            highlightUsername={user?.username}
-          />
-        </Col>
+        {!topic && (
+          <Col className="mx-4 my-10 items-center gap-10 lg:mx-0 lg:w-[35rem] lg:flex-row">
+            <Leaderboard
+              title="🏅 Top Referrers"
+              entries={topReferrals}
+              columns={[
+                {
+                  header: 'Referrals',
+                  renderCell: (user) => user.totalReferrals,
+                },
+                {
+                  header: (
+                    <span>
+                      Referred profits
+                      <InfoTooltip
+                        text={'Total profit earned by referred users'}
+                      />
+                    </span>
+                  ),
+                  renderCell: (user) =>
+                    formatMoney(user.totalReferredProfit ?? 0),
+                },
+              ]}
+              highlightUsername={user?.username}
+            />
+          </Col>
+        )}
       </Col>
+      <SelectTopicModal
+        open={showSelectGroupModal}
+        setOpen={setShowSelectGroupModal}
+        setGroup={(group) => {
+          setTopicSlug(group?.slug ?? '')
+        }}
+        group={topic}
+      />
     </Page>
   )
 }
+
+const SelectTopicModal = (props: {
+  open: boolean
+  setOpen: (open: boolean) => void
+  group?: Group
+  setGroup: (group: Group | undefined) => void
+}) => {
+  const { open, group, setOpen, setGroup } = props
+  return (
+    <Modal open={open} setOpen={setOpen} size={'lg'}>
+      <Col className={'bg-canvas-50 min-h-[25rem] rounded-xl p-4'}>
+        <Title className={''}>Filter leaderboards by topic</Title>
+        {group && (
+          <Row className={'items-center justify-between gap-2'}>
+            <span className={'text-ink-900 text-lg font-bold'}>
+              {group.name}
+            </span>
+            <button
+              onClick={() => {
+                setGroup(undefined)
+              }}
+            >
+              <XIcon className="hover:text-ink-700 text-ink-400 ml-1 h-4 w-4" />
+            </button>
+          </Row>
+        )}
+        <Col className={''}>
+          <TopicSelector
+            setSelectedGroup={(group) => {
+              setGroup(group)
+              setOpen(false)
+            }}
+          />
+        </Col>
+      </Col>
+    </Modal>
+  )
+}
+
+const toTopUsers = async (
+  cachedUserIds: { userId: string; score: number }[]
+): Promise<{ user: User | null; score: number }[]> => {
+  const userData = await getUsers(cachedUserIds.map((u) => u.userId))
+  const usersById = Object.fromEntries(userData.map((u) => [u.id, u as User]))
+  return cachedUserIds
+    .map((e) => ({
+      user: usersById[e.userId],
+      score: e.score,
+    }))
+    .filter((e) => e.user != null)
+}
+
+function useToTopUsers(
+  cachedUserIds: { userId: string; score: number }[] | undefined
+): UserStats[] | undefined {
+  const [topUsers, setTopUsers] = useState<UserStats[]>()
+  useEffect(() => {
+    if (cachedUserIds)
+      toTopUsers(cachedUserIds).then((result) =>
+        setTopUsers(result as UserStats[])
+      )
+  }, [JSON.stringify(cachedUserIds)])
+  return topUsers && topUsers.length > 0 ? topUsers : undefined
+}
+
+type UserStats = { user: User; score: number }

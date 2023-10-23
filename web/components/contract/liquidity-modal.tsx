@@ -1,17 +1,15 @@
 import { CPMMContract, CPMMMultiContract } from 'common/contract'
-import { formatMoney } from 'common/util/format'
+import { formatMoney, formatPercent } from 'common/util/format'
 import { useState } from 'react'
-import { useUser } from 'web/hooks/use-user'
 import { addSubsidy } from 'web/lib/firebase/api'
 import { track } from 'web/lib/service/analytics'
-import { AmountInput } from '../widgets/amount-input'
+import { BuyAmountInput } from '../widgets/amount-input'
 import { Button } from '../buttons/button'
-import { InfoTooltip } from '../widgets/info-tooltip'
 import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
-import { Row } from '../layout/row'
 import { Title } from '../widgets/title'
-import { ENV_CONFIG } from 'common/envs/constants'
+import { SUBSIDY_FEE } from 'common/economy'
+import { Row } from '../layout/row'
 
 export function LiquidityModal(props: {
   contract: CPMMContract | CPMMMultiContract
@@ -22,12 +20,22 @@ export function LiquidityModal(props: {
   const { totalLiquidity } = contract
 
   return (
-    <Modal open={isOpen} setOpen={setOpen} size="sm">
-      <Col className="bg-canvas-0 gap-2.5  rounded p-4 pb-8 sm:gap-4">
-        <Title className="!mb-2">💧 Add liquidity</Title>
+    <Modal open={isOpen} setOpen={setOpen} size="md">
+      <Col className="bg-canvas-0 gap-3  rounded p-4 pb-8 sm:gap-4">
+        <Title className="!mb-2">💧 Subsidize this market</Title>
 
-        <div>Total liquidity subsidies: {formatMoney(totalLiquidity)}</div>
-        <AddLiquidityPanel contract={contract} />
+        <div className="text-ink-600">
+          The higher the stakes, the more winners make!
+          <br />
+          Pay traders to make the probability more precise.
+        </div>
+        <div>
+          <div className="mb-2">
+            Total subsidy pool:{' '}
+            <span className="font-semibold">{formatMoney(totalLiquidity)}</span>
+          </div>
+          <AddLiquidityPanel contract={contract} />
+        </div>
       </Col>
     </Modal>
   )
@@ -39,8 +47,6 @@ function AddLiquidityPanel(props: {
   const { contract } = props
   const { id: contractId, slug } = contract
 
-  const user = useUser()
-
   const [amount, setAmount] = useState<number | undefined>(undefined)
   const [error, setError] = useState<string | undefined>(undefined)
   const [isSuccess, setIsSuccess] = useState(false)
@@ -49,18 +55,9 @@ function AddLiquidityPanel(props: {
   const onAmountChange = (amount: number | undefined) => {
     setIsSuccess(false)
     setAmount(amount)
-
-    // Check for errors.
-    if (amount !== undefined) {
-      if (user && user.balance < amount) {
-        setError('Insufficient balance')
-      } else if (amount < 1) {
-        setError('Minimum amount: ' + formatMoney(1))
-      } else {
-        setError(undefined)
-      }
-    }
   }
+
+  const payAmount = Math.ceil((1 / (1 - SUBSIDY_FEE)) * (amount ?? 0))
 
   const submit = () => {
     if (!amount) return
@@ -68,7 +65,7 @@ function AddLiquidityPanel(props: {
     setIsLoading(true)
     setIsSuccess(false)
 
-    addSubsidy({ amount, contractId })
+    addSubsidy({ amount: payAmount, contractId })
       .then((_) => {
         setIsSuccess(true)
         setError(undefined)
@@ -80,34 +77,47 @@ function AddLiquidityPanel(props: {
   }
 
   return (
-    <>
-      <div className="text-ink-500 mb-4">
-        Contribute your {ENV_CONFIG.moneyMoniker} to make this question more
-        accurate by subsidizing trading.{' '}
-        <InfoTooltip text="Liquidity is how much money traders can make if they're right. The higher the stakes for traders, the greater the incentive to find the correct probability." />
-      </div>
-
-      <Row>
-        <AmountInput
+    <Col className="w-full">
+      <Row className="mb-4">
+        <BuyAmountInput
+          inputClassName="w-40 mr-2"
           amount={amount}
-          onChangeAmount={onAmountChange}
-          label={ENV_CONFIG.moneyMoniker}
-          error={!!error}
+          onChange={onAmountChange}
+          error={error}
+          setError={setError}
           disabled={isLoading}
-          inputClassName="w-28 mr-4"
+          // don't use slider: useless for larger amounts
+          sliderOptions={{ show: false, wrap: false }}
         />
-        <Button onClick={submit} disabled={isLoading || !!error}>
-          Add
+
+        <Button
+          onClick={submit}
+          disabled={isLoading || !!error || !amount}
+          size="sm"
+        >
+          Subsidize
         </Button>
       </Row>
 
-      {error && <div className="text-red-500">{error}</div>}
+      {amount ? (
+        <div className="text-ink-700 text-xs">
+          Pay {formatMoney(payAmount)} to add {formatMoney(amount)} to the
+          subsidy pool after fees.
+        </div>
+      ) : (
+        <div className="text-ink-700 text-xs">
+          Note: Manifold charges a {formatPercent(SUBSIDY_FEE)} fee on
+          subsidies.
+        </div>
+      )}
 
       {isSuccess && amount && (
-        <div>Success! Added {formatMoney(amount)} in liquidity.</div>
+        <div>
+          Success! Added {formatMoney(amount)} to the subsidy pool, after fees.
+        </div>
       )}
 
       {isLoading && <div>Processing...</div>}
-    </>
+    </Col>
   )
 }

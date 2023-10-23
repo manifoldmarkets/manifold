@@ -1,4 +1,4 @@
-import { mapTypes, tsToMillis } from './supabase/utils'
+import { convertSQLtoTS, tsToMillis } from './supabase/utils'
 
 export type Portfolio = {
   id: string
@@ -18,7 +18,7 @@ export type PortfolioItem = {
 export const MAX_PORTFOLIO_NAME_LENGTH = 140
 
 export const convertPortfolio = (portfolioRow: any) => {
-  return mapTypes(portfolioRow, {
+  return convertSQLtoTS(portfolioRow, {
     created_time: tsToMillis,
   }) as Portfolio
 }
@@ -26,4 +26,3 @@ export const convertPortfolio = (portfolioRow: any) => {
 export function portfolioPath(portfolioSlug: string) {
   return `/portfolio/${portfolioSlug}`
 }
-

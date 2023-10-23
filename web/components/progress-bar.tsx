@@ -6,23 +6,17 @@ export const ProgressBar = (props: {
   value: number
   max: number
   className?: string
-  color?: string
   showPercentage?: boolean
 }) => {
-  const { value, max, className, color = 'bg-blue-500' } = props
+  const { value, max, className } = props
   const percentage = (value / max) * 100
   return (
     <Row className={'w-full justify-center'}>
-      <Col
-        className={clsx(
-          `h-2.5 w-full rounded-full bg-gray-200 dark:bg-gray-700`,
-          className
-        )}
-      >
+      <Col className={clsx('bg-ink-200 h-2.5 w-full rounded-full', className)}>
         <div
-          className={`h-full rounded-full ${color}`}
+          className={'bg-primary-500 h-full rounded-full'}
           style={{ width: `${percentage}%` }}
-        ></div>
+        />
       </Col>
     </Row>
   )

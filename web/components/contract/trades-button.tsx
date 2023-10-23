@@ -17,46 +17,46 @@ import { Col } from 'web/components/layout/col'
 import { useContractVoters } from 'web/hooks/use-votes'
 import { Avatar } from '../widgets/avatar'
 import { UserLink } from '../widgets/user-link'
+import { track } from 'web/lib/service/analytics'
 
 export function TradesButton(props: { contract: Contract }) {
   const { contract } = props
+  const { uniqueBettorCount: uniqueTraders } = contract
   const [modalOpen, setModalOpen] = useState<boolean>(false)
-  const [uniqueTraders, setUniqueTraders] = useState(contract.uniqueBettorCount)
-  useEffect(() => {
-    setUniqueTraders(contract.uniqueBettorCount)
-  }, [contract.uniqueBettorCount])
+
   const isPoll = contract.outcomeType === 'POLL'
+  const isBounty = contract.outcomeType === 'BOUNTIED_QUESTION'
+
   return (
-    <button
-      disabled={uniqueTraders === 0}
-      className={clsx(
-        'text-ink-500 transition-transform disabled:cursor-not-allowed'
-      )}
-      onClick={(e) => {
-        e.preventDefault()
-        setModalOpen(true)
-      }}
-    >
-      <Row className="relative gap-1.5 text-sm">
-        <Tooltip
-          text={'Traders'}
-          placement={'top'}
-          className={clsx('flex flex-row items-center justify-center gap-1.5')}
+    <>
+      <Tooltip
+        text={isPoll ? 'Voters' : isBounty ? 'Rewards given' : 'Traders'}
+        placement="top"
+        noTap
+      >
+        <button
+          disabled={uniqueTraders === 0}
+          className={clsx(
+            'text-ink-500 flex h-full flex-row items-center justify-center gap-1.5 transition-transform'
+          )}
+          onClick={(e) => {
+            track('click feed card traders button', { contractId: contract.id })
+            e.preventDefault()
+            setModalOpen(true)
+          }}
         >
-          <UserIcon className={clsx(' h-5')} />
-          <div>{uniqueTraders > 0 ? uniqueTraders : ''}</div>
-        </Tooltip>
-      </Row>
+          <Row className="relative gap-1.5 text-sm">
+            <UserIcon className="h-5 w-5" />
+            {isBounty ? contract.bountyTxns.length || '' : uniqueTraders || ''}
+          </Row>
+        </button>
+      </Tooltip>
       <Modal
         open={modalOpen}
         setOpen={setModalOpen}
         className={clsx(MODAL_CLASS)}
         size={'lg'}
       >
-        <div className={'bg-canvas-0 sticky top-0'}>
-          <span className="font-bold">{contract.question}</span>
-          {isPoll && <span> voters</span>}
-        </div>
         {modalOpen && (
           <div className={clsx(SCROLLABLE_MODAL_CLASS, 'scrollbar-hide')}>
             {isPoll ? (
@@ -67,7 +67,7 @@ export function TradesButton(props: { contract: Contract }) {
           </div>
         )}
       </Modal>
-    </button>
+    </>
   )
 }
 

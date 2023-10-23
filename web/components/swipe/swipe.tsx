@@ -17,8 +17,6 @@ import {
 } from 'web/components/swipe/swipe-helpers'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import Link from 'next/link'
-import { useFeed } from 'web/hooks/use-feed'
-import { useTracking } from 'web/hooks/use-tracking'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { useWindowSize } from 'web/hooks/use-window-size'
 import { firebaseLogin } from 'web/lib/firebase/users'
@@ -29,18 +27,20 @@ import { useEvent } from 'web/hooks/use-event'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { ContractCardView } from 'common/events'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import { useTrendingContracts } from 'web/hooks/use-contract-supabase'
 
 export function Swipe(props: { toggleView?: () => void }) {
-  useTracking('view swipe page')
   useRedirectIfSignedOut()
 
   const { toggleView } = props
 
   const user = useUser()
   const privateUser = usePrivateUser()
-  const { contracts, loadMore } = useFeed(user, privateUser, 'swipe', {
-    binaryOnly: true,
-  })
+  const contracts = useTrendingContracts(100)
+  const loadMore = () => {
+    console.log('swipe is deprecated')
+  }
+
   const feed = contracts as BinaryContract[] | undefined
 
   const [index, setIndex] = usePersistentInMemoryState(0, 'swipe-index')
@@ -213,7 +213,7 @@ export function Swipe(props: { toggleView?: () => void }) {
 
   if (user === undefined || feed === undefined) {
     return (
-      <Page>
+      <Page trackPageView={'swipe loading page'}>
         <LoadingIndicator className="mt-6" />
       </Page>
     )
@@ -221,7 +221,7 @@ export function Swipe(props: { toggleView?: () => void }) {
   // Show log in prompt if user not logged in.
   if (user === null) {
     return (
-      <Page>
+      <Page trackPageView={'logged out swipe page'}>
         <div className="flex h-screen w-screen items-center justify-center">
           <Button onClick={firebaseLogin} color="gradient" size="2xl">
             Log in to use Manifold Swipe
@@ -231,7 +231,7 @@ export function Swipe(props: { toggleView?: () => void }) {
     )
   }
   return (
-    <Page>
+    <Page trackPageView={'swipe page'}>
       <Row
         className="absolute justify-center overflow-hidden overscroll-none"
         style={{ height: cardHeight }}
@@ -277,10 +277,7 @@ export function Swipe(props: { toggleView?: () => void }) {
           {contracts !== undefined && contracts.length === 0 && (
             <div className="m-4 flex w-full flex-col items-center justify-center">
               We're fresh out of cards!
-              <Link
-                href="/questions?s=newest&f=open"
-                className="text-primary-700"
-              >
+              <Link href="/browse?s=newest&f=open" className="text-primary-700">
                 Browse new questions
               </Link>
             </div>

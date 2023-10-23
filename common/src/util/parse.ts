@@ -86,3 +86,7 @@ export function richTextToString(text?: JSONContent) {
     return ''
   }
 }
+
+export function parseJsonContentToText(content: JSONContent | string) {
+  return typeof content === 'string' ? content : richTextToString(content)
+}

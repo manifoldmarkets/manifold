@@ -44,17 +44,8 @@ export type GroupLink = {
   userId?: string
 }
 
-export function groupPath(
-  groupSlug: string,
-  subpath?:
-    | 'edit'
-    | 'markets'
-    | 'about'
-    | typeof GROUP_CHAT_SLUG
-    | 'leaderboards'
-    | 'posts'
-) {
-  return `/group/${groupSlug}${subpath ? `/${subpath}` : ''}`
+export function groupPath(groupSlug: string) {
+  return `/browse?${TOPIC_KEY}=${groupSlug}`
 }
 
 export const GroupsByTopic = {
@@ -79,3 +70,7 @@ export const GroupsByTopic = {
   ponzi: ['fun', 'selfresolving', 'whale-watching', 'permanent markets'],
   // grey: ['cgp-grey'],
 }
+// note: changing these breaks old urls. if you do, make sure to update omnisearch and opensearch.xml
+export const TOPIC_KEY = 'topic'
+export const DEFAULT_TOPIC = ''
+export type GroupRole = 'admin' | 'moderator' | 'member'

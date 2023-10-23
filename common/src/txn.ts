@@ -36,10 +36,17 @@ type AnyTxnType =
   | BountyPosted
   | BountyAwarded
   | BountyAdded
+  | BountyCanceled
   | ManaPay
   | LeagueBid
 
-export type SourceType = 'USER' | 'CONTRACT' | 'CHARITY' | 'BANK' | 'AD' | 'LEAGUE'
+export type SourceType =
+  | 'USER'
+  | 'CONTRACT'
+  | 'CHARITY'
+  | 'BANK'
+  | 'AD'
+  | 'LEAGUE'
 
 export type Txn<T extends AnyTxnType = AnyTxnType> = {
   id: string
@@ -198,9 +205,10 @@ type ContractResolutionPayout = {
   category: 'CONTRACT_RESOLUTION_PAYOUT'
   token: 'M$'
   data: {
-    /** @deprecated **/
+    /** @deprecated - we use CONTRACT_UNDO_RESOLUTION_PAYOUT **/
     reverted?: boolean
     deposit?: number
+    payoutStartTime?: number
   }
 }
 
@@ -325,6 +333,13 @@ type BountyAwarded = {
   token: 'M$'
 }
 
+type BountyCanceled = {
+  category: 'BOUNTY_CANCELED'
+  fromType: 'CONTRACT'
+  toType: 'USER'
+  token: 'M$'
+}
+
 type ManaPay = {
   category: 'MANA_PAYMENT'
   fromType: 'USER'
@@ -348,7 +363,6 @@ type LeagueBid = {
     cohort: string
   }
 }
-
 
 export type DonationTxn = Txn & Donation
 export type TipTxn = Txn & Tip
@@ -384,5 +398,6 @@ export type LeaguePrizeTxn = Txn & LeaguePrize
 export type BountyAwardedTxn = Txn & BountyAwarded
 export type BountyPostedTxn = Txn & BountyPosted
 export type BountyAddedTxn = Txn & BountyAdded
+export type BountyCanceledTxn = Txn & BountyCanceled
 export type ManaPayTxn = Txn & ManaPay
 export type LeagueBidTxn = Txn & LeagueBid

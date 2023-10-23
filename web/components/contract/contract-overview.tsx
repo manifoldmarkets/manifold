@@ -12,9 +12,8 @@ import {
 import { YES_GRAPH_COLOR } from 'common/envs/constants'
 import { NumericContractChart } from '../charts/contract/numeric'
 import { BinaryContractChart } from '../charts/contract/binary'
-import { ChoiceContractChart, MultiPoint } from '../charts/contract/choice'
+import { ChoiceContractChart, MultiPoints } from '../charts/contract/choice'
 import { PseudoNumericContractChart } from '../charts/contract/pseudo-numeric'
-import { useViewScale } from 'web/components/charts/generic-charts'
 import {
   BinaryResolutionOrChance,
   NumericResolutionOrExpectation,
@@ -29,7 +28,7 @@ import { Period } from 'web/lib/firebase/users'
 import { periodDurations } from 'web/lib/util/time'
 import { SignedInBinaryMobileBetting } from '../bet/bet-button'
 import { StonkContractChart } from '../charts/contract/stonk'
-import { getDateRange } from '../charts/helpers'
+import { getDateRange, useViewScale } from '../charts/helpers'
 import { TimeRangePicker } from '../charts/time-range-picker'
 import { Row } from '../layout/row'
 import { CertOverview } from './cert-overview'
@@ -37,7 +36,10 @@ import { QfOverview } from './qf-overview'
 import { AnswersPanel } from '../answers/answers-panel'
 import { Answer, DpmAnswer } from 'common/answer'
 import { UserBetsSummary } from '../bet/bet-summary'
-import { AnswersResolvePanel } from '../answers/answer-resolve-panel'
+import {
+  AnswersResolvePanel,
+  IndependentAnswersResolvePanel,
+} from '../answers/answer-resolve-panel'
 import { CancelLabel } from '../outcome-label'
 import { PollPanel } from '../poll/poll-panel'
 import { CreateAnswerPanel } from '../answers/create-answer-panel'
@@ -48,17 +50,19 @@ import { Col } from '../layout/col'
 export const ContractOverview = memo(
   (props: {
     contract: Contract
-    betPoints: HistoryPoint<Partial<Bet>>[] | MultiPoint[]
+    betPoints: HistoryPoint<Partial<Bet>>[] | MultiPoints
     showResolver: boolean
     onAnswerCommentClick?: (answer: Answer | DpmAnswer) => void
     resolutionRating?: ReactNode
+    setShowResolver: (show: boolean) => void
   }) => {
     const {
       betPoints,
       contract,
       showResolver,
-      onAnswerCommentClick,
       resolutionRating,
+      setShowResolver,
+      onAnswerCommentClick,
     } = props
 
     switch (contract.outcomeType) {
@@ -96,6 +100,7 @@ export const ContractOverview = memo(
             contract={contract}
             points={betPoints as any}
             showResolver={showResolver}
+            setShowResolver={setShowResolver}
             onAnswerCommentClick={onAnswerCommentClick}
             resolutionRating={resolutionRating}
           />
@@ -224,11 +229,12 @@ export function BinaryChart(props: {
 }
 
 const ChoiceOverview = (props: {
-  points: MultiPoint[]
+  points: MultiPoints
   contract: MultiContract
   showResolver: boolean
-  onAnswerCommentClick?: (answer: Answer | DpmAnswer) => void
   resolutionRating?: ReactNode
+  setShowResolver: (show: boolean) => void
+  onAnswerCommentClick: (answer: Answer | DpmAnswer) => void
 }) => {
   const {
     points,
@@ -236,42 +242,90 @@ const ChoiceOverview = (props: {
     showResolver,
     onAnswerCommentClick,
     resolutionRating,
+    setShowResolver,
   } = props
 
-  if (!onAnswerCommentClick) return null
+  const [showZoomer, setShowZoomer] = useState(false)
+  const { viewScale, currentTimePeriod, setTimePeriod, start, maxRange } =
+    useTimePicker(contract)
+
+  const [hoverAnswerId, setHoverAnswerId] = useState<string>()
+  const [checkedAnswerIds, setCheckedAnswerIds] = useState<string[]>([])
+
+  const shouldAnswersSumToOne =
+    'shouldAnswersSumToOne' in contract ? contract.shouldAnswersSumToOne : true
+
   return (
     <>
-      {contract.resolution === 'CANCEL' && (
-        <div className="flex items-end gap-2 text-2xl sm:text-3xl">
-          <span className="text-base">Resolved</span>
-          <CancelLabel />
-        </div>
-      )}
-      {!!points.length && (
-        <SizedContainer className="h-[150px] w-full pb-4 pr-10 sm:h-[250px]">
+      <Row className="justify-between gap-2">
+        {contract.resolution === 'CANCEL' ? (
+          <div className="flex items-end gap-2 text-2xl sm:text-3xl">
+            <span className="text-base">Resolved</span>
+            <CancelLabel />
+          </div>
+        ) : (
+          <div />
+        )}
+        <TimeRangePicker
+          currentTimePeriod={currentTimePeriod}
+          setCurrentTimePeriod={(p) => {
+            setTimePeriod(p)
+            setShowZoomer(true)
+          }}
+          maxRange={maxRange}
+          color="indigo"
+        />
+      </Row>
+      {!!Object.keys(points).length && contract.mechanism == 'cpmm-multi-1' && (
+        <SizedContainer
+          className={clsx(
+            'h-[150px] w-full pb-4 pr-10 sm:h-[250px]',
+            showZoomer && 'mb-8'
+          )}
+        >
           {(w, h) => (
             <ChoiceContractChart
+              showZoomer={showZoomer}
+              viewScaleProps={viewScale}
+              controlledStart={start}
               width={w}
               height={h}
-              points={points}
+              multiPoints={points}
               contract={contract}
+              highlightAnswerId={hoverAnswerId}
+              checkedAnswerIds={checkedAnswerIds}
             />
           )}
         </SizedContainer>
       )}
-
       {showResolver ? (
-        <AnswersResolvePanel contract={contract} />
+        !shouldAnswersSumToOne && contract.mechanism === 'cpmm-multi-1' ? (
+          <IndependentAnswersResolvePanel contract={contract} />
+        ) : (
+          <AnswersResolvePanel
+            contract={contract}
+            onClose={() => setShowResolver(false)}
+          />
+        )
       ) : (
         <>
           {resolutionRating}
           <AnswersPanel
             contract={contract}
             onAnswerCommentClick={onAnswerCommentClick}
+            onAnswerHover={(ans) => setHoverAnswerId(ans?.id)}
+            onAnswerClick={({ id }) =>
+              setCheckedAnswerIds((answers) =>
+                answers.includes(id)
+                  ? answers.filter((a) => a !== id)
+                  : [...answers, id]
+              )
+            }
+            selected={checkedAnswerIds}
           />
           <CreateAnswerPanel contract={contract} />
           <UserBetsSummary
-            className="border-ink-200 mt-2 !mb-2 "
+            className="border-ink-200 !mb-2 mt-2 "
             contract={contract}
           />
         </>

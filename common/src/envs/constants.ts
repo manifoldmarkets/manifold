@@ -40,6 +40,12 @@ export const AUTH_COOKIE_NAME = `FBUSER_${PROJECT_ID.toUpperCase().replace(
 export const CORS_ORIGIN_MANIFOLD = new RegExp(
   '^https?://(?:[a-zA-Z0-9\\-]+\\.)*' + escapeRegExp(ENV_CONFIG.domain) + '$'
 )
+// Manifold's domain or any subdomains thereof
+export const CORS_ORIGIN_MANIFOLD_LOVE = new RegExp(
+  '^https?://(?:[a-zA-Z0-9\\-]+\\.)*' +
+    escapeRegExp(ENV_CONFIG.loveDomain) +
+    '$'
+)
 // Vercel deployments, used for testing.
 export const CORS_ORIGIN_VERCEL = new RegExp(
   '^https?://[a-zA-Z0-9\\-]+' + escapeRegExp('mantic.vercel.app') + '$'
@@ -90,12 +96,20 @@ export const BOT_USERNAMES = [
   '7',
   'hyperkaehler',
   'NcyBot',
+  'ithaca',
+  'GigaGaussian',
+  'BottieMcBotface',
   'Seldon',
   'OnePercentBot',
   'arrbit',
   'ManaMaximizer',
   'rita',
   'uhh',
+  'ArkPoint',
+  'EliBot',
+  'manifestussy',
+  'mirrorbot',
+  'JakeBot',
 ]
 
 export const CORE_USERNAMES = [
@@ -105,7 +119,7 @@ export const CORE_USERNAMES = [
   'ian',
   'Sinclair',
   'Alice',
-  'DavidChee',
+  'SirSalty',
   'mqp',
   'IngaWei',
   'rachel',
@@ -139,16 +153,24 @@ export const MOD_USERNAMES = [
   'MatthewBarnett',
   'Jacy',
   'Gabrielle',
-  'KatjaGrace',
   'AndrewG',
   'MarcusAbramovitch',
   'KevinBurke',
   'PeterWildeford',
   'ScottLawrence',
   'NoaNabeshima',
-  'Mira',
   'evergreenemily',
   'SneakySly',
+  'Eliza',
+  'SirCryptomind',
+  'Joshua',
+  'jskf',
+  'JosephNoonan',
+  'CodeandSolder',
+  'Stralor',
+  'WieDan',
+  'StrayClimb',
+  'Gen',
 ]
 
 export const VERIFIED_USERNAMES = [
@@ -173,7 +195,7 @@ export const VERIFIED_USERNAMES = [
   'PaulChristiano',
   'BuckShlegeris',
   'Natalia',
-  'Zero',
+  'zero',
   'OzzieGooen',
   'OliverHabryka',
   'Alicorn',
@@ -183,6 +205,14 @@ export const VERIFIED_USERNAMES = [
   'GeorgeHotz',
   'ShayneCoplan',
   'SanghyeonSeo',
+  'KatjaGrace',
+  'EmmettShear',
+  'CateHall',
+  'RobertSKMiles',
+  'TarekMansour',
+  'DylanMatthews',
+  'RobinHanson',
+  'KevinRoose18ac',
 ]
 
 export const HOUSE_BOT_USERNAME = 'acc'
@@ -197,6 +227,8 @@ export const APPLE_APP_URL =
   'https://apps.apple.com/us/app/manifold-markets/id6444136749'
 
 export const TEN_YEARS_SECS = 60 * 60 * 24 * 365 * 10
+
+export const BLOCKED_BY_DEFAULT_GROUP_SLUGS = ['nsfw']
 
 export const DESTINY_GROUP_SLUGS = [
   'destinygg',
@@ -245,23 +277,40 @@ export const DEEMPHASIZED_GROUP_SLUGS = [
   'uk',
   'uk-politics',
   'crystal-ballin',
+  ...GROUP_SLUGS_TO_IGNORE_IN_MARKETS_EMAIL,
+  ...DESTINY_GROUP_SLUGS,
+  ...BLOCKED_BY_DEFAULT_GROUP_SLUGS,
 ]
-  .concat(GROUP_SLUGS_TO_IGNORE_IN_MARKETS_EMAIL)
-  .concat(DESTINY_GROUP_SLUGS)
 
 export const GROUP_SLUGS_TO_IGNORE_FOR_NEWS = DEEMPHASIZED_GROUP_SLUGS.filter(
   (slug) => ['uk', 'uk-politics'].includes(slug)
 )
 
-export const GROUP_SLUGS_TO_HIDE_FROM_PILL_SEARCH = [
+export const LIKELY_DUPLICATIVE_GROUP_SLUGS_ON_TOPICS_LIST = [
+  // politics, 2024-presidential-election, magaland, donald-trump
+  'us-politics',
+  'republican-party',
+  '2024-republican-primaries',
+  'presidential-politics',
+  // lk-99
+  'superconductivity',
+  // ai
+  'openai',
+  'technical-ai-timelines',
+  // crypto-speculation
+  'crypto-prices',
+  // musk-mania
+  'elon-musk',
+  // ignore all manifold groups
+  'manifold-user-retention',
+  'manifold-6748e065087e',
+  'manifold-leagues',
+  'manifold-features-25bad7c7792e',
+  'manifold-users',
+  // generally not helpful for browsing
   'new-years-resolutions-2024',
-  'metamarkets',
-  'magaland',
-  'metaforecasting',
-  'nonpredictive-profits',
-  '-sircryptomind-crypto-stock',
-  'selfresolving',
 ]
+
 export const GROUP_SLUGS_TO_HIDE_FROM_WELCOME_FLOW = [
   'new-years-resolutions-2024',
   'metamarkets',
@@ -283,6 +332,9 @@ export const GROUP_SLUGS_TO_HIDE_FROM_WELCOME_FLOW = [
   '2024-us-presidential-election', // same
   'elon-musk', // listed as Elon Musk
   'elon-musk-14d9d9498c7e',
+  'crypto-prices', // same as crypto,
+  'technical-ai-timelines', // same as ai
+  'presidential-politics', // same as politics
 ]
 
 export const EXTERNAL_REDIRECTS = ['/umami']
@@ -293,8 +345,6 @@ export const DISCORD_BOT_INVITE_LINK =
 
 export const YES_GRAPH_COLOR = '#11b981'
 
-export const BACKGROUND_COLOR = 'bg-canvas-50'
-
 export const RESERVED_PATHS = [
   '_next',
   'about',
@@ -303,6 +353,7 @@ export const RESERVED_PATHS = [
   'ads',
   'analytics',
   'api',
+  'browse',
   'calibration',
   'card',
   'cards',
@@ -315,6 +366,7 @@ export const RESERVED_PATHS = [
   'cowp',
   'create',
   'date-docs',
+  'dashboard',
   'discord',
   'discord-bot',
   'dream',
@@ -340,13 +392,16 @@ export const RESERVED_PATHS = [
   'login',
   'lootbox',
   'mana-auction',
+  'manifest',
   'markets',
   'mtg',
+  'news',
   'notifications',
+  'payments',
+  'portfolio',
   'privacy',
   'profile',
   'public',
-  'q-and-a',
   'questions',
   'referral',
   'referrals',
@@ -356,7 +411,6 @@ export const RESERVED_PATHS = [
   'sign-in-waiting',
   'sitemap',
   'slack',
-  'static',
   'stats',
   'styles',
   'swipe',

@@ -1,22 +1,16 @@
-import {
-  mapValues,
-  groupBy,
-  sumBy,
-  sum,
-  sortBy,
-  debounce,
-  uniqBy,
-} from 'lodash'
+import { debounce, sortBy, sum } from 'lodash'
 import { useState, useMemo } from 'react'
-import { charities, Charity as CharityType } from 'common/charity'
+import { charities } from 'common/charity'
 import { CharityCard } from 'web/components/charity/charity-card'
 import { Col } from 'web/components/layout/col'
 import { Spacer } from 'web/components/layout/spacer'
 import { Page } from 'web/components/layout/page'
 import { Title } from 'web/components/widgets/title'
-import { getAllCharityTxns } from 'web/lib/firebase/txns'
+import {
+  getDonationsByCharity,
+  getMostRecentDonation,
+} from 'web/lib/supabase/txns'
 import { formatMoney, manaToUSD } from 'common/util/format'
-import { useTracking } from 'web/hooks/use-tracking'
 import { searchInAny } from 'common/util/parse'
 import { getUser } from 'web/lib/firebase/users'
 import Link from 'next/link'
@@ -24,27 +18,18 @@ import { User } from 'common/user'
 import { SEO } from 'web/components/SEO'
 import { Input } from 'web/components/widgets/input'
 import { ENV_CONFIG } from 'common/envs/constants'
+import { AlertBox } from 'web/components/widgets/alert-box'
 
 export async function getStaticProps() {
-  let txns = await getAllCharityTxns()
-  // Sort by newest txns first
-  txns = sortBy(txns, 'createdTime').reverse()
-  const totals = mapValues(groupBy(txns, 'toId'), (txns) =>
-    sumBy(txns, (txn) => txn.amount)
-  )
-  const totalRaised = sum(Object.values(totals))
-  const sortedCharities = sortBy(charities, [(charity) => -totals[charity.id]])
-  const numDonors = uniqBy(txns, (txn) => txn.fromId).length
-  const mostRecentDonor = txns[0] ? await getUser(txns[0].fromId) : null
-  const mostRecentCharity = txns[0]?.toId ?? ''
-
+  const [totalsByCharity, mostRecentDonation] = await Promise.all([
+    getDonationsByCharity(),
+    getMostRecentDonation(),
+  ])
   return {
     props: {
-      totalRaised,
-      charities: sortedCharities,
-      numDonors,
-      mostRecentDonor,
-      mostRecentCharity,
+      totalsByCharity,
+      mostRecentCharityId: mostRecentDonation.toId,
+      mostRecentDonor: await getUser(mostRecentDonation.fromId),
     },
     revalidate: 60,
   }
@@ -83,38 +68,37 @@ function DonatedStats(props: { stats: Stat[] }) {
 }
 
 export default function Charity(props: {
-  totalRaised: number
-  charities: CharityType[]
-  numDonors: number
+  totalsByCharity: { [k: string]: number }
   mostRecentDonor?: User | null
-  mostRecentCharity?: string
+  mostRecentCharityId?: string
 }) {
-  const { totalRaised, charities, mostRecentCharity, mostRecentDonor } = props
+  const { totalsByCharity, mostRecentCharityId, mostRecentDonor } = props
 
   const [query, setQuery] = useState('')
+  const totalRaised = sum(Object.values(totalsByCharity))
   const debouncedQuery = debounce(setQuery, 50)
   const recentCharityName =
-    charities.find((charity) => charity.id === mostRecentCharity)?.name ??
+    charities.find((charity) => charity.id === mostRecentCharityId)?.name ??
     'Nobody'
 
-  const filterCharities = useMemo(
-    () =>
-      charities.filter(
-        (charity) =>
-          searchInAny(
-            query,
-            charity.name,
-            charity.preview,
-            charity.description
-          ) || (charity.tags as string[])?.includes(query.toLowerCase())
-      ),
-    [charities, query]
-  )
-
-  useTracking('view charity')
+  const filterCharities = useMemo(() => {
+    const sortedCharities = sortBy(charities, [
+      (c) => -(totalsByCharity[c.id] ?? 0),
+      (c) => c.name,
+    ])
+    return sortedCharities.filter(
+      (charity) =>
+        searchInAny(
+          query,
+          charity.name,
+          charity.preview,
+          charity.description
+        ) || (charity.tags as string[])?.includes(query.toLowerCase())
+    )
+  }, [charities, totalsByCharity, query])
 
   return (
-    <Page>
+    <Page trackPageView={'charity'}>
       <SEO
         title="Manifold for Charity"
         description="Donate your prediction market earnings to charity on Manifold."
@@ -124,10 +108,10 @@ export default function Charity(props: {
         <Col className="">
           <Title>Manifold for Charity</Title>
 
-          <span className="text-ink-600 mt-8">
+          <span className="text-ink-500">
             Convert your {ENV_CONFIG.moneyMoniker} earnings into real charitable
             donations at a ratio of{' '}
-            <strong className="semibold">{formatMoney(100)} : $1</strong>.
+            <span className="semibold">{formatMoney(100)} : $1</span>.
             <a
               href="https://manifoldmarkets.notion.site/Charitable-donation-program-668d55f4ded147cf8cf1282a007fb005"
               target="_blank"
@@ -137,6 +121,18 @@ export default function Charity(props: {
               Read more here.
             </a>
           </span>
+          <AlertBox title="2024 changes" className="mt-4 max-w-2xl">
+            Starting January 1st, 2024 Manifold user donations will be{' '}
+            <a
+              href="https://manifoldmarkets.notion.site/The-New-Deal-for-Manifold-s-Charity-Program-1527421b89224370a30dc1c7820c23ec"
+              target="_blank"
+              rel="noreferrer"
+              className="text-primary-700"
+            >
+              capped at $10,000 per month
+            </a>
+            .
+          </AlertBox>
           <DonatedStats
             stats={[
               {
@@ -151,7 +147,7 @@ export default function Charity(props: {
               {
                 name: 'Most recent donation',
                 stat: recentCharityName,
-                url: `/charity/${mostRecentCharity}`,
+                url: `/charity/${mostRecentCharityId}`,
               },
             ]}
           />
@@ -165,8 +161,12 @@ export default function Charity(props: {
           />
         </Col>
         <div className="grid max-w-xl grid-flow-row grid-cols-1 gap-4 self-center lg:max-w-full lg:grid-cols-2 xl:grid-cols-3">
-          {filterCharities.map((charity) => (
-            <CharityCard charity={charity} key={charity.name} />
+          {filterCharities.map((charity, i) => (
+            <CharityCard
+              charity={charity}
+              raised={totalsByCharity[charity.id]}
+              key={charity.id}
+            />
           ))}
         </div>
         {filterCharities.length === 0 && (
@@ -175,22 +175,15 @@ export default function Charity(props: {
           </div>
         )}
 
-        <div className="to-primary-400 mt-10 w-full rounded-xl bg-gradient-to-r from-pink-300 via-purple-300 p-5">
-          <iframe
-            height="405"
-            src="https://manifold.markets/embed/SG/will-manifold-have-100k-in-donation"
-            title="How many $ will be donated through Manifold's Giving Tuesday?"
-            frameBorder="0"
-            className="bg-canvas-0 w-full rounded-xl p-4"
-          />
-        </div>
-
         <div className="prose text-ink-500 mt-10 max-w-none">
           <span className="text-lg font-semibold">Notes</span>
           <ul>
             <li>
               Don't see your favorite 501c3 charity? Contact us at{' '}
-              <a href="mailto:charity@manifold.markets?subject=Add%20Charity">
+              <a
+                href="mailto:charity@manifold.markets?subject=Add%20Charity"
+                className="text-primary-500"
+              >
                 charity@manifold.markets
               </a>
               !

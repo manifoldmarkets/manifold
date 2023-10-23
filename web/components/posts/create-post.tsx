@@ -98,7 +98,7 @@ export function CreatePostForm(props: { group?: Group }) {
           </Button>
         </>
       ) : (
-        <div className="">
+        <div>
           <p>
             Due to high amounts of spam, posts can now only be created with
             accounts more than 30 days old. (Or with the API.)

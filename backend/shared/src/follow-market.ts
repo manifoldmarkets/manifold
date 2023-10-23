@@ -1,28 +1,18 @@
-import * as admin from 'firebase-admin'
-
-const firestore = admin.firestore()
+import { createSupabaseClient } from 'shared/supabase/init'
+import { followContract, unfollowContract } from 'common/supabase/contracts'
 
 export const addUserToContractFollowers = async (
   contractId: string,
   userId: string
 ) => {
-  try {
-    return await firestore
-      .collection(`contracts/${contractId}/follows`)
-      .doc(userId)
-      .create({ id: userId, createdTime: Date.now() })
-  } catch (e) {
-    // it probably already existed, that's fine
-    return
-  }
+  const db = createSupabaseClient()
+  return followContract(db, contractId, userId)
 }
 
 export const removeUserFromContractFollowers = async (
   contractId: string,
   userId: string
 ) => {
-  return await firestore
-    .collection(`contracts/${contractId}/follows`)
-    .doc(userId)
-    .delete()
+  const db = createSupabaseClient()
+  return unfollowContract(db, contractId, userId)
 }

@@ -30,7 +30,7 @@ export const LinkPreviewNodeView = (props: LinkPreviewProps) => {
       {!hideCloseButton && (
         <button
           className={
-            'bg-canvas-50 absolute top-2 right-2 z-20 rounded-full p-0.5 hover:invert'
+            'bg-canvas-50 absolute right-2 top-2 z-20 rounded-full p-0.5 hover:invert'
           }
           onClick={handleDelete}
         >
@@ -51,8 +51,8 @@ export const LinkPreviewNodeView = (props: LinkPreviewProps) => {
           height={200}
         />
         <Col className="bg-canvas-0 p-2 hover:underline">
-          <div className="line-clamp-2 text-ink-900 text-base">{title}</div>
-          <div className="line-clamp-3 text-ink-600 text-xs">{description}</div>
+          <div className="text-ink-900 line-clamp-2 text-base">{title}</div>
+          <div className="text-ink-600 line-clamp-3 text-xs">{description}</div>
         </Col>
       </a>
     </div>

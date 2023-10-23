@@ -76,17 +76,17 @@ module.exports = {
       },
       {
         source: '/labs',
-        destination: '/about',
+        destination: '/lab',
         permanent: true,
       },
       {
         source: '/sitemap',
         destination: '/about',
-        permanent: false,
+        permanent: true,
       },
       {
         source: '/versus',
-        destination: '/VersusBot?tab=markets',
+        destination: '/VersusBot?tab=questions',
         permanent: false,
       },
       {
@@ -112,12 +112,40 @@ module.exports = {
       },
       {
         source: '/markets',
-        destination: '/questions',
+        destination: '/browse',
         permanent: true,
       },
       {
         source: '/search',
-        destination: '/questions',
+        destination: '/browse',
+        permanent: true,
+      },
+      {
+        source: '/groups',
+        destination: '/browse?t=Topics',
+        permanent: true,
+      },
+      {
+        source: '/group/:slug*',
+        destination: '/browse?topic=:slug*',
+        permanent: true,
+      },
+      {
+        source: '/questions:slug*',
+        has: [
+          {
+            type: 'query',
+            key: 'topic',
+            // Using a named capture group to capture the value of 'topic'
+            value: '(?<slug>.*)',
+          },
+        ],
+        permanent: true,
+        destination: '/browse?topic=:slug', // Using the captured value here
+      },
+      {
+        source: '/questions',
+        destination: '/browse',
         permanent: true,
       },
       // NOTE: add any external redirects at common/envs/constants.ts and update native apps.

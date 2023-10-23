@@ -19,6 +19,26 @@ export async function testBackendFunction() {
     // await addInterestingContractsToFeed(db, pg)
     // await sendOnboardingNotificationsInternal(firestore)
     await addInterestingContractsToFeed(db, pg)
+
+    // const userId = '6hHpzvRG0pMq8PNJs7RZj2qlZGn2'
+    // await createLeagueChangedNotification(
+    //   userId,
+    //   {
+    //     season: 1,
+    //     division: 2,
+    //     cohort: 'lala',
+    //     rank: 1,
+    //     created_time: new Date().toISOString(),
+    //     mana_earned: 100,
+    //     mana_earned_breakdown: { '1': 100 } as any,
+    //     user_id: userId,
+    //     rank_snapshot: 1,
+    //   },
+    //   { season: 2, division: 3, cohort: 'lala' },
+    //   100,
+    //   pg
+    // )
+
     // const user = await getUser('hqdXgp0jK2YMMhPs067eFK4afEH3')
     // if (!user) return
     // const contract = await getContract('OMDk6mF7gC4YZEi1sdVa')

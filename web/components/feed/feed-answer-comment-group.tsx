@@ -10,17 +10,13 @@ import { Row } from 'web/components/layout/row'
 import { CopyLinkDateTimeComponent } from 'web/components/feed/copy-link-date-time'
 import { useRouter } from 'next/router'
 import { UserLink } from 'web/components/widgets/user-link'
-import { FeedCommentThread } from './feed-comments'
-import { AnswerCommentInput } from '../comments/comment-input'
-import { ContractComment } from 'common/comment'
-import { Dictionary, sortBy } from 'lodash'
-import { getAnswerColor } from '../answers/answers-panel'
-import Curve from 'web/public/custom-components/curve'
-import { useChartAnswers } from '../charts/contract/choice'
+import Curve from 'web/lib/icons/comment-curve.svg'
+import { getAnswerColor, useChartAnswers } from '../charts/contract/choice'
 import { scrollIntoViewCentered } from 'web/lib/util/scroll'
 import { useUserByIdOrAnswer } from 'web/hooks/use-user-supabase'
+import { XCircleIcon } from '@heroicons/react/solid'
 
-export function CommentsAnswer(props: {
+function CommentsAnswer(props: {
   answer: Answer | DpmAnswer
   contract: Contract
   color: string
@@ -48,7 +44,7 @@ export function CommentsAnswer(props: {
 
   return (
     <Row>
-      <div className="w-2" style={{ background: color }} />
+      <div className="w-2 dark:brightness-75" style={{ background: color }} />
       <Col className="bg-ink-100 w-fit py-1 pl-2 pr-2">
         <Row className="gap-2">
           <div className="text-ink-400 text-xs">
@@ -71,83 +67,30 @@ export function CommentsAnswer(props: {
   )
 }
 
-export function FreeResponseComments(props: {
+export function CommentOnAnswerRow(props: {
+  answer: Answer | DpmAnswer
   contract: FreeResponseContract | MultipleChoiceContract
-  answerResponse: Answer | DpmAnswer | undefined
-  onCancelAnswerResponse?: () => void
-  topLevelComments: ContractComment[]
-  commentsByParent: Dictionary<[ContractComment, ...ContractComment[]]>
+  clear?: () => void
 }) {
-  const {
-    contract,
-    answerResponse,
-    onCancelAnswerResponse,
-    topLevelComments,
-    commentsByParent,
-  } = props
+  const { answer, contract, clear } = props
+
   const answersArray = useChartAnswers(contract).map((answer) => answer.text)
+  const color = getAnswerColor(answer, answersArray)
+
   return (
-    <>
-      {answerResponse && (
-        <AnswerCommentInput
-          contract={contract}
-          answerResponse={answerResponse}
-          onCancelAnswerResponse={onCancelAnswerResponse}
-          answersArray={answersArray}
-        />
-      )}
-      {topLevelComments.map((parent) => {
-        if (parent.answerOutcome === undefined) {
-          return (
-            <FeedCommentThread
-              key={parent.id}
-              contract={contract}
-              parentComment={parent}
-              threadComments={sortBy(
-                commentsByParent[parent.id] ?? [],
-                (c) => c.createdTime
-              )}
-              trackingLocation={'contract page'}
-            />
-          )
-        }
-        const answer = contract.answers.find(
-          (answer) => answer.id === parent.answerOutcome
-        )
-        if (answer === undefined) {
-          console.error('Could not find answer that matches ID')
-          return <></>
-        }
-        const color = getAnswerColor(answer, answersArray)
-        return (
-          <>
-            <Row className="relative">
-              <div className="absolute -bottom-1 left-1.5 z-20">
-                <Curve size={32} strokeWidth={1} color="#D8D8EB" />
-              </div>
-              <div className="ml-[38px]">
-                <CommentsAnswer
-                  answer={answer}
-                  contract={contract}
-                  color={color}
-                />
-              </div>
-            </Row>
-            <div className="w-full pt-1">
-              <FeedCommentThread
-                key={parent.id}
-                contract={contract}
-                parentComment={parent}
-                threadComments={sortBy(
-                  commentsByParent[parent.id] ?? [],
-                  (c) => c.createdTime
-                )}
-                trackingLocation={'contract page'}
-              />
-            </div>
-          </>
-        )
-      })}
-    </>
+    <Row className="items-end pl-2">
+      <Curve className="text-ink-100 h-8 w-8 rotate-90" />
+      <div className="relative pb-1">
+        <CommentsAnswer answer={answer} contract={contract} color={color} />
+        {clear && (
+          <button
+            onClick={clear}
+            className="text-ink-500 hover:text-ink-600 bg-canvas-0 absolute -right-1.5 -top-1.5 rounded-full"
+          >
+            <XCircleIcon className="h-4 w-4" />
+          </button>
+        )}
+      </div>
+    </Row>
   )
 }

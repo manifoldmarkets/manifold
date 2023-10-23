@@ -7,7 +7,7 @@ create or replace view
     where
       resolution_time is null
       and visibility = 'public'
-      and close_time > now() + interval '10 minutes'
+      and ((close_time > now() + interval '10 minutes') or close_time is null)
   );
 
 create or replace view
@@ -29,7 +29,7 @@ create or replace view
     where
       resolution_time is null --    row level security prevents the 'private' contracts from being returned
       and visibility != 'unlisted'
-      and close_time > now() + interval '10 minutes'
+      and ((close_time > now() + interval '10 minutes') or close_time is null)
   );
 
 create or replace view
@@ -132,7 +132,6 @@ create or replace view
       users.name as name,
       users.username as username,
       users.data ->> 'avatarUrl' as avatarurl,
-      (users.data ->> 'followerCountCached')::integer as follower_count,
       coalesce(user_groups.groups, '{}') as groups
     from
       (
@@ -276,14 +275,16 @@ create or replace view
   user_league_info as (
     select
       *,
-      (row_number() over (
-        partition by
-          season,
-          division,
-          cohort
-        order by
-          mana_earned desc
-      )::int) as rank
+      (
+        row_number() over (
+          partition by
+            season,
+            division,
+            cohort
+          order by
+            mana_earned desc
+        )::int
+      ) as rank
     from
       leagues
   );

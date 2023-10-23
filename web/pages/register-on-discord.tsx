@@ -40,7 +40,7 @@ export default function RegisterOnDiscord() {
     return <LoadingIndicator />
   }
   return (
-    <Page>
+    <Page trackPageView={'register with discord bot page'}>
       <Col className={'p-2'}>
         <Title>Register with our Discord Bot</Title>
         {!privateUser ? (

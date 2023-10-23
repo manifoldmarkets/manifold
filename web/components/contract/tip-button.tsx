@@ -49,7 +49,7 @@ export function TipButton(props: {
           <div
             className={clsx(
               'absolute transition-all',
-              hover ? 'left-[6px] -top-[9px]' : 'left-[8px] -top-[10px]'
+              hover ? '-top-[9px] left-[6px]' : '-top-[10px] left-[8px]'
             )}
           >
             <Coin

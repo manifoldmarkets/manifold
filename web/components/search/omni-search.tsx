@@ -1,13 +1,12 @@
 import { Combobox } from '@headlessui/react'
 import { ChevronRightIcon } from '@heroicons/react/outline'
-import { SparklesIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { Contract } from 'common/contract'
-import { Group } from 'common/group'
+import { TOPIC_KEY, Group } from 'common/group'
 import { debounce, startCase, uniqBy } from 'lodash'
 import { useRouter } from 'next/router'
 import { ReactNode, useCallback, useEffect, useRef, useState } from 'react'
-import { useMemberGroupIds } from 'web/hooks/use-group-supabase'
+import { useMemberGroupIdsOnLoad } from 'web/hooks/use-group-supabase'
 import { useUser } from 'web/hooks/use-user'
 import { useYourRecentContracts } from 'web/hooks/use-your-daily-changed-contracts'
 import { searchContract } from 'web/lib/supabase/contracts'
@@ -15,12 +14,19 @@ import { db } from 'web/lib/supabase/db'
 import { SearchGroupInfo, searchGroups } from 'web/lib/supabase/groups'
 import { UserSearchResult, searchUsers } from 'web/lib/supabase/users'
 import { ContractStatusLabel } from '../contract/contracts-table'
-import { JoinOrLeaveGroupButton } from '../groups/groups-button'
-import { SORTS, Sort } from '../contracts-search'
+import { FollowOrUnfolowTopicButton } from 'web/components/topics/topics-button'
 import { Avatar } from '../widgets/avatar'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { searchMarketSorts } from './query-market-sorts'
 import { PageData, searchPages } from './query-pages'
+import { PillButton } from 'web/components/buttons/pill-button'
+import { Row } from '../layout/row'
+import { Col } from '../layout/col'
+import { formatLargeNumber } from 'common/util/format'
+import { FollowButton } from 'web/components/buttons/follow-button'
+import { getUserFollows } from 'web/lib/supabase/follows'
+import { User } from 'common/user'
+import { SORTS, Sort } from 'web/components/supabase-search'
 
 export interface Option {
   id: string
@@ -47,6 +53,8 @@ export const OmniSearch = (props: {
     debounce((newQuery) => setDebouncedQuery(newQuery), 50),
     []
   )
+  const pillOptions = ['All', 'Questions', 'Users', 'Topics', 'Following']
+  const [filter, setFilter] = useState(pillOptions[0])
 
   useEffect(() => {
     debouncedSearch(query)
@@ -76,19 +84,36 @@ export const OmniSearch = (props: {
               }
             }}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search questions, users, & categories"
+            placeholder="Search questions, users, & topics"
             enterKeyHint="search"
             className={clsx(
-              'border-ink-100 focus:border-ink-100 placeholder:text-ink-400 bg-canvas-0 text-ink-1000 border-0 border-b py-4 px-6 text-xl ring-0 ring-transparent focus:ring-transparent',
+              'border-ink-100 focus:border-ink-100 placeholder:text-ink-400 bg-canvas-0 text-ink-1000 border-0 border-b px-6 py-4 text-xl ring-0 ring-transparent focus:ring-transparent',
               inputClassName
             )}
           />
+          <Row className={'mx-4 my-1 gap-2'}>
+            {query &&
+              pillOptions.map((option) => (
+                <PillButton
+                  key={option}
+                  selected={filter === option}
+                  onSelect={() => setFilter(option)}
+                >
+                  {option}
+                </PillButton>
+              ))}
+          </Row>
           <Combobox.Options
             static
             className="text-ink-700 flex flex-col overflow-y-auto px-1"
           >
             {debouncedQuery ? (
-              <Results query={debouncedQuery} recentMarkets={recentMarkets} />
+              <Results
+                query={debouncedQuery}
+                recentMarkets={recentMarkets}
+                filter={filter}
+                user={user}
+              />
             ) : (
               <DefaultResults recentMarkets={recentMarkets} />
             )}
@@ -102,65 +127,71 @@ export const OmniSearch = (props: {
 const DefaultResults = (props: { recentMarkets: Contract[] }) => {
   const { recentMarkets } = props
   return (
-    <>
-      <GroupResults groups={[]} />
-      <UserResults users={[]} />
-      <MarketResults markets={recentMarkets.slice(0, 7)} />
-
-      <div className="mx-2 my-2 text-xs">
-        <SparklesIcon className="text-primary-500 mr-1 inline h-4 w-4 align-text-bottom" />
-        Start with <Key>%</Key> for questions, <Key>@</Key> for users, or{' '}
-        <Key>#</Key> for categories
-      </div>
-    </>
+    <MarketResults
+      title={'Recent questions'}
+      markets={recentMarkets.slice(0, 7)}
+    />
   )
 }
 
-const Key = (props: { children: ReactNode }) => (
-  <code className="bg-ink-300 mx-0.5 rounded p-0.5">{props.children}</code>
-)
+const Results = (props: {
+  query: string
+  recentMarkets: Contract[]
+  filter: string
+  user: User | null | undefined
+}) => {
+  const { query, recentMarkets, filter, user } = props
 
-const Results = (props: { query: string; recentMarkets: Contract[] }) => {
-  const { query, recentMarkets } = props
+  const search = query
+  const all = filter === 'All'
+  const justUsers = filter === 'Users'
+  const justGroups = filter === 'Topics'
+  const justMarkets = filter === 'Questions'
+  const following = filter === 'Following'
 
-  const prefix = query.match(/^(%|#|@)/) ? query.charAt(0) : ''
-  const search = prefix ? query.slice(1) : query
-
-  const userHitLimit = !prefix ? 5 : prefix === '@' ? 25 : 0
-  const groupHitLimit = !prefix ? 2 : prefix === '#' ? 25 : 0
-  const marketHitLimit = !prefix ? 5 : prefix === '%' ? 25 : 0
+  const userHitLimit = justUsers ? 50 : all ? 5 : following ? 7 : 0
+  const groupHitLimit = justGroups ? 50 : all ? 2 : following ? 7 : 0
+  const marketHitLimit = justMarkets ? 25 : all ? 5 : 0
 
   const [
-    { pageHits, userHits, groupHits, sortHit, marketHits },
+    { pageHits, userHits, topicHits, followedUserHits, sortHit, marketHits },
     setSearchResults,
   ] = useState({
     pageHits: [] as PageData[],
     userHits: [] as UserSearchResult[],
-    groupHits: [] as Group[],
+    topicHits: [] as Group[],
     sortHit: null as { sort: Sort; markets: Contract[] } | null,
     marketHits: [] as Contract[],
+    followedUserHits: [] as User[],
   })
   const [loading, setLoading] = useState(false)
 
   // Use nonce to make sure only latest result gets used.
   const nonce = useRef(0)
 
-  useEffect(() => {
-    nonce.current++
-    const thisNonce = nonce.current
-    setLoading(true)
-
-    Promise.allSettled([
-      searchUsers(search, userHitLimit),
-      searchGroups({ term: search, limit: groupHitLimit }),
-      searchContract({
-        query: search,
-        filter: 'all',
-        sort: 'score',
-        limit: marketHitLimit,
-      }),
+  const doSearch = async (thisNonce: number) => {
+    const [u, g, m, s, f] = await Promise.allSettled([
+      all || justUsers
+        ? searchUsers(search, userHitLimit, ['creatorTraders', 'bio'])
+        : [],
+      // add your groups via ilike on top
+      all || justGroups || following
+        ? searchGroups({
+            term: search,
+            limit: groupHitLimit,
+            searchYourTopics: following,
+          })
+        : { data: [] },
+      all || justMarkets
+        ? searchContract({
+            query: search,
+            filter: 'all',
+            sort: 'score',
+            limit: marketHitLimit,
+          })
+        : { data: [] },
       (async () => {
-        const sortHits = prefix ? [] : searchMarketSorts(search)
+        const sortHits = !all ? [] : searchMarketSorts(search)
         const sort = sortHits[0]
         if (sortHits.length) {
           const markets = (
@@ -175,38 +206,58 @@ const Results = (props: { query: string; recentMarkets: Contract[] }) => {
         }
         return null
       })(),
-    ]).then(([u, g, m, s]) => {
-      const userHits = u.status === 'fulfilled' ? u.value : []
-      const groupHits = g.status === 'fulfilled' ? g.value.data : []
-      const marketHits = m.status === 'fulfilled' ? m.value.data : []
-      const sortHit = s.status === 'fulfilled' ? s.value : null
-      const recentMarketHits = recentMarkets.filter((m) =>
-        m.question.toLowerCase().includes(search.toLowerCase())
-      )
+      all || following || justUsers ? getUserFollows(user?.id ?? '_') : [],
+    ])
 
-      if (thisNonce === nonce.current) {
-        const pageHits = prefix ? [] : searchPages(search, 2)
-        const uniqueMarketHits = uniqBy<Contract>(
-          recentMarketHits.concat(marketHits),
-          'id'
-        )
-        const uniqueGroupHits = uniqBy<Group>(groupHits, 'id')
-        setSearchResults({
-          pageHits,
-          userHits,
-          groupHits: uniqueGroupHits,
-          sortHit,
-          marketHits: uniqueMarketHits,
-        })
-        setLoading(false)
-      }
-    })
-  }, [search, groupHitLimit, marketHitLimit, userHitLimit, prefix])
+    const userHits = u.status === 'fulfilled' ? u.value : []
+    const groupHits = g.status === 'fulfilled' ? g.value.data : []
+    const marketHits = m.status === 'fulfilled' ? m.value.data : []
+    const sortHit = s.status === 'fulfilled' ? s.value : null
+    const recentMarketHits =
+      all || justMarkets
+        ? recentMarkets.filter((m) =>
+            m.question.toLowerCase().includes(search.toLowerCase())
+          )
+        : []
+    const followedUsers =
+      f.status === 'fulfilled'
+        ? f.value.filter(
+            (f) =>
+              f.name.toLowerCase().includes(search.toLowerCase()) ||
+              f.username.toLowerCase().includes(search.toLowerCase())
+          )
+        : []
+
+    if (thisNonce === nonce.current) {
+      const pageHits = !all ? [] : searchPages(search, 2)
+      const uniqueMarketHits = uniqBy<Contract>(
+        recentMarketHits.concat(marketHits),
+        'id'
+      )
+      const uniqueTopicHits = uniqBy<Group>(groupHits, 'id')
+      setSearchResults({
+        pageHits,
+        userHits,
+        topicHits: uniqueTopicHits,
+        sortHit,
+        marketHits: uniqueMarketHits,
+        followedUserHits: followedUsers,
+      })
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    nonce.current++
+    const thisNonce = nonce.current
+    setLoading(true)
+    doSearch(thisNonce)
+  }, [search, groupHitLimit, marketHitLimit, userHitLimit, all])
 
   if (loading) {
     return (
       <LoadingIndicator
-        className="absolute right-6 bottom-1/2 translate-y-1/2"
+        className="absolute right-6 top-4"
         spinnerClassName="!border-ink-300 !border-r-transparent"
       />
     )
@@ -215,8 +266,9 @@ const Results = (props: { query: string; recentMarkets: Contract[] }) => {
   if (
     !pageHits.length &&
     !userHits.length &&
-    !groupHits.length &&
-    !marketHits.length
+    !topicHits.length &&
+    !marketHits.length &&
+    !followedUserHits.length
   ) {
     return <div className="my-6 text-center">no results x.x</div>
   }
@@ -224,9 +276,13 @@ const Results = (props: { query: string; recentMarkets: Contract[] }) => {
   return (
     <>
       <PageResults pages={pageHits} />
-      <MarketResults markets={marketHits} search={search} />
-      <GroupResults groups={groupHits} search={search} />
-      <UserResults users={userHits} search={search} />
+      {marketHitLimit > 0 && (
+        <MarketResults markets={marketHits} search={search} />
+      )}
+      {groupHitLimit > 0 && <TopicResults topics={topicHits} />}
+      {userHitLimit > 0 && (
+        <UserResults users={uniqBy(followedUserHits.concat(userHits), 'id')} />
+      )}
       {sortHit && <MarketSortResults {...sortHit} />}
     </>
   )
@@ -293,13 +349,17 @@ const ResultOption = (props: {
   )
 }
 
-const MarketResults = (props: { markets: Contract[]; search?: string }) => {
-  const markets = props.markets
+const MarketResults = (props: {
+  markets: Contract[]
+  title?: string
+  search?: string
+}) => {
+  const { markets, title } = props
 
   return (
     <>
       <SectionTitle link={marketSearchSlug(props.search ?? '')}>
-        Questions
+        {title ?? 'Questions'}
       </SectionTitle>
       {markets.map((market) => (
         <MarketResult key={market.id} market={market} />
@@ -332,70 +392,85 @@ const MarketResult = (props: { market: Contract }) => {
   )
 }
 
-const UserResults = (props: { users: UserSearchResult[]; search?: string }) => {
-  const title = (
-    <SectionTitle
-      link={`/users?search=${encodeURIComponent(props.search ?? '')}`}
-    >
-      Users
-    </SectionTitle>
-  )
+const UserResults = (props: { users: UserSearchResult[] }) => {
+  const title = <SectionTitle>Users</SectionTitle>
   if (!props.users.length) return title
   return (
     <>
       {title}
-      {props.users.map(({ id, name, username, avatarUrl }) => (
-        <ResultOption key={id} value={{ id, slug: `/${username}` }}>
-          <div className="flex items-center gap-2">
-            <Avatar
-              username={username}
-              avatarUrl={avatarUrl}
-              size="xs"
-              noLink
-            />
-            {name}
-            {username !== name && (
-              <span className="text-ink-400 line-clamp-1">@{username}</span>
-            )}
-          </div>
-        </ResultOption>
-      ))}
+      {props.users.map(
+        ({ id, name, username, avatarUrl, bio, creatorTraders }) => (
+          <ResultOption key={id} value={{ id, slug: `/${username}` }}>
+            <Col>
+              <Row>
+                <Row className={'w-full flex-wrap items-center gap-2'}>
+                  <Avatar
+                    username={username}
+                    avatarUrl={avatarUrl}
+                    size="xs"
+                    noLink
+                  />
+                  {name}
+                  {username !== name && (
+                    <span className="text-ink-400 line-clamp-1">
+                      @{username}
+                    </span>
+                  )}
+                </Row>
+                <FollowButton size={'xs'} userId={id} />
+              </Row>
+              <div className={'text-ink-500 line-clamp-1 text-sm'}>
+                {creatorTraders.allTime > 0 && (
+                  <span className={'mr-1'}>
+                    {formatLargeNumber(creatorTraders.allTime)} traders
+                    {bio && ' •'}
+                  </span>
+                )}
+
+                <span>{bio}</span>
+              </div>
+            </Col>
+          </ResultOption>
+        )
+      )}
     </>
   )
 }
 
-const GroupResults = (props: {
-  groups: SearchGroupInfo[]
-  search?: string
-}) => {
+const TopicResults = (props: { topics: SearchGroupInfo[] }) => {
   const me = useUser()
-  const myGroupIds = useMemberGroupIds(me?.id) ?? []
-  const { search } = props
+  const myGroupIds = useMemberGroupIdsOnLoad(me?.id) ?? []
 
-  const title = (
-    <SectionTitle link={`/groups?search=${encodeURIComponent(search ?? '')}`}>
-      Categories
-    </SectionTitle>
-  )
-  if (!props.groups.length) return title
+  const title = <SectionTitle>Topics</SectionTitle>
+  if (!props.topics.length) return title
   return (
     <>
       {title}
-      {props.groups.map((group) => (
+      {props.topics.map((group) => (
         <ResultOption
           key={group.id}
-          value={{ id: group.id, slug: `/group/${group.slug}` }}
+          value={{
+            id: group.id,
+            slug: `/browse?${TOPIC_KEY}=${group.slug}`,
+          }}
         >
-          <div className="flex items-center gap-3">
-            <span className="line-clamp-1 grow">{group.name}</span>
+          <Row>
+            <Col className={'w-full'}>
+              <span className="line-clamp-1 ">{group.name}</span>
+              {group.totalMembers > 1 && (
+                <span className={'text-ink-500 text-sm'}>
+                  {group.totalMembers} followers
+                </span>
+              )}
+            </Col>
             <div onClick={(e) => e.stopPropagation()}>
-              <JoinOrLeaveGroupButton
+              <FollowOrUnfolowTopicButton
                 group={group}
                 user={me}
                 isMember={myGroupIds.includes(group.id)}
               />
             </div>
-          </div>
+          </Row>
         </ResultOption>
       ))}
     </>
@@ -433,7 +508,7 @@ const MarketSortResults = (props: { sort: Sort; markets: Contract[] }) => {
 
   return (
     <>
-      <SectionTitle link={`/questions?s=${sort}`}>{label}</SectionTitle>
+      <SectionTitle link={`/browse?s=${sort}`}>{label}</SectionTitle>
       <div className="flex">
         <div className="bg-ink-200 my-1 ml-2 mr-3 w-1" />
         <div className="flex flex-col gap-2">
@@ -446,5 +521,4 @@ const MarketSortResults = (props: { sort: Sort; markets: Contract[] }) => {
   )
 }
 
-const marketSearchSlug = (query: string) =>
-  `/questions?s=score&f=all&q=${query}`
+const marketSearchSlug = (query: string) => `/browse?s=score&f=all&q=${query}`

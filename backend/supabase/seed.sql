@@ -41,6 +41,21 @@ $$;
 /******************************************/
 /* 1. tables containing firestore content */
 /******************************************/
+
+create table if not exists private_users (
+  id text not null primary key,
+  data jsonb not null,
+  fs_updated_time timestamp not null,
+);
+
+alter table private_users enable row level security;
+
+drop policy if exists "private read" on private_users;
+create policy "private read" on private_users for select
+  using (firebase_uid() = id);
+
+alter table private_users cluster on private_users_pkey;
+
 create table if not exists
   user_portfolio_history (
     user_id text not null,
@@ -192,50 +207,6 @@ alter table user_disinterests
 cluster on user_disinterests_user_id;
 
 create table if not exists
-  user_events (
-    id bigint generated always as identity primary key,
-    ts timestamptz not null default now(),
-    name text not null,
-    user_id text null,
-    contract_id text null,
-    comment_id text null,
-    ad_id text null,
-    data jsonb not null
-  );
-
-alter table user_events enable row level security;
-
-drop policy if exists "public read" on user_events;
-
-create policy "public read" on user_events for
-select
-  using (true);
-
--- mqp: we should fix this up so that users can only insert their own events.
--- but right now it's blocked because our application code is too dumb to wait
--- for auth to be done until it starts sending events
-drop policy if exists "user can insert" on user_events;
-
-create policy "user can insert" on user_events for insert
-with
-  check (true);
-
-create index if not exists user_events_name on user_events (user_id, name);
-
-create index if not exists user_events_ts on user_events (user_id, ts);
-
-create index if not exists user_events_ad_skips on user_events (name, ad_id)
-where
-  name = 'Skip ad';
-
-create index if not exists user_events_comment_view on user_events (user_id, name, comment_id);
-
-create index if not exists user_events_contract_name on user_events (user_id, contract_id, name);
-
-alter table user_events
-cluster on user_events_name;
-
-create table if not exists
   user_seen_markets (
     id bigint generated always as identity primary key,
     user_id text not null,
@@ -331,6 +302,7 @@ create table if not exists
     answer_ids text[] null,
     relevance_score numeric default 0,
     reasons text[] null,
+    seen_duration bigint null, -- ms
     unique (user_id, idempotency_key)
   );
 
@@ -395,8 +367,6 @@ create policy "public read" on contracts for
 select
   using (true);
 
-create index if not exists contracts_data_gin on contracts using GIN (data);
-
 create index if not exists contracts_slug on contracts (slug);
 
 create index if not exists contracts_creator_id on contracts (creator_id, created_time);
@@ -426,6 +396,17 @@ create index if not exists contracts_sample_filtering on contracts (
   visibility,
   ((data ->> 'uniqueBettorCount'))
 );
+
+create index contracts_on_importance_score_and_resolution_time_idx on contracts(importance_score, resolution_time);
+
+create index contracts_last_updated_time on contracts(((data ->> 'lastUpdatedTime')::bigint) desc);
+
+create index contracts_group_slugs_public on contracts using gin((data -> 'groupSlugs'))
+    where visibility = 'public';
+
+create index concurrently idx_lover_user_id1 on contracts ((data ->> 'loverUserId1')) where data->>'loverUserId1' is not null;
+create index concurrently idx_lover_user_id2 on contracts ((data ->> 'loverUserId2')) where data->>'loverUserId2' is not null;
+
 
 alter table contracts
 cluster on contracts_creator_id;
@@ -493,6 +474,7 @@ create table if not exists
     contract_id text not null,
     bet_id text not null,
     user_id text,
+    answer_id text,
     created_time timestamptz,
     amount numeric,
     shares numeric,
@@ -533,6 +515,7 @@ begin
     new.is_redemption := ((new.data) -> 'isRedemption')::boolean;
     new.is_challenge := ((new.data) -> 'isChallenge')::boolean;
     new.visibility := ((new.data) ->> 'visibility')::text;
+    new.answer_id := ((new.data) ->> 'answerId')::text;
   end if;
   return new;
 end
@@ -561,6 +544,9 @@ create index if not exists contract_bets_contract_user_id on contract_bets (cont
 /* serving the user bets API */
 create index if not exists contract_bets_user_id on contract_bets (user_id, created_time desc);
 
+/* serving the user bets API */
+create index if not exists contract_bets_answer_id on contract_bets (answer_id);
+
 create index if not exists contract_bets_user_outstanding_limit_orders on contract_bets (
   user_id,
   ((data -> 'isFilled')::boolean),
@@ -575,6 +561,8 @@ create index if not exists contract_bets_unexpired_limit_orders on contract_bets
   is_redemption,
   ((data ->> 'expiresAt'))
 );
+
+create index contract_bets_contract_id_user_id on contract_bets(contract_id, user_id);
 
 alter table contract_bets
 cluster on contract_bets_created_time;
@@ -618,31 +606,12 @@ create index contract_comments_contract_id_created_time_idx on contract_comments
 
 create index contract_comments_data_likes_idx on contract_comments (((data -> 'likes')::numeric));
 
+create index contract_replies on contract_comments ((data ->> 'replyToCommentId'), contract_id, created_time desc);
+
 create index contract_comments_created_time_idx on contract_comments (created_time desc);
 
 alter table contract_comments
 cluster on contract_comments_pkey;
-
-create table if not exists
-  contract_edits (
-    id serial primary key,
-    contract_id text not null,
-    editor_id text not null,
-    data jsonb not null,
-    -- if created from a db trigger
-    idempotency_key text,
-    created_time timestamptz not null default now()
-  );
-
-alter table contract_edits enable row level security;
-
-drop policy if exists "public read" on contract_edits;
-
-create policy "public read" on contract_edits for
-select
-  using (true);
-
-create index if not exists contract_edits_contract_id_idx on contract_edits (contract_id);
 
 create table if not exists
   contract_comment_edits (
@@ -752,10 +721,17 @@ create index if not exists contract_follows_idx on contract_follows (follow_id);
 alter table contract_follows enable row level security;
 
 drop policy if exists "public read" on contract_follows;
+drop policy if exists "user can insert" on contract_follows;
+drop policy if exists "user can delete" on contract_follows;
 
 create policy "public read" on contract_follows for
 select
   using (true);
+create policy "user can insert" on contract_follows for insert
+    with check (firebase_uid() = follow_id);
+create policy "user can delete" on contract_follows for delete
+    using (firebase_uid() = follow_id);
+
 
 alter table contract_follows
 cluster on contract_follows_pkey;
@@ -804,26 +780,6 @@ select
 
 alter table groups
 cluster on groups_pkey;
-
-create table if not exists
-  group_contracts (
-    group_id text not null,
-    contract_id text not null,
-    data jsonb,
-    fs_updated_time timestamp,
-    primary key (group_id, contract_id)
-  );
-
-alter table group_contracts enable row level security;
-
-drop policy if exists "public read" on group_contracts;
-
-create policy "public read" on group_contracts for
-select
-  using (true);
-
-alter table group_contracts
-cluster on group_contracts_pkey;
 
 create table if not exists
   user_quest_metrics (
@@ -1286,7 +1242,7 @@ alter publication supabase_realtime
 add table user_follows;
 
 alter publication supabase_realtime
-add table chat_messages;
+add table private_user_message_channel_members;
 
 commit;
 
@@ -1347,6 +1303,7 @@ begin
   return case
     table_id
            when 'users' then cast((null, 'id') as table_spec)
+           when 'private_users' then cast((null, 'id') as table_spec)
            when 'user_reactions' then cast(('user_id', 'reaction_id') as table_spec)
            when 'contracts' then cast((null, 'id') as table_spec)
            when 'contract_answers' then cast(('contract_id', 'answer_id') as table_spec)

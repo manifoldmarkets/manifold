@@ -1,4 +1,5 @@
-import { ImageResponse, ImageResponseOptions } from '@vercel/og'
+import { ImageResponse } from '@vercel/og'
+import { ImageResponseOptions } from '@vercel/og/dist/types'
 import { NextRequest } from 'next/server'
 import { OgWeeklyUpdate } from 'web/components/og/og-weekly-update'
 import { WeeklyPortfolioUpdateOGCardProps } from 'common/weekly-portfolio-update'

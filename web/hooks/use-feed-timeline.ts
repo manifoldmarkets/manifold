@@ -5,9 +5,7 @@ import { useEffect, useRef } from 'react'
 import { buildArray, filterDefined } from 'common/util/array'
 import { useEvent } from './use-event'
 import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
-import { getBoosts } from 'web/lib/supabase/ads'
-import { BoostsType } from 'web/hooks/use-feed'
-import { mapTypes, Row, run, tsToMillis } from 'common/supabase/utils'
+import { convertSQLtoTS, Row, run, tsToMillis } from 'common/supabase/utils'
 import { db } from 'web/lib/supabase/db'
 import {
   countBy,
@@ -43,11 +41,12 @@ import { removeUndefinedProps } from 'common/util/object'
 import { convertAnswer } from 'common/supabase/contracts'
 import { compareTwoStrings } from 'string-similarity'
 import dayjs from 'dayjs'
+import { useBoosts } from 'web/hooks/use-boosts'
+import { useIsAuthorized } from 'web/hooks/use-user'
 
 export const DEBUG_FEED_CARDS =
   typeof window != 'undefined' &&
   window.location.toString().includes('localhost:3000')
-const PAGE_SIZE = 50
 
 export type FeedTimelineItem = {
   // These are stored in the db
@@ -64,6 +63,8 @@ export type FeedTimelineItem = {
   betData: PositionChangeData | null
   answerIds: string[] | null
   creatorId: string | null
+  seenTime: string | null
+  seenDuration: number | null
   // These are fetched/generated at runtime
   avatarUrl: string | null
   creatorDetails?: CreatorDetails
@@ -79,47 +80,73 @@ export type FeedTimelineItem = {
   manuallyCreatedFromContract?: boolean
   relatedItems?: FeedTimelineItem[]
 }
-const baseUserFeedQuery = (
+type times = 'new' | 'old'
+type loadProps = {
+  time: times
+  ignoreFeedTimelineItems: FeedTimelineItem[]
+  allowSeen?: boolean
+}
+const baseQuery = (
   userId: string,
   privateUser: PrivateUser,
-  ignoreContractIds: string[]
-) => {
-  return (
-    db
-      .from('user_feed')
-      .select('*')
-      .eq('user_id', userId)
-      .not(
-        'creator_id',
-        'in',
-        `(${privateUser.blockedUserIds.concat(privateUser.blockedByUserIds)})`
-      )
-      .not('contract_id', 'in', `(${privateUser.blockedContractIds})`)
-      // New comments or news items with/on contracts we already have on feed are okay
-      .or(
-        `data_type.eq.new_comment,data_type.eq.news_with_related_contracts,contract_id.not.in.(${ignoreContractIds})`
-      )
-      .order('relevance_score', { ascending: false })
-      .limit(PAGE_SIZE)
-  )
-}
+  ignoreContractIds: string[],
+  limit: number
+) =>
+  db
+    .from('user_feed')
+    .select('*')
+    .eq('user_id', userId)
+    .not(
+      'creator_id',
+      'in',
+      `(${privateUser.blockedUserIds.concat(privateUser.blockedByUserIds)})`
+    )
+    .not('contract_id', 'in', `(${privateUser.blockedContractIds})`)
+    // New comments or news items with/on contracts we already have on feed are okay
+    .or(
+      `data_type.eq.new_comment,data_type.eq.news_with_related_contracts,contract_id.not.in.(${ignoreContractIds})`
+    )
+    .order('relevance_score', { ascending: false })
+    .limit(limit)
 
-type loadProps = {
-  new?: boolean
-  old?: boolean
-  ignoreFeedTimelineItems: FeedTimelineItem[]
+const queryForFeedRows = async (
+  userId: string,
+  privateUser: PrivateUser,
+  options: loadProps,
+  newestCreatedTimestamp: string
+) => {
+  const ignoreContractIds = filterDefined(
+    options.ignoreFeedTimelineItems
+      .map((item) =>
+        (item.relatedItems ?? [])
+          .map((c) => c.contractId)
+          .concat([item.contractId])
+      )
+      .flat()
+  )
+  let query = baseQuery(userId, privateUser, ignoreContractIds, 50)
+  if (options.time === 'new') {
+    query = query.gt('created_time', newestCreatedTimestamp)
+  } else if (options.time === 'old') {
+    query = query.lt('created_time', newestCreatedTimestamp)
+    if (options.allowSeen) {
+      // We don't want the same top cards over and over when we've run out of new cards,
+      // instead it should be the most recently seen items first
+      query = query.order('seen_time', { ascending: false })
+    } else {
+      query = query.is('seen_time', null)
+    }
+  }
+  const results = await query
+  return filterDefined(results.data?.map((d) => d as Row<'user_feed'>) ?? [])
 }
 export const useFeedTimeline = (
   user: User | null | undefined,
   privateUser: PrivateUser,
   key: string
 ) => {
-  const [boosts, setBoosts] = usePersistentInMemoryState<
-    BoostsType | undefined
-  >(undefined, `boosts-${user?.id}-${key}`)
-  useEffect(() => {
-    getBoosts(privateUser).then(setBoosts)
-  }, [])
+  const isAuthed = useIsAuthorized()
+  const boosts = useBoosts(privateUser, key)
   const followedIds = useFollowedIdsSupabase(privateUser.id)
   if (DEBUG_FEED_CARDS)
     console.log('DEBUG_FEED_CARDS is true, not marking feed cards as seen')
@@ -134,37 +161,23 @@ export const useFeedTimeline = (
   const loadingFirstCards = useRef(false)
 
   const fetchFeedItems = async (userId: string, options: loadProps) => {
-    if (loadingFirstCards.current && options.new) return { timelineItems: [] }
+    if (loadingFirstCards.current && options.time === 'new')
+      return { timelineItems: [] }
 
-    const ignoreContractIds = filterDefined(
-      options.ignoreFeedTimelineItems
-        .map((item) =>
-          (item.relatedItems ?? [])
-            .map((c) => c.contractId)
-            .concat([item.contractId])
-        )
-        .flat()
+    const data = await queryForFeedRows(
+      userId,
+      privateUser,
+      options,
+      newestCreatedTimestamp.current
     )
-
-    let query = baseUserFeedQuery(userId, privateUser, ignoreContractIds)
-
-    if (options.new) {
-      query = query.gt('created_time', newestCreatedTimestamp.current)
-    } else if (options.old) {
-      query = query
-        .lt('created_time', newestCreatedTimestamp.current)
-        .is('seen_time', null)
-    }
-    const { data } = await run(query)
 
     const newFeedRows = data.map((d) => {
       const createdTimeAdjusted =
-        1 - dayjs().diff(dayjs(d.created_time), 'day') / 14
+        1 - dayjs().diff(dayjs(d.created_time), 'day') / 20
       d.relevance_score =
-        -(
-          d.relevance_score ||
-          BASE_FEED_DATA_TYPE_SCORES[d.data_type as FEED_DATA_TYPES]
-        ) * createdTimeAdjusted
+        (d.relevance_score ||
+          BASE_FEED_DATA_TYPE_SCORES[d.data_type as FEED_DATA_TYPES]) *
+        createdTimeAdjusted
       return d
     })
     const {
@@ -208,7 +221,7 @@ export const useFeedTimeline = (
         .in('id', newContractIds)
         .not('visibility', 'eq', 'unlisted')
         .is('resolution_time', null)
-        .gt('close_time', new Date().toISOString())
+        .or(`close_time.gt.${new Date().toISOString()},close_time.is.null`)
         .then((res) =>
           res.data?.map(
             (c) =>
@@ -289,7 +302,7 @@ export const useFeedTimeline = (
         !d.news_id &&
         !openFeedContractIds.includes(d.contract_id)
     )
-    // TODO: should we set a discarded field instead of seen_time?
+    //TODO: Mark all the user_position_changed feed items as seen that match creator_id, contract_id
     setSeenFeedItems(closedOrResolvedContractFeedIds)
 
     const filteredNewContracts = contracts?.filter(
@@ -315,10 +328,7 @@ export const useFeedTimeline = (
   }
 
   const addTimelineItems = useEvent(
-    (
-      newFeedItems: FeedTimelineItem[],
-      options: { new?: boolean; old?: boolean }
-    ) => {
+    (newFeedItems: FeedTimelineItem[], options: { time: times }) => {
       // Don't signal we're done loading until we've loaded at least one page
       if (
         loadingFirstCards.current &&
@@ -328,7 +338,7 @@ export const useFeedTimeline = (
         return
 
       const orderedItems = uniqBy(
-        options.new
+        options.time === 'new'
           ? buildArray(newFeedItems, savedFeedItems)
           : buildArray(savedFeedItems, newFeedItems),
         'id'
@@ -338,7 +348,7 @@ export const useFeedTimeline = (
     }
   )
   const loadMore = useEvent(
-    async (options: { old?: boolean; new?: boolean }) => {
+    async (options: { time: times; allowSeen?: boolean }) => {
       if (!userId) return []
 
       const { timelineItems } = await fetchFeedItems(userId, {
@@ -352,21 +362,23 @@ export const useFeedTimeline = (
 
   const tryToLoadManyCardsAtStart = useEvent(async () => {
     loadingFirstCards.current = true
-    for (const _ of range(0, 5)) {
-      const moreFeedItems = await loadMore({ old: true })
+    for (const i of range(0, 5)) {
+      const moreFeedItems = await loadMore({ time: 'old' })
       if (moreFeedItems.length > 10) break
+      if (i === 4) await loadMore({ time: 'old', allowSeen: true })
     }
     loadingFirstCards.current = false
   })
 
   useEffect(() => {
-    if (savedFeedItems?.length || !userId) return
+    if (savedFeedItems?.length || !userId || !isAuthed) return
     tryToLoadManyCardsAtStart()
-  }, [userId])
+  }, [userId, isAuthed])
 
   return {
-    loadMoreOlder: async () => loadMore({ old: true }),
-    checkForNewer: async () => loadMore({ new: true }),
+    loadMoreOlder: async (allowSeen: boolean) =>
+      loadMore({ time: 'old', allowSeen }),
+    checkForNewer: async () => loadMore({ time: 'new' }),
     addTimelineItems,
     boosts: boosts?.filter(
       (b) =>
@@ -378,7 +390,7 @@ export const useFeedTimeline = (
 
 const getBaseTimelineItem = (item: Row<'user_feed'>) =>
   removeUndefinedProps({
-    ...mapTypes<'user_feed', FeedTimelineItem>(item, {
+    ...convertSQLtoTS<'user_feed', FeedTimelineItem>(item, {
       created_time: (ts) => tsToMillis(ts),
     }),
     supabaseTimestamp: item.created_time,

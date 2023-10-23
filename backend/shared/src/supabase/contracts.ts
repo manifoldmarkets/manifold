@@ -16,6 +16,8 @@ import {
 import { log } from 'shared/utils'
 import { DEEMPHASIZED_GROUP_SLUGS, isAdminId } from 'common/envs/constants'
 import { NON_PREDICTIVE_GROUP_ID } from 'common/supabase/groups'
+import { convertContract } from 'common/supabase/contracts'
+import { generateEmbeddings } from 'shared/helpers/openai-utils'
 
 export const getUniqueBettorIds = async (
   contractId: string,
@@ -41,7 +43,7 @@ export const getContractsDirect = async (
   return await pg.map(
     `select data, importance_score from contracts where id in ($1:list)`,
     [contractIds],
-    (r) => ({ ...r.data, importanceScore: r.importance_score } as Contract)
+    (r) => convertContract(r)
   )
 }
 
@@ -155,6 +157,7 @@ export const getUsersWithSimilarInterestVectorsToContract = async (
       }
     )
   })
+  // Note: this will not include keys for users with scores below the threshold
   return userDistanceMap
 }
 
@@ -295,9 +298,11 @@ export const getUserToReasonsInterestedInContractAndUser = async (
 }
 
 export const isContractLikelyNonPredictive = async (
-  contractId: string,
+  contract: Contract,
   pg: SupabaseDirectClient
 ): Promise<boolean> => {
+  if (contract.question.trim().toLowerCase().includes('daily coinflip'))
+    return true
   return (
     await pg.map(
       `
@@ -305,8 +310,8 @@ export const isContractLikelyNonPredictive = async (
     ((select embedding from contract_embeddings where contract_id = $1)
          <=>
         (select embedding from group_embeddings where group_id = $2)) as distance`,
-      [contractId, NON_PREDICTIVE_GROUP_ID],
-      (row) => row.distance < 0.1
+      [contract.id, NON_PREDICTIVE_GROUP_ID],
+      (row) => row.distance < 0.11
     )
   )[0]
 }
@@ -379,4 +384,20 @@ export const getImportantContractsForNewUsers = async (
   }
 
   return contractIds
+}
+export const generateContractEmbeddings = async (
+  contract: Contract,
+  pg: SupabaseDirectClient
+) => {
+  const embedding = await generateEmbeddings(contract.question)
+  if (!embedding) return
+
+  return await pg.one(
+    `insert into contract_embeddings (contract_id, embedding)
+            values ($1, $2)
+            on conflict (contract_id) do nothing
+            returning embedding
+          `,
+    [contract.id, embedding]
+  )
 }

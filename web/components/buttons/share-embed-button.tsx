@@ -20,20 +20,19 @@ export function ShareEmbedButton(props: {
 }) {
   const { contract, className } = props
 
-  const codeIcon = <CodeIcon className="h-4 w-4" aria-hidden />
-
   return (
     <Button
-      size="sm"
       color="gray-outline"
+      size="sm"
       className={clsx('gap-1', className)}
       onClick={() => {
         copyToClipboard(embedContractCode(contract))
-        toast.success('Embed code copied!', { icon: codeIcon })
+        toast.success('Embed code copied!', {
+          icon: <CodeIcon className="h-4 w-4" />,
+        })
         track('copy embed code')
       }}
     >
-      {codeIcon}
       Embed
     </Button>
   )

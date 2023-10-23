@@ -5,7 +5,7 @@ import {
   MenuAlt3Icon,
   NewspaperIcon,
   QuestionMarkCircleIcon,
-  ScaleIcon,
+  SearchIcon,
   UserCircleIcon,
 } from '@heroicons/react/solid'
 import { animated } from '@react-spring/web'
@@ -25,6 +25,7 @@ import { User } from 'common/user'
 import { Col } from '../layout/col'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { useAnimatedNumber } from 'web/hooks/use-animated-number'
+import { UnseenMessagesBubble } from 'web/components/messaging/messages-icon'
 
 export const BOTTOM_NAV_BAR_HEIGHT = 58
 
@@ -36,7 +37,7 @@ const touchItemClass = 'bg-primary-100'
 function getNavigation(user: User) {
   return [
     { name: 'Home', href: '/home', icon: HomeIcon },
-    { name: 'Questions', href: '/questions?category=for-you', icon: ScaleIcon },
+    { name: 'Browse', href: '/browse?topic=for-you', icon: SearchIcon },
     {
       name: 'Profile',
       href: `/${user.username}`,
@@ -50,7 +51,7 @@ function getNavigation(user: User) {
 }
 
 const signedOutNavigation = () => [
-  { name: 'Questions', href: '/questions', icon: ScaleIcon },
+  { name: 'Browse', href: '/browse', icon: SearchIcon },
   { name: 'News', href: '/news', icon: NewspaperIcon },
   { name: 'About', href: '/about', icon: QuestionMarkCircleIcon },
   // {
@@ -62,7 +63,13 @@ const signedOutNavigation = () => [
 ]
 
 // From https://codepen.io/chris__sev/pen/QWGvYbL
-export function BottomNavBar() {
+export function BottomNavBar(props: {
+  navigationOptions?: Item[]
+  sidebarNavigationOptions?: Item[]
+  hideCreateQuestionButton?: boolean
+  isManifoldLove?: boolean
+}) {
+  const { hideCreateQuestionButton, isManifoldLove } = props
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   const router = useRouter()
@@ -80,10 +87,12 @@ export function BottomNavBar() {
     return null
   }
 
-  const navigationOptions = user ? getNavigation(user) : signedOutNavigation()
+  const navigationOptions =
+    props.navigationOptions ??
+    (user ? getNavigation(user) : signedOutNavigation())
 
   return (
-    <nav className="border-ink-200 text-ink-700 bg-canvas-0 fixed inset-x-0 bottom-0 z-50 flex select-none items-center justify-between border-t-2 text-xs lg:hidden">
+    <nav className="border-ink-200 dark:border-ink-300 text-ink-700 bg-canvas-0 fixed inset-x-0 bottom-0 z-50 flex select-none items-center justify-between border-t-2 text-xs lg:hidden">
       {navigationOptions.map((item) => (
         <NavBarItem
           key={item.name}
@@ -95,15 +104,23 @@ export function BottomNavBar() {
       {!!user && (
         <>
           <div
-            className={clsx(itemClass, sidebarOpen ? selectedItemClass : '')}
+            className={clsx(
+              itemClass,
+              'relative',
+              sidebarOpen ? selectedItemClass : ''
+            )}
             onClick={() => setSidebarOpen(true)}
           >
-            <MenuAlt3Icon className="my-1 mx-auto h-6 w-6" aria-hidden="true" />
+            <UnseenMessagesBubble />
+            <MenuAlt3Icon className="mx-auto my-1 h-6 w-6" aria-hidden="true" />
             More
           </div>
           <MobileSidebar
             sidebarOpen={sidebarOpen}
             setSidebarOpen={setSidebarOpen}
+            sidebarNavigationOptions={props.sidebarNavigationOptions}
+            hideCreateQuestionButton={hideCreateQuestionButton}
+            isManifoldLove={isManifoldLove}
           />
         </>
       )}
@@ -161,7 +178,7 @@ function NavBarItem(props: {
         onTouchStart={() => setTouched(true)}
         onTouchEnd={() => setTouched(false)}
       >
-        {item.icon && <item.icon className="my-1 mx-auto h-6 w-6" />}
+        {item.icon && <item.icon className="mx-auto my-1 h-6 w-6" />}
         {children}
         {item.name}
       </button>
@@ -184,7 +201,7 @@ function NavBarItem(props: {
       onTouchStart={() => setTouched(true)}
       onTouchEnd={() => setTouched(false)}
     >
-      {item.icon && <item.icon className="my-1 mx-auto h-6 w-6" />}
+      {item.icon && <item.icon className="mx-auto my-1 h-6 w-6" />}
       {children}
       {item.name}
     </Link>
@@ -195,8 +212,16 @@ function NavBarItem(props: {
 export function MobileSidebar(props: {
   sidebarOpen: boolean
   setSidebarOpen: (open: boolean) => void
+  sidebarNavigationOptions?: Item[]
+  hideCreateQuestionButton?: boolean
+  isManifoldLove?: boolean
 }) {
-  const { sidebarOpen, setSidebarOpen } = props
+  const {
+    sidebarOpen,
+    setSidebarOpen,
+    hideCreateQuestionButton,
+    isManifoldLove,
+  } = props
   return (
     <div>
       <Transition.Root show={sidebarOpen} as={Fragment}>
@@ -214,7 +239,8 @@ export function MobileSidebar(props: {
             leaveFrom="opacity-100"
             leaveTo="opacity-0"
           >
-            <Dialog.Overlay className="bg-canvas-100 fixed inset-0 bg-opacity-75" />
+            {/* background cover */}
+            <Dialog.Overlay className="bg-canvas-100/75 fixed inset-0" />
           </Transition.Child>
           <Transition.Child
             as={Fragment}
@@ -227,7 +253,12 @@ export function MobileSidebar(props: {
           >
             <div className="bg-canvas-0 relative flex w-full max-w-xs flex-1 flex-col">
               <div className="mx-2 h-0 flex-1 overflow-y-auto">
-                <Sidebar isMobile />
+                <Sidebar
+                  navigationOptions={props.sidebarNavigationOptions}
+                  isMobile
+                  hideCreateQuestionButton={hideCreateQuestionButton}
+                  loveSidebar={isManifoldLove}
+                />
               </div>
             </div>
           </Transition.Child>

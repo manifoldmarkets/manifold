@@ -51,7 +51,11 @@ async function getDailyBets(
       amount,
       bet_id
     from contract_bets
-    where created_time >= millis_to_ts($1) and created_time < millis_to_ts($2)`,
+    where
+      created_time >= millis_to_ts($1)
+      and created_time < millis_to_ts($2)
+      and is_redemption = false
+    `,
     [startTime, startTime + numberOfDays * DAY_MS]
   )
   const betsByDay: StatBet[][] = range(0, numberOfDays).map((_) => [])
@@ -284,7 +288,7 @@ export const updateStatsCore = async () => {
     const retainedCount = sumBy(yesterday, (userId) =>
       today.includes(userId) ? 1 : 0
     )
-    return retainedCount / today.length
+    return retainedCount / yesterday.length
   })
 
   const d1WeeklyAvg = d1.map((_, i) => {

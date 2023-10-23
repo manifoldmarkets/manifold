@@ -15,6 +15,7 @@ import { Major_Mono_Display, Figtree } from 'next/font/google'
 import { GoogleOneTapSetup } from 'web/lib/firebase/google-onetap-login'
 import clsx from 'clsx'
 import { useRefreshAllClients } from 'web/hooks/use-refresh-all-clients'
+import { useReloadIfClientOld } from 'web/hooks/use-reload-if-client-old'
 
 // See https://nextjs.org/docs/basic-features/font-optimization#google-fonts
 // and if you add a font, you must add it to tailwind config as well for it to work.
@@ -68,27 +69,28 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
   useEffect(printBuildInfo, [])
   useHasLoaded()
   useRefreshAllClients()
+  useReloadIfClientOld()
+
+  const title = 'Manifold | Bet on news, politics, science, AI, & more!'
+  const description =
+    'Manifold is the largest prediction market platform. Bet on news, politics, science, AI, and more with play-money. Accurate forecasts via the wisdom of the crowd.'
 
   return (
     <>
       <Head>
-        <title>Manifold</title>
+        <title>{title}</title>
 
         <meta
           property="og:title"
           name="twitter:title"
-          content="Manifold"
+          content={title}
           key="title"
         />
-        <meta
-          name="description"
-          content="Bet on anything and see the market consensus on real-world questions."
-          key="description1"
-        />
+        <meta name="description" content={description} key="description1" />
         <meta
           property="og:description"
           name="twitter:description"
-          content="Bet on anything and see the market consensus on real-world questions."
+          content={description}
           key="description2"
         />
         <meta property="og:url" content="https://manifold.markets" key="url" />

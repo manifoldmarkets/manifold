@@ -1,44 +1,45 @@
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
-import { Title } from 'web/components/widgets/title'
-import { useTracking } from 'web/hooks/use-tracking'
-import {
-  ActivityLog,
-  LivePillOptions,
-  pill_options,
-} from 'web/components/activity-log'
-import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import { ActivityLog } from 'web/components/activity-log'
 import { SEO } from 'web/components/SEO'
+import { Row } from 'web/components/layout/row'
+import { TopicSelector } from 'web/components/topics/topic-selector'
+import { usePersistentQueryState } from 'web/hooks/use-persistent-query-state'
+import { useTopicFromRouter } from 'web/hooks/use-topic-from-router'
 
 export default function LivePage() {
-  useTracking('view live page')
-
+  const [topicSlug, setTopicSlug] = usePersistentQueryState('topic', '')
+  const topicFromRouter = useTopicFromRouter(topicSlug)
   return (
-    <Page>
+    <Page trackPageView={'live page'}>
       <SEO
         title="Live"
         description="Watch all site activity live, including bets, comments, and new questions."
         url="/live"
       />
 
-      <Col className="gap-4 sm:px-4 sm:pb-4">
-        <Title className="mx-2 !mb-0 mt-2 sm:mx-0 lg:mt-0">Live feed</Title>
-        <LiveFeed />
+      <Col className="w-full max-w-3xl gap-4 self-center sm:pb-4">
+        <Row
+          className={
+            'w-full items-center justify-between pt-1 sm:justify-start sm:gap-4'
+          }
+        >
+          <span className="text-primary-700 line-clamp-1 shrink px-1 text-2xl">
+            {topicFromRouter ? topicFromRouter.name : 'Live'} feed
+          </span>
+          <TopicSelector
+            setSelectedGroup={(group) => {
+              setTopicSlug(group.slug)
+            }}
+            className={'!w-40 shrink-0 sm:!w-56'}
+            placeholder={'Filter by topic'}
+          />
+        </Row>
+        <ActivityLog
+          count={30}
+          topicSlugs={topicSlug ? [topicSlug] : undefined}
+        />
       </Col>
     </Page>
-  )
-}
-
-export const LiveFeed = () => {
-  const [pill, setPill] = usePersistentInMemoryState<pill_options>(
-    'all',
-    'live-pill'
-  )
-
-  return (
-    <Col className="gap-4">
-      <LivePillOptions pill={pill} setPill={setPill} />
-      <ActivityLog count={30} pill={pill} />
-    </Col>
   )
 }

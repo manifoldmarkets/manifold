@@ -11,7 +11,7 @@ import { Title } from 'web/components/widgets/title'
 
 export default function DiscordBot() {
   return (
-    <Page>
+    <Page trackPageView={'discord bot page'}>
       <SEO
         title={'Manifold Discord Bot'}
         description={'Add the Manifold Discord Bot to your server!'}

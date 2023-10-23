@@ -1,7 +1,7 @@
 import clsx from 'clsx'
-import { Contract, contractPath } from 'common/contract'
 import Link from 'next/link'
 import { memo } from 'react'
+import { range } from 'lodash'
 
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
@@ -10,6 +10,8 @@ import { UserLink } from '../widgets/user-link'
 import { LoadMoreUntilNotVisible } from '../widgets/visibility-observer'
 import { ContractStatusLabel } from './contracts-table'
 import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
+import { Contract, contractPath } from 'common/contract'
+import { Carousel } from '../widgets/carousel'
 
 export const RelatedContractsList = memo(function RelatedContractsList(props: {
   contracts: Contract[]
@@ -40,11 +42,59 @@ export const RelatedContractsList = memo(function RelatedContractsList(props: {
   )
 })
 
+export const RelatedContractsCarousel = memo(
+  function RelatedContractsCarousel(props: {
+    contracts: Contract[]
+    loadMore?: () => Promise<boolean>
+    onContractClick?: (contract: Contract) => void
+    className?: string
+  }) {
+    const { contracts, loadMore, onContractClick, className } = props
+    if (contracts.length === 0) {
+      return null
+    }
+
+    const halfRange = range(Math.floor(contracts.length / 2))
+
+    return (
+      <Col className={clsx(className, 'flex-1 px-3 py-2')}>
+        <h2 className={clsx('text-ink-800 mb-2 text-lg')}>Related questions</h2>
+        <Carousel loadMore={loadMore}>
+          {halfRange.map((i) => {
+            const contract = contracts[i * 2]
+            const secondContract = contracts[i * 2 + 1]
+            return (
+              <Col key={contract.id} className="snap-start gap-2">
+                <RelatedContractCard
+                  className="border-ink-300 min-w-[300px] rounded-xl border-2"
+                  contract={contract}
+                  onContractClick={onContractClick}
+                  twoLines
+                />
+                {secondContract && (
+                  <RelatedContractCard
+                    className="border-ink-300 min-w-[300px] rounded-xl border-2"
+                    contract={secondContract}
+                    onContractClick={onContractClick}
+                    twoLines
+                  />
+                )}
+              </Col>
+            )
+          })}
+        </Carousel>
+      </Col>
+    )
+  }
+)
+
 const RelatedContractCard = memo(function RelatedContractCard(props: {
   contract: Contract
   onContractClick?: (contract: Contract) => void
+  twoLines?: boolean
+  className?: string
 }) {
-  const { onContractClick } = props
+  const { onContractClick, twoLines, className } = props
 
   const contract =
     useFirebasePublicContract(props.contract.visibility, props.contract.id) ??
@@ -53,39 +103,46 @@ const RelatedContractCard = memo(function RelatedContractCard(props: {
     contract
 
   return (
-    <Col
+    <Link
       className={clsx(
-        'group relative gap-2 whitespace-nowrap rounded-sm py-3 px-4',
-        'bg-canvas-0 focus:bg-ink-300/30 lg:hover:bg-ink-300/30 transition-colors'
+        'whitespace-nowrap px-4 py-3 outline-none',
+        'bg-canvas-0 lg:hover:bg-primary-50 focus:bg-primary-50 transition-colors',
+        className
       )}
+      href={contractPath(contract)}
+      onClick={() => onContractClick?.(contract)}
     >
-      <Link
-        href={contractPath(contract)}
-        className="absolute top-0 left-0 h-full w-full"
-        onClick={() => onContractClick?.(contract)}
-      />
-      <div>
-        <span className={clsx('break-anywhere whitespace-normal font-medium')}>
-          {question}
-        </span>
+      <div
+        className={clsx(
+          'break-anywhere mb-2 whitespace-normal font-medium',
+          twoLines ? 'line-clamp-2' : 'line-clamp-3'
+        )}
+      >
+        {question}
       </div>
-      <Row className="z-10 gap-2">
-        <Avatar
-          username={creatorUsername}
-          avatarUrl={creatorAvatarUrl}
-          size="xs"
-        />
-        <UserLink
-          name={contract.creatorName}
-          username={contract.creatorUsername}
-          className="text-ink-400 text-sm"
-          createdTime={creatorCreatedTime}
-        />
+      <Row className="w-full items-end justify-between">
+        <Row className="items-center gap-1.5">
+          <Avatar
+            username={creatorUsername}
+            avatarUrl={creatorAvatarUrl}
+            size="xs"
+            noLink
+          />
+          <UserLink
+            name={contract.creatorName}
+            username={contract.creatorUsername}
+            className="text-ink-500 text-sm"
+            createdTime={creatorCreatedTime}
+            noLink
+          />
+        </Row>
 
-        <div className="ml-auto font-semibold">
-          <ContractStatusLabel contract={contract} chanceLabel />
-        </div>
+        <ContractStatusLabel
+          contract={contract}
+          chanceLabel
+          className="font-semibold"
+        />
       </Row>
-    </Col>
+    </Link>
   )
 })

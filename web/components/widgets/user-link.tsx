@@ -15,10 +15,13 @@ import { DAY_MS } from 'common/util/time'
 import ScalesIcon from 'web/lib/icons/scales-icon.svg'
 import { linkClass } from './site-link'
 import Foldy from '/public/logo.svg'
+import { Col } from 'web/components/layout/col'
+import { User } from 'common/user'
 
 export const isFresh = (createdTime: number) =>
   createdTime > Date.now() - DAY_MS * 14
-export function shortenName(name: string) {
+
+function shortenName(name: string) {
   const firstName = name.split(' ')[0]
   const maxLength = 11
   const shortName =
@@ -177,7 +180,7 @@ function ModBadge() {
   return (
     <Tooltip text="Trustworthy. ish." placement="right">
       <ShieldCheckIcon
-        className="text-primary-700 h-4 w-4"
+        className="h-4 w-4 text-purple-700 dark:text-purple-400"
         aria-hidden="true"
       />
     </Tooltip>
@@ -188,10 +191,7 @@ function ModBadge() {
 function VerifiedBadge() {
   return (
     <Tooltip text="It's really me!" placement="right">
-      <BadgeCheckIcon
-        className="h-4 w-4 text-purple-700 dark:text-purple-400"
-        aria-hidden
-      />
+      <BadgeCheckIcon className="text-primary-700 h-4 w-4" aria-hidden />
     </Tooltip>
   )
 }
@@ -210,5 +210,42 @@ function MarketCreatorBadge() {
     <Tooltip text="Question Creator" placement="right">
       <ScalesIcon className="h-4 w-4 text-amber-400" aria-hidden="true" />
     </Tooltip>
+  )
+}
+
+export const StackedUserNames = (props: {
+  user: User
+  followsYou?: boolean
+  className?: string
+  usernameClassName?: string
+}) => {
+  const { user, followsYou, usernameClassName, className } = props
+  return (
+    <Col>
+      <div className={'inline-flex flex-row items-center gap-1 pt-1'}>
+        <span className={clsx('break-anywhere ', className)}>{user.name}</span>
+        {
+          <UserBadge
+            username={user.username}
+            fresh={isFresh(user.createdTime)}
+          />
+        }
+        {user.isBannedFromPosting && <PostBanBadge />}
+      </div>
+      <Row className={'max-w-[8rem] flex-shrink flex-wrap gap-2 sm:max-w-none'}>
+        <span className={clsx('text-ink-400 text-sm', usernameClassName)}>
+          @{user.username}{' '}
+        </span>
+        {followsYou && (
+          <span
+            className={
+              'bg-ink-200 w-fit self-center rounded-md p-0.5 px-1 text-xs'
+            }
+          >
+            Follows you
+          </span>
+        )}
+      </Row>
+    </Col>
   )
 }

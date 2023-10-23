@@ -4,13 +4,16 @@ import { Contract } from 'common/contract'
 import { GroupLink } from 'common/group'
 import { createSupabaseClient, SupabaseDirectClient } from './supabase/init'
 import { NON_PREDICTIVE_GROUP_ID } from 'common/supabase/groups'
+import { recordContractEdit } from 'shared/record-contract-edit'
+import { trackPublicEvent } from 'shared/analytics'
 
 const firestore = admin.firestore()
 
 export async function addGroupToContract(
   contract: Contract,
   group: { id: string; slug: string; name: string },
-  pg: SupabaseDirectClient
+  pg: SupabaseDirectClient,
+  recordEdit?: { userId: string }
 ) {
   const addedToGroupAlready = await pg.one(
     `
@@ -52,17 +55,32 @@ export async function addGroupToContract(
       })
   }
 
-  if (group.id === NON_PREDICTIVE_GROUP_ID) {
+  if (group.id === NON_PREDICTIVE_GROUP_ID && !contract.nonPredictive) {
     await firestore.collection('contracts').doc(contract.id).update({
       nonPredictive: true,
     })
+    if (recordEdit) {
+      await recordContractEdit(contract, recordEdit.userId, ['nonPredictive'])
+    }
   }
+
+  await trackPublicEvent(
+    recordEdit?.userId ?? contract.creatorId,
+    'add market to topic',
+    {
+      contractId: contract.id,
+      groupSlug: group.slug,
+      inCreateMarket: !recordEdit,
+    }
+  )
+
   return !(linkedToGroupAlready && addedToGroupAlready)
 }
 
 export async function removeGroupFromContract(
   contract: Contract,
-  group: { id: string; slug: string }
+  group: { id: string; slug: string },
+  userId: string
 ) {
   const db = createSupabaseClient()
 
@@ -85,9 +103,14 @@ export async function removeGroupFromContract(
       groupLinks: newLinks,
     })
 
-  if (group.id === NON_PREDICTIVE_GROUP_ID) {
+  if (group.id === NON_PREDICTIVE_GROUP_ID && contract.nonPredictive) {
     await firestore.collection('contracts').doc(contract.id).update({
       nonPredictive: false,
     })
+    await recordContractEdit(contract, userId, ['nonPredictive'])
   }
+  await trackPublicEvent(userId, 'remove market from topic', {
+    contractId: contract.id,
+    groupSlug: group.slug,
+  })
 }

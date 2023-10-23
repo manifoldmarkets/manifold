@@ -58,7 +58,7 @@ export const removecontractfromgroup = authEndpoint(async (req, auth) => {
     )
   }
 
-  await removeGroupFromContract(contract, group)
+  await removeGroupFromContract(contract, group, auth.uid)
 
   return { success: true }
 })

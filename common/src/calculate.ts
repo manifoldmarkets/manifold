@@ -95,7 +95,12 @@ export function getAnswerProbability(
     const answer = contract.answers.find((a) => a.id === answerId)
     if (!answer) return 0
 
-    const { poolYes, poolNo } = answer
+    const { poolYes, poolNo, resolution, resolutionProbability } = answer
+    if (resolution) {
+      if (resolution === 'MKT') return resolutionProbability ?? answer.prob
+      if (resolution === 'YES') return 1
+      if (resolution === 'NO') return 0
+    }
     const pool = { YES: poolYes, NO: poolNo }
     return getCpmmProbability(pool, 0.5)
   }
@@ -106,6 +111,45 @@ export function getAnswerProbability(
 
   throw new Error(
     'getAnswerProbability not implemented for mechanism ' +
+      (contract as any).mechanism
+  )
+}
+
+export function getInitialAnswerProbability(
+  contract: MultiContract,
+  answer: Answer | DpmAnswer
+) {
+  if (contract.mechanism === 'cpmm-multi-1') {
+    if (!contract.shouldAnswersSumToOne) {
+      return 0.5
+    } else {
+      if (contract.addAnswersMode === 'DISABLED') {
+        return 1 / contract.answers.length
+      } else {
+        const answers = contract.answers as Answer[]
+        const initialTime = answers.find((a) => a.isOther)?.createdTime
+
+        if (answer.createdTime === initialTime) {
+          const numberOfInitialAnswers = sumBy(answers, (a) =>
+            a.createdTime === initialTime ? 1 : 0
+          )
+          return 1 / numberOfInitialAnswers
+        }
+        return undefined
+      }
+    }
+  }
+
+  if (contract.mechanism === 'dpm-2') {
+    return undefined
+  }
+
+  if (contract.mechanism === 'cpmm-2') {
+    return 1 / contract.answers.length
+  }
+
+  throw new Error(
+    'getAnswerInitialProbability not implemented for mechanism ' +
       (contract as any).mechanism
   )
 }
@@ -257,7 +301,7 @@ function getDpmInvested(yourBets: Bet[]) {
   })
 }
 
-function getSimpleCpmmInvested(yourBets: Bet[]) {
+export function getSimpleCpmmInvested(yourBets: Bet[]) {
   const total = sumBy(yourBets, (b) => b.amount)
   if (total < 0) return 0
   return total
@@ -270,31 +314,6 @@ export function getInvested(contract: Contract, yourBets: Bet[]) {
     const betsByAnswerId = groupBy(yourBets, 'answerId')
     const investedByAnswerId = mapValues(betsByAnswerId, getCpmmInvested)
     return sum(Object.values(investedByAnswerId))
-  }
-  return getDpmInvested(yourBets)
-}
-
-/**
- * Take the minimum of the average cost basis and the simple cost basis (sum of bet amounts).
- */
-export function getMinimalInvested(contract: Contract, yourBets: Bet[]) {
-  const { mechanism } = contract
-  if (mechanism === 'cpmm-1') {
-    const costBasisAvg = getCpmmInvested(yourBets)
-    const simpleCostBasis = getSimpleCpmmInvested(yourBets)
-    return Math.min(costBasisAvg, simpleCostBasis)
-  }
-  if (mechanism === 'cpmm-multi-1') {
-    const betsByAnswerId = groupBy(yourBets, 'answerId')
-    const investedByAnswerId = mapValues(betsByAnswerId, getCpmmInvested)
-    const costBasisAvg = sum(Object.values(investedByAnswerId))
-
-    const simpleInvestedByAnswerId = mapValues(
-      betsByAnswerId,
-      getSimpleCpmmInvested
-    )
-    const simpleCostBasis = sum(Object.values(simpleInvestedByAnswerId))
-    return Math.min(costBasisAvg, simpleCostBasis)
   }
   return getDpmInvested(yourBets)
 }

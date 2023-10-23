@@ -2,86 +2,77 @@ import { useEffect, useState } from 'react'
 import { noop, uniq } from 'lodash'
 
 import { Col } from 'web/components/layout/col'
-import { leaveGroup } from 'web/lib/supabase/groups'
 import { useUser } from 'web/hooks/use-user'
 import { Modal } from 'web/components/layout/modal'
 import { PillButton } from 'web/components/buttons/pill-button'
 import { Button } from 'web/components/buttons/button'
-import { getSubtopics, TOPICS_TO_SUBTOPICS } from 'common/topics'
+import { getSubtopics, removeEmojis, TOPICS_TO_SUBTOPICS } from 'common/topics'
 import { joinGroup, updateUserEmbedding } from 'web/lib/firebase/api'
 import { Group } from 'common/group'
-import { db } from 'web/lib/supabase/db'
-import { removeEmojis } from 'web/components/contract/market-groups'
 import { Row } from 'web/components/layout/row'
-import { GROUP_SLUGS_TO_HIDE_FROM_WELCOME_FLOW } from 'common/envs/constants'
-import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
+import { updateUser } from 'web/lib/firebase/users'
+import { leaveGroup } from 'web/lib/supabase/groups'
 
 export function TopicSelectorDialog(props: {
   skippable: boolean
-  opaque: boolean
+  trendingTopics: Group[]
+  userInterestedTopics: Group[]
+  userBetInTopics: Group[]
 }) {
-  const { skippable, opaque } = props
+  const { skippable, userInterestedTopics, trendingTopics, userBetInTopics } =
+    props
 
   const user = useUser()
-  const [userSelectedCategories, setUserSelectedCategories] = useState<
+
+  const [userSelectedTopics, setUserSelectedTopics] = useState<
     string[] | undefined
   >()
-  const [isLoading, setIsLoading] = useState(false)
-  const [trendingCategories, setTrendingCategories] = useState<Group[]>()
+
   const topics = Object.keys(TOPICS_TO_SUBTOPICS)
-  const hardCodedCategoryIds = topics
-    .map((topic) => getSubtopics(topic))
-    .flat()
-    .map(([_, __, groupId]) => groupId)
 
   useEffect(() => {
-    db.from('groups')
-      .select('id,data')
-      .not('id', 'in', `(${hardCodedCategoryIds.join(',')})`)
-      .not('slug', 'in', `(${GROUP_SLUGS_TO_HIDE_FROM_WELCOME_FLOW.join(',')})`)
-      .or(`slug.not.ilike.%manifold%`)
-      .order('importance_score', { ascending: false })
-      .limit(15)
-      .then(({ data }) => {
-        const categories = data?.map((groupData) => ({
-          ...(groupData?.data as Group),
-          id: groupData.id,
-        }))
-        setTrendingCategories(categories)
-      })
+    if (userBetInTopics.length > 0) {
+      userBetInTopics.forEach((group) => selectTopic(group.id))
+    } else if (userInterestedTopics.length > 0) {
+      userInterestedTopics.forEach((group) => selectTopic(group.id))
+    }
   }, [])
+
+  const selectTopic = (groupId: string) => {
+    if (selectedTopics.includes(groupId)) {
+      if (user) leaveGroup(groupId, user.id)
+      setUserSelectedTopics((tops) => (tops ?? []).filter((t) => t !== groupId))
+    } else {
+      setUserSelectedTopics((tops) => uniq([...(tops ?? []), groupId]))
+      if (user) joinGroup({ groupId })
+    }
+  }
+
+  const [isLoading, setIsLoading] = useState(false)
 
   const closeDialog = async (skipUpdate: boolean) => {
     setIsLoading(true)
 
     if (user && !skipUpdate) await updateUserEmbedding()
 
+    if (user) await updateUser(user.id, { shouldShowWelcome: false })
+
     window.location.reload()
     // setOpen(false)
   }
-  const selectedCategories: string[] = userSelectedCategories ?? []
+  const selectedTopics: string[] = userSelectedTopics ?? []
 
   const pillButton = (
-    category: string,
-    categoryWithEmoji: string,
+    topicWithEmoji: string,
+    topicName: string,
     groupId: string
   ) => (
     <PillButton
-      key={category}
-      selected={selectedCategories.includes(category)}
-      onSelect={() => {
-        if (selectedCategories.includes(category)) {
-          setUserSelectedCategories(
-            selectedCategories.filter((t) => t !== category)
-          )
-          if (groupId && user) leaveGroup(groupId, user.id)
-        } else {
-          setUserSelectedCategories(uniq([...selectedCategories, category]))
-          if (groupId && user) joinGroup({ groupId })
-        }
-      }}
+      key={topicName}
+      selected={selectedTopics.includes(groupId)}
+      onSelect={() => selectTopic(groupId)}
     >
-      {categoryWithEmoji}
+      {topicWithEmoji}
     </PillButton>
   )
 
@@ -91,25 +82,20 @@ export function TopicSelectorDialog(props: {
       setOpen={skippable ? closeDialog : noop}
       className="bg-canvas-0 overflow-hidden rounded-md"
       size={'lg'}
-      bgOpaque={opaque}
     >
       <Col className="h-[32rem] overflow-y-auto">
-        <div className="bg-canvas-0 sticky top-0 py-4 px-5">
+        <div className="bg-canvas-0 sticky top-0 px-5 py-4">
           <p className="text-primary-700 mb-2 text-2xl">What interests you?</p>
-          <p>Select 3 or more categories to personalize your experience</p>
+          <p>Select 3 or more topics to personalize your experience</p>
         </div>
         <Col className={'mb-4 px-5'}>
           <div className="text-primary-700 mb-1 text-sm">Trending now</div>
           <Row className={'flex-wrap gap-1 '}>
-            {trendingCategories ? (
-              trendingCategories.map((group) => (
-                <div className="" key={group.id + '-section'}>
-                  {pillButton(removeEmojis(group.name), group.name, group.id)}
-                </div>
-              ))
-            ) : (
-              <LoadingIndicator />
-            )}
+            {trendingTopics.map((group) => (
+              <div className="" key={group.id + '-section'}>
+                {pillButton(group.name, removeEmojis(group.name), group.id)}
+              </div>
+            ))}
           </Row>
         </Col>
 
@@ -120,7 +106,7 @@ export function TopicSelectorDialog(props: {
               {getSubtopics(topic)
                 .filter(([_, __, groupId]) => !!groupId)
                 .map(([subtopicWithEmoji, subtopic, groupId]) => {
-                  return pillButton(subtopic, subtopicWithEmoji, groupId)
+                  return pillButton(subtopicWithEmoji, subtopic, groupId)
                 })}
             </Row>
           </div>
@@ -139,7 +125,7 @@ export function TopicSelectorDialog(props: {
             )}
             <Button
               onClick={() => closeDialog(false)}
-              disabled={(userSelectedCategories ?? []).length <= 2}
+              disabled={(userSelectedTopics ?? []).length <= 2}
               loading={isLoading}
             >
               Done

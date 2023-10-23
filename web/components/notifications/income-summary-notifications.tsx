@@ -94,7 +94,7 @@ export function UniqueBettorBonusIncomeNotification(props: {
     relatedNotifications.length > 0 ? relatedNotifications.length : 1
   const answerText =
     relatedNotifications.length > 0
-      ? relatedNotifications[0].data.answerText
+      ? relatedNotifications[0].data?.answerText
       : undefined
 
   return (
@@ -465,7 +465,7 @@ const BettorStatusLabel = (props: { uniqueBettorData: UniqueBettorData }) => {
       props.uniqueBettorData.max !== undefined) ||
     outcomeType !== 'PSEUDO_NUMERIC'
   return (
-    <Row className={'line-clamp-1 '}>
+    <Row className={'line-clamp-1 gap-1'}>
       <span className="text-ink-600">{formatMoney(amount)}</span> on{' '}
       <BetOutcomeLabel
         bet={bet}

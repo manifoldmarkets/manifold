@@ -26,7 +26,7 @@ export async function searchUsers(
   if (prompt === '') {
     const { data } = await run(
       selectFrom(db, 'users', ...fields)
-        .order('data->followerCountCached', { ascending: false } as any)
+        .order('data->creatorTraders->allTime', { ascending: false } as any)
         .limit(limit)
     )
     return data

@@ -100,7 +100,7 @@ export const ManaEarnedBreakdown = (props: {
             avatarUrl={user.avatarUrl}
           />
         </Row>
-        <Subtitle className="text-ink-800 !mt-2 !mb-2">Mana earned</Subtitle>
+        <Subtitle className="text-ink-800 !mb-2 !mt-2">Mana earned</Subtitle>
         <Table className="text-base">
           <thead className={clsx('text-ink-600 text-left font-semibold')}>
             <tr>

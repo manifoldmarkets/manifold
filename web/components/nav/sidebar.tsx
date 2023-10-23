@@ -3,7 +3,6 @@ import {
   DeviceMobileIcon,
   HomeIcon,
   LogoutIcon,
-  ScaleIcon,
   MoonIcon,
   SunIcon,
   SparklesIcon,
@@ -13,6 +12,7 @@ import {
   SearchIcon,
   LightningBoltIcon,
   LoginIcon,
+  TemplateIcon,
 } from '@heroicons/react/outline'
 // import { GiftIcon, MapIcon, MoonIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
@@ -33,15 +33,18 @@ import { MobileAppsQRCodeDialog } from '../buttons/mobile-apps-qr-code-button'
 import { SidebarSignUpButton } from '../buttons/sign-up-button'
 import { ManifoldLogo } from './manifold-logo'
 import { ProfileSummary } from './profile-summary'
-import { SearchButton } from './search-button'
-import { SidebarItem } from './sidebar-item'
-import SquaresIcon from 'web/lib/icons/squares-icon.svg'
+import { Item, SidebarItem } from './sidebar-item'
+import { PrivateMessagesIcon } from 'web/components/messaging/messages-icon'
+import ManifoldLoveLogo from '../../../love/components/manifold-love-logo'
 
 export default function Sidebar(props: {
   className?: string
   isMobile?: boolean
+  navigationOptions?: Item[]
+  loveSidebar?: boolean
+  hideCreateQuestionButton?: boolean
 }) {
-  const { className, isMobile } = props
+  const { className, isMobile, loveSidebar, hideCreateQuestionButton } = props
   const router = useRouter()
   const currentPage = router.pathname
 
@@ -54,29 +57,34 @@ export default function Sidebar(props: {
   const toggleTheme = () => {
     changeTheme(theme === 'auto' ? 'dark' : theme === 'dark' ? 'light' : 'auto')
   }
-
-  const navOptions = isMobile
+  const navOptions = props.navigationOptions?.length
+    ? props.navigationOptions
+    : isMobile
     ? getMobileNav(() => setIsAddFundsModalOpen(!isAddFundsModalOpen))
     : getDesktopNav(!!user, () => setIsModalOpen(true), true)
 
   const bottomNavOptions = bottomNav(!!user, theme, toggleTheme)
 
-  const createMarketButton = user && !user.isBannedFromPosting && (
-    <CreateQuestionButton key="create-market-button" className={'mt-4'} />
-  )
+  const createMarketButton = !hideCreateQuestionButton &&
+    user &&
+    !user.isBannedFromPosting && (
+      <CreateQuestionButton key="create-market-button" className={'mt-4'} />
+    )
 
   return (
     <nav
       aria-label="Sidebar"
-      className={clsx('flex h-screen flex-col xl:ml-2', className)}
+      className={clsx('flex h-screen flex-col', className)}
     >
-      <ManifoldLogo className="pt-6 pb-3" />
+      {loveSidebar ? (
+        <ManifoldLoveLogo />
+      ) : (
+        <ManifoldLogo className="pb-3 pt-6" />
+      )}
 
       {user === undefined && <div className="h-[56px]" />}
 
-      {user && !isMobile && <ProfileSummary user={user} />}
-
-      {!isMobile && !!user && <SearchButton className="mb-5" />}
+      {user && !isMobile && <ProfileSummary user={user} className="mb-3" />}
 
       <div className="mb-4 flex flex-col gap-1">
         {navOptions.map((item) => (
@@ -93,7 +101,7 @@ export default function Sidebar(props: {
 
         {createMarketButton}
       </div>
-      <div className="mt-auto mb-6 flex flex-col gap-1">
+      <div className="mb-6 mt-auto flex flex-col gap-1">
         {user !== null && (
           <AppBadgesOrGetAppButton hideOnDesktop className="mb-2" />
         )}
@@ -126,9 +134,9 @@ const getDesktopNav = (
       { name: 'Home', href: '/home', icon: HomeIcon },
       showMarkets
         ? {
-            name: 'Questions',
-            href: '/questions?category=for-you',
-            icon: ScaleIcon,
+            name: 'Browse',
+            href: '/browse?topic=for-you',
+            icon: SearchIcon,
           }
         : { name: 'News', href: '/news', icon: NewspaperIcon },
       {
@@ -137,19 +145,17 @@ const getDesktopNav = (
         icon: NotificationsIcon,
       },
       {
-        name: 'Leagues',
-        href: '/leagues',
-        icon: TrophyIcon,
+        name: 'Messages',
+        href: '/messages',
+        icon: PrivateMessagesIcon,
       },
-      {
-        name: 'Categories',
-        icon: SquaresIcon,
-        href: '/groups',
-      }
+      { name: 'Leagues', href: '/leagues', icon: TrophyIcon }
+      // Disable for now.
+      // { name: 'Dashboards', href: '/dashboard', icon: TemplateIcon }
     )
 
   return buildArray(
-    { name: 'Questions', href: '/questions', icon: ScaleIcon },
+    { name: 'Browse', href: '/browse', icon: SearchIcon },
     { name: 'News', href: '/news', icon: NewspaperIcon },
     { name: 'About', href: '/about', icon: QuestionMarkCircleIcon },
     { name: 'App', onClick: openDownloadApp, icon: DeviceMobileIcon }
@@ -159,14 +165,10 @@ const getDesktopNav = (
 // No sidebar when signed out
 const getMobileNav = (toggleModal: () => void) => {
   return buildArray(
-    { name: 'Search', href: '/find', icon: SearchIcon },
     { name: 'Leagues', href: '/leagues', icon: TrophyIcon },
+    { name: 'Dashboards', href: '/dashboard', icon: TemplateIcon },
+    { name: 'Messages', href: '/messages', icon: PrivateMessagesIcon },
     { name: 'Live', href: '/live', icon: LightningBoltIcon },
-    {
-      name: 'Categories',
-      icon: SquaresIcon,
-      href: '/groups',
-    },
     { name: 'Get mana', icon: CashIcon, onClick: toggleModal },
     { name: 'Share with friends', href: '/referrals', icon: StarIcon } // remove this and I will beat you — SG
   )

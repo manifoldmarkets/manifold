@@ -1,6 +1,7 @@
-import { groupBy } from 'lodash'
+import { groupBy, mapValues } from 'lodash'
 import { Visibility } from './contract'
 import { Fees } from './fees'
+import { maxMinBin } from './chart'
 
 /************************************************
 
@@ -99,11 +100,9 @@ export type fill = {
   isSale?: boolean
 }
 
-export type Loading<T> = T | 'loading'
-
 export type BetFilter = {
   contractId?: string
-  userId?: Loading<string>
+  userId?: string
   filterChallenges?: boolean
   filterRedemptions?: boolean
   filterAntes?: boolean
@@ -114,32 +113,17 @@ export type BetFilter = {
   limit?: number
 }
 
-type AnswerId = string
-
-/** Must include redemptions. Joins all prob shifts from a bet action into single object*/
 export const calculateMultiBets = (
   betPoints: {
     x: number
     y: number
-    isRedemption: boolean
-    answerId?: string
-  }[],
-  order: AnswerId[]
+    answerId: string
+  }[]
 ) => {
-  const grouped = groupBy(betPoints, 'x')
-
-  // multi bets are represented by one non-redemption alongside redemptions for each other outcome
-
-  const points = Object.entries(grouped)
-    .filter(([, bets]) => bets.some((b) => !b.isRedemption))
-    .map(
-      ([timeStr, bets]) =>
-        [
-          +timeStr,
-          order.map((id) => bets.find((bet) => bet.answerId === id)?.y ?? 0),
-        ] as const
+  return mapValues(groupBy(betPoints, 'answerId'), (bets) =>
+    maxMinBin(
+      bets.sort((a, b) => a.x - b.x),
+      500
     )
-    .sort(([a], [b]) => a - b)
-
-  return points as any
+  )
 }

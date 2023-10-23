@@ -3,7 +3,7 @@ import { formatMoney } from 'common/util/format'
 import { AmountInput } from '../widgets/amount-input'
 import { ReactNode, useState } from 'react'
 import { boostMarket } from 'web/lib/firebase/api'
-import { Button, ColorType, SizeType } from '../buttons/button'
+import { Button } from '../buttons/button'
 import toast from 'react-hot-toast'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { DEFAULT_AD_COST_PER_VIEW, MIN_AD_COST_PER_VIEW } from 'common/boost'
@@ -19,14 +19,11 @@ import { ENV_CONFIG } from 'common/envs/constants'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import { track } from 'web/lib/service/analytics'
 import { useQuery } from 'web/hooks/use-query'
+import { TbRocket } from 'react-icons/tb'
+import clsx from 'clsx'
 
-export function BoostButton(props: {
-  contract: Contract
-  size?: SizeType
-  color?: ColorType
-  className?: string
-}) {
-  const { contract, size, color, className } = props
+export function BoostButton(props: { contract: Contract; className?: string }) {
+  const { contract, className } = props
   const [open, setOpen] = useState(false)
 
   const disabled =
@@ -39,11 +36,12 @@ export function BoostButton(props: {
   return (
     <Button
       onClick={() => setOpen(true)}
-      size={size}
-      color={color}
-      className={className}
+      size="lg"
+      color="indigo-outline"
+      className={clsx(className, 'group')}
     >
-      🚀 Boost
+      <TbRocket className="fill-scarlet-300 stroke-scarlet-600 mr-1 h-5 w-5 group-hover:stroke-current" />
+      Boost
       <BoostDialog contract={contract} isOpen={open} setOpen={setOpen} />
     </Button>
   )
@@ -61,12 +59,9 @@ export function BoostDialog(props: {
       <Col className="bg-canvas-0 gap-2.5  rounded p-4 pb-8 sm:gap-4">
         <Title className="!mb-2">🚀 Boost this question</Title>
 
-        <div className="text-ink-500 mb-2 text-base">
-          Pay to boost this question in the feed.{' '}
-          <InfoTooltip
-            text="Boosted questions are displayed to users with relevant interests. Users earn a redeemable reward
-          in exchange for clicking on the question."
-          />
+        <div className="text-ink-600 mb-2">
+          Boost this question higher in people's feeds.{' '}
+          <InfoTooltip text="Boosted questions target user interests. Users earn a reward for clicking on the question." />
         </div>
 
         <BoostFormRow contract={contract} />
@@ -123,7 +118,6 @@ function BoostFormRow(props: { contract: Contract }) {
   return (
     <>
       <Row className="items-center justify-between">
-        Boost amount{' '}
         <AmountInput
           amount={totalCost}
           onChangeAmount={setTotalCost}
@@ -147,7 +141,7 @@ function BoostFormRow(props: { contract: Contract }) {
               inputClassName="mr-2 w-36"
             />
           </Row>
-          {error && <div className="text-right text-red-500">{error}</div>}
+          {error && <div className="text-error text-right">{error}</div>}
         </>
       )}
 
@@ -201,15 +195,6 @@ function FeedAnalytics(props: { contractId: string }) {
         .eq('contract_id', contractId)
   )
 
-  const clickQuery = useQuery(
-    async () =>
-      await db
-        .from('user_events')
-        .select('*', { count: 'exact' })
-        .eq('name', 'click market card feed')
-        .eq('contract_id', contractId)
-  )
-
   const redeemQuery = useQuery(
     async () =>
       await db
@@ -219,12 +204,7 @@ function FeedAnalytics(props: { contractId: string }) {
         .eq('data->>fromId', adQuery.data?.data?.[0]?.id)
   )
 
-  if (
-    adQuery.error ||
-    viewQuery.error ||
-    clickQuery.error ||
-    redeemQuery.error
-  ) {
+  if (adQuery.error || viewQuery.error || redeemQuery.error) {
     return (
       <div className="bg-scarlet-100 mb-2 rounded-md p-4">
         Error loading analytics
@@ -241,18 +221,12 @@ function FeedAnalytics(props: { contractId: string }) {
     (v) => (v.data as ContractCardView).isPromoted
   )
 
-  const clickData = clickQuery.data
-  const promotedClickData = clickData?.data?.filter(
-    (v) => (v.data as any).isPromoted
-  )
-
   return (
     <div className="mt-4">
       <div className="mb-2 text-lg">
         Feed Analytics
         {(adQuery.isLoading ||
           viewQuery.isLoading ||
-          clickQuery.isLoading ||
           redeemQuery.isLoading) && (
           <LoadingIndicator size="sm" className="ml-4 !inline-flex" />
         )}
@@ -289,13 +263,6 @@ function FeedAnalytics(props: { contractId: string }) {
         {isBoosted && (
           <TableItem label="Boost clicks" value={redeemQuery.data?.count} />
         )}
-        <TableItem label="Clickthroughs" value={clickData?.count} />
-        {isBoosted && (
-          <TableItem
-            label="Boost clickthroughs"
-            value={promotedClickData?.length}
-          />
-        )}
       </Table>
     </div>
   )
@@ -303,7 +270,7 @@ function FeedAnalytics(props: { contractId: string }) {
 
 const TableItem = (props: { label: ReactNode; value?: ReactNode }) => (
   <tr>
-    <td className="!pt-0 !pl-0">{props.label}</td>
-    <td className="!pt-0 !pl-0">{props.value ?? '...'}</td>
+    <td className="!pl-0 !pt-0">{props.label}</td>
+    <td className="!pl-0 !pt-0">{props.value ?? '...'}</td>
   </tr>
 )

@@ -1,5 +1,5 @@
 import { pgp, SupabaseDirectClient } from 'shared/supabase/init'
-import { fromPairs, minBy } from 'lodash'
+import { fromPairs } from 'lodash'
 import {
   FEED_REASON_TYPES,
   getRelevanceScore,
@@ -13,6 +13,7 @@ import { IClient } from 'pg-promise/typescript/pg-subset'
 import { MINUTE_MS, WEEK_MS } from 'common/util/time'
 import { getContractsDirect } from 'shared/supabase/contracts'
 import { createManualTrendingFeedRow } from 'shared/create-feed'
+import { removeUndefinedProps } from 'common/util/object'
 
 export const getUserFollowerIds = async (
   userId: string,
@@ -71,7 +72,7 @@ export const getUsersWithSimilarInterestVectorToNews = async (
   )
 }
 
-export const spiceUpNewUsersFeedBasedOnTheirInterests = async (
+export const generateNewUserFeedFromContracts = async (
   userId: string,
   pg: SupabaseDirectClient,
   userIdFeedSource: string,
@@ -81,33 +82,22 @@ export const spiceUpNewUsersFeedBasedOnTheirInterests = async (
   await pg.tx(async (t) => {
     const relatedFeedItems = await t.map(
       `              
-          WITH user_embedding AS (
-            SELECT interest_embedding
-            FROM user_embeddings
-            WHERE user_id = $1
-          ),
-         recent_feed as (
+          WITH recent_feed as (
              SELECT distinct on (contract_id) * FROM user_feed
              where created_time > now() - interval '14 days'
                and user_id = $2
                and data_type = any($4::text[])
                and contract_id = any($5::text[])
-         ),
-         feed_embeddings AS (
-             SELECT contract_embeddings.contract_id, embedding
-             FROM contract_embeddings
+         ), feed_contracts AS (
+              SELECT importance_score
+              FROM contracts
               JOIN recent_feed
-              ON contract_embeddings.contract_id = recent_feed.contract_id
-         ),
-         feed_ordered_by_distance AS (
-             SELECT recent_feed.*
-             FROM feed_embeddings,user_embedding,recent_feed
-             WHERE feed_embeddings.contract_id = recent_feed.contract_id
-             order by (feed_embeddings.embedding <=> user_embedding.interest_embedding)
-             limit $3
-         )
-          SELECT *
-          FROM feed_ordered_by_distance
+                ON contracts.id = recent_feed.contract_id
+          )
+          SELECT recent_feed.*, feed_contracts.importance_score as importance_score
+          FROM recent_feed, feed_contracts
+          order by feed_contracts.importance_score desc
+          limit $3
         `,
       [
         userId,
@@ -116,10 +106,12 @@ export const spiceUpNewUsersFeedBasedOnTheirInterests = async (
         NEW_USER_FEED_DATA_TYPES,
         targetContractIds,
       ],
-      (r: Row<'user_feed'>) => ({
-        ...r,
-        relevance_score: (r.relevance_score || 0.85) * estimatedRelevance,
-      })
+      (r: Row<'user_feed'> & { importance_score: number }) =>
+        removeUndefinedProps({
+          ...r,
+          relevance_score: r.importance_score * estimatedRelevance,
+          importance_score: undefined, // remove this column
+        })
     )
     log('found related feed items', relatedFeedItems.length, 'for user', userId)
     await copyOverFeedItems(userId, relatedFeedItems, t)
@@ -128,23 +120,19 @@ export const spiceUpNewUsersFeedBasedOnTheirInterests = async (
       (cid) => !foundContractIds.includes(cid)
     )
     const manualContracts = await getContractsDirect(missingContractIds, pg)
-    const minRelevanceScore =
-      (minBy(relatedFeedItems, 'relevance_score')?.relevance_score || 0.85) *
-      estimatedRelevance
     const manualFeedRows = createManualTrendingFeedRow(
       manualContracts,
       userId,
-      minRelevanceScore
-    ) as userFeedRowAndDistance[]
+      estimatedRelevance
+    )
     log('made manual feed rows', manualFeedRows.length, 'for user', userId)
     await copyOverFeedItems(userId, manualFeedRows, t, MINUTE_MS)
   })
 }
 
-type userFeedRowAndDistance = Row<'user_feed'> & { distance?: number }
 const copyOverFeedItems = async (
   userId: string,
-  relatedFeedItems: userFeedRowAndDistance[],
+  relatedFeedItems: Row<'user_feed'>[],
   pg: ITask<IClient> & IClient,
   timeOffset?: number
 ) => {
@@ -152,7 +140,7 @@ const copyOverFeedItems = async (
   const now = Date.now()
   const updatedRows = relatedFeedItems.map((row, i) => {
     // assuming you want to change the 'columnToChange' column
-    const { id: __, distance: _, ...newRow } = row
+    const { id: __, ...newRow } = row
     newRow.user_id = userId
     newRow.is_copied = true
     newRow.created_time = new Date(

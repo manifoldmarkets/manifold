@@ -10,6 +10,7 @@ import {
 } from 'shared/supabase/contracts'
 import { Contract, CPMMContract } from 'common/contract'
 import {
+  ALL_FEED_USER_ID,
   CONTRACT_FEED_REASON_TYPES,
   FEED_DATA_TYPES,
   FEED_REASON_TYPES,
@@ -21,10 +22,10 @@ import {
   getUserFollowerIds,
   getUsersWithSimilarInterestVectorToNews,
 } from 'shared/supabase/users'
-import { convertObjectToSQLRow } from 'common/supabase/utils'
+import { convertObjectToSQLRow, Row } from 'common/supabase/utils'
 import { DAY_MS } from 'common/util/time'
 import { User } from 'common/user'
-import { fromPairs, uniq } from 'lodash'
+import { fromPairs, groupBy, maxBy, uniq } from 'lodash'
 import { removeUndefinedProps } from 'common/util/object'
 import { PositionChangeData } from 'common/supabase/bets'
 import { filterDefined } from 'common/util/array'
@@ -58,6 +59,12 @@ export const bulkInsertDataToUserFeed = async (
 
   const feedRows = Object.entries(usersToReasonsInterestedInContract)
     .filter(([userId]) => !userIdsToExclude.includes(userId))
+    .concat([
+      [
+        ALL_FEED_USER_ID,
+        { reasons: ['similar_interest_vector_to_contract'], relevanceScore: 1 },
+      ],
+    ])
     .map(([userId, reasonAndScore]) =>
       convertObjectToSQLRow<any, 'user_feed'>({
         ...dataProps,
@@ -72,36 +79,66 @@ export const bulkInsertDataToUserFeed = async (
   const cs = new pgp.helpers.ColumnSet(feedRows[0], { table: 'user_feed' })
   const insert = pgp.helpers.insert(feedRows, cs) + ` ON CONFLICT DO NOTHING`
 
-  try {
-    await pg.none(insert)
-    log(`inserted ${feedRows.length} feed items`)
-  } catch (e) {
-    console.log('error inserting feed items')
-    console.error(e)
+  const maxRetries = 3
+  let retries = 0
+  while (retries < maxRetries) {
+    try {
+      await pg.none(insert)
+      log(`inserted ${feedRows.length} feed items`)
+      break // Exit if successful
+    } catch (e) {
+      retries++
+      log(`error inserting feed items, retrying ${retries}/${maxRetries}`)
+      log(e)
+      await new Promise((r) => setTimeout(r, 1000 * retries + 1000))
+    }
   }
+  if (retries === maxRetries)
+    log(`Failed to insert feed items after ${maxRetries} attempts`)
 }
 
 export const createManualTrendingFeedRow = (
   contracts: Contract[],
   forUserId: string,
-  relevanceScore: number
+  estimatedRelevance: number
 ) => {
   const now = Date.now()
   const reasons: FEED_REASON_TYPES[] = [
     'similar_interest_vector_to_contract',
     'contract_in_group_you_are_in',
   ]
-  return contracts.map((contract) =>
-    convertObjectToSQLRow<any, 'user_feed'>({
-      contractId: contract.id,
-      creatorId: contract.creatorId,
-      userId: forUserId,
-      eventTime: new Date(now).toISOString(),
-      reason: 'similar_interest_vector_to_contract',
-      dataType: 'trending_contract',
-      reasons,
-      relevanceScore,
-    })
+  return contracts.map(
+    (contract) =>
+      convertObjectToSQLRow<any, 'user_feed'>({
+        contractId: contract.id,
+        creatorId: contract.creatorId,
+        userId: forUserId,
+        eventTime: new Date(now).toISOString(),
+        reason: 'similar_interest_vector_to_contract',
+        dataType: 'trending_contract',
+        reasons,
+        relevanceScore: contract.importanceScore * estimatedRelevance,
+      }) as Row<'user_feed'>
+  )
+}
+
+const matchingFeedRows = async (
+  contractId: string,
+  userIds: string[],
+  seenTime: number,
+  dataTypes: FEED_DATA_TYPES[],
+  pg: SupabaseDirectClient
+) => {
+  return await pg.map(
+    `select *
+            from user_feed
+            where contract_id = $1 and 
+                user_id = ANY($2) and 
+                (created_time > $3 or seen_time > $3) and
+                data_type = ANY($4)
+                `,
+    [contractId, userIds, new Date(seenTime).toISOString(), dataTypes],
+    (row) => row as Row<'user_feed'>
   )
 }
 
@@ -398,8 +435,37 @@ export const addBetDataToUsersFeeds = async (
 ) => {
   const pg = createSupabaseDirectClient()
   const now = Date.now()
-  const followerIds = await getUserFollowerIds(bettor.id, pg)
-  // const followerIds = ['mwaVAaKkabODsH8g5VrtbshsXz03']
+  let followerIds = await getUserFollowerIds(bettor.id, pg)
+  // let followerIds = ['mwaVAaKkabODsH8g5VrtbshsXz03']
+  const oldMatchingPositionChangedRows = await matchingFeedRows(
+    contract.id,
+    followerIds,
+    now - DAY_MS,
+    ['user_position_changed'],
+    pg
+  )
+  const oldRowsByUserId = groupBy(oldMatchingPositionChangedRows, 'user_id')
+  const feedRowIdsToDelete: number[] = []
+  Object.entries(oldRowsByUserId).forEach(([userId, rows]) => {
+    const oldMaxChange = maxBy(rows, (r) =>
+      r.bet_data ? Math.abs((r.bet_data as PositionChangeData).change) : 0
+    )
+    // No old row
+    if (!oldMaxChange) return
+    // Old row is more important, or has already been seen
+    if (
+      Math.abs((oldMaxChange.bet_data as PositionChangeData).change) >=
+        Math.abs(betData.change) ||
+      oldMaxChange.seen_time
+    ) {
+      followerIds = followerIds.filter((id) => id !== userId)
+    }
+    // New row is more important
+    else {
+      feedRowIdsToDelete.push(...rows.map((r) => r.id))
+    }
+  })
+  await deleteRowsFromUserFeed(feedRowIdsToDelete, pg)
   const usersToDistances = await getUsersWithSimilarInterestVectorsToContract(
     contract.id,
     pg,
@@ -418,7 +484,7 @@ export const addBetDataToUsersFeeds = async (
             'user_position_changed',
             ['follow_user'],
             contract.importanceScore,
-            usersToDistances[id]
+            usersToDistances[id] ?? 1
           ),
         },
       ])
@@ -437,6 +503,14 @@ export const addBetDataToUsersFeeds = async (
     }),
     pg
   )
+}
+
+const deleteRowsFromUserFeed = async (
+  rowIds: number[],
+  pg: SupabaseDirectClient
+) => {
+  if (rowIds.length === 0) return
+  await pg.none(`delete from user_feed where id = any($1)`, [rowIds])
 }
 
 // Currently creating feed items for:

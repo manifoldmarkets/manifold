@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <!-- Google Tag Manager -->
+    <script>
+      ;(function (w, d, s, l, i) {
+        w[l] = w[l] || []
+        w[l].push({
+          'gtm.start': new Date().getTime(),
+          event: 'gtm.js',
+        })
+        var f = d.getElementsByTagName(s)[0],
+          j = d.createElement(s),
+          dl = l !== 'dataLayer' ? '&l=' + l : ''
+        j.async = true
+        j.src = 'https://www.googletagmanager.com/gtm.js?id=' + i + dl
+        f.parentNode.insertBefore(j, f)
+      })(window, document, 'script', 'dataLayer', 'GTM-M3MBVGG')
+    </script>
+    <script>
+      function updateSettingDefault(digital, un, ub, original, original_label) {
+        window.console.log(digital, un, original)
+        document.getElementById('digital').checked = digital
+        document.getElementById('un').checked = un
+        document.getElementById('ub').checked = ub
+        document.getElementById('original').checked = original
+        document.getElementById('original_label').innerText = original_label
+      }
+    </script>
+    <!-- End Google Tag Manager -->
+    <meta charset="UTF-8" />
+    <style type="text/css">
+      body {
+        position: relative;
+      }
+
+      .play-page {
+        display: flex;
+        flex-direction: row-reverse;
+        font-family: Georgia, 'Times New Roman', Times, serif;
+        min-height: 200px;
+      }
+
+      .logo {
+        transition-property: all;
+        transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+        transition-duration: 0.15s;
+      }
+
+      .logo:hover {
+        transform: rotate(12deg);
+      }
+
+      h1,
+      h3 {
+        font-family: Verdana, Geneva, Tahoma, sans-serif;
+        text-align: center;
+      }
+
+      #submit {
+        margin-top: 10px;
+        padding: 8px 20px;
+        background-color: cadetblue;
+        border: none;
+        border-radius: 3px;
+        font-size: 1.1em;
+        color: white;
+        cursor: pointer;
+      }
+
+      #submit:hover {
+        background-color: rgb(0, 146, 156);
+      }
+
+      [type='radio'] {
+        display: none;
+      }
+
+      [type='radio'] + label.radio-label {
+        background: lightgrey;
+        display: block;
+        padding: 10px;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+
+      label.radio-label:hover {
+        background: darkgrey;
+      }
+
+      [type='radio']:checked + label.radio-label {
+        background: lightcoral;
+      }
+
+      .radio-label h3 {
+        margin: 0;
+        display: inline-block;
+        vertical-align: middle;
+        width: 220px;
+      }
+
+      .thumbnail {
+        display: inline-block;
+        vertical-align: middle;
+        width: 67px;
+        height: 48px;
+        margin-right: 4px;
+      }
+
+      body {
+        padding: 70px 0 30px;
+      }
+
+      #addl-options {
+        position: absolute;
+        top: 30px;
+        right: 30px;
+        background-color: white;
+        padding: 10px;
+        cursor: pointer;
+        width: 200px;
+      }
+
+      #addl-options > summary {
+        list-style: none;
+        text-align: right;
+      }
+
+      .option-row {
+        display: flex;
+        align-items: flex-end;
+        padding-left: 65px;
+      }
+      .level-badge {
+        display: block;
+        width: 65px;
+        padding-left: 8px;
+        padding-bottom: 2px;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Google Tag Manager (noscript) -->
+    <noscript>
+      <iframe
+        src="https://www.googletagmanager.com/ns.html?id=GTM-M3MBVGG"
+        height="0"
+        width="0"
+        style="display: none; visibility: hidden"
+      ></iframe>
+    </noscript>
+    <!-- End Google Tag Manager (noscript) -->
+    <h1>Magic the Guessering</h1>
+    <div class="play-page" style="justify-content: center">
+      <form
+        method="get"
+        action="guess.html"
+        style="display: flex; flex-direction: column; align-items: center"
+      >
+        <div class="option-row">
+          <input
+            type="radio"
+            id="counterspell"
+            name="whichguesser"
+            value="counterspell"
+            onchange="updateSettingDefault(true, true, true, false, 'only first printing')"
+            checked
+          />
+          <label class="radio-label" for="counterspell">
+            <img
+              class="thumbnail"
+              src="https://c1.scryfall.com/file/scryfall-cards/art_crop/front/7/1/71cfcba5-1571-48b8-a3db-55dca135506e.jpg?1562843855"
+            />
+            <h3>Counterspell Guesser</h3></label
+          >
+          <img class="level-badge" src="images/Advanced_level.webp" />
+        </div>
+        <br />
+
+        <div class="option-row">
+          <input
+            type="radio"
+            id="burn"
+            name="whichguesser"
+            value="burn"
+            onchange="updateSettingDefault(true, true, true, false, 'only first printing')"
+          />
+          <label class="radio-label" for="burn">
+            <img
+              class="thumbnail"
+              src="https://c1.scryfall.com/file/scryfall-cards/art_crop/front/6/0/60b2fae1-242b-45e0-a757-b1adc02c06f3.jpg?1562760596"
+            />
+            <h3>Match With Hot Singles</h3></label
+          >
+          <img class="level-badge" src="images/Advanced_level.webp" />
+        </div>
+        <br />
+
+        <div class="option-row">
+          <input
+            type="radio"
+            id="beast"
+            name="whichguesser"
+            value="beast"
+            onchange="updateSettingDefault(true, true, false, false, 'only first printing')"
+          />
+          <label class="radio-label" for="beast">
+            <img
+              class="thumbnail"
+              src="https://c1.scryfall.com/file/scryfall-cards/art_crop/front/3/3/33f7e788-8fc7-49f3-804b-2d7f96852d4b.jpg?1562905469"
+            />
+            <h3>Finding Fantastic Beasts</h3></label
+          >
+          <img class="level-badge" src="images/Advanced_level.webp" />
+        </div>
+        <br />
+
+        <div class="option-row">
+          <input
+            type="radio"
+            id="basic"
+            name="whichguesser"
+            value="basic"
+            onchange="updateSettingDefault(true, false, false, true, 'only expansions')"
+          />
+          <label class="radio-label" for="basic">
+            <img
+              class="thumbnail"
+              src="https://c1.scryfall.com/file/scryfall-cards/art_crop/front/e/5/e52ed647-bd30-40a5-b648-0b98d1a3fd4a.jpg?1562949575"
+            />
+            <h3>How Basic</h3></label
+          >
+          <img class="level-badge" src="images/Expert_level.webp" />
+        </div>
+        <br />
+
+        <div class="option-row">
+          <input
+            type="radio"
+            id="commander"
+            name="whichguesser"
+            value="commander"
+            onchange="updateSettingDefault(false, false, true, false, 'only first printing')"
+          />
+          <label class="radio-label" for="commander">
+            <img
+              class="thumbnail"
+              src="https://c1.scryfall.com/file/scryfall-cards/art_crop/front/d/9/d9631cb2-d53b-4401-b53b-29d27bdefc44.jpg?1562770627"
+            />
+            <h3>General Knowledge</h3></label
+          >
+          <img class="level-badge" src="images/Starter_level.webp" />
+        </div>
+        <br />
+
+        <div class="option-row">
+          <input
+            type="radio"
+            id="watermark"
+            name="whichguesser"
+            value="watermark"
+            onchange="updateSettingDefault(false, true, false, true, 'only affiliations')"
+          />
+          <label class="radio-label" for="watermark">
+            <img
+              class="thumbnail"
+              src="https://c1.scryfall.com/file/scryfall-cards/art_crop/front/b/6/b6188abb-2402-4ac8-96e9-d4ee8d52ef1b.jpg?1562708703"
+            />
+            <h3>Watermark It</h3></label
+          >
+          <img class="level-badge" src="images/Starter_level.webp" />
+        </div>
+        <br />
+
+        <div class="option-row">
+          <input
+            type="radio"
+            id="artist"
+            name="whichguesser"
+            value="artist"
+            onchange="updateSettingDefault(false, true, false, true, 'only include cards')"
+          />
+          <label class="radio-label" for="artist">
+            <img
+              class="thumbnail"
+              src="https://c1.scryfall.com/file/scryfall-cards/art_crop/front/0/4/0464a507-20e5-42d5-8aca-12504a869f21.jpg?1562487441"
+            />
+            <h3>Aesthetic Consultation</h3></label
+          >
+          <img class="level-badge" src="images/Expert_level.webp" />
+        </div>
+        <br />
+
+        <div class="option-row">
+          <input
+            type="radio"
+            id="artifact"
+            name="whichguesser"
+            value="artifact"
+            onchange="updateSettingDefault(true, true, false, true, 'only first printing')"
+          />
+          <label class="radio-label" for="artifact">
+            <img
+              class="thumbnail"
+              src="https://cards.scryfall.io/art_crop/front/8/7/87809c72-055f-4055-85a7-86d41bd655f1.jpg?1562922385"
+            />
+            <h3>Archaeological Dating</h3></label
+          >
+          <img class="level-badge" src="images/Expert_level.webp" />
+        </div>
+        <br />
+
+        <a
+          class="group flex flex-shrink-0 flex-row gap-4 pt-6"
+          href="https://manifold.markets/home"
+          style="vertical-align: top; position: absolute; top: 30px; left: 30px"
+          ><img class="logo" src="../logo.svg" width="45" height="45" alt="" />
+        </a>
+
+        <details id="addl-options">
+          <summary>
+            <img
+              src="images/ustset.png"
+              style="width: 32px; vertical-align: top"
+            />
+            Options
+          </summary>
+          <input type="checkbox" name="digital" id="digital" checked />
+          <label for="digital">digital cards</label>
+          <br />
+          <input type="checkbox" name="un" id="un" checked />
+          <label for="un">un-cards</label>
+          <br />
+          <input type="checkbox" name="ub" id="ub" checked />
+          <label for="ub">Universes Beyond</label>
+          <br />
+          <input type="checkbox" name="original" id="original" />
+          <label for="original"
+            ><span id="original_label">only first printing</span></label
+          >
+        </details>
+        <input type="submit" id="submit" value="Play" />
+      </form>
+    </div>
+
+    <div style="margin: -40px 0 0; height: 60px">
+      <a href="https://paypal.me/idamayer">Donate, buy us a boba 🧋</a>
+    </div>
+
+    <div
+      style="
+        font-size: 0.9em;
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        color: grey;
+        font-style: italic;
+      "
+    >
+      made by
+      <a
+        style="color: rgb(0, 146, 156); font-style: italic"
+        href="https://idamayer.com"
+        >Ida Mayer</a
+      >
+      &
+      <a
+        style="color: rgb(0, 146, 156); font-style: italic"
+        href="mailto:alexlien.alien@gmail.com"
+        >Alex Lien</a
+      >, 2022
+    </div>
+  </body>
+</html>

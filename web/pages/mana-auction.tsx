@@ -3,7 +3,6 @@ import dayjs from 'dayjs'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { Title } from 'web/components/widgets/title'
-import { useTracking } from 'web/hooks/use-tracking'
 import { formatMoney } from 'common/util/format'
 import { Row } from 'web/components/layout/row'
 import { useEffect, useState } from 'react'
@@ -274,7 +273,6 @@ const bids = [
 ]
 
 export default function ManaAuctionPage() {
-  useTracking('view mana auction')
   const maxBid = max(bids.map((b) => b.amount)) ?? 0
   const bidder = bids.find((b) => b.amount === maxBid)?.displayName ?? 'None'
   const totalRaised = Object.entries(groupBy(bids, 'userId'))
@@ -285,8 +283,8 @@ export default function ManaAuctionPage() {
   const timeRemaining = getCountdown(time, CUTOFF_TIME)
 
   return (
-    <Page className="px-4">
-      <Col className="gap-4 sm:px-4 sm:pb-4">
+    <Page trackPageView={'mana auction'}>
+      <Col className="gap-4 px-4 sm:px-8 sm:pb-4">
         <SEO
           title="Mana auction"
           description="To celebrate April 1st and to give back to the community, Manifold is
@@ -301,7 +299,7 @@ export default function ManaAuctionPage() {
           hosting an auction for {formatMoney(10000)}.
         </div>
 
-        <GradientContainer className="mb-8 p-4">
+        <GradientContainer className="mb-8">
           <Row className="gap-4 sm:gap-8">
             <div className="text-ink-700 text-center text-xl">
               Highest bid{' '}

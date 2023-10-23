@@ -10,7 +10,7 @@ import { Button } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
-import { SupabaseContractSearch } from 'web/components/contracts-search'
+import { SupabaseSearch } from 'web/components/supabase-search'
 import { ChoicesToggleGroup } from 'web/components/widgets/choices-toggle-group'
 import { Input } from 'web/components/widgets/input'
 import { Title } from 'web/components/widgets/title'
@@ -23,7 +23,7 @@ import { Portfolio } from 'common/portfolio'
 
 export default function Portfolio() {
   return (
-    <Page>
+    <Page trackPageView={'portfolios page'}>
       <PortfolioList />
       <div className="pt-6" />
       <CreatePortfolio />
@@ -121,7 +121,7 @@ const ContractSearch = memo(
     const privateUser = usePrivateUser()
 
     return (
-      <SupabaseContractSearch
+      <SupabaseSearch
         persistPrefix="contract-select-portfolio"
         hideOrderSelector
         onContractClick={addContract}
@@ -133,8 +133,9 @@ const ContractSearch = memo(
           contractType: 'BINARY',
         }}
         hideActions
-        hideFilters
+        hideContractFilters
         headerClassName={clsx('bg-canvas-0')}
+        contractsOnly
       />
     )
   }

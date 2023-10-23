@@ -10,6 +10,7 @@ import {
   LeagueBidTxn,
 } from 'common/txn'
 import { createSupabaseDirectClient } from '../supabase/init'
+import { isAdminId } from 'common/envs/constants'
 
 export type TxnData = Omit<Txn, 'id' | 'createdTime'>
 
@@ -19,7 +20,11 @@ export async function runTxn(
 ) {
   const { amount, fromType, fromId, toId, toType } = data
 
-  if (!isFinite(amount) || amount <= 0) {
+  if (!isFinite(amount)) {
+    return { status: 'error', message: 'Invalid amount' }
+  }
+
+  if (!isAdminId(fromId) && amount <= 0) {
     return { status: 'error', message: 'Invalid amount' }
   }
 

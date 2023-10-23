@@ -43,7 +43,7 @@ export default function CalibrationPage(props: {
   const { points, score, n } = props
 
   return (
-    <Page>
+    <Page trackPageView={'platform calibration page'}>
       <SEO
         title={`Platform calibration`}
         description="Manifold's overall track record"
@@ -55,13 +55,13 @@ export default function CalibrationPage(props: {
           <div className="mb-4">Manifold's overall track record.</div>
 
           <div className="bg-canvas-0 relative w-full max-w-[600px] self-center rounded-md p-4 pr-12">
-            <div className="absolute top-0 bottom-0 right-4 flex items-center">
+            <div className="absolute bottom-0 right-4 top-0 flex items-center">
               <span className="text-ink-800 text-sm [writing-mode:vertical-rl]">
                 Resolution probability
               </span>
             </div>
 
-            <SizedContainer className="aspect-square w-full pr-8 pb-8">
+            <SizedContainer className="aspect-square w-full pb-8 pr-8">
               {(w, h) => (
                 <CalibrationChart points={points} width={w} height={h} />
               )}
@@ -141,74 +141,44 @@ export function CalibrationChart(props: {
   const px = (p: Point) => xScale(p.x)
   const py = (p: Point) => yScale(p.y)
 
-  const [tooltip, setTooltip] = useState<Point | null>(null)
+  const [point, setPoint] = useState<Point | null>(null)
 
   return (
-    <SVGChart w={width} h={height} xAxis={xAxis} yAxis={yAxis}>
+    <SVGChart
+      w={width}
+      h={height}
+      xAxis={xAxis}
+      yAxis={yAxis}
+      ttParams={point ? { x: px(point), y: py(point), point } : undefined}
+      Tooltip={({ point }) => {
+        return (
+          <div>
+            ({formatPct(point.x)}, {formatPct(point.y)})
+          </div>
+        )
+      }}
+    >
       {/* points */}
       {points.map((p, i) => (
         <circle
           key={i}
           cx={px(p)}
           cy={py(p)}
-          r={10}
-          fill="indigo"
-          onMouseEnter={() => setTooltip(p)}
-          onMouseLeave={() => setTooltip(null)}
+          r={6}
+          className="fill-primary-700"
+          onMouseEnter={() => setPoint(p)}
+          onMouseLeave={() => setPoint(null)}
           style={{ cursor: 'pointer' }}
         />
       ))}
-      {/* tooltip */}
-      {tooltip && (
-        <>
-          {tooltip.x > 0.9 ? (
-            <>
-              <rect
-                x={px(tooltip) - 110}
-                y={py(tooltip) - 10}
-                width={100}
-                height={20}
-                fill="white"
-                style={{ zIndex: 100 }}
-              />
-              <text
-                x={px(tooltip) - 60}
-                y={py(tooltip) + 5}
-                textAnchor="middle"
-                style={{ fill: 'blue', zIndex: 100 }}
-              >
-                ({formatPct(tooltip.x)}, {formatPct(tooltip.y)})
-              </text>
-            </>
-          ) : (
-            <>
-              <rect
-                x={px(tooltip) - 30}
-                y={py(tooltip) - 25}
-                width={100}
-                height={20}
-                fill="white"
-                style={{ zIndex: 100 }}
-              />
-              <text
-                x={px(tooltip)}
-                y={py(tooltip) - 10}
-                textAnchor="bottom"
-                style={{ fill: 'blue', zIndex: 100 }}
-              >
-                ({formatPct(tooltip.x)}, {formatPct(tooltip.y)})
-              </text>
-            </>
-          )}
-        </>
-      )}
+
       {/* line x = y */}
       <line
         x1={xScale(0)}
         y1={yScale(0)}
         x2={xScale(1)}
         y2={yScale(1)}
-        stroke="rgb(99 102 241)"
+        className="stroke-primary-800"
         strokeWidth={1}
         strokeDasharray="4 8"
       />

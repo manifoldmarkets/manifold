@@ -2,6 +2,7 @@ import { ArrowLeftIcon } from '@heroicons/react/solid'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
 import clsx from 'clsx'
+import { Button } from 'web/components/buttons/button'
 
 // meant to be used over a cover image
 export function BackButton(props: { className?: string }) {
@@ -16,15 +17,13 @@ export function BackButton(props: { className?: string }) {
 
   if (!canGoBack) return <div />
   return (
-    <button
-      className={clsx(
-        'text-ink-500 hover:text-ink-600 flex transition-colors',
-        className
-      )}
+    <Button
+      className={clsx(className)}
       onClick={router.back}
+      color={'gray-white'}
     >
       <ArrowLeftIcon className="h-5 w-5" aria-hidden />
       <div className="sr-only">Back</div>
-    </button>
+    </Button>
   )
 }

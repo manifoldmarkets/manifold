@@ -1,19 +1,20 @@
 import { auth } from './users'
 import { APIError, getApiUrl } from 'common/api'
 import { JSONContent } from '@tiptap/core'
-import { Group, PrivacyStatusType } from 'common/group'
+import { Group, GroupRole, PrivacyStatusType } from 'common/group'
 import { HideCommentReq } from 'web/pages/api/v0/hide-comment'
 import { Contract } from './contracts'
-export { APIError } from 'common/api'
-import { ContractTypeType, filter, Sort } from 'web/components/contracts-search'
+import { ContractTypeType, Filter, Sort } from 'web/components/supabase-search'
 import { AD_RATE_LIMIT } from 'common/boost'
-import { groupRoleType } from 'web/components/groups/group-member-modal'
-import { Bet } from 'common/bet'
 import { ContractComment } from 'common/comment'
 import { Post } from 'common/post'
 import { MaybeAuthedContractParams } from 'common/contract'
 import { Portfolio, PortfolioItem } from 'common/portfolio'
 import { ReportProps } from 'common/report'
+import { BaseDashboard, Dashboard, DashboardItem } from 'common/dashboard'
+import { Bet } from 'common/bet'
+
+export { APIError } from 'common/api'
 
 export async function call(url: string, method: 'POST' | 'GET', params?: any) {
   const user = auth.currentUser
@@ -204,9 +205,8 @@ export function removeContractFromGroup(params: {
   return call(getApiUrl('removecontractfromgroup'), 'POST', params)
 }
 
-export function unresolveMarket(params: { marketId: string }) {
-  const { marketId } = params
-  return call(`/api/v0/market/${marketId}/unresolve`, 'POST', params)
+export function unresolveMarket(params: { contractId: string }) {
+  return call(getApiUrl('unresolve'), 'POST', params)
 }
 
 export function hideComment(params: HideCommentReq) {
@@ -223,7 +223,7 @@ export function updateGroupPrivacy(params: {
 export function addGroupMember(params: {
   groupId: string
   userId: string
-  role?: groupRoleType
+  role?: GroupRole
 }) {
   return call(getApiUrl('addgroupmember'), 'POST', params)
 }
@@ -268,14 +268,13 @@ export function createCommentOnContract(params: {
 
 export function supabaseSearchContracts(params: {
   term: string
-  filter: filter
+  filter: Filter
   sort: Sort
   contractType: ContractTypeType
   offset: number
   limit: number
-  topic?: string
   fuzzy?: boolean
-  groupId?: string
+  topicSlug?: string
   creatorId?: string
 }) {
   return maybeAuthedCall(
@@ -283,6 +282,37 @@ export function supabaseSearchContracts(params: {
     'POST',
     params
   ) as Promise<Contract[]>
+}
+
+export function supabaseSearchContractsWithDefaults(params: {
+  term?: string
+  filter?: Filter
+  sort?: Sort
+  contractType?: ContractTypeType
+  offset?: number
+  limit?: number
+  topic?: string
+  fuzzy?: boolean
+  topicSlug?: string
+  creatorId?: string
+}) {
+  const {
+    term = '',
+    filter = 'all',
+    sort = 'score',
+    contractType = 'ALL',
+    offset = 0,
+    limit = 1000,
+  } = params
+  return supabaseSearchContracts({
+    ...params,
+    term,
+    filter,
+    sort,
+    contractType,
+    offset,
+    limit,
+  })
 }
 
 export function deleteMarket(params: { contractId: string }) {
@@ -297,10 +327,7 @@ export function saveTopic(params: { topic: string }) {
   }>
 }
 
-export function getContractParams(params: {
-  contractSlug: string
-  fromStaticProps: boolean
-}) {
+export function getContractParams(params: { contractSlug: string }) {
   return maybeAuthedCall(
     getApiUrl('getcontractparams'),
     'POST',
@@ -348,31 +375,16 @@ export function leagueActivity(params: { season: number; cohort: string }) {
   }>
 }
 
-export function createQAndA(params: {
-  question: string
-  description: string
-  bounty: number
-}) {
-  return call(getApiUrl('create-q-and-a'), 'POST', params)
-}
-
-export function createQAndAAnswer(params: {
-  questionId: string
-  text: string
-}) {
-  return call(getApiUrl('create-q-and-a-answer'), 'POST', params)
-}
-
-export function awardQAndAAnswer(params: { answerId: string; amount: number }) {
-  return call(getApiUrl('award-q-and-a-answer'), 'POST', params)
-}
-
 export function awardBounty(params: {
   contractId: string
   commentId: string
   amount: number
 }) {
   return call(getApiUrl('award-bounty'), 'POST', params)
+}
+
+export function cancelBounty(params: { contractId: string }) {
+  return call(getApiUrl('cancel-bounty'), 'POST', params)
 }
 
 export function addBounty(params: { contractId: string; amount: number }) {
@@ -453,13 +465,6 @@ export function bidForLeague(params: {
   return call(getApiUrl('bidforleague'), 'POST', params)
 }
 
-export function createChatMessage(params: {
-  channelId: string
-  content: JSONContent
-}) {
-  return call(getApiUrl('create-chat-message'), 'POST', params)
-}
-
 export function followUser(userId: string) {
   return call(getApiUrl('follow-user'), 'POST', { userId, follow: true })
 }
@@ -474,7 +479,86 @@ export function report(params: ReportProps) {
 
 export function createDashboard(params: {
   title: string
+  items: DashboardItem[]
   description?: JSONContent
+  topics: string[]
 }) {
   return call(getApiUrl('createdashboard'), 'POST', params)
+}
+
+export function getYourDashboards() {
+  return call(getApiUrl('getyourdashboards'), 'POST')
+}
+
+export function followDashboard(params: { dashboardId: string }) {
+  return call(getApiUrl('followdashboard'), 'POST', params)
+}
+
+export function supabaseSearchDashboards(params: {
+  term: string
+  offset: number
+  limit: number
+}) {
+  return maybeAuthedCall(
+    getApiUrl('supabasesearchdashboards'),
+    'POST',
+    params
+  ) as Promise<BaseDashboard[]>
+}
+
+export function getYourFollowedDashboards() {
+  return call(getApiUrl('getyourfolloweddashboards'), 'POST')
+}
+
+export function updateDashboard(params: {
+  title: string
+  dashboardId: string
+  items: DashboardItem[]
+  topics?: string[]
+  description?: JSONContent
+}) {
+  return call(getApiUrl('updatedashboard'), 'POST', params)
+}
+
+export function deleteDashboard(params: { dashboardId: string }) {
+  return call(getApiUrl('delete-dashboard'), 'POST', params)
+}
+
+export function getDashboardFromSlug(params: { dashboardSlug: string }) {
+  return maybeAuthedCall(
+    getApiUrl('getdashboardfromslug'),
+    'POST',
+    params
+  ) as Promise<Dashboard>
+}
+
+export function referUser(params: {
+  referredByUsername: string
+  contractId?: string
+}) {
+  return call(getApiUrl('refer-user'), 'POST', params)
+}
+
+export function updateMarket(params: {
+  contractId: string
+  visibility?: 'public' | 'unlisted'
+  closeTime?: number
+}) {
+  return call(getApiUrl('update-market'), 'POST', params)
+}
+
+export function banUser(params: { userId: string; unban?: boolean }) {
+  return call(getApiUrl('ban-user'), 'POST', params)
+}
+export function createPrivateMessageChannelWithUser(params: {
+  userId: string
+}) {
+  return call(getApiUrl('create-private-user-message-channel'), 'POST', params)
+}
+
+export function sendUserPrivateMessage(params: {
+  channelId: number
+  content: JSONContent
+}) {
+  return call(getApiUrl('create-private-user-message'), 'POST', params)
 }

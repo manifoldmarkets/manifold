@@ -69,7 +69,9 @@ export const addcontracttogroup = authEndpoint(async (req, auth) => {
     )
   }
   const pg = createSupabaseDirectClient()
-  const isNew = await addGroupToContract(contract, group, pg)
+  const isNew = await addGroupToContract(contract, group, pg, {
+    userId: auth.uid,
+  })
 
   return { status: 'success', existed: !isNew }
 })
@@ -97,8 +99,9 @@ export function canUserAddGroupToMarket(props: {
   return (
     isManifoldAdmin ||
     isAdminOrMod ||
+    trustworthy ||
     // if user owns the contract and is a public group
-    (group.privacy_status === 'public' && (isMarketCreator || trustworthy)) ||
+    (group.privacy_status === 'public' && isMarketCreator) ||
     (group.privacy_status === 'private' && isMarketCreator && isMember)
   )
 }

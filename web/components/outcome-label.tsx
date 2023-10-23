@@ -10,7 +10,7 @@ import {
 import { formatLargeNumber, formatPercent } from 'common/util/format'
 import { Bet } from 'common/bet'
 import { STONK_NO, STONK_YES } from 'common/stonk'
-import { AnswerLabel } from './answers/answer-item'
+import { AnswerLabel } from './answers/answer-components'
 
 export function OutcomeLabel(props: {
   contract: Contract
@@ -151,13 +151,11 @@ export function BuyLabel() {
 }
 
 export function ShortLabel() {
-  return (
-    <span className="text-scarlet-600 dark:text-scarlet-400">{STONK_NO}</span>
-  )
+  return <span className="text-scarlet-600">{STONK_NO}</span>
 }
 
 export function NoLabel() {
-  return <span className="text-scarlet-600 dark:text-scarlet-400">NO</span>
+  return <span className="text-scarlet-600">NO</span>
 }
 
 export function CancelLabel() {

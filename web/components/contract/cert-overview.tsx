@@ -55,7 +55,7 @@ export function CertInfo(props: { contract: CertContract }) {
         <h2 className="text-primary-700 mb-2 text-xl">Pool</h2>
         {formatLargeNumber(share)} shares <br />
         {formatMoney(mana)}
-        <h2 className="text-primary-700 mt-4 mb-2 text-xl">Positions</h2>
+        <h2 className="text-primary-700 mb-2 mt-4 text-xl">Positions</h2>
         <Table>
           <thead>
             <tr>

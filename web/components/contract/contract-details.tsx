@@ -2,7 +2,7 @@ import { PencilIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import dayjs from 'dayjs'
 import { Row } from '../layout/row'
-import { Contract, updateContract } from 'web/lib/firebase/contracts'
+import { Contract } from 'web/lib/firebase/contracts'
 import { DateTimeTooltip } from '../widgets/datetime-tooltip'
 import { fromNow } from 'web/lib/util/time'
 import { useState } from 'react'
@@ -15,8 +15,9 @@ import { Input } from '../widgets/input'
 import { Avatar } from '../widgets/avatar'
 import { UserLink } from '../widgets/user-link'
 import { NO_CLOSE_TIME_TYPES } from 'common/contract'
-
-export type ShowTime = 'resolve-date' | 'close-date'
+import { FollowButton } from '../buttons/follow-button'
+import { updateMarket } from 'web/lib/firebase/api'
+import { FaHourglassEnd, FaHourglassHalf } from 'react-icons/fa6'
 
 export function AuthorInfo(props: { contract: Contract }) {
   const { contract } = props
@@ -38,6 +39,8 @@ export function AuthorInfo(props: { contract: Contract }) {
         username={creatorUsername}
         createdTime={creatorCreatedTime}
       />
+
+      <FollowButton userId={contract.creatorId} size="2xs" />
     </Row>
   )
 }
@@ -65,7 +68,7 @@ export function CloseOrResolveTime(props: {
       )}
 
       {!isResolved && (
-        <EditableCloseDate
+        <CloseDate
           closeTime={closeTime}
           contract={contract}
           editable={!!editable}
@@ -75,10 +78,10 @@ export function CloseOrResolveTime(props: {
   )
 }
 
-function EditableCloseDate(props: {
+export function CloseDate(props: {
   closeTime: number | undefined
   contract: Contract
-  editable: boolean
+  editable?: boolean
 }) {
   const { closeTime, contract, editable } = props
 
@@ -102,7 +105,7 @@ function EditableCloseDate(props: {
     ? dayjs(`${closeDate}T${closeHoursMinutes}`).valueOf()
     : undefined
 
-  function onSave(customTime?: number) {
+  async function onSave(customTime?: number) {
     if (customTime) {
       newCloseTime = customTime
       setCloseDate(dayjs(newCloseTime).format('YYYY-MM-DD'))
@@ -112,7 +115,8 @@ function EditableCloseDate(props: {
 
     setIsEditingCloseTime(false)
     if (newCloseTime !== closeTime) {
-      updateContract(contract.id, {
+      await updateMarket({
+        contractId: contract.id,
         closeTime: newCloseTime,
       })
     }
@@ -124,6 +128,7 @@ function EditableCloseDate(props: {
     !closeTime ??
     (NO_CLOSE_TIME_TYPES.includes(contract.outcomeType) &&
       dayjs(closeTime).isAfter(almostForeverTime))
+
   return (
     <>
       <Modal
@@ -138,7 +143,7 @@ function EditableCloseDate(props: {
             {contract.outcomeType === 'POLL' ? 'Voting' : 'Trading'} will halt
             at this time
           </div>
-          <Row className="items-stretch gap-2">
+          <Row className="flex-wrap items-stretch gap-2">
             <Input
               type="date"
               className="dark:date-range-input-white shrink-0 sm:w-fit"
@@ -187,14 +192,21 @@ function EditableCloseDate(props: {
           closeTime && (
             <DateTimeTooltip
               text={
-                closeTime <= Date.now() ? 'Trading ended:' : 'Trading ends:'
+                contract.outcomeType === 'POLL'
+                  ? 'Poll '
+                  : 'Market ' +
+                    (closeTime <= Date.now() ? 'closed:' : 'closes:')
               }
               time={closeTime}
               placement="bottom-end"
               noTap
-              className="flex items-center"
+              className="flex items-center gap-1"
             >
-              {dayjs().isBefore(closeTime) ? 'closes' : 'closed'}{' '}
+              {dayjs().isBefore(closeTime) ? (
+                <FaHourglassHalf className="fill-ink-500 h-4 w-4" />
+              ) : (
+                <FaHourglassEnd className="fill-ink-500 h-4 w-4" />
+              )}
               {isSameDay
                 ? fromNow(closeTime)
                 : isSameYear || isSoon
@@ -204,7 +216,7 @@ function EditableCloseDate(props: {
           )
         )}
         {editable && (
-          <PencilIcon className="sm:group-hover:fill-ink-600 h-4 w-4 sm:fill-transparent" />
+          <PencilIcon className="sm:group-hover:fill-ink-600 hidden h-4 w-4 sm:flex sm:fill-transparent" />
         )}
       </Row>
     </>

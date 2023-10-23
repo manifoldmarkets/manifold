@@ -44,7 +44,11 @@ export function getNewContract(
   isLogScale: boolean,
   answers: string[],
   addAnswersMode: add_answers_mode | undefined,
-  shouldAnswersSumToOne: boolean | undefined
+  shouldAnswersSumToOne: boolean | undefined,
+
+  // Manifold.love
+  loverUserId1: string | undefined,
+  loverUserId2: string | undefined
 ) {
   const createdTime = Date.now()
 
@@ -104,6 +108,8 @@ export function getNewContract(
     },
 
     isTwitchContract,
+    loverUserId1,
+    loverUserId2,
   })
 
   return contract as Contract
@@ -183,7 +189,7 @@ const getMultipleChoiceProps = (
   ante: number
 ) => {
   const answersWithOther = answers.concat(
-    addAnswersMode === 'DISABLED' ? [] : ['Other']
+    !shouldAnswersSumToOne || addAnswersMode === 'DISABLED' ? [] : ['Other']
   )
   const answerObjects = createAnswers(
     contractId,
@@ -217,8 +223,8 @@ function createAnswers(
   const ids = answers.map(() => randomString())
 
   let prob = 0.5
-  let poolYes = ante
-  let poolNo = ante
+  let poolYes = ante / answers.length
+  let poolNo = ante / answers.length
 
   if (shouldAnswersSumToOne && answers.length > 1) {
     const n = answers.length
@@ -255,7 +261,10 @@ function createAnswers(
       prob,
       totalLiquidity: getMultiCpmmLiquidity({ YES: poolYes, NO: poolNo }),
       subsidyPool: 0,
-      isOther: addAnswersMode !== 'DISABLED' && i === answers.length - 1,
+      isOther:
+        shouldAnswersSumToOne &&
+        addAnswersMode !== 'DISABLED' &&
+        i === answers.length - 1,
     }
     return answer
   })

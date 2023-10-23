@@ -1,11 +1,43 @@
 import { JSONContent } from '@tiptap/core'
+import { Row, convertSQLtoTS, tsToMillis } from './supabase/utils'
 
-export type Dashboard = {
+export const MAX_DASHBOARD_TITLE_LENGTH = 40
+
+// corresponds to SQL
+export type BaseDashboard = {
   id: string
   slug: string
-  creator_id: string
-  created_time: number
-  views: number
+  creatorId: string
+  createdTime: number
   description: JSONContent
   title: string
+  items: DashboardItem[]
+  creatorUsername: string
+  creatorName: string
+  creatorAvatarUrl: string
+  visibility: 'public' | 'deleted'
+}
+
+export type Dashboard = BaseDashboard & {
+  topics: string[]
+}
+
+export type DashboardItem = DashboardQuestionItem | DashboardLinkItem
+
+export type DashboardQuestionItem = {
+  type: 'question'
+  slug: string
+}
+
+export type DashboardLinkItem = {
+  type: 'link'
+  url: string
+}
+
+export const convertDashboardSqltoTS = (
+  sqlDashboard: Row<'dashboards'>
+): BaseDashboard => {
+  return convertSQLtoTS<'dashboards', Dashboard>(sqlDashboard, {
+    created_time: tsToMillis,
+  })
 }
