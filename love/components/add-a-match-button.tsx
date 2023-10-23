@@ -117,6 +117,9 @@ const AddMatchDialog = (props: {
         </div>
 
         <Col className="gap-0">
+          {potentialLovers.length === 0 && (
+            <div>No remaining matches of preferred gender.</div>
+          )}
           {potentialLoversWithYouFirst.map((lover) => {
             const selected = selectedMatchId === lover.user.id
             return (
@@ -151,17 +154,19 @@ const AddMatchDialog = (props: {
           })}
         </Col>
 
-        <Col className="gap-1">
-          <div>Choose bet amount (required)</div>
-          <BuyAmountInput
-            amount={betAmount}
-            onChange={setBetAmount}
-            minimumAmount={20}
-            error={error}
-            setError={setError}
-            showBalance
-          />
-        </Col>
+        {potentialLovers.length > 0 && (
+          <Col className="gap-1">
+            <div>Choose bet amount (required)</div>
+            <BuyAmountInput
+              amount={betAmount}
+              onChange={setBetAmount}
+              minimumAmount={20}
+              error={error}
+              setError={setError}
+              showBalance
+            />
+          </Col>
+        )}
 
         <Button
           className="font-semibold"

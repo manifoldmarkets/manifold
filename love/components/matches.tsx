@@ -24,6 +24,7 @@ import { MODAL_CLASS, Modal } from 'web/components/layout/modal'
 import { BuyPanel } from 'web/components/bet/bet-panel'
 import { Subtitle } from 'web/components/widgets/subtitle'
 import { linkClass } from 'web/components/widgets/site-link'
+import { areGenderCompatible } from 'love/lib/utils'
 
 export const Matches = (props: { userId: string }) => {
   const { userId } = props
@@ -42,9 +43,9 @@ export const Matches = (props: { userId: string }) => {
     ...matches.map((contract) => contract.loverUserId1),
     ...matches.map((contract) => contract.loverUserId2),
   ])
-  const potentialLovers = lovers.filter(
-    (lover) => !matchesSet.has(lover.user_id)
-  )
+  const potentialLovers = lovers
+    .filter((l) => !matchesSet.has(l.user_id))
+    .filter((l) => !lover || areGenderCompatible(lover, l))
   const currentMatches = matches.filter((c) => !c.isResolved)
   const areYourMatches = userId === user?.id
 
