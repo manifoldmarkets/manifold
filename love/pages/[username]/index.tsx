@@ -221,7 +221,7 @@ const LoverAttributes = (props: { lover: Lover }) => {
     ethnicity: 'Ethnicity',
     has_kids: 'Number of kids',
     born_in_location: 'Birthplace',
-    height_in_inches: 'Height (inches)',
+    height_in_inches: 'Height',
     is_smoker: 'Smokes',
     is_vegetarian_or_vegan: 'Vegetarian or vegan',
     political_beliefs: 'Political beliefs',
@@ -321,6 +321,8 @@ const formatValue = (key: string, value: any) => {
     case 'is_vegetarian_or_vegan':
     case 'has_pets':
       return value ? 'Yes' : 'No'
+    case 'height_in_inches':
+      return `${Math.floor(value / 12)}'${value % 12}"`
     case 'pref_age_max':
     case 'pref_age_min':
       return null // handle this in a special case
