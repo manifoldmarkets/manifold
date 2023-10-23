@@ -50,7 +50,6 @@ export default function LoverProfileHeader(props: {
                 Edit
               </Button>
             )}
-            <QuestsOrStreak user={user} />
           </Row>
         ) : isMobile ? (
           <>
