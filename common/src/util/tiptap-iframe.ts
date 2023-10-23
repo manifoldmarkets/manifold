@@ -77,7 +77,7 @@ export default Node.create<IframeOptions>({
               left: 0,
               right: 0,
               bottom: 0,
-              zIndex: 10000,
+              zIndex: 20, // This is equivalent to tailwind's z-20
               display: 'block',
             },
           },
