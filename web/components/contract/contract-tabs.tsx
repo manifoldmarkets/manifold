@@ -39,7 +39,6 @@ import { Button } from '../buttons/button'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { ArrowRightIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
-import { useComments } from 'web/hooks/use-comments'
 import { useRealtimeCommentsOnContract } from 'web/hooks/use-comments-supabase'
 
 export const EMPTY_USER = '_'

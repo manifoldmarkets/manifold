@@ -1,6 +1,6 @@
 import { Editor } from '@tiptap/react'
 import clsx from 'clsx'
-import { memo, ReactNode, useEffect, useReducer, useRef, useState } from 'react'
+import { memo, ReactNode, useEffect, useRef, useState } from 'react'
 
 import {
   EyeOffIcon,
@@ -59,7 +59,6 @@ import TipJar from 'web/public/custom-components/tipJar'
 import { Answer, DpmAnswer } from 'common/answer'
 import { CommentOnAnswerRow } from './feed-answer-comment-group'
 import { usePartialUpdater } from 'web/hooks/use-partial-updater'
-import { update } from '@react-spring/web'
 
 export type ReplyToUserInfo = { id: string; username: string }
 
