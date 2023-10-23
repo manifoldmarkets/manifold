@@ -60,7 +60,7 @@ export function UserContractsList(props: {
           </Col>
         )}
         <MarketStats
-          title={'Rank'}
+          title={'Creator rank'}
           total={`#${shortFormatNumber(creatorRank ?? 0)}`}
         />
         <MarketStats
