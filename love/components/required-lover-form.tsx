@@ -17,6 +17,7 @@ import { Row as rowFor } from 'common/supabase/utils'
 import dayjs from 'dayjs'
 import { Checkbox } from 'web/components/widgets/checkbox'
 import { range } from 'lodash'
+import { Select } from 'web/components/widgets/select'
 
 export const initialRequiredState = {
   birthdate: dayjs().subtract(18, 'year').format('YYYY-MM-DD'),
@@ -176,7 +177,7 @@ export const RequiredLoveUserForm = (props: {
                   <label className={clsx('text-base font-semibold')}>
                     Month
                   </label>
-                  <select
+                  <Select
                     value={dayjs(loverState['birthdate']).format('MMMM')}
                     onChange={(e) => {
                       const birthDate = dayjs(loverState['birthdate'])
@@ -209,11 +210,11 @@ export const RequiredLoveUserForm = (props: {
                         {m}
                       </option>
                     ))}
-                  </select>
+                  </Select>
                 </Col>
                 <Col className={clsx(colClassName)}>
                   <label className={clsx('text-base font-semibold')}>Day</label>
-                  <select
+                  <Select
                     value={dayjs(loverState['birthdate']).date()}
                     onChange={(e) => {
                       const birthDate = dayjs(loverState['birthdate'])
@@ -233,13 +234,13 @@ export const RequiredLoveUserForm = (props: {
                         {m}
                       </option>
                     ))}
-                  </select>
+                  </Select>
                 </Col>
                 <Col className={clsx(colClassName)}>
                   <label className={clsx('text-base font-semibold')}>
                     Year
                   </label>
-                  <select
+                  <Select
                     value={dayjs(loverState['birthdate']).year()}
                     onChange={(e) => {
                       const birthDate = dayjs(loverState['birthdate'])
@@ -262,7 +263,7 @@ export const RequiredLoveUserForm = (props: {
                         {m}
                       </option>
                     ))}
-                  </select>
+                  </Select>
                 </Col>
               </Row>
             </Col>
@@ -325,7 +326,7 @@ export const RequiredLoveUserForm = (props: {
               <Row className={'gap-2'}>
                 <Col>
                   <span>Min</span>
-                  <select
+                  <Select
                     value={loverState['pref_age_min']}
                     onChange={(e) =>
                       setLoverState('pref_age_min', Number(e.target.value))
@@ -337,11 +338,11 @@ export const RequiredLoveUserForm = (props: {
                         {m}
                       </option>
                     ))}
-                  </select>
+                  </Select>
                 </Col>
                 <Col>
                   <span>Max</span>
-                  <select
+                  <Select
                     value={loverState['pref_age_max']}
                     onChange={(e) =>
                       setLoverState('pref_age_max', Number(e.target.value))
@@ -353,7 +354,7 @@ export const RequiredLoveUserForm = (props: {
                         {m}
                       </option>
                     ))}
-                  </select>
+                  </Select>
                 </Col>
               </Row>
             </Col>
