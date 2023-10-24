@@ -3,13 +3,11 @@ import {
   QuestionMarkCircleIcon,
   HomeIcon as SolidHomeIcon,
   UserCircleIcon,
-  ViewListIcon,
 } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { User } from 'common/user'
 import { buildArray } from 'common/util/array'
 import { useOnline } from 'love/hooks/use-online'
-import { NOTIFICATIONS_TO_IGNORE } from 'love/pages/notifications'
 import { ReactNode, useState } from 'react'
 import { Toaster } from 'react-hot-toast'
 import { AddFundsModal } from 'web/components/add-funds-modal'
@@ -117,21 +115,21 @@ export function LovePage(props: {
 function getBottomNavigation(user: User) {
   return buildArray(
     { name: 'Profiles', href: '/profiles', icon: SolidHomeIcon },
-    { name: 'Updates', href: '/updates', icon: ViewListIcon },
     {
       name: 'Profile',
       href: `/${user.username}`,
     },
-    {
-      name: 'Notifs',
-      href: `/notifications`,
-      icon: (props) => (
-        <SolidNotificationsIcon
-          {...props}
-          ignoreTypes={NOTIFICATIONS_TO_IGNORE}
-        />
-      ),
-    }
+    { name: 'Updates', href: '/updates', icon: SolidNotificationsIcon }
+    // {
+    //   name: 'Notifs',
+    //   href: `/notifications`,
+    //   icon: (props) => (
+    //     <SolidNotificationsIcon
+    //       {...props}
+    //       ignoreTypes={NOTIFICATIONS_TO_IGNORE}
+    //     />
+    //   ),
+    // }
   )
 }
 
@@ -144,14 +142,14 @@ const getDesktopNav = (loggedIn: boolean, openDownloadApp: () => void) => {
   if (loggedIn)
     return buildArray(
       { name: 'Profiles', href: '/profiles', icon: HomeIcon },
-      { name: 'Updates', href: '/updates', icon: ViewListIcon },
-      {
-        name: 'Notifications',
-        href: `/notifications`,
-        icon: (props) => (
-          <NotificationsIcon {...props} ignoreTypes={NOTIFICATIONS_TO_IGNORE} />
-        ),
-      },
+      { name: 'Updates', href: '/updates', icon: NotificationsIcon },
+      // {
+      //   name: 'Notifications',
+      //   href: `/notifications`,
+      //   icon: (props) => (
+      //     <NotificationsIcon {...props} ignoreTypes={NOTIFICATIONS_TO_IGNORE} />
+      //   ),
+      // },
       {
         name: 'Messages',
         href: '/messages',
