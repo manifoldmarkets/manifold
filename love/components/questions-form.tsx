@@ -50,9 +50,7 @@ export const QuestionsForm = () => {
               <Button
                 className={'-auto'}
                 color={'gray-outline'}
-                onClick={() =>
-                  router.push('/' + (user ? user.username : 'browse'))
-                }
+                onClick={() => router.push('profiles')}
               >
                 Save & continue
               </Button>

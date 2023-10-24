@@ -147,17 +147,6 @@ export const OptionalLoveUserForm = (props: {
 
         <Col className={clsx(colClassName)}>
           <label className={clsx(labelClassName)}>
-            Hit 'em with your best line.
-          </label>
-          <Input
-            type="text"
-            onChange={(e) => setLoverState('bio', e.target.value)}
-            className={'w-full'}
-            value={lover['bio'] ?? undefined}
-          />
-        </Col>
-        <Col className={clsx(colClassName)}>
-          <label className={clsx(labelClassName)}>
             Website or date doc link
           </label>
           <Input
