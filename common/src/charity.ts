@@ -974,6 +974,16 @@ We began in 1996 by archiving the Internet itself, a medium that was just beginn
   },
 
   {
+    name: 'Mareworthy',
+    website: 'https://www.mareworthy.com/',
+    photo: 'https://i.imgur.com/SdpWbOe.png',
+    preview:
+      'Develops and manages programs that ensure all Thoroughbred mares whose racing and breeding careers have ended are tracked and provided with care that protects them from suffering and cruelty.',
+    description:
+      'Mareworthy Charities exists to develop and manage programs that ensure all Thoroughbred mares whose racing and breeding careers have ended are tracked and provided with care that protects them from suffering and cruelty with a focus on Thoroughbred warhorse mares (mares who raced more than 50 times) and retired Thoroughbred broodmares. Currently the sanctuary space is in its infancy with limited space in Kentucky, but the future dream is to acquire a larger property that can be home to a larger herd. Until then, Mareworthy Charities is developing a network of approved forever foster homes for eligible mares. We rely on donations, merchandise sales, and any other creative ways we can support the horses we love. Your donation, no matter the size, truly makes a difference!',
+  },
+
+  {
     name: 'The Shrimp Welfare Project',
     website: 'https://www.shrimpwelfareproject.org/',
     photo: 'https://i.imgur.com/1TugXgS.png',
