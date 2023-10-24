@@ -12,7 +12,7 @@ import { IoLocationOutline } from 'react-icons/io5'
 export default function LoverPrimaryInfo(props: { lover: Lover }) {
   const { lover } = props
   return (
-    <Row className="gap-4">
+    <Row className="text-ink-700 gap-4 text-sm">
       <IconWithInfo
         text={lover.city}
         icon={<IoLocationOutline className="h-4 w-4" />}
