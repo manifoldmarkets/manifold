@@ -31,7 +31,6 @@ export default function LoverProfileHeader(props: {
             <span className="font-semibold">{user.name}</span>,{' '}
             {calculateAge(lover.birthdate)}
           </div>
-          {/* <div className="text-ink-500 text-sm">@{user.username}</div> */}
           <LoverPrimaryInfo lover={lover} />
         </Col>
         {isCurrentUser ? (
