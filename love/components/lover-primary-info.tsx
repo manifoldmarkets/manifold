@@ -1,12 +1,10 @@
 import { Lover } from 'love/hooks/use-lover'
-import { ReactNode } from 'react'
-import { FaLocationDot } from 'react-icons/fa6'
-import { Row } from 'web/components/layout/row'
-import GenderIcon, { Gender } from './gender-icon'
-import { capitalizeFirstLetter } from 'web/lib/util/capitalize-first-letter'
 import { formatLoverValue } from 'love/pages/[username]'
-import { MdHeight } from 'react-icons/md'
+import { ReactNode } from 'react'
 import { IoLocationOutline } from 'react-icons/io5'
+import { MdHeight } from 'react-icons/md'
+import { Row } from 'web/components/layout/row'
+import GenderIcon, { Gender, convertGender } from './gender-icon'
 
 export default function LoverPrimaryInfo(props: { lover: Lover }) {
   const { lover } = props
@@ -17,7 +15,7 @@ export default function LoverPrimaryInfo(props: { lover: Lover }) {
         icon={<IoLocationOutline className="h-4 w-4" />}
       />
       <IconWithInfo
-        text={capitalizeFirstLetter(lover.gender)}
+        text={convertGender(lover.gender as Gender)}
         icon={
           <GenderIcon gender={lover.gender as Gender} className="h-4 w-4 " />
         }
