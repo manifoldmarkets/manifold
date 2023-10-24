@@ -30,6 +30,9 @@ const MATCH_CREATION_FEE = 10
 
 export const createMatch = authEndpoint(async (req, auth) => {
   const { userId1, userId2, betAmount } = validate(createMatchSchema, req.body)
+  if (userId1 === userId2) {
+    throw new APIError(400, `User ${userId1} cannot match with themselves.`)
+  }
 
   const db = createSupabaseClient()
 
@@ -47,7 +50,6 @@ export const createMatch = authEndpoint(async (req, auth) => {
   if (!user2) {
     throw new APIError(404, `User ${userId2} does not exist.`)
   }
-
   const [{ data: lover1 }, { data: lover2 }] = await Promise.all([
     db.from('lovers').select('id').eq('user_id', userId1).single(),
     db.from('lovers').select('id').eq('user_id', userId2).single(),

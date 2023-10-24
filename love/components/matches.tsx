@@ -44,6 +44,7 @@ export const Matches = (props: { userId: string }) => {
     ...matches.map((contract) => contract.loverUserId2),
   ])
   const potentialLovers = lovers
+    .filter((l) => l.user_id !== userId)
     .filter((l) => !matchesSet.has(l.user_id))
     .filter((l) => !lover || areGenderCompatible(lover, l))
   const currentMatches = matches.filter((c) => !c.isResolved)
