@@ -332,7 +332,9 @@ export function ContractPageContent(props: ContractParams) {
           className={clsx(
             'bg-canvas-0 w-full max-w-3xl rounded-b xl:w-[70%]',
             // Keep content in view when scrolling related questions on desktop.
-            'sticky bottom-0 min-h-screen self-end'
+            'sticky bottom-0 min-h-screen self-end',
+            // Accommodate scroll to top button at bottom of page.
+            'pb-10 xl:pb-0'
           )}
         >
           <div
@@ -629,7 +631,6 @@ export function ContractPageContent(props: ContractParams) {
         </Col>
       </Row>
 
-      <Spacer className="xl:hidden" h={10} />
       <ScrollToTopButton className="fixed bottom-16 right-2 z-20 lg:bottom-2 xl:hidden" />
     </>
   )
