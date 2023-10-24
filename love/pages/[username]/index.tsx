@@ -210,8 +210,6 @@ const LoverAttributes = (props: { lover: Lover }) => {
     [key in keyof Partial<Omit<Lover, 'user'>>]: string
   } = {
     last_online_time: 'Last online',
-    city: 'City',
-    gender: 'Gender',
     pref_gender: 'Interested gender',
     pref_relation_styles: 'Relationship styles',
     drinks_per_month: 'Drinks per month',
@@ -221,7 +219,6 @@ const LoverAttributes = (props: { lover: Lover }) => {
     ethnicity: 'Ethnicity',
     has_kids: 'Number of kids',
     born_in_location: 'Birthplace',
-    height_in_inches: 'Height',
     is_smoker: 'Smokes',
     is_vegetarian_or_vegan: 'Vegetarian or vegan',
     political_beliefs: 'Political beliefs',
@@ -265,7 +262,7 @@ const LoverAttributes = (props: { lover: Lover }) => {
           lover[key] === null
         )
           return null
-        const formattedValue = formatValue(key, lover[key])
+        const formattedValue = formatLoverValue(key, lover[key])
         if (formattedValue === null || formattedValue.length === 0) return null
         if (
           key == 'religious_belief_strength' &&
@@ -307,7 +304,7 @@ const LoverAttributes = (props: { lover: Lover }) => {
     </Row>
   )
 }
-const formatValue = (key: string, value: any) => {
+export const formatLoverValue = (key: string, value: any) => {
   if (Array.isArray(value)) {
     return value.join(', ')
   }

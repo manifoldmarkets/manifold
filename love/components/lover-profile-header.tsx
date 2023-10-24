@@ -14,6 +14,7 @@ import { QuestsOrStreak } from 'web/components/quests-or-streak'
 import { Linkify } from 'web/components/widgets/linkify'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { calculateAge } from './calculate-age'
+import LoverPrimaryInfo from './lover-primary-info'
 export default function LoverProfileHeader(props: {
   isCurrentUser: boolean
   currentUser: User | null | undefined
@@ -25,13 +26,8 @@ export default function LoverProfileHeader(props: {
   const isMobile = useIsMobile()
   return (
     <Col className="w-full">
-      <Row
-        className={clsx(
-          'flex-wrap gap-2 py-1',
-          isMobile ? '' : 'justify-between'
-        )}
-      >
-        <Col>
+      <Row className={clsx('flex-wrap justify-between gap-2 py-1')}>
+        <Col className="gap-1">
           <div className="text-xl">
             <span className="font-semibold">{user.name}</span>,{' '}
             {calculateAge(lover.birthdate)}
@@ -51,18 +47,6 @@ export default function LoverProfileHeader(props: {
               </Button>
             )}
           </Row>
-        ) : isMobile ? (
-          <>
-            <div className={'my-auto'}>
-              <SendMessageButton toUser={user} currentUser={currentUser} />
-            </div>
-            <div className={'my-auto'}>
-              <FollowButton userId={user.id} />
-            </div>
-            <div className={'my-auto'}>
-              <MoreOptionsUserButton user={user} />
-            </div>
-          </>
         ) : (
           <Row className="items-center gap-1 sm:gap-2">
             <SendMessageButton toUser={user} currentUser={currentUser} />
@@ -71,13 +55,16 @@ export default function LoverProfileHeader(props: {
           </Row>
         )}
       </Row>
-      <Col className={'mt-1'}>
+      <Col className={' gap-2'}>
         {user.bio && (
-          <div className="sm:text-md mt-1 text-sm">
+          <div className=" text-ink-600 mt-1">
             <Linkify text={user.bio}></Linkify>
           </div>
         )}
-        <Row className="text-ink-400 mt-2 flex-wrap items-center gap-2 sm:gap-4">
+
+        <LoverPrimaryInfo lover={lover} />
+        {/* TODO: add this to more info, not that important */}
+        {/* <Row className="text-ink-400 mt-2 flex-wrap items-center gap-2 sm:gap-4">
           {user.website && (
             <a
               href={
@@ -112,7 +99,7 @@ export default function LoverProfileHeader(props: {
               </Row>
             </a>
           )}
-        </Row>
+        </Row> */}
       </Col>
     </Col>
   )
