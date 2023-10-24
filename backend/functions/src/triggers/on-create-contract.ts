@@ -1,7 +1,7 @@
 import * as functions from 'firebase-functions'
 import { JSONContent } from '@tiptap/core'
 
-import { getUser } from 'shared/utils'
+import { getUser, log } from 'shared/utils'
 import { Contract } from 'common/contract'
 import { parseMentions, richTextToString } from 'common/util/parse'
 import { addUserToContractFollowers } from 'shared/follow-market'
@@ -12,7 +12,13 @@ import { addContractToFeed } from 'shared/create-feed'
 import { createNewContractNotification } from 'shared/create-notification'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { upsertGroupEmbedding } from 'shared/helpers/embeddings'
-import { generateContractEmbeddings } from 'shared/supabase/contracts'
+import {
+  generateContractEmbeddings,
+  isContractNonPredictive,
+} from 'shared/supabase/contracts'
+import { addGroupToContract } from 'shared/update-group-contracts-internal'
+import { NON_PREDICTIVE_GROUP_ID } from 'common/supabase/groups'
+import { HOUSE_LIQUIDITY_PROVIDER_ID } from 'common/antes'
 
 export const onCreateContract = functions
   .runWith({
@@ -53,7 +59,19 @@ export const onCreateContract = functions
       [contract.id]
     )
     if (!embedding) await generateContractEmbeddings(contract, pg)
-
+    if (isContractNonPredictive(contract)) {
+      const added = await addGroupToContract(
+        contract,
+        {
+          id: NON_PREDICTIVE_GROUP_ID,
+          slug: 'nonpredictive',
+          name: 'Unranked',
+        },
+        pg,
+        { userId: HOUSE_LIQUIDITY_PROVIDER_ID }
+      )
+      log('Added contract to non-predictive group', added)
+    }
     if (contract.visibility === 'unlisted') return
     await addContractToFeed(
       contract,
