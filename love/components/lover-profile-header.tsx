@@ -10,7 +10,6 @@ import { MoreOptionsUserButton } from 'web/components/buttons/more-options-user-
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { SendMessageButton } from 'web/components/messaging/send-message-button'
-import { QuestsOrStreak } from 'web/components/quests-or-streak'
 import { Linkify } from 'web/components/widgets/linkify'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { calculateAge } from './calculate-age'
@@ -25,12 +24,7 @@ export default function LoverProfileHeader(props: {
   const isMobile = useIsMobile()
   return (
     <Col className="w-full">
-      <Row
-        className={clsx(
-          'flex-wrap gap-2 py-1',
-          isMobile ? '' : 'justify-between'
-        )}
-      >
+      <Row className={clsx('flex-wrap justify-between gap-2 py-1')}>
         <Col>
           <div className="text-xl">
             <span className="font-semibold">{user.name}</span>,{' '}
@@ -51,22 +45,13 @@ export default function LoverProfileHeader(props: {
               </Button>
             )}
           </Row>
-        ) : isMobile ? (
-          <>
-            <div className={'my-auto'}>
-              <SendMessageButton toUser={user} currentUser={currentUser} />
-            </div>
-            <div className={'my-auto'}>
-              <FollowButton userId={user.id} />
-            </div>
-            <div className={'my-auto'}>
-              <MoreOptionsUserButton user={user} />
-            </div>
-          </>
         ) : (
           <Row className="items-center gap-1 sm:gap-2">
-            <SendMessageButton toUser={user} currentUser={currentUser} />
-            <FollowButton userId={user.id} />
+            <SendMessageButton
+              toUser={user}
+              currentUser={currentUser}
+              includeLabel
+            />
             <MoreOptionsUserButton user={user} />
           </Row>
         )}
