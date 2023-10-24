@@ -69,8 +69,8 @@ export function AddLiquidityPanel(props: {
       <div className="text-ink-600">
         {/* The higher the stakes, the more winners make!
         <br /> */}
-        Add to the subsidy pool to incentivize traders to make the probability more
-        precise.
+        Add to the subsidy pool to incentivize traders to make the probability
+        more precise.
       </div>
 
       <div className="my-4">
