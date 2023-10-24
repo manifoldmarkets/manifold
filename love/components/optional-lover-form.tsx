@@ -17,6 +17,7 @@ import Image from 'next/image'
 import { buildArray } from 'common/util/array'
 import { updateLover } from 'web/lib/firebase/love/api'
 import { Row as rowFor } from 'common/supabase/utils'
+import { XIcon } from '@heroicons/react/solid'
 
 export const OptionalLoveUserForm = (props: {
   lover: Lover
@@ -44,8 +45,8 @@ export const OptionalLoveUserForm = (props: {
       console.error(e)
       return []
     })
-    setLoverState('pinned_url', urls[0])
-    setLoverState('photo_urls', urls)
+    if (!lover.pinned_url) setLoverState('pinned_url', urls[0])
+    setLoverState('photo_urls', uniq([...(lover.photo_urls ?? []), ...urls]))
     setUploadingImages(false)
   }
 
@@ -88,6 +89,7 @@ export const OptionalLoveUserForm = (props: {
                       'hover:border-teal-900'
                     )}
                     onClick={() => {
+                      if (isPinned) return
                       setLoverState(
                         'photo_urls',
                         uniq(buildArray(lover.pinned_url, lover.photo_urls))
@@ -97,7 +99,7 @@ export const OptionalLoveUserForm = (props: {
                   >
                     {isPinned && (
                       <div
-                        className={clsx(' absolute right-0 top-0 rounded-full')}
+                        className={clsx(' absolute left-0 top-0 rounded-full')}
                       >
                         <CheckCircleIcon
                           className={
@@ -106,6 +108,24 @@ export const OptionalLoveUserForm = (props: {
                         />
                       </div>
                     )}
+                    <Button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        const newUrls = (lover.photo_urls ?? []).filter(
+                          (u) => u !== url
+                        )
+                        if (isPinned)
+                          setLoverState('pinned_url', newUrls[0] ?? '')
+                        setLoverState('photo_urls', newUrls)
+                      }}
+                      color={'gray-outline'}
+                      size={'2xs'}
+                      className={clsx(
+                        'bg-canvas-0 absolute right-0 top-0 !rounded-full !px-1 py-1'
+                      )}
+                    >
+                      <XIcon className={'h-4 w-4'} />
+                    </Button>
                     <Image
                       src={url}
                       width={80}
@@ -118,9 +138,11 @@ export const OptionalLoveUserForm = (props: {
               }
             )}
           </Row>
-          <span className={'text-ink-500 text-xs italic'}>
-            The highlighted image is your profile picture
-          </span>
+          {lover['photo_urls']?.length ? (
+            <span className={'text-ink-500 text-xs italic'}>
+              The highlighted image is your profile picture
+            </span>
+          ) : null}
         </Col>
 
         <Col className={clsx(colClassName)}>
