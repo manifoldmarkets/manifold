@@ -13,6 +13,7 @@ import { SendMessageButton } from 'web/components/messaging/send-message-button'
 import { Linkify } from 'web/components/widgets/linkify'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { calculateAge } from './calculate-age'
+import LoverPrimaryInfo from './lover-primary-info'
 export default function LoverProfileHeader(props: {
   isCurrentUser: boolean
   currentUser: User | null | undefined
@@ -25,45 +26,41 @@ export default function LoverProfileHeader(props: {
   return (
     <Col className="w-full">
       <Row className={clsx('flex-wrap justify-between gap-2 py-1')}>
-        <Col>
+        <Col className="gap-1">
           <div className="text-xl">
             <span className="font-semibold">{user.name}</span>,{' '}
             {calculateAge(lover.birthdate)}
           </div>
-          <div className="text-ink-500 text-sm">@{user.username}</div>
+          <LoverPrimaryInfo lover={lover} />
         </Col>
         {isCurrentUser ? (
           <Row className={'items-center gap-1 sm:gap-2'}>
             {lover && (
               <Button
                 color={'gray-outline'}
-                className={'h-12'}
                 onClick={() => router.push('profile')}
+                size="sm"
               >
-                <PencilIcon className="mr-2 h-4 w-4" />
-                Edit
+                <PencilIcon className=" h-4 w-4" />
               </Button>
             )}
           </Row>
         ) : (
           <Row className="items-center gap-1 sm:gap-2">
-            <SendMessageButton
-              toUser={user}
-              currentUser={currentUser}
-              includeLabel
-            />
+            <SendMessageButton toUser={user} currentUser={currentUser} />
             <MoreOptionsUserButton user={user} />
           </Row>
         )}
       </Row>
-      <Col className={'mt-1'}>
-        {lover.bio && (
-          <div className="sm:text-md mt-1 text-sm">
-            <Linkify text={lover.bio}></Linkify>
+      <Col className={'mt-1 gap-2'}>
+        {user.bio && (
+          <div className="text-sm">
+            <Linkify text={user.bio}></Linkify>
           </div>
         )}
-        <Row className="text-ink-400 mt-2 flex-wrap items-center gap-2 sm:gap-4">
-          {lover.website && (
+        {/* TODO: add this to more info, not that important */}
+        {/* <Row className="text-ink-400 mt-2 flex-wrap items-center gap-2 sm:gap-4">
+          {user.website && (
             <a
               href={
                 'https://' +
@@ -97,7 +94,7 @@ export default function LoverProfileHeader(props: {
               </Row>
             </a>
           )}
-        </Row>
+        </Row> */}
       </Col>
     </Col>
   )
