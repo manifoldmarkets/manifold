@@ -31,7 +31,7 @@ export default function LoverPrimaryInfo(props: { lover: Lover }) {
   )
 }
 
-function IconWithInfo(props: { text: string; icon: ReactNode }) {
+export function IconWithInfo(props: { text: string; icon: ReactNode }) {
   const { text, icon } = props
   return (
     <Row className="items-center gap-0.5">
