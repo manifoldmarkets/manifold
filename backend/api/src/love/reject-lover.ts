@@ -4,7 +4,8 @@ import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { Contract } from 'common/contract'
 import { resolveMarketHelper } from 'shared/resolve-market-helpers'
 import { getUser } from 'shared/utils'
-import { manifoldLoveUserId } from './create-match'
+
+import { manifoldLoveUserId } from 'common/love/constants'
 
 const rejectLoverSchema = z.object({
   userId: z.string(),

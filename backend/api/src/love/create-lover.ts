@@ -2,6 +2,8 @@ import { z } from 'zod'
 import { APIError, authEndpoint, validate } from 'api/helpers'
 import { createSupabaseClient } from 'shared/supabase/init'
 import { log } from 'shared/utils'
+import { addUserToGroup } from 'api/add-group-member'
+import { manifoldLoveRelationshipsGroupId } from 'common/love/constants'
 const genderType = z.union([
   z.literal('male'),
   z.literal('female'),
@@ -42,7 +44,11 @@ export const createlover = authEndpoint(async (req, auth) => {
   if (existingUser) {
     throw new APIError(400, 'User already exists')
   }
-  // TODO: add manifold user to manifold.love group
+  try {
+    await addUserToGroup(manifoldLoveRelationshipsGroupId, auth.uid, auth.uid)
+  } catch (e) {
+    log('Error adding user to group', e)
+  }
 
   const { data, error } = await db
     .from('lovers')
