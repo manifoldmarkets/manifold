@@ -14,6 +14,7 @@ import { Linkify } from 'web/components/widgets/linkify'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { calculateAge } from './calculate-age'
 import LoverPrimaryInfo from './lover-primary-info'
+import OnlineIcon from './online-icon'
 export default function LoverProfileHeader(props: {
   isCurrentUser: boolean
   currentUser: User | null | undefined
@@ -27,10 +28,13 @@ export default function LoverProfileHeader(props: {
     <Col className="w-full">
       <Row className={clsx('flex-wrap justify-between gap-2 py-1')}>
         <Col className="gap-1">
-          <div className="text-xl">
-            <span className="font-semibold">{user.name}</span>,{' '}
-            {calculateAge(lover.birthdate)}
-          </div>
+          <Row className="items-center gap-2 text-xl">
+            <span>
+              <span className="font-semibold">{user.name}</span>,{' '}
+              {calculateAge(lover.birthdate)}
+            </span>
+            <OnlineIcon last_online_time={lover.last_online_time} />
+          </Row>
           <LoverPrimaryInfo lover={lover} />
         </Col>
         {isCurrentUser ? (

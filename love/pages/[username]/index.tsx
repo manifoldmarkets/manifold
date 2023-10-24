@@ -209,7 +209,6 @@ const LoverAttributes = (props: { lover: Lover }) => {
   const loverPropsTitles: {
     [key in keyof Partial<Omit<Lover, 'user'>>]: string
   } = {
-    last_online_time: 'Last online',
     pref_gender: 'Interested gender',
     pref_relation_styles: 'Relationship styles',
     drinks_per_month: 'Drinks per month',
