@@ -13,7 +13,6 @@ import { uploadImage } from 'web/lib/firebase/storage'
 import { Lover } from 'love/hooks/use-lover'
 import { useRouter } from 'next/router'
 import { CheckCircleIcon } from '@heroicons/react/outline'
-import { EditUserField } from 'web/pages/profile'
 import Image from 'next/image'
 import { buildArray } from 'common/util/array'
 import { updateLover } from 'web/lib/firebase/love/api'
@@ -124,22 +123,37 @@ export const OptionalLoveUserForm = (props: {
           </span>
         </Col>
 
-        {(
-          [
-            ['bio', 'Condense yourself into a sentence'],
-            ['website', 'Website (or date doc link)'],
-            ['twitterHandle', 'Twitter'],
-          ] as const
-        ).map(([field, label]) => (
-          <EditUserField
-            key={field}
-            user={user}
-            field={field}
-            label={
-              <label className={clsx(labelClassName, 'mb-2')}>{label}</label>
-            }
+        <Col className={clsx(colClassName)}>
+          <label className={clsx(labelClassName)}>
+            Hit 'em with your best line.
+          </label>
+          <Input
+            type="text"
+            onChange={(e) => setLoverState('bio', e.target.value)}
+            className={'w-full'}
+            value={lover['bio'] ?? undefined}
           />
-        ))}
+        </Col>
+        <Col className={clsx(colClassName)}>
+          <label className={clsx(labelClassName)}>
+            Website or date doc link
+          </label>
+          <Input
+            type="text"
+            onChange={(e) => setLoverState('website', e.target.value)}
+            className={'w-full sm:w-96'}
+            value={lover['website'] ?? undefined}
+          />
+        </Col>
+        <Col className={clsx(colClassName)}>
+          <label className={clsx(labelClassName)}>Twitter</label>
+          <Input
+            type="text"
+            onChange={(e) => setLoverState('twitter', e.target.value)}
+            className={'w-full sm:w-96'}
+            value={lover['twitter'] ?? undefined}
+          />
+        </Col>
 
         <Col className={clsx(colClassName)}>
           <label className={clsx(labelClassName)}>Political beliefs</label>
@@ -227,12 +241,12 @@ export const OptionalLoveUserForm = (props: {
         </Col>
 
         <Col className={clsx(colClassName)}>
-          <label className={clsx(labelClassName)}>Location of birth</label>
+          <label className={clsx(labelClassName)}>Birthplace</label>
           <Input
             type="text"
             onChange={(e) => setLoverState('born_in_location', e.target.value)}
             className={'w-52'}
-            value={lover['born_in_location'] ?? ''}
+            value={lover['born_in_location'] ?? undefined}
           />
         </Col>
 
@@ -275,7 +289,7 @@ export const OptionalLoveUserForm = (props: {
             type="text"
             onChange={(e) => setLoverState('university', e.target.value)}
             className={'w-52'}
-            value={lover['university'] ?? ''}
+            value={lover['university'] ?? undefined}
           />
         </Col>
         <Col className={clsx(colClassName)}>
@@ -284,27 +298,19 @@ export const OptionalLoveUserForm = (props: {
             type="text"
             onChange={(e) => setLoverState('company', e.target.value)}
             className={'w-52'}
-            value={lover['company'] ?? ''}
+            value={lover['company'] ?? undefined}
           />
         </Col>
-        <Col className={clsx(colClassName)}>
-          <label className={clsx(labelClassName)}>Occupation</label>
-          <Input
-            type="text"
-            onChange={(e) => setLoverState('occupation', e.target.value)}
-            className={'w-52'}
-            value={lover['occupation'] ?? ''}
-          />
-        </Col>
+
         <Col className={clsx(colClassName)}>
           <label className={clsx(labelClassName)}>
-            Title at {lover['occupation'] ?? 'occupation'}
+            Job title {lover['company'] ? 'at ' + lover['company'] : ''}
           </label>
           <Input
             type="text"
             onChange={(e) => setLoverState('occupation_title', e.target.value)}
             className={'w-52'}
-            value={lover['occupation_title'] ?? ''}
+            value={lover['occupation_title'] ?? undefined}
           />
         </Col>
         <Row className={'justify-end'}>

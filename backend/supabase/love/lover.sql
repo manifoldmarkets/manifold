@@ -22,6 +22,9 @@ create table if not exists
       comments_enabled boolean not null default true,
 
       -- optional
+      bio text,
+      website text,
+      twitter text,
       has_kids int,
       is_smoker boolean,
       drinks_per_month int,

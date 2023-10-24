@@ -57,17 +57,17 @@ export default function LoverProfileHeader(props: {
         )}
       </Row>
       <Col className={'mt-1'}>
-        {user.bio && (
+        {lover.bio && (
           <div className="sm:text-md mt-1 text-sm">
-            <Linkify text={user.bio}></Linkify>
+            <Linkify text={lover.bio}></Linkify>
           </div>
         )}
         <Row className="text-ink-400 mt-2 flex-wrap items-center gap-2 sm:gap-4">
-          {user.website && (
+          {lover.website && (
             <a
               href={
                 'https://' +
-                user.website.replace('http://', '').replace('https://', '')
+                lover.website.replace('http://', '').replace('https://', '')
               }
             >
               <Row className="items-center gap-1">
@@ -77,9 +77,9 @@ export default function LoverProfileHeader(props: {
             </a>
           )}
 
-          {user.twitterHandle && (
+          {lover.twitter && (
             <a
-              href={`https://twitter.com/${user.twitterHandle
+              href={`https://twitter.com/${lover.twitter
                 .replace('https://www.twitter.com/', '')
                 .replace('https://twitter.com/', '')
                 .replace('www.twitter.com/', '')
