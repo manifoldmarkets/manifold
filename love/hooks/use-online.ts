@@ -9,7 +9,10 @@ export const useOnline = () => {
   useEffect(() => {
     if (!lover || !isAuthed) return
     run(
-      db.from('lovers').update({ last_online_time: new Date().toISOString() })
+      db
+        .from('lovers')
+        .update({ last_online_time: new Date().toISOString() })
+        .eq('id', lover.id)
     )
   }, [])
 }
