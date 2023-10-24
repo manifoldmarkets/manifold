@@ -1,3 +1,4 @@
+import clsx from 'clsx'
 import { User } from 'common/user'
 import { Button } from 'web/components/buttons/button'
 import { useRouter } from 'next/router'
@@ -25,8 +26,9 @@ import { firebaseLogin } from 'web/lib/firebase/users'
 export const SendMessageButton = (props: {
   toUser: User
   currentUser: User | undefined | null
+  includeLabel?: boolean
 }) => {
-  const { toUser, currentUser } = props
+  const { toUser, currentUser, includeLabel } = props
   const router = useRouter()
   const privateUser = usePrivateUser()
   const isAuthed = useIsAuthorized()
@@ -91,7 +93,8 @@ export const SendMessageButton = (props: {
   return (
     <>
       <Button size={'sm'} onClick={messageButtonClicked}>
-        <BiEnvelope className={'h-5 w-5'} />
+        <BiEnvelope className={clsx('h-5 w-5', includeLabel && 'mr-2')} />{' '}
+        {includeLabel && <>Message</>}
       </Button>
       <Modal open={openComposeModal} setOpen={setOpenComposeModal}>
         <Col className={MODAL_CLASS}>

@@ -2,7 +2,7 @@ import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { z } from 'zod'
 import { APIError, authEndpoint, validate } from './helpers'
 import { GroupInvite } from 'common/src/group-invite'
-import { addGroupMemberHelper } from './add-group-member'
+import { addUserToGroup } from './add-group-member'
 
 const schema = z.object({
   inviteId: z.string(),
@@ -30,7 +30,7 @@ export const joingroupthroughinvite = authEndpoint(async (req, auth) => {
   if (invite.is_max_uses_reached) {
     throw new APIError(403, 'The max uses has been reached for this link')
   }
-  const ret = await addGroupMemberHelper(
+  const ret = await addUserToGroup(
     invite.group_id,
     auth.uid,
     auth.uid,

@@ -232,18 +232,11 @@ export const Filters = (props: {
                 <Row className={'mt-2 gap-2'}>
                   <Row className={clsx(rowClassName)}>
                     <Checkbox
-                      label={'Has Kids'}
+                      label={'Has kids'}
                       checked={!!filters.has_kids}
                       toggle={(checked) =>
                         updateFilter({ has_kids: checked ? 1 : 0 })
                       }
-                    />
-                  </Row>
-                  <Row className={clsx(rowClassName)}>
-                    <Checkbox
-                      label={'Is Smoker'}
-                      checked={!!filters.is_smoker}
-                      toggle={(checked) => updateFilter({ is_smoker: checked })}
                     />
                   </Row>
                 </Row>

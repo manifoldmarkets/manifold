@@ -10,7 +10,6 @@ import { MoreOptionsUserButton } from 'web/components/buttons/more-options-user-
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { SendMessageButton } from 'web/components/messaging/send-message-button'
-import { QuestsOrStreak } from 'web/components/quests-or-streak'
 import { Linkify } from 'web/components/widgets/linkify'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { calculateAge } from './calculate-age'
@@ -49,8 +48,11 @@ export default function LoverProfileHeader(props: {
           </Row>
         ) : (
           <Row className="items-center gap-1 sm:gap-2">
-            <SendMessageButton toUser={user} currentUser={currentUser} />
-            <FollowButton userId={user.id} />
+            <SendMessageButton
+              toUser={user}
+              currentUser={currentUser}
+              includeLabel
+            />
             <MoreOptionsUserButton user={user} />
           </Row>
         )}
@@ -69,7 +71,7 @@ export default function LoverProfileHeader(props: {
             <a
               href={
                 'https://' +
-                user.website.replace('http://', '').replace('https://', '')
+                lover.website.replace('http://', '').replace('https://', '')
               }
             >
               <Row className="items-center gap-1">
@@ -79,9 +81,9 @@ export default function LoverProfileHeader(props: {
             </a>
           )}
 
-          {user.twitterHandle && (
+          {lover.twitter && (
             <a
-              href={`https://twitter.com/${user.twitterHandle
+              href={`https://twitter.com/${lover.twitter
                 .replace('https://www.twitter.com/', '')
                 .replace('https://twitter.com/', '')
                 .replace('www.twitter.com/', '')

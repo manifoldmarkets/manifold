@@ -986,9 +986,11 @@ export interface Database {
       }
       lovers: {
         Row: {
+          bio: string | null
           birthdate: string
           born_in_location: string | null
           city: string
+          comments_enabled: boolean
           company: string | null
           created_time: string
           drinks_per_month: number | null
@@ -1014,16 +1016,19 @@ export interface Database {
           pref_relation_styles: string[]
           religious_belief_strength: number | null
           religious_beliefs: string[] | null
+          twitter: string | null
           university: string | null
           user_id: string
           visibility: string
           wants_kids_strength: number
-          comments_enabled: boolean
+          website: string | null
         }
         Insert: {
+          bio?: string | null
           birthdate: string
           born_in_location?: string | null
           city: string
+          comments_enabled?: boolean
           company?: string | null
           created_time?: string
           drinks_per_month?: number | null
@@ -1049,16 +1054,19 @@ export interface Database {
           pref_relation_styles: string[]
           religious_belief_strength?: number | null
           religious_beliefs?: string[] | null
+          twitter?: string | null
           university?: string | null
           user_id: string
           visibility?: string
           wants_kids_strength?: number
-          comments_enabled?: boolean
+          website?: string | null
         }
         Update: {
+          bio?: string | null
           birthdate?: string
           born_in_location?: string | null
           city?: string
+          comments_enabled?: boolean
           company?: string | null
           created_time?: string
           drinks_per_month?: number | null
@@ -1084,11 +1092,12 @@ export interface Database {
           pref_relation_styles?: string[]
           religious_belief_strength?: number | null
           religious_beliefs?: string[] | null
+          twitter?: string | null
           university?: string | null
           user_id?: string
           visibility?: string
           wants_kids_strength?: number
-          comments_enabled?: boolean
+          website?: string | null
         }
         Relationships: []
       }

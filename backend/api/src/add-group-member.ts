@@ -17,10 +17,10 @@ const bodySchema = z.object({
 
 export const addgroupmember = authEndpoint(async (req, auth) => {
   const { groupId, userId, role } = validate(bodySchema, req.body)
-  return addGroupMemberHelper(groupId, userId, auth.uid, role)
+  return addUserToGroup(groupId, userId, auth.uid, role)
 })
 
-export async function addGroupMemberHelper(
+export async function addUserToGroup(
   groupId: string,
   userId: string,
   myId: string,

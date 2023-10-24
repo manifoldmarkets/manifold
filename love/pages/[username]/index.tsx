@@ -232,25 +232,32 @@ const LoverAttributes = (props: { lover: Lover }) => {
     occupation_title: 'Title',
     university: 'University',
   }
-  const [showMore, setShowMore] = useState(true)
+  const [showMore, setShowMore] = useState<boolean | undefined>(undefined)
   const [shouldAllowCollapseOfContent, setShouldAllowCollapseOfContent] =
     useState(false)
   const contentRef = useRef<HTMLDivElement>(null)
 
+  const user = useUser()
+  const isYou = user?.id === lover.user_id
+
   useSafeLayoutEffect(() => {
-    if (contentRef.current) {
-      if (contentRef.current.offsetHeight > 180) {
-        setShouldAllowCollapseOfContent(true)
-        setShowMore(false)
-      }
+    if (
+      contentRef.current &&
+      contentRef.current.offsetHeight > 180 &&
+      showMore === undefined &&
+      isYou
+    ) {
+      setShouldAllowCollapseOfContent(true)
+      setShowMore(false)
     }
-  }, [contentRef.current?.offsetHeight])
+  }, [contentRef.current?.offsetHeight, isYou])
+
   const cardClassName = 'px-3 py-2 bg-canvas-0 w-40 gap-1 rounded-md'
   return (
     <Row
       className={clsx(
         'relative flex-wrap gap-3 overflow-hidden',
-        showMore ? 'h-full' : 'max-h-24 '
+        showMore === undefined || showMore ? 'h-full' : 'max-h-24 '
       )}
       ref={contentRef}
     >
@@ -319,11 +326,22 @@ export const formatLoverValue = (key: string, value: any) => {
     case 'has_pets':
       return value ? 'Yes' : 'No'
     case 'height_in_inches':
-      return `${Math.floor(value / 12)}'${value % 12}"`
+      return `${Math.floor(value / 12)}' ${value % 12}"`
     case 'pref_age_max':
     case 'pref_age_min':
       return null // handle this in a special case
+    case 'wants_kids_strength':
+      return renderAgreementScale(value)
     default:
       return value
   }
+}
+
+const renderAgreementScale = (value: number) => {
+  if (value == 1) return 'Strongly disagree'
+  if (value == 2) return 'Disagree'
+  if (value == 3) return 'Neutral'
+  if (value == 4) return 'Agree'
+  if (value == 5) return 'Strongly agree'
+  return ''
 }

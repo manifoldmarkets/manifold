@@ -26,6 +26,9 @@ const optionaLoversSchema = z.object({
   occupation: z.string().optional(),
   company: z.string().optional(),
   comments_enabled: z.boolean().optional(),
+  website: z.string().optional(),
+  bio: z.string().optional(),
+  twitter: z.string().optional(),
 })
 
 const combinedLoveUsersSchema = baseLoversSchema.merge(optionaLoversSchema)

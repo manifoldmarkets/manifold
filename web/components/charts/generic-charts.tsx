@@ -317,7 +317,7 @@ export const MultiValueHistoryChart = <P extends HistoryPoint>(props: {
           </g>
         ))}
         {/* hover effect put last so it shows on top */}
-        {hoveringId && (
+        {hoveringId && hoveringId in data && (
           <AreaPath
             data={data[hoveringId].points}
             px={px}
