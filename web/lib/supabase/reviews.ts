@@ -39,9 +39,9 @@ export const getMyReviewOnContract = async (
     .select('*')
     .eq('market_id', contractId)
     .eq('reviewer_id', userId)
-    .single()
+    .limit(1)
 
-  return data && convertReview(data)
+  return data?.[0] ? convertReview(data[0]) : null
 }
 
 export type Review = {
