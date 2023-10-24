@@ -329,11 +329,22 @@ const formatValue = (key: string, value: any) => {
     case 'has_pets':
       return value ? 'Yes' : 'No'
     case 'height_in_inches':
-      return `${Math.floor(value / 12)}'${value % 12}"`
+      return `${Math.floor(value / 12)}' ${value % 12}"`
     case 'pref_age_max':
     case 'pref_age_min':
       return null // handle this in a special case
+    case 'wants_kids_strength':
+      return renderAgreementScale(value)
     default:
       return value
   }
+}
+
+const renderAgreementScale = (value: number) => {
+  if (value == 1) return 'Strongly disagree'
+  if (value == 2) return 'Disagree'
+  if (value == 3) return 'Neutral'
+  if (value == 4) return 'Agree'
+  if (value == 5) return 'Strongly agree'
+  return ''
 }
