@@ -1,6 +1,9 @@
 import { useState } from 'react'
 import { Col } from 'web/components/layout/col'
-import { RequiredLoveUserForm } from 'love/components/required-lover-form'
+import {
+  initialRequiredState,
+  RequiredLoveUserForm,
+} from 'love/components/required-lover-form'
 import { OptionalLoveUserForm } from 'love/components/optional-lover-form'
 import { useUser } from 'web/hooks/use-user'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
@@ -11,7 +14,6 @@ import { Row } from 'web/components/layout/row'
 import clsx from 'clsx'
 import { createLover } from 'web/lib/firebase/love/api'
 import { useRouter } from 'next/router'
-import { initialRequiredState } from 'common/love/lover'
 import { Row as rowFor } from 'common/supabase/utils'
 
 export default function SignupPage() {

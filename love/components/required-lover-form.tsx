@@ -13,12 +13,24 @@ import { RadioToggleGroup } from 'web/components/widgets/radio-toggle-group'
 import { MultipleChoiceOptions } from 'common/love/multiple-choice'
 import { useEditableUserInfo } from 'web/hooks/use-editable-user-info'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
-import { initialRequiredState } from 'common/love/lover'
 import { Row as rowFor } from 'common/supabase/utils'
 import dayjs from 'dayjs'
 import { Checkbox } from 'web/components/widgets/checkbox'
 import { range } from 'lodash'
 
+export const initialRequiredState = {
+  birthdate: dayjs().subtract(18, 'year').format('YYYY-MM-DD'),
+  city: '',
+  gender: '',
+  pref_gender: [],
+  pref_age_min: 18,
+  pref_age_max: 100,
+  pref_relation_styles: [],
+  wants_kids_strength: 2,
+  looking_for_matches: true,
+  messaging_status: 'open',
+  visibility: 'public',
+}
 const requiredKeys = Object.keys(
   initialRequiredState
 ) as (keyof typeof initialRequiredState)[]
