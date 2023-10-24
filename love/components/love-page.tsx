@@ -1,8 +1,14 @@
-import { CashIcon, DeviceMobileIcon, HomeIcon } from '@heroicons/react/outline'
+import {
+  CashIcon,
+  DeviceMobileIcon,
+  HomeIcon,
+  BellIcon,
+} from '@heroicons/react/outline'
 import {
   QuestionMarkCircleIcon,
   HomeIcon as SolidHomeIcon,
   UserCircleIcon,
+  BellIcon as SolidBellIcon,
 } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { User } from 'common/user'
@@ -18,10 +24,6 @@ import {
   SolidPrivateMessagesIcon,
 } from 'web/components/messaging/messages-icon'
 import { BottomNavBar } from 'web/components/nav/bottom-nav-bar'
-import {
-  NotificationsIcon,
-  SolidNotificationsIcon,
-} from 'web/components/notifications-icon'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useTracking } from 'web/hooks/use-tracking'
 import { useUser } from 'web/hooks/use-user'
@@ -122,17 +124,7 @@ function getBottomNavigation(user: User) {
       name: 'Profile',
       href: `/${user.username}`,
     },
-    { name: 'Updates', href: '/updates', icon: SolidNotificationsIcon },
-    // {
-    //   name: 'Notifs',
-    //   href: `/notifications`,
-    //   icon: (props) => (
-    //     <SolidNotificationsIcon
-    //       {...props}
-    //       ignoreTypes={NOTIFICATIONS_TO_IGNORE}
-    //     />
-    //   ),
-    // }
+    { name: 'Updates', href: '/updates', icon: SolidBellIcon },
     {
       name: 'Messages',
       href: '/messages',
@@ -150,14 +142,7 @@ const getDesktopNav = (loggedIn: boolean, openDownloadApp: () => void) => {
   if (loggedIn)
     return buildArray(
       { name: 'Profiles', href: '/profiles', icon: HomeIcon },
-      { name: 'Updates', href: '/updates', icon: NotificationsIcon },
-      // {
-      //   name: 'Notifications',
-      //   href: `/notifications`,
-      //   icon: (props) => (
-      //     <NotificationsIcon {...props} ignoreTypes={NOTIFICATIONS_TO_IGNORE} />
-      //   ),
-      // },
+      { name: 'Updates', href: '/updates', icon: BellIcon },
       {
         name: 'Messages',
         href: '/messages',
