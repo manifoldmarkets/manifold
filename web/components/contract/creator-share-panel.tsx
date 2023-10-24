@@ -13,7 +13,6 @@ import { trackShareEvent } from 'web/lib/service/analytics'
 import toast from 'react-hot-toast'
 import { Row } from '../layout/row'
 import { useUser } from 'web/hooks/use-user'
-import { AddLiquidityButton } from './add-liquidity-button'
 import { ShareIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { AddBountyButton, CancelBountyButton } from './bountied-question'
@@ -25,7 +24,6 @@ export function CreatorShareBoostPanel(props: { contract: Contract }) {
     <GradientContainer className="mb-8 flex w-full">
       <div className="mb-2 flex flex-wrap gap-2">
         <BoostButton contract={contract} />
-        <AddLiquidityButton contract={contract} />
         {contract.outcomeType == 'BOUNTIED_QUESTION' && (
           <AddBountyButton contract={contract} />
         )}
@@ -62,7 +60,6 @@ export function NonCreatorSharePanel(props: { contract: Contract }) {
   return (
     <Row className="my-4 flex-wrap gap-4">
       <BoostButton contract={contract} />
-      <AddLiquidityButton contract={contract} />
       {contract.outcomeType == 'BOUNTIED_QUESTION' && (
         <AddBountyButton contract={contract} />
       )}

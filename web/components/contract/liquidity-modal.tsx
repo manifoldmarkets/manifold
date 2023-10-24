@@ -17,35 +17,23 @@ export function LiquidityModal(props: {
   setOpen: (open: boolean) => void
 }) {
   const { contract, isOpen, setOpen } = props
-  const { totalLiquidity } = contract
 
   return (
     <Modal open={isOpen} setOpen={setOpen} size="md">
       <Col className="bg-canvas-0 gap-3  rounded p-4 pb-8 sm:gap-4">
         <Title className="!mb-2">💧 Subsidize this market</Title>
 
-        <div className="text-ink-600">
-          The higher the stakes, the more winners make!
-          <br />
-          Pay traders to make the probability more precise.
-        </div>
-        <div>
-          <div className="mb-2">
-            Total subsidy pool:{' '}
-            <span className="font-semibold">{formatMoney(totalLiquidity)}</span>
-          </div>
-          <AddLiquidityPanel contract={contract} />
-        </div>
+        <AddLiquidityPanel contract={contract} />
       </Col>
     </Modal>
   )
 }
 
-function AddLiquidityPanel(props: {
+export function AddLiquidityPanel(props: {
   contract: CPMMContract | CPMMMultiContract
 }) {
   const { contract } = props
-  const { id: contractId, slug } = contract
+  const { id: contractId, slug, totalLiquidity } = contract
 
   const [amount, setAmount] = useState<number | undefined>(undefined)
   const [error, setError] = useState<string | undefined>(undefined)
@@ -78,6 +66,18 @@ function AddLiquidityPanel(props: {
 
   return (
     <Col className="w-full">
+      <div className="text-ink-600">
+        {/* The higher the stakes, the more winners make!
+        <br /> */}
+        Add to the subsidy pool to incentivize traders to make the probability more
+        precise.
+      </div>
+
+      <div className="my-4">
+        Total subsidy pool:{' '}
+        <span className="font-semibold">{formatMoney(totalLiquidity)}</span>
+      </div>
+
       <Row className="mb-4">
         <BuyAmountInput
           inputClassName="w-40 mr-2"
@@ -88,16 +88,17 @@ function AddLiquidityPanel(props: {
           disabled={isLoading}
           // don't use slider: useless for larger amounts
           sliderOptions={{ show: false, wrap: false }}
+          hideQuickAdd
         />
-
-        <Button
-          onClick={submit}
-          disabled={isLoading || !!error || !amount}
-          size="sm"
-        >
-          Subsidize
-        </Button>
       </Row>
+      <Button
+        onClick={submit}
+        disabled={isLoading || !!error || !amount}
+        size="sm"
+        className="mb-2"
+      >
+        Subsidize
+      </Button>
 
       {amount ? (
         <div className="text-ink-700 text-xs">
