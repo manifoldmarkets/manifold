@@ -13,7 +13,10 @@ import { Toaster } from 'react-hot-toast'
 import { AddFundsModal } from 'web/components/add-funds-modal'
 import { MobileAppsQRCodeDialog } from 'web/components/buttons/mobile-apps-qr-code-button'
 import { Col } from 'web/components/layout/col'
-import { PrivateMessagesIcon } from 'web/components/messaging/messages-icon'
+import {
+  PrivateMessagesIcon,
+  SolidPrivateMessagesIcon,
+} from 'web/components/messaging/messages-icon'
 import { BottomNavBar } from 'web/components/nav/bottom-nav-bar'
 import {
   NotificationsIcon,
@@ -119,7 +122,7 @@ function getBottomNavigation(user: User) {
       name: 'Profile',
       href: `/${user.username}`,
     },
-    { name: 'Updates', href: '/updates', icon: SolidNotificationsIcon }
+    { name: 'Updates', href: '/updates', icon: SolidNotificationsIcon },
     // {
     //   name: 'Notifs',
     //   href: `/notifications`,
@@ -130,6 +133,11 @@ function getBottomNavigation(user: User) {
     //     />
     //   ),
     // }
+    {
+      name: 'Messages',
+      href: '/messages',
+      icon: SolidPrivateMessagesIcon,
+    }
   )
 }
 
@@ -167,7 +175,6 @@ const getDesktopNav = (loggedIn: boolean, openDownloadApp: () => void) => {
 // No sidebar when signed out
 const getSidebarNavigation = (toggleModal: () => void) => {
   return buildArray(
-    { name: 'Messages', href: '/messages', icon: PrivateMessagesIcon },
     { name: 'Get mana', icon: CashIcon, onClick: toggleModal }
     // { name: 'Share with friends', href: '/referrals', icon: StarIcon } // remove this and I will beat you — SG
   )
