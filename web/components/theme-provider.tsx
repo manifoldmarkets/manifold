@@ -1,9 +1,9 @@
 import { useEffect } from 'react'
-import { DarkModeContext, theme_option } from 'web/hooks/dark-mode-context'
+import { ThemeContext, theme_option } from 'web/hooks/theme-context'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { postMessageToNative } from './native-message-listener'
 
-export const DarkModeProvider = (props: { children: any }) => {
+export const ThemeProvider = (props: { children: any }) => {
   const [theme, changeTheme] = usePersistentLocalState<theme_option>(
     'auto',
     'theme'
@@ -36,8 +36,8 @@ export const DarkModeProvider = (props: { children: any }) => {
   }, [])
 
   return (
-    <DarkModeContext.Provider value={{ theme, changeTheme }}>
+    <ThemeContext.Provider value={{ theme, changeTheme }}>
       {props.children}
-    </DarkModeContext.Provider>
+    </ThemeContext.Provider>
   )
 }

@@ -24,7 +24,7 @@ import { AddFundsModal } from 'web/components/add-funds-modal'
 import { AppBadgesOrGetAppButton } from 'web/components/buttons/app-badges-or-get-app-button'
 import { CreateQuestionButton } from 'web/components/buttons/create-question-button'
 import { NotificationsIcon } from 'web/components/notifications-icon'
-import { DarkModeContext } from 'web/hooks/dark-mode-context'
+import { ThemeContext } from 'web/hooks/theme-context'
 import { useUser } from 'web/hooks/use-user'
 import { firebaseLogin, firebaseLogout } from 'web/lib/firebase/users'
 import TrophyIcon from 'web/lib/icons/trophy-icon.svg'
@@ -36,6 +36,7 @@ import { ProfileSummary } from './profile-summary'
 import { Item, SidebarItem } from './sidebar-item'
 import { PrivateMessagesIcon } from 'web/components/messaging/messages-icon'
 import ManifoldLoveLogo from '../../../love/components/manifold-love-logo'
+import toast from 'react-hot-toast'
 
 export default function Sidebar(props: {
   className?: string
@@ -52,9 +53,12 @@ export default function Sidebar(props: {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isAddFundsModalOpen, setIsAddFundsModalOpen] = useState(false)
 
-  const { theme, changeTheme } = useContext(DarkModeContext)
+  const { theme, changeTheme } = useContext(ThemeContext)
 
   const toggleTheme = () => {
+    if (theme === 'dark') {
+      toast('👻 Are you afraid of the dark?')
+    }
     changeTheme(theme === 'auto' ? 'dark' : theme === 'dark' ? 'light' : 'auto')
   }
   const navOptions = props.navigationOptions?.length
