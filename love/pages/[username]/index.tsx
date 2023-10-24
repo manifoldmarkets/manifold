@@ -240,16 +240,20 @@ const LoverAttributes = (props: { lover: Lover }) => {
     useState(false)
   const contentRef = useRef<HTMLDivElement>(null)
 
+  const user = useUser()
+  const isYou = user?.id === lover.user_id
+
   useSafeLayoutEffect(() => {
     if (
       contentRef.current &&
       contentRef.current.offsetHeight > 180 &&
-      showMore === undefined
+      showMore === undefined &&
+      isYou
     ) {
       setShouldAllowCollapseOfContent(true)
       setShowMore(false)
     }
-  }, [contentRef.current?.offsetHeight])
+  }, [contentRef.current?.offsetHeight, isYou])
 
   const cardClassName = 'px-3 py-2 bg-canvas-0 w-40 gap-1 rounded-md'
   return (
