@@ -14,6 +14,8 @@ export const getMatches = async (userId: string) => {
     db
       .from('contracts')
       .select('*')
+      .neq('data->>loverUserId1', null)
+      .neq('data->>loverUserId2', null)
       .or(`data->>loverUserId1.eq.${userId},data->>loverUserId2.eq.${userId}`)
   )
   const contracts = res.data.map((r) => r.data) as BinaryContract[]
