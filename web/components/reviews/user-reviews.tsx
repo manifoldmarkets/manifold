@@ -19,15 +19,15 @@ export function UserReviews(props: {
   const shortenedRating = Math.ceil(rating * 100) / 100
   return (
     <>
-      <Row className="text-primary-600 items-center gap-0.5 text-lg transition-colors sm:text-xl">
+      <Row
+        onClick={() => setOpen(true)}
+        className="text-primary-600 cursor-pointer items-center gap-0.5 text-lg transition-colors hover:underline sm:text-xl"
+      >
         {shortenedRating}
         <StarIcon className="h-5 w-5" />
-        <button
-          onClick={() => setOpen(true)}
-          className="text-ink-600  group text-sm"
-        >
-          (<span className="group-hover:underline">{reviewCount}</span>)
-        </button>
+        <div className="text-ink-600 text-sm">
+          (<span>{reviewCount}</span>)
+        </div>
       </Row>
       <UserReviewsModal
         userId={userId}
