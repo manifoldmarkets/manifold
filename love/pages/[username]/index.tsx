@@ -28,6 +28,7 @@ import { fromNow } from 'web/lib/util/time'
 import { useRef, useState } from 'react'
 import clsx from 'clsx'
 import { useSafeLayoutEffect } from 'web/hooks/use-safe-layout-effect'
+import { Linkify } from 'web/components/widgets/linkify'
 
 export const getStaticProps = async (props: {
   params: {
@@ -288,6 +289,19 @@ const LoverAttributes = (props: { lover: Lover }) => {
         <Row className={'font-semibold'}>Preferred Age Range</Row>
         <Row>{`${lover.pref_age_min} - ${lover.pref_age_max}`}</Row>
       </Col>
+      {lover.twitter && (
+        <Col className={cardClassName}>
+          <Row className={'font-semibold'}>Twitter</Row>
+          <Linkify text={lover.twitter} className={'break-anywhere'} />
+        </Col>
+      )}
+      {lover.website && (
+        <Col className={cardClassName}>
+          <Row className={'font-semibold'}>Website</Row>
+          <Linkify text={lover.website} className={'break-anywhere'} />
+        </Col>
+      )}
+
       {!showMore && shouldAllowCollapseOfContent && (
         <>
           <div className="from-canvas-50 absolute bottom-0 h-8 w-full rounded-b-md bg-gradient-to-t" />
