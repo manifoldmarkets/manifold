@@ -15,6 +15,7 @@ import { shortenedFromNow } from 'web/lib/util/shortenedFromNow'
 import { Row as SupabaseRow } from 'common/supabase/utils'
 import { UserIcon } from '@heroicons/react/solid'
 import { Lover } from 'love/hooks/use-lover'
+import { capitalizeFirstLetter } from 'web/lib/util/capitalize-first-letter'
 
 export default function ProfilesPage() {
   const allLovers = useLovers()
@@ -93,7 +94,7 @@ function ProfilePreview(props: {
             , {calculateAge(birthdate)}
           </Row>
           <Row className="gap-1 text-xs">
-            {gender} • {city}
+            {city} • {capitalizeFirstLetter(gender)}
           </Row>
         </Col>
 
