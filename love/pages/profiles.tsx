@@ -1,22 +1,21 @@
+import { UserIcon } from '@heroicons/react/solid'
+import { Row as SupabaseRow } from 'common/supabase/utils'
+import { User } from 'common/user'
+import { calculateAge } from 'love/components/calculate-age'
+import { Filters } from 'love/components/filters'
+import { Gender, convertGender } from 'love/components/gender-icon'
+import { LovePage } from 'love/components/love-page'
+import OnlineIcon from 'love/components/online-icon'
+import { PhotosModal } from 'love/components/photos-modal'
+import { Lover } from 'love/hooks/use-lover'
+import { useLovers } from 'love/hooks/use-lovers'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useState } from 'react'
-import { useLovers } from 'love/hooks/use-lovers'
 import { Col } from 'web/components/layout/col'
-import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
-import { LovePage } from 'love/components/love-page'
-import { Filters } from 'love/components/filters'
-import { PhotosModal } from 'love/components/photos-modal'
-import { calculateAge } from 'love/components/calculate-age'
-import { Title } from 'web/components/widgets/title'
-import { User } from 'common/user'
 import { Row } from 'web/components/layout/row'
-import { shortenedFromNow } from 'web/lib/util/shortenedFromNow'
-import { Row as SupabaseRow } from 'common/supabase/utils'
-import { UserIcon } from '@heroicons/react/solid'
-import { Lover } from 'love/hooks/use-lover'
-import { capitalizeFirstLetter } from 'web/lib/util/capitalize-first-letter'
-import OnlineIcon from 'love/components/online-icon'
+import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
+import { Title } from 'web/components/widgets/title'
 
 export default function ProfilesPage() {
   const allLovers = useLovers()
@@ -95,7 +94,7 @@ function ProfilePreview(props: {
             , {calculateAge(birthdate)}
           </Row>
           <Row className="gap-1 text-xs">
-            {city} • {capitalizeFirstLetter(gender)}
+            {city} • {convertGender(gender as Gender)}
           </Row>
         </Col>
 
