@@ -16,6 +16,7 @@ import { Row as SupabaseRow } from 'common/supabase/utils'
 import { UserIcon } from '@heroicons/react/solid'
 import { Lover } from 'love/hooks/use-lover'
 import { capitalizeFirstLetter } from 'web/lib/util/capitalize-first-letter'
+import OnlineIcon from 'love/components/online-icon'
 
 export default function ProfilesPage() {
   const allLovers = useLovers()
@@ -99,10 +100,7 @@ function ProfilePreview(props: {
         </Col>
 
         <Col className="absolute inset-x-0 top-0 items-end px-4 pt-2 text-xs">
-          <div className="rounded-full bg-gray-600 bg-opacity-50 px-2 py-0.5">
-            Active{' '}
-            <b>{shortenedFromNow(new Date(last_online_time).getTime())}</b>
-          </div>
+          <OnlineIcon last_online_time={last_online_time} alwaysDarkMode />
         </Col>
         {/* <Col
         className="absolute inset-x-0 bottom-0 cursor-pointer items-end px-4 pb-16 text-xs"

@@ -6,6 +6,10 @@ dayjs.extend(duration)
 export function shortenedFromNow(time: number): string {
   const diff = dayjs.duration(Math.abs(dayjs().diff(time)))
 
+  return shortenedDuration(diff)
+}
+
+export function shortenedDuration(diff: duration.Duration) {
   const units: { [key: string]: number } = {
     y: diff.years(),
     mo: diff.months(),
