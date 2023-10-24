@@ -26,14 +26,11 @@ dayjs.tz.setDefault('America/Los_Angeles')
 export const START_OF_WEEK = dayjs().startOf('week').add(1, 'day').valueOf()
 const START_OF_DAY = dayjs().startOf('day').valueOf()
 
-export const completeCalculatedQuest = async (
-  user: User,
-  questType: 'SHARES'
-) => {
+export const completeSharingQuest = async (user: User) => {
   const db = createSupabaseClient()
-  const count = await getCurrentCountForQuest(user.id, questType, db)
-  const oldEntry = await getQuestScore(user.id, questType, db)
-  return await completeQuestInternal(user, questType, oldEntry.score, count)
+  const count = await getCurrentCountForQuest(user.id, 'SHARES', db)
+  const oldEntry = await getQuestScore(user.id, 'SHARES', db)
+  return await completeQuestInternal(user, 'SHARES', oldEntry.score, count)
 }
 
 export const completeCalculatedQuestFromTrigger = async (
@@ -93,6 +90,18 @@ const completeQuestInternal = async (
     db,
     idempotencyKey
   )
+  log(
+    'completing',
+    questType,
+    'quest for user',
+    user.username,
+    'with old score',
+    oldScore,
+    'and new score',
+    count,
+    'and required count',
+    questDetails.requiredCount
+  )
   // If they have created the required amounts, send them a quest txn reward
   if (count !== oldScore && count === QUEST_DETAILS[questType].requiredCount) {
     const resp = await awardQuestBonus(user, questType, count)
@@ -116,12 +125,7 @@ const getCurrentCountForQuest = async (
   db: SupabaseClient
 ): Promise<number> => {
   if (questType === 'SHARES') {
-    return await getUniqueUserShareEventsCount(
-      userId,
-      START_OF_DAY,
-      Date.now(),
-      db
-    )
+    return await getUniqueUserShareEventsCount(userId, START_OF_DAY, db)
   } else if (questType === 'REFERRALS') {
     return await getReferralCount(userId, START_OF_WEEK, db)
   } else return 0
