@@ -9,7 +9,7 @@ export const CreateQuestionButton = (props: { className?: string }) => {
       href="/create"
       className={clsx(
         buttonClass('xl', 'gradient'),
-        'w-full whitespace-nowrap bg-gradient-to-r text-white',
+        'w-full whitespace-nowrap',
         className
       )}
     >
