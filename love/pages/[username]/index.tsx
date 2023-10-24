@@ -235,25 +235,28 @@ const LoverAttributes = (props: { lover: Lover }) => {
     occupation_title: 'Title',
     university: 'University',
   }
-  const [showMore, setShowMore] = useState(true)
+  const [showMore, setShowMore] = useState<boolean | undefined>(undefined)
   const [shouldAllowCollapseOfContent, setShouldAllowCollapseOfContent] =
     useState(false)
   const contentRef = useRef<HTMLDivElement>(null)
 
   useSafeLayoutEffect(() => {
-    if (contentRef.current) {
-      if (contentRef.current.offsetHeight > 180) {
-        setShouldAllowCollapseOfContent(true)
-        setShowMore(false)
-      }
+    if (
+      contentRef.current &&
+      contentRef.current.offsetHeight > 180 &&
+      showMore === undefined
+    ) {
+      setShouldAllowCollapseOfContent(true)
+      setShowMore(false)
     }
   }, [contentRef.current?.offsetHeight])
+
   const cardClassName = 'px-3 py-2 bg-canvas-0 w-40 gap-1 rounded-md'
   return (
     <Row
       className={clsx(
         'relative flex-wrap gap-3 overflow-hidden',
-        showMore ? 'h-full' : 'max-h-24 '
+        showMore === undefined || showMore ? 'h-full' : 'max-h-24 '
       )}
       ref={contentRef}
     >
