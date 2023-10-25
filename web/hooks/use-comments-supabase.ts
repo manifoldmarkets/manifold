@@ -51,7 +51,8 @@ export function useCommentsOnContract(contractId: string) {
   }, [contractId])
   return comments
 }
-// TODO: the loadNewerQuery doesn't query for comment edits via updated_time
+// TODO: the loadNewerQuery doesn't query for comment edits (e.g. via fs_updated_time).
+//This is okay for now as we're optimistically updating comments via useState.
 export function useRealtimeCommentsOnContract(contractId: string) {
   const { rows, loadNewer } = useSubscription(
     'contract_comments',
