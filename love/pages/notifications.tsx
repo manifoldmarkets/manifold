@@ -11,12 +11,13 @@ import { updatePrivateUser } from 'web/lib/firebase/users'
 import { XIcon } from '@heroicons/react/outline'
 import { PrivateUser } from 'common/user'
 import { useGroupedNotifications } from 'web/hooks/use-notifications'
-import { QueryUncontrolledTabs } from 'web/components/layout/tabs'
-import { NotificationSettings } from 'web/components/notification-settings'
 import { NotificationsList } from 'web/pages/notifications'
-import { NotificationReason } from 'common/notification'
+import { notification_source_types } from 'common/notification'
 import { LovePage } from 'love/components/love-page'
-export const NOTIFICATIONS_TO_IGNORE: NotificationReason[] = ['league_changed']
+export const NOTIFICATIONS_TO_SELECT: notification_source_types[] = [
+  'new_match',
+  'comment_on_lover',
+]
 export default function NotificationsPage() {
   const privateUser = usePrivateUser()
   useRedirectIfSignedOut()
@@ -77,73 +78,17 @@ function NotificationsContent(props: {
   privateUser: PrivateUser
   section?: string
 }) {
-  const { privateUser, section } = props
-  const {
-    groupedNotifications,
-    mostRecentNotification,
-    groupedBalanceChangeNotifications,
-    groupedNewMarketNotifications,
-  } = useGroupedNotifications(privateUser.id, NOTIFICATIONS_TO_IGNORE)
-  const [unseenNewMarketNotifs, setNewMarketNotifsAsSeen] = useState(
-    groupedNewMarketNotifications?.filter((n) => !n.isSeen).length ?? 0
-  )
+  const { privateUser } = props
+  const { groupedNotifications, mostRecentNotification } =
+    useGroupedNotifications(privateUser.id, NOTIFICATIONS_TO_SELECT)
 
   return (
     <div className="relative mt-2 h-full w-full">
       {privateUser && (
-        <QueryUncontrolledTabs
-          trackingName={'notification tabs'}
-          labelClassName={'relative pb-2 pt-1 '}
-          className={'mb-0 sm:mb-2'}
-          onClick={(title) =>
-            title === 'Following' ? setNewMarketNotifsAsSeen(0) : null
-          }
-          labelsParentClassName={'gap-3'}
-          tabs={[
-            {
-              title: 'General',
-              content: (
-                <NotificationsList
-                  privateUser={privateUser}
-                  groupedNotifications={groupedNotifications}
-                  mostRecentNotification={mostRecentNotification}
-                />
-              ),
-            },
-            {
-              title: 'Following',
-              inlineTabIcon:
-                unseenNewMarketNotifs > 0 ? (
-                  <div
-                    className={
-                      'text-ink-0 bg-primary-500 absolute -left-4 min-w-[15px] rounded-full p-[2px] text-center text-[10px] leading-3'
-                    }
-                  >
-                    {unseenNewMarketNotifs}
-                  </div>
-                ) : undefined,
-              content: (
-                <NotificationsList
-                  groupedNotifications={groupedNewMarketNotifications}
-                  emptyTitle={
-                    'You don’t have any new question notifications from followed users, yet. Try following some users to see more.'
-                  }
-                />
-              ),
-            },
-            {
-              title: 'Transactions',
-              content: (
-                <NotificationsList
-                  groupedNotifications={groupedBalanceChangeNotifications}
-                />
-              ),
-            },
-            {
-              title: 'Settings',
-              content: <NotificationSettings navigateToSection={section} />,
-            },
-          ]}
+        <NotificationsList
+          privateUser={privateUser}
+          groupedNotifications={groupedNotifications}
+          mostRecentNotification={mostRecentNotification}
         />
       )}
     </div>
