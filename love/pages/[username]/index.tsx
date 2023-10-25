@@ -31,6 +31,7 @@ import { useSafeLayoutEffect } from 'web/hooks/use-safe-layout-effect'
 import { Linkify } from 'web/components/widgets/linkify'
 import LoverAbout from 'love/components/lover-about'
 import { orderBy } from 'lodash'
+import { Subtitle } from 'love/components/widgets/lover-subtitle'
 
 export const getStaticProps = async (props: {
   params: {
@@ -125,7 +126,7 @@ export default function UserPage(props: {
             <LoverAbout lover={lover} />
             <Col className={'mt-2 gap-2'}>
               <Row className={'items-center gap-2'}>
-                <span className={'text-xl font-semibold'}>Answers</span>
+                <Subtitle>Answers</Subtitle>
                 {isCurrentUser && answers.length > 0 && (
                   <Button
                     color={'gray-outline'}
