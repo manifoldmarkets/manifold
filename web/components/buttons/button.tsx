@@ -70,7 +70,7 @@ export function buttonClass(size: SizeType, color: ColorType | 'none') {
       'text-ink-600 hover:bg-ink-200 disabled:text-ink-300 disabled:bg-transparent',
     color === 'gold' && [
       gradient,
-      'enabled:!bg-gradient-to-br from-yellow-400 via-yellow-100 to-yellow-300 dark:from-yellow-600 dark:via-yellow-200 dark:to-yellow-400 text-gray-900',
+      'enabled:!bg-gradient-to-br from-yellow-400 via-yellow-100 to-yellow-300 dark:from-yellow-600 dark:via-yellow-200 dark:to-yellow-400 !text-gray-900',
     ]
   )
 }
