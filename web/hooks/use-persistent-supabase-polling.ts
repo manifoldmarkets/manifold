@@ -2,7 +2,6 @@ import { useMemo, useEffect, useRef } from 'react'
 import { PostgrestBuilder } from '@supabase/postgrest-js'
 import { QueryMultiSuccessResponse, run } from 'common/supabase/utils'
 import { MINUTE_MS } from 'common/util/time'
-import { maxBy } from 'lodash'
 import { useEvent } from 'web/hooks/use-event'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 
@@ -19,8 +18,7 @@ type PollingState =
 
 export function usePersistentSupabasePolling<T>(
   allRowsQ: PostgrestBuilder<T>,
-  onlyNewRowsQ: (newestResult: T | undefined) => PostgrestBuilder<T>,
-  maxByComparison: keyof T,
+  onlyNewRowsQ: (results: T[] | undefined) => PostgrestBuilder<T>,
   key: string,
   opts?: PollingOptions
 ) {
@@ -30,9 +28,7 @@ export function usePersistentSupabasePolling<T>(
     QueryMultiSuccessResponse<T> | undefined
   >(undefined, key)
 
-  const onlyNewRowsQBy = useEvent(async () =>
-    onlyNewRowsQ(maxBy(results?.data ?? [], maxByComparison))
-  )
+  const onlyNewRowsQBy = useEvent(async () => onlyNewRowsQ(results?.data))
 
   const fetchNewRows = useMemo(
     () => () => {

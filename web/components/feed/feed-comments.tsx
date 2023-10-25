@@ -73,6 +73,7 @@ export function FeedCommentThread(props: {
   showReplies?: boolean
   childrenBountyTotal?: number
   className?: string
+  onSubmitReply?: () => void
 }) {
   const {
     contract,
@@ -85,6 +86,7 @@ export function FeedCommentThread(props: {
     showReplies,
     childrenBountyTotal,
     className,
+    onSubmitReply,
   } = props
   const [replyToUserInfo, setReplyToUserInfo] = useState<ReplyToUserInfo>()
 
@@ -164,6 +166,7 @@ export function FeedCommentThread(props: {
             clearReply={clearReply}
             trackingLocation={trackingLocation}
             className="w-full min-w-0 grow"
+            onSubmit={onSubmitReply}
           />
         </div>
       )}
@@ -562,6 +565,7 @@ export function ContractCommentInput(props: {
   parentCommentId?: string
   clearReply?: () => void
   trackingLocation: string
+  onSubmit?: () => void
 }) {
   const user = useUser()
   const privateUser = usePrivateUser()
@@ -573,6 +577,7 @@ export function ContractCommentInput(props: {
     className,
     clearReply,
     trackingLocation,
+    onSubmit,
   } = props
   const isReplyToBet = replyTo != null && 'amount' in replyTo
   const isReplyToAnswer = replyTo && !isReplyToBet
@@ -591,6 +596,7 @@ export function ContractCommentInput(props: {
       replyToBetId: isReplyToBet ? replyTo.id : undefined,
     })
     clearReply?.()
+    onSubmit?.()
     track('comment', {
       location: trackingLocation,
       replyTo: isReplyToBet
