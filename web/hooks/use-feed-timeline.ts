@@ -90,6 +90,7 @@ const baseQuery = (
   userId: string,
   privateUser: PrivateUser,
   ignoreContractIds: string[],
+  ignoreContractIdsWithComments: string[],
   limit: number
 ) =>
   db
@@ -102,9 +103,9 @@ const baseQuery = (
       `(${privateUser.blockedUserIds.concat(privateUser.blockedByUserIds)})`
     )
     .not('contract_id', 'in', `(${privateUser.blockedContractIds})`)
-    // New comments or news items with/on contracts we already have on feed are okay
+    // One comment per contract or news items with contracts we already have on the feed are okay
     .or(
-      `data_type.eq.new_comment,data_type.eq.news_with_related_contracts,contract_id.not.in.(${ignoreContractIds})`
+      `and(data_type.eq.new_comment,contract_id.not.in.(${ignoreContractIdsWithComments})), data_type.eq.news_with_related_contracts, contract_id.not.in.(${ignoreContractIds})`
     )
     .order('relevance_score', { ascending: false })
     .limit(limit)
@@ -115,7 +116,7 @@ const queryForFeedRows = async (
   options: loadProps,
   newestCreatedTimestamp: string
 ) => {
-  const ignoreContractIds = filterDefined(
+  const currentlyFetchedContractIds = filterDefined(
     options.ignoreFeedTimelineItems
       .map((item) =>
         (item.relatedItems ?? [])
@@ -124,7 +125,19 @@ const queryForFeedRows = async (
       )
       .flat()
   )
-  let query = baseQuery(userId, privateUser, ignoreContractIds, 50)
+  const currentlyFetchedCommentItems = filterDefined(
+    options.ignoreFeedTimelineItems.map((item) =>
+      item.commentId ? item.contractId : null
+    )
+  )
+
+  let query = baseQuery(
+    userId,
+    privateUser,
+    currentlyFetchedContractIds,
+    currentlyFetchedCommentItems,
+    50
+  )
   if (options.time === 'new') {
     query = query.gt('created_time', newestCreatedTimestamp)
   } else if (options.time === 'old') {
