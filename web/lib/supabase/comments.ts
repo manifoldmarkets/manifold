@@ -44,6 +44,18 @@ export async function getCommentRows(contractId: string) {
   )
   return data
 }
+export async function getNewCommentRows(contractId: string, afterTime: string) {
+  const { data } = await run(
+    db
+      .from('contract_comments')
+      .select()
+      .eq('contract_id', contractId)
+      .gt('fs_updated_time', afterTime)
+      .order('created_time', { ascending: false })
+  )
+  return data
+}
+
 export async function getRecentCommentsOnContracts(
   contractIds: string[],
   limit: number

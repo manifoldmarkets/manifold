@@ -89,6 +89,22 @@ export function OgMarket(props: OgCardProps) {
 
       {/* Bottom row */}
       <div className="flex w-full flex-row items-center justify-between px-8 text-3xl text-gray-600">
+        {/* Manifold logo */}
+        <div className="flex items-center pb-2">
+          <img
+            className="mr-3 h-28 w-28"
+            src="https://manifold.markets/logo.svg"
+            width="60"
+            height="60"
+          />
+          <span
+            className="text-6xl lowercase"
+            style={{ fontFamily: 'Major Mono Display' }}
+          >
+            Manifold
+          </span>
+        </div>
+
         {/* Details */}
         <div className="flex pt-4">
           <div className="mr-6 flex items-center">
@@ -107,22 +123,6 @@ export function OgMarket(props: OgCardProps) {
               {numTraders.toLocaleString('en-US')} traders
             </div>
           )}
-        </div>
-
-        {/* Manifold logo */}
-        <div className="flex items-center pb-2">
-          <img
-            className="mr-3 h-28 w-28"
-            src="https://manifold.markets/logo.svg"
-            width="60"
-            height="60"
-          />
-          <span
-            className="text-6xl lowercase"
-            style={{ fontFamily: 'Major Mono Display' }}
-          >
-            Manifold
-          </span>
         </div>
       </div>
     </div>

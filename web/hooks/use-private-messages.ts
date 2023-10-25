@@ -2,7 +2,7 @@ import { ChatMessage } from 'common/chat-message'
 import { Row, run, tsToMillis } from 'common/supabase/utils'
 import { usePersistentSubscription } from 'web/lib/supabase/realtime/use-subscription'
 import { useEffect, useState } from 'react'
-import { first, groupBy, orderBy } from 'lodash'
+import { first, groupBy, maxBy, orderBy } from 'lodash'
 import { useIsAuthorized } from 'web/hooks/use-user'
 import { safeLocalStorage } from 'web/lib/util/local'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
@@ -30,18 +30,17 @@ export function useRealtimePrivateMessagesPolling(
     .from('private_user_messages')
     .select('*')
     .eq('channel_id', channelId)
-  const newRowsOnlyQ = (row: Row<'private_user_messages'> | undefined) =>
+  const newRowsOnlyQ = (rows: Row<'private_user_messages'>[] | undefined) =>
     // You can't use allRowsQ here because it keeps tacking on another gt clause
     db
       .from('private_user_messages')
       .select('*')
       .eq('channel_id', channelId)
-      .gt('id', row?.id ?? 0)
+      .gt('id', maxBy(rows, 'id')?.id ?? 0)
 
   const results = usePersistentSupabasePolling(
     allRowsQ,
     newRowsOnlyQ,
-    'id',
     `private-messages-${channelId}`,
     {
       ms,

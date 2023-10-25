@@ -1,26 +1,29 @@
-import { CashIcon, DeviceMobileIcon, HomeIcon } from '@heroicons/react/outline'
+import {
+  CashIcon,
+  DeviceMobileIcon,
+  HomeIcon,
+  BellIcon,
+} from '@heroicons/react/outline'
 import {
   QuestionMarkCircleIcon,
   HomeIcon as SolidHomeIcon,
   UserCircleIcon,
-  ViewListIcon,
+  BellIcon as SolidBellIcon,
 } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { User } from 'common/user'
 import { buildArray } from 'common/util/array'
 import { useOnline } from 'love/hooks/use-online'
-import { NOTIFICATIONS_TO_IGNORE } from 'love/pages/notifications'
 import { ReactNode, useState } from 'react'
 import { Toaster } from 'react-hot-toast'
 import { AddFundsModal } from 'web/components/add-funds-modal'
 import { MobileAppsQRCodeDialog } from 'web/components/buttons/mobile-apps-qr-code-button'
 import { Col } from 'web/components/layout/col'
-import { PrivateMessagesIcon } from 'web/components/messaging/messages-icon'
-import { BottomNavBar } from 'web/components/nav/bottom-nav-bar'
 import {
-  NotificationsIcon,
-  SolidNotificationsIcon,
-} from 'web/components/notifications-icon'
+  PrivateMessagesIcon,
+  SolidPrivateMessagesIcon,
+} from 'web/components/messaging/messages-icon'
+import { BottomNavBar } from 'web/components/nav/bottom-nav-bar'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useTracking } from 'web/hooks/use-tracking'
 import { useUser } from 'web/hooks/use-user'
@@ -117,20 +120,15 @@ export function LovePage(props: {
 function getBottomNavigation(user: User) {
   return buildArray(
     { name: 'Profiles', href: '/profiles', icon: SolidHomeIcon },
-    { name: 'Updates', href: '/updates', icon: ViewListIcon },
     {
       name: 'Profile',
       href: `/${user.username}`,
     },
+    { name: 'Updates', href: '/updates', icon: SolidBellIcon },
     {
-      name: 'Notifs',
-      href: `/notifications`,
-      icon: (props) => (
-        <SolidNotificationsIcon
-          {...props}
-          ignoreTypes={NOTIFICATIONS_TO_IGNORE}
-        />
-      ),
+      name: 'Messages',
+      href: '/messages',
+      icon: SolidPrivateMessagesIcon,
     }
   )
 }
@@ -144,14 +142,7 @@ const getDesktopNav = (loggedIn: boolean, openDownloadApp: () => void) => {
   if (loggedIn)
     return buildArray(
       { name: 'Profiles', href: '/profiles', icon: HomeIcon },
-      { name: 'Updates', href: '/updates', icon: ViewListIcon },
-      {
-        name: 'Notifications',
-        href: `/notifications`,
-        icon: (props) => (
-          <NotificationsIcon {...props} ignoreTypes={NOTIFICATIONS_TO_IGNORE} />
-        ),
-      },
+      { name: 'Updates', href: '/updates', icon: BellIcon },
       {
         name: 'Messages',
         href: '/messages',
@@ -169,7 +160,6 @@ const getDesktopNav = (loggedIn: boolean, openDownloadApp: () => void) => {
 // No sidebar when signed out
 const getSidebarNavigation = (toggleModal: () => void) => {
   return buildArray(
-    { name: 'Messages', href: '/messages', icon: PrivateMessagesIcon },
     { name: 'Get mana', icon: CashIcon, onClick: toggleModal }
     // { name: 'Share with friends', href: '/referrals', icon: StarIcon } // remove this and I will beat you — SG
   )

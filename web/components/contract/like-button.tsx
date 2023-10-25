@@ -34,7 +34,6 @@ export const LikeButton = memo(function LikeButton(props: {
   contentText: string
   trackingLocation: string
   className?: string
-  isSwipe?: boolean
   placement?: 'top' | 'bottom'
   size?: SizeType
   disabled?: boolean
@@ -47,7 +46,6 @@ export const LikeButton = memo(function LikeButton(props: {
     contract,
     contentText,
     className,
-    isSwipe,
     trackingLocation,
     placement = 'bottom',
     size,
@@ -77,7 +75,7 @@ export const LikeButton = memo(function LikeButton(props: {
       contract.question,
       contentText,
       ButtonReactionType,
-      { isSwipe: !!isSwipe, location: trackingLocation }
+      { location: trackingLocation }
     )
   }
 

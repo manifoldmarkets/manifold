@@ -38,6 +38,7 @@ import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { useWarnUnsavedChanges } from 'web/hooks/use-warn-unsaved-changes'
 import { InputWithLimit } from 'web/components/dashboard/input-with-limit'
 import Head from 'next/head'
+import { useRouter } from 'next/router'
 
 export async function getStaticProps(ctx: {
   params: { dashboardSlug: string }
@@ -78,6 +79,9 @@ export default function DashboardPage(
       }
     | { state: 'not found' }
 ) {
+  const router = useRouter()
+  const edit = !!router.query.edit
+
   if (props.state === 'not found') {
     return <Custom404 />
   } else {
@@ -85,6 +89,7 @@ export default function DashboardPage(
       <FoundDashbordPage
         initialDashboard={props.initialDashboard}
         slug={props.slug}
+        editByDefault={edit}
       />
     )
   }
@@ -93,8 +98,9 @@ export default function DashboardPage(
 function FoundDashbordPage(props: {
   initialDashboard: Dashboard
   slug: string
+  editByDefault: boolean
 }) {
-  const { initialDashboard, slug } = props
+  const { initialDashboard, slug, editByDefault } = props
   const fetchedDashboard = useDashboardFromSlug(slug)
   const [dashboard, setDashboard] = useState<Dashboard>(initialDashboard)
 
@@ -118,7 +124,7 @@ function FoundDashbordPage(props: {
   const isCreator = dashboard.creatorId === user?.id
   const isOnlyAdmin = !isCreator && user && isAdminId(user.id)
 
-  const [editMode, setEditMode] = useState(false)
+  const [editMode, setEditMode] = useState(editByDefault)
   useWarnUnsavedChanges(editMode)
 
   const editor = useTextEditor({

@@ -6,7 +6,7 @@ import { PrivateUser } from 'common/user'
 import { useUnseenPrivateMessageChannels } from 'web/hooks/use-private-messages'
 import { db } from 'web/lib/supabase/db'
 import { run } from 'common/supabase/utils'
-import { BiEnvelope } from 'react-icons/bi'
+import { BiEnvelope, BiSolidEnvelope } from 'react-icons/bi'
 import clsx from 'clsx'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 
@@ -25,9 +25,14 @@ export function UnseenMessagesBubble() {
   )
 }
 
-export function PrivateMessagesIcon(props: { className?: string }) {
+export function PrivateMessagesIcon(props: {
+  className?: string
+  solid?: boolean
+}) {
+  const { solid } = props
   const privateUser = usePrivateUser()
   const isAuthed = useIsAuthorized()
+  const Icon = solid ? BiSolidEnvelope : BiEnvelope
   return (
     <Row className="relative justify-center">
       {privateUser && isAuthed && (
@@ -36,9 +41,13 @@ export function PrivateMessagesIcon(props: { className?: string }) {
           privateUser={privateUser}
         />
       )}
-      <BiEnvelope className={props.className} />
+      <Icon className={props.className} />
     </Row>
   )
+}
+
+export function SolidPrivateMessagesIcon(props: { className?: string }) {
+  return <PrivateMessagesIcon {...props} solid />
 }
 
 function InternalUnseenMessagesBubble(props: {

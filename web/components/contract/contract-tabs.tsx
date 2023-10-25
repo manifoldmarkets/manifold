@@ -200,9 +200,10 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
   // )
 
   // Supabase use realtime comments
-  const comments = (
-    useRealtimeCommentsOnContract(contract.id) ?? props.comments
-  ).filter((c) => !blockedUserIds.includes(c.userId))
+  const { rows, loadNewer } = useRealtimeCommentsOnContract(contract.id)
+  const comments = (rows ?? props.comments).filter(
+    (c) => !blockedUserIds.includes(c.userId)
+  )
 
   const [parentCommentsToRender, setParentCommentsToRender] = useState(
     props.comments.filter((c) => !c.replyToCommentId).length
@@ -321,6 +322,7 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
           contract={contract}
           clearReply={clearReply}
           trackingLocation={'contract page'}
+          onSubmit={loadNewer}
         />
       )}
       {comments.length > 0 && (
@@ -359,6 +361,7 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
               ? childrensBounties[parent.id]
               : undefined
           }
+          onSubmitReply={loadNewer}
         />
       ))}
 

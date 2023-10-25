@@ -30,6 +30,7 @@ import clsx from 'clsx'
 import { useSafeLayoutEffect } from 'web/hooks/use-safe-layout-effect'
 import { Linkify } from 'web/components/widgets/linkify'
 import LoverAbout from 'love/components/lover-about'
+import { orderBy } from 'lodash'
 
 export const getStaticProps = async (props: {
   params: {
@@ -139,7 +140,11 @@ export default function UserPage(props: {
               </Row>
               <Row className={'flex-wrap gap-3'}>
                 {answers.length > 0 ? (
-                  answers.map((answer) => {
+                  orderBy(
+                    answers,
+                    (a) => (a.free_response ? 3 : a.multiple_choice ? 2 : 1),
+                    'desc'
+                  ).map((answer) => {
                     const question = questions.find(
                       (q) => q.id === answer.question_id
                     )

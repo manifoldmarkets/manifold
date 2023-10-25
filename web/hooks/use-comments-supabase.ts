@@ -5,11 +5,14 @@ import {
   getAllCommentRows,
   getCommentRows,
   getCommentsOnContract,
+  getNewCommentRows,
   getNumContractComments,
   getNumUserComments,
   getPostCommentRows,
 } from 'web/lib/supabase/comments'
 import { useSubscription } from 'web/lib/supabase/realtime/use-subscription'
+import { maxBy } from 'lodash'
+import { tsToMillis } from 'common/supabase/utils'
 
 export function useNumContractComments(contractId: string) {
   const [numComments, setNumComments] = useState<number>(0)
@@ -50,13 +53,21 @@ export function useCommentsOnContract(contractId: string) {
 }
 
 export function useRealtimeCommentsOnContract(contractId: string) {
-  const { rows } = useSubscription(
+  const { rows, loadNewer } = useSubscription(
     'contract_comments',
     { k: 'contract_id', v: contractId },
-    () => getCommentRows(contractId)
+    () => getCommentRows(contractId),
+    undefined,
+    undefined,
+    (rows) =>
+      getNewCommentRows(
+        contractId,
+        maxBy(rows ?? [], (r) => tsToMillis(r.fs_updated_time))
+          ?.fs_updated_time ?? new Date(Date.now() - 500).toISOString()
+      )
   )
 
-  return rows?.map(convertContractComment)
+  return { rows: rows?.map(convertContractComment), loadNewer }
 }
 
 export function useRealtimeComments(

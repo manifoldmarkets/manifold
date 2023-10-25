@@ -89,7 +89,10 @@ export function useSubscription<T extends TableName>(
   filter?: Filter<T>,
   fetcher?: () => PromiseLike<Row<T>[] | undefined>,
   preload?: Row<T>[],
-  filterString?: string
+  filterString?: string,
+  loadNewerQuery?: (
+    rows: Row<T>[] | undefined
+  ) => PromiseLike<Row<T>[] | undefined>
 ) {
   const fetch = fetcher ?? (() => fetchSnapshot(table, filter))
   const reducer = useMemo(() => getReducer(table), [table])
@@ -97,6 +100,33 @@ export function useSubscription<T extends TableName>(
     status: 'starting',
     rows: preload,
     pending: [],
+  })
+  const upsertRow = (r: Row<T>) =>
+    dispatch({
+      type: 'RECEIVED_CHANGE',
+      change: {
+        table,
+        new: r,
+        old: {},
+        eventType: 'UPDATE', // really is an upsert
+      } as any,
+    })
+
+  const loadNewer = useEvent(async () => {
+    const retryLoadNewer = async (attemptNumber: number): Promise<boolean> => {
+      const newRows = await loadNewerQuery?.(state.rows)
+      if (newRows?.length) {
+        newRows.map(upsertRow)
+        return true
+      } else if (attemptNumber < maxAttempts) {
+        await new Promise((resolve) => setTimeout(resolve, 100 * attemptNumber))
+        return retryLoadNewer(attemptNumber + 1)
+      }
+      return false
+    }
+
+    const maxAttempts = 10
+    await retryLoadNewer(1)
   })
 
   const onChange = useEvent((change: Change<T>) => {
@@ -139,7 +169,7 @@ export function useSubscription<T extends TableName>(
     onEnabled,
     filterString
   )
-  return state
+  return { ...state, loadNewer }
 }
 
 export function usePersistentSubscription<T extends TableName>(
