@@ -65,7 +65,7 @@ import { User, getUserByUsername } from 'web/lib/firebase/users'
 import TrophyIcon from 'web/lib/icons/trophy-icon.svg'
 import { db } from 'web/lib/supabase/db'
 import { getPostsByUser } from 'web/lib/supabase/post'
-import { getAverageUserRating, getUserRating } from 'web/lib/supabase/reviews'
+import { getUserRating } from 'web/lib/supabase/reviews'
 import Custom404 from 'web/pages/404'
 import { UserPayments } from 'web/pages/payments'
 

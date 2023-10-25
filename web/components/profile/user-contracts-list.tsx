@@ -16,7 +16,6 @@ import { useUser } from 'web/hooks/use-user'
 import { CreateQuestionButton } from '../buttons/create-question-button'
 import { useRouter } from 'next/router'
 import { UserReviews } from '../reviews/user-reviews'
-import { InfoBox } from '../widgets/info-box'
 import { InfoTooltip } from '../widgets/info-tooltip'
 
 export function UserContractsList(props: {
