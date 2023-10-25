@@ -35,7 +35,7 @@ export function AboutRow(props: {
   preText?: string
 }) {
   const { icon, text, preText } = props
-  if (!text) {
+  if (!text || text.length < 1) {
     return <></>
   }
   return (
@@ -87,36 +87,36 @@ export function stringOrStringArrayToText(fields: {
   }`.trim()
 }
 
-export default function LoverAbout(props: { lover: Lover; loverName: string }) {
-  const { lover, loverName } = props
+export default function LoverAbout(props: { lover: Lover }) {
+  const { lover } = props
+  // TODO: figure out how to expand
+  //   const [showMore, setShowMore] = useState<boolean | undefined>(undefined)
+  //   const [shouldAllowCollapseOfContent, setShouldAllowCollapseOfContent] =
+  //     useState(false)
+  //   const contentRef = useRef<HTMLDivElement>(null)
 
-  const [showMore, setShowMore] = useState<boolean | undefined>(undefined)
-  const [shouldAllowCollapseOfContent, setShouldAllowCollapseOfContent] =
-    useState(false)
-  const contentRef = useRef<HTMLDivElement>(null)
+  //   const user = useUser()
+  //   const isYou = user?.id === lover.user_id
 
-  const user = useUser()
-  const isYou = user?.id === lover.user_id
-
-  useSafeLayoutEffect(() => {
-    if (
-      contentRef.current &&
-      contentRef.current.offsetHeight > 180 &&
-      showMore === undefined &&
-      isYou
-    ) {
-      setShouldAllowCollapseOfContent(true)
-      setShowMore(false)
-    }
-  }, [contentRef.current?.offsetHeight, isYou])
+  //   useSafeLayoutEffect(() => {
+  //     if (
+  //       contentRef.current &&
+  //       contentRef.current.offsetHeight > 180 &&
+  //       showMore === undefined &&
+  //       isYou
+  //     ) {
+  //       setShouldAllowCollapseOfContent(true)
+  //       setShowMore(false)
+  //     }
+  //   }, [contentRef.current?.offsetHeight, isYou])
 
   return (
     <Col
       className={clsx(
-        'bg-canvas-0 relative gap-3 overflow-hidden rounded p-4',
-        showMore === undefined || showMore ? 'h-full' : 'max-h-24 '
+        'bg-canvas-0 relative gap-3 overflow-hidden rounded p-4'
+        // showMore === undefined || showMore ? 'h-full' : 'max-h-24 '
       )}
-      ref={contentRef}
+      //   ref={contentRef}
     >
       <Seeking lover={lover} />
       <AboutRow
@@ -150,8 +150,7 @@ export default function LoverAbout(props: { lover: Lover; loverName: string }) {
         text={lover.is_vegetarian_or_vegan ? 'Vegetarian/Vegan' : null}
       />
       <WantsKids lover={lover} />
-      {/* Special case for min and max age range */}
-      {!showMore && shouldAllowCollapseOfContent && (
+      {/* {!showMore && shouldAllowCollapseOfContent && (
         <>
           <div className="from-canvas-50 absolute bottom-0 h-8 w-full rounded-b-md bg-gradient-to-t" />
         </>
@@ -169,7 +168,7 @@ export default function LoverAbout(props: { lover: Lover; loverName: string }) {
           )}
           Show {showMore ? 'less' : 'more'}
         </Button>
-      )}
+      )} */}
     </Col>
   )
 }

@@ -27,7 +27,7 @@ export function convertGender(gender: Gender) {
   if (gender == 'trans-male') {
     return 'trans man'
   }
-  return capitalizeFirstLetter(gender)
+  return gender
 }
 
 export function convertGenderPlural(gender: Gender) {
@@ -43,7 +43,7 @@ export function convertGenderPlural(gender: Gender) {
   if (gender == 'trans-male') {
     return 'trans men'
   }
-  return capitalizeFirstLetter(gender)
+  return gender
 }
 
 export default function GenderIcon(props: {

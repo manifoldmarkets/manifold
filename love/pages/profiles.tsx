@@ -1,6 +1,7 @@
 import { UserIcon } from '@heroicons/react/solid'
 import { Row as SupabaseRow } from 'common/supabase/utils'
 import { User } from 'common/user'
+import { capitalize } from 'lodash'
 import { calculateAge } from 'love/components/calculate-age'
 import { Filters } from 'love/components/filters'
 import { Gender, convertGender } from 'love/components/gender-icon'
@@ -94,7 +95,7 @@ function ProfilePreview(props: {
             , {calculateAge(birthdate)}
           </Row>
           <Row className="gap-1 text-xs">
-            {city} • {convertGender(gender as Gender)}
+            {city} • {capitalize(convertGender(gender as Gender))}
           </Row>
         </Col>
 

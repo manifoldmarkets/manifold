@@ -121,7 +121,7 @@ export default function UserPage(props: {
               router={router}
             />
             <Matches userId={user.id} />
-            <LoverAbout lover={lover} loverName={user.name} />
+            <LoverAbout lover={lover} />
             <Col className={'mt-2 gap-2'}>
               <Row className={'items-center gap-2'}>
                 <span className={'text-xl font-semibold'}>Answers</span>
