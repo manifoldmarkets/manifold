@@ -12,13 +12,13 @@ export default function ManifoldLoveLogo() {
       className=" flex flex-row gap-1 pb-3 pt-6"
     >
       <LoveLogo
-        className="h-10 w-10 shrink-0 transition-transform group-hover:rotate-12 dark:stroke-pink-300"
+        className="h-10 w-10 shrink-0 stroke-pink-700 transition-transform group-hover:rotate-12 dark:stroke-pink-300"
         aria-hidden
       />
       <div className={clsx('my-auto text-xl font-thin')}>
         {ENV == 'DEV' ? 'devifold' : 'manifold'}
         <span className="mx-[1px]">.</span>
-        <span className="font-semibold text-pink-800 dark:text-pink-300">
+        <span className="font-semibold text-pink-700 dark:text-pink-300">
           love
         </span>
       </div>
