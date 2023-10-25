@@ -4,12 +4,13 @@ import { useUser } from 'web/hooks/use-user'
 import clsx from 'clsx'
 import { ENV } from 'common/envs/constants'
 
-export default function ManifoldLoveLogo() {
+export default function ManifoldLoveLogo(props: { className?: string }) {
+  const { className } = props
   const user = useUser()
   return (
     <Link
       href={user ? '/profiles' : '/'}
-      className=" flex flex-row gap-1 pb-3 pt-6"
+      className={clsx(' flex flex-row gap-1 pb-3 pt-6', className)}
     >
       <LoveLogo
         className="h-10 w-10 shrink-0 stroke-pink-700 transition-transform group-hover:rotate-12 dark:stroke-pink-300"

@@ -23,7 +23,7 @@ import {
   PrivateMessagesIcon,
   SolidPrivateMessagesIcon,
 } from 'web/components/messaging/messages-icon'
-import { BottomNavBar } from 'web/components/nav/bottom-nav-bar'
+import { BottomNavBar } from 'love/components/nav/love-bottom-nav-bar'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useTracking } from 'web/hooks/use-tracking'
 import { useUser } from 'web/hooks/use-user'
