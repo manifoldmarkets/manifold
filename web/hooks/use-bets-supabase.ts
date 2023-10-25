@@ -5,6 +5,8 @@ import { useEffectCheckEquality } from './use-effect-check-equality'
 import { getBetRows, getBets, getTotalBetCount } from 'common/supabase/bets'
 import { Filter } from 'common/supabase/realtime'
 import { useSubscription } from 'web/lib/supabase/realtime/use-subscription'
+import { maxBy } from 'lodash'
+import { tsToMillis } from 'common/supabase/utils'
 
 function getFilteredQuery(filteredParam: string, filterId?: string) {
   if (filteredParam === 'contractId' && filterId) {
@@ -22,14 +24,26 @@ export function useRealtimeBets(options?: BetFilter) {
       filteredQuery = getFilteredQuery(filteredParam, options.contractId)
     }
   }
-  const { rows } = useSubscription('contract_bets', filteredQuery, () =>
-    getBetRows(db, { ...options, order: options?.order ?? 'asc' })
+  const { rows, loadNewer } = useSubscription(
+    'contract_bets',
+    filteredQuery,
+    () => getBetRows(db, { ...options, order: options?.order ?? 'asc' }),
+    undefined,
+    undefined,
+    (rows) =>
+      getBetRows(db, {
+        ...options,
+        afterTime: tsToMillis(
+          maxBy(rows ?? [], (r) => tsToMillis(r.created_time))?.created_time ??
+            new Date(Date.now() - 500).toISOString()
+        ),
+      })
   )
   const newBets = rows
     ?.map((r) => r.data as Bet)
     .filter((b) => !betShouldBeFiltered(b, options))
 
-  return newBets
+  return { rows: newBets, loadNewer }
 }
 
 function betShouldBeFiltered(bet: Bet, options?: BetFilter) {

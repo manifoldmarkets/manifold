@@ -201,14 +201,18 @@ export function ContractPageContent(props: ContractParams) {
 
   // Static props load bets in descending order by time
   const lastBetTime = first(historyData.bets)?.createdTime
+  const { rows, loadNewer } = useRealtimeBets({
+    contractId: contract.id,
+    afterTime: lastBetTime,
+    filterRedemptions: contract.outcomeType !== 'MULTIPLE_CHOICE',
+    order: 'asc',
+  })
 
-  const newBets =
-    useRealtimeBets({
-      contractId: contract.id,
-      afterTime: lastBetTime,
-      filterRedemptions: contract.outcomeType !== 'MULTIPLE_CHOICE',
-      order: 'asc',
-    }) ?? []
+  useEffect(() => {
+    loadNewer()
+  }, [contract.volume])
+
+  const newBets = rows ?? []
   const newBetsWithoutRedemptions = newBets.filter((bet) => !bet.isRedemption)
   const totalBets = props.totalBets + newBetsWithoutRedemptions.length
   const bets = useMemo(
