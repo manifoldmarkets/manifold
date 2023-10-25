@@ -100,7 +100,7 @@ export function ActivityLog(props: {
     if (topicSlugs) getRecentTopicalContent(topicSlugs)
   }, [topicSlugs])
 
-  const realtimeBets = useRealtimeBets({
+  const { rows: realtimeBets } = useRealtimeBets({
     limit: count * 3,
     filterRedemptions: true,
     order: 'desc',

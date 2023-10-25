@@ -79,13 +79,13 @@ export function ContractTabs(props: {
 
   const user = useUser()
 
-  const userBets =
-    useRealtimeBets({
-      contractId: contract.id,
-      userId: user === undefined ? 'loading' : user?.id ?? EMPTY_USER,
-      filterAntes: true,
-      order: 'asc',
-    }) ?? []
+  const { rows } = useRealtimeBets({
+    contractId: contract.id,
+    userId: user === undefined ? 'loading' : user?.id ?? EMPTY_USER,
+    filterAntes: true,
+    order: 'asc',
+  })
+  const userBets = rows ?? []
 
   const tradesTitle =
     (totalBets > 0 ? `${shortFormatNumber(totalBets)} ` : '') + 'Trades'

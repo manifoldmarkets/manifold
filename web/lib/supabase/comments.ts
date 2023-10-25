@@ -50,7 +50,7 @@ export async function getNewCommentRows(contractId: string, afterTime: string) {
       .from('contract_comments')
       .select()
       .eq('contract_id', contractId)
-      .gt('fs_updated_time', afterTime)
+      .gt('created_time', afterTime)
       .order('created_time', { ascending: false })
   )
   return data

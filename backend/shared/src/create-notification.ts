@@ -1958,12 +1958,16 @@ export const createMarketReviewedNotification = async (
   const privateUser = await getPrivateUser(userId)
   if (!privateUser) return
   const id = crypto.randomUUID()
-
-  if (!userOptedOutOfBrowserNotifications(privateUser)) {
+  const reason = 'review_on_your_market'
+  const { sendToBrowser } = getNotificationDestinationsForUser(
+    privateUser,
+    reason
+  )
+  if (sendToBrowser) {
     const notification: Notification = {
       id,
       userId: privateUser.id,
-      reason: 'review_on_your_market',
+      reason,
       createdTime: Date.now(),
       isSeen: false,
       sourceId: id,

@@ -47,6 +47,7 @@ export const Matches = (props: { userId: string }) => {
     .filter((l) => l.user_id !== userId)
     .filter((l) => !matchesSet.has(l.user_id))
     .filter((l) => !lover || areGenderCompatible(lover, l))
+    .filter((l) => l.looking_for_matches)
   const currentMatches = matches.filter((c) => !c.isResolved)
   const areYourMatches = userId === user?.id
 
