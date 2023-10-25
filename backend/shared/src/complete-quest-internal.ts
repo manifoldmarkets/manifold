@@ -7,14 +7,14 @@ import { QuestRewardTxn } from 'common/txn'
 import { runTxnFromBank } from 'shared/txn/run-txn'
 import { createSupabaseClient } from 'shared/supabase/init'
 import { getRecentContractIds } from 'common/supabase/contracts'
-import { getUniqueUserShareEventsCount } from 'common/supabase/user-events'
+import { getUserShareEventsCount } from 'common/supabase/user-events'
 import { APIError } from 'common/api'
 import { createQuestPayoutNotification } from 'shared/create-notification'
 import * as dayjs from 'dayjs'
 import * as utc from 'dayjs/plugin/utc'
 import * as timezone from 'dayjs/plugin/timezone'
 import { getQuestScore, setQuestScoreValue } from 'common/supabase/set-scores'
-import { SupabaseClient } from 'common/supabase/utils'
+import { millisToTs, SupabaseClient } from 'common/supabase/utils'
 import { getReferralCount } from 'common/supabase/referrals'
 import { log } from 'shared/utils'
 
@@ -94,12 +94,14 @@ const completeQuestInternal = async (
     'completing',
     questType,
     'quest for user',
-    user.username,
+    user.id,
     'with old score',
     oldScore,
     'and new score',
     count,
-    'and required count',
+    'from start of day',
+    START_OF_DAY,
+    'with required count',
     questDetails.requiredCount
   )
   // If they have created the required amounts, send them a quest txn reward
@@ -125,7 +127,9 @@ const getCurrentCountForQuest = async (
   db: SupabaseClient
 ): Promise<number> => {
   if (questType === 'SHARES') {
-    return await getUniqueUserShareEventsCount(userId, START_OF_DAY, db)
+    const startTs = millisToTs(START_OF_DAY)
+    log('getting shares count for user', userId, 'from startTs', startTs)
+    return await getUserShareEventsCount(userId, startTs, db)
   } else if (questType === 'REFERRALS') {
     return await getReferralCount(userId, START_OF_WEEK, db)
   } else return 0

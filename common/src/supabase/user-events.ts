@@ -1,15 +1,15 @@
-import { SupabaseClient, run, millisToTs } from 'common/supabase/utils'
+import { SupabaseClient, run } from 'common/supabase/utils'
 
-export async function getUniqueUserShareEventsCount(
+export async function getUserShareEventsCount(
   userId: string,
-  startTime: number,
+  startTs: string,
   db: SupabaseClient
 ) {
   const q = db
     .from('user_events')
     .select('*', { head: true, count: 'exact' })
     .eq('user_id', userId)
-    .gt('ts', millisToTs(startTime))
+    .gt('ts', startTs)
     .eq('data->>type', 'copy sharing link')
 
   const { count } = await run(q)
