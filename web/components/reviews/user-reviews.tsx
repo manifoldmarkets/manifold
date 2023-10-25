@@ -21,11 +21,11 @@ export function UserReviews(props: {
     <>
       <Row
         onClick={() => setOpen(true)}
-        className="text-primary-600 cursor-pointer items-center gap-0.5 text-lg transition-colors hover:underline sm:text-xl"
+        className=" text-primary-600 group cursor-pointer items-center gap-0.5 text-lg transition-colors sm:text-xl"
       >
         {shortenedRating}
         <StarIcon className="h-5 w-5" />
-        <div className="text-ink-600 text-sm">
+        <div className="text-ink-600 text-sm group-hover:underline">
           (<span>{reviewCount}</span>)
         </div>
       </Row>
