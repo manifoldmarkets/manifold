@@ -473,9 +473,9 @@ create table if not exists
   contract_bets (
     contract_id text not null,
     bet_id text not null,
-    user_id text,
+    user_id text not null,
     answer_id text,
-    created_time timestamptz,
+    created_time timestamptz not null,
     amount numeric,
     shares numeric,
     outcome text,

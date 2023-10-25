@@ -147,7 +147,7 @@ export interface Database {
           answer_id: string | null
           bet_id: string
           contract_id: string
-          created_time: string | null
+          created_time: string
           data: Json
           fs_updated_time: string
           is_ante: boolean | null
@@ -158,7 +158,7 @@ export interface Database {
           prob_after: number | null
           prob_before: number | null
           shares: number | null
-          user_id: string | null
+          user_id: string
           visibility: string | null
         }
         Insert: {
@@ -166,7 +166,7 @@ export interface Database {
           answer_id?: string | null
           bet_id: string
           contract_id: string
-          created_time?: string | null
+          created_time: string
           data: Json
           fs_updated_time: string
           is_ante?: boolean | null
@@ -177,7 +177,7 @@ export interface Database {
           prob_after?: number | null
           prob_before?: number | null
           shares?: number | null
-          user_id?: string | null
+          user_id: string
           visibility?: string | null
         }
         Update: {
@@ -185,7 +185,7 @@ export interface Database {
           answer_id?: string | null
           bet_id?: string
           contract_id?: string
-          created_time?: string | null
+          created_time?: string
           data?: Json
           fs_updated_time?: string
           is_ante?: boolean | null
@@ -196,7 +196,7 @@ export interface Database {
           prob_after?: number | null
           prob_before?: number | null
           shares?: number | null
-          user_id?: string | null
+          user_id?: string
           visibility?: string | null
         }
         Relationships: []
@@ -2516,13 +2516,16 @@ export interface Database {
           created_time: string | null
           creator_id: string | null
           data: Json | null
+          description_fts: unknown | null
           fs_updated_time: string | null
           id: string | null
+          importance_score: number | null
           mechanism: string | null
           outcome_type: string | null
           popularity_score: number | null
           question: string | null
           question_fts: unknown | null
+          question_nostop_fts: unknown | null
           resolution: string | null
           resolution_probability: number | null
           resolution_time: string | null
@@ -2534,13 +2537,16 @@ export interface Database {
           created_time?: string | null
           creator_id?: string | null
           data?: Json | null
+          description_fts?: unknown | null
           fs_updated_time?: string | null
           id?: string | null
+          importance_score?: number | null
           mechanism?: string | null
           outcome_type?: string | null
           popularity_score?: number | null
           question?: string | null
           question_fts?: unknown | null
+          question_nostop_fts?: unknown | null
           resolution?: string | null
           resolution_probability?: number | null
           resolution_time?: string | null
@@ -2552,13 +2558,16 @@ export interface Database {
           created_time?: string | null
           creator_id?: string | null
           data?: Json | null
+          description_fts?: unknown | null
           fs_updated_time?: string | null
           id?: string | null
+          importance_score?: number | null
           mechanism?: string | null
           outcome_type?: string | null
           popularity_score?: number | null
           question?: string | null
           question_fts?: unknown | null
+          question_nostop_fts?: unknown | null
           resolution?: string | null
           resolution_probability?: number | null
           resolution_time?: string | null
@@ -3070,6 +3079,15 @@ export interface Database {
           this_group_id: string
         }
         Returns: string
+      }
+      get_non_empty_private_message_channel_ids: {
+        Args: {
+          p_user_id: string
+          p_limit?: number
+        }
+        Returns: {
+          id: number
+        }[]
       }
       get_noob_questions: {
         Args: Record<PropertyKey, never>
