@@ -1,11 +1,10 @@
+import { BsFillPersonFill } from 'react-icons/bs'
 import {
   PiGenderFemaleBold,
   PiGenderMaleBold,
   PiGenderNonbinaryBold,
   PiGenderTransgenderBold,
 } from 'react-icons/pi'
-import { BsFillPersonFill } from 'react-icons/bs'
-import { capitalizeFirstLetter } from 'web/lib/util/capitalize-first-letter'
 
 export type Gender =
   | 'male'

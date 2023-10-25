@@ -1,9 +1,14 @@
-import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
-import { capitalize, upperCase } from 'lodash'
+import { capitalize } from 'lodash'
 import { Lover } from 'love/hooks/use-lover'
-import { ReactNode, useRef, useState } from 'react'
+import {
+  RelationshipType,
+  convertRelationshipType,
+} from 'love/lib/util/convert-relationship-type'
+import stringOrStringArrayToText from 'love/lib/util/string-or-string-array-to-text'
+import { ReactNode } from 'react'
 import { BiDna, BiSolidDrink } from 'react-icons/bi'
+import { BsPersonHeart } from 'react-icons/bs'
 import { FaChild } from 'react-icons/fa6'
 import {
   LuBriefcase,
@@ -19,15 +24,10 @@ import {
   PiPlantBold,
 } from 'react-icons/pi'
 import { RiScales3Line } from 'react-icons/ri'
-import { Button } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
-import { useSafeLayoutEffect } from 'web/hooks/use-safe-layout-effect'
-import { useUser } from 'web/hooks/use-user'
-import { capitalizeFirstLetter } from 'web/lib/util/capitalize-first-letter'
 import { fromNow } from 'web/lib/util/time'
 import { Gender, convertGenderPlural } from './gender-icon'
-import { BsPersonHeart } from 'react-icons/bs'
 
 export function AboutRow(props: {
   icon: ReactNode
@@ -51,40 +51,6 @@ export function AboutRow(props: {
       </div>
     </Row>
   )
-}
-
-export function stringOrStringArrayToText(fields: {
-  text: string[] | string
-  preText?: string
-  asSentence?: boolean
-  capitalizeFirstLetterOption?: boolean
-}): string {
-  const { text, preText, asSentence, capitalizeFirstLetterOption } = fields
-  if (Array.isArray(text)) {
-    let formattedText = ''
-
-    const formatText = capitalizeFirstLetterOption
-      ? capitalizeFirstLetter
-      : (text: string) => text
-
-    if (asSentence) {
-      formattedText = text
-        .map((item, index, array) =>
-          index === array.length - 1 && array.length > 1
-            ? `and ${formatText(item)}`
-            : formatText(item)
-        )
-        .join(', ')
-    } else {
-      formattedText = text.map(formatText).join(' • ')
-    }
-
-    return `${preText ?? ''} ${formattedText}`.trim()
-  }
-
-  return `${preText ?? ''} ${
-    capitalizeFirstLetterOption ? capitalizeFirstLetter(text) : text
-  }`.trim()
 }
 
 export default function LoverAbout(props: { lover: Lover }) {
@@ -119,10 +85,7 @@ export default function LoverAbout(props: { lover: Lover }) {
       //   ref={contentRef}
     >
       <Seeking lover={lover} />
-      <AboutRow
-        icon={<BsPersonHeart className="h-5 w-5" />}
-        text={lover.pref_relation_styles}
-      />
+      <RelationshipType lover={lover} />
       <HasKids lover={lover} />
       <AboutRow
         icon={<RiScales3Line className="h-5 w-5" />}
@@ -180,11 +143,11 @@ function Seeking(props: { lover: Lover }) {
   const max = lover.pref_age_max
   const seekingGenderText = stringOrStringArrayToText({
     text: prefGender.map((gender) => convertGenderPlural(gender as Gender)),
-    preText: 'Seeking',
+    preText: 'Interested in',
     asSentence: true,
     capitalizeFirstLetterOption: false,
   })
-  const ageRangeText = `between ${min} and ${max} years old`
+  const ageRangeText = `between ${min} - ${max} years old`
   if (!prefGender || prefGender.length < 1) {
     return <></>
   }
@@ -192,6 +155,26 @@ function Seeking(props: { lover: Lover }) {
     <AboutRow
       icon={<PiMagnifyingGlassBold className="h-5 w-5" />}
       text={`${seekingGenderText} ${ageRangeText}`}
+    />
+  )
+}
+
+function RelationshipType(props: { lover: Lover }) {
+  const { lover } = props
+  const relationshipTypes = lover.pref_relation_styles
+  const seekingGenderText = stringOrStringArrayToText({
+    text: relationshipTypes.map((rel) =>
+      convertRelationshipType(rel as RelationshipType)
+    ),
+    preText: 'Open to',
+    postText: 'relationships',
+    asSentence: true,
+    capitalizeFirstLetterOption: false,
+  })
+  return (
+    <AboutRow
+      icon={<BsPersonHeart className="h-5 w-5" />}
+      text={seekingGenderText}
     />
   )
 }
@@ -207,8 +190,8 @@ function Education(props: { lover: Lover }) {
     return <></>
   }
   const universityText = `${
-    NoUniDegree ? '' : capitalizeFirstLetter(educationLevel) + ' at '
-  }${capitalizeFirstLetter(university)}`
+    NoUniDegree ? '' : capitalize(educationLevel) + ' at '
+  }${capitalize(university)}`
   return (
     <AboutRow
       icon={<LuGraduationCap className="h-5 w-5" />}
@@ -219,7 +202,6 @@ function Education(props: { lover: Lover }) {
 
 function Occupation(props: { lover: Lover }) {
   const { lover } = props
-  const occupation = lover.occupation
   const occupation_title = lover.occupation_title
   const company = lover.company
 
@@ -227,9 +209,9 @@ function Occupation(props: { lover: Lover }) {
     return <></>
   }
   const occupationText = `${
-    occupation_title ? capitalizeFirstLetter(occupation_title) : ''
+    occupation_title ? capitalize(occupation_title) : ''
   }${occupation_title && company ? ' at ' : ''}${
-    company ? capitalizeFirstLetter(company) : ''
+    company ? capitalize(company) : ''
   }`
   return (
     <AboutRow
