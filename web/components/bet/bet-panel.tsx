@@ -150,7 +150,7 @@ export function BuyPanel(props: {
       })
       .catch((e) => {
         if (e instanceof APIError) {
-          setError(e.toString())
+          setError(e.message.toString())
         } else {
           console.error(e)
           setError('Error placing bet')
@@ -245,7 +245,6 @@ export function BuyPanel(props: {
     ? `Are you sure you want to move the probability by ${displayedDifference}?`
     : undefined
 
-  const displayError = !!outcome
   const selected = seeLimit ? 'LIMIT' : outcome
 
   return (
@@ -302,7 +301,7 @@ export function BuyPanel(props: {
           inputClassName="w-full max-w-none"
           amount={betAmount}
           onChange={onBetChange}
-          error={displayError ? error : undefined}
+          error={error}
           setError={setError}
           disabled={isSubmitting}
           inputRef={inputRef}
