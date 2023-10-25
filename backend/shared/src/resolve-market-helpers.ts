@@ -208,6 +208,12 @@ export const getDataAndPayoutInfo = async (
   if (answerId) {
     betsQuery = betsQuery.where('answerId', '==', answerId)
   }
+  if (
+    unresolvedContract.mechanism === 'cpmm-multi-1' &&
+    unresolvedContract.shouldAnswersSumToOne
+  ) {
+    betsQuery = betsQuery.where('isRedemption', '==', false)
+  }
   const betsSnap = await betsQuery.get()
   const bets = betsSnap.docs.map((doc) => doc.data() as Bet)
 
