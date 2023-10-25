@@ -14,6 +14,7 @@ import { useState } from 'react'
 import { updateLover } from 'web/lib/firebase/love/api'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { toast } from 'react-hot-toast'
+import { Subtitle } from './widgets/lover-subtitle'
 
 export const LoverCommentSection = (props: {
   onUser: User
@@ -26,9 +27,9 @@ export const LoverCommentSection = (props: {
   const commentsByParent = groupBy(comments, (c) => c.replyToCommentId ?? '_')
   const [lover, setLover] = useState<Lover>(props.lover)
   return (
-    <Col className={'bg-canvas-0 mt-4 rounded-md px-3 py-2'}>
-      <Row className={'mb-4 justify-between'}>
-        <Title className=" !text-ink-1000 !mb-0">Comments</Title>
+    <Col className={'mt-4 rounded py-2'}>
+      <Row className={' mb-4 justify-between'}>
+        <Subtitle>Comments</Subtitle>
         {currentUser?.id === lover.user_id && (
           <Tooltip
             text={

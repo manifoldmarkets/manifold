@@ -194,7 +194,7 @@ const ProfileComment = memo(function FeedComment(props: {
             'grow rounded-lg rounded-tl-none px-3 pb-0.5 pt-1 transition-colors',
             highlighted
               ? 'bg-primary-100 border-primary-300 border-2'
-              : 'bg-canvas-50'
+              : 'bg-canvas-0 drop-shadow-sm'
           )}
         >
           <FeedCommentHeader
