@@ -590,8 +590,8 @@ create table if not exists
     fs_updated_time timestamp not null,
     primary key (contract_id, comment_id),
     visibility text,
-    user_id text,
-    created_time timestamptz,
+    user_id text not null,
+    created_time timestamptz not null
   );
 
 alter table contract_comments enable row level security;

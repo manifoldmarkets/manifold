@@ -232,31 +232,31 @@ export interface Database {
         Row: {
           comment_id: string
           contract_id: string
-          created_time: string | null
+          created_time: string
           data: Json
           fs_updated_time: string
           is_api: boolean
-          user_id: string | null
+          user_id: string
           visibility: string | null
         }
         Insert: {
           comment_id: string
           contract_id: string
-          created_time?: string | null
+          created_time: string
           data: Json
           fs_updated_time: string
           is_api?: boolean
-          user_id?: string | null
+          user_id: string
           visibility?: string | null
         }
         Update: {
           comment_id?: string
           contract_id?: string
-          created_time?: string | null
+          created_time?: string
           data?: Json
           fs_updated_time?: string
           is_api?: boolean
-          user_id?: string | null
+          user_id?: string
           visibility?: string | null
         }
         Relationships: []
