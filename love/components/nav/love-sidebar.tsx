@@ -29,13 +29,12 @@ import { useUser } from 'web/hooks/use-user'
 import { firebaseLogin, firebaseLogout } from 'web/lib/firebase/users'
 import TrophyIcon from 'web/lib/icons/trophy-icon.svg'
 import { withTracking } from 'web/lib/service/analytics'
-import { MobileAppsQRCodeDialog } from '../buttons/mobile-apps-qr-code-button'
-import { SidebarSignUpButton } from '../buttons/sign-up-button'
-import { ManifoldLogo } from './manifold-logo'
-import { ProfileSummary } from './profile-summary'
-import { Item, SidebarItem } from './sidebar-item'
+import { MobileAppsQRCodeDialog } from 'web/components/buttons/mobile-apps-qr-code-button'
+import { SidebarSignUpButton } from 'web/components/buttons/sign-up-button'
+import { ProfileSummary } from 'web/components/nav/profile-summary'
+import { Item, SidebarItem } from './love-sidebar-item'
 import { PrivateMessagesIcon } from 'web/components/messaging/messages-icon'
-import ManifoldLoveLogo from '../../../love/components/manifold-love-logo'
+import ManifoldLoveLogo from '../manifold-love-logo'
 import toast from 'react-hot-toast'
 
 export default function Sidebar(props: {
@@ -79,7 +78,7 @@ export default function Sidebar(props: {
       aria-label="Sidebar"
       className={clsx('flex h-screen flex-col', className)}
     >
-      <ManifoldLogo className="pb-3 pt-6" />
+      <ManifoldLoveLogo />
 
       {user === undefined && <div className="h-[56px]" />}
 

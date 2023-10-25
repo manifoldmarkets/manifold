@@ -29,7 +29,7 @@ import { useTracking } from 'web/hooks/use-tracking'
 import { useUser } from 'web/hooks/use-user'
 import { GoogleOneTapLogin } from 'web/lib/firebase/google-onetap-login'
 import { firebaseLogin } from 'web/lib/firebase/users'
-import Sidebar from 'web/components/nav/sidebar'
+import Sidebar from './nav/love-sidebar'
 
 export function LovePage(props: {
   trackPageView: string | false
