@@ -205,9 +205,9 @@ export const useFeedTimeline = (
     } = getNewContentIds(newFeedRows, savedFeedItems, followedIds)
 
     const [
-      comments,
+      likedUnhiddenComments,
       commentsFromFollowed,
-      contracts,
+      openListedContracts,
       news,
       groups,
       uninterestingContractIds,
@@ -308,24 +308,29 @@ export const useFeedTimeline = (
           )
         ),
     ])
-    const openFeedContractIds = (contracts ?? []).map((c) => c.id)
-    const closedOrResolvedContractFeedIds = newFeedRows.filter(
-      (d) =>
-        d.contract_id &&
-        !d.news_id &&
-        !openFeedContractIds.includes(d.contract_id)
-    )
-    //TODO: Mark all the user_position_changed feed items as seen that match creator_id, contract_id
-    setSeenFeedItems(closedOrResolvedContractFeedIds)
-
-    const filteredNewContracts = contracts?.filter(
+    const filteredNewContracts = openListedContracts?.filter(
       (c) =>
         !isContractBlocked(privateUser, c) &&
         !uninterestingContractIds?.includes(c.id)
     )
-    const filteredNewComments = (comments ?? [])
+    const filteredNewContractIds = (filteredNewContracts ?? []).map((c) => c.id)
+    const filteredNewComments = (likedUnhiddenComments ?? [])
       .concat(commentsFromFollowed ?? [])
       .filter((c) => !seenCommentIds?.includes(c.id))
+
+    // We could set comment feed rows with insufficient likes as seen here, settling for seen ones only
+    const commentFeedIdsToIgnore = newFeedRows.filter((r) =>
+      r.comment_id ? seenCommentIds?.includes(r.comment_id ?? '_') : false
+    )
+    const contractFeedIdsToIgnore = newFeedRows.filter(
+      (d) =>
+        d.contract_id &&
+        !d.news_id &&
+        !filteredNewContractIds.includes(d.contract_id)
+    )
+
+    //TODO: Mark all the user_position_changed feed items as seen that match creator_id, contract_id
+    setSeenFeedItems(contractFeedIdsToIgnore.concat(commentFeedIdsToIgnore))
 
     // It's possible we're missing contracts for news items bc of the duplicate filter
     const timelineItems = createFeedTimelineItems(
@@ -649,7 +654,7 @@ const getNewContentIds = (
     newCommentIds,
     newCommentIdsFromFollowed,
     potentiallySeenCommentIds,
-    newsIds: [mostImportantNewsId],
+    newsIds: filterDefined([mostImportantNewsId]),
     groupIds,
     answerIds,
     userIds,

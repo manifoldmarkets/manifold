@@ -259,8 +259,9 @@ const FeedItemFrame = (props: {
   const { ref } = useIsVisible(
     () => {
       if (DEBUG_FEED_CARDS) return
+      const start = seenStart
       setSeenStart(Date.now())
-      if (seenDuration === 0) {
+      if (start === 0 && !item?.seenTime) {
         items.forEach(async (i) => {
           run(
             db
