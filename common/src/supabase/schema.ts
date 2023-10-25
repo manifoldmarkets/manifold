@@ -3080,15 +3080,6 @@ export interface Database {
         }
         Returns: string
       }
-      get_non_empty_private_message_channel_ids: {
-        Args: {
-          p_user_id: string
-          p_limit?: number
-        }
-        Returns: {
-          id: number
-        }[]
-      }
       get_noob_questions: {
         Args: Record<PropertyKey, never>
         Returns: {
