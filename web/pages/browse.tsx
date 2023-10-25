@@ -29,6 +29,7 @@ import { usePersistentQueryState } from 'web/hooks/use-persistent-query-state'
 import { QuestionsTopicTitle } from 'web/components/topics/questions-topic-title'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { useHeaderIsStuck } from 'web/hooks/use-header-is-stuck'
+import { useSaveReferral } from 'web/hooks/use-save-referral'
 
 // TODO: use static props for non for-you topic slugs
 export default function BrowsePage() {
@@ -40,6 +41,8 @@ export default function BrowsePage() {
   const autoFocus = !isMobile && !q
   const [showTopicsSidebar, setShowTopicsSidebar] = useState<boolean>(false)
   const privateUser = usePrivateUser()
+
+  useSaveReferral(user)
 
   const shouldFilterDestiny = false // useShouldBlockDestiny(user?.id)
 
