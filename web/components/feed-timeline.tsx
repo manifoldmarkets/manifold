@@ -35,8 +35,8 @@ export function FeedTimeline() {
   return (
     <Col className="w-full items-center pb-4 sm:px-2">
       {user && remaining > 0 && (
-        <Row className="text-ink-600 mb-2 items-center justify-between gap-2 rounded-md bg-green-200 p-2 text-sm">
-          <span className={'text-ink-700'}>
+        <Row className="mb-2 items-center justify-between gap-2 rounded-md bg-green-200 p-2 text-sm">
+          <span className={'text-gray-700'}>
             🎉 You've got {remaining} free questions! Use them before they
             expire in{' '}
             {shortenedFromNow(
