@@ -10,7 +10,6 @@ import { z } from 'zod'
 import { getUserId, initAdmin } from 'web/pages/api/v0/_firebase-utils'
 import { validate } from './_validate'
 import { Contract, contractPath } from 'common/contract'
-import { revalidateStaticProps } from 'shared/lib/utils'
 
 export const config = { api: { bodyParser: true } }
 
@@ -48,7 +47,7 @@ export default async function route(req: NextApiRequest, res: NextApiResponse) {
   }
 
   await hideComment(commentPath, userId)
-  await revalidateStaticProps(contractPath(contract))
+  await res.revalidate(contractPath(contract))
   return res.status(200).json({ success: true })
 }
 
