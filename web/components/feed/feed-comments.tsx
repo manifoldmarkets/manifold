@@ -579,7 +579,7 @@ export function ContractCommentInput(props: {
     trackingLocation,
     onSubmit,
   } = props
-  const isReplyToBet = replyTo != null && 'amount' in replyTo
+  const isReplyToBet = replyTo && 'amount' in replyTo
   const isReplyToAnswer = replyTo && !isReplyToBet
 
   const onSubmitComment = useEvent(async (editor: Editor) => {
