@@ -35,7 +35,6 @@ import { ManifoldLogo } from './manifold-logo'
 import { ProfileSummary } from './profile-summary'
 import { Item, SidebarItem } from './sidebar-item'
 import { PrivateMessagesIcon } from 'web/components/messaging/messages-icon'
-import ManifoldLoveLogo from '../../../love/components/manifold-love-logo'
 import toast from 'react-hot-toast'
 
 export default function Sidebar(props: {
