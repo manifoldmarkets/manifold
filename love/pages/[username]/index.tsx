@@ -29,6 +29,7 @@ import { useRef, useState } from 'react'
 import clsx from 'clsx'
 import { useSafeLayoutEffect } from 'web/hooks/use-safe-layout-effect'
 import { Linkify } from 'web/components/widgets/linkify'
+import LoverAbout from 'love/components/lover-about'
 import { orderBy } from 'lodash'
 
 export const getStaticProps = async (props: {
@@ -121,7 +122,7 @@ export default function UserPage(props: {
               router={router}
             />
             <Matches userId={user.id} />
-            <LoverAttributes lover={lover} />
+            <LoverAbout lover={lover} />
             <Col className={'mt-2 gap-2'}>
               <Row className={'items-center gap-2'}>
                 <span className={'text-xl font-semibold'}>Answers</span>
@@ -207,159 +208,4 @@ export default function UserPage(props: {
       )}
     </LovePage>
   )
-}
-
-const LoverAttributes = (props: { lover: Lover }) => {
-  const { lover } = props
-
-  const loverPropsTitles: {
-    [key in keyof Partial<Omit<Lover, 'user'>>]: string
-  } = {
-    pref_gender: 'Interested gender',
-    pref_relation_styles: 'Relationship styles',
-    drinks_per_month: 'Drinks per month',
-    pref_age_max: 'Preferred age max',
-    pref_age_min: 'Preferred age min',
-    education_level: 'Education level',
-    ethnicity: 'Ethnicity',
-    has_kids: 'Number of kids',
-    born_in_location: 'Birthplace',
-    is_smoker: 'Smokes',
-    is_vegetarian_or_vegan: 'Vegetarian or vegan',
-    political_beliefs: 'Political beliefs',
-    religious_belief_strength: 'Strength of religious belief',
-    religious_beliefs: 'Religious beliefs',
-    wants_kids_strength: 'Desire for kids',
-    company: 'Company',
-    looking_for_matches: '',
-    messaging_status: '',
-    occupation: 'Occupation',
-    occupation_title: 'Title',
-    university: 'University',
-  }
-  const [showMore, setShowMore] = useState<boolean | undefined>(undefined)
-  const [shouldAllowCollapseOfContent, setShouldAllowCollapseOfContent] =
-    useState(false)
-  const contentRef = useRef<HTMLDivElement>(null)
-
-  const user = useUser()
-  const isYou = user?.id === lover.user_id
-
-  useSafeLayoutEffect(() => {
-    if (
-      contentRef.current &&
-      contentRef.current.offsetHeight > 180 &&
-      showMore === undefined &&
-      isYou
-    ) {
-      setShouldAllowCollapseOfContent(true)
-      setShowMore(false)
-    }
-  }, [contentRef.current?.offsetHeight, isYou])
-
-  const cardClassName = 'px-3 py-2 bg-canvas-0 w-40 gap-1 rounded-md'
-  return (
-    <Row
-      className={clsx(
-        'relative flex-wrap gap-3 overflow-hidden',
-        showMore === undefined || showMore ? 'h-full' : 'max-h-24 '
-      )}
-      ref={contentRef}
-    >
-      {Object.keys(loverPropsTitles).map((k) => {
-        const key = k as keyof Omit<Lover, 'user'>
-        if (
-          !loverPropsTitles[key] ||
-          lover[key] === undefined ||
-          lover[key] === null
-        )
-          return null
-        const formattedValue = formatLoverValue(key, lover[key])
-        if (formattedValue === null || formattedValue.length === 0) return null
-        if (
-          key == 'religious_belief_strength' &&
-          !lover['religious_beliefs']?.length
-        )
-          return null
-
-        return (
-          <Col key={key} className={cardClassName}>
-            <Row className={'font-semibold'}>{loverPropsTitles[key]}</Row>
-            <Row>{formattedValue}</Row>
-          </Col>
-        )
-      })}
-      {/* Special case for min and max age range */}
-      <Col className={cardClassName}>
-        <Row className={'font-semibold'}>Preferred Age Range</Row>
-        <Row>{`${lover.pref_age_min} - ${lover.pref_age_max}`}</Row>
-      </Col>
-      {lover.twitter && (
-        <Col className={cardClassName}>
-          <Row className={'font-semibold'}>Twitter</Row>
-          <Linkify text={lover.twitter} className={'break-anywhere'} />
-        </Col>
-      )}
-      {lover.website && (
-        <Col className={cardClassName}>
-          <Row className={'font-semibold'}>Website</Row>
-          <Linkify text={lover.website} className={'break-anywhere'} />
-        </Col>
-      )}
-
-      {!showMore && shouldAllowCollapseOfContent && (
-        <>
-          <div className="from-canvas-50 absolute bottom-0 h-8 w-full rounded-b-md bg-gradient-to-t" />
-        </>
-      )}
-      {shouldAllowCollapseOfContent && (
-        <Button
-          color={'gray-outline'}
-          className={'absolute bottom-0 right-0'}
-          onClick={() => setShowMore(!showMore)}
-        >
-          {showMore ? (
-            <ChevronUpIcon className="mr-2 h-4 w-4" />
-          ) : (
-            <ChevronDownIcon className="mr-2 h-4 w-4" />
-          )}
-          Show {showMore ? 'less' : 'more'}
-        </Button>
-      )}
-    </Row>
-  )
-}
-export const formatLoverValue = (key: string, value: any) => {
-  if (Array.isArray(value)) {
-    return value.join(', ')
-  }
-  switch (key) {
-    case 'birthdate':
-      return fromNow(new Date(value).valueOf()).replace(' ago', '')
-    case 'created_time':
-    case 'last_online_time':
-      return fromNow(new Date(value).valueOf())
-    case 'is_smoker':
-    case 'is_vegetarian_or_vegan':
-    case 'has_pets':
-      return value ? 'Yes' : 'No'
-    case 'height_in_inches':
-      return `${Math.floor(value / 12)}' ${value % 12}"`
-    case 'pref_age_max':
-    case 'pref_age_min':
-      return null // handle this in a special case
-    case 'wants_kids_strength':
-      return renderAgreementScale(value)
-    default:
-      return value
-  }
-}
-
-const renderAgreementScale = (value: number) => {
-  if (value == 1) return 'Strongly disagree'
-  if (value == 2) return 'Disagree'
-  if (value == 3) return 'Neutral'
-  if (value == 4) return 'Agree'
-  if (value == 5) return 'Strongly agree'
-  return ''
 }
