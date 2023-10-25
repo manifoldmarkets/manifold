@@ -166,8 +166,11 @@ function RelationshipType(props: { lover: Lover }) {
     text: relationshipTypes.map((rel) =>
       convertRelationshipType(rel as RelationshipType)
     ),
-    preText: 'Open to',
-    postText: 'relationships',
+    preText: 'Seeking',
+    postText:
+      relationshipTypes.length == 1 && relationshipTypes[0] == 'mono'
+        ? 'relationship'
+        : 'relationships',
     asSentence: true,
     capitalizeFirstLetterOption: false,
   })

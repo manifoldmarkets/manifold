@@ -6,32 +6,37 @@ export default function stringOrStringArrayToText(fields: {
   postText?: string
   asSentence?: boolean
   capitalizeFirstLetterOption?: boolean
-}): string {
-  const { text, preText, postText, asSentence, capitalizeFirstLetterOption } =
-    fields
+}): string | null {
+  const {
+    text,
+    preText = '',
+    postText = '',
+    asSentence,
+    capitalizeFirstLetterOption,
+  } = fields
+
+  if (!text || text.length < 1) {
+    return null
+  }
+
+  const formatText = capitalizeFirstLetterOption
+    ? capitalize
+    : (text: string) => text
+
   if (Array.isArray(text)) {
     let formattedText = ''
 
-    const formatText = capitalizeFirstLetterOption
-      ? capitalize
-      : (text: string) => text
-
     if (asSentence) {
-      formattedText = text
-        .map((item, index, array) =>
-          index === array.length - 1 && array.length > 1
-            ? `and ${formatText(item)}`
-            : formatText(item)
-        )
-        .join(', ')
+      formattedText =
+        text.slice(0, -1).map(formatText).join(', ') +
+        (text.length > 1 ? ' and ' : '') +
+        formatText(text[text.length - 1])
     } else {
       formattedText = text.map(formatText).join(' • ')
     }
 
-    return `${preText ?? ''} ${formattedText} ${postText ?? ''}`.trim()
+    return `${preText} ${formattedText} ${postText}`.trim()
   }
 
-  return `${preText ?? ''} ${
-    capitalizeFirstLetterOption ? capitalize(text) : text
-  } ${postText ?? ''}`.trim()
+  return `${preText} ${formatText(text)} ${postText}`.trim()
 }
