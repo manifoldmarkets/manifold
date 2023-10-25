@@ -16,32 +16,32 @@ export type Gender =
 
 export function convertGender(gender: Gender) {
   if (gender == 'male') {
-    return 'Man'
+    return 'man'
   }
   if (gender == 'female') {
-    return 'Woman'
+    return 'woman'
   }
   if (gender == 'trans-female') {
-    return 'Trans woman'
+    return 'trans woman'
   }
   if (gender == 'trans-male') {
-    return 'Trans man'
+    return 'trans man'
   }
   return capitalizeFirstLetter(gender)
 }
 
 export function convertGenderPlural(gender: Gender) {
   if (gender == 'male') {
-    return 'Men'
+    return 'men'
   }
   if (gender == 'female') {
-    return 'Women'
+    return 'women'
   }
   if (gender == 'trans-female') {
-    return 'Trans women'
+    return 'trans women'
   }
   if (gender == 'trans-male') {
-    return 'Trans men'
+    return 'trans men'
   }
   return capitalizeFirstLetter(gender)
 }
