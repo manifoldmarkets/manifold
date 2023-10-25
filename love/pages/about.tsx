@@ -21,6 +21,7 @@ import {
   TbBrandTwitter,
 } from 'react-icons/tb'
 import { LovePage } from 'love/components/love-page'
+import ManifoldLoveLogo from 'love/components/manifold-love-logo'
 
 export default function AboutPage() {
   const { isNative } = getNativePlatform()
@@ -44,7 +45,7 @@ export default function AboutPage() {
 
       <Col className="p-4">
         <Title className="hidden sm:flex">About</Title>
-        <ManifoldLogo className="mb-4 flex sm:hidden" />
+        <ManifoldLoveLogo className="mb-4 flex sm:hidden" />
 
         <div className="mb-4 text-lg">
           Manifold.love is the first dating app where your{' '}
