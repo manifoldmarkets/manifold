@@ -168,7 +168,7 @@ export function NotificationFrame(props: {
   const frameObject = (
     <Row className="cursor-pointer text-sm md:text-base">
       <Row className="w-full items-start gap-3">
-        {icon}
+        <div className="w-10">{icon}</div>
         <Col className="font w-full">
           <span>{children}</span>
           <div className="mt-1 line-clamp-3 text-xs md:text-sm">{subtitle}</div>
