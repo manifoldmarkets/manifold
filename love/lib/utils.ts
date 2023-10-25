@@ -6,7 +6,7 @@ const isPreferredGender = (
 ) => {
   if (preferredGenders === undefined || gender === undefined) return true
 
-  return preferredGenders.includes(gender)
+  return preferredGenders.includes(gender) || gender === 'non-binary'
 }
 
 export const areGenderCompatible = (lover1: Lover, lover2: Lover) => {
