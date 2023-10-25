@@ -82,7 +82,6 @@ export function LovePage(props: {
           <Sidebar
             navigationOptions={sidebarNavigationOptions}
             className="sticky top-0 hidden self-start px-2 lg:col-span-2 lg:flex"
-            loveSidebar
             hideCreateQuestionButton
           />
         )}

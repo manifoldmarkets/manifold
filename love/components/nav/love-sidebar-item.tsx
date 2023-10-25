@@ -37,8 +37,8 @@ export function SidebarItem(props: { item: Item; currentPage?: string }) {
         <item.icon
           className={clsx(
             isCurrentPage
-              ? 'text-primary-600'
-              : 'text-ink-500 group-hover:text-primary-600',
+              ? 'text-primary-700'
+              : 'text-ink-500 group-hover:text-primary-700',
             '-ml-1 mr-3 h-6 w-6 flex-shrink-0 transition-all'
           )}
           aria-hidden="true"
