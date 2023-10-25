@@ -25,17 +25,17 @@
     --color-canvas-50: 244 243 251;
     --color-canvas-100: 210 212 224;
 
-    --color-primary-50: 238 242 255;
-    --color-primary-100: 224 231 255;
-    --color-primary-200: 199 210 254;
-    --color-primary-300: 165 180 252;
-    --color-primary-400: 129 140 248;
-    --color-primary-500: 99 102 241;
-    --color-primary-600: 79 70 229;
-    --color-primary-700: 67 56 202;
-    --color-primary-800: 55 48 163;
-    --color-primary-900: 49 46 129;
-    --color-primary-950: 30 27 75;
+    --color-primary-50: 253 242 248;
+    --color-primary-100: 252 231 243;
+    --color-primary-200: 251 207 232;
+    --color-primary-300: 249 168 212;
+    --color-primary-400: 244 114 182;
+    --color-primary-500: 236 72 153;
+    --color-primary-600: 219 39 119;
+    --color-primary-700: 190 24 93;
+    --color-primary-800: 157 23 77;
+    --color-primary-900: 157 23 77;
+    --color-primary-950: 131 24 67;
 
     --color-no-50: 255 243 241;
     --color-no-100: 255 235 231;
@@ -80,17 +80,17 @@
     --color-canvas-50: 15 23 41;
     --color-canvas-100: 51 65 85;
 
-    --color-primary-950: 238 242 255;
-    --color-primary-900: 224 231 255;
-    --color-primary-800: 199 210 254;
-    --color-primary-700: 165 180 252;
-    --color-primary-600: 129 140 248;
-    --color-primary-500: 99 102 241;
-    --color-primary-400: 79 70 229;
-    --color-primary-300: 67 56 202;
-    --color-primary-200: 55 48 163;
-    --color-primary-100: 49 46 129;
-    --color-primary-50: 30 27 75;
+    --color-primary-950: 253 242 248;
+    --color-primary-900: 252 231 243;
+    --color-primary-800: 251 207 232;
+    --color-primary-700: 249 168 212;
+    --color-primary-600: 244 114 182;
+    --color-primary-500: 236 72 153;
+    --color-primary-400: 219 39 119;
+    --color-primary-300: 190 24 93;
+    --color-primary-200: 157 23 77;
+    --color-primary-100: 157 23 77;
+    --color-primary-50: 131 24 67;
 
     --color-no-950: 255 243 241;
     --color-no-900: 255 235 231;
@@ -153,7 +153,8 @@
 
 @font-face {
   font-family: 'icomoon';
-  src: url('../public/fonts/icomoon.eot?v49ui9#iefix') format('embedded-opentype'),
+  src: url('../public/fonts/icomoon.eot?v49ui9#iefix')
+      format('embedded-opentype'),
     url('../public/fonts/icomoon.ttf?v49ui9') format('truetype'),
     url('../public/fonts/icomoon.woff?v49ui9') format('woff'),
     url('../public/fonts/icomoon.svg?v49ui9#icomoon') format('svg');
