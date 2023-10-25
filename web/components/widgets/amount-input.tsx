@@ -171,7 +171,7 @@ export function BuyAmountInput(props: {
     } else {
       setError(undefined)
     }
-  })
+  }, [amount, user, minimumAmount, maximumAmount, disregardUserBalance])
 
   const quickAddButton = (
     <button

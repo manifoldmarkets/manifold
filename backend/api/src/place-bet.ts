@@ -118,7 +118,8 @@ export const placeBetMain = async (
       ) {
         // eslint-disable-next-line prefer-const
         let { outcome, limitProb, expiresAt } = validate(binarySchema, body)
-
+        if (expiresAt && expiresAt < Date.now())
+          throw new APIError(404, 'Bet cannot expire in the past.')
         if (limitProb !== undefined && outcomeType === 'BINARY') {
           const isRounded = floatingEqual(
             Math.round(limitProb * 100),
@@ -168,6 +169,8 @@ export const placeBetMain = async (
           limitProb,
           expiresAt,
         } = validate(multipleChoiceSchema, body)
+        if (expiresAt && expiresAt < Date.now())
+          throw new APIError(404, 'Bet cannot expire in the past.')
         const answersSnap = await trans.get(
           contractDoc.collection('answersCpmm')
         )
