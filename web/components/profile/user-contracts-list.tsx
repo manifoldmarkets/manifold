@@ -16,6 +16,8 @@ import { useUser } from 'web/hooks/use-user'
 import { CreateQuestionButton } from '../buttons/create-question-button'
 import { useRouter } from 'next/router'
 import { UserReviews } from '../reviews/user-reviews'
+import { InfoBox } from '../widgets/info-box'
+import { InfoTooltip } from '../widgets/info-tooltip'
 
 export function UserContractsList(props: {
   creator: User
@@ -50,7 +52,15 @@ export function UserContractsList(props: {
       <Row className={'gap-8 pb-4'}>
         {rating && !!reviewCount && reviewCount > 0 && (
           <Col>
-            <Row className="text-ink-600 text-xs sm:text-sm">Rating</Row>
+            <Row className="text-ink-600 gap-0.5 text-xs sm:text-sm">
+              Rating
+              <InfoTooltip
+                text={
+                  'This average has been weighted to ensure more accurate representation'
+                }
+                size="sm"
+              />
+            </Row>
             <UserReviews
               userId={creator.id}
               rating={rating}
