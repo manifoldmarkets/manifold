@@ -754,7 +754,7 @@ function ContractFilters(props: {
               selectSort
             )}
             icon={
-              <Row className=" text-ink-500 items-center gap-0.5">
+              <Row className="text-ink-500 items-center gap-0.5">
                 <span className="whitespace-nowrap text-sm font-medium">
                   {sortLabel}
                 </span>

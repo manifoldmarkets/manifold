@@ -29,6 +29,16 @@ import {
 } from './answer-components'
 import { floatingEqual } from 'common/util/math'
 import { InfoTooltip } from '../widgets/info-tooltip'
+import DropdownMenu from '../comments/dropdown-menu'
+import generateFilterDropdownItems from '../search/search-dropdown-helpers'
+
+type Sort = 'prob' | 'index' | 'liquidity'
+
+const SORTS = [
+  { label: 'High %', value: 'prob' },
+  { label: 'Created', value: 'index' },
+  { label: 'Trending', value: 'liquidity' },
+] as const
 
 // full resorting, hover, clickiness
 export function AnswersPanel(props: {
@@ -62,20 +72,36 @@ export function AnswersPanel(props: {
 
   const answers = contract.answers
     .filter((a) => isMultipleChoice || ('number' in a && a.number !== 0))
-    .map((a) => ({ ...a, prob: getAnswerProbability(contract, a.id) }))
+    .map((a) => ({
+      ...a,
+      prob: getAnswerProbability(contract, a.id),
+    }))
 
-  const sortByProb = addAnswersMode === 'ANYONE'
+  const [sort, setSort] = useState<Sort>(
+    addAnswersMode !== 'ANYONE'
+      ? 'index'
+      : shouldAnswersSumToOne
+      ? 'prob'
+      : 'liquidity'
+  )
+
   const sortedAnswers = sortBy(answers, [
-    // Winners for shouldAnswersSumToOne
-    (answer) => (resolutions ? -1 * resolutions[answer.id] : answer),
-    // Winners for independent binary
-    (answer) =>
-      'resolution' in answer && answer.resolution
-        ? -answer.subsidyPool
-        : -Infinity,
-    // then by prob or index
-    (answer) =>
-      !sortByProb && 'index' in answer ? answer.index : -1 * answer.prob,
+    shouldAnswersSumToOne
+      ? // Winners first
+        (answer) => (resolutions ? -1 * resolutions[answer.id] : answer)
+      : // Resolved last
+        (answer) =>
+          'resolutionTime' in answer ? -(answer.resolutionTime ?? 1) : 0,
+    // then by sort
+    (answer) => {
+      if (sort === 'index') {
+        return 'index' in answer ? answer.index : answer.number
+      } else if (sort === 'prob') {
+        return -1 * answer.prob
+      } else if (sort === 'liquidity') {
+        return 'subsidyPool' in answer ? answer.subsidyPool : 0
+      }
+    },
   ])
 
   const answersToShow =
@@ -102,6 +128,19 @@ export function AnswersPanel(props: {
     <div className="mx-[2px]">
       {!showNoAnswers && (
         <Col className="gap-2">
+          <DropdownMenu
+            className="self-end"
+            items={generateFilterDropdownItems(SORTS, setSort)}
+            icon={
+              <Row className="text-ink-500 items-center gap-0.5">
+                <span className="whitespace-nowrap text-sm font-medium">
+                  Sort: {SORTS.find((s) => s.value === sort)?.label}
+                </span>
+                <ChevronDownIcon className="h-4 w-4" />
+              </Row>
+            }
+          />
+
           {answersToShow.map((answer) => (
             <Answer
               key={answer.id}
