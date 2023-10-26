@@ -1,6 +1,9 @@
 import { RadioGroup } from '@headlessui/react'
 import clsx from 'clsx'
 import { orderBy } from 'lodash'
+import { Col } from '../layout/col'
+import { Row } from '../layout/row'
+import { MultipleChoiceColors } from 'common/love/multiple-choice'
 
 export function RadioToggleGroup(props: {
   currentChoice: number
@@ -11,35 +14,52 @@ export function RadioToggleGroup(props: {
 }) {
   const { currentChoice, setChoice, choicesMap, className, toggleClassName } =
     props
+
+  const orderedChoicesMap = orderBy(
+    Object.entries(choicesMap),
+    ([_, choice]) => choice
+  )
+
+  const length = orderedChoicesMap.length
   return (
-    <RadioGroup
-      className={clsx(
-        className,
-        'border-ink-300 text-ink-400 bg-canvas-0  gap-2 rounded-md border p-1 text-sm shadow-sm'
-      )}
-      value={currentChoice}
-      onChange={setChoice}
-    >
-      {orderBy(Object.entries(choicesMap), ([_, choice]) => choice).map(
-        ([choiceKey, choice]) => (
+    <Row className="text-ink-300 dark:text-ink-600 mb-6 items-center gap-3 text-sm">
+      {orderedChoicesMap[0][0]}
+      <RadioGroup
+        className={clsx(
+          className,
+          `flex w-full flex-row justify-between gap-2 rounded-md p-1 text-xs shadow-sm`
+        )}
+        value={currentChoice}
+        onChange={setChoice}
+      >
+        {orderedChoicesMap.map(([choiceKey, choice], index) => (
           <RadioGroup.Option
             key={choiceKey}
             value={choice}
             className={({ disabled }) =>
               clsx(
+                disabled ? 'cursor-not-allowed' : 'cursor-pointer ',
+                ' mx-auto h-5 w-5 rounded-full  bg-opacity-20 ring-1 ring-opacity-70 transition-all',
+                ' aria-checked:bg-opacity-100 aria-checked:ring-8 aria-checked:ring-opacity-40',
                 disabled
-                  ? 'text-ink-300  cursor-not-allowed'
-                  : 'cursor-pointer ',
-                'text-ink-500 hover:bg-primary-100 hover:text-ink-700 aria-checked:bg-primary-500 aria-checked:text-white',
-                ' rounded-md p-2 outline-none transition-all focus-visible:ring-2 sm:px-3',
+                  ? 'bg-ink-400 ring-ink-400'
+                  : index % MultipleChoiceColors.length == 0
+                  ? 'bg-rose-500 ring-rose-500'
+                  : index % MultipleChoiceColors.length == 1
+                  ? 'bg-rose-300 ring-rose-300'
+                  : index % MultipleChoiceColors.length == 2
+                  ? 'bg-stone-300 ring-stone-300'
+                  : index % MultipleChoiceColors.length == 3
+                  ? 'bg-teal-300 ring-teal-300'
+                  : 'bg-teal-500 ring-teal-500',
+
                 toggleClassName
               )
             }
-          >
-            <RadioGroup.Label as="span">{choiceKey}</RadioGroup.Label>
-          </RadioGroup.Option>
-        )
-      )}
-    </RadioGroup>
+          />
+        ))}
+      </RadioGroup>
+      {orderedChoicesMap[length - 1][0]}
+    </Row>
   )
 }
