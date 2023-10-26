@@ -251,7 +251,7 @@ export const OptionalLoveUserForm = (props: {
           </Row>
         </Col>
 
-        <Col className={clsx(colClassName)}>
+        {/* <Col className={clsx(colClassName)}>
           <label className={clsx(labelClassName)}>Birthplace</label>
           <Input
             type="text"
@@ -259,7 +259,7 @@ export const OptionalLoveUserForm = (props: {
             className={'w-52'}
             value={lover['born_in_location'] ?? undefined}
           />
-        </Col>
+        </Col> */}
 
         <Col className={clsx(colClassName)}>
           <label className={clsx(labelClassName)}>Ethnicity/origin(s)</label>
