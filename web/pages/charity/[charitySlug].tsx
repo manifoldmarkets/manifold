@@ -136,11 +136,11 @@ function Details(props: {
       <div className="mb-2 text-4xl text-teal-500">
         {manaToUSD(totalRaised ?? 0)} raised
       </div>
-      {fromYou && (
+      {fromYou ? (
         <div className="text-xl text-teal-500">
           {manaToUSD(fromYou)} from you!
         </div>
-      )}
+      ) : null}
       {numSupporters && (
         <div className="text-ink-500">{numSupporters} supporters</div>
       )}
