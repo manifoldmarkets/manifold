@@ -444,6 +444,7 @@ export function LoverCommentInput(props: {
       onSubmitComment={onSubmitComment}
       replyToUserInfo={replyToUserInfo}
       parentCommentId={parentCommentId}
+      placeholder="Write your endorsement..."
       className={className}
     />
   )

@@ -6,7 +6,6 @@ import {
   LoverProfileCommentThread,
 } from 'love/components/lover-comments'
 import { User } from 'common/user'
-import { Title } from 'web/components/widgets/title'
 import { Row } from 'web/components/layout/row'
 import ShortToggle from 'web/components/widgets/short-toggle'
 import { Lover } from 'love/hooks/use-lover'
@@ -26,15 +25,16 @@ export const LoverCommentSection = (props: {
   const parentComments = comments.filter((c) => !c.replyToCommentId)
   const commentsByParent = groupBy(comments, (c) => c.replyToCommentId ?? '_')
   const [lover, setLover] = useState<Lover>(props.lover)
+  const isCurrentUser = currentUser?.id === onUser.id
   return (
     <Col className={'mt-4 rounded py-2'}>
-      <Row className={' mb-4 justify-between'}>
-        <Subtitle>Comments</Subtitle>
-        {currentUser?.id === lover.user_id && (
+      <Row className={'mb-2 justify-between'}>
+        <Subtitle>Endorsements</Subtitle>
+        {isCurrentUser && (
           <Tooltip
             text={
               (lover.comments_enabled ? 'Disable' : 'Enable') +
-              ' comments from others'
+              ' endorsements from others'
             }
           >
             <ShortToggle
@@ -48,12 +48,12 @@ export const LoverCommentSection = (props: {
                   }),
                   {
                     loading: on
-                      ? 'Enabling comments from others'
-                      : 'Disabling comments from others',
+                      ? 'Enabling endorsements from others'
+                      : 'Disabling endorsements from others',
                     success: on
-                      ? 'Comments enabled from others'
-                      : 'Comments disabled from others',
-                    error: 'Failed to update comment status',
+                      ? 'Endorsements enabled from others'
+                      : 'Endorsements disabled from others',
+                    error: 'Failed to update endorsement status',
                   }
                 )
               }}
@@ -61,6 +61,15 @@ export const LoverCommentSection = (props: {
           </Tooltip>
         )}
       </Row>
+      <div className="mb-4">
+        {isCurrentUser ? (
+          <>People you know can write endorsements of you here.</>
+        ) : (
+          <>
+            If you know them, write something nice that adds to their profile.
+          </>
+        )}
+      </div>
       {currentUser &&
         (lover.comments_enabled ||
           (!lover.comments_enabled && currentUser.id === lover.user_id)) && (
@@ -72,7 +81,7 @@ export const LoverCommentSection = (props: {
         )}
       {!lover.comments_enabled && currentUser?.id != lover.user_id && (
         <span className={'text-ink-500 text-sm'}>
-          {onUser.name} has disabled comments from others.
+          {onUser.name} has disabled endorsements from others.
         </span>
       )}
       {orderBy(parentComments, 'createdTime', 'desc').map((c) => (
