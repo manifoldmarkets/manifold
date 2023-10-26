@@ -1,14 +1,11 @@
-import { DonationTxn } from 'common/txn'
+import { User } from 'common/user'
 import { Avatar } from '../widgets/avatar'
-import { useUserById } from 'web/hooks/use-user'
 import { manaToUSD } from 'common/util/format'
 import { RelativeTimestamp } from '../relative-timestamp'
 import { UserLink } from 'web/components/widgets/user-link'
 
-export function Donation(props: { txn: DonationTxn }) {
-  const { txn } = props
-  const user = useUserById(txn.fromId)
-
+export function Donation(props: { user: User, amount: number, ts: number  }) {
+  const { user, amount, ts } = props;
   return (
     <div className="mb-2 flow-root pr-2 md:pr-0">
       <div className="text-ink-700 relative flex items-center gap-x-2">
@@ -24,8 +21,8 @@ export function Donation(props: { txn: DonationTxn }) {
             ) : (
               <>Someone</>
             )}{' '}
-            donated {manaToUSD(txn.amount)}
-            <RelativeTimestamp time={txn.createdTime} />
+            donated {manaToUSD(amount)}
+            <RelativeTimestamp time={ts} />
           </p>
         </div>
       </div>
