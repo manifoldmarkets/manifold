@@ -12,7 +12,7 @@ export function buildOgUrl<P extends Record<string, string>>(
 
   // Change to localhost:3000 for local testing
   const url =
-    // `http://localhost:3000/api/og/${endpoint}?` +
+    // `http://localhost:3000/api/og/${endpoint}?` + generateUrlParams(props)
     `https://${DOMAIN}/api/og/${endpoint}?` + generateUrlParams(props)
 
   return url

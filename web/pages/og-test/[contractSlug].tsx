@@ -51,15 +51,15 @@ function OriginalGangstaTestPage(props: ContractParams) {
       <div className="text-ink-900 mb-2 mt-6 text-xl">social preview image</div>
       <img
         src={buildOgUrl(ogCardProps as any, 'market')}
-        height={300}
+        height={315}
         width={600}
       />
 
       <div className="text-ink-900 mb-2 mt-6 text-xl">
         og card component (try inspecting)
       </div>
-      <div className="isolate h-[300px] w-[600px] resize overflow-hidden">
-        <OgMarket {...ogCardProps} />h
+      <div className="h-[315px] w-[600px] resize overflow-hidden">
+        <OgMarket {...ogCardProps} />
       </div>
     </div>
   )

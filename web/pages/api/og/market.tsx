@@ -12,8 +12,8 @@ export const getCardOptions = async () => {
     MAJOR_MONO_DATA,
   ])
   return {
-    width: 1200,
-    height: 600,
+    width: 600,
+    height: 315,
     fonts: [
       {
         name: 'Readex Pro',
