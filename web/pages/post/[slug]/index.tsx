@@ -19,7 +19,6 @@ import { ENV_CONFIG } from 'common/envs/constants'
 import Custom404 from 'web/pages/404'
 import { UserLink } from 'web/components/widgets/user-link'
 import { PostComment } from 'common/comment'
-import { CommentTipMap, useTipTxns } from 'web/hooks/use-tip-txns'
 import { groupBy, sortBy } from 'lodash'
 import {
   PostCommentInput,
@@ -70,7 +69,6 @@ export default function PostPage(props: {
   const { creator, watched = [], skipped = [], post } = props
   const postId = post?.id ?? '_'
 
-  const tips = useTipTxns({ postId })
   const comments = useRealtimePostComments(postId) || props.comments
   const user = useUser()
 
@@ -125,7 +123,7 @@ export default function PostPage(props: {
 
         <Spacer h={4} />
         <div className="rounded-lg px-6 py-4 sm:py-0">
-          <PostCommentsActivity post={post} comments={comments} tips={tips} />
+          <PostCommentsActivity post={post} comments={comments} />
         </div>
       </div>
     </Page>
@@ -135,9 +133,8 @@ export default function PostPage(props: {
 export function PostCommentsActivity(props: {
   post: Post
   comments: PostComment[]
-  tips: CommentTipMap
 }) {
-  const { post, comments, tips } = props
+  const { post, comments } = props
   const commentsByUserId = groupBy(comments, (c) => c.userId)
   const commentsByParentId = groupBy(comments, (c) => c.replyToCommentId ?? '_')
   const topLevelComments = sortBy(
@@ -157,7 +154,6 @@ export function PostCommentsActivity(props: {
             commentsByParentId[parent.id] ?? [],
             (c) => c.createdTime
           )}
-          tips={tips}
           commentsByUserId={commentsByUserId}
         />
       ))}
