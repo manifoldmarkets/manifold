@@ -1,9 +1,4 @@
-import {
-  CashIcon,
-  DeviceMobileIcon,
-  HomeIcon,
-  BellIcon,
-} from '@heroicons/react/outline'
+import { CashIcon, HomeIcon, BellIcon } from '@heroicons/react/outline'
 import {
   QuestionMarkCircleIcon,
   HomeIcon as SolidHomeIcon,
@@ -56,8 +51,8 @@ export function LovePage(props: {
   const sidebarNavigationOptions = user
     ? isMobile
       ? getSidebarNavigation(() => setIsAddFundsModalOpen(true))
-      : getDesktopNav(!!user, () => setIsModalOpen(true))
-    : []
+      : getDesktopNav(!!user)
+    : getDesktopNav(!!user)
   // eslint-disable-next-line react-hooks/rules-of-hooks
   trackPageView && useTracking(`view love ${trackPageView}`, trackPageProps)
   useOnline()
@@ -118,7 +113,7 @@ export function LovePage(props: {
 
 function getBottomNavigation(user: User) {
   return buildArray(
-    { name: 'Profiles', href: '/profiles', icon: SolidHomeIcon },
+    { name: 'Profiles', href: '/', icon: SolidHomeIcon },
     {
       name: 'Profile',
       href: `/${user.username}`,
@@ -133,14 +128,14 @@ function getBottomNavigation(user: User) {
 }
 
 const signedOutNavigation = () => [
-  { name: 'Profiles', href: '/profiles', icon: HomeIcon },
+  { name: 'Profiles', href: '/', icon: HomeIcon },
   { name: 'About', href: '/about', icon: QuestionMarkCircleIcon },
   { name: 'Sign in', onClick: firebaseLogin, icon: UserCircleIcon },
 ]
-const getDesktopNav = (loggedIn: boolean, openDownloadApp: () => void) => {
+const getDesktopNav = (loggedIn: boolean) => {
   if (loggedIn)
     return buildArray(
-      { name: 'Profiles', href: '/profiles', icon: HomeIcon },
+      { name: 'Profiles', href: '/', icon: HomeIcon },
       { name: 'Updates', href: '/updates', icon: BellIcon },
       {
         name: 'Messages',
@@ -150,9 +145,8 @@ const getDesktopNav = (loggedIn: boolean, openDownloadApp: () => void) => {
     )
 
   return buildArray(
-    { name: 'Profiles', href: '/profiles', icon: HomeIcon },
-    { name: 'About', href: '/about', icon: QuestionMarkCircleIcon },
-    { name: 'App', onClick: openDownloadApp, icon: DeviceMobileIcon }
+    { name: 'Profiles', href: '/', icon: HomeIcon },
+    { name: 'About', href: '/about', icon: QuestionMarkCircleIcon }
   )
 }
 

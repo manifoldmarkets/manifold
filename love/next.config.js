@@ -140,7 +140,7 @@ module.exports = {
       },
       {
         source: '/home',
-        destination: '/profiles',
+        destination: '/',
         permanent: true,
       },
       // NOTE: add any external redirects at common/envs/constants.ts and update native apps.

@@ -1,17 +1,16 @@
 import Link from 'next/link'
 import LoveLogo from '../public/manifold_love_logo.svg'
-import { useUser } from 'web/hooks/use-user'
 import clsx from 'clsx'
 import { ENV } from 'common/envs/constants'
+import { Row } from 'web/components/layout/row'
 
-export default function ManifoldLoveLogo(props: { className?: string }) {
-  const { className } = props
-  const user = useUser()
-  return (
-    <Link
-      href={user ? '/profiles' : '/'}
-      className={clsx(' flex flex-row gap-1 pb-3 pt-6', className)}
-    >
+export default function ManifoldLoveLogo(props: {
+  noLink?: boolean
+  className?: string
+}) {
+  const { noLink, className } = props
+  const inner = (
+    <>
       <LoveLogo
         className="h-10 w-10 shrink-0 stroke-pink-700 transition-transform group-hover:rotate-12 dark:stroke-pink-300"
         aria-hidden
@@ -23,6 +22,17 @@ export default function ManifoldLoveLogo(props: { className?: string }) {
           love
         </span>
       </div>
+    </>
+  )
+  if (noLink) {
+    return <Row className="gap-1 pb-3 pt-6">{inner}</Row>
+  }
+  return (
+    <Link
+      href={'/'}
+      className={clsx('flex flex-row gap-1 pb-3 pt-6', className)}
+    >
+      {inner}
     </Link>
   )
 }
