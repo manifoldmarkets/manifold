@@ -24,40 +24,38 @@ import { Button } from 'web/components/buttons/button'
 import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
 import { CollapsibleContent } from 'web/components/widgets/collapsible-content'
 
-type DonationItem = { user: User, ts: number, amount: number }
+type DonationItem = { user: User; ts: number; amount: number }
 
 export async function getStaticPaths() {
   return { paths: [], fallback: 'blocking' }
 }
 
-export async function getStaticProps(ctx: {
-  params: { charitySlug: string }
-}) {
+export async function getStaticProps(ctx: { params: { charitySlug: string } }) {
   const { charitySlug } = ctx.params
   const charity = charities.find((c) => c.slug === charitySlug?.toLowerCase())
   if (!charity) {
     return {
       props: { charity: null, donations: [] },
-      revalidate: 60
+      revalidate: 60,
     }
   }
-  const txns = await getAllDonations(charity.id);
-  const userIds = uniq(txns.map(t => t.fromId));
-  const users = await getUsers(userIds);
-  const usersById = Object.fromEntries(users.map(u => [u.id, u]));
-  const donations = txns.map(t => ({
+  const txns = await getAllDonations(charity.id)
+  const userIds = uniq(txns.map((t) => t.fromId))
+  const users = await getUsers(userIds)
+  const usersById = Object.fromEntries(users.map((u) => [u.id, u]))
+  const donations = txns.map((t) => ({
     user: usersById[t.fromId],
     ts: t.createdTime,
-    amount: t.amount
+    amount: t.amount,
   }))
   return {
     props: { charity, donations },
-    revalidate: 60
+    revalidate: 60,
   }
 }
 
 export default function CharityPageWrapper(props: {
-  charity: Charity | null,
+  charity: Charity | null
   donations: DonationItem[]
 }) {
   const { charity, donations } = props
@@ -67,15 +65,12 @@ export default function CharityPageWrapper(props: {
   return <CharityPage charity={charity} donations={donations} />
 }
 
-function CharityPage(props: {
-  charity: Charity,
-  donations: DonationItem[]
-}) {
+function CharityPage(props: { charity: Charity; donations: DonationItem[] }) {
   const { charity } = props
   const { name, photo, description } = charity
   const user = useUser()
 
-  const [donations, setDonations] = useState<DonationItem[]>(props.donations);
+  const [donations, setDonations] = useState<DonationItem[]>(props.donations)
   const [showConfetti, setShowConfetti] = useState(false)
 
   return (
@@ -101,7 +96,10 @@ function CharityPage(props: {
             user={user}
             charity={charity}
             onDonated={(user, ts, amount) => {
-              setDonations(existing => [{ user, ts, amount }, ...(existing ?? [])])
+              setDonations((existing) => [
+                { user, ts, amount },
+                ...(existing ?? []),
+              ])
               setShowConfetti(true)
             }}
           />
@@ -110,9 +108,10 @@ function CharityPage(props: {
             stateKey={`isCollapsed-charity-${charity.id}`}
           />
           <Spacer h={8} />
-          {donations && donations.map((d, i) => (
-            <Donation key={i} user={d.user} ts={d.ts} amount={d.amount} />
-          ))}
+          {donations &&
+            donations.map((d, i) => (
+              <Donation key={i} user={d.user} ts={d.ts} amount={d.amount} />
+            ))}
         </Col>
       </Col>
     </Page>
@@ -127,7 +126,7 @@ function Details(props: {
   const { website } = charity
   const user = useUser()
   const totalRaised = sumBy(donations ?? [], (txn) => txn.amount)
-  const numSupporters = uniqBy(donations ?? [], (d) => d.user.id).length;
+  const numSupporters = uniqBy(donations ?? [], (d) => d.user.id).length
   const fromYou = sumBy(
     (donations ?? []).filter((txn) => txn.user.id === user?.id),
     (txn) => txn.amount

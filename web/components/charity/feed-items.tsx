@@ -4,8 +4,8 @@ import { manaToUSD } from 'common/util/format'
 import { RelativeTimestamp } from '../relative-timestamp'
 import { UserLink } from 'web/components/widgets/user-link'
 
-export function Donation(props: { user: User, amount: number, ts: number  }) {
-  const { user, amount, ts } = props;
+export function Donation(props: { user: User; amount: number; ts: number }) {
+  const { user, amount, ts } = props
   return (
     <div className="mb-2 flow-root pr-2 md:pr-0">
       <div className="text-ink-700 relative flex items-center gap-x-2">
