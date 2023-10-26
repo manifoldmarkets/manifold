@@ -1,72 +1,100 @@
-import axios from 'axios'
-import { useState } from 'react'
+// src/components/SearchBar.tsx
+import clsx from 'clsx'
+import { useEffect, useState } from 'react'
+import { Col } from 'web/components/layout/col'
+import { Row } from 'web/components/layout/row'
 import { Input } from 'web/components/widgets/input'
+import { searchLocation } from 'web/lib/firebase/api'
 
-type SearchResult = {
-  formatted: string
-  geometry: { lat: number; lng: number }
-  components: { country?: string }
+export type City = {
+  city: string
+  regionCode: string
+  country: string
+  latitude: number
+  longitude: number
 }
 
-const CitySearchBox: React.FC = () => {
-  const [query, setQuery] = useState<string>('')
-  const [results, setResults] = useState<SearchResult[]>([])
+export default function CitySearchBox(props: {
+  onCitySelected: (city: City | undefined) => void
+}) {
+  const { onCitySelected } = props
+  const [query, setQuery] = useState('')
+  const [cities, setCities] = useState<City[]>([])
+  const [loading, setLoading] = useState(false)
+  const [selectedCity, setSelectedCity] = useState<City | undefined>(undefined)
 
-  const openCageKey = 'PUTHERE'
-  const limit = 10
-
-  const searchCities = async () => {
-    try {
-      const response = await axios.get(
-        `https://api.opencagedata.com/geocode/v1/json?q=${query}&key=${openCageKey}`
-      )
-      const filteredResults = response.data.results.filter((result: any) => {
-        const lowerCaseQuery = query.toLowerCase()
-        const city = result.components.city || ''
-        const state = result.components.state || ''
-        const country = result.components.country || ''
-        return (
-          (city &&
-            city !== '' &&
-            country &&
-            country !== '' &&
-            city.toLowerCase().includes(lowerCaseQuery)) ||
-          state.toLowerCase().includes(lowerCaseQuery) ||
-          country.toLowerCase().includes(lowerCaseQuery)
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true)
+        const response = await searchLocation({ term: query, limit: 5 })
+        setCities(
+          response.data.data.map((city: any) => ({
+            city: city.name,
+            regionCode: city.regionCode,
+            country: city.country,
+            latitude: city.latitude,
+            longitude: city.longitude,
+          }))
         )
-      })
-      setResults(filteredResults.slice(0, 5)) // Take only top 5 results after filtering
-    } catch (error) {
-      console.error('Error fetching data: ', error)
-      setResults([])
+      } catch (error) {
+        console.error('Error fetching cities', error)
+      } finally {
+        setLoading(false)
+      }
     }
-  }
-  const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setQuery(event.target.value)
-    if (event.target.value.length > 2) {
-      searchCities()
+
+    const debounce = setTimeout(() => {
+      if (query.length >= 2) {
+        fetchData()
+      }
+    }, 500)
+
+    return () => {
+      clearTimeout(debounce)
     }
+  }, [query])
+
+  if (selectedCity) {
+    return (
+      <Row className="border-primary-500 w-full justify-between rounded border px-4 py-2">
+        <CityRow city={selectedCity} />
+        <button
+          className="text-ink-700 hover:text-primary-700 text-sm underline"
+          onClick={() => {
+            setSelectedCity(undefined)
+            onCitySelected(undefined)
+          }}
+        >
+          Change
+        </button>
+      </Row>
+    )
   }
 
   return (
-    <div>
+    <div className="relative w-full">
       <Input
-        placeholder={'Search a city'}
-        className={'w-full max-w-xs'}
-        onChange={handleInputChange}
         value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        placeholder="Search for a city..."
+        className="w-full"
+        autoFocus
       />
-      {results.length > 0 && (
-        <ul>
-          {results.map((result, index) => (
-            <li key={index}>
-              {/* <strong>{result.formatted}</strong> - {result.components.country} */}
-              {/* <div>{result.components}</div> */}
-              <Result result={result} />
-              <br />
-              {result.components.city}, {result.components.state}
-              {result.components.country}
-              {/* Coordinates: ({result.geometry.lat}, {result.geometry.lng}) */}
+      {loading && <p>Loading...</p>}
+      {cities.length > 0 && (
+        <ul className="border-1 bg-canvas-0 absolute z-10 w-full border text-sm drop-shadow">
+          {cities.map((city, index) => (
+            <li
+              key={index}
+              onClick={() => {
+                onCitySelected(city)
+                setSelectedCity(city)
+                setQuery('')
+                setCities([])
+              }}
+            >
+              <CityRow city={city} className="hover:bg-primary-200 px-4 py-2" />
             </li>
           ))}
         </ul>
@@ -75,8 +103,15 @@ const CitySearchBox: React.FC = () => {
   )
 }
 
-function Result(props: { result: any }) {
-  console.log(props.result)
-  return <></>
+function CityRow(props: { city: City; className?: string }) {
+  const { city, className } = props
+  return (
+    <Col className={clsx(className, 'w-full justify-between transition-all')}>
+      <span className="font-semibold">
+        {city.city}
+        {city.regionCode ? `, ${city.regionCode}` : ''}{' '}
+      </span>
+      <div className="text-ink-400">{city.country}</div>
+    </Col>
+  )
 }
-export default CitySearchBox

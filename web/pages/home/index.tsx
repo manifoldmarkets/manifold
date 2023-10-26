@@ -13,6 +13,7 @@ import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { useUser } from 'web/hooks/use-user'
 import { FeedTimeline } from 'web/components/feed-timeline'
+import CitySearchBox from 'web/components/search-location'
 
 export default function Home() {
   const isClient = useIsClient()

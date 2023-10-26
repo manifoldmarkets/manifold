@@ -16,15 +16,15 @@ import { Col } from 'web/components/layout/col'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { Title } from 'web/components/widgets/title'
 import { Row } from 'web/components/layout/row'
-import CitySearchBox from 'love/components/search-location'
+import CitySearchBox, { City } from 'love/components/search-location'
 
 export default function ProfilesPage() {
   const allLovers = useLovers()
   const [lovers, setLovers] = useState<Lover[] | undefined>(undefined)
+  const [selectedCity, setSelectedCity] = useState()
 
   return (
     <LovePage trackPageView={'user profiles'}>
-      <CitySearchBox />
       <Col className="items-center">
         <Col className={'bg-canvas-0 w-full rounded px-6 py-4'}>
           <Title className="!mb-2 text-3xl">Profiles</Title>

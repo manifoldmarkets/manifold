@@ -18,10 +18,10 @@ import dayjs from 'dayjs'
 import { Checkbox } from 'web/components/widgets/checkbox'
 import { range } from 'lodash'
 import { Select } from 'web/components/widgets/select'
+import CitySearchBox, { City } from './search-location'
 
 export const initialRequiredState = {
   birthdate: dayjs().subtract(18, 'year').format('YYYY-MM-DD'),
-  city: '',
   gender: '',
   pref_gender: [],
   pref_age_min: 18,
@@ -31,7 +31,15 @@ export const initialRequiredState = {
   looking_for_matches: true,
   messaging_status: 'open',
   visibility: 'public',
+
+  // city params
+  city: '',
+  regionCode: '',
+  country: '',
+  lat: undefined,
+  long: undefined,
 }
+
 const requiredKeys = Object.keys(
   initialRequiredState
 ) as (keyof typeof initialRequiredState)[]
@@ -46,7 +54,6 @@ export const RequiredLoveUserForm = (props: {
   const { user, onSubmit, loverCreatedAlready, setLoverState, loverState } =
     props
   const [trans, setTrans] = useState<boolean>()
-  const [showCityInput, setShowCityInput] = useState(false)
   const { updateUsername, updateDisplayName, userInfo, updateUserState } =
     useEditableUserInfo(user)
 
@@ -72,6 +79,28 @@ export const RequiredLoveUserForm = (props: {
         )) &&
     !loadingUsername &&
     !loadingName
+
+  function setLoverCity(inputCity: City | undefined) {
+    if (!inputCity) {
+      //       state: '',
+      // regionCode: '',
+      // country: '',
+      // lat: undefined,
+      // long: undefined,
+      setLoverState('city', '')
+      setLoverState('regionCode', '')
+      setLoverState('country', '')
+      setLoverState('lat', undefined)
+      setLoverState('long', undefined)
+    } else {
+      const { city, regionCode, country, latitude, longitude } = inputCity
+      setLoverState('city', city.city)
+      setLoverState('regionCode', regionCode)
+      setLoverState('country', country)
+      setLoverState('lat', latitude)
+      setLoverState('long', longitude)
+    }
+  }
 
   useEffect(() => {
     const currentState = loverState['gender']
@@ -141,7 +170,12 @@ export const RequiredLoveUserForm = (props: {
           <>
             <Col className={clsx(colClassName)}>
               <label className={clsx(labelClassName)}>Your location</label>
-              <ChoicesToggleGroup
+              <CitySearchBox
+                onCitySelected={(city: City | undefined) => {
+                  setLoverCity(city)
+                }}
+              />
+              {/* <ChoicesToggleGroup
                 currentChoice={loverState['city']}
                 choicesMap={{
                   'San Francisco': 'San Francisco',
@@ -167,7 +201,7 @@ export const RequiredLoveUserForm = (props: {
                   className={'w-56'}
                   placeholder={'e.g. DC'}
                 />
-              )}
+              )} */}
             </Col>
 
             <Col className={clsx(colClassName)}>
