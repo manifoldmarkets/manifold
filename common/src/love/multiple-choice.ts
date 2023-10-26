@@ -6,14 +6,6 @@ export const MultipleChoiceOptions = {
   'Strongly agree': 4,
 }
 
-// export const MultipleChoiceColors = [
-//   '#fb923c',
-//   '#fdba74',
-//   '#d6d3d1',
-//   '#5eead4',
-//   '#2dd4bf',
-// ]
-
 export const MultipleChoiceColors = [
   'bg-orange-500',
   'bg-orange-400',

@@ -125,7 +125,7 @@ const QuestionRow = (props: { row: rowFor<'love_questions'>; user: User }) => {
   }
 
   return (
-    <Col className={'w-full gap-2 p-2'}>
+    <Col className={'w-full gap-2 sm:px-4'}>
       <span>{question}</span>
       {answer_type === 'free_response' ? (
         <ExpandingInput

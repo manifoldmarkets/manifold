@@ -15,55 +15,51 @@ export function RadioToggleGroup(props: {
   const { currentChoice, setChoice, choicesMap, className, toggleClassName } =
     props
 
-  const items = Object.entries(choicesMap)
-  const keys = Object.keys(choicesMap)
+  const orderedChoicesMap = orderBy(
+    Object.entries(choicesMap),
+    ([_, choice]) => choice
+  )
 
+  const length = orderedChoicesMap.length
   return (
-    <Row className="text-ink-700 items-center text-sm">
-      {keys[0]}
+    <Row className="text-ink-300 dark:text-ink-600 mb-6 items-center gap-3 text-sm">
+      {orderedChoicesMap[0][0]}
       <RadioGroup
-        style={{
-          display: 'grid',
-          gridTemplateColumns: `repeat(${items.length}, 1fr)`,
-          gridGap: '10px',
-        }}
         className={clsx(
           className,
-          `text-ink-400 w-full rounded-md p-1 text-xs shadow-sm`
+          `flex w-full flex-row justify-between gap-2 rounded-md p-1 text-xs shadow-sm`
         )}
         value={currentChoice}
         onChange={setChoice}
       >
-        {orderBy(Object.entries(choicesMap), ([_, choice]) => choice).map(
-          ([choiceKey, choice], index) => (
-            <RadioGroup.Option
-              key={choiceKey}
-              value={choice}
-              className={({ disabled }) =>
-                clsx(
-                  disabled
-                    ? 'text-ink-300  cursor-not-allowed'
-                    : 'cursor-pointer ',
-                  'mx-auto h-5 w-5 rounded-full border bg-opacity-60 transition-all focus-visible:ring-2',
-                  'aria-checked:border-transparent aria-checked:bg-opacity-100 aria-checked:ring-8 aria-checked:ring-opacity-50',
-                  `${
-                    MultipleChoiceColors[index % MultipleChoiceColors.length]
-                  }`,
-                  toggleClassName
-                )
-              }
-              // style={{
-              //   backgroundColor: `${
-              //     MultipleChoiceColors[index % MultipleChoiceColors.length]
-              //   }`,
-              //   borderColor:
-              //     MultipleChoiceColors[index % MultipleChoiceColors.length],
-              // }}
-            />
-          )
-        )}
+        {orderedChoicesMap.map(([choiceKey, choice], index) => (
+          <RadioGroup.Option
+            key={choiceKey}
+            value={choice}
+            className={({ disabled }) =>
+              clsx(
+                disabled ? 'cursor-not-allowed' : 'cursor-pointer ',
+                ' mx-auto h-5 w-5 rounded-full  bg-opacity-20 ring-1 ring-opacity-70 transition-all',
+                ' aria-checked:bg-opacity-100 aria-checked:ring-8 aria-checked:ring-opacity-40',
+                disabled
+                  ? 'bg-ink-400 ring-ink-400'
+                  : index % MultipleChoiceColors.length == 0
+                  ? 'bg-rose-500 ring-rose-500'
+                  : index % MultipleChoiceColors.length == 1
+                  ? 'bg-rose-300 ring-rose-300'
+                  : index % MultipleChoiceColors.length == 2
+                  ? 'bg-stone-300 ring-stone-300'
+                  : index % MultipleChoiceColors.length == 3
+                  ? 'bg-teal-300 ring-teal-300'
+                  : 'bg-teal-500 ring-teal-500',
+
+                toggleClassName
+              )
+            }
+          />
+        ))}
       </RadioGroup>
-      {keys[keys.length - 1]}
+      {orderedChoicesMap[length - 1][0]}
     </Row>
   )
 }
