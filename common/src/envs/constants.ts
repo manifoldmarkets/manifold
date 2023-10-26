@@ -169,7 +169,7 @@ export const MOD_USERNAMES = [
   'CodeandSolder',
   'Stralor',
   'WieDan',
-  'StrayClimb',
+  'Ernie',
   'Gen',
 ]
 
