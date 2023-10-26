@@ -9,9 +9,6 @@ import { useUser } from 'web/hooks/use-user'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { GoogleSignInButton } from 'web/components/buttons/sign-up-button'
 import { firebaseLogin } from 'web/lib/firebase/users'
-import { Title } from 'web/components/widgets/title'
-import { Row } from 'web/components/layout/row'
-import clsx from 'clsx'
 import { createLover } from 'web/lib/firebase/love/api'
 import { useRouter } from 'next/router'
 import { Row as rowFor } from 'common/supabase/utils'
@@ -42,11 +39,11 @@ export default function SignupPage() {
           {step === 0 ? (
             <RequiredLoveUserForm
               user={user}
-              setLoverState={setLoverState}
-              loverState={loverForm}
+              setLover={setLoverState}
+              lover={loverForm}
               onSubmit={async () => {
                 if (!loverForm.looking_for_matches) {
-                  router.push('profiles')
+                  router.push('/')
                   return
                 }
                 const res = await createLover({
@@ -65,7 +62,7 @@ export default function SignupPage() {
           ) : step === 1 ? (
             <OptionalLoveUserForm
               setLoverState={setLoverState}
-              lover={{ ...loverForm, user }}
+              lover={loverForm}
             />
           ) : (
             <LoadingIndicator />

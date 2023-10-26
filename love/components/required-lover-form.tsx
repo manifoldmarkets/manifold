@@ -16,8 +16,13 @@ import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { Row as rowFor } from 'common/supabase/utils'
 import dayjs from 'dayjs'
 import { Checkbox } from 'web/components/widgets/checkbox'
-import { range } from 'lodash'
+import { range, uniq } from 'lodash'
 import { Select } from 'web/components/widgets/select'
+import { uploadImage } from 'web/lib/firebase/storage'
+import { buildArray } from 'common/util/array'
+import { CheckCircleIcon } from '@heroicons/react/outline'
+import { XIcon } from '@heroicons/react/solid'
+import Image from 'next/image'
 
 export const initialRequiredState = {
   birthdate: dayjs().subtract(18, 'year').format('YYYY-MM-DD'),
@@ -31,6 +36,8 @@ export const initialRequiredState = {
   looking_for_matches: true,
   messaging_status: 'open',
   visibility: 'public',
+  pinned_url: '',
+  photo_urls: [],
 }
 const requiredKeys = Object.keys(
   initialRequiredState
@@ -38,13 +45,12 @@ const requiredKeys = Object.keys(
 
 export const RequiredLoveUserForm = (props: {
   user: User
-  loverState: rowFor<'lovers'>
-  setLoverState: (key: keyof rowFor<'lovers'>, value: any) => void
+  lover: rowFor<'lovers'>
+  setLover: (key: keyof rowFor<'lovers'>, value: any) => void
   onSubmit?: () => void
   loverCreatedAlready?: boolean
 }) => {
-  const { user, onSubmit, loverCreatedAlready, setLoverState, loverState } =
-    props
+  const { user, onSubmit, loverCreatedAlready, setLover, lover } = props
   const [trans, setTrans] = useState<boolean>()
   const [showCityInput, setShowCityInput] = useState(false)
   const { updateUsername, updateDisplayName, userInfo, updateUserState } =
@@ -60,9 +66,9 @@ export const RequiredLoveUserForm = (props: {
   } = userInfo
 
   const canContinue =
-    (!loverState.looking_for_matches ||
+    (!lover.looking_for_matches ||
       requiredKeys
-        .map((k) => loverState[k])
+        .map((k) => lover[k])
         .every((v) =>
           typeof v == 'string'
             ? v !== ''
@@ -74,15 +80,35 @@ export const RequiredLoveUserForm = (props: {
     !loadingName
 
   useEffect(() => {
-    const currentState = loverState['gender']
+    const currentState = lover['gender']
     if (currentState === 'non-binary') {
       setTrans(undefined)
     } else if (trans && !currentState.includes('trans-')) {
-      setLoverState('gender', 'trans-' + currentState.replace('trans-', ''))
+      setLover('gender', 'trans-' + currentState.replace('trans-', ''))
     } else if (!trans && currentState.includes('trans-')) {
-      setLoverState('gender', currentState.replace('trans-', ''))
+      setLover('gender', currentState.replace('trans-', ''))
     }
-  }, [trans, loverState['gender']])
+  }, [trans, lover['gender']])
+  const [uploadingImages, setUploadingImages] = useState(false)
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (!files) return
+    setUploadingImages(true)
+
+    // Convert files to an array and take only the first 6 files
+    const selectedFiles = Array.from(files).slice(0, 6)
+
+    const urls = await Promise.all(
+      selectedFiles.map((f) => uploadImage(user.username, f, 'love-images'))
+    ).catch((e) => {
+      console.error(e)
+      return []
+    })
+    if (!lover.pinned_url) setLover('pinned_url', urls[0])
+    setLover('photo_urls', uniq([...(lover.photo_urls ?? []), ...urls]))
+    setUploadingImages(false)
+  }
 
   return (
     <>
@@ -129,20 +155,20 @@ export const RequiredLoveUserForm = (props: {
         <Col className={clsx(colClassName)}>
           <label className={clsx(labelClassName)}>Looking for matches</label>
           <ChoicesToggleGroup
-            currentChoice={loverState.looking_for_matches}
+            currentChoice={lover.looking_for_matches}
             choicesMap={{
               Yes: true,
               No: false,
             }}
-            setChoice={(c) => setLoverState('looking_for_matches', c)}
+            setChoice={(c) => setLover('looking_for_matches', c)}
           />
         </Col>
-        {(loverState.looking_for_matches || loverCreatedAlready) && (
+        {(lover.looking_for_matches || loverCreatedAlready) && (
           <>
             <Col className={clsx(colClassName)}>
               <label className={clsx(labelClassName)}>Your location</label>
               <ChoicesToggleGroup
-                currentChoice={showCityInput ? 'Other' : loverState['city']}
+                currentChoice={showCityInput ? 'Other' : lover['city']}
                 choicesMap={{
                   'San Francisco Bay Area': 'San Francisco',
                   'New York City': 'New York City',
@@ -151,19 +177,19 @@ export const RequiredLoveUserForm = (props: {
                 }}
                 setChoice={(c) => {
                   if (c === 'Other') {
-                    setLoverState('city', '')
+                    setLover('city', '')
                     setShowCityInput(true)
                   } else {
                     setShowCityInput(false)
-                    setLoverState('city', c)
+                    setLover('city', c)
                   }
                 }}
               />
               {showCityInput && (
                 <Input
                   type="text"
-                  value={loverState['city']}
-                  onChange={(e) => setLoverState('city', e.target.value)}
+                  value={lover['city']}
+                  onChange={(e) => setLover('city', e.target.value)}
                   className={'w-56'}
                   placeholder={'e.g. DC'}
                 />
@@ -178,10 +204,10 @@ export const RequiredLoveUserForm = (props: {
                     Month
                   </label>
                   <Select
-                    value={dayjs(loverState['birthdate']).format('MMMM')}
+                    value={dayjs(lover['birthdate']).format('MMMM')}
                     onChange={(e) => {
-                      const birthDate = dayjs(loverState['birthdate'])
-                      setLoverState(
+                      const birthDate = dayjs(lover['birthdate'])
+                      setLover(
                         'birthdate',
                         dayjs(
                           `${
@@ -215,10 +241,10 @@ export const RequiredLoveUserForm = (props: {
                 <Col className={clsx(colClassName)}>
                   <label className={clsx('text-base font-semibold')}>Day</label>
                   <Select
-                    value={dayjs(loverState['birthdate']).date()}
+                    value={dayjs(lover['birthdate']).date()}
                     onChange={(e) => {
-                      const birthDate = dayjs(loverState['birthdate'])
-                      setLoverState(
+                      const birthDate = dayjs(lover['birthdate'])
+                      setLover(
                         'birthdate',
                         dayjs(
                           `${birthDate.month() + 1} ${
@@ -241,10 +267,10 @@ export const RequiredLoveUserForm = (props: {
                     Year
                   </label>
                   <Select
-                    value={dayjs(loverState['birthdate']).year()}
+                    value={dayjs(lover['birthdate']).year()}
                     onChange={(e) => {
-                      const birthDate = dayjs(loverState['birthdate'])
-                      setLoverState(
+                      const birthDate = dayjs(lover['birthdate'])
+                      setLover(
                         'birthdate',
                         dayjs(
                           `${birthDate.month() + 1} ${birthDate.date()} ${
@@ -256,8 +282,8 @@ export const RequiredLoveUserForm = (props: {
                     className={'border-ink-300 w-24 rounded-md'}
                   >
                     {range(
-                      dayjs().subtract(100, 'year').year(),
-                      dayjs().subtract(18, 'year').year()
+                      dayjs().subtract(18, 'year').year(),
+                      dayjs().subtract(100, 'year').year()
                     ).map((m) => (
                       <option key={m} value={m}>
                         {m}
@@ -272,13 +298,13 @@ export const RequiredLoveUserForm = (props: {
               <Col className={'gap-1'}>
                 <label className={clsx(labelClassName)}>Gender</label>
                 <ChoicesToggleGroup
-                  currentChoice={loverState['gender'].replace('trans-', '')}
+                  currentChoice={lover['gender'].replace('trans-', '')}
                   choicesMap={{
                     Male: 'male',
                     Female: 'female',
                     'Non-binary': 'non-binary',
                   }}
-                  setChoice={(c) => setLoverState('gender', c)}
+                  setChoice={(c) => setLover('gender', c)}
                 />
               </Col>
               <Checkbox
@@ -286,7 +312,7 @@ export const RequiredLoveUserForm = (props: {
                 label={'Trans'}
                 toggle={setTrans}
                 checked={trans ?? false}
-                disabled={loverState['gender'] === 'non-binary'}
+                disabled={lover['gender'] === 'non-binary'}
               />
             </Row>
 
@@ -300,8 +326,8 @@ export const RequiredLoveUserForm = (props: {
                   'Trans-female': 'trans-female',
                   'Trans-male': 'trans-male',
                 }}
-                selected={loverState['pref_gender']}
-                onChange={(selected) => setLoverState('pref_gender', selected)}
+                selected={lover['pref_gender']}
+                onChange={(selected) => setLover('pref_gender', selected)}
               />
             </Col>
 
@@ -314,11 +340,93 @@ export const RequiredLoveUserForm = (props: {
                   'Open Relationship': 'open',
                   Other: 'other',
                 }}
-                selected={loverState['pref_relation_styles']}
+                selected={lover['pref_relation_styles']}
                 onChange={(selected) =>
-                  setLoverState('pref_relation_styles', selected)
+                  setLover('pref_relation_styles', selected)
                 }
               />
+            </Col>
+
+            <Col className={clsx(colClassName)}>
+              <label className={clsx(labelClassName)}>
+                Upload at least one photo
+              </label>
+              <input
+                type="file"
+                onChange={handleFileChange}
+                multiple // Allows multiple files to be selected
+                className={'w-64'}
+                disabled={uploadingImages}
+              />
+              <Row className="flex-wrap gap-2">
+                {uniq(buildArray(lover.pinned_url, lover.photo_urls))?.map(
+                  (url, index) => {
+                    const isPinned = url === lover.pinned_url
+                    return (
+                      <div
+                        key={index}
+                        className={clsx(
+                          'relative cursor-pointer rounded-md border-2 p-2',
+                          isPinned ? 'border-teal-500' : 'border-canvas-100',
+                          'hover:border-teal-900'
+                        )}
+                        onClick={() => {
+                          if (isPinned) return
+                          setLover(
+                            'photo_urls',
+                            uniq(buildArray(lover.pinned_url, lover.photo_urls))
+                          )
+                          setLover('pinned_url', url)
+                        }}
+                      >
+                        {isPinned && (
+                          <div
+                            className={clsx(
+                              ' absolute left-0 top-0 rounded-full'
+                            )}
+                          >
+                            <CheckCircleIcon
+                              className={
+                                ' bg-canvas-0 h-6 w-6 rounded-full text-teal-500'
+                              }
+                            />
+                          </div>
+                        )}
+                        <Button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            const newUrls = (lover.photo_urls ?? []).filter(
+                              (u) => u !== url
+                            )
+                            if (isPinned)
+                              setLover('pinned_url', newUrls[0] ?? '')
+                            setLover('photo_urls', newUrls)
+                          }}
+                          color={'gray-outline'}
+                          size={'2xs'}
+                          className={clsx(
+                            'bg-canvas-0 absolute right-0 top-0 !rounded-full !px-1 py-1'
+                          )}
+                        >
+                          <XIcon className={'h-4 w-4'} />
+                        </Button>
+                        <Image
+                          src={url}
+                          width={80}
+                          height={80}
+                          alt={`preview ${index}`}
+                          className="h-20 w-20 object-cover"
+                        />
+                      </div>
+                    )
+                  }
+                )}
+              </Row>
+              {lover['photo_urls']?.length ? (
+                <span className={'text-ink-500 text-xs italic'}>
+                  The highlighted image is your profile picture
+                </span>
+              ) : null}
             </Col>
 
             <Col className={clsx(colClassName)}>
@@ -327,9 +435,9 @@ export const RequiredLoveUserForm = (props: {
                 <Col>
                   <span>Min</span>
                   <Select
-                    value={loverState['pref_age_min']}
+                    value={lover['pref_age_min']}
                     onChange={(e) =>
-                      setLoverState('pref_age_min', Number(e.target.value))
+                      setLover('pref_age_min', Number(e.target.value))
                     }
                     className={'w-18 border-ink-300 rounded-md'}
                   >
@@ -343,9 +451,9 @@ export const RequiredLoveUserForm = (props: {
                 <Col>
                   <span>Max</span>
                   <Select
-                    value={loverState['pref_age_max']}
+                    value={lover['pref_age_max']}
                     onChange={(e) =>
-                      setLoverState('pref_age_max', Number(e.target.value))
+                      setLover('pref_age_max', Number(e.target.value))
                     }
                     className={'w-18 border-ink-300 rounded-md'}
                   >
@@ -367,9 +475,9 @@ export const RequiredLoveUserForm = (props: {
                 className={'w-44'}
                 choicesMap={MultipleChoiceOptions}
                 setChoice={(choice) => {
-                  setLoverState('wants_kids_strength', choice)
+                  setLover('wants_kids_strength', choice)
                 }}
-                currentChoice={loverState.wants_kids_strength ?? -1}
+                currentChoice={lover.wants_kids_strength ?? -1}
               />
             </Col>
           </>

@@ -53,7 +53,7 @@ export const QuestionsForm = () => {
               <Button
                 color={'indigo-outline'}
                 onClick={() => {
-                  page === 0 ? setPage(1) : router.push('profiles')
+                  page === 0 ? setPage(1) : router.push('/')
                 }}
               >
                 Save & continue
