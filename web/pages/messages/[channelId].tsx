@@ -2,8 +2,8 @@ import { Page } from 'web/components/layout/page'
 import { useRouter } from 'next/router'
 import {
   useOtherUserIdsInPrivateMessageChannelIds,
-  usePrivateMessageChannelIds,
   useRealtimePrivateMessagesPolling,
+  usePrivateMessageChannelId,
 } from 'web/hooks/use-private-messages'
 import { Col } from 'web/components/layout/col'
 import { User } from 'common/user'
@@ -21,7 +21,6 @@ import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { MINUTE_MS } from 'common/util/time'
 import { run } from 'common/supabase/utils'
 import { db } from 'web/lib/supabase/db'
-import { useIsVisible } from 'web/hooks/use-is-visible'
 import { useUsersInStore } from 'web/hooks/use-user-supabase'
 import { BackButton } from 'web/components/contract/back-button'
 import { Row } from 'web/components/layout/row'
@@ -37,12 +36,16 @@ export default function PrivateMessagesPage() {
   const user = useUser()
   const isAuthed = useIsAuthorized()
   const { channelId } = router.query as { channelId: string }
-  const channelIds = usePrivateMessageChannelIds(user?.id, isAuthed)
-  const loaded = isAuthed && channelIds !== undefined && channelId
+  const accessToChannellId = usePrivateMessageChannelId(
+    user?.id,
+    isAuthed,
+    channelId
+  )
+  const loaded = isAuthed && accessToChannellId !== undefined && channelId
 
   return (
     <Page trackPageView={'private messages page'}>
-      {user && loaded && channelIds.includes(parseInt(channelId)) ? (
+      {user && loaded && accessToChannellId == parseInt(channelId) ? (
         <PrivateChat channelId={parseInt(channelId)} user={user} />
       ) : (
         <LoadingIndicator />
@@ -53,7 +56,6 @@ export default function PrivateMessagesPage() {
 
 export const PrivateChat = (props: { user: User; channelId: number }) => {
   const { user, channelId } = props
-  const [visible, setVisible] = useState(false)
   const realtimeMessages = useRealtimePrivateMessagesPolling(
     channelId,
     true,
@@ -82,7 +84,6 @@ export const PrivateChat = (props: { user: User; channelId: number }) => {
     size: 'sm',
     placeholder: 'Send a message',
   })
-  const { ref } = useIsVisible(() => setVisible(true), true)
 
   useEffect(() => {
     setAsSeen(user, channelId)
@@ -115,9 +116,9 @@ export const PrivateChat = (props: { user: User; channelId: number }) => {
   }, [messages.length])
 
   useEffect(() => {
-    if (scrollToBottomRef && visible && realtimeMessages?.length)
+    if (scrollToBottomRef && realtimeMessages?.length)
       scrollToBottomRef.scrollIntoView()
-  }, [scrollToBottomRef, realtimeMessages?.length, visible])
+  }, [scrollToBottomRef, realtimeMessages?.length])
 
   async function submitMessage() {
     if (!user) {
@@ -155,7 +156,6 @@ export const PrivateChat = (props: { user: User; channelId: number }) => {
           </Link>
         </Row>
       </Col>
-      <div ref={ref} />
       <Col
         className={clsx(
           'gap-1 overflow-y-auto py-2 ',
