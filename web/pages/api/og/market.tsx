@@ -7,32 +7,34 @@ import { OgCardProps } from 'common/contract-seo'
 
 export const config = { runtime: 'edge' }
 export const getCardOptions = async () => {
-  const [readexPro, majorMono] = await Promise.all([
-    READEX_PRO_DATA,
-    MAJOR_MONO_DATA,
-  ])
+  const [light, med] = await Promise.all([figtreeLightData, figtreeMediumData])
+
   return {
     width: 600,
     height: 315,
     fonts: [
       {
-        name: 'Readex Pro',
-        data: readexPro,
+        name: 'Figtree',
+        data: med,
         style: 'normal',
       },
       {
-        name: 'Major Mono Display',
-        data: majorMono,
+        name: 'Figtree-light',
+        data: light,
         style: 'normal',
       },
     ],
   }
 }
 
-const READEX_PRO_URL = new URL('ReadexPro-Regular.ttf', import.meta.url)
-const READEX_PRO_DATA = fetch(READEX_PRO_URL).then((res) => res.arrayBuffer())
-const MAJOR_MONO_URL = new URL('MajorMonoDisplay-Regular.ttf', import.meta.url)
-const MAJOR_MONO_DATA = fetch(MAJOR_MONO_URL).then((res) => res.arrayBuffer())
+const FIGTREE_LIGHT_URL = new URL('Figtree-Light.ttf', import.meta.url)
+const figtreeLightData = fetch(FIGTREE_LIGHT_URL).then((res) =>
+  res.arrayBuffer()
+)
+const FIGTREE_MED_URL = new URL('Figtree-Medium.ttf', import.meta.url)
+const figtreeMediumData = fetch(FIGTREE_MED_URL).then((res) =>
+  res.arrayBuffer()
+)
 
 export default async function handler(req: NextRequest) {
   try {

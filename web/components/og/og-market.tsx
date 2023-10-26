@@ -98,8 +98,8 @@ export function OgMarket(props: OgCardProps) {
             height="30"
           />
           <span
-            className="text-3xl lowercase"
-            style={{ fontFamily: 'Major Mono Display' }}
+            className="text-3xl font-thin uppercase text-indigo-700"
+            style={{ fontFamily: 'var(--font-main), Figtree-light' }}
           >
             Manifold
           </span>
