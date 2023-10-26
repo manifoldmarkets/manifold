@@ -6,11 +6,6 @@ import LoverProfileHeader from 'love/components/lover-profile-header'
 import { Matches } from 'love/components/matches'
 import ProfileCarousel from 'love/components/profile-carousel'
 import { useLoverByUser } from 'love/hooks/use-lover'
-import {
-  Answer,
-  getUserAnswersAndQuestions,
-  Question,
-} from 'love/lib/supabase/questions'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
 import { Button } from 'web/components/buttons/button'
@@ -22,6 +17,7 @@ import { firebaseLogin, getUserByUsername, User } from 'web/lib/firebase/users'
 import LoverAbout from 'love/components/lover-about'
 import { orderBy } from 'lodash'
 import { Subtitle } from 'love/components/widgets/lover-subtitle'
+import { useUserAnswersAndQuestions } from 'love/hooks/use-questions'
 
 export const getStaticProps = async (props: {
   params: {
@@ -30,16 +26,10 @@ export const getStaticProps = async (props: {
 }) => {
   const { username } = props.params
   const user = await getUserByUsername(username)
-  const { questions, answers } = user
-    ? await getUserAnswersAndQuestions(user.id)
-    : { answers: [], questions: [] }
-
   return {
     props: removeUndefinedProps({
       user,
       username,
-      questions,
-      answers,
     }),
     revalidate: 15,
   }
@@ -52,18 +42,19 @@ export const getStaticPaths = () => {
 export default function UserPage(props: {
   user: User | null
   username: string
-  questions: Question[]
-  answers: Answer[]
 }) {
-  const { user, questions } = props
+  const { user } = props
   const currentUser = useUser()
   const isCurrentUser = currentUser?.id === user?.id
   const router = useRouter()
-  const answers = props.answers.filter(
-    (a) => a.multiple_choice ?? a.free_response ?? a.integer
-  )
 
   const lover = useLoverByUser(user ?? undefined)
+  const { questions, answers: allAnswers } = useUserAnswersAndQuestions(
+    user?.id
+  )
+  const answers = allAnswers.filter(
+    (a) => a.multiple_choice ?? a.free_response ?? a.integer
+  )
 
   if (currentUser === undefined) return <div></div>
   if (!user) {

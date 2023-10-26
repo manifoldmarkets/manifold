@@ -4,6 +4,7 @@ import {
   getAllQuestions,
   getUserAnswersAndQuestions,
 } from 'love/lib/supabase/questions'
+import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 
 export const useQuestions = () => {
   const [questions, setQuestions] = useState<Row<'love_questions'>[]>([])
@@ -12,14 +13,21 @@ export const useQuestions = () => {
   }, [])
   return questions
 }
-export const useUserAnswersAndQuestions = (userId: string) => {
-  const [answers, setAnswers] = useState<Row<'love_answers'>[]>([])
-  const [questions, setQuestions] = useState<Row<'love_questions'>[]>([])
+
+export const useUserAnswersAndQuestions = (userId: string | undefined) => {
+  const [answers, setAnswers] = usePersistentInMemoryState<
+    Row<'love_answers'>[]
+  >([], `answers-${userId}`)
+  const [questions, setQuestions] = usePersistentInMemoryState<
+    Row<'love_questions'>[]
+  >([], `questions-${userId}`)
   useEffect(() => {
-    getUserAnswersAndQuestions(userId).then(({ answers, questions }) => {
-      setAnswers(answers)
-      setQuestions(questions)
-    })
+    if (userId) {
+      getUserAnswersAndQuestions(userId).then(({ answers, questions }) => {
+        setAnswers(answers)
+        setQuestions(questions)
+      })
+    }
   }, [userId])
   return { answers, questions }
 }
