@@ -70,10 +70,6 @@ export default function LoverAbout(props: { lover: Lover }) {
         icon={<PiHandsPrayingBold className="h-5 w-5" />}
         text={lover.religious_beliefs}
       />
-      <AboutRow
-        icon={<PiHandsPrayingBold className="h-5 w-5" />}
-        text={lover.religious_beliefs}
-      />
       <AboutRow icon={<BiDna className="h-5 w-5" />} text={lover.ethnicity} />
       <Smoker lover={lover} />
       <Drinks lover={lover} />
