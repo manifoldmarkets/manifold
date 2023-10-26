@@ -1,7 +1,6 @@
 import { RadioGroup } from '@headlessui/react'
 import clsx from 'clsx'
 import { orderBy } from 'lodash'
-import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { MultipleChoiceColors } from 'common/love/multiple-choice'
 
