@@ -1,5 +1,4 @@
 import clsx from 'clsx'
-import { capitalize } from 'lodash'
 import { Lover } from 'love/hooks/use-lover'
 import {
   RelationshipType,
@@ -145,7 +144,7 @@ function Education(props: { lover: Lover }) {
   }
   const universityText = `${
     NoUniDegree ? '' : capitalizeAndRemoveUnderscores(educationLevel) + ' at '
-  }${capitalize(university)}`
+  }${capitalizeAndRemoveUnderscores(university)}`
   return (
     <AboutRow
       icon={<LuGraduationCap className="h-5 w-5" />}
@@ -163,9 +162,9 @@ function Occupation(props: { lover: Lover }) {
     return <></>
   }
   const occupationText = `${
-    occupation_title ? capitalize(occupation_title) : ''
+    occupation_title ? capitalizeAndRemoveUnderscores(occupation_title) : ''
   }${occupation_title && company ? ' at ' : ''}${
-    company ? capitalize(company) : ''
+    company ? capitalizeAndRemoveUnderscores(company) : ''
   }`
   return (
     <AboutRow
@@ -220,7 +219,7 @@ function WantsKids(props: { lover: Lover }) {
       : wantsKidsStrength == 1
       ? 'Prefers not to have children'
       : wantsKidsStrength == 2
-      ? 'Undecided or open to having children'
+      ? 'Neutral or open to having children'
       : wantsKidsStrength == 3
       ? 'Leaning towards wanting children'
       : 'Wants children'
@@ -276,5 +275,7 @@ const renderAgreementScale = (value: number) => {
   return ''
 }
 
-const capitalizeAndRemoveUnderscores = (str: string) =>
-  capitalize(str).replace(/_/g, ' ')
+const capitalizeAndRemoveUnderscores = (str: string) => {
+  const withSpaces = str.replace(/_/g, ' ')
+  return withSpaces.charAt(0).toUpperCase() + withSpaces.slice(1)
+}

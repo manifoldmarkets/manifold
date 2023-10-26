@@ -1,5 +1,3 @@
-import { capitalize } from 'lodash'
-
 export default function stringOrStringArrayToText(fields: {
   text: string[] | string
   preText?: string
@@ -20,7 +18,7 @@ export default function stringOrStringArrayToText(fields: {
   }
 
   const formatText = capitalizeFirstLetterOption
-    ? capitalize
+    ? (text: string) => text.charAt(0).toUpperCase() + text.slice(1)
     : (text: string) => text
 
   if (Array.isArray(text)) {
