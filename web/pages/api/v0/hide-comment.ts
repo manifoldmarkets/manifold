@@ -2,6 +2,7 @@ import {
   CORS_ORIGIN_MANIFOLD,
   CORS_ORIGIN_LOCALHOST,
   isAdminId,
+  isTrustworthy,
 } from 'common/envs/constants'
 import { NextApiRequest, NextApiResponse } from 'next'
 import { applyCorsHeaders } from 'web/lib/api/cors'
@@ -10,6 +11,7 @@ import { z } from 'zod'
 import { getUserId, initAdmin } from 'web/pages/api/v0/_firebase-utils'
 import { validate } from './_validate'
 import { Contract, contractPath } from 'common/contract'
+import { getUser } from 'web/lib/supabase/user'
 
 export const config = { api: { bodyParser: true } }
 
@@ -31,8 +33,11 @@ export default async function route(req: NextApiRequest, res: NextApiResponse) {
   })
   const { commentPath } = validate(schema, req.body)
 
-  // Get the private-user to verify if user has an admin email
   const userId = await getUserId(req, res)
+  const user = await getUser(userId)
+  if (!user) {
+    return res.status(401).json({ error: 'User not found' })
+  }
 
   // Extract contractId from commentPath
   const contractId = commentPath.split('/')[1]
@@ -40,10 +45,14 @@ export default async function route(req: NextApiRequest, res: NextApiResponse) {
   const contract = contractDoc.data() as Contract
   const isContractCreator = contract.creatorId === userId
 
-  if (!isAdminId(userId) && !isContractCreator) {
+  if (
+    !isAdminId(userId) &&
+    !isContractCreator &&
+    !isTrustworthy(user.username)
+  ) {
     return res
       .status(401)
-      .json({ error: 'Only the market creator or an admin can hide markets' })
+      .json({ error: 'Only the market creator or mod can hide comments' })
   }
 
   await hideComment(commentPath, userId)

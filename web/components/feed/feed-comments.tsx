@@ -35,7 +35,7 @@ import { Row } from 'web/components/layout/row'
 import { OutcomeLabel } from 'web/components/outcome-label'
 import { Avatar } from 'web/components/widgets/avatar'
 import { UserLink } from 'web/components/widgets/user-link'
-import { useAdmin } from 'web/hooks/use-admin'
+import { useAdminOrTrusted } from 'web/hooks/use-admin'
 import { useEvent } from 'web/hooks/use-event'
 import { useIsVisible } from 'web/hooks/use-is-visible'
 import { isBlocked, usePrivateUser, useUser } from 'web/hooks/use-user'
@@ -343,7 +343,7 @@ export function DotMenu(props: {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const user = useUser()
   const privateUser = usePrivateUser()
-  const isAdmin = useAdmin()
+  const isMod = useAdminOrTrusted()
   const isContractCreator = privateUser?.id === contract.creatorId
   const [editingComment, setEditingComment] = useState(false)
   const [tipping, setTipping] = useState(false)
@@ -402,7 +402,7 @@ export function DotMenu(props: {
               icon: <PencilIcon className="h-5 w-5" />,
               onClick: () => setEditingComment(true),
             },
-          (isAdmin || isContractCreator) && {
+          (isMod || isContractCreator) && {
             name: comment.hidden ? 'Unhide' : 'Hide',
             icon: <EyeOffIcon className="h-5 w-5 text-red-500" />,
             onClick: async () => {
