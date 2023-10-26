@@ -28,14 +28,14 @@ export function OgMarket(props: OgCardProps) {
     <div className="relative flex h-full w-full flex-col items-stretch justify-between bg-white pt-4">
       <div
         className={clsx(
-          'flex overflow-hidden px-8 leading-tight text-indigo-700',
-          showGraph ? 'h-[190px]  text-2xl' : 'h-[300px]  text-3xl'
+          'mx-6 line-clamp-4 flex overflow-hidden leading-tight text-indigo-700',
+          showGraph ? 'text-2xl' : 'text-3xl'
         )}
       >
         {question}
       </div>
       {topAnswer ? (
-        <div className="flex w-full flex-row items-center justify-between px-8">
+        <div className="flex w-full flex-row items-center justify-between px-8 text-black">
           <Answer {...props} />
         </div>
       ) : showGraph ? (
@@ -43,7 +43,7 @@ export function OgMarket(props: OgCardProps) {
           <ProbGraph
             color={numericValue ? '#14bbFF' : undefined}
             data={data}
-            height={125}
+            height={120}
             aspectRatio={5}
           />
         </div>
@@ -53,22 +53,22 @@ export function OgMarket(props: OgCardProps) {
       {!topAnswer && (probability || numericValue || resolution) && (
         <div
           className={
-            'absolute flex h-fit w-full justify-center ' +
+            'absolute left-0 right-0 flex w-full justify-center ' +
             (showGraph ? 'top-[11rem]' : 'top-[12rem]')
           }
         >
           {probabilityAsFloat && !resolution ? (
-            <div className={'flex justify-center text-2xl text-white'}>
+            <div className="flex w-full justify-center text-2xl text-white">
               <div
                 className={
-                  'mr-3 flex h-12 w-2/5 items-center justify-center rounded-md bg-green-500 pt-1'
+                  'mr-3 flex h-12 w-2/5 items-center justify-center rounded-lg bg-green-500'
                 }
               >
                 Yes {probabilityAsFloat.toFixed(0)}%
               </div>
               <div
                 className={
-                  'ml-3 flex h-12 w-2/5 items-center justify-center rounded-md bg-red-600 pt-1'
+                  'ml-3 flex h-12 w-2/5 items-center justify-center rounded-lg bg-red-600'
                 }
               >
                 No {(100 - probabilityAsFloat).toFixed(0)}%
@@ -92,10 +92,10 @@ export function OgMarket(props: OgCardProps) {
         {/* Manifold logo */}
         <div className="flex items-center pb-1">
           <img
-            className="mr-1.5 h-14 w-14"
+            className="mr-1.5 h-12 w-12"
             src="https://manifold.markets/logo.svg"
-            width="30"
-            height="30"
+            width={48}
+            height={48}
           />
           <span
             className="text-3xl font-thin uppercase text-indigo-700"
@@ -106,7 +106,7 @@ export function OgMarket(props: OgCardProps) {
         </div>
 
         {/* Details */}
-        <div className="flex pt-2">
+        <div className="flex pt-1">
           <div className="mr-3 flex items-center">
             {/* Profile image */}
             {creatorAvatarUrl && (
@@ -133,7 +133,7 @@ function Answer(props: OgCardProps) {
   const { probability, topAnswer, resolution } = props
   return (
     <>
-      <span className="max-h-[4.5rem] w-[440px] overflow-hidden text-2xl">
+      <span className="max-h-[4rem] w-[460px] overflow-hidden text-2xl">
         {topAnswer}
       </span>
       {!resolution && probability && (
@@ -163,7 +163,7 @@ function Resolution(props: { resolution: string; label?: string }) {
   }[resolution]
 
   const color = {
-    YES: 'bg-teal-600',
+    YES: 'bg-green-500',
     NO: 'bg-red-600',
     MKT: 'bg-blue-500',
     CANCEL: 'bg-amber-400',
@@ -171,7 +171,7 @@ function Resolution(props: { resolution: string; label?: string }) {
 
   return (
     <div
-      className={`flex min-w-[15rem] flex-col rounded-lg px-12 pb-1 pt-2 text-white ${color} items-center justify-center`}
+      className={`flex min-w-[15rem] flex-col rounded-lg px-12 py-2 text-white ${color} items-center justify-center`}
     >
       <span className="text-4xl">{text}</span>
     </div>
