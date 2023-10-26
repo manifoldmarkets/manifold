@@ -36,7 +36,7 @@ export const baseLoversSchema = z.object({
 })
 
 export const createlover = authEndpoint(async (req, auth) => {
-  const parsedBody = baseLoversSchema.parse(req.body)
+  const parsedBody = validate(baseLoversSchema, req.body)
   const db = createSupabaseClient()
   const { data: existingUser } = await db
     .from('lovers')

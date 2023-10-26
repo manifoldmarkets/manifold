@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { APIError, authEndpoint } from 'api/helpers'
+import { APIError, authEndpoint, validate } from 'api/helpers'
 import { createSupabaseClient } from 'shared/supabase/init'
 import { log } from 'shared/utils'
 import * as admin from 'firebase-admin'
@@ -32,7 +32,7 @@ const optionaLoversSchema = z.object({
 const combinedLoveUsersSchema = baseLoversSchema.merge(optionaLoversSchema)
 
 export const updatelover = authEndpoint(async (req, auth) => {
-  const parsedBody = combinedLoveUsersSchema.parse(req.body)
+  const parsedBody = validate(combinedLoveUsersSchema, req.body)
   log('parsedBody', parsedBody)
   const db = createSupabaseClient()
   const { data: existingUser } = await db
