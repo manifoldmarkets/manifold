@@ -1,8 +1,4 @@
-import {
-  ChevronDownIcon,
-  ChevronUpIcon,
-  PencilIcon,
-} from '@heroicons/react/outline'
+import { PencilIcon } from '@heroicons/react/outline'
 import { removeUndefinedProps } from 'common/util/object'
 import { LovePage } from 'love/components/love-page'
 import { LoverCommentSection } from 'love/components/lover-comment-section'
@@ -24,11 +20,6 @@ import { Row } from 'web/components/layout/row'
 import { SEO } from 'web/components/SEO'
 import { useUser } from 'web/hooks/use-user'
 import { firebaseLogin, getUserByUsername, User } from 'web/lib/firebase/users'
-import { fromNow } from 'web/lib/util/time'
-import { useRef, useState } from 'react'
-import clsx from 'clsx'
-import { useSafeLayoutEffect } from 'web/hooks/use-safe-layout-effect'
-import { Linkify } from 'web/components/widgets/linkify'
 import LoverAbout from 'love/components/lover-about'
 import { orderBy } from 'lodash'
 import { Subtitle } from 'love/components/widgets/lover-subtitle'
@@ -81,6 +72,7 @@ export default function UserPage(props: {
     (a) => a.multiple_choice ?? a.free_response ?? a.integer
   )
 
+  if (currentUser === undefined) return <div></div>
   if (!user) {
     return <div>404</div>
   }
