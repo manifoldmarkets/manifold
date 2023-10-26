@@ -1,9 +1,8 @@
-import { CashIcon, HomeIcon, BellIcon } from '@heroicons/react/outline'
+import { CashIcon, HomeIcon } from '@heroicons/react/outline'
 import {
   QuestionMarkCircleIcon,
   HomeIcon as SolidHomeIcon,
   UserCircleIcon,
-  BellIcon as SolidBellIcon,
 } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { User } from 'common/user'
@@ -25,6 +24,8 @@ import { useUser } from 'web/hooks/use-user'
 import { GoogleOneTapLogin } from 'web/lib/firebase/google-onetap-login'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import Sidebar from './nav/love-sidebar'
+import { SolidNotificationsIcon } from 'web/components/notifications-icon'
+import { NOTIFICATIONS_TO_SELECT } from 'love/pages/notifications'
 
 export function LovePage(props: {
   trackPageView: string | false
@@ -95,7 +96,6 @@ export function LovePage(props: {
           sidebarNavigationOptions={sidebarNavigationOptions}
           navigationOptions={navigationOptions}
           hideCreateQuestionButton
-          isManifoldLove
         />
       )}
       <AddFundsModal
@@ -115,10 +115,19 @@ function getBottomNavigation(user: User) {
   return buildArray(
     { name: 'Profiles', href: '/', icon: SolidHomeIcon },
     {
+      name: 'Notifs',
+      href: `/notifications`,
+      icon: (props) => (
+        <SolidNotificationsIcon
+          {...props}
+          selectTypes={NOTIFICATIONS_TO_SELECT}
+        />
+      ),
+    },
+    {
       name: 'Profile',
       href: `/${user.username}`,
     },
-    { name: 'Updates', href: '/updates', icon: SolidBellIcon },
     {
       name: 'Messages',
       href: '/messages',
@@ -136,7 +145,16 @@ const getDesktopNav = (loggedIn: boolean) => {
   if (loggedIn)
     return buildArray(
       { name: 'Profiles', href: '/', icon: HomeIcon },
-      { name: 'Updates', href: '/updates', icon: BellIcon },
+      {
+        name: 'Notifs',
+        href: `/notifications`,
+        icon: (props: any) => (
+          <SolidNotificationsIcon
+            {...props}
+            selectTypes={NOTIFICATIONS_TO_SELECT}
+          />
+        ),
+      },
       {
         name: 'Messages',
         href: '/messages',
