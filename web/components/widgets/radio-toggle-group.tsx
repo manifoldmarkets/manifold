@@ -1,6 +1,9 @@
 import { RadioGroup } from '@headlessui/react'
 import clsx from 'clsx'
 import { orderBy } from 'lodash'
+import { Col } from '../layout/col'
+import { Row } from '../layout/row'
+import { MultipleChoiceColors } from 'common/love/multiple-choice'
 
 export function RadioToggleGroup(props: {
   currentChoice: number
@@ -11,35 +14,56 @@ export function RadioToggleGroup(props: {
 }) {
   const { currentChoice, setChoice, choicesMap, className, toggleClassName } =
     props
+
+  const items = Object.entries(choicesMap)
+  const keys = Object.keys(choicesMap)
+
   return (
-    <RadioGroup
-      className={clsx(
-        className,
-        'border-ink-300 text-ink-400 bg-canvas-0  gap-2 rounded-md border p-1 text-sm shadow-sm'
-      )}
-      value={currentChoice}
-      onChange={setChoice}
-    >
-      {orderBy(Object.entries(choicesMap), ([_, choice]) => choice).map(
-        ([choiceKey, choice]) => (
-          <RadioGroup.Option
-            key={choiceKey}
-            value={choice}
-            className={({ disabled }) =>
-              clsx(
-                disabled
-                  ? 'text-ink-300  cursor-not-allowed'
-                  : 'cursor-pointer ',
-                'text-ink-500 hover:bg-primary-100 hover:text-ink-700 aria-checked:bg-primary-500 aria-checked:text-white',
-                ' rounded-md p-2 outline-none transition-all focus-visible:ring-2 sm:px-3',
-                toggleClassName
-              )
-            }
-          >
-            <RadioGroup.Label as="span">{choiceKey}</RadioGroup.Label>
-          </RadioGroup.Option>
-        )
-      )}
-    </RadioGroup>
+    <Row className="text-ink-700 items-center text-sm">
+      {keys[0]}
+      <RadioGroup
+        style={{
+          display: 'grid',
+          gridTemplateColumns: `repeat(${items.length}, 1fr)`,
+          gridGap: '10px',
+        }}
+        className={clsx(
+          className,
+          `text-ink-400 w-full rounded-md p-1 text-xs shadow-sm`
+        )}
+        value={currentChoice}
+        onChange={setChoice}
+      >
+        {orderBy(Object.entries(choicesMap), ([_, choice]) => choice).map(
+          ([choiceKey, choice], index) => (
+            <RadioGroup.Option
+              key={choiceKey}
+              value={choice}
+              className={({ disabled }) =>
+                clsx(
+                  disabled
+                    ? 'text-ink-300  cursor-not-allowed'
+                    : 'cursor-pointer ',
+                  'mx-auto h-5 w-5 rounded-full border bg-opacity-60 transition-all focus-visible:ring-2',
+                  'aria-checked:border-transparent aria-checked:bg-opacity-100 aria-checked:ring-8 aria-checked:ring-opacity-50',
+                  `${
+                    MultipleChoiceColors[index % MultipleChoiceColors.length]
+                  }`,
+                  toggleClassName
+                )
+              }
+              // style={{
+              //   backgroundColor: `${
+              //     MultipleChoiceColors[index % MultipleChoiceColors.length]
+              //   }`,
+              //   borderColor:
+              //     MultipleChoiceColors[index % MultipleChoiceColors.length],
+              // }}
+            />
+          )
+        )}
+      </RadioGroup>
+      {keys[keys.length - 1]}
+    </Row>
   )
 }
