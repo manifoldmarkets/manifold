@@ -5,8 +5,7 @@ import { LoverCommentSection } from 'love/components/lover-comment-section'
 import LoverProfileHeader from 'love/components/lover-profile-header'
 import { Matches } from 'love/components/matches'
 import ProfileCarousel from 'love/components/profile-carousel'
-import { Lover } from 'love/hooks/use-lover'
-import { getLoverRow } from 'love/lib/supabase/lovers'
+import { useLoverByUser } from 'love/hooks/use-lover'
 import {
   Answer,
   getUserAnswersAndQuestions,
@@ -31,12 +30,6 @@ export const getStaticProps = async (props: {
 }) => {
   const { username } = props.params
   const user = await getUserByUsername(username)
-  const lover = user
-    ? await getLoverRow(user.id).catch((e) => {
-        console.error(e)
-        return null
-      })
-    : null
   const { questions, answers } = user
     ? await getUserAnswersAndQuestions(user.id)
     : { answers: [], questions: [] }
@@ -45,7 +38,6 @@ export const getStaticProps = async (props: {
     props: removeUndefinedProps({
       user,
       username,
-      lover,
       questions,
       answers,
     }),
@@ -59,18 +51,19 @@ export const getStaticPaths = () => {
 
 export default function UserPage(props: {
   user: User | null
-  lover: Lover | null
   username: string
   questions: Question[]
   answers: Answer[]
 }) {
-  const { user, lover, questions } = props
+  const { user, questions } = props
   const currentUser = useUser()
   const isCurrentUser = currentUser?.id === user?.id
   const router = useRouter()
   const answers = props.answers.filter(
     (a) => a.multiple_choice ?? a.free_response ?? a.integer
   )
+
+  const lover = useLoverByUser(user ?? undefined)
 
   if (currentUser === undefined) return <div></div>
   if (!user) {
