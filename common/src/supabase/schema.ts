@@ -1015,7 +1015,7 @@ export interface Database {
           pref_gender: string[]
           pref_relation_styles: string[]
           religious_belief_strength: number | null
-          religious_beliefs: string[] | null
+          religious_beliefs: string | null
           twitter: string | null
           university: string | null
           user_id: string
@@ -1053,7 +1053,7 @@ export interface Database {
           pref_gender: string[]
           pref_relation_styles: string[]
           religious_belief_strength?: number | null
-          religious_beliefs?: string[] | null
+          religious_beliefs?: string | null
           twitter?: string | null
           university?: string | null
           user_id: string
@@ -1091,7 +1091,7 @@ export interface Database {
           pref_gender?: string[]
           pref_relation_styles?: string[]
           religious_belief_strength?: number | null
-          religious_beliefs?: string[] | null
+          religious_beliefs?: string | null
           twitter?: string | null
           university?: string | null
           user_id?: string

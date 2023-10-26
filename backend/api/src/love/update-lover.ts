@@ -8,7 +8,7 @@ import { baseLoversSchema } from 'api/love/create-lover'
 const optionaLoversSchema = z.object({
   political_beliefs: z.array(z.string()).optional(),
   religious_belief_strength: z.number().optional(),
-  religious_beliefs: z.array(z.string()).optional(),
+  religious_beliefs: z.string().optional(),
   ethnicity: z.array(z.string()).optional(),
   born_in_location: z.string().optional(),
   height_in_inches: z.number().optional(),

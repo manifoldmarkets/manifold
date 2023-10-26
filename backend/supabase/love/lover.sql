@@ -31,7 +31,7 @@ create table if not exists
       is_vegetarian_or_vegan boolean,
       political_beliefs text[],
       religious_belief_strength int, -- 0 is none
-      religious_beliefs text[],
+      religious_beliefs text,
       photo_urls text[],
       pinned_url text,
       ethnicity text[],

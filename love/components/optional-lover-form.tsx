@@ -81,6 +81,16 @@ export const OptionalLoveUserForm = (props: {
         </Col>
 
         <Col className={clsx(colClassName)}>
+          <label className={clsx(labelClassName)}>Religious beliefs</label>
+          <Input
+            type="text"
+            onChange={(e) => setLoverState('religious_beliefs', e.target.value)}
+            className={'w-full sm:w-96'}
+            value={lover['religious_beliefs'] ?? undefined}
+          />
+        </Col>
+
+        <Col className={clsx(colClassName)}>
           <label className={clsx(labelClassName)}>Current number of kids</label>
           <Input
             type="number"
