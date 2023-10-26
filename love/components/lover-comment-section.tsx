@@ -62,39 +62,40 @@ export const LoverCommentSection = (props: {
         )}
       </Row>
       <div className="mb-4">
-        {isCurrentUser ? (
-          <>People you know can write endorsements of you here.</>
+        {!lover.comments_enabled ? (
+          <>This feature is disabled.</>
+        ) : isCurrentUser ? (
+          <>Other users can write endorsements of you here.</>
         ) : (
           <>
             If you know them, write something nice that adds to their profile.
           </>
         )}
       </div>
-      {currentUser &&
-        (lover.comments_enabled ||
-          (!lover.comments_enabled && currentUser.id === lover.user_id)) && (
-          <LoverCommentInput
-            className="mb-4 mr-px mt-px"
-            onUserId={onUser.id}
-            trackingLocation={'contract page'}
-          />
-        )}
+      {currentUser && !isCurrentUser && lover.comments_enabled && (
+        <LoverCommentInput
+          className="mb-4 mr-px mt-px"
+          onUserId={onUser.id}
+          trackingLocation={'contract page'}
+        />
+      )}
       {!lover.comments_enabled && currentUser?.id != lover.user_id && (
         <span className={'text-ink-500 text-sm'}>
           {onUser.name} has disabled endorsements from others.
         </span>
       )}
-      {orderBy(parentComments, 'createdTime', 'desc').map((c) => (
-        <LoverProfileCommentThread
-          key={c.id + 'thread'}
-          trackingLocation={onUser.name + 'comments  section'}
-          threadComments={commentsByParent[c.id] ?? []}
-          parentComment={c}
-          onUser={onUser}
-          showReplies={true}
-          inTimeline={false}
-        />
-      ))}
+      {lover.comments_enabled &&
+        orderBy(parentComments, 'createdTime', 'desc').map((c) => (
+          <LoverProfileCommentThread
+            key={c.id + 'thread'}
+            trackingLocation={onUser.name + 'comments  section'}
+            threadComments={commentsByParent[c.id] ?? []}
+            parentComment={c}
+            onUser={onUser}
+            showReplies={true}
+            inTimeline={false}
+          />
+        ))}
     </Col>
   )
 }
