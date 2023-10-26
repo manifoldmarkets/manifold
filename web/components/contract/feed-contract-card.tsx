@@ -21,7 +21,7 @@ import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { useUser } from 'web/hooks/use-user'
 import { track } from 'web/lib/service/analytics'
 import { getMarketMovementInfo } from 'web/lib/supabase/feed-timeline/feed-market-movement-display'
-import { AnswersPanel } from '../answers/answers-panel'
+import { SimpleAnswerBars } from '../answers/answers-panel'
 import { BetButton } from '../bet/feed-bet-button'
 import { CommentsButton } from '../comments/comments-button'
 import { CardReason } from '../feed/card-reason'
@@ -187,16 +187,12 @@ export function FeedContractCard(props: {
         </div>
       </Col>
 
-      <div className="w-full overflow-hidden">
+      <div className="w-full overflow-hidden pt-2">
         {contract.outcomeType === 'POLL' && (
-          <div className="mt-2">
-            <PollPanel contract={contract} maxOptions={4} />
-          </div>
+          <PollPanel contract={contract} maxOptions={4} />
         )}
         {contract.outcomeType === 'MULTIPLE_CHOICE' && (
-          <div className="mt-2" onClick={(e) => e.preventDefault()}>
-            <AnswersPanel contract={contract} maxAnswers={4} linkToContract />
-          </div>
+          <SimpleAnswerBars contract={contract} maxAnswers={4} />
         )}
 
         {isBinaryCpmm && (showGraph || probChange) && (

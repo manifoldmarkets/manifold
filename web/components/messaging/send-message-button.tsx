@@ -5,7 +5,7 @@ import { useRouter } from 'next/router'
 import { BiEnvelope } from 'react-icons/bi'
 import {
   useOtherUserIdsInPrivateMessageChannelIds,
-  usePrivateMessageChannelIds,
+  useSortedPrivateMessageChannelIds,
 } from 'web/hooks/use-private-messages'
 import { useIsAuthorized, usePrivateUser } from 'web/hooks/use-user'
 import { findKey, first } from 'lodash'
@@ -32,7 +32,10 @@ export const SendMessageButton = (props: {
   const router = useRouter()
   const privateUser = usePrivateUser()
   const isAuthed = useIsAuthorized()
-  const channelIds = usePrivateMessageChannelIds(currentUser?.id, isAuthed)
+  const channelIds = useSortedPrivateMessageChannelIds(
+    currentUser?.id,
+    isAuthed
+  )
   const channelIdsToUserIds = useOtherUserIdsInPrivateMessageChannelIds(
     currentUser?.id,
     isAuthed,

@@ -19,17 +19,18 @@ export default function LabsPage() {
           <LabLink href="/about">About</LabLink>
           {useAdmin() && <LabLink href="/admin">Admin</LabLink>}
           <LabLink href="/stats">Stats</LabLink>
-          <LabLink href="https://manifoldmarkets.notion.site/About-4a1e35b5cedf43998161609eea887679">
-            Notion
-          </LabLink>
           <LabLink href="https://github.com/manifoldmarkets/manifold">
             Github
+          </LabLink>
+          <LabLink href="/api">API</LabLink>
+          <LabLink href="https://manifoldmarkets.notion.site/About-4a1e35b5cedf43998161609eea887679">
+            More
           </LabLink>
         </div>
       </div>
       <LabCard
         title="💌 Manifold.love"
-        description="Coming soon — crowd source your long term matches"
+        description="Crowd source your long term matches!"
         href="https://manifold.love"
       />
       <LabSection>

@@ -1,5 +1,4 @@
 import clsx from 'clsx'
-import { capitalize } from 'lodash'
 import { Lover } from 'love/hooks/use-lover'
 import {
   RelationshipType,
@@ -15,7 +14,6 @@ import {
   LuCigarette,
   LuCigaretteOff,
   LuGraduationCap,
-  LuHome,
 } from 'react-icons/lu'
 import { MdNoDrinks, MdOutlineChildFriendly } from 'react-icons/md'
 import {
@@ -55,34 +53,9 @@ export function AboutRow(props: {
 
 export default function LoverAbout(props: { lover: Lover }) {
   const { lover } = props
-  // TODO: figure out how to expand
-  //   const [showMore, setShowMore] = useState<boolean | undefined>(undefined)
-  //   const [shouldAllowCollapseOfContent, setShouldAllowCollapseOfContent] =
-  //     useState(false)
-  //   const contentRef = useRef<HTMLDivElement>(null)
-
-  //   const user = useUser()
-  //   const isYou = user?.id === lover.user_id
-
-  //   useSafeLayoutEffect(() => {
-  //     if (
-  //       contentRef.current &&
-  //       contentRef.current.offsetHeight > 180 &&
-  //       showMore === undefined &&
-  //       isYou
-  //     ) {
-  //       setShouldAllowCollapseOfContent(true)
-  //       setShowMore(false)
-  //     }
-  //   }, [contentRef.current?.offsetHeight, isYou])
-
   return (
     <Col
-      className={clsx(
-        'bg-canvas-0 relative gap-3 overflow-hidden rounded p-4'
-        // showMore === undefined || showMore ? 'h-full' : 'max-h-24 '
-      )}
-      //   ref={contentRef}
+      className={clsx('bg-canvas-0 relative gap-3 overflow-hidden rounded p-4')}
     >
       <Seeking lover={lover} />
       <RelationshipType lover={lover} />
@@ -97,15 +70,7 @@ export default function LoverAbout(props: { lover: Lover }) {
         icon={<PiHandsPrayingBold className="h-5 w-5" />}
         text={lover.religious_beliefs}
       />
-      <AboutRow
-        icon={<PiHandsPrayingBold className="h-5 w-5" />}
-        text={lover.religious_beliefs}
-      />
       <AboutRow icon={<BiDna className="h-5 w-5" />} text={lover.ethnicity} />
-      <AboutRow
-        icon={<LuHome className="h-5 w-5" />}
-        text={lover.born_in_location}
-      />
       <Smoker lover={lover} />
       <Drinks lover={lover} />
       <AboutRow
@@ -113,25 +78,6 @@ export default function LoverAbout(props: { lover: Lover }) {
         text={lover.is_vegetarian_or_vegan ? 'Vegetarian/Vegan' : null}
       />
       <WantsKids lover={lover} />
-      {/* {!showMore && shouldAllowCollapseOfContent && (
-        <>
-          <div className="from-canvas-50 absolute bottom-0 h-8 w-full rounded-b-md bg-gradient-to-t" />
-        </>
-      )}
-      {shouldAllowCollapseOfContent && (
-        <Button
-          color={'gray-outline'}
-          className={'absolute bottom-0 right-0'}
-          onClick={() => setShowMore(!showMore)}
-        >
-          {showMore ? (
-            <ChevronUpIcon className="mr-2 h-4 w-4" />
-          ) : (
-            <ChevronDownIcon className="mr-2 h-4 w-4" />
-          )}
-          Show {showMore ? 'less' : 'more'}
-        </Button>
-      )} */}
     </Col>
   )
 }
@@ -193,8 +139,8 @@ function Education(props: { lover: Lover }) {
     return <></>
   }
   const universityText = `${
-    NoUniDegree ? '' : capitalize(educationLevel) + ' at '
-  }${capitalize(university)}`
+    NoUniDegree ? '' : capitalizeAndRemoveUnderscores(educationLevel) + ' at '
+  }${capitalizeAndRemoveUnderscores(university)}`
   return (
     <AboutRow
       icon={<LuGraduationCap className="h-5 w-5" />}
@@ -212,9 +158,9 @@ function Occupation(props: { lover: Lover }) {
     return <></>
   }
   const occupationText = `${
-    occupation_title ? capitalize(occupation_title) : ''
+    occupation_title ? capitalizeAndRemoveUnderscores(occupation_title) : ''
   }${occupation_title && company ? ' at ' : ''}${
-    company ? capitalize(company) : ''
+    company ? capitalizeAndRemoveUnderscores(company) : ''
   }`
   return (
     <AboutRow
@@ -269,7 +215,7 @@ function WantsKids(props: { lover: Lover }) {
       : wantsKidsStrength == 1
       ? 'Prefers not to have children'
       : wantsKidsStrength == 2
-      ? 'Undecided or open to having children'
+      ? 'Neutral or open to having children'
       : wantsKidsStrength == 3
       ? 'Leaning towards wanting children'
       : 'Wants children'
@@ -323,4 +269,9 @@ const renderAgreementScale = (value: number) => {
   if (value == 4) return 'Agree'
   if (value == 5) return 'Strongly agree'
   return ''
+}
+
+const capitalizeAndRemoveUnderscores = (str: string) => {
+  const withSpaces = str.replace(/_/g, ' ')
+  return withSpaces.charAt(0).toUpperCase() + withSpaces.slice(1)
 }

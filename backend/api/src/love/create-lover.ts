@@ -31,10 +31,12 @@ export const baseLoversSchema = z.object({
   ),
   wants_kids_strength: z.number().min(0),
   looking_for_matches: z.boolean(),
+  photo_urls: z.array(z.string()),
+  pinned_url: z.string(),
 })
 
 export const createlover = authEndpoint(async (req, auth) => {
-  const parsedBody = baseLoversSchema.parse(req.body)
+  const parsedBody = validate(baseLoversSchema, req.body)
   const db = createSupabaseClient()
   const { data: existingUser } = await db
     .from('lovers')

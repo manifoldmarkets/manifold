@@ -7,20 +7,20 @@ import { useRouter } from 'next/router'
 import { useGroupedUnseenNotifications } from 'web/hooks/use-notifications'
 import { PrivateUser } from 'common/user'
 import { NOTIFICATIONS_PER_PAGE } from './notifications/notification-helpers'
-import { NotificationReason } from 'common/notification'
+import { notification_source_types } from 'common/notification'
 
 export function NotificationsIcon(props: {
   className?: string
-  ignoreTypes?: NotificationReason[]
+  selectTypes?: notification_source_types[]
 }) {
   const privateUser = usePrivateUser()
-  const { ignoreTypes, className } = props
+  const { selectTypes, className } = props
 
   return (
     <Row className="relative justify-center">
       {privateUser && (
         <UnseenNotificationsBubble
-          ignoreTypes={ignoreTypes}
+          selectTypes={selectTypes}
           privateUser={privateUser}
         />
       )}
@@ -31,15 +31,15 @@ export function NotificationsIcon(props: {
 
 export function SolidNotificationsIcon(props: {
   className?: string
-  ignoreTypes?: NotificationReason[]
+  selectTypes?: notification_source_types[]
 }) {
   const privateUser = usePrivateUser()
-  const { ignoreTypes, className } = props
+  const { selectTypes, className } = props
   return (
     <Row className="relative justify-center">
       {privateUser && (
         <UnseenNotificationsBubble
-          ignoreTypes={ignoreTypes}
+          selectTypes={selectTypes}
           privateUser={privateUser}
         />
       )}
@@ -50,13 +50,13 @@ export function SolidNotificationsIcon(props: {
 
 function UnseenNotificationsBubble(props: {
   privateUser: PrivateUser
-  ignoreTypes?: NotificationReason[]
+  selectTypes?: notification_source_types[]
 }) {
   const { isReady, pathname } = useRouter()
-  const { privateUser, ignoreTypes } = props
+  const { privateUser, selectTypes } = props
   const [seen, setSeen] = useState(false)
   const unseenSourceIdsToNotificationIds =
-    useGroupedUnseenNotifications(privateUser.id, ignoreTypes) ?? []
+    useGroupedUnseenNotifications(privateUser.id, selectTypes) ?? []
 
   const unseenNotifs = Object.keys(unseenSourceIdsToNotificationIds).length
 

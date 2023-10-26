@@ -9,7 +9,7 @@ import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import {
   convertChatMessage,
   getChannelLastSeenTimeQuery,
-  getChatMessageChannelIds,
+  getSortedChatMessageChannelIds,
   getMessageChannelMemberships,
   getNonEmptyChatMessageChannelIds,
   getOtherUserIdsInPrivateMessageChannelIds,
@@ -160,19 +160,36 @@ export const useUnseenPrivateMessageChannels = (
     .flat()
 }
 
-export const usePrivateMessageChannelIds = (
+export const useSortedPrivateMessageChannelIds = (
   userId: string | undefined,
   isAuthed: boolean | undefined
 ) => {
-  const [channelIds, setChannelIds] = usePersistentLocalState<number[]>(
-    [],
-    `private-message-channel-ids-${userId}`
+  const [channelIds, setChannelIds] = usePersistentLocalState<
+    number[] | undefined
+  >(undefined, `private-message-channel-ids-${userId}`)
+  useEffect(() => {
+    if (userId && isAuthed)
+      getSortedChatMessageChannelIds(userId, 100).then(setChannelIds)
+  }, [userId, isAuthed])
+  return channelIds
+}
+
+export const usePrivateMessageChannelId = (
+  userId: string | undefined,
+  isAuthed: boolean | undefined,
+  forChannelId: string
+) => {
+  const [channelId, setChannelId] = usePersistentLocalState<number | undefined>(
+    undefined,
+    `private-message-channel-id-${userId}-${forChannelId}`
   )
   useEffect(() => {
     if (userId && isAuthed)
-      getChatMessageChannelIds(userId, 100).then(setChannelIds)
+      getSortedChatMessageChannelIds(userId, 1, forChannelId).then((c) =>
+        setChannelId(first(c))
+      )
   }, [userId, isAuthed])
-  return channelIds
+  return channelId
 }
 
 export const useNonEmptyPrivateMessageChannelIds = (

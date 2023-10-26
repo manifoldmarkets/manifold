@@ -17,7 +17,6 @@ import { track } from 'web/lib/service/analytics'
 import { copyToClipboard } from 'web/lib/util/copy'
 import { useUser } from 'web/hooks/use-user'
 import { PostCommentsActivity, RichEditPost } from '../post/[slug]/index'
-import { useTipTxns } from 'web/hooks/use-tip-txns'
 import { NoSEO } from 'web/components/NoSEO'
 import { usePost } from 'web/hooks/use-post-supabase'
 import { getCommentsOnPost } from 'web/lib/supabase/comments'
@@ -65,9 +64,6 @@ function DateDocPage(props: {
   comments: PostComment[]
 }) {
   const { creator, post } = props
-
-  const tips = useTipTxns({ postId: post.id })
-
   const comments = useRealtimePostComments(post.id) || props.comments
 
   return (
@@ -86,7 +82,7 @@ function DateDocPage(props: {
         <DateDocPost dateDoc={post} creator={creator} />
         <Col className="bg-canvas-0 gap-4 rounded-lg px-6 py-4">
           <div className="">Add your endorsement of {creator.name}!</div>
-          <PostCommentsActivity post={post} comments={comments} tips={tips} />
+          <PostCommentsActivity post={post} comments={comments} />
         </Col>
       </Col>
     </Page>

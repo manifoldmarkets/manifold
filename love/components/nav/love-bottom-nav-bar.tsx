@@ -1,13 +1,6 @@
 import Link from 'next/link'
 import clsx from 'clsx'
-import {
-  HomeIcon,
-  MenuAlt3Icon,
-  NewspaperIcon,
-  QuestionMarkCircleIcon,
-  SearchIcon,
-  UserCircleIcon,
-} from '@heroicons/react/solid'
+import { MenuAlt3Icon } from '@heroicons/react/solid'
 import { animated } from '@react-spring/web'
 import { Transition, Dialog } from '@headlessui/react'
 import { useState, Fragment } from 'react'
@@ -18,58 +11,29 @@ import { Item } from './love-sidebar-item'
 import { useUser } from 'web/hooks/use-user'
 import { formatMoney } from 'common/util/format'
 import { Avatar } from 'web/components/widgets/avatar'
-import { SolidNotificationsIcon } from 'web/components/notifications-icon'
 import { useIsIframe } from 'web/hooks/use-is-iframe'
 import { trackCallback } from 'web/lib/service/analytics'
 import { User } from 'common/user'
 import { Col } from 'web/components/layout/col'
-import { firebaseLogin } from 'web/lib/firebase/users'
 import { useAnimatedNumber } from 'web/hooks/use-animated-number'
 import { UnseenMessagesBubble } from 'web/components/messaging/messages-icon'
-
-export const BOTTOM_NAV_BAR_HEIGHT = 58
 
 const itemClass =
   'sm:hover:bg-ink-200 block w-full py-1 px-3 text-center sm:hover:text-primary-700 transition-colors'
 const selectedItemClass = 'bg-ink-100 text-primary-700'
 const touchItemClass = 'bg-primary-100'
 
-function getNavigation(user: User) {
-  return [
-    { name: 'Home', href: '/home', icon: HomeIcon },
-    { name: 'Browse', href: '/browse?topic=for-you', icon: SearchIcon },
-    {
-      name: 'Profile',
-      href: `/${user.username}`,
-    },
-    {
-      name: 'Notifs',
-      href: `/notifications`,
-      icon: SolidNotificationsIcon,
-    },
-  ]
-}
-
-const signedOutNavigation = () => [
-  { name: 'Browse', href: '/browse', icon: SearchIcon },
-  { name: 'News', href: '/news', icon: NewspaperIcon },
-  { name: 'About', href: '/about', icon: QuestionMarkCircleIcon },
-  // {
-  //   name: 'Get app',
-  //   href: appStoreUrl,
-  //   icon: DeviceMobileIcon,
-  // },
-  { name: 'Sign in', onClick: firebaseLogin, icon: UserCircleIcon },
-]
-
 // From https://codepen.io/chris__sev/pen/QWGvYbL
 export function BottomNavBar(props: {
-  navigationOptions?: Item[]
-  sidebarNavigationOptions?: Item[]
+  navigationOptions: Item[]
+  sidebarNavigationOptions: Item[]
   hideCreateQuestionButton?: boolean
-  isManifoldLove?: boolean
 }) {
-  const { hideCreateQuestionButton, isManifoldLove } = props
+  const {
+    hideCreateQuestionButton,
+    navigationOptions,
+    sidebarNavigationOptions,
+  } = props
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   const router = useRouter()
@@ -77,19 +41,10 @@ export function BottomNavBar(props: {
 
   const user = useUser()
 
-  // const [appStoreUrl, setAppStoreUrl] = useState(APPLE_APP_URL)
-  // useEffect(() => {
-  //   setAppStoreUrl(isIOS() ? APPLE_APP_URL : GOOGLE_PLAY_APP_URL)
-  // }, [])
-
   const isIframe = useIsIframe()
   if (isIframe) {
     return null
   }
-
-  const navigationOptions =
-    props.navigationOptions ??
-    (user ? getNavigation(user) : signedOutNavigation())
 
   return (
     <nav className="border-ink-200 dark:border-ink-300 text-ink-700 bg-canvas-0 fixed inset-x-0 bottom-0 z-50 flex select-none items-center justify-between border-t-2 text-xs lg:hidden">
@@ -118,9 +73,8 @@ export function BottomNavBar(props: {
           <MobileSidebar
             sidebarOpen={sidebarOpen}
             setSidebarOpen={setSidebarOpen}
-            sidebarNavigationOptions={props.sidebarNavigationOptions}
+            sidebarNavigationOptions={sidebarNavigationOptions}
             hideCreateQuestionButton={hideCreateQuestionButton}
-            isManifoldLove={isManifoldLove}
           />
         </>
       )}
@@ -212,15 +166,14 @@ function NavBarItem(props: {
 export function MobileSidebar(props: {
   sidebarOpen: boolean
   setSidebarOpen: (open: boolean) => void
-  sidebarNavigationOptions?: Item[]
+  sidebarNavigationOptions: Item[]
   hideCreateQuestionButton?: boolean
-  isManifoldLove?: boolean
 }) {
   const {
     sidebarOpen,
+    sidebarNavigationOptions,
     setSidebarOpen,
     hideCreateQuestionButton,
-    isManifoldLove,
   } = props
   return (
     <div>
@@ -254,7 +207,7 @@ export function MobileSidebar(props: {
             <div className="bg-canvas-0 relative flex w-full max-w-xs flex-1 flex-col">
               <div className="mx-2 h-0 flex-1 overflow-y-auto">
                 <Sidebar
-                  navigationOptions={props.sidebarNavigationOptions}
+                  navigationOptions={sidebarNavigationOptions}
                   isMobile
                   hideCreateQuestionButton={hideCreateQuestionButton}
                 />

@@ -13,7 +13,6 @@ import { CopyLinkDateTimeComponent } from 'web/components/feed/copy-link-date-ti
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { UserLink } from 'web/components/widgets/user-link'
-import { CommentTipMap, CommentTips } from 'web/hooks/use-tip-txns'
 import { isBlocked, usePrivateUser, useUser } from 'web/hooks/use-user'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { scrollIntoViewCentered } from 'web/lib/util/scroll'
@@ -22,11 +21,10 @@ import { createPostComment } from 'web/lib/supabase/comments'
 export function PostCommentThread(props: {
   post: Post
   threadComments: PostComment[]
-  tips: CommentTipMap
   parentComment: PostComment
   commentsByUserId: Dictionary<PostComment[]>
 }) {
-  const { post, threadComments, tips, parentComment } = props
+  const { post, threadComments, parentComment } = props
   const [showReply, setShowReply] = useState(false)
   const [replyTo, setReplyTo] = useState<{ id: string; username: string }>()
 
@@ -47,7 +45,6 @@ export function PostCommentThread(props: {
           indent={commentIdx != 0}
           post={post}
           comment={comment}
-          tips={tips[comment.id]}
           onReplyClick={scrollAndOpenReplyInput}
         />
       ))}
@@ -104,7 +101,6 @@ export function PostCommentInput(props: {
 export function PostCommentItem(props: {
   post: Post
   comment: PostComment
-  tips: CommentTips
   indent?: boolean
   probAtCreatedTime?: number
   onReplyClick?: (comment: PostComment) => void

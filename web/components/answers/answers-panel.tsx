@@ -29,15 +29,24 @@ import {
 } from './answer-components'
 import { floatingEqual } from 'common/util/math'
 import { InfoTooltip } from '../widgets/info-tooltip'
+import DropdownMenu from '../comments/dropdown-menu'
+import generateFilterDropdownItems from '../search/search-dropdown-helpers'
 
+type Sort = 'prob' | 'index' | 'liquidity'
+
+const SORTS = [
+  { label: 'High %', value: 'prob' },
+  { label: 'Created', value: 'index' },
+  { label: 'Trending', value: 'liquidity' },
+] as const
+
+// full resorting, hover, clickiness
 export function AnswersPanel(props: {
   contract: MultiContract
-  onAnswerCommentClick?: (answer: Answer | DpmAnswer) => void
-  onAnswerHover?: (answer: Answer | DpmAnswer | undefined) => void
-  onAnswerClick?: (answer: Answer | DpmAnswer) => void
+  onAnswerCommentClick: (answer: Answer | DpmAnswer) => void
+  onAnswerHover: (answer: Answer | DpmAnswer | undefined) => void
+  onAnswerClick: (answer: Answer | DpmAnswer) => void
   selected?: string[] // answer ids
-  linkToContract?: boolean
-  maxAnswers?: number
 }) {
   const {
     contract,
@@ -45,8 +54,6 @@ export function AnswersPanel(props: {
     onAnswerHover,
     onAnswerClick,
     selected,
-    linkToContract,
-    maxAnswers = Infinity,
   } = props
   const { resolutions, outcomeType } = contract
   const isMultipleChoice = outcomeType === 'MULTIPLE_CHOICE'
@@ -65,29 +72,44 @@ export function AnswersPanel(props: {
 
   const answers = contract.answers
     .filter((a) => isMultipleChoice || ('number' in a && a.number !== 0))
-    .map((a) => ({ ...a, prob: getAnswerProbability(contract, a.id) }))
+    .map((a) => ({
+      ...a,
+      prob: getAnswerProbability(contract, a.id),
+    }))
 
-  const sortByProb = addAnswersMode === 'ANYONE' || answers.length > maxAnswers
+  const [sort, setSort] = useState<Sort>(
+    addAnswersMode !== 'ANYONE'
+      ? 'index'
+      : shouldAnswersSumToOne
+      ? 'prob'
+      : 'liquidity'
+  )
+
   const sortedAnswers = sortBy(answers, [
-    // Winners for shouldAnswersSumToOne
-    (answer) => (resolutions ? -1 * resolutions[answer.id] : answer),
-    // Winners for independent binary
-    (answer) =>
-      'resolution' in answer && answer.resolution
-        ? -answer.subsidyPool
-        : -Infinity,
-    // then by prob or index
-    (answer) =>
-      !sortByProb && 'index' in answer ? answer.index : -1 * answer.prob,
+    shouldAnswersSumToOne
+      ? // Winners first
+        (answer) => (resolutions ? -1 * resolutions[answer.id] : answer)
+      : // Resolved last
+        (answer) =>
+          'resolutionTime' in answer ? -(answer.resolutionTime ?? 1) : 0,
+    // then by sort
+    (answer) => {
+      if (sort === 'index') {
+        return 'index' in answer ? answer.index : answer.number
+      } else if (sort === 'prob') {
+        return -1 * answer.prob
+      } else if (sort === 'liquidity') {
+        return 'subsidyPool' in answer ? answer.subsidyPool : 0
+      }
+    },
   ])
 
-  const answersToShow = (
+  const answersToShow =
     showSmallAnswers || answers.length <= 5
       ? sortedAnswers
       : sortedAnswers.filter(
           (answer) => answer.prob >= 0.01 || resolutions?.[answer.id]
         )
-  ).slice(0, maxAnswers)
 
   const user = useUser()
 
@@ -103,9 +125,22 @@ export function AnswersPanel(props: {
     answers.length === 0 || (shouldAnswersSumToOne && answers.length === 1)
 
   return (
-    <Col className="mx-[2px] gap-3">
+    <div className="mx-[2px]">
       {!showNoAnswers && (
         <Col className="gap-2">
+          <DropdownMenu
+            className="self-end"
+            items={generateFilterDropdownItems(SORTS, setSort)}
+            icon={
+              <Row className="text-ink-500 items-center gap-0.5">
+                <span className="whitespace-nowrap text-sm font-medium">
+                  Sort: {SORTS.find((s) => s.value === sort)?.label}
+                </span>
+                <ChevronDownIcon className="h-4 w-4" />
+              </Row>
+            }
+          />
+
           {answersToShow.map((answer) => (
             <Answer
               key={answer.id}
@@ -121,32 +156,90 @@ export function AnswersPanel(props: {
               userBets={userBetsByAnswer[answer.id]}
             />
           ))}
-          {moreCount > 0 &&
-            (linkToContract ? (
-              <Row className="w-full justify-end">
-                <Link
-                  className="text-ink-500 hover:text-primary-500 text-sm"
-                  href={contractPath(contract)}
-                >
-                  See {moreCount} more {moreCount === 1 ? 'answer' : 'answers'}{' '}
-                  <ArrowRightIcon className="inline h-4 w-4" />
-                </Link>
-              </Row>
-            ) : (
-              <Button
-                color="gray-white"
-                onClick={() => setShowSmallAnswers(true)}
-                size="xs"
-              >
-                <ChevronDownIcon className="mr-1 h-4 w-4" />
-                Show {moreCount} more {moreCount === 1 ? 'answer' : 'answers'}
-              </Button>
-            ))}
+          {moreCount > 0 && (
+            <Button
+              color="gray-white"
+              onClick={() => setShowSmallAnswers(true)}
+              size="xs"
+            >
+              <ChevronDownIcon className="mr-1 h-4 w-4" />
+              Show {moreCount} more {moreCount === 1 ? 'answer' : 'answers'}
+            </Button>
+          )}
         </Col>
       )}
 
-      {showNoAnswers && (
-        <div className="text-ink-500 pb-4">No answers yet...</div>
+      {showNoAnswers && <div className="text-ink-500 pb-4">No answers yet</div>}
+    </div>
+  )
+}
+
+// just the bars
+export function SimpleAnswerBars(props: {
+  contract: MultiContract
+  maxAnswers?: number
+}) {
+  const { contract, maxAnswers = Infinity } = props
+  const { resolutions, outcomeType } = contract
+
+  const shouldAnswersSumToOne =
+    'shouldAnswersSumToOne' in contract ? contract.shouldAnswersSumToOne : true
+
+  const answers = contract.answers
+    .filter(
+      (a) =>
+        outcomeType === 'MULTIPLE_CHOICE' || ('number' in a && a.number !== 0)
+    )
+    .map((a) => ({ ...a, prob: getAnswerProbability(contract, a.id) }))
+
+  const sortByProb = answers.length > maxAnswers
+  const displayedAnswers = sortBy(answers, [
+    // Winners for shouldAnswersSumToOne
+    (answer) => (resolutions ? -1 * resolutions[answer.id] : answer),
+    // Winners for independent binary
+    (answer) =>
+      'resolution' in answer && answer.resolution
+        ? -answer.subsidyPool
+        : -Infinity,
+    // then by prob or index
+    (answer) =>
+      !sortByProb && 'index' in answer ? answer.index : -1 * answer.prob,
+  ]).slice(0, maxAnswers)
+
+  const moreCount = answers.length - displayedAnswers.length
+
+  const answersArray = useChartAnswers(contract).map((answer) => answer.text)
+
+  // Note: Hide answers if there is just one "Other" answer.
+  const showNoAnswers =
+    answers.length === 0 || (shouldAnswersSumToOne && answers.length === 1)
+
+  return (
+    <Col className="mx-[2px] gap-2">
+      {showNoAnswers ? (
+        <div className="text-ink-500 pb-4">No answers yet</div>
+      ) : (
+        <>
+          {displayedAnswers.map((answer) => (
+            <Answer
+              key={answer.id}
+              answer={answer}
+              contract={contract}
+              color={getAnswerColor(answer, answersArray)}
+            />
+          ))}
+          {moreCount > 0 && (
+            <Row className="w-full justify-end">
+              <Link
+                className="text-ink-500 hover:text-primary-500 text-sm"
+                href={contractPath(contract)}
+              >
+                See {moreCount} more {moreCount === 1 ? 'answer' : 'answers'}{' '}
+                <ArrowRightIcon className="inline h-4 w-4" />
+              </Link>
+            </Row>
+          )}
+        </>
       )}
     </Col>
   )

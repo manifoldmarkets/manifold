@@ -1,10 +1,12 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
-import { first, keyBy } from 'lodash'
+import { keyBy } from 'lodash'
 
 import { Bet, LimitBet } from 'common/bet'
 import {
   getBettingStreakResetTimeBeforeNow,
+  getContract,
+  getUser,
   getUserSupabase,
   getValues,
   isProd,
@@ -47,7 +49,6 @@ import { addToLeagueIfNotInOne } from 'shared/generate-leagues'
 import { FieldValue } from 'firebase-admin/firestore'
 import { FLAT_TRADE_FEE } from 'common/fees'
 import {
-  getContractsDirect,
   getUniqueBettorIds,
   getUniqueBettorIdsForAnswer,
 } from 'shared/supabase/contracts'
@@ -77,19 +78,25 @@ export const onCreateBet = functions
 
     const bet = change.data() as Bet
     if (bet.isChallenge) return
-    const pg = createSupabaseDirectClient()
 
-    const contracts = await getContractsDirect([contractId], pg)
-    const contract = first(contracts)
-    if (!contract) return
+    const contract = await getContract(contractId)
+    if (!contract) {
+      log(`No contract: ${contractId} found for bet: ${bet.id}`)
+      return
+    }
 
     await firestore.collection('contracts').doc(contract.id).update({
       lastBetTime: bet.createdTime,
       lastUpdatedTime: Date.now(),
     })
 
-    const bettor = await getUserSupabase(bet.userId)
-    if (!bettor) return
+    const bettor = await getUser(bet.userId)
+    if (!bettor) {
+      log(
+        `No user:${bet.userId} found for bet: ${bet.id} on contract: ${contract.id}`
+      )
+      return
+    }
 
     const notifiedUsers = await notifyUsersOfLimitFills(
       bet,
@@ -121,6 +128,7 @@ export const onCreateBet = functions
      *  Handle bonuses, other stuff for non-bot users below:
      */
 
+    const pg = createSupabaseDirectClient()
     // Follow suggestion should be before betting streak update (which updates lastBetTime)
     !bettor.lastBetTime &&
       !bettor.referredByUserId &&
@@ -141,7 +149,7 @@ export const onCreateBet = functions
 
       addToLeagueIfNotInOne(pg, bettor.id),
 
-      (bettor?.lastBetTime ?? 0) < bet.createdTime &&
+      (bettor.lastBetTime ?? 0) < bet.createdTime &&
         firestore
           .doc(`users/${bettor.id}`)
           .update({ lastBetTime: bet.createdTime }),
@@ -198,7 +206,7 @@ const updateBettingStreak = async (
     const userDoc = firestore.collection('users').doc(user.id)
     const bettor = (await trans.get(userDoc)).data() as User
     const betStreakResetTime = getBettingStreakResetTimeBeforeNow()
-    const lastBetTime = bettor?.lastBetTime ?? 0
+    const lastBetTime = bettor.lastBetTime ?? 0
 
     // If they've already bet after the reset time
     if (lastBetTime > betStreakResetTime)

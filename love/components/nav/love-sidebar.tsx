@@ -1,18 +1,10 @@
 import {
-  CashIcon,
-  DeviceMobileIcon,
-  HomeIcon,
   LogoutIcon,
   MoonIcon,
   SunIcon,
   SparklesIcon,
-  StarIcon,
   QuestionMarkCircleIcon,
-  NewspaperIcon,
-  SearchIcon,
-  LightningBoltIcon,
   LoginIcon,
-  TemplateIcon,
 } from '@heroicons/react/outline'
 // import { GiftIcon, MapIcon, MoonIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
@@ -23,24 +15,21 @@ import { useContext, useState } from 'react'
 import { AddFundsModal } from 'web/components/add-funds-modal'
 import { AppBadgesOrGetAppButton } from 'web/components/buttons/app-badges-or-get-app-button'
 import { CreateQuestionButton } from 'web/components/buttons/create-question-button'
-import { NotificationsIcon } from 'web/components/notifications-icon'
 import { ThemeContext } from 'web/hooks/theme-context'
 import { useUser } from 'web/hooks/use-user'
 import { firebaseLogin, firebaseLogout } from 'web/lib/firebase/users'
-import TrophyIcon from 'web/lib/icons/trophy-icon.svg'
 import { withTracking } from 'web/lib/service/analytics'
 import { MobileAppsQRCodeDialog } from 'web/components/buttons/mobile-apps-qr-code-button'
 import { SidebarSignUpButton } from 'web/components/buttons/sign-up-button'
 import { ProfileSummary } from './love-profile-summary'
 import { Item, SidebarItem } from './love-sidebar-item'
-import { PrivateMessagesIcon } from 'web/components/messaging/messages-icon'
 import ManifoldLoveLogo from '../manifold-love-logo'
 import toast from 'react-hot-toast'
 
 export default function Sidebar(props: {
   className?: string
   isMobile?: boolean
-  navigationOptions?: Item[]
+  navigationOptions: Item[]
   hideCreateQuestionButton?: boolean
 }) {
   const { className, isMobile, hideCreateQuestionButton } = props
@@ -59,11 +48,7 @@ export default function Sidebar(props: {
     }
     changeTheme(theme === 'auto' ? 'dark' : theme === 'dark' ? 'light' : 'auto')
   }
-  const navOptions = props.navigationOptions?.length
-    ? props.navigationOptions
-    : isMobile
-    ? getMobileNav(() => setIsAddFundsModalOpen(!isAddFundsModalOpen))
-    : getDesktopNav(!!user, () => setIsModalOpen(true), true)
+  const navOptions = props.navigationOptions
 
   const bottomNavOptions = bottomNav(!!user, theme, toggleTheme)
 
@@ -120,56 +105,6 @@ const logout = async () => {
   // of whatever logged-in-only area of the site they might be in
   await withTracking(firebaseLogout, 'sign out')()
   await Router.replace(Router.asPath)
-}
-
-const getDesktopNav = (
-  loggedIn: boolean,
-  openDownloadApp: () => void,
-  showMarkets: boolean
-) => {
-  if (loggedIn)
-    return buildArray(
-      { name: 'Home', href: '/home', icon: HomeIcon },
-      showMarkets
-        ? {
-            name: 'Browse',
-            href: '/browse?topic=for-you',
-            icon: SearchIcon,
-          }
-        : { name: 'News', href: '/news', icon: NewspaperIcon },
-      {
-        name: 'Notifications',
-        href: `/notifications`,
-        icon: NotificationsIcon,
-      },
-      {
-        name: 'Messages',
-        href: '/messages',
-        icon: PrivateMessagesIcon,
-      },
-      { name: 'Leagues', href: '/leagues', icon: TrophyIcon }
-      // Disable for now.
-      // { name: 'Dashboards', href: '/dashboard', icon: TemplateIcon }
-    )
-
-  return buildArray(
-    { name: 'Browse', href: '/browse', icon: SearchIcon },
-    { name: 'News', href: '/news', icon: NewspaperIcon },
-    { name: 'About', href: '/about', icon: QuestionMarkCircleIcon },
-    { name: 'App', onClick: openDownloadApp, icon: DeviceMobileIcon }
-  )
-}
-
-// No sidebar when signed out
-const getMobileNav = (toggleModal: () => void) => {
-  return buildArray(
-    { name: 'Leagues', href: '/leagues', icon: TrophyIcon },
-    { name: 'Dashboards', href: '/dashboard', icon: TemplateIcon },
-    { name: 'Messages', href: '/messages', icon: PrivateMessagesIcon },
-    { name: 'Live', href: '/live', icon: LightningBoltIcon },
-    { name: 'Get mana', icon: CashIcon, onClick: toggleModal },
-    { name: 'Share with friends', href: '/referrals', icon: StarIcon } // remove this and I will beat you — SG
-  )
 }
 
 const bottomNav = (

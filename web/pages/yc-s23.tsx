@@ -2,10 +2,9 @@ import clsx from 'clsx'
 import Link from 'next/link'
 import { sortBy } from 'lodash'
 import { useState } from 'react'
-
 import { Answer } from 'common/answer'
 import { CPMMMultiContract } from 'common/contract'
-import { AnswersPanel } from 'web/components/answers/answers-panel'
+import { SimpleAnswerBars } from 'web/components/answers/answers-panel'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
@@ -117,7 +116,7 @@ const CompanyRow = (props: {
       </Link>
       {expanded && (
         <Col className="border-ink-200 border-b px-3 pb-4 pt-2">
-          <AnswersPanel contract={contract} />
+          <SimpleAnswerBars contract={contract} />
         </Col>
       )}
     </Col>

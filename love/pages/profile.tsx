@@ -27,7 +27,6 @@ export default function ProfilePage(props: {
     birthdate: dayjs(loverRow.birthdate).format('YYYY-MM-DD'),
     user,
   })
-  console.log(lover)
   const setLoverState = (key: keyof rowFor<'lovers'>, value: any) => {
     setLover((prevState) => ({ ...prevState, [key]: value }))
   }
@@ -37,8 +36,8 @@ export default function ProfilePage(props: {
       <Col className={'bg-canvas-0 w-full max-w-2xl px-6 py-4'}>
         <RequiredLoveUserForm
           user={user}
-          setLoverState={setLoverState}
-          loverState={lover}
+          setLover={setLoverState}
+          lover={lover}
           loverCreatedAlready={true}
         />
         <div className={'h-4'} />

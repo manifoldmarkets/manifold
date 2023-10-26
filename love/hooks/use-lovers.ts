@@ -14,6 +14,7 @@ export const useLovers = () => {
   useEffect(() => {
     db.from('lovers')
       .select('*')
+      .filter('looking_for_matches', 'eq', true)
       .then(({ data }) => {
         if (data) {
           getUsers(data.map((d) => d.user_id)).then((users) => {
