@@ -1,43 +1,19 @@
-import { APPLE_APP_URL, GOOGLE_PLAY_APP_URL } from 'common/envs/constants'
+import Link from 'next/link'
 import { useState } from 'react'
 import { MobileAppsQRCodeDialog } from 'web/components/buttons/mobile-apps-qr-code-button'
 import { Col } from 'web/components/layout/col'
 import { Spacer } from 'web/components/layout/spacer'
-import { ManifoldLogo } from 'web/components/nav/manifold-logo'
 import { PrivacyTermsLab } from 'web/components/privacy-terms'
 import { SEO } from 'web/components/SEO'
 import { Title } from 'web/components/widgets/title'
-import { useIsMobile } from 'web/hooks/use-is-mobile'
-import { getNativePlatform } from 'web/lib/native/is-native'
-import { isIOS } from 'web/lib/util/device'
 import { WhatIsAPM, WhatIsMana } from 'web/components/explainer-panel'
-import Link from 'next/link'
 import { MailIcon, NewspaperIcon } from '@heroicons/react/outline'
-import {
-  TbBrandAndroid,
-  TbBrandApple,
-  TbBrandDiscord,
-  TbBrandGithub,
-  TbBrandTwitter,
-} from 'react-icons/tb'
+import { TbBrandDiscord, TbBrandGithub, TbBrandTwitter } from 'react-icons/tb'
 import { LovePage } from 'love/components/love-page'
 import ManifoldLoveLogo from 'love/components/manifold-love-logo'
 
 export default function AboutPage() {
-  const { isNative } = getNativePlatform()
-
-  const isMobile = useIsMobile()
   const [isModalOpen, setIsModalOpen] = useState(false)
-
-  const appCallback = isMobile
-    ? { href: isIOS() ? APPLE_APP_URL : GOOGLE_PLAY_APP_URL }
-    : ({
-        href: '#',
-        onClick: (e: any) => {
-          e.preventDefault()
-          setIsModalOpen(true)
-        },
-      } as { href: string }) // typechecker is dumb
 
   return (
     <LovePage trackPageView={'about page'}>
@@ -48,10 +24,12 @@ export default function AboutPage() {
         <ManifoldLoveLogo className="mb-4 flex sm:hidden" />
 
         <div className="mb-4 text-lg">
-          Manifold.love is the first dating app where your{' '}
-          <span className="font-semibold">long term matches</span> are forecast
-          by the wisdom of the crowd using play-money{' '}
-          <span className="font-semibold">prediction markets</span>!
+          Find your long term match through human matchmaking & prediction
+          markets.
+        </div>
+        <div className="mb-4 text-lg">
+          Manifold.love is the first dating app where your matches are chosen by
+          other users trading on play-money prediction markets!
         </div>
 
         <Col className="w-full max-w-[60ch]">
@@ -62,12 +40,22 @@ export default function AboutPage() {
 
         <div className="my-2 text-lg font-semibold">How does it work?</div>
 
-        <div className="mb-4 text-lg">
-          Review user profiles and bet on matches you predict will last 6
-          months. If you are right, you will earn a profit.
+        <div className="mb-2 text-lg">
+          <span className="font-semibold">1.</span> Browse user profiles.{' '}
         </div>
-        <div className="mb-4 text-lg">
-          But more importantly, you will be helping to crowdsource matchmaking!
+        <div className="mb-2 text-lg">
+          <span className="font-semibold">2.</span> Bet on potential matches.{' '}
+        </div>
+        <div className="mb-2 text-lg">
+          <span className="font-semibold">3.</span> See your top matches.
+        </div>
+        <div className="mb-2 text-lg">
+          If two users end up dating for 6 months, those who bet on it win
+          currency. It's fun!
+        </div>
+        <div className="mb-2 text-lg">
+          But most importantly, we are collectively curating the best long term
+          relationships.
         </div>
 
         <MobileAppsQRCodeDialog
