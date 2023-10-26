@@ -17,14 +17,14 @@ import { getQuestScore, setQuestScoreValue } from 'common/supabase/set-scores'
 import { millisToTs, SupabaseClient } from 'common/supabase/utils'
 import { getReferralCount } from 'common/supabase/referrals'
 import { log } from 'shared/utils'
-
 dayjs.extend(utc)
 dayjs.extend(timezone)
-// configure dayjs as pacific time
-dayjs.tz.setDefault('America/Los_Angeles')
-// the start of the week is 12am on Monday Pacific time
-export const START_OF_WEEK = dayjs().startOf('week').add(1, 'day').valueOf()
-const START_OF_DAY = dayjs().startOf('day').valueOf()
+export const START_OF_WEEK = dayjs()
+  .tz('America/Los_Angeles')
+  .startOf('week')
+  .add(1, 'day')
+  .valueOf()
+const START_OF_DAY = dayjs().tz('America/Los_Angeles').startOf('day').valueOf()
 
 export const completeSharingQuest = async (user: User) => {
   const db = createSupabaseClient()
