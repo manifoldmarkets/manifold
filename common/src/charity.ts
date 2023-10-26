@@ -999,6 +999,23 @@ They are highly neglected. Shrimp Welfare Project is the first organization focu
     `,
     tags: ['New'] as const,
   },
+  {
+    name: 'Foresight Institute',
+    website: 'https://foresight.org/',
+    photo: 'https://i.imgur.com/SQqcQkL.png',
+    preview:
+      'Foresight Institute supports the beneficial development of high-impact technology to make great futures more likely.',
+    description: `Foresight Institute is a research organization and non-profit that supports the beneficial development of high-impact technologies. Since our founding in 1986 on a vision of guiding powerful technologies, we have continued to evolve into a many-armed organization that focuses on several fields of science and technology that are too ambitious for legacy institutions to support. From molecular nanotechnology, to brain-computer interfaces, space exploration, cryptocommerce, and AI, Foresight gathers leading minds to advance research and accelerate progress toward flourishing futures.
+
+A core part of Foresight’s work is to host technical groups: Molecular Machines to better control matter; Biotech to reverse aging; Computer Science to secure human AI cooperation; Neurotech to support human flourishing; Spacetech to further exploration. In these groups, we connect scientists, entrepreneurs, and institutional allies who cooperate to advance the respective technologies. Currently, meetings take place virtually every month. Most of the meetings are made publicly available via our Youtube or podcast, and are written into seminar summaries including slides, videos and any additional material to the talks that you can find on the respective page.
+
+Foresight regularly hosts monthly in-person meetups across the globe, to offer like-minded people all over the world an opportunity to find each other and join our community. If you work in science and tech and want the future to go well, you should apply to join our meetups! Currently we are hosting in cities such as San Francisco, NYC, LA, Berlin, London, Stockholm, Zurich, Toronto, Paris, Miami, Austin, Singapore, Boston, Phuket/Rawai, Seattle, Dubai, Philadelphia and Lisbon.
+
+Foresight’s biggest event every year is our annual member gathering Vision Weekend. This conference festival is hosted at the end of the year in the United State of America and in France. We invite top talent across biotechnology, nanotechnology, neurotechnology, computing, and space to burst their tech silos, and plan for flourishing long-term futures. Previously we have hosted this event in locations such as The Internet Archive, a space company, an old military ship and at a beautiful old castle in France.
+
+We also host several technical conferences every year, inviting top researchers, entrepreneurs, and funders to highlight undervalued areas for progress. In addition to learning about undervalued opportunities for progress relevant to your field, and forming lasting collaborations with other leading scientists, entrepreneurs, and funders around shared goals, we hope that these workshops will generate direction and drive toward shared long-term goals.
+    `,
+  },
 ].map((charity) => {
   const slug = charity.name.toLowerCase().replace(/\s/g, '-')
   return {
