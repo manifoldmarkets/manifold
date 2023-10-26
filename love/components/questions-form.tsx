@@ -3,7 +3,6 @@ import { Col } from 'web/components/layout/col'
 import { Row as rowFor, run } from 'common/supabase/utils'
 import { useQuestions } from 'love/hooks/use-questions'
 import { useEffect, useState } from 'react'
-import { Pagination } from 'web/components/widgets/pagination'
 import { useUser } from 'web/hooks/use-user'
 import { db } from 'web/lib/supabase/db'
 import { User } from 'common/user'
@@ -19,38 +18,43 @@ export const QuestionsForm = () => {
   const questions = useQuestions()
   const user = useUser()
   const [page, setPage] = useState(0)
-  const questionsPerPage = 3
   const router = useRouter()
+  useEffect(() => {
+    scrollTo(0, 0)
+  }, [page])
   return (
     <Col className={'w-full items-center'}>
       <Col
-        className={
-          ' bg-canvas-0 min-h-[calc(100vh-4rem)] w-full max-w-2xl justify-between px-6 py-4'
-        }
+        className={' bg-canvas-0 w-full max-w-2xl justify-between px-6 py-4'}
       >
         <Title>Questions</Title>
         <Col className={'gap-2'}>
           {user &&
             questions
-              .slice(
-                questionsPerPage * page,
-                questionsPerPage * page + questionsPerPage
+              .filter((q) =>
+                page === 0
+                  ? q.answer_type === 'multiple_choice'
+                  : page === 1 && q.answer_type !== 'multiple_choice'
               )
               .map((row) => <QuestionRow user={user} key={row.id} row={row} />)}
         </Col>
         <Row>
-          <Col className={'w-full'}>
-            <Pagination
-              page={page}
-              itemsPerPage={questionsPerPage}
-              totalItems={questions.length}
-              setPage={setPage}
-            />
-            <Row className={'justify-end'}>
+          <Col className={'mt-2 w-full'}>
+            <Row className={'justify-between'}>
               <Button
-                className={'-auto'}
-                color={'gray-outline'}
-                onClick={() => router.push('profiles')}
+                color={'gray-white'}
+                className={page === 0 ? 'invisible' : ''}
+                onClick={() => {
+                  setPage(page - 1)
+                }}
+              >
+                Back
+              </Button>
+              <Button
+                color={'indigo-outline'}
+                onClick={() => {
+                  page === 0 ? setPage(1) : router.push('profiles')
+                }}
               >
                 Save & continue
               </Button>
@@ -121,7 +125,7 @@ const QuestionRow = (props: { row: rowFor<'love_questions'>; user: User }) => {
   }
 
   return (
-    <Col className={'w-full gap-2 p-2 sm:items-center'}>
+    <Col className={'w-full gap-2 p-2'}>
       <span>{question}</span>
       {answer_type === 'free_response' ? (
         <ExpandingInput
