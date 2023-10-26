@@ -142,9 +142,9 @@ export const RequiredLoveUserForm = (props: {
             <Col className={clsx(colClassName)}>
               <label className={clsx(labelClassName)}>Your location</label>
               <ChoicesToggleGroup
-                currentChoice={loverState['city']}
+                currentChoice={showCityInput ? 'Other' : loverState['city']}
                 choicesMap={{
-                  'San Francisco': 'San Francisco',
+                  'San Francisco Bay Area': 'San Francisco',
                   'New York City': 'New York City',
                   London: 'London',
                   Other: 'Other',
