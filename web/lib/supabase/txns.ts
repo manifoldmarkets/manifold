@@ -6,6 +6,16 @@ export async function getDonationsByCharity() {
   return Object.fromEntries(data!.map((r: any) => [r.charity_id, r.total]))
 }
 
+export async function getAllDonations(charityId: string) {
+  const { data } = await run(
+    selectFrom(db, 'txns', 'fromId', 'createdTime', 'amount')
+      .eq('data->>category', 'CHARITY')
+      .eq('data->>toId', charityId)
+      .order('data->createdTime', { ascending: false } as any)
+  )
+  return data
+}
+
 export async function getMostRecentDonation() {
   const { data } = await run(
     selectFrom(db, 'txns', 'fromId', 'toId')

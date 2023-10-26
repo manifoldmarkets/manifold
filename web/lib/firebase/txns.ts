@@ -1,25 +1,10 @@
-import { ManalinkTxn, DonationTxn, TipTxn, Txn, LeagueBidTxn } from 'common/txn'
+import { ManalinkTxn, TipTxn, Txn, LeagueBidTxn } from 'common/txn'
 import { orderBy, query, where } from 'firebase/firestore'
 import { coll, listenForValues } from './utils'
 import { useState, useEffect } from 'react'
 import { orderBy as _orderBy } from 'lodash'
 
 export const txns = coll<Txn>('txns')
-
-const getCharityQuery = (charityId: string) =>
-  query(
-    txns,
-    where('toType', '==', 'CHARITY'),
-    where('toId', '==', charityId),
-    orderBy('createdTime', 'desc')
-  )
-
-export function listenForCharityTxns(
-  charityId: string,
-  setTxns: (txns: DonationTxn[]) => void
-) {
-  return listenForValues<DonationTxn>(getCharityQuery(charityId), setTxns)
-}
 
 const getTipsOnContractQuery = (contractId: string) =>
   query(
