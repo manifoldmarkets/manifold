@@ -18,6 +18,7 @@ import LoverAbout from 'love/components/lover-about'
 import { orderBy } from 'lodash'
 import { Subtitle } from 'love/components/widgets/lover-subtitle'
 import { useUserAnswersAndQuestions } from 'love/hooks/use-questions'
+import clsx from 'clsx'
 
 export const getStaticProps = async (props: {
   params: {
@@ -115,7 +116,7 @@ export default function UserPage(props: {
                   </Button>
                 )}
               </Row>
-              <Row className={'flex-wrap gap-3'}>
+              <Row className={clsx('flex-wrap gap-3')}>
                 {answers.length > 0 ? (
                   orderBy(
                     answers,
