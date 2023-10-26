@@ -30,7 +30,7 @@ import { getBetFields } from 'web/lib/supabase/bets'
 import { db } from 'web/lib/supabase/db'
 import Custom404 from '../../404'
 import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
-import { AnswersPanel } from 'web/components/answers/answers-panel'
+import { SimpleAnswerBars } from 'web/components/answers/answers-panel'
 
 type Points = HistoryPoint<any>[]
 
@@ -161,11 +161,10 @@ const ContractChart = (props: {
     case 'FREE_RESPONSE':
     case 'MULTIPLE_CHOICE':
       return (
-        <div className=" flex h-full flex-col justify-center">
-          <AnswersPanel
+        <div className="flex h-full flex-col justify-center">
+          <SimpleAnswerBars
             contract={contract}
             maxAnswers={numBars(props.height)}
-            linkToContract
           />
         </div>
       )
