@@ -398,6 +398,7 @@ export const RESERVED_PATHS = [
   'mtg',
   'news',
   'notifications',
+  'og-test',
   'payments',
   'portfolio',
   'privacy',
