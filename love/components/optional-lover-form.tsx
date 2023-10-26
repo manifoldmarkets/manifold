@@ -281,12 +281,13 @@ export const OptionalLoveUserForm = (props: {
 
         <Col className={clsx(colClassName)}>
           <label className={clsx(labelClassName)}>
-            Highest education level
+            Highest completed education level
           </label>
           <ChoicesToggleGroup
             currentChoice={lover['education_level'] ?? ''}
             choicesMap={{
-              'High School': 'high-school',
+              'High school': 'high-school',
+              'Some college': 'some-college',
               Bachelors: 'bachelors',
               Masters: 'masters',
               Doctorate: 'doctorate',

@@ -144,7 +144,7 @@ function Education(props: { lover: Lover }) {
     return <></>
   }
   const universityText = `${
-    NoUniDegree ? '' : capitalize(educationLevel) + ' at '
+    NoUniDegree ? '' : capitalizeAndRemoveUnderscores(educationLevel) + ' at '
   }${capitalize(university)}`
   return (
     <AboutRow
@@ -275,3 +275,6 @@ const renderAgreementScale = (value: number) => {
   if (value == 5) return 'Strongly agree'
   return ''
 }
+
+const capitalizeAndRemoveUnderscores = (str: string) =>
+  capitalize(str).replace(/_/g, ' ')
