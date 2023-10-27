@@ -26,6 +26,7 @@ import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { fromNow } from 'web/lib/util/time'
 import { Gender, convertGenderPlural } from './gender-icon'
+import { HiOutlineGlobe } from 'react-icons/hi'
 
 export function AboutRow(props: {
   icon: ReactNode
@@ -70,7 +71,10 @@ export default function LoverAbout(props: { lover: Lover }) {
         icon={<PiHandsPrayingBold className="h-5 w-5" />}
         text={lover.religious_beliefs}
       />
-      <AboutRow icon={<BiDna className="h-5 w-5" />} text={lover.ethnicity} />
+      <AboutRow
+        icon={<HiOutlineGlobe className="h-5 w-5" />}
+        text={lover.ethnicity}
+      />
       <Smoker lover={lover} />
       <Drinks lover={lover} />
       <AboutRow
