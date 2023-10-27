@@ -10,17 +10,20 @@ import { Lover } from 'love/hooks/use-lover'
 import { useLovers } from 'love/hooks/use-lovers'
 import Image from 'next/image'
 import Link from 'next/link'
-import { useState } from 'react'
 import { Col } from 'web/components/layout/col'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { Title } from 'web/components/widgets/title'
 import { Row } from 'web/components/layout/row'
 import { useUser } from 'web/hooks/use-user'
 import { Button } from 'web/components/buttons/button'
+import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 
 export default function ProfilesPage() {
   const allLovers = useLovers()
-  const [lovers, setLovers] = useState<Lover[] | undefined>(undefined)
+  const [lovers, setLovers] = usePersistentInMemoryState<Lover[] | undefined>(
+    undefined,
+    'profile-lovers'
+  )
 
   const user = useUser()
   if (user === undefined) return <div />
