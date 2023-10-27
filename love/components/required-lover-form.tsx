@@ -18,6 +18,7 @@ import dayjs from 'dayjs'
 import { Checkbox } from 'web/components/widgets/checkbox'
 import { range, uniq } from 'lodash'
 import { Select } from 'web/components/widgets/select'
+import { CitySearchBox, City } from './search-location'
 import { uploadImage } from 'web/lib/firebase/storage'
 import { buildArray } from 'common/util/array'
 import { CheckCircleIcon } from '@heroicons/react/outline'
@@ -26,7 +27,6 @@ import Image from 'next/image'
 
 export const initialRequiredState = {
   birthdate: dayjs().subtract(18, 'year').format('YYYY-MM-DD'),
-  city: '',
   gender: '',
   pref_gender: [],
   pref_age_min: 18,
@@ -36,9 +36,11 @@ export const initialRequiredState = {
   looking_for_matches: true,
   messaging_status: 'open',
   visibility: 'public',
+  city: '',
   pinned_url: '',
   photo_urls: [],
 }
+
 const requiredKeys = Object.keys(
   initialRequiredState
 ) as (keyof typeof initialRequiredState)[]
@@ -52,7 +54,6 @@ export const RequiredLoveUserForm = (props: {
 }) => {
   const { user, onSubmit, loverCreatedAlready, setLover, lover } = props
   const [trans, setTrans] = useState<boolean>()
-  const [showCityInput, setShowCityInput] = useState(false)
   const { updateUsername, updateDisplayName, userInfo, updateUserState } =
     useEditableUserInfo(user)
 
@@ -79,6 +80,24 @@ export const RequiredLoveUserForm = (props: {
     !loadingUsername &&
     !loadingName
 
+  function setLoverCity(inputCity: City | undefined) {
+    if (!inputCity) {
+      setLover('city', '')
+      setLover('region_code', undefined)
+      setLover('country', undefined)
+      setLover('city_latitude', undefined)
+      setLover('city_longitude', undefined)
+    } else {
+      const { city, region_code, country, city_latitude, city_longitude } =
+        inputCity
+      setLover('city', city)
+      setLover('region_code', region_code)
+      setLover('country', country)
+      setLover('city_latitude', city_latitude)
+      setLover('city_longitude', city_longitude)
+    }
+  }
+
   useEffect(() => {
     const currentState = lover['gender']
     if (currentState === 'non-binary') {
@@ -89,6 +108,7 @@ export const RequiredLoveUserForm = (props: {
       setLover('gender', currentState.replace('trans-', ''))
     }
   }, [trans, lover['gender']])
+
   const [uploadingImages, setUploadingImages] = useState(false)
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -167,33 +187,12 @@ export const RequiredLoveUserForm = (props: {
           <>
             <Col className={clsx(colClassName)}>
               <label className={clsx(labelClassName)}>Your location</label>
-              <ChoicesToggleGroup
-                currentChoice={showCityInput ? 'Other' : lover['city']}
-                choicesMap={{
-                  'SF Bay Area': 'San Francisco',
-                  NYC: 'New York City',
-                  London: 'London',
-                  Other: 'Other',
+              <CitySearchBox
+                onCitySelected={(city: City | undefined) => {
+                  setLoverCity(city)
                 }}
-                setChoice={(c) => {
-                  if (c === 'Other') {
-                    setLover('city', '')
-                    setShowCityInput(true)
-                  } else {
-                    setShowCityInput(false)
-                    setLover('city', c)
-                  }
-                }}
+                lover={lover}
               />
-              {showCityInput && (
-                <Input
-                  type="text"
-                  value={lover['city']}
-                  onChange={(e) => setLover('city', e.target.value)}
-                  className={'w-56'}
-                  placeholder={'e.g. DC'}
-                />
-              )}
             </Col>
 
             <Col className={clsx(colClassName)}>

@@ -19,7 +19,6 @@ const genderTypes = z.array(genderType)
 export const baseLoversSchema = z.object({
   // Required fields
   birthdate: z.string(),
-  city: z.string(),
   gender: genderType,
   pref_gender: genderTypes,
   pref_age_min: z.number().min(18).max(999),
@@ -35,6 +34,13 @@ export const baseLoversSchema = z.object({
   wants_kids_strength: z.number().min(0),
   looking_for_matches: z.boolean(),
   photo_urls: z.array(z.string()),
+
+  city: z.string(),
+  region_code: z.string().optional(),
+  country: z.string().optional(),
+  city_latitude: z.number().optional(),
+  city_longitude: z.number().optional(),
+
   pinned_url: z.string(),
 })
 

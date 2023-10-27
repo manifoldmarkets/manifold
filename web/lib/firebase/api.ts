@@ -562,3 +562,7 @@ export function sendUserPrivateMessage(params: {
 }) {
   return call(getApiUrl('create-private-user-message'), 'POST', params)
 }
+
+export function searchLocation(params: { term: string; limit?: number }) {
+  return call(getApiUrl('searchlocation'), 'POST', params)
+}

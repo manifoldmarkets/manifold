@@ -992,6 +992,7 @@ export interface Database {
           city: string
           comments_enabled: boolean
           company: string | null
+          country: string | null
           created_time: string
           drinks_per_month: number | null
           education_level: string | null
@@ -1003,6 +1004,8 @@ export interface Database {
           is_smoker: boolean | null
           is_vegetarian_or_vegan: boolean | null
           last_online_time: string
+          city_latitude: number | null
+          city_longitude: number | null
           looking_for_matches: boolean
           messaging_status: string
           occupation: string | null
@@ -1014,6 +1017,7 @@ export interface Database {
           pref_age_min: number
           pref_gender: string[]
           pref_relation_styles: string[]
+          region_code: string | null
           religious_belief_strength: number | null
           religious_beliefs: string | null
           twitter: string | null
@@ -1030,6 +1034,7 @@ export interface Database {
           city: string
           comments_enabled?: boolean
           company?: string | null
+          country?: string | null
           created_time?: string
           drinks_per_month?: number | null
           education_level?: string | null
@@ -1041,6 +1046,8 @@ export interface Database {
           is_smoker?: boolean | null
           is_vegetarian_or_vegan?: boolean | null
           last_online_time?: string
+          city_latitude?: number | null
+          city_longitude?: number | null
           looking_for_matches?: boolean
           messaging_status?: string
           occupation?: string | null
@@ -1052,6 +1059,7 @@ export interface Database {
           pref_age_min?: number
           pref_gender: string[]
           pref_relation_styles: string[]
+          region_code?: string | null
           religious_belief_strength?: number | null
           religious_beliefs?: string | null
           twitter?: string | null
@@ -1068,6 +1076,7 @@ export interface Database {
           city?: string
           comments_enabled?: boolean
           company?: string | null
+          country?: string | null
           created_time?: string
           drinks_per_month?: number | null
           education_level?: string | null
@@ -1079,6 +1088,8 @@ export interface Database {
           is_smoker?: boolean | null
           is_vegetarian_or_vegan?: boolean | null
           last_online_time?: string
+          city_latitude?: number | null
+          city_longitude?: number | null
           looking_for_matches?: boolean
           messaging_status?: string
           occupation?: string | null
@@ -1090,6 +1101,7 @@ export interface Database {
           pref_age_min?: number
           pref_gender?: string[]
           pref_relation_styles?: string[]
+          region_code?: string | null
           religious_belief_strength?: number | null
           religious_beliefs?: string | null
           twitter?: string | null
