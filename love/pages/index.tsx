@@ -75,13 +75,11 @@ function ProfilePreview(props: { lover: Lover }) {
             <UserIcon className="h-20 w-20" />
           </Col>
         )}
-        <Col className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/70 via-black/70 to-transparent px-4 pt-6">
-          <Row>
-            <div className="line-clamp-1 max-w-[calc(100%-2rem)] font-semibold hover:text-pink-300">
-              {user.name}
-            </div>
-            , {calculateAge(birthdate)}
-          </Row>
+        <Col className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 via-black/70 to-transparent px-4 pb-2 pt-6">
+          <span>
+            <span className=" break-words font-semibold">{user.name}</span>,{' '}
+            {calculateAge(birthdate)}
+          </span>
           <Row className="gap-1 text-xs">
             {city} • {capitalize(convertGender(gender as Gender))}
           </Row>
