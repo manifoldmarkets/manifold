@@ -41,12 +41,6 @@ export const initialRequiredState = {
   photo_urls: [],
 }
 
-const notStrictlyRequired = ['regionCode', 'country', 'latitude', 'longitude']
-
-// const requiredKeys = Object.keys(initialRequiredState).filter(
-//   (key) => !notStrictlyRequired.includes(key)
-// ) as (keyof typeof initialRequiredState)[]
-
 const requiredKeys = Object.keys(
   initialRequiredState
 ) as (keyof typeof initialRequiredState)[]
@@ -102,21 +96,6 @@ export const RequiredLoveUserForm = (props: {
       setLover('longitude', longitude)
     }
   }
-
-  // // const [initialCity, setInitialCity] = useState<City | undefined>(undefined)
-
-  // useEffect(() => {
-  //   // Set the initial state based on the lover prop when the component mounts
-  //   if (lover && lover.city) {
-  //     setInitialCity({
-  //       city: lover.city,
-  //       regionCode: lover.region_code,
-  //       country: lover.country,
-  //       latitude: lover.latitude,
-  //       longitude: lover.longitude,
-  //     } as City)
-  //   }
-  // }, [])
 
   useEffect(() => {
     const currentState = lover['gender']
