@@ -27,7 +27,7 @@ function loverToCity(lover: rowFor<'lovers'>) {
   } as City
 }
 
-export default function CitySearchBox(props: {
+export function CitySearchBox(props: {
   onCitySelected: (city: City | undefined) => void
   lover: rowFor<'lovers'>
 }) {
