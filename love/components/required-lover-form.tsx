@@ -39,14 +39,20 @@ export const initialRequiredState = {
 
   // city params
   city: '',
-  regionCode: '',
-  country: '',
-  lat: undefined,
-  long: undefined,
+  // region_code: undefined,
+  // country: undefined,
+  // latitude: undefined,
+  // longitude: undefined,
 
   pinned_url: '',
   photo_urls: [],
 }
+
+const notStrictlyRequired = ['regionCode', 'country', 'latitude', 'longitude']
+
+// const requiredKeys = Object.keys(initialRequiredState).filter(
+//   (key) => !notStrictlyRequired.includes(key)
+// ) as (keyof typeof initialRequiredState)[]
 
 const requiredKeys = Object.keys(
   initialRequiredState
@@ -94,18 +100,18 @@ export const RequiredLoveUserForm = (props: {
       // country: '',
       // lat: undefined,
       // long: undefined,
-      setLoverState('city', '')
-      setLoverState('regionCode', '')
-      setLoverState('country', '')
-      setLoverState('lat', undefined)
-      setLoverState('long', undefined)
+      setLover('city', '')
+      setLover('regionCode', undefined)
+      setLover('country', undefined)
+      setLover('latitude', undefined)
+      setLover('longitude', undefined)
     } else {
       const { city, regionCode, country, latitude, longitude } = inputCity
-      setLoverState('city', city.city)
-      setLoverState('regionCode', regionCode)
-      setLoverState('country', country)
-      setLoverState('lat', latitude)
-      setLoverState('long', longitude)
+      setLover('city', city)
+      setLover('regionCode', regionCode)
+      setLover('country', country)
+      setLover('latitude', latitude)
+      setLover('longitude', longitude)
     }
   }
 
@@ -119,6 +125,8 @@ export const RequiredLoveUserForm = (props: {
       setLover('gender', currentState.replace('trans-', ''))
     }
   }, [trans, lover['gender']])
+
+  console.log(lover)
   const [uploadingImages, setUploadingImages] = useState(false)
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -202,33 +210,6 @@ export const RequiredLoveUserForm = (props: {
                   setLoverCity(city)
                 }}
               />
-              {/* <ChoicesToggleGroup
-                currentChoice={loverState['city']}
-                choicesMap={{
-                  'San Francisco Bay Area': 'San Francisco',
-                  'New York City': 'New York City',
-                  London: 'London',
-                  Other: 'Other',
-                }}
-                setChoice={(c) => {
-                  if (c === 'Other') {
-                    setLover('city', '')
-                    setShowCityInput(true)
-                  } else {
-                    setShowCityInput(false)
-                    setLover('city', c)
-                  }
-                }}
-              />
-              {showCityInput && (
-                <Input
-                  type="text"
-                  value={lover['city']}
-                  onChange={(e) => setLover('city', e.target.value)}
-                  className={'w-56'}
-                  placeholder={'e.g. DC'}
-                />
-              )} */}
             </Col>
 
             <Col className={clsx(colClassName)}>

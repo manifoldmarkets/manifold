@@ -1009,6 +1009,7 @@ export interface Database {
           occupation_title: string | null
           photo_urls: string[] | null
           pinned_url: string | null
+
           political_beliefs: string[] | null
           pref_age_max: number
           pref_age_min: number
