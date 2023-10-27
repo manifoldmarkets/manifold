@@ -19,12 +19,6 @@ import { getReferralCount } from 'common/supabase/referrals'
 import { log } from 'shared/utils'
 dayjs.extend(utc)
 dayjs.extend(timezone)
-export const START_OF_WEEK = dayjs()
-  .tz('America/Los_Angeles')
-  .startOf('week')
-  .add(1, 'day')
-  .valueOf()
-const START_OF_DAY = dayjs().tz('America/Los_Angeles').startOf('day').valueOf()
 
 export const completeSharingQuest = async (user: User) => {
   const db = createSupabaseClient()
@@ -41,7 +35,12 @@ export const completeCalculatedQuestFromTrigger = async (
   contractId: string
 ) => {
   const db = createSupabaseClient()
-  const contractIds = await getRecentContractIds(user.id, START_OF_WEEK, db)
+  const startOfWeek = dayjs()
+    .tz('America/Los_Angeles')
+    .startOf('week')
+    .add(1, 'day')
+    .valueOf()
+  const contractIds = await getRecentContractIds(user.id, startOfWeek, db)
   // In case replication hasn't happened yet, add the id manually
   if (!contractIds.includes(contractId)) contractIds.push(contractId)
   const count = contractIds.length
@@ -90,6 +89,7 @@ const completeQuestInternal = async (
     db,
     idempotencyKey
   )
+  const startOfDay = dayjs().tz('America/Los_Angeles').startOf('day').valueOf()
   log(
     'completing',
     questType,
@@ -100,7 +100,7 @@ const completeQuestInternal = async (
     'and new score',
     count,
     'from start of day',
-    START_OF_DAY,
+    startOfDay,
     'with required count',
     questDetails.requiredCount
   )
@@ -127,11 +127,20 @@ const getCurrentCountForQuest = async (
   db: SupabaseClient
 ): Promise<number> => {
   if (questType === 'SHARES') {
-    const startTs = millisToTs(START_OF_DAY)
+    const startOfDay = dayjs()
+      .tz('America/Los_Angeles')
+      .startOf('day')
+      .valueOf()
+    const startTs = millisToTs(startOfDay)
     log('getting shares count for user', userId, 'from startTs', startTs)
     return await getUserShareEventsCount(userId, startTs, db)
   } else if (questType === 'REFERRALS') {
-    return await getReferralCount(userId, START_OF_WEEK, db)
+    const startOfWeek = dayjs()
+      .tz('America/Los_Angeles')
+      .startOf('week')
+      .add(1, 'day')
+      .valueOf()
+    return await getReferralCount(userId, startOfWeek, db)
   } else return 0
 }
 
@@ -140,6 +149,7 @@ const awardQuestBonus = async (
   questType: QuestType,
   newCount: number
 ) => {
+  const startOfDay = dayjs().tz('America/Los_Angeles').startOf('day').valueOf()
   return await firestore.runTransaction(async (trans) => {
     // make sure we don't already have a txn for this user/questType
     const previousTxns = firestore
@@ -148,7 +158,7 @@ const awardQuestBonus = async (
       .where('category', '==', 'QUEST_REWARD')
       .where('data.questType', '==', questType)
       .where('data.questCount', '==', newCount)
-      .where('createdTime', '>=', START_OF_DAY)
+      .where('createdTime', '>=', startOfDay)
       .limit(1)
     const previousTxn = (await trans.get(previousTxns)).docs[0]
     if (previousTxn) {
