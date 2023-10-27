@@ -170,8 +170,8 @@ export const RequiredLoveUserForm = (props: {
               <ChoicesToggleGroup
                 currentChoice={showCityInput ? 'Other' : lover['city']}
                 choicesMap={{
-                  'San Francisco Bay Area': 'San Francisco',
-                  'New York City': 'New York City',
+                  'SF Bay Area': 'San Francisco',
+                  NYC: 'New York City',
                   London: 'London',
                   Other: 'Other',
                 }}

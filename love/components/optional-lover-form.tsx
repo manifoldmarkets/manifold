@@ -11,13 +11,21 @@ import { colClassName, labelClassName } from 'love/pages/signup'
 import { useRouter } from 'next/router'
 import { updateLover } from 'web/lib/firebase/love/api'
 import { Row as rowFor } from 'common/supabase/utils'
+import Image from 'next/image'
+import { uploadImage } from 'web/lib/firebase/storage'
+import { User } from 'common/user'
+import { changeUserInfo } from 'web/lib/firebase/api'
+import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
+import { StackedUserNames } from 'web/components/widgets/user-link'
 
 export const OptionalLoveUserForm = (props: {
   lover: rowFor<'lovers'>
-  setLoverState: (key: keyof rowFor<'lovers'>, value: any) => void
+  setLover: (key: keyof rowFor<'lovers'>, value: any) => void
+  user: User
+  showAvatar?: boolean
   butonLabel?: string
 }) => {
-  const { lover, butonLabel, setLoverState } = props
+  const { lover, showAvatar, user, butonLabel, setLover } = props
 
   const router = useRouter()
   const [heightFeet, setHeightFeet] = useState(
@@ -36,18 +44,60 @@ export const OptionalLoveUserForm = (props: {
       router.push('/love-questions')
     }
   }
+  const [uploadingImages, setUploadingImages] = useState(false)
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (!files || Array.from(files).length === 0) return
+    const selectedFiles = Array.from(files)
+    setUploadingImages(true)
+    const url = await uploadImage(
+      user.username,
+      selectedFiles[0],
+      'love-images'
+    )
+    await changeUserInfo({ avatarUrl: url })
+    setUploadingImages(false)
+  }
 
   return (
     <>
       <Title>More about me</Title>
       <Col className={'gap-8'}>
+        {showAvatar && (
+          <Col className={clsx(colClassName)}>
+            <label className={clsx(labelClassName)}>
+              Change your avatar photo (optional)
+            </label>
+            <Row>
+              <input
+                type="file"
+                onChange={handleFileChange}
+                className={'w-48'}
+                disabled={uploadingImages}
+              />
+              {uploadingImages && <LoadingIndicator />}
+            </Row>
+            <Row className=" items-center gap-2">
+              <Image
+                src={user.avatarUrl}
+                width={80}
+                height={80}
+                alt={`avatar photo of ${user.username}`}
+                className="h-20 w-20 rounded-full object-cover p-2"
+              />
+              <StackedUserNames user={user} />
+            </Row>
+          </Col>
+        )}
+
         <Col className={clsx(colClassName)}>
           <label className={clsx(labelClassName)}>
             Website or date doc link
           </label>
           <Input
             type="text"
-            onChange={(e) => setLoverState('website', e.target.value)}
+            onChange={(e) => setLover('website', e.target.value)}
             className={'w-full sm:w-96'}
             value={lover['website'] ?? undefined}
           />
@@ -56,7 +106,7 @@ export const OptionalLoveUserForm = (props: {
           <label className={clsx(labelClassName)}>Twitter</label>
           <Input
             type="text"
-            onChange={(e) => setLoverState('twitter', e.target.value)}
+            onChange={(e) => setLover('twitter', e.target.value)}
             className={'w-full sm:w-96'}
             value={lover['twitter'] ?? undefined}
           />
@@ -76,9 +126,7 @@ export const OptionalLoveUserForm = (props: {
               Other: 'other',
             }}
             selected={lover['political_beliefs'] ?? []}
-            onChange={(selected) =>
-              setLoverState('political_beliefs', selected)
-            }
+            onChange={(selected) => setLover('political_beliefs', selected)}
           />
         </Col>
 
@@ -86,7 +134,7 @@ export const OptionalLoveUserForm = (props: {
           <label className={clsx(labelClassName)}>Religious beliefs</label>
           <Input
             type="text"
-            onChange={(e) => setLoverState('religious_beliefs', e.target.value)}
+            onChange={(e) => setLover('religious_beliefs', e.target.value)}
             className={'w-full sm:w-96'}
             value={lover['religious_beliefs'] ?? undefined}
           />
@@ -96,7 +144,7 @@ export const OptionalLoveUserForm = (props: {
           <label className={clsx(labelClassName)}>Current number of kids</label>
           <Input
             type="number"
-            onChange={(e) => setLoverState('has_kids', Number(e.target.value))}
+            onChange={(e) => setLover('has_kids', Number(e.target.value))}
             className={'w-20'}
             min={0}
             value={lover['has_kids'] ?? undefined}
@@ -111,7 +159,7 @@ export const OptionalLoveUserForm = (props: {
               Yes: true,
               No: false,
             }}
-            setChoice={(c) => setLoverState('is_smoker', c)}
+            setChoice={(c) => setLover('is_smoker', c)}
           />
         </Col>
 
@@ -122,7 +170,7 @@ export const OptionalLoveUserForm = (props: {
           <Input
             type="number"
             onChange={(e) =>
-              setLoverState('drinks_per_month', Number(e.target.value))
+              setLover('drinks_per_month', Number(e.target.value))
             }
             className={'w-20'}
             min={0}
@@ -139,7 +187,7 @@ export const OptionalLoveUserForm = (props: {
                 type="number"
                 onChange={(e) => {
                   setHeightFeet(Number(e.target.value))
-                  setLoverState(
+                  setLover(
                     'height_in_inches',
                     Number(e.target.value) * 12 +
                       ((lover['height_in_inches'] ?? 0) % 12)
@@ -154,7 +202,7 @@ export const OptionalLoveUserForm = (props: {
               <Input
                 type="number"
                 onChange={(e) =>
-                  setLoverState(
+                  setLover(
                     'height_in_inches',
                     Number(e.target.value) + heightFeet * 12
                   )
@@ -190,7 +238,7 @@ export const OptionalLoveUserForm = (props: {
               Other: 'other',
             }}
             selected={lover['ethnicity'] ?? []}
-            onChange={(selected) => setLoverState('ethnicity', selected)}
+            onChange={(selected) => setLover('ethnicity', selected)}
           />
         </Col>
 
@@ -205,16 +253,16 @@ export const OptionalLoveUserForm = (props: {
               'Some college': 'some-college',
               Bachelors: 'bachelors',
               Masters: 'masters',
-              Doctorate: 'doctorate',
+              PhD: 'doctorate',
             }}
-            setChoice={(c) => setLoverState('education_level', c)}
+            setChoice={(c) => setLover('education_level', c)}
           />
         </Col>
         <Col className={clsx(colClassName)}>
           <label className={clsx(labelClassName)}>University</label>
           <Input
             type="text"
-            onChange={(e) => setLoverState('university', e.target.value)}
+            onChange={(e) => setLover('university', e.target.value)}
             className={'w-52'}
             value={lover['university'] ?? undefined}
           />
@@ -223,7 +271,7 @@ export const OptionalLoveUserForm = (props: {
           <label className={clsx(labelClassName)}>Company</label>
           <Input
             type="text"
-            onChange={(e) => setLoverState('company', e.target.value)}
+            onChange={(e) => setLover('company', e.target.value)}
             className={'w-52'}
             value={lover['company'] ?? undefined}
           />
@@ -235,7 +283,7 @@ export const OptionalLoveUserForm = (props: {
           </label>
           <Input
             type="text"
-            onChange={(e) => setLoverState('occupation_title', e.target.value)}
+            onChange={(e) => setLover('occupation_title', e.target.value)}
             className={'w-52'}
             value={lover['occupation_title'] ?? undefined}
           />

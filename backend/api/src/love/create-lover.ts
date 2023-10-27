@@ -1,9 +1,12 @@
 import { z } from 'zod'
 import { APIError, authEndpoint, validate } from 'api/helpers'
 import { createSupabaseClient } from 'shared/supabase/init'
-import { log } from 'shared/utils'
+import { getUser, log } from 'shared/utils'
 import { addUserToGroup } from 'api/add-group-member'
 import { manifoldLoveRelationshipsGroupId } from 'common/love/constants'
+import { HOUR_MS } from 'common/util/time'
+import * as admin from 'firebase-admin'
+import { removePinnedUrlFromPhotoUrls } from 'shared/love/parse-photos'
 const genderType = z.union([
   z.literal('male'),
   z.literal('female'),
@@ -50,6 +53,15 @@ export const createlover = authEndpoint(async (req, auth) => {
     await addUserToGroup(manifoldLoveRelationshipsGroupId, auth.uid, auth.uid)
   } catch (e) {
     log('Error adding user to group', e)
+  }
+  await removePinnedUrlFromPhotoUrls(parsedBody)
+  const user = await getUser(auth.uid)
+  if (user && user.createdTime > Date.now() - HOUR_MS) {
+    // If they just signed up for manifold via manifold.love, set their avatar to be their pinned photo
+    const firestore = admin.firestore()
+    await firestore.doc('users/' + auth.uid).update({
+      avatarUrl: parsedBody.pinned_url,
+    })
   }
 
   const { data, error } = await db
