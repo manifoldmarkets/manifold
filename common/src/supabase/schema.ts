@@ -1113,24 +1113,57 @@ export interface Database {
         }
         Relationships: []
       }
+      manalink_claims: {
+        Row: {
+          manalink_id: string
+          txn_id: string
+        }
+        Insert: {
+          manalink_id: string
+          txn_id: string
+        }
+        Update: {
+          manalink_id?: string
+          txn_id?: string
+        }
+        Relationships: []
+      }
       manalinks: {
         Row: {
+          amount: number | null
+          created_time: string | null
+          creator_id: string | null
           data: Json
+          expires_time: string | null
           from_id: string | null
           fs_updated_time: string
           id: string
+          max_uses: number | null
+          message: string | null
         }
         Insert: {
+          amount?: number | null
+          created_time?: string | null
+          creator_id?: string | null
           data: Json
+          expires_time?: string | null
           from_id?: string | null
           fs_updated_time: string
           id: string
+          max_uses?: number | null
+          message?: string | null
         }
         Update: {
+          amount?: number | null
+          created_time?: string | null
+          creator_id?: string | null
           data?: Json
+          expires_time?: string | null
           from_id?: string | null
           fs_updated_time?: string
           id?: string
+          max_uses?: number | null
+          message?: string | null
         }
         Relationships: []
       }

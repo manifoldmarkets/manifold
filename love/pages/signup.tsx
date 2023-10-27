@@ -61,8 +61,9 @@ export default function SignupPage() {
             />
           ) : step === 1 ? (
             <OptionalLoveUserForm
-              setLoverState={setLoverState}
+              setLover={setLoverState}
               lover={loverForm}
+              user={user}
             />
           ) : (
             <LoadingIndicator />

@@ -4,7 +4,7 @@ import { usePersistentSubscription } from 'web/lib/supabase/realtime/use-subscri
 import { useEffect, useState } from 'react'
 import { first, groupBy, maxBy, orderBy } from 'lodash'
 import { useIsAuthorized } from 'web/hooks/use-user'
-import { safeLocalStorage } from 'web/lib/util/local'
+import { safeLocalStorage, safeSessionStorage } from 'web/lib/util/local'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import {
   convertChatMessage,
@@ -116,9 +116,9 @@ export const useUnseenPrivateMessageChannels = (
   const { rows: messageRows } = usePersistentSubscription(
     `private_messages-${userId}`,
     'private_user_messages',
-    safeLocalStorage,
+    safeSessionStorage,
     undefined,
-    undefined,
+    undefined, // no need to fetch old messages, just fetch new ones
     `channel_id=in.(${channelIds.join(', ')})`
   )
   const allMessagesByChannelId = groupBy(

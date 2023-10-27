@@ -1,14 +1,18 @@
 import { getServiceAccountCredentials, initAdmin } from 'shared/init-admin'
 initAdmin()
 import { loadSecretsToEnv } from 'common/secrets'
-import { START_OF_WEEK } from 'shared/complete-quest-internal'
 import { getAllUsers } from 'shared/utils'
 import { getRecentContractIds } from 'common/supabase/contracts'
 import { createSupabaseClient } from 'shared/supabase/init'
 import { setQuestScoreValue } from 'common/supabase/set-scores'
 import { QUEST_DETAILS } from 'common/quest'
 import { getReferralCount } from 'common/supabase/referrals'
-
+import * as dayjs from 'dayjs'
+const START_OF_WEEK = dayjs()
+  .tz('America/Los_Angeles')
+  .startOf('week')
+  .add(1, 'day')
+  .valueOf()
 async function backfillSupabaseQuests() {
   const credentials = getServiceAccountCredentials()
   await loadSecretsToEnv(credentials)

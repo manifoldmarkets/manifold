@@ -9,6 +9,7 @@ import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
 import { PrivateUser } from 'common/user'
 import { getLoverRow } from 'love/lib/supabase/lovers'
 import dayjs from 'dayjs'
+import { useUser } from 'web/hooks/use-user'
 
 export const getServerSideProps = redirectIfLoggedOut('/', async (_, creds) => {
   const { user, privateUser } = await getUserAndPrivateUser(creds.uid)
@@ -21,7 +22,7 @@ export default function ProfilePage(props: {
   loverRow: rowFor<'lovers'>
 }) {
   const { auth, loverRow } = props
-  const { user } = auth
+  const user = useUser() ?? auth.user
   const [lover, setLover] = useState<Lover>({
     ...loverRow,
     birthdate: dayjs(loverRow.birthdate).format('YYYY-MM-DD'),
@@ -43,8 +44,10 @@ export default function ProfilePage(props: {
         <div className={'h-4'} />
         <OptionalLoveUserForm
           lover={lover}
-          setLoverState={setLoverState}
+          user={user}
+          setLover={setLoverState}
           butonLabel={'Save'}
+          showAvatar={true}
         />
       </Col>
     </Col>

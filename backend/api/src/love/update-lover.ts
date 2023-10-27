@@ -1,9 +1,11 @@
 import { z } from 'zod'
 import { APIError, authEndpoint, validate } from 'api/helpers'
 import { createSupabaseClient } from 'shared/supabase/init'
-import { log } from 'shared/utils'
+import { getUser, log } from 'shared/utils'
 import * as admin from 'firebase-admin'
 import { baseLoversSchema } from 'api/love/create-lover'
+import { HOUR_MS } from 'common/util/time'
+import { removePinnedUrlFromPhotoUrls } from 'shared/love/parse-photos'
 
 const optionaLoversSchema = z.object({
   political_beliefs: z.array(z.string()).optional(),
@@ -27,6 +29,7 @@ const optionaLoversSchema = z.object({
   website: z.string().optional(),
   bio: z.string().optional(),
   twitter: z.string().optional(),
+  avatar_url: z.string().optional(),
 })
 
 const combinedLoveUsersSchema = baseLoversSchema.merge(optionaLoversSchema)
@@ -35,26 +38,22 @@ export const updatelover = authEndpoint(async (req, auth) => {
   const parsedBody = validate(combinedLoveUsersSchema, req.body)
   log('parsedBody', parsedBody)
   const db = createSupabaseClient()
-  const { data: existingUser } = await db
+  const { data: existingLover } = await db
     .from('lovers')
     .select('id')
     .eq('user_id', auth.uid)
     .single()
-  if (!existingUser) {
-    throw new APIError(400, 'User not found')
+  if (!existingLover) {
+    throw new APIError(400, 'Lover not found')
   }
-  !parsedBody.last_online_time && log('Updating user', auth.uid, parsedBody)
+  !parsedBody.last_online_time && log('Updating lover', auth.uid, parsedBody)
 
-  if (parsedBody.pinned_url) {
+  await removePinnedUrlFromPhotoUrls(parsedBody)
+  if (parsedBody.avatar_url) {
     const firestore = admin.firestore()
     await firestore.doc('users/' + auth.uid).update({
-      avatarUrl: parsedBody.pinned_url,
+      avatarUrl: parsedBody.avatar_url,
     })
-    if (parsedBody.photo_urls) {
-      parsedBody.photo_urls = parsedBody.photo_urls.filter(
-        (url) => url !== parsedBody.pinned_url
-      )
-    }
   }
 
   const { data, error } = await db
@@ -62,11 +61,11 @@ export const updatelover = authEndpoint(async (req, auth) => {
     .update({
       ...parsedBody,
     })
-    .eq('id', existingUser.id)
+    .eq('id', existingLover.id)
     .select()
   if (error) {
-    log('Error updating user', error)
-    throw new APIError(500, 'Error updating user')
+    log('Error updating lover', error)
+    throw new APIError(500, 'Error updating lover')
   }
   return {
     success: true,

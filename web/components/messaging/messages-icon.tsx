@@ -20,6 +20,7 @@ export function UnseenMessagesBubble() {
   return (
     <InternalUnseenMessagesBubble
       iconClassName={'-mr-4'}
+      isAuthed={isAuthed}
       privateUser={privateUser}
     />
   )
@@ -37,6 +38,7 @@ export function PrivateMessagesIcon(props: {
     <Row className="relative justify-center">
       {privateUser && isAuthed && (
         <InternalUnseenMessagesBubble
+          isAuthed={isAuthed}
           iconClassName={'-mt-2'}
           privateUser={privateUser}
         />
@@ -50,24 +52,25 @@ export function SolidPrivateMessagesIcon(props: { className?: string }) {
   return <PrivateMessagesIcon {...props} solid />
 }
 
+// Note: must be authorized to use this component
 function InternalUnseenMessagesBubble(props: {
   privateUser: PrivateUser
+  isAuthed: boolean
   iconClassName?: string
   className?: string
 }) {
-  const { privateUser, className, iconClassName } = props
+  const { privateUser, isAuthed, className, iconClassName } = props
   const { isReady, asPath } = useRouter()
-  const isAuthed = useIsAuthorized()
   const [lastSeenTime, setLastSeenTime] = usePersistentLocalState(
     0,
     'last-seen-private-messages-page'
   )
+  if (!isAuthed) console.error('must be authorized to use this component')
   useEffect(() => {
     if (isReady && asPath.endsWith('/messages')) {
       setLastSeenTime(Date.now())
       return
     }
-    if (!isAuthed) return
     // on every path change, check the last time we saw the messages page
     run(
       db
@@ -80,7 +83,7 @@ function InternalUnseenMessagesBubble(props: {
     ).then(({ data }) => {
       setLastSeenTime(new Date(data[0]?.ts ?? 0).valueOf())
     })
-  }, [isReady, asPath, isAuthed])
+  }, [isReady, asPath])
 
   const unseenMessages = useUnseenPrivateMessageChannels(privateUser.id, true)
     .filter((message) => message.createdTime > lastSeenTime)
