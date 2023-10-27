@@ -207,31 +207,17 @@ export const RequiredLoveUserForm = (props: {
                     value={dayjs(lover['birthdate']).format('MMMM')}
                     onChange={(e) => {
                       const birthDate = dayjs(lover['birthdate'])
+                      const monthNumber = MONTHS.indexOf(e.target.value) + 1
                       setLover(
                         'birthdate',
                         dayjs(
-                          `${
-                            e.target.value
-                          } ${birthDate.date()} ${birthDate.year()}`
+                          `${birthDate.year()}-${monthNumber}-${birthDate.date()}`
                         ).format('YYYY-MM-DD')
                       )
                     }}
                     className={'border-ink-300 w-32 rounded-md'}
                   >
-                    {[
-                      'January',
-                      'February',
-                      'March',
-                      'April',
-                      'May',
-                      'June',
-                      'July',
-                      'August',
-                      'September',
-                      'October',
-                      'November',
-                      'December',
-                    ].map((m) => (
+                    {MONTHS.map((m) => (
                       <option key={m} value={m}>
                         {m}
                       </option>
@@ -247,9 +233,9 @@ export const RequiredLoveUserForm = (props: {
                       setLover(
                         'birthdate',
                         dayjs(
-                          `${birthDate.month() + 1} ${
+                          `${birthDate.year()}-${birthDate.month() + 1}-${
                             e.target.value
-                          } ${birthDate.year()}`
+                          }`
                         ).format('YYYY-MM-DD')
                       )
                     }}
@@ -270,13 +256,12 @@ export const RequiredLoveUserForm = (props: {
                     value={dayjs(lover['birthdate']).year()}
                     onChange={(e) => {
                       const birthDate = dayjs(lover['birthdate'])
+                      const newDateStr = `${e.target.value}-${
+                        birthDate.month() + 1
+                      }-${birthDate.date()}`
                       setLover(
                         'birthdate',
-                        dayjs(
-                          `${birthDate.month() + 1} ${birthDate.date()} ${
-                            e.target.value
-                          }`
-                        ).format('YYYY-MM-DD')
+                        dayjs(newDateStr).format('YYYY-MM-DD')
                       )
                     }}
                     className={'border-ink-300 w-24 rounded-md'}
@@ -494,3 +479,18 @@ export const RequiredLoveUserForm = (props: {
     </>
   )
 }
+
+const MONTHS = [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
+]
