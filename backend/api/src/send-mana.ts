@@ -12,12 +12,14 @@ import { MAX_ID_LENGTH } from 'common/group'
 import { isAdminId } from 'common/envs/constants'
 import { MAX_COMMENT_LENGTH } from 'common/comment'
 
-const bodySchema = z.object({
-  amount: z.number().finite(),
-  toIds: z.array(z.string()),
-  message: z.string(),
-  groupId: z.string().max(MAX_ID_LENGTH).optional(),
-})
+const bodySchema = z
+  .object({
+    amount: z.number().finite(),
+    toIds: z.array(z.string()),
+    message: z.string(),
+    groupId: z.string().max(MAX_ID_LENGTH).optional(),
+  })
+  .strict()
 
 export const sendmana = authEndpoint(async (req, auth) => {
   const {

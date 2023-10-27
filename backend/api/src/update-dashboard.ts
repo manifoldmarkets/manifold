@@ -7,13 +7,15 @@ import { isAdminId } from 'common/envs/constants'
 import { updateDashboardGroups } from 'shared/supabase/dashboard'
 import { MAX_DASHBOARD_TITLE_LENGTH } from 'common/dashboard'
 
-const schema = z.object({
-  title: z.string().min(1).max(MAX_DASHBOARD_TITLE_LENGTH),
-  dashboardId: z.string(),
-  description: contentSchema.optional(),
-  items: z.array(DashboardItemSchema),
-  topics: z.array(z.string()),
-})
+const schema = z
+  .object({
+    title: z.string().min(1).max(MAX_DASHBOARD_TITLE_LENGTH),
+    dashboardId: z.string(),
+    description: contentSchema.optional(),
+    items: z.array(DashboardItemSchema),
+    topics: z.array(z.string()),
+  })
+  .strict()
 
 export const updatedashboard = authEndpoint(async (req, auth) => {
   const { title, dashboardId, description, items, topics } = validate(

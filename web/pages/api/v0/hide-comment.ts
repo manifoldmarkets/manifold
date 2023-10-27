@@ -18,9 +18,11 @@ export const config = { api: { bodyParser: true } }
 initAdmin()
 const firestore = admin.firestore()
 
-const schema = z.object({
-  commentPath: z.string(),
-})
+const schema = z
+  .object({
+    commentPath: z.string(),
+  })
+  .strict()
 export type HideCommentReq = {
   // eg 'contracts/iisfjklsd/comments/1jdkisjoof'
   commentPath: string

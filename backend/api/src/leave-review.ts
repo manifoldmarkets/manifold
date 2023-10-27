@@ -10,11 +10,13 @@ import { User } from 'common/user'
 import { Contract } from 'common/contract'
 import { parseJsonContentToText, richTextToString } from 'common/util/parse'
 
-const schema = z.object({
-  marketId: z.string(),
-  review: contentSchema.optional(),
-  rating: z.number().gte(0).lte(5).int(),
-})
+const schema = z
+  .object({
+    marketId: z.string(),
+    review: contentSchema.optional(),
+    rating: z.number().gte(0).lte(5).int(),
+  })
+  .strict()
 
 export const leavereview = authEndpoint(async (req, auth) => {
   const { marketId, review, rating } = validate(schema, req.body)

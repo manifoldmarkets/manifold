@@ -6,9 +6,11 @@ import { APIError, authEndpoint, validate } from './helpers'
 import { PrivateUser, User } from 'common/user'
 import { DestinySub, DESTINY_SUB_COST } from 'common/destiny-sub'
 
-const bodySchema = z.object({
-  destinyUsername: z.string().trim().min(1),
-})
+const bodySchema = z
+  .object({
+    destinyUsername: z.string().trim().min(1),
+  })
+  .strict()
 
 export const claimdestinysub = authEndpoint(async (req, auth) => {
   const { destinyUsername } = validate(bodySchema, req.body)

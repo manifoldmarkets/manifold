@@ -22,10 +22,12 @@ import { noFees } from 'common/fees'
 import { getCpmmInitialLiquidity } from 'common/antes'
 import { addUserToContractFollowers } from 'shared/follow-market'
 
-const bodySchema = z.object({
-  contractId: z.string().max(MAX_ANSWER_LENGTH),
-  text: z.string().min(1).max(MAX_ANSWER_LENGTH),
-})
+const bodySchema = z
+  .object({
+    contractId: z.string().max(MAX_ANSWER_LENGTH),
+    text: z.string().min(1).max(MAX_ANSWER_LENGTH),
+  })
+  .strict()
 
 export const createanswercpmm = authEndpoint(async (req, auth) => {
   const { contractId, text } = validate(bodySchema, req.body)

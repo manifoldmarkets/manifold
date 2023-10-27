@@ -5,10 +5,12 @@ import { run } from 'common/supabase/utils'
 import { createFollowOrMarketSubsidizedNotification } from 'shared/create-notification'
 import { log } from 'shared/utils'
 
-const schema = z.object({
-  userId: z.string().describe('id of the person you want to follow'),
-  follow: z.boolean().describe('Whether you want to follow or unfollow'),
-})
+const schema = z
+  .object({
+    userId: z.string().describe('id of the person you want to follow'),
+    follow: z.boolean().describe('Whether you want to follow or unfollow'),
+  })
+  .strict()
 
 export const followUser = authEndpoint(async (req, auth) => {
   const { userId: them, follow } = schema.parse(req.body)

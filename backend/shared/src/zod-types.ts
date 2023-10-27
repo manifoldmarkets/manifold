@@ -24,15 +24,19 @@ export const contentSchema: z.ZodType<JSONContent> = z.lazy(() =>
   )
 )
 
-export const DashboardQuestionItemSchema = z.object({
-  type: z.literal('question'),
-  slug: z.string(),
-})
+export const DashboardQuestionItemSchema = z
+  .object({
+    type: z.literal('question'),
+    slug: z.string(),
+  })
+  .strict()
 
-export const DashboardLinkItemSchema = z.object({
-  type: z.literal('link'),
-  url: z.string(),
-})
+export const DashboardLinkItemSchema = z
+  .object({
+    type: z.literal('link'),
+    url: z.string(),
+  })
+  .strict()
 
 export const DashboardItemSchema: ZodUnion<
   [typeof DashboardQuestionItemSchema, typeof DashboardLinkItemSchema]

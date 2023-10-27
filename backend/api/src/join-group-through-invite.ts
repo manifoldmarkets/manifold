@@ -4,9 +4,11 @@ import { APIError, authEndpoint, validate } from './helpers'
 import { GroupInvite } from 'common/src/group-invite'
 import { addUserToGroup } from './add-group-member'
 
-const schema = z.object({
-  inviteId: z.string(),
-})
+const schema = z
+  .object({
+    inviteId: z.string(),
+  })
+  .strict()
 
 // TODO: this whole thing should be a transaction
 export const joingroupthroughinvite = authEndpoint(async (req, auth) => {

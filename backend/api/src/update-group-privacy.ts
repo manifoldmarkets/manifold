@@ -4,10 +4,12 @@ import { APIError, authEndpoint, validate } from './helpers'
 import { createSupabaseClient } from 'shared/supabase/init'
 import { Group } from 'common/group'
 
-const bodySchema = z.object({
-  groupId: z.string(),
-  privacy: z.enum(['public', 'curated', 'private']),
-})
+const bodySchema = z
+  .object({
+    groupId: z.string(),
+    privacy: z.enum(['public', 'curated', 'private']),
+  })
+  .strict()
 
 export const updategroupprivacy = authEndpoint(async (req, auth) => {
   const { groupId, privacy } = validate(bodySchema, req.body)

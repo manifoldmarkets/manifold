@@ -3,9 +3,11 @@ import { z } from 'zod'
 import { addUserToGroup } from './add-group-member'
 import { authEndpoint, validate } from './helpers'
 
-const bodySchema = z.object({
-  groupId: z.string(),
-})
+const bodySchema = z
+  .object({
+    groupId: z.string(),
+  })
+  .strict()
 
 export const joingroup = authEndpoint(async (req, auth) => {
   const { groupId } = validate(bodySchema, req.body)

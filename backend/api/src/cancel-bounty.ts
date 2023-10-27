@@ -8,9 +8,11 @@ import { z } from 'zod'
 import { APIError, authEndpoint, validate } from './helpers'
 import { Contract } from 'common/contract'
 import dayjs = require('dayjs')
-const bodySchema = z.object({
-  contractId: z.string(),
-})
+const bodySchema = z
+  .object({
+    contractId: z.string(),
+  })
+  .strict()
 
 export const cancelbounty = authEndpoint(async (req, auth) => {
   const { contractId } = validate(bodySchema, req.body)

@@ -8,12 +8,14 @@ import { randomString } from 'common/util/random'
 import { updateDashboardGroups } from 'shared/supabase/dashboard'
 import { MAX_DASHBOARD_TITLE_LENGTH } from 'common/dashboard'
 
-const schema = z.object({
-  title: z.string().min(1).max(MAX_DASHBOARD_TITLE_LENGTH),
-  description: contentSchema.optional(),
-  items: z.array(DashboardItemSchema),
-  topics: z.array(z.string()),
-})
+const schema = z
+  .object({
+    title: z.string().min(1).max(MAX_DASHBOARD_TITLE_LENGTH),
+    description: contentSchema.optional(),
+    items: z.array(DashboardItemSchema),
+    topics: z.array(z.string()),
+  })
+  .strict()
 
 export const createdashboard = authEndpoint(async (req, auth) => {
   const { title, description, items, topics } = validate(schema, req.body)

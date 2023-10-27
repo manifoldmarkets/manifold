@@ -5,11 +5,13 @@ import { APIError, authEndpoint, validate } from './helpers'
 import { createGroupStatusChangeNotification } from 'shared/create-notification'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 
-const bodySchema = z.object({
-  groupId: z.string(),
-  memberId: z.string(),
-  role: z.enum(['admin', 'member', 'moderator']),
-})
+const bodySchema = z
+  .object({
+    groupId: z.string(),
+    memberId: z.string(),
+    role: z.enum(['admin', 'member', 'moderator']),
+  })
+  .strict()
 
 export const updatememberrole = authEndpoint(async (req, auth) => {
   const { groupId, memberId, role } = validate(bodySchema, req.body)

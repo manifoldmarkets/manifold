@@ -3,14 +3,16 @@ import type { ReportProps } from 'common/src/report'
 import { APIError, authEndpoint, validate } from './helpers'
 import { createSupabaseClient } from 'shared/supabase/init'
 
-const schema: z.ZodSchema<ReportProps> = z.object({
-  contentOwnerId: z.string(),
-  contentType: z.enum(['user', 'comment', 'contract']),
-  contentId: z.string(),
-  description: z.string().optional(),
-  parentId: z.string().optional(),
-  parentType: z.enum(['contract', 'post']).optional(),
-})
+const schema: z.ZodSchema<ReportProps> = z
+  .object({
+    contentOwnerId: z.string(),
+    contentType: z.enum(['user', 'comment', 'contract']),
+    contentId: z.string(),
+    description: z.string().optional(),
+    parentId: z.string().optional(),
+    parentType: z.enum(['contract', 'post']).optional(),
+  })
+  .strict()
 
 // abusable: people can report the wrong person, that didn't write the comment
 // but in practice we check it manually and nothing bad happens to them automatically

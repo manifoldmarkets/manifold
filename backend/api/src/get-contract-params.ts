@@ -6,9 +6,11 @@ import { APIError, MaybeAuthedEndpoint, validate } from './helpers'
 
 import { getContractParams } from 'common/contract-params'
 
-const bodySchema = z.object({
-  contractSlug: z.string(),
-})
+const bodySchema = z
+  .object({
+    contractSlug: z.string(),
+  })
+  .strict()
 
 export const getcontractparams = MaybeAuthedEndpoint<MaybeAuthedContractParams>(
   async (req, auth) => {

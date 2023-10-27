@@ -3,16 +3,18 @@ import { APIError, authEndpoint, validate } from './helpers'
 import { runTxn } from 'shared/txn/run-txn'
 import { z } from 'zod'
 
-const txnSchema = z.object({
-  fromType: z.enum(['USER']),
-  fromId: z.string(),
-  amount: z.number().positive().safe(),
-  toType: z.enum(['USER', 'CHARITY']),
-  toId: z.string(),
-  token: z.enum(['M$']),
-  category: z.string(),
-  description: z.string().optional(),
-})
+const txnSchema = z
+  .object({
+    fromType: z.enum(['USER']),
+    fromId: z.string(),
+    amount: z.number().positive().safe(),
+    toType: z.enum(['USER', 'CHARITY']),
+    toId: z.string(),
+    token: z.enum(['M$']),
+    category: z.string(),
+    description: z.string().optional(),
+  })
+  .strict()
 
 export const transact = authEndpoint(async (req, auth) => {
   const firestore = admin.firestore()

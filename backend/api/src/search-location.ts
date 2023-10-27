@@ -2,10 +2,12 @@ import { GiphyFetch } from '@giphy/js-fetch-api'
 import { z } from 'zod'
 import { jsonEndpoint, validate } from './helpers'
 
-const bodySchema = z.object({
-  term: z.string(),
-  limit: z.number().optional(),
-})
+const bodySchema = z
+  .object({
+    term: z.string(),
+    limit: z.number().optional(),
+  })
+  .strict()
 
 export const searchlocation = jsonEndpoint(async (req) => {
   const { term, limit } = validate(bodySchema, req.body)

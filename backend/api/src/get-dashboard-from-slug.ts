@@ -4,9 +4,11 @@ import { APIError, MaybeAuthedEndpoint, validate } from './helpers'
 import { run } from 'common/supabase/utils'
 import { convertDashboardSqltoTS } from 'common/dashboard'
 
-const bodySchema = z.object({
-  dashboardSlug: z.string(),
-})
+const bodySchema = z
+  .object({
+    dashboardSlug: z.string(),
+  })
+  .strict()
 
 export const getdashboardfromslug = MaybeAuthedEndpoint(async (req) => {
   const { dashboardSlug } = validate(bodySchema, req.body)

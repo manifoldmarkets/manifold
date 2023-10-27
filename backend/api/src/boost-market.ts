@@ -9,11 +9,13 @@ import { MIN_AD_COST_PER_VIEW } from 'common/boost'
 import { runTxn } from 'shared/txn/run-txn'
 import { generateContractEmbeddings } from 'shared/supabase/contracts'
 
-const schema = z.object({
-  marketId: z.string(),
-  totalCost: z.number().positive(),
-  costPerView: z.number().positive().min(MIN_AD_COST_PER_VIEW),
-})
+const schema = z
+  .object({
+    marketId: z.string(),
+    totalCost: z.number().positive(),
+    costPerView: z.number().positive().min(MIN_AD_COST_PER_VIEW),
+  })
+  .strict()
 
 export const boostmarket = authEndpoint(async (req, auth) => {
   const { marketId, totalCost, costPerView } = validate(schema, req.body)

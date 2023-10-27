@@ -9,11 +9,13 @@ import { getValues } from 'shared/utils'
 import { APIError, authEndpoint, validate } from './helpers'
 import { addUserToContractFollowers } from 'shared/follow-market'
 
-const bodySchema = z.object({
-  contractId: z.string().max(MAX_ANSWER_LENGTH),
-  amount: z.number().gt(0).int().finite(),
-  text: z.string(),
-})
+const bodySchema = z
+  .object({
+    contractId: z.string().max(MAX_ANSWER_LENGTH),
+    amount: z.number().gt(0).int().finite(),
+    text: z.string(),
+  })
+  .strict()
 
 export const createanswer = authEndpoint(async (req, auth) => {
   const { contractId, amount, text } = validate(bodySchema, req.body)

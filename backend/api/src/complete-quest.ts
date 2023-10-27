@@ -3,9 +3,11 @@ import { getUser } from 'shared/utils'
 import { z } from 'zod'
 import { completeSharingQuest } from 'shared/complete-quest-internal'
 
-const bodySchema = z.object({
-  questType: z.enum(['SHARES'] as const),
-})
+const bodySchema = z
+  .object({
+    questType: z.enum(['SHARES'] as const),
+  })
+  .strict()
 
 export const completequest = authEndpoint(async (req, auth) => {
   validate(bodySchema, req.body)

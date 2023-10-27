@@ -28,6 +28,7 @@ import { createLimitBetCanceledNotification } from 'shared/create-notification'
 import { Answer } from 'common/answer'
 import { CpmmState, getCpmmProbability } from 'common/calculate-cpmm'
 
+// don't use strict() because we want to allow market-type-specific fields
 const bodySchema = z.object({
   contractId: z.string(),
   amount: z.number().gte(1),

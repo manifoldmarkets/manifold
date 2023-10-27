@@ -4,9 +4,11 @@ import { isAdminId } from 'common/envs/constants'
 import { APIError, authEndpoint, validate } from './helpers'
 import { createSupabaseClient } from 'shared/supabase/init'
 
-const schema = z.object({
-  dashboardId: z.string(),
-})
+const schema = z
+  .object({
+    dashboardId: z.string(),
+  })
+  .strict()
 
 export const deletedashboard = authEndpoint(async (req, auth) => {
   const { dashboardId } = validate(schema, req.body)

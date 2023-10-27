@@ -8,10 +8,12 @@ import { Bet } from 'common/bet'
 import { getSellBetInfo } from 'common/sell-bet'
 import { addObjects, removeUndefinedProps } from 'common/util/object'
 
-const bodySchema = z.object({
-  contractId: z.string(),
-  betId: z.string(),
-})
+const bodySchema = z
+  .object({
+    contractId: z.string(),
+    betId: z.string(),
+  })
+  .strict()
 
 export const sellbet = authEndpoint(async (req, auth) => {
   const { contractId, betId } = validate(bodySchema, req.body)

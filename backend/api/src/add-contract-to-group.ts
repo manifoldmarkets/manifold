@@ -14,10 +14,12 @@ import { addGroupToContract } from 'shared/update-group-contracts-internal'
 import { GroupMember } from 'common/group-member'
 import { User } from 'common/user'
 
-const bodySchema = z.object({
-  groupId: z.string(),
-  contractId: z.string(),
-})
+const bodySchema = z
+  .object({
+    groupId: z.string(),
+    contractId: z.string(),
+  })
+  .strict()
 
 export const addcontracttogroup = authEndpoint(async (req, auth) => {
   const { groupId, contractId } = validate(bodySchema, req.body)

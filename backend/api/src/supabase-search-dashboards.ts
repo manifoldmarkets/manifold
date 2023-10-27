@@ -3,11 +3,13 @@ import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { z } from 'zod'
 import { Json, MaybeAuthedEndpoint, validate } from './helpers'
 
-const bodySchema = z.object({
-  term: z.string(),
-  offset: z.number().gte(0),
-  limit: z.number().gt(0),
-})
+const bodySchema = z
+  .object({
+    term: z.string(),
+    offset: z.number().gte(0),
+    limit: z.number().gt(0),
+  })
+  .strict()
 
 export const supabasesearchdashboards = MaybeAuthedEndpoint(async (req) => {
   const { term, offset, limit } = validate(bodySchema, req.body)

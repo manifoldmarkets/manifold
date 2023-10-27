@@ -3,12 +3,14 @@ import { addContractToUserDisinterestEmbedding } from 'shared/helpers/embeddings
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { z } from 'zod'
 
-const bodySchema = z.object({
-  contractId: z.string(),
-  creatorId: z.string(),
-  feedId: z.number().optional(),
-  removeContract: z.boolean().optional(),
-})
+const bodySchema = z
+  .object({
+    contractId: z.string(),
+    creatorId: z.string(),
+    feedId: z.number().optional(),
+    removeContract: z.boolean().optional(),
+  })
+  .strict()
 
 export const updateUserDisinterestEmbedding = authEndpoint(
   async (req, auth) => {

@@ -6,14 +6,17 @@ import { Dictionary, flatMap } from 'lodash'
 import { ContractMetric } from 'common/contract-metric'
 import { Contract } from 'common/contract'
 
-const bodySchema = z.object({
-  userId: z.string(),
-  limit: z.number(),
-})
+const bodySchema = z
+  .object({
+    userId: z.string(),
+    limit: z.number(),
+    offset: z.number().gte(0).optional(),
+  })
+  .strict()
 
 export const getusercontractmetricswithcontracts = MaybeAuthedEndpoint(
   async (req, auth) => {
-    const { userId, limit } = validate(bodySchema, req.body)
+    const { userId, limit, offset = 0 } = validate(bodySchema, req.body)
     const visibilitySQL = getContractPrivacyWhereSQLFilter(auth?.uid)
     const cmSql = `ucm.user_id='${userId}' and ucm.data->'lastBetTime' is not null`
     const pg = createSupabaseDirectClient()
@@ -30,7 +33,7 @@ export const getusercontractmetricswithcontracts = MaybeAuthedEndpoint(
     limit $2`
       await pg.map(
         q,
-        [0, limit],
+        [offset, limit],
         (data: {
           contract_id: string
           metrics: ContractMetric

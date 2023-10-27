@@ -34,11 +34,13 @@ import { DEFAULT_FEED_USER_ID } from 'common/feed'
 
 import { getImportantContractsForNewUsers } from 'shared/supabase/contracts'
 
-const bodySchema = z.object({
-  deviceToken: z.string().optional(),
-  adminToken: z.string().optional(),
-  visitedContractIds: z.array(z.string()).optional(),
-})
+const bodySchema = z
+  .object({
+    deviceToken: z.string().optional(),
+    adminToken: z.string().optional(),
+    visitedContractIds: z.array(z.string()).optional(),
+  })
+  .strict()
 
 export const createuser = authEndpoint(async (req, auth) => {
   const {

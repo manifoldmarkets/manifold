@@ -14,13 +14,15 @@ import { getContract } from 'web/lib/supabase/contracts'
 
 export const longCacheStrategy = 's-maxage=120, stale-while-revalidate=150'
 
-const queryParams = z.object({
-  id: z.string(),
-  userId: z.string().optional().optional(),
-  top: z.number().optional().or(z.string().regex(/\d+/).transform(Number)),
-  bottom: z.number().optional().or(z.string().regex(/\d+/).transform(Number)),
-  order: z.string().optional(),
-})
+const queryParams = z
+  .object({
+    id: z.string(),
+    userId: z.string().optional().optional(),
+    top: z.number().optional().or(z.string().regex(/\d+/).transform(Number)),
+    bottom: z.number().optional().or(z.string().regex(/\d+/).transform(Number)),
+    order: z.string().optional(),
+  })
+  .strict()
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<ContractMetric[] | ValidationError | ApiError>

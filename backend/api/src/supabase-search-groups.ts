@@ -5,15 +5,17 @@ import { convertGroup } from 'common/supabase/groups'
 
 const SIMILARITY_THRESHOLD = 0.2
 
-const bodySchema = z.object({
-  term: z.string(),
-  offset: z.number().gte(0),
-  limit: z.number().gt(0),
-  fuzzy: z.boolean().optional(),
-  yourGroups: z.boolean().optional(),
-  addingToContract: z.boolean().optional(),
-  newContract: z.boolean().optional(),
-})
+const bodySchema = z
+  .object({
+    term: z.string(),
+    offset: z.number().gte(0),
+    limit: z.number().gt(0),
+    fuzzy: z.boolean().optional(),
+    yourGroups: z.boolean().optional(),
+    addingToContract: z.boolean().optional(),
+    newContract: z.boolean().optional(),
+  })
+  .strict()
 
 export const supabasesearchgroups = MaybeAuthedEndpoint(async (req, auth) => {
   const {

@@ -17,9 +17,11 @@ import { recordContractEdit } from 'shared/record-contract-edit'
 import { isAdminId, isTrustworthy } from 'common/envs/constants'
 
 const firestore = admin.firestore()
-const bodySchema = z.object({
-  contractId: z.string(),
-})
+const bodySchema = z
+  .object({
+    contractId: z.string(),
+  })
+  .strict()
 const TXNS_PR_MERGED_ON = 1675693800000 // #PR 1476
 
 export const unresolve = authEndpoint(async (req, auth) => {

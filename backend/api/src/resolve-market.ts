@@ -14,6 +14,7 @@ import { resolveMarketHelper } from 'shared/resolve-market-helpers'
 import { Answer } from 'common/answer'
 import { throwErrorIfNotMod } from 'shared/helpers/auth'
 
+// don't use strict() to include contract specific fields
 const bodySchema = z.object({
   contractId: z.string(),
 })

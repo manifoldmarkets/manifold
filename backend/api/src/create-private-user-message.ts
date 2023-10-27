@@ -6,10 +6,12 @@ import { Json } from 'common/supabase/schema'
 import { contentSchema } from 'shared/zod-types'
 import { MAX_COMMENT_JSON_LENGTH } from 'api/create-comment'
 
-const postSchema = z.object({
-  content: contentSchema,
-  channelId: z.number().gte(0).int(),
-})
+const postSchema = z
+  .object({
+    content: contentSchema,
+    channelId: z.number().gte(0).int(),
+  })
+  .strict()
 
 export const createprivateusermessage = authEndpoint(async (req, auth) => {
   const { content, channelId } = validate(postSchema, req.body)
