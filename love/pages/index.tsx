@@ -1,3 +1,4 @@
+import Router from 'next/router'
 import { UserIcon } from '@heroicons/react/solid'
 import { capitalize } from 'lodash'
 import { calculateAge } from 'love/components/calculate-age'
@@ -15,6 +16,7 @@ import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { Title } from 'web/components/widgets/title'
 import { Row } from 'web/components/layout/row'
 import { useUser } from 'web/hooks/use-user'
+import { Button } from 'web/components/buttons/button'
 
 export default function ProfilesPage() {
   const allLovers = useLovers()
@@ -23,10 +25,20 @@ export default function ProfilesPage() {
   const user = useUser()
   if (user === undefined) return <div />
 
+  const lover = allLovers?.find((lover) => lover.user_id === user?.id)
+
   return (
     <LovePage trackPageView={'user profiles'}>
       <Col className="items-center">
         <Col className={'bg-canvas-0 w-full rounded px-6 py-4'}>
+          {user && allLovers && !lover && (
+            <Button
+              className="mb-4 lg:hidden"
+              onClick={() => Router.push('signup')}
+            >
+              Create a profile
+            </Button>
+          )}
           <Title className="!mb-2 text-3xl">Profiles</Title>
           <Filters allLovers={allLovers} setLovers={setLovers} />
 
