@@ -25,6 +25,7 @@ module.exports = {
     dangerouslyAllowSVG: true,
     domains: [
       'manifold.markets',
+      'manifold.love',
       'lh3.googleusercontent.com',
       'i.imgur.com',
       'firebasestorage.googleapis.com',
