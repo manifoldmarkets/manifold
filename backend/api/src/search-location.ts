@@ -33,7 +33,6 @@ export const searchlocation = jsonEndpoint(async (req) => {
     }
 
     const data = await res.json()
-    console.log(data)
     return { status: 'success', data: data }
   } catch (error) {
     return { status: 'failure', data: error }
