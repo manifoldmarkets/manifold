@@ -35,8 +35,8 @@ export const baseLoversSchema = z.object({
   city: z.string(),
   region_code: z.string().optional(),
   country: z.string().optional(),
-  latitude: z.string().optional(),
-  longitude: z.string().optional(),
+  latitude: z.number().optional(),
+  longitude: z.number().optional(),
 
   pinned_url: z.string(),
 })

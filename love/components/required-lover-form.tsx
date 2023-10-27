@@ -95,20 +95,15 @@ export const RequiredLoveUserForm = (props: {
 
   function setLoverCity(inputCity: City | undefined) {
     if (!inputCity) {
-      //       state: '',
-      // regionCode: '',
-      // country: '',
-      // lat: undefined,
-      // long: undefined,
       setLover('city', '')
-      setLover('regionCode', undefined)
+      setLover('region_code', undefined)
       setLover('country', undefined)
       setLover('latitude', undefined)
       setLover('longitude', undefined)
     } else {
       const { city, regionCode, country, latitude, longitude } = inputCity
       setLover('city', city)
-      setLover('regionCode', regionCode)
+      setLover('region_code', regionCode)
       setLover('country', country)
       setLover('latitude', latitude)
       setLover('longitude', longitude)
