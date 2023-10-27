@@ -79,17 +79,15 @@ function ProfilePreview(props: { lover: Lover }) {
           </Col>
         )}
         <Col className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 via-black/70 to-transparent px-4 pb-2 pt-6">
-          <span>
-            <span className=" break-words font-semibold">{user.name}</span>,{' '}
-            {calculateAge(birthdate)}
-          </span>
+          <Row className="flex-wrap">
+            <OnlineIcon last_online_time={last_online_time} className="mr-1" />
+            <span className=" break-words font-semibold">
+              {user.name}
+            </span>, {calculateAge(birthdate)}
+          </Row>
           <Row className="gap-1 text-xs">
             {city} • {capitalize(convertGender(gender as Gender))}
           </Row>
-        </Col>
-
-        <Col className="absolute inset-x-0 top-0 items-end px-4 pt-2 text-xs">
-          <OnlineIcon last_online_time={last_online_time} alwaysDarkMode />
         </Col>
       </Col>
     </Link>
