@@ -117,7 +117,7 @@ export default function CitySearchBox(props: {
             loading
               ? 'pointer-events-none animate-pulse cursor-not-allowed'
               : '',
-            'border-1 bg-canvas-0 absolute z-10 w-full border text-sm drop-shadow'
+            'border-1 border-ink-400 bg-canvas-0 absolute z-10 w-full rounded-b border text-sm drop-shadow'
           )}
           ref={dropdownRef}
         >
