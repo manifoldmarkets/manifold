@@ -13,6 +13,7 @@ import { Lover } from 'love/hooks/use-lover'
 import { calculateAge } from 'love/components/calculate-age'
 import { User } from 'common/user'
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/outline'
+import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 
 const labelClassName = 'font-semibold'
 const initialFilters = {
@@ -31,8 +32,9 @@ export const Filters = (props: {
   setLovers: (lovers: Lover[] | undefined) => void
 }) => {
   const { allLovers, setLovers } = props
-  const [filters, setFilters] =
-    useState<Partial<rowFor<'lovers'> & User>>(initialFilters)
+  const [filters, setFilters] = usePersistentInMemoryState<
+    Partial<rowFor<'lovers'> & User>
+  >(initialFilters, 'profile-filters')
 
   const updateFilter = (newState: Partial<rowFor<'lovers'> & User>) => {
     setFilters((prevState) => ({ ...prevState, ...newState }))
