@@ -40,8 +40,8 @@ create table if not exists
     company text,
     region_code text,
     country text,
-    latitude decimal(9, 6),
-    longitude decimal(9, 6)
+    city_latitude decimal(9, 6),
+    city_longitude decimal(9, 6)
   );
 
 alter table lovers enable row level security;

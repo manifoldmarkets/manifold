@@ -1004,8 +1004,8 @@ export interface Database {
           is_smoker: boolean | null
           is_vegetarian_or_vegan: boolean | null
           last_online_time: string
-          latitude: number | null
-          longitude: number | null
+          city_latitude: number | null
+          city_longitude: number | null
           looking_for_matches: boolean
           messaging_status: string
           occupation: string | null
@@ -1046,8 +1046,8 @@ export interface Database {
           is_smoker?: boolean | null
           is_vegetarian_or_vegan?: boolean | null
           last_online_time?: string
-          latitude?: number | null
-          longitude?: number | null
+          city_latitude?: number | null
+          city_longitude?: number | null
           looking_for_matches?: boolean
           messaging_status?: string
           occupation?: string | null
@@ -1088,8 +1088,8 @@ export interface Database {
           is_smoker?: boolean | null
           is_vegetarian_or_vegan?: boolean | null
           last_online_time?: string
-          latitude?: number | null
-          longitude?: number | null
+          city_latitude?: number | null
+          city_longitude?: number | null
           looking_for_matches?: boolean
           messaging_status?: string
           occupation?: string | null

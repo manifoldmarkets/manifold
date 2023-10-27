@@ -11,19 +11,19 @@ import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 
 export type City = {
   city: string
-  regionCode: string
+  region_code: string
   country: string
-  latitude: number
-  longitude: number
+  city_latitude: number
+  city_longitude: number
 }
 
 function loverToCity(lover: rowFor<'lovers'>) {
   return {
     city: lover.city,
-    regionCode: lover.region_code,
+    region_code: lover.region_code,
     country: lover.country,
-    latitude: lover.latitude,
-    longitude: lover.longitude,
+    city_latitude: lover.city_latitude,
+    city_longitude: lover.city_longitude,
   } as City
 }
 
@@ -37,27 +37,26 @@ export function CitySearchBox(props: {
   const [loading, setLoading] = useState(false)
   const [dropdownVisible, setDropdownVisible] = useState(false)
   const dropdownRef = useRef<HTMLUListElement>(null)
-
-  useEffect(() => {
-    if (query.length < 2) {
-      setCities([])
-    }
-  }, [query])
+  const searchCountRef = useRef(0)
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true)
+        searchCountRef.current++
+        const thisSearchCount = searchCountRef.current
         const response = await searchLocation({ term: query, limit: 5 })
-        setCities(
-          response.data.data.map((city: any) => ({
-            city: city.name,
-            regionCode: city.regionCode,
-            country: city.country,
-            latitude: city.latitude,
-            longitude: city.longitude,
-          }))
-        )
+        if (thisSearchCount == searchCountRef.current) {
+          setCities(
+            response.data.data.map((city: any) => ({
+              city: city.name,
+              regionCode: city.regionCode,
+              country: city.country,
+              city_latitude: city.latitude,
+              city_longitude: city.longitude,
+            }))
+          )
+        }
       } catch (error) {
         console.error('Error fetching cities', error)
       } finally {
@@ -66,6 +65,10 @@ export function CitySearchBox(props: {
     }
 
     const debounce = setTimeout(() => {
+      if (query.length < 2) {
+        setCities([])
+        return
+      }
       if (query.length >= 2) {
         fetchData()
       }
@@ -146,7 +149,7 @@ function CityRow(props: { city: City; className?: string }) {
     <Col className={clsx(className, 'w-full justify-between transition-all')}>
       <span className="font-semibold">
         {city.city}
-        {city.regionCode ? `, ${city.regionCode}` : ''}{' '}
+        {city.region_code ? `, ${city.region_code}` : ''}{' '}
       </span>
       <div className="text-ink-400">{city.country}</div>
     </Col>
