@@ -50,7 +50,7 @@ export function CitySearchBox(props: {
           setCities(
             response.data.data.map((city: any) => ({
               city: city.name,
-              regionCode: city.regionCode,
+              region_code: city.regionCode,
               country: city.country,
               city_latitude: city.latitude,
               city_longitude: city.longitude,
