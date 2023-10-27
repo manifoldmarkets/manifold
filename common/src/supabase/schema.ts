@@ -1101,6 +1101,21 @@ export interface Database {
         }
         Relationships: []
       }
+      manalink_claims: {
+        Row: {
+          manalink_id: string
+          txn_id: string
+        }
+        Insert: {
+          manalink_id: string
+          txn_id: string
+        }
+        Update: {
+          manalink_id?: string
+          txn_id?: string
+        }
+        Relationships: []
+      }
       manalinks: {
         Row: {
           amount: number | null
