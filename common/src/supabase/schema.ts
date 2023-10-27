@@ -3434,6 +3434,16 @@ export interface Database {
               contract_id: string
             }[]
           }
+      get_user_manalink_claims: {
+        Args: {
+          creator_id: string
+        }
+        Returns: {
+          manalink_id: string
+          claimant_id: string
+          ts: number
+        }[]
+      }
       get_your_daily_changed_contracts: {
         Args: {
           uid: string
