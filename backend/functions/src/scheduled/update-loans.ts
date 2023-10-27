@@ -27,7 +27,7 @@ export const scheduleUpdateLoans = functions.pubsub
   })
 
 export const updateloans = onRequest(
-  { timeoutSeconds: 3600, memory: '8GiB', minInstances: 0, secrets },
+  { timeoutSeconds: 3600, memory: '16GiB', cpu: 6, minInstances: 0, secrets },
   async (_req, res) => {
     await updateLoansCore()
     res.status(200).json({ success: true })
