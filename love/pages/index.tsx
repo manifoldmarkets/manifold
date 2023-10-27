@@ -1,6 +1,4 @@
 import { UserIcon } from '@heroicons/react/solid'
-import { Row as SupabaseRow } from 'common/supabase/utils'
-import { User } from 'common/user'
 import { capitalize } from 'lodash'
 import { calculateAge } from 'love/components/calculate-age'
 import { Filters } from 'love/components/filters'
@@ -17,7 +15,6 @@ import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { Title } from 'web/components/widgets/title'
 import { Row } from 'web/components/layout/row'
 import { useUser } from 'web/hooks/use-user'
-import SignupPage from './signup'
 
 export default function ProfilesPage() {
   const allLovers = useLovers()
@@ -25,9 +22,6 @@ export default function ProfilesPage() {
 
   const user = useUser()
   if (user === undefined) return <div />
-  if (user === null) {
-    return <SignupPage />
-  }
 
   return (
     <LovePage trackPageView={'user profiles'}>

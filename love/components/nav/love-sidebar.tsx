@@ -13,30 +13,31 @@ import { capitalize } from 'lodash'
 import Router, { useRouter } from 'next/router'
 import { useContext, useState } from 'react'
 import { AddFundsModal } from 'web/components/add-funds-modal'
-import { AppBadgesOrGetAppButton } from 'web/components/buttons/app-badges-or-get-app-button'
-import { CreateQuestionButton } from 'web/components/buttons/create-question-button'
 import { ThemeContext } from 'web/hooks/theme-context'
 import { useUser } from 'web/hooks/use-user'
 import { firebaseLogin, firebaseLogout } from 'web/lib/firebase/users'
 import { withTracking } from 'web/lib/service/analytics'
 import { MobileAppsQRCodeDialog } from 'web/components/buttons/mobile-apps-qr-code-button'
-import { SidebarSignUpButton } from 'web/components/buttons/sign-up-button'
 import { ProfileSummary } from './love-profile-summary'
 import { Item, SidebarItem } from './love-sidebar-item'
 import ManifoldLoveLogo from '../manifold-love-logo'
 import toast from 'react-hot-toast'
+import { Col } from 'web/components/layout/col'
+import { Button } from 'web/components/buttons/button'
+import { signupThenMaybeRedirectToSignup } from 'love/lib/util/signup'
+import { useLover } from 'love/hooks/use-lover'
 
 export default function Sidebar(props: {
   className?: string
   isMobile?: boolean
   navigationOptions: Item[]
-  hideCreateQuestionButton?: boolean
 }) {
-  const { className, isMobile, hideCreateQuestionButton } = props
+  const { className, isMobile } = props
   const router = useRouter()
   const currentPage = router.pathname
 
   const user = useUser()
+  const lover = useLover()
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isAddFundsModalOpen, setIsAddFundsModalOpen] = useState(false)
 
@@ -51,12 +52,6 @@ export default function Sidebar(props: {
   const navOptions = props.navigationOptions
 
   const bottomNavOptions = bottomNav(!!user, theme, toggleTheme)
-
-  const createMarketButton = !hideCreateQuestionButton &&
-    user &&
-    !user.isBannedFromPosting && (
-      <CreateQuestionButton key="create-market-button" className={'mt-4'} />
-    )
 
   return (
     <nav
@@ -82,12 +77,13 @@ export default function Sidebar(props: {
 
         {user === null && <SidebarSignUpButton />}
 
-        {createMarketButton}
+        {user && !lover && (
+          <Button className="mt-2" onClick={() => router.push('signup')}>
+            Create a profile
+          </Button>
+        )}
       </div>
       <div className="mb-6 mt-auto flex flex-col gap-1">
-        {user !== null && (
-          <AppBadgesOrGetAppButton hideOnDesktop className="mb-2" />
-        )}
         {bottomNavOptions.map((item) => (
           <SidebarItem key={item.name} item={item} currentPage={currentPage} />
         ))}
@@ -127,3 +123,21 @@ const bottomNav = (
     },
     loggedIn && { name: 'Sign out', icon: LogoutIcon, onClick: logout }
   )
+
+const SidebarSignUpButton = (props: { className?: string }) => {
+  const { className } = props
+
+  return (
+    <Col className={clsx('mt-4', className)}>
+      <Button
+        color="gradient"
+        size="xl"
+        onClick={signupThenMaybeRedirectToSignup}
+        className="w-full"
+      >
+        Sign up now
+      </Button>
+      {/* <PlayMoneyDisclaimer /> */}
+    </Col>
+  )
+}

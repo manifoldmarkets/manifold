@@ -27,13 +27,8 @@ const touchItemClass = 'bg-primary-100'
 export function BottomNavBar(props: {
   navigationOptions: Item[]
   sidebarNavigationOptions: Item[]
-  hideCreateQuestionButton?: boolean
 }) {
-  const {
-    hideCreateQuestionButton,
-    navigationOptions,
-    sidebarNavigationOptions,
-  } = props
+  const { navigationOptions, sidebarNavigationOptions } = props
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   const router = useRouter()
@@ -74,7 +69,6 @@ export function BottomNavBar(props: {
             sidebarOpen={sidebarOpen}
             setSidebarOpen={setSidebarOpen}
             sidebarNavigationOptions={sidebarNavigationOptions}
-            hideCreateQuestionButton={hideCreateQuestionButton}
           />
         </>
       )}
@@ -167,14 +161,8 @@ export function MobileSidebar(props: {
   sidebarOpen: boolean
   setSidebarOpen: (open: boolean) => void
   sidebarNavigationOptions: Item[]
-  hideCreateQuestionButton?: boolean
 }) {
-  const {
-    sidebarOpen,
-    sidebarNavigationOptions,
-    setSidebarOpen,
-    hideCreateQuestionButton,
-  } = props
+  const { sidebarOpen, sidebarNavigationOptions, setSidebarOpen } = props
   return (
     <div>
       <Transition.Root show={sidebarOpen} as={Fragment}>
@@ -209,7 +197,6 @@ export function MobileSidebar(props: {
                 <Sidebar
                   navigationOptions={sidebarNavigationOptions}
                   isMobile
-                  hideCreateQuestionButton={hideCreateQuestionButton}
                 />
               </div>
             </div>
