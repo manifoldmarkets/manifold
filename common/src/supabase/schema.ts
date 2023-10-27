@@ -998,7 +998,7 @@ export interface Database {
           education_level: string | null
           ethnicity: string[] | null
           gender: string
-          geodb_city_id: bigint | null
+          geodb_city_id: string | null
           has_kids: number | null
           height_in_inches: number | null
           id: number
@@ -1041,7 +1041,7 @@ export interface Database {
           education_level?: string | null
           ethnicity?: string[] | null
           gender: string
-          geodb_city_id?: bigint | null
+          geodb_city_id?: string | null
           has_kids?: number | null
           height_in_inches?: number | null
           id?: never
@@ -1084,7 +1084,7 @@ export interface Database {
           education_level?: string | null
           ethnicity?: string[] | null
           gender?: string
-          geodb_city_id?: bigint | null
+          geodb_city_id?: string | null
           has_kids?: number | null
           height_in_inches?: number | null
           id?: never

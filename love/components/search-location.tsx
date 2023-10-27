@@ -10,7 +10,7 @@ import { Row as rowFor } from 'common/supabase/utils'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 
 export type City = {
-  geodb_city_id: bigint
+  geodb_city_id: string
   city: string
   region_code: string
   country: string
@@ -51,7 +51,7 @@ export function CitySearchBox(props: {
         if (thisSearchCount == searchCountRef.current) {
           setCities(
             response.data.data.map((city: any) => ({
-              geodb_city_id: city.id,
+              geodb_city_id: city.id.toString(),
               city: city.name,
               region_code: city.regionCode,
               country: city.country,
