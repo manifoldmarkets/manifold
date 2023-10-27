@@ -3,10 +3,9 @@ import dayjs from 'dayjs'
 
 export default function OnlineIcon(props: {
   last_online_time: string
-  // alwaysDarkMode?: boolean
   className?: string
 }) {
-  const { last_online_time, alwaysDarkMode, className } = props
+  const { last_online_time, className } = props
   const lastOnlineTime = dayjs(last_online_time)
   const currentTime = dayjs()
 
