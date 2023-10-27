@@ -1,16 +1,12 @@
 import clsx from 'clsx'
 import dayjs from 'dayjs'
-import { Row } from 'web/components/layout/row'
-import {
-  shortenedDuration,
-  shortenedFromNow,
-} from 'web/lib/util/shortenedFromNow'
 
 export default function OnlineIcon(props: {
   last_online_time: string
-  alwaysDarkMode?: boolean
+  // alwaysDarkMode?: boolean
+  className?: string
 }) {
-  const { last_online_time, alwaysDarkMode } = props
+  const { last_online_time, alwaysDarkMode, className } = props
   const lastOnlineTime = dayjs(last_online_time)
   const currentTime = dayjs()
 
@@ -24,24 +20,17 @@ export default function OnlineIcon(props: {
   const isStalled = diff.asMinutes() > STALLED_CUTOFF
   const isInactive = diff.asHours() > INACTIVE_HOURS
 
+  if (isInactive) {
+    return <></>
+  }
+
   return (
-    <Row
+    <div
       className={clsx(
-        'h-fit items-center rounded-full px-1.5 text-xs font-semibold',
-        isInactive
-          ? alwaysDarkMode
-            ? 'bg-gray-600/70'
-            : 'bg-gray-300/70 dark:bg-gray-600/70 '
-          : isStalled
-          ? alwaysDarkMode
-            ? 'bg-yellow-500/70'
-            : 'bg-yellow-200/70 dark:bg-yellow-400/70'
-          : alwaysDarkMode
-          ? 'bg-green-500/70'
-          : 'bg-green-300/80 dark:bg-green-500/70'
+        'my-auto h-2 w-2 rounded-full font-semibold',
+        isStalled ? 'bg-yellow-500' : 'bg-green-500',
+        className
       )}
-    >
-      {shortenedDuration(diff)}
-    </Row>
+    />
   )
 }
