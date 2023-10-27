@@ -26,7 +26,7 @@ export function RadioToggleGroup(props: {
       <RadioGroup
         className={clsx(
           className,
-          `flex w-full flex-row justify-between gap-2 rounded-md p-1 text-xs shadow-sm`
+          `flex w-full flex-row justify-between gap-2 rounded-md p-1 text-xs`
         )}
         value={currentChoice}
         onChange={setChoice}
@@ -43,14 +43,14 @@ export function RadioToggleGroup(props: {
                 disabled
                   ? 'bg-ink-400 ring-ink-400'
                   : index % MultipleChoiceColors.length == 0
-                  ? 'bg-rose-500 ring-rose-500'
+                  ? 'bg-rose-600 ring-rose-600'
                   : index % MultipleChoiceColors.length == 1
-                  ? 'bg-rose-300 ring-rose-300'
+                  ? 'bg-rose-400 ring-rose-400'
                   : index % MultipleChoiceColors.length == 2
-                  ? 'bg-stone-300 ring-stone-300'
+                  ? 'bg-stone-400 ring-stone-400'
                   : index % MultipleChoiceColors.length == 3
-                  ? 'bg-teal-300 ring-teal-300'
-                  : 'bg-teal-500 ring-teal-500',
+                  ? 'bg-teal-400 ring-teal-400'
+                  : 'bg-teal-600 ring-teal-600',
 
                 toggleClassName
               )

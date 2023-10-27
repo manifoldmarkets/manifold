@@ -1,6 +1,5 @@
+import Router from 'next/router'
 import { UserIcon } from '@heroicons/react/solid'
-import { Row as SupabaseRow } from 'common/supabase/utils'
-import { User } from 'common/user'
 import { capitalize } from 'lodash'
 import { calculateAge } from 'love/components/calculate-age'
 import { Filters } from 'love/components/filters'
@@ -17,7 +16,7 @@ import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { Title } from 'web/components/widgets/title'
 import { Row } from 'web/components/layout/row'
 import { useUser } from 'web/hooks/use-user'
-import SignupPage from './signup'
+import { Button } from 'web/components/buttons/button'
 
 export default function ProfilesPage() {
   const allLovers = useLovers()
@@ -25,14 +24,21 @@ export default function ProfilesPage() {
 
   const user = useUser()
   if (user === undefined) return <div />
-  if (user === null) {
-    return <SignupPage />
-  }
+
+  const lover = allLovers?.find((lover) => lover.user_id === user?.id)
 
   return (
     <LovePage trackPageView={'user profiles'}>
       <Col className="items-center">
         <Col className={'bg-canvas-0 w-full rounded px-6 py-4'}>
+          {user && allLovers && !lover && (
+            <Button
+              className="mb-4 lg:hidden"
+              onClick={() => Router.push('signup')}
+            >
+              Create a profile
+            </Button>
+          )}
           <Title className="!mb-2 text-3xl">Profiles</Title>
           <Filters allLovers={allLovers} setLovers={setLovers} />
 

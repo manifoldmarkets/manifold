@@ -1,9 +1,8 @@
-import { getDoc, orderBy, query, setDoc, where } from 'firebase/firestore'
+import { setDoc } from 'firebase/firestore'
 import { doc } from 'firebase/firestore'
 import { Manalink } from 'common/manalink'
 import { customAlphabet } from 'nanoid'
-import { coll, listenForValues } from './utils'
-import { useEffect, useState } from 'react'
+import { coll } from './utils'
 
 export const manalinks = coll<Manalink>('manalinks')
 
@@ -41,43 +40,4 @@ export async function createManalink(data: {
 
   await setDoc(doc(manalinks, slug), manalink)
   return slug
-}
-
-function listUserManalinks(fromId?: string) {
-  return query(
-    manalinks,
-    where('fromId', '==', fromId),
-    orderBy('createdTime', 'desc')
-  )
-}
-
-export async function getManalink(slug: string) {
-  return (await getDoc(doc(manalinks, slug))).data()
-}
-
-export function useManalink(slug: string) {
-  const [manalink, setManalink] = useState<Manalink | undefined>(undefined)
-  useEffect(() => {
-    if (slug) {
-      getManalink(slug).then(setManalink)
-    }
-  }, [slug])
-  return manalink
-}
-
-export function listenForUserManalinks(
-  fromId: string | undefined,
-  setLinks: (links: Manalink[]) => void
-) {
-  return listenForValues<Manalink>(listUserManalinks(fromId), setLinks)
-}
-
-export const useUserManalinks = (fromId: string) => {
-  const [links, setLinks] = useState<Manalink[]>([])
-
-  useEffect(() => {
-    return listenForUserManalinks(fromId, setLinks)
-  }, [fromId])
-
-  return links
 }

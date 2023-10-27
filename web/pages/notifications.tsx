@@ -257,10 +257,7 @@ export function NotificationsList(props: {
         <LoadingIndicator />
       ) : paginatedGroupedNotifications.length === 0 ? (
         <div className={'mt-2'}>
-          {emptyTitle
-            ? emptyTitle
-            : `You don't have any notifications, yet. Try changing your settings to
-          see more.`}
+          {emptyTitle ? emptyTitle : `You don't have any notifications, yet.`}
         </div>
       ) : (
         <RenderNotificationGroups

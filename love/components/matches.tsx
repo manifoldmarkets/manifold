@@ -24,7 +24,7 @@ import { MODAL_CLASS, Modal } from 'web/components/layout/modal'
 import { BuyPanel } from 'web/components/bet/bet-panel'
 import { Subtitle } from 'web/components/widgets/subtitle'
 import { linkClass } from 'web/components/widgets/site-link'
-import { areGenderCompatible } from 'love/lib/utils'
+import { areGenderCompatible } from 'love/lib/util/gender'
 
 export const Matches = (props: { userId: string }) => {
   const { userId } = props

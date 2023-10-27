@@ -22,10 +22,10 @@ import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useTracking } from 'web/hooks/use-tracking'
 import { useUser } from 'web/hooks/use-user'
 import { GoogleOneTapLogin } from 'web/lib/firebase/google-onetap-login'
-import { firebaseLogin } from 'web/lib/firebase/users'
 import Sidebar from './nav/love-sidebar'
 import { SolidNotificationsIcon } from 'web/components/notifications-icon'
 import { NOTIFICATIONS_TO_SELECT } from 'love/pages/notifications'
+import { signupThenMaybeRedirectToSignup } from 'love/lib/util/signup'
 
 export function LovePage(props: {
   trackPageView: string | false
@@ -78,7 +78,6 @@ export function LovePage(props: {
           <Sidebar
             navigationOptions={sidebarNavigationOptions}
             className="sticky top-0 hidden self-start px-2 lg:col-span-2 lg:flex"
-            hideCreateQuestionButton
           />
         )}
         <main
@@ -95,7 +94,6 @@ export function LovePage(props: {
         <BottomNavBar
           sidebarNavigationOptions={sidebarNavigationOptions}
           navigationOptions={navigationOptions}
-          hideCreateQuestionButton
         />
       )}
       <AddFundsModal
@@ -139,7 +137,11 @@ function getBottomNavigation(user: User) {
 const signedOutNavigation = () => [
   { name: 'Profiles', href: '/', icon: HomeIcon },
   { name: 'About', href: '/about', icon: QuestionMarkCircleIcon },
-  { name: 'Sign in', onClick: firebaseLogin, icon: UserCircleIcon },
+  {
+    name: 'Sign in',
+    onClick: signupThenMaybeRedirectToSignup,
+    icon: UserCircleIcon,
+  },
 ]
 const getDesktopNav = (loggedIn: boolean) => {
   if (loggedIn)

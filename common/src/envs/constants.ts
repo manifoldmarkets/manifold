@@ -110,6 +110,7 @@ export const BOT_USERNAMES = [
   'manifestussy',
   'mirrorbot',
   'JakeBot',
+  'loopsbot',
 ]
 
 export const CORE_USERNAMES = [
@@ -398,6 +399,7 @@ export const RESERVED_PATHS = [
   'mtg',
   'news',
   'notifications',
+  'og-test',
   'payments',
   'portfolio',
   'privacy',

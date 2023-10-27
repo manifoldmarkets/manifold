@@ -1,7 +1,6 @@
 import { usePrivateUser } from 'web/hooks/use-user'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { useEffect, useState } from 'react'
-import { getNativePlatform } from 'web/lib/native/is-native'
 import { useRouter } from 'next/router'
 import { Title } from 'web/components/widgets/title'
 import { SEO } from 'web/components/SEO'
@@ -23,7 +22,6 @@ export default function NotificationsPage() {
   useRedirectIfSignedOut()
 
   const [navigateToSection, setNavigateToSection] = useState<string>()
-  const { isNative } = getNativePlatform()
   const router = useRouter()
   useEffect(() => {
     if (!router.isReady) return
@@ -33,15 +31,11 @@ export default function NotificationsPage() {
     }
   }, [router.query])
 
-  const shouldShowBanner =
-    privateUser && !privateUser.hasSeenAppBannerInNotificationsOn && !isNative
-
   return (
     <LovePage trackPageView={'notifications page'}>
       <div className="w-full">
         <Title className="hidden lg:block">Notifications</Title>
         <SEO title="Notifications" description="Manifold user notifications" />
-        {shouldShowBanner && <NotificationsAppBanner userId={privateUser.id} />}
         {privateUser && router.isReady ? (
           <NotificationsContent
             privateUser={privateUser}
@@ -53,7 +47,7 @@ export default function NotificationsPage() {
   )
 }
 
-function NotificationsAppBanner(props: { userId: string }) {
+function _NotificationsAppBanner(props: { userId: string }) {
   const { userId } = props
   return (
     <Row className="bg-primary-100 relative mb-2 justify-between rounded-md px-4 py-2 text-sm">
