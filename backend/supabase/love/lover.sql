@@ -3,7 +3,7 @@
 create table if not exists
     lovers (
       id bigint generated always as identity primary key,
-      user_id text not null,
+      user_id text not null unique,
       created_time timestamptz not null default now(),
       last_online_time timestamptz not null default now(),
 
