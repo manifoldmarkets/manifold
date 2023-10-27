@@ -1,10 +1,13 @@
 // src/components/SearchBar.tsx
 import clsx from 'clsx'
-import { useEffect, useState } from 'react'
+import { Lover } from 'love/hooks/use-lover'
+import { useEffect, useRef, useState } from 'react'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Input } from 'web/components/widgets/input'
 import { searchLocation } from 'web/lib/firebase/api'
+import { Row as rowFor } from 'common/supabase/utils'
+import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 
 export type City = {
   city: string
@@ -14,14 +17,32 @@ export type City = {
   longitude: number
 }
 
+function loverToCity(lover: rowFor<'lovers'>) {
+  return {
+    city: lover.city,
+    regionCode: lover.region_code,
+    country: lover.country,
+    latitude: lover.latitude,
+    longitude: lover.longitude,
+  } as City
+}
+
 export default function CitySearchBox(props: {
   onCitySelected: (city: City | undefined) => void
+  lover: rowFor<'lovers'>
 }) {
-  const { onCitySelected } = props
+  const { onCitySelected, lover } = props
   const [query, setQuery] = useState('')
   const [cities, setCities] = useState<City[]>([])
   const [loading, setLoading] = useState(false)
-  const [selectedCity, setSelectedCity] = useState<City | undefined>(undefined)
+  const [dropdownVisible, setDropdownVisible] = useState(false)
+  const dropdownRef = useRef<HTMLUListElement>(null)
+
+  useEffect(() => {
+    if (query.length < 2) {
+      setCities([])
+    }
+  }, [query])
 
   useEffect(() => {
     const fetchData = async () => {
@@ -48,21 +69,20 @@ export default function CitySearchBox(props: {
       if (query.length >= 2) {
         fetchData()
       }
-    }, 500)
+    }, 200)
 
     return () => {
       clearTimeout(debounce)
     }
   }, [query])
 
-  if (selectedCity) {
+  if (lover.city) {
     return (
       <Row className="border-primary-500 w-full justify-between rounded border px-4 py-2">
-        <CityRow city={selectedCity} />
+        <CityRow city={loverToCity(lover)} />
         <button
           className="text-ink-700 hover:text-primary-700 text-sm underline"
           onClick={() => {
-            setSelectedCity(undefined)
             onCitySelected(undefined)
           }}
         >
@@ -80,16 +100,33 @@ export default function CitySearchBox(props: {
         placeholder="Search for a city..."
         className="w-full"
         autoFocus
+        onFocus={() => setDropdownVisible(true)}
+        onBlur={(e) => {
+          if (
+            dropdownRef.current &&
+            dropdownRef.current.contains(e.relatedTarget)
+          ) {
+            return // Do not hide the dropdown if clicking inside the dropdown
+          }
+          setTimeout(() => setDropdownVisible(false), 300)
+        }}
       />
-      {loading && <p>Loading...</p>}
-      {cities.length > 0 && (
-        <ul className="border-1 bg-canvas-0 absolute z-10 w-full border text-sm drop-shadow">
+      {cities.length > 0 && dropdownVisible && (
+        <ul
+          className={clsx(
+            loading
+              ? 'pointer-events-none animate-pulse cursor-not-allowed'
+              : '',
+            'border-1 bg-canvas-0 absolute z-10 w-full border text-sm drop-shadow'
+          )}
+          ref={dropdownRef}
+        >
+          {cities.length < 1 && loading && <LoadingIndicator />}
           {cities.map((city, index) => (
             <li
               key={index}
               onClick={() => {
                 onCitySelected(city)
-                setSelectedCity(city)
                 setQuery('')
                 setCities([])
               }}

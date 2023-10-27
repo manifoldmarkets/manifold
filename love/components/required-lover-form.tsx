@@ -36,14 +36,7 @@ export const initialRequiredState = {
   looking_for_matches: true,
   messaging_status: 'open',
   visibility: 'public',
-
-  // city params
   city: '',
-  // region_code: undefined,
-  // country: undefined,
-  // latitude: undefined,
-  // longitude: undefined,
-
   pinned_url: '',
   photo_urls: [],
 }
@@ -110,6 +103,21 @@ export const RequiredLoveUserForm = (props: {
     }
   }
 
+  // // const [initialCity, setInitialCity] = useState<City | undefined>(undefined)
+
+  // useEffect(() => {
+  //   // Set the initial state based on the lover prop when the component mounts
+  //   if (lover && lover.city) {
+  //     setInitialCity({
+  //       city: lover.city,
+  //       regionCode: lover.region_code,
+  //       country: lover.country,
+  //       latitude: lover.latitude,
+  //       longitude: lover.longitude,
+  //     } as City)
+  //   }
+  // }, [])
+
   useEffect(() => {
     const currentState = lover['gender']
     if (currentState === 'non-binary') {
@@ -121,7 +129,6 @@ export const RequiredLoveUserForm = (props: {
     }
   }, [trans, lover['gender']])
 
-  console.log(lover)
   const [uploadingImages, setUploadingImages] = useState(false)
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -204,6 +211,7 @@ export const RequiredLoveUserForm = (props: {
                 onCitySelected={(city: City | undefined) => {
                   setLoverCity(city)
                 }}
+                lover={lover}
               />
             </Col>
 
