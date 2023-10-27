@@ -20,7 +20,9 @@ export const OptionalLoveUserForm = (props: {
   const { lover, butonLabel, setLoverState } = props
 
   const router = useRouter()
-  const [heightFeet, setHeightFeet] = useState(0)
+  const [heightFeet, setHeightFeet] = useState(
+    Math.floor((lover['height_in_inches'] ?? 0) / 12)
+  )
 
   const handleSubmit = async () => {
     const res = await updateLover({
@@ -135,8 +137,16 @@ export const OptionalLoveUserForm = (props: {
               <span>Feet</span>
               <Input
                 type="number"
-                onChange={(e) => setHeightFeet(Number(e.target.value))}
+                onChange={(e) => {
+                  setHeightFeet(Number(e.target.value))
+                  setLoverState(
+                    'height_in_inches',
+                    Number(e.target.value) * 12 +
+                      ((lover['height_in_inches'] ?? 0) % 12)
+                  )
+                }}
                 className={'w-16'}
+                value={heightFeet}
               />
             </Col>
             <Col>
@@ -150,6 +160,7 @@ export const OptionalLoveUserForm = (props: {
                   )
                 }
                 className={'w-16'}
+                value={(lover['height_in_inches'] ?? 0) % 12}
               />
             </Col>
           </Row>
