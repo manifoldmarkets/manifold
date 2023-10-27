@@ -32,11 +32,13 @@ import { InfoTooltip } from '../widgets/info-tooltip'
 import DropdownMenu from '../comments/dropdown-menu'
 import generateFilterDropdownItems from '../search/search-dropdown-helpers'
 
-type Sort = 'prob' | 'index' | 'liquidity'
+type Sort = 'prob-desc' | 'prob-asc' | 'old' | 'new' | 'liquidity'
 
 const SORTS = [
-  { label: 'High %', value: 'prob' },
-  { label: 'Created', value: 'index' },
+  { label: 'High %', value: 'prob-desc' },
+  { label: 'Low %', value: 'prob-asc' },
+  { label: 'Old', value: 'old' },
+  { label: 'New', value: 'new' },
   { label: 'Trending', value: 'liquidity' },
 ] as const
 
@@ -66,10 +68,6 @@ export function AnswersPanel(props: {
   const shouldAnswersSumToOne =
     'shouldAnswersSumToOne' in contract ? contract.shouldAnswersSumToOne : true
 
-  const [showSmallAnswers, setShowSmallAnswers] = useState(
-    addAnswersMode !== 'ANYONE'
-  )
-
   const answers = contract.answers
     .filter((a) => isMultipleChoice || ('number' in a && a.number !== 0))
     .map((a) => ({
@@ -78,11 +76,17 @@ export function AnswersPanel(props: {
     }))
 
   const [sort, setSort] = useState<Sort>(
-    addAnswersMode !== 'ANYONE'
-      ? 'index'
-      : shouldAnswersSumToOne
-      ? 'prob'
-      : 'liquidity'
+    addAnswersMode === 'DISABLED'
+      ? 'old'
+      : !shouldAnswersSumToOne
+      ? 'liquidity'
+      : answers.length > 10
+      ? 'prob-desc'
+      : 'old'
+  )
+
+  const [showAll, setShowAll] = useState(
+    addAnswersMode === 'DISABLED' || answers.length <= 5
   )
 
   const sortedAnswers = sortBy(answers, [
@@ -91,12 +95,16 @@ export function AnswersPanel(props: {
         (answer) => (resolutions ? -1 * resolutions[answer.id] : answer)
       : // Resolved last
         (answer) =>
-          'resolutionTime' in answer ? -(answer.resolutionTime ?? 1) : 0,
+          'resolutionTime' in answer ? answer.resolutionTime ?? 1 : 0,
     // then by sort
     (answer) => {
-      if (sort === 'index') {
+      if (sort === 'old') {
         return 'index' in answer ? answer.index : answer.number
-      } else if (sort === 'prob') {
+      } else if (sort === 'new') {
+        return 'index' in answer ? -answer.index : -answer.number
+      } else if (sort === 'prob-asc') {
+        return answer.prob
+      } else if (sort === 'prob-desc') {
         return -1 * answer.prob
       } else if (sort === 'liquidity') {
         return 'subsidyPool' in answer ? answer.subsidyPool : 0
@@ -104,12 +112,20 @@ export function AnswersPanel(props: {
     },
   ])
 
-  const answersToShow =
-    showSmallAnswers || answers.length <= 5
-      ? sortedAnswers
-      : sortedAnswers.filter(
-          (answer) => answer.prob >= 0.01 || resolutions?.[answer.id]
-        )
+  const answersToShow = showAll
+    ? sortedAnswers
+    : sortedAnswers.filter((answer) => {
+        if (resolutions?.[answer.id]) {
+          return true
+        }
+        if (sort === 'prob-asc') {
+          return answer.prob < 0.99
+        } else if (sort === 'prob-desc') {
+          return answer.prob > 0.01
+        } else if (sort === 'liquidity' || sort === 'new' || sort === 'old') {
+          return !('resolution' in answer)
+        }
+      })
 
   const user = useUser()
 
@@ -159,7 +175,7 @@ export function AnswersPanel(props: {
           {moreCount > 0 && (
             <Button
               color="gray-white"
-              onClick={() => setShowSmallAnswers(true)}
+              onClick={() => setShowAll(true)}
               size="xs"
             >
               <ChevronDownIcon className="mr-1 h-4 w-4" />
