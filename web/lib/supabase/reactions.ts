@@ -6,6 +6,7 @@ export type SearchLikedContent = Pick<
   Reaction,
   'id' | 'title' | 'slug' | 'contentId' | 'contentType' | 'text'
 >
+
 export async function getLikedContracts(userId: string) {
   // The best way to do this would be to join the matching table via contentId and contentType
   // but not sure if people even use this button, so we'll wait until someone complains
