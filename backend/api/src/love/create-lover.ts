@@ -35,6 +35,7 @@ export const baseLoversSchema = z.object({
   looking_for_matches: z.boolean(),
   photo_urls: z.array(z.string()),
 
+  geodb_city_id: z.bigint().optional(),
   city: z.string(),
   region_code: z.string().optional(),
   country: z.string().optional(),

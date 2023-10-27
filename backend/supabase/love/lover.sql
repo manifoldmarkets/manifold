@@ -38,6 +38,7 @@ create table if not exists
     occupation text,
     occupation_title text,
     company text,
+    geodb_city_id bigint,
     region_code text,
     country text,
     city_latitude decimal(9, 6),
