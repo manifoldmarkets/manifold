@@ -77,7 +77,7 @@ export default function Sidebar(props: {
 
         {user === null && <SidebarSignUpButton />}
 
-        {user && !lover && (
+        {user && lover === null && (
           <Button className="mt-2" onClick={() => router.push('signup')}>
             Create a profile
           </Button>
