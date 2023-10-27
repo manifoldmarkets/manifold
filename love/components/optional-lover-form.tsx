@@ -69,7 +69,7 @@ export const OptionalLoveUserForm = (props: {
               Conservative: 'conservative',
               Socialist: 'socialist',
               Libertarian: 'libertarian',
-              'E/acc': 'e/acc',
+              'e/acc': 'e/acc',
               'Pause AI': 'pause ai',
               Other: 'other',
             }}
