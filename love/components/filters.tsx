@@ -144,7 +144,9 @@ export const Filters = (props: {
               <Col className={clsx(rowClassName)}>
                 <label className={clsx(labelClassName)}>Gender</label>
                 <select
-                  className={'border-ink-200 rounded-md'}
+                  className={
+                    'bg-canvas-0 text-ink-1000 border-ink-300 focus:border-primary-500 focus:ring-primary-500 rounded-md '
+                  }
                   onChange={(e) =>
                     updateFilter({
                       gender: e.target.value,
