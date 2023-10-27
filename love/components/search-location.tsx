@@ -10,7 +10,7 @@ import { Row as rowFor } from 'common/supabase/utils'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 
 export type City = {
-  geodb_city_id: number
+  geodb_city_id: bigint
   city: string
   region_code: string
   country: string
