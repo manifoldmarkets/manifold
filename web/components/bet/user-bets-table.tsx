@@ -106,7 +106,7 @@ export function UserBetsTable(props: { user: User }) {
   }, [setInitialContracts, setOpenLimitBetsByContract, user.id, isAuth])
 
   const [filter, setFilter] = usePersistentInMemoryState<BetFilter>(
-    'open',
+    'all',
     'bets-list-filter'
   )
   const [page, setPage] = usePersistentInMemoryState(0, 'portfolio-page')
@@ -186,12 +186,12 @@ export function UserBetsTable(props: { user: User }) {
             onChange={(e) => onSetFilter(e.target.value as BetFilter)}
             className="py-1"
           >
+            <option value="all">All</option>
             <option value="open">Active</option>
             <option value="limit_bet">Limit orders</option>
             <option value="sold">Sold</option>
             <option value="closed">Closed</option>
             <option value="resolved">Resolved</option>
-            <option value="all">All</option>
           </Select>
         </Row>
       </div>
