@@ -19,21 +19,24 @@ import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
 import { getUserAndPrivateUser } from 'web/lib/firebase/users'
 import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
 
-export const getServerSideProps = redirectIfLoggedOut('/', async (ctx, creds) => {
-  const slug = ctx.params?.slug
-  if (!slug || typeof slug !== 'string') {
-    return { notFound: true }
+export const getServerSideProps = redirectIfLoggedOut(
+  '/',
+  async (ctx, creds) => {
+    const slug = ctx.params?.slug
+    if (!slug || typeof slug !== 'string') {
+      return { notFound: true }
+    }
+    const adminDb = await initSupabaseAdmin()
+    const [auth, manalink] = await Promise.all([
+      getUserAndPrivateUser(creds.uid),
+      getManalink(slug, adminDb),
+    ])
+    if (manalink == null) {
+      return { notFound: true }
+    }
+    return { props: { auth, manalink } }
   }
-  const adminDb = await initSupabaseAdmin()
-  const [auth, manalink] = await Promise.all([
-    getUserAndPrivateUser(creds.uid),
-    getManalink(slug, adminDb)
-  ])
-  if (manalink == null) {
-    return { notFound: true }
-  }
-  return { props: { auth, manalink } }
-})
+)
 
 export default function ClaimPage(props: { manalink: Manalink }) {
   const { manalink } = props
