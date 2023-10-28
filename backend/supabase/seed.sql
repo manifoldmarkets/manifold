@@ -851,7 +851,7 @@ as $$ begin
     new.created_time :=
         case when new.data ? 'createdTime' then millis_to_ts(((new.data) ->> 'createdTime')::bigint) else null end;
     new.expires_time :=
-        case when new.data ? 'expiresTime' then millis_to_ts(((new.data) ->> 'createdTime')::bigint) else null end;
+        case when new.data ? 'expiresTime' then millis_to_ts(((new.data) ->> 'expiresTime')::bigint) else null end;
     new.creator_id := (new.data)->>'fromId';
     new.max_uses := ((new.data)->>'maxUses')::numeric;
     new.message := (new.data)->>'message';
