@@ -213,14 +213,21 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
   )
 
   const user = useUser()
-
+  const isBinary = contract.outcomeType === 'BINARY'
   const isBountiedQuestion = contract.outcomeType == 'BOUNTIED_QUESTION'
-  const [sort, setSort] = usePersistentInMemoryState<'Newest' | 'Best'>(
+  const bestFirst =
     isBountiedQuestion && (!user || user.id !== contract.creatorId)
-      ? 'Best'
-      : 'Newest',
+  const sorts = buildArray(
+    bestFirst ? 'Best' : 'Newest',
+    bestFirst ? 'Newest' : 'Best',
+    isBinary && 'Yes',
+    isBinary && 'No'
+  )
+  const [sortIndex, setSortIndex] = usePersistentInMemoryState(
+    0,
     `comments-sort-${contract.id}`
   )
+  const sort = sorts[sortIndex]
   const likes = comments.some((c) => (c?.likes ?? 0) > 0)
 
   // replied to answers/comments are NOT newest, otherwise newest first
@@ -229,7 +236,8 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
   const strictlySortedComments = sortBy(comments, [
     sort === 'Best'
       ? isBountiedQuestion
-        ? (c) =>
+        ? // Best, bountied
+          (c) =>
             isReply(c)
               ? c.createdTime
               : // For your own recent comments, show first.
@@ -237,7 +245,8 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
                 c.userId === user?.id
               ? -Infinity
               : -((c.bountyAwarded ?? 0) * 1000 + (c.likes ?? 0))
-        : (c) =>
+        : // Best, non-bountied
+          (c) =>
             isReply(c)
               ? c.createdTime
               : // Is this too magic? If there are likes, 'Best' shows your own comments made within the last 10 minutes first, then sorts by score
@@ -246,7 +255,12 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
                 c.userId === user?.id
               ? -Infinity
               : -(c?.likes ?? 0)
-      : (c) => c,
+      : sort === 'Yes'
+      ? (c: ContractComment) => -(c.betReplyAmountsByOutcome?.['YES'] ?? 0)
+      : sort === 'No'
+      ? (c: ContractComment) => -(c.betReplyAmountsByOutcome?.['NO'] ?? 0)
+      : // Newest
+        (c) => c,
     (c) => (isReply(c) ? c.createdTime : -c.createdTime),
   ])
 
@@ -332,7 +346,7 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
         <SortRow
           sort={sort}
           onSortClick={() => {
-            setSort(sort === 'Newest' ? 'Best' : 'Newest')
+            setSortIndex((i) => (i + 1) % sorts.length)
             refreezeIds()
             track('change-comments-sort', {
               contractSlug: contract.slug,
