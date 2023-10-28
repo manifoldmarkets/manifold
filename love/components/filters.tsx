@@ -26,6 +26,7 @@ const initialFilters = {
   wants_kids_strength: -1,
   is_smoker: undefined,
   pref_relation_styles: undefined,
+  pref_gender: undefined,
 }
 export const Filters = (props: {
   allLovers: Lover[] | undefined
@@ -102,6 +103,12 @@ export const Filters = (props: {
       ) {
         return false
       } else if (filters.gender && lover.gender !== filters.gender) {
+        return false
+      } else if (
+        filters.pref_gender !== undefined &&
+        filters.pref_gender.length > 0 &&
+        !filters.pref_gender.every((g) => lover.pref_gender.includes(g))
+      ) {
         return false
       }
 
@@ -227,6 +234,24 @@ export const Filters = (props: {
                   }
                   onChange={(c) => {
                     updateFilter({ pref_relation_styles: c })
+                  }}
+                />
+              </Col>
+              <Col className={clsx(rowClassName)}>
+                <label className={clsx(labelClassName)}>Interested in</label>
+                <MultiCheckbox
+                  selected={filters.pref_gender ?? []}
+                  choices={
+                    {
+                      Male: 'male',
+                      Female: 'female',
+                      'Non-binary': 'non-binary',
+                      'Trans-female': 'trans-female',
+                      'Trans-male': 'trans-male',
+                    } as any
+                  }
+                  onChange={(c) => {
+                    updateFilter({ pref_gender: c })
                   }}
                 />
               </Col>
