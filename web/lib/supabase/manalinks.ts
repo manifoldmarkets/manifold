@@ -1,4 +1,4 @@
-import { SupabaseClient, run, selectJson } from 'common/supabase/utils'
+import { SupabaseClient, run } from 'common/supabase/utils'
 
 export type ClaimInfo = {
   ts: number
