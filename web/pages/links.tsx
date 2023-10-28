@@ -28,10 +28,10 @@ import {
   ClaimInfo,
   ManalinkInfo,
   getUserManalinks,
-  getUserManalinkClaims
+  getUserManalinkClaims,
 } from 'web/lib/supabase/manalinks'
 
-type LinkAndClaims = { link: ManalinkInfo, claims: ClaimInfo[] }
+type LinkAndClaims = { link: ManalinkInfo; claims: ClaimInfo[] }
 
 const LINKS_PER_PAGE = 24
 
@@ -40,11 +40,12 @@ export const getServerSideProps = redirectIfLoggedOut('/', async (_, creds) => {
   const [auth, links, claims] = await Promise.all([
     getUserAndPrivateUser(creds.uid),
     getUserManalinks(creds.uid, adminDb),
-    getUserManalinkClaims(creds.uid, adminDb)
+    getUserManalinkClaims(creds.uid, adminDb),
   ])
-  const claimsByLinkId = groupBy(claims, c => c.manalinkId)
-  const userLinks = links.map(l => ({
-    link: l, claims: claimsByLinkId[l.slug] ?? []
+  const claimsByLinkId = groupBy(claims, (c) => c.manalinkId)
+  const userLinks = links.map((l) => ({
+    link: l,
+    claims: claimsByLinkId[l.slug] ?? [],
   }))
   return { props: { auth, userLinks } }
 })

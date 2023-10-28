@@ -204,7 +204,12 @@ function CreateManalinkForm(props: {
       {finishedCreating && (
         <>
           <Title className="!my-0">Manalink Created!</Title>
-          <ManalinkCard className="my-4" info={newManalink} numClaims={0} preview />
+          <ManalinkCard
+            className="my-4"
+            info={newManalink}
+            numClaims={0}
+            preview
+          />
           <CopyLinkRow url={url} eventTrackingName={'copy manalink'} />
           <QRCode url={url} className="self-center" />
         </>

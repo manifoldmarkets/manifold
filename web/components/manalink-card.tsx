@@ -21,7 +21,7 @@ export function linkClaimed(info: ManalinkInfo, numClaims: number) {
 
 export function ManalinkCard(props: {
   info: ManalinkInfo
-  numClaims: number,
+  numClaims: number
   className?: string
   preview?: boolean
 }) {
@@ -74,8 +74,8 @@ export function ManalinkCard(props: {
 }
 
 export function ManalinkCardFromView(props: {
-  info: ManalinkInfo,
-  claims: ClaimInfo[],
+  info: ManalinkInfo
+  claims: ClaimInfo[]
   className?: string
   highlightedSlug: string
 }) {
@@ -160,7 +160,7 @@ export function ManalinkCardFromView(props: {
   )
 }
 
-function ClaimsList(props: { claims: ClaimInfo[], className: string }) {
+function ClaimsList(props: { claims: ClaimInfo[]; className: string }) {
   const { claims, className } = props
   return (
     <>

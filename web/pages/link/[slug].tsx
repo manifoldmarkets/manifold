@@ -3,7 +3,11 @@ import { useEffect, useState } from 'react'
 import { SEO } from 'web/components/SEO'
 import { Title } from 'web/components/widgets/title'
 import { claimManalink } from 'web/lib/firebase/api'
-import { ManalinkInfo, getManalink, getNumClaims } from 'web/lib/supabase/manalinks'
+import {
+  ManalinkInfo,
+  getManalink,
+  getNumClaims,
+} from 'web/lib/supabase/manalinks'
 import { ManalinkCard } from 'web/components/manalink-card'
 import { useUser } from 'web/hooks/use-user'
 import { firebaseLogin, getUser } from 'web/lib/firebase/users'
@@ -30,7 +34,7 @@ export const getServerSideProps = redirectIfLoggedOut(
     const [auth, link, numClaims] = await Promise.all([
       getUserAndPrivateUser(creds.uid),
       getManalink(slug, adminDb),
-      getNumClaims(slug, adminDb)
+      getNumClaims(slug, adminDb),
     ])
     if (link == null) {
       return { notFound: true }
@@ -39,7 +43,10 @@ export const getServerSideProps = redirectIfLoggedOut(
   }
 )
 
-export default function ClaimPage(props: { link: ManalinkInfo, numClaims: number }) {
+export default function ClaimPage(props: {
+  link: ManalinkInfo
+  numClaims: number
+}) {
   const { link, numClaims } = props
   const user = useUser()
   const router = useRouter()
