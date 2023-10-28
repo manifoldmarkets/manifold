@@ -69,6 +69,8 @@ export const Filters = (props: {
         calculateAge(lover.birthdate) > filters.pref_age_max
       ) {
         return false
+      } else if (calculateAge(lover.birthdate) < 18) {
+        return false
       } else if (filters.city && lover.city !== filters.city) {
         return false
       } else if (
@@ -110,8 +112,7 @@ export const Filters = (props: {
         !filters.pref_gender.every((g) => lover.pref_gender.includes(g))
       ) {
         return false
-      }
-
+      } else if (!lover.pinned_url) return false
       return true
     })
     setLovers(filteredLovers)
