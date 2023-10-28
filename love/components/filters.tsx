@@ -14,6 +14,7 @@ import { calculateAge } from 'love/components/calculate-age'
 import { User } from 'common/user'
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/outline'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import { searchNearCity } from 'web/lib/firebase/api'
 
 const labelClassName = 'font-semibold'
 const initialFilters = {
@@ -48,6 +49,12 @@ export const Filters = (props: {
       applyFilters()
     }
   }, [JSON.stringify(filters), allLovers?.map((l) => l.id).join(',')])
+
+  useEffect(() => {
+    searchNearCity({ cityId: '45633', radius: 100 }).then((result) => {
+      console.log('NEAR YOU', result)
+    })
+  }, [])
 
   const applyFilters = () => {
     const sortedLovers = orderBy(
@@ -108,7 +115,7 @@ export const Filters = (props: {
       return true
     })
     setLovers(filteredLovers)
-    console.log(filteredLovers)
+    // console.log(filteredLovers)
   }
   const cities: { [key: string]: string } = {
     'San Francisco': 'San Francisco',

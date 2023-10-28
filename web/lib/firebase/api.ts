@@ -568,5 +568,8 @@ export function searchLocation(params: { term: string; limit?: number }) {
 }
 
 export function searchNearCity(params: { cityId: string; radius: number }) {
+  if (params.radius < 1 || params.radius > 500) {
+    throw new Error('Your radius is out of bounds!')
+  }
   return call(getApiUrl('searchnearcity'), 'POST', params)
 }
