@@ -566,3 +566,7 @@ export function sendUserPrivateMessage(params: {
 export function searchLocation(params: { term: string; limit?: number }) {
   return call(getApiUrl('searchlocation'), 'POST', params)
 }
+
+export function searchNearCity(params: { cityId: string; radius: number }) {
+  return call(getApiUrl('searchnearcity'), 'POST', params)
+}
