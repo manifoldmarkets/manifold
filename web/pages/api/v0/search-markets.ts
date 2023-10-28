@@ -1,22 +1,42 @@
-import { FullMarket, toFullMarket } from 'common/api-market-types'
-import { Contract } from 'common/contract'
+import { LiteMarket, toLiteMarket } from 'common/api-market-types'
 import { NextApiRequest, NextApiResponse } from 'next'
-import { CORS_UNRESTRICTED, applyCorsHeaders } from 'web/lib/api/cors'
-import { searchContract } from 'web/lib/supabase/contracts'
+import { applyCorsHeaders } from 'web/lib/api/cors'
+import { APIError, supabaseSearchContracts } from 'web/lib/firebase/api'
+import { marketCacheStrategy } from 'web/pages/api/v0/market/[id]'
 import { ApiError } from 'web/pages/api/v0/_types'
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse<FullMarket[] | ApiError>
+  res: NextApiResponse<LiteMarket[] | ApiError>
 ) {
-  await applyCorsHeaders(req, res, CORS_UNRESTRICTED)
-  const { terms } = req.query
-  const keywords = terms as string
-  const { data: contracts } = (await searchContract({
-    query: keywords,
-    filter: 'all',
-    sort: 'most-popular',
-    limit: 100,
-  })) as { data: Contract[] }
-  res.status(200).json(contracts.map((c) => toFullMarket(c)))
+  await applyCorsHeaders(req, res, {
+    methods: 'GET',
+  })
+
+  const { limit, offset, fuzzy, ...rest } = req.query
+  // "terms" is a legacy query param for the search term
+  const term = req.query.term ?? req.query.terms
+
+  const body = {
+    term,
+    limit: typeof limit === 'string' ? parseInt(limit) : undefined,
+    offset: typeof offset === 'string' ? parseInt(offset) : undefined,
+    fuzzy: !!fuzzy,
+    ...rest,
+  }
+
+  try {
+    const contracts = await supabaseSearchContracts(body as any)
+    const liteContracts = contracts.map(toLiteMarket)
+    res.setHeader('Cache-Control', marketCacheStrategy)
+    res.status(200).json(liteContracts)
+  } catch (err) {
+    if (err instanceof APIError) {
+      console.error(err.name)
+      res.status(err.code).json(err.details as any)
+    } else {
+      console.error('Error talking to cloud function: ', err)
+      res.status(500).json(err as any)
+    }
+  }
 }
