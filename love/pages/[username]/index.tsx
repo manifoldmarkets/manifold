@@ -18,6 +18,7 @@ import LoverAbout from 'love/components/lover-about'
 import { orderBy } from 'lodash'
 import { Subtitle } from 'love/components/widgets/lover-subtitle'
 import { useUserAnswersAndQuestions } from 'love/hooks/use-questions'
+import { Linkify } from 'web/components/widgets/linkify'
 
 export const getStaticProps = async (props: {
   params: {
@@ -144,9 +145,14 @@ export default function UserPage(props: {
                         <Row className={'font-semibold'}>
                           {question.question}
                         </Row>
-                        <Row>
-                          {answer.free_response ?? optionKey ?? answer.integer}
-                        </Row>
+                        <Linkify
+                          text={
+                            answer.free_response ??
+                            optionKey ??
+                            answer.integer?.toString() ??
+                            ''
+                          }
+                        />
                       </Col>
                     )
                   })
