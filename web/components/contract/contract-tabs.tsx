@@ -136,6 +136,7 @@ export function ContractTabs(props: {
               replyTo={replyTo}
               clearReply={() => setReplyTo?.(undefined)}
               className="-ml-2 -mr-1"
+              bets={bets}
             />
           ),
         },
@@ -184,6 +185,7 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
   replyTo?: Answer | DpmAnswer | Bet
   clearReply?: () => void
   className?: string
+  bets?: Bet[]
 }) {
   const {
     contract,
@@ -192,6 +194,7 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
     replyTo,
     clearReply,
     className,
+    bets,
   } = props
 
   // Firebase useComments
@@ -362,6 +365,14 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
               : undefined
           }
           onSubmitReply={loadNewer}
+          bets={bets?.filter(
+            (b) =>
+              b.replyToCommentId &&
+              [parent]
+                .concat(commentsByParent[parent.id] ?? [])
+                .map((c) => c.id)
+                .includes(b.replyToCommentId)
+          )}
         />
       ))}
 

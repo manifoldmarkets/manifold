@@ -2,6 +2,7 @@ import { getContractBetMetrics } from 'common/calculate'
 import * as admin from 'firebase-admin'
 import {
   BetFillData,
+  BetReplyNotificationData,
   BettingStreakData,
   ContractResolutionData,
   LeagueChangeData,
@@ -26,7 +27,7 @@ import {
   getValues,
   log,
 } from 'shared/utils'
-import { Comment } from 'common/comment'
+import { Comment, ContractComment } from 'common/comment'
 import { groupBy, keyBy, mapValues, minBy, sum, uniq } from 'lodash'
 import { Bet, LimitBet } from 'common/bet'
 import { Answer, DpmAnswer } from 'common/answer'
@@ -1987,6 +1988,50 @@ export const createMarketReviewedNotification = async (
         rating,
         review,
       } as ReviewNotificationData,
+    }
+    await insertNotificationToSupabase(notification, pg)
+  }
+}
+export const createBetReplyToCommentNotification = async (
+  userId: string,
+  contract: Contract,
+  bet: Bet,
+  fromUser: User,
+  comment: ContractComment,
+  pg: SupabaseDirectClient
+) => {
+  const privateUser = await getPrivateUser(userId)
+  if (!privateUser) return
+  const reason = 'reply_to_users_comment'
+  const { sendToBrowser } = getNotificationDestinationsForUser(
+    privateUser,
+    reason
+  )
+  if (sendToBrowser) {
+    const notification: Notification = {
+      id: bet.id + 'reply-to' + comment.id,
+      userId: privateUser.id,
+      reason,
+      createdTime: Date.now(),
+      isSeen: false,
+      sourceId: bet.id,
+      sourceType: 'bet_reply',
+      sourceUpdateType: 'created',
+      sourceUserName: fromUser.name,
+      sourceUserUsername: fromUser.username,
+      sourceUserAvatarUrl: fromUser.avatarUrl,
+      sourceContractId: contract.id,
+      sourceContractSlug: contract.slug,
+      sourceContractTitle: contract.question,
+      sourceContractCreatorUsername: contract.creatorUsername,
+      sourceTitle: contract.question,
+      sourceSlug: contract.slug,
+      sourceText: '',
+      data: {
+        betAmount: bet.amount,
+        betOutcome: bet.outcome,
+        commentText: richTextToString(comment.content),
+      } as BetReplyNotificationData,
     }
     await insertNotificationToSupabase(notification, pg)
   }

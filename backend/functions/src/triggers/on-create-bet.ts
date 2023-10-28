@@ -1,6 +1,6 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
-import { keyBy } from 'lodash'
+import { groupBy, keyBy, sumBy } from 'lodash'
 
 import { Bet, LimitBet } from 'common/bet'
 import {
@@ -14,6 +14,7 @@ import {
 } from 'shared/utils'
 import {
   createBetFillNotification,
+  createBetReplyToCommentNotification,
   createBettingStreakBonusNotification,
   createFollowSuggestionNotification,
   createUniqueBettorBonusNotification,
@@ -59,6 +60,8 @@ import { Answer } from 'common/answer'
 import { getUserMostChangedPosition } from 'common/supabase/bets'
 import { addBetDataToUsersFeeds } from 'shared/create-feed'
 import { MINUTE_MS } from 'common/util/time'
+import { ContractComment } from 'common/comment'
+import { getBetsRepliedToComment } from 'shared/supabase/bets'
 
 const firestore = admin.firestore()
 
@@ -111,6 +114,40 @@ export const onCreateBet = functions
 
     // Note: Anything that applies to redemption bets should be above this line.
     if (bet.isRedemption) return
+    const pg = createSupabaseDirectClient()
+
+    if (bet.replyToCommentId) {
+      const commentSnap = await firestore
+        .doc(`contracts/${contractId}/comments/${bet.replyToCommentId}`)
+        .get()
+      const comment = commentSnap.data() as ContractComment
+      if (comment) {
+        const bets = filterDefined(
+          await getBetsRepliedToComment(pg, comment.id)
+        )
+        // This could potentially miss some bets if they're not replicated in time
+        if (!bets.some((b) => b.id === bet.id)) bets.push(bet)
+        const groupedBetsByOutcome = groupBy(bets, 'outcome')
+        const betReplyAmountsByOutcome: { [outcome: string]: number } = {}
+        for (const outcome in groupedBetsByOutcome) {
+          betReplyAmountsByOutcome[outcome] = sumBy(
+            groupedBetsByOutcome[outcome],
+            (b) => b.amount
+          )
+        }
+        await commentSnap.ref.update({
+          betReplyAmountsByOutcome,
+        })
+      }
+      await createBetReplyToCommentNotification(
+        comment.userId,
+        contract,
+        bet,
+        bettor,
+        comment,
+        pg
+      )
+    }
 
     const isApiOrBot = bet.isApi || BOT_USERNAMES.includes(bettor.username)
     if (isApiOrBot) {
@@ -128,7 +165,6 @@ export const onCreateBet = functions
      *  Handle bonuses, other stuff for non-bot users below:
      */
 
-    const pg = createSupabaseDirectClient()
     // Follow suggestion should be before betting streak update (which updates lastBetTime)
     !bettor.lastBetTime &&
       !bettor.referredByUserId &&

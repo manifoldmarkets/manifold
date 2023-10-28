@@ -59,6 +59,42 @@ export const FeedBet = memo(function FeedBet(props: {
     </Col>
   )
 })
+export const FeedReplyBet = memo(function FeedBet(props: {
+  contract: Contract
+  bet: Bet
+  avatarSize?: AvatarSizeType
+  className?: string
+  onReply?: (bet: Bet) => void
+}) {
+  const { contract, bet, avatarSize, className, onReply } = props
+  const { userAvatarUrl, userUsername, createdTime } = bet
+  const showUser = dayjs(createdTime).isAfter('2022-06-01')
+
+  return (
+    <Col className={'w-full'}>
+      <Row className={'w-full gap-2'}>
+        {showUser ? (
+          <Avatar
+            className={'mt-1'}
+            size={avatarSize}
+            avatarUrl={userAvatarUrl}
+            username={userUsername}
+          />
+        ) : (
+          <EmptyAvatar className="mx-1" />
+        )}
+        <Row
+          className={clsx(
+            className,
+            'w-full items-start gap-2 rounded-r-lg rounded-bl-lg  p-1'
+          )}
+        >
+          <BetStatusText bet={bet} contract={contract} hideUser={!showUser} />
+        </Row>
+      </Row>
+    </Col>
+  )
+})
 
 export function BetStatusText(props: {
   contract: Contract

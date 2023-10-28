@@ -23,6 +23,7 @@ import { pointsToBase64 } from 'common/util/og'
 import { SupabaseClient } from 'common/supabase/utils'
 import { buildArray } from 'common/util/array'
 import { groupBy } from 'lodash'
+import { Bet } from 'common/bet'
 
 export async function getContractParams(
   contract: Contract,
@@ -46,6 +47,7 @@ export async function getContractParams(
     topContractMetrics,
     totalPositions,
     relatedContracts,
+    betReplies,
   ] = await Promise.all([
     checkAccess ? getCanAccessContract(contract, userId, db) : true,
     hasMechanism ? getTotalBetCount(contract.id, db) : 0,
@@ -57,7 +59,7 @@ export async function getContractParams(
           filterAntes: true,
           filterRedemptions: true,
         })
-      : [],
+      : ([] as Bet[]),
     hasMechanism
       ? getBetPoints(db, contract.id, contract.mechanism === 'cpmm-multi-1')
       : [],
@@ -66,8 +68,21 @@ export async function getContractParams(
     contract.resolution ? getTopContractMetrics(contract.id, 10, db) : [],
     isCpmm1 ? getTotalContractMetrics(contract.id, db) : 0,
     getRelatedContracts(contract, 20, db, true),
+    isCpmm1
+      ? getBets(db, {
+          contractId: contract.id,
+          commentRepliesOnly: true,
+        })
+      : ([] as Bet[]),
   ])
-
+  console.log('betReplies', betReplies.length)
+  const expl = await db
+    .from('contract_bets')
+    .select('*')
+    .eq('contract_id', contract.id)
+    .neq('data->>replyToCommentId', null)
+    .explain({ analyze: true })
+  console.log('expl', expl)
   if (!canAccessContract) {
     return contract && !contract.deleted
       ? {
@@ -95,7 +110,7 @@ export async function getContractParams(
       outcomeType: contract.outcomeType,
       contract,
       historyData: {
-        bets: betsToPass,
+        bets: betsToPass.concat(betReplies),
         points: chartPoints,
       },
       pointsString,
