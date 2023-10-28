@@ -234,8 +234,9 @@ export const FeedComment = memo(function FeedComment(props: {
           />
           <div
             className={clsx(
-              'bg-ink-100 dark:bg-ink-300 absolute bottom-0 left-4 w-0.5 group-last:hidden ',
-              isParent ? 'top-0' : '-top-1'
+              'bg-ink-100 dark:bg-ink-300 absolute bottom-0 left-4 w-0.5',
+              isParent ? 'top-0' : '-top-1',
+              !isParent && !isBetParent ? 'group-last:hidden' : ''
             )}
           />
           {isBetParent && !isParent && (
@@ -301,7 +302,7 @@ export const FeedComment = memo(function FeedComment(props: {
                 />
                 <div
                   className={clsx(
-                    'bg-ink-100 dark:bg-ink-300 absolute w-0.5 group-last:hidden ',
+                    'bg-ink-100 dark:bg-ink-300 absolute w-0.5 ',
                     isParent ? '  left-4 top-0' : '-top-1 left-10',
                     i === bets.length - 1 ? 'bottom-7' : 'bottom-0'
                   )}
