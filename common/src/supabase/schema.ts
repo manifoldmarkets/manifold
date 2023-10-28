@@ -1138,7 +1138,6 @@ export interface Database {
           creator_id: string | null
           data: Json
           expires_time: string | null
-          from_id: string | null
           fs_updated_time: string
           id: string
           max_uses: number | null
@@ -1150,7 +1149,6 @@ export interface Database {
           creator_id?: string | null
           data: Json
           expires_time?: string | null
-          from_id?: string | null
           fs_updated_time: string
           id: string
           max_uses?: number | null
@@ -1162,7 +1160,6 @@ export interface Database {
           creator_id?: string | null
           data?: Json
           expires_time?: string | null
-          from_id?: string | null
           fs_updated_time?: string
           id?: string
           max_uses?: number | null
@@ -3434,6 +3431,16 @@ export interface Database {
               contract_id: string
             }[]
           }
+      get_user_manalink_claims: {
+        Args: {
+          creator_id: string
+        }
+        Returns: {
+          manalink_id: string
+          claimant_id: string
+          ts: number
+        }[]
+      }
       get_your_daily_changed_contracts: {
         Args: {
           uid: string

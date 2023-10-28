@@ -1,1 +1,0 @@
-create index if not exists from_id_idx on public.manalinks (from_id);
