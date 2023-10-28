@@ -12,7 +12,6 @@ export default async function route(req: NextApiRequest, res: NextApiResponse) {
   await applyCorsHeaders(req, res, {
     origin: [CORS_ORIGIN_MANIFOLD, CORS_ORIGIN_LOCALHOST],
     methods: 'POST',
-    allowedHeaders: 'Authorization',
   })
   try {
     const backendRes = await fetchBackend(req, 'createcomment')
