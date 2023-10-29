@@ -120,38 +120,41 @@ const AddMatchDialog = (props: {
           {potentialLovers.length === 0 && (
             <div>No remaining matches of preferred gender.</div>
           )}
-          {potentialLoversWithYouFirst.map((lover) => {
-            const selected = selectedMatchId === lover.user.id
-            return (
-              <Row
-                key={lover.id}
-                className={clsx(
-                  'items-center justify-between px-3 py-2',
-                  selected && 'bg-primary-100'
-                )}
-              >
-                <Row className="gap-2">
-                  {lover.pinned_url && (
-                    <Avatar
-                      avatarUrl={lover.pinned_url}
+
+          <Col className="max-h-[300px] overflow-y-auto">
+            {potentialLoversWithYouFirst.map((lover) => {
+              const selected = selectedMatchId === lover.user.id
+              return (
+                <Row
+                  key={lover.id}
+                  className={clsx(
+                    'items-center justify-between px-3 py-2',
+                    selected && 'bg-primary-100'
+                  )}
+                >
+                  <Row className="gap-2">
+                    {lover.pinned_url && (
+                      <Avatar
+                        avatarUrl={lover.pinned_url}
+                        username={lover.user.username}
+                      />
+                    )}
+                    <UserLink
+                      name={lover.user.name}
                       username={lover.user.username}
                     />
-                  )}
-                  <UserLink
-                    name={lover.user.name}
-                    username={lover.user.username}
-                  />
+                  </Row>
+                  <Button
+                    size="xs"
+                    color="indigo-outline"
+                    onClick={() => setSelectedMatchId(lover.user.id)}
+                  >
+                    Select
+                  </Button>
                 </Row>
-                <Button
-                  size="xs"
-                  color="indigo-outline"
-                  onClick={() => setSelectedMatchId(lover.user.id)}
-                >
-                  Select
-                </Button>
-              </Row>
-            )
-          })}
+              )
+            })}
+          </Col>
         </Col>
 
         {potentialLovers.length > 0 && (
