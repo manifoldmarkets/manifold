@@ -35,7 +35,7 @@ export function TopicTag(props: {
         href={groupPath(topic.slug)}
         onClick={(e) => {
           e.stopPropagation()
-          track(`click category tag on ${location}`, {
+          track(`click category tag`, {
             categoryName: topic.name,
           })
         }}
