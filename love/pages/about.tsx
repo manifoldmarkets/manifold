@@ -74,7 +74,7 @@ export default function AboutPage() {
           )} */}
           <SocialLink
             Icon={TbBrandDiscord}
-            href="https://discord.com/invite/eHQBNBqXuh"
+            href="https://discord.gg/nu27NceaEU"
           >
             Discord
           </SocialLink>
