@@ -15,6 +15,9 @@ export const useLovers = () => {
     db.from('lovers')
       .select('*')
       .filter('looking_for_matches', 'eq', true)
+      .order('created_time', { ascending: false })
+      .neq('pinned_url', null)
+      .limit(250)
       .then(({ data }) => {
         if (data) {
           getUsers(data.map((d) => d.user_id)).then((users) => {
