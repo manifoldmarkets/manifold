@@ -1,11 +1,12 @@
 import clsx from 'clsx'
 import { useRouter, NextRouter } from 'next/router'
-import { ReactNode, useEffect, useRef, useState } from 'react'
+import { ReactNode, useEffect, useRef } from 'react'
 import { track } from 'web/lib/service/analytics'
 import { Col } from './col'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { Row } from 'web/components/layout/row'
 import { Carousel } from 'web/components/widgets/carousel'
+import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 
 export type Tab = {
   title: string
@@ -108,7 +109,10 @@ export function ControlledTabs(props: TabProps & { activeIndex: number }) {
 
 export function UncontrolledTabs(props: TabProps & { defaultIndex?: number }) {
   const { defaultIndex, onClick, ...rest } = props
-  const [activeIndex, setActiveIndex] = useState(defaultIndex ?? 0)
+  const [activeIndex, setActiveIndex] = usePersistentInMemoryState(
+    defaultIndex ?? 0,
+    `tab-${props.trackingName}-${props.tabs[0]?.title}`
+  )
   return (
     <ControlledTabs
       {...rest}

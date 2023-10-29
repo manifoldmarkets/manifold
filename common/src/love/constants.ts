@@ -5,6 +5,7 @@ const isProd = () => {
     return process.env.ENVIRONMENT == 'PROD'
   } else {
     // ian: this is untested, but might work for local scripts and cloud functions
+    // james: doesn't work for local web dev
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const admin = require('firebase-admin')
     return admin.app().options.projectId === 'mantic-markets'
