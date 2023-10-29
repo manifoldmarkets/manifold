@@ -416,9 +416,10 @@ function FeedAnalytics(props: { contractId: string }) {
             }
           />
         )}
-        {isBoosted && (
+        {/* TODO: fix this  */}
+        {/* {isBoosted && (
           <TableItem label="Boost clicks" value={redeemQuery.data?.count} />
-        )}
+        )} */}
       </Table>
     </div>
   )
