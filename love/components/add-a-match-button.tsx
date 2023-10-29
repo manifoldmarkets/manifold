@@ -4,10 +4,15 @@ import { Lover } from 'love/hooks/use-lover'
 import { useState } from 'react'
 import { Button } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
-import { Modal, SCROLLABLE_MODAL_CLASS } from 'web/components/layout/modal'
+import {
+  MODAL_CLASS,
+  Modal,
+  SCROLLABLE_MODAL_CLASS,
+} from 'web/components/layout/modal'
 import { Row } from 'web/components/layout/row'
 import { BuyAmountInput } from 'web/components/widgets/amount-input'
 import { Avatar } from 'web/components/widgets/avatar'
+import { Input } from 'web/components/widgets/input'
 import { UserLink } from 'web/components/widgets/user-link'
 import { useUser } from 'web/hooks/use-user'
 import { createMatch } from 'web/lib/firebase/love/api'
@@ -102,19 +107,34 @@ const AddMatchDialog = (props: {
   } = props
 
   const [error, setError] = useState<string | undefined>(undefined)
+  const [search, setSearch] = useState('')
 
   const user = useUser()
   const potentialLoversWithYouFirst = filterDefined([
     potentialLovers.find((lover) => lover.user.id === user?.id),
     ...potentialLovers.filter((lover) => lover.user.id !== user?.id),
   ])
+  // Then filter by search query, if present
+  const results = search
+    ? potentialLoversWithYouFirst.filter(
+        (lover) =>
+          lover.user.name.toLowerCase().includes(search.toLowerCase()) ||
+          lover.user.username.toLowerCase().includes(search.toLowerCase())
+      )
+    : potentialLoversWithYouFirst
 
   return (
-    <Modal className={SCROLLABLE_MODAL_CLASS} open setOpen={setOpen}>
+    <Modal className={clsx(MODAL_CLASS, '!px-2 !py-2')} open setOpen={setOpen}>
       <Col className="bg-canvas-0 rounded p-4 pb-8 sm:gap-4">
         <div className="text-lg font-semibold">
           Match {lover.user.name} with...
         </div>
+        <Input
+          className="w-full"
+          placeholder="Search..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
 
         <Col className="gap-0">
           {potentialLovers.length === 0 && (
@@ -122,7 +142,7 @@ const AddMatchDialog = (props: {
           )}
 
           <Col className="max-h-[300px] overflow-y-auto">
-            {potentialLoversWithYouFirst.map((lover) => {
+            {results.map((lover) => {
               const selected = selectedMatchId === lover.user.id
               return (
                 <Row
@@ -159,7 +179,7 @@ const AddMatchDialog = (props: {
 
         {potentialLovers.length > 0 && (
           <Col className="gap-1">
-            <div>Choose bet amount (required)</div>
+            <div className="text-sm font-bold">Bet on 6 month relationship</div>
             <BuyAmountInput
               amount={betAmount}
               onChange={setBetAmount}
