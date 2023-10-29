@@ -127,10 +127,10 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
           <div />
         </div>
       </div>
-      {/* Umami, for pageview analytics on https://analytics.umami.is/share/ARwUIC9GWLNyowjq/Manifold%20Markets */}
+      {/* Umami, for pageview analytics. Separate from Main Manifold umami */}
       <Script
-        src="https://analytics.umami.is/script.js"
-        data-website-id="ee5d6afd-5009-405b-a69f-04e3e4e3a685"
+        src="https://analytics.eu.umami.is/script.js"
+        data-website-id="38ac9f34-f8f0-49b7-ba3e-e335125a8b59"
       />
       {/* Hotjar, for recording user sessions */}
       <Script
