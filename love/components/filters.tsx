@@ -240,7 +240,7 @@ export const Filters = (props: {
                 />
               </Col>
               <Col className={clsx(rowClassName)}>
-                <label className={clsx(labelClassName)}>Interested in any of</label>
+                <label className={clsx(labelClassName)}>Only people interested in any of</label>
                 <MultiCheckbox
                   selected={filters.pref_gender ?? []}
                   choices={
