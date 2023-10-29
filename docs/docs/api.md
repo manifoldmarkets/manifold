@@ -217,7 +217,7 @@ Requires no authorization.
   https://manifold.markets/api/v0/market/3zspH9sSzMlbFQLn9GKR
   ```
 
-- <details><summary>Example response</summary><p>
+- Example response
 
   ```json
   {
@@ -291,9 +291,6 @@ Requires no authorization.
   }
   ```
 
-    </p>
-  </details>
-
 - Response type: A `FullMarket`
 
   ```tsx
@@ -325,7 +322,7 @@ Requires no authorization.
   https://manifold.markets/api/v0/market/kupKInoLsjMuiDiNfogm/positions?top=1&bottom=1
   ```
 
-- <details><summary>Example response</summary><p>
+- Example response
 
   ```json
   [
@@ -418,9 +415,6 @@ Requires no authorization.
   ]
   ```
 
-    </p>
-  </details>
-
 - Response type: An array of `ContractMetric`
 
   ```tsx
@@ -497,7 +491,7 @@ Requires no authorization.
   https://manifold.markets/api/v0/search-markets?term=biden&sort=liquidity&filter=resolved&contractType=BINARY&limit=2
   ```
 
-- <details><summary>Example response</summary><p>
+- Example response
 
   ```json
   [
@@ -559,10 +553,6 @@ Requires no authorization.
     }
   ]
   ```
-
-      </p>
-
-    </details>
 
 - Response type: Array of `LiteMarket`.
 
@@ -879,7 +869,7 @@ Requires no authorization.
   ```
 - Response type: A `Bet[]`.
 
-- <details><summary>Example response</summary><p>
+- Example response
 
   ```json
   [
@@ -941,9 +931,6 @@ Requires no authorization.
   ]
   ```
 
-  </p>
-  </details>
-
 ### `GET /v0/managrams`
 
 Gets a list of managrams, ordered by creation time descending.
@@ -964,7 +951,7 @@ Example request
 https://manifold.markets/api/v0/managrams?toId=IPTOzEqrpkWmEzh6hwvAyY9PqFb2
 ```
 
-<details><summary>Example response</summary><p>
+Example response
 
 ```json
 [
@@ -1004,9 +991,6 @@ https://manifold.markets/api/v0/managrams?toId=IPTOzEqrpkWmEzh6hwvAyY9PqFb2
   }
 ]
 ```
-
-</p>
-</details>
 
 ### `POST /v0/managram`
 
