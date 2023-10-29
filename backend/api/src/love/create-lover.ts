@@ -7,6 +7,7 @@ import { manifoldLoveRelationshipsGroupId } from 'common/love/constants'
 import { HOUR_MS } from 'common/util/time'
 import * as admin from 'firebase-admin'
 import { removePinnedUrlFromPhotoUrls } from 'shared/love/parse-photos'
+import { getIp, track } from 'shared/analytics'
 const genderType = z.union([
   z.literal('male'),
   z.literal('female'),
@@ -85,7 +86,11 @@ export const createlover = authEndpoint(async (req, auth) => {
     log('Error creating user', error)
     throw new APIError(500, 'Error creating user')
   }
+
   log('Created user', data[0])
+  const ip = getIp(req)
+  await track(auth.uid, 'create lover', { username: user?.username }, { ip })
+
   return {
     success: true,
     lover: data[0],

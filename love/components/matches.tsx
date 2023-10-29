@@ -25,6 +25,7 @@ import { BuyPanel } from 'web/components/bet/bet-panel'
 import { Subtitle } from 'web/components/widgets/subtitle'
 import { linkClass } from 'web/components/widgets/site-link'
 import { areGenderCompatible } from 'love/lib/util/gender'
+import { track } from 'web/lib/service/analytics'
 
 export const Matches = (props: { userId: string }) => {
   const { userId } = props
@@ -133,7 +134,14 @@ const BetButton = (props: { contract: BinaryContract; lover: Lover }) => {
   const [open, setOpen] = useState(false)
   return (
     <>
-      <Button size="xs" color="indigo-outline" onClick={() => setOpen(true)}>
+      <Button
+        size="xs"
+        color="indigo-outline"
+        onClick={() => {
+          setOpen(true)
+          track('love bet button click')
+        }}
+      >
         Bet
       </Button>
       <Modal

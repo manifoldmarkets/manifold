@@ -17,6 +17,7 @@ import { Row } from 'web/components/layout/row'
 import { useUser } from 'web/hooks/use-user'
 import { Button } from 'web/components/buttons/button'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import { track } from 'web/lib/service/analytics'
 
 export default function ProfilesPage() {
   const allLovers = useLovers()
@@ -64,7 +65,12 @@ function ProfilePreview(props: { lover: Lover }) {
   const { user, gender, birthdate, pinned_url, city, last_online_time } =
     props.lover
   return (
-    <Link href={`/${user.username}`}>
+    <Link
+      href={`/${user.username}`}
+      onClick={() => {
+        track('click love profile preview')
+      }}
+    >
       <Col className="relative h-60 w-full overflow-hidden rounded text-white transition-all hover:z-40 hover:scale-110 hover:drop-shadow">
         {pinned_url ? (
           <Image

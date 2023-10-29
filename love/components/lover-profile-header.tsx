@@ -11,6 +11,7 @@ import { SendMessageButton } from 'web/components/messaging/send-message-button'
 import { calculateAge } from './calculate-age'
 import LoverPrimaryInfo from './lover-primary-info'
 import OnlineIcon from './online-icon'
+import { track } from 'web/lib/service/analytics'
 export default function LoverProfileHeader(props: {
   isCurrentUser: boolean
   currentUser: User | null | undefined
@@ -37,7 +38,10 @@ export default function LoverProfileHeader(props: {
             {lover && (
               <Button
                 color={'gray-outline'}
-                onClick={() => router.push('profile')}
+                onClick={() => {
+                  track('edit love profile')
+                  router.push('profile')
+                }}
                 size="sm"
               >
                 <PencilIcon className=" h-4 w-4" />

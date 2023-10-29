@@ -13,11 +13,15 @@ import { createLover } from 'web/lib/firebase/love/api'
 import { useRouter } from 'next/router'
 import { Row as rowFor } from 'common/supabase/utils'
 import ManifoldLoveLogo from 'love/components/manifold-love-logo'
+import { useTracking } from 'web/hooks/use-tracking'
+import { track } from 'web/lib/service/analytics'
 
 export default function SignupPage() {
   const [step, setStep] = useState(0)
   const user = useUser()
   const router = useRouter()
+  useTracking('view love signup page')
+
   // Omit the id, created_time?
   const [loverForm, setLoverForm] = useState<rowFor<'lovers'>>({
     ...initialRequiredState,
@@ -56,6 +60,7 @@ export default function SignupPage() {
                   setLoverForm(res.lover)
                   setStep(1)
                   scrollTo(0, 0)
+                  track('submit love required profile')
                 }
               }}
             />
