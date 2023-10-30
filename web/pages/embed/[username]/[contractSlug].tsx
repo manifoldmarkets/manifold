@@ -249,7 +249,7 @@ function ContractSmolView(props: {
           <a
             href={href}
             target="_blank"
-            className="hover:text-primary-700 text-lg hover:underline sm:text-xl"
+            className="hover:text-primary-700 text-ink-1000 text-lg transition-all hover:underline sm:text-xl"
             rel="noreferrer"
           >
             {question}
