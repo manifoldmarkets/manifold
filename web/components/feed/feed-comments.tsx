@@ -1,6 +1,6 @@
 import { Editor } from '@tiptap/react'
 import clsx from 'clsx'
-import { memo, ReactNode, useEffect, useRef, useState } from 'react'
+import { memo, ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 
 import {
   EyeOffIcon,
@@ -9,8 +9,6 @@ import {
   PencilIcon,
 } from '@heroicons/react/outline'
 import {
-  ArrowDownIcon,
-  ArrowUpIcon,
   DotsHorizontalIcon,
   ReplyIcon,
   XCircleIcon,
@@ -64,6 +62,9 @@ import { usePartialUpdater } from 'web/hooks/use-partial-updater'
 import { BuyPanel } from 'web/components/bet/bet-panel'
 import { FeedReplyBet } from 'web/components/feed/feed-bets'
 import { Modal, MODAL_CLASS } from 'web/components/layout/modal'
+import { last, orderBy } from 'lodash'
+import { HOUR_MS } from 'common/util/time'
+import { FaArrowTrendDown, FaArrowTrendUp } from 'react-icons/fa6'
 
 export type ReplyToUserInfo = { id: string; username: string }
 
@@ -204,6 +205,43 @@ export const FeedComment = memo(function FeedComment(props: {
     isParent,
     bets,
   } = props
+
+  const groupedBets = useMemo(() => {
+    // Sort the bets by createdTime
+    const sortedBets = orderBy(bets, 'createdTime', 'desc')
+
+    const tempGrouped: Bet[][] = []
+
+    sortedBets.forEach((currentBet) => {
+      let foundGroup = false
+
+      for (const group of tempGrouped) {
+        const lastBetInGroup = last(group)
+
+        if (lastBetInGroup) {
+          const close =
+            Math.abs(currentBet.createdTime - lastBetInGroup.createdTime) <
+            HOUR_MS
+          const outcomesMatch = currentBet.outcome === lastBetInGroup.outcome
+          const sameSign =
+            Math.sign(currentBet.amount) === Math.sign(lastBetInGroup.amount)
+
+          if (close && outcomesMatch && sameSign) {
+            group.push(currentBet)
+            foundGroup = true
+            break
+          }
+        }
+      }
+
+      if (!foundGroup) {
+        tempGrouped.push([currentBet])
+      }
+    })
+
+    return tempGrouped
+  }, [bets?.length])
+
   // for optimistic updates
   const [comment, updateComment] = usePartialUpdater(props.comment)
   useEffect(() => updateComment(props.comment), [props.comment])
@@ -212,6 +250,7 @@ export const FeedComment = memo(function FeedComment(props: {
   const ref = useRef<HTMLDivElement>(null)
   const marketCreator = contract.creatorId === comment.userId
   const isBetParent = !!bets?.length
+
   useEffect(() => {
     if (highlighted && ref.current) {
       scrollIntoViewCentered(ref.current)
@@ -236,7 +275,7 @@ export const FeedComment = memo(function FeedComment(props: {
             className={clsx(
               'bg-ink-100 dark:bg-ink-300 absolute bottom-0 left-4 w-0.5',
               isParent ? 'top-0' : '-top-1',
-              !isParent && !isBetParent ? 'group-last:hidden' : ''
+              !isParent && !isBetParent && 'group-last:hidden'
             )}
           />
           {isBetParent && !isParent && (
@@ -280,35 +319,40 @@ export const FeedComment = memo(function FeedComment(props: {
       {!!bets?.length && (
         <Row>
           <Col className={'w-full'}>
-            {bets?.map((bet, i) => (
-              <Row className={'relative mt-1 w-full'} key={bet.id + '-reply'}>
-                <div
-                  className={clsx(
-                    'border-ink-100 dark:border-ink-300 rounded-bl-xl border-b-2 border-l-2 ',
-                    isParent ? '-mt-2 ml-4 h-4 w-4' : '-mt-7 ml-10 h-10 w-4'
-                  )}
-                />
-                <div
-                  className={clsx(
-                    'bg-ink-100 dark:bg-ink-300 absolute bottom-0 left-4 w-0.5 group-last:hidden ',
-                    isParent ? 'top-0' : '-top-1'
-                  )}
-                />
-                <FeedReplyBet
-                  className={'bg-canvas-50'}
-                  avatarSize={'2xs'}
-                  contract={contract}
-                  bet={bet}
-                />
-                <div
-                  className={clsx(
-                    'bg-ink-100 dark:bg-ink-300 absolute w-0.5 ',
-                    isParent ? '  left-4 top-0' : '-top-1 left-10',
-                    i === bets.length - 1 ? 'bottom-7' : 'bottom-0'
-                  )}
-                />
-              </Row>
-            ))}
+            {groupedBets?.map((bets, i) => {
+              return (
+                <Row
+                  className={'relative mt-1 w-full'}
+                  key={bets.map((b) => b.id) + '-reply'}
+                >
+                  <div
+                    className={clsx(
+                      'border-ink-100 dark:border-ink-300 rounded-bl-xl border-b-2 border-l-2 ',
+                      isParent ? '-mt-2 ml-4 h-4 w-4' : '-mt-7 ml-10 h-10 w-4'
+                    )}
+                  />
+                  <div
+                    className={clsx(
+                      'bg-ink-100 dark:bg-ink-300 absolute bottom-0 left-4 w-0.5 group-last:hidden ',
+                      isParent ? 'top-0' : '-top-1'
+                    )}
+                  />
+                  <FeedReplyBet
+                    className={'bg-canvas-50'}
+                    avatarSize={'2xs'}
+                    contract={contract}
+                    bets={bets}
+                  />
+                  <div
+                    className={clsx(
+                      'bg-ink-100 dark:bg-ink-300 absolute w-0.5  ',
+                      isParent ? '  left-4 top-0' : '-top-1 left-10',
+                      i === bets.length - 1 ? 'bottom-7' : 'bottom-0'
+                    )}
+                  />
+                </Row>
+              )
+            })}
           </Col>
         </Row>
       )}
@@ -549,26 +593,40 @@ function CommentActions(props: {
         />
       )}
       {user && contract.outcomeType === 'BINARY' && (
-        <IconButton
-          onClick={() => {
-            setOutcome('YES')
-            setShowBetModal(true)
-          }}
-          size={'xs'}
-        >
-          <ArrowUpIcon className="h-5 w-5" />
-        </IconButton>
+        <Tooltip text="Bet YES" placement="bottom">
+          <IconButton
+            onClick={() => {
+              setOutcome('YES')
+              setShowBetModal(true)
+            }}
+            size={'xs'}
+          >
+            <Row className={'relative gap-1'}>
+              {(comment.betReplyAmountsByOutcome?.YES ?? 0) > 0 && (
+                <>
+                  <span className="absolute -bottom-0.5 text-teal-500">
+                    {comment.betReplyAmountsByOutcome?.YES}
+                  </span>
+                  <div className={'w-5'} />
+                </>
+              )}
+              <FaArrowTrendUp className={'h-5 w-5'} />
+            </Row>
+          </IconButton>
+        </Tooltip>
       )}
       {user && contract.outcomeType === 'BINARY' && (
-        <IconButton
-          onClick={() => {
-            setOutcome('NO')
-            setShowBetModal(true)
-          }}
-          size={'xs'}
-        >
-          <ArrowDownIcon className="h-5 w-5" />
-        </IconButton>
+        <Tooltip text="Bet NO" placement="bottom">
+          <IconButton
+            onClick={() => {
+              setOutcome('NO')
+              setShowBetModal(true)
+            }}
+            size={'xs'}
+          >
+            <FaArrowTrendDown className="h-5 w-5" />
+          </IconButton>
+        </Tooltip>
       )}
       {user && onReplyClick && (
         <Tooltip text="Reply" placement="bottom">

@@ -220,8 +220,8 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
   const sorts = buildArray(
     bestFirst ? 'Best' : 'Newest',
     bestFirst ? 'Newest' : 'Best',
-    isBinary && 'Yes',
-    isBinary && 'No'
+    isBinary && 'Yes bets',
+    isBinary && 'No bets'
   )
   const [sortIndex, setSortIndex] = usePersistentInMemoryState(
     0,
@@ -255,9 +255,9 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
                 c.userId === user?.id
               ? -Infinity
               : -(c?.likes ?? 0)
-      : sort === 'Yes'
+      : sort === 'Yes bets'
       ? (c: ContractComment) => -(c.betReplyAmountsByOutcome?.['YES'] ?? 0)
-      : sort === 'No'
+      : sort === 'No bets'
       ? (c: ContractComment) => -(c.betReplyAmountsByOutcome?.['NO'] ?? 0)
       : // Newest
         (c) => c,

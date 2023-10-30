@@ -75,14 +75,6 @@ export async function getContractParams(
         })
       : ([] as Bet[]),
   ])
-  console.log('betReplies', betReplies.length)
-  const expl = await db
-    .from('contract_bets')
-    .select('*')
-    .eq('contract_id', contract.id)
-    .neq('data->>replyToCommentId', null)
-    .explain({ analyze: true })
-  console.log('expl', expl)
   if (!canAccessContract) {
     return contract && !contract.deleted
       ? {
