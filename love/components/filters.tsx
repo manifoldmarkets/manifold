@@ -94,9 +94,9 @@ export const Filters = (props: {
         return false
       } else if (
         filters.pref_relation_styles !== undefined &&
-        filters.pref_relation_styles.some(
+        filters.pref_relation_styles.every(
           (s) => !lover.pref_relation_styles.includes(s)
-        )
+        )  // if every relationship style mismatches, hide person
       ) {
         return false
       } else if (
@@ -109,7 +109,8 @@ export const Filters = (props: {
       } else if (
         filters.pref_gender !== undefined &&
         filters.pref_gender.length > 0 &&
-        !filters.pref_gender.every((g) => lover.pref_gender.includes(g))
+        filters.pref_gender.every((g) => !lover.pref_gender.includes(g))
+        // if every preferred gender mismatches, hide person
       ) {
         return false
       } else if (!lover.pinned_url) return false
@@ -239,7 +240,7 @@ export const Filters = (props: {
                 />
               </Col>
               <Col className={clsx(rowClassName)}>
-                <label className={clsx(labelClassName)}>Interested in</label>
+                <label className={clsx(labelClassName)}>Only people interested in any of</label>
                 <MultiCheckbox
                   selected={filters.pref_gender ?? []}
                   choices={
