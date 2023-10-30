@@ -630,7 +630,7 @@ function CommentActions(props: {
         </Tooltip>
       )}
       {user && onReplyClick && (
-        <Tooltip text="Reply" placement="bottom">
+        <Tooltip text="Reply with a comment" placement="bottom">
           <IconButton
             size={'xs'}
             onClick={(e) => {
