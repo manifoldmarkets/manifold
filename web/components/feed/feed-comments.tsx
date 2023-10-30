@@ -265,7 +265,7 @@ export const FeedComment = memo(function FeedComment(props: {
       <CommentReplyHeader comment={comment} contract={contract} />
       <Row ref={ref} className={clsx(isParent ? 'gap-2' : 'gap-1')}>
         <Row className="relative">
-          {/*// This is the curved reply line*/}
+          {/*// Curved reply line*/}
           {!isParent && (
             <div className="border-ink-100 dark:border-ink-300 -mt-4 ml-4 h-6 w-4 rounded-bl-xl border-b-2 border-l-2" />
           )}
@@ -275,6 +275,7 @@ export const FeedComment = memo(function FeedComment(props: {
             avatarUrl={userAvatarUrl}
             className={clsx(marketCreator && 'shadow shadow-amber-300', 'z-10')}
           />
+          {/* Outer vertical reply line*/}
           <div
             className={clsx(
               'bg-ink-100 dark:bg-ink-300 absolute bottom-0 left-4 w-0.5',
@@ -282,6 +283,7 @@ export const FeedComment = memo(function FeedComment(props: {
               (!isBetParent || lastInReplyChain) && 'group-last:hidden'
             )}
           />
+          {/* Inner vertical reply line*/}
           {isBetParent && !isParent && (
             <div
               className={clsx(
@@ -329,13 +331,14 @@ export const FeedComment = memo(function FeedComment(props: {
                   className={'relative mt-1 w-full'}
                   key={bets.map((b) => b.id) + '-reply'}
                 >
-                  {/*// This is the curved bet reply line*/}
+                  {/*// Curved bet reply line*/}
                   <div
                     className={clsx(
                       'border-ink-100 dark:border-ink-300 rounded-bl-xl border-b-2 border-l-2 ',
                       isParent ? '-mt-2 ml-4 h-4 w-4' : '-mt-7 ml-10 h-10 w-4'
                     )}
                   />
+                  {/* Outer vertical bet reply line*/}
                   <div
                     className={clsx(
                       'bg-ink-100 dark:bg-ink-300 absolute bottom-0 left-4 w-0.5 group-last:hidden ',
@@ -348,6 +351,7 @@ export const FeedComment = memo(function FeedComment(props: {
                     contract={contract}
                     bets={bets}
                   />
+                  {/* Inner vertical bet reply line*/}
                   <div
                     className={clsx(
                       'bg-ink-100 dark:bg-ink-300 absolute w-0.5 ',
