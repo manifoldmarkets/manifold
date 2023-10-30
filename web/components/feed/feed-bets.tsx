@@ -1,4 +1,4 @@
-import { memo } from 'react'
+import { memo, useState } from 'react'
 import dayjs from 'dayjs'
 import { Contract } from 'common/contract'
 import { Bet } from 'common/bet'
@@ -24,6 +24,7 @@ import { Tooltip } from 'web/components/widgets/tooltip'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import { filterDefined } from 'common/util/array'
 import { sumBy, uniq } from 'lodash'
+import { Modal, MODAL_CLASS } from 'web/components/layout/modal'
 
 export const FeedBet = memo(function FeedBet(props: {
   contract: Contract
@@ -61,7 +62,7 @@ export const FeedBet = memo(function FeedBet(props: {
     </Col>
   )
 })
-export const FeedReplyBet = memo(function FeedBet(props: {
+export const FeedReplyBet = memo(function FeedReplyBet(props: {
   contract: Contract
   bets: Bet[]
   avatarSize?: AvatarSizeType
@@ -71,6 +72,7 @@ export const FeedReplyBet = memo(function FeedBet(props: {
   const { contract, bets, avatarSize, className } = props
   const showUser = bets.every((b) => dayjs(b.createdTime).isAfter('2022-06-01'))
   const avatarUrls = filterDefined(uniq(bets.map((b) => b.userAvatarUrl)))
+  const [showBets, setShowBets] = useState(false)
   return (
     <Col className={'w-full'}>
       <Row className={'w-full gap-2'}>
@@ -83,7 +85,25 @@ export const FeedReplyBet = memo(function FeedBet(props: {
             username={bets[0].userUsername}
           />
         ) : (
-          avatarUrls.length > 1 && <MultipleAvatars avatarUrls={avatarUrls} />
+          avatarUrls.length > 1 && (
+            <MultipleAvatars
+              onClick={() => setShowBets(true)}
+              avatarUrls={avatarUrls}
+            />
+          )
+        )}
+        {showBets && (
+          <Modal open={showBets} setOpen={setShowBets}>
+            <Col className={MODAL_CLASS}>
+              {bets.map((bet) => (
+                <FeedBet
+                  key={bet.id + 'modal-bet'}
+                  contract={contract}
+                  bet={bet}
+                />
+              ))}
+            </Col>
+          </Modal>
         )}
         <Row
           className={clsx(
@@ -107,7 +127,11 @@ export const FeedReplyBet = memo(function FeedBet(props: {
   )
 })
 
-const MultipleAvatars = (props: { avatarUrls: string[] }) => {
+const MultipleAvatars = (props: {
+  avatarUrls: string[]
+  onClick: () => void
+}) => {
+  const { avatarUrls, onClick } = props
   const combineAvatars = (avatarUrls: string[]) => {
     const totalAvatars = avatarUrls.length
     const maxToShow = Math.min(totalAvatars, 3)
@@ -137,9 +161,12 @@ const MultipleAvatars = (props: { avatarUrls: string[] }) => {
     ))
   }
   return (
-    <Col className={`pointer-events-none relative items-center justify-center`}>
+    <Col
+      onClick={onClick}
+      className={`relative cursor-pointer items-center justify-center`}
+    >
       <Avatar className={'-mt-2'} size={'2xs'} />
-      {combineAvatars(props.avatarUrls)}
+      {combineAvatars(avatarUrls)}
     </Col>
   )
 }

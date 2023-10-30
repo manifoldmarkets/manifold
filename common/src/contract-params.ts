@@ -103,7 +103,11 @@ export async function getContractParams(
       outcomeType: contract.outcomeType,
       contract,
       historyData: {
-        bets: betsToPass.concat(betReplies),
+        bets: betsToPass.concat(
+          betReplies.filter(
+            (b1) => !betsToPass.map((b2) => b2.id).includes(b1.id)
+          )
+        ),
         points: chartPoints,
       },
       pointsString,
