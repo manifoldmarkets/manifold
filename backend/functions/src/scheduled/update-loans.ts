@@ -41,6 +41,13 @@ export async function updateLoansCore() {
 
   const today = new Date().toDateString().replace(' ', '-')
   const key = `loan-notifications-${today}`
+  const lockName = `update-loans-${today}`
+  const lockRef = firestore.collection('locks').doc(lockName)
+  await lockRef.create({}).catch((_e) => {
+    throw new Error(
+      `Could not acquire ${lockName} lock, which means it was probably already running`
+    )
+  })
 
   // Select users who did not already get a loan notification today.
   const users = await pg.map<User>(
@@ -117,7 +124,7 @@ export async function updateLoansCore() {
     // Only pay out loans that are >= M1.
     .filter((p) => p.result.payout >= 1)
 
-  const updateChunks = chunk(shuffle(userUpdates), 200)
+  const updateChunks = chunk(shuffle(userUpdates), 100)
 
   let i = 0
   for (const updateChunk of updateChunks) {
@@ -152,6 +159,8 @@ export async function updateLoansCore() {
     await writeAsync(firestore, betUpdates)
     i++
   }
+
+  await lockRef.delete()
 
   log(`${userUpdates.length} user loans paid out!`)
 }
