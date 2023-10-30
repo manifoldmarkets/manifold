@@ -44,6 +44,7 @@ import { runTxnFromBank } from 'shared/txn/run-txn'
 import {
   createSupabaseClient,
   createSupabaseDirectClient,
+  SupabaseDirectClient,
 } from 'shared/supabase/init'
 import { secrets } from 'common/secrets'
 import { addToLeagueIfNotInOne } from 'shared/generate-leagues'
@@ -116,38 +117,8 @@ export const onCreateBet = functions
     if (bet.isRedemption) return
     const pg = createSupabaseDirectClient()
 
-    if (bet.replyToCommentId) {
-      const commentSnap = await firestore
-        .doc(`contracts/${contractId}/comments/${bet.replyToCommentId}`)
-        .get()
-      const comment = commentSnap.data() as ContractComment
-      if (comment) {
-        const bets = filterDefined(
-          await getBetsRepliedToComment(pg, comment.id)
-        )
-        // This could potentially miss some bets if they're not replicated in time
-        if (!bets.some((b) => b.id === bet.id)) bets.push(bet)
-        const groupedBetsByOutcome = groupBy(bets, 'outcome')
-        const betReplyAmountsByOutcome: { [outcome: string]: number } = {}
-        for (const outcome in groupedBetsByOutcome) {
-          betReplyAmountsByOutcome[outcome] = sumBy(
-            groupedBetsByOutcome[outcome],
-            (b) => b.amount
-          )
-        }
-        await commentSnap.ref.update({
-          betReplyAmountsByOutcome,
-        })
-      }
-      await createBetReplyToCommentNotification(
-        comment.userId,
-        contract,
-        bet,
-        bettor,
-        comment,
-        pg
-      )
-    }
+    if (bet.replyToCommentId)
+      await handleBetReplyToComment(bet, contract, bettor, pg)
 
     const isApiOrBot = bet.isApi || BOT_USERNAMES.includes(bettor.username)
     if (isApiOrBot) {
@@ -199,6 +170,42 @@ const MED_BET_SIZE_FOR_FEED = 100
 
 const MIN_BALANCE_PERCENTAGE_FOR_FEED = 0.05
 const MIN_BET_SIZE_GIVEN_PERCENTAGE = 20
+
+const handleBetReplyToComment = async (
+  bet: Bet,
+  contract: Contract,
+  bettor: User,
+  pg: SupabaseDirectClient
+) => {
+  const commentSnap = await firestore
+    .doc(`contracts/${contract.id}/comments/${bet.replyToCommentId}`)
+    .get()
+  const comment = commentSnap.data() as ContractComment
+  if (comment) {
+    const bets = filterDefined(await getBetsRepliedToComment(pg, comment.id))
+    // This could potentially miss some bets if they're not replicated in time
+    if (!bets.some((b) => b.id === bet.id)) bets.push(bet)
+    const groupedBetsByOutcome = groupBy(bets, 'outcome')
+    const betReplyAmountsByOutcome: { [outcome: string]: number } = {}
+    for (const outcome in groupedBetsByOutcome) {
+      betReplyAmountsByOutcome[outcome] = sumBy(
+        groupedBetsByOutcome[outcome],
+        (b) => b.amount
+      )
+    }
+    await commentSnap.ref.update({
+      betReplyAmountsByOutcome,
+    })
+  }
+  await createBetReplyToCommentNotification(
+    comment.userId,
+    contract,
+    bet,
+    bettor,
+    comment,
+    pg
+  )
+}
 
 const addBetToFollowersFeeds = async (
   bettor: User,
