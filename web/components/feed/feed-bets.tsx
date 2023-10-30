@@ -193,7 +193,7 @@ export function BetStatusText(props: {
 }) {
   const { bet, contract, hideUser, className, inTimeline } = props
   const self = useUser()
-  const { amount, outcome, createdTime, answerId, isChallenge, isApi } = bet
+  const { amount, outcome, createdTime, answerId, isApi } = bet
 
   const bought = amount >= 0 ? 'bought' : 'sold'
   const absAmount = Math.abs(amount)
