@@ -212,20 +212,21 @@ function ContractSmolView(props: {
   return (
     <Col className="bg-canvas-0 h-[100vh] w-full p-4">
       <Row className="justify-between gap-4">
-        <div>
+        <Col>
           <a
             href={href}
             target="_blank"
-            className="text-primary-700 text-lg hover:underline sm:text-xl"
+            className="hover:text-primary-700 text-lg hover:underline sm:text-xl"
             rel="noreferrer"
           >
             {question}
           </a>
-        </div>
+          <Details contract={contract} />
+        </Col>
         {isBinary && (
           <BinaryResolutionOrChance
             contract={contract}
-            className="!flex-col !gap-0"
+            className="!flex-col !gap-0 text-right"
           />
         )}
 
@@ -243,7 +244,6 @@ function ContractSmolView(props: {
           <StonkPrice className="!flex-col !gap-0" contract={contract} />
         )}
       </Row>
-      <Details contract={contract} />
       {!isBountiedQuestion && (
         <SizedContainer
           className={clsx(
@@ -295,8 +295,8 @@ const Details = (props: { contract: Contract }) => {
 
   const isBountiedQuestion = outcomeType === 'BOUNTIED_QUESTION'
   return (
-    <div className="text-ink-400 relative right-0 mt-2 flex flex-wrap items-center gap-4 text-xs">
-      <span className="text-ink-600 flex gap-1">
+    <div className="text-ink-400 relative right-0 mt-2 flex flex-wrap items-center gap-4 text-sm">
+      <span className="flex gap-1">
         <Avatar
           size="2xs"
           avatarUrl={creatorAvatarUrl}
