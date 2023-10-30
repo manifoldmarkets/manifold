@@ -58,6 +58,7 @@ export type OnContract = {
   commenterPositionAnswerId?: string
 
   bountyAwarded?: number
+  betReplyAmountsByOutcome?: { [outcome: string]: number }
 }
 
 export type OnPost = {

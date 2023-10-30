@@ -1,5 +1,5 @@
 import { ContractComment } from 'common/comment'
-import { SupabaseClient, run } from './utils'
+import { convertSQLtoTS, Row, run, SupabaseClient, tsToMillis } from './utils'
 
 export async function getRecentTopLevelCommentsAndReplies(
   db: SupabaseClient,
@@ -44,3 +44,9 @@ export async function getRecentTopLevelCommentsAndReplies(
 
   return targetComments
 }
+
+export const convertContractComment = (row: Row<'contract_comments'>) =>
+  convertSQLtoTS<'contract_comments', ContractComment>(row, {
+    fs_updated_time: false,
+    created_time: tsToMillis as any,
+  })

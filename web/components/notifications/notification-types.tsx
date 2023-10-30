@@ -1,6 +1,7 @@
 import clsx from 'clsx'
 import {
   BetFillData,
+  BetReplyNotificationData,
   ContractResolutionData,
   getSourceUrl,
   Notification,
@@ -217,6 +218,15 @@ export function NotificationItem(props: {
   } else if (reason === 'tagged_user') {
     return (
       <TaggedUserNotification
+        notification={notification}
+        isChildOfGroup={isChildOfGroup}
+        highlighted={highlighted}
+        setHighlighted={setHighlighted}
+      />
+    )
+  } else if (sourceType === 'bet_reply') {
+    return (
+      <BetReplyNotification
         notification={notification}
         isChildOfGroup={isChildOfGroup}
         highlighted={highlighted}
@@ -1007,6 +1017,54 @@ function CommentNotification(props: {
           className={'hover:text-primary-500 relative flex-shrink-0'}
         />{' '}
         {reasonText}
+        {!isChildOfGroup && (
+          <span>
+            on <PrimaryNotificationLink text={sourceContractTitle} />
+          </span>
+        )}
+      </div>
+    </NotificationFrame>
+  )
+}
+function BetReplyNotification(props: {
+  notification: Notification
+  highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
+  isChildOfGroup?: boolean
+}) {
+  const { notification, isChildOfGroup, highlighted, setHighlighted } = props
+  const { sourceUserName, sourceUserUsername, sourceContractTitle } =
+    notification
+  const { betOutcome, betAmount, commentText } =
+    notification.data as BetReplyNotificationData
+
+  return (
+    <NotificationFrame
+      notification={notification}
+      isChildOfGroup={isChildOfGroup}
+      highlighted={highlighted}
+      setHighlighted={setHighlighted}
+      icon={
+        <AvatarNotificationIcon notification={notification} symbol={'💬'} />
+      }
+      subtitle={<span className={'text-ink-500'}>{commentText}</span>}
+      link={getSourceUrl(notification)}
+    >
+      <div className="line-clamp-3">
+        <UserLink
+          name={sourceUserName || ''}
+          username={sourceUserUsername || ''}
+          className={'hover:text-primary-500 relative flex-shrink-0'}
+        />{' '}
+        bet{' '}
+        <span
+          className={
+            betOutcome === 'YES' ? 'text-teal-600' : 'text-scarlet-600'
+          }
+        >
+          {formatMoney(betAmount)} {betOutcome}
+        </span>{' '}
+        in reply to your comment
         {!isChildOfGroup && (
           <span>
             on <PrimaryNotificationLink text={sourceContractTitle} />

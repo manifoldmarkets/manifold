@@ -31,7 +31,6 @@ import {
 import { isContractBlocked } from 'web/lib/firebase/users'
 import { IGNORE_COMMENT_FEED_CONTENT } from 'web/hooks/use-additional-feed-items'
 import { DAY_MS } from 'common/util/time'
-import { convertContractComment } from 'web/lib/supabase/comments'
 import { Group } from 'common/group'
 import { getMarketMovementInfo } from 'web/lib/supabase/feed-timeline/feed-market-movement-display'
 import { useFollowedIdsSupabase } from 'web/hooks/use-follows'
@@ -43,6 +42,7 @@ import { compareTwoStrings } from 'string-similarity'
 import dayjs from 'dayjs'
 import { useBoosts } from 'web/hooks/use-boosts'
 import { useIsAuthorized } from 'web/hooks/use-user'
+import { convertContractComment } from 'common/supabase/comments'
 
 export const DEBUG_FEED_CARDS =
   typeof window != 'undefined' &&
