@@ -1988,27 +1988,27 @@ export interface Database {
       user_portfolio_history: {
         Row: {
           balance: number | null
+          id: number
           investment_value: number | null
           loan_total: number | null
-          portfolio_id: string
           total_deposits: number | null
           ts: string | null
           user_id: string
         }
         Insert: {
           balance?: number | null
+          id?: never
           investment_value?: number | null
           loan_total?: number | null
-          portfolio_id: string
           total_deposits?: number | null
           ts?: string | null
           user_id: string
         }
         Update: {
           balance?: number | null
+          id?: never
           investment_value?: number | null
           loan_total?: number | null
-          portfolio_id?: string
           total_deposits?: number | null
           ts?: string | null
           user_id?: string
