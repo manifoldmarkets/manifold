@@ -26,13 +26,13 @@ export const RejectButton = (props: { lover: Lover; className?: string }) => {
         size="xs"
         onClick={() => setDialogOpen(true)}
       >
-        Reject
+        Unmatch
       </Button>
       {dialogOpen && (
         <Modal open={dialogOpen} setOpen={(open) => setDialogOpen(open)}>
           <Col className="bg-canvas-0 rounded p-4 pb-8 sm:gap-4">
             <div className="text-lg font-semibold">
-              Are you sure you want to reject {lover.user.name}?
+              Are you sure you don't want a relationship with {lover.user.name}?
             </div>
             <div className="">This action cannot be undone.</div>
 
@@ -43,7 +43,7 @@ export const RejectButton = (props: { lover: Lover; className?: string }) => {
               disabled={isSubmitting}
               loading={isSubmitting}
             >
-              Confirm reject
+              Confirm unmatch
             </Button>
           </Col>
         </Modal>
