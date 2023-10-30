@@ -351,16 +351,27 @@ function FeedAnalytics(props: { contractId: string }) {
         .eq('contract_id', contractId)
   )
 
+  if (adQuery.error || viewQuery.error) {
+    return (
+      <div className="bg-scarlet-100 mb-2 rounded-md p-4">
+        Error loading analytics
+      </div>
+    )
+  }
+  
+  const isBoosted = !!adQuery.data?.data?.length
+  const lastAdData = adQuery.data?.data?.[0]
+
   const redeemQuery = useQuery(
     async () =>
       await db
         .from('txns')
         .select('*', { count: 'exact' })
         .eq('data->>category', 'MARKET_BOOST_REDEEM')
-        .eq('data->>fromId', adQuery.data?.data?.[0]?.id)
+        .eq('data->>fromId', lastAdData?.id)
   )
 
-  if (adQuery.error || viewQuery.error || redeemQuery.error) {
+  if (redeemQuery.error) {
     return (
       <div className="bg-scarlet-100 mb-2 rounded-md p-4">
         Error loading analytics
@@ -368,8 +379,6 @@ function FeedAnalytics(props: { contractId: string }) {
     )
   }
 
-  const isBoosted = !!adQuery.data?.data?.length
-  const lastAdData = adQuery.data?.data?.[0]
   const totalFunds =
     adQuery.data?.data?.reduce((acc, v) => acc + v.funds, 0) ?? 0
   const viewData = viewQuery.data?.data
@@ -416,10 +425,9 @@ function FeedAnalytics(props: { contractId: string }) {
             }
           />
         )}
-        {/* TODO: fix this  */}
-        {/* {isBoosted && (
+        {isBoosted && (
           <TableItem label="Boost clicks" value={redeemQuery.data?.count} />
-        )} */}
+        )}
       </Table>
     </div>
   )
