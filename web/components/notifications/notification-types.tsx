@@ -1064,7 +1064,7 @@ function BetReplyNotification(props: {
         >
           {formatMoney(betAmount)} {betOutcome}
         </span>{' '}
-        in reply to your comment
+        in reply to your comment{' '}
         {!isChildOfGroup && (
           <span>
             on <PrimaryNotificationLink text={sourceContractTitle} />
