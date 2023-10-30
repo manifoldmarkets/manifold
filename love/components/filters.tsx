@@ -52,7 +52,7 @@ export const Filters = (props: {
   }, [JSON.stringify(filters), allLovers?.map((l) => l.id).join(',')])
 
   useEffect(() => {
-    searchNearCity({ cityId: '45633', radius: 100 }).then((result) => {
+    searchNearCity({ cityId: '45633', radius: 20 }).then((result) => {
       console.log('NEAR YOU', result)
     })
   }, [])
