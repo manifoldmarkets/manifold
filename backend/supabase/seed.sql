@@ -270,6 +270,9 @@ create index if not exists user_notifications_created_time on user_notifications
 
 create index if not exists user_notifications_created_time_idx on user_notifications (user_id, ((data -> 'createdTime')::bigint) desc);
 
+-- used for querying loan payouts (ugh)
+create index if not exists user_notifications_notification_id on user_notifications (notification_id, user_id);
+
 create index if not exists user_notifications_unseen_text_created_time_idx on user_notifications (
   user_id,
   -- Unfortunately casting to a boolean doesn't work in postgrest  ((data->'isSeen')::boolean),
