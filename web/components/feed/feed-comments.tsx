@@ -64,7 +64,7 @@ import { FeedReplyBet } from 'web/components/feed/feed-bets'
 import { Modal, MODAL_CLASS } from 'web/components/layout/modal'
 import { last, orderBy } from 'lodash'
 import { HOUR_MS } from 'common/util/time'
-import { FaArrowTrendDown, FaArrowTrendUp } from 'react-icons/fa6'
+import { FaArrowTrendUp } from 'react-icons/fa6'
 
 export type ReplyToUserInfo = { id: string; username: string }
 
@@ -589,6 +589,9 @@ function CommentActions(props: {
     comment.userId != user.id
   const [showBetModal, setShowBetModal] = useState(false)
   const [outcome, setOutcome] = useState<'YES' | 'NO'>('YES')
+  const diff =
+    (comment.betReplyAmountsByOutcome?.YES ?? 0) -
+    (comment.betReplyAmountsByOutcome?.NO ?? 0)
   return (
     <Row className="grow items-center justify-end">
       {canGiveBounty && (
@@ -602,7 +605,7 @@ function CommentActions(props: {
         />
       )}
       {user && contract.outcomeType === 'BINARY' && (
-        <Tooltip text="Reply by betting YES" placement="bottom">
+        <Tooltip text="Reply with a bet" placement="bottom">
           <IconButton
             onClick={() => {
               setOutcome('YES')
@@ -610,39 +613,18 @@ function CommentActions(props: {
             }}
             size={'xs'}
           >
-            <Row className={'relative gap-1'}>
-              {(comment.betReplyAmountsByOutcome?.YES ?? 0) > 0 && (
-                <>
-                  <span className="absolute -bottom-0.5 text-teal-500">
-                    {comment.betReplyAmountsByOutcome?.YES}
-                  </span>
-                  <div className={'w-5'} />
-                </>
-              )}
-              <FaArrowTrendUp className={'h-5 w-5'} />
-            </Row>
-          </IconButton>
-        </Tooltip>
-      )}
-      {user && contract.outcomeType === 'BINARY' && (
-        <Tooltip text="Reply by betting NO" placement="bottom">
-          <IconButton
-            onClick={() => {
-              setOutcome('NO')
-              setShowBetModal(true)
-            }}
-            size={'xs'}
-          >
-            <Row className={'relative gap-1'}>
-              {(comment.betReplyAmountsByOutcome?.NO ?? 0) > 0 && (
-                <>
-                  <span className="text-scarlet-500 absolute -bottom-0.5">
-                    {comment.betReplyAmountsByOutcome?.NO}
-                  </span>
-                  <div className={'w-5'} />
-                </>
-              )}
-              <FaArrowTrendDown className="h-5 w-5" />
+            <Row className={'mt-0.5 gap-1'}>
+              {diff != 0 && <span className="">{Math.abs(diff)}</span>}
+              <FaArrowTrendUp
+                className={clsx(
+                  'h-5 w-5',
+                  diff > 0
+                    ? 'text-teal-500'
+                    : diff < 0
+                    ? 'text-scarlet-500'
+                    : ''
+                )}
+              />
             </Row>
           </IconButton>
         </Tooltip>
