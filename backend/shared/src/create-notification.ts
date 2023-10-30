@@ -2030,7 +2030,7 @@ export const createBetReplyToCommentNotification = async (
       data: {
         betAmount: bet.amount,
         betOutcome: bet.outcome,
-        commentText: richTextToString(comment.content),
+        commentText: richTextToString(comment.content).slice(0, 250),
       } as BetReplyNotificationData,
     }
     await insertNotificationToSupabase(notification, pg)

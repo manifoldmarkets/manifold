@@ -68,6 +68,7 @@ export async function getContractParams(
     contract.resolution ? getTopContractMetrics(contract.id, 10, db) : [],
     isCpmm1 ? getTotalContractMetrics(contract.id, db) : 0,
     getRelatedContracts(contract, 20, db, true),
+    // TODO: Should only send bets that are replies to comments we're sending, and load the rest client side
     isCpmm1
       ? getBets(db, {
           contractId: contract.id,
