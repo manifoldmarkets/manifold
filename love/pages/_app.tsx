@@ -70,7 +70,7 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
 
   const title = 'Manifold.love — Bet on love!'
   const description =
-    'Find the best long term matches based through markets that crowdsource human matchmaking.'
+    "Find the love of your life and bet on your friends’ relationships ❤️ Who says love and money don't mix?"
 
   return (
     <>
@@ -96,12 +96,12 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
         <meta name="twitter:site" content="@manifoldmarkets" />
         <meta
           name="twitter:image"
-          content="https://manifold.love/manifold_love_logo.svg"
+          content="https://manifold.love/bet-on-love.png"
           key="image2"
         />
         <meta
           property="og:image"
-          content="https://manifold.love/manifold_love_logo.svg"
+          content="https://manifold.love/bet-on-love.png"
           key="image1"
         />
         <meta

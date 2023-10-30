@@ -376,7 +376,7 @@ export const MAX_DESCRIPTION_LENGTH = 16000
 export const CPMM_MIN_POOL_QTY = 0.01
 
 export type Visibility = 'public' | 'unlisted' | 'private'
-export const VISIBILITIES = ['public', 'unlisted', 'private'] as const
+export const VISIBILITIES = ['public', 'unlisted'] as const
 
 export const MINUTES_ALLOWED_TO_UNRESOLVE = 10
 

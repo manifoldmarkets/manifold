@@ -1,6 +1,6 @@
 import { Editor } from '@tiptap/react'
 import clsx from 'clsx'
-import { memo, ReactNode, useEffect, useRef, useState } from 'react'
+import { memo, ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 
 import {
   EyeOffIcon,
@@ -59,6 +59,12 @@ import TipJar from 'web/public/custom-components/tipJar'
 import { Answer, DpmAnswer } from 'common/answer'
 import { CommentOnAnswerRow } from './feed-answer-comment-group'
 import { usePartialUpdater } from 'web/hooks/use-partial-updater'
+import { BuyPanel } from 'web/components/bet/bet-panel'
+import { FeedReplyBet } from 'web/components/feed/feed-bets'
+import { Modal, MODAL_CLASS } from 'web/components/layout/modal'
+import { last, orderBy } from 'lodash'
+import { HOUR_MS } from 'common/util/time'
+import { FaArrowTrendUp } from 'react-icons/fa6'
 
 export type ReplyToUserInfo = { id: string; username: string }
 
@@ -74,6 +80,7 @@ export function FeedCommentThread(props: {
   childrenBountyTotal?: number
   className?: string
   onSubmitReply?: () => void
+  bets?: Bet[]
 }) {
   const {
     contract,
@@ -87,6 +94,7 @@ export function FeedCommentThread(props: {
     childrenBountyTotal,
     className,
     onSubmitReply,
+    bets,
   } = props
   const [replyToUserInfo, setReplyToUserInfo] = useState<ReplyToUserInfo>()
 
@@ -122,11 +130,12 @@ export function FeedCommentThread(props: {
         trackingLocation={trackingLocation}
         inTimeline={inTimeline}
         childrenBountyTotal={childrenBountyTotal}
+        bets={bets?.filter((bet) => bet.replyToCommentId === parentComment.id)}
       />
       {seeReplies &&
         threadComments
           .slice(0, collapseToIndex)
-          .map((comment) => (
+          .map((comment, i) => (
             <FeedComment
               key={comment.id}
               contract={contract}
@@ -134,6 +143,8 @@ export function FeedCommentThread(props: {
               highlighted={idInUrl === comment.id}
               onReplyClick={onReplyClick}
               trackingLocation={trackingLocation}
+              bets={bets?.filter((bet) => bet.replyToCommentId === comment.id)}
+              lastInReplyChain={i === threadComments.length - 1}
             />
           ))}
       {seeReplies && threadComments.length > collapseToIndex && (
@@ -183,6 +194,8 @@ export const FeedComment = memo(function FeedComment(props: {
   children?: ReactNode
   inTimeline?: boolean
   isParent?: boolean
+  bets?: Bet[]
+  lastInReplyChain?: boolean
 }) {
   const {
     contract,
@@ -192,7 +205,46 @@ export const FeedComment = memo(function FeedComment(props: {
     trackingLocation,
     inTimeline,
     isParent,
+    bets,
+    lastInReplyChain,
   } = props
+
+  const groupedBets = useMemo(() => {
+    // Sort the bets by createdTime
+    const sortedBets = orderBy(bets, 'createdTime', 'asc')
+
+    const tempGrouped: Bet[][] = []
+
+    sortedBets.forEach((currentBet) => {
+      let foundGroup = false
+
+      for (const group of tempGrouped) {
+        const lastBetInGroup = last(group)
+
+        if (lastBetInGroup) {
+          const close =
+            Math.abs(currentBet.createdTime - lastBetInGroup.createdTime) <
+            HOUR_MS
+          const outcomesMatch = currentBet.outcome === lastBetInGroup.outcome
+          const sameSign =
+            Math.sign(currentBet.amount) === Math.sign(lastBetInGroup.amount)
+
+          if (close && outcomesMatch && sameSign) {
+            group.push(currentBet)
+            foundGroup = true
+            break
+          }
+        }
+      }
+
+      if (!foundGroup) {
+        tempGrouped.push([currentBet])
+      }
+    })
+
+    return tempGrouped
+  }, [bets?.length])
+
   // for optimistic updates
   const [comment, updateComment] = usePartialUpdater(props.comment)
   useEffect(() => updateComment(props.comment), [props.comment])
@@ -200,6 +252,7 @@ export const FeedComment = memo(function FeedComment(props: {
   const { userUsername, userAvatarUrl } = comment
   const ref = useRef<HTMLDivElement>(null)
   const marketCreator = contract.creatorId === comment.userId
+  const isBetParent = !!bets?.length
 
   useEffect(() => {
     if (highlighted && ref.current) {
@@ -212,6 +265,7 @@ export const FeedComment = memo(function FeedComment(props: {
       <CommentReplyHeader comment={comment} contract={contract} />
       <Row ref={ref} className={clsx(isParent ? 'gap-2' : 'gap-1')}>
         <Row className="relative">
+          {/*// Curved reply line*/}
           {!isParent && (
             <div className="border-ink-100 dark:border-ink-300 -mt-4 ml-4 h-6 w-4 rounded-bl-xl border-b-2 border-l-2" />
           )}
@@ -221,12 +275,22 @@ export const FeedComment = memo(function FeedComment(props: {
             avatarUrl={userAvatarUrl}
             className={clsx(marketCreator && 'shadow shadow-amber-300', 'z-10')}
           />
+          {/* Outer vertical reply line*/}
           <div
             className={clsx(
-              'bg-ink-100 dark:bg-ink-300 absolute bottom-0 left-4 w-0.5 group-last:hidden ',
-              isParent ? 'top-0' : '-top-1'
+              'bg-ink-100 dark:bg-ink-300 absolute bottom-0 left-4 w-0.5',
+              isParent ? 'top-0' : '-top-1',
+              (!isBetParent || lastInReplyChain) && 'group-last:hidden'
             )}
           />
+          {/* Inner vertical reply line*/}
+          {isBetParent && !isParent && (
+            <div
+              className={clsx(
+                'bg-ink-100 dark:bg-ink-300 absolute bottom-0 left-10 top-0 w-0.5'
+              )}
+            />
+          )}
         </Row>
 
         <Col
@@ -258,6 +322,49 @@ export const FeedComment = memo(function FeedComment(props: {
           </Row>
         </Col>
       </Row>
+      {!!bets?.length && (
+        <Row>
+          <Col className={'w-full'}>
+            {groupedBets?.map((bets, i) => {
+              return (
+                <Row
+                  className={'relative mt-1 w-full'}
+                  key={bets.map((b) => b.id) + '-reply'}
+                >
+                  {/*// Curved bet reply line*/}
+                  <div
+                    className={clsx(
+                      'border-ink-100 dark:border-ink-300 rounded-bl-xl border-b-2 border-l-2 ',
+                      isParent ? '-mt-2 ml-4 h-4 w-4' : '-mt-7 ml-10 h-10 w-4'
+                    )}
+                  />
+                  {/* Outer vertical bet reply line*/}
+                  <div
+                    className={clsx(
+                      'bg-ink-100 dark:bg-ink-300 absolute bottom-0 left-4 w-0.5 group-last:hidden ',
+                      isParent ? 'top-0' : '-top-1'
+                    )}
+                  />
+                  <FeedReplyBet
+                    className={'bg-canvas-50'}
+                    avatarSize={'2xs'}
+                    contract={contract}
+                    bets={bets}
+                  />
+                  {/* Inner vertical bet reply line*/}
+                  <div
+                    className={clsx(
+                      'bg-ink-100 dark:bg-ink-300 absolute w-0.5 ',
+                      isParent ? '  left-4 top-0' : '-top-1 left-10',
+                      i === groupedBets.length - 1 ? 'hidden' : 'bottom-0'
+                    )}
+                  />
+                </Row>
+              )
+            })}
+          </Col>
+        </Row>
+      )}
     </Col>
   )
 })
@@ -273,6 +380,7 @@ const ParentFeedComment = memo(function ParentFeedComment(props: {
   trackingLocation: string
   inTimeline?: boolean
   childrenBountyTotal?: number
+  bets?: Bet[]
 }) {
   const {
     contract,
@@ -285,6 +393,7 @@ const ParentFeedComment = memo(function ParentFeedComment(props: {
     trackingLocation,
     inTimeline,
     childrenBountyTotal,
+    bets,
   } = props
   const { ref } = useIsVisible(
     () =>
@@ -304,6 +413,7 @@ const ParentFeedComment = memo(function ParentFeedComment(props: {
       trackingLocation={trackingLocation}
       inTimeline={inTimeline}
       isParent={true}
+      bets={bets}
     >
       <div ref={ref} />
       <ReplyToggle
@@ -477,7 +587,11 @@ function CommentActions(props: {
     user &&
     user.id == contract.creatorId &&
     comment.userId != user.id
-
+  const [showBetModal, setShowBetModal] = useState(false)
+  const [outcome, setOutcome] = useState<'YES' | 'NO'>('YES')
+  const diff =
+    (comment.betReplyAmountsByOutcome?.YES ?? 0) -
+    (comment.betReplyAmountsByOutcome?.NO ?? 0)
   return (
     <Row className="grow items-center justify-end">
       {canGiveBounty && (
@@ -490,8 +604,33 @@ function CommentActions(props: {
           buttonClassName={'mr-1'}
         />
       )}
+      {user && contract.outcomeType === 'BINARY' && (
+        <Tooltip text="Reply with a bet" placement="bottom">
+          <IconButton
+            onClick={() => {
+              setOutcome('YES')
+              setShowBetModal(true)
+            }}
+            size={'xs'}
+          >
+            <Row className={'mt-0.5 gap-1'}>
+              {diff != 0 && <span className="">{Math.abs(diff)}</span>}
+              <FaArrowTrendUp
+                className={clsx(
+                  'h-5 w-5',
+                  diff > 0
+                    ? 'text-teal-500'
+                    : diff < 0
+                    ? 'text-scarlet-500'
+                    : ''
+                )}
+              />
+            </Row>
+          </IconButton>
+        </Tooltip>
+      )}
       {user && onReplyClick && (
-        <Tooltip text="Reply" placement="bottom">
+        <Tooltip text="Reply with a comment" placement="bottom">
           <IconButton
             size={'xs'}
             onClick={(e) => {
@@ -517,6 +656,31 @@ function CommentActions(props: {
         disabled={isBlocked(privateUser, comment.userId)}
         trackingLocation={trackingLocation}
       />
+      {showBetModal && (
+        <Modal
+          open={showBetModal}
+          setOpen={setShowBetModal}
+          className={clsx(
+            MODAL_CLASS,
+            'pointer-events-auto max-h-[32rem] overflow-auto'
+          )}
+        >
+          <Col>
+            <span className={'text-primary-700 mb-4 line-clamp-2 text-lg'}>
+              @{comment.userUsername}: {richTextToString(comment.content)}
+            </span>
+            <BuyPanel
+              contract={contract as any}
+              user={user}
+              initialOutcome={outcome}
+              onBuySuccess={() => setTimeout(() => setShowBetModal(false), 500)}
+              location={'comment on contract'}
+              inModal={true}
+              replyToCommentId={comment.id}
+            />
+          </Col>
+        </Modal>
+      )}
     </Row>
   )
 }

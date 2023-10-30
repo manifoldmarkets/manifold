@@ -366,13 +366,6 @@ function validateMarketBody(body: any) {
     totalBounty: number | undefined,
     extraLiquidity: number | undefined
 
-  if (visibility == 'private' && !groupIds?.length) {
-    throw new APIError(
-      403,
-      'Private markets cannot exist outside a private group.'
-    )
-  }
-
   if (outcomeType === 'PSEUDO_NUMERIC') {
     let initialValue
     ;({ min, max, initialValue, isLogScale, extraLiquidity } = validate(
