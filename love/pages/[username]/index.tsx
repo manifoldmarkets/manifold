@@ -177,16 +177,24 @@ export default function UserPage(props: {
               </Row>
             </Col>
           </>
+        ) : isCurrentUser ? (
+          <Col className={'mt-4 w-full items-center'}>
+            <Row>
+              <Button onClick={() => router.push('signup')}>
+                Create a profile
+              </Button>
+            </Row>
+          </Col>
         ) : (
-          isCurrentUser && (
-            <Col className={'mt-4 w-full items-center'}>
-              <Row>
-                <Button onClick={() => router.push('signup')}>
-                  Create a profile
-                </Button>
-              </Row>
-            </Col>
-          )
+          <Col className="bg-canvas-0 rounded p-4 ">
+            <div>{user.name} hasn't created a profile yet.</div>
+            <Button
+              className="mt-4 self-start"
+              onClick={() => router.push('/')}
+            >
+              See more profiles
+            </Button>
+          </Col>
         )}
       </Col>
       {currentUser && lover && (
