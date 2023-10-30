@@ -5,7 +5,7 @@ import { DOMAIN } from 'common/envs/constants'
 import { getContractFromSlug } from 'common/supabase/contracts'
 import { formatMoney } from 'common/util/format'
 import Image from 'next/image'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { NoSEO } from 'web/components/NoSEO'
 import { BinaryContractChart } from 'web/components/charts/contract/binary'
 import { NumericContractChart } from 'web/components/charts/contract/numeric'
@@ -31,6 +31,10 @@ import { db } from 'web/lib/supabase/db'
 import Custom404 from '../../404'
 import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
 import { SimpleAnswerBars } from 'web/components/answers/answers-panel'
+import { QrcodeIcon, UserIcon } from '@heroicons/react/solid'
+import { QRCode } from 'web/components/widgets/qr-code'
+import { getShareUrl } from 'common/util/share'
+import { useRouter } from 'next/router'
 
 type Points = HistoryPoint<any>[]
 
@@ -107,6 +111,17 @@ export default function ContractEmbedPage(props: {
     useFirebasePublicContract(props.contract.visibility, props.contract.id) ??
     props.contract
 
+  const router = useRouter()
+  const { qr } = router.query
+
+  const [showQRCode, setShowQRCode] = useState(false)
+
+  useEffect(() => {
+    if (router.query.qr !== undefined) {
+      setShowQRCode(true)
+    }
+  }, [router.query.qr])
+
   useEffect(() => {
     if (contract?.id)
       track('view market embed', {
@@ -125,7 +140,11 @@ export default function ContractEmbedPage(props: {
     <>
       <NoSEO />
       <ContractSEO contract={contract} />
-      <ContractSmolView contract={contract} points={props.points} />
+      <ContractSmolView
+        contract={contract}
+        points={props.points}
+        showQRCode={showQRCode}
+      />
     </>
   )
 }
@@ -197,8 +216,9 @@ const numBars = (height: number) => {
 function ContractSmolView(props: {
   contract: Contract
   points: Points | null
+  showQRCode: boolean
 }) {
-  const { contract, points } = props
+  const { contract, points, showQRCode } = props
   const { question, outcomeType } = contract
 
   const isBinary = outcomeType === 'BINARY'
@@ -209,8 +229,21 @@ function ContractSmolView(props: {
 
   const href = `https://${DOMAIN}${contractPath(contract)}`
 
+  const shareUrl = getShareUrl(contract, undefined)
+
   return (
-    <Col className="bg-canvas-0 h-[100vh] w-full p-4">
+    <Col className="bg-canvas-0 h-[100vh] w-full gap-1 px-6 py-4">
+      <Row className="text-ink-500 w-full justify-between text-sm">
+        <Row className="items-center gap-1">
+          <Avatar
+            size="2xs"
+            avatarUrl={contract.creatorAvatarUrl}
+            username={contract.creatorUsername}
+            noLink
+          />
+          {contract.creatorName}
+        </Row>
+      </Row>
       <Row className="justify-between gap-4">
         <Col>
           <a
@@ -221,12 +254,12 @@ function ContractSmolView(props: {
           >
             {question}
           </a>
-          <Details contract={contract} />
         </Col>
         {isBinary && (
           <BinaryResolutionOrChance
             contract={contract}
-            className="!flex-col !gap-0 text-right"
+            className="!flex-col !justify-end !gap-0 !text-xl !font-semibold"
+            subtextClassName="text-right w-full font-normal -mt-1"
           />
         )}
 
@@ -244,42 +277,54 @@ function ContractSmolView(props: {
           <StonkPrice className="!flex-col !gap-0" contract={contract} />
         )}
       </Row>
-      {!isBountiedQuestion && (
-        <SizedContainer
-          className={clsx(
-            'text-ink-1000 my-4 min-h-0 flex-1',
-            !isMulti && 'pr-10'
-          )}
-        >
-          {(w, h) => (
-            <ContractChart
-              contract={contract}
-              points={points}
-              width={w}
-              height={h}
+      <div className="grow-y relative flex h-full w-full">
+        {showQRCode && (
+          <div className="absolute inset-0 z-10 m-auto flex items-center justify-center">
+            <div className="border-ink-400 bg-canvas-0 rounded-xl border p-4 drop-shadow">
+              <QRCode url={shareUrl} />
+            </div>
+          </div>
+        )}
+        {!isBountiedQuestion && (
+          <SizedContainer
+            className={clsx(
+              'text-ink-1000 my-4 min-h-0 flex-1',
+              !isMulti && 'pr-10'
+            )}
+          >
+            {(w, h) => (
+              <ContractChart
+                contract={contract}
+                points={points}
+                width={w}
+                height={h}
+              />
+            )}
+          </SizedContainer>
+        )}
+        {isBountiedQuestion && (
+          <Col className="relative h-full w-full">
+            <Image
+              className="mx-auto my-auto opacity-40"
+              height={200}
+              width={200}
+              src={'/money-bag.svg'}
+              alt={''}
             />
-          )}
-        </SizedContainer>
-      )}
-      {isBountiedQuestion && (
-        <Col className="relative h-full w-full">
-          <Image
-            className="mx-auto my-auto opacity-40"
-            height={200}
-            width={200}
-            src={'/money-bag.svg'}
-            alt={''}
-          />
-          <Col className="absolute bottom-0 left-0 right-0 top-12">
-            <Col className="mx-auto my-auto text-center">
-              <div className="text-ink-1000 text-3xl">
-                {formatMoney(contract.bountyLeft)}
-              </div>
-              <div className="text-ink-500">bounty</div>
+            <Col className="absolute bottom-0 left-0 right-0 top-12">
+              <Col className="mx-auto my-auto text-center">
+                <div className="text-ink-1000 text-3xl">
+                  {formatMoney(contract.bountyLeft)}
+                </div>
+                <div className="text-ink-500">bounty</div>
+              </Col>
             </Col>
           </Col>
-        </Col>
-      )}
+        )}
+      </div>
+      <Row className="w-full justify-end text-sm">
+        <Details contract={contract} />
+      </Row>
     </Col>
   )
 }
@@ -296,19 +341,13 @@ const Details = (props: { contract: Contract }) => {
   const isBountiedQuestion = outcomeType === 'BOUNTIED_QUESTION'
   return (
     <div className="text-ink-400 relative right-0 mt-2 flex flex-wrap items-center gap-4 text-sm">
-      <span className="flex gap-1">
-        <Avatar
-          size="2xs"
-          avatarUrl={creatorAvatarUrl}
-          username={creatorUsername}
-          noLink
-        />
-        {creatorName}
-      </span>
       {!isBountiedQuestion && (
         <>
           <CloseOrResolveTime contract={props.contract} />{' '}
-          <span>{uniqueBettorCount} traders</span>
+          <Row className="gap-1">
+            <UserIcon className="h-5 w-5" />
+            {uniqueBettorCount}
+          </Row>
         </>
       )}
       {isBountiedQuestion && (

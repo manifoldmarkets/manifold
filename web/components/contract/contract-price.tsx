@@ -36,7 +36,7 @@ export function BinaryResolutionOrChance(props: {
 
   return (
     <Row
-      className={clsx('items-baseline gap-1 text-2xl sm:text-3xl', className)}
+      className={clsx('items-baseline gap-2 text-2xl sm:text-3xl', className)}
     >
       {resolution ? (
         <>
@@ -54,7 +54,15 @@ export function BinaryResolutionOrChance(props: {
           <animated.div className={textColor}>
             {spring.to((val) => formatPercent(val))}
           </animated.div>
-          <div className={clsx(textColor, 'text-ink-600 text-sm')}>chance</div>
+          <div
+            className={clsx(
+              textColor,
+              'text-ink-600 text-sm',
+              subtextClassName
+            )}
+          >
+            chance
+          </div>
         </>
       )}
     </Row>
