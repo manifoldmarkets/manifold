@@ -135,7 +135,7 @@ export function FeedCommentThread(props: {
       {seeReplies &&
         threadComments
           .slice(0, collapseToIndex)
-          .map((comment) => (
+          .map((comment, i) => (
             <FeedComment
               key={comment.id}
               contract={contract}
@@ -144,6 +144,7 @@ export function FeedCommentThread(props: {
               onReplyClick={onReplyClick}
               trackingLocation={trackingLocation}
               bets={bets?.filter((bet) => bet.replyToCommentId === comment.id)}
+              lastInReplyChain={i === threadComments.length - 1}
             />
           ))}
       {seeReplies && threadComments.length > collapseToIndex && (
@@ -194,6 +195,7 @@ export const FeedComment = memo(function FeedComment(props: {
   inTimeline?: boolean
   isParent?: boolean
   bets?: Bet[]
+  lastInReplyChain?: boolean
 }) {
   const {
     contract,
@@ -204,11 +206,12 @@ export const FeedComment = memo(function FeedComment(props: {
     inTimeline,
     isParent,
     bets,
+    lastInReplyChain,
   } = props
 
   const groupedBets = useMemo(() => {
     // Sort the bets by createdTime
-    const sortedBets = orderBy(bets, 'createdTime', 'desc')
+    const sortedBets = orderBy(bets, 'createdTime', 'asc')
 
     const tempGrouped: Bet[][] = []
 
@@ -262,6 +265,7 @@ export const FeedComment = memo(function FeedComment(props: {
       <CommentReplyHeader comment={comment} contract={contract} />
       <Row ref={ref} className={clsx(isParent ? 'gap-2' : 'gap-1')}>
         <Row className="relative">
+          {/*// This is the curved reply line*/}
           {!isParent && (
             <div className="border-ink-100 dark:border-ink-300 -mt-4 ml-4 h-6 w-4 rounded-bl-xl border-b-2 border-l-2" />
           )}
@@ -275,7 +279,7 @@ export const FeedComment = memo(function FeedComment(props: {
             className={clsx(
               'bg-ink-100 dark:bg-ink-300 absolute bottom-0 left-4 w-0.5',
               isParent ? 'top-0' : '-top-1',
-              !isParent && !isBetParent && 'group-last:hidden'
+              (!isBetParent || lastInReplyChain) && 'group-last:hidden'
             )}
           />
           {isBetParent && !isParent && (
@@ -325,6 +329,7 @@ export const FeedComment = memo(function FeedComment(props: {
                   className={'relative mt-1 w-full'}
                   key={bets.map((b) => b.id) + '-reply'}
                 >
+                  {/*// This is the curved bet reply line*/}
                   <div
                     className={clsx(
                       'border-ink-100 dark:border-ink-300 rounded-bl-xl border-b-2 border-l-2 ',
@@ -345,9 +350,9 @@ export const FeedComment = memo(function FeedComment(props: {
                   />
                   <div
                     className={clsx(
-                      'bg-ink-100 dark:bg-ink-300 absolute w-0.5  ',
+                      'bg-ink-100 dark:bg-ink-300 absolute w-0.5 ',
                       isParent ? '  left-4 top-0' : '-top-1 left-10',
-                      i === bets.length - 1 ? 'bottom-7' : 'bottom-0'
+                      i === groupedBets.length - 1 ? 'hidden' : 'bottom-0'
                     )}
                   />
                 </Row>
