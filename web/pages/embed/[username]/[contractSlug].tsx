@@ -1,4 +1,3 @@
-import { UserIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { HistoryPoint } from 'common/chart'
 import { Contract, contractPath } from 'common/contract'
@@ -16,7 +15,6 @@ import { NumericContractChart } from 'web/components/charts/contract/numeric'
 import { PseudoNumericContractChart } from 'web/components/charts/contract/pseudo-numeric'
 import { StonkContractChart } from 'web/components/charts/contract/stonk'
 import { useViewScale } from 'web/components/charts/helpers'
-import { CloseOrResolveTime } from 'web/components/contract/contract-details'
 import {
   BinaryResolutionOrChance,
   NumericResolutionOrExpectation,
@@ -29,7 +27,6 @@ import { Row } from 'web/components/layout/row'
 import { SizedContainer } from 'web/components/sized-container'
 import { Avatar } from 'web/components/widgets/avatar'
 import { QRCode } from 'web/components/widgets/qr-code'
-import { useNumContractComments } from 'web/hooks/use-comments-supabase'
 import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
 import { track } from 'web/lib/service/analytics'
 import { getBetFields } from 'web/lib/supabase/bets'
