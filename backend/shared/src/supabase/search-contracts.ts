@@ -396,7 +396,7 @@ function getSearchContractWhereSQL(
     contractType === 'ALL'
       ? ''
       : contractType === 'MULTIPLE_CHOICE'
-      ? `(outcome_type = 'FREE_RESPONSE' OR outcome_type = 'MULTIPLE_CHOICE')`
+      ? `outcome_type = 'FREE_RESPONSE' OR outcome_type = 'MULTIPLE_CHOICE'`
       : `outcome_type = '${contractType}'`
 
   const stonkFilter =
@@ -409,13 +409,17 @@ function getSearchContractWhereSQL(
     creatorId,
     hasGroupAccess
   )
+
+  const deletedFilter = `data->>'deleted' is null OR (data->>'deleted')::boolean = false`
+
   return buildSql(
     where(filterSQL[filter]),
     where(stonkFilter),
     where(sortFilter),
     where(contractTypeFilter),
     where(visibilitySQL),
-    where(creatorFilter)
+    where(creatorFilter),
+    where(deletedFilter)
   )
 }
 

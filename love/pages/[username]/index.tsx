@@ -18,6 +18,9 @@ import LoverAbout from 'love/components/lover-about'
 import { orderBy } from 'lodash'
 import { Subtitle } from 'love/components/widgets/lover-subtitle'
 import { useUserAnswersAndQuestions } from 'love/hooks/use-questions'
+import { Linkify } from 'web/components/widgets/linkify'
+import { useTracking } from 'web/hooks/use-tracking'
+import { track } from 'web/lib/service/analytics'
 
 export const getStaticProps = async (props: {
   params: {
@@ -47,6 +50,8 @@ export default function UserPage(props: {
   const currentUser = useUser()
   const isCurrentUser = currentUser?.id === user?.id
   const router = useRouter()
+
+  useTracking('view love profile', { username: user?.username })
 
   const lover = useLoverByUser(user ?? undefined)
   const { questions, answers: allAnswers } = useUserAnswersAndQuestions(
@@ -108,7 +113,10 @@ export default function UserPage(props: {
                     color={'gray-outline'}
                     size="xs"
                     className={''}
-                    onClick={() => router.push('love-questions')}
+                    onClick={() => {
+                      track('edit love questions')
+                      router.push('love-questions')
+                    }}
                   >
                     <PencilIcon className="mr-2 h-4 w-4" />
                     Edit
@@ -144,9 +152,14 @@ export default function UserPage(props: {
                         <Row className={'font-semibold'}>
                           {question.question}
                         </Row>
-                        <Row>
-                          {answer.free_response ?? optionKey ?? answer.integer}
-                        </Row>
+                        <Linkify
+                          text={
+                            answer.free_response ??
+                            optionKey ??
+                            answer.integer?.toString() ??
+                            ''
+                          }
+                        />
                       </Col>
                     )
                   })

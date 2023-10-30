@@ -1,3 +1,4 @@
+/*
 import * as functions from 'firebase-functions'
 import { getReplicatorUrl } from 'common/api'
 import { invokeFunction, log } from 'shared/utils'
@@ -43,3 +44,4 @@ export async function runRepackSupabase() {
     method: 'POST',
   })
 }
+ */

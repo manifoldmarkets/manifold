@@ -7,17 +7,15 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     query: '',
     filter: 'all',
     sort: 'score',
-    limit: 5000,
+    limit: 1000,
   }).then((x) => x.data)
 
-  const filteredContract = contracts.filter((x) => x.visibility === 'public')
+  const score = (index: number) => (1 - index / 1000) * 0.3 + 0.4
 
-  const score = (popularity: number) => Math.tanh(Math.log10(popularity + 1))
-
-  const fields = filteredContract.map((market) => ({
+  const fields = contracts.map((market, i) => ({
     loc: `https://manifold.markets/${market.creatorUsername}/${market.slug}`,
     changefreq: market.volume24Hours > 10 ? 'hourly' : 'daily',
-    priority: score(market.popularityScore ?? 0),
+    priority: score(i),
     lastmod: new Date(market.lastUpdatedTime ?? 0).toISOString(),
   })) as ISitemapField[]
 

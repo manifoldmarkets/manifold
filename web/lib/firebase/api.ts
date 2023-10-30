@@ -268,11 +268,11 @@ export function createCommentOnContract(params: {
 
 export function supabaseSearchContracts(params: {
   term: string
-  filter: Filter
-  sort: Sort
-  contractType: ContractTypeType
-  offset: number
-  limit: number
+  filter?: Filter
+  sort?: Sort
+  contractType?: ContractTypeType
+  offset?: number
+  limit?: number
   fuzzy?: boolean
   topicSlug?: string
   creatorId?: string
@@ -282,37 +282,6 @@ export function supabaseSearchContracts(params: {
     'POST',
     params
   ) as Promise<Contract[]>
-}
-
-export function supabaseSearchContractsWithDefaults(params: {
-  term?: string
-  filter?: Filter
-  sort?: Sort
-  contractType?: ContractTypeType
-  offset?: number
-  limit?: number
-  topic?: string
-  fuzzy?: boolean
-  topicSlug?: string
-  creatorId?: string
-}) {
-  const {
-    term = '',
-    filter = 'all',
-    sort = 'score',
-    contractType = 'ALL',
-    offset = 0,
-    limit = 1000,
-  } = params
-  return supabaseSearchContracts({
-    ...params,
-    term,
-    filter,
-    sort,
-    contractType,
-    offset,
-    limit,
-  })
 }
 
 export function deleteMarket(params: { contractId: string }) {

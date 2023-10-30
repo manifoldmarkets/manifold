@@ -3,7 +3,8 @@ import { useState } from 'react'
 import { Col } from '../layout/col'
 import { Title } from '../widgets/title'
 import { User } from 'common/user'
-import { ManalinkCard, ManalinkInfo } from 'web/components/manalink-card'
+import { ManalinkInfo } from 'web/lib/supabase/manalinks'
+import { ManalinkCard } from 'web/components/manalink-card'
 import { createManalink } from 'web/lib/firebase/manalinks'
 import { Modal } from 'web/components/layout/modal'
 import dayjs from 'dayjs'
@@ -73,10 +74,11 @@ function CreateManalinkForm(props: {
   const defaultMessage = 'from ' + user.name
 
   const [newManalink, setNewManalink] = useState<ManalinkInfo>({
+    slug: '',
+    creatorId: user.id,
     expiresTime: dayjs().add(1, defaultExpire).valueOf(),
     amount: 100,
     maxUses: 1,
-    uses: 0,
     message: defaultMessage,
   })
 
@@ -202,7 +204,12 @@ function CreateManalinkForm(props: {
       {finishedCreating && (
         <>
           <Title className="!my-0">Manalink Created!</Title>
-          <ManalinkCard className="my-4" info={newManalink} preview />
+          <ManalinkCard
+            className="my-4"
+            info={newManalink}
+            numClaims={0}
+            preview
+          />
           <CopyLinkRow url={url} eventTrackingName={'copy manalink'} />
           <QRCode url={url} className="self-center" />
         </>

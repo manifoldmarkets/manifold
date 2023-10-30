@@ -121,6 +121,11 @@ module.exports = {
         permanent: true,
       },
       {
+        source: '/find',
+        destination: '/browse',
+        permanent: true,
+      },
+      {
         source: '/groups',
         destination: '/browse?t=Topics',
         permanent: true,

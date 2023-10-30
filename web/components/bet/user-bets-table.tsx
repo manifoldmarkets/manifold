@@ -38,6 +38,7 @@ import { useEvent } from 'web/hooks/use-event'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { usePersistentQueryState } from 'web/hooks/use-persistent-query-state'
 import { linkClass } from '../widgets/site-link'
+import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 
 type BetSort =
   | 'newest'
@@ -105,7 +106,7 @@ export function UserBetsTable(props: { user: User }) {
     })
   }, [setInitialContracts, setOpenLimitBetsByContract, user.id, isAuth])
 
-  const [filter, setFilter] = usePersistentInMemoryState<BetFilter>(
+  const [filter, setFilter] = usePersistentLocalState<BetFilter>(
     'all',
     'bets-list-filter'
   )

@@ -27,6 +27,7 @@ const initialFilters = {
   wants_kids_strength: -1,
   is_smoker: undefined,
   pref_relation_styles: undefined,
+  pref_gender: undefined,
 }
 export const Filters = (props: {
   allLovers: Lover[] | undefined
@@ -75,6 +76,8 @@ export const Filters = (props: {
         calculateAge(lover.birthdate) > filters.pref_age_max
       ) {
         return false
+      } else if (calculateAge(lover.birthdate) < 18) {
+        return false
       } else if (filters.city && lover.city !== filters.city) {
         return false
       } else if (
@@ -98,9 +101,9 @@ export const Filters = (props: {
         return false
       } else if (
         filters.pref_relation_styles !== undefined &&
-        filters.pref_relation_styles.some(
+        filters.pref_relation_styles.every(
           (s) => !lover.pref_relation_styles.includes(s)
-        )
+        ) // if every relationship style mismatches, hide person
       ) {
         return false
       } else if (
@@ -110,8 +113,14 @@ export const Filters = (props: {
         return false
       } else if (filters.gender && lover.gender !== filters.gender) {
         return false
-      }
-
+      } else if (
+        filters.pref_gender !== undefined &&
+        filters.pref_gender.length > 0 &&
+        filters.pref_gender.every((g) => !lover.pref_gender.includes(g))
+        // if every preferred gender mismatches, hide person
+      ) {
+        return false
+      } else if (!lover.pinned_url) return false
       return true
     })
     setLovers(filteredLovers)
@@ -149,7 +158,7 @@ export const Filters = (props: {
         </Row>
         {showFilters && (
           <>
-            <Row className={'flex-wrap items-center gap-4'}>
+            <Row className={'flex-wrap gap-4'}>
               <Col className={clsx(rowClassName)}>
                 <label className={clsx(labelClassName)}>Gender</label>
                 <select
@@ -171,30 +180,52 @@ export const Filters = (props: {
                   <option value="non-binary">Non-Binary</option>
                 </select>
               </Col>
-
               <Col className={clsx(rowClassName)}>
-                <label className={clsx(labelClassName)}>Min age</label>
-                <Input
-                  type="number"
-                  className={'w-20'}
-                  value={filters.pref_age_min}
-                  onChange={(e) =>
-                    updateFilter({ pref_age_min: Number(e.target.value) })
+                <label className={clsx(labelClassName)}>
+                  Gender person is interested in
+                </label>
+                <MultiCheckbox
+                  selected={filters.pref_gender ?? []}
+                  choices={
+                    {
+                      Male: 'male',
+                      Female: 'female',
+                      'Non-binary': 'non-binary',
+                      'Trans-female': 'trans-female',
+                      'Trans-male': 'trans-male',
+                    } as any
                   }
+                  onChange={(c) => {
+                    updateFilter({ pref_gender: c })
+                  }}
                 />
               </Col>
 
-              <Col className={clsx(rowClassName)}>
-                <label className={clsx(labelClassName)}>Max age</label>
-                <Input
-                  type="number"
-                  value={filters.pref_age_max}
-                  className={'w-20'}
-                  onChange={(e) =>
-                    updateFilter({ pref_age_max: Number(e.target.value) })
-                  }
-                />
-              </Col>
+              <Row className="gap-4">
+                <Col className={clsx(rowClassName)}>
+                  <label className={clsx(labelClassName)}>Min age</label>
+                  <Input
+                    type="number"
+                    className={'w-20'}
+                    value={filters.pref_age_min}
+                    onChange={(e) =>
+                      updateFilter({ pref_age_min: Number(e.target.value) })
+                    }
+                  />
+                </Col>
+
+                <Col className={clsx(rowClassName)}>
+                  <label className={clsx(labelClassName)}>Max age</label>
+                  <Input
+                    type="number"
+                    value={filters.pref_age_max}
+                    className={'w-20'}
+                    onChange={(e) =>
+                      updateFilter({ pref_age_max: Number(e.target.value) })
+                    }
+                  />
+                </Col>
+              </Row>
               <Col className={clsx(rowClassName)}>
                 <label className={clsx(labelClassName)}>City</label>
                 <ChoicesToggleGroup
@@ -209,9 +240,9 @@ export const Filters = (props: {
                 <ChoicesToggleGroup
                   currentChoice={filters.wants_kids_strength ?? 0}
                   choicesMap={{
-                    No: 0,
                     Yes: 2,
-                    'N/A': -1,
+                    No: 0,
+                    Any: -1,
                   }}
                   setChoice={(c) =>
                     updateFilter({ wants_kids_strength: Number(c) })

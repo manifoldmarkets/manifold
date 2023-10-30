@@ -31,7 +31,7 @@ const optionaLoversSchema = z.object({
   twitter: z.string().optional(),
   avatar_url: z.string().optional(),
 })
-
+// TODO: make strict
 const combinedLoveUsersSchema = baseLoversSchema.merge(optionaLoversSchema)
 
 export const updatelover = authEndpoint(async (req, auth) => {
@@ -60,6 +60,7 @@ export const updatelover = authEndpoint(async (req, auth) => {
     .from('lovers')
     .update({
       ...parsedBody,
+      user_id: auth.uid,
     })
     .eq('id', existingLover.id)
     .select()

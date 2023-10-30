@@ -172,7 +172,6 @@ export async function updateUserMetricsCore() {
     if (didPortfolioChange) {
       portfolioUpdates.push({
         user_id: user.id,
-        portfolio_id: userDoc.collection('portfolioHistory').doc().id,
         ts: new Date(newPortfolio.timestamp).toISOString(),
         investment_value: newPortfolio.investmentValue,
         balance: newPortfolio.balance,

@@ -2,7 +2,6 @@ import { usePrivateUser } from 'web/hooks/use-user'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
-import { Title } from 'web/components/widgets/title'
 import { SEO } from 'web/components/SEO'
 import { Row } from 'web/components/layout/row'
 import { AppBadgesOrGetAppButton } from 'web/components/buttons/app-badges-or-get-app-button'
@@ -13,6 +12,10 @@ import { useGroupedNotifications } from 'web/hooks/use-notifications'
 import { NotificationsList } from 'web/pages/notifications'
 import { notification_source_types } from 'common/notification'
 import { LovePage } from 'love/components/love-page'
+import { Tabs } from 'web/components/layout/tabs'
+import { ActivityLog } from 'web/components/activity-log'
+import { ENV } from 'common/envs/constants'
+
 export const NOTIFICATIONS_TO_SELECT: notification_source_types[] = [
   'new_match',
   'comment_on_lover',
@@ -34,14 +37,37 @@ export default function NotificationsPage() {
   return (
     <LovePage trackPageView={'notifications page'}>
       <div className="w-full">
-        <Title className="hidden lg:block">Notifications</Title>
-        <SEO title="Notifications" description="Manifold user notifications" />
-        {privateUser && router.isReady ? (
-          <NotificationsContent
-            privateUser={privateUser}
-            section={navigateToSection}
-          />
-        ) : null}
+        {/* <Title className="hidden lg:block">Notifications</Title> */}
+        <SEO
+          title="Notifications"
+          description="Manifold.love user notifications"
+        />
+        <Tabs
+          tabs={[
+            {
+              title: 'Notifications',
+              content:
+                privateUser && router.isReady ? (
+                  <NotificationsContent
+                    privateUser={privateUser}
+                    section={navigateToSection}
+                  />
+                ) : null,
+            },
+            {
+              title: 'Site activity',
+              content: (
+                <ActivityLog
+                  className="mt-4"
+                  count={100}
+                  topicSlugs={['manifoldlove', 'manifoldlove-relationships']}
+                  blockedUserIds={[manifoldLoveUserId]}
+                  hideQuestions
+                />
+              ),
+            },
+          ]}
+        />
       </div>
     </LovePage>
   )
@@ -88,3 +114,8 @@ function NotificationsContent(props: {
     </div>
   )
 }
+
+const manifoldLoveUserId =
+  ENV === 'PROD'
+    ? 'tRZZ6ihugZQLXPf6aPRneGpWLmz1'
+    : 'RlXR2xa4EFfAzdCbSe45wkcdarh1'

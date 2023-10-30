@@ -580,7 +580,7 @@ const useContractSearch = (
         })
 
         if (id === requestId.current) {
-          const newContracts: Contract[] = results.data
+          const newContracts = results.data
 
           const freshContracts = freshQuery
             ? newContracts
@@ -588,12 +588,6 @@ const useContractSearch = (
                 ...(currentState.contracts ? currentState.contracts : []),
                 ...newContracts,
               ]
-
-          // TODO: When `deleted` is a native supabase column, filter
-          // out deleted contracts in backend.
-          const freshContractsWithoutDeleted = freshContracts.filter(
-            (contract) => !contract.deleted
-          )
 
           const newFuzzyContractOffset =
             results.fuzzyOffset + currentState.fuzzyContractOffset
@@ -603,7 +597,7 @@ const useContractSearch = (
 
           setState({
             fuzzyContractOffset: newFuzzyContractOffset,
-            contracts: freshContractsWithoutDeleted,
+            contracts: freshContracts,
             shouldLoadMore,
           })
           if (freshQuery && isWholePage) window.scrollTo(0, 0)

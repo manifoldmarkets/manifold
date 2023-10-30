@@ -13,6 +13,7 @@ import { ExpandingInput } from 'web/components/widgets/expanding-input'
 import { useRouter } from 'next/router'
 import { Row } from 'web/components/layout/row'
 import { Button } from 'web/components/buttons/button'
+import { track } from 'web/lib/service/analytics'
 
 export const QuestionsForm = () => {
   const questions = useQuestions()
@@ -53,6 +54,7 @@ export const QuestionsForm = () => {
               <Button
                 color={'indigo-outline'}
                 onClick={() => {
+                  track(`submit love questions page ${page}`)
                   page === 0 ? setPage(1) : router.push('/')
                 }}
               >

@@ -1,12 +1,11 @@
 import * as admin from 'firebase-admin'
 import { z } from 'zod'
-import { Request } from 'express'
 
 import { PrivateUser, User } from 'common/user'
 import { randomString } from 'common/util/random'
 import { cleanDisplayName, cleanUsername } from 'common/util/clean-username'
 
-import { track } from 'shared/analytics'
+import { getIp, track } from 'shared/analytics'
 import { APIError, authEndpoint, validate } from './helpers'
 import { SUS_STARTING_BALANCE, STARTING_BALANCE } from 'common/economy'
 import { getDefaultNotificationPreferences } from 'common/user-notification-preferences'
@@ -257,13 +256,6 @@ function getStorageBucketId() {
   return isProd()
     ? PROD_CONFIG.firebaseConfig.storageBucket
     : DEV_CONFIG.firebaseConfig.storageBucket
-}
-
-const getIp = (req: Request) => {
-  const xForwarded = req.headers['x-forwarded-for']
-  const xForwardedIp = Array.isArray(xForwarded) ? xForwarded[0] : xForwarded
-
-  return xForwardedIp ?? req.socket.remoteAddress ?? req.ip
 }
 
 // Automatically ban users with these device tokens or ip addresses.

@@ -58,14 +58,13 @@ alter table private_users cluster on private_users_pkey;
 
 create table if not exists
   user_portfolio_history (
+    id bigint generated always as identity primary key,
     user_id text not null,
-    portfolio_id text not null,
     ts timestamp not null,
     investment_value numeric not null,
     balance numeric not null,
     total_deposits numeric not null,
     loan_total numeric,
-    primary key (user_id, portfolio_id)
   );
 
 alter table user_portfolio_history enable row level security;
@@ -269,6 +268,9 @@ select
 create index if not exists user_notifications_created_time on user_notifications (user_id, (to_jsonb(data) -> 'createdTime') desc);
 
 create index if not exists user_notifications_created_time_idx on user_notifications (user_id, ((data -> 'createdTime')::bigint) desc);
+
+-- used for querying loan payouts (ugh)
+create index if not exists user_notifications_notification_id on user_notifications (notification_id, user_id);
 
 create index if not exists user_notifications_unseen_text_created_time_idx on user_notifications (
   user_id,
@@ -851,7 +853,7 @@ as $$ begin
     new.created_time :=
         case when new.data ? 'createdTime' then millis_to_ts(((new.data) ->> 'createdTime')::bigint) else null end;
     new.expires_time :=
-        case when new.data ? 'expiresTime' then millis_to_ts(((new.data) ->> 'createdTime')::bigint) else null end;
+        case when new.data ? 'expiresTime' then millis_to_ts(((new.data) ->> 'expiresTime')::bigint) else null end;
     new.creator_id := (new.data)->>'fromId';
     new.max_uses := ((new.data)->>'maxUses')::numeric;
     new.message := (new.data)->>'message';

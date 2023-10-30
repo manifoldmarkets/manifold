@@ -1138,7 +1138,6 @@ export interface Database {
           creator_id: string | null
           data: Json
           expires_time: string | null
-          from_id: string | null
           fs_updated_time: string
           id: string
           max_uses: number | null
@@ -1150,7 +1149,6 @@ export interface Database {
           creator_id?: string | null
           data: Json
           expires_time?: string | null
-          from_id?: string | null
           fs_updated_time: string
           id: string
           max_uses?: number | null
@@ -1162,7 +1160,6 @@ export interface Database {
           creator_id?: string | null
           data?: Json
           expires_time?: string | null
-          from_id?: string | null
           fs_updated_time?: string
           id?: string
           max_uses?: number | null
@@ -1991,27 +1988,27 @@ export interface Database {
       user_portfolio_history: {
         Row: {
           balance: number | null
+          id: number
           investment_value: number | null
           loan_total: number | null
-          portfolio_id: string
           total_deposits: number | null
           ts: string | null
           user_id: string
         }
         Insert: {
           balance?: number | null
+          id?: never
           investment_value?: number | null
           loan_total?: number | null
-          portfolio_id: string
           total_deposits?: number | null
           ts?: string | null
           user_id: string
         }
         Update: {
           balance?: number | null
+          id?: never
           investment_value?: number | null
           loan_total?: number | null
-          portfolio_id?: string
           total_deposits?: number | null
           ts?: string | null
           user_id?: string
@@ -3434,6 +3431,16 @@ export interface Database {
               contract_id: string
             }[]
           }
+      get_user_manalink_claims: {
+        Args: {
+          creator_id: string
+        }
+        Returns: {
+          manalink_id: string
+          claimant_id: string
+          ts: number
+        }[]
+      }
       get_your_daily_changed_contracts: {
         Args: {
           uid: string

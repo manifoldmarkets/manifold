@@ -11,15 +11,17 @@ import { Row } from 'web/components/layout/row'
 import { linkClass } from 'web/components/widgets/site-link'
 import { Title } from 'web/components/widgets/title'
 import { useAnswersCpmm } from 'web/hooks/use-answers'
-import { supabaseSearchContractsWithDefaults } from 'web/lib/firebase/api'
+import { supabaseSearchContracts } from 'web/lib/firebase/api'
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/outline'
 
 export async function getStaticProps() {
-  const contracts = await supabaseSearchContractsWithDefaults({
+  const contracts = await supabaseSearchContracts({
+    term: '',
     // yc-s23
     topicSlug: 'yc-s23',
     // Manifold
     creatorId: 'IPTOzEqrpkWmEzh6hwvAyY9PqFb2',
+    limit: 1000,
   })
 
   return {

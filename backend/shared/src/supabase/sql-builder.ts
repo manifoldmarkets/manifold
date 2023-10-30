@@ -89,7 +89,8 @@ export function renderSql(builder: SqlBuilder) {
     select.length && `select ${select.join(', ')}`,
     from.length && `from ${from.join(', ')}`,
     join.length && `join ${join.join(' join ')}`,
-    where.length && `where ${where.join(' and ')}`,
+    where.length &&
+      `where ${where.map((clause) => `(${clause})`).join(' and ')}`,
     orderBy.length && `order by ${orderBy.join(', ')}`,
     limit && `limit ${limit}`
   ).join('\n')

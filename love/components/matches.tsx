@@ -1,6 +1,9 @@
 import clsx from 'clsx'
 import Link from 'next/link'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/outline'
+import { sortBy } from 'lodash'
+
 import {
   BinaryContract,
   CPMMBinaryContract,
@@ -14,7 +17,7 @@ import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { Lover } from 'love/hooks/use-lover'
 import { Row } from 'web/components/layout/row'
 import { getProbability } from 'common/calculate'
-import { formatPercent } from 'common/util/format'
+import { formatMoney, formatPercent } from 'common/util/format'
 import { UserLink } from 'web/components/widgets/user-link'
 import { Button } from 'web/components/buttons/button'
 import { RejectButton } from './reject-button'
@@ -25,6 +28,11 @@ import { BuyPanel } from 'web/components/bet/bet-panel'
 import { Subtitle } from 'web/components/widgets/subtitle'
 import { linkClass } from 'web/components/widgets/site-link'
 import { areGenderCompatible } from 'love/lib/util/gender'
+import { track } from 'web/lib/service/analytics'
+import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import { getCPMMContractUserContractMetrics } from 'common/supabase/contract-metrics'
+import { db } from 'web/lib/supabase/db'
+import { NoLabel, YesLabel } from 'web/components/outcome-label'
 
 export const Matches = (props: { userId: string }) => {
   const { userId } = props
@@ -110,20 +118,117 @@ const MatchContract = (props: {
   const { contract, lover, isYourMatch } = props
   const prob = getProbability(contract)
   const { user, pinned_url } = lover
+
+  const [positions, setPositions] = usePersistentInMemoryState<
+    undefined | Awaited<ReturnType<typeof getCPMMContractUserContractMetrics>>
+  >(undefined, 'market-card-feed-positions-' + contract.id)
+  useEffect(() => {
+    getCPMMContractUserContractMetrics(contract.id, 10, db).then(
+      (positions) => {
+        const yesPositions = sortBy(
+          positions.YES.filter(
+            (metric) => metric.userUsername !== 'ManifoldLove'
+          ),
+          (metric) => metric.invested
+        ).reverse()
+        const noPositions = sortBy(
+          positions.NO.filter(
+            (metric) => metric.userUsername !== 'ManifoldLove'
+          ),
+          (metric) => metric.invested
+        ).reverse()
+        setPositions({ YES: yesPositions, NO: noPositions })
+      }
+    )
+  }, [contract.id])
+
+  const [expanded, setExpanded] = useState(false)
+
   return (
-    <Row className="items-center justify-between">
-      <Row className="items-center gap-2">
-        {pinned_url && (
-          <Avatar avatarUrl={pinned_url} username={user.username} />
-        )}
-        <UserLink name={user.name} username={user.username} />
+    <Col>
+      <Row
+        className="items-center justify-between"
+        onClick={() => setExpanded((b) => !b)}
+      >
+        <Row className="items-center gap-2">
+          {expanded ? (
+            <ChevronUpIcon className={'mr-2 h-4 w-4'} />
+          ) : (
+            <ChevronDownIcon className={'mr-2 h-4 w-4'} />
+          )}
+          {pinned_url && (
+            <Avatar avatarUrl={pinned_url} username={user.username} />
+          )}
+          <UserLink name={user.name} username={user.username} />
+        </Row>
+        <Row className="items-center gap-2">
+          <div className="font-semibold">{formatPercent(prob)}</div>
+          <BetButton contract={contract} lover={lover} />
+          {isYourMatch && <RejectButton lover={lover} />}
+        </Row>
       </Row>
-      <Row className="items-center gap-2">
-        <div className="font-semibold">{formatPercent(prob)}</div>
-        <BetButton contract={contract} lover={lover} />
-        {isYourMatch && <RejectButton lover={lover} />}
-      </Row>
-    </Row>
+
+      {expanded && positions && (
+        <Row className="mb-2 mt-2 max-w-full gap-6 overflow-hidden sm:gap-8">
+          <Col className="w-[50%] gap-2">
+            <div>
+              Invested in <YesLabel />
+            </div>
+            {positions.YES.length === 0 && (
+              <div className="text-ink-500">None</div>
+            )}
+            {positions.YES.map((position) => (
+              <Row key={position.userId} className="justify-between gap-4">
+                <Row className="items-center gap-2">
+                  {pinned_url && (
+                    <Avatar
+                      avatarUrl={position.userAvatarUrl}
+                      username={position.userUsername}
+                      size="xs"
+                    />
+                  )}
+                  <UserLink
+                    name={position.userName}
+                    username={position.userUsername}
+                    hideBadge
+                    short
+                  />
+                </Row>
+                <div>{formatMoney(position.invested)}</div>
+              </Row>
+            ))}
+          </Col>
+          <Col className="w-[50%] gap-2">
+            <div>
+              Invested in <NoLabel />
+            </div>
+            {positions.NO.length === 0 && (
+              <div className="text-ink-500">None</div>
+            )}
+            {positions.NO.map((position) => (
+              <Row key={position.userId} className="justify-between gap-4">
+                <Row className="items-center gap-2">
+                  {pinned_url && (
+                    <Avatar
+                      avatarUrl={position.userAvatarUrl}
+                      username={position.userUsername}
+                      size="xs"
+                    />
+                  )}
+                  <UserLink
+                    name={position.userName}
+                    username={position.userUsername}
+                    hideBadge
+                    short
+                  />
+                </Row>
+                <div>{formatMoney(position.invested)}</div>
+              </Row>
+            ))}
+          </Col>
+        </Row>
+      )}
+    </Col>
   )
 }
 
@@ -133,7 +238,15 @@ const BetButton = (props: { contract: BinaryContract; lover: Lover }) => {
   const [open, setOpen] = useState(false)
   return (
     <>
-      <Button size="xs" color="indigo-outline" onClick={() => setOpen(true)}>
+      <Button
+        size="xs"
+        color="indigo-outline"
+        onClick={(e) => {
+          e.stopPropagation()
+          setOpen(true)
+          track('love bet button click')
+        }}
+      >
         Bet
       </Button>
       <Modal

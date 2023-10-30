@@ -17,6 +17,7 @@ import { User } from 'common/user'
 import { changeUserInfo } from 'web/lib/firebase/api'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { StackedUserNames } from 'web/components/widgets/user-link'
+import { track } from 'web/lib/service/analytics'
 
 export const OptionalLoveUserForm = (props: {
   lover: rowFor<'lovers'>
@@ -41,6 +42,7 @@ export const OptionalLoveUserForm = (props: {
     })
     if (res) {
       console.log('success')
+      track('submit love optional profile')
       router.push('/love-questions')
     }
   }

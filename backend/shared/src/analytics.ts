@@ -1,4 +1,5 @@
 import * as Amplitude from '@amplitude/node'
+import { Request } from 'express'
 
 import { DEV_CONFIG } from 'common/envs/dev'
 import { PROD_CONFIG } from 'common/envs/prod'
@@ -45,4 +46,11 @@ export const trackPublicEvent = async (
       trackAuditEvent(userId, eventName, contractId, commentId, data),
     ])
   )
+}
+
+export const getIp = (req: Request) => {
+  const xForwarded = req.headers['x-forwarded-for']
+  const xForwardedIp = Array.isArray(xForwarded) ? xForwarded[0] : xForwarded
+
+  return xForwardedIp ?? req.socket.remoteAddress ?? req.ip
 }
