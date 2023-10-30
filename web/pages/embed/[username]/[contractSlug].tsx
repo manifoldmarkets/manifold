@@ -1,12 +1,16 @@
+import { UserIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { HistoryPoint } from 'common/chart'
 import { Contract, contractPath } from 'common/contract'
 import { DOMAIN } from 'common/envs/constants'
 import { getContractFromSlug } from 'common/supabase/contracts'
 import { formatMoney } from 'common/util/format'
+import { getShareUrl } from 'common/util/share'
 import Image from 'next/image'
+import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import { NoSEO } from 'web/components/NoSEO'
+import { SimpleAnswerBars } from 'web/components/answers/answers-panel'
 import { BinaryContractChart } from 'web/components/charts/contract/binary'
 import { NumericContractChart } from 'web/components/charts/contract/numeric'
 import { PseudoNumericContractChart } from 'web/components/charts/contract/pseudo-numeric'
@@ -24,17 +28,13 @@ import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { SizedContainer } from 'web/components/sized-container'
 import { Avatar } from 'web/components/widgets/avatar'
+import { QRCode } from 'web/components/widgets/qr-code'
 import { useNumContractComments } from 'web/hooks/use-comments-supabase'
+import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
 import { track } from 'web/lib/service/analytics'
 import { getBetFields } from 'web/lib/supabase/bets'
 import { db } from 'web/lib/supabase/db'
 import Custom404 from '../../404'
-import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
-import { SimpleAnswerBars } from 'web/components/answers/answers-panel'
-import { QrcodeIcon, UserIcon } from '@heroicons/react/solid'
-import { QRCode } from 'web/components/widgets/qr-code'
-import { getShareUrl } from 'common/util/share'
-import { useRouter } from 'next/router'
 
 type Points = HistoryPoint<any>[]
 
@@ -330,17 +330,11 @@ function ContractSmolView(props: {
 }
 
 const Details = (props: { contract: Contract }) => {
-  const {
-    creatorAvatarUrl,
-    creatorUsername,
-    creatorName,
-    uniqueBettorCount,
-    outcomeType,
-  } = props.contract
+  const { uniqueBettorCount, outcomeType } = props.contract
 
   const isBountiedQuestion = outcomeType === 'BOUNTIED_QUESTION'
   return (
-    <div className="text-ink-400 relative right-0 mt-2 flex flex-wrap items-center gap-4 text-sm">
+    <div className="text-ink-500 relative right-0 mt-2 flex flex-wrap items-center gap-4 text-sm">
       {!isBountiedQuestion && (
         <>
           <CloseOrResolveTime contract={props.contract} />{' '}

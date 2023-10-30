@@ -203,9 +203,9 @@ export function CloseDate(props: {
               className="flex items-center gap-1"
             >
               {dayjs().isBefore(closeTime) ? (
-                <FaHourglassHalf className="fill-ink-400 h-4 w-4" />
+                <FaHourglassHalf className="fill-ink-500 h-4 w-4" />
               ) : (
-                <FaHourglassEnd className="fill-ink-400 h-4 w-4" />
+                <FaHourglassEnd className="fill-ink-500 h-4 w-4" />
               )}
               {isSameDay
                 ? fromNow(closeTime)
