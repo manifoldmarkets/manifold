@@ -181,6 +181,7 @@ const handleBetReplyToComment = async (
     .doc(`contracts/${contract.id}/comments/${bet.replyToCommentId}`)
     .get()
   const comment = commentSnap.data() as ContractComment
+  if (comment.userId === bettor.id) return
   if (comment) {
     const bets = filterDefined(await getBetsRepliedToComment(pg, comment.id))
     // This could potentially miss some bets if they're not replicated in time

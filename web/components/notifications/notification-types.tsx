@@ -1047,7 +1047,7 @@ function BetReplyNotification(props: {
       icon={
         <AvatarNotificationIcon notification={notification} symbol={'💬'} />
       }
-      subtitle={<span className={'text-ink-500'}>{commentText}</span>}
+      subtitle={commentText}
       link={getSourceUrl(notification)}
     >
       <div className="line-clamp-3">
