@@ -114,7 +114,7 @@ export const applyBetsFilter = <T>(q: T, options?: BetFilter): T => {
   if (options?.limit) {
     q = (q as any).limit(options.limit)
   }
-  if (options?.commentRepliesOnly && options?.contractId) {
+  if (options?.commentRepliesOnly) {
     q = (q as any).neq('data->>replyToCommentId', null)
   }
   return q
