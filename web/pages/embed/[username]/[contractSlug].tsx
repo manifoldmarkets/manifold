@@ -35,6 +35,7 @@ import { track } from 'web/lib/service/analytics'
 import { getBetFields } from 'web/lib/supabase/bets'
 import { db } from 'web/lib/supabase/db'
 import Custom404 from '../../404'
+import { ContractSummaryStats } from 'web/components/contract/contract-summary-stats'
 
 type Points = HistoryPoint<any>[]
 
@@ -249,7 +250,7 @@ function ContractSmolView(props: {
           <a
             href={href}
             target="_blank"
-            className="hover:text-primary-700 text-ink-1000 text-lg transition-all hover:underline sm:text-xl"
+            className="hover:text-primary-700 text-ink-1000 text-lg transition-all hover:underline sm:text-xl lg:mb-4 lg:text-2xl"
             rel="noreferrer"
           >
             {question}
@@ -258,7 +259,7 @@ function ContractSmolView(props: {
         {isBinary && (
           <BinaryResolutionOrChance
             contract={contract}
-            className="!flex-col !justify-end !gap-0 !text-xl !font-semibold"
+            className="!flex-col !justify-end !gap-0 !font-semibold"
             subtextClassName="text-right w-full font-normal -mt-1"
           />
         )}
@@ -322,39 +323,9 @@ function ContractSmolView(props: {
           </Col>
         )}
       </div>
-      <Row className="w-full justify-end text-sm">
-        <Details contract={contract} />
+      <Row className="text-ink-500 mt-4 w-full justify-end text-sm">
+        <ContractSummaryStats contract={contract} />
       </Row>
     </Col>
   )
-}
-
-const Details = (props: { contract: Contract }) => {
-  const { uniqueBettorCount, outcomeType } = props.contract
-
-  const isBountiedQuestion = outcomeType === 'BOUNTIED_QUESTION'
-  return (
-    <div className="text-ink-500 relative right-0 mt-2 flex flex-wrap items-center gap-4 text-sm">
-      {!isBountiedQuestion && (
-        <>
-          <CloseOrResolveTime contract={props.contract} />{' '}
-          <Row className="gap-1">
-            <UserIcon className="h-5 w-5" />
-            {uniqueBettorCount}
-          </Row>
-        </>
-      )}
-      {isBountiedQuestion && (
-        <>
-          <NumComments contract={props.contract} />
-        </>
-      )}
-    </div>
-  )
-}
-
-const NumComments = (props: { contract: Contract }) => {
-  const { contract } = props
-  const numComments = useNumContractComments(contract.id)
-  return <span>{numComments} comments</span>
 }
