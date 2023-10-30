@@ -602,7 +602,7 @@ function CommentActions(props: {
         />
       )}
       {user && contract.outcomeType === 'BINARY' && (
-        <Tooltip text="Bet YES" placement="bottom">
+        <Tooltip text="Reply by betting YES" placement="bottom">
           <IconButton
             onClick={() => {
               setOutcome('YES')
@@ -625,7 +625,7 @@ function CommentActions(props: {
         </Tooltip>
       )}
       {user && contract.outcomeType === 'BINARY' && (
-        <Tooltip text="Bet NO" placement="bottom">
+        <Tooltip text="Reply by betting NO" placement="bottom">
           <IconButton
             onClick={() => {
               setOutcome('NO')
@@ -633,7 +633,17 @@ function CommentActions(props: {
             }}
             size={'xs'}
           >
-            <FaArrowTrendDown className="h-5 w-5" />
+            <Row className={'relative gap-1'}>
+              {(comment.betReplyAmountsByOutcome?.NO ?? 0) > 0 && (
+                <>
+                  <span className="text-scarlet-500 absolute -bottom-0.5">
+                    {comment.betReplyAmountsByOutcome?.NO}
+                  </span>
+                  <div className={'w-5'} />
+                </>
+              )}
+              <FaArrowTrendDown className="h-5 w-5" />
+            </Row>
           </IconButton>
         </Tooltip>
       )}
