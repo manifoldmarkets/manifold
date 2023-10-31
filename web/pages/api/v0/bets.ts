@@ -23,6 +23,8 @@ const queryParams = z
       .or(z.string().regex(/\d+/).transform(Number))
       .refine((n) => n >= 0 && n <= 1000, 'Limit must be between 0 and 1000'),
     before: z.string().optional(),
+    after: z.string().optional(),
+    order: z.enum(['asc', 'desc']).optional(),
   })
   .strict()
 
@@ -70,6 +72,18 @@ const getBeforeTime = async (params: z.infer<typeof queryParams>) => {
   }
 }
 
+const getAfterTime = async (params: z.infer<typeof queryParams>) => {
+  if (params.after) {
+    const afterBet = await getBet(params.after)
+    if (afterBet == null) {
+      throw new Error('Bet specified in after parameter not found.')
+    }
+    return afterBet.createdTime
+  } else {
+    return undefined
+  }
+}
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<Bet[] | ValidationError | ApiError>
@@ -87,16 +101,31 @@ export default async function handler(
     return res.status(500).json({ error: 'Unknown error during validation' })
   }
 
-  const { limit } = params
+  const { limit, order } = params
   try {
-    const [userId, contractId, beforeTime] = await Promise.all([
+    const [userId, contractId, beforeTime, afterTime] = await Promise.all([
       getUserId(params),
       getContractId(params),
       getBeforeTime(params),
+      getAfterTime(params),
     ])
     const bets = contractId
-      ? await getBets(db, { userId, contractId, beforeTime, limit })
-      : await getPublicBets({ userId, contractId, beforeTime, limit })
+      ? await getBets(db, {
+          userId,
+          contractId,
+          beforeTime,
+          afterTime,
+          limit,
+          order,
+        })
+      : await getPublicBets({
+          userId,
+          contractId,
+          beforeTime,
+          afterTime,
+          limit,
+          order,
+        })
 
     res.setHeader('Cache-Control', 'max-age=15, public')
     return res.status(200).json(bets)
