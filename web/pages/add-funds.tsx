@@ -10,8 +10,9 @@ export const WEB_PRICES = {
   [formatMoney(1000)]: 1000,
   [formatMoney(2500)]: 2500,
   [formatMoney(10000)]: 10000,
-  [formatMoney(20000)]: 20000,
+  [formatMoney(100000)]: 100000,
 }
+
 export const IOS_PRICES = {
   [formatMoney(1000)]: 1199,
   [formatMoney(2500)]: 2999,
