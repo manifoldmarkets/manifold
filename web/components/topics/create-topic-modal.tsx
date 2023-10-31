@@ -96,12 +96,8 @@ export function CreateTopicModal(props: {
           SCROLLABLE_MODAL_CLASS
         )}
       >
-        <Col className="">
+        <Col>
           <span className="text-primary-700 text-2xl">Create a topic</span>
-
-          <div className={'text-ink-500 mt-2 text-sm'}>
-            You can add questions to your topic after creation.
-          </div>
         </Col>
         {errorText && <div className={'text-error'}>{errorText}</div>}
 
