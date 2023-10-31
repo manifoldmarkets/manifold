@@ -51,14 +51,13 @@ export async function updateLoansCore() {
 
   // Select users who did not already get a loan notification today.
   const users = await pg.map<User>(
-    `
-  with users_got_loan as (
-    select user_id from user_notifications
-    where notification_id = $1
-  )
-  select data from users
-  where users.id not in (select user_id from users_got_loan)
-  `,
+    `select data from users`,
+    // with users_got_loan as (
+    //   select user_id from user_notifications
+    //   where notification_id = $1
+    // )
+    // select data from users
+    //  where users.id not in (select user_id from users_got_loan)
     [key],
     (r) => r.data
   )

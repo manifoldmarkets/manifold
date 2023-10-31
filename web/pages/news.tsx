@@ -1,3 +1,4 @@
+import { Dashboard } from 'common/dashboard'
 import { SEO } from 'web/components/SEO'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
@@ -6,8 +7,20 @@ import { NewsTopicsTabs } from 'web/components/news/news-topics-tabs'
 import { Title } from 'web/components/widgets/title'
 import { useSaveCampaign } from 'web/hooks/use-save-campaign'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
+import { getNewsDashboards } from 'web/lib/firebase/api'
 
-export default function NewsPage() {
+export async function getStaticProps() {
+  const dashboards = await getNewsDashboards()
+
+  return {
+    props: {
+      dashboards,
+      revalidate: 4 * 60 * 60, // 4 hours
+    },
+  }
+}
+
+export default function NewsPage(props: { dashboards: Dashboard[] }) {
   useSaveReferral()
   useSaveCampaign()
 
@@ -22,7 +35,7 @@ export default function NewsPage() {
           <Title className="!mb-0">News</Title>
         </Row>
 
-        <NewsTopicsTabs />
+        <NewsTopicsTabs dashboards={props.dashboards} />
       </Col>
     </Page>
   )
