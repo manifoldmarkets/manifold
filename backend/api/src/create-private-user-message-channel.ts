@@ -1,13 +1,9 @@
 import { z } from 'zod'
 import { APIError, authEndpoint, validate } from 'api/helpers'
-import { getPrivateUser, getUserSupabase } from 'shared/utils'
+import { getPrivateUser, getUserSupabase, log } from 'shared/utils'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { filterDefined } from 'common/util/array'
 import { uniq } from 'lodash'
-
-// we need to pass all the userids in, find the channel where all userids are present,
-// return the channel if not created
-// then we need a leave-channel endpoint that
 
 const postSchema = z
   .object({
@@ -50,9 +46,9 @@ export const createprivateusermessagechannel = authEndpoint(
     const currentChannel = await pg.oneOrNone(
       `
         select channel_id from private_user_message_channel_members
-         where user_id = any($1)
-         group by channel_id
-         having count(distinct user_id) = $2
+          group by channel_id
+          having array_agg(user_id::text) @> array[$1]::text[]
+          and count(distinct user_id) = $2
       `,
       [allUserIds, allUserIds.length]
     )

@@ -101,6 +101,7 @@ import { createcommentonlover } from 'api/love/create-comment-on-lover'
 import { hidecommentonlover } from 'api/love/hide-comment-on-lover'
 import { rejectLover } from './love/reject-lover'
 import { searchlocation } from './search-location'
+import { leaveprivateusermessagechannel } from 'api/leave-private-user-message-channel'
 
 const allowCors: RequestHandler = cors({
   origin: [
@@ -244,6 +245,10 @@ app.post('/create-private-user-message', ...apiRoute(createprivateusermessage))
 app.post(
   '/create-private-user-message-channel',
   ...apiRoute(createprivateusermessagechannel)
+)
+app.post(
+  '/leave-private-user-message-channel',
+  ...apiRoute(leaveprivateusermessagechannel)
 )
 app.post('/create-lover', ...apiRoute(createlover))
 app.post('/update-lover', ...apiRoute(updatelover))

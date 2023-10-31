@@ -14,7 +14,10 @@ import { forEach, last, uniq } from 'lodash'
 import { useIsAuthorized, useUser } from 'web/hooks/use-user'
 import { ChatMessage } from 'common/chat-message'
 import { useTextEditor } from 'web/components/widgets/editor'
-import { sendUserPrivateMessage } from 'web/lib/firebase/api'
+import {
+  leavePrivateMessageChannel,
+  sendUserPrivateMessage,
+} from 'web/lib/firebase/api'
 import { ChatMessageItem } from 'web/components/chat-message'
 import { CommentInputTextArea } from 'web/components/comments/comment-input'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
@@ -29,6 +32,10 @@ import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { MultipleOrSingleAvatars } from 'web/components/multiple-or-single-avatars'
 import { Modal, MODAL_CLASS } from 'web/components/layout/modal'
 import { UserAvatarAndBadge } from 'web/components/widgets/user-link'
+import DropdownMenu from 'web/components/comments/dropdown-menu'
+import { DotsVerticalIcon } from '@heroicons/react/solid'
+import { FaUserFriends, FaUserMinus } from 'react-icons/fa'
+import { filterDefined } from 'common/util/array'
 
 export default function PrivateMessagesPage() {
   return (
@@ -79,9 +86,19 @@ export const PrivateChat = (props: { user: User; channelId: number }) => {
     (realtimeMessages ?? [])
       .filter((message) => message.userId !== user.id)
       .map((message) => message.userId)
-      .concat(otherUsersFromChannel?.[channelId] ?? [])
+      .concat(otherUsersFromChannel?.[channelId]?.map((m) => m.user_id) ?? [])
   )
+  const usersThatLeft = filterDefined(
+    otherUsersFromChannel?.[channelId]
+      ?.filter((membership) => membership.status === 'left')
+      .map((membership) => membership.user_id) ?? []
+  )
+
   const otherUsers = useUsersInStore(otherUserIds)
+  const remainingUsers = filterDefined(
+    otherUsers?.filter((user) => !usersThatLeft.includes(user.id)) ?? []
+  )
+  const router = useRouter()
 
   const messages = (realtimeMessages ?? []).reverse()
   const editor = useTextEditor({
@@ -102,7 +119,7 @@ export const PrivateChat = (props: { user: User; channelId: number }) => {
     // Group messages with createdTime within 2 minutes of each other.
     const tempGrouped: ChatMessage[][] = []
     forEach(messages, (message, i) => {
-      if (i === 0) {
+      if (i === 0 || message.visibility === 'system_status') {
         tempGrouped.push([message])
       } else {
         const prevMessage = messages[i - 1]
@@ -153,30 +170,68 @@ export const PrivateChat = (props: { user: User; channelId: number }) => {
             size="sm"
             spacing={0.5}
             startLeft={1}
-            avatarUrls={otherUsers?.map((user) => user.avatarUrl) ?? []}
+            avatarUrls={remainingUsers?.map((user) => user.avatarUrl) ?? []}
             onClick={() => setShowUsers(true)}
           />
-          {otherUsers && (
+          {remainingUsers && (
             <span
               className={'ml-1 cursor-pointer hover:underline'}
               onClick={() => setShowUsers(true)}
             >
-              {otherUsers
-                .map((user) => user.name)
+              {remainingUsers
+                .map((user) => user.name.split(' ')[0].trim())
                 .slice(0, 2)
                 .join(', ')}
-              {otherUsers.length > 2 && ` and ${otherUsers.length - 2} more`}
+              {remainingUsers.length > 2 &&
+                ` & ${remainingUsers.length - 2} more`}
             </span>
           )}
+          <DropdownMenu
+            className={'ml-auto'}
+            menuWidth={'w-44'}
+            icon={<DotsVerticalIcon className="h-5 w-5" />}
+            items={[
+              {
+                icon: <FaUserFriends className={'h-5 w-5'} />,
+                name: 'See members',
+                onClick: () => {
+                  setShowUsers(true)
+                },
+              },
+              {
+                icon: <FaUserMinus className="h-5 w-5" />,
+                name: 'Leave chat',
+                onClick: async () => {
+                  await leavePrivateMessageChannel({ channelId: channelId })
+                  router.push('/messages')
+                },
+              },
+            ]}
+          />
           <Modal open={showUsers} setOpen={setShowUsers}>
             <Col className={clsx(MODAL_CLASS)}>
               {otherUsers?.map((user) => (
-                <Row key={user.id} className={'w-full justify-start'}>
+                <Row
+                  key={user.id}
+                  className={'w-full items-center justify-start gap-2'}
+                >
                   <UserAvatarAndBadge
                     name={user.name}
                     username={user.username}
                     avatarUrl={user.avatarUrl}
                   />
+                  {otherUsersFromChannel?.[channelId].map(
+                    (membership) =>
+                      membership.user_id === user.id &&
+                      membership.status === 'left' && (
+                        <span
+                          key={membership.user_id + 'status'}
+                          className={'text-ink-500 text-sm'}
+                        >
+                          (Left)
+                        </span>
+                      )
+                  )}
                 </Row>
               ))}
             </Col>

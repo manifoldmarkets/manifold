@@ -22,6 +22,7 @@ import { CommentInputTextArea } from 'web/components/comments/comment-input'
 import { Title } from 'web/components/widgets/title'
 import { Row } from 'web/components/layout/row'
 import { firebaseLogin } from 'web/lib/firebase/users'
+import { PrivateMessageMembership } from 'web/lib/supabase/private-messages'
 
 export const SendMessageButton = (props: {
   toUser: User
@@ -50,7 +51,8 @@ export const SendMessageButton = (props: {
     if (!isAuthed) return
     const keyFound = findKey(
       channelIdsToUserIds,
-      (values: string[]) => values.length === 1 && first(values) === toUser.id
+      (values: PrivateMessageMembership[]) =>
+        values.length === 1 && first(values)?.user_id === toUser.id
     )
 
     const previousChannelId =

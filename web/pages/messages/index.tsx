@@ -57,7 +57,9 @@ export function MessagesContent() {
         {currentUser &&
           isAuthed &&
           channelIds.map((channelId) => {
-            const userIds = channelIdsToUserIds?.[channelId]
+            const userIds = channelIdsToUserIds?.[channelId]?.map(
+              (m) => m.user_id
+            )
             if (!userIds) return null
             return (
               <MessageChannelRow

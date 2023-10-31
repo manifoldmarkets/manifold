@@ -5,6 +5,7 @@ import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { Json } from 'common/supabase/schema'
 import { contentSchema } from 'shared/zod-types'
 import { MAX_COMMENT_JSON_LENGTH } from 'api/create-comment'
+import { insertPrivateMessage } from 'shared/supabase/private-message'
 
 const postSchema = z
   .object({
@@ -34,15 +35,7 @@ export const createprivateusermessage = authEndpoint(async (req, auth) => {
   if (!authorized)
     throw new APIError(403, 'You are not authorized to post to this channel')
 
-  const lastMessage = await pg.one(
-    `insert into private_user_messages (content, channel_id, user_id)
-    values ($1, $2, $3) returning created_time`,
-    [content, channelId, creator.id]
-  )
-  await pg.none(
-    `update private_user_message_channels set last_updated_time = $1 where id = $2`,
-    [lastMessage.created_time, channelId]
-  )
+  await insertPrivateMessage(content, channelId, auth.uid, 'private', pg)
 
   const privateMessage = {
     content: content as Json,

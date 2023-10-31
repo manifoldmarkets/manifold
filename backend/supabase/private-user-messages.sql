@@ -58,7 +58,8 @@ create table if not exists
     channel_id bigint not null,
     user_id text not null,
     content jsonb not null,
-    created_time timestamptz not null default now()
+    created_time timestamptz not null default now(),
+    visibility text not null default 'private' -- 'private', 'system_status'
   );
 
 alter table private_user_messages enable row level security;

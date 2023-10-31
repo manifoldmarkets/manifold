@@ -1,6 +1,7 @@
 import { db } from 'web/lib/supabase/db'
 import { convertSQLtoTS, Row, run, tsToMillis } from 'common/supabase/utils'
 import { ChatMessage } from 'common/chat-message'
+import { groupBy, NumericDictionary } from 'lodash'
 
 // NOTE: must be authorized (useIsAuthorized) to use this function
 export const getChatMessages = async (channelId: number, limit: number) => {
@@ -79,9 +80,10 @@ export const getNonEmptyChatMessageChannelIds = async (
   limit?: number
 ) => {
   const orderedNonEmptyIds = await db.rpc(
-    'get_non_empty_private_message_channel_ids',
+    'get_non_empty_private_message_channel_ids' as any,
     {
       p_user_id: userId,
+      p_ignored_statuses: ['left'],
       p_limit: limit,
     }
   )
@@ -91,26 +93,27 @@ export const getNonEmptyChatMessageChannelIds = async (
   return []
 }
 
+export type PrivateMessageMembership = {
+  user_id: string
+  status: 'proposed' | 'joined' | 'left'
+  channel_id: number
+}
 // NOTE: must be authorized (useIsAuthorized) to use this function
 export const getOtherUserIdsInPrivateMessageChannelIds = async (
   userId: string,
   channelIds: number[],
   limit: number
 ) => {
-  const channelIdToUserIds: Record<number, string[]> = {}
+  // const channelIdToUserIds: Record<number, string[]> = {}
   const q = db
     .from('private_user_message_channel_members')
-    .select('channel_id, user_id')
+    .select('channel_id, user_id, status')
     .neq('user_id', userId)
     .in('channel_id', channelIds)
     .order('created_time', { ascending: false })
     .limit(limit)
   const { data } = await run(q)
-
-  data.forEach((d) =>
-    channelIdToUserIds[d.channel_id] === undefined
-      ? (channelIdToUserIds[d.channel_id] = [d.user_id])
-      : channelIdToUserIds[d.channel_id].push(d.user_id)
-  )
-  return channelIdToUserIds
+  return groupBy(data, 'channel_id') as NumericDictionary<
+    PrivateMessageMembership[]
+  >
 }

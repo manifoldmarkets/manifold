@@ -2,7 +2,7 @@ import { ChatMessage } from 'common/chat-message'
 import { Row, run, tsToMillis } from 'common/supabase/utils'
 import { usePersistentSubscription } from 'web/lib/supabase/realtime/use-subscription'
 import { useEffect, useState } from 'react'
-import { first, groupBy, maxBy, orderBy } from 'lodash'
+import { NumericDictionary, first, groupBy, maxBy, orderBy } from 'lodash'
 import { useIsAuthorized } from 'web/hooks/use-user'
 import { safeLocalStorage, safeSessionStorage } from 'web/lib/util/local'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
@@ -13,6 +13,7 @@ import {
   getMessageChannelMemberships,
   getNonEmptyChatMessageChannelIds,
   getOtherUserIdsInPrivateMessageChannelIds,
+  PrivateMessageMembership,
 } from 'web/lib/supabase/private-messages'
 import { usePersistentSupabasePolling } from 'web/hooks/use-persistent-supabase-polling'
 import { db } from 'web/lib/supabase/db'
@@ -213,14 +214,18 @@ export const useOtherUserIdsInPrivateMessageChannelIds = (
   channelIds: number[] | undefined
 ) => {
   const [chanelIdToUserIds, setChanelIdToUserIds] = usePersistentLocalState<
-    Record<number, string[]> | undefined
+    NumericDictionary<PrivateMessageMembership[]> | undefined
   >(undefined, `private-message-channel-ids-to-user-ids-${userId}`)
   useEffect(() => {
     if (
       userId &&
       isAuthed &&
       channelIds &&
-      channelIds.some((c) => chanelIdToUserIds?.[c] === undefined)
+      channelIds.some(
+        (c) =>
+          chanelIdToUserIds?.[c] === undefined ||
+          chanelIdToUserIds?.[c]?.[0].status === undefined
+      )
     )
       getOtherUserIdsInPrivateMessageChannelIds(userId, channelIds, 100).then(
         setChanelIdToUserIds
