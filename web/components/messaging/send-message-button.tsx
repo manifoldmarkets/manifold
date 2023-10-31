@@ -13,7 +13,7 @@ import { useState } from 'react'
 import { Modal, MODAL_CLASS } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
 import {
-  createPrivateMessageChannelWithUser,
+  createPrivateMessageChannelWithUsers,
   sendUserPrivateMessage,
 } from 'web/lib/firebase/api'
 import { useTextEditor } from 'web/components/widgets/editor'
@@ -69,8 +69,8 @@ export const SendMessageButton = (props: {
   const sendMessage = async () => {
     if (!editor) return
     setSubmitting(true)
-    const res = await createPrivateMessageChannelWithUser({
-      userId: toUser.id,
+    const res = await createPrivateMessageChannelWithUsers({
+      userIds: [toUser.id],
     }).catch((e) => {
       setError(e.message)
       setSubmitting(false)
