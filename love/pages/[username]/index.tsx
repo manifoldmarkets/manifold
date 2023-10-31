@@ -61,7 +61,7 @@ export default function UserPage(props: {
     (a) => a.multiple_choice ?? a.free_response ?? a.integer
   )
 
-  if (currentUser === undefined) return <div></div>
+  if (currentUser === undefined || lover === undefined) return <div></div>
   if (!user) {
     return <div>404</div>
   }
