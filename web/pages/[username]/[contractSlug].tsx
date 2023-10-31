@@ -8,10 +8,7 @@ import {
 } from 'common/chart'
 import { ContractParams, MaybeAuthedContractParams } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
-import {
-  HOUSE_BOT_USERNAME,
-  isTrustworthy,
-} from 'common/envs/constants'
+import { HOUSE_BOT_USERNAME, isTrustworthy } from 'common/envs/constants'
 import { getTopContractMetrics } from 'common/supabase/contract-metrics'
 import { User } from 'common/user'
 import { first, mergeWith } from 'lodash'
@@ -23,9 +20,7 @@ import { SidebarSignUpButton } from 'web/components/buttons/sign-up-button'
 import { getMultiBetPoints } from 'web/components/charts/contract/choice'
 import { BackButton } from 'web/components/contract/back-button'
 import { ChangeBannerButton } from 'web/components/contract/change-banner-button'
-import {
-  AuthorInfo,
-} from 'web/components/contract/contract-details'
+import { AuthorInfo } from 'web/components/contract/contract-details'
 import { ContractLeaderboard } from 'web/components/contract/contract-leaderboard'
 import { ContractOverview } from 'web/components/contract/contract-overview'
 import { ContractSEO } from 'web/components/contract/contract-seo'
@@ -75,7 +70,6 @@ import ContractEmbedPage from '../embed/[username]/[contractSlug]'
 import { Bet } from 'common/bet'
 import { getContractParams } from 'common/contract-params'
 import { getContractFromSlug } from 'common/supabase/contracts'
-
 
 import { useHeaderIsStuck } from 'web/hooks/use-header-is-stuck'
 import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
