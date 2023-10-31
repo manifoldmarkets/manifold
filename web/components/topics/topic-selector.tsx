@@ -8,7 +8,6 @@ import { Row } from 'web/components/layout/row'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { useUser } from 'web/hooks/use-user'
 import { getGroups, searchGroups } from 'web/lib/supabase/groups'
-import { LoadingIndicator } from '../widgets/loading-indicator'
 import { PRIVACY_STATUS_ITEMS } from './topic-privacy-modal'
 import { uniqBy } from 'lodash'
 
