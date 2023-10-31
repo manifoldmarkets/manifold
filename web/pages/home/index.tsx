@@ -17,6 +17,9 @@ import { getNewsDashboards } from 'web/lib/firebase/api'
 import { Dashboard } from 'common/dashboard'
 import { isAdminId } from 'common/envs/constants'
 import { EditNewsButton } from 'web/components/news/edit-news-button'
+import { useYourFollowedDashboards } from 'web/hooks/use-dashboard'
+import { buildArray } from 'common/util/array'
+import { uniqBy } from 'lodash'
 
 export async function getStaticProps() {
   const dashboards = await getNewsDashboards()
@@ -49,6 +52,7 @@ function HomeDashboard(props: { dashboards: Dashboard[] }) {
   const { dashboards } = props
 
   const user = useUser()
+  const myDashboards = useYourFollowedDashboards()
 
   return (
     <>
@@ -70,7 +74,7 @@ function HomeDashboard(props: { dashboards: Dashboard[] }) {
         </Row>
 
         <NewsTopicsTabs
-          dashboards={dashboards}
+          dashboards={uniqBy(buildArray(myDashboards, dashboards), 'id')}
           homeContent={<FeedTimeline />}
         />
       </Page>
