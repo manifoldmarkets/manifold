@@ -5,7 +5,7 @@ import {
   PencilIcon,
   ScaleIcon,
 } from '@heroicons/react/outline'
-import { ChartBarIcon, LinkIcon } from '@heroicons/react/solid'
+import { ChartBarIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { DIVISION_NAMES, getLeaguePath } from 'common/leagues'
 import { Post } from 'common/post'
