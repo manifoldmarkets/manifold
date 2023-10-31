@@ -34,7 +34,6 @@ export default function ProfilesPage() {
 
   if (user === undefined) return <div />
 
-  // TODO: grab nearby cities, filter users by it
   return (
     <LovePage trackPageView={'user profiles'}>
       <Col className="items-center">

@@ -19,7 +19,6 @@ export const searchnearcity = MaybeAuthedEndpoint(async (req) => {
   const host = 'wft-geo-db.p.rapidapi.com'
   const baseUrl = `https://${host}/v1/geo`
   const url = `${baseUrl}/cities/${cityId}/nearbyCities?radius=${radius}&offset=0&sort=-population&limit=100`
-  // const url = `${baseUrl}/cities/${cityId}/nearbyCities?radius=${radius}&sort=-population`
 
   try {
     const res = await fetch(url, {
