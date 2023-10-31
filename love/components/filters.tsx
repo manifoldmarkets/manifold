@@ -1,4 +1,4 @@
-import { orderBy } from 'lodash'
+import { debounce, orderBy } from 'lodash'
 import { useEffect, useState } from 'react'
 import { Row } from 'web/components/layout/row'
 import { Col } from 'web/components/layout/col'
@@ -17,6 +17,8 @@ import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-s
 import { searchNearCity } from 'web/lib/firebase/api'
 import { useIsAuthorized } from 'web/hooks/use-user'
 import { useNearbyCities } from 'love/hooks/use-nearby-locations'
+import { Slider } from 'web/components/widgets/slider'
+import { useEffectCheckEquality } from 'web/hooks/use-effect-check-equality'
 
 const labelClassName = 'font-semibold'
 const initialFilters = {
@@ -24,7 +26,7 @@ const initialFilters = {
   gender: undefined,
   pref_age_max: undefined,
   pref_age_min: undefined,
-  city: undefined,
+  geodb_city_id: undefined,
   has_kids: undefined,
   wants_kids_strength: -1,
   is_smoker: undefined,
@@ -45,16 +47,20 @@ export const Filters = (props: {
     string | null | undefined
   >(undefined)
 
-  const [proximity, setProximity] = useState<number>(100)
+  const [radius, setRadius] = useState<number>(100)
+  const [debouncedRadius, setDebouncedRadius] = useState(radius)
+  const debouncedSetRadius = debounce(setDebouncedRadius, 200)
+  useEffect(() => {
+    debouncedSetRadius(radius)
+  }, [radius])
 
   useEffect(() => {
     if (youLover) {
-      console.log('YOU LOVER', youLover)
       setNearbyOriginLocation(youLover.geodb_city_id)
     }
   }, [youLover])
 
-  const nearbyCities = useNearbyCities(nearbyOriginLocation)
+  const nearbyCities = useNearbyCities(nearbyOriginLocation, debouncedRadius)
 
   const updateFilter = (newState: Partial<rowFor<'lovers'> & User>) => {
     setFilters((prevState) => ({ ...prevState, ...newState }))
@@ -67,7 +73,11 @@ export const Filters = (props: {
     if (allLovers) {
       applyFilters()
     }
-  }, [JSON.stringify(filters), allLovers?.map((l) => l.id).join(',')])
+  }, [
+    JSON.stringify(filters),
+    allLovers?.map((l) => l.id).join(','),
+    debouncedRadius,
+  ])
 
   const applyFilters = () => {
     const sortedLovers = orderBy(
@@ -90,7 +100,12 @@ export const Filters = (props: {
         return false
       } else if (calculateAge(lover.birthdate) < 18) {
         return false
-      } else if (filters.city && lover.city !== filters.city) {
+      } else if (
+        filters.geodb_city_id &&
+        (!lover.geodb_city_id ||
+          (lover.geodb_city_id != filters.geodb_city_id &&
+            !(nearbyCities ?? []).includes(lover.geodb_city_id)))
+      ) {
         return false
       } else if (
         filters.is_smoker !== undefined &&
@@ -136,7 +151,6 @@ export const Filters = (props: {
       return true
     })
     setLovers(filteredLovers)
-    // console.log(filteredLovers)
   }
   const cities: { [key: string]: string } = {
     'San Francisco': 'San Francisco',
@@ -238,14 +252,37 @@ export const Filters = (props: {
                   />
                 </Col>
               </Row>
+
               {youLover && nearbyOriginLocation && (
-                <Col className={clsx(rowClassName)}>
+                <Col className={clsx('w-full', rowClassName)}>
                   <label className={clsx(labelClassName)}>Location</label>
-                  <ChoicesToggleGroup
-                    currentChoice={filters.city ?? ''}
-                    choicesMap={cities}
-                    setChoice={(c) => updateFilter({ city: c as string })}
+                  <Checkbox
+                    label={`${
+                      filters.geodb_city_id ? radius + ' miles n' : 'N'
+                    }ear you`}
+                    checked={!!filters.geodb_city_id}
+                    toggle={(checked: boolean) => {
+                      if (checked) {
+                        updateFilter({
+                          geodb_city_id: nearbyOriginLocation,
+                        })
+                      } else {
+                        updateFilter({
+                          geodb_city_id: undefined,
+                        })
+                      }
+                    }}
                   />
+                  {filters.geodb_city_id && (
+                    <Slider
+                      min={1}
+                      max={500}
+                      step={100}
+                      color="indigo"
+                      amount={radius}
+                      onChange={setRadius}
+                    />
+                  )}
                 </Col>
               )}
 
