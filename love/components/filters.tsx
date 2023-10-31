@@ -34,7 +34,7 @@ const initialFilters = {
 export const Filters = (props: {
   allLovers: Lover[] | undefined
   setLovers: (lovers: Lover[] | undefined) => void
-  youLover: Lover | undefined
+  youLover: Lover | undefined | null
 }) => {
   const { allLovers, setLovers, youLover } = props
   const [filters, setFilters] = usePersistentInMemoryState<
@@ -45,6 +45,8 @@ export const Filters = (props: {
     string | null | undefined
   >(undefined)
 
+  const [proximity, setProximity] = useState<number>(100)
+
   useEffect(() => {
     if (youLover) {
       console.log('YOU LOVER', youLover)
@@ -53,7 +55,6 @@ export const Filters = (props: {
   }, [youLover])
 
   const nearbyCities = useNearbyCities(nearbyOriginLocation)
-  console.log('NEARBY CITIES', nearbyOriginLocation, nearbyCities, youLover)
 
   const updateFilter = (newState: Partial<rowFor<'lovers'> & User>) => {
     setFilters((prevState) => ({ ...prevState, ...newState }))
@@ -237,14 +238,16 @@ export const Filters = (props: {
                   />
                 </Col>
               </Row>
-              <Col className={clsx(rowClassName)}>
-                <label className={clsx(labelClassName)}>City</label>
-                <ChoicesToggleGroup
-                  currentChoice={filters.city ?? ''}
-                  choicesMap={cities}
-                  setChoice={(c) => updateFilter({ city: c as string })}
-                />
-              </Col>
+              {youLover && nearbyOriginLocation && (
+                <Col className={clsx(rowClassName)}>
+                  <label className={clsx(labelClassName)}>Location</label>
+                  <ChoicesToggleGroup
+                    currentChoice={filters.city ?? ''}
+                    choicesMap={cities}
+                    setChoice={(c) => updateFilter({ city: c as string })}
+                  />
+                </Col>
+              )}
 
               <Col className={clsx(rowClassName)}>
                 <label className={clsx(labelClassName)}>Wants kids</label>

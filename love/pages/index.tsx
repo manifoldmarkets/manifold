@@ -6,7 +6,7 @@ import { Filters } from 'love/components/filters'
 import { Gender, convertGender } from 'love/components/gender-icon'
 import { LovePage } from 'love/components/love-page'
 import OnlineIcon from 'love/components/online-icon'
-import { Lover } from 'love/hooks/use-lover'
+import { Lover, useLover } from 'love/hooks/use-lover'
 import { useLovers } from 'love/hooks/use-lovers'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -30,7 +30,7 @@ export default function ProfilesPage() {
 
   const user = useUser()
 
-  const lover = allLovers?.find((lover) => lover.user_id === user?.id)
+  const lover = useLover()
 
   if (user === undefined) return <div />
 
@@ -48,7 +48,11 @@ export default function ProfilesPage() {
             </Button>
           )}
           <Title className="!mb-2 text-3xl">Profiles</Title>
-          <Filters allLovers={allLovers} setLovers={setLovers} youLover={lover}/>
+          <Filters
+            allLovers={allLovers}
+            setLovers={setLovers}
+            youLover={lover}
+          />
 
           {lovers === undefined ? (
             <LoadingIndicator />
