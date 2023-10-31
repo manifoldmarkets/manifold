@@ -1,4 +1,3 @@
-import { useDashboardFromSlug } from 'web/hooks/use-dashboard'
 import { DashboardContent } from '../dashboard/dashboard-content'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { DashboardDescription } from '../dashboard/dashboard-description'
@@ -14,9 +13,10 @@ import { useUser } from 'web/hooks/use-user'
 import { buttonClass } from '../buttons/button'
 import { Tooltip } from '../widgets/tooltip'
 import { isAdminId } from 'common/envs/constants'
+import { Dashboard } from 'common/dashboard'
 
-export function NewsDashboard(props: { slug: string }) {
-  const dashboard = useDashboardFromSlug(props.slug)
+export function NewsDashboard(props: { dashboard: Dashboard }) {
+  const { dashboard } = props
   const user = useUser()
 
   if (!dashboard) return <LoadingIndicator />

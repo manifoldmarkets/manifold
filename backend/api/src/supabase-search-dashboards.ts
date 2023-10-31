@@ -53,7 +53,7 @@ function getSearchDashboardSQL(input: {
         FROM dashboards,
         LATERAL websearch_to_tsquery('english', $1) as query
         WHERE dashboards.title_fts @@ query
-        AND visibility = 'public'
+        AND visibility <> 'deleted'
         ORDER BY importance_score DESC, created_time DESC
       `
   }

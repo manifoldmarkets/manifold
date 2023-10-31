@@ -2,16 +2,16 @@ import { HomeIcon } from '@heroicons/react/solid'
 import { Col } from 'web/components/layout/col'
 import { QueryUncontrolledTabs, Tab } from 'web/components/layout/tabs'
 import { track } from 'web/lib/service/analytics'
-
 import { buildArray } from 'common/util/array'
-import { newsContent } from 'web/components/news/news-content'
 import { NewsDashboard } from './news-dashboard'
+import { Dashboard } from 'common/dashboard'
 
 export function NewsTopicsTabs(props: {
+  dashboards: Dashboard[]
   homeContent?: JSX.Element
   dontScroll?: boolean
 }) {
-  const { homeContent, dontScroll } = props
+  const { dashboards, homeContent, dontScroll } = props
 
   const topics = buildArray<Tab>(
     !!homeContent && {
@@ -19,9 +19,9 @@ export function NewsTopicsTabs(props: {
       inlineTabIcon: <HomeIcon className="h-4 w-4" />,
       content: homeContent,
     },
-    newsContent.map((content) => ({
-      title: content.title,
-      content: <NewsDashboard slug={content.slug} />,
+    dashboards.map((d) => ({
+      title: d.title,
+      content: <NewsDashboard dashboard={d} />,
     }))
   )
   return (
