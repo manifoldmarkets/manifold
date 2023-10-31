@@ -68,6 +68,7 @@ import { getPostsByUser } from 'web/lib/supabase/post'
 import { getUserRating } from 'web/lib/supabase/reviews'
 import Custom404 from 'web/pages/404'
 import { UserPayments } from 'web/pages/payments'
+import { UserHandles } from 'web/components/user/user-handles'
 
 export const getStaticProps = async (props: {
   params: {
@@ -282,57 +283,12 @@ function UserProfile(props: {
               <Linkify text={user.bio}></Linkify>
             </div>
           )}
-          <Row className="text-ink-400 mt-2 flex-wrap items-center gap-2 sm:gap-4">
-            {user.website && (
-              <a
-                href={
-                  'https://' +
-                  user.website.replace('http://', '').replace('https://', '')
-                }
-              >
-                <Row className="items-center gap-1">
-                  <LinkIcon className="h-4 w-4" />
-                  <span className="text-ink-400 text-sm">{user.website}</span>
-                </Row>
-              </a>
-            )}
-
-            {user.twitterHandle && (
-              <a
-                href={`https://twitter.com/${user.twitterHandle
-                  .replace('https://www.twitter.com/', '')
-                  .replace('https://twitter.com/', '')
-                  .replace('www.twitter.com/', '')
-                  .replace('twitter.com/', '')}`}
-              >
-                <Row className="items-center gap-1">
-                  <img
-                    src="/twitter-logo.svg"
-                    className="h-4 w-4"
-                    alt="Twitter"
-                  />
-                  <span className="text-ink-400 text-sm">
-                    {user.twitterHandle}
-                  </span>
-                </Row>
-              </a>
-            )}
-
-            {user.discordHandle && (
-              <a href="https://discord.com/invite/eHQBNBqXuh">
-                <Row className="items-center gap-1">
-                  <img
-                    src="/discord-logo.svg"
-                    className="h-4 w-4"
-                    alt="Discord"
-                  />
-                  <span className="text-ink-400 text-sm">
-                    {user.discordHandle}
-                  </span>
-                </Row>
-              </a>
-            )}
-          </Row>
+          <UserHandles
+            website={user.website}
+            twitterHandle={user.twitterHandle}
+            discordHandle={user.discordHandle}
+            className="mt-2"
+          />
         </Col>
 
         <Col className="mt-2">
