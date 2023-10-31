@@ -207,7 +207,7 @@ function Drinks(props: { lover: Lover }) {
   return (
     <AboutRow
       icon={<BiSolidDrink className="h-5 w-5" />}
-      text={`${drinksPerMonth} drinks per month`}
+      text={`${drinksPerMonth} ${drinksPerMonth == 1 ? 'drink' : 'drinks'} per month`}
     />
   )
 }
