@@ -3965,15 +3965,6 @@ export interface Database {
         }
         Returns: number
       }
-      get_non_empty_private_message_channel_ids: {
-        Args: {
-          p_user_id: string
-          p_limit?: number
-        }
-        Returns: {
-          id: number
-        }
-      }
     }
     Enums: {
       [_ in never]: never
