@@ -37,8 +37,8 @@ export const searchnearcity = jsonEndpoint(async (req) => {
     }
 
     const data = await res.json()
-    const ids = data.map((item) => (item as { id: number }).id)
     console.log('DATAAAAAAAAA\n', data)
+    const ids = data.map((item) => (item as { id: number }).id)
     return { status: 'success', data: ids }
   } catch (error) {
     console.log('ERRRORRR', error)

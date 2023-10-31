@@ -52,14 +52,14 @@ export const Filters = (props: {
     }
   }, [JSON.stringify(filters), allLovers?.map((l) => l.id).join(',')])
 
-  const isAuth = useIsAuthorized()
+  // const isAuth = useIsAuthorized()
   useEffect(() => {
-    if (isAuth) {
-      searchNearCity({ cityId: '45633', radius: 20 }).then((result) => {
-        console.log('NEAR YOU', result)
-      })
-    }
-  }, [isAuth])
+    // if (isAuth) {
+    searchNearCity({ cityId: '45633', radius: 20 }).then((result) => {
+      console.log('NEAR YOU', result)
+    })
+    // }
+  }, [])
 
   const applyFilters = () => {
     const sortedLovers = orderBy(
