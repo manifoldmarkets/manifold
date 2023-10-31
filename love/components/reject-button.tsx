@@ -30,7 +30,7 @@ export const RejectButton = (props: { lover: Lover; className?: string }) => {
       </Button>
       {dialogOpen && (
         <Modal open={dialogOpen} setOpen={(open) => setDialogOpen(open)}>
-          <Col className="bg-canvas-0 rounded p-4 pb-8 sm:gap-4">
+          <Col className="bg-canvas-0 gap-4 rounded p-4 pb-8">
             <div className="text-lg font-semibold">
               Are you sure you don't want a relationship with {lover.user.name}?
             </div>
