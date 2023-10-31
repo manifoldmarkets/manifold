@@ -477,9 +477,10 @@ function BetsTable(props: {
     <Col className="mb-4 flex-1 gap-4">
       <Col className={'w-full'}>
         <Row
-          className={
-            'grid-cols-15 bg-canvas-50 sticky top-0 z-10 grid w-full py-2 pr-1'
-          }
+          className={clsx(
+            'grid-cols-15 bg-canvas-50 sticky z-10 grid w-full py-2 pr-1',
+            isMobile ? 'top-16' : 'top-0' // Sets it below sticy user profile header on mobile
+          )}
         >
           {dataColumns.map((c) => (
             <span
