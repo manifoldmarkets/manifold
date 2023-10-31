@@ -320,7 +320,7 @@ function ContractSmolView(props: {
           </Col>
         )}
       </div>
-      <Row className="text-ink-500 mt-4 w-full justify-end text-sm">
+      <Row className="text-ink-500 mt-4 w-full justify-end text-sm md:text-lg">
         <ContractSummaryStats contract={contract} />
       </Row>
     </Col>
