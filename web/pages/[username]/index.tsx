@@ -236,7 +236,9 @@ function UserProfile(props: {
               />
             </div>
 
-            <MoreOptionsUserButton user={user} />
+            <div>
+              <MoreOptionsUserButton user={user} />
+            </div>
           </Row>
         )}
 
