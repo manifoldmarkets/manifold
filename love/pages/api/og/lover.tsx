@@ -5,7 +5,6 @@ import { NextRequest } from 'next/server'
 import { classToTw } from 'web/components/og/utils'
 import { calculateAge } from 'love/components/calculate-age'
 import { Gender, convertGender } from 'love/components/gender-icon'
-import { capitalize } from 'lodash'
 
 export const config = { runtime: 'edge' }
 
@@ -38,6 +37,11 @@ const FIGTREE_MED_URL = new URL('Figtree-Medium.ttf', import.meta.url)
 const figtreeMediumData = fetch(FIGTREE_MED_URL).then((res) =>
   res.arrayBuffer()
 )
+
+// Quick replacement for lodash.capitalize since this is an edge function
+function capitalize(str: string) {
+  return str.charAt(0).toUpperCase() + str.slice(1)
+}
 
 function OgLover(props: LoveOgProps) {
   const { avatarUrl, username, birthdate, name, city, gender } = props
