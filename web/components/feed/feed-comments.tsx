@@ -62,9 +62,9 @@ import { usePartialUpdater } from 'web/hooks/use-partial-updater'
 import { BuyPanel } from 'web/components/bet/bet-panel'
 import { FeedReplyBet } from 'web/components/feed/feed-bets'
 import { Modal, MODAL_CLASS } from 'web/components/layout/modal'
-import { last, orderBy } from 'lodash'
 import { HOUR_MS } from 'common/util/time'
 import { FaArrowTrendUp } from 'react-icons/fa6'
+import { last, orderBy } from 'lodash'
 
 export type ReplyToUserInfo = { id: string; username: string }
 
@@ -214,32 +214,30 @@ export const FeedComment = memo(function FeedComment(props: {
     const sortedBets = orderBy(bets, 'createdTime', 'asc')
 
     const tempGrouped: Bet[][] = []
-
     sortedBets.forEach((currentBet) => {
-      let foundGroup = false
+      // Check if the bet was made within the last 2 hours
+      const isRecentBet = Date.now() - currentBet.createdTime < 2 * HOUR_MS
 
+      if (isRecentBet) {
+        // If the bet was made within the last 2 hours, add it as an individual group
+        tempGrouped.push([currentBet])
+        return
+      }
+      let foundGroup = false
       for (const group of tempGrouped) {
         const lastBetInGroup = last(group)
+        if (!lastBetInGroup) break
+        const outcomesMatch = currentBet.outcome === lastBetInGroup.outcome
+        const sameSign =
+          Math.sign(currentBet.amount) === Math.sign(lastBetInGroup.amount)
 
-        if (lastBetInGroup) {
-          const close =
-            Math.abs(currentBet.createdTime - lastBetInGroup.createdTime) <
-            HOUR_MS
-          const outcomesMatch = currentBet.outcome === lastBetInGroup.outcome
-          const sameSign =
-            Math.sign(currentBet.amount) === Math.sign(lastBetInGroup.amount)
-
-          if (close && outcomesMatch && sameSign) {
-            group.push(currentBet)
-            foundGroup = true
-            break
-          }
+        if (outcomesMatch && sameSign) {
+          group.push(currentBet)
+          foundGroup = true
+          break
         }
       }
-
-      if (!foundGroup) {
-        tempGrouped.push([currentBet])
-      }
+      if (!foundGroup) tempGrouped.push([currentBet])
     })
 
     return tempGrouped
