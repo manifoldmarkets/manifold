@@ -34,11 +34,19 @@ export const createprivateusermessagechannel = authEndpoint(
           (uid) => !toPrivateUsers.map((p) => p.id).includes(uid)
         )} not found`
       )
-    // TODO: should check if any user has blocked any other user in the list
-    if (toPrivateUsers.some((p) => p.blockedUserIds.includes(auth.uid)))
-      throw new APIError(403, 'You are blocked by one of those users')
+    const allUserIds = uniq(toPrivateUsers.map((p) => p.id).concat(auth.uid))
 
-    const allUserIds = uniq([auth.uid, ...userIds])
+    if (
+      toPrivateUsers.some((user) =>
+        user.blockedUserIds.some((blockedId) => allUserIds.includes(blockedId))
+      )
+    ) {
+      throw new APIError(
+        403,
+        'One of the users has blocked another user in the list'
+      )
+    }
+
     const currentChannel = await pg.oneOrNone(
       `
         select channel_id from private_user_message_channel_members
