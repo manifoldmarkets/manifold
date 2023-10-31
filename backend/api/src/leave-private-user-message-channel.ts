@@ -2,7 +2,7 @@ import { z } from 'zod'
 import { APIError, authEndpoint, validate } from 'api/helpers'
 import { getUserSupabase, log } from 'shared/utils'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { insertPrivateMessage } from 'shared/supabase/private-message'
+import { insertPrivateMessage } from 'shared/supabase/private-messages'
 
 const postSchema = z
   .object({

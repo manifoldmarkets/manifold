@@ -3,7 +3,8 @@ create table if not exists
   private_user_message_channels (
     id bigint generated always as identity primary key,
     created_time timestamptz not null default now(),
-    last_updated_time timestamptz not null default now()
+    last_updated_time timestamptz not null default now(),
+    title text -- title is public, so handle this before allowing users to set titles
   );
 
 alter table private_user_message_channels enable row level security;

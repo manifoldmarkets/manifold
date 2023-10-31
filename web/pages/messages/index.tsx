@@ -18,6 +18,7 @@ import { useIsAuthorized, useUser } from 'web/hooks/use-user'
 import { useUsersInStore } from 'web/hooks/use-user-supabase'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { MultipleOrSingleAvatars } from 'web/components/multiple-or-single-avatars'
+import { Row as rowFor } from 'common/supabase/utils'
 
 export default function MessagesPage() {
   return (
@@ -31,10 +32,11 @@ export function MessagesContent() {
   useRedirectIfSignedOut()
   const currentUser = useUser()
   const isAuthed = useIsAuthorized()
-  const channelIds = useNonEmptyPrivateMessageChannelIds(
+  const channels = useNonEmptyPrivateMessageChannelIds(
     currentUser?.id,
     isAuthed
   )
+  const channelIds = channels.map((c) => c.id)
 
   const channelIdsToUserIds = useOtherUserIdsInPrivateMessageChannelIds(
     currentUser?.id,
@@ -49,24 +51,24 @@ export function MessagesContent() {
         <NewMessageButton />
       </Row>
       <Col className={'w-full overflow-hidden'}>
-        {currentUser && isAuthed && channelIds.length === 0 && (
+        {currentUser && isAuthed && channels.length === 0 && (
           <div className={'text-ink-500 dark:text-ink-600 mt-4 text-center'}>
             You have no messages, yet.
           </div>
         )}
         {currentUser &&
           isAuthed &&
-          channelIds.map((channelId) => {
-            const userIds = channelIdsToUserIds?.[channelId]?.map(
+          channels.map((channel) => {
+            const userIds = channelIdsToUserIds?.[channel.id]?.map(
               (m) => m.user_id
             )
             if (!userIds) return null
             return (
               <MessageChannelRow
-                key={channelId}
+                key={channel.id}
                 otherUserIds={userIds}
                 currentUser={currentUser}
-                channelId={channelId}
+                channel={channel}
               />
             )
           })}
@@ -77,9 +79,10 @@ export function MessagesContent() {
 export const MessageChannelRow = (props: {
   otherUserIds: string[]
   currentUser: User
-  channelId: number
+  channel: rowFor<'private_user_message_channels'>
 }) => {
-  const { otherUserIds, currentUser, channelId } = props
+  const { otherUserIds, currentUser, channel } = props
+  const channelId = channel.id
   const otherUsers = useUsersInStore(otherUserIds)
 
   const messages = useRealtimePrivateMessagesPolling(channelId, true, 2000)
@@ -104,14 +107,19 @@ export const MessageChannelRow = (props: {
         <Col className={'w-full'}>
           <Row className={'items-center justify-between'}>
             <span className={'font-semibold'}>
-              {otherUsers && (
-                <span>
-                  {otherUsers
-                    .map((user) => user.name.split(' ')[0].trim())
-                    .slice(0, 2)
-                    .join(', ')}
-                  {otherUsers.length > 2 && ` & ${otherUsers.length - 2} more`}
-                </span>
+              {channel.title ? (
+                <span className={'font-semibold'}>{channel.title}</span>
+              ) : (
+                otherUsers && (
+                  <span>
+                    {otherUsers
+                      .map((user) => user.name.split(' ')[0].trim())
+                      .slice(0, 2)
+                      .join(', ')}
+                    {otherUsers.length > 2 &&
+                      ` & ${otherUsers.length - 2} more`}
+                  </span>
+                )
               )}
             </span>
             <span className={'text-ink-400 dark:text-ink-500 text-xs'}>

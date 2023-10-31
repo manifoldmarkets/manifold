@@ -8,7 +8,7 @@ import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import {
   convertChatMessage,
   getChannelLastSeenTimeQuery,
-  getSortedChatMessageChannelIds,
+  getSortedChatMessageChannels,
   getMessageChannelMemberships,
   getNonEmptyChatMessageChannelIds,
   getOtherUserIdsInPrivateMessageChannelIds,
@@ -170,27 +170,26 @@ export const useSortedPrivateMessageChannelIds = (
   isAuthed: boolean | undefined
 ) => {
   const [channelIds, setChannelIds] = usePersistentLocalState<
-    number[] | undefined
+    Row<'private_user_message_channels'>[] | undefined
   >(undefined, `private-message-channel-ids-${userId}`)
   useEffect(() => {
     if (userId && isAuthed)
-      getSortedChatMessageChannelIds(userId, 100).then(setChannelIds)
+      getSortedChatMessageChannels(userId, 100).then(setChannelIds)
   }, [userId, isAuthed])
   return channelIds
 }
 
-export const usePrivateMessageChannelId = (
+export const usePrivateMessageChannel = (
   userId: string | undefined,
   isAuthed: boolean | undefined,
   forChannelId: string
 ) => {
-  const [channelId, setChannelId] = usePersistentLocalState<number | undefined>(
-    undefined,
-    `private-message-channel-id-${userId}-${forChannelId}`
-  )
+  const [channelId, setChannelId] = usePersistentLocalState<
+    Row<'private_user_message_channels'> | undefined
+  >(undefined, `private-message-channel-id-${userId}-${forChannelId}`)
   useEffect(() => {
     if (userId && isAuthed)
-      getSortedChatMessageChannelIds(userId, 1, forChannelId).then((c) =>
+      getSortedChatMessageChannels(userId, 1, forChannelId).then((c) =>
         setChannelId(first(c))
       )
   }, [userId, isAuthed])
@@ -201,10 +200,9 @@ export const useNonEmptyPrivateMessageChannelIds = (
   userId: string | undefined,
   isAuthed: boolean | undefined
 ) => {
-  const [channelIds, setChannelIds] = usePersistentLocalState<number[]>(
-    [],
-    `non-empty-private-message-channel-ids-${userId}`
-  )
+  const [channelIds, setChannelIds] = usePersistentLocalState<
+    Row<'private_user_message_channels'>[]
+  >([], `non-empty-private-message-channel-ids-${userId}`)
   useEffect(() => {
     if (userId && isAuthed)
       getNonEmptyChatMessageChannelIds(userId, 100).then(setChannelIds)

@@ -55,7 +55,7 @@ export const getMessageChannelMemberships = async (
 }
 
 // NOTE: must be authorized (useIsAuthorized) to use this function
-export const getSortedChatMessageChannelIds = async (
+export const getSortedChatMessageChannels = async (
   userId: string,
   limit: number,
   channelId?: string
@@ -63,27 +63,23 @@ export const getSortedChatMessageChannelIds = async (
   const membershipChannelIds = (
     await getMessageChannelMemberships(userId, limit, channelId)
   ).map((m) => m.channel_id)
-  // If you just want one channel, you don't need anything sorted
-  if (channelId) {
-    return membershipChannelIds
-  } else {
-    const orderedIds = await run(
-      db
-        .from('private_user_message_channels')
-        .select('id')
-        .in('id', membershipChannelIds)
-        .order('last_updated_time', { ascending: false })
-    )
-    return orderedIds.data.map((d) => d.id)
-  }
+  const channels = await run(
+    db
+      .from('private_user_message_channels')
+      .select('*')
+      .in('id', membershipChannelIds)
+      .order('last_updated_time', { ascending: false })
+  )
+  return channels.data
 }
 
+// Note: must be authorized (useIsAuthorized) to use this function
 export const getNonEmptyChatMessageChannelIds = async (
   userId: string,
   limit?: number
 ) => {
   const orderedNonEmptyIds = await db.rpc(
-    'get_non_empty_private_message_channel_ids' as any,
+    'get_non_empty_private_message_channel_ids',
     {
       p_user_id: userId,
       p_ignored_statuses: ['left'],
@@ -91,7 +87,9 @@ export const getNonEmptyChatMessageChannelIds = async (
     }
   )
   if (orderedNonEmptyIds.data) {
-    return orderedNonEmptyIds.data.map((d) => d.id)
+    return orderedNonEmptyIds.data
+      .flat()
+      .map((d) => d as Row<'private_user_message_channels'>)
   }
   return []
 }

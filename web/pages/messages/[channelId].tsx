@@ -3,7 +3,7 @@ import { useRouter } from 'next/router'
 import {
   useOtherUserIdsInPrivateMessageChannelIds,
   useRealtimePrivateMessagesPolling,
-  usePrivateMessageChannelId,
+  usePrivateMessageChannel,
 } from 'web/hooks/use-private-messages'
 import { Col } from 'web/components/layout/col'
 import { User } from 'common/user'
@@ -22,7 +22,7 @@ import { ChatMessageItem } from 'web/components/chat-message'
 import { CommentInputTextArea } from 'web/components/comments/comment-input'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { MINUTE_MS } from 'common/util/time'
-import { run } from 'common/supabase/utils'
+import { run, Row as rowFor } from 'common/supabase/utils'
 import { db } from 'web/lib/supabase/db'
 import { useUsersInStore } from 'web/hooks/use-user-supabase'
 import { BackButton } from 'web/components/contract/back-button'
@@ -51,17 +51,17 @@ export function PrivateMessagesContent() {
   const user = useUser()
   const isAuthed = useIsAuthorized()
   const { channelId } = router.query as { channelId: string }
-  const accessToChannellId = usePrivateMessageChannelId(
+  const accessToChannel = usePrivateMessageChannel(
     user?.id,
     isAuthed,
     channelId
   )
-  const loaded = isAuthed && accessToChannellId !== undefined && channelId
+  const loaded = isAuthed && accessToChannel !== undefined && channelId
 
   return (
     <>
-      {user && loaded && accessToChannellId == parseInt(channelId) ? (
-        <PrivateChat channelId={parseInt(channelId)} user={user} />
+      {user && loaded && accessToChannel?.id == parseInt(channelId) ? (
+        <PrivateChat channel={accessToChannel} user={user} />
       ) : (
         <LoadingIndicator />
       )}
@@ -69,8 +69,12 @@ export function PrivateMessagesContent() {
   )
 }
 
-export const PrivateChat = (props: { user: User; channelId: number }) => {
-  const { user, channelId } = props
+export const PrivateChat = (props: {
+  user: User
+  channel: rowFor<'private_user_message_channels'>
+}) => {
+  const { user, channel } = props
+  const channelId = channel.id
   const realtimeMessages = useRealtimePrivateMessagesPolling(
     channelId,
     true,
@@ -173,18 +177,22 @@ export const PrivateChat = (props: { user: User; channelId: number }) => {
             avatarUrls={remainingUsers?.map((user) => user.avatarUrl) ?? []}
             onClick={() => setShowUsers(true)}
           />
-          {remainingUsers && (
-            <span
-              className={'ml-1 cursor-pointer hover:underline'}
-              onClick={() => setShowUsers(true)}
-            >
-              {remainingUsers
-                .map((user) => user.name.split(' ')[0].trim())
-                .slice(0, 2)
-                .join(', ')}
-              {remainingUsers.length > 2 &&
-                ` & ${remainingUsers.length - 2} more`}
-            </span>
+          {channel.title ? (
+            <span className={'ml-1 font-semibold'}>{channel.title}</span>
+          ) : (
+            remainingUsers && (
+              <span
+                className={'ml-1 cursor-pointer hover:underline'}
+                onClick={() => setShowUsers(true)}
+              >
+                {remainingUsers
+                  .map((user) => user.name.split(' ')[0].trim())
+                  .slice(0, 2)
+                  .join(', ')}
+                {remainingUsers.length > 2 &&
+                  ` & ${remainingUsers.length - 2} more`}
+              </span>
+            )
           )}
           <DropdownMenu
             className={'ml-auto'}

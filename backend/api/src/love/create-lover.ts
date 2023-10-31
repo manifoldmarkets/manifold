@@ -1,6 +1,9 @@
 import { z } from 'zod'
 import { APIError, authEndpoint, validate } from 'api/helpers'
-import { createSupabaseClient } from 'shared/supabase/init'
+import {
+  createSupabaseClient,
+  createSupabaseDirectClient,
+} from 'shared/supabase/init'
 import { getUser, log } from 'shared/utils'
 import { addUserToGroup } from 'api/add-group-member'
 import { manifoldLoveRelationshipsGroupId } from 'common/love/constants'
@@ -8,6 +11,7 @@ import { HOUR_MS } from 'common/util/time'
 import * as admin from 'firebase-admin'
 import { removePinnedUrlFromPhotoUrls } from 'shared/love/parse-photos'
 import { getIp, track } from 'shared/analytics'
+import { addUsersToPrivateMessageChannel } from 'shared/supabase/private-messages'
 const genderType = z.union([
   z.literal('male'),
   z.literal('female'),
@@ -86,6 +90,15 @@ export const createlover = authEndpoint(async (req, auth) => {
     log('Error creating user', error)
     throw new APIError(500, 'Error creating user')
   }
+  const pg = createSupabaseDirectClient()
+  const publicChannels = await pg.many(
+    `select id from private_user_message_channels where title is not null`
+  )
+  await Promise.all(
+    publicChannels.map(async (pc) =>
+      addUsersToPrivateMessageChannel([auth.uid], pc.id, pg)
+    )
+  )
 
   log('Created user', data[0])
   const ip = getIp(req)

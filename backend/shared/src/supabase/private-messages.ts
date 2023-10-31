@@ -18,3 +18,21 @@ export const insertPrivateMessage = async (
     [lastMessage.created_time, channelId]
   )
 }
+
+export const addUsersToPrivateMessageChannel = async (
+  userIds: string[],
+  channelId: number,
+  pg: SupabaseDirectClient
+) => {
+  await Promise.all(
+    userIds.map((id) =>
+      pg.none(
+        `insert into private_user_message_channel_members (channel_id, user_id, role, status)
+                values
+                ($1, $2, 'member', 'proposed')
+              `,
+        [channelId, id]
+      )
+    )
+  )
+}

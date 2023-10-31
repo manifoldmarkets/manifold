@@ -5,7 +5,7 @@ import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { Json } from 'common/supabase/schema'
 import { contentSchema } from 'shared/zod-types'
 import { MAX_COMMENT_JSON_LENGTH } from 'api/create-comment'
-import { insertPrivateMessage } from 'shared/supabase/private-message'
+import { insertPrivateMessage } from 'shared/supabase/private-messages'
 
 const postSchema = z
   .object({
