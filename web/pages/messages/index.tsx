@@ -1,14 +1,12 @@
 import clsx from 'clsx'
 import { User } from 'common/user'
 import { parseJsonContentToText } from 'common/util/parse'
-import { first } from 'lodash'
 import Link from 'next/link'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
 import NewMessageButton from 'web/components/messaging/new-message-button'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
-import { Avatar } from 'web/components/widgets/avatar'
 import { Title } from 'web/components/widgets/title'
 import {
   useHasUnseenPrivateMessage,
@@ -16,13 +14,21 @@ import {
   useOtherUserIdsInPrivateMessageChannelIds,
   useRealtimePrivateMessagesPolling,
 } from 'web/hooks/use-private-messages'
-import { useIsAuthorized, usePrivateUser, useUser } from 'web/hooks/use-user'
+import { useIsAuthorized, useUser } from 'web/hooks/use-user'
 import { useUsersInStore } from 'web/hooks/use-user-supabase'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
+import { MultipleOrSingleAvatars } from 'web/components/multiple-or-single-avatars'
 
 export default function MessagesPage() {
+  return (
+    <Page trackPageView={'messages page'} className={'p-2'}>
+      <MessagesContent />
+    </Page>
+  )
+}
+
+export function MessagesContent() {
   useRedirectIfSignedOut()
-  const privateUser = usePrivateUser()
   const currentUser = useUser()
   const isAuthed = useIsAuthorized()
   const channelIds = useNonEmptyPrivateMessageChannelIds(
@@ -35,12 +41,9 @@ export default function MessagesPage() {
     isAuthed,
     channelIds
   )
-  const users = useUsersInStore(
-    Object.values(channelIdsToUserIds ?? {}).flat()
-  )?.filter((u) => !privateUser?.blockedUserIds.includes(u.id))
 
   return (
-    <Page trackPageView={'messages page'} className={'p-2'}>
+    <>
       <Row className="justify-between">
         <Title>Messages</Title>
         <NewMessageButton />
@@ -54,28 +57,29 @@ export default function MessagesPage() {
         {currentUser &&
           isAuthed &&
           channelIds.map((channelId) => {
-            const userId = first(channelIdsToUserIds?.[channelId])
-            const user = users?.find((u) => u.id === userId)
-            if (!user) return null
+            const userIds = channelIdsToUserIds?.[channelId]
+            if (!userIds) return null
             return (
               <MessageChannelRow
-                key={user.id}
-                toUser={user}
+                key={channelId}
+                otherUserIds={userIds}
                 currentUser={currentUser}
                 channelId={channelId}
               />
             )
           })}
       </Col>
-    </Page>
+    </>
   )
 }
 export const MessageChannelRow = (props: {
-  toUser: User
+  otherUserIds: string[]
   currentUser: User
   channelId: number
 }) => {
-  const { toUser, currentUser, channelId } = props
+  const { otherUserIds, currentUser, channelId } = props
+  const otherUsers = useUsersInStore(otherUserIds)
+
   const messages = useRealtimePrivateMessagesPolling(channelId, true, 2000)
   const unseen = useHasUnseenPrivateMessage(currentUser.id, channelId, messages)
   const chat = messages?.[0]
@@ -86,15 +90,26 @@ export const MessageChannelRow = (props: {
       href={'/messages/' + channelId}
     >
       <Row className={'items-center gap-3 rounded-md'}>
-        <Avatar
-          username={toUser?.username ?? ''}
-          avatarUrl={toUser?.avatarUrl}
-          noLink={true}
-          size="lg"
+        <MultipleOrSingleAvatars
+          size="md"
+          spacing={1}
+          avatarUrls={otherUsers?.map((user) => user.avatarUrl) ?? []}
         />
+
         <Col className={'w-full'}>
           <Row className={'items-center justify-between'}>
-            <span className={'font-semibold'}>{toUser?.name}</span>
+            <span className={'font-semibold'}>
+              {otherUsers && (
+                <span>
+                  {otherUsers
+                    .map((user) => user.name)
+                    .slice(0, 2)
+                    .join(', ')}
+                  {otherUsers.length > 2 &&
+                    ` and ${otherUsers.length - 2} more`}
+                </span>
+              )}
+            </span>
             <span className={'text-ink-400 dark:text-ink-500 text-xs'}>
               {chat && <RelativeTimestamp time={chat.createdTime} />}
             </span>

@@ -4,6 +4,7 @@ import { getUser, getUsers } from 'web/lib/supabase/user'
 import { useEffectCheckEquality } from './use-effect-check-equality'
 import { Answer, DpmAnswer } from 'common/answer'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import { uniqBy } from 'lodash'
 
 export function useUserById(userId: string | undefined) {
   const [user, setUser] = useState<User | null | undefined>(undefined)
@@ -44,7 +45,9 @@ export function useUsersInStore(userIds: string[]) {
     )
     if (userIdsToFetch.length === 0) return
     getUsers(userIdsToFetch).then((newUsers) => {
-      setUsers((currentUsers) => (currentUsers || []).concat(newUsers))
+      setUsers((currentUsers) =>
+        uniqBy((currentUsers || []).concat(newUsers), 'id')
+      )
     })
   }, [userIds])
 

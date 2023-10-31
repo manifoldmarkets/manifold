@@ -25,6 +25,7 @@ import { InfoTooltip } from '../widgets/info-tooltip'
 import { filterDefined } from 'common/util/array'
 import { sumBy, uniq } from 'lodash'
 import { Modal, MODAL_CLASS } from 'web/components/layout/modal'
+import { MultipleOrSingleAvatars } from 'web/components/multiple-or-single-avatars'
 
 export const FeedBet = memo(function FeedBet(props: {
   contract: Contract
@@ -86,7 +87,10 @@ export const FeedReplyBet = memo(function FeedReplyBet(props: {
           />
         ) : (
           avatarUrls.length > 1 && (
-            <MultipleAvatars
+            <MultipleOrSingleAvatars
+              size={'2xs'}
+              spacing={-0.2}
+              startLeft={0.2}
               onClick={() => setShowBets(true)}
               avatarUrls={avatarUrls}
             />
@@ -126,50 +130,6 @@ export const FeedReplyBet = memo(function FeedReplyBet(props: {
     </Col>
   )
 })
-
-const MultipleAvatars = (props: {
-  avatarUrls: string[]
-  onClick: () => void
-}) => {
-  const { avatarUrls, onClick } = props
-  const combineAvatars = (avatarUrls: string[]) => {
-    const totalAvatars = avatarUrls.length
-    const maxToShow = Math.min(totalAvatars, 3)
-    const avatarsToCombine = avatarUrls.slice(
-      totalAvatars - maxToShow,
-      totalAvatars
-    )
-    const max = avatarsToCombine.length
-    const startLeft = -0.1 * (max - 1)
-    const spacing = 0.3
-    return avatarsToCombine.map((n, index) => (
-      <div
-        key={index}
-        className={'absolute top-0'}
-        style={
-          index === 0
-            ? {
-                left: `${startLeft}rem`,
-              }
-            : {
-                left: `${startLeft + index * spacing}rem`,
-              }
-        }
-      >
-        <Avatar className={'absolute top-0'} size={'2xs'} avatarUrl={n} />
-      </div>
-    ))
-  }
-  return (
-    <Col
-      onClick={onClick}
-      className={`relative cursor-pointer items-center justify-center`}
-    >
-      <Avatar className={'-mt-2'} size={'2xs'} />
-      {combineAvatars(avatarUrls)}
-    </Col>
-  )
-}
 
 export function BetStatusesText(props: {
   contract: Contract
