@@ -3,9 +3,9 @@ import { Row } from '../layout/row'
 import clsx from 'clsx'
 
 export function UserHandles(props: {
-  website?: string
-  twitterHandle?: string
-  discordHandle?: string
+  website?: string | null
+  twitterHandle?: string | null
+  discordHandle?: string | null
   className?: string
 }) {
   const { website, twitterHandle, discordHandle, className } = props
