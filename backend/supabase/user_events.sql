@@ -32,9 +32,6 @@ create index if not exists user_events_name on user_events (user_id, name);
 
 create index if not exists user_events_ts on user_events (user_id, ts);
 
-create index if not exists user_events_ad_skips on user_events (name, ad_id)
-where name = 'Skip ad';
-
 create index if not exists user_events_comment_view on user_events (user_id, name, comment_id)
 where name = 'view comment thread';
 
