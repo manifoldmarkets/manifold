@@ -12,15 +12,14 @@ const bodySchema = z.object({
 export const searchnearcity = jsonEndpoint(async (req) => {
   const { cityId, radius } = validate(bodySchema, req.body)
   const apiKey = process.env.GEODB_API_KEY
-  console.log('APIIIIIÏ', apiKey)
 
   if (!apiKey) {
     return { status: 'failure', data: 'Missing GEODB API key' }
   }
   const host = 'wft-geo-db.p.rapidapi.com'
   const baseUrl = `https://${host}/v1/geo`
-  // const url = `${baseUrl}/cities/${cityId}/nearbyCities?radius=${radius}&offset=0&sort=-population`
-  const url = `${baseUrl}/cities/${cityId}/nearbyCities?radius=${radius}&sort=-population`
+  const url = `${baseUrl}/cities/${cityId}/nearbyCities?radius=${radius}&offset=0&sort=-population`
+  // const url = `${baseUrl}/cities/${cityId}/nearbyCities?radius=${radius}&sort=-population`
 
   try {
     const res = await fetch(url, {
@@ -31,17 +30,14 @@ export const searchnearcity = jsonEndpoint(async (req) => {
       },
     })
 
-    console.log(res.json())
     if (!res.ok) {
       throw new Error(`HTTP error! Status: ${res.status}`)
     }
 
     const data = await res.json()
-    console.log('DATAAAAAAAAA\n', data)
-    const ids = data.map((item) => (item as { id: number }).id)
-    return { status: 'success', data: ids }
+
+    return { status: 'success', data: data }
   } catch (error) {
-    console.log('ERRRORRR', error)
     return { status: 'failure', data: error }
   }
 })
