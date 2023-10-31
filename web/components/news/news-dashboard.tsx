@@ -28,11 +28,13 @@ export function NewsDashboard(props: { dashboard: Dashboard }) {
           {dashboard.title}
         </h2>
         <div className="flex items-center">
-          <CopyLinkOrShareButton
-            eventTrackingName="share home news item"
-            url={window.location.href}
-            tooltip="Share"
-          />
+          {user !== undefined && (
+            <CopyLinkOrShareButton
+              eventTrackingName="share home news item"
+              url={window.location.href}
+              tooltip="Share"
+            />
+          )}
 
           <FollowDashboardButton
             dashboardId={dashboard.id}

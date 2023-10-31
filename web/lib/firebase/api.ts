@@ -476,7 +476,7 @@ export function supabaseSearchDashboards(params: {
 }
 
 export function getNewsDashboards() {
-  return call(getApiUrl('get-news-dashboards'), 'GET')
+  return maybeAuthedCall(getApiUrl('get-news-dashboards'), 'GET')
 }
 
 export function setNewsDashboards(params: { dashboardIds: string[] }) {
