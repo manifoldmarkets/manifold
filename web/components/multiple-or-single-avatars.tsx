@@ -1,6 +1,7 @@
 import { Avatar, AvatarSizeType } from 'web/components/widgets/avatar'
 import { Col } from 'web/components/layout/col'
 import { Row } from './layout/row'
+import clsx from 'clsx'
 
 export const MultipleOrSingleAvatars = (props: {
   avatarUrls: string[]
@@ -8,8 +9,9 @@ export const MultipleOrSingleAvatars = (props: {
   size: AvatarSizeType
   spacing?: number
   startLeft?: number
+  className?: string
 }) => {
-  const { avatarUrls, onClick, size } = props
+  const { avatarUrls, className, onClick, size } = props
   const combineAvatars = (avatarUrls: string[]) => {
     const totalAvatars = avatarUrls.length
     const maxToShow = Math.min(totalAvatars, 3)
@@ -36,7 +38,10 @@ export const MultipleOrSingleAvatars = (props: {
     ))
   }
   return (
-    <Col onClick={onClick} className={`relative cursor-pointer items-center`}>
+    <Col
+      onClick={onClick}
+      className={clsx(`relative cursor-pointer items-center`, className)}
+    >
       {avatarUrls.length === 1 ? (
         <Avatar size={size} avatarUrl={avatarUrls[0]} />
       ) : (

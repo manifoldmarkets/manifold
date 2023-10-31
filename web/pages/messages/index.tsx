@@ -83,6 +83,7 @@ export const MessageChannelRow = (props: {
   const messages = useRealtimePrivateMessagesPolling(channelId, true, 2000)
   const unseen = useHasUnseenPrivateMessage(currentUser.id, channelId, messages)
   const chat = messages?.[0]
+  const numOthers = otherUsers?.length ?? 0
   return (
     <Link
       className="hover:bg-canvas-0 rounded p-2 transition-colors"
@@ -92,8 +93,10 @@ export const MessageChannelRow = (props: {
       <Row className={'items-center gap-3 rounded-md'}>
         <MultipleOrSingleAvatars
           size="md"
-          spacing={1}
+          spacing={numOthers === 2 ? 0.3 : 0.15}
+          startLeft={numOthers === 2 ? 2.2 : 1.2}
           avatarUrls={otherUsers?.map((user) => user.avatarUrl) ?? []}
+          className={numOthers > 1 ? '-ml-2' : ''}
         />
 
         <Col className={'w-full'}>
@@ -102,11 +105,10 @@ export const MessageChannelRow = (props: {
               {otherUsers && (
                 <span>
                   {otherUsers
-                    .map((user) => user.name)
+                    .map((user) => user.name.split(' ')[0].trim())
                     .slice(0, 2)
                     .join(', ')}
-                  {otherUsers.length > 2 &&
-                    ` and ${otherUsers.length - 2} more`}
+                  {otherUsers.length > 2 && ` & ${otherUsers.length - 2} more`}
                 </span>
               )}
             </span>
