@@ -85,7 +85,11 @@ function InternalUnseenMessagesBubble(props: {
     })
   }, [isReady, asPath])
 
-  const unseenMessages = useUnseenPrivateMessageChannels(privateUser.id, true)
+  const unseenMessages = useUnseenPrivateMessageChannels(
+    privateUser.id,
+    true,
+    lastSeenTime
+  )
     .filter((message) => message.createdTime > lastSeenTime)
     .filter((message) => !asPath.endsWith(`/messages/${message.channelId}`))
 

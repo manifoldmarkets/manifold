@@ -1,10 +1,9 @@
 import { ChatMessage } from 'common/chat-message'
-import { Row, run, tsToMillis } from 'common/supabase/utils'
-import { usePersistentSubscription } from 'web/lib/supabase/realtime/use-subscription'
+import { millisToTs, Row, run, tsToMillis } from 'common/supabase/utils'
+import { useSubscription } from 'web/lib/supabase/realtime/use-subscription'
 import { useEffect, useState } from 'react'
 import { NumericDictionary, first, groupBy, maxBy, orderBy } from 'lodash'
 import { useIsAuthorized } from 'web/hooks/use-user'
-import { safeLocalStorage, safeSessionStorage } from 'web/lib/util/local'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import {
   convertChatMessage,
@@ -61,10 +60,8 @@ export function useRealtimePrivateMessageChannelMemberships(
       'useRealtimePrivateMessageChannelMemberships must be authorized'
     )
   }
-  const { rows } = usePersistentSubscription(
-    `private-user-channel-memberships-${userId}`,
+  const { rows } = useSubscription(
     'private_user_message_channel_members',
-    safeLocalStorage,
     { k: 'user_id', v: userId },
     () => getMessageChannelMemberships(userId, 100)
   )
@@ -96,7 +93,8 @@ export const useHasUnseenPrivateMessage = (
 // NOTE: must be authorized (useIsAuthorized) to use this hook
 export const useUnseenPrivateMessageChannels = (
   userId: string,
-  isAuthed: boolean
+  isAuthed: boolean,
+  sinceLastTime: number
 ) => {
   if (!isAuthed) {
     console.error('useUnseenPrivateMessageChannels must be authorized')
@@ -113,13 +111,19 @@ export const useUnseenPrivateMessageChannels = (
   )
   const channelIds = messageChannels?.map((m) => m.channel_id) ?? []
 
-  // also poll last_updated_time for all message channels to compare last_updated_time to last time viewed that channel page
-  const { rows: messageRows } = usePersistentSubscription(
-    `private_messages-${userId}`,
+  const { rows: messageRows } = useSubscription(
     'private_user_messages',
-    safeSessionStorage,
     undefined,
-    undefined, // no need to fetch old messages, just fetch new ones
+    async () => {
+      const q = db
+        .from('private_user_messages')
+        .select('*')
+        .in('channel_id', channelIds)
+        .gt('created_time', millisToTs(sinceLastTime))
+      const { data } = await run(q)
+      return data
+    },
+    undefined,
     `channel_id=in.(${channelIds.join(', ')})`
   )
   const allMessagesByChannelId = groupBy(

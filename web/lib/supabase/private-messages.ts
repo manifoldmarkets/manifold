@@ -45,9 +45,12 @@ export const getMessageChannelMemberships = async (
     .eq('user_id', userId)
     .order('created_time', { ascending: false })
     .limit(limit)
-  if (channelId) q = q.eq('channel_id', channelId)
+  if (channelId) {
+    q = q.eq('channel_id', channelId)
+  } else {
+    q = q.neq('status', 'left')
+  }
   const { data } = await run(q)
-
   return data
 }
 
@@ -57,18 +60,18 @@ export const getSortedChatMessageChannelIds = async (
   limit: number,
   channelId?: string
 ) => {
-  const memberships = (
+  const membershipChannelIds = (
     await getMessageChannelMemberships(userId, limit, channelId)
   ).map((m) => m.channel_id)
-  // If you just want one chanel, you don't need anything sorted
+  // If you just want one channel, you don't need anything sorted
   if (channelId) {
-    return memberships
+    return membershipChannelIds
   } else {
     const orderedIds = await run(
       db
         .from('private_user_message_channels')
         .select('id')
-        .in('id', memberships)
+        .in('id', membershipChannelIds)
         .order('last_updated_time', { ascending: false })
     )
     return orderedIds.data.map((d) => d.id)
