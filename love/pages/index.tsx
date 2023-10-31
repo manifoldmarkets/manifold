@@ -19,6 +19,7 @@ import { Button } from 'web/components/buttons/button'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { track } from 'web/lib/service/analytics'
 import { useEffect, useState } from 'react'
+import { useNearbyCities } from 'love/hooks/use-nearby-locations'
 
 export default function ProfilesPage() {
   const allLovers = useLovers()
@@ -28,19 +29,10 @@ export default function ProfilesPage() {
   )
 
   const user = useUser()
-  if (user === undefined) return <div />
 
   const lover = allLovers?.find((lover) => lover.user_id === user?.id)
 
-  const [nearbyOriginLocation, setNearbyOriginLocation] = useState<
-    string | null
-  >(null)
-
-  useEffect(() => {
-    if (lover) {
-      setNearbyOriginLocation(lover.geodb_city_id)
-    }
-  }, [lover])
+  if (user === undefined) return <div />
 
   // TODO: grab nearby cities, filter users by it
   return (
@@ -56,7 +48,7 @@ export default function ProfilesPage() {
             </Button>
           )}
           <Title className="!mb-2 text-3xl">Profiles</Title>
-          <Filters allLovers={allLovers} setLovers={setLovers} />
+          <Filters allLovers={allLovers} setLovers={setLovers} youLover={lover}/>
 
           {lovers === undefined ? (
             <LoadingIndicator />

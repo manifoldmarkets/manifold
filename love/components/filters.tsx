@@ -16,6 +16,7 @@ import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/outline'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { searchNearCity } from 'web/lib/firebase/api'
 import { useIsAuthorized } from 'web/hooks/use-user'
+import { useNearbyCities } from 'love/hooks/use-nearby-locations'
 
 const labelClassName = 'font-semibold'
 const initialFilters = {
@@ -33,11 +34,26 @@ const initialFilters = {
 export const Filters = (props: {
   allLovers: Lover[] | undefined
   setLovers: (lovers: Lover[] | undefined) => void
+  youLover: Lover | undefined
 }) => {
-  const { allLovers, setLovers } = props
+  const { allLovers, setLovers, youLover } = props
   const [filters, setFilters] = usePersistentInMemoryState<
     Partial<rowFor<'lovers'> & User>
   >(initialFilters, 'profile-filters')
+
+  const [nearbyOriginLocation, setNearbyOriginLocation] = useState<
+    string | null | undefined
+  >(undefined)
+
+  useEffect(() => {
+    if (youLover) {
+      console.log('YOU LOVER', youLover)
+      setNearbyOriginLocation(youLover.geodb_city_id)
+    }
+  }, [youLover])
+
+  const nearbyCities = useNearbyCities(nearbyOriginLocation)
+  console.log('NEARBY CITIES', nearbyOriginLocation, nearbyCities, youLover)
 
   const updateFilter = (newState: Partial<rowFor<'lovers'> & User>) => {
     setFilters((prevState) => ({ ...prevState, ...newState }))
@@ -51,15 +67,6 @@ export const Filters = (props: {
       applyFilters()
     }
   }, [JSON.stringify(filters), allLovers?.map((l) => l.id).join(',')])
-
-  // const isAuth = useIsAuthorized()
-  useEffect(() => {
-    // if (isAuth) {
-    searchNearCity({ cityId: '45633', radius: 100 }).then((result) => {
-      console.log('NEAR YOU', result)
-    })
-    // }
-  }, [])
 
   const applyFilters = () => {
     const sortedLovers = orderBy(
