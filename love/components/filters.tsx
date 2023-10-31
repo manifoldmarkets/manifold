@@ -15,6 +15,7 @@ import { User } from 'common/user'
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/outline'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { searchNearCity } from 'web/lib/firebase/api'
+import { useIsAuthorized } from 'web/hooks/use-user'
 
 const labelClassName = 'font-semibold'
 const initialFilters = {
@@ -51,11 +52,14 @@ export const Filters = (props: {
     }
   }, [JSON.stringify(filters), allLovers?.map((l) => l.id).join(',')])
 
+  const isAuth = useIsAuthorized()
   useEffect(() => {
-    searchNearCity({ cityId: '45633', radius: 20 }).then((result) => {
-      console.log('NEAR YOU', result)
-    })
-  }, [])
+    if (isAuth) {
+      searchNearCity({ cityId: '45633', radius: 20 }).then((result) => {
+        console.log('NEAR YOU', result)
+      })
+    }
+  }, [isAuth])
 
   const applyFilters = () => {
     const sortedLovers = orderBy(

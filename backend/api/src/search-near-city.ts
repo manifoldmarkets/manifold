@@ -12,6 +12,7 @@ const bodySchema = z.object({
 export const searchnearcity = jsonEndpoint(async (req) => {
   const { cityId, radius } = validate(bodySchema, req.body)
   const apiKey = process.env.GEODB_API_KEY
+  console.log('APIIIIIÏ', apiKey)
 
   if (!apiKey) {
     return { status: 'failure', data: 'Missing GEODB API key' }
