@@ -50,6 +50,7 @@ export const Filters = (props: {
   const [radius, setRadius] = useState<number>(100)
   const [debouncedRadius, setDebouncedRadius] = useState(radius)
   const debouncedSetRadius = debounce(setDebouncedRadius, 200)
+
   useEffect(() => {
     debouncedSetRadius(radius)
   }, [radius])
@@ -275,12 +276,16 @@ export const Filters = (props: {
                   />
                   {filters.geodb_city_id && (
                     <Slider
-                      min={1}
+                      min={50}
                       max={500}
-                      step={100}
+                      step={50}
                       color="indigo"
                       amount={radius}
                       onChange={setRadius}
+                      marks={[
+                        { value: 0, label: '50' },
+                        { value: 100, label: '500' },
+                      ]}
                     />
                   )}
                 </Col>
