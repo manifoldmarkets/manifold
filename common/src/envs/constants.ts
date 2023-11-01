@@ -111,6 +111,7 @@ export const BOT_USERNAMES = [
   'mirrorbot',
   'JakeBot',
   'loopsbot',
+  'breezybot',
 ]
 
 export const CORE_USERNAMES = [
