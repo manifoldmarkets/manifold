@@ -14,7 +14,6 @@ export default async function handler(
   await applyCorsHeaders(req, res, {
     origin: [CORS_ORIGIN_MANIFOLD, CORS_ORIGIN_LOCALHOST],
     methods: 'GET',
-    allowedHeaders: 'Authorization',
   })
   try {
     const backendRes = await fetchBackend(req, 'getcurrentuser')

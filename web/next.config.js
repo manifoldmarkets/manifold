@@ -76,17 +76,17 @@ module.exports = {
       },
       {
         source: '/labs',
-        destination: '/about',
+        destination: '/lab',
         permanent: true,
       },
       {
         source: '/sitemap',
         destination: '/about',
-        permanent: false,
+        permanent: true,
       },
       {
         source: '/versus',
-        destination: '/VersusBot?tab=markets',
+        destination: '/VersusBot?tab=questions',
         permanent: false,
       },
       {
@@ -121,8 +121,13 @@ module.exports = {
         permanent: true,
       },
       {
-        source: '/groups',
+        source: '/find',
         destination: '/browse',
+        permanent: true,
+      },
+      {
+        source: '/groups',
+        destination: '/browse?t=Topics',
         permanent: true,
       },
       {

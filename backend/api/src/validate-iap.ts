@@ -8,9 +8,11 @@ import { ManaPurchaseTxn } from 'common/txn'
 import { sendThankYouEmail } from 'shared/emails'
 import { runTxnFromBank } from 'shared/txn/run-txn'
 
-const bodySchema = z.object({
-  receipt: z.string(),
-})
+const bodySchema = z
+  .object({
+    receipt: z.string(),
+  })
+  .strict()
 
 const PRODUCTS_TO_AMOUNTS: { [key: string]: number } = {
   mana_1000: 1000,

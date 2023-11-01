@@ -4,15 +4,23 @@ import { getUserSupabase } from 'shared/utils'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { Json } from 'common/supabase/schema'
 import { contentSchema } from 'shared/zod-types'
+import { MAX_COMMENT_JSON_LENGTH } from 'api/create-comment'
 
-const postSchema = z.object({
-  content: contentSchema,
-  channelId: z.number().gte(0).int(),
-})
+const postSchema = z
+  .object({
+    content: contentSchema,
+    channelId: z.number().gte(0).int(),
+  })
+  .strict()
 
 export const createprivateusermessage = authEndpoint(async (req, auth) => {
   const { content, channelId } = validate(postSchema, req.body)
-
+  if (JSON.stringify(content).length > MAX_COMMENT_JSON_LENGTH) {
+    throw new APIError(
+      400,
+      `Message JSON should be less than ${MAX_COMMENT_JSON_LENGTH}`
+    )
+  }
   const pg = createSupabaseDirectClient()
   const creator = await getUserSupabase(auth.uid)
   if (!creator) throw new APIError(401, 'Your account was not found')

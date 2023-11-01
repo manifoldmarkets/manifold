@@ -1,4 +1,4 @@
-import { sortBy, sumBy, uniqBy } from 'lodash'
+import { sumBy, uniq, uniqBy } from 'lodash'
 import { useState } from 'react'
 import Image from 'next/legacy/image'
 
@@ -13,9 +13,9 @@ import { useUser } from 'web/hooks/use-user'
 import { Linkify } from 'web/components/widgets/linkify'
 import { transact } from 'web/lib/firebase/api'
 import { charities, Charity } from 'common/charity'
-import { useRouter } from 'next/router'
 import Custom404 from '../404'
-import { useCharityTxns } from 'web/hooks/use-charity-txns'
+import { getAllDonations } from 'web/lib/supabase/txns'
+import { getUsers } from 'web/lib/supabase/user'
 import { Donation } from 'web/components/charity/feed-items'
 import { manaToUSD } from 'common/util/format'
 import { track } from 'web/lib/service/analytics'
@@ -24,32 +24,53 @@ import { Button } from 'web/components/buttons/button'
 import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
 import { CollapsibleContent } from 'web/components/widgets/collapsible-content'
 
-export default function CharityPageWrapper() {
-  const router = useRouter()
-  const { charitySlug } = router.query as { charitySlug: string }
+type DonationItem = { user: User; ts: number; amount: number }
 
+export async function getStaticPaths() {
+  return { paths: [], fallback: 'blocking' }
+}
+
+export async function getStaticProps(ctx: { params: { charitySlug: string } }) {
+  const { charitySlug } = ctx.params
   const charity = charities.find((c) => c.slug === charitySlug?.toLowerCase())
-  if (!router.isReady) return <></>
+  if (!charity) {
+    return {
+      props: { charity: null, donations: [] },
+      revalidate: 60,
+    }
+  }
+  const txns = await getAllDonations(charity.id)
+  const userIds = uniq(txns.map((t) => t.fromId))
+  const users = await getUsers(userIds)
+  const usersById = Object.fromEntries(users.map((u) => [u.id, u]))
+  const donations = txns.map((t) => ({
+    user: usersById[t.fromId],
+    ts: t.createdTime,
+    amount: t.amount,
+  }))
+  return {
+    props: { charity, donations },
+    revalidate: 60,
+  }
+}
+
+export default function CharityPageWrapper(props: {
+  charity: Charity | null
+  donations: DonationItem[]
+}) {
+  const { charity, donations } = props
   if (!charity) {
     return <Custom404 />
   }
-  return <CharityPage charity={charity} />
+  return <CharityPage charity={charity} donations={donations} />
 }
 
-function CharityPage(props: { charity: Charity }) {
+function CharityPage(props: { charity: Charity; donations: DonationItem[] }) {
   const { charity } = props
   const { name, photo, description } = charity
   const user = useUser()
 
-  const txns = useCharityTxns(charity.id)
-  const newToOld = sortBy(txns, (txn) => -txn.createdTime)
-  const totalRaised = sumBy(txns, (txn) => txn.amount)
-  const fromYou = sumBy(
-    txns.filter((txn) => txn.fromId === user?.id),
-    (txn) => txn.amount
-  )
-  const numSupporters = uniqBy(txns, (txn) => txn.fromId).length
-
+  const [donations, setDonations] = useState<DonationItem[]>(props.donations)
   const [showConfetti, setShowConfetti] = useState(false)
 
   return (
@@ -69,26 +90,28 @@ function CharityPage(props: { charity: Charity }) {
                 <Image src={photo} alt="" layout="fill" objectFit="contain" />
               </div>
             )}
-            <Details
-              charity={charity}
-              totalRaised={totalRaised}
-              userDonated={fromYou}
-              numSupporters={numSupporters}
-            />
+            <Details charity={charity} donations={donations} />
           </Row>
           <DonationBox
             user={user}
             charity={charity}
-            setShowConfetti={setShowConfetti}
+            onDonated={(user, ts, amount) => {
+              setDonations((existing) => [
+                { user, ts, amount },
+                ...(existing ?? []),
+              ])
+              setShowConfetti(true)
+            }}
           />
           <CollapsibleContent
             content={description}
             stateKey={`isCollapsed-charity-${charity.id}`}
           />
           <Spacer h={8} />
-          {newToOld.map((txn) => (
-            <Donation key={txn.id} txn={txn} />
-          ))}
+          {donations &&
+            donations.map((d, i) => (
+              <Donation key={i} user={d.user} ts={d.ts} amount={d.amount} />
+            ))}
         </Col>
       </Col>
     </Page>
@@ -97,23 +120,28 @@ function CharityPage(props: { charity: Charity }) {
 
 function Details(props: {
   charity: Charity
-  totalRaised: number
-  userDonated: number
-  numSupporters: number
+  donations: DonationItem[] | undefined
 }) {
-  const { charity, userDonated, numSupporters, totalRaised } = props
+  const { charity, donations } = props
   const { website } = charity
+  const user = useUser()
+  const totalRaised = sumBy(donations ?? [], (txn) => txn.amount)
+  const numSupporters = uniqBy(donations ?? [], (d) => d.user.id).length
+  const fromYou = sumBy(
+    (donations ?? []).filter((txn) => txn.user.id === user?.id),
+    (txn) => txn.amount
+  )
   return (
     <Col className="gap-1 text-right">
       <div className="mb-2 text-4xl text-teal-500">
         {manaToUSD(totalRaised ?? 0)} raised
       </div>
-      {userDonated > 0 && (
+      {fromYou ? (
         <div className="text-xl text-teal-500">
-          {manaToUSD(userDonated)} from you!
+          {manaToUSD(fromYou)} from you!
         </div>
-      )}
-      {numSupporters > 0 && (
+      ) : null}
+      {numSupporters && (
         <div className="text-ink-500">{numSupporters} supporters</div>
       )}
       <Linkify text={website} />
@@ -126,9 +154,9 @@ const MIN_DONATION_MANA = 100
 function DonationBox(props: {
   user?: User | null
   charity: Charity
-  setShowConfetti: (show: boolean) => void
+  onDonated?: (user: User, ts: number, amount: number) => void
 }) {
-  const { user, charity, setShowConfetti } = props
+  const { user, charity, onDonated } = props
   const [amount, setAmount] = useState<number | undefined>()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | undefined>()
@@ -156,7 +184,7 @@ function DonationBox(props: {
 
     setIsSubmitting(false)
     setAmount(undefined)
-    setShowConfetti(true)
+    onDonated?.(user, Date.now(), amount)
     track('donation', { charityId: charity.id, amount })
   }
 

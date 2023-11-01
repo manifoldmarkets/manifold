@@ -59,6 +59,7 @@ export const getBets = async (db: SupabaseClient, options?: BetFilter) => {
   return data.map((r) => r.data)
 }
 
+// gets 50,000 unsorted random bets
 export const getBetPoints = async <S extends SupabaseClient>(
   db: S,
   contractId: string,
@@ -66,17 +67,21 @@ export const getBetPoints = async <S extends SupabaseClient>(
 ) => {
   let q = db
     .from('contract_bets')
-    .select('created_time, prob_after, data->answerId')
-    .order('created_time', { ascending: true })
-  q = applyBetsFilter(q, { contractId, filterRedemptions: !isMulti })
+    .select('created_time, prob_before, prob_after, data->answerId')
+    .order('bet_id')
+  q = applyBetsFilter(q, {
+    contractId,
+    filterRedemptions: !isMulti,
+    limit: 50000,
+  })
   const { data } = await run(q)
 
   return data
     .filter((r: any) => r.prob_after != r.prob_before)
     .map((r: any) => ({
       x: tsToMillis(r.created_time),
-      y: r.prob_after,
-      answerId: r.answerId,
+      y: r.prob_after as number,
+      answerId: r.answerId as string,
     }))
 }
 
@@ -108,6 +113,9 @@ export const applyBetsFilter = <T>(q: T, options?: BetFilter): T => {
   }
   if (options?.limit) {
     q = (q as any).limit(options.limit)
+  }
+  if (options?.commentRepliesOnly) {
+    q = (q as any).neq('data->>replyToCommentId', null)
   }
   return q
 }

@@ -207,10 +207,19 @@ export async function getMyGroupRoles(userId: string) {
 }
 
 // gets all public groups
-export async function getPublicGroups() {
-  const { data } = await run(
-    db.from('groups').select().eq('privacy_status', 'public').order('name')
-  )
+export async function getPublicGroups(limit?: number, beforeTime?: number) {
+  let q = db
+    .from('groups')
+    .select()
+    .eq('privacy_status', 'public')
+    .order('data->createdTime', { ascending: false } as any)
+  if (limit) {
+    q = q.limit(limit)
+  }
+  if (beforeTime) {
+    q = q.lt('data->createdTime', beforeTime)
+  }
+  const { data } = await run(q)
 
   return data.map(convertGroup)
 }

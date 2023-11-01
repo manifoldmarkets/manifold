@@ -1,6 +1,7 @@
 import clsx from 'clsx'
 import {
   BetFillData,
+  BetReplyNotificationData,
   ContractResolutionData,
   getSourceUrl,
   Notification,
@@ -35,7 +36,7 @@ import { Avatar } from 'web/components/widgets/avatar'
 import { UserLink } from 'web/components/widgets/user-link'
 import { useContract } from 'web/hooks/use-contract-supabase'
 import { useGroupsWithContract } from 'web/hooks/use-group-supabase'
-import { StarDisplay } from '../reviews/stars'
+import { Rating, ReviewPanel } from '../reviews/stars'
 import { Linkify } from '../widgets/linkify'
 import { linkClass } from '../widgets/site-link'
 import {
@@ -48,6 +49,10 @@ import {
   QuestionOrGroupLink,
 } from './notification-helpers'
 import Link from 'next/link'
+import { Modal } from '../layout/modal'
+import { Button } from '../buttons/button'
+import { StarIcon } from '@heroicons/react/solid'
+import { useReview } from 'web/hooks/use-review'
 import { groupPath } from 'common/group'
 import { REFERRAL_AMOUNT } from 'common/economy'
 import { ReferralsDialog } from 'web/components/buttons/referrals-button'
@@ -59,6 +64,10 @@ import {
 } from 'common/user'
 import { SEARCH_TYPE_KEY } from 'web/components/supabase-search'
 import { canSetReferrer } from 'web/lib/firebase/users'
+import {
+  CommentOnLoverNotification,
+  NewMatchNotification,
+} from 'manifold-love/components/love-notification-types'
 
 export function NotificationItem(props: {
   notification: Notification
@@ -126,6 +135,15 @@ export function NotificationItem(props: {
         isChildOfGroup={isChildOfGroup}
       />
     )
+  } else if (reason === 'bounty_canceled') {
+    return (
+      <BountyCanceledNotification
+        notification={notification}
+        highlighted={highlighted}
+        setHighlighted={setHighlighted}
+        isChildOfGroup={isChildOfGroup}
+      />
+    )
   } else if (sourceType === 'user' && sourceUpdateType === 'updated') {
     return (
       <UserJoinedNotification
@@ -170,9 +188,45 @@ export function NotificationItem(props: {
         setHighlighted={setHighlighted}
       />
     )
+  } else if (sourceType === 'comment') {
+    return (
+      <CommentNotification
+        notification={notification}
+        isChildOfGroup={isChildOfGroup}
+        highlighted={highlighted}
+        setHighlighted={setHighlighted}
+      />
+    )
+  } else if (sourceType === 'comment_on_lover') {
+    return (
+      <CommentOnLoverNotification
+        notification={notification}
+        isChildOfGroup={isChildOfGroup}
+        highlighted={highlighted}
+        setHighlighted={setHighlighted}
+      />
+    )
+  } else if (sourceType === 'new_match') {
+    return (
+      <NewMatchNotification
+        notification={notification}
+        isChildOfGroup={isChildOfGroup}
+        highlighted={highlighted}
+        setHighlighted={setHighlighted}
+      />
+    )
   } else if (reason === 'tagged_user') {
     return (
       <TaggedUserNotification
+        notification={notification}
+        isChildOfGroup={isChildOfGroup}
+        highlighted={highlighted}
+        setHighlighted={setHighlighted}
+      />
+    )
+  } else if (sourceType === 'bet_reply') {
+    return (
+      <BetReplyNotification
         notification={notification}
         isChildOfGroup={isChildOfGroup}
         highlighted={highlighted}
@@ -242,15 +296,6 @@ export function NotificationItem(props: {
   } else if (sourceType === 'signup_bonus') {
     return (
       <SignupBonusNotification
-        notification={notification}
-        isChildOfGroup={isChildOfGroup}
-        highlighted={highlighted}
-        setHighlighted={setHighlighted}
-      />
-    )
-  } else if (sourceType === 'comment') {
-    return (
-      <CommentNotification
         notification={notification}
         isChildOfGroup={isChildOfGroup}
         highlighted={highlighted}
@@ -615,6 +660,7 @@ export function MarketResolvedNotification(props: {
     ) : (
       <div />
     )
+  const [openRateModal, setOpenRateModal] = useState(false)
 
   const resolutionDescription = () => {
     if (!sourceText) return <div />
@@ -688,6 +734,10 @@ export function MarketResolvedNotification(props: {
       </>
     )
 
+  const [justNowReview, setJustNowReview] = useState<null | Rating>(null)
+  const userReview = useReview(notification.sourceId, notification.userId)
+  const showReviewButton = !userReview && !justNowReview
+
   return (
     <NotificationFrame
       notification={notification}
@@ -697,7 +747,28 @@ export function MarketResolvedNotification(props: {
       subtitle={
         <>
           <div className="mb-1">{subtitle}</div>
-          <StarDisplay rating={0} />
+          {showReviewButton && (
+            <Button
+              size={'2xs'}
+              color={'gray'}
+              onClick={(e) => {
+                e.stopPropagation()
+                e.preventDefault()
+                setOpenRateModal(true)
+              }}
+            >
+              <Row className="gap-1">
+                <StarIcon className="h-4 w-4" />
+                Rate {notification.sourceUserName}'s resolution
+              </Row>
+            </Button>
+          )}
+          {!showReviewButton && (
+            <Row className="text-ink-500 items-center gap-0.5 text-sm italic">
+              You rated this resolution {justNowReview ?? userReview?.rating}{' '}
+              <StarIcon className="h-4 w-4" />
+            </Row>
+          )}
         </>
       }
       icon={
@@ -709,6 +780,17 @@ export function MarketResolvedNotification(props: {
       link={getSourceUrl(notification)}
     >
       {content}
+      <Modal open={openRateModal} setOpen={setOpenRateModal}>
+        <ReviewPanel
+          marketId={notification.sourceId}
+          author={notification.sourceUserName}
+          className="my-2"
+          onSubmit={(rating: Rating) => {
+            setJustNowReview(rating)
+            setOpenRateModal(false)
+          }}
+        />
+      </Modal>
     </NotificationFrame>
   )
 }
@@ -935,6 +1017,54 @@ function CommentNotification(props: {
           className={'hover:text-primary-500 relative flex-shrink-0'}
         />{' '}
         {reasonText}
+        {!isChildOfGroup && (
+          <span>
+            on <PrimaryNotificationLink text={sourceContractTitle} />
+          </span>
+        )}
+      </div>
+    </NotificationFrame>
+  )
+}
+function BetReplyNotification(props: {
+  notification: Notification
+  highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
+  isChildOfGroup?: boolean
+}) {
+  const { notification, isChildOfGroup, highlighted, setHighlighted } = props
+  const { sourceUserName, sourceUserUsername, sourceContractTitle } =
+    notification
+  const { betOutcome, betAmount, commentText } =
+    notification.data as BetReplyNotificationData
+
+  return (
+    <NotificationFrame
+      notification={notification}
+      isChildOfGroup={isChildOfGroup}
+      highlighted={highlighted}
+      setHighlighted={setHighlighted}
+      icon={
+        <AvatarNotificationIcon notification={notification} symbol={'💬'} />
+      }
+      subtitle={commentText}
+      link={getSourceUrl(notification)}
+    >
+      <div className="line-clamp-3">
+        <UserLink
+          name={sourceUserName || ''}
+          username={sourceUserUsername || ''}
+          className={'hover:text-primary-500 relative flex-shrink-0'}
+        />{' '}
+        bet{' '}
+        <span
+          className={
+            betOutcome === 'YES' ? 'text-teal-600' : 'text-scarlet-600'
+          }
+        >
+          {formatMoney(betAmount)} {betOutcome}
+        </span>{' '}
+        in reply to your comment{' '}
         {!isChildOfGroup && (
           <span>
             on <PrimaryNotificationLink text={sourceContractTitle} />
@@ -1550,6 +1680,41 @@ function BountyAddedNotification(props: {
           )}
         </span>
       </>
+    </NotificationFrame>
+  )
+}
+
+function BountyCanceledNotification(props: {
+  notification: Notification
+  highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
+  isChildOfGroup?: boolean
+}) {
+  const { notification, highlighted, setHighlighted, isChildOfGroup } = props
+  return (
+    <NotificationFrame
+      notification={notification}
+      isChildOfGroup={isChildOfGroup}
+      highlighted={highlighted}
+      setHighlighted={setHighlighted}
+      link={getSourceUrl(notification)}
+      icon={
+        <AvatarNotificationIcon notification={notification} symbol={'❌'} />
+      }
+      subtitle={`with ${notification.sourceText} bounty left unpaid`}
+    >
+      <span>
+        <UserLink
+          name={notification.sourceUserName}
+          username={notification.sourceUserUsername}
+        />{' '}
+        canceled bounty{' '}
+        {!isChildOfGroup && (
+          <span>
+            <PrimaryNotificationLink text={notification.sourceContractTitle} />
+          </span>
+        )}
+      </span>
     </NotificationFrame>
   )
 }

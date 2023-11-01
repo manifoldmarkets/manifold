@@ -3,7 +3,7 @@ import Head from 'next/head'
 import Script from 'next/script'
 import { useEffect } from 'react'
 import { AuthProvider, AuthUser } from 'web/components/auth-context'
-import { DarkModeProvider } from 'web/components/dark-mode-provider'
+import { ThemeProvider } from 'web/components/theme-provider'
 import {
   NativeMessageListener,
   postMessageToNative,
@@ -70,7 +70,7 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
 
   const title = 'Manifold.love — Bet on love!'
   const description =
-    'Find the best long term matches based through markets that crowdsource human matchmaking.'
+    "Find the love of your life and bet on your friends’ relationships ❤️ Who says love and money don't mix?"
 
   return (
     <>
@@ -96,24 +96,17 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
         <meta name="twitter:site" content="@manifoldmarkets" />
         <meta
           name="twitter:image"
-          content="https://manifold.markets/logo.png"
+          content="https://manifold.love/bet-on-love.png"
           key="image2"
         />
         <meta
           property="og:image"
-          content="https://manifold.markets/logo-cover.png"
+          content="https://manifold.love/bet-on-love.png"
           key="image1"
         />
         <meta
           name="viewport"
           content="width=device-width, initial-scale=1,maximum-scale=1, user-scalable=no"
-        />
-        <meta name="apple-itunes-app" content="app-id=6444136749" />
-        <link
-          rel="search"
-          type="application/opensearchdescription+xml"
-          href="https://manifold.markets/opensearch.xml"
-          title="Manifold"
         />
       </Head>
       <div
@@ -124,20 +117,20 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
         )}
       >
         <AuthProvider serverUser={pageProps.auth}>
-          <DarkModeProvider>
+          <ThemeProvider>
             <NativeMessageListener />
             <Component {...pageProps} />
-          </DarkModeProvider>
+          </ThemeProvider>
         </AuthProvider>
         {/* Workaround for https://github.com/tailwindlabs/headlessui/discussions/666, to allow font CSS variable */}
         <div id="headlessui-portal-root">
           <div />
         </div>
       </div>
-      {/* Umami, for pageview analytics on https://analytics.umami.is/share/ARwUIC9GWLNyowjq/Manifold%20Markets */}
+      {/* Umami, for pageview analytics. Separate from Main Manifold umami */}
       <Script
-        src="https://analytics.umami.is/script.js"
-        data-website-id="ee5d6afd-5009-405b-a69f-04e3e4e3a685"
+        src="https://analytics.eu.umami.is/script.js"
+        data-website-id="38ac9f34-f8f0-49b7-ba3e-e335125a8b59"
       />
       {/* Hotjar, for recording user sessions */}
       <Script

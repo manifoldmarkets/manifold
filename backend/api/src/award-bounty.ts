@@ -7,11 +7,13 @@ import { FieldValue } from 'firebase-admin/firestore'
 import { createBountyAwardedNotification } from 'shared/create-notification'
 import { getContract } from 'shared/utils'
 
-const bodySchema = z.object({
-  contractId: z.string(),
-  commentId: z.string(),
-  amount: z.number().gt(0).int().finite(),
-})
+const bodySchema = z
+  .object({
+    contractId: z.string(),
+    commentId: z.string(),
+    amount: z.number().gt(0).int().finite(),
+  })
+  .strict()
 
 export const awardbounty = authEndpoint(async (req, auth) => {
   const { contractId, commentId, amount } = validate(bodySchema, req.body)

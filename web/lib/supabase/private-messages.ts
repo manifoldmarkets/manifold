@@ -51,25 +51,44 @@ export const getMessageChannelMemberships = async (
 }
 
 // NOTE: must be authorized (useIsAuthorized) to use this function
-export const getChatMessageChannelIds = async (
+export const getSortedChatMessageChannelIds = async (
   userId: string,
   limit: number,
   channelId?: string
 ) => {
-  const memberhips = (await getMessageChannelMemberships(userId, limit)).map(
-    (m) => m.channel_id
-  )
-  if (channelId) return memberhips
-  else {
+  const memberships = (
+    await getMessageChannelMemberships(userId, limit, channelId)
+  ).map((m) => m.channel_id)
+  // If you just want one chanel, you don't need anything sorted
+  if (channelId) {
+    return memberships
+  } else {
     const orderedIds = await run(
       db
         .from('private_user_message_channels')
         .select('id')
-        .in('id', memberhips)
+        .in('id', memberships)
         .order('last_updated_time', { ascending: false })
     )
     return orderedIds.data.map((d) => d.id)
   }
+}
+
+export const getNonEmptyChatMessageChannelIds = async (
+  userId: string,
+  limit?: number
+) => {
+  const orderedNonEmptyIds = await db.rpc(
+    'get_non_empty_private_message_channel_ids',
+    {
+      p_user_id: userId,
+      p_limit: limit,
+    }
+  )
+  if (orderedNonEmptyIds.data) {
+    return orderedNonEmptyIds.data.map((d) => d.id)
+  }
+  return []
 }
 
 // NOTE: must be authorized (useIsAuthorized) to use this function

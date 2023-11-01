@@ -3,7 +3,11 @@ import { useEffect, useState } from 'react'
 import { SEO } from 'web/components/SEO'
 import { Title } from 'web/components/widgets/title'
 import { claimManalink } from 'web/lib/firebase/api'
-import { useManalink } from 'web/lib/firebase/manalinks'
+import {
+  ManalinkInfo,
+  getManalink,
+  getNumClaims,
+} from 'web/lib/supabase/manalinks'
 import { ManalinkCard } from 'web/components/manalink-card'
 import { useUser } from 'web/hooks/use-user'
 import { firebaseLogin, getUser } from 'web/lib/firebase/users'
@@ -11,26 +15,45 @@ import { Row } from 'web/components/layout/row'
 import { Button } from 'web/components/buttons/button'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { User } from 'common/user'
-import { Manalink } from 'common/manalink'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { Page } from 'web/components/layout/page'
 import { formatMoney } from 'common/util/format'
+import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
+import { getUserAndPrivateUser } from 'web/lib/firebase/users'
+import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
 
-export default function ClaimPage() {
+export const getServerSideProps = redirectIfLoggedOut(
+  '/',
+  async (ctx, creds) => {
+    const slug = ctx.params?.slug
+    if (!slug || typeof slug !== 'string') {
+      return { notFound: true }
+    }
+    const adminDb = await initSupabaseAdmin()
+    const [auth, link, numClaims] = await Promise.all([
+      getUserAndPrivateUser(creds.uid),
+      getManalink(slug, adminDb),
+      getNumClaims(slug, adminDb),
+    ])
+    if (link == null) {
+      return { notFound: true }
+    }
+    return { props: { auth, link, numClaims } }
+  }
+)
+
+export default function ClaimPage(props: {
+  link: ManalinkInfo
+  numClaims: number
+}) {
+  const { link, numClaims } = props
   const user = useUser()
   const router = useRouter()
-  const { slug } = router.query as { slug: string }
-  const manalink = useManalink(slug)
   const [claiming, setClaiming] = useState(false)
   const [error, setError] = useState<string | undefined>(undefined)
 
-  useReferral(user, manalink)
+  useReferral(user, link)
 
-  if (!manalink) {
-    return <></>
-  }
-
-  const info = { ...manalink, uses: manalink.claims.length }
   return (
     <Page trackPageView={'manalink slug page'}>
       <SEO
@@ -40,11 +63,11 @@ export default function ClaimPage() {
       />
       <div className="mx-auto max-w-xl px-2">
         <Row className="items-center justify-between">
-          <Title>Claim {formatMoney(manalink.amount)} mana </Title>
+          <Title>Claim {formatMoney(link.amount)} mana </Title>
           <div className="my-auto"></div>
         </Row>
 
-        <ManalinkCard info={info} />
+        <ManalinkCard info={link} numClaims={numClaims} />
 
         {error && (
           <section className="text-scarlet-500 my-5">
@@ -63,10 +86,10 @@ export default function ClaimPage() {
                   setClaiming(false)
                   return
                 }
-                if (user?.id == manalink.fromId) {
+                if (user?.id == link.creatorId) {
                   throw new Error("You can't claim your own manalink.")
                 }
-                await claimManalink({ slug: manalink.slug })
+                await claimManalink({ slug: link.slug })
                 user && router.push(`/${user.username}?claimed-mana=yes`)
               } catch (e) {
                 console.log(e)
@@ -80,7 +103,7 @@ export default function ClaimPage() {
             size="lg"
           >
             {user
-              ? `Claim ${ENV_CONFIG.moneyMoniker}${manalink.amount}`
+              ? `Claim ${ENV_CONFIG.moneyMoniker}${link.amount}`
               : 'Login to claim'}
           </Button>
         </Row>
@@ -89,12 +112,12 @@ export default function ClaimPage() {
   )
 }
 
-const useReferral = (user: User | undefined | null, manalink?: Manalink) => {
+const useReferral = (user: User | undefined | null, link: ManalinkInfo) => {
   const [creator, setCreator] = useState<User | undefined>(undefined)
 
   useEffect(() => {
-    if (manalink?.fromId) getUser(manalink.fromId).then(setCreator)
-  }, [manalink])
+    getUser(link.creatorId).then(setCreator)
+  }, [link])
 
   useSaveReferral(user, { defaultReferrerUsername: creator?.username })
 }

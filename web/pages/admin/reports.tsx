@@ -27,9 +27,10 @@ export async function getStaticProps() {
       .order('created_time', { ascending: false })
       .limit(500)
   )
-
-  const reports = await getReports(data)
-
+  const reports = await getReports(data).catch((e) => {
+    console.error(e)
+    return []
+  })
   return { props: { reports } }
 }
 

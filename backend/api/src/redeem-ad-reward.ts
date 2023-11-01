@@ -10,9 +10,11 @@ import { z } from 'zod'
 import { APIError, authEndpoint, validate } from './helpers'
 import { BOT_USERNAMES } from 'common/envs/constants'
 
-const schema = z.object({
-  adId: z.string(),
-})
+const schema = z
+  .object({
+    adId: z.string(),
+  })
+  .strict()
 
 export const redeemad = authEndpoint(async (req, auth) => {
   const firestore = admin.firestore()

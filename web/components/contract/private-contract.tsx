@@ -18,6 +18,6 @@ export function PrivateContractPage(props: { contractSlug: string }) {
   else if (contractParameters.state !== 'authed')
     return <InaccessiblePrivateThing thing="market" />
   else {
-    return <ContractPageContent contractParams={contractParameters.params} />
+    return <ContractPageContent {...contractParameters.params} />
   }
 }

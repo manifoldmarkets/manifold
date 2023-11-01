@@ -19,7 +19,7 @@ import { Contract } from 'common/contract'
 import { searchContract } from 'web/lib/supabase/contracts'
 import { getTotalSubs } from 'web/lib/firebase/utils'
 import { WhatIsMana } from 'web/components/explainer-panel'
-import { LabCard } from './about'
+import { LabCard } from './lab'
 
 export async function getStaticProps() {
   const subCount = await getTotalSubs()

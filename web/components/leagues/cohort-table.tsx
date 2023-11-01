@@ -51,96 +51,119 @@ export const CohortTable = (props: {
   const noPromotionDemotion = cohort === 'bots'
   const shouldTruncateZeros = division === 1 || division === 2 || division === 3
 
+  const adjustedDoublePromotionCount =
+    division === 1
+      ? Math.min(
+          rows.findLastIndex((row) => row.mana_earned >= 100) + 1,
+          doublePromotionCount
+        )
+      : doublePromotionCount
+  const adjustedPromotionCount =
+    division === 1
+      ? Math.min(
+          rows.findLastIndex((row) => row.mana_earned >= 100) + 1,
+          promotionCount
+        )
+      : promotionCount
+
   return (
-    <table>
-      <thead className={clsx('text-ink-600 text-left text-sm font-semibold')}>
-        <tr>
-          <th className={clsx('pb-1 pl-10 pr-2')}>User</th>
-          <th className={clsx('px-2 pb-1 text-right sm:pr-10')}>
-            <InfoTooltip
-              text={
-                'Includes both realized and unrealized profits from bets placed this month plus quest rewards and unique trader bonuses.'
-              }
-            >
-              Mana earned{' '}
-            </InfoTooltip>
-          </th>
-        </tr>
-      </thead>
-      <tbody>
-        {rows.map((row, i) => {
-          const user = users[i]
-          return (
-            <Fragment key={user.id}>
-              {user &&
-                (!shouldTruncateZeros ||
-                  !!row.mana_earned ||
-                  highlightedUserId === user.id) && (
-                  <UserRow
-                    {...row}
-                    user={users[i]}
-                    isHighlighted={highlightedUserId === user.id}
-                    mana_earned_breakdown={row.mana_earned_breakdown as any}
-                    season={season}
-                  />
-                )}
-              {user &&
-                shouldTruncateZeros &&
-                row.mana_earned === 0 &&
-                (i === rows.length - 1 || rows[i + 1].mana_earned !== 0) && (
-                  <tr>
-                    <td className="pl-9">
-                      <div className="">...</div>
-                    </td>
-                    <td />
-                  </tr>
-                )}
-              {!noPromotionDemotion && (
-                <>
-                  {doublePromotionCount > 0 && i + 1 === doublePromotionCount && (
+    <Col>
+      {division === 1 && (
+        <div className="mb-4">Requires 100 mana earned to promote.</div>
+      )}
+      <table>
+        <thead className={clsx('text-ink-600 text-left text-sm font-semibold')}>
+          <tr>
+            <th className={clsx('pb-1 pl-10 pr-2')}>User</th>
+            <th className={clsx('px-2 pb-1 text-right sm:pr-10')}>
+              <InfoTooltip
+                text={
+                  'Includes both realized and unrealized profits from bets placed this month plus quest rewards and unique trader bonuses.'
+                }
+              >
+                Mana earned{' '}
+              </InfoTooltip>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row, i) => {
+            const user = users[i]
+            return (
+              <Fragment key={user.id}>
+                {user &&
+                  (!shouldTruncateZeros ||
+                    !!row.mana_earned ||
+                    highlightedUserId === user.id) && (
+                    <UserRow
+                      {...row}
+                      user={users[i]}
+                      isHighlighted={highlightedUserId === user.id}
+                      mana_earned_breakdown={row.mana_earned_breakdown as any}
+                      season={season}
+                    />
+                  )}
+                {user &&
+                  shouldTruncateZeros &&
+                  row.mana_earned === 0 &&
+                  (i === rows.length - 1 || rows[i + 1].mana_earned !== 0) && (
                     <tr>
-                      <td colSpan={2}>
-                        <Col className="mb-2 w-full items-center gap-1">
-                          <div className="text-ink-500 text-xs">
-                            ▲ Promotes to {nextNextDivisionName}
-                          </div>
-                          <div className="border-ink-300 w-full border-t-2 border-dashed" />
-                        </Col>
+                      <td className="pl-9">
+                        <div className="">...</div>
                       </td>
+                      <td />
                     </tr>
                   )}
-                  {promotionCount > 0 && i + 1 === promotionCount && (
-                    <tr>
-                      <td colSpan={2}>
-                        <Col className="mb-2 w-full items-center gap-1">
-                          <div className="text-ink-500 text-xs">
-                            ▲ Promotes to {nextDivisionName}
-                          </div>
-                          <div className="border-ink-300 w-full border-t-2 border-dashed" />
-                        </Col>
-                      </td>
-                    </tr>
-                  )}
-                  {demotionCount > 0 &&
-                    rows.length - (i + 1) === demotionCount && (
-                      <tr>
-                        <td colSpan={2}>
-                          <Col className="mt-2 w-full items-center gap-1">
-                            <div className="border-ink-300 w-full border-t-2 border-dashed" />
-                            <div className="text-ink-500 text-xs">
-                              ▼ Demotes to {prevDivisionName}
-                            </div>
-                          </Col>
-                        </td>
-                      </tr>
-                    )}
-                </>
-              )}
-            </Fragment>
-          )
-        })}
-      </tbody>
-    </table>
+                {!noPromotionDemotion && (
+                  <>
+                    {adjustedDoublePromotionCount > 0 &&
+                      i + 1 === adjustedDoublePromotionCount && (
+                        <tr>
+                          <td colSpan={2}>
+                            <Col className="mb-2 w-full items-center gap-1">
+                              <div className="text-ink-500 text-xs">
+                                ▲ Promotes to {nextNextDivisionName}{' '}
+                              </div>
+                              <div className="border-ink-300 w-full border-t-2 border-dashed" />
+                            </Col>
+                          </td>
+                        </tr>
+                      )}
+                    {adjustedDoublePromotionCount !== adjustedPromotionCount &&
+                      adjustedPromotionCount > 0 &&
+                      i + 1 === adjustedPromotionCount && (
+                        <tr>
+                          <td colSpan={2}>
+                            <Col className="mb-2 w-full items-center gap-1">
+                              <div className="text-ink-500 text-xs">
+                                ▲ Promotes to {nextDivisionName}
+                              </div>
+                              <div className="border-ink-300 w-full border-t-2 border-dashed" />
+                            </Col>
+                          </td>
+                        </tr>
+                      )}
+                    {demotionCount > 0 &&
+                      rows.length - (i + 1) === demotionCount && (
+                        <tr>
+                          <td colSpan={2}>
+                            <Col className="mt-2 w-full items-center gap-1">
+                              <div className="border-ink-300 w-full border-t-2 border-dashed" />
+                              <div className="text-ink-500 text-xs">
+                                ▼ Demotes to {prevDivisionName}
+                              </div>
+                            </Col>
+                          </td>
+                        </tr>
+                      )}
+                  </>
+                )}
+              </Fragment>
+            )
+          })}
+        </tbody>
+      </table>
+    </Col>
   )
 }
 

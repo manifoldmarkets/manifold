@@ -1,9 +1,10 @@
 import type { JSONContent } from '@tiptap/core'
 import { Visibility } from './contract'
+import { OnLover } from 'common/love/love-comment'
 
 export const MAX_COMMENT_LENGTH = 10000
 
-export type AnyCommentType = OnContract | OnPost
+export type AnyCommentType = OnContract | OnPost | OnLover
 
 // Currently, comments are created after the bet, not atomically with the bet.
 // They're uniquely identified by the pair contractId/betId.
@@ -57,6 +58,7 @@ export type OnContract = {
   commenterPositionAnswerId?: string
 
   bountyAwarded?: number
+  betReplyAmountsByOutcome?: { [outcome: string]: number }
 }
 
 export type OnPost = {

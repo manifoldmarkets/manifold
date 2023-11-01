@@ -41,16 +41,30 @@ $$;
 /******************************************/
 /* 1. tables containing firestore content */
 /******************************************/
+
+create table if not exists private_users (
+  id text not null primary key,
+  data jsonb not null,
+  fs_updated_time timestamp not null,
+);
+
+alter table private_users enable row level security;
+
+drop policy if exists "private read" on private_users;
+create policy "private read" on private_users for select
+  using (firebase_uid() = id);
+
+alter table private_users cluster on private_users_pkey;
+
 create table if not exists
   user_portfolio_history (
+    id bigint generated always as identity primary key,
     user_id text not null,
-    portfolio_id text not null,
     ts timestamp not null,
     investment_value numeric not null,
     balance numeric not null,
     total_deposits numeric not null,
     loan_total numeric,
-    primary key (user_id, portfolio_id)
   );
 
 alter table user_portfolio_history enable row level security;
@@ -192,50 +206,6 @@ alter table user_disinterests
 cluster on user_disinterests_user_id;
 
 create table if not exists
-  user_events (
-    id bigint generated always as identity primary key,
-    ts timestamptz not null default now(),
-    name text not null,
-    user_id text null,
-    contract_id text null,
-    comment_id text null,
-    ad_id text null,
-    data jsonb not null
-  );
-
-alter table user_events enable row level security;
-
-drop policy if exists "public read" on user_events;
-
-create policy "public read" on user_events for
-select
-  using (true);
-
--- mqp: we should fix this up so that users can only insert their own events.
--- but right now it's blocked because our application code is too dumb to wait
--- for auth to be done until it starts sending events
-drop policy if exists "user can insert" on user_events;
-
-create policy "user can insert" on user_events for insert
-with
-  check (true);
-
-create index if not exists user_events_name on user_events (user_id, name);
-
-create index if not exists user_events_ts on user_events (user_id, ts);
-
-create index if not exists user_events_ad_skips on user_events (name, ad_id)
-where
-  name = 'Skip ad';
-
-create index if not exists user_events_comment_view on user_events (user_id, name, comment_id);
-
-create index if not exists user_events_contract_name on user_events (user_id, contract_id, name);
-
-alter table user_events
-cluster on user_events_name;
-
-create table if not exists
   user_seen_markets (
     id bigint generated always as identity primary key,
     user_id text not null,
@@ -298,6 +268,9 @@ select
 create index if not exists user_notifications_created_time on user_notifications (user_id, (to_jsonb(data) -> 'createdTime') desc);
 
 create index if not exists user_notifications_created_time_idx on user_notifications (user_id, ((data -> 'createdTime')::bigint) desc);
+
+-- used for querying loan payouts (ugh)
+create index if not exists user_notifications_notification_id on user_notifications (notification_id, user_id);
 
 create index if not exists user_notifications_unseen_text_created_time_idx on user_notifications (
   user_id,
@@ -428,6 +401,15 @@ create index if not exists contracts_sample_filtering on contracts (
 
 create index contracts_on_importance_score_and_resolution_time_idx on contracts(importance_score, resolution_time);
 
+create index contracts_last_updated_time on contracts(((data ->> 'lastUpdatedTime')::bigint) desc);
+
+create index contracts_group_slugs_public on contracts using gin((data -> 'groupSlugs'))
+    where visibility = 'public';
+
+create index concurrently idx_lover_user_id1 on contracts ((data ->> 'loverUserId1')) where data->>'loverUserId1' is not null;
+create index concurrently idx_lover_user_id2 on contracts ((data ->> 'loverUserId2')) where data->>'loverUserId2' is not null;
+
+
 alter table contracts
 cluster on contracts_creator_id;
 
@@ -493,9 +475,9 @@ create table if not exists
   contract_bets (
     contract_id text not null,
     bet_id text not null,
-    user_id text,
+    user_id text not null,
     answer_id text,
-    created_time timestamptz,
+    created_time timestamptz not null,
     amount numeric,
     shares numeric,
     outcome text,
@@ -584,6 +566,8 @@ create index if not exists contract_bets_unexpired_limit_orders on contract_bets
 
 create index contract_bets_contract_id_user_id on contract_bets(contract_id, user_id);
 
+create index contract_bets_comment_reply_id on contract_bets((data ->> 'replyToCommentId'));
+
 alter table contract_bets
 cluster on contract_bets_created_time;
 
@@ -610,8 +594,8 @@ create table if not exists
     fs_updated_time timestamp not null,
     primary key (contract_id, comment_id),
     visibility text,
-    user_id text,
-    created_time timestamptz,
+    user_id text not null,
+    created_time timestamptz not null
   );
 
 alter table contract_comments enable row level security;
@@ -844,15 +828,58 @@ cluster on txns_pkey;
 -- for querying top market_ads
 create index if not exists txns_category on txns ((data ->> 'category'), (data ->> 'toId'));
 
+
 create table if not exists
   manalinks (
     id text not null primary key,
+    amount numeric null,
+    created_time timestamptz null,
+    expires_time timestamptz null,
+    creator_id text null,
+    max_uses int null,
+    message text null,
     data jsonb not null,
     fs_updated_time timestamp not null
   );
 
-alter table manalinks
-cluster on manalinks_pkey;
+create index if not exists manalinks_creator_id on manalinks (creator_id);
+
+alter table manalinks cluster on manalinks_creator_id;
+
+create or replace function manalinks_populate_cols()
+  returns trigger
+  language plpgsql
+as $$ begin
+  if new.data is not null then
+    new.amount := ((new.data)->>'amount')::numeric;
+    new.created_time :=
+        case when new.data ? 'createdTime' then millis_to_ts(((new.data) ->> 'createdTime')::bigint) else null end;
+    new.expires_time :=
+        case when new.data ? 'expiresTime' then millis_to_ts(((new.data) ->> 'expiresTime')::bigint) else null end;
+    new.creator_id := (new.data)->>'fromId';
+    new.max_uses := ((new.data)->>'maxUses')::numeric;
+    new.message := (new.data)->>'message';
+    if (new.data)->'claims' is not null then
+        delete from manalink_claims where manalink_id = new.id;
+        with claims as (select new.id, jsonb_array_elements((new.data)->'claims') as cdata)
+        insert into manalink_claims (manalink_id, txn_id) select id, cdata->>'txnId' from claims;
+    end if;
+  end if;
+  return new;
+end $$;
+
+drop trigger manalinks_populate on manalinks;
+create trigger manalinks_populate before insert or update on manalinks
+for each row execute function manalinks_populate_cols();
+
+create table if not exists
+  manalink_claims (
+    manalink_id text not null,
+    txn_id text not null,
+    primary key (manalink_id, txn_id)
+  );
+
+alter table manalink_claims cluster on manalink_claims_pkey;
 
 create table if not exists
   posts (
@@ -1262,10 +1289,7 @@ alter publication supabase_realtime
 add table user_follows;
 
 alter publication supabase_realtime
-add table chat_messages;
-
-alter publication supabase_realtime
-add table private_user_messages;
+    add table private_user_messages;
 
 alter publication supabase_realtime
 add table private_user_message_channel_members;
@@ -1329,6 +1353,7 @@ begin
   return case
     table_id
            when 'users' then cast((null, 'id') as table_spec)
+           when 'private_users' then cast((null, 'id') as table_spec)
            when 'user_reactions' then cast(('user_id', 'reaction_id') as table_spec)
            when 'contracts' then cast((null, 'id') as table_spec)
            when 'contract_answers' then cast(('contract_id', 'answer_id') as table_spec)

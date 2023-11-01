@@ -7,14 +7,18 @@ import { createSupabaseClient } from 'shared/supabase/init'
 import { run } from 'common/supabase/utils'
 import { contentSchema } from 'shared/zod-types'
 import { isAdminId } from 'common/envs/constants'
+import { revalidateStaticProps } from 'shared/utils'
+import { contractPath } from 'common/contract'
 
-const editSchema = z.object({
-  contractId: z.string(),
-  commentId: z.string(),
-  content: contentSchema.optional(),
-  html: z.string().optional(),
-  markdown: z.string().optional(),
-})
+const editSchema = z
+  .object({
+    contractId: z.string(),
+    commentId: z.string(),
+    content: contentSchema.optional(),
+    html: z.string().optional(),
+    markdown: z.string().optional(),
+  })
+  .strict()
 export const editcomment = authEndpoint(async (req, auth) => {
   const firestore = admin.firestore()
   const { commentId, contractId, content, html, markdown } = validate(
@@ -49,6 +53,7 @@ export const editcomment = authEndpoint(async (req, auth) => {
       data: comment,
     })
   )
+  await revalidateStaticProps(contractPath(contract))
 
   return { commentId: ref.id }
 })

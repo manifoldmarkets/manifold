@@ -4,11 +4,13 @@ import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { convertPortfolio } from 'common/portfolio'
 import { placeBetMain } from './place-bet'
 
-const schema = z.object({
-  portfolioId: z.string(),
-  amount: z.number(),
-  buyOpposite: z.boolean().optional(),
-})
+const schema = z
+  .object({
+    portfolioId: z.string(),
+    amount: z.number(),
+    buyOpposite: z.boolean().optional(),
+  })
+  .strict()
 
 export const buyportfolio = authEndpoint(async (req, auth) => {
   const { portfolioId, amount, buyOpposite } = validate(schema, req.body)

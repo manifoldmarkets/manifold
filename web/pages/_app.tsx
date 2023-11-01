@@ -3,7 +3,7 @@ import Head from 'next/head'
 import Script from 'next/script'
 import { useEffect } from 'react'
 import { AuthProvider, AuthUser } from 'web/components/auth-context'
-import { DarkModeProvider } from 'web/components/dark-mode-provider'
+import { ThemeProvider } from 'web/components/theme-provider'
 import {
   NativeMessageListener,
   postMessageToNative,
@@ -127,10 +127,10 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
         )}
       >
         <AuthProvider serverUser={pageProps.auth}>
-          <DarkModeProvider>
+          <ThemeProvider>
             <NativeMessageListener />
             <Component {...pageProps} />
-          </DarkModeProvider>
+          </ThemeProvider>
         </AuthProvider>
         {/* Workaround for https://github.com/tailwindlabs/headlessui/discussions/666, to allow font CSS variable */}
         <div id="headlessui-portal-root">

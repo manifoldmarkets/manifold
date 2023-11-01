@@ -1,13 +1,14 @@
 import { JSONContent } from '@tiptap/core'
 import { useContract } from 'web/hooks/use-contract-supabase'
 import { useUserById } from 'web/hooks/use-user-supabase'
+import { JSONEmpty } from '../contract/contract-description'
 import { ContractMention } from '../contract/contract-mention'
-import { Col } from '../layout/col'
+import { Row } from '../layout/row'
 import { RelativeTimestamp } from '../relative-timestamp'
 import { Avatar } from '../widgets/avatar'
 import { Content } from '../widgets/editor'
 import { UserLink } from '../widgets/user-link'
-import { StarDisplay } from './stars'
+import { Rating, StarDisplay } from './stars'
 
 export const Review = (props: {
   userId: string
@@ -22,28 +23,33 @@ export const Review = (props: {
 
   if (!user || !contract) return null
 
+  const isEmpty = !text || JSONEmpty(text)
   return (
-    <div className="py-6 first:pt-0 last:pb-0">
-      <Col className="items-start">
-        <div className="mb-1 flex items-center gap-3">
+    <div className="py-4 first:pt-0 last:pb-0">
+      <div className="opacity-50">
+        <ContractMention contract={contract} className="text-ink-600" />
+      </div>
+      <Row className="mb-1 mt-1 flex w-full items-center justify-between">
+        <Row className="gap-2">
           <Avatar
             username={user.username}
             avatarUrl={user.avatarUrl}
             size="xs"
           />
-          <UserLink
-            name={user.name}
-            username={user.username}
-            className="text-ink-500"
+          <UserLink name={user.name} username={user.username} />
+        </Row>
+        <Row className="items-center gap-2">
+          <StarDisplay rating={rating as Rating} />
+          <RelativeTimestamp
+            time={created}
+            className="-ml-1"
+            shortened={true}
           />
-        </div>
-        <div className="-mb-1 -ml-0.5 space-x-2">
-          <StarDisplay rating={rating} />
-          <ContractMention contract={contract} />
-        </div>
-        <RelativeTimestamp time={created} className="-ml-1" />
-      </Col>
-      {text && <Content content={text} size="sm" className="mt-2" />}
+        </Row>
+      </Row>
+      {text && !isEmpty && (
+        <Content content={text} size="sm" className="mt-2" />
+      )}
     </div>
   )
 }

@@ -19,11 +19,13 @@ import { createSupabaseDirectClient } from 'shared/supabase/init'
 
 type ChoiceContract = FreeResponseContract | MultipleChoiceContract
 
-const bodySchema = z.object({
-  username: z.string().min(1).optional(),
-  name: z.string().min(1).optional(),
-  avatarUrl: z.string().optional(),
-})
+const bodySchema = z
+  .object({
+    username: z.string().min(1).optional(),
+    name: z.string().min(1).optional(),
+    avatarUrl: z.string().optional(),
+  })
+  .strict()
 
 export const changeuserinfo = authEndpoint(async (req, auth) => {
   const { username, name, avatarUrl } = validate(bodySchema, req.body)

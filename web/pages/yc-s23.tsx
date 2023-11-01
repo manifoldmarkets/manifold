@@ -2,25 +2,26 @@ import clsx from 'clsx'
 import Link from 'next/link'
 import { sortBy } from 'lodash'
 import { useState } from 'react'
-
 import { Answer } from 'common/answer'
 import { CPMMMultiContract } from 'common/contract'
-import { AnswersPanel } from 'web/components/answers/answers-panel'
+import { SimpleAnswerBars } from 'web/components/answers/answers-panel'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
 import { linkClass } from 'web/components/widgets/site-link'
 import { Title } from 'web/components/widgets/title'
 import { useAnswersCpmm } from 'web/hooks/use-answers'
-import { supabaseSearchContractsWithDefaults } from 'web/lib/firebase/api'
+import { supabaseSearchContracts } from 'web/lib/firebase/api'
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/outline'
 
 export async function getStaticProps() {
-  const contracts = await supabaseSearchContractsWithDefaults({
+  const contracts = await supabaseSearchContracts({
+    term: '',
     // yc-s23
     topicSlug: 'yc-s23',
     // Manifold
     creatorId: 'IPTOzEqrpkWmEzh6hwvAyY9PqFb2',
+    limit: 1000,
   })
 
   return {
@@ -117,7 +118,7 @@ const CompanyRow = (props: {
       </Link>
       {expanded && (
         <Col className="border-ink-200 border-b px-3 pb-4 pt-2">
-          <AnswersPanel contract={contract} />
+          <SimpleAnswerBars contract={contract} />
         </Col>
       )}
     </Col>

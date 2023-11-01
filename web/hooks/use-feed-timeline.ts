@@ -31,7 +31,6 @@ import {
 import { isContractBlocked } from 'web/lib/firebase/users'
 import { IGNORE_COMMENT_FEED_CONTENT } from 'web/hooks/use-additional-feed-items'
 import { DAY_MS } from 'common/util/time'
-import { convertContractComment } from 'web/lib/supabase/comments'
 import { Group } from 'common/group'
 import { getMarketMovementInfo } from 'web/lib/supabase/feed-timeline/feed-market-movement-display'
 import { useFollowedIdsSupabase } from 'web/hooks/use-follows'
@@ -42,6 +41,8 @@ import { convertAnswer } from 'common/supabase/contracts'
 import { compareTwoStrings } from 'string-similarity'
 import dayjs from 'dayjs'
 import { useBoosts } from 'web/hooks/use-boosts'
+import { useIsAuthorized } from 'web/hooks/use-user'
+import { convertContractComment } from 'common/supabase/comments'
 
 export const DEBUG_FEED_CARDS =
   typeof window != 'undefined' &&
@@ -89,6 +90,7 @@ const baseQuery = (
   userId: string,
   privateUser: PrivateUser,
   ignoreContractIds: string[],
+  ignoreContractIdsWithComments: string[],
   limit: number
 ) =>
   db
@@ -101,9 +103,9 @@ const baseQuery = (
       `(${privateUser.blockedUserIds.concat(privateUser.blockedByUserIds)})`
     )
     .not('contract_id', 'in', `(${privateUser.blockedContractIds})`)
-    // New comments or news items with/on contracts we already have on feed are okay
+    // One comment per contract or news items with contracts we already have on the feed are okay
     .or(
-      `data_type.eq.new_comment,data_type.eq.news_with_related_contracts,contract_id.not.in.(${ignoreContractIds})`
+      `and(data_type.eq.new_comment,contract_id.not.in.(${ignoreContractIdsWithComments})), data_type.eq.news_with_related_contracts, contract_id.not.in.(${ignoreContractIds})`
     )
     .order('relevance_score', { ascending: false })
     .limit(limit)
@@ -114,7 +116,7 @@ const queryForFeedRows = async (
   options: loadProps,
   newestCreatedTimestamp: string
 ) => {
-  const ignoreContractIds = filterDefined(
+  const currentlyFetchedContractIds = filterDefined(
     options.ignoreFeedTimelineItems
       .map((item) =>
         (item.relatedItems ?? [])
@@ -123,7 +125,19 @@ const queryForFeedRows = async (
       )
       .flat()
   )
-  let query = baseQuery(userId, privateUser, ignoreContractIds, 50)
+  const currentlyFetchedCommentItems = filterDefined(
+    options.ignoreFeedTimelineItems.map((item) =>
+      item.commentId ? item.contractId : null
+    )
+  )
+
+  let query = baseQuery(
+    userId,
+    privateUser,
+    currentlyFetchedContractIds,
+    currentlyFetchedCommentItems,
+    50
+  )
   if (options.time === 'new') {
     query = query.gt('created_time', newestCreatedTimestamp)
   } else if (options.time === 'old') {
@@ -144,6 +158,7 @@ export const useFeedTimeline = (
   privateUser: PrivateUser,
   key: string
 ) => {
+  const isAuthed = useIsAuthorized()
   const boosts = useBoosts(privateUser, key)
   const followedIds = useFollowedIdsSupabase(privateUser.id)
   if (DEBUG_FEED_CARDS)
@@ -169,6 +184,10 @@ export const useFeedTimeline = (
       newestCreatedTimestamp.current
     )
 
+    if (data.length == 0) {
+      return { timelineItems: [] }
+    }
+
     const newFeedRows = data.map((d) => {
       const createdTimeAdjusted =
         1 - dayjs().diff(dayjs(d.created_time), 'day') / 20
@@ -190,9 +209,9 @@ export const useFeedTimeline = (
     } = getNewContentIds(newFeedRows, savedFeedItems, followedIds)
 
     const [
-      comments,
+      likedUnhiddenComments,
       commentsFromFollowed,
-      contracts,
+      openListedContracts,
       news,
       groups,
       uninterestingContractIds,
@@ -293,24 +312,29 @@ export const useFeedTimeline = (
           )
         ),
     ])
-    const openFeedContractIds = (contracts ?? []).map((c) => c.id)
-    const closedOrResolvedContractFeedIds = newFeedRows.filter(
-      (d) =>
-        d.contract_id &&
-        !d.news_id &&
-        !openFeedContractIds.includes(d.contract_id)
-    )
-    //TODO: Mark all the user_position_changed feed items as seen that match creator_id, contract_id
-    setSeenFeedItems(closedOrResolvedContractFeedIds)
-
-    const filteredNewContracts = contracts?.filter(
+    const filteredNewContracts = openListedContracts?.filter(
       (c) =>
         !isContractBlocked(privateUser, c) &&
         !uninterestingContractIds?.includes(c.id)
     )
-    const filteredNewComments = (comments ?? [])
+    const filteredNewContractIds = (filteredNewContracts ?? []).map((c) => c.id)
+    const filteredNewComments = (likedUnhiddenComments ?? [])
       .concat(commentsFromFollowed ?? [])
       .filter((c) => !seenCommentIds?.includes(c.id))
+
+    // We could set comment feed rows with insufficient likes as seen here, settling for seen ones only
+    const commentFeedIdsToIgnore = newFeedRows.filter((r) =>
+      r.comment_id ? seenCommentIds?.includes(r.comment_id ?? '_') : false
+    )
+    const contractFeedIdsToIgnore = newFeedRows.filter(
+      (d) =>
+        d.contract_id &&
+        !d.news_id &&
+        !filteredNewContractIds.includes(d.contract_id)
+    )
+
+    //TODO: Mark all the user_position_changed feed items as seen that match creator_id, contract_id
+    setSeenFeedItems(contractFeedIdsToIgnore.concat(commentFeedIdsToIgnore))
 
     // It's possible we're missing contracts for news items bc of the duplicate filter
     const timelineItems = createFeedTimelineItems(
@@ -369,9 +393,9 @@ export const useFeedTimeline = (
   })
 
   useEffect(() => {
-    if (savedFeedItems?.length || !userId) return
+    if (savedFeedItems?.length || !userId || !isAuthed) return
     tryToLoadManyCardsAtStart()
-  }, [userId])
+  }, [userId, isAuthed])
 
   return {
     loadMoreOlder: async (allowSeen: boolean) =>
@@ -634,7 +658,7 @@ const getNewContentIds = (
     newCommentIds,
     newCommentIdsFromFollowed,
     potentiallySeenCommentIds,
-    newsIds: [mostImportantNewsId],
+    newsIds: filterDefined([mostImportantNewsId]),
     groupIds,
     answerIds,
     userIds,

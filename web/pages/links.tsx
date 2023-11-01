@@ -1,5 +1,5 @@
 import { useState } from 'react'
-
+import { groupBy } from 'lodash'
 import dayjs from 'dayjs'
 import customParseFormat from 'dayjs/plugin/customParseFormat'
 dayjs.extend(customParseFormat)
@@ -18,29 +18,36 @@ import { getUserAndPrivateUser } from 'web/lib/firebase/users'
 
 import { REFERRAL_AMOUNT } from 'common/economy'
 import { ENV_CONFIG } from 'common/envs/constants'
-import { Manalink } from 'common/manalink'
-import {
-  linkClaimed,
-  ManalinkCardFromView,
-  toInfo,
-} from 'web/components/manalink-card'
+import { linkClaimed, ManalinkCardFromView } from 'web/components/manalink-card'
 import { Pagination } from 'web/components/widgets/pagination'
 import ShortToggle from 'web/components/widgets/short-toggle'
 import Link from 'next/link'
 import { useCanSendMana } from 'web/hooks/use-can-send-mana'
 import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
-import { getUserManalinks } from 'web/lib/supabase/manalinks'
+import {
+  ClaimInfo,
+  ManalinkInfo,
+  getUserManalinks,
+  getUserManalinkClaims,
+} from 'web/lib/supabase/manalinks'
+
+type LinkAndClaims = { link: ManalinkInfo; claims: ClaimInfo[] }
 
 const LINKS_PER_PAGE = 24
 
 export const getServerSideProps = redirectIfLoggedOut('/', async (_, creds) => {
   const adminDb = await initSupabaseAdmin()
-  return {
-    props: {
-      auth: await getUserAndPrivateUser(creds.uid),
-      userLinks: await getUserManalinks(creds.uid, adminDb),
-    },
-  }
+  const [auth, links, claims] = await Promise.all([
+    getUserAndPrivateUser(creds.uid),
+    getUserManalinks(creds.uid, adminDb),
+    getUserManalinkClaims(creds.uid, adminDb),
+  ])
+  const claimsByLinkId = groupBy(claims, (c) => c.manalinkId)
+  const userLinks = links.map((l) => ({
+    link: l,
+    claims: claimsByLinkId[l.slug] ?? [],
+  }))
+  return { props: { auth, userLinks } }
 })
 
 export function getManalinkUrl(slug: string) {
@@ -49,7 +56,7 @@ export function getManalinkUrl(slug: string) {
 
 export default function LinkPage(props: {
   auth: { user: User }
-  userLinks: Manalink[]
+  userLinks: LinkAndClaims[]
 }) {
   const { user } = props.auth
   const { userLinks } = props
@@ -57,7 +64,7 @@ export default function LinkPage(props: {
   const [showDisabled, setShowDisabled] = useState(false)
   const displayedLinks = showDisabled
     ? userLinks
-    : userLinks.filter((l) => !linkClaimed(toInfo(l)))
+    : userLinks.filter((l) => !linkClaimed(l.link, l.claims.length))
   const { canSend, message } = useCanSendMana(user)
 
   return (
@@ -96,7 +103,7 @@ export default function LinkPage(props: {
         </Row>
         {canSend ? (
           <ManalinksDisplay
-            links={displayedLinks}
+            items={displayedLinks}
             highlightedSlug={highlightedSlug}
           />
         ) : (
@@ -108,16 +115,16 @@ export default function LinkPage(props: {
 }
 
 function ManalinksDisplay(props: {
-  links: Manalink[]
+  items: LinkAndClaims[]
   highlightedSlug: string
 }) {
-  const { links, highlightedSlug } = props
+  const { items, highlightedSlug } = props
   const [page, setPage] = useState(0)
   const start = page * LINKS_PER_PAGE
   const end = start + LINKS_PER_PAGE
-  const displayedLinks = links.slice(start, end)
+  const displayedItems = items.slice(start, end)
 
-  if (links.length === 0) {
+  if (items.length === 0) {
     return (
       <p className="text-ink-500">
         You don't have any active manalinks. Create one to spread the wealth!
@@ -127,10 +134,11 @@ function ManalinksDisplay(props: {
     return (
       <>
         <Col className="grid w-full gap-4 md:grid-cols-2">
-          {displayedLinks.map((link) => (
+          {displayedItems.map((item) => (
             <ManalinkCardFromView
-              key={link.slug + link.createdTime}
-              link={link}
+              key={item.link.slug}
+              info={item.link}
+              claims={item.claims}
               highlightedSlug={highlightedSlug}
             />
           ))}
@@ -138,7 +146,7 @@ function ManalinksDisplay(props: {
         <Pagination
           page={page}
           itemsPerPage={LINKS_PER_PAGE}
-          totalItems={links.length}
+          totalItems={items.length}
           setPage={setPage}
           className="bg-transparent"
         />

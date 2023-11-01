@@ -3,9 +3,11 @@ import { z } from 'zod'
 import { APIError, authEndpoint, validate } from './helpers'
 import { LimitBet } from 'common/bet'
 
-const bodySchema = z.object({
-  betId: z.string(),
-})
+const bodySchema = z
+  .object({
+    betId: z.string(),
+  })
+  .strict()
 
 export const cancelbet = authEndpoint(async (req, auth) => {
   const { betId } = validate(bodySchema, req.body)

@@ -110,6 +110,7 @@ export const BOT_USERNAMES = [
   'manifestussy',
   'mirrorbot',
   'JakeBot',
+  'loopsbot',
 ]
 
 export const CORE_USERNAMES = [
@@ -169,7 +170,7 @@ export const MOD_USERNAMES = [
   'CodeandSolder',
   'Stralor',
   'WieDan',
-  'StrayClimb',
+  'Ernie',
   'Gen',
 ]
 
@@ -212,6 +213,8 @@ export const VERIFIED_USERNAMES = [
   'TarekMansour',
   'DylanMatthews',
   'RobinHanson',
+  'KevinRoose18ac',
+  'KnowNothing',
 ]
 
 export const HOUSE_BOT_USERNAME = 'acc'
@@ -393,9 +396,12 @@ export const RESERVED_PATHS = [
   'mana-auction',
   'manifest',
   'markets',
+  'messages',
   'mtg',
   'news',
   'notifications',
+  'og-test',
+  'payments',
   'portfolio',
   'privacy',
   'profile',

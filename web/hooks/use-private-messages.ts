@@ -1,36 +1,53 @@
 import { ChatMessage } from 'common/chat-message'
-import { run, tsToMillis } from 'common/supabase/utils'
+import { Row, run, tsToMillis } from 'common/supabase/utils'
 import { usePersistentSubscription } from 'web/lib/supabase/realtime/use-subscription'
 import { useEffect, useState } from 'react'
-import { first, groupBy, orderBy } from 'lodash'
+import { first, groupBy, maxBy, orderBy } from 'lodash'
 import { useIsAuthorized } from 'web/hooks/use-user'
-import { safeLocalStorage } from 'web/lib/util/local'
+import { safeLocalStorage, safeSessionStorage } from 'web/lib/util/local'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import {
   convertChatMessage,
   getChannelLastSeenTimeQuery,
-  getChatMessageChannelIds,
-  getChatMessages,
+  getSortedChatMessageChannelIds,
   getMessageChannelMemberships,
+  getNonEmptyChatMessageChannelIds,
   getOtherUserIdsInPrivateMessageChannelIds,
 } from 'web/lib/supabase/private-messages'
+import { usePersistentSupabasePolling } from 'web/hooks/use-persistent-supabase-polling'
+import { db } from 'web/lib/supabase/db'
 
 // NOTE: must be authorized (useIsAuthorized) to use this hook
-export function useRealtimePrivateMessages(
+export function useRealtimePrivateMessagesPolling(
   channelId: number,
-  isAuthed: boolean
+  isAuthed: boolean,
+  ms: number
 ) {
   if (!isAuthed) {
     console.error('useRealtimePrivateMessages must be authorized')
   }
-  const { rows } = usePersistentSubscription(
-    `private-user-messages-${channelId}`,
-    'private_user_messages',
-    safeLocalStorage,
-    { k: 'channel_id', v: channelId },
-    () => getChatMessages(channelId, 100)
+  const allRowsQ = db
+    .from('private_user_messages')
+    .select('*')
+    .eq('channel_id', channelId)
+  const newRowsOnlyQ = (rows: Row<'private_user_messages'>[] | undefined) =>
+    // You can't use allRowsQ here because it keeps tacking on another gt clause
+    db
+      .from('private_user_messages')
+      .select('*')
+      .eq('channel_id', channelId)
+      .gt('id', maxBy(rows, 'id')?.id ?? 0)
+
+  const results = usePersistentSupabasePolling(
+    allRowsQ,
+    newRowsOnlyQ,
+    `private-messages-${channelId}`,
+    {
+      ms,
+      deps: [channelId],
+    }
   )
-  return orderBy(rows?.map(convertChatMessage), 'createdTime', 'desc')
+  return orderBy(results?.data?.map(convertChatMessage), 'createdTime', 'desc')
 }
 
 // NOTE: must be authorized (useIsAuthorized) to use this hook
@@ -99,9 +116,9 @@ export const useUnseenPrivateMessageChannels = (
   const { rows: messageRows } = usePersistentSubscription(
     `private_messages-${userId}`,
     'private_user_messages',
-    safeLocalStorage,
+    safeSessionStorage,
     undefined,
-    undefined,
+    undefined, // no need to fetch old messages, just fetch new ones
     `channel_id=in.(${channelIds.join(', ')})`
   )
   const allMessagesByChannelId = groupBy(
@@ -143,17 +160,49 @@ export const useUnseenPrivateMessageChannels = (
     .flat()
 }
 
-export const usePrivateMessageChannelIds = (
+export const useSortedPrivateMessageChannelIds = (
+  userId: string | undefined,
+  isAuthed: boolean | undefined
+) => {
+  const [channelIds, setChannelIds] = usePersistentLocalState<
+    number[] | undefined
+  >(undefined, `private-message-channel-ids-${userId}`)
+  useEffect(() => {
+    if (userId && isAuthed)
+      getSortedChatMessageChannelIds(userId, 100).then(setChannelIds)
+  }, [userId, isAuthed])
+  return channelIds
+}
+
+export const usePrivateMessageChannelId = (
+  userId: string | undefined,
+  isAuthed: boolean | undefined,
+  forChannelId: string
+) => {
+  const [channelId, setChannelId] = usePersistentLocalState<number | undefined>(
+    undefined,
+    `private-message-channel-id-${userId}-${forChannelId}`
+  )
+  useEffect(() => {
+    if (userId && isAuthed)
+      getSortedChatMessageChannelIds(userId, 1, forChannelId).then((c) =>
+        setChannelId(first(c))
+      )
+  }, [userId, isAuthed])
+  return channelId
+}
+
+export const useNonEmptyPrivateMessageChannelIds = (
   userId: string | undefined,
   isAuthed: boolean | undefined
 ) => {
   const [channelIds, setChannelIds] = usePersistentLocalState<number[]>(
     [],
-    `private-message-channel-ids-${userId}`
+    `non-empty-private-message-channel-ids-${userId}`
   )
   useEffect(() => {
     if (userId && isAuthed)
-      getChatMessageChannelIds(userId, 100).then(setChannelIds)
+      getNonEmptyChatMessageChannelIds(userId, 100).then(setChannelIds)
   }, [userId, isAuthed])
   return channelIds
 }

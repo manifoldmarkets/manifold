@@ -1,4 +1,3 @@
-import { useDashboardFromSlug } from 'web/hooks/use-dashboard'
 import { DashboardContent } from '../dashboard/dashboard-content'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { DashboardDescription } from '../dashboard/dashboard-description'
@@ -8,9 +7,21 @@ import { FollowDashboardButton } from '../dashboard/follow-dashboard-button'
 import { RelativeTimestamp } from '../relative-timestamp'
 import { Avatar } from '../widgets/avatar'
 import { UserLink } from '../widgets/user-link'
+import Link from 'next/link'
+import { PencilIcon } from '@heroicons/react/outline'
+import { useUser } from 'web/hooks/use-user'
+import { buttonClass } from '../buttons/button'
+import { Tooltip } from '../widgets/tooltip'
+import { isAdminId } from 'common/envs/constants'
+import { Dashboard } from 'common/dashboard'
+import { LinkPreviews } from 'common/link-preview'
 
-export function NewsDashboard(props: { slug: string }) {
-  const dashboard = useDashboardFromSlug(props.slug)
+export function NewsDashboard(props: {
+  dashboard: Dashboard
+  previews: LinkPreviews
+}) {
+  const { dashboard, previews } = props
+  const user = useUser()
 
   if (!dashboard) return <LoadingIndicator />
 
@@ -21,17 +32,30 @@ export function NewsDashboard(props: { slug: string }) {
           {dashboard.title}
         </h2>
         <div className="flex items-center">
-          <CopyLinkOrShareButton
-            eventTrackingName="share home news item"
-            url={window.location.href}
-            tooltip="Share"
-          />
+          {user !== undefined && (
+            <CopyLinkOrShareButton
+              eventTrackingName="share home news item"
+              url={window.location.href}
+              tooltip="Share"
+            />
+          )}
 
           <FollowDashboardButton
             dashboardId={dashboard.id}
             dashboardCreatorId={dashboard.creatorId}
             ttPlacement="bottom"
           />
+
+          {user?.id && (user.id === dashboard.creatorId || isAdminId(user.id)) && (
+            <Tooltip text="Edit" placement="bottom" noTap>
+              <Link
+                href={`/dashboard/${dashboard.slug}?edit=true`}
+                className={buttonClass('md', 'gray-white')}
+              >
+                <PencilIcon className="h-5 w-5 cursor-pointer" />
+              </Link>
+            </Tooltip>
+          )}
         </div>
       </Row>
       <Row className="mb-8 items-center gap-2">
@@ -46,13 +70,17 @@ export function NewsDashboard(props: { slug: string }) {
           className="text-ink-700"
         />
         <span className="text-ink-400 ml-4 text-sm">
-          Edited
+          Created
           <RelativeTimestamp time={dashboard.createdTime} />
         </span>
       </Row>
 
       <DashboardDescription description={dashboard.description} />
-      <DashboardContent items={dashboard.items} topics={dashboard.topics} />
+      <DashboardContent
+        items={dashboard.items}
+        topics={dashboard.topics}
+        previews={previews}
+      />
     </div>
   )
 }

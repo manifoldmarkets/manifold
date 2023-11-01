@@ -1,10 +1,12 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
-import { first, keyBy } from 'lodash'
+import { groupBy, keyBy, sumBy } from 'lodash'
 
 import { Bet, LimitBet } from 'common/bet'
 import {
   getBettingStreakResetTimeBeforeNow,
+  getContract,
+  getUser,
   getUserSupabase,
   getValues,
   isProd,
@@ -12,6 +14,7 @@ import {
 } from 'shared/utils'
 import {
   createBetFillNotification,
+  createBetReplyToCommentNotification,
   createBettingStreakBonusNotification,
   createFollowSuggestionNotification,
   createUniqueBettorBonusNotification,
@@ -41,13 +44,13 @@ import { runTxnFromBank } from 'shared/txn/run-txn'
 import {
   createSupabaseClient,
   createSupabaseDirectClient,
+  SupabaseDirectClient,
 } from 'shared/supabase/init'
 import { secrets } from 'common/secrets'
 import { addToLeagueIfNotInOne } from 'shared/generate-leagues'
 import { FieldValue } from 'firebase-admin/firestore'
 import { FLAT_TRADE_FEE } from 'common/fees'
 import {
-  getContractsDirect,
   getUniqueBettorIds,
   getUniqueBettorIdsForAnswer,
 } from 'shared/supabase/contracts'
@@ -58,6 +61,8 @@ import { Answer } from 'common/answer'
 import { getUserMostChangedPosition } from 'common/supabase/bets'
 import { addBetDataToUsersFeeds } from 'shared/create-feed'
 import { MINUTE_MS } from 'common/util/time'
+import { ContractComment } from 'common/comment'
+import { getBetsRepliedToComment } from 'shared/supabase/bets'
 
 const firestore = admin.firestore()
 
@@ -77,19 +82,25 @@ export const onCreateBet = functions
 
     const bet = change.data() as Bet
     if (bet.isChallenge) return
-    const pg = createSupabaseDirectClient()
 
-    const contracts = await getContractsDirect([contractId], pg)
-    const contract = first(contracts)
-    if (!contract) return
+    const contract = await getContract(contractId)
+    if (!contract) {
+      log(`No contract: ${contractId} found for bet: ${bet.id}`)
+      return
+    }
 
     await firestore.collection('contracts').doc(contract.id).update({
       lastBetTime: bet.createdTime,
       lastUpdatedTime: Date.now(),
     })
 
-    const bettor = await getUserSupabase(bet.userId)
-    if (!bettor) return
+    const bettor = await getUser(bet.userId)
+    if (!bettor) {
+      log(
+        `No user:${bet.userId} found for bet: ${bet.id} on contract: ${contract.id}`
+      )
+      return
+    }
 
     const notifiedUsers = await notifyUsersOfLimitFills(
       bet,
@@ -104,6 +115,10 @@ export const onCreateBet = functions
 
     // Note: Anything that applies to redemption bets should be above this line.
     if (bet.isRedemption) return
+    const pg = createSupabaseDirectClient()
+
+    if (bet.replyToCommentId)
+      await handleBetReplyToComment(bet, contract, bettor, pg)
 
     const isApiOrBot = bet.isApi || BOT_USERNAMES.includes(bettor.username)
     if (isApiOrBot) {
@@ -121,28 +136,33 @@ export const onCreateBet = functions
      *  Handle bonuses, other stuff for non-bot users below:
      */
 
-    // They may be selling out of a position completely, so only add them if they're buying
-    if (bet.amount >= 0 && !bet.isSold)
-      await addUserToContractFollowers(contractId, bettor.id)
-
     // Follow suggestion should be before betting streak update (which updates lastBetTime)
-    if (!bettor.lastBetTime && !bettor.referredByUserId)
-      await createFollowSuggestionNotification(bettor.id, contract, pg)
+    !bettor.lastBetTime &&
+      !bettor.referredByUserId &&
+      (await createFollowSuggestionNotification(bettor.id, contract, pg))
+
     await updateBettingStreak(bettor, bet, contract, eventId)
-
     await giveUniqueBettorAndLiquidityBonus(contract, eventId, bettor, bet)
-    await updateUniqueBettors(contract, bet)
 
-    await updateUserInterestEmbedding(pg, bettor.id)
+    await Promise.all([
+      // They may be selling out of a position completely, so only add them if they're buying
+      bet.amount >= 0 &&
+        !bet.isSold &&
+        addUserToContractFollowers(contractId, bettor.id),
 
-    await addToLeagueIfNotInOne(pg, bettor.id)
+      updateUniqueBettors(contract, bet),
 
-    if ((bettor?.lastBetTime ?? 0) < bet.createdTime)
-      await firestore
-        .doc(`users/${bettor.id}`)
-        .update({ lastBetTime: bet.createdTime })
+      updateUserInterestEmbedding(pg, bettor.id),
 
-    await addBetToFollowersFeeds(bettor, contract, bet)
+      addToLeagueIfNotInOne(pg, bettor.id),
+
+      (bettor.lastBetTime ?? 0) < bet.createdTime &&
+        firestore
+          .doc(`users/${bettor.id}`)
+          .update({ lastBetTime: bet.createdTime }),
+
+      addBetToFollowersFeeds(bettor, contract, bet),
+    ])
   })
 
 const MED_BALANCE_PERCENTAGE_FOR_FEED = 0.005
@@ -150,6 +170,43 @@ const MED_BET_SIZE_FOR_FEED = 100
 
 const MIN_BALANCE_PERCENTAGE_FOR_FEED = 0.05
 const MIN_BET_SIZE_GIVEN_PERCENTAGE = 20
+
+const handleBetReplyToComment = async (
+  bet: Bet,
+  contract: Contract,
+  bettor: User,
+  pg: SupabaseDirectClient
+) => {
+  const commentSnap = await firestore
+    .doc(`contracts/${contract.id}/comments/${bet.replyToCommentId}`)
+    .get()
+  const comment = commentSnap.data() as ContractComment
+  if (comment.userId === bettor.id) return
+  if (comment) {
+    const bets = filterDefined(await getBetsRepliedToComment(pg, comment.id))
+    // This could potentially miss some bets if they're not replicated in time
+    if (!bets.some((b) => b.id === bet.id)) bets.push(bet)
+    const groupedBetsByOutcome = groupBy(bets, 'outcome')
+    const betReplyAmountsByOutcome: { [outcome: string]: number } = {}
+    for (const outcome in groupedBetsByOutcome) {
+      betReplyAmountsByOutcome[outcome] = sumBy(
+        groupedBetsByOutcome[outcome],
+        (b) => b.amount
+      )
+    }
+    await commentSnap.ref.update({
+      betReplyAmountsByOutcome,
+    })
+  }
+  await createBetReplyToCommentNotification(
+    comment.userId,
+    contract,
+    bet,
+    bettor,
+    comment,
+    pg
+  )
+}
 
 const addBetToFollowersFeeds = async (
   bettor: User,
@@ -193,7 +250,7 @@ const updateBettingStreak = async (
     const userDoc = firestore.collection('users').doc(user.id)
     const bettor = (await trans.get(userDoc)).data() as User
     const betStreakResetTime = getBettingStreakResetTimeBeforeNow()
-    const lastBetTime = bettor?.lastBetTime ?? 0
+    const lastBetTime = bettor.lastBetTime ?? 0
 
     // If they've already bet after the reset time
     if (lastBetTime > betStreakResetTime)

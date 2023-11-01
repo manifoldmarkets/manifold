@@ -69,6 +69,9 @@ export type notification_source_types =
   | 'referral_program'
   | 'follow_suggestion'
   | 'market_review'
+  | 'comment_on_lover'
+  | 'new_match'
+  | 'bet_reply'
 
 export type notification_source_update_types =
   | 'created'
@@ -76,6 +79,7 @@ export type notification_source_update_types =
   | 'resolved'
   | 'deleted'
   | 'closed'
+  | 'canceled'
 
 /** @deprecated - use a notification_preference (in user-notification-preferences.ts) */
 export type notification_reason_types =
@@ -117,6 +121,7 @@ export type notification_reason_types =
   | 'added_to_group'
   | 'bounty_awarded'
   | 'bounty_added'
+  | 'bounty_canceled'
   | 'mana_payment_received'
   | 'poll_you_follow_closed'
   | 'your_poll_closed'
@@ -282,6 +287,10 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
     simple: 'Bounties added to your question',
     detailed: 'When another user adds a bounty to your question',
   },
+  bounty_canceled: {
+    simple: 'A bounty you follow is canceled',
+    detailed: 'When the creator of a bounty cancels it',
+  },
   all_votes_on_watched_markets: {
     simple: 'Votes on polls you follow',
     detailed: 'When a user votes on a poll you follow',
@@ -348,6 +357,12 @@ export type UniqueBettorData = {
 export type ReviewNotificationData = {
   rating: number
   review: string
+}
+
+export type BetReplyNotificationData = {
+  betAmount: number
+  betOutcome: string
+  commentText: string
 }
 
 export function getSourceIdForLinkComponent(

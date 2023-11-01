@@ -7,10 +7,12 @@ import { PollOption } from 'common/poll-option'
 import { Contract, PollContract } from 'common/contract'
 import { createVotedOnPollNotification } from 'shared/create-notification'
 
-const schema = z.object({
-  contractId: z.string(),
-  voteId: z.string(),
-})
+const schema = z
+  .object({
+    contractId: z.string(),
+    voteId: z.string(),
+  })
+  .strict()
 
 export const castpollvote = authEndpoint(async (req, auth) => {
   const { contractId, voteId } = validate(schema, req.body)

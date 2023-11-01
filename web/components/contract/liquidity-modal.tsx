@@ -9,6 +9,7 @@ import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
 import { Title } from '../widgets/title'
 import { SUBSIDY_FEE } from 'common/economy'
+import { Row } from '../layout/row'
 
 export function LiquidityModal(props: {
   contract: CPMMContract | CPMMMultiContract
@@ -16,35 +17,23 @@ export function LiquidityModal(props: {
   setOpen: (open: boolean) => void
 }) {
   const { contract, isOpen, setOpen } = props
-  const { totalLiquidity } = contract
 
   return (
     <Modal open={isOpen} setOpen={setOpen} size="md">
       <Col className="bg-canvas-0 gap-3  rounded p-4 pb-8 sm:gap-4">
         <Title className="!mb-2">💧 Subsidize this market</Title>
 
-        <div className="text-ink-600">
-          The higher the stakes, the more winners make!
-          <br />
-          Pay traders to make the probability more precise.
-        </div>
-        <div>
-          <div className="mb-2">
-            Total subsidy pool:{' '}
-            <span className="font-semibold">{formatMoney(totalLiquidity)}</span>
-          </div>
-          <AddLiquidityPanel contract={contract} />
-        </div>
+        <AddLiquidityPanel contract={contract} />
       </Col>
     </Modal>
   )
 }
 
-function AddLiquidityPanel(props: {
+export function AddLiquidityPanel(props: {
   contract: CPMMContract | CPMMMultiContract
 }) {
   const { contract } = props
-  const { id: contractId, slug } = contract
+  const { id: contractId, slug, totalLiquidity } = contract
 
   const [amount, setAmount] = useState<number | undefined>(undefined)
   const [error, setError] = useState<string | undefined>(undefined)
@@ -56,13 +45,15 @@ function AddLiquidityPanel(props: {
     setAmount(amount)
   }
 
+  const payAmount = Math.ceil((1 / (1 - SUBSIDY_FEE)) * (amount ?? 0))
+
   const submit = () => {
     if (!amount) return
 
     setIsLoading(true)
     setIsSuccess(false)
 
-    addSubsidy({ amount, contractId })
+    addSubsidy({ amount: payAmount, contractId })
       .then((_) => {
         setIsSuccess(true)
         setError(undefined)
@@ -75,29 +66,55 @@ function AddLiquidityPanel(props: {
 
   return (
     <Col className="w-full">
-      <BuyAmountInput
-        parentClassName="w-full mb-3"
-        inputClassName="w-full max-w-none"
-        amount={amount}
-        onChange={onAmountChange}
-        error={error}
-        setError={setError}
-        disabled={isLoading}
-        sliderOptions={{ show: true, wrap: false }}
-      />
+      <div className="text-ink-600">
+        {/* The higher the stakes, the more winners make!
+        <br /> */}
+        Add to the subsidy pool to incentivize traders to make the probability
+        more precise.
+      </div>
 
-      <Button onClick={submit} disabled={isLoading || !!error || !amount}>
-        Add {amount ? formatMoney((1 - SUBSIDY_FEE) * amount) : ''} subsidy
+      <div className="my-4">
+        Total subsidy pool:{' '}
+        <span className="font-semibold">{formatMoney(totalLiquidity)}</span>
+      </div>
+
+      <Row className="mb-4">
+        <BuyAmountInput
+          inputClassName="w-40 mr-2"
+          amount={amount}
+          onChange={onAmountChange}
+          error={error}
+          setError={setError}
+          disabled={isLoading}
+          // don't use slider: useless for larger amounts
+          sliderOptions={{ show: false, wrap: false }}
+          hideQuickAdd
+        />
+      </Row>
+      <Button
+        onClick={submit}
+        disabled={isLoading || !!error || !amount}
+        size="sm"
+        className="mb-2"
+      >
+        Subsidize
       </Button>
 
-      <div className="text-ink-600 mt-0.5 text-xs">
-        Note: Manifold charges a {formatPercent(SUBSIDY_FEE)} fee on subsidies.
-      </div>
+      {amount ? (
+        <div className="text-ink-700 text-xs">
+          Pay {formatMoney(payAmount)} to add {formatMoney(amount)} to the
+          subsidy pool after fees.
+        </div>
+      ) : (
+        <div className="text-ink-700 text-xs">
+          Note: Manifold charges a {formatPercent(SUBSIDY_FEE)} fee on
+          subsidies.
+        </div>
+      )}
 
       {isSuccess && amount && (
         <div>
-          Success! Added {formatMoney((1 - SUBSIDY_FEE) * amount)} to the
-          subsidy pool, after fees.
+          Success! Added {formatMoney(amount)} to the subsidy pool, after fees.
         </div>
       )}
 

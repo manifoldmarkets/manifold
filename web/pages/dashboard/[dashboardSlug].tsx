@@ -1,4 +1,10 @@
-import { Dashboard, DashboardItem } from 'common/dashboard'
+import {
+  Dashboard,
+  DashboardItem,
+  DashboardLinkItem,
+  MAX_DASHBOARD_TITLE_LENGTH,
+  convertDashboardSqltoTS,
+} from 'common/dashboard'
 import { useEffect, useState } from 'react'
 import { Button } from 'web/components/buttons/button'
 import { AddItemCard } from 'web/components/dashboard/add-dashboard-item'
@@ -12,22 +18,29 @@ import { Avatar } from 'web/components/widgets/avatar'
 import { Title } from 'web/components/widgets/title'
 import { UserLink } from 'web/components/widgets/user-link'
 import { useUser } from 'web/hooks/use-user'
-import { getDashboardFromSlug, updateDashboard } from 'web/lib/firebase/api'
+import {
+  deleteDashboard,
+  getDashboardFromSlug,
+  updateDashboard,
+} from 'web/lib/firebase/api'
 import Custom404 from '../404'
 import { useDashboardFromSlug } from 'web/hooks/use-dashboard'
 import { TextEditor, useTextEditor } from 'web/components/widgets/editor'
 import { MAX_DESCRIPTION_LENGTH } from 'common/contract'
 import { JSONEmpty } from 'web/components/contract/contract-description'
 import clsx from 'clsx'
-import { JSONContent } from '@tiptap/core'
 import { Editor } from '@tiptap/react'
-import { PlusIcon } from '@heroicons/react/solid'
+import { XCircleIcon } from '@heroicons/react/solid'
 import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
 import { ENV_CONFIG, isAdminId } from 'common/envs/constants'
-import { ExpandingInput } from 'web/components/widgets/expanding-input'
 import { SEO } from 'web/components/SEO'
 import { richTextToString } from 'common/util/parse'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
+import { useWarnUnsavedChanges } from 'web/hooks/use-warn-unsaved-changes'
+import { InputWithLimit } from 'web/components/dashboard/input-with-limit'
+import Head from 'next/head'
+import { useRouter } from 'next/router'
+import { LinkPreviews, fetchLinkPreviews } from 'common/link-preview'
 
 export async function getStaticProps(ctx: {
   params: { dashboardSlug: string }
@@ -36,8 +49,19 @@ export async function getStaticProps(ctx: {
 
   try {
     const dashboard = await getDashboardFromSlug({ dashboardSlug })
+    const links = dashboard.items.filter(
+      (item): item is DashboardLinkItem => item.type === 'link'
+    )
+    const previews = await fetchLinkPreviews(links.map((l) => l.url))
 
-    return { props: { initialDashboard: dashboard, slug: dashboardSlug } }
+    return {
+      props: {
+        state: 'success',
+        initialDashboard: dashboard,
+        previews,
+        slug: dashboardSlug,
+      },
+    }
   } catch (e) {
     if (typeof e === 'object' && e !== null && 'code' in e && e.code === 404) {
       return {
@@ -53,11 +77,33 @@ export async function getStaticPaths() {
   return { paths: [], fallback: 'blocking' }
 }
 
-export default function DashboardPage(props: {
+export default function DashboardPage(
+  props:
+    | {
+        state: 'success'
+        initialDashboard: Dashboard
+        previews: LinkPreviews
+        slug: string
+      }
+    | { state: 'not found' }
+) {
+  const router = useRouter()
+  const edit = !!router.query.edit
+
+  if (props.state === 'not found') {
+    return <Custom404 />
+  } else {
+    return <FoundDashbordPage {...props} editByDefault={edit} />
+  }
+}
+
+function FoundDashbordPage(props: {
   initialDashboard: Dashboard
+  previews: LinkPreviews
   slug: string
+  editByDefault: boolean
 }) {
-  const { initialDashboard, slug } = props
+  const { initialDashboard, slug, editByDefault, previews } = props
   const fetchedDashboard = useDashboardFromSlug(slug)
   const [dashboard, setDashboard] = useState<Dashboard>(initialDashboard)
 
@@ -68,32 +114,21 @@ export default function DashboardPage(props: {
     }
   }, [fetchedDashboard])
 
-  const updateItems = (newItems: DashboardItem[]) => {
-    if (dashboard) {
-      const updatedDashboard = { ...dashboard, items: newItems }
-      setDashboard(updatedDashboard)
-    }
-  }
+  const updateItems = (newItems: DashboardItem[]) =>
+    setDashboard({ ...dashboard, items: newItems })
 
-  const updateTitle = (newTitle: string) => {
-    if (dashboard) {
-      const updatedDashboard = { ...dashboard, title: newTitle }
-      setDashboard(updatedDashboard)
-    }
-  }
+  const updateTitle = (newTitle: string) =>
+    setDashboard({ ...dashboard, title: newTitle })
 
-  const updateTopics = (newTopics: string[]) => {
-    if (dashboard) {
-      const updatedDashboard = { ...dashboard, topics: newTopics }
-      setDashboard(updatedDashboard)
-    }
-  }
+  const updateTopics = (newTopics: string[]) =>
+    setDashboard({ ...dashboard, topics: newTopics })
 
   const user = useUser()
   const isCreator = dashboard.creatorId === user?.id
   const isOnlyAdmin = !isCreator && user && isAdminId(user.id)
 
-  const [editMode, setEditMode] = useState(false)
+  const [editMode, setEditMode] = useState(editByDefault)
+  useWarnUnsavedChanges(editMode)
 
   const editor = useTextEditor({
     size: 'lg',
@@ -103,9 +138,8 @@ export default function DashboardPage(props: {
     placeholder: 'Optional. Provide background info and details.',
   })
 
-  if (!dashboard) {
-    return <Custom404 />
-  }
+  const [showDescription, setShowDescription] = useState(false)
+  const reallyShowDesc = editor && (!editor.isEmpty || showDescription)
 
   return (
     <Page
@@ -121,19 +155,29 @@ export default function DashboardPage(props: {
             : richTextToString(dashboard.description)
         }
       />
+      {dashboard.visibility === 'deleted' && (
+        <>
+          <Head>
+            <meta name="robots" content="noindex, nofollow" />
+          </Head>
+          <div className="bg-error w-full rounded p-6 text-center text-lg text-white">
+            Deleted by admins
+          </div>
+        </>
+      )}
+
       <Col className="w-full max-w-2xl px-1 sm:px-2">
-        <Row className="my-2 items-center justify-between sm:mt-4 lg:mt-0">
+        <div className="my-2 sm:mt-4 lg:mt-0">
           {editMode ? (
-            <ExpandingInput
+            <InputWithLimit
               placeholder={'Dashboard Title'}
-              autoFocus
-              maxLength={150}
-              value={dashboard.title}
-              className="w-full"
-              onChange={(e) => updateTitle(e.target.value)}
+              text={dashboard.title}
+              setText={updateTitle}
+              limit={MAX_DASHBOARD_TITLE_LENGTH}
+              className="!w-full !text-lg"
             />
           ) : (
-            <>
+            <Row className="items-center justify-between">
               <Title className="!mb-0 ">{dashboard.title}</Title>
 
               <div className="flex items-center">
@@ -161,20 +205,28 @@ export default function DashboardPage(props: {
                   </Button>
                 )}
               </div>
-            </>
+            </Row>
           )}
-        </Row>
+        </div>
         {editMode ? (
           <Row className="bg-canvas-50 sticky top-0 z-20 mb-2 w-full items-center justify-end gap-2 self-start py-1">
+            {isOnlyAdmin && (
+              <Button
+                color="red"
+                className="mr-auto"
+                onClick={() => {
+                  deleteDashboard({ dashboardId: dashboard.id })
+                  setEditMode(false)
+                }}
+              >
+                Delete dashboard
+              </Button>
+            )}
             <Button
               color="gray"
               onClick={() => {
-                // reset items to original state
-                updateItems(
-                  fetchedDashboard
-                    ? fetchedDashboard.items
-                    : initialDashboard.items
-                )
+                // reset to original state
+                setDashboard(fetchedDashboard || initialDashboard)
                 setEditMode(false)
               }}
             >
@@ -189,13 +241,10 @@ export default function DashboardPage(props: {
                   items: dashboard.items,
                   description: editor?.getJSON(),
                   topics: dashboard.topics,
-                }).then((resultingDashboard) => {
-                  if (
-                    resultingDashboard &&
-                    resultingDashboard.updateDashboard
-                  ) {
+                }).then((data) => {
+                  if (data?.updateDashboard) {
                     setDashboard(
-                      resultingDashboard.updateDashboard as Dashboard
+                      convertDashboardSqltoTS(data.updateDashboard) as any
                     )
                   }
                 })
@@ -218,17 +267,19 @@ export default function DashboardPage(props: {
               className="text-ink-700"
             />
             <span className="text-ink-400 ml-4 text-sm">
-              Edited
+              Created
               <RelativeTimestamp time={dashboard.createdTime} />
             </span>
           </Row>
         )}
         {editMode ? (
-          <DescriptionEditor
-            editor={editor}
-            description={dashboard.description}
-            className="mb-4"
-          />
+          reallyShowDesc && (
+            <DescriptionEditor
+              editor={editor}
+              className="mb-4"
+              onClose={() => setShowDescription(false)}
+            />
+          )
         ) : (
           <DashboardDescription description={dashboard.description} />
         )}
@@ -239,10 +290,14 @@ export default function DashboardPage(props: {
               setItems={updateItems}
               topics={dashboard.topics}
               setTopics={updateTopics}
+              createDescription={
+                reallyShowDesc ? undefined : () => setShowDescription(true)
+              }
             />
           </div>
         )}
         <DashboardContent
+          previews={previews}
           items={dashboard.items}
           setItems={updateItems}
           topics={dashboard.topics}
@@ -255,27 +310,23 @@ export default function DashboardPage(props: {
 }
 
 function DescriptionEditor(props: {
-  description: JSONContent
-  editor: Editor | null
+  editor: Editor
   className?: string
+  onClose: () => void
 }) {
-  const { description, editor, className } = props
-  const [editDescription, setEditDescription] = useState(false)
-  const noDescription = !description || JSONEmpty(description)
-  if (noDescription && !editDescription) {
-    return (
-      <Button
-        className={clsx(className, 'w-full')}
-        color="gray-outline"
-        onClick={() => setEditDescription(true)}
+  const { editor, className, onClose } = props
+  return (
+    <div className={clsx('relative', className)}>
+      <button
+        className="text-ink-500 hover:text-ink-700 absolute -top-2 right-0 z-10 transition-colors"
+        onClick={() => {
+          onClose?.()
+          editor.commands.clearContent()
+        }}
       >
-        <PlusIcon className="mr-2 h-6 w-6" />
-        Add description
-      </Button>
-    )
-  }
-  if (editor) {
-    return <TextEditor editor={editor} className={className} />
-  }
-  return <></>
+        <XCircleIcon className="h-5 w-5" />
+      </button>
+      <TextEditor editor={editor} />
+    </div>
+  )
 }

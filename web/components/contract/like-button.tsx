@@ -34,9 +34,9 @@ export const LikeButton = memo(function LikeButton(props: {
   contentText: string
   trackingLocation: string
   className?: string
-  isSwipe?: boolean
   placement?: 'top' | 'bottom'
   size?: SizeType
+  disabled?: boolean
 }) {
   const {
     user,
@@ -46,13 +46,12 @@ export const LikeButton = memo(function LikeButton(props: {
     contract,
     contentText,
     className,
-    isSwipe,
     trackingLocation,
     placement = 'bottom',
     size,
   } = props
   const userLiked = useIsLiked(user?.id, contentType, contentId)
-  const disabled = !user
+  const disabled = props.disabled || !user
   const isMe = contentCreatorId === user?.id
   const [liked, setLiked] = useState(false)
   const [modalOpen, setModalOpen] = useState(false)
@@ -76,7 +75,7 @@ export const LikeButton = memo(function LikeButton(props: {
       contract.question,
       contentText,
       ButtonReactionType,
-      { isSwipe: !!isSwipe, location: trackingLocation }
+      { location: trackingLocation }
     )
   }
 

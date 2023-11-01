@@ -5,12 +5,19 @@ import { Col } from 'web/components/layout/col'
 import { QRCode } from 'web/components/widgets/qr-code'
 import { APPLE_APP_URL, GOOGLE_PLAY_APP_URL } from 'common/envs/constants'
 import { Tabs } from 'web/components/layout/tabs'
+import { track } from 'web/lib/service/analytics'
 
 export const MobileAppsQRCodeButton = () => {
   const [isModalOpen, setIsModalOpen] = useState(false)
   return (
     <>
-      <Button color="indigo-outline" onClick={() => setIsModalOpen(true)}>
+      <Button
+        color="indigo-outline"
+        onClick={() => {
+          setIsModalOpen(true)
+          track('banner click get app')
+        }}
+      >
         Get the app
       </Button>
       <MobileAppsQRCodeDialog

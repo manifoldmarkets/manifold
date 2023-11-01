@@ -63,7 +63,13 @@ const signedOutNavigation = () => [
 ]
 
 // From https://codepen.io/chris__sev/pen/QWGvYbL
-export function BottomNavBar() {
+export function BottomNavBar(props: {
+  navigationOptions?: Item[]
+  sidebarNavigationOptions?: Item[]
+  hideCreateQuestionButton?: boolean
+  isManifoldLove?: boolean
+}) {
+  const { hideCreateQuestionButton, isManifoldLove } = props
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   const router = useRouter()
@@ -81,7 +87,9 @@ export function BottomNavBar() {
     return null
   }
 
-  const navigationOptions = user ? getNavigation(user) : signedOutNavigation()
+  const navigationOptions =
+    props.navigationOptions ??
+    (user ? getNavigation(user) : signedOutNavigation())
 
   return (
     <nav className="border-ink-200 dark:border-ink-300 text-ink-700 bg-canvas-0 fixed inset-x-0 bottom-0 z-50 flex select-none items-center justify-between border-t-2 text-xs lg:hidden">
@@ -110,6 +118,9 @@ export function BottomNavBar() {
           <MobileSidebar
             sidebarOpen={sidebarOpen}
             setSidebarOpen={setSidebarOpen}
+            sidebarNavigationOptions={props.sidebarNavigationOptions}
+            hideCreateQuestionButton={hideCreateQuestionButton}
+            isManifoldLove={isManifoldLove}
           />
         </>
       )}
@@ -201,8 +212,16 @@ function NavBarItem(props: {
 export function MobileSidebar(props: {
   sidebarOpen: boolean
   setSidebarOpen: (open: boolean) => void
+  sidebarNavigationOptions?: Item[]
+  hideCreateQuestionButton?: boolean
+  isManifoldLove?: boolean
 }) {
-  const { sidebarOpen, setSidebarOpen } = props
+  const {
+    sidebarOpen,
+    setSidebarOpen,
+    hideCreateQuestionButton,
+    isManifoldLove,
+  } = props
   return (
     <div>
       <Transition.Root show={sidebarOpen} as={Fragment}>
@@ -234,7 +253,11 @@ export function MobileSidebar(props: {
           >
             <div className="bg-canvas-0 relative flex w-full max-w-xs flex-1 flex-col">
               <div className="mx-2 h-0 flex-1 overflow-y-auto">
-                <Sidebar isMobile />
+                <Sidebar
+                  navigationOptions={props.sidebarNavigationOptions}
+                  isMobile
+                  hideCreateQuestionButton={hideCreateQuestionButton}
+                />
               </div>
             </div>
           </Transition.Child>

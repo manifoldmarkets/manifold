@@ -4,9 +4,11 @@ import { createSupabaseClient } from 'shared/supabase/init'
 import { z } from 'zod'
 import { authEndpoint } from './helpers'
 
-const schema = z.object({
-  dashboardId: z.string(),
-})
+const schema = z
+  .object({
+    dashboardId: z.string(),
+  })
+  .strict()
 
 export const followdashboard = authEndpoint(async (req, auth) => {
   const { dashboardId } = schema.parse(req.body)

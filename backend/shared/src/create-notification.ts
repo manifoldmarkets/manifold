@@ -2,6 +2,7 @@ import { getContractBetMetrics } from 'common/calculate'
 import * as admin from 'firebase-admin'
 import {
   BetFillData,
+  BetReplyNotificationData,
   BettingStreakData,
   ContractResolutionData,
   LeagueChangeData,
@@ -26,7 +27,7 @@ import {
   getValues,
   log,
 } from 'shared/utils'
-import { Comment } from 'common/comment'
+import { Comment, ContractComment } from 'common/comment'
 import { groupBy, keyBy, mapValues, minBy, sum, uniq } from 'lodash'
 import { Bet, LimitBet } from 'common/bet'
 import { Answer, DpmAnswer } from 'common/answer'
@@ -54,7 +55,7 @@ import { Reaction } from 'common/reaction'
 import { GroupMember } from 'common/group-member'
 import { QuestType } from 'common/quest'
 import { QuestRewardTxn } from 'common/txn'
-import { getMoneyNumber } from 'common/util/format'
+import { formatMoney, getMoneyNumber } from 'common/util/format'
 import {
   createSupabaseClient,
   createSupabaseDirectClient,
@@ -76,7 +77,7 @@ type recipients_to_reason_texts = {
   [userId: string]: { reason: notification_reason_types }
 }
 
-const insertNotificationToSupabase = async (
+export const insertNotificationToSupabase = async (
   notification: Notification,
   pg: SupabaseDirectClient
 ) => {
@@ -1591,6 +1592,79 @@ export const createBountyAddedNotification = async (
   await insertNotificationToSupabase(notification, pg)
 }
 
+export const createBountyCanceledNotification = async (
+  contract: Contract,
+  amountLeft: number
+) => {
+  const pg = createSupabaseDirectClient()
+
+  const followerIds = await pg.manyOrNone<{ follow_id: string }>(
+    `select follow_id from contract_follows where contract_id = $1`,
+    [contract.id]
+  )
+  const contractFollowersIds = mapValues(
+    keyBy(followerIds, 'follow_id'),
+    () => true
+  )
+  const constructNotification = (
+    userId: string,
+    reason: notification_preference
+  ): Notification => {
+    return {
+      id: crypto.randomUUID(),
+      userId,
+      reason,
+      createdTime: Date.now(),
+      isSeen: false,
+      sourceId: contract.id,
+      sourceType: 'contract',
+      sourceContractId: contract.id,
+      sourceUserName: contract.creatorName,
+      sourceUserUsername: contract.creatorUsername,
+      sourceUserAvatarUrl: contract.creatorAvatarUrl ?? '',
+      sourceText: formatMoney(amountLeft),
+      sourceContractCreatorUsername: contract.creatorUsername,
+      sourceContractTitle: contract.question,
+      sourceContractSlug: contract.slug,
+      sourceSlug: contract.slug,
+      sourceTitle: contract.question,
+    }
+  }
+
+  const sendNotificationsIfSettingsPermit = async (
+    userId: string,
+    reason: notification_reason_types
+  ) => {
+    const privateUser = await getPrivateUser(userId)
+    if (!privateUser) return
+    const { sendToBrowser } = getNotificationDestinationsForUser(
+      privateUser,
+      reason
+    )
+
+    // Browser notifications
+    if (sendToBrowser) {
+      await insertNotificationToSupabase(
+        constructNotification(userId, 'bounty_canceled'),
+        pg
+      )
+    }
+  }
+
+  const notifyContractFollowers = async () => {
+    await Promise.all(
+      Object.keys(contractFollowersIds).map((userId) => {
+        if (userId !== contract.creatorId) {
+          sendNotificationsIfSettingsPermit(userId, 'bounty_canceled')
+        }
+      })
+    )
+  }
+
+  log('notifying followers')
+  await notifyContractFollowers()
+}
+
 export const createVotedOnPollNotification = async (
   voterId: string,
   sourceText: string,
@@ -1885,12 +1959,16 @@ export const createMarketReviewedNotification = async (
   const privateUser = await getPrivateUser(userId)
   if (!privateUser) return
   const id = crypto.randomUUID()
-
-  if (!userOptedOutOfBrowserNotifications(privateUser)) {
+  const reason = 'review_on_your_market'
+  const { sendToBrowser } = getNotificationDestinationsForUser(
+    privateUser,
+    reason
+  )
+  if (sendToBrowser) {
     const notification: Notification = {
       id,
       userId: privateUser.id,
-      reason: 'review_on_your_market',
+      reason,
       createdTime: Date.now(),
       isSeen: false,
       sourceId: id,
@@ -1910,6 +1988,50 @@ export const createMarketReviewedNotification = async (
         rating,
         review,
       } as ReviewNotificationData,
+    }
+    await insertNotificationToSupabase(notification, pg)
+  }
+}
+export const createBetReplyToCommentNotification = async (
+  userId: string,
+  contract: Contract,
+  bet: Bet,
+  fromUser: User,
+  comment: ContractComment,
+  pg: SupabaseDirectClient
+) => {
+  const privateUser = await getPrivateUser(userId)
+  if (!privateUser) return
+  const reason = 'reply_to_users_comment'
+  const { sendToBrowser } = getNotificationDestinationsForUser(
+    privateUser,
+    reason
+  )
+  if (sendToBrowser) {
+    const notification: Notification = {
+      id: bet.id + 'reply-to' + comment.id,
+      userId: privateUser.id,
+      reason,
+      createdTime: Date.now(),
+      isSeen: false,
+      sourceId: bet.id,
+      sourceType: 'bet_reply',
+      sourceUpdateType: 'created',
+      sourceUserName: fromUser.name,
+      sourceUserUsername: fromUser.username,
+      sourceUserAvatarUrl: fromUser.avatarUrl,
+      sourceContractId: contract.id,
+      sourceContractSlug: contract.slug,
+      sourceContractTitle: contract.question,
+      sourceContractCreatorUsername: contract.creatorUsername,
+      sourceTitle: contract.question,
+      sourceSlug: contract.slug,
+      sourceText: '',
+      data: {
+        betAmount: bet.amount,
+        betOutcome: bet.outcome,
+        commentText: richTextToString(comment.content).slice(0, 250),
+      } as BetReplyNotificationData,
     }
     await insertNotificationToSupabase(notification, pg)
   }

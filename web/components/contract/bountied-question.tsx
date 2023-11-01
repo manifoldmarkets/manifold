@@ -4,8 +4,11 @@ import { BountiedQuestionContract } from 'common/contract'
 import { User } from 'common/user'
 import { formatMoney } from 'common/util/format'
 import { forwardRef, useEffect, useState } from 'react'
-import { addBounty, awardBounty } from 'web/lib/firebase/api'
+import { FaXmark } from 'react-icons/fa6'
+import { TbMoneybag } from 'react-icons/tb'
+import { addBounty, awardBounty, cancelBounty } from 'web/lib/firebase/api'
 import { Button } from '../buttons/button'
+import { ConfirmationButton } from '../buttons/confirmation-button'
 import { Col } from '../layout/col'
 import { MODAL_CLASS, Modal } from '../layout/modal'
 import { Row } from '../layout/row'
@@ -112,14 +115,16 @@ export function BountyLeft(props: {
 export function AwardBountyButton(props: {
   contract: BountiedQuestionContract
   comment: ContractComment
+  onAward: (bountyTotal: number) => void
   user: User
   disabled: boolean
   buttonClassName?: string
 }) {
-  const { contract, comment, user, disabled, buttonClassName } = props
+  const { contract, comment, onAward, user, disabled, buttonClassName } = props
   const [open, setOpen] = useState(false)
   const [error, setError] = useState<string | undefined>(undefined)
   const { bountyLeft } = contract
+  const { bountyAwarded } = comment
   const [amount, setAmount] = useState<number | undefined>(bountyLeft)
   const [loading, setLoading] = useState(false)
   if (!user || user.id !== contract.creatorId) {
@@ -129,14 +134,14 @@ export function AwardBountyButton(props: {
   async function onAwardBounty() {
     if (amount) {
       setLoading(true)
-      const newDefault = bountyLeft - amount
       awardBounty({
         contractId: contract.id,
         commentId: comment.id,
         amount: amount,
       }).then((_result) => {
         setOpen(false)
-        setAmount(newDefault)
+        setAmount(bountyLeft - amount)
+        onAward((bountyAwarded ?? 0) + amount)
         setLoading(false)
       })
     }
@@ -210,11 +215,12 @@ export function AddBountyButton(props: {
   return (
     <>
       <Button
-        className={clsx(buttonClassName)}
+        className={clsx(buttonClassName, 'group gap-1')}
         color={'green-outline'}
         onClick={() => setOpen(true)}
       >
-        💸 Add bounty
+        <TbMoneybag className="h-5 w-5 fill-teal-300 stroke-teal-600 group-hover:fill-none group-hover:stroke-current" />
+        Add bounty
       </Button>
       <Modal open={open} setOpen={setOpen}>
         <Col className={MODAL_CLASS}>
@@ -239,5 +245,57 @@ export function AddBountyButton(props: {
         </Col>
       </Modal>
     </>
+  )
+}
+
+export function CancelBountyButton(props: {
+  contract: BountiedQuestionContract
+  buttonClassName?: string
+  disabled?: boolean
+}) {
+  const { contract, buttonClassName, disabled } = props
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  async function onCancel() {
+    setIsSubmitting(true)
+    cancelBounty({
+      contractId: contract.id,
+    }).finally(() => {
+      setIsSubmitting(false)
+    })
+  }
+
+  return (
+    <ConfirmationButton
+      openModalBtn={{
+        label: 'Cancel Bounty',
+        size: 'sm',
+        color: 'gray-outline',
+        disabled: isSubmitting || disabled,
+        icon: <FaXmark className="mr-1 h-5 w-5" />,
+      }}
+      cancelBtn={{
+        label: 'Go back',
+        color: 'gray',
+        disabled: isSubmitting,
+      }}
+      submitBtn={{
+        label: 'Yes, Cancel Bounty',
+        color: 'indigo',
+        isSubmitting,
+      }}
+      onSubmit={onCancel}
+    >
+      <Row className="items-center gap-2 text-xl">
+        <div className="text-3xl">🤔</div>
+        Are you sure?
+      </Row>
+
+      <p>
+        If you decide to cancel this bounty, the remaining money will be
+        returned to you. Please take a moment to ensure that everyone who
+        contributed has been fairly compensated.
+      </p>
+    </ConfirmationButton>
   )
 }

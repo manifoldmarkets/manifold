@@ -125,6 +125,7 @@ export function BuyAmountInput(props: {
     show: boolean
     wrap: boolean
   }
+  hideQuickAdd?: boolean
   customRange?: {
     rangeMin?: number
     rangeMax?: number
@@ -149,6 +150,7 @@ export function BuyAmountInput(props: {
     maximumAmount,
     customRange,
     disregardUserBalance,
+    hideQuickAdd,
   } = props
   const { show, wrap } = sliderOptions ?? {}
 
@@ -169,7 +171,7 @@ export function BuyAmountInput(props: {
     } else {
       setError(undefined)
     }
-  })
+  }, [amount, user, minimumAmount, maximumAmount, disregardUserBalance])
 
   const quickAddButton = (
     <button
@@ -205,7 +207,9 @@ export function BuyAmountInput(props: {
             className={className}
             inputClassName={clsx('pr-12', inputClassName)}
             inputRef={inputRef}
-            quickAddMoreButton={maximumAmount ? undefined : quickAddButton}
+            quickAddMoreButton={
+              hideQuickAdd || maximumAmount ? undefined : quickAddButton
+            }
           />
           {show && (
             <BetSlider

@@ -8,34 +8,34 @@
   }
   :root {
     --color-ink-0: 255 255 255;
-    --color-ink-50: 248 248 252;
-    --color-ink-100: 236 237 248;
-    --color-ink-200: 221 222 238;
-    --color-ink-300: 194 195 219;
-    --color-ink-400: 158 159 189;
-    --color-ink-500: 118 118 147;
-    --color-ink-600: 86 86 118;
-    --color-ink-700: 61 61 92;
-    --color-ink-800: 39 39 73;
-    --color-ink-900: 22 21 55;
-    --color-ink-950: 10 8 43;
+    --color-ink-50: 249 245 249;
+    --color-ink-100: 231 223 230;
+    --color-ink-200: 206 192 206;
+    --color-ink-300: 162 142 164;
+    --color-ink-400: 130 109 136;
+    --color-ink-500: 96 82 102;
+    --color-ink-600: 79 68 85;
+    --color-ink-700: 62 54 58;
+    --color-ink-800: 46 41 51;
+    --color-ink-900: 32 30 37;
+    --color-ink-950: 22 20 25;
     --color-ink-1000: 0 0 0;
 
-    --color-canvas-0: 253 254 255;
-    --color-canvas-50: 244 243 251;
-    --color-canvas-100: 210 212 224;
+    --color-canvas-0: 255 255 255;
+    --color-canvas-50: 247 238 249;
+    --color-canvas-100: 231 223 230;
 
-    --color-primary-50: 238 242 255;
-    --color-primary-100: 224 231 255;
-    --color-primary-200: 199 210 254;
-    --color-primary-300: 165 180 252;
-    --color-primary-400: 129 140 248;
-    --color-primary-500: 99 102 241;
-    --color-primary-600: 79 70 229;
-    --color-primary-700: 67 56 202;
-    --color-primary-800: 55 48 163;
-    --color-primary-900: 49 46 129;
-    --color-primary-950: 30 27 75;
+    --color-primary-50: 253 242 248;
+    --color-primary-100: 252 231 243;
+    --color-primary-200: 251 207 232;
+    --color-primary-300: 249 168 212;
+    --color-primary-400: 244 114 182;
+    --color-primary-500: 236 72 153;
+    --color-primary-600: 219 39 119;
+    --color-primary-700: 190 24 93;
+    --color-primary-800: 157 23 77;
+    --color-primary-900: 157 23 77;
+    --color-primary-950: 131 24 67;
 
     --color-no-50: 255 243 241;
     --color-no-100: 255 235 231;
@@ -63,34 +63,34 @@
   }
   .dark {
     --color-ink-1000: 255 255 255;
-    --color-ink-950: 248 248 252;
-    --color-ink-900: 236 237 248;
-    --color-ink-800: 221 222 238;
-    --color-ink-700: 194 195 219;
-    --color-ink-600: 158 159 189;
-    --color-ink-500: 118 118 147;
-    --color-ink-400: 86 86 118;
-    --color-ink-300: 61 61 92;
-    --color-ink-200: 39 39 73;
-    --color-ink-100: 22 21 55;
-    --color-ink-50: 10 8 43;
+    --color-ink-950: 249 245 249;
+    --color-ink-900: 231 223 230;
+    --color-ink-800: 206 192 206;
+    --color-ink-700: 162 142 164;
+    --color-ink-600: 130 109 136;
+    --color-ink-500: 96 82 102;
+    --color-ink-400: 79 68 85;
+    --color-ink-300: 62 54 58;
+    --color-ink-200: 46 41 51;
+    --color-ink-100: 32 30 37;
+    --color-ink-50: 22 20 25;
     --color-ink-0: 0 0 0;
 
-    --color-canvas-0: 30 41 59;
-    --color-canvas-50: 15 23 41;
-    --color-canvas-100: 51 65 85;
+    --color-canvas-0: 32 30 37;
+    --color-canvas-50: 22 20 25;
+    --color-canvas-100: 46 41 51;
 
-    --color-primary-950: 238 242 255;
-    --color-primary-900: 224 231 255;
-    --color-primary-800: 199 210 254;
-    --color-primary-700: 165 180 252;
-    --color-primary-600: 129 140 248;
-    --color-primary-500: 99 102 241;
-    --color-primary-400: 79 70 229;
-    --color-primary-300: 67 56 202;
-    --color-primary-200: 55 48 163;
-    --color-primary-100: 49 46 129;
-    --color-primary-50: 30 27 75;
+    --color-primary-950: 253 242 248;
+    --color-primary-900: 252 231 243;
+    --color-primary-800: 251 207 232;
+    --color-primary-700: 249 168 212;
+    --color-primary-600: 244 114 182;
+    --color-primary-500: 236 72 153;
+    --color-primary-400: 219 39 119;
+    --color-primary-300: 190 24 93;
+    --color-primary-200: 157 23 77;
+    --color-primary-100: 157 23 77;
+    --color-primary-50: 131 24 67;
 
     --color-no-950: 255 243 241;
     --color-no-900: 255 235 231;
@@ -120,7 +120,7 @@
 
 @font-face {
   font-family: 'emoji';
-  src: local('AppleColorEmoji'), local('Segoe UI Emoji'),
+  src: local('AppleColorEmoji') local('Segoe UI Emoji'),
     local('Noto Color Emoji');
   /* from official unicode range for emoji: https://util.unicode.org/UnicodeJsps/list-unicodeset.jsp?a=%5B%3AEmoji%3DYes%3A%5D%0D%0A&abb=on&esc=on&g=&i= */
   /* but include zero width joiner and variant block selector, like 🏳️‍🌈 */
@@ -153,7 +153,8 @@
 
 @font-face {
   font-family: 'icomoon';
-  src: url('../public/fonts/icomoon.eot?v49ui9#iefix') format('embedded-opentype'),
+  src: url('../public/fonts/icomoon.eot?v49ui9#iefix')
+      format('embedded-opentype'),
     url('../public/fonts/icomoon.ttf?v49ui9') format('truetype'),
     url('../public/fonts/icomoon.woff?v49ui9') format('woff'),
     url('../public/fonts/icomoon.svg?v49ui9#icomoon') format('svg');

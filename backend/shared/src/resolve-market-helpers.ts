@@ -32,6 +32,7 @@ import { CORE_USERNAMES } from 'common/envs/constants'
 import { Query } from 'firebase-admin/firestore'
 import { trackPublicEvent } from 'shared/analytics'
 import { recordContractEdit } from 'shared/record-contract-edit'
+import { createSupabaseDirectClient } from './supabase/init'
 
 export type ResolutionParams = {
   outcome: string
@@ -202,14 +203,32 @@ export const getDataAndPayoutInfo = async (
     (doc) => doc.data() as LiquidityProvision
   )
 
-  let betsQuery: Query<any> = firestore.collection(
-    `contracts/${contractId}/bets`
-  )
-  if (answerId) {
-    betsQuery = betsQuery.where('answerId', '==', answerId)
+  let bets: Bet[]
+  if (
+    unresolvedContract.mechanism === 'cpmm-multi-1' &&
+    unresolvedContract.shouldAnswersSumToOne
+  ) {
+    // Load bets from supabase as an optimization.
+    // This type of multi choice generates a lot of extra bets that have shares = 0.
+    const pg = createSupabaseDirectClient()
+    bets = await pg.map(
+      `select * from contract_bets
+      where contract_id = $1
+      and shares != 0
+      `,
+      [contractId],
+      (row) => row.data
+    )
+  } else {
+    let betsQuery: Query<any> = firestore.collection(
+      `contracts/${contractId}/bets`
+    )
+    if (answerId) {
+      betsQuery = betsQuery.where('answerId', '==', answerId)
+    }
+    const betsSnap = await betsQuery.get()
+    bets = betsSnap.docs.map((doc) => doc.data() as Bet)
   }
-  const betsSnap = await betsQuery.get()
-  const bets = betsSnap.docs.map((doc) => doc.data() as Bet)
 
   const resolutionProbability =
     probabilityInt !== undefined ? probabilityInt / 100 : undefined

@@ -1,9 +1,5 @@
 import { groupBy } from 'lodash'
-import {
-  createSupabaseClient,
-  pgp,
-  SupabaseDirectClient,
-} from './supabase/init'
+import { pgp, SupabaseDirectClient } from './supabase/init'
 import { genNewAdjectiveAnimal } from 'common/util/adjective-animal'
 import { BOT_USERNAMES } from 'common/envs/constants'
 import {
@@ -18,7 +14,6 @@ import {
 import { getCurrentPortfolio } from './helpers/portfolio'
 import { createLeagueChangedNotification } from 'shared/create-notification'
 import { bulkInsert } from './supabase/utils'
-import { generateLeagueChats } from 'shared/generate-league-chats'
 
 export async function generateNextSeason(
   pg: SupabaseDirectClient,
@@ -78,7 +73,6 @@ export async function generateNextSeason(
     division = excluded.division,
     cohort = excluded.cohort`
   await pg.none(insertStatement)
-  await generateLeagueChats(season, pg, createSupabaseClient())
 }
 
 const generateDivisions = (
@@ -96,7 +90,12 @@ const generateDivisions = (
 
     const cohortRows = rowsByCohort[cohort]
 
-    let change = getDivisionChange(division, rank, cohortRows.length)
+    let change = getDivisionChange(
+      division,
+      rank,
+      mana_earned,
+      cohortRows.length
+    )
     if (change > 0 && mana_earned <= 0) change = 0
 
     const newDivision = division + change

@@ -4,9 +4,11 @@ import { generateEmbeddings } from 'shared/helpers/openai-utils'
 import { createSupabaseClient } from 'shared/supabase/init'
 import { authEndpoint, validate } from './helpers'
 
-const bodySchema = z.object({
-  topic: z.string(),
-})
+const bodySchema = z
+  .object({
+    topic: z.string(),
+  })
+  .strict()
 
 export const saveTopic = authEndpoint(async (req) => {
   const { topic } = validate(bodySchema, req.body)

@@ -76,7 +76,7 @@ export async function getPublicContractIdsInTopics(
   return uniqBy(contractLists.flat(), 'id')
 }
 
-export async function getRecentContractsOnTopics(
+export async function getRecentActiveContractsOnTopics(
   topicSlugs: string[],
   ignoreSlugs: string[],
   limit: number

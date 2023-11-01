@@ -1,68 +1,39 @@
 import { useState } from 'react'
 import { ChatIcon } from '@heroicons/react/outline'
-import { ChatIcon as ChatIconSolid } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { Contract } from 'common/contract'
 import { Modal, SCROLLABLE_MODAL_CLASS } from '../layout/modal'
 import { Col } from '../layout/col'
 import { CommentsTabContent } from '../contract/contract-tabs'
 import { usePrivateUser } from 'web/hooks/use-user'
-import { track, withTracking } from 'web/lib/service/analytics'
+import { track } from 'web/lib/service/analytics'
 import { Tooltip } from '../widgets/tooltip'
 import { User } from 'common/user'
 import {
   useCommentsOnContract,
   useNumContractComments,
-  useRealtimeCommentsOnContract,
 } from 'web/hooks/use-comments-supabase'
-
-export function SwipeComments(props: {
-  contract: Contract
-  setIsModalOpen: (open: boolean) => void
-}) {
-  const { contract, setIsModalOpen } = props
-  const [open, setOpen] = useState(false)
-  const setAllOpen = (open: boolean) => {
-    setOpen(open)
-    setIsModalOpen(open)
-  }
-
-  const comments = useRealtimeCommentsOnContract(contract.id) ?? []
-
-  return (
-    <button
-      className={clsx('text-white active:text-gray-400 disabled:opacity-50')}
-      onClick={withTracking(() => setAllOpen(true), 'view swipe comments', {
-        contractId: contract.id,
-      })}
-    >
-      <Col>
-        <ChatIconSolid className="h-12 w-12" />
-        <div className="mx-auto h-5 text-lg">
-          {comments.length > 0 && comments.length}
-        </div>
-      </Col>
-
-      <CommentsDialog contract={contract} open={open} setOpen={setAllOpen} />
-    </button>
-  )
-}
 
 export function CommentsButton(props: {
   contract: Contract
   user: User | null | undefined
+  className?: string
 }) {
-  const { contract, user } = props
+  const { contract, user, className } = props
 
   const [open, setOpen] = useState(false)
   const totalComments = useNumContractComments(contract.id)
 
   return (
-    <Tooltip text={`Comments`} placement="top" className={'z-10'}>
+    <Tooltip text={`Comments`} placement="top" noTap>
       <button
         disabled={totalComments === 0 && !user}
-        className="hover:text-ink-600 text-ink-500 flex items-center gap-1.5 disabled:opacity-50"
+        className={clsx(
+          'hover:text-ink-600 text-ink-500 flex h-full items-center gap-1.5 disabled:opacity-50',
+          className
+        )}
         onClick={(e) => {
+          e.stopPropagation()
           e.preventDefault()
           setOpen(true)
           track('click feed card comments button', { contractId: contract.id })

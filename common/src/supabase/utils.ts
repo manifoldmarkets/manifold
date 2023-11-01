@@ -12,6 +12,8 @@ import { Contract } from '../contract'
 import { Bet } from '../bet'
 import { ContractMetric } from '../contract-metric'
 import { Group } from '../group'
+import { Manalink } from '../manalink'
+import { Txn } from '../txn'
 
 export type Schema = Database['public']
 export type Tables = Schema['Tables']
@@ -31,6 +33,7 @@ export type SupabaseClient = SupabaseClientGeneric<Database, 'public', Schema>
 export type CollectionTableMapping = { [coll: string]: TableName }
 export const collectionTables: CollectionTableMapping = {
   users: 'users',
+  "private-users": 'private_users',
   contracts: 'contracts',
   txns: 'txns',
   manalinks: 'manalinks',
@@ -93,8 +96,10 @@ type JsonTypes = {
   contracts: Contract
   cotracts_rbac: Contract
   contract_bets: Bet
+  manalinks: Manalink
   public_contract_bets: Bet
   groups: Group
+  txns: Txn
 }
 
 export type DataFor<T extends Selectable> = T extends keyof JsonTypes

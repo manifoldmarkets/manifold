@@ -36,6 +36,7 @@ import { updatePrivateUser } from 'web/lib/firebase/users'
 import { getNativePlatform } from 'web/lib/native/is-native'
 import { AppBadgesOrGetAppButton } from 'web/components/buttons/app-badges-or-get-app-button'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
+import { track } from 'web/lib/service/analytics'
 
 export default function NotificationsPage() {
   const privateUser = usePrivateUser()
@@ -81,11 +82,12 @@ function NotificationsAppBanner(props: { userId: string }) {
         <AppBadgesOrGetAppButton />
       </Row>
       <button
-        onClick={() =>
+        onClick={() => {
+          track('close app banner')
           updatePrivateUser(userId, {
             hasSeenAppBannerInNotificationsOn: Date.now(),
           })
-        }
+        }}
       >
         <XIcon className="text-ink-600 hover:text-ink-800 h-6 w-6" />
       </button>
@@ -215,7 +217,7 @@ function RenderNotificationGroups(props: {
   )
 }
 
-function NotificationsList(props: {
+export function NotificationsList(props: {
   groupedNotifications: NotificationGroup[] | undefined
   privateUser?: PrivateUser
   mostRecentNotification?: Notification
@@ -255,10 +257,7 @@ function NotificationsList(props: {
         <LoadingIndicator />
       ) : paginatedGroupedNotifications.length === 0 ? (
         <div className={'mt-2'}>
-          {emptyTitle
-            ? emptyTitle
-            : `You don't have any notifications, yet. Try changing your settings to
-          see more.`}
+          {emptyTitle ? emptyTitle : `You don't have any notifications, yet.`}
         </div>
       ) : (
         <RenderNotificationGroups
@@ -335,7 +334,7 @@ function NotificationGroupItem(props: {
               {notifications[0].sourceUserName}
             </>
           ) : onboardingNotifs ? (
-            <>Welcome to Manifold</>
+            <>Welcome to Manifold!</>
           ) : questNotifs ? (
             <>
               {notifications.length} quest
@@ -379,26 +378,27 @@ function NotificationGroupItemComponent(props: {
     ? notifications
     : notifications.slice(0, lines)
   return (
-    <div className="pb-2">
+    <div>
       {header}
-      <div className="whitespace-pre-line">
-        {shownNotifications.map((notification) => {
-          return (
-            <NotificationItem
-              notification={notification}
-              key={notification.id}
-            />
-          )
-        })}
+      <div className="relative whitespace-pre-line last:[&>*]:pb-6 sm:last:[&>*]:pb-4">
         {needsExpanding && (
-          <Row className={clsx('w-full justify-end pr-2')}>
+          <div className={clsx('absolute bottom-0 right-4')}>
             <ShowMoreLessButton
               onClick={onExpandHandler}
               isCollapsed={!expanded}
               howManyMore={numNotifications - lines}
             />
-          </Row>
+          </div>
         )}
+        {shownNotifications.map((notification) => {
+          return (
+            <NotificationItem
+              notification={notification}
+              key={notification.id}
+              isChildOfGroup={shownNotifications.length > 1}
+            />
+          )
+        })}
       </div>
     </div>
   )

@@ -168,33 +168,25 @@ export function NotificationFrame(props: {
   const frameObject = (
     <Row className="cursor-pointer text-sm md:text-base">
       <Row className="w-full items-start gap-3">
-        {icon}
+        <div className="w-10">{icon}</div>
         <Col className="font w-full">
           <span>{children}</span>
           <div className="mt-1 line-clamp-3 text-xs md:text-sm">{subtitle}</div>
-          {isMobile && (
-            <Row className="mt-1 items-center gap-1 self-end">
-              {highlighted && (
-                <SparklesIcon className="text-primary-600 h-4 w-4" />
-              )}
-              <RelativeTimestampNoTooltip
-                time={notification.createdTime}
-                className="text-xs"
-              />
-            </Row>
-          )}
         </Col>
-        {!isMobile && (
-          <Row className="w-32 items-center justify-end gap-1 pr-1">
-            {highlighted && (
-              <SparklesIcon className="text-primary-600 h-4 w-4" />
+
+        <Row className="mt-1 items-center justify-end gap-1 pr-1 sm:w-36">
+          {highlighted && !isMobile && (
+            <SparklesIcon className="text-primary-600 h-4 w-4" />
+          )}
+          <RelativeTimestampNoTooltip
+            time={notification.createdTime}
+            shortened={isMobile}
+            className={clsx(
+              'text-xs',
+              highlighted ? 'text-primary-600' : 'text-ink-700'
             )}
-            <RelativeTimestampNoTooltip
-              time={notification.createdTime}
-              className="text-xs"
-            />
-          </Row>
-        )}
+          />
+        </Row>
       </Row>
     </Row>
   )

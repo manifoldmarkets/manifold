@@ -7,7 +7,7 @@ import {
   curveStepAfter,
   curveStepBefore,
 } from 'd3-shape'
-import { maxBy, minBy, range } from 'lodash'
+import { range, mapValues, last } from 'lodash'
 import { ReactNode, useCallback, useId, useMemo, useState } from 'react'
 
 import {
@@ -32,7 +32,6 @@ import {
   useViewScale,
 } from './helpers'
 import { roundToNearestFive } from 'web/lib/util/roundToNearestFive'
-import { nthColor } from './contract/choice'
 import { ZoomSlider } from './zoom-slider'
 import clsx from 'clsx'
 
@@ -180,7 +179,7 @@ export const DistributionChart = <P extends DistributionPoint>(props: {
 
 // multi line chart
 export const MultiValueHistoryChart = <P extends HistoryPoint>(props: {
-  data: P[][]
+  data: { [id: string]: { points: P[]; color: string } }
   w: number
   h: number
   xScale: ScaleTime<number, number>
@@ -189,29 +188,16 @@ export const MultiValueHistoryChart = <P extends HistoryPoint>(props: {
   showZoomer?: boolean
   yKind?: ValueKind
   curve?: CurveFactory
-  Tooltip?: (props: TooltipProps<P> & { i: number }) => ReactNode
+  hoveringId?: string
+  Tooltip?: (props: TooltipProps<P> & { ans: string }) => ReactNode
 }) => {
   const { data, w, h, yScale, yKind, Tooltip, showZoomer } = props
 
   const { viewXScale, setViewXScale } = props.viewScaleProps
 
-  const [ttParams, setTTParams] = useState<TooltipProps<P> & { i: number }>()
+  const [ttParams, setTTParams] = useState<TooltipProps<P> & { ans: string }>()
   const xScale = viewXScale ?? props.xScale
-
-  const [xMin, xMax] = xScale?.domain().map((d) => d.getTime()) ?? [
-    minBy(data[0], 'x'),
-    maxBy(data[data.length - 1], 'x'),
-  ]
-
-  const { compressedData, isCompressed } = useMemo(() => {
-    const newData = data.map((points) => compressPoints(points, xMin, xMax))
-    return {
-      compressedData: newData.map((d) => d.points),
-      isCompressed: newData.some((d) => d.isCompressed),
-    }
-  }, [data, xMin, xMax])
-
-  const curve = props.curve ?? isCompressed ? curveLinear : curveStepAfter
+  const curve = props.curve ?? curveStepAfter
 
   const px = useCallback((p: P) => xScale(p.x), [xScale])
   const py = useCallback((p: P) => yScale(p.y), [yScale])
@@ -234,19 +220,37 @@ export const MultiValueHistoryChart = <P extends HistoryPoint>(props: {
     return { xAxis, yAxis }
   }, [w, h, yKind, xScale, yScale])
 
-  const selectors = compressedData.map((points) =>
-    dataAtTimeSelector(points, xScale)
+  const sortedLines = useMemo(
+    () =>
+      Object.entries(data)
+        .map(([id, { points, color }]) => ({
+          points,
+          color,
+          id,
+        }))
+        .sort((a, b) => {
+          const endA = last(a.points)
+          const endB = last(b.points)
+          if (!endA) return -1
+          if (!endB) return 1
+          return endA.y - endB.y
+        }),
+    [data]
+  )
+
+  const selectors = mapValues(data, (data) =>
+    dataAtTimeSelector(data.points, xScale)
   )
   const onMouseOver = useEvent((mouseX: number, mouseY: number) => {
     const valueY = yScale.invert(mouseY)
 
-    const ps = selectors.map((s) => s(mouseX))
+    const ps = sortedLines.map((data) => selectors[data.id](mouseX))
 
     let closestIdx = 0
     ps.forEach((p, i) => {
       const closePrev = ps[closestIdx].prev
       const closestDist = closePrev ? Math.abs(closePrev.y - valueY) : 1
-      if (p.prev && Math.abs(p.prev.y - valueY) < closestDist) {
+      if (p.prev && p.next && Math.abs(p.prev.y - valueY) < closestDist) {
         closestIdx = i
       }
     })
@@ -254,7 +258,12 @@ export const MultiValueHistoryChart = <P extends HistoryPoint>(props: {
     const p = ps[closestIdx]
 
     if (p?.prev) {
-      setTTParams({ ...p, i: closestIdx, x: mouseX, y: yScale(p.prev.y) })
+      setTTParams({
+        ...p,
+        ans: sortedLines[closestIdx].id,
+        x: mouseX,
+        y: yScale(p.prev.y),
+      })
     } else {
       setTTParams(undefined)
     }
@@ -263,6 +272,8 @@ export const MultiValueHistoryChart = <P extends HistoryPoint>(props: {
   const onMouseLeave = useEvent(() => {
     setTTParams(undefined)
   })
+
+  const hoveringId = props.hoveringId ?? ttParams?.ans
 
   const rescale = useCallback((newXScale: ScaleTime<number, number> | null) => {
     if (newXScale) {
@@ -288,33 +299,32 @@ export const MultiValueHistoryChart = <P extends HistoryPoint>(props: {
         noGridlines
         className="group"
       >
-        {compressedData.map((points, i) => (
-          <g key={i}>
+        {sortedLines.map(({ id, points, color }) => (
+          <g key={id}>
             <LinePath
-              key={i}
               data={points}
               px={px}
               py={py}
               curve={curve}
               className={clsx(
-                'transition-all',
-                ttParams && ttParams.i !== i
+                'transition-[stroke-width]',
+                hoveringId && hoveringId !== id
                   ? 'stroke-1 opacity-50'
                   : 'stroke-2'
               )}
-              stroke={nthColor(i)}
+              stroke={color}
             />
           </g>
         ))}
         {/* hover effect put last so it shows on top */}
-        {ttParams && (
+        {hoveringId && hoveringId in data && (
           <AreaPath
-            data={compressedData[ttParams.i]}
+            data={data[hoveringId].points}
             px={px}
             py0={yScale(0)}
             py1={py}
             curve={curve}
-            fill={nthColor(ttParams.i)}
+            fill={data[hoveringId].color}
             opacity={0.5}
           />
         )}

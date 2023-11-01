@@ -1,18 +1,21 @@
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { log } from 'shared/utils'
 import { z } from 'zod'
-import { APIError, authEndpoint, validate } from './helpers'
+import { authEndpoint, validate } from './helpers'
 import { DashboardItemSchema, contentSchema } from 'shared/zod-types'
 import { slugify } from 'common/util/slugify'
 import { randomString } from 'common/util/random'
 import { updateDashboardGroups } from 'shared/supabase/dashboard'
+import { MAX_DASHBOARD_TITLE_LENGTH } from 'common/dashboard'
 
-const schema = z.object({
-  title: z.string(),
-  description: contentSchema.optional(),
-  items: z.array(DashboardItemSchema),
-  topics: z.array(z.string()),
-})
+const schema = z
+  .object({
+    title: z.string().min(1).max(MAX_DASHBOARD_TITLE_LENGTH),
+    description: contentSchema.optional(),
+    items: z.array(DashboardItemSchema),
+    topics: z.array(z.string()),
+  })
+  .strict()
 
 export const createdashboard = authEndpoint(async (req, auth) => {
   const { title, description, items, topics } = validate(schema, req.body)

@@ -38,6 +38,7 @@ import { useEvent } from 'web/hooks/use-event'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { usePersistentQueryState } from 'web/hooks/use-persistent-query-state'
 import { linkClass } from '../widgets/site-link'
+import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 
 type BetSort =
   | 'newest'
@@ -105,8 +106,8 @@ export function UserBetsTable(props: { user: User }) {
     })
   }, [setInitialContracts, setOpenLimitBetsByContract, user.id, isAuth])
 
-  const [filter, setFilter] = usePersistentInMemoryState<BetFilter>(
-    'open',
+  const [filter, setFilter] = usePersistentLocalState<BetFilter>(
+    'all',
     'bets-list-filter'
   )
   const [page, setPage] = usePersistentInMemoryState(0, 'portfolio-page')
@@ -186,12 +187,12 @@ export function UserBetsTable(props: { user: User }) {
             onChange={(e) => onSetFilter(e.target.value as BetFilter)}
             className="py-1"
           >
+            <option value="all">All</option>
             <option value="open">Active</option>
             <option value="limit_bet">Limit orders</option>
             <option value="sold">Sold</option>
             <option value="closed">Closed</option>
             <option value="resolved">Resolved</option>
-            <option value="all">All</option>
           </Select>
         </Row>
       </div>

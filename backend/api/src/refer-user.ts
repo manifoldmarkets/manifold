@@ -23,10 +23,12 @@ import { MINUTE_MS } from 'common/util/time'
 import { removeUndefinedProps } from 'common/util/object'
 import { trackPublicEvent } from 'shared/analytics'
 
-const bodySchema = z.object({
-  referredByUsername: z.string(),
-  contractId: z.string().optional(),
-})
+const bodySchema = z
+  .object({
+    referredByUsername: z.string(),
+    contractId: z.string().optional(),
+  })
+  .strict()
 
 export const referuser = authEndpoint(async (req, auth) => {
   const { referredByUsername, contractId } = validate(bodySchema, req.body)

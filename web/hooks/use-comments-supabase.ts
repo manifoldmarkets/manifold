@@ -1,19 +1,18 @@
 import { ContractComment, PostComment } from 'common/comment'
 import { useEffect, useState } from 'react'
 import {
-  convertContractComment,
   getAllCommentRows,
   getCommentRows,
   getCommentsOnContract,
+  getNewCommentRows,
   getNumContractComments,
   getNumUserComments,
   getPostCommentRows,
 } from 'web/lib/supabase/comments'
-import { db } from 'web/lib/supabase/db'
-import { uniqBy } from 'lodash'
-import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
-import { isBlocked, usePrivateUser } from 'web/hooks/use-user'
 import { useSubscription } from 'web/lib/supabase/realtime/use-subscription'
+import { maxBy } from 'lodash'
+import { tsToMillis } from 'common/supabase/utils'
+import { convertContractComment } from 'common/supabase/comments'
 
 export function useNumContractComments(contractId: string) {
   const [numComments, setNumComments] = useState<number>(0)
@@ -27,42 +26,6 @@ export function useNumContractComments(contractId: string) {
   }, [contractId])
 
   return numComments
-}
-
-export function useUnseenReplyChainCommentsOnContracts(
-  contractIds: string[],
-  userId: string
-) {
-  const [comments, setComments] = usePersistentInMemoryState<ContractComment[]>(
-    [],
-    `recent-feed-replies-${userId}`
-  )
-  const privateUser = usePrivateUser()
-
-  useEffect(() => {
-    if (contractIds.length > 0) {
-      db.rpc('get_unseen_reply_chain_comments_matching_contracts', {
-        contract_ids: contractIds,
-        current_user_id: userId,
-      }).then((result) => {
-        const { data, error } = result
-        if (error || !data) {
-          console.log(error)
-          return null
-        }
-        setComments((prev) =>
-          uniqBy(
-            [...data.map((d: any) => d.data as ContractComment), ...prev],
-            (c) => c.id
-          )
-        )
-      })
-    }
-  }, [JSON.stringify(contractIds)])
-
-  return comments.filter(
-    (c) => c.hidden != true && !isBlocked(privateUser, c.userId)
-  )
 }
 
 export function useNumUserComments(userId: string) {
@@ -88,15 +51,24 @@ export function useCommentsOnContract(contractId: string) {
   }, [contractId])
   return comments
 }
-
+// TODO: the loadNewerQuery doesn't query for comment edits (e.g. via fs_updated_time).
+//This is okay for now as we're optimistically updating comments via useState.
 export function useRealtimeCommentsOnContract(contractId: string) {
-  const { rows } = useSubscription(
+  const { rows, loadNewer } = useSubscription(
     'contract_comments',
     { k: 'contract_id', v: contractId },
-    () => getCommentRows(contractId)
+    () => getCommentRows(contractId),
+    undefined,
+    undefined,
+    (rows) =>
+      getNewCommentRows(
+        contractId,
+        maxBy(rows ?? [], (r) => tsToMillis(r.created_time))?.created_time ??
+          new Date(Date.now() - 500).toISOString()
+      )
   )
 
-  return rows?.map(convertContractComment)
+  return { rows: rows?.map(convertContractComment), loadNewer }
 }
 
 export function useRealtimeComments(

@@ -5,6 +5,7 @@ import { firebaseLogin } from 'web/lib/firebase/users'
 import { Button } from './button'
 import { PlayMoneyDisclaimer } from '../play-money-disclaimer'
 import { Col } from '../layout/col'
+import { Row } from 'web/components/layout/row'
 
 export const SidebarSignUpButton = (props: { className?: string }) => {
   const { className } = props
@@ -32,19 +33,22 @@ export const SidebarSignUpButton = (props: { className?: string }) => {
 
 export const GoogleSignInButton = (props: { onClick: () => any }) => {
   return (
-    <button
+    <Button
       onClick={props.onClick}
-      className="flex items-center whitespace-nowrap rounded-md bg-white p-2 text-sm shadow-sm outline-2 outline-indigo-200 hover:outline dark:bg-blue-500"
+      color={'gradient-pink'}
+      size={'lg'}
+      className=" whitespace-nowrap  shadow-sm outline-2 "
     >
-      <img
-        src="/google.svg"
-        alt=""
-        width={24}
-        height={24}
-        className="rounded-full bg-white"
-      />
-      <span className="w-3 shrink" />
-      <span>Sign in with Google</span>
-    </button>
+      <Row className={'items-center gap-2 p-2'}>
+        <img
+          src="/google.svg"
+          alt=""
+          width={24}
+          height={24}
+          className="rounded-full bg-white"
+        />
+        <span>Sign in with Google</span>
+      </Row>
+    </Button>
   )
 }

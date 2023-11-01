@@ -1,4 +1,4 @@
-import { track } from '@amplitude/analytics-browser'
+import { track } from 'web/lib/service/analytics'
 import clsx from 'clsx'
 import { formatMoney } from 'common/util/format'
 import { useEffect, useState } from 'react'
@@ -12,8 +12,9 @@ export function ClaimButton(props: {
   adId: string
   reward: number
   className?: string
+  onClaim: () => Promise<any>
 }) {
-  const { adId, reward, className } = props
+  const { adId, reward, className, onClaim } = props
 
   const [claimed, setClaimed] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -43,8 +44,9 @@ export function ClaimButton(props: {
         e.stopPropagation()
         setLoading(true)
         try {
+          await onClaim()
           await redeemBoost({ adId })
-          toast.success(`+${formatMoney(reward)}`)
+          toast.success(`Boost claimed! +${formatMoney(reward)}`)
           setClaimed(true)
           track('claim boost', { adId })
         } catch (err) {

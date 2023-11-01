@@ -3,14 +3,28 @@ import { Col } from 'web/components/layout/col'
 import { track } from 'web/lib/service/analytics'
 import { Row } from '../layout/row'
 import { RelativeTimestamp } from '../relative-timestamp'
+import { useLinkPreview } from 'web/hooks/use-link-previews'
+import { LinkPreview } from 'common/link-preview'
+
+export const MaybeDashboardNewsItem = (props: {
+  url: string
+  preview?: LinkPreview
+  className?: string
+}) => {
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const preview = props.preview ?? useLinkPreview(props.url)
+
+  if (!preview) {
+    return <DashboardNewsItemPlaceholder pulse />
+  }
+  return <DashboardNewsItem {...preview} className={props.className} />
+}
 
 export const DashboardNewsItem = (props: {
   title?: string
-  urlToImage?: string
   image?: string
   url: string
-  description: string
-  author?: string
+  description?: string
   published_time?: number
   className?: string
   siteName?: string
@@ -18,7 +32,6 @@ export const DashboardNewsItem = (props: {
   const {
     title,
     image,
-    urlToImage,
     url,
     description,
     published_time,
@@ -26,7 +39,7 @@ export const DashboardNewsItem = (props: {
     siteName,
   } = props
   const date = Date.parse(published_time as any)
-  const imgSrc = image ?? urlToImage
+  const imgSrc = image
 
   return (
     <a
@@ -41,7 +54,7 @@ export const DashboardNewsItem = (props: {
     >
       {imgSrc && (
         <img
-          className="object-cover sm:w-1/3"
+          className="h-[200px] object-cover sm:h-auto sm:w-1/3"
           src={imgSrc}
           alt=""
           height={200}

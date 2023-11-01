@@ -1,19 +1,20 @@
 import { Dashboard } from 'common/dashboard'
 import { Col } from '../layout/col'
-import Link from 'next/link'
 import { Row } from '../layout/row'
 import { Avatar } from '../widgets/avatar'
-import { UserLink } from '../widgets/user-link'
 import { FollowDashboardButton } from './follow-dashboard-button'
-import clsx from 'clsx'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { LoadMoreUntilNotVisible } from '../widgets/visibility-observer'
+import { ClickFrame } from '../widgets/click-frame'
+import { useRouter } from 'next/router'
+import Link from 'next/link'
 
 export function DashboardCards(props: {
   dashboards?: Dashboard[]
   loadMore?: () => Promise<boolean>
 }) {
   const { dashboards, loadMore } = props
+
   if (!dashboards) {
     return <LoadingIndicator />
   }
@@ -32,43 +33,37 @@ export function DashboardCards(props: {
 }
 
 function DashboardCard(props: { dashboard: Dashboard }) {
-  const {
-    id,
-    title,
-    slug,
-    creatorId,
-    creatorAvatarUrl,
-    creatorUsername,
-    creatorName,
-  } = props.dashboard
+  const { id, title, slug, creatorId, creatorAvatarUrl, creatorUsername } =
+    props.dashboard
+  const router = useRouter()
+
+  const href = `/dashboard/${slug}`
+
   return (
-    <Link
-      href={`/dashboard/${slug}`}
-      className=" bg-canvas-0 border-canvas-0 hover:border-primary-300 flex flex-col gap-2 rounded-lg border px-4 py-2 transition-colors"
+    <ClickFrame
+      onClick={() => router.push(href)}
+      className="bg-canvas-0 border-canvas-0 hover:border-primary-300 flex cursor-pointer flex-col gap-2 rounded-lg border py-2 pl-4 pr-2 transition-colors"
     >
       <Row className="w-full items-center justify-between">
-        <Row className={'text-ink-500 items-center gap-1 text-sm'}>
+        <Link
+          className={'flex items-center gap-2 truncate text-sm'}
+          href={href}
+        >
           <Avatar
             size={'xs'}
             className={'mr-0.5'}
             avatarUrl={creatorAvatarUrl}
             username={creatorUsername}
+            noLink
           />
-          <UserLink
-            name={creatorName}
-            username={creatorUsername}
-            className={clsx(
-              'w-full max-w-[10rem] text-ellipsis sm:max-w-[12rem]'
-            )}
-          />
-        </Row>
+          <div className="truncate text-base sm:text-lg">{title}</div>
+        </Link>
         <FollowDashboardButton
           dashboardId={id}
           dashboardCreatorId={creatorId}
           ttPlacement="left"
         />
       </Row>
-      <div className="text-lg">{title}</div>
-    </Link>
+    </ClickFrame>
   )
 }

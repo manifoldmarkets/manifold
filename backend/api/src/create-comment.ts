@@ -13,15 +13,17 @@ import { getContract, getUser, htmlToRichText } from 'shared/utils'
 import { APIError, authEndpoint, validate } from './helpers'
 import { contentSchema } from 'shared/zod-types'
 
-const postSchema = z.object({
-  contractId: z.string(),
-  content: contentSchema.optional(),
-  html: z.string().optional(),
-  markdown: z.string().optional(),
-  replyToCommentId: z.string().optional(),
-  replyToAnswerId: z.string().optional(),
-  replyToBetId: z.string().optional(),
-})
+const postSchema = z
+  .object({
+    contractId: z.string(),
+    content: contentSchema.optional(),
+    html: z.string().optional(),
+    markdown: z.string().optional(),
+    replyToCommentId: z.string().optional(),
+    replyToAnswerId: z.string().optional(),
+    replyToBetId: z.string().optional(),
+  })
+  .strict()
 
 export const MAX_COMMENT_JSON_LENGTH = 20000
 

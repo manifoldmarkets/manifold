@@ -1,8 +1,8 @@
 import { Contract } from 'common/contract'
-import { formatMoney } from 'common/util/format'
-import { AmountInput } from '../widgets/amount-input'
+import { formatMoney, formatWithCommas } from 'common/util/format'
+import { AmountInput, BuyAmountInput } from '../widgets/amount-input'
 import { ReactNode, useState } from 'react'
-import { boostMarket } from 'web/lib/firebase/api'
+import { addSubsidy, boostMarket } from 'web/lib/firebase/api'
 import { Button } from '../buttons/button'
 import toast from 'react-hot-toast'
 import { LoadingIndicator } from '../widgets/loading-indicator'
@@ -21,6 +21,11 @@ import { track } from 'web/lib/service/analytics'
 import { useQuery } from 'web/hooks/use-query'
 import { TbRocket } from 'react-icons/tb'
 import clsx from 'clsx'
+import { ControlledTabs } from '../layout/tabs'
+import { AddLiquidityPanel } from './liquidity-modal'
+import { buildArray } from 'common/util/array'
+import { ShowMoreLessButton } from '../widgets/collapsible-content'
+import { SUBSIDY_FEE } from 'common/economy'
 
 export function BoostButton(props: { contract: Contract; className?: string }) {
   const { contract, className } = props
@@ -54,20 +59,166 @@ export function BoostDialog(props: {
 }) {
   const { contract, isOpen, setOpen } = props
 
+  const [index, setIndex] = useState(0)
+  const [showTabs, setShowTabs] = useState(false)
+
+  const subsidyDisabled =
+    contract.isResolved ||
+    (contract.closeTime ?? Infinity) < Date.now() ||
+    (contract.mechanism !== 'cpmm-1' && contract.mechanism !== 'cpmm-multi-1')
+
   return (
     <Modal open={isOpen} setOpen={setOpen} size="sm">
       <Col className="bg-canvas-0 gap-2.5  rounded p-4 pb-8 sm:gap-4">
         <Title className="!mb-2">🚀 Boost this question</Title>
 
-        <div className="text-ink-600 mb-2">
-          Boost this question higher in people's feeds.{' '}
-          <InfoTooltip text="Boosted questions target user interests. Users earn a reward for clicking on the question." />
-        </div>
+        {!showTabs && (
+          <SimpleBoostRow
+            contract={contract}
+            subsidyDisabled={subsidyDisabled}
+          />
+        )}
 
-        <BoostFormRow contract={contract} />
-        <FeedAnalytics contractId={contract.id} />
+        <ShowMoreLessButton
+          onClick={() => setShowTabs(!showTabs)}
+          isCollapsed={!showTabs}
+        />
+
+        {showTabs && (
+          <ControlledTabs
+            tabs={buildArray(
+              !subsidyDisabled && {
+                title: 'Subsidies',
+                content: <AddLiquidityPanel contract={contract} />,
+              },
+              {
+                title: 'Feed promo',
+                content: <BoostFormRow contract={contract} />,
+              },
+              {
+                title: 'Analytics',
+                content: <FeedAnalytics contractId={contract.id} />,
+              }
+            )}
+            activeIndex={index}
+            onClick={(_, i) => setIndex(i)}
+            trackingName="boost tabs"
+          />
+        )}
       </Col>
     </Modal>
+  )
+}
+
+function SimpleBoostRow(props: {
+  contract: Contract
+  subsidyDisabled: boolean
+}) {
+  const { contract, subsidyDisabled } = props
+  const { id: contractId, slug } = contract
+
+  const [amount, setAmount] = useState<number | undefined>(undefined)
+  const [error, setError] = useState<string | undefined>(undefined)
+  const [success, setSuccess] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
+
+  const onAmountChange = (amount: number | undefined) => {
+    setSuccess('')
+    setAmount(amount)
+  }
+
+  const clickAmount = subsidyDisabled ? amount ?? 0 : 0.5 * (amount ?? 0)
+  const numClicks = Math.floor(clickAmount / DEFAULT_AD_COST_PER_VIEW)
+  const subsidyAmount = (amount ?? 0) - numClicks * DEFAULT_AD_COST_PER_VIEW
+
+  const submit = async () => {
+    if (!amount) return
+
+    setIsLoading(true)
+    setSuccess('')
+    setError(undefined)
+
+    if (subsidyDisabled && numClicks < 1) {
+      setError(`Boost at least ${formatMoney(10)}`)
+      return
+    }
+
+    if (numClicks >= 1)
+      await boostMarket({
+        marketId: contract.id,
+        totalCost: numClicks * DEFAULT_AD_COST_PER_VIEW,
+        costPerView: DEFAULT_AD_COST_PER_VIEW,
+      })
+
+    if (!subsidyDisabled) {
+      await addSubsidy({ amount: subsidyAmount, contractId })
+
+      // setSuccess(
+      //   `Boosted! You purchased ${numClicks} feed click${
+      //     numClicks > 1 ? 's' : ''
+      //   } and added ${formatMoney(
+      //     (1 - SUBSIDY_FEE) * subsidyAmount
+      //   )} to the subsidy pool.`
+      // )
+    }
+
+    setSuccess(`Boosted by ${formatMoney(amount)}!`)
+
+    setError(undefined)
+    setIsLoading(false)
+
+    track('simple boost', { amount, contractId, slug })
+  }
+
+  return (
+    <>
+      <div className="text-ink-600 mb-2">
+        Pay to get your question answered!{' '}
+        {subsidyDisabled
+          ? 'All of your boost goes to feed promotion.'
+          : 'Half of your boost goes to feed promotion and half to trader subsidies.'}
+      </div>
+
+      <Row className="mb-2">
+        <BuyAmountInput
+          inputClassName="w-40 mr-2"
+          amount={amount}
+          onChange={onAmountChange}
+          error={error}
+          setError={setError}
+          disabled={isLoading}
+          // don't use slider: useless for larger amounts
+          sliderOptions={{ show: false, wrap: false }}
+          hideQuickAdd
+        />
+      </Row>
+
+      <Button
+        onClick={submit}
+        disabled={isLoading || !!error || !amount}
+        size="md"
+        color="indigo"
+      >
+        Boost!
+      </Button>
+
+      {!!amount && (
+        <div className="text-xs">
+          Get {formatWithCommas(numClicks)} feed click
+          {numClicks !== 1 ? 's' : ''}{' '}
+          {!subsidyDisabled && (
+            <>
+              and {formatMoney((1 - SUBSIDY_FEE) * subsidyAmount)} in subsidies{' '}
+            </>
+          )}
+          for {formatMoney(amount)}.
+        </div>
+      )}
+
+      {isLoading && <div>Processing...</div>}
+      {error && <div className="text-error text-right">{error}</div>}
+      {success && <div>{success}</div>}
+    </>
   )
 }
 
@@ -75,7 +226,7 @@ function BoostFormRow(props: { contract: Contract }) {
   const { contract } = props
 
   const [loading, setLoading] = useState(false)
-  const [showBid, setShowBid] = useState(false)
+  const [showBid, setShowBid] = useState(true)
   const [totalCost, setTotalCost] = useState<number>()
   const [costPerView, setCostPerView] = useState<number | undefined>(
     DEFAULT_AD_COST_PER_VIEW
@@ -117,6 +268,11 @@ function BoostFormRow(props: { contract: Contract }) {
 
   return (
     <>
+      <div className="text-ink-600 mb-2">
+        Feed promotion boosts this question higher on the feed based on user
+        interests. Users earn a reward for clicking.
+      </div>
+
       <Row className="items-center justify-between">
         <AmountInput
           amount={totalCost}
@@ -195,15 +351,6 @@ function FeedAnalytics(props: { contractId: string }) {
         .eq('contract_id', contractId)
   )
 
-  const clickQuery = useQuery(
-    async () =>
-      await db
-        .from('user_events')
-        .select('*', { count: 'exact' })
-        .eq('name', 'click market card feed')
-        .eq('contract_id', contractId)
-  )
-
   const redeemQuery = useQuery(
     async () =>
       await db
@@ -213,12 +360,7 @@ function FeedAnalytics(props: { contractId: string }) {
         .eq('data->>fromId', adQuery.data?.data?.[0]?.id)
   )
 
-  if (
-    adQuery.error ||
-    viewQuery.error ||
-    clickQuery.error ||
-    redeemQuery.error
-  ) {
+  if (adQuery.error || viewQuery.error || redeemQuery.error) {
     return (
       <div className="bg-scarlet-100 mb-2 rounded-md p-4">
         Error loading analytics
@@ -235,18 +377,12 @@ function FeedAnalytics(props: { contractId: string }) {
     (v) => (v.data as ContractCardView).isPromoted
   )
 
-  const clickData = clickQuery.data
-  const promotedClickData = clickData?.data?.filter(
-    (v) => (v.data as any).isPromoted
-  )
-
   return (
     <div className="mt-4">
       <div className="mb-2 text-lg">
         Feed Analytics
         {(adQuery.isLoading ||
           viewQuery.isLoading ||
-          clickQuery.isLoading ||
           redeemQuery.isLoading) && (
           <LoadingIndicator size="sm" className="ml-4 !inline-flex" />
         )}
@@ -280,16 +416,10 @@ function FeedAnalytics(props: { contractId: string }) {
             }
           />
         )}
-        {isBoosted && (
+        {/* TODO: fix this  */}
+        {/* {isBoosted && (
           <TableItem label="Boost clicks" value={redeemQuery.data?.count} />
-        )}
-        <TableItem label="Clickthroughs" value={clickData?.count} />
-        {isBoosted && (
-          <TableItem
-            label="Boost clickthroughs"
-            value={promotedClickData?.length}
-          />
-        )}
+        )} */}
       </Table>
     </div>
   )

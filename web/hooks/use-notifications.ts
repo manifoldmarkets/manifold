@@ -1,6 +1,7 @@
 import {
   BalanceChangeNotificationTypes,
   Notification,
+  notification_source_types,
   NotificationReason,
 } from 'common/notification'
 import { Dictionary, first, groupBy, sortBy } from 'lodash'
@@ -79,15 +80,25 @@ function useUnseenNotifications(
   }, [rows])
 }
 
-export function useGroupedUnseenNotifications(userId: string) {
-  const notifications = useUnseenNotifications(userId)
+export function useGroupedUnseenNotifications(
+  userId: string,
+  selectTypes?: notification_source_types[]
+) {
+  const notifications = useUnseenNotifications(userId)?.filter(
+    (n) => selectTypes?.includes(n.sourceType) ?? true
+  )
   return useMemo(() => {
     return notifications ? groupNotificationsForIcon(notifications) : undefined
   }, [notifications])
 }
 
-export function useGroupedNotifications(userId: string) {
-  const notifications = useNotifications(userId)
+export function useGroupedNotifications(
+  userId: string,
+  selectTypes?: notification_source_types[]
+) {
+  const notifications = useNotifications(userId)?.filter(
+    (n) => selectTypes?.includes(n.sourceType) ?? true
+  )
   const sortedNotifications = notifications
     ? sortBy(notifications, (n) => -n.createdTime)
     : undefined

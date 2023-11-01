@@ -1,68 +1,59 @@
-import { UserIcon, XIcon, ChartBarIcon } from '@heroicons/react/solid'
+import { StarIcon, XIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
-import { first, mergeWith } from 'lodash'
-import Head from 'next/head'
-import Image from 'next/image'
-import { useEffect, useMemo, useRef, useState } from 'react'
 import { Answer, DpmAnswer } from 'common/answer'
 import {
-  binAvg,
-  maxMinBin,
-  serializeMultiPoints,
+  MultiSerializedPoints,
   unserializeMultiPoints,
   unserializePoints,
 } from 'common/chart'
 import { ContractParams, MaybeAuthedContractParams } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
-import {
-  ENV_CONFIG,
-  HOUSE_BOT_USERNAME,
-  isTrustworthy,
-} from 'common/envs/constants'
+import { HOUSE_BOT_USERNAME, isTrustworthy } from 'common/envs/constants'
+import { getTopContractMetrics } from 'common/supabase/contract-metrics'
 import { User } from 'common/user'
+import { first, mergeWith } from 'lodash'
+import Head from 'next/head'
+import Image from 'next/image'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { ScrollToTopButton } from 'web/components/buttons/scroll-to-top-button'
+import { SidebarSignUpButton } from 'web/components/buttons/sign-up-button'
+import { getMultiBetPoints } from 'web/components/charts/contract/choice'
 import { BackButton } from 'web/components/contract/back-button'
-import { BountyLeft } from 'web/components/contract/bountied-question'
 import { ChangeBannerButton } from 'web/components/contract/change-banner-button'
-import { ContractDescription } from 'web/components/contract/contract-description'
-import {
-  AuthorInfo,
-  CloseOrResolveTime,
-} from 'web/components/contract/contract-details'
+import { AuthorInfo } from 'web/components/contract/contract-details'
 import { ContractLeaderboard } from 'web/components/contract/contract-leaderboard'
 import { ContractOverview } from 'web/components/contract/contract-overview'
+import { ContractSEO } from 'web/components/contract/contract-seo'
+import ContractSharePanel from 'web/components/contract/contract-share-panel'
 import { ContractTabs } from 'web/components/contract/contract-tabs'
 import { VisibilityIcon } from 'web/components/contract/contracts-table'
-import {
-  getCPMMContractUserContractMetrics,
-  getTopContractMetrics,
-  getTotalContractMetrics,
-} from 'common/supabase/contract-metrics'
-import ContractSharePanel from 'web/components/contract/contract-share-panel'
 import { HeaderActions } from 'web/components/contract/header-actions'
+import { MarketTopics } from 'web/components/contract/market-topics'
 import { PrivateContractPage } from 'web/components/contract/private-contract'
 import {
   RelatedContractsCarousel,
   RelatedContractsList,
 } from 'web/components/contract/related-contracts-widget'
 import { EditableQuestionTitle } from 'web/components/contract/title-edit'
+import { ExplainerPanel } from 'web/components/explainer-panel'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
 import { Spacer } from 'web/components/layout/spacer'
 import { NumericResolutionPanel } from 'web/components/numeric-resolution-panel'
 import { ResolutionPanel } from 'web/components/resolution-panel'
-import { ReviewPanel } from 'web/components/reviews/stars'
+import { Rating, ReviewPanel } from 'web/components/reviews/stars'
 import { GradientContainer } from 'web/components/widgets/gradient-container'
-import { Tooltip } from 'web/components/widgets/tooltip'
 import { useAdmin } from 'web/hooks/use-admin'
 import { useAnswersCpmm } from 'web/hooks/use-answers'
+import { useRealtimeBets } from 'web/hooks/use-bets-supabase'
 import {
   useFirebasePublicContract,
   useIsPrivateContractMember,
 } from 'web/hooks/use-contract-supabase'
 import { useIsIframe } from 'web/hooks/use-is-iframe'
 import { useRelatedMarkets } from 'web/hooks/use-related-contracts'
+import { useReview } from 'web/hooks/use-review'
 import { useSaveCampaign } from 'web/hooks/use-save-campaign'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { useSaveContractVisitsLocally } from 'web/hooks/use-save-visits'
@@ -75,31 +66,16 @@ import { db } from 'web/lib/supabase/db'
 import { scrollIntoViewCentered } from 'web/lib/util/scroll'
 import Custom404 from '../404'
 import ContractEmbedPage from '../embed/[username]/[contractSlug]'
-import { ExplainerPanel } from 'web/components/explainer-panel'
-import { SidebarSignUpButton } from 'web/components/buttons/sign-up-button'
-import { MarketTopics } from 'web/components/contract/market-topics'
-import { getMultiBetPoints } from 'web/components/charts/contract/choice'
-import { useRealtimeBets } from 'web/hooks/use-bets-supabase'
-import { ContractSEO } from 'web/components/contract/contract-seo'
+
+import { Bet } from 'common/bet'
+import { getContractParams } from 'common/contract-params'
 import { getContractFromSlug } from 'common/supabase/contracts'
-import { getBetPoints, getBets, getTotalBetCount } from 'common/supabase/bets'
-import { getRecentTopLevelCommentsAndReplies } from 'common/supabase/comments'
-import { getRelatedContracts } from 'common/supabase/related-contracts'
-import { buildArray } from 'common/util/array'
-import { getInitialProbability } from 'common/calculate'
-import { Bet, calculateMultiBets } from 'common/bet'
-import { pointsToBase64 } from 'common/util/og'
-import { removeUndefinedProps } from 'common/util/object'
-import { getUser } from 'web/lib/supabase/user'
-import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
+
 import { useHeaderIsStuck } from 'web/hooks/use-header-is-stuck'
+import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
 import { DangerZone } from 'web/components/contract/danger-zone'
-import {
-  formatMoney,
-  formatWithCommas,
-  shortFormatNumber,
-} from 'common/util/format'
-import { TbDroplet } from 'react-icons/tb'
+import { ContractDescription } from 'web/components/contract/contract-description'
+import { ContractSummaryStats } from 'web/components/contract/contract-summary-stats'
 export async function getStaticProps(ctx: {
   params: { username: string; contractSlug: string }
 }) {
@@ -129,81 +105,8 @@ export async function getStaticProps(ctx: {
     }
   }
 
-  const isCpmm1 = contract.mechanism === 'cpmm-1'
-  const hasMechanism = contract.mechanism !== 'none'
-  const isMulti = contract.mechanism === 'cpmm-multi-1'
-  const isBinaryDpm =
-    contract.outcomeType === 'BINARY' && contract.mechanism === 'dpm-2'
-
-  const [
-    totalBets,
-    betsToPass,
-    allBetPoints,
-    comments,
-    userPositionsByOutcome,
-    topContractMetrics,
-    totalPositions,
-    creator,
-    relatedContracts,
-  ] = await Promise.all([
-    hasMechanism ? getTotalBetCount(contract.id, db) : 0,
-    hasMechanism
-      ? getBets(db, {
-          contractId: contract.id,
-          limit: 100,
-          order: 'desc',
-          filterAntes: true,
-          filterRedemptions: true,
-        })
-      : [],
-    hasMechanism
-      ? getBetPoints(db, contract.id, contract.mechanism === 'cpmm-multi-1')
-      : [],
-    getRecentTopLevelCommentsAndReplies(db, contract.id, 25),
-    isCpmm1 ? getCPMMContractUserContractMetrics(contract.id, 100, db) : {},
-    contract.resolution ? getTopContractMetrics(contract.id, 10, db) : [],
-    isCpmm1 ? getTotalContractMetrics(contract.id, db) : 0,
-    getUser(contract.creatorId),
-    getRelatedContracts(contract, 20, db, true),
-  ])
-
-  const chartPoints =
-    isCpmm1 || isBinaryDpm
-      ? buildArray<{ x: number; y: number }>(
-          isCpmm1 && {
-            x: contract.createdTime,
-            y: getInitialProbability(contract),
-          },
-          maxMinBin(allBetPoints, 500)
-        ).map((p) => [p.x, p.y] as const)
-      : isMulti
-      ? serializeMultiPoints(calculateMultiBets(allBetPoints))
-      : []
-
-  const ogPoints = isCpmm1 ? binAvg(allBetPoints) : []
-  const pointsString = pointsToBase64(ogPoints.map((p) => [p.x, p.y] as const))
-
-  return {
-    props: {
-      state: 'authed',
-      params: removeUndefinedProps({
-        outcomeType: contract.outcomeType,
-        contract,
-        historyData: {
-          bets: betsToPass,
-          points: chartPoints,
-        },
-        pointsString,
-        comments,
-        userPositionsByOutcome,
-        totalPositions,
-        totalBets,
-        topContractMetrics,
-        creatorTwitter: creator,
-        relatedContracts,
-      }),
-    },
-  }
+  const props = await getContractParams(contract, adminDb)
+  return { props }
 }
 
 export async function getStaticPaths() {
@@ -243,38 +146,31 @@ function NonPrivateContractPage(props: { contractParams: ContractParams }) {
     return (
       <>
         <ContractSEO contract={contract} points={pointsString} />
-        <ContractPageContent
-          key={contract.id}
-          contractParams={props.contractParams}
-        />
+        <ContractPageContent key={contract.id} {...props.contractParams} />
       </>
     )
 }
 
-export function ContractPageContent(props: {
-  contractParams: ContractParams & { contract: Contract }
-}) {
-  const { contractParams } = props
+export function ContractPageContent(props: ContractParams) {
   const {
     userPositionsByOutcome,
     comments,
     totalPositions,
-    creatorTwitter,
     relatedContracts,
-  } = contractParams
+    historyData,
+  } = props
+
   const contract =
-    useFirebasePublicContract(
-      contractParams.contract.visibility,
-      contractParams.contract.id
-    ) ?? contractParams.contract
-  if (
-    'answers' in contractParams.contract &&
-    contract.mechanism === 'cpmm-multi-1'
-  ) {
-    ;(contract as any).answers =
-      // eslint-disable-next-line react-hooks/rules-of-hooks
-      useAnswersCpmm(contract.id) ?? contractParams.contract.answers
+    useFirebasePublicContract(props.contract.visibility, props.contract.id) ??
+    props.contract
+  if (contract.mechanism === 'cpmm-multi-1') {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const answers = useAnswersCpmm(contract.id)
+    if (answers) {
+      contract.answers = answers
+    }
   }
+
   const cachedContract = useMemo(
     () => contract,
     [
@@ -284,13 +180,14 @@ export function ContractPageContent(props: {
       'answers' in contract ? contract.answers : undefined,
     ]
   )
+
   const user = useUser()
   const contractMetrics = useSavedContractMetrics(contract)
   const privateUser = usePrivateUser()
   const blockedUserIds = privateUser?.blockedUserIds ?? []
   const [topContractMetrics, setTopContractMetrics] = useState<
     ContractMetric[]
-  >(contractParams.topContractMetrics)
+  >(props.topContractMetrics)
 
   useEffect(() => {
     // If the contract resolves while the user is on the page, get the top contract metrics
@@ -312,33 +209,41 @@ export function ContractPageContent(props: {
   useSaveContractVisitsLocally(user === null, contract.id)
 
   // Static props load bets in descending order by time
-  const lastBetTime = first(contractParams.historyData.bets)?.createdTime
+  const lastBetTime = first(historyData.bets)?.createdTime
 
-  const newBets =
-    useRealtimeBets({
-      contractId: contract.id,
-      afterTime: lastBetTime,
-      filterRedemptions: contract.outcomeType !== 'MULTIPLE_CHOICE',
-      order: 'asc',
-    }) ?? []
+  const { rows, loadNewer } = useRealtimeBets({
+    contractId: contract.id,
+    afterTime: lastBetTime,
+    filterRedemptions: contract.outcomeType !== 'MULTIPLE_CHOICE',
+    order: 'asc',
+  })
+
+  useEffect(() => {
+    loadNewer()
+  }, [contract.volume])
+
+  const newBets = rows ?? []
   const newBetsWithoutRedemptions = newBets.filter((bet) => !bet.isRedemption)
-  const totalBets = contractParams.totalBets + newBetsWithoutRedemptions.length
+  const totalBets = props.totalBets + newBetsWithoutRedemptions.length
   const bets = useMemo(
-    () => [...contractParams.historyData.bets, ...newBetsWithoutRedemptions],
-    [contractParams.historyData.bets, newBets]
+    () => [...historyData.bets, ...newBetsWithoutRedemptions],
+    [historyData.bets, newBets]
   )
 
   const betPoints = useMemo(() => {
-    if (contract.outcomeType === 'MULTIPLE_CHOICE') {
+    if (
+      contract.outcomeType === 'MULTIPLE_CHOICE' ||
+      contract.outcomeType === 'FREE_RESPONSE'
+    ) {
       const data = unserializeMultiPoints(
-        contractParams.historyData.points as any
+        historyData.points as MultiSerializedPoints
       )
       const newData =
         contract.mechanism === 'cpmm-multi-1' ? getMultiBetPoints(newBets) : []
 
       return mergeWith(data, newData, (a, b) => [...(a ?? []), ...(b ?? [])])
     } else {
-      const points = unserializePoints(contractParams.historyData.points as any)
+      const points = unserializePoints(historyData.points as any)
       const newPoints = newBets.map((bet) => ({
         x: bet.createdTime,
         y: bet.probAfter,
@@ -346,7 +251,7 @@ export function ContractPageContent(props: {
       }))
       return [...points, ...newPoints]
     }
-  }, [contractParams.historyData.points, newBets])
+  }, [historyData.points, newBets])
 
   const {
     isResolved,
@@ -399,13 +304,12 @@ export function ContractPageContent(props: {
     user === null ||
     (user && user.createdTime > Date.now() - 24 * 60 * 60 * 1000)
 
+  const [justNowReview, setJustNowReview] = useState<null | Rating>(null)
+  const userReview = useReview(contract.id, user?.id)
+  const userHasReviewed = userReview || justNowReview
+
   return (
     <>
-      {creatorTwitter && (
-        <Head>
-          <meta name="twitter:creator" content={`@${creatorTwitter}`} />
-        </Head>
-      )}
       {contract.visibility == 'private' && isAdmin && user && (
         <PrivateContractAdminTag contract={contract} user={user} />
       )}
@@ -420,7 +324,9 @@ export function ContractPageContent(props: {
           className={clsx(
             'bg-canvas-0 w-full max-w-3xl rounded-b xl:w-[70%]',
             // Keep content in view when scrolling related questions on desktop.
-            'sticky bottom-0 min-h-screen self-end'
+            'sticky bottom-0 min-h-screen self-end',
+            // Accommodate scroll to top button at bottom of page.
+            'pb-10 xl:pb-0'
           )}
         >
           <div
@@ -520,68 +426,24 @@ export function ContractPageContent(props: {
               <div className="text-ink-600 flex flex-wrap items-center justify-between gap-y-1 text-sm">
                 <AuthorInfo contract={contract} />
 
-                {contract.outcomeType == 'BOUNTIED_QUESTION' ? (
-                  <BountyLeft
-                    bountyLeft={contract.bountyLeft}
-                    totalBounty={contract.totalBounty}
-                    inEmbed={true}
-                  />
-                ) : (
-                  <div className="flex gap-4">
-                    <Tooltip
-                      text={
-                        contract.outcomeType == 'POLL' ? 'Voters' : 'Traders'
-                      }
-                      placement="bottom"
-                      noTap
-                      className="flex flex-row items-center gap-1"
-                    >
-                      <UserIcon className="text-ink-500 h-4 w-4" />
-                      <div>{formatWithCommas(uniqueBettorCount ?? 0)}</div>
-                    </Tooltip>
-
-                    {!!contract.volume && (
-                      <Tooltip
-                        text={`Trading volume: ${formatMoney(contract.volume)}`}
-                        placement="bottom"
-                        noTap
-                        className="hidden flex-row items-center gap-1 sm:flex"
-                      >
-                        <ChartBarIcon className="text-ink-500 h-4 w-4" />Ṁ
-                        {shortFormatNumber(contract.volume)}
-                      </Tooltip>
-                    )}
-
-                    {(contract.mechanism === 'cpmm-1' ||
-                      contract.mechanism === 'cpmm-multi-1') && (
-                      <Tooltip
-                        text={`Subsidy pool: ${formatMoney(
-                          contract.totalLiquidity
-                        )}`}
-                        placement="bottom"
-                        noTap
-                        className="flex flex-row items-center gap-1"
-                      >
-                        <TbDroplet className="stroke-ink-500 h-4 w-4 stroke-[3]" />
-                        <div>
-                          {ENV_CONFIG.moneyMoniker}
-                          {shortFormatNumber(contract.totalLiquidity)}
-                        </div>
-                      </Tooltip>
-                    )}
-
-                    <CloseOrResolveTime
-                      contract={contract}
-                      editable={isCreator || isAdmin || trustworthy}
-                    />
-                  </div>
-                )}
+                <ContractSummaryStats
+                  contract={contract}
+                  editable={isCreator || isAdmin || trustworthy}
+                />
               </div>
-
               <ContractOverview
                 contract={contract}
                 betPoints={betPoints as any}
                 showResolver={showResolver}
+                resolutionRating={
+                  userHasReviewed ? (
+                    <Row className="text-ink-500 items-center gap-0.5 text-sm italic">
+                      You rated this resolution{' '}
+                      {justNowReview ?? userReview?.rating}{' '}
+                      <StarIcon className="h-4 w-4" />
+                    </Row>
+                  ) : null
+                }
                 setShowResolver={setShowResolver}
                 onAnswerCommentClick={setReplyTo}
               />
@@ -591,7 +453,10 @@ export function ContractPageContent(props: {
                 <ReviewPanel
                   marketId={contract.id}
                   author={contract.creatorName}
-                  user={user}
+                  onSubmit={(rating: Rating) => {
+                    setJustNowReview(rating)
+                    setShowReview(false)
+                  }}
                 />
                 <button
                   className="text-ink-400 hover:text-ink-600 absolute right-0 top-0 p-4"
@@ -626,6 +491,7 @@ export function ContractPageContent(props: {
               showReview={showReview}
               setShowReview={setShowReview}
               userHasBet={!!contractMetrics}
+              hasReviewed={!!userHasReviewed}
             />
             <ContractDescription contract={contract} />
             <Row className="my-2 flex-wrap items-center justify-between gap-y-2"></Row>
@@ -705,7 +571,6 @@ export function ContractPageContent(props: {
         </Col>
       </Row>
 
-      <Spacer className="xl:hidden" h={10} />
       <ScrollToTopButton className="fixed bottom-16 right-2 z-20 lg:bottom-2 xl:hidden" />
     </>
   )

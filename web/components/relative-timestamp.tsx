@@ -27,10 +27,15 @@ export function RelativeTimestamp(props: {
 export function RelativeTimestampNoTooltip(props: {
   time: number
   className?: string
+  shortened?: boolean
 }) {
-  const { time, className } = props
+  const { time, className, shortened } = props
   const isClient = useIsClient()
-  return <span className={className}>{isClient && fromNow(time)}</span>
+  return (
+    <span className={className}>
+      {isClient && (shortened ? shortenedFromNow(time) : fromNow(time))}
+    </span>
+  )
 }
 
 import dayjs from 'dayjs'

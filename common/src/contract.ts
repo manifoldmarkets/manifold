@@ -113,6 +113,10 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
   coverImageUrl?: string
   isRanked?: boolean
   isSubsidised?: boolean
+
+  // Manifold.love
+  loverUserId1?: string // The user id's of the pair of lovers referenced in the question.
+  loverUserId2?: string // The user id's of the pair of lovers referenced in the question.
 } & T
 
 export type DPMContract = Contract & DPM
@@ -373,7 +377,7 @@ export const MAX_DESCRIPTION_LENGTH = 16000
 export const CPMM_MIN_POOL_QTY = 0.01
 
 export type Visibility = 'public' | 'unlisted' | 'private'
-export const VISIBILITIES = ['public', 'unlisted', 'private'] as const
+export const VISIBILITIES = ['public', 'unlisted'] as const
 
 export const MINUTES_ALLOWED_TO_UNRESOLVE = 10
 
@@ -393,7 +397,6 @@ export type ContractParams = {
   totalPositions: number
   totalBets: number
   topContractMetrics: ContractMetric[]
-  creatorTwitter?: string
   relatedContracts: Contract[]
 }
 

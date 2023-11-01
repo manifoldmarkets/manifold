@@ -10,13 +10,16 @@ import * as crypto from 'crypto'
 import { createSupabaseClient } from 'shared/supabase/init'
 import { MAX_ID_LENGTH } from 'common/group'
 import { isAdminId } from 'common/envs/constants'
+import { MAX_COMMENT_LENGTH } from 'common/comment'
 
-const bodySchema = z.object({
-  amount: z.number().finite(),
-  toIds: z.array(z.string()),
-  message: z.string(),
-  groupId: z.string().max(MAX_ID_LENGTH).optional(),
-})
+const bodySchema = z
+  .object({
+    amount: z.number().finite(),
+    toIds: z.array(z.string()),
+    message: z.string(),
+    groupId: z.string().max(MAX_ID_LENGTH).optional(),
+  })
+  .strict()
 
 export const sendmana = authEndpoint(async (req, auth) => {
   const {
@@ -25,6 +28,12 @@ export const sendmana = authEndpoint(async (req, auth) => {
     amount,
     groupId: passedGroupId,
   } = validate(bodySchema, req.body)
+  if (message.length > MAX_COMMENT_LENGTH) {
+    throw new APIError(
+      400,
+      `Message should be less than ${MAX_COMMENT_LENGTH} characters`
+    )
+  }
   const fromId = auth.uid
   // Run as transaction to prevent race conditions.
   return await firestore.runTransaction(async (transaction) => {

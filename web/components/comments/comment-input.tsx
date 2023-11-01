@@ -16,7 +16,7 @@ export function CommentInput(props: {
   replyToUserInfo?: ReplyToUserInfo
   // Reply to another comment
   parentCommentId?: string
-  onSubmitComment?: (editor: Editor) => void
+  onSubmitComment?: (editor: Editor) => Promise<void>
   // unique id for autosave
   pageId: string
   className?: string
@@ -56,7 +56,12 @@ export function CommentInput(props: {
       editor.commands.deleteRange({ from: endPos - 1, to: endPos })
     }
 
-    onSubmitComment?.(editor)
+    if (onSubmitComment) {
+      await onSubmitComment?.(editor).catch((e) => {
+        console.error(e)
+        setIsSubmitting(false)
+      })
+    }
     setIsSubmitting(false)
     editor.commands.clearContent(true)
     // force clear save, because it can fail if editor unrenders
@@ -81,6 +86,19 @@ export function CommentInput(props: {
       />
     </Row>
   )
+}
+const emojiMenuActive = (view: { state: any }) => {
+  const regex = /^emoji\$.*$/ // emoji$ can have random numbers following it....❤️ tiptap
+  let active = false
+
+  for (const key in view.state) {
+    if (regex.test(key)) {
+      active = (view.state as any)[key].active
+      if (active) break
+    }
+  }
+
+  return active
 }
 
 export function CommentInputTextArea(props: {
@@ -117,7 +135,9 @@ export function CommentInputTextArea(props: {
             !event.shiftKey &&
             (!submitOnEnter ? event.ctrlKey || event.metaKey : true) &&
             // mention list is closed
-            !(view.state as any).mention$.active
+            !(view.state as any).mention$.active &&
+            // emoji list is closed
+            !emojiMenuActive(view)
           ) {
             submit()
             event.preventDefault()
@@ -158,7 +178,11 @@ export function CommentInputTextArea(props: {
       )}
 
       {isSubmitting && (
-        <LoadingIndicator size={'md'} spinnerClassName="border-ink-500" />
+        <LoadingIndicator
+          size={'md'}
+          className={'px-4'}
+          spinnerClassName="border-ink-500"
+        />
       )}
     </TextEditor>
   )

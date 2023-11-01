@@ -4,7 +4,6 @@ import { JSONContent } from '@tiptap/core'
 import { Group, GroupRole, PrivacyStatusType } from 'common/group'
 import { HideCommentReq } from 'web/pages/api/v0/hide-comment'
 import { Contract } from './contracts'
-export { APIError } from 'common/api'
 import { ContractTypeType, Filter, Sort } from 'web/components/supabase-search'
 import { AD_RATE_LIMIT } from 'common/boost'
 import { ContractComment } from 'common/comment'
@@ -14,6 +13,8 @@ import { Portfolio, PortfolioItem } from 'common/portfolio'
 import { ReportProps } from 'common/report'
 import { BaseDashboard, Dashboard, DashboardItem } from 'common/dashboard'
 import { Bet } from 'common/bet'
+
+export { APIError } from 'common/api'
 
 export async function call(url: string, method: 'POST' | 'GET', params?: any) {
   const user = auth.currentUser
@@ -267,11 +268,11 @@ export function createCommentOnContract(params: {
 
 export function supabaseSearchContracts(params: {
   term: string
-  filter: Filter
-  sort: Sort
-  contractType: ContractTypeType
-  offset: number
-  limit: number
+  filter?: Filter
+  sort?: Sort
+  contractType?: ContractTypeType
+  offset?: number
+  limit?: number
   fuzzy?: boolean
   topicSlug?: string
   creatorId?: string
@@ -281,37 +282,6 @@ export function supabaseSearchContracts(params: {
     'POST',
     params
   ) as Promise<Contract[]>
-}
-
-export function supabaseSearchContractsWithDefaults(params: {
-  term?: string
-  filter?: Filter
-  sort?: Sort
-  contractType?: ContractTypeType
-  offset?: number
-  limit?: number
-  topic?: string
-  fuzzy?: boolean
-  topicSlug?: string
-  creatorId?: string
-}) {
-  const {
-    term = '',
-    filter = 'all',
-    sort = 'score',
-    contractType = 'ALL',
-    offset = 0,
-    limit = 1000,
-  } = params
-  return supabaseSearchContracts({
-    ...params,
-    term,
-    filter,
-    sort,
-    contractType,
-    offset,
-    limit,
-  })
 }
 
 export function deleteMarket(params: { contractId: string }) {
@@ -380,6 +350,10 @@ export function awardBounty(params: {
   amount: number
 }) {
   return call(getApiUrl('award-bounty'), 'POST', params)
+}
+
+export function cancelBounty(params: { contractId: string }) {
+  return call(getApiUrl('cancel-bounty'), 'POST', params)
 }
 
 export function addBounty(params: { contractId: string; amount: number }) {
@@ -460,13 +434,6 @@ export function bidForLeague(params: {
   return call(getApiUrl('bidforleague'), 'POST', params)
 }
 
-export function createChatMessage(params: {
-  channelId: string
-  content: JSONContent
-}) {
-  return call(getApiUrl('create-chat-message'), 'POST', params)
-}
-
 export function followUser(userId: string) {
   return call(getApiUrl('follow-user'), 'POST', { userId, follow: true })
 }
@@ -508,6 +475,14 @@ export function supabaseSearchDashboards(params: {
   ) as Promise<BaseDashboard[]>
 }
 
+export function getNewsDashboards() {
+  return maybeAuthedCall(getApiUrl('get-news-dashboards'), 'GET')
+}
+
+export function setNewsDashboards(params: { dashboardIds: string[] }) {
+  return call(getApiUrl('set-news-dashboards'), 'POST', params)
+}
+
 export function getYourFollowedDashboards() {
   return call(getApiUrl('getyourfolloweddashboards'), 'POST')
 }
@@ -520,6 +495,10 @@ export function updateDashboard(params: {
   description?: JSONContent
 }) {
   return call(getApiUrl('updatedashboard'), 'POST', params)
+}
+
+export function deleteDashboard(params: { dashboardId: string }) {
+  return call(getApiUrl('delete-dashboard'), 'POST', params)
 }
 
 export function getDashboardFromSlug(params: { dashboardSlug: string }) {
@@ -560,9 +539,7 @@ export function sendUserPrivateMessage(params: {
 }) {
   return call(getApiUrl('create-private-user-message'), 'POST', params)
 }
-export function createLover(params: any) {
-  return call(getApiUrl('create-lover'), 'POST', params)
-}
-export function updateLover(params: any) {
-  return call(getApiUrl('update-lover'), 'POST', params)
+
+export function searchLocation(params: { term: string; limit?: number }) {
+  return call(getApiUrl('searchlocation'), 'POST', params)
 }

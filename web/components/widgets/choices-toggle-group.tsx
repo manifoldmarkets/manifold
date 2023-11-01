@@ -18,7 +18,7 @@ export function ChoicesToggleGroup(props: {
   choicesMap: { [key: string]: string | number | boolean }
   disabled?: boolean
   disabledOptions?: Array<string | number | boolean> //values
-  setChoice: (p: number | string) => void
+  setChoice: (val: number | string | boolean) => void
   color?: ColorType
   className?: string
   toggleClassName?: string

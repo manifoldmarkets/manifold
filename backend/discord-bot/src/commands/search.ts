@@ -142,10 +142,10 @@ export const searchCommand = {
 
 export const searchMarkets = async (terms: string) => {
   const resp = await fetch(
-    `${config.domain}api/v0/search-markets?terms=${terms}`
+    `${config.domain}api/v0/search-markets?term=${encodeURIComponent(terms)}`
   )
   if (!resp.ok) {
-    throw new Error('Market not found with slug: ' + terms)
+    throw new Error('Market not found with query: ' + terms)
   }
   const fullMarkets = (await resp.json()) as FullMarket[]
   // filter markets that are closed or resolved already

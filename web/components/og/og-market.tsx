@@ -25,25 +25,25 @@ export function OgMarket(props: OgCardProps) {
   const showGraph = data && data.length > 5
 
   return (
-    <div className="relative flex h-full w-full flex-col items-stretch justify-between bg-white pt-8">
+    <div className="relative flex h-full w-full flex-col items-stretch justify-between bg-white pt-4">
       <div
         className={clsx(
-          'flex overflow-hidden px-16 leading-tight text-indigo-700',
-          showGraph ? 'h-[190px]  text-5xl' : 'h-[300px]  text-6xl'
+          'mx-6 line-clamp-4 flex overflow-hidden leading-tight text-indigo-700',
+          showGraph ? 'text-2xl' : 'text-3xl'
         )}
       >
         {question}
       </div>
       {topAnswer ? (
-        <div className="flex w-full flex-row items-center justify-between px-16">
+        <div className="flex w-full flex-row items-center justify-between px-8 text-black">
           <Answer {...props} />
         </div>
       ) : showGraph ? (
-        <div className=" flex w-full justify-center">
+        <div className="flex w-full justify-center">
           <ProbGraph
             color={numericValue ? '#14bbFF' : undefined}
             data={data}
-            height={250}
+            height={120}
             aspectRatio={5}
           />
         </div>
@@ -53,22 +53,22 @@ export function OgMarket(props: OgCardProps) {
       {!topAnswer && (probability || numericValue || resolution) && (
         <div
           className={
-            'absolute flex h-fit w-full justify-center ' +
-            (showGraph ? 'top-[22rem]' : 'top-[23rem]')
+            'absolute left-0 right-0 flex w-full justify-center ' +
+            (showGraph ? 'top-[11rem]' : 'top-[12rem]')
           }
         >
           {probabilityAsFloat && !resolution ? (
-            <div className={'flex justify-center text-5xl text-white'}>
+            <div className="flex w-full justify-center text-2xl text-white">
               <div
                 className={
-                  'mr-6 flex h-24 w-2/5 items-center justify-center rounded-md bg-green-500 pt-2'
+                  'mr-3 flex h-12 w-2/5 items-center justify-center rounded-lg bg-green-500'
                 }
               >
                 Yes {probabilityAsFloat.toFixed(0)}%
               </div>
               <div
                 className={
-                  'ml-6 flex h-24 w-2/5 items-center justify-center rounded-md bg-red-600 pt-2'
+                  'ml-3 flex h-12 w-2/5 items-center justify-center rounded-lg bg-red-600'
                 }
               >
                 No {(100 - probabilityAsFloat).toFixed(0)}%
@@ -88,14 +88,30 @@ export function OgMarket(props: OgCardProps) {
       )}
 
       {/* Bottom row */}
-      <div className="flex w-full flex-row items-center justify-between px-8 text-3xl text-gray-600">
+      <div className="flex w-full flex-row items-center justify-between px-4 text-lg text-gray-600">
+        {/* Manifold logo */}
+        <div className="flex items-center pb-1">
+          <img
+            className="mr-1.5 h-12 w-12"
+            src="https://manifold.markets/logo.svg"
+            width={48}
+            height={48}
+          />
+          <span
+            className="text-3xl font-thin uppercase text-indigo-700"
+            style={{ fontFamily: 'var(--font-main), Figtree-light' }}
+          >
+            Manifold
+          </span>
+        </div>
+
         {/* Details */}
-        <div className="flex pt-4">
-          <div className="mr-6 flex items-center">
+        <div className="flex pt-1">
+          <div className="mr-3 flex items-center">
             {/* Profile image */}
             {creatorAvatarUrl && (
               <img
-                className="mr-2 h-12 w-12 rounded-full bg-white"
+                className="mr-1 h-6 w-6 rounded-full bg-white"
                 src={creatorAvatarUrl}
               />
             )}
@@ -108,22 +124,6 @@ export function OgMarket(props: OgCardProps) {
             </div>
           )}
         </div>
-
-        {/* Manifold logo */}
-        <div className="flex items-center pb-2">
-          <img
-            className="mr-3 h-28 w-28"
-            src="https://manifold.markets/logo.svg"
-            width="60"
-            height="60"
-          />
-          <span
-            className="text-6xl lowercase"
-            style={{ fontFamily: 'Major Mono Display' }}
-          >
-            Manifold
-          </span>
-        </div>
       </div>
     </div>
   )
@@ -133,7 +133,7 @@ function Answer(props: OgCardProps) {
   const { probability, topAnswer, resolution } = props
   return (
     <>
-      <span className="max-h-[9rem] w-[880px] overflow-hidden text-5xl">
+      <span className="max-h-[4rem] w-[460px] overflow-hidden text-2xl">
         {topAnswer}
       </span>
       {!resolution && probability && (
@@ -146,8 +146,8 @@ function Answer(props: OgCardProps) {
 function EndValue(props: { value: string; label: string }) {
   return (
     <div className="flex flex-col items-center justify-center">
-      <span className="text-6xl">{props.value}</span>
-      <span className="text-4xl">{props.label}</span>
+      <span className="text-3xl">{props.value}</span>
+      <span className="text-xl">{props.label}</span>
     </div>
   )
 }
@@ -163,7 +163,7 @@ function Resolution(props: { resolution: string; label?: string }) {
   }[resolution]
 
   const color = {
-    YES: 'bg-teal-600',
+    YES: 'bg-green-500',
     NO: 'bg-red-600',
     MKT: 'bg-blue-500',
     CANCEL: 'bg-amber-400',
@@ -171,9 +171,9 @@ function Resolution(props: { resolution: string; label?: string }) {
 
   return (
     <div
-      className={`flex min-w-[30rem] flex-col rounded-lg px-24 pb-2 pt-4 text-white ${color} items-center justify-center`}
+      className={`flex min-w-[15rem] flex-col rounded-lg px-12 py-2 text-white ${color} items-center justify-center`}
     >
-      <span className="text-7xl">{text}</span>
+      <span className="text-4xl">{text}</span>
     </div>
   )
 }
@@ -181,7 +181,7 @@ function Resolution(props: { resolution: string; label?: string }) {
 function BountyLeft(props: { bountyLeft: string }) {
   const { bountyLeft } = props
   return (
-    <div className="mx-auto flex flex-col text-center text-9xl">
+    <div className="mx-auto flex flex-col text-center text-6xl">
       <div className="mx-auto flex flex-row text-teal-600">M{bountyLeft}</div>
       <span className="mx-auto text-5xl text-gray-600">bounty</span>
     </div>

@@ -89,9 +89,13 @@ export function GifButton(props: {
   return (
     <button
       onClick={() => {
-        const imageCode = `<img src="${imageUrl}" alt="${gif.title}"/>`
         if (editor) {
-          editor.chain().insertContent(imageCode).run()
+          editor
+            .chain()
+            .focus()
+            .setImage({ src: imageUrl, alt: gif.alt_text ?? gif.title })
+            .createParagraphNear()
+            .run()
           setOpen(false)
         }
       }}

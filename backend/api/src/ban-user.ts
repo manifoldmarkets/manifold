@@ -5,10 +5,12 @@ import { trackPublicEvent } from 'shared/analytics'
 import { throwErrorIfNotMod } from 'shared/helpers/auth'
 import { isAdminId } from 'common/envs/constants'
 import { log } from 'shared/utils'
-const bodySchema = z.object({
-  userId: z.string(),
-  unban: z.boolean().optional(),
-})
+const bodySchema = z
+  .object({
+    userId: z.string(),
+    unban: z.boolean().optional(),
+  })
+  .strict()
 export const banuser = authEndpoint(async (req, auth) => {
   const { userId, unban } = validate(bodySchema, req.body)
   await throwErrorIfNotMod(auth.uid)

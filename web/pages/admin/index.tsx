@@ -1,11 +1,15 @@
 import { Page } from 'web/components/layout/page'
 import { Title } from 'web/components/widgets/title'
-import { LabCard } from '../about'
+import { LabCard } from '../lab'
 import { NoSEO } from 'web/components/NoSEO'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
+import { useAdmin } from 'web/hooks/use-admin'
 
 export default function AdminPage() {
   useRedirectIfSignedOut()
+
+  const isAdmin = useAdmin()
+  if (!isAdmin) return <></>
 
   return (
     <Page trackPageView={'admin page'}>
@@ -24,7 +28,10 @@ export default function AdminPage() {
         </div>
 
         <LabCard title="💹 stats" href="/stats" />
-        <LabCard title="🍚 umami" href="/umami" />
+        <LabCard
+          title="🍚 umami"
+          href="https://analytics.eu.umami.is/websites/ee5d6afd-5009-405b-a69f-04e3e4e3a685"
+        />
         <LabCard
           title="🍥 grafana"
           description="db performance"
@@ -39,15 +46,11 @@ export default function AdminPage() {
           title="💤 postgres logs"
           href="https://app.supabase.com/project/pxidrgkatumlvfqaxcll/logs/postgres-logs"
         />
-        <LabCard
-          title="🗺️ user journeys"
-          description={'See what new users are up to'}
-          href="/admin/journeys"
-        />
+        <LabCard title="🗺️ user journeys" href="/admin/journeys" />
+        <LabCard title="🥩 new user questions" href="/newbies" />
         <LabCard title="🤬 reports" href="/admin/reports" />
         <LabCard title="🎨 design system" href="/styles" />
         <LabCard title="🌑 test new user" href="/admin/test-user" />
-        <p className="mb-2 italic">anyone can see this page btw</p>
       </div>
     </Page>
   )

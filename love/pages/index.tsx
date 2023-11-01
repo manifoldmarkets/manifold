@@ -1,117 +1,103 @@
-import clsx from 'clsx'
-import { useState } from 'react'
-import { HeartIcon } from '@heroicons/react/solid'
-
-import { Page } from 'web/components/layout/page'
+import Router from 'next/router'
+import { UserIcon } from '@heroicons/react/solid'
+import { capitalize } from 'lodash'
+import { calculateAge } from 'love/components/calculate-age'
+import { Filters } from 'love/components/filters'
+import { Gender, convertGender } from 'love/components/gender-icon'
+import { LovePage } from 'love/components/love-page'
+import OnlineIcon from 'love/components/online-icon'
+import { Lover } from 'love/hooks/use-lover'
+import { useLovers } from 'love/hooks/use-lovers'
+import Image from 'next/image'
+import Link from 'next/link'
 import { Col } from 'web/components/layout/col'
+import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
+import { Title } from 'web/components/widgets/title'
 import { Row } from 'web/components/layout/row'
-import { Button, outline } from 'web/components/buttons/button'
-import { Input } from 'web/components/widgets/input'
-import { db } from 'web/lib/supabase/db'
+import { useUser } from 'web/hooks/use-user'
+import { Button } from 'web/components/buttons/button'
+import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import { track } from 'web/lib/service/analytics'
 
-export default function ManifoldLove() {
+export default function ProfilesPage() {
+  const allLovers = useLovers()
+  const [lovers, setLovers] = usePersistentInMemoryState<Lover[] | undefined>(
+    undefined,
+    'profile-lovers'
+  )
+
+  const user = useUser()
+  if (user === undefined) return <div />
+
+  const lover = allLovers?.find((lover) => lover.user_id === user?.id)
+
   return (
-    <Page trackPageView={'signed out home page'} hideSidebar hideBottomBar>
-      <Col className="mx-auto w-full gap-8 px-4 pt-4 sm:pt-0">
-        <Col className="gap-4">
-          <Row className="border-scarlet-800 max-w-md items-center gap-2 border-b border-solid p-2">
-            <HeartIcon className="text-scarlet-600 h-8 w-8" />
-            <HeartIcon className="text-scarlet-600 h-8 w-8" />
-            <HeartIcon className="text-scarlet-600 h-8 w-8" />
-            <h1 className="mx-auto text-3xl">
-              Manifold
-              <span className="text-scarlet-600 font-semibold">.love</span>
-            </h1>
-            <HeartIcon className="text-scarlet-600 h-8 w-8" />
-            <HeartIcon className="text-scarlet-600 h-8 w-8" />
-            <HeartIcon className="text-scarlet-600 h-8 w-8" />
-          </Row>
+    <LovePage trackPageView={'user profiles'}>
+      <Col className="items-center">
+        <Col className={'bg-canvas-0 w-full rounded px-6 py-4'}>
+          {user && allLovers && !lover && (
+            <Button
+              className="mb-4 lg:hidden"
+              onClick={() => Router.push('signup')}
+            >
+              Create a profile
+            </Button>
+          )}
+          <Title className="!mb-2 text-3xl">Profiles</Title>
+          <Filters allLovers={allLovers} setLovers={setLovers} />
 
-          <div className="mt-2" />
-
-          <Row className="justify-between rounded-lg px-3">
-            <Col className="max-w-2xl gap-2">
-              <h1 className="mb-6 text-3xl">Find your long-term match</h1>
-              <h1 className="text-lg leading-10">
-                Sign up to see{' '}
-                <span className="text-scarlet-700 font-semibold">
-                  your matches
-                </span>
-                ,
-                <br /> ranked by odds of a{' '}
-                <span className="text-scarlet-700 font-semibold">
-                  6-month relationship
-                </span>
-                ,
-                <br /> through a nerdy{' '}
-                <span className="text-scarlet-700 font-semibold">
-                  prediction market
-                </span>
-                ,
-                <br /> bet on by{' '}
-                <span className="text-scarlet-700 font-semibold">
-                  your friends
-                </span>
-                !
-              </h1>
-
-              <div className="mt-2" />
-
-              <EmailForm />
-            </Col>
-            <Col className="hidden sm:flex">
-              <img src="/welcome/manipurple.png" width={210} />
-            </Col>
-          </Row>
+          {lovers === undefined ? (
+            <LoadingIndicator />
+          ) : (
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
+              {lovers.map((lover) => (
+                <ProfilePreview key={lover.id} lover={lover} />
+              ))}
+            </div>
+          )}
         </Col>
       </Col>
-    </Page>
+    </LovePage>
   )
 }
 
-function EmailForm() {
-  const [email, setEmail] = useState('')
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [didSubmit, setDidSubmit] = useState(false)
-
-  const submit = async () => {
-    setIsSubmitting(true)
-    setDidSubmit(false)
-    console.log('adding email to waitlist', email)
-    await db.from('love_waitlist').insert({ email })
-    setIsSubmitting(false)
-    setDidSubmit(true)
-  }
-
+function ProfilePreview(props: { lover: Lover }) {
+  const { user, gender, birthdate, pinned_url, city, last_online_time } =
+    props.lover
   return (
-    <Col className="rounded-lg py-4">
-      <h1 className="mb-4 text-xl">Get notified when we launch</h1>
-      <Row className="gap-2">
-        <Input
-          className="text-ink-1000 invalid:text-ink-1000"
-          placeholder="Email"
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
-        <Button
-          className={clsx(
-            'text-scarlet-700 hover:bg-scarlet-700 whitespace-nowrap',
-            outline
-          )}
-          color="none"
-          size="sm"
-          disabled={isSubmitting}
-          onClick={submit}
-        >
-          Notify me
-        </Button>
-      </Row>
-      {didSubmit && (
-        <div className="text-ink-600 mt-2 text-sm">
-          Thanks! We'll email you when we launch.
-        </div>
-      )}
-    </Col>
+    <Link
+      href={`/${user.username}`}
+      onClick={() => {
+        track('click love profile preview')
+      }}
+    >
+      <Col className="relative h-60 w-full overflow-hidden rounded text-white transition-all hover:z-40 hover:scale-110 hover:drop-shadow">
+        {pinned_url ? (
+          <Image
+            src={pinned_url}
+            // You must set these so we don't pay an extra $1k/month to vercel
+            width={180}
+            height={240}
+            alt={`${user.username}`}
+            className="h-full w-full object-cover"
+          />
+        ) : (
+          <Col className="bg-ink-300 h-full w-full items-center justify-center">
+            <UserIcon className="h-20 w-20" />
+          </Col>
+        )}
+        <Col className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 via-black/70 to-transparent px-4 pb-2 pt-6">
+          <Row className="flex-wrap">
+            <OnlineIcon last_online_time={last_online_time} className="mr-1" />
+            <span className=" break-words font-semibold">
+              {user.name}
+            </span>, {calculateAge(birthdate)}
+          </Row>
+          <Row className="gap-1 text-xs">
+            {city} • {capitalize(convertGender(gender as Gender))}
+          </Row>
+        </Col>
+      </Col>
+    </Link>
   )
 }

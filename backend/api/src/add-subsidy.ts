@@ -7,10 +7,12 @@ import { getNewLiquidityProvision } from 'common/add-liquidity'
 import { APIError, authEndpoint, validate } from './helpers'
 import { SUBSIDY_FEE } from 'common/economy'
 
-const bodySchema = z.object({
-  contractId: z.string(),
-  amount: z.number().int().gt(0).finite(),
-})
+const bodySchema = z
+  .object({
+    contractId: z.string(),
+    amount: z.number().int().gt(0).finite(),
+  })
+  .strict()
 
 export const addsubsidy = authEndpoint(async (req, auth) => {
   const { amount, contractId } = validate(bodySchema, req.body)

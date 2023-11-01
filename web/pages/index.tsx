@@ -1,5 +1,7 @@
-import { useState } from 'react'
+import { memo, useState } from 'react'
 import Link from 'next/link'
+import clsx from 'clsx'
+
 import { Page } from 'web/components/layout/page'
 import { Col } from 'web/components/layout/col'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
@@ -8,22 +10,44 @@ import { TestimonialsPanel } from 'web/components/testimonials-panel'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { Button } from 'web/components/buttons/button'
 import { redirectIfLoggedIn } from 'web/lib/firebase/server-auth'
-import { PrivacyAndTerms } from 'web/components/privacy-terms'
+import { AboutPrivacyTerms } from 'web/components/privacy-terms'
 import { formatMoney } from 'common/util/format'
-import { NewsTopicsTabs } from 'web/components/news/news-topics-tabs'
 import { useRedirectIfSignedIn } from 'web/hooks/use-redirect-if-signed-in'
 import { STARTING_BALANCE } from 'common/economy'
 import { ManifoldLogo } from 'web/components/nav/manifold-logo'
 import { LogoSEO } from 'web/components/LogoSEO'
 import { MobileAppsQRCodeDialog } from 'web/components/buttons/mobile-apps-qr-code-button'
 import { useSaveCampaign } from 'web/hooks/use-save-campaign'
+import { FeedContractCard } from 'web/components/contract/feed-contract-card'
+import { CPMMBinaryContract, Contract } from 'common/contract'
+import { db } from 'web/lib/supabase/db'
+import { DEEMPHASIZED_GROUP_SLUGS } from 'common/envs/constants'
 
-export const getServerSideProps = redirectIfLoggedIn('/home')
+const excluded = [...DEEMPHASIZED_GROUP_SLUGS, 'manifold-6748e065087e']
 
-export default function Home() {
+export const getServerSideProps = redirectIfLoggedIn('/home', async (_) => {
+  const { data } = await db.from('trending_contracts').select('data').limit(20)
+  const contracts = (data ?? []).map((d) => d.data) as Contract[]
+  const trendingContracts = contracts
+    .filter(
+      (c) => !c.groupSlugs?.some((slug) => excluded.includes(slug as any))
+    )
+    .filter((c) => c.outcomeType !== 'STONK')
+    .slice(0, 7)
+  return {
+    props: { trendingContracts },
+  }
+})
+
+export default function LandingPage(props: {
+  trendingContracts: CPMMBinaryContract[]
+}) {
+  const { trendingContracts } = props
+
   useSaveReferral()
   useSaveCampaign()
   useRedirectIfSignedIn()
+
   const [isModalOpen, setIsModalOpen] = useState(false)
 
   return (
@@ -46,7 +70,7 @@ export default function Home() {
                   size="xs"
                   className="hidden whitespace-nowrap lg:flex"
                 >
-                  Questions
+                  Markets
                 </Button>
               </Link>
               <Button
@@ -102,7 +126,7 @@ export default function Home() {
                 className="mt-8"
                 onClick={firebaseLogin}
               >
-                Play now
+                Start trading
               </Button>
 
               <div className="text-md ml-8 ">
@@ -120,12 +144,29 @@ export default function Home() {
           </Row>
         </Col>
 
-        <NewsTopicsTabs dontScroll />
+        <ContractsSection
+          contracts={trendingContracts}
+          className="w-full self-center"
+        />
 
         <TestimonialsPanel />
 
-        <PrivacyAndTerms />
+        <AboutPrivacyTerms />
       </Col>
     </Page>
   )
 }
+
+const ContractsSection = memo(function ContractsSection(props: {
+  contracts: Contract[]
+  className?: string
+}) {
+  const { contracts, className } = props
+  return (
+    <Col className={clsx('max-w-2xl gap-4', className)}>
+      {contracts.map((contract) => (
+        <FeedContractCard key={contract.id} contract={contract} />
+      ))}
+    </Col>
+  )
+})

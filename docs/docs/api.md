@@ -80,10 +80,12 @@ Returns the authenticated user.
 
 ### `GET /v0/groups`
 
-Gets all groups, in no particular order.
+Gets all groups, in order of descending creation time, 500 at a time.
 
 Parameters:
 
+- `beforeTime`: Optional. If specified, only groups created before this time
+  will be returned.
 - `availableToUserId`: Optional. if specified, only groups that the user can
   join and groups they've already joined will be returned.
 
@@ -215,7 +217,7 @@ Requires no authorization.
   https://manifold.markets/api/v0/market/3zspH9sSzMlbFQLn9GKR
   ```
 
-- <details><summary>Example response</summary><p>
+- Example response
 
   ```json
   {
@@ -289,9 +291,6 @@ Requires no authorization.
   }
   ```
 
-    </p>
-  </details>
-
 - Response type: A `FullMarket`
 
   ```tsx
@@ -323,7 +322,7 @@ Requires no authorization.
   https://manifold.markets/api/v0/market/kupKInoLsjMuiDiNfogm/positions?top=1&bottom=1
   ```
 
-- <details><summary>Example response</summary><p>
+- Example response
 
   ```json
   [
@@ -416,9 +415,6 @@ Requires no authorization.
   ]
   ```
 
-    </p>
-  </details>
-
 - Response type: An array of `ContractMetric`
 
   ```tsx
@@ -471,116 +467,94 @@ Requires no authorization.
 
 ### `GET /v0/search-markets`
 
-Search markets by keywords, limited to 100 results.
+Search or filter markets, Similar to the [browse page](https://manifold.markets/browse).
+
+Requires no Authorization.
+
 Parameters:
 
-- `terms`: Optional. A space-separated list of keywords to search for.
+- `term`: Required. the search query in question. Can be empty string.
+- `sort`: Optional. `score` (default), `newest`, `liquidity`, or ... (see code)
+- `filter`: Optional. Closing state. `all` (default), `open`, `closed`, `resolved`, `closing-this-month`, or `closing-next-month`.
+- `contractType`: Optional. `ALL` (default), `BINARY` (yes/no), `MULTIPLE_CHOICE`, `BOUNTY`, `POLL`, or ... (see code)
+- `topicSlug`: Optional. Only include questions with the topic tag with this slug.
+- `creatorId`: Optional. Only include questions created by the user with this id.
+- `limit`: Optional. Number of contracts to return from 0 to 1000. Default 100.
+- `offset`: Optional. Number of contracts to skip. Use with limit to paginate the results.
+- `fuzzy`: Optional. If set to any value, uses fuzzier string matching.
 
 Requires no authorization.
 
 - Example request
 
   ```
-  https://manifold.markets/api/v0/search-markets?terms=biden poop
+  https://manifold.markets/api/v0/search-markets?term=biden&sort=liquidity&filter=resolved&contractType=BINARY&limit=2
   ```
 
-- <details><summary>Example response</summary><p>
+- Example response
 
   ```json
   [
     {
-      "id": "qr759sZOfNCBV9o0cIDg",
-      "creatorId": "2e6vTEJPk1dVs3xGvOBM2xkK2Q02",
-      "creatorUsername": "frostmourn",
-      "creatorName": "frostmourn",
-      "createdTime": 1671067643426,
-      "creatorAvatarUrl": "https://firebasestorage.googleapis.com/v0/b/mantic-markets.appspot.com/o/user-images%2Ffrostmourn%2FbpATR5uUGb.cloudfront?alt=media&token=ff031d9c-26e8-4b83-972f-ad1795633fac",
-      "closeTime": 1672531140000,
-      "question": "Will Biden poop in his pants again by EOY 2022?",
-      "url": "https://manifold.markets/frostmourn/will-biden-poop-in-his-pants-again",
+      "id": "GF2XuchW9kfFvtTbx3Ps",
+      "creatorId": "946iB1LqFIR06G7d8q89um57PHh2",
+      "creatorUsername": "egroj",
+      "creatorName": "JAAM",
+      "createdTime": 1677883374246,
+      "creatorAvatarUrl": "https://firebasestorage.googleapis.com/v0/b/mantic-markets.appspot.com/o/user-images%2Fjorge%2F6eta_wBPT5.png?alt=media&token=2d5f9149-6e77-4307-83f7-a770bebe9686",
+      "closeTime": 1688137496869,
+      "question": "Will student loan payments resume by Sep 1st if SCOTUS permits Biden's student loan forgiveness to proceed?",
+      "slug": "will-student-loan-payments-resume-b",
+      "url": "https://manifold.markets/egroj/will-student-loan-payments-resume-b",
       "pool": {
-        "NO": 199.4604480014367,
-        "YES": 958.0024251946996
+        "NO": 37312.24020368579,
+        "YES": 5953.602147664982
       },
-      "probability": 0.0480391000210468,
-      "p": 0.1950892350158,
-      "totalLiquidity": 290,
+      "probability": 0.93730169447499,
+      "p": 0.7046095540123395,
+      "totalLiquidity": 10250,
       "outcomeType": "BINARY",
       "mechanism": "cpmm-1",
-      "volume": 1165.294619742559,
+      "volume": 42814.582261094794,
+      "volume24Hours": 0,
+      "isResolved": true,
+      "resolution": "CANCEL",
+      "resolutionTime": 1688137496869,
+      "resolutionProbability": 0.94,
+      "lastUpdatedTime": 1688137484056
+    },
+    {
+      "id": "Z8ZE1ivTKqpuIuUlqaNX",
+      "creatorId": "3BNoCvJIPOaJvrYM8DQXCQqJVJG3",
+      "creatorUsername": "Hyperstition",
+      "creatorName": "Hyperstition",
+      "createdTime": 1695679507033,
+      "creatorAvatarUrl": "https://lh3.googleusercontent.com/a/ACg8ocLYWPycEPnlZAvi3IocdNxOsccwbg8kDM1S8kTHbCRS0w=s96-c",
+      "closeTime": 1696882191666,
+      "question": "Will there be a finalized US-EU Trade Agreement on Steel by October 31st? [5k Mana Subsidy]",
+      "slug": "will-there-be-a-finalized-useu-trad",
+      "url": "https://manifold.markets/Hyperstition/will-there-be-a-finalized-useu-trad",
+      "pool": {
+        "NO": 4460.7051256428695,
+        "YES": 6523.627155492219
+      },
+      "probability": 0.5287578894969781,
+      "p": 0.62135002343295,
+      "totalLiquidity": 5690,
+      "outcomeType": "BINARY",
+      "mechanism": "cpmm-1",
+      "volume": 3004.9476092964946,
       "volume24Hours": 0,
       "isResolved": true,
       "resolution": "NO",
-      "resolutionTime": 1675498119366,
-      "resolutionProbability": 0.05,
-      "lastUpdatedTime": 1675498117432,
-      "description": {
-        "content": [
-          {
-            "content": [
-              {
-                "marks": [
-                  {
-                    "attrs": {
-                      "href": "https://www.opindia.com/2021/10/poopypantsbiden-trend-twitter-rumours-joe-biden-suffering-bathroom-accident-vatican/",
-                      "target": "_blank"
-                    },
-                    "type": "link"
-                  }
-                ],
-                "text": "https://www.opindia.com/2021/10/poopypantsbiden-trend-twitter-rumours-joe-biden-suffering-bathroom-accident-vatican/",
-                "type": "text"
-              }
-            ],
-            "type": "paragraph"
-          },
-          {
-            "attrs": {
-              "src": "https://firebasestorage.googleapis.com/v0/b/mantic-markets.appspot.com/o/user-images%2Fdefault%2FagMgCBTkIa.jpg?alt=media&token=4d57e1c1-8264-45f7-bda5-db43b23f398e"
-            },
-            "type": "image"
-          },
-          {
-            "content": [
-              {
-                "text": "Market resolves to \"yes\" if Biden pooped in his pants again by the end of 2022",
-                "type": "text"
-              }
-            ],
-            "type": "paragraph"
-          },
-          {
-            "content": [
-              {
-                "text": "Market resolves to \"no\" if Biden has not pooped in his pants again by the end of 2022",
-                "type": "text"
-              }
-            ],
-            "type": "paragraph"
-          }
-        ],
-        "type": "doc"
-      },
-      "coverImageUrl": "https://firebasestorage.googleapis.com/v0/b/mantic-markets.appspot.com/o/dream%2FxPIOqK99-m.png?alt=media&token=30a61355-fc83-4d98-9197-f99db72e8b54",
-      "textDescription": "https://www.opindia.com/2021/10/poopypantsbiden-trend-twitter-rumours-joe-biden-suffering-bathroom-accident-vatican/\n\n[image]Market resolves to \"yes\" if Biden pooped in his pants again by the end of 2022\n\nMarket resolves to \"no\" if Biden has not pooped in his pants again by the end of 2022"
+      "resolutionTime": 1696882191666,
+      "resolutionProbability": 0.53,
+      "lastUpdatedTime": 1696887359826
     }
   ]
   ```
 
-    </p>
-  </details>
-
-- Response type: Array of `FullMarket`.
-
-  ```tsx
-  // A complete market, along with answers (for free response markets)
-  type FullMarket = LiteMarket & {
-    answers?: Answer[] // dpm-2 markets only
-    description: JSONContent // Rich text content. See https://tiptap.dev/guide/output#option-1-json
-    textDescription: string // string description without formatting, images, or embeds
-    groupSlugs?: string[] // groups which the market is a part of
-  }
-  ```
+- Response type: Array of `LiteMarket`.
 
 ### `GET /v0/users`
 
@@ -700,10 +674,10 @@ Creates a new market on behalf of the authorized user.
 Note: this costs mana. If you have insufficient mana, this call will return an error. The cost to create each type of market is:
 
 | Market Type     | Creation Cost                             |
-| --------------- |-------------------------------------------|
+| --------------- | ----------------------------------------- |
 | BINARY          | M$50                                      |
 | PSEUDO_NUMERIC  | M$250                                     |
-| MULTIPLE_CHOICE | M$25/answer  or M$25 for no preset answers |  
+| MULTIPLE_CHOICE | M$25/answer or M$25 for no preset answers |
 
 Parameters:
 
@@ -713,7 +687,7 @@ Parameters:
   - Note: string descriptions do **not** turn into links, mentions, formatted text. You may instead use `descriptionMarkdown` or `descriptionHtml` for rich text formatting.
 - `closeTime`: Optional. The time at which the market will close, represented as milliseconds since the epoch. Defaults to 7 days from now.
 - `visibility`: Optional. One of `public` (default) or `unlisted`. Controls whether the market can be shown on homepage and in search results.
-- `groupId`: Optional. A group to create this market under.
+- `groupIds`: Optional. An array of topic/group ids to categorize this market under.
 
 For binary markets, you must also provide:
 
@@ -732,9 +706,11 @@ For multiple choice markets, you must also provide:
 - `addAnswersMode`: Optional. Controls who can add answers to the market after it has been created. Must be one of `'DISABLED' | 'ONLY_CREATOR' | 'ANYONE'`. Defaults to `'DISABLED'`.
 
 For bountied questions, you must also provide:
+
 - `totalBounty`: The total amount of mana to be distributed to the best answers.
 
 For polls, you must also provide:
+
 - `answers`: An array of strings, each of which will be an option for the poll.
 
 Example request:
@@ -893,7 +869,7 @@ Requires no authorization.
   ```
 - Response type: A `Bet[]`.
 
-- <details><summary>Example response</summary><p>
+- Example response
 
   ```json
   [
@@ -955,12 +931,9 @@ Requires no authorization.
   ]
   ```
 
-  </p>
-  </details>
-
 ### `GET /v0/managrams`
 
-Gets a list of managrams, ordered by creation time descending.  
+Gets a list of managrams, ordered by creation time descending.
 
 Parameters
 
@@ -968,56 +941,56 @@ Parameters
 - `fromId`: Optional. Returns managrams sent from this user.
 - `limit`: Optional. How many managrams to return. The maximum and the default are 100.
 - `before`: Optional. The `createdTime` before which you want managrams
-- `after`: Optional. The `createdTime` after which you want managrams 
+- `after`: Optional. The `createdTime` after which you want managrams
 
 Requires no authorization.
 
 Example request
-  ```
-  https://manifold.markets/api/v0/managrams?toId=IPTOzEqrpkWmEzh6hwvAyY9PqFb2
-  ```
-<details><summary>Example response</summary><p>
 
-  ```json
-  [
-      {
-          "id": "INKcoBUVT914i1XUJ6rG",
-          "data": {
-              "groupId": "e097e0c5-3ce0-4eb2-9ca7-6554f86b84cd",
-              "message": "Puzzles for Progress",
-              "visibility": "public"
-          },
-          "toId": "AJwLWoo3xue32XIiAVrL5SyR1WB2",
-          "token": "M$",
-          "amount": 2500,
-          "fromId": "jO7sUhIDTQbAJ3w86akzncTlpRG2",
-          "toType": "USER",
-          "category": "MANA_PAYMENT",
-          "fromType": "USER",
-          "createdTime": 1695665438987,
-          "description": "Mana payment 2500 from MichaelWheatley to jO7sUhIDTQbAJ3w86akzncTlpRG2"
-      },
-      {
-          "id": "crFuofkDd8gcpbEEFfcY",
-          "data": {
-              "groupId": "b8fea716-186b-4bef-9a19-7bc90c16c9e9",
-              "message": "Thank you for running the music and the great time!! ",
-              "visibility": "public"
-          },
-          "toId": "AJwLWoo3xue32XIiAVrL5SyR1WB2",
-          "token": "M$",
-          "amount": 500,
-          "fromId": "uLhlcRUBUpSnmqp2L0PJRuxbvku2",
-          "toType": "USER",
-          "category": "MANA_PAYMENT",
-          "fromType": "USER",
-          "createdTime": 1695604111711,
-          "description": "Mana payment 500 from AdriaGarrigaAlonso to uLhlcRUBUpSnmqp2L0PJRuxbvku2"
-      }
-  ]
-  ```
-</p>
-</details>  
+```
+https://manifold.markets/api/v0/managrams?toId=IPTOzEqrpkWmEzh6hwvAyY9PqFb2
+```
+
+Example response
+
+```json
+[
+  {
+    "id": "INKcoBUVT914i1XUJ6rG",
+    "data": {
+      "groupId": "e097e0c5-3ce0-4eb2-9ca7-6554f86b84cd",
+      "message": "Puzzles for Progress",
+      "visibility": "public"
+    },
+    "toId": "AJwLWoo3xue32XIiAVrL5SyR1WB2",
+    "token": "M$",
+    "amount": 2500,
+    "fromId": "jO7sUhIDTQbAJ3w86akzncTlpRG2",
+    "toType": "USER",
+    "category": "MANA_PAYMENT",
+    "fromType": "USER",
+    "createdTime": 1695665438987,
+    "description": "Mana payment 2500 from MichaelWheatley to jO7sUhIDTQbAJ3w86akzncTlpRG2"
+  },
+  {
+    "id": "crFuofkDd8gcpbEEFfcY",
+    "data": {
+      "groupId": "b8fea716-186b-4bef-9a19-7bc90c16c9e9",
+      "message": "Thank you for running the music and the great time!! ",
+      "visibility": "public"
+    },
+    "toId": "AJwLWoo3xue32XIiAVrL5SyR1WB2",
+    "token": "M$",
+    "amount": 500,
+    "fromId": "uLhlcRUBUpSnmqp2L0PJRuxbvku2",
+    "toType": "USER",
+    "category": "MANA_PAYMENT",
+    "fromType": "USER",
+    "createdTime": 1695604111711,
+    "description": "Mana payment 500 from AdriaGarrigaAlonso to uLhlcRUBUpSnmqp2L0PJRuxbvku2"
+  }
+]
+```
 
 ### `POST /v0/managram`
 
@@ -1029,17 +1002,19 @@ Parameters
 - `amount`: Required. The amount of mana (must be >= 10) to send to each user.
 - `message`: Optional. A message to include with the managram.
 
-
 Example body
+
 ```json
 {
-    "amount":10,
-    "toIds":["AJwLWoo3xue32XIiAVrL5SyR1WB2"],
-    "message":"hi!"
+  "amount": 10,
+  "toIds": ["AJwLWoo3xue32XIiAVrL5SyR1WB2"],
+  "message": "hi!"
 }
 ```
 
 ## Changelog
+
+- 2023-10-27: Update `/search-markets` to allow all the same search options as our search.
 - 2023-09-29: Add `/managrams` and `/managram` endpoints
 - 2023-05-15: Change the response of the `/market/{marketId}/sell` POST endpoint from
   `{"status": "success"}` to a full `Bet`, with an additional `"status": "success"` field.

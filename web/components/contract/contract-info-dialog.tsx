@@ -38,6 +38,7 @@ import {
 import { ContractHistoryButton } from './contract-edit-history-button'
 import { ShareEmbedButton } from '../buttons/share-embed-button'
 import { ShareQRButton } from '../buttons/share-qr-button'
+import dayjs from 'dayjs'
 
 export const Stats = (props: {
   contract: Contract
@@ -131,20 +132,29 @@ export const Stats = (props: {
             </tr>
             <tr>
               <td>
-                Bounty paid{' '}
-                <InfoTooltip text="The bounty that has been paid out so far" />
+                Bounty left <InfoTooltip text="Bounty left to pay out" />
               </td>
-              <td>{formatMoney(contract.totalBounty - contract.bountyLeft)}</td>
+              <td>{formatMoney(contract.bountyLeft)}</td>
             </tr>
           </>
         )}
 
-        {closeTime && isBettingContract && (
-          <tr>
-            <td>Question close{closeTime > Date.now() ? 's' : 'd'}</td>
-            <td>{formatTime(closeTime)}</td>
-          </tr>
-        )}
+        {closeTime &&
+          (isBettingContract ||
+            contract.outcomeType == 'BOUNTIED_QUESTION') && (
+            <tr>
+              <td>Question close{closeTime > Date.now() ? 's' : 'd'}</td>
+
+              <td>
+                {!closeTime ||
+                dayjs(closeTime).isAfter(
+                  dayjs(contract.createdTime).add(dayjs.duration(900, 'year'))
+                )
+                  ? 'Never'
+                  : formatTime(closeTime)}
+              </td>
+            </tr>
+          )}
 
         {resolutionTime && isBettingContract && (
           <tr>

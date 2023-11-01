@@ -304,6 +304,7 @@ module.exports = {
           50: 'rgb(var(--color-canvas-50) / <alpha-value>)',
           100: 'rgb(var(--color-canvas-100) / <alpha-value>)',
         },
+
         primary: {
           50: 'rgb(var(--color-primary-50) / <alpha-value>)',
           100: 'rgb(var(--color-primary-100) / <alpha-value>)',

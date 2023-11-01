@@ -36,12 +36,33 @@ export const useBets = (options?: BetFilter) => {
 
 export const useUnfilledBets = (contractId: string) => {
   const [unfilledBets, setUnfilledBets] = useState<LimitBet[] | undefined>()
+
+  const getUnfilledUnexpiredBets = (bets: LimitBet[]) => {
+    const now = Date.now()
+    return bets.filter((bet) => (bet.expiresAt ? bet.expiresAt > now : true))
+  }
+
   useEffect(() => {
     // Load first with supabase b/c it's faster.
-    getUnfilledLimitOrders(contractId).then(setUnfilledBets)
+    getUnfilledLimitOrders(contractId).then((b) =>
+      setUnfilledBets(getUnfilledUnexpiredBets(b))
+    )
     // Then listen for updates w/ firebase.
-    return listenForUnfilledBets(contractId, setUnfilledBets)
+    return listenForUnfilledBets(contractId, (b) =>
+      setUnfilledBets(getUnfilledUnexpiredBets(b))
+    )
   }, [contractId])
+
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      if (!unfilledBets?.length) return
+      const unExpiredBetsOnly = getUnfilledUnexpiredBets(unfilledBets)
+      if (unExpiredBetsOnly.length !== unfilledBets.length)
+        setUnfilledBets(unExpiredBetsOnly)
+    }, 5000)
+    return () => clearInterval(intervalId)
+  }, [unfilledBets?.length])
+
   return unfilledBets
 }
 

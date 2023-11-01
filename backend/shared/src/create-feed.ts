@@ -79,13 +79,22 @@ export const bulkInsertDataToUserFeed = async (
   const cs = new pgp.helpers.ColumnSet(feedRows[0], { table: 'user_feed' })
   const insert = pgp.helpers.insert(feedRows, cs) + ` ON CONFLICT DO NOTHING`
 
-  try {
-    await pg.none(insert)
-    log(`inserted ${feedRows.length} feed items`)
-  } catch (e) {
-    console.log('error inserting feed items')
-    console.error(e)
+  const maxRetries = 3
+  let retries = 0
+  while (retries < maxRetries) {
+    try {
+      await pg.none(insert)
+      log(`inserted ${feedRows.length} feed items`)
+      break // Exit if successful
+    } catch (e) {
+      retries++
+      log(`error inserting feed items, retrying ${retries}/${maxRetries}`)
+      log(e)
+      await new Promise((r) => setTimeout(r, 1000 * retries + 1000))
+    }
   }
+  if (retries === maxRetries)
+    log(`Failed to insert feed items after ${maxRetries} attempts`)
 }
 
 export const createManualTrendingFeedRow = (

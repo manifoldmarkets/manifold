@@ -1,4 +1,4 @@
-import { usePrivateUser, useUser } from 'web/hooks/use-user'
+import { useIsAuthorized, usePrivateUser, useUser } from 'web/hooks/use-user'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
@@ -35,8 +35,8 @@ export function FeedTimeline() {
   return (
     <Col className="w-full items-center pb-4 sm:px-2">
       {user && remaining > 0 && (
-        <Row className="text-ink-600 mb-2 items-center justify-between gap-2 rounded-md bg-green-200 p-2 text-sm">
-          <span className={'text-ink-700'}>
+        <Row className="mb-2 items-center justify-between gap-2 rounded-md bg-green-200 p-2 text-sm">
+          <span className={'text-gray-700'}>
             🎉 You've got {remaining} free questions! Use them before they
             expire in{' '}
             {shortenedFromNow(
@@ -80,7 +80,7 @@ function FeedTimelineContent(props: { privateUser: PrivateUser }) {
     Date.now(),
     'last-seen-feed-timeline' + user?.id
   )
-
+  const isAuthed = useIsAuthorized()
   const [topIsVisible, setTopIsVisible] = useState(false)
   const [newerTimelineItems, setNewerTimelineItems] = useState<
     FeedTimelineItem[]
@@ -88,7 +88,7 @@ function FeedTimelineContent(props: { privateUser: PrivateUser }) {
   const [loadingMore, setLoadingMore] = useState(false)
 
   useEffect(() => {
-    if (newerTimelineItems.length > 0) return
+    if (!isAuthed || newerTimelineItems.length > 0) return
     const now = Date.now()
     // This queries for new items if they scroll to the top
     if (topIsVisible && now - lastSeen > 10000) {
@@ -109,7 +109,7 @@ function FeedTimelineContent(props: { privateUser: PrivateUser }) {
     }
     setLastSeen(now)
     return () => setLastSeen(Date.now())
-  }, [pageVisible, topIsVisible])
+  }, [pageVisible, topIsVisible, isAuthed])
 
   if (!savedFeedItems) return <LoadingIndicator />
   const newAvatarUrls = uniq(
@@ -161,7 +161,9 @@ function FeedTimelineContent(props: { privateUser: PrivateUser }) {
       <div className="relative">
         <VisibilityObserver
           className="pointer-events-none absolute bottom-0 h-screen w-full select-none"
-          onVisibilityUpdated={(visible) => visible && fetchMoreOlderContent()}
+          onVisibilityUpdated={(visible) =>
+            visible && isAuthed && fetchMoreOlderContent()
+          }
         />
       </div>
 

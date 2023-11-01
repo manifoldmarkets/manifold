@@ -3,9 +3,11 @@ import { APIError, authEndpoint, validate } from 'api/helpers'
 import { getPrivateUser, getUserSupabase } from 'shared/utils'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 
-const postSchema = z.object({
-  userId: z.string(),
-})
+const postSchema = z
+  .object({
+    userId: z.string(),
+  })
+  .strict()
 
 export const createprivateusermessagechannel = authEndpoint(
   async (req, auth) => {

@@ -17,9 +17,11 @@ import { recordContractEdit } from 'shared/record-contract-edit'
 import { isAdminId, isTrustworthy } from 'common/envs/constants'
 
 const firestore = admin.firestore()
-const bodySchema = z.object({
-  contractId: z.string(),
-})
+const bodySchema = z
+  .object({
+    contractId: z.string(),
+  })
+  .strict()
 const TXNS_PR_MERGED_ON = 1675693800000 // #PR 1476
 
 export const unresolve = authEndpoint(async (req, auth) => {
@@ -28,6 +30,12 @@ export const unresolve = authEndpoint(async (req, auth) => {
   const contract = await getContractSupabase(contractId)
 
   if (!contract) throw new APIError(404, `Contract ${contractId} not found`)
+  if (
+    contract.mechanism === 'cpmm-multi-1' &&
+    !contract.shouldAnswersSumToOne
+  ) {
+    throw new APIError(400, `Can't unresolve a contract that doesn't sum to 1`)
+  }
 
   const resolutionTime = contract.resolutionTime
   if (!contract.isResolved || !resolutionTime)

@@ -67,7 +67,7 @@ export function AnswerBetPanel(props: {
       })
       .catch((e) => {
         if (e instanceof APIError) {
-          setError(e.toString())
+          setError(e.message.toString())
         } else {
           console.error(e)
           setError('Error placing bet')

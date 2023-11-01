@@ -114,6 +114,10 @@ export function ContractParamsForm(props: {
   const numAnswers = hasOtherAnswer ? answers.length + 1 : answers.length
 
   useEffect(() => {
+    if (params?.q) setQuestion(params?.q ?? '')
+  }, [params?.q])
+
+  useEffect(() => {
     if (params?.answers) {
       setAnswers(params.answers)
     } else if (answers.length && answers.every((a) => a.trim().length === 0)) {
@@ -122,7 +126,9 @@ export function ContractParamsForm(props: {
       if (answers.length === 0) setAnswers(defaultAnswers)
       else setAnswers(answers.concat(['']))
     }
-    if (params?.q) setQuestion(params?.q ?? '')
+  }, [JSON.stringify(params?.answers)])
+
+  useEffect(() => {
     if (params?.groupIds) {
       const getAndSetGroups = async (groupIds: string[]) => {
         const groups = await Promise.all(groupIds.map((id) => getGroup(id)))
@@ -139,7 +145,7 @@ export function ContractParamsForm(props: {
       }
       getAndSetGroupsViaSlugs(params.groupSlugs)
     }
-  }, [params?.answers, params?.q, params?.groupIds])
+  }, [JSON.stringify(params?.groupIds)])
 
   useEffect(() => {
     if (addAnswersMode === 'DISABLED' && answers.length < 2) {
@@ -418,7 +424,7 @@ export function ContractParamsForm(props: {
     setCategorizedQuestion(trimmed)
     try {
       const { groups } = await getSimilarGroupsToContract({ question })
-      setSelectedGroups(groups)
+      if (groups) setSelectedGroups(groups)
     } catch (e) {
       console.error('error getting similar groups', e)
     }
@@ -575,7 +581,7 @@ export function ContractParamsForm(props: {
           Add topics{' '}
           <InfoTooltip text="Question will be displayed alongside the other questions in the topic." />
         </span>
-        {selectedGroups.length > 0 && (
+        {selectedGroups && selectedGroups.length > 0 && (
           <Row className={'flex-wrap gap-2'}>
             {selectedGroups.map((group) => (
               <TopicTag
@@ -609,7 +615,7 @@ export function ContractParamsForm(props: {
                 selectedGroups.some((g) => g.privacyStatus === 'private'))
             ) {
               toast(
-                `Questions are only allowed one category if the category is private.`,
+                `Questions are only allowed one topic if the topic is private.`,
                 { icon: '🚫' }
               )
               return

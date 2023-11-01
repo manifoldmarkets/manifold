@@ -9,11 +9,13 @@ import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { buildArray } from 'common/util/array'
 import { recordContractEdit } from 'shared/record-contract-edit'
 
-const bodySchema = z.object({
-  contractId: z.string(),
-  visibility: z.enum(['unlisted', 'public']).optional(),
-  closeTime: z.number().optional(),
-})
+const bodySchema = z
+  .object({
+    contractId: z.string(),
+    visibility: z.enum(['unlisted', 'public']).optional(),
+    closeTime: z.number().optional(),
+  })
+  .strict()
 
 export const updatemarket = authEndpoint(async (req, auth) => {
   const { contractId, visibility, closeTime } = validate(bodySchema, req.body)

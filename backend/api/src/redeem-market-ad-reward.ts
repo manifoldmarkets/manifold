@@ -7,9 +7,11 @@ import { AD_REDEEM_REWARD } from 'common/boost'
 import { FieldValue } from 'firebase-admin/firestore'
 import { MarketAdRedeemFeeTxn, MarketAdRedeemTxn } from 'common/txn'
 
-const schema = z.object({
-  adId: z.string(),
-})
+const schema = z
+  .object({
+    adId: z.string(),
+  })
+  .strict()
 
 export const redeemboost = authEndpoint(async (req, auth) => {
   const { adId } = validate(schema, req.body)

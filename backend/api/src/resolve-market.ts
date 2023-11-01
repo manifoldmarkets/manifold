@@ -14,6 +14,7 @@ import { resolveMarketHelper } from 'shared/resolve-market-helpers'
 import { Answer } from 'common/answer'
 import { throwErrorIfNotMod } from 'shared/helpers/auth'
 
+// don't use strict() to include contract specific fields
 const bodySchema = z.object({
   contractId: z.string(),
 })
@@ -110,6 +111,14 @@ export const resolvemarket = authEndpoint(async (req, auth) => {
   if (!creator) throw new APIError(500, 'Creator not found')
 
   const resolutionParams = getResolutionParams(contract, req.body)
+
+  console.log(
+    'Resolving market',
+    contract.slug,
+    contractId,
+    'with params',
+    resolutionParams
+  )
 
   return await resolveMarketHelper(contract, caller, creator, resolutionParams)
 })

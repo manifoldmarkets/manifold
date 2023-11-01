@@ -5,10 +5,12 @@ import { getContract } from 'shared/utils'
 import { z } from 'zod'
 import { APIError, authEndpoint, validate } from './helpers'
 
-const bodySchema = z.object({
-  contractId: z.string(),
-  amount: z.number().gt(0).int().finite(),
-})
+const bodySchema = z
+  .object({
+    contractId: z.string(),
+    amount: z.number().gt(0).int().finite(),
+  })
+  .strict()
 
 export const addbounty = authEndpoint(async (req, auth) => {
   const { contractId, amount } = validate(bodySchema, req.body)

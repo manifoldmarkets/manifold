@@ -1,10 +1,9 @@
 import { Page } from 'web/components/layout/page'
-import { Title } from 'web/components/widgets/title'
 import { useRouter } from 'next/router'
 import {
   useOtherUserIdsInPrivateMessageChannelIds,
-  usePrivateMessageChannelIds,
-  useRealtimePrivateMessages,
+  useRealtimePrivateMessagesPolling,
+  usePrivateMessageChannelId,
 } from 'web/hooks/use-private-messages'
 import { Col } from 'web/components/layout/col'
 import { User } from 'common/user'
@@ -22,30 +21,31 @@ import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { MINUTE_MS } from 'common/util/time'
 import { run } from 'common/supabase/utils'
 import { db } from 'web/lib/supabase/db'
-import { useIsVisible } from 'web/hooks/use-is-visible'
-import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
 import { useUsersInStore } from 'web/hooks/use-user-supabase'
 import { BackButton } from 'web/components/contract/back-button'
 import { Row } from 'web/components/layout/row'
 import clsx from 'clsx'
 import Link from 'next/link'
 import { linkClass } from 'web/components/widgets/site-link'
-
-export const getServerSideProps = redirectIfLoggedOut('/')
+import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
+import { Avatar } from 'web/components/widgets/avatar'
 
 export default function PrivateMessagesPage() {
-  redirectIfLoggedOut('/')
-
+  useRedirectIfSignedOut()
   const router = useRouter()
   const user = useUser()
   const isAuthed = useIsAuthorized()
   const { channelId } = router.query as { channelId: string }
-  const channelIds = usePrivateMessageChannelIds(user?.id, isAuthed)
-  const loaded = isAuthed && channelIds !== undefined && channelId
+  const accessToChannellId = usePrivateMessageChannelId(
+    user?.id,
+    isAuthed,
+    channelId
+  )
+  const loaded = isAuthed && accessToChannellId !== undefined && channelId
 
   return (
     <Page trackPageView={'private messages page'}>
-      {user && loaded && channelIds.includes(parseInt(channelId)) ? (
+      {user && loaded && accessToChannellId == parseInt(channelId) ? (
         <PrivateChat channelId={parseInt(channelId)} user={user} />
       ) : (
         <LoadingIndicator />
@@ -54,11 +54,13 @@ export default function PrivateMessagesPage() {
   )
 }
 
-// TODO: We may want to refactor this to share code with league-chat.tsx
 export const PrivateChat = (props: { user: User; channelId: number }) => {
   const { user, channelId } = props
-  const [visible, setVisible] = useState(false)
-  const realtimeMessages = useRealtimePrivateMessages(channelId, true)
+  const realtimeMessages = useRealtimePrivateMessagesPolling(
+    channelId,
+    true,
+    100
+  )
   const otherUserFromMessages = (realtimeMessages ?? [])
     .filter((message) => message.userId !== user.id)
     .map((message) => message.userId)
@@ -82,10 +84,10 @@ export const PrivateChat = (props: { user: User; channelId: number }) => {
     size: 'sm',
     placeholder: 'Send a message',
   })
-  const { ref } = useIsVisible(() => {
-    user && setAsSeen(user, channelId)
-    setVisible(true)
-  }, true)
+
+  useEffect(() => {
+    setAsSeen(user, channelId)
+  }, [messages.length])
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [scrollToBottomRef, setScrollToBottomRef] =
@@ -114,9 +116,9 @@ export const PrivateChat = (props: { user: User; channelId: number }) => {
   }, [messages.length])
 
   useEffect(() => {
-    if (scrollToBottomRef && visible && realtimeMessages?.length)
+    if (scrollToBottomRef && realtimeMessages?.length)
       scrollToBottomRef.scrollIntoView()
-  }, [scrollToBottomRef, realtimeMessages?.length, visible])
+  }, [scrollToBottomRef, realtimeMessages?.length])
 
   async function submitMessage() {
     if (!user) {
@@ -139,22 +141,26 @@ export const PrivateChat = (props: { user: User; channelId: number }) => {
   }
 
   return (
-    <Col>
+    <Col className=" px-2 xl:px-0">
       <Col className={''}>
-        <Row className={'mb-3 items-center gap-2 '}>
+        <Row className={'border-ink-200 items-center gap-1 border-b py-2'}>
           <BackButton />
+          <Avatar
+            size="xs"
+            avatarUrl={otherUser?.avatarUrl}
+            className="mx-1"
+            username={otherUser?.username}
+          />
           <Link className={linkClass} href={`/${otherUser?.username ?? ''}`}>
-            <Title className={'!mb-0'}>{otherUser?.name ?? ''}</Title>
+            <span className={'!mb-0'}>{otherUser?.name ?? ''}</span>
           </Link>
         </Row>
-        <Row className={'w-full border-b-2'} />
       </Col>
-      <div ref={ref} />
       <Col
         className={clsx(
-          'gap-2 overflow-y-scroll pb-2 ',
-          'max-h-[calc(100vh-13rem)] min-h-[calc(100vh-13rem)]',
-          'lg:max-h-[calc(100vh-11rem)] lg:min-h-[calc(100vh-11rem)]'
+          'gap-1 overflow-y-auto py-2 ',
+          'max-h-[calc(100vh-216px)] min-h-[calc(100vh-216px)]',
+          'lg:max-h-[calc(100vh-184px)] lg:min-h-[calc(100vh-184px)]'
         )}
       >
         {realtimeMessages === undefined ? (
@@ -172,34 +178,44 @@ export const PrivateChat = (props: { user: User; channelId: number }) => {
                     : undefined
                 }
                 otherUser={otherUser}
+                beforeSameUser={
+                  groupedMessages[i + 1]
+                    ? groupedMessages[i + 1][0].userId === messages[0].userId
+                    : false
+                }
+                firstOfUser={
+                  groupedMessages[i - 1]
+                    ? groupedMessages[i - 1][0].userId !== messages[0].userId
+                    : true
+                }
               />
             )
           })
         )}
         {messages.length === 0 && (
-          <div className="text-ink-500 p-2">
+          <div className="text-ink-500 dark:text-ink-600 p-2">
             No messages yet. Say something why don't ya?
           </div>
         )}
       </Col>
-      <div className="bg-canvas-50 sticky bottom-[56px] flex w-full justify-start gap-2 pb-1 lg:bottom-0">
+      <div className="bg-canvas-50 sticky bottom-[56px] flex w-full justify-start gap-2 lg:bottom-0">
         <CommentInputTextArea
           editor={editor}
           user={user}
           submit={submitMessage}
           isSubmitting={isSubmitting}
           submitOnEnter={true}
-          hideToolbar={true}
         />
       </div>
     </Col>
   )
 }
 
-const setAsSeen = async (user: User, privatechannelId: number) =>
-  run(
+const setAsSeen = async (user: User, privatechannelId: number) => {
+  return run(
     db.from('private_user_seen_message_channels').insert({
       user_id: user.id,
       channel_id: privatechannelId,
     })
   )
+}

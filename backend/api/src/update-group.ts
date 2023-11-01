@@ -6,12 +6,14 @@ import { isAdminId } from 'common/envs/constants'
 import { contentSchema } from 'shared/zod-types'
 import { MAX_ABOUT_LENGTH, MAX_GROUP_NAME_LENGTH } from 'common/group'
 
-const schema = z.object({
-  id: z.string(),
-  about: contentSchema.or(z.string().max(MAX_ABOUT_LENGTH)).optional(),
-  name: z.string().max(MAX_GROUP_NAME_LENGTH).optional(),
-  bannerUrl: z.string().optional(),
-})
+const schema = z
+  .object({
+    id: z.string(),
+    about: contentSchema.or(z.string().max(MAX_ABOUT_LENGTH)).optional(),
+    name: z.string().max(MAX_GROUP_NAME_LENGTH).optional(),
+    bannerUrl: z.string().optional(),
+  })
+  .strict()
 
 export const updategroup = authEndpoint(async (req, auth) => {
   const { id, ...data } = validate(schema, req.body)

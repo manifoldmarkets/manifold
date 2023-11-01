@@ -1,7 +1,7 @@
 import clsx from 'clsx'
 import { getUnresolvedContractsCount } from 'common/supabase/contracts'
 import { User } from 'common/user'
-import { formatWithCommas } from 'common/util/format'
+import { shortFormatNumber } from 'common/util/format'
 import { ReactNode, useEffect, useState } from 'react'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -15,9 +15,15 @@ import { SupabaseSearch } from 'web/components/supabase-search'
 import { useUser } from 'web/hooks/use-user'
 import { CreateQuestionButton } from '../buttons/create-question-button'
 import { useRouter } from 'next/router'
+import { UserReviews } from '../reviews/user-reviews'
+import { InfoTooltip } from '../widgets/info-tooltip'
 
-export function UserContractsList(props: { creator: User }) {
-  const { creator } = props
+export function UserContractsList(props: {
+  creator: User
+  rating?: number
+  reviewCount?: number
+}) {
+  const { creator, rating, reviewCount } = props
   const { creatorTraders } = creator
   const { weekly, allTime } = creatorTraders
   const [marketsCreated, setMarketsCreated] = useState<number | undefined>()
@@ -43,13 +49,31 @@ export function UserContractsList(props: { creator: User }) {
   return (
     <Col className={'w-full'}>
       <Row className={'gap-8 pb-4'}>
+        {rating && !!reviewCount && reviewCount > 0 && (
+          <Col>
+            <Row className="text-ink-600 gap-0.5 text-xs sm:text-sm">
+              Rating
+              <InfoTooltip
+                text={
+                  'This average has been weighted to ensure more accurate representation'
+                }
+                size="sm"
+              />
+            </Row>
+            <UserReviews
+              userId={creator.id}
+              rating={rating}
+              reviewCount={reviewCount}
+            />
+          </Col>
+        )}
         <MarketStats
-          title={'Creator rank'}
-          total={`#${formatWithCommas(creatorRank ?? 0)}`}
+          title={'Rank'}
+          total={`#${shortFormatNumber(creatorRank ?? 0)}`}
         />
         <MarketStats
-          title={'Total questions'}
-          total={formatWithCommas(marketsCreated ?? 0)}
+          title={'Questions'}
+          total={shortFormatNumber(marketsCreated ?? 0)}
           subTitle={
             unresolvedMarkets === 0 ? null : (
               <Tooltip text={'Closed and waiting for resolution'}>
@@ -65,7 +89,7 @@ export function UserContractsList(props: { creator: User }) {
         />
         <MarketStats
           title={'Traders'}
-          total={formatWithCommas(allTime ?? 0)}
+          total={shortFormatNumber(allTime ?? 0)}
           subTitle={
             allTime === 0 ? (
               <></>
@@ -118,7 +142,7 @@ const MarketStats = (props: {
 }) => {
   const { title, total, subTitle } = props
   return (
-    <Col>
+    <Col className="select-none">
       <div className="text-ink-600 text-xs sm:text-sm">{title}</div>
       <Row className="items-center gap-2">
         <span className="text-primary-600 text-lg sm:text-xl">{total}</span>

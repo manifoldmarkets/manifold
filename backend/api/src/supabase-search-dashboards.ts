@@ -3,11 +3,13 @@ import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { z } from 'zod'
 import { Json, MaybeAuthedEndpoint, validate } from './helpers'
 
-const bodySchema = z.object({
-  term: z.string(),
-  offset: z.number().gte(0),
-  limit: z.number().gt(0),
-})
+const bodySchema = z
+  .object({
+    term: z.string(),
+    offset: z.number().gte(0),
+    limit: z.number().gt(0),
+  })
+  .strict()
 
 export const supabasesearchdashboards = MaybeAuthedEndpoint(async (req) => {
   const { term, offset, limit } = validate(bodySchema, req.body)
@@ -42,6 +44,7 @@ function getSearchDashboardSQL(input: {
     query = `
         select *
         from dashboards
+        where visibility = 'public'
         order by importance_score desc, created_time desc
       `
   } else {
@@ -50,6 +53,7 @@ function getSearchDashboardSQL(input: {
         FROM dashboards,
         LATERAL websearch_to_tsquery('english', $1) as query
         WHERE dashboards.title_fts @@ query
+        AND visibility <> 'deleted'
         ORDER BY importance_score DESC, created_time DESC
       `
   }

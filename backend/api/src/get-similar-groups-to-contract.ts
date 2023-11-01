@@ -5,9 +5,11 @@ import { MAX_QUESTION_LENGTH } from 'common/contract'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { convertGroup } from 'common/supabase/groups'
 import { log } from 'shared/utils'
-const bodySchema = z.object({
-  question: z.string().min(1).max(MAX_QUESTION_LENGTH),
-})
+const bodySchema = z
+  .object({
+    question: z.string().min(1).max(MAX_QUESTION_LENGTH),
+  })
+  .strict()
 const GROUPS_SLUGS_TO_IGNORE = [
   'olivia',
   'nathans-dashboard',

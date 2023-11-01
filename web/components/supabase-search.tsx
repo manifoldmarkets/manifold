@@ -15,10 +15,8 @@ import generateFilterDropdownItems, {
   getLabelFromValue,
 } from './search/search-dropdown-helpers'
 import { Input } from './widgets/input'
-import {
-  usePartialUpdater,
-  usePersistentQueriesState,
-} from 'web/hooks/use-persistent-query-state'
+import { usePersistentQueriesState } from 'web/hooks/use-persistent-query-state'
+import { usePartialUpdater } from 'web/hooks/use-partial-updater'
 import {
   useGroupFromSlug,
   useRealtimeMemberGroupIds,
@@ -34,15 +32,12 @@ import { PillButton } from 'web/components/buttons/pill-button'
 import { searchUsers, UserSearchResult } from 'web/lib/supabase/users'
 import { searchGroups } from 'web/lib/supabase/groups'
 import { convertGroup } from 'common/supabase/groups'
-import { FollowButton } from 'web/components/buttons/follow-button'
-import { shortFormatNumber } from 'common/util/format'
-import { StackedUserNames } from 'web/components/widgets/user-link'
 import { User } from 'common/user'
-import { Avatar } from 'web/components/widgets/avatar'
 import { Button, IconButton } from 'web/components/buttons/button'
 import Link from 'next/link'
 import { useFollowedUsersOnLoad } from 'web/hooks/use-follows'
 import { CONTRACTS_PER_SEARCH_PAGE } from 'common/supabase/contracts'
+import { UserResults } from './search/user-results'
 
 const USERS_PER_PAGE = 100
 const TOPICS_PER_PAGE = 100
@@ -175,12 +170,19 @@ export function SupabaseSearch(props: {
   yourTopics?: Group[]
   contractsOnly?: boolean
   showTopicTag?: boolean
+  hideSearchTypes?: boolean
+  userResultProps?: {
+    onUserClick?: (user: User) => void
+    hideFollowButton?: boolean
+    loadingUserId?: string
+  }
 }) {
   const {
     defaultSort,
     defaultFilter,
     additionalFilter,
     onContractClick,
+    userResultProps,
     hideOrderSelector,
     hideActions,
     highlightContractIds,
@@ -197,6 +199,7 @@ export function SupabaseSearch(props: {
     yourTopics,
     contractsOnly,
     showTopicTag,
+    hideSearchTypes,
   } = props
 
   const [searchParams, setSearchParams, defaults] = useSearchQueryState({
@@ -251,6 +254,7 @@ export function SupabaseSearch(props: {
   const setSearchType = (t: SearchType) =>
     setSearchParams({ [SEARCH_TYPE_KEY]: searchTypeAsString === t ? '' : t })
   const showSearchTypes =
+    !hideSearchTypes &&
     ((showSearchTypeState &&
       (!currentTopicSlug || currentTopicSlug === 'for-you') &&
       queryAsString !== '') ||
@@ -333,7 +337,7 @@ export function SupabaseSearch(props: {
     ))
 
   return (
-    <Col>
+    <Col className="w-full">
       <Col className={clsx('sticky top-0 z-20 ', headerClassName)}>
         <Row>
           <Col className={'w-full'}>
@@ -448,7 +452,10 @@ export function SupabaseSearch(props: {
             {/* Find users from your contacts!*/}
           </Col>
         ) : (
-          <UserResults users={userResults ?? []} />
+          <UserResults
+            users={userResults ?? []}
+            userResultProps={userResultProps}
+          />
         )
       ) : searchTypeAsString === 'Topics' ? (
         topicResults && topicResults.length === 0 ? (
@@ -463,57 +470,6 @@ export function SupabaseSearch(props: {
           />
         )
       ) : null}
-    </Col>
-  )
-}
-
-const UserResults = (props: { users: UserSearchResult[] }) => {
-  return (
-    <Col className={'mt-1 w-full gap-1'}>
-      {props.users.map(
-        ({
-          id,
-          name,
-          username,
-          avatarUrl,
-          bio,
-          createdTime,
-          creatorTraders,
-        }) => (
-          <Link key={id} href={`/${username}`}>
-            <Row className={'hover:bg-primary-100 p-1'}>
-              <Col className={'w-full'}>
-                <Row className={'justify-between'}>
-                  <Row className={'gap-1'}>
-                    <Avatar
-                      username={username}
-                      avatarUrl={avatarUrl}
-                      className={'mt-1'}
-                    />
-                    <StackedUserNames
-                      user={
-                        { id, name, username, avatarUrl, createdTime } as User
-                      }
-                      className={'font-normal sm:text-lg'}
-                      usernameClassName={'sm:text-sm font-normal'}
-                    />
-                  </Row>
-                  <FollowButton size={'xs'} userId={id} />
-                </Row>
-                <div className={'text-ink-500 ml-1 line-clamp-2 text-sm'}>
-                  {creatorTraders.allTime > 0 && (
-                    <span className={'mr-1'}>
-                      {shortFormatNumber(creatorTraders.allTime)} traders
-                      {bio && ' •'}
-                    </span>
-                  )}
-                  <span>{bio}</span>
-                </div>
-              </Col>
-            </Row>
-          </Link>
-        )
-      )}
     </Col>
   )
 }
@@ -624,7 +580,7 @@ const useContractSearch = (
         })
 
         if (id === requestId.current) {
-          const newContracts: Contract[] = results.data
+          const newContracts = results.data
 
           const freshContracts = freshQuery
             ? newContracts
@@ -632,12 +588,6 @@ const useContractSearch = (
                 ...(currentState.contracts ? currentState.contracts : []),
                 ...newContracts,
               ]
-
-          // TODO: When `deleted` is a native supabase column, filter
-          // out deleted contracts in backend.
-          const freshContractsWithoutDeleted = freshContracts.filter(
-            (contract) => !contract.deleted
-          )
 
           const newFuzzyContractOffset =
             results.fuzzyOffset + currentState.fuzzyContractOffset
@@ -647,7 +597,7 @@ const useContractSearch = (
 
           setState({
             fuzzyContractOffset: newFuzzyContractOffset,
-            contracts: freshContractsWithoutDeleted,
+            contracts: freshContracts,
             shouldLoadMore,
           })
           if (freshQuery && isWholePage) window.scrollTo(0, 0)
@@ -798,7 +748,7 @@ function ContractFilters(props: {
               selectSort
             )}
             icon={
-              <Row className=" text-ink-500 items-center gap-0.5">
+              <Row className="text-ink-500 items-center gap-0.5">
                 <span className="whitespace-nowrap text-sm font-medium">
                   {sortLabel}
                 </span>

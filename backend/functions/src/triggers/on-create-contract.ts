@@ -12,6 +12,13 @@ import { addContractToFeed } from 'shared/create-feed'
 import { createNewContractNotification } from 'shared/create-notification'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { upsertGroupEmbedding } from 'shared/helpers/embeddings'
+import {
+  generateContractEmbeddings,
+  isContractNonPredictive,
+} from 'shared/supabase/contracts'
+import { addGroupToContract } from 'shared/update-group-contracts-internal'
+import { NON_PREDICTIVE_GROUP_ID } from 'common/supabase/groups'
+import { HOUSE_LIQUIDITY_PROVIDER_ID } from 'common/antes'
 
 export const onCreateContract = functions
   .runWith({
@@ -44,20 +51,26 @@ export const onCreateContract = functions
       mentioned
     )
     const pg = createSupabaseDirectClient()
-    if (contract.visibility !== 'private') {
-      const contractEmbedding = await pg.oneOrNone<{ embedding: string }>(
-        `select embedding
-         from contract_embeddings
-         where contract_id = $1`,
-        [contract.id]
+
+    const embedding = await pg.oneOrNone(
+      `select embedding
+              from contract_embeddings
+              where contract_id = $1`,
+      [contract.id]
+    )
+    if (!embedding) await generateContractEmbeddings(contract, pg)
+    if (isContractNonPredictive(contract)) {
+      const added = await addGroupToContract(
+        contract,
+        {
+          id: NON_PREDICTIVE_GROUP_ID,
+          slug: 'nonpredictive',
+          name: 'Unranked',
+        },
+        pg,
+        { userId: HOUSE_LIQUIDITY_PROVIDER_ID }
       )
-      const contractHasEmbedding =
-        (contractEmbedding?.embedding ?? []).length > 0
-      log('contractHasEmbedding:', contractHasEmbedding)
-      if (!contractHasEmbedding) {
-        // Wait 5 seconds, hopefully the embedding will be there by then
-        await new Promise((resolve) => setTimeout(resolve, 5000))
-      }
+      log('Added contract to non-predictive group', added)
     }
     if (contract.visibility === 'unlisted') return
     await addContractToFeed(

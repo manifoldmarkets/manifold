@@ -8,12 +8,14 @@ import { buyFromPool } from 'shared/helpers/cert-txns'
 import { CertTxn } from 'common/txn'
 import { getCertOwnershipUsers } from 'common/calculate/cert'
 
-const bodySchema = z.object({
-  certId: z.string(),
-  amount: z.number(),
-  // Assumes 'M$' for now.
-  // token: z.enum(['SHARE', 'M$']),
-})
+const bodySchema = z
+  .object({
+    certId: z.string(),
+    amount: z.number(),
+    // Assumes 'M$' for now.
+    // token: z.enum(['SHARE', 'M$']),
+  })
+  .strict()
 
 export const swapcert = authEndpoint(async (req, auth) => {
   return await firestore.runTransaction(async (transaction) => {

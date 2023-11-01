@@ -2,6 +2,7 @@ import { DashboardItem } from 'common/dashboard'
 import { DashboardAddContract } from './dashboard-add-contract'
 import { DashboardAddLink } from './dashboard-add-link'
 import {
+  DocumentIcon,
   ExternalLinkIcon,
   HashtagIcon,
   PlusIcon,
@@ -19,8 +20,9 @@ export function AddItemCard(props: {
   setItems: (items: DashboardItem[]) => void
   topics: string[]
   setTopics: (topics: string[]) => void
+  createDescription?: () => void
 }) {
-  const { items, setItems, topics, setTopics } = props
+  const { items, setItems, topics, setTopics, createDescription } = props
 
   const [open, setOpen] = useState(false)
   const [tab, setTab] = useState<0 | 1 | 2>(0)
@@ -28,7 +30,17 @@ export function AddItemCard(props: {
   return (
     <div className="border-ink-200 flex flex-col items-center gap-2 rounded-lg border-2 border-dashed p-2">
       <div className="text-ink-500 text-sm">Add item</div>
-      <div className="grid w-full grid-cols-2 gap-2 sm:grid-cols-3">
+      <div className="grid w-full grid-cols-2 gap-2 sm:auto-cols-fr sm:grid-flow-col sm:grid-cols-none">
+        {createDescription && (
+          <Button
+            color="gray-outline"
+            className="gap-1"
+            onClick={createDescription}
+          >
+            <DocumentIcon className="h-5 w-5" />
+            Description
+          </Button>
+        )}
         <Button
           color="gray-outline"
           className="gap-1"

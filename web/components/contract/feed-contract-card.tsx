@@ -21,7 +21,7 @@ import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { useUser } from 'web/hooks/use-user'
 import { track } from 'web/lib/service/analytics'
 import { getMarketMovementInfo } from 'web/lib/supabase/feed-timeline/feed-market-movement-display'
-import { AnswersPanel } from '../answers/answers-panel'
+import { SimpleAnswerBars } from '../answers/answers-panel'
 import { BetButton } from '../bet/feed-bet-button'
 import { CommentsButton } from '../comments/comments-button'
 import { CardReason } from '../feed/card-reason'
@@ -36,7 +36,8 @@ import { TradesButton } from './trades-button'
 import { FeedDropdown } from '../feed/card-dropdown'
 import { CategoryTags } from '../feed/feed-timeline-items'
 import { JSONEmpty } from 'web/components/contract/contract-description'
-import { Tooltip } from '../widgets/tooltip'
+import { ENV_CONFIG } from 'common/envs/constants'
+import { TbDropletHeart, TbMoneybag } from 'react-icons/tb'
 
 export function FeedContractCard(props: {
   contract: Contract
@@ -186,16 +187,12 @@ export function FeedContractCard(props: {
         </div>
       </Col>
 
-      <div className="w-full overflow-hidden">
+      <div className="w-full overflow-hidden pt-2">
         {contract.outcomeType === 'POLL' && (
-          <div className="mt-2">
-            <PollPanel contract={contract} maxOptions={4} />
-          </div>
+          <PollPanel contract={contract} maxOptions={4} />
         )}
         {contract.outcomeType === 'MULTIPLE_CHOICE' && (
-          <div className="mt-2" onClick={(e) => e.preventDefault()}>
-            <AnswersPanel contract={contract} maxAnswers={4} linkToContract />
-          </div>
+          <SimpleAnswerBars contract={contract} maxAnswers={4} />
         )}
 
         {isBinaryCpmm && (showGraph || probChange) && (
@@ -209,6 +206,7 @@ export function FeedContractCard(props: {
           <Col className={'w-full items-center'}>
             <ClaimButton
               {...promotedData}
+              onClaim={() => router.push(path)}
               className={'z-10 my-2 whitespace-nowrap'}
             />
           </Col>
@@ -241,7 +239,7 @@ export function FeedContractCard(props: {
 
 // ensures that the correct spacing is between buttons
 const BottomRowButtonWrapper = (props: { children: React.ReactNode }) => {
-  return <Row className="min-w-14 justify-start">{props.children}</Row>
+  return <Row className="basis-10 justify-start">{props.children}</Row>
 }
 
 const BottomActionRow = (props: {
@@ -255,7 +253,7 @@ const BottomActionRow = (props: {
   return (
     <Row
       className={clsx(
-        'items-center justify-between pt-2',
+        'justify-between pt-2',
         underline ? 'border-1 border-ink-200 border-b pb-3' : 'pb-2'
       )}
     >
@@ -263,25 +261,32 @@ const BottomActionRow = (props: {
         <TradesButton contract={contract} />
       </BottomRowButtonWrapper>
 
-      <BottomRowButtonWrapper>
-        <div>
-          {(contract.mechanism === 'cpmm-1' ||
-            contract.mechanism === 'cpmm-multi-1') && (
-            <Tooltip
-              text={`Liquidity subsidy pool: ${formatMoney(
-                contract.totalLiquidity
-              )}`}
-              placement="bottom"
-              noTap
-              className="flex flex-row items-center gap-1"
-            >
-              <div className="text-ink-500 text-sm grayscale">
-                💧 Ṁ{shortFormatNumber(contract.totalLiquidity)}
+      {contract.outcomeType === 'BOUNTIED_QUESTION' && (
+        <BottomRowButtonWrapper>
+          <div className="text-ink-500 z-10 flex items-center gap-1.5 text-sm">
+            <TbMoneybag className="h-6 w-6 stroke-2" />
+            <div>
+              {ENV_CONFIG.moneyMoniker}
+              {shortFormatNumber(contract.bountyLeft)}
+            </div>
+          </div>
+        </BottomRowButtonWrapper>
+      )}
+
+      {/* cpmm markets */}
+      {'totalLiquidity' in contract && (
+        <BottomRowButtonWrapper>
+          {
+            <div className="text-ink-500 z-10 flex items-center gap-1.5 text-sm">
+              <TbDropletHeart className="h-6 w-6 stroke-2" />
+              <div>
+                {ENV_CONFIG.moneyMoniker}
+                {shortFormatNumber(contract.totalLiquidity)}
               </div>
-            </Tooltip>
-          )}
-        </div>
-      </BottomRowButtonWrapper>
+            </div>
+          }
+        </BottomRowButtonWrapper>
+      )}
 
       <BottomRowButtonWrapper>
         <CommentsButton contract={contract} user={user} />
@@ -295,7 +300,7 @@ const BottomActionRow = (props: {
           totalLikes={contract.likedByUserCount ?? 0}
           contract={contract}
           contentText={question}
-          className={'hover:!bg-canvas-0 px-0'}
+          className={'hover:!bg-canvas-0 !px-0'}
           trackingLocation={'contract card (feed)'}
           placement="top"
         />

@@ -33,7 +33,7 @@ import {
 } from 'common/user'
 import { randomString } from 'common/util/random'
 import { slugify } from 'common/util/slugify'
-import { generateEmbeddings, getCloseDate } from 'shared/helpers/openai-utils'
+import { getCloseDate } from 'shared/helpers/openai-utils'
 import { getUser, htmlToRichText, isProd } from 'shared/utils'
 import { canUserAddGroupToMarket } from './add-contract-to-group'
 import { APIError, AuthedUser, authEndpoint, validate } from './helpers'
@@ -45,7 +45,8 @@ import {
 import { contentSchema } from 'shared/zod-types'
 import { createNewContractFromPrivateGroupNotification } from 'shared/create-notification'
 import { addGroupToContract } from 'shared/update-group-contracts-internal'
-import { SupabaseClient } from 'common/supabase/utils'
+import { generateContractEmbeddings } from 'shared/supabase/contracts'
+import { manifoldLoveUserId } from 'common/love/constants'
 
 export const createmarket = authEndpoint(async (req, auth) => {
   return createMarketHelper(req.body, auth)
@@ -62,6 +63,7 @@ export async function createMarketHelper(body: any, auth: AuthedUser) {
     outcomeType,
     groupIds,
     visibility,
+    extraLiquidity,
     isTwitchContract,
     utcOffset,
     min,
@@ -72,11 +74,19 @@ export async function createMarketHelper(body: any, auth: AuthedUser) {
     addAnswersMode,
     shouldAnswersSumToOne,
     totalBounty,
+    loverUserId1,
+    loverUserId2,
   } = validateMarketBody(body)
 
   const userId = auth.uid
   const user = await getUser(userId)
   if (!user) throw new APIError(401, 'Your account was not found')
+
+  if (loverUserId1 || loverUserId2) {
+    if (auth.uid !== manifoldLoveUserId) {
+      throw new Error('Only Manifold Love account can create love contracts.')
+    }
+  }
 
   let groups = groupIds
     ? await Promise.all(
@@ -89,9 +99,9 @@ export async function createMarketHelper(body: any, auth: AuthedUser) {
   const contractRef = firestore.collection('contracts').doc()
 
   const hasOtherAnswer = addAnswersMode !== 'DISABLED' && shouldAnswersSumToOne
-  const numAnswers =
-    (answers?.length ?? 0) + (hasOtherAnswer ? 1 : 0)
-  const ante = totalBounty ?? getAnte(outcomeType, numAnswers)
+  const numAnswers = (answers?.length ?? 0) + (hasOtherAnswer ? 1 : 0)
+  const ante =
+    (totalBounty ?? getAnte(outcomeType, numAnswers)) + (extraLiquidity ?? 0)
 
   if (ante < 1) throw new APIError(400, 'Ante must be at least 1')
 
@@ -145,7 +155,9 @@ export async function createMarketHelper(body: any, auth: AuthedUser) {
       isLogScale ?? false,
       answers ?? [],
       addAnswersMode,
-      shouldAnswersSumToOne
+      shouldAnswersSumToOne,
+      loverUserId1,
+      loverUserId2
     )
 
     const houseId = isProd()
@@ -192,9 +204,8 @@ export async function createMarketHelper(body: any, auth: AuthedUser) {
   }
 
   await generateAntes(userId, contract, outcomeType, ante)
-  const db = createSupabaseClient()
 
-  await generateContractEmbeddings(contract, db)
+  await generateContractEmbeddings(contract, pg)
 
   return contract
 }
@@ -265,18 +276,6 @@ const runCreateMarketTxn = async (
     })
 
   return contract
-}
-
-const generateContractEmbeddings = async (
-  contract: Contract,
-  db: SupabaseClient
-) => {
-  const embedding = await generateEmbeddings(contract.question)
-  if (!embedding) return
-
-  await db
-    .from('contract_embeddings')
-    .insert({ contract_id: contract.id, embedding: embedding as any })
 }
 
 function getDescriptionJson(
@@ -353,6 +352,8 @@ function validateMarketBody(body: any) {
     visibility = 'public',
     isTwitchContract,
     utcOffset,
+    loverUserId1,
+    loverUserId2,
   } = validate(bodySchema, body)
 
   let min: number | undefined,
@@ -362,18 +363,15 @@ function validateMarketBody(body: any) {
     answers: string[] | undefined,
     addAnswersMode: add_answers_mode | undefined,
     shouldAnswersSumToOne: boolean | undefined,
-    totalBounty: number | undefined
-
-  if (visibility == 'private' && !groupIds?.length) {
-    throw new APIError(
-      403,
-      'Private markets cannot exist outside a private group.'
-    )
-  }
+    totalBounty: number | undefined,
+    extraLiquidity: number | undefined
 
   if (outcomeType === 'PSEUDO_NUMERIC') {
     let initialValue
-    ;({ min, max, initialValue, isLogScale } = validate(numericSchema, body))
+    ;({ min, max, initialValue, isLogScale, extraLiquidity } = validate(
+      numericSchema,
+      body
+    ))
     if (max - min <= 0.01 || initialValue <= min || initialValue >= max)
       throw new APIError(400, 'Invalid range.')
 
@@ -392,14 +390,12 @@ function validateMarketBody(body: any) {
   }
 
   if (outcomeType === 'BINARY') {
-    ;({ initialProb } = validate(binarySchema, body))
+    ;({ initialProb, extraLiquidity } = validate(binarySchema, body))
   }
 
   if (outcomeType === 'MULTIPLE_CHOICE') {
-    ;({ answers, addAnswersMode, shouldAnswersSumToOne } = validate(
-      multipleChoiceSchema,
-      body
-    ))
+    ;({ answers, addAnswersMode, shouldAnswersSumToOne, extraLiquidity } =
+      validate(multipleChoiceSchema, body))
     if (answers.length < 2 && addAnswersMode === 'DISABLED')
       throw new APIError(
         400,
@@ -424,6 +420,7 @@ function validateMarketBody(body: any) {
     outcomeType,
     groupIds,
     visibility,
+    extraLiquidity,
     isTwitchContract,
     utcOffset,
     min,
@@ -434,6 +431,8 @@ function validateMarketBody(body: any) {
     addAnswersMode,
     shouldAnswersSumToOne,
     totalBounty,
+    loverUserId1,
+    loverUserId2,
   }
 }
 
@@ -542,6 +541,8 @@ const bodySchema = z.object({
   visibility: z.enum(VISIBILITIES).optional(),
   isTwitchContract: z.boolean().optional(),
   utcOffset: z.number().optional(),
+  loverUserId1: z.string().optional(),
+  loverUserId2: z.string().optional(),
 })
 
 export type CreateMarketParams = z.infer<typeof bodySchema> &
@@ -556,6 +557,7 @@ export type CreateableOutcomeType = CreateMarketParams['outcomeType']
 
 const binarySchema = z.object({
   initialProb: z.number().min(1).max(99),
+  extraLiquidity: z.number().min(1).optional(),
 })
 
 const numericSchema = z.object({
@@ -563,6 +565,7 @@ const numericSchema = z.object({
   max: z.number().safe(),
   initialValue: z.number().safe(),
   isLogScale: z.boolean().optional(),
+  extraLiquidity: z.number().min(1).optional(),
 })
 
 const multipleChoiceSchema = z.object({
@@ -572,6 +575,7 @@ const multipleChoiceSchema = z.object({
     .optional()
     .default('DISABLED'),
   shouldAnswersSumToOne: z.boolean().optional(),
+  extraLiquidity: z.number().min(1).optional(),
 })
 
 const bountiedQuestionSchema = z.object({

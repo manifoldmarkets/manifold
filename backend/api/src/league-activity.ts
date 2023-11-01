@@ -11,10 +11,12 @@ import { Contract } from 'common/contract'
 import { ContractComment } from 'common/comment'
 import { Bet } from 'common/bet'
 
-const bodySchema = z.object({
-  season: z.number(),
-  cohort: z.string(),
-})
+const bodySchema = z
+  .object({
+    season: z.number(),
+    cohort: z.string(),
+  })
+  .strict()
 
 export const leagueActivity = authEndpoint(async (req) => {
   const { season, cohort } = validate(bodySchema, req.body)

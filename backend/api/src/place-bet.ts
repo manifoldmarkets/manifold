@@ -28,9 +28,11 @@ import { createLimitBetCanceledNotification } from 'shared/create-notification'
 import { Answer } from 'common/answer'
 import { CpmmState, getCpmmProbability } from 'common/calculate-cpmm'
 
+// don't use strict() because we want to allow market-type-specific fields
 const bodySchema = z.object({
   contractId: z.string(),
   amount: z.number().gte(1),
+  replyToCommentId: z.string().optional(),
 })
 
 const binarySchema = z.object({
@@ -64,7 +66,7 @@ export const placeBetMain = async (
   uid: string,
   isApi: boolean
 ) => {
-  const { amount, contractId } = validate(bodySchema, body)
+  const { amount, contractId, replyToCommentId } = validate(bodySchema, body)
 
   const result = await firestore.runTransaction(async (trans) => {
     log(`Inside main transaction for ${uid}.`)
@@ -118,7 +120,8 @@ export const placeBetMain = async (
       ) {
         // eslint-disable-next-line prefer-const
         let { outcome, limitProb, expiresAt } = validate(binarySchema, body)
-
+        if (expiresAt && expiresAt < Date.now())
+          throw new APIError(404, 'Bet cannot expire in the past.')
         if (limitProb !== undefined && outcomeType === 'BINARY') {
           const isRounded = floatingEqual(
             Math.round(limitProb * 100),
@@ -168,6 +171,8 @@ export const placeBetMain = async (
           limitProb,
           expiresAt,
         } = validate(multipleChoiceSchema, body)
+        if (expiresAt && expiresAt < Date.now())
+          throw new APIError(404, 'Bet cannot expire in the past.')
         const answersSnap = await trans.get(
           contractDoc.collection('answersCpmm')
         )
@@ -232,17 +237,31 @@ export const placeBetMain = async (
       throw new APIError(403, 'Trade too large for current liquidity pool.')
     }
 
+    if (contract.loverUserId1 && newPool && newP) {
+      const prob = getCpmmProbability(newPool, newP)
+      if (prob < 0.01) {
+        throw new APIError(
+          403,
+          'Cannot bet lower than 1% probability in relationship markets.'
+        )
+      }
+    }
+
     const betDoc = contractDoc.collection('bets').doc()
 
-    trans.create(betDoc, {
-      id: betDoc.id,
-      userId: user.id,
-      userAvatarUrl: user.avatarUrl,
-      userUsername: user.username,
-      userName: user.name,
-      isApi,
-      ...newBet,
-    })
+    trans.create(
+      betDoc,
+      removeUndefinedProps({
+        id: betDoc.id,
+        userId: user.id,
+        userAvatarUrl: user.avatarUrl,
+        userUsername: user.username,
+        userName: user.name,
+        isApi,
+        replyToCommentId,
+        ...newBet,
+      })
+    )
     log(`Created new bet document for ${user.username} - auth ${uid}.`)
 
     if (makers) {
@@ -298,26 +317,34 @@ export const placeBetMain = async (
       if (otherBetResults) {
         for (const result of otherBetResults) {
           const { answer, bet, cpmmState, makers, ordersToCancel } = result
-          const betDoc = contractDoc.collection('bets').doc()
-          trans.create(betDoc, {
-            id: betDoc.id,
-            userId: user.id,
-            userAvatarUrl: user.avatarUrl,
-            userUsername: user.username,
-            userName: user.name,
-            isApi,
-            ...bet,
-          })
-          const { YES: poolYes, NO: poolNo } = cpmmState.pool
-          const prob = getCpmmProbability(cpmmState.pool, 0.5)
-          trans.update(
-            contractDoc.collection('answersCpmm').doc(answer.id),
-            removeUndefinedProps({
-              poolYes,
-              poolNo,
-              prob,
+          const { probBefore, probAfter } = bet
+          const smallEnoughToIgnore =
+            probBefore < 0.001 &&
+            probAfter < 0.001 &&
+            Math.abs(probAfter - probBefore) < 0.00001
+
+          if (!smallEnoughToIgnore || Math.random() < 0.01) {
+            const betDoc = contractDoc.collection('bets').doc()
+            trans.create(betDoc, {
+              id: betDoc.id,
+              userId: user.id,
+              userAvatarUrl: user.avatarUrl,
+              userUsername: user.username,
+              userName: user.name,
+              isApi,
+              ...bet,
             })
-          )
+            const { YES: poolYes, NO: poolNo } = cpmmState.pool
+            const prob = getCpmmProbability(cpmmState.pool, 0.5)
+            trans.update(
+              contractDoc.collection('answersCpmm').doc(answer.id),
+              removeUndefinedProps({
+                poolYes,
+                poolNo,
+                prob,
+              })
+            )
+          }
           updateMakers(makers, betDoc.id, contractDoc, trans)
           for (const bet of ordersToCancel) {
             trans.update(contractDoc.collection('bets').doc(bet.id), {
