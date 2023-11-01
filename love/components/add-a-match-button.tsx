@@ -60,7 +60,7 @@ export const AddAMatchButton = (props: {
   if (!currentUser) {
     return (
       <Button color={'indigo'} onClick={firebaseLogin}>
-        Sign up to add a match
+        Add a match
       </Button>
     )
   }
