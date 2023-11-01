@@ -13,6 +13,7 @@ const SEASON_END_TIMES = [
   new Date('2023-08-01T17:05:29-07:00'),
   new Date('2023-09-01T20:20:04-07:00'),
   new Date('2023-10-01T11:17:16-07:00'),
+  new Date('2023-11-01T14:01:38-07:00'),
 ]
 
 export const getSeasonMonth = (season: number) => {
