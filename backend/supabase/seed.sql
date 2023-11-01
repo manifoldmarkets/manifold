@@ -396,7 +396,7 @@ create index if not exists contracts_sample_filtering on contracts (
   outcome_type,
   resolution,
   visibility,
-  ((data ->> 'uniqueBettorCount'))
+  ((data ->> 'uniqueBettorCount')::int)
 );
 
 create index contracts_on_importance_score_and_resolution_time_idx on contracts(importance_score, resolution_time);
