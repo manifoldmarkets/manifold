@@ -1,4 +1,3 @@
-import { useDashboardFromSlug } from 'web/hooks/use-dashboard'
 import { DashboardContent } from '../dashboard/dashboard-content'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { DashboardDescription } from '../dashboard/dashboard-description'
@@ -14,9 +13,14 @@ import { useUser } from 'web/hooks/use-user'
 import { buttonClass } from '../buttons/button'
 import { Tooltip } from '../widgets/tooltip'
 import { isAdminId } from 'common/envs/constants'
+import { Dashboard } from 'common/dashboard'
+import { LinkPreviews } from 'common/link-preview'
 
-export function NewsDashboard(props: { slug: string }) {
-  const dashboard = useDashboardFromSlug(props.slug)
+export function NewsDashboard(props: {
+  dashboard: Dashboard
+  previews: LinkPreviews
+}) {
+  const { dashboard, previews } = props
   const user = useUser()
 
   if (!dashboard) return <LoadingIndicator />
@@ -28,11 +32,13 @@ export function NewsDashboard(props: { slug: string }) {
           {dashboard.title}
         </h2>
         <div className="flex items-center">
-          <CopyLinkOrShareButton
-            eventTrackingName="share home news item"
-            url={window.location.href}
-            tooltip="Share"
-          />
+          {user !== undefined && (
+            <CopyLinkOrShareButton
+              eventTrackingName="share home news item"
+              url={window.location.href}
+              tooltip="Share"
+            />
+          )}
 
           <FollowDashboardButton
             dashboardId={dashboard.id}
@@ -70,7 +76,11 @@ export function NewsDashboard(props: { slug: string }) {
       </Row>
 
       <DashboardDescription description={dashboard.description} />
-      <DashboardContent items={dashboard.items} topics={dashboard.topics} />
+      <DashboardContent
+        items={dashboard.items}
+        topics={dashboard.topics}
+        previews={previews}
+      />
     </div>
   )
 }

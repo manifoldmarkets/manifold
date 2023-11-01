@@ -615,7 +615,7 @@ export function ContractParamsForm(props: {
                 selectedGroups.some((g) => g.privacyStatus === 'private'))
             ) {
               toast(
-                `Questions are only allowed one category if the category is private.`,
+                `Questions are only allowed one topic if the topic is private.`,
                 { icon: '🚫' }
               )
               return

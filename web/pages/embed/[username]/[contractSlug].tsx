@@ -4,15 +4,17 @@ import { Contract, contractPath } from 'common/contract'
 import { DOMAIN } from 'common/envs/constants'
 import { getContractFromSlug } from 'common/supabase/contracts'
 import { formatMoney } from 'common/util/format'
+import { getShareUrl } from 'common/util/share'
 import Image from 'next/image'
-import { useEffect } from 'react'
+import { useRouter } from 'next/router'
+import { useEffect, useState } from 'react'
 import { NoSEO } from 'web/components/NoSEO'
+import { SimpleAnswerBars } from 'web/components/answers/answers-panel'
 import { BinaryContractChart } from 'web/components/charts/contract/binary'
 import { NumericContractChart } from 'web/components/charts/contract/numeric'
 import { PseudoNumericContractChart } from 'web/components/charts/contract/pseudo-numeric'
 import { StonkContractChart } from 'web/components/charts/contract/stonk'
 import { useViewScale } from 'web/components/charts/helpers'
-import { CloseOrResolveTime } from 'web/components/contract/contract-details'
 import {
   BinaryResolutionOrChance,
   NumericResolutionOrExpectation,
@@ -24,13 +26,13 @@ import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { SizedContainer } from 'web/components/sized-container'
 import { Avatar } from 'web/components/widgets/avatar'
-import { useNumContractComments } from 'web/hooks/use-comments-supabase'
+import { QRCode } from 'web/components/widgets/qr-code'
+import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
 import { track } from 'web/lib/service/analytics'
 import { getBetFields } from 'web/lib/supabase/bets'
 import { db } from 'web/lib/supabase/db'
 import Custom404 from '../../404'
-import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
-import { SimpleAnswerBars } from 'web/components/answers/answers-panel'
+import { ContractSummaryStats } from 'web/components/contract/contract-summary-stats'
 
 type Points = HistoryPoint<any>[]
 
@@ -107,6 +109,17 @@ export default function ContractEmbedPage(props: {
     useFirebasePublicContract(props.contract.visibility, props.contract.id) ??
     props.contract
 
+  const router = useRouter()
+  const { qr } = router.query
+
+  const [showQRCode, setShowQRCode] = useState(false)
+
+  useEffect(() => {
+    if (router.query.qr !== undefined) {
+      setShowQRCode(true)
+    }
+  }, [router.query.qr])
+
   useEffect(() => {
     if (contract?.id)
       track('view market embed', {
@@ -125,7 +138,11 @@ export default function ContractEmbedPage(props: {
     <>
       <NoSEO />
       <ContractSEO contract={contract} />
-      <ContractSmolView contract={contract} points={props.points} />
+      <ContractSmolView
+        contract={contract}
+        points={props.points}
+        showQRCode={showQRCode}
+      />
     </>
   )
 }
@@ -197,8 +214,9 @@ const numBars = (height: number) => {
 function ContractSmolView(props: {
   contract: Contract
   points: Points | null
+  showQRCode: boolean
 }) {
-  const { contract, points } = props
+  const { contract, points, showQRCode } = props
   const { question, outcomeType } = contract
 
   const isBinary = outcomeType === 'BINARY'
@@ -209,23 +227,37 @@ function ContractSmolView(props: {
 
   const href = `https://${DOMAIN}${contractPath(contract)}`
 
+  const shareUrl = getShareUrl(contract, undefined)
+
   return (
-    <Col className="bg-canvas-0 h-[100vh] w-full p-4">
+    <Col className="bg-canvas-0 h-[100vh] w-full gap-1 px-6 py-4">
+      <Row className="text-ink-500 w-full justify-between text-sm">
+        <Row className="items-center gap-1">
+          <Avatar
+            size="2xs"
+            avatarUrl={contract.creatorAvatarUrl}
+            username={contract.creatorUsername}
+            noLink
+          />
+          {contract.creatorName}
+        </Row>
+      </Row>
       <Row className="justify-between gap-4">
-        <div>
+        <Col>
           <a
             href={href}
             target="_blank"
-            className="text-primary-700 text-lg hover:underline sm:text-xl"
+            className="hover:text-primary-700 text-ink-1000 text-lg transition-all hover:underline sm:text-xl lg:mb-4 lg:text-2xl"
             rel="noreferrer"
           >
             {question}
           </a>
-        </div>
+        </Col>
         {isBinary && (
           <BinaryResolutionOrChance
             contract={contract}
-            className="!flex-col !gap-0"
+            className="!flex-col !justify-end !gap-0 !font-semibold"
+            subtextClassName="text-right w-full font-normal -mt-1"
           />
         )}
 
@@ -243,85 +275,54 @@ function ContractSmolView(props: {
           <StonkPrice className="!flex-col !gap-0" contract={contract} />
         )}
       </Row>
-      <Details contract={contract} />
-      {!isBountiedQuestion && (
-        <SizedContainer
-          className={clsx(
-            'text-ink-1000 my-4 min-h-0 flex-1',
-            !isMulti && 'pr-10'
-          )}
-        >
-          {(w, h) => (
-            <ContractChart
-              contract={contract}
-              points={points}
-              width={w}
-              height={h}
+      <div className="grow-y relative flex h-full w-full">
+        {showQRCode && (
+          <div className="absolute inset-0 z-10 m-auto flex items-center justify-center">
+            <div className="border-ink-400 bg-canvas-0 rounded-xl border p-4 drop-shadow">
+              <QRCode url={shareUrl} />
+            </div>
+          </div>
+        )}
+        {!isBountiedQuestion && (
+          <SizedContainer
+            className={clsx(
+              'text-ink-1000 my-4 min-h-0 flex-1',
+              !isMulti && 'pr-10'
+            )}
+          >
+            {(w, h) => (
+              <ContractChart
+                contract={contract}
+                points={points}
+                width={w}
+                height={h}
+              />
+            )}
+          </SizedContainer>
+        )}
+        {isBountiedQuestion && (
+          <Col className="relative h-full w-full">
+            <Image
+              className="mx-auto my-auto opacity-40"
+              height={200}
+              width={200}
+              src={'/money-bag.svg'}
+              alt={''}
             />
-          )}
-        </SizedContainer>
-      )}
-      {isBountiedQuestion && (
-        <Col className="relative h-full w-full">
-          <Image
-            className="mx-auto my-auto opacity-40"
-            height={200}
-            width={200}
-            src={'/money-bag.svg'}
-            alt={''}
-          />
-          <Col className="absolute bottom-0 left-0 right-0 top-12">
-            <Col className="mx-auto my-auto text-center">
-              <div className="text-ink-1000 text-3xl">
-                {formatMoney(contract.bountyLeft)}
-              </div>
-              <div className="text-ink-500">bounty</div>
+            <Col className="absolute bottom-0 left-0 right-0 top-12">
+              <Col className="mx-auto my-auto text-center">
+                <div className="text-ink-1000 text-3xl">
+                  {formatMoney(contract.bountyLeft)}
+                </div>
+                <div className="text-ink-500">bounty</div>
+              </Col>
             </Col>
           </Col>
-        </Col>
-      )}
+        )}
+      </div>
+      <Row className="text-ink-500 mt-4 w-full justify-end text-sm md:text-lg">
+        <ContractSummaryStats contract={contract} />
+      </Row>
     </Col>
   )
-}
-
-const Details = (props: { contract: Contract }) => {
-  const {
-    creatorAvatarUrl,
-    creatorUsername,
-    creatorName,
-    uniqueBettorCount,
-    outcomeType,
-  } = props.contract
-
-  const isBountiedQuestion = outcomeType === 'BOUNTIED_QUESTION'
-  return (
-    <div className="text-ink-400 relative right-0 mt-2 flex flex-wrap items-center gap-4 text-xs">
-      <span className="text-ink-600 flex gap-1">
-        <Avatar
-          size="2xs"
-          avatarUrl={creatorAvatarUrl}
-          username={creatorUsername}
-          noLink
-        />
-        {creatorName}
-      </span>
-      {!isBountiedQuestion && (
-        <>
-          <CloseOrResolveTime contract={props.contract} />{' '}
-          <span>{uniqueBettorCount} traders</span>
-        </>
-      )}
-      {isBountiedQuestion && (
-        <>
-          <NumComments contract={props.contract} />
-        </>
-      )}
-    </div>
-  )
-}
-
-const NumComments = (props: { contract: Contract }) => {
-  const { contract } = props
-  const numComments = useNumContractComments(contract.id)
-  return <span>{numComments} comments</span>
 }

@@ -1,4 +1,4 @@
-import { ChartBarIcon, StarIcon, UserIcon, XIcon } from '@heroicons/react/solid'
+import { StarIcon, XIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { Answer, DpmAnswer } from 'common/answer'
 import {
@@ -8,11 +8,7 @@ import {
 } from 'common/chart'
 import { ContractParams, MaybeAuthedContractParams } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
-import {
-  ENV_CONFIG,
-  HOUSE_BOT_USERNAME,
-  isTrustworthy,
-} from 'common/envs/constants'
+import { HOUSE_BOT_USERNAME, isTrustworthy } from 'common/envs/constants'
 import { getTopContractMetrics } from 'common/supabase/contract-metrics'
 import { User } from 'common/user'
 import { first, mergeWith } from 'lodash'
@@ -23,12 +19,8 @@ import { ScrollToTopButton } from 'web/components/buttons/scroll-to-top-button'
 import { SidebarSignUpButton } from 'web/components/buttons/sign-up-button'
 import { getMultiBetPoints } from 'web/components/charts/contract/choice'
 import { BackButton } from 'web/components/contract/back-button'
-import { BountyLeft } from 'web/components/contract/bountied-question'
 import { ChangeBannerButton } from 'web/components/contract/change-banner-button'
-import {
-  AuthorInfo,
-  CloseOrResolveTime,
-} from 'web/components/contract/contract-details'
+import { AuthorInfo } from 'web/components/contract/contract-details'
 import { ContractLeaderboard } from 'web/components/contract/contract-leaderboard'
 import { ContractOverview } from 'web/components/contract/contract-overview'
 import { ContractSEO } from 'web/components/contract/contract-seo'
@@ -52,7 +44,6 @@ import { NumericResolutionPanel } from 'web/components/numeric-resolution-panel'
 import { ResolutionPanel } from 'web/components/resolution-panel'
 import { Rating, ReviewPanel } from 'web/components/reviews/stars'
 import { GradientContainer } from 'web/components/widgets/gradient-container'
-import { Tooltip } from 'web/components/widgets/tooltip'
 import { useAdmin } from 'web/hooks/use-admin'
 import { useAnswersCpmm } from 'web/hooks/use-answers'
 import { useRealtimeBets } from 'web/hooks/use-bets-supabase'
@@ -79,16 +70,12 @@ import ContractEmbedPage from '../embed/[username]/[contractSlug]'
 import { Bet } from 'common/bet'
 import { getContractParams } from 'common/contract-params'
 import { getContractFromSlug } from 'common/supabase/contracts'
-import {
-  formatMoney,
-  formatWithCommas,
-  shortFormatNumber,
-} from 'common/util/format'
-import { TbDroplet } from 'react-icons/tb'
+
 import { useHeaderIsStuck } from 'web/hooks/use-header-is-stuck'
 import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
 import { DangerZone } from 'web/components/contract/danger-zone'
 import { ContractDescription } from 'web/components/contract/contract-description'
+import { ContractSummaryStats } from 'web/components/contract/contract-summary-stats'
 export async function getStaticProps(ctx: {
   params: { username: string; contractSlug: string }
 }) {
@@ -439,62 +426,10 @@ export function ContractPageContent(props: ContractParams) {
               <div className="text-ink-600 flex flex-wrap items-center justify-between gap-y-1 text-sm">
                 <AuthorInfo contract={contract} />
 
-                {contract.outcomeType == 'BOUNTIED_QUESTION' ? (
-                  <BountyLeft
-                    bountyLeft={contract.bountyLeft}
-                    totalBounty={contract.totalBounty}
-                    inEmbed={true}
-                  />
-                ) : (
-                  <div className="flex gap-4">
-                    <Tooltip
-                      text={
-                        contract.outcomeType == 'POLL' ? 'Voters' : 'Traders'
-                      }
-                      placement="bottom"
-                      noTap
-                      className="flex flex-row items-center gap-1"
-                    >
-                      <UserIcon className="text-ink-500 h-4 w-4" />
-                      <div>{formatWithCommas(uniqueBettorCount ?? 0)}</div>
-                    </Tooltip>
-
-                    {!!contract.volume && (
-                      <Tooltip
-                        text={`Trading volume: ${formatMoney(contract.volume)}`}
-                        placement="bottom"
-                        noTap
-                        className="hidden flex-row items-center gap-1 sm:flex"
-                      >
-                        <ChartBarIcon className="text-ink-500 h-4 w-4" />Ṁ
-                        {shortFormatNumber(contract.volume)}
-                      </Tooltip>
-                    )}
-
-                    {(contract.mechanism === 'cpmm-1' ||
-                      contract.mechanism === 'cpmm-multi-1') && (
-                      <Tooltip
-                        text={`Subsidy pool: ${formatMoney(
-                          contract.totalLiquidity
-                        )}`}
-                        placement="bottom"
-                        noTap
-                        className="flex flex-row items-center gap-1"
-                      >
-                        <TbDroplet className="stroke-ink-500 h-4 w-4 stroke-[3]" />
-                        <div>
-                          {ENV_CONFIG.moneyMoniker}
-                          {shortFormatNumber(contract.totalLiquidity)}
-                        </div>
-                      </Tooltip>
-                    )}
-
-                    <CloseOrResolveTime
-                      contract={contract}
-                      editable={isCreator || isAdmin || trustworthy}
-                    />
-                  </div>
-                )}
+                <ContractSummaryStats
+                  contract={contract}
+                  editable={isCreator || isAdmin || trustworthy}
+                />
               </div>
               <ContractOverview
                 contract={contract}

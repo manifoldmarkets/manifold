@@ -16,11 +16,6 @@ export function DashboardAddLink(props: {
   const [linkInput, setLinkInput] = useState<string>('')
 
   const preview = useLinkPreview(linkInput)
-  const validPreview = !!preview && !preview.error
-  const emptyTitle = !!preview && !!preview.title && preview.title.length === 0
-  const emptyImage = !!preview && !!preview.image && preview.image.length === 0
-  const emptyDescription =
-    !!preview && !!preview.description && preview.description.length === 0
 
   return (
     <>
@@ -36,8 +31,8 @@ export function DashboardAddLink(props: {
         <DashboardNewsItemPlaceholder />
       ) : !preview ? (
         <DashboardNewsItemPlaceholder pulse />
-      ) : preview.error ? (
-        <div className="text-error p-8 text-center">{preview.error}</div>
+      ) : !preview ? (
+        <div className="text-error p-8 text-center">Error fetching preview</div>
       ) : (
         <div className="relative">
           <div className="absolute inset-0 z-40 rounded-lg bg-white opacity-10" />
@@ -54,11 +49,7 @@ export function DashboardAddLink(props: {
             setLinkInput('')
           }}
           color="indigo"
-          disabled={
-            !linkInput ||
-            !validPreview ||
-            (emptyTitle && emptyImage && emptyDescription)
-          }
+          disabled={!linkInput || !preview}
         >
           Add link
         </Button>

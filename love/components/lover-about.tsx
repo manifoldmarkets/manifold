@@ -27,6 +27,7 @@ import { Row } from 'web/components/layout/row'
 import { fromNow } from 'web/lib/util/time'
 import { Gender, convertGenderPlural } from './gender-icon'
 import { HiOutlineGlobe } from 'react-icons/hi'
+import { UserHandles } from 'web/components/user/user-handles'
 
 export function AboutRow(props: {
   icon: ReactNode
@@ -82,6 +83,7 @@ export default function LoverAbout(props: { lover: Lover }) {
         text={lover.is_vegetarian_or_vegan ? 'Vegetarian/Vegan' : null}
       />
       <WantsKids lover={lover} />
+      <UserHandles website={lover.website} twitterHandle={lover.twitter} />
     </Col>
   )
 }
@@ -205,7 +207,7 @@ function Drinks(props: { lover: Lover }) {
   return (
     <AboutRow
       icon={<BiSolidDrink className="h-5 w-5" />}
-      text={`${drinksPerMonth} drinks per month`}
+      text={`${drinksPerMonth} ${drinksPerMonth == 1 ? 'drink' : 'drinks'} per month`}
     />
   )
 }

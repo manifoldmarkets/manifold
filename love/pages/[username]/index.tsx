@@ -5,9 +5,9 @@ import { LoverCommentSection } from 'love/components/lover-comment-section'
 import LoverProfileHeader from 'love/components/lover-profile-header'
 import { Matches } from 'love/components/matches'
 import ProfileCarousel from 'love/components/profile-carousel'
-import { useLoverByUser } from 'love/hooks/use-lover'
+import { Lover, useLoverByUser } from 'love/hooks/use-lover'
 import Head from 'next/head'
-import { useRouter } from 'next/router'
+import { NextRouter, useRouter } from 'next/router'
 import { Button } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -22,6 +22,9 @@ import { Linkify } from 'web/components/widgets/linkify'
 import { useTracking } from 'web/hooks/use-tracking'
 import { track } from 'web/lib/service/analytics'
 import { loveOgImageUrl } from 'love/pages/api/og/utils'
+import { LoverAnswers } from 'love/components/lover-answers'
+import { Row as rowFor } from 'common/supabase/utils'
+import { SignUpButton } from 'love/components/nav/love-sidebar'
 
 export const getStaticProps = async (props: {
   params: {
@@ -55,14 +58,8 @@ export default function UserPage(props: {
   useTracking('view love profile', { username: user?.username })
 
   const lover = useLoverByUser(user ?? undefined)
-  const { questions, answers: allAnswers } = useUserAnswersAndQuestions(
-    user?.id
-  )
-  const answers = allAnswers.filter(
-    (a) => a.multiple_choice ?? a.free_response ?? a.integer
-  )
 
-  if (currentUser === undefined) return <div></div>
+  if (currentUser === undefined || lover === undefined) return <div></div>
   if (!user) {
     return <div>404</div>
   }
@@ -86,16 +83,7 @@ export default function UserPage(props: {
         </Head>
       )}
       <Col className={'gap-4'}>
-        {!currentUser ? (
-          <Col className={'bg-canvas-0 items-center justify-center p-4'}>
-            <Row className={' items-center justify-center gap-2'}>
-              <Button color={'gradient'} onClick={firebaseLogin}>
-                Sign up
-              </Button>{' '}
-              to see {user.name}'s profile!
-            </Row>
-          </Col>
-        ) : lover ? (
+        {lover ? (
           <>
             {lover.photo_urls && <ProfileCarousel lover={lover} />}
             <LoverProfileHeader
@@ -105,99 +93,94 @@ export default function UserPage(props: {
               lover={lover}
               router={router}
             />
-            <Matches userId={user.id} />
-            <LoverAbout lover={lover} />
-            <Col className={'mt-2 gap-2'}>
-              <Row className={'items-center gap-2'}>
-                <Subtitle>Answers</Subtitle>
-                {isCurrentUser && answers.length > 0 && (
-                  <Button
-                    color={'gray-outline'}
-                    size="xs"
-                    className={''}
-                    onClick={() => {
-                      track('edit love questions')
-                      router.push('love-questions')
-                    }}
-                  >
-                    <PencilIcon className="mr-2 h-4 w-4" />
-                    Edit
-                  </Button>
-                )}
-              </Row>
-              <Row className={'flex-wrap gap-3'}>
-                {answers.length > 0 ? (
-                  orderBy(
-                    answers,
-                    (a) => (a.free_response ? 3 : a.multiple_choice ? 2 : 1),
-                    'desc'
-                  ).map((answer) => {
-                    const question = questions.find(
-                      (q) => q.id === answer.question_id
-                    )
-                    if (!question) return null
-                    const options = question.multiple_choice_options as Record<
-                      string,
-                      number
-                    >
-                    const optionKey = options
-                      ? Object.keys(options).find(
-                          (k) => options[k] === answer.multiple_choice
-                        )
-                      : null
-
-                    return (
-                      <Col
-                        key={question.id}
-                        className={'bg-canvas-0 flex-grow rounded-md px-3 py-2'}
-                      >
-                        <Row className={'font-semibold'}>
-                          {question.question}
-                        </Row>
-                        <Linkify
-                          text={
-                            answer.free_response ??
-                            optionKey ??
-                            answer.integer?.toString() ??
-                            ''
-                          }
-                        />
-                      </Col>
-                    )
-                  })
-                ) : isCurrentUser ? (
-                  <Col className={'mt-4 w-full items-center'}>
-                    <Row>
-                      <Button onClick={() => router.push('love-questions')}>
-                        Answer questions
-                      </Button>
-                    </Row>
-                  </Col>
-                ) : (
-                  <span className={'text-ink-500 text-sm'}>Nothing yet :(</span>
-                )}
-              </Row>
-            </Col>
+            {lover.looking_for_matches && <Matches userId={user.id} />}
+            <LoverContent
+              isCurrentUser={isCurrentUser}
+              router={router}
+              user={user}
+              lover={lover}
+              currentUser={currentUser}
+            />
           </>
+        ) : isCurrentUser ? (
+          <Col className={'mt-4 w-full items-center'}>
+            <Row>
+              <Button onClick={() => router.push('signup')}>
+                Create a profile
+              </Button>
+            </Row>
+          </Col>
         ) : (
-          isCurrentUser && (
-            <Col className={'mt-4 w-full items-center'}>
-              <Row>
-                <Button onClick={() => router.push('signup')}>
-                  Create a profile
-                </Button>
-              </Row>
-            </Col>
-          )
+          <Col className="bg-canvas-0 rounded p-4 ">
+            <div>{user.name} hasn't created a profile yet.</div>
+            <Button
+              className="mt-4 self-start"
+              onClick={() => router.push('/')}
+            >
+              See more profiles
+            </Button>
+          </Col>
         )}
       </Col>
-      {currentUser && lover && (
+    </LovePage>
+  )
+}
+
+function LoverContent(props: {
+  isCurrentUser: boolean
+  router: NextRouter
+  user: User
+  lover: Lover
+  currentUser: User | null
+}) {
+  const { isCurrentUser, router, user, lover, currentUser } = props
+
+  const { questions, answers: allAnswers } = useUserAnswersAndQuestions(
+    user?.id
+  )
+
+  const answers = allAnswers.filter(
+    (a) => a.multiple_choice ?? a.free_response ?? a.integer
+  )
+
+  if (!currentUser) {
+    return (
+      <div className="relative mb-4 max-h-[40rem] overflow-hidden">
+        <LoverAbout lover={lover} />
+        <LoverAnswers
+          isCurrentUser={isCurrentUser}
+          answers={answers}
+          router={router}
+          questions={questions}
+        />
         <LoverCommentSection
           onUser={user}
           lover={lover}
           currentUser={currentUser}
         />
-      )}
-    </LovePage>
+        <Col className=" absolute inset-x-0 bottom-0 z-10 h-24">
+          <div className="from-canvas-50 h-full bg-gradient-to-t to-transparent" />
+          <div className="bg-canvas-50 m-auto flex w-full items-center justify-center">
+            <SignUpButton text="Sign up to see more" />
+          </div>
+        </Col>
+      </div>
+    )
+  }
+  return (
+    <>
+      <LoverAbout lover={lover} />
+      <LoverAnswers
+        isCurrentUser={isCurrentUser}
+        answers={answers}
+        router={router}
+        questions={questions}
+      />
+      <LoverCommentSection
+        onUser={user}
+        lover={lover}
+        currentUser={currentUser}
+      />
+    </>
   )
 }

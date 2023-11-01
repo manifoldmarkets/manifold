@@ -71,6 +71,7 @@ export type notification_source_types =
   | 'market_review'
   | 'comment_on_lover'
   | 'new_match'
+  | 'bet_reply'
 
 export type notification_source_update_types =
   | 'created'
@@ -356,6 +357,12 @@ export type UniqueBettorData = {
 export type ReviewNotificationData = {
   rating: number
   review: string
+}
+
+export type BetReplyNotificationData = {
+  betAmount: number
+  betOutcome: string
+  commentText: string
 }
 
 export function getSourceIdForLinkComponent(

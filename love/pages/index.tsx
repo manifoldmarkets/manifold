@@ -75,7 +75,9 @@ function ProfilePreview(props: { lover: Lover }) {
         {pinned_url ? (
           <Image
             src={pinned_url}
-            fill
+            // You must set these so we don't pay an extra $1k/month to vercel
+            width={180}
+            height={240}
             alt={`${user.username}`}
             className="h-full w-full object-cover"
           />

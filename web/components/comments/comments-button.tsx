@@ -17,8 +17,9 @@ import {
 export function CommentsButton(props: {
   contract: Contract
   user: User | null | undefined
+  className?: string
 }) {
-  const { contract, user } = props
+  const { contract, user, className } = props
 
   const [open, setOpen] = useState(false)
   const totalComments = useNumContractComments(contract.id)
@@ -27,8 +28,12 @@ export function CommentsButton(props: {
     <Tooltip text={`Comments`} placement="top" noTap>
       <button
         disabled={totalComments === 0 && !user}
-        className="hover:text-ink-600 text-ink-500 flex h-full items-center gap-1.5 disabled:opacity-50"
+        className={clsx(
+          'hover:text-ink-600 text-ink-500 flex h-full items-center gap-1.5 disabled:opacity-50',
+          className
+        )}
         onClick={(e) => {
+          e.stopPropagation()
           e.preventDefault()
           setOpen(true)
           track('click feed card comments button', { contractId: contract.id })

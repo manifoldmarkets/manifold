@@ -33,6 +33,8 @@ import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-s
 import { getCPMMContractUserContractMetrics } from 'common/supabase/contract-metrics'
 import { db } from 'web/lib/supabase/db'
 import { NoLabel, YesLabel } from 'web/components/outcome-label'
+import { SendMessageButton } from 'web/components/messaging/send-message-button'
+import { CommentsButton } from 'web/components/comments/comments-button'
 
 export const Matches = (props: { userId: string }) => {
   const { userId } = props
@@ -75,7 +77,8 @@ export const Matches = (props: { userId: string }) => {
                 ? contract.loverUserId2
                 : contract.loverUserId1
             const matchedLover = lovers.find(
-              (lover) => lover.user_id === matchedLoverId
+              (lover) =>
+                lover.user_id === matchedLoverId && lover.looking_for_matches
             )
             return (
               matchedLover && (
@@ -118,6 +121,7 @@ const MatchContract = (props: {
   const { contract, lover, isYourMatch } = props
   const prob = getProbability(contract)
   const { user, pinned_url } = lover
+  const currentUser = useUser()
 
   const [positions, setPositions] = usePersistentInMemoryState<
     undefined | Awaited<ReturnType<typeof getCPMMContractUserContractMetrics>>
@@ -164,9 +168,20 @@ const MatchContract = (props: {
         <Row className="items-center gap-2">
           <div className="font-semibold">{formatPercent(prob)}</div>
           <BetButton contract={contract} lover={lover} />
-          {isYourMatch && <RejectButton lover={lover} />}
+          <CommentsButton
+            className="min-w-[36px]"
+            contract={contract}
+            user={currentUser}
+          />
         </Row>
       </Row>
+
+      {expanded && isYourMatch && (
+        <Row className="mt-2 justify-between gap-2">
+          <RejectButton lover={lover} />
+          <SendMessageButton toUser={user} currentUser={currentUser} />
+        </Row>
+      )}
 
       {expanded && positions && (
         <Row className="mb-2 mt-2 max-w-full gap-6 overflow-hidden sm:gap-8">

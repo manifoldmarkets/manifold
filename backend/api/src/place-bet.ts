@@ -32,6 +32,7 @@ import { CpmmState, getCpmmProbability } from 'common/calculate-cpmm'
 const bodySchema = z.object({
   contractId: z.string(),
   amount: z.number().gte(1),
+  replyToCommentId: z.string().optional(),
 })
 
 const binarySchema = z.object({
@@ -65,7 +66,7 @@ export const placeBetMain = async (
   uid: string,
   isApi: boolean
 ) => {
-  const { amount, contractId } = validate(bodySchema, body)
+  const { amount, contractId, replyToCommentId } = validate(bodySchema, body)
 
   const result = await firestore.runTransaction(async (trans) => {
     log(`Inside main transaction for ${uid}.`)
@@ -248,15 +249,19 @@ export const placeBetMain = async (
 
     const betDoc = contractDoc.collection('bets').doc()
 
-    trans.create(betDoc, {
-      id: betDoc.id,
-      userId: user.id,
-      userAvatarUrl: user.avatarUrl,
-      userUsername: user.username,
-      userName: user.name,
-      isApi,
-      ...newBet,
-    })
+    trans.create(
+      betDoc,
+      removeUndefinedProps({
+        id: betDoc.id,
+        userId: user.id,
+        userAvatarUrl: user.avatarUrl,
+        userUsername: user.username,
+        userName: user.name,
+        isApi,
+        replyToCommentId,
+        ...newBet,
+      })
+    )
     log(`Created new bet document for ${user.username} - auth ${uid}.`)
 
     if (makers) {

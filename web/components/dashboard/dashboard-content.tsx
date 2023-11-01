@@ -1,61 +1,49 @@
 import { useContracts } from 'web/hooks/use-contract-supabase'
-import { useLinkPreviews } from 'web/hooks/use-link-previews'
-import { DashboardNewsItem } from '../news/dashboard-news-item'
+import {
+  DashboardNewsItemPlaceholder,
+  MaybeDashboardNewsItem,
+} from '../news/dashboard-news-item'
 import { FeedContractCard } from '../contract/feed-contract-card'
-import { LoadingIndicator } from '../widgets/loading-indicator'
 import { ReactNode, useState } from 'react'
 import { XCircleIcon } from '@heroicons/react/solid'
 import { DashboardItem, DashboardQuestionItem } from 'common/dashboard'
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
-import { partition } from 'lodash'
 import { AddItemFloatyButton } from './add-dashboard-item'
 import { DashboardLive } from './dashboard-live'
 import { useIsVisible } from 'web/hooks/use-is-visible'
+import { LinkPreviews } from 'common/link-preview'
 
 export const DashboardContent = (props: {
   items: DashboardItem[]
+  previews?: LinkPreviews
   setItems?: (items: DashboardItem[]) => void
   topics: string[]
   setTopics?: (topics: string[]) => void
   isEditing?: boolean
 }) => {
-  const { items, isEditing, setItems, topics = [], setTopics } = props
+  const { items, previews, isEditing, setItems, topics = [], setTopics } = props
 
-  const [questions, links] = partition(
-    items,
+  const questions = items.filter(
     (x): x is DashboardQuestionItem => x.type === 'question'
   )
 
   const slugs = questions.map((q) => q.slug)
   const contracts = useContracts(slugs, 'slug')
 
-  const urls = links.map((l) => l.url)
-  const previews = useLinkPreviews(urls)
-  const isLoading =
-    (slugs.length > 0 && contracts.length === 0) ||
-    (urls.length > 0 && previews.length === 0)
-
   const [loadLiveFeed, setLoadLiveFeed] = useState(false)
-  const { ref: loadLiveRef } = useIsVisible(
-    () => setLoadLiveFeed(true),
-    true,
-    !isLoading
-  )
+  const { ref: loadLiveRef } = useIsVisible(() => setLoadLiveFeed(true), true)
 
   const renderCard = (
     card: { url: string } | { slug: string } | { content: any }
   ) => {
     if ('url' in card) {
-      const preview = previews.find((p) => p.url === card.url)
-      if (!preview) return null
-      return (
-        <DashboardNewsItem {...preview} className="shadow-md" key={card.url} />
-      )
+      const preview = previews?.[card.url]
+      return <MaybeDashboardNewsItem url={card.url} preview={preview} />
     }
 
     if ('slug' in card) {
       const contract = contracts.find((c) => c.slug === card.slug)
-      if (!contract) return null
+      if (!contract) return <DashboardNewsItemPlaceholder pulse />
       return <FeedContractCard key={contract.id} contract={contract} />
     }
   }
@@ -71,8 +59,6 @@ export const DashboardContent = (props: {
 
   const [hoverIndex, setHoverIndex] = useState<number>()
   const [hoverTop, setHoverTop] = useState<number>()
-
-  if (isLoading) return <LoadingIndicator />
 
   return (
     <>

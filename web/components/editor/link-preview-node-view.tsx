@@ -4,6 +4,7 @@ import { LinkPreviewProps } from 'web/components/editor/link-preview-extension'
 import { Editor } from '@tiptap/react'
 import { JSONContent } from '@tiptap/core'
 import { filterDefined } from 'common/util/array'
+import { fetchLinkPreview } from 'common/link-preview'
 
 const linkPreviewDismissed: { [key: string]: boolean } = {}
 export const LinkPreviewNodeView = (props: LinkPreviewProps) => {
@@ -24,7 +25,7 @@ export const LinkPreviewNodeView = (props: LinkPreviewProps) => {
   }
   return (
     <div
-      className="border-ink-300 not-prose relative w-full max-w-[25rem] overflow-hidden rounded-lg border "
+      className="border-ink-300 not-prose relative w-full max-w-[25rem] overflow-hidden rounded-lg border"
       key={id}
     >
       {!hideCloseButton && (
@@ -69,23 +70,11 @@ export const insertLinkPreviews = async (
       .filter((link) => !linkPreviewDismissed[key + link])
       .map(async (link) => {
         try {
-          const res = await fetch('/api/v0/fetch-link-preview', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              url: link,
-            }),
-          })
-          const resText = await res.json()
+          const preview = await fetchLinkPreview(link)
           if (
-            !resText ||
-            !resText.title ||
-            !resText.description ||
-            !resText.image ||
-            resText.description === 'Error' ||
-            resText.title === 'Error'
+            !preview ||
+            preview.description === 'Error' ||
+            preview.title === 'Error'
           )
             return
           // Another fetch may have added a preview, so check again
@@ -97,7 +86,7 @@ export const insertLinkPreviews = async (
           const linkPreviewNodeJSON = {
             type: 'linkPreview',
             attrs: {
-              ...resText,
+              ...preview,
               url: link,
               hideCloseButton: false,
               id: crypto.randomUUID(),

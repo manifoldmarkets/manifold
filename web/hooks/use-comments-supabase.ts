@@ -1,7 +1,6 @@
 import { ContractComment, PostComment } from 'common/comment'
 import { useEffect, useState } from 'react'
 import {
-  convertContractComment,
   getAllCommentRows,
   getCommentRows,
   getCommentsOnContract,
@@ -13,6 +12,7 @@ import {
 import { useSubscription } from 'web/lib/supabase/realtime/use-subscription'
 import { maxBy } from 'lodash'
 import { tsToMillis } from 'common/supabase/utils'
+import { convertContractComment } from 'common/supabase/comments'
 
 export function useNumContractComments(contractId: string) {
   const [numComments, setNumComments] = useState<number>(0)

@@ -1,6 +1,7 @@
 import {
   Dashboard,
   DashboardItem,
+  DashboardLinkItem,
   MAX_DASHBOARD_TITLE_LENGTH,
   convertDashboardSqltoTS,
 } from 'common/dashboard'
@@ -39,6 +40,7 @@ import { useWarnUnsavedChanges } from 'web/hooks/use-warn-unsaved-changes'
 import { InputWithLimit } from 'web/components/dashboard/input-with-limit'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
+import { LinkPreviews, fetchLinkPreviews } from 'common/link-preview'
 
 export async function getStaticProps(ctx: {
   params: { dashboardSlug: string }
@@ -47,11 +49,16 @@ export async function getStaticProps(ctx: {
 
   try {
     const dashboard = await getDashboardFromSlug({ dashboardSlug })
+    const links = dashboard.items.filter(
+      (item): item is DashboardLinkItem => item.type === 'link'
+    )
+    const previews = await fetchLinkPreviews(links.map((l) => l.url))
 
     return {
       props: {
         state: 'success',
         initialDashboard: dashboard,
+        previews,
         slug: dashboardSlug,
       },
     }
@@ -75,6 +82,7 @@ export default function DashboardPage(
     | {
         state: 'success'
         initialDashboard: Dashboard
+        previews: LinkPreviews
         slug: string
       }
     | { state: 'not found' }
@@ -85,22 +93,17 @@ export default function DashboardPage(
   if (props.state === 'not found') {
     return <Custom404 />
   } else {
-    return (
-      <FoundDashbordPage
-        initialDashboard={props.initialDashboard}
-        slug={props.slug}
-        editByDefault={edit}
-      />
-    )
+    return <FoundDashbordPage {...props} editByDefault={edit} />
   }
 }
 
 function FoundDashbordPage(props: {
   initialDashboard: Dashboard
+  previews: LinkPreviews
   slug: string
   editByDefault: boolean
 }) {
-  const { initialDashboard, slug, editByDefault } = props
+  const { initialDashboard, slug, editByDefault, previews } = props
   const fetchedDashboard = useDashboardFromSlug(slug)
   const [dashboard, setDashboard] = useState<Dashboard>(initialDashboard)
 
@@ -294,6 +297,7 @@ function FoundDashbordPage(props: {
           </div>
         )}
         <DashboardContent
+          previews={previews}
           items={dashboard.items}
           setItems={updateItems}
           topics={dashboard.topics}

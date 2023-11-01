@@ -214,6 +214,7 @@ export const VERIFIED_USERNAMES = [
   'DylanMatthews',
   'RobinHanson',
   'KevinRoose18ac',
+  'KnowNothing',
 ]
 
 export const HOUSE_BOT_USERNAME = 'acc'
@@ -245,7 +246,7 @@ export const GROUP_SLUGS_TO_IGNORE_IN_MARKETS_EMAIL = [
   'manifold-features-25bad7c7792e',
   'bugs',
   'manifold-leagues',
-  'nonpredictive',
+  'unranked',
 ]
 
 export const DEEMPHASIZED_GROUP_SLUGS = [
@@ -321,7 +322,7 @@ export const GROUP_SLUGS_TO_HIDE_FROM_WELCOME_FLOW = [
   '-sircryptomind-crypto-stock',
   'selfresolving',
   'fun',
-  'nonpredictive',
+  'unranked',
   'bugs',
   'rationalussy',
   'personal',
