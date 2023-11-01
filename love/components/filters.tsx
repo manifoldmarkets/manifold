@@ -42,7 +42,7 @@ const initialFilters: Partial<FilterFields> = {
   is_smoker: undefined,
   pref_relation_styles: undefined,
   pref_gender: undefined,
-  orderBy: 'last_online_time',
+  orderBy: 'created_time',
 }
 export const Filters = (props: {
   allLovers: Lover[] | undefined
@@ -202,11 +202,11 @@ export const Filters = (props: {
                   })
                 }
               }}
-              value={filters.orderBy || 'last_online_time'}
+              value={filters.orderBy || 'created_time'}
               className={'w-18 border-ink-300 rounded-md'}
             >
-              <option value="last_online_time">Recently Active</option>
-              <option value="created_time">Newly Registered</option>
+              <option value="last_online_time">Active</option>
+              <option value="created_time">New</option>
             </Select>
 
             <Button
