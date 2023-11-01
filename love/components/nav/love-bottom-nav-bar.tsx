@@ -16,7 +16,6 @@ import { trackCallback } from 'web/lib/service/analytics'
 import { User } from 'common/user'
 import { Col } from 'web/components/layout/col'
 import { useAnimatedNumber } from 'web/hooks/use-animated-number'
-import { UnseenMessagesBubble } from 'web/components/messaging/messages-icon'
 
 const itemClass =
   'sm:hover:bg-ink-200 block w-full py-1 px-3 text-center sm:hover:text-primary-700 transition-colors'
@@ -61,7 +60,6 @@ export function BottomNavBar(props: {
             )}
             onClick={() => setSidebarOpen(true)}
           >
-            <UnseenMessagesBubble />
             <MenuAlt3Icon className="mx-auto my-1 h-6 w-6" aria-hidden="true" />
             More
           </div>
