@@ -33,7 +33,7 @@ export const updateUserMetrics = functions
     timeoutSeconds: 540,
     secrets,
   })
-  .pubsub.schedule('every 5 minutes')
+  .pubsub.schedule('every 10 minutes')
   .onRun(async () => {
     await updateUserMetricsCore()
   })
@@ -46,15 +46,6 @@ export async function updateUserMetricsCore() {
   const pg = createSupabaseDirectClient()
   const db = createSupabaseClient()
   const writer = firestore.bulkWriter()
-
-  const today = new Date().toDateString().replace(' ', '-')
-  const lockName = `update-user-metrics`
-  const lockRef = firestore.collection('locks').doc(lockName)
-  await lockRef.create({}).catch((_e) => {
-    throw new Error(
-      `Could not acquire ${lockName} lock, which means it was probably already running`
-    )
-  })
 
   log('Loading users...')
   const users = await pg.map(
@@ -217,8 +208,7 @@ export async function updateUserMetricsCore() {
 
   await revalidateStaticProps('/leaderboards')
 
-  await lockRef.delete()
-log('Done.')
+  log('Done.')
 }
 
 const getRelevantContracts = async (pg: SupabaseDirectClient, bets: Bet[]) => {
