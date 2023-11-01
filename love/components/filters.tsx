@@ -140,14 +140,14 @@ export const Filters = (props: {
     console.log(filteredLovers)
   }
   const cities: { [key: string]: string } = {
+    All: '',
     'San Francisco': 'San Francisco',
     'New York City': 'New York City',
     London: 'London',
-    All: '',
   }
   const [showFilters, setShowFilters] = useState(false)
 
-  const rowClassName = 'gap-2'
+  const rowClassName = 'gap-2 items-start'
   return (
     <Row className="bg-canvas-0 w-full gap-2 py-2">
       <Col className={'w-full'}>
@@ -189,12 +189,16 @@ export const Filters = (props: {
         </Row>
         {showFilters && (
           <>
-            <Row className={'flex-wrap gap-4'}>
+            <Row
+              className={
+                'border-ink-300 dark:border-ink-300 grid grid-cols-1 gap-4 rounded-md border p-4 md:grid-cols-2'
+              }
+            >
               <Col className={clsx(rowClassName)}>
                 <label className={clsx(labelClassName)}>Gender</label>
                 <select
                   className={
-                    'bg-canvas-0 text-ink-1000 border-ink-300 focus:border-primary-500 focus:ring-primary-500 rounded-md '
+                    'bg-canvas-0 text-ink-1000 border-ink-300 focus:border-primary-500 focus:ring-primary-500 w-full rounded-md sm:w-3/4'
                   }
                   onChange={(e) =>
                     updateFilter({
@@ -232,12 +236,12 @@ export const Filters = (props: {
                 />
               </Col>
 
-              <Row className="gap-4">
-                <Col className={clsx(rowClassName)}>
+              <Row className="gap-4 sm:pr-8">
+                <Col className={clsx(rowClassName, 'grow')}>
                   <label className={clsx(labelClassName)}>Min age</label>
                   <Input
                     type="number"
-                    className={'w-20'}
+                    className={'w-full'}
                     value={filters.pref_age_min}
                     onChange={(e) =>
                       updateFilter({ pref_age_min: Number(e.target.value) })
@@ -245,12 +249,12 @@ export const Filters = (props: {
                   />
                 </Col>
 
-                <Col className={clsx(rowClassName)}>
+                <Col className={clsx(rowClassName, 'grow')}>
                   <label className={clsx(labelClassName)}>Max age</label>
                   <Input
                     type="number"
                     value={filters.pref_age_max}
-                    className={'w-20'}
+                    className={'w-full'}
                     onChange={(e) =>
                       updateFilter({ pref_age_max: Number(e.target.value) })
                     }
@@ -271,13 +275,14 @@ export const Filters = (props: {
                 <ChoicesToggleGroup
                   currentChoice={filters.wants_kids_strength ?? 0}
                   choicesMap={{
+                    Any: -1,
                     Yes: 2,
                     No: 0,
-                    Any: -1,
                   }}
                   setChoice={(c) =>
                     updateFilter({ wants_kids_strength: Number(c) })
                   }
+                  toggleClassName="min-w-[80px] justify-center"
                 />
               </Col>
               <Col className={clsx(rowClassName)}>
@@ -299,8 +304,7 @@ export const Filters = (props: {
                   }}
                 />
               </Col>
-            </Row>
-            <Row className={'mt-2'}>
+
               <Col>
                 <label className={clsx(labelClassName)}>Other</label>
                 <Row className={'mt-2 gap-2'}>
