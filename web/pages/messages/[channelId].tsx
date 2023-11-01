@@ -144,9 +144,11 @@ export const PrivateChat = (props: {
   }, [messages.length])
 
   useEffect(() => {
-    if (scrollToBottomRef && realtimeMessages?.length)
-      scrollToBottomRef.scrollIntoView()
-  }, [scrollToBottomRef, realtimeMessages?.length])
+    if (scrollToBottomRef)
+      scrollToBottomRef.scrollIntoView({
+        block: 'end',
+      })
+  }, [scrollToBottomRef])
 
   async function submitMessage() {
     if (!user) {
@@ -166,6 +168,9 @@ export const PrivateChat = (props: {
     editor.commands.clearContent()
     setIsSubmitting(false)
     editor?.commands?.focus()
+    scrollToBottomRef?.scrollIntoView({
+      block: 'end',
+    })
   }
 
   return (
