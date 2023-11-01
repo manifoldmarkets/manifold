@@ -1,4 +1,4 @@
-import { orderBy } from 'lodash'
+import { debounce, orderBy } from 'lodash'
 import { useEffect, useState } from 'react'
 import { Row } from 'web/components/layout/row'
 import { Col } from 'web/components/layout/col'
@@ -14,6 +14,11 @@ import { calculateAge } from 'love/components/calculate-age'
 import { User } from 'common/user'
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/outline'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import { searchNearCity } from 'web/lib/firebase/api'
+import { useIsAuthorized } from 'web/hooks/use-user'
+import { useNearbyCities } from 'love/hooks/use-nearby-locations'
+import { Slider } from 'web/components/widgets/slider'
+import { useEffectCheckEquality } from 'web/hooks/use-effect-check-equality'
 import { Select } from 'web/components/widgets/select'
 
 type FilterFields = {
@@ -31,7 +36,7 @@ const initialFilters: Partial<FilterFields> = {
   gender: undefined,
   pref_age_max: undefined,
   pref_age_min: undefined,
-  city: undefined,
+  geodb_city_id: undefined,
   has_kids: undefined,
   wants_kids_strength: -1,
   is_smoker: undefined,
@@ -42,11 +47,33 @@ const initialFilters: Partial<FilterFields> = {
 export const Filters = (props: {
   allLovers: Lover[] | undefined
   setLovers: (lovers: Lover[] | undefined) => void
+  youLover: Lover | undefined | null
 }) => {
-  const { allLovers, setLovers } = props
+  const { allLovers, setLovers, youLover } = props
   const [filters, setFilters] = usePersistentInMemoryState<
     Partial<FilterFields>
   >(initialFilters, 'profile-filters')
+
+  const [nearbyOriginLocation, setNearbyOriginLocation] = useState<
+    string | null | undefined
+  >(undefined)
+
+  const [radius, setRadius] = useState<number>(100)
+
+  const [debouncedRadius, setDebouncedRadius] = useState(radius)
+  const [debouncedSetRadius] = useState(() => debounce(setDebouncedRadius, 200))
+
+  useEffect(() => {
+    debouncedSetRadius(radius)
+  }, [radius])
+
+  useEffect(() => {
+    if (youLover) {
+      setNearbyOriginLocation(youLover.geodb_city_id)
+    }
+  }, [youLover])
+
+  const nearbyCities = useNearbyCities(nearbyOriginLocation, debouncedRadius)
 
   const updateFilter = (newState: Partial<FilterFields>) => {
     setFilters((prevState) => ({ ...prevState, ...newState }))
@@ -59,7 +86,11 @@ export const Filters = (props: {
     if (allLovers) {
       applyFilters()
     }
-  }, [JSON.stringify(filters), allLovers?.map((l) => l.id).join(',')])
+  }, [
+    JSON.stringify(filters),
+    allLovers?.map((l) => l.id).join(','),
+    debouncedRadius,
+  ])
 
   const applyFilters = () => {
     const sortedLovers = orderBy(
@@ -91,7 +122,12 @@ export const Filters = (props: {
         return false
       } else if (calculateAge(lover.birthdate) < 18) {
         return false
-      } else if (filters.city && lover.city !== filters.city) {
+      } else if (
+        filters.geodb_city_id &&
+        (!lover.geodb_city_id ||
+          (lover.geodb_city_id != filters.geodb_city_id &&
+            !(nearbyCities ?? []).includes(lover.geodb_city_id)))
+      ) {
         return false
       } else if (
         filters.is_smoker !== undefined &&
@@ -137,7 +173,6 @@ export const Filters = (props: {
       return true
     })
     setLovers(filteredLovers)
-    console.log(filteredLovers)
   }
   const cities: { [key: string]: string } = {
     All: '',
@@ -261,14 +296,44 @@ export const Filters = (props: {
                   />
                 </Col>
               </Row>
-              <Col className={clsx(rowClassName)}>
-                <label className={clsx(labelClassName)}>City</label>
-                <ChoicesToggleGroup
-                  currentChoice={filters.city ?? ''}
-                  choicesMap={cities}
-                  setChoice={(c) => updateFilter({ city: c as string })}
-                />
-              </Col>
+
+              {youLover && nearbyOriginLocation && (
+                <Col className={clsx('w-full', rowClassName)}>
+                  <label className={clsx(labelClassName)}>Location</label>
+                  <Checkbox
+                    label={`${
+                      filters.geodb_city_id ? radius + ' miles n' : 'N'
+                    }ear you`}
+                    checked={!!filters.geodb_city_id}
+                    toggle={(checked: boolean) => {
+                      if (checked) {
+                        updateFilter({
+                          geodb_city_id: nearbyOriginLocation,
+                        })
+                      } else {
+                        updateFilter({
+                          geodb_city_id: undefined,
+                        })
+                      }
+                    }}
+                  />
+                  {filters.geodb_city_id && (
+                    <Slider
+                      min={50}
+                      max={500}
+                      step={50}
+                      color="indigo"
+                      amount={radius}
+                      onChange={setRadius}
+                      className="w-full"
+                      marks={[
+                        { value: 0, label: '50' },
+                        { value: 100, label: '500' },
+                      ]}
+                    />
+                  )}
+                </Col>
+              )}
 
               <Col className={clsx(rowClassName)}>
                 <label className={clsx(labelClassName)}>Wants kids</label>

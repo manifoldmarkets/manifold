@@ -101,6 +101,7 @@ import { createcommentonlover } from 'api/love/create-comment-on-lover'
 import { hidecommentonlover } from 'api/love/hide-comment-on-lover'
 import { rejectLover } from './love/reject-lover'
 import { searchlocation } from './search-location'
+import { searchnearcity } from './search-near-city'
 import { leaveprivateusermessagechannel } from 'api/leave-private-user-message-channel'
 import { updateprivateusermessagechannel } from 'api/update-private-user-message-channel'
 
@@ -262,6 +263,7 @@ app.post('/create-match', ...apiRoute(createMatch))
 app.post('/create-comment-on-lover', ...apiRoute(createcommentonlover))
 app.post('/hide-comment-on-lover', ...apiRoute(hidecommentonlover))
 app.post('/searchlocation', ...apiRoute(searchlocation))
+app.post('/searchnearcity', ...apiRoute(searchnearcity))
 
 // Catch 404 errors - this should be the last route
 app.use(allowCors, (req, res) => {

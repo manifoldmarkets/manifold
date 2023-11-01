@@ -6,7 +6,7 @@ import { Filters } from 'love/components/filters'
 import { Gender, convertGender } from 'love/components/gender-icon'
 import { LovePage } from 'love/components/love-page'
 import OnlineIcon from 'love/components/online-icon'
-import { Lover } from 'love/hooks/use-lover'
+import { Lover, useLover } from 'love/hooks/use-lover'
 import { useLovers } from 'love/hooks/use-lovers'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -18,6 +18,8 @@ import { useUser } from 'web/hooks/use-user'
 import { Button } from 'web/components/buttons/button'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { track } from 'web/lib/service/analytics'
+import { useEffect, useState } from 'react'
+import { useNearbyCities } from 'love/hooks/use-nearby-locations'
 
 export default function ProfilesPage() {
   const allLovers = useLovers()
@@ -27,9 +29,10 @@ export default function ProfilesPage() {
   )
 
   const user = useUser()
-  if (user === undefined) return <div />
 
-  const lover = allLovers?.find((lover) => lover.user_id === user?.id)
+  const lover = useLover()
+
+  if (user === undefined) return <div />
 
   return (
     <LovePage trackPageView={'user profiles'}>
@@ -44,7 +47,11 @@ export default function ProfilesPage() {
             </Button>
           )}
           <Title className="!mb-2 text-3xl">Profiles</Title>
-          <Filters allLovers={allLovers} setLovers={setLovers} />
+          <Filters
+            allLovers={allLovers}
+            setLovers={setLovers}
+            youLover={lover}
+          />
 
           {lovers === undefined ? (
             <LoadingIndicator />
