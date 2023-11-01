@@ -58,7 +58,7 @@ export async function addGroupToContract(
       })
   }
 
-  if (group.id === UNRANKED_GROUP_ID && contract.isRanked) {
+  if (group.id === UNRANKED_GROUP_ID) {
     await firestore.collection('contracts').doc(contract.id).update({
       isRanked: false,
     })
@@ -67,7 +67,7 @@ export async function addGroupToContract(
     }
   }
 
-  if (group.id === UNSUBSIDIZED_GROUP_ID && contract.isSubsidized) {
+  if (group.id === UNSUBSIDIZED_GROUP_ID) {
     await firestore.collection('contracts').doc(contract.id).update({
       isSubsidized: false,
     })
@@ -115,13 +115,13 @@ export async function removeGroupFromContract(
       groupLinks: newLinks,
     })
 
-  if (group.id === UNRANKED_GROUP_ID && !contract.isRanked) {
+  if (group.id === UNRANKED_GROUP_ID) {
     await firestore.collection('contracts').doc(contract.id).update({
       isRanked: true,
     })
     await recordContractEdit(contract, userId, ['isRanked'])
   }
-  if (group.id === UNSUBSIDIZED_GROUP_ID && !contract.isSubsidized) {
+  if (group.id === UNSUBSIDIZED_GROUP_ID) {
     await firestore.collection('contracts').doc(contract.id).update({
       isSubsidized: true,
     })
