@@ -99,7 +99,17 @@ function Seeking(props: { lover: Lover }) {
     asSentence: true,
     capitalizeFirstLetterOption: false,
   })
+  if (prefGender.length == 5) {
+    seekingGenderText = "Interested in anyone"
+  }
   const ageRangeText = `between ${min} - ${max} years old`
+  if (min == 18 && max == 99) {
+    ageRangeText = "of any age"
+  } else if (min == 18) {
+    ageRangeText = `younger than ${max}`
+  } else if (max == 99) {
+    ageRangeText = `older than ${min}`
+  }
   if (!prefGender || prefGender.length < 1) {
     return <></>
   }
