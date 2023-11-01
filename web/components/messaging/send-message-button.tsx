@@ -33,10 +33,8 @@ export const SendMessageButton = (props: {
   const router = useRouter()
   const privateUser = usePrivateUser()
   const isAuthed = useIsAuthorized()
-  const channelIds = useSortedPrivateMessageChannelIds(
-    currentUser?.id,
-    isAuthed
-  )
+  const channels = useSortedPrivateMessageChannelIds(currentUser?.id, isAuthed)
+  const channelIds = channels?.map((c) => c.id)
   const channelIdsToUserIds = useOtherUserIdsInPrivateMessageChannelIds(
     currentUser?.id,
     isAuthed,
