@@ -31,7 +31,10 @@ import { Row } from '../layout/row'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import ShortToggle from '../widgets/short-toggle'
 import { Table } from '../widgets/table'
-import { NON_PREDICTIVE_GROUP_ID } from 'common/supabase/groups'
+import {
+  UNRANKED_GROUP_ID,
+  UNSUBSIDIZED_GROUP_ID,
+} from 'common/supabase/groups'
 import { ContractHistoryButton } from './contract-edit-history-button'
 import { ShareEmbedButton } from '../buttons/share-embed-button'
 import { ShareQRButton } from '../buttons/share-qr-button'
@@ -306,31 +309,30 @@ export const Stats = (props: {
             </td>
           </tr>
         )}
+
         {!hideAdvanced && isBettingContract && (
           <tr className={clsx(isMod && 'bg-purple-500/30')}>
             <td>
-              In leagues{' '}
+              Ranked{' '}
               <InfoTooltip
-                text={
-                  'Whether profit count torward leagues - typically off for non-predictive questions'
-                }
+                text={'Profit and creator bonuses count torward leagues'}
               />
             </td>
             <td>
               <ShortToggle
                 className="align-middle"
                 disabled={!isMod}
-                on={!contract.nonPredictive}
+                on={contract.isRanked ?? true}
                 setOn={(on) => {
                   toast.promise(
                     on
                       ? removeContractFromGroup({
                           contractId: contract.id,
-                          groupId: NON_PREDICTIVE_GROUP_ID,
+                          groupId: UNRANKED_GROUP_ID,
                         })
                       : addContractToGroup({
                           contractId: contract.id,
-                          groupId: NON_PREDICTIVE_GROUP_ID,
+                          groupId: UNRANKED_GROUP_ID,
                         }).catch((e) => {
                           console.error(e.message)
                           throw e
@@ -338,10 +340,54 @@ export const Stats = (props: {
                     {
                       loading: `${
                         on ? 'Removing' : 'Adding'
-                      } question to non-predictive group...`,
+                      } question to the unranked group...`,
                       success: `Successfully ${
                         on ? 'removed' : 'added'
-                      } question to non-predictive group!`,
+                      } question to the unranked group!`,
+                      error: `Error ${
+                        on ? 'removing' : 'adding'
+                      } category. Try again?`,
+                    }
+                  )
+                }}
+              />
+            </td>
+          </tr>
+        )}
+        {!hideAdvanced && isBettingContract && (
+          <tr className={clsx(isMod && 'bg-purple-500/30')}>
+            <td>
+              Subsidized{' '}
+              <InfoTooltip
+                text={'Market receives unique trader bonuses and house subsidy'}
+              />
+            </td>
+            <td>
+              <ShortToggle
+                className="align-middle"
+                disabled={!isMod}
+                on={contract.isSubsidized ?? true}
+                setOn={(on) => {
+                  toast.promise(
+                    on
+                      ? removeContractFromGroup({
+                          contractId: contract.id,
+                          groupId: UNSUBSIDIZED_GROUP_ID,
+                        })
+                      : addContractToGroup({
+                          contractId: contract.id,
+                          groupId: UNSUBSIDIZED_GROUP_ID,
+                        }).catch((e) => {
+                          console.error(e.message)
+                          throw e
+                        }),
+                    {
+                      loading: `${
+                        on ? 'Removing' : 'Adding'
+                      } question to the unsubsidized group...`,
+                      success: `Successfully ${
+                        on ? 'removed' : 'added'
+                      } question to the unsubsidized group!`,
                       error: `Error ${
                         on ? 'removing' : 'adding'
                       } category. Try again?`,

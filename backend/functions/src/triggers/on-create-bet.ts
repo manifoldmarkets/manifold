@@ -335,7 +335,7 @@ export const giveUniqueBettorAndLiquidityBonus = async (
 
   const isBot = BOT_USERNAMES.includes(bettor.username)
   const isUnlisted = contract.visibility === 'unlisted'
-  const isNonPredictive = contract.nonPredictive
+  const unSubsidized = !contract.isSubsidized
 
   const answer =
     answerId && 'answers' in contract
@@ -345,8 +345,7 @@ export const giveUniqueBettorAndLiquidityBonus = async (
   const creatorId = answerCreatorId ?? contract.creatorId
   const isCreator = bettor.id == creatorId
 
-  if (isCreator || isBot || isUnlisted || isRedemption || isNonPredictive)
-    return
+  if (isCreator || isBot || isUnlisted || isRedemption || unSubsidized) return
 
   const previousBet = answerId
     ? await pg.oneOrNone(

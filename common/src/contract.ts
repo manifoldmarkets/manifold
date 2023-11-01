@@ -111,7 +111,8 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
   isTwitchContract?: boolean
 
   coverImageUrl?: string
-  nonPredictive?: boolean // If true, don't include profits in leagues, etc.
+  isRanked?: boolean
+  isSubsidized?: boolean
 
   // Manifold.love
   loverUserId1?: string // The user id's of the pair of lovers referenced in the question.
