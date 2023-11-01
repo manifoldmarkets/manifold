@@ -80,58 +80,47 @@ export default function UserPage(props: {
           <meta name="robots" content="noindex, nofollow" />
         </Head>
       )}
-      {!currentUser && lover && (
-        <Col className={'bg-canvas-0 items-center justify-center p-4'}>
-          <Row className={' items-center justify-center gap-2'}>
-            <Button color={'gradient'} onClick={firebaseLogin}>
-              Sign up
-            </Button>{' '}
-            to see {user.name}'s profile!
-          </Row>
-        </Col>
-      )}
-      {currentUser && (
-        <Col className={'gap-4'}>
-          {lover ? (
-            <>
-              {lover.photo_urls && <ProfileCarousel lover={lover} />}
-              <LoverProfileHeader
-                isCurrentUser={isCurrentUser}
-                currentUser={currentUser}
-                user={user}
-                lover={lover}
-                router={router}
-              />
-              {lover.looking_for_matches && <Matches userId={user.id} />}
-              <LoverContent
-                isCurrentUser={isCurrentUser}
-                router={router}
-                user={user}
-                lover={lover}
-                currentUser={currentUser}
-              />
-            </>
-          ) : isCurrentUser ? (
-            <Col className={'mt-4 w-full items-center'}>
-              <Row>
-                <Button onClick={() => router.push('signup')}>
-                  Create a profile
-                </Button>
-              </Row>
-            </Col>
-          ) : (
-            <Col className="bg-canvas-0 rounded p-4 ">
-              <div>{user.name} hasn't created a profile yet.</div>
-              <Button
-                className="mt-4 self-start"
-                onClick={() => router.push('/')}
-              >
-                See more profiles
+      <Col className={'gap-4'}>
+        {lover ? (
+          <>
+            {lover.photo_urls && (
+              <ProfileCarousel lover={lover} currentUser={currentUser} />
+            )}
+            <LoverProfileHeader
+              isCurrentUser={isCurrentUser}
+              currentUser={currentUser}
+              user={user}
+              lover={lover}
+              router={router}
+            />
+            <LoverContent
+              isCurrentUser={isCurrentUser}
+              router={router}
+              user={user}
+              lover={lover}
+              currentUser={currentUser}
+            />
+          </>
+        ) : isCurrentUser ? (
+          <Col className={'mt-4 w-full items-center'}>
+            <Row>
+              <Button onClick={() => router.push('signup')}>
+                Create a profile
               </Button>
-            </Col>
-          )}
-        </Col>
-      )}
+            </Row>
+          </Col>
+        ) : (
+          <Col className="bg-canvas-0 rounded p-4 ">
+            <div>{user.name} hasn't created a profile yet.</div>
+            <Button
+              className="mt-4 self-start"
+              onClick={() => router.push('/')}
+            >
+              See more profiles
+            </Button>
+          </Col>
+        )}
+      </Col>
     </LovePage>
   )
 }
@@ -155,18 +144,20 @@ function LoverContent(props: {
 
   if (!currentUser) {
     return (
-      <div className="relative mb-4 max-h-[40rem] overflow-hidden">
-        <Col className=" absolute inset-x-0 bottom-0 z-10 h-24">
-          <div className="from-canvas-50 h-full bg-gradient-to-t to-transparent" />
-          <div className="bg-canvas-50 m-auto flex w-full items-center justify-center">
-            <SignUpButton text="Sign up to see more" />
-          </div>
+      <Col className="bg-canvas-0 w-full gap-4 rounded p-4">
+        <Col className="relative gap-4">
+          <div className="bg-ink-200 dark:bg-ink-400 h-4 w-2/5" />
+          <div className="bg-ink-200 dark:bg-ink-400 h-4 w-3/5" />
+          <div className="bg-ink-200 dark:bg-ink-400 h-4 w-1/2" />
+          <div className="from-canvas-0 absolute bottom-0 h-12 w-full bg-gradient-to-t to-transparent" />
         </Col>
-      </div>
+        <SignUpButton text="Sign up to see more" />
+      </Col>
     )
   }
   return (
     <>
+      {lover.looking_for_matches && <Matches userId={user.id} />}
       <LoverAbout lover={lover} />
       <LoverAnswers
         isCurrentUser={isCurrentUser}

@@ -23,7 +23,7 @@ import { Item, SidebarItem } from './love-sidebar-item'
 import ManifoldLoveLogo from '../manifold-love-logo'
 import toast from 'react-hot-toast'
 import { Col } from 'web/components/layout/col'
-import { Button } from 'web/components/buttons/button'
+import { Button, ColorType, SizeType } from 'web/components/buttons/button'
 import { signupThenMaybeRedirectToSignup } from 'love/lib/util/signup'
 import { useLover } from 'love/hooks/use-lover'
 
@@ -75,7 +75,7 @@ export default function Sidebar(props: {
           setIsModalOpen={setIsModalOpen}
         />
 
-        {user === null && <SignUpButton />}
+        {user === null && <SignUpButton className="mt-4" />}
 
         {user && lover === null && (
           <Button className="mt-2" onClick={() => router.push('signup')}>
@@ -124,20 +124,22 @@ const bottomNav = (
     loggedIn && { name: 'Sign out', icon: LogoutIcon, onClick: logout }
   )
 
-export const SignUpButton = (props: { text?: string; className?: string }) => {
-  const { className, text } = props
+export const SignUpButton = (props: {
+  text?: string
+  className?: string
+  color?: ColorType
+  size?: SizeType
+}) => {
+  const { className, text, color, size } = props
 
   return (
-    <Col className={clsx('mt-4', className)}>
-      <Button
-        color="gradient"
-        size="xl"
-        onClick={signupThenMaybeRedirectToSignup}
-        className="w-full"
-      >
-        {text ?? 'Sign up now'}
-      </Button>
-      {/* <PlayMoneyDisclaimer /> */}
-    </Col>
+    <Button
+      color={color ?? 'gradient'}
+      size={size ?? 'xl'}
+      onClick={signupThenMaybeRedirectToSignup}
+      className={clsx('w-full', className)}
+    >
+      {text ?? 'Sign up now'}
+    </Button>
   )
 }
