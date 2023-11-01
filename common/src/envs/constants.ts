@@ -214,6 +214,7 @@ export const VERIFIED_USERNAMES = [
   'DylanMatthews',
   'RobinHanson',
   'KevinRoose18ac',
+  'KnowNothing',
 ]
 
 export const HOUSE_BOT_USERNAME = 'acc'
