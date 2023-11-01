@@ -63,6 +63,9 @@ export default function UserPage(props: {
   if (!user) {
     return <div>404</div>
   }
+  if (user.isBannedFromPosting) {
+    return <div>User is banned</div>
+  }
 
   return (
     <LovePage
