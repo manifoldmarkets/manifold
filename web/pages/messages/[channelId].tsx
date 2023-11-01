@@ -38,6 +38,7 @@ import { DotsVerticalIcon } from '@heroicons/react/solid'
 import { FaUserFriends, FaUserMinus } from 'react-icons/fa'
 import { filterDefined } from 'common/util/array'
 import { GiSpeakerOff } from 'react-icons/gi'
+import toast from 'react-hot-toast'
 
 export default function PrivateMessagesPage() {
   return (
@@ -213,20 +214,34 @@ export const PrivateChat = (props: {
                 icon: <GiSpeakerOff className="h-5 w-5" />,
                 name: 'Mute 1 day',
                 onClick: async () => {
-                  await updatePrivateMessageChannel({
-                    channelId: channelId,
-                    notifyAfterTime: Date.now() + DAY_MS,
-                  })
+                  await toast.promise(
+                    updatePrivateMessageChannel({
+                      channelId: channelId,
+                      notifyAfterTime: Date.now() + DAY_MS,
+                    }),
+                    {
+                      loading: 'Muting for 1 day...',
+                      success: 'Muted for 1 day',
+                      error: 'Failed to mute',
+                    }
+                  )
                 },
               },
               {
                 icon: <GiSpeakerOff className="h-5 w-5" />,
                 name: 'Mute forever',
                 onClick: async () => {
-                  await updatePrivateMessageChannel({
-                    channelId: channelId,
-                    notifyAfterTime: Date.now() + 100 * YEAR_MS,
-                  })
+                  await toast.promise(
+                    updatePrivateMessageChannel({
+                      channelId: channelId,
+                      notifyAfterTime: Date.now() + 100 * YEAR_MS,
+                    }),
+                    {
+                      loading: 'Muting forever...',
+                      success: 'Muted forever',
+                      error: 'Failed to mute',
+                    }
+                  )
                 },
               },
               {
