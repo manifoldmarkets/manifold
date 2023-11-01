@@ -63,7 +63,7 @@ import { BuyPanel } from 'web/components/bet/bet-panel'
 import { FeedReplyBet } from 'web/components/feed/feed-bets'
 import { Modal, MODAL_CLASS } from 'web/components/layout/modal'
 import { HOUR_MS } from 'common/util/time'
-import { FaArrowTrendUp } from 'react-icons/fa6'
+import { FaArrowTrendUp, FaArrowTrendDown } from 'react-icons/fa6'
 import { last, orderBy } from 'lodash'
 
 export type ReplyToUserInfo = { id: string; username: string }
@@ -613,16 +613,12 @@ function CommentActions(props: {
           >
             <Row className={'mt-0.5 gap-1'}>
               {diff != 0 && <span className="">{Math.abs(diff)}</span>}
-              <FaArrowTrendUp
-                className={clsx(
-                  'h-5 w-5',
-                  diff > 0
-                    ? 'text-teal-500'
-                    : diff < 0
-                    ? 'text-scarlet-500'
-                    : ''
-                )}
-              />
+              {diff > 0
+                ? <FaArrowTrendUp className={'h-5 w-5 text-teal-500'}/>
+                : diff < 0
+                ? <FaArrowTrendDown className={'h-5 w-5 text-scarlet-500'}/>
+                : <FaArrowTrendUp className={'h-5 w-5'}/>
+              }
             </Row>
           </IconButton>
         </Tooltip>
