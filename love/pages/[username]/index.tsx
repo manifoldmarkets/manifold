@@ -21,6 +21,7 @@ import { useUserAnswersAndQuestions } from 'love/hooks/use-questions'
 import { Linkify } from 'web/components/widgets/linkify'
 import { useTracking } from 'web/hooks/use-tracking'
 import { track } from 'web/lib/service/analytics'
+import { loveOgImageUrl } from 'love/pages/api/og/utils'
 import { LoverAnswers } from 'love/components/lover-answers'
 import { Row as rowFor } from 'common/supabase/utils'
 import { SignUpButton } from 'love/components/nav/love-sidebar'
@@ -74,6 +75,7 @@ export default function UserPage(props: {
         title={`${user.name} (@${user.username})`}
         description={user.bio ?? ''}
         url={`/${user.username}`}
+        image={loveOgImageUrl(user, lover)}
       />
       {(user.isBannedFromPosting || user.userDeleted) && (
         <Head>
