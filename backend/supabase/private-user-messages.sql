@@ -21,8 +21,9 @@ create table if not exists
     channel_id bigint not null, -- channel_id is the same as private_user_messages.channel_id
     user_id text not null,
     role text not null default 'member', -- member, creator
-    status text not null default 'proposed' -- proposed, joined, left, banned
-  );
+    status text not null default 'proposed', -- proposed, joined, left, banned
+    unique (channel_id, user_id)
+);
 
 create index if not exists pumcm_members_idx on private_user_message_channel_members (channel_id,user_id);
 

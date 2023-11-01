@@ -191,6 +191,7 @@ export const PrivateChat = (props: {
                   .join(', ')}
                 {remainingUsers.length > 2 &&
                   ` & ${remainingUsers.length - 2} more`}
+                {usersThatLeft.length > 0 && ` (${usersThatLeft.length} left)`}
               </span>
             )
           )}

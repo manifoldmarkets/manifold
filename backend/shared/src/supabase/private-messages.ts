@@ -30,6 +30,7 @@ export const addUsersToPrivateMessageChannel = async (
         `insert into private_user_message_channel_members (channel_id, user_id, role, status)
                 values
                 ($1, $2, 'member', 'proposed')
+                on conflict do nothing
               `,
         [channelId, id]
       )

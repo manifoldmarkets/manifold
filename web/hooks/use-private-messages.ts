@@ -231,6 +231,7 @@ export const useOtherUserIdsInPrivateMessageChannelIds = (
       userId &&
       isAuthed &&
       channelIds &&
+      // TODO: Currently doesn't update other users' statuses ie if they left the channel
       channelIds.some(
         (c) =>
           chanelIdToUserIds?.[c] === undefined ||
