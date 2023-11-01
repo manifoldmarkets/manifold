@@ -167,6 +167,7 @@ export const useUnseenPrivateMessageChannels = (
       const lastSeenTime = lastSeenChatTimeByChannelId[channelId as any] ?? 0
       const lastSeenChatTime =
         notifyAfterTime > lastSeenTime ? notifyAfterTime : lastSeenTime ?? 0
+
       return allMessagesByChannelId[channelId]?.filter(
         (c) => c.userId !== userId && c.createdTime > lastSeenChatTime
       )
@@ -224,33 +225,41 @@ export const useOtherUserIdsInPrivateMessageChannelIds = (
   isAuthed: boolean | undefined,
   channels: Row<'private_user_message_channels'>[] | undefined
 ) => {
-  const [chanelIdToUserStatuses, setChanelIdToUserIds] =
-    usePersistentLocalState<
-      NumericDictionary<PrivateMessageMembership[]> | undefined
-    >(undefined, `private-message-channel-ids-to-user-ids-${userId}`)
+  const [channelMemberships, setChannelMemberships] = usePersistentLocalState<
+    PrivateMessageMembership[] | undefined
+  >(undefined, `private-message-channel-memberships-${userId}`)
   useEffect(() => {
     if (
       userId &&
       isAuthed &&
       channels &&
-      channels.some(
-        (c) =>
-          chanelIdToUserStatuses?.[c.id] === undefined ||
-          chanelIdToUserStatuses?.[c.id]?.[0].status === undefined ||
-          // TODO: probably should keep track of when we last checked the membership status vs last 5 minutes
-          tsToMillis(
-            channels?.find((ch) => ch.id === c.id)?.last_updated_time ?? '0'
-          ) >
-            Date.now() - 5 * MINUTE_MS
-      )
+      channels.some((c) => {
+        const matchingMembership = channelMemberships?.find(
+          (cm) => cm.channel_id === c.id
+        )
+        // TODO: probably should keep track of when we last checked the membership status vs last 5 minutes
+        return (
+          !matchingMembership ||
+          matchingMembership?.status === undefined ||
+          tsToMillis(c?.last_updated_time ?? '0') > Date.now() - 5 * MINUTE_MS
+        )
+      })
     ) {
-      console.log('fetching other user ids in private message channels')
+      // Non general chat
       getOtherUserIdsInPrivateMessageChannelIds(
         userId,
-        channels.map((c) => c.id),
+        channels.filter((c) => !c.title).map((c) => c.id),
         100
-      ).then(setChanelIdToUserIds)
+      ).then((c) => setChannelMemberships((prev) => [...(prev ?? []), ...c]))
+      // General chat w/ tons of users
+      getOtherUserIdsInPrivateMessageChannelIds(
+        userId,
+        channels.filter((c) => c.title).map((c) => c.id),
+        50
+      ).then((c) => setChannelMemberships((prev) => [...(prev ?? []), ...c]))
     }
   }, [userId, isAuthed, JSON.stringify(channels)])
-  return chanelIdToUserStatuses
+  return groupBy(channelMemberships, 'channel_id') as NumericDictionary<
+    PrivateMessageMembership[]
+  >
 }

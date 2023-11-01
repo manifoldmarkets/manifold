@@ -1,7 +1,6 @@
 import { db } from 'web/lib/supabase/db'
 import { convertSQLtoTS, Row, run, tsToMillis } from 'common/supabase/utils'
 import { ChatMessage } from 'common/chat-message'
-import { groupBy, NumericDictionary } from 'lodash'
 
 // NOTE: must be authorized (useIsAuthorized) to use this function
 export const getChatMessages = async (channelId: number, limit: number) => {
@@ -114,7 +113,5 @@ export const getOtherUserIdsInPrivateMessageChannelIds = async (
     .order('created_time', { ascending: false })
     .limit(limit)
   const { data } = await run(q)
-  return groupBy(data, 'channel_id') as NumericDictionary<
-    PrivateMessageMembership[]
-  >
+  return data as PrivateMessageMembership[]
 }
