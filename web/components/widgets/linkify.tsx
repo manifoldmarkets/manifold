@@ -38,13 +38,7 @@ export function Linkify(props: { text: string; className?: string }) {
     <span className={clsx(className, 'break-anywhere')}>
       {text.split(regex).map((part, i) => (
         <Fragment key={i}>
-          {/* Ensure newlines are respected */}
-          {part.split('\n').map((line, j) => (
-            <Fragment key={j}>
-              {j > 0 && <br />}
-              {line}
-            </Fragment>
-          ))}
+          {part}
           {links[i]}
         </Fragment>
       ))}
