@@ -9,3 +9,5 @@ where
   data ->> 'referredByUserId' is not null;
 
 create index if not exists users_betting_streak_idx on users (((data -> 'currentBettingStreak')::int));
+
+create index if not exists users_created_time on users (((data->'createdTime'::text)::bigint) desc);

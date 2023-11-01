@@ -143,7 +143,7 @@ export async function addInterestingContractsToFeed(
 const getUserEmbeddingDetails = async (
   pg: SupabaseDirectClient,
   since = 0,
-  userIds: string[] | null = null
+  userId: string | null = null
 ) => {
   const newUserInterestEmbeddings: Dictionary<UserEmbeddingDetails> = {}
 
@@ -163,9 +163,9 @@ const getUserEmbeddingDetails = async (
         group by usm.user_id
     ) as usm on u.id = usm.user_id
     where ((u.data->'createdTime')::bigint) > $1
-      and ($2::text[] is null or u.id = any($2::text[]))
+      and ($2 is null or u.id = $2)
     `,
-    [since, userIds],
+    [since, userId],
     (row) => {
       const interest = JSON.parse(row.interest_embedding) as number[]
       const disinterest = row.disinterest_embedding
@@ -201,9 +201,7 @@ const loadUserEmbeddingsToStore = async (
   })
 
   if (!newUserInterestEmbeddings[DEFAULT_FEED_USER_ID]) {
-    const defaultUser = await getUserEmbeddingDetails(pg, 0, [
-      DEFAULT_FEED_USER_ID,
-    ])
+    const defaultUser = await getUserEmbeddingDetails(pg, 0, DEFAULT_FEED_USER_ID)
     userInterestEmbeddings[DEFAULT_FEED_USER_ID] =
       defaultUser[DEFAULT_FEED_USER_ID]
   }
