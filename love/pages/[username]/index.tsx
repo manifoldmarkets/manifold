@@ -143,7 +143,7 @@ function LoverContent(props: {
 
   if (!currentUser) {
     return (
-      <div className="relative mb-4 h-[40rem] overflow-hidden">
+      <div className="relative mb-4 max-h-[40rem] overflow-hidden">
         <LoverAbout lover={lover} />
         <LoverAnswers
           isCurrentUser={isCurrentUser}
