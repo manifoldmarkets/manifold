@@ -16,6 +16,7 @@ import {
 } from 'web/lib/supabase/private-messages'
 import { usePersistentSupabasePolling } from 'web/hooks/use-persistent-supabase-polling'
 import { db } from 'web/lib/supabase/db'
+import { useEvent } from 'web/hooks/use-event'
 
 // NOTE: must be authorized (useIsAuthorized) to use this hook
 export function useRealtimePrivateMessagesPolling(
@@ -105,24 +106,24 @@ export const useUnseenPrivateMessageChannels = (
       `private-message-channel-last-seen-${userId}`
     )
 
-  const messageChannels = useRealtimePrivateMessageChannelMemberships(
+  const messageChannelMemberships = useRealtimePrivateMessageChannelMemberships(
     userId,
     isAuthed
   )
-  const channelIds = messageChannels?.map((m) => m.channel_id) ?? []
-
+  const channelIds = messageChannelMemberships?.map((m) => m.channel_id) ?? []
+  const fetcher = useEvent(async () => {
+    const q = db
+      .from('private_user_messages')
+      .select('*')
+      .in('channel_id', channelIds)
+      .gt('created_time', millisToTs(sinceLastTime))
+    const { data } = await run(q)
+    return data
+  })
   const { rows: messageRows } = useSubscription(
     'private_user_messages',
     undefined,
-    async () => {
-      const q = db
-        .from('private_user_messages')
-        .select('*')
-        .in('channel_id', channelIds)
-        .gt('created_time', millisToTs(sinceLastTime))
-      const { data } = await run(q)
-      return data
-    },
+    fetcher,
     undefined,
     `channel_id=in.(${channelIds.join(', ')})`
   )
@@ -156,8 +157,20 @@ export const useUnseenPrivateMessageChannels = (
   if (!lastSeenChatTimeByChannelId) return []
   return Object.keys(allMessagesByChannelId)
     .map((channelId) => {
+      const joinedChannelTime = tsToMillis(
+        messageChannelMemberships?.[channelId as any]?.created_time ?? '0'
+      )
+      const lastSeenTime = lastSeenChatTimeByChannelId[channelId as any] ?? 0
+      console.log(
+        'lastSeenTime',
+        lastSeenTime,
+        'joinedChannelTime',
+        joinedChannelTime,
+        'channelId',
+        channelId
+      )
       const lastSeenChatTime =
-        lastSeenChatTimeByChannelId[channelId as any] ?? 0
+        joinedChannelTime > lastSeenTime ? joinedChannelTime : lastSeenTime ?? 0
       return allMessagesByChannelId[channelId]?.filter(
         (c) => c.userId !== userId && c.createdTime > lastSeenChatTime
       )
@@ -196,18 +209,18 @@ export const usePrivateMessageChannel = (
   return channelId
 }
 
-export const useNonEmptyPrivateMessageChannelIds = (
+export const useNonEmptyPrivateMessageChannels = (
   userId: string | undefined,
   isAuthed: boolean | undefined
 ) => {
-  const [channelIds, setChannelIds] = usePersistentLocalState<
+  const [channels, setChannels] = usePersistentLocalState<
     Row<'private_user_message_channels'>[]
   >([], `non-empty-private-message-channel-ids-${userId}`)
   useEffect(() => {
     if (userId && isAuthed)
-      getNonEmptyChatMessageChannelIds(userId, 100).then(setChannelIds)
+      getNonEmptyChatMessageChannelIds(userId, 100).then(setChannels)
   }, [userId, isAuthed])
-  return channelIds
+  return channels
 }
 
 export const useOtherUserIdsInPrivateMessageChannelIds = (

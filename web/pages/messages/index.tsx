@@ -10,7 +10,7 @@ import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { Title } from 'web/components/widgets/title'
 import {
   useHasUnseenPrivateMessage,
-  useNonEmptyPrivateMessageChannelIds,
+  useNonEmptyPrivateMessageChannels,
   useOtherUserIdsInPrivateMessageChannelIds,
   useRealtimePrivateMessagesPolling,
 } from 'web/hooks/use-private-messages'
@@ -32,10 +32,7 @@ export function MessagesContent() {
   useRedirectIfSignedOut()
   const currentUser = useUser()
   const isAuthed = useIsAuthorized()
-  const channels = useNonEmptyPrivateMessageChannelIds(
-    currentUser?.id,
-    isAuthed
-  )
+  const channels = useNonEmptyPrivateMessageChannels(currentUser?.id, isAuthed)
   const channelIds = channels.map((c) => c.id)
 
   const channelIdsToUserIds = useOtherUserIdsInPrivateMessageChannelIds(
