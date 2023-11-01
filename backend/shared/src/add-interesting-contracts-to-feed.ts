@@ -1,5 +1,5 @@
 import { SupabaseDirectClient } from 'shared/supabase/init'
-import { SupabaseClient } from 'common/supabase/utils'
+import { SupabaseClient, tsToMillis } from 'common/supabase/utils'
 import { DAY_MS, HOUR_MS, MINUTE_MS } from 'common/util/time'
 import { log } from 'shared/utils'
 import { Contract } from 'common/contract'
@@ -37,9 +37,9 @@ export async function addInterestingContractsToFeed(
   if (Object.keys(userInterestEmbeddings).length === 0)
     await loadUserEmbeddingsToStore(pg)
   const contracts = await pg.map(
-    `select data, importance_score from contracts 
+    `select data, importance_score from contracts
             where importance_score >= 0.225
-            order by importance_score desc 
+            order by importance_score desc
             `,
     [],
     rowToContract
@@ -162,7 +162,7 @@ const getUserEmbeddingDetails = async (
         from user_seen_markets usm
         group by usm.user_id
     ) as usm on u.id = usm.user_id
-    where u.created_time > $1 and ($2 is null or u.id = $2)
+    where u.created_time > millis_to_ts($1) and ($2 is null or u.id = $2)
     `,
     [since, userId],
     (row) => {
@@ -171,9 +171,9 @@ const getUserEmbeddingDetails = async (
         ? (JSON.parse(row.disinterest_embedding) as number[])
         : null
       const lastBetTime = row.last_bet_time
-      const createdTime = row.created_time
+      const createdTime = tsToMillis(row.created_time)
       const lastSeenTime =
-        row.last_seen_time == 0 ? row.created_time : row.last_seen_time
+        row.last_seen_time == 0 ? tsToMillis(row.created_time) : row.last_seen_time
 
       newUserInterestEmbeddings[row.user_id] = {
         interest,
