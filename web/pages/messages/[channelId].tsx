@@ -84,7 +84,7 @@ export const PrivateChat = (props: {
   const otherUsersFromChannel = useOtherUserIdsInPrivateMessageChannelIds(
     user.id,
     true,
-    [channelId]
+    [channel]
   )
   const otherUserIds = uniq(
     (realtimeMessages ?? [])

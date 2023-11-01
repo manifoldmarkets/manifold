@@ -36,4 +36,8 @@ export const addUsersToPrivateMessageChannel = async (
       )
     )
   )
+  await pg.none(
+    `update private_user_message_channels set last_updated_time = now() where id = $1`,
+    [channelId]
+  )
 }

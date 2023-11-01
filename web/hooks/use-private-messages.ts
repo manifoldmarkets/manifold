@@ -17,6 +17,7 @@ import {
 import { usePersistentSupabasePolling } from 'web/hooks/use-persistent-supabase-polling'
 import { db } from 'web/lib/supabase/db'
 import { useEvent } from 'web/hooks/use-event'
+import { MINUTE_MS } from 'common/util/time'
 
 // NOTE: must be authorized (useIsAuthorized) to use this hook
 export function useRealtimePrivateMessagesPolling(
@@ -221,26 +222,35 @@ export const useNonEmptyPrivateMessageChannels = (
 export const useOtherUserIdsInPrivateMessageChannelIds = (
   userId: string | undefined,
   isAuthed: boolean | undefined,
-  channelIds: number[] | undefined
+  channels: Row<'private_user_message_channels'>[] | undefined
 ) => {
-  const [chanelIdToUserIds, setChanelIdToUserIds] = usePersistentLocalState<
-    NumericDictionary<PrivateMessageMembership[]> | undefined
-  >(undefined, `private-message-channel-ids-to-user-ids-${userId}`)
+  const [chanelIdToUserStatuses, setChanelIdToUserIds] =
+    usePersistentLocalState<
+      NumericDictionary<PrivateMessageMembership[]> | undefined
+    >(undefined, `private-message-channel-ids-to-user-ids-${userId}`)
   useEffect(() => {
     if (
       userId &&
       isAuthed &&
-      channelIds &&
-      // TODO: Currently doesn't update other users' statuses ie if they left the channel
-      channelIds.some(
+      channels &&
+      channels.some(
         (c) =>
-          chanelIdToUserIds?.[c] === undefined ||
-          chanelIdToUserIds?.[c]?.[0].status === undefined
+          chanelIdToUserStatuses?.[c.id] === undefined ||
+          chanelIdToUserStatuses?.[c.id]?.[0].status === undefined ||
+          // TODO: probably should keep track of when we last checked the membership status vs last 5 minutes
+          tsToMillis(
+            channels?.find((ch) => ch.id === c.id)?.last_updated_time ?? '0'
+          ) >
+            Date.now() - 5 * MINUTE_MS
       )
-    )
-      getOtherUserIdsInPrivateMessageChannelIds(userId, channelIds, 100).then(
-        setChanelIdToUserIds
-      )
-  }, [userId, isAuthed, channelIds?.length])
-  return chanelIdToUserIds
+    ) {
+      console.log('fetching other user ids in private message channels')
+      getOtherUserIdsInPrivateMessageChannelIds(
+        userId,
+        channels.map((c) => c.id),
+        100
+      ).then(setChanelIdToUserIds)
+    }
+  }, [userId, isAuthed, JSON.stringify(channels)])
+  return chanelIdToUserStatuses
 }

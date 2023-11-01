@@ -25,12 +25,11 @@ export function MessagesContent() {
   const currentUser = useUser()
   const isAuthed = useIsAuthorized()
   const channels = useNonEmptyPrivateMessageChannels(currentUser?.id, isAuthed)
-  const channelIds = channels.map((c) => c.id)
 
   const channelIdsToUserIds = useOtherUserIdsInPrivateMessageChannelIds(
     currentUser?.id,
     isAuthed,
-    channelIds
+    channels
   )
 
   return (

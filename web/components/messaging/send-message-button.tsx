@@ -34,11 +34,10 @@ export const SendMessageButton = (props: {
   const privateUser = usePrivateUser()
   const isAuthed = useIsAuthorized()
   const channels = useSortedPrivateMessageChannelIds(currentUser?.id, isAuthed)
-  const channelIds = channels?.map((c) => c.id)
   const channelIdsToUserIds = useOtherUserIdsInPrivateMessageChannelIds(
     currentUser?.id,
     isAuthed,
-    channelIds
+    channels
   )
   const [openComposeModal, setOpenComposeModal] = useState(false)
   const [error, setError] = useState('')
