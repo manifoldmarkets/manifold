@@ -59,8 +59,9 @@ export const Filters = (props: {
   >(undefined)
 
   const [radius, setRadius] = useState<number>(100)
+
   const [debouncedRadius, setDebouncedRadius] = useState(radius)
-  const debouncedSetRadius = debounce(setDebouncedRadius, 200)
+  const [debouncedSetRadius] = useState(() => debounce(setDebouncedRadius, 200))
 
   useEffect(() => {
     debouncedSetRadius(radius)
