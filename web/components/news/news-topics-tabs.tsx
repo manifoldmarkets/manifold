@@ -5,13 +5,15 @@ import { track } from 'web/lib/service/analytics'
 import { buildArray } from 'common/util/array'
 import { NewsDashboard } from './news-dashboard'
 import { Dashboard } from 'common/dashboard'
+import { LinkPreviews } from 'common/link-preview'
 
 export function NewsTopicsTabs(props: {
   dashboards: Dashboard[]
+  previews: LinkPreviews
   homeContent?: JSX.Element
   dontScroll?: boolean
 }) {
-  const { dashboards, homeContent, dontScroll } = props
+  const { dashboards, previews, homeContent, dontScroll } = props
 
   const topics = buildArray<Tab>(
     !!homeContent && {
@@ -21,7 +23,7 @@ export function NewsTopicsTabs(props: {
     },
     dashboards.map((d) => ({
       title: d.title,
-      content: <NewsDashboard dashboard={d} />,
+      content: <NewsDashboard dashboard={d} previews={previews} />,
     }))
   )
   return (

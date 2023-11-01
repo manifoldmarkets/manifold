@@ -14,9 +14,13 @@ import { buttonClass } from '../buttons/button'
 import { Tooltip } from '../widgets/tooltip'
 import { isAdminId } from 'common/envs/constants'
 import { Dashboard } from 'common/dashboard'
+import { LinkPreviews } from 'common/link-preview'
 
-export function NewsDashboard(props: { dashboard: Dashboard }) {
-  const { dashboard } = props
+export function NewsDashboard(props: {
+  dashboard: Dashboard
+  previews: LinkPreviews
+}) {
+  const { dashboard, previews } = props
   const user = useUser()
 
   if (!dashboard) return <LoadingIndicator />
@@ -72,7 +76,11 @@ export function NewsDashboard(props: { dashboard: Dashboard }) {
       </Row>
 
       <DashboardDescription description={dashboard.description} />
-      <DashboardContent items={dashboard.items} topics={dashboard.topics} />
+      <DashboardContent
+        items={dashboard.items}
+        topics={dashboard.topics}
+        previews={previews}
+      />
     </div>
   )
 }
