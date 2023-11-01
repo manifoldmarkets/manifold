@@ -14,9 +14,19 @@ import { calculateAge } from 'love/components/calculate-age'
 import { User } from 'common/user'
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/outline'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import { Select } from 'web/components/widgets/select'
+
+type FilterFields = {
+  orderBy: 'last_online_time' | 'created_time'
+} & rowFor<'lovers'> &
+  User
+
+function isOrderBy(input: string): input is FilterFields['orderBy'] {
+  return ['last_online_time', 'created_time'].includes(input)
+}
 
 const labelClassName = 'font-semibold'
-const initialFilters = {
+const initialFilters: Partial<FilterFields> = {
   name: undefined,
   gender: undefined,
   pref_age_max: undefined,
@@ -27,6 +37,7 @@ const initialFilters = {
   is_smoker: undefined,
   pref_relation_styles: undefined,
   pref_gender: undefined,
+  orderBy: 'last_online_time',
 }
 export const Filters = (props: {
   allLovers: Lover[] | undefined
@@ -34,10 +45,10 @@ export const Filters = (props: {
 }) => {
   const { allLovers, setLovers } = props
   const [filters, setFilters] = usePersistentInMemoryState<
-    Partial<rowFor<'lovers'> & User>
+    Partial<FilterFields>
   >(initialFilters, 'profile-filters')
 
-  const updateFilter = (newState: Partial<rowFor<'lovers'> & User>) => {
+  const updateFilter = (newState: Partial<FilterFields>) => {
     setFilters((prevState) => ({ ...prevState, ...newState }))
   }
   const clearFilters = () => {
@@ -53,8 +64,17 @@ export const Filters = (props: {
   const applyFilters = () => {
     const sortedLovers = orderBy(
       allLovers,
-      (lover) =>
-        (lover.pinned_url ? 2 : 1) * new Date(lover.last_online_time).getTime(),
+      (lover) => {
+        switch (filters.orderBy) {
+          case 'last_online_time':
+            return (
+              (lover.pinned_url ? 2 : 1) *
+              new Date(lover.last_online_time).getTime()
+            )
+          case 'created_time':
+            return new Date(lover.created_time).getTime()
+        }
+      },
       'desc'
     )
     const filteredLovers = sortedLovers?.filter((lover) => {
@@ -129,7 +149,7 @@ export const Filters = (props: {
 
   const rowClassName = 'gap-2'
   return (
-    <Row className="bg-canvas-0 w-full gap-2 p-2">
+    <Row className="bg-canvas-0 w-full gap-2 py-2">
       <Col className={'w-full'}>
         <Row className={'mb-2 justify-between gap-2'}>
           <Input
@@ -137,17 +157,35 @@ export const Filters = (props: {
             className={'w-full max-w-xs'}
             onChange={(e) => updateFilter({ name: e.target.value })}
           />
-          <Button
-            color={'gray-outline'}
-            onClick={() => setShowFilters(!showFilters)}
-          >
-            {showFilters ? (
-              <ChevronUpIcon className={'mr-2 h-4 w-4'} />
-            ) : (
-              <ChevronDownIcon className={'mr-2 h-4 w-4'} />
-            )}
-            {showFilters ? 'Filters' : 'Filters'}
-          </Button>
+
+          <Row className="gap-2">
+            <Select
+              onChange={(e) => {
+                if (isOrderBy(e.target.value)) {
+                  updateFilter({
+                    orderBy: e.target.value,
+                  })
+                }
+              }}
+              value={filters.orderBy || 'last_online_time'}
+              className={'w-18 border-ink-300 rounded-md'}
+            >
+              <option value="last_online_time">Recently Active</option>
+              <option value="created_time">Newly Registered</option>
+            </Select>
+
+            <Button
+              color={'gray-outline'}
+              onClick={() => setShowFilters(!showFilters)}
+            >
+              {showFilters ? (
+                <ChevronUpIcon className={'mr-2 h-4 w-4'} />
+              ) : (
+                <ChevronDownIcon className={'mr-2 h-4 w-4'} />
+              )}
+              {showFilters ? 'Filters' : 'Filters'}
+            </Button>
+          </Row>
         </Row>
         {showFilters && (
           <>
