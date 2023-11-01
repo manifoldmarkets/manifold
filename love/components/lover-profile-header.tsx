@@ -1,5 +1,7 @@
 import { PencilIcon } from '@heroicons/react/outline'
+import { DotsHorizontalIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
+
 import { User } from 'common/user'
 import { Lover } from 'love/hooks/use-lover'
 import { NextRouter } from 'next/router'
@@ -12,6 +14,9 @@ import { calculateAge } from './calculate-age'
 import LoverPrimaryInfo from './lover-primary-info'
 import OnlineIcon from './online-icon'
 import { track } from 'web/lib/service/analytics'
+import DropdownMenu from 'web/components/comments/dropdown-menu'
+import { deleteLover } from 'love/lib/supabase/lovers'
+
 export default function LoverProfileHeader(props: {
   isCurrentUser: boolean
   currentUser: User | null | undefined
@@ -33,20 +38,41 @@ export default function LoverProfileHeader(props: {
           </Row>
           <LoverPrimaryInfo lover={lover} />
         </Col>
-        {isCurrentUser ? (
+        {currentUser && isCurrentUser ? (
           <Row className={'items-center gap-1 sm:gap-2'}>
-            {lover && (
-              <Button
-                color={'gray-outline'}
-                onClick={() => {
-                  track('edit love profile')
-                  router.push('profile')
-                }}
-                size="sm"
-              >
-                <PencilIcon className=" h-4 w-4" />
-              </Button>
-            )}
+            <Button
+              color={'gray-outline'}
+              onClick={() => {
+                track('edit love profile')
+                router.push('profile')
+              }}
+              size="sm"
+            >
+              <PencilIcon className=" h-4 w-4" />
+            </Button>
+
+            <DropdownMenu
+              menuWidth={'w-36'}
+              icon={
+                <DotsHorizontalIcon className="h-5 w-5" aria-hidden="true" />
+              }
+              items={[
+                {
+                  name: 'Delete profile',
+                  icon: null,
+                  onClick: async () => {
+                    const confirmed = confirm(
+                      'Are you sure you want to delete your profile? This cannot be undone.'
+                    )
+                    if (confirmed) {
+                      track('delete love profile')
+                      await deleteLover(currentUser.id)
+                      window.location.reload()
+                    }
+                  },
+                },
+              ]}
+            />
           </Row>
         ) : (
           <Row className="items-center gap-1 sm:gap-2">

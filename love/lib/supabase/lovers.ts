@@ -22,3 +22,7 @@ export const getMatches = async (userId: string) => {
 
   return sortBy(contracts, (c) => getProbability(c)).reverse()
 }
+
+export const deleteLover = async (userId: string) => {
+  await run(db.from('lovers').delete().filter('user_id', 'eq', userId))
+}
