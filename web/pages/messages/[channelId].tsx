@@ -17,11 +17,12 @@ import { useTextEditor } from 'web/components/widgets/editor'
 import {
   leavePrivateMessageChannel,
   sendUserPrivateMessage,
+  updatePrivateMessageChannel,
 } from 'web/lib/firebase/api'
 import { ChatMessageItem } from 'web/components/chat-message'
 import { CommentInputTextArea } from 'web/components/comments/comment-input'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
-import { MINUTE_MS } from 'common/util/time'
+import { DAY_MS, MINUTE_MS, YEAR_MS } from 'common/util/time'
 import { run, Row as rowFor } from 'common/supabase/utils'
 import { db } from 'web/lib/supabase/db'
 import { useUsersInStore } from 'web/hooks/use-user-supabase'
@@ -36,6 +37,7 @@ import DropdownMenu from 'web/components/comments/dropdown-menu'
 import { DotsVerticalIcon } from '@heroicons/react/solid'
 import { FaUserFriends, FaUserMinus } from 'react-icons/fa'
 import { filterDefined } from 'common/util/array'
+import { GiSpeakerOff } from 'react-icons/gi'
 
 export default function PrivateMessagesPage() {
   return (
@@ -205,6 +207,26 @@ export const PrivateChat = (props: {
                 name: 'See members',
                 onClick: () => {
                   setShowUsers(true)
+                },
+              },
+              {
+                icon: <GiSpeakerOff className="h-5 w-5" />,
+                name: 'Mute 1 day',
+                onClick: async () => {
+                  await updatePrivateMessageChannel({
+                    channelId: channelId,
+                    notifyAfterTime: Date.now() + DAY_MS,
+                  })
+                },
+              },
+              {
+                icon: <GiSpeakerOff className="h-5 w-5" />,
+                name: 'Mute forever',
+                onClick: async () => {
+                  await updatePrivateMessageChannel({
+                    channelId: channelId,
+                    notifyAfterTime: Date.now() + 100 * YEAR_MS,
+                  })
                 },
               },
               {

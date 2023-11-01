@@ -159,14 +159,14 @@ export const useUnseenPrivateMessageChannels = (
   if (!lastSeenChatTimeByChannelId) return []
   return Object.keys(allMessagesByChannelId)
     .map((channelId) => {
-      const joinedChannelTime = tsToMillis(
+      const notifyAfterTime = tsToMillis(
         messageChannelMemberships?.find(
           (m) => m.channel_id === parseInt(channelId)
-        )?.created_time ?? '0'
+        )?.notify_after_time ?? '0'
       )
       const lastSeenTime = lastSeenChatTimeByChannelId[channelId as any] ?? 0
       const lastSeenChatTime =
-        joinedChannelTime > lastSeenTime ? joinedChannelTime : lastSeenTime ?? 0
+        notifyAfterTime > lastSeenTime ? notifyAfterTime : lastSeenTime ?? 0
       return allMessagesByChannelId[channelId]?.filter(
         (c) => c.userId !== userId && c.createdTime > lastSeenChatTime
       )

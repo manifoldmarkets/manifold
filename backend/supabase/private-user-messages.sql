@@ -22,6 +22,7 @@ create table if not exists
     user_id text not null,
     role text not null default 'member', -- member, creator
     status text not null default 'proposed', -- proposed, joined, left, banned
+    notify_after_time timestamptz not null default now(),
     unique (channel_id, user_id)
 );
 

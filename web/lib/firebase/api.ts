@@ -542,6 +542,12 @@ export function sendUserPrivateMessage(params: {
 export function leavePrivateMessageChannel(params: { channelId: number }) {
   return call(getApiUrl('leave-private-user-message-channel'), 'POST', params)
 }
+export function updatePrivateMessageChannel(params: {
+  channelId: number
+  notifyAfterTime: number
+}) {
+  return call(getApiUrl('update-private-user-message-channel'), 'POST', params)
+}
 
 export function searchLocation(params: { term: string; limit?: number }) {
   return call(getApiUrl('searchlocation'), 'POST', params)

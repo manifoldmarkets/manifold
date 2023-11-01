@@ -1398,6 +1398,7 @@ export interface Database {
           channel_id: number
           created_time: string
           id: number
+          notify_after_time: string
           role: string
           status: string
           user_id: string
@@ -1406,6 +1407,7 @@ export interface Database {
           channel_id: number
           created_time?: string
           id?: never
+          notify_after_time?: string
           role?: string
           status?: string
           user_id: string
@@ -1414,6 +1416,7 @@ export interface Database {
           channel_id?: number
           created_time?: string
           id?: never
+          notify_after_time?: string
           role?: string
           status?: string
           user_id?: string
