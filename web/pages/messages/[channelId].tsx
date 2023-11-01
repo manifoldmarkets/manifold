@@ -89,19 +89,26 @@ export const PrivateChat = (props: {
     true,
     [channel]
   )
-  const otherUserIds = uniq(
+  const maxUsers = 100
+  const userIdsFromMessages = uniq(
     (realtimeMessages ?? [])
       .filter((message) => message.userId !== user.id)
       .map((message) => message.userId)
-      .concat(otherUsersFromChannel?.[channelId]?.map((m) => m.user_id) ?? [])
   )
+  const userIdsFromMemberships = (
+    otherUsersFromChannel?.[channelId]?.map((m) => m.user_id) ?? []
+  )
+    .filter((userId) => !userIdsFromMessages.includes(userId))
+    .slice(0, maxUsers - userIdsFromMessages.length)
+  const otherUserIds = userIdsFromMessages.concat(userIdsFromMemberships)
+
   const usersThatLeft = filterDefined(
     otherUsersFromChannel?.[channelId]
       ?.filter((membership) => membership.status === 'left')
       .map((membership) => membership.user_id) ?? []
   )
 
-  const otherUsers = useUsersInStore(otherUserIds)
+  const otherUsers = useUsersInStore(otherUserIds, maxUsers)
   const remainingUsers = filterDefined(
     otherUsers?.filter((user) => !usersThatLeft.includes(user.id)) ?? []
   )

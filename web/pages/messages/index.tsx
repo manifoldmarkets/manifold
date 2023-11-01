@@ -79,7 +79,7 @@ export const MessageChannelRow = (props: {
 }) => {
   const { otherUserIds, currentUser, channel } = props
   const channelId = channel.id
-  const otherUsers = useUsersInStore(otherUserIds)
+  const otherUsers = useUsersInStore(otherUserIds, 100)
 
   const messages = useRealtimePrivateMessagesPolling(channelId, true, 2000)
   const unseen = useHasUnseenPrivateMessage(currentUser.id, channelId, messages)

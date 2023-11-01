@@ -33,7 +33,7 @@ export function useUsers(userIds: string[]) {
 
   return users
 }
-export function useUsersInStore(userIds: string[]) {
+export function useUsersInStore(userIds: string[], limit?: number) {
   const [users, setUsers] = usePersistentInMemoryState<User[] | undefined>(
     undefined,
     'use-users-in-store'
@@ -44,11 +44,13 @@ export function useUsersInStore(userIds: string[]) {
       (id) => !users?.find((user) => user.id === id)
     )
     if (userIdsToFetch.length === 0) return
-    getUsers(userIdsToFetch).then((newUsers) => {
-      setUsers((currentUsers) =>
-        uniqBy((currentUsers || []).concat(newUsers), 'id')
-      )
-    })
+    getUsers(limit ? userIdsToFetch.slice(0, limit) : userIdsToFetch).then(
+      (newUsers) => {
+        setUsers((currentUsers) =>
+          uniqBy((currentUsers || []).concat(newUsers), 'id')
+        )
+      }
+    )
   }, [userIds])
 
   return users?.filter((user) => userIds.includes(user.id))

@@ -2,7 +2,14 @@ import { ChatMessage } from 'common/chat-message'
 import { millisToTs, Row, run, tsToMillis } from 'common/supabase/utils'
 import { useSubscription } from 'web/lib/supabase/realtime/use-subscription'
 import { useEffect, useState } from 'react'
-import { NumericDictionary, first, groupBy, maxBy, orderBy } from 'lodash'
+import {
+  NumericDictionary,
+  first,
+  groupBy,
+  maxBy,
+  orderBy,
+  uniqBy,
+} from 'lodash'
 import { useIsAuthorized } from 'web/hooks/use-user'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import {
@@ -250,13 +257,21 @@ export const useOtherUserIdsInPrivateMessageChannelIds = (
         userId,
         channels.filter((c) => !c.title).map((c) => c.id),
         100
-      ).then((c) => setChannelMemberships((prev) => [...(prev ?? []), ...c]))
+      ).then((c) =>
+        setChannelMemberships((prev) =>
+          uniqBy([...(prev ?? []), ...c], (cm) => cm.user_id + cm.channel_id)
+        )
+      )
       // General chat w/ tons of users
       getOtherUserIdsInPrivateMessageChannelIds(
         userId,
         channels.filter((c) => c.title).map((c) => c.id),
         50
-      ).then((c) => setChannelMemberships((prev) => [...(prev ?? []), ...c]))
+      ).then((c) =>
+        setChannelMemberships((prev) =>
+          uniqBy([...(prev ?? []), ...c], (cm) => cm.user_id + cm.channel_id)
+        )
+      )
     }
   }, [userId, isAuthed, JSON.stringify(channels)])
   return groupBy(channelMemberships, 'channel_id') as NumericDictionary<
