@@ -2155,6 +2155,7 @@ export interface Database {
       }
       users: {
         Row: {
+          created_time: string | null
           data: Json
           fs_updated_time: string
           id: string
@@ -2163,6 +2164,7 @@ export interface Database {
           username: string
         }
         Insert: {
+          created_time?: string | null
           data: Json
           fs_updated_time: string
           id: string
@@ -2171,6 +2173,7 @@ export interface Database {
           username: string
         }
         Update: {
+          created_time?: string | null
           data?: Json
           fs_updated_time?: string
           id?: string
