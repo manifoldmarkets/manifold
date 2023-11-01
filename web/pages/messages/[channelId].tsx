@@ -175,9 +175,13 @@ export const PrivateChat = (props: {
     editor.commands.clearContent()
     setIsSubmitting(false)
     editor?.commands?.focus()
-    scrollToBottomRef?.scrollIntoView({
-      block: 'end',
-    })
+    setTimeout(
+      () =>
+        scrollToBottomRef?.scrollIntoView({
+          block: 'end',
+        }),
+      100
+    )
   }
 
   return (
@@ -312,11 +316,6 @@ export const PrivateChat = (props: {
                 key={messages[0].id}
                 chats={messages}
                 currentUser={user}
-                ref={
-                  i === groupedMessages.length - 1
-                    ? setScrollToBottomRef
-                    : undefined
-                }
                 otherUser={otherUsers?.find(
                   (user) => user.id === messages[0].userId
                 )}
@@ -339,6 +338,7 @@ export const PrivateChat = (props: {
             No messages yet. Say something why don't ya?
           </div>
         )}
+        {groupedMessages.length > 0 && <div ref={setScrollToBottomRef} />}
       </Col>
       <div className="bg-canvas-50 sticky bottom-[56px] flex w-full justify-start gap-2 lg:bottom-0">
         <CommentInputTextArea
