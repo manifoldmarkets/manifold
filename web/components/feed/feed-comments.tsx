@@ -613,12 +613,13 @@ function CommentActions(props: {
           >
             <Row className={'mt-0.5 gap-1'}>
               {diff != 0 && <span className="">{Math.abs(diff)}</span>}
-              {diff > 0
-                ? <FaArrowTrendUp className={'h-5 w-5 text-teal-500'}/>
-                : diff < 0
-                ? <FaArrowTrendDown className={'h-5 w-5 text-scarlet-500'}/>
-                : <FaArrowTrendUp className={'h-5 w-5'}/>
-              }
+              {diff > 0 ? (
+                <FaArrowTrendUp className={'h-5 w-5 text-teal-500'} />
+              ) : diff < 0 ? (
+                <FaArrowTrendDown className={'text-scarlet-500 h-5 w-5'} />
+              ) : (
+                <FaArrowTrendUp className={'h-5 w-5'} />
+              )}
             </Row>
           </IconButton>
         </Tooltip>
