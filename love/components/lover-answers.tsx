@@ -1,14 +1,14 @@
+import { track } from '@amplitude/analytics-browser'
+import { NextRouter } from 'next/router'
+import { PencilIcon } from '@heroicons/react/outline'
+import { orderBy } from 'lodash'
+
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Subtitle } from './widgets/lover-subtitle'
 import { Row as rowFor } from 'common/supabase/utils'
 import { Button } from 'web/components/buttons/button'
-import { track } from '@amplitude/analytics-browser'
-import { NextRouter } from 'next/router'
-import { PencilIcon } from '@heroicons/react/outline'
-import { orderBy } from 'lodash'
 import { Linkify } from 'web/components/widgets/linkify'
-import { useUser } from 'web/hooks/use-user'
 
 export function LoverAnswers(props: {
   isCurrentUser: boolean
@@ -58,7 +58,9 @@ export function LoverAnswers(props: {
             return (
               <Col
                 key={question.id}
-                className={'bg-canvas-0 flex-grow rounded-md px-3 py-2'}
+                className={
+                  'bg-canvas-0 flex-grow whitespace-pre-line rounded-md px-3 py-2 leading-relaxed'
+                }
               >
                 <Row className={'font-semibold'}>{question.question}</Row>
                 <Linkify
