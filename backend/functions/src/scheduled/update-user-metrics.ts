@@ -47,6 +47,15 @@ export async function updateUserMetricsCore() {
   const db = createSupabaseClient()
   const writer = firestore.bulkWriter()
 
+  const today = new Date().toDateString().replace(' ', '-')
+  const lockName = `update-user-metrics`
+  const lockRef = firestore.collection('locks').doc(lockName)
+  await lockRef.create({}).catch((_e) => {
+    throw new Error(
+      `Could not acquire ${lockName} lock, which means it was probably already running`
+    )
+  })
+
   log('Loading users...')
   const users = await pg.map(
     `select data from users order by data->'metricsLastUpdated' asc nulls first limit 5000`,
@@ -207,7 +216,9 @@ export async function updateUserMetricsCore() {
   await writer.close()
 
   await revalidateStaticProps('/leaderboards')
-  log('Done.')
+
+  await lockRef.delete()
+log('Done.')
 }
 
 const getRelevantContracts = async (pg: SupabaseDirectClient, bets: Bet[]) => {
