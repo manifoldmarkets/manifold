@@ -357,7 +357,7 @@ export const Stats = (props: {
         {!hideAdvanced && isBettingContract && (
           <tr className={clsx(isMod && 'bg-purple-500/30')}>
             <td>
-              Subsidised{' '}
+              Subsidized{' '}
               <InfoTooltip
                 text={'Market receives unique trader bonuses and house subsidy'}
               />
@@ -366,7 +366,7 @@ export const Stats = (props: {
               <ShortToggle
                 className="align-middle"
                 disabled={!isMod}
-                on={contract.isSubsidised ?? true}
+                on={contract.isSubsidized ?? true}
                 setOn={(on) => {
                   toast.promise(
                     on

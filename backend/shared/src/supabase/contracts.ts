@@ -297,7 +297,12 @@ export const getUserToReasonsInterestedInContractAndUser = async (
 }
 
 export const isContractNonPredictive = (contract: Contract) => {
-  return contract.question.trim().toLowerCase().includes('daily coinflip')
+  const questionIncludesDailyCoinflip = contract.question
+    .trim()
+    .toLowerCase()
+    .includes('daily coinflip')
+  const createdByManifoldLove = contract.creatorUsername === 'ManifoldLove'
+  return questionIncludesDailyCoinflip || createdByManifoldLove
   // return (
   //   await pg.map(
   //     `

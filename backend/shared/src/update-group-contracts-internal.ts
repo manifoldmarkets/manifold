@@ -60,19 +60,19 @@ export async function addGroupToContract(
 
   if (group.id === UNRANKED_GROUP_ID && !contract.isRanked) {
     await firestore.collection('contracts').doc(contract.id).update({
-      isRanked: false,
+      isRanked: true,
     })
     if (recordEdit) {
       await recordContractEdit(contract, recordEdit.userId, ['isRanked'])
     }
   }
 
-  if (group.id === UNSUBSIDIZED_GROUP_ID && !contract.isSubsidised) {
+  if (group.id === UNSUBSIDIZED_GROUP_ID && !contract.isSubsidized) {
     await firestore.collection('contracts').doc(contract.id).update({
-      isSubsidised: false,
+      isSubsidized: true,
     })
     if (recordEdit) {
-      await recordContractEdit(contract, recordEdit.userId, ['isSubsidised'])
+      await recordContractEdit(contract, recordEdit.userId, ['isSubsidized'])
     }
   }
 
@@ -117,15 +117,15 @@ export async function removeGroupFromContract(
 
   if (group.id === UNRANKED_GROUP_ID && contract.isRanked) {
     await firestore.collection('contracts').doc(contract.id).update({
-      isRanked: true,
+      isRanked: false,
     })
     await recordContractEdit(contract, userId, ['isRanked'])
   }
-  if (group.id === UNSUBSIDIZED_GROUP_ID && contract.isSubsidised) {
+  if (group.id === UNSUBSIDIZED_GROUP_ID && contract.isSubsidized) {
     await firestore.collection('contracts').doc(contract.id).update({
-      isSubsidised: true,
+      isSubsidized: false,
     })
-    await recordContractEdit(contract, userId, ['isRanked'])
+    await recordContractEdit(contract, userId, ['isSubsidized'])
   }
   await trackPublicEvent(userId, 'remove market from topic', {
     contractId: contract.id,
