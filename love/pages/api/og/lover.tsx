@@ -83,7 +83,7 @@ function OgLover(props: LoveOgProps) {
         style={{ fontFamily: 'var(--font-main), Figtree-light' }}
       >
         <img
-          className="mr-1.5 h-12 w-12"
+          className="mr-1.5 h-12 w-12 object-cover"
           src="https://manifold.love/manifold_love_logo.svg"
           width={48}
           height={48}
