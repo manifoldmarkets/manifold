@@ -91,7 +91,7 @@ export default function UserPage(props: {
               lover={lover}
               router={router}
             />
-            <Matches userId={user.id} />
+            {lover.looking_for_matches && <Matches userId={user.id} />}
             <LoverContent
               isCurrentUser={isCurrentUser}
               router={router}

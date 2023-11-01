@@ -77,7 +77,8 @@ export const Matches = (props: { userId: string }) => {
                 ? contract.loverUserId2
                 : contract.loverUserId1
             const matchedLover = lovers.find(
-              (lover) => lover.user_id === matchedLoverId
+              (lover) =>
+                lover.user_id === matchedLoverId && lover.looking_for_matches
             )
             return (
               matchedLover && (
