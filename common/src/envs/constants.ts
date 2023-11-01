@@ -246,7 +246,7 @@ export const GROUP_SLUGS_TO_IGNORE_IN_MARKETS_EMAIL = [
   'manifold-features-25bad7c7792e',
   'bugs',
   'manifold-leagues',
-  'unranked',
+  'nonpredictive',
 ]
 
 export const DEEMPHASIZED_GROUP_SLUGS = [
@@ -273,6 +273,7 @@ export const DEEMPHASIZED_GROUP_SLUGS = [
   'destinygg',
   'the-market',
   'nonpredictive-profits',
+  'nonpredictive',
   'personal-goals',
   'personal',
   'rationalussy',
@@ -319,6 +320,7 @@ export const GROUP_SLUGS_TO_HIDE_FROM_WELCOME_FLOW = [
   'magaland',
   'metaforecasting',
   'nonpredictive-profits',
+  'nonpredictive',
   '-sircryptomind-crypto-stock',
   'selfresolving',
   'fun',
