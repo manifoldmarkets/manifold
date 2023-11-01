@@ -3,7 +3,8 @@ create table if not exists
   private_user_message_channels (
     id bigint generated always as identity primary key,
     created_time timestamptz not null default now(),
-    last_updated_time timestamptz not null default now()
+    last_updated_time timestamptz not null default now(),
+    title text -- title is public, so handle this before allowing users to set titles
   );
 
 alter table private_user_message_channels enable row level security;
@@ -20,8 +21,9 @@ create table if not exists
     channel_id bigint not null, -- channel_id is the same as private_user_messages.channel_id
     user_id text not null,
     role text not null default 'member', -- member, creator
-    status text not null default 'proposed' -- proposed, joined, left, banned
-  );
+    status text not null default 'proposed', -- proposed, joined, left, banned
+    unique (channel_id, user_id)
+);
 
 create index if not exists pumcm_members_idx on private_user_message_channel_members (channel_id,user_id);
 
@@ -58,7 +60,8 @@ create table if not exists
     channel_id bigint not null,
     user_id text not null,
     content jsonb not null,
-    created_time timestamptz not null default now()
+    created_time timestamptz not null default now(),
+    visibility text not null default 'private' -- 'private', 'system_status'
   );
 
 alter table private_user_messages enable row level security;

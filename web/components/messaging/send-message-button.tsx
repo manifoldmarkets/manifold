@@ -13,7 +13,7 @@ import { useState } from 'react'
 import { Modal, MODAL_CLASS } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
 import {
-  createPrivateMessageChannelWithUser,
+  createPrivateMessageChannelWithUsers,
   sendUserPrivateMessage,
 } from 'web/lib/firebase/api'
 import { useTextEditor } from 'web/components/widgets/editor'
@@ -22,6 +22,7 @@ import { CommentInputTextArea } from 'web/components/comments/comment-input'
 import { Title } from 'web/components/widgets/title'
 import { Row } from 'web/components/layout/row'
 import { firebaseLogin } from 'web/lib/firebase/users'
+import { PrivateMessageMembership } from 'web/lib/supabase/private-messages'
 
 export const SendMessageButton = (props: {
   toUser: User
@@ -32,14 +33,11 @@ export const SendMessageButton = (props: {
   const router = useRouter()
   const privateUser = usePrivateUser()
   const isAuthed = useIsAuthorized()
-  const channelIds = useSortedPrivateMessageChannelIds(
-    currentUser?.id,
-    isAuthed
-  )
+  const channels = useSortedPrivateMessageChannelIds(currentUser?.id, isAuthed)
   const channelIdsToUserIds = useOtherUserIdsInPrivateMessageChannelIds(
     currentUser?.id,
     isAuthed,
-    channelIds
+    channels
   )
   const [openComposeModal, setOpenComposeModal] = useState(false)
   const [error, setError] = useState('')
@@ -50,7 +48,8 @@ export const SendMessageButton = (props: {
     if (!isAuthed) return
     const keyFound = findKey(
       channelIdsToUserIds,
-      (values: string[]) => values.length === 1 && first(values) === toUser.id
+      (values: PrivateMessageMembership[]) =>
+        values.length === 1 && first(values)?.user_id === toUser.id
     )
 
     const previousChannelId =
@@ -69,8 +68,8 @@ export const SendMessageButton = (props: {
   const sendMessage = async () => {
     if (!editor) return
     setSubmitting(true)
-    const res = await createPrivateMessageChannelWithUser({
-      userId: toUser.id,
+    const res = await createPrivateMessageChannelWithUsers({
+      userIds: [toUser.id],
     }).catch((e) => {
       setError(e.message)
       setSubmitting(false)

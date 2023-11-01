@@ -10,7 +10,8 @@ import { BiEnvelope, BiSolidEnvelope } from 'react-icons/bi'
 import clsx from 'clsx'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 
-export function UnseenMessagesBubble() {
+export function UnseenMessagesBubble(props: { className?: string }) {
+  const { className } = props
   const privateUser = usePrivateUser()
   const isAuthed = useIsAuthorized()
 
@@ -19,7 +20,7 @@ export function UnseenMessagesBubble() {
   }
   return (
     <InternalUnseenMessagesBubble
-      iconClassName={'-mr-4'}
+      iconClassName={clsx('-mr-4', className)}
       isAuthed={isAuthed}
       privateUser={privateUser}
     />
@@ -28,9 +29,10 @@ export function UnseenMessagesBubble() {
 
 export function PrivateMessagesIcon(props: {
   className?: string
+  iconClassName?: string
   solid?: boolean
 }) {
-  const { solid } = props
+  const { solid, iconClassName } = props
   const privateUser = usePrivateUser()
   const isAuthed = useIsAuthorized()
   const Icon = solid ? BiSolidEnvelope : BiEnvelope
@@ -39,7 +41,7 @@ export function PrivateMessagesIcon(props: {
       {privateUser && isAuthed && (
         <InternalUnseenMessagesBubble
           isAuthed={isAuthed}
-          iconClassName={'-mt-2'}
+          iconClassName={clsx('-mt-2', iconClassName)}
           privateUser={privateUser}
         />
       )}
@@ -49,7 +51,7 @@ export function PrivateMessagesIcon(props: {
 }
 
 export function SolidPrivateMessagesIcon(props: { className?: string }) {
-  return <PrivateMessagesIcon {...props} solid />
+  return <PrivateMessagesIcon {...props} solid iconClassName={'-mr-5'} />
 }
 
 // Note: must be authorized to use this component
@@ -85,7 +87,11 @@ function InternalUnseenMessagesBubble(props: {
     })
   }, [isReady, asPath])
 
-  const unseenMessages = useUnseenPrivateMessageChannels(privateUser.id, true)
+  const unseenMessages = useUnseenPrivateMessageChannels(
+    privateUser.id,
+    true,
+    lastSeenTime
+  )
     .filter((message) => message.createdTime > lastSeenTime)
     .filter((message) => !asPath.endsWith(`/messages/${message.channelId}`))
 

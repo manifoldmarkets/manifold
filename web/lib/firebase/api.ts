@@ -527,8 +527,8 @@ export function updateMarket(params: {
 export function banUser(params: { userId: string; unban?: boolean }) {
   return call(getApiUrl('ban-user'), 'POST', params)
 }
-export function createPrivateMessageChannelWithUser(params: {
-  userId: string
+export function createPrivateMessageChannelWithUsers(params: {
+  userIds: string[]
 }) {
   return call(getApiUrl('create-private-user-message-channel'), 'POST', params)
 }
@@ -538,6 +538,9 @@ export function sendUserPrivateMessage(params: {
   content: JSONContent
 }) {
   return call(getApiUrl('create-private-user-message'), 'POST', params)
+}
+export function leavePrivateMessageChannel(params: { channelId: number }) {
+  return call(getApiUrl('leave-private-user-message-channel'), 'POST', params)
 }
 
 export function searchLocation(params: { term: string; limit?: number }) {

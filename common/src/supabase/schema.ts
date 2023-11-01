@@ -1425,16 +1425,19 @@ export interface Database {
           created_time: string
           id: number
           last_updated_time: string
+          title: string | null
         }
         Insert: {
           created_time?: string
           id?: never
           last_updated_time?: string
+          title?: string | null
         }
         Update: {
           created_time?: string
           id?: never
           last_updated_time?: string
+          title?: string | null
         }
         Relationships: []
       }
@@ -1445,6 +1448,7 @@ export interface Database {
           created_time: string
           id: number
           user_id: string
+          visibility: string
         }
         Insert: {
           channel_id: number
@@ -1452,6 +1456,7 @@ export interface Database {
           created_time?: string
           id?: never
           user_id: string
+          visibility?: string
         }
         Update: {
           channel_id?: number
@@ -1459,6 +1464,7 @@ export interface Database {
           created_time?: string
           id?: never
           user_id?: string
+          visibility?: string
         }
         Relationships: []
       }
@@ -3128,6 +3134,29 @@ export interface Database {
         }
         Returns: string
       }
+      get_non_empty_private_message_channel_ids:
+        | {
+            Args: {
+              p_user_id: string
+              p_ignored_statuses: string[]
+              p_limit: number
+            }
+            Returns: {
+              created_time: string
+              id: number
+              last_updated_time: string
+              title: string | null
+            }[]
+          }
+        | {
+            Args: {
+              p_user_id: string
+              p_limit?: number
+            }
+            Returns: {
+              id: number
+            }[]
+          }
       get_noob_questions: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -3938,15 +3967,6 @@ export interface Database {
           '': unknown[]
         }
         Returns: number
-      }
-      get_non_empty_private_message_channel_ids: {
-        Args: {
-          p_user_id: string
-          p_limit?: number
-        }
-        Returns: {
-          id: number
-        }
       }
     }
     Enums: {

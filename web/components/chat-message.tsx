@@ -21,30 +21,16 @@ export const ChatMessageItem = forwardRef(
     },
     ref: React.Ref<HTMLDivElement>
   ) => {
-    const {
-      chats,
-      currentUser,
-      otherUser,
-      onReplyClick,
-      beforeSameUser,
-      firstOfUser,
-    } = props
+    const { chats, currentUser, otherUser, beforeSameUser, firstOfUser } = props
     const chat = first(chats)
     if (!chat) return null
     const isMe = currentUser?.id === chat.userId
-    const {
-      username: userUsername,
-      avatarUrl: userAvatarUrl,
-      name: userName,
-    } = !isMe && otherUser
-      ? otherUser
-      : isMe && currentUser
-      ? currentUser
-      : {
-          username: chat.userUsername,
-          avatarUrl: chat.userAvatarUrl,
-          name: chat.userName,
-        }
+    const { username, avatarUrl } =
+      !isMe && otherUser
+        ? otherUser
+        : isMe && currentUser
+        ? currentUser
+        : { username: '', avatarUrl: undefined }
 
     return (
       <Row
@@ -64,15 +50,18 @@ export const ChatMessageItem = forwardRef(
           />
         </Col>
         <Col className="max-w-[calc(100vw-6rem)] md:max-w-[80%]">
-          {firstOfUser && !otherUser && (
+          {firstOfUser && !isMe && chat.visibility !== 'system_status' && (
             <span className="text-ink-500 dark:text-ink-600 mt-1 pl-3 text-sm">
-              {chat.userName}
+              {username}
             </span>
           )}
           <Col
             className={clsx(
-              'rounded-3xl px-3 py-2 drop-shadow-sm',
-              isMe
+              'rounded-3xl px-3 py-2',
+              chat.visibility !== 'system_status' && 'drop-shadow-sm',
+              chat.visibility === 'system_status'
+                ? 'bg-canvas-50 italic  drop-shadow-none'
+                : isMe
                 ? 'bg-primary-100 items-end self-end rounded-br-none'
                 : 'bg-canvas-0 items-start self-start rounded-bl-none'
             )}
@@ -84,9 +73,9 @@ export const ChatMessageItem = forwardRef(
         </Col>
         {!isMe && (
           <MessageAvatar
-            beforeSameUser={!!beforeSameUser}
-            userAvatarUrl={userAvatarUrl}
-            username={userUsername}
+            beforeSameUser={beforeSameUser}
+            userAvatarUrl={avatarUrl}
+            username={username}
           />
         )}
       </Row>

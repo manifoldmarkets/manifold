@@ -7,7 +7,7 @@ import { Modal } from '../layout/modal'
 import { Tabs } from '../layout/tabs'
 import { Row } from 'web/components/layout/row'
 import { Avatar } from 'web/components/widgets/avatar'
-import { FilterSelectUsers } from 'web/components/filter-select-users'
+import { SelectUsers } from 'web/components/select-users'
 import { TextButton } from './text-button'
 import { UserLink } from 'web/components/widgets/user-link'
 import { Button } from './button'
@@ -87,7 +87,7 @@ export function ReferralsDialog(props: {
                   {user.id === currentUser?.id && canSetReferrer(user) ? (
                     <Col className={'mt-1'}>
                       <span>Know who referred you?</span>
-                      <FilterSelectUsers
+                      <SelectUsers
                         setSelectedUsers={setReferredBy}
                         selectedUsers={referredBy}
                         ignoreUserIds={[currentUser.id]}
