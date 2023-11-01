@@ -33,7 +33,7 @@ export const updateUserMetrics = functions
     timeoutSeconds: 540,
     secrets,
   })
-  .pubsub.schedule('every 5 minutes')
+  .pubsub.schedule('every 10 minutes')
   .onRun(async () => {
     await updateUserMetricsCore()
   })
@@ -207,6 +207,7 @@ export async function updateUserMetricsCore() {
   await writer.close()
 
   await revalidateStaticProps('/leaderboards')
+
   log('Done.')
 }
 
