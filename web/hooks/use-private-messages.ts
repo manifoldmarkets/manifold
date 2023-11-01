@@ -117,6 +117,8 @@ export const useUnseenPrivateMessageChannels = (
       .select('*')
       .in('channel_id', channelIds)
       .gt('created_time', millisToTs(sinceLastTime))
+      .limit(100)
+      .order('created_time', { ascending: false })
     const { data } = await run(q)
     return data
   })
@@ -144,7 +146,6 @@ export const useUnseenPrivateMessageChannels = (
         return { channelId, time: tsToMillis(first(data)?.created_time ?? '0') }
       })
     )
-
     const newState: Record<number, number> = {}
     results.forEach(({ channelId, time }) => (newState[channelId] = time))
     setLastSeenChatTimeByChannelId(newState)
@@ -158,17 +159,11 @@ export const useUnseenPrivateMessageChannels = (
   return Object.keys(allMessagesByChannelId)
     .map((channelId) => {
       const joinedChannelTime = tsToMillis(
-        messageChannelMemberships?.[channelId as any]?.created_time ?? '0'
+        messageChannelMemberships?.find(
+          (m) => m.channel_id === parseInt(channelId)
+        )?.created_time ?? '0'
       )
       const lastSeenTime = lastSeenChatTimeByChannelId[channelId as any] ?? 0
-      console.log(
-        'lastSeenTime',
-        lastSeenTime,
-        'joinedChannelTime',
-        joinedChannelTime,
-        'channelId',
-        channelId
-      )
       const lastSeenChatTime =
         joinedChannelTime > lastSeenTime ? joinedChannelTime : lastSeenTime ?? 0
       return allMessagesByChannelId[channelId]?.filter(
