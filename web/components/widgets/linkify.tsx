@@ -35,7 +35,7 @@ export function Linkify(props: { text: string; className?: string }) {
     )
   })
   return (
-    <span className={clsx(className, 'break-anywhere')}>
+    <span className={clsx(className, 'break-anywhere whitespace-pre-line')}>
       {text.split(regex).map((part, i) => (
         <Fragment key={i}>
           {part}
