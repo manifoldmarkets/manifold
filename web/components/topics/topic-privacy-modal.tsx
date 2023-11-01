@@ -65,20 +65,20 @@ export const PRIVACY_STATUS_ITEMS = {
     bigIcon: <GlobeIcon className="h-6 w-6" />,
     status: 'Public',
     descriptor:
-      'Anyone can view, join, and add their own questions to this category.',
+      'Anyone can view and follow this topic, and tag their questions with this topic',
   },
   curated: {
     icon: <ShieldCheckIcon className="h-4 w-4" />,
     bigIcon: <ShieldCheckIcon className="h-6 w-6" />,
     status: 'Curated',
     descriptor:
-      'Anyone can view and join this category, but only admins and moderators can add/remove questions.',
+      'Anyone can view and follow this topic, but only admins and moderators can tag/untag questions with this topic',
   },
   private: {
     icon: <LockClosedIcon className="h-4 w-4" />,
     bigIcon: <LockClosedIcon className="h-6 w-6" />,
     status: 'Private',
     descriptor:
-      'The content in this category is not viewable by the public. Only approved users can join this category. Manifold devs may view for development reasons.',
+      'The content in this topic is not viewable by the public. Only approved users can see this topic. Manifold devs may view for development reasons.',
   },
 }

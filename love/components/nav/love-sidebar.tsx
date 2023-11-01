@@ -75,7 +75,7 @@ export default function Sidebar(props: {
           setIsModalOpen={setIsModalOpen}
         />
 
-        {user === null && <SidebarSignUpButton />}
+        {user === null && <SignUpButton />}
 
         {user && lover === null && (
           <Button className="mt-2" onClick={() => router.push('signup')}>
@@ -124,8 +124,8 @@ const bottomNav = (
     loggedIn && { name: 'Sign out', icon: LogoutIcon, onClick: logout }
   )
 
-const SidebarSignUpButton = (props: { className?: string }) => {
-  const { className } = props
+export const SignUpButton = (props: { text?: string; className?: string }) => {
+  const { className, text } = props
 
   return (
     <Col className={clsx('mt-4', className)}>
@@ -135,7 +135,7 @@ const SidebarSignUpButton = (props: { className?: string }) => {
         onClick={signupThenMaybeRedirectToSignup}
         className="w-full"
       >
-        Sign up now
+        {text ?? 'Sign up now'}
       </Button>
       {/* <PlayMoneyDisclaimer /> */}
     </Col>

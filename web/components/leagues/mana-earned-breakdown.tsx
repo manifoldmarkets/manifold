@@ -62,8 +62,9 @@ export const ManaEarnedBreakdown = (props: {
     ? uniq(loadingBets.map((b) => b.contractId))
     : undefined
   const contracts = usePublicContracts(contractIds)?.filter(
-    (c) => !c.nonPredictive
+    (c) => c.isRanked !== false
   )
+
   const contractsById = keyBy(contracts, 'id')
 
   const betsByContract = groupBy(bets, 'contractId')

@@ -1,5 +1,5 @@
 import { SupabaseDirectClient } from 'shared/supabase/init'
-import { SupabaseClient } from 'common/supabase/utils'
+import { SupabaseClient, tsToMillis } from 'common/supabase/utils'
 import { DAY_MS, HOUR_MS, MINUTE_MS } from 'common/util/time'
 import { log } from 'shared/utils'
 import { Contract } from 'common/contract'
@@ -37,9 +37,9 @@ export async function addInterestingContractsToFeed(
   if (Object.keys(userInterestEmbeddings).length === 0)
     await loadUserEmbeddingsToStore(pg)
   const contracts = await pg.map(
-    `select data, importance_score from contracts 
+    `select data, importance_score from contracts
             where importance_score >= 0.225
-            order by importance_score desc 
+            order by importance_score desc
             `,
     [],
     rowToContract
@@ -143,38 +143,37 @@ export async function addInterestingContractsToFeed(
 const getUserEmbeddingDetails = async (
   pg: SupabaseDirectClient,
   since = 0,
-  userIds: string[] | null = null
+  userId: string | null = null
 ) => {
   const newUserInterestEmbeddings: Dictionary<UserEmbeddingDetails> = {}
 
+  // mqp -- careful with this query, a correlated subquery seemed like it
+  // worked best to me to avoid an expensive scan over the huge USM table
   await pg.map(
     `
-      select u.id as user_id,
-      ((u.data->'createdTime')::bigint) as created_time,
+    select u.id as user_id,
+      u.created_time as created_time,
       ((u.data->'lastBetTime')::bigint) as last_bet_time,
-      coalesce(max_created_time, 0) as last_seen_time,
-      interest_embedding,
-      disinterest_embedding 
-    from user_embeddings
-    join users u on u.id = user_embeddings.user_id
-    left join (
-        select usm.user_id, ts_to_millis(max(usm.created_time)) as max_created_time
+      coalesce((
+        select ts_to_millis(max(usm.created_time)) as max_created_time
         from user_seen_markets usm
-        group by usm.user_id
-    ) as usm on u.id = usm.user_id
-    where ((u.data->'createdTime')::bigint) > $1
-      and ($2::text[] is null or u.id = any($2::text[]))
+        where usm.user_id = u.id), 0) as last_seen_time,
+      interest_embedding,
+      disinterest_embedding
+    from users as u
+    join user_embeddings on u.id = user_embeddings.user_id
+    where u.created_time > millis_to_ts($1) and ($2 is null or u.id = $2)
     `,
-    [since, userIds],
+    [since, userId],
     (row) => {
       const interest = JSON.parse(row.interest_embedding) as number[]
       const disinterest = row.disinterest_embedding
         ? (JSON.parse(row.disinterest_embedding) as number[])
         : null
       const lastBetTime = row.last_bet_time
-      const createdTime = row.created_time
+      const createdTime = tsToMillis(row.created_time)
       const lastSeenTime =
-        row.last_seen_time == 0 ? row.created_time : row.last_seen_time
+        row.last_seen_time == 0 ? tsToMillis(row.created_time) : row.last_seen_time
 
       newUserInterestEmbeddings[row.user_id] = {
         interest,
@@ -201,9 +200,7 @@ const loadUserEmbeddingsToStore = async (
   })
 
   if (!newUserInterestEmbeddings[DEFAULT_FEED_USER_ID]) {
-    const defaultUser = await getUserEmbeddingDetails(pg, 0, [
-      DEFAULT_FEED_USER_ID,
-    ])
+    const defaultUser = await getUserEmbeddingDetails(pg, 0, DEFAULT_FEED_USER_ID)
     userInterestEmbeddings[DEFAULT_FEED_USER_ID] =
       defaultUser[DEFAULT_FEED_USER_ID]
   }

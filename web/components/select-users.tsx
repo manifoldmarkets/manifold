@@ -10,7 +10,7 @@ import { searchUsers, UserSearchResult } from 'web/lib/supabase/users'
 import { Col } from 'web/components/layout/col'
 import { Button } from 'web/components/buttons/button'
 
-export function FilterSelectUsers(props: {
+export function SelectUsers(props: {
   setSelectedUsers: (users: UserSearchResult[]) => void
   selectedUsers: UserSearchResult[]
   ignoreUserIds: string[]
@@ -18,6 +18,8 @@ export function FilterSelectUsers(props: {
   selectedUsersClassName?: string
   showUserUsername?: boolean
   maxUsers?: number
+  searchLimit?: number
+  className?: string
 }) {
   const {
     ignoreUserIds,
@@ -27,6 +29,8 @@ export function FilterSelectUsers(props: {
     selectedUsersClassName,
     showUserUsername,
     maxUsers,
+    className,
+    searchLimit,
   } = props
   const [query, setQuery] = useState('')
   const [filteredUsers, setFilteredUsers] = useState<UserSearchResult[]>([])
@@ -37,7 +41,7 @@ export function FilterSelectUsers(props: {
   useEffect(() => {
     const id = ++requestId.current
     if (queryReady) {
-      searchUsers(query, 5).then((results) => {
+      searchUsers(query, searchLimit ?? 5).then((results) => {
         // if there's a more recent request, forget about this one
         if (id === requestId.current) {
           setFilteredUsers(
@@ -57,17 +61,16 @@ export function FilterSelectUsers(props: {
 
   const shouldShow = maxUsers ? selectedUsers.length < maxUsers : true
   return (
-    <div>
+    <Col className={className}>
       {shouldShow && (
         <>
-          <Col className="relative mt-1 rounded-md">
+          <Col className="relative mt-1 w-full rounded-md">
             <Input
               type="text"
               name="user name"
               id="user name"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              className=" max-w-xs"
               placeholder="e.g. Ian Philips"
             />
           </Col>
@@ -75,7 +78,7 @@ export function FilterSelectUsers(props: {
             <Menu
               as="div"
               className={clsx(
-                'relative inline-block w-full max-w-xs overflow-y-scroll text-right',
+                'relative inline-block w-full overflow-y-scroll text-right',
                 queryReady && 'h-56'
               )}
             >
@@ -168,6 +171,6 @@ export function FilterSelectUsers(props: {
           </Row>
         </>
       )}
-    </div>
+    </Col>
   )
 }

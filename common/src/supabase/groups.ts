@@ -2,7 +2,8 @@ import { SupabaseClient } from '@supabase/supabase-js'
 import { Row, convertSQLtoTS, run } from 'common/supabase/utils'
 import { Group } from 'common/group'
 
-export const NON_PREDICTIVE_GROUP_ID = 'f141b8ca-eac3-4400-962a-72973b3ceb62'
+export const UNRANKED_GROUP_ID = 'f141b8ca-eac3-4400-962a-72973b3ceb62'
+export const UNSUBSIDIZED_GROUP_ID = 'f08f4130-3410-4030-9bf5-f675e5035e9c'
 
 export async function getGroup(db: SupabaseClient, groupId: string) {
   const { data } = await run(db.from('groups').select().eq('id', groupId))

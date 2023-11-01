@@ -111,6 +111,7 @@ export const BOT_USERNAMES = [
   'mirrorbot',
   'JakeBot',
   'loopsbot',
+  'breezybot',
 ]
 
 export const CORE_USERNAMES = [
@@ -214,6 +215,7 @@ export const VERIFIED_USERNAMES = [
   'DylanMatthews',
   'RobinHanson',
   'KevinRoose18ac',
+  'KnowNothing',
 ]
 
 export const HOUSE_BOT_USERNAME = 'acc'
@@ -272,6 +274,7 @@ export const DEEMPHASIZED_GROUP_SLUGS = [
   'destinygg',
   'the-market',
   'nonpredictive-profits',
+  'nonpredictive',
   'personal-goals',
   'personal',
   'rationalussy',
@@ -318,10 +321,11 @@ export const GROUP_SLUGS_TO_HIDE_FROM_WELCOME_FLOW = [
   'magaland',
   'metaforecasting',
   'nonpredictive-profits',
+  'nonpredictive',
   '-sircryptomind-crypto-stock',
   'selfresolving',
   'fun',
-  'nonpredictive',
+  'unranked',
   'bugs',
   'rationalussy',
   'personal',

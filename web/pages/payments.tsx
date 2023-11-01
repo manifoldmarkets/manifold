@@ -7,7 +7,7 @@ import { Row } from 'web/components/layout/row'
 import { Button } from 'web/components/buttons/button'
 import { useEffect, useState } from 'react'
 import { Modal } from 'web/components/layout/modal'
-import { FilterSelectUsers } from 'web/components/filter-select-users'
+import { SelectUsers } from 'web/components/select-users'
 import { UserSearchResult } from 'web/lib/supabase/users'
 import { AmountInput } from 'web/components/widgets/amount-input'
 import { sendMana } from 'web/lib/firebase/api'
@@ -268,7 +268,8 @@ export const PaymentsModal = (props: {
                   </Row>
                 </Col>
               ) : (
-                <FilterSelectUsers
+                <SelectUsers
+                  className={'w-64'}
                   setSelectedUsers={setToUsers}
                   selectedUsers={toUsers}
                   ignoreUserIds={[fromUser.id]}

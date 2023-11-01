@@ -19,9 +19,19 @@ import { useIsAuthorized } from 'web/hooks/use-user'
 import { useNearbyCities } from 'love/hooks/use-nearby-locations'
 import { Slider } from 'web/components/widgets/slider'
 import { useEffectCheckEquality } from 'web/hooks/use-effect-check-equality'
+import { Select } from 'web/components/widgets/select'
+
+type FilterFields = {
+  orderBy: 'last_online_time' | 'created_time'
+} & rowFor<'lovers'> &
+  User
+
+function isOrderBy(input: string): input is FilterFields['orderBy'] {
+  return ['last_online_time', 'created_time'].includes(input)
+}
 
 const labelClassName = 'font-semibold'
-const initialFilters = {
+const initialFilters: Partial<FilterFields> = {
   name: undefined,
   gender: undefined,
   pref_age_max: undefined,
@@ -32,6 +42,7 @@ const initialFilters = {
   is_smoker: undefined,
   pref_relation_styles: undefined,
   pref_gender: undefined,
+  orderBy: 'last_online_time',
 }
 export const Filters = (props: {
   allLovers: Lover[] | undefined
@@ -40,7 +51,7 @@ export const Filters = (props: {
 }) => {
   const { allLovers, setLovers, youLover } = props
   const [filters, setFilters] = usePersistentInMemoryState<
-    Partial<rowFor<'lovers'> & User>
+    Partial<FilterFields>
   >(initialFilters, 'profile-filters')
 
   const [nearbyOriginLocation, setNearbyOriginLocation] = useState<
@@ -63,7 +74,7 @@ export const Filters = (props: {
 
   const nearbyCities = useNearbyCities(nearbyOriginLocation, debouncedRadius)
 
-  const updateFilter = (newState: Partial<rowFor<'lovers'> & User>) => {
+  const updateFilter = (newState: Partial<FilterFields>) => {
     setFilters((prevState) => ({ ...prevState, ...newState }))
   }
   const clearFilters = () => {
@@ -83,8 +94,17 @@ export const Filters = (props: {
   const applyFilters = () => {
     const sortedLovers = orderBy(
       allLovers,
-      (lover) =>
-        (lover.pinned_url ? 2 : 1) * new Date(lover.last_online_time).getTime(),
+      (lover) => {
+        switch (filters.orderBy) {
+          case 'last_online_time':
+            return (
+              (lover.pinned_url ? 2 : 1) *
+              new Date(lover.last_online_time).getTime()
+            )
+          case 'created_time':
+            return new Date(lover.created_time).getTime()
+        }
+      },
       'desc'
     )
     const filteredLovers = sortedLovers?.filter((lover) => {
@@ -154,16 +174,16 @@ export const Filters = (props: {
     setLovers(filteredLovers)
   }
   const cities: { [key: string]: string } = {
+    All: '',
     'San Francisco': 'San Francisco',
     'New York City': 'New York City',
     London: 'London',
-    All: '',
   }
   const [showFilters, setShowFilters] = useState(false)
 
-  const rowClassName = 'gap-2'
+  const rowClassName = 'gap-2 items-start'
   return (
-    <Row className="bg-canvas-0 w-full gap-2 p-2">
+    <Row className="bg-canvas-0 w-full gap-2 py-2">
       <Col className={'w-full'}>
         <Row className={'mb-2 justify-between gap-2'}>
           <Input
@@ -171,26 +191,48 @@ export const Filters = (props: {
             className={'w-full max-w-xs'}
             onChange={(e) => updateFilter({ name: e.target.value })}
           />
-          <Button
-            color={'gray-outline'}
-            onClick={() => setShowFilters(!showFilters)}
-          >
-            {showFilters ? (
-              <ChevronUpIcon className={'mr-2 h-4 w-4'} />
-            ) : (
-              <ChevronDownIcon className={'mr-2 h-4 w-4'} />
-            )}
-            {showFilters ? 'Filters' : 'Filters'}
-          </Button>
+
+          <Row className="gap-2">
+            <Select
+              onChange={(e) => {
+                if (isOrderBy(e.target.value)) {
+                  updateFilter({
+                    orderBy: e.target.value,
+                  })
+                }
+              }}
+              value={filters.orderBy || 'last_online_time'}
+              className={'w-18 border-ink-300 rounded-md'}
+            >
+              <option value="last_online_time">Recently Active</option>
+              <option value="created_time">Newly Registered</option>
+            </Select>
+
+            <Button
+              color={'gray-outline'}
+              onClick={() => setShowFilters(!showFilters)}
+            >
+              {showFilters ? (
+                <ChevronUpIcon className={'mr-2 h-4 w-4'} />
+              ) : (
+                <ChevronDownIcon className={'mr-2 h-4 w-4'} />
+              )}
+              {showFilters ? 'Filters' : 'Filters'}
+            </Button>
+          </Row>
         </Row>
         {showFilters && (
           <>
-            <Row className={'flex-wrap gap-4'}>
+            <Row
+              className={
+                'border-ink-300 dark:border-ink-300 grid grid-cols-1 gap-4 rounded-md border p-4 md:grid-cols-2'
+              }
+            >
               <Col className={clsx(rowClassName)}>
                 <label className={clsx(labelClassName)}>Gender</label>
                 <select
                   className={
-                    'bg-canvas-0 text-ink-1000 border-ink-300 focus:border-primary-500 focus:ring-primary-500 rounded-md '
+                    'bg-canvas-0 text-ink-1000 border-ink-300 focus:border-primary-500 focus:ring-primary-500 w-full rounded-md sm:w-3/4'
                   }
                   onChange={(e) =>
                     updateFilter({
@@ -228,12 +270,12 @@ export const Filters = (props: {
                 />
               </Col>
 
-              <Row className="gap-4">
-                <Col className={clsx(rowClassName)}>
+              <Row className="gap-4 sm:pr-8">
+                <Col className={clsx(rowClassName, 'grow')}>
                   <label className={clsx(labelClassName)}>Min age</label>
                   <Input
                     type="number"
-                    className={'w-20'}
+                    className={'w-full'}
                     value={filters.pref_age_min}
                     onChange={(e) =>
                       updateFilter({ pref_age_min: Number(e.target.value) })
@@ -241,12 +283,12 @@ export const Filters = (props: {
                   />
                 </Col>
 
-                <Col className={clsx(rowClassName)}>
+                <Col className={clsx(rowClassName, 'grow')}>
                   <label className={clsx(labelClassName)}>Max age</label>
                   <Input
                     type="number"
                     value={filters.pref_age_max}
-                    className={'w-20'}
+                    className={'w-full'}
                     onChange={(e) =>
                       updateFilter({ pref_age_max: Number(e.target.value) })
                     }
@@ -282,6 +324,7 @@ export const Filters = (props: {
                       color="indigo"
                       amount={radius}
                       onChange={setRadius}
+                      className="w-full"
                       marks={[
                         { value: 0, label: '50' },
                         { value: 100, label: '500' },
@@ -296,13 +339,14 @@ export const Filters = (props: {
                 <ChoicesToggleGroup
                   currentChoice={filters.wants_kids_strength ?? 0}
                   choicesMap={{
+                    Any: -1,
                     Yes: 2,
                     No: 0,
-                    Any: -1,
                   }}
                   setChoice={(c) =>
                     updateFilter({ wants_kids_strength: Number(c) })
                   }
+                  toggleClassName="min-w-[80px] justify-center"
                 />
               </Col>
               <Col className={clsx(rowClassName)}>
@@ -324,8 +368,7 @@ export const Filters = (props: {
                   }}
                 />
               </Col>
-            </Row>
-            <Row className={'mt-2'}>
+
               <Col>
                 <label className={clsx(labelClassName)}>Other</label>
                 <Row className={'mt-2 gap-2'}>

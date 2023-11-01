@@ -860,6 +860,8 @@ Parameters:
   example, if you ask for the most recent 10 bets, and then perform a second
   query for 10 more bets with `before=[the id of the 10th bet]`, you will
   get bets 11 through 20.
+- `after`: Optional. The ID of the bet after which the list will start. For example, if you request the 10 most recent bets and then perform a second query with after=[the id of the 1st bet], you will receive up to 10 new bets, if available.
+- `order`: Optional. The sorting order for returned bets. Accepts desc or asc. Default is desc.
 
 Requires no authorization.
 

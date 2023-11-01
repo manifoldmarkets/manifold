@@ -5,7 +5,7 @@ import {
   PencilIcon,
   ScaleIcon,
 } from '@heroicons/react/outline'
-import { ChartBarIcon, LinkIcon } from '@heroicons/react/solid'
+import { ChartBarIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { DIVISION_NAMES, getLeaguePath } from 'common/leagues'
 import { Post } from 'common/post'
@@ -69,6 +69,8 @@ import { getUserRating } from 'web/lib/supabase/reviews'
 import Custom404 from 'web/pages/404'
 import { UserPayments } from 'web/pages/payments'
 import { UserHandles } from 'web/components/user/user-handles'
+import { BackButton } from 'web/components/contract/back-button'
+import { useHeaderIsStuck } from 'web/hooks/use-header-is-stuck'
 
 export const getStaticProps = async (props: {
   params: {
@@ -159,6 +161,7 @@ function UserProfile(props: {
   const isCurrentUser = user.id === currentUser?.id
   const [showConfetti, setShowConfetti] = useState(false)
   const [followsYou, setFollowsYou] = useState(false)
+  const { ref: titleRef, headerStuck } = useHeaderIsStuck()
 
   useEffect(() => {
     const claimedMana = router.query['claimed-mana'] === 'yes'
@@ -211,13 +214,36 @@ function UserProfile(props: {
       {showConfetti && <FullscreenConfetti />}
 
       <Col className="mx-4 mt-1">
-        <Row
-          className={clsx(
-            'flex-wrap gap-2 py-1',
-            isMobile ? '' : 'justify-between'
-          )}
-        >
-          <Row className={clsx('gap-2')}>
+        {isMobile && (
+          <Row
+            className={
+              'bg-canvas-50 sticky top-0 z-10 w-full items-center justify-between gap-1 py-2 pr-1 sm:gap-2'
+            }
+          >
+            <BackButton />
+
+            <div
+              className={clsx(
+                'opacity-0 transition-opacity',
+                headerStuck && 'opacity-100'
+              )}
+            >
+              <StackedUserNames
+                usernameClassName={'sm:text-base'}
+                className={'font-bold sm:mr-0 sm:text-xl'}
+                user={user}
+                followsYou={followsYou}
+              />
+            </div>
+
+            <div>
+              <MoreOptionsUserButton user={user} />
+            </div>
+          </Row>
+        )}
+
+        <Row className={clsx('flex-wrap justify-between gap-2 py-1')}>
+          <Row className={clsx('gap-2')} ref={titleRef}>
             <Col className={'relative max-h-14'}>
               <ImageWithBlurredShadow
                 image={
@@ -253,17 +279,10 @@ function UserProfile(props: {
               <QuestsOrStreak user={user} />
             </Row>
           ) : isMobile ? (
-            <>
-              <div className={'my-auto'}>
-                <SendMessageButton toUser={user} currentUser={currentUser} />
-              </div>
-              <div className={'my-auto'}>
-                <FollowButton userId={user.id} />
-              </div>
-              <div className={'my-auto'}>
-                <MoreOptionsUserButton user={user} />
-              </div>
-            </>
+            <Row className={'items-center gap-1 sm:gap-2'}>
+              <SendMessageButton toUser={user} currentUser={currentUser} />
+              <FollowButton userId={user.id} />
+            </Row>
           ) : (
             <Row className="items-center gap-1 sm:gap-2">
               <SendMessageButton toUser={user} currentUser={currentUser} />
