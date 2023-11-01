@@ -150,11 +150,11 @@ const getUserEmbeddingDetails = async (
   await pg.map(
     `
       select u.id as user_id,
-      ((u.data->'createdTime')::bigint) as created_time,
+      u.created_time as created_time,
       ((u.data->'lastBetTime')::bigint) as last_bet_time,
       coalesce(max_created_time, 0) as last_seen_time,
       interest_embedding,
-      disinterest_embedding 
+      disinterest_embedding
     from user_embeddings
     join users u on u.id = user_embeddings.user_id
     left join (
@@ -162,8 +162,7 @@ const getUserEmbeddingDetails = async (
         from user_seen_markets usm
         group by usm.user_id
     ) as usm on u.id = usm.user_id
-    where ((u.data->'createdTime')::bigint) > $1
-      and ($2 is null or u.id = $2)
+    where u.created_time > $1 and ($2 is null or u.id = $2)
     `,
     [since, userId],
     (row) => {
