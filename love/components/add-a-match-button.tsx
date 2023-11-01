@@ -16,6 +16,7 @@ import { Input } from 'web/components/widgets/input'
 import { UserLink } from 'web/components/widgets/user-link'
 import { useUser } from 'web/hooks/use-user'
 import { createMatch } from 'web/lib/firebase/love/api'
+import { firebaseLogin } from 'web/lib/firebase/users'
 
 export const AddAMatchButton = (props: {
   lover: Lover
@@ -28,6 +29,7 @@ export const AddAMatchButton = (props: {
   const [selectedMatchId, setSelectedMatchId] = useState<string | null>(null)
   const [betAmount, setBetAmount] = useState<number | undefined>(20)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const currentUser = useUser()
 
   const submit = async () => {
     if (!selectedMatchId || !betAmount) return
@@ -55,6 +57,13 @@ export const AddAMatchButton = (props: {
       </div>
     )
 
+  if (!currentUser) {
+    return (
+      <Button color={'indigo'} onClick={firebaseLogin}>
+        Sign up to add a match
+      </Button>
+    )
+  }
   return (
     <>
       <Button
