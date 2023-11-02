@@ -36,10 +36,7 @@ export function CustomizeableDropdown(props: {
       {({ open, close }) => (
         <>
           <Popover.Button
-            className={clsx(
-              'text-ink-500 hover:text-ink-800 flex items-center',
-              buttonClass
-            )}
+            className={clsx('flex items-center', buttonClass)}
             onClick={(e: any) => {
               e.stopPropagation()
             }}
@@ -50,8 +47,12 @@ export function CustomizeableDropdown(props: {
 
           <AnimationOrNothing show={open} animate={!withinOverflowContainer}>
             <Popover.Panel
+              ref={setPopperElement}
+              style={styles.popper}
+              {...attributes.popper}
               className={clsx(
-                "bg-canvas-0 ring-ink-1000 focus:outline-none', z-30  mt-2 rounded-md px-4 py-2 shadow-lg ring-1 ring-opacity-5",
+                'bg-canvas-0 ring-ink-1000 z-30 mt-6 rounded-md px-4 py-2 shadow-lg ring-1 ring-opacity-5 focus:outline-none',
+                menuWidth ?? 'w-36',
                 popoverClassName
               )}
             >
