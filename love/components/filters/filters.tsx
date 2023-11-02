@@ -201,7 +201,7 @@ export const Filters = (props: {
     setLovers(filteredLovers)
   }
 
-  console.log(filters.has_kids)
+  console.log('HAS KIDS', filters.has_kids)
   const rowClassName = 'gap-2 items-start'
   return (
     <Row className="bg-canvas-0 text-ink-600 w-full gap-2 py-2 text-sm">
@@ -231,7 +231,9 @@ export const Filters = (props: {
           </Row>
         </Row>
         <Row
-          className={'border-ink-300 dark:border-ink-300 flex-wrap gap-2 pt-2'}
+          className={
+            'border-ink-300 dark:border-ink-300 flex-wrap items-center gap-2 pt-2'
+          }
         >
           {/* PREFERRED GENDER */}
           <CustomizeableDropdown
@@ -521,7 +523,7 @@ export const Filters = (props: {
                 content={
                   <Row className="items-center gap-0.5">
                     <FaChild className="h-4 w-4" />
-                    {!filters.has_kids
+                    {filters.has_kids == undefined
                       ? 'Any'
                       : filters.has_kids == 0
                       ? `Doesn't have kids`
@@ -534,20 +536,13 @@ export const Filters = (props: {
             menuItemsClass="bg-canvas-50"
             menuWidth="w-40"
           />
-          {/* <Row className={'mt-2 gap-2'}>
-            <Row className={clsx(rowClassName)}>
-              <Checkbox
-                label={'Has kids'}
-                checked={!!filters.has_kids}
-                toggle={(checked) =>
-                  updateFilter({ has_kids: checked ? 1 : 0 })
-                }
-              />
-            </Row>
-          </Row> */}
-          <Button color={'gray-white'} onClick={clearFilters} size="xs">
+
+          <button
+            className="text-ink-500 hover:text-primary-500 underline"
+            onClick={clearFilters}
+          >
             Clear filters
-          </Button>
+          </button>
         </Row>
       </Col>
     </Row>
@@ -557,7 +552,7 @@ export const Filters = (props: {
 function DropdownButton(props: { open: boolean; content: ReactNode }) {
   const { open, content } = props
   return (
-    <Row className="items-center gap-0.5">
+    <Row className="hover:text-ink-700 items-center gap-0.5 transition-all">
       {content}
       <span className="text-ink-400">
         {open ? (

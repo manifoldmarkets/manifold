@@ -36,6 +36,7 @@ export function CustomizeableDropdown(props: {
       {({ open, close }) => (
         <>
           <Popover.Button
+            ref={setReferenceElement}
             className={clsx('flex items-center', buttonClass)}
             onClick={(e: any) => {
               e.stopPropagation()
