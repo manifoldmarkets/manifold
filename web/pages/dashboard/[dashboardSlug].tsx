@@ -107,6 +107,10 @@ function FoundDashbordPage(props: {
   const fetchedDashboard = useDashboardFromSlug(slug)
   const [dashboard, setDashboard] = useState<Dashboard>(initialDashboard)
 
+  const isValid =
+    dashboard.title.length > 0 &&
+    dashboard.title.length <= MAX_DASHBOARD_TITLE_LENGTH
+
   // Update the dashboard state if a new fetchedDashboard becomes available
   useEffect(() => {
     if (fetchedDashboard) {
@@ -233,6 +237,7 @@ function FoundDashbordPage(props: {
               Cancel
             </Button>
             <Button
+              disabled={!isValid}
               onClick={() => {
                 updateDashboard({
                   dashboardId: dashboard.id,

@@ -46,10 +46,7 @@ export default function CreateDashboard() {
     'create dashboard topics'
   )
 
-  const isValid =
-    title.length > 0 &&
-    title.length <= MAX_DASHBOARD_TITLE_LENGTH &&
-    items.length > 1
+  const isValid = title.length > 0 && title.length <= MAX_DASHBOARD_TITLE_LENGTH
 
   useEffect(() => {
     if (isValid) {
@@ -132,15 +129,15 @@ export default function CreateDashboard() {
           setTopics={setTopics}
         />
 
-        {items.length > 0 && (
-          <DashboardContent
-            items={items}
-            setItems={setItems}
-            topics={topics}
-            setTopics={setTopics}
-            isEditing
-          />
-        )}
+        <Spacer h={4} />
+
+        <DashboardContent
+          items={items}
+          setItems={setItems}
+          topics={topics}
+          setTopics={setTopics}
+          isEditing
+        />
         <Spacer h={6} />
         <span className="text-error">{errorText}</span>
 

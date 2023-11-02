@@ -143,7 +143,7 @@ export const DashboardContent = (props: {
           )}
         </Droppable>
       </DragDropContext>
-      {loadLiveFeed && <DashboardLive topics={topics} />}
+      {loadLiveFeed && <DashboardLive topics={topics} editing={isEditing} />}
     </>
   )
 }
