@@ -183,6 +183,7 @@ export const insertBots = async (pg: SupabaseDirectClient, season: number) => {
 
   // console.log('alreadyAssignedBotIds', alreadyAssignedBotIds)
 
+  const botUsernamesExcludingAcc = BOT_USERNAMES.filter((u) => u !== 'acc')
   const startDate = getSeasonDates(prevSeason).start
   const botIds = await pg.map(
     `with active_user_ids as (
@@ -194,7 +195,7 @@ export const insertBots = async (pg: SupabaseDirectClient, season: number) => {
       where users.username in ($2:csv)
       and id in (select user_id from active_user_ids)
     `,
-    [startDate, BOT_USERNAMES],
+    [startDate, botUsernamesExcludingAcc],
     (r) => r.id
   )
 
