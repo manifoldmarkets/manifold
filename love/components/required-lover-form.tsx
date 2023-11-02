@@ -53,7 +53,9 @@ export const RequiredLoveUserForm = (props: {
   loverCreatedAlready?: boolean
 }) => {
   const { user, onSubmit, loverCreatedAlready, setLover, lover } = props
-  const [trans, setTrans] = useState<boolean>()
+  const [trans, setTrans] = useState<boolean | undefined>(
+    lover['gender'].includes('trans')
+  )
   const { updateUsername, updateDisplayName, userInfo, updateUserState } =
     useEditableUserInfo(user)
 
