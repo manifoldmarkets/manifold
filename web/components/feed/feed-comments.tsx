@@ -612,7 +612,9 @@ function CommentActions(props: {
             size={'xs'}
           >
             <Row className={'mt-0.5 gap-1'}>
-              {diff != 0 && <span className="">{Math.abs(diff)}</span>}
+              {diff != 0 && (
+                <span className="">{Math.round(Math.abs(diff))}</span>
+              )}
               {diff > 0 ? (
                 <FaArrowTrendUp className={'h-5 w-5 text-teal-500'} />
               ) : diff < 0 ? (
