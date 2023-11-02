@@ -75,9 +75,9 @@ export function HasKidsFilter(props: {
   const { filters, updateFilter } = props
   return (
     <ChoicesToggleGroup
-      currentChoice={filters.wants_kids_strength ?? 0}
+      currentChoice={filters.has_kids ?? 0}
       choicesMap={generateChoicesMap(hasKidsLabels)}
-      setChoice={(c) => updateFilter({ wants_kids_strength: Number(c) })}
+      setChoice={(c) => updateFilter({ has_kids: Number(c) })}
       toggleClassName="w-1/3 justify-center"
     />
   )

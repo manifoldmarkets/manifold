@@ -74,6 +74,7 @@ export function WantsKidsFilter(props: {
   updateFilter: (newState: Partial<FilterFields>) => void
 }) {
   const { filters, updateFilter } = props
+
   return (
     <ChoicesToggleGroup
       currentChoice={filters.wants_kids_strength ?? 0}

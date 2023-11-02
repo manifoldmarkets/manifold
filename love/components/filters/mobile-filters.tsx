@@ -34,6 +34,16 @@ export function MobileFilters(props: {
 
   return (
     <>
+      {/* WANTS KIDS */}
+      <Col>
+        <Subtitle>Wants kids</Subtitle>
+        <WantsKidsFilter filters={filters} updateFilter={updateFilter} />
+      </Col>
+      {/* HAS KIDS */}
+      <Col>
+        <Subtitle>Has kids</Subtitle>
+        <HasKidsFilter filters={filters} updateFilter={updateFilter} />
+      </Col>
       <Col className="gap-1">
         <Subtitle>Gender</Subtitle>
         <Col>
@@ -66,21 +76,12 @@ export function MobileFilters(props: {
           />
         </Col>
       )}
-      {/* WANTS KIDS */}
-      <Col>
-        <Subtitle>Wants kids</Subtitle>
-        <WantsKidsFilter filters={filters} updateFilter={updateFilter} />
-      </Col>
       {/* RELATIONSHIP STYLE */}
       <Col>
         <Subtitle>Relationship Style</Subtitle>
         <RelationshipFilter filters={filters} updateFilter={updateFilter} />
       </Col>
-      {/* HAS KIDS */}
-      <Col>
-        <Subtitle>Has kids</Subtitle>
-        <HasKidsFilter filters={filters} updateFilter={updateFilter} />
-      </Col>
+
       <button
         className="text-ink-500 hover:text-primary-500 underline"
         onClick={clearFilters}
