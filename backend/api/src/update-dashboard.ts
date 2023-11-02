@@ -1,5 +1,5 @@
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { log } from 'shared/utils'
+import { log, revalidateStaticProps } from 'shared/utils'
 import { DashboardItemSchema, contentSchema } from 'shared/zod-types'
 import { z } from 'zod'
 import { authEndpoint, validate } from './helpers'
@@ -44,6 +44,15 @@ export const updatedashboard = authEndpoint(async (req, auth) => {
 
     return dashboard
   })
+
+  await revalidateStaticProps(`/dashboards/${updatedDashboard.slug}`)
+  // if in news
+  if (updatedDashboard.importance_score) {
+    await Promise.all([
+      revalidateStaticProps(`/news`),
+      revalidateStaticProps(`/home`),
+    ])
+  }
 
   // return updated dashboard
   return { updateDashboard: { ...updatedDashboard, topics } }

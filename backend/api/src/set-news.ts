@@ -2,6 +2,7 @@ import { isAdminId } from 'common/envs/constants'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { z } from 'zod'
 import { APIError, authEndpoint, validate } from './helpers'
+import { revalidateStaticProps } from 'shared/utils'
 
 const schema = z
   .object({
@@ -34,6 +35,11 @@ export const setnews = authEndpoint(async (req, auth) => {
 
     return t.batch(queries)
   })
+
+  await Promise.all([
+    revalidateStaticProps(`/news`),
+    revalidateStaticProps(`/home`),
+  ])
 
   return { success: true }
 })
