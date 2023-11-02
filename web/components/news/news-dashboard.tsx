@@ -12,7 +12,7 @@ import { PencilIcon } from '@heroicons/react/outline'
 import { useUser } from 'web/hooks/use-user'
 import { buttonClass } from '../buttons/button'
 import { Tooltip } from '../widgets/tooltip'
-import { isAdminId } from 'common/envs/constants'
+import { ENV_CONFIG, isAdminId } from 'common/envs/constants'
 import { Dashboard } from 'common/dashboard'
 import { LinkPreviews } from 'common/link-preview'
 
@@ -35,7 +35,7 @@ export function NewsDashboard(props: {
           {user !== undefined && (
             <CopyLinkOrShareButton
               eventTrackingName="share home news item"
-              url={window.location.href}
+              url={`https://${ENV_CONFIG.domain}/news?tab=${dashboard.slug}`}
               tooltip="Share"
             />
           )}
