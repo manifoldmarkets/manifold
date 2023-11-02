@@ -67,7 +67,7 @@ export const ChatMessageItem = forwardRef(
             )}
           >
             {chats.map((chat) => (
-              <Content content={chat.content} key={chat.id} />
+              <Content size={'sm'} content={chat.content} key={chat.id} />
             ))}
           </Col>
         </Col>

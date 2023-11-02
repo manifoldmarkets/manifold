@@ -39,6 +39,8 @@ export function useRealtimePrivateMessagesPolling(
     .from('private_user_messages')
     .select('*')
     .eq('channel_id', channelId)
+    .order('created_time', { ascending: false })
+    .limit(50)
   const newRowsOnlyQ = (rows: Row<'private_user_messages'>[] | undefined) =>
     // You can't use allRowsQ here because it keeps tacking on another gt clause
     db
@@ -103,7 +105,8 @@ export const useHasUnseenPrivateMessage = (
 export const useUnseenPrivateMessageChannels = (
   userId: string,
   isAuthed: boolean,
-  sinceLastTime: number
+  sinceLastTime: number,
+  ignoreChannelIds: number[] = []
 ) => {
   if (!isAuthed) {
     console.error('useUnseenPrivateMessageChannels must be authorized')
@@ -165,13 +168,14 @@ export const useUnseenPrivateMessageChannels = (
 
   if (!lastSeenChatTimeByChannelId) return []
   return Object.keys(allMessagesByChannelId)
-    .map((channelId) => {
+    .map((channelIdString) => {
+      const channelId = parseInt(channelIdString)
+      if (ignoreChannelIds.includes(channelId)) return []
       const notifyAfterTime = tsToMillis(
-        messageChannelMemberships?.find(
-          (m) => m.channel_id === parseInt(channelId)
-        )?.notify_after_time ?? '0'
+        messageChannelMemberships?.find((m) => m.channel_id === channelId)
+          ?.notify_after_time ?? '0'
       )
-      const lastSeenTime = lastSeenChatTimeByChannelId[channelId as any] ?? 0
+      const lastSeenTime = lastSeenChatTimeByChannelId[channelId] ?? 0
       const lastSeenChatTime =
         notifyAfterTime > lastSeenTime ? notifyAfterTime : lastSeenTime ?? 0
 

@@ -269,34 +269,36 @@ export const PrivateChat = (props: {
               },
             ]}
           />
-          <Modal open={showUsers} setOpen={setShowUsers}>
-            <Col className={clsx(MODAL_CLASS)}>
-              {otherUsers?.map((user) => (
-                <Row
-                  key={user.id}
-                  className={'w-full items-center justify-start gap-2'}
-                >
-                  <UserAvatarAndBadge
-                    name={user.name}
-                    username={user.username}
-                    avatarUrl={user.avatarUrl}
-                  />
-                  {otherUsersFromChannel?.[channelId].map(
-                    (membership) =>
-                      membership.user_id === user.id &&
-                      membership.status === 'left' && (
-                        <span
-                          key={membership.user_id + 'status'}
-                          className={'text-ink-500 text-sm'}
-                        >
-                          (Left)
-                        </span>
-                      )
-                  )}
-                </Row>
-              ))}
-            </Col>
-          </Modal>
+          {showUsers && (
+            <Modal open={showUsers} setOpen={setShowUsers}>
+              <Col className={clsx(MODAL_CLASS)}>
+                {otherUsers?.map((user) => (
+                  <Row
+                    key={user.id}
+                    className={'w-full items-center justify-start gap-2'}
+                  >
+                    <UserAvatarAndBadge
+                      name={user.name}
+                      username={user.username}
+                      avatarUrl={user.avatarUrl}
+                    />
+                    {otherUsersFromChannel?.[channelId].map(
+                      (membership) =>
+                        membership.user_id === user.id &&
+                        membership.status === 'left' && (
+                          <span
+                            key={membership.user_id + 'status'}
+                            className={'text-ink-500 text-sm'}
+                          >
+                            (Left)
+                          </span>
+                        )
+                    )}
+                  </Row>
+                ))}
+              </Col>
+            </Modal>
+          )}
         </Row>
       </Col>
       <Col
