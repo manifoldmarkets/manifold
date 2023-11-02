@@ -18,7 +18,7 @@ export function PrefGenderFilterText(props: {
     )
   }
   return (
-    <Row className="gap-0.5">
+    <Row className="items-center gap-0.5">
       Interested in{' '}
       {pref_gender.map((gender) => {
         return (

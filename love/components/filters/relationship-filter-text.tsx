@@ -15,18 +15,22 @@ export function RelationshipFilterText(props: {
   const relationshipLength = (relationship ?? []).length
 
   if (!relationship || relationshipLength < 1) {
-    return (
-      <span>
-        <span className={clsx('text-semibold', highlightedClass)}>Any</span>{' '}
-        relationship style
-      </span>
-    )
+    return <span className={clsx('text-semibold', highlightedClass)}>Any</span>
   }
 
   const convertedRelationships = relationship.map((r) =>
     convertRelationshipType(r)
   )
 
+  if (relationshipLength > 1) {
+    return (
+      <span>
+        <span className={clsx('text-semibold', highlightedClass)}>
+          Multiple
+        </span>
+      </span>
+    )
+  }
   return (
     <div>
       <span className={highlightedClass}>
