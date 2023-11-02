@@ -137,11 +137,15 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
           <div />
         </div>
       </div>
+
+      <GoogleOneTapSetup />
+
       {/* Umami, for pageview analytics on https://analytics.umami.is/share/ARwUIC9GWLNyowjq/Manifold%20Markets */}
       <Script
         src="https://analytics.umami.is/script.js"
         data-website-id="ee5d6afd-5009-405b-a69f-04e3e4e3a685"
       />
+
       {/* Hotjar, for recording user sessions */}
       <Script
         id="hotjar"
@@ -157,6 +161,7 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
     })(window,document,'https://static.hotjar.com/c/hotjar-','.js?sv=');`,
         }}
       />
+
       <Script
         id="fbpx"
         dangerouslySetInnerHTML={{
@@ -173,7 +178,22 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
   fbq('track', 'PageView');`,
         }}
       />
-      <GoogleOneTapSetup />
+
+      <Script
+        async
+        src="https://www.googletagmanager.com/gtag/js?id=G-WYVP7LFZTC"
+      />
+      <Script
+        id="gaw"
+        dangerouslySetInnerHTML={{
+          __html: `
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-WYVP7LFZTC');`,
+        }}
+      />
     </>
   )
 }
