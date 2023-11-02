@@ -12,6 +12,11 @@ export type LinkPreview = {
 
 export type LinkPreviews = { [url: string]: LinkPreview }
 
+/**
+ * If you get CORS errors: you cannot run this on the client.
+ * This is meant to be used on the server or static props.
+ * Try clientFetchLinkPreview instead
+ */
 export async function fetchLinkPreview(url: string) {
   try {
     const preview = await getLinkPreview(url)

@@ -13,6 +13,7 @@ import { Portfolio, PortfolioItem } from 'common/portfolio'
 import { ReportProps } from 'common/report'
 import { BaseDashboard, Dashboard, DashboardItem } from 'common/dashboard'
 import { Bet } from 'common/bet'
+import { LinkPreview } from 'common/link-preview'
 
 export { APIError } from 'common/api'
 
@@ -558,4 +559,18 @@ export function searchNearCity(params: { cityId: string; radius: number }) {
     throw new Error('Your radius is out of bounds!')
   }
   return call(getApiUrl('searchnearcity'), 'POST', params)
+}
+
+// vercel api
+
+export async function clientFetchLinkPreview(
+  url: string
+): Promise<LinkPreview | undefined> {
+  url = url.trim()
+  if (!url) return undefined
+  return fetch(`/api/v0/fetch-link-preview?url=${encodeURIComponent(url)}`, {
+    method: 'GET',
+    headers: { 'Content-Type': 'application/json' },
+    redirect: 'follow',
+  }).then((r) => r.json())
 }

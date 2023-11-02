@@ -1,5 +1,6 @@
-import { LinkPreview, fetchLinkPreview } from 'common/link-preview'
+import { LinkPreview } from 'common/link-preview'
 import { useEffect, useState } from 'react'
+import { clientFetchLinkPreview } from 'web/lib/firebase/api'
 import { safeLocalStorage } from 'web/lib/util/local'
 
 export const useLinkPreview = (url: string) => {
@@ -18,7 +19,7 @@ export const cachedLinkPreview = async (url: string) => {
   const cacheKey = `link-preview-${url}`
   const cached = safeLocalStorage?.getItem(cacheKey)
   if (cached) return JSON.parse(cached) as LinkPreview
-  const preview = await fetchLinkPreview(url)
+  const preview = await clientFetchLinkPreview(url)
   if (preview) {
     safeLocalStorage?.setItem(cacheKey, JSON.stringify(preview))
   }
