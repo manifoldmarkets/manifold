@@ -21,8 +21,6 @@ import { MobileAppsQRCodeDialog } from 'web/components/buttons/mobile-apps-qr-co
 import { ProfileSummary } from './love-profile-summary'
 import { Item, SidebarItem } from './love-sidebar-item'
 import ManifoldLoveLogo from '../manifold-love-logo'
-import toast from 'react-hot-toast'
-import { Col } from 'web/components/layout/col'
 import { Button, ColorType, SizeType } from 'web/components/buttons/button'
 import { signupThenMaybeRedirectToSignup } from 'love/lib/util/signup'
 import { useLover } from 'love/hooks/use-lover'
@@ -44,9 +42,6 @@ export default function Sidebar(props: {
   const { theme, changeTheme } = useContext(ThemeContext)
 
   const toggleTheme = () => {
-    if (theme === 'dark') {
-      toast('👻 Are you afraid of the dark?')
-    }
     changeTheme(theme === 'auto' ? 'dark' : theme === 'dark' ? 'light' : 'auto')
   }
   const navOptions = props.navigationOptions
