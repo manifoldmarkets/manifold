@@ -14,9 +14,8 @@ import { Spacer } from 'web/components/layout/spacer'
 import { TestimonialsPanel } from 'web/components/testimonials-panel'
 import { ContractsGrid } from 'web/components/contract/contracts-grid'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
-import { claimDestinySub } from 'web/lib/firebase/api'
+import { claimDestinySub, searchContracts } from 'web/lib/firebase/api'
 import { Contract } from 'common/contract'
-import { searchContract } from 'web/lib/supabase/contracts'
 import { getTotalSubs } from 'web/lib/firebase/utils'
 import { WhatIsMana } from 'web/components/explainer-panel'
 import { LabCard } from './lab'
@@ -24,15 +23,13 @@ import { LabCard } from './lab'
 export async function getStaticProps() {
   const subCount = await getTotalSubs()
 
-  const trendingContracts = (
-    await searchContract({
-      query: '',
-      filter: 'open',
-      sort: 'score',
-      limit: 6,
-      topicSlug: 'destinygg',
-    })
-  ).data
+  const trendingContracts = await searchContracts({
+    term: '',
+    filter: 'open',
+    sort: 'score',
+    limit: 6,
+    topicSlug: 'destinygg',
+  })
 
   return {
     props: {

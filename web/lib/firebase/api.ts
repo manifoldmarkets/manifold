@@ -266,7 +266,7 @@ export function createCommentOnContract(params: {
   return call(getApiUrl('createcomment'), 'POST', params)
 }
 
-export function supabaseSearchContracts(params: {
+export function searchContracts(params: {
   term: string
   filter?: Filter
   sort?: Sort

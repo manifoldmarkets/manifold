@@ -6,7 +6,6 @@ import { Contract } from 'common/contract'
 import { useEvent } from 'web/hooks/use-event'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { track, trackCallback } from 'web/lib/service/analytics'
-import { searchContract } from 'web/lib/supabase/contracts'
 import DropdownMenu from './comments/dropdown-menu'
 import { ContractsList } from './contract/contracts-list'
 import { Col } from './layout/col'
@@ -38,6 +37,7 @@ import Link from 'next/link'
 import { useFollowedUsersOnLoad } from 'web/hooks/use-follows'
 import { CONTRACTS_PER_SEARCH_PAGE } from 'common/supabase/contracts'
 import { UserResults } from './search/user-results'
+import { searchContracts } from 'web/lib/firebase/api'
 
 const USERS_PER_PAGE = 100
 const TOPICS_PER_PAGE = 100
@@ -142,7 +142,6 @@ export type SupabaseAdditionalFilter = {
 
 export type SearchState = {
   contracts: Contract[] | undefined
-  fuzzyContractOffset: number
   shouldLoadMore: boolean
 }
 
@@ -528,7 +527,6 @@ const NoResults = () => {
 
 const FRESH_SEARCH_CHANGED_STATE: SearchState = {
   contracts: undefined,
-  fuzzyContractOffset: 0,
   shouldLoadMore: true,
 }
 
@@ -567,9 +565,8 @@ const useContractSearch = (
       if (freshQuery || currentState.shouldLoadMore) {
         const id = ++requestId.current
 
-        const results = await searchContract({
-          state: currentState,
-          query,
+        const newContracts = await searchContracts({
+          term: query,
           filter,
           sort,
           contractType: additionalFilter?.contractType ?? contractType,
@@ -580,8 +577,6 @@ const useContractSearch = (
         })
 
         if (id === requestId.current) {
-          const newContracts = results.data
-
           const freshContracts = freshQuery
             ? newContracts
             : [
@@ -589,14 +584,10 @@ const useContractSearch = (
                 ...newContracts,
               ]
 
-          const newFuzzyContractOffset =
-            results.fuzzyOffset + currentState.fuzzyContractOffset
-
           const shouldLoadMore =
             newContracts.length === CONTRACTS_PER_SEARCH_PAGE
 
           setState({
-            fuzzyContractOffset: newFuzzyContractOffset,
             contracts: freshContracts,
             shouldLoadMore,
           })

@@ -26,10 +26,13 @@ export const searchContracts = async (
     contractType,
     offset,
     limit,
-    fuzzy,
     topicSlug: possibleTopicSlug,
     creatorId,
   } = validate(bodySchema, body)
+
+  if (limit === 0) {
+    return [] as unknown as Json
+  }
 
   const isForYou = possibleTopicSlug === 'for-you'
   const topicSlug =
@@ -49,7 +52,6 @@ export const searchContracts = async (
           contractType,
           offset,
           limit,
-          fuzzy,
           groupId,
           creatorId,
           uid: userId,
@@ -112,7 +114,6 @@ const bodySchema = z
       .default('ALL'),
     offset: z.number().gte(0).default(0),
     limit: z.number().gt(0).lte(1000).default(100),
-    fuzzy: z.boolean().optional(),
     topicSlug: z.string().regex(FIRESTORE_DOC_REF_ID_REGEX).optional(),
     creatorId: z.string().regex(FIRESTORE_DOC_REF_ID_REGEX).optional(),
   })

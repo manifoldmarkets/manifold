@@ -1,14 +1,14 @@
 import { GetServerSideProps } from 'next'
 import { getServerSideSitemap, ISitemapField } from 'next-sitemap'
-import { searchContract } from 'web/lib/supabase/contracts'
+import { searchContracts } from 'web/lib/firebase/api'
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
-  const contracts = await searchContract({
-    query: '',
+  const contracts = await searchContracts({
+    term: '',
     filter: 'all',
     sort: 'score',
     limit: 1000,
-  }).then((x) => x.data)
+  })
 
   const score = (index: number) => (1 - index / 1000) * 0.3 + 0.4
 
