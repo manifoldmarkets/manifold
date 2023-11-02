@@ -7,81 +7,75 @@ import { Content } from 'web/components/widgets/editor'
 import { User } from 'common/user'
 import { ChatMessage } from 'common/chat-message'
 import { first } from 'lodash'
-import { forwardRef } from 'react'
+import { memo } from 'react'
 
-export const ChatMessageItem = forwardRef(
-  (
-    props: {
-      chats: ChatMessage[]
-      currentUser: User | undefined | null
-      otherUser?: User | null
-      onReplyClick?: (chat: ChatMessage) => void
-      beforeSameUser: boolean
-      firstOfUser: boolean
-    },
-    ref: React.Ref<HTMLDivElement>
-  ) => {
-    const { chats, currentUser, otherUser, beforeSameUser, firstOfUser } = props
-    const chat = first(chats)
-    if (!chat) return null
-    const isMe = currentUser?.id === chat.userId
-    const { username, avatarUrl } =
-      !isMe && otherUser
-        ? otherUser
-        : isMe && currentUser
-        ? currentUser
-        : { username: '', avatarUrl: undefined }
+export const ChatMessageItem = memo(function ChatMessageItem(props: {
+  chats: ChatMessage[]
+  currentUser: User | undefined | null
+  otherUser?: User | null
+  onReplyClick?: (chat: ChatMessage) => void
+  beforeSameUser: boolean
+  firstOfUser: boolean
+}) {
+  const { chats, currentUser, otherUser, beforeSameUser, firstOfUser } = props
+  const chat = first(chats)
+  if (!chat) return null
+  const isMe = currentUser?.id === chat.userId
+  const { username, avatarUrl } =
+    !isMe && otherUser
+      ? otherUser
+      : isMe && currentUser
+      ? currentUser
+      : { username: '', avatarUrl: undefined }
 
-    return (
-      <Row
-        className={clsx(
-          'gap-1',
-          isMe ? '' : 'flex-row-reverse',
-          firstOfUser ? 'mt-3' : ''
+  return (
+    <Row
+      className={clsx(
+        'gap-1',
+        isMe ? '' : 'flex-row-reverse',
+        firstOfUser ? 'mt-3' : ''
+      )}
+    >
+      <Row className="grow" />
+      <Col className={clsx(isMe ? 'pr-1' : '', 'grow-y justify-end pb-2')}>
+        <RelativeTimestamp
+          time={chat.createdTime}
+          shortened
+          className="text-xs"
+        />
+      </Col>
+      <Col className="max-w-[calc(100vw-6rem)] md:max-w-[80%]">
+        {firstOfUser && !isMe && chat.visibility !== 'system_status' && (
+          <span className="text-ink-500 dark:text-ink-600 mt-1 pl-3 text-sm">
+            {username}
+          </span>
         )}
-        ref={ref}
-      >
-        <Row className="grow" />
-        <Col className={clsx(isMe ? 'pr-1' : '', 'grow-y justify-end pb-2')}>
-          <RelativeTimestamp
-            time={chat.createdTime}
-            shortened
-            className="text-xs"
-          />
-        </Col>
-        <Col className="max-w-[calc(100vw-6rem)] md:max-w-[80%]">
-          {firstOfUser && !isMe && chat.visibility !== 'system_status' && (
-            <span className="text-ink-500 dark:text-ink-600 mt-1 pl-3 text-sm">
-              {username}
-            </span>
+        <Col
+          className={clsx(
+            'rounded-3xl px-3 py-2',
+            chat.visibility !== 'system_status' && 'drop-shadow-sm',
+            chat.visibility === 'system_status'
+              ? 'bg-canvas-50 italic  drop-shadow-none'
+              : isMe
+              ? 'bg-primary-100 items-end self-end rounded-br-none'
+              : 'bg-canvas-0 items-start self-start rounded-bl-none'
           )}
-          <Col
-            className={clsx(
-              'rounded-3xl px-3 py-2',
-              chat.visibility !== 'system_status' && 'drop-shadow-sm',
-              chat.visibility === 'system_status'
-                ? 'bg-canvas-50 italic  drop-shadow-none'
-                : isMe
-                ? 'bg-primary-100 items-end self-end rounded-br-none'
-                : 'bg-canvas-0 items-start self-start rounded-bl-none'
-            )}
-          >
-            {chats.map((chat) => (
-              <Content size={'sm'} content={chat.content} key={chat.id} />
-            ))}
-          </Col>
+        >
+          {chats.map((chat) => (
+            <Content size={'sm'} content={chat.content} key={chat.id} />
+          ))}
         </Col>
-        {!isMe && (
-          <MessageAvatar
-            beforeSameUser={beforeSameUser}
-            userAvatarUrl={avatarUrl}
-            username={username}
-          />
-        )}
-      </Row>
-    )
-  }
-)
+      </Col>
+      {!isMe && (
+        <MessageAvatar
+          beforeSameUser={beforeSameUser}
+          userAvatarUrl={avatarUrl}
+          username={username}
+        />
+      )}
+    </Row>
+  )
+})
 
 function MessageAvatar(props: {
   beforeSameUser: boolean

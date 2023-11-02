@@ -114,7 +114,11 @@ export const PrivateChat = (props: {
   )
   const router = useRouter()
 
-  const messages = (realtimeMessages ?? []).reverse()
+  const messages = (realtimeMessages ?? [])
+    .reverse()
+    .filter((message) =>
+      channel.title ? message.visibility !== 'system_status' : true
+    )
   const editor = useTextEditor({
     size: 'sm',
     placeholder: 'Send a message',
