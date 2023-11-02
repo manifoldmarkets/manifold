@@ -6,6 +6,8 @@ import {
   convertRelationshipType,
 } from 'love/lib/util/convert-relationship-type'
 import stringOrStringArrayToText from 'love/lib/util/string-or-string-array-to-text'
+import { FilterFields } from './search'
+import { MultiCheckbox } from 'web/components/multi-checkbox'
 
 export function RelationshipFilterText(props: {
   relationship: RelationshipType[] | undefined
@@ -40,5 +42,28 @@ export function RelationshipFilterText(props: {
         })}{' '}
       </span>
     </div>
+  )
+}
+
+export function RelationshipFilter(props: {
+  filters: Partial<FilterFields>
+  updateFilter: (newState: Partial<FilterFields>) => void
+}) {
+  const { filters, updateFilter } = props
+  return (
+    <MultiCheckbox
+      selected={filters.pref_relation_styles ?? []}
+      choices={
+        {
+          Monogamous: 'mono',
+          Polyamorous: 'poly',
+          'Open Relationship': 'open',
+          Other: 'other',
+        } as any
+      }
+      onChange={(c) => {
+        updateFilter({ pref_relation_styles: c })
+      }}
+    />
   )
 }

@@ -1,7 +1,7 @@
 import { UserIcon } from '@heroicons/react/solid'
 import { capitalize } from 'lodash'
 import { calculateAge } from 'love/components/calculate-age'
-import { Filters } from 'love/components/filters/filters'
+import { Search } from 'love/components/filters/search'
 import { Gender, convertGender } from 'love/components/gender-icon'
 import { LovePage } from 'love/components/love-page'
 import OnlineIcon from 'love/components/online-icon'
@@ -45,7 +45,7 @@ export default function ProfilesPage() {
             </Button>
           )}
           <Title className="!mb-2 text-3xl">Profiles</Title>
-          <Filters
+          <Search
             allLovers={allLovers}
             setLovers={setLovers}
             youLover={lover}

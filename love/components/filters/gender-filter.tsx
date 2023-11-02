@@ -1,6 +1,8 @@
 import clsx from 'clsx'
 import GenderIcon, { Gender } from '../gender-icon'
 import { Row } from 'web/components/layout/row'
+import { MultiCheckbox } from 'web/components/multi-checkbox'
+import { FilterFields } from './search'
 
 export function GenderFilterText(props: {
   gender: Gender[] | undefined
@@ -29,5 +31,31 @@ export function GenderFilterText(props: {
       })}{' '}
       <span>gender{gender.length > 1 ? 's' : ''}</span>
     </Row>
+  )
+}
+
+export function GenderFilter(props: {
+  filters: Partial<FilterFields>
+  updateFilter: (newState: Partial<FilterFields>) => void
+}) {
+  const { filters, updateFilter } = props
+  return (
+    <>
+      <MultiCheckbox
+        selected={filters.genders ?? []}
+        choices={
+          {
+            Male: 'male',
+            Female: 'female',
+            'Non-binary': 'non-binary',
+            'Trans-female': 'trans-female',
+            'Trans-male': 'trans-male',
+          } as any
+        }
+        onChange={(c) => {
+          updateFilter({ genders: c })
+        }}
+      />
+    </>
   )
 }

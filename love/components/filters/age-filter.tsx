@@ -1,4 +1,6 @@
 import clsx from 'clsx'
+import { FilterFields } from './search'
+import { RangeSlider } from 'web/components/widgets/slider'
 
 export const PREF_AGE_MIN = 18
 export const PREF_AGE_MAX = 100
@@ -53,5 +55,42 @@ export function AgeFilterText(props: {
       </span>{' '}
       years
     </span>
+  )
+}
+
+export function AgeFilter(props: {
+  filters: Partial<FilterFields>
+  updateFilter: (newState: Partial<FilterFields>) => void
+}) {
+  const { filters, updateFilter } = props
+  return (
+    <RangeSlider
+      lowValue={filters.pref_age_min ?? PREF_AGE_MIN}
+      highValue={filters.pref_age_max ?? PREF_AGE_MAX}
+      setValues={(low: number, high: number) => {
+        updateFilter({
+          pref_age_min: Number(low),
+          pref_age_max: Number(high),
+        })
+      }}
+      min={PREF_AGE_MIN}
+      max={PREF_AGE_MAX}
+      marks={[
+        { value: 0, label: `${PREF_AGE_MIN}` },
+        {
+          value: ((30 - PREF_AGE_MIN) / (PREF_AGE_MAX - PREF_AGE_MIN)) * 100,
+          label: `30`,
+        },
+        {
+          value: ((50 - PREF_AGE_MIN) / (PREF_AGE_MAX - PREF_AGE_MIN)) * 100,
+          label: `50`,
+        },
+        {
+          value: ((70 - PREF_AGE_MIN) / (PREF_AGE_MAX - PREF_AGE_MIN)) * 100,
+          label: `70`,
+        },
+        { value: 100, label: `${PREF_AGE_MAX}` },
+      ]}
+    />
   )
 }
