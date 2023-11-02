@@ -105,7 +105,7 @@ export default function DropdownMenu(props: {
     </Popover>
   )
 }
-const AnimationOrNothing = (props: {
+export const AnimationOrNothing = (props: {
   animate: boolean
   show: boolean
   children: ReactNode

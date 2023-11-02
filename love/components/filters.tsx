@@ -17,9 +17,12 @@ import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-s
 import { searchNearCity } from 'web/lib/firebase/api'
 import { useIsAuthorized } from 'web/hooks/use-user'
 import { useNearbyCities } from 'love/hooks/use-nearby-locations'
-import { Slider } from 'web/components/widgets/slider'
+import { RangeSlider, Slider } from 'web/components/widgets/slider'
 import { useEffectCheckEquality } from 'web/hooks/use-effect-check-equality'
 import { Select } from 'web/components/widgets/select'
+import { Popover, Transition } from '@headlessui/react'
+import React from 'react'
+import { CustomizeableDropdown } from 'web/components/widgets/customizeable-dropdown'
 
 type FilterFields = {
   orderBy: 'last_online_time' | 'created_time'
@@ -270,9 +273,36 @@ export const Filters = (props: {
                   }}
                 />
               </Col>
-
+              {/* AGE RANGE */}
               <Row className="gap-4 sm:pr-8">
-                <Col className={clsx(rowClassName, 'grow')}>
+                <CustomizeableDropdown
+                  buttonContent={(open: boolean) => (
+                    <Row>
+                      <span>{`${filters.pref_age_min} to ${filters.pref_age_max}`}</span>
+                      <span>
+                        {open ? (
+                          <ChevronUpIcon className="h-5 w-5" />
+                        ) : (
+                          <ChevronDownIcon className="h-5 w-5" />
+                        )}
+                      </span>
+                    </Row>
+                  )}
+                  dropdownMenuContent={
+                    <RangeSlider
+                      lowValue={filters.pref_age_min ?? 18}
+                      highValue={filters.pref_age_max ?? 100}
+                      setValues={(low: number, high: number) => {
+                        updateFilter({
+                          pref_age_min: Number(low),
+                          pref_age_max: Number(high),
+                        })
+                      }}
+                    />
+                  }
+                  popoverClassName="bg-canvas-50"
+                />
+                {/* <Col className={clsx(rowClassName, 'grow')}>
                   <label className={clsx(labelClassName)}>Min age</label>
                   <Input
                     type="number"
@@ -294,7 +324,7 @@ export const Filters = (props: {
                       updateFilter({ pref_age_max: Number(e.target.value) })
                     }
                   />
-                </Col>
+                </Col> */}
               </Row>
 
               {youLover && nearbyOriginLocation && (
