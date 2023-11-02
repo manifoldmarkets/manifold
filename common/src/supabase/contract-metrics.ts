@@ -46,6 +46,7 @@ export async function getUserContractMetrics(
     selectJson(db, 'user_contract_metrics')
       .eq('user_id', userId)
       .eq('contract_id', contractId)
+      .is('answer_id', null)
   )
   return data.map((r) => r.data) as ContractMetric[]
 }

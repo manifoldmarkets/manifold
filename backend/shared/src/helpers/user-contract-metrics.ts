@@ -5,7 +5,7 @@ import { calculateUserMetrics } from 'common/calculate-metrics'
 import { bulkUpsert } from 'shared/supabase/utils'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { ContractMetric } from 'common/contract-metric'
-import { Row } from 'common/supabase/utils'
+import { Tables } from 'common/supabase/utils'
 
 export async function updateContractMetricsForUsers(
   contract: Contract,
@@ -15,7 +15,7 @@ export async function updateContractMetricsForUsers(
   const metrics: ContractMetric[] = []
   for (const userId in betsByUser) {
     const userBets = betsByUser[userId]
-    metrics.push(calculateUserMetrics(contract, userBets))
+    metrics.push(...calculateUserMetrics(contract, userBets))
   }
 
   await bulkUpdateContractMetrics(metrics)
@@ -27,7 +27,7 @@ export async function bulkUpdateContractMetrics(metrics: ContractMetric[]) {
   return bulkUpsert(
     pg,
     'user_contract_metrics',
-    ['user_id', 'contract_id'],
+    [],
     metrics.map(
       (m) =>
         ({
@@ -41,7 +41,9 @@ export async function bulkUpdateContractMetrics(metrics: ContractMetric[]) {
           has_yes_shares: m.hasYesShares,
           total_shares_no: m.totalShares['NO'] ?? null,
           total_shares_yes: m.totalShares['YES'] ?? null,
-        } as Row<'user_contract_metrics'>)
-    )
+          answer_id: m.answerId,
+        } as Tables['user_contract_metrics']['Insert'])
+    ),
+    `CONFLICT (user_id, contract_id, coalesce(answer_id, ''))`
   )
 }

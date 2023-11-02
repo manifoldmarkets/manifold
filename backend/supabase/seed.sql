@@ -80,31 +80,6 @@ create index if not exists user_portfolio_history_user_ts on user_portfolio_hist
 alter table user_portfolio_history
 cluster on user_portfolio_history_user_ts;
 
-create table if not exists
-  user_contract_metrics (
-    user_id text not null,
-    contract_id text not null,
-    data jsonb not null,
-    fs_updated_time timestamp,
-    has_yes_shares boolean,
-    has_no_shares boolean,
-    total_shares_yes numeric,
-    total_shares_no numeric,
-    profit numeric,
-    has_shares boolean,
-    primary key (user_id, contract_id)
-  );
-
-alter table user_contract_metrics enable row level security;
-
-drop policy if exists "public read" on user_contract_metrics;
-
-create policy "public read" on user_contract_metrics for
-select
-  using (true);
-
-alter table user_contract_metrics
-cluster on user_contract_metrics_pkey;
 
 create table if not exists
   user_follows (

@@ -1,5 +1,9 @@
 import { Dictionary, first, partition, sumBy, uniq } from 'lodash'
-import { calculatePayout, getContractBetMetrics } from './calculate'
+import {
+  calculatePayout,
+  getContractBetMetrics,
+  getContractBetMetricsPerAnswer,
+} from './calculate'
 import { Bet, LimitBet } from './bet'
 import { Contract, CPMMContract, DPMContract } from './contract'
 import { User } from './user'
@@ -194,7 +198,7 @@ export const calculateNewPortfolioMetrics = (
   }
 }
 
-export const calculateMetricsByContract = (
+export const calculateMetricsByContractAndAnswer = (
   betsByContractId: Dictionary<Bet[]>,
   contractsById: Dictionary<Contract>,
   user?: User
@@ -210,28 +214,34 @@ export const calculateUserMetrics = (
   bets: Bet[],
   user?: User
 ) => {
-  const current = getContractBetMetrics(contract, bets)
+  const currentMetrics = getContractBetMetricsPerAnswer(contract, bets)
 
-  let periodMetrics
-  if (contract.mechanism === 'cpmm-1') {
-    const periods = ['day', 'week', 'month'] as const
-    periodMetrics = Object.fromEntries(
-      periods.map((period) => [
-        period,
-        calculatePeriodProfit(contract, bets, period),
-      ])
-    )
-  }
   const bet = first(bets)
-  return removeUndefinedProps({
-    contractId: contract.id,
-    ...current,
-    from: periodMetrics,
-    userName: user?.name ?? bet?.userName,
-    userId: user?.id ?? bet?.userId,
-    userUsername: user?.username ?? bet?.userUsername,
-    userAvatarUrl: user?.avatarUrl ?? bet?.userAvatarUrl,
-  } as ContractMetric)
+  return currentMetrics.map((current) => {
+    let periodMetrics
+    if (contract.mechanism === 'cpmm-1') {
+      const periods = ['day', 'week', 'month'] as const
+      periodMetrics = Object.fromEntries(
+        periods.map((period) => [
+          period,
+          calculatePeriodProfit(
+            contract,
+            bets.filter((b) => b.answerId === current.answerId),
+            period
+          ),
+        ])
+      )
+    }
+    return removeUndefinedProps({
+      contractId: contract.id,
+      ...current,
+      from: periodMetrics,
+      userName: user?.name ?? bet?.userName,
+      userId: user?.id ?? bet?.userId,
+      userUsername: user?.username ?? bet?.userUsername,
+      userAvatarUrl: user?.avatarUrl ?? bet?.userAvatarUrl,
+    } as ContractMetric)
+  })
 }
 
 const calculatePeriodProfit = (

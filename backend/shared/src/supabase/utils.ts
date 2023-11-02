@@ -1,5 +1,5 @@
 import { pgp, SupabaseDirectClient } from './init'
-import { DataFor, Tables, TableName, Row, Column } from 'common/supabase/utils'
+import { DataFor, Tables, TableName, Column } from 'common/supabase/utils'
 
 export async function getIds<T extends TableName>(
   db: SupabaseDirectClient,
@@ -58,7 +58,8 @@ export async function bulkUpsert<
   db: SupabaseDirectClient,
   table: T,
   idField: Col | Col[],
-  values: ColumnValues[]
+  values: ColumnValues[],
+  onConflict?: string
 ) {
   if (!values.length) return
 
@@ -70,7 +71,9 @@ export async function bulkUpsert<
 
   const primaryKey = Array.isArray(idField) ? idField.join(', ') : idField
   const upsertAssigns = cs.assignColumns({ from: 'excluded', skip: idField })
-  const query = `${baseQueryReplaced} on conflict(${primaryKey}) do update set ${upsertAssigns}`
+  const query = `${baseQueryReplaced} on ${
+    onConflict ? onConflict : `conflict(${primaryKey})`
+  } do update set ${upsertAssigns}`
   await db.none(query)
 }
 

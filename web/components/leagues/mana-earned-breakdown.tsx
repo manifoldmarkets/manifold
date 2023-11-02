@@ -80,7 +80,12 @@ export const ManaEarnedBreakdown = (props: {
   const contractsSorted =
     contracts &&
     metricsByContract &&
-    sortBy(contracts, (contract) => metricsByContract[contract.id]?.profit ?? 0)
+    sortBy(
+      contracts,
+      (contract) =>
+        // Just getting the overall profit for each contract
+        metricsByContract[contract.id]?.find((cm) => !cm.answerId)?.profit ?? 0
+    )
 
   const contractsSortedByProfit = showHighestFirst
     ? contractsSorted?.reverse()
@@ -172,10 +177,10 @@ export const ManaEarnedBreakdown = (props: {
 const ContractBetsEntry = (props: {
   contract: Contract
   bets: Bet[]
-  metrics: ContractMetric
+  metrics: ContractMetric[]
 }) => {
   const { bets, metrics, contract } = props
-  const { profit, profitPercent } = metrics
+  const { profit, profitPercent } = metrics[0]
 
   const showExpander = bets.length > 2
   const [expanded, setExpanded] = useState(false)
