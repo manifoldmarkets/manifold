@@ -57,7 +57,7 @@ export const BinaryUserPositionsTable = memo(
 
     useEffect(() => {
       if (sortBy === 'profit' && contractMetricsByProfit === undefined) {
-        getContractMetricsForContractId(contractId, db, sortBy).then(
+        getContractMetricsForContractId(contractId, db, null, sortBy).then(
           setContractMetricsByProfit
         )
       }

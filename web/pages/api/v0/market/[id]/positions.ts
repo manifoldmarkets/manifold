@@ -77,6 +77,7 @@ export default async function handler(
     const contractMetrics = await getContractMetricsForContractId(
       contractId,
       db,
+      null,
       order ? (order as 'profit' | 'shares') : undefined
     )
     if (!top && !bottom) {

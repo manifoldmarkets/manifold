@@ -127,7 +127,7 @@ const MatchContract = (props: {
     undefined | Awaited<ReturnType<typeof getCPMMContractUserContractMetrics>>
   >(undefined, 'market-card-feed-positions-' + contract.id)
   useEffect(() => {
-    getCPMMContractUserContractMetrics(contract.id, 10, db).then(
+    getCPMMContractUserContractMetrics(contract.id, 10, null, db).then(
       (positions) => {
         const yesPositions = sortBy(
           positions.YES.filter(

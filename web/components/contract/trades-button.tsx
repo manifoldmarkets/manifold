@@ -106,7 +106,9 @@ function BetsModalContent(props: { contract: Contract }) {
     undefined | Awaited<ReturnType<typeof getCPMMContractUserContractMetrics>>
   >(undefined, 'market-card-feed-positions-' + contract.id)
   useEffect(() => {
-    getCPMMContractUserContractMetrics(contract.id, 100, db).then(setPositions)
+    getCPMMContractUserContractMetrics(contract.id, 100, null, db).then(
+      setPositions
+    )
   }, [contract.id])
   if (contract.outcomeType !== 'BINARY') {
     if (!bets) return <LoadingIndicator />

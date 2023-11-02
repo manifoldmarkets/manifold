@@ -15,6 +15,7 @@ export async function getTopContractMetrics(
       .select('data')
       .eq('contract_id', contractId)
       .order('profit', { ascending: false } as any)
+      .is('answer_id', null)
       .limit(limit)
   )
 
@@ -31,6 +32,7 @@ export async function getRanking(
       .from('user_contract_metrics')
       .select('*', { count: 'exact' })
       .eq('contract_id', contractId)
+      .is('answer_id', null)
       .gt('profit', profit)
   )
 
@@ -54,19 +56,26 @@ export async function getUserContractMetrics(
 export async function getCPMMContractUserContractMetrics(
   contractId: string,
   limit: number,
+  answerId: string | null,
   db: SupabaseClient
 ) {
   async function fetchOutcomeMetrics(outcome: 'yes' | 'no') {
     const hasSharesColumn = `has_${outcome}_shares`
     const totalSharesColumn = `total_shares_${outcome}`
-
-    const { data, error } = await db
+    let q = db
       .from('user_contract_metrics')
       .select('data')
       .eq('contract_id', contractId)
       .eq(hasSharesColumn, true)
       .order(totalSharesColumn, { ascending: false } as any)
       .limit(limit)
+    if (answerId) {
+      q = q.eq('answer_id', answerId)
+    } else {
+      q = q.is('answer_id', null)
+    }
+
+    const { data, error } = await q
 
     if (error) {
       throw error
@@ -137,6 +146,7 @@ export async function getBestAndWorstUserContractMetrics(
   const { data: negative } = await run(
     selectJson(db, 'user_contract_metrics')
       .eq('user_id', userId)
+      .is('answer_id', null)
       .order(orderString as any, {
         ascending: true,
       })
@@ -145,6 +155,7 @@ export async function getBestAndWorstUserContractMetrics(
   const { data: profit } = await run(
     selectJson(db, 'user_contract_metrics')
       .eq('user_id', userId)
+      .is('answer_id', null)
       .order(orderString as any, {
         ascending: false,
         nullsFirst: false,
@@ -169,6 +180,7 @@ export async function getUsersContractMetricsOrderedByProfit(
     const { data: negative } = await run(
       selectJson(db, 'user_contract_metrics')
         .in('user_id', chunk)
+        .is('answer_id', null)
         .order(orderString as any, {
           ascending: true,
         })
@@ -176,6 +188,7 @@ export async function getUsersContractMetricsOrderedByProfit(
     const { data: profit } = await run(
       selectJson(db, 'user_contract_metrics')
         .in('user_id', chunk)
+        .is('answer_id', null)
         .order(orderString as any, {
           ascending: false,
           nullsFirst: false,
@@ -212,6 +225,7 @@ export async function getUsersRecentBetContractIds(
     const { data } = await run(
       selectFrom(db, 'user_contract_metrics', 'userId', 'contractId')
         .in('user_id', chunk)
+        .is('answer_id', null)
         .gt('data->lastBetTime', lastBetTime)
     )
     return data.map((d) => ({
@@ -232,6 +246,7 @@ export async function getContractMetricsForContractIds(
     selectJson(db, 'user_contract_metrics')
       .eq('user_id', userId)
       .in('contract_id', contractIds)
+      .is('answer_id', null)
   )
   return data.map((d) => d.data) as ContractMetric[]
 }
@@ -245,6 +260,7 @@ export async function getTotalContractMetrics(
       .from('user_contract_metrics')
       .select('*', { head: true, count: 'exact' })
       .eq('contract_id', contractId)
+      .is('answer_id', null)
       .gt('data->invested', 0)
   )
   return count
@@ -253,12 +269,19 @@ export async function getTotalContractMetrics(
 export async function getContractMetricsForContractId(
   contractId: string,
   db: SupabaseClient,
+  answerId: string | null,
   order?: 'profit' | 'shares'
 ) {
   let q = db
     .from('user_contract_metrics')
     .select('*')
     .eq('contract_id', contractId)
+
+  if (answerId) {
+    q = q.eq('answer_id', answerId)
+  } else {
+    q = q.is('answer_id', null)
+  }
 
   if (order === 'shares') {
     const noSharesQuery = db

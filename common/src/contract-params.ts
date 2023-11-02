@@ -64,7 +64,9 @@ export async function getContractParams(
       ? getBetPoints(db, contract.id, contract.mechanism === 'cpmm-multi-1')
       : [],
     getRecentTopLevelCommentsAndReplies(db, contract.id, 25),
-    isCpmm1 ? getCPMMContractUserContractMetrics(contract.id, 100, db) : {},
+    isCpmm1
+      ? getCPMMContractUserContractMetrics(contract.id, 100, null, db)
+      : {},
     contract.resolution ? getTopContractMetrics(contract.id, 10, db) : [],
     isCpmm1 ? getTotalContractMetrics(contract.id, db) : 0,
     getRelatedContracts(contract, 20, db, true),
