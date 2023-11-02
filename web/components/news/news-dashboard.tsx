@@ -26,7 +26,7 @@ export function NewsDashboard(props: {
   if (!dashboard) return <LoadingIndicator />
 
   return (
-    <div className="mx-auto w-full max-w-2xl">
+    <div className="mx-auto w-full max-w-3xl">
       <Row className="mb-2 flex items-center justify-between">
         <h2 className="text-primary-700 text-2xl font-normal sm:text-3xl">
           {dashboard.title}

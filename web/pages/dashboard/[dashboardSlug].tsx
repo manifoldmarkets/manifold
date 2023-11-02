@@ -170,7 +170,7 @@ function FoundDashbordPage(props: {
         </>
       )}
 
-      <Col className="w-full max-w-2xl px-1 sm:px-2">
+      <Col className="w-full max-w-3xl px-1 sm:px-2">
         <div className="my-2 sm:mt-4 lg:mt-0">
           {editMode ? (
             <InputWithLimit
