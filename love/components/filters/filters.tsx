@@ -230,7 +230,7 @@ export const Filters = (props: {
         </Row>
         <Row
           className={
-            'border-ink-300 dark:border-ink-300 flex-wrap items-center gap-2 pt-2'
+            'border-ink-300 dark:border-ink-300 flex-wrap items-center gap-2 pb-4 pt-1'
           }
         >
           {/* PREFERRED GENDER */}
