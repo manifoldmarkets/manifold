@@ -6,7 +6,7 @@ import {
   usePrivateMessageChannel,
 } from 'web/hooks/use-private-messages'
 import { Col } from 'web/components/layout/col'
-import { User } from 'common/user'
+import { MANIFOLD_AVATAR_URL, User } from 'common/user'
 import { useEffect, useState, useMemo } from 'react'
 import { track } from 'web/lib/service/analytics'
 import { firebaseLogin } from 'web/lib/firebase/users'
@@ -39,6 +39,7 @@ import { FaUserFriends, FaUserMinus } from 'react-icons/fa'
 import { filterDefined } from 'common/util/array'
 import { GiSpeakerOff } from 'react-icons/gi'
 import toast from 'react-hot-toast'
+import { Avatar } from 'web/components/widgets/avatar'
 
 export default function PrivateMessagesPage() {
   return (
@@ -192,13 +193,17 @@ export const PrivateChat = (props: {
       <Col className={''}>
         <Row className={'border-ink-200 items-center gap-1 border-b py-2'}>
           <BackButton />
-          <MultipleOrSingleAvatars
-            size="sm"
-            spacing={0.5}
-            startLeft={1}
-            avatarUrls={remainingUsers?.map((user) => user.avatarUrl) ?? []}
-            onClick={() => setShowUsers(true)}
-          />
+          {channel.title ? (
+            <Avatar noLink={true} avatarUrl={MANIFOLD_AVATAR_URL} size={'md'} />
+          ) : (
+            <MultipleOrSingleAvatars
+              size="sm"
+              spacing={0.5}
+              startLeft={1}
+              avatarUrls={remainingUsers?.map((user) => user.avatarUrl) ?? []}
+              onClick={() => setShowUsers(true)}
+            />
+          )}
           {channel.title ? (
             <span className={'ml-1 font-semibold'}>{channel.title}</span>
           ) : (
