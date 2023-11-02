@@ -233,7 +233,6 @@ function FoundDashbordPage(props: {
               Cancel
             </Button>
             <Button
-              disabled={dashboard.items.length < 2}
               onClick={() => {
                 updateDashboard({
                   dashboardId: dashboard.id,
