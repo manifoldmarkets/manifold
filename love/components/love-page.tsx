@@ -27,7 +27,10 @@ import {
   NotificationsIcon,
   SolidNotificationsIcon,
 } from 'web/components/notifications-icon'
-import { NOTIFICATIONS_TO_SELECT } from 'love/pages/notifications'
+import {
+  NOTIFICATION_REASONS_TO_SELECT,
+  NOTIFICATION_TYPES_TO_SELECT,
+} from 'love/pages/notifications'
 import { signupThenMaybeRedirectToSignup } from 'love/lib/util/signup'
 
 export function LovePage(props: {
@@ -121,7 +124,8 @@ function getBottomNavigation(user: User) {
       icon: (props) => (
         <SolidNotificationsIcon
           {...props}
-          selectTypes={NOTIFICATIONS_TO_SELECT}
+          selectTypes={NOTIFICATION_TYPES_TO_SELECT}
+          selectReasons={NOTIFICATION_REASONS_TO_SELECT}
         />
       ),
     },
@@ -154,7 +158,11 @@ const getDesktopNav = (loggedIn: boolean) => {
         name: 'Notifs',
         href: `/notifications`,
         icon: (props: any) => (
-          <NotificationsIcon {...props} selectTypes={NOTIFICATIONS_TO_SELECT} />
+          <NotificationsIcon
+            {...props}
+            selectTypes={NOTIFICATION_TYPES_TO_SELECT}
+            selectReasons={NOTIFICATION_REASONS_TO_SELECT}
+          />
         ),
       },
       {

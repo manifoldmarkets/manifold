@@ -82,10 +82,14 @@ function useUnseenNotifications(
 
 export function useGroupedUnseenNotifications(
   userId: string,
-  selectTypes?: notification_source_types[]
+  selectTypes?: notification_source_types[],
+  selectReasons?: NotificationReason[]
 ) {
   const notifications = useUnseenNotifications(userId)?.filter(
-    (n) => selectTypes?.includes(n.sourceType) ?? true
+    (n) =>
+      (selectTypes?.includes(n.sourceType) ||
+        selectReasons?.includes(n.reason)) ??
+      true
   )
   return useMemo(() => {
     return notifications ? groupNotificationsForIcon(notifications) : undefined
@@ -94,10 +98,14 @@ export function useGroupedUnseenNotifications(
 
 export function useGroupedNotifications(
   userId: string,
-  selectTypes?: notification_source_types[]
+  selectTypes?: notification_source_types[],
+  selectReasons?: NotificationReason[]
 ) {
   const notifications = useNotifications(userId)?.filter(
-    (n) => selectTypes?.includes(n.sourceType) ?? true
+    (n) =>
+      (selectTypes?.includes(n.sourceType) ||
+        selectReasons?.includes(n.reason)) ??
+      true
   )
   const sortedNotifications = notifications
     ? sortBy(notifications, (n) => -n.createdTime)

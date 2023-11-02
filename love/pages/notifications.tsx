@@ -10,15 +10,21 @@ import { XIcon } from '@heroicons/react/outline'
 import { PrivateUser } from 'common/user'
 import { useGroupedNotifications } from 'web/hooks/use-notifications'
 import { NotificationsList } from 'web/pages/notifications'
-import { notification_source_types } from 'common/notification'
+import {
+  notification_source_types,
+  NotificationReason,
+} from 'common/notification'
 import { LovePage } from 'love/components/love-page'
 import { Tabs } from 'web/components/layout/tabs'
 import { ActivityLog } from 'web/components/activity-log'
 import { ENV } from 'common/envs/constants'
 
-export const NOTIFICATIONS_TO_SELECT: notification_source_types[] = [
+export const NOTIFICATION_TYPES_TO_SELECT: notification_source_types[] = [
   'new_match',
   'comment_on_lover',
+]
+export const NOTIFICATION_REASONS_TO_SELECT: NotificationReason[] = [
+  'tagged_user',
 ]
 export default function NotificationsPage() {
   const privateUser = usePrivateUser()
@@ -100,7 +106,11 @@ function NotificationsContent(props: {
 }) {
   const { privateUser } = props
   const { groupedNotifications, mostRecentNotification } =
-    useGroupedNotifications(privateUser.id, NOTIFICATIONS_TO_SELECT)
+    useGroupedNotifications(
+      privateUser.id,
+      NOTIFICATION_TYPES_TO_SELECT,
+      NOTIFICATION_REASONS_TO_SELECT
+    )
 
   return (
     <div className="relative mt-2 h-full w-full">
