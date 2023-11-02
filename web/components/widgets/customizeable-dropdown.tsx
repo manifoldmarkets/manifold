@@ -52,7 +52,7 @@ export function CustomizeableDropdown(props: {
               style={styles.popper}
               {...attributes.popper}
               className={clsx(
-                'bg-canvas-0 ring-ink-1000 z-30 mt-6 rounded-md px-4 py-2 shadow-lg ring-1 ring-opacity-5 focus:outline-none',
+                'bg-canvas-0 ring-ink-1000 z-30 rounded-md px-4 py-2 shadow-lg ring-1 ring-opacity-5 focus:outline-none',
                 menuWidth ?? 'w-36',
                 popoverClassName
               )}

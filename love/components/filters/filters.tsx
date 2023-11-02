@@ -200,8 +200,6 @@ export const Filters = (props: {
     })
     setLovers(filteredLovers)
   }
-
-  console.log('HAS KIDS', filters.has_kids)
   const rowClassName = 'gap-2 items-start'
   return (
     <Row className="bg-canvas-0 text-ink-600 w-full gap-2 py-2 text-sm">
