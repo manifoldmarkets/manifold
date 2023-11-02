@@ -12,7 +12,7 @@ import { PencilIcon } from '@heroicons/react/outline'
 import { useUser } from 'web/hooks/use-user'
 import { buttonClass } from '../buttons/button'
 import { Tooltip } from '../widgets/tooltip'
-import { ENV_CONFIG, isAdminId } from 'common/envs/constants'
+import { ENV_CONFIG, isAdminId, isTrustworthy } from 'common/envs/constants'
 import { Dashboard } from 'common/dashboard'
 import { LinkPreviews } from 'common/link-preview'
 
@@ -22,6 +22,9 @@ export function NewsDashboard(props: {
 }) {
   const { dashboard, previews } = props
   const user = useUser()
+  const isCreator = user?.id === dashboard.creatorId
+  const isOnlyMod =
+    user && !isCreator && (isAdminId(user.id) || isTrustworthy(user.username))
 
   if (!dashboard) return <LoadingIndicator />
 
@@ -46,8 +49,12 @@ export function NewsDashboard(props: {
             ttPlacement="bottom"
           />
 
-          {user?.id && (user.id === dashboard.creatorId || isAdminId(user.id)) && (
-            <Tooltip text="Edit" placement="bottom" noTap>
+          {(isCreator || isOnlyMod) && (
+            <Tooltip
+              text={isOnlyMod ? 'Edit as mod' : 'Edit'}
+              placement="bottom"
+              noTap
+            >
               <Link
                 href={`/dashboard/${dashboard.slug}?edit=true`}
                 className={buttonClass('md', 'gray-white')}

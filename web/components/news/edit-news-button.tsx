@@ -15,6 +15,7 @@ import { Avatar } from '../widgets/avatar'
 import { Input } from '../widgets/input'
 import { Subtitle } from '../widgets/subtitle'
 import { Title } from '../widgets/title'
+import { Tooltip } from '../widgets/tooltip'
 
 export const EditNewsButton = (props: { defaultDashboards: Dashboard[] }) => {
   const { defaultDashboards } = props
@@ -22,14 +23,16 @@ export const EditNewsButton = (props: { defaultDashboards: Dashboard[] }) => {
 
   return (
     <>
-      <Button
-        color="gray-white"
-        size="sm"
-        className="hidden sm:inline-flex"
-        onClick={() => setOpen(true)}
-      >
-        <PencilIcon className="h-6 w-6" />
-      </Button>
+      <Tooltip text="Change pinned news" placement="right" noTap>
+        <Button
+          color="gray-white"
+          size="sm"
+          className="hidden sm:inline-flex"
+          onClick={() => setOpen(true)}
+        >
+          <PencilIcon className="h-6 w-6" />
+        </Button>
+      </Tooltip>
       {open && (
         <EditNewsModal
           setOpen={setOpen}

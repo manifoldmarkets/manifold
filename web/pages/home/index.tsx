@@ -15,7 +15,7 @@ import { useUser } from 'web/hooks/use-user'
 import { FeedTimeline } from 'web/components/feed-timeline'
 import { getNewsDashboards } from 'web/lib/firebase/api'
 import { Dashboard, DashboardLinkItem } from 'common/dashboard'
-import { isAdminId } from 'common/envs/constants'
+import { isAdminId, isTrustworthy } from 'common/envs/constants'
 import { EditNewsButton } from 'web/components/news/edit-news-button'
 import { useYourFollowedDashboards } from 'web/hooks/use-dashboard'
 import { buildArray } from 'common/util/array'
@@ -80,7 +80,7 @@ function HomeDashboard(props: {
             {user ? <ProfileSummary user={user} /> : <Spacer w={4} />}
           </div>
           <Title className="!mb-0 hidden md:flex">Home</Title>
-          {user && isAdminId(user.id) && (
+          {user && (isAdminId(user.id) || isTrustworthy(user.username)) && (
             <EditNewsButton defaultDashboards={dashboards} />
           )}
           <DailyStats user={user} />

@@ -32,7 +32,7 @@ import clsx from 'clsx'
 import { Editor } from '@tiptap/react'
 import { XCircleIcon } from '@heroicons/react/solid'
 import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
-import { ENV_CONFIG, isAdminId } from 'common/envs/constants'
+import { ENV_CONFIG, isAdminId, isTrustworthy } from 'common/envs/constants'
 import { SEO } from 'web/components/SEO'
 import { richTextToString } from 'common/util/parse'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
@@ -129,7 +129,8 @@ function FoundDashbordPage(props: {
 
   const user = useUser()
   const isCreator = dashboard.creatorId === user?.id
-  const isOnlyAdmin = !isCreator && user && isAdminId(user.id)
+  const isOnlyMod =
+    !isCreator && user && (isAdminId(user.id) || isTrustworthy(user.username))
 
   const [editMode, setEditMode] = useState(editByDefault)
   useWarnUnsavedChanges(editMode)
@@ -165,7 +166,7 @@ function FoundDashbordPage(props: {
             <meta name="robots" content="noindex, nofollow" />
           </Head>
           <div className="bg-error w-full rounded p-6 text-center text-lg text-white">
-            Deleted by admins
+            Deleted by mods
           </div>
         </>
       )}
@@ -199,13 +200,13 @@ function FoundDashbordPage(props: {
                 {isCreator && (
                   <Button onClick={() => setEditMode(true)}>Edit</Button>
                 )}
-                {isOnlyAdmin && (
+                {isOnlyMod && (
                   <Button
                     color="red"
                     className="ml-6"
                     onClick={() => setEditMode(true)}
                   >
-                    Edit as Admin
+                    Edit as Mod
                   </Button>
                 )}
               </div>
@@ -214,7 +215,7 @@ function FoundDashbordPage(props: {
         </div>
         {editMode ? (
           <Row className="bg-canvas-50 sticky top-0 z-20 mb-2 w-full items-center justify-end gap-2 self-start py-1">
-            {isOnlyAdmin && (
+            {isOnlyMod && (
               <Button
                 color="red"
                 className="mr-auto"
@@ -223,7 +224,7 @@ function FoundDashbordPage(props: {
                   setEditMode(false)
                 }}
               >
-                Delete dashboard
+                Delete (mark as spam)
               </Button>
             )}
             <Button
