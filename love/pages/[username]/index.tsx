@@ -13,13 +13,14 @@ import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { SEO } from 'web/components/SEO'
 import { useUser } from 'web/hooks/use-user'
-import { firebaseLogin, getUserByUsername, User } from 'web/lib/firebase/users'
+import { getUserByUsername, User } from 'web/lib/firebase/users'
 import LoverAbout from 'love/components/lover-about'
 import { useUserAnswersAndQuestions } from 'love/hooks/use-questions'
 import { useTracking } from 'web/hooks/use-tracking'
 import { loveOgImageUrl } from 'love/pages/api/og/utils'
 import { LoverAnswers } from 'love/components/lover-answers'
 import { SignUpButton } from 'love/components/nav/love-sidebar'
+import { BackButton } from 'web/components/contract/back-button'
 
 export const getStaticProps = async (props: {
   params: {
@@ -67,7 +68,7 @@ export default function UserPage(props: {
       key={user.id}
       trackPageView={'user page'}
       trackPageProps={{ username: user.username }}
-      className={'p-2'}
+      className={'p-2 sm:pt-0'}
     >
       <SEO
         title={`${user.name} (@${user.username})`}
@@ -80,6 +81,7 @@ export default function UserPage(props: {
           <meta name="robots" content="noindex, nofollow" />
         </Head>
       )}
+      <BackButton className="-ml-2 mb-2 self-start" />
       <Col className={'gap-4'}>
         {lover ? (
           <>
