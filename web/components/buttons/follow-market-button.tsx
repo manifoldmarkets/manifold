@@ -1,77 +1,57 @@
-import { CheckIcon, EyeIcon, EyeOffIcon } from '@heroicons/react/outline'
-import clsx from 'clsx'
+import { CheckIcon } from '@heroicons/react/outline'
 import { User } from 'common/user'
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { Button } from 'web/components/buttons/button'
-import { WatchMarketModal } from 'web/components/contract/watch-market-modal'
-import { Row } from 'web/components/layout/row'
 import { Contract } from 'web/lib/firebase/contracts'
-import { firebaseLogin, updateUser } from 'web/lib/firebase/users'
+import { firebaseLogin } from 'web/lib/firebase/users'
 import { track } from 'web/lib/service/analytics'
 import { db } from 'web/lib/supabase/db'
 import { followContract, unfollowContract } from 'common/supabase/contracts'
+import { FaBookmark, FaRegBookmark } from 'react-icons/fa6'
+import { Tooltip } from '../widgets/tooltip'
+import { getContractFollows } from 'web/lib/supabase/follows'
 
 export const FollowMarketButton = (props: {
   contract: Contract
   user: User | undefined | null
 }) => {
   const { contract, user } = props
-  const [following, setFollowing] = useState<boolean>()
-  const [open, setOpen] = useState(false)
+  const [follows, setFollows] = useState<string[]>([])
+  const following = user && follows.includes(user.id)
+  const count = follows.length
+
   useEffect(() => {
     if (!user?.id) return
-    db.from('contract_follows')
-      .select('contract_id')
-      .eq('follow_id', user.id)
-      .eq('contract_id', contract.id)
-      .then((res) => {
-        setFollowing((res.data?.length ?? 0) > 0)
-      })
+    getContractFollows(contract.id).then(setFollows)
   }, [user?.id, open])
 
   if (user === null) return null
 
   return (
-    <Button
-      loading={following === undefined}
-      size="sm"
-      onClick={async () => {
-        if (!user) return firebaseLogin()
-        if (following) {
-          unfollowMarket(contract.id, contract.slug, user).then(() =>
-            setFollowing(false)
-          )
-        } else {
-          followMarket(contract.id, contract.slug, user).then(() =>
-            setFollowing(true)
-          )
-        }
-        if (!user.hasSeenContractFollowModal) {
-          await updateUser(user.id, {
-            hasSeenContractFollowModal: true,
-          })
-          setOpen(true)
-        }
-      }}
-    >
-      {following ? (
-        <Row className={'items-center gap-x-2 sm:flex-row'}>
-          <EyeOffIcon className={clsx('h-5 w-5')} aria-hidden="true" />
-          Unwatch
-        </Row>
-      ) : (
-        <Row className={'items-center gap-x-2 sm:flex-row'}>
-          <EyeIcon className={clsx('h-5 w-5')} aria-hidden="true" />
-          Watch
-        </Row>
-      )}
-      <WatchMarketModal
-        open={open}
-        setOpen={setOpen}
-        title={`You ${following ? 'watched' : 'unwatched'} a question!`}
-      />
-    </Button>
+    <Tooltip text={following ? 'Remove bookmark' : 'Bookmark'}>
+      <Button
+        color="gray-white"
+        loading={following === undefined}
+        onClick={async () => {
+          if (!user) return firebaseLogin()
+          if (following) {
+            setFollows(follows?.filter((f) => f !== user.id))
+            unfollowMarket(contract.id, contract.slug, user)
+          } else {
+            setFollows([...(follows ?? []), user.id])
+            followMarket(contract.id, contract.slug, user)
+          }
+        }}
+      >
+        {following ? (
+          <FaBookmark className={'h-5 w-5 text-yellow-500'} />
+        ) : (
+          <FaRegBookmark className={'h-5 w-5'} />
+        )}
+        {count && <span className="text-ink-500 ml-1">{count}</span>}
+      </Button>
+    </Tooltip>
   )
 }
 

@@ -10,7 +10,6 @@ import {
   replied_users_info,
 } from 'shared/create-notification'
 import { parseMentions, richTextToString } from 'common/util/parse'
-import { addUserToContractFollowers } from 'shared/follow-market'
 import { Contract, contractPath } from 'common/contract'
 import { User } from 'common/user'
 import { secrets } from 'common/secrets'
@@ -104,8 +103,6 @@ export const onCreateCommentOnContract = functions
 
     const commentCreator = await getUser(comment.userId)
     if (!commentCreator) throw new Error('Could not find comment creator')
-
-    await addUserToContractFollowers(contract.id, commentCreator.id)
 
     await firestore
       .collection('contracts')

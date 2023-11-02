@@ -9,6 +9,7 @@ import { Contract } from 'web/lib/firebase/contracts'
 import { Row } from '../layout/row'
 import { Tooltip } from '../widgets/tooltip'
 import { LikeButton } from './like-button'
+import { FollowMarketButton } from '../buttons/follow-market-button'
 
 export function HeaderActions(props: {
   contract: Contract
@@ -25,7 +26,8 @@ export function HeaderActions(props: {
       {children}
 
       {!isBlocked(privateUser, contract.creatorId) && (
-        <div className="flex items-center">
+        <>
+          <FollowMarketButton contract={contract} user={user} />
           <LikeButton
             user={user}
             contract={contract}
@@ -35,13 +37,14 @@ export function HeaderActions(props: {
             totalLikes={contract.likedByUserCount ?? 0}
             contentText={contract.question}
             trackingLocation={'contract page'}
+            className="hidden sm:flex"
           />
-        </div>
+        </>
       )}
 
       <CopyLinkOrShareButton
         url={getShareUrl(contract, user?.username)}
-        tooltip="Copy question share link"
+        tooltip="Share question"
         className="text-ink-500 hover:text-ink-600"
         eventTrackingName="copy market link"
       />

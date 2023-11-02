@@ -13,7 +13,6 @@ import { capitalize, sumBy } from 'lodash'
 import { toast } from 'react-hot-toast'
 import { TiVolumeMute } from 'react-icons/ti'
 import { BlockMarketButton } from 'web/components/buttons/block-market-button'
-import { FollowMarketButton } from 'web/components/buttons/follow-market-button'
 import { useDev } from 'web/hooks/use-admin'
 import {
   addContractToGroup,
@@ -417,8 +416,6 @@ export function ContractInfoDialog(props: {
       setOpen={setOpen}
       className="bg-canvas-0 flex flex-col gap-4 rounded p-6"
     >
-      <FollowMarketButton contract={contract} user={user} />
-
       <Stats contract={contract} user={user} hideAdvanced={!user} />
 
       {!!user && (

@@ -38,7 +38,6 @@ import {
   addHouseSubsidyToAnswer,
 } from 'shared/helpers/add-house-subsidy'
 import { BOT_USERNAMES } from 'common/envs/constants'
-import { addUserToContractFollowers } from 'shared/follow-market'
 import { calculateUserMetrics } from 'common/calculate-metrics'
 import { runTxnFromBank } from 'shared/txn/run-txn'
 import {
@@ -145,11 +144,6 @@ export const onCreateBet = functions
     await giveUniqueBettorAndLiquidityBonus(contract, eventId, bettor, bet)
 
     await Promise.all([
-      // They may be selling out of a position completely, so only add them if they're buying
-      bet.amount >= 0 &&
-        !bet.isSold &&
-        addUserToContractFollowers(contractId, bettor.id),
-
       updateUniqueBettors(contract, bet),
 
       updateUserInterestEmbedding(pg, bettor.id),

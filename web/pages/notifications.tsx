@@ -37,6 +37,7 @@ import { getNativePlatform } from 'web/lib/native/is-native'
 import { AppBadgesOrGetAppButton } from 'web/components/buttons/app-badges-or-get-app-button'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { track } from 'web/lib/service/analytics'
+import { BookmarkedContractsButton } from 'web/components/notifications/watched-markets'
 
 export default function NotificationsPage() {
   const privateUser = usePrivateUser()
@@ -138,19 +139,22 @@ function NotificationsContent(props: {
                 unseenNewMarketNotifs > 0 ? (
                   <div
                     className={
-                      'text-ink-0 bg-primary-500 absolute -left-4 min-w-[15px] rounded-full p-[2px] text-center text-[10px] leading-3'
+                      'text-ink-0 bg-primary-500 min-w-[15px] rounded-full p-[2px] text-center text-[10px] leading-3'
                     }
                   >
                     {unseenNewMarketNotifs}
                   </div>
                 ) : undefined,
               content: (
-                <NotificationsList
-                  groupedNotifications={groupedNewMarketNotifications}
-                  emptyTitle={
-                    'You don’t have any new question notifications from followed users, yet. Try following some users to see more.'
-                  }
-                />
+                <>
+                  <BookmarkedContractsButton className="text-ink-700 px-2 text-xl" />
+                  <NotificationsList
+                    groupedNotifications={groupedNewMarketNotifications}
+                    emptyTitle={
+                      'You don’t have any new question notifications from followed users, yet. Try following some users to see more.'
+                    }
+                  />
+                </>
               ),
             },
             {

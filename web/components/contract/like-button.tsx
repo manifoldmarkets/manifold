@@ -132,26 +132,18 @@ export const LikeButton = memo(function LikeButton(props: {
           color={'gray-white'}
           disabled={disabled}
           size={size}
-          className={clsx(
-            'text-ink-500 flex flex-row items-center disabled:cursor-not-allowed',
-            'disabled:text-ink-500',
-            className
-          )}
+          className={className}
           {...likeLongPress}
         >
-          <div className="relative">
-            <HeartIcon
-              className={clsx(
-                'h-6 w-6',
-                liked &&
-                  'fill-scarlet-200 stroke-scarlet-300 dark:stroke-scarlet-600'
-              )}
-            />
-          </div>
+          <HeartIcon
+            className={clsx(
+              'h-6 w-6',
+              liked &&
+                'fill-scarlet-200 stroke-scarlet-300 dark:stroke-scarlet-600'
+            )}
+          />
           {totalLikes > 0 && (
-            <div className="text-ink-500 my-auto h-5 pl-1 text-sm disabled:opacity-50">
-              {totalLikes}
-            </div>
+            <div className="text-ink-500 pl-1">{totalLikes}</div>
           )}
         </Button>
       </Tooltip>

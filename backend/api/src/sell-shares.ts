@@ -13,7 +13,6 @@ import { Bet } from 'common/bet'
 import { floatingEqual, floatingLesserEqual } from 'common/util/math'
 import { getUnfilledBetsAndUserBalances, updateMakers } from './place-bet'
 import { redeemShares } from './redeem-shares'
-import { removeUserFromContractFollowers } from 'shared/follow-market'
 import { Answer } from 'common/answer'
 import { getCpmmProbability } from 'common/calculate-cpmm'
 
@@ -289,19 +288,7 @@ export const sellshares = authEndpoint(async (req, auth) => {
     }
   })
 
-  const {
-    newBet,
-    betId,
-    makers,
-    maxShares,
-    soldShares,
-    contract,
-    otherResultsWithBet,
-  } = result
-
-  if (contract.mechanism === 'cpmm-1' && floatingEqual(maxShares, soldShares)) {
-    await removeUserFromContractFollowers(contractId, auth.uid)
-  }
+  const { newBet, betId, makers, contract, otherResultsWithBet } = result
 
   const allMakers = [...makers, ...otherResultsWithBet.flatMap((r) => r.makers)]
   const userIds = uniq(allMakers.map((maker) => maker.bet.userId))

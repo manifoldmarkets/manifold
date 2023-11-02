@@ -34,7 +34,7 @@ export function FollowDashboardButton(props: {
         {isFollowing ? (
           <FaBookmark className={'h-5 w-5 text-yellow-500'} />
         ) : (
-          <FaRegBookmark className={' h-5 w-5'} />
+          <FaRegBookmark className={'h-5 w-5'} />
         )}
       </Button>
     </Tooltip>

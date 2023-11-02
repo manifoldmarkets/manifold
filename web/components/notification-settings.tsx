@@ -6,7 +6,6 @@ import {
   CurrencyDollarIcon,
   ExclamationIcon,
   InboxInIcon,
-  InformationCircleIcon,
   LightBulbIcon,
   RefreshIcon,
   TrendingUpIcon,
@@ -31,16 +30,13 @@ import {
 } from 'react'
 import toast from 'react-hot-toast'
 import { Button } from 'web/components/buttons/button'
-import { WatchMarketModal } from 'web/components/contract/watch-market-modal'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { SwitchSetting } from 'web/components/switch-setting'
-
 import { updatePrivateUser } from 'web/lib/firebase/users'
 import { getIsNative } from 'web/lib/native/is-native'
 import { postMessageToNative } from 'web/components/native-message-listener'
-import { UserWatchedContractsButton } from 'web/components/notifications/watched-markets'
-import { usePrivateUser, useUser } from 'web/hooks/use-user'
+import { usePrivateUser } from 'web/hooks/use-user'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import TrophyIcon from 'web/lib/icons/trophy-icon.svg'
 
@@ -205,24 +201,11 @@ export function NotificationSettings(props: {
   navigateToSection: string | undefined
 }) {
   const { navigateToSection } = props
-  const user = useUser()
-  const [showWatchModal, setShowWatchModal] = useState(false)
 
   return (
     <SectionRoutingContext.Provider value={navigateToSection}>
       <Col className={'gap-6 p-2'}>
         <PushNotificationsBanner />
-        <Row className={'text-ink-700 gap-2 text-xl'}>
-          {user ? (
-            <UserWatchedContractsButton user={user} />
-          ) : (
-            <span>Watched Questions</span>
-          )}
-          <InformationCircleIcon
-            className="text-ink-500 -mb-1 h-5 w-5 cursor-pointer"
-            onClick={() => setShowWatchModal(true)}
-          />
-        </Row>
         <Section icon={<ChatIcon className={'h-6 w-6'} />} data={comments} />
         <Section
           icon={<TrendingUpIcon className={'h-6 w-6'} />}
@@ -261,7 +244,6 @@ export function NotificationSettings(props: {
           icon={<ExclamationIcon className={'h-6 w-6'} />}
           data={optOut}
         />
-        <WatchMarketModal open={showWatchModal} setOpen={setShowWatchModal} />
       </Col>
     </SectionRoutingContext.Provider>
   )
