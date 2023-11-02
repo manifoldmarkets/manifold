@@ -7,7 +7,6 @@ import { useEvent } from 'web/hooks/use-event'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { track, trackCallback } from 'web/lib/service/analytics'
 import DropdownMenu from './comments/dropdown-menu'
-import { ContractsList } from './contract/contracts-list'
 import { Col } from './layout/col'
 import { Row } from './layout/row'
 import generateFilterDropdownItems, {
@@ -38,6 +37,15 @@ import { useFollowedUsersOnLoad } from 'web/hooks/use-follows'
 import { CONTRACTS_PER_SEARCH_PAGE } from 'common/supabase/contracts'
 import { UserResults } from './search/user-results'
 import { searchContracts } from 'web/lib/firebase/api'
+import { LoadMoreUntilNotVisible } from './widgets/visibility-observer'
+import { LoadingIndicator } from './widgets/loading-indicator'
+import {
+  actionColumn,
+  probColumn,
+  traderColumn,
+} from './contract/contract-table-col-formats'
+import { buildArray } from 'common/util/array'
+import { ContractsTable } from './contract/contracts-table'
 
 const USERS_PER_PAGE = 100
 const TOPICS_PER_PAGE = 100
@@ -241,7 +249,7 @@ export function SupabaseSearch(props: {
     'id'
   )
 
-  const { contracts, loadMoreContracts, queryContracts } = useContractSearch(
+  const { contracts, queryContracts, shouldLoadMore } = useContractSearch(
     persistPrefix,
     setLastSearch,
     searchParams,
@@ -311,7 +319,7 @@ export function SupabaseSearch(props: {
     if (!searchParams || isEqual(searchParams, lastSearch)) return
     const searchCount = ++searchCountRef.current
 
-    queryContracts(FRESH_SEARCH_CHANGED_STATE, true)
+    queryContracts(true)
     queryUsers(queryAsString).then((results) => {
       if (searchCount === searchCountRef.current) setQueriedUserResults(results)
     })
@@ -404,16 +412,21 @@ export function SupabaseSearch(props: {
             <ArrowLeftIcon className={'h-4 w-4'} />
           </Button>
           {pillOptions.map((option) => {
-            const numHits = Math.min(
-              option === 'Questions'
-                ? contracts?.length ?? 0
+            const numHits =
+              (option === 'Questions'
+                ? contracts?.length
                 : option === 'Users'
-                ? userResults?.length ?? 0
-                : topicResults?.length ?? 0,
-              100
-            )
+                ? userResults?.length
+                : topicResults?.length) ?? 0
+
             const hitsTitle =
-              numHits >= 100 ? '100+ ' : numHits > 0 ? numHits + ' ' : ''
+              numHits <= 0
+                ? ''
+                : numHits >= 100
+                ? '100+ '
+                : option === 'Questions' && shouldLoadMore
+                ? `${numHits}+ `
+                : `${numHits} `
             return (
               <PillButton
                 key={option}
@@ -432,17 +445,25 @@ export function SupabaseSearch(props: {
         rowBelowFilters
       )}
       {searchTypeAsString === '' || searchTypeAsString === 'Questions' ? (
-        contracts && contracts.length === 0 ? (
+        !contracts ? (
+          <LoadingIndicator />
+        ) : contracts.length === 0 ? (
           emptyContractsState
         ) : (
-          <ContractsList
-            contracts={contracts}
-            loadMore={loadMoreContracts}
-            onContractClick={onContractClick}
-            highlightContractIds={highlightContractIds}
-            headerClassName={clsx(headerClassName, '!top-14')}
-            hideActions={hideActions}
-          />
+          <>
+            <ContractsTable
+              contracts={contracts}
+              onContractClick={onContractClick}
+              highlightContractIds={highlightContractIds}
+              columns={buildArray([
+                traderColumn,
+                probColumn,
+                !hideActions && actionColumn,
+              ])}
+              headerClassName={clsx(headerClassName, '!top-14')}
+            />
+            <LoadMoreUntilNotVisible loadMore={queryContracts} />
+          </>
         )
       ) : searchTypeAsString === 'Users' ? (
         userResults && userResults.length === 0 ? (
@@ -544,63 +565,55 @@ const useContractSearch = (
 
   const requestId = useRef(0)
 
-  const queryContracts = useEvent(
-    async (currentState: SearchState, freshQuery?: boolean) => {
-      if (!searchParams) return true
-      const {
-        q: query,
-        s: sort,
-        f: filter,
-        topic: topicSlug,
-        ct: contractType,
-      } = searchParams
-      setLastSearch(searchParams)
+  const queryContracts = useEvent(async (freshQuery?: boolean) => {
+    if (!searchParams) return true
+    const {
+      q: query,
+      s: sort,
+      f: filter,
+      topic: topicSlug,
+      ct: contractType,
+    } = searchParams
+    setLastSearch(searchParams)
 
-      const offset = freshQuery
-        ? 0
-        : currentState.contracts
-        ? currentState.contracts.length
-        : 0
-
-      if (freshQuery || currentState.shouldLoadMore) {
-        const id = ++requestId.current
-
-        const newContracts = await searchContracts({
-          term: query,
-          filter,
-          sort,
-          contractType: additionalFilter?.contractType ?? contractType,
-          offset: offset,
-          limit: CONTRACTS_PER_SEARCH_PAGE,
-          topicSlug: topicSlug !== '' ? topicSlug : undefined,
-          creatorId: additionalFilter?.creatorId,
-        })
-
-        if (id === requestId.current) {
-          const freshContracts = freshQuery
-            ? newContracts
-            : [
-                ...(currentState.contracts ? currentState.contracts : []),
-                ...newContracts,
-              ]
-
-          const shouldLoadMore =
-            newContracts.length === CONTRACTS_PER_SEARCH_PAGE
-
-          setState({
-            contracts: freshContracts,
-            shouldLoadMore,
-          })
-          if (freshQuery && isWholePage) window.scrollTo(0, 0)
-
-          return shouldLoadMore
-        }
-      }
-      return false
+    if (freshQuery) {
+      setState(FRESH_SEARCH_CHANGED_STATE)
     }
-  )
 
-  const loadMoreContracts = () => queryContracts(state)
+    const offset = freshQuery ? 0 : state.contracts?.length ?? 0
+
+    if (freshQuery || state.shouldLoadMore) {
+      const id = ++requestId.current
+
+      const newContracts = await searchContracts({
+        term: query,
+        filter,
+        sort,
+        contractType: additionalFilter?.contractType ?? contractType,
+        offset: offset,
+        limit: CONTRACTS_PER_SEARCH_PAGE,
+        topicSlug: topicSlug !== '' ? topicSlug : undefined,
+        creatorId: additionalFilter?.creatorId,
+      })
+
+      if (id === requestId.current) {
+        const freshContracts = freshQuery
+          ? newContracts
+          : buildArray(state.contracts, newContracts)
+
+        const shouldLoadMore = newContracts.length === CONTRACTS_PER_SEARCH_PAGE
+
+        setState({
+          contracts: freshContracts,
+          shouldLoadMore,
+        })
+        if (freshQuery && isWholePage) window.scrollTo(0, 0)
+
+        return shouldLoadMore
+      }
+    }
+    return false
+  })
 
   const contracts = state.contracts
     ? uniqBy(
@@ -619,7 +632,7 @@ const useContractSearch = (
 
   return {
     contracts,
-    loadMoreContracts,
+    shouldLoadMore: state.shouldLoadMore,
     queryContracts,
   }
 }
