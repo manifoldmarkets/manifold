@@ -2,7 +2,7 @@ import type { MentionOptions } from '@tiptap/extension-mention'
 import { PluginKey } from 'prosemirror-state'
 import { MentionList } from './contract-mention-list'
 import { makeMentionRender } from '../user-mention/mention-suggestion'
-import { searchContract } from 'web/lib/supabase/contracts'
+import { searchContracts } from 'web/lib/firebase/api'
 
 type Suggestion = MentionOptions['suggestion']
 
@@ -16,13 +16,11 @@ export const contractMentionSuggestion: Suggestion = {
   },
   pluginKey: new PluginKey('contract-mention'),
   items: async ({ query }) =>
-    (
-      await searchContract({
-        query,
-        filter: 'all',
-        sort: 'score',
-        limit: 5,
-      })
-    ).data,
+    await searchContracts({
+      term: query,
+      filter: 'all',
+      sort: 'score',
+      limit: 5,
+    }),
   render: makeMentionRender(MentionList),
 }

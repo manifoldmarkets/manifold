@@ -90,7 +90,8 @@ function InternalUnseenMessagesBubble(props: {
   const unseenMessages = useUnseenPrivateMessageChannels(
     privateUser.id,
     true,
-    lastSeenTime
+    lastSeenTime,
+    [638] //Silence prod manifold.love general chat by default
   )
     .filter((message) => message.createdTime > lastSeenTime)
     .filter((message) => !asPath.endsWith(`/messages/${message.channelId}`))

@@ -481,7 +481,6 @@ Parameters:
 - `creatorId`: Optional. Only include questions created by the user with this id.
 - `limit`: Optional. Number of contracts to return from 0 to 1000. Default 100.
 - `offset`: Optional. Number of contracts to skip. Use with limit to paginate the results.
-- `fuzzy`: Optional. If set to any value, uses fuzzier string matching.
 
 Requires no authorization.
 

@@ -6,7 +6,7 @@ import {
   usePrivateMessageChannel,
 } from 'web/hooks/use-private-messages'
 import { Col } from 'web/components/layout/col'
-import { User } from 'common/user'
+import { MANIFOLD_AVATAR_URL, User } from 'common/user'
 import { useEffect, useState, useMemo } from 'react'
 import { track } from 'web/lib/service/analytics'
 import { firebaseLogin } from 'web/lib/firebase/users'
@@ -39,6 +39,7 @@ import { FaUserFriends, FaUserMinus } from 'react-icons/fa'
 import { filterDefined } from 'common/util/array'
 import { GiSpeakerOff } from 'react-icons/gi'
 import toast from 'react-hot-toast'
+import { Avatar } from 'web/components/widgets/avatar'
 
 export default function PrivateMessagesPage() {
   return (
@@ -114,7 +115,11 @@ export const PrivateChat = (props: {
   )
   const router = useRouter()
 
-  const messages = (realtimeMessages ?? []).reverse()
+  const messages = (realtimeMessages ?? [])
+    .reverse()
+    .filter((message) =>
+      channel.title ? message.visibility !== 'system_status' : true
+    )
   const editor = useTextEditor({
     size: 'sm',
     placeholder: 'Send a message',
@@ -188,13 +193,17 @@ export const PrivateChat = (props: {
       <Col className={''}>
         <Row className={'border-ink-200 items-center gap-1 border-b py-2'}>
           <BackButton />
-          <MultipleOrSingleAvatars
-            size="sm"
-            spacing={0.5}
-            startLeft={1}
-            avatarUrls={remainingUsers?.map((user) => user.avatarUrl) ?? []}
-            onClick={() => setShowUsers(true)}
-          />
+          {channel.title ? (
+            <Avatar noLink={true} avatarUrl={MANIFOLD_AVATAR_URL} size={'md'} />
+          ) : (
+            <MultipleOrSingleAvatars
+              size="sm"
+              spacing={0.5}
+              startLeft={1}
+              avatarUrls={remainingUsers?.map((user) => user.avatarUrl) ?? []}
+              onClick={() => setShowUsers(true)}
+            />
+          )}
           {channel.title ? (
             <span className={'ml-1 font-semibold'}>{channel.title}</span>
           ) : (
@@ -269,34 +278,36 @@ export const PrivateChat = (props: {
               },
             ]}
           />
-          <Modal open={showUsers} setOpen={setShowUsers}>
-            <Col className={clsx(MODAL_CLASS)}>
-              {otherUsers?.map((user) => (
-                <Row
-                  key={user.id}
-                  className={'w-full items-center justify-start gap-2'}
-                >
-                  <UserAvatarAndBadge
-                    name={user.name}
-                    username={user.username}
-                    avatarUrl={user.avatarUrl}
-                  />
-                  {otherUsersFromChannel?.[channelId].map(
-                    (membership) =>
-                      membership.user_id === user.id &&
-                      membership.status === 'left' && (
-                        <span
-                          key={membership.user_id + 'status'}
-                          className={'text-ink-500 text-sm'}
-                        >
-                          (Left)
-                        </span>
-                      )
-                  )}
-                </Row>
-              ))}
-            </Col>
-          </Modal>
+          {showUsers && (
+            <Modal open={showUsers} setOpen={setShowUsers}>
+              <Col className={clsx(MODAL_CLASS)}>
+                {otherUsers?.map((user) => (
+                  <Row
+                    key={user.id}
+                    className={'w-full items-center justify-start gap-2'}
+                  >
+                    <UserAvatarAndBadge
+                      name={user.name}
+                      username={user.username}
+                      avatarUrl={user.avatarUrl}
+                    />
+                    {otherUsersFromChannel?.[channelId].map(
+                      (membership) =>
+                        membership.user_id === user.id &&
+                        membership.status === 'left' && (
+                          <span
+                            key={membership.user_id + 'status'}
+                            className={'text-ink-500 text-sm'}
+                          >
+                            (Left)
+                          </span>
+                        )
+                    )}
+                  </Row>
+                ))}
+              </Col>
+            </Modal>
+          )}
         </Row>
       </Col>
       <Col

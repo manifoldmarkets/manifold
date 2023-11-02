@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { User } from 'common/user'
+import { MANIFOLD_AVATAR_URL, User } from 'common/user'
 import { parseJsonContentToText } from 'common/util/parse'
 import Link from 'next/link'
 import { Col } from 'web/components/layout/col'
@@ -79,12 +79,22 @@ export const MessageChannelRow = (props: {
 }) => {
   const { otherUserIds, currentUser, channel } = props
   const channelId = channel.id
-  const otherUsers = useUsersInStore(otherUserIds, 100)
+  const otherUsers = channel.title
+    ? [
+        {
+          id: 'manifold',
+          name: 'Manifold',
+          avatarUrl: MANIFOLD_AVATAR_URL,
+        },
+      ]
+    : // eslint-disable-next-line react-hooks/rules-of-hooks
+      useUsersInStore(otherUserIds, 100)
 
   const messages = useRealtimePrivateMessagesPolling(channelId, true, 2000)
   const unseen = useHasUnseenPrivateMessage(currentUser.id, channelId, messages)
   const chat = messages?.[0]
   const numOthers = otherUsers?.length ?? 0
+
   return (
     <Link
       className="hover:bg-canvas-0 rounded p-2 transition-colors"
@@ -99,7 +109,6 @@ export const MessageChannelRow = (props: {
           avatarUrls={otherUsers?.map((user) => user.avatarUrl) ?? []}
           className={numOthers > 1 ? '-ml-2' : ''}
         />
-
         <Col className={'w-full'}>
           <Row className={'items-center justify-between'}>
             <span className={'font-semibold'}>
