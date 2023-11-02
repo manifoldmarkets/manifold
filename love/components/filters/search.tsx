@@ -234,7 +234,7 @@ export const Search = (props: {
         />
       </Row>
       <RightModal
-        className="bg-canvas-0 w-2/3 px-6 py-4 sm:hidden"
+        className="bg-canvas-0 w-2/3 sm:hidden"
         open={openFiltersModal}
         setOpen={setOpenFiltersModal}
       >

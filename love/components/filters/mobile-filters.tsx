@@ -10,6 +10,9 @@ import { RelationshipFilter } from './relationship-filter'
 import { FilterFields } from './search'
 import { WantsKidsFilter } from './wants-kids-filter'
 import { HasKidsFilter } from './has-kids-filter'
+import { ReactNode, forwardRef, useState } from 'react'
+import { Row } from 'web/components/layout/row'
+import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/outline'
 
 export function MobileFilters(props: {
   filters: Partial<FilterFields>
@@ -32,24 +35,17 @@ export function MobileFilters(props: {
     nearbyCities,
   } = props
 
+  const [openFilter, setOpenFilter] = useState<string | undefined>(undefined)
+
   return (
     <>
-      {/* WANTS KIDS */}
-      <Col>
-        <Subtitle>Wants kids</Subtitle>
-        <WantsKidsFilter filters={filters} updateFilter={updateFilter} />
-      </Col>
-      {/* HAS KIDS */}
-      <Col>
-        <Subtitle>Has kids</Subtitle>
-        <HasKidsFilter filters={filters} updateFilter={updateFilter} />
-      </Col>
-      <Col className="gap-1">
-        <Subtitle>Gender</Subtitle>
-        <Col>
-          <GenderFilter filters={filters} updateFilter={updateFilter} />
-        </Col>
-      </Col>
+      <MobileFilterSection
+        title="Gender"
+        openFilter={openFilter}
+        setOpenFilter={setOpenFilter}
+      >
+        <GenderFilter filters={filters} updateFilter={updateFilter} />
+      </MobileFilterSection>
       {/* PREFERRED GENDER */}
       <Col className="gap-1">
         <Subtitle>Preferred Gender</Subtitle>
@@ -81,7 +77,16 @@ export function MobileFilters(props: {
         <Subtitle>Relationship Style</Subtitle>
         <RelationshipFilter filters={filters} updateFilter={updateFilter} />
       </Col>
-
+      {/* WANTS KIDS */}
+      <Col>
+        <Subtitle>Wants kids</Subtitle>
+        <WantsKidsFilter filters={filters} updateFilter={updateFilter} />
+      </Col>
+      {/* HAS KIDS */}
+      <Col>
+        <Subtitle>Has kids</Subtitle>
+        <HasKidsFilter filters={filters} updateFilter={updateFilter} />
+      </Col>
       <button
         className="text-ink-500 hover:text-primary-500 underline"
         onClick={clearFilters}
@@ -92,12 +97,33 @@ export function MobileFilters(props: {
   )
 }
 
-export function MobileFilterHeader(props: {
-  children: string
+export function MobileFilterSection(props: {
+  title: string
+  children: ReactNode
+  openFilter: string | undefined
+  setOpenFilter: (openFilter: string | undefined) => void
   className?: string
 }) {
-  const { children: text, className } = props
+  const { title, children, openFilter, setOpenFilter, className } = props
+  const isOpen = openFilter == title
   return (
-    <div className={clsx('text-ink-600 inline-block', className)}>{text}</div>
+    <Col className={clsx(className)}>
+      <button
+        className="text-ink-600 flex w-full flex-row justify-between px-4 py-1"
+        onClick={() =>
+          isOpen ? setOpenFilter(undefined) : setOpenFilter(title)
+        }
+      >
+        {title}
+        <div className="text-ink-400">
+          {isOpen ? (
+            <ChevronUpIcon className="h-5 w-5" />
+          ) : (
+            <ChevronDownIcon className="h-5 w-5" />
+          )}
+        </div>
+      </button>
+      {isOpen && <div className="bg-canvas-50 px-4 py-2">{children}</div>}
+    </Col>
   )
 }
