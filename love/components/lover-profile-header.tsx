@@ -103,7 +103,8 @@ export default function LoverProfileHeader(props: {
                 .replace('https://www.twitter.com/', '')
                 .replace('https://twitter.com/', '')
                 .replace('www.twitter.com/', '')
-                .replace('twitter.com/', '')}`}
+                .replace('twitter.com/', '')
+                .replace(/^@/, '')}`}
             >
               <Row className="items-center gap-1">
                 <img

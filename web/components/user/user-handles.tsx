@@ -35,7 +35,8 @@ export function UserHandles(props: {
             .replace('https://www.twitter.com/', '')
             .replace('https://twitter.com/', '')
             .replace('www.twitter.com/', '')
-            .replace('twitter.com/', '')}`}
+            .replace('twitter.com/', '')
+            .replace(/^@/, '')}`}
         >
           <Row className="items-center gap-1">
             <img src="/twitter-logo.svg" className="h-4 w-4" alt="Twitter" />
