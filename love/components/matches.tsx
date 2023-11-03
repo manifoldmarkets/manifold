@@ -35,6 +35,7 @@ import { db } from 'web/lib/supabase/db'
 import { NoLabel, YesLabel } from 'web/components/outcome-label'
 import { SendMessageButton } from 'web/components/messaging/send-message-button'
 import { CommentsButton } from 'web/components/comments/comments-button'
+import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
 
 export const Matches = (props: { userId: string }) => {
   const { userId } = props
@@ -118,7 +119,11 @@ const MatchContract = (props: {
   lover: Lover
   isYourMatch: boolean
 }) => {
-  const { contract, lover, isYourMatch } = props
+  const { lover, isYourMatch } = props
+  const contract = (useFirebasePublicContract(
+    props.contract.visibility,
+    props.contract.id
+  ) ?? props.contract) as CPMMBinaryContract
   const prob = getProbability(contract)
   const { user, pinned_url } = lover
   const currentUser = useUser()
