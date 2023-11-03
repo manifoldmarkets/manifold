@@ -9,7 +9,7 @@ export const ShareProfileButton = (props: {
   const { username, className } = props
   const currentUser = useUser()
   const shareUrl = currentUser
-    ? `https://${ENV_CONFIG.loveDomain}/${username}?r=${currentUser.username}`
+    ? `https://${ENV_CONFIG.loveDomain}/${username}?referrer=${currentUser.username}`
     : `https://${ENV_CONFIG.loveDomain}/${username}`
 
   return (
