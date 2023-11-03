@@ -193,7 +193,7 @@ function ModBadge() {
 }
 function MVPBadge() {
   return (
-    <Tooltip text="MVP" placement="right">
+    <Tooltip text="Thanks for helping Manifold!" placement="right">
       <BsFillArrowThroughHeartFill
         className="h-4 w-4 text-purple-700 dark:text-purple-400"
         aria-hidden="true"
