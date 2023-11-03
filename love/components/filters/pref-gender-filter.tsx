@@ -24,6 +24,7 @@ export function PrefGenderFilterText(props: {
       {pref_gender.map((gender) => {
         return (
           <GenderIcon
+            key={gender}
             gender={gender}
             className={clsx('h-4 w-4')}
             hasColor={!!highlightedClass}

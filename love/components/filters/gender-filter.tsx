@@ -23,6 +23,7 @@ export function GenderFilterText(props: {
       {gender.map((g) => {
         return (
           <GenderIcon
+            key={g}
             gender={g}
             className={clsx('h-4 w-4')}
             hasColor={!!highlightedClass}
