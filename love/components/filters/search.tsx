@@ -218,6 +218,7 @@ export const Search = (props: {
     <Col className={'text-ink-600 w-full gap-2 py-2 text-sm'}>
       <Row className={'mb-2 justify-between gap-2'}>
         <Input
+          value={filters.name}
           placeholder={'Search name'}
           className={'w-full max-w-xs'}
           onChange={(e) => updateFilter({ name: e.target.value })}
