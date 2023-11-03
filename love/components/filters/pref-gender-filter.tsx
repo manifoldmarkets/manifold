@@ -43,15 +43,13 @@ export function PrefGenderFilter(props: {
   return (
     <MultiCheckbox
       selected={filters.pref_gender ?? []}
-      choices={
-        {
-          Male: 'male',
-          Female: 'female',
-          'Non-binary': 'non-binary',
-          'Trans-female': 'trans-female',
-          'Trans-male': 'trans-male',
-        } as any
-      }
+      choices={{
+        Women: 'female',
+        Men: 'male',
+        'Non-binary': 'non-binary',
+        'Trans-women': 'trans-female',
+        'Trans-men': 'trans-male',
+      }}
       onChange={(c) => {
         updateFilter({ pref_gender: c })
       }}

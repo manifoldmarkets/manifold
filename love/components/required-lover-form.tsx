@@ -24,6 +24,8 @@ import { buildArray } from 'common/util/array'
 import { CheckCircleIcon } from '@heroicons/react/outline'
 import { XIcon } from '@heroicons/react/solid'
 import Image from 'next/image'
+import { genderLabels, genderLabelsPlural } from './gender-icon'
+import { capitalize, mapValues, invert } from 'lodash'
 
 export const initialRequiredState = {
   birthdate: dayjs().subtract(18, 'year').format('YYYY-MM-DD'),
@@ -294,8 +296,8 @@ export const RequiredLoveUserForm = (props: {
                 <ChoicesToggleGroup
                   currentChoice={lover['gender'].replace('trans-', '')}
                   choicesMap={{
-                    Male: 'male',
-                    Female: 'female',
+                    Woman: 'female',
+                    Man: 'male',
                     'Non-binary': 'non-binary',
                   }}
                   setChoice={(c) => setLover('gender', c)}
@@ -314,11 +316,11 @@ export const RequiredLoveUserForm = (props: {
               <label className={clsx(labelClassName)}>Interested in</label>
               <MultiCheckbox
                 choices={{
-                  Male: 'male',
-                  Female: 'female',
+                  Women: 'female',
+                  Men: 'male',
                   'Non-binary': 'non-binary',
-                  'Trans-female': 'trans-female',
-                  'Trans-male': 'trans-male',
+                  'Trans-women': 'trans-female',
+                  'Trans-men': 'trans-male',
                 }}
                 selected={lover['pref_gender']}
                 onChange={(selected) => setLover('pref_gender', selected)}

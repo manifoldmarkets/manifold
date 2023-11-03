@@ -46,11 +46,11 @@ export function GenderFilter(props: {
         selected={filters.genders ?? []}
         choices={
           {
-            Male: 'male',
-            Female: 'female',
+            Women: 'female',
+            Men: 'male',
             'Non-binary': 'non-binary',
-            'Trans-female': 'trans-female',
-            'Trans-male': 'trans-male',
+            'Trans-women': 'trans-female',
+            'Trans-men': 'trans-male',
           } as any
         }
         onChange={(c) => {

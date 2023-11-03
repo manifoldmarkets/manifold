@@ -19,7 +19,6 @@ import {
 import { FilterFields } from './search'
 import { KidsLabel, wantsKidsLabels } from './wants-kids-filter'
 import { HasKidsLabel, hasKidsLabels } from './has-kids-filter'
-import { Checkbox } from 'web/components/widgets/checkbox'
 import { MyMatchesToggle } from './my-matches-toggle'
 
 export function DesktopFilters(props: {
