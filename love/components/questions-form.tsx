@@ -34,7 +34,7 @@ export const QuestionsForm = () => {
             questions
               .filter((q) =>
                 page === 0
-                  ? q.answer_type === 'multiple_choice'
+                  ? q.answer_type !== 'multiple_choice'
                   : page === 1 && q.answer_type !== 'multiple_choice'
               )
               .map((row) => <QuestionRow user={user} key={row.id} row={row} />)}
