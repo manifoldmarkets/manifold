@@ -91,7 +91,6 @@ export const Search = (props: {
   const nearbyCities = useNearbyCities(nearbyOriginLocation, debouncedRadius)
 
   const [openFiltersModal, setOpenFiltersModal] = useState(false)
-  // const [isYourFilters, setIsYourFilters] = useState(false)
 
   const yourFilters: Partial<FilterFields> = {
     genders: youLover?.pref_gender,
