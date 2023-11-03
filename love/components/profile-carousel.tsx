@@ -16,6 +16,8 @@ export default function ProfileCarousel(props: {
   const photoNums = lover.photo_urls ? lover.photo_urls.length : 0
 
   const [lightboxUrl, setLightboxUrl] = useState('')
+  const [dialogOpen, setDialogOpen] = useState(false)
+
   if (!currentUser) {
     return (
       <Carousel>
@@ -58,16 +60,17 @@ export default function ProfileCarousel(props: {
                 src={url}
                 fill
                 alt={`preview ${index}`}
-                className="w-full object-cover"
+                className="w-full cursor-pointer object-cover"
                 onClick={() => {
                   setLightboxUrl(url)
+                  setDialogOpen(true)
                 }}
               />
             </div>
           )
         })}
       </Carousel>
-      <Modal open={!!lightboxUrl} setOpen={() => setLightboxUrl('')}>
+      <Modal open={dialogOpen} setOpen={setDialogOpen}>
         <Image src={lightboxUrl} width={1000} height={1000} alt="" />
       </Modal>
     </>
