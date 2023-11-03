@@ -48,7 +48,7 @@ export function LocationFilter(props: {
   } = props
 
   return (
-    <Col className={clsx('w-full')}>
+    <Col className={clsx('w-full gap-1')}>
       <Checkbox
         label={`${radius} miles near you`}
         checked={!!filters.geodbCityIds}

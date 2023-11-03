@@ -1,18 +1,20 @@
+import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { Lover } from 'love/hooks/use-lover'
+import { ReactNode, useState } from 'react'
+import { MdOutlineStroller } from 'react-icons/md'
 import { Col } from 'web/components/layout/col'
-import { Subtitle } from '../widgets/lover-subtitle'
+import { Row } from 'web/components/layout/row'
 import { AgeFilter } from './age-filter'
 import { GenderFilter } from './gender-filter'
+import { HasKidsFilter } from './has-kids-filter'
 import { LocationFilter } from './location-filter'
 import { PrefGenderFilter } from './pref-gender-filter'
 import { RelationshipFilter } from './relationship-filter'
 import { FilterFields } from './search'
 import { WantsKidsFilter } from './wants-kids-filter'
-import { HasKidsFilter } from './has-kids-filter'
-import { ReactNode, forwardRef, useState } from 'react'
-import { Row } from 'web/components/layout/row'
-import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/outline'
+import { FaChild } from 'react-icons/fa6'
+import { MyMatchesToggle } from './my-matches-toggle'
 
 export function MobileFilters(props: {
   filters: Partial<FilterFields>
@@ -23,6 +25,8 @@ export function MobileFilters(props: {
   clearFilters: () => void
   nearbyOriginLocation: string | null | undefined
   nearbyCities: string[] | null | undefined
+  setYourFilters: (checked: boolean) => void
+  isYourFilters: boolean
 }) {
   const {
     filters,
@@ -33,12 +37,22 @@ export function MobileFilters(props: {
     clearFilters,
     nearbyOriginLocation,
     nearbyCities,
+    setYourFilters,
+    isYourFilters,
   } = props
 
   const [openFilter, setOpenFilter] = useState<string | undefined>(undefined)
 
   return (
-    <>
+    <Col>
+      <Col className="p-4 pb-2">
+        <MyMatchesToggle
+          setYourFilters={setYourFilters}
+          youLover={youLover}
+          isYourFilters={isYourFilters}
+        />
+      </Col>
+      {/* GENDER */}
       <MobileFilterSection
         title="Gender"
         openFilter={openFilter}
@@ -47,21 +61,28 @@ export function MobileFilters(props: {
         <GenderFilter filters={filters} updateFilter={updateFilter} />
       </MobileFilterSection>
       {/* PREFERRED GENDER */}
-      <Col className="gap-1">
-        <Subtitle>Preferred Gender</Subtitle>
-        <Col>
-          <PrefGenderFilter filters={filters} updateFilter={updateFilter} />
-        </Col>
-      </Col>
+      <MobileFilterSection
+        title="Preferred gender"
+        openFilter={openFilter}
+        setOpenFilter={setOpenFilter}
+      >
+        <PrefGenderFilter filters={filters} updateFilter={updateFilter} />
+      </MobileFilterSection>
       {/* AGE RANGE */}
-      <Col className="mb-4 gap-1">
-        <Subtitle>Age</Subtitle>
+      <MobileFilterSection
+        title="Age"
+        openFilter={openFilter}
+        setOpenFilter={setOpenFilter}
+      >
         <AgeFilter filters={filters} updateFilter={updateFilter} />
-      </Col>
+      </MobileFilterSection>
       {/* LOCATION */}
       {youLover && nearbyOriginLocation && (
-        <Col className="gap-1">
-          <Subtitle>Location</Subtitle>
+        <MobileFilterSection
+          title="Location"
+          openFilter={openFilter}
+          setOpenFilter={setOpenFilter}
+        >
           <LocationFilter
             filters={filters}
             updateFilter={updateFilter}
@@ -70,30 +91,41 @@ export function MobileFilters(props: {
             radius={radius}
             setRadius={setRadius}
           />
-        </Col>
+        </MobileFilterSection>
       )}
       {/* RELATIONSHIP STYLE */}
-      <Col>
-        <Subtitle>Relationship Style</Subtitle>
+      <MobileFilterSection
+        title="Relationship style"
+        openFilter={openFilter}
+        setOpenFilter={setOpenFilter}
+      >
         <RelationshipFilter filters={filters} updateFilter={updateFilter} />
-      </Col>
+      </MobileFilterSection>
       {/* WANTS KIDS */}
-      <Col>
-        <Subtitle>Wants kids</Subtitle>
+      <MobileFilterSection
+        title="Wants kids"
+        openFilter={openFilter}
+        setOpenFilter={setOpenFilter}
+        icon={<MdOutlineStroller className="text-ink-400 h-4 w-4" />}
+      >
         <WantsKidsFilter filters={filters} updateFilter={updateFilter} />
-      </Col>
+      </MobileFilterSection>
       {/* HAS KIDS */}
-      <Col>
-        <Subtitle>Has kids</Subtitle>
+      <MobileFilterSection
+        title="Has kids"
+        openFilter={openFilter}
+        setOpenFilter={setOpenFilter}
+        icon={<FaChild className="text-ink-400 h-4 w-4" />}
+      >
         <HasKidsFilter filters={filters} updateFilter={updateFilter} />
-      </Col>
+      </MobileFilterSection>
       <button
         className="text-ink-500 hover:text-primary-500 underline"
         onClick={clearFilters}
       >
         Clear filters
       </button>
-    </>
+    </Col>
   )
 }
 
@@ -103,18 +135,34 @@ export function MobileFilterSection(props: {
   openFilter: string | undefined
   setOpenFilter: (openFilter: string | undefined) => void
   className?: string
+  icon?: ReactNode
+  selection?: ReactNode
 }) {
-  const { title, children, openFilter, setOpenFilter, className } = props
+  const {
+    title,
+    children,
+    openFilter,
+    setOpenFilter,
+    className,
+    icon,
+    selection,
+  } = props
   const isOpen = openFilter == title
   return (
     <Col className={clsx(className)}>
       <button
-        className="text-ink-600 flex w-full flex-row justify-between px-4 py-1"
+        className={clsx(
+          'text-ink-600 flex w-full flex-row justify-between px-4 py-2'
+        )}
         onClick={() =>
           isOpen ? setOpenFilter(undefined) : setOpenFilter(title)
         }
       >
-        {title}
+        <Row className="items-center gap-0.5">
+          {icon}
+          {title}
+          {selection}
+        </Row>
         <div className="text-ink-400">
           {isOpen ? (
             <ChevronUpIcon className="h-5 w-5" />

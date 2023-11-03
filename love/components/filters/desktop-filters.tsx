@@ -19,6 +19,8 @@ import {
 import { FilterFields } from './search'
 import { KidsLabel, wantsKidsLabels } from './wants-kids-filter'
 import { HasKidsLabel, hasKidsLabels } from './has-kids-filter'
+import { Checkbox } from 'web/components/widgets/checkbox'
+import { MyMatchesToggle } from './my-matches-toggle'
 
 export function DesktopFilters(props: {
   filters: Partial<FilterFields>
@@ -29,6 +31,8 @@ export function DesktopFilters(props: {
   clearFilters: () => void
   nearbyOriginLocation: string | null | undefined
   nearbyCities: string[] | null | undefined
+  setYourFilters: (checked: boolean) => void
+  isYourFilters: boolean
 }) {
   const {
     filters,
@@ -39,6 +43,8 @@ export function DesktopFilters(props: {
     clearFilters,
     nearbyOriginLocation,
     nearbyCities,
+    setYourFilters,
+    isYourFilters,
   } = props
 
   return (
@@ -240,13 +246,17 @@ export function DesktopFilters(props: {
         menuItemsClass="bg-canvas-50"
         menuWidth="w-40"
       />
-
       <button
         className="text-ink-500 hover:text-primary-500 underline"
         onClick={clearFilters}
       >
         Clear filters
       </button>
+      <MyMatchesToggle
+        setYourFilters={setYourFilters}
+        youLover={youLover}
+        isYourFilters={isYourFilters}
+      />
     </>
   )
 }

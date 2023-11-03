@@ -3,6 +3,7 @@ import { MdNoStroller, MdOutlineStroller, MdStroller } from 'react-icons/md'
 import { Row } from 'web/components/layout/row'
 import { ChoicesToggleGroup } from 'web/components/widgets/choices-toggle-group'
 import { FilterFields } from './search'
+import { hasKidsLabels } from './has-kids-filter'
 
 interface KidLabel {
   name: string
@@ -13,6 +14,30 @@ interface KidLabel {
 
 interface KidsLabelsMap {
   [key: string]: KidLabel
+}
+
+export type wantsKidsDatabase = 0 | 1 | 2 | 3 | 4
+
+export function wantsKidsToHasKidsFilter(wantsKidsStrength: wantsKidsDatabase) {
+  if (wantsKidsStrength > wantsKidsLabels.wants_kids.strength) {
+    return hasKidsLabels.has_kids.value
+  }
+  if (wantsKidsStrength < wantsKidsLabels.wants_kids.strength) {
+    return hasKidsLabels.doesnt_have_kids.value
+  }
+  return hasKidsLabels.no_preference.value
+}
+
+export function wantsKidsDatabaseToWantsKidsFilter(
+  wantsKidsStrength: wantsKidsDatabase
+) {
+  if (wantsKidsStrength > wantsKidsLabels.wants_kids.strength) {
+    return wantsKidsLabels.wants_kids.strength
+  }
+  if (wantsKidsStrength < wantsKidsLabels.wants_kids.strength) {
+    return wantsKidsLabels.doesnt_want_kids.strength
+  }
+  return wantsKidsLabels.no_preference.strength
 }
 
 export const wantsKidsLabels: KidsLabelsMap = {

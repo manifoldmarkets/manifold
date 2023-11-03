@@ -3,25 +3,25 @@ import { User } from 'common/user'
 import { debounce, orderBy } from 'lodash'
 import { calculateAge } from 'love/components/calculate-age'
 import { Lover } from 'love/hooks/use-lover'
+import { useNearbyCities } from 'love/hooks/use-nearby-locations'
 import { useEffect, useState } from 'react'
+import { IoFilterSharp } from 'react-icons/io5'
+import { Button } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
+import { RightModal } from 'web/components/layout/right-modal'
 import { Row } from 'web/components/layout/row'
+import { Checkbox } from 'web/components/widgets/checkbox'
 import { Input } from 'web/components/widgets/input'
 import { Select } from 'web/components/widgets/select'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
-import Sidebar from '../nav/love-sidebar'
 import { DesktopFilters } from './desktop-filters'
-import { Button } from 'web/components/buttons/button'
-import { IoFilterSharp } from 'react-icons/io5'
-import {
-  MODAL_CLASS,
-  Modal,
-  SCROLLABLE_MODAL_CLASS,
-} from 'web/components/layout/modal'
-import clsx from 'clsx'
-import { RightModal } from 'web/components/layout/right-modal'
 import { MobileFilters } from './mobile-filters'
-import { useNearbyCities } from 'love/hooks/use-nearby-locations'
+import {
+  wantsKidsDatabase,
+  wantsKidsDatabaseToWantsKidsFilter,
+  wantsKidsToHasKidsFilter,
+} from './wants-kids-filter'
+import { useEffectCheckEquality } from 'web/hooks/use-effect-check-equality'
 
 export type FilterFields = {
   orderBy: 'last_online_time' | 'created_time'
@@ -34,7 +34,6 @@ function isOrderBy(input: string): input is FilterFields['orderBy'] {
   return ['last_online_time', 'created_time'].includes(input)
 }
 
-const labelClassName = 'font-semibold'
 const initialFilters: Partial<FilterFields> = {
   geodbCityIds: undefined,
   name: undefined,
@@ -61,9 +60,19 @@ export const Search = (props: {
   const updateFilter = (newState: Partial<FilterFields>) => {
     setFilters((prevState) => ({ ...prevState, ...newState }))
   }
+
   const clearFilters = () => {
     setFilters(initialFilters)
     setLovers(allLovers)
+  }
+
+  const setYourFilters = (checked: boolean) => {
+    console.log('CHECKED', checked)
+    if (checked) {
+      updateFilter(yourFilters)
+    } else {
+      clearFilters()
+    }
   }
 
   const [radius, setRadius] = useState<number>(100)
@@ -83,6 +92,35 @@ export const Search = (props: {
   const nearbyCities = useNearbyCities(nearbyOriginLocation, debouncedRadius)
 
   const [openFiltersModal, setOpenFiltersModal] = useState(false)
+  // const [isYourFilters, setIsYourFilters] = useState(false)
+
+  const yourFilters: Partial<FilterFields> = {
+    genders: youLover?.pref_gender,
+    pref_gender: youLover ? [youLover.gender] : undefined,
+    pref_age_max: youLover?.pref_age_max,
+    pref_age_min: youLover?.pref_age_min,
+    geodbCityIds: nearbyCities ?? undefined,
+    pref_relation_styles: youLover?.pref_relation_styles,
+    wants_kids_strength: wantsKidsDatabaseToWantsKidsFilter(
+      (youLover?.wants_kids_strength ?? 2) as wantsKidsDatabase
+    ),
+    has_kids: wantsKidsToHasKidsFilter(
+      (youLover?.wants_kids_strength ?? 2) as wantsKidsDatabase
+    ),
+  }
+
+  const isYourFilters =
+    !!youLover &&
+    !!filters.geodbCityIds &&
+    filters.genders == yourFilters.genders &&
+    !!filters.pref_gender &&
+    filters.pref_gender.length == 1 &&
+    filters.pref_gender[0] == youLover.gender &&
+    filters.pref_age_max == yourFilters.pref_age_max &&
+    filters.pref_age_min == yourFilters.pref_age_min &&
+    filters.pref_relation_styles == yourFilters.pref_relation_styles &&
+    filters.wants_kids_strength == yourFilters.wants_kids_strength &&
+    filters.has_kids == yourFilters.has_kids
 
   useEffect(() => {
     debouncedSetRadius(radius)
@@ -194,13 +232,6 @@ export const Search = (props: {
         />
 
         <Row className="gap-2">
-          <Button
-            color="gray"
-            className="sm:hidden"
-            onClick={() => setOpenFiltersModal(true)}
-          >
-            <IoFilterSharp className="h-5 w-5" />
-          </Button>
           <Select
             onChange={(e) => {
               if (isOrderBy(e.target.value)) {
@@ -215,6 +246,14 @@ export const Search = (props: {
             <option value="last_online_time">Active</option>
             <option value="created_time">New</option>
           </Select>
+          <Button
+            color="none"
+            size="sm"
+            className="border-ink-300 border sm:hidden "
+            onClick={() => setOpenFiltersModal(true)}
+          >
+            <IoFilterSharp className="h-5 w-5" />
+          </Button>
         </Row>
       </Row>
       <Row
@@ -231,25 +270,27 @@ export const Search = (props: {
           clearFilters={clearFilters}
           nearbyOriginLocation={nearbyOriginLocation}
           nearbyCities={nearbyCities}
+          setYourFilters={setYourFilters}
+          isYourFilters={isYourFilters}
         />
       </Row>
       <RightModal
-        className="bg-canvas-0 w-2/3 sm:hidden"
+        className="bg-canvas-0 w-2/3 text-sm sm:hidden"
         open={openFiltersModal}
         setOpen={setOpenFiltersModal}
       >
-        <Col className="gap-4">
-          <MobileFilters
-            filters={filters}
-            youLover={youLover}
-            radius={radius}
-            setRadius={setRadius}
-            updateFilter={updateFilter}
-            clearFilters={clearFilters}
-            nearbyOriginLocation={nearbyOriginLocation}
-            nearbyCities={nearbyCities}
-          />
-        </Col>
+        <MobileFilters
+          filters={filters}
+          youLover={youLover}
+          radius={radius}
+          setRadius={setRadius}
+          updateFilter={updateFilter}
+          clearFilters={clearFilters}
+          nearbyOriginLocation={nearbyOriginLocation}
+          nearbyCities={nearbyCities}
+          setYourFilters={setYourFilters}
+          isYourFilters={isYourFilters}
+        />
       </RightModal>
     </Col>
   )

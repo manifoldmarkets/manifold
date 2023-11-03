@@ -52,7 +52,6 @@ export default function GenderIcon(props: {
   hasColor?: boolean
 }) {
   const { gender, className, hasColor } = props
-  console.log(hasColor)
   if (gender == 'male') {
     return (
       <PiGenderMaleBold
