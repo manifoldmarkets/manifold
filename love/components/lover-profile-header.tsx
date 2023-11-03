@@ -16,6 +16,7 @@ import OnlineIcon from './online-icon'
 import { track } from 'web/lib/service/analytics'
 import DropdownMenu from 'web/components/comments/dropdown-menu'
 import { deleteLover } from 'love/lib/supabase/lovers'
+import { ShareProfileButton } from './widgets/share-profile-button'
 
 export default function LoverProfileHeader(props: {
   isCurrentUser: boolean
@@ -75,11 +76,19 @@ export default function LoverProfileHeader(props: {
             />
           </Row>
         ) : (
-          <Row className="items-center gap-1 sm:gap-2">
+          <Row className="items-center gap-1 self-end sm:gap-2">
+            <ShareProfileButton
+              className="hidden sm:flex"
+              username={user.username}
+            />
             <SendMessageButton toUser={user} currentUser={currentUser} />
             <MoreOptionsUserButton user={user} />
           </Row>
         )}
+      </Row>
+
+      <Row className="justify-end sm:hidden">
+        <ShareProfileButton username={user.username} />
       </Row>
       {/* TODO: add this to more info, not that important */}
       {/* <Row className="text-ink-400 mt-2 flex-wrap items-center gap-2 sm:gap-4">
