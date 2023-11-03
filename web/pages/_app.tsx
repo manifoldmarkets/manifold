@@ -181,7 +181,7 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
 
       <Script
         async
-        src="https://www.googletagmanager.com/gtag/js?id=G-WYVP7LFZTC"
+        src="https://www.googletagmanager.com/gtag/js?id=G-SSFK1Q138D"
       />
       <Script
         id="gaw"
@@ -191,7 +191,7 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
 
-  gtag('config', 'G-WYVP7LFZTC');`,
+  gtag('config', 'G-SSFK1Q138D');`,
         }}
       />
     </>
