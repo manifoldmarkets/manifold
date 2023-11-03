@@ -17,7 +17,13 @@ const bodySchema = z
 export const getusercontractmetricswithcontracts = MaybeAuthedEndpoint(
   async (req, auth) => {
     const { userId, limit, offset = 0 } = validate(bodySchema, req.body)
-    const visibilitySQL = getContractPrivacyWhereSQLFilter(auth?.uid)
+    const visibilitySQL = getContractPrivacyWhereSQLFilter(
+      auth?.uid,
+      undefined,
+      undefined,
+      undefined,
+      'c.id'
+    )
     const pg = createSupabaseDirectClient()
     const metricsByContract = {} as Dictionary<ContractMetric>
     const contracts = [] as Contract[]
@@ -30,7 +36,7 @@ export const getusercontractmetricswithcontracts = MaybeAuthedEndpoint(
     where ${visibilitySQL} 
       and ucm.user_id='${userId}'
       and ucm.data->'lastBetTime' is not null
-      and answer_id is null
+      and ucm.answer_id is null
     order by ((ucm.data)->'lastBetTime')::bigint desc offset $1
     limit $2`
       await pg.map(

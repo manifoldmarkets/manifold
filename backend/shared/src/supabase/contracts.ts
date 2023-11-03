@@ -320,12 +320,13 @@ export const getContractPrivacyWhereSQLFilter = (
   uid: string | undefined,
   creatorId?: string,
   groupId?: string,
-  hasGroupAccess?: boolean
+  hasGroupAccess?: boolean,
+  contractIdString = 'id'
 ) => {
   const otherVisibilitySQL = `
   OR (visibility = 'unlisted' AND creator_id='${uid}') 
   OR (visibility = 'unlisted' AND ${isAdminId(uid ?? '_')}) 
-  OR (visibility = 'private' AND can_access_private_contract(id,'${uid}'))
+  OR (visibility = 'private' AND can_access_private_contract(${contractIdString},'${uid}'))
   `
   return (groupId && hasGroupAccess) ||
     (!!creatorId && !!uid && creatorId === uid)
