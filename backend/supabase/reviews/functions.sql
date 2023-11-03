@@ -42,11 +42,13 @@ or replace function get_rating (user_id text) returns table (count bigint, ratin
 $$;
 
 create
-or replace function get_rating_info (p_vendor_id text) returns table (avg_rating numeric, count bigint) language plpgsql stable as $$
+or replace function get_average_rating (user_id text) returns numeric as $$
+DECLARE
+  result numeric;
 BEGIN
-  RETURN QUERY
-    SELECT AVG(rating) AS avg_rating, COUNT(rating) AS count
-    FROM reviews
-    WHERE vendor_id = p_vendor_id;
+  SELECT AVG(rating)::numeric INTO result
+  FROM reviews
+  WHERE vendor_id = user_id;
+  RETURN result;
 END;
-$$;
+$$ language plpgsql;
