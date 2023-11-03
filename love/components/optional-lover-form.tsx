@@ -18,6 +18,7 @@ import { changeUserInfo } from 'web/lib/firebase/api'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { StackedUserNames } from 'web/components/widgets/user-link'
 import { track } from 'web/lib/service/analytics'
+import { Races } from './race'
 
 export const OptionalLoveUserForm = (props: {
   lover: rowFor<'lovers'>
@@ -229,16 +230,7 @@ export const OptionalLoveUserForm = (props: {
         <Col className={clsx(colClassName)}>
           <label className={clsx(labelClassName)}>Ethnicity/origin(s)</label>
           <MultiCheckbox
-            choices={{
-              African: 'african',
-              Asian: 'asian',
-              Caucasian: 'caucasian',
-              Hispanic: 'hispanic',
-              'Middle Eastern': 'middle_eastern',
-              'Native American': 'native_american',
-              'Pacific Islander': 'pacific_islander',
-              Other: 'other',
-            }}
+            choices={Races}
             selected={lover['ethnicity'] ?? []}
             onChange={(selected) => setLover('ethnicity', selected)}
           />

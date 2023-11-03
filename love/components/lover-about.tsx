@@ -28,6 +28,7 @@ import { fromNow } from 'web/lib/util/time'
 import { Gender, convertGenderPlural } from './gender-icon'
 import { HiOutlineGlobe } from 'react-icons/hi'
 import { UserHandles } from 'web/components/user/user-handles'
+import { convertRace } from './race'
 
 export function AboutRow(props: {
   icon: ReactNode
@@ -74,7 +75,9 @@ export default function LoverAbout(props: { lover: Lover }) {
       />
       <AboutRow
         icon={<HiOutlineGlobe className="h-5 w-5" />}
-        text={lover.ethnicity}
+        text={lover.ethnicity
+          ?.filter((r) => r !== 'other')
+          ?.map((r: any) => convertRace(r))}
       />
       <Smoker lover={lover} />
       <Drinks lover={lover} />
