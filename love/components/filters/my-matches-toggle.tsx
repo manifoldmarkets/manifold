@@ -18,7 +18,7 @@ export function MyMatchesToggle(props: {
   const disabled = !youLover
 
   return (
-    <Row className={'items-center gap-2 sm:gap-1 sm:font-semibold'}>
+    <Row className={'mr-2 items-center gap-2 sm:gap-1 sm:font-semibold'}>
       <input
         id={label}
         type="checkbox"

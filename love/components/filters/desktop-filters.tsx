@@ -49,6 +49,11 @@ export function DesktopFilters(props: {
 
   return (
     <>
+      <MyMatchesToggle
+        setYourFilters={setYourFilters}
+        youLover={youLover}
+        isYourFilters={isYourFilters}
+      />
       <CustomizeableDropdown
         buttonContent={(open: boolean) => (
           <DropdownButton
@@ -252,11 +257,6 @@ export function DesktopFilters(props: {
       >
         Clear filters
       </button>
-      <MyMatchesToggle
-        setYourFilters={setYourFilters}
-        youLover={youLover}
-        isYourFilters={isYourFilters}
-      />
     </>
   )
 }
