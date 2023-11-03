@@ -154,7 +154,7 @@ export function UserBadge(props: {
     badges.push(<ModBadge key="mod" />)
   }
   if (MVP.includes(username)) {
-    badges.push(<MVPBadge key="mod" />)
+    badges.push(<MVPBadge key="mvp" />)
   }
   if (VERIFIED_USERNAMES.includes(username)) {
     badges.push(<VerifiedBadge key="check" />)
