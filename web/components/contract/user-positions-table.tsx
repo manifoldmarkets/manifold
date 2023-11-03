@@ -60,7 +60,7 @@ export const UserPositionsTable = memo(
     }>({})
     const [answerId, setAnswerId] = useState<string | undefined>(
       contract.mechanism === 'cpmm-multi-1'
-        ? first(contract.answers)?.id
+        ? first(orderBy(contract.answers, 'totalLiquidity', 'desc'))?.id
         : undefined
     )
     const [page, setPage] = useState(0)
