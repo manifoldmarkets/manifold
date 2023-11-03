@@ -73,6 +73,7 @@ export function MobileFilters(props: {
         title="Age"
         openFilter={openFilter}
         setOpenFilter={setOpenFilter}
+        childrenClassName={'pb-6'}
       >
         <AgeFilter filters={filters} updateFilter={updateFilter} />
       </MobileFilterSection>
@@ -135,6 +136,7 @@ export function MobileFilterSection(props: {
   openFilter: string | undefined
   setOpenFilter: (openFilter: string | undefined) => void
   className?: string
+  childrenClassName?: string
   icon?: ReactNode
   selection?: ReactNode
 }) {
@@ -144,6 +146,7 @@ export function MobileFilterSection(props: {
     openFilter,
     setOpenFilter,
     className,
+    childrenClassName,
     icon,
     selection,
   } = props
@@ -171,7 +174,11 @@ export function MobileFilterSection(props: {
           )}
         </div>
       </button>
-      {isOpen && <div className="bg-canvas-50 px-4 py-2">{children}</div>}
+      {isOpen && (
+        <div className={clsx('bg-canvas-50 px-4 py-2', childrenClassName)}>
+          {children}
+        </div>
+      )}
     </Col>
   )
 }

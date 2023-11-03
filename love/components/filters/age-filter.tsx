@@ -3,7 +3,7 @@ import { FilterFields } from './search'
 import { RangeSlider } from 'web/components/widgets/slider'
 
 export const PREF_AGE_MIN = 18
-export const PREF_AGE_MAX = 100
+export const PREF_AGE_MAX = 99
 
 export function AgeFilterText(props: {
   pref_age_min: number | undefined
