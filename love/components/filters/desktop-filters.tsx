@@ -53,6 +53,7 @@ export function DesktopFilters(props: {
         setYourFilters={setYourFilters}
         youLover={youLover}
         isYourFilters={isYourFilters}
+        disabled={!youLover || !nearbyCities}
       />
       <CustomizeableDropdown
         buttonContent={(open: boolean) => (

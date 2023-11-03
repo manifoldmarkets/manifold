@@ -50,6 +50,7 @@ export function MobileFilters(props: {
           setYourFilters={setYourFilters}
           youLover={youLover}
           isYourFilters={isYourFilters}
+          disabled={!youLover || !nearbyCities}
         />
       </Col>
       {/* GENDER */}

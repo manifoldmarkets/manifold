@@ -7,15 +7,14 @@ export function MyMatchesToggle(props: {
   setYourFilters: (checked: boolean) => void
   youLover: Lover | undefined | null
   isYourFilters: boolean
+  disabled: boolean
 }) {
-  const { setYourFilters, youLover, isYourFilters } = props
+  const { setYourFilters, youLover, isYourFilters, disabled } = props
   if (!youLover) {
     return <></>
   }
 
   const label = 'Your matches'
-
-  const disabled = !youLover
 
   return (
     <Row className={'mr-2 items-center gap-2 sm:gap-1 sm:font-semibold'}>
