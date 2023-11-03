@@ -35,7 +35,7 @@ export default function ProfilesPage() {
   return (
     <LovePage trackPageView={'user profiles'}>
       <Col className="items-center">
-        <Col className={'bg-canvas-0 w-full rounded px-6 py-4'}>
+        <Col className={'bg-canvas-0 w-full rounded px-3 py-4 sm:px-6'}>
           {user && allLovers && !lover && (
             <Button
               className="mb-4 lg:hidden"
