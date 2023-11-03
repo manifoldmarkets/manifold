@@ -88,7 +88,9 @@ export const Search = (props: {
       setNearbyOriginLocation(youLover.geodb_city_id)
     }
   }, [youLover])
+
   const nearbyCities = useNearbyCities(nearbyOriginLocation, debouncedRadius)
+  console.log(nearbyCities)
 
   const [openFiltersModal, setOpenFiltersModal] = useState(false)
 

@@ -7,9 +7,10 @@ export function useNearbyCities(
   radius: number
 ) {
   const searchCount = useRef(0)
+  const lastKnownCities = useRef<string[] | null | undefined>(undefined)
   const [nearbyCities, setNearbyCities] = usePersistentInMemoryState<
     string[] | undefined | null
-  >(undefined, `nearby-cities-${referenceCityId}-${radius}`)
+  >(lastKnownCities.current, `nearby-cities-${referenceCityId}-${radius}`)
   useEffect(() => {
     searchCount.current++
     const thisSearchCount = searchCount.current
@@ -21,11 +22,14 @@ export function useNearbyCities(
         if (thisSearchCount == searchCount.current) {
           if (result.status === 'failure') {
             setNearbyCities(null)
+            lastKnownCities.current = null
             console.log('ERROR:', result.data)
           } else {
-            setNearbyCities(
-              (result.data.data as any[]).map((city) => city.id.toString())
+            const cities = (result.data.data as any[]).map((city) =>
+              city.id.toString()
             )
+            setNearbyCities(cities)
+            lastKnownCities.current = cities
           }
         }
       })
