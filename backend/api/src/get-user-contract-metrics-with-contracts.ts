@@ -2,7 +2,7 @@ import { z } from 'zod'
 import { MaybeAuthedEndpoint, validate } from './helpers'
 import { getContractPrivacyWhereSQLFilter } from 'shared/supabase/contracts'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { Dictionary, flatMap } from 'lodash'
+import { Dictionary } from 'lodash'
 import { ContractMetric } from 'common/contract-metric'
 import { Contract } from 'common/contract'
 
