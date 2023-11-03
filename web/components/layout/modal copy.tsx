@@ -2,7 +2,6 @@ import { Dialog, Transition } from '@headlessui/react'
 import clsx from 'clsx'
 import { Fragment, ReactNode } from 'react'
 
-
 // From https://tailwindui.com/components/application-ui/overlays/modals
 export function Modal(props: {
   children: ReactNode
