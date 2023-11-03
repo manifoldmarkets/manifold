@@ -142,7 +142,7 @@ const QuestionRow = (props: { row: rowFor<'love_questions'>; user: User }) => {
           className={'w-44'}
           choicesMap={options}
           setChoice={(choice) => {
-            console.log(choice)
+            // console.log(choice)
             const updatedForm = { ...form, multiple_choice: choice }
             setForm(updatedForm)
             submitAnswer(updatedForm)

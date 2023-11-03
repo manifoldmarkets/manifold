@@ -1,8 +1,7 @@
-import Router from 'next/router'
 import { UserIcon } from '@heroicons/react/solid'
 import { capitalize } from 'lodash'
 import { calculateAge } from 'love/components/calculate-age'
-import { Filters } from 'love/components/filters'
+import { Search } from 'love/components/filters/search'
 import { Gender, convertGender } from 'love/components/gender-icon'
 import { LovePage } from 'love/components/love-page'
 import OnlineIcon from 'love/components/online-icon'
@@ -10,16 +9,15 @@ import { Lover, useLover } from 'love/hooks/use-lover'
 import { useLovers } from 'love/hooks/use-lovers'
 import Image from 'next/image'
 import Link from 'next/link'
+import Router from 'next/router'
+import { Button } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
+import { Row } from 'web/components/layout/row'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { Title } from 'web/components/widgets/title'
-import { Row } from 'web/components/layout/row'
-import { useUser } from 'web/hooks/use-user'
-import { Button } from 'web/components/buttons/button'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import { useUser } from 'web/hooks/use-user'
 import { track } from 'web/lib/service/analytics'
-import { useEffect, useState } from 'react'
-import { useNearbyCities } from 'love/hooks/use-nearby-locations'
 
 export default function ProfilesPage() {
   const allLovers = useLovers()
@@ -47,7 +45,7 @@ export default function ProfilesPage() {
             </Button>
           )}
           <Title className="!mb-2 text-3xl">Profiles</Title>
-          <Filters
+          <Search
             allLovers={allLovers}
             setLovers={setLovers}
             youLover={lover}
@@ -78,7 +76,7 @@ function ProfilePreview(props: { lover: Lover }) {
         track('click love profile preview')
       }}
     >
-      <Col className="relative h-60 w-full overflow-hidden rounded text-white transition-all hover:z-40 hover:scale-110 hover:drop-shadow">
+      <Col className="relative h-60 w-full overflow-hidden rounded text-white transition-all hover:z-20 hover:scale-110 hover:drop-shadow">
         {pinned_url ? (
           <Image
             src={pinned_url}

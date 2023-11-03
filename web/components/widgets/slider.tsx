@@ -91,6 +91,7 @@ export function RangeSlider(props: {
   color?: keyof typeof colors
   handleSize?: number
   className?: string
+  marks?: { value: number; label: string }[]
 }) {
   const {
     lowValue,
@@ -102,6 +103,7 @@ export function RangeSlider(props: {
     disabled,
     color = 'indigo',
     className,
+    marks,
   } = props
 
   const [trackClasses, thumbClasses] = colors[color]
@@ -119,7 +121,21 @@ export function RangeSlider(props: {
       max={max}
       disabled={disabled}
     >
-      <Track className={trackClasses} />
+      <Track className={trackClasses}>
+        <div>
+          {marks?.map(({ value, label }) => (
+            <div
+              className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2"
+              style={{ left: `${value}%` }}
+              key={value}
+            >
+              <span className="text-ink-400 absolute left-1/2 top-4 -translate-x-1/2 text-xs">
+                {label}
+              </span>
+            </div>
+          ))}
+        </div>
+      </Track>
       <Thumb className={thumbClasses} />
       <Thumb className={thumbClasses} />
     </RxSlider.Root>
