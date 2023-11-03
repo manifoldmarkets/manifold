@@ -176,6 +176,8 @@ export const MOD_USERNAMES = [
   'NathanpmYoung',
 ]
 
+export const MVP = ['Eliza']
+
 export const VERIFIED_USERNAMES = [
   'EliezerYudkowsky',
   'ScottAlexander',
