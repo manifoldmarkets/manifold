@@ -1,4 +1,5 @@
 import {
+  HeartIcon,
   LogoutIcon,
   MoonIcon,
   SunIcon,
@@ -6,7 +7,6 @@ import {
   QuestionMarkCircleIcon,
   LoginIcon,
 } from '@heroicons/react/outline'
-// import { GiftIcon, MapIcon, MoonIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { buildArray } from 'common/util/array'
 import { capitalize } from 'lodash'
@@ -104,6 +104,7 @@ const bottomNav = (
   toggleTheme: () => void
 ) =>
   buildArray(
+    { name: 'Share with friends', href: '/referrals', icon: HeartIcon },
     !loggedIn && { name: 'Sign in', icon: LoginIcon, onClick: firebaseLogin },
     loggedIn && { name: 'About', href: '/about', icon: QuestionMarkCircleIcon },
     {

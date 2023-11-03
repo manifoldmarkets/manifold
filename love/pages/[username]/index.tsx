@@ -21,6 +21,7 @@ import { loveOgImageUrl } from 'love/pages/api/og/utils'
 import { LoverAnswers } from 'love/components/lover-answers'
 import { SignUpButton } from 'love/components/nav/love-sidebar'
 import { BackButton } from 'web/components/contract/back-button'
+import { useSaveReferral } from 'web/hooks/use-save-referral'
 
 export const getStaticProps = async (props: {
   params: {
@@ -51,6 +52,8 @@ export default function UserPage(props: {
   const isCurrentUser = currentUser?.id === user?.id
   const router = useRouter()
 
+  useSaveReferral(user, { defaultReferrerUsername: props.username })
+
   useTracking('view love profile', { username: user?.username })
 
   const lover = useLoverByUser(user ?? undefined)
@@ -65,7 +68,6 @@ export default function UserPage(props: {
 
   return (
     <LovePage
-      key={user.id}
       trackPageView={'user page'}
       trackPageProps={{ username: user.username }}
       className={'p-2 sm:pt-0'}

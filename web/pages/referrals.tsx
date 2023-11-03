@@ -24,8 +24,7 @@ export default function ReferralsPage() {
         title="Refer a friend"
         description={`Invite new users to Manifold and get ${formatMoney(
           REFERRAL_AMOUNT
-        )} if they
-            sign up and place a trade!`}
+        )} if they sign up and place a trade!`}
         url="/referrals"
       />
 
@@ -50,7 +49,7 @@ export default function ReferralsPage() {
 
           <InfoBox
             title="FYI"
-            className="mt-4 max-w-md"
+            className="mt-4"
             text="You can also earn the referral bonus using the share link to any question or group!"
           />
         </Col>

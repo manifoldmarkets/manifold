@@ -16,6 +16,7 @@ import { Row } from 'web/components/layout/row'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { Title } from 'web/components/widgets/title'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { useUser } from 'web/hooks/use-user'
 import { track } from 'web/lib/service/analytics'
 
@@ -27,6 +28,7 @@ export default function ProfilesPage() {
   )
 
   const user = useUser()
+  useSaveReferral(user)
 
   const lover = useLover()
 

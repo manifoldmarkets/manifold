@@ -1,6 +1,10 @@
-import { CashIcon, HomeIcon } from '@heroicons/react/outline'
 import {
+  CashIcon,
+  HomeIcon,
   QuestionMarkCircleIcon,
+} from '@heroicons/react/outline'
+import {
+  QuestionMarkCircleIcon as SolidQuestionIcon,
   HomeIcon as SolidHomeIcon,
   UserCircleIcon,
 } from '@heroicons/react/solid'
@@ -51,15 +55,16 @@ export function LovePage(props: {
   } = props
   const user = useUser()
   const isMobile = useIsMobile()
-  const navigationOptions = user
+  const bottomNavOptions = user
     ? getBottomNavigation(user)
     : signedOutNavigation()
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const sidebarNavigationOptions = user
-    ? isMobile
-      ? getSidebarNavigation(() => setIsAddFundsModalOpen(true))
-      : getDesktopNav(!!user)
-    : getDesktopNav(!!user)
+  const desktopSidebarOptions = getDesktopNav(!!user)
+
+  const mobileSidebarOptions = user
+    ? getSidebarNavigation(() => setIsAddFundsModalOpen(true))
+    : []
+
   // eslint-disable-next-line react-hooks/rules-of-hooks
   trackPageView && useTracking(`view love ${trackPageView}`, trackPageProps)
   useOnline()
@@ -82,7 +87,7 @@ export function LovePage(props: {
           <div className="lg:col-span-2 lg:flex" />
         ) : (
           <Sidebar
-            navigationOptions={sidebarNavigationOptions}
+            navigationOptions={desktopSidebarOptions}
             className="sticky top-0 hidden self-start px-2 lg:col-span-2 lg:flex"
           />
         )}
@@ -98,8 +103,8 @@ export function LovePage(props: {
       </Col>
       {!hideBottomBar && (
         <BottomNavBar
-          sidebarNavigationOptions={sidebarNavigationOptions}
-          navigationOptions={navigationOptions}
+          sidebarNavigationOptions={mobileSidebarOptions}
+          navigationOptions={bottomNavOptions}
         />
       )}
       <AddFundsModal
@@ -142,8 +147,8 @@ function getBottomNavigation(user: User) {
 }
 
 const signedOutNavigation = () => [
-  { name: 'Profiles', href: '/', icon: HomeIcon },
-  { name: 'About', href: '/about', icon: QuestionMarkCircleIcon },
+  { name: 'Profiles', href: '/', icon: SolidHomeIcon },
+  { name: 'About', href: '/about', icon: SolidQuestionIcon },
   {
     name: 'Sign in',
     onClick: signupThenMaybeRedirectToSignup,
@@ -180,8 +185,5 @@ const getDesktopNav = (loggedIn: boolean) => {
 
 // No sidebar when signed out
 const getSidebarNavigation = (toggleModal: () => void) => {
-  return buildArray(
-    { name: 'Get mana', icon: CashIcon, onClick: toggleModal }
-    // { name: 'Share with friends', href: '/referrals', icon: StarIcon } // remove this and I will beat you — SG
-  )
+  return buildArray({ name: 'Get mana', icon: CashIcon, onClick: toggleModal })
 }
