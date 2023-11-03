@@ -51,7 +51,7 @@ export const UserPositionsTable = memo(
 
     const [contractMetricsByProfit, setContractMetricsByProfit] =
       useState<ContractMetric[]>()
-    const [contractMetricsByAnswerId, setContractMetricsByAnswerId] = useState<
+    const [contractMetricsByShares, setContractMetricsByShares] = useState<
       ContractMetric[]
     >(Object.values(props.positions).flat())
 
@@ -81,7 +81,7 @@ export const UserPositionsTable = memo(
       ).then((rows) =>
         sortBy === 'profit'
           ? updateContractMetricsByProfit(convertContractMetricRows(rows))
-          : updateContractMetricsByAnswerId(convertContractMetricRows(rows))
+          : updateContractMetricsByShares(convertContractMetricRows(rows))
       )
     }, [contractId, answerId, sortBy])
 
@@ -95,8 +95,8 @@ export const UserPositionsTable = memo(
       setLoading(false)
     }
 
-    const updateContractMetricsByAnswerId = (cms: ContractMetric[]) => {
-      setContractMetricsByAnswerId((prev) =>
+    const updateContractMetricsByShares = (cms: ContractMetric[]) => {
+      setContractMetricsByShares((prev) =>
         uniqBy(
           cms.concat(prev ?? []),
           (cm) => cm.userId + cm.answerId + cm.contractId
@@ -138,7 +138,7 @@ export const UserPositionsTable = memo(
       getAllAnswerPositionCounts()
     }, [])
 
-    const positionsToDisplay = contractMetricsByAnswerId.filter((cm) =>
+    const positionsToDisplay = contractMetricsByShares.filter((cm) =>
       answerId ? cm.answerId === answerId : !cm.answerId
     )
     const profitPositionsToDisplay = contractMetricsByProfit?.filter((cm) =>
@@ -160,7 +160,7 @@ export const UserPositionsTable = memo(
           <BinaryUserPositionsTable
             loading={loading}
             contract={contract}
-            positions={positionsToDisplay}
+            positionsByShares={positionsToDisplay}
             positionsByProfit={profitPositionsToDisplay}
             totalYesPositions={totalYesPositions}
             totalNoPositions={totalNoPositions}
@@ -214,7 +214,7 @@ export const UserPositionsTable = memo(
           <BinaryUserPositionsTable
             loading={loading}
             contract={contract}
-            positions={positionsToDisplay}
+            positionsByShares={positionsToDisplay}
             positionsByProfit={profitPositionsToDisplay}
             totalYesPositions={totalYesPositions}
             totalNoPositions={totalNoPositions}
@@ -238,7 +238,7 @@ export const UserPositionsTable = memo(
 const BinaryUserPositionsTable = memo(
   function BinaryUserPositionsTabContent(props: {
     contract: CPMMContract | CPMMMultiContract
-    positions: ContractMetric[]
+    positionsByShares: ContractMetric[]
     positionsByProfit: ContractMetric[] | undefined
     totalYesPositions: number
     totalNoPositions: number
@@ -252,7 +252,7 @@ const BinaryUserPositionsTable = memo(
       contract,
       totalYesPositions,
       totalNoPositions,
-      positions,
+      positionsByShares,
       positionsByProfit,
       sortBy,
       page,
@@ -264,21 +264,25 @@ const BinaryUserPositionsTable = memo(
     const currentUser = useUser()
     const followedUsers = useFollows(currentUser?.id)
 
-    const [leftColumnPositions, rightColumnPositions] = useMemo(() => {
-      const [left, right] = partition(
-        sortBy === 'profit' ? positionsByProfit ?? [] : positions,
-        (cm) => (sortBy === 'profit' ? cm.profit > 0 : cm.hasYesShares)
-      )
+    const [leftColumnPositions, rightColumnPositions] = useMemo(
+      () =>
+        partition(
+          sortBy === 'profit' ? positionsByProfit ?? [] : positionsByShares,
+          (cm) => (sortBy === 'profit' ? cm.profit >= 0 : cm.hasYesShares)
+        ),
+      [
+        JSON.stringify(positionsByProfit),
+        JSON.stringify(positionsByShares),
+        sortBy,
+      ]
+    )
 
-      return [left, sortBy === 'profit' ? right.reverse() : right]
-    }, [JSON.stringify(positionsByProfit), JSON.stringify(positions), sortBy])
-
-    const visibleYesPositions = leftColumnPositions.slice(
+    const visibleLeftPositions = leftColumnPositions.slice(
       page * pageSize,
       (page + 1) * pageSize
     )
 
-    const visibleNoPositions = rightColumnPositions.slice(
+    const visibleRightPositions = rightColumnPositions.slice(
       page * pageSize,
       (page + 1) * pageSize
     )
@@ -359,7 +363,7 @@ const BinaryUserPositionsTable = memo(
                     <span>{getPositionsTitle('YES')}</span>
                   )}
                 </Row>
-                {visibleYesPositions.map((position) => {
+                {visibleLeftPositions.map((position) => {
                   const outcome = 'YES'
                   return (
                     <PositionRow
@@ -391,7 +395,7 @@ const BinaryUserPositionsTable = memo(
                     <span>{getPositionsTitle('NO')}</span>
                   )}
                 </Row>
-                {visibleNoPositions.map((position) => {
+                {visibleRightPositions.map((position) => {
                   const outcome = 'NO'
                   return (
                     <PositionRow

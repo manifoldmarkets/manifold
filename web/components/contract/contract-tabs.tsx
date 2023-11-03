@@ -142,8 +142,9 @@ export function ContractTabs(props: {
         },
         totalBets > 0 &&
           // to enabled after generating positions for cpmm-multi-1
-          // ( contract.mechanism === 'cpmm-1' || contract.mechanism === 'cpmm-multi-1') &&
-          contract.mechanism === 'cpmm-1' && {
+          (contract.mechanism === 'cpmm-1' ||
+            contract.mechanism === 'cpmm-multi-1') && {
+            // contract.mechanism === 'cpmm-1' && {
             title: positionsTitle,
             content: (
               <UserPositionsTable
@@ -519,7 +520,7 @@ export function SortRow(props: {
 }) {
   const { sort, onSortClick, customBestTooltip } = props
   return (
-    <Row className="items-center justify-end gap-4">
+    <Row className="items-center justify-end gap-4 whitespace-nowrap">
       <Row className="items-center gap-1">
         <span className="text-ink-400 text-sm">Sort by:</span>
         <button className="text-ink-600 w-20 text-sm" onClick={onSortClick}>
