@@ -7,10 +7,10 @@ export function MyMatchesToggle(props: {
   setYourFilters: (checked: boolean) => void
   youLover: Lover | undefined | null
   isYourFilters: boolean
-  disabled: boolean
+  hidden: boolean
 }) {
-  const { setYourFilters, youLover, isYourFilters, disabled } = props
-  if (!youLover) {
+  const { setYourFilters, youLover, isYourFilters, hidden } = props
+  if (hidden) {
     return <></>
   }
 
@@ -24,12 +24,8 @@ export function MyMatchesToggle(props: {
         className="border-ink-300 bg-canvas-0 dark:border-ink-500 text-primary-600 focus:ring-primary-500 h-4 w-4 rounded"
         checked={isYourFilters}
         onChange={(e) => setYourFilters(e.target.checked)}
-        disabled={disabled}
       />
-      <label
-        htmlFor={label}
-        className={clsx(disabled ? 'text-ink-300' : 'text-ink-600')}
-      >
+      <label htmlFor={label} className={clsx('text-ink-600')}>
         {label}
       </label>
     </Row>
