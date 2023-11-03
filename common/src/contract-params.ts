@@ -68,7 +68,7 @@ export async function getContractParams(
       ? getCPMMContractUserContractMetrics(contract.id, 100, null, db)
       : {},
     contract.resolution ? getTopContractMetrics(contract.id, 10, db) : [],
-    isCpmm1 ? getContractMetricsCount(contract.id, db) : 0,
+    isCpmm1 || isMulti ? getContractMetricsCount(contract.id, db) : 0,
     getRelatedContracts(contract, 20, db, true),
     // TODO: Should only send bets that are replies to comments we're sending, and load the rest client side
     isCpmm1

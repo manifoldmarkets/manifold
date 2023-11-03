@@ -15,7 +15,7 @@ import {
 } from 'common/supabase/contract-metrics'
 import { User } from 'common/user'
 import { formatMoney } from 'common/util/format'
-import { partition, uniqBy } from 'lodash'
+import { first, orderBy, partition, uniqBy } from 'lodash'
 import { memo, useEffect, useMemo, useState } from 'react'
 import { SortRow } from 'web/components/contract/contract-tabs'
 import { Col } from 'web/components/layout/col'
@@ -54,8 +54,17 @@ export const UserPositionsTable = memo(
     const [contractMetricsByAnswerId, setContractMetricsByAnswerId] = useState<
       ContractMetric[]
     >(Object.values(props.positions).flat())
-    const [answerId, setAnswerId] = useState<string>()
 
+    const [totalMetricsByAnswerId, setTotalMetricsByAnswerId] = useState<{
+      [key: string]: number
+    }>({})
+    const [answerId, setAnswerId] = useState<string | undefined>(
+      contract.mechanism === 'cpmm-multi-1'
+        ? first(contract.answers)?.id
+        : undefined
+    )
+    const [page, setPage] = useState(0)
+    const [loading, setLoading] = useState(false)
     const [totalYesPositions, setTotalYesPositions] = useState(0)
     const [totalNoPositions, setTotalNoPositions] = useState(0)
     const [sortBy, setSortBy] = useState<'profit' | 'shares'>(
@@ -63,6 +72,7 @@ export const UserPositionsTable = memo(
     )
 
     useEffect(() => {
+      setLoading(true)
       getOrderedContractMetricRowsForContractId(
         contractId,
         db,
@@ -82,7 +92,9 @@ export const UserPositionsTable = memo(
           (cm) => cm.userId + cm.answerId + cm.contractId
         )
       )
+      setLoading(false)
     }
+
     const updateContractMetricsByAnswerId = (cms: ContractMetric[]) => {
       setContractMetricsByAnswerId((prev) =>
         uniqBy(
@@ -90,6 +102,7 @@ export const UserPositionsTable = memo(
           (cm) => cm.userId + cm.answerId + cm.contractId
         )
       )
+      setLoading(false)
     }
 
     useEffect(() => {
@@ -99,11 +112,31 @@ export const UserPositionsTable = memo(
       getContractMetricsCount(contractId, db, 'no', answerId).then(
         setTotalNoPositions
       )
-    }, [Object.values(contractMetricsByAnswerId).length, answerId, contractId])
+    }, [answerId, contractId])
 
+    const getAllAnswerPositionCounts = async () => {
+      if (!setTotalPositions) return
+      const count = await getContractMetricsCount(contractId, db)
+      setTotalPositions(count)
+      if (contract.mechanism == 'cpmm-1') return
+      const allCounts = Object.fromEntries(
+        await Promise.all(
+          contract.answers.map(async (answer) => {
+            const count = await getContractMetricsCount(
+              contractId,
+              db,
+              undefined,
+              answer.id
+            )
+            return [answer.id, count]
+          })
+        )
+      )
+      setTotalMetricsByAnswerId(allCounts)
+    }
     useEffect(() => {
-      setTotalPositions?.(totalYesPositions + totalNoPositions)
-    }, [totalNoPositions, totalYesPositions])
+      getAllAnswerPositionCounts()
+    }, [])
 
     const positionsToDisplay = contractMetricsByAnswerId.filter((cm) =>
       answerId ? cm.answerId === answerId : !cm.answerId
@@ -114,39 +147,86 @@ export const UserPositionsTable = memo(
 
     if (contract.mechanism === 'cpmm-1') {
       return (
-        <BinaryUserPositionsTable
-          contract={contract}
-          positions={positionsToDisplay}
-          positionsByProfit={profitPositionsToDisplay}
-          totalYesPositions={totalYesPositions}
-          totalNoPositions={totalNoPositions}
-          sortBy={sortBy}
-          setSortBy={setSortBy}
-        />
-      )
-    } else if (contract.mechanism === 'cpmm-multi-1') {
-      return (
-        <Col>
-          <Carousel>
-            {contract.answers.map((answer) => (
-              <PillButton
-                key={answer.id}
-                selected={answer.id === answerId}
-                onSelect={() => setAnswerId(answer.id)}
-                className={'max-w-[100px] truncate text-ellipsis'}
-              >
-                heeby jeeby when they go up they also go down
-              </PillButton>
-            ))}
-          </Carousel>
+        <Col className={'w-full'}>
+          <Row className={'mb-2 items-center justify-end gap-2'}>
+            <SortRow
+              sort={sortBy === 'profit' ? 'profit' : 'position'}
+              onSortClick={() => {
+                setSortBy(sortBy === 'shares' ? 'profit' : 'shares')
+                setPage(0)
+              }}
+            />
+          </Row>
           <BinaryUserPositionsTable
+            loading={loading}
             contract={contract}
             positions={positionsToDisplay}
             positionsByProfit={profitPositionsToDisplay}
             totalYesPositions={totalYesPositions}
             totalNoPositions={totalNoPositions}
             sortBy={sortBy}
-            setSortBy={setSortBy}
+            page={page}
+            setPage={setPage}
+            loadingPositions={Math.min(totalYesPositions, totalNoPositions)}
+          />
+        </Col>
+      )
+    } else if (contract.mechanism === 'cpmm-multi-1') {
+      return (
+        <Col className={'w-full'}>
+          <Carousel labelsParentClassName={'gap-1'}>
+            {orderBy(
+              contract.answers,
+              (answer) => totalMetricsByAnswerId[answer.id] ?? answer.text,
+              'desc'
+            ).map((answer) => (
+              <PillButton
+                key={answer.id}
+                selected={answer.id === answerId}
+                onSelect={() => setAnswerId(answer.id)}
+              >
+                <Row className={'gap-1'}>
+                  <span className={'max-w-[60px] truncate text-ellipsis'}>
+                    {answer.text}
+                  </span>
+                  {totalMetricsByAnswerId[answer.id]
+                    ? ` (${totalMetricsByAnswerId[answer.id]})`
+                    : ''}
+                </Row>
+              </PillButton>
+            ))}
+          </Carousel>
+          <Row className={'mb-2 mt-1 items-center justify-between gap-2'}>
+            <Row className={'font-semibold '}>
+              <span className={'line-clamp-1 '}>
+                {contract.answers.find((a) => a.id === answerId)?.text}
+              </span>
+            </Row>
+
+            <SortRow
+              sort={sortBy === 'profit' ? 'profit' : 'position'}
+              onSortClick={() => {
+                setSortBy(sortBy === 'shares' ? 'profit' : 'shares')
+                setPage(0)
+              }}
+            />
+          </Row>
+          <BinaryUserPositionsTable
+            loading={loading}
+            contract={contract}
+            positions={positionsToDisplay}
+            positionsByProfit={profitPositionsToDisplay}
+            totalYesPositions={totalYesPositions}
+            totalNoPositions={totalNoPositions}
+            sortBy={sortBy}
+            page={page}
+            setPage={setPage}
+            loadingPositions={
+              answerId
+                ? // Just an approximation, could be more asymmetric
+                  totalMetricsByAnswerId[answerId] / 2
+                : Math.min(totalYesPositions, totalNoPositions)
+            }
           />
         </Col>
       )
@@ -163,7 +243,10 @@ const BinaryUserPositionsTable = memo(
     totalYesPositions: number
     totalNoPositions: number
     sortBy: 'profit' | 'shares'
-    setSortBy: (sortBy: 'profit' | 'shares') => void
+    page: number
+    setPage: (page: number) => void
+    loading: boolean
+    loadingPositions: number
   }) {
     const {
       contract,
@@ -172,9 +255,11 @@ const BinaryUserPositionsTable = memo(
       positions,
       positionsByProfit,
       sortBy,
-      setSortBy,
+      page,
+      setPage,
+      loading,
+      loadingPositions,
     } = props
-    const [page, setPage] = useState(0)
     const pageSize = 20
     const currentUser = useUser()
     const followedUsers = useFollows(currentUser?.id)
@@ -203,7 +288,8 @@ const BinaryUserPositionsTable = memo(
         ? leftColumnPositions.length
         : rightColumnPositions.length
 
-    const isBinary = contract.outcomeType === 'BINARY'
+    const isBinary =
+      contract.outcomeType === 'BINARY' || contract.mechanism === 'cpmm-multi-1'
     const isStonk = contract.outcomeType === 'STONK'
     const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
 
@@ -250,93 +336,95 @@ const BinaryUserPositionsTable = memo(
     }
 
     return (
-      <Col className={'w-full'}>
-        <Row className={'mb-2 items-center justify-end gap-2'}>
-          {sortBy === 'profit' && positionsByProfit === undefined && (
-            <LoadingIndicator spinnerClassName={'border-ink-500'} size={'sm'} />
+      <>
+        <Col
+          className={clsx('w-full')}
+          // To avoid the table height jumping when loading
+          style={{
+            minHeight: `${
+              80 +
+              (loadingPositions > pageSize ? pageSize : loadingPositions) * 57
+            }px`,
+          }}
+        >
+          {loading ? (
+            <LoadingIndicator spinnerClassName={'border-ink-500'} size={'lg'} />
+          ) : (
+            <Row className={'gap-1'}>
+              <Col className={'w-1/2'}>
+                <Row className={'text-ink-500 justify-end p-2'}>
+                  {sortBy === 'profit' ? (
+                    <span className={'text-ink-500'}>Profit</span>
+                  ) : (
+                    <span>{getPositionsTitle('YES')}</span>
+                  )}
+                </Row>
+                {visibleYesPositions.map((position) => {
+                  const outcome = 'YES'
+                  return (
+                    <PositionRow
+                      key={position.userId + outcome}
+                      position={position}
+                      outcome={outcome}
+                      currentUser={currentUser}
+                      followedUsers={followedUsers}
+                      numberToShow={
+                        sortBy === 'shares'
+                          ? isStonk
+                            ? getStonkDisplayShares(
+                                contract,
+                                position.totalShares[outcome] ?? 0,
+                                2
+                              ).toString()
+                            : formatMoney(position.totalShares[outcome] ?? 0)
+                          : formatMoney(position.profit)
+                      }
+                    />
+                  )
+                })}
+              </Col>
+              <Col className={'w-1/2'}>
+                <Row className={'text-ink-500 justify-end p-2'}>
+                  {sortBy === 'profit' ? (
+                    <span className={'text-ink-500'}>Loss</span>
+                  ) : (
+                    <span>{getPositionsTitle('NO')}</span>
+                  )}
+                </Row>
+                {visibleNoPositions.map((position) => {
+                  const outcome = 'NO'
+                  return (
+                    <PositionRow
+                      key={position.userId + outcome}
+                      position={position}
+                      outcome={outcome}
+                      currentUser={currentUser}
+                      followedUsers={followedUsers}
+                      numberToShow={
+                        sortBy === 'shares'
+                          ? isStonk
+                            ? getStonkDisplayShares(
+                                contract,
+                                position.totalShares[outcome] ?? 0,
+                                2
+                              ).toString()
+                            : formatMoney(position.totalShares[outcome] ?? 0)
+                          : formatMoney(position.profit)
+                      }
+                    />
+                  )
+                })}
+              </Col>
+            </Row>
           )}
-          <SortRow
-            sort={sortBy === 'profit' ? 'profit' : 'position'}
-            onSortClick={() => {
-              setSortBy(sortBy === 'shares' ? 'profit' : 'shares')
-              setPage(0)
-            }}
-          />
-        </Row>
-
-        <Row className={'gap-1'}>
-          <Col className={'w-1/2'}>
-            <Row className={'text-ink-500 justify-end p-2'}>
-              {sortBy === 'profit' ? (
-                <span className={'text-ink-500'}>Profit</span>
-              ) : (
-                <span>{getPositionsTitle('YES')}</span>
-              )}
-            </Row>
-            {visibleYesPositions.map((position) => {
-              const outcome = 'YES'
-              return (
-                <PositionRow
-                  key={position.userId + outcome}
-                  position={position}
-                  outcome={outcome}
-                  currentUser={currentUser}
-                  followedUsers={followedUsers}
-                  numberToShow={
-                    sortBy === 'shares'
-                      ? isStonk
-                        ? getStonkDisplayShares(
-                            contract,
-                            position.totalShares[outcome] ?? 0,
-                            2
-                          ).toString()
-                        : formatMoney(position.totalShares[outcome] ?? 0)
-                      : formatMoney(position.profit)
-                  }
-                />
-              )
-            })}
-          </Col>
-          <Col className={'w-1/2'}>
-            <Row className={'text-ink-500 justify-end p-2'}>
-              {sortBy === 'profit' ? (
-                <span className={'text-ink-500'}>Loss</span>
-              ) : (
-                <span>{getPositionsTitle('NO')}</span>
-              )}
-            </Row>
-            {visibleNoPositions.map((position) => {
-              const outcome = 'NO'
-              return (
-                <PositionRow
-                  key={position.userId + outcome}
-                  position={position}
-                  outcome={outcome}
-                  currentUser={currentUser}
-                  followedUsers={followedUsers}
-                  numberToShow={
-                    sortBy === 'shares'
-                      ? isStonk
-                        ? getStonkDisplayShares(
-                            contract,
-                            position.totalShares[outcome] ?? 0,
-                            2
-                          ).toString()
-                        : formatMoney(position.totalShares[outcome] ?? 0)
-                      : formatMoney(position.profit)
-                  }
-                />
-              )
-            })}
-          </Col>
-        </Row>
+        </Col>
         <Pagination
           page={page}
           itemsPerPage={pageSize}
           totalItems={largestColumnLength}
           setPage={setPage}
         />
-      </Col>
+      </>
     )
   }
 )

@@ -39,3 +39,6 @@ create index contract_metrics_no_shares  on user_contract_metrics
 create index contract_metrics_yes_shares  on user_contract_metrics
     (contract_id, total_shares_yes desc)
     where total_shares_yes is not null;
+
+create index contract_metrics_answer_id
+    on user_contract_metrics (contract_id,answer_id);

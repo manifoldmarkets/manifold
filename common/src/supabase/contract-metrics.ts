@@ -311,7 +311,6 @@ export async function getOrderedContractMetricRowsForContractId(
     q1 = q1.order(`profit`, { ascending: false, nullsFirst: false })
     q2 = q2.order(`profit`, { ascending: true, nullsFirst: false })
   }
-  // TODO: when on prod, test these indices
   const { data: q1Data } = await run(q1)
   const { data: q2Data } = await run(q2)
   return q1Data.concat(q2Data)
