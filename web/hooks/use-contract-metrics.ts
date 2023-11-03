@@ -5,6 +5,7 @@ import {
   getOrderedContractMetricRowsForContractId,
 } from 'common/supabase/contract-metrics'
 
+// NOTE: user_contract_metrics table not enabled in realtime publication
 export const useRealtimeContractMetrics = (
   contractId: string,
   answerId?: string,
