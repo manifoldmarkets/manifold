@@ -29,7 +29,6 @@ export function useNearbyCities(
               city.id.toString()
             )
             const citiesIncludingYours = [referenceCityId, ...cities]
-            console.log(citiesIncludingYours)
             setNearbyCities(citiesIncludingYours)
             lastKnownCities.current = citiesIncludingYours
           }
