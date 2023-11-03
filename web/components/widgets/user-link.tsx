@@ -178,7 +178,7 @@ function CoreBadge() {
 // Show a normal checkmark next to our mods
 function ModBadge() {
   return (
-    <Tooltip text="Trustworthy. ish." placement="right">
+    <Tooltip text="Moderator" placement="right">
       <ShieldCheckIcon
         className="h-4 w-4 text-purple-700 dark:text-purple-400"
         aria-hidden="true"
