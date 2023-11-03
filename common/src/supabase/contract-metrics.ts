@@ -69,12 +69,7 @@ export async function getCPMMContractUserContractMetrics(
       .eq(hasSharesColumn, true)
       .order(totalSharesColumn, { ascending: false } as any)
       .limit(limit)
-    if (answerId) {
-      q = q.eq('answer_id', answerId)
-    } else {
-      q = q.is('answer_id', null)
-    }
-
+    q = answerId ? q.eq('answer_id', answerId) : q.is('answer_id', null)
     const { data, error } = await q
 
     if (error) {
