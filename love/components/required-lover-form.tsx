@@ -24,8 +24,6 @@ import { buildArray } from 'common/util/array'
 import { CheckCircleIcon } from '@heroicons/react/outline'
 import { XIcon } from '@heroicons/react/solid'
 import Image from 'next/image'
-import { genderLabels, genderLabelsPlural } from './gender-icon'
-import { capitalize, mapValues, invert } from 'lodash'
 
 export const initialRequiredState = {
   birthdate: dayjs().subtract(18, 'year').format('YYYY-MM-DD'),
