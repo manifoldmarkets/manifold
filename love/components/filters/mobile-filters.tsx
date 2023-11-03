@@ -62,7 +62,7 @@ export function MobileFilters(props: {
       </MobileFilterSection>
       {/* PREFERRED GENDER */}
       <MobileFilterSection
-        title="Preferred gender"
+        title="Interested in"
         openFilter={openFilter}
         setOpenFilter={setOpenFilter}
       >
