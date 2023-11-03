@@ -190,7 +190,7 @@ function ModBadge() {
 // Show a normal checkmark next to our verified users
 function VerifiedBadge() {
   return (
-    <Tooltip text="It's really me!" placement="right">
+    <Tooltip text="Verified" placement="right">
       <BadgeCheckIcon className="text-primary-700 h-4 w-4" aria-hidden />
     </Tooltip>
   )
