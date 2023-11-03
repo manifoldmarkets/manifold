@@ -60,7 +60,6 @@ export const Search = (props: {
 
   const clearFilters = () => {
     setFilters(initialFilters)
-    setLovers(allLovers)
   }
 
   const setYourFilters = (checked: boolean) => {
