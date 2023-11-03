@@ -35,7 +35,7 @@ export const QuestionsForm = () => {
               .filter((q) =>
                 page === 0
                   ? q.answer_type !== 'multiple_choice'
-                  : page === 1 && q.answer_type !== 'multiple_choice'
+                  : page === 1 && q.answer_type === 'multiple_choice'
               )
               .map((row) => <QuestionRow user={user} key={row.id} row={row} />)}
         </Col>
@@ -55,7 +55,9 @@ export const QuestionsForm = () => {
                 color={'indigo-outline'}
                 onClick={() => {
                   track(`submit love questions page ${page}`)
-                  page === 0 ? setPage(1) : router.push('/')
+                  if (page === 0) setPage(1)
+                  else if (user) router.push(`/${user.username}`)
+                  else router.push('/')
                 }}
               >
                 Save & continue
