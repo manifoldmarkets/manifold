@@ -749,25 +749,29 @@ export function ContractCommentInput(props: {
       await firebaseLogin()
       return
     }
-    await createCommentOnContract({
-      contractId: contract.id,
-      content: editor.getJSON(),
-      replyToAnswerId: isReplyToAnswer ? replyTo.id : undefined,
-      replyToCommentId: parentCommentId,
-      replyToBetId: isReplyToBet ? replyTo.id : undefined,
-    })
-    clearReply?.()
-    onSubmit?.()
-    track('comment', {
-      location: trackingLocation,
-      replyTo: isReplyToBet
-        ? 'bet'
-        : isReplyToAnswer
-        ? 'answer'
-        : replyToUserInfo
-        ? 'user'
-        : undefined,
-    })
+    try {
+      await createCommentOnContract({
+        contractId: contract.id,
+        content: editor.getJSON(),
+        replyToAnswerId: isReplyToAnswer ? replyTo.id : undefined,
+        replyToCommentId: parentCommentId,
+        replyToBetId: isReplyToBet ? replyTo.id : undefined,
+      })
+      clearReply?.()
+      onSubmit?.()
+      track('comment', {
+        location: trackingLocation,
+        replyTo: isReplyToBet
+          ? 'bet'
+          : isReplyToAnswer
+          ? 'answer'
+          : replyToUserInfo
+          ? 'user'
+          : undefined,
+      })
+    } catch (e) {
+      toast.error('Error submitting comment. Try again?')
+    }
   })
 
   return (
