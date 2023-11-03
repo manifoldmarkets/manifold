@@ -534,5 +534,5 @@ const updateContractMetrics = async (contract: Contract, users: User[]) => {
     })
   )
 
-  await bulkUpdateContractMetrics(metrics)
+  await bulkUpdateContractMetrics(metrics.flat())
 }

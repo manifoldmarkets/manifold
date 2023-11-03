@@ -1759,36 +1759,42 @@ export interface Database {
       }
       user_contract_metrics: {
         Row: {
+          answer_id: string | null
           contract_id: string
           data: Json
           fs_updated_time: string | null
           has_no_shares: boolean | null
           has_shares: boolean | null
           has_yes_shares: boolean | null
+          id: number
           profit: number | null
           total_shares_no: number | null
           total_shares_yes: number | null
           user_id: string
         }
         Insert: {
+          answer_id?: string | null
           contract_id: string
           data: Json
           fs_updated_time?: string | null
           has_no_shares?: boolean | null
           has_shares?: boolean | null
           has_yes_shares?: boolean | null
+          id?: never
           profit?: number | null
           total_shares_no?: number | null
           total_shares_yes?: number | null
           user_id: string
         }
         Update: {
+          answer_id?: string | null
           contract_id?: string
           data?: Json
           fs_updated_time?: string | null
           has_no_shares?: boolean | null
           has_shares?: boolean | null
           has_yes_shares?: boolean | null
+          id?: never
           profit?: number | null
           total_shares_no?: number | null
           total_shares_yes?: number | null

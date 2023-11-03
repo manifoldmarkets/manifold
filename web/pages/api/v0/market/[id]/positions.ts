@@ -1,6 +1,6 @@
 import { ContractMetric } from 'common/contract-metric'
 import {
-  getContractMetricsForContractId,
+  getOrderedContractMetricRowsForContractId,
   getUserContractMetrics,
 } from 'common/supabase/contract-metrics'
 import { uniqBy } from 'lodash'
@@ -74,10 +74,14 @@ export default async function handler(
 
   // Get all positions for contract
   try {
-    const contractMetrics = await getContractMetricsForContractId(
+    const contractMetricRows = await getOrderedContractMetricRowsForContractId(
       contractId,
       db,
+      undefined,
       order ? (order as 'profit' | 'shares') : undefined
+    )
+    const contractMetrics = contractMetricRows.map(
+      (row) => row.data as ContractMetric
     )
     if (!top && !bottom) {
       return res.status(200).json(contractMetrics)

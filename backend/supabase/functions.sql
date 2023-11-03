@@ -92,6 +92,7 @@ from user_contract_metrics as ucm
     join contracts_rbac as c on c.id = ucm.contract_id
 where ucm.user_id = uid
   and ucm.data->'lastBetTime' is not null
+  and ucm.answer_id is null
 order by ((ucm.data)->'lastBetTime')::bigint desc offset start
 limit count $$;
 

@@ -10,28 +10,28 @@ import {
 } from 'lodash'
 import { Bet } from './bet'
 import {
-  getCpmmProbability,
-  getCpmmOutcomeProbabilityAfterBet,
   calculateCpmmPurchase,
+  getCpmmOutcomeProbabilityAfterBet,
+  getCpmmProbability,
 } from './calculate-cpmm'
 import { buy, getProb } from './calculate-cpmm-multi'
 import {
   calculateDpmPayout,
-  getDpmOutcomeProbability,
-  getDpmProbability,
-  getDpmOutcomeProbabilityAfterBet,
   calculateDpmShares,
+  getDpmOutcomeProbability,
+  getDpmOutcomeProbabilityAfterBet,
+  getDpmProbability,
 } from './calculate-dpm'
 import {
   calculateFixedPayout,
   calculateFixedPayoutMulti,
 } from './calculate-fixed-payouts'
 import {
-  Contract,
   BinaryContract,
+  Contract,
+  MultiContract,
   PseudoNumericContract,
   StonkContract,
-  MultiContract,
 } from './contract'
 import { floatingEqual } from './util/math'
 import { ContractMetric } from 'common/contract-metric'
@@ -440,7 +440,11 @@ export function getCpmmMultiShares(yourBets: Bet[]) {
   }
 }
 
-export const getContractBetMetrics = (contract: Contract, yourBets: Bet[]) => {
+export const getContractBetMetrics = (
+  contract: Contract,
+  yourBets: Bet[],
+  answerId?: string
+) => {
   const { mechanism } = contract
   const isCpmmMulti = mechanism === 'cpmm-multi-1'
   const { profit, profitPercent, payout } = getProfitMetrics(contract, yourBets)
@@ -466,7 +470,24 @@ export const getContractBetMetrics = (contract: Contract, yourBets: Bet[]) => {
     hasNoShares,
     maxSharesOutcome,
     lastBetTime,
+    answerId: answerId ?? null,
   }
+}
+export const getContractBetMetricsPerAnswer = (
+  contract: Contract,
+  yourBets: Bet[]
+) => {
+  const betsPerAnswer = groupBy(yourBets, 'answerId')
+  const metricsPerAnswer = Object.values(
+    mapValues(betsPerAnswer, (bets) =>
+      getContractBetMetrics(contract, bets, bets[0].answerId)
+    )
+  )
+  // Not entirely sure about this extra calculation, but seems nice to have an overall contract metric.
+  if (contract.mechanism === 'cpmm-multi-1') {
+    metricsPerAnswer.push(getContractBetMetrics(contract, yourBets))
+  }
+  return metricsPerAnswer
 }
 
 export function getContractBetNullMetrics() {

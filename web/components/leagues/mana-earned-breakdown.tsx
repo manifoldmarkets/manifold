@@ -72,7 +72,9 @@ export const ManaEarnedBreakdown = (props: {
     contracts &&
     mapValues(betsByContract, (bets, contractId) => {
       const contract = contractsById[contractId]
-      return contract ? calculateUserMetrics(contract, bets) : undefined
+      return contract
+        ? calculateUserMetrics(contract, bets).find((cm) => !cm.answerId)
+        : undefined
     })
 
   const [showHighestFirst, setShowHighestFirst] = useState(true)

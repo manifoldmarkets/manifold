@@ -13,7 +13,7 @@ import { getRecentTopLevelCommentsAndReplies } from 'common/supabase/comments'
 import {
   getCPMMContractUserContractMetrics,
   getTopContractMetrics,
-  getTotalContractMetrics,
+  getContractMetricsCount,
 } from 'common/supabase/contract-metrics'
 import { getUserIsMember } from 'common/supabase/groups'
 import { getRelatedContracts } from 'common/supabase/related-contracts'
@@ -64,9 +64,11 @@ export async function getContractParams(
       ? getBetPoints(db, contract.id, contract.mechanism === 'cpmm-multi-1')
       : [],
     getRecentTopLevelCommentsAndReplies(db, contract.id, 25),
-    isCpmm1 ? getCPMMContractUserContractMetrics(contract.id, 100, db) : {},
+    isCpmm1
+      ? getCPMMContractUserContractMetrics(contract.id, 100, null, db)
+      : {},
     contract.resolution ? getTopContractMetrics(contract.id, 10, db) : [],
-    isCpmm1 ? getTotalContractMetrics(contract.id, db) : 0,
+    isCpmm1 ? getContractMetricsCount(contract.id, db) : 0,
     getRelatedContracts(contract, 20, db, true),
     // TODO: Should only send bets that are replies to comments we're sending, and load the rest client side
     isCpmm1
