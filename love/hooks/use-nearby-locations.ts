@@ -28,8 +28,10 @@ export function useNearbyCities(
             const cities = (result.data.data as any[]).map((city) =>
               city.id.toString()
             )
-            setNearbyCities(cities)
-            lastKnownCities.current = cities
+            const citiesIncludingYours = [referenceCityId, ...cities]
+            console.log(citiesIncludingYours)
+            setNearbyCities(citiesIncludingYours)
+            lastKnownCities.current = citiesIncludingYours
           }
         }
       })
