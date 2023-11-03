@@ -41,6 +41,10 @@ export default function LoverProfileHeader(props: {
         </Col>
         {currentUser && isCurrentUser ? (
           <Row className={'items-center gap-1 sm:gap-2'}>
+            <ShareProfileButton
+              className="hidden sm:flex"
+              username={user.username}
+            />
             <Button
               color={'gray-outline'}
               onClick={() => {
