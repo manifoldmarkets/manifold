@@ -50,7 +50,7 @@ export function MobileFilters(props: {
           setYourFilters={setYourFilters}
           youLover={youLover}
           isYourFilters={isYourFilters}
-          disabled={!youLover || !nearbyCities}
+          hidden={!youLover || !nearbyCities}
         />
       </Col>
       {/* GENDER */}
@@ -79,7 +79,7 @@ export function MobileFilters(props: {
         <AgeFilter filters={filters} updateFilter={updateFilter} />
       </MobileFilterSection>
       {/* LOCATION */}
-      {youLover && nearbyOriginLocation && (
+      {youLover && nearbyCities && nearbyOriginLocation && (
         <MobileFilterSection
           title="Location"
           openFilter={openFilter}

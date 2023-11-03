@@ -53,7 +53,7 @@ export function DesktopFilters(props: {
         setYourFilters={setYourFilters}
         youLover={youLover}
         isYourFilters={isYourFilters}
-        disabled={!youLover || !nearbyCities}
+        hidden={!youLover || !nearbyCities}
       />
       <CustomizeableDropdown
         buttonContent={(open: boolean) => (
@@ -117,7 +117,7 @@ export function DesktopFilters(props: {
         menuWidth="w-80"
       />
       {/* LOCATION */}
-      {youLover && nearbyOriginLocation && (
+      {youLover && nearbyCities && nearbyOriginLocation && (
         <CustomizeableDropdown
           buttonContent={(open: boolean) => (
             <DropdownButton
