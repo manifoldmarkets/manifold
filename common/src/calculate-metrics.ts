@@ -214,6 +214,7 @@ export const calculateUserMetrics = (
   bets: Bet[],
   user?: User
 ) => {
+  // ContractMetrics will have an answerId for every answer, and a null for the overall metrics.
   const currentMetrics = getContractBetMetricsPerAnswer(contract, bets)
 
   const bet = first(bets)
@@ -224,11 +225,7 @@ export const calculateUserMetrics = (
       periodMetrics = Object.fromEntries(
         periods.map((period) => [
           period,
-          calculatePeriodProfit(
-            contract,
-            bets.filter((b) => b.answerId === current.answerId),
-            period
-          ),
+          calculatePeriodProfit(contract, bets, period),
         ])
       )
     }
