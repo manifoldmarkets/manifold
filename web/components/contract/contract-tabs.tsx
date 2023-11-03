@@ -12,7 +12,7 @@ import { CPMMBinaryContract, Contract } from 'common/contract'
 import { buildArray } from 'common/util/array'
 import { shortFormatNumber } from 'common/util/format'
 import { MINUTE_MS } from 'common/util/time'
-import { BinaryUserPositionsTable } from 'web/components/contract/user-positions-table'
+import { UserPositionsTable } from 'web/components/contract/user-positions-table'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { Pagination } from 'web/components/widgets/pagination'
 import { Tooltip } from 'web/components/widgets/tooltip'
@@ -141,14 +141,14 @@ export function ContractTabs(props: {
           ),
         },
         totalBets > 0 &&
-          contract.mechanism === 'cpmm-1' && {
+          (contract.mechanism === 'cpmm-1' ||
+            contract.mechanism === 'cpmm-multi-1') && {
             title: positionsTitle,
             content: (
-              <BinaryUserPositionsTable
+              <UserPositionsTable
                 positions={userPositionsByOutcome}
                 contract={contract as CPMMBinaryContract}
                 setTotalPositions={setTotalPositions}
-                enableRealtime
               />
             ),
           },

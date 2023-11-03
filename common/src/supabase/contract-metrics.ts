@@ -1,5 +1,5 @@
 import { chunk, Dictionary, flatMap, groupBy, uniqBy } from 'lodash'
-import { run, selectFrom, selectJson, SupabaseClient } from './utils'
+import { Row, run, selectFrom, selectJson, SupabaseClient } from './utils'
 import { getContracts } from './contracts'
 import { Contract, CPMMContract } from '../contract'
 import { ContractMetric } from 'common/contract-metric'
@@ -167,7 +167,6 @@ export async function getBestAndWorstUserContractMetrics(
   ) as ContractMetric[]
 }
 
-//TODO: Transition this to rpc call
 export async function getUsersContractMetricsOrderedByProfit(
   userIds: string[],
   db: SupabaseClient,
@@ -251,58 +250,74 @@ export async function getContractMetricsForContractIds(
   return data.map((d) => d.data) as ContractMetric[]
 }
 
-export async function getTotalContractMetrics(
-  contractId: string,
-  db: SupabaseClient
-) {
-  const { count } = await run(
-    db
-      .from('user_contract_metrics')
-      .select('*', { head: true, count: 'exact' })
-      .eq('contract_id', contractId)
-      .is('answer_id', null)
-      .gt('data->invested', 0)
-  )
-  return count
-}
-
-export async function getContractMetricsForContractId(
+export async function getContractMetricsCount(
   contractId: string,
   db: SupabaseClient,
-  answerId: string | null,
-  order?: 'profit' | 'shares'
+  outcome?: 'yes' | 'no',
+  answerId?: string
 ) {
   let q = db
     .from('user_contract_metrics')
+    .select('*', { head: true, count: 'exact' })
+    .eq('contract_id', contractId)
+    .eq('has_shares', true)
+
+  q = answerId ? q.eq('answer_id', answerId) : q.is('answer_id', null)
+
+  if (outcome) {
+    q = q.eq(`has_${outcome}_shares`, true)
+  }
+  const { count } = await run(q)
+
+  return count
+}
+export const convertContractMetricRows = (
+  docs: Row<'user_contract_metrics'>[]
+) =>
+  uniqBy(
+    docs.map((doc) => doc.data as ContractMetric),
+    (cm) => cm.userId + cm.answerId + cm.contractId
+  )
+
+export async function getOrderedContractMetricRowsForContractId(
+  contractId: string,
+  db: SupabaseClient,
+  answerId?: string,
+  order: 'profit' | 'shares' = 'profit',
+  limit: number = 50
+) {
+  let q1 = db
+    .from('user_contract_metrics')
     .select('*')
     .eq('contract_id', contractId)
+    .limit(limit)
+  let q2 = db
+    .from('user_contract_metrics')
+    .select('*')
+    .eq('contract_id', contractId)
+    .limit(limit)
 
   if (answerId) {
-    q = q.eq('answer_id', answerId)
+    q1 = q1.eq('answer_id', answerId)
+    q2 = q2.eq('answer_id', answerId)
   } else {
-    q = q.is('answer_id', null)
+    q1 = q1.is('answer_id', null)
+    q2 = q2.is('answer_id', null)
   }
 
   if (order === 'shares') {
-    const noSharesQuery = db
-      .from('user_contract_metrics')
-      .select('*')
-      .eq('contract_id', contractId)
-      .eq(`data->hasNoShares`, true)
-      .order(`data->totalShares->NO` as any, { ascending: false })
-
-    q = q
-      .eq(`data->hasYesShares`, true)
-      .order(`data->totalShares->YES` as any, { ascending: false })
-
-    const { data: yesData } = await run(q)
-    const { data: noData } = await run(noSharesQuery)
-    return yesData.concat(noData).map((d) => d.data) as ContractMetric[]
+    q1 = q1
+      .eq(`has_yes_shares`, true)
+      .order(`total_shares_yes`, { ascending: false })
+    q2 = q2
+      .eq(`has_no_shares`, true)
+      .order(`total_shares_no`, { ascending: false })
+  } else {
+    q1 = q1.order(`profit`, { ascending: false, nullsFirst: false })
+    q2 = q2.order(`profit`, { ascending: true, nullsFirst: false })
   }
-
-  q = q
-    .neq(`data->profit`, null)
-    .order(`data->profit` as any, { ascending: false })
-  const { data } = await run(q)
-  return data.map((d) => d.data) as ContractMetric[]
+  // TODO: when on prod, test these indices
+  const { data: q1Data } = await run(q1)
+  const { data: q2Data } = await run(q2)
+  return q1Data.concat(q2Data)
 }

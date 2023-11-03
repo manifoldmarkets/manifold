@@ -29,6 +29,7 @@ export async function updateGroupMetricsCore() {
       from group_contracts as gc
       join contracts as c on gc.contract_id = c.id
       join user_contract_metrics as ucm on ucm.contract_id = gc.contract_id
+        where ucm.answer_id is null
       group by gc.group_id, c.creator_id
     )
     select * from creator_scores where nth <= 50`
@@ -50,6 +51,7 @@ export async function updateGroupMetricsCore() {
         row_number() over (partition by gc.group_id order by sum((ucm.data->'profit')::numeric) desc) as nth
       from group_contracts as gc
       join user_contract_metrics as ucm on ucm.contract_id = gc.contract_id
+      where ucm.answer_id is null
       group by gc.group_id, ucm.user_id
     )
     select * from profit_scores where nth <= 50`

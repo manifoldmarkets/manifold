@@ -8,7 +8,7 @@ import { Row } from '../layout/row'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { Tooltip } from '../widgets/tooltip'
 import { BetsTabContent } from './contract-tabs'
-import { BinaryUserPositionsTable } from 'web/components/contract/user-positions-table'
+import { UserPositionsTable } from 'web/components/contract/user-positions-table'
 import { getCPMMContractUserContractMetrics } from 'common/supabase/contract-metrics'
 import { db } from 'web/lib/supabase/db'
 import { UncontrolledTabs } from 'web/components/layout/tabs'
@@ -131,7 +131,7 @@ function BetsModalContent(props: { contract: Contract }) {
           content: !positions ? (
             <LoadingIndicator />
           ) : (
-            <BinaryUserPositionsTable
+            <UserPositionsTable
               contract={contract as CPMMBinaryContract}
               positions={positions}
             />
