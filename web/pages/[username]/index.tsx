@@ -155,7 +155,6 @@ function UserProfile(props: {
   averageRating?: number
 }) {
   const { rating, reviewCount, averageRating } = props
-  console.log('AVg', averageRating)
   const user = useUserById(props.user.id) ?? props.user
   const isMobile = useIsMobile()
   const router = useRouter()
