@@ -10,7 +10,6 @@ export function PrefGenderFilterText(props: {
 }) {
   const { pref_gender, highlightedClass } = props
 
-  console.log(pref_gender)
   if (!pref_gender || pref_gender.length < 1) {
     return (
       <span>

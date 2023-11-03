@@ -67,7 +67,6 @@ export const Search = (props: {
   }
 
   const setYourFilters = (checked: boolean) => {
-    console.log('CHECKED', checked)
     if (checked) {
       updateFilter(yourFilters)
     } else {
