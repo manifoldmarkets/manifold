@@ -35,8 +35,7 @@ export async function updateUserMetricsCore() {
   log('Loading users...')
   const users = await pg.map(
     `select data from users 
-            where username = 'IanPhilipz' -- remove this later!
-            order by data->'metricsLastUpdated' asc nulls first limit 50`,
+            order by data->'metricsLastUpdated' nulls first limit 5000`,
     [],
     (r) => r.data as User
   )
@@ -219,7 +218,7 @@ const getMetricRelevantUserBets = async (
       cb.user_id in ($1:list)
       and (c.resolution_time is null or c.resolution_time > $2)
       and (a is null or a.data->'resolution' is null)
-    order by cb.created_time asc`,
+    order by cb.created_time`,
     [userIds, new Date(since).toISOString()]
   )
   return mapValues(
