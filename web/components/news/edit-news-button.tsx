@@ -71,14 +71,15 @@ const EditNewsModal = (props: {
     >
       <Col>
         <div className="flex items-start justify-between">
-          <Title>Edit News</Title>
+          <Title>News tabs</Title>
           <Button
+            color="red"
             onClick={() => {
               setNewsDashboards({ dashboardIds: dashboards.map((d) => d.id) })
               setOpen(false)
             }}
           >
-            Save
+            Save for everyone
           </Button>
         </div>
         {/* search */}
@@ -89,7 +90,7 @@ const EditNewsModal = (props: {
           selected={dashboards.map((d) => d.id)}
         />
 
-        <Subtitle>Order</Subtitle>
+        <Subtitle>Tab order</Subtitle>
         <DragDropContext
           onDragStart={() => window.navigator.vibrate?.(100)}
           onDragEnd={onDragEnd}
@@ -171,7 +172,7 @@ const DashboardFinder = (props: {
         inputMode="search"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        placeholder="Search dashboards"
+        placeholder="Search and add a dashboard"
       />
 
       <div className="mt-2 flex max-h-96 flex-col overflow-y-auto">
