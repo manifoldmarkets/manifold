@@ -90,7 +90,6 @@ export const Search = (props: {
   }, [youLover])
 
   const nearbyCities = useNearbyCities(nearbyOriginLocation, debouncedRadius)
-  console.log(nearbyCities)
 
   const [openFiltersModal, setOpenFiltersModal] = useState(false)
 
