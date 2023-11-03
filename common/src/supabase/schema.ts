@@ -3249,24 +3249,13 @@ export interface Database {
           rating: number
         }[]
       }
-      get_rating2: {
+      get_average_rating: {
         Args: {
           user_id: string
         }
-        Returns: {
-          count: number
-          rating: number
-        }[]
+        Returns: number
       }
-      get_rating_info: {
-        Args: {
-          p_vendor_id: string
-        }
-        Returns: {
-          avg_rating: number
-          count: number
-        }[]
-      }
+
       get_recently_active_contracts_in_group_slugs: {
         Args: {
           group_slugs: string[]
