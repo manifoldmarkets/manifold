@@ -173,6 +173,7 @@ export const MOD_USERNAMES = [
   'WieDan',
   'Ernie',
   'Gen',
+  'NathanpmYoung',
 ]
 
 export const VERIFIED_USERNAMES = [
@@ -180,7 +181,6 @@ export const VERIFIED_USERNAMES = [
   'ScottAlexander',
   'Aella',
   'ZviMowshowitz',
-  'NathanpmYoung',
   'GavrielK',
   'CGPGrey',
   'LexFridman',
