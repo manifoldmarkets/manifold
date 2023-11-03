@@ -10,7 +10,6 @@ import { Button } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
 import { RightModal } from 'web/components/layout/right-modal'
 import { Row } from 'web/components/layout/row'
-import { Checkbox } from 'web/components/widgets/checkbox'
 import { Input } from 'web/components/widgets/input'
 import { Select } from 'web/components/widgets/select'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
@@ -19,9 +18,7 @@ import { MobileFilters } from './mobile-filters'
 import {
   wantsKidsDatabase,
   wantsKidsDatabaseToWantsKidsFilter,
-  wantsKidsToHasKidsFilter,
 } from './wants-kids-filter'
-import { useEffectCheckEquality } from 'web/hooks/use-effect-check-equality'
 
 export type FilterFields = {
   orderBy: 'last_online_time' | 'created_time'
@@ -103,9 +100,6 @@ export const Search = (props: {
     wants_kids_strength: wantsKidsDatabaseToWantsKidsFilter(
       (youLover?.wants_kids_strength ?? 2) as wantsKidsDatabase
     ),
-    has_kids: wantsKidsToHasKidsFilter(
-      (youLover?.wants_kids_strength ?? 2) as wantsKidsDatabase
-    ),
   }
 
   const isYourFilters =
@@ -118,8 +112,7 @@ export const Search = (props: {
     filters.pref_age_max == yourFilters.pref_age_max &&
     filters.pref_age_min == yourFilters.pref_age_min &&
     filters.pref_relation_styles == yourFilters.pref_relation_styles &&
-    filters.wants_kids_strength == yourFilters.wants_kids_strength &&
-    filters.has_kids == yourFilters.has_kids
+    filters.wants_kids_strength == yourFilters.wants_kids_strength
 
   useEffect(() => {
     debouncedSetRadius(radius)
