@@ -734,3 +734,39 @@ export const sendWeeklyPortfolioUpdateEmail = async (
   )
   log('Sent portfolio update email to', privateUser.email)
 }
+
+export const sendNewMatchEmail = async (
+  reason: NotificationReason,
+  privateUser: PrivateUser,
+  contract: Contract,
+  creatorName: string
+) => {
+  const { sendToEmail, unsubscribeUrl } = getNotificationDestinationsForUser(
+    privateUser,
+    reason
+  )
+  if (!privateUser.email || !sendToEmail) return
+  const user = await getUser(privateUser.id)
+  if (!user) return
+
+  const { name } = user
+  const firstName = name.split(' ')[0]
+
+  const questionImgSrc = imageSourceUrl(contract)
+  return await sendTemplateEmail(
+    privateUser.email,
+    `You have a new match!`,
+    'new-match',
+    {
+      name: firstName,
+      creatorName,
+      unsubscribeUrl,
+      questionTitle: contract.question,
+      questionUrl: contractUrl(contract),
+      questionImgSrc,
+    },
+    {
+      from: `manifold.love <no-reply@manifold.markets>`,
+    }
+  )
+}

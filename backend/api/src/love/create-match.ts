@@ -19,6 +19,7 @@ import {
   manifoldLoveRelationshipsGroupId,
   manifoldLoveUserId,
 } from 'common/love/constants'
+import { sendNewMatchEmail } from 'shared/emails'
 
 const createMatchSchema = z.object({
   userId1: z.string(),
@@ -156,7 +157,7 @@ export const createMatch = authEndpoint(async (req, auth) => {
 
 const createNewMatchNotification = async (
   forUser: User,
-  creator: User,
+  matchMaker: User,
   matchedUser: User,
   contract: Contract,
   pg: SupabaseDirectClient
@@ -164,8 +165,9 @@ const createNewMatchNotification = async (
   const privateUser = await getPrivateUser(forUser.id)
   if (!privateUser) return
   const id = crypto.randomUUID()
-  const reason = 'tagged_user' // not really true, but it's pretty close
-  const { sendToBrowser, sendToMobile, notificationPreference } =
+  //TODO: We should probably build matches their own notification preference
+  const reason = 'tagged_user'
+  const { sendToBrowser, sendToMobile, sendToEmail } =
     getNotificationDestinationsForUser(privateUser, reason)
   const sourceText = `Check out @${matchedUser.username} now!`
   const notification: Notification = {
@@ -177,9 +179,9 @@ const createNewMatchNotification = async (
     sourceId: contract.id,
     sourceType: 'new_match',
     sourceUpdateType: 'created',
-    sourceUserName: creator.name,
-    sourceUserUsername: creator.username,
-    sourceUserAvatarUrl: creator.avatarUrl,
+    sourceUserName: matchMaker.name,
+    sourceUserUsername: matchMaker.username,
+    sourceUserAvatarUrl: matchMaker.avatarUrl,
     sourceText,
     sourceContractSlug: contract.slug,
     sourceContractId: contract.id,
@@ -201,6 +203,14 @@ const createNewMatchNotification = async (
       privateUser,
       `You have a new potential match!`,
       sourceText
+    )
+  }
+  if (sendToEmail) {
+    await sendNewMatchEmail(
+      'tagged_user',
+      privateUser,
+      contract,
+      matchMaker.name
     )
   }
 }
