@@ -34,6 +34,7 @@ export async function addInterestingContractsToFeed(
   pg: SupabaseDirectClient,
   readOnly = false
 ) {
+  log(`Starting feed population. Querying candidate contracts...`)
   if (Object.keys(userInterestEmbeddings).length === 0)
     await loadUserEmbeddingsToStore(pg)
   const contracts = await pg.map(

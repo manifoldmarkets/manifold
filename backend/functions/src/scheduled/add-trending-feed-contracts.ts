@@ -1,39 +1,23 @@
-import * as functions from 'firebase-functions'
 import { secrets } from 'common/secrets'
 import {
   addInterestingContractsToFeed,
   MINUTE_INTERVAL,
 } from 'shared/add-interesting-contracts-to-feed'
-import { invokeFunction, log } from 'shared/utils'
-import { onRequest } from 'firebase-functions/v2/https'
+import { onSchedule } from 'firebase-functions/v2/scheduler'
 import {
   createSupabaseClient,
   createSupabaseDirectClient,
 } from 'shared/supabase/init'
 
-export const addTrendingFeedContractsScheduler = functions
-  .runWith({
-    timeoutSeconds: 540,
-    secrets,
-  })
-  .pubsub.schedule(`every ${MINUTE_INTERVAL} minutes`)
-  .onRun(async () => {
-    try {
-      log('running addcontractstofeed firebase v2 function')
-      log(await invokeFunction('addcontractstofeed'))
-    } catch (e) {
-      console.error(e)
-    }
-  })
-
-export const addcontractstofeed = onRequest(
+export const addcontractstofeed = onSchedule(
   {
+    schedule: `every ${MINUTE_INTERVAL} minutes`,
     timeoutSeconds: MINUTE_INTERVAL * 60,
     memory: '4GiB',
     secrets,
-    cpu: 2,
+    cpu: 2
   },
-  async (_req, res) => {
+  async () => {
     const db = createSupabaseClient()
     const pg = createSupabaseDirectClient()
     const startTime = Date.now()
@@ -43,7 +27,5 @@ export const addcontractstofeed = onRequest(
     while (Date.now() < startTime + (MINUTE_INTERVAL * 60 - 10) * 1000) {
       await addInterestingContractsToFeed(db, pg)
     }
-
-    res.status(200).json({ success: true })
   }
 )
