@@ -1,7 +1,7 @@
 import { runScript } from './run-script'
 
 import { log } from 'shared/utils'
-import { updateUserMetricsCore } from 'functions/scheduled/update-user-metrics'
+import { updateUserMetricsCore } from 'shared/update-user-metrics-core'
 import { updateContractMetricsCore } from 'functions/scheduled/update-contract-metrics'
 import { updateGroupMetricsCore } from 'functions/scheduled/update-group-metrics'
 
