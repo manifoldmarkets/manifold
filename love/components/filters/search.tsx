@@ -70,14 +70,22 @@ export const Search = (props: {
     }
   }
 
-  const [radius, setRadius] = useState<number>(100)
+  const [radius, setRadius] = usePersistentInMemoryState<number>(
+    100,
+    'search-radius'
+  )
 
-  const [debouncedRadius, setDebouncedRadius] = useState(radius)
+  const [debouncedRadius, setDebouncedRadius] = usePersistentInMemoryState(
+    radius,
+    'search-radius-debounced'
+  )
   const [debouncedSetRadius] = useState(() => debounce(setDebouncedRadius, 200))
 
-  const [nearbyOriginLocation, setNearbyOriginLocation] = useState<
-    string | null | undefined
-  >(undefined)
+  const [nearbyOriginLocation, setNearbyOriginLocation] =
+    usePersistentInMemoryState<string | null | undefined>(
+      undefined,
+      'nearby-origin-location'
+    )
 
   useEffect(() => {
     if (youLover) {
