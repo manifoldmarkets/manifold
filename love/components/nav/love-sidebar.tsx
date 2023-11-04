@@ -70,7 +70,10 @@ export default function Sidebar(props: {
           setIsModalOpen={setIsModalOpen}
         />
 
-        {user === null && <SignUpButton className="mt-4" />}
+        {user === null && (
+          <SignUpButton className="mt-4" text="Create a profile" />
+        )}
+        {user === null && <SignUpAsMatchmaker className="mt-2" />}
 
         {user && lover === null && (
           <Button className="mt-2" onClick={() => router.push('signup')}>
@@ -136,6 +139,24 @@ export const SignUpButton = (props: {
       className={clsx('w-full', className)}
     >
       {text ?? 'Sign up now'}
+    </Button>
+  )
+}
+
+export const SignUpAsMatchmaker = (props: {
+  className?: string
+  size?: SizeType
+}) => {
+  const { className, size } = props
+
+  return (
+    <Button
+      color={'indigo-outline'}
+      size={size ?? 'md'}
+      onClick={firebaseLogin}
+      className={clsx('w-full', className)}
+    >
+      Sign up as matchmaker
     </Button>
   )
 }

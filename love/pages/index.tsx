@@ -4,9 +4,11 @@ import { calculateAge } from 'love/components/calculate-age'
 import { Search } from 'love/components/filters/search'
 import { Gender, convertGender } from 'love/components/gender-icon'
 import { LovePage } from 'love/components/love-page'
+import { SignUpAsMatchmaker } from 'love/components/nav/love-sidebar'
 import OnlineIcon from 'love/components/online-icon'
 import { Lover, useLover } from 'love/hooks/use-lover'
 import { useLovers } from 'love/hooks/use-lovers'
+import { signupThenMaybeRedirectToSignup } from 'love/lib/util/signup'
 import Image from 'next/image'
 import Link from 'next/link'
 import Router from 'next/router'
@@ -45,6 +47,19 @@ export default function ProfilesPage() {
             >
               Create a profile
             </Button>
+          )}
+          {user === null && (
+            <Col className="mb-4 gap-2 lg:hidden">
+              <Button
+                className="flex-1"
+                color="gradient"
+                size="xl"
+                onClick={signupThenMaybeRedirectToSignup}
+              >
+                Create a profile
+              </Button>
+              <SignUpAsMatchmaker className="flex-1" />
+            </Col>
           )}
           <Title className="!mb-2 text-3xl">Profiles</Title>
           <Search

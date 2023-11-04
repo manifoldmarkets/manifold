@@ -155,7 +155,9 @@ function LoverContent(props: {
           <div className="bg-ink-200 dark:bg-ink-400 h-4 w-1/2" />
           <div className="from-canvas-0 absolute bottom-0 h-12 w-full bg-gradient-to-t to-transparent" />
         </Col>
-        <SignUpButton text="Sign up to see more" />
+        <Row className="gap-2">
+          <SignUpButton text="Sign up to see profile" />
+        </Row>
       </Col>
     )
   }
