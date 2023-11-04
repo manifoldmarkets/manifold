@@ -308,8 +308,12 @@ export async function getOrderedContractMetricRowsForContractId(
       .eq(`has_no_shares`, true)
       .order(`total_shares_no`, { ascending: false })
   } else {
-    q1 = q1.order(`profit`, { ascending: false, nullsFirst: false })
-    q2 = q2.order(`profit`, { ascending: true, nullsFirst: false })
+    q1 = q1
+      .order(`profit`, { ascending: false, nullsFirst: false })
+      .gt(`profit`, 0)
+    q2 = q2
+      .order(`profit`, { ascending: true, nullsFirst: false })
+      .lt(`profit`, 0)
   }
   const { data: q1Data } = await run(q1)
   const { data: q2Data } = await run(q2)
