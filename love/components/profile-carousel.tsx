@@ -22,12 +22,15 @@ export default function ProfileCarousel(props: {
     return (
       <Carousel>
         {lover.pinned_url && (
-          <div className="relative h-80 min-w-[250px] flex-none snap-start gap-1 overflow-hidden rounded">
+          <div className="h-80 w-[250px] flex-none snap-start">
             <Image
+              priority={true}
               src={lover.pinned_url}
-              fill
-              alt={`preview pinned photo`}
-              className="w-full object-cover"
+              height={360}
+              width={240}
+              sizes="(max-width: 640px) 100vw, 240px"
+              alt=""
+              className="h-full cursor-pointer rounded object-cover"
             />
           </div>
         )}
@@ -50,17 +53,17 @@ export default function ProfileCarousel(props: {
   return (
     <>
       <Carousel>
-        {buildArray(lover.pinned_url, lover.photo_urls).map((url, index) => {
+        {buildArray(lover.pinned_url, lover.photo_urls).map((url, i) => {
           return (
-            <div
-              key={url}
-              className="relative h-80 min-w-[250px] flex-none snap-start gap-1 overflow-hidden rounded"
-            >
+            <div key={url} className="h-80 w-[250px] flex-none snap-start">
               <Image
+                priority={i < 3}
                 src={url}
-                fill
-                alt={`preview ${index}`}
-                className="w-full cursor-pointer object-cover"
+                height={360}
+                width={240}
+                sizes="(max-width: 640px) 100vw, 240px"
+                alt=""
+                className="h-full cursor-pointer rounded object-cover"
                 onClick={() => {
                   setLightboxUrl(url)
                   setDialogOpen(true)
