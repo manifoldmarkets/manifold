@@ -4,7 +4,6 @@ import { onRequest } from 'firebase-functions/v2/https'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { secrets } from 'common/secrets'
 import { chunk } from 'lodash'
-import { ALL_FEED_USER_ID, DEFAULT_FEED_USER_ID } from 'common/feed'
 
 export const cleanOldFeedRowsScheduler = functions.pubsub
   // 1am every day PST
@@ -41,32 +40,11 @@ export const cleanoldfeedrows = onRequest(
       (r) => r.id as string
     )
     const chunks = chunk(userIds, 500)
-
     for (const batch of chunks) {
       await pg.none(
-        `
-          delete from user_feed
-          where id in (
-            select id from (
-               select
-                   id,
-                   user_id,
-                   row_number() over (
-                       partition by user_id
-                       order by created_time desc
-                       ) as rn
-               from
-                   user_feed
-               where
-                   user_id in ($1:list)
-           ) as user_feed_rows
-            where case
-              when user_id in ($2:list) and rn > 10000 then true
-              when user_id not in ($2:list) and rn > 1000 then true
-              else false
-              end
-          )`,
-        [batch, [DEFAULT_FEED_USER_ID, ALL_FEED_USER_ID]]
+        `delete from user_feed
+         where user_id in ($1:list) and created_time < now() - interval '2 weeks'`,
+        [batch]
       )
       log(`Deleted rows from ${batch.length} users`)
     }
