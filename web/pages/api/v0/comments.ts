@@ -69,7 +69,11 @@ export default async function handler(
     if (!contractId) {
       return res.status(400).json({ error: 'You must specify a contract.' })
     }
-    const comments = await getCommentsOnContract(contractId, params.limit)
+    const comments = await getCommentsOnContract(
+      contractId,
+      params.limit,
+      userId
+    )
 
     res.setHeader('Cache-Control', 'max-age=15, public')
     return res.status(200).json(comments)
