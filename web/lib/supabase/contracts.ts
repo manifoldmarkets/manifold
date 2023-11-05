@@ -145,6 +145,7 @@ export const getPublicContracts = async (options: {
   limit: number
   beforeTime?: number
   order?: 'asc' | 'desc'
+  userId?: string
 }) => {
   let q = selectJson(db, 'public_contracts')
   q = q.order('created_time', {
@@ -152,6 +153,9 @@ export const getPublicContracts = async (options: {
   } as any)
   if (options.beforeTime) {
     q = q.lt('created_time', millisToTs(options.beforeTime))
+  }
+  if (options?.userId) {
+    q = q.eq('user_id', options.userId)
   }
   q = q.limit(options.limit)
   const { data } = await run(q)

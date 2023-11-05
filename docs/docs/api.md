@@ -123,6 +123,7 @@ Parameters:
   example, if you ask for the most recent 10 markets, and then perform a second
   query for 10 more markets with `before=[the id of the 10th market]`, you will
   get markets 11 through 20.
+- `userId`: Optional. If set, the response will include only markets created by this user.
 
 Requires no authorization.
 
@@ -841,6 +842,7 @@ Parameters:
 
 - `contractId`: Optional. Which contract to read comments for. Either an ID or slug must be specified.
 - `contractSlug`: Optional.
+- `userId`: Optional. If set, the response will include only comments created by this user.
 
 Requires no authorization.
 
