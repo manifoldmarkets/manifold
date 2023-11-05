@@ -259,7 +259,7 @@ export const Search = (props: {
       </Row>
       <Row
         className={
-          'border-ink-300 dark:border-ink-300 hidden flex-wrap items-center gap-2 pb-4 pt-1 sm:inline-flex'
+          'border-ink-300 dark:border-ink-300 hidden flex-wrap items-center gap-4 pb-4 pt-1 sm:inline-flex'
         }
       >
         <DesktopFilters

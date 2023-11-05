@@ -156,7 +156,8 @@ export function MobileFilterSection(props: {
     <Col className={clsx(className)}>
       <button
         className={clsx(
-          'text-ink-600 flex w-full flex-row justify-between px-4 py-2'
+          'text-ink-600 flex w-full flex-row justify-between px-4 pt-4',
+          isOpen ? 'pb-2' : 'pb-4'
         )}
         onClick={() =>
           isOpen ? setOpenFilter(undefined) : setOpenFilter(title)
