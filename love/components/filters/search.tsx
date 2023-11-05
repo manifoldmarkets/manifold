@@ -153,6 +153,7 @@ export const Search = (props: {
     )
     const filteredLovers = sortedLovers?.filter((lover) => {
       if (lover.user.name === 'deleted') return false
+      if (lover.user.userDeleted || lover.user.isBannedFromPosting) return false
       if (
         filters.pref_age_min &&
         calculateAge(lover.birthdate) < filters.pref_age_min
