@@ -21,10 +21,12 @@ export default function LoverPrimaryInfo(props: { lover: Lover }) {
           <GenderIcon gender={lover.gender as Gender} className="h-4 w-4 " />
         }
       />
-      <IconWithInfo
-        text={formatLoverValue('height_in_inches', lover.height_in_inches)}
-        icon={<MdHeight className="h-4 w-4 " />}
-      />
+      {lover.height_in_inches != null && (
+        <IconWithInfo
+          text={formatLoverValue('height_in_inches', lover.height_in_inches)}
+          icon={<MdHeight className="h-4 w-4 " />}
+        />
+      )}
     </Row>
   )
 }
