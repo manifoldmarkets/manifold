@@ -667,14 +667,10 @@ const getNewContentIds = (
 
 const setSeenFeedItems = async (feedItems: Row<'user_feed'>[]) => {
   if (DEBUG_FEED_CARDS) return
-  await Promise.all(
-    feedItems.map(async (item) =>
-      run(
-        db
-          .from('user_feed')
-          .update({ seen_time: new Date().toISOString() })
-          .eq('id', item.id)
-      )
-    )
+  await run(
+    db
+      .from('user_feed')
+      .update({ seen_time: new Date().toISOString() })
+      .in('id', feedItems.map(i => i.id))
   )
 }

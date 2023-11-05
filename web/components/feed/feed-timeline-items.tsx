@@ -262,13 +262,13 @@ const FeedItemFrame = (props: {
       const start = seenStart
       setSeenStart(Date.now())
       if (start === 0 && !item?.seenTime) {
+        run(
+          db
+            .from('user_feed')
+            .update({ seen_time: new Date().toISOString() })
+            .in('id', items.map((i) => i.id))
+        )
         items.forEach(async (i) => {
-          run(
-            db
-              .from('user_feed')
-              .update({ seen_time: new Date().toISOString() })
-              .eq('id', i.id)
-          )
           track('view feed item', { id: i.id, type: i.dataType })
         })
       }
@@ -279,14 +279,12 @@ const FeedItemFrame = (props: {
       if (DEBUG_FEED_CARDS) return
       const newSeenDuration =
         (Date.now() - seenStart) / items.length + seenDuration
-      items.forEach(async (i) => {
-        run(
-          db
-            .from('user_feed')
-            .update({ seen_duration: newSeenDuration })
-            .eq('id', i.id)
-        )
-      })
+      run(
+        db
+          .from('user_feed')
+          .update({ seen_duration: newSeenDuration })
+          .in('id', items.map((i) => i.id))
+      )
       setSeenDuration(newSeenDuration)
     }
   )
