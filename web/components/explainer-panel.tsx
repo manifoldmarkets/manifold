@@ -59,6 +59,16 @@ export const WhatIsMana = () => (
     <br />
     Most users never have to buy mana!
     <br />
+    Mana isn't really your property, because you don't have guarantee that it
+    will remain as is. Possible things that change your balance include:
+    <br />
+    1) admins can fine/managram users at their discretion (most commonly, for
+    violating Community Guidelines);
+    <br />
+    2) market profits can be rolled back on misresolution/profit manipulation;
+    <br />
+    3) new mana is constantly printed.
+    <br />
     Mana can't be redeemed for cash, but you can donate it to charity at a rate
     of $1 per Ṁ100.
   </ExpandSection>
