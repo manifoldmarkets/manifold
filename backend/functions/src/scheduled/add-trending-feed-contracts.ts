@@ -19,7 +19,7 @@ export const addcontractstofeed = onSchedule(
     cpu: 2
   },
   async () => {
-    runSingleton('add-contracts-to-feed', async () => {
+    await runSingleton('add-contracts-to-feed', async () => {
       const db = createSupabaseClient()
       const pg = createSupabaseDirectClient()
       const startTime = Date.now()
