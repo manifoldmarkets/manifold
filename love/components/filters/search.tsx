@@ -18,6 +18,7 @@ import { MobileFilters } from './mobile-filters'
 import {
   wantsKidsDatabase,
   wantsKidsDatabaseToWantsKidsFilter,
+  wantsKidsToHasKidsFilter,
 } from './wants-kids-filter'
 
 export type FilterFields = {
@@ -105,6 +106,9 @@ export const Search = (props: {
     geodbCityIds: nearbyCities ?? undefined,
     pref_relation_styles: youLover?.pref_relation_styles,
     wants_kids_strength: wantsKidsDatabaseToWantsKidsFilter(
+      (youLover?.wants_kids_strength ?? 2) as wantsKidsDatabase
+    ),
+    has_kids: wantsKidsToHasKidsFilter(
       (youLover?.wants_kids_strength ?? 2) as wantsKidsDatabase
     ),
   }
