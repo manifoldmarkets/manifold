@@ -335,7 +335,8 @@ export const giveUniqueBettorAndLiquidityBonus = async (
 
   const isBot = BOT_USERNAMES.includes(bettor.username)
   const isUnlisted = contract.visibility === 'unlisted'
-  const unSubsidized = !contract.isSubsidized
+  const unSubsidized =
+    contract.isSubsidized === undefined ? false : !contract.isSubsidized
 
   const answer =
     answerId && 'answers' in contract
