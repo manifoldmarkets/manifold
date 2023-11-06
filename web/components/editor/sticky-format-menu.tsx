@@ -1,4 +1,4 @@
-import { CloudIcon, EmojiHappyIcon } from '@heroicons/react/outline'
+import { EmojiHappyIcon } from '@heroicons/react/outline'
 import {
   CodeIcon,
   PhotographIcon,
@@ -10,7 +10,6 @@ import { FileUploadButton } from '../buttons/file-upload-button'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { Tooltip } from '../widgets/tooltip'
 import { EmbedModal } from './embed-modal'
-import { DreamModal } from './image-modal'
 import { MarketModal } from './market-modal'
 import type { UploadMutation } from './upload-extension'
 import { PiGifFill } from 'react-icons/pi'
@@ -24,7 +23,6 @@ export function StickyFormatMenu(props: {
   const { editor, children } = props
   const upload = editor?.storage.upload.mutation
 
-  const [dreamOpen, setDreamOpen] = useState(false)
   const [iframeOpen, setIframeOpen] = useState(false)
   const [GIFOpen, setGIFOpen] = useState(false)
   const [marketOpen, setMarketOpen] = useState(false)
@@ -32,10 +30,6 @@ export function StickyFormatMenu(props: {
   return (
     <div className="flex h-9 items-stretch">
       <UploadButton upload={upload} />
-      <ToolbarButton label="Add dream" onClick={() => setDreamOpen(true)}>
-        <DreamModal editor={editor} open={dreamOpen} setOpen={setDreamOpen} />
-        <CloudIcon className="h-5 w-5" aria-hidden />
-      </ToolbarButton>
       <ToolbarButton label="Add embed" onClick={() => setIframeOpen(true)}>
         <EmbedModal editor={editor} open={iframeOpen} setOpen={setIframeOpen} />
         <CodeIcon className="h-5 w-5" aria-hidden="true" />
