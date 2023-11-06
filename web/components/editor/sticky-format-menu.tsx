@@ -30,13 +30,13 @@ export function StickyFormatMenu(props: {
   return (
     <div className="flex h-9 items-stretch">
       <UploadButton upload={upload} />
-      <ToolbarButton label="Add embed" onClick={() => setIframeOpen(true)}>
-        <EmbedModal editor={editor} open={iframeOpen} setOpen={setIframeOpen} />
-        <CodeIcon className="h-5 w-5" aria-hidden="true" />
-      </ToolbarButton>
       <ToolbarButton label="Add GIF" onClick={() => setGIFOpen(true)}>
         <GIFModal editor={editor} open={GIFOpen} setOpen={setGIFOpen} />
         <PiGifFill className="h-5 w-5" aria-hidden />
+      </ToolbarButton>
+      <ToolbarButton label="Add embed" onClick={() => setIframeOpen(true)}>
+        <EmbedModal editor={editor} open={iframeOpen} setOpen={setIframeOpen} />
+        <CodeIcon className="h-5 w-5" aria-hidden="true" />
       </ToolbarButton>
       <ToolbarButton label="Add question" onClick={() => setMarketOpen(true)}>
         <MarketModal
