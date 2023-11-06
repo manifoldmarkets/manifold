@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { MANIFOLD_AVATAR_URL, User } from 'common/user'
+import { MANIFOLD_LOVE_LOGO, User } from 'common/user'
 import { parseJsonContentToText } from 'common/util/parse'
 import Link from 'next/link'
 import { Col } from 'web/components/layout/col'
@@ -84,13 +84,13 @@ export const MessageChannelRow = (props: {
         {
           id: 'manifold',
           name: 'Manifold',
-          avatarUrl: MANIFOLD_AVATAR_URL,
+          avatarUrl: MANIFOLD_LOVE_LOGO,
         },
       ]
     : // eslint-disable-next-line react-hooks/rules-of-hooks
-      useUsersInStore(otherUserIds, 100)
+      useUsersInStore(otherUserIds, `${channelId}`, 100)
 
-  const messages = useRealtimePrivateMessagesPolling(channelId, true, 2000)
+  const messages = useRealtimePrivateMessagesPolling(channelId, true, 2000, 1)
   const unseen = useHasUnseenPrivateMessage(currentUser.id, channelId, messages)
   const chat = messages?.[0]
   const numOthers = otherUsers?.length ?? 0
@@ -132,20 +132,19 @@ export const MessageChannelRow = (props: {
             </span>
           </Row>
           <Row className="items-center justify-between gap-1">
-            {!chat && (
-              <div className="bg-ink-500 dark:bg-ink-600 h-4 w-2/3 animate-pulse py-1" />
-            )}
-            {chat && (
-              <span
-                className={clsx(
-                  'line-clamp-1 text-sm',
-                  unseen ? '' : 'text-ink-500 dark:text-ink-600'
-                )}
-              >
-                {chat.userId == currentUser.id && 'You: '}
-                {parseJsonContentToText(chat.content)}
-              </span>
-            )}
+            <span
+              className={clsx(
+                'line-clamp-1 h-5 text-sm',
+                unseen ? '' : 'text-ink-500 dark:text-ink-600'
+              )}
+            >
+              {chat && (
+                <>
+                  {chat.userId == currentUser.id && 'You: '}
+                  {parseJsonContentToText(chat.content)}
+                </>
+              )}
+            </span>
             {unseen && (
               <div
                 className={clsx(

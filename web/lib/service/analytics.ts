@@ -43,11 +43,12 @@ export async function track(name: string, properties?: EventIds & EventData) {
     sessionId,
   })
 
-  if (ENV !== 'PROD') {
-    console.log(name, allProperties)
-  }
+  const { contractId, adId, commentId, ...data } = allProperties
   try {
-    const { contractId, adId, commentId, ...data } = allProperties
+    if (ENV !== 'PROD') {
+      console.log(name, allProperties)
+      await insertUserEvent(name, data, db, userId, contractId, commentId, adId)
+    }
     await Promise.all([
       amplitude.track(name, removeUndefinedProps(allProperties)).promise,
       insertUserEvent(name, data, db, userId, contractId, commentId, adId),

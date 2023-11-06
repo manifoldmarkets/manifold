@@ -78,7 +78,7 @@ function InternalUnseenMessagesBubble(props: {
       db
         .from('user_events')
         .select('ts')
-        .eq('name', 'view messages page')
+        .eq('name', 'view love messages page')
         .eq('user_id', privateUser.id)
         .order('ts', { ascending: false })
         .limit(1)

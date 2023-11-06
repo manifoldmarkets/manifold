@@ -3,7 +3,7 @@ import { PostgrestBuilder } from '@supabase/postgrest-js'
 import { QueryMultiSuccessResponse, run } from 'common/supabase/utils'
 import { MINUTE_MS } from 'common/util/time'
 import { useEvent } from 'web/hooks/use-event'
-import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
+import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 
 export type DependencyList = readonly unknown[]
 export type PollingOptions = {
@@ -24,7 +24,7 @@ export function usePersistentSupabasePolling<T>(
 ) {
   const { ms, deps } = opts ?? { ms: MINUTE_MS, deps: [] }
   const state = useRef<PollingState>({ state: 'waiting', version: 0 })
-  const [results, setResults] = usePersistentInMemoryState<
+  const [results, setResults] = usePersistentLocalState<
     QueryMultiSuccessResponse<T> | undefined
   >(undefined, key)
 

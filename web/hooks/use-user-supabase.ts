@@ -3,8 +3,8 @@ import { useEffect, useRef, useState } from 'react'
 import { getUser, getUsers } from 'web/lib/supabase/user'
 import { useEffectCheckEquality } from './use-effect-check-equality'
 import { Answer, DpmAnswer } from 'common/answer'
-import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { uniqBy } from 'lodash'
+import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 
 export function useUserById(userId: string | undefined) {
   const [user, setUser] = useState<User | null | undefined>(undefined)
@@ -33,21 +33,25 @@ export function useUsers(userIds: string[]) {
 
   return users
 }
-export function useUsersInStore(userIds: string[], limit?: number) {
-  const [users, setUsers] = usePersistentInMemoryState<User[] | undefined>(
+export function useUsersInStore(
+  userIds: string[],
+  key: string,
+  limit?: number
+) {
+  const [users, setUsers] = usePersistentLocalState<User[] | undefined>(
     undefined,
-    'use-users-in-store'
+    'use-users-in-local-storage' + key
   )
 
   useEffectCheckEquality(() => {
     const userIdsToFetch = userIds.filter(
-      (id) => !users?.find((user) => user.id === id)
+      (id) => !users?.map((u) => u.id).includes(id)
     )
     if (userIdsToFetch.length === 0) return
     getUsers(limit ? userIdsToFetch.slice(0, limit) : userIdsToFetch).then(
       (newUsers) => {
         setUsers((currentUsers) =>
-          uniqBy((currentUsers || []).concat(newUsers), 'id')
+          uniqBy((currentUsers ?? []).concat(newUsers), 'id')
         )
       }
     )

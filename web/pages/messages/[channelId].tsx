@@ -6,7 +6,7 @@ import {
   useRealtimePrivateMessagesPolling,
 } from 'web/hooks/use-private-messages'
 import { Col } from 'web/components/layout/col'
-import { MANIFOLD_AVATAR_URL, User } from 'common/user'
+import { MANIFOLD_LOVE_LOGO, User } from 'common/user'
 import { useEffect, useMemo, useState } from 'react'
 import { track } from 'web/lib/service/analytics'
 import { firebaseLogin } from 'web/lib/firebase/users'
@@ -113,7 +113,7 @@ export const PrivateChat = (props: {
       .map((membership) => membership.user_id) ?? []
   )
 
-  const otherUsers = useUsersInStore(otherUserIds, maxUsers)
+  const otherUsers = useUsersInStore(otherUserIds, `${channelId}`, maxUsers)
   const remainingUsers = filterDefined(
     otherUsers?.filter((user) => !usersThatLeft.includes(user.id)) ?? []
   )
@@ -228,7 +228,7 @@ export const PrivateChat = (props: {
         <Row className={'border-ink-200 items-center gap-1 border-b py-2'}>
           <BackButton />
           {channel.title ? (
-            <Avatar noLink={true} avatarUrl={MANIFOLD_AVATAR_URL} size={'md'} />
+            <Avatar noLink={true} avatarUrl={MANIFOLD_LOVE_LOGO} size={'md'} />
           ) : (
             <MultipleOrSingleAvatars
               size="sm"
