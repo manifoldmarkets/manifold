@@ -19,9 +19,6 @@ interface KidsLabelsMap {
 export type wantsKidsDatabase = 0 | 1 | 2 | 3 | 4
 
 export function wantsKidsToHasKidsFilter(wantsKidsStrength: wantsKidsDatabase) {
-  if (wantsKidsStrength > wantsKidsLabels.wants_kids.strength) {
-    return hasKidsLabels.has_kids.value
-  }
   if (wantsKidsStrength < wantsKidsLabels.wants_kids.strength) {
     return hasKidsLabels.doesnt_have_kids.value
   }
