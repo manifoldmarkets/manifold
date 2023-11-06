@@ -56,6 +56,7 @@ export type User = {
   metricsLastUpdated?: number
   optOutBetWarnings?: boolean
   freeQuestionsCreated?: number
+  fromLove?: boolean
 }
 
 export type PrivateUser = {

@@ -2,12 +2,12 @@ import { Page } from 'web/components/layout/page'
 import { useRouter } from 'next/router'
 import {
   useOtherUserIdsInPrivateMessageChannelIds,
-  useRealtimePrivateMessagesPolling,
   usePrivateMessageChannel,
+  useRealtimePrivateMessagesPolling,
 } from 'web/hooks/use-private-messages'
 import { Col } from 'web/components/layout/col'
 import { MANIFOLD_AVATAR_URL, User } from 'common/user'
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { track } from 'web/lib/service/analytics'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { forEach, last, uniq } from 'lodash'
@@ -19,11 +19,14 @@ import {
   sendUserPrivateMessage,
   updatePrivateMessageChannel,
 } from 'web/lib/firebase/api'
-import { ChatMessageItem } from 'web/components/chat-message'
+import {
+  ChatMessageItem,
+  SystemChatMessageItem,
+} from 'web/components/chat-message'
 import { CommentInputTextArea } from 'web/components/comments/comment-input'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
-import { DAY_MS, MINUTE_MS, YEAR_MS } from 'common/util/time'
-import { run, Row as rowFor } from 'common/supabase/utils'
+import { DAY_MS, HOUR_MS, MINUTE_MS, YEAR_MS } from 'common/util/time'
+import { Row as rowFor, run } from 'common/supabase/utils'
 import { db } from 'web/lib/supabase/db'
 import { useUsersInStore } from 'web/hooks/use-user-supabase'
 import { BackButton } from 'web/components/contract/back-button'
@@ -40,6 +43,7 @@ import { filterDefined } from 'common/util/array'
 import { GiSpeakerOff } from 'react-icons/gi'
 import toast from 'react-hot-toast'
 import { Avatar } from 'web/components/widgets/avatar'
+import { richTextToString } from 'common/util/parse'
 
 export default function PrivateMessagesPage() {
   return (
@@ -115,11 +119,7 @@ export const PrivateChat = (props: {
   )
   const router = useRouter()
 
-  const messages = (realtimeMessages ?? [])
-    .reverse()
-    .filter((message) =>
-      channel.title ? message.visibility !== 'system_status' : true
-    )
+  const messages = (realtimeMessages ?? []).reverse()
   const editor = useTextEditor({
     size: 'sm',
     placeholder: 'Send a message',
@@ -133,24 +133,58 @@ export const PrivateChat = (props: {
   const [scrollToBottomRef, setScrollToBottomRef] =
     useState<HTMLDivElement | null>(null)
 
-  // array of groups, where each group is an array of messages that are displayed as one
   const groupedMessages = useMemo(() => {
-    // Group messages with createdTime within 2 minutes of each other.
+    // Group messages created within a short time of each other.
     const tempGrouped: ChatMessage[][] = []
+    let systemStatusGroup: ChatMessage[] = []
+
     forEach(messages, (message, i) => {
-      if (i === 0 || message.visibility === 'system_status') {
-        tempGrouped.push([message])
+      const isSystemStatus = message.visibility === 'system_status'
+      if (
+        isSystemStatus &&
+        richTextToString(message.content).includes('left the chat')
+      )
+        return
+
+      if (i === 0) {
+        if (isSystemStatus) systemStatusGroup.push(message)
+        else tempGrouped.push([message])
       } else {
         const prevMessage = messages[i - 1]
-        const close =
-          Math.abs(message.createdTime - prevMessage.createdTime) <
-          2 * MINUTE_MS
+        const timeDifference = Math.abs(
+          message.createdTime - prevMessage.createdTime
+        )
         const creatorsMatch = message.userId === prevMessage.userId
+        const isPrevSystemStatus = prevMessage.visibility === 'system_status'
 
-        if (close && creatorsMatch) last(tempGrouped)?.push(message)
-        else tempGrouped.push([message])
+        if (isSystemStatus) {
+          // Check if the current message should be grouped with the previous system_status message(s)
+          if (isPrevSystemStatus && timeDifference < 4 * HOUR_MS) {
+            systemStatusGroup.push(message)
+          } else {
+            if (systemStatusGroup.length > 0) {
+              tempGrouped.push([...systemStatusGroup])
+              systemStatusGroup = []
+            }
+            systemStatusGroup.push(message)
+          }
+        } else if (
+          timeDifference < 2 * MINUTE_MS &&
+          creatorsMatch &&
+          !isPrevSystemStatus
+        ) {
+          last(tempGrouped)?.push(message)
+        } else {
+          if (systemStatusGroup.length > 0) {
+            tempGrouped.push([...systemStatusGroup])
+            systemStatusGroup = []
+          }
+          tempGrouped.push([message])
+        }
       }
     })
+
+    if (systemStatusGroup.length > 0) tempGrouped.push(systemStatusGroup)
 
     return tempGrouped
   }, [messages.length])
@@ -321,23 +355,33 @@ export const PrivateChat = (props: {
           <LoadingIndicator />
         ) : (
           groupedMessages.map((messages, i) => {
+            const firstMessage = messages[0]
+            if (firstMessage.visibility === 'system_status') {
+              return (
+                <SystemChatMessageItem
+                  key={firstMessage.id}
+                  chats={messages}
+                  otherUsers={otherUsers
+                    ?.concat([user])
+                    .filter((user) =>
+                      messages.some((m) => m.userId === user.id)
+                    )}
+                />
+              )
+            }
             return (
               <ChatMessageItem
-                key={messages[0].id}
+                key={firstMessage.id}
                 chats={messages}
                 currentUser={user}
                 otherUser={otherUsers?.find(
-                  (user) => user.id === messages[0].userId
+                  (user) => user.id === firstMessage.userId
                 )}
                 beforeSameUser={
-                  groupedMessages[i + 1]
-                    ? groupedMessages[i + 1][0].userId === messages[0].userId
-                    : false
+                  groupedMessages[i + 1]?.[0].userId === firstMessage.userId
                 }
                 firstOfUser={
-                  groupedMessages[i - 1]
-                    ? groupedMessages[i - 1][0].userId !== messages[0].userId
-                    : true
+                  groupedMessages[i - 1]?.[0].userId !== firstMessage.userId
                 }
               />
             )

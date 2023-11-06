@@ -2,7 +2,10 @@ import { z } from 'zod'
 import { APIError, authEndpoint, validate } from 'api/helpers'
 import { getUserSupabase, log } from 'shared/utils'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { insertPrivateMessage } from 'shared/supabase/private-messages'
+import {
+  insertPrivateMessage,
+  leaveChatContent,
+} from 'shared/supabase/private-messages'
 
 const postSchema = z
   .object({
@@ -35,17 +38,9 @@ export const leaveprivateusermessagechannel = authEndpoint(
       `,
       [channelId, auth.uid]
     )
-    const content = {
-      type: 'doc',
-      content: [
-        {
-          type: 'paragraph',
-          content: [{ text: `${user.name} left the chat`, type: 'text' }],
-        },
-      ],
-    }
+
     await insertPrivateMessage(
-      content,
+      leaveChatContent(user.name),
       channelId,
       auth.uid,
       'system_status',

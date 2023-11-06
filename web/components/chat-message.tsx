@@ -6,8 +6,11 @@ import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { Content } from 'web/components/widgets/editor'
 import { User } from 'common/user'
 import { ChatMessage } from 'common/chat-message'
-import { first } from 'lodash'
-import { memo } from 'react'
+import { first, last } from 'lodash'
+import { memo, useState } from 'react'
+import { MultipleOrSingleAvatars } from 'web/components/multiple-or-single-avatars'
+import { Modal, MODAL_CLASS } from 'web/components/layout/modal'
+import { UserAvatarAndBadge } from 'web/components/widgets/user-link'
 
 export const ChatMessageItem = memo(function ChatMessageItem(props: {
   chats: ChatMessage[]
@@ -84,6 +87,85 @@ export const ChatMessageItem = memo(function ChatMessageItem(props: {
     </Row>
   )
 })
+
+export const SystemChatMessageItem = memo(
+  function SystemChatMessageItem(props: {
+    chats: ChatMessage[]
+    otherUsers: User[] | undefined
+  }) {
+    const { chats, otherUsers } = props
+    const chat = last(chats)
+    const [showUsers, setShowUsers] = useState(false)
+    if (!chat) return null
+
+    const totalUsers = otherUsers?.length || 1
+    return (
+      <Row className={clsx('flex-row-reverse gap-1')}>
+        <Row className="grow" />
+        <Col className={clsx('grow-y justify-end pb-2')}>
+          <RelativeTimestamp
+            time={chat.createdTime}
+            shortened
+            className="text-xs"
+          />
+        </Col>
+        <Col className="max-w-[calc(100vw-6rem)] md:max-w-[80%]">
+          <Col
+            className={clsx(
+              ' bg-canvas-50 px-1 py-2 text-sm italic drop-shadow-none'
+            )}
+          >
+            <span>
+              {totalUsers > 1
+                ? `${totalUsers} user${totalUsers > 1 ? 's' : ''}`
+                : first(otherUsers)?.name}{' '}
+              joined the chat!
+            </span>
+          </Col>
+        </Col>
+        <MultipleOrSingleAvatars
+          size={'sm'}
+          spacing={0.2}
+          startLeft={0.8}
+          avatarUrls={otherUsers?.map((u) => u.avatarUrl) || []}
+          onClick={() => setShowUsers(true)}
+        />
+        {showUsers && (
+          <MultiUserModal
+            showUsers={showUsers}
+            setShowUsers={setShowUsers}
+            otherUsers={otherUsers ?? []}
+          />
+        )}
+      </Row>
+    )
+  }
+)
+export const MultiUserModal = (props: {
+  showUsers: boolean
+  setShowUsers: (show: boolean) => void
+  otherUsers: User[]
+}) => {
+  const { showUsers, setShowUsers, otherUsers } = props
+  return (
+    <Modal open={showUsers} setOpen={setShowUsers}>
+      <Col className={clsx(MODAL_CLASS)}>
+        {otherUsers?.map((user) => (
+          <Row
+            key={user.id}
+            className={'w-full items-center justify-start gap-2'}
+          >
+            <UserAvatarAndBadge
+              name={user.name}
+              username={user.username}
+              avatarUrl={user.avatarUrl}
+            />
+          </Row>
+        ))}
+      </Col>
+    </Modal>
+  )
+}
 
 function MessageAvatar(props: {
   beforeSameUser: boolean

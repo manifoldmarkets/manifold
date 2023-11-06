@@ -1,6 +1,27 @@
 import { Json } from 'common/supabase/schema'
 import { SupabaseDirectClient } from 'shared/supabase/init'
 
+export const leaveChatContent = (userName: string) => ({
+  type: 'doc',
+  content: [
+    {
+      type: 'paragraph',
+      content: [{ text: `${userName} left the chat`, type: 'text' }],
+    },
+  ],
+})
+export const joinChatContent = (userName: string) => {
+  return {
+    type: 'doc',
+    content: [
+      {
+        type: 'paragraph',
+        content: [{ text: `${userName} has joined the chat!`, type: 'text' }],
+      },
+    ],
+  }
+}
+
 export const insertPrivateMessage = async (
   content: Json,
   channelId: number,

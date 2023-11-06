@@ -7,6 +7,7 @@ export const MultipleOrSingleAvatars = (props: {
   avatarUrls: string[]
   onClick?: () => void
   size: AvatarSizeType
+  // TODO: standardize these numbers so they are calculated from the size
   spacing?: number
   startLeft?: number
   className?: string

@@ -32,6 +32,7 @@ import { generateNewUserFeedFromContracts } from 'shared/supabase/users'
 import { DEFAULT_FEED_USER_ID } from 'common/feed'
 
 import { getImportantContractsForNewUsers } from 'shared/supabase/contracts'
+import { onboardLover } from 'shared/love/onboard-lover'
 
 const bodySchema = z
   .object({
@@ -58,6 +59,11 @@ export const createuser = authEndpoint(async (req, auth) => {
     )
   }
 
+  const host = req.get('host')
+  const fromLove =
+    (host?.includes('localhost')
+      ? process.env.IS_MANIFOLD_LOVE === 'true'
+      : host?.includes('manifold.love')) || undefined
   const ip = getIp(req)
   const deviceToken = isTestUser ? randomString(20) : preDeviceToken
   const deviceUsedBefore =
@@ -106,7 +112,7 @@ export const createuser = authEndpoint(async (req, auth) => {
       if (!sameNameUser.empty)
         throw new APIError(403, 'Username already taken', { username })
 
-      // Only undefined prop should be avatarUrl
+      // Only undefined prop should be fromLove
       const user: User = removeUndefinedProps({
         id: auth.uid,
         name,
@@ -124,6 +130,7 @@ export const createuser = authEndpoint(async (req, auth) => {
           (deviceToken && bannedDeviceTokens.includes(deviceToken)) ||
             (ip && bannedIpAddresses.includes(ip))
         ),
+        fromLove,
       })
 
       const privateUser: PrivateUser = {
@@ -152,7 +159,7 @@ export const createuser = authEndpoint(async (req, auth) => {
 
   console.log('created user', user.username, 'firebase id:', auth.uid)
   const pg = createSupabaseDirectClient()
-
+  if (fromLove) await onboardLover(user, ip)
   await addContractsToSeenMarketsTable(auth.uid, visitedContractIds, pg)
   await upsertNewUserEmbeddings(auth.uid, visitedContractIds, pg)
   const interestingContractIds = await getImportantContractsForNewUsers(100, pg)
