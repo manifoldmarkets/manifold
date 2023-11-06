@@ -94,44 +94,6 @@ export default function LoverProfileHeader(props: {
       <Row className="justify-end sm:hidden">
         <ShareProfileButton username={user.username} />
       </Row>
-      {/* TODO: add this to more info, not that important */}
-      {/* <Row className="text-ink-400 mt-2 flex-wrap items-center gap-2 sm:gap-4">
-          {user.website && (
-            <a
-              href={
-                'https://' +
-                lover.website.replace('http://', '').replace('https://', '')
-              }
-            >
-              <Row className="items-center gap-1">
-                <LinkIcon className="h-4 w-4" />
-                <span className="text-ink-400 text-sm">{user.website}</span>
-              </Row>
-            </a>
-          )}
-
-          {lover.twitter && (
-            <a
-              href={`https://twitter.com/${lover.twitter
-                .replace('https://www.twitter.com/', '')
-                .replace('https://twitter.com/', '')
-                .replace('www.twitter.com/', '')
-                .replace('twitter.com/', '')
-                .replace(/^@/, '')}`}
-            >
-              <Row className="items-center gap-1">
-                <img
-                  src="/twitter-logo.svg"
-                  className="h-4 w-4"
-                  alt="Twitter"
-                />
-                <span className="text-ink-400 text-sm">
-                  {user.twitterHandle}
-                </span>
-              </Row>
-            </a>
-          )}
-        </Row> */}
     </Col>
   )
 }
