@@ -13,8 +13,12 @@ pgp.pg.types.setTypeParser(1700, parseFloat) // Type Id 1700 = NUMERIC
 
 export type SupabaseDirectClient = ReturnType<typeof createSupabaseDirectClient>
 
-export function createSupabaseClient() {
-  const instanceId =
+export function createSupabaseClient(
+  instanceId?: string,
+  key?: string
+) {
+  instanceId =
+    instanceId ??
     process.env.SUPABASE_INSTANCE_ID ??
     (isProd() ? PROD_CONFIG.supabaseInstanceId : DEV_CONFIG.supabaseInstanceId)
   if (!instanceId) {
@@ -22,7 +26,7 @@ export function createSupabaseClient() {
       "Can't connect to Supabase; no process.env.SUPABASE_INSTANCE_ID and no instance ID in config."
     )
   }
-  const key = process.env.SUPABASE_KEY
+  key = key ?? process.env.SUPABASE_KEY
   if (!key) {
     throw new Error("Can't connect to Supabase; no process.env.SUPABASE_KEY.")
   }

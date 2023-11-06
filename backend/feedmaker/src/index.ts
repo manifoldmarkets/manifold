@@ -1,7 +1,14 @@
-import { SupabaseDirectClient } from 'shared/supabase/init'
-import { SupabaseClient, tsToMillis } from 'common/supabase/utils'
-import { DAY_MS, HOUR_MS, MINUTE_MS } from 'common/util/time'
+import * as express from 'express'
+import * as admin from 'firebase-admin'
 import { log } from 'shared/utils'
+import { CONFIGS } from 'common/envs/constants'
+import { MINUTE_MS, HOUR_MS, DAY_MS } from 'common/util/time'
+import { delay } from 'common/util/promise'
+import {
+  createSupabaseClient,
+  createSupabaseDirectClient,
+} from 'shared/supabase/init'
+import { getInstanceHostname, tsToMillis } from 'common/supabase/utils'
 import { Contract } from 'common/contract'
 import { getRecentContractLikes } from 'shared/supabase/likes'
 import {
@@ -12,7 +19,7 @@ import {
   computeContractScores,
   getContractTraders,
   getTodayComments,
-} from './importance-score'
+} from 'shared/importance-score'
 import {
   UserEmbeddingDetails,
   userInterestEmbeddings,
@@ -20,38 +27,105 @@ import {
 import { Dictionary, pickBy } from 'lodash'
 import { getWhenToIgnoreUsersTime } from 'shared/supabase/users'
 import { DEFAULT_FEED_USER_ID } from 'common/feed'
-const rowToContract = (row: any) =>
-  ({
-    ...(row.data as Contract),
-    importanceScore: row.importance_score,
-  } as Contract)
 
-export const MINUTE_INTERVAL = 30
-let lastLoadedTime = 0
+let RUN_INTERVAL_MS = 30 * MINUTE_MS
+let EMBEDDINGS_UPDATE_MS = 5 * MINUTE_MS
+let EMBEDDINGS_FULL_REFRESH_MS = 60 * MINUTE_MS
 
-export async function addInterestingContractsToFeed(
-  db: SupabaseClient,
-  pg: SupabaseDirectClient,
-  readOnly = false
-) {
-  log(`Starting feed population. Querying candidate contracts...`)
-  if (Object.keys(userInterestEmbeddings).length === 0)
-    await loadUserEmbeddingsToStore(pg)
+let LAST_RUN_TS = 0
+let LAST_RUN_DURATION_MS = 0
+let LAST_EMBEDDINGS_UPDATED_TS = 0
+let LAST_EMBEDDINGS_FULL_REFRESH_TS = 0
+
+const PORT = (process.env.PORT ? parseInt(process.env.PORT) : null) || 8080
+const ENV = process.env.ENVIRONMENT ?? 'DEV'
+const CONFIG = CONFIGS[ENV]
+if (CONFIG == null) {
+  throw new Error(`process.env.ENVIRONMENT = ${ENV} - should be DEV or PROD.`)
+}
+
+const SUPABASE_INSTANCE_ID = CONFIG.supabaseInstanceId
+if (!SUPABASE_INSTANCE_ID) {
+  throw new Error(`Can't connect to Supabase; no instance ID set for ${ENV}.`)
+}
+
+const SUPABASE_PASSWORD = process.env.SUPABASE_PASSWORD
+if (!SUPABASE_PASSWORD) {
+  throw new Error(
+    `Can't connect to Supabase; no process.env.SUPABASE_PASSWORD.`
+  )
+}
+
+const SUPABASE_KEY = process.env.SUPABASE_KEY
+if (!SUPABASE_KEY) {
+  throw new Error(
+    `Can't connect to Supabase; no process.env.SUPABASE_KEY.`
+  )
+}
+
+const firestore = admin.initializeApp().firestore()
+const db = createSupabaseClient(SUPABASE_INSTANCE_ID, SUPABASE_KEY)
+const pg = createSupabaseDirectClient(SUPABASE_INSTANCE_ID, SUPABASE_PASSWORD)
+
+const app = express()
+app.use(express.json())
+
+app.get('/', async (_req, res) => {
+  return res.status(200).json({
+    running: true,
+    last_run_ts: LAST_RUN_TS ? new Date(LAST_RUN_TS).toISOString() : null,
+    last_run_duration_ms: LAST_RUN_DURATION_MS,
+    last_embeddings_updated_ts: LAST_EMBEDDINGS_UPDATED_TS
+      ? new Date(LAST_EMBEDDINGS_UPDATED_TS).toISOString()
+      : null,
+    last_embeddings_full_refresh_ts: LAST_EMBEDDINGS_FULL_REFRESH_TS
+      ? new Date(LAST_EMBEDDINGS_FULL_REFRESH_TS).toISOString()
+      : null,
+  })
+})
+
+const server = app.listen(PORT, async () => {
+  log('INFO', `Running in ${ENV} environment listening on port ${PORT}.`)
+  process.on('SIGTERM', async () => {
+    log('INFO', 'Shutting down.')
+    await new Promise((resolve) => server.close(resolve))
+    process.exit(0)
+  })
+  while (true) {
+    LAST_RUN_TS = Date.now()
+    log('Starting feed population iteration.')
+    await addInterestingContractsToFeed(LAST_RUN_TS)
+    LAST_RUN_DURATION_MS = Date.now() - LAST_RUN_TS;
+
+    const breakTimeMs = RUN_INTERVAL_MS - LAST_RUN_DURATION_MS
+    if (breakTimeMs > 0) {
+      log(`Done with feed population. Restarting in ${breakTimeMs / 1000}s.`)
+      // mqp -- if we do a giant setTimeout GCR might kill our instance, so
+      // break it up so that it knows we are awake
+      for (let i = 0; i < breakTimeMs / 1000; i++) {
+        await delay(1000)
+      }
+    } else {
+      log('Done with feed population. Restarting immediately.')
+    }
+  }
+})
+
+async function addInterestingContractsToFeed(startTime: number, readOnly = false) {
   const contracts = await pg.map(
     `select data, importance_score from contracts
             where importance_score >= 0.225
             order by importance_score desc
             `,
     [],
-    rowToContract
+    (r: any) => ({ ...r.data, importanceScore: r.importance_score } as Contract)
   )
   log(`Found ${contracts.length} contracts to add to feed`)
 
   const contractIds = contracts.map((c) => c.id)
-  const now = Date.now()
-  const hourAgo = now - HOUR_MS
-  const dayAgo = now - DAY_MS
-  const weekAgo = now - 7 * DAY_MS
+  const hourAgo = startTime - HOUR_MS
+  const dayAgo = startTime - DAY_MS
+  const weekAgo = startTime - 7 * DAY_MS
   const todayComments = await getTodayComments(db)
   const todayLikesByContract = await getRecentContractLikes(db, dayAgo)
   const thisWeekLikesByContract = await getRecentContractLikes(db, weekAgo)
@@ -72,13 +146,10 @@ export async function addInterestingContractsToFeed(
   )
 
   for (const contract of contracts) {
-    if (Date.now() - lastLoadedTime > 5 * MINUTE_MS) {
-      log('Refreshing user embeddings')
-      await loadUserEmbeddingsToStore(pg, lastLoadedTime)
-    }
+    await updateStoredUserEmbeddings()
     const { todayScore, logOddsChange, thisWeekScore, importanceScore } =
       computeContractScores(
-        now,
+        startTime,
         contract,
         todayComments[contract.id] ?? 0,
         todayLikesByContract[contract.id] ?? 0,
@@ -93,7 +164,7 @@ export async function addInterestingContractsToFeed(
       log('Inserting specifically today trending contract', contract.id)
       await insertTrendingContractToUsersFeeds(
         contract,
-        now - 5 * DAY_MS,
+        startTime - 5 * DAY_MS,
         {
           todayScore,
           thisWeekScore,
@@ -116,7 +187,7 @@ export async function addInterestingContractsToFeed(
       )
       await insertTrendingContractToUsersFeeds(
         contract,
-        now - 14 * DAY_MS,
+        startTime - 14 * DAY_MS,
         {
           tradersInPastHour: hourAgoTradersByContract[contract.id] ?? 0,
           importanceScore: parseFloat(importanceScore.toPrecision(2)),
@@ -138,11 +209,9 @@ export async function addInterestingContractsToFeed(
       if (!readOnly) await insertMarketMovementContractToUsersFeeds(contract)
     }
   }
-  log('Done adding trending contracts to feed')
 }
 
 const getUserEmbeddingDetails = async (
-  pg: SupabaseDirectClient,
   since = 0,
   userId: string | null = null
 ) => {
@@ -166,7 +235,7 @@ const getUserEmbeddingDetails = async (
     where u.created_time > millis_to_ts($1) and ($2 is null or u.id = $2)
     `,
     [since, userId],
-    (row) => {
+    (row: any) => {
       const interest = JSON.parse(row.interest_embedding) as number[]
       const disinterest = row.disinterest_embedding
         ? (JSON.parse(row.disinterest_embedding) as number[])
@@ -188,12 +257,26 @@ const getUserEmbeddingDetails = async (
   return newUserInterestEmbeddings
 }
 
-const loadUserEmbeddingsToStore = async (
-  pg: SupabaseDirectClient,
-  since = 0
-) => {
-  lastLoadedTime = Date.now()
-  const newUserInterestEmbeddings = await getUserEmbeddingDetails(pg, since)
+const updateStoredUserEmbeddings = async () => {
+  const now = Date.now()
+  const fullRefresh =
+    LAST_EMBEDDINGS_FULL_REFRESH_TS + EMBEDDINGS_FULL_REFRESH_MS < now
+  const partialRefresh =
+    LAST_EMBEDDINGS_UPDATED_TS + EMBEDDINGS_UPDATE_MS < now
+  if (fullRefresh) {
+    log("Fully refreshing user embedding details.")
+    LAST_EMBEDDINGS_FULL_REFRESH_TS = now
+    LAST_EMBEDDINGS_UPDATED_TS = now
+  } else if (partialRefresh) {
+    LAST_EMBEDDINGS_UPDATED_TS = now
+    log("Updating details for new user embeddings.")
+  } else {
+    // don't need to update right now
+    return
+  }
+  const since = fullRefresh ? 0 : now - EMBEDDINGS_UPDATE_MS
+  const newUserInterestEmbeddings = await getUserEmbeddingDetails(since)
+  log(`Fetched ${Object.keys(newUserInterestEmbeddings).length} embeddings.`)
   Object.entries(
     filterUserEmbeddings(newUserInterestEmbeddings, getWhenToIgnoreUsersTime())
   ).forEach(([userId, user]) => {
@@ -201,13 +284,13 @@ const loadUserEmbeddingsToStore = async (
   })
 
   if (!newUserInterestEmbeddings[DEFAULT_FEED_USER_ID]) {
-    const defaultUser = await getUserEmbeddingDetails(pg, 0, DEFAULT_FEED_USER_ID)
+    const defaultUser = await getUserEmbeddingDetails(0, DEFAULT_FEED_USER_ID)
     userInterestEmbeddings[DEFAULT_FEED_USER_ID] =
       defaultUser[DEFAULT_FEED_USER_ID]
   }
 }
 
-export const filterUserEmbeddings = (
+const filterUserEmbeddings = (
   userEmbeddings: Dictionary<UserEmbeddingDetails>,
   longAgo: number
 ): Dictionary<UserEmbeddingDetails> => {
@@ -221,7 +304,7 @@ export const filterUserEmbeddings = (
       (lastBetTime === null && createdTime >= longAgo) ||
       lastSeenTime >= longAgo ||
       // Let's update inactive users' feeds once per day
-      Math.random() <= 1 / ((24 * 60) / MINUTE_INTERVAL)
+      Math.random() <= 1 / (DAY_MS / RUN_INTERVAL_MS)
     )
   })
 }

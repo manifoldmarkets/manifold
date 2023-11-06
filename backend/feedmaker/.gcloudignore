@@ -1,6 +1,6 @@
 .gitignore
 .gcloudignore
 /tsconfig.json
-/deploy-replicator.sh
+/deploy-feedmaker.sh
 /src/
 /lib/

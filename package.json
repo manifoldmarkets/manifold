@@ -5,6 +5,7 @@
     "common",
     "backend/api",
     "backend/functions",
+    "backend/feedmaker",
     "backend/replicator",
     "backend/scripts",
     "backend/shared",
