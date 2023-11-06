@@ -23,9 +23,9 @@ import {
 } from 'web/lib/supabase/private-messages'
 import { usePersistentSupabasePolling } from 'web/hooks/use-persistent-supabase-polling'
 import { db } from 'web/lib/supabase/db'
-import { useEvent } from 'web/hooks/use-event'
 import { MINUTE_MS } from 'common/util/time'
 import { safeLocalStorage } from 'web/lib/util/local'
+import { useEvent } from 'web/hooks/use-event'
 
 // NOTE: must be authorized (useIsAuthorized) to use this hook
 export function useRealtimePrivateMessagesPolling(
@@ -129,15 +129,21 @@ export const useUnseenPrivateMessageChannels = (
   )
   const channelIds = messageChannelMemberships?.map((m) => m.channel_id) ?? []
   const fetcher = useEvent(async () => {
-    const q = db
-      .from('private_user_messages')
-      .select('*')
-      .in('channel_id', channelIds)
-      .gt('created_time', millisToTs(sinceLastTime))
-      .limit(10)
-      .order('created_time', { ascending: false })
-    const { data } = await run(q)
-    return data
+    const q = Promise.all(
+      channelIds.map(async (channelId) =>
+        run(
+          db
+            .from('private_user_messages')
+            .select('*')
+            .eq('channel_id', channelId)
+            .gt('created_time', millisToTs(sinceLastTime))
+            .limit(1)
+            .order('created_time', { ascending: false })
+        )
+      )
+    )
+    const data = await q
+    return data.map((d) => d.data).flat()
   })
   const { rows: messageRows } = usePersistentSubscription(
     'private_user_messages_all_channels',
