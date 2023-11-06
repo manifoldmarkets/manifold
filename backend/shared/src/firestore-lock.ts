@@ -1,13 +1,14 @@
 import * as admin from 'firebase-admin'
 import { FieldValue } from 'firebase-admin/firestore'
 import { log } from 'shared/utils'
+
 export async function acquire(id: string) {
   const fs = admin.firestore()
   const ref = fs.collection('locks').doc(id)
   try {
     await ref.create({ id, ts: FieldValue.serverTimestamp() })
     return true
-  } catch {
+  } catch {2
     return false
   }
 }

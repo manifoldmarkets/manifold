@@ -13,7 +13,7 @@ import { runSingleton } from 'shared/firestore-lock'
 export const addcontractstofeed = onSchedule(
   {
     schedule: `every ${MINUTE_INTERVAL} minutes`,
-    timeoutSeconds: MINUTE_INTERVAL * 60,
+    timeoutSeconds: 3600,
     memory: '4GiB',
     secrets,
     cpu: 2
