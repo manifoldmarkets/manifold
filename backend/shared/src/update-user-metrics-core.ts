@@ -149,7 +149,10 @@ export async function updateUserMetricsCore() {
       contractsById,
       user
     ).flat()
-    await bulkUpdateContractMetrics(metricsByContract)
+
+    await bulkUpdateContractMetrics(metricsByContract).catch((e) => {
+      log('Error upserting contract metrics', e)
+    })
 
     const nextLoanPayout = isUserEligibleForLoan(newPortfolio)
       ? getUserLoanUpdates(metricRelevantBetsByContract, contractsById).payout
