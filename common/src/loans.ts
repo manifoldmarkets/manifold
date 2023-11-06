@@ -50,9 +50,12 @@ const calculateLoanBetUpdates = (
     } else if (c.mechanism === 'cpmm-multi-1') {
       const betsByAnswerId = groupBy(bets, (bet) => bet.answerId)
       return filterDefined(
-        Object.values(betsByAnswerId).map((bets) =>
-          getCpmmContractLoanUpdate(c, bets)
-        )
+        Object.entries(betsByAnswerId).map(([answerId, bets]) => {
+          const answer = c.answers.find((a) => a.id === answerId)
+          if (!answer) return undefined
+          if (answer.resolution) return undefined
+          return getCpmmContractLoanUpdate(c, bets)
+        })
       )
     } else if (c.mechanism === 'dpm-2')
       return filterDefined(getDpmContractLoanUpdate(c, bets))
