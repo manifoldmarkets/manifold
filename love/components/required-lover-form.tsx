@@ -301,13 +301,14 @@ export const RequiredLoveUserForm = (props: {
                   setChoice={(c) => setLover('gender', c)}
                 />
               </Col>
-              <Checkbox
-                className={'mt-7'}
-                label={'Trans'}
-                toggle={setTrans}
-                checked={trans ?? false}
-                disabled={lover['gender'] === 'non-binary'}
-              />
+              {lover.gender !== 'non-binary' && (
+                <Checkbox
+                  className={'mt-7'}
+                  label={'Trans'}
+                  toggle={setTrans}
+                  checked={trans ?? false}
+                />
+              )}
             </Row>
 
             <Col className={clsx(colClassName)}>
