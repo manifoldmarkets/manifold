@@ -80,9 +80,10 @@ export async function getRecentCommentsOnContracts(
 
 export async function getCommentsOnContract(
   contractId: string,
-  limit?: number
+  limit?: number,
+  userId?: string
 ) {
-  const q = db
+  let q = db
     .from('contract_comments')
     .select()
     .eq('contract_id', contractId)
@@ -90,6 +91,10 @@ export async function getCommentsOnContract(
 
   if (limit) {
     q.limit(limit)
+  }
+
+  if (userId) {
+    q = q.eq('user_id', userId)
   }
 
   const { data } = await run(q)

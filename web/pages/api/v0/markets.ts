@@ -18,6 +18,7 @@ const queryParams = z
       .or(z.string().regex(/\d+/).transform(Number))
       .refine((n) => n >= 0 && n <= 1000, 'Limit must be between 0 and 1000'),
     before: z.string().optional(),
+    userId: z.string().optional(),
   })
   .strict()
 
@@ -52,11 +53,11 @@ export default async function handler(
     return res.status(500).json({ error: 'Unknown error during validation' })
   }
 
-  const { limit } = params
+  const { limit, userId } = params
 
   try {
     const beforeTime = await getBeforeTime(params)
-    const contracts = await getPublicContracts({ limit, beforeTime })
+    const contracts = await getPublicContracts({ limit, beforeTime, userId })
     // Serve from Vercel cache, then update. see https://vercel.com/docs/concepts/functions/edge-caching
     res.setHeader('Cache-Control', 's-maxage=45, stale-while-revalidate=45')
     res.status(200).json(contracts.map(toLiteMarket))
