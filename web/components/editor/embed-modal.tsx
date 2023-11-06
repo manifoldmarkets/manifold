@@ -81,6 +81,11 @@ const embedPatterns: EmbedPattern[] = [
     rewrite: (id) =>
       `<iframe src="https://www.tiktok.com/embed/v2/${id}"></iframe>`,
   },
+  {
+    // Streamlit: https://appname.streamlit.app/?params=param
+    regex: /^(https?:\/\/[^\/]+\.streamlit\.app(?:\/|\?|$).*)/,
+    rewrite: (url: string) => `<iframe src="${url}"></iframe>`,
+  },
   // {
   //   regex: /^(https?:\/\/.*)/,
   //   rewrite: (url) => `<iframe src="${url}"></iframe>`,
