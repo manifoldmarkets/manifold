@@ -24,12 +24,12 @@ export const ChatMessageItem = memo(function ChatMessageItem(props: {
   const chat = first(chats)
   if (!chat) return null
   const isMe = currentUser?.id === chat.userId
-  const { username, avatarUrl } =
+  const { username, avatarUrl, name } =
     !isMe && otherUser
       ? otherUser
       : isMe && currentUser
       ? currentUser
-      : { username: '', avatarUrl: undefined }
+      : { username: '', avatarUrl: undefined, name: '' }
 
   return (
     <Row
@@ -49,11 +49,11 @@ export const ChatMessageItem = memo(function ChatMessageItem(props: {
       <Col className="max-w-[calc(100vw-6rem)] md:max-w-[80%]">
         {firstOfUser && !isMe && chat.visibility !== 'system_status' && (
           <span className="text-ink-500 dark:text-ink-600 pl-3 text-sm">
-            {username}
+            {name}
           </span>
         )}
         <Col className="gap-1">
-          {chats.map((chat, i) => (
+          {chats.map((chat) => (
             <div
               className={clsx(
                 'group flex items-end gap-1',
