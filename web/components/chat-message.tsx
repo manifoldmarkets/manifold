@@ -31,48 +31,56 @@ export const ChatMessageItem = memo(function ChatMessageItem(props: {
   return (
     <Row
       className={clsx(
-        'gap-1',
-        isMe ? '' : 'flex-row-reverse',
-        firstOfUser ? 'mt-3' : ''
+        'items-end justify-start gap-1',
+        isMe && 'flex-row-reverse',
+        firstOfUser ? 'mt-2' : ''
       )}
     >
-      <Row className="grow" />
-      <Col className={clsx(isMe ? 'pr-1' : '', 'grow-y justify-end pb-2')}>
-        <RelativeTimestamp
-          time={chat.createdTime}
-          shortened
-          className="text-xs"
-        />
-      </Col>
-      <Col className="max-w-[calc(100vw-6rem)] md:max-w-[80%]">
-        {firstOfUser && !isMe && chat.visibility !== 'system_status' && (
-          <span className="text-ink-500 dark:text-ink-600 mt-1 pl-3 text-sm">
-            {username}
-          </span>
-        )}
-        <Col
-          className={clsx(
-            'rounded-3xl px-3 py-2',
-            chat.visibility !== 'system_status' && 'drop-shadow-sm',
-            chat.visibility === 'system_status'
-              ? 'bg-canvas-50 italic  drop-shadow-none'
-              : isMe
-              ? 'bg-primary-100 items-end self-end rounded-br-none'
-              : 'bg-canvas-0 items-start self-start rounded-bl-none'
-          )}
-        >
-          {chats.map((chat) => (
-            <Content size={'sm'} content={chat.content} key={chat.id} />
-          ))}
-        </Col>
-      </Col>
       {!isMe && (
         <MessageAvatar
           beforeSameUser={beforeSameUser}
-          userAvatarUrl={avatarUrl}
           username={username}
+          userAvatarUrl={avatarUrl}
         />
       )}
+      <Col className="max-w-[calc(100vw-6rem)] md:max-w-[80%]">
+        {firstOfUser && !isMe && chat.visibility !== 'system_status' && (
+          <span className="text-ink-500 dark:text-ink-600 pl-3 text-sm">
+            {username}
+          </span>
+        )}
+        <Col className="gap-1">
+          {chats.map((chat, i) => (
+            <div
+              className={clsx(
+                'group flex items-end gap-1',
+                isMe && 'flex-row-reverse'
+              )}
+              key={chat.id}
+            >
+              <div
+                className={clsx(
+                  'rounded-3xl px-3 py-2',
+                  chat.visibility !== 'system_status' && 'drop-shadow-sm',
+                  chat.visibility === 'system_status'
+                    ? 'bg-canvas-50 italic  drop-shadow-none'
+                    : isMe
+                    ? 'bg-primary-100 items-end self-end rounded-r-none group-first:rounded-tr-3xl'
+                    : 'bg-canvas-0 items-start self-start rounded-l-none group-first:rounded-tl-3xl'
+                )}
+              >
+                <Content size={'sm'} content={chat.content} key={chat.id} />
+              </div>
+              <RelativeTimestamp
+                time={chat.createdTime}
+                shortened
+                className="mb-2 mr-1 hidden text-xs group-last:block"
+              />
+            </div>
+          ))}
+        </Col>
+      </Col>
+      <div className={clsx(isMe ? 'pr-1' : '', 'pb-2')}></div>
     </Row>
   )
 })

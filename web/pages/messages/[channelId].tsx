@@ -312,7 +312,7 @@ export const PrivateChat = (props: {
       </Col>
       <Col
         className={clsx(
-          'gap-1 overflow-y-auto py-2 ',
+          'gap-2 overflow-y-auto py-2 ',
           'max-h-[calc(100vh-216px)] min-h-[calc(100vh-216px)]',
           'lg:max-h-[calc(100vh-184px)] lg:min-h-[calc(100vh-184px)]'
         )}
