@@ -39,7 +39,7 @@ import { UserAvatarAndBadge } from 'web/components/widgets/user-link'
 import DropdownMenu from 'web/components/comments/dropdown-menu'
 import { DotsVerticalIcon } from '@heroicons/react/solid'
 import { FaUserFriends, FaUserMinus } from 'react-icons/fa'
-import { filterDefined } from 'common/util/array'
+import { buildArray, filterDefined } from 'common/util/array'
 import { GiSpeakerOff } from 'react-icons/gi'
 import toast from 'react-hot-toast'
 import { Avatar } from 'web/components/widgets/avatar'
@@ -86,7 +86,8 @@ export const PrivateChat = (props: {
   const realtimeMessages = useRealtimePrivateMessagesPolling(
     channelId,
     true,
-    100
+    100,
+    20
   )
   const [showUsers, setShowUsers] = useState(false)
   const otherUsersFromChannel = useOtherUserIdsInPrivateMessageChannelIds(
@@ -260,8 +261,8 @@ export const PrivateChat = (props: {
             className={'ml-auto'}
             menuWidth={'w-44'}
             icon={<DotsVerticalIcon className="h-5 w-5" />}
-            items={[
-              {
+            items={buildArray(
+              !channel.title && {
                 icon: <FaUserFriends className={'h-5 w-5'} />,
                 name: 'See members',
                 onClick: () => {
@@ -309,8 +310,8 @@ export const PrivateChat = (props: {
                   await leavePrivateMessageChannel({ channelId: channelId })
                   router.push('/messages')
                 },
-              },
-            ]}
+              }
+            )}
           />
           {showUsers && (
             <Modal open={showUsers} setOpen={setShowUsers}>
@@ -347,7 +348,7 @@ export const PrivateChat = (props: {
       <Col
         className={clsx(
           'gap-2 overflow-y-auto py-2 ',
-          'max-h-[calc(100vh-216px)] min-h-[calc(100vh-216px)]',
+          'max-h-[calc(100vh - env(safe-area-inset-bottom))] min-h-[calc(100vh - env(safe-area-inset-bottom))]',
           'lg:max-h-[calc(100vh-184px)] lg:min-h-[calc(100vh-184px)]'
         )}
       >
@@ -394,7 +395,7 @@ export const PrivateChat = (props: {
         )}
         {groupedMessages.length > 0 && <div ref={setScrollToBottomRef} />}
       </Col>
-      <div className="bg-canvas-50 sticky bottom-[56px] flex w-full justify-start gap-2 lg:bottom-0">
+      <div className="bg-canvas-50 sticky bottom-[58px] flex w-full justify-start gap-2 lg:bottom-0">
         <CommentInputTextArea
           editor={editor}
           user={user}

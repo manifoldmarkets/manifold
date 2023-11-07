@@ -11,6 +11,7 @@ import { memo, useState } from 'react'
 import { MultipleOrSingleAvatars } from 'web/components/multiple-or-single-avatars'
 import { Modal, MODAL_CLASS } from 'web/components/layout/modal'
 import { UserAvatarAndBadge } from 'web/components/widgets/user-link'
+import Link from 'next/link'
 
 export const ChatMessageItem = memo(function ChatMessageItem(props: {
   chats: ChatMessage[]
@@ -48,9 +49,12 @@ export const ChatMessageItem = memo(function ChatMessageItem(props: {
       )}
       <Col className="max-w-[calc(100vw-6rem)] md:max-w-[80%]">
         {firstOfUser && !isMe && chat.visibility !== 'system_status' && (
-          <span className="text-ink-500 dark:text-ink-600 pl-3 text-sm">
+          <Link
+            href={'/' + username}
+            className="text-ink-500 dark:text-ink-600 pl-3 text-sm"
+          >
             {name}
-          </span>
+          </Link>
         )}
         <Col className="gap-1">
           {chats.map((chat) => (
@@ -100,7 +104,7 @@ export const SystemChatMessageItem = memo(
 
     const totalUsers = otherUsers?.length || 1
     return (
-      <Row className={clsx('flex-row-reverse gap-1')}>
+      <Row className={clsx('flex-row-reverse items-center gap-1')}>
         <Row className="grow" />
         <Col className={clsx('grow-y justify-end pb-2')}>
           <RelativeTimestamp
@@ -112,7 +116,7 @@ export const SystemChatMessageItem = memo(
         <Col className="max-w-[calc(100vw-6rem)] md:max-w-[80%]">
           <Col
             className={clsx(
-              ' bg-canvas-50 px-1 py-2 text-sm italic drop-shadow-none'
+              ' bg-canvas-50  px-1 py-2 text-sm italic drop-shadow-none'
             )}
           >
             <span>
@@ -124,9 +128,9 @@ export const SystemChatMessageItem = memo(
           </Col>
         </Col>
         <MultipleOrSingleAvatars
-          size={'sm'}
-          spacing={0.2}
-          startLeft={0.8}
+          size={'xs'}
+          spacing={0.3}
+          startLeft={0.6}
           avatarUrls={otherUsers?.map((u) => u.avatarUrl) || []}
           onClick={() => setShowUsers(true)}
         />
