@@ -110,7 +110,6 @@ export default function ContractEmbedPage(props: {
     props.contract
 
   const router = useRouter()
-  const { qr } = router.query
 
   const [showQRCode, setShowQRCode] = useState(false)
 
@@ -152,9 +151,18 @@ const ContractChart = (props: {
   points: Points | null
   width: number
   height: number
+  showOnlyLastThousand?: boolean
 }) => {
-  const { contract, points, ...rest } = props
+  const { contract, showOnlyLastThousand, ...rest } = props
   const viewScale = useViewScale()
+
+  const points = showOnlyLastThousand
+    ? props.points?.slice(-1000) ?? []
+    : props.points ?? []
+
+  const controlledStart = showOnlyLastThousand
+    ? points[0]?.x ?? undefined
+    : undefined
 
   switch (contract.outcomeType) {
     case 'BINARY':
@@ -163,7 +171,8 @@ const ContractChart = (props: {
           {...rest}
           viewScaleProps={viewScale}
           contract={contract}
-          betPoints={points ?? []}
+          betPoints={points}
+          controlledStart={controlledStart}
         />
       )
     case 'PSEUDO_NUMERIC':
@@ -172,7 +181,8 @@ const ContractChart = (props: {
           {...rest}
           viewScaleProps={viewScale}
           contract={contract}
-          betPoints={points ?? []}
+          betPoints={points}
+          controlledStart={controlledStart}
         />
       )
     case 'FREE_RESPONSE':
@@ -192,9 +202,10 @@ const ContractChart = (props: {
       return (
         <StonkContractChart
           {...rest}
-          betPoints={points ?? []}
+          betPoints={points}
           viewScaleProps={viewScale}
           contract={contract}
+          controlledStart={controlledStart}
         />
       )
 
@@ -297,6 +308,7 @@ function ContractSmolView(props: {
                 points={points}
                 width={w}
                 height={h}
+                showOnlyLastThousand={showQRCode}
               />
             )}
           </SizedContainer>
