@@ -134,7 +134,7 @@ const matchingFeedRows = async (
             from user_feed
             where contract_id = $1 and
                 user_id = ANY($2) and
-                (created_time > $3 or seen_time > $3) and
+                greatest(created_time, seen_time) > $3 and
                 data_type = ANY($4)
                 `,
     [contractId, userIds, new Date(seenTime).toISOString(), dataTypes],
