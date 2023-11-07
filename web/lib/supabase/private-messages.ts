@@ -115,3 +115,13 @@ export const getOtherUserIdsInPrivateMessageChannelIds = async (
   const { data } = await run(q)
   return data as PrivateMessageMembership[]
 }
+
+// NOTE: must be authorized (useIsAuthorized) to use this function
+export const getTotalChatMessages = async (channelId: number) => {
+  const q = db
+    .from('private_user_messages')
+    .select('*', { head: true, count: 'exact' })
+    .eq('channel_id', channelId)
+  const { count } = await run(q)
+  return count
+}

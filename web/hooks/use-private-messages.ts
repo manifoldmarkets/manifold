@@ -20,6 +20,7 @@ import {
   getNonEmptyChatMessageChannelIds,
   getOtherUserIdsInPrivateMessageChannelIds,
   PrivateMessageMembership,
+  getTotalChatMessages,
 } from 'web/lib/supabase/private-messages'
 import { usePersistentSupabasePolling } from 'web/hooks/use-persistent-supabase-polling'
 import { db } from 'web/lib/supabase/db'
@@ -60,7 +61,9 @@ export function useRealtimePrivateMessagesPolling(
       deps: [channelId],
     }
   )
-  return orderBy(results?.data?.map(convertChatMessage), 'createdTime', 'desc')
+  return results
+    ? orderBy(results.data.map(convertChatMessage), 'createdTime', 'desc')
+    : undefined
 }
 
 // NOTE: must be authorized (useIsAuthorized) to use this hook
@@ -294,4 +297,19 @@ export const useOtherUserIdsInPrivateMessageChannelIds = (
   return groupBy(channelMemberships, 'channel_id') as NumericDictionary<
     PrivateMessageMembership[]
   >
+}
+
+export const useMessagesCount = (
+  isAuthed: boolean | undefined,
+  channelId: number
+) => {
+  const [count, setCount] = usePersistentLocalState<number>(
+    0,
+    `private-message-count-channel-id-${channelId}`
+  )
+
+  useEffect(() => {
+    if (isAuthed) getTotalChatMessages(channelId).then((c) => setCount(c))
+  }, [isAuthed])
+  return count
 }

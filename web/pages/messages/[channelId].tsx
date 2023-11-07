@@ -1,6 +1,7 @@
 import { Page } from 'web/components/layout/page'
 import { useRouter } from 'next/router'
 import {
+  useMessagesCount,
   useOtherUserIdsInPrivateMessageChannelIds,
   usePrivateMessageChannel,
   useRealtimePrivateMessagesPolling,
@@ -89,6 +90,10 @@ export const PrivateChat = (props: {
     100,
     20
   )
+  const totalMessages = useMessagesCount(true, channelId)
+  const notShowingMessages = realtimeMessages
+    ? Math.max(0, totalMessages - realtimeMessages.length)
+    : 0
   const [showUsers, setShowUsers] = useState(false)
   const otherUsersFromChannel = useOtherUserIdsInPrivateMessageChannelIds(
     user.id,
@@ -360,38 +365,45 @@ export const PrivateChat = (props: {
         {realtimeMessages === undefined ? (
           <LoadingIndicator />
         ) : (
-          groupedMessages.map((messages, i) => {
-            const firstMessage = messages[0]
-            if (firstMessage.visibility === 'system_status') {
+          <>
+            {notShowingMessages ? (
+              <Row className=" text-ink-500 items-center justify-center p-2 text-xs italic">
+                Not showing {notShowingMessages} older messages
+              </Row>
+            ) : null}
+            {groupedMessages.map((messages, i) => {
+              const firstMessage = messages[0]
+              if (firstMessage.visibility === 'system_status') {
+                return (
+                  <SystemChatMessageItem
+                    key={firstMessage.id}
+                    chats={messages}
+                    otherUsers={otherUsers
+                      ?.concat([user])
+                      .filter((user) =>
+                        messages.some((m) => m.userId === user.id)
+                      )}
+                  />
+                )
+              }
               return (
-                <SystemChatMessageItem
+                <ChatMessageItem
                   key={firstMessage.id}
                   chats={messages}
-                  otherUsers={otherUsers
-                    ?.concat([user])
-                    .filter((user) =>
-                      messages.some((m) => m.userId === user.id)
-                    )}
+                  currentUser={user}
+                  otherUser={otherUsers?.find(
+                    (user) => user.id === firstMessage.userId
+                  )}
+                  beforeSameUser={
+                    groupedMessages[i + 1]?.[0].userId === firstMessage.userId
+                  }
+                  firstOfUser={
+                    groupedMessages[i - 1]?.[0].userId !== firstMessage.userId
+                  }
                 />
               )
-            }
-            return (
-              <ChatMessageItem
-                key={firstMessage.id}
-                chats={messages}
-                currentUser={user}
-                otherUser={otherUsers?.find(
-                  (user) => user.id === firstMessage.userId
-                )}
-                beforeSameUser={
-                  groupedMessages[i + 1]?.[0].userId === firstMessage.userId
-                }
-                firstOfUser={
-                  groupedMessages[i - 1]?.[0].userId !== firstMessage.userId
-                }
-              />
-            )
-          })
+            })}
+          </>
         )}
         {messages.length === 0 && (
           <div className="text-ink-500 dark:text-ink-600 p-2">
