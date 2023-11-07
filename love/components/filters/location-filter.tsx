@@ -170,19 +170,31 @@ function DistanceSlider(props: {
   setRadius: (radius: number) => void
 }) {
   const { radius, setRadius } = props
+
+  // New snap values
+  const snapValues = [10, 50, 100, 300]
+
+  // Function to snap to the closest value
+  const snapToValue = (value: number) => {
+    const closest = snapValues.reduce((prev, curr) =>
+      Math.abs(curr - value) < Math.abs(prev - value) ? curr : prev
+    )
+    setRadius(closest)
+  }
+
+  const min = snapValues[0]
+  const max = snapValues[snapValues.length - 1]
   return (
     <Slider
-      min={50}
-      max={500}
-      step={50}
-      color="indigo"
+      min={min} // The minimum snap value
+      max={max} // The maximum snap value
       amount={radius}
-      onChange={setRadius}
+      onChange={snapToValue}
       className="mb-4 w-full"
-      marks={[
-        { value: 0, label: '50' },
-        { value: 100, label: '500' },
-      ]}
+      marks={snapValues.map((value) => ({
+        value: ((value - min) / max) * 100,
+        label: value.toString(),
+      }))}
     />
   )
 }
