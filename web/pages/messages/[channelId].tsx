@@ -224,131 +224,133 @@ export const PrivateChat = (props: {
   }
 
   return (
-    <Col className=" px-2 xl:px-0">
-      <Col className={''}>
-        <Row className={'border-ink-200 items-center gap-1 border-b py-2'}>
-          <BackButton />
-          {channel.title ? (
-            <Avatar noLink={true} avatarUrl={MANIFOLD_LOVE_LOGO} size={'md'} />
-          ) : (
-            <MultipleOrSingleAvatars
-              size="sm"
-              spacing={0.5}
-              startLeft={1}
-              avatarUrls={remainingUsers?.map((user) => user.avatarUrl) ?? []}
-              onClick={() => setShowUsers(true)}
-            />
-          )}
-          {channel.title ? (
-            <span className={'ml-1 font-semibold'}>{channel.title}</span>
-          ) : (
-            remainingUsers && (
-              <span
-                className={'ml-1 cursor-pointer hover:underline'}
-                onClick={() => setShowUsers(true)}
-              >
-                {remainingUsers
-                  .map((user) => user.name.split(' ')[0].trim())
-                  .slice(0, 2)
-                  .join(', ')}
-                {remainingUsers.length > 2 &&
-                  ` & ${remainingUsers.length - 2} more`}
-                {usersThatLeft.length > 0 && ` (${usersThatLeft.length} left)`}
-              </span>
-            )
-          )}
-          <DropdownMenu
-            className={'ml-auto'}
-            menuWidth={'w-44'}
-            icon={<DotsVerticalIcon className="h-5 w-5" />}
-            items={buildArray(
-              !channel.title && {
-                icon: <FaUserFriends className={'h-5 w-5'} />,
-                name: 'See members',
-                onClick: () => {
-                  setShowUsers(true)
-                },
-              },
-              {
-                icon: <GiSpeakerOff className="h-5 w-5" />,
-                name: 'Mute 1 day',
-                onClick: async () => {
-                  await toast.promise(
-                    updatePrivateMessageChannel({
-                      channelId: channelId,
-                      notifyAfterTime: Date.now() + DAY_MS,
-                    }),
-                    {
-                      loading: 'Muting for 1 day...',
-                      success: 'Muted for 1 day',
-                      error: 'Failed to mute',
-                    }
-                  )
-                },
-              },
-              {
-                icon: <GiSpeakerOff className="h-5 w-5" />,
-                name: 'Mute forever',
-                onClick: async () => {
-                  await toast.promise(
-                    updatePrivateMessageChannel({
-                      channelId: channelId,
-                      notifyAfterTime: Date.now() + 100 * YEAR_MS,
-                    }),
-                    {
-                      loading: 'Muting forever...',
-                      success: 'Muted forever',
-                      error: 'Failed to mute',
-                    }
-                  )
-                },
-              },
-              {
-                icon: <FaUserMinus className="h-5 w-5" />,
-                name: 'Leave chat',
-                onClick: async () => {
-                  await leavePrivateMessageChannel({ channelId: channelId })
-                  router.push('/messages')
-                },
-              }
-            )}
+    <Col className="px-2 xl:px-0">
+      <Row
+        className={
+          'border-ink-200 bg-canvas-50 sticky top-0 z-10 items-center gap-1 border-b py-2'
+        }
+      >
+        <BackButton />
+        {channel.title ? (
+          <Avatar noLink={true} avatarUrl={MANIFOLD_LOVE_LOGO} size={'md'} />
+        ) : (
+          <MultipleOrSingleAvatars
+            size="sm"
+            spacing={0.5}
+            startLeft={1}
+            avatarUrls={remainingUsers?.map((user) => user.avatarUrl) ?? []}
+            onClick={() => setShowUsers(true)}
           />
-          {showUsers && (
-            <Modal open={showUsers} setOpen={setShowUsers}>
-              <Col className={clsx(MODAL_CLASS)}>
-                {otherUsers?.map((user) => (
-                  <Row
-                    key={user.id}
-                    className={'w-full items-center justify-start gap-2'}
-                  >
-                    <UserAvatarAndBadge
-                      name={user.name}
-                      username={user.username}
-                      avatarUrl={user.avatarUrl}
-                    />
-                    {otherUsersFromChannel?.[channelId].map(
-                      (membership) =>
-                        membership.user_id === user.id &&
-                        membership.status === 'left' && (
-                          <span
-                            key={membership.user_id + 'status'}
-                            className={'text-ink-500 text-sm'}
-                          >
-                            (Left)
-                          </span>
-                        )
-                    )}
-                  </Row>
-                ))}
-              </Col>
-            </Modal>
+        )}
+        {channel.title ? (
+          <span className={'ml-1 font-semibold'}>{channel.title}</span>
+        ) : (
+          remainingUsers && (
+            <span
+              className={'ml-1 cursor-pointer hover:underline'}
+              onClick={() => setShowUsers(true)}
+            >
+              {remainingUsers
+                .map((user) => user.name.split(' ')[0].trim())
+                .slice(0, 2)
+                .join(', ')}
+              {remainingUsers.length > 2 &&
+                ` & ${remainingUsers.length - 2} more`}
+              {usersThatLeft.length > 0 && ` (${usersThatLeft.length} left)`}
+            </span>
+          )
+        )}
+        <DropdownMenu
+          className={'ml-auto'}
+          menuWidth={'w-44'}
+          icon={<DotsVerticalIcon className="h-5 w-5" />}
+          items={buildArray(
+            !channel.title && {
+              icon: <FaUserFriends className={'h-5 w-5'} />,
+              name: 'See members',
+              onClick: () => {
+                setShowUsers(true)
+              },
+            },
+            {
+              icon: <GiSpeakerOff className="h-5 w-5" />,
+              name: 'Mute 1 day',
+              onClick: async () => {
+                await toast.promise(
+                  updatePrivateMessageChannel({
+                    channelId: channelId,
+                    notifyAfterTime: Date.now() + DAY_MS,
+                  }),
+                  {
+                    loading: 'Muting for 1 day...',
+                    success: 'Muted for 1 day',
+                    error: 'Failed to mute',
+                  }
+                )
+              },
+            },
+            {
+              icon: <GiSpeakerOff className="h-5 w-5" />,
+              name: 'Mute forever',
+              onClick: async () => {
+                await toast.promise(
+                  updatePrivateMessageChannel({
+                    channelId: channelId,
+                    notifyAfterTime: Date.now() + 100 * YEAR_MS,
+                  }),
+                  {
+                    loading: 'Muting forever...',
+                    success: 'Muted forever',
+                    error: 'Failed to mute',
+                  }
+                )
+              },
+            },
+            {
+              icon: <FaUserMinus className="h-5 w-5" />,
+              name: 'Leave chat',
+              onClick: async () => {
+                await leavePrivateMessageChannel({ channelId: channelId })
+                router.push('/messages')
+              },
+            }
           )}
-        </Row>
-      </Col>
+        />
+        {showUsers && (
+          <Modal open={showUsers} setOpen={setShowUsers}>
+            <Col className={clsx(MODAL_CLASS)}>
+              {otherUsers?.map((user) => (
+                <Row
+                  key={user.id}
+                  className={'w-full items-center justify-start gap-2'}
+                >
+                  <UserAvatarAndBadge
+                    name={user.name}
+                    username={user.username}
+                    avatarUrl={user.avatarUrl}
+                  />
+                  {otherUsersFromChannel?.[channelId].map(
+                    (membership) =>
+                      membership.user_id === user.id &&
+                      membership.status === 'left' && (
+                        <span
+                          key={membership.user_id + 'status'}
+                          className={'text-ink-500 text-sm'}
+                        >
+                          (Left)
+                        </span>
+                      )
+                  )}
+                </Row>
+              ))}
+            </Col>
+          </Modal>
+        )}
+      </Row>
       <Col
         className={clsx(
-          'gap-2 overflow-y-auto py-2 ',
-          'max-h-[calc(100vh - env(safe-area-inset-bottom))] min-h-[calc(100vh - env(safe-area-inset-bottom))]',
+          'gap-2 overflow-y-auto py-2',
+          'min-h-[100vh]',
           'lg:max-h-[calc(100vh-184px)] lg:min-h-[calc(100vh-184px)]'
         )}
       >
