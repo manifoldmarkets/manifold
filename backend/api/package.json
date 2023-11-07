@@ -41,7 +41,7 @@
     "lodash": "4.17.21",
     "mailgun-js": "0.22.0",
     "marked": "4.1.1",
-    "openai": "3.2.1",
+    "openai": "4.16.1",
     "pg-promise": "11.4.1",
     "string-similarity": "4.0.4",
     "stripe": "8.194.0",
