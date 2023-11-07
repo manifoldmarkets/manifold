@@ -48,7 +48,7 @@ import { Linkify } from 'web/components/widgets/linkify'
 import { QRCode } from 'web/components/widgets/qr-code'
 import { linkClass } from 'web/components/widgets/site-link'
 import { Title } from 'web/components/widgets/title'
-import { StackedUserNames } from 'web/components/widgets/user-link'
+import { StackedUserNames, UserLink } from 'web/components/widgets/user-link'
 import { useAdmin } from 'web/hooks/use-admin'
 import { useFollowers, useFollows } from 'web/hooks/use-follows'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
@@ -232,12 +232,7 @@ function UserProfile(props: {
                 headerStuck && 'opacity-100'
               )}
             >
-              <StackedUserNames
-                usernameClassName={'sm:text-base'}
-                className={'font-bold sm:mr-0 sm:text-xl'}
-                user={user}
-                followsYou={followsYou}
-              />
+              <UserLink name={user.name} username={user.username} noLink={true}/>
             </div>
 
             <div>
