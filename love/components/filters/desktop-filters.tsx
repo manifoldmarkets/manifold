@@ -114,33 +114,29 @@ export function DesktopFilters(props: {
         menuWidth="w-80"
       />
       {/* LOCATION */}
-      {youLover && (
-        <CustomizeableDropdown
-          buttonContent={(open: boolean) => (
-            <DropdownButton
-              content={
-                <LocationFilterText
-                  youLover={youLover}
-                  nearbyOriginLocation={
-                    locationFilterProps.nearbyOriginLocation
-                  }
-                  radius={locationFilterProps.radius}
-                  highlightedClass={open ? 'text-primary-500' : ''}
-                />
-              }
-              open={open}
-            />
-          )}
-          dropdownMenuContent={
-            <LocationFilter
-              youLover={youLover}
-              locationFilterProps={locationFilterProps}
-            />
-          }
-          popoverClassName="bg-canvas-50"
-          menuWidth="w-80"
-        />
-      )}
+      <CustomizeableDropdown
+        buttonContent={(open: boolean) => (
+        <DropdownButton
+            content={
+              <LocationFilterText
+                youLover={youLover}
+                nearbyOriginLocation={locationFilterProps.nearbyOriginLocation}
+                radius={locationFilterProps.radius}
+                highlightedClass={open ? 'text-primary-500' : ''}
+              />
+            }
+            open={open}
+          />
+        )}
+        dropdownMenuContent={
+          <LocationFilter
+            youLover={youLover}
+            locationFilterProps={locationFilterProps}
+          />
+        }
+        popoverClassName="bg-canvas-50"
+        menuWidth="w-80"
+      />
       <CustomizeableDropdown
         buttonContent={(open) => (
           <DropdownButton

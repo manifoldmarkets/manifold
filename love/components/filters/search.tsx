@@ -147,7 +147,6 @@ export const Search = (props: {
 
   useEffect(() => {
     if (allLovers) {
-      console.log('CHANGED', filters.geodbCityIds)
       applyFilters()
     }
   }, [JSON.stringify(filters), allLovers?.map((l) => l.id).join(',')])

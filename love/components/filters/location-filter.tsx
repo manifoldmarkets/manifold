@@ -172,7 +172,7 @@ function DistanceSlider(props: {
   const { radius, setRadius } = props
 
   // New snap values
-  const snapValues = [10, 50, 100, 300]
+  const snapValues = [10, 50, 100, 200, 300]
 
   // Function to snap to the closest value
   const snapToValue = (value: number) => {
