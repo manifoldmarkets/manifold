@@ -193,6 +193,7 @@ export const PrivateChat = (props: {
   useEffect(() => {
     scrollToBottomRef?.scrollIntoView({
       block: 'end',
+      inline: 'end',
     })
   }, [scrollToBottomRef])
 
@@ -200,8 +201,9 @@ export const PrivateChat = (props: {
     if (last(messages)?.userId === user.id)
       scrollToBottomRef?.scrollIntoView({
         block: 'end',
+        inline: 'end',
       })
-  }, [messages?.length])
+  }, [messages.length])
 
   async function submitMessage() {
     if (!user) {
@@ -349,8 +351,9 @@ export const PrivateChat = (props: {
       </Row>
       <Col
         className={clsx(
+          'relative',
           'gap-2 overflow-y-auto py-2',
-          'min-h-[100vh]',
+          'min-h-[calc(100vh-216px)]',
           'lg:max-h-[calc(100vh-184px)] lg:min-h-[calc(100vh-184px)]'
         )}
       >
@@ -395,7 +398,9 @@ export const PrivateChat = (props: {
             No messages yet. Say something why don't ya?
           </div>
         )}
-        {groupedMessages.length > 0 && <div ref={setScrollToBottomRef} />}
+        {groupedMessages.length > 0 && (
+          <div className={'absolute -bottom-24'} ref={setScrollToBottomRef} />
+        )}
       </Col>
       <div className="bg-canvas-50 sticky bottom-[58px] flex w-full justify-start gap-2 lg:bottom-0">
         <CommentInputTextArea
