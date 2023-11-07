@@ -29,7 +29,6 @@ export const addcontractstofeed = onSchedule(
       while (Date.now() < startTime + (MINUTE_INTERVAL - 10) * 60 * 1000) {
         await addInterestingContractsToFeed(db, pg)
       }
-
     })
   }
 )
