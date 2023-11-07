@@ -221,7 +221,7 @@ function UserProfile(props: {
         {isMobile && (
           <Row
             className={
-              'bg-canvas-50 sticky top-0 z-10 w-full items-center justify-between gap-1 pl-4 pr-5 py-2 pr-1 sm:gap-2'
+              'bg-canvas-50 sticky top-0 z-10 w-full items-center justify-between gap-1 py-2 pl-4 pr-1 pr-5 sm:gap-2'
             }
           >
             <BackButton />
@@ -232,7 +232,11 @@ function UserProfile(props: {
                 headerStuck && 'opacity-100'
               )}
             >
-              <UserLink name={user.name} username={user.username} noLink={true}/>
+              <UserLink
+                name={user.name}
+                username={user.username}
+                noLink={true}
+              />
             </div>
 
             <div>
@@ -241,7 +245,7 @@ function UserProfile(props: {
           </Row>
         )}
 
-        <Row className={clsx('flex-wrap justify-between gap-2 mx-4 py-1')}>
+        <Row className={clsx('mx-4 flex-wrap justify-between gap-2 py-1')}>
           <Row className={clsx('gap-2')} ref={titleRef}>
             <Col className={'relative max-h-14'}>
               <ImageWithBlurredShadow
