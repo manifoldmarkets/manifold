@@ -1,6 +1,6 @@
 import { GiphyFetch } from '@giphy/js-fetch-api'
 import { z } from 'zod'
-import { jsonEndpoint, validate } from './helpers'
+import { MaybeAuthedEndpoint, validate } from './helpers'
 
 const bodySchema = z
   .object({
@@ -9,7 +9,7 @@ const bodySchema = z
   })
   .strict()
 
-export const searchlocation = jsonEndpoint(async (req) => {
+export const searchlocation = MaybeAuthedEndpoint(async (req) => {
   const { term, limit } = validate(bodySchema, req.body)
   const apiKey = process.env.GEODB_API_KEY
 

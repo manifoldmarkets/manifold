@@ -551,14 +551,14 @@ export function updatePrivateMessageChannel(params: {
 }
 
 export function searchLocation(params: { term: string; limit?: number }) {
-  return call(getApiUrl('searchlocation'), 'POST', params)
+  return maybeAuthedCall(getApiUrl('searchlocation'), 'POST', params)
 }
 
 export function searchNearCity(params: { cityId: string; radius: number }) {
   if (params.radius < 1 || params.radius > 500) {
     throw new Error('Your radius is out of bounds!')
   }
-  return call(getApiUrl('searchnearcity'), 'POST', params)
+  return maybeAuthedCall(getApiUrl('searchnearcity'), 'POST', params)
 }
 
 // vercel api

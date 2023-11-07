@@ -8,7 +8,7 @@ import { Row } from 'web/components/layout/row'
 import { AgeFilter } from './age-filter'
 import { GenderFilter } from './gender-filter'
 import { HasKidsFilter } from './has-kids-filter'
-import { LocationFilter } from './location-filter'
+import { LocationFilter, LocationFilterProps } from './location-filter'
 import { PrefGenderFilter } from './pref-gender-filter'
 import { RelationshipFilter } from './relationship-filter'
 import { FilterFields } from './search'
@@ -19,26 +19,20 @@ import { MyMatchesToggle } from './my-matches-toggle'
 export function MobileFilters(props: {
   filters: Partial<FilterFields>
   youLover: Lover | undefined | null
-  radius: number
-  setRadius: (radius: number) => void
   updateFilter: (newState: Partial<FilterFields>) => void
   clearFilters: () => void
-  nearbyOriginLocation: string | null | undefined
-  nearbyCities: string[] | null | undefined
   setYourFilters: (checked: boolean) => void
   isYourFilters: boolean
+  locationFilterProps: LocationFilterProps
 }) {
   const {
     filters,
     youLover,
-    radius,
-    setRadius,
     updateFilter,
     clearFilters,
-    nearbyOriginLocation,
-    nearbyCities,
     setYourFilters,
     isYourFilters,
+    locationFilterProps,
   } = props
 
   const [openFilter, setOpenFilter] = useState<string | undefined>(undefined)
@@ -50,7 +44,7 @@ export function MobileFilters(props: {
           setYourFilters={setYourFilters}
           youLover={youLover}
           isYourFilters={isYourFilters}
-          hidden={!youLover || !nearbyCities}
+          hidden={!youLover}
         />
       </Col>
       {/* GENDER */}
@@ -79,22 +73,16 @@ export function MobileFilters(props: {
         <AgeFilter filters={filters} updateFilter={updateFilter} />
       </MobileFilterSection>
       {/* LOCATION */}
-      {youLover && nearbyCities && nearbyOriginLocation && (
-        <MobileFilterSection
-          title="Location"
-          openFilter={openFilter}
-          setOpenFilter={setOpenFilter}
-        >
-          <LocationFilter
-            filters={filters}
-            updateFilter={updateFilter}
-            nearbyOriginLocation={nearbyOriginLocation}
-            nearbyCities={nearbyCities}
-            radius={radius}
-            setRadius={setRadius}
-          />
-        </MobileFilterSection>
-      )}
+      <MobileFilterSection
+        title="Location"
+        openFilter={openFilter}
+        setOpenFilter={setOpenFilter}
+      >
+        <LocationFilter
+          youLover={youLover}
+          locationFilterProps={locationFilterProps}
+        />
+      </MobileFilterSection>
       {/* RELATIONSHIP STYLE */}
       <MobileFilterSection
         title="Relationship style"

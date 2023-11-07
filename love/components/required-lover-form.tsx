@@ -18,7 +18,7 @@ import dayjs from 'dayjs'
 import { Checkbox } from 'web/components/widgets/checkbox'
 import { range, uniq } from 'lodash'
 import { Select } from 'web/components/widgets/select'
-import { CitySearchBox, City } from './search-location'
+import { CitySearchBox, City, loverToCity, CityRow } from './search-location'
 import { uploadImage } from 'web/lib/firebase/storage'
 import { buildArray } from 'common/util/array'
 import { CheckCircleIcon } from '@heroicons/react/outline'
@@ -201,7 +201,20 @@ export const RequiredLoveUserForm = (props: {
                 onCitySelected={(city: City | undefined) => {
                   setLoverCity(city)
                 }}
-                lover={lover}
+                selected={!!lover.city}
+                selectedNode={
+                  <Row className="border-primary-500 w-full justify-between rounded border px-4 py-2">
+                    <CityRow city={loverToCity(lover)} />
+                    <button
+                      className="text-ink-700 hover:text-primary-700 text-sm underline"
+                      onClick={() => {
+                        setLoverCity(undefined)
+                      }}
+                    >
+                      Change
+                    </button>
+                  </Row>
+                }
               />
             </Col>
 

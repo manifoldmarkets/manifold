@@ -34,6 +34,9 @@ export function useNearbyCities(
           }
         }
       })
+    } else {
+      setNearbyCities(null)
+      lastKnownCities.current = null
     }
   }, [referenceCityId, radius])
 
