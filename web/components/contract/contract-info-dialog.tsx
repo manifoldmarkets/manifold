@@ -36,7 +36,7 @@ import {
   UNSUBSIDIZED_GROUP_ID,
 } from 'common/supabase/groups'
 import { ContractHistoryButton } from './contract-edit-history-button'
-import { ShareEmbedButton } from '../buttons/share-embed-button'
+import { ShareEmbedButton, ShareIRLButton } from '../buttons/share-embed-button'
 import { ShareQRButton } from '../buttons/share-qr-button'
 import dayjs from 'dayjs'
 
@@ -443,6 +443,7 @@ export function ContractInfoDialog(props: {
 
             <ContractHistoryButton contract={contract} />
             <ShareQRButton contract={contract} />
+            <ShareIRLButton contract={contract} />
             <ShareEmbedButton contract={contract} />
           </Row>
           <Row className="flex-wrap gap-2">

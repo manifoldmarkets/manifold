@@ -37,3 +37,27 @@ export function ShareEmbedButton(props: {
     </Button>
   )
 }
+
+export function ShareIRLButton(props: {
+  contract: Contract
+  className?: string
+}) {
+  const { contract, className } = props
+
+  return (
+    <Button
+      color="gray-outline"
+      size="sm"
+      className={clsx('gap-1', className)}
+      onClick={() => {
+        copyToClipboard(`https://${DOMAIN}/embed${contractPath(contract)}?qr`)
+        toast.success('Url to IRL-mode market copied!', {
+          icon: <CodeIcon className="h-4 w-4" />,
+        })
+        track('copy irl url')
+      }}
+    >
+      IRL
+    </Button>
+  )
+}

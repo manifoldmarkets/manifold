@@ -278,8 +278,9 @@ function ContractSmolView(props: {
       <div className="grow-y relative flex h-full w-full">
         {showQRCode && (
           <div className="absolute inset-0 z-10 m-auto flex items-center justify-center">
-            <div className="border-ink-400 bg-canvas-0 rounded-xl border p-4 drop-shadow">
+            <div className="border-ink-400 bg-canvas-0 rounded-xl border p-4 pb-2 drop-shadow">
               <QRCode url={shareUrl} />
+              <div className="mt-1 text-center text-lg">Scan to bet!</div>
             </div>
           </div>
         )}
