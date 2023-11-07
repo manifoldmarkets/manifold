@@ -20,10 +20,12 @@ import {
   wantsKidsDatabaseToWantsKidsFilter,
   wantsKidsToHasKidsFilter,
 } from './wants-kids-filter'
+import { useEffectCheckEquality } from 'web/hooks/use-effect-check-equality'
+import { OriginLocation } from './location-filter'
 
 export type FilterFields = {
   orderBy: 'last_online_time' | 'created_time'
-  geodbCityIds: string[]
+  geodbCityIds: string[] | null
   genders: string[]
 } & rowFor<'lovers'> &
   User
@@ -61,15 +63,25 @@ export const Search = (props: {
 
   const clearFilters = () => {
     setFilters(initialFilters)
+    setNearbyOriginLocation(undefined)
   }
 
   const setYourFilters = (checked: boolean) => {
     if (checked) {
       updateFilter(yourFilters)
+      setRadius(100)
+      if (youLover?.geodb_city_id && youLover.city) {
+        setNearbyOriginLocation({
+          id: youLover?.geodb_city_id,
+          name: youLover?.city,
+        })
+      }
     } else {
       clearFilters()
     }
   }
+
+  const [openFiltersModal, setOpenFiltersModal] = useState(false)
 
   const [radius, setRadius] = usePersistentInMemoryState<number>(
     100,
@@ -80,30 +92,34 @@ export const Search = (props: {
     radius,
     'search-radius-debounced'
   )
+
   const [debouncedSetRadius] = useState(() => debounce(setDebouncedRadius, 200))
 
-  const [nearbyOriginLocation, setNearbyOriginLocation] =
-    usePersistentInMemoryState<string | null | undefined>(
-      undefined,
-      'nearby-origin-location'
-    )
+  const [nearbyOriginLocation, setNearbyOriginLocation] = useState<
+    OriginLocation | undefined | null
+  >(undefined)
 
-  useEffect(() => {
-    if (youLover) {
-      setNearbyOriginLocation(youLover.geodb_city_id)
-    }
-  }, [youLover])
+  const nearbyCities = useNearbyCities(
+    nearbyOriginLocation?.id,
+    debouncedRadius
+  )
 
-  const nearbyCities = useNearbyCities(nearbyOriginLocation, debouncedRadius)
+  useEffectCheckEquality(() => {
+    updateFilter({ geodbCityIds: nearbyCities })
+  }, [nearbyCities])
 
-  const [openFiltersModal, setOpenFiltersModal] = useState(false)
+  const locationFilterProps = {
+    nearbyOriginLocation,
+    setNearbyOriginLocation,
+    radius,
+    setRadius,
+  }
 
   const yourFilters: Partial<FilterFields> = {
     genders: youLover?.pref_gender,
     pref_gender: youLover ? [youLover.gender] : undefined,
     pref_age_max: youLover?.pref_age_max,
     pref_age_min: youLover?.pref_age_min,
-    geodbCityIds: nearbyCities ?? undefined,
     pref_relation_styles: youLover?.pref_relation_styles,
     wants_kids_strength: wantsKidsDatabaseToWantsKidsFilter(
       (youLover?.wants_kids_strength ?? 2) as wantsKidsDatabase
@@ -115,7 +131,7 @@ export const Search = (props: {
 
   const isYourFilters =
     !!youLover &&
-    !!filters.geodbCityIds &&
+    nearbyOriginLocation === youLover.geodb_city_id &&
     filters.genders == yourFilters.genders &&
     !!filters.pref_gender &&
     filters.pref_gender.length == 1 &&
@@ -131,13 +147,10 @@ export const Search = (props: {
 
   useEffect(() => {
     if (allLovers) {
+      console.log('CHANGED', filters.geodbCityIds)
       applyFilters()
     }
-  }, [
-    JSON.stringify(filters),
-    allLovers?.map((l) => l.id).join(','),
-    debouncedRadius,
-  ])
+  }, [JSON.stringify(filters), allLovers?.map((l) => l.id).join(',')])
 
   const applyFilters = () => {
     const sortedLovers = orderBy(
@@ -269,14 +282,11 @@ export const Search = (props: {
         <DesktopFilters
           filters={filters}
           youLover={youLover}
-          radius={radius}
-          setRadius={setRadius}
           updateFilter={updateFilter}
           clearFilters={clearFilters}
-          nearbyOriginLocation={nearbyOriginLocation}
-          nearbyCities={nearbyCities}
           setYourFilters={setYourFilters}
           isYourFilters={isYourFilters}
+          locationFilterProps={locationFilterProps}
         />
       </Row>
       <RightModal
@@ -287,14 +297,11 @@ export const Search = (props: {
         <MobileFilters
           filters={filters}
           youLover={youLover}
-          radius={radius}
-          setRadius={setRadius}
           updateFilter={updateFilter}
           clearFilters={clearFilters}
-          nearbyOriginLocation={nearbyOriginLocation}
-          nearbyCities={nearbyCities}
           setYourFilters={setYourFilters}
           isYourFilters={isYourFilters}
+          locationFilterProps={locationFilterProps}
         />
       </RightModal>
     </Col>

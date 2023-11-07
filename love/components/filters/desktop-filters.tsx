@@ -10,7 +10,11 @@ import { CustomizeableDropdown } from 'web/components/widgets/customizeable-drop
 import { Gender } from '../gender-icon'
 import { AgeFilter, AgeFilterText } from './age-filter'
 import { GenderFilter, GenderFilterText } from './gender-filter'
-import { LocationFilter, LocationFilterText } from './location-filter'
+import {
+  LocationFilter,
+  LocationFilterProps,
+  LocationFilterText,
+} from './location-filter'
 import { PrefGenderFilter, PrefGenderFilterText } from './pref-gender-filter'
 import {
   RelationshipFilter,
@@ -24,26 +28,20 @@ import { MyMatchesToggle } from './my-matches-toggle'
 export function DesktopFilters(props: {
   filters: Partial<FilterFields>
   youLover: Lover | undefined | null
-  radius: number
-  setRadius: (radius: number) => void
   updateFilter: (newState: Partial<FilterFields>) => void
   clearFilters: () => void
-  nearbyOriginLocation: string | null | undefined
-  nearbyCities: string[] | null | undefined
   setYourFilters: (checked: boolean) => void
   isYourFilters: boolean
+  locationFilterProps: LocationFilterProps
 }) {
   const {
     filters,
     youLover,
-    radius,
-    setRadius,
     updateFilter,
     clearFilters,
-    nearbyOriginLocation,
-    nearbyCities,
     setYourFilters,
     isYourFilters,
+    locationFilterProps,
   } = props
 
   return (
@@ -52,7 +50,7 @@ export function DesktopFilters(props: {
         setYourFilters={setYourFilters}
         youLover={youLover}
         isYourFilters={isYourFilters}
-        hidden={!youLover || !nearbyCities}
+        hidden={!youLover}
       />
       <CustomizeableDropdown
         buttonContent={(open: boolean) => (
@@ -116,14 +114,17 @@ export function DesktopFilters(props: {
         menuWidth="w-80"
       />
       {/* LOCATION */}
-      {youLover && nearbyCities && nearbyOriginLocation && (
+      {youLover && (
         <CustomizeableDropdown
           buttonContent={(open: boolean) => (
             <DropdownButton
               content={
                 <LocationFilterText
-                  locationFilterOn={!!filters.geodbCityIds}
-                  radius={radius}
+                  youLover={youLover}
+                  nearbyOriginLocation={
+                    locationFilterProps.nearbyOriginLocation
+                  }
+                  radius={locationFilterProps.radius}
                   highlightedClass={open ? 'text-primary-500' : ''}
                 />
               }
@@ -132,12 +133,8 @@ export function DesktopFilters(props: {
           )}
           dropdownMenuContent={
             <LocationFilter
-              filters={filters}
-              updateFilter={updateFilter}
-              nearbyOriginLocation={nearbyOriginLocation}
-              nearbyCities={nearbyCities}
-              radius={radius}
-              setRadius={setRadius}
+              youLover={youLover}
+              locationFilterProps={locationFilterProps}
             />
           }
           popoverClassName="bg-canvas-50"
