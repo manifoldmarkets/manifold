@@ -75,12 +75,17 @@ export function LoverAnswers(props: {
             )
           })
         ) : isCurrentUser ? (
-          <Col className={'mt-4 w-full items-center'}>
-            <Row>
-              <Button onClick={() => router.push('love-questions')}>
-                Answer questions
-              </Button>
-            </Row>
+          <Col className={'text-ink-600 w-full gap-2 text-sm'}>
+            No answers yet. Answer some questions to help your matches get to
+            know you!
+            {/* <Row> */}
+            <Button
+              color="gradient"
+              onClick={() => router.push('love-questions')}
+            >
+              Answer questions
+            </Button>
+            {/* </Row> */}
           </Col>
         ) : (
           <span className={'text-ink-500 text-sm'}>Nothing yet :(</span>

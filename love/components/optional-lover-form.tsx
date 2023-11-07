@@ -44,7 +44,8 @@ export const OptionalLoveUserForm = (props: {
     if (res) {
       console.log('success')
       track('submit love optional profile')
-      router.push('/love-questions')
+      if (user) router.push(`/${user.username}`)
+      else router.push('/')
     }
   }
   const [uploadingImages, setUploadingImages] = useState(false)
