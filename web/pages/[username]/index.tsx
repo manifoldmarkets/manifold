@@ -48,7 +48,7 @@ import { Linkify } from 'web/components/widgets/linkify'
 import { QRCode } from 'web/components/widgets/qr-code'
 import { linkClass } from 'web/components/widgets/site-link'
 import { Title } from 'web/components/widgets/title'
-import { StackedUserNames } from 'web/components/widgets/user-link'
+import { StackedUserNames, UserLink } from 'web/components/widgets/user-link'
 import { useAdmin } from 'web/hooks/use-admin'
 import { useFollowers, useFollows } from 'web/hooks/use-follows'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
@@ -217,11 +217,11 @@ function UserProfile(props: {
       )}
       {showConfetti && <FullscreenConfetti />}
 
-      <Col className="mx-4 mt-1">
+      <Col className="mt-1">
         {isMobile && (
           <Row
             className={
-              'bg-canvas-50 sticky top-0 z-10 w-full items-center justify-between gap-1 py-2 pr-1 sm:gap-2'
+              'bg-canvas-50 sticky top-0 z-10 w-full items-center justify-between gap-1 py-2 pl-4 pr-1 pr-5 sm:gap-2'
             }
           >
             <BackButton />
@@ -232,11 +232,10 @@ function UserProfile(props: {
                 headerStuck && 'opacity-100'
               )}
             >
-              <StackedUserNames
-                usernameClassName={'sm:text-base'}
-                className={'font-bold sm:mr-0 sm:text-xl'}
-                user={user}
-                followsYou={followsYou}
+              <UserLink
+                name={user.name}
+                username={user.username}
+                noLink={true}
               />
             </div>
 
@@ -246,7 +245,7 @@ function UserProfile(props: {
           </Row>
         )}
 
-        <Row className={clsx('flex-wrap justify-between gap-2 py-1')}>
+        <Row className={clsx('mx-4 flex-wrap justify-between gap-2 py-1')}>
           <Row className={clsx('gap-2')} ref={titleRef}>
             <Col className={'relative max-h-14'}>
               <ImageWithBlurredShadow
@@ -295,7 +294,7 @@ function UserProfile(props: {
             </Row>
           )}
         </Row>
-        <Col className={'mt-1'}>
+        <Col className={'mx-4 mt-1'}>
           <ProfilePublicStats user={user} currentUser={currentUser} />
           {user.bio && (
             <div className="sm:text-md mt-1 text-sm">
@@ -310,7 +309,7 @@ function UserProfile(props: {
           />
         </Col>
 
-        <Col className="mt-2">
+        <Col className="mx-4 mt-2">
           <QueryUncontrolledTabs
             trackingName={'profile tabs'}
             labelsParentClassName={'gap-0 sm:gap-4'}

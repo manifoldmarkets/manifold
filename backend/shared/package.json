@@ -21,7 +21,8 @@
     "lodash": "4.17.21",
     "mailgun-js": "0.22.0",
     "pg-promise": "11.4.1",
-    "openai": "4.16.1 "
+    "openai": "4.16.1",
+    "string-similarity": "4.0.4"
   },
   "devDependencies": {
     "@types/mailgun-js": "0.22.12"
