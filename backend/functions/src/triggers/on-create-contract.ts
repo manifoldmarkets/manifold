@@ -19,6 +19,7 @@ import {
 import { addGroupToContract } from 'shared/update-group-contracts-internal'
 import { UNRANKED_GROUP_ID } from 'common/supabase/groups'
 import { HOUSE_LIQUIDITY_PROVIDER_ID } from 'common/antes'
+import { generateImage } from 'shared/helpers/openai-utils'
 
 export const onCreateContract = functions
   .runWith({
@@ -27,10 +28,20 @@ export const onCreateContract = functions
   })
   .firestore.document('contracts/{contractId}')
   .onCreate(async (snapshot, context) => {
-    const contract = snapshot.data() as Contract
     const { eventId } = context
-    const contractCreator = await getUser(contract.creatorId)
+
+    const contract = snapshot.data() as Contract
+    const { creatorId, question, loverUserId1 } = contract
+
+    const contractCreator = await getUser(creatorId)
     if (!contractCreator) throw new Error('Could not find contract creator')
+
+    if (!loverUserId1) {
+      const coverImageUrl = await generateImage(question)
+      if (coverImageUrl) {
+        await snapshot.ref.update({ coverImageUrl })
+      }
+    }
 
     await completeCalculatedQuestFromTrigger(
       contractCreator,

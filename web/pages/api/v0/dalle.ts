@@ -1,10 +1,10 @@
+import OpenAI from 'openai'
 import { NextApiRequest, NextApiResponse } from 'next'
 import {
   CORS_ORIGIN_MANIFOLD,
   CORS_ORIGIN_LOCALHOST,
 } from 'common/envs/constants'
 import { applyCorsHeaders } from 'web/lib/api/cors'
-import { Configuration, OpenAIApi } from 'openai'
 import { upload } from 'web/pages/api/v0/dream'
 
 export const config = { api: { bodyParser: true } }
@@ -27,19 +27,18 @@ export default async function route(req: NextApiRequest, res: NextApiResponse) {
   }
 
   try {
-    const configuration = new Configuration({
-      apiKey: req.body.apiKey,
-    })
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+    const b64 = await openai.images
+      .generate({
+        model: 'dall-e-3',
+        prompt: req.body.prompt,
+        n: 1,
+        size: '1792x1024',
+        quality: 'standard',
+      })
+      .then((res) => res.data[0].b64_json)
+      .catch((err) => (console.log(err), undefined))
 
-    const openai = new OpenAIApi(configuration)
-    const response = await openai.createImage({
-      prompt: req.body.prompt,
-      n: 1,
-      size: '512x512',
-      response_format: 'b64_json',
-    })
-
-    const b64 = response.data.data[0].b64_json
     if (!b64) {
       res.status(400).json({ message: 'Image generation failed' })
       return

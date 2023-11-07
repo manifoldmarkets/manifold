@@ -59,7 +59,7 @@ export async function createMarketHelper(body: any, auth: AuthedUser) {
     descriptionHtml,
     descriptionMarkdown,
     descriptionJson,
-    closeTime,
+    closeTime: closeTimeRaw,
     outcomeType,
     groupIds,
     visibility,
@@ -105,8 +105,8 @@ export async function createMarketHelper(body: any, auth: AuthedUser) {
 
   if (ante < 1) throw new APIError(400, 'Ante must be at least 1')
 
-  const closeTimestamp = await getCloseTimestamp(
-    closeTime,
+  const closeTime = await getCloseTimestamp(
+    closeTimeRaw,
     question,
     outcomeType,
     utcOffset
@@ -133,32 +133,32 @@ export async function createMarketHelper(body: any, auth: AuthedUser) {
 
     const slug = await getSlug(trans, question)
 
-    const contract = getNewContract(
-      contractRef.id,
+    const contract = getNewContract({
+      id: contractRef.id,
       slug,
-      user,
+      creator: user,
       question,
       outcomeType,
-      getDescriptionJson(
+      description: getDescriptionJson(
         description,
         descriptionHtml,
         descriptionMarkdown,
         descriptionJson
       ),
-      initialProb ?? 0,
+      initialProb: initialProb ?? 0,
       ante,
-      closeTimestamp,
+      closeTime,
       visibility,
-      isTwitchContract ? true : undefined,
-      min ?? 0,
-      max ?? 0,
-      isLogScale ?? false,
-      answers ?? [],
+      isTwitchContract,
+      min: min ?? 0,
+      max: max ?? 0,
+      isLogScale: isLogScale ?? false,
+      answers: answers ?? [],
       addAnswersMode,
       shouldAnswersSumToOne,
       loverUserId1,
-      loverUserId2
-    )
+      loverUserId2,
+    })
 
     const houseId = isProd()
       ? HOUSE_LIQUIDITY_PROVIDER_ID

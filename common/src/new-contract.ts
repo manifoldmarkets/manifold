@@ -23,33 +23,56 @@ import { getMultiCpmmLiquidity } from './calculate-cpmm'
 
 export const NEW_MARKET_IMPORTANCE_SCORE = 0.25
 
-export function getNewContract(
-  id: string,
-  slug: string,
-  creator: User,
-  question: string,
-  outcomeType: typeof CREATEABLE_OUTCOME_TYPES[number],
-  description: JSONContent,
-  initialProb: number,
-  ante: number,
-  closeTime: number | undefined,
-  visibility: Visibility,
+export function getNewContract(props: {
+  id: string
+  slug: string
+  creator: User
+  question: string
+  outcomeType: typeof CREATEABLE_OUTCOME_TYPES[number]
+  description: JSONContent
+  initialProb: number
+  ante: number
+  closeTime: number | undefined
+  visibility: Visibility
+  coverImageUrl?: string
 
   // twitch
-  isTwitchContract: boolean | undefined,
+  isTwitchContract: boolean | undefined
 
   // used for numeric markets
-  min: number,
-  max: number,
-  isLogScale: boolean,
-  answers: string[],
-  addAnswersMode: add_answers_mode | undefined,
-  shouldAnswersSumToOne: boolean | undefined,
+  min: number
+  max: number
+  isLogScale: boolean
+  answers: string[]
+  addAnswersMode: add_answers_mode | undefined
+  shouldAnswersSumToOne: boolean | undefined
 
   // Manifold.love
-  loverUserId1: string | undefined,
+  loverUserId1: string | undefined
   loverUserId2: string | undefined
-) {
+}) {
+  const {
+    id,
+    slug,
+    creator,
+    question,
+    outcomeType,
+    description,
+    initialProb,
+    ante,
+    closeTime,
+    visibility,
+    isTwitchContract,
+    min,
+    max,
+    isLogScale,
+    answers,
+    addAnswersMode,
+    shouldAnswersSumToOne,
+    loverUserId1,
+    loverUserId2,
+    coverImageUrl,
+  } = props
   const createdTime = Date.now()
 
   const propsByOutcomeType = {
@@ -80,6 +103,7 @@ export function getNewContract(
     creatorUsername: creator.username,
     creatorAvatarUrl: creator.avatarUrl,
     creatorCreatedTime: creator.createdTime,
+    coverImageUrl,
 
     question: question.trim(),
     description,

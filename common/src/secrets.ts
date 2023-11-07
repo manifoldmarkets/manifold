@@ -8,6 +8,7 @@ import { zip } from 'lodash'
 // dev - https://console.cloud.google.com/security/secret-manager?project=dev-mantic-markets
 export const secrets = (
   [
+    'OPENAI_API_KEY',
     'API_SECRET',
     'DREAM_KEY',
     'MAILGUN_KEY',
