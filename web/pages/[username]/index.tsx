@@ -217,11 +217,11 @@ function UserProfile(props: {
       )}
       {showConfetti && <FullscreenConfetti />}
 
-      <Col className="mx-4 mt-1">
+      <Col className="mt-1">
         {isMobile && (
           <Row
             className={
-              'bg-canvas-50 sticky top-0 z-10 w-full items-center justify-between gap-1 py-2 pr-1 sm:gap-2'
+              'bg-canvas-50 sticky top-0 z-10 w-full items-center justify-between gap-1 pl-4 pr-5 py-2 pr-1 sm:gap-2'
             }
           >
             <BackButton />
@@ -246,7 +246,7 @@ function UserProfile(props: {
           </Row>
         )}
 
-        <Row className={clsx('flex-wrap justify-between gap-2 py-1')}>
+        <Row className={clsx('flex-wrap justify-between gap-2 mx-4 py-1')}>
           <Row className={clsx('gap-2')} ref={titleRef}>
             <Col className={'relative max-h-14'}>
               <ImageWithBlurredShadow
@@ -295,7 +295,7 @@ function UserProfile(props: {
             </Row>
           )}
         </Row>
-        <Col className={'mt-1'}>
+        <Col className={'mx-4 mt-1'}>
           <ProfilePublicStats user={user} currentUser={currentUser} />
           {user.bio && (
             <div className="sm:text-md mt-1 text-sm">
@@ -310,7 +310,7 @@ function UserProfile(props: {
           />
         </Col>
 
-        <Col className="mt-2">
+        <Col className="mx-4 mt-2">
           <QueryUncontrolledTabs
             trackingName={'profile tabs'}
             labelsParentClassName={'gap-0 sm:gap-4'}
