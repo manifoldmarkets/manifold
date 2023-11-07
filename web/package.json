@@ -71,7 +71,7 @@
     "react-tinder-card": "1.5.4",
     "react-twitter-embed": "4.0.4",
     "stability-client": "1.6.1",
-    "string-similarity": "^4.0.4",
+    "string-similarity": "4.0.4",
     "tippy.js": "6.3.7",
     "typewriter-effect": "2.19.0"
   },
@@ -83,7 +83,7 @@
     "@types/react": "18.0.25",
     "@types/react-dom": "18.0.9",
     "@types/react-lottie": "1.2.6",
-    "@types/string-similarity": "^4.0.0",
+    "@types/string-similarity": "4.0.0",
     "autoprefixer": "10.2.6",
     "concurrently": "8.2.1",
     "cross-env": "7.0.3",

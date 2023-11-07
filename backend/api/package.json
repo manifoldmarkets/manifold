@@ -43,6 +43,7 @@
     "marked": "4.1.1",
     "openai": "3.2.1",
     "pg-promise": "11.4.1",
+    "string-similarity": "4.0.4",
     "stripe": "8.194.0",
     "twitter-api-v2": "1.15.0",
     "type-fest": "3.12.0",
