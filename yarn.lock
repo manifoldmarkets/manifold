@@ -8984,7 +8984,7 @@ openai@3.2.1:
     axios "^0.26.0"
     form-data "^4.0.0"
 
-openai@4.16.1, "openai@4.16.1 ":
+openai@4.16.1:
   version "4.16.1"
   resolved "https://registry.yarnpkg.com/openai/-/openai-4.16.1.tgz#6377682ad2af805affd1b401958fb6eb92a87d61"
   integrity sha512-Gr+uqUN1ICSk6VhrX64E+zL7skjI1TgPr/XUN+ZQuNLLOvx15+XZulx/lSW4wFEAQzgjBDlMBbBeikguGIjiMg==
