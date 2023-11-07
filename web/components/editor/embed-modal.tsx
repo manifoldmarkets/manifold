@@ -84,10 +84,7 @@ const embedPatterns: EmbedPattern[] = [
 ]
 const allowed_domains: string[] = [
   "streamlit.app",
-  "kalshi.com",
-  "polymarket.com",
-  "predictit.org",
-  "gjopen.com",
+  "wikipedia.org",
 ];
 
 function isAllowedDomain(url: string) {
