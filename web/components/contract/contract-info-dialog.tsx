@@ -2,6 +2,7 @@ import clsx from 'clsx'
 import { ELASTICITY_BET_AMOUNT } from 'common/calculate-metrics'
 import { Contract, contractPool } from 'common/contract'
 import {
+  ENV,
   ENV_CONFIG,
   firestoreConsolePath,
   isAdminId,
@@ -89,13 +90,28 @@ export const Stats = (props: {
           label: 'Fixed',
           desc: `Each YES share is worth ${ENV_CONFIG.moneyMoniker}1 if YES wins`,
         }
-      : mechanism === 'cpmm-2' || mechanism === 'cpmm-multi-1'
+      : mechanism === 'cpmm-2'
       ? {
           label: 'Fixed',
           desc: `Each share in an outcome is worth ${ENV_CONFIG.moneyMoniker}1 if it is chosen`,
         }
+      : mechanism === 'cpmm-multi-1'
+      ? contract.shouldAnswersSumToOne
+        ? {
+            label: 'Dependent',
+            desc: `Each share in an outcome is worth ${ENV_CONFIG.moneyMoniker}1 if it is chosen. Only one outcome can be chosen`,
+          }
+        : {
+            label: 'Independent',
+            desc: `Each answer is a seperate binary contract with shares worth ${ENV_CONFIG.moneyMoniker}1 if chosen. Any number of answers can be chosen`,
+          }
       : mechanism == 'dpm-2'
-      ? { label: 'Parimutuel', desc: 'Each share is a fraction of the pool' }
+      ? {
+          label: 'Parimutuel',
+          desc: 'Each share is a fraction of the pool. Only one outcome can be chosen',
+        }
+      : mechanism == 'none'
+      ? undefined
       : { label: 'Mistake', desc: "Likely one of Austin's bad ideas" }
 
   const isBettingContract = contract.mechanism !== 'none'
