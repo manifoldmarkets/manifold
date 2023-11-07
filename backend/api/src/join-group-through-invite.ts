@@ -2,7 +2,7 @@ import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { z } from 'zod'
 import { APIError, authEndpoint, validate } from './helpers'
 import { GroupInvite } from 'common/src/group-invite'
-import { addUserToGroup } from './add-group-member'
+import { addUserToGroup } from 'shared/supabase/groups'
 
 const schema = z
   .object({

@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
-import { addUserToGroup } from './add-group-member'
 import { authEndpoint, validate } from './helpers'
+import { addUserToGroup } from 'shared/supabase/groups'
 
 const bodySchema = z
   .object({

@@ -6,9 +6,9 @@ import {
 } from 'shared/supabase/private-messages'
 import { User } from 'common/user'
 import { track } from 'shared/analytics'
-import { addUserToGroup } from 'api/lib/add-group-member'
 import { manifoldLoveRelationshipsGroupId } from 'common/love/constants'
 import { log } from 'shared/utils'
+import { addUserToGroup } from 'shared/supabase/groups'
 
 export const onboardLover = async (user: User, ip: string) => {
   const pg = createSupabaseDirectClient()
