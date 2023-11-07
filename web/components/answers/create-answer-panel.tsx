@@ -1,11 +1,10 @@
 import clsx from 'clsx'
 import { useState } from 'react'
-import { findBestMatch } from 'string-similarity'
-
 import {
   CPMMMultiContract,
   Contract,
   FreeResponseContract,
+  add_answers_mode,
   tradingAllowed,
 } from 'common/contract'
 import { BuyAmountInput } from '../widgets/amount-input'
@@ -24,31 +23,25 @@ import {
   calculateDpmPayoutAfterCorrectBet,
   getDpmOutcomeProbabilityAfterBet,
 } from 'common/calculate-dpm'
-import { firebaseLogin } from 'web/lib/firebase/users'
 import { Bet } from 'common/bet'
 import { MAX_ANSWER_LENGTH } from 'common/answer'
 import { withTracking } from 'web/lib/service/analytics'
-import { lowerCase } from 'lodash'
 import { Button } from '../buttons/button'
 import { ExpandingInput } from '../widgets/expanding-input'
-import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { ANSWER_COST } from 'common/economy'
+import { Input } from '../widgets/input'
 
-export function CreateAnswerCpmmPanel(props: { contract: CPMMMultiContract }) {
-  const { contract } = props
-  const user = useUser()
-  const [text, setText] = usePersistentInMemoryState(
-    '',
-    'create-answer-text' + contract.id
-  )
-  const [answerError, setAnswerError] = useState<string | undefined>()
-  const [possibleDuplicateAnswer, setPossibleDuplicateAnswer] = useState<
-    string | undefined
-  >()
+export function CreateAnswerCpmmPanel(props: {
+  contract: CPMMMultiContract
+  text: string
+  setText: (text: string) => void
+  children?: React.ReactNode
+}) {
+  const { contract, text, setText, children } = props
+
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const { answers } = contract
 
-  const canSubmit = text && !isSubmitting && !answerError
+  const canSubmit = text && !isSubmitting
 
   const submitAnswer = async () => {
     if (canSubmit) {
@@ -60,92 +53,58 @@ export function CreateAnswerCpmmPanel(props: { contract: CPMMMultiContract }) {
           text,
         })
         setText('')
-        setPossibleDuplicateAnswer(undefined)
       } catch (e) {}
 
       setIsSubmitting(false)
     }
   }
 
-  const changeAnswer = (text: string) => {
-    setText(text)
-    const existingAnswer = answers.find(
-      (a) => lowerCase(a.text) === lowerCase(text)
-    )
-
-    if (existingAnswer) {
-      setAnswerError(
-        existingAnswer
-          ? `"${existingAnswer.text}" already exists as an answer. Can't see it? Hit the 'Show More' button right above this box.`
-          : ''
-      )
-      return
-    } else {
-      setAnswerError('')
-    }
-
-    if (answers.length && text) {
-      const matches = findBestMatch(
-        lowerCase(text),
-        answers.map((a) => lowerCase(a.text))
-      )
-      setPossibleDuplicateAnswer(
-        matches.bestMatch.rating > 0.8
-          ? answers[matches.bestMatchIndex].text
-          : ''
-      )
-    }
-  }
-
-  if (user?.isBannedFromPosting) return <></>
-
   return (
-    <Col className="bg-canvas-50 gap-2 rounded-lg p-2">
+    <Col className="gap-1">
       <ExpandingInput
         value={text}
-        onChange={(e) => changeAnswer(e.target.value)}
+        onChange={(e) => setText(e.target.value)}
         className="w-full"
-        placeholder="Add another answer"
+        placeholder="Search or add answer"
         rows={1}
         maxLength={MAX_ANSWER_LENGTH}
       />
-      {answerError ? (
-        <AnswerError key={1} level="error" text={answerError} />
-      ) : possibleDuplicateAnswer ? (
-        <AnswerError
-          key={2}
-          level="warning"
-          text={`Did you mean to bet on "${possibleDuplicateAnswer}"?`}
-        />
-      ) : undefined}
-      <Row className={'justify-end'}>
-        <Button
-          loading={isSubmitting}
-          disabled={!canSubmit}
-          onClick={withTracking(submitAnswer, 'submit answer')}
-        >
-          Add answer ({formatMoney(ANSWER_COST)})
-        </Button>
+
+      <Row className="justify-between">
+        {children}
+
+        {text && (
+          <Row className="gap-1">
+            <Button size="2xs" color="gray" onClick={() => setText('')}>
+              Clear
+            </Button>
+            <Button
+              size="2xs"
+              loading={isSubmitting}
+              disabled={!canSubmit}
+              onClick={withTracking(submitAnswer, 'submit answer')}
+            >
+              Add answer ({formatMoney(ANSWER_COST)})
+            </Button>
+          </Row>
+        )}
       </Row>
     </Col>
   )
 }
 
-function CreateAnswerDpmPanel(props: { contract: FreeResponseContract }) {
-  const { contract } = props
+function CreateAnswerDpmPanel(props: {
+  contract: FreeResponseContract
+  text: string
+  setText: (text: string) => void
+}) {
+  const { contract, text, setText } = props
   const user = useUser()
-  const [text, setText] = useState('')
   const [betAmount, setBetAmount] = useState<number | undefined>(10)
   const [amountError, setAmountError] = useState<string | undefined>()
-  const [answerError, setAnswerError] = useState<string | undefined>()
-  const [possibleDuplicateAnswer, setPossibleDuplicateAnswer] = useState<
-    string | undefined
-  >()
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const { answers } = contract
 
-  const canSubmit =
-    text && betAmount && !amountError && !isSubmitting && !answerError
+  const canSubmit = text && betAmount && !amountError && !isSubmitting
 
   const submitAnswer = async () => {
     if (canSubmit) {
@@ -160,7 +119,6 @@ function CreateAnswerDpmPanel(props: { contract: FreeResponseContract }) {
         setText('')
         setBetAmount(10)
         setAmountError(undefined)
-        setPossibleDuplicateAnswer(undefined)
       } catch (e) {
         if (e instanceof APIError) {
           setAmountError(e.toString())
@@ -168,36 +126,6 @@ function CreateAnswerDpmPanel(props: { contract: FreeResponseContract }) {
       }
 
       setIsSubmitting(false)
-    }
-  }
-
-  const changeAnswer = (text: string) => {
-    setText(text)
-    const existingAnswer = answers.find(
-      (a) => lowerCase(a.text) === lowerCase(text)
-    )
-
-    if (existingAnswer) {
-      setAnswerError(
-        existingAnswer
-          ? `"${existingAnswer.text}" already exists as an answer. Can't see it? Hit the 'Show More' button right above this box.`
-          : ''
-      )
-      return
-    } else {
-      setAnswerError('')
-    }
-
-    if (answers.length && text) {
-      const matches = findBestMatch(
-        lowerCase(text),
-        answers.map((a) => lowerCase(a.text))
-      )
-      setPossibleDuplicateAnswer(
-        matches.bestMatch.rating > 0.8
-          ? answers[matches.bestMatchIndex].text
-          : ''
-      )
     }
   }
 
@@ -223,158 +151,126 @@ function CreateAnswerDpmPanel(props: { contract: FreeResponseContract }) {
   if (user?.isBannedFromPosting) return <></>
 
   return (
-    <Col className="gap-4 rounded">
-      <Col className="flex-1 gap-2 px-4 xl:px-0">
-        <div className="mb-1">Add your answer</div>
-        <ExpandingInput
-          value={text}
-          onChange={(e) => changeAnswer(e.target.value)}
-          className="w-full"
-          placeholder="Type your answer..."
-          rows={1}
-          maxLength={MAX_ANSWER_LENGTH}
-        />
-        {answerError ? (
-          <AnswerError key={1} level="error" text={answerError} />
-        ) : possibleDuplicateAnswer ? (
-          <AnswerError
-            key={2}
-            level="warning"
-            text={`Did you mean to bet on "${possibleDuplicateAnswer}"?`}
-          />
-        ) : undefined}
-        <div />
-        <Col className={'justify-between sm:flex-row'}>
-          <Row
-            className={clsx('w-full flex-wrap gap-4 sm:max-w-md sm:flex-col')}
-          >
-            {text && (
-              <>
-                <Col className="mt-1 w-full gap-2">
-                  <Row className="text-ink-500 my-3 justify-between text-left text-sm">
-                    Bet Amount
-                    <span className={'sm:hidden'}>
-                      Balance: {formatMoney(user?.balance ?? 0)}
-                    </span>
-                  </Row>{' '}
-                  <BuyAmountInput
-                    inputClassName={'w-32'}
-                    amount={betAmount}
-                    onChange={setBetAmount}
-                    error={amountError}
-                    setError={setAmountError}
-                    minimumAmount={1}
-                    disabled={isSubmitting}
-                    sliderOptions={{ show: true, wrap: false }}
-                  />
-                </Col>
-                <Col className="w-full gap-3 sm:max-w-md">
-                  <Row className="items-center justify-between text-sm">
-                    <div className="text-ink-500">Probability</div>
-                    <Row>
-                      <div>{formatPercent(0)}</div>
-                      <div className="mx-2">→</div>
-                      <div>{formatPercent(resultProb)}</div>
-                    </Row>
-                  </Row>
+    <Col className="mb-2 gap-2">
+      <ExpandingInput
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        className="w-full"
+        placeholder="Search or add answer"
+        rows={1}
+        maxLength={MAX_ANSWER_LENGTH}
+      />
+      {text && (
+        <Col className="bg-canvas-50 rounded p-2">
+          <Row className={clsx('flex-wrap gap-4')}>
+            <Col className="w-full gap-2">
+              <Row className="text-ink-500 mb-3 justify-between text-left text-sm">
+                Bet Amount
+                <span className={'sm:hidden'}>
+                  Balance: {formatMoney(user?.balance ?? 0)}
+                </span>
+              </Row>{' '}
+              <BuyAmountInput
+                inputClassName={'w-32'}
+                amount={betAmount}
+                onChange={setBetAmount}
+                error={amountError}
+                setError={setAmountError}
+                minimumAmount={1}
+                disabled={isSubmitting}
+                sliderOptions={{ show: true, wrap: false }}
+              />
+            </Col>
+            <Col className="w-full gap-3">
+              <Row className="items-center justify-between text-sm">
+                <div className="text-ink-500">Probability</div>
+                <Row>
+                  <div>{formatPercent(0)}</div>
+                  <div className="mx-2">→</div>
+                  <div>{formatPercent(resultProb)}</div>
+                </Row>
+              </Row>
 
-                  <Row className="items-center justify-between gap-4 text-sm">
-                    <Row className="text-ink-500 flex-nowrap items-center gap-2 whitespace-nowrap">
-                      <div>
-                        Estimated <br /> payout if chosen
-                      </div>
-                      <InfoTooltip
-                        text={`Current payout for ${formatWithCommas(
-                          shares
-                        )} / ${formatWithCommas(shares)} shares`}
-                      />
-                    </Row>
-                    <Row className="flex-wrap items-end justify-end gap-2">
-                      <span className="whitespace-nowrap">
-                        {formatMoney(currentPayout)}
-                      </span>
-                      <span>(+{currentReturnPercent})</span>
-                    </Row>
-                  </Row>
-                </Col>
-              </>
-            )}
+              <Row className="items-center justify-between gap-4 text-sm">
+                <Row className="text-ink-500 flex-nowrap items-center gap-2 whitespace-nowrap">
+                  <div>
+                    Estimated <br /> payout if chosen
+                  </div>
+                  <InfoTooltip
+                    text={`Current payout for ${formatWithCommas(
+                      shares
+                    )} / ${formatWithCommas(shares)} shares`}
+                  />
+                </Row>
+                <Row className="flex-wrap items-end justify-end gap-2">
+                  <span className="whitespace-nowrap">
+                    {formatMoney(currentPayout)}
+                  </span>
+                  <span>(+{currentReturnPercent})</span>
+                </Row>
+              </Row>
+            </Col>
           </Row>
-          <Row
-            className={
-              'mt-3 justify-end pl-2 sm:mt-0 sm:min-w-[10rem] sm:flex-col'
-            }
+          <Button
+            color="green"
+            className="self-end"
+            loading={isSubmitting}
+            disabled={!canSubmit}
+            onClick={withTracking(submitAnswer, 'submit answer')}
           >
-            {user ? (
-              <Button
-                color="green"
-                size="lg"
-                loading={isSubmitting}
-                disabled={!canSubmit}
-                onClick={withTracking(submitAnswer, 'submit answer')}
-              >
-                Submit
-              </Button>
-            ) : (
-              text && (
-                <Button
-                  color="green"
-                  size="lg"
-                  className="self-end whitespace-nowrap "
-                  onClick={withTracking(firebaseLogin, 'answer panel sign in')}
-                >
-                  Add my answer
-                </Button>
-              )
-            )}
-          </Row>
+            Add answer
+          </Button>
         </Col>
-      </Col>
+      )}
     </Col>
   )
 }
 
-export function CreateAnswerPanel(props: { contract: Contract }) {
-  const { contract } = props
-  const addAnswersMode =
-    'addAnswersMode' in contract
-      ? contract.addAnswersMode
-      : contract.outcomeType === 'FREE_RESPONSE'
-      ? 'ANYONE'
-      : 'DISABLED'
+export function SearchCreateAnswerPanel(props: {
+  contract: Contract
+  addAnswersMode: add_answers_mode | undefined
+  text: string
+  setText: (text: string) => void
+  children?: React.ReactNode
+}) {
+  const { contract, addAnswersMode, text, setText, children } = props
 
   const user = useUser()
   const privateUser = usePrivateUser()
 
   if (
     user &&
+    !user.isBannedFromPosting &&
     (addAnswersMode === 'ANYONE' ||
       (addAnswersMode === 'ONLY_CREATOR' && user.id === contract.creatorId)) &&
     tradingAllowed(contract) &&
     !privateUser?.blockedByUserIds.includes(contract.creatorId)
   ) {
     return contract.mechanism === 'cpmm-multi-1' ? (
-      <CreateAnswerCpmmPanel contract={contract} />
+      <CreateAnswerCpmmPanel contract={contract} text={text} setText={setText}>
+        {children}
+      </CreateAnswerCpmmPanel>
     ) : (
-      <CreateAnswerDpmPanel contract={contract as FreeResponseContract} />
+      <>
+        <CreateAnswerDpmPanel
+          contract={contract as FreeResponseContract}
+          text={text}
+          setText={setText}
+        />
+        {children}
+      </>
     )
   }
 
-  return null
-}
-
-const AnswerError = (props: { text: string; level: 'warning' | 'error' }) => {
-  const { text, level } = props
-  const colorClass =
-    {
-      error: 'text-scarlet-500',
-      warning: 'text-orange-600',
-    }[level] ?? ''
   return (
-    <div
-      className={`${colorClass} mb-2 mr-auto self-center text-xs font-medium tracking-wide`}
-    >
-      {text}
-    </div>
+    <>
+      <Input
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        className="!text-md"
+        placeholder="Search answers"
+      />
+      {children}
+    </>
   )
 }

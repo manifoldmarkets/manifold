@@ -4,8 +4,7 @@ import {
   PresentationChartLineIcon,
 } from '@heroicons/react/outline'
 import { groupBy, sortBy, sumBy } from 'lodash'
-import { useState } from 'react'
-
+import { useMemo, useState } from 'react'
 import clsx from 'clsx'
 import { Answer, DpmAnswer } from 'common/answer'
 import { Bet } from 'common/bet'
@@ -31,6 +30,9 @@ import { floatingEqual } from 'common/util/math'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import DropdownMenu from '../comments/dropdown-menu'
 import generateFilterDropdownItems from '../search/search-dropdown-helpers'
+import { SearchCreateAnswerPanel } from './create-answer-panel'
+import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import { searchInAny } from 'common/util/parse'
 
 type Sort = 'prob-desc' | 'prob-asc' | 'old' | 'new' | 'liquidity'
 
@@ -42,7 +44,7 @@ const SORTS = [
   { label: 'Trending', value: 'liquidity' },
 ] as const
 
-// full resorting, hover, clickiness
+// full resorting, hover, clickiness, search and add
 export function AnswersPanel(props: {
   contract: MultiContract
   onAnswerCommentClick: (answer: Answer | DpmAnswer) => void
@@ -68,6 +70,11 @@ export function AnswersPanel(props: {
   const shouldAnswersSumToOne =
     'shouldAnswersSumToOne' in contract ? contract.shouldAnswersSumToOne : true
 
+  const [query, setQuery] = usePersistentInMemoryState(
+    '',
+    'create-answer-text' + contract.id
+  )
+
   const answers = contract.answers
     .filter((a) => isMultipleChoice || ('number' in a && a.number !== 0))
     .map((a) => ({
@@ -75,46 +82,66 @@ export function AnswersPanel(props: {
       prob: getAnswerProbability(contract, a.id),
     }))
 
-  const [sort, setSort] = useState<Sort>(
+  const [sort, setSort] = usePersistentInMemoryState<Sort>(
     addAnswersMode === 'DISABLED'
       ? 'old'
       : !shouldAnswersSumToOne
       ? 'liquidity'
       : answers.length > 10
       ? 'prob-desc'
-      : 'old'
+      : 'old',
+    'answer-sort' + contract.id
   )
 
   const [showAll, setShowAll] = useState(
     addAnswersMode === 'DISABLED' || answers.length <= 5
   )
 
-  const sortedAnswers = sortBy(answers, [
-    shouldAnswersSumToOne
-      ? // Winners first
-        (answer) => (resolutions ? -1 * resolutions[answer.id] : answer)
-      : // Resolved last
-        (answer) =>
-          'resolutionTime' in answer ? answer.resolutionTime ?? 1 : 0,
-    // then by sort
-    (answer) => {
-      if (sort === 'old') {
-        return 'index' in answer ? answer.index : answer.number
-      } else if (sort === 'new') {
-        return 'index' in answer ? -answer.index : -answer.number
-      } else if (sort === 'prob-asc') {
-        return answer.prob
-      } else if (sort === 'prob-desc') {
-        return -1 * answer.prob
-      } else if (sort === 'liquidity') {
-        return 'subsidyPool' in answer ? answer.subsidyPool : 0
-      }
-    },
-  ])
+  const sortedAnswers = useMemo(
+    () =>
+      sortBy(answers, [
+        shouldAnswersSumToOne
+          ? // Winners first
+            (answer) => (resolutions ? -1 * resolutions[answer.id] : answer)
+          : // Resolved last
+            (answer) =>
+              'resolutionTime' in answer ? answer.resolutionTime ?? 1 : 0,
+        // then by sort
+        (answer) => {
+          if (sort === 'old') {
+            return 'index' in answer ? answer.index : answer.number
+          } else if (sort === 'new') {
+            return 'index' in answer ? -answer.index : -answer.number
+          } else if (sort === 'prob-asc') {
+            return answer.prob
+          } else if (sort === 'prob-desc') {
+            return -1 * answer.prob
+          } else if (sort === 'liquidity') {
+            return 'subsidyPool' in answer ? answer.subsidyPool : 0
+          }
+        },
+      ]),
+    [answers, resolutions, shouldAnswersSumToOne, sort]
+  )
 
-  const answersToShow = showAll
+  const searchedAnswers = useMemo(() => {
+    if (!answers.length || !query) return []
+
+    return sortedAnswers.filter(
+      (answer) =>
+        selected?.includes(answer.id) || searchInAny(query, answer.text)
+    )
+  }, [sortedAnswers, query])
+
+  const answersToShow = query
+    ? searchedAnswers
+    : showAll
     ? sortedAnswers
     : sortedAnswers.filter((answer) => {
+        if (selected?.includes(answer.id)) {
+          return true
+        }
+
         if (resolutions?.[answer.id]) {
           return true
         }
@@ -141,22 +168,31 @@ export function AnswersPanel(props: {
     answers.length === 0 || (shouldAnswersSumToOne && answers.length === 1)
 
   return (
-    <div className="mx-[2px]">
-      {!showNoAnswers && (
-        <Col className="gap-2">
-          <DropdownMenu
-            className="self-end"
-            items={generateFilterDropdownItems(SORTS, setSort)}
-            icon={
-              <Row className="text-ink-500 items-center gap-0.5">
-                <span className="whitespace-nowrap text-sm font-medium">
-                  Sort: {SORTS.find((s) => s.value === sort)?.label}
-                </span>
-                <ChevronDownIcon className="h-4 w-4" />
-              </Row>
-            }
-          />
+    <Col>
+      <SearchCreateAnswerPanel
+        contract={contract}
+        addAnswersMode={addAnswersMode}
+        text={query}
+        setText={setQuery}
+      >
+        <DropdownMenu
+          className="mb-1"
+          items={generateFilterDropdownItems(SORTS, setSort)}
+          icon={
+            <Row className="text-ink-500 items-center gap-0.5">
+              <span className="whitespace-nowrap text-sm font-medium">
+                Sort: {SORTS.find((s) => s.value === sort)?.label}
+              </span>
+              <ChevronDownIcon className="h-4 w-4" />
+            </Row>
+          }
+        />
+      </SearchCreateAnswerPanel>
 
+      {showNoAnswers ? (
+        <div className="text-ink-500 p-4 text-center">No answers yet</div>
+      ) : (
+        <Col className="mx-[2px] mt-1 gap-2">
           {answersToShow.map((answer) => (
             <Answer
               key={answer.id}
@@ -172,21 +208,25 @@ export function AnswersPanel(props: {
               userBets={userBetsByAnswer[answer.id]}
             />
           ))}
-          {moreCount > 0 && (
-            <Button
-              color="gray-white"
-              onClick={() => setShowAll(true)}
-              size="xs"
-            >
-              <ChevronDownIcon className="mr-1 h-4 w-4" />
-              Show {moreCount} more {moreCount === 1 ? 'answer' : 'answers'}
-            </Button>
-          )}
+
+          {moreCount > 0 &&
+            (query ? (
+              <div className="text-ink-600 pb-4 text-center">
+                {moreCount} answers hidden by search
+              </div>
+            ) : (
+              <Button
+                color="gray-white"
+                onClick={() => setShowAll(true)}
+                size="xs"
+              >
+                <ChevronDownIcon className="mr-1 h-4 w-4" />
+                Show {moreCount} more {moreCount === 1 ? 'answer' : 'answers'}
+              </Button>
+            ))}
         </Col>
       )}
-
-      {showNoAnswers && <div className="text-ink-500 pb-4">No answers yet</div>}
-    </div>
+    </Col>
   )
 }
 

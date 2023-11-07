@@ -42,7 +42,6 @@ import {
 } from '../answers/answer-resolve-panel'
 import { CancelLabel } from '../outcome-label'
 import { PollPanel } from '../poll/poll-panel'
-import { CreateAnswerPanel } from '../answers/create-answer-panel'
 import clsx from 'clsx'
 import { viewScale } from 'common/chart'
 import { Col } from '../layout/col'
@@ -323,7 +322,6 @@ const ChoiceOverview = (props: {
             }
             selected={checkedAnswerIds}
           />
-          <CreateAnswerPanel contract={contract} />
           <UserBetsSummary
             className="border-ink-200 !mb-2 mt-2 "
             contract={contract}
