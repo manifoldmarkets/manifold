@@ -19,7 +19,9 @@ export const onboardLover = async (user: User, ip: string) => {
     log('Error adding user to group', e)
   }
   const publicChannels = await pg.many(
-    `select id from private_user_message_channels where title is not null`
+    `select id from private_user_message_channels where title is not null
+          and id not in (select channel_id from private_user_message_channel_members where user_id = $1)`,
+    [user.id]
   )
   log('Adding lover to public channels:', publicChannels)
   await Promise.all(
