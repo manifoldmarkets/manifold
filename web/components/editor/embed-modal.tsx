@@ -81,22 +81,43 @@ const embedPatterns: EmbedPattern[] = [
     rewrite: (id) =>
       `<iframe src="https://www.tiktok.com/embed/v2/${id}"></iframe>`,
   },
-  {
-    // Streamlit: https://appname.streamlit.app/?params=param
-    regex: /^(https?:\/\/[^\/]+\.streamlit\.app(?:\/|\?|$).*)/,
-    rewrite: (url: string) => `<iframe src="${url}"></iframe>`,
-  },
-  // {
-  //   regex: /^(https?:\/\/.*)/,
-  //   rewrite: (url) => `<iframe src="${url}"></iframe>`,
-  // },
 ]
+const allowed_domains: string[] = [
+  "streamlit.app",
+  "kalshi.com",
+  "polymarket.com",
+  "predictit.org",
+  "gjopen.com",
+];
+
+function isAllowedDomain(url: string) {
+  try {
+    const { hostname } = new URL(url);
+    return allowed_domains.some(allowedDomain => 
+      hostname === allowedDomain || hostname.endsWith('.' + allowedDomain)
+    );
+  } catch (error) {
+    return false;
+  }
+}
 
 function embedCode(text: string) {
   for (const pattern of embedPatterns) {
     const match = text.match(pattern.regex)
     if (match) {
       return pattern.rewrite(match[1])
+    }
+    
+  }
+
+  const urlPattern = /^(https?:\/\/.*)/;
+  const match = text.match(urlPattern);
+  if (match) {
+    // If it's a URL, check against the allowed domains
+    if (isAllowedDomain(match[1])) {
+      return `<iframe src="${match[1]}"></iframe>`;
+    } else {
+      return null;
     }
   }
   return null
