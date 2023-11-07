@@ -1018,6 +1018,7 @@ export interface Database {
           pref_age_min: number
           pref_gender: string[]
           pref_relation_styles: string[]
+          referred_by_username: string | null
           region_code: string | null
           religious_belief_strength: number | null
           religious_beliefs: string | null
@@ -1061,6 +1062,7 @@ export interface Database {
           pref_age_min?: number
           pref_gender: string[]
           pref_relation_styles: string[]
+          referred_by_username?: string | null
           region_code?: string | null
           religious_belief_strength?: number | null
           religious_beliefs?: string | null
@@ -1104,6 +1106,7 @@ export interface Database {
           pref_age_min?: number
           pref_gender?: string[]
           pref_relation_styles?: string[]
+          referred_by_username?: string | null
           region_code?: string | null
           religious_belief_strength?: number | null
           religious_beliefs?: string | null

@@ -43,6 +43,7 @@ export const baseLoversSchema = z.object({
   city_longitude: z.number().optional(),
 
   pinned_url: z.string(),
+  referred_by_username: z.string().optional(),
 })
 
 export const createlover = authEndpoint(async (req, auth) => {

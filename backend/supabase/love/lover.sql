@@ -42,7 +42,8 @@ create table if not exists
     region_code text,
     country text,
     city_latitude decimal(9, 6),
-    city_longitude decimal(9, 6)
+    city_longitude decimal(9, 6),
+    referred_by_username text
   );
 
 alter table lovers enable row level security;

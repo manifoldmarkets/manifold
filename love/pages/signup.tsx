@@ -8,13 +8,18 @@ import { OptionalLoveUserForm } from 'love/components/optional-lover-form'
 import { useUser } from 'web/hooks/use-user'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { GoogleSignInButton } from 'web/components/buttons/sign-up-button'
-import { firebaseLogin } from 'web/lib/firebase/users'
+import {
+  CACHED_REFERRAL_USERNAME_KEY,
+  firebaseLogin,
+} from 'web/lib/firebase/users'
 import { createLover } from 'web/lib/firebase/love/api'
 import { useRouter } from 'next/router'
 import { Row as rowFor } from 'common/supabase/utils'
 import ManifoldLoveLogo from 'love/components/manifold-love-logo'
 import { useTracking } from 'web/hooks/use-tracking'
 import { track } from 'web/lib/service/analytics'
+import { safeLocalStorage } from 'web/lib/util/local'
+import { removeUndefinedProps } from 'common/util/object'
 
 export default function SignupPage() {
   const [step, setStep] = useState(0)
@@ -50,9 +55,17 @@ export default function SignupPage() {
                   router.push('/')
                   return
                 }
-                const res = await createLover({
-                  ...loverForm,
-                }).catch((e) => {
+                const referredByUsername = safeLocalStorage
+                  ? safeLocalStorage.getItem(CACHED_REFERRAL_USERNAME_KEY) ??
+                    undefined
+                  : undefined
+
+                const res = await createLover(
+                  removeUndefinedProps({
+                    ...loverForm,
+                    referred_by_username: referredByUsername,
+                  })
+                ).catch((e) => {
                   console.error(e)
                   return null
                 })
