@@ -82,7 +82,7 @@ const embedPatterns: EmbedPattern[] = [
       `<iframe src="https://www.tiktok.com/embed/v2/${id}"></iframe>`,
   },
 ]
-const allowed_domains: string[] = [
+const allowedDomains: string[] = [
   "streamlit.app",
   "wikipedia.org",
 ];
@@ -90,7 +90,7 @@ const allowed_domains: string[] = [
 function isAllowedDomain(url: string) {
   try {
     const { hostname } = new URL(url);
-    return allowed_domains.some(allowedDomain => 
+    return allowedDomains.some(allowedDomain => 
       hostname === allowedDomain || hostname.endsWith('.' + allowedDomain)
     );
   } catch (error) {
@@ -109,13 +109,9 @@ function embedCode(text: string) {
 
   const urlPattern = /^(https?:\/\/.*)/;
   const match = text.match(urlPattern);
-  if (match) {
     // If it's a URL, check against the allowed domains
-    if (isAllowedDomain(match[1])) {
-      return `<iframe src="${match[1]}"></iframe>`;
-    } else {
-      return null;
-    }
+  if (match && isAllowedDomain(match[1])) {
+    return `<iframe src="${match[1]}"></iframe>`;
   }
   return null
 }
