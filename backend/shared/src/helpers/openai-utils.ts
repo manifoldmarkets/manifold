@@ -1,23 +1,13 @@
 import * as dayjs from 'dayjs'
 import 'dayjs/plugin/utc'
-import { Configuration, OpenAIApi } from 'openai'
+import OpenAI from 'openai'
 
-export const initOpenAIApi = () => {
-  const configuration = new Configuration({
-    apiKey: process.env.OPENAI_API_KEY,
-  })
-
-  return new OpenAIApi(configuration)
-}
-
-let openai: OpenAIApi | undefined
+const openai = new OpenAI()
 
 export const generateEmbeddings = async (question: string) => {
-  if (!openai) openai = initOpenAIApi()
-
   let response
   try {
-    response = await openai.createEmbedding({
+    response = await openai.embeddings.create({
       model: 'text-embedding-ada-002',
       input: question,
     })
@@ -30,19 +20,15 @@ export const generateEmbeddings = async (question: string) => {
     return undefined
   }
 
-  if (response.status !== 200) return undefined
-
-  return response.data.data[0].embedding
+  return response.data[0].embedding
 }
 
 export const getCloseDate = async (question: string, utcOffset?: number) => {
-  if (!openai) openai = initOpenAIApi()
-
   const now = dayjs.utc().format('M/D/YYYY h:mm a')
 
   let response
   try {
-    response = await openai.createCompletion({
+    response = await openai.completions.create({
       model: 'text-davinci-003',
       prompt: `Question: Will I finish the task by 2027?\nNow: 5/2/2026 12:11 pm\nEnd date: 12/31/2026 11:59 pm\n\nQuestion: Will an AI-drawn movie have a rating >=7.0 on IMDB before 2025?\nNow: 5/2/2019 3:47 pm\nEnd date: 12/31/2024 11:59 pm\n\nQuestion: Will Bolsanaro concede the election by Nov 15?\nNow: 8/5/2022 1:20 pm\nEnd date: 11/14/2022 11:59 pm\n\nQuestion: Will Dwarf Fortress be released on Steam this year?\nNow: 2/5/2023 11:24 am\nEnd date: 12/31/2023 11:59 pm\n\nQuestion: Will eat ice cream today?\nNow: 10/2/2022 5:55 pm\nEnd date: 10/2/2022 11:59 pm\n\nQuestion: ${question}\nNow: ${now}\nEnd date:`,
       temperature: 0.4,
@@ -60,9 +46,7 @@ export const getCloseDate = async (question: string, utcOffset?: number) => {
     return undefined
   }
 
-  if (response.status !== 200) return undefined
-
-  const text = response.data.choices[0].text?.trim()
+  const text = response.choices[0].text?.trim()
   if (!text) return undefined
   console.log(
     'AI-selected close date for question',
@@ -81,12 +65,23 @@ export const getCloseDate = async (question: string, utcOffset?: number) => {
   return utcTime.utcOffset(utcOffset ?? 0).valueOf()
 }
 
-export const getImagePrompt = async (question: string) => {
-  if (!openai) openai = initOpenAIApi()
+export const generateImage = async (prompt: string) => {
+  return await openai.images
+    .generate({
+      model: 'dall-e-3',
+      prompt,
+      n: 1,
+      size: '1792x1024',
+      quality: 'standard',
+    })
+    .then((res) => res.data[0].url)
+    .catch((err) => (console.log(err), undefined))
+}
 
+export const getImagePrompt = async (question: string) => {
   let response
   try {
-    response = await openai.createCompletion({
+    response = await openai.completions.create({
       model: 'text-davinci-003',
       prompt: `The following are some examples of prompts for titles to be fed into the Dalle-2 image generation model:\n\n
       Title: "Will the new BART Transbay tube be completed by 2040"\n
@@ -121,9 +116,7 @@ export const getImagePrompt = async (question: string) => {
     return undefined
   }
 
-  if (response.status !== 200) return undefined
-
-  const text = response.data.choices[0].text
+  const text = response.choices[0].text
   if (!text) return undefined
   console.log('AI-selected image prompt for question', question, ':', text)
 

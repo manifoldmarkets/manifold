@@ -25,6 +25,7 @@ module.exports = {
     dangerouslyAllowSVG: true,
     domains: [
       'manifold.markets',
+      'oaidalleapiprodscus.blob.core.windows.net',
       'lh3.googleusercontent.com',
       'i.imgur.com',
       'firebasestorage.googleapis.com',

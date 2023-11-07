@@ -48,7 +48,8 @@ export function getNewContract(
 
   // Manifold.love
   loverUserId1: string | undefined,
-  loverUserId2: string | undefined
+  loverUserId2: string | undefined,
+  coverImageUrl: string | undefined
 ) {
   const createdTime = Date.now()
 
@@ -80,6 +81,7 @@ export function getNewContract(
     creatorUsername: creator.username,
     creatorAvatarUrl: creator.avatarUrl,
     creatorCreatedTime: creator.createdTime,
+    coverImageUrl,
 
     question: question.trim(),
     description,
