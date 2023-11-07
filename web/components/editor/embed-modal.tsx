@@ -82,6 +82,7 @@ const embedPatterns: EmbedPattern[] = [
       `<iframe src="https://www.tiktok.com/embed/v2/${id}"></iframe>`,
   },
 ]
+
 const allowedDomains: string[] = [
   "streamlit.app",
   "wikipedia.org",
@@ -104,7 +105,6 @@ function embedCode(text: string) {
     if (match) {
       return pattern.rewrite(match[1])
     }
-    
   }
 
   const urlPattern = /^(https?:\/\/.*)/;
