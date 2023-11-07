@@ -59,7 +59,8 @@ export const createuser = authEndpoint(async (req, auth) => {
     )
   }
 
-  const host = req.get('host')
+  const host = req.get('referer')
+  log(`Create user from: ${host}`)
   const fromLove =
     (host?.includes('localhost')
       ? process.env.IS_MANIFOLD_LOVE === 'true'
