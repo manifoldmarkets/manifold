@@ -33,7 +33,7 @@ import {
 } from 'common/user'
 import { randomString } from 'common/util/random'
 import { slugify } from 'common/util/slugify'
-import { generateImage, getCloseDate } from 'shared/helpers/openai-utils'
+import { getCloseDate } from 'shared/helpers/openai-utils'
 import { getUser, htmlToRichText, isProd } from 'shared/utils'
 import { canUserAddGroupToMarket } from './add-contract-to-group'
 import { APIError, AuthedUser, authEndpoint, validate } from './helpers'
@@ -133,8 +133,6 @@ export async function createMarketHelper(body: any, auth: AuthedUser) {
 
     const slug = await getSlug(trans, question)
 
-    const coverImageUrl = await generateImage(question)
-
     const contract = getNewContract({
       id: contractRef.id,
       slug,
@@ -147,7 +145,6 @@ export async function createMarketHelper(body: any, auth: AuthedUser) {
         descriptionMarkdown,
         descriptionJson
       ),
-      coverImageUrl,
       initialProb: initialProb ?? 0,
       ante,
       closeTime,

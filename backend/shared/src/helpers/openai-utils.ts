@@ -1,10 +1,9 @@
+import OpenAI from 'openai'
 import * as dayjs from 'dayjs'
 import 'dayjs/plugin/utc'
-import OpenAI from 'openai'
-
-const openai = new OpenAI()
 
 export const generateEmbeddings = async (question: string) => {
+  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
   let response
   try {
     response = await openai.embeddings.create({
@@ -24,6 +23,7 @@ export const generateEmbeddings = async (question: string) => {
 }
 
 export const getCloseDate = async (question: string, utcOffset?: number) => {
+  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
   const now = dayjs.utc().format('M/D/YYYY h:mm a')
 
   let response
@@ -66,6 +66,7 @@ export const getCloseDate = async (question: string, utcOffset?: number) => {
 }
 
 export const generateImage = async (prompt: string) => {
+  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
   return await openai.images
     .generate({
       model: 'dall-e-3',
@@ -79,6 +80,7 @@ export const generateImage = async (prompt: string) => {
 }
 
 export const getImagePrompt = async (question: string) => {
+  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
   let response
   try {
     response = await openai.completions.create({

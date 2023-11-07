@@ -34,6 +34,7 @@ export function getNewContract(props: {
   ante: number
   closeTime: number | undefined
   visibility: Visibility
+  coverImageUrl?: string
 
   // twitch
   isTwitchContract: boolean | undefined
@@ -49,7 +50,6 @@ export function getNewContract(props: {
   // Manifold.love
   loverUserId1: string | undefined
   loverUserId2: string | undefined
-  coverImageUrl: string | undefined
 }) {
   const {
     id,
