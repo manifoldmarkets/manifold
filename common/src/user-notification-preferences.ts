@@ -53,14 +53,21 @@ export type notification_preferences = {
   added_to_group: notification_destination_types[]
   contract_from_private_group: notification_destination_types[]
 
-  //Leagues
+  // Leagues
   league_changed: notification_destination_types[]
 
-  // General
+  // Manifold.love
+  new_match: notification_destination_types[]
+  new_endorsement: notification_destination_types[]
+
+  // User-related
+  new_message: notification_destination_types[]
   tagged_user: notification_destination_types[]
   user_liked_your_content: notification_destination_types[]
   on_new_follow: notification_destination_types[]
   contract_from_followed_user: notification_destination_types[]
+
+  // General
   trending_markets: notification_destination_types[]
   profit_loss_updates: notification_destination_types[]
   onboarding_flow: notification_destination_types[]
@@ -141,7 +148,7 @@ export const getDefaultNotificationPreferences = (isDev?: boolean) => {
     bounty_canceled: constructPref(true, false, false),
     poll_close_on_watched_markets: constructPref(true, false, false),
 
-    //Balance Changes
+    // Balance Changes
     loan_income: constructPref(true, false, false),
     betting_streaks: constructPref(true, false, true),
     referral_bonuses: constructPref(true, true, false),
@@ -154,19 +161,26 @@ export const getDefaultNotificationPreferences = (isDev?: boolean) => {
     added_to_group: constructPref(true, false, false),
     contract_from_private_group: constructPref(true, true, false),
 
-    //Leagues
+    // Leagues
     league_changed: constructPref(true, false, false),
 
-    // General
+    // Manifold.love
+    new_match: constructPref(true, true, true),
+    new_endorsement: constructPref(true, true, true),
+
+    // User-related
+    new_message: constructPref(true, true, true),
     tagged_user: constructPref(true, true, true),
     on_new_follow: constructPref(true, true, false),
     contract_from_followed_user: constructPref(true, true, false),
+    user_liked_your_content: constructPref(true, false, false),
+
+    // General
     trending_markets: constructPref(false, true, false),
     profit_loss_updates: constructPref(true, true, false),
     probability_updates_on_watched_markets: constructPref(true, false, true),
     thank_you_for_purchases: constructPref(false, false, false),
     onboarding_flow: constructPref(true, true, false),
-    user_liked_your_content: constructPref(true, false, false),
 
     opt_out_all: [],
   }
