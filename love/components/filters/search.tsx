@@ -131,7 +131,7 @@ export const Search = (props: {
 
   const isYourFilters =
     !!youLover &&
-    nearbyOriginLocation &&
+    !!nearbyOriginLocation &&
     nearbyOriginLocation.id === youLover.geodb_city_id &&
     filters.genders == yourFilters.genders &&
     !!filters.pref_gender &&
