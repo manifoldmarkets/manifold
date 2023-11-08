@@ -4,7 +4,7 @@ import {
   MaybeDashboardNewsItem,
 } from '../news/dashboard-news-item'
 import { FeedContractCard } from '../contract/feed-contract-card'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { XCircleIcon } from '@heroicons/react/solid'
 import { DashboardItem, DashboardQuestionItem } from 'common/dashboard'
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
