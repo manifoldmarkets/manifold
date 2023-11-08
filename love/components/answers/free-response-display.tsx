@@ -33,7 +33,7 @@ export function FreeResponseDisplay(props: {
             className={''}
             onClick={() => {
               track('edit love questions')
-              router.push('opinion-scale')
+              router.push('love-questions')
             }}
           >
             <PencilIcon className="mr-2 h-4 w-4" />
@@ -48,17 +48,16 @@ export function FreeResponseDisplay(props: {
             return <AnswerBlock answer={answer} questions={questions} />
           })}
         </div>
-      ) : (
+      ) : isCurrentUser ? (
         <Col className="text-ink-600 gap-2 text-sm">
           You have not answered any questions yet! Help your potential matches
           get to know you better...
-          <Button
-            color="red-outline"
-            onClick={() => router.push('love-questions')}
-          >
+          <Button color="indigo" onClick={() => router.push('love-questions')}>
             Answer questions
           </Button>
         </Col>
+      ) : (
+        <div className="text-ink-600 gap-2 text-sm">None yet</div>
       )}
     </Col>
   )

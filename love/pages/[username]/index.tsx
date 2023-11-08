@@ -143,7 +143,7 @@ function LoverContent(props: {
   )
 
   const answers = allAnswers.filter(
-    (a) => a.multiple_choice != null ?? a.free_response ?? a.integer
+    (a) => a.multiple_choice != null || a.free_response || a.integer
   )
 
   if (!currentUser) {

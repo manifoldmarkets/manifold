@@ -28,6 +28,8 @@ export function LoverAnswers(props: {
     answers,
     (a) => a.multiple_choice != null
   )
+
+  console.log(multiChoiceAnswers, otherAnswers, answers)
   return (
     <Col className={'mt-2 gap-2'}>
       <OpinionScale

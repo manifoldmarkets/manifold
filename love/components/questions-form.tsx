@@ -40,7 +40,7 @@ export const QuestionsForm = (props: { questionType: QuestionType }) => {
         </Col>
         <Row>
           <Col className={'mt-2 w-full'}>
-            <Row className={'justify-between'}>
+            <Row className={'w-full justify-end'}>
               <Button
                 color={'indigo-outline'}
                 onClick={() => {
