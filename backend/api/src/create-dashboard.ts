@@ -2,7 +2,7 @@ import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { log } from 'shared/utils'
 import { z } from 'zod'
 import { authEndpoint, validate } from './helpers'
-import { DashboardItemSchema, contentSchema } from 'shared/zod-types'
+import { DashboardItemSchema } from 'shared/zod-types'
 import { slugify } from 'common/util/slugify'
 import { randomString } from 'common/util/random'
 import { updateDashboardGroups } from 'shared/supabase/dashboard'
@@ -11,14 +11,13 @@ import { MAX_DASHBOARD_TITLE_LENGTH } from 'common/dashboard'
 const schema = z
   .object({
     title: z.string().min(1).max(MAX_DASHBOARD_TITLE_LENGTH),
-    description: contentSchema.optional(),
     items: z.array(DashboardItemSchema),
     topics: z.array(z.string()),
   })
   .strict()
 
 export const createdashboard = authEndpoint(async (req, auth) => {
-  const { title, description, items, topics } = validate(schema, req.body)
+  const { title, items, topics } = validate(schema, req.body)
 
   log('creating dashboard')
   const pg = createSupabaseDirectClient()
@@ -39,13 +38,12 @@ export const createdashboard = authEndpoint(async (req, auth) => {
 
   // create if not exists the group invite link row
   const { id } = await pg.one(
-    `insert into dashboards(slug, creator_id, description, title, items, creator_username, creator_name, creator_avatar_url)
-      values ($1, $2, $3,$4, $5, $6, $7, $8)
+    `insert into dashboards(slug, creator_id, title, items, creator_username, creator_name, creator_avatar_url)
+      values ($1, $2, $3,$4, $5, $6, $7)
       returning id, slug`,
     [
       slug,
       auth.uid,
-      description,
       title,
       JSON.stringify(items),
       user.username,
@@ -56,6 +54,5 @@ export const createdashboard = authEndpoint(async (req, auth) => {
 
   await pg.tx((txn) => updateDashboardGroups(id, topics, txn))
 
-  // return something
   return { id: id, slug: slug }
 })

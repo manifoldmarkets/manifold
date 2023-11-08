@@ -1,6 +1,5 @@
 import { track } from 'web/lib/service/analytics'
 import clsx from 'clsx'
-import { MAX_DESCRIPTION_LENGTH } from 'common/contract'
 import { DashboardItem, MAX_DASHBOARD_TITLE_LENGTH } from 'common/dashboard'
 import { removeUndefinedProps } from 'common/util/object'
 import router from 'next/router'
@@ -13,7 +12,6 @@ import { InputWithLimit } from 'web/components/dashboard/input-with-limit'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { Spacer } from 'web/components/layout/spacer'
-import { TextEditor, useTextEditor } from 'web/components/widgets/editor'
 import { Title } from 'web/components/widgets/title'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { createDashboard } from 'web/lib/firebase/api'
@@ -23,12 +21,6 @@ export default function CreateDashboard() {
     '',
     'create dashboard title'
   )
-
-  const editor = useTextEditor({
-    key: 'create dashbord description',
-    max: MAX_DESCRIPTION_LENGTH,
-    placeholder: 'Optional. Provide background info and details.',
-  })
 
   const [submitState, setSubmitState] = useState<
     'EDITING' | 'LOADING' | 'DONE'
@@ -46,7 +38,10 @@ export default function CreateDashboard() {
     'create dashboard topics'
   )
 
-  const isValid = title.length > 0 && title.length <= MAX_DASHBOARD_TITLE_LENGTH
+  const isValid =
+    title.length > 0 &&
+    title.length <= MAX_DASHBOARD_TITLE_LENGTH &&
+    (items.length || topics.length)
 
   useEffect(() => {
     if (isValid) {
@@ -55,24 +50,19 @@ export default function CreateDashboard() {
   }, [isValid])
 
   const resetProperties = () => {
-    editor?.commands.clearContent(true)
     setTitle('')
     setItems([])
+    setTopics([])
   }
 
   async function submit() {
     if (!isValid) return
     setSubmitState('LOADING')
     try {
-      const createProps = removeUndefinedProps({
-        title,
-        description: editor?.getJSON(),
-        items,
-        topics,
-      })
+      const createProps = removeUndefinedProps({ title, items, topics })
       const newDashboard = await createDashboard(createProps)
 
-      track('create market', {
+      track('create dashboard', {
         id: newDashboard.id,
         slug: newDashboard.slug,
       })
@@ -120,7 +110,6 @@ export default function CreateDashboard() {
         <Spacer h={6} />
 
         <label className="mb-2">Content</label>
-        <TextEditor editor={editor} className="mb-4" />
 
         <AddItemCard
           items={items}
