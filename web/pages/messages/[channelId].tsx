@@ -246,7 +246,7 @@ export const PrivateChat = (props: {
   }, [messages.length])
 
   return (
-    <div className="h-[calc(100svh-216px)] w-full lg:max-w-3xl" style={{}}>
+    <Col className=" w-full lg:max-w-3xl" style={{}}>
       <Row
         className={
           'border-ink-200 bg-canvas-50 items-center gap-1 border-b py-2'
@@ -369,7 +369,7 @@ export const PrivateChat = (props: {
           </Modal>
         )}
       </Row>
-      <Col className="relative h-full xl:px-0">
+      <Col className="relative h-[calc(100svh-213px)]  lg:h-[calc(100svh-184px)] xl:px-0">
         <div
           ref={outerDiv}
           className={clsx('relative h-full overflow-y-scroll ')}
@@ -439,7 +439,7 @@ export const PrivateChat = (props: {
         isSubmitting={isSubmitting}
         submitOnEnter={true}
       />
-    </div>
+    </Col>
   )
 }
 
