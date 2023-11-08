@@ -336,8 +336,8 @@ export const Stats = (props: {
             <td>
               <ShortToggle
                 className="align-middle"
-                disabled={!isMod}
-                on={contract.isRanked ?? true}
+                disabled={!isMod || !isPublic}
+                on={isPublic && contract.isRanked !== false}
                 setOn={(on) => {
                   toast.promise(
                     on
@@ -380,8 +380,8 @@ export const Stats = (props: {
             <td>
               <ShortToggle
                 className="align-middle"
-                disabled={!isMod}
-                on={contract.isSubsidized ?? true}
+                disabled={!isMod || !isPublic}
+                on={isPublic && contract.isSubsidized !== false}
                 setOn={(on) => {
                   toast.promise(
                     on

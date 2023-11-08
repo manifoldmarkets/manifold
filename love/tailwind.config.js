@@ -20,6 +20,15 @@ module.exports = {
       }
     ),
     extend: {
+      minHeight: {
+        screen: ['100vh /* fallback for Opera, IE and etc. */', '100dvh'],
+      },
+      height: {
+        screen: ['100vh /* fallback for Opera, IE and etc. */', '100dvh'],
+      },
+      maxHeight: {
+        screen: ['100vh /* fallback for Opera, IE and etc. */', '100dvh'],
+      },
       gridTemplateColumns: {
         15: 'repeat(15, minmax(0, 1fr))',
         16: 'repeat(16, minmax(0, 1fr))',

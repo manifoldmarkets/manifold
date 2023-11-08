@@ -1,6 +1,5 @@
 import { DashboardContent } from '../dashboard/dashboard-content'
 import { LoadingIndicator } from '../widgets/loading-indicator'
-import { DashboardDescription } from '../dashboard/dashboard-description'
 import { CopyLinkOrShareButton } from '../buttons/copy-link-button'
 import { Row } from '../layout/row'
 import { FollowDashboardButton } from '../dashboard/follow-dashboard-button'
@@ -82,7 +81,6 @@ export function NewsDashboard(props: {
         </span>
       </Row>
 
-      <DashboardDescription description={dashboard.description} />
       <DashboardContent
         items={dashboard.items}
         topics={dashboard.topics}

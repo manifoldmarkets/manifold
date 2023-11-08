@@ -9,7 +9,6 @@ export type BaseDashboard = {
   slug: string
   creatorId: string
   createdTime: number
-  description: JSONContent
   title: string
   items: DashboardItem[]
   creatorUsername: string
@@ -22,7 +21,10 @@ export type Dashboard = BaseDashboard & {
   topics: string[]
 }
 
-export type DashboardItem = DashboardQuestionItem | DashboardLinkItem
+export type DashboardItem =
+  | DashboardQuestionItem
+  | DashboardLinkItem
+  | DashboardTextItem
 
 export type DashboardQuestionItem = {
   type: 'question'
@@ -32,6 +34,12 @@ export type DashboardQuestionItem = {
 export type DashboardLinkItem = {
   type: 'link'
   url: string
+}
+
+export type DashboardTextItem = {
+  type: 'text'
+  id: string
+  content: JSONContent
 }
 
 export const convertDashboardSqltoTS = (

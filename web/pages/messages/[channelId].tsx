@@ -8,7 +8,7 @@ import {
 } from 'web/hooks/use-private-messages'
 import { Col } from 'web/components/layout/col'
 import { MANIFOLD_LOVE_LOGO, User } from 'common/user'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { track } from 'web/lib/service/analytics'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { forEach, last, uniq } from 'lodash'
@@ -45,6 +45,7 @@ import { GiSpeakerOff } from 'react-icons/gi'
 import toast from 'react-hot-toast'
 import { Avatar } from 'web/components/widgets/avatar'
 import { richTextToString } from 'common/util/parse'
+import { isIOS } from 'web/lib/util/device'
 
 export default function PrivateMessagesPage() {
   return (
@@ -88,18 +89,20 @@ export const PrivateChat = (props: {
     channelId,
     true,
     100,
-    20
+    100
   )
+
   const totalMessages = useMessagesCount(true, channelId)
-  const notShowingMessages = realtimeMessages
-    ? Math.max(0, totalMessages - realtimeMessages.length)
-    : 0
+  // Unfortunately, on ios safari, we can't render more than a few dozen messages
+  const messagesPerPage = isIOS() ? 30 : 100
+
   const [showUsers, setShowUsers] = useState(false)
   const otherUsersFromChannel = useOtherUserIdsInPrivateMessageChannelIds(
     user.id,
     true,
     [channel]
   )
+  const initialScroll = useRef(realtimeMessages === undefined)
   const maxUsers = 100
   const userIdsFromMessages = uniq(
     (realtimeMessages ?? [])
@@ -125,7 +128,11 @@ export const PrivateChat = (props: {
   )
   const router = useRouter()
 
-  const messages = (realtimeMessages ?? []).reverse()
+  const messages = (realtimeMessages ?? []).slice(0, messagesPerPage).reverse()
+
+  const notShowingMessages = realtimeMessages
+    ? Math.max(0, totalMessages - messages.length)
+    : 0
   const editor = useTextEditor({
     size: 'sm',
     placeholder: 'Send a message',
@@ -136,8 +143,12 @@ export const PrivateChat = (props: {
   }, [messages.length])
 
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [scrollToBottomRef, setScrollToBottomRef] =
-    useState<HTMLDivElement | null>(null)
+  const outerDiv = useRef<HTMLDivElement | null>(null)
+  const innerDiv = useRef<HTMLDivElement | null>(null)
+
+  const [prevInnerDivHeight, setPrevInnerDivHeight] = useState<number>()
+
+  const [showMessages, setShowMessages] = useState(false)
 
   const groupedMessages = useMemo(() => {
     // Group messages created within a short time of each other.
@@ -195,21 +206,6 @@ export const PrivateChat = (props: {
     return tempGrouped
   }, [messages.length])
 
-  useEffect(() => {
-    scrollToBottomRef?.scrollIntoView({
-      block: 'end',
-      inline: 'end',
-    })
-  }, [scrollToBottomRef])
-
-  useEffect(() => {
-    if (last(messages)?.userId === user.id)
-      scrollToBottomRef?.scrollIntoView({
-        block: 'end',
-        inline: 'end',
-      })
-  }, [messages.length])
-
   async function submitMessage() {
     if (!user) {
       track('sign in to comment')
@@ -230,11 +226,39 @@ export const PrivateChat = (props: {
     editor?.commands?.focus()
   }
 
+  useEffect(() => {
+    const outerDivHeight = outerDiv?.current?.clientHeight ?? 0
+    const innerDivHeight = innerDiv?.current?.clientHeight ?? 0
+    const outerDivScrollTop = outerDiv?.current?.scrollTop ?? 0
+    if (
+      (!prevInnerDivHeight ||
+        outerDivScrollTop === prevInnerDivHeight - outerDivHeight ||
+        initialScroll.current) &&
+      realtimeMessages
+    ) {
+      outerDiv?.current?.scrollTo({
+        top: innerDivHeight! - outerDivHeight!,
+        left: 0,
+        behavior: prevInnerDivHeight ? 'smooth' : 'auto',
+      })
+      setShowMessages(true)
+      initialScroll.current = false
+    } else if (last(messages)?.userId === user.id) {
+      outerDiv?.current?.scrollTo({
+        top: innerDivHeight! - outerDivHeight!,
+        left: 0,
+        behavior: 'smooth',
+      })
+    }
+
+    setPrevInnerDivHeight(innerDivHeight)
+  }, [messages.length])
+
   return (
-    <Col className="px-2 xl:px-0">
+    <Col className=" w-full">
       <Row
         className={
-          'border-ink-200 bg-canvas-50 sticky top-0 z-10 items-center gap-1 border-b py-2'
+          'border-ink-200 bg-canvas-50 items-center gap-1 border-b py-2'
         }
       >
         <BackButton />
@@ -354,75 +378,76 @@ export const PrivateChat = (props: {
           </Modal>
         )}
       </Row>
-      <Col
-        className={clsx(
-          'relative',
-          'gap-2 overflow-y-auto py-2',
-          'min-h-[calc(100vh-216px)]',
-          'lg:max-h-[calc(100vh-184px)] lg:min-h-[calc(100vh-184px)]'
-        )}
-      >
-        {realtimeMessages === undefined ? (
-          <LoadingIndicator />
-        ) : (
-          <>
-            {notShowingMessages ? (
-              <Row className=" text-ink-500 items-center justify-center p-2 text-xs italic">
-                Not showing {notShowingMessages} older messages
-              </Row>
-            ) : null}
-            {groupedMessages.map((messages, i) => {
-              const firstMessage = messages[0]
-              if (firstMessage.visibility === 'system_status') {
-                return (
-                  <SystemChatMessageItem
-                    key={firstMessage.id}
-                    chats={messages}
-                    otherUsers={otherUsers
-                      ?.concat([user])
-                      .filter((user) =>
-                        messages.some((m) => m.userId === user.id)
+      <Col className="relative h-[calc(100dvh-213px)]  lg:h-[calc(100dvh-184px)] xl:px-0">
+        <div
+          ref={outerDiv}
+          className={clsx('relative h-full overflow-y-scroll ')}
+        >
+          <div
+            className="relative px-1 py-1  transition-all duration-100"
+            style={{ opacity: showMessages ? 1 : 0 }}
+            ref={innerDiv}
+          >
+            {realtimeMessages === undefined ? (
+              <LoadingIndicator />
+            ) : (
+              <>
+                {notShowingMessages ? (
+                  <Row className=" text-ink-500 items-center justify-center p-2 text-xs italic">
+                    Not showing {notShowingMessages} older messages
+                  </Row>
+                ) : null}
+                {groupedMessages.map((messages, i) => {
+                  const firstMessage = messages[0]
+                  if (firstMessage.visibility === 'system_status') {
+                    return (
+                      <SystemChatMessageItem
+                        key={firstMessage.id}
+                        chats={messages}
+                        otherUsers={otherUsers
+                          ?.concat([user])
+                          .filter((user) =>
+                            messages.some((m) => m.userId === user.id)
+                          )}
+                      />
+                    )
+                  }
+                  return (
+                    <ChatMessageItem
+                      key={firstMessage.id}
+                      chats={messages}
+                      currentUser={user}
+                      otherUser={otherUsers?.find(
+                        (user) => user.id === firstMessage.userId
                       )}
-                  />
-                )
-              }
-              return (
-                <ChatMessageItem
-                  key={firstMessage.id}
-                  chats={messages}
-                  currentUser={user}
-                  otherUser={otherUsers?.find(
-                    (user) => user.id === firstMessage.userId
-                  )}
-                  beforeSameUser={
-                    groupedMessages[i + 1]?.[0].userId === firstMessage.userId
-                  }
-                  firstOfUser={
-                    groupedMessages[i - 1]?.[0].userId !== firstMessage.userId
-                  }
-                />
-              )
-            })}
-          </>
-        )}
-        {messages.length === 0 && (
-          <div className="text-ink-500 dark:text-ink-600 p-2">
-            No messages yet. Say something why don't ya?
+                      beforeSameUser={
+                        groupedMessages[i + 1]?.[0].userId ===
+                        firstMessage.userId
+                      }
+                      firstOfUser={
+                        groupedMessages[i - 1]?.[0].userId !==
+                        firstMessage.userId
+                      }
+                    />
+                  )
+                })}
+              </>
+            )}
+            {realtimeMessages && messages.length === 0 && (
+              <div className="text-ink-500 dark:text-ink-600 p-2">
+                No messages yet. Say something why don't ya?
+              </div>
+            )}
           </div>
-        )}
-        {groupedMessages.length > 0 && (
-          <div className={'absolute -bottom-24'} ref={setScrollToBottomRef} />
-        )}
+        </div>
       </Col>
-      <div className="bg-canvas-50 sticky bottom-[58px] flex w-full justify-start gap-2 lg:bottom-0">
-        <CommentInputTextArea
-          editor={editor}
-          user={user}
-          submit={submitMessage}
-          isSubmitting={isSubmitting}
-          submitOnEnter={true}
-        />
-      </div>
+      <CommentInputTextArea
+        editor={editor}
+        user={user}
+        submit={submitMessage}
+        isSubmitting={isSubmitting}
+        submitOnEnter={true}
+      />
     </Col>
   )
 }

@@ -450,7 +450,6 @@ export function report(params: ReportProps) {
 export function createDashboard(params: {
   title: string
   items: DashboardItem[]
-  description?: JSONContent
   topics: string[]
 }) {
   return call(getApiUrl('createdashboard'), 'POST', params)
@@ -493,7 +492,6 @@ export function updateDashboard(params: {
   dashboardId: string
   items: DashboardItem[]
   topics?: string[]
-  description?: JSONContent
 }) {
   return call(getApiUrl('updatedashboard'), 'POST', params)
 }

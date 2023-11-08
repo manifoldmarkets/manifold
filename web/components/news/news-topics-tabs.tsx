@@ -1,7 +1,6 @@
 import { HomeIcon } from '@heroicons/react/solid'
 import { Col } from 'web/components/layout/col'
 import { QueryUncontrolledTabs, Tab } from 'web/components/layout/tabs'
-import { track } from 'web/lib/service/analytics'
 import { buildArray } from 'common/util/array'
 import { NewsDashboard } from './news-dashboard'
 import { Dashboard } from 'common/dashboard'
@@ -33,9 +32,6 @@ export function NewsTopicsTabs(props: {
         trackingName="news tabs"
         scrollToTop={!dontScroll}
         tabs={topics}
-        onClick={(tabTitle) => {
-          track('news topic clicked', { tab: tabTitle })
-        }}
       />
     </Col>
   )
