@@ -17,10 +17,7 @@ import { Toaster } from 'react-hot-toast'
 import { AddFundsModal } from 'web/components/add-funds-modal'
 import { MobileAppsQRCodeDialog } from 'web/components/buttons/mobile-apps-qr-code-button'
 import { Col } from 'web/components/layout/col'
-import {
-  PrivateMessagesIcon,
-  SolidPrivateMessagesIcon,
-} from 'web/components/messaging/messages-icon'
+import { PrivateMessagesIcon } from 'web/components/messaging/messages-icon'
 import { BottomNavBar } from 'love/components/nav/love-bottom-nav-bar'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useTracking } from 'web/hooks/use-tracking'
@@ -141,7 +138,9 @@ function getBottomNavigation(user: User) {
     {
       name: 'Messages',
       href: '/messages',
-      icon: SolidPrivateMessagesIcon,
+      icon: (props) => (
+        <PrivateMessagesIcon iconClassName={'-mr-5'} solid {...props} />
+      ),
     }
   )
 }
