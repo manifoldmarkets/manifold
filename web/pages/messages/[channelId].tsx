@@ -249,7 +249,7 @@ export const PrivateChat = (props: {
   }, [messages.length])
 
   return (
-    <Col className=" w-full lg:max-w-3xl" style={{}}>
+    <Col className=" w-full">
       <Row
         className={
           'border-ink-200 bg-canvas-50 items-center gap-1 border-b py-2'
