@@ -2,7 +2,6 @@ import clsx from 'clsx'
 import { useState } from 'react'
 import {
   CPMMMultiContract,
-  Contract,
   FreeResponseContract,
   MultiContract,
   add_answers_mode,
