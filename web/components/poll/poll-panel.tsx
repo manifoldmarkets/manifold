@@ -23,8 +23,9 @@ import { Tooltip } from '../widgets/tooltip'
 export function PollPanel(props: {
   contract: PollContract
   maxOptions?: number
+  showResults?: boolean
 }) {
-  const { contract, maxOptions } = props
+  const { contract, maxOptions, showResults } = props
   const { options, closeTime } = contract
   const totalVotes = sumBy(options, (option) => option.votes)
   const votingOpen = !closeTime || closeTime > Date.now()
@@ -99,7 +100,11 @@ export function PollPanel(props: {
               </Row>
             }
             hideBar={
-              !hasVoted && !!closeTime && closeTime > Date.now() && !isCreator
+              !showResults &&
+              !hasVoted &&
+              !!closeTime &&
+              closeTime > Date.now() &&
+              !isCreator
             }
             className={'min-h-[40px]'}
           />
