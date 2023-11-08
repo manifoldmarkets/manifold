@@ -18,7 +18,7 @@ import LoverAbout from 'love/components/lover-about'
 import { useUserAnswersAndQuestions } from 'love/hooks/use-questions'
 import { useTracking } from 'web/hooks/use-tracking'
 import { loveOgImageUrl } from 'love/pages/api/og/utils'
-import { LoverAnswers } from 'love/components/lover-answers'
+import { LoverAnswers } from 'love/components/answers/lover-answers'
 import { SignUpButton } from 'love/components/nav/love-sidebar'
 import { BackButton } from 'web/components/contract/back-button'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
@@ -170,6 +170,7 @@ function LoverContent(props: {
         answers={answers}
         router={router}
         questions={questions}
+        user={user}
       />
       <LoverCommentSection
         onUser={user}

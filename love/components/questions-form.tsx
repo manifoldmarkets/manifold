@@ -15,14 +15,13 @@ import { Row } from 'web/components/layout/row'
 import { Button } from 'web/components/buttons/button'
 import { track } from 'web/lib/service/analytics'
 
-export const QuestionsForm = () => {
+export type QuestionType = 'multiple_choice' | 'free_response'
+
+export const QuestionsForm = (props: { questionType: QuestionType }) => {
+  const { questionType } = props
   const questions = useQuestions()
   const user = useUser()
-  const [page, setPage] = useState(0)
   const router = useRouter()
-  useEffect(() => {
-    scrollTo(0, 0)
-  }, [page])
   return (
     <Col className={'w-full items-center'}>
       <Col
@@ -33,9 +32,9 @@ export const QuestionsForm = () => {
           {user &&
             questions
               .filter((q) =>
-                page === 0
+                questionType !== 'multiple_choice'
                   ? q.answer_type !== 'multiple_choice'
-                  : page === 1 && q.answer_type === 'multiple_choice'
+                  : q.answer_type === 'multiple_choice'
               )
               .map((row) => <QuestionRow user={user} key={row.id} row={row} />)}
         </Col>
@@ -43,24 +42,14 @@ export const QuestionsForm = () => {
           <Col className={'mt-2 w-full'}>
             <Row className={'justify-between'}>
               <Button
-                color={'gray-white'}
-                className={page === 0 ? 'invisible' : ''}
-                onClick={() => {
-                  setPage(page - 1)
-                }}
-              >
-                Back
-              </Button>
-              <Button
                 color={'indigo-outline'}
                 onClick={() => {
-                  track(`submit love questions page ${page}`)
-                  if (page === 0) setPage(1)
-                  else if (user) router.push(`/${user.username}`)
+                  track(`submit love questions page ${questionType}`)
+                  if (user) router.push(`/${user.username}`)
                   else router.push('/')
                 }}
               >
-                Save & continue
+                Save
               </Button>
             </Row>
           </Col>
@@ -71,6 +60,7 @@ export const QuestionsForm = () => {
 }
 type loveAnswer = rowFor<'love_answers'>
 type loveAnswerState = Omit<loveAnswer, 'id' | 'created_time'>
+
 const QuestionRow = (props: { row: rowFor<'love_questions'>; user: User }) => {
   const { row, user } = props
   const { question, id, answer_type, multiple_choice_options } = row
