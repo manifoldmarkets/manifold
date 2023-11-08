@@ -88,7 +88,7 @@ function OpinionScaleBlock(props: {
           : multiChoiceAnswer == 3
           ? `bg-teal-300 dark:bg-teal-200  `
           : `bg-teal-400`,
-        'rounded bg-opacity-20 px-4 py-1 dark:bg-opacity-30 '
+        'relative rounded bg-opacity-20 px-4 py-1 dark:bg-opacity-30'
       )}
     >
       <div
