@@ -1,16 +1,14 @@
 import { track } from '@amplitude/analytics-browser'
-import { NextRouter } from 'next/router'
 import { PencilIcon } from '@heroicons/react/outline'
+import { NextRouter } from 'next/router'
 
+import clsx from 'clsx'
+import { Row as rowFor } from 'common/supabase/utils'
+import { capitalize, orderBy } from 'lodash'
+import { Button } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Subtitle } from '../widgets/lover-subtitle'
-import { Row as rowFor } from 'common/supabase/utils'
-import { Button } from 'web/components/buttons/button'
-import { Linkify } from 'web/components/widgets/linkify'
-import { capitalize, orderBy, partition } from 'lodash'
-import { MultipleChoiceColors } from 'common/love/multiple-choice'
-import clsx from 'clsx'
 
 export function OpinionScale(props: {
   multiChoiceAnswers: rowFor<'love_answers'>[]

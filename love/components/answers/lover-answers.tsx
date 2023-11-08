@@ -1,19 +1,11 @@
-import { track } from '@amplitude/analytics-browser'
 import { NextRouter } from 'next/router'
-import { PencilIcon } from '@heroicons/react/outline'
 
-import { Col } from 'web/components/layout/col'
-import { Row } from 'web/components/layout/row'
-import { Subtitle } from '../widgets/lover-subtitle'
 import { Row as rowFor } from 'common/supabase/utils'
-import { Button } from 'web/components/buttons/button'
-import { Linkify } from 'web/components/widgets/linkify'
-import { capitalize, orderBy, partition } from 'lodash'
-import { MultipleChoiceColors } from 'common/love/multiple-choice'
-import clsx from 'clsx'
-import { OpinionScale } from './opinion-scale-display'
-import { FreeResponseDisplay } from './free-response-display'
 import { User } from 'common/user'
+import { partition } from 'lodash'
+import { Col } from 'web/components/layout/col'
+import { FreeResponseDisplay } from './free-response-display'
+import { OpinionScale } from './opinion-scale-display'
 
 export function LoverAnswers(props: {
   isCurrentUser: boolean
@@ -29,7 +21,6 @@ export function LoverAnswers(props: {
     (a) => a.multiple_choice != null
   )
 
-  console.log(multiChoiceAnswers, otherAnswers, answers)
   return (
     <Col className={'mt-2 gap-2'}>
       <OpinionScale
