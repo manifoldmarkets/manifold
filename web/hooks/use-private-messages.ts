@@ -142,6 +142,7 @@ export const useUnseenPrivateMessageChannels = (
             .select('*')
             .eq('channel_id', channelId)
             .gt('created_time', millisToTs(lastSeenMessagesPageTime))
+            .neq('visibility', 'system_status')
             .limit(1)
             .order('created_time', { ascending: false })
         )
@@ -157,7 +158,7 @@ export const useUnseenPrivateMessageChannels = (
     safeLocalStorage,
     undefined,
     fetcher,
-    `channel_id=in.(${channelIds.join(', ')})`
+    `channel_id=in.(${channelIds.join(', ')}),visibility=neq.system_status`
   )
   const allMessagesByChannelId = groupBy(
     orderBy(messageRows?.map(convertChatMessage), 'createdTime', 'desc'),
