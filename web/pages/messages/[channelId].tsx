@@ -403,15 +403,13 @@ export const PrivateChat = (props: {
                 />
               )
             })}
+            {groupedMessages.length > 0 && <div ref={setScrollToBottomRef} />}
           </>
         )}
         {messages.length === 0 && (
           <div className="text-ink-500 dark:text-ink-600 p-2">
             No messages yet. Say something why don't ya?
           </div>
-        )}
-        {groupedMessages.length > 0 && (
-          <div className={'absolute -bottom-24'} ref={setScrollToBottomRef} />
         )}
       </Col>
       <div className="bg-canvas-50 sticky bottom-[58px] flex w-full justify-start gap-2 lg:bottom-0">
