@@ -100,6 +100,7 @@ export const PrivateChat = (props: {
     true,
     [channel]
   )
+  const initialScroll = useRef(realtimeMessages === undefined)
   const maxUsers = 100
   const userIdsFromMessages = uniq(
     (realtimeMessages ?? [])
@@ -223,10 +224,11 @@ export const PrivateChat = (props: {
     const outerDivHeight = outerDiv?.current?.clientHeight ?? 0
     const innerDivHeight = innerDiv?.current?.clientHeight ?? 0
     const outerDivScrollTop = outerDiv?.current?.scrollTop ?? 0
-
     if (
-      !prevInnerDivHeight ||
-      outerDivScrollTop === prevInnerDivHeight - outerDivHeight
+      (!prevInnerDivHeight ||
+        outerDivScrollTop === prevInnerDivHeight - outerDivHeight ||
+        initialScroll.current) &&
+      realtimeMessages
     ) {
       outerDiv?.current?.scrollTo({
         top: innerDivHeight! - outerDivHeight!,
@@ -234,6 +236,7 @@ export const PrivateChat = (props: {
         behavior: prevInnerDivHeight ? 'smooth' : 'auto',
       })
       setShowMessages(true)
+      initialScroll.current = false
     } else if (last(messages)?.userId === user.id) {
       outerDiv?.current?.scrollTo({
         top: innerDivHeight! - outerDivHeight!,
@@ -369,7 +372,7 @@ export const PrivateChat = (props: {
           </Modal>
         )}
       </Row>
-      <Col className="relative h-[calc(100svh-213px)]  lg:h-[calc(100svh-184px)] xl:px-0">
+      <Col className="relative h-[calc(100dvh-213px)]  lg:h-[calc(100dvh-184px)] xl:px-0">
         <div
           ref={outerDiv}
           className={clsx('relative h-full overflow-y-scroll ')}
@@ -424,7 +427,7 @@ export const PrivateChat = (props: {
                 })}
               </>
             )}
-            {messages.length === 0 && (
+            {realtimeMessages && messages.length === 0 && (
               <div className="text-ink-500 dark:text-ink-600 p-2">
                 No messages yet. Say something why don't ya?
               </div>
