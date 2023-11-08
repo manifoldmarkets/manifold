@@ -91,7 +91,6 @@ function OpinionScaleBlock(props: {
         'rounded bg-opacity-20 px-4 py-1 dark:bg-opacity-30 '
       )}
     >
-      {question.question}
       <div
         className={clsx(
           'text-ink-600 w-full text-xs',
@@ -108,6 +107,7 @@ function OpinionScaleBlock(props: {
       >
         {capitalize(optionKey)}
       </div>
+      {question.question}
     </Col>
   )
 }

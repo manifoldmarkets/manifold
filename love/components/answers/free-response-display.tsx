@@ -43,11 +43,13 @@ export function FreeResponseDisplay(props: {
       </Row>
 
       {answers.length > 0 ? (
-        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+        // <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+        <Col className="gap-2">
           {answers.map((answer) => {
             return <AnswerBlock answer={answer} questions={questions} />
           })}
-        </div>
+          {/* </div> */}
+        </Col>
       ) : isCurrentUser ? (
         <Col className="text-ink-600 gap-2 text-sm">
           You have not answered any questions yet! Help your potential matches
@@ -78,8 +80,9 @@ function AnswerBlock(props: {
         'bg-canvas-0 flex-grow whitespace-pre-line rounded-md px-3 py-2 leading-relaxed'
       }
     >
-      <Row className={'font-semibold'}>{question.question}</Row>
+      <Row className="text-ink-600 text-sm">{question.question}</Row>
       <Linkify
+        className="font-semibold"
         text={answer.free_response ?? answer.integer?.toString() ?? ''}
       />
     </Col>
