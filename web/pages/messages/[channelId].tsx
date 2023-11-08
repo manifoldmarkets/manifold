@@ -45,6 +45,7 @@ import { GiSpeakerOff } from 'react-icons/gi'
 import toast from 'react-hot-toast'
 import { Avatar } from 'web/components/widgets/avatar'
 import { richTextToString } from 'common/util/parse'
+import { isIOS } from 'web/lib/util/device'
 
 export default function PrivateMessagesPage() {
   return (
@@ -88,12 +89,13 @@ export const PrivateChat = (props: {
     channelId,
     true,
     100,
-    20
+    100
   )
+
   const totalMessages = useMessagesCount(true, channelId)
-  const notShowingMessages = realtimeMessages
-    ? Math.max(0, totalMessages - realtimeMessages.length)
-    : 0
+  // Unfortunately, on ios safari, we can't render more than a few dozen messages
+  const messagesPerPage = isIOS() ? 30 : 100
+
   const [showUsers, setShowUsers] = useState(false)
   const otherUsersFromChannel = useOtherUserIdsInPrivateMessageChannelIds(
     user.id,
@@ -126,7 +128,11 @@ export const PrivateChat = (props: {
   )
   const router = useRouter()
 
-  const messages = (realtimeMessages ?? []).reverse()
+  const messages = (realtimeMessages ?? []).slice(0, messagesPerPage).reverse()
+
+  const notShowingMessages = realtimeMessages
+    ? Math.max(0, totalMessages - messages.length)
+    : 0
   const editor = useTextEditor({
     size: 'sm',
     placeholder: 'Send a message',
