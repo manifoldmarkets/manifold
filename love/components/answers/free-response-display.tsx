@@ -22,7 +22,7 @@ export function FreeResponseDisplay(props: {
 }) {
   const { answers, questions, isCurrentUser, router, user } = props
   return (
-    <Col className="mt-4 gap-2">
+    <Col className="mt-5 gap-2">
       <Row className={'w-full items-center justify-between gap-2'}>
         <Subtitle>{`More About ${
           isCurrentUser ? 'You' : user.name.split(' ')[0]
