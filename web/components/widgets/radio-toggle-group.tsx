@@ -43,14 +43,14 @@ export function RadioToggleGroup(props: {
                 disabled
                   ? 'bg-ink-400 ring-ink-400'
                   : index % MultipleChoiceColors.length == 0
-                  ? 'bg-rose-600 ring-rose-600'
+                  ? `${MultipleChoiceColors[0]} ring-rose-600`
                   : index % MultipleChoiceColors.length == 1
-                  ? 'bg-rose-400 ring-rose-400'
+                  ? `${MultipleChoiceColors[1]} ring-rose-400`
                   : index % MultipleChoiceColors.length == 2
-                  ? 'bg-stone-400 ring-stone-400'
+                  ? `${MultipleChoiceColors[2]} ring-stone-400`
                   : index % MultipleChoiceColors.length == 3
-                  ? 'bg-teal-400 ring-teal-400'
-                  : 'bg-teal-600 ring-teal-600',
+                  ? `${MultipleChoiceColors[3]} ring-teal-400`
+                  : `${MultipleChoiceColors[4]} ring-teal-600`,
 
                 toggleClassName
               )
