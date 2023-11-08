@@ -43,7 +43,13 @@ export function OpinionScale(props: {
         <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
           {orderBy(multiChoiceAnswers, (a) => a.multiple_choice, 'desc').map(
             (answer) => {
-              return <OpinionScaleBlock answer={answer} questions={questions} />
+              return (
+                <OpinionScaleBlock
+                  key={answer.multiple_choice ?? '' + answer.id}
+                  answer={answer}
+                  questions={questions}
+                />
+              )
             }
           )}
         </div>
