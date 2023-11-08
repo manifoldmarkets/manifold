@@ -44,7 +44,13 @@ export function FreeResponseDisplay(props: {
       {answers.length > 0 ? (
         <Col className="gap-2">
           {answers.map((answer) => {
-            return <AnswerBlock answer={answer} questions={questions} />
+            return (
+              <AnswerBlock
+                key={answer.free_response ?? '' + answer.id}
+                answer={answer}
+                questions={questions}
+              />
+            )
           })}
         </Col>
       ) : isCurrentUser ? (
