@@ -35,24 +35,30 @@ export function useRealtimePrivateMessagesPolling(
   channelId: number,
   isAuthed: boolean,
   ms: number,
-  initialLimit = 50
+  initialLimit = 50,
+  ignoreSystemStatus = false
 ) {
   if (!isAuthed) {
     console.error('useRealtimePrivateMessages must be authorized')
   }
-  const allRowsQ = db
+  let allRowsQ = db
     .from('private_user_messages')
     .select('*')
     .eq('channel_id', channelId)
     .order('created_time', { ascending: false })
     .limit(initialLimit)
-  const newRowsOnlyQ = (rows: Row<'private_user_messages'>[] | undefined) =>
+  if (ignoreSystemStatus) allRowsQ = allRowsQ.neq('visibility', 'system_status')
+
+  const newRowsOnlyQ = (rows: Row<'private_user_messages'>[] | undefined) => {
     // You can't use allRowsQ here because it keeps tacking on another gt clause
-    db
+    let q = db
       .from('private_user_messages')
       .select('*')
       .eq('channel_id', channelId)
       .gt('id', maxBy(rows, 'id')?.id ?? 0)
+    if (ignoreSystemStatus) q = q.neq('visibility', 'system_status')
+    return q
+  }
 
   const results = usePersistentSupabasePolling(
     allRowsQ,
