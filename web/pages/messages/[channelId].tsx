@@ -8,7 +8,7 @@ import {
 } from 'web/hooks/use-private-messages'
 import { Col } from 'web/components/layout/col'
 import { MANIFOLD_LOVE_LOGO, User } from 'common/user'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { track } from 'web/lib/service/analytics'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { forEach, last, uniq } from 'lodash'
@@ -136,8 +136,12 @@ export const PrivateChat = (props: {
   }, [messages.length])
 
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [scrollToBottomRef, setScrollToBottomRef] =
-    useState<HTMLDivElement | null>(null)
+  const outerDiv = useRef<HTMLDivElement | null>(null)
+  const innerDiv = useRef<HTMLDivElement | null>(null)
+
+  const [prevInnerDivHeight, setPrevInnerDivHeight] = useState<number>()
+
+  const [showMessages, setShowMessages] = useState(false)
 
   const groupedMessages = useMemo(() => {
     // Group messages created within a short time of each other.
@@ -195,21 +199,6 @@ export const PrivateChat = (props: {
     return tempGrouped
   }, [messages.length])
 
-  useEffect(() => {
-    scrollToBottomRef?.scrollIntoView({
-      block: 'end',
-      inline: 'end',
-    })
-  }, [scrollToBottomRef])
-
-  useEffect(() => {
-    if (last(messages)?.userId === user.id)
-      scrollToBottomRef?.scrollIntoView({
-        block: 'end',
-        inline: 'end',
-      })
-  }, [messages.length])
-
   async function submitMessage() {
     if (!user) {
       track('sign in to comment')
@@ -230,11 +219,37 @@ export const PrivateChat = (props: {
     editor?.commands?.focus()
   }
 
+  useEffect(() => {
+    const outerDivHeight = outerDiv?.current?.clientHeight ?? 0
+    const innerDivHeight = innerDiv?.current?.clientHeight ?? 0
+    const outerDivScrollTop = outerDiv?.current?.scrollTop ?? 0
+
+    if (
+      !prevInnerDivHeight ||
+      outerDivScrollTop === prevInnerDivHeight - outerDivHeight
+    ) {
+      outerDiv?.current?.scrollTo({
+        top: innerDivHeight! - outerDivHeight!,
+        left: 0,
+        behavior: prevInnerDivHeight ? 'smooth' : 'auto',
+      })
+      setShowMessages(true)
+    } else if (last(messages)?.userId === user.id) {
+      outerDiv?.current?.scrollTo({
+        top: innerDivHeight! - outerDivHeight!,
+        left: 0,
+        behavior: 'smooth',
+      })
+    }
+
+    setPrevInnerDivHeight(innerDivHeight)
+  }, [messages.length])
+
   return (
-    <Col className="px-2 xl:px-0">
+    <div className="h-[calc(100svh-216px)] w-full lg:max-w-3xl" style={{}}>
       <Row
         className={
-          'border-ink-200 bg-canvas-50 sticky top-0 z-10 items-center gap-1 border-b py-2'
+          'border-ink-200 bg-canvas-50 items-center gap-1 border-b py-2'
         }
       >
         <BackButton />
@@ -354,74 +369,77 @@ export const PrivateChat = (props: {
           </Modal>
         )}
       </Row>
-      <Col
-        className={clsx(
-          'relative',
-          'gap-2 overflow-y-auto py-2',
-          'min-h-[calc(100vh-216px)]',
-          'lg:max-h-[calc(100vh-184px)] lg:min-h-[calc(100vh-184px)]'
-        )}
-      >
-        {realtimeMessages === undefined ? (
-          <LoadingIndicator />
-        ) : (
-          <>
-            {notShowingMessages ? (
-              <Row className=" text-ink-500 items-center justify-center p-2 text-xs italic">
-                Not showing {notShowingMessages} older messages
-              </Row>
-            ) : null}
-            {groupedMessages.map((messages, i) => {
-              const firstMessage = messages[0]
-              if (firstMessage.visibility === 'system_status') {
-                return (
-                  <SystemChatMessageItem
-                    key={firstMessage.id}
-                    chats={messages}
-                    otherUsers={otherUsers
-                      ?.concat([user])
-                      .filter((user) =>
-                        messages.some((m) => m.userId === user.id)
+      <Col className="relative h-full xl:px-0">
+        <div
+          ref={outerDiv}
+          className={clsx('relative h-full overflow-y-scroll ')}
+        >
+          <div
+            className="relative px-1 py-1  transition-all duration-100"
+            style={{ opacity: showMessages ? 1 : 0 }}
+            ref={innerDiv}
+          >
+            {realtimeMessages === undefined ? (
+              <LoadingIndicator />
+            ) : (
+              <>
+                {notShowingMessages ? (
+                  <Row className=" text-ink-500 items-center justify-center p-2 text-xs italic">
+                    Not showing {notShowingMessages} older messages
+                  </Row>
+                ) : null}
+                {groupedMessages.map((messages, i) => {
+                  const firstMessage = messages[0]
+                  if (firstMessage.visibility === 'system_status') {
+                    return (
+                      <SystemChatMessageItem
+                        key={firstMessage.id}
+                        chats={messages}
+                        otherUsers={otherUsers
+                          ?.concat([user])
+                          .filter((user) =>
+                            messages.some((m) => m.userId === user.id)
+                          )}
+                      />
+                    )
+                  }
+                  return (
+                    <ChatMessageItem
+                      key={firstMessage.id}
+                      chats={messages}
+                      currentUser={user}
+                      otherUser={otherUsers?.find(
+                        (user) => user.id === firstMessage.userId
                       )}
-                  />
-                )
-              }
-              return (
-                <ChatMessageItem
-                  key={firstMessage.id}
-                  chats={messages}
-                  currentUser={user}
-                  otherUser={otherUsers?.find(
-                    (user) => user.id === firstMessage.userId
-                  )}
-                  beforeSameUser={
-                    groupedMessages[i + 1]?.[0].userId === firstMessage.userId
-                  }
-                  firstOfUser={
-                    groupedMessages[i - 1]?.[0].userId !== firstMessage.userId
-                  }
-                />
-              )
-            })}
-            {groupedMessages.length > 0 && <div ref={setScrollToBottomRef} />}
-          </>
-        )}
-        {messages.length === 0 && (
-          <div className="text-ink-500 dark:text-ink-600 p-2">
-            No messages yet. Say something why don't ya?
+                      beforeSameUser={
+                        groupedMessages[i + 1]?.[0].userId ===
+                        firstMessage.userId
+                      }
+                      firstOfUser={
+                        groupedMessages[i - 1]?.[0].userId !==
+                        firstMessage.userId
+                      }
+                    />
+                  )
+                })}
+              </>
+            )}
+            {messages.length === 0 && (
+              <div className="text-ink-500 dark:text-ink-600 p-2">
+                No messages yet. Say something why don't ya?
+              </div>
+            )}
           </div>
-        )}
+        </div>
       </Col>
-      <div className="bg-canvas-50 sticky bottom-[58px] flex w-full justify-start gap-2 lg:bottom-0">
-        <CommentInputTextArea
-          editor={editor}
-          user={user}
-          submit={submitMessage}
-          isSubmitting={isSubmitting}
-          submitOnEnter={true}
-        />
-      </div>
-    </Col>
+      <CommentInputTextArea
+        editor={editor}
+        user={user}
+        submit={submitMessage}
+        isSubmitting={isSubmitting}
+        submitOnEnter={true}
+      />
+    </div>
   )
 }
 
