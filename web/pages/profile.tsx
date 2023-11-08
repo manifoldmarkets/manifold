@@ -30,6 +30,7 @@ import { useUser } from 'web/hooks/use-user'
 import ShortToggle from 'web/components/widgets/short-toggle'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { useEditableUserInfo } from 'web/hooks/use-editable-user-info'
+import { Tooltip } from 'web/components/widgets/tooltip'
 
 export const getServerSideProps = redirectIfLoggedOut('/', async (_, creds) => {
   return { props: { auth: await getUserAndPrivateUser(creds.uid) } }
@@ -112,6 +113,12 @@ export default function ProfilePage(props: {
       //eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
       twitchInfo: deleteField(),
+      //eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
+      initialIpAddress: deleteField(),
+      //eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
+      initialDeviceToken: deleteField(),
       notificationPreferences: {
         ...privateUser.notificationPreferences,
         opt_out_all: ['email', 'mobile', 'browser'],
@@ -284,39 +291,30 @@ export default function ProfilePage(props: {
                   <Title>Are you sure?</Title>
                   <div>
                     Updating your API key will break any existing applications
-                    connected to your account, <b>including the Twitch bot</b>.
-                    You will need to go to the{' '}
-                    <Link
-                      href="/twitch"
-                      className="underline focus:outline-none"
-                    >
-                      Twitch page
-                    </Link>{' '}
-                    to relink your account.
+                    connected to your account.
                   </div>
                 </Col>
               </ConfirmationButton>
             </div>
           </div>
           <div>
-            <label className="mb-1 block">Delete Account</label>
-            <div className="flex w-full items-stretch space-x-1">
+            <div className="flex w-full items-center space-x-1 ">
               <ConfirmationButton
                 openModalBtn={{
                   className: 'p-2',
-                  label: 'Permanently delete this account',
+                  label: 'Delete my account',
                   icon: <TrashIcon className="mr-1 h-5 w-5" />,
                   color: 'red',
                 }}
                 submitBtn={{
                   label: 'Delete account',
                   color:
-                    deleteAccountConfirmation == 'delete my account'
+                    deleteAccountConfirmation == 'DELETE MY ACCOUNT'
                       ? 'red'
                       : 'gray',
                 }}
                 onSubmitWithSuccess={async () => {
-                  if (deleteAccountConfirmation == 'delete my account') {
+                  if (deleteAccountConfirmation == 'DELETE MY ACCOUNT') {
                     toast
                       .promise(deleteAccount(), {
                         loading: 'Deleting account...',
@@ -340,13 +338,16 @@ export default function ProfilePage(props: {
               >
                 <Col>
                   <Title>Are you sure?</Title>
-                  <div>
+                  <div className="pb-2">
                     Deleting your account means you will no longer be able to
                     use your account. You will lose access to all of your data.
                   </div>
+                  <div className="pb-4">
+                    Type 'DELETE MY ACCOUNT' to confirm.
+                  </div>
                   <Input
                     type="text"
-                    placeholder="Type 'delete my account' to confirm"
+                    placeholder="Type 'DELETE MY ACCOUNT' to confirm"
                     className="w-full"
                     value={deleteAccountConfirmation}
                     onChange={(e) =>
@@ -355,6 +356,7 @@ export default function ProfilePage(props: {
                   />
                 </Col>
               </ConfirmationButton>
+              <InfoTooltip text="This will delete your personal information and remove your profile page. Public comments and trades will NOT be deleted. Upon request, we may manually remove comments in certain cases at our discretion."></InfoTooltip>
             </div>
           </div>
         </Col>
