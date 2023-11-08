@@ -1,8 +1,8 @@
 import { sortBy } from 'lodash'
 import { run } from 'common/supabase/utils'
-import { BinaryContract } from 'common/contract'
+import { CPMMMultiContract } from 'common/contract'
 import { db } from 'web/lib/supabase/db'
-import { getProbability } from 'common/calculate'
+import { getSixMonthProb } from '../util/relationship-market'
 
 export const getLoverRow = async (userId: string) => {
   const res = await run(db.from('lovers').select('*').eq('user_id', userId))
@@ -14,13 +14,16 @@ export const getMatches = async (userId: string) => {
     db
       .from('contracts')
       .select('*')
+      .filter('outcome_type', 'eq', 'MULTIPLE_CHOICE')
+      .filter('resolution', 'is', null)
       .neq('data->>loverUserId1', null)
       .neq('data->>loverUserId2', null)
       .or(`data->>loverUserId1.eq.${userId},data->>loverUserId2.eq.${userId}`)
   )
-  const contracts = res.data.map((r) => r.data) as BinaryContract[]
+  const contracts = res.data.map((r) => r.data) as CPMMMultiContract[]
+  console.log('contract', contracts[0])
 
-  return sortBy(contracts, (c) => getProbability(c)).reverse()
+  return sortBy(contracts, (c) => getSixMonthProb(c)).reverse()
 }
 
 export const deleteLover = async (userId: string) => {

@@ -4,11 +4,7 @@ import { useState, useEffect } from 'react'
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/outline'
 import { sortBy } from 'lodash'
 
-import {
-  BinaryContract,
-  CPMMBinaryContract,
-  contractPath,
-} from 'common/contract'
+import { CPMMMultiContract, contractPath } from 'common/contract'
 import { useLovers } from 'love/hooks/use-lovers'
 import { useMatches } from 'love/hooks/use-matches'
 import { Col } from 'web/components/layout/col'
@@ -16,7 +12,6 @@ import { AddAMatchButton } from './add-a-match-button'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { Lover } from 'love/hooks/use-lover'
 import { Row } from 'web/components/layout/row'
-import { getProbability } from 'common/calculate'
 import { formatMoney, formatPercent } from 'common/util/format'
 import { UserLink } from 'web/components/widgets/user-link'
 import { Button } from 'web/components/buttons/button'
@@ -36,6 +31,7 @@ import { NoLabel, YesLabel } from 'web/components/outcome-label'
 import { SendMessageButton } from 'web/components/messaging/send-message-button'
 import { CommentsButton } from 'web/components/comments/comments-button'
 import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
+import { getSixMonthProb } from 'love/lib/util/relationship-market'
 
 export const Matches = (props: { userId: string }) => {
   const { userId } = props
@@ -115,7 +111,7 @@ export const Matches = (props: { userId: string }) => {
 }
 
 const MatchContract = (props: {
-  contract: BinaryContract
+  contract: CPMMMultiContract
   lover: Lover
   isYourMatch: boolean
 }) => {
@@ -123,8 +119,9 @@ const MatchContract = (props: {
   const contract = (useFirebasePublicContract(
     props.contract.visibility,
     props.contract.id
-  ) ?? props.contract) as CPMMBinaryContract
-  const prob = getProbability(contract)
+  ) ?? props.contract) as CPMMMultiContract
+  const { answers } = contract
+  const sixMonthProb = getSixMonthProb(contract)
   const { user, pinned_url } = lover
   const currentUser = useUser()
 
@@ -132,7 +129,7 @@ const MatchContract = (props: {
     undefined | Awaited<ReturnType<typeof getCPMMContractUserContractMetrics>>
   >(undefined, 'market-card-feed-positions-' + contract.id)
   useEffect(() => {
-    getCPMMContractUserContractMetrics(contract.id, 10, null, db).then(
+    getCPMMContractUserContractMetrics(contract.id, 10, answers[0].id, db).then(
       (positions) => {
         const yesPositions = sortBy(
           positions.YES.filter(
@@ -171,7 +168,7 @@ const MatchContract = (props: {
           <UserLink name={user.name} username={user.username} />
         </Row>
         <Row className="items-center gap-2">
-          <div className="font-semibold">{formatPercent(prob)}</div>
+          <div className="font-semibold">{formatPercent(sixMonthProb)}</div>
           <BetButton contract={contract} lover={lover} />
           <CommentsButton
             className="min-w-[36px]"
@@ -252,8 +249,10 @@ const MatchContract = (props: {
   )
 }
 
-const BetButton = (props: { contract: BinaryContract; lover: Lover }) => {
+const BetButton = (props: { contract: CPMMMultiContract; lover: Lover }) => {
   const { contract } = props
+  const { answers } = contract
+
   const user = useUser()
   const [open, setOpen] = useState(false)
   return (
@@ -284,7 +283,8 @@ const BetButton = (props: { contract: BinaryContract; lover: Lover }) => {
             </Subtitle>
           </Link>
           <BuyPanel
-            contract={contract as CPMMBinaryContract}
+            contract={contract}
+            multiProps={{ answers, answerToBuy: answers[0] }}
             user={user}
             initialOutcome={'YES'}
             onBuySuccess={() => setTimeout(() => setOpen(false), 500)}

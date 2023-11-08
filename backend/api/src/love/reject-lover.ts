@@ -1,11 +1,13 @@
 import { z } from 'zod'
+import * as admin from 'firebase-admin'
 import { APIError, authEndpoint, validate } from 'api/helpers'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { Contract } from 'common/contract'
+import { CPMMMultiContract, Contract } from 'common/contract'
 import { resolveMarketHelper } from 'shared/resolve-market-helpers'
 import { getUser } from 'shared/utils'
 
 import { manifoldLoveUserId } from 'common/love/constants'
+import { Answer } from 'common/answer'
 
 const rejectLoverSchema = z.object({
   userId: z.string(),
@@ -18,10 +20,15 @@ export const rejectLover = authEndpoint(async (req, auth) => {
   const pg = createSupabaseDirectClient()
   const loverContracts = await pg.map<Contract>(
     `select data from contracts
-    where (data->>'loverUserId1' = $1
-    and data->>'loverUserId2' = $2)
-    or (data->>'loverUserId1' = $2
-    and data->>'loverUserId2' = $1)`,
+    where outcome_type = 'MULTIPLE_CHOICE'
+    and resolution is null
+    and (
+      (data->>'loverUserId1' = $1
+      and data->>'loverUserId2' = $2)
+    or
+      (data->>'loverUserId1' = $2
+      and data->>'loverUserId2' = $1)
+    )`,
     [yourUserId, userId],
     (r) => r.data
   )
@@ -29,18 +36,49 @@ export const rejectLover = authEndpoint(async (req, auth) => {
   if (loverContracts.length === 0)
     throw new APIError(404, 'No lover contract found')
 
-  const contract = loverContracts[0]
+  const contract = loverContracts[0] as CPMMMultiContract
+  const { answers } = contract
+
   const manifoldLoveUser = await getUser(manifoldLoveUserId)
   if (!manifoldLoveUser) throw new APIError(404, 'Manifold Love user not found')
 
-  const resolvedContract = await resolveMarketHelper(
-    contract,
-    manifoldLoveUser,
-    manifoldLoveUser,
-    {
-      outcome: 'NO',
+  console.log('Rejecting lover', contract.id, contract.question, answers)
+
+  const firestore = admin.firestore()
+
+  let resolvedContract = contract
+  let lastResolution = 'YES'
+  for (const answerId of answers.map((a) => a.id)) {
+    // Fetch latest answers.
+    const answersSnap = await firestore
+      .collection(`contracts/${contract.id}/answersCpmm`)
+      .get()
+    const answers = answersSnap.docs.map((doc) => doc.data() as Answer)
+    contract.answers = answers
+
+    const answer = answers.find((a) => a.id === answerId)
+
+    if (!answer) throw new APIError(404, 'Answer not found')
+    if (answer.resolution) {
+      lastResolution = answer.resolution
+      continue
     }
-  )
+
+    const outcome = lastResolution === 'YES' ? 'NO' : 'CANCEL'
+    console.log('Resolving', answer.text, 'to', outcome)
+
+    resolvedContract = (await resolveMarketHelper(
+      contract,
+      manifoldLoveUser,
+      manifoldLoveUser,
+      {
+        answerId: answer.id,
+        outcome,
+      }
+    )) as CPMMMultiContract
+
+    lastResolution = outcome
+  }
 
   return { status: 'success', contract: resolvedContract }
 })
