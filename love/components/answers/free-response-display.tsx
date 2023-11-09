@@ -9,6 +9,8 @@ import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Linkify } from 'web/components/widgets/linkify'
 import { Subtitle } from '../widgets/lover-subtitle'
+import { MODAL_CLASS, Modal } from 'web/components/layout/modal'
+import { useFreeResponseQuestions } from 'love/hooks/use-questions'
 
 export function FreeResponseDisplay(props: {
   answers: rowFor<'love_answers'>[]
@@ -68,6 +70,32 @@ export function FreeResponseDisplay(props: {
   )
 }
 
+export function AddQuestionButton() {
+  const [openModal, setOpenModal] = useState(false)
+  return (
+    <>
+      <Button color="indigo" onClick={() => setOpenModal(true)}>
+        Answer questions
+      </Button>
+    </>
+  )
+}
+
+function AddQuestionModal(props: {
+  open: boolean
+  setOpen: (open: boolean) => void
+}) {
+  const { open, setOpen } = props
+  const questions = useFreeResponseQuestions()
+  return (
+    <Modal open={open} setOpen={setOpen}>
+      <Col className={MODAL_CLASS}>
+        
+      </Col>
+    </Modal>
+  )
+}
+
 function AnswerBlock(props: {
   answer: rowFor<'love_answers'>
   questions: rowFor<'love_questions'>[]
@@ -90,4 +118,7 @@ function AnswerBlock(props: {
       />
     </Col>
   )
+}
+function useState(arg0: boolean): [any, any] {
+  throw new Error('Function not implemented.')
 }

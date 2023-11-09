@@ -9,6 +9,17 @@ export const getAllQuestions = async () => {
   return res.data
 }
 
+export const getFreeResponseQuestions = async () => {
+  const res = await run(
+    db
+      .from('love_questions')
+      .select('*')
+      .order('created_time')
+      .is('multiple_choice', null)
+  )
+  return res.data
+}
+
 export const getUserAnswersAndQuestions = async (userId: string) => {
   const answers = await run(
     db.from('love_answers').select('*').eq('creator_id', userId)
