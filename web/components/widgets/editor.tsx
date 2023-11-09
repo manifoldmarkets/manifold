@@ -122,7 +122,6 @@ export function useTextEditor(props: {
     editorProps: {
       attributes: {
         class: editorClass,
-        spellcheck: simple ? 'true' : 'false',
         style: `min-height: ${1 + 1.625 * (simple ? 2 : 3)}em`, // 1em padding + 1.625 lines per row
       },
     },
