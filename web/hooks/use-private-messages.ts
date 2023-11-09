@@ -67,6 +67,7 @@ export function useRealtimePrivateMessagesPolling(
     {
       ms,
       deps: [channelId],
+      shouldUseLocalStorage: true,
     }
   )
   return results
