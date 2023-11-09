@@ -35,12 +35,7 @@ import { getCumulativeRelationshipProb } from 'love/lib/util/relationship-market
 import { ControlledTabs } from 'web/components/layout/tabs'
 import { Answer } from 'common/answer'
 
-const relationshipStages = [
-  '1st date',
-  '2nd date',
-  '3rd date',
-  '6-month relationship',
-]
+const relationshipStages = ['1st date', '2nd date', '3rd date', '6-month']
 
 export const Matches = (props: { userId: string }) => {
   const { userId } = props
@@ -181,12 +176,21 @@ const MatchContract = (props: {
 
   const [expanded, setExpanded] = useState(false)
 
+  const firstDateDeadline =
+    answer.index === 0
+      ? answer.text.split(' by ')[1].replace('?', '')
+      : undefined
   return (
     <Col>
       {previousStage && (
         <Row className="text-ink-600 bg-canvas-50 px-2 py-1 text-sm">
           Assuming {previousStage.toLowerCase()} ({formatPercent(conditionProb)}{' '}
           chance)
+        </Row>
+      )}
+      {firstDateDeadline && (
+        <Row className="text-ink-600 bg-canvas-50 px-2 py-1 text-sm">
+          By {firstDateDeadline}
         </Row>
       )}
       <Row
