@@ -23,7 +23,7 @@ export const RejectButton = (props: { lover: Lover; className?: string }) => {
       <Button
         className={className}
         color="red-outline"
-        size="xs"
+        size="2xs"
         onClick={() => setDialogOpen(true)}
       >
         Unmatch

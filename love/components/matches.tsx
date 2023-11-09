@@ -2,7 +2,7 @@ import clsx from 'clsx'
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/outline'
-import { sortBy } from 'lodash'
+import { sortBy, orderBy } from 'lodash'
 
 import { CPMMMultiContract, contractPath } from 'common/contract'
 import { useLovers } from 'love/hooks/use-lovers'
@@ -31,13 +31,27 @@ import { NoLabel, YesLabel } from 'web/components/outcome-label'
 import { SendMessageButton } from 'web/components/messaging/send-message-button'
 import { CommentsButton } from 'web/components/comments/comments-button'
 import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
-import { getSixMonthProb } from 'love/lib/util/relationship-market'
+import { getCumulativeRelationshipProb } from 'love/lib/util/relationship-market'
+import { ControlledTabs } from 'web/components/layout/tabs'
+import { Answer } from 'common/answer'
+
+const relationshipStages = [
+  '1st date',
+  '2nd date',
+  '3rd date',
+  '6-month relationship',
+]
 
 export const Matches = (props: { userId: string }) => {
   const { userId } = props
   const lovers = useLovers()
   const matches = useMatches(userId)
   const user = useUser()
+
+  const [tabIndex, setTabIndex] = usePersistentInMemoryState(
+    0,
+    `matches-tab-${userId}`
+  )
 
   const truncatedSize = 5
   const [expanded, setExpanded] = useState(false)
@@ -55,16 +69,28 @@ export const Matches = (props: { userId: string }) => {
     .filter((l) => !matchesSet.has(l.user_id))
     .filter((l) => !lover || areGenderCompatible(lover, l))
     .filter((l) => l.looking_for_matches)
-  const currentMatches = matches.filter((c) => !c.isResolved)
+
+  const currentMatches = orderBy(
+    matches.filter((c) => !c.isResolved),
+    (c) => c.answers[tabIndex].prob,
+    'desc'
+  )
   const areYourMatches = userId === user?.id
 
   return (
     <Col className="bg-canvas-0 max-w-lg gap-4 rounded px-4 py-3">
       {currentMatches.length > 0 ? (
         <Col className="gap-2">
-          <div className="text-lg font-semibold">
-            Chance of 6 month relationship
-          </div>
+          <div className="text-lg font-semibold">Relationship chances</div>
+          <ControlledTabs
+            tabs={relationshipStages.map((stage) => ({
+              title: stage,
+              content: null,
+            }))}
+            activeIndex={tabIndex}
+            onClick={(_title, index) => setTabIndex(index)}
+          />
+
           {(expanded
             ? currentMatches
             : currentMatches.slice(0, truncatedSize)
@@ -82,8 +108,10 @@ export const Matches = (props: { userId: string }) => {
                 <MatchContract
                   key={contract.id}
                   contract={contract}
+                  answer={contract.answers[tabIndex]}
                   lover={matchedLover}
                   isYourMatch={areYourMatches}
+                  previousStage={relationshipStages[tabIndex - 1]}
                 />
               )
             )
@@ -112,24 +140,27 @@ export const Matches = (props: { userId: string }) => {
 
 const MatchContract = (props: {
   contract: CPMMMultiContract
+  answer: Answer
   lover: Lover
   isYourMatch: boolean
+  previousStage: string | undefined
 }) => {
-  const { lover, isYourMatch } = props
+  const { answer, lover, isYourMatch, previousStage } = props
   const contract = (useFirebasePublicContract(
     props.contract.visibility,
     props.contract.id
   ) ?? props.contract) as CPMMMultiContract
-  const { answers } = contract
-  const sixMonthProb = getSixMonthProb(contract)
   const { user, pinned_url } = lover
   const currentUser = useUser()
+
+  const conditionProb =
+    answer.index && getCumulativeRelationshipProb(contract, answer.index - 1)
 
   const [positions, setPositions] = usePersistentInMemoryState<
     undefined | Awaited<ReturnType<typeof getCPMMContractUserContractMetrics>>
   >(undefined, 'market-card-feed-positions-' + contract.id)
   useEffect(() => {
-    getCPMMContractUserContractMetrics(contract.id, 10, answers[0].id, db).then(
+    getCPMMContractUserContractMetrics(contract.id, 10, answer.id, db).then(
       (positions) => {
         const yesPositions = sortBy(
           positions.YES.filter(
@@ -146,12 +177,18 @@ const MatchContract = (props: {
         setPositions({ YES: yesPositions, NO: noPositions })
       }
     )
-  }, [contract.id])
+  }, [contract.id, answer.id])
 
   const [expanded, setExpanded] = useState(false)
 
   return (
     <Col>
+      {previousStage && (
+        <Row className="text-ink-600 bg-canvas-50 px-2 py-1 text-sm">
+          Assuming {previousStage.toLowerCase()} ({formatPercent(conditionProb)}{' '}
+          chance)
+        </Row>
+      )}
       <Row
         className="items-center justify-between"
         onClick={() => setExpanded((b) => !b)}
@@ -168,8 +205,8 @@ const MatchContract = (props: {
           <UserLink name={user.name} username={user.username} />
         </Row>
         <Row className="items-center gap-2">
-          <div className="font-semibold">{formatPercent(sixMonthProb)}</div>
-          <BetButton contract={contract} lover={lover} />
+          <div className="font-semibold">{formatPercent(answer.prob)}</div>
+          <BetButton contract={contract} answer={answer} lover={lover} />
           <CommentsButton
             className="min-w-[36px]"
             contract={contract}
@@ -249,8 +286,12 @@ const MatchContract = (props: {
   )
 }
 
-const BetButton = (props: { contract: CPMMMultiContract; lover: Lover }) => {
-  const { contract } = props
+const BetButton = (props: {
+  contract: CPMMMultiContract
+  answer: Answer
+  lover: Lover
+}) => {
+  const { contract, answer } = props
   const { answers } = contract
 
   const user = useUser()
@@ -284,7 +325,7 @@ const BetButton = (props: { contract: CPMMMultiContract; lover: Lover }) => {
           </Link>
           <BuyPanel
             contract={contract}
-            multiProps={{ answers, answerToBuy: answers[0] }}
+            multiProps={{ answers, answerToBuy: answer }}
             user={user}
             initialOutcome={'YES'}
             onBuySuccess={() => setTimeout(() => setOpen(false), 500)}
