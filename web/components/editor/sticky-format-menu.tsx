@@ -97,7 +97,7 @@ function ToolbarButton(props: {
   )
 }
 
-/** insert a colon, and a space if necessary, to bring up emoji selctor */
+/** insert a colon, and a space if necessary, to bring up emoji selector */
 const insertEmoji = (editor: Editor | null) => {
   if (!editor) return
 

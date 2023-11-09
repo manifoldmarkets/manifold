@@ -2,7 +2,7 @@ import { ITask } from 'pg-promise'
 import { IClient } from 'pg-promise/typescript/pg-subset'
 import { pgp } from './init'
 
-// assuems dashboard exists, user authed
+// assumes dashboard exists, user authed
 export const updateDashboardGroups = async (
   dashboardId: string,
   groupsIds: string[],
