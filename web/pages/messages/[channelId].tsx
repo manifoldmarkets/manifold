@@ -127,8 +127,10 @@ export const PrivateChat = (props: {
     otherUsers?.filter((user) => !usersThatLeft.includes(user.id)) ?? []
   )
   const router = useRouter()
-
-  const messages = (realtimeMessages ?? []).slice(0, messagesPerPage).reverse()
+  const messages = useMemo(
+    () => (realtimeMessages ?? []).slice(0, messagesPerPage).reverse(),
+    [realtimeMessages?.length]
+  )
 
   const notShowingMessages = realtimeMessages
     ? Math.max(0, totalMessages - messages.length)
@@ -204,7 +206,7 @@ export const PrivateChat = (props: {
     if (systemStatusGroup.length > 0) tempGrouped.push(systemStatusGroup)
 
     return tempGrouped
-  }, [messages.length])
+  }, [messages])
 
   async function submitMessage() {
     if (!user) {
@@ -252,7 +254,7 @@ export const PrivateChat = (props: {
     }
 
     setPrevInnerDivHeight(innerDivHeight)
-  }, [messages.length])
+  }, [messages])
 
   return (
     <Col className=" w-full">
