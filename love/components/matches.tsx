@@ -78,8 +78,8 @@ export const Matches = (props: { userId: string }) => {
 
   const currentMatches = sortBy(
     matches.filter((c) => !c.isResolved),
-    (c) => -1 * c.answers[tabIndex].prob,
-    (c) => !c.answers[tabIndex].resolution
+    (c) => (c.answers[tabIndex].resolution ? 1 : 0),
+    (c) => -1 * c.answers[tabIndex].prob
   )
   const areYourMatches = userId === user?.id
 
