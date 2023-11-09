@@ -285,7 +285,7 @@ export function LoanIncomeNotification(props: {
     </NotificationFrame>
   )
 }
-export function ManaPaymentReceievedNotification(props: {
+export function ManaPaymentReceivedNotification(props: {
   notification: Notification
   highlighted: boolean
   setHighlighted: (highlighted: boolean) => void
