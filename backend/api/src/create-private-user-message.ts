@@ -114,7 +114,7 @@ const notifyOtherUserInChannelIfInactive = async (
 
   const otherUser = await getUserSupabase(otherUserId.user_id)
   if (!otherUser) return
-  await createNewMessageNotification(creator, otherUser, channelId, pg)
+  await createNewMessageNotification(creator, otherUser, channelId)
 }
 
 const createNewMessageNotification = async (
