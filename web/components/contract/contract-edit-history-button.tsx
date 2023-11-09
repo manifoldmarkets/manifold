@@ -184,8 +184,8 @@ export const ContractHistoryButton = (props: {
                     {edit.updatedKeys?.includes('isRanked') && (
                       <div>Toggled ranked</div>
                     )}
-                    {edit.updatedKeys?.includes('isSubsidised') && (
-                      <div>Toggled subsidised</div>
+                    {edit.updatedKeys?.includes('isSubsidized') && (
+                      <div>Toggled subsidized</div>
                     )}
                   </Col>
                 </div>
