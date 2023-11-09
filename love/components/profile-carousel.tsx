@@ -1,5 +1,4 @@
 import { buildArray } from 'common/util/array'
-import { Lover } from 'love/hooks/use-lover'
 import { Carousel } from 'web/components/widgets/carousel'
 import Image from 'next/image'
 import { Modal } from 'web/components/layout/modal'
@@ -7,6 +6,7 @@ import { useState } from 'react'
 import { User } from 'common/user'
 import { Col } from 'web/components/layout/col'
 import { SignUpButton } from './nav/love-sidebar'
+import { Lover } from 'common/love/lover'
 
 export default function ProfileCarousel(props: {
   lover: Lover

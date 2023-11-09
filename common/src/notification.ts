@@ -72,6 +72,7 @@ export type notification_source_types =
   | 'comment_on_lover'
   | 'new_match'
   | 'bet_reply'
+  | 'new_message'
 
 export type notification_source_update_types =
   | 'created'

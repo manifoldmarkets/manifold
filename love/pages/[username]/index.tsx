@@ -7,7 +7,7 @@ import { LoverCommentSection } from 'love/components/lover-comment-section'
 import LoverProfileHeader from 'love/components/lover-profile-header'
 import { Matches } from 'love/components/matches'
 import ProfileCarousel from 'love/components/profile-carousel'
-import { Lover, useLoverByUser } from 'love/hooks/use-lover'
+import { useLoverByUser } from 'love/hooks/use-lover'
 import { Button } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -17,11 +17,12 @@ import { getUserByUsername, User } from 'web/lib/firebase/users'
 import LoverAbout from 'love/components/lover-about'
 import { useUserAnswersAndQuestions } from 'love/hooks/use-questions'
 import { useTracking } from 'web/hooks/use-tracking'
-import { loveOgImageUrl } from 'love/pages/api/og/utils'
 import { LoverAnswers } from 'love/components/answers/lover-answers'
 import { SignUpButton } from 'love/components/nav/love-sidebar'
 import { BackButton } from 'web/components/contract/back-button'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
+import { getLoveOgImageUrl } from 'common/love/og-image'
+import { Lover } from 'common/love/lover'
 
 export const getStaticProps = async (props: {
   params: {
@@ -76,7 +77,7 @@ export default function UserPage(props: {
         title={`${user.name} (@${user.username})`}
         description={user.bio ?? ''}
         url={`/${user.username}`}
-        image={loveOgImageUrl(user, lover)}
+        image={getLoveOgImageUrl(user, lover)}
       />
       {(user.isBannedFromPosting || user.userDeleted) && (
         <Head>

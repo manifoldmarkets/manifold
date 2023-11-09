@@ -8,12 +8,12 @@ import {
 import { User } from 'common/user'
 import { Row } from 'web/components/layout/row'
 import ShortToggle from 'web/components/widgets/short-toggle'
-import { Lover } from 'love/hooks/use-lover'
 import { useState } from 'react'
 import { updateLover } from 'web/lib/firebase/love/api'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { toast } from 'react-hot-toast'
 import { Subtitle } from './widgets/lover-subtitle'
+import { Lover } from 'common/love/lover'
 
 export const LoverCommentSection = (props: {
   onUser: User

@@ -70,6 +70,9 @@ const emailsEnabled: Array<notification_preference> = [
   'unique_bettors_on_your_contract',
   'profit_loss_updates',
   'opt_out_all',
+  'new_endorsement',
+  'new_match',
+  'new_message',
   // TODO: add these
 
   // 'referral_bonuses',
@@ -101,12 +104,12 @@ const mobilePushEnabled: Array<notification_preference> = [
   // 'probability_updates_on_watched_markets',
 ]
 
-type SectionData = {
+export type NotificationSectionData = {
   label: string
   subscriptionTypes: Partial<notification_preference>[]
 }
 
-const comments: SectionData = {
+const comments: NotificationSectionData = {
   label: 'New Comments',
   subscriptionTypes: [
     // TODO: combine these two
@@ -117,14 +120,14 @@ const comments: SectionData = {
   ],
 }
 
-const answers: SectionData = {
+const answers: NotificationSectionData = {
   label: 'New Answers',
   subscriptionTypes: [
     'all_answers_on_watched_markets',
     'all_answers_on_contracts_with_shares_in_on_watched_markets',
   ],
 }
-const updates: SectionData = {
+const updates: NotificationSectionData = {
   label: 'Updates & Resolutions',
   subscriptionTypes: [
     'market_updates_on_watched_markets',
@@ -136,7 +139,7 @@ const updates: SectionData = {
     'bounty_canceled',
   ],
 }
-const yourMarkets: SectionData = {
+const yourMarkets: NotificationSectionData = {
   label: 'Questions You Created',
   subscriptionTypes: [
     // 'your_contract_closed',
@@ -149,7 +152,7 @@ const yourMarkets: SectionData = {
     'review_on_your_market',
   ],
 }
-const bonuses: SectionData = {
+const bonuses: NotificationSectionData = {
   label: 'Bonuses',
   subscriptionTypes: [
     'betting_streaks',
@@ -159,11 +162,11 @@ const bonuses: SectionData = {
     'bounty_awarded',
   ],
 }
-const otherBalances: SectionData = {
+const otherBalances: NotificationSectionData = {
   label: 'Other',
   subscriptionTypes: ['loan_income', 'limit_order_fills'],
 }
-const userInteractions: SectionData = {
+const userInteractions: NotificationSectionData = {
   label: 'Users',
   subscriptionTypes: [
     'tagged_user',
@@ -172,7 +175,7 @@ const userInteractions: SectionData = {
     'user_liked_your_content',
   ],
 }
-const groups: SectionData = {
+const groups: NotificationSectionData = {
   label: 'Groups',
   subscriptionTypes: [
     'group_role_changed',
@@ -180,11 +183,11 @@ const groups: SectionData = {
     'contract_from_private_group',
   ],
 }
-const leagues: SectionData = {
+const leagues: NotificationSectionData = {
   label: 'Leagues',
   subscriptionTypes: ['league_changed'],
 }
-const generalOther: SectionData = {
+const generalOther: NotificationSectionData = {
   label: 'Other',
   subscriptionTypes: [
     'trending_markets',
@@ -194,12 +197,14 @@ const generalOther: SectionData = {
   ],
 }
 
-const optOut: SectionData = {
+export const optOutAll: NotificationSectionData = {
   label: 'Opt Out',
   subscriptionTypes: ['opt_out_all'],
 }
 
-const SectionRoutingContext = createContext<string | undefined>(undefined)
+export const SectionRoutingContext = createContext<string | undefined>(
+  undefined
+)
 
 export function NotificationSettings(props: {
   navigateToSection: string | undefined
@@ -223,43 +228,55 @@ export function NotificationSettings(props: {
             onClick={() => setShowWatchModal(true)}
           />
         </Row>
-        <Section icon={<ChatIcon className={'h-6 w-6'} />} data={comments} />
-        <Section
+        <NotificationSection
+          icon={<ChatIcon className={'h-6 w-6'} />}
+          data={comments}
+        />
+        <NotificationSection
           icon={<TrendingUpIcon className={'h-6 w-6'} />}
           data={updates}
         />
-        <Section
+        <NotificationSection
           icon={<LightBulbIcon className={'h-6 w-6'} />}
           data={answers}
         />
-        <Section icon={<UserIcon className={'h-6 w-6'} />} data={yourMarkets} />
+        <NotificationSection
+          icon={<UserIcon className={'h-6 w-6'} />}
+          data={yourMarkets}
+        />
         <Row className={'text-ink-700 gap-2 text-xl'}>
           <span>Balance Changes</span>
         </Row>
-        <Section
+        <NotificationSection
           icon={<CurrencyDollarIcon className={'h-6 w-6'} />}
           data={bonuses}
         />
-        <Section
+        <NotificationSection
           icon={<CashIcon className={'h-6 w-6'} />}
           data={otherBalances}
         />
         <Row className={'text-ink-700 gap-2 text-xl'}>
           <span>General</span>
         </Row>
-        <Section icon={<TrophyIcon className={'h-6 w-6'} />} data={leagues} />
-        <Section
+        <NotificationSection
+          icon={<TrophyIcon className={'h-6 w-6'} />}
+          data={leagues}
+        />
+        <NotificationSection
           icon={<UserIcon className={'h-6 w-6'} />}
           data={userInteractions}
         />
-        <Section icon={<UsersIcon className={'h-6 w-6'} />} data={groups} />
-        <Section
+        <NotificationSection
+          icon={<UsersIcon className={'h-6 w-6'} />}
+          data={groups}
+        />
+        <NotificationSection
           icon={<InboxInIcon className={'h-6 w-6'} />}
           data={generalOther}
         />
-        <Section
+        <NotificationSection
           icon={<ExclamationIcon className={'h-6 w-6'} />}
-          data={optOut}
+          data={optOutAll}
         />
         <WatchMarketModal open={showWatchModal} setOpen={setShowWatchModal} />
       </Col>
@@ -283,6 +300,7 @@ function NotificationSettingLine(props: {
   const [error, setError] = useState<string>('')
   const navigateToSection = useContext(SectionRoutingContext)
   const highlight = navigateToSection === subscriptionTypeKey
+  const isOptOutSection = subscriptionTypeKey === 'opt_out_all'
 
   const privateUser = usePrivateUser()!
 
@@ -315,6 +333,7 @@ function NotificationSettingLine(props: {
               }
               label={'Web'}
               disabled={optOutAll.includes('browser')}
+              colorMode={isOptOutSection ? 'warning' : 'primary'}
             />
           )}
           {emailsEnabled.includes(subscriptionTypeKey) && (
@@ -332,6 +351,7 @@ function NotificationSettingLine(props: {
                   setEnabled: setEmailEnabled,
                 })
               }
+              colorMode={isOptOutSection ? 'warning' : 'primary'}
               label={'Email'}
               disabled={optOutAll.includes('email')}
             />
@@ -351,6 +371,7 @@ function NotificationSettingLine(props: {
                   setEnabled: setMobileEnabled,
                 })
               }
+              colorMode={isOptOutSection ? 'warning' : 'primary'}
               label={'Mobile'}
               disabled={optOutAll.includes('mobile')}
             />
@@ -362,7 +383,10 @@ function NotificationSettingLine(props: {
   )
 }
 
-const Section = (props: { icon: ReactNode; data: SectionData }) => {
+export const NotificationSection = (props: {
+  icon: ReactNode
+  data: NotificationSectionData
+}) => {
   const { icon, data } = props
   const { label, subscriptionTypes } = data
   const privateUser = usePrivateUser()!
@@ -425,7 +449,7 @@ const Section = (props: { icon: ReactNode; data: SectionData }) => {
   )
 }
 
-const PushNotificationsBanner = () => {
+export const PushNotificationsBanner = () => {
   const privateUser = usePrivateUser()!
   const {
     interestedInPushNotifications,
