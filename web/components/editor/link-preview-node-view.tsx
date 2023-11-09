@@ -108,7 +108,7 @@ export const findLinksInContent = (content: JSONContent) => {
 
   const linkMatches = content.content?.flatMap((node) => {
     const contents = node.content?.flat()
-    return contents?.map((n, i) => {
+    return contents?.flatMap((n, i) => {
       const next = contents[i + 1]
       const { text } = n
       const spaceFollows = next?.text?.startsWith(' ') || text?.endsWith(' ')
