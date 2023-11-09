@@ -7,7 +7,7 @@ import { baseLoversSchema } from 'api/love/create-lover'
 import { HOUR_MS } from 'common/util/time'
 import { removePinnedUrlFromPhotoUrls } from 'shared/love/parse-photos'
 
-const optionaLoversSchema = z.object({
+const optionalLoversSchema = z.object({
   political_beliefs: z.array(z.string()).optional(),
   religious_belief_strength: z.number().optional(),
   religious_beliefs: z.string().optional(),
@@ -32,7 +32,7 @@ const optionaLoversSchema = z.object({
   avatar_url: z.string().optional(),
 })
 // TODO: make strict
-const combinedLoveUsersSchema = baseLoversSchema.merge(optionaLoversSchema)
+const combinedLoveUsersSchema = baseLoversSchema.merge(optionalLoversSchema)
 
 export const updatelover = authEndpoint(async (req, auth) => {
   const parsedBody = validate(combinedLoveUsersSchema, req.body)
