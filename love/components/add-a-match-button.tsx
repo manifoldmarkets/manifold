@@ -4,11 +4,7 @@ import { Lover } from 'love/hooks/use-lover'
 import { useState } from 'react'
 import { Button } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
-import {
-  MODAL_CLASS,
-  Modal,
-  SCROLLABLE_MODAL_CLASS,
-} from 'web/components/layout/modal'
+import { MODAL_CLASS, Modal } from 'web/components/layout/modal'
 import { Row } from 'web/components/layout/row'
 import { BuyAmountInput } from 'web/components/widgets/amount-input'
 import { Avatar } from 'web/components/widgets/avatar'
@@ -200,6 +196,11 @@ const AddMatchDialog = (props: {
           </Col>
         )}
 
+        {isSubmitting && (
+          <div className="text-ink-500">
+            Can take up to 30 seconds to create match...
+          </div>
+        )}
         <Button
           className="font-semibold"
           color="green"
