@@ -86,7 +86,7 @@ export const Matches = (props: { userId: string }) => {
   return (
     <Col className="bg-canvas-0 max-w-lg gap-4 rounded px-4 py-3">
       {currentMatches.length > 0 ? (
-        <Col className="gap-2">
+        <Col>
           <div className="text-lg font-semibold">Relationship chances</div>
           <ControlledTabs
             tabs={relationshipStages.map((stage) => ({
@@ -97,32 +97,34 @@ export const Matches = (props: { userId: string }) => {
             onClick={(_title, index) => setTabIndex(index)}
           />
 
-          {(expanded
-            ? currentMatches
-            : currentMatches.slice(0, truncatedSize)
-          ).map((contract) => {
-            const matchedLoverId =
-              contract.loverUserId1 === userId
-                ? contract.loverUserId2
-                : contract.loverUserId1
-            const matchedLover = lovers.find(
-              (lover) =>
-                lover.user_id === matchedLoverId && lover.looking_for_matches
-            )
-            return (
-              matchedLover && (
-                <MatchContract
-                  key={contract.id}
-                  contract={contract}
-                  answer={contract.answers[tabIndex]}
-                  lover={matchedLover}
-                  isYourMatch={areYourMatches}
-                  previousStage={relationshipStages[tabIndex - 1]}
-                  stage={relationshipStages[tabIndex]}
-                />
+          <Col className="gap-4">
+            {(expanded
+              ? currentMatches
+              : currentMatches.slice(0, truncatedSize)
+            ).map((contract) => {
+              const matchedLoverId =
+                contract.loverUserId1 === userId
+                  ? contract.loverUserId2
+                  : contract.loverUserId1
+              const matchedLover = lovers.find(
+                (lover) =>
+                  lover.user_id === matchedLoverId && lover.looking_for_matches
               )
-            )
-          })}
+              return (
+                matchedLover && (
+                  <MatchContract
+                    key={contract.id}
+                    contract={contract}
+                    answer={contract.answers[tabIndex]}
+                    lover={matchedLover}
+                    isYourMatch={areYourMatches}
+                    previousStage={relationshipStages[tabIndex - 1]}
+                    stage={relationshipStages[tabIndex]}
+                  />
+                )
+              )
+            })}
+          </Col>
           {!expanded && currentMatches.length > truncatedSize && (
             <Button
               className="self-start"
@@ -159,7 +161,7 @@ const MatchContract = (props: {
     props.contract.id
   ) ?? props.contract) as CPMMMultiContract
   const answers = useAnswersCpmm(contract.id)
-  contract.answers = answers ?? contract.answers
+  contract.answers = answers && answers.length > 0 ? answers : contract.answers
   const answer = answers
     ? answers.find((a) => a.id === props.answer.id) ?? props.answer
     : props.answer
@@ -204,7 +206,7 @@ const MatchContract = (props: {
       : undefined
   return (
     <Col>
-      <Row className="text-ink-600 bg-canvas-50 justify-between px-2 py-1 text-sm">
+      <Row className="text-ink-600 bg-canvas-50 items-center justify-between px-2 py-1 text-sm">
         {previousStage && (
           <div>
             Assuming {previousStage.toLowerCase()} (
