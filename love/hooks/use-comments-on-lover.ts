@@ -21,6 +21,7 @@ export function useRealtimeCommentsOnLover(userId: string) {
     {
       ms: 500,
       deps: [userId],
+      shouldUseLocalStorage: true,
     }
   )
 
