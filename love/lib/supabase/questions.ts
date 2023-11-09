@@ -15,7 +15,7 @@ export const getFreeResponseQuestions = async () => {
       .from('love_questions')
       .select('*')
       .order('created_time')
-      .is('multiple_choice', null)
+      .eq('answer_type', 'free_response')
   )
   return res.data
 }

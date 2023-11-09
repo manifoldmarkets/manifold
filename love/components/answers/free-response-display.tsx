@@ -9,8 +9,7 @@ import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Linkify } from 'web/components/widgets/linkify'
 import { Subtitle } from '../widgets/lover-subtitle'
-import { MODAL_CLASS, Modal } from 'web/components/layout/modal'
-import { useFreeResponseQuestions } from 'love/hooks/use-questions'
+import { AddQuestionButton } from './free-response-add-question'
 
 export function FreeResponseDisplay(props: {
   answers: rowFor<'love_answers'>[]
@@ -59,40 +58,12 @@ export function FreeResponseDisplay(props: {
         <Col className="text-ink-600 gap-2 text-sm">
           You have not answered any questions yet! Help your potential matches
           get to know you better...
-          <Button color="indigo" onClick={() => router.push('love-questions')}>
-            Answer questions
-          </Button>
+          <AddQuestionButton answers={answers} questions={questions} />
         </Col>
       ) : (
         <div className="text-ink-600 gap-2 text-sm">None yet</div>
       )}
     </Col>
-  )
-}
-
-export function AddQuestionButton() {
-  const [openModal, setOpenModal] = useState(false)
-  return (
-    <>
-      <Button color="indigo" onClick={() => setOpenModal(true)}>
-        Answer questions
-      </Button>
-    </>
-  )
-}
-
-function AddQuestionModal(props: {
-  open: boolean
-  setOpen: (open: boolean) => void
-}) {
-  const { open, setOpen } = props
-  const questions = useFreeResponseQuestions()
-  return (
-    <Modal open={open} setOpen={setOpen}>
-      <Col className={MODAL_CLASS}>
-        
-      </Col>
-    </Modal>
   )
 }
 
@@ -118,7 +89,4 @@ function AnswerBlock(props: {
       />
     </Col>
   )
-}
-function useState(arg0: boolean): [any, any] {
-  throw new Error('Function not implemented.')
 }

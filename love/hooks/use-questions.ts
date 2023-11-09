@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Row } from 'common/supabase/utils'
 import {
   getAllQuestions,
+  getFreeResponseQuestions,
   getUserAnswersAndQuestions,
 } from 'love/lib/supabase/questions'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
@@ -17,7 +18,7 @@ export const useQuestions = () => {
 export const useFreeResponseQuestions = () => {
   const [questions, setQuestions] = useState<Row<'love_questions'>[]>([])
   useEffect(() => {
-    getAllQuestions().then(setQuestions)
+    getFreeResponseQuestions().then(setQuestions)
   }, [])
   return questions
 }
