@@ -85,11 +85,11 @@ export default function DashboardPage(
   if (props.state === 'not found') {
     return <Custom404 />
   } else {
-    return <FoundDashbordPage {...props} editByDefault={edit} />
+    return <FoundDashboardPage {...props} editByDefault={edit} />
   }
 }
 
-function FoundDashbordPage(props: {
+function FoundDashboardPage(props: {
   initialDashboard: Dashboard
   previews: LinkPreviews
   slug: string
