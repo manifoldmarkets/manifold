@@ -281,7 +281,7 @@ export const Stats = (props: {
             <tr className="bg-purple-500/30">
               <td>SQL query</td>
               <td>
-                <span className="trucnate">select * from contracts...</span>
+                <span className="truncate">select * from contracts...</span>
                 <CopyLinkOrShareButton
                   url={`select * from contracts where id = '${id}';`}
                   tooltip="Copy sql query to contract id"
