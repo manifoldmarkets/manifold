@@ -4,17 +4,33 @@ import { ReactNode, useState } from 'react'
 import { MdOutlineStroller } from 'react-icons/md'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
-import { AgeFilter } from './age-filter'
-import { GenderFilter } from './gender-filter'
-import { HasKidsFilter } from './has-kids-filter'
-import { LocationFilter, LocationFilterProps } from './location-filter'
-import { PrefGenderFilter } from './pref-gender-filter'
-import { RelationshipFilter } from './relationship-filter'
+import { AgeFilter, AgeFilterText, getNoMinMaxAge } from './age-filter'
+import { GenderFilter, GenderFilterText } from './gender-filter'
+import { HasKidsFilter, HasKidsLabel, hasKidsLabels } from './has-kids-filter'
+import {
+  LocationFilter,
+  LocationFilterProps,
+  LocationFilterText,
+  PREF_AGE_MIN,
+  PREF_AGE_MAX,
+} from './location-filter'
+import { PrefGenderFilter, PrefGenderFilterText } from './pref-gender-filter'
+import {
+  RelationshipFilter,
+  RelationshipFilterText,
+} from './relationship-filter'
 import { FilterFields } from './search'
-import { WantsKidsFilter } from './wants-kids-filter'
+import {
+  KidsLabel,
+  WantsKidsFilter,
+  WantsKidsIcon,
+  wantsKidsLabels,
+} from './wants-kids-filter'
 import { FaChild } from 'react-icons/fa6'
 import { MyMatchesToggle } from './my-matches-toggle'
 import { Lover } from 'common/love/lover'
+import { Gender } from '../gender-icon'
+import { RelationshipType } from 'love/lib/util/convert-relationship-type'
 
 export function MobileFilters(props: {
   filters: Partial<FilterFields>
@@ -36,6 +52,14 @@ export function MobileFilters(props: {
   } = props
 
   const [openFilter, setOpenFilter] = useState<string | undefined>(undefined)
+  function isAny(filterArray: any[] | undefined) {
+    return !filterArray || filterArray.length < 0
+  }
+
+  const [noMinAge, noMaxAge] = getNoMinMaxAge(
+    filters.pref_age_min,
+    filters.pref_age_max
+  )
 
   return (
     <Col>
@@ -52,6 +76,14 @@ export function MobileFilters(props: {
         title="Gender"
         openFilter={openFilter}
         setOpenFilter={setOpenFilter}
+        selection={
+          <GenderFilterText
+            gender={filters.genders as Gender[]}
+            highlightedClass={
+              isAny(filters.genders) ? 'text-ink-400' : 'text-primary-600'
+            }
+          />
+        }
       >
         <GenderFilter filters={filters} updateFilter={updateFilter} />
       </MobileFilterSection>
@@ -60,6 +92,14 @@ export function MobileFilters(props: {
         title="Interested in"
         openFilter={openFilter}
         setOpenFilter={setOpenFilter}
+        selection={
+          <PrefGenderFilterText
+            pref_gender={filters.pref_gender as Gender[]}
+            highlightedClass={
+              isAny(filters.pref_gender) ? 'text-ink-400' : 'text-primary-600'
+            }
+          />
+        }
       >
         <PrefGenderFilter filters={filters} updateFilter={updateFilter} />
       </MobileFilterSection>
@@ -69,6 +109,15 @@ export function MobileFilters(props: {
         openFilter={openFilter}
         setOpenFilter={setOpenFilter}
         childrenClassName={'pb-6'}
+        selection={
+          <AgeFilterText
+            pref_age_min={filters.pref_age_min}
+            pref_age_max={filters.pref_age_max}
+            highlightedClass={
+              noMinAge && noMaxAge ? 'text-ink-400' : 'text-primary-600'
+            }
+          />
+        }
       >
         <AgeFilter filters={filters} updateFilter={updateFilter} />
       </MobileFilterSection>
@@ -77,6 +126,18 @@ export function MobileFilters(props: {
         title="Location"
         openFilter={openFilter}
         setOpenFilter={setOpenFilter}
+        selection={
+          <LocationFilterText
+            nearbyOriginLocation={locationFilterProps.nearbyOriginLocation}
+            radius={locationFilterProps.radius}
+            youLover={youLover}
+            highlightedClass={
+              !locationFilterProps.nearbyOriginLocation
+                ? 'text-ink-400'
+                : 'text-primary-600'
+            }
+          />
+        }
       >
         <LocationFilter
           youLover={youLover}
@@ -88,6 +149,16 @@ export function MobileFilters(props: {
         title="Relationship style"
         openFilter={openFilter}
         setOpenFilter={setOpenFilter}
+        selection={
+          <RelationshipFilterText
+            relationship={filters.pref_relation_styles as RelationshipType[]}
+            highlightedClass={
+              isAny(filters.pref_relation_styles)
+                ? 'text-ink-400'
+                : 'text-primary-600'
+            }
+          />
+        }
       >
         <RelationshipFilter filters={filters} updateFilter={updateFilter} />
       </MobileFilterSection>
@@ -96,7 +167,19 @@ export function MobileFilters(props: {
         title="Wants kids"
         openFilter={openFilter}
         setOpenFilter={setOpenFilter}
-        icon={<MdOutlineStroller className="text-ink-400 h-4 w-4" />}
+        icon={<WantsKidsIcon strength={filters.wants_kids_strength ?? -1} />}
+        selection={
+          <KidsLabel
+            strength={filters.wants_kids_strength ?? -1}
+            highlightedClass={
+              filters.wants_kids_strength ==
+              wantsKidsLabels.no_preference.strength
+                ? 'text-ink-400'
+                : 'text-primary-600'
+            }
+            mobile
+          />
+        }
       >
         <WantsKidsFilter filters={filters} updateFilter={updateFilter} />
       </MobileFilterSection>
@@ -106,6 +189,17 @@ export function MobileFilters(props: {
         openFilter={openFilter}
         setOpenFilter={setOpenFilter}
         icon={<FaChild className="text-ink-400 h-4 w-4" />}
+        selection={
+          <HasKidsLabel
+            has_kids={filters.has_kids ?? -1}
+            highlightedClass={
+              filters.has_kids == hasKidsLabels.no_preference.value
+                ? 'text-ink-400'
+                : 'text-primary-600'
+            }
+            mobile
+          />
+        }
       >
         <HasKidsFilter filters={filters} updateFilter={updateFilter} />
       </MobileFilterSection>
@@ -153,8 +247,7 @@ export function MobileFilterSection(props: {
       >
         <Row className="items-center gap-0.5">
           {icon}
-          {title}
-          {selection}
+          {title}: {selection}
         </Row>
         <div className="text-ink-400">
           {isOpen ? (
