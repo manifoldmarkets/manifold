@@ -14,7 +14,7 @@ export function GenderFilterText(props: {
     return (
       <span>
         <span className={clsx('text-semibold', highlightedClass)}>Any</span>{' '}
-        gender
+        <span className="hidden sm:inline">gender</span>
       </span>
     )
   }
@@ -30,7 +30,9 @@ export function GenderFilterText(props: {
           />
         )
       })}{' '}
-      <span>gender{gender.length > 1 ? 's' : ''}</span>
+      <span className="hidden sm:inline">
+        gender{gender.length > 1 ? 's' : ''}
+      </span>
     </Row>
   )
 }

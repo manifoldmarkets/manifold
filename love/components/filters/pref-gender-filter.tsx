@@ -13,14 +13,21 @@ export function PrefGenderFilterText(props: {
   if (!pref_gender || pref_gender.length < 1) {
     return (
       <span>
-        Interested in{' '}
-        <span className={clsx('text-semibold', highlightedClass)}>any</span>
+        <span className="hidden sm:inline">Interested in </span>
+        <span
+          className={clsx(
+            'text-semibold capitalize sm:normal-case',
+            highlightedClass
+          )}
+        >
+          any
+        </span>
       </span>
     )
   }
   return (
     <Row className="items-center gap-0.5">
-      Interested in{' '}
+      <span className="hidden sm:inline">Interested in </span>
       {pref_gender.map((gender) => {
         return (
           <GenderIcon

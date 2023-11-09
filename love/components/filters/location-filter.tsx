@@ -24,18 +24,25 @@ export function LocationFilterText(props: {
   if (!nearbyOriginLocation) {
     return (
       <span>
-        <span className={clsx('text-semibold', highlightedClass)}>Any</span>{' '}
-        location
+        <span className={clsx('text-semibold', highlightedClass)}>Any</span>
+        <span className="hidden sm:inline"> location</span>
       </span>
     )
   }
   return (
     <span>
-      <span className={clsx('text-semibold', highlightedClass)}>{radius}</span>{' '}
-      miles near{' '}
-      {youLover?.geodb_city_id == nearbyOriginLocation.id
-        ? 'you'
-        : nearbyOriginLocation.name}
+      <span className="hidden sm:inline">
+        <span className={clsx('text-semibold', highlightedClass)}>
+          {radius}
+        </span>{' '}
+        miles
+      </span>{' '}
+      <span className="capitalize sm:normal-case">near</span>{' '}
+      <span className={highlightedClass}>
+        {youLover?.geodb_city_id == nearbyOriginLocation.id
+          ? 'you'
+          : nearbyOriginLocation.name}
+      </span>
     </span>
   )
 }
