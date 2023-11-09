@@ -37,7 +37,7 @@ export const ChatMessageItem = memo(function ChatMessageItem(props: {
       className={clsx(
         'items-end justify-start gap-1',
         isMe && 'flex-row-reverse',
-        firstOfUser ? 'mt-2' : ''
+        firstOfUser ? 'mt-2' : 'mt-1'
       )}
     >
       {!isMe && (
