@@ -29,6 +29,7 @@ import { MINUTE_MS } from 'common/util/time'
 import { safeLocalStorage } from 'web/lib/util/local'
 import { useEvent } from 'web/hooks/use-event'
 import { useRouter } from 'next/router'
+import { PostgrestBuilder } from '@supabase/postgrest-js'
 
 // NOTE: must be authorized (useIsAuthorized) to use this hook
 export function useRealtimePrivateMessagesPolling(
@@ -57,13 +58,14 @@ export function useRealtimePrivateMessagesPolling(
       .eq('channel_id', channelId)
       .gt('id', maxBy(rows, 'id')?.id ?? 0)
     if (ignoreSystemStatus) q = q.neq('visibility', 'system_status')
-    return q
+    return q as PostgrestBuilder<'private_user_messages'>
   }
 
   const results = usePersistentSupabasePolling(
-    allRowsQ,
+    'private_user_messages',
+    allRowsQ as PostgrestBuilder<'private_user_messages'>,
     newRowsOnlyQ,
-    `private-messages-${channelId}-${ms}ms-${initialLimit}limit`,
+    `private-messages-${channelId}-${ms}ms-${initialLimit}limit-v1`,
     {
       ms,
       deps: [channelId],
@@ -71,7 +73,7 @@ export function useRealtimePrivateMessagesPolling(
     }
   )
   return results
-    ? orderBy(results.data.map(convertChatMessage), 'createdTime', 'desc')
+    ? orderBy(results.map(convertChatMessage), 'createdTime', 'desc')
     : undefined
 }
 

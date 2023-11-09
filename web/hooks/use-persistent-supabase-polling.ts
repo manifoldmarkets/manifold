@@ -1,10 +1,11 @@
 import { useMemo, useEffect, useRef } from 'react'
+import { Row, run, TableName } from 'common/supabase/utils'
 import { PostgrestBuilder } from '@supabase/postgrest-js'
-import { QueryMultiSuccessResponse, run } from 'common/supabase/utils'
 import { MINUTE_MS } from 'common/util/time'
 import { useEvent } from 'web/hooks/use-event'
 import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
 import { usePersistentLocalState } from './use-persistent-local-state'
+import { insertChanges } from 'common/supabase/realtime'
 
 export type DependencyList = readonly unknown[]
 export type PollingOptions = {
@@ -18,9 +19,10 @@ type PollingState =
   | { state: 'polling'; version: number; timeout: NodeJS.Timeout }
   | { state: 'error'; version: number; timeout?: NodeJS.Timeout }
 
-export function usePersistentSupabasePolling<T>(
+export function usePersistentSupabasePolling<T extends TableName>(
+  table: T,
   allRowsQ: PostgrestBuilder<T>,
-  onlyNewRowsQ: (results: T[] | undefined) => PostgrestBuilder<T>,
+  onlyNewRowsQ: (results: Row<T>[] | undefined) => PostgrestBuilder<T>,
   key: string,
   opts?: PollingOptions
 ) {
@@ -31,20 +33,27 @@ export function usePersistentSupabasePolling<T>(
   const state = useRef<PollingState>({ state: 'waiting', version: 0 })
   const [results, setResults] = (
     shouldUseLocalStorage ? usePersistentLocalState : usePersistentInMemoryState
-  )<QueryMultiSuccessResponse<T> | undefined>(undefined, key)
+  )<Row<T>[] | undefined>(undefined, key)
 
-  const onlyNewRowsQBy = useEvent(async () => onlyNewRowsQ(results?.data))
+  const runOnlyNewRowsQ = useEvent(async () => {
+    const res = await run(onlyNewRowsQ(results))
+    return res.data as Row<T>[]
+  })
+  const runAllRowsQ = useEvent(async () => {
+    const res = await run(allRowsQ)
+    return res.data as Row<T>[]
+  })
+  const updateResults = useEvent((rows: Row<T>[]) => {
+    setResults(insertChanges(table, results ?? [], rows))
+  })
 
   const fetchNewRows = useMemo(
     () => () => {
       const version = state.current.version
-      run(onlyNewRowsQBy())
+      runOnlyNewRowsQ()
         .then((r) => {
           if (state.current.version == version) {
-            setResults((prev) => ({
-              data: [...(prev?.data ?? []), ...(r.data ?? [])],
-              count: (prev?.count ?? 0) + (r?.count ?? 0),
-            }))
+            updateResults(r)
             state.current = {
               state: 'polling',
               version,
@@ -61,16 +70,16 @@ export function usePersistentSupabasePolling<T>(
           }
         })
     },
-    [onlyNewRowsQBy, opts]
+    [runOnlyNewRowsQ, opts]
   )
 
   const fetchAllRows = useMemo(
     () => () => {
       const version = state.current.version
-      run(allRowsQ)
+      runAllRowsQ()
         .then((r) => {
           if (state.current.version == version) {
-            setResults(r)
+            updateResults(r)
             state.current = {
               state: 'polling',
               version,
