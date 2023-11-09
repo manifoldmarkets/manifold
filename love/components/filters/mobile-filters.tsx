@@ -172,7 +172,7 @@ export function MobileFilters(props: {
           <KidsLabel
             strength={filters.wants_kids_strength ?? -1}
             highlightedClass={
-              filters.wants_kids_strength ==
+              (filters.wants_kids_strength ?? -1) ==
               wantsKidsLabels.no_preference.strength
                 ? 'text-ink-400'
                 : 'text-primary-600'
@@ -193,7 +193,7 @@ export function MobileFilters(props: {
           <HasKidsLabel
             has_kids={filters.has_kids ?? -1}
             highlightedClass={
-              filters.has_kids == hasKidsLabels.no_preference.value
+              (filters.has_kids ?? -1) == hasKidsLabels.no_preference.value
                 ? 'text-ink-400'
                 : 'text-primary-600'
             }
