@@ -165,8 +165,7 @@ const createNewMatchNotification = async (
   const privateUser = await getPrivateUser(forUser.id)
   if (!privateUser) return
   const id = crypto.randomUUID()
-  //TODO: We should probably build matches their own notification preference
-  const reason = 'tagged_user'
+  const reason = 'new_match'
   const { sendToBrowser, sendToMobile, sendToEmail } =
     getNotificationDestinationsForUser(privateUser, reason)
   const sourceText = `Check out @${matchedUser.username} now!`
@@ -177,7 +176,7 @@ const createNewMatchNotification = async (
     createdTime: Date.now(),
     isSeen: false,
     sourceId: contract.id,
-    sourceType: 'new_match',
+    sourceType: reason,
     sourceUpdateType: 'created',
     sourceUserName: matchMaker.name,
     sourceUserUsername: matchMaker.username,
@@ -207,10 +206,11 @@ const createNewMatchNotification = async (
   }
   if (sendToEmail) {
     await sendNewMatchEmail(
-      'tagged_user',
+      reason,
       privateUser,
       contract,
-      matchMaker.name
+      matchMaker.name,
+      matchedUser
     )
   }
 }

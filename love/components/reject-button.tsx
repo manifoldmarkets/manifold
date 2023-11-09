@@ -1,9 +1,9 @@
-import { Lover } from 'love/hooks/use-lover'
 import { useState } from 'react'
 import { Button } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
 import { Modal } from 'web/components/layout/modal'
 import { rejectLover } from 'web/lib/firebase/love/api'
+import { Lover } from 'common/love/lover'
 
 export const RejectButton = (props: { lover: Lover; className?: string }) => {
   const { lover, className } = props

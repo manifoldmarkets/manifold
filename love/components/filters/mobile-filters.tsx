@@ -1,6 +1,5 @@
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
-import { Lover } from 'love/hooks/use-lover'
 import { ReactNode, useState } from 'react'
 import { MdOutlineStroller } from 'react-icons/md'
 import { Col } from 'web/components/layout/col'
@@ -15,6 +14,7 @@ import { FilterFields } from './search'
 import { WantsKidsFilter } from './wants-kids-filter'
 import { FaChild } from 'react-icons/fa6'
 import { MyMatchesToggle } from './my-matches-toggle'
+import { Lover } from 'common/love/lover'
 
 export function MobileFilters(props: {
   filters: Partial<FilterFields>

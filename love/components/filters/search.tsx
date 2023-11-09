@@ -2,7 +2,6 @@ import { Row as rowFor } from 'common/supabase/utils'
 import { User } from 'common/user'
 import { debounce, orderBy } from 'lodash'
 import { calculateAge } from 'love/components/calculate-age'
-import { Lover } from 'love/hooks/use-lover'
 import { useNearbyCities } from 'love/hooks/use-nearby-locations'
 import { useEffect, useState } from 'react'
 import { IoFilterSharp } from 'react-icons/io5'
@@ -22,6 +21,7 @@ import {
 } from './wants-kids-filter'
 import { useEffectCheckEquality } from 'web/hooks/use-effect-check-equality'
 import { OriginLocation } from './location-filter'
+import { Lover } from 'common/love/lover'
 
 export type FilterFields = {
   orderBy: 'last_online_time' | 'created_time'

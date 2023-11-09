@@ -60,7 +60,12 @@ function InternalUnseenMessagesBubble(props: {
     true
   )
 
-  if (unseenMessages.length === 0) return null
+  if (
+    unseenMessages.length === 0 ||
+    !privateUser.notificationPreferences.new_message.includes('browser') ||
+    privateUser.notificationPreferences.opt_out_all.includes('browser')
+  )
+    return null
 
   return (
     <Row

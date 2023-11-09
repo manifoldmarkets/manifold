@@ -1,8 +1,7 @@
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/outline'
-import { Lover } from 'love/hooks/use-lover'
 import { RelationshipType } from 'love/lib/util/convert-relationship-type'
 import { ReactNode } from 'react'
-import { FaChild, FaUserGroup } from 'react-icons/fa6'
+import { FaUserGroup } from 'react-icons/fa6'
 import DropdownMenu from 'web/components/comments/dropdown-menu'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -24,6 +23,7 @@ import { FilterFields } from './search'
 import { KidsLabel, wantsKidsLabels } from './wants-kids-filter'
 import { HasKidsLabel, hasKidsLabels } from './has-kids-filter'
 import { MyMatchesToggle } from './my-matches-toggle'
+import { Lover } from 'common/love/lover'
 
 export function DesktopFilters(props: {
   filters: Partial<FilterFields>
@@ -116,7 +116,7 @@ export function DesktopFilters(props: {
       {/* LOCATION */}
       <CustomizeableDropdown
         buttonContent={(open: boolean) => (
-        <DropdownButton
+          <DropdownButton
             content={
               <LocationFilterText
                 youLover={youLover}

@@ -27,6 +27,7 @@ export function isTrustworthy(username?: string) {
   return MOD_USERNAMES.includes(username)
 }
 export const DOMAIN = ENV_CONFIG.domain
+export const LOVE_DOMAIN = ENV_CONFIG.loveDomain
 export const FIREBASE_CONFIG = ENV_CONFIG.firebaseConfig
 export const PROJECT_ID = ENV_CONFIG.firebaseConfig.projectId
 export const IS_PRIVATE_MANIFOLD = ENV_CONFIG.visibility === 'PRIVATE'

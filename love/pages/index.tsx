@@ -6,7 +6,7 @@ import { Gender, convertGender } from 'love/components/gender-icon'
 import { LovePage } from 'love/components/love-page'
 import { SignUpAsMatchmaker } from 'love/components/nav/love-sidebar'
 import OnlineIcon from 'love/components/online-icon'
-import { Lover, useLover } from 'love/hooks/use-lover'
+import { useLover } from 'love/hooks/use-lover'
 import { useLovers } from 'love/hooks/use-lovers'
 import { signupThenMaybeRedirectToSignup } from 'love/lib/util/signup'
 import Image from 'next/image'
@@ -21,6 +21,7 @@ import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-s
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { useUser } from 'web/hooks/use-user'
 import { track } from 'web/lib/service/analytics'
+import { Lover } from 'common/love/lover'
 
 export default function ProfilesPage() {
   const allLovers = useLovers()

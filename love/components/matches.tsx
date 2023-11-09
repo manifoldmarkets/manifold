@@ -14,7 +14,6 @@ import { useMatches } from 'love/hooks/use-matches'
 import { Col } from 'web/components/layout/col'
 import { AddAMatchButton } from './add-a-match-button'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
-import { Lover } from 'love/hooks/use-lover'
 import { Row } from 'web/components/layout/row'
 import { getProbability } from 'common/calculate'
 import { formatMoney, formatPercent } from 'common/util/format'
@@ -36,6 +35,7 @@ import { NoLabel, YesLabel } from 'web/components/outcome-label'
 import { SendMessageButton } from 'web/components/messaging/send-message-button'
 import { CommentsButton } from 'web/components/comments/comments-button'
 import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
+import { Lover } from 'common/love/lover'
 
 export const Matches = (props: { userId: string }) => {
   const { userId } = props

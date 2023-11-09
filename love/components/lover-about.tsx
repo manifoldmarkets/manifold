@@ -1,5 +1,4 @@
 import clsx from 'clsx'
-import { Lover } from 'love/hooks/use-lover'
 import {
   RelationshipType,
   convertRelationshipType,
@@ -29,6 +28,7 @@ import { Gender, convertGenderPlural } from './gender-icon'
 import { HiOutlineGlobe } from 'react-icons/hi'
 import { UserHandles } from 'web/components/user/user-handles'
 import { convertRace } from './race'
+import { Lover } from 'common/love/lover'
 
 export function AboutRow(props: {
   icon: ReactNode
