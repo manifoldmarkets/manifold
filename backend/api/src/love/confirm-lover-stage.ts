@@ -43,6 +43,33 @@ export const confirmLoverStage = authEndpoint(async (req, auth) => {
   const manifoldLoveUser = await getUser(manifoldLoveUserId)
   if (!manifoldLoveUser) throw new APIError(404, 'Manifold Love user not found')
 
+  // Find other lover contracts resolved by you in the last day.
+  const yourLoverContracts = await pg.map<Contract>(
+    `select data from contracts
+    where
+      outcome_type = 'MULTIPLE_CHOICE'
+      and resolution is not null
+      and (
+        data->>'loverUserId1' = $1
+        or
+        data->>'loverUserId2' = $1
+      )
+      and resolution_time > now() - interval '1 day'`,
+    [yourUserId],
+    (r) => r.data
+  )
+
+  const otherLoverContracts = yourLoverContracts.filter(
+    (c) => c.id !== contract.id
+  )
+
+  if (otherLoverContracts.length > 0) {
+    throw new APIError(
+      400,
+      'You can only confirm one new relationship stage per day.'
+    )
+  }
+
   console.log(
     'Confirming lover stage',
     contract.id,

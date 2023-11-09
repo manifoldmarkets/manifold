@@ -14,13 +14,19 @@ export const ConfirmStageButton = (props: {
 }) => {
   const { lover, stage, contractId, answerId, className } = props
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [error, setError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const submit = async () => {
     setIsSubmitting(true)
     await confirmLoverStage({ contractId, answerId })
+      .then(() => {
+        setDialogOpen(false)
+      })
+      .catch((e) => {
+        setError(e.message)
+      })
     setIsSubmitting(false)
-    setDialogOpen(false)
   }
 
   return (
@@ -42,6 +48,7 @@ export const ConfirmStageButton = (props: {
             <div>This action cannot be undone.</div>
             <div>(An innaccurate report could result in a ban.)</div>
 
+            {error && <div className="text-red-500">{error}</div>}
             <Button
               className="font-semibold"
               color="green"
