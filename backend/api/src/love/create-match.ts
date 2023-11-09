@@ -109,8 +109,8 @@ export const createMatch = authEndpoint(async (req, auth) => {
   }
 
   const thirtyDaysLaterStr = dayjs(
-    Date.now() + DAY_MS * 31 + 7 * HOUR_MS
-  ).format('MMM d')
+    Date.now() + DAY_MS * 30 + 7 * HOUR_MS
+  ).format('MMM D')
   const eightMonthsLater = new Date(Date.now() + 8 * MONTH_MS)
 
   const contract = (await createMarketHelper(

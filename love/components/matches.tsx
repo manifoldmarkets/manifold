@@ -2,7 +2,7 @@ import clsx from 'clsx'
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/outline'
-import { sortBy, orderBy } from 'lodash'
+import { sortBy } from 'lodash'
 
 import { CPMMMultiContract, contractPath } from 'common/contract'
 import { useLovers } from 'love/hooks/use-lovers'
@@ -27,13 +27,19 @@ import { track } from 'web/lib/service/analytics'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { getCPMMContractUserContractMetrics } from 'common/supabase/contract-metrics'
 import { db } from 'web/lib/supabase/db'
-import { NoLabel, YesLabel } from 'web/components/outcome-label'
+import {
+  BinaryOutcomeLabel,
+  NoLabel,
+  YesLabel,
+} from 'web/components/outcome-label'
 import { SendMessageButton } from 'web/components/messaging/send-message-button'
 import { CommentsButton } from 'web/components/comments/comments-button'
 import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
 import { getCumulativeRelationshipProb } from 'love/lib/util/relationship-market'
 import { ControlledTabs } from 'web/components/layout/tabs'
 import { Answer } from 'common/answer'
+import { ConfirmStageButton } from './confirm-stage-button'
+import { useAnswersCpmm } from 'web/hooks/use-answers'
 
 const relationshipStages = ['1st date', '2nd date', '3rd date', '6-month']
 
@@ -65,10 +71,10 @@ export const Matches = (props: { userId: string }) => {
     .filter((l) => !lover || areGenderCompatible(lover, l))
     .filter((l) => l.looking_for_matches)
 
-  const currentMatches = orderBy(
+  const currentMatches = sortBy(
     matches.filter((c) => !c.isResolved),
-    (c) => c.answers[tabIndex].prob,
-    'desc'
+    (c) => -1 * c.answers[tabIndex].prob,
+    (c) => !c.answers[tabIndex].resolution
   )
   const areYourMatches = userId === user?.id
 
@@ -107,6 +113,7 @@ export const Matches = (props: { userId: string }) => {
                   lover={matchedLover}
                   isYourMatch={areYourMatches}
                   previousStage={relationshipStages[tabIndex - 1]}
+                  stage={relationshipStages[tabIndex]}
                 />
               )
             )
@@ -139,14 +146,24 @@ const MatchContract = (props: {
   lover: Lover
   isYourMatch: boolean
   previousStage: string | undefined
+  stage: string
 }) => {
-  const { answer, lover, isYourMatch, previousStage } = props
+  const { lover, isYourMatch, previousStage, stage } = props
   const contract = (useFirebasePublicContract(
     props.contract.visibility,
     props.contract.id
   ) ?? props.contract) as CPMMMultiContract
+  const answers = useAnswersCpmm(contract.id)
+  contract.answers = answers ?? contract.answers
+  const answer = answers
+    ? answers.find((a) => a.id === props.answer.id) ?? props.answer
+    : props.answer
+
   const { user, pinned_url } = lover
   const currentUser = useUser()
+  const prevAnswer = contract.answers[answer.index - 1]
+  const showConfirmStage =
+    !answer.resolution && (!prevAnswer || prevAnswer.resolution === 'YES')
 
   const conditionProb =
     answer.index && getCumulativeRelationshipProb(contract, answer.index - 1)
@@ -209,19 +226,37 @@ const MatchContract = (props: {
           <UserLink name={user.name} username={user.username} />
         </Row>
         <Row className="items-center gap-2">
-          <div className="font-semibold">{formatPercent(answer.prob)}</div>
-          <BetButton contract={contract} answer={answer} lover={lover} />
-          <CommentsButton
-            className="min-w-[36px]"
-            contract={contract}
-            user={currentUser}
-          />
+          {answer.resolution ? (
+            <div>
+              Resolved <BinaryOutcomeLabel outcome={answer.resolution} />
+            </div>
+          ) : (
+            <>
+              <div className="font-semibold">{formatPercent(answer.prob)}</div>
+              <BetButton contract={contract} answer={answer} lover={lover} />
+              <CommentsButton
+                className="min-w-[36px]"
+                contract={contract}
+                user={currentUser}
+              />
+            </>
+          )}
         </Row>
       </Row>
 
       {expanded && isYourMatch && (
         <Row className="mt-2 justify-between gap-2">
-          <RejectButton lover={lover} />
+          <Row className="gap-2">
+            <RejectButton lover={lover} />
+            {showConfirmStage && (
+              <ConfirmStageButton
+                lover={lover}
+                stage={stage}
+                contractId={contract.id}
+                answerId={answer.id}
+              />
+            )}
+          </Row>
           <SendMessageButton toUser={user} currentUser={currentUser} />
         </Row>
       )}
