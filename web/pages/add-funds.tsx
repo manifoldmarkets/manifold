@@ -26,7 +26,7 @@ export default function AddFundsPage() {
     <Page trackPageView={'add funds'}>
       <SEO
         title="Get mana"
-        description="Buy mana to trade in your favorite questionss on Manifold"
+        description="Buy mana to trade in your favorite questions on Manifold"
         url="/add-funds"
       />
 
