@@ -1,7 +1,12 @@
 import clsx from 'clsx'
 import Link from 'next/link'
+import Router from 'next/router'
 import { useState, useEffect } from 'react'
-import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/outline'
+import {
+  ChevronDownIcon,
+  ChevronUpIcon,
+  ArrowRightIcon,
+} from '@heroicons/react/outline'
 import { sortBy } from 'lodash'
 
 import { CPMMMultiContract, contractPath } from 'common/contract'
@@ -199,17 +204,20 @@ const MatchContract = (props: {
       : undefined
   return (
     <Col>
-      {previousStage && (
-        <Row className="text-ink-600 bg-canvas-50 px-2 py-1 text-sm">
-          Assuming {previousStage.toLowerCase()} ({formatPercent(conditionProb)}{' '}
-          chance)
-        </Row>
-      )}
-      {firstDateDeadline && (
-        <Row className="text-ink-600 bg-canvas-50 px-2 py-1 text-sm">
-          By {firstDateDeadline}
-        </Row>
-      )}
+      <Row className="text-ink-600 bg-canvas-50 justify-between px-2 py-1 text-sm">
+        {previousStage && (
+          <div>
+            Assuming {previousStage.toLowerCase()} (
+            {formatPercent(conditionProb)} chance)
+          </div>
+        )}
+        {firstDateDeadline && <div>By {firstDateDeadline}</div>}
+        <ArrowRightIcon
+          className="h-4 w-4 cursor-pointer"
+          tabIndex={0}
+          onClick={() => Router.push(contractPath(contract))}
+        />
+      </Row>
       <Row
         className="items-center justify-between"
         onClick={() => setExpanded((b) => !b)}
