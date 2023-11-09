@@ -95,9 +95,11 @@ export const Search = (props: {
 
   const [debouncedSetRadius] = useState(() => debounce(setDebouncedRadius, 200))
 
-  const [nearbyOriginLocation, setNearbyOriginLocation] = useState<
-    OriginLocation | undefined | null
-  >(undefined)
+  const [nearbyOriginLocation, setNearbyOriginLocation] =
+    usePersistentInMemoryState<OriginLocation | undefined | null>(
+      undefined,
+      'nearby-origin-location'
+    )
 
   const nearbyCities = useNearbyCities(
     nearbyOriginLocation?.id,
