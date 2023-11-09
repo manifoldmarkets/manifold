@@ -102,7 +102,7 @@ export const Stats = (props: {
           }
         : {
             label: 'Independent',
-            desc: `Each answer is a seperate binary contract with shares worth ${ENV_CONFIG.moneyMoniker}1 if chosen. Any number of answers can be chosen`,
+            desc: `Each answer is a separate binary contract with shares worth ${ENV_CONFIG.moneyMoniker}1 if chosen. Any number of answers can be chosen`,
           }
       : mechanism == 'dpm-2'
       ? {
