@@ -137,6 +137,7 @@ export const resolveMarketHelper = async (
         resolution: outcome,
         resolutionTime,
         resolutionProbability,
+        prob: resolutionProbability,
       })
     )
   }
