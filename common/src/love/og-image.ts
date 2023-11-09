@@ -1,6 +1,5 @@
 import { User } from 'common/user'
-import { buildOgUrl } from 'common/util/og'
-import { Lover } from 'love/hooks/use-lover'
+import { LoverRow } from 'common/love/lover'
 
 export type LoveOgProps = {
   // user props
@@ -13,7 +12,7 @@ export type LoveOgProps = {
   gender: string
 }
 
-export function loveOgImageUrl(user: User, lover?: Lover | null) {
+export function getLoveOgImageUrl(user: User, lover?: LoverRow | null) {
   const loveProps = {
     avatarUrl: user.avatarUrl,
     username: user.username,

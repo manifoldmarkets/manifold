@@ -4,11 +4,6 @@ import { CPMMMultiContract } from 'common/contract'
 import { db } from 'web/lib/supabase/db'
 import { getCumulativeRelationshipProb } from '../util/relationship-market'
 
-export const getLoverRow = async (userId: string) => {
-  const res = await run(db.from('lovers').select('*').eq('user_id', userId))
-  return res.data[0]
-}
-
 export const getMatches = async (userId: string) => {
   const res = await run(
     db

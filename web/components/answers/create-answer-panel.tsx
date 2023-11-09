@@ -2,8 +2,8 @@ import clsx from 'clsx'
 import { useState } from 'react'
 import {
   CPMMMultiContract,
-  Contract,
   FreeResponseContract,
+  MultiContract,
   add_answers_mode,
   tradingAllowed,
 } from 'common/contract'
@@ -24,7 +24,7 @@ import {
   getDpmOutcomeProbabilityAfterBet,
 } from 'common/calculate-dpm'
 import { Bet } from 'common/bet'
-import { MAX_ANSWER_LENGTH } from 'common/answer'
+import { MAX_ANSWERS, MAX_ANSWER_LENGTH } from 'common/answer'
 import { withTracking } from 'web/lib/service/analytics'
 import { Button } from '../buttons/button'
 import { ExpandingInput } from '../widgets/expanding-input'
@@ -227,7 +227,7 @@ function CreateAnswerDpmPanel(props: {
 }
 
 export function SearchCreateAnswerPanel(props: {
-  contract: Contract
+  contract: MultiContract
   addAnswersMode: add_answers_mode | undefined
   text: string
   setText: (text: string) => void
@@ -244,7 +244,8 @@ export function SearchCreateAnswerPanel(props: {
     (addAnswersMode === 'ANYONE' ||
       (addAnswersMode === 'ONLY_CREATOR' && user.id === contract.creatorId)) &&
     tradingAllowed(contract) &&
-    !privateUser?.blockedByUserIds.includes(contract.creatorId)
+    !privateUser?.blockedByUserIds.includes(contract.creatorId) &&
+    contract.answers.length < MAX_ANSWERS
   ) {
     return contract.mechanism === 'cpmm-multi-1' ? (
       <CreateAnswerCpmmPanel contract={contract} text={text} setText={setText}>

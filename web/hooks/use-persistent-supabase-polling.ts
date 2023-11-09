@@ -3,12 +3,14 @@ import { PostgrestBuilder } from '@supabase/postgrest-js'
 import { QueryMultiSuccessResponse, run } from 'common/supabase/utils'
 import { MINUTE_MS } from 'common/util/time'
 import { useEvent } from 'web/hooks/use-event'
-import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
+import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
+import { usePersistentLocalState } from './use-persistent-local-state'
 
 export type DependencyList = readonly unknown[]
 export type PollingOptions = {
   ms: number
   deps: DependencyList | undefined
+  shouldUseLocalStorage?: boolean
 }
 
 type PollingState =
@@ -22,11 +24,14 @@ export function usePersistentSupabasePolling<T>(
   key: string,
   opts?: PollingOptions
 ) {
-  const { ms, deps } = opts ?? { ms: MINUTE_MS, deps: [] }
+  const { ms, deps, shouldUseLocalStorage } = opts ?? {
+    ms: MINUTE_MS,
+    deps: [],
+  }
   const state = useRef<PollingState>({ state: 'waiting', version: 0 })
-  const [results, setResults] = usePersistentLocalState<
-    QueryMultiSuccessResponse<T> | undefined
-  >(undefined, key)
+  const [results, setResults] = (
+    shouldUseLocalStorage ? usePersistentLocalState : usePersistentInMemoryState
+  )<QueryMultiSuccessResponse<T> | undefined>(undefined, key)
 
   const onlyNewRowsQBy = useEvent(async () => onlyNewRowsQ(results?.data))
 

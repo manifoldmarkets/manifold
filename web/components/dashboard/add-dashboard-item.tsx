@@ -20,27 +20,16 @@ export function AddItemCard(props: {
   setItems: (items: DashboardItem[]) => void
   topics: string[]
   setTopics: (topics: string[]) => void
-  createDescription?: () => void
 }) {
-  const { items, setItems, topics, setTopics, createDescription } = props
+  const { items, setItems, topics, setTopics } = props
 
   const [open, setOpen] = useState(false)
-  const [tab, setTab] = useState<0 | 1 | 2>(0)
+  const [tab, setTab] = useState<0 | 1 | 2 | 3>(0)
 
   return (
     <div className="border-ink-200 flex flex-col items-center gap-2 rounded-lg border-2 border-dashed p-2">
       <div className="text-ink-500 text-sm">Add item</div>
       <div className="grid w-full grid-cols-2 gap-2 sm:auto-cols-fr sm:grid-flow-col sm:grid-cols-none">
-        {createDescription && (
-          <Button
-            color="gray-outline"
-            className="gap-1"
-            onClick={createDescription}
-          >
-            <DocumentIcon className="h-5 w-5" />
-            Description
-          </Button>
-        )}
         <Button
           color="gray-outline"
           className="gap-1"
@@ -63,11 +52,22 @@ export function AddItemCard(props: {
           <ExternalLinkIcon className="h-5 w-5" />
           Link
         </Button>
+
         <Button
           color="gray-outline"
           className="gap-1"
           onClick={() => {
-            setTab(2)
+            setItems([newTextItem(), ...items])
+          }}
+        >
+          <DocumentIcon className="h-5 w-5" />
+          Text
+        </Button>
+        <Button
+          color="gray-outline"
+          className="gap-1"
+          onClick={() => {
+            setTab(3)
             setOpen(true)
           }}
         >
@@ -93,8 +93,8 @@ export function AddItemCard(props: {
 const AddDashboardModal = (props: {
   open: boolean
   setOpen: (open: boolean) => void
-  tab: 0 | 1 | 2
-  setTab: (tab: 0 | 1 | 2) => void
+  tab: 0 | 1 | 2 | 3
+  setTab: (tab: 0 | 1 | 2 | 3) => void
   insertItems: (items: DashboardItem[]) => void
   topics: string[]
   setTopics: (topics: string[]) => void
@@ -110,7 +110,13 @@ const AddDashboardModal = (props: {
     >
       <ControlledTabs
         activeIndex={tab}
-        onClick={(_, index) => setTab(index as 0 | 1 | 2)}
+        onClick={(title, index) => {
+          setTab(index as 0 | 1 | 2 | 3)
+          if (title === 'Add text') {
+            insertItems([newTextItem()])
+            setOpen(false)
+          }
+        }}
         tabs={[
           {
             title: 'Add question',
@@ -135,6 +141,10 @@ const AddDashboardModal = (props: {
             ),
           },
           {
+            title: 'Add text',
+            content: null,
+          },
+          {
             title: 'Edit topics',
             content: (
               <DashboardSetTopics
@@ -150,6 +160,13 @@ const AddDashboardModal = (props: {
   )
 }
 
+const newTextItem = () =>
+  ({
+    id: Math.random().toString(),
+    type: 'text',
+    content: {},
+  } as const)
+
 export const AddItemFloatyButton = (props: {
   position: number
   items: DashboardItem[]
@@ -161,7 +178,7 @@ export const AddItemFloatyButton = (props: {
   const { position, items, setItems, topics, setTopics, className } = props
 
   const [open, setOpen] = useState(false)
-  const [tab, setTab] = useState<0 | 1 | 2>(0)
+  const [tab, setTab] = useState<0 | 1 | 2 | 3>(0)
 
   return (
     <>

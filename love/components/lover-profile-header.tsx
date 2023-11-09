@@ -3,7 +3,6 @@ import { DotsHorizontalIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 
 import { User } from 'common/user'
-import { Lover } from 'love/hooks/use-lover'
 import { NextRouter } from 'next/router'
 import { Button } from 'web/components/buttons/button'
 import { MoreOptionsUserButton } from 'web/components/buttons/more-options-user-button'
@@ -17,6 +16,7 @@ import { track } from 'web/lib/service/analytics'
 import DropdownMenu from 'web/components/comments/dropdown-menu'
 import { deleteLover } from 'love/lib/supabase/lovers'
 import { ShareProfileButton } from './widgets/share-profile-button'
+import { Lover } from 'common/love/lover'
 
 export default function LoverProfileHeader(props: {
   isCurrentUser: boolean

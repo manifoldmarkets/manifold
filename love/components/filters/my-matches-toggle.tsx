@@ -1,7 +1,6 @@
-import { Lover } from 'love/hooks/use-lover'
 import { Row } from 'web/components/layout/row'
-import { Checkbox } from 'web/components/widgets/checkbox'
 import clsx from 'clsx'
+import { Lover } from 'common/love/lover'
 
 export function MyMatchesToggle(props: {
   setYourFilters: (checked: boolean) => void

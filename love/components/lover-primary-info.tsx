@@ -1,4 +1,3 @@
-import { Lover } from 'love/hooks/use-lover'
 import { ReactNode } from 'react'
 import { IoLocationOutline } from 'react-icons/io5'
 import { MdHeight } from 'react-icons/md'
@@ -7,6 +6,7 @@ import GenderIcon, { Gender, convertGender } from './gender-icon'
 import { formatLoverValue } from './lover-about'
 import { capitalize } from 'lodash'
 import { Tooltip } from 'web/components/widgets/tooltip'
+import { Lover } from 'common/love/lover'
 
 export default function LoverPrimaryInfo(props: { lover: Lover }) {
   const { lover } = props

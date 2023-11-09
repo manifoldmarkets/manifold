@@ -15,7 +15,7 @@ export function UnseenMessagesBubble(props: { className?: string }) {
   }
   return (
     <InternalUnseenMessagesBubble
-      iconClassName={clsx('-mr-4', className)}
+      bubbleClassName={clsx('-mr-4', className)}
       isAuthed={isAuthed}
       privateUser={privateUser}
     />
@@ -24,10 +24,10 @@ export function UnseenMessagesBubble(props: { className?: string }) {
 
 export function PrivateMessagesIcon(props: {
   className?: string
-  iconClassName?: string
+  bubbleClassName?: string
   solid?: boolean
 }) {
-  const { solid, iconClassName } = props
+  const { solid, className, bubbleClassName } = props
   const privateUser = usePrivateUser()
   const isAuthed = useIsAuthorized()
   const Icon = solid ? BiSolidEnvelope : BiEnvelope
@@ -36,11 +36,11 @@ export function PrivateMessagesIcon(props: {
       {privateUser && isAuthed && (
         <InternalUnseenMessagesBubble
           isAuthed={isAuthed}
-          iconClassName={clsx('-mt-2', iconClassName)}
+          bubbleClassName={clsx('-mt-2', bubbleClassName)}
           privateUser={privateUser}
         />
       )}
-      <Icon className={props.className} />
+      <Icon className={className} />
     </Row>
   )
 }
@@ -49,10 +49,10 @@ export function PrivateMessagesIcon(props: {
 function InternalUnseenMessagesBubble(props: {
   privateUser: PrivateUser
   isAuthed: boolean
-  iconClassName?: string
+  bubbleClassName?: string
   className?: string
 }) {
-  const { privateUser, isAuthed, className, iconClassName } = props
+  const { privateUser, isAuthed, className, bubbleClassName } = props
   if (!isAuthed) console.error('must be authorized to use this component')
 
   const { unseenMessages } = useUnseenPrivateMessageChannels(
@@ -60,7 +60,12 @@ function InternalUnseenMessagesBubble(props: {
     true
   )
 
-  if (unseenMessages.length === 0) return null
+  if (
+    unseenMessages.length === 0 ||
+    !privateUser.notificationPreferences.new_message.includes('browser') ||
+    privateUser.notificationPreferences.opt_out_all.includes('browser')
+  )
+    return null
 
   return (
     <Row
@@ -72,7 +77,7 @@ function InternalUnseenMessagesBubble(props: {
       <div
         className={clsx(
           'text-ink-0 bg-primary-500 min-w-[15px] rounded-full p-[2px] text-center text-[10px] leading-3 ',
-          iconClassName
+          bubbleClassName
         )}
       >
         {unseenMessages.length}

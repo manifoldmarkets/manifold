@@ -139,7 +139,7 @@ function getBottomNavigation(user: User) {
       name: 'Messages',
       href: '/messages',
       icon: (props) => (
-        <PrivateMessagesIcon iconClassName={'-mr-5'} solid {...props} />
+        <PrivateMessagesIcon bubbleClassName={'-mr-5'} solid {...props} />
       ),
     }
   )

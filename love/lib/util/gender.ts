@@ -1,4 +1,4 @@
-import { Lover } from 'love/hooks/use-lover'
+import { Lover } from 'common/love/lover'
 
 const isPreferredGender = (
   preferredGenders: string[] | undefined,

@@ -1,15 +1,16 @@
 import { Switch } from '@headlessui/react'
 import clsx from 'clsx'
 import { Tooltip } from 'web/components/widgets/tooltip'
-import ShortToggle from './widgets/short-toggle'
+import ShortToggle, { ToggleColorMode } from './widgets/short-toggle'
 
 export const SwitchSetting = (props: {
   checked: boolean
   onChange: (checked: boolean) => void
   label: 'Web' | 'Email' | 'Mobile'
   disabled: boolean
+  colorMode?: ToggleColorMode
 }) => {
-  const { checked, onChange, label, disabled } = props
+  const { colorMode, checked, onChange, label, disabled } = props
   return (
     <Switch.Group as="div" className="flex items-center gap-3">
       <Tooltip
@@ -21,7 +22,12 @@ export const SwitchSetting = (props: {
             : ''
         }
       >
-        <ShortToggle on={checked} setOn={onChange} disabled={disabled} />
+        <ShortToggle
+          colorMode={colorMode}
+          on={checked}
+          setOn={onChange}
+          disabled={disabled}
+        />
       </Tooltip>
       <Switch.Label
         className={clsx(

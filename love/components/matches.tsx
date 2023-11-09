@@ -15,7 +15,6 @@ import { useMatches } from 'love/hooks/use-matches'
 import { Col } from 'web/components/layout/col'
 import { AddAMatchButton } from './add-a-match-button'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
-import { Lover } from 'love/hooks/use-lover'
 import { Row } from 'web/components/layout/row'
 import { formatMoney, formatPercent } from 'common/util/format'
 import { UserLink } from 'web/components/widgets/user-link'
@@ -45,6 +44,7 @@ import { ControlledTabs } from 'web/components/layout/tabs'
 import { Answer } from 'common/answer'
 import { ConfirmStageButton } from './confirm-stage-button'
 import { useAnswersCpmm } from 'web/hooks/use-answers'
+import { Lover } from 'common/love/lover'
 
 const relationshipStages = ['1st date', '2nd date', '3rd date', '6-month']
 

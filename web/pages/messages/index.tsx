@@ -90,7 +90,13 @@ export const MessageChannelRow = (props: {
     : // eslint-disable-next-line react-hooks/rules-of-hooks
       useUsersInStore(otherUserIds, `${channelId}`, 100)
 
-  const messages = useRealtimePrivateMessagesPolling(channelId, true, 2000, 1)
+  const messages = useRealtimePrivateMessagesPolling(
+    channelId,
+    true,
+    2000,
+    1,
+    true
+  )
   const unseen = useHasUnseenPrivateMessage(currentUser.id, channelId, messages)
   const chat = messages?.[0]
   const numOthers = otherUsers?.length ?? 0

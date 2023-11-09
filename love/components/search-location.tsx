@@ -1,9 +1,7 @@
 // src/components/SearchBar.tsx
 import clsx from 'clsx'
-import { Lover } from 'love/hooks/use-lover'
 import { useEffect, useRef, useState } from 'react'
 import { Col } from 'web/components/layout/col'
-import { Row } from 'web/components/layout/row'
 import { Input } from 'web/components/widgets/input'
 import { searchLocation } from 'web/lib/firebase/api'
 import { Row as rowFor } from 'common/supabase/utils'
