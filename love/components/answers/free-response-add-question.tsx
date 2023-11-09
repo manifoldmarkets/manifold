@@ -68,8 +68,8 @@ function AddQuestionModal(props: {
             </Col>
           </>
         ) : (
-          <Col className="gap-2">
-            <div className="text-ink-600 text-sm">
+          <Col className="w-full gap-2">
+            <div className="text-semibold w-full">
               {addableQuestions.find((q) => q.id === selectedQuestion)
                 ?.question ?? ''}
             </div>
