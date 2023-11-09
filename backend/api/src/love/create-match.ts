@@ -115,7 +115,7 @@ export const createMatch = authEndpoint(async (req, auth) => {
 
   const contract = (await createMarketHelper(
     {
-      question: `Relationship of @${user1.username} and @${user2.username}`,
+      question: `Relationship of @${user1.username} & @${user2.username}`,
       answers: [
         `First date by ${thirtyDaysLaterStr}?`,
         `If first date, second date within two weeks?`,
@@ -123,12 +123,11 @@ export const createMatch = authEndpoint(async (req, auth) => {
         `If third date, continue relationship for six months?`,
       ],
       // TODO: Insert a link to rules page for all the answer criteria (that way we can update it too).
-      descriptionMarkdown: `Check out the profiles of these two and bet on their long term compatibility!
+      descriptionMarkdown: `Are [${user1.name}](https://manifold.love/${user1.username}) and [${user2.name}](https://manifold.love/${user2.username}) a good match? Bet on whether they will hit any of these relationship milestones! 
 
-[${user1.name}](https://manifold.love/${user1.username})
+Beyond the first date, each milestone only resolves to YES or NO if all the previous milestones resolve YES. Otherwise, they will resolve to N/A.
 
-[${user2.name}](https://manifold.love/${user2.username})
-`,
+See [FAQ](https://manifold.love/faq) for more details.`,
       extraLiquidity: 500,
       outcomeType: 'MULTIPLE_CHOICE',
       shouldAnswersSumToOne: false,
