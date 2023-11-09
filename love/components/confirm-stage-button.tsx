@@ -1,4 +1,4 @@
-import { Lover } from 'love/hooks/use-lover'
+import { Lover } from 'common/love/lover'
 import { useState } from 'react'
 import { Button } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
