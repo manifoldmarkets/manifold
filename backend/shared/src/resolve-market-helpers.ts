@@ -132,12 +132,15 @@ export const resolveMarketHelper = async (
     const answerDoc = firestore.doc(
       `contracts/${contractId}/answersCpmm/${answerId}`
     )
+    const finalProb =
+      resolutionProbability ??
+      (outcome === 'YES' ? 1 : outcome === 'NO' ? 0 : undefined)
     await answerDoc.update(
       removeUndefinedProps({
         resolution: outcome,
         resolutionTime,
         resolutionProbability,
-        prob: resolutionProbability,
+        prob: finalProb,
       })
     )
   }
