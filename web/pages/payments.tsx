@@ -100,7 +100,11 @@ export const PaymentsContent = (props: {
         >
           Send
         </Button>
-        <Button onClick={() => setShowQRModal(true)} color="indigo-outline" size="xl">
+        <Button
+          onClick={() => setShowQRModal(true)}
+          color="indigo-outline"
+          size="xl"
+        >
           {user && user.id === forUser?.id && (
             <span className="mr-1">Receive</span>
           )}
