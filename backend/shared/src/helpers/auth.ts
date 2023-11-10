@@ -5,7 +5,7 @@ import { isAdminId, isTrustworthy } from 'common/envs/constants'
 export const throwErrorIfNotMod = async (userId: string) => {
   const error = new APIError(
     403,
-    `User ${userId} must be an admin or trusted to unresolve.`
+    `User ${userId} must be an admin or trusted to perform this action.`
   )
   if (isAdminId(userId)) return
   const user = await getUserSupabase(userId)

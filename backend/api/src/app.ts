@@ -104,6 +104,7 @@ import { searchlocation } from './search-location'
 import { searchnearcity } from './search-near-city'
 import { leaveprivateusermessagechannel } from 'api/leave-private-user-message-channel'
 import { updateprivateusermessagechannel } from 'api/update-private-user-message-channel'
+import { confirmLoverStage } from './love/confirm-lover-stage'
 
 const allowCors: RequestHandler = cors({
   origin: [
@@ -259,6 +260,7 @@ app.post(
 app.post('/create-lover', ...apiRoute(createlover))
 app.post('/update-lover', ...apiRoute(updatelover))
 app.post('/reject-lover', ...apiRoute(rejectLover))
+app.post('/confirm-lover-stage', ...apiRoute(confirmLoverStage))
 app.post('/create-match', ...apiRoute(createMatch))
 app.post('/create-comment-on-lover', ...apiRoute(createcommentonlover))
 app.post('/hide-comment-on-lover', ...apiRoute(hidecommentonlover))
