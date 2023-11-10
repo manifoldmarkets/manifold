@@ -17,8 +17,9 @@ export function FreeResponseDisplay(props: {
   isCurrentUser: boolean
   router: NextRouter
   user: User
+  refreshAnswers: () => void
 }) {
-  const { answers, questions, isCurrentUser, router, user } = props
+  const { answers, questions, isCurrentUser, refreshAnswers, user } = props
   return (
     <Col className="mt-5 gap-2">
       <Row className={'w-full items-center justify-between gap-2'}>
@@ -53,6 +54,7 @@ export function FreeResponseDisplay(props: {
           answers={answers}
           questions={questions}
           user={user}
+          refreshAnswers={refreshAnswers}
         />
       )}
     </Col>

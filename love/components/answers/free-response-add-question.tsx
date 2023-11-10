@@ -12,15 +12,16 @@ import {
   SCROLLABLE_MODAL_CLASS,
 } from 'web/components/layout/modal'
 import { Row } from 'web/components/layout/row'
-import { IndividualQuestionRow } from '../questions-form'
+import { IndividualQuestionRow, loveAnswerState } from '../questions-form'
 
 export function AddQuestionButton(props: {
   isFirstQuestion?: boolean
   answers: rowFor<'love_answers'>[]
   questions: rowFor<'love_questions'>[]
   user: User
+  refreshAnswers: () => void
 }) {
-  const { isFirstQuestion, answers, questions, user } = props
+  const { isFirstQuestion, answers, questions, user, refreshAnswers } = props
   const [openModal, setOpenModal] = useState(false)
   return (
     <>
@@ -43,6 +44,7 @@ export function AddQuestionButton(props: {
         answers={answers}
         userQuestions={questions}
         user={user}
+        refreshAnswers={refreshAnswers}
       />
     </>
   )
@@ -54,8 +56,9 @@ function AddQuestionModal(props: {
   answers: rowFor<'love_answers'>[]
   userQuestions: rowFor<'love_questions'>[]
   user: User
+  refreshAnswers: () => void
 }) {
-  const { open, setOpen, answers, userQuestions, user } = props
+  const { open, setOpen, answers, userQuestions, user, refreshAnswers } = props
   const addableQuestions = useFreeResponseQuestions()
   const [selectedQuestion, setSelectedQuestion] =
     useState<rowFor<'love_questions'> | null>(null)
@@ -94,7 +97,10 @@ function AddQuestionModal(props: {
               user={user}
               row={selectedQuestion}
               onCancel={() => setOpen(false)}
-              onSubmit={() => setOpen(false)}
+              onSubmit={(_newState: loveAnswerState) => {
+                refreshAnswers()
+                setOpen(false)
+              }}
             />
           </Col>
         )}

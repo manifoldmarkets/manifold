@@ -59,7 +59,7 @@ export const QuestionsForm = (props: { questionType: QuestionType }) => {
   )
 }
 type loveAnswer = rowFor<'love_answers'>
-type loveAnswerState = Omit<loveAnswer, 'id' | 'created_time'>
+export type loveAnswerState = Omit<loveAnswer, 'id' | 'created_time'>
 
 const fetchPrevious = async (
   id: number,
@@ -222,10 +222,11 @@ export const IndividualQuestionRow = (props: {
         <Button
           color={'indigo'}
           onClick={() => {
-            submitAnswer(form)
-            if (onSubmit) {
-              onSubmit(form)
-            }
+            submitAnswer(form).then(() => {
+              if (onSubmit) {
+                onSubmit(form)
+              }
+            })
           }}
         >
           Save

@@ -23,7 +23,10 @@ export const useFreeResponseQuestions = () => {
   return questions
 }
 
-export const useUserAnswersAndQuestions = (userId: string | undefined) => {
+export const useUserAnswersAndQuestions = (
+  userId: string | undefined,
+  refresh?: number
+) => {
   const [answers, setAnswers] = usePersistentInMemoryState<
     Row<'love_answers'>[]
   >([], `answers-${userId}`)
@@ -37,6 +40,7 @@ export const useUserAnswersAndQuestions = (userId: string | undefined) => {
         setQuestions(questions)
       })
     }
-  }, [userId])
+  }, [userId, refresh])
+
   return { answers, questions }
 }
