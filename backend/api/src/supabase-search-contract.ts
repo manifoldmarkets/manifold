@@ -6,8 +6,10 @@ import {
   hasGroupAccess,
   getSearchContractSQL,
   getForYouSQL,
+  SearchTypes,
 } from 'shared/supabase/search-contracts'
 import { getGroupIdFromSlug } from 'shared/supabase/groups'
+import { uniqBy } from 'lodash'
 
 export const supabasesearchcontracts = MaybeAuthedEndpoint(
   async (req, auth) => {
@@ -41,11 +43,24 @@ export const searchContracts = async (
   const groupId = topicSlug
     ? await getGroupIdFromSlug(topicSlug, pg)
     : undefined
-
-  const searchMarketSQL =
-    isForYou && !term && sort === 'score' && userId
-      ? getForYouSQL(userId, filter, contractType, limit, offset)
-      : getSearchContractSQL({
+  let contracts: Contract[]
+  if (isForYou && !term && sort === 'score' && userId) {
+    const forYouSql = getForYouSQL(userId, filter, contractType, limit, offset)
+    contracts = await pg.map(forYouSql, [term], (r) => r.data as Contract)
+  } else {
+    const groupAccess = await hasGroupAccess(groupId, userId)
+    const searchTypes: SearchTypes[] = [
+      'without-stopwords',
+      'with-stopwords',
+      'description',
+    ]
+    const [
+      contractsWithoutStopwords,
+      contractsWithStopwords,
+      contractDescriptionMatches,
+    ] = await Promise.all(
+      searchTypes.map(async (searchType) => {
+        const searchSQL = getSearchContractSQL({
           term,
           filter,
           sort,
@@ -56,14 +71,22 @@ export const searchContracts = async (
           creatorId,
           uid: userId,
           isForYou,
-          hasGroupAccess: await hasGroupAccess(groupId, userId),
+          groupAccess,
+          searchType,
         })
+        return pg.map(searchSQL, [term], (r) => r.data as Contract)
+      })
+    )
 
-  const contracts = await pg.map(
-    searchMarketSQL,
-    [term],
-    (r) => r.data as Contract
-  )
+    contracts = uniqBy(
+      [
+        ...contractsWithoutStopwords,
+        ...contractsWithStopwords,
+        ...contractDescriptionMatches,
+      ],
+      'id'
+    ).slice(0, limit)
+  }
 
   return (contracts ?? []) as unknown as Json
 }
