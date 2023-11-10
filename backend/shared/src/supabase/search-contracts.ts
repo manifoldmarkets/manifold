@@ -138,7 +138,9 @@ export function getSearchContractSQL(args: {
 
     term.length && [
       join(`websearch_to_tsquery('english', $1) as query on true`),
-      where('question_fts @@ query OR description_fts @@ query'),
+      // TODO reenable description search
+      // where('question_fts @@ query OR description_fts @@ query'),
+      where(`question_fts @@ to_tsquery(concat($1, ':*'))`),
     ],
 
     orderBy(getSearchContractSortSQL(sort)),
