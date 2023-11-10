@@ -359,7 +359,7 @@ function UserProfile(props: {
                 ),
               },
               {
-                title: 'Managrams',
+                title: 'Payments',
                 stackedTabIcon: <CashIcon className="h-5" />,
                 content: (
                   <>
