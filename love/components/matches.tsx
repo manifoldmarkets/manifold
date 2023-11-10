@@ -1,6 +1,5 @@
 import clsx from 'clsx'
 import Link from 'next/link'
-import Router from 'next/router'
 import { useState, useEffect } from 'react'
 import {
   ChevronDownIcon,
@@ -84,7 +83,7 @@ export const Matches = (props: { userId: string }) => {
   const areYourMatches = userId === user?.id
 
   return (
-    <Col className="bg-canvas-0 max-w-lg gap-4 rounded px-4 py-3">
+    <Col className="bg-canvas-0 max-w-lg gap-4 rounded px-2 py-1.5 sm:px-4 sm:py-3">
       {currentMatches.length > 0 ? (
         <Col>
           <div className="text-lg font-semibold">Relationship chances</div>
@@ -219,37 +218,39 @@ const MatchContract = (props: {
         </Row>
       </Link>
       <Row
-        className="items-center justify-between"
+        className="items-center justify-between gap-2"
         onClick={() => setExpanded((b) => !b)}
       >
-        <Row className="items-center gap-2">
-          {pinned_url && (
-            <Avatar avatarUrl={pinned_url} username={user.username} />
-          )}
-          <UserLink name={user.name} username={user.username} />
-        </Row>
-        <Row className="items-center gap-2">
-          {answer.resolution ? (
-            <div>
-              Resolved <BinaryOutcomeLabel outcome={answer.resolution} />
-            </div>
-          ) : (
-            <>
-              <div className="font-semibold">{formatPercent(answer.prob)}</div>
-              <BetButton contract={contract} answer={answer} lover={lover} />
-              <CommentsButton
-                className="min-w-[36px]"
-                contract={contract}
-                user={currentUser}
-              />
-            </>
-          )}
-          {expanded ? (
-            <ChevronUpIcon className={'mr-2 h-4 w-4'} />
-          ) : (
-            <ChevronDownIcon className={'mr-2 h-4 w-4'} />
-          )}
-        </Row>
+        {pinned_url && (
+          <Avatar avatarUrl={pinned_url} username={user.username} />
+        )}
+        <UserLink
+          className="truncate"
+          name={user.name}
+          username={user.username}
+          hideBadge
+        />
+        <div className="flex-1" />
+        {answer.resolution ? (
+          <div>
+            Resolved <BinaryOutcomeLabel outcome={answer.resolution} />
+          </div>
+        ) : (
+          <>
+            <CommentsButton
+              className="min-w-[36px]"
+              contract={contract}
+              user={currentUser}
+            />
+            <BetButton contract={contract} answer={answer} lover={lover} />
+            <div className="font-semibold">{formatPercent(answer.prob)}</div>
+          </>
+        )}
+        {expanded ? (
+          <ChevronUpIcon className={'mr-2 h-4 w-4'} />
+        ) : (
+          <ChevronDownIcon className={'mr-2 h-4 w-4'} />
+        )}
       </Row>
 
       {expanded && isYourMatch && (
@@ -343,19 +344,36 @@ const BetButton = (props: {
 
   const user = useUser()
   const [open, setOpen] = useState(false)
+  const [outcome, setOutcome] = useState<'YES' | 'NO'>('YES')
+
   return (
     <>
-      <Button
-        size="xs"
-        color="indigo-outline"
-        onClick={(e) => {
-          e.stopPropagation()
-          setOpen(true)
-          track('love bet button click')
-        }}
-      >
-        Bet
-      </Button>
+      <Row className="gap-1">
+        <Button
+          size="xs"
+          color="green-outline"
+          onClick={(e) => {
+            e.stopPropagation()
+            setOutcome('YES')
+            setOpen(true)
+            track('love bet yes button click')
+          }}
+        >
+          Yes
+        </Button>
+        <Button
+          size="xs"
+          color="red-outline"
+          onClick={(e) => {
+            e.stopPropagation()
+            setOutcome('NO')
+            setOpen(true)
+            track('love bet no button click')
+          }}
+        >
+          No
+        </Button>
+      </Row>
       <Modal
         open={open}
         setOpen={setOpen}
@@ -374,7 +392,7 @@ const BetButton = (props: {
             contract={contract}
             multiProps={{ answers, answerToBuy: answer }}
             user={user}
-            initialOutcome={'YES'}
+            initialOutcome={outcome}
             onBuySuccess={() => setTimeout(() => setOpen(false), 500)}
             location={'love profile'}
             inModal={true}
