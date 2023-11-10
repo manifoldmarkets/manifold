@@ -14,6 +14,7 @@ import { useRouter } from 'next/router'
 import { Row } from 'web/components/layout/row'
 import { Button } from 'web/components/buttons/button'
 import { track } from 'web/lib/service/analytics'
+import clsx from 'clsx'
 
 export type QuestionType = 'multiple_choice' | 'free_response'
 
@@ -169,15 +170,17 @@ const QuestionRow = (props: { row: rowFor<'love_questions'>; user: User }) => {
 
 export const IndividualQuestionRow = (props: {
   row: rowFor<'love_questions'>
+  initialAnswer?: rowFor<'love_answers'>
   user: User
   onCancel: () => void
   onSubmit?: (form: loveAnswerState) => void
+  className?: string
 }) => {
-  const { row, user, onCancel, onSubmit } = props
-  const { question, id, answer_type, multiple_choice_options } = row
+  const { row, user, onCancel, onSubmit, initialAnswer, className } = props
+  const { id, answer_type, multiple_choice_options } = row
   const options = multiple_choice_options as Record<string, number>
   const [form, setForm] = usePersistentLocalState<loveAnswerState>(
-    getInitialForm(user.id, id),
+    initialAnswer ?? getInitialForm(user.id, id),
     `love_answer_${id}_user_${user.id}`
   )
 
@@ -186,10 +189,10 @@ export const IndividualQuestionRow = (props: {
   }, [row.id])
 
   return (
-    <Col className="gap-4">
+    <Col className={clsx('gap-4', className)}>
       {answer_type === 'free_response' ? (
         <ExpandingInput
-          className={'w-full max-w-xl'}
+          className={'w-full'}
           rows={3}
           value={form.free_response ?? ''}
           onChange={(e) => setForm({ ...form, free_response: e.target.value })}

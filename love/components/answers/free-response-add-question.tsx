@@ -96,10 +96,14 @@ function AddQuestionModal(props: {
             <IndividualQuestionRow
               user={user}
               row={selectedQuestion}
-              onCancel={() => setOpen(false)}
+              onCancel={() => {
+                setOpen(false)
+                setSelectedQuestion(null)
+              }}
               onSubmit={(_newState: loveAnswerState) => {
                 refreshAnswers()
                 setOpen(false)
+                setSelectedQuestion(null)
               }}
             />
           </Col>
