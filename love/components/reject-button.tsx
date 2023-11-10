@@ -34,7 +34,10 @@ export const RejectButton = (props: { lover: Lover; className?: string }) => {
             <div className="text-lg font-semibold">
               Are you sure you don't want a relationship with {lover.user.name}?
             </div>
-            <div className="">This action cannot be undone.</div>
+            <div>
+              Your relationship market with them will be resolved. This cannot
+              be undone.
+            </div>
 
             <Button
               className="font-semibold"

@@ -123,9 +123,11 @@ export const createMatch = authEndpoint(async (req, auth) => {
         `If third date, continue relationship for six months?`,
       ],
       descriptionMarkdown: `Are [${user1.name}](https://manifold.love/${user1.username}) and [${user2.name}](https://manifold.love/${user2.username}) a good match? Bet on whether they will hit any of these relationship milestones! 
-
-Beyond the first date, each milestone only resolves to YES or NO if all the previous milestones resolve YES. Otherwise, they will resolve to N/A.
-
+  
+  
+Each of the milestones beyond the first date is conditional on the previous milestone. For example, if the first date answer resolves NO, the others will resolve N/A.
+  
+  
 See [FAQ](https://manifold.love/faq) for more details.`,
       extraLiquidity: 500,
       outcomeType: 'MULTIPLE_CHOICE',

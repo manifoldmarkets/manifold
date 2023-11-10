@@ -206,30 +206,23 @@ const MatchContract = (props: {
       : undefined
   return (
     <Col>
-      <Row className="text-ink-600 bg-canvas-50 items-center justify-between px-2 py-1 text-sm">
-        {previousStage && (
-          <div>
-            Assuming {previousStage.toLowerCase()} (
-            {formatPercent(conditionProb)} chance)
-          </div>
-        )}
-        {firstDateDeadline && <div>By {firstDateDeadline}</div>}
-        <ArrowRightIcon
-          className="h-4 w-4 cursor-pointer"
-          tabIndex={0}
-          onClick={() => Router.push(contractPath(contract))}
-        />
-      </Row>
+      <Link href={contractPath(contract)}>
+        <Row className="text-ink-600 bg-canvas-50 items-center justify-between gap-2 px-2 py-1 text-sm">
+          {previousStage && (
+            <div>
+              Assuming {previousStage.toLowerCase()} (
+              {formatPercent(conditionProb)} chance)
+            </div>
+          )}
+          {firstDateDeadline && <div>By {firstDateDeadline}</div>}
+          <ArrowRightIcon className="h-4 w-4" />
+        </Row>
+      </Link>
       <Row
         className="items-center justify-between"
         onClick={() => setExpanded((b) => !b)}
       >
         <Row className="items-center gap-2">
-          {expanded ? (
-            <ChevronUpIcon className={'mr-2 h-4 w-4'} />
-          ) : (
-            <ChevronDownIcon className={'mr-2 h-4 w-4'} />
-          )}
           {pinned_url && (
             <Avatar avatarUrl={pinned_url} username={user.username} />
           )}
@@ -250,6 +243,11 @@ const MatchContract = (props: {
                 user={currentUser}
               />
             </>
+          )}
+          {expanded ? (
+            <ChevronUpIcon className={'mr-2 h-4 w-4'} />
+          ) : (
+            <ChevronDownIcon className={'mr-2 h-4 w-4'} />
           )}
         </Row>
       </Row>
@@ -369,7 +367,7 @@ const BetButton = (props: {
         <Col>
           <Link href={contractPath(contract)}>
             <Subtitle className={clsx('!mb-4 !mt-0 !text-xl', linkClass)}>
-              {contract.question}
+              {answer.text}
             </Subtitle>
           </Link>
           <BuyPanel
