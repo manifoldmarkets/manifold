@@ -26,6 +26,7 @@ import {
   TOPICS_TO_SUBTOPICS,
 } from 'common/topics'
 import { orderBy, uniqBy } from 'lodash'
+import { track } from 'web/lib/service/analytics'
 
 export default function Welcome() {
   const user = useUser()
@@ -43,10 +44,24 @@ export default function Welcome() {
     user && <ThankYouPage />,
   ])
 
+  const handleSetPage = (page: number) => {
+    if (page === 0) {
+      track('welcome screen: what is manifold')
+    } else if (page === 1) {
+      track('welcome screen: how it works')
+    } else if (page === 2) {
+      track('welcome screen: thank you')
+    }
+    setPage(page)
+  }
+
   const isLastPage = page === availablePages.length - 1
 
   useEffect(() => {
-    if (user?.shouldShowWelcome) setOpen(true)
+    if (user?.shouldShowWelcome) {
+      track('welcome screen: landed', { isTwitch })
+      setOpen(true)
+    }
   }, [user?.shouldShowWelcome])
 
   const [userInterestedTopics, setUserInterestedTopics] = useState<Group[]>([])
@@ -123,17 +138,18 @@ export default function Welcome() {
     setPage(0)
 
     setGroupSelectorOpen(true)
+    track('welcome screen: group selector')
 
     if (showSignedOutUser) setShowSignedOutUser(false)
   }
   function increasePage() {
-    if (!isLastPage) setPage(page + 1)
+    if (!isLastPage) handleSetPage(page + 1)
     else close()
   }
 
   function decreasePage() {
     if (page > 0) {
-      setPage(page - 1)
+      handleSetPage(page - 1)
     }
   }
 
@@ -151,6 +167,9 @@ export default function Welcome() {
         trendingTopics={trendingTopics}
         userInterestedTopics={userInterestedTopics}
         userBetInTopics={userBetInTopics}
+        onClose={() => {
+          track('welcome screen: complete')
+        }}
       />
     )
 
