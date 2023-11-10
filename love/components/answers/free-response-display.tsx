@@ -25,21 +25,6 @@ export function FreeResponseDisplay(props: {
         <Subtitle>{`More About ${
           isCurrentUser ? 'You' : user.name.split(' ')[0]
         }`}</Subtitle>
-
-        {isCurrentUser && answers.length > 0 && (
-          <Button
-            color={'gray-outline'}
-            size="xs"
-            className={''}
-            onClick={() => {
-              track('edit love questions')
-              router.push('love-questions')
-            }}
-          >
-            <PencilIcon className="mr-2 h-4 w-4" />
-            Edit
-          </Button>
-        )}
       </Row>
 
       {answers.length > 0 ? (
@@ -58,14 +43,17 @@ export function FreeResponseDisplay(props: {
         <Col className="text-ink-600 gap-2 text-sm">
           You have not answered any questions yet! Help your potential matches
           get to know you better...
-          <AddQuestionButton
-            answers={answers}
-            questions={questions}
-            user={user}
-          />
         </Col>
       ) : (
         <div className="text-ink-600 gap-2 text-sm">None yet</div>
+      )}
+      {isCurrentUser && (
+        <AddQuestionButton
+          isFirstQuestion={answers.length < 1}
+          answers={answers}
+          questions={questions}
+          user={user}
+        />
       )}
     </Col>
   )

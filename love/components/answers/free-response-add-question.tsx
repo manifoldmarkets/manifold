@@ -1,41 +1,48 @@
+import { PlusIcon } from '@heroicons/react/outline'
+import clsx from 'clsx'
+import { Row as rowFor } from 'common/supabase/utils'
+import { User } from 'common/user'
+import { useFreeResponseQuestions } from 'love/hooks/use-questions'
+import { useState } from 'react'
+import { Button } from 'web/components/buttons/button'
+import { Col } from 'web/components/layout/col'
 import {
   MODAL_CLASS,
   Modal,
   SCROLLABLE_MODAL_CLASS,
 } from 'web/components/layout/modal'
-import { useFreeResponseQuestions } from 'love/hooks/use-questions'
-import { useState } from 'react'
-import { Title } from 'web/components/widgets/title'
-import clsx from 'clsx'
-import { Spacer } from 'web/components/layout/spacer'
-import { Row as rowFor } from 'common/supabase/utils'
-import { Button } from 'web/components/buttons/button'
-import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
-import { useTextEditor } from 'web/components/widgets/editor'
-import { ExpandingInput } from 'web/components/widgets/expanding-input'
-import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { IndividualQuestionRow } from '../questions-form'
-import { useUser } from 'web/hooks/use-user'
-import { User } from 'common/user'
 
 export function AddQuestionButton(props: {
+  isFirstQuestion?: boolean
   answers: rowFor<'love_answers'>[]
   questions: rowFor<'love_questions'>[]
   user: User
 }) {
+  const { isFirstQuestion, answers, questions, user } = props
   const [openModal, setOpenModal] = useState(false)
   return (
     <>
-      <Button color="indigo" onClick={() => setOpenModal(true)}>
-        Answer questions
+      <Button
+        color={isFirstQuestion ? 'indigo' : 'gray-outline'}
+        onClick={() => setOpenModal(true)}
+      >
+        {isFirstQuestion ? (
+          <>Answer Questions</>
+        ) : (
+          <Row className="items-center gap-1">
+            <PlusIcon className="h-4 w-4" />
+            Add Question
+          </Row>
+        )}
       </Button>
       <AddQuestionModal
         open={openModal}
         setOpen={setOpenModal}
-        answers={props.answers}
-        userQuestions={props.questions}
-        user={props.user}
+        answers={answers}
+        userQuestions={questions}
+        user={user}
       />
     </>
   )
