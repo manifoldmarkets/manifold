@@ -96,7 +96,7 @@ export const Matches = (props: { userId: string }) => {
             onClick={(_title, index) => setTabIndex(index)}
           />
 
-          <Col className="gap-4">
+          <Col className={clsx(tabIndex === 0 ? 'gap-2' : 'gap-4')}>
             {(expanded
               ? currentMatches
               : currentMatches.slice(0, truncatedSize)
