@@ -199,24 +199,21 @@ const MatchContract = (props: {
 
   const [expanded, setExpanded] = useState(false)
 
-  const firstDateDeadline =
-    answer.index === 0
-      ? answer.text.split(' by ')[1].replace('?', '')
-      : undefined
   return (
     <Col>
-      <Link href={contractPath(contract)}>
-        <Row className="text-ink-600 bg-canvas-50 items-center justify-between gap-2 px-2 py-1 text-sm">
-          {previousStage && (
+      {previousStage ? (
+        <Link href={contractPath(contract)}>
+          <Row className="text-ink-600 bg-canvas-50 items-center justify-between gap-2 px-2 py-1 text-sm">
             <div>
               Assuming {previousStage.toLowerCase()} (
               {formatPercent(conditionProb)} chance)
             </div>
-          )}
-          {firstDateDeadline && <div>By {firstDateDeadline}</div>}
-          <ArrowRightIcon className="h-4 w-4" />
-        </Row>
-      </Link>
+            <ArrowRightIcon className="h-4 w-4" />
+          </Row>
+        </Link>
+      ) : (
+        <div className="mt-2" />
+      )}
       <Row
         className="items-center justify-between gap-2"
         onClick={() => setExpanded((b) => !b)}
@@ -231,17 +228,17 @@ const MatchContract = (props: {
           hideBadge
         />
         <div className="flex-1" />
+        <CommentsButton
+          className="min-w-[36px]"
+          contract={contract}
+          user={currentUser}
+        />
         {answer.resolution ? (
           <div>
             Resolved <BinaryOutcomeLabel outcome={answer.resolution} />
           </div>
         ) : (
           <>
-            <CommentsButton
-              className="min-w-[36px]"
-              contract={contract}
-              user={currentUser}
-            />
             <BetButton contract={contract} answer={answer} lover={lover} />
             <div className="font-semibold">{formatPercent(answer.prob)}</div>
           </>
@@ -256,7 +253,6 @@ const MatchContract = (props: {
       {expanded && isYourMatch && (
         <Row className="mt-2 justify-between gap-2">
           <Row className="gap-2">
-            <RejectButton lover={lover} />
             {showConfirmStage && (
               <ConfirmStageButton
                 lover={lover}
@@ -265,6 +261,7 @@ const MatchContract = (props: {
                 answerId={answer.id}
               />
             )}
+            <RejectButton lover={lover} />
           </Row>
           <SendMessageButton toUser={user} currentUser={currentUser} />
         </Row>
