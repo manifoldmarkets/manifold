@@ -58,7 +58,11 @@ export function FreeResponseDisplay(props: {
         <Col className="text-ink-600 gap-2 text-sm">
           You have not answered any questions yet! Help your potential matches
           get to know you better...
-          <AddQuestionButton answers={answers} questions={questions} />
+          <AddQuestionButton
+            answers={answers}
+            questions={questions}
+            user={user}
+          />
         </Col>
       ) : (
         <div className="text-ink-600 gap-2 text-sm">None yet</div>

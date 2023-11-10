@@ -61,65 +61,74 @@ export const QuestionsForm = (props: { questionType: QuestionType }) => {
 type loveAnswer = rowFor<'love_answers'>
 type loveAnswerState = Omit<loveAnswer, 'id' | 'created_time'>
 
+const fetchPrevious = async (
+  id: number,
+  userId: string,
+  setForm: (
+    newState:
+      | loveAnswerState
+      | ((prevState: loveAnswerState) => loveAnswerState)
+  ) => void
+) => {
+  const res = await run(
+    db
+      .from('love_answers')
+      .select('*')
+      .eq('question_id', id)
+      .eq('creator_id', userId)
+  )
+  if (res.data.length) {
+    setForm(res.data[0])
+  }
+}
+
+function getInitialForm(userId: string, id: number) {
+  return {
+    creator_id: userId,
+    free_response: null,
+    multiple_choice: null,
+    integer: null,
+    question_id: id,
+  }
+}
+
+const filterKeys = (
+  obj: Record<string, any>,
+  predicate: (key: string, value: any) => boolean
+): Record<string, any> => {
+  const filteredEntries = Object.entries(obj).filter(([key, value]) =>
+    predicate(key, value)
+  )
+  return Object.fromEntries(filteredEntries)
+}
+
+const submitAnswer = async (newForm: loveAnswerState) => {
+  if (!newForm) return
+  const input = {
+    ...filterKeys(newForm, (key, _) => !['id', 'created_time'].includes(key)),
+  }
+  await run(
+    db
+      .from('love_answers')
+      .upsert(input, { onConflict: 'question_id,creator_id' })
+  )
+}
+
 const QuestionRow = (props: { row: rowFor<'love_questions'>; user: User }) => {
   const { row, user } = props
   const { question, id, answer_type, multiple_choice_options } = row
   const options = multiple_choice_options as Record<string, number>
   const [form, setForm] = usePersistentLocalState<loveAnswerState>(
-    {
-      creator_id: user.id,
-      free_response: null,
-      multiple_choice: null,
-      integer: null,
-      question_id: id,
-    },
+    getInitialForm(user.id, id),
     `love_answer_${id}_user_${user.id}`
   )
 
-  const fetchPrevious = async () => {
-    const res = await run(
-      db
-        .from('love_answers')
-        .select('*')
-        .eq('question_id', id)
-        .eq('creator_id', user.id)
-    )
-    if (res.data.length) {
-      setForm(res.data[0])
-    }
-  }
   useEffect(() => {
-    fetchPrevious()
+    fetchPrevious(id, user.id, setForm)
   }, [row.id])
 
-  const filterKeys = (
-    obj: Record<string, any>,
-    predicate: (key: string, value: any) => boolean
-  ): Record<string, any> => {
-    const filteredEntries = Object.entries(obj).filter(([key, value]) =>
-      predicate(key, value)
-    )
-    return Object.fromEntries(filteredEntries)
-  }
-
-  const submitAnswer = async (currentForm?: loveAnswerState) => {
-    const updatedForm = currentForm ?? form
-    if (!updatedForm) return
-    const input = {
-      ...filterKeys(
-        updatedForm,
-        (key, _) => !['id', 'created_time'].includes(key)
-      ),
-    }
-    await run(
-      db
-        .from('love_answers')
-        .upsert(input, { onConflict: 'question_id,creator_id' })
-    )
-  }
-
   return (
-    <Col className={'w-full gap-2 sm:px-4'}>
+    <Col>
       <span>{question}</span>
       {answer_type === 'free_response' ? (
         <ExpandingInput
@@ -127,7 +136,7 @@ const QuestionRow = (props: { row: rowFor<'love_questions'>; user: User }) => {
           rows={3}
           value={form.free_response ?? ''}
           onChange={(e) => setForm({ ...form, free_response: e.target.value })}
-          onBlur={() => submitAnswer()}
+          onBlur={() => submitAnswer(form)}
         />
       ) : answer_type === 'multiple_choice' && row.multiple_choice_options ? (
         <RadioToggleGroup
@@ -151,9 +160,77 @@ const QuestionRow = (props: { row: rowFor<'love_questions'>; user: User }) => {
             setForm({ ...form, integer: Number(e.target.value) })
           }
           value={form.integer ?? undefined}
-          onBlur={() => submitAnswer()}
+          onBlur={() => submitAnswer(form)}
         />
       ) : null}
+    </Col>
+  )
+}
+
+export const IndividualQuestionRow = (props: {
+  row: rowFor<'love_questions'>
+  user: User
+  onCancel: () => void
+  onSubmit?: (form: loveAnswerState) => void
+}) => {
+  const { row, user, onCancel, onSubmit } = props
+  const { question, id, answer_type, multiple_choice_options } = row
+  const options = multiple_choice_options as Record<string, number>
+  const [form, setForm] = usePersistentLocalState<loveAnswerState>(
+    getInitialForm(user.id, id),
+    `love_answer_${id}_user_${user.id}`
+  )
+
+  useEffect(() => {
+    fetchPrevious(id, user.id, setForm)
+  }, [row.id])
+
+  return (
+    <Col className="gap-4">
+      {answer_type === 'free_response' ? (
+        <ExpandingInput
+          className={'w-full max-w-xl'}
+          rows={3}
+          value={form.free_response ?? ''}
+          onChange={(e) => setForm({ ...form, free_response: e.target.value })}
+        />
+      ) : answer_type === 'multiple_choice' && row.multiple_choice_options ? (
+        <RadioToggleGroup
+          className={'w-44'}
+          choicesMap={options}
+          setChoice={(choice) => {
+            setForm({ ...form, multiple_choice: choice })
+          }}
+          currentChoice={form.multiple_choice ?? -1}
+        />
+      ) : answer_type === 'integer' ? (
+        <Input
+          type={'number'}
+          className={'w-20'}
+          max={1000}
+          min={0}
+          onChange={(e) =>
+            setForm({ ...form, integer: Number(e.target.value) })
+          }
+          value={form.integer ?? undefined}
+        />
+      ) : null}
+      <Row className="w-full justify-between">
+        <Button color={'gray-outline'} onClick={onCancel}>
+          Cancel
+        </Button>
+        <Button
+          color={'indigo'}
+          onClick={() => {
+            submitAnswer(form)
+            if (onSubmit) {
+              onSubmit(form)
+            }
+          }}
+        >
+          Save
+        </Button>
+      </Row>
     </Col>
   )
 }
