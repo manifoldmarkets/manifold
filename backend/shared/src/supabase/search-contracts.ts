@@ -137,10 +137,10 @@ export function getSearchContractSQL(args: {
     whereSql,
 
     term.length && [
-      join(`websearch_to_tsquery('english', $1) as query on true`),
+      // join(`websearch_to_tsquery('english', $1) as query on true`),
       // TODO reenable description search
       // where('question_fts @@ query OR description_fts @@ query'),
-      where(`question_fts @@ to_tsquery(concat($1, ':*'))`),
+      where(`question_fts @@ websearch_to_tsquery('english', $1)`),
     ],
 
     orderBy(getSearchContractSortSQL(sort)),
