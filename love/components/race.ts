@@ -2,13 +2,13 @@ import { invert } from 'lodash'
 
 // label -> backend
 export const Races = {
-  Black: 'african',
-  Asian: 'asian',
-  Desi: 'south_asian',
-  White: 'caucasian',
-  Hispanic: 'hispanic',
-  Arab: 'middle_eastern',
-  Indigenous: 'native_american',
+  'Black/African origin': 'african',
+  'East Asian': 'asian',
+  'South/Southeast Asian': 'south_asian',
+  'White/Caucasian': 'caucasian',
+  'Hispanic/Latino': 'hispanic',
+  'Middle Eastern': 'middle_eastern',
+  'Native American/Indigenous': 'native_american',
   Other: 'other',
 } as const
 
