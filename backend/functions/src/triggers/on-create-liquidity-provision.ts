@@ -34,7 +34,7 @@ export const onCreateLiquidityProvision = functions
     const liquidityProvider = await getUser(liquidity.userId)
     if (!liquidityProvider) throw new Error('Could not find liquidity provider')
     await addUserToContractFollowers(contract.id, liquidityProvider.id)
-    if (liquidity.amount > 100)
+    if (liquidity.amount > 250)
       await addContractToFeed(
         contract,
         [

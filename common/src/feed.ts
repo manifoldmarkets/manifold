@@ -42,8 +42,8 @@ export const BASE_FEED_DATA_TYPE_SCORES: { [key in FEED_DATA_TYPES]: number } =
     new_contract: 0.15,
     new_subsidy: 0.1,
     news_with_related_contracts: 0.1,
-    user_position_changed: 0.05,
-    contract_probability_changed: 0.2, // todo: multiply by magnitude of prob change
+    user_position_changed: 0.02,
+    contract_probability_changed: 0.25, // todo: multiply by magnitude of prob change
     trending_contract: 0.2,
   }
 
