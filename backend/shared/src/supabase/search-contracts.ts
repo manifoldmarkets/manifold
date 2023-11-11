@@ -93,7 +93,12 @@ export const hasGroupAccess = async (groupId?: string, uid?: string) => {
       return r.check_group_accessibility
     })
 }
-export type SearchTypes = 'without-stopwords' | 'with-stopwords' | 'description'
+export type SearchTypes =
+  | 'without-stopwords'
+  | 'with-stopwords'
+  | 'description'
+  | 'prefix'
+
 export function getSearchContractSQL(args: {
   term: string
   filter: string
@@ -138,6 +143,8 @@ export function getSearchContractSQL(args: {
     whereSql,
 
     term.length && [
+      searchType === 'prefix' &&
+        where(`question_fts @@ to_tsquery('english', $1)`),
       searchType === 'without-stopwords' &&
         where(`question_fts @@ websearch_to_tsquery('english', $1)`),
       searchType === 'with-stopwords' &&
