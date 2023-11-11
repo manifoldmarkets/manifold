@@ -20,7 +20,8 @@ const server = app.listen(PORT, async () => {
   log.info('Loaded secrets from GCP.')
 
   const jobs = createJobs()
-  log.info(`Loaded ${jobs.length} job(s).`, { names: jobs.map((j) => j.name) })
+  const jobsByName = Object.fromEntries(jobs.map(j => [j.name, j]))
+  log.info(`Loaded ${jobs.length} job(s).`, { names: Object.keys(jobsByName) })
 
   app.get('/', async (_req, res) => {
     return res.status(200).json({ status: 'running' })
@@ -45,21 +46,30 @@ const server = app.listen(PORT, async () => {
     })
   })
 
-  app.post('/jobs/:name/pause', async (req, res) => {
-    const candidates = jobs.filter(j => j.name === req.params.name)
-    if (candidates.length != 1) {
+  app.post('/jobs/:name/trigger', async (req, res) => {
+    const job = jobsByName[req.params.name]
+    if (job == null) {
       res.status(400).json({ success: false, err: "Invalid job name." })
     }
-    candidates[0].pause()
+    job.trigger()
+    return res.status(200).json({ success: true })
+  })
+
+  app.post('/jobs/:name/pause', async (req, res) => {
+    const job = jobsByName[req.params.name]
+    if (job == null) {
+      res.status(400).json({ success: false, err: "Invalid job name." })
+    }
+    job.pause()
     return res.status(200).json({ success: true })
   })
 
   app.post('/jobs/:name/resume', async (req, res) => {
-    const candidates = jobs.filter(j => j.name === req.params.name)
-    if (candidates.length != 1) {
+    const job = jobsByName[req.params.name]
+    if (job == null) {
       res.status(400).json({ success: false, err: "Invalid job name." })
     }
-    candidates[0].resume()
+    job.resume()
     return res.status(200).json({ success: true })
   })
 })
