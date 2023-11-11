@@ -18,13 +18,19 @@ export function LoverAnswers(props: {
 
   const [refresh, setRefresh] = useState<number>(0)
 
-  const { questions, answers: allAnswers } = useUserAnswersAndQuestions(
-    user?.id,
-    refresh
-  )
+  const { questions: allQuestions, answers: allAnswers } =
+    useUserAnswersAndQuestions(user?.id, refresh)
 
   const answers = allAnswers.filter(
     (a) => a.multiple_choice != null || a.free_response || a.integer
+  )
+
+  // Extract question IDs from the filtered answers
+  const answerQuestionIds = new Set(answers.map((answer) => answer.question_id))
+
+  // Filter questions to include only those with a matching question_id in answers
+  const questions = allQuestions.filter((question) =>
+    answerQuestionIds.has(question.id)
   )
 
   const [multiChoiceAnswers, otherAnswers] = partition(
@@ -33,7 +39,6 @@ export function LoverAnswers(props: {
   )
 
   function refreshAnswers() {
-    console.log('HIIIII')
     setRefresh((prevRefresh) => prevRefresh + 1)
   }
 
