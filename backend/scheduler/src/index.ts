@@ -63,3 +63,8 @@ const server = app.listen(PORT, async () => {
     return res.status(200).json({ success: true })
   })
 })
+
+process.on('SIGTERM', () => {
+  log.info('Received SIGTERM.');
+  server.close((err) => { process.exit(err ? 1 : 0) });
+});
