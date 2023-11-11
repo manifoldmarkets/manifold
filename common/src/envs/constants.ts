@@ -175,7 +175,6 @@ export const MOD_USERNAMES = [
   'Stralor',
   'WieDan',
   'Ernie',
-  'Gen',
   'NathanpmYoung',
 ]
 
