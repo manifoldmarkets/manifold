@@ -25,10 +25,8 @@ export function LoverAnswers(props: {
     (a) => a.multiple_choice != null || a.free_response || a.integer
   )
 
-  // Extract question IDs from the filtered answers
   const answerQuestionIds = new Set(answers.map((answer) => answer.question_id))
 
-  // Filter questions to include only those with a matching question_id in answers
   const questions = allQuestions.filter((question) =>
     answerQuestionIds.has(question.id)
   )
