@@ -118,8 +118,8 @@ export const createMatch = authEndpoint(async (req, auth) => {
       question: `Relationship of @${user1.username} & @${user2.username}`,
       answers: [
         `First date by ${thirtyDaysLaterStr}?`,
-        `If first date, second date within two weeks?`,
-        `If second date, third date within two weeks?`,
+        `If first date, second date within one month?`,
+        `If second date, third date within one month?`,
         `If third date, continue relationship for six months?`,
       ],
       descriptionMarkdown: `Are [${user1.name}](https://manifold.love/${user1.username}) and [${user2.name}](https://manifold.love/${user2.username}) a good match? Bet on whether they will hit any of these relationship milestones! 
