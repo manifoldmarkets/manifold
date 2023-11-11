@@ -18,9 +18,15 @@ export function TopicSelectorDialog(props: {
   trendingTopics: Group[]
   userInterestedTopics: Group[]
   userBetInTopics: Group[]
+  onClose?: () => void
 }) {
-  const { skippable, userInterestedTopics, trendingTopics, userBetInTopics } =
-    props
+  const {
+    skippable,
+    userInterestedTopics,
+    trendingTopics,
+    userBetInTopics,
+    onClose,
+  } = props
 
   const user = useUser()
 
@@ -56,6 +62,8 @@ export function TopicSelectorDialog(props: {
     if (user && !skipUpdate) await updateUserEmbedding()
 
     if (user) await updateUser(user.id, { shouldShowWelcome: false })
+
+    onClose?.()
 
     window.location.reload()
     // setOpen(false)

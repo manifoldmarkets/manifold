@@ -92,15 +92,23 @@ export const PaymentsContent = (props: {
   }, [showPayModal])
   return (
     <Col className={'w-full'}>
-      <Row className={'mb-2 justify-between'}>
-        <Button onClick={() => setShowQRModal(true)} color="gray-outline">
+      <Row className={'mb-4 gap-4'}>
+        <Button
+          onClick={() => setShowPayModal(true)}
+          color={'indigo-outline'}
+          size="xl"
+        >
+          Send
+        </Button>
+        <Button
+          onClick={() => setShowQRModal(true)}
+          color="indigo-outline"
+          size="xl"
+        >
           {user && user.id === forUser?.id && (
-            <span className="mr-1">Receive Mana</span>
+            <span className="mr-1">Receive</span>
           )}
           <QrcodeIcon className="h-5 w-5" />
-        </Button>
-        <Button onClick={() => setShowPayModal(true)} color={'indigo'}>
-          Send Mana
         </Button>
       </Row>
       {payments.length === 0 ? (
@@ -243,7 +251,7 @@ export const PaymentsModal = (props: {
   return (
     <Modal open={show} setOpen={setShow}>
       <Col className={'bg-canvas-0 rounded-md p-4'}>
-        <div className="my-2 text-xl">Send Mana</div>
+        <div className="my-2 text-xl">Send mana</div>
         <Row className={'text-error'}>{!canSend ? cannotSendMessage : ''}</Row>
         <Col className={'gap-3'}>
           <Row className={'items-center justify-between'}>
@@ -356,7 +364,7 @@ export const QRModal = (props: {
   const [message, setMessage] = useState('')
 
   const url =
-    `https://${ENV_CONFIG.domain}/${user.username}?tab=managrams&a=${
+    `https://${ENV_CONFIG.domain}/${user.username}?tab=payments&a=${
       amount ?? 10
     }` + (message && `&msg=${encodeURIComponent(message)}`)
 

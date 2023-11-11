@@ -463,6 +463,25 @@ export function SupabaseSearch(props: {
               headerClassName={clsx(headerClassName, '!top-14')}
             />
             <LoadMoreUntilNotVisible loadMore={queryContracts} />
+            {!shouldLoadMore &&
+              (searchParams?.[FILTER_KEY] !== 'all' ||
+                searchParams?.[CONTRACT_TYPE_KEY] !== 'ALL') && (
+                <div className="text-ink-500 mx-2 my-8 text-center">
+                  No more results under this filter.{' '}
+                  <button
+                    className="text-primary-500 hover:underline"
+                    onClick={() =>
+                      setSearchParams({
+                        [FILTER_KEY]: 'all',
+                        [CONTRACT_TYPE_KEY]: 'ALL',
+                      })
+                    }
+                  >
+                    Clear filter
+                  </button>
+                  ?
+                </div>
+              )}
           </>
         )
       ) : searchTypeAsString === 'Users' ? (

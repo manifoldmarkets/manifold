@@ -93,7 +93,7 @@ export const hasGroupAccess = async (groupId?: string, uid?: string) => {
       return r.check_group_accessibility
     })
 }
-
+export type SearchTypes = 'without-stopwords' | 'with-stopwords' | 'description'
 export function getSearchContractSQL(args: {
   term: string
   filter: string
@@ -104,10 +104,11 @@ export function getSearchContractSQL(args: {
   groupId?: string
   creatorId?: string
   uid?: string
-  hasGroupAccess?: boolean
+  groupAccess?: boolean
   isForYou?: boolean
+  searchType: SearchTypes
 }) {
-  const { term, sort, offset, limit, groupId } = args
+  const { term, sort, offset, limit, groupId, searchType } = args
 
   const hideStonks = sort === 'score' && !term.length && !groupId
 
@@ -137,8 +138,14 @@ export function getSearchContractSQL(args: {
     whereSql,
 
     term.length && [
-      join(`websearch_to_tsquery('english', $1) as query on true`),
-      where('question_fts @@ query OR description_fts @@ query'),
+      searchType === 'without-stopwords' &&
+        where(`question_fts @@ websearch_to_tsquery('english', $1)`),
+      searchType === 'with-stopwords' &&
+        where(
+          `question_nostop_fts @@ websearch_to_tsquery('english_nostop_with_prefix', $1)`
+        ),
+      searchType === 'description' &&
+        where(`description_fts @@ websearch_to_tsquery('english', $1)`),
     ],
 
     orderBy(getSearchContractSortSQL(sort)),
@@ -230,6 +237,8 @@ function getSearchContractSortSQL(sort: string) {
   const ASCDESC =
     sort === 'close-date' || sort === 'liquidity' || sort === 'prob-ascending'
       ? 'ASC'
+      : sort === 'score'
+      ? 'DESC'
       : 'DESC NULLS LAST'
   return `${sortFields[sort]} ${ASCDESC}`
 }

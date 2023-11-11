@@ -59,7 +59,7 @@ export default function AboutPage() {
           on anything.
         </div>
 
-        <Col className="w-full max-w-[60ch]">
+        <Col className="w-full">
           <WhatIsAPM />
 
           <WhatIsMana />
