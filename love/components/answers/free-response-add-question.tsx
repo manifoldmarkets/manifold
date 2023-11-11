@@ -41,7 +41,6 @@ export function AddQuestionButton(props: {
       <AddQuestionModal
         open={openModal}
         setOpen={setOpenModal}
-        answers={answers}
         userQuestions={questions}
         user={user}
         refreshAnswers={refreshAnswers}
@@ -53,12 +52,11 @@ export function AddQuestionButton(props: {
 function AddQuestionModal(props: {
   open: boolean
   setOpen: (open: boolean) => void
-  answers: rowFor<'love_answers'>[]
   userQuestions: rowFor<'love_questions'>[]
   user: User
   refreshAnswers: () => void
 }) {
-  const { open, setOpen, answers, userQuestions, user, refreshAnswers } = props
+  const { open, setOpen, userQuestions, user, refreshAnswers } = props
   const addableQuestions = useFreeResponseQuestions()
   const [selectedQuestion, setSelectedQuestion] =
     useState<rowFor<'love_questions'> | null>(null)
