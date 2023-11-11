@@ -1,6 +1,6 @@
 {
-  "name": "scheduler",
-  "description": "GCP service for running backend scheduled jobs.",
+  "name": "@manifold/scheduler",
+  "description": "GCE service for running backend scheduled jobs.",
   "version": "0.1.0",
   "private": true,
   "scripts": {

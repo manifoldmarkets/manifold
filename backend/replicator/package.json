@@ -1,5 +1,5 @@
 {
-  "name": "replicator",
+  "name": "@manifold/replicator",
   "description": "GCR service for replicating Firestore writes to Supabase.",
   "version": "0.1.0",
   "private": true,
