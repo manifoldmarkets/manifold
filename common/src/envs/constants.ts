@@ -127,6 +127,7 @@ export const CORE_USERNAMES = [
   'mqp',
   'IngaWei',
   'rachel',
+  'Gen',
 ]
 
 export const MOD_USERNAMES = [
