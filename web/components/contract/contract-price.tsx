@@ -1,7 +1,5 @@
 import {
   BinaryContract,
-  FreeResponseContract,
-  MultipleChoiceContract,
   NumericContract,
   PseudoNumericContract,
   StonkContract,
