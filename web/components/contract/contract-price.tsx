@@ -11,7 +11,6 @@ import clsx from 'clsx'
 import {
   BinaryContractOutcomeLabel,
   CancelLabel,
-  MultiOutcomeLabel,
   NumericValueLabel,
 } from 'web/components/outcome-label'
 import { getMappedValue } from 'common/pseudo-numeric'
@@ -65,26 +64,6 @@ export function BinaryResolutionOrChance(props: {
           </div>
         </>
       )}
-    </Row>
-  )
-}
-
-export function FreeResponseResolution(props: {
-  contract: FreeResponseContract | MultipleChoiceContract
-}) {
-  const { contract } = props
-  const { resolution } = contract
-  if (!(resolution === 'CANCEL' || resolution === 'MKT')) return null
-
-  return (
-    <Row className="gap-2 text-3xl">
-      <div className={clsx('text-base')}>Resolved</div>
-
-      <MultiOutcomeLabel
-        contract={contract}
-        resolution={resolution}
-        truncate="none"
-      />
     </Row>
   )
 }
