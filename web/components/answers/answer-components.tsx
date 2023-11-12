@@ -98,20 +98,12 @@ export const AnswerBar = (props: {
 
 export const AnswerLabel = (props: {
   text: string
-  index: number | undefined
   createdTime: number
   truncate?: 'short' | 'long' | 'none' //  | medium (30)
-  creator?: { username: string; avatarUrl?: string } | false
+  creator?: { name: string; username: string; avatarUrl?: string } | false
   className?: string
 }) => {
-  const {
-    text,
-    index,
-    createdTime,
-    truncate = 'none',
-    creator,
-    className,
-  } = props
+  const { text, createdTime, truncate = 'none', creator, className } = props
 
   const ELLIPSES_LENGTH = 3
   const maxLength = { short: 20, long: 75, none: undefined }[truncate]
@@ -122,9 +114,8 @@ export const AnswerLabel = (props: {
 
   const answerTextTooltip = truncated === text ? false : text
 
-  const indexText = index !== undefined ? `#${index + 1}: ` : ''
   const dateText = `created ${formatTimeShort(createdTime)}`
-  const dateTooltip = `${indexText}${dateText}`
+  const dateTooltip = creator ? `${creator.name} ${dateText}` : dateText
 
   return (
     <Tooltip text={answerTextTooltip}>
