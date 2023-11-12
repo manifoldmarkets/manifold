@@ -5,7 +5,6 @@ import { Row } from 'web/components/layout/row'
 import { Spacer } from 'web/components/layout/spacer'
 import { ProfileSummary } from 'web/components/nav/profile-summary'
 import { NewsTopicsTabs } from 'web/components/news/news-topics-tabs'
-import Welcome from 'web/components/onboarding/welcome'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { Title } from 'web/components/widgets/title'
 import { useIsClient } from 'web/hooks/use-is-client'
@@ -21,6 +20,8 @@ import { useYourFollowedDashboards } from 'web/hooks/use-dashboard'
 import { buildArray } from 'common/util/array'
 import { uniqBy } from 'lodash'
 import { LinkPreviews, fetchLinkPreviews } from 'common/link-preview'
+import { Onboarding } from 'web/components/onboarding/onboarding'
+import { ErrorBoundary } from 'react-error-boundary'
 
 export async function getStaticProps() {
   const dashboards = (await getNewsDashboards()) as Dashboard[]
@@ -73,7 +74,11 @@ function HomeDashboard(props: {
         title="News"
         description="Breaking news meets the wisdom of the crowd"
       />
-      <Welcome />
+      {/* <Welcome /> */}
+      <ErrorBoundary fallback={null}>
+        <Onboarding />
+      </ErrorBoundary>
+
       <Page trackPageView={'home'} trackPageProps={{ kind: 'desktop' }}>
         <Row className="mx-3 mb-2 items-center gap-4">
           <div className="flex md:hidden">

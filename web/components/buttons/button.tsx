@@ -75,14 +75,16 @@ export function buttonClass(size: SizeType, color: ColorType | 'none') {
   )
 }
 
+export type ButtonProps = {
+  className?: string
+  size?: SizeType
+  color?: ColorType
+  type?: 'button' | 'reset' | 'submit'
+  loading?: boolean
+} & JSX.IntrinsicElements['button']
+
 export const Button = forwardRef(function Button(
-  props: {
-    className?: string
-    size?: SizeType
-    color?: ColorType
-    type?: 'button' | 'reset' | 'submit'
-    loading?: boolean
-  } & JSX.IntrinsicElements['button'],
+  props: ButtonProps,
   ref: Ref<HTMLButtonElement>
 ) {
   const {
