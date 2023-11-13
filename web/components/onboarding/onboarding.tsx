@@ -15,7 +15,6 @@ import { PillButton } from '../buttons/pill-button'
 import { useGetTrendingGroups } from 'web/hooks/api/use-get-trending-groups'
 import { useGetTrendingContracts } from 'web/hooks/api/use-get-trending-contracts'
 import { joinGroup, placeBet, updateUserEmbedding } from 'web/lib/firebase/api'
-import { leaveGroup } from 'web/lib/supabase/groups'
 import Image from 'next/image'
 import { track } from 'web/lib/service/analytics'
 import { updateUser } from 'web/lib/firebase/users'
@@ -313,9 +312,9 @@ function OnboardingViewInterests({
   onAdvance,
   groupsBetOn = [],
 }: SharedOnboardingViewProps) {
-  const user = useUser()
   const trendingGroups = useGetTrendingGroups({ limit: 10 })
   const [selected, setSelected] = useState<Array<string>>(groupsBetOn)
+  const [isLoading, setIsLoading] = useState(false)
 
   const trendingGroupIds = trendingGroups.map((group) => group.id)
   const topicsWithFilteredSubtopics = Object.entries(TOPICS_TO_SUBTOPICS).map(
@@ -330,16 +329,6 @@ function OnboardingViewInterests({
   )
 
   const handleSelectDeselect = (id: string) => {
-    try {
-      if (selected.includes(id)) {
-        user && leaveGroup(id, user.id)
-      } else {
-        joinGroup({ groupId: id })
-      }
-    } catch (error) {
-      console.error(error)
-    }
-
     setSelected((prev) => {
       const next = prev.includes(id)
         ? prev.filter((t) => t !== id)
@@ -352,10 +341,18 @@ function OnboardingViewInterests({
     <OnboardingView
       buttonProps={{
         onClick: async () => {
-          await updateUserEmbedding()
+          setIsLoading(true)
+          try {
+            await Promise.all(selected.map((groupId) => joinGroup({ groupId })))
+            await updateUserEmbedding()
+          } catch (error) {
+            console.error(error)
+          }
+          setIsLoading(false)
           onAdvance()
         },
         disabled: Object.keys(selected).length < 3,
+        loading: isLoading,
       }}
     >
       <h4 className="text-primary-700 mb-6 mt-3 text-center text-xl font-normal sm:text-2xl">
