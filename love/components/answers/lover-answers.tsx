@@ -1,13 +1,11 @@
 import { NextRouter } from 'next/router'
 
-import { Row as rowFor } from 'common/supabase/utils'
 import { User } from 'common/user'
 import { partition } from 'lodash'
+import { useUserAnswersAndQuestions } from 'love/hooks/use-questions'
 import { Col } from 'web/components/layout/col'
 import { FreeResponseDisplay } from './free-response-display'
 import { OpinionScale } from './opinion-scale-display'
-import { useUserAnswersAndQuestions } from 'love/hooks/use-questions'
-import { useState } from 'react'
 
 export function LoverAnswers(props: {
   isCurrentUser: boolean

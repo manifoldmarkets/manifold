@@ -1,20 +1,18 @@
-import { track } from '@amplitude/analytics-browser'
 import { PencilIcon } from '@heroicons/react/outline'
 import { NextRouter } from 'next/router'
 
+import { XIcon } from '@heroicons/react/outline'
 import { Row as rowFor } from 'common/supabase/utils'
 import { User } from 'common/user'
-import { Button } from 'web/components/buttons/button'
+import { deleteAnswer } from 'love/lib/supabase/answers'
+import { useState } from 'react'
+import DropdownMenu from 'web/components/comments/dropdown-menu'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Linkify } from 'web/components/widgets/linkify'
+import { IndividualQuestionRow } from '../questions-form'
 import { Subtitle } from '../widgets/lover-subtitle'
 import { AddQuestionButton } from './free-response-add-question'
-import DropdownMenu from 'web/components/comments/dropdown-menu'
-import { useState } from 'react'
-import { XIcon } from '@heroicons/react/outline'
-import { deleteAnswer } from 'love/lib/supabase/answers'
-import { IndividualQuestionRow, loveAnswerState } from '../questions-form'
 
 export function FreeResponseDisplay(props: {
   answers: rowFor<'love_answers'>[]
