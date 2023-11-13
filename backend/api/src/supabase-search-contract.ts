@@ -81,7 +81,10 @@ export const searchContracts = async (
           searchType,
         })
         return pg
-          .map(searchSQL, [searchTerm], (r) => r.data as Contract)
+          .map(searchSQL, [searchTerm], (r) => ({
+            data: r.data as Contract,
+            searchType,
+          }))
           .catch((e) => {
             // to_tsquery is sensitive to special characters and can throw an error
             console.error(`Error with type: ${searchType} for term: ${term}`)
@@ -90,22 +93,25 @@ export const searchContracts = async (
           })
       })
     )
-    const contractsOfEqualRelevance = orderBy(
+    const contractsOfSimilarRelevance = orderBy(
       [
         ...contractsWithoutStopwords,
         ...contractsWithMatchingAnswers,
         ...contractPrefixMatches,
       ],
-      'importanceScore',
+      (c) =>
+        c.searchType === 'answer'
+          ? c.data.importanceScore * 0.5
+          : c.data.importanceScore,
       'desc'
     )
 
     contracts = uniqBy(
       [
-        ...contractsOfEqualRelevance,
+        ...contractsOfSimilarRelevance,
         ...contractsWithStopwords,
         ...contractDescriptionMatches,
-      ],
+      ].map((c) => c.data),
       'id'
     ).slice(0, limit)
   }
