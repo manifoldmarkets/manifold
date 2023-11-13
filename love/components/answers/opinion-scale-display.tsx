@@ -43,7 +43,7 @@ export function OpinionScale(props: {
             (answer) => {
               return (
                 <OpinionScaleBlock
-                  key={answer.multiple_choice ?? '' + answer.id}
+                  key={answer.id}
                   answer={answer}
                   questions={questions}
                 />

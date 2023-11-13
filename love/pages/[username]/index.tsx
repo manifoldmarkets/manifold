@@ -23,6 +23,7 @@ import { BackButton } from 'web/components/contract/back-button'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { getLoveOgImageUrl } from 'common/love/og-image'
 import { Lover } from 'common/love/lover'
+import { createContext } from 'react'
 
 export const getStaticProps = async (props: {
   params: {
@@ -139,14 +140,6 @@ function LoverContent(props: {
 }) {
   const { isCurrentUser, router, user, lover, currentUser } = props
 
-  const { questions, answers: allAnswers } = useUserAnswersAndQuestions(
-    user?.id
-  )
-
-  const answers = allAnswers.filter(
-    (a) => a.multiple_choice != null || a.free_response || a.integer
-  )
-
   if (!currentUser) {
     return (
       <Col className="bg-canvas-0 w-full gap-4 rounded p-4">
@@ -166,13 +159,7 @@ function LoverContent(props: {
     <>
       {lover.looking_for_matches && <Matches userId={user.id} />}
       <LoverAbout lover={lover} />
-      <LoverAnswers
-        isCurrentUser={isCurrentUser}
-        answers={answers}
-        router={router}
-        questions={questions}
-        user={user}
-      />
+      <LoverAnswers isCurrentUser={isCurrentUser} router={router} user={user} />
       <LoverCommentSection
         onUser={user}
         lover={lover}

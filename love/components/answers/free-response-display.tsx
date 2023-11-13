@@ -1,14 +1,18 @@
-import { track } from '@amplitude/analytics-browser'
 import { PencilIcon } from '@heroicons/react/outline'
 import { NextRouter } from 'next/router'
 
+import { XIcon } from '@heroicons/react/outline'
 import { Row as rowFor } from 'common/supabase/utils'
 import { User } from 'common/user'
-import { Button } from 'web/components/buttons/button'
+import { deleteAnswer } from 'love/lib/supabase/answers'
+import { useState } from 'react'
+import DropdownMenu from 'web/components/comments/dropdown-menu'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Linkify } from 'web/components/widgets/linkify'
+import { IndividualQuestionRow } from '../questions-form'
 import { Subtitle } from '../widgets/lover-subtitle'
+import { AddQuestionButton } from './free-response-add-question'
 
 export function FreeResponseDisplay(props: {
   answers: rowFor<'love_answers'>[]
@@ -16,29 +20,15 @@ export function FreeResponseDisplay(props: {
   isCurrentUser: boolean
   router: NextRouter
   user: User
+  refreshAnswers: () => void
 }) {
-  const { answers, questions, isCurrentUser, router, user } = props
+  const { answers, questions, isCurrentUser, refreshAnswers, user } = props
   return (
     <Col className="gap-2">
       <Row className={'w-full items-center justify-between gap-2'}>
         <Subtitle>{`About ${
           isCurrentUser ? 'You' : user.name.split(' ')[0]
         }`}</Subtitle>
-
-        {isCurrentUser && answers.length > 0 && (
-          <Button
-            color={'gray-outline'}
-            size="xs"
-            className={''}
-            onClick={() => {
-              track('edit love questions')
-              router.push('love-questions')
-            }}
-          >
-            <PencilIcon className="mr-2 h-4 w-4" />
-            Edit
-          </Button>
-        )}
       </Row>
 
       {answers.length > 0 ? (
@@ -49,6 +39,9 @@ export function FreeResponseDisplay(props: {
                 key={answer.free_response ?? '' + answer.id}
                 answer={answer}
                 questions={questions}
+                isCurrentUser={isCurrentUser}
+                user={user}
+                refreshAnswers={refreshAnswers}
               />
             )
           })}
@@ -57,12 +50,18 @@ export function FreeResponseDisplay(props: {
         <Col className="text-ink-600 gap-2 text-sm">
           You have not answered any questions yet! Help your potential matches
           get to know you better...
-          <Button color="indigo" onClick={() => router.push('love-questions')}>
-            Answer questions
-          </Button>
         </Col>
       ) : (
         <div className="text-ink-600 gap-2 text-sm">None yet</div>
+      )}
+      {isCurrentUser && (
+        <AddQuestionButton
+          isFirstQuestion={answers.length < 1}
+          answers={answers}
+          questions={questions}
+          user={user}
+          refreshAnswers={refreshAnswers}
+        />
       )}
     </Col>
   )
@@ -71,9 +70,14 @@ export function FreeResponseDisplay(props: {
 function AnswerBlock(props: {
   answer: rowFor<'love_answers'>
   questions: rowFor<'love_questions'>[]
+  isCurrentUser: boolean
+  user: User
+  refreshAnswers: () => void
 }) {
-  const { answer, questions } = props
+  const { answer, questions, isCurrentUser, user, refreshAnswers } = props
   const question = questions.find((q) => q.id === answer.question_id)
+  const [edit, setEdit] = useState(false)
+
   if (!question) return null
 
   return (
@@ -83,11 +87,48 @@ function AnswerBlock(props: {
         'bg-canvas-0 flex-grow whitespace-pre-line rounded-md px-3 py-2 leading-relaxed'
       }
     >
-      <Row className="text-ink-600 text-sm">{question.question}</Row>
-      <Linkify
-        className="text-lg"
-        text={answer.free_response ?? answer.integer?.toString() ?? ''}
-      />
+      <Row className="text-ink-600 justify-between text-sm">
+        {question.question}
+        {isCurrentUser && (
+          <DropdownMenu
+            items={[
+              {
+                name: 'Edit',
+                icon: <PencilIcon className="h-5 w-5" />,
+                onClick: () => setEdit(true),
+              },
+              {
+                name: 'Delete',
+                icon: <XIcon className="h-5 w-5" />,
+                onClick: () =>
+                  deleteAnswer(answer, user.id).then(() => refreshAnswers()),
+              },
+            ]}
+            closeOnClick
+          />
+        )}
+      </Row>
+      {!edit && (
+        <Linkify
+          className="font-semibold"
+          text={answer.free_response ?? answer.integer?.toString() ?? ''}
+        />
+      )}
+      {edit && (
+        <IndividualQuestionRow
+          user={user}
+          initialAnswer={answer}
+          row={question}
+          onCancel={() => {
+            setEdit(false)
+          }}
+          onSubmit={() => {
+            refreshAnswers()
+            setEdit(false)
+          }}
+          className="mt-2"
+        />
+      )}
     </Col>
   )
 }
