@@ -85,7 +85,7 @@ function AnswerBlock(props: {
     >
       <Row className="text-ink-600 text-sm">{question.question}</Row>
       <Linkify
-        className="font-semibold"
+        className="text-lg"
         text={answer.free_response ?? answer.integer?.toString() ?? ''}
       />
     </Col>
