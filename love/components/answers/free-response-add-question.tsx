@@ -98,7 +98,7 @@ function AddQuestionModal(props: {
                 setOpen(false)
                 setSelectedQuestion(null)
               }}
-              onSubmit={(_newState: loveAnswerState) => {
+              onSubmit={() => {
                 refreshAnswers()
                 setOpen(false)
                 setSelectedQuestion(null)

@@ -16,10 +16,11 @@ export function LoverAnswers(props: {
 }) {
   const { isCurrentUser, router, user } = props
 
-  const [refresh, setRefresh] = useState<number>(0)
-
-  const { questions: allQuestions, answers: allAnswers } =
-    useUserAnswersAndQuestions(user?.id, refresh)
+  const {
+    questions: allQuestions,
+    answers: allAnswers,
+    refreshAnswersAndQuestions,
+  } = useUserAnswersAndQuestions(user?.id)
 
   const answers = allAnswers.filter(
     (a) => a.multiple_choice != null || a.free_response || a.integer
@@ -36,10 +37,6 @@ export function LoverAnswers(props: {
     (a) => a.multiple_choice != null
   )
 
-  function refreshAnswers() {
-    setRefresh((prevRefresh) => prevRefresh + 1)
-  }
-
   return (
     <Col className={'mt-2 gap-2'}>
       <OpinionScale
@@ -54,7 +51,7 @@ export function LoverAnswers(props: {
         isCurrentUser={isCurrentUser}
         router={router}
         user={user}
-        refreshAnswers={refreshAnswers}
+        refreshAnswers={refreshAnswersAndQuestions}
       />
     </Col>
   )

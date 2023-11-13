@@ -124,7 +124,7 @@ function AnswerBlock(props: {
           onCancel={() => {
             setEdit(false)
           }}
-          onSubmit={(_newState: loveAnswerState) => {
+          onSubmit={() => {
             refreshAnswers()
             setEdit(false)
           }}

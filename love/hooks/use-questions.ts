@@ -23,10 +23,7 @@ export const useFreeResponseQuestions = () => {
   return questions
 }
 
-export const useUserAnswersAndQuestions = (
-  userId: string | undefined,
-  refresh?: number
-) => {
+export const useUserAnswersAndQuestions = (userId: string | undefined) => {
   const [answers, setAnswers] = usePersistentInMemoryState<
     Row<'love_answers'>[]
   >([], `answers-${userId}`)
@@ -40,7 +37,15 @@ export const useUserAnswersAndQuestions = (
         setQuestions(questions)
       })
     }
-  }, [userId, refresh])
+  }, [userId])
 
-  return { answers, questions }
+  async function refreshAnswersAndQuestions() {
+    if (!userId) return
+    getUserAnswersAndQuestions(userId).then(({ answers, questions }) => {
+      setAnswers(answers)
+      setQuestions(questions)
+    })
+  }
+
+  return { answers, questions, refreshAnswersAndQuestions }
 }

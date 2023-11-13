@@ -62,15 +62,7 @@ export const QuestionsForm = (props: { questionType: QuestionType }) => {
 type loveAnswer = rowFor<'love_answers'>
 export type loveAnswerState = Omit<loveAnswer, 'id' | 'created_time'>
 
-const fetchPrevious = async (
-  id: number,
-  userId: string,
-  setForm: (
-    newState:
-      | loveAnswerState
-      | ((prevState: loveAnswerState) => loveAnswerState)
-  ) => void
-) => {
+const fetchPrevious = async (id: number, userId: string) => {
   const res = await run(
     db
       .from('love_answers')
@@ -79,8 +71,9 @@ const fetchPrevious = async (
       .eq('creator_id', userId)
   )
   if (res.data.length) {
-    setForm(res.data[0])
+    return res.data[0]
   }
+  return null
 }
 
 function getInitialForm(userId: string, id: number) {
@@ -125,7 +118,11 @@ const QuestionRow = (props: { row: rowFor<'love_questions'>; user: User }) => {
   )
 
   useEffect(() => {
-    fetchPrevious(id, user.id, setForm)
+    fetchPrevious(id, user.id).then((res) => {
+      if (res) {
+        setForm(res)
+      }
+    })
   }, [row.id])
 
   return (
@@ -173,7 +170,7 @@ export const IndividualQuestionRow = (props: {
   initialAnswer?: rowFor<'love_answers'>
   user: User
   onCancel: () => void
-  onSubmit?: (form: loveAnswerState) => void
+  onSubmit?: () => void
   className?: string
 }) => {
   const { row, user, onCancel, onSubmit, initialAnswer, className } = props
@@ -185,7 +182,11 @@ export const IndividualQuestionRow = (props: {
   )
 
   useEffect(() => {
-    fetchPrevious(id, user.id, setForm)
+    fetchPrevious(id, user.id).then((res) => {
+      if (res) {
+        setForm(res)
+      }
+    })
   }, [row.id])
 
   return (
@@ -227,7 +228,7 @@ export const IndividualQuestionRow = (props: {
           onClick={() => {
             submitAnswer(form).then(() => {
               if (onSubmit) {
-                onSubmit(form)
+                onSubmit()
               }
             })
           }}
