@@ -12,7 +12,7 @@ import {
   SCROLLABLE_MODAL_CLASS,
 } from 'web/components/layout/modal'
 import { Row } from 'web/components/layout/row'
-import { IndividualQuestionRow, loveAnswerState } from '../questions-form'
+import { IndividualQuestionRow } from '../questions-form'
 
 export function AddQuestionButton(props: {
   isFirstQuestion?: boolean
@@ -75,6 +75,7 @@ function AddQuestionModal(props: {
                 .map((question) => {
                   return (
                     <button
+                      key={question.id}
                       onClick={() => {
                         setSelectedQuestion(question)
                       }}
