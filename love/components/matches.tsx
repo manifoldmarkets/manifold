@@ -284,8 +284,11 @@ const MatchContract = (props: {
                     />
                   )}
                   <UserLink
-                    name={position.userName}
-                    username={position.userUsername}
+                    user={{
+                      id: position.userId,
+                      name: position.userName,
+                      username: position.userUsername,
+                    }}
                     hideBadge
                     short
                   />
@@ -312,8 +315,11 @@ const MatchContract = (props: {
                     />
                   )}
                   <UserLink
-                    name={position.userName}
-                    username={position.userUsername}
+                    user={{
+                      id: position.userId,
+                      name: position.userName,
+                      username: position.userUsername,
+                    }}
                     hideBadge
                     short
                   />

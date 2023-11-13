@@ -457,7 +457,7 @@ function FeedCommentHeader(props: {
   isParent?: boolean
 }) {
   const { comment, onUser, onHide } = props
-  const { userUsername, userName } = comment
+  const { userUsername, userName, userId } = comment
 
   return (
     <Col className={clsx('text-ink-600 text-sm ')}>
@@ -465,8 +465,7 @@ function FeedCommentHeader(props: {
         <Row className=" gap-1">
           <span>
             <UserLink
-              username={userUsername}
-              name={userName}
+              user={{ id: userId, username: userUsername, name: userName }}
               className={'font-semibold'}
             />
           </span>
