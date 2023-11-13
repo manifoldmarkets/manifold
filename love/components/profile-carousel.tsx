@@ -64,9 +64,7 @@ export default function ProfileCarousel(props: {
           color="red"
           onClick={() => {
             console.log('deleting')
-            clearLoverPhoto({ loverId: lover.id }).then(() =>
-              window.location.reload()
-            )
+            clearLoverPhoto({ loverId: lover.id })
           }}
         >
           Admin: Delete pinned photo
