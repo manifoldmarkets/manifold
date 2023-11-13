@@ -22,19 +22,19 @@ export function LoverAnswers(props: {
   )
 
   return (
-    <Col className={'mt-2 gap-2'}>
-      <OpinionScale
-        multiChoiceAnswers={multiChoiceAnswers}
-        questions={questions}
-        isCurrentUser={isCurrentUser}
-        router={router}
-      />
+    <Col className={'mt-2 gap-5'}>
       <FreeResponseDisplay
         answers={otherAnswers}
         questions={questions}
         isCurrentUser={isCurrentUser}
         router={router}
         user={user}
+      />
+      <OpinionScale
+        multiChoiceAnswers={multiChoiceAnswers}
+        questions={questions}
+        isCurrentUser={isCurrentUser}
+        router={router}
       />
     </Col>
   )
