@@ -14,8 +14,12 @@ create table if not exists
                 total_liquidity numeric default 0, -- for historical reasons, this the total subsidy amount added in M
                 subsidy_pool numeric default 0, -- current value of subsidy pool in M
                 data jsonb not null,
-                fs_updated_time timestamp not null
+                fs_updated_time timestamp not null,
+                text_fts tsvector generated always as (to_tsvector('english', text)) stored
 );
+
+create index if not exists answer_text_fts on answers using gin (text_fts);
+create index if not exists answer_contract_id on answers (contract_id);
 
 alter table answers enable row level security;
 

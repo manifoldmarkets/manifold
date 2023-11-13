@@ -9,7 +9,7 @@ import {
   SearchTypes,
 } from 'shared/supabase/search-contracts'
 import { getGroupIdFromSlug } from 'shared/supabase/groups'
-import { uniqBy } from 'lodash'
+import { orderBy, uniqBy } from 'lodash'
 
 export const supabasesearchcontracts = MaybeAuthedEndpoint(
   async (req, auth) => {
@@ -52,12 +52,14 @@ export const searchContracts = async (
     const searchTypes: SearchTypes[] = [
       'prefix',
       'without-stopwords',
+      'answer',
       'with-stopwords',
       'description',
     ]
     const [
       contractPrefixMatches,
       contractsWithoutStopwords,
+      contractsWithMatchingAnswers,
       contractsWithStopwords,
       contractDescriptionMatches,
     ] = await Promise.all(
@@ -88,11 +90,19 @@ export const searchContracts = async (
           })
       })
     )
+    const contractsOfEqualRelevance = orderBy(
+      [
+        ...contractsWithoutStopwords,
+        ...contractsWithMatchingAnswers,
+        ...contractPrefixMatches,
+      ],
+      'importanceScore',
+      'desc'
+    )
 
     contracts = uniqBy(
       [
-        ...contractPrefixMatches,
-        ...contractsWithoutStopwords,
+        ...contractsOfEqualRelevance,
         ...contractsWithStopwords,
         ...contractDescriptionMatches,
       ],

@@ -98,6 +98,7 @@ export type SearchTypes =
   | 'with-stopwords'
   | 'description'
   | 'prefix'
+  | 'answer'
 
 export function getSearchContractSQL(args: {
   term: string
@@ -130,6 +131,12 @@ export function getSearchContractSQL(args: {
     )
   }
 
+  const answersSubQuery = renderSql(
+    select('distinct a.contract_id'),
+    from('answers a'),
+    where(`a.text_fts @@ websearch_to_tsquery('english', $1)`, [term])
+  )
+
   // Normal full text search
   return renderSql(
     select('data'),
@@ -138,6 +145,10 @@ export function getSearchContractSQL(args: {
       join('group_contracts gc on gc.contract_id = contracts.id'),
       where('gc.group_id = $1', [groupId]),
     ],
+    searchType === 'answer' &&
+      join(
+        `(${answersSubQuery}) as matched_answers on matched_answers.contract_id = contracts.id`
+      ),
 
     whereSql,
 
