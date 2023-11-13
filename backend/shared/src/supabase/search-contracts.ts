@@ -120,7 +120,6 @@ export function getSearchContractSQL(args: {
   const whereSql = getSearchContractWhereSQL({ ...args, hideStonks })
 
   const isUrl = term.startsWith('https://manifold.markets/')
-
   if (isUrl) {
     const slug = term.split('/').pop()
     return renderSql(
