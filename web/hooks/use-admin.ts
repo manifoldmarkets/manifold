@@ -13,7 +13,7 @@ export const useAdminOrTrusted = () => {
 
 export const useTrusted = () => {
   const user = useUser()
-  return user ? isModId(user?.username) : false
+  return user ? isModId(user.id) : false
 }
 
 export const useDev = () => {
