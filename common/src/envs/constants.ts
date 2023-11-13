@@ -114,6 +114,7 @@ export const BOT_USERNAMES = [
   'loopsbot',
   'breezybot',
   'echo',
+  'Sayaka',
 ]
 
 export const CORE_USERNAMES = [
