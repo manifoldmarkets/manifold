@@ -28,7 +28,7 @@ import {
 } from './utils'
 import { getLoanPayouts, getPayouts, groupPayoutsByUser } from 'common/payouts'
 import { APIError } from 'common/api'
-import { CORE_USERNAMES } from 'common/envs/constants'
+import { ENV_CONFIG } from 'common/envs/constants'
 import { Query } from 'firebase-admin/firestore'
 import { trackPublicEvent } from 'shared/analytics'
 import { recordContractEdit } from 'shared/record-contract-edit'
@@ -115,7 +115,7 @@ export const resolveMarketHelper = async (
 
   if (
     outcome === 'CANCEL' &&
-    !CORE_USERNAMES.includes(resolver.username) &&
+    !ENV_CONFIG.adminIds.includes(resolver.id) &&
     negativePayouts.length > 0
   ) {
     throw new APIError(

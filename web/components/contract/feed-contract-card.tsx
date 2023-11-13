@@ -70,6 +70,8 @@ export function FeedContractCard(props: {
 
   const {
     closeTime,
+    creatorId,
+    creatorName,
     creatorUsername,
     creatorAvatarUrl,
     outcomeType,
@@ -138,11 +140,12 @@ export function FeedContractCard(props: {
               username={creatorUsername}
             />
             <UserLink
-              name={contract.creatorName}
-              username={creatorUsername}
-              className={clsx(
-                'w-full max-w-[10rem] text-ellipsis sm:max-w-[12rem]'
-              )}
+              user={{
+                id: creatorId,
+                name: creatorName,
+                username: creatorUsername,
+              }}
+              className={'w-full max-w-[10rem] text-ellipsis sm:max-w-[12rem]'}
             />
           </Row>
           <Row className="gap-1">

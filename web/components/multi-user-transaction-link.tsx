@@ -8,6 +8,7 @@ import { UserLink } from 'web/components/widgets/user-link'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 
 export type MultiUserLinkInfo = {
+  id: string
   name: string
   username: string
   avatarUrl: string | undefined
@@ -75,11 +76,7 @@ export function MultiUserTransactionModal(props: {
                   avatarUrl={userInfo.avatarUrl}
                   size={'sm'}
                 />
-                <UserLink
-                  name={userInfo.name}
-                  username={userInfo.username}
-                  short={short}
-                />
+                <UserLink user={userInfo} short={short} />
               </Row>
             ))}
           </Col>

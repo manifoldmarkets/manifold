@@ -2,7 +2,7 @@ import {
   CORS_ORIGIN_MANIFOLD,
   CORS_ORIGIN_LOCALHOST,
   isAdminId,
-  isTrustworthy,
+  isModId,
 } from 'common/envs/constants'
 import { NextApiRequest, NextApiResponse } from 'next'
 import { applyCorsHeaders } from 'web/lib/api/cors'
@@ -47,11 +47,7 @@ export default async function route(req: NextApiRequest, res: NextApiResponse) {
   const contract = contractDoc.data() as Contract
   const isContractCreator = contract.creatorId === userId
 
-  if (
-    !isAdminId(userId) &&
-    !isContractCreator &&
-    !isTrustworthy(user.username)
-  ) {
+  if (!isAdminId(userId) && !isContractCreator && !isModId(userId)) {
     return res
       .status(401)
       .json({ error: 'Only the market creator or mod can hide comments' })

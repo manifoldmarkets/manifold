@@ -6,6 +6,7 @@ import { UserAvatarAndBadge } from './widgets/user-link'
 import { ReactNode } from 'react'
 
 interface LeaderboardEntry {
+  id: string
   username: string
   name: string
   avatarUrl?: string
@@ -63,9 +64,7 @@ export function Leaderboard<T extends LeaderboardEntry>(props: {
                   <td>
                     <UserAvatarAndBadge
                       className="overflow-hidden max-[600px]:max-w-[200px] max-[400px]:max-w-[160px]"
-                      name={entry.name}
-                      username={entry.username}
-                      avatarUrl={entry.avatarUrl}
+                      user={entry}
                     />
                   </td>
                   {columns.map((column, index) => (

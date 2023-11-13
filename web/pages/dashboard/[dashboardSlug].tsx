@@ -25,7 +25,7 @@ import {
 import Custom404 from '../404'
 import { useDashboardFromSlug } from 'web/hooks/use-dashboard'
 import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
-import { ENV_CONFIG, isAdminId, isTrustworthy } from 'common/envs/constants'
+import { ENV_CONFIG, isAdminId, isModId } from 'common/envs/constants'
 import { SEO } from 'web/components/SEO'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { useWarnUnsavedChanges } from 'web/hooks/use-warn-unsaved-changes'
@@ -122,7 +122,7 @@ function FoundDashbordPage(props: {
   const user = useUser()
   const isCreator = dashboard.creatorId === user?.id
   const isOnlyMod =
-    !isCreator && user && (isAdminId(user.id) || isTrustworthy(user.username))
+    !isCreator && user && (isAdminId(user.id) || isModId(user.id))
 
   const [editMode, setEditMode] = useState(editByDefault)
   useWarnUnsavedChanges(editMode)
@@ -243,8 +243,11 @@ function FoundDashbordPage(props: {
               size="xs"
             />
             <UserLink
-              username={dashboard.creatorUsername}
-              name={dashboard.creatorName}
+              user={{
+                id: dashboard.creatorId,
+                name: dashboard.creatorName,
+                username: dashboard.creatorUsername,
+              }}
               className="text-ink-700"
             />
             <span className="text-ink-400 ml-4 text-sm">

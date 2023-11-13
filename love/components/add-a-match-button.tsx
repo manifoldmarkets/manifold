@@ -164,10 +164,7 @@ const AddMatchDialog = (props: {
                         username={lover.user.username}
                       />
                     )}
-                    <UserLink
-                      name={lover.user.name}
-                      username={lover.user.username}
-                    />
+                    <UserLink user={lover.user} />
                   </Row>
                   <Button
                     size="xs"

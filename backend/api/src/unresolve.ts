@@ -14,7 +14,7 @@ import { getContractSupabase, getUserSupabase, log } from 'shared/utils'
 import { MINUTE_MS } from 'common/util/time'
 import { MINUTES_ALLOWED_TO_UNRESOLVE } from 'common/contract'
 import { recordContractEdit } from 'shared/record-contract-edit'
-import { isAdminId, isTrustworthy } from 'common/envs/constants'
+import { isAdminId, isModId } from 'common/envs/constants'
 
 const firestore = admin.firestore()
 const bodySchema = z
@@ -47,9 +47,7 @@ export const unresolve = authEndpoint(async (req, auth) => {
       `Contract ${contractId} was resolved before payouts were unresolvable transactions.`
     )
   const pg = createSupabaseDirectClient()
-  const user = await getUserSupabase(auth.uid)
-  if (!user) throw new APIError(400, `User ${auth.uid} not found.`)
-  const isMod = isTrustworthy(user.username) || isAdminId(auth.uid)
+  const isMod = isModId(auth.uid) || isAdminId(auth.uid)
   if (contract.creatorId !== auth.uid && !isMod)
     throw new APIError(403, `User ${auth.uid} must be a mod to unresolve.`)
   else if (

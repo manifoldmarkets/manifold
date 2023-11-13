@@ -5,7 +5,7 @@ import {
   ENV_CONFIG,
   firestoreConsolePath,
   isAdminId,
-  isTrustworthy,
+  isModId,
 } from 'common/envs/constants'
 import { BETTORS, User } from 'common/user'
 import { formatMoney } from 'common/util/format'
@@ -43,13 +43,13 @@ import dayjs from 'dayjs'
 export const Stats = (props: {
   contract: Contract
   user?: User | null | undefined
-  hideAdvanced?: boolean
 }) => {
-  const { contract, user, hideAdvanced } = props
+  const { contract, user } = props
 
+  const hideAdvanced = !user
   const isDev = useDev()
   const isAdmin = !!user && isAdminId(user?.id)
-  const isTrusty = !!user && isTrustworthy(user?.username)
+  const isTrusty = !!user && isModId(user?.id)
   const isMod = isAdmin || isTrusty
   const isCreator = user?.id === contract.creatorId
   const isPublic = contract.visibility === 'public'
@@ -434,7 +434,7 @@ export function ContractInfoDialog(props: {
     >
       <FollowMarketButton contract={contract} user={user} />
 
-      <Stats contract={contract} user={user} hideAdvanced={!user} />
+      <Stats contract={contract} user={user} />
 
       {!!user && (
         <>

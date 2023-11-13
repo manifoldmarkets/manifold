@@ -128,8 +128,11 @@ const RelatedContractCard = memo(function RelatedContractCard(props: {
             noLink
           />
           <UserLink
-            name={contract.creatorName}
-            username={contract.creatorUsername}
+            user={{
+              id: contract.creatorId,
+              name: contract.creatorName,
+              username: contract.creatorUsername,
+            }}
             className="text-ink-500 text-sm"
             createdTime={creatorCreatedTime}
             noLink

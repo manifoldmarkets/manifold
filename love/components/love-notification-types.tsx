@@ -2,10 +2,10 @@ import { getSourceUrl, Notification } from 'common/notification'
 import {
   AvatarNotificationIcon,
   NotificationFrame,
+  NotificationUserLink,
   PrimaryNotificationLink,
 } from 'web/components/notifications/notification-helpers'
 import { Linkify } from 'web/components/widgets/linkify'
-import { UserLink } from 'web/components/widgets/user-link'
 
 export function CommentOnLoverNotification(props: {
   notification: Notification
@@ -33,10 +33,9 @@ export function CommentOnLoverNotification(props: {
       link={notification.sourceSlug}
     >
       <div className="line-clamp-3">
-        <UserLink
-          name={sourceUserName || ''}
-          username={sourceUserUsername || ''}
-          className={'hover:text-primary-500 relative flex-shrink-0'}
+        <NotificationUserLink
+          name={sourceUserName}
+          username={sourceUserUsername}
         />{' '}
         {reasonText}
         {!isChildOfGroup && <span>on your profile</span>}
@@ -76,10 +75,9 @@ export function NewMatchNotification(props: {
       }
     >
       <div className="line-clamp-3">
-        <UserLink
-          name={sourceUserName || ''}
-          username={sourceUserUsername || ''}
-          className={'hover:text-primary-500 relative flex-shrink-0'}
+        <NotificationUserLink
+          name={sourceUserName}
+          username={sourceUserUsername}
         />{' '}
         <span>
           proposed a new match:{' '}

@@ -173,12 +173,7 @@ export default function RangePerformancePage(props: {
       <Col className={'p-2'}>
         <Row className={'w-full items-start justify-between pb-6'}>
           <Title>
-            <UserLink
-              name={user.name.split(' ')[0] + `'s`}
-              hideBadge={true}
-              username={user.username}
-            />{' '}
-            {date} Profit
+            <UserLink user={user} hideBadge={true} /> {date} Profit
           </Title>
           <CopyLinkOrShareButton
             url={`https://${ENV_CONFIG.domain}/week/${user.username}/${rangeEndDateSlug}`}

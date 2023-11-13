@@ -357,11 +357,7 @@ export const PrivateChat = (props: {
                   key={user.id}
                   className={'w-full items-center justify-start gap-2'}
                 >
-                  <UserAvatarAndBadge
-                    name={user.name}
-                    username={user.username}
-                    avatarUrl={user.avatarUrl}
-                  />
+                  <UserAvatarAndBadge user={user} />
                   {otherUsersFromChannel?.[channelId].map(
                     (membership) =>
                       membership.user_id === user.id &&

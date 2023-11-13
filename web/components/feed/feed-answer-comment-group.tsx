@@ -50,7 +50,7 @@ function CommentsAnswer(props: {
           <div className="text-ink-400 text-xs">
             {user && (
               <>
-                <UserLink username={user.username} name={user.name} /> answered
+                <UserLink user={user} /> answered
               </>
             )}
             <CopyLinkDateTimeComponent

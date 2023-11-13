@@ -2,10 +2,10 @@ import Link from 'next/link'
 import clsx from 'clsx'
 import {
   BOT_USERNAMES,
-  MOD_USERNAMES,
   VERIFIED_USERNAMES,
-  CORE_USERNAMES,
   MVP,
+  ENV_CONFIG,
+  MOD_IDS,
 } from 'common/envs/constants'
 import { SparklesIcon } from '@heroicons/react/solid'
 import { Tooltip } from './tooltip'
@@ -38,13 +38,13 @@ function shortenName(name: string) {
 }
 
 export function UserAvatarAndBadge(props: {
-  name: string
-  username: string
-  avatarUrl?: string
+  user: { id: string; name: string; username: string; avatarUrl?: string }
   noLink?: boolean
   className?: string
 }) {
-  const { name, username, avatarUrl, noLink, className } = props
+  const { user, noLink, className } = props
+  const { username, avatarUrl } = user
+
   return (
     <Row className={clsx('items-center gap-2', className)}>
       <Avatar
@@ -53,14 +53,13 @@ export function UserAvatarAndBadge(props: {
         size={'sm'}
         noLink={noLink}
       />
-      <UserLink name={name} username={username} noLink={noLink} />
+      <UserLink user={user} noLink={noLink} />
     </Row>
   )
 }
 
 export function UserLink(props: {
-  name: string
-  username: string
+  user: { id: string; name: string; username: string }
   className?: string
   short?: boolean
   noLink?: boolean
@@ -69,8 +68,7 @@ export function UserLink(props: {
   marketCreator?: boolean
 }) {
   const {
-    name,
-    username,
+    user: { id, name, username },
     className,
     short,
     noLink,
@@ -85,6 +83,7 @@ export function UserLink(props: {
       <span className="max-w-[200px] truncate">{shortName}</span>
       {!hideBadge && (
         <UserBadge
+          userId={id}
           username={username}
           fresh={fresh}
           marketCreator={marketCreator}
@@ -138,19 +137,20 @@ export function PostBanBadge() {
 }
 
 export function UserBadge(props: {
+  userId: string
   username: string
   fresh?: boolean
   marketCreator?: boolean
 }) {
-  const { username, fresh, marketCreator } = props
+  const { userId, username, fresh, marketCreator } = props
   const badges = []
   if (BOT_USERNAMES.includes(username)) {
     badges.push(<BotBadge key="bot" />)
   }
-  if (CORE_USERNAMES.includes(username)) {
+  if (ENV_CONFIG.adminIds.includes(userId)) {
     badges.push(<CoreBadge key="core" />)
   }
-  if (MOD_USERNAMES.includes(username)) {
+  if (MOD_IDS.includes(userId)) {
     badges.push(<ModBadge key="mod" />)
   }
   if (MVP.includes(username)) {
@@ -241,6 +241,7 @@ export const StackedUserNames = (props: {
         <span className={clsx('break-anywhere ', className)}>{user.name}</span>
         {
           <UserBadge
+            userId={user.id}
             username={user.username}
             fresh={isFresh(user.createdTime)}
           />

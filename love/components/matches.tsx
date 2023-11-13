@@ -223,12 +223,7 @@ const MatchContract = (props: {
         {pinned_url && (
           <Avatar avatarUrl={pinned_url} username={user.username} />
         )}
-        <UserLink
-          className="truncate"
-          name={user.name}
-          username={user.username}
-          hideBadge
-        />
+        <UserLink className="truncate" user={user} hideBadge />
         <div className="flex-1" />
         <CommentsButton
           className="min-w-[36px]"

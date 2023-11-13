@@ -226,12 +226,7 @@ const UserRow = (props: {
               <div className="w-4 text-right font-semibold">{rank}</div>
             </Row>
           </Tooltip>
-          <UserAvatarAndBadge
-            name={user.name}
-            username={user.username}
-            noLink
-            avatarUrl={user.avatarUrl}
-          />
+          <UserAvatarAndBadge user={user} noLink />
         </Row>
       </td>
       <td className="pr-2 text-right sm:pr-10">{formatMoney(mana_earned)}</td>

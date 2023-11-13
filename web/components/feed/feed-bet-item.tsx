@@ -2,7 +2,6 @@ import { Contract } from 'common/contract'
 import { PositionChangeData } from 'common/supabase/bets'
 import { Avatar } from 'web/components/widgets/avatar'
 import { UserLink } from 'web/components/widgets/user-link'
-import clsx from 'clsx'
 import { CreatorDetails } from 'common/feed'
 import { Answer } from 'common/answer'
 import { formatMoney } from 'common/util/format'
@@ -16,7 +15,7 @@ export const FeedBetsItem = (props: {
   answers: Answer[] | undefined
 }) => {
   const { contract, answers, creatorDetails, betData } = props
-  const { avatarUrl, username, name } = creatorDetails
+  const { avatarUrl, username } = creatorDetails
   const { previous, change, current } = betData
   // Current lists their original investment, not their sale value
   const saleAmount =
@@ -40,9 +39,8 @@ export const FeedBetsItem = (props: {
       <span className={'inline-flex w-fit flex-row'}>
         <Avatar size={'xs'} avatarUrl={avatarUrl} username={username} />
         <UserLink
-          name={name}
-          username={username}
-          className={clsx('ml-1 max-w-[10rem] text-ellipsis sm:max-w-[12rem]')}
+          user={creatorDetails}
+          className="ml-1 max-w-[10rem] text-ellipsis sm:max-w-[12rem]"
         />
       </span>
       {previous?.outcome && saleAmount > 0 && (

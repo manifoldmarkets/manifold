@@ -91,7 +91,7 @@ export async function createMarketHelper(body: any, auth: AuthedUser) {
   let groups = groupIds
     ? await Promise.all(
         groupIds.map(async (gId) =>
-          getGroupCheckPermissions(gId, visibility, user)
+          getGroupCheckPermissions(gId, visibility, userId)
         )
       )
     : null
@@ -439,7 +439,7 @@ function validateMarketBody(body: any) {
 async function getGroupCheckPermissions(
   groupId: string,
   visibility: string,
-  user: User
+  userId: string
 ) {
   const db = createSupabaseClient()
 
@@ -453,7 +453,7 @@ async function getGroupCheckPermissions(
   const membershipQuery = await db
     .from('group_members')
     .select()
-    .eq('member_id', user.id)
+    .eq('member_id', userId)
     .eq('group_id', groupId)
     .limit(1)
   const membership = membershipQuery.data?.[0]
@@ -470,7 +470,7 @@ async function getGroupCheckPermissions(
 
   if (
     !canUserAddGroupToMarket({
-      user,
+      userId,
       group,
       membership,
     })

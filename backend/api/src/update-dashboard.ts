@@ -3,7 +3,7 @@ import { getUserSupabase, log, revalidateStaticProps } from 'shared/utils'
 import { DashboardItemSchema } from 'shared/zod-types'
 import { z } from 'zod'
 import { authEndpoint, validate } from './helpers'
-import { isAdminId, isTrustworthy } from 'common/envs/constants'
+import { isAdminId, isModId } from 'common/envs/constants'
 import { updateDashboardGroups } from 'shared/supabase/dashboard'
 import { MAX_DASHBOARD_TITLE_LENGTH } from 'common/dashboard'
 import { track } from 'shared/analytics'
@@ -22,8 +22,7 @@ export const updatedashboard = authEndpoint(async (req, auth) => {
 
   log('updating dashboard')
 
-  const user = await getUserSupabase(auth.uid)
-  const isMod = isAdminId(auth.uid) || isTrustworthy(user?.username)
+  const isMod = isAdminId(auth.uid) || isModId(auth.uid)
 
   const pg = createSupabaseDirectClient()
 
@@ -48,7 +47,6 @@ export const updatedashboard = authEndpoint(async (req, auth) => {
     title,
     items,
     topics,
-    username: user?.username,
   })
 
   await revalidateStaticProps(`/dashboards/${updatedDashboard.slug}`)

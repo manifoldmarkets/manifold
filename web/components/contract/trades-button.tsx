@@ -90,7 +90,7 @@ function VotesModalContent(props: { contract: Contract }) {
                 avatarUrl={voter.avatarUrl}
                 size={'sm'}
               />
-              <UserLink name={voter.name} username={voter.username} />
+              <UserLink user={voter} />
             </Row>
           )
         })

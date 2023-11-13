@@ -170,17 +170,11 @@ const PaymentCards = (props: {
                   <Col className={'w-full'}>
                     <Row className={'flex-wrap gap-x-1'}>
                       <span className={'ml-1'}>
-                        <UserLink
-                          name={fromUser.name}
-                          username={fromUser.username}
-                        />
+                        <UserLink user={fromUser} />
                       </span>
                       <span>{payment.amount < 0 ? 'fined' : 'paid'}</span>
                       <span>
-                        <UserLink
-                          name={toUser.name}
-                          username={toUser.username}
-                        />
+                        <UserLink user={toUser} />
                       </span>
                     </Row>
                     <span className={'-mt-1'}>
@@ -260,11 +254,7 @@ export const PaymentsModal = (props: {
               {toUser && !removedToUser ? (
                 <Col className={'mt-2'}>
                   <Row className={'items-center gap-1'}>
-                    <UserAvatarAndBadge
-                      name={toUser.name}
-                      username={toUser.username}
-                      avatarUrl={toUser.avatarUrl}
-                    />
+                    <UserAvatarAndBadge user={toUser} />
                     <XIcon
                       onClick={() => {
                         setToUsers([])

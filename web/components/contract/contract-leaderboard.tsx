@@ -52,6 +52,7 @@ export function ContractLeaderboard(props: {
     .map((cm) => {
       const { profit } = cm
       return removeUndefinedProps({
+        id: cm.userId,
         name: cm.userName,
         username: cm.userUsername,
         avatarUrl: cm.userAvatarUrl,
