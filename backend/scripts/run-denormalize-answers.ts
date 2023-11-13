@@ -1,23 +1,11 @@
-import * as functions from 'firebase-functions'
-import * as admin from 'firebase-admin'
-import { chunk, sortBy, uniq } from 'lodash'
-import { createSupabaseClient } from 'shared/supabase/init'
-import { secrets } from 'common/secrets'
+import { runScript } from 'run-script'
+import { uniq, sortBy, chunk } from 'lodash'
 import { getAnswersForContracts } from 'common/supabase/contracts'
+import { HOUR_MS } from 'common/util/time'
 
-export const denormalizeAnswers = functions
-  .runWith({
-    secrets,
-    timeoutSeconds: 540,
-  })
-  .pubsub.schedule('*/1 * * * *') // runs every minute
-  .onRun(denormalizeAnswersCore)
-
-export async function denormalizeAnswersCore() {
-  const db = createSupabaseClient()
-
+runScript(async ({ db, firestore }) => {
   // Fetch answers modified in the last minute (plus 5 seconds)
-  const oneMinuteAgo = new Date(Date.now() - 65 * 1000)
+  const oneMinuteAgo = new Date(Date.now() - 10 * HOUR_MS)
   const { data: recentAnswers } = await db
     .from('answers')
     .select('contract_id')
@@ -51,8 +39,5 @@ export async function denormalizeAnswersCore() {
       })
     )
   }
-
   console.log('Done.')
-}
-
-const firestore = admin.firestore()
+})

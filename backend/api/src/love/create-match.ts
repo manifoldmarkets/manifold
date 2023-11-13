@@ -33,6 +33,15 @@ const MATCH_CREATION_FEE = 10
 
 export const createMatch = authEndpoint(async (req, auth) => {
   const { userId1, userId2, betAmount } = validate(createMatchSchema, req.body)
+  return await createMatchMain(auth.uid, userId1, userId2, betAmount)
+})
+
+export const createMatchMain = async (
+  authUserId: string,
+  userId1: string,
+  userId2: string,
+  betAmount: number
+) => {
   if (userId1 === userId2) {
     throw new APIError(400, `User ${userId1} cannot match with themselves.`)
   }
@@ -40,12 +49,12 @@ export const createMatch = authEndpoint(async (req, auth) => {
   const db = createSupabaseClient()
 
   const [matchCreator, user1, user2] = await Promise.all([
-    getUser(auth.uid),
+    getUser(authUserId),
     getUser(userId1),
     getUser(userId2),
   ])
   if (!matchCreator) {
-    throw new APIError(404, `User ${auth.uid} does not exist.`)
+    throw new APIError(404, `User ${authUserId} does not exist.`)
   }
   if (!user1) {
     throw new APIError(404, `User ${userId1} does not exist.`)
@@ -83,12 +92,12 @@ export const createMatch = authEndpoint(async (req, auth) => {
     throw new APIError(400, `User ${userId1} is blocked by ${userId2}.`)
   }
   if (
-    privateUser1.blockedUserIds?.includes(auth.uid) ||
-    privateUser2.blockedUserIds?.includes(auth.uid)
+    privateUser1.blockedUserIds?.includes(authUserId) ||
+    privateUser2.blockedUserIds?.includes(authUserId)
   ) {
     throw new APIError(
       400,
-      `User ${auth.uid} is blocked by ${userId1} or ${userId2}.`
+      `User ${authUserId} is blocked by ${userId1} or ${userId2}.`
     )
   }
 
@@ -118,8 +127,8 @@ export const createMatch = authEndpoint(async (req, auth) => {
       question: `Relationship of @${user1.username} & @${user2.username}`,
       answers: [
         `First date by ${thirtyDaysLaterStr}?`,
-        `If first date, second date within two weeks?`,
-        `If second date, third date within two weeks?`,
+        `If first date, second date within one month?`,
+        `If second date, third date within one month?`,
         `If third date, continue relationship for six months?`,
       ],
       descriptionMarkdown: `Are [${user1.name}](https://manifold.love/${user1.username}) and [${user2.name}](https://manifold.love/${user2.username}) a good match? Bet on whether they will hit any of these relationship milestones! 
@@ -144,13 +153,14 @@ See [FAQ](https://manifold.love/faq) for more details.`,
 
   const { answers } = contract
 
+  const noBetAmounts = [300, 300, 100, 300]
   await Promise.all(
-    answers.map(async (a) => {
+    answers.map(async (a, i) => {
       await placeBetMain(
         {
           contractId: contract.id,
           answerId: a.id,
-          amount: 300,
+          amount: noBetAmounts[i],
           outcome: 'NO',
         },
         manifoldLoveUserId,
@@ -187,7 +197,7 @@ See [FAQ](https://manifold.love/faq) for more details.`,
     success: true,
     contract,
   }
-})
+}
 
 const createNewMatchNotification = async (
   forUser: User,

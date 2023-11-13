@@ -137,12 +137,6 @@ export const Matches = (props: { userId: string }) => {
         </Col>
       ) : (
         <Col>
-          <div className="mb-2 text-lg font-semibold">Matches</div>
-          <div className="bg-canvas-50 mb-4 px-2 py-1.5">
-            Hello manifold.love users — we've overhauled matches to include
-            markets on 1st date, 2nd date and more! Sadly, the old matches have
-            been reset and will need to be recreated. Enjoy!
-          </div>
           <span className={'text-ink-500 text-sm'}>No matches yet.</span>
         </Col>
       )}

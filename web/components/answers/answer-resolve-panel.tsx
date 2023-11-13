@@ -358,7 +358,6 @@ export function ResolutionAnswerItem(props: {
       label={
         <AnswerLabel
           text={text}
-          index={'index' in answer ? answer.index : undefined}
           createdTime={answer.createdTime}
           creator={addAnswersMode === 'ANYONE' ? user ?? false : undefined}
         />
@@ -479,7 +478,6 @@ function IndependentResolutionAnswerItem(props: {
           ) : (
             <AnswerLabel
               text={answer.text}
-              index={'index' in answer ? answer.index : undefined}
               createdTime={answer.createdTime}
               creator={
                 addAnswersMode === 'ANYONE' ? answerCreator ?? false : undefined

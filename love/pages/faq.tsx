@@ -21,8 +21,8 @@ export default function FAQ() {
         </div>
         <Col className="mb-4 ml-4 gap-2">
           <div>1. First date by Dec 10?</div>
-          <div>2. If first date, second date within two weeks?</div>
-          <div>3. If second date, third date within two weeks?</div>
+          <div>2. If first date, second date within one month?</div>
+          <div>3. If second date, third date within one month?</div>
           <div>4. If third date, continue relationship for six months?</div>
         </Col>
         <Col className="gap-2">
@@ -47,9 +47,9 @@ export default function FAQ() {
             For 1, the date must start by the end of the date specified.
           </div>
           <div>
-            For 2-3, the two-week countdown starts from the day the last date
+            For 2-3, the one-month countdown starts from the day the last date
             happened. So if you went on a first date on Dec 3, then you would
-            have until the end of Dec 17 to go on a second date for the market
+            have until the end of Jan 3 to go on a second date for the market
             to resolve YES.
           </div>
           <div>

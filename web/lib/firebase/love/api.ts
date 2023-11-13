@@ -19,6 +19,10 @@ export function rejectLover(params: { userId: string }) {
   return call(getApiUrl('reject-lover'), 'POST', params)
 }
 
+export function clearLoverPhoto(params: { loverId: number }) {
+  return call(getApiUrl('clear-lover-photo'), 'POST', params)
+}
+
 export function confirmLoverStage(params: {
   contractId: string
   answerId: string

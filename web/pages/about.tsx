@@ -150,8 +150,13 @@ export default function AboutPage() {
               href="/charity"
             />
           )}
-          {/* TODO: replace with another page to be even. or remove one */}
-          <LabCard title="🐮 Moolinda" description="???" href="/cowp" />
+
+          <LabCard
+            title="❤️ Manifold.love"
+            description="Dating meets prediction markets"
+            href="https://manifold.love"
+            target="_blank"
+          />
         </LabSection>
 
         <Spacer h={8} />
