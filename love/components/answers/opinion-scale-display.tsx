@@ -17,7 +17,6 @@ export function OpinionScale(props: {
   router: NextRouter
 }) {
   const { multiChoiceAnswers, questions, isCurrentUser, router } = props
-  console.log(multiChoiceAnswers)
   return (
     <Col className="gap-2">
       <Row className={'w-full items-center justify-between gap-2'}>
