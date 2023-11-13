@@ -7,9 +7,11 @@ import {
   getSearchContractSQL,
   getForYouSQL,
   SearchTypes,
+  sortFields,
 } from 'shared/supabase/search-contracts'
 import { getGroupIdFromSlug } from 'shared/supabase/groups'
 import { orderBy, uniqBy } from 'lodash'
+import { convertContract } from 'common/supabase/contracts'
 
 export const supabasesearchcontracts = MaybeAuthedEndpoint(
   async (req, auth) => {
@@ -82,7 +84,7 @@ export const searchContracts = async (
         })
         return pg
           .map(searchSQL, [searchTerm], (r) => ({
-            data: r.data as Contract,
+            data: convertContract(r),
             searchType,
           }))
           .catch((e) => {
@@ -100,10 +102,9 @@ export const searchContracts = async (
         ...contractPrefixMatches,
       ],
       (c) =>
-        c.searchType === 'answer'
-          ? c.data.importanceScore * 0.5
-          : c.data.importanceScore,
-      'desc'
+        sortFields[sort].sortCallback(c.data) *
+        (c.searchType === 'answer' ? 0.5 : 1),
+      sortFields[sort].order.includes('DESC') ? 'desc' : 'asc'
     )
 
     contracts = uniqBy(
