@@ -6,6 +6,7 @@ import * as admin from 'firebase-admin'
 import { baseLoversSchema } from 'api/love/create-lover'
 import { HOUR_MS } from 'common/util/time'
 import { removePinnedUrlFromPhotoUrls } from 'shared/love/parse-photos'
+import { contentSchema } from 'shared/zod-types'
 
 const optionaLoversSchema = z.object({
   political_beliefs: z.array(z.string()).optional(),
@@ -27,7 +28,7 @@ const optionaLoversSchema = z.object({
   company: z.string().optional(),
   comments_enabled: z.boolean().optional(),
   website: z.string().optional(),
-  bio: z.string().optional(),
+  bio: contentSchema.optional().nullable(),
   twitter: z.string().optional(),
   avatar_url: z.string().optional(),
 })

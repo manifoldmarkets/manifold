@@ -37,5 +37,13 @@ export const useLoverByUser = (user: User | undefined) => {
       })
   }, [userId])
 
-  return lover
+  function refreshLover() {
+    if (userId)
+      getLoverRow(userId, db).then((lover) => {
+        if (!lover) setLover(null)
+        else setLover({ ...lover, user })
+      })
+  }
+
+  return { lover, refreshLover }
 }

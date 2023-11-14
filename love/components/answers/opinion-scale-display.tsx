@@ -9,6 +9,7 @@ import { Button } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Subtitle } from '../widgets/lover-subtitle'
+import { BiTachometer } from 'react-icons/bi'
 
 export function OpinionScale(props: {
   multiChoiceAnswers: rowFor<'love_answers'>[]
@@ -17,12 +18,27 @@ export function OpinionScale(props: {
   router: NextRouter
 }) {
   const { multiChoiceAnswers, questions, isCurrentUser, router } = props
+
+  if (multiChoiceAnswers.length < 1) {
+    if (isCurrentUser) {
+      return (
+        <Button color="indigo" onClick={() => router.push('opinion-scale')}>
+          <Row className="items-center gap-1">
+            <BiTachometer className="h-5 w-5" />
+            Fill Opinion Scale
+          </Row>
+        </Button>
+      )
+    }
+    return null
+  }
+
   return (
     <Col className="gap-2">
       <Row className={'w-full items-center justify-between gap-2'}>
         <Subtitle>Opinion Scale</Subtitle>
 
-        {isCurrentUser && multiChoiceAnswers.length > 0 && (
+        {isCurrentUser && (
           <Button
             color={'gray-outline'}
             size="xs"
@@ -37,30 +53,19 @@ export function OpinionScale(props: {
           </Button>
         )}
       </Row>
-      {multiChoiceAnswers.length > 0 ? (
-        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-          {orderBy(multiChoiceAnswers, (a) => a.multiple_choice, 'desc').map(
-            (answer) => {
-              return (
-                <OpinionScaleBlock
-                  key={answer.id}
-                  answer={answer}
-                  questions={questions}
-                />
-              )
-            }
-          )}
-        </div>
-      ) : isCurrentUser ? (
-        <Col className="text-ink-600 gap-2 text-sm">
-          You have not filled out your opinion scale yet!
-          <Button color="indigo" onClick={() => router.push('opinion-scale')}>
-            Fill opinion scale
-          </Button>
-        </Col>
-      ) : (
-        <div className="text-ink-600 gap-2 text-sm">None yet</div>
-      )}
+      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+        {orderBy(multiChoiceAnswers, (a) => a.multiple_choice, 'desc').map(
+          (answer) => {
+            return (
+              <OpinionScaleBlock
+                key={answer.id}
+                answer={answer}
+                questions={questions}
+              />
+            )
+          }
+        )}
+      </div>
     </Col>
   )
 }

@@ -18,7 +18,7 @@ create table if not exists
     comments_enabled boolean not null default true,
     city text not null,
     -- optional
-    bio text,
+    bio json,
     website text,
     twitter text,
     has_kids int,
