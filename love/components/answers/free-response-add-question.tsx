@@ -29,14 +29,10 @@ export function AddQuestionButton(props: {
         color={isFirstQuestion ? 'indigo' : 'gray-outline'}
         onClick={() => setOpenModal(true)}
       >
-        {isFirstQuestion ? (
-          <>Answer Questions</>
-        ) : (
-          <Row className="items-center gap-1">
-            <PlusIcon className="h-4 w-4" />
-            Add Question
-          </Row>
-        )}
+        <Row className="items-center gap-1">
+          <PlusIcon className="h-4 w-4" />
+          Add A Prompt
+        </Row>
       </Button>
       <AddQuestionModal
         open={openModal}

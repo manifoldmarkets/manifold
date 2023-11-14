@@ -1,21 +1,13 @@
 import { Lover } from 'common/love/lover'
-import { Subtitle } from '../widgets/lover-subtitle'
-import { Col } from 'web/components/layout/col'
-import {
-  Content,
-  TextEditor,
-  useTextEditor,
-} from 'web/components/widgets/editor'
-import { JSONContent } from '@tiptap/core'
-import { Button } from 'web/components/buttons/button'
 import { useState } from 'react'
+import { Button } from 'web/components/buttons/button'
+import { Col } from 'web/components/layout/col'
 import { MODAL_CLASS, Modal } from 'web/components/layout/modal'
-import { MAX_DESCRIPTION_LENGTH } from 'common/contract'
-import { Row } from 'web/components/layout/row'
-import { updateLover } from 'web/lib/firebase/love/api'
-import { track } from 'web/lib/service/analytics'
+import { Subtitle } from '../widgets/lover-subtitle'
 import { EditableBio } from './editable-bio'
 import { BioBlock } from './lover-bio-block'
+import { Row } from 'web/components/layout/row'
+import { PlusIcon } from '@heroicons/react/outline'
 
 export function LoverBio(props: {
   isCurrentUser: boolean
@@ -24,20 +16,22 @@ export function LoverBio(props: {
 }) {
   const { isCurrentUser, lover, refreshLover } = props
 
+  if (!lover.bio) {
+    return isCurrentUser ? (
+      <AddBioButton lover={lover} refreshLover={refreshLover} />
+    ) : (
+      <></>
+    )
+  }
+
   return (
     <Col>
       <Subtitle>Bio</Subtitle>
-      {lover.bio ? (
-        <BioBlock
-          isCurrentUser={isCurrentUser}
-          lover={lover}
-          refreshLover={refreshLover}
-        />
-      ) : (
-        isCurrentUser && (
-          <AddBioButton lover={lover} refreshLover={refreshLover} />
-        )
-      )}
+      <BioBlock
+        isCurrentUser={isCurrentUser}
+        lover={lover}
+        refreshLover={refreshLover}
+      />
     </Col>
   )
 }
@@ -48,12 +42,15 @@ function AddBioButton(props: { lover: Lover; refreshLover: () => void }) {
   return (
     <>
       <Button
-        className="indigo-outline"
+        color="gray-outline"
         onClick={() => {
           setOpen(true)
         }}
       >
-        Add Bio
+        <Row className="items-center gap-1">
+          <PlusIcon className="h-4 w-4" />
+          Add Bio
+        </Row>
       </Button>
       <Modal open={open} setOpen={setOpen}>
         <Col className={MODAL_CLASS}>

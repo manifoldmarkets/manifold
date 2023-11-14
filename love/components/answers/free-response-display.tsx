@@ -23,37 +23,44 @@ export function FreeResponseDisplay(props: {
   refreshAnswers: () => void
 }) {
   const { answers, questions, isCurrentUser, refreshAnswers, user } = props
+
+  const noAnswers = answers.length < 1
+
+  if (noAnswers) {
+    return (
+      isCurrentUser && (
+        <AddQuestionButton
+          isFirstQuestion={answers.length < 1}
+          answers={answers}
+          questions={questions}
+          user={user}
+          refreshAnswers={refreshAnswers}
+        />
+      )
+    )
+  }
   return (
     <Col className="gap-2">
       <Row className={'w-full items-center justify-between gap-2'}>
-        <Subtitle>{`About ${
-          isCurrentUser ? 'You' : user.name.split(' ')[0]
-        }`}</Subtitle>
+        <Subtitle>{`${
+          isCurrentUser ? 'Your' : user.name.split(' ')[0] + `'s`
+        } Prompts`}</Subtitle>
       </Row>
 
-      {answers.length > 0 ? (
-        <Col className="gap-2">
-          {answers.map((answer) => {
-            return (
-              <AnswerBlock
-                key={answer.free_response ?? '' + answer.id}
-                answer={answer}
-                questions={questions}
-                isCurrentUser={isCurrentUser}
-                user={user}
-                refreshAnswers={refreshAnswers}
-              />
-            )
-          })}
-        </Col>
-      ) : isCurrentUser ? (
-        <Col className="text-ink-600 gap-2 text-sm">
-          You have not answered any questions yet! Help your potential matches
-          get to know you better...
-        </Col>
-      ) : (
-        <div className="text-ink-600 gap-2 text-sm">None yet</div>
-      )}
+      <Col className="gap-2">
+        {answers.map((answer) => {
+          return (
+            <AnswerBlock
+              key={answer.free_response ?? '' + answer.id}
+              answer={answer}
+              questions={questions}
+              isCurrentUser={isCurrentUser}
+              user={user}
+              refreshAnswers={refreshAnswers}
+            />
+          )
+        })}
+      </Col>
       {isCurrentUser && (
         <AddQuestionButton
           isFirstQuestion={answers.length < 1}

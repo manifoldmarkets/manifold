@@ -62,14 +62,16 @@ export function BioBlock(props: {
               {
                 name: 'Delete',
                 icon: <XIcon className="h-5 w-5" />,
-                onClick: async () =>
+                onClick: async () => {
                   await updateLover({
                     ...lover,
                     bio: null,
                   }).catch((e) => {
                     console.error(e)
                     return false
-                  }),
+                  })
+                  refreshLover()
+                },
               },
             ]}
             closeOnClick
