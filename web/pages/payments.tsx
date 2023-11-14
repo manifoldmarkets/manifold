@@ -28,6 +28,7 @@ import { useCanSendMana } from 'web/hooks/use-can-send-mana'
 import { QRCode } from 'web/components/widgets/qr-code'
 import { CopyLinkRow } from 'web/components/buttons/copy-link-button'
 import { useRouter } from 'next/router'
+import { filterDefined } from 'common/util/array'
 
 export default function Payments() {
   const { payments, load } = useManaPayments()
@@ -114,7 +115,11 @@ export const PaymentsContent = (props: {
       {payments.length === 0 ? (
         <span className="text-ink-500">No Payments</span>
       ) : (
-        <PaymentCards payments={payments} users={users} forUser={forUser} />
+        <PaymentCards
+          payments={payments}
+          users={filterDefined(users ?? [])}
+          forUser={forUser}
+        />
       )}
       {user && (
         <>

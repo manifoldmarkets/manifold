@@ -31,6 +31,7 @@ import { DotsVerticalIcon } from '@heroicons/react/solid'
 import { usePersistentQueryState } from 'web/hooks/use-persistent-query-state'
 import { useTopicFromRouter } from 'web/hooks/use-topic-from-router'
 import { BackButton } from 'web/components/contract/back-button'
+import { filterDefined } from 'common/util/array'
 
 export async function getStaticProps() {
   const allTime = await queryLeaderboardUsers('allTime').catch(() => ({
@@ -312,7 +313,9 @@ const SelectTopicModal = (props: {
 const toTopUsers = async (
   cachedUserIds: { userId: string; score: number }[]
 ): Promise<{ user: User | null; score: number }[]> => {
-  const userData = await getUsers(cachedUserIds.map((u) => u.userId))
+  const userData = filterDefined(
+    await getUsers(cachedUserIds.map((u) => u.userId))
+  )
   const usersById = Object.fromEntries(userData.map((u) => [u.id, u as User]))
   return cachedUserIds
     .map((e) => ({
