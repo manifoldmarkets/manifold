@@ -58,7 +58,7 @@ export function useUsersInStore(
     )
   }, [userIds])
 
-  return users?.filter((user) => userIds.includes(user.id))
+  return users?.filter((user) => userIds.includes(user?.id))
 }
 
 export function useUserByIdOrAnswer(answer: Answer | DpmAnswer) {
