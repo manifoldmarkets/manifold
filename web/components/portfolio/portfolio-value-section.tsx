@@ -237,12 +237,7 @@ function PortfolioValueSkeleton(props: {
 
   return (
     <>
-      <Row
-        className={clsx(
-          'mb-1 items-start gap-0 sm:mb-2',
-          placement === 'bottom' ? 'gap-8' : ''
-        )}
-      >
+      <Row className={clsx('mb-1 items-start gap-0 sm:mb-2')}>
         <Col
           className={clsx(
             'w-24 cursor-pointer sm:w-28 ',
