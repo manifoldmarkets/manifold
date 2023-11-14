@@ -9,6 +9,7 @@ import { Button } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Subtitle } from '../widgets/lover-subtitle'
+import { BiTachometer } from 'react-icons/bi'
 
 export function OpinionScale(props: {
   multiChoiceAnswers: rowFor<'love_answers'>[]
@@ -22,7 +23,10 @@ export function OpinionScale(props: {
     if (isCurrentUser) {
       return (
         <Button color="indigo" onClick={() => router.push('opinion-scale')}>
-          Fill opinion scale
+          <Row className="items-center gap-1">
+            <BiTachometer className="h-5 w-5" />
+            Fill Opinion Scale
+          </Row>
         </Button>
       )
     }
