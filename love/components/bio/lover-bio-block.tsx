@@ -36,10 +36,9 @@ export function BioBlock(props: {
     >
       <Row className="w-full">
         {!edit && (
-          <Content
-            className="flex flex-grow"
-            content={lover.bio as JSONContent}
-          />
+          <Col className="flex w-full flex-grow">
+            <Content className="w-full" content={lover.bio as JSONContent} />
+          </Col>
         )}
         {edit && (
           <EditableBio
