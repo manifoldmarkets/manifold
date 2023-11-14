@@ -17,7 +17,10 @@ export const ExplainerPanel = (props: { className?: string }) => {
   )
 }
 
-const ExpandSection = (props: { title: string; children: React.ReactNode }) => {
+export const ExpandSection = (props: {
+  title: string
+  children: React.ReactNode
+}) => {
   const { title, children } = props
 
   return (

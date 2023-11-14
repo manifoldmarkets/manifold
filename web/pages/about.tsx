@@ -3,7 +3,6 @@ import { useState } from 'react'
 import { MobileAppsQRCodeDialog } from 'web/components/buttons/mobile-apps-qr-code-button'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
-import { Spacer } from 'web/components/layout/spacer'
 import { ManifoldLogo } from 'web/components/nav/manifold-logo'
 import { PrivacyTermsLab } from 'web/components/privacy-terms'
 import { SEO } from 'web/components/SEO'
@@ -67,6 +66,12 @@ export default function AboutPage() {
           <WhyManifold />
 
           <LabCard
+            title="🎯 Manifold Accuracy and Track Record"
+            description="Why you should trust Manifold"
+            href="/calibration"
+          />
+
+          <LabCard
             title="🙋‍♂️ Learn more in our FAQ"
             href="https://docs.manifold.markets/faq"
             target="_blank"
@@ -90,24 +95,35 @@ export default function AboutPage() {
           <SocialLink
             Icon={TbBrandDiscord}
             href="https://discord.com/invite/eHQBNBqXuh"
+            target="_blank"
           >
             Discord
           </SocialLink>
-          <SocialLink Icon={NewspaperIcon} href="https://news.manifold.markets">
+          <SocialLink
+            Icon={NewspaperIcon}
+            href="https://news.manifold.markets"
+            target="_blank"
+          >
             Newsletter
           </SocialLink>
           <SocialLink
             Icon={TbBrandTwitter}
             href="https://twitter.com/ManifoldMarkets"
+            target="_blank"
           >
             Twitter
           </SocialLink>
-          <SocialLink Icon={MailIcon} href="mailto:info@manifold.markets">
+          <SocialLink
+            Icon={MailIcon}
+            href="mailto:info@manifold.markets"
+            target="_blank"
+          >
             Email
           </SocialLink>
           <SocialLink
             Icon={TbBrandGithub}
             href="https://github.com/manifoldmarkets/manifold"
+            target="_blank"
           >
             Github
           </SocialLink>
@@ -132,17 +148,6 @@ export default function AboutPage() {
         </div>
 
         <LabSection>
-          <LabCard
-            title="📜 Community guidelines"
-            description="General expectations and account rules"
-            href="https://manifoldmarkets.notion.site/Community-Guidelines-f6c77b1af41749828df7dae5e8735400"
-          />
-          <LabCard
-            title="📏 Platform calibration"
-            description="Manifold's overall track record"
-            href="/calibration"
-          />
-
           {(!isNative || (isNative && platform !== 'ios')) && (
             <LabCard
               title="🫀 Charity"
@@ -150,11 +155,13 @@ export default function AboutPage() {
               href="/charity"
             />
           )}
-          {/* TODO: replace with another page to be even. or remove one */}
-          <LabCard title="🐮 Moolinda" description="???" href="/cowp" />
+          <LabCard
+            title="📜 Community guidelines"
+            description="General expectations and account rules"
+            href="https://manifoldmarkets.notion.site/Community-Guidelines-f6c77b1af41749828df7dae5e8735400"
+            target="_blank"
+          />
         </LabSection>
-
-        <Spacer h={8} />
       </Col>
       <PrivacyTermsLab />
     </Page>
@@ -166,12 +173,14 @@ const SocialLink = (props: {
   onClick?: () => void
   Icon: any
   children: React.ReactNode
+  target?: string
 }) => {
-  const { href, onClick, Icon, children } = props
+  const { href, onClick, Icon, children, target } = props
   return (
     <Link
       href={href}
       onClick={onClick}
+      target={target}
       className="text-ink-800 hover:text-primary-800 hover:bg-primary-100 flex items-center justify-center gap-1.5 whitespace-nowrap rounded p-2 transition-colors"
     >
       <Icon className="h-6 w-6" />
