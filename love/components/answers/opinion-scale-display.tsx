@@ -19,7 +19,11 @@ export function OpinionScale(props: {
 }) {
   const { multiChoiceAnswers, questions, isCurrentUser, router } = props
 
-  if (multiChoiceAnswers.length < 1) {
+  const answeredMultiChoice = multiChoiceAnswers.filter(
+    (a) => a.multiple_choice != null && a.multiple_choice != -1
+  )
+
+  if (answeredMultiChoice.length < 1) {
     if (isCurrentUser) {
       return (
         <Button color="indigo" onClick={() => router.push('opinion-scale')}>
@@ -54,7 +58,7 @@ export function OpinionScale(props: {
         )}
       </Row>
       <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-        {orderBy(multiChoiceAnswers, (a) => a.multiple_choice, 'desc').map(
+        {orderBy(answeredMultiChoice, (a) => a.multiple_choice, 'desc').map(
           (answer) => {
             return (
               <OpinionScaleBlock

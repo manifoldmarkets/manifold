@@ -32,6 +32,11 @@ export function RadioToggleGroup(props: {
       >
         {orderedChoicesMap.map(([choiceKey, choice], index) => (
           <RadioGroup.Option
+            onClick={() => {
+              if (currentChoice == choice) {
+                setChoice(-1)
+              }
+            }}
             key={choiceKey}
             value={choice}
             className={({ disabled }) =>
