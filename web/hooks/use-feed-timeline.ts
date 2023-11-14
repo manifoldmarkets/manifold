@@ -37,7 +37,7 @@ import { useFollowedIdsSupabase } from 'web/hooks/use-follows'
 import { PositionChangeData } from 'common/supabase/bets'
 import { Answer } from 'common/answer'
 import { removeUndefinedProps } from 'common/util/object'
-import { convertAnswer } from 'common/supabase/contracts'
+import { convertAnswer, convertContract } from 'common/supabase/contracts'
 import { compareTwoStrings } from 'string-similarity'
 import dayjs from 'dayjs'
 import { useBoosts } from 'web/hooks/use-boosts'
@@ -47,6 +47,7 @@ import { convertContractComment } from 'common/supabase/comments'
 export const DEBUG_FEED_CARDS =
   typeof window != 'undefined' &&
   window.location.toString().includes('localhost:3000')
+const MAX_ITEMS_PER_CREATOR = 7
 
 export type FeedTimelineItem = {
   // These are stored in the db
@@ -241,16 +242,7 @@ export const useFeedTimeline = (
         .not('visibility', 'eq', 'unlisted')
         .is('resolution_time', null)
         .or(`close_time.gt.${new Date().toISOString()},close_time.is.null`)
-        .then((res) =>
-          res.data?.map(
-            (c) =>
-              ({
-                ...(c.data as Contract),
-                // importance_score is only updated in Supabase
-                importanceScore: c.importance_score,
-              } as Contract)
-          )
-        ),
+        .then((res) => res.data?.map(convertContract)),
       db
         .from('news')
         .select('*')
@@ -341,7 +333,7 @@ export const useFeedTimeline = (
         .map((r) => r.contract_id)
     )
 
-    const openListedUnblockedInterestingContracts = openListedContracts?.filter(
+    const freshAndInterestingContracts = openListedContracts?.filter(
       (c) =>
         !isContractBlocked(privateUser, c) &&
         !uninterestingContractIds?.includes(c.id) &&
@@ -359,8 +351,8 @@ export const useFeedTimeline = (
     const contractFeedIdsToIgnore = newFeedRows.filter(
       (d) =>
         d.contract_id &&
-        !d.news_id &&
-        !(openListedUnblockedInterestingContracts ?? [])
+        newContractIds.includes(d.contract_id) &&
+        !(freshAndInterestingContracts ?? [])
           .map((c) => c.id)
           .includes(d.contract_id)
     )
@@ -370,7 +362,7 @@ export const useFeedTimeline = (
     // It's possible we're missing contracts for news items bc of the duplicate filter
     const timelineItems = createFeedTimelineItems(
       newFeedRows,
-      openListedUnblockedInterestingContracts,
+      freshAndInterestingContracts,
       unseenUnhiddenLikedOrFollowedComments,
       news,
       groups,
@@ -644,12 +636,16 @@ const getNewContentIds = (
   const shouldGetNewsRelatedItem = (item: Row<'user_feed'>) =>
     item.news_id ? item.news_id === mostImportantNewsId : true
 
-  const newContractIds = uniq(
-    filterDefined(
-      data
-        .filter((item) => item.contract_id && shouldGetNewsRelatedItem(item))
-        .map((item) => item.contract_id)
-    )
+  const contractIdsByCreatorId = groupBy(data, (item) => item.creator_id)
+  const newContractIds = filterDefined(
+    Object.values(contractIdsByCreatorId)
+      .map((items) =>
+        items
+          .filter((item) => item.contract_id && shouldGetNewsRelatedItem(item))
+          .slice(0, MAX_ITEMS_PER_CREATOR)
+          .map((item) => item.contract_id)
+      )
+      .flat()
   )
   const newCommentIdsFromFollowed = filterDefined(
     data.map((item) =>
