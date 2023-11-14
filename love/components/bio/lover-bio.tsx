@@ -7,7 +7,7 @@ import { Subtitle } from '../widgets/lover-subtitle'
 import { EditableBio } from './editable-bio'
 import { BioBlock } from './lover-bio-block'
 import { Row } from 'web/components/layout/row'
-import { PlusIcon } from '@heroicons/react/outline'
+import { BiSolidBookHeart } from 'react-icons/bi'
 
 export function LoverBio(props: {
   isCurrentUser: boolean
@@ -47,7 +47,7 @@ function AddBioButton(props: { lover: Lover; refreshLover: () => void }) {
         }}
       >
         <Row className="items-center gap-1">
-          <PlusIcon className="h-4 w-4" />
+          <BiSolidBookHeart className="h-4 w-4" />
           Add Bio
         </Row>
       </Button>
