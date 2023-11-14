@@ -143,7 +143,6 @@ export type SupabaseAdditionalFilter = {
   excludeGroupSlugs?: string[]
   excludeUserIds?: string[]
   nonQueryFacetFilters?: string[]
-  contractType?: ContractTypeType
 }
 
 export type SearchState = {
@@ -155,10 +154,11 @@ export function SupabaseSearch(props: {
   persistPrefix: string
   defaultSort?: Sort
   defaultFilter?: Filter
+  defaultContractType?: ContractTypeType
+  defaultSearchType?: SearchType
   additionalFilter?: SupabaseAdditionalFilter
   highlightContractIds?: string[]
   onContractClick?: (contract: Contract) => void
-  hideOrderSelector?: boolean
   hideActions?: boolean
   headerClassName?: string
   isWholePage?: boolean
@@ -171,7 +171,6 @@ export function SupabaseSearch(props: {
   emptyState?: ReactNode
   hideSearch?: boolean
   hideContractFilters?: boolean
-  defaultSearchType?: SearchType
   topics?: Group[]
   setTopics?: (topics: Group[]) => void
   contractsOnly?: boolean
@@ -186,10 +185,11 @@ export function SupabaseSearch(props: {
   const {
     defaultSort,
     defaultFilter,
+    defaultContractType,
+    defaultSearchType,
     additionalFilter,
     onContractClick,
     userResultProps,
-    hideOrderSelector,
     hideActions,
     highlightContractIds,
     headerClassName,
@@ -201,7 +201,6 @@ export function SupabaseSearch(props: {
     hideContractFilters,
     menuButton,
     rowBelowFilters,
-    defaultSearchType,
     topics: topicResults,
     setTopics: setTopicResults,
     contractsOnly,
@@ -212,8 +211,9 @@ export function SupabaseSearch(props: {
   const [searchParams, setSearchParams, defaults] = useSearchQueryState({
     defaultSort,
     defaultFilter,
-    useUrlParams,
+    defaultContractType,
     defaultSearchType,
+    useUrlParams,
   })
   const user = useUser()
   const followingUsers = useFollowedUsersOnLoad(user?.id)
@@ -389,7 +389,6 @@ export function SupabaseSearch(props: {
         </Row>
         {!hideContractFilters && (
           <ContractFilters
-            hideOrderSelector={hideOrderSelector}
             includeProbSorts={includeProbSorts}
             params={searchParams ?? defaults}
             updateParams={setSearchParams}
@@ -612,8 +611,8 @@ const useContractSearch = (
         term: query,
         filter,
         sort,
-        contractType: additionalFilter?.contractType ?? contractType,
-        offset: offset,
+        contractType,
+        offset,
         limit: CONTRACTS_PER_SEARCH_PAGE,
         topicSlug: topicSlug !== '' ? topicSlug : undefined,
         creatorId: additionalFilter?.creatorId,
@@ -692,20 +691,13 @@ const useSearchQueryState = (props: {
 
 function ContractFilters(props: {
   className?: string
-  hideOrderSelector?: boolean
   includeProbSorts?: boolean
   params: SearchParams
   updateParams: (params: Partial<SearchParams>) => void
   showTopicTag?: boolean
 }) {
-  const {
-    className,
-    hideOrderSelector,
-    includeProbSorts,
-    params,
-    updateParams,
-    showTopicTag,
-  } = props
+  const { className, includeProbSorts, params, updateParams, showTopicTag } =
+    props
 
   const { s: sort, f: filter, ct: contractType, topic: topicSlug } = params
 
@@ -761,33 +753,32 @@ function ContractFilters(props: {
       )}
     >
       <Row className={'h-6 gap-3'}>
-        {!hideOrderSelector && (
-          <DropdownMenu
-            items={generateFilterDropdownItems(
-              contractType == 'BOUNTIED_QUESTION'
-                ? BOUNTY_MARKET_SORTS
-                : contractType == 'POLL'
-                ? POLL_SORTS
-                : includeProbSorts &&
-                  (contractType === 'ALL' || contractType === 'BINARY')
-                ? PREDICTION_MARKET_PROB_SORTS
-                : PREDICTION_MARKET_SORTS,
-              selectSort
-            )}
-            icon={
-              <Row className="text-ink-500 items-center gap-0.5">
-                <span className="whitespace-nowrap text-sm font-medium">
-                  {sortLabel}
-                </span>
-                <ChevronDownIcon className="h-4 w-4" />
-              </Row>
-            }
-            menuWidth={'w-36'}
-            menuItemsClass="left-0 right-auto"
-            selectedItemName={sortLabel}
-            closeOnClick={true}
-          />
-        )}
+        <DropdownMenu
+          items={generateFilterDropdownItems(
+            contractType == 'BOUNTIED_QUESTION'
+              ? BOUNTY_MARKET_SORTS
+              : contractType == 'POLL'
+              ? POLL_SORTS
+              : includeProbSorts &&
+                (contractType === 'ALL' || contractType === 'BINARY')
+              ? PREDICTION_MARKET_PROB_SORTS
+              : PREDICTION_MARKET_SORTS,
+            selectSort
+          )}
+          icon={
+            <Row className="text-ink-500 items-center gap-0.5">
+              <span className="whitespace-nowrap text-sm font-medium">
+                {sortLabel}
+              </span>
+              <ChevronDownIcon className="h-4 w-4" />
+            </Row>
+          }
+          menuWidth={'w-36'}
+          menuItemsClass="left-0 right-auto"
+          selectedItemName={sortLabel}
+          closeOnClick={true}
+        />
+
         {!hideFilter && (
           <DropdownMenu
             items={generateFilterDropdownItems(FILTERS, selectFilter)}
