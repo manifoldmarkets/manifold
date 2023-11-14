@@ -28,15 +28,13 @@ import { FollowOrUnfolowTopicButton } from 'web/components/topics/topics-button'
 
 import { PillButton } from 'web/components/buttons/pill-button'
 import { searchUsers, UserSearchResult } from 'web/lib/supabase/users'
-import { searchGroups } from 'web/lib/supabase/groups'
-import { convertGroup } from 'common/supabase/groups'
 import { User } from 'common/user'
 import { Button, IconButton } from 'web/components/buttons/button'
 import Link from 'next/link'
 import { useFollowedUsersOnLoad } from 'web/hooks/use-follows'
 import { CONTRACTS_PER_SEARCH_PAGE } from 'common/supabase/contracts'
 import { UserResults } from './search/user-results'
-import { searchContracts } from 'web/lib/firebase/api'
+import { searchContracts, searchGroups } from 'web/lib/firebase/api'
 import { LoadMoreUntilNotVisible } from './widgets/visibility-observer'
 import { LoadingIndicator } from './widgets/loading-indicator'
 import {
@@ -174,7 +172,8 @@ export function SupabaseSearch(props: {
   hideSearch?: boolean
   hideContractFilters?: boolean
   defaultSearchType?: SearchType
-  yourTopics?: Group[]
+  topics?: Group[]
+  setTopics?: (topics: Group[]) => void
   contractsOnly?: boolean
   showTopicTag?: boolean
   hideSearchTypes?: boolean
@@ -203,7 +202,8 @@ export function SupabaseSearch(props: {
     menuButton,
     rowBelowFilters,
     defaultSearchType,
-    yourTopics,
+    topics: topicResults,
+    setTopics: setTopicResults,
     contractsOnly,
     showTopicTag,
     hideSearchTypes,
@@ -231,9 +231,7 @@ export function SupabaseSearch(props: {
       undefined,
       `${persistPrefix}-queried-user-results`
     )
-  const [topicResults, setTopicResults] = usePersistentInMemoryState<
-    Group[] | undefined
-  >(undefined, `${persistPrefix}-topic-results`)
+
   const [showSearchTypeState, setShowSearchTypeState] = useState(
     queryAsString === '' || searchTypeAsString !== '' || !!currentTopicSlug
   )
@@ -249,13 +247,28 @@ export function SupabaseSearch(props: {
     'id'
   )
 
-  const { contracts, queryContracts, shouldLoadMore } = useContractSearch(
+  const {
+    contracts: rawContracts,
+    queryContracts,
+    shouldLoadMore,
+  } = useContractSearch(
     persistPrefix,
     setLastSearch,
     searchParams,
     additionalFilter,
     isWholePage
   )
+
+  // remove love from new results
+  const contracts =
+    searchParams?.[SORT_KEY] === 'newest' &&
+    !searchParams?.[QUERY_KEY] &&
+    (!currentTopicSlug || currentTopicSlug === 'for-you')
+      ? rawContracts?.filter(
+          (c) => !c.groupSlugs?.includes('manifoldlove-relationships')
+        )
+      : rawContracts
+
   const pillOptions: SearchType[] = ['Questions', 'Users', 'Topics']
   const setQuery = (query: string) => setSearchParams({ [QUERY_KEY]: query })
   const setSearchType = (t: SearchType) =>
@@ -289,30 +302,21 @@ export function SupabaseSearch(props: {
     }
   }, [currentTopicSlug])
 
-  const queryUsers = useEvent(async (query: string) => {
-    const results = await searchUsers(query, USERS_PER_PAGE, [
+  const queryUsers = useEvent(async (query: string) =>
+    searchUsers(query, USERS_PER_PAGE, [
       'creatorTraders',
       'bio',
       'createdTime',
       'isBannedFromPosting',
     ])
-    return results
-  })
+  )
 
-  const queryTopics = useEvent(async (query: string) => {
-    const results = await searchGroups({
+  const queryTopics = useEvent(async (query: string) =>
+    searchGroups({
       term: query,
       limit: TOPICS_PER_PAGE,
     })
-    const groupResults = results.data.map(convertGroup)
-    const followedTopics =
-      yourTopics?.filter(
-        (f) =>
-          f.name.toLowerCase().includes(query.toLowerCase()) ||
-          f.slug.toLowerCase().includes(query.toLowerCase())
-      ) ?? []
-    return uniqBy(followedTopics.concat(groupResults), 'name')
-  })
+  )
 
   const searchCountRef = useRef(0)
   useEffect(() => {
@@ -324,7 +328,7 @@ export function SupabaseSearch(props: {
       if (searchCount === searchCountRef.current) setQueriedUserResults(results)
     })
     queryTopics(queryAsString).then((results) => {
-      if (searchCount === searchCountRef.current) setTopicResults(results)
+      if (searchCount === searchCountRef.current) setTopicResults?.(results)
     })
   }, [JSON.stringify(searchParams)])
 

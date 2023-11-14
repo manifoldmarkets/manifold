@@ -15,7 +15,6 @@ import { SEO } from 'web/components/SEO'
 import { useUser } from 'web/hooks/use-user'
 import { getUserByUsername, User } from 'web/lib/firebase/users'
 import LoverAbout from 'love/components/lover-about'
-import { useUserAnswersAndQuestions } from 'love/hooks/use-questions'
 import { useTracking } from 'web/hooks/use-tracking'
 import { LoverAnswers } from 'love/components/answers/lover-answers'
 import { SignUpButton } from 'love/components/nav/love-sidebar'
@@ -25,6 +24,7 @@ import { getLoveOgImageUrl } from 'common/love/og-image'
 import { Lover } from 'common/love/lover'
 import { createContext } from 'react'
 import { LoverBio } from 'love/components/bio/lover-bio'
+import Custom404 from '../404'
 
 export const getStaticProps = async (props: {
   params: {
@@ -63,7 +63,7 @@ export default function UserPage(props: {
 
   if (currentUser === undefined || lover === undefined) return <div></div>
   if (!user) {
-    return <div>404</div>
+    return <Custom404 />
   }
   if (user.isBannedFromPosting) {
     return <div>User is banned</div>

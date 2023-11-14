@@ -192,51 +192,6 @@ export const addCommentOnContractToFeed = async (
     pg
   )
 }
-//TODO: before adding, exclude those users who:
-// - have it in their notifications: users in reply thread, mentioned, creator of the contract
-// - creator of the comment & reaction
-// - have already seen the comment
-// - already have the comment in their feed (unique by contract id, comment id, user id)
-// export const addLikedCommentOnContractToFeed = async (
-//   contractId: string,
-//   reaction: Reaction,
-//   comment: Comment,
-//   userIdsToExclude: string[],
-//   idempotencyKey?: string
-// ) => {
-//   const pg = createSupabaseDirectClient()
-//   const usersToReasonsInterestedInContract =
-//     await getUserToReasonsInterestedInContractAndUser(
-//       contractId,
-//       reaction.userId,
-//       pg,
-//       [
-//         'follow_user',
-//         'contract_in_group_you_are_in',
-//         'similar_interest_vector_to_contract',
-//       ],
-//       INTEREST_DISTANCE_THRESHOLDS.popular_comment
-//     )
-//   await Promise.all(
-//     Object.keys(usersToReasonsInterestedInContract).map(async (userId) =>
-//       insertDataToUserFeed(
-//         userId,
-//         reaction.createdTime,
-//         'popular_comment',
-//         usersToReasonsInterestedInContract[userId],
-//         userIdsToExclude,
-//         {
-//           contractId,
-//           commentId: comment.id,
-//           creatorId: reaction.userId,
-//           reactionId: reaction.id,
-//           idempotencyKey,
-//         },
-//         pg
-//       )
-//     )
-//   )
-// }
 
 export const addContractToFeed = async (
   contract: Contract,

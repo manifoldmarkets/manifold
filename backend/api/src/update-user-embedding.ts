@@ -5,6 +5,7 @@ import { generateNewUserFeedFromContracts } from 'shared/supabase/users'
 import { ALL_FEED_USER_ID } from 'common/feed'
 import { getMemberGroupSlugs } from 'shared/supabase/groups'
 import { getImportantContractsForNewUsers } from 'shared/supabase/contracts'
+import { PROD_MANIFOLD_LOVE_GROUP_SLUG } from 'common/envs/constants'
 
 export const updateUserEmbedding = authEndpoint(async (req, auth) => {
   const pg = createSupabaseDirectClient()
@@ -14,7 +15,7 @@ export const updateUserEmbedding = authEndpoint(async (req, auth) => {
   const contractIds = await getImportantContractsForNewUsers(
     300,
     pg,
-    groupSlugs
+    groupSlugs.filter((slug) => slug !== PROD_MANIFOLD_LOVE_GROUP_SLUG)
   )
   await generateNewUserFeedFromContracts(
     auth.uid,

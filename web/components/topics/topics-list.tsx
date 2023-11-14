@@ -5,7 +5,7 @@ import { PrivateUser, User } from 'common/user'
 import { Button } from 'web/components/buttons/button'
 import { MdOutlineKeyboardDoubleArrowRight } from 'react-icons/md'
 import { track } from 'web/lib/service/analytics'
-import { ForYouDropdown } from 'web/components/topics/for-you-dropdown'
+import { TopicDropdown } from 'web/components/topics/topic-dropdown'
 
 export function TopicsList(props: {
   topics: Group[]
@@ -49,7 +49,7 @@ export function TopicsList(props: {
         <div className="text-primary-700 hidden w-full items-center justify-between px-2 pb-2 md:flex">
           Topics
           {user && (
-            <ForYouDropdown
+            <TopicDropdown
               setCurrentTopic={setCurrentTopicSlug}
               user={user}
               className="mr-1"

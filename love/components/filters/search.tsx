@@ -1,3 +1,4 @@
+import { partition, zip } from 'lodash'
 import { Row as rowFor } from 'common/supabase/utils'
 import { User } from 'common/user'
 import { debounce, orderBy } from 'lodash'
@@ -22,6 +23,7 @@ import {
 import { useEffectCheckEquality } from 'web/hooks/use-effect-check-equality'
 import { OriginLocation } from './location-filter'
 import { Lover } from 'common/love/lover'
+import { filterDefined } from 'common/util/array'
 
 export type FilterFields = {
   orderBy: 'last_online_time' | 'created_time'
@@ -170,7 +172,8 @@ export const Search = (props: {
       },
       'desc'
     )
-    const filteredLovers = sortedLovers?.filter((lover) => {
+    const modifiedSortedLovers = alternateWomenAndMen(sortedLovers)
+    const filteredLovers = modifiedSortedLovers?.filter((lover) => {
       if (lover.user.name === 'deleted') return false
       if (lover.user.userDeleted || lover.user.isBannedFromPosting) return false
       if (
@@ -308,4 +311,9 @@ export const Search = (props: {
       </RightModal>
     </Col>
   )
+}
+
+const alternateWomenAndMen = (lovers: Lover[]) => {
+  const [women, nonWomen] = partition(lovers, (l) => l.gender === 'female')
+  return filterDefined(zip(women, nonWomen).flat())
 }

@@ -111,6 +111,7 @@ export const BOT_USERNAMES = [
   'loopsbot',
   'breezybot',
   'echo',
+  'Sayaka',
 ]
 
 export const MOD_IDS = [
@@ -225,7 +226,7 @@ export const DESTINY_GROUP_SLUGS = [
   'eto',
   'mumbowl-stonks',
 ]
-
+export const PROD_MANIFOLD_LOVE_GROUP_SLUG = 'manifoldlove-relationships'
 export const GROUP_SLUGS_TO_IGNORE_IN_MARKETS_EMAIL = [
   'manifold-features',
   'manifold-6748e065087e',
@@ -234,6 +235,7 @@ export const GROUP_SLUGS_TO_IGNORE_IN_MARKETS_EMAIL = [
   'bugs',
   'manifold-leagues',
   'nonpredictive',
+  PROD_MANIFOLD_LOVE_GROUP_SLUG,
 ]
 
 export const DEEMPHASIZED_GROUP_SLUGS = [
@@ -326,6 +328,7 @@ export const GROUP_SLUGS_TO_HIDE_FROM_WELCOME_FLOW = [
   'crypto-prices', // same as crypto,
   'technical-ai-timelines', // same as ai
   'presidential-politics', // same as politics
+  PROD_MANIFOLD_LOVE_GROUP_SLUG,
 ]
 
 export const EXTERNAL_REDIRECTS = ['/umami']
