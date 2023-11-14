@@ -45,9 +45,8 @@ export function useUsersInStore(
   )
 
   useEffectCheckEquality(() => {
-    const userIdsToFetch = userIds.filter(
-      (id) => !users?.map((u) => u.id).includes(id)
-    )
+    const userIdSet = new Set((users ?? []).map((u) => u?.id))
+    const userIdsToFetch = userIds.filter((id) => !userIdSet.has(id))
     if (userIdsToFetch.length === 0) return
     getUsers(limit ? userIdsToFetch.slice(0, limit) : userIdsToFetch).then(
       (newUsers) => {
