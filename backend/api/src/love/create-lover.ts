@@ -18,7 +18,7 @@ const genderTypes = z.array(genderType)
 
 export const baseLoversSchema = z.object({
   // Required fields
-  birthdate: z.string(),
+  age: z.number().min(18).max(100),
   gender: genderType,
   pref_gender: genderTypes,
   pref_age_min: z.number().min(18).max(999),

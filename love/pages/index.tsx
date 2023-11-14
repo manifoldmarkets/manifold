@@ -1,6 +1,5 @@
 import { UserIcon } from '@heroicons/react/solid'
 import { capitalize } from 'lodash'
-import { calculateAge } from 'love/components/calculate-age'
 import { Search } from 'love/components/filters/search'
 import { Gender, convertGender } from 'love/components/gender-icon'
 import { LovePage } from 'love/components/love-page'
@@ -85,8 +84,7 @@ export default function ProfilesPage() {
 }
 
 function ProfilePreview(props: { lover: Lover }) {
-  const { user, gender, birthdate, pinned_url, city, last_online_time } =
-    props.lover
+  const { user, gender, age, pinned_url, city, last_online_time } = props.lover
   return (
     <Link
       href={`/${user.username}`}
@@ -114,7 +112,7 @@ function ProfilePreview(props: { lover: Lover }) {
             <OnlineIcon last_online_time={last_online_time} className="mr-1" />
             <span className=" break-words font-semibold">
               {user.name}
-            </span>, {calculateAge(birthdate)}
+            </span>, {age}
           </Row>
           <Row className="gap-1 text-xs">
             {city} • {capitalize(convertGender(gender as Gender))}

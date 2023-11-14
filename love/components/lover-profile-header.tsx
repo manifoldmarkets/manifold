@@ -9,7 +9,6 @@ import { MoreOptionsUserButton } from 'web/components/buttons/more-options-user-
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { SendMessageButton } from 'web/components/messaging/send-message-button'
-import { calculateAge } from './calculate-age'
 import LoverPrimaryInfo from './lover-primary-info'
 import OnlineIcon from './online-icon'
 import { track } from 'web/lib/service/analytics'
@@ -33,8 +32,7 @@ export default function LoverProfileHeader(props: {
           <Row className="items-center gap-1 text-xl">
             <OnlineIcon last_online_time={lover.last_online_time} />
             <span>
-              <span className="font-semibold">{user.name}</span>,{' '}
-              {calculateAge(lover.birthdate)}
+              <span className="font-semibold">{user.name}</span>, {lover.age}
             </span>
           </Row>
           <LoverPrimaryInfo lover={lover} />

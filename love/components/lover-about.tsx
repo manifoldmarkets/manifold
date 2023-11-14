@@ -256,8 +256,6 @@ export const formatLoverValue = (key: string, value: any) => {
     return value.join(', ')
   }
   switch (key) {
-    case 'birthdate':
-      return fromNow(new Date(value).valueOf()).replace(' ago', '')
     case 'created_time':
     case 'last_online_time':
       return fromNow(new Date(value).valueOf())

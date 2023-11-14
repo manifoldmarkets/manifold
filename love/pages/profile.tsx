@@ -6,7 +6,6 @@ import { RequiredLoveUserForm } from 'love/components/required-lover-form'
 import { OptionalLoveUserForm } from 'love/components/optional-lover-form'
 import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
 import { PrivateUser } from 'common/user'
-import dayjs from 'dayjs'
 import { useUser } from 'web/hooks/use-user'
 import { getLoverRow, Lover } from 'common/love/lover'
 import { db } from 'web/lib/supabase/db'
@@ -25,7 +24,6 @@ export default function ProfilePage(props: {
   const user = useUser() ?? auth.user
   const [lover, setLover] = useState<Lover>({
     ...loverRow,
-    birthdate: dayjs(loverRow.birthdate).format('YYYY-MM-DD'),
     user,
   })
   const setLoverState = (key: keyof rowFor<'lovers'>, value: any) => {
