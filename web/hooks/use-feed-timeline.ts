@@ -317,9 +317,9 @@ export const useFeedTimeline = (
         .from('user_seen_markets')
         .select('contract_id')
         .eq('user_id', userId)
-        .in('type', ['view market card'])
+        .in('type', ['view market card']) // Could add 'view market' as well
         .in('contract_id', newContractIds)
-        .gt('created_time', new Date(Date.now() - 5 * DAY_MS).toISOString())
+        .gt('created_time', new Date(Date.now() - 3 * DAY_MS).toISOString())
         .then((res) => res.data?.map((c) => c.contract_id)),
     ])
 
@@ -331,12 +331,15 @@ export const useFeedTimeline = (
         'trending_contract',
         'user_position_changed',
         'new_contract',
+        'new_comment',
       ].includes(d.data_type) &&
       recentlySeenContractCards?.includes(d.contract_id)
 
-    const recentlySeenFeedContractIds = newFeedRows
-      .filter((r) => feedItemRecentlySeen(r))
-      .map((r) => r.contract_id)
+    const recentlySeenFeedContractIds = uniq(
+      newFeedRows
+        .filter((r) => feedItemRecentlySeen(r))
+        .map((r) => r.contract_id)
+    )
 
     const openListedUnblockedInterestingContracts = openListedContracts?.filter(
       (c) =>
@@ -362,7 +365,6 @@ export const useFeedTimeline = (
           .includes(d.contract_id)
     )
 
-    //TODO: Mark all the user_position_changed feed items as seen that match creator_id, contract_id
     setSeenFeedItems(contractFeedIdsToIgnore.concat(commentFeedIdsToIgnore))
 
     // It's possible we're missing contracts for news items bc of the duplicate filter
