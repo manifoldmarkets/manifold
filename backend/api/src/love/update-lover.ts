@@ -28,7 +28,7 @@ const optionaLoversSchema = z.object({
   company: z.string().optional(),
   comments_enabled: z.boolean().optional(),
   website: z.string().optional(),
-  bio: contentSchema.optional(),
+  bio: contentSchema.optional().nullable(),
   twitter: z.string().optional(),
   avatar_url: z.string().optional(),
 })
@@ -38,6 +38,7 @@ const combinedLoveUsersSchema = baseLoversSchema.merge(optionaLoversSchema)
 export const updatelover = authEndpoint(async (req, auth) => {
   const parsedBody = validate(combinedLoveUsersSchema, req.body)
   log('parsedBody', parsedBody)
+  console.log('PARSED BODYYYYYYYYYYYYYYY', parsedBody)
   const db = createSupabaseClient()
   const { data: existingLover } = await db
     .from('lovers')
