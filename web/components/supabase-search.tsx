@@ -28,15 +28,13 @@ import { FollowOrUnfolowTopicButton } from 'web/components/topics/topics-button'
 
 import { PillButton } from 'web/components/buttons/pill-button'
 import { searchUsers, UserSearchResult } from 'web/lib/supabase/users'
-import { searchGroups } from 'web/lib/supabase/groups'
-import { convertGroup } from 'common/supabase/groups'
 import { User } from 'common/user'
 import { Button, IconButton } from 'web/components/buttons/button'
 import Link from 'next/link'
 import { useFollowedUsersOnLoad } from 'web/hooks/use-follows'
 import { CONTRACTS_PER_SEARCH_PAGE } from 'common/supabase/contracts'
 import { UserResults } from './search/user-results'
-import { searchContracts } from 'web/lib/firebase/api'
+import { searchContracts, searchGroups } from 'web/lib/firebase/api'
 import { LoadMoreUntilNotVisible } from './widgets/visibility-observer'
 import { LoadingIndicator } from './widgets/loading-indicator'
 import {
@@ -315,11 +313,10 @@ export function SupabaseSearch(props: {
   })
 
   const queryTopics = useEvent(async (query: string) => {
-    const results = await searchGroups({
+    const groupResults = await searchGroups({
       term: query,
       limit: TOPICS_PER_PAGE,
     })
-    const groupResults = results.data.map(convertGroup)
     const followedTopics =
       yourTopics?.filter(
         (f) =>

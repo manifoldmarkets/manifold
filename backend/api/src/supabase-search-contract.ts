@@ -171,7 +171,7 @@ const bodySchema = z
   })
   .strict()
 
-const constructPrefixTsQuery = (term: string) => {
+export const constructPrefixTsQuery = (term: string) => {
   const trimmed = term.trim()
   if (trimmed === '') return ''
   const sanitizedTrimmed = trimmed.replace(/'/g, "''").replace(/[!&|():*]/g, '')

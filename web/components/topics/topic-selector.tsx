@@ -7,7 +7,8 @@ import { CreateTopicModal } from 'web/components/topics/create-topic-modal'
 import { Row } from 'web/components/layout/row'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { useUser } from 'web/hooks/use-user'
-import { getGroups, searchGroups } from 'web/lib/supabase/groups'
+import { getGroups } from 'web/lib/supabase/groups'
+import { searchGroups } from 'web/lib/firebase/api'
 import { PRIVACY_STATUS_ITEMS } from './topic-privacy-modal'
 import { uniqBy } from 'lodash'
 
@@ -18,7 +19,6 @@ export function TopicSelector(props: {
   setSelectedGroup: (group: Group) => void
   label?: string
   ignoreGroupIds?: string[]
-  newContract?: boolean
   onlyGroupIds?: string[]
   onCreateTopic?: (group: Group) => void
   className?: string
@@ -29,7 +29,6 @@ export function TopicSelector(props: {
     label,
     onCreateTopic,
     ignoreGroupIds,
-    newContract,
     onlyGroupIds,
     className,
     placeholder,
@@ -64,10 +63,9 @@ export function TopicSelector(props: {
       term: query,
       limit: 10,
       addingToContract: true,
-      newContract,
     }).then((result) => {
       if (requestNumber.current === requestId) {
-        setSearchedGroups(uniqBy(result.data, 'name'))
+        setSearchedGroups(uniqBy(result, 'name'))
         setLoading(false)
       }
     })
