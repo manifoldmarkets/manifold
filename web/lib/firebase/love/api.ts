@@ -2,7 +2,6 @@ import { getApiUrl } from 'common/api'
 import { call } from 'web/lib/firebase/api'
 import { JSONContent } from '@tiptap/core'
 import { removeNullOrUndefinedProps } from 'common/util/object'
-import { Lover } from 'common/love/lover'
 
 export function createLover(params: any) {
   return call(getApiUrl('create-lover'), 'POST', params)
