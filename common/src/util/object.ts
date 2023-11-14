@@ -16,14 +16,12 @@ export const removeNullOrUndefinedProps = <T extends object>(
   const newObj: any = {}
 
   for (const key of Object.keys(obj)) {
-    console.log('key', key, exceptions, exceptions?.includes(key))
     if (
       ((obj as any)[key] !== undefined && (obj as any)[key] !== null) ||
       (exceptions ?? []).includes(key)
     )
       newObj[key] = (obj as any)[key]
   }
-  console.log('newObj', newObj)
   return newObj
 }
 

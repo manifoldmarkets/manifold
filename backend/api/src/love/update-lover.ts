@@ -38,7 +38,6 @@ const combinedLoveUsersSchema = baseLoversSchema.merge(optionaLoversSchema)
 export const updatelover = authEndpoint(async (req, auth) => {
   const parsedBody = validate(combinedLoveUsersSchema, req.body)
   log('parsedBody', parsedBody)
-  console.log('PARSED BODYYYYYYYYYYYYYYY', parsedBody)
   const db = createSupabaseClient()
   const { data: existingLover } = await db
     .from('lovers')
