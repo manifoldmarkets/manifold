@@ -244,6 +244,7 @@ export const OptionalLoveUserForm = (props: {
           <ChoicesToggleGroup
             currentChoice={lover['education_level'] ?? ''}
             choicesMap={{
+              None: 'none',
               'High school': 'high-school',
               'Some college': 'some-college',
               Bachelors: 'bachelors',
