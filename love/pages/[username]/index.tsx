@@ -24,6 +24,7 @@ import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { getLoveOgImageUrl } from 'common/love/og-image'
 import { Lover } from 'common/love/lover'
 import { createContext } from 'react'
+import { LoverBio } from 'love/components/bio/lover-bio'
 
 export const getStaticProps = async (props: {
   params: {
@@ -58,7 +59,7 @@ export default function UserPage(props: {
 
   useTracking('view love profile', { username: user?.username })
 
-  const lover = useLoverByUser(user ?? undefined)
+  const { lover, refreshLover } = useLoverByUser(user ?? undefined)
 
   if (currentUser === undefined || lover === undefined) return <div></div>
   if (!user) {
@@ -104,6 +105,7 @@ export default function UserPage(props: {
               router={router}
               user={user}
               lover={lover}
+              refreshLover={refreshLover}
               currentUser={currentUser}
             />
           </>
@@ -137,8 +139,10 @@ function LoverContent(props: {
   user: User
   lover: Lover
   currentUser: User | null
+  refreshLover: () => void
 }) {
-  const { isCurrentUser, router, user, lover, currentUser } = props
+  const { isCurrentUser, router, user, lover, currentUser, refreshLover } =
+    props
 
   if (!currentUser) {
     return (
@@ -159,6 +163,11 @@ function LoverContent(props: {
     <>
       {lover.looking_for_matches && <Matches userId={user.id} />}
       <LoverAbout lover={lover} />
+      <LoverBio
+        isCurrentUser={isCurrentUser}
+        lover={lover}
+        refreshLover={refreshLover}
+      />
       <LoverAnswers isCurrentUser={isCurrentUser} router={router} user={user} />
       <LoverCommentSection
         onUser={user}

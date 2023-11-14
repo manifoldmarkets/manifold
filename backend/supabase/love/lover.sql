@@ -18,7 +18,7 @@ create table if not exists
     comments_enabled boolean not null default true,
     city text not null,
     -- optional
-    bio text,
+    bio json,
     website text,
     twitter text,
     has_kids int,
@@ -60,3 +60,10 @@ with
   check (user_id = firebase_uid ());
 
 create index if not exists lovers_user_id_idx on lovers (user_id);
+
+-- ALTER TABLE lovers DROP COLUMN bio;
+alter table lovers
+drop column bio;
+
+alter table lovers
+add column bio json;

@@ -986,7 +986,7 @@ export interface Database {
       }
       lovers: {
         Row: {
-          bio: string | null
+          bio: Json | null
           birthdate: string
           born_in_location: string | null
           city: string
@@ -1030,7 +1030,7 @@ export interface Database {
           website: string | null
         }
         Insert: {
-          bio?: string | null
+          bio?: Json | null
           birthdate: string
           born_in_location?: string | null
           city: string
@@ -1074,7 +1074,7 @@ export interface Database {
           website?: string | null
         }
         Update: {
-          bio?: string | null
+          bio?: Json | null
           birthdate?: string
           born_in_location?: string | null
           city?: string

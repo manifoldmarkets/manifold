@@ -19,6 +19,8 @@ import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { StackedUserNames } from 'web/components/widgets/user-link'
 import { track } from 'web/lib/service/analytics'
 import { Races } from './race'
+import { useTextEditor } from 'web/components/widgets/editor'
+import { MAX_DESCRIPTION_LENGTH } from 'common/contract'
 
 export const OptionalLoveUserForm = (props: {
   lover: rowFor<'lovers'>
