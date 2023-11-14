@@ -1,15 +1,15 @@
+import { LovePage } from 'love/components/love-page'
 import Link from 'next/link'
 import { Button } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
-import { Page } from 'web/components/layout/page'
 import { ExternalLink } from 'web/components/widgets/external-link'
 import { Title } from 'web/components/widgets/title'
 
 export default function Custom404(props: { customText?: string }) {
   return (
-    <Page trackPageView={'404'}>
+    <LovePage trackPageView={'404'}>
       <Custom404Content customText={props.customText} />
-    </Page>
+    </LovePage>
   )
 }
 
