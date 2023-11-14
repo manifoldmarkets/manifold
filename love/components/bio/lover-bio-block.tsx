@@ -24,9 +24,10 @@ export function BioBlock(props: {
   isCurrentUser: boolean
   lover: Lover
   refreshLover: () => void
+  edit: boolean
+  setEdit: (edit: boolean) => void
 }) {
-  const { isCurrentUser, refreshLover, lover } = props
-  const [edit, setEdit] = useState(false)
+  const { isCurrentUser, refreshLover, lover, edit, setEdit } = props
 
   return (
     <Col

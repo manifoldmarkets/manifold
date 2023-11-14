@@ -15,10 +15,23 @@ export function LoverBio(props: {
   refreshLover: () => void
 }) {
   const { isCurrentUser, lover, refreshLover } = props
+  const [edit, setEdit] = useState(false)
 
-  if (!lover.bio) {
+  if (!lover.bio && !edit) {
     if (isCurrentUser) {
-      return <AddBioButton lover={lover} refreshLover={refreshLover} />
+      return (
+        <Button
+          color="gray-outline"
+          onClick={() => {
+            setEdit(true)
+          }}
+        >
+          <Row className="items-center gap-1">
+            <BiSolidBookHeart className="h-4 w-4" />
+            Add Bio
+          </Row>
+        </Button>
+      )
     }
     return null
   }
@@ -30,39 +43,41 @@ export function LoverBio(props: {
         isCurrentUser={isCurrentUser}
         lover={lover}
         refreshLover={refreshLover}
+        edit={edit}
+        setEdit={setEdit}
       />
     </Col>
   )
 }
 
-function AddBioButton(props: { lover: Lover; refreshLover: () => void }) {
-  const { lover, refreshLover } = props
-  const [open, setOpen] = useState(false)
-  return (
-    <>
-      <Button
-        color="gray-outline"
-        onClick={() => {
-          setOpen(true)
-        }}
-      >
-        <Row className="items-center gap-1">
-          <BiSolidBookHeart className="h-4 w-4" />
-          Add Bio
-        </Row>
-      </Button>
-      <Modal open={open} setOpen={setOpen}>
-        <Col className={MODAL_CLASS}>
-          <EditableBio
-            lover={lover}
-            onCancel={() => setOpen(false)}
-            onSave={() => {
-              refreshLover()
-              setOpen(false)
-            }}
-          />
-        </Col>
-      </Modal>
-    </>
-  )
-}
+// function AddBioButton(props: { lover: Lover; refreshLover: () => void }) {
+//   const { lover, refreshLover } = props
+//   const [editMode, setEditMode] = useState(false)
+//   return (
+//     <>
+//       <Button
+//         color="gray-outline"
+//         onClick={() => {
+//           setEditMode(true)
+//         }}
+//       >
+//         <Row className="items-center gap-1">
+//           <BiSolidBookHeart className="h-4 w-4" />
+//           Add Bio
+//         </Row>
+//       </Button>
+//       <Modal open={open} setOpen={setOpen}>
+//         <Col className={MODAL_CLASS}>
+//           <EditableBio
+//             lover={lover}
+//             onCancel={() => setOpen(false)}
+//             onSave={() => {
+//               refreshLover()
+//               setOpen(false)
+//             }}
+//           />
+//         </Col>
+//       </Modal>
+//     </>
+//   )
+// }
