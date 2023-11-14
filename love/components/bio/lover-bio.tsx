@@ -17,11 +17,10 @@ export function LoverBio(props: {
   const { isCurrentUser, lover, refreshLover } = props
 
   if (!lover.bio) {
-    return isCurrentUser ? (
-      <AddBioButton lover={lover} refreshLover={refreshLover} />
-    ) : (
-      <></>
-    )
+    if (isCurrentUser) {
+      return <AddBioButton lover={lover} refreshLover={refreshLover} />
+    }
+    return null
   }
 
   return (

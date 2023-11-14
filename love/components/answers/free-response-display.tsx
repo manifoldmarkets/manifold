@@ -27,8 +27,8 @@ export function FreeResponseDisplay(props: {
   const noAnswers = answers.length < 1
 
   if (noAnswers) {
-    return (
-      isCurrentUser && (
+    if (isCurrentUser) {
+      return (
         <AddQuestionButton
           isFirstQuestion={answers.length < 1}
           answers={answers}
@@ -37,8 +37,10 @@ export function FreeResponseDisplay(props: {
           refreshAnswers={refreshAnswers}
         />
       )
-    )
+    }
+    return null
   }
+
   return (
     <Col className="gap-2">
       <Row className={'w-full items-center justify-between gap-2'}>
