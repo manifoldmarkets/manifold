@@ -2,7 +2,6 @@ import { Group, TOPIC_KEY } from 'common/group'
 import {
   ArrowLeftIcon,
   BookmarkIcon,
-  PencilIcon,
   PlusCircleIcon,
 } from '@heroicons/react/outline'
 import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
@@ -17,10 +16,7 @@ import { Row } from 'web/components/layout/row'
 import { useRealtimeMemberGroups } from 'web/hooks/use-group-supabase'
 import { User } from 'common/user'
 import { forwardRef, Ref, useState } from 'react'
-import {
-  FollowedTopicsModal,
-  ForYouDropdown,
-} from 'web/components/topics/for-you-dropdown'
+import { TopicDropdown } from 'web/components/topics/topic-dropdown'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useRouter } from 'next/router'
 
@@ -42,16 +38,7 @@ export const QuestionsTopicTitle = forwardRef(
     const isMobile = useIsMobile()
     const isFollowing =
       currentTopic && (yourGroupIds ?? []).includes(currentTopic.id)
-    const [showFollowedTopics, setShowFollowedTopics] = useState(false)
     const router = useRouter()
-
-    const buttonTopics = [
-      {
-        name: 'Followed topics',
-        icon: <PencilIcon className="h-5 w-5" />,
-        onClick: () => setShowFollowedTopics(true),
-      },
-    ]
 
     return (
       <Row
@@ -70,38 +57,33 @@ export const QuestionsTopicTitle = forwardRef(
                 (topicSlug === 'for-you' ? '⭐️ For you' : 'Browse')}
             </span>
           </Row>
-          {user && topicSlug === 'for-you' ? (
-            <ForYouDropdown
-              setCurrentTopic={setTopicSlug}
-              user={user}
-              className={'sm:hidden'}
-            />
-          ) : currentTopic ? (
+          {currentTopic ? (
             <TopicOptionsButton
               group={currentTopic}
               yourGroupIds={yourGroupIds}
               user={user}
               className={'sm:hidden'}
             />
+          ) : user ? (
+            <TopicDropdown
+              setCurrentTopic={setTopicSlug}
+              user={user}
+              className={'sm:hidden'}
+            />
           ) : null}
         </Row>
-        {topicSlug === 'for-you' && (
-          <Row className={'items-center justify-between gap-2'}>
-            {buttonTopics.map((item) => (
-              <Button
-                key={item.name}
-                size={'sm'}
-                color={'gray-white'}
-                onClick={item.onClick}
-              >
-                <Row className={'items-center gap-1'}>
-                  {item.icon}
-                  {item.name}
-                </Row>
-              </Button>
-            ))}
-          </Row>
-        )}
+        {/* {topicSlug === 'for-you' && (
+          <Button
+            size={'sm'}
+            color={'gray-white'}
+            onClick={() => setShowFollowedTopics(true)}
+          >
+            <Row className={'items-center gap-1'}>
+              <PencilIcon className={'h-5 w-5'} />
+              Followed topics
+            </Row>
+          </Button>
+        )} */}
         {currentTopic && (
           <Row className="items-center">
             <CopyLinkOrShareButton
@@ -153,27 +135,18 @@ export const QuestionsTopicTitle = forwardRef(
             )}
           </Row>
         )}
-        {showFollowedTopics && user && (
-          <FollowedTopicsModal
-            user={user}
-            setShow={setShowFollowedTopics}
-            show={showFollowedTopics}
-            setCurrentTopicSlug={setTopicSlug}
-            groups={yourGroups}
-          />
-        )}
-        {user && topicSlug === 'for-you' ? (
-          <ForYouDropdown
-            setCurrentTopic={setTopicSlug}
-            user={user}
-            className={'hidden sm:block md:hidden'}
-          />
-        ) : currentTopic ? (
+        {currentTopic ? (
           <TopicOptionsButton
             group={currentTopic}
             yourGroupIds={yourGroupIds}
             user={user}
             className={'hidden sm:block'}
+          />
+        ) : user ? (
+          <TopicDropdown
+            setCurrentTopic={setTopicSlug}
+            user={user}
+            className={'hidden sm:block md:hidden'}
           />
         ) : null}
       </Row>

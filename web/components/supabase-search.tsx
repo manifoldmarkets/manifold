@@ -172,7 +172,8 @@ export function SupabaseSearch(props: {
   hideSearch?: boolean
   hideContractFilters?: boolean
   defaultSearchType?: SearchType
-  yourTopics?: Group[]
+  topics?: Group[]
+  setTopics?: (topics: Group[]) => void
   contractsOnly?: boolean
   showTopicTag?: boolean
   hideSearchTypes?: boolean
@@ -201,7 +202,8 @@ export function SupabaseSearch(props: {
     menuButton,
     rowBelowFilters,
     defaultSearchType,
-    yourTopics,
+    topics: topicResults,
+    setTopics: setTopicResults,
     contractsOnly,
     showTopicTag,
     hideSearchTypes,
@@ -229,9 +231,7 @@ export function SupabaseSearch(props: {
       undefined,
       `${persistPrefix}-queried-user-results`
     )
-  const [topicResults, setTopicResults] = usePersistentInMemoryState<
-    Group[] | undefined
-  >(undefined, `${persistPrefix}-topic-results`)
+
   const [showSearchTypeState, setShowSearchTypeState] = useState(
     queryAsString === '' || searchTypeAsString !== '' || !!currentTopicSlug
   )
@@ -302,29 +302,21 @@ export function SupabaseSearch(props: {
     }
   }, [currentTopicSlug])
 
-  const queryUsers = useEvent(async (query: string) => {
-    const results = await searchUsers(query, USERS_PER_PAGE, [
+  const queryUsers = useEvent(async (query: string) =>
+    searchUsers(query, USERS_PER_PAGE, [
       'creatorTraders',
       'bio',
       'createdTime',
       'isBannedFromPosting',
     ])
-    return results
-  })
+  )
 
-  const queryTopics = useEvent(async (query: string) => {
-    const groupResults = await searchGroups({
+  const queryTopics = useEvent(async (query: string) =>
+    searchGroups({
       term: query,
       limit: TOPICS_PER_PAGE,
     })
-    const followedTopics =
-      yourTopics?.filter(
-        (f) =>
-          f.name.toLowerCase().includes(query.toLowerCase()) ||
-          f.slug.toLowerCase().includes(query.toLowerCase())
-      ) ?? []
-    return uniqBy(followedTopics.concat(groupResults), 'name')
-  })
+  )
 
   const searchCountRef = useRef(0)
   useEffect(() => {
@@ -336,7 +328,7 @@ export function SupabaseSearch(props: {
       if (searchCount === searchCountRef.current) setQueriedUserResults(results)
     })
     queryTopics(queryAsString).then((results) => {
-      if (searchCount === searchCountRef.current) setTopicResults(results)
+      if (searchCount === searchCountRef.current) setTopicResults?.(results)
     })
   }, [JSON.stringify(searchParams)])
 
