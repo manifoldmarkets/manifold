@@ -816,3 +816,35 @@ export const sendNewMessageEmail = async (
     }
   )
 }
+
+export const sendNewEndorsementEmail = async (
+  reason: NotificationReason,
+  privateUser: PrivateUser,
+  fromUser: User,
+  onUser: User,
+  subject: string,
+  text: string
+) => {
+  const { sendToEmail, unsubscribeUrl } = getNotificationDestinationsForUser(
+    privateUser,
+    reason
+  )
+  if (!privateUser.email || !sendToEmail) return
+  const firstName = onUser.name.split(' ')[0]
+  return await sendTemplateEmail(
+    privateUser.email,
+    subject,
+    'new-endorsement',
+    {
+      name: firstName,
+      endorsementUrl: `https://${LOVE_DOMAIN}/${onUser.username}`,
+      creatorName: fromUser.name,
+      creatorAvatarUrl: fromUser.avatarUrl,
+      endorsementText: text,
+      unsubscribeUrl,
+    },
+    {
+      from: `manifold.love <no-reply@manifold.markets>`,
+    }
+  )
+}

@@ -130,7 +130,7 @@ const manifoldLoveUserId =
 
 const userInteractions: NotificationSectionData = {
   label: 'Users',
-  subscriptionTypes: ['new_message', 'new_match'],
+  subscriptionTypes: ['new_message', 'new_match', 'new_endorsement'],
 }
 function NotificationSettings(props: {
   navigateToSection: string | undefined

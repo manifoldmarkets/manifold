@@ -15,6 +15,7 @@ import { User } from 'common/user'
 import { createPushNotification } from 'shared/create-push-notification'
 import { richTextToString } from 'common/util/parse'
 import * as crypto from 'crypto'
+import { sendNewEndorsementEmail } from 'shared/emails'
 
 const postSchema = z.object({
   userId: z.string(),
@@ -99,10 +100,8 @@ const createNewCommentOnLoverNotification = async (
   if (!privateUser) return
   const id = crypto.randomUUID()
   const reason = 'new_endorsement'
-  const { sendToBrowser, sendToMobile } = getNotificationDestinationsForUser(
-    privateUser,
-    reason
-  )
+  const { sendToBrowser, sendToMobile, sendToEmail } =
+    getNotificationDestinationsForUser(privateUser, reason)
   const notification: Notification = {
     id,
     userId: privateUser.id,
@@ -126,6 +125,16 @@ const createNewCommentOnLoverNotification = async (
       notification,
       privateUser,
       `${creator.name} commented on your profile`,
+      sourceText
+    )
+  }
+  if (sendToEmail) {
+    await sendNewEndorsementEmail(
+      reason,
+      privateUser,
+      creator,
+      onUser,
+      `${creator.name} just endorsed you!`,
       sourceText
     )
   }
