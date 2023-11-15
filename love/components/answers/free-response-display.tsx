@@ -1,5 +1,4 @@
 import { PencilIcon } from '@heroicons/react/outline'
-import { NextRouter } from 'next/router'
 
 import { XIcon } from '@heroicons/react/outline'
 import { Row as rowFor } from 'common/supabase/utils'
@@ -18,7 +17,6 @@ export function FreeResponseDisplay(props: {
   answers: rowFor<'love_answers'>[]
   questions: rowFor<'love_questions'>[]
   isCurrentUser: boolean
-  router: NextRouter
   user: User
   refreshAnswers: () => void
 }) {

@@ -1,4 +1,4 @@
-import { NextRouter, useRouter } from 'next/router'
+import Router from 'next/router'
 import Head from 'next/head'
 
 import { removeUndefinedProps } from 'common/util/object'
@@ -56,7 +56,6 @@ export default function UserPage(props: {
   const { user, username } = props
   const currentUser = useUser()
   const isCurrentUser = currentUser?.id === user?.id
-  const router = useRouter()
 
   useSaveReferral(user, { defaultReferrerUsername: username })
 
@@ -103,11 +102,9 @@ export default function UserPage(props: {
                 currentUser={currentUser}
                 user={user}
                 lover={lover}
-                router={router}
               />
               <LoverContent
                 isCurrentUser={isCurrentUser}
-                router={router}
                 user={user}
                 lover={lover}
                 refreshLover={refreshLover}
@@ -117,7 +114,7 @@ export default function UserPage(props: {
           ) : isCurrentUser ? (
             <Col className={'mt-4 w-full items-center'}>
               <Row>
-                <Button onClick={() => router.push('signup')}>
+                <Button onClick={() => Router.push('/signup')}>
                   Create a profile
                 </Button>
               </Row>
@@ -127,7 +124,7 @@ export default function UserPage(props: {
               <div>{user.name} hasn't created a profile yet.</div>
               <Button
                 className="mt-4 self-start"
-                onClick={() => router.push('/')}
+                onClick={() => Router.push('/')}
               >
                 See more profiles
               </Button>
@@ -141,13 +138,12 @@ export default function UserPage(props: {
 
 function LoverContent(props: {
   isCurrentUser: boolean
-  router: NextRouter
   user: User
   lover: Lover
   currentUser: User | null
   refreshLover: () => void
 }) {
-  const { isCurrentUser, router, user, lover, currentUser, refreshLover } =
+  const { isCurrentUser, user, lover, currentUser, refreshLover } =
     props
 
   if (!currentUser) {
@@ -174,7 +170,7 @@ function LoverContent(props: {
         lover={lover}
         refreshLover={refreshLover}
       />
-      <LoverAnswers isCurrentUser={isCurrentUser} router={router} user={user} />
+      <LoverAnswers isCurrentUser={isCurrentUser} user={user} />
       <LoverCommentSection
         onUser={user}
         lover={lover}

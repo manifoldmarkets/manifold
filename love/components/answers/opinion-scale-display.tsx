@@ -1,6 +1,6 @@
 import { track } from '@amplitude/analytics-browser'
 import { PencilIcon } from '@heroicons/react/outline'
-import { NextRouter } from 'next/router'
+import Router from 'next/router'
 
 import clsx from 'clsx'
 import { Row as rowFor } from 'common/supabase/utils'
@@ -15,9 +15,8 @@ export function OpinionScale(props: {
   multiChoiceAnswers: rowFor<'love_answers'>[]
   questions: rowFor<'love_questions'>[]
   isCurrentUser: boolean
-  router: NextRouter
 }) {
-  const { multiChoiceAnswers, questions, isCurrentUser, router } = props
+  const { multiChoiceAnswers, questions, isCurrentUser } = props
 
   const answeredMultiChoice = multiChoiceAnswers.filter(
     (a) => a.multiple_choice != null && a.multiple_choice != -1
@@ -26,7 +25,7 @@ export function OpinionScale(props: {
   if (answeredMultiChoice.length < 1) {
     if (isCurrentUser) {
       return (
-        <Button color="indigo" onClick={() => router.push('opinion-scale')}>
+        <Button color="indigo" onClick={() => Router.push('opinion-scale')}>
           <Row className="items-center gap-1">
             <BiTachometer className="h-5 w-5" />
             Fill Opinion Scale
@@ -49,7 +48,7 @@ export function OpinionScale(props: {
             className={''}
             onClick={() => {
               track('edit love questions')
-              router.push('opinion-scale')
+              Router.push('opinion-scale')
             }}
           >
             <PencilIcon className="mr-2 h-4 w-4" />

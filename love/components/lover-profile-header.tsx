@@ -1,9 +1,9 @@
 import { PencilIcon } from '@heroicons/react/outline'
 import { DotsHorizontalIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
+import Router from 'next/router'
 
 import { User } from 'common/user'
-import { NextRouter } from 'next/router'
 import { Button } from 'web/components/buttons/button'
 import { MoreOptionsUserButton } from 'web/components/buttons/more-options-user-button'
 import { Col } from 'web/components/layout/col'
@@ -22,9 +22,8 @@ export default function LoverProfileHeader(props: {
   currentUser: User | null | undefined
   user: User
   lover: Lover
-  router: NextRouter
 }) {
-  const { isCurrentUser, currentUser, user, lover, router } = props
+  const { isCurrentUser, currentUser, user, lover } = props
   return (
     <Col className="w-full">
       <Row className={clsx('flex-wrap justify-between gap-2 py-1')}>
@@ -47,7 +46,7 @@ export default function LoverProfileHeader(props: {
               color={'gray-outline'}
               onClick={() => {
                 track('edit love profile')
-                router.push('profile')
+                Router.push('profile')
               }}
               size="sm"
             >
