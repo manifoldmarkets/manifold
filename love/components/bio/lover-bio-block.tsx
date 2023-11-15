@@ -1,23 +1,12 @@
-import { Lover } from 'common/love/lover'
-import { Subtitle } from '../widgets/lover-subtitle'
-import { Col } from 'web/components/layout/col'
-import {
-  Content,
-  TextEditor,
-  useTextEditor,
-} from 'web/components/widgets/editor'
+import { PencilIcon, XIcon } from '@heroicons/react/outline'
 import { JSONContent } from '@tiptap/core'
-import { Button } from 'web/components/buttons/button'
+import { Lover } from 'common/love/lover'
 import { useState } from 'react'
-import { MODAL_CLASS, Modal } from 'web/components/layout/modal'
-import { MAX_DESCRIPTION_LENGTH } from 'common/contract'
-import { Row } from 'web/components/layout/row'
-import { updateLover } from 'web/lib/firebase/love/api'
-import { track } from 'web/lib/service/analytics'
-import { User } from 'common/user'
 import DropdownMenu from 'web/components/comments/dropdown-menu'
-import { PencilIcon } from '@heroicons/react/outline'
-import { XIcon } from '@heroicons/react/outline'
+import { Col } from 'web/components/layout/col'
+import { Row } from 'web/components/layout/row'
+import { Content } from 'web/components/widgets/editor'
+import { updateLover } from 'web/lib/firebase/love/api'
 import { EditableBio } from './editable-bio'
 
 export function BioBlock(props: {

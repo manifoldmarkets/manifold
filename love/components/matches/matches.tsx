@@ -12,13 +12,13 @@ import { CPMMMultiContract, contractPath } from 'common/contract'
 import { useLovers } from 'love/hooks/use-lovers'
 import { useMatches } from 'love/hooks/use-matches'
 import { Col } from 'web/components/layout/col'
-import { AddAMatchButton } from './add-a-match-button'
+import { AddAMatchButton } from '../add-a-match-button'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { Row } from 'web/components/layout/row'
 import { formatMoney, formatPercent } from 'common/util/format'
 import { UserLink } from 'web/components/widgets/user-link'
 import { Button } from 'web/components/buttons/button'
-import { RejectButton } from './reject-button'
+import { RejectButton } from '../reject-button'
 import { useUser } from 'web/hooks/use-user'
 import { Avatar } from 'web/components/widgets/avatar'
 import { MODAL_CLASS, Modal } from 'web/components/layout/modal'
@@ -41,9 +41,10 @@ import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
 import { getCumulativeRelationshipProb } from 'love/lib/util/relationship-market'
 import { ControlledTabs } from 'web/components/layout/tabs'
 import { Answer } from 'common/answer'
-import { ConfirmStageButton } from './confirm-stage-button'
+import { ConfirmStageButton } from '../confirm-stage-button'
 import { useAnswersCpmm } from 'web/hooks/use-answers'
 import { Lover } from 'common/love/lover'
+import { MatchTile } from './match-tile'
 
 const relationshipStages = ['1st date', '2nd date', '3rd date', '6-month']
 
@@ -58,6 +59,7 @@ export const Matches = (props: { userId: string }) => {
     `matches-tab-${userId}`
   )
 
+  console.log(matches)
   const truncatedSize = 5
   const [expanded, setExpanded] = useState(false)
 
@@ -83,20 +85,20 @@ export const Matches = (props: { userId: string }) => {
   const areYourMatches = userId === user?.id
 
   return (
-    <Col className="bg-canvas-0 max-w-lg gap-4 rounded px-2 py-1.5 sm:px-4 sm:py-3">
+    <Col className="bg-canvas-0 w-full gap-4 rounded px-2 py-1.5 sm:px-4 sm:py-3">
       {currentMatches.length > 0 ? (
         <Col>
           <div className="text-lg font-semibold">Relationship chances</div>
-          <ControlledTabs
+          {/* <ControlledTabs
             tabs={relationshipStages.map((stage) => ({
               title: stage,
               content: null,
             }))}
             activeIndex={tabIndex}
             onClick={(_title, index) => setTabIndex(index)}
-          />
+          />*/}
 
-          <Col className={clsx(tabIndex === 0 ? 'gap-2' : 'gap-4')}>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
             {(expanded
               ? currentMatches
               : currentMatches.slice(0, truncatedSize)
@@ -111,19 +113,17 @@ export const Matches = (props: { userId: string }) => {
               )
               return (
                 matchedLover && (
-                  <MatchContract
+                  <MatchTile
                     key={contract.id}
                     contract={contract}
-                    answer={contract.answers[tabIndex]}
+                    answers={contract.answers}
                     lover={matchedLover}
                     isYourMatch={areYourMatches}
-                    previousStage={relationshipStages[tabIndex - 1]}
-                    stage={relationshipStages[tabIndex]}
                   />
                 )
               )
             })}
-          </Col>
+          </div>
           {!expanded && currentMatches.length > truncatedSize && (
             <Button
               className="self-start"
@@ -203,19 +203,6 @@ const MatchContract = (props: {
 
   return (
     <Col>
-      {previousStage ? (
-        <Link href={contractPath(contract)}>
-          <Row className="text-ink-600 bg-canvas-50 items-center justify-between gap-2 px-2 py-1 text-sm">
-            <div>
-              Assuming {previousStage.toLowerCase()} (
-              {formatPercent(conditionProb)} chance)
-            </div>
-            <ArrowRightIcon className="h-4 w-4" />
-          </Row>
-        </Link>
-      ) : (
-        <div className="mt-2" />
-      )}
       <Row
         className="items-center justify-between gap-2"
         onClick={() => setExpanded((b) => !b)}
@@ -334,7 +321,7 @@ const MatchContract = (props: {
   )
 }
 
-const BetButton = (props: {
+export const BetButton = (props: {
   contract: CPMMMultiContract
   answer: Answer
   lover: Lover
