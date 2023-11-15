@@ -376,7 +376,7 @@ export const getImportantContractsForNewUsers = async (
            where (slug = any($2) or slug ilike '%manifold%')
          )
          and resolution_time is null
-         and data ->> 'deleted' is null
+         and deleted = false
          and visibility = 'public'
          and importance_score > $3
        order by importance_score desc
