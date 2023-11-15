@@ -45,7 +45,6 @@ export default function ProfilePage(props: {
           user={user}
           setLover={setLoverState}
           butonLabel={'Save'}
-          showAvatar={true}
         />
       </Col>
     </Col>
