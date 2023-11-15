@@ -408,6 +408,16 @@ Wild Animal Initiative currently focuses on helping scientists, grantors, and de
       'Our unique, cost-effective conservation model for protecting endangered species has been implemented successfully for over 30 years. Thanks to the generosity of our donors, the expertise of our partners and the participation of local communities across the tropics, our reserves are exemplary models of international conservation.',
   },
   {
+    name: 'Helping Shepherds of Every Color Rescue',
+    website: 'https://www.helpingshepherdsofeverycolor.com/',
+    ein: '46-1747360',
+    photo: 'https://i.imgur.com/TXQZe9E.png',
+    preview:
+      'Helping Shepherds of Every Color Rescue is an all volunteer German Shepherd rescue group based in Montgomery, AL.',
+    description:
+      'Helping Shepherds of Every Color Rescue is an all volunteer German Shepherd rescue group based in Montgomery, AL. We provide needed medical care, training and rehabilitation to needy GSDs until they are ready for adoption. All dogs are spayed/neutered, up-to-date on shots and heartworm free by the time they are re-homed.',
+  },
+  {
     name: 'The Nature Conservancy',
     website: 'https://www.nature.org/en-us/',
     ein: '53-0242652',
