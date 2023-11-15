@@ -39,7 +39,7 @@ export function LoansModal(props: {
           <span className={'text-primary-700'}>• What is an example?</span>
           <span className={'ml-2'}>
             For example, if you bet {ENV_CONFIG.moneyMoniker}1000 on "Will I
-            become a millionare?", you will get {ENV_CONFIG.moneyMoniker}
+            become a millionaire?", you will get {ENV_CONFIG.moneyMoniker}
             {LOAN_DAILY_RATE * 1000} back tomorrow.
           </span>
           <span className={'ml-2'}>
