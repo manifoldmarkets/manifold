@@ -1,31 +1,35 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import Router from 'next/router'
+
 import { Row as rowFor } from 'common/supabase/utils'
 import { Col } from 'web/components/layout/col'
-import { getUserAndPrivateUser, User } from 'web/lib/firebase/users'
 import { RequiredLoveUserForm } from 'love/components/required-lover-form'
 import { OptionalLoveUserForm } from 'love/components/optional-lover-form'
-import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
-import { PrivateUser } from 'common/user'
+import { User } from 'common/user'
 import { useUser } from 'web/hooks/use-user'
-import { getLoverRow, Lover } from 'common/love/lover'
-import { db } from 'web/lib/supabase/db'
+import { Lover } from 'common/love/lover'
+import { useLover } from 'love/hooks/use-lover'
 
-export const getServerSideProps = redirectIfLoggedOut('/', async (_, creds) => {
-  const { user, privateUser } = await getUserAndPrivateUser(creds.uid)
-  const loverRow = await getLoverRow(user.id, db)
+export default function ProfilePage() {
+  const user = useUser()
+  const lover = useLover()
 
-  return { props: { auth: { user, privateUser }, loverRow } }
-})
-export default function ProfilePage(props: {
-  auth: { user: User; privateUser: PrivateUser }
-  loverRow: rowFor<'lovers'>
-}) {
-  const { auth, loverRow } = props
-  const user = useUser() ?? auth.user
+  useEffect(() => {
+    if (user === null || lover === null) {
+      Router.replace('/')
+    }
+  }, [user])
+
+  return user && lover && <ProfilePageInner user={user} lover={lover} />
+}
+function ProfilePageInner(props: { user: User; lover: Lover }) {
+  const { user } = props
+
   const [lover, setLover] = useState<Lover>({
-    ...loverRow,
+    ...props.lover,
     user,
   })
+
   const setLoverState = (key: keyof rowFor<'lovers'>, value: any) => {
     setLover((prevState) => ({ ...prevState, [key]: value }))
   }
