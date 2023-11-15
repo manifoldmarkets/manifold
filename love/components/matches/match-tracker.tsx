@@ -1,0 +1,45 @@
+import clsx from 'clsx'
+import { Row } from 'web/components/layout/row'
+import { HeartIcon } from '@heroicons/react/solid'
+
+export function MatchTracker(props: {
+  lastResolved: number
+  setStage: (stage: number) => void
+  stage: number
+}) {
+  const { lastResolved, setStage, stage } = props
+  console.log(stage)
+  return (
+    <Row className="items-center text-xs">
+      {Array(4)
+        .fill(null)
+        .map((_, i) => (
+          <>
+            {i !== 0 && (
+              <hr
+                className={clsx(
+                  'border-ink-300 dark:border-ink-600 flex flex-grow border-t-2 ',
+                  i <= lastResolved + 1 ? '' : ' border-dashed'
+                )}
+              />
+            )}
+
+            <button
+              key={i}
+              onClick={() => setStage(i)}
+              className={clsx(
+                ' text-ink-0 z-10 rounded-full px-1 text-xs transition-all',
+                stage == i ? ' bg-primary-500 ' : 'bg-ink-300 dark:bg-ink-600'
+              )}
+            >
+              {i != 3 ? (
+                <div className="h-4 w-5">{i + 1}</div>
+              ) : (
+                <HeartIcon className="mx-0.5 my-[1px] h-3.5 w-3.5" />
+              )}
+            </button>
+          </>
+        ))}
+    </Row>
+  )
+}

@@ -59,7 +59,6 @@ export const Matches = (props: { userId: string }) => {
     `matches-tab-${userId}`
   )
 
-  console.log(matches)
   const truncatedSize = 5
   const [expanded, setExpanded] = useState(false)
 
@@ -85,10 +84,10 @@ export const Matches = (props: { userId: string }) => {
   const areYourMatches = userId === user?.id
 
   return (
-    <Col className="bg-canvas-0 w-full gap-4 rounded px-2 py-1.5 sm:px-4 sm:py-3">
+    <Col className=" w-full gap-2 ">
       {currentMatches.length > 0 ? (
         <Col>
-          <div className="text-lg font-semibold">Relationship chances</div>
+          <div className="text-lg font-semibold">Matches</div>
           {/* <ControlledTabs
             tabs={relationshipStages.map((stage) => ({
               title: stage,

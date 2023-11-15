@@ -1,33 +1,36 @@
-import { sortBy } from 'lodash'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 
 import { UserIcon } from '@heroicons/react/solid'
+import clsx from 'clsx'
 import { Answer } from 'common/answer'
 import { CPMMMultiContract } from 'common/contract'
 import { Lover } from 'common/love/lover'
-import { getCPMMContractUserContractMetrics } from 'common/supabase/contract-metrics'
-import { capitalize } from 'lodash'
-import { calculateAge } from 'love/components/calculate-age'
-import { Gender, convertGender } from 'love/components/gender-icon'
-import OnlineIcon from 'love/components/online-icon'
-import { getCumulativeRelationshipProb } from 'love/lib/util/relationship-market'
 import Image from 'next/image'
+import Link from 'next/link'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { useAnswersCpmm } from 'web/hooks/use-answers'
 import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
-import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { useUser } from 'web/hooks/use-user'
-import { db } from 'web/lib/supabase/db'
+
+import { contractPath } from 'common/contract'
+import { BuyPanel } from 'web/components/bet/bet-panel'
+import { MODAL_CLASS, Modal } from 'web/components/layout/modal'
+import { linkClass } from 'web/components/widgets/site-link'
+import { Subtitle } from 'web/components/widgets/subtitle'
+import { User } from 'common/user'
+import { formatPercent } from 'common/util/format'
 import { Button } from 'web/components/buttons/button'
-import clsx from 'clsx'
-import { AiOutlineCaretDown } from 'react-icons/ai'
+import { track } from 'web/lib/service/analytics'
+import { Spacer } from 'web/components/layout/spacer'
+import { CommentsButton } from 'web/components/comments/comments-button'
+import { MatchTracker } from './match-tracker'
 
 const relationshipStages = [
   '1st date',
   '2nd date',
   '3rd date',
-  '6-month relationship',
+  '6 month relationship',
 ]
 
 export const MatchTile = (props: {
@@ -51,7 +54,9 @@ export const MatchTile = (props: {
     return answer.resolution !== undefined ? index : acc
   }, -1)
 
-  const [timeFrame, setTimeFrame] = useState(lastResolved + 1)
+  const [stage, setStage] = useState(lastResolved + 1)
+  const [open, setOpen] = useState(false)
+  const answer = answers[stage]
   //   const showConfirmStage =
   //     !answer.resolution && (!prevAnswer || prevAnswer.resolution === 'YES')
 
@@ -80,74 +85,116 @@ export const MatchTile = (props: {
   //       }
   //     )
   //   }, [contract.id, answer.id])
+
+  const firstDateDate = answer.text
+    .substring(answer.text.indexOf('by'), answer.text.length - 1)
+    .trim()
+
   return (
-    <Col className="relative h-60  overflow-hidden rounded text-white transition-all  hover:drop-shadow">
-      {pinned_url ? (
-        <Image
-          src={pinned_url}
-          // You must set these so we don't pay an extra $1k/month to vercel
-          width={180}
-          height={240}
-          alt={`${user.username}`}
-          className="h-full w-full object-cover"
+    <Col className="overflow-hidden rounded drop-shadow">
+      <Col className="relative h-40 overflow-hidden">
+        {pinned_url ? (
+          <Image
+            src={pinned_url}
+            // You must set these so we don't pay an extra $1k/month to vercel
+            width={180}
+            height={240}
+            alt={`${user.username}`}
+            className="h-full w-full object-cover"
+          />
+        ) : (
+          <Col className="bg-ink-300 h-full w-full items-center justify-center">
+            <UserIcon className="h-20 w-20" />
+          </Col>
+        )}
+        <BetModal
+          open={open}
+          setOpen={setOpen}
+          contract={contract}
+          answer={answer}
+          answers={answers}
+          user={user}
         />
-      ) : (
-        <Col className="bg-ink-300 h-full w-full items-center justify-center">
-          <UserIcon className="h-20 w-20" />
-        </Col>
-      )}
-
-      <Col className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 via-black/70 to-transparent px-4 py-4 ">
-        <Col className="-mb-[6px] rounded bg-white px-4 py-2 text-xs text-black opacity-70">
-          <span>
-            chance of{' '}
-            <span className="text-sm font-semibold">
-              {relationshipStages[timeFrame]}
+      </Col>
+      <Col className="bg-canvas-0 text-ink-1000 -mb-[6px] p-2  text-sm">
+        <MatchTracker
+          lastResolved={lastResolved}
+          stage={stage}
+          setStage={setStage}
+        />
+        <Spacer className="h-2" />
+        <Row className="w-full justify-between gap-2">
+          <Col>
+            <span>
+              Chance of{' '}
+              <span className="font-semibold">{relationshipStages[stage]}</span>
             </span>
-          </span>
-        </Col>
-        <Row className="text-xs">
-          {Array(4)
-            .fill(null)
-            .map((_, i) => (
-              <>
-                {i !== 0 && (
-                  <div
-                    className={clsx(
-                      '-mx-2 mt-[28px] flex h-0.5 flex-grow opacity-50',
-                      answers[i].resolution ? 'bg-green-500' : 'bg-ink-300'
-                    )}
-                  />
-                )}
-                <Col className="items-center gap-1">
-                  <AiOutlineCaretDown
-                    key={i}
-                    className={clsx(
-                      'h-5 w-5 text-white opacity-70',
-                      i !== timeFrame ? 'invisible' : ''
-                    )}
-                  />
-                  <button
-                    key={i}
-                    onClick={() => setTimeFrame(i)}
-                    className={clsx(
-                      'z-10 h-3 w-3 rounded-full transition-all',
-
-                      answers[i].resolution ? 'bg-green-500' : 'bg-ink-300',
-                      timeFrame == i
-                        ? `${
-                            answers[i].resolution
-                              ? 'ring-green-500'
-                              : 'ring-ink-300'
-                          } ring-4 ring-opacity-50`
-                        : ''
-                    )}
-                  />
-                </Col>
-              </>
-            ))}
+            <div className="text-ink-500 text-xs">
+              {stage === 0 ? (
+                <> {firstDateDate}</>
+              ) : (
+                <> if {relationshipStages[stage - 1]} happens</>
+              )}
+            </div>
+          </Col>
+          <div className="font-semibold">{formatPercent(answer.prob)}</div>
+        </Row>
+        <Row className="w-full items-center justify-end gap-2">
+          <Button
+            size={'2xs'}
+            color={'indigo-outline'}
+            onClick={() => {
+              setOpen(true)
+              track('love bet button click')
+            }}
+          >
+            Bet
+          </Button>
+          <CommentsButton
+            className="min-w-[36px]"
+            contract={contract}
+            user={currentUser}
+          />
         </Row>
       </Col>
     </Col>
+  )
+}
+
+function BetModal(props: {
+  open: boolean
+  setOpen: (open: boolean) => void
+  contract: CPMMMultiContract
+  answer: Answer
+  answers: Answer[]
+  user: User
+}) {
+  const { open, setOpen, contract, answer, answers, user } = props
+  return (
+    <Modal
+      open={open}
+      setOpen={setOpen}
+      className={clsx(
+        MODAL_CLASS,
+        'pointer-events-auto max-h-[32rem] overflow-auto'
+      )}
+    >
+      <Col>
+        <Link href={contractPath(contract)}>
+          <Subtitle className={clsx('!mb-4 !mt-0 !text-xl', linkClass)}>
+            {answer.text}
+          </Subtitle>
+        </Link>
+        <BuyPanel
+          contract={contract}
+          multiProps={{ answers, answerToBuy: answer }}
+          user={user}
+          initialOutcome="YES"
+          onBuySuccess={() => setTimeout(() => setOpen(false), 500)}
+          location={'love profile'}
+          inModal={true}
+        />
+      </Col>
+    </Modal>
   )
 }
