@@ -38,6 +38,7 @@ export async function addInterestingContractsToFeed(
   if (Object.keys(userInterestEmbeddings).length === 0)
     await loadUserEmbeddingsToStore(pg)
   log(`Loaded users. Querying candidate contracts...`)
+  // We could query for contracts that've had large changes in prob in the past hour
   const contracts = await pg.map(
     `select data, importance_score from contracts
             where importance_score >= 0.225
