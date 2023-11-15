@@ -5,7 +5,7 @@ import clsx from 'clsx'
 import { ChoicesToggleGroup } from 'web/components/widgets/choices-toggle-group'
 import { Input } from 'web/components/widgets/input'
 import { Row } from 'web/components/layout/row'
-import { Button } from 'web/components/buttons/button'
+import { Button, buttonClass } from 'web/components/buttons/button'
 import { colClassName, labelClassName } from 'love/pages/signup'
 import { MultiCheckbox } from 'web/components/multi-checkbox'
 import { User } from 'common/user'
@@ -337,15 +337,23 @@ export const RequiredLoveUserForm = (props: {
 
             <Col className={clsx(colClassName)}>
               <label className={clsx(labelClassName)}>
-                Upload at least one photo
+                Add at least one photo
               </label>
+
               <input
+                id="photo-upload"
                 type="file"
                 onChange={handleFileChange}
                 multiple // Allows multiple files to be selected
-                className={'w-64'}
+                className={'hidden'}
                 disabled={uploadingImages}
               />
+              <label
+                className={clsx(buttonClass('md', 'indigo'), 'cursor-pointer')}
+                htmlFor="photo-upload"
+              >
+                Add photos
+              </label>
               <Row className="flex-wrap gap-2">
                 {uniq(buildArray(lover.pinned_url, lover.photo_urls))?.map(
                   (url, index) => {
