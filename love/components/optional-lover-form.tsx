@@ -25,8 +25,11 @@ export const OptionalLoveUserForm = (props: {
   const { lover, user, butonLabel, setLover } = props
 
   const router = useRouter()
-  const [heightFeet, setHeightFeet] = useState(
+  const [heightFeet, setHeightFeet] = useState<number | undefined>(
     Math.floor((lover['height_in_inches'] ?? 0) / 12)
+  )
+  const [heightInches, setHeightInches] = useState<number | undefined>(
+    Math.floor((lover['height_in_inches'] ?? 0) % 12)
   )
 
   const handleSubmit = async () => {
@@ -148,29 +151,35 @@ export const OptionalLoveUserForm = (props: {
               <Input
                 type="number"
                 onChange={(e) => {
-                  setHeightFeet(Number(e.target.value))
-                  setLover(
-                    'height_in_inches',
-                    Number(e.target.value) * 12 +
-                      ((lover['height_in_inches'] ?? 0) % 12)
-                  )
+                  if (e.target.value === '') {
+                    setHeightFeet(undefined)
+                  } else {
+                    setHeightFeet(Number(e.target.value))
+                    const heightInInches =
+                      Number(e.target.value) * 12 + (heightInches ?? 0)
+                    setLover('height_in_inches', heightInInches)
+                  }
                 }}
                 className={'w-16'}
-                value={heightFeet}
+                value={heightFeet ?? ''}
               />
             </Col>
             <Col>
               <span>Inches</span>
               <Input
                 type="number"
-                onChange={(e) =>
-                  setLover(
-                    'height_in_inches',
-                    Number(e.target.value) + heightFeet * 12
-                  )
-                }
+                onChange={(e) => {
+                  if (e.target.value === '') {
+                    setHeightInches(undefined)
+                  } else {
+                    setHeightInches(Number(e.target.value))
+                    const heightInInches =
+                      Number(e.target.value) + 12 * (heightFeet ?? 0)
+                    setLover('height_in_inches', heightInInches)
+                  }
+                }}
                 className={'w-16'}
-                value={(lover['height_in_inches'] ?? 0) % 12}
+                value={heightInches ?? ''}
               />
             </Col>
           </Row>
