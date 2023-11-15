@@ -114,7 +114,9 @@ export function ActivityLog(props: {
       !blockedContractIds.includes(c.id) &&
       !blockedUserIds.includes(c.creatorId) &&
       c.visibility === 'public' &&
-      c.groupSlugs?.some((slug) => topicSlugs?.includes(slug))
+      (!c.groupSlugs?.some((slug) => blockedGroupSlugs.includes(slug)) ??
+        true) &&
+      (topicSlugs?.some((s) => c.groupSlugs?.includes(s)) ?? true)
   )
   const bets = uniqBy(
     (realtimeBets ?? []).concat(recentTopicalBets ?? []),
@@ -146,9 +148,9 @@ export function ActivityLog(props: {
     topicSlugs,
     blockedGroupSlugs
   )?.filter((c) =>
-    topicSlugs
-      ? c.groupSlugs?.some((slug) => topicSlugs?.includes(slug)) &&
-        !c.groupSlugs?.some((slug) => blockedGroupSlugs.includes(slug))
+    c.groupSlugs
+      ? (topicSlugs?.some((s) => c.groupSlugs?.includes(s)) ?? true) &&
+        !c.groupSlugs.some((slug) => blockedGroupSlugs.includes(slug))
       : true
   )
 
