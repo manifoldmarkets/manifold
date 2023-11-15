@@ -21,10 +21,10 @@ import { SignUpButton } from 'love/components/nav/love-sidebar'
 import { BackButton } from 'web/components/contract/back-button'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { getLoveOgImageUrl } from 'common/love/og-image'
-import { Lover } from 'common/love/lover'
-import { createContext } from 'react'
+import { getLoverRow, Lover } from 'common/love/lover'
 import { LoverBio } from 'love/components/bio/lover-bio'
 import Custom404 from '../404'
+import { db } from 'web/lib/supabase/db'
 
 export const getStaticProps = async (props: {
   params: {
@@ -33,10 +33,12 @@ export const getStaticProps = async (props: {
 }) => {
   const { username } = props.params
   const user = await getUserByUsername(username)
+  const lover = user ? await getLoverRow(user.id, db) : null
   return {
     props: removeUndefinedProps({
       user,
       username,
+      lover,
     }),
     revalidate: 15,
   }
@@ -49,19 +51,20 @@ export const getStaticPaths = () => {
 export default function UserPage(props: {
   user: User | null
   username: string
+  lover: Lover | null
 }) {
-  const { user } = props
+  const { user, username } = props
   const currentUser = useUser()
   const isCurrentUser = currentUser?.id === user?.id
   const router = useRouter()
 
-  useSaveReferral(user, { defaultReferrerUsername: props.username })
+  useSaveReferral(user, { defaultReferrerUsername: username })
 
   useTracking('view love profile', { username: user?.username })
 
-  const { lover, refreshLover } = useLoverByUser(user ?? undefined)
+  const { lover: clientLover, refreshLover } = useLoverByUser(user ?? undefined)
+  const lover = clientLover ?? props.lover
 
-  if (currentUser === undefined || lover === undefined) return <div></div>
   if (!user) {
     return <Custom404 />
   }
@@ -87,48 +90,51 @@ export default function UserPage(props: {
         </Head>
       )}
       <BackButton className="-ml-2 mb-2 self-start" />
-      <Col className={'gap-4'}>
-        {lover ? (
-          <>
-            {lover.photo_urls && (
-              <ProfileCarousel lover={lover} currentUser={currentUser} />
-            )}
-            <LoverProfileHeader
-              isCurrentUser={isCurrentUser}
-              currentUser={currentUser}
-              user={user}
-              lover={lover}
-              router={router}
-            />
-            <LoverContent
-              isCurrentUser={isCurrentUser}
-              router={router}
-              user={user}
-              lover={lover}
-              refreshLover={refreshLover}
-              currentUser={currentUser}
-            />
-          </>
-        ) : isCurrentUser ? (
-          <Col className={'mt-4 w-full items-center'}>
-            <Row>
-              <Button onClick={() => router.push('signup')}>
-                Create a profile
+
+      {currentUser !== undefined && (
+        <Col className={'gap-4'}>
+          {lover ? (
+            <>
+              {lover.photo_urls && (
+                <ProfileCarousel lover={lover} currentUser={currentUser} />
+              )}
+              <LoverProfileHeader
+                isCurrentUser={isCurrentUser}
+                currentUser={currentUser}
+                user={user}
+                lover={lover}
+                router={router}
+              />
+              <LoverContent
+                isCurrentUser={isCurrentUser}
+                router={router}
+                user={user}
+                lover={lover}
+                refreshLover={refreshLover}
+                currentUser={currentUser}
+              />
+            </>
+          ) : isCurrentUser ? (
+            <Col className={'mt-4 w-full items-center'}>
+              <Row>
+                <Button onClick={() => router.push('signup')}>
+                  Create a profile
+                </Button>
+              </Row>
+            </Col>
+          ) : (
+            <Col className="bg-canvas-0 rounded p-4 ">
+              <div>{user.name} hasn't created a profile yet.</div>
+              <Button
+                className="mt-4 self-start"
+                onClick={() => router.push('/')}
+              >
+                See more profiles
               </Button>
-            </Row>
-          </Col>
-        ) : (
-          <Col className="bg-canvas-0 rounded p-4 ">
-            <div>{user.name} hasn't created a profile yet.</div>
-            <Button
-              className="mt-4 self-start"
-              onClick={() => router.push('/')}
-            >
-              See more profiles
-            </Button>
-          </Col>
-        )}
-      </Col>
+            </Col>
+          )}
+        </Col>
+      )}
     </LovePage>
   )
 }
