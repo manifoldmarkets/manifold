@@ -284,6 +284,58 @@ export const RequiredLoveUserForm = (props: {
             </Col>
 
             <Col className={clsx(colClassName)}>
+              <label className={clsx(labelClassName)}>Partner age range</label>
+              <Row className={'gap-2'}>
+                <Col>
+                  <span>Min</span>
+                  <Select
+                    value={lover['pref_age_min']}
+                    onChange={(e) =>
+                      setLover('pref_age_min', Number(e.target.value))
+                    }
+                    className={'w-18 border-ink-300 rounded-md'}
+                  >
+                    {range(18, 100).map((m) => (
+                      <option key={m} value={m}>
+                        {m}
+                      </option>
+                    ))}
+                  </Select>
+                </Col>
+                <Col>
+                  <span>Max</span>
+                  <Select
+                    value={lover['pref_age_max']}
+                    onChange={(e) =>
+                      setLover('pref_age_max', Number(e.target.value))
+                    }
+                    className={'w-18 border-ink-300 rounded-md'}
+                  >
+                    {range(18, 100).map((m) => (
+                      <option key={m} value={m}>
+                        {m}
+                      </option>
+                    ))}
+                  </Select>
+                </Col>
+              </Row>
+            </Col>
+
+            <Col className={clsx(colClassName)}>
+              <label className={clsx(labelClassName)}>
+                You want to have kids
+              </label>
+              <RadioToggleGroup
+                className={'w-44'}
+                choicesMap={MultipleChoiceOptions}
+                setChoice={(choice) => {
+                  setLover('wants_kids_strength', choice)
+                }}
+                currentChoice={lover.wants_kids_strength ?? -1}
+              />
+            </Col>
+
+            <Col className={clsx(colClassName)}>
               <label className={clsx(labelClassName)}>
                 Upload at least one photo
               </label>
@@ -363,58 +415,6 @@ export const RequiredLoveUserForm = (props: {
                   The highlighted image is your profile picture
                 </span>
               ) : null}
-            </Col>
-
-            <Col className={clsx(colClassName)}>
-              <label className={clsx(labelClassName)}>Partner age range</label>
-              <Row className={'gap-2'}>
-                <Col>
-                  <span>Min</span>
-                  <Select
-                    value={lover['pref_age_min']}
-                    onChange={(e) =>
-                      setLover('pref_age_min', Number(e.target.value))
-                    }
-                    className={'w-18 border-ink-300 rounded-md'}
-                  >
-                    {range(18, 100).map((m) => (
-                      <option key={m} value={m}>
-                        {m}
-                      </option>
-                    ))}
-                  </Select>
-                </Col>
-                <Col>
-                  <span>Max</span>
-                  <Select
-                    value={lover['pref_age_max']}
-                    onChange={(e) =>
-                      setLover('pref_age_max', Number(e.target.value))
-                    }
-                    className={'w-18 border-ink-300 rounded-md'}
-                  >
-                    {range(18, 100).map((m) => (
-                      <option key={m} value={m}>
-                        {m}
-                      </option>
-                    ))}
-                  </Select>
-                </Col>
-              </Row>
-            </Col>
-
-            <Col className={clsx(colClassName)}>
-              <label className={clsx(labelClassName)}>
-                You want to have kids
-              </label>
-              <RadioToggleGroup
-                className={'w-44'}
-                choicesMap={MultipleChoiceOptions}
-                setChoice={(choice) => {
-                  setLover('wants_kids_strength', choice)
-                }}
-                currentChoice={lover.wants_kids_strength ?? -1}
-              />
             </Col>
           </>
         )}
