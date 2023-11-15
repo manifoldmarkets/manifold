@@ -23,7 +23,7 @@ import {
   getUsersWithSimilarInterestVectorToNews,
 } from 'shared/supabase/users'
 import { convertObjectToSQLRow, Row } from 'common/supabase/utils'
-import { DAY_MS } from 'common/util/time'
+import { DAY_MS, HOUR_MS } from 'common/util/time'
 import { User } from 'common/user'
 import { fromPairs, groupBy, maxBy, uniq } from 'lodash'
 import { removeUndefinedProps } from 'common/util/object'
@@ -151,11 +151,10 @@ const userIdsWithFeedRowsMatchingContract = async (
 ) => {
   return await pg.map(
     `select distinct user_id
-            from user_feed
+            from user_seen_markets
             where contract_id = $1 and
                 user_id = ANY($2) and
-                greatest(created_time, seen_time) > $3 and
-                data_type = ANY($4)
+                created_time > $3
                 `,
     [contractId, userIds, new Date(seenTime).toISOString(), dataTypes],
     (row: { user_id: string }) => row.user_id
@@ -353,7 +352,7 @@ export const insertMarketMovementContractToUsersFeeds = async (
     ],
     'contract_probability_changed',
     [],
-    Date.now() - DAY_MS,
+    Date.now() - 12 * HOUR_MS,
     {
       currentProb: contract.prob,
       previousProb: contract.prob - contract.probChanges.day,

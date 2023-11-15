@@ -34,9 +34,10 @@ export async function addInterestingContractsToFeed(
   pg: SupabaseDirectClient,
   readOnly = false
 ) {
-  log(`Starting feed population. Querying candidate contracts...`)
+  log(`Starting feed population. Loading user embeddings to store...`)
   if (Object.keys(userInterestEmbeddings).length === 0)
     await loadUserEmbeddingsToStore(pg)
+  log(`Loaded users. Querying candidate contracts...`)
   const contracts = await pg.map(
     `select data, importance_score from contracts
             where importance_score >= 0.225
@@ -93,7 +94,7 @@ export async function addInterestingContractsToFeed(
       log('Inserting specifically today trending contract', contract.id)
       await insertTrendingContractToUsersFeeds(
         contract,
-        now - 5 * DAY_MS,
+        now - 3 * DAY_MS,
         {
           todayScore,
           thisWeekScore,
@@ -174,7 +175,9 @@ const getUserEmbeddingDetails = async (
       const lastBetTime = row.last_bet_time
       const createdTime = tsToMillis(row.created_time)
       const lastSeenTime =
-        row.last_seen_time == 0 ? tsToMillis(row.created_time) : row.last_seen_time
+        row.last_seen_time == 0
+          ? tsToMillis(row.created_time)
+          : row.last_seen_time
 
       newUserInterestEmbeddings[row.user_id] = {
         interest,
@@ -201,7 +204,11 @@ const loadUserEmbeddingsToStore = async (
   })
 
   if (!newUserInterestEmbeddings[DEFAULT_FEED_USER_ID]) {
-    const defaultUser = await getUserEmbeddingDetails(pg, 0, DEFAULT_FEED_USER_ID)
+    const defaultUser = await getUserEmbeddingDetails(
+      pg,
+      0,
+      DEFAULT_FEED_USER_ID
+    )
     userInterestEmbeddings[DEFAULT_FEED_USER_ID] =
       defaultUser[DEFAULT_FEED_USER_ID]
   }
