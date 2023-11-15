@@ -1,4 +1,3 @@
-import clsx from 'clsx'
 import { Col } from './layout/col'
 import { ExpandSection } from './explainer-panel'
 
@@ -7,7 +6,6 @@ export const TrustPanel = (props: { className?: string }) => {
   return (
     <div className={className}>
       <Col className="mx-auto">
-        <h2 className={clsx('text-ink-600 mb-2 text-xl')}>Common questions</h2>
         <WhyNotAlternatives />
         <PlayMoneyVsRealMoney />
         <ManipulationAndHype />

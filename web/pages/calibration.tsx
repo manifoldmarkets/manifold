@@ -249,7 +249,7 @@ export default function CalibrationPage(props: {
                           </InfoTooltip>
                           : {Math.round(score * 1e5) / 1e5}
                           <br />
-                          This number between 0 and 2 that tells us how good our
+                          This number between 0 and 1 that tells us how good our
                           predictions are. Closer to 0 is better. A score
                           between 0.1 and 0.2 is very good!
                         </li>
