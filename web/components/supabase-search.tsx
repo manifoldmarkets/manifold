@@ -1,6 +1,6 @@
 import { ArrowLeftIcon, ChevronDownIcon, XIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
-import { isEqual, sample, uniqBy } from 'lodash'
+import { sample, uniqBy } from 'lodash'
 import { ReactNode, useEffect, useRef, useState } from 'react'
 import { Contract } from 'common/contract'
 import { useEvent } from 'web/hooks/use-event'
@@ -43,7 +43,7 @@ import {
   traderColumn,
 } from './contract/contract-table-col-formats'
 import { buildArray } from 'common/util/array'
-import { ContractsTable } from './contract/contracts-table'
+import { ContractsTable, LoadingContractRow } from './contract/contracts-table'
 
 const USERS_PER_PAGE = 100
 const TOPICS_PER_PAGE = 100
@@ -252,6 +252,7 @@ export function SupabaseSearch(props: {
 
   const {
     contracts: rawContracts,
+    loading,
     queryContracts,
     shouldLoadMore,
   } = useContractSearch(
@@ -287,7 +288,7 @@ export function SupabaseSearch(props: {
   }, [query])
 
   useEffect(() => {
-    if (topicSlug && topicSlug !== 'for-you' && searchTypeShown) {
+    if (topicSlug !== 'for-you' && searchTypeShown) {
       setSearchTypeShown(false)
       setSearchParams({ [SEARCH_TYPE_KEY]: '' })
     } else if (!showSearchTypes && topicSlug === '' && query === '') {
@@ -313,17 +314,18 @@ export function SupabaseSearch(props: {
 
   const searchCountRef = useRef(0)
   useEffect(() => {
-    if (!searchParams || isEqual(searchParams, lastSearch)) return
     const searchCount = ++searchCountRef.current
-
     queryContracts(true)
-    queryUsers(query).then((results) => {
-      if (searchCount === searchCountRef.current) setQueriedUserResults(results)
-    })
-    queryTopics(query).then((results) => {
-      if (searchCount === searchCountRef.current) setTopicResults?.(results)
-    })
-  }, [JSON.stringify(searchParams)])
+    if (query !== lastSearch?.[QUERY_KEY]) {
+      queryUsers(query).then((results) => {
+        if (searchCount === searchCountRef.current)
+          setQueriedUserResults(results)
+      })
+      queryTopics(query).then((results) => {
+        if (searchCount === searchCountRef.current) setTopicResults?.(results)
+      })
+    }
+  }, [query, topicSlug, sort, filter, contractType])
 
   const emptyContractsState =
     props.emptyState ??
@@ -367,13 +369,17 @@ export function SupabaseSearch(props: {
               />
               {query !== '' && (
                 <IconButton
-                  className={'absolute right-2 top-2.5 p-0'}
+                  className={'absolute right-2 top-1/2 -translate-y-1/2'}
                   size={'2xs'}
                   onClick={() => {
                     setSearchParams({ [QUERY_KEY]: '' })
                   }}
                 >
-                  <XIcon className={'h-5 w-5 rounded-full'} />
+                  {loading ? (
+                    <LoadingIndicator size="sm" />
+                  ) : (
+                    <XIcon className={'h-5 w-5 rounded-full'} />
+                  )}
                 </IconButton>
               )}
             </Row>
@@ -418,7 +424,7 @@ export function SupabaseSearch(props: {
                 ? ''
                 : numHits >= 100
                 ? '100+ '
-                : option === 'Questions' && shouldLoadMore
+                : option === 'Questions' && shouldLoadMore && !loading
                 ? `${numHits}+ `
                 : `${numHits} `
             return (
@@ -440,7 +446,7 @@ export function SupabaseSearch(props: {
       )}
       {searchType === '' || searchType === 'Questions' ? (
         !contracts ? (
-          <LoadingIndicator />
+          <LoadingResults />
         ) : contracts.length === 0 ? (
           emptyContractsState
         ) : (
@@ -457,22 +463,23 @@ export function SupabaseSearch(props: {
               headerClassName={clsx(headerClassName, '!top-14')}
             />
             <LoadMoreUntilNotVisible loadMore={queryContracts} />
+            {shouldLoadMore && <LoadingResults />}
             {!shouldLoadMore && (filter !== 'all' || contractType !== 'ALL') && (
-                <div className="text-ink-500 mx-2 my-8 text-center">
-                  No more results under this filter.{' '}
-                  <button
-                    className="text-primary-500 hover:underline"
-                    onClick={() =>
-                      setSearchParams({
-                        [FILTER_KEY]: 'all',
-                        [CONTRACT_TYPE_KEY]: 'ALL',
-                      })
-                    }
-                  >
-                    Clear filter
-                  </button>
-                  ?
-                </div>
+              <div className="text-ink-500 mx-2 my-8 text-center">
+                No more results under this filter.{' '}
+                <button
+                  className="text-primary-500 hover:underline"
+                  onClick={() =>
+                    setSearchParams({
+                      [FILTER_KEY]: 'all',
+                      [CONTRACT_TYPE_KEY]: 'ALL',
+                    })
+                  }
+                >
+                  Clear filter
+                </button>
+                ?
+              </div>
             )}
           </>
         )
@@ -557,6 +564,16 @@ const NoResults = () => {
   return <div className="text-ink-700 mx-2 my-6 text-center">{message}</div>
 }
 
+const LoadingResults = () => {
+  return (
+    <Col className="w-full">
+      <LoadingContractRow />
+      <LoadingContractRow />
+      <LoadingContractRow />
+    </Col>
+  )
+}
+
 const FRESH_SEARCH_CHANGED_STATE: SearchState = {
   contracts: undefined,
   shouldLoadMore: true,
@@ -573,6 +590,7 @@ const useContractSearch = (
     FRESH_SEARCH_CHANGED_STATE,
     `${persistPrefix}-supabase-contract-search`
   )
+  const [loading, setLoading] = useState(false)
 
   const requestId = useRef(0)
 
@@ -587,14 +605,18 @@ const useContractSearch = (
     } = searchParams
     setLastSearch(searchParams)
 
-    if (freshQuery) {
-      setState(FRESH_SEARCH_CHANGED_STATE)
-    }
-
     const offset = freshQuery ? 0 : state.contracts?.length ?? 0
 
     if (freshQuery || state.shouldLoadMore) {
       const id = ++requestId.current
+      let timeoutId: NodeJS.Timeout | undefined
+      if (freshQuery) {
+        timeoutId = setTimeout(() => {
+          if (id === requestId.current) {
+            setLoading(true)
+          }
+        }, 500)
+      }
 
       const newContracts = await searchContracts({
         term: query,
@@ -618,6 +640,9 @@ const useContractSearch = (
           contracts: freshContracts,
           shouldLoadMore,
         })
+        clearTimeout(timeoutId)
+        setLoading(false)
+
         if (freshQuery && isWholePage) window.scrollTo(0, 0)
 
         return shouldLoadMore
@@ -643,6 +668,7 @@ const useContractSearch = (
 
   return {
     contracts,
+    loading,
     shouldLoadMore: state.shouldLoadMore,
     queryContracts,
   }
