@@ -18,6 +18,7 @@ import {
 } from 'common/contract'
 import {
   MINIMUM_BOUNTY,
+  SMALL_UNIQUE_BETTOR_BONUS_AMOUNT,
   UNIQUE_ANSWER_BETTOR_BONUS_AMOUNT,
   UNIQUE_BETTOR_BONUS_AMOUNT,
 } from 'common/economy'
@@ -626,7 +627,6 @@ export function ContractParamsForm(props: {
             setHasChosenCategory(true)
           }}
           ignoreGroupIds={selectedGroups.map((g) => g.id)}
-          newContract={true}
         />
       </Col>
 
@@ -768,7 +768,9 @@ export function ContractParamsForm(props: {
                           )} for each unique trader you get on each answer.`
                         : `You'll earn a bonus of ${formatMoney(
                             UNIQUE_BETTOR_BONUS_AMOUNT
-                          )} for each unique trader you get on your question.`
+                          )} for each unique trader you get on your question, up to 50 traders. Then ${formatMoney(
+                            SMALL_UNIQUE_BETTOR_BONUS_AMOUNT
+                          )} for every unique trader after that.`
                     }
                   />
                 </span>

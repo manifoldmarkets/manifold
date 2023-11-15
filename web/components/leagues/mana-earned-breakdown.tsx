@@ -97,11 +97,7 @@ export const ManaEarnedBreakdown = (props: {
     >
       <Col>
         <Row className="mb-2 items-center gap-4">
-          <UserAvatarAndBadge
-            name={user.name}
-            username={user.username}
-            avatarUrl={user.avatarUrl}
-          />
+          <UserAvatarAndBadge user={user} />
         </Row>
         <Subtitle className="text-ink-800 !mb-2 !mt-2">Mana earned</Subtitle>
         <Table className="text-base">

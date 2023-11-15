@@ -99,11 +99,7 @@ export default function PostPage(props: {
         <Row className="mt-4 items-center">
           <div className="flex px-2">
             <div className="text-ink-500 mr-1">Created by</div>
-            <UserLink
-              className="text-ink-700"
-              name={creator.name}
-              username={creator.username}
-            />
+            <UserLink className="text-ink-700" user={creator} />
           </div>
           <Row className="items-center sm:pr-2">
             <CopyLinkOrShareButton

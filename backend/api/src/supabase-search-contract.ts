@@ -6,8 +6,12 @@ import {
   hasGroupAccess,
   getSearchContractSQL,
   getForYouSQL,
+  SearchTypes,
+  sortFields,
 } from 'shared/supabase/search-contracts'
 import { getGroupIdFromSlug } from 'shared/supabase/groups'
+import { orderBy, uniqBy } from 'lodash'
+import { convertContract } from 'common/supabase/contracts'
 
 export const supabasesearchcontracts = MaybeAuthedEndpoint(
   async (req, auth) => {
@@ -41,12 +45,31 @@ export const searchContracts = async (
   const groupId = topicSlug
     ? await getGroupIdFromSlug(topicSlug, pg)
     : undefined
-
-  const searchMarketSQL =
-    isForYou && !term && sort === 'score' && userId
-      ? getForYouSQL(userId, filter, contractType, limit, offset)
-      : getSearchContractSQL({
-          term,
+  let contracts
+  if (isForYou && !term && sort === 'score' && userId) {
+    const forYouSql = getForYouSQL(userId, filter, contractType, limit, offset)
+    contracts = await pg.map(forYouSql, [term], (r) => r.data as Contract)
+  } else {
+    const groupAccess = await hasGroupAccess(groupId, userId)
+    const searchTypes: SearchTypes[] = [
+      'prefix',
+      'without-stopwords',
+      'answer',
+      'with-stopwords',
+      'description',
+    ]
+    const [
+      contractPrefixMatches,
+      contractsWithoutStopwords,
+      contractsWithMatchingAnswers,
+      contractsWithStopwords,
+      contractDescriptionMatches,
+    ] = await Promise.all(
+      searchTypes.map(async (searchType) => {
+        const searchTerm =
+          searchType === 'prefix' ? constructPrefixTsQuery(term) : term
+        const searchSQL = getSearchContractSQL({
+          term: searchTerm,
           filter,
           sort,
           contractType,
@@ -56,14 +79,43 @@ export const searchContracts = async (
           creatorId,
           uid: userId,
           isForYou,
-          hasGroupAccess: await hasGroupAccess(groupId, userId),
+          groupAccess,
+          searchType,
         })
+        return pg
+          .map(searchSQL, [searchTerm], (r) => ({
+            data: convertContract(r),
+            searchType,
+          }))
+          .catch((e) => {
+            // to_tsquery is sensitive to special characters and can throw an error
+            console.error(`Error with type: ${searchType} for term: ${term}`)
+            console.error(e)
+            return []
+          })
+      })
+    )
+    const contractsOfSimilarRelevance = orderBy(
+      [
+        ...contractsWithoutStopwords,
+        ...contractsWithMatchingAnswers,
+        ...contractPrefixMatches,
+      ],
+      (c) =>
+        sortFields[sort].sortCallback(c.data) *
+        (c.searchType === 'answer' ? 0.5 : 1),
+      sortFields[sort].order.includes('DESC') ? 'desc' : 'asc'
+    )
 
-  const contracts = await pg.map(
-    searchMarketSQL,
-    [term],
-    (r) => r.data as Contract
-  )
+    contracts = uniqBy(
+      [
+        ...contractsOfSimilarRelevance,
+        ...contractsWithStopwords,
+        ...contractDescriptionMatches,
+      ].map((c) => c.data),
+      'id'
+    ).slice(0, limit)
+  }
 
   return (contracts ?? []) as unknown as Json
 }
@@ -118,3 +170,12 @@ const bodySchema = z
     creatorId: z.string().regex(FIRESTORE_DOC_REF_ID_REGEX).optional(),
   })
   .strict()
+
+export const constructPrefixTsQuery = (term: string) => {
+  const trimmed = term.trim()
+  if (trimmed === '') return ''
+  const sanitizedTrimmed = trimmed.replace(/'/g, "''").replace(/[!&|():*]/g, '')
+  const tokens = sanitizedTrimmed.split(' ')
+  tokens[tokens.length - 1] += ':*'
+  return tokens.join(' & ')
+}

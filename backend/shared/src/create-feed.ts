@@ -23,7 +23,7 @@ import {
   getUsersWithSimilarInterestVectorToNews,
 } from 'shared/supabase/users'
 import { convertObjectToSQLRow, Row } from 'common/supabase/utils'
-import { DAY_MS } from 'common/util/time'
+import { DAY_MS, HOUR_MS } from 'common/util/time'
 import { User } from 'common/user'
 import { fromPairs, groupBy, maxBy, uniq } from 'lodash'
 import { removeUndefinedProps } from 'common/util/object'
@@ -151,11 +151,10 @@ const userIdsWithFeedRowsMatchingContract = async (
 ) => {
   return await pg.map(
     `select distinct user_id
-            from user_feed
+            from user_seen_markets
             where contract_id = $1 and
                 user_id = ANY($2) and
-                greatest(created_time, seen_time) > $3 and
-                data_type = ANY($4)
+                created_time > $3
                 `,
     [contractId, userIds, new Date(seenTime).toISOString(), dataTypes],
     (row: { user_id: string }) => row.user_id
@@ -192,51 +191,6 @@ export const addCommentOnContractToFeed = async (
     pg
   )
 }
-//TODO: before adding, exclude those users who:
-// - have it in their notifications: users in reply thread, mentioned, creator of the contract
-// - creator of the comment & reaction
-// - have already seen the comment
-// - already have the comment in their feed (unique by contract id, comment id, user id)
-// export const addLikedCommentOnContractToFeed = async (
-//   contractId: string,
-//   reaction: Reaction,
-//   comment: Comment,
-//   userIdsToExclude: string[],
-//   idempotencyKey?: string
-// ) => {
-//   const pg = createSupabaseDirectClient()
-//   const usersToReasonsInterestedInContract =
-//     await getUserToReasonsInterestedInContractAndUser(
-//       contractId,
-//       reaction.userId,
-//       pg,
-//       [
-//         'follow_user',
-//         'contract_in_group_you_are_in',
-//         'similar_interest_vector_to_contract',
-//       ],
-//       INTEREST_DISTANCE_THRESHOLDS.popular_comment
-//     )
-//   await Promise.all(
-//     Object.keys(usersToReasonsInterestedInContract).map(async (userId) =>
-//       insertDataToUserFeed(
-//         userId,
-//         reaction.createdTime,
-//         'popular_comment',
-//         usersToReasonsInterestedInContract[userId],
-//         userIdsToExclude,
-//         {
-//           contractId,
-//           commentId: comment.id,
-//           creatorId: reaction.userId,
-//           reactionId: reaction.id,
-//           idempotencyKey,
-//         },
-//         pg
-//       )
-//     )
-//   )
-// }
 
 export const addContractToFeed = async (
   contract: Contract,
@@ -398,7 +352,7 @@ export const insertMarketMovementContractToUsersFeeds = async (
     ],
     'contract_probability_changed',
     [],
-    Date.now() - DAY_MS,
+    Date.now() - 12 * HOUR_MS,
     {
       currentProb: contract.prob,
       previousProb: contract.prob - contract.probChanges.day,

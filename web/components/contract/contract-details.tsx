@@ -21,8 +21,7 @@ import { FaHourglassEnd, FaHourglassHalf } from 'react-icons/fa6'
 
 export function AuthorInfo(props: { contract: Contract }) {
   const { contract } = props
-  const { creatorName, creatorUsername, creatorAvatarUrl, creatorCreatedTime } =
-    contract
+  const { creatorId, creatorName, creatorUsername, creatorAvatarUrl } = contract
 
   return (
     <Row className="grow items-center gap-2">
@@ -35,9 +34,11 @@ export function AuthorInfo(props: { contract: Contract }) {
       </div>
 
       <UserLink
-        name={creatorName}
-        username={creatorUsername}
-        createdTime={creatorCreatedTime}
+        user={{
+          id: creatorId,
+          name: creatorName,
+          username: creatorUsername,
+        }}
       />
 
       <FollowButton userId={contract.creatorId} size="2xs" />

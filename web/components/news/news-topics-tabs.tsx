@@ -5,6 +5,9 @@ import { buildArray } from 'common/util/array'
 import { NewsDashboard } from './news-dashboard'
 import { Dashboard } from 'common/dashboard'
 import { LinkPreviews } from 'common/link-preview'
+import { useRouter } from 'next/router'
+
+const MORE_LABEL = 'All Dashboards'
 
 export function NewsTopicsTabs(props: {
   dashboards: Dashboard[]
@@ -13,6 +16,8 @@ export function NewsTopicsTabs(props: {
   dontScroll?: boolean
 }) {
   const { dashboards, previews, homeContent, dontScroll } = props
+
+  const router = useRouter()
 
   const topics = buildArray<Tab>(
     !!homeContent && {
@@ -23,7 +28,11 @@ export function NewsTopicsTabs(props: {
     dashboards.map((d) => ({
       title: d.title,
       content: <NewsDashboard dashboard={d} previews={previews} />,
-    }))
+    })),
+    !!homeContent && {
+      title: MORE_LABEL,
+      content: null,
+    }
   )
   return (
     <Col className="w-full gap-2 px-1 pb-8 sm:mx-auto sm:gap-6">
@@ -32,6 +41,11 @@ export function NewsTopicsTabs(props: {
         trackingName="news tabs"
         scrollToTop={!dontScroll}
         tabs={topics}
+        onClick={(tab) => {
+          if (tab === MORE_LABEL) {
+            router.push('/dashboard')
+          }
+        }}
       />
     </Col>
   )

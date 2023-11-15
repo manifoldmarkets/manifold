@@ -126,8 +126,15 @@ function ProfileCommentGroup(props: {
 
 function ProfileComment(props: { comment: ContractComment }) {
   const { comment } = props
-  const { text, content, userUsername, userName, userAvatarUrl, createdTime } =
-    comment
+  const {
+    text,
+    content,
+    userId,
+    userUsername,
+    userName,
+    userAvatarUrl,
+    createdTime,
+  } = comment
 
   return (
     <Row className="relative flex items-start space-x-3">
@@ -136,8 +143,11 @@ function ProfileComment(props: { comment: ContractComment }) {
         <p className="text-ink-500 mt-0.5 text-sm">
           <UserLink
             className="text-ink-500"
-            username={userUsername}
-            name={userName}
+            user={{
+              id: userId,
+              name: userName,
+              username: userUsername,
+            }}
           />{' '}
           <RelativeTimestamp time={createdTime} />
         </p>

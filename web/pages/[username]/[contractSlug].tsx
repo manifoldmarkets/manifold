@@ -8,7 +8,7 @@ import {
 } from 'common/chart'
 import { ContractParams, MaybeAuthedContractParams } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
-import { HOUSE_BOT_USERNAME, isTrustworthy } from 'common/envs/constants'
+import { HOUSE_BOT_USERNAME } from 'common/envs/constants'
 import { getTopContractMetrics } from 'common/supabase/contract-metrics'
 import { User } from 'common/user'
 import { first, mergeWith } from 'lodash'
@@ -44,7 +44,7 @@ import { NumericResolutionPanel } from 'web/components/numeric-resolution-panel'
 import { ResolutionPanel } from 'web/components/resolution-panel'
 import { Rating, ReviewPanel } from 'web/components/reviews/stars'
 import { GradientContainer } from 'web/components/widgets/gradient-container'
-import { useAdmin } from 'web/hooks/use-admin'
+import { useAdmin, useTrusted } from 'web/hooks/use-admin'
 import { useAnswersCpmm } from 'web/hooks/use-answers'
 import { useRealtimeBets } from 'web/hooks/use-bets-supabase'
 import {
@@ -260,13 +260,12 @@ export function ContractPageContent(props: ContractParams) {
     closeTime,
     creatorId,
     coverImageUrl,
-    uniqueBettorCount,
   } = contract
 
   const isAdmin = useAdmin()
+  const isMod = useTrusted()
   const isCreator = creatorId === user?.id
   const isClosed = !!(closeTime && closeTime < Date.now())
-  const trustworthy = isTrustworthy(user?.username)
   const [showResolver, setShowResolver] = useState(false)
 
   const [showReview, setShowReview] = useState(false)
@@ -428,7 +427,7 @@ export function ContractPageContent(props: ContractParams) {
 
                 <ContractSummaryStats
                   contract={contract}
-                  editable={isCreator || isAdmin || trustworthy}
+                  editable={isCreator || isAdmin || isMod}
                 />
               </div>
               <ContractOverview

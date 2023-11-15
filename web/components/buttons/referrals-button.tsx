@@ -146,10 +146,7 @@ export function ReferralsDialog(props: {
                             username={referredByUser.username}
                             avatarUrl={referredByUser.avatarUrl}
                           />
-                          <UserLink
-                            username={referredByUser.username}
-                            name={referredByUser.name}
-                          />
+                          <UserLink user={referredByUser} />
                         </Row>
                       ) : (
                         <span className={'text-ink-500'}>No one...</span>
@@ -184,12 +181,7 @@ export function ReferralsDialog(props: {
                             username={refUser?.username}
                             avatarUrl={refUser?.avatarUrl}
                           />
-                          {refUser && (
-                            <UserLink
-                              name={refUser.name}
-                              username={refUser.username}
-                            />
-                          )}
+                          {refUser && <UserLink user={refUser} />}
                         </Row>
                       </Row>
                     ))

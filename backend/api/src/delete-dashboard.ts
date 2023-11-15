@@ -1,9 +1,8 @@
 import { z } from 'zod'
 
-import { isAdminId, isTrustworthy } from 'common/envs/constants'
+import { isAdminId, isModId } from 'common/envs/constants'
 import { APIError, authEndpoint, validate } from './helpers'
 import { createSupabaseClient } from 'shared/supabase/init'
-import { getUserSupabase } from 'shared/utils'
 import { track } from 'shared/analytics'
 
 const schema = z
@@ -15,8 +14,7 @@ const schema = z
 export const deletedashboard = authEndpoint(async (req, auth) => {
   const { dashboardId } = validate(schema, req.body)
 
-  const user = await getUserSupabase(auth.uid)
-  if (!isAdminId(auth.uid) && !isTrustworthy(user?.username)) {
+  if (!isAdminId(auth.uid) && !isModId(auth.uid)) {
     throw new APIError(403, 'You are not an admin or mod')
   }
 
@@ -31,7 +29,7 @@ export const deletedashboard = authEndpoint(async (req, auth) => {
     throw new APIError(500, 'Failed to delete dashboard' + error.message)
   }
 
-  track(auth.uid, 'delete-dashboard', { dashboardId, username: user?.username })
+  track(auth.uid, 'delete-dashboard', { dashboardId })
 
   return { status: 'success' }
 })

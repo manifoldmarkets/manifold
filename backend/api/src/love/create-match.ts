@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import * as dayjs from 'dayjs'
 import { APIError, authEndpoint, validate } from 'api/helpers'
 import {
   createSupabaseClient,
@@ -7,7 +8,7 @@ import {
 } from 'shared/supabase/init'
 import { getPrivateUser, getUser } from 'shared/utils'
 import { createMarketHelper } from '../create-market'
-import { Contract } from 'common/contract'
+import { CPMMMultiContract, Contract } from 'common/contract'
 import { placeBetMain } from '../place-bet'
 import { User } from 'common/user'
 import * as crypto from 'crypto'
@@ -20,6 +21,7 @@ import {
   manifoldLoveUserId,
 } from 'common/love/constants'
 import { sendNewMatchEmail } from 'shared/emails'
+import { DAY_MS, HOUR_MS, MONTH_MS, YEAR_MS } from 'common/util/time'
 
 const createMatchSchema = z.object({
   userId1: z.string(),
@@ -31,6 +33,15 @@ const MATCH_CREATION_FEE = 10
 
 export const createMatch = authEndpoint(async (req, auth) => {
   const { userId1, userId2, betAmount } = validate(createMatchSchema, req.body)
+  return await createMatchMain(auth.uid, userId1, userId2, betAmount)
+})
+
+export const createMatchMain = async (
+  authUserId: string,
+  userId1: string,
+  userId2: string,
+  betAmount: number
+) => {
   if (userId1 === userId2) {
     throw new APIError(400, `User ${userId1} cannot match with themselves.`)
   }
@@ -38,12 +49,12 @@ export const createMatch = authEndpoint(async (req, auth) => {
   const db = createSupabaseClient()
 
   const [matchCreator, user1, user2] = await Promise.all([
-    getUser(auth.uid),
+    getUser(authUserId),
     getUser(userId1),
     getUser(userId2),
   ])
   if (!matchCreator) {
-    throw new APIError(404, `User ${auth.uid} does not exist.`)
+    throw new APIError(404, `User ${authUserId} does not exist.`)
   }
   if (!user1) {
     throw new APIError(404, `User ${userId1} does not exist.`)
@@ -81,12 +92,12 @@ export const createMatch = authEndpoint(async (req, auth) => {
     throw new APIError(400, `User ${userId1} is blocked by ${userId2}.`)
   }
   if (
-    privateUser1.blockedUserIds?.includes(auth.uid) ||
-    privateUser2.blockedUserIds?.includes(auth.uid)
+    privateUser1.blockedUserIds?.includes(authUserId) ||
+    privateUser2.blockedUserIds?.includes(authUserId)
   ) {
     throw new APIError(
       400,
-      `User ${auth.uid} is blocked by ${userId1} or ${userId2}.`
+      `User ${authUserId} is blocked by ${userId1} or ${userId2}.`
     )
   }
 
@@ -98,50 +109,83 @@ export const createMatch = authEndpoint(async (req, auth) => {
     [userId1, userId2],
     (r) => r.data
   )
-  if (loverContracts.length > 0) {
+  const unresolvedMultiLoverContracts = loverContracts.filter(
+    (c) => !c.isResolved && c.outcomeType === 'MULTIPLE_CHOICE'
+  )
+  if (unresolvedMultiLoverContracts.length > 0) {
     console.log('loverContracts', loverContracts)
-    throw new APIError(400, `Match already exists.`)
+    throw new APIError(400, `Match market already exists.`)
   }
 
-  const contract = await createMarketHelper(
+  const thirtyDaysLaterStr = dayjs(
+    Date.now() + DAY_MS * 30 + 7 * HOUR_MS
+  ).format('MMM D')
+  const eightMonthsLater = new Date(Date.now() + 8 * MONTH_MS)
+
+  const contract = (await createMarketHelper(
     {
-      question: `Will @${user1.username} and @${user2.username} date for six months?`,
-      descriptionMarkdown: `Check out the profiles of these two and bet on their long term compatibility!
-
-[${user1.name}](https://manifold.love/${user1.username})
-
-[${user2.name}](https://manifold.love/${user2.username})`,
-      extraLiquidity: 950,
-      outcomeType: 'BINARY',
+      question: `Relationship of @${user1.username} & @${user2.username}`,
+      answers: [
+        `First date by ${thirtyDaysLaterStr}?`,
+        `If first date, second date within one month?`,
+        `If second date, third date within one month?`,
+        `If third date, continue relationship for six months?`,
+      ],
+      descriptionMarkdown: `Are [${user1.name}](https://manifold.love/${user1.username}) and [${user2.name}](https://manifold.love/${user2.username}) a good match? Bet on whether they will hit any of these relationship milestones! 
+  
+  
+Each of the milestones beyond the first date is conditional on the previous milestone. For example, if the first date answer resolves NO, the others will resolve N/A.
+  
+  
+See [FAQ](https://manifold.love/faq) for more details.`,
+      extraLiquidity: 500,
+      outcomeType: 'MULTIPLE_CHOICE',
+      shouldAnswersSumToOne: false,
+      addAnswersMode: 'DISABLED',
       groupIds: [manifoldLoveRelationshipsGroupId],
       visibility: 'public',
-      closeTime: new Date('2100-01-01'),
-      initialProb: 15,
+      closeTime: eightMonthsLater,
       loverUserId1: userId1,
       loverUserId2: userId2,
     },
     { uid: manifoldLoveUserId, creds: undefined as any }
+  )) as CPMMMultiContract
+
+  const { answers } = contract
+
+  const noBetAmounts = [300, 300, 100, 300]
+  await Promise.all(
+    answers.map(async (a, i) => {
+      await placeBetMain(
+        {
+          contractId: contract.id,
+          answerId: a.id,
+          amount: noBetAmounts[i],
+          outcome: 'NO',
+        },
+        manifoldLoveUserId,
+        true
+      )
+    })
   )
 
-  await placeBetMain(
-    {
-      contractId: contract.id,
-      amount: 10000,
-      outcome: 'NO',
-    },
-    manifoldLoveUserId,
-    true
+  const amountAfterFee = betAmount - MATCH_CREATION_FEE
+  const amountPerAnswer = amountAfterFee / answers.length
+  await Promise.all(
+    answers.map(async (a) => {
+      await placeBetMain(
+        {
+          contractId: contract.id,
+          answerId: a.id,
+          amount: amountPerAnswer,
+          outcome: 'YES',
+        },
+        matchCreator.id,
+        true
+      )
+    })
   )
 
-  await placeBetMain(
-    {
-      contractId: contract.id,
-      amount: betAmount - MATCH_CREATION_FEE,
-      outcome: 'YES',
-    },
-    matchCreator.id,
-    true
-  )
   if (matchCreator.id !== user1.id) {
     await createNewMatchNotification(user1, matchCreator, user2, contract, pg)
   }
@@ -153,7 +197,7 @@ export const createMatch = authEndpoint(async (req, auth) => {
     success: true,
     contract,
   }
-})
+}
 
 const createNewMatchNotification = async (
   forUser: User,
@@ -165,8 +209,7 @@ const createNewMatchNotification = async (
   const privateUser = await getPrivateUser(forUser.id)
   if (!privateUser) return
   const id = crypto.randomUUID()
-  //TODO: We should probably build matches their own notification preference
-  const reason = 'tagged_user'
+  const reason = 'new_match'
   const { sendToBrowser, sendToMobile, sendToEmail } =
     getNotificationDestinationsForUser(privateUser, reason)
   const sourceText = `Check out @${matchedUser.username} now!`
@@ -177,7 +220,7 @@ const createNewMatchNotification = async (
     createdTime: Date.now(),
     isSeen: false,
     sourceId: contract.id,
-    sourceType: 'new_match',
+    sourceType: reason,
     sourceUpdateType: 'created',
     sourceUserName: matchMaker.name,
     sourceUserUsername: matchMaker.username,
@@ -207,10 +250,11 @@ const createNewMatchNotification = async (
   }
   if (sendToEmail) {
     await sendNewMatchEmail(
-      'tagged_user',
+      reason,
       privateUser,
       contract,
-      matchMaker.name
+      matchMaker.name,
+      matchedUser
     )
   }
 }

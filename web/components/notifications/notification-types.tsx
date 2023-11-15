@@ -33,7 +33,6 @@ import {
   ProbPercentLabel,
 } from 'web/components/outcome-label'
 import { Avatar } from 'web/components/widgets/avatar'
-import { UserLink } from 'web/components/widgets/user-link'
 import { useContract } from 'web/hooks/use-contract-supabase'
 import { useGroupsWithContract } from 'web/hooks/use-group-supabase'
 import { Rating, ReviewPanel } from '../reviews/stars'
@@ -45,6 +44,7 @@ import {
   NotificationFrame,
   NotificationIcon,
   NotificationTextLabel,
+  NotificationUserLink,
   PrimaryNotificationLink,
   QuestionOrGroupLink,
 } from './notification-helpers'
@@ -628,6 +628,7 @@ export function MarketResolvedNotification(props: {
   const {
     sourceText,
     data,
+    sourceId,
     sourceUserName,
     sourceUserUsername,
     sourceContractTitle,
@@ -698,10 +699,10 @@ export function MarketResolvedNotification(props: {
   const content =
     sourceText === 'CANCEL' ? (
       <>
-        <UserLink
-          name={sourceUserName || ''}
-          username={sourceUserUsername || ''}
-          className={'hover:text-primary-500 relative flex-shrink-0'}
+        <NotificationUserLink
+          userId={sourceId}
+          name={sourceUserName}
+          username={sourceUserUsername}
         />{' '}
         cancelled {isChildOfGroup && <span>the question</span>}
         {!isChildOfGroup && (
@@ -716,10 +717,10 @@ export function MarketResolvedNotification(props: {
       </>
     ) : (
       <>
-        <UserLink
-          name={sourceUserName || ''}
-          username={sourceUserUsername || ''}
-          className={'hover:text-primary-500 relative flex-shrink-0'}
+        <NotificationUserLink
+          userId={sourceId}
+          name={sourceUserName}
+          username={sourceUserUsername}
         />{' '}
         resolved {isChildOfGroup && <span>the question</span>}
         {!isChildOfGroup && (
@@ -839,7 +840,7 @@ function NewMarketNotification(props: {
   isChildOfGroup?: boolean
 }) {
   const { notification, isChildOfGroup, highlighted, setHighlighted } = props
-  const { sourceContractTitle, sourceUserName, sourceUserUsername } =
+  const { sourceContractTitle, sourceId, sourceUserName, sourceUserUsername } =
     notification
   return (
     <NotificationFrame
@@ -853,10 +854,10 @@ function NewMarketNotification(props: {
       link={getSourceUrl(notification)}
     >
       <div className="line-clamp-3">
-        <UserLink
-          name={sourceUserName || ''}
-          username={sourceUserUsername || ''}
-          className={'hover:text-primary-500 relative flex-shrink-0'}
+        <NotificationUserLink
+          userId={sourceId}
+          name={sourceUserName}
+          username={sourceUserUsername}
         />{' '}
         <span>
           asked <PrimaryNotificationLink text={sourceContractTitle} />
@@ -875,6 +876,7 @@ function NewPrivateMarketNotification(props: {
   const { notification, isChildOfGroup, highlighted, setHighlighted } = props
   const {
     sourceContractTitle,
+    sourceId,
     sourceUserName,
     sourceUserUsername,
     sourceContractId,
@@ -893,10 +895,10 @@ function NewPrivateMarketNotification(props: {
       link={getSourceUrl(notification)}
     >
       <div className="line-clamp-3">
-        <UserLink
-          name={sourceUserName || ''}
-          username={sourceUserUsername || ''}
-          className={'hover:text-primary-500 relative flex-shrink-0'}
+        <NotificationUserLink
+          userId={sourceId}
+          name={sourceUserName}
+          username={sourceUserUsername}
         />{' '}
         <span>
           asked <PrimaryNotificationLink text={sourceContractTitle} />
@@ -926,6 +928,7 @@ function MarketUpdateNotification(props: {
   const { notification, isChildOfGroup, highlighted, setHighlighted } = props
   const {
     sourceContractTitle,
+    sourceId,
     sourceUserName,
     sourceUserUsername,
     sourceUpdateType,
@@ -954,10 +957,10 @@ function MarketUpdateNotification(props: {
       link={getSourceUrl(notification)}
     >
       <div className="line-clamp-3">
-        <UserLink
-          name={sourceUserName || ''}
-          username={sourceUserUsername || ''}
-          className={'hover:text-primary-500 relative flex-shrink-0'}
+        <NotificationUserLink
+          userId={sourceId}
+          name={sourceUserName}
+          username={sourceUserUsername}
         />{' '}
         <span>
           {action}{' '}
@@ -979,6 +982,7 @@ function CommentNotification(props: {
 }) {
   const { notification, isChildOfGroup, highlighted, setHighlighted } = props
   const {
+    sourceId,
     sourceUserName,
     sourceUserUsername,
     reason,
@@ -1011,10 +1015,10 @@ function CommentNotification(props: {
       link={getSourceUrl(notification)}
     >
       <div className="line-clamp-3">
-        <UserLink
-          name={sourceUserName || ''}
-          username={sourceUserUsername || ''}
-          className={'hover:text-primary-500 relative flex-shrink-0'}
+        <NotificationUserLink
+          userId={sourceId}
+          name={sourceUserName}
+          username={sourceUserUsername}
         />{' '}
         {reasonText}
         {!isChildOfGroup && (
@@ -1033,7 +1037,7 @@ function BetReplyNotification(props: {
   isChildOfGroup?: boolean
 }) {
   const { notification, isChildOfGroup, highlighted, setHighlighted } = props
-  const { sourceUserName, sourceUserUsername, sourceContractTitle } =
+  const { sourceId, sourceUserName, sourceUserUsername, sourceContractTitle } =
     notification
   const { betOutcome, betAmount, commentText } =
     notification.data as BetReplyNotificationData
@@ -1051,10 +1055,10 @@ function BetReplyNotification(props: {
       link={getSourceUrl(notification)}
     >
       <div className="line-clamp-3">
-        <UserLink
-          name={sourceUserName || ''}
-          username={sourceUserUsername || ''}
-          className={'hover:text-primary-500 relative flex-shrink-0'}
+        <NotificationUserLink
+          userId={sourceId}
+          name={sourceUserName}
+          username={sourceUserUsername}
         />{' '}
         bet{' '}
         <span
@@ -1083,6 +1087,7 @@ function AnswerNotification(props: {
 }) {
   const { notification, isChildOfGroup, highlighted, setHighlighted } = props
   const {
+    sourceId,
     sourceUserName,
     sourceUserUsername,
     sourceText,
@@ -1101,10 +1106,10 @@ function AnswerNotification(props: {
       link={getSourceUrl(notification)}
     >
       <div className="line-clamp-3">
-        <UserLink
-          name={sourceUserName || ''}
-          username={sourceUserUsername || ''}
-          className={'hover:text-primary-500 relative flex-shrink-0'}
+        <NotificationUserLink
+          userId={sourceId}
+          name={sourceUserName}
+          username={sourceUserUsername}
         />{' '}
         answered{' '}
         {!isChildOfGroup && (
@@ -1124,7 +1129,7 @@ function TaggedUserNotification(props: {
   isChildOfGroup?: boolean
 }) {
   const { notification, isChildOfGroup, highlighted, setHighlighted } = props
-  const { sourceUserName, sourceUserUsername, sourceContractTitle } =
+  const { sourceId, sourceUserName, sourceUserUsername, sourceContractTitle } =
     notification
   return (
     <NotificationFrame
@@ -1138,10 +1143,10 @@ function TaggedUserNotification(props: {
       link={getSourceUrl(notification)}
     >
       <div className="line-clamp-3">
-        <UserLink
-          name={sourceUserName || ''}
-          username={sourceUserUsername || ''}
-          className={'hover:text-primary-500 relative flex-shrink-0'}
+        <NotificationUserLink
+          userId={sourceId}
+          name={sourceUserName}
+          username={sourceUserUsername}
         />{' '}
         tagged you{' '}
         {!isChildOfGroup && (
@@ -1277,7 +1282,7 @@ function FollowNotification(props: {
   isChildOfGroup?: boolean
 }) {
   const { notification, isChildOfGroup, highlighted, setHighlighted } = props
-  const { sourceUserName, sourceUserUsername } = notification
+  const { sourceId, sourceUserName, sourceUserUsername } = notification
   return (
     <NotificationFrame
       notification={notification}
@@ -1297,10 +1302,10 @@ function FollowNotification(props: {
       link={getSourceUrl(notification)}
     >
       <>
-        <UserLink
-          name={sourceUserName || ''}
-          username={sourceUserUsername || ''}
-          className={'hover:text-primary-500 relative flex-shrink-0'}
+        <NotificationUserLink
+          userId={sourceId}
+          name={sourceUserName}
+          username={sourceUserUsername}
         />{' '}
         followed you
       </>
@@ -1316,6 +1321,7 @@ function LiquidityNotification(props: {
 }) {
   const { notification, isChildOfGroup, highlighted, setHighlighted } = props
   const {
+    sourceId,
     sourceUserName,
     sourceUserUsername,
     sourceText,
@@ -1333,10 +1339,10 @@ function LiquidityNotification(props: {
       link={getSourceUrl(notification)}
     >
       <div className="line-clamp-3">
-        <UserLink
-          name={sourceUserName || ''}
-          username={sourceUserUsername || ''}
-          className={'hover:text-primary-500 relative flex-shrink-0'}
+        <NotificationUserLink
+          userId={sourceId}
+          name={sourceUserName}
+          username={sourceUserUsername}
         />{' '}
         added{' '}
         {sourceText && <span>{formatMoney(parseInt(sourceText))} of</span>}{' '}
@@ -1358,7 +1364,8 @@ function GroupAddNotification(props: {
   isChildOfGroup?: boolean
 }) {
   const { notification, isChildOfGroup, highlighted, setHighlighted } = props
-  const { sourceUserName, sourceUserUsername, sourceTitle } = notification
+  const { sourceId, sourceUserName, sourceUserUsername, sourceTitle } =
+    notification
   return (
     <NotificationFrame
       notification={notification}
@@ -1371,10 +1378,10 @@ function GroupAddNotification(props: {
       link={getSourceUrl(notification)}
     >
       <div className="line-clamp-3">
-        <UserLink
-          name={sourceUserName || ''}
-          username={sourceUserUsername || ''}
-          className={'hover:text-primary-500 relative flex-shrink-0'}
+        <NotificationUserLink
+          userId={sourceId}
+          name={sourceUserName}
+          username={sourceUserUsername}
         />{' '}
         added you{' '}
         {!isChildOfGroup && (
@@ -1394,8 +1401,13 @@ function GroupRoleChangedNotification(props: {
   isChildOfGroup?: boolean
 }) {
   const { notification, isChildOfGroup, highlighted, setHighlighted } = props
-  const { sourceUserName, sourceUserUsername, sourceText, sourceTitle } =
-    notification
+  const {
+    sourceId,
+    sourceUserName,
+    sourceUserUsername,
+    sourceText,
+    sourceTitle,
+  } = notification
   return (
     <NotificationFrame
       notification={notification}
@@ -1408,10 +1420,10 @@ function GroupRoleChangedNotification(props: {
       link={getSourceUrl(notification)}
     >
       <>
-        <UserLink
-          name={sourceUserName || ''}
-          username={sourceUserUsername || ''}
-          className={'hover:text-primary-500 relative flex-shrink-0'}
+        <NotificationUserLink
+          userId={sourceId}
+          name={sourceUserName}
+          username={sourceUserUsername}
         />{' '}
         {sourceText}{' '}
         {!isChildOfGroup && (
@@ -1485,7 +1497,7 @@ function FollowFromReferralNotification(props: {
   isChildOfGroup?: boolean
 }) {
   const { notification, isChildOfGroup, highlighted, setHighlighted } = props
-  const { sourceUserName, sourceUserUsername } = notification
+  const { sourceId, sourceUserName, sourceUserUsername } = notification
   return (
     <NotificationFrame
       notification={notification}
@@ -1508,10 +1520,10 @@ function FollowFromReferralNotification(props: {
       <>
         <span>
           You're now following{' '}
-          <UserLink
-            name={sourceUserName || ''}
-            username={sourceUserUsername || ''}
-            className={'hover:text-primary-500 relative flex-shrink-0'}
+          <NotificationUserLink
+            userId={sourceId}
+            name={sourceUserName}
+            username={sourceUserUsername}
           />{' '}
           (your referrer)
         </span>
@@ -1526,7 +1538,7 @@ function FollowSuggestionNotification(props: {
   isChildOfGroup?: boolean
 }) {
   const { notification, isChildOfGroup, highlighted, setHighlighted } = props
-  const { sourceUserName, sourceUserUsername } = notification
+  const { sourceId, sourceUserName, sourceUserUsername } = notification
   return (
     <NotificationFrame
       notification={notification}
@@ -1549,10 +1561,10 @@ function FollowSuggestionNotification(props: {
       <>
         <span>
           Want to follow{' '}
-          <UserLink
-            name={sourceUserName || ''}
-            username={sourceUserUsername || ''}
-            className={'hover:text-primary-500 relative flex-shrink-0'}
+          <NotificationUserLink
+            userId={sourceId}
+            name={sourceUserName}
+            username={sourceUserUsername}
           />
           ? You just bet on their question!
         </span>
@@ -1618,9 +1630,11 @@ function BountyAwardedNotification(props: {
     >
       <>
         <span>
-          <UserLink
+          <NotificationUserLink
+            userId={notification.sourceId}
             name={notification.sourceUserName}
             username={notification.sourceUserUsername}
+            className=""
           />
           awarded you a{' '}
           <span className="font-semibold text-teal-600">
@@ -1662,9 +1676,11 @@ function BountyAddedNotification(props: {
     >
       <>
         <span>
-          <UserLink
+          <NotificationUserLink
+            userId={notification.sourceId}
             name={notification.sourceUserName}
             username={notification.sourceUserUsername}
+            className=""
           />{' '}
           added{' '}
           <span className="font-semibold text-teal-600">
@@ -1704,9 +1720,11 @@ function BountyCanceledNotification(props: {
       subtitle={`with ${notification.sourceText} bounty left unpaid`}
     >
       <span>
-        <UserLink
+        <NotificationUserLink
+          userId={notification.sourceId}
           name={notification.sourceUserName}
           username={notification.sourceUserUsername}
+          className=""
         />{' '}
         canceled bounty{' '}
         {!isChildOfGroup && (
@@ -1738,9 +1756,11 @@ function VotedNotification(props: {
       }
     >
       <span>
-        <UserLink
+        <NotificationUserLink
+          userId={notification.sourceId}
           name={notification.sourceUserName}
           username={notification.sourceUserUsername}
+          className=""
         />{' '}
         voted on <b>{notification.sourceText}</b>
         {!isChildOfGroup && (
@@ -1775,9 +1795,11 @@ function ReviewNotification(props: {
       subtitle={review}
     >
       <span>
-        <UserLink
+        <NotificationUserLink
+          userId={notification.sourceId}
           name={notification.sourceUserName}
           username={notification.sourceUserUsername}
+          className=""
         />{' '}
         gave you{' '}
         <span
@@ -1829,9 +1851,11 @@ function PollClosedNotification(props: {
             <span>Your poll</span>
           ) : (
             <span>
-              <UserLink
+              <NotificationUserLink
+                userId={notification.sourceId}
                 name={notification.sourceUserName}
                 username={notification.sourceUserUsername}
+                className=""
               />
               {`'s poll`}
             </span>

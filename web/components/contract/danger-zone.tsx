@@ -1,7 +1,6 @@
 import { Contract, MINUTES_ALLOWED_TO_UNRESOLVE } from 'common/contract'
-import { isTrustworthy } from 'common/envs/constants'
 import { useEffect } from 'react'
-import { useAdmin } from 'web/hooks/use-admin'
+import { useAdmin, useTrusted } from 'web/hooks/use-admin'
 import { useUser } from 'web/hooks/use-user'
 import { Button } from '../buttons/button'
 import { DeleteMarketButton } from '../buttons/delete-market-button'
@@ -40,10 +39,10 @@ export function DangerZone(props: {
   } = contract
 
   const isAdmin = useAdmin()
+  const isMod = useTrusted()
   const user = useUser()
   const isCreator = user?.id === creatorId
   const isClosed = !!closeTime && closeTime < Date.now()
-  const trustworthy = isTrustworthy(user?.username)
 
   const canReview =
     !!user &&
@@ -60,7 +59,7 @@ export function DangerZone(props: {
     (!uniqueBettorCount || uniqueBettorCount < 2)
 
   const canResolve =
-    (isCreator || isAdmin || trustworthy) &&
+    (isCreator || isAdmin || isMod) &&
     !isResolved &&
     outcomeType !== 'STONK' &&
     mechanism !== 'none'
@@ -72,7 +71,7 @@ export function DangerZone(props: {
     now.diff(dayjs(resolutionTime), 'minute') < MINUTES_ALLOWED_TO_UNRESOLVE
 
   const canUnresolve =
-    (isAdmin || trustworthy || (isCreator && creatorCanUnresolve)) && isResolved
+    (isAdmin || isMod || (isCreator && creatorCanUnresolve)) && isResolved
 
   useEffect(() => {
     if (
@@ -92,7 +91,7 @@ export function DangerZone(props: {
     else if (canResolve && isClosed) {
       setShowResolver(true)
     }
-  }, [isAdmin, isCreator, trustworthy, closeTime, isResolved])
+  }, [isAdmin, isCreator, isMod, closeTime, isResolved])
 
   const highlightResolver = isClosed && !showResolver
 
@@ -123,7 +122,7 @@ export function DangerZone(props: {
             ? 'Resolve'
             : isAdmin
             ? 'Admin resolve'
-            : trustworthy
+            : isMod
             ? 'Mod resolve'
             : ''}
         </Button>

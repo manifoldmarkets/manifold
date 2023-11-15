@@ -176,6 +176,7 @@ function getLikeDisplayList(
 ) {
   const likedUserInfos = reacts.map((reaction) => {
     return {
+      id: reaction.userId,
       name: reaction.userDisplayName,
       username: reaction.userUsername,
       avatarUrl: reaction.userAvatarUrl,
@@ -283,11 +284,7 @@ function UserLikedItem(props: { userInfo: MultiUserLinkInfo }) {
         avatarUrl={userInfo.avatarUrl}
         size="2xs"
       />
-      <UserLink
-        name={userInfo.name}
-        username={userInfo.username}
-        short={true}
-      />
+      <UserLink user={userInfo} short={true} />
     </Row>
   )
 }

@@ -1,9 +1,9 @@
-import { Lover } from 'love/hooks/use-lover'
 import { useState } from 'react'
 import { Button } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
 import { Modal } from 'web/components/layout/modal'
 import { rejectLover } from 'web/lib/firebase/love/api'
+import { Lover } from 'common/love/lover'
 
 export const RejectButton = (props: { lover: Lover; className?: string }) => {
   const { lover, className } = props
@@ -23,7 +23,7 @@ export const RejectButton = (props: { lover: Lover; className?: string }) => {
       <Button
         className={className}
         color="red-outline"
-        size="xs"
+        size="2xs"
         onClick={() => setDialogOpen(true)}
       >
         Unmatch
@@ -34,7 +34,10 @@ export const RejectButton = (props: { lover: Lover; className?: string }) => {
             <div className="text-lg font-semibold">
               Are you sure you don't want a relationship with {lover.user.name}?
             </div>
-            <div className="">This action cannot be undone.</div>
+            <div>
+              Your relationship market with them will be resolved. This cannot
+              be undone.
+            </div>
 
             <Button
               className="font-semibold"

@@ -14,7 +14,6 @@ import { MultipleChoiceOptions } from 'common/love/multiple-choice'
 import { useEditableUserInfo } from 'web/hooks/use-editable-user-info'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { Row as rowFor } from 'common/supabase/utils'
-import dayjs from 'dayjs'
 import { Checkbox } from 'web/components/widgets/checkbox'
 import { range, uniq } from 'lodash'
 import { Select } from 'web/components/widgets/select'
@@ -26,7 +25,7 @@ import { XIcon } from '@heroicons/react/solid'
 import Image from 'next/image'
 
 export const initialRequiredState = {
-  birthdate: dayjs().subtract(18, 'year').format('YYYY-MM-DD'),
+  age: 0,
   gender: '',
   pref_gender: [],
   pref_age_min: 18,
@@ -219,86 +218,15 @@ export const RequiredLoveUserForm = (props: {
             </Col>
 
             <Col className={clsx(colClassName)}>
-              <label className={clsx(labelClassName)}>Birthdate</label>
-              <Row className={'gap-2'}>
-                <Col className={clsx(colClassName)}>
-                  <label className={clsx('text-base font-semibold')}>
-                    Month
-                  </label>
-                  <Select
-                    value={dayjs(lover['birthdate']).format('MMMM')}
-                    onChange={(e) => {
-                      const birthDate = dayjs(lover['birthdate'])
-                      const monthNumber = MONTHS.indexOf(e.target.value) + 1
-                      setLover(
-                        'birthdate',
-                        dayjs(
-                          `${birthDate.year()}-${monthNumber}-${birthDate.date()}`
-                        ).format('YYYY-MM-DD')
-                      )
-                    }}
-                    className={'border-ink-300 w-32 rounded-md'}
-                  >
-                    {MONTHS.map((m) => (
-                      <option key={m} value={m}>
-                        {m}
-                      </option>
-                    ))}
-                  </Select>
-                </Col>
-                <Col className={clsx(colClassName)}>
-                  <label className={clsx('text-base font-semibold')}>Day</label>
-                  <Select
-                    value={dayjs(lover['birthdate']).date()}
-                    onChange={(e) => {
-                      const birthDate = dayjs(lover['birthdate'])
-                      setLover(
-                        'birthdate',
-                        dayjs(
-                          `${birthDate.year()}-${birthDate.month() + 1}-${
-                            e.target.value
-                          }`
-                        ).format('YYYY-MM-DD')
-                      )
-                    }}
-                    className={'w-18 border-ink-300 rounded-md'}
-                  >
-                    {range(1, 32).map((m) => (
-                      <option key={m} value={m}>
-                        {m}
-                      </option>
-                    ))}
-                  </Select>
-                </Col>
-                <Col className={clsx(colClassName)}>
-                  <label className={clsx('text-base font-semibold')}>
-                    Year
-                  </label>
-                  <Select
-                    value={dayjs(lover['birthdate']).year()}
-                    onChange={(e) => {
-                      const birthDate = dayjs(lover['birthdate'])
-                      const newDateStr = `${e.target.value}-${
-                        birthDate.month() + 1
-                      }-${birthDate.date()}`
-                      setLover(
-                        'birthdate',
-                        dayjs(newDateStr).format('YYYY-MM-DD')
-                      )
-                    }}
-                    className={'border-ink-300 w-24 rounded-md'}
-                  >
-                    {range(
-                      dayjs().subtract(18, 'year').year(),
-                      dayjs().subtract(100, 'year').year()
-                    ).map((m) => (
-                      <option key={m} value={m}>
-                        {m}
-                      </option>
-                    ))}
-                  </Select>
-                </Col>
-              </Row>
+              <label className={clsx(labelClassName)}>Age</label>
+              <Input
+                type="number"
+                placeholder="Age"
+                value={lover['age'] > 0 ? lover['age'] : undefined}
+                min={18}
+                max={100}
+                onChange={(e) => setLover('age', Number(e.target.value))}
+              />
             </Col>
 
             <Row className={'items-center gap-2'}>
@@ -502,18 +430,3 @@ export const RequiredLoveUserForm = (props: {
     </>
   )
 }
-
-const MONTHS = [
-  'January',
-  'February',
-  'March',
-  'April',
-  'May',
-  'June',
-  'July',
-  'August',
-  'September',
-  'October',
-  'November',
-  'December',
-]

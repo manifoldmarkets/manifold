@@ -440,7 +440,7 @@ const PositionRow = memo(function PositionRow(props: {
   followedUsers: string[] | undefined
 }) {
   const { position, outcome, currentUser, followedUsers, numberToShow } = props
-  const { userName, userUsername, userAvatarUrl } = position
+  const { userId, userName, userUsername, userAvatarUrl } = position
   const isMobile = useIsMobile(800)
 
   return (
@@ -458,7 +458,10 @@ const PositionRow = memo(function PositionRow(props: {
       >
         <Avatar size={'sm'} avatarUrl={userAvatarUrl} username={userUsername} />
         {userName && userUsername ? (
-          <UserLink short={isMobile} name={userName} username={userUsername} />
+          <UserLink
+            user={{ id: userId, name: userName, username: userUsername }}
+            short={isMobile}
+          />
         ) : (
           <span>Loading..</span>
         )}

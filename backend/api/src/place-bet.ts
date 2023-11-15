@@ -237,13 +237,25 @@ export const placeBetMain = async (
       throw new APIError(403, 'Trade too large for current liquidity pool.')
     }
 
-    if (contract.loverUserId1 && newPool && newP) {
-      const prob = getCpmmProbability(newPool, newP)
-      if (prob < 0.01) {
-        throw new APIError(
-          403,
-          'Cannot bet lower than 1% probability in relationship markets.'
-        )
+    // Special case for relationship markets.
+    if (contract.loverUserId1 && newPool) {
+      if (contract.outcomeType === 'BINARY') {
+        // Binary relationship markets deprecated.
+        const prob = getCpmmProbability(newPool, newP ?? 0.5)
+        if (prob < 0.01) {
+          throw new APIError(
+            403,
+            'Minimum of 1% probability in relationship markets.'
+          )
+        }
+      } else if (contract.outcomeType === 'MULTIPLE_CHOICE') {
+        const prob = getCpmmProbability(newPool, 0.5)
+        if (prob < 0.1) {
+          throw new APIError(
+            403,
+            'Minimum of 10% probability in relationship markets.'
+          )
+        }
       }
     }
 

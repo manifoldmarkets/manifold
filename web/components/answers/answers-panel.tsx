@@ -177,6 +177,7 @@ export function AnswersPanel(props: {
       >
         <DropdownMenu
           className="mb-1"
+          closeOnClick
           items={generateFilterDropdownItems(SORTS, setSort)}
           icon={
             <Row className="text-ink-500 items-center gap-0.5">
@@ -374,7 +375,6 @@ function Answer(props: {
           ) : (
             <AnswerLabel
               text={answer.text}
-              index={'index' in answer ? answer.index : undefined}
               createdTime={answer.createdTime}
               creator={
                 addAnswersMode === 'ANYONE' ? answerCreator ?? false : undefined

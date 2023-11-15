@@ -17,6 +17,7 @@ import { log } from 'shared/utils'
 import { DEEMPHASIZED_GROUP_SLUGS, isAdminId } from 'common/envs/constants'
 import { convertContract } from 'common/supabase/contracts'
 import { generateEmbeddings } from 'shared/helpers/openai-utils'
+import { manifoldLoveRelationshipsGroupId } from 'common/love/constants'
 
 export const getUniqueBettorIds = async (
   contractId: string,
@@ -102,6 +103,7 @@ export const getContractViewerIds = async (
 
 export const getContractGroupMemberIds = async (
   contractId: string,
+  ignoringGroupIds: string[],
   pg: SupabaseDirectClient
 ) => {
   const contractGroups = await pg.manyOrNone(
@@ -109,7 +111,9 @@ export const getContractGroupMemberIds = async (
                 where contract_id = $1`,
     [contractId]
   )
-  const groupIds = contractGroups.map((cg) => cg.group_id)
+  const groupIds = contractGroups
+    .map((cg) => cg.group_id)
+    .filter((g) => !ignoringGroupIds.includes(g))
 
   if (groupIds.length === 0) return []
   const contractGroupMemberIds = await pg.manyOrNone<{ member_id: string }>(
@@ -205,7 +209,8 @@ export const getUserToReasonsInterestedInContractAndUser = async (
   reasonsToInclude: CONTRACT_FEED_REASON_TYPES[],
   serverSideCalculation: boolean,
   dataType: FEED_DATA_TYPES,
-  trendingContractType?: 'old' | 'new'
+  trendingContractType?: 'old' | 'new',
+  ignoringGroupIds = [manifoldLoveRelationshipsGroupId]
 ): Promise<{
   [userId: string]: {
     reasons: CONTRACT_FEED_REASON_TYPES[]
@@ -230,7 +235,7 @@ export const getUserToReasonsInterestedInContractAndUser = async (
       users: getUserFollowerIds(creatorId, pg),
     },
     contract_in_group_you_are_in: {
-      users: getContractGroupMemberIds(contractId, pg),
+      users: getContractGroupMemberIds(contractId, ignoringGroupIds, pg),
     },
     similar_interest_vector_to_contract: {
       usersToDistances: serverSideCalculation

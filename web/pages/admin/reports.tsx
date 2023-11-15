@@ -55,11 +55,7 @@ export default function Reports(props: { reports: LiteReport[] }) {
                     avatarUrl={owner.avatarUrl}
                     size="sm"
                   />
-                  <UserLink
-                    name={owner.name}
-                    username={owner.username}
-                    className="text-ink-800 ml-2"
-                  />
+                  <UserLink user={owner} className="text-ink-800 ml-2" />
                   {owner.isBannedFromPosting && <PostBanBadge />}
                 </div>
 

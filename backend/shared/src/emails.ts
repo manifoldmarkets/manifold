@@ -1,7 +1,12 @@
-import { DOMAIN, ENV_CONFIG } from 'common/envs/constants'
+import { DOMAIN, ENV_CONFIG, LOVE_DOMAIN } from 'common/envs/constants'
 import { Bet } from 'common/bet'
 import { getProbability } from 'common/calculate'
-import { Contract, MultiContract, renderResolution } from 'common/contract'
+import {
+  Contract,
+  contractPath,
+  MultiContract,
+  renderResolution,
+} from 'common/contract'
 import { PrivateUser, User } from 'common/user'
 import { formatLargeNumber, formatMoney } from 'common/util/format'
 import { formatNumericProbability } from 'common/pseudo-numeric'
@@ -16,6 +21,9 @@ import { Dictionary } from 'lodash'
 import { getNotificationDestinationsForUser } from 'common/user-notification-preferences'
 import { buildOgUrl } from 'common/util/og'
 import { removeUndefinedProps } from 'common/util/object'
+import { getLoveOgImageUrl } from 'common/love/og-image'
+import { createSupabaseClient } from 'shared/supabase/init'
+import { getLoverRow } from 'common/love/lover'
 
 export type PerContractInvestmentsData = {
   questionTitle: string
@@ -739,7 +747,8 @@ export const sendNewMatchEmail = async (
   reason: NotificationReason,
   privateUser: PrivateUser,
   contract: Contract,
-  creatorName: string
+  creatorName: string,
+  matchedWithUser: User
 ) => {
   const { sendToEmail, unsubscribeUrl } = getNotificationDestinationsForUser(
     privateUser,
@@ -751,7 +760,8 @@ export const sendNewMatchEmail = async (
 
   const { name } = user
   const firstName = name.split(' ')[0]
-
+  const lover = await getLoverRow(matchedWithUser.id, createSupabaseClient())
+  const loveOgImageUrl = getLoveOgImageUrl(matchedWithUser, lover)
   const questionImgSrc = imageSourceUrl(contract)
   return await sendTemplateEmail(
     privateUser.email,
@@ -762,8 +772,44 @@ export const sendNewMatchEmail = async (
       creatorName,
       unsubscribeUrl,
       questionTitle: contract.question,
-      questionUrl: contractUrl(contract),
+      questionUrl: `https://${LOVE_DOMAIN}${contractPath(contract)}`,
+      userUrl: `https://${LOVE_DOMAIN}/${matchedWithUser.username}`,
+      matchedUsersName: matchedWithUser.name,
+      userImgSrc: loveOgImageUrl,
       questionImgSrc,
+    },
+    {
+      from: `manifold.love <no-reply@manifold.markets>`,
+    }
+  )
+}
+export const sendNewMessageEmail = async (
+  reason: NotificationReason,
+  privateUser: PrivateUser,
+  fromUser: User,
+  toUser: User,
+  channelId: number,
+  subject: string
+) => {
+  const { sendToEmail, unsubscribeUrl } = getNotificationDestinationsForUser(
+    privateUser,
+    reason
+  )
+  if (!privateUser.email || !sendToEmail) return
+  const firstName = toUser.name.split(' ')[0]
+  const lover = await getLoverRow(toUser.id, createSupabaseClient())
+  const loveOgImageUrl = getLoveOgImageUrl(fromUser, lover)
+
+  return await sendTemplateEmail(
+    privateUser.email,
+    subject,
+    'new-message',
+    {
+      name: firstName,
+      messagesUrl: `https://${LOVE_DOMAIN}/messages/${channelId}`,
+      creatorName: fromUser.name,
+      userImgSrc: loveOgImageUrl,
+      unsubscribeUrl,
     },
     {
       from: `manifold.love <no-reply@manifold.markets>`,

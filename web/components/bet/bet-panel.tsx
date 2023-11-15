@@ -112,6 +112,7 @@ export function BuyPanel(props: {
     if (option === choice && !initialOutcome) {
       setOption(undefined)
     } else {
+      track('bet intent', { choice })
       setOption(choice)
     }
     if (!isIOS() && !isAndroid()) {

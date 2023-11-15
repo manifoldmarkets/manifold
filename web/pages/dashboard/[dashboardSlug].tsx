@@ -9,7 +9,6 @@ import { useEffect, useState } from 'react'
 import { Button } from 'web/components/buttons/button'
 import { AddItemCard } from 'web/components/dashboard/add-dashboard-item'
 import { DashboardContent } from 'web/components/dashboard/dashboard-content'
-import { DashboardDescription } from 'web/components/dashboard/dashboard-description'
 import { FollowDashboardButton } from 'web/components/dashboard/follow-dashboard-button'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
@@ -25,16 +24,9 @@ import {
 } from 'web/lib/firebase/api'
 import Custom404 from '../404'
 import { useDashboardFromSlug } from 'web/hooks/use-dashboard'
-import { TextEditor, useTextEditor } from 'web/components/widgets/editor'
-import { MAX_DESCRIPTION_LENGTH } from 'common/contract'
-import { JSONEmpty } from 'web/components/contract/contract-description'
-import clsx from 'clsx'
-import { Editor } from '@tiptap/react'
-import { XCircleIcon } from '@heroicons/react/solid'
 import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
-import { ENV_CONFIG, isAdminId, isTrustworthy } from 'common/envs/constants'
+import { ENV_CONFIG, isAdminId, isModId } from 'common/envs/constants'
 import { SEO } from 'web/components/SEO'
-import { richTextToString } from 'common/util/parse'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { useWarnUnsavedChanges } from 'web/hooks/use-warn-unsaved-changes'
 import { InputWithLimit } from 'web/components/dashboard/input-with-limit'
@@ -130,21 +122,10 @@ function FoundDashbordPage(props: {
   const user = useUser()
   const isCreator = dashboard.creatorId === user?.id
   const isOnlyMod =
-    !isCreator && user && (isAdminId(user.id) || isTrustworthy(user.username))
+    !isCreator && user && (isAdminId(user.id) || isModId(user.id))
 
   const [editMode, setEditMode] = useState(editByDefault)
   useWarnUnsavedChanges(editMode)
-
-  const editor = useTextEditor({
-    size: 'lg',
-    key: `edit dashboard ${slug}`,
-    max: MAX_DESCRIPTION_LENGTH,
-    defaultValue: dashboard.description,
-    placeholder: 'Optional. Provide background info and details.',
-  })
-
-  const [showDescription, setShowDescription] = useState(false)
-  const reallyShowDesc = editor && (!editor.isEmpty || showDescription)
 
   return (
     <Page
@@ -154,11 +135,7 @@ function FoundDashbordPage(props: {
     >
       <SEO
         title={dashboard.title}
-        description={
-          JSONEmpty(dashboard.description)
-            ? `dashboard created by ${dashboard.creatorName}`
-            : richTextToString(dashboard.description)
-        }
+        description={`dashboard created by ${dashboard.creatorName}`}
       />
       {dashboard.visibility === 'deleted' && (
         <>
@@ -244,7 +221,6 @@ function FoundDashbordPage(props: {
                   dashboardId: dashboard.id,
                   title: dashboard.title,
                   items: dashboard.items,
-                  description: editor?.getJSON(),
                   topics: dashboard.topics,
                 }).then((data) => {
                   if (data?.updateDashboard) {
@@ -267,8 +243,11 @@ function FoundDashbordPage(props: {
               size="xs"
             />
             <UserLink
-              username={dashboard.creatorUsername}
-              name={dashboard.creatorName}
+              user={{
+                id: dashboard.creatorId,
+                name: dashboard.creatorName,
+                username: dashboard.creatorUsername,
+              }}
               className="text-ink-700"
             />
             <span className="text-ink-400 ml-4 text-sm">
@@ -277,17 +256,6 @@ function FoundDashbordPage(props: {
             </span>
           </Row>
         )}
-        {editMode ? (
-          reallyShowDesc && (
-            <DescriptionEditor
-              editor={editor}
-              className="mb-4"
-              onClose={() => setShowDescription(false)}
-            />
-          )
-        ) : (
-          <DashboardDescription description={dashboard.description} />
-        )}
         {editMode && (
           <div className="mb-4">
             <AddItemCard
@@ -295,9 +263,6 @@ function FoundDashbordPage(props: {
               setItems={updateItems}
               topics={dashboard.topics}
               setTopics={updateTopics}
-              createDescription={
-                reallyShowDesc ? undefined : () => setShowDescription(true)
-              }
             />
           </div>
         )}
@@ -311,27 +276,5 @@ function FoundDashbordPage(props: {
         />
       </Col>
     </Page>
-  )
-}
-
-function DescriptionEditor(props: {
-  editor: Editor
-  className?: string
-  onClose: () => void
-}) {
-  const { editor, className, onClose } = props
-  return (
-    <div className={clsx('relative', className)}>
-      <button
-        className="text-ink-500 hover:text-ink-700 absolute -top-2 right-0 z-10 transition-colors"
-        onClick={() => {
-          onClose?.()
-          editor.commands.clearContent()
-        }}
-      >
-        <XCircleIcon className="h-5 w-5" />
-      </button>
-      <TextEditor editor={editor} />
-    </div>
   )
 }

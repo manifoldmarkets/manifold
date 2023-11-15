@@ -43,7 +43,7 @@ function UserFollowItem(props: {
     <Row className={clsx('items-center justify-between gap-2 p-2', className)}>
       <Row className="items-center gap-2">
         <Avatar username={user?.username} avatarUrl={user?.avatarUrl} />
-        {user && <UserLink name={user.name} username={user.username} />}
+        {user && <UserLink user={user} />}
       </Row>
       {!hideFollowButton && <FollowButton userId={userId} />}
     </Row>

@@ -72,6 +72,7 @@ export type notification_source_types =
   | 'comment_on_lover'
   | 'new_match'
   | 'bet_reply'
+  | 'new_message'
 
 export type notification_source_update_types =
   | 'created'
@@ -310,6 +311,18 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
   review_on_your_market: {
     simple: 'Reviews on your questions',
     detailed: 'When a user reviews your question after resolution',
+  },
+  new_match: {
+    simple: 'New matches',
+    detailed: 'When you match with another user',
+  },
+  new_message: {
+    simple: 'New messages',
+    detailed: 'When another user messages you',
+  },
+  new_endorsement: {
+    simple: 'New endorsements',
+    detailed: 'When another user endorses you',
   },
 }
 

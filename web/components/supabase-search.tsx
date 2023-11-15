@@ -28,15 +28,13 @@ import { FollowOrUnfolowTopicButton } from 'web/components/topics/topics-button'
 
 import { PillButton } from 'web/components/buttons/pill-button'
 import { searchUsers, UserSearchResult } from 'web/lib/supabase/users'
-import { searchGroups } from 'web/lib/supabase/groups'
-import { convertGroup } from 'common/supabase/groups'
 import { User } from 'common/user'
 import { Button, IconButton } from 'web/components/buttons/button'
 import Link from 'next/link'
 import { useFollowedUsersOnLoad } from 'web/hooks/use-follows'
 import { CONTRACTS_PER_SEARCH_PAGE } from 'common/supabase/contracts'
 import { UserResults } from './search/user-results'
-import { searchContracts } from 'web/lib/firebase/api'
+import { searchContracts, searchGroups } from 'web/lib/firebase/api'
 import { LoadMoreUntilNotVisible } from './widgets/visibility-observer'
 import { LoadingIndicator } from './widgets/loading-indicator'
 import {
@@ -145,7 +143,6 @@ export type SupabaseAdditionalFilter = {
   excludeGroupSlugs?: string[]
   excludeUserIds?: string[]
   nonQueryFacetFilters?: string[]
-  contractType?: ContractTypeType
 }
 
 export type SearchState = {
@@ -157,10 +154,11 @@ export function SupabaseSearch(props: {
   persistPrefix: string
   defaultSort?: Sort
   defaultFilter?: Filter
+  defaultContractType?: ContractTypeType
+  defaultSearchType?: SearchType
   additionalFilter?: SupabaseAdditionalFilter
   highlightContractIds?: string[]
   onContractClick?: (contract: Contract) => void
-  hideOrderSelector?: boolean
   hideActions?: boolean
   headerClassName?: string
   isWholePage?: boolean
@@ -173,8 +171,8 @@ export function SupabaseSearch(props: {
   emptyState?: ReactNode
   hideSearch?: boolean
   hideContractFilters?: boolean
-  defaultSearchType?: SearchType
-  yourTopics?: Group[]
+  topics?: Group[]
+  setTopics?: (topics: Group[]) => void
   contractsOnly?: boolean
   showTopicTag?: boolean
   hideSearchTypes?: boolean
@@ -187,10 +185,11 @@ export function SupabaseSearch(props: {
   const {
     defaultSort,
     defaultFilter,
+    defaultContractType,
+    defaultSearchType,
     additionalFilter,
     onContractClick,
     userResultProps,
-    hideOrderSelector,
     hideActions,
     highlightContractIds,
     headerClassName,
@@ -202,8 +201,8 @@ export function SupabaseSearch(props: {
     hideContractFilters,
     menuButton,
     rowBelowFilters,
-    defaultSearchType,
-    yourTopics,
+    topics: topicResults,
+    setTopics: setTopicResults,
     contractsOnly,
     showTopicTag,
     hideSearchTypes,
@@ -212,8 +211,9 @@ export function SupabaseSearch(props: {
   const [searchParams, setSearchParams, defaults] = useSearchQueryState({
     defaultSort,
     defaultFilter,
-    useUrlParams,
+    defaultContractType,
     defaultSearchType,
+    useUrlParams,
   })
   const user = useUser()
   const followingUsers = useFollowedUsersOnLoad(user?.id)
@@ -231,9 +231,7 @@ export function SupabaseSearch(props: {
       undefined,
       `${persistPrefix}-queried-user-results`
     )
-  const [topicResults, setTopicResults] = usePersistentInMemoryState<
-    Group[] | undefined
-  >(undefined, `${persistPrefix}-topic-results`)
+
   const [showSearchTypeState, setShowSearchTypeState] = useState(
     queryAsString === '' || searchTypeAsString !== '' || !!currentTopicSlug
   )
@@ -249,13 +247,28 @@ export function SupabaseSearch(props: {
     'id'
   )
 
-  const { contracts, queryContracts, shouldLoadMore } = useContractSearch(
+  const {
+    contracts: rawContracts,
+    queryContracts,
+    shouldLoadMore,
+  } = useContractSearch(
     persistPrefix,
     setLastSearch,
     searchParams,
     additionalFilter,
     isWholePage
   )
+
+  // remove love from new results
+  const contracts =
+    searchParams?.[SORT_KEY] === 'newest' &&
+    !searchParams?.[QUERY_KEY] &&
+    (!currentTopicSlug || currentTopicSlug === 'for-you')
+      ? rawContracts?.filter(
+          (c) => !c.groupSlugs?.includes('manifoldlove-relationships')
+        )
+      : rawContracts
+
   const pillOptions: SearchType[] = ['Questions', 'Users', 'Topics']
   const setQuery = (query: string) => setSearchParams({ [QUERY_KEY]: query })
   const setSearchType = (t: SearchType) =>
@@ -289,30 +302,21 @@ export function SupabaseSearch(props: {
     }
   }, [currentTopicSlug])
 
-  const queryUsers = useEvent(async (query: string) => {
-    const results = await searchUsers(query, USERS_PER_PAGE, [
+  const queryUsers = useEvent(async (query: string) =>
+    searchUsers(query, USERS_PER_PAGE, [
       'creatorTraders',
       'bio',
       'createdTime',
       'isBannedFromPosting',
     ])
-    return results
-  })
+  )
 
-  const queryTopics = useEvent(async (query: string) => {
-    const results = await searchGroups({
+  const queryTopics = useEvent(async (query: string) =>
+    searchGroups({
       term: query,
       limit: TOPICS_PER_PAGE,
     })
-    const groupResults = results.data.map(convertGroup)
-    const followedTopics =
-      yourTopics?.filter(
-        (f) =>
-          f.name.toLowerCase().includes(query.toLowerCase()) ||
-          f.slug.toLowerCase().includes(query.toLowerCase())
-      ) ?? []
-    return uniqBy(followedTopics.concat(groupResults), 'name')
-  })
+  )
 
   const searchCountRef = useRef(0)
   useEffect(() => {
@@ -324,7 +328,7 @@ export function SupabaseSearch(props: {
       if (searchCount === searchCountRef.current) setQueriedUserResults(results)
     })
     queryTopics(queryAsString).then((results) => {
-      if (searchCount === searchCountRef.current) setTopicResults(results)
+      if (searchCount === searchCountRef.current) setTopicResults?.(results)
     })
   }, [JSON.stringify(searchParams)])
 
@@ -385,7 +389,6 @@ export function SupabaseSearch(props: {
         </Row>
         {!hideContractFilters && (
           <ContractFilters
-            hideOrderSelector={hideOrderSelector}
             includeProbSorts={includeProbSorts}
             params={searchParams ?? defaults}
             updateParams={setSearchParams}
@@ -463,6 +466,25 @@ export function SupabaseSearch(props: {
               headerClassName={clsx(headerClassName, '!top-14')}
             />
             <LoadMoreUntilNotVisible loadMore={queryContracts} />
+            {!shouldLoadMore &&
+              (searchParams?.[FILTER_KEY] !== 'all' ||
+                searchParams?.[CONTRACT_TYPE_KEY] !== 'ALL') && (
+                <div className="text-ink-500 mx-2 my-8 text-center">
+                  No more results under this filter.{' '}
+                  <button
+                    className="text-primary-500 hover:underline"
+                    onClick={() =>
+                      setSearchParams({
+                        [FILTER_KEY]: 'all',
+                        [CONTRACT_TYPE_KEY]: 'ALL',
+                      })
+                    }
+                  >
+                    Clear filter
+                  </button>
+                  ?
+                </div>
+              )}
           </>
         )
       ) : searchTypeAsString === 'Users' ? (
@@ -589,8 +611,8 @@ const useContractSearch = (
         term: query,
         filter,
         sort,
-        contractType: additionalFilter?.contractType ?? contractType,
-        offset: offset,
+        contractType,
+        offset,
         limit: CONTRACTS_PER_SEARCH_PAGE,
         topicSlug: topicSlug !== '' ? topicSlug : undefined,
         creatorId: additionalFilter?.creatorId,
@@ -669,20 +691,13 @@ const useSearchQueryState = (props: {
 
 function ContractFilters(props: {
   className?: string
-  hideOrderSelector?: boolean
   includeProbSorts?: boolean
   params: SearchParams
   updateParams: (params: Partial<SearchParams>) => void
   showTopicTag?: boolean
 }) {
-  const {
-    className,
-    hideOrderSelector,
-    includeProbSorts,
-    params,
-    updateParams,
-    showTopicTag,
-  } = props
+  const { className, includeProbSorts, params, updateParams, showTopicTag } =
+    props
 
   const { s: sort, f: filter, ct: contractType, topic: topicSlug } = params
 
@@ -738,33 +753,32 @@ function ContractFilters(props: {
       )}
     >
       <Row className={'h-6 gap-3'}>
-        {!hideOrderSelector && (
-          <DropdownMenu
-            items={generateFilterDropdownItems(
-              contractType == 'BOUNTIED_QUESTION'
-                ? BOUNTY_MARKET_SORTS
-                : contractType == 'POLL'
-                ? POLL_SORTS
-                : includeProbSorts &&
-                  (contractType === 'ALL' || contractType === 'BINARY')
-                ? PREDICTION_MARKET_PROB_SORTS
-                : PREDICTION_MARKET_SORTS,
-              selectSort
-            )}
-            icon={
-              <Row className="text-ink-500 items-center gap-0.5">
-                <span className="whitespace-nowrap text-sm font-medium">
-                  {sortLabel}
-                </span>
-                <ChevronDownIcon className="h-4 w-4" />
-              </Row>
-            }
-            menuWidth={'w-36'}
-            menuItemsClass="left-0 right-auto"
-            selectedItemName={sortLabel}
-            closeOnClick={true}
-          />
-        )}
+        <DropdownMenu
+          items={generateFilterDropdownItems(
+            contractType == 'BOUNTIED_QUESTION'
+              ? BOUNTY_MARKET_SORTS
+              : contractType == 'POLL'
+              ? POLL_SORTS
+              : includeProbSorts &&
+                (contractType === 'ALL' || contractType === 'BINARY')
+              ? PREDICTION_MARKET_PROB_SORTS
+              : PREDICTION_MARKET_SORTS,
+            selectSort
+          )}
+          icon={
+            <Row className="text-ink-500 items-center gap-0.5">
+              <span className="whitespace-nowrap text-sm font-medium">
+                {sortLabel}
+              </span>
+              <ChevronDownIcon className="h-4 w-4" />
+            </Row>
+          }
+          menuWidth={'w-36'}
+          menuItemsClass="left-0 right-auto"
+          selectedItemName={sortLabel}
+          closeOnClick={true}
+        />
+
         {!hideFilter && (
           <DropdownMenu
             items={generateFilterDropdownItems(FILTERS, selectFilter)}

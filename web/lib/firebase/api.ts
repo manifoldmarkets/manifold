@@ -321,14 +321,11 @@ export function joinGroup(params: { groupId: string }) {
   return call(getApiUrl('joingroup'), 'POST', params)
 }
 
-export function supabaseSearchGroups(params: {
+export function searchGroups(params: {
   term: string
-  offset: number
   limit: number
-  fuzzy?: boolean
-  yourGroups?: boolean
+  offset?: number
   addingToContract?: boolean
-  newContract?: boolean
 }) {
   return maybeAuthedCall(
     getApiUrl('supabasesearchgroups'),
@@ -450,7 +447,6 @@ export function report(params: ReportProps) {
 export function createDashboard(params: {
   title: string
   items: DashboardItem[]
-  description?: JSONContent
   topics: string[]
 }) {
   return call(getApiUrl('createdashboard'), 'POST', params)
@@ -493,7 +489,6 @@ export function updateDashboard(params: {
   dashboardId: string
   items: DashboardItem[]
   topics?: string[]
-  description?: JSONContent
 }) {
   return call(getApiUrl('updatedashboard'), 'POST', params)
 }

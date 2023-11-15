@@ -1,10 +1,9 @@
 import { ImageResponse } from '@vercel/og'
 import { ImageResponseOptions } from '@vercel/og/dist/types'
-import { LoveOgProps } from './utils'
 import { NextRequest } from 'next/server'
 import { classToTw } from 'web/components/og/utils'
-import { calculateAge } from 'love/components/calculate-age'
 import { Gender, convertGender } from 'love/components/gender-icon'
+import { LoveOgProps } from 'common/love/og-image'
 
 export const config = { runtime: 'edge' }
 
@@ -44,7 +43,7 @@ function capitalize(str: string) {
 }
 
 function OgLover(props: LoveOgProps) {
-  const { avatarUrl, username, birthdate, name, city, gender } = props
+  const { avatarUrl, username, name, age, city, gender } = props
   return (
     <div
       className="flex h-full w-full flex-col items-center justify-center"
@@ -68,8 +67,7 @@ function OgLover(props: LoveOgProps) {
           }}
         >
           <div className="flex flex-row flex-wrap text-gray-50">
-            <span className="break-words font-bold">{name}</span>,{' '}
-            {calculateAge(birthdate)}
+            <span className="break-words font-bold">{name}</span>, {age}
           </div>
           <div className="flex flex-row gap-1 text-xs text-gray-50">
             {city} • {capitalize(convertGender(gender as Gender))}

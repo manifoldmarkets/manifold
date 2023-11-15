@@ -52,16 +52,23 @@ const generateChoicesMap = (
 export function HasKidsLabel(props: {
   has_kids: number
   highlightedClass?: string
+  mobile?: boolean
 }) {
-  const { has_kids, highlightedClass } = props
+  const { has_kids, highlightedClass, mobile } = props
   return (
     <Row className="items-center gap-0.5">
-      <FaChild className="h-4 w-4" />
+      <FaChild className="hidden h-4 w-4 sm:inline" />
       <span className={highlightedClass}>
         {has_kids == hasKidsLabels.has_kids.value
-          ? hasKidsLabels.has_kids.name
+          ? mobile
+            ? hasKidsLabels.has_kids.shortName
+            : hasKidsLabels.has_kids.name
           : has_kids == hasKidsLabels.doesnt_have_kids.value
-          ? hasKidsLabels.doesnt_have_kids.name
+          ? mobile
+            ? hasKidsLabels.doesnt_have_kids.shortName
+            : hasKidsLabels.doesnt_have_kids.name
+          : mobile
+          ? hasKidsLabels.no_preference.shortName
           : hasKidsLabels.no_preference.name}
       </span>
     </Row>

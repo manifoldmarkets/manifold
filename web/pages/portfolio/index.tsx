@@ -123,15 +123,14 @@ const ContractSearch = memo(
     return (
       <SupabaseSearch
         persistPrefix="contract-select-portfolio"
-        hideOrderSelector
         onContractClick={addContract}
         highlightContractIds={contracts.map((c) => c.id)}
         additionalFilter={{
           excludeContractIds: [...(privateUser?.blockedContractIds ?? [])],
           excludeGroupSlugs: privateUser?.blockedGroupSlugs,
           excludeUserIds: privateUser?.blockedUserIds,
-          contractType: 'BINARY',
         }}
+        defaultContractType="BINARY"
         hideActions
         hideContractFilters
         headerClassName={clsx('bg-canvas-0')}

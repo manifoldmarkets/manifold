@@ -9,6 +9,7 @@ import { LinkPreview } from 'common/link-preview'
 export const MaybeDashboardNewsItem = (props: {
   url: string
   preview?: LinkPreview
+  className?: string
 }) => {
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const preview = props.preview ?? useLinkPreview(props.url)
@@ -17,7 +18,10 @@ export const MaybeDashboardNewsItem = (props: {
     return <DashboardNewsItemPlaceholder pulse />
   }
   return (
-    <DashboardNewsItem {...preview} className="shadow-md dark:shadow-none" />
+    <DashboardNewsItem
+      {...preview}
+      className={clsx('shadow-md dark:shadow-none', props.className)}
+    />
   )
 }
 

@@ -58,7 +58,7 @@ export default function AboutPage() {
           on anything.
         </div>
 
-        <Col className="w-full max-w-[60ch]">
+        <Col className="w-full">
           <WhatIsAPM />
 
           <WhatIsMana />
@@ -148,6 +148,17 @@ export default function AboutPage() {
         </div>
 
         <LabSection>
+          <LabCard
+            title="📜 Community guidelines"
+            description="General expectations and account rules"
+            href="https://manifoldmarkets.notion.site/New-WIP-Community-Guidelines-2b986d33f0c646478d4921667c272f21"
+          />
+          <LabCard
+            title="📏 Platform calibration"
+            description="Manifold's overall track record"
+            href="/calibration"
+          />
+
           {(!isNative || (isNative && platform !== 'ios')) && (
             <LabCard
               title="🫀 Charity"
@@ -155,10 +166,11 @@ export default function AboutPage() {
               href="/charity"
             />
           )}
+
           <LabCard
-            title="📜 Community guidelines"
-            description="General expectations and account rules"
-            href="https://manifoldmarkets.notion.site/Community-Guidelines-f6c77b1af41749828df7dae5e8735400"
+            title="❤️ Manifold.love"
+            description="Dating meets prediction markets"
+            href="https://manifold.love"
             target="_blank"
           />
         </LabSection>

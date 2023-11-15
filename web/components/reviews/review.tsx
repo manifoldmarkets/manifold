@@ -36,7 +36,7 @@ export const Review = (props: {
             avatarUrl={user.avatarUrl}
             size="xs"
           />
-          <UserLink name={user.name} username={user.username} />
+          <UserLink user={user} />
         </Row>
         <Row className="items-center gap-2">
           <StarDisplay rating={rating as Rating} />

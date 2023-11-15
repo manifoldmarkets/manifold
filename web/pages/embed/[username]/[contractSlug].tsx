@@ -33,6 +33,7 @@ import { getBetFields } from 'web/lib/supabase/bets'
 import { db } from 'web/lib/supabase/db'
 import Custom404 from '../../404'
 import { ContractSummaryStats } from 'web/components/contract/contract-summary-stats'
+import { PollPanel } from 'web/components/poll/poll-panel'
 
 type Points = HistoryPoint<any>[]
 
@@ -235,6 +236,7 @@ function ContractSmolView(props: {
   const isMulti =
     outcomeType === 'MULTIPLE_CHOICE' || outcomeType === 'FREE_RESPONSE'
   const isBountiedQuestion = outcomeType === 'BOUNTIED_QUESTION'
+  const isPoll = outcomeType === 'POLL'
 
   const href = `https://${DOMAIN}${contractPath(contract)}`
 
@@ -295,7 +297,7 @@ function ContractSmolView(props: {
             </div>
           </div>
         )}
-        {!isBountiedQuestion && (
+        {!isBountiedQuestion && !isPoll && (
           <SizedContainer
             className={clsx(
               'text-ink-1000 my-4 min-h-0 flex-1',
@@ -330,6 +332,11 @@ function ContractSmolView(props: {
                 <div className="text-ink-500">bounty</div>
               </Col>
             </Col>
+          </Col>
+        )}
+        {isPoll && (
+          <Col className="relative h-full w-full">
+            <PollPanel contract={contract} maxOptions={4} showResults />
           </Col>
         )}
       </div>

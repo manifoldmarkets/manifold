@@ -4,6 +4,7 @@ import { Row } from 'web/components/layout/row'
 import { ChoicesToggleGroup } from 'web/components/widgets/choices-toggle-group'
 import { FilterFields } from './search'
 import { hasKidsLabels } from './has-kids-filter'
+import clsx from 'clsx'
 
 interface KidLabel {
   name: string
@@ -68,23 +69,40 @@ const generateChoicesMap = (labels: KidsLabelsMap): Record<string, number> => {
   )
 }
 
-export function KidsLabel(props: {
-  strength: number
-  highlightedClass?: string
-}) {
-  const { strength, highlightedClass } = props
+export function WantsKidsIcon(props: { strength: number; className?: string }) {
+  const { strength, className } = props
   return (
-    <Row className="items-center gap-0.5">
+    <span className={className}>
       {strength == wantsKidsLabels.no_preference.strength
         ? wantsKidsLabels.no_preference.icon
         : strength == wantsKidsLabels.wants_kids.strength
         ? wantsKidsLabels.wants_kids.icon
         : wantsKidsLabels.doesnt_want_kids.icon}
+    </span>
+  )
+}
+
+export function KidsLabel(props: {
+  strength: number
+  highlightedClass?: string
+  mobile?: boolean
+}) {
+  const { strength, highlightedClass, mobile } = props
+
+  return (
+    <Row className="items-center gap-0.5">
+      <WantsKidsIcon strength={strength} className={clsx('hidden sm:inline')} />
       <span className={highlightedClass}>
         {strength == wantsKidsLabels.no_preference.strength
-          ? wantsKidsLabels.no_preference.name
+          ? mobile
+            ? wantsKidsLabels.no_preference.shortName
+            : wantsKidsLabels.no_preference.name
           : strength == wantsKidsLabels.wants_kids.strength
-          ? wantsKidsLabels.wants_kids.name
+          ? mobile
+            ? wantsKidsLabels.wants_kids.shortName
+            : wantsKidsLabels.wants_kids.name
+          : mobile
+          ? wantsKidsLabels.doesnt_want_kids.shortName
           : wantsKidsLabels.doesnt_want_kids.name}
       </span>
     </Row>

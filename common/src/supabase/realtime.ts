@@ -6,6 +6,7 @@ import {
   REALTIME_POSTGRES_CHANGES_LISTEN_EVENT,
   REALTIME_SUBSCRIBE_STATES,
 } from '@supabase/realtime-js'
+import { unionWith } from 'lodash'
 
 export type Insert<T extends TableName> = RealtimePostgresInsertPayload<Row<T>>
 export type Update<T extends TableName> = RealtimePostgresUpdatePayload<Row<T>>
@@ -77,17 +78,17 @@ export const REALTIME_TABLES: Partial<{ [T in TableName]: TableSpec<T> }> = {
     pk: ['id'],
     ts: (r) => Date.parse(r.created_time),
   },
+  lover_comments: {
+    pk: ['id'],
+    ts: (r) => Date.parse(r.created_time),
+  },
 }
 
 export function buildFilterString<T extends TableName>(filter: Filter<T>) {
   return `${filter.k}=eq.${filter.v}`
 }
 
-export function applyChange<T extends TableName>(
-  table: T,
-  rows: Row<T>[],
-  change: Change<T>
-) {
+const getIdenticalSpec = <T extends TableName>(table: T) => {
   const spec = REALTIME_TABLES[table]
   if (spec == null) {
     throw new Error(
@@ -97,7 +98,15 @@ export function applyChange<T extends TableName>(
   const identical = (a: Row<T>, b: Row<T>) => {
     return !spec.pk.some((col) => a[col] !== b[col])
   }
+  return { identical, spec }
+}
 
+export function applyChange<T extends TableName>(
+  table: T,
+  rows: Row<T>[],
+  change: Change<T>
+) {
+  const { identical, spec } = getIdenticalSpec(table)
   // apply the change to the existing row set, taking into account timestamps.
   // this presumes that when we get new changes, we get them in order, but some
   // prefix of the changes we get may be already reflected in our existing rows.
@@ -144,4 +153,13 @@ export function applyChange<T extends TableName>(
       return rows
     }
   }
+}
+
+export const insertChanges = <T extends TableName>(
+  table: T,
+  rows: Row<T>[],
+  newRows: Row<T>[]
+) => {
+  const { identical } = getIdenticalSpec(table)
+  return unionWith(rows, newRows, identical) as Row<T>[]
 }

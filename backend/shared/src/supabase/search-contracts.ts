@@ -93,6 +93,12 @@ export const hasGroupAccess = async (groupId?: string, uid?: string) => {
       return r.check_group_accessibility
     })
 }
+export type SearchTypes =
+  | 'without-stopwords'
+  | 'with-stopwords'
+  | 'description'
+  | 'prefix'
+  | 'answer'
 
 export function getSearchContractSQL(args: {
   term: string
@@ -104,17 +110,17 @@ export function getSearchContractSQL(args: {
   groupId?: string
   creatorId?: string
   uid?: string
-  hasGroupAccess?: boolean
+  groupAccess?: boolean
   isForYou?: boolean
+  searchType: SearchTypes
 }) {
-  const { term, sort, offset, limit, groupId } = args
+  const { term, sort, offset, limit, groupId, searchType } = args
 
   const hideStonks = sort === 'score' && !term.length && !groupId
 
   const whereSql = getSearchContractWhereSQL({ ...args, hideStonks })
 
   const isUrl = term.startsWith('https://manifold.markets/')
-
   if (isUrl) {
     const slug = term.split('/').pop()
     return renderSql(
@@ -125,20 +131,38 @@ export function getSearchContractSQL(args: {
     )
   }
 
+  const answersSubQuery = renderSql(
+    select('distinct a.contract_id'),
+    from('answers a'),
+    where(`a.text_fts @@ websearch_to_tsquery('english', $1)`, [term])
+  )
+
   // Normal full text search
   return renderSql(
-    select('data'),
+    select('data, importance_score'),
     from('contracts'),
     groupId && [
       join('group_contracts gc on gc.contract_id = contracts.id'),
       where('gc.group_id = $1', [groupId]),
     ],
+    searchType === 'answer' &&
+      join(
+        `(${answersSubQuery}) as matched_answers on matched_answers.contract_id = contracts.id`
+      ),
 
     whereSql,
 
     term.length && [
-      join(`websearch_to_tsquery('english', $1) as query on true`),
-      where('question_fts @@ query OR description_fts @@ query'),
+      searchType === 'prefix' &&
+        where(`question_fts @@ to_tsquery('english', $1)`),
+      searchType === 'without-stopwords' &&
+        where(`question_fts @@ websearch_to_tsquery('english', $1)`),
+      searchType === 'with-stopwords' &&
+        where(
+          `question_nostop_fts @@ websearch_to_tsquery('english_nostop_with_prefix', $1)`
+        ),
+      searchType === 'description' &&
+        where(`description_fts @@ websearch_to_tsquery('english', $1)`),
     ],
 
     orderBy(getSearchContractSortSQL(sort)),
@@ -208,28 +232,81 @@ function getSearchContractWhereSQL(args: {
   ]
 }
 
-type SortFields = Record<string, string>
-
-function getSearchContractSortSQL(sort: string) {
-  const sortFields: SortFields = {
-    score: 'importance_score',
-    'daily-score': "(data->>'dailyScore')::numeric",
-    '24-hour-vol': "(data->>'volume24Hours')::numeric",
-    liquidity: "(data->>'elasticity')::numeric",
-    'last-updated': "(data->>'lastUpdatedTime')::numeric",
-    'most-popular': "(data->>'uniqueBettorCount')::integer",
-    newest: 'created_time',
-    'resolve-date': 'resolution_time',
-    'close-date': 'close_time',
-    random: 'random()',
-    'bounty-amount': "COALESCE((data->>'bountyLeft')::integer, -1)",
-    'prob-descending': "resolution DESC, (data->>'p')::numeric",
-    'prob-ascending': "resolution DESC, (data->>'p')::numeric",
+type SortFields = Record<
+  string,
+  {
+    sql: string
+    sortCallback: (c: Contract) => number
+    order: 'ASC' | 'DESC' | 'DESC NULLS LAST'
   }
-
-  const ASCDESC =
-    sort === 'close-date' || sort === 'liquidity' || sort === 'prob-ascending'
-      ? 'ASC'
-      : 'DESC NULLS LAST'
-  return `${sortFields[sort]} ${ASCDESC}`
+>
+export const sortFields: SortFields = {
+  score: {
+    sql: 'importance_score',
+    sortCallback: (c: Contract) => c.importanceScore,
+    order: 'DESC',
+  },
+  'daily-score': {
+    sql: "(data->>'dailyScore')::numeric",
+    sortCallback: (c: Contract) => c.dailyScore,
+    order: 'DESC NULLS LAST',
+  },
+  '24-hour-vol': {
+    sql: "(data->>'volume24Hours')::numeric",
+    sortCallback: (c: Contract) => c.volume24Hours,
+    order: 'DESC NULLS LAST',
+  },
+  liquidity: {
+    sql: "(data->>'elasticity')::numeric",
+    sortCallback: (c: Contract) => c.elasticity,
+    order: 'ASC',
+  },
+  'last-updated': {
+    sql: "(data->>'lastUpdatedTime')::numeric",
+    sortCallback: (c: Contract) => c.lastUpdatedTime,
+    order: 'DESC NULLS LAST',
+  },
+  'most-popular': {
+    sql: "(data->>'uniqueBettorCount')::integer",
+    sortCallback: (c: Contract) => c.uniqueBettorCount,
+    order: 'DESC NULLS LAST',
+  },
+  newest: {
+    sql: 'created_time',
+    sortCallback: (c: Contract) => c.createdTime,
+    order: 'DESC NULLS LAST',
+  },
+  'resolve-date': {
+    sql: 'resolution_time',
+    sortCallback: (c: Contract) => c.resolutionTime ?? 0,
+    order: 'DESC NULLS LAST',
+  },
+  'close-date': {
+    sql: 'close_time',
+    sortCallback: (c: Contract) => c.closeTime ?? Infinity,
+    order: 'ASC',
+  },
+  random: {
+    sql: 'random()',
+    sortCallback: () => Math.random(),
+    order: 'DESC NULLS LAST',
+  },
+  'bounty-amount': {
+    sql: "COALESCE((data->>'bountyLeft')::integer, -1)",
+    sortCallback: (c: Contract) => ('bountyLeft' in c && c.bountyLeft) || -1,
+    order: 'DESC NULLS LAST',
+  },
+  'prob-descending': {
+    sql: "resolution DESC, (data->>'p')::numeric",
+    sortCallback: (c: Contract) => ('p' in c && c.p) || 0,
+    order: 'DESC NULLS LAST',
+  },
+  'prob-ascending': {
+    sql: "resolution DESC, (data->>'p')::numeric",
+    sortCallback: (c: Contract) => ('p' in c && c.p) || 0,
+    order: 'ASC',
+  },
+}
+function getSearchContractSortSQL(sort: string) {
+  return `${sortFields[sort].sql} ${sortFields[sort].order}`
 }

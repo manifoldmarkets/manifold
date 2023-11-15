@@ -1,5 +1,4 @@
 import { buildArray } from 'common/util/array'
-import { Lover } from 'love/hooks/use-lover'
 import { Carousel } from 'web/components/widgets/carousel'
 import Image from 'next/image'
 import { Modal } from 'web/components/layout/modal'
@@ -7,6 +6,10 @@ import { useState } from 'react'
 import { User } from 'common/user'
 import { Col } from 'web/components/layout/col'
 import { SignUpButton } from './nav/love-sidebar'
+import { Lover } from 'common/love/lover'
+import { useAdmin } from 'web/hooks/use-admin'
+import { Button } from 'web/components/buttons/button'
+import { clearLoverPhoto } from 'web/lib/firebase/love/api'
 
 export default function ProfileCarousel(props: {
   lover: Lover
@@ -17,6 +20,8 @@ export default function ProfileCarousel(props: {
 
   const [lightboxUrl, setLightboxUrl] = useState('')
   const [dialogOpen, setDialogOpen] = useState(false)
+
+  const isAdmin = useAdmin()
 
   if (!currentUser) {
     return (
@@ -52,6 +57,19 @@ export default function ProfileCarousel(props: {
   }
   return (
     <>
+      {isAdmin && (
+        <Button
+          className="self-end"
+          size="2xs"
+          color="red"
+          onClick={() => {
+            console.log('deleting')
+            clearLoverPhoto({ loverId: lover.id })
+          }}
+        >
+          Admin: Delete pinned photo
+        </Button>
+      )}
       <Carousel>
         {buildArray(lover.pinned_url, lover.photo_urls).map((url, i) => {
           return (

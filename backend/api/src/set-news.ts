@@ -1,4 +1,4 @@
-import { isAdminId, isTrustworthy } from 'common/envs/constants'
+import { isAdminId, isModId } from 'common/envs/constants'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { z } from 'zod'
 import { APIError, authEndpoint, validate } from './helpers'
@@ -13,8 +13,7 @@ const schema = z
 
 export const setnews = authEndpoint(async (req, auth) => {
   const { dashboardIds } = validate(schema, req.body)
-  const user = await getUserSupabase(auth.uid)
-  if (!isAdminId(auth.uid) && !isTrustworthy(user?.username)) {
+  if (!isAdminId(auth.uid) && !isModId(auth.uid)) {
     throw new APIError(403, 'You are not an admin or mod')
   }
 
@@ -43,7 +42,7 @@ export const setnews = authEndpoint(async (req, auth) => {
     revalidateStaticProps(`/home`),
   ])
 
-  track(auth.uid, 'set-news', { dashboardIds, username: user?.username })
+  track(auth.uid, 'set-news', { dashboardIds })
 
   return { success: true }
 })

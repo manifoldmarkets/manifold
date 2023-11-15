@@ -1,8 +1,7 @@
+import { partition, zip } from 'lodash'
 import { Row as rowFor } from 'common/supabase/utils'
 import { User } from 'common/user'
 import { debounce, orderBy } from 'lodash'
-import { calculateAge } from 'love/components/calculate-age'
-import { Lover } from 'love/hooks/use-lover'
 import { useNearbyCities } from 'love/hooks/use-nearby-locations'
 import { useEffect, useState } from 'react'
 import { IoFilterSharp } from 'react-icons/io5'
@@ -22,6 +21,8 @@ import {
 } from './wants-kids-filter'
 import { useEffectCheckEquality } from 'web/hooks/use-effect-check-equality'
 import { OriginLocation } from './location-filter'
+import { Lover } from 'common/love/lover'
+import { filterDefined } from 'common/util/array'
 
 export type FilterFields = {
   orderBy: 'last_online_time' | 'created_time'
@@ -95,9 +96,11 @@ export const Search = (props: {
 
   const [debouncedSetRadius] = useState(() => debounce(setDebouncedRadius, 200))
 
-  const [nearbyOriginLocation, setNearbyOriginLocation] = useState<
-    OriginLocation | undefined | null
-  >(undefined)
+  const [nearbyOriginLocation, setNearbyOriginLocation] =
+    usePersistentInMemoryState<OriginLocation | undefined | null>(
+      undefined,
+      'nearby-origin-location'
+    )
 
   const nearbyCities = useNearbyCities(
     nearbyOriginLocation?.id,
@@ -168,20 +171,15 @@ export const Search = (props: {
       },
       'desc'
     )
-    const filteredLovers = sortedLovers?.filter((lover) => {
+    const modifiedSortedLovers = alternateWomenAndMen(sortedLovers)
+    const filteredLovers = modifiedSortedLovers?.filter((lover) => {
       if (lover.user.name === 'deleted') return false
       if (lover.user.userDeleted || lover.user.isBannedFromPosting) return false
-      if (
-        filters.pref_age_min &&
-        calculateAge(lover.birthdate) < filters.pref_age_min
-      ) {
+      if (filters.pref_age_min && lover.age < filters.pref_age_min) {
         return false
-      } else if (
-        filters.pref_age_max &&
-        calculateAge(lover.birthdate) > filters.pref_age_max
-      ) {
+      } else if (filters.pref_age_max && lover.age > filters.pref_age_max) {
         return false
-      } else if (calculateAge(lover.birthdate) < 18) {
+      } else if (lover.age < 18) {
         return false
       } else if (
         filters.geodbCityIds &&
@@ -306,4 +304,9 @@ export const Search = (props: {
       </RightModal>
     </Col>
   )
+}
+
+const alternateWomenAndMen = (lovers: Lover[]) => {
+  const [women, nonWomen] = partition(lovers, (l) => l.gender === 'female')
+  return filterDefined(zip(women, nonWomen).flat())
 }

@@ -5,6 +5,7 @@ import { useEffectCheckEquality } from './use-effect-check-equality'
 import { Answer, DpmAnswer } from 'common/answer'
 import { uniqBy } from 'lodash'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
+import { filterDefined } from 'common/util/array'
 
 export function useUserById(userId: string | undefined) {
   const [user, setUser] = useState<User | null | undefined>(undefined)
@@ -19,7 +20,7 @@ export function useUserById(userId: string | undefined) {
 }
 
 export function useUsers(userIds: string[]) {
-  const [users, setUsers] = useState<User[] | undefined>(undefined)
+  const [users, setUsers] = useState<(User | null)[] | undefined>(undefined)
 
   const requestIdRef = useRef(0)
   useEffectCheckEquality(() => {
@@ -44,20 +45,19 @@ export function useUsersInStore(
   )
 
   useEffectCheckEquality(() => {
-    const userIdsToFetch = userIds.filter(
-      (id) => !users?.map((u) => u.id).includes(id)
-    )
+    const userIdSet = new Set((users ?? []).map((u) => u?.id))
+    const userIdsToFetch = userIds.filter((id) => !userIdSet.has(id))
     if (userIdsToFetch.length === 0) return
     getUsers(limit ? userIdsToFetch.slice(0, limit) : userIdsToFetch).then(
       (newUsers) => {
         setUsers((currentUsers) =>
-          uniqBy((currentUsers ?? []).concat(newUsers), 'id')
+          uniqBy((currentUsers ?? []).concat(filterDefined(newUsers)), 'id')
         )
       }
     )
   }, [userIds])
 
-  return users?.filter((user) => userIds.includes(user.id))
+  return users?.filter((user) => userIds.includes(user?.id))
 }
 
 export function useUserByIdOrAnswer(answer: Answer | DpmAnswer) {

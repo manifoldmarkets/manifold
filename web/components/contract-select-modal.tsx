@@ -3,41 +3,11 @@ import { Contract } from 'common/contract'
 import { useState } from 'react'
 import { usePrivateUser } from 'web/hooks/use-user'
 import { Button } from './buttons/button'
-import { Col } from './layout/col'
-import { MODAL_CLASS, Modal } from './layout/modal'
 import { Row } from './layout/row'
 import {
   SupabaseAdditionalFilter,
   SupabaseSearch,
 } from 'web/components/supabase-search'
-import { LoadingIndicator } from './widgets/loading-indicator'
-
-export function SelectMarketsModal(props: {
-  title?: string
-  description?: React.ReactNode
-  open: boolean
-  setOpen: (open: boolean) => void
-  submitLabel: (length: number) => string
-  onSubmit: (contracts: Contract[]) => void | Promise<void>
-}) {
-  const { title, description, open, setOpen, submitLabel, onSubmit } = props
-
-  return (
-    <Modal open={open} setOpen={setOpen} size={'lg'}>
-      <Col className={clsx(MODAL_CLASS, 'relative h-[85vh]')}>
-        {title && (
-          <div className={'text-primary-700 pb-0 text-xl'}>{title}</div>
-        )}
-        {description}
-        <SelectMarkets
-          submitLabel={submitLabel}
-          onSubmit={onSubmit}
-          className="grow overflow-y-auto"
-        />
-      </Col>
-    </Modal>
-  )
-}
 
 export function SelectMarkets(props: {
   submitLabel: (length: number) => string
@@ -51,8 +21,8 @@ export function SelectMarkets(props: {
   const [contracts, setContracts] = useState<Contract[]>([])
   const [loading, setLoading] = useState(false)
 
-  async function addContract(contract: Contract) {
-    if (contracts.find((c) => c.id === contract.id) !== undefined) {
+  async function toggleContract(contract: Contract) {
+    if (contracts.some((c) => c.id === contract.id)) {
       setContracts(contracts.filter((c) => c.id !== contract.id))
     } else setContracts([...contracts, contract])
   }
@@ -66,15 +36,9 @@ export function SelectMarkets(props: {
 
   return (
     <div className={clsx('px-1', className)}>
-      {loading && (
-        <div className="w-full justify-center">
-          <LoadingIndicator />
-        </div>
-      )}
       <SupabaseSearch
         persistPrefix="contract-select-modal"
-        hideOrderSelector
-        onContractClick={addContract}
+        onContractClick={toggleContract}
         hideActions
         highlightContractIds={contracts.map((c) => c.id)}
         additionalFilter={{
@@ -107,6 +71,7 @@ export function SelectMarkets(props: {
               onClick={onFinish}
               color="indigo"
               disabled={contracts.length <= 0}
+              loading={loading}
             >
               {contracts.length > 0
                 ? submitLabel(contracts.length)

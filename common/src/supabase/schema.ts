@@ -986,8 +986,8 @@ export interface Database {
       }
       lovers: {
         Row: {
-          bio: string | null
-          birthdate: string
+          bio: Json | null
+          age: number
           born_in_location: string | null
           city: string
           comments_enabled: boolean
@@ -1030,8 +1030,8 @@ export interface Database {
           website: string | null
         }
         Insert: {
-          bio?: string | null
-          birthdate: string
+          bio?: Json | null
+          age: number
           born_in_location?: string | null
           city: string
           comments_enabled?: boolean
@@ -1074,8 +1074,8 @@ export interface Database {
           website?: string | null
         }
         Update: {
-          bio?: string | null
-          birthdate?: string
+          bio?: Json | null
+          age?: number
           born_in_location?: string | null
           city?: string
           comments_enabled?: boolean

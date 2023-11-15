@@ -22,6 +22,7 @@ import { runTxnFromBank } from 'shared/txn/run-txn'
 import { MINUTE_MS } from 'common/util/time'
 import { removeUndefinedProps } from 'common/util/object'
 import { trackPublicEvent } from 'shared/analytics'
+import { manifoldLoveUserId } from 'common/love/constants'
 
 const bodySchema = z
   .object({
@@ -67,12 +68,13 @@ export const referuser = authEndpoint(async (req, auth) => {
     referredByUserId: referredByUser.id,
     referredByContractId: contractId,
   })
-  const db = createSupabaseClient()
-  // Perhaps should check if they're already following the user
-  await db
-    .from('user_follows')
-    .upsert([{ user_id: newUser.id, follow_id: referredByUser.id }])
-  await createFollowAfterReferralNotification(newUser.id, referredByUser, pg)
+  if (referredByUser.id !== manifoldLoveUserId) {
+    const db = createSupabaseClient()
+    await db
+      .from('user_follows')
+      .upsert([{ user_id: newUser.id, follow_id: referredByUser.id }])
+    await createFollowAfterReferralNotification(newUser.id, referredByUser, pg)
+  }
   return { status: 'ok' }
 })
 

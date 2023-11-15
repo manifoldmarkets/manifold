@@ -71,7 +71,7 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
   useRefreshAllClients()
   useReloadIfClientOld()
 
-  const title = 'Manifold | Bet on news, politics, science, AI, & more!'
+  const title = 'Manifold | The largest prediction market platform'
   const description =
     'Manifold is the largest prediction market platform. Bet on news, politics, science, AI, and more with play-money. Accurate forecasts via the wisdom of the crowd.'
 

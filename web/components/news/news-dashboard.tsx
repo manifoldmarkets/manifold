@@ -1,6 +1,5 @@
 import { DashboardContent } from '../dashboard/dashboard-content'
 import { LoadingIndicator } from '../widgets/loading-indicator'
-import { DashboardDescription } from '../dashboard/dashboard-description'
 import { CopyLinkOrShareButton } from '../buttons/copy-link-button'
 import { Row } from '../layout/row'
 import { FollowDashboardButton } from '../dashboard/follow-dashboard-button'
@@ -12,7 +11,7 @@ import { PencilIcon } from '@heroicons/react/outline'
 import { useUser } from 'web/hooks/use-user'
 import { buttonClass } from '../buttons/button'
 import { Tooltip } from '../widgets/tooltip'
-import { ENV_CONFIG, isAdminId, isTrustworthy } from 'common/envs/constants'
+import { ENV_CONFIG, isAdminId, isModId } from 'common/envs/constants'
 import { Dashboard } from 'common/dashboard'
 import { LinkPreviews } from 'common/link-preview'
 
@@ -24,7 +23,7 @@ export function NewsDashboard(props: {
   const user = useUser()
   const isCreator = user?.id === dashboard.creatorId
   const isOnlyMod =
-    user && !isCreator && (isAdminId(user.id) || isTrustworthy(user.username))
+    user && !isCreator && (isAdminId(user.id) || isModId(user.id))
 
   if (!dashboard) return <LoadingIndicator />
 
@@ -72,8 +71,11 @@ export function NewsDashboard(props: {
           size="2xs"
         />
         <UserLink
-          username={dashboard.creatorUsername}
-          name={dashboard.creatorName}
+          user={{
+            id: dashboard.creatorId,
+            username: dashboard.creatorUsername,
+            name: dashboard.creatorName,
+          }}
           className="text-ink-700"
         />
         <span className="text-ink-400 ml-4 text-sm">
@@ -82,7 +84,6 @@ export function NewsDashboard(props: {
         </span>
       </Row>
 
-      <DashboardDescription description={dashboard.description} />
       <DashboardContent
         items={dashboard.items}
         topics={dashboard.topics}

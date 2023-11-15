@@ -1,18 +1,12 @@
 import clsx from 'clsx'
-import { FilterFields } from './search'
 import { Col } from 'web/components/layout/col'
 import { Checkbox } from 'web/components/widgets/checkbox'
 import { Slider } from 'web/components/widgets/slider'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
-import { useEffect, useState } from 'react'
-import { debounce } from 'lodash'
-import { useNearbyCities } from 'love/hooks/use-nearby-locations'
-import { Lover } from 'love/hooks/use-lover'
-import { type } from 'os'
-import { useEffectCheckEquality } from 'web/hooks/use-effect-check-equality'
 import { Row } from 'web/components/layout/row'
 import { City, CitySearchBox } from '../search-location'
 import { XCircleIcon } from '@heroicons/react/outline'
+import { Lover } from 'common/love/lover'
 
 export const PREF_AGE_MIN = 18
 export const PREF_AGE_MAX = 100
@@ -30,18 +24,25 @@ export function LocationFilterText(props: {
   if (!nearbyOriginLocation) {
     return (
       <span>
-        <span className={clsx('text-semibold', highlightedClass)}>Any</span>{' '}
-        location
+        <span className={clsx('text-semibold', highlightedClass)}>Any</span>
+        <span className="hidden sm:inline"> location</span>
       </span>
     )
   }
   return (
     <span>
-      <span className={clsx('text-semibold', highlightedClass)}>{radius}</span>{' '}
-      miles near{' '}
-      {youLover?.geodb_city_id == nearbyOriginLocation.id
-        ? 'you'
-        : nearbyOriginLocation.name}
+      <span className="hidden sm:inline">
+        <span className={clsx('text-semibold', highlightedClass)}>
+          {radius}
+        </span>{' '}
+        miles
+      </span>{' '}
+      <span className="capitalize sm:normal-case">near</span>{' '}
+      <span className={highlightedClass}>
+        {youLover?.geodb_city_id == nearbyOriginLocation.id
+          ? 'you'
+          : nearbyOriginLocation.name}
+      </span>
     </span>
   )
 }

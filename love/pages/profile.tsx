@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { Lover } from 'love/hooks/use-lover'
 import { Row as rowFor } from 'common/supabase/utils'
 import { Col } from 'web/components/layout/col'
 import { getUserAndPrivateUser, User } from 'web/lib/firebase/users'
@@ -7,13 +6,13 @@ import { RequiredLoveUserForm } from 'love/components/required-lover-form'
 import { OptionalLoveUserForm } from 'love/components/optional-lover-form'
 import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
 import { PrivateUser } from 'common/user'
-import { getLoverRow } from 'love/lib/supabase/lovers'
-import dayjs from 'dayjs'
 import { useUser } from 'web/hooks/use-user'
+import { getLoverRow, Lover } from 'common/love/lover'
+import { db } from 'web/lib/supabase/db'
 
 export const getServerSideProps = redirectIfLoggedOut('/', async (_, creds) => {
   const { user, privateUser } = await getUserAndPrivateUser(creds.uid)
-  const loverRow = await getLoverRow(user.id)
+  const loverRow = await getLoverRow(user.id, db)
 
   return { props: { auth: { user, privateUser }, loverRow } }
 })
@@ -25,7 +24,6 @@ export default function ProfilePage(props: {
   const user = useUser() ?? auth.user
   const [lover, setLover] = useState<Lover>({
     ...loverRow,
-    birthdate: dayjs(loverRow.birthdate).format('YYYY-MM-DD'),
     user,
   })
   const setLoverState = (key: keyof rowFor<'lovers'>, value: any) => {
