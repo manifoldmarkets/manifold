@@ -222,9 +222,12 @@ export function SupabaseSearch(props: {
   const [lastSearch, setLastSearch] = usePersistentInMemoryState<
     typeof searchParams
   >(undefined, `${persistPrefix}-last-search`)
-  const queryAsString = searchParams?.[QUERY_KEY] ?? ''
-  const searchTypeAsString = searchParams?.[SEARCH_TYPE_KEY] ?? ''
-  const currentTopicSlug = searchParams?.[TOPIC_KEY]
+  const query = searchParams?.[QUERY_KEY] ?? ''
+  const searchType = searchParams?.[SEARCH_TYPE_KEY] ?? ''
+  const topicSlug = searchParams?.[TOPIC_KEY]
+  const sort = searchParams?.[SORT_KEY]
+  const filter = searchParams?.[FILTER_KEY]
+  const contractType = searchParams?.[CONTRACT_TYPE_KEY]
 
   const [queriedUserResults, setQueriedUserResults] =
     usePersistentInMemoryState<UserSearchResult[] | undefined>(
@@ -232,16 +235,16 @@ export function SupabaseSearch(props: {
       `${persistPrefix}-queried-user-results`
     )
 
-  const [showSearchTypeState, setShowSearchTypeState] = useState(
-    queryAsString === '' || searchTypeAsString !== '' || !!currentTopicSlug
+  const [searchTypeShown, setSearchTypeShown] = useState(
+    query === '' || searchType !== '' || !!topicSlug
   )
 
   const userResults = uniqBy(
     (
       followingUsers?.filter(
         (f) =>
-          f.name.toLowerCase().includes(queryAsString.toLowerCase()) ||
-          f.username.toLowerCase().includes(queryAsString.toLowerCase())
+          f.name.toLowerCase().includes(query.toLowerCase()) ||
+          f.username.toLowerCase().includes(query.toLowerCase())
       ) ?? []
     ).concat(queriedUserResults ?? []),
     'id'
@@ -261,9 +264,7 @@ export function SupabaseSearch(props: {
 
   // remove love from new results
   const contracts =
-    searchParams?.[SORT_KEY] === 'newest' &&
-    !searchParams?.[QUERY_KEY] &&
-    (!currentTopicSlug || currentTopicSlug === 'for-you')
+    sort === 'newest' && !query && (!topicSlug || topicSlug === 'for-you')
       ? rawContracts?.filter(
           (c) => !c.groupSlugs?.includes('manifoldlove-relationships')
         )
@@ -272,35 +273,27 @@ export function SupabaseSearch(props: {
   const pillOptions: SearchType[] = ['Questions', 'Users', 'Topics']
   const setQuery = (query: string) => setSearchParams({ [QUERY_KEY]: query })
   const setSearchType = (t: SearchType) =>
-    setSearchParams({ [SEARCH_TYPE_KEY]: searchTypeAsString === t ? '' : t })
+    setSearchParams({ [SEARCH_TYPE_KEY]: t })
   const showSearchTypes =
     !hideSearchTypes &&
-    ((showSearchTypeState &&
-      (!currentTopicSlug || currentTopicSlug === 'for-you') &&
-      queryAsString !== '') ||
-      searchTypeAsString !== '') &&
+    ((searchTypeShown &&
+      (!topicSlug || topicSlug === 'for-you') &&
+      query !== '') ||
+      searchType !== '') &&
     !contractsOnly
 
   useEffect(() => {
-    if (searchParams?.[QUERY_KEY] === '') setShowSearchTypeState(true)
-  }, [searchParams?.[QUERY_KEY]])
+    if (query === '') setSearchTypeShown(true)
+  }, [query])
 
   useEffect(() => {
-    if (
-      currentTopicSlug &&
-      currentTopicSlug !== 'for-you' &&
-      showSearchTypeState
-    ) {
-      setShowSearchTypeState(false)
+    if (topicSlug && topicSlug !== 'for-you' && searchTypeShown) {
+      setSearchTypeShown(false)
       setSearchParams({ [SEARCH_TYPE_KEY]: '' })
-    } else if (
-      !showSearchTypes &&
-      currentTopicSlug === '' &&
-      queryAsString === ''
-    ) {
-      setShowSearchTypeState(true)
+    } else if (!showSearchTypes && topicSlug === '' && query === '') {
+      setSearchTypeShown(true)
     }
-  }, [currentTopicSlug])
+  }, [topicSlug])
 
   const queryUsers = useEvent(async (query: string) =>
     searchUsers(query, USERS_PER_PAGE, [
@@ -324,22 +317,22 @@ export function SupabaseSearch(props: {
     const searchCount = ++searchCountRef.current
 
     queryContracts(true)
-    queryUsers(queryAsString).then((results) => {
+    queryUsers(query).then((results) => {
       if (searchCount === searchCountRef.current) setQueriedUserResults(results)
     })
-    queryTopics(queryAsString).then((results) => {
+    queryTopics(query).then((results) => {
       if (searchCount === searchCountRef.current) setTopicResults?.(results)
     })
   }, [JSON.stringify(searchParams)])
 
   const emptyContractsState =
     props.emptyState ??
-    (searchParams?.[QUERY_KEY] ? (
+    (query ? (
       <NoResults />
     ) : (
       <Col className="text-ink-700 mx-2 my-6 text-center">
         No questions yet.
-        {searchParams?.[TOPIC_KEY] && (
+        {topicSlug && (
           <Row className={'mt-2 w-full items-center justify-center'}>
             <AddContractToGroupButton groupSlug={searchParams[TOPIC_KEY]} />
           </Row>
@@ -356,23 +349,23 @@ export function SupabaseSearch(props: {
               <Input
                 type="text"
                 inputMode="search"
-                value={queryAsString}
+                value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                onBlur={trackCallback('search', { query: queryAsString })}
+                onBlur={trackCallback('search', { query: query })}
                 placeholder={
-                  searchTypeAsString === 'Users'
+                  searchType === 'Users'
                     ? 'Search users'
-                    : searchTypeAsString === 'Topics'
+                    : searchType === 'Topics'
                     ? 'Search topics'
-                    : searchTypeAsString === 'Questions' ||
-                      (currentTopicSlug && currentTopicSlug !== 'for-you')
+                    : searchType === 'Questions' ||
+                      (topicSlug && topicSlug !== 'for-you')
                     ? 'Search questions'
                     : 'Search questions, users, and topics'
                 }
                 className="w-full"
                 autoFocus={autoFocus}
               />
-              {queryAsString !== '' && (
+              {query !== '' && (
                 <IconButton
                   className={'absolute right-2 top-2.5 p-0'}
                   size={'2xs'}
@@ -393,9 +386,7 @@ export function SupabaseSearch(props: {
             params={searchParams ?? defaults}
             updateParams={setSearchParams}
             className={
-              searchTypeAsString !== '' && searchTypeAsString !== 'Questions'
-                ? 'invisible'
-                : ''
+              searchType !== '' && searchType !== 'Questions' ? 'invisible' : ''
             }
             showTopicTag={showTopicTag}
           />
@@ -408,7 +399,7 @@ export function SupabaseSearch(props: {
             color={'gray-white'}
             className={' ml-1 rounded-full sm:hidden'}
             onClick={() => {
-              setShowSearchTypeState(false)
+              setSearchTypeShown(false)
               setSearchType('')
             }}
           >
@@ -434,8 +425,8 @@ export function SupabaseSearch(props: {
               <PillButton
                 key={option}
                 selected={
-                  searchTypeAsString === option ||
-                  (option === 'Questions' && searchTypeAsString === '')
+                  searchType === option ||
+                  (option === 'Questions' && searchType === '')
                 }
                 onSelect={() => setSearchType(option)}
               >
@@ -447,7 +438,7 @@ export function SupabaseSearch(props: {
       ) : (
         rowBelowFilters
       )}
-      {searchTypeAsString === '' || searchTypeAsString === 'Questions' ? (
+      {searchType === '' || searchType === 'Questions' ? (
         !contracts ? (
           <LoadingIndicator />
         ) : contracts.length === 0 ? (
@@ -466,9 +457,7 @@ export function SupabaseSearch(props: {
               headerClassName={clsx(headerClassName, '!top-14')}
             />
             <LoadMoreUntilNotVisible loadMore={queryContracts} />
-            {!shouldLoadMore &&
-              (searchParams?.[FILTER_KEY] !== 'all' ||
-                searchParams?.[CONTRACT_TYPE_KEY] !== 'ALL') && (
+            {!shouldLoadMore && (filter !== 'all' || contractType !== 'ALL') && (
                 <div className="text-ink-500 mx-2 my-8 text-center">
                   No more results under this filter.{' '}
                   <button
@@ -484,10 +473,10 @@ export function SupabaseSearch(props: {
                   </button>
                   ?
                 </div>
-              )}
+            )}
           </>
         )
-      ) : searchTypeAsString === 'Users' ? (
+      ) : searchType === 'Users' ? (
         userResults && userResults.length === 0 ? (
           <Col className="text-ink-700 mx-2 my-6 text-center">
             No users found.
@@ -499,7 +488,7 @@ export function SupabaseSearch(props: {
             userResultProps={userResultProps}
           />
         )
-      ) : searchTypeAsString === 'Topics' ? (
+      ) : searchType === 'Topics' ? (
         topicResults && topicResults.length === 0 ? (
           <Col className="text-ink-700 mx-2 my-6 text-center">
             No topics found.
