@@ -250,26 +250,14 @@ export function SupabaseSearch(props: {
     'id'
   )
 
-  const {
-    contracts: rawContracts,
-    loading,
-    queryContracts,
-    shouldLoadMore,
-  } = useContractSearch(
-    persistPrefix,
-    setLastSearch,
-    searchParams,
-    additionalFilter,
-    isWholePage
-  )
-
-  // remove love from new results
-  const contracts =
-    sort === 'newest' && !query && (!topicSlug || topicSlug === 'for-you')
-      ? rawContracts?.filter(
-          (c) => !c.groupSlugs?.includes('manifoldlove-relationships')
-        )
-      : rawContracts
+  const { contracts, loading, queryContracts, shouldLoadMore } =
+    useContractSearch(
+      persistPrefix,
+      setLastSearch,
+      searchParams,
+      additionalFilter,
+      isWholePage
+    )
 
   const pillOptions: SearchType[] = ['Questions', 'Users', 'Topics']
   const setQuery = (query: string) => setSearchParams({ [QUERY_KEY]: query })

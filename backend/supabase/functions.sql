@@ -52,12 +52,12 @@ select ct.resolution_time is null
   and ((ct.close_time > now() + interval '10 minutes') or ct.close_time is null) $$ language sql;
 
 create
-or replace function search_contracts_by_group_slugs (group_slugs text[], lim int, start int) returns jsonb[] stable parallel safe language sql as $$
+or replace function search_contracts_by_group_slugs_1 (p_group_slugs text[], lim int, start int) returns jsonb[] stable parallel safe language sql as $$
 select array_agg(data)
 from (
     select data
     from contracts
-    where data->'groupSlugs' ?| group_slugs
+    where contracts.group_slugs && p_group_slugs
       and is_valid_contract(contracts)
     order by importance_score desc,
      slug offset start
@@ -65,9 +65,9 @@ from (
   ) as search_contracts $$;
 
 create
-or replace function search_contracts_by_group_slugs_for_creator (
+or replace function search_contracts_by_group_slugs_for_creator_1 (
   creator_id text,
-  group_slugs text[],
+  p_group_slugs text[],
   lim int,
   start int
 ) returns jsonb[] stable parallel safe language sql as $$
@@ -75,7 +75,7 @@ select array_agg(data)
 from (
     select data
     from contracts
-    where data->'groupSlugs' ?| group_slugs
+    where contracts.group_slugs && p_group_slugs
       and is_valid_contract(contracts)
       and contracts.creator_id = $1
     order by importance_score desc,

@@ -368,11 +368,11 @@ export const getImportantContractsForNewUsers = async (
     const ids = await pg.map(
       `select id
        from contracts
-       where (data -> 'groupSlugs') is not null
-         and ($1::text[] is null or jsonb_array_to_text_array((data -> 'groupSlugs')) && $1)
+       where group_slugs is not null
+         and ($1::text[] is null or group_slugs && $1)
          and not exists (
            select 1
-           from unnest(jsonb_array_to_text_array(data->'groupSlugs')) as t(slug)
+           from unnest(group_slugs) as t(slug)
            where (slug = any($2) or slug ilike '%manifold%')
          )
          and resolution_time is null

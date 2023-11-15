@@ -10,6 +10,7 @@ import {
   orderBy,
 } from 'shared/supabase/sql-builder'
 import { getContractPrivacyWhereSQLFilter } from 'shared/supabase/contracts'
+import { PROD_MANIFOLD_LOVE_GROUP_SLUG } from 'common/envs/constants'
 
 export async function getForYouMarkets(userId: string, limit = 25) {
   const searchMarketSQL = getForYouSQL(userId, 'all', 'ALL', limit, 0)
@@ -117,9 +118,9 @@ export function getSearchContractSQL(args: {
   const { term, sort, offset, limit, groupId, searchType } = args
 
   const hideStonks = sort === 'score' && !term.length && !groupId
+  const hideLove = sort === 'newest' && !term.length && !groupId
 
-  const whereSql = getSearchContractWhereSQL({ ...args, hideStonks })
-
+  const whereSql = getSearchContractWhereSQL({ ...args, hideStonks, hideLove })
   const isUrl = term.startsWith('https://manifold.markets/')
   if (isUrl) {
     const slug = term.split('/').pop()
@@ -179,6 +180,7 @@ function getSearchContractWhereSQL(args: {
   groupId?: string
   hasGroupAccess?: boolean
   hideStonks?: boolean
+  hideLove?: boolean
 }) {
   const {
     filter,
@@ -189,6 +191,7 @@ function getSearchContractWhereSQL(args: {
     groupId,
     hasGroupAccess,
     hideStonks,
+    hideLove,
   } = args
 
   type FilterSQL = Record<string, string>
@@ -210,6 +213,7 @@ function getSearchContractWhereSQL(args: {
 
   const stonkFilter =
     hideStonks && contractType !== 'STONK' ? `outcome_type != 'STONK'` : ''
+  const loveFilter = hideLove ? `not group_slugs && $1` : ''
   const sortFilter = sort == 'close-date' ? 'close_time > NOW()' : ''
   const creatorFilter = creatorId ? `creator_id = '${creatorId}'` : ''
   const visibilitySQL = getContractPrivacyWhereSQLFilter(
@@ -219,11 +223,12 @@ function getSearchContractWhereSQL(args: {
     hasGroupAccess
   )
 
-  const deletedFilter = `data->>'deleted' is null OR (data->>'deleted')::boolean = false`
+  const deletedFilter = `deleted = false`
 
   return [
     where(filterSQL[filter]),
     where(stonkFilter),
+    where(loveFilter, [[PROD_MANIFOLD_LOVE_GROUP_SLUG]]),
     where(sortFilter),
     where(contractTypeFilter),
     where(visibilitySQL),
