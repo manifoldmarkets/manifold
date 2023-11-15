@@ -128,7 +128,7 @@ export function useGroupedNotifications(
   )
   const groupedMentionNotifications = groupSpecificNotifications(
     sortedNotifications,
-    (n) => n.reason === 'tagged_user' || n.reason === 'reply_to_users_comment'
+    (n) => n.reason === 'tagged_user'
   )
 
   return useMemo(
