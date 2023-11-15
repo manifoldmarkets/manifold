@@ -16,6 +16,7 @@ import ChevronDownIcon from '@heroicons/react/solid/ChevronDownIcon'
 import { FeedContractCard } from 'web/components/contract/feed-contract-card'
 import { getContract } from 'web/lib/supabase/contracts'
 import { Contract } from 'common/contract'
+import { Subtitle } from 'web/components/widgets/subtitle'
 
 const TRADER_THRESHOLD = 15
 const SAMPLING_P = 0.02
@@ -75,12 +76,14 @@ export default function CalibrationPage(props: {
       <Col className=" w-full rounded px-4 py-6 sm:px-8 xl:w-[125%]">
         <Col className="w-full max-w-[800px]">
           <Title>Track Record and Accuracy</Title>
-          
+
           <TrustPanel />
-          
-          <div className="text-ink-600  py-2 pb-4">
-            <div className="pb-2">
-              <div className={'text-ink-600  text-xl'}>
+
+          <Subtitle>Case studies</Subtitle>
+
+          <div className="text-ink-600 py-2 pb-4">
+            <div className="pb-8">
+              <div className={'text-ink-600 text-xl'}>
                 Predicting Trump's arrest
               </div>
               <div className="py-1">
@@ -97,7 +100,7 @@ export default function CalibrationPage(props: {
                 discussing it as a true possibility of happening!
               </div>
             </div>
-            <div className="pb-2">
+            <div className="pb-8">
               <div className={'text-ink-600  text-xl'}>
                 Al-Ahli Arab hospital explosion
               </div>
@@ -126,7 +129,7 @@ export default function CalibrationPage(props: {
                 </div>
               </div>
             </div>
-            <div className="pb-2">
+            <div className="pb-8">
               <div className={'text-ink-600  text-xl'}>
                 How we performed on the 2022 US midterms
               </div>
@@ -144,7 +147,9 @@ export default function CalibrationPage(props: {
               </div>
             </div>
             <div className="py-1">
-              <div className={'text-ink-600  text-xl'}>Predicting SBF fraud</div>
+              <div className={'text-ink-600  text-xl'}>
+                Predicting SBF fraud
+              </div>
               <div className="py-1">
                 <FeedContractCard
                   contract={sbfMarket}
@@ -160,10 +165,8 @@ export default function CalibrationPage(props: {
             </div>
           </div>
 
+          <Subtitle>Overall calibration</Subtitle>
           <Col className="w-full   ">
-            <h2 className={'text-ink-600 mb-2 text-xl'}>
-              Manifold's overall calibration
-            </h2>
             <div className="bg-canvas-0 relative w-full  rounded-md p-4 pr-12">
               <div className="absolute bottom-0 right-4 top-0 flex items-center">
                 <span className="text-ink-800 text-sm [writing-mode:vertical-rl]">
