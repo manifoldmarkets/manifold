@@ -1,6 +1,6 @@
 import clsx from 'clsx'
 import { Notification, ReactionNotificationTypes } from 'common/notification'
-import { PrivateUser } from 'common/user'
+import { PrivateUser, User } from 'common/user'
 import { groupBy, sortBy } from 'lodash'
 import { useRouter } from 'next/router'
 import { Fragment, ReactNode, useEffect, useMemo, useState } from 'react'
@@ -30,7 +30,7 @@ import {
 } from 'web/hooks/use-notifications'
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
-import { usePrivateUser, useIsAuthorized } from 'web/hooks/use-user'
+import { usePrivateUser, useIsAuthorized, useUser } from 'web/hooks/use-user'
 import { CogIcon, XIcon } from '@heroicons/react/outline'
 import { updatePrivateUser } from 'web/lib/firebase/users'
 import { getNativePlatform } from 'web/lib/native/is-native'
@@ -40,6 +40,7 @@ import { track } from 'web/lib/service/analytics'
 
 export default function NotificationsPage() {
   const privateUser = usePrivateUser()
+  const user = useUser()
   useRedirectIfSignedOut()
 
   const [navigateToSection, setNavigateToSection] = useState<string>()
@@ -62,8 +63,9 @@ export default function NotificationsPage() {
         <Title className="hidden lg:block">Notifications</Title>
         <SEO title="Notifications" description="Manifold user notifications" />
         {shouldShowBanner && <NotificationsAppBanner userId={privateUser.id} />}
-        {privateUser && router.isReady ? (
+        {privateUser && user && router.isReady ? (
           <NotificationsContent
+            user={user}
             privateUser={privateUser}
             section={navigateToSection}
           />
@@ -97,16 +99,17 @@ function NotificationsAppBanner(props: { userId: string }) {
 
 function NotificationsContent(props: {
   privateUser: PrivateUser
+  user: User
   section?: string
 }) {
-  const { privateUser, section } = props
+  const { privateUser, user, section } = props
   const {
     groupedNotifications,
     mostRecentNotification,
     groupedBalanceChangeNotifications,
     groupedNewMarketNotifications,
     groupedMentionNotifications,
-  } = useGroupedNotifications(privateUser.id)
+  } = useGroupedNotifications(user)
   const [unseenNewMarketNotifs, setNewMarketNotifsAsSeen] = useState(
     groupedNewMarketNotifications?.filter((n) => !n.isSeen).length ?? 0
   )

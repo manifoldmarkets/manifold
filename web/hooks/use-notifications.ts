@@ -18,6 +18,7 @@ import {
 import { safeLocalStorage } from 'web/lib/util/local'
 import { Row } from 'common/supabase/utils'
 import { db } from 'web/lib/supabase/db'
+import { User } from 'common/user'
 
 export type NotificationGroup = {
   notifications: Notification[]
@@ -97,11 +98,11 @@ export function useGroupedUnseenNotifications(
 }
 
 export function useGroupedNotifications(
-  userId: string,
+  user: User,
   selectTypes?: notification_source_types[],
   selectReasons?: NotificationReason[]
 ) {
-  const notifications = useNotifications(userId)?.filter(
+  const notifications = useNotifications(user.id)?.filter(
     (n) =>
       (selectTypes?.includes(n.sourceType) ||
         selectReasons?.includes(n.reason)) ??
@@ -128,7 +129,9 @@ export function useGroupedNotifications(
   )
   const groupedMentionNotifications = groupSpecificNotifications(
     sortedNotifications,
-    (n) => n.reason === 'tagged_user'
+    (n) =>
+      n.reason === 'tagged_user' ||
+      (n.sourceType === 'comment' && n.sourceText.includes('@' + user.username))
   )
 
   return useMemo(
