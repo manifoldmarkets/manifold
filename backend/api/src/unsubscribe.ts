@@ -360,7 +360,7 @@ export const unsubscribe = async (req: Request, res: Response) => {
                                         <br/>
                     <span>Click
                     <a href=${optOutAllUrl}>here</a>
-                       to unsubscribe from all unnecessary emails.
+                       to unsubscribe from all emails.
                       </span>
                                         <br/>
                                         <br/>

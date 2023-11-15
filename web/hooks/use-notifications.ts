@@ -30,7 +30,7 @@ const NOTIFICATIONS_KEY = 'notifications_1'
 function useNotifications(
   userId: string,
   // Nobody's going through 10 pages of notifications, right?
-  count = 10 * NOTIFICATIONS_PER_PAGE
+  count = 20 * NOTIFICATIONS_PER_PAGE
 ) {
   const { rows } = usePersistentSubscription(
     NOTIFICATIONS_KEY,
@@ -117,10 +117,19 @@ export function useGroupedNotifications(
       'contract_from_followed_user',
     ])
 
-  const groupedBalanceChangeNotifications =
-    groupBalanceChangeNotifications(sortedNotifications)
-  const groupedNewMarketNotifications =
-    groupNewMarketNotifications(sortedNotifications)
+  const groupedBalanceChangeNotifications = groupSpecificNotifications(
+    sortedNotifications,
+    (n) => BalanceChangeNotificationTypes.includes(n.reason)
+  )
+  const groupedNewMarketNotifications = groupSpecificNotifications(
+    sortedNotifications,
+    (n) => n.reason === 'contract_from_followed_user',
+    (n) => new Date(n.createdTime).toDateString() + n.sourceUserUsername
+  )
+  const groupedMentionNotifications = groupSpecificNotifications(
+    sortedNotifications,
+    (n) => n.reason === 'tagged_user' || n.reason === 'reply_to_users_comment'
+  )
 
   return useMemo(
     () => ({
@@ -128,6 +137,7 @@ export function useGroupedNotifications(
       groupedNotifications,
       groupedBalanceChangeNotifications,
       groupedNewMarketNotifications,
+      groupedMentionNotifications,
     }),
     [notifications]
   )
@@ -180,37 +190,22 @@ function groupGeneralNotifications(
   return [groupedNotifications, mostRecentNotification] as const
 }
 
-function groupBalanceChangeNotifications(
-  sortedNotifications: Notification[] | undefined
+function groupSpecificNotifications(
+  sortedNotifications: Notification[] | undefined,
+  filter: (n: Notification) => boolean,
+  groupByKey?: (n: Notification) => string
 ) {
   if (!sortedNotifications) return undefined
-  const filteredNotifications = sortedNotifications.filter((n) =>
-    BalanceChangeNotificationTypes.includes(n.reason)
-  )
+  const filteredNotifications = sortedNotifications.filter(filter)
   const notificationGroupsByDayAndContract = groupBy(
     filteredNotifications,
-    (notification) =>
-      new Date(notification.createdTime).toDateString() +
-      notification.sourceContractId +
-      notification.sourceTitle
+    (n) =>
+      groupByKey
+        ? groupByKey(n)
+        : new Date(n.createdTime).toDateString() +
+          n.sourceContractId +
+          n.sourceTitle
   )
 
   return groupNotifications(notificationGroupsByDayAndContract)
-}
-
-function groupNewMarketNotifications(
-  sortedNotifications: Notification[] | undefined
-) {
-  if (!sortedNotifications) return undefined
-  const filteredNotifications = sortedNotifications.filter(
-    (n) => n.reason === 'contract_from_followed_user'
-  )
-  const notificationGroupsByDay = groupBy(
-    filteredNotifications,
-    (notification) =>
-      new Date(notification.createdTime).toDateString() +
-      notification.sourceUserUsername
-  )
-
-  return groupNotifications(notificationGroupsByDay)
 }

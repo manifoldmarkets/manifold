@@ -31,7 +31,7 @@ import {
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { usePrivateUser, useIsAuthorized } from 'web/hooks/use-user'
-import { XIcon } from '@heroicons/react/outline'
+import { CogIcon, XIcon } from '@heroicons/react/outline'
 import { updatePrivateUser } from 'web/lib/firebase/users'
 import { getNativePlatform } from 'web/lib/native/is-native'
 import { AppBadgesOrGetAppButton } from 'web/components/buttons/app-badges-or-get-app-button'
@@ -105,6 +105,7 @@ function NotificationsContent(props: {
     mostRecentNotification,
     groupedBalanceChangeNotifications,
     groupedNewMarketNotifications,
+    groupedMentionNotifications,
   } = useGroupedNotifications(privateUser.id)
   const [unseenNewMarketNotifs, setNewMarketNotifsAsSeen] = useState(
     groupedNewMarketNotifications?.filter((n) => !n.isSeen).length ?? 0
@@ -154,7 +155,15 @@ function NotificationsContent(props: {
               ),
             },
             {
-              title: 'Transactions',
+              title: 'Mentions',
+              content: (
+                <NotificationsList
+                  groupedNotifications={groupedMentionNotifications}
+                />
+              ),
+            },
+            {
+              title: 'Mana',
               content: (
                 <NotificationsList
                   groupedNotifications={groupedBalanceChangeNotifications}
@@ -162,7 +171,9 @@ function NotificationsContent(props: {
               ),
             },
             {
-              title: 'Settings',
+              queryTitle: 'Settings',
+              title: '',
+              inlineTabIcon: <CogIcon className="text-ink-500 h-5 w-5" />,
               content: <NotificationSettings navigateToSection={section} />,
             },
           ]}
