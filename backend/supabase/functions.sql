@@ -59,7 +59,7 @@ from (
     from contracts
     where data->'groupSlugs' ?| group_slugs
       and is_valid_contract(contracts)
-    order by popularity_score desc,
+    order by importance_score desc,
      slug offset start
     limit lim
   ) as search_contracts $$;
@@ -78,7 +78,7 @@ from (
     where data->'groupSlugs' ?| group_slugs
       and is_valid_contract(contracts)
       and contracts.creator_id = $1
-    order by popularity_score desc,
+    order by importance_score desc,
       slug offset start
     limit lim
   ) as search_contracts $$;
