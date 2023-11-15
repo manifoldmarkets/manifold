@@ -199,7 +199,7 @@ export function FeedContractCard(props: {
           <FeedBinaryChart
             contract={contract}
             className="my-4"
-            startDate={item?.createdTime}
+            startDate={item?.createdTime ?? contract.createdTime}
           />
         )}
         {promotedData && (
