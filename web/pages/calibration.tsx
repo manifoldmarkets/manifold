@@ -75,36 +75,38 @@ export default function CalibrationPage(props: {
       <Col className=" w-full rounded px-4 py-6 sm:px-8 xl:w-[125%]">
         <Col className="w-full max-w-[800px]">
           <Title>Track Record and Accuracy</Title>
+          
           <TrustPanel />
-          <p className="text-ink-600  py-2 pb-4">
+          
+          <div className="text-ink-600  py-2 pb-4">
             <div className="pb-2">
-              <p className={'text-ink-600  text-xl'}>
+              <div className={'text-ink-600  text-xl'}>
                 Predicting Trump's arrest
-              </p>
+              </div>
               <div className="py-1">
                 <FeedContractCard
                   contract={trumpMarket}
                   showGraph={true}
                 ></FeedContractCard>
               </div>
-              <p className="py-1">
+              <div className="py-1">
                 On March 18th Trump posted on Truth Social that he believes he
                 was about to be arrested, this caused our market to spike to
                 88%. However, since December our market had already been
                 hovering around 40% on average before anyone else was even
                 discussing it as a true possibility of happening!
-              </p>
+              </div>
             </div>
             <div className="pb-2">
-              <p className={'text-ink-600  text-xl'}>
+              <div className={'text-ink-600  text-xl'}>
                 Al-Ahli Arab hospital explosion
-              </p>
+              </div>
               <div className="py-1">
                 <FeedContractCard
                   contract={gazaMarket}
                   showGraph={true}
                 ></FeedContractCard>
-                <p className="py-1">
+                <div className="py-1">
                   Just 3 hours after the initial local reports of the explosion,
                   we had this market made. Within 1 hour of creation it had
                   already been pushed to down 6%, before eventually settling
@@ -121,14 +123,14 @@ export default function CalibrationPage(props: {
                     BBC conceding that a reporter had been wrong to speculate in
                     his analysis.
                   </a>
-                </p>
+                </div>
               </div>
             </div>
             <div className="pb-2">
-              <p className={'text-ink-600  text-xl'}>
+              <div className={'text-ink-600  text-xl'}>
                 How we performed on the 2022 US midterms
-              </p>
-              <p className="pb-1">
+              </div>
+              <div className="pb-1">
                 Manifold{' '}
                 <a
                   className="text-primary-700 hover:underline"
@@ -139,24 +141,24 @@ export default function CalibrationPage(props: {
                   accurate as FiveThiryEight
                 </a>{' '}
                 when forecasting the 2022 US midterm elections.
-              </p>
+              </div>
             </div>
             <div className="py-1">
-              <p className={'text-ink-600  text-xl'}>Predicting SBF fraud</p>
+              <div className={'text-ink-600  text-xl'}>Predicting SBF fraud</div>
               <div className="py-1">
                 <FeedContractCard
                   contract={sbfMarket}
                   showGraph={true}
                 ></FeedContractCard>
               </div>
-              <p className="py-1">
+              <div className="py-1">
                 Manifold had a market stable between 5-10% that SBF would be
                 convicted of a felony 1-month before there was any news about
                 it. It then immediately reacted correctly to rumors before any
                 official statements were made.
-              </p>
+              </div>
             </div>
-          </p>
+          </div>
 
           <Col className="w-full   ">
             <h2 className={'text-ink-600 mb-2 text-xl'}>
@@ -182,7 +184,7 @@ export default function CalibrationPage(props: {
           <h2 className={'text-ink-600 py-2 pt-6 text-xl'}>
             Interpreting our calibration
           </h2>
-          <p className="prose prose-md text-ink-600 max-w-[800px]">
+          <div className="prose prose-md text-ink-600 max-w-[800px]">
             <ul>
               <li>
                 <b>Calibration plot</b>: This chart show whether events happened
@@ -269,7 +271,7 @@ export default function CalibrationPage(props: {
                 )}
               </li>
             </ul>
-          </p>
+          </div>
           <WasabiCharts />
         </Col>
       </Col>
@@ -353,7 +355,7 @@ export function CalibrationChart(props: {
 export function WasabiCharts() {
   return (
     <>
-      <p className="text-ink-600 mt-8">
+      <div className="text-ink-600 mt-8">
         See more {''}
         <a
           className="text-primary-700 hover:underline"
@@ -363,7 +365,7 @@ export function WasabiCharts() {
           charts
         </a>
         {''} courtesy of <Linkify text="@wasabipesto" /> from our data in 2022.
-      </p>
+      </div>
     </>
   )
 }

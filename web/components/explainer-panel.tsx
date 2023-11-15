@@ -33,7 +33,7 @@ export const ExpandSection = (props: {
             aria-hidden
           />
         </summary>
-        <p className="text-ink-900 px-4 pb-3">{children}</p>
+        <div className="text-ink-900 px-4 pb-3">{children}</div>
       </details>
     </Card>
   )
