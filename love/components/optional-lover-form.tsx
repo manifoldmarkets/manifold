@@ -19,8 +19,7 @@ import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { StackedUserNames } from 'web/components/widgets/user-link'
 import { track } from 'web/lib/service/analytics'
 import { Races } from './race'
-import { useTextEditor } from 'web/components/widgets/editor'
-import { MAX_DESCRIPTION_LENGTH } from 'common/contract'
+import { Carousel } from 'web/components/widgets/carousel'
 
 export const OptionalLoveUserForm = (props: {
   lover: rowFor<'lovers'>
@@ -148,7 +147,11 @@ export const OptionalLoveUserForm = (props: {
           <label className={clsx(labelClassName)}>Current number of kids</label>
           <Input
             type="number"
-            onChange={(e) => setLover('has_kids', Number(e.target.value))}
+            onChange={(e) => {
+              const value =
+                e.target.value === '' ? null : Number(e.target.value)
+              setLover('has_kids', value)
+            }}
             className={'w-20'}
             min={0}
             value={lover['has_kids'] ?? undefined}
@@ -173,9 +176,11 @@ export const OptionalLoveUserForm = (props: {
           </label>
           <Input
             type="number"
-            onChange={(e) =>
-              setLover('drinks_per_month', Number(e.target.value))
-            }
+            onChange={(e) => {
+              const value =
+                e.target.value === '' ? null : Number(e.target.value)
+              setLover('drinks_per_month', value)
+            }}
             className={'w-20'}
             min={0}
             value={lover['drinks_per_month'] ?? undefined}
@@ -241,18 +246,20 @@ export const OptionalLoveUserForm = (props: {
           <label className={clsx(labelClassName)}>
             Highest completed education level
           </label>
-          <ChoicesToggleGroup
-            currentChoice={lover['education_level'] ?? ''}
-            choicesMap={{
-              None: 'none',
-              'High school': 'high-school',
-              'Some college': 'some-college',
-              Bachelors: 'bachelors',
-              Masters: 'masters',
-              PhD: 'doctorate',
-            }}
-            setChoice={(c) => setLover('education_level', c)}
-          />
+          <Carousel className="max-w-full">
+            <ChoicesToggleGroup
+              currentChoice={lover['education_level'] ?? ''}
+              choicesMap={{
+                None: 'none',
+                'High school': 'high-school',
+                'Some college': 'some-college',
+                Bachelors: 'bachelors',
+                Masters: 'masters',
+                PhD: 'doctorate',
+              }}
+              setChoice={(c) => setLover('education_level', c)}
+            />
+          </Carousel>
         </Col>
         <Col className={clsx(colClassName)}>
           <label className={clsx(labelClassName)}>University</label>
