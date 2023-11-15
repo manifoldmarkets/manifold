@@ -21,12 +21,6 @@ import { Subtitle } from 'web/components/widgets/subtitle'
 const TRADER_THRESHOLD = 15
 const SAMPLING_P = 0.02
 
-// const EmbedMarket = (props: { slug: string}) => {
-//   const slug = useContracts{id, 'slug'}
-//   return
-//   <Feed
-// }
-
 export const getStaticProps = async () => {
   const result = await db
     .from('platform_calibration')
@@ -116,6 +110,7 @@ export default function CalibrationPage(props: {
                   between 6-20% over the next few hours as more news came to
                   light.
                   <br />
+                  <br />
                   Meanwhile, major news outlets still presented conflicting
                   headlines, which eventually led to the {''}
                   <a
@@ -129,24 +124,8 @@ export default function CalibrationPage(props: {
                 </div>
               </div>
             </div>
+
             <div className="pb-8">
-              <div className={'text-ink-600  text-xl'}>
-                How we performed on the 2022 US midterms
-              </div>
-              <div className="pb-1">
-                Manifold{' '}
-                <a
-                  className="text-primary-700 hover:underline"
-                  target="_blank"
-                  href="https://firstsigma.substack.com/p/midterm-elections-forecast-comparison-analysis"
-                >
-                  outperformed real money prediction markets and was almost as
-                  accurate as FiveThiryEight
-                </a>{' '}
-                when forecasting the 2022 US midterm elections.
-              </div>
-            </div>
-            <div className="py-1">
               <div className={'text-ink-600  text-xl'}>
                 Predicting SBF fraud
               </div>
@@ -163,10 +142,39 @@ export default function CalibrationPage(props: {
                 official statements were made.
               </div>
             </div>
+
+            <div className="">
+              <div className={'text-ink-600  text-xl'}>
+                How we performed on the 2022 US midterms
+              </div>
+              <div className="pb-1">
+                Manifold{' '}
+                <a
+                  className="text-primary-700 hover:underline"
+                  target="_blank"
+                  href="https://firstsigma.substack.com/p/midterm-elections-forecast-comparison-analysis"
+                >
+                  outperformed real money prediction markets and was almost as
+                  accurate as FiveThiryEight
+                </a>{' '}
+                when forecasting the 2022 US midterm elections.
+              </div>
+            </div>
           </div>
 
           <Subtitle>Overall calibration</Subtitle>
-          <Col className="w-full   ">
+          <div className='mb-2 text-ink-600'>
+            This chart show whether events happened as often as we predicted. We
+            want to blue dots to be as close to the diagonal line as possible!{' '}
+          </div>
+          <div className='text-ink-600'>
+            A dot with a question probability of 70% means we have a group of
+            markets that were predicted to have a 70% chance of occurring. If
+            our predictions are perfectly calibrated, then 70% of those markets
+            should have resolved yes and it should appear on the y-axis at 70%.
+          </div>
+
+          <Col className="w-full mt-4">
             <div className="bg-canvas-0 relative w-full  rounded-md p-4 pr-12">
               <div className="absolute bottom-0 right-4 top-0 flex items-center">
                 <span className="text-ink-800 text-sm [writing-mode:vertical-rl]">
@@ -184,25 +192,9 @@ export default function CalibrationPage(props: {
               </div>
             </div>
           </Col>
-          <h2 className={'text-ink-600 py-2 pt-6 text-xl'}>
-            Interpreting our calibration
-          </h2>
+
           <div className="prose prose-md text-ink-600 max-w-[800px]">
             <ul>
-              <li>
-                <b>Calibration plot</b>: This chart show whether events happened
-                as often as we predicted. We want to blue dots to be as close to
-                the diagonal line as possible!
-              </li>
-              <li>
-                <b>What does each dot mean?</b> Each dot represents a set of
-                predictions at a specific probability, shown on the x-axis. For
-                example, a dot at 70% means we have a group of markets that were
-                predicted to have a 70% chance of occurring. If our predictions
-                are perfectly calibrated, 70% of these markets should have
-                resolved as yes, shown on the y-axis.
-              </li>
-
               <li>
                 <b>Methodology and Brier score</b>
                 <br />
