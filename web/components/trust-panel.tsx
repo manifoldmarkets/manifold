@@ -8,9 +8,9 @@ export const TrustPanel = (props: { className?: string }) => {
     <div className={className}>
       <Col className="mx-auto">
         <h2 className={clsx('text-ink-600 mb-2 text-xl')}>Common questions</h2>
-        <ManipulationAndHype />
-        <PlayMoneyVsRealMoney />
         <WhyNotAlternatives />
+        <PlayMoneyVsRealMoney />
+        <ManipulationAndHype />
         <LowTraders />
       </Col>
     </div>
