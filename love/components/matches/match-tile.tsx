@@ -76,7 +76,7 @@ export const MatchTile = (props: {
     .trim()
 
   return (
-    <Col className=" overflow-hidden rounded drop-shadow ">
+    <Col className=" overflow-hidden rounded drop-shadow">
       <div className="bg-canvas-0 w-full bg-gradient-to-b px-4 py-2">
         <UserLink
           className={
@@ -86,7 +86,7 @@ export const MatchTile = (props: {
           hideBadge
         />
       </div>
-      <Col className="relative h-36 overflow-hidden">
+      <Col className="relative h-36 w-full overflow-hidden">
         {pinned_url ? (
           <Image
             src={pinned_url}
@@ -94,7 +94,7 @@ export const MatchTile = (props: {
             width={180}
             height={240}
             alt={`${user.username}`}
-            className="h-full w-full object-cover"
+            className="h-full w-60 object-cover"
           />
         ) : (
           <Col className="bg-ink-300 h-full w-full items-center justify-center">

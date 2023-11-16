@@ -11,6 +11,7 @@ import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-s
 import { useUser } from 'web/hooks/use-user'
 import { AddAMatchButton } from '../add-a-match-button'
 import { MatchTile } from './match-tile'
+import { Carousel } from 'web/components/widgets/carousel'
 
 export const Matches = (props: { userId: string }) => {
   const { userId } = props
@@ -19,7 +20,6 @@ export const Matches = (props: { userId: string }) => {
   const user = useUser()
 
   const truncatedSize = 5
-  const [expanded, setExpanded] = useState(false)
 
   if (!lovers || !matches) return <LoadingIndicator />
 
@@ -70,10 +70,7 @@ export const Matches = (props: { userId: string }) => {
         <Col>
           <div className="text-lg font-semibold">Matches</div>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
-            {(expanded
-              ? currentMatches
-              : currentMatches.slice(0, truncatedSize)
-            ).map((contract) => {
+            {currentMatches.map((contract) => {
               const matchedLoverId =
                 contract.loverUserId1 === userId
                   ? contract.loverUserId2
@@ -95,16 +92,6 @@ export const Matches = (props: { userId: string }) => {
               )
             })}
           </div>
-          {!expanded && currentMatches.length > truncatedSize && (
-            <Button
-              className="self-start"
-              size="xs"
-              color="indigo-outline"
-              onClick={() => setExpanded(true)}
-            >
-              Show {currentMatches.length - truncatedSize} more
-            </Button>
-          )}
         </Col>
       ) : (
         <Col>
