@@ -12,18 +12,11 @@ import { useUser } from 'web/hooks/use-user'
 import { AddAMatchButton } from '../add-a-match-button'
 import { MatchTile } from './match-tile'
 
-const relationshipStages = ['1st date', '2nd date', '3rd date', '6-month']
-
 export const Matches = (props: { userId: string }) => {
   const { userId } = props
   const lovers = useLovers()
   const matches = useMatches(userId)
   const user = useUser()
-
-  const [tabIndex, setTabIndex] = usePersistentInMemoryState(
-    0,
-    `matches-tab-${userId}`
-  )
 
   const truncatedSize = 5
   const [expanded, setExpanded] = useState(false)
@@ -42,11 +35,33 @@ export const Matches = (props: { userId: string }) => {
     .filter((l) => !lover || areGenderCompatible(lover, l))
     .filter((l) => l.looking_for_matches)
 
-  const currentMatches = sortBy(
-    matches.filter((c) => !c.isResolved),
-    (c) => (c.answers[tabIndex].resolution ? 1 : 0),
-    (c) => -1 * c.answers[tabIndex].prob
-  )
+  // const currentMatches = sortBy(
+  //   matches.filter((c) => !c.isResolved),
+  //   (c) => (c.answers[tabIndex].resolution ? 1 : 0),
+  //   (c) => -1 * c.answers[tabIndex].prob
+  // )
+
+  const currentMatches = matches
+    .filter((c) => !c.isResolved)
+    .sort((a, b) => {
+      const resolvedCountA = a.answers.filter((ans) => ans.resolution).length
+      const resolvedCountB = b.answers.filter((ans) => ans.resolution).length
+
+      if (resolvedCountA !== resolvedCountB) {
+        return resolvedCountB - resolvedCountA
+      }
+
+      const highestUnresolvedProbabilityA = Math.max(
+        ...a.answers.filter((ans) => !ans.resolution).map((ans) => ans.prob),
+        0
+      )
+      const highestUnresolvedProbabilityB = Math.max(
+        ...b.answers.filter((ans) => !ans.resolution).map((ans) => ans.prob),
+        0
+      )
+
+      return highestUnresolvedProbabilityB - highestUnresolvedProbabilityA
+    })
   const areYourMatches = userId === user?.id
 
   return (
