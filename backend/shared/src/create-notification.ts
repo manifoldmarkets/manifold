@@ -4,11 +4,13 @@ import {
   BetFillData,
   BetReplyNotificationData,
   BettingStreakData,
+  CommentNotificationData,
   ContractResolutionData,
   LeagueChangeData,
   Notification,
   NOTIFICATION_DESCRIPTIONS,
   notification_reason_types,
+  NotificationReason,
   ReviewNotificationData,
   UniqueBettorData,
 } from 'common/notification'
@@ -220,7 +222,7 @@ export const createCommentOrAnswerOrUpdatedContractNotification = async (
 
   const constructNotification = (
     userId: string,
-    reason: notification_reason_types
+    reason: NotificationReason
   ) => {
     const notification: Notification = {
       id: idempotencyKey,
@@ -241,6 +243,9 @@ export const createCommentOrAnswerOrUpdatedContractNotification = async (
       sourceContractSlug: sourceContract.slug,
       sourceSlug: sourceContract.slug,
       sourceTitle: sourceContract.question,
+      data: {
+        isReply: sourceType === 'comment' && !!repliedUsersInfo,
+      } as CommentNotificationData,
     }
     return removeUndefinedProps(notification)
   }
@@ -253,7 +258,7 @@ export const createCommentOrAnswerOrUpdatedContractNotification = async (
 
   const sendNotificationsIfSettingsPermit = async (
     userId: string,
-    reason: notification_reason_types
+    reason: NotificationReason
   ) => {
     // A user doesn't have to follow a market to receive a notification with their tag
     if (
@@ -348,8 +353,8 @@ export const createCommentOrAnswerOrUpdatedContractNotification = async (
     await sendNotificationsIfSettingsPermit(
       sourceContract.creatorId,
       sourceType === 'comment'
-        ? 'comment_on_your_contract'
-        : 'answer_on_your_contract'
+        ? 'all_comments_on_my_markets'
+        : 'all_answers_on_my_markets'
     )
   }
 
@@ -713,8 +718,6 @@ export const createManaPaymentNotification = async (
   const pg = createSupabaseDirectClient()
   await insertNotificationToSupabase(notification, pg)
 }
-
-const groupPath = (groupSlug: string) => `/group/${groupSlug}`
 
 export const createBettingStreakBonusNotification = async (
   user: User,

@@ -413,7 +413,7 @@ export const sendNewCommentEmail = async (
 }
 
 export const sendNewAnswerEmail = async (
-  reason: notification_reason_types,
+  reason: NotificationReason,
   privateUser: PrivateUser,
   name: string,
   text: string,

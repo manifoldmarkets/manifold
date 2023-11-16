@@ -372,6 +372,10 @@ export type ReviewNotificationData = {
   review: string
 }
 
+export type CommentNotificationData = {
+  isReply: boolean
+}
+
 export type BetReplyNotificationData = {
   betAmount: number
   betOutcome: string

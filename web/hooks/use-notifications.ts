@@ -1,5 +1,6 @@
 import {
   BalanceChangeNotificationTypes,
+  CommentNotificationData,
   Notification,
   notification_source_types,
   NotificationReason,
@@ -131,7 +132,11 @@ export function useGroupedNotifications(
     sortedNotifications,
     (n) =>
       n.reason === 'tagged_user' ||
-      (n.sourceType === 'comment' && n.sourceText.includes('@' + user.username))
+      (n.sourceType === 'comment' &&
+        n.sourceText.includes('@' + user.username)) ||
+      ((n.reason === 'all_comments_on_my_markets' ||
+        n.reason === 'comment_on_your_contract') &&
+        !(n.data as CommentNotificationData)?.isReply)
   )
 
   return useMemo(
