@@ -27,8 +27,9 @@ yarn build
 gcloud builds submit . --tag ${IMAGE_URL} --project ${GCLOUD_PROJECT}
 
 if [ "${INITIALIZE}" = true ]; then
-    gcloud compute addresses create scheduler --region ${REGION}
+    gcloud compute addresses create scheduler --project ${GCLOUD_PROJECT} --region ${REGION}
     gcloud compute instances create-with-container scheduler \
+           --project ${GCLOUD_PROJECT} \
            --zone ${ZONE} \
            --address scheduler \
            --container-image ${IMAGE_URL} \
@@ -39,6 +40,7 @@ if [ "${INITIALIZE}" = true ]; then
            --tags http-server
 else
     gcloud compute instances update-container scheduler \
+           --project ${GCLOUD_PROJECT} \
            --zone ${ZONE} \
            --container-image ${IMAGE_URL}
 fi
