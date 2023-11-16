@@ -1,5 +1,7 @@
 import clsx from 'clsx'
 import dayjs from 'dayjs'
+import { Tooltip } from 'web/components/widgets/tooltip'
+import { fromNow } from 'web/lib/util/time'
 
 export default function OnlineIcon(props: {
   last_online_time: string
@@ -30,6 +32,10 @@ export default function OnlineIcon(props: {
         isStalled ? 'bg-yellow-500' : 'bg-green-500',
         className
       )}
-    />
+    >
+      <Tooltip text={'Last online: ' + fromNow(lastOnlineTime.valueOf())}>
+        <div className="h-full w-full" />
+      </Tooltip>
+    </div>
   )
 }
