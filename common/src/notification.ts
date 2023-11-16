@@ -73,6 +73,9 @@ export type notification_source_types =
   | 'new_match'
   | 'bet_reply'
   | 'new_message'
+  | love_notification_source_types
+
+export type love_notification_source_types = 'love_contract'
 
 export type notification_source_update_types =
   | 'created'
@@ -454,6 +457,7 @@ export const BalanceChangeNotificationTypes: NotificationReason[] = [
   'unique_bettors_on_your_contract',
   // resolutions
   'resolution_on_contract_with_users_shares_in',
+  'resolutions_on_watched_markets_with_shares_in',
   // referrals
   'you_referred_user',
   'user_joined_to_bet_on_your_market',

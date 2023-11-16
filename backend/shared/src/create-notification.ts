@@ -72,6 +72,7 @@ import { league_user_info } from 'common/leagues'
 import { hasUserSeenMarket } from 'shared/helpers/seen-markets'
 import { getUserFollowerIds } from 'shared/supabase/users'
 import { getForYouMarkets } from './supabase/search-contracts'
+import { PROD_MANIFOLD_LOVE_GROUP_SLUG } from 'common/envs/constants'
 
 const firestore = admin.firestore()
 
@@ -341,9 +342,7 @@ export const createCommentOrAnswerOrUpdatedContractNotification = async (
             ? 'answer_on_contract_you_follow'
             : sourceType === 'comment'
             ? 'comment_on_contract_you_follow'
-            : sourceUpdateType === 'updated'
-            ? 'update_on_contract_you_follow'
-            : 'resolution_on_contract_you_follow'
+            : 'update_on_contract_you_follow'
         )
       )
     )
@@ -374,9 +373,7 @@ export const createCommentOrAnswerOrUpdatedContractNotification = async (
             ? 'answer_on_contract_with_users_answer'
             : sourceType === 'comment'
             ? 'comment_on_contract_with_users_answer'
-            : sourceUpdateType === 'updated'
-            ? 'update_on_contract_with_users_answer'
-            : 'resolution_on_contract_with_users_answer'
+            : 'update_on_contract_with_users_answer'
         )
       )
     )
@@ -398,9 +395,7 @@ export const createCommentOrAnswerOrUpdatedContractNotification = async (
             ? 'answer_on_contract_with_users_comment'
             : sourceType === 'comment'
             ? 'comment_on_contract_with_users_comment'
-            : sourceUpdateType === 'updated'
-            ? 'update_on_contract_with_users_comment'
-            : 'resolution_on_contract_with_users_comment'
+            : 'update_on_contract_with_users_comment'
         )
       )
     )
@@ -420,9 +415,7 @@ export const createCommentOrAnswerOrUpdatedContractNotification = async (
             ? 'answer_on_contract_with_users_shares_in'
             : sourceType === 'comment'
             ? 'comment_on_contract_with_users_shares_in'
-            : sourceUpdateType === 'updated'
-            ? 'update_on_contract_with_users_shares_in'
-            : 'resolution_on_contract_with_users_shares_in'
+            : 'update_on_contract_with_users_shares_in'
         )
       )
     )
@@ -466,9 +459,7 @@ export const createCommentOrAnswerOrUpdatedContractNotification = async (
             ? 'answer_on_contract_with_users_shares_in'
             : sourceType === 'comment'
             ? 'comment_on_contract_with_users_shares_in'
-            : sourceUpdateType === 'updated'
-            ? 'update_on_contract_with_users_shares_in'
-            : 'resolution_on_contract_with_users_shares_in'
+            : 'update_on_contract_with_users_shares_in'
         )
       )
     )
@@ -1177,7 +1168,7 @@ export const createContractResolvedNotifications = async (
   const pg = createSupabaseDirectClient()
   const constructNotification = (
     userId: string,
-    reason: notification_reason_types
+    reason: NotificationReason
   ): Notification => {
     return {
       id: crypto.randomUUID(),
@@ -1186,7 +1177,9 @@ export const createContractResolvedNotifications = async (
       createdTime: Date.now(),
       isSeen: false,
       sourceId: contract.id,
-      sourceType: 'contract',
+      sourceType: contract.groupSlugs?.includes(PROD_MANIFOLD_LOVE_GROUP_SLUG)
+        ? 'love_contract'
+        : 'contract',
       sourceUpdateType: 'resolved',
       sourceContractId: contract.id,
       sourceUserName: resolver.name,
@@ -1212,7 +1205,7 @@ export const createContractResolvedNotifications = async (
 
   const sendNotificationsIfSettingsPermit = async (
     userId: string,
-    reason: notification_reason_types
+    reason: NotificationReason
   ) => {
     const privateUser = await getPrivateUser(userId)
     if (!privateUser) return
@@ -1295,8 +1288,8 @@ export const createContractResolvedNotifications = async (
       sendNotificationsIfSettingsPermit(
         id,
         userIdToContractMetrics?.[id]?.invested
-          ? 'resolution_on_contract_with_users_shares_in'
-          : 'resolution_on_contract_you_follow'
+          ? 'resolutions_on_watched_markets_with_shares_in'
+          : 'resolutions_on_watched_markets'
       )
     )
   )

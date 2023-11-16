@@ -34,6 +34,7 @@ import { WatchMarketModal } from 'web/components/contract/watch-market-modal'
 export const NOTIFICATION_TYPES_TO_SELECT: notification_source_types[] = [
   'new_match',
   'comment_on_lover',
+  'love_contract',
 ]
 export const NOTIFICATION_REASONS_TO_SELECT: NotificationReason[] = [
   'tagged_user',

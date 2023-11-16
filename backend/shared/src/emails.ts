@@ -51,7 +51,7 @@ export const emailMoneyFormat = (amount: number) => {
 }
 
 export const sendMarketResolutionEmail = async (
-  reason: notification_reason_types,
+  reason: NotificationReason,
   privateUser: PrivateUser,
   investment: number,
   payout: number,

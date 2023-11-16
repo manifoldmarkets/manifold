@@ -275,7 +275,10 @@ export function NotificationItem(props: {
         setHighlighted={setHighlighted}
       />
     )
-  } else if (sourceType === 'contract' && sourceUpdateType === 'resolved') {
+  } else if (
+    (sourceType === 'contract' || sourceType === 'love_contract') &&
+    sourceUpdateType === 'resolved'
+  ) {
     return (
       <MarketResolvedNotification
         highlighted={highlighted}
