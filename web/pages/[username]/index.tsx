@@ -221,7 +221,7 @@ function UserProfile(props: {
         {isMobile && (
           <Row
             className={
-              'bg-canvas-50 sticky top-0 z-10 w-full items-center justify-between gap-1 py-2 pl-4 pr-1 pr-5 sm:gap-2'
+              'bg-canvas-50 sticky top-0 z-10 w-full items-center justify-between gap-1 py-2 pl-4 pr-5 sm:gap-2'
             }
           >
             <BackButton />
@@ -232,11 +232,7 @@ function UserProfile(props: {
                 headerStuck && 'opacity-100'
               )}
             >
-              <UserLink
-                name={user.name}
-                username={user.username}
-                noLink={true}
-              />
+              <UserLink user={user} noLink />
             </div>
 
             <div>
@@ -359,7 +355,7 @@ function UserProfile(props: {
                 ),
               },
               {
-                title: 'Managrams',
+                title: 'Payments',
                 stackedTabIcon: <CashIcon className="h-5" />,
                 content: (
                   <>
@@ -385,7 +381,6 @@ function ProfilePublicStats(props: {
 }) {
   const { user, className, currentUser } = props
   const isCurrentUser = user.id === currentUser?.id
-  const [reviewsOpen, setReviewsOpen] = useState(false)
   const [followsOpen, setFollowsOpen] = useState(false)
   const [followsTab, setFollowsTab] = useState<FollowsDialogTab>('following')
   const followingIds = useFollows(user.id)

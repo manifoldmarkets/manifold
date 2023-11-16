@@ -9,6 +9,7 @@ import { FieldValue } from 'firebase-admin/firestore'
 import { isAdminId } from 'common/envs/constants'
 import { removeUndefinedProps } from 'common/util/object'
 import { createAddedToGroupNotification } from 'shared/create-notification'
+import { TOPIC_IDS_YOU_CANT_FOLLOW } from 'common/supabase/groups'
 
 export const getMemberGroupSlugs = async (
   userId: string,
@@ -33,13 +34,16 @@ export const getGroupIdFromSlug = async (
   )
 }
 
-export async function addUserToGroup(
+export async function addUserToTopic(
   groupId: string,
   userId: string,
   myId: string,
   role?: string,
   isLink = false
 ) {
+  if (TOPIC_IDS_YOU_CANT_FOLLOW.includes(groupId)) {
+    throw new APIError(403, 'You can not follow this topic.')
+  }
   const pg = createSupabaseDirectClient()
 
   // the old firebase code did this as a transaction to prevent race conditions

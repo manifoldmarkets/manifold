@@ -348,7 +348,7 @@ export async function getTrendingContractsToEmail() {
     `select data from contracts 
             where resolution_time is null 
               and visibility = 'public'
-              and not (data -> 'groupSlugs' ?| $1)
+              and not (group_slugs && $1)
               and question not ilike '%stock%'
               and question not ilike '%permanent%'
               and ((close_time > current_date + interval '1 day') or close_time is null)

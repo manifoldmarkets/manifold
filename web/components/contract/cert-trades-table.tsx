@@ -47,14 +47,7 @@ export default function CertTradesTable(props: { txns: CertTxn[] }) {
     } else if (type === 'USER') {
       const user = usersMap.get(id)
       if (!user) return 'Loading'
-      return (
-        <UserAvatarAndBadge
-          name={user.name}
-          username={user.username}
-          avatarUrl={user.avatarUrl}
-          className="!gap-1"
-        />
-      )
+      return <UserAvatarAndBadge user={user} className="!gap-1" />
     }
   }
 

@@ -1,15 +1,14 @@
 import { PencilIcon } from '@heroicons/react/outline'
 import { DotsHorizontalIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
+import Router from 'next/router'
 
 import { User } from 'common/user'
-import { NextRouter } from 'next/router'
 import { Button } from 'web/components/buttons/button'
 import { MoreOptionsUserButton } from 'web/components/buttons/more-options-user-button'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { SendMessageButton } from 'web/components/messaging/send-message-button'
-import { calculateAge } from './calculate-age'
 import LoverPrimaryInfo from './lover-primary-info'
 import OnlineIcon from './online-icon'
 import { track } from 'web/lib/service/analytics'
@@ -23,9 +22,8 @@ export default function LoverProfileHeader(props: {
   currentUser: User | null | undefined
   user: User
   lover: Lover
-  router: NextRouter
 }) {
-  const { isCurrentUser, currentUser, user, lover, router } = props
+  const { isCurrentUser, currentUser, user, lover } = props
   return (
     <Col className="w-full">
       <Row className={clsx('flex-wrap justify-between gap-2 py-1')}>
@@ -33,8 +31,7 @@ export default function LoverProfileHeader(props: {
           <Row className="items-center gap-1 text-xl">
             <OnlineIcon last_online_time={lover.last_online_time} />
             <span>
-              <span className="font-semibold">{user.name}</span>,{' '}
-              {calculateAge(lover.birthdate)}
+              <span className="font-semibold">{user.name}</span>, {lover.age}
             </span>
           </Row>
           <LoverPrimaryInfo lover={lover} />
@@ -49,7 +46,7 @@ export default function LoverProfileHeader(props: {
               color={'gray-outline'}
               onClick={() => {
                 track('edit love profile')
-                router.push('profile')
+                Router.push('profile')
               }}
               size="sm"
             >

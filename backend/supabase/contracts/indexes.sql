@@ -1,7 +1,5 @@
 create index if not exists contracts_data_gin on contracts using GIN (data);
 
-create index if not exists contracts_group_slugs_gin on contracts using GIN ((data -> 'groupSlugs'));
-
 create index if not exists contracts_slug on contracts (slug);
 
 create index if not exists contracts_creator_id on contracts (creator_id, created_time);

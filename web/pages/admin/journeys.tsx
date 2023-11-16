@@ -130,15 +130,7 @@ export default function Journeys() {
                       : ''
                   )}
                 >
-                  {user ? (
-                    <UserAvatarAndBadge
-                      name={user.name}
-                      username={user.username}
-                      avatarUrl={user.avatarUrl}
-                    />
-                  ) : (
-                    userId
-                  )}
+                  {user ? <UserAvatarAndBadge user={user} /> : userId}
                 </Row>
                 <ul>
                   <li>{new Date(events[0].ts!).toLocaleString()}</li>

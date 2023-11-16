@@ -70,6 +70,8 @@ export function FeedContractCard(props: {
 
   const {
     closeTime,
+    creatorId,
+    creatorName,
     creatorUsername,
     creatorAvatarUrl,
     outcomeType,
@@ -138,11 +140,12 @@ export function FeedContractCard(props: {
               username={creatorUsername}
             />
             <UserLink
-              name={contract.creatorName}
-              username={creatorUsername}
-              className={clsx(
-                'w-full max-w-[10rem] text-ellipsis sm:max-w-[12rem]'
-              )}
+              user={{
+                id: creatorId,
+                name: creatorName,
+                username: creatorUsername,
+              }}
+              className={'w-full max-w-[10rem] text-ellipsis sm:max-w-[12rem]'}
             />
           </Row>
           <Row className="gap-1">
@@ -199,7 +202,7 @@ export function FeedContractCard(props: {
           <FeedBinaryChart
             contract={contract}
             className="my-4"
-            startDate={item?.createdTime}
+            startDate={item?.createdTime ?? contract.createdTime}
           />
         )}
         {promotedData && (
@@ -239,7 +242,11 @@ export function FeedContractCard(props: {
 
 // ensures that the correct spacing is between buttons
 const BottomRowButtonWrapper = (props: { children: React.ReactNode }) => {
-  return <Row className="basis-10 justify-start">{props.children}</Row>
+  return (
+    <Row className="basis-10 justify-start whitespace-nowrap">
+      {props.children}
+    </Row>
+  )
 }
 
 const BottomActionRow = (props: {

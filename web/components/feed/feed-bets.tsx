@@ -138,7 +138,15 @@ export function BetStatusesText(props: {
   inTimeline?: boolean
 }) {
   const { bets, contract, className, inTimeline } = props
-  const { amount, outcome, createdTime, answerId } = bets[0]
+  const {
+    amount,
+    outcome,
+    createdTime,
+    answerId,
+    userId,
+    userName,
+    userUsername,
+  } = bets[0]
 
   const bought = amount >= 0 ? 'bought' : 'sold'
   const absAmount = Math.abs(sumBy(bets, (b) => b.amount))
@@ -150,8 +158,7 @@ export function BetStatusesText(props: {
       {!inTimeline &&
         (uniqueUsers.length === 1 ? (
           <UserLink
-            name={bets[0].userName}
-            username={bets[0].userUsername}
+            user={{ id: userId, name: userName, username: userUsername }}
             className={'font-semibold'}
           />
         ) : (
@@ -210,8 +217,11 @@ export function BetStatusText(props: {
       {!inTimeline ? (
         !hideUser ? (
           <UserLink
-            name={bet.userName}
-            username={bet.userUsername}
+            user={{
+              id: bet.userId,
+              name: bet.userName,
+              username: bet.userUsername,
+            }}
             className={'font-semibold'}
           />
         ) : (

@@ -53,8 +53,7 @@ import { getcontractparams } from './get-contract-params'
 import { boostmarket } from './boost-market'
 import { redeemboost } from './redeem-market-ad-reward'
 import { creategroupinvite } from './create-group-invite'
-import { joingroupthroughinvite } from './join-group-through-invite'
-import { joingroup } from './join-group'
+import { followtopic } from './follow-topic'
 import { editcomment } from 'api/edit-comment'
 import { supabasesearchgroups } from './supabase-search-groups'
 import { leagueActivity } from './league-activity'
@@ -104,6 +103,8 @@ import { searchlocation } from './search-location'
 import { searchnearcity } from './search-near-city'
 import { leaveprivateusermessagechannel } from 'api/leave-private-user-message-channel'
 import { updateprivateusermessagechannel } from 'api/update-private-user-message-channel'
+import { confirmLoverStage } from './love/confirm-lover-stage'
+import { clearLoverPhoto } from './love/clear-lover-photo'
 
 const allowCors: RequestHandler = cors({
   origin: [
@@ -201,8 +202,7 @@ app.post(
 )
 app.post('/getcontractparams', ...apiRoute(getcontractparams))
 app.post('/creategroupinvite', ...apiRoute(creategroupinvite))
-app.post('/joingroupthroughinvite', ...apiRoute(joingroupthroughinvite))
-app.post('/joingroup', ...apiRoute(joingroup))
+app.post('/follow-topic', ...apiRoute(followtopic))
 app.post('/supabasesearchgroups', ...apiRoute(supabasesearchgroups))
 app.post('/league-activity', ...apiRoute(leagueActivity))
 app.post('/award-bounty', ...apiRoute(awardbounty))
@@ -259,6 +259,8 @@ app.post(
 app.post('/create-lover', ...apiRoute(createlover))
 app.post('/update-lover', ...apiRoute(updatelover))
 app.post('/reject-lover', ...apiRoute(rejectLover))
+app.post('/clear-lover-photo', ...apiRoute(clearLoverPhoto))
+app.post('/confirm-lover-stage', ...apiRoute(confirmLoverStage))
 app.post('/create-match', ...apiRoute(createMatch))
 app.post('/create-comment-on-lover', ...apiRoute(createcommentonlover))
 app.post('/hide-comment-on-lover', ...apiRoute(hidecommentonlover))

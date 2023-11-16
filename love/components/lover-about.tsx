@@ -142,13 +142,16 @@ function Education(props: { lover: Lover }) {
   const educationLevel = lover.education_level
   const university = lover.university
 
-  const NoUniDegree = !educationLevel || educationLevel == 'high-school'
+  const noUniversity =
+    !educationLevel ||
+    educationLevel == 'high-school' ||
+    educationLevel == 'none'
 
-  if (!university) {
+  if (!university || noUniversity) {
     return <></>
   }
   const universityText = `${
-    NoUniDegree ? '' : capitalizeAndRemoveUnderscores(educationLevel) + ' at '
+    noUniversity ? '' : capitalizeAndRemoveUnderscores(educationLevel) + ' at '
   }${capitalizeAndRemoveUnderscores(university)}`
   return (
     <AboutRow
@@ -253,8 +256,6 @@ export const formatLoverValue = (key: string, value: any) => {
     return value.join(', ')
   }
   switch (key) {
-    case 'birthdate':
-      return fromNow(new Date(value).valueOf()).replace(' ago', '')
     case 'created_time':
     case 'last_online_time':
       return fromNow(new Date(value).valueOf())

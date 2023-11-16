@@ -7,7 +7,7 @@ import { Dashboard } from 'common/dashboard'
 import { LinkPreviews } from 'common/link-preview'
 import { useRouter } from 'next/router'
 
-const MORE_LABEL = 'All Articles'
+const MORE_LABEL = 'All Dashboards'
 
 export function NewsTopicsTabs(props: {
   dashboards: Dashboard[]

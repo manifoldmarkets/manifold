@@ -335,7 +335,9 @@ create table if not exists
         add_creator_name_to_description (data)
       )
     ) stored,
-    fs_updated_time timestamp not null
+    fs_updated_time timestamp not null,
+    deleted boolean default false,
+    group_slugs text[]
   );
 
 alter table contracts enable row level security;
@@ -376,16 +378,14 @@ create index if not exists contracts_sample_filtering on contracts (
   ((data ->> 'uniqueBettorCount')::int)
 );
 
-create index contracts_on_importance_score_and_resolution_time_idx on contracts(importance_score, resolution_time);
+create index if not exists contracts_on_importance_score_and_resolution_time_idx on contracts(importance_score, resolution_time);
 
-create index contracts_last_updated_time on contracts(((data ->> 'lastUpdatedTime')::bigint) desc);
+create index if not exists contracts_last_updated_time on contracts(((data ->> 'lastUpdatedTime')::bigint) desc);
 
-create index contracts_group_slugs_public on contracts using gin((data -> 'groupSlugs'))
-    where visibility = 'public';
+create index if not exists idx_lover_user_id1 on contracts ((data ->> 'loverUserId1')) where data->>'loverUserId1' is not null;
+create index if not exists idx_lover_user_id2 on contracts ((data ->> 'loverUserId2')) where data->>'loverUserId2' is not null;
 
-create index concurrently idx_lover_user_id1 on contracts ((data ->> 'loverUserId1')) where data->>'loverUserId1' is not null;
-create index concurrently idx_lover_user_id2 on contracts ((data ->> 'loverUserId2')) where data->>'loverUserId2' is not null;
-
+create index if not exists contracts_group_slugs on contracts (group_slugs);
 
 alter table contracts
 cluster on contracts_creator_id;
@@ -416,6 +416,11 @@ begin
     new.resolution_probability := ((new.data) ->> 'resolutionProbability')::numeric;
     new.resolution := (new.data) ->> 'resolution';
     new.popularity_score := coalesce(((new.data) ->> 'popularityScore')::numeric, 0);
+    new.deleted := coalesce(((new.data) ->> 'deleted')::boolean, false);
+    new.group_slugs := case
+                           when new.data ? 'groupSlugs' then jsonb_array_to_text_array((new.data) -> 'groupSlugs')
+                           else null
+        end;
   end if;
   return new;
 end
@@ -426,27 +431,6 @@ or
 update on contracts for each row
 execute function contract_populate_cols ();
 
-create table if not exists
-  contract_answers (
-    contract_id text not null,
-    answer_id text not null,
-    data jsonb not null,
-    fs_updated_time timestamp not null,
-    primary key (contract_id, answer_id)
-  );
-
-alter table contract_answers enable row level security;
-
-drop policy if exists "public read" on contract_answers;
-
-create policy "public read" on contract_answers for
-select
-  using (true);
-
-create index if not exists contract_answers_data_gin on contract_answers using GIN (data);
-
-alter table contract_answers
-cluster on contract_answers_pkey;
 
 create table if not exists
   contract_bets (
@@ -1109,96 +1093,6 @@ drop policy if exists "public read" on leagues;
 create policy "public read" on leagues for
 select
   using (true);
-
-create table if not exists
-  q_and_a (
-    id text not null primary key,
-    user_id text not null,
-    question text not null,
-    description text not null,
-    bounty numeric not null,
-    deleted boolean not null default false,
-    created_time timestamptz not null default now()
-  );
-
-alter table q_and_a enable row level security;
-
-drop policy if exists "public read" on q_and_a;
-
-create policy "public read" on q_and_a for
-select
-  using (true);
-
-create table if not exists
-  q_and_a_answers (
-    id text not null primary key,
-    q_and_a_id text not null,
-    user_id text not null,
-    text text not null,
-    award numeric not null default 0.0,
-    deleted boolean not null default false,
-    created_time timestamptz not null default now()
-  );
-
-alter table q_and_a_answers enable row level security;
-
-drop policy if exists "public read" on q_and_a_answers;
-
-create policy "public read" on q_and_a_answers for
-select
-  using (true);
-
-create table if not exists
-  answers (
-    id text not null primary key,
-    index int, -- Order of the answer in the list
-    contract_id text, -- Associated contract
-    user_id text, -- Creator of the answer
-    text text,
-    created_time timestamptz default now(),
-    -- Mechanism props
-    pool_yes numeric, -- YES shares in the pool
-    pool_no numeric, -- NO shares in the pool
-    prob numeric, -- Probability of YES computed from pool_yes and pool_no
-    total_liquidity numeric default 0, -- for historical reasons, this the total subsidy amount added in M
-    subsidy_pool numeric default 0, -- current value of subsidy pool in M
-    data jsonb not null,
-    fs_updated_time timestamp not null
-  );
-
-alter table answers enable row level security;
-
-drop policy if exists "public read" on answers;
-
-create policy "public read" on answers for
-select
-  using (true);
-
-create
-or replace function answers_populate_cols () returns trigger language plpgsql as $$
-begin
-  if new.data is not null then
-    new.index := ((new.data) ->> 'index')::int;
-    new.contract_id := (new.data) ->> 'contractId';
-    new.user_id := (new.data) ->> 'userId';
-    new.text := ((new.data) ->> 'text')::text;
-    new.created_time :=
-        case when new.data ? 'createdTime' then millis_to_ts(((new.data) ->> 'createdTime')::bigint) else null end;
-
-    new.pool_yes := ((new.data) ->> 'poolYes')::numeric;
-    new.pool_no := ((new.data) ->> 'poolNo')::numeric;
-    new.prob := ((new.data) ->> 'prob')::numeric;
-    new.total_liquidity := ((new.data) ->> 'totalLiquidity')::numeric;
-    new.subsidy_pool := ((new.data) ->> 'subsidyPool')::numeric;
-  end if;
-  return new;
-end
-$$;
-
-create trigger answers_populate before insert
-or
-update on answers for each row
-execute function answers_populate_cols ();
 
 create table if not exists
   stats (

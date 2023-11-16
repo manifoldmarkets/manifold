@@ -357,11 +357,7 @@ export const PrivateChat = (props: {
                   key={user.id}
                   className={'w-full items-center justify-start gap-2'}
                 >
-                  <UserAvatarAndBadge
-                    name={user.name}
-                    username={user.username}
-                    avatarUrl={user.avatarUrl}
-                  />
+                  <UserAvatarAndBadge user={user} />
                   {otherUsersFromChannel?.[channelId].map(
                     (membership) =>
                       membership.user_id === user.id &&
@@ -386,7 +382,7 @@ export const PrivateChat = (props: {
           className={clsx('relative h-full overflow-y-scroll ')}
         >
           <div
-            className="relative px-1 py-1  transition-all duration-100"
+            className="relative px-1 pb-4 pt-1 transition-all duration-100"
             style={{ opacity: showMessages ? 1 : 0 }}
             ref={innerDiv}
           >

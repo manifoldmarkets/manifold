@@ -11,12 +11,23 @@ export function updateLover(params: any) {
   return call(
     getApiUrl('update-lover'),
     'POST',
-    removeNullOrUndefinedProps(params)
+    removeNullOrUndefinedProps(params, ['bio'])
   )
 }
 
 export function rejectLover(params: { userId: string }) {
   return call(getApiUrl('reject-lover'), 'POST', params)
+}
+
+export function clearLoverPhoto(params: { loverId: number }) {
+  return call(getApiUrl('clear-lover-photo'), 'POST', params)
+}
+
+export function confirmLoverStage(params: {
+  contractId: string
+  answerId: string
+}) {
+  return call(getApiUrl('confirm-lover-stage'), 'POST', params)
 }
 
 export function createMatch(params: {

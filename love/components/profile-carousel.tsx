@@ -7,6 +7,10 @@ import { User } from 'common/user'
 import { Col } from 'web/components/layout/col'
 import { SignUpButton } from './nav/love-sidebar'
 import { Lover } from 'common/love/lover'
+import { useAdmin } from 'web/hooks/use-admin'
+import { Button } from 'web/components/buttons/button'
+import { clearLoverPhoto } from 'web/lib/firebase/love/api'
+import { AddPhotosWidget } from './widgets/add-photos'
 
 export default function ProfileCarousel(props: {
   lover: Lover
@@ -17,6 +21,9 @@ export default function ProfileCarousel(props: {
 
   const [lightboxUrl, setLightboxUrl] = useState('')
   const [dialogOpen, setDialogOpen] = useState(false)
+
+  const isAdmin = useAdmin()
+  const isCurrentUser = currentUser?.id === lover.user_id
 
   if (!currentUser) {
     return (
@@ -52,6 +59,19 @@ export default function ProfileCarousel(props: {
   }
   return (
     <>
+      {isAdmin && (
+        <Button
+          className="self-end"
+          size="2xs"
+          color="red"
+          onClick={() => {
+            console.log('deleting')
+            clearLoverPhoto({ loverId: lover.id })
+          }}
+        >
+          Admin: Delete pinned photo
+        </Button>
+      )}
       <Carousel>
         {buildArray(lover.pinned_url, lover.photo_urls).map((url, i) => {
           return (
@@ -72,6 +92,16 @@ export default function ProfileCarousel(props: {
             </div>
           )
         })}
+
+        {/* {isCurrentUser && (
+          <AddPhotosWidget
+            user={currentUser}
+            photo_urls={lover.photo_urls}
+            pinned_url={lover.pinned_url}
+            setPhotoUrls={() => {}}
+            setPinnedUrl={() => {}}
+          />
+        )} */}
       </Carousel>
       <Modal open={dialogOpen} setOpen={setDialogOpen}>
         <Image src={lightboxUrl} width={1000} height={1000} alt="" />

@@ -37,8 +37,11 @@ export function PostCard(props: {
             />
             <UserLink
               className="text-ink-400 text-sm"
-              name={post.creatorName}
-              username={post.creatorUsername}
+              user={{
+                id: post.creatorId,
+                name: post.creatorName,
+                username: post.creatorUsername,
+              }}
             />
           </Row>
           <span className="text-ink-400 text-sm">

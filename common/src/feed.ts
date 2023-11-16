@@ -39,11 +39,11 @@ export const NEW_USER_FEED_DATA_TYPES: FEED_DATA_TYPES[] = [
 export const BASE_FEED_DATA_TYPE_SCORES: { [key in FEED_DATA_TYPES]: number } =
   {
     new_comment: 0.05,
-    new_contract: 0.15,
+    new_contract: 0.2,
     new_subsidy: 0.1,
     news_with_related_contracts: 0.1,
-    user_position_changed: 0.05,
-    contract_probability_changed: 0.2, // todo: multiply by magnitude of prob change
+    user_position_changed: 0.02,
+    contract_probability_changed: 0.25, // todo: multiply by magnitude of prob change
     trending_contract: 0.2,
   }
 
@@ -52,7 +52,7 @@ export const BASE_FEED_REASON_TYPE_SCORES: {
 } = {
   follow_contract: 0.4,
   liked_contract: 0.2,
-  contract_in_group_you_are_in: 0.2,
+  contract_in_group_you_are_in: 0.3,
   similar_interest_vector_to_contract: 0, // score calculated using interest distance
   follow_user: 0.3,
   similar_interest_vector_to_news_vector: 0.1,

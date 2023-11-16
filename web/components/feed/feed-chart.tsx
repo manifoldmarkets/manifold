@@ -20,7 +20,11 @@ export function FeedBinaryChart(props: {
 
   useEffect(() => {
     const startingDate = (startDate ?? Date.now()) - DAY_MS
-    getHistoryData(contract, 1000, startingDate).then((points) => {
+    getHistoryData(
+      contract,
+      startDate === contract.createdTime ? undefined : 1000,
+      startingDate
+    ).then((points) => {
       if (points && points.length > 0 && !!points[0]) {
         setPoints(points)
       }

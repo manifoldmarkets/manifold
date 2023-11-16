@@ -19,7 +19,7 @@ export async function getUsers(userIds: string[]) {
     const userObj = Object.fromEntries(
       data.map((d) => [(d.data as any)?.id, d.data])
     )
-    return userIds.map((id) => userObj[id] as User)
+    return userIds.map((id) => (userObj[id] ?? null) as User | null)
   } else {
     return []
   }

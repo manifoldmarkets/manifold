@@ -89,6 +89,7 @@ export const CohortTable = (props: {
         <tbody>
           {rows.map((row, i) => {
             const user = users[i]
+            if (!user) return null
             return (
               <Fragment key={user.id}>
                 {user &&
@@ -97,7 +98,7 @@ export const CohortTable = (props: {
                     highlightedUserId === user.id) && (
                     <UserRow
                       {...row}
-                      user={users[i]}
+                      user={user}
                       isHighlighted={highlightedUserId === user.id}
                       mana_earned_breakdown={row.mana_earned_breakdown as any}
                       season={season}
@@ -226,12 +227,7 @@ const UserRow = (props: {
               <div className="w-4 text-right font-semibold">{rank}</div>
             </Row>
           </Tooltip>
-          <UserAvatarAndBadge
-            name={user.name}
-            username={user.username}
-            noLink
-            avatarUrl={user.avatarUrl}
-          />
+          <UserAvatarAndBadge user={user} noLink />
         </Row>
       </td>
       <td className="pr-2 text-right sm:pr-10">{formatMoney(mana_earned)}</td>

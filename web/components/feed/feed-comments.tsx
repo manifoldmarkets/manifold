@@ -845,8 +845,11 @@ function FeedCommentHeader(props: {
         <Row className=" gap-1">
           <span>
             <UserLink
-              username={userUsername}
-              name={userName}
+              user={{
+                id: userId,
+                name: userName,
+                username: userUsername,
+              }}
               marketCreator={marketCreator}
               className={'font-semibold'}
             />
@@ -977,9 +980,7 @@ export function CommentOnBetRow(props: {
       <div className="border-ink-100 h-4 w-6 rounded-tl-xl border-2 border-b-0 border-r-0" />
       <Row className="bg-ink-100 text-ink-600 relative items-center gap-1 whitespace-nowrap px-4 py-1">
         <UserLink
-          username={bettorUsername}
-          name={bettorName}
-          marketCreator={false}
+          user={{ id: '', name: bettorName, username: bettorUsername }}
         />
         {bought} <span className="text-ink-1000">{money}</span> of
         <OutcomeLabel

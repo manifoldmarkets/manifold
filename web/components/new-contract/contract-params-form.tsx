@@ -627,7 +627,6 @@ export function ContractParamsForm(props: {
             setHasChosenCategory(true)
           }}
           ignoreGroupIds={selectedGroups.map((g) => g.id)}
-          newContract={true}
         />
       </Col>
 

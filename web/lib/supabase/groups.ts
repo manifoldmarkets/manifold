@@ -3,14 +3,8 @@ import { Group } from 'common/group'
 import { Row, run, SupabaseClient } from 'common/supabase/utils'
 import { db } from './db'
 import { Contract } from 'common/contract'
-import { supabaseSearchGroups } from '../firebase/api'
 import { convertGroup } from 'common/supabase/groups'
 
-export type GroupState = {
-  groups: Group[] | undefined
-  fuzzyGroupOffset: number
-  shouldLoadMore: boolean
-}
 export type SearchGroupInfo = Pick<
   Group,
   'id' | 'name' | 'slug' | 'totalMembers' | 'privacyStatus' | 'creatorId'
@@ -26,117 +20,6 @@ export async function getGroupContracts(groupId: string) {
     return data.map((contract) => (contract as any).data as Contract)
   }
   return []
-}
-
-export async function searchGroups(props: {
-  state?: GroupState
-  term: string
-  offset?: number
-  limit: number
-  searchYourTopics?: boolean
-  addingToContract?: boolean
-  newContract?: boolean
-}) {
-  const {
-    term,
-    offset = 0,
-    limit,
-    searchYourTopics,
-    addingToContract,
-    newContract,
-  } = props
-  const state = props.state ?? {
-    groups: undefined,
-    fuzzyGroupOffset: 0,
-    shouldLoadMore: false,
-  }
-
-  if (limit === 0) {
-    return { fuzzyOffset: 0, data: [] }
-  }
-
-  if (!term) {
-    const groups = await supabaseSearchGroups({
-      term: '',
-      offset: offset,
-      limit: limit,
-      yourGroups: searchYourTopics,
-      addingToContract: addingToContract ?? false,
-      newContract: newContract ?? false,
-    })
-    if (groups) {
-      return { fuzzyOffset: 0, data: groups }
-    }
-  }
-  if (state.fuzzyGroupOffset > 0) {
-    const contractFuzzy = searchGroupsFuzzy({
-      term,
-      state,
-      limit,
-      yourGroups: searchYourTopics,
-      addingToContract: addingToContract ?? false,
-      newContract: newContract ?? false,
-    })
-    return contractFuzzy
-  }
-
-  const groups = await supabaseSearchGroups({
-    term: term,
-    offset,
-    limit,
-    fuzzy: false,
-    yourGroups: searchYourTopics,
-    addingToContract: addingToContract ?? false,
-    newContract: newContract ?? false,
-  })
-
-  if (groups) {
-    if (groups.length == limit) {
-      return { fuzzyOffset: 0, data: groups }
-    } else {
-      const fuzzyData = await searchGroupsFuzzy({
-        state,
-        term,
-        limit: limit - groups.length,
-        yourGroups: searchYourTopics,
-        addingToContract: addingToContract ?? false,
-        newContract: newContract ?? false,
-      })
-      return {
-        fuzzyOffset: fuzzyData.fuzzyOffset,
-        data: groups.concat(fuzzyData.data),
-      }
-    }
-  }
-  return { fuzzyOffset: 0, data: [] }
-}
-
-export async function searchGroupsFuzzy(props: {
-  state: GroupState
-  term: string
-  limit: number
-  yourGroups?: boolean
-  addingToContract?: boolean
-  newContract?: boolean
-}) {
-  const { state, term, limit, yourGroups, addingToContract, newContract } =
-    props
-  const groups = await supabaseSearchGroups({
-    term,
-    offset: state.fuzzyGroupOffset,
-    limit: limit,
-    fuzzy: true,
-    yourGroups,
-    addingToContract: addingToContract ?? false,
-    newContract: newContract ?? false,
-  })
-  if (groups) {
-    return {
-      fuzzyOffset: groups.length,
-      data: groups,
-    }
-  }
-  return { fuzzyOffset: 0, data: [] }
 }
 
 export async function getMemberGroups(userId: string, db: SupabaseClient) {
@@ -282,7 +165,7 @@ export async function getYourNonPrivateNonModeratorGroups(userId: string) {
   return data ?? []
 }
 
-export async function leaveGroup(groupId: string, userId: string) {
+export async function unfollowTopic(groupId: string, userId: string) {
   await run(
     db
       .from('group_members')

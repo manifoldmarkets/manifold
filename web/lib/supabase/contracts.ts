@@ -53,9 +53,9 @@ export async function getPublicContractIdsInTopics(
   const contractLists = await Promise.all(
     chunk(contractIds, 100).map(async (ids) => {
       const { data } = await run(
-        db.rpc('get_contracts_in_group_slugs', {
+        db.rpc('get_contracts_in_group_slugs_1', {
           contract_ids: ids,
-          group_slugs: topicSlugs,
+          p_group_slugs: topicSlugs,
           ignore_slugs: ignoreSlugs ?? [],
         })
       )
@@ -75,8 +75,8 @@ export async function getRecentActiveContractsOnTopics(
   limit: number
 ) {
   const { data } = await run(
-    db.rpc('get_recently_active_contracts_in_group_slugs', {
-      group_slugs: topicSlugs,
+    db.rpc('get_recently_active_contracts_in_group_slugs_1', {
+      p_group_slugs: topicSlugs,
       ignore_slugs: ignoreSlugs,
       max: limit,
     })

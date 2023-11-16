@@ -75,6 +75,10 @@ export default function BrowsePage() {
   }, [topicFromRouter])
 
   const topics = buildArray(topicsFromRouter, topicsByImportance)
+  const [topicResults, setTopicResults] = usePersistentInMemoryState<
+    Group[] | undefined
+  >(undefined, `search-topic-results`)
+
   const currentTopic = topics.find((t) => t.slug === topicSlug)
   const { ref, headerStuck } = useHeaderIsStuck()
 
@@ -125,6 +129,8 @@ export default function BrowsePage() {
                 isWholePage
                 showTopicTag={headerStuck}
                 headerClassName={'pt-0 px-2 bg-canvas-0 md:bg-canvas-50'}
+                topics={topicResults}
+                setTopics={setTopicResults}
                 menuButton={
                   showTopicsSidebar ? null : (
                     <Button
@@ -157,7 +163,7 @@ export default function BrowsePage() {
             {!isMobile && (
               <TopicsList
                 key={'groups' + topics.length}
-                topics={topics}
+                topics={q && topicResults?.length ? topicResults : topics}
                 currentTopicSlug={topicSlug}
                 setCurrentTopicSlug={setTopicSlug}
                 privateUser={privateUser}

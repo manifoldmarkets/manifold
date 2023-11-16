@@ -150,11 +150,7 @@ export function SelectUsers(props: {
                   avatarUrl={user.avatarUrl}
                   size={'sm'}
                 />
-                <UserLink
-                  username={user.username}
-                  className="ml-1"
-                  name={user.name}
-                />
+                <UserLink user={user} className="ml-1" />
                 <Button
                   onClick={() =>
                     setSelectedUsers([

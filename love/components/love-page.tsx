@@ -2,6 +2,7 @@ import {
   CashIcon,
   HomeIcon,
   QuestionMarkCircleIcon,
+  ChartBarIcon,
 } from '@heroicons/react/outline'
 import {
   QuestionMarkCircleIcon as SolidQuestionIcon,
@@ -56,7 +57,7 @@ export function LovePage(props: {
     ? getBottomNavigation(user)
     : signedOutNavigation()
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const desktopSidebarOptions = getDesktopNav(!!user)
+  const desktopSidebarOptions = getDesktopNav(user)
 
   const mobileSidebarOptions = user
     ? getSidebarNavigation(() => setIsAddFundsModalOpen(true))
@@ -154,8 +155,8 @@ const signedOutNavigation = () => [
     icon: UserCircleIcon,
   },
 ]
-const getDesktopNav = (loggedIn: boolean) => {
-  if (loggedIn)
+const getDesktopNav = (user: User | null | undefined) => {
+  if (user)
     return buildArray(
       { name: 'Profiles', href: '/', icon: HomeIcon },
       {
@@ -173,6 +174,11 @@ const getDesktopNav = (loggedIn: boolean) => {
         name: 'Messages',
         href: '/messages',
         icon: PrivateMessagesIcon,
+      },
+      {
+        name: 'Portfolio',
+        href: '/portfolio',
+        icon: ChartBarIcon,
       }
     )
 
@@ -184,5 +190,8 @@ const getDesktopNav = (loggedIn: boolean) => {
 
 // No sidebar when signed out
 const getSidebarNavigation = (toggleModal: () => void) => {
-  return buildArray({ name: 'Get mana', icon: CashIcon, onClick: toggleModal })
+  return buildArray(
+    { name: 'Portfolio', icon: ChartBarIcon, href: '/portfolio' },
+    { name: 'Get mana', icon: CashIcon, onClick: toggleModal }
+  )
 }

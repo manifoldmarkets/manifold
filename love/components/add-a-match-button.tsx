@@ -164,10 +164,7 @@ const AddMatchDialog = (props: {
                         username={lover.user.username}
                       />
                     )}
-                    <UserLink
-                      name={lover.user.name}
-                      username={lover.user.username}
-                    />
+                    <UserLink user={lover.user} />
                   </Row>
                   <Button
                     size="xs"
@@ -184,7 +181,7 @@ const AddMatchDialog = (props: {
 
         {potentialLovers.length > 0 && (
           <Col className="gap-1">
-            <div className="text-sm font-bold">Bet on 6 month relationship</div>
+            <div className="text-sm font-bold">Bet on their relationship</div>
             <BuyAmountInput
               amount={betAmount}
               onChange={setBetAmount}
@@ -196,6 +193,11 @@ const AddMatchDialog = (props: {
           </Col>
         )}
 
+        {isSubmitting && (
+          <div className="text-ink-500">
+            Can take up to 30 seconds to create match...
+          </div>
+        )}
         <Button
           className="font-semibold"
           color="green"

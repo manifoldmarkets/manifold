@@ -12,11 +12,7 @@ import {
 } from 'common/chart'
 import { ContractParams, MaybeAuthedContractParams } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
-import {
-  ENV_CONFIG,
-  HOUSE_BOT_USERNAME,
-  isTrustworthy,
-} from 'common/envs/constants'
+import { ENV_CONFIG, HOUSE_BOT_USERNAME } from 'common/envs/constants'
 import { ScrollToTopButton } from 'web/components/buttons/scroll-to-top-button'
 import { BackButton } from 'web/components/contract/back-button'
 import { BountyLeft } from 'web/components/contract/bountied-question'
@@ -42,7 +38,7 @@ import { ResolutionPanel } from 'web/components/resolution-panel'
 import { Rating, ReviewPanel } from 'web/components/reviews/stars'
 import { GradientContainer } from 'web/components/widgets/gradient-container'
 import { Tooltip } from 'web/components/widgets/tooltip'
-import { useAdmin } from 'web/hooks/use-admin'
+import { useAdmin, useTrusted } from 'web/hooks/use-admin'
 import { useAnswersCpmm } from 'web/hooks/use-answers'
 import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
 import { useIsIframe } from 'web/hooks/use-is-iframe'
@@ -254,9 +250,9 @@ export function ContractPageContent(props: ContractParams) {
   } = contract
 
   const isAdmin = useAdmin()
+  const trustworthy = useTrusted()
   const isCreator = creatorId === user?.id
   const isClosed = !!(closeTime && closeTime < Date.now())
-  const trustworthy = isTrustworthy(user?.username)
   const [showResolver, setShowResolver] = useState(false)
   const [justNowReview, setJustNowReview] = useState<null | Rating>(null)
   const userReview = useReview(contract.id, user?.id)

@@ -7,7 +7,7 @@ export type LoveOgProps = {
   username: string
   name: string
   // lover props
-  birthdate: string
+  age: string
   city: string
   gender: string
 }
@@ -17,7 +17,7 @@ export function getLoveOgImageUrl(user: User, lover?: LoverRow | null) {
     avatarUrl: user.avatarUrl,
     username: user.username,
     name: user.name,
-    birthdate: lover?.birthdate ?? '2000-01-01',
+    age: lover?.age.toString() ?? '25',
     city: lover?.city ?? 'Internet',
     gender: lover?.gender ?? '???',
   } as LoveOgProps

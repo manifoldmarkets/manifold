@@ -317,18 +317,15 @@ export function joinGroupThroughInvite(params: { inviteId: string }) {
   return call(getApiUrl('joingroupthroughinvite'), 'POST', params)
 }
 
-export function joinGroup(params: { groupId: string }) {
-  return call(getApiUrl('joingroup'), 'POST', params)
+export function followTopic(params: { groupId: string }) {
+  return call(getApiUrl('follow-topic'), 'POST', params)
 }
 
-export function supabaseSearchGroups(params: {
+export function searchGroups(params: {
   term: string
-  offset: number
   limit: number
-  fuzzy?: boolean
-  yourGroups?: boolean
+  offset?: number
   addingToContract?: boolean
-  newContract?: boolean
 }) {
   return maybeAuthedCall(
     getApiUrl('supabasesearchgroups'),
