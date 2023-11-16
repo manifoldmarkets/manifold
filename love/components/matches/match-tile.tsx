@@ -26,6 +26,9 @@ import { Spacer } from 'web/components/layout/spacer'
 import { CommentsButton } from 'web/components/comments/comments-button'
 import { MatchTracker } from './match-tracker'
 import { TradesButton } from 'web/components/contract/trades-button'
+import { MatchPositionsButton } from './match-positions'
+import { MatchBetButton } from './match-bet'
+import { UserLink } from 'web/components/widgets/user-link'
 
 const relationshipStages = [
   '1st date',
@@ -56,7 +59,6 @@ export const MatchTile = (props: {
   }, -1)
 
   const [stage, setStage] = useState(lastResolved + 1)
-  const [open, setOpen] = useState(false)
   const answer = answers[stage]
   //   const showConfirmStage =
   //     !answer.resolution && (!prevAnswer || prevAnswer.resolution === 'YES')
@@ -64,36 +66,22 @@ export const MatchTile = (props: {
   //   const conditionProb =
   //     answer.index && getCumulativeRelationshipProb(contract, answer.index - 1)
 
-  //   const [positions, setPositions] = usePersistentInMemoryState<
-  //     undefined | Awaited<ReturnType<typeof getCPMMContractUserContractMetrics>>
-  //   >(undefined, 'market-card-feed-positions-' + contract.id)
-  //   useEffect(() => {
-  //     getCPMMContractUserContractMetrics(contract.id, 10, answer.id, db).then(
-  //       (positions) => {
-  //         const yesPositions = sortBy(
-  //           positions.YES.filter(
-  //             (metric) => metric.userUsername !== 'ManifoldLove'
-  //           ),
-  //           (metric) => metric.invested
-  //         ).reverse()
-  //         const noPositions = sortBy(
-  //           positions.NO.filter(
-  //             (metric) => metric.userUsername !== 'ManifoldLove'
-  //           ),
-  //           (metric) => metric.invested
-  //         ).reverse()
-  //         setPositions({ YES: yesPositions, NO: noPositions })
-  //       }
-  //     )
-  //   }, [contract.id, answer.id])
-
   const firstDateDate = answer.text
     .substring(answer.text.indexOf('by'), answer.text.length - 1)
     .trim()
 
   return (
     <Col className=" overflow-hidden rounded drop-shadow ">
-      <Col className="relative h-40 overflow-hidden">
+      <div className="bg-canvas-0 w-full bg-opacity-80 bg-gradient-to-b px-4 py-2">
+        <UserLink
+          className={
+            'hover:text-primary-500 text-ink-1000 truncate font-semibold transition-colors'
+          }
+          user={user}
+          hideBadge
+        />
+      </div>
+      <Col className="h-36 overflow-hidden">
         {pinned_url ? (
           <Image
             src={pinned_url}
@@ -108,14 +96,6 @@ export const MatchTile = (props: {
             <UserIcon className="h-20 w-20" />
           </Col>
         )}
-        <BetModal
-          open={open}
-          setOpen={setOpen}
-          contract={contract}
-          answer={answer}
-          answers={answers}
-          user={user}
-        />
       </Col>
       <Col className="bg-canvas-0 text-ink-1000 grow justify-between gap-2 px-4 py-2 text-sm">
         <Col className="gap-2">
@@ -135,8 +115,10 @@ export const MatchTile = (props: {
               <div className="text-ink-500 text-xs">
                 {stage === 0 ? (
                   <> {firstDateDate}</>
-                ) : (
+                ) : lastResolved < stage - 1 ? (
                   <> if {relationshipStages[stage - 1]} happens</>
+                ) : (
+                  <></>
                 )}
               </div>
             </Col>
@@ -144,58 +126,16 @@ export const MatchTile = (props: {
           </Row>
         </Col>
         <Row className="w-full items-center justify-between gap-2">
-          <TradesButton contract={contract} />
+          <MatchPositionsButton contract={contract} answer={answer} />
           <CommentsButton contract={contract} user={currentUser} />
-          <Button
-            size={'2xs'}
-            color={'indigo-outline'}
-            onClick={() => {
-              setOpen(true)
-              track('love bet button click')
-            }}
-          >
-            Bet
-          </Button>
+          <MatchBetButton
+            contract={contract}
+            answer={answer}
+            answers={answers}
+            user={user}
+          />
         </Row>
       </Col>
     </Col>
-  )
-}
-
-function BetModal(props: {
-  open: boolean
-  setOpen: (open: boolean) => void
-  contract: CPMMMultiContract
-  answer: Answer
-  answers: Answer[]
-  user: User
-}) {
-  const { open, setOpen, contract, answer, answers, user } = props
-  return (
-    <Modal
-      open={open}
-      setOpen={setOpen}
-      className={clsx(
-        MODAL_CLASS,
-        'pointer-events-auto max-h-[32rem] overflow-auto'
-      )}
-    >
-      <Col>
-        <Link href={contractPath(contract)}>
-          <Subtitle className={clsx('!mb-4 !mt-0 !text-xl', linkClass)}>
-            {answer.text}
-          </Subtitle>
-        </Link>
-        <BuyPanel
-          contract={contract}
-          multiProps={{ answers, answerToBuy: answer }}
-          user={user}
-          initialOutcome="YES"
-          onBuySuccess={() => setTimeout(() => setOpen(false), 500)}
-          location={'love profile'}
-          inModal={true}
-        />
-      </Col>
-    </Modal>
   )
 }

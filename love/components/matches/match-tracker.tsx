@@ -18,8 +18,10 @@ export function MatchTracker(props: {
             {i !== 0 && (
               <hr
                 className={clsx(
-                  'border-ink-200 dark:border-ink-400 flex flex-grow border-t-2 ',
-                  i <= lastResolved + 1 ? '' : ' border-dashed'
+                  'flex flex-grow border-t-2 ',
+                  i <= lastResolved + 1
+                    ? 'border-primary-200 dark:border-primary-50'
+                    : ' border-ink-200 dark:border-ink-400 border-dashed '
                 )}
               />
             )}
@@ -31,6 +33,8 @@ export function MatchTracker(props: {
                 ' text-canvas-0 z-10 rounded-full text-xs transition-all ',
                 stage == i
                   ? ' bg-primary-500 '
+                  : i <= lastResolved
+                  ? 'bg-primary-200 dark:bg-primary-50 hover:dark:bg-primary-100 hover:bg-primary-300'
                   : 'bg-ink-200 dark:bg-ink-400 hover:bg-ink-300 hover:dark:bg-ink-500'
               )}
             >
