@@ -20,13 +20,13 @@ import { linkClass } from 'web/components/widgets/site-link'
 export default function ManachanPage() {
   const [tweet, setTweet] = useState('')
   const [loading, setLoading] = useState(false)
-  const [success, setSucess] = useState(false)
+  const [success, setSuccess] = useState(false)
   const [error, setError] = useState(false)
 
   const user = useUser()
 
   const submit = async () => {
-    setSucess(false)
+    setSuccess(false)
     setError(false)
 
     if (!tweet.trim()) return
@@ -38,7 +38,7 @@ export default function ManachanPage() {
     setLoading(true)
 
     await tweetFromManaChan({ tweet })
-      .then(() => setSucess(true))
+      .then(() => setSuccess(true))
       .catch(() => setError(true))
 
     track('buy manachan tweet', { tweet })

@@ -73,7 +73,7 @@ export default function LabsPage() {
       <LabSection>
         <LabCard
           title="🏆 CSPI/Salem tournament"
-          description="Seperate site hosting special contest"
+          description="Separate site hosting special contest"
           href="https://salemcenter.manifold.markets/"
           target="_blank"
         />

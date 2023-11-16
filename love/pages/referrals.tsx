@@ -30,7 +30,7 @@ export default function ReferralsPage() {
           {formatMoney(REFERRAL_AMOUNT)} if they sign up and bet on love!
         </div>
 
-        <CopyLinkRow url={url} eventTrackingName="copy love referrral" />
+        <CopyLinkRow url={url} eventTrackingName="copy love referral" />
 
         <QRCode url={url} className="mt-4 self-center" />
       </Col>

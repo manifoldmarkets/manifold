@@ -45,8 +45,8 @@ export const CohortTable = (props: {
   const nextNextDivision = division + 2
   const nextDivisionName = DIVISION_NAMES[nextDivision]
   const nextNextDivisionName = DIVISION_NAMES[nextNextDivision]
-  const prevDivison = Math.max(division - 1, 1)
-  const prevDivisionName = DIVISION_NAMES[prevDivison]
+  const prevDivision = Math.max(division - 1, 1)
+  const prevDivisionName = DIVISION_NAMES[prevDivision]
 
   const noPromotionDemotion = cohort === 'bots'
   const shouldTruncateZeros = division === 1 || division === 2 || division === 3

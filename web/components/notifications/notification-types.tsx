@@ -21,7 +21,7 @@ import {
   BettingStreakExpiringNotification,
   LeagueChangedNotification,
   LoanIncomeNotification,
-  ManaPaymentReceievedNotification,
+  ManaPaymentReceivedNotification,
   QuestIncomeNotification,
   UniqueBettorBonusIncomeNotification,
   UserJoinedNotification,
@@ -120,7 +120,7 @@ export function NotificationItem(props: {
     )
   } else if (reason === 'mana_payment_received') {
     return (
-      <ManaPaymentReceievedNotification
+      <ManaPaymentReceivedNotification
         notification={notification}
         highlighted={highlighted}
         setHighlighted={setHighlighted}

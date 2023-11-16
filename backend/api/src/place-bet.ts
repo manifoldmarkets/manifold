@@ -222,7 +222,7 @@ export const placeBetMain = async (
       } else {
         throw new APIError(
           500,
-          'Contract type/mechaism not supported (or is no longer)'
+          'Contract type/mechanism not supported (or is no longer)'
         )
       }
     })()

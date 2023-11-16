@@ -247,7 +247,7 @@ export const getAllPrivateUsersNotSent = async (
   preference: 'trending_markets' | 'profit_loss_updates'
 ) => {
   const firestore = admin.firestore()
-  // Unforunately firestore can't do 'array-not-contains' for the opt_out_all preference
+  // Unfortunately firestore can't do 'array-not-contains' for the opt_out_all preference
   const users = await firestore
     .collection('private-users')
     .where(`notificationPreferences.${preference}`, 'array-contains', 'email')

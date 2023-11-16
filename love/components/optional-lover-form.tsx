@@ -20,9 +20,9 @@ export const OptionalLoveUserForm = (props: {
   lover: rowFor<'lovers'>
   setLover: (key: keyof rowFor<'lovers'>, value: any) => void
   user: User
-  butonLabel?: string
+  buttonLabel?: string
 }) => {
-  const { lover, user, butonLabel, setLover } = props
+  const { lover, user, buttonLabel, setLover } = props
 
   const router = useRouter()
   const [heightFeet, setHeightFeet] = useState<number | undefined>(
@@ -254,7 +254,7 @@ export const OptionalLoveUserForm = (props: {
           />
         </Col>
         <Row className={'justify-end'}>
-          <Button onClick={handleSubmit}>{butonLabel ?? 'Next'}</Button>
+          <Button onClick={handleSubmit}>{buttonLabel ?? 'Next'}</Button>
         </Row>
       </Col>
     </>

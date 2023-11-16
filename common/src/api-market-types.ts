@@ -11,7 +11,7 @@ import { richTextToString } from 'common/util/parse'
 import { getMappedValue } from './pseudo-numeric'
 
 export type LiteMarket = {
-  // Unique identifer for this market
+  // Unique identifier for this market
   id: string
 
   // Attributes about the creator

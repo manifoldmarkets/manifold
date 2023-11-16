@@ -51,8 +51,8 @@ export const validateiap = authEndpoint(async (req, auth) => {
   // }
 
   const options = {
-    ignoreCanceled: true, // Apple ONLY (for now...): purchaseData will NOT contain cancceled items
-    ignoreExpired: true, // purchaseData will NOT contain exipired subscription items
+    ignoreCanceled: true, // Apple ONLY (for now...): purchaseData will NOT contain canceled items
+    ignoreExpired: true, // purchaseData will NOT contain expired subscription items
   }
   // validatedData contains sandbox: true/false for Apple and Amazon
   const purchaseData = iap.getPurchaseData(

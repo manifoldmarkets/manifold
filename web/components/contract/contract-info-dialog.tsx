@@ -102,7 +102,7 @@ export const Stats = (props: {
           }
         : {
             label: 'Independent',
-            desc: `Each answer is a seperate binary contract with shares worth ${ENV_CONFIG.moneyMoniker}1 if chosen. Any number of answers can be chosen`,
+            desc: `Each answer is a separate binary contract with shares worth ${ENV_CONFIG.moneyMoniker}1 if chosen. Any number of answers can be chosen`,
           }
       : mechanism == 'dpm-2'
       ? {
@@ -281,7 +281,7 @@ export const Stats = (props: {
             <tr className="bg-purple-500/30">
               <td>SQL query</td>
               <td>
-                <span className="trucnate">select * from contracts...</span>
+                <span className="truncate">select * from contracts...</span>
                 <CopyLinkOrShareButton
                   url={`select * from contracts where id = '${id}';`}
                   tooltip="Copy sql query to contract id"

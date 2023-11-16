@@ -38,7 +38,7 @@ const TOPICS_TO_WORDS: { [key: string]: string } = {
     'climate change, global warming, climate science, global temperatures, carbon emissions, renewable energy',
   Biotech:
     'biotech, biotechnology, CRISPR, drug trials, pharmaceuticals, vaccines, gene editing',
-  Math: 'mathematics, Millenium Prize, math olympiad, proof, puzzle, paradox, numbers, equation',
+  Math: 'mathematics, Millennium Prize, math olympiad, proof, puzzle, paradox, numbers, equation',
   Nuclear: 'nuclear, nuclear power, fission, fusion',
   Space:
     'space, astronomy, astrophysics, space exploration, NASA, SpaceX, Mars, Moon, solar system, planets, stars, galaxies',
