@@ -3,11 +3,8 @@ import dayjs from 'dayjs'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { fromNow } from 'web/lib/util/time'
 
-export default function OnlineIcon(props: {
-  last_online_time: string
-  className?: string
-}) {
-  const { last_online_time, className } = props
+export default function OnlineIcon(props: { last_online_time: string }) {
+  const { last_online_time } = props
   const lastOnlineTime = dayjs(last_online_time)
   const currentTime = dayjs()
 
@@ -26,16 +23,13 @@ export default function OnlineIcon(props: {
   }
 
   return (
-    <div
-      className={clsx(
-        'my-auto h-2 w-2 rounded-full font-semibold',
-        isStalled ? 'bg-yellow-500' : 'bg-green-500',
-        className
-      )}
-    >
-      <Tooltip text={'Last online: ' + fromNow(lastOnlineTime.valueOf())}>
-        <div className="h-full w-full" />
-      </Tooltip>
-    </div>
+    <Tooltip text={'Last online: ' + fromNow(lastOnlineTime.valueOf())}>
+      <div
+        className={clsx(
+          'h-2 w-2 rounded-full',
+          isStalled ? 'bg-yellow-500' : 'bg-green-500'
+        )}
+      />
+    </Tooltip>
   )
 }
