@@ -115,10 +115,10 @@ export function getSearchContractSQL(args: {
   isForYou?: boolean
   searchType: SearchTypes
 }) {
-  const { term, sort, offset, limit, groupId, searchType } = args
+  const { term, sort, offset, limit, groupId, creatorId, searchType } = args
 
   const hideStonks = sort === 'score' && !term.length && !groupId
-  const hideLove = sort === 'newest' && !term.length && !groupId
+  const hideLove = sort === 'newest' && !term.length && !groupId && !creatorId
 
   const whereSql = getSearchContractWhereSQL({ ...args, hideStonks, hideLove })
   const isUrl = term.startsWith('https://manifold.markets/')
