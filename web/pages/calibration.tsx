@@ -163,18 +163,18 @@ export default function CalibrationPage(props: {
           </div>
 
           <Subtitle>Overall calibration</Subtitle>
-          <div className='mb-2 text-ink-600'>
+          <div className="text-ink-600 mb-2">
             This chart show whether events happened as often as we predicted. We
             want to blue dots to be as close to the diagonal line as possible!{' '}
           </div>
-          <div className='text-ink-600'>
+          <div className="text-ink-600">
             A dot with a question probability of 70% means we have a group of
             markets that were predicted to have a 70% chance of occurring. If
             our predictions are perfectly calibrated, then 70% of those markets
             should have resolved yes and it should appear on the y-axis at 70%.
           </div>
 
-          <Col className="w-full mt-4">
+          <Col className="mt-4 w-full">
             <div className="bg-canvas-0 relative w-full  rounded-md p-4 pr-12">
               <div className="absolute bottom-0 right-4 top-0 flex items-center">
                 <span className="text-ink-800 text-sm [writing-mode:vertical-rl]">
