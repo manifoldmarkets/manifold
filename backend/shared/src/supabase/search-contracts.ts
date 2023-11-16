@@ -218,8 +218,8 @@ function getSearchContractWhereSQL(args: {
   const creatorFilter = creatorId ? `creator_id = '${creatorId}'` : ''
   const visibilitySQL = getContractPrivacyWhereSQLFilter(
     uid,
-    groupId,
     creatorId,
+    groupId,
     hasGroupAccess
   )
 

@@ -327,12 +327,23 @@ export const getContractPrivacyWhereSQLFilter = (
   creatorId?: string,
   groupId?: string,
   hasGroupAccess?: boolean,
-  contractIdString = 'id'
+  contractIdString = 'id',
+  includePrivateMarkets = false
 ) => {
   const otherVisibilitySQL = `
-  OR (visibility = 'unlisted' AND creator_id='${uid}') 
-  OR (visibility = 'unlisted' AND ${isAdminId(uid ?? '_')}) 
-  OR (visibility = 'private' AND can_access_private_contract(${contractIdString},'${uid}'))
+  OR (visibility = 'unlisted' 
+    AND (
+     creator_id='${uid}'
+     OR ${isAdminId(uid ?? '_')}
+     OR exists(
+         select 1 from contract_bets where contract_id = ${contractIdString} and user_id = '${uid}')
+     )) 
+     ${
+       // Included when viewing your own contract metrics or your own markets
+       includePrivateMarkets || creatorId === uid
+         ? `OR (visibility = 'private' AND can_access_private_contract(${contractIdString},'${uid}'))`
+         : ''
+     }
   `
   return (groupId && hasGroupAccess) ||
     (!!creatorId && !!uid && creatorId === uid)

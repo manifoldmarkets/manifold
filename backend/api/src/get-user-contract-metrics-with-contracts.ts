@@ -22,7 +22,8 @@ export const getusercontractmetricswithcontracts = MaybeAuthedEndpoint(
       undefined,
       undefined,
       undefined,
-      'c.id'
+      'c.id',
+      auth && auth.uid === userId
     )
     const pg = createSupabaseDirectClient()
     const metricsByContract = {} as Dictionary<ContractMetric>
