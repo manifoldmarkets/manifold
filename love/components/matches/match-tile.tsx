@@ -6,33 +6,21 @@ import { Answer } from 'common/answer'
 import { CPMMMultiContract } from 'common/contract'
 import { Lover } from 'common/love/lover'
 import Image from 'next/image'
-import Link from 'next/link'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { useAnswersCpmm } from 'web/hooks/use-answers'
 import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
 import { useUser } from 'web/hooks/use-user'
 
-import { contractPath } from 'common/contract'
-import { BuyPanel } from 'web/components/bet/bet-panel'
-import { MODAL_CLASS, Modal } from 'web/components/layout/modal'
-import { linkClass } from 'web/components/widgets/site-link'
-import { Subtitle } from 'web/components/widgets/subtitle'
-import { User } from 'common/user'
 import { formatPercent } from 'common/util/format'
-import { Button } from 'web/components/buttons/button'
-import { track } from 'web/lib/service/analytics'
-import { Spacer } from 'web/components/layout/spacer'
 import { CommentsButton } from 'web/components/comments/comments-button'
-import { MatchTracker } from './match-tracker'
-import { TradesButton } from 'web/components/contract/trades-button'
-import { MatchPositionsButton } from './match-positions'
-import { MatchBetButton } from './match-bet'
+import { SendMessageButton } from 'web/components/messaging/send-message-button'
 import { UserLink } from 'web/components/widgets/user-link'
-import { ControlledTabs } from 'web/components/layout/tabs'
 import { ConfirmStageButton } from '../confirm-stage-button'
 import { RejectButton } from '../reject-button'
-import { SendMessageButton } from 'web/components/messaging/send-message-button'
+import { MatchBetButton } from './match-bet'
+import { MatchPositionsButton } from './match-positions'
+import { MatchTracker } from './match-tracker'
 
 const relationshipStages = [
   '1st date',
@@ -76,7 +64,7 @@ export const MatchTile = (props: {
     .trim()
 
   return (
-    <Col className=" overflow-hidden rounded drop-shadow">
+    <Col className="w-[220px] shrink-0 overflow-hidden rounded drop-shadow">
       <div className="bg-canvas-0 w-full bg-gradient-to-b px-4 py-2">
         <UserLink
           className={
@@ -94,7 +82,7 @@ export const MatchTile = (props: {
             width={180}
             height={240}
             alt={`${user.username}`}
-            className="h-full w-60 object-cover"
+            className="h-full w-full object-cover"
           />
         ) : (
           <Col className="bg-ink-300 h-full w-full items-center justify-center">
@@ -118,7 +106,6 @@ export const MatchTile = (props: {
             lastResolved={lastResolved}
             stage={stage}
             setStage={setStage}
-            answers={answers}
           />
 
           <Row className="w-full justify-between">
@@ -164,15 +151,15 @@ export const MatchTile = (props: {
             answers={answers}
             user={user}
           />
+          {showConfirmStage && isYourMatch && (
+            <ConfirmStageButton
+              lover={lover}
+              stage={relationshipStages[stage]}
+              contractId={contract.id}
+              answerId={answer.id}
+            />
+          )}
         </Row>
-        {showConfirmStage && isYourMatch && (
-          <ConfirmStageButton
-            lover={lover}
-            stage={relationshipStages[stage]}
-            contractId={contract.id}
-            answerId={answer.id}
-          />
-        )}
       </Col>
     </Col>
   )

@@ -12,6 +12,7 @@ import { useUser } from 'web/hooks/use-user'
 import { AddAMatchButton } from '../add-a-match-button'
 import { MatchTile } from './match-tile'
 import { Carousel } from 'web/components/widgets/carousel'
+import { Row } from 'web/components/layout/row'
 
 export const Matches = (props: { userId: string }) => {
   const { userId } = props
@@ -69,7 +70,7 @@ export const Matches = (props: { userId: string }) => {
       {currentMatches.length > 0 ? (
         <Col>
           <div className="text-lg font-semibold">Matches</div>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
+          <Carousel>
             {currentMatches.map((contract) => {
               const matchedLoverId =
                 contract.loverUserId1 === userId
@@ -91,7 +92,7 @@ export const Matches = (props: { userId: string }) => {
                 )
               )
             })}
-          </div>
+          </Carousel>
         </Col>
       ) : (
         <Col>
