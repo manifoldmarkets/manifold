@@ -35,7 +35,8 @@ if [ "${INITIALIZE}" = true ]; then
            --machine-type n2-standard-2 \
            --container-env ENVIRONMENT=${ENVIRONMENT} \
            --container-env GOOGLE_CLOUD_PROJECT=${GCLOUD_PROJECT} \
-           --scopes default,cloud-platform
+           --scopes default,cloud-platform \
+           --tags http-server
 else
     gcloud compute instances update-container scheduler \
            --zone ${ZONE} \
