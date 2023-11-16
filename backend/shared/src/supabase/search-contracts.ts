@@ -213,7 +213,9 @@ function getSearchContractWhereSQL(args: {
 
   const stonkFilter =
     hideStonks && contractType !== 'STONK' ? `outcome_type != 'STONK'` : ''
-  const loveFilter = hideLove ? `not group_slugs && $1` : ''
+  const loveFilter = hideLove
+    ? `group_slugs is null or not group_slugs && $1`
+    : ''
   const sortFilter = sort == 'close-date' ? 'close_time > NOW()' : ''
   const creatorFilter = creatorId ? `creator_id = '${creatorId}'` : ''
   const visibilitySQL = getContractPrivacyWhereSQLFilter(
@@ -254,12 +256,12 @@ export const sortFields: SortFields = {
   'daily-score': {
     sql: "(data->>'dailyScore')::numeric",
     sortCallback: (c: Contract) => c.dailyScore,
-    order: 'DESC NULLS LAST',
+    order: 'DESC',
   },
   '24-hour-vol': {
     sql: "(data->>'volume24Hours')::numeric",
     sortCallback: (c: Contract) => c.volume24Hours,
-    order: 'DESC NULLS LAST',
+    order: 'DESC',
   },
   liquidity: {
     sql: "(data->>'elasticity')::numeric",
@@ -269,17 +271,17 @@ export const sortFields: SortFields = {
   'last-updated': {
     sql: "(data->>'lastUpdatedTime')::numeric",
     sortCallback: (c: Contract) => c.lastUpdatedTime,
-    order: 'DESC NULLS LAST',
+    order: 'DESC',
   },
   'most-popular': {
     sql: "(data->>'uniqueBettorCount')::integer",
     sortCallback: (c: Contract) => c.uniqueBettorCount,
-    order: 'DESC NULLS LAST',
+    order: 'DESC',
   },
   newest: {
     sql: 'created_time',
     sortCallback: (c: Contract) => c.createdTime,
-    order: 'DESC NULLS LAST',
+    order: 'DESC',
   },
   'resolve-date': {
     sql: 'resolution_time',
@@ -294,12 +296,12 @@ export const sortFields: SortFields = {
   random: {
     sql: 'random()',
     sortCallback: () => Math.random(),
-    order: 'DESC NULLS LAST',
+    order: 'DESC',
   },
   'bounty-amount': {
     sql: "COALESCE((data->>'bountyLeft')::integer, -1)",
     sortCallback: (c: Contract) => ('bountyLeft' in c && c.bountyLeft) || -1,
-    order: 'DESC NULLS LAST',
+    order: 'DESC',
   },
   'prob-descending': {
     sql: "resolution DESC, (data->>'p')::numeric",
