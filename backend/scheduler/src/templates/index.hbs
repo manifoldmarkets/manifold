@@ -32,7 +32,7 @@
   <body>
     <header>
       <h1>{{env}} scheduled jobs</h1>
-      <p><a href="https://console.cloud.google.com/compute/instancesDetail/zones/us-central1-a/instances/scheduler?project=dev-mantic-markets">Instance admin page</a></p>
+      <p><a href="{{instanceDashboardUrl}}">Instance admin page</a></p>
     </header>
     <section>
       {{#each jobs}}

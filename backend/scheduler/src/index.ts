@@ -25,6 +25,8 @@ app.use(express.json())
 const server = app.listen(PORT, async () => {
   await initGoogleCredentialsAndSecrets()
   const prod = isProd()
+  const projectId = prod ? 'mantic-markets' : 'dev-mantic-markets'
+
   log.info(`Running in ${prod ? 'prod' : 'dev'} listening on port ${PORT}.`)
   app.use(
     basicAuth({
@@ -79,6 +81,7 @@ const server = app.listen(PORT, async () => {
     return res.status(200).send(
       indexTemplate({
         env: isProd() ? 'Prod' : 'Dev',
+        instanceDashboardUrl: `https://console.cloud.google.com/compute/instancesDetail/zones/us-central1-a/instances/scheduler?project=${projectId}`,
         jobs: sortedJobsData,
       })
     )
