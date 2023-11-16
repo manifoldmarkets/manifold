@@ -147,12 +147,11 @@ export function UserBetsTable(props: { user: User }) {
   if (Object.keys(nullableMetricsByContract).length === 0)
     return <NoBets user={user} />
 
-  const contracts =
-    query && query !== ''
-      ? initialContracts.filter((c) =>
-          searchInAny(query, ...[c.question, c.creatorName, c.creatorUsername])
-        )
-      : initialContracts
+  const contracts = query
+    ? initialContracts.filter((c) =>
+        searchInAny(query, c.question, c.creatorName, c.creatorUsername)
+      )
+    : initialContracts
 
   const FILTERS: Record<BetFilter, (c: Contract) => boolean> = {
     resolved: (c) => !!c.resolutionTime,

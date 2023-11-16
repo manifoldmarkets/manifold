@@ -23,7 +23,7 @@ import {
   getUsersWithSimilarInterestVectorToNews,
 } from 'shared/supabase/users'
 import { convertObjectToSQLRow, Row } from 'common/supabase/utils'
-import { DAY_MS } from 'common/util/time'
+import { DAY_MS, HOUR_MS } from 'common/util/time'
 import { User } from 'common/user'
 import { fromPairs, groupBy, maxBy, uniq } from 'lodash'
 import { removeUndefinedProps } from 'common/util/object'
@@ -142,14 +142,24 @@ const matchingFeedRows = async (
   )
 }
 
-const userIdsWithFeedRowsMatchingContract = async (
+const userIdsToIgnore = async (
   contractId: string,
   userIds: string[],
   seenTime: number,
   dataTypes: FEED_DATA_TYPES[],
   pg: SupabaseDirectClient
 ) => {
-  return await pg.map(
+  const userIdsWithSeenMarkets = await pg.map(
+    `select distinct user_id
+            from user_seen_markets
+            where contract_id = $1 and
+                user_id = ANY($2) and
+                created_time > $3
+                `,
+    [contractId, userIds, new Date(seenTime).toISOString(), dataTypes],
+    (row: { user_id: string }) => row.user_id
+  )
+  const userIdsWithFeedRows = await pg.map(
     `select distinct user_id
             from user_feed
             where contract_id = $1 and
@@ -157,9 +167,15 @@ const userIdsWithFeedRowsMatchingContract = async (
                 greatest(created_time, seen_time) > $3 and
                 data_type = ANY($4)
                 `,
-    [contractId, userIds, new Date(seenTime).toISOString(), dataTypes],
+    [
+      contractId,
+      userIds.filter((id) => !userIdsWithSeenMarkets.includes(id)),
+      new Date(seenTime).toISOString(),
+      dataTypes,
+    ],
     (row: { user_id: string }) => row.user_id
   )
+  return userIdsWithFeedRows.concat(userIdsWithSeenMarkets)
 }
 
 export const addCommentOnContractToFeed = async (
@@ -258,7 +274,7 @@ export const addContractToFeedIfNotDuplicative = async (
     Object.keys(usersToReasonsInterestedInContract).length
   )
 
-  const ignoreUserIds = await userIdsWithFeedRowsMatchingContract(
+  const ignoreUserIds = await userIdsToIgnore(
     contract.id,
     Object.keys(usersToReasonsInterestedInContract),
     unseenNewerThanTime,
@@ -353,7 +369,7 @@ export const insertMarketMovementContractToUsersFeeds = async (
     ],
     'contract_probability_changed',
     [],
-    Date.now() - DAY_MS,
+    Date.now() - 12 * HOUR_MS,
     {
       currentProb: contract.prob,
       previousProb: contract.prob - contract.probChanges.day,

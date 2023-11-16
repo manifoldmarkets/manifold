@@ -40,10 +40,10 @@ export async function getDefaultEmbedding(
                    join (
               select id
               from contracts
-                where (data -> 'groupSlugs') is not null
+                where group_slugs is not null
                 and not exists (
                 select 1
-                from unnest(jsonb_array_to_text_array(data->'groupSlugs')) as t(slug)
+                from unnest(group_slugs) as t(slug)
                 where (slug = any($1) or slug ilike '%manifold%')
                 )
               order by importance_score desc

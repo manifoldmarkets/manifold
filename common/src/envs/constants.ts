@@ -140,7 +140,6 @@ export const MOD_IDS = [
   'fP5OQUWYt4MW17A2giGjMGsw1uu2', // LarsDoucet
   'k13AzY3mu8XTju3xRZV3P8qBjEC2', // LivInTheLookingGlass
   'lQdCwuc1OrZLUqgA4EwjPSSwG5Z2', // memestiny
-  'IPTOzEqrpkWmEzh6hwvAyY9PqFb2', // Manifold
   'b3WDWY8TdrhQKKNuJkNuvQKwHWE3', // MarcusAbramovitch
   'sA7V30Ic73XZtniboy2eKr6ekkn1', // MartinRandall
   'nEc7EizWpQSGO5y5A7H13TaE6Aw2', // MattP
@@ -203,6 +202,7 @@ export const VERIFIED_USERNAMES = [
   'RobinHanson',
   'KevinRoose18ac',
   'KnowNothing',
+  'SantaPawsSSB',
 ]
 
 export const HOUSE_BOT_USERNAME = 'acc'

@@ -1,6 +1,6 @@
 import { ArrowLeftIcon, ChevronDownIcon, XIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
-import { isEqual, sample, uniqBy } from 'lodash'
+import { sample, uniqBy } from 'lodash'
 import { ReactNode, useEffect, useRef, useState } from 'react'
 import { Contract } from 'common/contract'
 import { useEvent } from 'web/hooks/use-event'
@@ -43,7 +43,7 @@ import {
   traderColumn,
 } from './contract/contract-table-col-formats'
 import { buildArray } from 'common/util/array'
-import { ContractsTable } from './contract/contracts-table'
+import { ContractsTable, LoadingContractRow } from './contract/contracts-table'
 
 const USERS_PER_PAGE = 100
 const TOPICS_PER_PAGE = 100
@@ -119,7 +119,7 @@ const CONTRACT_TYPES = [
 ] as const
 
 export type ContractTypeType = typeof CONTRACT_TYPES[number]['value']
-type SearchType = '' | 'Topics' | 'Users' | 'Questions'
+type SearchType = 'Topics' | 'Users' | 'Questions' | undefined
 
 export type SearchParams = {
   [QUERY_KEY]: string
@@ -143,7 +143,6 @@ export type SupabaseAdditionalFilter = {
   excludeGroupSlugs?: string[]
   excludeUserIds?: string[]
   nonQueryFacetFilters?: string[]
-  contractType?: ContractTypeType
 }
 
 export type SearchState = {
@@ -155,10 +154,11 @@ export function SupabaseSearch(props: {
   persistPrefix: string
   defaultSort?: Sort
   defaultFilter?: Filter
+  defaultContractType?: ContractTypeType
+  defaultSearchType?: SearchType
   additionalFilter?: SupabaseAdditionalFilter
   highlightContractIds?: string[]
   onContractClick?: (contract: Contract) => void
-  hideOrderSelector?: boolean
   hideActions?: boolean
   headerClassName?: string
   isWholePage?: boolean
@@ -171,7 +171,6 @@ export function SupabaseSearch(props: {
   emptyState?: ReactNode
   hideSearch?: boolean
   hideContractFilters?: boolean
-  defaultSearchType?: SearchType
   topics?: Group[]
   setTopics?: (topics: Group[]) => void
   contractsOnly?: boolean
@@ -186,10 +185,11 @@ export function SupabaseSearch(props: {
   const {
     defaultSort,
     defaultFilter,
+    defaultContractType,
+    defaultSearchType,
     additionalFilter,
     onContractClick,
     userResultProps,
-    hideOrderSelector,
     hideActions,
     highlightContractIds,
     headerClassName,
@@ -201,7 +201,6 @@ export function SupabaseSearch(props: {
     hideContractFilters,
     menuButton,
     rowBelowFilters,
-    defaultSearchType,
     topics: topicResults,
     setTopics: setTopicResults,
     contractsOnly,
@@ -209,22 +208,27 @@ export function SupabaseSearch(props: {
     hideSearchTypes,
   } = props
 
-  const [searchParams, setSearchParams, defaults] = useSearchQueryState({
+  const [searchParams, setSearchParams] = useSearchQueryState({
     defaultSort,
     defaultFilter,
-    useUrlParams,
+    defaultContractType,
     defaultSearchType,
+    useUrlParams,
   })
   const user = useUser()
   const followingUsers = useFollowedUsersOnLoad(user?.id)
   const follwingTopics = useRealtimeMemberGroupIds(user?.id)
 
-  const [lastSearch, setLastSearch] = usePersistentInMemoryState<
-    typeof searchParams
-  >(undefined, `${persistPrefix}-last-search`)
-  const queryAsString = searchParams?.[QUERY_KEY] ?? ''
-  const searchTypeAsString = searchParams?.[SEARCH_TYPE_KEY] ?? ''
-  const currentTopicSlug = searchParams?.[TOPIC_KEY]
+  const [lastQuery, setLastQuery] = usePersistentInMemoryState(
+    '',
+    `${persistPrefix}-last-search`
+  )
+  const query = searchParams[QUERY_KEY] ?? ''
+  const searchType = searchParams[SEARCH_TYPE_KEY]
+  const topicSlug = searchParams[TOPIC_KEY]
+  const sort = searchParams[SORT_KEY]
+  const filter = searchParams[FILTER_KEY]
+  const contractType = searchParams[CONTRACT_TYPE_KEY]
 
   const [queriedUserResults, setQueriedUserResults] =
     usePersistentInMemoryState<UserSearchResult[] | undefined>(
@@ -232,75 +236,35 @@ export function SupabaseSearch(props: {
       `${persistPrefix}-queried-user-results`
     )
 
-  const [showSearchTypeState, setShowSearchTypeState] = useState(
-    queryAsString === '' || searchTypeAsString !== '' || !!currentTopicSlug
-  )
-
   const userResults = uniqBy(
     (
       followingUsers?.filter(
         (f) =>
-          f.name.toLowerCase().includes(queryAsString.toLowerCase()) ||
-          f.username.toLowerCase().includes(queryAsString.toLowerCase())
+          f.name.toLowerCase().includes(query.toLowerCase()) ||
+          f.username.toLowerCase().includes(query.toLowerCase())
       ) ?? []
     ).concat(queriedUserResults ?? []),
     'id'
   )
 
-  const {
-    contracts: rawContracts,
-    queryContracts,
-    shouldLoadMore,
-  } = useContractSearch(
-    persistPrefix,
-    setLastSearch,
-    searchParams,
-    additionalFilter,
-    isWholePage
-  )
-
-  // remove love from new results
-  const contracts =
-    searchParams?.[SORT_KEY] === 'newest' &&
-    !searchParams?.[QUERY_KEY] &&
-    (!currentTopicSlug || currentTopicSlug === 'for-you')
-      ? rawContracts?.filter(
-          (c) => !c.groupSlugs?.includes('manifoldlove-relationships')
-        )
-      : rawContracts
+  const { contracts, loading, queryContracts, shouldLoadMore } =
+    useContractSearch(
+      persistPrefix,
+      setLastQuery,
+      searchParams,
+      additionalFilter,
+      isWholePage
+    )
 
   const pillOptions: SearchType[] = ['Questions', 'Users', 'Topics']
   const setQuery = (query: string) => setSearchParams({ [QUERY_KEY]: query })
   const setSearchType = (t: SearchType) =>
-    setSearchParams({ [SEARCH_TYPE_KEY]: searchTypeAsString === t ? '' : t })
+    setSearchParams({ [SEARCH_TYPE_KEY]: t })
+
   const showSearchTypes =
     !hideSearchTypes &&
-    ((showSearchTypeState &&
-      (!currentTopicSlug || currentTopicSlug === 'for-you') &&
-      queryAsString !== '') ||
-      searchTypeAsString !== '') &&
-    !contractsOnly
-
-  useEffect(() => {
-    if (searchParams?.[QUERY_KEY] === '') setShowSearchTypeState(true)
-  }, [searchParams?.[QUERY_KEY]])
-
-  useEffect(() => {
-    if (
-      currentTopicSlug &&
-      currentTopicSlug !== 'for-you' &&
-      showSearchTypeState
-    ) {
-      setShowSearchTypeState(false)
-      setSearchParams({ [SEARCH_TYPE_KEY]: '' })
-    } else if (
-      !showSearchTypes &&
-      currentTopicSlug === '' &&
-      queryAsString === ''
-    ) {
-      setShowSearchTypeState(true)
-    }
-  }, [currentTopicSlug])
+    !contractsOnly &&
+    (((!topicSlug || topicSlug === 'for-you') && query !== '') || searchType)
 
   const queryUsers = useEvent(async (query: string) =>
     searchUsers(query, USERS_PER_PAGE, [
@@ -320,26 +284,27 @@ export function SupabaseSearch(props: {
 
   const searchCountRef = useRef(0)
   useEffect(() => {
-    if (!searchParams || isEqual(searchParams, lastSearch)) return
     const searchCount = ++searchCountRef.current
-
     queryContracts(true)
-    queryUsers(queryAsString).then((results) => {
-      if (searchCount === searchCountRef.current) setQueriedUserResults(results)
-    })
-    queryTopics(queryAsString).then((results) => {
-      if (searchCount === searchCountRef.current) setTopicResults?.(results)
-    })
-  }, [JSON.stringify(searchParams)])
+    if (query !== lastQuery) {
+      queryUsers(query).then((results) => {
+        if (searchCount === searchCountRef.current)
+          setQueriedUserResults(results)
+      })
+      queryTopics(query).then((results) => {
+        if (searchCount === searchCountRef.current) setTopicResults?.(results)
+      })
+    }
+  }, [query, topicSlug, sort, filter, contractType])
 
   const emptyContractsState =
     props.emptyState ??
-    (searchParams?.[QUERY_KEY] ? (
+    (query ? (
       <NoResults />
     ) : (
       <Col className="text-ink-700 mx-2 my-6 text-center">
         No questions yet.
-        {searchParams?.[TOPIC_KEY] && (
+        {topicSlug && (
           <Row className={'mt-2 w-full items-center justify-center'}>
             <AddContractToGroupButton groupSlug={searchParams[TOPIC_KEY]} />
           </Row>
@@ -356,31 +321,35 @@ export function SupabaseSearch(props: {
               <Input
                 type="text"
                 inputMode="search"
-                value={queryAsString}
+                value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                onBlur={trackCallback('search', { query: queryAsString })}
+                onBlur={trackCallback('search', { query: query })}
                 placeholder={
-                  searchTypeAsString === 'Users'
+                  searchType === 'Users'
                     ? 'Search users'
-                    : searchTypeAsString === 'Topics'
+                    : searchType === 'Topics'
                     ? 'Search topics'
-                    : searchTypeAsString === 'Questions' ||
-                      (currentTopicSlug && currentTopicSlug !== 'for-you')
+                    : searchType === 'Questions' ||
+                      (topicSlug && topicSlug !== 'for-you')
                     ? 'Search questions'
                     : 'Search questions, users, and topics'
                 }
                 className="w-full"
                 autoFocus={autoFocus}
               />
-              {queryAsString !== '' && (
+              {query !== '' && (
                 <IconButton
-                  className={'absolute right-2 top-2.5 p-0'}
+                  className={'absolute right-2 top-1/2 -translate-y-1/2'}
                   size={'2xs'}
                   onClick={() => {
                     setSearchParams({ [QUERY_KEY]: '' })
                   }}
                 >
-                  <XIcon className={'h-5 w-5 rounded-full'} />
+                  {loading ? (
+                    <LoadingIndicator size="sm" />
+                  ) : (
+                    <XIcon className={'h-5 w-5 rounded-full'} />
+                  )}
                 </IconButton>
               )}
             </Row>
@@ -389,14 +358,11 @@ export function SupabaseSearch(props: {
         </Row>
         {!hideContractFilters && (
           <ContractFilters
-            hideOrderSelector={hideOrderSelector}
             includeProbSorts={includeProbSorts}
-            params={searchParams ?? defaults}
+            params={searchParams}
             updateParams={setSearchParams}
             className={
-              searchTypeAsString !== '' && searchTypeAsString !== 'Questions'
-                ? 'invisible'
-                : ''
+              searchType && searchType !== 'Questions' ? 'invisible' : ''
             }
             showTopicTag={showTopicTag}
           />
@@ -407,10 +373,9 @@ export function SupabaseSearch(props: {
           <Button
             size={'sm'}
             color={'gray-white'}
-            className={' ml-1 rounded-full sm:hidden'}
+            className={'ml-1 rounded-full sm:hidden'}
             onClick={() => {
-              setShowSearchTypeState(false)
-              setSearchType('')
+              setSearchParams({ [SEARCH_TYPE_KEY]: undefined, [QUERY_KEY]: '' })
             }}
           >
             <ArrowLeftIcon className={'h-4 w-4'} />
@@ -428,15 +393,15 @@ export function SupabaseSearch(props: {
                 ? ''
                 : numHits >= 100
                 ? '100+ '
-                : option === 'Questions' && shouldLoadMore
+                : option === 'Questions' && shouldLoadMore && !loading
                 ? `${numHits}+ `
                 : `${numHits} `
             return (
               <PillButton
                 key={option}
                 selected={
-                  searchTypeAsString === option ||
-                  (option === 'Questions' && searchTypeAsString === '')
+                  searchType === option ||
+                  (option === 'Questions' && !searchType)
                 }
                 onSelect={() => setSearchType(option)}
               >
@@ -448,9 +413,9 @@ export function SupabaseSearch(props: {
       ) : (
         rowBelowFilters
       )}
-      {searchTypeAsString === '' || searchTypeAsString === 'Questions' ? (
+      {!searchType || searchType === 'Questions' ? (
         !contracts ? (
-          <LoadingIndicator />
+          <LoadingResults />
         ) : contracts.length === 0 ? (
           emptyContractsState
         ) : (
@@ -467,28 +432,27 @@ export function SupabaseSearch(props: {
               headerClassName={clsx(headerClassName, '!top-14')}
             />
             <LoadMoreUntilNotVisible loadMore={queryContracts} />
-            {!shouldLoadMore &&
-              (searchParams?.[FILTER_KEY] !== 'all' ||
-                searchParams?.[CONTRACT_TYPE_KEY] !== 'ALL') && (
-                <div className="text-ink-500 mx-2 my-8 text-center">
-                  No more results under this filter.{' '}
-                  <button
-                    className="text-primary-500 hover:underline"
-                    onClick={() =>
-                      setSearchParams({
-                        [FILTER_KEY]: 'all',
-                        [CONTRACT_TYPE_KEY]: 'ALL',
-                      })
-                    }
-                  >
-                    Clear filter
-                  </button>
-                  ?
-                </div>
-              )}
+            {shouldLoadMore && <LoadingResults />}
+            {!shouldLoadMore && (filter !== 'all' || contractType !== 'ALL') && (
+              <div className="text-ink-500 mx-2 my-8 text-center">
+                No more results under this filter.{' '}
+                <button
+                  className="text-primary-500 hover:underline"
+                  onClick={() =>
+                    setSearchParams({
+                      [FILTER_KEY]: 'all',
+                      [CONTRACT_TYPE_KEY]: 'ALL',
+                    })
+                  }
+                >
+                  Clear filter
+                </button>
+                ?
+              </div>
+            )}
           </>
         )
-      ) : searchTypeAsString === 'Users' ? (
+      ) : searchType === 'Users' ? (
         userResults && userResults.length === 0 ? (
           <Col className="text-ink-700 mx-2 my-6 text-center">
             No users found.
@@ -500,7 +464,7 @@ export function SupabaseSearch(props: {
             userResultProps={userResultProps}
           />
         )
-      ) : searchTypeAsString === 'Topics' ? (
+      ) : searchType === 'Topics' ? (
         topicResults && topicResults.length === 0 ? (
           <Col className="text-ink-700 mx-2 my-6 text-center">
             No topics found.
@@ -524,12 +488,9 @@ const TopicResults = (props: { topics: Group[]; yourTopicIds: string[] }) => {
   return (
     <Col className={'mt-1 w-full gap-1'}>
       {topics.map((group) => (
-        <Link
-          key={group.id}
-          href={`/browse?${TOPIC_KEY}=${group.slug}&${SEARCH_TYPE_KEY}=&${QUERY_KEY}=`}
-        >
+        <Link key={group.id} href={`/browse?${TOPIC_KEY}=${group.slug}`}>
           <Row className={'hover:bg-primary-100 min-h-[4rem] p-1 pl-2 pt-2.5'}>
-            <Col className={' w-full'}>
+            <Col className={'w-full'}>
               <span className="line-clamp-1 sm:text-lg">{group.name}</span>
               <Row className={'text-ink-500 line-clamp-2 gap-1 text-sm'}>
                 {group.totalMembers > 1 && (
@@ -569,6 +530,16 @@ const NoResults = () => {
   return <div className="text-ink-700 mx-2 my-6 text-center">{message}</div>
 }
 
+const LoadingResults = () => {
+  return (
+    <Col className="w-full">
+      <LoadingContractRow />
+      <LoadingContractRow />
+      <LoadingContractRow />
+    </Col>
+  )
+}
+
 const FRESH_SEARCH_CHANGED_STATE: SearchState = {
   contracts: undefined,
   shouldLoadMore: true,
@@ -576,7 +547,7 @@ const FRESH_SEARCH_CHANGED_STATE: SearchState = {
 
 const useContractSearch = (
   persistPrefix: string,
-  setLastSearch: (searchParams: SearchParams) => void,
+  setLastQuery: (q: string) => void,
   searchParams: SearchParams | undefined,
   additionalFilter?: SupabaseAdditionalFilter,
   isWholePage?: boolean
@@ -585,6 +556,7 @@ const useContractSearch = (
     FRESH_SEARCH_CHANGED_STATE,
     `${persistPrefix}-supabase-contract-search`
   )
+  const [loading, setLoading] = useState(false)
 
   const requestId = useRef(0)
 
@@ -597,23 +569,28 @@ const useContractSearch = (
       topic: topicSlug,
       ct: contractType,
     } = searchParams
-    setLastSearch(searchParams)
 
-    if (freshQuery) {
-      setState(FRESH_SEARCH_CHANGED_STATE)
-    }
+    setLastQuery(query)
 
     const offset = freshQuery ? 0 : state.contracts?.length ?? 0
 
     if (freshQuery || state.shouldLoadMore) {
       const id = ++requestId.current
+      let timeoutId: NodeJS.Timeout | undefined
+      if (freshQuery) {
+        timeoutId = setTimeout(() => {
+          if (id === requestId.current) {
+            setLoading(true)
+          }
+        }, 500)
+      }
 
       const newContracts = await searchContracts({
         term: query,
         filter,
         sort,
-        contractType: additionalFilter?.contractType ?? contractType,
-        offset: offset,
+        contractType,
+        offset,
         limit: CONTRACTS_PER_SEARCH_PAGE,
         topicSlug: topicSlug !== '' ? topicSlug : undefined,
         creatorId: additionalFilter?.creatorId,
@@ -630,6 +607,9 @@ const useContractSearch = (
           contracts: freshContracts,
           shouldLoadMore,
         })
+        clearTimeout(timeoutId)
+        setLoading(false)
+
         if (freshQuery && isWholePage) window.scrollTo(0, 0)
 
         return shouldLoadMore
@@ -655,6 +635,7 @@ const useContractSearch = (
 
   return {
     contracts,
+    loading,
     shouldLoadMore: state.shouldLoadMore,
     queryContracts,
   }
@@ -671,7 +652,7 @@ const useSearchQueryState = (props: {
     defaultSort = 'score',
     defaultFilter = 'open',
     defaultContractType = 'ALL',
-    defaultSearchType = '',
+    defaultSearchType,
     useUrlParams,
   } = props
 
@@ -687,25 +668,18 @@ const useSearchQueryState = (props: {
   const useHook = useUrlParams ? usePersistentQueriesState : usePartialUpdater
   const [state, setState] = useHook(defaults)
 
-  return [state, setState, defaults] as const
+  return [state, setState] as const
 }
 
 function ContractFilters(props: {
   className?: string
-  hideOrderSelector?: boolean
   includeProbSorts?: boolean
   params: SearchParams
   updateParams: (params: Partial<SearchParams>) => void
   showTopicTag?: boolean
 }) {
-  const {
-    className,
-    hideOrderSelector,
-    includeProbSorts,
-    params,
-    updateParams,
-    showTopicTag,
-  } = props
+  const { className, includeProbSorts, params, updateParams, showTopicTag } =
+    props
 
   const { s: sort, f: filter, ct: contractType, topic: topicSlug } = params
 
@@ -761,33 +735,32 @@ function ContractFilters(props: {
       )}
     >
       <Row className={'h-6 gap-3'}>
-        {!hideOrderSelector && (
-          <DropdownMenu
-            items={generateFilterDropdownItems(
-              contractType == 'BOUNTIED_QUESTION'
-                ? BOUNTY_MARKET_SORTS
-                : contractType == 'POLL'
-                ? POLL_SORTS
-                : includeProbSorts &&
-                  (contractType === 'ALL' || contractType === 'BINARY')
-                ? PREDICTION_MARKET_PROB_SORTS
-                : PREDICTION_MARKET_SORTS,
-              selectSort
-            )}
-            icon={
-              <Row className="text-ink-500 items-center gap-0.5">
-                <span className="whitespace-nowrap text-sm font-medium">
-                  {sortLabel}
-                </span>
-                <ChevronDownIcon className="h-4 w-4" />
-              </Row>
-            }
-            menuWidth={'w-36'}
-            menuItemsClass="left-0 right-auto"
-            selectedItemName={sortLabel}
-            closeOnClick={true}
-          />
-        )}
+        <DropdownMenu
+          items={generateFilterDropdownItems(
+            contractType == 'BOUNTIED_QUESTION'
+              ? BOUNTY_MARKET_SORTS
+              : contractType == 'POLL'
+              ? POLL_SORTS
+              : includeProbSorts &&
+                (contractType === 'ALL' || contractType === 'BINARY')
+              ? PREDICTION_MARKET_PROB_SORTS
+              : PREDICTION_MARKET_SORTS,
+            selectSort
+          )}
+          icon={
+            <Row className="text-ink-500 items-center gap-0.5">
+              <span className="whitespace-nowrap text-sm font-medium">
+                {sortLabel}
+              </span>
+              <ChevronDownIcon className="h-4 w-4" />
+            </Row>
+          }
+          menuWidth={'w-36'}
+          menuItemsClass="left-0 right-auto"
+          selectedItemName={sortLabel}
+          closeOnClick={true}
+        />
+
         {!hideFilter && (
           <DropdownMenu
             items={generateFilterDropdownItems(FILTERS, selectFilter)}

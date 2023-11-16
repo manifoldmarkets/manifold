@@ -9,10 +9,9 @@ import { OpinionScale } from './opinion-scale-display'
 
 export function LoverAnswers(props: {
   isCurrentUser: boolean
-  router: NextRouter
   user: User
 }) {
-  const { isCurrentUser, router, user } = props
+  const { isCurrentUser, user } = props
 
   const {
     questions: allQuestions,
@@ -41,7 +40,6 @@ export function LoverAnswers(props: {
         answers={otherAnswers}
         questions={questions}
         isCurrentUser={isCurrentUser}
-        router={router}
         user={user}
         refreshAnswers={refreshAnswersAndQuestions}
       />
@@ -49,7 +47,6 @@ export function LoverAnswers(props: {
         multiChoiceAnswers={multiChoiceAnswers}
         questions={questions}
         isCurrentUser={isCurrentUser}
-        router={router}
       />
     </Col>
   )

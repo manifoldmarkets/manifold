@@ -9,7 +9,7 @@ import {
   InformationCircleIcon,
   UserIcon,
 } from '@heroicons/react/outline'
-import { PrivateUser } from 'common/user'
+import { PrivateUser, User } from 'common/user'
 import { useGroupedNotifications } from 'web/hooks/use-notifications'
 import { NotificationsList } from 'web/pages/notifications'
 import {
@@ -40,6 +40,7 @@ export const NOTIFICATION_REASONS_TO_SELECT: NotificationReason[] = [
 ]
 export default function NotificationsPage() {
   const privateUser = usePrivateUser()
+  const user = useUser()
   useRedirectIfSignedOut()
 
   const [navigateToSection, setNavigateToSection] = useState<string>()
@@ -65,8 +66,9 @@ export default function NotificationsPage() {
             {
               title: 'Notifications',
               content:
-                privateUser && router.isReady ? (
+                privateUser && user && router.isReady ? (
                   <NotificationsContent
+                    user={user}
                     privateUser={privateUser}
                     section={navigateToSection}
                   />
@@ -97,12 +99,13 @@ export default function NotificationsPage() {
 
 function NotificationsContent(props: {
   privateUser: PrivateUser
+  user: User
   section?: string
 }) {
-  const { privateUser } = props
+  const { privateUser, user } = props
   const { groupedNotifications, mostRecentNotification } =
     useGroupedNotifications(
-      privateUser.id,
+      user,
       NOTIFICATION_TYPES_TO_SELECT,
       NOTIFICATION_REASONS_TO_SELECT
     )
@@ -127,7 +130,7 @@ const manifoldLoveUserId =
 
 const userInteractions: NotificationSectionData = {
   label: 'Users',
-  subscriptionTypes: ['new_message', 'new_match'],
+  subscriptionTypes: ['new_message', 'new_match', 'new_endorsement'],
 }
 function NotificationSettings(props: {
   navigateToSection: string | undefined

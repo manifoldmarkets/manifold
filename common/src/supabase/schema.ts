@@ -22,6 +22,7 @@ export interface Database {
           prob: number | null
           subsidy_pool: number | null
           text: string | null
+          text_fts: unknown | null
           total_liquidity: number | null
           user_id: string | null
         }
@@ -37,6 +38,7 @@ export interface Database {
           prob?: number | null
           subsidy_pool?: number | null
           text?: string | null
+          text_fts?: unknown | null
           total_liquidity?: number | null
           user_id?: string | null
         }
@@ -52,6 +54,7 @@ export interface Database {
           prob?: number | null
           subsidy_pool?: number | null
           text?: string | null
+          text_fts?: unknown | null
           total_liquidity?: number | null
           user_id?: string | null
         }
@@ -387,8 +390,10 @@ export interface Database {
           created_time: string | null
           creator_id: string | null
           data: Json
+          deleted: boolean | null
           description_fts: unknown | null
           fs_updated_time: string
+          group_slugs: string[] | null
           id: string
           importance_score: number | null
           mechanism: string | null
@@ -408,8 +413,10 @@ export interface Database {
           created_time?: string | null
           creator_id?: string | null
           data: Json
+          deleted?: boolean | null
           description_fts?: unknown | null
           fs_updated_time: string
+          group_slugs?: string[] | null
           id: string
           importance_score?: number | null
           mechanism?: string | null
@@ -429,8 +436,10 @@ export interface Database {
           created_time?: string | null
           creator_id?: string | null
           data?: Json
+          deleted?: boolean | null
           description_fts?: unknown | null
           fs_updated_time?: string
+          group_slugs?: string[] | null
           id?: string
           importance_score?: number | null
           mechanism?: string | null
@@ -480,28 +489,32 @@ export interface Database {
         }
         Relationships: [
           {
-            foreignKeyName: 'dashboard_groups_dashboard_id_fkey'
-            columns: ['dashboard_id']
-            referencedRelation: 'dashboards'
-            referencedColumns: ['id']
+            foreignKeyName: "dashboard_groups_dashboard_id_fkey"
+            columns: ["dashboard_id"]
+            isOneToOne: false
+            referencedRelation: "dashboards"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'dashboard_groups_group_id_fkey'
-            columns: ['group_id']
-            referencedRelation: 'groups'
-            referencedColumns: ['id']
+            foreignKeyName: "dashboard_groups_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "group_role"
+            referencedColumns: ["group_id"]
           },
           {
-            foreignKeyName: 'dashboard_groups_group_id_fkey'
-            columns: ['group_id']
-            referencedRelation: 'group_role'
-            referencedColumns: ['group_id']
+            foreignKeyName: "dashboard_groups_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'dashboard_groups_group_id_fkey'
-            columns: ['group_id']
-            referencedRelation: 'groups_rbac'
-            referencedColumns: ['id']
+            foreignKeyName: "dashboard_groups_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups_rbac"
+            referencedColumns: ["id"]
           }
         ]
       }
@@ -553,28 +566,32 @@ export interface Database {
         }
         Relationships: [
           {
-            foreignKeyName: 'dashboards_creator_id_fkey'
-            columns: ['creator_id']
-            referencedRelation: 'users'
-            referencedColumns: ['id']
+            foreignKeyName: "dashboards_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "user_groups"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'dashboards_creator_id_fkey'
-            columns: ['creator_id']
-            referencedRelation: 'user_groups'
-            referencedColumns: ['id']
+            foreignKeyName: "dashboards_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "user_referrals"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'dashboards_creator_id_fkey'
-            columns: ['creator_id']
-            referencedRelation: 'user_referrals'
-            referencedColumns: ['id']
+            foreignKeyName: "dashboards_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "user_referrals_profit"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'dashboards_creator_id_fkey'
-            columns: ['creator_id']
-            referencedRelation: 'user_referrals_profit'
-            referencedColumns: ['id']
+            foreignKeyName: "dashboards_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
           }
         ]
       }
@@ -692,22 +709,25 @@ export interface Database {
         }
         Relationships: [
           {
-            foreignKeyName: 'group_invites_group_id_fkey'
-            columns: ['group_id']
-            referencedRelation: 'groups'
-            referencedColumns: ['id']
+            foreignKeyName: "group_invites_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "group_role"
+            referencedColumns: ["group_id"]
           },
           {
-            foreignKeyName: 'group_invites_group_id_fkey'
-            columns: ['group_id']
-            referencedRelation: 'group_role'
-            referencedColumns: ['group_id']
+            foreignKeyName: "group_invites_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'group_invites_group_id_fkey'
-            columns: ['group_id']
-            referencedRelation: 'groups_rbac'
-            referencedColumns: ['id']
+            foreignKeyName: "group_invites_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups_rbac"
+            referencedColumns: ["id"]
           }
         ]
       }
@@ -841,6 +861,7 @@ export interface Database {
           division: number
           mana_earned: number
           mana_earned_breakdown: Json
+          "Primary Key": string
           rank_snapshot: number | null
           season: number
           user_id: string
@@ -851,6 +872,7 @@ export interface Database {
           division: number
           mana_earned?: number
           mana_earned_breakdown?: Json
+          "Primary Key"?: string
           rank_snapshot?: number | null
           season: number
           user_id: string
@@ -861,6 +883,7 @@ export interface Database {
           division?: number
           mana_earned?: number
           mana_earned_breakdown?: Json
+          "Primary Key"?: string
           rank_snapshot?: number | null
           season?: number
           user_id?: string
@@ -986,10 +1009,12 @@ export interface Database {
       }
       lovers: {
         Row: {
+          age: number
           bio: Json | null
-          birthdate: string
           born_in_location: string | null
           city: string
+          city_latitude: number | null
+          city_longitude: number | null
           comments_enabled: boolean
           company: string | null
           country: string | null
@@ -1005,8 +1030,6 @@ export interface Database {
           is_smoker: boolean | null
           is_vegetarian_or_vegan: boolean | null
           last_online_time: string
-          city_latitude: number | null
-          city_longitude: number | null
           looking_for_matches: boolean
           messaging_status: string
           occupation: string | null
@@ -1030,10 +1053,12 @@ export interface Database {
           website: string | null
         }
         Insert: {
+          age?: number
           bio?: Json | null
-          birthdate: string
           born_in_location?: string | null
           city: string
+          city_latitude?: number | null
+          city_longitude?: number | null
           comments_enabled?: boolean
           company?: string | null
           country?: string | null
@@ -1049,8 +1074,6 @@ export interface Database {
           is_smoker?: boolean | null
           is_vegetarian_or_vegan?: boolean | null
           last_online_time?: string
-          city_latitude?: number | null
-          city_longitude?: number | null
           looking_for_matches?: boolean
           messaging_status?: string
           occupation?: string | null
@@ -1074,10 +1097,12 @@ export interface Database {
           website?: string | null
         }
         Update: {
+          age?: number
           bio?: Json | null
-          birthdate?: string
           born_in_location?: string | null
           city?: string
+          city_latitude?: number | null
+          city_longitude?: number | null
           comments_enabled?: boolean
           company?: string | null
           country?: string | null
@@ -1093,8 +1118,6 @@ export interface Database {
           is_smoker?: boolean | null
           is_vegetarian_or_vegan?: boolean | null
           last_online_time?: string
-          city_latitude?: number | null
-          city_longitude?: number | null
           looking_for_matches?: boolean
           messaging_status?: string
           occupation?: string | null
@@ -1200,46 +1223,53 @@ export interface Database {
         }
         Relationships: [
           {
-            foreignKeyName: 'market_ads_market_id_fkey'
-            columns: ['market_id']
-            referencedRelation: 'contracts'
-            referencedColumns: ['id']
+            foreignKeyName: "market_ads_market_id_fkey"
+            columns: ["market_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'market_ads_market_id_fkey'
-            columns: ['market_id']
-            referencedRelation: 'contracts_rbac'
-            referencedColumns: ['id']
+            foreignKeyName: "market_ads_market_id_fkey"
+            columns: ["market_id"]
+            isOneToOne: false
+            referencedRelation: "contracts_rbac"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'market_ads_market_id_fkey'
-            columns: ['market_id']
-            referencedRelation: 'contracts_view'
-            referencedColumns: ['id']
+            foreignKeyName: "market_ads_market_id_fkey"
+            columns: ["market_id"]
+            isOneToOne: false
+            referencedRelation: "contracts_view"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'market_ads_market_id_fkey'
-            columns: ['market_id']
-            referencedRelation: 'listed_open_contracts'
-            referencedColumns: ['id']
+            foreignKeyName: "market_ads_market_id_fkey"
+            columns: ["market_id"]
+            isOneToOne: false
+            referencedRelation: "listed_open_contracts"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'market_ads_market_id_fkey'
-            columns: ['market_id']
-            referencedRelation: 'public_contracts'
-            referencedColumns: ['id']
+            foreignKeyName: "market_ads_market_id_fkey"
+            columns: ["market_id"]
+            isOneToOne: false
+            referencedRelation: "public_contracts"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'market_ads_market_id_fkey'
-            columns: ['market_id']
-            referencedRelation: 'public_open_contracts'
-            referencedColumns: ['id']
+            foreignKeyName: "market_ads_market_id_fkey"
+            columns: ["market_id"]
+            isOneToOne: false
+            referencedRelation: "public_open_contracts"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'market_ads_market_id_fkey'
-            columns: ['market_id']
-            referencedRelation: 'trending_contracts'
-            referencedColumns: ['id']
+            foreignKeyName: "market_ads_market_id_fkey"
+            columns: ["market_id"]
+            isOneToOne: false
+            referencedRelation: "trending_contracts"
+            referencedColumns: ["id"]
           }
         ]
       }
@@ -1609,52 +1639,60 @@ export interface Database {
         }
         Relationships: [
           {
-            foreignKeyName: 'reports_content_owner_id_fkey'
-            columns: ['content_owner_id']
-            referencedRelation: 'users'
-            referencedColumns: ['id']
+            foreignKeyName: "reports_content_owner_id_fkey"
+            columns: ["content_owner_id"]
+            isOneToOne: false
+            referencedRelation: "user_groups"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'reports_content_owner_id_fkey'
-            columns: ['content_owner_id']
-            referencedRelation: 'user_groups'
-            referencedColumns: ['id']
+            foreignKeyName: "reports_content_owner_id_fkey"
+            columns: ["content_owner_id"]
+            isOneToOne: false
+            referencedRelation: "user_referrals"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'reports_content_owner_id_fkey'
-            columns: ['content_owner_id']
-            referencedRelation: 'user_referrals'
-            referencedColumns: ['id']
+            foreignKeyName: "reports_content_owner_id_fkey"
+            columns: ["content_owner_id"]
+            isOneToOne: false
+            referencedRelation: "user_referrals_profit"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'reports_content_owner_id_fkey'
-            columns: ['content_owner_id']
-            referencedRelation: 'user_referrals_profit'
-            referencedColumns: ['id']
+            foreignKeyName: "reports_content_owner_id_fkey"
+            columns: ["content_owner_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'reports_user_id_fkey'
-            columns: ['user_id']
-            referencedRelation: 'users'
-            referencedColumns: ['id']
+            foreignKeyName: "reports_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_groups"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'reports_user_id_fkey'
-            columns: ['user_id']
-            referencedRelation: 'user_groups'
-            referencedColumns: ['id']
+            foreignKeyName: "reports_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_referrals"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'reports_user_id_fkey'
-            columns: ['user_id']
-            referencedRelation: 'user_referrals'
-            referencedColumns: ['id']
+            foreignKeyName: "reports_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_referrals_profit"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'reports_user_id_fkey'
-            columns: ['user_id']
-            referencedRelation: 'user_referrals_profit'
-            referencedColumns: ['id']
+            foreignKeyName: "reports_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
           }
         ]
       }
@@ -2582,8 +2620,10 @@ export interface Database {
           created_time: string | null
           creator_id: string | null
           data: Json | null
+          deleted: boolean | null
           description_fts: unknown | null
           fs_updated_time: string | null
+          group_slugs: string[] | null
           id: string | null
           importance_score: number | null
           mechanism: string | null
@@ -2603,8 +2643,10 @@ export interface Database {
           created_time?: string | null
           creator_id?: string | null
           data?: Json | null
+          deleted?: boolean | null
           description_fts?: unknown | null
           fs_updated_time?: string | null
+          group_slugs?: string[] | null
           id?: string | null
           importance_score?: number | null
           mechanism?: string | null
@@ -2624,8 +2666,10 @@ export interface Database {
           created_time?: string | null
           creator_id?: string | null
           data?: Json | null
+          deleted?: boolean | null
           description_fts?: unknown | null
           fs_updated_time?: string | null
+          group_slugs?: string[] | null
           id?: string | null
           importance_score?: number | null
           mechanism?: string | null
@@ -2875,7 +2919,6 @@ export interface Database {
               input_contract_id: string
               similarity_threshold: number
               match_count: number
-              is_admin?: boolean
             }
             Returns: {
               contract_id: string
@@ -2888,6 +2931,7 @@ export interface Database {
               input_contract_id: string
               similarity_threshold: number
               match_count: number
+              is_admin?: boolean
             }
             Returns: {
               contract_id: string
@@ -2916,8 +2960,10 @@ export interface Database {
           created_time: string | null
           creator_id: string | null
           data: Json
+          deleted: boolean | null
           description_fts: unknown | null
           fs_updated_time: string
+          group_slugs: string[] | null
           id: string
           importance_score: number | null
           mechanism: string | null
@@ -2969,6 +3015,12 @@ export interface Database {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      get_average_rating: {
+        Args: {
+          user_id: string
+        }
+        Returns: number
+      }
       get_contract_metrics_for_contract: {
         Args: {
           contractid: string
@@ -3003,7 +3055,6 @@ export interface Database {
             Args: {
               uid: string
               count: number
-              start: number
             }
             Returns: {
               contract_id: string
@@ -3015,6 +3066,7 @@ export interface Database {
             Args: {
               uid: string
               count: number
+              start: number
             }
             Returns: {
               contract_id: string
@@ -3051,18 +3103,15 @@ export interface Database {
           importance_score: number
         }[]
       }
-      get_contracts_with_unseen_liked_comments: {
+      get_contracts_in_group_slugs_1: {
         Args: {
-          available_contract_ids: string[]
-          excluded_contract_ids: string[]
-          current_user_id: string
-          limit_count: number
+          contract_ids: string[]
+          p_group_slugs: string[]
+          ignore_slugs: string[]
         }
         Returns: {
-          contract_id: string
-          comment_id: string
-          user_id: string
           data: Json
+          importance_score: number
         }[]
       }
       get_cpmm_pool_prob: {
@@ -3075,13 +3124,13 @@ export interface Database {
       get_cpmm_resolved_prob:
         | {
             Args: {
-              data: Json
+              c: unknown
             }
             Returns: number
           }
         | {
             Args: {
-              c: unknown
+              data: Json
             }
             Returns: number
           }
@@ -3097,7 +3146,7 @@ export interface Database {
         Args: {
           table_id: string
         }
-        Returns: Database['public']['CompositeTypes']['table_spec']
+        Returns: Database["public"]["CompositeTypes"]["table_spec"]
       }
       get_donations_by_charity: {
         Args: Record<PropertyKey, never>
@@ -3132,13 +3181,13 @@ export interface Database {
         Args: {
           uid: string
         }
-        Returns: Database['public']['CompositeTypes']['group_with_score_and_bet_flag'][]
+        Returns: Database["public"]["CompositeTypes"]["group_with_score_and_bet_flag"][]
       }
       get_groups_from_user_seen_markets: {
         Args: {
           uid: string
         }
-        Returns: Database['public']['CompositeTypes']['group_with_bet_flag'][]
+        Returns: Database["public"]["CompositeTypes"]["group_with_bet_flag"][]
       }
       get_last_week_long_link: {
         Args: {
@@ -3176,8 +3225,10 @@ export interface Database {
           created_time: string | null
           creator_id: string | null
           data: Json
+          deleted: boolean | null
           description_fts: unknown | null
           fs_updated_time: string
+          group_slugs: string[] | null
           id: string
           importance_score: number | null
           mechanism: string | null
@@ -3258,13 +3309,15 @@ export interface Database {
           rating: number
         }[]
       }
-      get_average_rating: {
+      get_rating_info: {
         Args: {
-          user_id: string
+          p_vendor_id: string
         }
-        Returns: number
+        Returns: {
+          avg_rating: number
+          count: number
+        }[]
       }
-
       get_recently_active_contracts_in_group_slugs: {
         Args: {
           group_slugs: string[]
@@ -3276,32 +3329,26 @@ export interface Database {
           importance_score: number
         }[]
       }
-      get_recommended_contracts_embeddings: {
+      get_recently_active_contracts_in_group_slugs_1: {
         Args: {
-          uid: string
-          n: number
-          excluded_contract_ids: string[]
+          p_group_slugs: string[]
+          ignore_slugs: string[]
+          max: number
         }
         Returns: {
           data: Json
-          distance: number
-          relative_dist: number
-          popularity_score: number
+          importance_score: number
         }[]
       }
-      get_recommended_contracts_embeddings_from: {
+      get_recently_active_contracts_in_group_slugs_2: {
         Args: {
-          uid: string
-          p_embedding: string
-          n: number
-          excluded_contract_ids: string[]
-          max_dist: number
+          group_slugs: string[]
+          ignore_slugs: string[]
+          max: number
         }
         Returns: {
           data: Json
-          distance: number
-          relative_dist: number
-          popularity_score: number
+          importance_score: number
         }[]
       }
       get_related_contracts: {
@@ -3366,17 +3413,6 @@ export interface Database {
         }
         Returns: number
       }
-      get_unseen_reply_chain_comments_matching_contracts: {
-        Args: {
-          contract_ids: string[]
-          current_user_id: string
-        }
-        Returns: {
-          id: string
-          contract_id: string
-          data: Json
-        }[]
-      }
       get_user_bet_contracts: {
         Args: {
           this_user_id: string
@@ -3414,56 +3450,6 @@ export interface Database {
         Args: Record<PropertyKey, never>
         Returns: string
       }
-      get_user_journeys:
-        | {
-            Args: {
-              interv: unknown
-            }
-            Returns: {
-              ad_id: string | null
-              comment_id: string | null
-              contract_id: string | null
-              data: Json
-              id: number
-              name: string
-              ts: string | null
-              user_id: string | null
-            }[]
-          }
-        | {
-            Args: {
-              start_time: number
-            }
-            Returns: {
-              ad_id: string | null
-              comment_id: string | null
-              contract_id: string | null
-              data: Json
-              id: number
-              name: string
-              ts: string | null
-              user_id: string | null
-            }[]
-          }
-      get_your_contract_ids:
-        | {
-            Args: {
-              uid: string
-              n: number
-              start: number
-            }
-            Returns: {
-              contract_id: string
-            }[]
-          }
-        | {
-            Args: {
-              uid: string
-            }
-            Returns: {
-              contract_id: string
-            }[]
-          }
       get_user_manalink_claims: {
         Args: {
           creator_id: string
@@ -3474,6 +3460,25 @@ export interface Database {
           ts: number
         }[]
       }
+      get_your_contract_ids:
+        | {
+            Args: {
+              uid: string
+            }
+            Returns: {
+              contract_id: string
+            }[]
+          }
+        | {
+            Args: {
+              uid: string
+              n: number
+              start: number
+            }
+            Returns: {
+              contract_id: string
+            }[]
+          }
       get_your_daily_changed_contracts: {
         Args: {
           uid: string
@@ -3509,31 +3514,31 @@ export interface Database {
       }
       gtrgm_compress: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
       gtrgm_decompress: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
       gtrgm_in: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
       gtrgm_options: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: undefined
       }
       gtrgm_out: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
@@ -3589,7 +3594,7 @@ export interface Database {
       }
       ivfflathandler: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
@@ -3710,10 +3715,27 @@ export interface Database {
         }
         Returns: unknown
       }
+      search_contracts_by_group_slugs_1: {
+        Args: {
+          p_group_slugs: string[]
+          lim: number
+          start: number
+        }
+        Returns: unknown
+      }
       search_contracts_by_group_slugs_for_creator: {
         Args: {
           creator_id: string
           group_slugs: string[]
+          lim: number
+          start: number
+        }
+        Returns: unknown
+      }
+      search_contracts_by_group_slugs_for_creator_1: {
+        Args: {
+          creator_id: string
+          p_group_slugs: string[]
           lim: number
           start: number
         }
@@ -3783,6 +3805,7 @@ export interface Database {
           count: number
         }
         Returns: {
+          created_time: string | null
           data: Json
           fs_updated_time: string
           id: string
@@ -3797,6 +3820,7 @@ export interface Database {
           count: number
         }
         Returns: {
+          created_time: string | null
           data: Json
           fs_updated_time: string
           id: string
@@ -3807,7 +3831,7 @@ export interface Database {
       }
       set_limit: {
         Args: {
-          '': number
+          "": number
         }
         Returns: number
       }
@@ -3817,7 +3841,7 @@ export interface Database {
       }
       show_trgm: {
         Args: {
-          '': string
+          "": string
         }
         Returns: unknown
       }
@@ -3854,7 +3878,7 @@ export interface Database {
       }
       to_jsonb: {
         Args: {
-          '': Json
+          "": Json
         }
         Returns: Json
       }
@@ -3935,37 +3959,37 @@ export interface Database {
       }
       vector_avg: {
         Args: {
-          '': number[]
+          "": number[]
         }
         Returns: string
       }
       vector_dims: {
         Args: {
-          '': string
+          "": string
         }
         Returns: number
       }
       vector_norm: {
         Args: {
-          '': string
+          "": string
         }
         Returns: number
       }
       vector_out: {
         Args: {
-          '': string
+          "": string
         }
         Returns: unknown
       }
       vector_send: {
         Args: {
-          '': string
+          "": string
         }
         Returns: string
       }
       vector_typmod_in: {
         Args: {
-          '': unknown[]
+          "": unknown[]
         }
         Returns: number
       }

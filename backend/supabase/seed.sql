@@ -335,7 +335,9 @@ create table if not exists
         add_creator_name_to_description (data)
       )
     ) stored,
-    fs_updated_time timestamp not null
+    fs_updated_time timestamp not null,
+    deleted boolean default false,
+    group_slugs text[]
   );
 
 alter table contracts enable row level security;
@@ -376,16 +378,14 @@ create index if not exists contracts_sample_filtering on contracts (
   ((data ->> 'uniqueBettorCount')::int)
 );
 
-create index contracts_on_importance_score_and_resolution_time_idx on contracts(importance_score, resolution_time);
+create index if not exists contracts_on_importance_score_and_resolution_time_idx on contracts(importance_score, resolution_time);
 
-create index contracts_last_updated_time on contracts(((data ->> 'lastUpdatedTime')::bigint) desc);
+create index if not exists contracts_last_updated_time on contracts(((data ->> 'lastUpdatedTime')::bigint) desc);
 
-create index contracts_group_slugs_public on contracts using gin((data -> 'groupSlugs'))
-    where visibility = 'public';
+create index if not exists idx_lover_user_id1 on contracts ((data ->> 'loverUserId1')) where data->>'loverUserId1' is not null;
+create index if not exists idx_lover_user_id2 on contracts ((data ->> 'loverUserId2')) where data->>'loverUserId2' is not null;
 
-create index concurrently idx_lover_user_id1 on contracts ((data ->> 'loverUserId1')) where data->>'loverUserId1' is not null;
-create index concurrently idx_lover_user_id2 on contracts ((data ->> 'loverUserId2')) where data->>'loverUserId2' is not null;
-
+create index if not exists contracts_group_slugs on contracts (group_slugs);
 
 alter table contracts
 cluster on contracts_creator_id;
@@ -416,6 +416,11 @@ begin
     new.resolution_probability := ((new.data) ->> 'resolutionProbability')::numeric;
     new.resolution := (new.data) ->> 'resolution';
     new.popularity_score := coalesce(((new.data) ->> 'popularityScore')::numeric, 0);
+    new.deleted := coalesce(((new.data) ->> 'deleted')::boolean, false);
+    new.group_slugs := case
+                           when new.data ? 'groupSlugs' then jsonb_array_to_text_array((new.data) -> 'groupSlugs')
+                           else null
+        end;
   end if;
   return new;
 end
