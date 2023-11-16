@@ -28,7 +28,7 @@ export const getStaticProps = async () => {
     .order('created_time', { ascending: false })
     .limit(1)
 
-  const { points, score, n } = result.data![0]?.data as any
+  const { points, score, n } = result.data?.[0]?.data as any
   const trumpMarket = await getContract('AiEh38dIYVV5tOs1RmN3')
   const gazaMarket = await getContract('KmWz1wvC8AmNX3a1iiUF')
   const sbfMarket = await getContract('dRdXZtj8UXiXxkoF2rXE')
@@ -50,15 +50,18 @@ export default function CalibrationPage(props: {
   points: { x: number; y: number }[]
   score: number
   n: number
-  trumpMarket: Contract
-  gazaMarket: Contract
-  sbfMarket: Contract
+  trumpMarket: Contract | null
+  gazaMarket: Contract | null
+  sbfMarket: Contract | null
 }) {
   const { points, score, n, trumpMarket, gazaMarket, sbfMarket } = props
   const [isCollapsed, setIsCollapsed] = useState(true)
 
   const toggleCollapse = () => {
     setIsCollapsed(!isCollapsed)
+  }
+  if (!trumpMarket || !gazaMarket || !sbfMarket) {
+    return <div>Contracts not found</div>
   }
 
   return (
