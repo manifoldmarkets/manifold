@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { searchNearCity } from 'web/lib/firebase/api'
 
 export function useNearbyCities(
@@ -8,7 +8,7 @@ export function useNearbyCities(
 ) {
   const searchCount = useRef(0)
   const lastKnownCities = useRef<string[] | null | undefined>(undefined)
-  const [nearbyCities, setNearbyCities] = usePersistentInMemoryState<
+  const [nearbyCities, setNearbyCities] = usePersistentLocalState<
     string[] | undefined | null
   >(lastKnownCities.current, `nearby-cities-${referenceCityId}-${radius}`)
   useEffect(() => {

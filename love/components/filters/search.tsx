@@ -11,7 +11,6 @@ import { RightModal } from 'web/components/layout/right-modal'
 import { Row } from 'web/components/layout/row'
 import { Input } from 'web/components/widgets/input'
 import { Select } from 'web/components/widgets/select'
-import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { DesktopFilters } from './desktop-filters'
 import { MobileFilters } from './mobile-filters'
 import {
@@ -23,6 +22,7 @@ import { useEffectCheckEquality } from 'web/hooks/use-effect-check-equality'
 import { OriginLocation } from './location-filter'
 import { Lover } from 'common/love/lover'
 import { filterDefined } from 'common/util/array'
+import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 
 export type FilterFields = {
   orderBy: 'last_online_time' | 'created_time'
@@ -54,9 +54,10 @@ export const Search = (props: {
   youLover: Lover | undefined | null
 }) => {
   const { allLovers, setLovers, youLover } = props
-  const [filters, setFilters] = usePersistentInMemoryState<
-    Partial<FilterFields>
-  >(initialFilters, 'profile-filters')
+  const [filters, setFilters] = usePersistentLocalState<Partial<FilterFields>>(
+    initialFilters,
+    'profile-filters'
+  )
 
   const updateFilter = (newState: Partial<FilterFields>) => {
     setFilters((prevState) => ({ ...prevState, ...newState }))
@@ -84,12 +85,12 @@ export const Search = (props: {
 
   const [openFiltersModal, setOpenFiltersModal] = useState(false)
 
-  const [radius, setRadius] = usePersistentInMemoryState<number>(
+  const [radius, setRadius] = usePersistentLocalState<number>(
     100,
     'search-radius'
   )
 
-  const [debouncedRadius, setDebouncedRadius] = usePersistentInMemoryState(
+  const [debouncedRadius, setDebouncedRadius] = usePersistentLocalState(
     radius,
     'search-radius-debounced'
   )
@@ -97,7 +98,7 @@ export const Search = (props: {
   const [debouncedSetRadius] = useState(() => debounce(setDebouncedRadius, 200))
 
   const [nearbyOriginLocation, setNearbyOriginLocation] =
-    usePersistentInMemoryState<OriginLocation | undefined | null>(
+    usePersistentLocalState<OriginLocation | undefined | null>(
       undefined,
       'nearby-origin-location'
     )
@@ -241,7 +242,7 @@ export const Search = (props: {
     <Col className={'text-ink-600 w-full gap-2 py-2 text-sm'}>
       <Row className={'mb-2 justify-between gap-2'}>
         <Input
-          value={filters.name}
+          value={filters.name ?? ''}
           placeholder={'Search name'}
           className={'w-full max-w-xs'}
           onChange={(e) => updateFilter({ name: e.target.value })}
