@@ -311,9 +311,11 @@ export const RequiredLoveUserForm = (props: {
             </Col>
 
             <Col className={clsx(colClassName)}>
-              <label className={clsx(labelClassName)}>
-                Add at least one photo
-              </label>
+              <label className={clsx(labelClassName)}>Photos</label>
+
+              <div className="mb-1">
+                A real or stylized photo of you is required.
+              </div>
 
               <AddPhotosWidget
                 user={user}
