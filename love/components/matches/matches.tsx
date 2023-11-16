@@ -1,26 +1,18 @@
-import { sortBy } from 'lodash'
-import { useState } from 'react'
-
 import { useLovers } from 'love/hooks/use-lovers'
 import { useMatches } from 'love/hooks/use-matches'
 import { areGenderCompatible } from 'love/lib/util/gender'
-import { Button } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
+import { Carousel } from 'web/components/widgets/carousel'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
-import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { useUser } from 'web/hooks/use-user'
 import { AddAMatchButton } from '../add-a-match-button'
 import { MatchTile } from './match-tile'
-import { Carousel } from 'web/components/widgets/carousel'
-import { Row } from 'web/components/layout/row'
 
 export const Matches = (props: { userId: string }) => {
   const { userId } = props
   const lovers = useLovers()
   const matches = useMatches(userId)
   const user = useUser()
-
-  const truncatedSize = 5
 
   if (!lovers || !matches) return <LoadingIndicator />
 

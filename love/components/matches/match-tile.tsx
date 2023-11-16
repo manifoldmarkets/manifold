@@ -56,15 +56,12 @@ export const MatchTile = (props: {
   const showConfirmStage =
     !answer.resolution && (!prevAnswer || prevAnswer.resolution === 'YES')
 
-  //   const conditionProb =
-  //     answer.index && getCumulativeRelationshipProb(contract, answer.index - 1)
-
   const firstDateDate = answer.text
     .substring(answer.text.indexOf('by'), answer.text.length - 1)
     .trim()
 
   return (
-    <Col className="w-[220px] shrink-0 overflow-hidden rounded drop-shadow">
+    <Col className="w-[220px] shrink-0 overflow-hidden rounded drop-shadow-lg">
       <div className="bg-canvas-0 w-full bg-gradient-to-b px-4 py-2">
         <UserLink
           className={
