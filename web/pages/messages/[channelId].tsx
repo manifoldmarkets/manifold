@@ -48,7 +48,7 @@ import { GiSpeakerOff } from 'react-icons/gi'
 import toast from 'react-hot-toast'
 import { Avatar } from 'web/components/widgets/avatar'
 import { richTextToString } from 'common/util/parse'
-import { isIOS } from 'web/lib/util/device'
+import { useIsVisible } from 'web/hooks/use-is-visible'
 
 export default function PrivateMessagesPage() {
   return (
@@ -88,16 +88,21 @@ export const PrivateChat = (props: {
 }) => {
   const { user, channel } = props
   const channelId = channel.id
+  const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent)
+
+  const totalMessagesToLoad = 500
   const realtimeMessages = useRealtimePrivateMessagesPolling(
     channelId,
     true,
     100,
-    100
+    totalMessagesToLoad
   )
 
+  const [page, setPage] = useState(1)
+  const scrollToOldTop = useRef(false)
+
   const totalMessages = useMessagesCount(true, channelId)
-  // Unfortunately, on ios safari, we can't render more than a few dozen messages
-  const messagesPerPage = isIOS() ? 30 : 100
+  const messagesPerPage = 50
 
   const [showUsers, setShowUsers] = useState(false)
   const otherUsersFromChannel = useOtherUserIdsInPrivateMessageChannelIds(
@@ -131,8 +136,8 @@ export const PrivateChat = (props: {
   )
   const router = useRouter()
   const messages = useMemo(
-    () => (realtimeMessages ?? []).slice(0, messagesPerPage).reverse(),
-    [realtimeMessages?.length]
+    () => (realtimeMessages ?? []).slice(0, messagesPerPage * page).reverse(),
+    [realtimeMessages?.length, page]
   )
 
   const notShowingMessages = realtimeMessages
@@ -254,10 +259,24 @@ export const PrivateChat = (props: {
         left: 0,
         behavior: 'smooth',
       })
+    } else if (scrollToOldTop.current) {
+      const height = innerDivHeight! - prevInnerDivHeight! + heightFromTop
+      outerDiv?.current?.scrollTo({
+        top: height,
+        left: 0,
+        behavior: 'auto',
+      })
+      scrollToOldTop.current = false
     }
 
     setPrevInnerDivHeight(innerDivHeight)
   }, [messages])
+
+  const heightFromTop = 200
+  const { ref: topVisibleRef } = useIsVisible(() => {
+    scrollToOldTop.current = true
+    setPage(page + 1)
+  })
 
   return (
     <Col className=" w-full">
@@ -385,11 +404,17 @@ export const PrivateChat = (props: {
         <div
           ref={outerDiv}
           className={clsx('relative h-full overflow-y-scroll ')}
+          style={{
+            transform: isSafari ? 'translate3d(0, 0, 0)' : 'none',
+          }}
         >
           <div
             className="relative px-1 pb-4 pt-1 transition-all duration-100"
-            style={{ opacity: showMessages ? 1 : 0 }}
             ref={innerDiv}
+            style={{
+              transform: isSafari ? 'translate3d(0, 0, 0)' : 'none',
+              opacity: showMessages ? 1 : 0,
+            }}
           >
             {realtimeMessages === undefined ? (
               <LoadingIndicator />
@@ -400,6 +425,11 @@ export const PrivateChat = (props: {
                     Not showing {notShowingMessages} older messages
                   </Row>
                 ) : null}
+                <div
+                  className={'absolute h-1 '}
+                  ref={topVisibleRef}
+                  style={{ top: heightFromTop }}
+                />
                 {groupedMessages.map((messages, i) => {
                   const firstMessage = messages[0]
                   if (firstMessage.visibility === 'system_status') {
