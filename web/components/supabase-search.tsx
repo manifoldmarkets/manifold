@@ -373,9 +373,9 @@ export function SupabaseSearch(props: {
           <Button
             size={'sm'}
             color={'gray-white'}
-            className={' ml-1 rounded-full sm:hidden'}
+            className={'ml-1 rounded-full sm:hidden'}
             onClick={() => {
-              setSearchType(undefined)
+              setSearchParams({ [SEARCH_TYPE_KEY]: undefined, [QUERY_KEY]: '' })
             }}
           >
             <ArrowLeftIcon className={'h-4 w-4'} />
