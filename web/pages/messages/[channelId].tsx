@@ -250,6 +250,7 @@ export const PrivateChat = (props: {
         initialScroll.current) &&
       realtimeMessages
     ) {
+      // Initial load, scroll to bottom
       outerDiv?.current?.scrollTo({
         top: innerDivHeight! - outerDivHeight!,
         left: 0,
@@ -257,13 +258,8 @@ export const PrivateChat = (props: {
       })
       setShowMessages(true)
       initialScroll.current = false
-    } else if (last(messages)?.userId === user.id) {
-      outerDiv?.current?.scrollTo({
-        top: innerDivHeight! - outerDivHeight!,
-        left: 0,
-        behavior: 'smooth',
-      })
     } else if (scrollToOldTop.current) {
+      // Loaded more messages, scroll to old top
       const height = innerDivHeight! - prevInnerDivHeight! + heightFromTop
       outerDiv?.current?.scrollTo({
         top: height,
@@ -271,6 +267,13 @@ export const PrivateChat = (props: {
         behavior: 'auto',
       })
       scrollToOldTop.current = false
+    } else if (last(messages)?.userId === user.id) {
+      // Sent a message, scroll to bottom
+      outerDiv?.current?.scrollTo({
+        top: innerDivHeight! - outerDivHeight!,
+        left: 0,
+        behavior: 'smooth',
+      })
     }
 
     setPrevInnerDivHeight(innerDivHeight)
