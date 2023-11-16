@@ -23,17 +23,18 @@ const app = express()
 app.use(express.json())
 
 const server = app.listen(PORT, async () => {
-
   await initGoogleCredentialsAndSecrets()
-  const prod = isProd();
+  const prod = isProd()
   log.info(`Running in ${prod ? 'prod' : 'dev'} listening on port ${PORT}.`)
-  app.use(basicAuth({
-    users: { 'admin': process.env.SCHEDULER_AUTH_PASSWORD ?? '' },
-    challenge: true,
-    realm: prod ?
-      'scheduler.manifold.markets' :
-      'scheduler.dev.manifold.markets'
-  }))
+  app.use(
+    basicAuth({
+      users: { admin: process.env.SCHEDULER_AUTH_PASSWORD ?? '' },
+      challenge: true,
+      realm: prod
+        ? 'scheduler.manifold.markets'
+        : 'scheduler.dev.manifold.markets',
+    })
+  )
 
   const jobs = createJobs()
   const jobsByName = Object.fromEntries(jobs.map((j) => [j.name, j]))
@@ -68,16 +69,19 @@ const server = app.listen(PORT, async () => {
         nextRunInSecs,
       }
     })
-    const sortedJobsData = sortBy(jobsData,
-      j => j.running ? 0 : 1,
-      j => j.currentRunStart,
-      j => j.name
+    const sortedJobsData = sortBy(
+      jobsData,
+      (j) => (j.running ? 0 : 1),
+      (j) => j.currentRunStart,
+      (j) => j.name
     )
     res.set('Content-Type', 'text/html')
-    return res.status(200).send(indexTemplate({
-      env: isProd() ? 'Prod' : "Dev",
-      jobs: sortedJobsData
-    }))
+    return res.status(200).send(
+      indexTemplate({
+        env: isProd() ? 'Prod' : 'Dev',
+        jobs: sortedJobsData,
+      })
+    )
   })
 
   app.post('/jobs/:name/trigger', async (req, res) => {
