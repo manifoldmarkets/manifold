@@ -4,6 +4,7 @@ import { chunk, sortBy, uniq } from 'lodash'
 import { createSupabaseClient } from 'shared/supabase/init'
 import { secrets } from 'common/secrets'
 import { getAnswersForContracts } from 'common/supabase/contracts'
+import { SupabaseClient } from 'common/supabase/utils'
 
 export const denormalizeAnswers = functions
   .runWith({
@@ -37,22 +38,26 @@ export async function denormalizeAnswersCore() {
   const contractIdChunks = chunk(contractIds, 20)
 
   for (const contractIdChunk of contractIdChunks) {
-    const answersByContractId = await getAnswersForContracts(
-      db,
-      contractIdChunk
-    )
-    console.log('Got answers for chunk', contractIdChunk)
-    await Promise.all(
-      Object.entries(answersByContractId).map(([contractId, answers]) => {
-        const sortedAnswers = sortBy(answers, (answer) => answer.index)
-        return firestore.collection('contracts').doc(contractId).update({
-          answers: sortedAnswers,
-        })
-      })
-    )
+    await denormalizeContractAnswers(db, contractIdChunk)
   }
 
   console.log('Done.')
+}
+
+export const denormalizeContractAnswers = async (
+  db: SupabaseClient,
+  contractIds: string[]
+) => {
+  const answersByContractId = await getAnswersForContracts(db, contractIds)
+  console.log('Got answers for chunk', contractIds)
+  await Promise.all(
+    Object.entries(answersByContractId).map(([contractId, answers]) => {
+      const sortedAnswers = sortBy(answers, (answer) => answer.index)
+      return firestore.collection('contracts').doc(contractId).update({
+        answers: sortedAnswers,
+      })
+    })
+  )
 }
 
 const firestore = admin.firestore()
