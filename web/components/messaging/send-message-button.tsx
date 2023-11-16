@@ -28,8 +28,9 @@ export const SendMessageButton = (props: {
   toUser: User
   currentUser: User | undefined | null
   includeLabel?: boolean
+  circleButton?: boolean
 }) => {
-  const { toUser, currentUser, includeLabel } = props
+  const { toUser, currentUser, includeLabel, circleButton } = props
   const router = useRouter()
   const privateUser = usePrivateUser()
   const isAuthed = useIsAuthorized()
@@ -94,10 +95,24 @@ export const SendMessageButton = (props: {
 
   return (
     <>
-      <Button size={'sm'} onClick={messageButtonClicked}>
-        <BiEnvelope className={clsx('h-5 w-5', includeLabel && 'mr-2')} />{' '}
-        {includeLabel && <>Message</>}
-      </Button>
+      {circleButton ? (
+        <button
+          className="bg-primary-500 hover:bg-primary-600 h-7 w-7 rounded-full transition-colors"
+          onClick={messageButtonClicked}
+        >
+          <BiEnvelope
+            className={clsx(
+              'm-auto h-5 w-5 text-white drop-shadow',
+              includeLabel && 'mr-2'
+            )}
+          />
+        </button>
+      ) : (
+        <Button size={'sm'} onClick={messageButtonClicked}>
+          <BiEnvelope className={clsx('h-5 w-5', includeLabel && 'mr-2')} />{' '}
+          {includeLabel && <>Message</>}
+        </Button>
+      )}
       <Modal open={openComposeModal} setOpen={setOpenComposeModal}>
         <Col className={MODAL_CLASS}>
           <Row className={'w-full'}>

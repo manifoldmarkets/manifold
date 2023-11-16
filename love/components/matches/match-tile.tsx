@@ -30,6 +30,9 @@ import { MatchPositionsButton } from './match-positions'
 import { MatchBetButton } from './match-bet'
 import { UserLink } from 'web/components/widgets/user-link'
 import { ControlledTabs } from 'web/components/layout/tabs'
+import { ConfirmStageButton } from '../confirm-stage-button'
+import { RejectButton } from '../reject-button'
+import { SendMessageButton } from 'web/components/messaging/send-message-button'
 
 const relationshipStages = [
   '1st date',
@@ -61,8 +64,9 @@ export const MatchTile = (props: {
 
   const [stage, setStage] = useState(lastResolved + 1)
   const answer = answers[stage]
-  //   const showConfirmStage =
-  //     !answer.resolution && (!prevAnswer || prevAnswer.resolution === 'YES')
+  const prevAnswer = answers[stage - 1]
+  const showConfirmStage =
+    !answer.resolution && (!prevAnswer || prevAnswer.resolution === 'YES')
 
   //   const conditionProb =
   //     answer.index && getCumulativeRelationshipProb(contract, answer.index - 1)
@@ -82,7 +86,7 @@ export const MatchTile = (props: {
           hideBadge
         />
       </div>
-      <Col className="h-36 overflow-hidden">
+      <Col className="relative h-36 overflow-hidden">
         {pinned_url ? (
           <Image
             src={pinned_url}
@@ -95,6 +99,16 @@ export const MatchTile = (props: {
         ) : (
           <Col className="bg-ink-300 h-full w-full items-center justify-center">
             <UserIcon className="h-20 w-20" />
+          </Col>
+        )}
+        {isYourMatch && (
+          <Col className="absolute right-3 top-2 gap-2">
+            <SendMessageButton
+              toUser={user}
+              currentUser={currentUser}
+              circleButton
+            />
+            <RejectButton lover={lover} />
           </Col>
         )}
       </Col>
@@ -151,6 +165,14 @@ export const MatchTile = (props: {
             user={user}
           />
         </Row>
+        {showConfirmStage && (
+          <ConfirmStageButton
+            lover={lover}
+            stage={relationshipStages[stage]}
+            contractId={contract.id}
+            answerId={answer.id}
+          />
+        )}
       </Col>
     </Col>
   )
