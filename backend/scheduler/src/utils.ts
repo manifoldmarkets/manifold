@@ -16,7 +16,13 @@ export async function initGoogleCredentialsAndSecrets() {
   try {
     await loadSecretsToEnv()
     admin.initializeApp()
+    admin.app()
     log.info('Loaded secrets using GCP service account access.')
+    return {
+      isLocal: false,
+      projectId: admin.app().options.projectId,
+      env: admin.app().options.projectId == 'mantic-markets' ? 'prod' : 'dev',
+    }
   } catch {
     const env = getLocalEnv()
     const credentials = getServiceAccountCredentials(env)
@@ -29,6 +35,11 @@ export async function initGoogleCredentialsAndSecrets() {
     log.info(
       `Loaded secrets using local credentials for ${credentials.project_id}.`
     )
+    return {
+      isLocal: true,
+      projectId: credentials.project_id,
+      env: credentials.project_id == 'mantic-markets' ? 'prod' : 'dev',
+    }
   }
 }
 export function log(severity: GCPLogLevel, message: any, details?: object) {

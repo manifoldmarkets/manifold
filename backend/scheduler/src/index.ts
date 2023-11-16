@@ -23,16 +23,18 @@ const app = express()
 app.use(express.json())
 
 const server = app.listen(PORT, async () => {
-  await initGoogleCredentialsAndSecrets()
-  const prod = isProd()
-  const projectId = prod ? 'mantic-markets' : 'dev-mantic-markets'
+  const { isLocal, env, projectId } = await initGoogleCredentialsAndSecrets()
 
-  log.info(`Running in ${prod ? 'prod' : 'dev'} listening on port ${PORT}.`)
+  if (isLocal) {
+    log.info(`Running locally against ${env} DB. http://localhost:${PORT}`)
+  } else {
+    log.info(`Running on GCP in ${env}.`)
+  }
   app.use(
     basicAuth({
       users: { admin: process.env.SCHEDULER_AUTH_PASSWORD ?? '' },
       challenge: true,
-      realm: prod
+      realm: env == 'prod'
         ? 'scheduler.manifold.markets'
         : 'scheduler.dev.manifold.markets',
     })
@@ -80,7 +82,7 @@ const server = app.listen(PORT, async () => {
     res.set('Content-Type', 'text/html')
     return res.status(200).send(
       indexTemplate({
-        env: isProd() ? 'Prod' : 'Dev',
+        env: env.toUpperCase(),
         instanceDashboardUrl: `https://console.cloud.google.com/compute/instancesDetail/zones/us-central1-a/instances/scheduler?project=${projectId}`,
         jobs: sortedJobsData,
       })
