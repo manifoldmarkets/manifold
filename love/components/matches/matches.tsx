@@ -36,12 +36,6 @@ export const Matches = (props: { userId: string }) => {
     .filter((l) => !lover || areGenderCompatible(lover, l))
     .filter((l) => l.looking_for_matches)
 
-  // const currentMatches = sortBy(
-  //   matches.filter((c) => !c.isResolved),
-  //   (c) => (c.answers[tabIndex].resolution ? 1 : 0),
-  //   (c) => -1 * c.answers[tabIndex].prob
-  // )
-
   const currentMatches = matches
     .filter((c) => !c.isResolved)
     .sort((a, b) => {
@@ -69,7 +63,9 @@ export const Matches = (props: { userId: string }) => {
     <Col className=" w-full gap-2 ">
       {currentMatches.length > 0 ? (
         <Col>
-          <div className="text-lg font-semibold">Matches</div>
+          <div className="text-lg font-semibold">
+            {currentMatches.length} Matches
+          </div>
           <Carousel>
             {currentMatches.map((contract) => {
               const matchedLoverId =
