@@ -165,7 +165,7 @@ export const MatchTile = (props: {
             user={user}
           />
         </Row>
-        {showConfirmStage && (
+        {showConfirmStage && isYourMatch && (
           <ConfirmStageButton
             lover={lover}
             stage={relationshipStages[stage]}
