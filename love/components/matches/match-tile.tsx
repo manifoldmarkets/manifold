@@ -91,7 +91,7 @@ export const MatchTile = (props: {
     .trim()
 
   return (
-    <Col className="overflow-hidden rounded drop-shadow">
+    <Col className=" overflow-hidden rounded drop-shadow">
       <Col className="relative h-40 overflow-hidden">
         {pinned_url ? (
           <Image
@@ -116,30 +116,34 @@ export const MatchTile = (props: {
           user={user}
         />
       </Col>
-      <Col className="bg-canvas-0 text-ink-1000 -mb-[6px] p-2  text-sm">
-        <MatchTracker
-          lastResolved={lastResolved}
-          stage={stage}
-          setStage={setStage}
-        />
-        <Spacer className="h-2" />
-        <Row className="w-full justify-between gap-2">
-          <Col>
-            <span>
-              Chance of{' '}
-              <span className="font-semibold">{relationshipStages[stage]}</span>
-            </span>
-            <div className="text-ink-500 text-xs">
-              {stage === 0 ? (
-                <> {firstDateDate}</>
-              ) : (
-                <> if {relationshipStages[stage - 1]} happens</>
-              )}
-            </div>
-          </Col>
-          <div className="font-semibold">{formatPercent(answer.prob)}</div>
-        </Row>
+      <Col className="bg-canvas-0 text-ink-1000 grow justify-between p-2 text-sm">
+        <Col className="gap-2">
+          <MatchTracker
+            lastResolved={lastResolved}
+            stage={stage}
+            setStage={setStage}
+          />
+          <Row className="w-full justify-between">
+            <Col>
+              <span>
+                Chance of{' '}
+                <span className="font-semibold">
+                  {relationshipStages[stage]}
+                </span>
+              </span>
+              <div className="text-ink-500 text-xs">
+                {stage === 0 ? (
+                  <> {firstDateDate}</>
+                ) : (
+                  <> if {relationshipStages[stage - 1]} happens</>
+                )}
+              </div>
+            </Col>
+            <div className="font-semibold">{formatPercent(answer.prob)}</div>
+          </Row>
+        </Col>
         <Row className="w-full items-center justify-end gap-2">
+          <CommentsButton contract={contract} user={currentUser} />
           <Button
             size={'2xs'}
             color={'indigo-outline'}
@@ -150,11 +154,6 @@ export const MatchTile = (props: {
           >
             Bet
           </Button>
-          <CommentsButton
-            className="min-w-[36px]"
-            contract={contract}
-            user={currentUser}
-          />
         </Row>
       </Col>
     </Col>

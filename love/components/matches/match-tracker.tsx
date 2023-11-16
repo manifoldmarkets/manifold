@@ -18,7 +18,7 @@ export function MatchTracker(props: {
             {i !== 0 && (
               <hr
                 className={clsx(
-                  'border-ink-300 dark:border-ink-600 flex flex-grow border-t-2 ',
+                  'border-ink-200 dark:border-ink-400 flex flex-grow border-t-2 ',
                   i <= lastResolved + 1 ? '' : ' border-dashed'
                 )}
               />
@@ -28,8 +28,8 @@ export function MatchTracker(props: {
               key={i}
               onClick={() => setStage(i)}
               className={clsx(
-                ' text-ink-0 z-10 rounded-full px-1 text-xs transition-all',
-                stage == i ? ' bg-primary-500 ' : 'bg-ink-300 dark:bg-ink-600'
+                ' text-canvas-0 z-10 rounded-full text-xs transition-all',
+                stage == i ? ' bg-primary-500 ' : 'bg-ink-200 dark:bg-ink-400'
               )}
             >
               {i != 3 ? (
