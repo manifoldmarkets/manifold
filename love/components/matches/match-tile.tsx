@@ -29,6 +29,7 @@ import { TradesButton } from 'web/components/contract/trades-button'
 import { MatchPositionsButton } from './match-positions'
 import { MatchBetButton } from './match-bet'
 import { UserLink } from 'web/components/widgets/user-link'
+import { ControlledTabs } from 'web/components/layout/tabs'
 
 const relationshipStages = [
   '1st date',
@@ -72,7 +73,7 @@ export const MatchTile = (props: {
 
   return (
     <Col className=" overflow-hidden rounded drop-shadow ">
-      <div className="bg-canvas-0 w-full bg-opacity-80 bg-gradient-to-b px-4 py-2">
+      <div className="bg-canvas-0 w-full bg-gradient-to-b px-4 py-2">
         <UserLink
           className={
             'hover:text-primary-500 text-ink-1000 truncate font-semibold transition-colors'
@@ -103,7 +104,9 @@ export const MatchTile = (props: {
             lastResolved={lastResolved}
             stage={stage}
             setStage={setStage}
+            answers={answers}
           />
+
           <Row className="w-full justify-between">
             <Col>
               <span>
@@ -122,7 +125,20 @@ export const MatchTile = (props: {
                 )}
               </div>
             </Col>
-            <div className="font-semibold">{formatPercent(answer.prob)}</div>
+            <div
+              className={clsx(
+                'font-semibold',
+                answer.resolution
+                  ? answer.resolution == 'YES'
+                    ? 'text-teal-300'
+                    : answer.resolution == 'NO'
+                    ? 'text-scarlet-300'
+                    : ''
+                  : ''
+              )}
+            >
+              {formatPercent(answer.prob)}
+            </div>
           </Row>
         </Col>
         <Row className="w-full items-center justify-between gap-2">

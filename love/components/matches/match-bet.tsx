@@ -31,6 +31,7 @@ export function MatchBetButton(props: {
           setOpen(true)
           track('love bet button click')
         }}
+        disabled={!!answer.resolution}
       >
         Bet
       </Button>
