@@ -117,7 +117,7 @@ export const MatchTile = (props: {
           user={user}
         />
       </Col>
-      <Col className="bg-canvas-0 text-ink-1000 grow justify-between gap-2 p-2 text-sm">
+      <Col className="bg-canvas-0 text-ink-1000 grow justify-between gap-2 px-4 py-2 text-sm">
         <Col className="gap-2">
           <MatchTracker
             lastResolved={lastResolved}
