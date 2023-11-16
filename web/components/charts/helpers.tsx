@@ -9,6 +9,7 @@ import React, {
   SVGProps,
   useDeferredValue,
   useEffect,
+  useId,
   useMemo,
   useRef,
   useState,
@@ -240,6 +241,8 @@ export const SVGChart = <
     onMouseLeave?.()
   }
 
+  const id = useId()
+
   if (w <= 0 || h <= 0) {
     // i.e. chart is smaller than margin
     return null
@@ -269,20 +272,20 @@ export const SVGChart = <
         ref={svgRef}
       >
         <defs>
-          <filter id="blur">
+          <filter id={`${id}-blur`}>
             <feGaussianBlur stdDeviation="8" />
           </filter>
-          <mask id="mask">
+          <mask id={`${id}-mask`}>
             <rect
               x={-8}
               y={-8}
               width={w + 16}
               height={h + 16}
               fill="white"
-              filter="url(#blur)"
+              filter={`url(#${id}-blur)`}
             />
           </mask>
-          <clipPath id="clip">
+          <clipPath id={`${id}-clip`}>
             <rect x={-32} y={-32} width={w + 64} height={h + 64} />
           </clipPath>
         </defs>
@@ -292,8 +295,8 @@ export const SVGChart = <
 
           <YAxis axis={yAxis} w={w} noGridlines={noGridlines} />
           {/* clip to stop pointer events outside of graph, and mask for the blur to indicate zoom */}
-          <g clipPath="url(#clip)">
-            <g mask="url(#mask)">{children}</g>
+          <g clipPath={`url(#${id}-clip)`} mask={`url(#${id}-mask)`}>
+            {children}
           </g>
         </g>
       </svg>
