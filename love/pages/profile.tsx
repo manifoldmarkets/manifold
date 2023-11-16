@@ -48,7 +48,7 @@ function ProfilePageInner(props: { user: User; lover: Lover }) {
           lover={lover}
           user={user}
           setLover={setLoverState}
-          butonLabel={'Save'}
+          buttonLabel={'Save'}
         />
       </Col>
     </Col>
