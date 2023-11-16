@@ -5,15 +5,16 @@ import toast from 'react-hot-toast'
 import { Row } from 'web/components/layout/row'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { track, withTracking } from 'web/lib/service/analytics'
-import { leaveGroup, SearchGroupInfo } from 'web/lib/supabase/groups'
+import { unfollowTopic, SearchGroupInfo } from 'web/lib/supabase/groups'
 import { Button, SizeType } from '../buttons/button'
 import { ConfirmationButton } from '../buttons/confirmation-button'
 import { Subtitle } from '../widgets/subtitle'
-import { joinGroup } from 'web/lib/firebase/api'
+import { followTopic } from 'web/lib/firebase/api'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { Group } from 'common/group'
 import { TopicOptions } from 'web/components/topics/topic-options'
 import { BookmarkIcon } from '@heroicons/react/outline'
+import { TOPIC_IDS_YOU_CANT_FOLLOW } from 'common/supabase/groups'
 
 function LeavePrivateTopicButton(props: {
   group: SearchGroupInfo
@@ -28,7 +29,7 @@ function LeavePrivateTopicButton(props: {
     props
   const leavePrivateGroup = user
     ? withTracking(() => {
-        leaveGroup(group.id, user.id)
+        unfollowTopic(group.id, user.id)
           .then(() => setIsMember(false))
           .catch(() => {
             toast.error('Failed to unfollow group')
@@ -110,7 +111,7 @@ export function FollowOrUnfolowTopicButton(props: {
 
   const unfollow = user
     ? withTracking(() => {
-        leaveGroup(group.id, user.id)
+        unfollowTopic(group.id, user.id)
           .then(() => setIsMember(false))
           .catch(() => {
             toast.error('Failed to unfollow category')
@@ -119,7 +120,7 @@ export function FollowOrUnfolowTopicButton(props: {
     : firebaseLogin
   const follow = user
     ? withTracking(() => {
-        joinGroup({ groupId: group.id })
+        followTopic({ groupId: group.id })
           .then(() => setIsMember(true))
           .catch((e) => {
             console.error(e)
@@ -146,7 +147,7 @@ export function FollowOrUnfolowTopicButton(props: {
       </Button>
     )
   }
-
+  if (TOPIC_IDS_YOU_CANT_FOLLOW.includes(group.id)) return null
   return (
     <Button
       size={size ?? 'xs'}
@@ -166,32 +167,32 @@ export function FollowOrUnfolowTopicButton(props: {
     </Button>
   )
 }
-export const followTopic = async (
+export const internalFollowTopic = async (
   user: User | null | undefined,
   group: Group
 ) => {
   if (!user) return firebaseLogin()
-  await joinGroup({ groupId: group.id })
+  await followTopic({ groupId: group.id })
     .then(() => {
       toast(`You'll see markets related to ${group.name} on your home feed!`)
     })
     .catch((e) => {
       console.error(e)
-      toast.error('Failed to follow category')
+      toast.error('Failed to follow topic')
     })
   track('join group', { slug: group.slug })
 }
-export const unfollowTopic = async (
+export const unfollowTopicInternal = async (
   user: User | null | undefined,
   group: Group
 ) => {
   if (!user) return firebaseLogin()
-  await leaveGroup(group.id, user.id)
+  await unfollowTopic(group.id, user.id)
     .then(() => {
       toast(`You won't see markets related to ${group.name} on your home feed.`)
     })
     .catch(() => {
-      toast.error('Failed to unfollow category')
+      toast.error('Failed to unfollow topic')
     })
   track('leave group', { slug: group.slug })
 }
@@ -216,7 +217,7 @@ export const TopicOptionsButton = (props: {
         user={user}
         isMember={isMember}
         unfollow={() => {
-          unfollowTopic(user, group).then(() => {
+          unfollowTopicInternal(user, group).then(() => {
             setIsMember(false)
           })
         }}

@@ -53,8 +53,7 @@ import { getcontractparams } from './get-contract-params'
 import { boostmarket } from './boost-market'
 import { redeemboost } from './redeem-market-ad-reward'
 import { creategroupinvite } from './create-group-invite'
-import { joingroupthroughinvite } from './join-group-through-invite'
-import { joingroup } from './join-group'
+import { followtopic } from './follow-topic'
 import { editcomment } from 'api/edit-comment'
 import { supabasesearchgroups } from './supabase-search-groups'
 import { leagueActivity } from './league-activity'
@@ -203,8 +202,7 @@ app.post(
 )
 app.post('/getcontractparams', ...apiRoute(getcontractparams))
 app.post('/creategroupinvite', ...apiRoute(creategroupinvite))
-app.post('/joingroupthroughinvite', ...apiRoute(joingroupthroughinvite))
-app.post('/joingroup', ...apiRoute(joingroup))
+app.post('/follow-topic', ...apiRoute(followtopic))
 app.post('/supabasesearchgroups', ...apiRoute(supabasesearchgroups))
 app.post('/league-activity', ...apiRoute(leagueActivity))
 app.post('/award-bounty', ...apiRoute(awardbounty))

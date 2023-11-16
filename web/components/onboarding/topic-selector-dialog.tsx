@@ -7,11 +7,11 @@ import { Modal } from 'web/components/layout/modal'
 import { PillButton } from 'web/components/buttons/pill-button'
 import { Button } from 'web/components/buttons/button'
 import { getSubtopics, removeEmojis, TOPICS_TO_SUBTOPICS } from 'common/topics'
-import { joinGroup, updateUserEmbedding } from 'web/lib/firebase/api'
+import { followTopic, updateUserEmbedding } from 'web/lib/firebase/api'
 import { Group } from 'common/group'
 import { Row } from 'web/components/layout/row'
 import { updateUser } from 'web/lib/firebase/users'
-import { leaveGroup } from 'web/lib/supabase/groups'
+import { unfollowTopic } from 'web/lib/supabase/groups'
 
 export function TopicSelectorDialog(props: {
   skippable: boolean
@@ -46,11 +46,11 @@ export function TopicSelectorDialog(props: {
 
   const selectTopic = (groupId: string) => {
     if (selectedTopics.includes(groupId)) {
-      if (user) leaveGroup(groupId, user.id)
+      if (user) unfollowTopic(groupId, user.id)
       setUserSelectedTopics((tops) => (tops ?? []).filter((t) => t !== groupId))
     } else {
       setUserSelectedTopics((tops) => uniq([...(tops ?? []), groupId]))
-      if (user) joinGroup({ groupId })
+      if (user) followTopic({ groupId })
     }
   }
 

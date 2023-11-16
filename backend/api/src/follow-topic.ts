@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
 import { authEndpoint, validate } from './helpers'
-import { addUserToGroup } from 'shared/supabase/groups'
+import { addUserToTopic } from 'shared/supabase/groups'
 
 const bodySchema = z
   .object({
@@ -9,8 +9,8 @@ const bodySchema = z
   })
   .strict()
 
-export const joingroup = authEndpoint(async (req, auth) => {
+export const followtopic = authEndpoint(async (req, auth) => {
   const { groupId } = validate(bodySchema, req.body)
 
-  return addUserToGroup(groupId, auth.uid, auth.uid)
+  return addUserToTopic(groupId, auth.uid, auth.uid)
 })

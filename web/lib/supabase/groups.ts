@@ -165,7 +165,7 @@ export async function getYourNonPrivateNonModeratorGroups(userId: string) {
   return data ?? []
 }
 
-export async function leaveGroup(groupId: string, userId: string) {
+export async function unfollowTopic(groupId: string, userId: string) {
   await run(
     db
       .from('group_members')
