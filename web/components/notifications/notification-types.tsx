@@ -188,7 +188,7 @@ export function NotificationItem(props: {
         setHighlighted={setHighlighted}
       />
     )
-  } else if (sourceType === 'comment') {
+  } else if (sourceType === 'comment' || sourceType === 'love_comment') {
     return (
       <CommentNotification
         notification={notification}
@@ -266,7 +266,10 @@ export function NotificationItem(props: {
         isChildOfGroup={isChildOfGroup}
       />
     )
-  } else if (sourceType === 'contract' && sourceUpdateType === 'updated') {
+  } else if (
+    (sourceType === 'contract' || sourceType === 'love_contract') &&
+    sourceUpdateType === 'updated'
+  ) {
     return (
       <MarketUpdateNotification
         notification={notification}
@@ -287,7 +290,10 @@ export function NotificationItem(props: {
         setHighlighted={setHighlighted}
       />
     )
-  } else if (sourceType === 'contract' && sourceUpdateType === 'closed') {
+  } else if (
+    (sourceType === 'contract' || sourceType === 'love_contract') &&
+    sourceUpdateType === 'closed'
+  ) {
     return (
       <MarketClosedNotification
         notification={notification}
@@ -305,7 +311,7 @@ export function NotificationItem(props: {
         setHighlighted={setHighlighted}
       />
     )
-  } else if (sourceType === 'answer') {
+  } else if (sourceType === 'answer' || sourceType === 'love_answer') {
     return (
       <AnswerNotification
         notification={notification}

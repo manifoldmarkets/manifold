@@ -7,6 +7,7 @@ import {
   CommentNotificationData,
   ContractResolutionData,
   LeagueChangeData,
+  love_notification_source_types,
   Notification,
   NOTIFICATION_DESCRIPTIONS,
   notification_reason_types,
@@ -72,7 +73,8 @@ import { league_user_info } from 'common/leagues'
 import { hasUserSeenMarket } from 'shared/helpers/seen-markets'
 import { getUserFollowerIds } from 'shared/supabase/users'
 import { getForYouMarkets } from './supabase/search-contracts'
-import { PROD_MANIFOLD_LOVE_GROUP_SLUG } from 'common/envs/constants'
+import { isManifoldLoveContract } from 'common/love/constants'
+import { filterDefined } from 'common/util/array'
 
 const firestore = admin.firestore()
 
@@ -212,15 +214,15 @@ export const createCommentOrAnswerOrUpdatedContractNotification = async (
     notification_destination_types[]
   > = {}
 
-  const followerIds = await pg.manyOrNone<{ follow_id: string }>(
+  const followerIds = await pg.map(
     `select follow_id from contract_follows where contract_id = $1`,
-    [sourceContract.id]
+    [sourceContract.id],
+    (r) => r.follow_id
   )
-  const contractFollowersIds = mapValues(
-    keyBy(followerIds, 'follow_id'),
-    () => true
-  )
-
+  if (sourceContract.loverUserId1 || sourceContract.loverUserId2) {
+    const { loverUserId1, loverUserId2 } = sourceContract
+    followerIds.push(...filterDefined([loverUserId1, loverUserId2]))
+  }
   const constructNotification = (
     userId: string,
     reason: NotificationReason
@@ -232,7 +234,9 @@ export const createCommentOrAnswerOrUpdatedContractNotification = async (
       createdTime: Date.now(),
       isSeen: false,
       sourceId,
-      sourceType,
+      sourceType: isManifoldLoveContract(sourceContract)
+        ? (`love_${sourceType}` as love_notification_source_types)
+        : sourceType,
       sourceUpdateType,
       sourceContractId: sourceContract.id,
       sourceUserName: sourceUser.name,
@@ -252,10 +256,6 @@ export const createCommentOrAnswerOrUpdatedContractNotification = async (
   }
 
   const needNotFollowContractReasons = ['tagged_user']
-  const stillFollowingContract = (userId: string) => {
-    // Should be better performance than includes
-    return contractFollowersIds[userId] !== undefined
-  }
 
   const sendNotificationsIfSettingsPermit = async (
     userId: string,
@@ -263,7 +263,7 @@ export const createCommentOrAnswerOrUpdatedContractNotification = async (
   ) => {
     // A user doesn't have to follow a market to receive a notification with their tag
     if (
-      (!stillFollowingContract(userId) &&
+      (!followerIds.some((id) => id === userId) &&
         !needNotFollowContractReasons.includes(reason)) ||
       sourceUser.id == userId
     )
@@ -335,7 +335,7 @@ export const createCommentOrAnswerOrUpdatedContractNotification = async (
 
   const notifyContractFollowers = async () => {
     await Promise.all(
-      Object.keys(contractFollowersIds).map((userId) =>
+      followerIds.map((userId) =>
         sendNotificationsIfSettingsPermit(
           userId,
           sourceType === 'answer'
@@ -1177,7 +1177,7 @@ export const createContractResolvedNotifications = async (
       createdTime: Date.now(),
       isSeen: false,
       sourceId: contract.id,
-      sourceType: contract.groupSlugs?.includes(PROD_MANIFOLD_LOVE_GROUP_SLUG)
+      sourceType: isManifoldLoveContract(contract)
         ? 'love_contract'
         : 'contract',
       sourceUpdateType: 'resolved',

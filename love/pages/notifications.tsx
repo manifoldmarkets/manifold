@@ -32,13 +32,14 @@ import { UserWatchedContractsButton } from 'web/components/notifications/watched
 import { WatchMarketModal } from 'web/components/contract/watch-market-modal'
 
 export const NOTIFICATION_TYPES_TO_SELECT: notification_source_types[] = [
-  'new_match',
-  'comment_on_lover',
-  'love_contract',
+  'new_match', // new match markets
+  'comment_on_lover', // endorsements
+  'love_comment', // comments on your match markets
+  'love_answer', // not used yet
+  'love_contract', // match market resolutions, updates
 ]
-export const NOTIFICATION_REASONS_TO_SELECT: NotificationReason[] = [
-  'tagged_user',
-]
+export const NOTIFICATION_REASONS_TO_SELECT: NotificationReason[] = []
+
 export default function NotificationsPage() {
   const privateUser = usePrivateUser()
   const user = useUser()

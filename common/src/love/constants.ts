@@ -1,4 +1,6 @@
 import { PROD_MANIFOLD_LOVE_GROUP_ID } from 'common/supabase/groups'
+import { Contract } from 'common/contract'
+import { PROD_MANIFOLD_LOVE_GROUP_SLUG } from 'common/envs/constants'
 
 const isProd = () => {
   // mqp: kind of hacky rn. the first clause is for cloud run API service,
@@ -20,3 +22,6 @@ export const manifoldLoveUserId = isProd()
 export const manifoldLoveRelationshipsGroupId = isProd()
   ? PROD_MANIFOLD_LOVE_GROUP_ID
   : '77df8782-34b7-4daa-89f4-a75c8ea844d4'
+
+export const isManifoldLoveContract = (contract: Contract) =>
+  contract.groupSlugs?.includes(PROD_MANIFOLD_LOVE_GROUP_SLUG)

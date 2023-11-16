@@ -75,7 +75,10 @@ export type notification_source_types =
   | 'new_message'
   | love_notification_source_types
 
-export type love_notification_source_types = 'love_contract'
+export type love_notification_source_types =
+  | 'love_contract'
+  | 'love_comment'
+  | 'love_answer'
 
 export type notification_source_update_types =
   | 'created'
@@ -87,7 +90,6 @@ export type notification_source_update_types =
 
 /** @deprecated - use a notification_preference (in user-notification-preferences.ts) */
 export type notification_reason_types =
-  | 'tagged_user'
   | 'on_new_follow'
   | 'contract_from_followed_user'
   | 'contract_from_private_group'
