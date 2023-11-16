@@ -24,7 +24,7 @@ export const RejectButton = (props: { lover: Lover; className?: string }) => {
     <>
       <button
         className={clsx(
-          'bg-ink-500 hover:bg-ink-600 h-7 w-7 rounded-full drop-shadow-lg transition-colors',
+          'bg-ink-400 hover:bg-ink-500 dark:bg-ink-600 dark:hover:bg-ink-500 h-7 w-7 rounded-full drop-shadow-lg transition-colors',
           className
         )}
         onClick={() => setDialogOpen(true)}
