@@ -1,51 +1,21 @@
 import clsx from 'clsx'
-import Link from 'next/link'
-import { useState, useEffect } from 'react'
-import {
-  ChevronDownIcon,
-  ChevronUpIcon,
-  ArrowRightIcon,
-} from '@heroicons/react/outline'
 import { sortBy } from 'lodash'
+import { useEffect, useState } from 'react'
 
-import { CPMMMultiContract, contractPath } from 'common/contract'
-import { useLovers } from 'love/hooks/use-lovers'
-import { useMatches } from 'love/hooks/use-matches'
-import { Col } from 'web/components/layout/col'
-import { AddAMatchButton } from '../add-a-match-button'
-import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
-import { Row } from 'web/components/layout/row'
-import { formatMoney, formatPercent } from 'common/util/format'
-import { UserLink } from 'web/components/widgets/user-link'
-import { Button } from 'web/components/buttons/button'
-import { RejectButton } from '../reject-button'
-import { useUser } from 'web/hooks/use-user'
-import { Avatar } from 'web/components/widgets/avatar'
-import { MODAL_CLASS, Modal } from 'web/components/layout/modal'
-import { BuyPanel } from 'web/components/bet/bet-panel'
-import { Subtitle } from 'web/components/widgets/subtitle'
-import { linkClass } from 'web/components/widgets/site-link'
-import { areGenderCompatible } from 'love/lib/util/gender'
-import { track } from 'web/lib/service/analytics'
-import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
-import { getCPMMContractUserContractMetrics } from 'common/supabase/contract-metrics'
-import { db } from 'web/lib/supabase/db'
-import {
-  BinaryOutcomeLabel,
-  NoLabel,
-  YesLabel,
-} from 'web/components/outcome-label'
-import { SendMessageButton } from 'web/components/messaging/send-message-button'
-import { CommentsButton } from 'web/components/comments/comments-button'
-import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
-import { getCumulativeRelationshipProb } from 'love/lib/util/relationship-market'
-import { ControlledTabs } from 'web/components/layout/tabs'
-import { Answer } from 'common/answer'
-import { ConfirmStageButton } from '../confirm-stage-button'
-import { useAnswersCpmm } from 'web/hooks/use-answers'
-import { Lover } from 'common/love/lover'
-import { MatchTile } from './match-tile'
 import { UserIcon } from '@heroicons/react/outline'
+import { Answer } from 'common/answer'
+import { CPMMMultiContract } from 'common/contract'
+import { getCPMMContractUserContractMetrics } from 'common/supabase/contract-metrics'
+import { formatMoney } from 'common/util/format'
+import { Col } from 'web/components/layout/col'
+import { MODAL_CLASS, Modal } from 'web/components/layout/modal'
+import { Row } from 'web/components/layout/row'
+import { NoLabel, YesLabel } from 'web/components/outcome-label'
+import { Avatar } from 'web/components/widgets/avatar'
+import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
+import { UserLink } from 'web/components/widgets/user-link'
+import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import { db } from 'web/lib/supabase/db'
 
 export function MatchPositionsButton(props: {
   contract: CPMMMultiContract
