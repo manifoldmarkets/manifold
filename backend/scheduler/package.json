@@ -1,0 +1,43 @@
+{
+  "name": "@manifold/scheduler",
+  "description": "GCE service for running backend scheduled jobs.",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "nodemon src/index.ts --ext '*'",
+    "build": "yarn compile && yarn --cwd=../../common alias && yarn --cwd=../shared alias && yarn alias && yarn dist",
+    "dist": "yarn dist:prepare && yarn dist:copy",
+    "dist:prepare": "rm -rf dist && mkdir -p dist/common/lib dist/backend/shared/lib dist/backend/scheduler/lib",
+    "dist:copy": "cp -R ../../common/lib/* dist/common/lib && cp -R ../shared/lib/* dist/backend/shared/lib && cp -R ./lib/* dist/backend/scheduler/lib && cp ../../yarn.lock dist && cp package.json dist && cp -R src/templates dist/backend/scheduler/lib",
+    "prune-images": "gcloud compute ssh scheduler --command 'sudo docker image prune -af'",
+    "compile": "tsc -b",
+    "watch": "tsc -w",
+    "alias": "tsc-alias"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "dependencies": {
+    "@google-cloud/secret-manager": "4.2.1",
+    "@supabase/supabase-js": "2.2.0",
+    "@tiptap/core": "2.0.0-beta.204",
+    "@tiptap/extension-image": "2.0.0-beta.204",
+    "@tiptap/extension-link": "2.0.0-beta.204",
+    "@tiptap/extension-mention": "2.0.0-beta.204",
+    "@tiptap/html": "2.0.0-beta.204",
+    "@tiptap/starter-kit": "2.0.0-beta.204",
+    "@tiptap/suggestion": "2.0.0-beta.204",
+    "croner": "7.0.4",
+    "dayjs": "1.11.4",
+    "express": "4.18.1",
+    "express-basic-auth": "1.2.1",
+    "firebase-admin": "11.5.0",
+    "handlebars": "4.7.8",
+    "lodash": "4.17.21",
+    "openai": "3.2.1",
+    "pg-promise": "11.4.1",
+    "string-similarity": "4.0.4",
+    "supabase": "1.38.7",
+    "typescript": "5.0.4"
+  }
+}
