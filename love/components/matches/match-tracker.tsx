@@ -28,8 +28,10 @@ export function MatchTracker(props: {
               key={i}
               onClick={() => setStage(i)}
               className={clsx(
-                ' text-canvas-0 z-10 rounded-full text-xs transition-all',
-                stage == i ? ' bg-primary-500 ' : 'bg-ink-200 dark:bg-ink-400'
+                ' text-canvas-0 z-10 rounded-full text-xs transition-all ',
+                stage == i
+                  ? ' bg-primary-500 '
+                  : 'bg-ink-200 dark:bg-ink-400 hover:bg-ink-300 hover:dark:bg-ink-500'
               )}
             >
               {i != 3 ? (

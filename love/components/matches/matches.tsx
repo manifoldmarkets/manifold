@@ -88,15 +88,6 @@ export const Matches = (props: { userId: string }) => {
       {currentMatches.length > 0 ? (
         <Col>
           <div className="text-lg font-semibold">Matches</div>
-          {/* <ControlledTabs
-            tabs={relationshipStages.map((stage) => ({
-              title: stage,
-              content: null,
-            }))}
-            activeIndex={tabIndex}
-            onClick={(_title, index) => setTabIndex(index)}
-          />*/}
-
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
             {(expanded
               ? currentMatches

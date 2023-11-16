@@ -25,6 +25,7 @@ import { track } from 'web/lib/service/analytics'
 import { Spacer } from 'web/components/layout/spacer'
 import { CommentsButton } from 'web/components/comments/comments-button'
 import { MatchTracker } from './match-tracker'
+import { TradesButton } from 'web/components/contract/trades-button'
 
 const relationshipStages = [
   '1st date',
@@ -91,7 +92,7 @@ export const MatchTile = (props: {
     .trim()
 
   return (
-    <Col className=" overflow-hidden rounded drop-shadow">
+    <Col className=" overflow-hidden rounded drop-shadow ">
       <Col className="relative h-40 overflow-hidden">
         {pinned_url ? (
           <Image
@@ -116,7 +117,7 @@ export const MatchTile = (props: {
           user={user}
         />
       </Col>
-      <Col className="bg-canvas-0 text-ink-1000 grow justify-between p-2 text-sm">
+      <Col className="bg-canvas-0 text-ink-1000 grow justify-between gap-2 p-2 text-sm">
         <Col className="gap-2">
           <MatchTracker
             lastResolved={lastResolved}
@@ -142,7 +143,8 @@ export const MatchTile = (props: {
             <div className="font-semibold">{formatPercent(answer.prob)}</div>
           </Row>
         </Col>
-        <Row className="w-full items-center justify-end gap-2">
+        <Row className="w-full items-center justify-between gap-2">
+          <TradesButton contract={contract} />
           <CommentsButton contract={contract} user={currentUser} />
           <Button
             size={'2xs'}
