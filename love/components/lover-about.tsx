@@ -94,22 +94,24 @@ function Seeking(props: { lover: Lover }) {
   const min = lover.pref_age_min
   const max = lover.pref_age_max
   const seekingGenderText = stringOrStringArrayToText({
-    text: prefGender.map((gender) => convertGenderPlural(gender as Gender)),
+    text:
+      prefGender.length == 5
+        ? ['people']
+        : prefGender.map((gender) => convertGenderPlural(gender as Gender)),
     preText: 'Interested in',
     asSentence: true,
     capitalizeFirstLetterOption: false,
   })
-  if (prefGender.length == 5) {
-    seekingGenderText = "Interested in anyone"
-  }
-  const ageRangeText = `between ${min} - ${max} years old`
-  if (min == 18 && max == 99) {
-    ageRangeText = "of any age"
-  } else if (min == 18) {
-    ageRangeText = `younger than ${max}`
-  } else if (max == 99) {
-    ageRangeText = `older than ${min}`
-  }
+
+  const ageRangeText =
+    min == 18 && max == 99
+      ? 'of any age'
+      : min == max
+      ? `exactly ${min} years old`
+      : max == 99
+      ? `${min} or older`
+      : `between ${min} - ${max} years old`
+
   if (!prefGender || prefGender.length < 1) {
     return <></>
   }
