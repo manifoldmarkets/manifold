@@ -37,7 +37,7 @@ export const ConfirmStageButton = (props: {
         size="2xs"
         onClick={() => setDialogOpen(true)}
       >
-        Confirm {stage}
+        Confirm
       </Button>
       {dialogOpen && (
         <Modal open={dialogOpen} setOpen={(open) => setDialogOpen(open)}>
