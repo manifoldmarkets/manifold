@@ -50,6 +50,7 @@ import { Avatar } from 'web/components/widgets/avatar'
 import { richTextToString } from 'common/util/parse'
 import { useIsVisible } from 'web/hooks/use-is-visible'
 import { getNativePlatform } from 'web/lib/native/is-native'
+import { ReplyToUserInfo } from 'web/components/feed/feed-comments'
 
 export default function PrivateMessagesPage() {
   return (
@@ -280,6 +281,7 @@ export const PrivateChat = (props: {
     scrollToOldTop.current = true
     setPage(page + 1)
   })
+  const [replyToUserInfo, setReplyToUserInfo] = useState<ReplyToUserInfo>()
 
   return (
     <Col className=" w-full">
@@ -448,14 +450,15 @@ export const PrivateChat = (props: {
                       />
                     )
                   }
+                  const otherUser = otherUsers?.find(
+                    (user) => user.id === firstMessage.userId
+                  )
                   return (
                     <ChatMessageItem
                       key={firstMessage.id}
                       chats={messages}
                       currentUser={user}
-                      otherUser={otherUsers?.find(
-                        (user) => user.id === firstMessage.userId
-                      )}
+                      otherUser={otherUser}
                       beforeSameUser={
                         groupedMessages[i + 1]?.[0].userId ===
                         firstMessage.userId
@@ -463,6 +466,15 @@ export const PrivateChat = (props: {
                       firstOfUser={
                         groupedMessages[i - 1]?.[0].userId !==
                         firstMessage.userId
+                      }
+                      onReplyClick={
+                        remainingUsers.length > 1
+                          ? (chat) =>
+                              setReplyToUserInfo({
+                                id: chat.userId,
+                                username: otherUser?.username ?? '',
+                              })
+                          : undefined
                       }
                     />
                   )
@@ -483,6 +495,7 @@ export const PrivateChat = (props: {
         submit={submitMessage}
         isSubmitting={isSubmitting}
         submitOnEnter={true}
+        replyTo={replyToUserInfo}
       />
     </Col>
   )

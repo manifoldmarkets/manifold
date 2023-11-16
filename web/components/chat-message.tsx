@@ -12,6 +12,8 @@ import { MultipleOrSingleAvatars } from 'web/components/multiple-or-single-avata
 import { Modal, MODAL_CLASS } from 'web/components/layout/modal'
 import { UserAvatarAndBadge } from 'web/components/widgets/user-link'
 import Link from 'next/link'
+import DropdownMenu from 'web/components/comments/dropdown-menu'
+import { DotsHorizontalIcon, ReplyIcon } from '@heroicons/react/solid'
 
 export const ChatMessageItem = memo(function ChatMessageItem(props: {
   chats: ChatMessage[]
@@ -21,7 +23,14 @@ export const ChatMessageItem = memo(function ChatMessageItem(props: {
   beforeSameUser: boolean
   firstOfUser: boolean
 }) {
-  const { chats, currentUser, otherUser, beforeSameUser, firstOfUser } = props
+  const {
+    chats,
+    onReplyClick,
+    currentUser,
+    otherUser,
+    beforeSameUser,
+    firstOfUser,
+  } = props
   const chat = first(chats)
   if (!chat) return null
   const isMe = currentUser?.id === chat.userId
@@ -49,12 +58,26 @@ export const ChatMessageItem = memo(function ChatMessageItem(props: {
       )}
       <Col className="max-w-[calc(100vw-6rem)] md:max-w-[80%]">
         {firstOfUser && !isMe && chat.visibility !== 'system_status' && (
-          <Link
-            href={'/' + username}
-            className="text-ink-500 dark:text-ink-600 pl-3 text-sm"
-          >
-            {name}
-          </Link>
+          <Row className={'items-center gap-3'}>
+            <Link
+              href={'/' + username}
+              className="text-ink-500 dark:text-ink-600 pl-3 text-sm"
+            >
+              {name}
+            </Link>
+            {onReplyClick && (
+              <DropdownMenu
+                items={[
+                  {
+                    name: 'Reply',
+                    icon: <ReplyIcon className=" h-5 w-5 " />,
+                    onClick: () => onReplyClick(chat),
+                  },
+                ]}
+                icon={<DotsHorizontalIcon className="text-ink-400 h-4 w-4" />}
+              />
+            )}
+          </Row>
         )}
         <Col className="gap-1">
           {chats.map((chat) => (
