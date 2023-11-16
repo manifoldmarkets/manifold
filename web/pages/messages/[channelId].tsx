@@ -49,6 +49,7 @@ import toast from 'react-hot-toast'
 import { Avatar } from 'web/components/widgets/avatar'
 import { richTextToString } from 'common/util/parse'
 import { useIsVisible } from 'web/hooks/use-is-visible'
+import { getNativePlatform } from 'web/lib/native/is-native'
 
 export default function PrivateMessagesPage() {
   return (
@@ -88,7 +89,9 @@ export const PrivateChat = (props: {
 }) => {
   const { user, channel } = props
   const channelId = channel.id
-  const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent)
+  const isSafari =
+    /^((?!chrome|android).)*safari/i.test(navigator.userAgent) ||
+    getNativePlatform().platform === 'ios'
 
   const totalMessagesToLoad = 500
   const realtimeMessages = useRealtimePrivateMessagesPolling(
