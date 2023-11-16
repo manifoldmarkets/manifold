@@ -12,6 +12,7 @@ export const secrets = (
     'DREAM_KEY',
     'MAILGUN_KEY',
     'OPENAI_API_KEY',
+    'SCHEDULER_AUTH_PASSWORD',
     'STRIPE_APIKEY',
     'STRIPE_WEBHOOKSECRET',
     'SUPABASE_KEY',

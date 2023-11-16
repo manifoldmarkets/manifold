@@ -1,3 +1,7 @@
+import * as admin from 'firebase-admin'
+import { getLocalEnv, initAdmin } from 'shared/init-admin'
+import { getServiceAccountCredentials, loadSecretsToEnv } from 'common/secrets'
+
 // log levels GCP's log explorer recognizes
 export const LEVELS = ['DEBUG', 'INFO', 'WARNING', 'ERROR'] as const
 type GCPLogLevel = typeof LEVELS[number]
@@ -8,6 +12,25 @@ type GCPLogOutput = {
   details: any[]
 }
 
+export async function initGoogleCredentialsAndSecrets() {
+  try {
+    await loadSecretsToEnv()
+    admin.initializeApp()
+    log.info('Loaded secrets using GCP service account access.')
+  } catch {
+    const env = getLocalEnv()
+    const credentials = getServiceAccountCredentials(env)
+    await loadSecretsToEnv(credentials)
+    admin.initializeApp({
+      projectId: credentials.project_id,
+      credential: admin.credential.cert(credentials),
+      storageBucket: `${credentials.project_id}.appspot.com`,
+    })
+    log.info(
+      `Loaded secrets using local credentials for ${credentials.project_id}.`
+    )
+  }
+}
 export function log(severity: GCPLogLevel, message: any, details?: object) {
   const output = { severity, message: message ?? null, ...(details ?? {}) }
   console.log(JSON.stringify(output))
