@@ -235,6 +235,7 @@ export const GROUP_SLUGS_TO_IGNORE_IN_MARKETS_EMAIL = [
   'bugs',
   'manifold-leagues',
   'nonpredictive',
+  'unsubsidized',
   PROD_MANIFOLD_LOVE_GROUP_SLUG,
 ]
 
@@ -328,6 +329,7 @@ export const GROUP_SLUGS_TO_HIDE_FROM_WELCOME_FLOW = [
   'crypto-prices', // same as crypto,
   'technical-ai-timelines', // same as ai
   'presidential-politics', // same as politics
+  'unsubsidized',
   PROD_MANIFOLD_LOVE_GROUP_SLUG,
 ]
 

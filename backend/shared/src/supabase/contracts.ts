@@ -17,7 +17,7 @@ import { log } from 'shared/utils'
 import { DEEMPHASIZED_GROUP_SLUGS, isAdminId } from 'common/envs/constants'
 import { convertContract } from 'common/supabase/contracts'
 import { generateEmbeddings } from 'shared/helpers/openai-utils'
-import { manifoldLoveRelationshipsGroupId } from 'common/love/constants'
+import { TOPIC_IDS_YOU_CANT_FOLLOW } from 'common/supabase/groups'
 
 export const getUniqueBettorIds = async (
   contractId: string,
@@ -210,7 +210,8 @@ export const getUserToReasonsInterestedInContractAndUser = async (
   serverSideCalculation: boolean,
   dataType: FEED_DATA_TYPES,
   trendingContractType?: 'old' | 'new',
-  ignoringGroupIds = [manifoldLoveRelationshipsGroupId]
+  // This can be deleted after removing all users from these groups
+  ignoringGroupIds = TOPIC_IDS_YOU_CANT_FOLLOW
 ): Promise<{
   [userId: string]: {
     reasons: CONTRACT_FEED_REASON_TYPES[]
