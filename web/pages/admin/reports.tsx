@@ -12,7 +12,7 @@ import { Avatar } from 'web/components/widgets/avatar'
 import { Content } from 'web/components/widgets/editor'
 import { Title } from 'web/components/widgets/title'
 import { Tooltip } from 'web/components/widgets/tooltip'
-import { PostBanBadge, UserLink } from 'web/components/widgets/user-link'
+import { BannedBadge, UserLink } from 'web/components/widgets/user-link'
 import { getComment, getCommentsOnPost } from 'web/lib/supabase/comments'
 import { getContract } from 'web/lib/supabase/contracts'
 import { db } from 'web/lib/supabase/db'
@@ -56,7 +56,7 @@ export default function Reports(props: { reports: LiteReport[] }) {
                     size="sm"
                   />
                   <UserLink user={owner} className="text-ink-800 ml-2" />
-                  {owner.isBannedFromPosting && <PostBanBadge />}
+                  {owner.isBannedFromPosting && <BannedBadge />}
                 </div>
 
                 <div>

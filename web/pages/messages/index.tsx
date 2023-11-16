@@ -19,6 +19,7 @@ import { useUsersInStore } from 'web/hooks/use-user-supabase'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { MultipleOrSingleAvatars } from 'web/components/multiple-or-single-avatars'
 import { Row as rowFor } from 'common/supabase/utils'
+import { BannedBadge } from 'web/components/widgets/user-link'
 
 export default function MessagesPage() {
   return (
@@ -85,7 +86,7 @@ export const MessageChannelRow = (props: {
           id: 'manifold',
           name: 'Manifold',
           avatarUrl: MANIFOLD_LOVE_LOGO,
-        },
+        } as User,
       ]
     : // eslint-disable-next-line react-hooks/rules-of-hooks
       useUsersInStore(otherUserIds, `${channelId}`, 100)
@@ -131,6 +132,9 @@ export const MessageChannelRow = (props: {
                       ` & ${otherUsers.length - 2} more`}
                   </span>
                 )
+              )}
+              {otherUsers?.length == 1 && otherUsers[0].isBannedFromPosting && (
+                <BannedBadge />
               )}
             </span>
             <span className={'text-ink-400 dark:text-ink-500 text-xs'}>

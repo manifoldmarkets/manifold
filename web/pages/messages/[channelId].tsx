@@ -36,7 +36,10 @@ import clsx from 'clsx'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { MultipleOrSingleAvatars } from 'web/components/multiple-or-single-avatars'
 import { Modal, MODAL_CLASS } from 'web/components/layout/modal'
-import { UserAvatarAndBadge } from 'web/components/widgets/user-link'
+import {
+  BannedBadge,
+  UserAvatarAndBadge,
+} from 'web/components/widgets/user-link'
 import DropdownMenu from 'web/components/comments/dropdown-menu'
 import { DotsVerticalIcon } from '@heroicons/react/solid'
 import { FaUserFriends, FaUserMinus } from 'react-icons/fa'
@@ -293,6 +296,8 @@ export const PrivateChat = (props: {
             </span>
           )
         )}
+        {remainingUsers?.length == 1 &&
+          remainingUsers[0].isBannedFromPosting && <BannedBadge />}
         <DropdownMenu
           className={'ml-auto'}
           menuWidth={'w-44'}

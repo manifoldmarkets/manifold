@@ -123,10 +123,10 @@ function BotBadge() {
   )
 }
 
-export function PostBanBadge() {
+export function BannedBadge() {
   return (
     <Tooltip
-      text="Can't create comments, posts, or questions"
+      text="Can't create comments, messages, or questions"
       placement="bottom"
     >
       <span className="ml-1.5 rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800">
@@ -246,7 +246,7 @@ export const StackedUserNames = (props: {
             fresh={isFresh(user.createdTime)}
           />
         }
-        {user.isBannedFromPosting && <PostBanBadge />}
+        {user.isBannedFromPosting && <BannedBadge />}
       </div>
       <Row className={'max-w-[8rem] flex-shrink flex-wrap gap-2 sm:max-w-none'}>
         <span className={clsx('text-ink-400 text-sm', usernameClassName)}>
