@@ -9,10 +9,10 @@ const bodySchema = z
   })
   .strict()
 
-export const completequest = authEndpoint(async (req, auth) => {
+export const completequest = authEndpoint(async (req, auth, log) => {
   validate(bodySchema, req.body)
 
   const user = await getUser(auth.uid)
   if (!user) throw new APIError(401, 'Your account was not found')
-  return await completeSharingQuest(user)
+  return await completeSharingQuest(user, log)
 })

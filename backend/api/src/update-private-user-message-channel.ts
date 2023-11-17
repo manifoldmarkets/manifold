@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { APIError, authEndpoint, validate } from 'api/helpers'
-import { getUserSupabase, log } from 'shared/utils'
+import { getUserSupabase } from 'shared/utils'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { millisToTs } from 'common/supabase/utils'
 
@@ -12,7 +12,7 @@ const postSchema = z
   .strict()
 
 export const updateprivateusermessagechannel = authEndpoint(
-  async (req, auth) => {
+  async (req, auth, log) => {
     const { channelId, notifyAfterTime } = validate(postSchema, req.body)
     const pg = createSupabaseDirectClient()
     const user = await getUserSupabase(auth.uid)
@@ -25,7 +25,7 @@ export const updateprivateusermessagechannel = authEndpoint(
     )
     if (!membershipStatus)
       throw new APIError(403, 'You are not authorized to this channel')
-    log('membershipStatus', membershipStatus)
+    log('membershipStatus ' + membershipStatus)
 
     await pg.none(
       `

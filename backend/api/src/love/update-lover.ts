@@ -1,10 +1,8 @@
 import { z } from 'zod'
 import { APIError, authEndpoint, validate } from 'api/helpers'
 import { createSupabaseClient } from 'shared/supabase/init'
-import { getUser, log } from 'shared/utils'
 import * as admin from 'firebase-admin'
 import { baseLoversSchema } from 'api/love/create-lover'
-import { HOUR_MS } from 'common/util/time'
 import { removePinnedUrlFromPhotoUrls } from 'shared/love/parse-photos'
 import { contentSchema } from 'shared/zod-types'
 
@@ -35,7 +33,7 @@ const optionalLoversSchema = z.object({
 // TODO: make strict
 const combinedLoveUsersSchema = baseLoversSchema.merge(optionalLoversSchema)
 
-export const updatelover = authEndpoint(async (req, auth) => {
+export const updatelover = authEndpoint(async (req, auth, log) => {
   const parsedBody = validate(combinedLoveUsersSchema, req.body)
   log('parsedBody', parsedBody)
   const db = createSupabaseClient()
@@ -47,7 +45,8 @@ export const updatelover = authEndpoint(async (req, auth) => {
   if (!existingLover) {
     throw new APIError(400, 'Lover not found')
   }
-  !parsedBody.last_online_time && log('Updating lover', auth.uid, parsedBody)
+  !parsedBody.last_online_time &&
+    log('Updating lover', { userId: auth.uid, parsedBody })
 
   await removePinnedUrlFromPhotoUrls(parsedBody)
   if (parsedBody.avatar_url) {

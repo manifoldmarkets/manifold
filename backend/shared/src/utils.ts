@@ -26,6 +26,44 @@ export const log = (...args: unknown[]) => {
   console.log(`[${new Date().toISOString()}]`, ...args)
 }
 
+// log levels GCP's log explorer recognizes
+export const LEVELS = ['DEBUG', 'INFO', 'WARNING', 'ERROR'] as const
+export type GCPLogLevel = typeof LEVELS[number]
+
+// ian: Not sure if we need this for reference, from mqp's initial log implementation
+type GCPLogOutput = {
+  severity: GCPLogLevel
+  message?: string
+  details: any[]
+}
+
+export type GCPLog = (message: any, details?: object) => void
+
+function replacer(key: string, value: any) {
+  if (typeof value === 'bigint') {
+    return value.toString()
+  } else {
+    return value
+  }
+}
+
+export const gLog = (severity: GCPLogLevel, message: any, details?: object) => {
+  const output = { severity, message: message ?? null, ...(details ?? {}) }
+  try {
+    const stringified = JSON.stringify(output, replacer)
+    console.log(stringified)
+  } catch (e) {
+    console.error('Could not stringify log output')
+    console.error(e)
+  }
+}
+
+gLog.debug = (message: any, details?: object) => gLog('DEBUG', message, details)
+gLog.info = (message: any, details?: object) => gLog('INFO', message, details)
+gLog.warn = (message: any, details?: object) =>
+  gLog('WARNING', message, details)
+gLog.error = (message: any, details?: object) => gLog('ERROR', message, details)
+
 export const logMemory = () => {
   const used = process.memoryUsage()
   for (const [k, v] of Object.entries(used)) {

@@ -4,19 +4,24 @@ import { Request, Response, NextFunction } from 'express'
 
 import { PrivateUser } from 'common/user'
 import { APIError } from 'common/api'
-import { log } from 'shared/utils'
+import { gLog, GCPLog, log } from 'shared/utils'
 export { APIError } from 'common/api'
+import * as crypto from 'crypto'
 
 export type Json = Record<string, unknown>
 export type Handler<T> = (req: Request) => Promise<T>
 export type JsonHandler<T extends Json> = Handler<T>
 export type AuthedHandler<T extends Json> = (
   req: Request,
-  user: AuthedUser
+  user: AuthedUser,
+  log: GCPLog,
+  logError: GCPLog
 ) => Promise<T>
 export type MaybeAuthedHandler<T extends Json> = (
   req: Request,
-  user?: AuthedUser
+  user: AuthedUser | undefined,
+  log: GCPLog,
+  logError: GCPLog
 ) => Promise<T>
 
 export type AuthedUser = {
@@ -117,12 +122,25 @@ export const jsonEndpoint = <T extends Json>(fn: JsonHandler<T>) => {
     }
   }
 }
+const getLogs = (req: Request) => {
+  const traceContext = req.get('X-Cloud-Trace-Context')
+  const traceId = traceContext
+    ? traceContext.split('/')[0]
+    : crypto.randomUUID()
 
+  const log = (message: any, details?: object) =>
+    gLog.debug(message, { ...details, endpoint: req.path, traceId })
+
+  const logError = (message: any, details?: object) =>
+    gLog.error(message, { ...details, endpoint: req.path, traceId })
+  return { log, logError }
+}
 export const authEndpoint = <T extends Json>(fn: AuthedHandler<T>) => {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
       const authedUser = await lookupUser(await parseCredentials(req))
-      res.status(200).json(await fn(req, authedUser))
+      const { log, logError } = getLogs(req)
+      res.status(200).json(await fn(req, authedUser, log, logError))
     } catch (e) {
       next(e)
     }
@@ -138,7 +156,8 @@ export const MaybeAuthedEndpoint = <T extends Json>(
     } catch {}
 
     try {
-      res.status(200).json(await fn(req, authUser))
+      const { log, logError } = getLogs(req)
+      res.status(200).json(await fn(req, authUser, log, logError))
     } catch (e) {
       next(e)
     }

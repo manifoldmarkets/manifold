@@ -8,7 +8,8 @@ import * as admin from 'firebase-admin'
 import { sortBy } from 'lodash'
 import { CONFIGS } from 'common/envs/constants'
 import { isProd } from 'shared/utils'
-import { initGoogleCredentialsAndSecrets, log } from './utils'
+import { initGoogleCredentialsAndSecrets } from './utils'
+import { gLog as log } from 'shared/utils'
 import { createJobs } from './jobs'
 
 const PORT = (process.env.PORT ? parseInt(process.env.PORT) : null) || 8080

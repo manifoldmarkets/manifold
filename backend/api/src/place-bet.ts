@@ -22,7 +22,7 @@ import { addObjects, removeUndefinedProps } from 'common/util/object'
 import { Bet, LimitBet } from 'common/bet'
 import { floatingEqual } from 'common/util/math'
 import { redeemShares } from './redeem-shares'
-import { log } from 'shared/utils'
+import { GCPLog } from 'shared/utils'
 import { filterDefined } from 'common/util/array'
 import { createLimitBetCanceledNotification } from 'shared/create-notification'
 import { Answer } from 'common/answer'
@@ -55,16 +55,17 @@ const numericSchema = z.object({
   value: z.number(),
 })
 
-export const placebet = authEndpoint(async (req, auth) => {
+export const placebet = authEndpoint(async (req, auth, log) => {
   log(`Inside endpoint handler for ${auth.uid}.`)
   const isApi = auth.creds.kind === 'key'
-  return await placeBetMain(req.body, auth.uid, isApi)
+  return await placeBetMain(req.body, auth.uid, isApi, log)
 })
 
 export const placeBetMain = async (
   body: unknown,
   uid: string,
-  isApi: boolean
+  isApi: boolean,
+  log: GCPLog
 ) => {
   const { amount, contractId, replyToCommentId } = validate(bodySchema, body)
 
@@ -277,7 +278,7 @@ export const placeBetMain = async (
     log(`Created new bet document for ${user.username} - auth ${uid}.`)
 
     if (makers) {
-      updateMakers(makers, betDoc.id, contractDoc, trans)
+      updateMakers(makers, betDoc.id, contractDoc, trans, log)
     }
     if (ordersToCancel) {
       for (const bet of ordersToCancel) {
@@ -357,7 +358,7 @@ export const placeBetMain = async (
               })
             )
           }
-          updateMakers(makers, betDoc.id, contractDoc, trans)
+          updateMakers(makers, betDoc.id, contractDoc, trans, log)
           for (const bet of ordersToCancel) {
             trans.update(contractDoc.collection('bets').doc(bet.id), {
               isCancelled: true,
@@ -385,7 +386,9 @@ export const placeBetMain = async (
       uid,
       ...(makers ?? []).map((maker) => maker.bet.userId),
     ])
-    await Promise.all(userIds.map((userId) => redeemShares(userId, contract)))
+    await Promise.all(
+      userIds.map((userId) => redeemShares(userId, contract, log))
+    )
     log(`Share redemption transaction finished - auth ${uid}.`)
   }
   if (ordersToCancel) {
@@ -457,7 +460,8 @@ export const updateMakers = (
   makers: maker[],
   takerBetId: string,
   contractDoc: DocumentReference,
-  trans: Transaction
+  trans: Transaction,
+  log: GCPLog
 ) => {
   const makersByBet = groupBy(makers, (maker) => maker.bet.id)
   for (const makers of Object.values(makersByBet)) {

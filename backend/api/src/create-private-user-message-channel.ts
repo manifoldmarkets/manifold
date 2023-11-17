@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { APIError, authEndpoint, validate } from 'api/helpers'
-import { getPrivateUser, getUserSupabase, log } from 'shared/utils'
+import { getPrivateUser, getUserSupabase } from 'shared/utils'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { filterDefined } from 'common/util/array'
 import { uniq } from 'lodash'

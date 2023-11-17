@@ -8,7 +8,6 @@ import { Contract, CPMM_MIN_POOL_QTY } from 'common/contract'
 import { User } from 'common/user'
 import { getCpmmMultiSellBetInfo, getCpmmSellBetInfo } from 'common/sell-bet'
 import { removeUndefinedProps } from 'common/util/object'
-import { log } from 'shared/utils'
 import { Bet } from 'common/bet'
 import { floatingEqual, floatingLesserEqual } from 'common/util/math'
 import { getUnfilledBetsAndUserBalances, updateMakers } from './place-bet'
@@ -24,7 +23,7 @@ const bodySchema = z.object({
   answerId: z.string().optional(), // Required for multi binary markets
 })
 
-export const sellshares = authEndpoint(async (req, auth) => {
+export const sellshares = authEndpoint(async (req, auth, log) => {
   const { contractId, shares, outcome, answerId } = validate(
     bodySchema,
     req.body
@@ -192,7 +191,7 @@ export const sellshares = authEndpoint(async (req, auth) => {
 
     const newBetDoc = firestore.collection(`contracts/${contractId}/bets`).doc()
 
-    updateMakers(makers, newBetDoc.id, contractDoc, transaction)
+    updateMakers(makers, newBetDoc.id, contractDoc, transaction, log)
 
     transaction.update(userDoc, {
       balance: FieldValue.increment(-newBet.amount + (newBet.loanAmount ?? 0)),
@@ -270,7 +269,7 @@ export const sellshares = authEndpoint(async (req, auth) => {
           prob,
         })
       )
-      updateMakers(makers, betDoc.id, contractDoc, transaction)
+      updateMakers(makers, betDoc.id, contractDoc, transaction, log)
       for (const bet of ordersToCancel) {
         transaction.update(contractDoc.collection('bets').doc(bet.id), {
           isCancelled: true,
@@ -305,7 +304,9 @@ export const sellshares = authEndpoint(async (req, auth) => {
 
   const allMakers = [...makers, ...otherResultsWithBet.flatMap((r) => r.makers)]
   const userIds = uniq(allMakers.map((maker) => maker.bet.userId))
-  await Promise.all(userIds.map((userId) => redeemShares(userId, contract)))
+  await Promise.all(
+    userIds.map((userId) => redeemShares(userId, contract, log))
+  )
   log('Share redemption transaction finished.')
 
   return { status: 'success', ...newBet, betId: betId }

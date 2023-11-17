@@ -16,7 +16,7 @@ const schema = z
   })
   .strict()
 
-export const redeemad = authEndpoint(async (req, auth) => {
+export const redeemad = authEndpoint(async (req, auth, log) => {
   const firestore = admin.firestore()
 
   const { adId } = validate(schema, req.body)
@@ -61,7 +61,7 @@ export const redeemad = authEndpoint(async (req, auth) => {
   const calcFunds = totalCost - spent
 
   if (funds != calcFunds) {
-    console.warn(
+    log(
       `funds was ${funds} but according to txns but ${spent} spent and there's ${calcFunds} left`
     )
   }

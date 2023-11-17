@@ -30,7 +30,7 @@ const postSchema = z
     ])
   )
 
-export const createpost = authEndpoint(async (req, auth) => {
+export const createpost = authEndpoint(async (req, auth, log) => {
   const pg = createSupabaseDirectClient()
 
   const { title, content, groupId, ...otherProps } = validate(
@@ -61,7 +61,8 @@ export const createpost = authEndpoint(async (req, auth) => {
           // Dating group!
           groupIds: ['j3ZE8fkeqiKmRGumy3O1'],
         },
-        auth
+        auth,
+        log
       )
       contractSlug = result.slug
     } catch (e) {

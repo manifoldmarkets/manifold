@@ -4,7 +4,6 @@ import { z } from 'zod'
 import { MAX_QUESTION_LENGTH } from 'common/contract'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { convertGroup } from 'common/supabase/groups'
-import { log } from 'shared/utils'
 const bodySchema = z
   .object({
     question: z.string().min(1).max(MAX_QUESTION_LENGTH),
@@ -21,12 +20,12 @@ const GROUPS_SLUGS_TO_IGNORE = [
   'test',
   'sf-bay-rationalists',
 ]
-export const getsimilargroupstocontract = authEndpoint(async (req) => {
+export const getsimilargroupstocontract = authEndpoint(async (req, _, log) => {
   const { question } = bodySchema.parse(req.body)
   const embedding = await generateEmbeddings(question)
   if (!embedding) return { error: 'Failed to generate embeddings' }
   const pg = createSupabaseDirectClient()
-  log('Finding similar groups to', question)
+  log('Finding similar groups to' + question)
   const groups = await pg.map(
     `
       select *, (embedding <=> ($1)::vector) as distance from groups
@@ -40,7 +39,7 @@ export const getsimilargroupstocontract = authEndpoint(async (req) => {
     `,
     [embedding, GROUPS_SLUGS_TO_IGNORE],
     (group) => {
-      log('group:', group.name, 'distance:', group.distance)
+      log('group: ' + group.name + ' distance: ' + group.distance)
       return convertGroup(group)
     }
   )

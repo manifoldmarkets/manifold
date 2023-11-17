@@ -13,7 +13,7 @@ const bodySchema = z
   })
   .strict()
 
-export const deleteMarket = authEndpoint(async (req, auth) => {
+export const deleteMarket = authEndpoint(async (req, auth, log) => {
   const { contractId } = validate(bodySchema, req.body)
   const contractDoc = firestore.doc(`contracts/${contractId}`)
   const contractSnap = await contractDoc.get()
@@ -41,7 +41,7 @@ export const deleteMarket = authEndpoint(async (req, auth) => {
   await new Promise((resolve) => setTimeout(resolve, 3000))
   await revalidateStaticProps(contractPath(contract))
 
-  console.log('contract ', contractId, 'deleted')
+  log('contract ' + contractId + ' deleted')
 
   return { status: 'success' }
 })

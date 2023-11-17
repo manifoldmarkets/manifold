@@ -21,6 +21,7 @@ import { floatingEqual } from 'common/util/math'
 import { noFees } from 'common/fees'
 import { getCpmmInitialLiquidity } from 'common/antes'
 import { addUserToContractFollowers } from 'shared/follow-market'
+import { GCPLog } from 'shared/utils'
 
 const bodySchema = z
   .object({
@@ -29,9 +30,9 @@ const bodySchema = z
   })
   .strict()
 
-export const createanswercpmm = authEndpoint(async (req, auth) => {
+export const createanswercpmm = authEndpoint(async (req, auth, log) => {
   const { contractId, text } = validate(bodySchema, req.body)
-  console.log('Received', contractId, text)
+  log('Received ' + contractId + ' ' + text)
 
   // Run as transaction to prevent race conditions.
   const { newAnswerId, contract } = await firestore.runTransaction(
@@ -105,7 +106,8 @@ export const createanswercpmm = authEndpoint(async (req, auth) => {
           user,
           contract,
           answers,
-          newAnswer
+          newAnswer,
+          log
         )
       } else {
         const newAnswerDoc = contractDoc
@@ -149,7 +151,8 @@ async function createAnswerAndSumAnswersToOne(
   user: User,
   contract: CPMMMultiContract,
   answers: Answer[],
-  newAnswer: Answer
+  newAnswer: Answer,
+  log: GCPLog
 ) {
   const [otherAnswers, answersWithoutOther] = partition(
     answers,
@@ -249,19 +252,17 @@ async function createAnswerAndSumAnswersToOne(
     balanceByUserId
   )
 
-  console.log('New answer', newAnswer)
-  console.log('Other answer', updatedOtherAnswer)
-  console.log('extraMana', extraMana)
-  console.log(
-    'bet amounts',
-    betResults.map((r) =>
+  log('New answer', { newAnswer })
+  log('Other answer', { updatedOtherAnswer })
+  log('extraMana ' + extraMana)
+  log('bet amounts', {
+    amounts: betResults.map((r) =>
       sumBy(r.takers.slice(0, r.takers.length - 1), (t) => t.amount)
     ),
-    'shares',
-    betResults.map((r) =>
+    shares: betResults.map((r) =>
       sumBy(r.takers.slice(0, r.takers.length - 1), (t) => t.shares)
-    )
-  )
+    ),
+  })
 
   transaction.create(newAnswerDoc, newAnswer)
   transaction.update(
@@ -278,15 +279,13 @@ async function createAnswerAndSumAnswersToOne(
   for (const [answerId, pool] of Object.entries(poolsByAnswer)) {
     const { YES: poolYes, NO: poolNo } = pool
     const prob = poolNo / (poolYes + poolNo)
-    console.log(
-      'After arbitrage answer',
-      newAnswer.text,
-      'with',
+    log('After arbitrage answer ', {
+      answerText: newAnswer.text,
+      answerId,
       poolYes,
       poolNo,
-      'prob',
-      prob
-    )
+      prob,
+    })
   }
   const newPoolsByAnswer = addCpmmMultiLiquidityAnswersSumToOne(
     poolsByAnswer,
@@ -308,21 +307,18 @@ async function createAnswerAndSumAnswersToOne(
     const pool = newPoolsByAnswer[answer.id]
     const { YES: poolYes, NO: poolNo } = pool
     const prob = getCpmmProbability(pool, 0.5)
-    console.log(
-      'Updating answer',
-      answer.text,
-      'with',
+    log('Updating answer ', {
+      answerText: answer.text,
       poolYes,
       poolNo,
-      'prob',
-      prob
-    )
+      prob,
+    })
     transaction.update(contractDoc.collection('answersCpmm').doc(answer.id), {
       poolYes,
       poolNo,
       prob,
     })
-    updateMakers(makers, betDoc.id, contractDoc, transaction)
+    updateMakers(makers, betDoc.id, contractDoc, transaction, log)
     for (const bet of ordersToCancel) {
       transaction.update(contractDoc.collection('bets').doc(bet.id), {
         isCancelled: true,
