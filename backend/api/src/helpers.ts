@@ -4,7 +4,7 @@ import { Request, Response, NextFunction } from 'express'
 
 import { PrivateUser } from 'common/user'
 import { APIError } from 'common/api'
-import { gcpLog, GCPLog, log } from 'shared/utils'
+import { gLog, GCPLog, log } from 'shared/utils'
 export { APIError } from 'common/api'
 import * as crypto from 'crypto'
 
@@ -129,10 +129,10 @@ const getLogs = (req: Request) => {
     : crypto.randomUUID()
 
   const log = (message: any, details?: object) =>
-    gcpLog.debug(message, { ...details, endpoint: req.path, traceId })
+    gLog.debug(message, { ...details, endpoint: req.path, traceId })
 
   const logError = (message: any, details?: object) =>
-    gcpLog.error(message, { ...details, endpoint: req.path, traceId })
+    gLog.error(message, { ...details, endpoint: req.path, traceId })
   return { log, logError }
 }
 export const authEndpoint = <T extends Json>(fn: AuthedHandler<T>) => {

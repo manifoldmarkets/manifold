@@ -7,7 +7,7 @@ import {
   NEW_USER_FEED_DATA_TYPES,
 } from 'common/feed'
 import { Row } from 'common/supabase/utils'
-import { log } from 'shared/utils'
+import { GCPLog } from 'shared/utils'
 import { ITask } from 'pg-promise'
 import { IClient } from 'pg-promise/typescript/pg-subset'
 import { MINUTE_MS, WEEK_MS } from 'common/util/time'
@@ -77,7 +77,8 @@ export const generateNewUserFeedFromContracts = async (
   pg: SupabaseDirectClient,
   userIdFeedSource: string,
   targetContractIds: string[],
-  estimatedRelevance: number
+  estimatedRelevance: number,
+  log: GCPLog
 ) => {
   await pg.tx(async (t) => {
     const relatedFeedItems = await t.map(
@@ -113,7 +114,12 @@ export const generateNewUserFeedFromContracts = async (
           importance_score: undefined, // remove this column
         })
     )
-    log('found related feed items', relatedFeedItems.length, 'for user', userId)
+    log(
+      'found related feed items ' +
+        relatedFeedItems.length +
+        ' for user ' +
+        userId
+    )
     await copyOverFeedItems(userId, relatedFeedItems, t)
     const foundContractIds = relatedFeedItems.map((r) => r.contract_id)
     const missingContractIds = targetContractIds.filter(
@@ -125,7 +131,9 @@ export const generateNewUserFeedFromContracts = async (
       userId,
       estimatedRelevance
     )
-    log('made manual feed rows', manualFeedRows.length, 'for user', userId)
+    log(
+      'made manual feed rows ' + manualFeedRows.length + ' for user ' + userId
+    )
     await copyOverFeedItems(userId, manualFeedRows, t, MINUTE_MS)
   })
 }

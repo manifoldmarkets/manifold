@@ -1,5 +1,5 @@
 import { Cron, CronOptions } from 'croner'
-import { log } from '../utils'
+import { gLog as log } from 'shared/utils'
 
 const DEFAULT_OPTS: CronOptions = {
   timezone: 'America/Los_Angeles',

@@ -30,25 +30,25 @@ export const log = (...args: unknown[]) => {
 export const LEVELS = ['DEBUG', 'INFO', 'WARNING', 'ERROR'] as const
 export type GCPLogLevel = typeof LEVELS[number]
 
+// ian: Not sure if we need this for reference, from mqp's initial log implementation
+type GCPLogOutput = {
+  severity: GCPLogLevel
+  message?: string
+  details: any[]
+}
+
 export type GCPLog = (message: any, details?: object) => void
 
-export const gcpLog = (
-  severity: GCPLogLevel,
-  message: any,
-  details?: object
-) => {
+export const gLog = (severity: GCPLogLevel, message: any, details?: object) => {
   const output = { severity, message: message ?? null, ...(details ?? {}) }
   console.log(JSON.stringify(output))
 }
 
-gcpLog.debug = (message: any, details?: object) =>
-  gcpLog('DEBUG', message, details)
-gcpLog.info = (message: any, details?: object) =>
-  gcpLog('INFO', message, details)
-gcpLog.warn = (message: any, details?: object) =>
-  gcpLog('WARNING', message, details)
-gcpLog.error = (message: any, details?: object) =>
-  gcpLog('ERROR', message, details)
+gLog.debug = (message: any, details?: object) => gLog('DEBUG', message, details)
+gLog.info = (message: any, details?: object) => gLog('INFO', message, details)
+gLog.warn = (message: any, details?: object) =>
+  gLog('WARNING', message, details)
+gLog.error = (message: any, details?: object) => gLog('ERROR', message, details)
 
 export const logMemory = () => {
   const used = process.memoryUsage()
