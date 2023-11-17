@@ -7,23 +7,28 @@ import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { useUser } from 'web/hooks/use-user'
 import { AddAMatchButton } from '../add-a-match-button'
 import { MatchTile } from './match-tile'
+import { User } from 'common/user'
+import { Lover } from 'common/love/lover'
 
-export const Matches = (props: { userId: string }) => {
-  const { userId } = props
+export const Matches = (props: {
+  profileLover: Lover
+  profileUserId: string
+}) => {
+  const { profileLover, profileUserId } = props
   const lovers = useLovers()
-  const matches = useMatches(userId)
+  const matches = useMatches(profileUserId)
   const user = useUser()
 
   if (!lovers || !matches) return <LoadingIndicator />
 
-  const lover = lovers.find((lover) => lover.user_id === userId)
+  const lover = lovers.find((lover) => lover.user_id === profileUserId)
 
   const matchesSet = new Set([
     ...matches.map((contract) => contract.loverUserId1),
     ...matches.map((contract) => contract.loverUserId2),
   ])
   const potentialLovers = lovers
-    .filter((l) => l.user_id !== userId)
+    .filter((l) => l.user_id !== profileUserId)
     .filter((l) => !matchesSet.has(l.user_id))
     .filter((l) => !lover || areGenderCompatible(lover, l))
     .filter((l) => l.looking_for_matches)
@@ -49,10 +54,10 @@ export const Matches = (props: { userId: string }) => {
 
       return highestUnresolvedProbabilityB - highestUnresolvedProbabilityA
     })
-  const areYourMatches = userId === user?.id
+  const areYourMatches = profileUserId === user?.id
 
   return (
-    <Col className=" w-full gap-2 ">
+    <Col className=" w-full ">
       {currentMatches.length > 0 ? (
         <Col>
           <div className="text-lg font-semibold">
@@ -61,7 +66,7 @@ export const Matches = (props: { userId: string }) => {
           <Carousel>
             {currentMatches.map((contract) => {
               const matchedLoverId =
-                contract.loverUserId1 === userId
+                contract.loverUserId1 === profileUserId
                   ? contract.loverUserId2
                   : contract.loverUserId1
               const matchedLover = lovers.find(
@@ -75,6 +80,7 @@ export const Matches = (props: { userId: string }) => {
                     contract={contract}
                     answers={contract.answers}
                     lover={matchedLover}
+                    profileLover={profileLover}
                     isYourMatch={areYourMatches}
                   />
                 )
@@ -83,9 +89,7 @@ export const Matches = (props: { userId: string }) => {
           </Carousel>
         </Col>
       ) : (
-        <Col>
-          <span className={'text-ink-500 text-sm'}>No matches yet.</span>
-        </Col>
+        <></>
       )}
 
       {lover && (

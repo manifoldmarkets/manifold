@@ -143,8 +143,7 @@ function LoverContent(props: {
   currentUser: User | null
   refreshLover: () => void
 }) {
-  const { isCurrentUser, user, lover, currentUser, refreshLover } =
-    props
+  const { isCurrentUser, user, lover, currentUser, refreshLover } = props
 
   if (!currentUser) {
     return (
@@ -163,7 +162,9 @@ function LoverContent(props: {
   }
   return (
     <>
-      {lover.looking_for_matches && <Matches userId={user.id} />}
+      {lover.looking_for_matches && (
+        <Matches profileLover={lover} profileUserId={user.id} />
+      )}
       <LoverAbout lover={lover} />
       <LoverBio
         isCurrentUser={isCurrentUser}

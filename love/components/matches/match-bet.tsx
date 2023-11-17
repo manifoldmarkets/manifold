@@ -19,8 +19,9 @@ export function MatchBetButton(props: {
   answer: Answer
   answers: Answer[]
   user: User
+  modalHeader?: React.ReactNode
 }) {
-  const { contract, answer, answers, user } = props
+  const { contract, answer, answers, user, modalHeader } = props
   const [open, setOpen] = useState(false)
   return (
     <>
@@ -44,6 +45,7 @@ export function MatchBetButton(props: {
         )}
       >
         <Col>
+          {modalHeader}
           <Link href={contractPath(contract)}>
             <Subtitle className={clsx('!mb-4 !mt-0 !text-xl', linkClass)}>
               {answer.text}
