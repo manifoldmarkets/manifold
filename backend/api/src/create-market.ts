@@ -34,7 +34,7 @@ import {
 import { randomString } from 'common/util/random'
 import { slugify } from 'common/util/slugify'
 import { getCloseDate } from 'shared/helpers/openai-utils'
-import { getUser, htmlToRichText, isProd } from 'shared/utils'
+import { GCPLog, getUser, htmlToRichText, isProd } from 'shared/utils'
 import { canUserAddGroupToMarket } from './add-contract-to-group'
 import { APIError, AuthedUser, authEndpoint, validate } from './helpers'
 import { STONK_INITIAL_PROB } from 'common/stonk'
@@ -48,11 +48,15 @@ import { addGroupToContract } from 'shared/update-group-contracts-internal'
 import { generateContractEmbeddings } from 'shared/supabase/contracts'
 import { manifoldLoveUserId } from 'common/love/constants'
 
-export const createmarket = authEndpoint(async (req, auth) => {
-  return createMarketHelper(req.body, auth)
+export const createmarket = authEndpoint(async (req, auth, log) => {
+  return createMarketHelper(req.body, auth, log)
 })
 
-export async function createMarketHelper(body: any, auth: AuthedUser) {
+export async function createMarketHelper(
+  body: any,
+  auth: AuthedUser,
+  log: GCPLog
+) {
   const {
     question,
     description,
@@ -179,13 +183,13 @@ export async function createMarketHelper(body: any, auth: AuthedUser) {
     )
   })
 
-  console.log(
-    'created contract for',
-    user.username,
-    'on',
-    question,
-    'ante:',
-    ante || 0
+  log(
+    'created contract for ' +
+      user.username +
+      ' on ' +
+      question +
+      ' ante: ' +
+      ante || 0
   )
 
   if (answers && contract.mechanism === 'cpmm-multi-1')

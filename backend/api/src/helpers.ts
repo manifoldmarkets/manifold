@@ -15,11 +15,13 @@ export type AuthedHandler<T extends Json> = (
   req: Request,
   user: AuthedUser,
   log: GCPLog,
-  error: GCPLog
+  logError: GCPLog
 ) => Promise<T>
 export type MaybeAuthedHandler<T extends Json> = (
   req: Request,
-  user?: AuthedUser
+  user: AuthedUser | undefined,
+  log: GCPLog,
+  logError: GCPLog
 ) => Promise<T>
 
 export type AuthedUser = {
@@ -120,22 +122,24 @@ export const jsonEndpoint = <T extends Json>(fn: JsonHandler<T>) => {
     }
   }
 }
+const getLogs = (req: Request) => {
+  const traceContext = req.get('X-Cloud-Trace-Context')
+  const traceId = traceContext
+    ? traceContext.split('/')[0]
+    : crypto.randomUUID()
 
+  const log = (message: any, details?: object) =>
+    gcpLog.debug(message, { ...details, endpoint: req.path, traceId })
+
+  const logError = (message: any, details?: object) =>
+    gcpLog.error(message, { ...details, endpoint: req.path, traceId })
+  return { log, logError }
+}
 export const authEndpoint = <T extends Json>(fn: AuthedHandler<T>) => {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
       const authedUser = await lookupUser(await parseCredentials(req))
-      const traceContext = req.get('X-Cloud-Trace-Context')
-      const traceId = traceContext
-        ? traceContext.split('/')[0]
-        : crypto.randomUUID()
-
-      const log = (message: any, details?: object) =>
-        gcpLog.debug(message, { ...details, endpoint: req.path, traceId })
-
-      const logError = (message: any, details?: object) =>
-        gcpLog.error(message, { ...details, endpoint: req.path, traceId })
-
+      const { log, logError } = getLogs(req)
       res.status(200).json(await fn(req, authedUser, log, logError))
     } catch (e) {
       next(e)
@@ -152,7 +156,8 @@ export const MaybeAuthedEndpoint = <T extends Json>(
     } catch {}
 
     try {
-      res.status(200).json(await fn(req, authUser))
+      const { log, logError } = getLogs(req)
+      res.status(200).json(await fn(req, authUser, log, logError))
     } catch (e) {
       next(e)
     }

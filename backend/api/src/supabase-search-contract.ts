@@ -12,16 +12,18 @@ import {
 import { getGroupIdFromSlug } from 'shared/supabase/groups'
 import { orderBy, uniqBy } from 'lodash'
 import { convertContract } from 'common/supabase/contracts'
+import { GCPLog } from 'shared/utils'
 
 export const supabasesearchcontracts = MaybeAuthedEndpoint(
-  async (req, auth) => {
-    return await searchContracts(req.body, auth?.uid)
+  async (req, auth, log, logError) => {
+    return await searchContracts(req.body, auth?.uid, log)
   }
 )
 
 export const searchContracts = async (
   body: z.infer<typeof bodySchema>,
-  userId?: string
+  userId: string | undefined,
+  log: GCPLog
 ) => {
   const {
     term,
@@ -89,8 +91,8 @@ export const searchContracts = async (
           }))
           .catch((e) => {
             // to_tsquery is sensitive to special characters and can throw an error
-            console.error(`Error with type: ${searchType} for term: ${term}`)
-            console.error(e)
+            log(`Error with type: ${searchType} for term: ${term}`)
+            log(e)
             return []
           })
       })

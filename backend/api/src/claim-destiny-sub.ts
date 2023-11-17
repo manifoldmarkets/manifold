@@ -12,7 +12,7 @@ const bodySchema = z
   })
   .strict()
 
-export const claimdestinysub = authEndpoint(async (req, auth) => {
+export const claimdestinysub = authEndpoint(async (req, auth, log) => {
   const { destinyUsername } = validate(bodySchema, req.body)
 
   return await firestore.runTransaction(async (trans) => {
@@ -72,11 +72,11 @@ export const claimdestinysub = authEndpoint(async (req, auth) => {
       destinySub2Claimed: true,
     } as Partial<PrivateUser>)
 
-    console.log(
-      'claimed destiny sub for',
-      destinyUsername,
-      'by Manifold user',
-      user.username
+    log(
+      'claimed destiny sub for ' +
+        destinyUsername +
+        ' by Manifold user ' +
+        user.username
     )
 
     return { success: true }

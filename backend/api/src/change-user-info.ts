@@ -28,7 +28,7 @@ const bodySchema = z
   })
   .strict()
 
-export const changeuserinfo = authEndpoint(async (req, auth, log) => {
+export const changeuserinfo = authEndpoint(async (req, auth, log, logError) => {
   const { username, name, avatarUrl } = validate(bodySchema, req.body)
 
   const user = await getUser(auth.uid)
@@ -55,7 +55,7 @@ export const changeuserinfo = authEndpoint(async (req, auth, log) => {
     )
     return { message: 'Successfully changed user info.' }
   } catch (e) {
-    console.error(e)
+    logError(e)
     throw new APIError(500, 'update failed, please revert changes')
   }
 })

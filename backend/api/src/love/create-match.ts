@@ -149,7 +149,8 @@ See [FAQ](https://manifold.love/faq) for more details.`,
       loverUserId1: userId1,
       loverUserId2: userId2,
     },
-    { uid: manifoldLoveUserId, creds: undefined as any }
+    { uid: manifoldLoveUserId, creds: undefined as any },
+    log
   )) as CPMMMultiContract
 
   const { answers } = contract

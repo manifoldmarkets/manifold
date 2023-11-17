@@ -304,7 +304,9 @@ export const sellshares = authEndpoint(async (req, auth, log) => {
 
   const allMakers = [...makers, ...otherResultsWithBet.flatMap((r) => r.makers)]
   const userIds = uniq(allMakers.map((maker) => maker.bet.userId))
-  await Promise.all(userIds.map((userId) => redeemShares(userId, contract)))
+  await Promise.all(
+    userIds.map((userId) => redeemShares(userId, contract, log))
+  )
   log('Share redemption transaction finished.')
 
   return { status: 'success', ...newBet, betId: betId }
