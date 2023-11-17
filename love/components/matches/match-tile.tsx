@@ -1,17 +1,17 @@
 import { useState } from 'react'
-
+import Link from 'next/link'
+import Image from 'next/image'
 import { UserIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
+
 import { Answer } from 'common/answer'
 import { CPMMMultiContract } from 'common/contract'
 import { Lover } from 'common/love/lover'
-import Image from 'next/image'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { useAnswersCpmm } from 'web/hooks/use-answers'
 import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
 import { useUser } from 'web/hooks/use-user'
-
 import { formatPercent } from 'common/util/format'
 import { CommentsButton } from 'web/components/comments/comments-button'
 import { SendMessageButton } from 'web/components/messaging/send-message-button'
@@ -73,14 +73,16 @@ export const MatchTile = (props: {
       </div>
       <Col className="relative h-36 w-full overflow-hidden">
         {pinned_url ? (
-          <Image
-            src={pinned_url}
-            // You must set these so we don't pay an extra $1k/month to vercel
-            width={180}
-            height={240}
-            alt={`${user.username}`}
-            className="h-full w-full object-cover"
-          />
+          <Link href={`/${user.username}`}>
+            <Image
+              src={pinned_url}
+              // You must set these so we don't pay an extra $1k/month to vercel
+              width={180}
+              height={240}
+              alt={`${user.username}`}
+              className="h-full w-full object-cover"
+            />
+          </Link>
         ) : (
           <Col className="bg-ink-300 h-full w-full items-center justify-center">
             <UserIcon className="h-20 w-20" />
