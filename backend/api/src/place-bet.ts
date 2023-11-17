@@ -22,7 +22,7 @@ import { addObjects, removeUndefinedProps } from 'common/util/object'
 import { Bet, LimitBet } from 'common/bet'
 import { floatingEqual } from 'common/util/math'
 import { redeemShares } from './redeem-shares'
-import { log } from 'shared/utils'
+import { GCPLog } from 'shared/utils'
 import { filterDefined } from 'common/util/array'
 import { createLimitBetCanceledNotification } from 'shared/create-notification'
 import { Answer } from 'common/answer'
@@ -55,21 +55,22 @@ const numericSchema = z.object({
   value: z.number(),
 })
 
-export const placebet = authEndpoint(async (req, auth) => {
-  log(`Inside endpoint handler for ${auth.uid}.`)
+export const placebet = authEndpoint(async (req, auth, log) => {
+  log.debug(`Inside endpoint handler for ${auth.uid}.`)
   const isApi = auth.creds.kind === 'key'
-  return await placeBetMain(req.body, auth.uid, isApi)
+  return await placeBetMain(req.body, auth.uid, isApi, log)
 })
 
 export const placeBetMain = async (
   body: unknown,
   uid: string,
-  isApi: boolean
+  isApi: boolean,
+  log: GCPLog
 ) => {
   const { amount, contractId, replyToCommentId } = validate(bodySchema, body)
 
   const result = await firestore.runTransaction(async (trans) => {
-    log(`Inside main transaction for ${uid}.`)
+    log.debug(`Inside main transaction for ${uid}.`)
     const contractDoc = firestore.doc(`contracts/${contractId}`)
     const userDoc = firestore.doc(`users/${uid}`)
     const [contractSnap, userSnap] = await trans.getAll(contractDoc, userDoc)
@@ -80,7 +81,7 @@ export const placeBetMain = async (
     const contract = contractSnap.data() as Contract
     const user = userSnap.data() as User
     if (user.balance < amount) throw new APIError(403, 'Insufficient balance.')
-    log(
+    log.debug(
       `Loaded user ${user.username} with id ${user.id} betting on slug ${contract.slug} with contract id: ${contract.id}.`
     )
 
@@ -136,7 +137,7 @@ export const placeBetMain = async (
           limitProb = Math.round(limitProb * 100) / 100
         }
 
-        log(
+        log.debug(
           `Checking for limit orders in placebet for user ${uid} on contract id ${contractId}.`
         )
         const { unfilledBets, balanceByUserId } =
@@ -226,7 +227,9 @@ export const placeBetMain = async (
         )
       }
     })()
-    log(`Calculated new bet information for ${user.username} - auth ${uid}.`)
+    log.debug(
+      `Calculated new bet information for ${user.username} - auth ${uid}.`
+    )
 
     if (
       mechanism == 'cpmm-1' &&
@@ -274,10 +277,10 @@ export const placeBetMain = async (
         ...newBet,
       })
     )
-    log(`Created new bet document for ${user.username} - auth ${uid}.`)
+    log.debug(`Created new bet document for ${user.username} - auth ${uid}.`)
 
     if (makers) {
-      updateMakers(makers, betDoc.id, contractDoc, trans)
+      updateMakers(makers, betDoc.id, contractDoc, trans, log)
     }
     if (ordersToCancel) {
       for (const bet of ordersToCancel) {
@@ -288,7 +291,7 @@ export const placeBetMain = async (
     }
 
     trans.update(userDoc, { balance: FieldValue.increment(-newBet.amount) })
-    log(`Updated user ${user.username} balance - auth ${uid}.`)
+    log.debug(`Updated user ${user.username} balance - auth ${uid}.`)
 
     if (newBet.amount !== 0) {
       if (newBet.answerId) {
@@ -357,7 +360,7 @@ export const placeBetMain = async (
               })
             )
           }
-          updateMakers(makers, betDoc.id, contractDoc, trans)
+          updateMakers(makers, betDoc.id, contractDoc, trans, log)
           for (const bet of ordersToCancel) {
             trans.update(contractDoc.collection('bets').doc(bet.id), {
               isCancelled: true,
@@ -366,13 +369,13 @@ export const placeBetMain = async (
         }
       }
 
-      log(`Updated contract ${contract.slug} properties - auth ${uid}.`)
+      log.debug(`Updated contract ${contract.slug} properties - auth ${uid}.`)
     }
 
     return { newBet, betId: betDoc.id, contract, makers, ordersToCancel, user }
   })
 
-  log(`Main transaction finished - auth ${uid}.`)
+  log.debug(`Main transaction finished - auth ${uid}.`)
 
   const { newBet, betId, contract, makers, ordersToCancel, user } = result
   const { mechanism } = contract
@@ -386,7 +389,7 @@ export const placeBetMain = async (
       ...(makers ?? []).map((maker) => maker.bet.userId),
     ])
     await Promise.all(userIds.map((userId) => redeemShares(userId, contract)))
-    log(`Share redemption transaction finished - auth ${uid}.`)
+    log.debug(`Share redemption transaction finished - auth ${uid}.`)
   }
   if (ordersToCancel) {
     await Promise.all(
@@ -457,7 +460,8 @@ export const updateMakers = (
   makers: maker[],
   takerBetId: string,
   contractDoc: DocumentReference,
-  trans: Transaction
+  trans: Transaction,
+  log: GCPLog
 ) => {
   const makersByBet = groupBy(makers, (maker) => maker.bet.id)
   for (const makers of Object.values(makersByBet)) {
@@ -471,7 +475,7 @@ export const updateMakers = (
     const totalAmount = sumBy(fills, 'amount')
     const isFilled = floatingEqual(totalAmount, bet.orderAmount)
 
-    log('Updated a matched limit order.')
+    log.debug('Updated a matched limit order.')
     trans.update(contractDoc.collection('bets').doc(bet.id), {
       fills,
       isFilled,

@@ -4,15 +4,17 @@ import { Request, Response, NextFunction } from 'express'
 
 import { PrivateUser } from 'common/user'
 import { APIError } from 'common/api'
-import { log } from 'shared/utils'
+import { gcpLog, GCPLog, log } from 'shared/utils'
 export { APIError } from 'common/api'
+import * as crypto from 'crypto'
 
 export type Json = Record<string, unknown>
 export type Handler<T> = (req: Request) => Promise<T>
 export type JsonHandler<T extends Json> = Handler<T>
 export type AuthedHandler<T extends Json> = (
   req: Request,
-  user: AuthedUser
+  user: AuthedUser,
+  log: GCPLog
 ) => Promise<T>
 export type MaybeAuthedHandler<T extends Json> = (
   req: Request,
@@ -122,7 +124,23 @@ export const authEndpoint = <T extends Json>(fn: AuthedHandler<T>) => {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
       const authedUser = await lookupUser(await parseCredentials(req))
-      res.status(200).json(await fn(req, authedUser))
+      const traceContext = req.get('X-Cloud-Trace-Context')
+      const traceId = traceContext
+        ? traceContext.split('/')[0]
+        : crypto.randomUUID()
+
+      const log = {
+        debug: (message: any, details?: object) =>
+          gcpLog.debug(message, { ...details, endpoint: req.path, traceId }),
+        info: (message: any, details?: object) =>
+          gcpLog.info(message, { ...details, endpoint: req.path, traceId }),
+        warn: (message: any, details?: object) =>
+          gcpLog.warn(message, { ...details, endpoint: req.path, traceId }),
+        error: (message: any, details?: object) =>
+          gcpLog.error(message, { ...details, endpoint: req.path, traceId }),
+      }
+
+      res.status(200).json(await fn(req, authedUser, log))
     } catch (e) {
       next(e)
     }

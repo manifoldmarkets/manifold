@@ -26,6 +26,35 @@ export const log = (...args: unknown[]) => {
   console.log(`[${new Date().toISOString()}]`, ...args)
 }
 
+// log levels GCP's log explorer recognizes
+export const LEVELS = ['DEBUG', 'INFO', 'WARNING', 'ERROR'] as const
+export type GCPLogLevel = typeof LEVELS[number]
+
+export type GCPLog = {
+  debug: (message: any, details?: object) => void
+  info: (message: any, details?: object) => void
+  warn: (message: any, details?: object) => void
+  error: (message: any, details?: object) => void
+}
+
+export const gcpLog = (
+  severity: GCPLogLevel,
+  message: any,
+  details?: object
+) => {
+  const output = { severity, message: message ?? null, ...(details ?? {}) }
+  console.log(JSON.stringify(output))
+}
+
+gcpLog.debug = (message: any, details?: object) =>
+  gcpLog('DEBUG', message, details)
+gcpLog.info = (message: any, details?: object) =>
+  gcpLog('INFO', message, details)
+gcpLog.warn = (message: any, details?: object) =>
+  gcpLog('WARNING', message, details)
+gcpLog.error = (message: any, details?: object) =>
+  gcpLog('ERROR', message, details)
+
 export const logMemory = () => {
   const used = process.memoryUsage()
   for (const [k, v] of Object.entries(used)) {

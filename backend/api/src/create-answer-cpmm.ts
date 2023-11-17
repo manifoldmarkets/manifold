@@ -21,6 +21,7 @@ import { floatingEqual } from 'common/util/math'
 import { noFees } from 'common/fees'
 import { getCpmmInitialLiquidity } from 'common/antes'
 import { addUserToContractFollowers } from 'shared/follow-market'
+import { GCPLog } from 'shared/utils'
 
 const bodySchema = z
   .object({
@@ -29,7 +30,7 @@ const bodySchema = z
   })
   .strict()
 
-export const createanswercpmm = authEndpoint(async (req, auth) => {
+export const createanswercpmm = authEndpoint(async (req, auth, log) => {
   const { contractId, text } = validate(bodySchema, req.body)
   console.log('Received', contractId, text)
 
@@ -105,7 +106,8 @@ export const createanswercpmm = authEndpoint(async (req, auth) => {
           user,
           contract,
           answers,
-          newAnswer
+          newAnswer,
+          log
         )
       } else {
         const newAnswerDoc = contractDoc
@@ -149,7 +151,8 @@ async function createAnswerAndSumAnswersToOne(
   user: User,
   contract: CPMMMultiContract,
   answers: Answer[],
-  newAnswer: Answer
+  newAnswer: Answer,
+  log: GCPLog
 ) {
   const [otherAnswers, answersWithoutOther] = partition(
     answers,
@@ -322,7 +325,7 @@ async function createAnswerAndSumAnswersToOne(
       poolNo,
       prob,
     })
-    updateMakers(makers, betDoc.id, contractDoc, transaction)
+    updateMakers(makers, betDoc.id, contractDoc, transaction, log)
     for (const bet of ordersToCancel) {
       transaction.update(contractDoc.collection('bets').doc(bet.id), {
         isCancelled: true,

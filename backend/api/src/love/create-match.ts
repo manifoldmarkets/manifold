@@ -6,7 +6,7 @@ import {
   createSupabaseDirectClient,
   SupabaseDirectClient,
 } from 'shared/supabase/init'
-import { getPrivateUser, getUser } from 'shared/utils'
+import { GCPLog, getPrivateUser, getUser } from 'shared/utils'
 import { createMarketHelper } from '../create-market'
 import { CPMMMultiContract, Contract } from 'common/contract'
 import { placeBetMain } from '../place-bet'
@@ -21,7 +21,7 @@ import {
   manifoldLoveUserId,
 } from 'common/love/constants'
 import { sendNewMatchEmail } from 'shared/emails'
-import { DAY_MS, HOUR_MS, MONTH_MS, YEAR_MS } from 'common/util/time'
+import { DAY_MS, HOUR_MS, MONTH_MS } from 'common/util/time'
 
 const createMatchSchema = z.object({
   userId1: z.string(),
@@ -31,16 +31,17 @@ const createMatchSchema = z.object({
 
 const MATCH_CREATION_FEE = 10
 
-export const createMatch = authEndpoint(async (req, auth) => {
+export const createMatch = authEndpoint(async (req, auth, log) => {
   const { userId1, userId2, betAmount } = validate(createMatchSchema, req.body)
-  return await createMatchMain(auth.uid, userId1, userId2, betAmount)
+  return await createMatchMain(auth.uid, userId1, userId2, betAmount, log)
 })
 
 export const createMatchMain = async (
   authUserId: string,
   userId1: string,
   userId2: string,
-  betAmount: number
+  betAmount: number,
+  log: GCPLog
 ) => {
   if (userId1 === userId2) {
     throw new APIError(400, `User ${userId1} cannot match with themselves.`)
@@ -113,7 +114,7 @@ export const createMatchMain = async (
     (c) => !c.isResolved && c.outcomeType === 'MULTIPLE_CHOICE'
   )
   if (unresolvedMultiLoverContracts.length > 0) {
-    console.log('loverContracts', loverContracts)
+    log.debug('loverContracts', loverContracts)
     throw new APIError(400, `Match market already exists.`)
   }
 
@@ -164,7 +165,8 @@ See [FAQ](https://manifold.love/faq) for more details.`,
           outcome: 'NO',
         },
         manifoldLoveUserId,
-        true
+        true,
+        log
       )
     })
   )
@@ -181,7 +183,8 @@ See [FAQ](https://manifold.love/faq) for more details.`,
           outcome: 'YES',
         },
         matchCreator.id,
-        true
+        true,
+        log
       )
     })
   )
