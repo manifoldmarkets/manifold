@@ -63,7 +63,7 @@ export const MatchTile = (props: {
     .trim()
 
   return (
-    <Col className="mb-2 w-[220px] shrink-0 overflow-hidden rounded drop-shadow-lg">
+    <Col className="w-[220px] shrink-0 overflow-hidden rounded">
       <div className="bg-canvas-0 w-full bg-gradient-to-b px-4 py-2">
         <UserLink
           className={
