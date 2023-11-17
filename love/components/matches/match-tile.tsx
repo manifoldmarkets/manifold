@@ -5,7 +5,7 @@ import { UserIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 
 import { Answer } from 'common/answer'
-import { CPMMMultiContract } from 'common/contract'
+import { CPMMMultiContract, contractPath } from 'common/contract'
 import { Lover } from 'common/love/lover'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -13,7 +13,6 @@ import { useAnswersCpmm } from 'web/hooks/use-answers'
 import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
 import { useUser } from 'web/hooks/use-user'
 import { formatPercent } from 'common/util/format'
-import { CommentsButton } from 'web/components/comments/comments-button'
 import { SendMessageButton } from 'web/components/messaging/send-message-button'
 import { UserLink } from 'web/components/widgets/user-link'
 import { ConfirmStageButton } from '../confirm-stage-button'
@@ -21,6 +20,11 @@ import { RejectButton } from '../reject-button'
 import { MatchBetButton } from './match-bet'
 import { MatchPositionsButton } from './match-positions'
 import { MatchTracker } from './match-tracker'
+import Link from 'next/link'
+import { linkClass } from 'web/components/widgets/site-link'
+import { CommentsButton } from '../comments/love-comments-button'
+import { User } from 'common/user'
+import { MatchAvatars } from './match-avatars'
 
 const relationshipStages = [
   '1st date',
@@ -33,9 +37,10 @@ export const MatchTile = (props: {
   contract: CPMMMultiContract
   answers: Answer[]
   lover: Lover
+  profileLover: Lover
   isYourMatch: boolean
 }) => {
-  const { lover, isYourMatch } = props
+  const { lover, isYourMatch, profileLover } = props
   const contract = (useFirebasePublicContract(
     props.contract.visibility,
     props.contract.id
@@ -61,7 +66,7 @@ export const MatchTile = (props: {
     .trim()
 
   return (
-    <Col className="w-[220px] shrink-0 overflow-hidden rounded drop-shadow-lg">
+    <Col className="mb-2 w-[220px] shrink-0 overflow-hidden rounded drop-shadow-lg">
       <div className="bg-canvas-0 w-full bg-gradient-to-b px-4 py-2">
         <UserLink
           className={
@@ -112,7 +117,9 @@ export const MatchTile = (props: {
               <span>
                 Chance of{' '}
                 <span className="font-semibold">
-                  {relationshipStages[stage]}
+                  <Link className={linkClass} href={contractPath(contract)}>
+                    {relationshipStages[stage]}
+                  </Link>
                 </span>
               </span>
               <div className="text-ink-500 text-xs">
@@ -142,13 +149,32 @@ export const MatchTile = (props: {
           </Row>
         </Col>
         <Row className="w-full items-center justify-between gap-2">
-          <MatchPositionsButton contract={contract} answer={answer} />
-          <CommentsButton contract={contract} user={currentUser} />
+          <MatchPositionsButton
+            contract={contract}
+            answer={answer}
+            modalHeader={
+              <MatchAvatars profileLover={profileLover} matchedLover={lover} />
+            }
+          />
+          <CommentsButton
+            contract={contract}
+            user={currentUser}
+            modalHeader={
+              <MatchAvatars profileLover={profileLover} matchedLover={lover} />
+            }
+          />
           <MatchBetButton
             contract={contract}
             answer={answer}
             answers={answers}
             user={user}
+            modalHeader={
+              <MatchAvatars
+                profileLover={profileLover}
+                matchedLover={lover}
+                className="mb-3"
+              />
+            }
           />
           {showConfirmStage && isYourMatch && (
             <ConfirmStageButton

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 
 import { UserIcon } from '@heroicons/react/outline'
 import { Answer } from 'common/answer'
-import { CPMMMultiContract } from 'common/contract'
+import { CPMMMultiContract, contractPath } from 'common/contract'
 import { getCPMMContractUserContractMetrics } from 'common/supabase/contract-metrics'
 import { formatMoney } from 'common/util/format'
 import { Col } from 'web/components/layout/col'
@@ -16,12 +16,16 @@ import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { UserLink } from 'web/components/widgets/user-link'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { db } from 'web/lib/supabase/db'
+import { Tooltip } from 'web/components/widgets/tooltip'
+import Link from 'next/link'
+import { linkClass } from 'web/components/widgets/site-link'
 
 export function MatchPositionsButton(props: {
   contract: CPMMMultiContract
   answer: Answer
+  modalHeader?: React.ReactNode
 }) {
-  const { contract, answer } = props
+  const { contract, answer, modalHeader } = props
   const [open, setOpen] = useState(false)
   const [positions, setPositions] = usePersistentInMemoryState<
     undefined | Awaited<ReturnType<typeof getCPMMContractUserContractMetrics>>
@@ -52,27 +56,35 @@ export function MatchPositionsButton(props: {
 
   return (
     <>
-      <button
-        disabled={totalPositions === 0}
-        className={clsx(
-          'text-ink-500 flex h-full flex-row items-center justify-center gap-1.5 transition-transform'
-        )}
-        onClick={(e) => {
-          e.preventDefault()
-          setOpen(true)
-        }}
-      >
-        <Row className="relative gap-1.5 text-sm">
-          <UserIcon className="h-5 w-5" />
-          {totalPositions}
-        </Row>
-      </button>
-      <Modal open={open} setOpen={setOpen}>
-        <Col className={MODAL_CLASS}>
-          Trades on {answer.text}
-          <MatchPositionsContent positions={positions} />
-        </Col>
-      </Modal>
+      <Tooltip text={`Positions`} placement="top-start" noTap>
+        <button
+          disabled={totalPositions === 0}
+          className={clsx(
+            'text-ink-500 flex h-full flex-row items-center justify-center gap-1.5 transition-transform'
+          )}
+          onClick={(e) => {
+            e.preventDefault()
+            setOpen(true)
+          }}
+        >
+          <Row className="relative gap-1.5 text-sm">
+            <UserIcon className="h-5 w-5" />
+            {totalPositions}
+          </Row>
+        </button>
+        <Modal open={open} setOpen={setOpen}>
+          <Col className={MODAL_CLASS}>
+            {modalHeader}
+            <span>
+              <span className="text-ink-600">Positions on </span>
+              <span className={clsx('text-primary-600', linkClass)}>
+                <Link href={contractPath(contract)}>{answer.text}</Link>
+              </span>
+            </span>
+            <MatchPositionsContent positions={positions} />
+          </Col>
+        </Modal>
+      </Tooltip>
     </>
   )
 }
