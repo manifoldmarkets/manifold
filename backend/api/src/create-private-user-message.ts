@@ -109,7 +109,7 @@ const notifyOtherUserInChannelIfInactive = async (
     `select ts from user_events where user_id = $1 order by ts desc limit 1`,
     [otherUserId.user_id]
   )
-  log('lastUserEvent ' + lastUserEvent + ' for user ' + otherUserId.user_id)
+  log('lastUserEvent for user ' + otherUserId.user_id, lastUserEvent)
   if (lastUserEvent && tsToMillis(lastUserEvent.ts) > Date.now() - HOUR_MS)
     return
 
