@@ -45,7 +45,8 @@ export const updatelover = authEndpoint(async (req, auth, log) => {
   if (!existingLover) {
     throw new APIError(400, 'Lover not found')
   }
-  !parsedBody.last_online_time && log('Updating lover ' + auth.uid, parsedBody)
+  !parsedBody.last_online_time &&
+    log('Updating lover', { userId: auth.uid, parsedBody })
 
   await removePinnedUrlFromPhotoUrls(parsedBody)
   if (parsedBody.avatar_url) {

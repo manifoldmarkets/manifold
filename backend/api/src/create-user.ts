@@ -158,7 +158,7 @@ export const createuser = authEndpoint(async (req, auth, log) => {
     }
   )
 
-  log('created user ' + user.username + ' firebase id: ' + auth.uid)
+  log('created user ', { username: user.username, firebaseId: auth.uid })
   const pg = createSupabaseDirectClient()
   if (fromLove) await onboardLover(user, ip, log)
   await addContractsToSeenMarketsTable(auth.uid, visitedContractIds, pg)
