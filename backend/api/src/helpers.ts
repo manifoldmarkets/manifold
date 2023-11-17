@@ -14,7 +14,8 @@ export type JsonHandler<T extends Json> = Handler<T>
 export type AuthedHandler<T extends Json> = (
   req: Request,
   user: AuthedUser,
-  log: GCPLog
+  log: GCPLog,
+  error: GCPLog
 ) => Promise<T>
 export type MaybeAuthedHandler<T extends Json> = (
   req: Request,
@@ -129,18 +130,13 @@ export const authEndpoint = <T extends Json>(fn: AuthedHandler<T>) => {
         ? traceContext.split('/')[0]
         : crypto.randomUUID()
 
-      const log = {
-        debug: (message: any, details?: object) =>
-          gcpLog.debug(message, { ...details, endpoint: req.path, traceId }),
-        info: (message: any, details?: object) =>
-          gcpLog.info(message, { ...details, endpoint: req.path, traceId }),
-        warn: (message: any, details?: object) =>
-          gcpLog.warn(message, { ...details, endpoint: req.path, traceId }),
-        error: (message: any, details?: object) =>
-          gcpLog.error(message, { ...details, endpoint: req.path, traceId }),
-      }
+      const log = (message: any, details?: object) =>
+        gcpLog.debug(message, { ...details, endpoint: req.path, traceId })
 
-      res.status(200).json(await fn(req, authedUser, log))
+      const error = (message: any, details?: object) =>
+        gcpLog.error(message, { ...details, endpoint: req.path, traceId })
+
+      res.status(200).json(await fn(req, authedUser, log, error))
     } catch (e) {
       next(e)
     }

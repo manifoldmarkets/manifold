@@ -30,12 +30,7 @@ export const log = (...args: unknown[]) => {
 export const LEVELS = ['DEBUG', 'INFO', 'WARNING', 'ERROR'] as const
 export type GCPLogLevel = typeof LEVELS[number]
 
-export type GCPLog = {
-  debug: (message: any, details?: object) => void
-  info: (message: any, details?: object) => void
-  warn: (message: any, details?: object) => void
-  error: (message: any, details?: object) => void
-}
+export type GCPLog = (message: any, details?: object) => void
 
 export const gcpLog = (
   severity: GCPLogLevel,

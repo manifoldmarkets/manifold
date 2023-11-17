@@ -37,7 +37,7 @@ export const sellshares = authEndpoint(async (req, auth, log) => {
     if (answerId) {
       betsQ = betsQ.where('answerId', '==', answerId)
     }
-    log.debug(
+    log(
       `Checking for limit orders and bets in sellshares for user ${auth.uid} on contract id ${contractId}.`
     )
     const [contractSnap, userSnap] = await transaction.getAll(
@@ -305,7 +305,7 @@ export const sellshares = authEndpoint(async (req, auth, log) => {
   const allMakers = [...makers, ...otherResultsWithBet.flatMap((r) => r.makers)]
   const userIds = uniq(allMakers.map((maker) => maker.bet.userId))
   await Promise.all(userIds.map((userId) => redeemShares(userId, contract)))
-  log.debug('Share redemption transaction finished.')
+  log('Share redemption transaction finished.')
 
   return { status: 'success', ...newBet, betId: betId }
 })
