@@ -117,7 +117,7 @@ export function AnswersPanel(props: {
           } else if (sort === 'prob-desc') {
             return -1 * answer.prob
           } else if (sort === 'liquidity') {
-            return 'subsidyPool' in answer ? answer.subsidyPool : 0
+            return 'subsidyPool' in answer ? -answer.subsidyPool : 0
           }
         },
       ]),
