@@ -55,7 +55,16 @@ function OgLover(props: LoveOgProps) {
       }}
     >
       <div className="flex flex-col">
-        <img src={avatarUrl} width={250} height={250} className="rounded-lg" />
+        <img
+          src={avatarUrl}
+          width={250}
+          height={250}
+          className="rounded-lg"
+          style={{
+            objectPosition: 'center',
+            objectFit: 'cover',
+          }}
+        />
 
         {/* Details */}
         <div
@@ -67,9 +76,9 @@ function OgLover(props: LoveOgProps) {
           }}
         >
           <div className="flex flex-row flex-wrap text-gray-50">
-            <span className="break-words font-bold">{name}</span>, {age}
+            <span className="font-bold">{name}</span>, {age}
           </div>
-          <div className="flex flex-row gap-1 text-xs text-gray-50">
+          <div className="flex flex-row text-xs text-gray-50">
             {city} • {capitalize(convertGender(gender as Gender))}
           </div>
         </div>
@@ -81,7 +90,7 @@ function OgLover(props: LoveOgProps) {
         style={{ fontFamily: 'var(--font-main), Figtree-light' }}
       >
         <img
-          className="mr-1.5 h-12 w-12 object-cover"
+          className="mr-1.5 h-12 w-12"
           src="https://manifold.love/manifold_love_logo.svg"
           width={48}
           height={48}
