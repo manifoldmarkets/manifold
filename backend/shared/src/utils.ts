@@ -39,9 +39,23 @@ type GCPLogOutput = {
 
 export type GCPLog = (message: any, details?: object) => void
 
+function replacer(key: string, value: any) {
+  if (typeof value === 'bigint') {
+    return value.toString()
+  } else {
+    return value
+  }
+}
+
 export const gLog = (severity: GCPLogLevel, message: any, details?: object) => {
   const output = { severity, message: message ?? null, ...(details ?? {}) }
-  console.log(JSON.stringify(output))
+  try {
+    const stringified = JSON.stringify(output, replacer)
+    console.log(stringified)
+  } catch (e) {
+    console.error('Could not stringify log output')
+    console.error(e)
+  }
 }
 
 gLog.debug = (message: any, details?: object) => gLog('DEBUG', message, details)
