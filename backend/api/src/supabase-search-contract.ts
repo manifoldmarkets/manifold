@@ -69,10 +69,8 @@ export const searchContracts = async (
       contractDescriptionMatches,
     ] = await Promise.all(
       searchTypes.map(async (searchType) => {
-        const searchTerm =
-          searchType === 'prefix' ? constructPrefixTsQuery(term) : term
         const searchSQL = getSearchContractSQL({
-          term: searchTerm,
+          term,
           filter,
           sort,
           contractType,
@@ -86,7 +84,7 @@ export const searchContracts = async (
           searchType,
         })
         return pg
-          .map(searchSQL, [searchTerm], (r) => ({
+          .map(searchSQL, [], (r) => ({
             data: convertContract(r),
             searchType,
           }))
@@ -173,12 +171,3 @@ const bodySchema = z
     creatorId: z.string().regex(FIRESTORE_DOC_REF_ID_REGEX).optional(),
   })
   .strict()
-
-export const constructPrefixTsQuery = (term: string) => {
-  const trimmed = term.trim()
-  if (trimmed === '') return ''
-  const sanitizedTrimmed = trimmed.replace(/'/g, "''").replace(/[!&|():*]/g, '')
-  const tokens = sanitizedTrimmed.split(' ')
-  tokens[tokens.length - 1] += ':*'
-  return tokens.join(' & ')
-}

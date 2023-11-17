@@ -11,6 +11,7 @@ import {
 } from 'shared/supabase/sql-builder'
 import { getContractPrivacyWhereSQLFilter } from 'shared/supabase/contracts'
 import { PROD_MANIFOLD_LOVE_GROUP_SLUG } from 'common/envs/constants'
+import { constructPrefixTsQuery } from 'shared/helpers/search'
 
 export async function getForYouMarkets(userId: string, limit = 25) {
   const searchMarketSQL = getForYouSQL(userId, 'all', 'ALL', limit, 0)
@@ -155,15 +156,19 @@ export function getSearchContractSQL(args: {
 
     term.length && [
       searchType === 'prefix' &&
-        where(`question_fts @@ to_tsquery('english', $1)`),
+        where(
+          `question_fts @@ to_tsquery('english', $1)`,
+          constructPrefixTsQuery(term)
+        ),
       searchType === 'without-stopwords' &&
-        where(`question_fts @@ websearch_to_tsquery('english', $1)`),
+        where(`question_fts @@ websearch_to_tsquery('english', $1)`, term),
       searchType === 'with-stopwords' &&
         where(
-          `question_nostop_fts @@ websearch_to_tsquery('english_nostop_with_prefix', $1)`
+          `question_nostop_fts @@ websearch_to_tsquery('english_nostop_with_prefix', $1)`,
+          term
         ),
       searchType === 'description' &&
-        where(`description_fts @@ websearch_to_tsquery('english', $1)`),
+        where(`description_fts @@ websearch_to_tsquery('english', $1)`, term),
     ],
 
     orderBy(getSearchContractSortSQL(sort)),
