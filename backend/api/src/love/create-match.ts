@@ -23,10 +23,12 @@ import {
 import { sendNewMatchEmail } from 'shared/emails'
 import { DAY_MS, HOUR_MS, MONTH_MS } from 'common/util/time'
 
+const MIN_BET_AMOUNT_FOR_NEW_MATCH = 50
+
 const createMatchSchema = z.object({
   userId1: z.string(),
   userId2: z.string(),
-  betAmount: z.number().min(20),
+  betAmount: z.number().min(MIN_BET_AMOUNT_FOR_NEW_MATCH),
 })
 
 const MATCH_CREATION_FEE = 10
@@ -156,7 +158,7 @@ See [FAQ](https://manifold.love/faq) for more details.`,
 
   const { answers } = contract
 
-  const noBetAmounts = [300, 300, 100, 300]
+  const noBetAmounts = [500, 300, 150, 300]
   await Promise.all(
     answers.map(async (a, i) => {
       await placeBetMain(

@@ -251,10 +251,10 @@ export const placeBetMain = async (
         }
       } else if (contract.outcomeType === 'MULTIPLE_CHOICE') {
         const prob = getCpmmProbability(newPool, 0.5)
-        if (prob < 0.1) {
+        if (prob < 0.05) {
           throw new APIError(
             403,
-            'Minimum of 10% probability in relationship markets.'
+            'Minimum of 5% probability in relationship markets.'
           )
         }
       }

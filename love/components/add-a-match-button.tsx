@@ -14,6 +14,8 @@ import { createMatch } from 'web/lib/firebase/love/api'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { Lover } from 'common/love/lover'
 
+const MIN_BET_AMOUNT_FOR_NEW_MATCH = 50
+
 export const AddAMatchButton = (props: {
   lover: Lover
   potentialLovers: Lover[]
@@ -23,7 +25,9 @@ export const AddAMatchButton = (props: {
 
   const [dialogOpen, setDialogOpen] = useState(false)
   const [selectedMatchId, setSelectedMatchId] = useState<string | null>(null)
-  const [betAmount, setBetAmount] = useState<number | undefined>(20)
+  const [betAmount, setBetAmount] = useState<number | undefined>(
+    MIN_BET_AMOUNT_FOR_NEW_MATCH
+  )
   const [isSubmitting, setIsSubmitting] = useState(false)
   const currentUser = useUser()
 
@@ -185,7 +189,7 @@ const AddMatchDialog = (props: {
             <BuyAmountInput
               amount={betAmount}
               onChange={setBetAmount}
-              minimumAmount={20}
+              minimumAmount={MIN_BET_AMOUNT_FOR_NEW_MATCH}
               error={error}
               setError={setError}
               showBalance
@@ -203,7 +207,10 @@ const AddMatchDialog = (props: {
           color="green"
           onClick={() => submit()}
           disabled={
-            !selectedMatchId || isSubmitting || !betAmount || betAmount < 20
+            !selectedMatchId ||
+            isSubmitting ||
+            !betAmount ||
+            betAmount < MIN_BET_AMOUNT_FOR_NEW_MATCH
           }
           loading={isSubmitting}
         >
