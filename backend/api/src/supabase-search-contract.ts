@@ -16,14 +16,15 @@ import { GCPLog } from 'shared/utils'
 
 export const supabasesearchcontracts = MaybeAuthedEndpoint(
   async (req, auth, log, logError) => {
-    return await searchContracts(req.body, auth?.uid, log)
+    return await searchContracts(req.body, auth?.uid, log, logError)
   }
 )
 
 export const searchContracts = async (
   body: z.infer<typeof bodySchema>,
   userId: string | undefined,
-  log: GCPLog
+  log: GCPLog,
+  logError: GCPLog
 ) => {
   const {
     term,
@@ -91,8 +92,8 @@ export const searchContracts = async (
           }))
           .catch((e) => {
             // to_tsquery is sensitive to special characters and can throw an error
-            log(`Error with type: ${searchType} for term: ${term}`)
-            log(e)
+            logError(`Error with type: ${searchType} for term: ${term}`)
+            logError(e)
             return []
           })
       })
