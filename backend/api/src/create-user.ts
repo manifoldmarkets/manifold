@@ -15,7 +15,7 @@ import { getStorage } from 'firebase-admin/storage'
 import { DEV_CONFIG } from 'common/envs/dev'
 import { PROD_CONFIG } from 'common/envs/prod'
 import { RESERVED_PATHS } from 'common/envs/constants'
-import { isProd, log } from 'shared/utils'
+import { GCPLog, isProd } from 'shared/utils'
 import { trackSignupFB } from 'shared/fb-analytics'
 import {
   getAverageContractEmbedding,
@@ -42,7 +42,7 @@ const bodySchema = z
   })
   .strict()
 
-export const createuser = authEndpoint(async (req, auth) => {
+export const createuser = authEndpoint(async (req, auth, log) => {
   const {
     deviceToken: preDeviceToken,
     adminToken,
@@ -158,11 +158,11 @@ export const createuser = authEndpoint(async (req, auth) => {
     }
   )
 
-  console.log('created user', user.username, 'firebase id:', auth.uid)
+  log('created user ' + user.username + ' firebase id: ' + auth.uid)
   const pg = createSupabaseDirectClient()
-  if (fromLove) await onboardLover(user, ip)
+  if (fromLove) await onboardLover(user, ip, log)
   await addContractsToSeenMarketsTable(auth.uid, visitedContractIds, pg)
-  await upsertNewUserEmbeddings(auth.uid, visitedContractIds, pg)
+  await upsertNewUserEmbeddings(auth.uid, visitedContractIds, pg, log)
   const interestingContractIds = await getImportantContractsForNewUsers(100, pg)
   await generateNewUserFeedFromContracts(
     auth.uid,
@@ -180,8 +180,8 @@ export const createuser = authEndpoint(async (req, auth) => {
       user.id,
       email ?? '',
       ip
-    ).catch((e) => console.log('error fb tracking:', e))
-  else console.log('no FB_ACCESS_TOKEN')
+    ).catch((e) => log('error fb tracking:', e))
+  else log('no FB_ACCESS_TOKEN')
 
   return { user, privateUser }
 })
@@ -207,9 +207,12 @@ async function addContractsToSeenMarketsTable(
 async function upsertNewUserEmbeddings(
   userId: string,
   visitedContractIds: string[] | undefined,
-  pg: SupabaseDirectClient
+  pg: SupabaseDirectClient,
+  log: GCPLog
 ): Promise<void> {
-  log('Averaging contract embeddings for user', userId, visitedContractIds)
+  log('Averaging contract embeddings for user ' + userId, {
+    visitedContractIds,
+  })
   let embed = await getAverageContractEmbedding(pg, visitedContractIds)
   if (!embed) embed = await getDefaultEmbedding(pg)
   const groupIds =
@@ -222,7 +225,7 @@ async function upsertNewUserEmbeddings(
           (r) => r.group_id
         )
       : []
-  log('Averaging group embeddings for user', userId, groupIds)
+  log('Averaging group embeddings for user ' + userId, { groupIds })
   let groupEmbed = await getAverageGroupEmbedding(pg, groupIds)
   if (groupEmbed) {
     embed = normalizeAndAverageVectors([embed, embed, groupEmbed])

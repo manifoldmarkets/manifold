@@ -23,8 +23,8 @@ import {
   revalidateStaticProps,
   isProd,
   getValues,
-  log,
   checkAndMergePayouts,
+  GCPLog,
 } from './utils'
 import { getLoanPayouts, getPayouts, groupPayoutsByUser } from 'common/payouts'
 import { APIError } from 'common/api'
@@ -46,7 +46,8 @@ export const resolveMarketHelper = async (
   unresolvedContract: Contract,
   resolver: User,
   creator: User,
-  { value, resolutions, probabilityInt, outcome, answerId }: ResolutionParams
+  { value, resolutions, probabilityInt, outcome, answerId }: ResolutionParams,
+  log: GCPLog
 ) => {
   const { closeTime, id: contractId } = unresolvedContract
 
@@ -111,7 +112,7 @@ export const resolveMarketHelper = async (
     (p) => p <= negPayoutThreshold
   )
 
-  console.log('negative payouts', negativePayouts)
+  log('negative payouts', { negativePayouts })
 
   if (
     outcome === 'CANCEL' &&
@@ -146,11 +147,11 @@ export const resolveMarketHelper = async (
   }
   await contractDoc.update(contract)
 
-  console.log('contract ', contractId, 'resolved to:', outcome)
+  log('contract ' + contractId + ' resolved to: ' + outcome)
 
   if (!answerId) {
     await updateContractMetricsForUsers(contract, bets)
-    await undoUniqueBettorRewardsIfCancelResolution(contract, outcome)
+    await undoUniqueBettorRewardsIfCancelResolution(contract, outcome, log)
   }
   await revalidateStaticProps(contractPath(contract))
 
@@ -288,7 +289,8 @@ export const getDataAndPayoutInfo = async (
 }
 async function undoUniqueBettorRewardsIfCancelResolution(
   contract: Contract,
-  outcome: string
+  outcome: string,
+  log: GCPLog
 ) {
   if (outcome === 'CANCEL') {
     const creatorsBonusTxns = await getValues<Txn>(
@@ -301,9 +303,9 @@ async function undoUniqueBettorRewardsIfCancelResolution(
     const bonusTxnsOnThisContract = creatorsBonusTxns.filter(
       (txn) => txn.data && txn.data.contractId === contract.id
     )
-    log('total bonusTxnsOnThisContract', bonusTxnsOnThisContract.length)
+    log('total bonusTxnsOnThisContract ' + bonusTxnsOnThisContract.length)
     const totalBonusAmount = sumBy(bonusTxnsOnThisContract, (txn) => txn.amount)
-    log('totalBonusAmount to be withdrawn', totalBonusAmount)
+    log('totalBonusAmount to be withdrawn ' + totalBonusAmount)
     const result = await firestore.runTransaction(async (trans) => {
       const bonusTxn = {
         fromId: contract.creatorId,
@@ -324,14 +326,12 @@ async function undoUniqueBettorRewardsIfCancelResolution(
 
     if (result.status != 'success' || !result.txn) {
       log(
-        `Couldn't cancel bonus for user: ${contract.creatorId} - status:`,
-        result.status
+        `Couldn't cancel bonus for user: ${contract.creatorId} - status: ${result.status}`
       )
-      log('message:', result.message)
+      log('message: ' + result.message)
     } else {
       log(
-        `Cancel Bonus txn for user: ${contract.creatorId} completed:`,
-        result.txn?.id
+        `Cancel Bonus txn for user: ${contract.creatorId} completed: ${result.txn?.id}`
       )
     }
   }

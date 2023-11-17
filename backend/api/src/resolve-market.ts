@@ -80,7 +80,7 @@ const pseudoNumericSchema = z.union([
   }),
 ])
 
-export const resolvemarket = authEndpoint(async (req, auth) => {
+export const resolvemarket = authEndpoint(async (req, auth, log) => {
   const { contractId } = validate(bodySchema, req.body)
   const contractDoc = firestore.doc(`contracts/${contractId}`)
   const contractSnap = await contractDoc.get()
@@ -112,15 +112,23 @@ export const resolvemarket = authEndpoint(async (req, auth) => {
 
   const resolutionParams = getResolutionParams(contract, req.body)
 
-  console.log(
-    'Resolving market',
-    contract.slug,
-    contractId,
-    'with params',
-    resolutionParams
+  log(
+    'Resolving market ' +
+      contract.slug +
+      ' ' +
+      contractId +
+      ' ' +
+      'with params',
+    { resolutionParams }
   )
 
-  return await resolveMarketHelper(contract, caller, creator, resolutionParams)
+  return await resolveMarketHelper(
+    contract,
+    caller,
+    creator,
+    resolutionParams,
+    log
+  )
 })
 
 function getResolutionParams(contract: Contract, body: string) {

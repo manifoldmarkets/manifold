@@ -12,10 +12,11 @@ import { removeUndefinedProps } from 'common/util/object'
 import { RESERVED_PATHS } from 'common/envs/constants'
 import * as admin from 'firebase-admin'
 import { uniq } from 'lodash'
-import { log, getUser, getUserByUsername } from 'shared/utils'
+import { getUser, getUserByUsername } from 'shared/utils'
 import { z } from 'zod'
 import { APIError, authEndpoint, validate } from './helpers'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { GCPLog } from 'shared/utils'
 
 type ChoiceContract = FreeResponseContract | MultipleChoiceContract
 
@@ -27,7 +28,7 @@ const bodySchema = z
   })
   .strict()
 
-export const changeuserinfo = authEndpoint(async (req, auth) => {
+export const changeuserinfo = authEndpoint(async (req, auth, log) => {
   const { username, name, avatarUrl } = validate(bodySchema, req.body)
 
   const user = await getUser(auth.uid)
@@ -43,11 +44,15 @@ export const changeuserinfo = authEndpoint(async (req, auth) => {
   }
 
   try {
-    await changeUser(user, {
-      username: cleanedUsername,
-      name,
-      avatarUrl,
-    })
+    await changeUser(
+      user,
+      {
+        username: cleanedUsername,
+        name,
+        avatarUrl,
+      },
+      log
+    )
     return { message: 'Successfully changed user info.' }
   } catch (e) {
     console.error(e)
@@ -61,7 +66,8 @@ export const changeUser = async (
     username?: string
     name?: string
     avatarUrl?: string
-  }
+  },
+  log: GCPLog
 ) => {
   const pg = createSupabaseDirectClient()
   const firestore = admin.firestore()

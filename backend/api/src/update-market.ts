@@ -1,11 +1,10 @@
 import { APIError, authEndpoint, validate } from 'api/helpers'
-import { getContractSupabase, log } from 'shared/utils'
+import { getContractSupabase } from 'shared/utils'
 import * as admin from 'firebase-admin'
-import { record, z } from 'zod'
-import { track, trackPublicEvent } from 'shared/analytics'
+import { z } from 'zod'
+import { trackPublicEvent } from 'shared/analytics'
 import { throwErrorIfNotMod } from 'shared/helpers/auth'
 import { removeUndefinedProps } from 'common/util/object'
-import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { buildArray } from 'common/util/array'
 import { recordContractEdit } from 'shared/record-contract-edit'
 
@@ -17,7 +16,7 @@ const bodySchema = z
   })
   .strict()
 
-export const updatemarket = authEndpoint(async (req, auth) => {
+export const updatemarket = authEndpoint(async (req, auth, log) => {
   const { contractId, visibility, closeTime } = validate(bodySchema, req.body)
   if (!visibility && !closeTime)
     throw new APIError(400, 'Must provide visibility or closeTime')

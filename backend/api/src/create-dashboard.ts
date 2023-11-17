@@ -1,5 +1,4 @@
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { log } from 'shared/utils'
 import { z } from 'zod'
 import { authEndpoint, validate } from './helpers'
 import { DashboardItemSchema } from 'shared/zod-types'
@@ -16,7 +15,7 @@ const schema = z
   })
   .strict()
 
-export const createdashboard = authEndpoint(async (req, auth) => {
+export const createdashboard = authEndpoint(async (req, auth, log) => {
   const { title, items, topics } = validate(schema, req.body)
 
   log('creating dashboard')

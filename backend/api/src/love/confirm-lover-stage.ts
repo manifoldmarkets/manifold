@@ -11,7 +11,7 @@ const confirmLoverStageSchema = z.object({
   answerId: z.string(),
 })
 
-export const confirmLoverStage = authEndpoint(async (req, auth) => {
+export const confirmLoverStage = authEndpoint(async (req, auth, log) => {
   const { contractId, answerId } = validate(confirmLoverStageSchema, req.body)
   const yourUserId = auth.uid
 
@@ -70,11 +70,13 @@ export const confirmLoverStage = authEndpoint(async (req, auth) => {
     )
   }
 
-  console.log(
-    'Confirming lover stage',
-    contract.id,
-    contract.question,
-    answer.text
+  log(
+    'Confirming lover stage ' +
+      contract.id +
+      ' ' +
+      contract.question +
+      ' ' +
+      answer.text
   )
 
   const resolvedContract = await resolveMarketHelper(
@@ -84,7 +86,8 @@ export const confirmLoverStage = authEndpoint(async (req, auth) => {
     {
       answerId: answer.id,
       outcome: 'YES',
-    }
+    },
+    log
   )
 
   return { status: 'success', contract: resolvedContract }

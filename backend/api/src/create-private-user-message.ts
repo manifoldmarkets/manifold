@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { APIError, authEndpoint, validate } from 'api/helpers'
-import { getPrivateUser, getUserSupabase, log } from 'shared/utils'
+import { GCPLog, getPrivateUser, getUserSupabase } from 'shared/utils'
 import {
   createSupabaseDirectClient,
   SupabaseDirectClient,
@@ -31,7 +31,7 @@ const postSchema = z
   })
   .strict()
 
-export const createprivateusermessage = authEndpoint(async (req, auth) => {
+export const createprivateusermessage = authEndpoint(async (req, auth, log) => {
   const { content, channelId } = validate(postSchema, req.body)
   if (JSON.stringify(content).length > MAX_COMMENT_JSON_LENGTH) {
     throw new APIError(
@@ -52,7 +52,7 @@ export const createprivateusermessage = authEndpoint(async (req, auth) => {
   )
   if (!authorized)
     throw new APIError(403, 'You are not authorized to post to this channel')
-  await notifyOtherUserInChannelIfInactive(channelId, creator, pg)
+  await notifyOtherUserInChannelIfInactive(channelId, creator, pg, log)
   await insertPrivateMessage(content, channelId, auth.uid, 'private', pg)
 
   const privateMessage = {
@@ -67,7 +67,8 @@ export const createprivateusermessage = authEndpoint(async (req, auth) => {
 const notifyOtherUserInChannelIfInactive = async (
   channelId: number,
   creator: User,
-  pg: SupabaseDirectClient
+  pg: SupabaseDirectClient,
+  log: GCPLog
 ) => {
   const otherUserIds = await pg.manyOrNone<{ user_id: string }>(
     `select user_id from private_user_message_channel_members
@@ -108,7 +109,7 @@ const notifyOtherUserInChannelIfInactive = async (
     `select ts from user_events where user_id = $1 order by ts desc limit 1`,
     [otherUserId.user_id]
   )
-  log('lastUserEvent', lastUserEvent, 'for user', otherUserId.user_id)
+  log('lastUserEvent ' + lastUserEvent + ' for user ' + otherUserId.user_id)
   if (lastUserEvent && tsToMillis(lastUserEvent.ts) > Date.now() - HOUR_MS)
     return
 

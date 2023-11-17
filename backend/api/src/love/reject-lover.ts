@@ -13,7 +13,7 @@ const rejectLoverSchema = z.object({
   userId: z.string(),
 })
 
-export const rejectLover = authEndpoint(async (req, auth) => {
+export const rejectLover = authEndpoint(async (req, auth, log) => {
   const { userId } = validate(rejectLoverSchema, req.body)
   const yourUserId = auth.uid
 
@@ -42,7 +42,7 @@ export const rejectLover = authEndpoint(async (req, auth) => {
   const manifoldLoveUser = await getUser(manifoldLoveUserId)
   if (!manifoldLoveUser) throw new APIError(404, 'Manifold Love user not found')
 
-  console.log('Rejecting lover', contract.id, contract.question, answers)
+  log('Rejecting lover ' + contract.id + ' ' + contract.question, { answers })
 
   const firestore = admin.firestore()
 
@@ -65,7 +65,7 @@ export const rejectLover = authEndpoint(async (req, auth) => {
     }
 
     const outcome = lastResolution === 'YES' ? 'NO' : 'CANCEL'
-    console.log('Resolving', answer.text, 'to', outcome)
+    log('Resolving ' + answer.text + ' to ' + outcome)
 
     resolvedContract = (await resolveMarketHelper(
       contract,
@@ -74,7 +74,8 @@ export const rejectLover = authEndpoint(async (req, auth) => {
       {
         answerId: answer.id,
         outcome,
-      }
+      },
+      log
     )) as CPMMMultiContract
 
     lastResolution = outcome

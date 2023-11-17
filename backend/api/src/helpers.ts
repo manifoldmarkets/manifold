@@ -133,10 +133,10 @@ export const authEndpoint = <T extends Json>(fn: AuthedHandler<T>) => {
       const log = (message: any, details?: object) =>
         gcpLog.debug(message, { ...details, endpoint: req.path, traceId })
 
-      const error = (message: any, details?: object) =>
+      const logError = (message: any, details?: object) =>
         gcpLog.error(message, { ...details, endpoint: req.path, traceId })
 
-      res.status(200).json(await fn(req, authedUser, log, error))
+      res.status(200).json(await fn(req, authedUser, log, logError))
     } catch (e) {
       next(e)
     }

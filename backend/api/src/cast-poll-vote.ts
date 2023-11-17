@@ -1,5 +1,4 @@
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { log } from 'shared/utils'
 import { z } from 'zod'
 import { APIError, authEndpoint, validate } from './helpers'
 import * as admin from 'firebase-admin'

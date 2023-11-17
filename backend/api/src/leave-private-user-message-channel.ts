@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { APIError, authEndpoint, validate } from 'api/helpers'
-import { getUserSupabase, log } from 'shared/utils'
+import { getUserSupabase } from 'shared/utils'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import {
   insertPrivateMessage,
@@ -14,7 +14,7 @@ const postSchema = z
   .strict()
 
 export const leaveprivateusermessagechannel = authEndpoint(
-  async (req, auth) => {
+  async (req, auth, log) => {
     const { channelId } = validate(postSchema, req.body)
     const pg = createSupabaseDirectClient()
     const user = await getUserSupabase(auth.uid)
@@ -27,7 +27,7 @@ export const leaveprivateusermessagechannel = authEndpoint(
     )
     if (!membershipStatus)
       throw new APIError(403, 'You are not authorized to post to this channel')
-    log('membershipStatus', membershipStatus)
+    log('membershipStatus: ' + membershipStatus)
 
     // add message that the user left the channel
     await pg.none(
