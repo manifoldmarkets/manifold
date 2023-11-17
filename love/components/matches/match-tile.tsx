@@ -3,7 +3,6 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { UserIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
-
 import { Answer } from 'common/answer'
 import { CPMMMultiContract, contractPath } from 'common/contract'
 import { Lover } from 'common/love/lover'
@@ -20,10 +19,8 @@ import { RejectButton } from '../reject-button'
 import { MatchBetButton } from './match-bet'
 import { MatchPositionsButton } from './match-positions'
 import { MatchTracker } from './match-tracker'
-import Link from 'next/link'
 import { linkClass } from 'web/components/widgets/site-link'
 import { CommentsButton } from '../comments/love-comments-button'
-import { User } from 'common/user'
 import { MatchAvatars } from './match-avatars'
 
 const relationshipStages = [
