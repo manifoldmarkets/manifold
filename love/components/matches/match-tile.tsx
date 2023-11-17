@@ -167,7 +167,11 @@ export const MatchTile = (props: {
             answers={answers}
             user={user}
             modalHeader={
-              <MatchAvatars profileLover={profileLover} matchedLover={lover} />
+              <MatchAvatars
+                profileLover={profileLover}
+                matchedLover={lover}
+                className="mb-3"
+              />
             }
           />
           {showConfirmStage && isYourMatch && (

@@ -6,15 +6,17 @@ import { Lover } from 'common/love/lover'
 import Image from 'next/image'
 import { Col } from 'web/components/layout/col'
 import { UserIcon } from '@heroicons/react/solid'
+import clsx from 'clsx'
 
 export function MatchAvatars(props: {
   profileLover: Lover
   matchedLover: Lover
+  className?: string
 }) {
-  const { profileLover, matchedLover } = props
+  const { profileLover, matchedLover, className } = props
 
   return (
-    <Row className="mx-auto items-center gap-1">
+    <Row className={clsx(className, 'mx-auto items-center gap-1')}>
       {profileLover.pinned_url ? (
         <Image
           src={profileLover.pinned_url}
