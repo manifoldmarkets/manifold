@@ -148,6 +148,7 @@ See [FAQ](https://manifold.love/faq) for more details.`,
       closeTime: eightMonthsLater,
       loverUserId1: userId1,
       loverUserId2: userId2,
+      matchCreatorId: matchCreator.id,
     },
     { uid: manifoldLoveUserId, creds: undefined as any },
     log

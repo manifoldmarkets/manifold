@@ -80,6 +80,7 @@ export async function createMarketHelper(
     totalBounty,
     loverUserId1,
     loverUserId2,
+    matchCreatorId
   } = validateMarketBody(body)
 
   const userId = auth.uid
@@ -162,6 +163,7 @@ export async function createMarketHelper(
       shouldAnswersSumToOne,
       loverUserId1,
       loverUserId2,
+      matchCreatorId,
     })
 
     const houseId = isProd()
@@ -356,6 +358,7 @@ function validateMarketBody(body: any) {
     utcOffset,
     loverUserId1,
     loverUserId2,
+    matchCreatorId,
   } = validate(bodySchema, body)
 
   let min: number | undefined,
@@ -435,6 +438,7 @@ function validateMarketBody(body: any) {
     totalBounty,
     loverUserId1,
     loverUserId2,
+    matchCreatorId
   }
 }
 
@@ -545,6 +549,7 @@ const bodySchema = z.object({
   utcOffset: z.number().optional(),
   loverUserId1: z.string().optional(),
   loverUserId2: z.string().optional(),
+  matchCreatorId: z.string().optional(),
 })
 
 export type CreateMarketParams = z.infer<typeof bodySchema> &
