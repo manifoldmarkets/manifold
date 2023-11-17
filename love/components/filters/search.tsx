@@ -1,4 +1,4 @@
-import { partition, zip } from 'lodash'
+import { partition, zip, isEqual } from 'lodash'
 import { Row as rowFor } from 'common/supabase/utils'
 import { User } from 'common/user'
 import { debounce, orderBy } from 'lodash'
@@ -137,7 +137,7 @@ export const Search = (props: {
     !!youLover &&
     !!nearbyOriginLocation &&
     nearbyOriginLocation.id === youLover.geodb_city_id &&
-    filters.genders == yourFilters.genders &&
+    isEqual(filters.genders, yourFilters.genders) &&
     !!filters.pref_gender &&
     filters.pref_gender.length == 1 &&
     filters.pref_gender[0] == youLover.gender &&
