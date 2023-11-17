@@ -5,7 +5,7 @@ export function createJobs() {
   return [
     createJob(
       'add-trending-feed-contracts',
-      '0 */30 * * * *', // every 30 minutes
+      '0 0 * * * *', // every hour
       addTrendingFeedContracts
     ),
   ]

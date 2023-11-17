@@ -18,7 +18,7 @@ export async function testBackendFunction() {
     // await updateViewsAndViewersEmbeddings(pg)
     // await addInterestingContractsToFeed(db, pg)
     // await sendOnboardingNotificationsInternal(firestore)
-    await addInterestingContractsToFeed(db, pg)
+    await addInterestingContractsToFeed(db, pg, true)
 
     // const userId = '6hHpzvRG0pMq8PNJs7RZj2qlZGn2'
     // await createLeagueChangedNotification(

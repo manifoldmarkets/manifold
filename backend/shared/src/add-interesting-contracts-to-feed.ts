@@ -26,16 +26,17 @@ const rowToContract = (row: any) =>
     importanceScore: row.importance_score,
   } as Contract)
 
-export const MINUTE_INTERVAL = 30
+export const MINUTE_INTERVAL = 60
 let lastLoadedTime = 0
 
 export async function addInterestingContractsToFeed(
   db: SupabaseClient,
   pg: SupabaseDirectClient,
+  reloadAllEmbeddings: boolean,
   readOnly = false
 ) {
   log(`Starting feed population. Loading user embeddings to store...`)
-  if (Object.keys(userInterestEmbeddings).length === 0)
+  if (Object.keys(userInterestEmbeddings).length === 0 || reloadAllEmbeddings)
     await loadUserEmbeddingsToStore(pg)
   log(`Loaded users. Querying candidate contracts...`)
   // We could query for contracts that've had large changes in prob in the past hour

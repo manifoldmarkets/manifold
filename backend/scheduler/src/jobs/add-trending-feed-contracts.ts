@@ -13,7 +13,8 @@ export async function addTrendingFeedContracts() {
   const startTime = Date.now()
   // Keep running with the users cached (we refresh for new users) until we've just 10 minutes left,
   // on the next run we'll do a full refresh (picking a new random sample of old users)
+  await addInterestingContractsToFeed(db, pg, true)
   while (Date.now() < startTime + (MINUTE_INTERVAL - 10) * 60 * 1000) {
-    await addInterestingContractsToFeed(db, pg)
+    await addInterestingContractsToFeed(db, pg, false)
   }
 }
