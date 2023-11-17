@@ -183,14 +183,12 @@ export async function createMarketHelper(
     )
   })
 
-  log(
-    'created contract for ' +
-      user.username +
-      ' on ' +
-      question +
-      ' ante: ' +
-      ante || 0
-  )
+  log('created contract ', {
+    userUserName: user.username,
+    userId: user.id,
+    question,
+    ante: ante || 0,
+  })
 
   if (answers && contract.mechanism === 'cpmm-multi-1')
     await createAnswers(contract)

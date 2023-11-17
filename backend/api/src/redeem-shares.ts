@@ -52,7 +52,10 @@ export const redeemShares = async (
       trans.create(yesDoc, { id: yesDoc.id, userId, ...yesBet })
       trans.create(noDoc, { id: noDoc.id, userId, ...noBet })
 
-      log('redeemed ' + shares + ' shares for ' + netAmount)
+      log('redeemed', {
+        shares,
+        netAmount,
+      })
     }
 
     const userDoc = firestore.collection('users').doc(userId)

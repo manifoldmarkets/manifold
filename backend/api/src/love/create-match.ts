@@ -114,7 +114,7 @@ export const createMatchMain = async (
     (c) => !c.isResolved && c.outcomeType === 'MULTIPLE_CHOICE'
   )
   if (unresolvedMultiLoverContracts.length > 0) {
-    log('loverContracts', loverContracts)
+    log('loverContracts', { loverContracts })
     throw new APIError(400, `Match market already exists.`)
   }
 

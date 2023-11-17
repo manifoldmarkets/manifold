@@ -112,15 +112,11 @@ export const resolvemarket = authEndpoint(async (req, auth, log) => {
 
   const resolutionParams = getResolutionParams(contract, req.body)
 
-  log(
-    'Resolving market ' +
-      contract.slug +
-      ' ' +
-      contractId +
-      ' ' +
-      'with params',
-    { resolutionParams }
-  )
+  log('Resolving market ', {
+    contractSlug: contract.slug,
+    contractId,
+    resolutionParams,
+  })
 
   return await resolveMarketHelper(
     contract,

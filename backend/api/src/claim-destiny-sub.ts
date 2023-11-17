@@ -72,12 +72,10 @@ export const claimdestinysub = authEndpoint(async (req, auth, log) => {
       destinySub2Claimed: true,
     } as Partial<PrivateUser>)
 
-    log(
-      'claimed destiny sub for ' +
-        destinyUsername +
-        ' by Manifold user ' +
-        user.username
-    )
+    log('claimed destiny sub', {
+      destinyUsername,
+      manifoldUserId: user.id,
+    })
 
     return { success: true }
   })

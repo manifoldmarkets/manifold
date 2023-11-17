@@ -42,7 +42,11 @@ export const rejectLover = authEndpoint(async (req, auth, log) => {
   const manifoldLoveUser = await getUser(manifoldLoveUserId)
   if (!manifoldLoveUser) throw new APIError(404, 'Manifold Love user not found')
 
-  log('Rejecting lover ' + contract.id + ' ' + contract.question, { answers })
+  log('Rejecting lover', {
+    answers,
+    contractId: contract.id,
+    question: contract.question,
+  })
 
   const firestore = admin.firestore()
 

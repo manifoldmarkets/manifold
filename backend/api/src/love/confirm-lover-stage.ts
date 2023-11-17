@@ -70,14 +70,12 @@ export const confirmLoverStage = authEndpoint(async (req, auth, log) => {
     )
   }
 
-  log(
-    'Confirming lover stage ' +
-      contract.id +
-      ' ' +
-      contract.question +
-      ' ' +
-      answer.text
-  )
+  log('Confirming lover stage ', {
+    contractId: contract.id,
+    question: contract.question,
+    answerText: answer.text,
+    outcome: 'YES',
+  })
 
   const resolvedContract = await resolveMarketHelper(
     contract,

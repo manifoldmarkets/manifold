@@ -38,18 +38,13 @@ export const creategroup = authEndpoint(async (req, auth, log) => {
   // Add creator id to member ids for convenience
   if (!memberIds.includes(creator.id)) memberIds.push(creator.id)
 
-  log(
-    'creating group for ' +
-      creator.username +
-      ' named ' +
-      name +
-      ' about ' +
-      about +
-      ' privacy ' +
-      privacyStatus +
-      ' other member ids ',
-    { memberIds }
-  )
+  log('creating group ', {
+    creatorId: creator.id,
+    name,
+    about,
+    privacyStatus,
+    memberIds,
+  })
 
   const slug = await getSlug(name)
 

@@ -106,7 +106,7 @@ export const resolveMarketHelper = async (
   const negPayoutThreshold = contract.uniqueBettorCount <= 2 ? -500 : -10000
 
   const userPayouts = groupPayoutsByUser(payouts)
-  console.log('user payouts', userPayouts)
+  console.log('user payouts', { userPayouts })
 
   const negativePayouts = Object.values(userPayouts).filter(
     (p) => p <= negPayoutThreshold
@@ -147,7 +147,10 @@ export const resolveMarketHelper = async (
   }
   await contractDoc.update(contract)
 
-  log('contract ' + contractId + ' resolved to: ' + outcome)
+  log('contract resolved', {
+    contractId,
+    outcome,
+  })
 
   if (!answerId) {
     await updateContractMetricsForUsers(contract, bets)

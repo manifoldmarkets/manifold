@@ -252,8 +252,8 @@ async function createAnswerAndSumAnswersToOne(
     balanceByUserId
   )
 
-  log('New answer', newAnswer)
-  log('Other answer', updatedOtherAnswer)
+  log('New answer', { newAnswer })
+  log('Other answer', { updatedOtherAnswer })
   log('extraMana ' + extraMana)
   log('bet amounts', {
     amounts: betResults.map((r) =>
@@ -279,16 +279,13 @@ async function createAnswerAndSumAnswersToOne(
   for (const [answerId, pool] of Object.entries(poolsByAnswer)) {
     const { YES: poolYes, NO: poolNo } = pool
     const prob = poolNo / (poolYes + poolNo)
-    log(
-      'After arbitrage answer ' +
-        newAnswer.text +
-        ' with ' +
-        poolYes +
-        ' ' +
-        poolNo +
-        ' prob ' +
-        prob
-    )
+    log('After arbitrage answer ', {
+      answerText: newAnswer.text,
+      answerId,
+      poolYes,
+      poolNo,
+      prob,
+    })
   }
   const newPoolsByAnswer = addCpmmMultiLiquidityAnswersSumToOne(
     poolsByAnswer,
@@ -310,16 +307,12 @@ async function createAnswerAndSumAnswersToOne(
     const pool = newPoolsByAnswer[answer.id]
     const { YES: poolYes, NO: poolNo } = pool
     const prob = getCpmmProbability(pool, 0.5)
-    log(
-      'Updating answer ' +
-        answer.text +
-        ' with ' +
-        poolYes +
-        ' ' +
-        poolNo +
-        ' prob ' +
-        prob
-    )
+    log('Updating answer ', {
+      answerText: answer.text,
+      poolYes,
+      poolNo,
+      prob,
+    })
     transaction.update(contractDoc.collection('answersCpmm').doc(answer.id), {
       poolYes,
       poolNo,
