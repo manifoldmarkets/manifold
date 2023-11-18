@@ -76,10 +76,11 @@ export const createanswercpmm = authEndpoint(async (req, auth, log) => {
         firestore.collection(`contracts/${contractId}/answersCpmm`)
       )
       const answers = answersSnap.docs.map((doc) => doc.data() as Answer)
-      if (answers.length >= MAX_ANSWERS) {
+      const unresolvedAnswers = answers.filter((a) => !a.resolution)
+      if (unresolvedAnswers.length >= MAX_ANSWERS) {
         throw new APIError(
           403,
-          `Cannot add an answer: Maximum number (${MAX_ANSWERS}) of answers reached.`
+          `Cannot add an answer: Maximum number (${MAX_ANSWERS}) of open answers reached.`
         )
       }
 

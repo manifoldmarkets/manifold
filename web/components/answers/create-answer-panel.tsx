@@ -237,6 +237,9 @@ export function SearchCreateAnswerPanel(props: {
 
   const user = useUser()
   const privateUser = usePrivateUser()
+  const unresolvedAnswers = contract.answers.filter((a) =>
+    'resolution' in a ? !a.resolution : true
+  )
 
   if (
     user &&
@@ -245,7 +248,7 @@ export function SearchCreateAnswerPanel(props: {
       (addAnswersMode === 'ONLY_CREATOR' && user.id === contract.creatorId)) &&
     tradingAllowed(contract) &&
     !privateUser?.blockedByUserIds.includes(contract.creatorId) &&
-    contract.answers.length < MAX_ANSWERS
+    unresolvedAnswers.length < MAX_ANSWERS
   ) {
     return contract.mechanism === 'cpmm-multi-1' ? (
       <CreateAnswerCpmmPanel contract={contract} text={text} setText={setText}>
