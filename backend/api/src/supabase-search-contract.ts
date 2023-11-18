@@ -42,8 +42,9 @@ export const searchContracts = async (
   }
 
   const isForYou = possibleTopicSlug === 'for-you'
+  const isRecent = possibleTopicSlug === 'recent'
   const topicSlug =
-    possibleTopicSlug && !isForYou ? possibleTopicSlug : undefined
+    possibleTopicSlug && !isForYou && !isRecent ? possibleTopicSlug : undefined
   const pg = createSupabaseDirectClient()
   const groupId = topicSlug
     ? await getGroupIdFromSlug(topicSlug, pg)
@@ -52,6 +53,12 @@ export const searchContracts = async (
   if (isForYou && !term && sort === 'score' && userId) {
     const forYouSql = getForYouSQL(userId, filter, contractType, limit, offset)
     contracts = await pg.map(forYouSql, [term], (r) => r.data as Contract)
+  } else if (isRecent && !term && userId) {
+    contracts = await pg.map(
+      'select data from get_your_recent_contracts($1, $2, $3)',
+      [userId, limit, offset],
+      convertContract
+    )
   } else {
     const groupAccess = await hasGroupAccess(groupId, userId)
     const searchTypes: SearchTypes[] = [

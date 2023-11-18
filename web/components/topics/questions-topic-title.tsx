@@ -55,7 +55,11 @@ export const QuestionsTopicTitle = forwardRef(
             </Button>
             <span className="text-primary-700 !mb-0 line-clamp-1 text-2xl">
               {currentTopic?.name ??
-                (topicSlug === 'for-you' ? '⭐️ For you' : 'Browse')}
+                (topicSlug === 'for-you'
+                  ? '⭐️ For you'
+                  : topicSlug === 'recent'
+                  ? '⏳ Your recents'
+                  : 'Browse')}
             </span>
           </Row>
           {currentTopic ? (
@@ -73,18 +77,6 @@ export const QuestionsTopicTitle = forwardRef(
             />
           ) : null}
         </Row>
-        {/* {topicSlug === 'for-you' && (
-          <Button
-            size={'sm'}
-            color={'gray-white'}
-            onClick={() => setShowFollowedTopics(true)}
-          >
-            <Row className={'items-center gap-1'}>
-              <PencilIcon className={'h-5 w-5'} />
-              Followed topics
-            </Row>
-          </Button>
-        )} */}
         {currentTopic && (
           <Row className="items-center">
             <CopyLinkOrShareButton

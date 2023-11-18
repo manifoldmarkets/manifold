@@ -67,22 +67,29 @@ export function TopicsList(props: {
         </Button>
       </Row>
       {user && (
-        <SidebarItem
-          key={'all-questions'}
-          slug={''}
-          name={'🌎 All questions'}
-          currentTopicSlug={currentTopicSlug}
-          setCurrentTopicSlug={setCurrentTopicSlug}
-        />
-      )}
-      {user && (
-        <SidebarItem
-          key={'sidebar-for-you'}
-          slug={'for-you'}
-          name={'⭐️ For you'}
-          currentTopicSlug={currentTopicSlug}
-          setCurrentTopicSlug={setCurrentTopicSlug}
-        />
+        <>
+          <SidebarItem
+            key={'all-questions'}
+            slug={''}
+            name={'🌎 All questions'}
+            currentTopicSlug={currentTopicSlug}
+            setCurrentTopicSlug={setCurrentTopicSlug}
+          />
+          <SidebarItem
+            key={'sidebar-for-you'}
+            slug={'for-you'}
+            name={'⭐️ For you'}
+            currentTopicSlug={currentTopicSlug}
+            setCurrentTopicSlug={setCurrentTopicSlug}
+          />
+          <SidebarItem
+            key={'sidebar-recent'}
+            slug={'recent'}
+            name={'⏳ Your recents'}
+            currentTopicSlug={currentTopicSlug}
+            setCurrentTopicSlug={setCurrentTopicSlug}
+          />
+        </>
       )}
       {topics.length > 0 &&
         topics.map((group) => (
