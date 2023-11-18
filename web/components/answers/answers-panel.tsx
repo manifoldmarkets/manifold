@@ -4,7 +4,6 @@ import {
   PresentationChartLineIcon,
 } from '@heroicons/react/outline'
 import { groupBy, sortBy, sumBy } from 'lodash'
-import { useMemo, useState } from 'react'
 import clsx from 'clsx'
 import { Answer, DpmAnswer } from 'common/answer'
 import { Bet } from 'common/bet'
@@ -31,10 +30,7 @@ import { InfoTooltip } from '../widgets/info-tooltip'
 import DropdownMenu from '../comments/dropdown-menu'
 import generateFilterDropdownItems from '../search/search-dropdown-helpers'
 import { SearchCreateAnswerPanel } from './create-answer-panel'
-import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
-import { searchInAny } from 'common/util/parse'
-
-type Sort = 'prob-desc' | 'prob-asc' | 'old' | 'new' | 'liquidity'
+import { MultiSort } from '../contract/contract-overview'
 
 const SORTS = [
   { label: 'High %', value: 'prob-desc' },
@@ -47,20 +43,31 @@ const SORTS = [
 // full resorting, hover, clickiness, search and add
 export function AnswersPanel(props: {
   contract: MultiContract
+  answersToShow: (Answer | DpmAnswer)[]
+  selected: string[]
+  sort: MultiSort
+  setSort: (sort: MultiSort) => void
+  query: string
+  setQuery: (query: string) => void
+  setShowAll: (showAll: boolean) => void
   onAnswerCommentClick: (answer: Answer | DpmAnswer) => void
   onAnswerHover: (answer: Answer | DpmAnswer | undefined) => void
   onAnswerClick: (answer: Answer | DpmAnswer) => void
-  selected?: string[] // answer ids
 }) {
   const {
     contract,
     onAnswerCommentClick,
     onAnswerHover,
     onAnswerClick,
+    answersToShow,
     selected,
+    sort,
+    setSort,
+    query,
+    setQuery,
+    setShowAll,
   } = props
-  const { resolutions, outcomeType } = contract
-  const isMultipleChoice = outcomeType === 'MULTIPLE_CHOICE'
+  const { outcomeType, answers } = contract
   const addAnswersMode =
     'addAnswersMode' in contract
       ? contract.addAnswersMode
@@ -69,90 +76,6 @@ export function AnswersPanel(props: {
       : 'DISABLED'
   const shouldAnswersSumToOne =
     'shouldAnswersSumToOne' in contract ? contract.shouldAnswersSumToOne : true
-
-  const [query, setQuery] = usePersistentInMemoryState(
-    '',
-    'create-answer-text' + contract.id
-  )
-
-  const answers = contract.answers
-    .filter((a) => isMultipleChoice || ('number' in a && a.number !== 0))
-    .map((a) => ({
-      ...a,
-      prob: getAnswerProbability(contract, a.id),
-    }))
-
-  const [sort, setSort] = usePersistentInMemoryState<Sort>(
-    addAnswersMode === 'DISABLED'
-      ? 'old'
-      : !shouldAnswersSumToOne
-      ? 'liquidity'
-      : answers.length > 10
-      ? 'prob-desc'
-      : 'old',
-    'answer-sort' + contract.id
-  )
-
-  const [showAll, setShowAll] = useState(
-    addAnswersMode === 'DISABLED' || answers.length <= 5
-  )
-
-  const sortedAnswers = useMemo(
-    () =>
-      sortBy(answers, [
-        shouldAnswersSumToOne
-          ? // Winners first
-            (answer) => (resolutions ? -1 * resolutions[answer.id] : answer)
-          : // Resolved last
-            (answer) =>
-              'resolutionTime' in answer ? answer.resolutionTime ?? 1 : 0,
-        // then by sort
-        (answer) => {
-          if (sort === 'old') {
-            return 'index' in answer ? answer.index : answer.number
-          } else if (sort === 'new') {
-            return 'index' in answer ? -answer.index : -answer.number
-          } else if (sort === 'prob-asc') {
-            return answer.prob
-          } else if (sort === 'prob-desc') {
-            return -1 * answer.prob
-          } else if (sort === 'liquidity') {
-            return 'subsidyPool' in answer ? -answer.subsidyPool : 0
-          }
-        },
-      ]),
-    [answers, resolutions, shouldAnswersSumToOne, sort]
-  )
-
-  const searchedAnswers = useMemo(() => {
-    if (!answers.length || !query) return []
-
-    return sortedAnswers.filter(
-      (answer) =>
-        selected?.includes(answer.id) || searchInAny(query, answer.text)
-    )
-  }, [sortedAnswers, query])
-
-  const answersToShow = query
-    ? searchedAnswers
-    : showAll
-    ? sortedAnswers
-    : sortedAnswers.filter((answer) => {
-        if (selected?.includes(answer.id)) {
-          return true
-        }
-
-        if (resolutions?.[answer.id]) {
-          return true
-        }
-        if (sort === 'prob-asc') {
-          return answer.prob < 0.99
-        } else if (sort === 'prob-desc') {
-          return answer.prob > 0.01
-        } else if (sort === 'liquidity' || sort === 'new' || sort === 'old') {
-          return !('resolution' in answer)
-        }
-      })
 
   const user = useUser()
 
