@@ -288,7 +288,7 @@ const ChoiceOverview = (props: {
     addAnswersMode === 'DISABLED'
       ? 'old'
       : !shouldAnswersSumToOne
-      ? 'liquidity'
+      ? 'prob-desc'
       : answers.length > 10
       ? 'prob-desc'
       : 'old',
