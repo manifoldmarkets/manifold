@@ -14,7 +14,11 @@ import { TOPICS_TO_SUBTOPICS } from 'common/topics'
 import { PillButton } from '../buttons/pill-button'
 import { useGetTrendingGroups } from 'web/hooks/api/use-get-trending-groups'
 import { useGetTrendingContracts } from 'web/hooks/api/use-get-trending-contracts'
-import { joinGroup, placeBet, updateUserEmbedding } from 'web/lib/firebase/api'
+import {
+  followTopic,
+  placeBet,
+  updateUserEmbedding,
+} from 'web/lib/firebase/api'
 import Image from 'next/image'
 import { track } from 'web/lib/service/analytics'
 import { updateUser } from 'web/lib/firebase/users'
@@ -343,7 +347,9 @@ function OnboardingViewInterests({
         onClick: async () => {
           setIsLoading(true)
           try {
-            await Promise.all(selected.map((groupId) => joinGroup({ groupId })))
+            await Promise.all(
+              selected.map((groupId) => followTopic({ groupId }))
+            )
             await updateUserEmbedding()
           } catch (error) {
             console.error(error)

@@ -30,6 +30,9 @@ import { QuestionsTopicTitle } from 'web/components/topics/questions-topic-title
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { useHeaderIsStuck } from 'web/hooks/use-header-is-stuck'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
+import { getVariants } from 'web/lib/service/experiments'
+import { ErrorBoundary } from 'react-error-boundary'
+import { Onboarding } from 'web/components/onboarding/onboarding'
 
 // TODO: use static props for non for-you topic slugs
 export default function BrowsePage() {
@@ -41,6 +44,7 @@ export default function BrowsePage() {
   const autoFocus = !isMobile && !q
   const [showTopicsSidebar, setShowTopicsSidebar] = useState<boolean>(false)
   const privateUser = usePrivateUser()
+  const { bettingOnboarding } = getVariants()
 
   useSaveReferral(user)
 
@@ -84,7 +88,15 @@ export default function BrowsePage() {
 
   return (
     <>
-      {user && <Welcome />}
+      {}
+      {user &&
+        (bettingOnboarding ? (
+          <ErrorBoundary fallback={null}>
+            <Onboarding />
+          </ErrorBoundary>
+        ) : (
+          <Welcome />
+        ))}
       <Page
         trackPageView={'questions page'}
         className="bg-canvas-0 md:bg-canvas-50 lg:col-span-10"
