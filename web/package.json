@@ -25,6 +25,7 @@
   },
   "dependencies": {
     "@amplitude/analytics-browser": "1.9.4",
+    "@amplitude/experiment-js-client": "1.9.5",
     "@floating-ui/react": "0.19.0",
     "@google-cloud/secret-manager": "4.2.1",
     "@headlessui/react": "1.7.11",

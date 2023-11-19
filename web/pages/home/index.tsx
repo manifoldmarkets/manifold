@@ -22,6 +22,8 @@ import { uniqBy } from 'lodash'
 import { LinkPreviews, fetchLinkPreviews } from 'common/link-preview'
 import { Onboarding } from 'web/components/onboarding/onboarding'
 import { ErrorBoundary } from 'react-error-boundary'
+import Welcome from 'web/components/onboarding/welcome'
+import { getVariants } from 'web/lib/service/experiments'
 
 export async function getStaticProps() {
   const dashboards = (await getNewsDashboards()) as Dashboard[]
@@ -64,6 +66,7 @@ function HomeDashboard(props: {
   previews: LinkPreviews
 }) {
   const { dashboards, previews } = props
+  const { bettingOnboarding } = getVariants()
 
   const user = useUser()
   const myDashboards = useYourFollowedDashboards()
@@ -74,10 +77,13 @@ function HomeDashboard(props: {
         title="News"
         description="Breaking news meets the wisdom of the crowd"
       />
-      {/* <Welcome /> */}
-      <ErrorBoundary fallback={null}>
-        <Onboarding />
-      </ErrorBoundary>
+      {bettingOnboarding ? (
+        <ErrorBoundary fallback={null}>
+          <Onboarding />
+        </ErrorBoundary>
+      ) : (
+        <Welcome />
+      )}
 
       <Page trackPageView={'home'} trackPageProps={{ kind: 'desktop' }}>
         <Row className="mx-3 mb-2 items-center gap-4">
