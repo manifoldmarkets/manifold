@@ -296,9 +296,6 @@ export function ContractParamsForm(props: {
           `All ${outcomeType === 'POLL' ? 'options' : 'answers'} must have text`
         )
       }
-      if (!isValidQuestion) {
-        setErrorText('Question must have text')
-      }
     }
   }, [isValid, isValidDate, isValidMultipleChoice, isValidQuestion])
 
