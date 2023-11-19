@@ -1,3 +1,8 @@
+import { useEffect, useState } from 'react'
+import Head from 'next/head'
+import { useRouter } from 'next/router'
+import Router from 'next/router'
+
 import {
   Dashboard,
   DashboardItem,
@@ -5,7 +10,6 @@ import {
   MAX_DASHBOARD_TITLE_LENGTH,
   convertDashboardSqltoTS,
 } from 'common/dashboard'
-import { useEffect, useState } from 'react'
 import { Button } from 'web/components/buttons/button'
 import { AddItemCard } from 'web/components/dashboard/add-dashboard-item'
 import { DashboardContent } from 'web/components/dashboard/dashboard-content'
@@ -30,8 +34,6 @@ import { SEO } from 'web/components/SEO'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { useWarnUnsavedChanges } from 'web/hooks/use-warn-unsaved-changes'
 import { InputWithLimit } from 'web/components/dashboard/input-with-limit'
-import Head from 'next/head'
-import { useRouter } from 'next/router'
 import { LinkPreviews, fetchLinkPreviews } from 'common/link-preview'
 
 export async function getStaticProps(ctx: {
@@ -199,6 +201,7 @@ function FoundDashboardPage(props: {
                 onClick={() => {
                   deleteDashboard({ dashboardId: dashboard.id })
                   setEditMode(false)
+                  Router.replace(Router.asPath.split('?')[0])
                 }}
               >
                 Delete (mark as spam)
@@ -210,6 +213,7 @@ function FoundDashboardPage(props: {
                 // reset to original state
                 setDashboard(fetchedDashboard || initialDashboard)
                 setEditMode(false)
+                Router.replace(Router.asPath.split('?')[0])
               }}
             >
               Cancel
@@ -230,6 +234,7 @@ function FoundDashboardPage(props: {
                   }
                 })
                 setEditMode(false)
+                Router.replace(Router.asPath.split('?')[0])
               }}
             >
               Save
