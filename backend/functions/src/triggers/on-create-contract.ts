@@ -1,4 +1,5 @@
 import * as functions from 'firebase-functions'
+import * as admin from 'firebase-admin'
 import { JSONContent } from '@tiptap/core'
 
 import { getUser, log } from 'shared/utils'
@@ -20,6 +21,7 @@ import { addGroupToContract } from 'shared/update-group-contracts-internal'
 import { UNRANKED_GROUP_ID } from 'common/supabase/groups'
 import { HOUSE_LIQUIDITY_PROVIDER_ID } from 'common/antes'
 import { generateImage } from 'shared/helpers/openai-utils'
+import { randomString } from 'common/util/random'
 
 export const onCreateContract = functions
   .runWith({
@@ -31,15 +33,16 @@ export const onCreateContract = functions
     const { eventId } = context
 
     const contract = snapshot.data() as Contract
-    const { creatorId, question, loverUserId1 } = contract
+    const { creatorId, question, loverUserId1, creatorUsername } = contract
 
     const contractCreator = await getUser(creatorId)
     if (!contractCreator) throw new Error('Could not find contract creator')
 
     if (!loverUserId1) {
-      const coverImageUrl = await generateImage(question)
-      if (coverImageUrl) {
-        await snapshot.ref.update({ coverImageUrl })
+      const dalleImage = await generateImage(question)
+      if (dalleImage) {
+        const coverImageUrl = await uploadToStorage(dalleImage, creatorUsername)
+        if (coverImageUrl) await snapshot.ref.update({ coverImageUrl })
       }
     }
 
@@ -102,3 +105,36 @@ export const onCreateContract = functions
       groupIds.map(async (groupId) => upsertGroupEmbedding(pg, groupId))
     )
   })
+
+export const uploadToStorage = async (imgUrl: string, username: string) => {
+  const response = await fetch(imgUrl)
+  const arrayBuffer = await response.arrayBuffer()
+  const buffer = Buffer.from(arrayBuffer)
+
+  const bucket = admin.storage().bucket()
+
+  const file = bucket.file(`contract-images/${username}/${randomString()}.png`)
+
+  const stream = file.createWriteStream({
+    metadata: {
+      contentType: 'image/png',
+    },
+  })
+
+  stream.on('error', (err) => {
+    console.error(err)
+  })
+
+  stream.on('finish', () => {
+    console.log('Image upload completed')
+  })
+
+  stream.end(buffer)
+
+  const urls = await file.getSignedUrl({
+    action: 'read',
+    expires: '03-09-2491',
+  })
+
+  return urls[0]
+}
