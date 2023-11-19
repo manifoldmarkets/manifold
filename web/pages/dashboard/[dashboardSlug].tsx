@@ -35,6 +35,8 @@ import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { useWarnUnsavedChanges } from 'web/hooks/use-warn-unsaved-changes'
 import { InputWithLimit } from 'web/components/dashboard/input-with-limit'
 import { LinkPreviews, fetchLinkPreviews } from 'common/link-preview'
+import { useSaveReferral } from 'web/hooks/use-save-referral'
+import { referralQuery } from 'common/util/share'
 
 export async function getStaticProps(ctx: {
   params: { dashboardSlug: string }
@@ -97,6 +99,8 @@ function FoundDashboardPage(props: {
   slug: string
   editByDefault: boolean
 }) {
+  useSaveReferral()
+
   const { initialDashboard, slug, editByDefault, previews } = props
   const fetchedDashboard = useDashboardFromSlug(slug)
   const [dashboard, setDashboard] = useState<Dashboard>(initialDashboard)
@@ -166,7 +170,9 @@ function FoundDashboardPage(props: {
 
               <div className="flex items-center">
                 <CopyLinkOrShareButton
-                  url={`https://${ENV_CONFIG.domain}/dashboard/${dashboard.slug}`}
+                  url={`https://${ENV_CONFIG.domain}/dashboard/${
+                    dashboard.slug
+                  }${user?.username ? referralQuery(user.username) : ''}`}
                   eventTrackingName="copy dashboard link"
                   tooltip="Share"
                 />
