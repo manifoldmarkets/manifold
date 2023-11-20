@@ -14,6 +14,7 @@ import { UserAvatarAndBadge } from 'web/components/widgets/user-link'
 import Link from 'next/link'
 import DropdownMenu from 'web/components/comments/dropdown-menu'
 import { DotsHorizontalIcon, ReplyIcon } from '@heroicons/react/solid'
+import { manifoldLoveUserId } from 'common/love/constants'
 
 export const ChatMessageItem = memo(function ChatMessageItem(props: {
   chats: ChatMessage[]
@@ -91,9 +92,9 @@ export const ChatMessageItem = memo(function ChatMessageItem(props: {
               <div
                 className={clsx(
                   'rounded-3xl px-3 py-2',
-                  chat.visibility !== 'system_status' && 'drop-shadow-sm',
+                  chat.visibility !== 'system_status' && '',
                   chat.visibility === 'system_status'
-                    ? 'bg-canvas-50 italic  drop-shadow-none'
+                    ? 'bg-canvas-50 italic'
                     : isMe
                     ? 'bg-primary-100 items-end self-end rounded-r-none group-first:rounded-tr-3xl'
                     : 'bg-canvas-0 items-start self-start rounded-l-none group-first:rounded-tl-3xl'
@@ -124,7 +125,10 @@ export const SystemChatMessageItem = memo(
     const chat = last(chats)
     const [showUsers, setShowUsers] = useState(false)
     if (!chat) return null
-
+    const hideAvatar =
+      chat.visibility === 'system_status' &&
+      chat.userId === manifoldLoveUserId &&
+      chats.length === 1
     const totalUsers = otherUsers?.length || 1
     return (
       <Row className={clsx('flex-row-reverse items-center gap-1')}>
@@ -137,26 +141,27 @@ export const SystemChatMessageItem = memo(
           />
         </Col>
         <Col className="max-w-[calc(100vw-6rem)] md:max-w-[80%]">
-          <Col
-            className={clsx(
-              ' bg-canvas-50  px-1 py-2 text-sm italic drop-shadow-none'
-            )}
-          >
+          <Col className={clsx(' bg-canvas-50  px-1 py-2 text-sm italic')}>
             <span>
-              {totalUsers > 1
-                ? `${totalUsers} user${totalUsers > 1 ? 's' : ''}`
-                : first(otherUsers)?.name}{' '}
-              joined the chat!
+              {totalUsers > 1 ? (
+                <span>
+                  {totalUsers} user{totalUsers > 1 ? 's' : ''} joined the chat!
+                </span>
+              ) : (
+                <Content content={chat.content} size={'sm'} />
+              )}
             </span>
           </Col>
         </Col>
-        <MultipleOrSingleAvatars
-          size={'xs'}
-          spacing={0.3}
-          startLeft={0.6}
-          avatarUrls={otherUsers?.map((u) => u.avatarUrl) || []}
-          onClick={() => setShowUsers(true)}
-        />
+        {!hideAvatar && (
+          <MultipleOrSingleAvatars
+            size={'xs'}
+            spacing={0.3}
+            startLeft={0.6}
+            avatarUrls={otherUsers?.map((u) => u.avatarUrl) || []}
+            onClick={() => setShowUsers(true)}
+          />
+        )}
         {showUsers && (
           <MultiUserModal
             showUsers={showUsers}

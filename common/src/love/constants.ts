@@ -7,6 +7,9 @@ const isProd = () => {
   // second clause is for local scripts and cloud functions
   if (process.env.ENVIRONMENT) {
     return process.env.ENVIRONMENT == 'PROD'
+    // ian: this should work for local web dev
+  } else if (process.env.NEXT_PUBLIC_FIREBASE_ENV) {
+    return process.env.NEXT_PUBLIC_FIREBASE_ENV == 'prod'
   } else {
     // ian: this is untested, but might work for local scripts and cloud functions
     // james: doesn't work for local web dev
