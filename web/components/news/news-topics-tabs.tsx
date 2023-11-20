@@ -27,6 +27,7 @@ export function NewsTopicsTabs(props: {
     },
     dashboards.map((d) => ({
       title: d.title,
+      queryString: d.slug,
       content: <NewsDashboard dashboard={d} previews={previews} />,
     })),
     !!homeContent && {

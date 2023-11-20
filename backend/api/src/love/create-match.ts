@@ -28,11 +28,13 @@ import { contentSchema } from 'shared/zod-types'
 import { JSONContent } from '@tiptap/core'
 import { ChatVisibility } from 'common/chat-message'
 
+const MIN_BET_AMOUNT_FOR_NEW_MATCH = 50
+
 const createMatchSchema = z.object({
   userId1: z.string(),
   userId2: z.string(),
-  betAmount: z.number().min(20),
   introduction: contentSchema.optional(),
+  betAmount: z.number().min(MIN_BET_AMOUNT_FOR_NEW_MATCH),
 })
 
 const MATCH_CREATION_FEE = 10
@@ -165,6 +167,7 @@ See [FAQ](https://manifold.love/faq) for more details.`,
       closeTime: eightMonthsLater,
       loverUserId1: userId1,
       loverUserId2: userId2,
+      matchCreatorId: matchCreator.id,
     },
     { uid: manifoldLoveUserId, creds: undefined as any },
     log
@@ -172,7 +175,7 @@ See [FAQ](https://manifold.love/faq) for more details.`,
 
   const { answers } = contract
 
-  const noBetAmounts = [300, 300, 100, 300]
+  const noBetAmounts = [500, 300, 150, 300]
   await Promise.all(
     answers.map(async (a, i) => {
       await placeBetMain(

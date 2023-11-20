@@ -74,7 +74,7 @@ import { hasUserSeenMarket } from 'shared/helpers/seen-markets'
 import { getUserFollowerIds } from 'shared/supabase/users'
 import { getForYouMarkets } from './supabase/search-contracts'
 import { isManifoldLoveContract } from 'common/love/constants'
-import { filterDefined } from 'common/util/array'
+import { buildArray, filterDefined } from 'common/util/array'
 
 const firestore = admin.firestore()
 
@@ -1278,9 +1278,10 @@ export const createContractResolvedNotifications = async (
   // We ignore whether users are still watching a market if they have a payout, mainly
   // bc market resolutions changes their profits, and they'll likely want to know, esp. if NA resolution
   const usersToNotify = uniq(
-    [...contractFollowersIds, ...Object.keys(userPayouts)].filter(
-      (id) => id !== resolver.id
-    )
+    buildArray([
+      !isIndependentMulti && contractFollowersIds,
+      Object.keys(userPayouts),
+    ]).filter((id) => id !== resolver.id)
   )
 
   await Promise.all(

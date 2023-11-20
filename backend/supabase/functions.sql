@@ -212,17 +212,6 @@ where contracts.outcome_type = 'BINARY'
 order by daily_score desc
 limit n offset start $$;
 
-create
-or replace function get_your_trending_contracts (uid text, n int, start int) returns table (data jsonb, score real) stable parallel safe language sql as $$
-select data,
-  popularity_score as score
-from get_your_contract_ids(uid)
-  left join contracts on contracts.id = contract_id
-where is_valid_contract(contracts)
-  and contracts.outcome_type = 'BINARY'
-order by score desc
-limit n offset start $$;
-
 -- Your most recent contracts by bets, likes, or views.
 create
 or replace function get_your_recent_contracts (uid text, n int, start int) returns table (data jsonb, max_ts bigint) stable parallel safe language sql as $$
@@ -577,7 +566,6 @@ order by greatest(
   coalesce(data->'creatorTraders'->'allTime',0) desc nulls last
 limit count $$ language sql stable;
 
-
 create
 or replace function extract_text_from_rich_text_json (description jsonb) returns text language sql immutable as $$
 WITH RECURSIVE content_elements AS (
@@ -710,7 +698,8 @@ order by ((n.data->'createdTime')::bigint) desc
 limit max_num
 $$;
 
-create or replace function get_user_manalink_claims(creator_id text) returns table (manalink_id text, claimant_id text, ts bigint) as $$
+create
+or replace function get_user_manalink_claims (creator_id text) returns table (manalink_id text, claimant_id text, ts bigint) as $$
     select mc.manalink_id, (tx.data)->>'toId' as claimant_id, ((tx.data)->'createdTime')::bigint as ts
     from manalink_claims as mc
     join manalinks as m on mc.manalink_id = m.id

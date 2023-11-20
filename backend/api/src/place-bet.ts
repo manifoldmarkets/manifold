@@ -173,13 +173,15 @@ export const placeBetMain = async (
           expiresAt,
         } = validate(multipleChoiceSchema, body)
         if (expiresAt && expiresAt < Date.now())
-          throw new APIError(404, 'Bet cannot expire in the past.')
+          throw new APIError(403, 'Bet cannot expire in the past.')
         const answersSnap = await trans.get(
           contractDoc.collection('answersCpmm')
         )
         const answers = answersSnap.docs.map((doc) => doc.data() as Answer)
         const answer = answers.find((a) => a.id === answerId)
         if (!answer) throw new APIError(404, 'Answer not found')
+        if ('resolution' in answer && answer.resolution)
+          throw new APIError(403, 'Answer is resolved and cannot be bet on')
         if (shouldAnswersSumToOne && answers.length < 2)
           throw new APIError(
             403,
@@ -251,10 +253,10 @@ export const placeBetMain = async (
         }
       } else if (contract.outcomeType === 'MULTIPLE_CHOICE') {
         const prob = getCpmmProbability(newPool, 0.5)
-        if (prob < 0.1) {
+        if (prob < 0.05) {
           throw new APIError(
             403,
-            'Minimum of 10% probability in relationship markets.'
+            'Minimum of 5% probability in relationship markets.'
           )
         }
       }

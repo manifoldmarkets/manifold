@@ -43,16 +43,7 @@ export const Matches = (props: {
         return resolvedCountB - resolvedCountA
       }
 
-      const highestUnresolvedProbabilityA = Math.max(
-        ...a.answers.filter((ans) => !ans.resolution).map((ans) => ans.prob),
-        0
-      )
-      const highestUnresolvedProbabilityB = Math.max(
-        ...b.answers.filter((ans) => !ans.resolution).map((ans) => ans.prob),
-        0
-      )
-
-      return highestUnresolvedProbabilityB - highestUnresolvedProbabilityA
+      return b.answers[resolvedCountB].prob - a.answers[resolvedCountA].prob
     })
   const areYourMatches = profileUserId === user?.id
 

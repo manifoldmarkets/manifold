@@ -11,6 +11,7 @@ import {
 } from 'shared/supabase/sql-builder'
 import { getContractPrivacyWhereSQLFilter } from 'shared/supabase/contracts'
 import { PROD_MANIFOLD_LOVE_GROUP_SLUG } from 'common/envs/constants'
+import { constructPrefixTsQuery } from 'shared/helpers/search'
 
 export async function getForYouMarkets(userId: string, limit = 25) {
   const searchMarketSQL = getForYouSQL(userId, 'all', 'ALL', limit, 0)
@@ -33,10 +34,6 @@ export function getForYouSQL(
   )
 
   return `with 
-  user_interest AS (SELECT interest_embedding 
-                       FROM user_embeddings
-                       WHERE user_id = '${uid}'
-                       LIMIT 1),
 user_disinterests AS (
   SELECT contract_id
   FROM user_disinterests
@@ -56,19 +53,17 @@ groups AS (
 select data, contract_id,
       importance_score
            * (
-              0.3
-               + 3 * ((1 - (contract_embeddings.embedding <=> user_interest.interest_embedding)) - 0.8)
-               + (CASE WHEN user_follows.follow_id IS NOT NULL THEN 0.1 ELSE 0 END)
+              0.4
                 + (CASE WHEN  EXISTS (
                     SELECT 1
                     FROM group_contracts
                     join groups on group_contracts.group_id = groups.group_id
                     WHERE group_contracts.contract_id = contracts.id
-                  ) THEN 0.3 ELSE 0 END)
+                  ) THEN 0.59 + (CASE WHEN user_follows.follow_id IS NOT NULL THEN 0.01 ELSE 0 END) 
+                      ELSE (CASE WHEN user_follows.follow_id IS NOT NULL THEN 0.5 ELSE 0 END)  END)
            )
            AS modified_importance_score
-from user_interest,
-     contracts
+from contracts
          join contract_embeddings ON contracts.id = contract_embeddings.contract_id
         LEFT JOIN user_follows ON contracts.creator_id = user_follows.follow_id
     ${whereClause}
@@ -155,15 +150,19 @@ export function getSearchContractSQL(args: {
 
     term.length && [
       searchType === 'prefix' &&
-        where(`question_fts @@ to_tsquery('english', $1)`),
+        where(
+          `question_fts @@ to_tsquery('english', $1)`,
+          constructPrefixTsQuery(term)
+        ),
       searchType === 'without-stopwords' &&
-        where(`question_fts @@ websearch_to_tsquery('english', $1)`),
+        where(`question_fts @@ websearch_to_tsquery('english', $1)`, term),
       searchType === 'with-stopwords' &&
         where(
-          `question_nostop_fts @@ websearch_to_tsquery('english_nostop_with_prefix', $1)`
+          `question_nostop_fts @@ websearch_to_tsquery('english_nostop_with_prefix', $1)`,
+          term
         ),
       searchType === 'description' &&
-        where(`description_fts @@ websearch_to_tsquery('english', $1)`),
+        where(`description_fts @@ websearch_to_tsquery('english', $1)`, term),
     ],
 
     orderBy(getSearchContractSortSQL(sort)),

@@ -14,11 +14,15 @@ import { Tooltip } from '../widgets/tooltip'
 import { ENV_CONFIG, isAdminId, isModId } from 'common/envs/constants'
 import { Dashboard } from 'common/dashboard'
 import { LinkPreviews } from 'common/link-preview'
+import { useSaveReferral } from 'web/hooks/use-save-referral'
+import { referralQuery } from 'common/util/share'
 
 export function NewsDashboard(props: {
   dashboard: Dashboard
   previews: LinkPreviews
 }) {
+  useSaveReferral()
+
   const { dashboard, previews } = props
   const user = useUser()
   const isCreator = user?.id === dashboard.creatorId
@@ -37,7 +41,11 @@ export function NewsDashboard(props: {
           {user !== undefined && (
             <CopyLinkOrShareButton
               eventTrackingName="share home news item"
-              url={`https://${ENV_CONFIG.domain}/news?tab=${dashboard.slug}`}
+              url={`https://${ENV_CONFIG.domain}/news?tab=${dashboard.slug}${
+                user?.username
+                  ? referralQuery(user.username).replace('?', '&')
+                  : ''
+              }`}
               tooltip="Share"
             />
           )}

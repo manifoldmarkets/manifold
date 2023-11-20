@@ -112,6 +112,14 @@ export const resolvemarket = authEndpoint(async (req, auth, log) => {
 
   const resolutionParams = getResolutionParams(contract, req.body)
 
+  if ('answerId' in resolutionParams && 'answers' in contract) {
+    const { answerId } = resolutionParams
+    const answer = contract.answers.find((a) => a.id === answerId)
+    if (answer && 'resolution' in answer && answer.resolution) {
+      throw new APIError(403, `${answerId} answer is already resolved`)
+    }
+  }
+
   log('Resolving market ', {
     contractSlug: contract.slug,
     contractId,

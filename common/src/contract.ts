@@ -117,6 +117,7 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
   // Manifold.love
   loverUserId1?: string // The user id's of the pair of lovers referenced in the question.
   loverUserId2?: string // The user id's of the pair of lovers referenced in the question.
+  matchCreatorId?: string // The user id of the person who proposed the match.
 } & T
 
 export type DPMContract = Contract & DPM
