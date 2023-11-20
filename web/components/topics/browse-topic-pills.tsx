@@ -30,13 +30,20 @@ export const BrowseTopicPills = (props: {
         )}
       >
         {isAuth && (sort == undefined || sort == 'score') && (
-          <PillButton
-            key={'pill-for-you'}
-            selected={currentTopicSlug === 'for-you'}
-            onSelect={() => setTopicSlug('for-you')}
-          >
-            ⭐️ For you
-          </PillButton>
+          <>
+            <PillButton
+              selected={currentTopicSlug === 'for-you'}
+              onSelect={() => setTopicSlug('for-you')}
+            >
+              ⭐️ For you
+            </PillButton>
+            <PillButton
+              selected={currentTopicSlug === 'recent'}
+              onSelect={() => setTopicSlug('recent')}
+            >
+              ⏳ Recent
+            </PillButton>
+          </>
         )}
 
         {topics.map((g) => (
