@@ -1,5 +1,6 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
+import * as sharp from 'sharp'
 import { JSONContent } from '@tiptap/core'
 
 import { getUser, log } from 'shared/utils'
@@ -41,8 +42,9 @@ export const onCreateContract = functions
     if (!loverUserId1) {
       const dalleImage = await generateImage(question)
       if (dalleImage) {
-        const coverImageUrl = await uploadToStorage(dalleImage, creatorUsername)
-        if (coverImageUrl) await snapshot.ref.update({ coverImageUrl })
+        await uploadToStorage(dalleImage, creatorUsername)
+          .then((coverImageUrl) => snapshot.ref.update({ coverImageUrl }))
+          .catch((err) => console.error('Failed to load image', err))
       }
     }
 
@@ -108,16 +110,21 @@ export const onCreateContract = functions
 
 export const uploadToStorage = async (imgUrl: string, username: string) => {
   const response = await fetch(imgUrl)
+
   const arrayBuffer = await response.arrayBuffer()
-  const buffer = Buffer.from(arrayBuffer)
+  const inputBuffer = Buffer.from(arrayBuffer)
+
+  const buffer = await sharp(inputBuffer)
+    .toFormat('jpeg', { quality: 60 })
+    .toBuffer()
 
   const bucket = admin.storage().bucket()
 
-  const file = bucket.file(`contract-images/${username}/${randomString()}.png`)
+  const file = bucket.file(`contract-images/${username}/${randomString()}.jpg`)
 
   const stream = file.createWriteStream({
     metadata: {
-      contentType: 'image/png',
+      contentType: 'image/jpg',
     },
   })
 
