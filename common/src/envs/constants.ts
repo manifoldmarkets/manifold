@@ -234,6 +234,7 @@ export const DESTINY_GROUP_SLUGS = [
   'mumbowl-stonks',
 ]
 export const PROD_MANIFOLD_LOVE_GROUP_SLUG = 'manifoldlove-relationships'
+export const PROD_MANIFOLD_LOVE_USER_ID = 'tRZZ6ihugZQLXPf6aPRneGpWLmz1'
 export const GROUP_SLUGS_TO_IGNORE_IN_MARKETS_EMAIL = [
   'manifold-features',
   'manifold-6748e065087e',
