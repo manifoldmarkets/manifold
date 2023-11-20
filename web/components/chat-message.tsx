@@ -14,7 +14,7 @@ import { UserAvatarAndBadge } from 'web/components/widgets/user-link'
 import Link from 'next/link'
 import DropdownMenu from 'web/components/comments/dropdown-menu'
 import { DotsHorizontalIcon, ReplyIcon } from '@heroicons/react/solid'
-import { PROD_MANIFOLD_LOVE_USER_ID } from 'common/envs/constants'
+import { manifoldLoveUserId } from 'common/love/constants'
 
 export const ChatMessageItem = memo(function ChatMessageItem(props: {
   chats: ChatMessage[]
@@ -127,7 +127,7 @@ export const SystemChatMessageItem = memo(
     if (!chat) return null
     const hideAvatar =
       chat.visibility === 'system_status' &&
-      chat.userId === PROD_MANIFOLD_LOVE_USER_ID &&
+      chat.userId === manifoldLoveUserId &&
       chats.length === 1
     const totalUsers = otherUsers?.length || 1
     return (

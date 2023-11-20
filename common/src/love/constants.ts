@@ -1,9 +1,6 @@
 import { PROD_MANIFOLD_LOVE_GROUP_ID } from 'common/supabase/groups'
 import { Contract } from 'common/contract'
-import {
-  PROD_MANIFOLD_LOVE_GROUP_SLUG,
-  PROD_MANIFOLD_LOVE_USER_ID,
-} from 'common/envs/constants'
+import { PROD_MANIFOLD_LOVE_GROUP_SLUG } from 'common/envs/constants'
 
 const isProd = () => {
   // mqp: kind of hacky rn. the first clause is for cloud run API service,
@@ -23,7 +20,7 @@ const isProd = () => {
 }
 
 export const manifoldLoveUserId = isProd()
-  ? PROD_MANIFOLD_LOVE_USER_ID
+  ? 'tRZZ6ihugZQLXPf6aPRneGpWLmz1'
   : 'RlXR2xa4EFfAzdCbSe45wkcdarh1'
 export const manifoldLoveRelationshipsGroupId = isProd()
   ? PROD_MANIFOLD_LOVE_GROUP_ID
