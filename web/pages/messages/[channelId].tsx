@@ -83,6 +83,14 @@ export function PrivateMessagesContent() {
     </>
   )
 }
+const systemStatusType = (message: ChatMessage) => {
+  const chatContent = richTextToString(message.content)
+  return chatContent.includes('left the chat')
+    ? 'left'
+    : chatContent.includes('joined the chat')
+    ? 'joined'
+    : 'other'
+}
 
 export const PrivateChat = (props: {
   user: User
@@ -109,34 +117,45 @@ export const PrivateChat = (props: {
   const messagesPerPage = 50
 
   const [showUsers, setShowUsers] = useState(false)
-  const otherUsersFromChannel = useOtherUserIdsInPrivateMessageChannelIds(
+  const channelMemberships = useOtherUserIdsInPrivateMessageChannelIds(
     user.id,
     true,
     [channel]
   )
   const initialScroll = useRef(realtimeMessages === undefined)
-  const maxUsers = 100
-  const userIdsFromMessages = uniq(
+  const maxUsersToGet = 100
+  const messageUserIds = uniq(
     (realtimeMessages ?? [])
       .filter((message) => message.userId !== user.id)
       .map((message) => message.userId)
   )
-  const userIdsFromMemberships = (
-    otherUsersFromChannel?.[channelId]?.map((m) => m.user_id) ?? []
+  const membershipUserIds =
+    channelMemberships?.[channelId]?.map((m) => m.user_id) ?? []
+
+  // Prioritize getting users that have messages in the channel
+  const otherUserIds = messageUserIds.concat(
+    membershipUserIds
+      .filter((userId) => !messageUserIds.includes(userId))
+      .slice(0, maxUsersToGet - messageUserIds.length)
   )
-    .filter((userId) => !userIdsFromMessages.includes(userId))
-    .slice(0, maxUsers - userIdsFromMessages.length)
-  const otherUserIds = userIdsFromMessages.concat(userIdsFromMemberships)
 
   const usersThatLeft = filterDefined(
-    otherUsersFromChannel?.[channelId]
+    channelMemberships?.[channelId]
       ?.filter((membership) => membership.status === 'left')
       .map((membership) => membership.user_id) ?? []
   )
 
-  const otherUsers = useUsersInStore(otherUserIds, `${channelId}`, maxUsers)
+  // Note: we may have messages from users not in the channel, e.g. a system message from manifold
+  const otherUsers = useUsersInStore(
+    otherUserIds,
+    `${channelId}`,
+    maxUsersToGet
+  )
   const remainingUsers = filterDefined(
     otherUsers?.filter((user) => !usersThatLeft.includes(user.id)) ?? []
+  )
+  const members = filterDefined(
+    otherUsers?.filter((user) => membershipUserIds.includes(user.id)) ?? []
   )
   const router = useRouter()
   const messages = useMemo(
@@ -171,11 +190,8 @@ export const PrivateChat = (props: {
 
     forEach(messages, (message, i) => {
       const isSystemStatus = message.visibility === 'system_status'
-      if (
-        isSystemStatus &&
-        richTextToString(message.content).includes('left the chat')
-      )
-        return
+      const systemType = systemStatusType(message)
+      if (isSystemStatus && systemType === 'left') return
 
       if (i === 0) {
         if (isSystemStatus) systemStatusGroup.push(message)
@@ -186,11 +202,13 @@ export const PrivateChat = (props: {
           message.createdTime - prevMessage.createdTime
         )
         const creatorsMatch = message.userId === prevMessage.userId
-        const isPrevSystemStatus = prevMessage.visibility === 'system_status'
+        const isMatchingPrevSystemStatus =
+          prevMessage.visibility === 'system_status' &&
+          systemStatusType(prevMessage) === systemType
 
         if (isSystemStatus) {
           // Check if the current message should be grouped with the previous system_status message(s)
-          if (isPrevSystemStatus && timeDifference < 4 * HOUR_MS) {
+          if (isMatchingPrevSystemStatus && timeDifference < 4 * HOUR_MS) {
             systemStatusGroup.push(message)
           } else {
             if (systemStatusGroup.length > 0) {
@@ -202,7 +220,7 @@ export const PrivateChat = (props: {
         } else if (
           timeDifference < 2 * MINUTE_MS &&
           creatorsMatch &&
-          !isPrevSystemStatus
+          !isMatchingPrevSystemStatus
         ) {
           last(tempGrouped)?.push(message)
         } else {
@@ -301,30 +319,30 @@ export const PrivateChat = (props: {
             size="sm"
             spacing={0.5}
             startLeft={1}
-            avatarUrls={remainingUsers?.map((user) => user.avatarUrl) ?? []}
+            avatarUrls={members?.map((user) => user.avatarUrl) ?? []}
             onClick={() => setShowUsers(true)}
           />
         )}
         {channel.title ? (
           <span className={'ml-1 font-semibold'}>{channel.title}</span>
         ) : (
-          remainingUsers && (
+          members && (
             <span
               className={'ml-1 cursor-pointer hover:underline'}
               onClick={() => setShowUsers(true)}
             >
-              {remainingUsers
+              {members
                 .map((user) => user.name.split(' ')[0].trim())
                 .slice(0, 2)
                 .join(', ')}
-              {remainingUsers.length > 2 &&
-                ` & ${remainingUsers.length - 2} more`}
+              {members.length > 2 && ` & ${members.length - 2} more`}
               {usersThatLeft.length > 0 && ` (${usersThatLeft.length} left)`}
             </span>
           )
         )}
-        {remainingUsers?.length == 1 &&
-          remainingUsers[0].isBannedFromPosting && <BannedBadge />}
+        {members?.length == 1 && members[0].isBannedFromPosting && (
+          <BannedBadge />
+        )}
         <DropdownMenu
           className={'ml-auto'}
           menuWidth={'w-44'}
@@ -384,13 +402,13 @@ export const PrivateChat = (props: {
         {showUsers && (
           <Modal open={showUsers} setOpen={setShowUsers}>
             <Col className={clsx(MODAL_CLASS)}>
-              {otherUsers?.map((user) => (
+              {members?.map((user) => (
                 <Row
                   key={user.id}
                   className={'w-full items-center justify-start gap-2'}
                 >
                   <UserAvatarAndBadge user={user} />
-                  {otherUsersFromChannel?.[channelId].map(
+                  {channelMemberships?.[channelId].map(
                     (membership) =>
                       membership.user_id === user.id &&
                       membership.status === 'left' && (

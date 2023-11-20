@@ -1,5 +1,6 @@
 import { Json } from 'common/supabase/schema'
 import { SupabaseDirectClient } from 'shared/supabase/init'
+import { ChatVisibility } from 'common/chat-message'
 
 export const leaveChatContent = (userName: string) => ({
   type: 'doc',
@@ -16,7 +17,7 @@ export const joinChatContent = (userName: string) => {
     content: [
       {
         type: 'paragraph',
-        content: [{ text: `${userName} has joined the chat!`, type: 'text' }],
+        content: [{ text: `${userName} joined the chat!`, type: 'text' }],
       },
     ],
   }
@@ -26,7 +27,7 @@ export const insertPrivateMessage = async (
   content: Json,
   channelId: number,
   userId: string,
-  visibility: 'private' | 'system_status',
+  visibility: ChatVisibility,
   pg: SupabaseDirectClient
 ) => {
   const lastMessage = await pg.one(

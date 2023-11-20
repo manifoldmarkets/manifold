@@ -1,4 +1,5 @@
 import { JSONContent } from '@tiptap/core'
+export type ChatVisibility = 'private' | 'system_status'
 
 export type ChatMessage = {
   id: string
@@ -6,5 +7,5 @@ export type ChatMessage = {
   channelId: string
   content: JSONContent
   createdTime: number
-  visibility: 'private' | 'system_status'
+  visibility: ChatVisibility
 }

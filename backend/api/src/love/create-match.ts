@@ -22,20 +22,36 @@ import {
 } from 'common/love/constants'
 import { sendNewMatchEmail } from 'shared/emails'
 import { DAY_MS, HOUR_MS, MONTH_MS } from 'common/util/time'
+import { createPrivateUserMessageChannelMain } from 'api/create-private-user-message-channel'
+import { createPrivateUserMessageMain } from 'api/create-private-user-message'
+import { contentSchema } from 'shared/zod-types'
+import { JSONContent } from '@tiptap/core'
+import { ChatVisibility } from 'common/chat-message'
 
 const MIN_BET_AMOUNT_FOR_NEW_MATCH = 50
 
 const createMatchSchema = z.object({
   userId1: z.string(),
   userId2: z.string(),
+  introduction: contentSchema.optional(),
   betAmount: z.number().min(MIN_BET_AMOUNT_FOR_NEW_MATCH),
 })
 
 const MATCH_CREATION_FEE = 10
 
 export const createMatch = authEndpoint(async (req, auth, log) => {
-  const { userId1, userId2, betAmount } = validate(createMatchSchema, req.body)
-  return await createMatchMain(auth.uid, userId1, userId2, betAmount, log)
+  const { userId1, userId2, betAmount, introduction } = validate(
+    createMatchSchema,
+    req.body
+  )
+  return await createMatchMain(
+    auth.uid,
+    userId1,
+    userId2,
+    betAmount,
+    introduction,
+    log
+  )
 })
 
 export const createMatchMain = async (
@@ -43,6 +59,7 @@ export const createMatchMain = async (
   userId1: string,
   userId2: string,
   betAmount: number,
+  introduction: JSONContent | undefined,
   log: GCPLog
 ) => {
   if (userId1 === userId2) {
@@ -199,12 +216,64 @@ See [FAQ](https://manifold.love/faq) for more details.`,
   if (matchCreator.id !== user2.id) {
     await createNewMatchNotification(user2, matchCreator, user1, contract, pg)
   }
+  const { channelId } = await createPrivateUserMessageChannelMain(
+    matchCreator.id,
+    [user1.id, user2.id],
+    pg
+  )
+  const isExternalMatchmaker = ![user1.id, user2.id].includes(matchCreator.id)
+  const messages = [
+    [
+      introSystemMessage(
+        matchCreator.name,
+        isExternalMatchmaker ? introduction : undefined
+      ),
+      'system_status',
+    ],
+  ] as [JSONContent, ChatVisibility][]
+  if (!isExternalMatchmaker && !!introduction) {
+    messages.push([introduction, 'private'])
+  }
 
+  await Promise.all(
+    messages.map(async ([message, visibility]) => {
+      await createPrivateUserMessageMain(
+        matchCreator,
+        channelId,
+        message,
+        pg,
+        log,
+        visibility,
+        visibility === 'system_status' ? manifoldLoveUserId : undefined
+      )
+    })
+  )
   return {
     success: true,
     contract,
   }
 }
+
+const introSystemMessage = (
+  userName: string,
+  content: JSONContent | undefined
+) =>
+  ({
+    type: 'doc',
+    content: [
+      {
+        type: 'paragraph',
+        content: [
+          {
+            text: `${userName} proposed your match! ${
+              content ? 'They said:' : ''
+            }`,
+            type: 'text',
+          },
+        ],
+      },
+    ].concat(content?.content ? content.content : ([] as any)),
+  } as JSONContent)
 
 const createNewMatchNotification = async (
   forUser: User,

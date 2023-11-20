@@ -1,20 +1,7 @@
 import { PROD_MANIFOLD_LOVE_GROUP_ID } from 'common/supabase/groups'
 import { Contract } from 'common/contract'
 import { PROD_MANIFOLD_LOVE_GROUP_SLUG } from 'common/envs/constants'
-
-const isProd = () => {
-  // mqp: kind of hacky rn. the first clause is for cloud run API service,
-  // second clause is for local scripts and cloud functions
-  if (process.env.ENVIRONMENT) {
-    return process.env.ENVIRONMENT == 'PROD'
-  } else {
-    // ian: this is untested, but might work for local scripts and cloud functions
-    // james: doesn't work for local web dev
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const admin = require('firebase-admin')
-    return admin.app().options.projectId === 'mantic-markets'
-  }
-}
+import { isProd } from 'common/envs/is-prod'
 
 export const manifoldLoveUserId = isProd()
   ? 'tRZZ6ihugZQLXPf6aPRneGpWLmz1'

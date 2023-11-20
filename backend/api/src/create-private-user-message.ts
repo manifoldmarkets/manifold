@@ -21,6 +21,9 @@ import { createPushNotification } from 'shared/create-push-notification'
 import { sendNewMessageEmail } from 'shared/emails'
 import { HOUR_MS } from 'common/util/time'
 import { tsToMillis } from 'common/supabase/utils'
+import { JSONContent } from '@tiptap/core'
+import { ChatVisibility } from 'common/chat-message'
+import { manifoldLoveUserId } from 'common/love/constants'
 dayjs.extend(utc)
 dayjs.extend(timezone)
 
@@ -43,17 +46,47 @@ export const createprivateusermessage = authEndpoint(async (req, auth, log) => {
   const creator = await getUserSupabase(auth.uid)
   if (!creator) throw new APIError(401, 'Your account was not found')
   if (creator.isBannedFromPosting) throw new APIError(403, 'You are banned')
-
-  // users can only submit messages to channels that they are members of
-  const authorized = await pg.oneOrNone(
-    `select 1 from private_user_message_channel_members
-            where channel_id = $1 and user_id = $2`,
-    [channelId, auth.uid]
+  return await createPrivateUserMessageMain(
+    creator,
+    channelId,
+    content,
+    pg,
+    log,
+    'private'
   )
-  if (!authorized)
-    throw new APIError(403, 'You are not authorized to post to this channel')
+})
+
+export const createPrivateUserMessageMain = async (
+  creator: User,
+  channelId: number,
+  content: JSONContent,
+  pg: SupabaseDirectClient,
+  log: GCPLog,
+  visibility: ChatVisibility,
+  overrideCreatorId?: string
+) => {
+  if (!overrideCreatorId) {
+    // Normally, users can only submit messages to channels that they are members of
+    const authorized = await pg.oneOrNone(
+      `select 1
+       from private_user_message_channel_members
+       where channel_id = $1
+         and user_id = $2`,
+      [channelId, creator.id]
+    )
+    if (!authorized)
+      throw new APIError(403, 'You are not authorized to post to this channel')
+  } else if (overrideCreatorId !== manifoldLoveUserId) {
+    throw new APIError(403, 'Only manifold love can post to arbitrary channels')
+  }
   await notifyOtherUserInChannelIfInactive(channelId, creator, pg, log)
-  await insertPrivateMessage(content, channelId, auth.uid, 'private', pg)
+  await insertPrivateMessage(
+    content,
+    channelId,
+    overrideCreatorId ?? creator.id,
+    visibility,
+    pg
+  )
 
   const privateMessage = {
     content: content as Json,
@@ -62,7 +95,7 @@ export const createprivateusermessage = authEndpoint(async (req, auth, log) => {
   }
 
   return { status: 'success', privateMessage }
-})
+}
 
 const notifyOtherUserInChannelIfInactive = async (
   channelId: number,

@@ -13,6 +13,10 @@ import { useUser } from 'web/hooks/use-user'
 import { createMatch } from 'web/lib/firebase/love/api'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { Lover } from 'common/love/lover'
+import { CommentInputTextArea } from 'web/components/comments/comment-input'
+import { Editor } from '@tiptap/react'
+import { useTextEditor } from 'web/components/widgets/editor'
+import { MAX_COMMENT_LENGTH } from 'common/comment'
 
 const MIN_BET_AMOUNT_FOR_NEW_MATCH = 50
 
@@ -30,7 +34,14 @@ export const AddAMatchButton = (props: {
   )
   const [isSubmitting, setIsSubmitting] = useState(false)
   const currentUser = useUser()
+  const key = `comment ${potentialLovers.map((l) => l.id).join(',')}`
 
+  const editor = useTextEditor({
+    key,
+    size: 'sm',
+    max: MAX_COMMENT_LENGTH,
+    placeholder: 'Write your introduction...',
+  })
   const submit = async () => {
     if (!selectedMatchId || !betAmount) return
 
@@ -39,6 +50,7 @@ export const AddAMatchButton = (props: {
       userId1: lover.user_id,
       userId2: selectedMatchId,
       betAmount,
+      introduction: editor?.getJSON(),
     }).finally(() => {
       setIsSubmitting(false)
     })
@@ -77,6 +89,7 @@ export const AddAMatchButton = (props: {
       </Button>
       {dialogOpen && (
         <AddMatchDialog
+          editor={editor}
           lover={lover}
           potentialLovers={potentialLovers}
           selectedMatchId={selectedMatchId}
@@ -102,6 +115,7 @@ const AddMatchDialog = (props: {
   isSubmitting: boolean
   setOpen: (open: boolean) => void
   submit: () => void
+  editor: Editor | null
 }) => {
   const {
     lover,
@@ -113,6 +127,7 @@ const AddMatchDialog = (props: {
     isSubmitting,
     setOpen,
     submit,
+    editor,
   } = props
 
   const [error, setError] = useState<string | undefined>(undefined)
@@ -188,6 +203,7 @@ const AddMatchDialog = (props: {
             <div className="text-sm font-bold">Bet on their relationship</div>
             <BuyAmountInput
               amount={betAmount}
+              inputClassName={'w-36'}
               onChange={setBetAmount}
               minimumAmount={MIN_BET_AMOUNT_FOR_NEW_MATCH}
               error={error}
@@ -196,6 +212,13 @@ const AddMatchDialog = (props: {
             />
           </Col>
         )}
+
+        <CommentInputTextArea
+          isSubmitting={isSubmitting}
+          editor={editor}
+          user={user}
+          hideToolbar={true}
+        />
 
         {isSubmitting && (
           <div className="text-ink-500">

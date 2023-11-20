@@ -34,6 +34,7 @@ export function createMatch(params: {
   userId1: string
   userId2: string
   betAmount: number
+  introduction: JSONContent | undefined
 }) {
   return call(getApiUrl('create-match'), 'POST', params)
 }
