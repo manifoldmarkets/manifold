@@ -119,6 +119,7 @@ export const BOT_USERNAMES = [
   'breezybot',
   'echo',
   'Sayaka',
+  'cc7',
 ]
 
 export const MOD_IDS = [
