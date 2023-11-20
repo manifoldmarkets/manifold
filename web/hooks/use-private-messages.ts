@@ -30,6 +30,8 @@ import { safeLocalStorage } from 'web/lib/util/local'
 import { useEvent } from 'web/hooks/use-event'
 import { useRouter } from 'next/router'
 import { PostgrestBuilder } from '@supabase/postgrest-js'
+import { useIsPageVisible } from 'web/hooks/use-page-visible'
+import { track } from 'web/lib/service/analytics'
 
 // NOTE: must be authorized (useIsAuthorized) to use this hook
 export function useRealtimePrivateMessagesPolling(
@@ -235,15 +237,17 @@ export const useUnseenPrivateMessageChannels = (
 
 const useLastSeenMessagesPageTime = (userId: string) => {
   const { isReady, asPath } = useRouter()
+  const isVisible = useIsPageVisible()
 
   const [lastSeenMessagesPageTime, setLastSeenMessagesPageTime] =
     usePersistentLocalState(0, 'last-seen-private-messages-page')
   useEffect(() => {
     if (isReady && asPath.endsWith('/messages')) {
       setLastSeenMessagesPageTime(Date.now())
+      track('view love messages page')
       return
     }
-    // On every path change, check the last time we saw the messages page
+    // On every path or visibility change, check the last time we saw the messages page
     run(
       db
         .from('user_events')
@@ -255,7 +259,7 @@ const useLastSeenMessagesPageTime = (userId: string) => {
     ).then(({ data }) => {
       setLastSeenMessagesPageTime(new Date(data[0]?.ts ?? 0).valueOf())
     })
-  }, [isReady, asPath])
+  }, [isReady, asPath, isVisible])
 
   return lastSeenMessagesPageTime
 }
