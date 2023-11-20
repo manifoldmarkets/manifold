@@ -50,6 +50,7 @@ export function getNewContract(props: {
   // Manifold.love
   loverUserId1: string | undefined
   loverUserId2: string | undefined
+  matchCreatorId: string | undefined
 }) {
   const {
     id,
@@ -71,6 +72,7 @@ export function getNewContract(props: {
     shouldAnswersSumToOne,
     loverUserId1,
     loverUserId2,
+    matchCreatorId,
     coverImageUrl,
   } = props
   const createdTime = Date.now()
@@ -134,6 +136,7 @@ export function getNewContract(props: {
     isTwitchContract,
     loverUserId1,
     loverUserId2,
+    matchCreatorId,
   })
 
   return contract as Contract

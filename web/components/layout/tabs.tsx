@@ -15,7 +15,7 @@ export type Tab = {
   inlineTabIcon?: ReactNode
   tooltip?: string
   className?: string
-  queryTitle?: string
+  queryString?: string
 }
 
 type TabProps = {
@@ -54,12 +54,12 @@ export function ControlledTabs(props: TabProps & { activeIndex: number }) {
         {tabs.map((tab, i) => (
           <a
             href="#"
-            key={tab.queryTitle ?? tab.title}
+            key={tab.queryString ?? tab.title}
             onClick={(e) => {
               e.preventDefault()
 
               onClick?.(
-                tab.queryTitle?.toLowerCase() ?? tab.title.toLowerCase(),
+                tab.queryString?.toLowerCase() ?? tab.title.toLowerCase(),
                 i
               )
 
@@ -133,7 +133,7 @@ const isTabSelected = (router: NextRouter, queryParam: string, tab: Tab) => {
   const selected = router.query[queryParam]
   if (typeof selected === 'string') {
     return (
-      (tab.queryTitle?.toLowerCase() ?? tab.title.toLowerCase()) === selected
+      (tab.queryString?.toLowerCase() ?? tab.title.toLowerCase()) === selected
     )
   } else {
     return false
@@ -151,7 +151,7 @@ export function QueryUncontrolledTabs(
   useEffect(() => {
     if (onClick) {
       onClick(
-        tabs[activeIndex].queryTitle ?? tabs[activeIndex].title,
+        tabs[activeIndex].queryString ?? tabs[activeIndex].title,
         activeIndex
       )
     }

@@ -7,7 +7,7 @@ create or replace function users_populate_cols () returns trigger language plpgs
     return new;
 end $$;
 
-create trigger users_populate before insert
+create trigger users_popuate before insert
 or
 update on users for each row
 execute function users_populate_cols ();

@@ -46,18 +46,19 @@ export const drizzleLiquidity = async () => {
 }
 
 export const drizzleLiquidityScheduler = functions.pubsub
-  .schedule('*/10 * * * *')
+  .schedule('*/7 * * * *')
   .onRun(drizzleLiquidity)
 
 const drizzleMarket = async (contractId: string) => {
   await firestore.runTransaction(async (trans) => {
     const snap = await trans.get(firestore.doc(`contracts/${contractId}`))
     const contract = snap.data() as CPMMContract | CPMMMultiContract
-    const { subsidyPool, slug } = contract
+    const { subsidyPool, slug, uniqueBettorCount } = contract
     if ((subsidyPool ?? 0) < 1e-7) return
 
     const r = Math.random()
-    const amount = subsidyPool <= 1 ? subsidyPool : r * 0.3 * subsidyPool
+    const v = (uniqueBettorCount ?? 0) < 50 ? 0.3 : 0.6
+    const amount = subsidyPool <= 1 ? subsidyPool : r * v * subsidyPool
 
     if (contract.mechanism === 'cpmm-multi-1') {
       const answersSnap = await trans.get(

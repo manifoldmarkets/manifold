@@ -3501,17 +3501,6 @@ export interface Database {
           max_ts: number
         }[]
       }
-      get_your_trending_contracts: {
-        Args: {
-          uid: string
-          n: number
-          start: number
-        }
-        Returns: {
-          data: Json
-          score: number
-        }[]
-      }
       gtrgm_compress: {
         Args: {
           "": unknown

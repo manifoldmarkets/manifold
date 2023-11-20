@@ -42,8 +42,9 @@ export const searchContracts = async (
   }
 
   const isForYou = possibleTopicSlug === 'for-you'
+  const isRecent = possibleTopicSlug === 'recent'
   const topicSlug =
-    possibleTopicSlug && !isForYou ? possibleTopicSlug : undefined
+    possibleTopicSlug && !isForYou && !isRecent ? possibleTopicSlug : undefined
   const pg = createSupabaseDirectClient()
   const groupId = topicSlug
     ? await getGroupIdFromSlug(topicSlug, pg)
@@ -52,6 +53,12 @@ export const searchContracts = async (
   if (isForYou && !term && sort === 'score' && userId) {
     const forYouSql = getForYouSQL(userId, filter, contractType, limit, offset)
     contracts = await pg.map(forYouSql, [term], (r) => r.data as Contract)
+  } else if (isRecent && !term && userId) {
+    contracts = await pg.map(
+      'select data from get_your_recent_contracts($1, $2, $3)',
+      [userId, limit, offset],
+      convertContract
+    )
   } else {
     const groupAccess = await hasGroupAccess(groupId, userId)
     const searchTypes: SearchTypes[] = [
@@ -69,10 +76,8 @@ export const searchContracts = async (
       contractDescriptionMatches,
     ] = await Promise.all(
       searchTypes.map(async (searchType) => {
-        const searchTerm =
-          searchType === 'prefix' ? constructPrefixTsQuery(term) : term
         const searchSQL = getSearchContractSQL({
-          term: searchTerm,
+          term,
           filter,
           sort,
           contractType,
@@ -86,7 +91,7 @@ export const searchContracts = async (
           searchType,
         })
         return pg
-          .map(searchSQL, [searchTerm], (r) => ({
+          .map(searchSQL, [], (r) => ({
             data: convertContract(r),
             searchType,
           }))
@@ -173,12 +178,3 @@ const bodySchema = z
     creatorId: z.string().regex(FIRESTORE_DOC_REF_ID_REGEX).optional(),
   })
   .strict()
-
-export const constructPrefixTsQuery = (term: string) => {
-  const trimmed = term.trim()
-  if (trimmed === '') return ''
-  const sanitizedTrimmed = trimmed.replace(/'/g, "''").replace(/[!&|():*]/g, '')
-  const tokens = sanitizedTrimmed.split(' ')
-  tokens[tokens.length - 1] += ':*'
-  return tokens.join(' & ')
-}

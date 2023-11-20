@@ -162,23 +162,6 @@ export const getPublicContracts = async (options: {
   return data.map((r) => r.data)
 }
 
-export async function getYourRecentContracts(
-  db: SupabaseClient,
-  userId: string,
-  count: number
-) {
-  const { data } = await db.rpc('get_your_recent_contracts', {
-    uid: userId,
-    n: count,
-    start: 0,
-  })
-
-  if (!data) return null
-
-  const contracts = filterDefined(data.map((d) => (d as any).data))
-  return contracts
-}
-
 export async function getYourDailyChangedContracts(
   db: SupabaseClient,
   userId: string,
@@ -196,20 +179,6 @@ export async function getYourDailyChangedContracts(
     data.map((d) => (d as any).data)
   ) as CPMMContract[]
   return contracts
-}
-
-export async function getYourTrendingContracts(
-  db: SupabaseClient,
-  userId: string,
-  count: number
-) {
-  const { data } = await db.rpc('get_your_trending_contracts', {
-    uid: userId,
-    n: count,
-    start: 0,
-  })
-
-  return data?.map((d) => (d as any).data as Contract)
 }
 
 export async function getContractFromSlug(

@@ -10,7 +10,7 @@ import {
   orderBy,
   where,
 } from 'shared/supabase/sql-builder'
-import { constructPrefixTsQuery } from './supabase-search-contract'
+import { constructPrefixTsQuery } from 'shared/helpers/search'
 
 const bodySchema = z
   .object({

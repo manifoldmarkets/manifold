@@ -138,6 +138,9 @@ export const sellshares = authEndpoint(async (req, auth, log) => {
           if (!answer) {
             throw new APIError(404, 'Answer not found')
           }
+          if ('resolution' in answer && answer.resolution) {
+            throw new APIError(403, 'Answer is resolved and cannot be bet on')
+          }
         }
         return {
           otherResultsWithBet: [],

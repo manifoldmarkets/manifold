@@ -112,7 +112,7 @@ export const ChoiceContractChart = (props: {
   controlledStart?: number
   showZoomer?: boolean
   highlightAnswerId?: string
-  checkedAnswerIds?: string[]
+  selectedAnswerIds: string[]
 }) => {
   const {
     contract,
@@ -123,7 +123,7 @@ export const ChoiceContractChart = (props: {
     controlledStart,
     showZoomer,
     highlightAnswerId,
-    checkedAnswerIds,
+    selectedAnswerIds,
   } = props
 
   const [start, end] = getDateRange(contract)
@@ -168,6 +168,7 @@ export const ChoiceContractChart = (props: {
   const xScale = scaleTime([rangeStart, rightmostDate], [0, width])
   const yScale = scaleLinear([0, 1], [height, 0])
 
+  const chosenAnswerIds = buildArray(selectedAnswerIds, highlightAnswerId)
   return (
     <MultiValueHistoryChart
       w={width}
@@ -177,11 +178,7 @@ export const ChoiceContractChart = (props: {
       viewScaleProps={viewScaleProps}
       showZoomer={showZoomer}
       yKind="percent"
-      data={
-        checkedAnswerIds?.length
-          ? pick(data, buildArray(checkedAnswerIds, highlightAnswerId))
-          : data
-      }
+      data={pick(data, chosenAnswerIds)}
       hoveringId={highlightAnswerId}
       Tooltip={(props) => (
         <ChoiceTooltip answers={answers} xScale={xScale} ttProps={props} />

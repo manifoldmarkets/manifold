@@ -79,10 +79,10 @@ export const MatchTile = (props: {
             <Image
               src={pinned_url}
               // You must set these so we don't pay an extra $1k/month to vercel
-              width={180}
-              height={240}
+              width={220}
+              height={144}
               alt={`${user.username}`}
-              className="h-full w-full object-cover"
+              className="h-36 w-full object-cover"
             />
           </Link>
         ) : (
