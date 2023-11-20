@@ -220,9 +220,13 @@ See [FAQ](https://manifold.love/faq) for more details.`,
   )
   const isExternalMatchmaker = ![user1.id, user2.id].includes(matchCreator.id)
   const messages = [
-    isExternalMatchmaker
-      ? [introSystemMessage(matchCreator.name, introduction), 'system_status']
-      : [introSystemMessage(matchCreator.name, undefined), 'system_status'],
+    [
+      introSystemMessage(
+        matchCreator.name,
+        isExternalMatchmaker ? introduction : undefined
+      ),
+      'system_status',
+    ],
   ] as [JSONContent, ChatVisibility][]
   if (!isExternalMatchmaker && !!introduction) {
     messages.push([introduction, 'private'])
