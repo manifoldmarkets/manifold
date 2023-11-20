@@ -216,6 +216,7 @@ export const processPartitioned = async <T extends DocumentData, U>(
   return results
 }
 
+// TODO: deprecate in favor of common/src/envs/is-prod.ts
 export const isProd = () => {
   // mqp: kind of hacky rn. the first clause is for cloud run API service,
   // second clause is for local scripts and cloud functions
