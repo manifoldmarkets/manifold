@@ -34,6 +34,10 @@ export function getForYouSQL(
   )
 
   return `with 
+  user_interest AS (SELECT interest_embedding 
+                       FROM user_embeddings
+                       WHERE user_id = '${uid}'
+                       LIMIT 1),
 user_disinterests AS (
   SELECT contract_id
   FROM user_disinterests
@@ -59,11 +63,17 @@ select data, contract_id,
                     FROM group_contracts
                     join groups on group_contracts.group_id = groups.group_id
                     WHERE group_contracts.contract_id = contracts.id
-                  ) THEN 0.59 + (CASE WHEN user_follows.follow_id IS NOT NULL THEN 0.01 ELSE 0 END) 
-                      ELSE (CASE WHEN user_follows.follow_id IS NOT NULL THEN 0.5 ELSE 0 END)  END)
+                  ) THEN 
+                        0.59 
+                        + (CASE WHEN user_follows.follow_id IS NOT NULL THEN 0.01 ELSE 0 END) 
+                      ELSE 
+                        (CASE WHEN user_follows.follow_id IS NOT NULL THEN 0.1 ELSE 0 END)  
+                        + 5 * ((1 - (contract_embeddings.embedding <=> user_interest.interest_embedding)) - 0.8)
+                      END)
            )
            AS modified_importance_score
-from contracts
+from user_interest,
+     contracts
          join contract_embeddings ON contracts.id = contract_embeddings.contract_id
         LEFT JOIN user_follows ON contracts.creator_id = user_follows.follow_id
     ${whereClause}
