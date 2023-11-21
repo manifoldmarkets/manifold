@@ -14,6 +14,8 @@ import {
 import { Row } from 'web/components/layout/row'
 import { IndividualQuestionRow } from '../questions-form'
 import { TbMessage } from 'react-icons/tb'
+import { OtherLoverAnswers } from './other-lover-answers'
+import { ArrowLeftIcon } from '@heroicons/react/outline'
 
 export function AddQuestionButton(props: {
   isFirstQuestion?: boolean
@@ -59,12 +61,36 @@ function AddQuestionModal(props: {
     (q) => q.answer_type === 'free_response'
   )
   const [selectedQuestion, setSelectedQuestion] =
-    useState<rowFor<'love_questions'> | null>(null)
+    useState<QuestionWithCountType | null>(null)
+
+  const [expandedQuestion, setExpandedQuestion] =
+    useState<QuestionWithCountType | null>(null)
 
   return (
     <Modal open={open} setOpen={setOpen}>
       <Col className={clsx(MODAL_CLASS)}>
-        {selectedQuestion == null ? (
+        {expandedQuestion ? (
+          <Col>
+            <Row className="mb-1 items-center">
+              <Button
+                size={'sm'}
+                color={'gray-white'}
+                className={'ml-1 rounded-full'}
+                onClick={() => {
+                  setExpandedQuestion(null)
+                }}
+              >
+                <ArrowLeftIcon className={'h-4 w-4'} />
+              </Button>
+              <span className="font-semibold">{expandedQuestion.question}</span>
+            </Row>
+            <OtherLoverAnswers
+              question={expandedQuestion}
+              user={user}
+              className={SCROLLABLE_MODAL_CLASS}
+            />
+          </Col>
+        ) : selectedQuestion == null ? (
           <>
             <div className="text-primary-600  w-full font-semibold">
               Choose a question to answer
@@ -84,7 +110,12 @@ function AddQuestionModal(props: {
                     >
                       {question.question}
                     </button>
-                    <button className="text-ink-500 flex cursor-pointer flex-row gap-0.5 pr-2 text-xs">
+                    <button
+                      className="text-ink-500 flex cursor-pointer flex-row gap-0.5 pr-2 text-xs transition-all hover:text-indigo-500"
+                      onClick={() => {
+                        setExpandedQuestion(question)
+                      }}
+                    >
                       {question.answer_count}
                       <TbMessage className="h-4 w-4" />
                     </button>

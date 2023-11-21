@@ -13,3 +13,10 @@ export const deleteAnswer = async (
       .match({ id: answer.id, creator_id: userId })
   )
 }
+
+export const getOtherAnswers = async (question_id: number) => {
+  const { data } = await db.rpc('get_love_question_answers_and_lovers' as any, {
+    p_question_id: question_id,
+  })
+  return data
+}
