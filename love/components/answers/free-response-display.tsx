@@ -12,15 +12,32 @@ import { Linkify } from 'web/components/widgets/linkify'
 import { IndividualQuestionRow } from '../questions-form'
 import { Subtitle } from '../widgets/lover-subtitle'
 import { AddQuestionButton } from './free-response-add-question'
+import { QuestionWithCountType } from 'love/hooks/use-questions'
+import { TbMessage } from 'react-icons/tb'
+import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import { OtherLoverAnswers } from './other-lover-answers'
+import {
+  MODAL_CLASS,
+  Modal,
+  SCROLLABLE_MODAL_CLASS,
+} from 'web/components/layout/modal'
 
 export function FreeResponseDisplay(props: {
   answers: rowFor<'love_answers'>[]
-  questions: rowFor<'love_questions'>[]
+  yourQuestions: QuestionWithCountType[]
+  otherQuestions: QuestionWithCountType[]
   isCurrentUser: boolean
   user: User
   refreshAnswers: () => void
 }) {
-  const { answers, questions, isCurrentUser, refreshAnswers, user } = props
+  const {
+    answers,
+    yourQuestions,
+    otherQuestions,
+    isCurrentUser,
+    refreshAnswers,
+    user,
+  } = props
 
   const noAnswers = answers.length < 1
 
@@ -29,8 +46,7 @@ export function FreeResponseDisplay(props: {
       return (
         <AddQuestionButton
           isFirstQuestion={answers.length < 1}
-          answers={answers}
-          questions={questions}
+          questions={otherQuestions}
           user={user}
           refreshAnswers={refreshAnswers}
         />
@@ -53,7 +69,7 @@ export function FreeResponseDisplay(props: {
             <AnswerBlock
               key={answer.free_response ?? '' + answer.id}
               answer={answer}
-              questions={questions}
+              questions={yourQuestions}
               isCurrentUser={isCurrentUser}
               user={user}
               refreshAnswers={refreshAnswers}
@@ -64,8 +80,7 @@ export function FreeResponseDisplay(props: {
       {isCurrentUser && (
         <AddQuestionButton
           isFirstQuestion={answers.length < 1}
-          answers={answers}
-          questions={questions}
+          questions={otherQuestions}
           user={user}
           refreshAnswers={refreshAnswers}
         />
@@ -76,7 +91,7 @@ export function FreeResponseDisplay(props: {
 
 function AnswerBlock(props: {
   answer: rowFor<'love_answers'>
-  questions: rowFor<'love_questions'>[]
+  questions: QuestionWithCountType[]
   isCurrentUser: boolean
   user: User
   refreshAnswers: () => void
@@ -84,6 +99,8 @@ function AnswerBlock(props: {
   const { answer, questions, isCurrentUser, user, refreshAnswers } = props
   const question = questions.find((q) => q.id === answer.question_id)
   const [edit, setEdit] = useState(false)
+
+  const [otherAnswerModal, setOtherAnswerModal] = useState<boolean>(false)
 
   if (!question) return null
 
@@ -110,8 +127,14 @@ function AnswerBlock(props: {
                 onClick: () =>
                   deleteAnswer(answer, user.id).then(() => refreshAnswers()),
               },
+              {
+                name: `See ${question.answer_count} other answers`,
+                icon: <TbMessage className="h-5 w-5" />,
+                onClick: () => setOtherAnswerModal(true),
+              },
             ]}
             closeOnClick
+            menuWidth="w-40"
           />
         )}
       </Row>
@@ -136,6 +159,16 @@ function AnswerBlock(props: {
           className="mt-2"
         />
       )}
+      <Modal open={otherAnswerModal} setOpen={setOtherAnswerModal}>
+        <Col className={MODAL_CLASS}>
+          <span className="font-semibold">{question.question}</span>
+          <OtherLoverAnswers
+            question={question}
+            user={user}
+            className={SCROLLABLE_MODAL_CLASS}
+          />
+        </Col>
+      </Modal>
     </Col>
   )
 }

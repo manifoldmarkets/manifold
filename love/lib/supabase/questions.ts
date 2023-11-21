@@ -20,13 +20,16 @@ export const getFreeResponseQuestions = async () => {
   return res.data
 }
 
-export const getUserAnswersAndQuestions = async (userId: string) => {
-  const answers = await run(
+export const getUserAnswers = async (userId: string) => {
+  const { data } = await run(
     db.from('love_answers').select('*').eq('creator_id', userId)
   )
-  const questionIds = answers.data.map((row) => row.question_id)
-  const questions = await run(
-    db.from('love_questions').select('*').in('id', questionIds)
+  return data
+}
+
+export const getQuestionsWithAnswerCount = async () => {
+  const { data } = await db.rpc(
+    'get_free_response_questions_with_answer_count' as any
   )
-  return { answers: answers.data, questions: questions.data }
+  return data
 }

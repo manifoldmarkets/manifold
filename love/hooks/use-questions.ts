@@ -3,7 +3,8 @@ import { Row } from 'common/supabase/utils'
 import {
   getAllQuestions,
   getFreeResponseQuestions,
-  getUserAnswersAndQuestions,
+  getQuestionsWithAnswerCount,
+  getUserAnswers,
 } from 'love/lib/supabase/questions'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 
@@ -23,29 +24,38 @@ export const useFreeResponseQuestions = () => {
   return questions
 }
 
-export const useUserAnswersAndQuestions = (userId: string | undefined) => {
+export const useUserAnswers = (userId: string | undefined) => {
   const [answers, setAnswers] = usePersistentInMemoryState<
     Row<'love_answers'>[]
   >([], `answers-${userId}`)
-  const [questions, setQuestions] = usePersistentInMemoryState<
-    Row<'love_questions'>[]
-  >([], `questions-${userId}`)
+
   useEffect(() => {
     if (userId) {
-      getUserAnswersAndQuestions(userId).then(({ answers, questions }) => {
-        setAnswers(answers)
-        setQuestions(questions)
-      })
+      getUserAnswers(userId).then(setAnswers)
     }
   }, [userId])
 
-  async function refreshAnswersAndQuestions() {
+  async function refreshAnswers() {
     if (!userId) return
-    getUserAnswersAndQuestions(userId).then(({ answers, questions }) => {
-      setAnswers(answers)
-      setQuestions(questions)
-    })
+    getUserAnswers(userId).then(setAnswers)
   }
 
-  return { answers, questions, refreshAnswersAndQuestions }
+  return { refreshAnswers, answers }
+}
+
+export type QuestionWithCountType = Row<'love_questions'> & {
+  answer_count: number
+}
+
+export const useQuestionsWithAnswerCount = () => {
+  const [questionsWithCount, setQuestionsWithCount] =
+    usePersistentInMemoryState<any>([], `questions-with-count`)
+
+  useEffect(() => {
+    getQuestionsWithAnswerCount().then((questions) => {
+      setQuestionsWithCount(questions)
+    })
+  }, [])
+
+  return questionsWithCount as QuestionWithCountType[]
 }
