@@ -2,7 +2,7 @@ import { PlusIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { Row as rowFor } from 'common/supabase/utils'
 import { User } from 'common/user'
-import { useFreeResponseQuestions } from 'love/hooks/use-questions'
+import { QuestionWithCountType } from 'love/hooks/use-questions'
 import { useState } from 'react'
 import { Button } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
@@ -13,16 +13,18 @@ import {
 } from 'web/components/layout/modal'
 import { Row } from 'web/components/layout/row'
 import { IndividualQuestionRow } from '../questions-form'
+import { TbMessage } from 'react-icons/tb'
 
 export function AddQuestionButton(props: {
   isFirstQuestion?: boolean
-  answers: rowFor<'love_answers'>[]
-  questions: rowFor<'love_questions'>[]
+  questions: QuestionWithCountType[]
   user: User
   refreshAnswers: () => void
 }) {
-  const { isFirstQuestion, answers, questions, user, refreshAnswers } = props
+  const { isFirstQuestion, questions, user, refreshAnswers } = props
   const [openModal, setOpenModal] = useState(false)
+
+  console.log('ADD QUESTIONs', questions)
   return (
     <>
       <Button
@@ -37,7 +39,7 @@ export function AddQuestionButton(props: {
       <AddQuestionModal
         open={openModal}
         setOpen={setOpenModal}
-        userQuestions={questions}
+        questions={questions}
         user={user}
         refreshAnswers={refreshAnswers}
       />
@@ -48,12 +50,14 @@ export function AddQuestionButton(props: {
 function AddQuestionModal(props: {
   open: boolean
   setOpen: (open: boolean) => void
-  userQuestions: rowFor<'love_questions'>[]
+  questions: QuestionWithCountType[]
   user: User
   refreshAnswers: () => void
 }) {
-  const { open, setOpen, userQuestions, user, refreshAnswers } = props
-  const addableQuestions = useFreeResponseQuestions()
+  const { open, setOpen, questions, user, refreshAnswers } = props
+  const addableQuestions = questions.filter(
+    (q) => q.answer_type === 'free_response'
+  )
   const [selectedQuestion, setSelectedQuestion] =
     useState<rowFor<'love_questions'> | null>(null)
 
@@ -66,21 +70,27 @@ function AddQuestionModal(props: {
               Choose a question to answer
             </div>
             <Col className={SCROLLABLE_MODAL_CLASS}>
-              {addableQuestions
-                .filter((aq) => !userQuestions.some((uq) => uq.id === aq.id))
-                .map((question) => {
-                  return (
+              {addableQuestions.map((question) => {
+                return (
+                  <Row
+                    key={question.id}
+                    className="hover:bg-canvas-50 grow-y flex w-full items-center justify-between rounded"
+                  >
                     <button
-                      key={question.id}
                       onClick={() => {
                         setSelectedQuestion(question)
                       }}
-                      className="hover:bg-canvas-50 grow-y flex w-full rounded p-2 text-left"
+                      className="flex grow flex-row p-2  text-left"
                     >
                       {question.question}
                     </button>
-                  )
-                })}
+                    <button className="text-ink-500 flex cursor-pointer flex-row gap-0.5 pr-2 text-xs">
+                      {question.answer_count}
+                      <TbMessage className="h-4 w-4" />
+                    </button>
+                  </Row>
+                )
+              })}
             </Col>
           </>
         ) : (

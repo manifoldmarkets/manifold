@@ -12,15 +12,24 @@ import { Linkify } from 'web/components/widgets/linkify'
 import { IndividualQuestionRow } from '../questions-form'
 import { Subtitle } from '../widgets/lover-subtitle'
 import { AddQuestionButton } from './free-response-add-question'
+import { QuestionWithCountType } from 'love/hooks/use-questions'
 
 export function FreeResponseDisplay(props: {
   answers: rowFor<'love_answers'>[]
-  questions: rowFor<'love_questions'>[]
+  yourQuestions: QuestionWithCountType[]
+  otherQuestions: QuestionWithCountType[]
   isCurrentUser: boolean
   user: User
   refreshAnswers: () => void
 }) {
-  const { answers, questions, isCurrentUser, refreshAnswers, user } = props
+  const {
+    answers,
+    yourQuestions,
+    otherQuestions,
+    isCurrentUser,
+    refreshAnswers,
+    user,
+  } = props
 
   const noAnswers = answers.length < 1
 
@@ -29,8 +38,7 @@ export function FreeResponseDisplay(props: {
       return (
         <AddQuestionButton
           isFirstQuestion={answers.length < 1}
-          answers={answers}
-          questions={questions}
+          questions={otherQuestions}
           user={user}
           refreshAnswers={refreshAnswers}
         />
@@ -53,7 +61,7 @@ export function FreeResponseDisplay(props: {
             <AnswerBlock
               key={answer.free_response ?? '' + answer.id}
               answer={answer}
-              questions={questions}
+              questions={yourQuestions}
               isCurrentUser={isCurrentUser}
               user={user}
               refreshAnswers={refreshAnswers}
@@ -64,8 +72,7 @@ export function FreeResponseDisplay(props: {
       {isCurrentUser && (
         <AddQuestionButton
           isFirstQuestion={answers.length < 1}
-          answers={answers}
-          questions={questions}
+          questions={otherQuestions}
           user={user}
           refreshAnswers={refreshAnswers}
         />
