@@ -255,7 +255,7 @@ function WhatIsManifoldPage() {
         Welcome to Manifold!
       </div>
       <div className="mb-4 flex h-10 flex-row gap-2 text-xl">
-        <div className='mt-2'>Welcome,</div>
+        <div className="mt-2">Welcome,</div>
         {isEditingUsername || showOnHover ? (
           <div>
             <Input
