@@ -16,6 +16,8 @@ import { IndividualQuestionRow } from '../questions-form'
 import { TbMessage } from 'react-icons/tb'
 import { OtherLoverAnswers } from './other-lover-answers'
 import { ArrowLeftIcon } from '@heroicons/react/outline'
+import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
+import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 
 export function AddQuestionButton(props: {
   isFirstQuestion?: boolean
@@ -24,7 +26,10 @@ export function AddQuestionButton(props: {
   refreshAnswers: () => void
 }) {
   const { isFirstQuestion, questions, user, refreshAnswers } = props
-  const [openModal, setOpenModal] = useState(false)
+  const [openModal, setOpenModal] = usePersistentInMemoryState(
+    false,
+    `add-question-${user.id}`
+  )
   return (
     <>
       <Button
@@ -59,10 +64,16 @@ function AddQuestionModal(props: {
     (q) => q.answer_type === 'free_response'
   )
   const [selectedQuestion, setSelectedQuestion] =
-    useState<QuestionWithCountType | null>(null)
+    usePersistentInMemoryState<QuestionWithCountType | null>(
+      null,
+      `selected-added-question-${user.id}}`
+    )
 
   const [expandedQuestion, setExpandedQuestion] =
-    useState<QuestionWithCountType | null>(null)
+    usePersistentInMemoryState<QuestionWithCountType | null>(
+      null,
+      `selected-expanded-question-${user.id}}`
+    )
 
   return (
     <Modal open={open} setOpen={setOpen}>
