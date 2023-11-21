@@ -25,8 +25,6 @@ export function AddQuestionButton(props: {
 }) {
   const { isFirstQuestion, questions, user, refreshAnswers } = props
   const [openModal, setOpenModal] = useState(false)
-
-  console.log('ADD QUESTIONs', questions)
   return (
     <>
       <Button
