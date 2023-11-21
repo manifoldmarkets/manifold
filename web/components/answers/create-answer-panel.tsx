@@ -24,7 +24,7 @@ import {
   getDpmOutcomeProbabilityAfterBet,
 } from 'common/calculate-dpm'
 import { Bet } from 'common/bet'
-import { MAX_ANSWERS, MAX_ANSWER_LENGTH } from 'common/answer'
+import { MAX_ANSWER_LENGTH, getMaximumAnswers } from 'common/answer'
 import { withTracking } from 'web/lib/service/analytics'
 import { Button } from '../buttons/button'
 import { ExpandingInput } from '../widgets/expanding-input'
@@ -240,6 +240,10 @@ export function SearchCreateAnswerPanel(props: {
   const unresolvedAnswers = contract.answers.filter((a) =>
     'resolution' in a ? !a.resolution : true
   )
+  const shouldAnswersSumToOne =
+    contract.mechanism === 'cpmm-multi-1'
+      ? contract.shouldAnswersSumToOne
+      : true
 
   if (
     user &&
@@ -248,7 +252,7 @@ export function SearchCreateAnswerPanel(props: {
       (addAnswersMode === 'ONLY_CREATOR' && user.id === contract.creatorId)) &&
     tradingAllowed(contract) &&
     !privateUser?.blockedByUserIds.includes(contract.creatorId) &&
-    unresolvedAnswers.length < MAX_ANSWERS
+    unresolvedAnswers.length < getMaximumAnswers(shouldAnswersSumToOne)
   ) {
     return contract.mechanism === 'cpmm-multi-1' ? (
       <CreateAnswerCpmmPanel contract={contract} text={text} setText={setText}>

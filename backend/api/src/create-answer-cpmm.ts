@@ -5,7 +5,7 @@ import { groupBy, partition, sumBy } from 'lodash'
 import { CPMMMultiContract, Contract } from 'common/contract'
 import { User } from 'common/user'
 import { CandidateBet, getBetDownToOneMultiBetInfo } from 'common/new-bet'
-import { Answer, MAX_ANSWER_LENGTH, MAX_ANSWERS } from 'common/answer'
+import { Answer, getMaximumAnswers, MAX_ANSWER_LENGTH } from 'common/answer'
 import { APIError, authEndpoint, validate } from './helpers'
 import { ANSWER_COST } from 'common/economy'
 import { randomString } from 'common/util/random'
@@ -77,10 +77,11 @@ export const createanswercpmm = authEndpoint(async (req, auth, log) => {
       )
       const answers = answersSnap.docs.map((doc) => doc.data() as Answer)
       const unresolvedAnswers = answers.filter((a) => !a.resolution)
-      if (unresolvedAnswers.length >= MAX_ANSWERS) {
+      const maxAnswers = getMaximumAnswers(contract.shouldAnswersSumToOne)
+      if (unresolvedAnswers.length >= maxAnswers) {
         throw new APIError(
           403,
-          `Cannot add an answer: Maximum number (${MAX_ANSWERS}) of open answers reached.`
+          `Cannot add an answer: Maximum number (${maxAnswers}) of open answers reached.`
         )
       }
 
