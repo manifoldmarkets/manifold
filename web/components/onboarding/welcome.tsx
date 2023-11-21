@@ -27,6 +27,11 @@ import {
 } from 'common/topics'
 import { orderBy, uniqBy } from 'lodash'
 import { track } from 'web/lib/service/analytics'
+import { PencilIcon } from '@heroicons/react/outline'
+import { Input } from '../widgets/input'
+import { cleanDisplayName, cleanUsername } from 'common/util/clean-username'
+import { changeUserInfo } from 'web/lib/firebase/api'
+import { randomString } from 'common/util/random'
 
 export default function Welcome() {
   const user = useUser()
@@ -210,6 +215,33 @@ const useIsTwitch = (user: User | null | undefined) => {
 }
 
 function WhatIsManifoldPage() {
+  const user = useUser()
+
+  const [name, setName] = useState<string>(user?.name ?? 'friend')
+  useEffect(() => {
+    if (user?.name) setName(user.name)
+  }, [user?.name === undefined])
+
+  const saveName = async () => {
+    let newName = cleanDisplayName(name)
+    if (!newName) newName = 'User'
+    if (newName === user?.name) return
+    setName(newName)
+
+    await changeUserInfo({ name: newName })
+
+    let username = cleanUsername(newName)
+    try {
+      await changeUserInfo({ username })
+    } catch (e) {
+      username += randomString(5)
+      await changeUserInfo({ username })
+    }
+  }
+
+  const [showOnHover, setShowOnHover] = useState(false)
+  const [isEditingUsername, setIsEditingUsername] = useState(false)
+
   return (
     <>
       <Image
@@ -220,13 +252,49 @@ function WhatIsManifoldPage() {
         width={150}
       />
       <div className="to-ink-0mt-3 text-primary-700 mb-6 text-center text-2xl font-normal">
-        Welcome to Manifold
+        Welcome to Manifold!
       </div>
-      <p className="mb-4 text-lg">
+      <div className="mb-4 flex h-10 flex-row gap-2 text-xl">
+        <div className='mt-2'>Welcome,</div>
+        {isEditingUsername || showOnHover ? (
+          <div>
+            <Input
+              type="text"
+              placeholder="Name"
+              value={name}
+              className="text-lg font-semibold"
+              maxLength={30}
+              onChange={(e) => {
+                setName(e.target.value)
+              }}
+              onBlur={() => {
+                setIsEditingUsername(false)
+                saveName()
+              }}
+              onFocus={() => {
+                setIsEditingUsername(true)
+                setShowOnHover(false)
+              }}
+              onMouseLeave={() => setShowOnHover(false)}
+            />
+          </div>
+        ) : (
+          <div className="mt-2">
+            <span
+              className="hover:cursor-pointer hover:border"
+              onClick={() => setIsEditingUsername(true)}
+              onMouseEnter={() => setShowOnHover(true)}
+            >
+              <span className="font-semibold">{name}</span>{' '}
+              <PencilIcon className="mb-1 inline h-4 w-4" />
+            </span>
+          </div>
+        )}
+      </div>
+      <div className="mb-4 text-lg">
         Manifold is a play-money prediction market platform where you can bet on
         anything.
-      </p>
-      <p> </p>
+      </div>
     </>
   )
 }
