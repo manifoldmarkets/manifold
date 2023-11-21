@@ -1,5 +1,5 @@
 {
-  "name": "api",
+  "name": "@manifold/api",
   "description": "Backend API endpoints for the Manifold website.",
   "version": "0.1.0",
   "private": true,
