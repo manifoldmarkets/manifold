@@ -106,6 +106,7 @@ import { leaveprivateusermessagechannel } from 'api/leave-private-user-message-c
 import { updateprivateusermessagechannel } from 'api/update-private-user-message-channel'
 import { confirmLoverStage } from './love/confirm-lover-stage'
 import { clearLoverPhoto } from './love/clear-lover-photo'
+import { editanswercpmm } from 'api/edit-answer'
 
 const allowCors: RequestHandler = cors({
   origin: [
@@ -211,6 +212,7 @@ app.post('/award-bounty', ...apiRoute(awardbounty))
 app.post('/cancel-bounty', ...apiRoute(cancelbounty))
 app.post('/add-bounty', ...apiRoute(addbounty))
 app.post('/createanswercpmm', ...apiRoute(createanswercpmm))
+app.post('/edit-answer-cpmm', ...apiRoute(editanswercpmm))
 app.post('/createportfolio', ...apiRoute(createportfolio))
 app.post('/updateportfolio', ...apiRoute(updateportfolio))
 app.post('/buyportfolio', ...apiRoute(buyportfolio))

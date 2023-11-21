@@ -544,6 +544,13 @@ export function updatePrivateMessageChannel(params: {
 }) {
   return call(getApiUrl('update-private-user-message-channel'), 'POST', params)
 }
+export function editAnswerCpmm(params: {
+  answerId: string
+  text: string
+  contractId: string
+}) {
+  return call(getApiUrl('edit-answer-cpmm'), 'POST', params)
+}
 
 export function searchLocation(params: { term: string; limit?: number }) {
   return maybeAuthedCall(getApiUrl('searchlocation'), 'POST', params)

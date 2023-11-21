@@ -23,6 +23,7 @@ type ContractEdit = {
   updatedKeys: string[] | null
   editCreated: number
   editorId: string
+  answer?: string
 }
 export const ContractHistoryButton = (props: {
   contract: Contract
@@ -101,6 +102,13 @@ export const ContractHistoryButton = (props: {
           updatedKeys: prev.updatedKeys,
           editCreated: prev.editCreated,
           editorId: prev.editorId,
+          answer:
+            'answers' in edit && 'answers' in prev
+              ? edit.answers.find(
+                  (a) =>
+                    a.text !== prev.answers.find((a2) => a2.id === a.id)?.text
+                )?.text
+              : undefined,
         })
       } else {
         // market created
@@ -166,6 +174,12 @@ export const ContractHistoryButton = (props: {
                           defaultCollapse
                         />
                       </div>
+                    )}
+                    {edit.answer && (
+                      <Col>
+                        <div className={'text-ink-500'}>Edited answer: </div>
+                        {edit.answer}
+                      </Col>
                     )}
                     {edit.closeTime && !edit.resolution && (
                       <CloseDate

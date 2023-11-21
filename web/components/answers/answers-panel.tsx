@@ -1,6 +1,7 @@
 import {
   ArrowRightIcon,
   ChevronDownIcon,
+  PencilIcon,
   PresentationChartLineIcon,
 } from '@heroicons/react/outline'
 import { groupBy, sortBy, sumBy } from 'lodash'
@@ -8,7 +9,12 @@ import clsx from 'clsx'
 import { Answer, DpmAnswer } from 'common/answer'
 import { Bet } from 'common/bet'
 import { getAnswerProbability, getContractBetMetrics } from 'common/calculate'
-import { CPMMMultiContract, MultiContract, contractPath } from 'common/contract'
+import {
+  CPMMMultiContract,
+  MultiContract,
+  contractPath,
+  Contract,
+} from 'common/contract'
 import { formatMoney } from 'common/util/format'
 import Link from 'next/link'
 import { Button } from 'web/components/buttons/button'
@@ -31,6 +37,12 @@ import DropdownMenu from '../comments/dropdown-menu'
 import generateFilterDropdownItems from '../search/search-dropdown-helpers'
 import { SearchCreateAnswerPanel } from './create-answer-panel'
 import { MultiSort } from '../contract/contract-overview'
+import { useState } from 'react'
+import { editAnswerCpmm } from 'web/lib/firebase/api'
+import { Modal } from 'web/components/layout/modal'
+import { Title } from 'web/components/widgets/title'
+import { Input } from 'web/components/widgets/input'
+import { isAdminId, isModId } from 'common/envs/constants'
 
 const SORTS = [
   { label: 'High %', value: 'prob-desc' },
@@ -89,7 +101,8 @@ export function AnswersPanel(props: {
   // Note: Hide answers if there is just one "Other" answer.
   const showNoAnswers =
     answers.length === 0 || (shouldAnswersSumToOne && answers.length === 1)
-
+  const [expandedIds, setExpandedIds] = useState<string[]>([])
+  const [editAnswer, setEditAnswer] = useState<Answer>()
   return (
     <Col>
       <SearchCreateAnswerPanel
@@ -118,20 +131,60 @@ export function AnswersPanel(props: {
       ) : (
         <Col className="mx-[2px] mt-1 gap-2">
           {answersToShow.map((answer) => (
-            <Answer
-              key={answer.id}
-              answer={answer}
-              contract={contract}
-              onCommentClick={() => onAnswerCommentClick?.(answer)}
-              onHover={(hovering) =>
-                onAnswerHover?.(hovering ? answer : undefined)
-              }
-              onClick={() => onAnswerClick?.(answer)}
-              selected={selected?.includes(answer.id)}
-              color={getAnswerColor(answer, answersArray)}
-              userBets={userBetsByAnswer[answer.id]}
-            />
+            <Col key={answer.id}>
+              <Answer
+                answer={answer}
+                contract={contract}
+                onCommentClick={() => onAnswerCommentClick?.(answer)}
+                onHover={(hovering) =>
+                  onAnswerHover?.(hovering ? answer : undefined)
+                }
+                onClick={() => {
+                  onAnswerClick?.(answer)
+                  if (!('poolYes' in answer) || !user) return
+                  if (
+                    !isAdminId(user.id) &&
+                    !isModId(user.id) &&
+                    user.id !== contract.creatorId &&
+                    user.id !== answer.userId
+                  )
+                    return
+                  setExpandedIds((ids) =>
+                    ids.includes(answer.id)
+                      ? ids.filter((id) => id !== answer.id)
+                      : [...ids, answer.id]
+                  )
+                }}
+                selected={selected?.includes(answer.id)}
+                color={getAnswerColor(answer, answersArray)}
+                userBets={userBetsByAnswer[answer.id]}
+              />
+              {expandedIds.includes(answer.id) && (
+                <Row className={'my-2 justify-end'}>
+                  <Button
+                    color={'gray-outline'}
+                    size="xs"
+                    onClick={() =>
+                      'poolYes' in answer && !answer.isOther
+                        ? setEditAnswer(answer)
+                        : null
+                    }
+                  >
+                    <PencilIcon className="mr-1 h-4 w-4" />
+                    Edit
+                  </Button>
+                </Row>
+              )}
+            </Col>
           ))}
+          {editAnswer && (
+            <EditAnswerModal
+              open={!!editAnswer}
+              setOpen={() => setEditAnswer(undefined)}
+              contract={contract}
+              answer={editAnswer}
+            />
+          )}
 
           {moreCount > 0 &&
             (query ? (
@@ -151,6 +204,67 @@ export function AnswersPanel(props: {
         </Col>
       )}
     </Col>
+  )
+}
+
+const EditAnswerModal = (props: {
+  open: boolean
+  setOpen: (show: boolean) => void
+  contract: Contract
+  answer: Answer
+}) => {
+  const { answer, contract, open, setOpen } = props
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  const [text, setText] = useState(answer.text)
+  const [error, setError] = useState<string | null>(null)
+  const editAnswer = async () => {
+    if (isSubmitting) return
+    setIsSubmitting(true)
+
+    const res = await editAnswerCpmm({
+      answerId: answer.id,
+      contractId: contract.id,
+      text,
+    })
+      .catch((e) => {
+        console.error(e)
+        setError(e.message)
+        return null
+      })
+      .finally(() => {
+        setIsSubmitting(false)
+      })
+    if (!res) return
+
+    setOpen(false)
+  }
+
+  return (
+    <Modal open={open} setOpen={setOpen}>
+      <Col className={'bg-canvas-50 rounded-md p-4'}>
+        <Title>Edit answer</Title>
+        <Input
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          className="w-full"
+        />
+        {error ? <span className="text-red-500">{error}</span> : null}
+
+        <Row className={'mt-2 justify-between'}>
+          <Button
+            color={'gray-outline'}
+            disabled={isSubmitting}
+            onClick={() => setOpen(false)}
+          >
+            Cancel
+          </Button>
+          <Button color={'indigo'} loading={isSubmitting} onClick={editAnswer}>
+            Submit
+          </Button>
+        </Row>
+      </Col>
+    </Modal>
   )
 }
 
