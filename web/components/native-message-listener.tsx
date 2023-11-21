@@ -12,7 +12,11 @@ import {
   setIsNative,
 } from 'web/lib/native/is-native'
 import { useNativeMessages } from 'web/hooks/use-native-messages'
-import { webToNativeMessageType } from 'common/native-message'
+import {
+  nativeToWebMessage,
+  nativeToWebMessageType,
+  webToNativeMessageType,
+} from 'common/native-message'
 import { useEffect } from 'react'
 import { usePrivateUser } from 'web/hooks/use-user'
 import { useEvent } from 'web/hooks/use-event'
@@ -108,4 +112,47 @@ export const postMessageToNative = (
       })
     )
   }
+}
+
+export const parseNativeMessage = (event: MessageEvent) => {
+  let message: nativeToWebMessage
+
+  try {
+    message = JSON.parse(event.data)
+  } catch (e) {
+    return
+  }
+
+  return message
+}
+
+export async function postMessageToNativeAwaitResponse(
+  type: webToNativeMessageType,
+  data: any,
+  resolveEvent: nativeToWebMessageType,
+  rejectEvent?: nativeToWebMessageType
+): Promise<nativeToWebMessage | undefined> {
+  const isNative = getIsNative()
+
+  if (!isNative) {
+    return
+  }
+
+  return new Promise((resolve, reject) => {
+    postMessageToNative(type, data)
+
+    function handleMessage(event: MessageEvent) {
+      const message = parseNativeMessage(event)
+
+      if (message?.type === resolveEvent) {
+        resolve(message)
+        window.removeEventListener('message', handleMessage)
+      } else if (message?.type === rejectEvent) {
+        reject()
+        window.removeEventListener('message', handleMessage)
+      }
+    }
+
+    window.addEventListener('message', handleMessage)
+  })
 }

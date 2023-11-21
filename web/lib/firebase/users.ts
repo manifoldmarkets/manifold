@@ -8,7 +8,12 @@ import {
 import { filterDefined } from 'common/util/array'
 import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
-import { GoogleAuthProvider, getAuth, signInWithPopup } from 'firebase/auth'
+import {
+  GoogleAuthProvider,
+  getAuth,
+  signInWithPopup,
+  User as FirebaseUser,
+} from 'firebase/auth'
 import {
   collection,
   deleteDoc,
@@ -24,7 +29,7 @@ import {
   updateDoc,
   where,
 } from 'firebase/firestore'
-import { postMessageToNative } from 'web/components/native-message-listener'
+import { postMessageToNativeAwaitResponse } from 'web/components/native-message-listener'
 import { getIsNative } from 'web/lib/native/is-native'
 import { nativeSignOut } from 'web/lib/native/native-messages'
 import { safeLocalStorage } from '../util/local'
@@ -180,12 +185,17 @@ export async function setCachedReferralInfoForUser(user: User) {
 export async function firebaseLogin() {
   if (getIsNative()) {
     // Post the message back to expo
-    postMessageToNative('loginClicked', {})
-    return
+    const responseMessage = await postMessageToNativeAwaitResponse(
+      'loginClicked',
+      {},
+      'nativeFbUser',
+      'nativeLoginAbort'
+    )
+    return responseMessage?.data as FirebaseUser | undefined
   }
   const provider = new GoogleAuthProvider()
   return signInWithPopup(auth, provider).then(async (result) => {
-    return result
+    return result.user
   })
 }
 

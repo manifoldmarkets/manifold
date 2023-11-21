@@ -60,9 +60,30 @@ export const AuthPage = (props: {
             )
           }
         })
+      } else if (
+        response?.type === 'cancel' ||
+        response?.type === 'dismiss' ||
+        response?.type === 'error'
+      ) {
+        if (webview.current) {
+          webview.current.postMessage(
+            JSON.stringify({
+              type: 'nativeLoginAbort',
+              data: { reason: response.type },
+            })
+          )
+        }
       }
     } catch (err) {
       log('[google sign in] Error : ', err)
+      if (webview.current) {
+        webview.current.postMessage(
+          JSON.stringify({
+            type: 'nativeLoginAbort',
+            data: { reason: 'error' },
+          })
+        )
+      }
     }
     setLoading(false)
   }, [response])

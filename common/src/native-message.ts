@@ -3,6 +3,7 @@ export type nativeToWebMessageType =
   | 'iapError'
   | 'setIsNative'
   | 'nativeFbUser'
+  | 'nativeLoginAbort'
   | 'pushNotificationPermissionStatus'
   | 'pushToken'
   | 'notification'
