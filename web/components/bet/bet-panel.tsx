@@ -112,7 +112,10 @@ export function BuyPanel(props: {
     if (option === choice && !initialOutcome) {
       setOption(undefined)
     } else {
-      track('bet intent', { choice })
+      // Skip for modals, we are tracking intent at the trigger call sites
+      if (inModal === false) {
+        track('bet intent', { location, option })
+      }
       setOption(choice)
     }
     if (!isIOS() && !isAndroid()) {

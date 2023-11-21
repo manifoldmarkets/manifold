@@ -6,6 +6,7 @@ import { Button } from '../buttons/button'
 import { Col } from '../layout/col'
 import { MODAL_CLASS, Modal } from '../layout/modal'
 import { BuyPanel, BinaryOutcomes } from './bet-panel'
+import { track } from 'web/lib/service/analytics'
 
 export function BetButton(props: {
   contract: CPMMBinaryContract
@@ -49,6 +50,7 @@ function FeedBetButton(props: {
         onClick={(e) => {
           e.preventDefault()
           e.stopPropagation()
+          track('bet intent', { location: 'feed card' })
           if (!user) {
             firebaseLogin()
             return
