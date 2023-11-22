@@ -169,7 +169,6 @@ function OnboardingView({
 
 type BetFormItem = {
   value: 'YES' | 'NO' | 'SKIP'
-  betId: string
   groupIds: Array<string>
 }
 
@@ -244,30 +243,25 @@ function OnboardingViewIntro({ onAdvance }: SharedOnboardingViewProps) {
             alreadyBet: !!formItem,
           })
 
-          let betId = formItem?.betId ?? ''
-
-          if ((value === 'YES' || value === 'NO') && !formItem?.betId) {
-            try {
-              const bet = await placeBet({
-                outcome: value,
-                amount: 10,
-                contractId: contract.id,
-              })
-
-              betId = bet.betId
-            } catch (error) {
-              console.error(error)
-            }
-          }
-
           setBetsMade((prev) => ({
             ...prev,
             [contract.id]: {
               value,
-              betId,
               groupIds: contract.groupLinks?.map((link) => link.groupId) || [],
             },
           }))
+
+          if (value === 'YES' || value === 'NO') {
+            try {
+              void placeBet({
+                outcome: value,
+                amount: 10,
+                contractId: contract.id,
+              })
+            } catch (error) {
+              console.error(error)
+            }
+          }
         }
 
         return (
