@@ -199,6 +199,7 @@ Requires no authorization.
     resolutionTime?: number
     resolution?: string
     resolutionProbability?: number // Used for BINARY markets resolved to MKT
+    uniqueBettorCount: number
 
     lastUpdatedTime?: number
     lastBetTime?: number
@@ -522,6 +523,7 @@ Requires no authorization.
       "resolution": "CANCEL",
       "resolutionTime": 1688137496869,
       "resolutionProbability": 0.94,
+      "uniqueBettorCount": 22,
       "lastUpdatedTime": 1688137484056,
       "lastBetTime": 1688137484056
     },
@@ -551,6 +553,7 @@ Requires no authorization.
       "resolution": "NO",
       "resolutionTime": 1696882191666,
       "resolutionProbability": 0.53,
+      "uniqueBettorCount": 34,
       "lastUpdatedTime": 1696887359826,
       "lastBetTime": 1696887359826
     }
