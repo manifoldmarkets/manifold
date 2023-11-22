@@ -195,14 +195,13 @@ function MatchedBy(props: { contract: Contract }) {
   const matchMaker = useUserById(matchMakerId)
 
   return (
-    <span className="text-ink-500 text-xs">
+    <Row className="text-ink-500 items-center gap-[3px] text-xs">
+      <span>Matched by </span>
       {!matchMaker ? (
         <div className="dark:bg-ink-400 bg-ink-200 h-3 w-16 animate-pulse" />
       ) : (
-        <span>
-          <span>Matched by</span> <UserLink user={matchMaker} hideBadge />
-        </span>
+        <UserLink user={matchMaker} hideBadge />
       )}
-    </span>
+    </Row>
   )
 }
