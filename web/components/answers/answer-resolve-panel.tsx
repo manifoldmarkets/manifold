@@ -20,7 +20,7 @@ import { InfoTooltip } from '../widgets/info-tooltip'
 import {
   AnswerBar,
   AnswerLabel,
-  AnswerStatusAndBetButtons,
+  AnswerStatus,
   ClosedProb,
   OpenProb,
 } from './answer-components'
@@ -28,6 +28,7 @@ import { useAdmin } from 'web/hooks/use-admin'
 import { GradientContainer } from '../widgets/gradient-container'
 import { AmountInput } from '../widgets/amount-input'
 import { getAnswerColor } from '../charts/contract/choice'
+import { useAnimatedNumber } from 'web/hooks/use-animated-number'
 
 function getAnswerResolveButtonColor(
   resolveOption: string | undefined,
@@ -354,6 +355,7 @@ export function ResolutionAnswerItem(props: {
     answer,
     contract.answers.map((a) => a.id)
   )
+  const spring = useAnimatedNumber(getAnswerProbability(contract, answer.id))
 
   return (
     <AnswerBar
@@ -372,7 +374,7 @@ export function ResolutionAnswerItem(props: {
           {chosenShare ? (
             <ClosedProb prob={prob} resolvedProb={chosenShare} />
           ) : (
-            <OpenProb prob={prob} />
+            <OpenProb spring={spring} />
           )}
 
           {showChoice === 'checkbox' && (
@@ -472,35 +474,33 @@ function IndependentResolutionAnswerItem(props: {
         color={color}
         prob={prob}
         label={
-          isOther ? (
-            <span>
-              Other{' '}
-              <InfoTooltip
-                className="!text-ink-600"
-                text="Represents all answers not listed. New answers are split out of this answer."
+          <Row className={'items-center gap-1'}>
+            <AnswerStatus contract={contract} answer={answer} />
+            {isOther ? (
+              <span>
+                Other{' '}
+                <InfoTooltip
+                  className="!text-ink-600"
+                  text="Represents all answers not listed. New answers are split out of this answer."
+                />
+              </span>
+            ) : (
+              <AnswerLabel
+                text={answer.text}
+                createdTime={answer.createdTime}
+                creator={
+                  addAnswersMode === 'ANYONE'
+                    ? answerCreator ?? false
+                    : undefined
+                }
+                className={clsx(
+                  'items-center text-sm !leading-none sm:text-base'
+                )}
               />
-            </span>
-          ) : (
-            <AnswerLabel
-              text={answer.text}
-              createdTime={answer.createdTime}
-              creator={
-                addAnswersMode === 'ANYONE' ? answerCreator ?? false : undefined
-              }
-              className={clsx(
-                'items-center text-sm !leading-none sm:text-base'
-              )}
-            />
-          )
+            )}
+          </Row>
         }
-        end={
-          <AnswerStatusAndBetButtons
-            contract={contract}
-            answer={answer}
-            userBets={[]}
-            noBetButtons
-          />
-        }
+        end={null}
       />
       {!answer.resolution && (
         <MiniResolutionPanel
