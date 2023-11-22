@@ -214,7 +214,9 @@ function OnboardingViewIntro({ onAdvance }: SharedOnboardingViewProps) {
           )
           return onAdvance({ groupsBetOn })
         },
-        disabled: Object.keys(betsMade).length < 2,
+        disabled:
+          Object.keys(betsMade).length < 2 &&
+          contractsWithUniqueGroups.length >= 3,
       }}
     >
       <h4 className="text-primary-700 mb-6 mt-3 text-center text-xl font-normal sm:text-2xl">
