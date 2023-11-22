@@ -1,16 +1,20 @@
+import { useState } from 'react'
+import clsx from 'clsx'
+import Image from 'next/image'
+
 import { buildArray } from 'common/util/array'
 import { Carousel } from 'web/components/widgets/carousel'
-import Image from 'next/image'
-import { Modal } from 'web/components/layout/modal'
-import { useState } from 'react'
+import { MODAL_CLASS, Modal } from 'web/components/layout/modal'
 import { User } from 'common/user'
 import { Col } from 'web/components/layout/col'
 import { SignUpButton } from './nav/love-sidebar'
 import { Lover } from 'common/love/lover'
 import { useAdmin } from 'web/hooks/use-admin'
 import { Button } from 'web/components/buttons/button'
-import { clearLoverPhoto } from 'web/lib/firebase/love/api'
+import { clearLoverPhoto, updateLover } from 'web/lib/firebase/love/api'
 import { AddPhotosWidget } from './widgets/add-photos'
+import { Row as rowFor } from 'common/supabase/utils'
+import { Row } from 'web/components/layout/row'
 
 export default function ProfileCarousel(props: {
   lover: Lover
@@ -93,18 +97,68 @@ export default function ProfileCarousel(props: {
           )
         })}
 
-        {/* {isCurrentUser && (
-          <AddPhotosWidget
-            user={currentUser}
-            photo_urls={lover.photo_urls}
-            pinned_url={lover.pinned_url}
-            setPhotoUrls={() => {}}
-            setPinnedUrl={() => {}}
-          />
-        )} */}
+        {isCurrentUser && (
+          <AddPhotoPlaceholder user={currentUser} lover={lover} />
+        )}
       </Carousel>
       <Modal open={dialogOpen} setOpen={setDialogOpen}>
         <Image src={lightboxUrl} width={1000} height={1000} alt="" />
+      </Modal>
+    </>
+  )
+}
+
+const AddPhotoPlaceholder = (props: { user: User; lover: Lover }) => {
+  const { user } = props
+  const [dialogOpen, setDialogOpen] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  const [lover, setLover] = useState<Lover>(props.lover)
+
+  const setLoverState = (key: keyof rowFor<'lovers'>, value: any) => {
+    setLover((prevState) => ({ ...prevState, [key]: value }))
+  }
+
+  const submit = async () => {
+    setIsSubmitting(true)
+    await updateLover(lover)
+    setIsSubmitting(false)
+    setDialogOpen(false)
+    window.location.reload()
+  }
+
+  return (
+    <>
+      <Button color="none" onClick={() => setDialogOpen(true)}>
+        <Col className="bg-canvas-100 dark:bg-canvas-0 text-ink-500 relative h-80 w-[250px] flex-none items-center rounded text-5xl">
+          <Col className="m-auto items-center gap-1">
+            <div className="select-none font-semibold">+ photo</div>
+          </Col>
+        </Col>
+      </Button>
+      <Modal open={dialogOpen} setOpen={setDialogOpen}>
+        <Col className={clsx(MODAL_CLASS)}>
+          <AddPhotosWidget
+            user={user}
+            photo_urls={lover.photo_urls}
+            pinned_url={lover.pinned_url}
+            setPhotoUrls={(urls) => setLoverState('photo_urls', urls)}
+            setPinnedUrl={(url) => setLoverState('pinned_url', url)}
+          />
+          <Row className="gap-4 self-end">
+            <Button color="gray-outline" onClick={() => setDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              className="self-end"
+              onClick={submit}
+              disabled={isSubmitting}
+              loading={isSubmitting}
+            >
+              Save
+            </Button>
+          </Row>
+        </Col>
       </Modal>
     </>
   )
