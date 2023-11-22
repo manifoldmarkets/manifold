@@ -33,6 +33,10 @@ export const editanswercpmm = authEndpoint(async (req, auth, log) => {
   if (contract.mechanism !== 'cpmm-multi-1')
     throw new APIError(403, 'Requires a cpmm multiple choice contract')
 
+  const { closeTime } = contract
+  if (closeTime && Date.now() > closeTime)
+    throw new APIError(403, 'Cannot edit answer after market closes')
+
   const answerDoc = firestore
     .collection(`contracts/${contractId}/answersCpmm/`)
     .doc(answerId)
