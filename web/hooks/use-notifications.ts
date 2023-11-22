@@ -133,6 +133,7 @@ export function useGroupedNotifications(
     (n) =>
       n.reason === 'tagged_user' ||
       (n.sourceType === 'comment' &&
+        n.sourceText &&
         n.sourceText.includes('@' + user.username + ' ')) ||
       ((n.reason === 'all_comments_on_my_markets' ||
         n.reason === 'comment_on_your_contract') &&
