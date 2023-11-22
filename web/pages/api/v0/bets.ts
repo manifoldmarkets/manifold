@@ -121,7 +121,9 @@ export default async function handler(
     if (params.kinds === 'open-limit') {
       opts.isOpenLimitOrder = true
     }
-    const bets = contractId ? await getBets(db, opts) : await getPublicBets(opts)
+    const bets = contractId
+      ? await getBets(db, opts)
+      : await getPublicBets(opts)
     res.setHeader('Cache-Control', 'max-age=15, public')
     return res.status(200).json(bets)
   } catch (e) {
