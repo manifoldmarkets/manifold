@@ -149,9 +149,11 @@ export function Onboarding() {
 function OnboardingView({
   children,
   buttonProps = {},
+  isContinueVisible = true,
 }: {
   children: React.ReactNode
   buttonProps?: Omit<Partial<ButtonProps>, 'ref'>
+  isContinueVisible?: boolean
 }) {
   return (
     <Col className="flex-1">
@@ -159,7 +161,13 @@ function OnboardingView({
         {children}
       </div>
       <Row className="border-ink-300 justify-end border-t p-4 sm:p-2">
-        <Button {...buttonProps} className="w-full sm:w-auto">
+        <Button
+          {...buttonProps}
+          className={clsx(
+            'w-full opacity-0 sm:w-auto',
+            isContinueVisible && 'opacity-100'
+          )}
+        >
           {buttonProps.children || 'Continue'}
         </Button>
       </Row>
@@ -177,7 +185,7 @@ type SharedOnboardingViewProps = {
 } & SharedState
 
 function OnboardingViewIntro({ onAdvance }: SharedOnboardingViewProps) {
-  const trendingContracts = useGetTrendingContracts<CPMMContract>()
+  const trendingContracts = useGetTrendingContracts<CPMMContract>({ limit: 50 })
   const [betsMade, setBetsMade] = useState<Record<string, BetFormItem>>({})
 
   const user = useUser()
@@ -219,10 +227,11 @@ function OnboardingViewIntro({ onAdvance }: SharedOnboardingViewProps) {
           )
           return onAdvance({ groupsBetOn })
         },
-        disabled:
-          Object.keys(betsMade).length < 2 &&
-          contractsWithUniqueGroups.length >= 3,
       }}
+      isContinueVisible={
+        Object.keys(betsMade).length > 2 ||
+        contractsWithUniqueGroups.length <= 3
+      }
     >
       {user && (
         <OnboardingUsernameForm user={user} className="justify-center" />
@@ -342,6 +351,8 @@ function OnboardingUsernameForm({
     setName(nextName)
     await changeUserInfo({ name: nextName })
 
+    track('onboarding: name change')
+
     try {
       await changeUserInfo({ username: nextName })
     } catch (_) {
@@ -420,9 +431,9 @@ function OnboardingViewInterests({
           setIsLoading(false)
           onAdvance()
         },
-        disabled: Object.keys(selected).length < 3,
         loading: isLoading,
       }}
+      isContinueVisible={Object.keys(selected).length >= 3}
     >
       <h4 className="text-primary-700 mb-6 mt-3 text-center text-xl font-normal sm:text-2xl">
         <Balancer>What are you interested in?</Balancer>
