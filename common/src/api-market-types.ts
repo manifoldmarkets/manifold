@@ -85,6 +85,7 @@ export function toLiteMarket(contract: Contract): LiteMarket {
     resolutionTime,
     resolutionProbability,
     lastUpdatedTime,
+    lastBetTime
   } = contract
 
   const { p, totalLiquidity } = contract as any
@@ -127,6 +128,7 @@ export function toLiteMarket(contract: Contract): LiteMarket {
     resolutionTime,
     resolutionProbability,
     lastUpdatedTime,
+    lastBetTime,
     value,
     min,
     max,

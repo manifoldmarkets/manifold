@@ -201,6 +201,7 @@ Requires no authorization.
     resolutionProbability?: number // Used for BINARY markets resolved to MKT
 
     lastUpdatedTime?: number
+    lastBetTime?: number
   }
   ```
 
@@ -521,7 +522,8 @@ Requires no authorization.
       "resolution": "CANCEL",
       "resolutionTime": 1688137496869,
       "resolutionProbability": 0.94,
-      "lastUpdatedTime": 1688137484056
+      "lastUpdatedTime": 1688137484056,
+      "lastBetTime": 1688137484056
     },
     {
       "id": "Z8ZE1ivTKqpuIuUlqaNX",
@@ -549,7 +551,8 @@ Requires no authorization.
       "resolution": "NO",
       "resolutionTime": 1696882191666,
       "resolutionProbability": 0.53,
-      "lastUpdatedTime": 1696887359826
+      "lastUpdatedTime": 1696887359826,
+      "lastBetTime": 1696887359826
     }
   ]
   ```
