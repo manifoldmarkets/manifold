@@ -4,7 +4,7 @@ import { Experiment, ExperimentClient } from '@amplitude/experiment-js-client'
 let client: ExperimentClient | undefined
 
 const getClient = () => {
-  if (client == null) {
+  if (client == null && typeof window !== 'undefined') {
     client = Experiment.initialize(ENV_CONFIG.amplitudeApiKey)
   }
   return client
@@ -12,19 +12,19 @@ const getClient = () => {
 
 export const startExperiments = async () => {
   const client = getClient()
-  return client.start()
+  return client?.start()
 }
 export const clearExperiments = () => {
   const client = getClient()
-  return client.clear()
+  return client?.clear()
 }
 
 export const getVariant = (experimentName: string) => {
   const client = getClient()
-  return client.variant(experimentName)
+  return client?.variant(experimentName)
 }
 
 export const getVariants = () => {
   const client = getClient()
-  return client.all()
+  return client?.all() || {}
 }

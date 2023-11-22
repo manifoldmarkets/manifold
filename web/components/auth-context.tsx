@@ -19,7 +19,6 @@ import { safeLocalStorage } from 'web/lib/util/local'
 import { getSavedContractVisitsLocally } from 'web/hooks/use-save-visits'
 import { getSupabaseToken } from 'web/lib/firebase/api'
 import { updateSupabaseAuth } from 'web/lib/supabase/db'
-import { clearExperiments, startExperiments } from 'web/lib/service/experiments'
 
 // Either we haven't looked up the logged in user yet (undefined), or we know
 // the user is not logged in (null), or we know the user is logged in.
@@ -163,7 +162,6 @@ export function AuthProvider(props: {
   useEffect(() => {
     if (uid) {
       identifyUser(uid)
-      startExperiments()
       const userListener = listenForUser(uid, (user) => {
         setAuthUser((currAuthUser) =>
           currAuthUser && user ? { ...currAuthUser, user } : null
@@ -180,7 +178,6 @@ export function AuthProvider(props: {
       }
     } else if (uid === null) {
       identifyUser(null)
-      clearExperiments()
     }
   }, [uid, setAuthUser])
 

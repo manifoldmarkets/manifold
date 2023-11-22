@@ -23,7 +23,7 @@ import { LinkPreviews, fetchLinkPreviews } from 'common/link-preview'
 import { Onboarding } from 'web/components/onboarding/onboarding'
 import { ErrorBoundary } from 'react-error-boundary'
 import Welcome from 'web/components/onboarding/welcome'
-import { getVariants } from 'web/lib/service/experiments'
+import { useIsBetOnboardingTest } from 'web/hooks/use-is-bet-onboarding-test'
 
 export async function getStaticProps() {
   const dashboards = (await getNewsDashboards()) as Dashboard[]
@@ -66,7 +66,7 @@ function HomeDashboard(props: {
   previews: LinkPreviews
 }) {
   const { dashboards, previews } = props
-  const { bettingOnboarding } = getVariants()
+  const bettingOnboarding = useIsBetOnboardingTest()
 
   const user = useUser()
   const myDashboards = useYourFollowedDashboards()
