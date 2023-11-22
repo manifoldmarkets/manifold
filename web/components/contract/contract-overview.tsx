@@ -34,7 +34,6 @@ import { StonkContractChart } from '../charts/contract/stonk'
 import { getDateRange, useViewScale } from '../charts/helpers'
 import { TimeRangePicker } from '../charts/time-range-picker'
 import { Row } from '../layout/row'
-import { CertOverview } from './cert-overview'
 import { QfOverview } from './qf-overview'
 import { AnswersPanel } from '../answers/answers-panel'
 import { Answer, DpmAnswer } from 'common/answer'
@@ -93,8 +92,7 @@ export const ContractOverview = memo(
             resolutionRating={resolutionRating}
           />
         )
-      case 'CERT':
-        return <CertOverview contract={contract} />
+
       case 'QUADRATIC_FUNDING':
         return <QfOverview contract={contract} />
       case 'FREE_RESPONSE':
@@ -117,6 +115,8 @@ export const ContractOverview = memo(
         return <></>
       case 'POLL':
         return <PollPanel contract={contract} />
+      case 'CERT':
+        return <>Deprecated</>
     }
   }
 )
