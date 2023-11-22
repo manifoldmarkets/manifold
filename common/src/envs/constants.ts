@@ -124,7 +124,6 @@ export const BOT_USERNAMES = [
 export const MOD_IDS = [
   '9hWkzPveXIelUk4XOrm5WroriST2', // a
   'H6b5PWELWfRV6HhyHAlCGq7yJJu2', // AndrewG
-  '4JuXgDx47xPagH5mcLDqLzUSN5g2', // BTE
   'uyzAXSRdCCUWs4KstCLq2GfzAip2', // BoltonBailey
   '4aW01GHrlgafwAPLI1St7MPnOni1', // CarsonGale
   'MV9fTVHetcfp3h6CVYzpypIsbyN2', // CodeandSolder
@@ -212,6 +211,7 @@ export const VERIFIED_USERNAMES = [
   'SantaPawsSSB',
   'AndersSandberg',
   'JosephWeisenthal',
+  'BTE',
 ]
 
 export const HOUSE_BOT_USERNAME = 'acc'
