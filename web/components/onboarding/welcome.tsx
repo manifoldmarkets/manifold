@@ -9,8 +9,11 @@ import { User } from 'common/user'
 import { buildArray } from 'common/util/array'
 import { formatMoney } from 'common/util/format'
 import { Button } from 'web/components/buttons/button'
-import { useUser } from 'web/hooks/use-user'
-import { updateUser } from 'web/lib/firebase/users'
+import { useIsAuthorized, useUser } from 'web/hooks/use-user'
+import {
+  setCachedReferralInfoForUser,
+  updateUser,
+} from 'web/lib/firebase/users'
 import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
 import { Row } from '../layout/row'
@@ -35,6 +38,7 @@ import { randomString } from 'common/util/random'
 
 export default function Welcome() {
   const user = useUser()
+  const authed = useIsAuthorized()
   const isTwitch = useIsTwitch(user)
 
   const [open, setOpen] = useState(false)
@@ -68,6 +72,12 @@ export default function Welcome() {
       setOpen(true)
     }
   }, [user?.shouldShowWelcome])
+
+  useEffect(() => {
+    if (!authed || !user || !groupSelectorOpen) return
+    // Wait until after they've had the opportunity to change their name
+    setCachedReferralInfoForUser(user)
+  }, [groupSelectorOpen])
 
   const [userInterestedTopics, setUserInterestedTopics] = useState<Group[]>([])
   const [userBetInTopics, setUserBetInTopics] = useState<Group[]>([])
