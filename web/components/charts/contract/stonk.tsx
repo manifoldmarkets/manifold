@@ -7,16 +7,17 @@ import { formatLargeNumber } from 'common/util/format'
 import { StonkContract } from 'common/contract'
 import {
   TooltipProps,
-  getDateRange,
+  getEndDate,
   getRightmostVisibleDate,
   formatDate,
+  ZoomParams,
 } from '../helpers'
-import { ControllableSingleValueHistoryChart } from '../generic-charts'
+import { SingleValueHistoryChart } from '../generic-charts'
 import { Row } from 'web/components/layout/row'
 import { Avatar } from 'web/components/widgets/avatar'
 import { getStonkPriceAtProb } from 'common/stonk'
 import { YES_GRAPH_COLOR } from 'common/envs/constants'
-import { HistoryPoint, viewScale } from 'common/chart'
+import { HistoryPoint } from 'common/chart'
 
 const getScaleP = () => {
   return (p: number) => getStonkPriceAtProb({} as StonkContract, p)
@@ -48,26 +49,17 @@ export const StonkContractChart = (props: {
   betPoints: HistoryPoint<Partial<Bet>>[]
   width: number
   height: number
-  viewScaleProps: viewScale
-  controlledStart?: number
+  zoomParams?: ZoomParams
+  showZoomer?: boolean
   color?: string
-  onMouseOver?: (p: HistoryPoint<Partial<Bet>> | undefined) => void
 }) => {
-  const {
-    contract,
-    width,
-    height,
-    viewScaleProps,
-    controlledStart,
-    color,
-    onMouseOver,
-  } = props
+  const { contract, width, height, zoomParams, showZoomer, color } = props
 
-  const [start, end] = getDateRange(contract)
-  const rangeStart = controlledStart ?? start
+  const start = contract.createdTime
+  const end = getEndDate(contract)
   const betPointsInRange = useMemo(
-    () => props.betPoints.filter((pt) => pt.x >= rangeStart),
-    [props.betPoints, rangeStart]
+    () => props.betPoints.filter((pt) => pt.x >= start),
+    [props.betPoints, start]
   )
   const minProb = useMemo(
     () => minBy(betPointsInRange, (pt) => pt.y)?.y ?? 0.0001,
@@ -94,18 +86,18 @@ export const StonkContractChart = (props: {
     [betPoints, start, startP, end, endP]
   )
   const rightmostDate = getRightmostVisibleDate(end, last(betPoints)?.x, now)
-  const xScale = scaleTime([rangeStart, rightmostDate], [0, width])
+  const xScale = scaleTime([start, rightmostDate], [0, width])
   // clamp log scale to make sure zeroes go to the bottom
   const yScale = scaleLinear([min, max], [height, 0])
   return (
-    <ControllableSingleValueHistoryChart
+    <SingleValueHistoryChart
       w={width}
       h={height}
       xScale={xScale}
       yScale={yScale}
-      viewScaleProps={viewScaleProps}
+      zoomParams={zoomParams}
+      showZoomer={showZoomer}
       data={data}
-      onMouseOver={onMouseOver}
       Tooltip={StonkChartTooltip}
       color={color ?? YES_GRAPH_COLOR}
     />

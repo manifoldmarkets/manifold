@@ -1,12 +1,13 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import { scaleTime, scaleLinear } from 'd3-scale'
 import { min, max } from 'lodash'
 import dayjs from 'dayjs'
 import { Col } from '../layout/col'
-import { ControllableSingleValueHistoryChart } from 'web/components/charts/generic-charts'
+import { SingleValueHistoryChart } from 'web/components/charts/generic-charts'
 import { PortfolioMetrics } from 'common/portfolio-metrics'
-import { HistoryPoint, viewScale } from 'common/chart'
+import { HistoryPoint } from 'common/chart'
 import { curveLinear } from 'd3-shape'
+import { ZoomParams } from '../charts/helpers'
 
 export type GraphMode = 'profit' | 'value' | 'balance'
 
@@ -27,7 +28,7 @@ export const PortfolioGraph = (props: {
   points: HistoryPoint<Partial<PortfolioMetrics>>[]
   width: number
   height: number
-  viewScaleProps: viewScale
+  zoomParams?: ZoomParams
   onMouseOver?: (p: HistoryPoint<Partial<PortfolioMetrics>> | undefined) => void
   negativeThreshold?: number
 }) => {
@@ -37,7 +38,7 @@ export const PortfolioGraph = (props: {
     onMouseOver,
     width,
     height,
-    viewScaleProps,
+    zoomParams,
     negativeThreshold,
   } = props
   const { minDate, maxDate, minValue, maxValue } = useMemo(() => {
@@ -55,13 +56,17 @@ export const PortfolioGraph = (props: {
   const xScale = scaleTime([minDate, maxDate], [0, width])
   const yScale = scaleLinear([minValue, maxValue], [height, 0])
 
+  useEffect(() => {
+    zoomParams?.setXScale(xScale)
+  }, [])
+
   return (
-    <ControllableSingleValueHistoryChart
+    <SingleValueHistoryChart
       w={width}
       h={height}
       xScale={xScale}
       yScale={yScale}
-      viewScaleProps={viewScaleProps}
+      zoomParams={zoomParams}
       yKind="Ṁ"
       data={points}
       // eslint-disable-next-line react/prop-types

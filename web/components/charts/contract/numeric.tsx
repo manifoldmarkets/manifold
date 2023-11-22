@@ -1,7 +1,6 @@
 import { useMemo } from 'react'
 import { range } from 'lodash'
 import { scaleLinear } from 'd3-scale'
-
 import { getDpmOutcomeProbabilities } from 'common/calculate-dpm'
 import { NumericContract } from 'common/contract'
 import { NUMERIC_GRAPH_COLOR } from 'common/numeric-constants'
