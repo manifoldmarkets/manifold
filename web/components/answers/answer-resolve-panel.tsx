@@ -28,7 +28,6 @@ import { useAdmin } from 'web/hooks/use-admin'
 import { GradientContainer } from '../widgets/gradient-container'
 import { AmountInput } from '../widgets/amount-input'
 import { getAnswerColor } from '../charts/contract/choice'
-import { useAnimatedNumber } from 'web/hooks/use-animated-number'
 
 function getAnswerResolveButtonColor(
   resolveOption: string | undefined,
@@ -355,7 +354,6 @@ export function ResolutionAnswerItem(props: {
     answer,
     contract.answers.map((a) => a.id)
   )
-  const spring = useAnimatedNumber(getAnswerProbability(contract, answer.id))
 
   return (
     <AnswerBar
@@ -374,7 +372,7 @@ export function ResolutionAnswerItem(props: {
           {chosenShare ? (
             <ClosedProb prob={prob} resolvedProb={chosenShare} />
           ) : (
-            <OpenProb spring={spring} />
+            <OpenProb contract={contract} answer={answer} />
           )}
 
           {showChoice === 'checkbox' && (
