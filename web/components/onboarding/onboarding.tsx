@@ -15,14 +15,18 @@ import { PillButton } from '../buttons/pill-button'
 import { useGetTrendingGroups } from 'web/hooks/api/use-get-trending-groups'
 import { useGetTrendingContracts } from 'web/hooks/api/use-get-trending-contracts'
 import {
+  changeUserInfo,
   followTopic,
   placeBet,
   updateUserEmbedding,
 } from 'web/lib/firebase/api'
 import Image from 'next/image'
 import { track } from 'web/lib/service/analytics'
-import { updateUser } from 'web/lib/firebase/users'
+import { User, updateUser } from 'web/lib/firebase/users'
 import { useSearchParam } from 'web/hooks/use-search-param'
+import { cleanDisplayName } from 'common/util/clean-username'
+import { randomString } from 'common/util/random'
+import { PencilIcon } from '@heroicons/react/outline'
 
 const orderedOnboardingViews = ['intro', 'interests', 'thanks'] as const
 type OnboardingView = typeof orderedOnboardingViews[number]
@@ -177,6 +181,8 @@ function OnboardingViewIntro({ onAdvance }: SharedOnboardingViewProps) {
   const trendingContracts = useGetTrendingContracts<CPMMContract>()
   const [betsMade, setBetsMade] = useState<Record<string, BetFormItem>>({})
 
+  const user = useUser()
+
   const contractsWithUniqueGroups = useMemo(() => {
     let seenGroupSlugs: Array<string> = []
     const uniqueGroupSlugContracts = trendingContracts?.filter((contract) => {
@@ -219,6 +225,10 @@ function OnboardingViewIntro({ onAdvance }: SharedOnboardingViewProps) {
           contractsWithUniqueGroups.length >= 3,
       }}
     >
+      {user && (
+        <OnboardingUsernameForm user={user} className="justify-center" />
+      )}
+
       <h4 className="text-primary-700 mb-6 mt-3 text-center text-xl font-normal sm:text-2xl">
         <Balancer>
           Manifold lets you bet fake money on real events — from sports to
@@ -311,6 +321,63 @@ function OnboardingViewIntro({ onAdvance }: SharedOnboardingViewProps) {
         )
       })}
     </OnboardingView>
+  )
+}
+
+function OnboardingUsernameForm({
+  user,
+  className,
+}: {
+  user: User
+  className?: string
+}) {
+  const [name, setName] = useState<string>(user.name)
+
+  useEffect(() => {
+    if (user.name !== name) {
+      setName(user.name)
+    }
+  }, [user.name])
+
+  const handleSave = async () => {
+    const nextName = cleanDisplayName(name) ?? 'User'
+    if (nextName === user.name) {
+      return
+    }
+
+    setName(nextName)
+    await changeUserInfo({ name: nextName })
+
+    try {
+      await changeUserInfo({ username: nextName })
+    } catch (_) {
+      await changeUserInfo({ username: `${nextName}${randomString(5)}` })
+    }
+  }
+
+  return (
+    <Row className={clsx('items-center gap-2 text-xl', className)}>
+      <div>Welcome,</div>
+
+      <div className="relative">
+        <input
+          type="text"
+          placeholder="Name"
+          value={name}
+          maxLength={30}
+          size={name.length}
+          onChange={(e) => {
+            setName(e.target.value)
+          }}
+          onBlur={handleSave}
+          className="border-ink-400 focus:border-primary-500 w-auto rounded-md border-2 border-dashed bg-transparent px-2 py-1 pr-6 text-lg font-semibold focus:ring-0"
+        />
+
+        <div className="pointer-events-none absolute inset-y-0 right-0 flex py-3 pr-3">
+          <PencilIcon className="text-ink-700 h-4 w-4" />
+        </div>
+      </div>
+    </Row>
   )
 }
 
