@@ -1,4 +1,4 @@
-import { Bet } from 'common/bet'
+import { Bet, BetFilter } from 'common/bet'
 import { NextApiRequest, NextApiResponse } from 'next'
 import { CORS_UNRESTRICTED, applyCorsHeaders } from 'web/lib/api/cors'
 import { getUserByUsername } from 'web/lib/firebase/users'
@@ -24,6 +24,7 @@ const queryParams = z
       .refine((n) => n >= 0 && n <= 1000, 'Limit must be between 0 and 1000'),
     before: z.string().optional(),
     after: z.string().optional(),
+    kinds: z.string().optional(),
     order: z.enum(['asc', 'desc']).optional(),
   })
   .strict()
@@ -109,24 +110,18 @@ export default async function handler(
       getBeforeTime(params),
       getAfterTime(params),
     ])
-    const bets = contractId
-      ? await getBets(db, {
-          userId,
-          contractId,
-          beforeTime,
-          afterTime,
-          limit,
-          order,
-        })
-      : await getPublicBets({
-          userId,
-          contractId,
-          beforeTime,
-          afterTime,
-          limit,
-          order,
-        })
-
+    const opts: BetFilter = {
+      userId,
+      contractId,
+      beforeTime,
+      afterTime,
+      limit,
+      order,
+    }
+    if (params.kinds === 'open-limit') {
+      opts.isOpenLimitOrder = true
+    }
+    const bets = contractId ? await getBets(db, opts) : await getPublicBets(opts)
     res.setHeader('Cache-Control', 'max-age=15, public')
     return res.status(200).json(bets)
   } catch (e) {
