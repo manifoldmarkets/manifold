@@ -1,7 +1,7 @@
 import { createRNG } from 'common/util/random'
 import { useState } from 'react'
 import { ensureDeviceToken } from 'web/components/auth-context'
-import { track } from 'web/lib/service/analytics'
+import { setUserProperty, track } from 'web/lib/service/analytics'
 import { useEffectCheckEquality } from './use-effect-check-equality'
 
 const TEST_CACHE: any = {}
@@ -28,6 +28,7 @@ export const useABTest = <T>(
       TEST_CACHE[testName] = true
 
       track(testName, { ...trackingProperties, variant: key })
+      setUserProperty(testName, key)
     }
   }, [testName, trackingProperties, variants])
 
