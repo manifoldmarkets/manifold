@@ -376,7 +376,7 @@ function Answer(props: {
 
   const textColorClass = resolvedProb === 0 ? 'text-ink-700' : 'text-ink-900'
   return (
-    <Col className={' w-full'}>
+    <Col className={'w-full'}>
       <AnswerBar
         color={color}
         prob={prob}
@@ -447,6 +447,8 @@ function Answer(props: {
           )}
           <Row className={'w-full justify-end gap-2'}>
             {user &&
+              'isOther' in answer &&
+              !answer.isOther &&
               (isAdminId(user.id) ||
                 isModId(user.id) ||
                 user.id === contract.creatorId ||
