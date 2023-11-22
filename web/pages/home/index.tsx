@@ -24,6 +24,7 @@ import { Onboarding } from 'web/components/onboarding/onboarding'
 import { ErrorBoundary } from 'react-error-boundary'
 import Welcome from 'web/components/onboarding/welcome'
 import { useIsBetOnboardingTest } from 'web/hooks/use-is-bet-onboarding-test'
+import { useRouter } from 'next/router'
 
 export async function getStaticProps() {
   const dashboards = (await getNewsDashboards()) as Dashboard[]
@@ -68,6 +69,9 @@ function HomeDashboard(props: {
   const { dashboards, previews } = props
   const bettingOnboarding = useIsBetOnboardingTest()
 
+  const router = useRouter()
+  const { forceOnboarding } = router.query
+
   const user = useUser()
   const myDashboards = useYourFollowedDashboards()
 
@@ -77,7 +81,7 @@ function HomeDashboard(props: {
         title="News"
         description="Breaking news meets the wisdom of the crowd"
       />
-      {bettingOnboarding ? (
+      {bettingOnboarding || forceOnboarding ? (
         <ErrorBoundary fallback={null}>
           <Onboarding />
         </ErrorBoundary>

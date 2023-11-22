@@ -39,7 +39,7 @@ export default function BrowsePage() {
   const user = useUser()
   const isMobile = useIsMobile()
   const router = useRouter()
-  const { q } = router.query
+  const { q, forceOnboarding } = router.query
   // Allow users to browse without keyboard popping up on mobile.
   const autoFocus = !isMobile && !q
   const [showTopicsSidebar, setShowTopicsSidebar] = useState<boolean>(false)
@@ -90,7 +90,7 @@ export default function BrowsePage() {
     <>
       {}
       {user &&
-        (bettingOnboarding ? (
+        (bettingOnboarding || forceOnboarding ? (
           <ErrorBoundary fallback={null}>
             <Onboarding />
           </ErrorBoundary>
