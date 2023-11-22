@@ -516,6 +516,7 @@ export function updateMarket(params: {
   contractId: string
   visibility?: 'public' | 'unlisted'
   closeTime?: number
+  addAnswersMode?: 'ONLY_CREATOR' | 'ANYONE'
 }) {
   return call(getApiUrl('update-market'), 'POST', params)
 }

@@ -53,6 +53,9 @@ export const Stats = (props: {
   const isMod = isAdmin || isTrusty
   const isCreator = user?.id === contract.creatorId
   const isPublic = contract.visibility === 'public'
+  const isMulti = contract.mechanism === 'cpmm-multi-1'
+  const canAddAnswers = isMulti && contract.addAnswersMode !== 'DISABLED'
+  const creatorOnly = isMulti && contract.addAnswersMode === 'ONLY_CREATOR'
   const wasUnlistedByCreator = contract.unlistedById
     ? contract.unlistedById === contract.creatorId
     : false
@@ -262,8 +265,35 @@ export const Stats = (props: {
           </tr>
         )}
 
+        {canAddAnswers && (isCreator || isAdmin || isMod) && (
+          <tr className={clsx(isMod && 'bg-purple-500/30')}>
+            <td>
+              Creator only{' '}
+              <InfoTooltip
+                text={
+                  creatorOnly
+                    ? 'Only creator can add answers'
+                    : 'Anyone can add answers'
+                }
+              />
+            </td>
+            <td>
+              <ShortToggle
+                className="align-middle"
+                on={creatorOnly}
+                setOn={(on) =>
+                  updateMarket({
+                    contractId: contract.id,
+                    addAnswersMode: on ? 'ONLY_CREATOR' : 'ANYONE',
+                  })
+                }
+              />
+            </td>
+          </tr>
+        )}
+
         {/* Show a path to Firebase if user is an admin, or we're on localhost */}
-        {!hideAdvanced && (isAdmin || isDev) && (
+        {(isAdmin || isDev) && (
           <>
             <tr className="bg-purple-500/30">
               <td>Firestore link</td>

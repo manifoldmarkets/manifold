@@ -86,6 +86,10 @@ export function AnswersPanel(props: {
       : outcomeType === 'FREE_RESPONSE'
       ? 'ANYONE'
       : 'DISABLED'
+  const showAvatars =
+    addAnswersMode === 'ANYONE' ||
+    answers.some((a) => a.userId !== contract.creatorId)
+
   const shouldAnswersSumToOne =
     'shouldAnswersSumToOne' in contract ? contract.shouldAnswersSumToOne : true
 
@@ -158,6 +162,7 @@ export function AnswersPanel(props: {
                 selected={selected?.includes(answer.id)}
                 color={getAnswerColor(answer, answersArray)}
                 userBets={userBetsByAnswer[answer.id]}
+                showAvatars={showAvatars}
               />
               {expandedIds.includes(answer.id) && (
                 <Row className={'my-2 justify-end'}>
@@ -285,6 +290,15 @@ export function SimpleAnswerBars(props: {
         outcomeType === 'MULTIPLE_CHOICE' || ('number' in a && a.number !== 0)
     )
     .map((a) => ({ ...a, prob: getAnswerProbability(contract, a.id) }))
+  const addAnswersMode =
+    'addAnswersMode' in contract
+      ? contract.addAnswersMode
+      : outcomeType === 'FREE_RESPONSE'
+      ? 'ANYONE'
+      : 'DISABLED'
+  const showAvatars =
+    addAnswersMode === 'ANYONE' ||
+    answers.some((a) => a.userId !== contract.creatorId)
 
   const sortByProb = answers.length > maxAnswers
   const displayedAnswers = sortBy(answers, [
@@ -320,6 +334,7 @@ export function SimpleAnswerBars(props: {
               answer={answer}
               contract={contract}
               color={getAnswerColor(answer, answersArray)}
+              showAvatars={showAvatars}
             />
           ))}
           {moreCount > 0 && (
@@ -348,6 +363,7 @@ function Answer(props: {
   onClick?: () => void
   selected?: boolean
   userBets?: Bet[]
+  showAvatars?: boolean
 }) {
   const {
     answer,
@@ -358,20 +374,14 @@ function Answer(props: {
     selected,
     color,
     userBets,
+    showAvatars,
   } = props
 
   const answerCreator = useUserByIdOrAnswer(answer)
   const prob = getAnswerProbability(contract, answer.id)
 
   const isCpmm = contract.mechanism === 'cpmm-multi-1'
-  const isFreeResponse = contract.outcomeType === 'FREE_RESPONSE'
   const isOther = 'isOther' in answer && answer.isOther
-  const addAnswersMode =
-    'addAnswersMode' in contract
-      ? contract.addAnswersMode ?? 'DISABLED'
-      : isFreeResponse
-      ? 'ANYONE'
-      : 'DISABLED'
 
   const { resolution, resolutions } = contract
   const resolvedProb =
@@ -413,11 +423,9 @@ function Answer(props: {
             <AnswerLabel
               text={answer.text}
               createdTime={answer.createdTime}
-              creator={
-                addAnswersMode === 'ANYONE' ? answerCreator ?? false : undefined
-              }
+              creator={showAvatars ? answerCreator ?? false : undefined}
               className={clsx(
-                'items-center text-sm !leading-none sm:flex sm:text-base',
+                'items-center text-sm !leading-none sm:text-base',
                 textColorClass
               )}
             />

@@ -112,7 +112,7 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
 
   coverImageUrl?: string
   isRanked?: boolean
-  isSubsidized?: boolean
+  isSubsidized?: boolean // NOTE: not backfilled, undefined = true
 
   // Manifold.love
   loverUserId1?: string // The user id's of the pair of lovers referenced in the question.
