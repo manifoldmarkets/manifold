@@ -28,8 +28,7 @@ import {
   ShortLabel,
   YesLabel,
 } from 'web/components/outcome-label'
-import { Avatar } from 'web/components/widgets/avatar'
-import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
+import { Avatar, EmptyAvatar } from 'web/components/widgets/avatar'
 import { Pagination } from 'web/components/widgets/pagination'
 import { UserLink } from 'web/components/widgets/user-link'
 import { useFollows } from 'web/hooks/use-follows'
@@ -362,7 +361,7 @@ const BinaryUserPositionsTable = memo(
           }}
         >
           {loading ? (
-            <LoadingIndicator spinnerClassName={'border-ink-500'} size={'lg'} />
+            <LoadingResults />
           ) : (
             <Row className={'gap-1'}>
               <Col className={'w-1/2'}>
@@ -487,3 +486,29 @@ const PositionRow = memo(function PositionRow(props: {
     </Row>
   )
 })
+const LoadingResults = () => {
+  return (
+    <Row className={'gap-1'}>
+      <Col className={'w-1/2'}>
+        <LoadingPositionsRows />
+        <LoadingPositionsRows />
+        <LoadingPositionsRows />
+      </Col>
+      <Col className={'w-1/2'}>
+        <LoadingPositionsRows />
+        <LoadingPositionsRows />
+        <LoadingPositionsRows />
+      </Col>
+    </Row>
+  )
+}
+export function LoadingPositionsRows() {
+  return (
+    <Row className="border-ink-200 animate-pulse border-b p-2 last:border-none sm:rounded-md sm:border-none">
+      <Col className=" w-full items-center justify-between gap-1 sm:flex-row sm:gap-4">
+        <EmptyAvatar />
+        <div className="bg-canvas-100 h-6 grow rounded-md" />
+      </Col>
+    </Row>
+  )
+}
