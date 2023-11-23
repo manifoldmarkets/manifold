@@ -603,14 +603,14 @@ function CommentActions(props: {
         />
       )}
       {user && contract.outcomeType === 'BINARY' && (
-        <Tooltip text="Reply with a bet" placement="bottom">
-          <IconButton
-            onClick={() => {
-              setOutcome('YES')
-              setShowBetModal(true)
-            }}
-            size={'xs'}
-          >
+        <IconButton
+          onClick={() => {
+            setOutcome('YES')
+            setShowBetModal(true)
+          }}
+          size={'xs'}
+        >
+          <Tooltip text="Reply with a bet" placement="bottom">
             <Row className={'mt-0.5 gap-1'}>
               {diff != 0 && (
                 <span className="">{Math.round(Math.abs(diff))}</span>
@@ -623,23 +623,23 @@ function CommentActions(props: {
                 <FaArrowTrendUp className={'h-5 w-5'} />
               )}
             </Row>
-          </IconButton>
-        </Tooltip>
+          </Tooltip>
+        </IconButton>
       )}
       {user && onReplyClick && (
-        <Tooltip text="Reply with a comment" placement="bottom">
-          <IconButton
-            size={'xs'}
-            onClick={(e) => {
-              e.preventDefault()
-              e.stopPropagation()
-              onReplyClick(comment)
-            }}
-            className={'text-ink-500'}
-          >
+        <IconButton
+          size={'xs'}
+          onClick={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            onReplyClick(comment)
+          }}
+          className={'text-ink-500'}
+        >
+          <Tooltip text="Reply with a comment" placement="bottom">
             <ReplyIcon className="h-5 w-5 " />
-          </IconButton>
-        </Tooltip>
+          </Tooltip>
+        </IconButton>
       )}
       <LikeButton
         contentCreatorId={comment.userId}

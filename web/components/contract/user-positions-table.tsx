@@ -39,14 +39,16 @@ import { db } from 'web/lib/supabase/db'
 import { getStonkDisplayShares } from 'common/stonk'
 import { PillButton } from 'web/components/buttons/pill-button'
 import { Carousel } from 'web/components/widgets/carousel'
+import { Answer } from 'common/answer'
 
 export const UserPositionsTable = memo(
   function UserPositionsTableContent(props: {
     contract: CPMMBinaryContract | CPMMMultiContract
     positions: ContractMetricsByOutcome
     setTotalPositions?: (totalPositions: number) => void
+    answer?: Answer
   }) {
-    const { contract, setTotalPositions } = props
+    const { contract, setTotalPositions, answer } = props
     const contractId = contract.id
 
     const [contractMetricsByProfit, setContractMetricsByProfit] =
@@ -58,10 +60,16 @@ export const UserPositionsTable = memo(
     const [totalMetricsByAnswerId, setTotalMetricsByAnswerId] = useState<{
       [key: string]: number
     }>({})
+    const answers = answer
+      ? [answer]
+      : contract.mechanism === 'cpmm-multi-1'
+      ? contract.answers
+      : []
     const [answerId, setAnswerId] = useState<string | undefined>(
-      contract.mechanism === 'cpmm-multi-1'
-        ? first(orderBy(contract.answers, 'totalLiquidity', 'desc'))?.id
-        : undefined
+      answer?.id ??
+        (answers.length > 0
+          ? first(orderBy(answers, 'totalLiquidity', 'desc'))?.id
+          : undefined)
     )
     const [page, setPage] = useState(0)
     const [loading, setLoading] = useState(false)
@@ -121,7 +129,7 @@ export const UserPositionsTable = memo(
       if (contract.mechanism == 'cpmm-1') return
       const allCounts = Object.fromEntries(
         await Promise.all(
-          contract.answers.map(async (answer) => {
+          answers.map(async (answer) => {
             const count = await getContractMetricsCount(
               contractId,
               db,
@@ -174,32 +182,34 @@ export const UserPositionsTable = memo(
     } else if (contract.mechanism === 'cpmm-multi-1') {
       return (
         <Col className={'w-full'}>
-          <Carousel labelsParentClassName={'gap-1'}>
-            {orderBy(
-              contract.answers,
-              (answer) => totalMetricsByAnswerId[answer.id] ?? answer.text,
-              'desc'
-            ).map((answer) => (
-              <PillButton
-                key={answer.id}
-                selected={answer.id === answerId}
-                onSelect={() => setAnswerId(answer.id)}
-              >
-                <Row className={'gap-1'}>
-                  <span className={'max-w-[60px] truncate text-ellipsis'}>
-                    {answer.text}
-                  </span>
-                  {totalMetricsByAnswerId[answer.id]
-                    ? ` (${totalMetricsByAnswerId[answer.id]})`
-                    : ''}
-                </Row>
-              </PillButton>
-            ))}
-          </Carousel>
+          {!answer && (
+            <Carousel labelsParentClassName={'gap-1'}>
+              {orderBy(
+                answers,
+                (answer) => totalMetricsByAnswerId[answer.id] ?? answer.text,
+                'desc'
+              ).map((answer) => (
+                <PillButton
+                  key={answer.id}
+                  selected={answer.id === answerId}
+                  onSelect={() => setAnswerId(answer.id)}
+                >
+                  <Row className={'gap-1'}>
+                    <span className={'max-w-[60px] truncate text-ellipsis'}>
+                      {answer.text}
+                    </span>
+                    {totalMetricsByAnswerId[answer.id]
+                      ? ` (${totalMetricsByAnswerId[answer.id]})`
+                      : ''}
+                  </Row>
+                </PillButton>
+              ))}
+            </Carousel>
+          )}
           <Row className={'mb-2 mt-1 items-center justify-between gap-2'}>
             <Row className={'font-semibold '}>
               <span className={'line-clamp-1 '}>
-                {contract.answers.find((a) => a.id === answerId)?.text}
+                {answers.find((a) => a.id === answerId)?.text}
               </span>
             </Row>
 

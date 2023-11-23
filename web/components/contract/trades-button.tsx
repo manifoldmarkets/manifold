@@ -18,10 +18,22 @@ import { useContractVoters } from 'web/hooks/use-votes'
 import { Avatar } from '../widgets/avatar'
 import { UserLink } from '../widgets/user-link'
 import { track } from 'web/lib/service/analytics'
+import { Answer } from 'common/answer'
+import { useUniqueBettorCountOnAnswer } from 'web/hooks/use-answers'
+import { Button, ColorType } from 'web/components/buttons/button'
 
-export function TradesButton(props: { contract: Contract }) {
-  const { contract } = props
+export function TradesButton(props: {
+  contract: Contract
+  answer?: Answer
+  className?: string
+  color?: ColorType
+}) {
+  const { contract, color, answer, className } = props
   const { uniqueBettorCount: uniqueTraders } = contract
+  const uniqueAnswerBettorCount = useUniqueBettorCountOnAnswer(
+    contract.id,
+    answer?.id
+  )
   const [modalOpen, setModalOpen] = useState<boolean>(false)
 
   const isPoll = contract.outcomeType === 'POLL'
@@ -29,28 +41,31 @@ export function TradesButton(props: { contract: Contract }) {
 
   return (
     <>
-      <Tooltip
-        text={isPoll ? 'Voters' : isBounty ? 'Rewards given' : 'Traders'}
-        placement="top"
-        noTap
+      <Button
+        size={'2xs'}
+        color={color ?? 'gray-white'}
+        className={clsx(className)}
+        onClick={(e) => {
+          track('click feed card traders button', { contractId: contract.id })
+          e.preventDefault()
+          setModalOpen(true)
+        }}
       >
-        <button
-          disabled={uniqueTraders === 0}
-          className={clsx(
-            'text-ink-500 flex h-full flex-row items-center justify-center gap-1.5 transition-transform'
-          )}
-          onClick={(e) => {
-            track('click feed card traders button', { contractId: contract.id })
-            e.preventDefault()
-            setModalOpen(true)
-          }}
+        <Tooltip
+          text={isPoll ? 'Voters' : isBounty ? 'Rewards given' : 'Traders'}
+          placement="top"
+          noTap
         >
-          <Row className="relative gap-1.5 text-sm">
+          <Row className="relative items-center  gap-1.5 text-sm">
             <UserIcon className="h-5 w-5" />
-            {isBounty ? contract.bountyTxns.length || '' : uniqueTraders || ''}
+            {isBounty
+              ? contract.bountyTxns.length || ''
+              : answer
+              ? uniqueAnswerBettorCount
+              : uniqueTraders || ''}
           </Row>
-        </button>
-      </Tooltip>
+        </Tooltip>
+      </Button>
       <Modal
         open={modalOpen}
         setOpen={setModalOpen}
@@ -62,7 +77,7 @@ export function TradesButton(props: { contract: Contract }) {
             {isPoll ? (
               <VotesModalContent contract={contract} />
             ) : (
-              <BetsModalContent contract={contract} />
+              <BetsModalContent contract={contract} answer={answer} />
             )}
           </div>
         )}
@@ -99,29 +114,25 @@ function VotesModalContent(props: { contract: Contract }) {
   )
 }
 
-function BetsModalContent(props: { contract: Contract }) {
-  const { contract } = props
-  const bets = useBets({ contractId: contract.id })
+function BetsModalContent(props: { contract: Contract; answer?: Answer }) {
+  const { contract, answer } = props
+  const bets = useBets({
+    contractId: contract.id,
+    answerId: answer?.id,
+    filterAntes: true,
+    filterRedemptions: true,
+  })
   const [positions, setPositions] = usePersistentInMemoryState<
     undefined | Awaited<ReturnType<typeof getCPMMContractUserContractMetrics>>
   >(undefined, 'market-card-feed-positions-' + contract.id)
   useEffect(() => {
-    getCPMMContractUserContractMetrics(contract.id, 100, null, db).then(
-      setPositions
-    )
+    getCPMMContractUserContractMetrics(
+      contract.id,
+      100,
+      answer?.id ?? null,
+      db
+    ).then(setPositions)
   }, [contract.id])
-  if (contract.outcomeType !== 'BINARY') {
-    if (!bets) return <LoadingIndicator />
-    return (
-      <Col className={'mt-2'}>
-        <BetsTabContent
-          contract={contract}
-          bets={bets}
-          totalBets={bets.length}
-        />
-      </Col>
-    )
-  }
 
   return (
     <UncontrolledTabs
@@ -134,6 +145,7 @@ function BetsModalContent(props: { contract: Contract }) {
             <UserPositionsTable
               contract={contract as CPMMBinaryContract}
               positions={positions}
+              answer={answer}
             />
           ),
         },

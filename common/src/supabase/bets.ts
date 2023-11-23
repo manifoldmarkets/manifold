@@ -122,6 +122,9 @@ export const applyBetsFilter = <
   if (options?.commentRepliesOnly) {
     q = q.neq('data->>replyToCommentId', null)
   }
+  if (options?.answerId) {
+    q = q.eq('answer_id', options.answerId)
+  }
   return q
 }
 

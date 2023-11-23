@@ -38,6 +38,8 @@ import { CategoryTags } from '../feed/feed-timeline-items'
 import { JSONEmpty } from 'web/components/contract/contract-description'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { TbDropletHeart, TbMoneybag } from 'react-icons/tb'
+import { Tooltip } from 'web/components/widgets/tooltip'
+import { Button } from 'web/components/buttons/button'
 
 export function FeedContractCard(props: {
   contract: Contract
@@ -265,7 +267,7 @@ const BottomActionRow = (props: {
       )}
     >
       <BottomRowButtonWrapper>
-        <TradesButton contract={contract} />
+        <TradesButton contract={contract} className={'h-full'} />
       </BottomRowButtonWrapper>
 
       {contract.outcomeType === 'BOUNTIED_QUESTION' && (
@@ -283,20 +285,29 @@ const BottomActionRow = (props: {
       {/* cpmm markets */}
       {'totalLiquidity' in contract && (
         <BottomRowButtonWrapper>
-          {
-            <div className="text-ink-500 z-10 flex items-center gap-1.5 text-sm">
-              <TbDropletHeart className="h-6 w-6 stroke-2" />
-              <div>
-                {ENV_CONFIG.moneyMoniker}
-                {shortFormatNumber(contract.totalLiquidity)}
-              </div>
-            </div>
-          }
+          <Button
+            disabled={true}
+            size={'2xs'}
+            color={'gray-white'}
+            className={'disabled:cursor-pointer'}
+          >
+            <Tooltip text={`Total liquidity`} placement="top" noTap>
+              <Row
+                className={'text-ink-500 h-full items-center gap-1.5 text-sm'}
+              >
+                <TbDropletHeart className="h-6 w-6 stroke-2" />
+                <div>
+                  {ENV_CONFIG.moneyMoniker}
+                  {shortFormatNumber(contract.totalLiquidity)}
+                </div>
+              </Row>
+            </Tooltip>
+          </Button>
         </BottomRowButtonWrapper>
       )}
 
       <BottomRowButtonWrapper>
-        <CommentsButton contract={contract} user={user} />
+        <CommentsButton contract={contract} user={user} className={'h-full'} />
       </BottomRowButtonWrapper>
       <BottomRowButtonWrapper>
         <LikeButton
@@ -307,7 +318,7 @@ const BottomActionRow = (props: {
           totalLikes={contract.likedByUserCount ?? 0}
           contract={contract}
           contentText={question}
-          className={'hover:!bg-canvas-0 !px-0'}
+          size={'2xs'}
           trackingLocation={'contract card (feed)'}
           placement="top"
         />

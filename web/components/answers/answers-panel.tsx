@@ -47,6 +47,7 @@ import { isAdminId, isModId } from 'common/envs/constants'
 import { User } from 'common/user'
 import { Avatar } from 'web/components/widgets/avatar'
 import { UserLink } from 'web/components/widgets/user-link'
+import { TradesButton } from 'web/components/contract/trades-button'
 
 const SORTS = [
   { label: 'High %', value: 'prob-desc' },
@@ -466,6 +467,13 @@ function Answer(props: {
                   Edit
                 </Button>
               )}
+            {'poolYes' in answer && (
+              <TradesButton
+                contract={contract}
+                answer={answer}
+                color={'gray-outline'}
+              />
+            )}
             {onCommentClick && <AddComment onClick={onCommentClick} />}
           </Row>
         </Row>
