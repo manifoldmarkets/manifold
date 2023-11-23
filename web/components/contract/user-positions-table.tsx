@@ -54,11 +54,12 @@ export const UserPositionsTable = memo(
     const answer = answerDetails?.answer
     const contractId = contract.id
 
-    const [contractMetricsByProfit, setContractMetricsByProfit] =
-      useState<ContractMetric[]>()
+    const [contractMetricsByProfit, setContractMetricsByProfit] = useState<
+      ContractMetric[] | undefined
+    >()
     const [contractMetricsByShares, setContractMetricsByShares] = useState<
-      ContractMetric[]
-    >(Object.values(props.positions ?? []).flat())
+      ContractMetric[] | undefined
+    >(props.positions ? Object.values(props.positions).flat() : undefined)
 
     const [totalMetricsByAnswerId, setTotalMetricsByAnswerId] = useState<{
       [key: string]: number
@@ -81,14 +82,24 @@ export const UserPositionsTable = memo(
         : undefined
     )
     const [page, setPage] = useState(0)
-    const [loading, setLoading] = useState(false)
-    const [totalYesPositions, setTotalYesPositions] = useState(0)
-    const [totalNoPositions, setTotalNoPositions] = useState(0)
+    const [loading, setLoading] = useState(!props.positions)
+    const [totalYesPositions, setTotalYesPositions] = useState(
+      props.positions?.YES?.length ?? 0
+    )
+    const [totalNoPositions, setTotalNoPositions] = useState(
+      props.positions?.NO?.length ?? 0
+    )
     const [sortBy, setSortBy] = useState<'profit' | 'shares'>(
       contract.isResolved ? 'profit' : 'shares'
     )
-
     useEffect(() => {
+      if (!props.positions) getContractMetrics(sortBy, answerId)
+    }, [])
+
+    const getContractMetrics = (
+      sortBy: 'profit' | 'shares',
+      answerId?: string
+    ) => {
       setLoading(true)
       getOrderedContractMetricRowsForContractId(
         contractId,
@@ -100,7 +111,7 @@ export const UserPositionsTable = memo(
           ? updateContractMetricsByProfit(convertContractMetricRows(rows))
           : updateContractMetricsByShares(convertContractMetricRows(rows))
       )
-    }, [contractId, answerId, sortBy])
+    }
 
     const updateContractMetricsByProfit = (cms: ContractMetric[]) => {
       setContractMetricsByProfit((prev) =>
@@ -155,7 +166,7 @@ export const UserPositionsTable = memo(
       getAllAnswerPositionCounts()
     }, [])
 
-    const positionsToDisplay = contractMetricsByShares.filter((cm) =>
+    const positionsToDisplay = contractMetricsByShares?.filter((cm) =>
       answerId ? cm.answerId === answerId : !cm.answerId
     )
     const profitPositionsToDisplay = contractMetricsByProfit?.filter((cm) =>
@@ -169,8 +180,10 @@ export const UserPositionsTable = memo(
             <SortRow
               sort={sortBy === 'profit' ? 'profit' : 'position'}
               onSortClick={() => {
-                setSortBy(sortBy === 'shares' ? 'profit' : 'shares')
+                const newSort = sortBy === 'shares' ? 'profit' : 'shares'
+                setSortBy(newSort)
                 setPage(0)
+                getContractMetrics(newSort)
               }}
             />
           </Row>
@@ -184,7 +197,7 @@ export const UserPositionsTable = memo(
             sortBy={sortBy}
             page={page}
             setPage={setPage}
-            loadingPositions={Math.min(totalYesPositions, totalNoPositions)}
+            loadingPositions={Math.max(totalYesPositions, totalNoPositions)}
           />
         </Col>
       )
@@ -201,7 +214,10 @@ export const UserPositionsTable = memo(
                 <PillButton
                   key={answer.id}
                   selected={answer.id === answerId}
-                  onSelect={() => setAnswerId(answer.id)}
+                  onSelect={() => {
+                    setAnswerId(answer.id)
+                    getContractMetrics(sortBy, answer.id)
+                  }}
                 >
                   <Row className={'gap-1'}>
                     <span className={'max-w-[60px] truncate text-ellipsis'}>
@@ -225,8 +241,10 @@ export const UserPositionsTable = memo(
             <SortRow
               sort={sortBy === 'profit' ? 'profit' : 'position'}
               onSortClick={() => {
-                setSortBy(sortBy === 'shares' ? 'profit' : 'shares')
+                const newSort = sortBy === 'shares' ? 'profit' : 'shares'
+                setSortBy(newSort)
                 setPage(0)
+                getContractMetrics(newSort, answerId)
               }}
             />
           </Row>
@@ -257,7 +275,7 @@ export const UserPositionsTable = memo(
 const BinaryUserPositionsTable = memo(
   function BinaryUserPositionsTabContent(props: {
     contract: CPMMContract | CPMMMultiContract
-    positionsByShares: ContractMetric[]
+    positionsByShares: ContractMetric[] | undefined
     positionsByProfit: ContractMetric[] | undefined
     totalYesPositions: number
     totalNoPositions: number
