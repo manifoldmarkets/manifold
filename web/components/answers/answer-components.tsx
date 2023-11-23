@@ -123,7 +123,7 @@ export const AnswerLabel = (props: {
 
   return (
     <Tooltip text={answerTextTooltip}>
-      <Row className={clsx('my-1', className)}>
+      <span className={clsx('my-1', className)}>
         <Tooltip text={dateTooltip}>
           {creator === false ? (
             <EmptyAvatar className="mr-2 inline" size={4} />
@@ -137,7 +137,7 @@ export const AnswerLabel = (props: {
           ) : null}
         </Tooltip>
         <Linkify text={truncated} className="[&_a]:text-primary-800" />
-      </Row>
+      </span>
     </Tooltip>
   )
 }
