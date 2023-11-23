@@ -56,7 +56,7 @@ export const WhatIsAPM = () => (
 
 export const WhatIsMana = () => (
   <ExpandSection title="💰 What is mana (Ṁ)?">
-    Mana (Ṁ) is the play-money used by to bet on Manifold.
+    Mana (Ṁ) is the play-money used to bet on Manifold.
     <br />
     You start with Ṁ500 for free. Earn more by winning bets and gaining bonuses.
     <br />
