@@ -1,7 +1,6 @@
 import { BinaryContract } from 'common/contract'
 import { useEffect } from 'react'
 import { getHistoryData } from 'web/pages/embed/[username]/[contractSlug]'
-import { useViewScale } from '../charts/helpers'
 import { BinaryChart } from '../contract/contract-overview'
 import { DAY_MS } from 'common/util/time'
 import PlaceholderGraph from 'web/lib/icons/placeholder-graph.svg'
@@ -40,16 +39,12 @@ export function FeedBinaryChart(props: {
         { max: Number.NEGATIVE_INFINITY, min: Number.POSITIVE_INFINITY }
       )
     : undefined
-  const viewScaleProps = useViewScale()
 
   if (points && points.length > 0 && !!points[0]) {
     return (
       <BinaryChart
         betPoints={points as any}
         contract={contract}
-        showZoomer={false}
-        viewScale={viewScaleProps}
-        controlledStart={points[0].x}
         percentBounds={percentBounds}
         className={className}
         size={'sm'}

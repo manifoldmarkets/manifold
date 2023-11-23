@@ -7,14 +7,15 @@ import { PseudoNumericContract } from 'common/contract'
 import { NUMERIC_GRAPH_COLOR } from 'common/numeric-constants'
 import {
   TooltipProps,
-  getDateRange,
+  getEndDate,
   getRightmostVisibleDate,
   formatDateInRange,
+  ZoomParams,
 } from '../helpers'
-import { ControllableSingleValueHistoryChart } from '../generic-charts'
+import { SingleValueHistoryChart } from '../generic-charts'
 import { Row } from 'web/components/layout/row'
 import { Avatar } from 'web/components/widgets/avatar'
-import { HistoryPoint, viewScale } from 'common/chart'
+import { HistoryPoint } from 'common/chart'
 
 // mqp: note that we have an idiosyncratic version of 'log scale'
 // contracts. the values are stored "linearly" and can include zero.
@@ -56,23 +57,13 @@ export const PseudoNumericContractChart = (props: {
   betPoints: NumericPoint[]
   width: number
   height: number
-  viewScaleProps: viewScale
+  zoomParams?: ZoomParams
   showZoomer?: boolean
-  controlledStart?: number
-  onMouseOver?: (p: NumericPoint | undefined) => void
 }) => {
-  const {
-    contract,
-    width,
-    height,
-    viewScaleProps,
-    showZoomer,
-    controlledStart,
-    onMouseOver,
-  } = props
+  const { contract, width, height, zoomParams, showZoomer } = props
   const { min, max, isLogScale } = contract
-  const [start, end] = getDateRange(contract)
-  const rangeStart = controlledStart ?? start
+  const start = contract.createdTime
+  const end = getEndDate(contract)
   const scaleP = useMemo(
     () => getScaleP(min, max, isLogScale),
     [min, max, isLogScale]
@@ -91,28 +82,28 @@ export const PseudoNumericContractChart = (props: {
     [betPoints, start, startP, end, endP]
   )
   const rightmostDate = getRightmostVisibleDate(end, last(betPoints)?.x, now)
-  const xScale = scaleTime([rangeStart, rightmostDate], [0, width])
+  const xScale = scaleTime([start, rightmostDate], [0, width])
+
   // clamp log scale to make sure zeroes go to the bottom
   const yScale = isLogScale
     ? scaleLog([Math.max(min, 1), max], [height, 0]).clamp(true)
     : scaleLinear([min, max], [height, 0])
   return (
-    <ControllableSingleValueHistoryChart
+    <SingleValueHistoryChart
       w={width}
       h={height}
       xScale={xScale}
       yScale={yScale}
-      viewScaleProps={viewScaleProps}
+      zoomParams={zoomParams}
       showZoomer={showZoomer}
       data={data}
-      onMouseOver={onMouseOver}
       Tooltip={(props) => (
         <PseudoNumericChartTooltip
           {...props}
           dateLabel={formatDateInRange(
             // eslint-disable-next-line react/prop-types
             xScale.invert(props.x),
-            rangeStart,
+            start,
             rightmostDate
           )}
         />
