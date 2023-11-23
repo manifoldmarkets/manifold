@@ -15,7 +15,7 @@ import {
 } from 'common/supabase/contract-metrics'
 import { User } from 'common/user'
 import { formatMoney } from 'common/util/format'
-import { first, orderBy, partition, uniqBy } from 'lodash'
+import { countBy, first, orderBy, partition, uniqBy } from 'lodash'
 import { memo, useEffect, useMemo, useState } from 'react'
 import { SortRow } from 'web/components/contract/contract-tabs'
 import { Col } from 'web/components/layout/col'
@@ -43,32 +43,42 @@ import { Answer } from 'common/answer'
 export const UserPositionsTable = memo(
   function UserPositionsTableContent(props: {
     contract: CPMMBinaryContract | CPMMMultiContract
-    positions: ContractMetricsByOutcome
+    positions?: ContractMetricsByOutcome
     setTotalPositions?: (totalPositions: number) => void
-    answer?: Answer
+    answerDetails?: {
+      answer: Answer
+      totalPositions: number
+    }
   }) {
-    const { contract, setTotalPositions, answer } = props
+    const { contract, setTotalPositions, answerDetails } = props
+    const answer = answerDetails?.answer
     const contractId = contract.id
 
     const [contractMetricsByProfit, setContractMetricsByProfit] =
       useState<ContractMetric[]>()
     const [contractMetricsByShares, setContractMetricsByShares] = useState<
       ContractMetric[]
-    >(Object.values(props.positions).flat())
+    >(Object.values(props.positions ?? []).flat())
 
     const [totalMetricsByAnswerId, setTotalMetricsByAnswerId] = useState<{
       [key: string]: number
-    }>({})
+    }>(
+      answerDetails
+        ? { [answerDetails.answer.id]: answerDetails.totalPositions }
+        : countBy(
+            Object.values(props.positions ?? []).flat(),
+            (position) => position.answerId
+          )
+    )
     const answers = answer
       ? [answer]
       : contract.mechanism === 'cpmm-multi-1'
       ? contract.answers
       : []
     const [answerId, setAnswerId] = useState<string | undefined>(
-      answer?.id ??
-        (answers.length > 0
-          ? first(orderBy(answers, 'totalLiquidity', 'desc'))?.id
-          : undefined)
+      answers.length > 0
+        ? first(orderBy(answers, 'totalLiquidity', 'desc'))?.id
+        : undefined
     )
     const [page, setPage] = useState(0)
     const [loading, setLoading] = useState(false)
@@ -231,10 +241,10 @@ export const UserPositionsTable = memo(
             page={page}
             setPage={setPage}
             loadingPositions={
-              answerId
+              answerId && totalMetricsByAnswerId[answerId]
                 ? // Just an approximation, could be more asymmetric
                   totalMetricsByAnswerId[answerId] / 2
-                : Math.min(totalYesPositions, totalNoPositions)
+                : Math.max(totalYesPositions, totalNoPositions)
             }
           />
         </Col>
@@ -504,11 +514,9 @@ const LoadingResults = () => {
 }
 export function LoadingPositionsRows() {
   return (
-    <Row className="border-ink-200 animate-pulse border-b p-2 last:border-none sm:rounded-md sm:border-none">
-      <Col className=" w-full items-center justify-between gap-1 sm:flex-row sm:gap-4">
-        <EmptyAvatar />
-        <div className="bg-canvas-100 h-6 grow rounded-md" />
-      </Col>
+    <Row className="border-ink-200 min-h-[4rem] animate-pulse items-center justify-center gap-2 border-b p-2 last:border-none sm:rounded-md sm:border-none">
+      <EmptyAvatar />
+      <div className="bg-canvas-100 h-7 grow rounded-md" />
     </Row>
   )
 }

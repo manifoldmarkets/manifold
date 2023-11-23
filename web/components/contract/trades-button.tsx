@@ -1,7 +1,7 @@
 import { UserIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { Contract, CPMMBinaryContract } from 'common/contract'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useBets } from 'web/hooks/use-bets-supabase'
 import { MODAL_CLASS, Modal, SCROLLABLE_MODAL_CLASS } from '../layout/modal'
 import { Row } from '../layout/row'
@@ -9,10 +9,7 @@ import { LoadingIndicator } from '../widgets/loading-indicator'
 import { Tooltip } from '../widgets/tooltip'
 import { BetsTabContent } from './contract-tabs'
 import { UserPositionsTable } from 'web/components/contract/user-positions-table'
-import { getCPMMContractUserContractMetrics } from 'common/supabase/contract-metrics'
-import { db } from 'web/lib/supabase/db'
 import { UncontrolledTabs } from 'web/components/layout/tabs'
-import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { Col } from 'web/components/layout/col'
 import { useContractVoters } from 'web/hooks/use-votes'
 import { Avatar } from '../widgets/avatar'
@@ -77,7 +74,17 @@ export function TradesButton(props: {
             {isPoll ? (
               <VotesModalContent contract={contract} />
             ) : (
-              <BetsModalContent contract={contract} answer={answer} />
+              <BetsModalContent
+                contract={contract}
+                answerDetails={
+                  answer
+                    ? {
+                        answer,
+                        totalPositions: uniqueAnswerBettorCount,
+                      }
+                    : undefined
+                }
+              />
             )}
           </div>
         )}
@@ -114,38 +121,31 @@ function VotesModalContent(props: { contract: Contract }) {
   )
 }
 
-function BetsModalContent(props: { contract: Contract; answer?: Answer }) {
-  const { contract, answer } = props
+function BetsModalContent(props: {
+  contract: Contract
+  answerDetails?: {
+    answer: Answer
+    totalPositions: number
+  }
+}) {
+  const { contract, answerDetails } = props
+  const answer = answerDetails?.answer
   const bets = useBets({
     contractId: contract.id,
     answerId: answer?.id,
     filterAntes: true,
     filterRedemptions: true,
   })
-  const [positions, setPositions] = usePersistentInMemoryState<
-    undefined | Awaited<ReturnType<typeof getCPMMContractUserContractMetrics>>
-  >(undefined, 'market-card-feed-positions-' + contract.id)
-  useEffect(() => {
-    getCPMMContractUserContractMetrics(
-      contract.id,
-      100,
-      answer?.id ?? null,
-      db
-    ).then(setPositions)
-  }, [contract.id])
 
   return (
     <UncontrolledTabs
       tabs={[
         {
           title: 'Positions',
-          content: !positions ? (
-            <LoadingIndicator />
-          ) : (
+          content: (
             <UserPositionsTable
               contract={contract as CPMMBinaryContract}
-              positions={positions}
-              answer={answer}
+              answerDetails={answerDetails}
             />
           ),
         },
