@@ -15,18 +15,17 @@ import { clearLoverPhoto, updateLover } from 'web/lib/firebase/love/api'
 import { AddPhotosWidget } from './widgets/add-photos'
 import { Row as rowFor } from 'common/supabase/utils'
 import { Row } from 'web/components/layout/row'
+import { useUser } from 'web/hooks/use-user'
 
-export default function ProfileCarousel(props: {
-  lover: Lover
-  currentUser: User | null
-}) {
-  const { lover, currentUser } = props
+export default function ProfileCarousel(props: { lover: Lover }) {
+  const { lover } = props
   const photoNums = lover.photo_urls ? lover.photo_urls.length : 0
 
   const [lightboxUrl, setLightboxUrl] = useState('')
   const [dialogOpen, setDialogOpen] = useState(false)
 
   const isAdmin = useAdmin()
+  const currentUser = useUser()
   const isCurrentUser = currentUser?.id === lover.user_id
 
   if (!currentUser) {

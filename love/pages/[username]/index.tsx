@@ -95,24 +95,11 @@ export default function UserPage(props: {
       {currentUser !== undefined && (
         <Col className={'gap-4'}>
           {lover ? (
-            <>
-              {lover.photo_urls && (
-                <ProfileCarousel lover={lover} currentUser={currentUser} />
-              )}
-              <LoverProfileHeader
-                isCurrentUser={isCurrentUser}
-                currentUser={currentUser}
-                user={user}
-                lover={lover}
-              />
-              <LoverContent
-                isCurrentUser={isCurrentUser}
-                user={user}
-                lover={lover}
-                refreshLover={refreshLover}
-                currentUser={currentUser}
-              />
-            </>
+            <LoverProfile
+              lover={lover}
+              user={user}
+              refreshLover={refreshLover}
+            />
           ) : isCurrentUser ? (
             <Col className={'mt-4 w-full items-center'}>
               <Row>
@@ -138,14 +125,37 @@ export default function UserPage(props: {
   )
 }
 
+export function LoverProfile(props: {
+  lover: Lover
+  user: User
+  refreshLover: () => void
+  hideMatches?: boolean
+}) {
+  const { lover, user, refreshLover, hideMatches } = props
+
+  return (
+    <>
+      {lover.photo_urls && <ProfileCarousel lover={lover} />}
+      <LoverProfileHeader user={user} lover={lover} />
+      <LoverContent
+        user={user}
+        lover={lover}
+        refreshLover={refreshLover}
+        hideMatches={hideMatches}
+      />
+    </>
+  )
+}
+
 function LoverContent(props: {
-  isCurrentUser: boolean
   user: User
   lover: Lover
-  currentUser: User | null
   refreshLover: () => void
+  hideMatches?: boolean
 }) {
-  const { isCurrentUser, user, lover, currentUser, refreshLover } = props
+  const { user, lover, refreshLover, hideMatches } = props
+  const currentUser = useUser()
+  const isCurrentUser = currentUser?.id === user.id
 
   if (!currentUser) {
     return (
@@ -164,7 +174,7 @@ function LoverContent(props: {
   }
   return (
     <>
-      {lover.looking_for_matches && (
+      {!hideMatches && lover.looking_for_matches && (
         <Matches profileLover={lover} profileUserId={user.id} />
       )}
       <LoverAbout lover={lover} />
