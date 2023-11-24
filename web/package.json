@@ -83,7 +83,7 @@
     "autoprefixer": "10.2.6",
     "concurrently": "8.2.2",
     "cross-env": "7.0.3",
-    "eslint-config-next": "13.5.4",
+    "eslint-config-next": "14.0.3",
     "eslint-config-prettier": "9.0.0",
     "next-sitemap": "^2.5.14",
     "postcss": "8.4.31",
