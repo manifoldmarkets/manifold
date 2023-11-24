@@ -175,9 +175,7 @@ export async function getYourDailyChangedContracts(
 
   if (!data) return null
 
-  const contracts = filterDefined(
-    data.map((d) => d.data as CPMMContract)
-  )
+  const contracts = filterDefined(data.map((d) => d.data as CPMMContract))
   return contracts
 }
 
