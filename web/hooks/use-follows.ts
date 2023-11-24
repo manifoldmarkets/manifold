@@ -44,7 +44,7 @@ export const useIsFollowing = (
   return { isFollowing, setIsFollowing }
 }
 
-export const useFollowedIdsSupabase = (userId: string | undefined) => {
+export const useFollowedIdsSupabase = (userId: string) => {
   const [followedIds, setFollowedIds] = usePersistentLocalState<
     string[] | undefined
   >(undefined, `user-followed-${userId}`)

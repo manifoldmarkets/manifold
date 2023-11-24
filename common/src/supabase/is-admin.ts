@@ -1,9 +1,6 @@
-import { SupabaseClient } from '@supabase/supabase-js'
+import { SupabaseClient } from 'common/supabase/utils'
 
-export async function getIsAdmin(
-  db: SupabaseClient,
-  userId: string | undefined | null
-) {
-  const { data: is_admin } = await db.rpc('is_admin', { input_string: userId })
-  return is_admin as any as boolean
+export async function getIsAdmin(db: SupabaseClient, userId: string) {
+  const { data } = await db.rpc('is_admin', { input_string: userId })
+  return data!
 }

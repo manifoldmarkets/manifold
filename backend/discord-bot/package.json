@@ -16,7 +16,7 @@
   },
   "dependencies": {
     "@amplitude/node": "1.10.2",
-    "@supabase/supabase-js": "2.8.0",
+    "@supabase/supabase-js": "2.38.5",
     "discord.js": "^14.10.2"
   },
   "devDependencies": {

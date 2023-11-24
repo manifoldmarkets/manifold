@@ -1,4 +1,4 @@
-import { SupabaseClient } from '@supabase/supabase-js'
+import { SupabaseClient } from 'common/supabase/utils'
 import type { PostgrestFilterBuilder } from '@supabase/postgrest-js'
 import { Row, Schema, millisToTs, run, selectJson, tsToMillis } from './utils'
 import { Bet, BetFilter } from 'common/bet'

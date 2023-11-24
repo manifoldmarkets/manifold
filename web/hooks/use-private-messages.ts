@@ -29,7 +29,6 @@ import { MINUTE_MS } from 'common/util/time'
 import { safeLocalStorage } from 'web/lib/util/local'
 import { useEvent } from 'web/hooks/use-event'
 import { useRouter } from 'next/router'
-import { PostgrestBuilder } from '@supabase/postgrest-js'
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
 import { track } from 'web/lib/service/analytics'
 
@@ -60,12 +59,12 @@ export function useRealtimePrivateMessagesPolling(
       .eq('channel_id', channelId)
       .gt('id', maxBy(rows, 'id')?.id ?? 0)
     if (ignoreSystemStatus) q = q.neq('visibility', 'system_status')
-    return q as PostgrestBuilder<'private_user_messages'>
+    return q
   }
 
   const results = usePersistentSupabasePolling(
     'private_user_messages',
-    allRowsQ as PostgrestBuilder<'private_user_messages'>,
+    allRowsQ,
     newRowsOnlyQ,
     `private-messages-${channelId}-${ms}ms-${initialLimit}limit-v1`,
     {

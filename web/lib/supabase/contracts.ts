@@ -176,8 +176,8 @@ export async function getYourDailyChangedContracts(
   if (!data) return null
 
   const contracts = filterDefined(
-    data.map((d) => (d as any).data)
-  ) as CPMMContract[]
+    data.map((d) => d.data as CPMMContract)
+  )
   return contracts
 }
 
@@ -245,7 +245,7 @@ export async function getIsPrivateContractMember(
     this_contract_id: contractId,
     this_member_id: userId,
   })
-  return data as boolean | null
+  return data
 }
 
 export const getTrendingContracts = async (limit: number) => {

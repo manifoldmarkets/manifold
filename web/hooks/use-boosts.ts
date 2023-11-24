@@ -20,7 +20,7 @@ export const useBoosts = (
   }, [privateUser?.id])
 
   const getLimitedBoosts = async (privateUser: PrivateUser) => {
-    const { data } = await db.rpc(`get_daily_claimed_boosts` as any, {
+    const { data } = await db.rpc('get_daily_claimed_boosts', {
       user_id: privateUser.id,
     })
     const totalBoostFundsClaimed = sum(data?.map((d) => d.total))
