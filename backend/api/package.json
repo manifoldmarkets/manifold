@@ -19,7 +19,7 @@
   },
   "main": "lib/serve.js",
   "dependencies": {
-    "@amplitude/node": "1.10.0",
+    "@amplitude/node": "1.10.2",
     "@flat/in-app-purchase": "FlatIO/in-app-purchase#1.13.5",
     "@giphy/js-fetch-api": "5.0.0",
     "@google-cloud/pubsub": "3.2.1",
