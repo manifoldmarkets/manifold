@@ -34,7 +34,7 @@
     "lodash": "4.17.21",
     "pg-promise": "11.4.1",
     "supabase": "1.113.2",
-    "typescript": "5.0.4",
+    "typescript": "5.3.2",
     "string-similarity": "4.0.4"
   }
 }

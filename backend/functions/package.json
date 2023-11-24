@@ -26,7 +26,7 @@
   },
   "main": "backend/functions/lib/index.js",
   "dependencies": {
-    "@amplitude/node": "1.10.0",
+    "@amplitude/node": "1.10.2",
     "@google-cloud/functions-framework": "3.1.2",
     "@google-cloud/pubsub": "3.2.1",
     "@google-cloud/secret-manager": "4.2.1",

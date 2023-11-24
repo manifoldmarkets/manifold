@@ -22,7 +22,6 @@
   },
   "devDependencies": {
     "@types/numeral": "2.0.2",
-    "puppeteer": "19.7.5",
     "tsc-alias": "1.8.2",
     "tsconfig-paths": "4.1.2"
   },
