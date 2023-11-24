@@ -21,7 +21,7 @@
   },
   "dependencies": {
     "@google-cloud/pubsub": "3.2.1",
-    "@supabase/supabase-js": "2.2.0",
+    "@supabase/supabase-js": "2.38.5",
     "@tiptap/core": "2.0.0-beta.204",
     "@tiptap/extension-image": "2.0.0-beta.204",
     "@tiptap/extension-link": "2.0.0-beta.204",
@@ -33,7 +33,7 @@
     "firebase-admin": "11.5.0",
     "lodash": "4.17.21",
     "pg-promise": "11.4.1",
-    "supabase": "1.38.7",
+    "supabase": "1.113.2",
     "typescript": "5.0.4",
     "string-similarity": "4.0.4"
   }
