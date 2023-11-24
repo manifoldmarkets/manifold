@@ -100,7 +100,7 @@ export const getUserBetsFromResolvedContracts = async (
     uid: userId,
   })
 
-  return flatMap(data).map((d: any) => {
+  return flatMap(data).map((d) => {
     return [d.contract, d.bets]
   }) as [Contract, LimitBet[]][]
 }

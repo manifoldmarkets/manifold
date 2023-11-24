@@ -4,7 +4,7 @@ import { run, selectFrom } from 'common/supabase/utils'
 export async function getDonationsByCharity() {
   const { data } = await db.rpc('get_donations_by_charity')
   return Object.fromEntries(
-    (data ?? []).map((r: any) => [r.charity_id, r.total])
+    (data ?? []).map((r) => [r.charity_id, r.total])
   )
 }
 

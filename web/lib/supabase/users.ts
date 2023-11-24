@@ -34,7 +34,7 @@ export async function searchUsers(
 
   const { data } = await db.rpc('search_users', { query: prompt, count: limit })
 
-  return data?.map((d: any) => d.data as User) ?? []
+  return data?.map((d) => d.data as User) ?? []
 }
 
 // leaderboards
@@ -93,8 +93,7 @@ export async function getTopUserCreators(
       limit_n: limit,
     })
   )
-  // work around rpc typing bug
-  return data as unknown as { user_id: string; n: number }[]
+  return data
 }
 
 export const getTotalContractsCreated = async (userId: string) => {
