@@ -20,6 +20,11 @@ module.exports = {
   transpilePackages: ['common'],
   experimental: {
     scrollRestoration: true,
+    turbo: {
+      rules: {
+        '*.svg': { loaders: ['@svgr/webpack'], as: '*.js' },
+      },
+    },
   },
   images: {
     dangerouslyAllowSVG: true,
