@@ -1,6 +1,5 @@
 import { db } from './db'
 import { run, selectFrom } from 'common/supabase/utils'
-import { uniqBy } from 'lodash'
 import { User } from 'common/user'
 import { Period } from '../firebase/users'
 
