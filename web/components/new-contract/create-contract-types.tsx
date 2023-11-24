@@ -91,7 +91,7 @@ export const ALL_CONTRACT_TYPES = {
 }
 
 type ContractTypeParams =
-  typeof ALL_CONTRACT_TYPES[keyof typeof ALL_CONTRACT_TYPES]
+  (typeof ALL_CONTRACT_TYPES)[keyof typeof ALL_CONTRACT_TYPES]
 
 export function getContractTypeThingFromValue(
   thing: keyof ContractTypeParams,
