@@ -1,10 +1,5 @@
 import { Contract, CPMMContract, Visibility } from 'common/contract'
-import {
-  run,
-  selectFrom,
-  SupabaseClient,
-  Tables,
-} from 'common/supabase/utils'
+import { run, selectFrom, SupabaseClient, Tables } from 'common/supabase/utils'
 import { filterDefined } from 'common/util/array'
 import { db } from './db'
 import { chunk, uniqBy } from 'lodash'
