@@ -3,7 +3,7 @@ import { createBountyAddedNotification } from 'shared/create-notification'
 import { runAddBountyTxn } from 'shared/txn/run-bounty-txn'
 import { getContract } from 'shared/utils'
 import { z } from 'zod'
-import { APIError, authEndpoint, validate } from './helpers'
+import { authEndpoint, validate } from './helpers'
 
 const bodySchema = z
   .object({
@@ -17,7 +17,7 @@ export const addbounty = authEndpoint(async (req, auth) => {
 
   // run as transaction to prevent race conditions
   return await firestore.runTransaction(async (transaction) => {
-    const { status, txn } = await runAddBountyTxn(transaction, {
+    const { txn } = await runAddBountyTxn(transaction, {
       fromId: auth.uid,
       fromType: 'USER',
       toId: contractId,
