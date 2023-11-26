@@ -1,9 +1,7 @@
 import { Contract, CPMMContract, Visibility } from 'common/contract'
 import {
-  millisToTs,
   run,
   selectFrom,
-  selectJson,
   SupabaseClient,
   Tables,
 } from 'common/supabase/utils'
