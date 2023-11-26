@@ -64,7 +64,7 @@ export async function getTopTraders(period: Period) {
       .order(`data->profitCached->${period}`, {
         ascending: false,
       } as any)
-      .limit(21) // add extra for @acc
+      .limit(25) // add extra for @acc, excluded users
   )
   return data
 }
