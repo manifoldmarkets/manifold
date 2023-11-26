@@ -102,12 +102,6 @@ export async function getContracts(
   }
 }
 
-export const getPublicContract = async (id: string) => {
-  const { data } = await run(
-    db.from('public_contracts').select('data').eq('id', id)
-  )
-  return data && data.length > 0 ? (data[0].data as Contract) : null
-}
 export const getContract = async (id: string) => {
   const { data } = await run(db.from('contracts').select('data').eq('id', id))
   return data && data.length > 0 ? (data[0].data as Contract) : null
@@ -138,28 +132,6 @@ export const getRecentPublicContractRows = async (options: {
     .limit(options.limit)
   const { data } = await run(q)
   return data as Tables['contracts']['Row'][]
-}
-
-// Only fetches contracts with 'public' visibility
-export const getPublicContracts = async (options: {
-  limit: number
-  beforeTime?: number
-  order?: 'asc' | 'desc'
-  userId?: string
-}) => {
-  let q = selectJson(db, 'public_contracts')
-  q = q.order('created_time', {
-    ascending: options?.order === 'asc',
-  } as any)
-  if (options.beforeTime) {
-    q = q.lt('created_time', millisToTs(options.beforeTime))
-  }
-  if (options?.userId) {
-    q = q.eq('user_id', options.userId)
-  }
-  q = q.limit(options.limit)
-  const { data } = await run(q)
-  return data.map((r) => r.data)
 }
 
 export async function getYourDailyChangedContracts(
