@@ -32,7 +32,7 @@ export function getReplicatorUrl() {
 
 export function getApiUrl(path: string) {
   if (process.env.NEXT_PUBLIC_API_URL) {
-    return `${process.env.NEXT_PUBLIC_API_URL}/${name}`
+    return `${process.env.NEXT_PUBLIC_API_URL}/${path}`
   } else {
     const { apiEndpoint } = ENV_CONFIG
     return `${apiEndpoint}/${path}`
