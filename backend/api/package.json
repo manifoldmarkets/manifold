@@ -1,5 +1,5 @@
 {
-  "name": "api",
+  "name": "@manifold/api",
   "description": "Backend API endpoints for the Manifold website.",
   "version": "0.1.0",
   "private": true,
@@ -12,7 +12,9 @@
     "dist:copy": "cp -R ../../common/lib/* dist/common/lib && cp -R ../shared/lib/* dist/backend/shared/lib && cp -R ./lib/* dist/backend/api/lib && cp ../../yarn.lock dist && cp package.json dist",
     "compile": "tsc -b",
     "watch": "tsc -w",
-    "alias": "tsc-alias"
+    "alias": "tsc-alias",
+    "verify": "yarn --cwd=../.. verify",
+    "verify:dir": "npx eslint . --max-warnings 0"
   },
   "engines": {
     "node": ">=16.0.0"

@@ -5,14 +5,12 @@ import { Contract } from 'common/contract'
 import { isAdminId, isModId } from 'common/envs/constants'
 import { GroupResponse } from 'common/group'
 import { APIError, authEndpoint, validate } from './helpers'
-import { getUser } from 'shared/utils'
 import {
   createSupabaseClient,
   createSupabaseDirectClient,
 } from 'shared/supabase/init'
 import { addGroupToContract } from 'shared/update-group-contracts-internal'
 import { GroupMember } from 'common/group-member'
-import { User } from 'common/user'
 
 const bodySchema = z
   .object({

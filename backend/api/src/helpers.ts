@@ -153,7 +153,9 @@ export const MaybeAuthedEndpoint = <T extends Json>(
     let authUser: AuthedUser | undefined = undefined
     try {
       authUser = await lookupUser(await parseCredentials(req))
-    } catch {}
+    } catch {
+      // it's treated as an anon request
+    }
 
     try {
       const { log, logError } = getLogs(req)
