@@ -369,7 +369,7 @@ export const insertMarketMovementContractToUsersFeeds = async (
     ],
     'contract_probability_changed',
     [],
-    Date.now() - 12 * HOUR_MS,
+    Date.now() - 24 * HOUR_MS,
     {
       currentProb: contract.prob,
       previousProb: contract.prob - contract.probChanges.day,
