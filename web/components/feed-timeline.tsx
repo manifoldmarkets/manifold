@@ -26,6 +26,8 @@ import { CreateQuestionButton } from 'web/components/buttons/create-question-but
 import { shortenedFromNow } from 'web/lib/util/shortenedFromNow'
 import { Button } from './buttons/button'
 import { linkClass } from './widgets/site-link'
+import { isIOS } from 'web/lib/util/device'
+import { getIsNative } from 'web/lib/native/is-native'
 
 export function FeedTimeline() {
   const privateUser = usePrivateUser()
@@ -50,7 +52,7 @@ export function FeedTimeline() {
           <CreateQuestionButton className={'max-w-[10rem]'} />
         </Row>
       )}
-      {user && (remaining ?? 0) <= 0 && (
+      {user && (remaining ?? 0) <= 0 && !(isIOS() && getIsNative()) && (
         <Row className="text-md mb-2 items-center justify-between gap-2 rounded-md border-2 border-indigo-500 p-2">
           <span>
             🤖{' '}
