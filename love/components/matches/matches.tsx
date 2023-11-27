@@ -7,8 +7,8 @@ import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { useUser } from 'web/hooks/use-user'
 import { AddAMatchButton } from '../add-a-match-button'
 import { MatchTile } from './match-tile'
-import { User } from 'common/user'
 import { Lover } from 'common/love/lover'
+import { BrowseMatchesButton } from '../browse-matches-button'
 
 export const Matches = (props: {
   profileLover: Lover
@@ -45,6 +45,7 @@ export const Matches = (props: {
 
       return b.answers[resolvedCountB].prob - a.answers[resolvedCountA].prob
     })
+
   const areYourMatches = profileUserId === user?.id
 
   return (
@@ -84,7 +85,14 @@ export const Matches = (props: {
       )}
 
       {lover && (
-        <AddAMatchButton lover={lover} potentialLovers={potentialLovers} />
+        <>
+          <BrowseMatchesButton
+            lover={lover}
+            potentialLovers={potentialLovers}
+            matchedLovers={[]}
+          />
+          <AddAMatchButton lover={lover} potentialLovers={potentialLovers} />
+        </>
       )}
     </Col>
   )
