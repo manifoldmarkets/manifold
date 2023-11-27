@@ -341,7 +341,13 @@ export function ContractPageContent(props: ContractParams) {
                   sizes="100vw"
                   className="object-cover"
                   src={coverImageUrl}
-                  onError={() => setCoverImageUrl(undefined)}
+                  onError={() => {
+                    track('image error on contract', {
+                      contractId: contract.id,
+                      imageUrl: coverImageUrl,
+                    })
+                    setCoverImageUrl(undefined)
+                  }}
                   priority
                 />
                 <ChangeBannerButton
