@@ -17,7 +17,7 @@ import React, {
 } from 'react'
 import { Contract } from 'common/contract'
 import { useMeasureSize } from 'web/hooks/use-measure-size'
-import { clamp } from 'lodash'
+import { clamp, sortBy } from 'lodash'
 import { ScaleTime, scaleTime } from 'd3-scale'
 import { useEvent } from 'web/hooks/use-event'
 
@@ -499,7 +499,7 @@ function useInitZoomBehavior(props: {
 
   const [mouseDownX, setMouseDownX] = useState<number>()
   const [mouseCurrentX, setMouseCurrentX] = useState<number>()
-  const [selectStart, selectEnd] = [mouseDownX, mouseCurrentX].sort()
+  const [selectStart, selectEnd] = sortBy([mouseDownX, mouseCurrentX])
 
   useEffect(() => {
     if (!zoomParams) return
