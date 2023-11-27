@@ -540,8 +540,10 @@ function useInitZoomBehavior(props: {
       .call(zoomer)
       .on('dblclick.zoom', () => rescale(null))
       .on('mousedown.zoom', (ev) => {
-        const [x] = pointer(ev)
-        setMouseDownX(x)
+        if (ev.button === 0 && !ev.ctrlKey && !ev.metaKey && !ev.altKey) {
+          const [x] = pointer(ev)
+          setMouseDownX(x)
+        }
       })
       .on('mousemove.zoom', (ev) => {
         const [x] = pointer(ev)
