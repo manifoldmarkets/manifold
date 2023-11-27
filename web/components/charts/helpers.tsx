@@ -208,6 +208,11 @@ export const SVGChart = <X, TT extends { x: number; y: number }>(props: {
     h,
   })
 
+  useEffect(() => {
+    window.addEventListener('pointerup', onPointerUp)
+    return () => window.removeEventListener('pointerup', onPointerUp)
+  }, [onPointerUp])
+
   const onPointerLeave = () => {
     onMouseLeave?.()
   }
@@ -224,7 +229,6 @@ export const SVGChart = <X, TT extends { x: number; y: number }>(props: {
       className={clsx(className, 'relative cursor-crosshair select-none')}
       onPointerEnter={onPointerMove}
       onPointerMove={onPointerMove}
-      onPointerUp={onPointerUp}
       onPointerLeave={onPointerLeave}
     >
       {ttParams && Tooltip && (
