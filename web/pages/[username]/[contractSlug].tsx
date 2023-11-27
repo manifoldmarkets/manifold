@@ -253,22 +253,19 @@ export function ContractPageContent(props: ContractParams) {
     }
   }, [historyData.points, newBets])
 
-  const {
-    isResolved,
-    outcomeType,
-    resolution,
-    closeTime,
-    creatorId,
-    coverImageUrl,
-  } = contract
+  const { isResolved, outcomeType, resolution, closeTime, creatorId } = contract
 
   const isAdmin = useAdmin()
   const isMod = useTrusted()
   const isCreator = creatorId === user?.id
   const isClosed = !!(closeTime && closeTime < Date.now())
   const [showResolver, setShowResolver] = useState(false)
-
   const [showReview, setShowReview] = useState(false)
+  const [coverImageUrl, setCoverImageUrl] = useState(contract.coverImageUrl)
+  // unhide on upload
+  useEffect(() => {
+    setCoverImageUrl(contract.coverImageUrl)
+  }, [contract.coverImageUrl])
 
   useSaveReferral(user, {
     defaultReferrerUsername: contract.creatorUsername,
@@ -344,7 +341,8 @@ export function ContractPageContent(props: ContractParams) {
                   sizes="100vw"
                   className="object-cover"
                   src={coverImageUrl}
-                  priority={true}
+                  onError={() => setCoverImageUrl(undefined)}
+                  priority
                 />
                 <ChangeBannerButton
                   contract={contract}
