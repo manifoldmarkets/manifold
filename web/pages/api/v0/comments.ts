@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next'
-import { applyCorsHeaders, CORS_UNRESTRICTED } from 'web/lib/api/cors'
+import { applyCorsHeaders } from 'web/lib/api/cors'
 import type { Comment } from 'common/comment'
 import { getContractFromSlug } from 'web/lib/supabase/contracts'
 import { ApiError, ValidationError } from './_types'
