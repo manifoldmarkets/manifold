@@ -135,6 +135,7 @@ export const MOD_IDS = [
   '946iB1LqFIR06G7d8q89um57PHh2', // egroj
   'hqdXgp0jK2YMMhPs067eFK4afEH3', // Eliza
   'kbHiTAGBahXdX9Z4sW29JpNrB0l2', // Ernie
+  'W4yEF6idSMcNWEVUquowziSCZFI3', // EvanDaniel
   '2VhlvfTaRqZbFn2jqxk2Am9jgsE2', // Gabrielle
   'cA1JupYR5AR8btHUs2xvkui7jA93', // Gen
   'TUk0ELR0SNV74OfRAOD48ciiS0W2', // itsTomekK
