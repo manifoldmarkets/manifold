@@ -1,6 +1,6 @@
 import { Bet, BetFilter } from 'common/bet'
 import { NextApiRequest, NextApiResponse } from 'next'
-import { CORS_UNRESTRICTED, applyCorsHeaders } from 'web/lib/api/cors'
+import { applyCorsHeaders } from 'web/lib/api/cors'
 import { getUserByUsername } from 'web/lib/firebase/users'
 import { getBet, getPublicBets } from 'web/lib/supabase/bets'
 import { getContractFromSlug } from 'web/lib/supabase/contracts'

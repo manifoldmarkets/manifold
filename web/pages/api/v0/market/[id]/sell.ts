@@ -1,8 +1,4 @@
 import { NextApiRequest, NextApiResponse } from 'next'
-import {
-  CORS_ORIGIN_MANIFOLD,
-  CORS_ORIGIN_LOCALHOST,
-} from 'common/envs/constants'
 import { applyCorsHeaders } from 'web/lib/api/cors'
 import { fetchBackend, forwardResponse } from 'web/lib/api/proxy'
 

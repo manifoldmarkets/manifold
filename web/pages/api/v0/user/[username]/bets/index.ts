@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next'
-import { applyCorsHeaders, CORS_UNRESTRICTED } from 'web/lib/api/cors'
+import { applyCorsHeaders } from 'web/lib/api/cors'
 import { Bet } from 'web/lib/firebase/bets'
 import { getUserByUsername } from 'web/lib/firebase/users'
 import { ApiError } from '../../../_types'

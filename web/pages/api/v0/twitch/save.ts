@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next'
-import { CORS_UNRESTRICTED, applyCorsHeaders } from 'web/lib/api/cors'
+import { applyCorsHeaders } from 'web/lib/api/cors'
 import { fetchBackend, forwardResponse } from 'web/lib/api/proxy'
 
 export const config = { api: { bodyParser: true } }

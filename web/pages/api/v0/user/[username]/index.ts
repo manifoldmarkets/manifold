@@ -1,6 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next'
 import { getUserByUsername } from 'web/lib/firebase/users'
-import { applyCorsHeaders, CORS_UNRESTRICTED } from 'web/lib/api/cors'
+import { applyCorsHeaders } from 'web/lib/api/cors'
 import { LiteUser, ApiError, toLiteUser } from '../../_types'
 
 export default async function handler(

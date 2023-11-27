@@ -1,6 +1,6 @@
 import { LiteMarket, toLiteMarket } from 'common/api-market-types'
 import { NextApiRequest, NextApiResponse } from 'next'
-import { applyCorsHeaders, CORS_UNRESTRICTED } from 'web/lib/api/cors'
+import { applyCorsHeaders } from 'web/lib/api/cors'
 import { ApiError } from '../../_types'
 import { marketCacheStrategy } from 'web/pages/api/v0/market/[id]/index'
 import { getContract } from 'web/lib/supabase/contracts'

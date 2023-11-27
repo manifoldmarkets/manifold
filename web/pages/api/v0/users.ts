@@ -1,7 +1,7 @@
 // Next.js API route support: https://vercel.com/docs/concepts/functions/serverless-functions
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { listAllUsers } from 'web/lib/firebase/users'
-import { applyCorsHeaders, CORS_UNRESTRICTED } from 'web/lib/api/cors'
+import { applyCorsHeaders } from 'web/lib/api/cors'
 import { toLiteUser, ValidationError } from './_types'
 import { z } from 'zod'
 import { validate } from './_validate'

@@ -5,7 +5,7 @@ import {
 } from 'common/supabase/contract-metrics'
 import { uniqBy } from 'lodash'
 import { NextApiRequest, NextApiResponse } from 'next'
-import { applyCorsHeaders, CORS_UNRESTRICTED } from 'web/lib/api/cors'
+import { applyCorsHeaders } from 'web/lib/api/cors'
 import { db } from 'web/lib/supabase/db'
 import { validate } from 'web/pages/api/v0/_validate'
 import { z } from 'zod'
