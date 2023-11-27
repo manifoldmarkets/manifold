@@ -1,18 +1,11 @@
 import { NextApiRequest, NextApiResponse } from 'next'
-import {
-  CORS_ORIGIN_MANIFOLD,
-  CORS_ORIGIN_LOCALHOST,
-} from 'common/envs/constants'
-import { applyCorsHeaders } from 'web/lib/api/cors'
+import { CORS_UNRESTRICTED, applyCorsHeaders } from 'web/lib/api/cors'
 import { fetchBackend, forwardResponse } from 'web/lib/api/proxy'
 
 export const config = { api: { bodyParser: true } }
 
 export default async function route(req: NextApiRequest, res: NextApiResponse) {
-  await applyCorsHeaders(req, res, {
-    origin: [CORS_ORIGIN_MANIFOLD, CORS_ORIGIN_LOCALHOST],
-    methods: 'POST',
-  })
+  await applyCorsHeaders(req, res)
   try {
     const backendRes = await fetchBackend(req, 'savetwitchcredentials')
     await forwardResponse(res, backendRes)

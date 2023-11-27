@@ -8,7 +8,7 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  await applyCorsHeaders(req, res, CORS_UNRESTRICTED)
+  await applyCorsHeaders(req, res)
   const { id } = req.query
   const contracts = (await getGroupMarkets(id as string))?.map((contract) =>
     toLiteMarket(contract)

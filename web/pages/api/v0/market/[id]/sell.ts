@@ -9,10 +9,7 @@ import { fetchBackend, forwardResponse } from 'web/lib/api/proxy'
 export const config = { api: { bodyParser: true } }
 
 export default async function route(req: NextApiRequest, res: NextApiResponse) {
-  await applyCorsHeaders(req, res, {
-    origin: [CORS_ORIGIN_MANIFOLD, CORS_ORIGIN_LOCALHOST],
-    methods: 'POST',
-  })
+  await applyCorsHeaders(req, res)
 
   const { id } = req.query
   const contractId = id as string

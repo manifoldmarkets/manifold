@@ -3,20 +3,14 @@ import { nanoid } from 'nanoid'
 import { NextApiRequest, NextApiResponse } from 'next'
 import { generateAsync } from 'stability-client'
 import { storage } from 'web/lib/firebase/init'
-import {
-  CORS_ORIGIN_MANIFOLD,
-  CORS_ORIGIN_LOCALHOST,
-} from 'common/envs/constants'
+
 import { applyCorsHeaders } from 'web/lib/api/cors'
 
 export const config = { api: { bodyParser: true } }
 
 // Highly experimental. Proxy for https://github.com/vpzomtrrfrt/stability-client
 export default async function route(req: NextApiRequest, res: NextApiResponse) {
-  await applyCorsHeaders(req, res, {
-    origin: [CORS_ORIGIN_MANIFOLD, CORS_ORIGIN_LOCALHOST],
-    methods: 'POST',
-  })
+  await applyCorsHeaders(req, res)
 
   // Check that prompt and apiKey are included in the body
   if (!req.body.prompt) {

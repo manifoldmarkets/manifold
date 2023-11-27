@@ -43,7 +43,7 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<Comment[] | ValidationError | ApiError>
 ) {
-  await applyCorsHeaders(req, res, CORS_UNRESTRICTED)
+  await applyCorsHeaders(req, res)
 
   let params: z.infer<typeof queryParams>
   try {
