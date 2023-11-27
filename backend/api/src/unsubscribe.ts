@@ -50,7 +50,7 @@ export const unsubscribe = async (req: Request, res: Response) => {
     },
   }
 
-  trackPublicEvent(id, 'unsubscribe from emails', {
+  await trackPublicEvent(id, 'unsubscribe from emails', {
     type: notificationSubscriptionType,
   })
 
