@@ -24,6 +24,8 @@ import {
 } from 'common/user'
 import { CreateQuestionButton } from 'web/components/buttons/create-question-button'
 import { shortenedFromNow } from 'web/lib/util/shortenedFromNow'
+import { Button } from './buttons/button'
+import { linkClass } from './widgets/site-link'
 
 export function FeedTimeline() {
   const privateUser = usePrivateUser()
@@ -46,6 +48,20 @@ export function FeedTimeline() {
             .
           </span>
           <CreateQuestionButton className={'max-w-[10rem]'} />
+        </Row>
+      )}
+      {user && (remaining ?? 0) <= 0 && (
+        <Row className="text-md mb-2 items-center justify-between gap-2 rounded-md border-2 border-indigo-500 p-2">
+          <span>
+            🤖{' '}
+            <Link href="/add-funds" className={linkClass}>
+              Cyber Monday Sale.
+            </Link>{' '}
+            Use code CBRMON to get 15% off mana sales.
+          </span>
+          <Button color="gradient" onClick={() => Router.push('/add-funds')}>
+            Shop
+          </Button>
         </Row>
       )}
       {privateUser && <FeedTimelineContent privateUser={privateUser} />}
