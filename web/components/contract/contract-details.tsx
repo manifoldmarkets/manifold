@@ -155,8 +155,9 @@ export const EditCloseTimeModal = (props: {
   contract: Contract
   isOpen: boolean
   setOpen: (isOpen: boolean) => void
+  setNewCloseTime?: (closeTime: number) => void
 }) => {
-  const { contract, isOpen, setOpen } = props
+  const { contract, isOpen, setOpen, setNewCloseTime } = props
   const { closeTime } = contract
   const isClient = useIsClient()
   const dayJsCloseTime = dayjs(closeTime)
@@ -187,6 +188,7 @@ export const EditCloseTimeModal = (props: {
         contractId: contract.id,
         closeTime: newCloseTime,
       })
+      setNewCloseTime?.(newCloseTime)
     }
   }
   return (

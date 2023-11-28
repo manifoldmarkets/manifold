@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { YesNoCancelSelector } from './bet/yes-no-selector'
 import { Spacer } from './layout/spacer'
 import { ResolveConfirmationButton } from './buttons/confirmation-button'
@@ -171,9 +171,9 @@ export function ResolveHeader(props: {
   const { fullTitle, contract, isCreator, onClose } = props
   const { closeTime } = contract
   const [isEditingCloseTime, setIsEditingCloseTime] = useState(false)
-  useEffect(() => {
-    if (closeTime && closeTime > Date.now()) onClose()
-  }, [closeTime])
+  const setNewCloseTime = (newCloseTime: number) => {
+    if (newCloseTime > Date.now()) onClose()
+  }
   return (
     <Col>
       {!isCreator ? (
@@ -184,14 +184,18 @@ export function ResolveHeader(props: {
         <div />
       )}
       <Row className="mb-6 items-start justify-between">
-        <Col>
-          <span className="mb-2 text-lg">
-            If your question closed too early{' '}
-          </span>
-          <Button color={'gray'} onClick={() => setIsEditingCloseTime(true)}>
-            Extend the close time
-          </Button>
-        </Col>
+        {closeTime && closeTime < Date.now() ? (
+          <Col>
+            <span className="mb-2 text-lg">
+              If your question closed too early{' '}
+            </span>
+            <Button color={'gray'} onClick={() => setIsEditingCloseTime(true)}>
+              Extend the close time
+            </Button>
+          </Col>
+        ) : (
+          <div />
+        )}
         <IconButton size={'2xs'} onClick={onClose}>
           <XIcon className="h-5 w-5" />
         </IconButton>
@@ -215,6 +219,7 @@ export function ResolveHeader(props: {
         contract={contract}
         isOpen={isEditingCloseTime}
         setOpen={setIsEditingCloseTime}
+        setNewCloseTime={setNewCloseTime}
       />
     </Col>
   )
