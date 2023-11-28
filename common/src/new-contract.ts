@@ -292,6 +292,7 @@ function createAnswers(
         shouldAnswersSumToOne &&
         addAnswersMode !== 'DISABLED' &&
         i === answers.length - 1,
+      probChanges: { day: 0, week: 0, month: 0 },
     }
     return answer
   })

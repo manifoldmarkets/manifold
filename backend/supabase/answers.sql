@@ -15,7 +15,10 @@ create table if not exists
                 subsidy_pool numeric default 0, -- current value of subsidy pool in M
                 data jsonb not null,
                 fs_updated_time timestamp not null,
-                text_fts tsvector generated always as (to_tsvector('english', text)) stored
+                text_fts tsvector generated always as (to_tsvector('english', text)) stored,
+                prob_change_day numeric default 0, -- change in prob in the last 24h
+                prob_change_week numeric default 0, -- change in prob in the last week
+                prob_change_month numeric default 0 -- change in prob in the last month
 );
 
 create index if not exists answer_text_fts on answers using gin (text_fts);
@@ -45,6 +48,9 @@ begin
         new.prob := ((new.data) ->> 'prob')::numeric;
         new.total_liquidity := ((new.data) ->> 'totalLiquidity')::numeric;
         new.subsidy_pool := ((new.data) ->> 'subsidyPool')::numeric;
+        new.prob_change_day := ((new.data) ->> 'probChanges->>day')::numeric;
+        new.prob_change_week := ((new.data) ->> 'probChanges->>week')::numeric;
+        new.prob_change_month := ((new.data) ->> 'probChanges->>month')::numeric;
     end if;
     return new;
 end

@@ -100,6 +100,7 @@ export const createanswercpmm = authEndpoint(async (req, auth, log) => {
         prob: 0.5,
         totalLiquidity: ANSWER_COST,
         subsidyPool: 0,
+        probChanges: { day: 0, week: 0, month: 0 },
       }
 
       if (shouldAnswersSumToOne) {
