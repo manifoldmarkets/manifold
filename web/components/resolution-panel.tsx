@@ -176,30 +176,28 @@ export function ResolveHeader(props: {
   }, [closeTime])
   return (
     <Col>
-      <Row className={'justify-between'}>
-        {!isCreator ? (
-          <span className="mr-2 rounded bg-purple-100 p-1 align-baseline text-xs uppercase text-purple-600 dark:bg-purple-900 dark:text-purple-300">
-            Mod
-          </span>
-        ) : (
-          <div />
-        )}
-        <IconButton size={'xs'} onClick={onClose}>
-          <XIcon className="h-5 w-5" />
-        </IconButton>
-      </Row>
-      <Row className="mb-6">
+      {!isCreator ? (
+        <span className="mr-2 rounded bg-purple-100 p-1 align-baseline text-xs uppercase text-purple-600 dark:bg-purple-900 dark:text-purple-300">
+          Mod
+        </span>
+      ) : (
+        <div />
+      )}
+      <Row className="mb-6 items-start justify-between">
         <Col>
           <span className="mb-2 text-lg">
             If your question closed too early{' '}
           </span>
           <Button
-            color={'gray-outline'}
+            color={'indigo-outline'}
             onClick={() => setIsEditingCloseTime(true)}
           >
             Extend the close time
           </Button>
         </Col>
+        <IconButton size={'2xs'} onClick={onClose}>
+          <XIcon className="h-5 w-5" />
+        </IconButton>
       </Row>
       <Row className="mb-2">
         <div className={'text-lg'}>
