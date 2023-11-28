@@ -10,6 +10,9 @@ import { CopyLinkRow } from '../buttons/copy-link-button'
 const MODIFIERS =
   '8k, beautiful, illustration, trending on art station, picture of the day, epic composition'
 
+// Select engine from https://platform.stability.ai/docs/features/api-parameters#engine
+const ENGINE = 'stable-diffusion-xl-1024-v0-9'
+
 export function DreamModal(props: {
   editor: Editor | null
   open: boolean
@@ -78,6 +81,7 @@ const API_KEY = process.env.NEXT_PUBLIC_DREAM_KEY
 export async function dreamDefault(input: string) {
   const data = {
     prompt: input + ', ' + MODIFIERS,
+    engine: ENGINE,
     apiKey: API_KEY,
   }
   const response = await fetch(`/api/v0/dream`, {
