@@ -24,6 +24,10 @@ import {
 } from 'common/user'
 import { CreateQuestionButton } from 'web/components/buttons/create-question-button'
 import { shortenedFromNow } from 'web/lib/util/shortenedFromNow'
+import { Button } from './buttons/button'
+import { linkClass } from './widgets/site-link'
+import { isIOS } from 'web/lib/util/device'
+import { getIsNative } from 'web/lib/native/is-native'
 
 export function FeedTimeline() {
   const privateUser = usePrivateUser()
@@ -46,6 +50,20 @@ export function FeedTimeline() {
             .
           </span>
           <CreateQuestionButton className={'max-w-[10rem]'} />
+        </Row>
+      )}
+      {user && (remaining ?? 0) <= 0 && !(isIOS() && getIsNative()) && (
+        <Row className="text-md mb-2 w-full max-w-3xl items-center justify-center gap-2 rounded-md border-2 border-indigo-500 p-2">
+          <span>
+            🎁{' '}
+            <Link href="/charity" className={linkClass}>
+              It's Giving Tuesday.
+            </Link>{' '}
+            Consider dontating your mana today!
+          </span>
+          <Button color="gradient" onClick={() => Router.push('/charity')}>
+            Give
+          </Button>
         </Row>
       )}
       {privateUser && <FeedTimelineContent privateUser={privateUser} />}
