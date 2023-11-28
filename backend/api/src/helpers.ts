@@ -139,6 +139,17 @@ const getLogs = (req: Request) => {
   return { log, logError }
 }
 
+export const getDummyLogs = (endpointPath: string) => {
+  const traceId = crypto.randomUUID()
+
+  const log = (message: any, details?: object) =>
+    gLog.debug(message, { ...details, endpoint: endpointPath, traceId })
+
+  const logError = (message: any, details?: object) =>
+    gLog.error(message, { ...details, endpoint: endpointPath, traceId })
+  return { log, logError }
+}
+
 export const authEndpoint = <T extends Json>(fn: AuthedHandler<T>) => {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
