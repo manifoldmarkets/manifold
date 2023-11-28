@@ -18,8 +18,6 @@ import TriangleDownFillIcon from 'web/lib/icons/triangle-down-fill-icon.svg'
 import TriangleFillIcon from 'web/lib/icons/triangle-fill-icon.svg'
 import { scrollIntoViewCentered } from 'web/lib/util/scroll'
 import { Button, IconButton } from 'web/components/buttons/button'
-import { PaymentsModal } from 'web/pages/payments'
-import TipJar from 'web/public/custom-components/tipJar'
 import { ReplyToggle } from 'web/components/comments/reply-toggle'
 import { Content } from 'web/components/widgets/editor'
 import { Tooltip } from 'web/components/widgets/tooltip'
@@ -206,7 +204,7 @@ const ProfileComment = memo(function FeedComment(props: {
 
           {hidden ? (
             <span className={'text-ink-500 text-sm italic'}>
-              Comment hidden
+              Comment deleted
             </span>
           ) : (
             <Content
@@ -283,7 +281,6 @@ function DotMenu(props: {
   const isCurrentUser = user?.id === comment.userId
   const isOwner = onUser.id === user?.id
   const isAdmin = useAdmin()
-  const [tipping, setTipping] = useState(false)
 
   return (
     <>
@@ -311,12 +308,6 @@ function DotMenu(props: {
         items={buildArray(
           user &&
             comment.userId !== user.id && {
-              name: 'Tip',
-              icon: <TipJar size={20} color="currentcolor" />,
-              onClick: () => setTipping(true),
-            },
-          user &&
-            comment.userId !== user.id && {
               name: 'Report',
               icon: <FlagIcon className="h-5 w-5" />,
               onClick: () => {
@@ -325,7 +316,7 @@ function DotMenu(props: {
               },
             },
           (isAdmin || isCurrentUser || isOwner) && {
-            name: comment.hidden ? 'Unhide' : 'Hide',
+            name: comment.hidden ? 'Undelete' : 'Delete',
             icon: <EyeOffIcon className="h-5 w-5 text-red-500" />,
             onClick: async () => {
               onHide()
@@ -336,17 +327,17 @@ function DotMenu(props: {
                 }),
                 {
                   loading: comment.hidden
-                    ? 'Unhiding comment...'
-                    : 'Hiding comment...',
+                    ? 'Undeleting comment...'
+                    : 'Deleting comment...',
                   success: () => {
                     return comment.hidden
-                      ? 'Comment unhidden'
-                      : 'Comment hidden'
+                      ? 'Comment undeleted'
+                      : 'Comment deleted'
                   },
                   error: () => {
                     return comment.hidden
-                      ? 'Error unhiding comment'
-                      : 'Error hiding comment'
+                      ? 'Error undeleting comment'
+                      : 'Error deleting comment'
                   },
                 }
               )
@@ -354,24 +345,6 @@ function DotMenu(props: {
           }
         )}
       />
-
-      {user && tipping && (
-        <PaymentsModal
-          fromUser={user}
-          toUser={
-            {
-              id: comment.userId,
-              name: comment.userName,
-              username: comment.userUsername,
-              avatarUrl: comment.userAvatarUrl ?? '',
-            } as User
-          }
-          setShow={setTipping}
-          show={tipping}
-          groupId={comment.id}
-          defaultMessage={`Tip for comment on ${onUser.name} profile`}
-        />
-      )}
     </>
   )
 }

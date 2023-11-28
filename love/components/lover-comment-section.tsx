@@ -21,7 +21,9 @@ export const LoverCommentSection = (props: {
   currentUser: User | null | undefined
 }) => {
   const { onUser, currentUser } = props
-  const comments = useRealtimeCommentsOnLover(onUser.id) ?? []
+  const comments = (useRealtimeCommentsOnLover(onUser.id) ?? []).filter(
+    (c) => !c.hidden
+  )
   const parentComments = comments.filter((c) => !c.replyToCommentId)
   const commentsByParent = groupBy(comments, (c) => c.replyToCommentId ?? '_')
   const [lover, setLover] = useState<Lover>(props.lover)
