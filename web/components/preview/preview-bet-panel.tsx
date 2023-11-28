@@ -17,7 +17,7 @@ import {
   formatPercent,
 } from 'common/util/format'
 import { APIError, placeBet } from 'web/lib/firebase/api'
-import { User, firebaseLogin } from 'web/lib/firebase/users'
+import { User } from 'web/lib/firebase/users'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { BuyAmountInput } from '../widgets/amount-input'
@@ -31,12 +31,13 @@ import { SINGULAR_BET } from 'common/user'
 import { removeUndefinedProps } from 'common/util/object'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { useFocus } from 'web/hooks/use-focus'
-import { track, withTracking } from 'web/lib/service/analytics'
+import { track } from 'web/lib/service/analytics'
 import { isAndroid, isIOS } from 'web/lib/util/device'
 import { useUnfilledBetsAndBalanceByUserId } from '../../hooks/use-bets'
 import { Button } from '../buttons/button'
 import { WarningConfirmationButton } from '../buttons/warning-confirmation-button'
 import { PreviewYesNoSelector } from './preview-yes-no-selector'
+import { useAuthCheckHandler } from 'web/hooks/use-auth-check-handler'
 
 type BinaryOutcomes = 'YES' | 'NO' | undefined
 
@@ -95,6 +96,8 @@ export function PreviewBuyPanel(props: {
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const [inputRef, focusAmountInput] = useFocus()
+
+  const { authCheckHandler } = useAuthCheckHandler()
 
   useEffect(() => {
     if (initialOutcome) {
@@ -392,7 +395,12 @@ export function PreviewBuyPanel(props: {
           <Button
             color={outcome === 'NO' ? 'red' : 'green'}
             size="xl"
-            onClick={withTracking(firebaseLogin, 'login from bet panel')}
+            onClick={() => {
+              track('login from bet panel')
+              authCheckHandler(() => {
+                submitBet()
+              })
+            }}
           >
             Sign up to predict
           </Button>

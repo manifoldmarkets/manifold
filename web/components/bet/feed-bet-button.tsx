@@ -1,11 +1,12 @@
 import clsx from 'clsx'
 import { CPMMBinaryContract } from 'common/contract'
 import { useState } from 'react'
-import { User, firebaseLogin } from 'web/lib/firebase/users'
+import { User } from 'web/lib/firebase/users'
 import { Button } from '../buttons/button'
 import { Col } from '../layout/col'
 import { MODAL_CLASS, Modal } from '../layout/modal'
 import { BuyPanel, BinaryOutcomes } from './bet-panel'
+import { useAuthCheckHandler } from 'web/hooks/use-auth-check-handler'
 
 export function BetButton(props: {
   contract: CPMMBinaryContract
@@ -41,6 +42,7 @@ function FeedBetButton(props: {
 }) {
   const { dialogueThatIsOpen, setDialogueThatIsOpen, contract, outcome, user } =
     props
+  const { authCheckHandler } = useAuthCheckHandler()
   return (
     <>
       <Button
@@ -49,11 +51,10 @@ function FeedBetButton(props: {
         onClick={(e) => {
           e.preventDefault()
           e.stopPropagation()
-          if (!user) {
-            firebaseLogin()
-            return
-          }
-          setDialogueThatIsOpen(outcome)
+
+          authCheckHandler(() => {
+            setDialogueThatIsOpen(outcome)
+          })
         }}
       >
         Bet

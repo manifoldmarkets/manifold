@@ -19,7 +19,7 @@ import {
   formatPercent,
 } from 'common/util/format'
 import { computeCpmmBet } from 'common/new-bet'
-import { User, firebaseLogin } from 'web/lib/firebase/users'
+import { User } from 'web/lib/firebase/users'
 import { LimitBet } from 'common/bet'
 import { APIError, placeBet } from 'web/lib/firebase/api'
 import { BuyAmountInput } from '../widgets/amount-input'
@@ -28,7 +28,7 @@ import { useFocus } from 'web/hooks/use-focus'
 import { useUnfilledBetsAndBalanceByUserId } from '../../hooks/use-bets'
 import { getFormattedMappedValue, getMappedValue } from 'common/pseudo-numeric'
 import { YourOrders } from './order-book'
-import { track, withTracking } from 'web/lib/service/analytics'
+import { track } from 'web/lib/service/analytics'
 import { YesNoSelector } from './yes-no-selector'
 import { isAndroid, isIOS } from 'web/lib/util/device'
 import { WarningConfirmationButton } from '../buttons/warning-confirmation-button'
@@ -41,6 +41,7 @@ import { getCpmmProbability } from 'common/calculate-cpmm'
 import { removeUndefinedProps } from 'common/util/object'
 import { calculateCpmmMultiArbitrageBet } from 'common/calculate-cpmm-arbitrage'
 import LimitOrderPanel from './limit-order-panel'
+import { useAuthCheckHandler } from 'web/hooks/use-auth-check-handler'
 
 export type BinaryOutcomes = 'YES' | 'NO' | undefined
 
@@ -101,6 +102,8 @@ export function BuyPanel(props: {
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const [inputRef, focusAmountInput] = useFocus()
+
+  const { authCheckHandler } = useAuthCheckHandler()
 
   useEffect(() => {
     if (initialOutcome) {
@@ -411,7 +414,12 @@ export function BuyPanel(props: {
           <Button
             color={outcome === 'NO' ? 'red' : 'green'}
             size="xl"
-            onClick={withTracking(firebaseLogin, 'login from bet panel')}
+            onClick={async () => {
+              track('login from bet panel')
+              authCheckHandler(() => {
+                submitBet()
+              })
+            }}
           >
             Sign up to predict
           </Button>

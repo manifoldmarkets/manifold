@@ -1,7 +1,6 @@
 import { Contract } from 'common/contract'
 import { User } from 'common/user'
 import { useState } from 'react'
-import { firebaseLogin } from 'web/lib/firebase/users'
 import { BetDialog } from '../bet/bet-dialog'
 import { Button } from '../buttons/button'
 import { Col } from '../layout/col'
@@ -13,6 +12,7 @@ import { isClosed } from './contracts-table'
 import { AnswersResolvePanel } from '../answers/answer-resolve-panel'
 import { useUser } from 'web/hooks/use-user'
 import clsx from 'clsx'
+import { useAuthCheckHandler } from 'web/hooks/use-auth-check-handler'
 
 export function Action(props: { contract: Contract }) {
   const { contract } = props
@@ -28,6 +28,8 @@ export function BetButton(props: { contract: Contract; user?: User | null }) {
   const { contract } = props
   const user = useUser()
   const [open, setOpen] = useState(false)
+  const { authCheckHandler } = useAuthCheckHandler()
+
   if (
     !isClosed(contract) &&
     !contract.isResolved &&
@@ -42,11 +44,10 @@ export function BetButton(props: { contract: Contract; user?: User | null }) {
           onClick={(e) => {
             e.preventDefault()
             e.stopPropagation()
-            if (!user) {
-              firebaseLogin()
-              return
-            }
-            setOpen(true)
+
+            authCheckHandler(() => {
+              setOpen(true)
+            })
           }}
         >
           Bet
