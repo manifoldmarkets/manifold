@@ -438,19 +438,19 @@ export function SupabaseSearch(props: {
                 <div className="text-ink-500 mx-2 my-8 text-center">
                   No more results under this filter.{' '}
                   <button
-                    className="text-primary-500 hover:underline"
-                    onClick={() =>
-                      setSearchParams({
-                        [FILTER_KEY]: 'all',
-                        [CONTRACT_TYPE_KEY]: 'ALL',
-                      })
-                    }
-                  >
-                    Clear filter
-                  </button>
-                  ?
-                </div>
-              )}
+                  className="text-primary-500 hover:underline"
+                  onClick={() =>
+                    setSearchParams({
+                      [FILTER_KEY]: 'all',
+                      [CONTRACT_TYPE_KEY]: 'ALL',
+                    })
+                  }
+                >
+                  Clear filter
+                </button>
+                ?
+              </div>
+            )}
           </>
         )
       ) : searchType === 'Users' ? (
@@ -557,6 +557,7 @@ const useContractSearch = (
     FRESH_SEARCH_CHANGED_STATE,
     `${persistPrefix}-supabase-contract-search`
   )
+  const [firstQuery, setFirstQuery] = useState(true)
   const [loading, setLoading] = useState(false)
 
   const requestId = useRef(0)
@@ -611,7 +612,9 @@ const useContractSearch = (
         clearTimeout(timeoutId)
         setLoading(false)
 
-        if (freshQuery && isWholePage) window.scrollTo(0, 0)
+        if (freshQuery && isWholePage && !firstQuery) window.scrollTo(0, 0)
+
+        setFirstQuery(false)
 
         return shouldLoadMore
       }
