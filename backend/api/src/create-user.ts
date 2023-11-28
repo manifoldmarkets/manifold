@@ -227,7 +227,7 @@ async function upsertNewUserEmbeddings(
         )
       : []
   log('Averaging group embeddings for user ' + userId, { groupIds })
-  let groupEmbed = await getAverageGroupEmbedding(pg, groupIds)
+  const groupEmbed = await getAverageGroupEmbedding(pg, groupIds)
   if (groupEmbed) {
     embed = normalizeAndAverageVectors([embed, embed, groupEmbed])
   }

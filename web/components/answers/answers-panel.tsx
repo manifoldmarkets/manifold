@@ -29,7 +29,8 @@ import {
   AddComment,
   AnswerBar,
   AnswerLabel,
-  AnswerStatusAndBetButtons,
+  AnswerStatus,
+  BetButtons,
 } from './answer-components'
 import { floatingEqual } from 'common/util/math'
 import { InfoTooltip } from '../widgets/info-tooltip'
@@ -43,6 +44,10 @@ import { Modal } from 'web/components/layout/modal'
 import { Title } from 'web/components/widgets/title'
 import { Input } from 'web/components/widgets/input'
 import { isAdminId, isModId } from 'common/envs/constants'
+import { User } from 'common/user'
+import { Avatar } from 'web/components/widgets/avatar'
+import { UserLink } from 'web/components/widgets/user-link'
+import { TradesButton } from 'web/components/contract/trades-button'
 
 const SORTS = [
   { label: 'High %', value: 'prob-desc' },
@@ -86,6 +91,10 @@ export function AnswersPanel(props: {
       : outcomeType === 'FREE_RESPONSE'
       ? 'ANYONE'
       : 'DISABLED'
+  const showAvatars =
+    addAnswersMode === 'ANYONE' ||
+    answers.some((a) => a.userId !== contract.creatorId)
+
   const shouldAnswersSumToOne =
     'shouldAnswersSumToOne' in contract ? contract.shouldAnswersSumToOne : true
 
@@ -97,12 +106,10 @@ export function AnswersPanel(props: {
   const userBetsByAnswer = groupBy(userBets, (bet) => bet.answerId)
 
   const moreCount = answers.length - answersToShow.length
-
   // Note: Hide answers if there is just one "Other" answer.
   const showNoAnswers =
     answers.length === 0 || (shouldAnswersSumToOne && answers.length === 1)
   const [expandedIds, setExpandedIds] = useState<string[]>([])
-  const [editAnswer, setEditAnswer] = useState<Answer>()
   return (
     <Col>
       <SearchCreateAnswerPanel
@@ -131,60 +138,31 @@ export function AnswersPanel(props: {
       ) : (
         <Col className="mx-[2px] mt-1 gap-2">
           {answersToShow.map((answer) => (
-            <Col key={answer.id}>
-              <Answer
-                answer={answer}
-                contract={contract}
-                onCommentClick={() => onAnswerCommentClick?.(answer)}
-                onHover={(hovering) =>
-                  onAnswerHover?.(hovering ? answer : undefined)
-                }
-                onClick={() => {
-                  onAnswerClick?.(answer)
-                  if (!('poolYes' in answer) || !user) return
-                  if (
-                    !isAdminId(user.id) &&
-                    !isModId(user.id) &&
-                    user.id !== contract.creatorId &&
-                    user.id !== answer.userId
-                  )
-                    return
-                  setExpandedIds((ids) =>
-                    ids.includes(answer.id)
-                      ? ids.filter((id) => id !== answer.id)
-                      : [...ids, answer.id]
-                  )
-                }}
-                selected={selected?.includes(answer.id)}
-                color={getAnswerColor(answer, answersArray)}
-                userBets={userBetsByAnswer[answer.id]}
-              />
-              {expandedIds.includes(answer.id) && (
-                <Row className={'my-2 justify-end'}>
-                  <Button
-                    color={'gray-outline'}
-                    size="xs"
-                    onClick={() =>
-                      'poolYes' in answer && !answer.isOther
-                        ? setEditAnswer(answer)
-                        : null
-                    }
-                  >
-                    <PencilIcon className="mr-1 h-4 w-4" />
-                    Edit
-                  </Button>
-                </Row>
-              )}
-            </Col>
-          ))}
-          {editAnswer && (
-            <EditAnswerModal
-              open={!!editAnswer}
-              setOpen={() => setEditAnswer(undefined)}
+            <Answer
+              key={answer.id}
+              user={user}
+              answer={answer}
               contract={contract}
-              answer={editAnswer}
+              onCommentClick={() => onAnswerCommentClick?.(answer)}
+              onHover={(hovering) =>
+                onAnswerHover?.(hovering ? answer : undefined)
+              }
+              onClick={() => {
+                onAnswerClick?.(answer)
+                if (!('poolYes' in answer) || !user) return
+                setExpandedIds((ids) =>
+                  ids.includes(answer.id)
+                    ? ids.filter((id) => id !== answer.id)
+                    : [...ids, answer.id]
+                )
+              }}
+              selected={selected?.includes(answer.id)}
+              color={getAnswerColor(answer, answersArray)}
+              userBets={userBetsByAnswer[answer.id]}
+              showAvatars={showAvatars}
+              expanded={expandedIds.includes(answer.id)}
             />
-          )}
+          ))}
 
           {moreCount > 0 &&
             (query ? (
@@ -278,13 +256,22 @@ export function SimpleAnswerBars(props: {
 
   const shouldAnswersSumToOne =
     'shouldAnswersSumToOne' in contract ? contract.shouldAnswersSumToOne : true
-
+  const user = useUser()
   const answers = contract.answers
     .filter(
       (a) =>
         outcomeType === 'MULTIPLE_CHOICE' || ('number' in a && a.number !== 0)
     )
     .map((a) => ({ ...a, prob: getAnswerProbability(contract, a.id) }))
+  const addAnswersMode =
+    'addAnswersMode' in contract
+      ? contract.addAnswersMode
+      : outcomeType === 'FREE_RESPONSE'
+      ? 'ANYONE'
+      : 'DISABLED'
+  const showAvatars =
+    addAnswersMode === 'ANYONE' ||
+    answers.some((a) => a.userId !== contract.creatorId)
 
   const sortByProb = answers.length > maxAnswers
   const displayedAnswers = sortBy(answers, [
@@ -316,10 +303,12 @@ export function SimpleAnswerBars(props: {
         <>
           {displayedAnswers.map((answer) => (
             <Answer
+              user={user}
               key={answer.id}
               answer={answer}
               contract={contract}
               color={getAnswerColor(answer, answersArray)}
+              showAvatars={showAvatars}
             />
           ))}
           {moreCount > 0 && (
@@ -343,11 +332,14 @@ function Answer(props: {
   contract: MultiContract
   answer: Answer | DpmAnswer
   color: string
+  user: User | undefined | null
   onCommentClick?: () => void
   onHover?: (hovering: boolean) => void
   onClick?: () => void
   selected?: boolean
   userBets?: Bet[]
+  showAvatars?: boolean
+  expanded?: boolean
 }) {
   const {
     answer,
@@ -358,20 +350,17 @@ function Answer(props: {
     selected,
     color,
     userBets,
+    showAvatars,
+    expanded,
+    user,
   } = props
 
   const answerCreator = useUserByIdOrAnswer(answer)
   const prob = getAnswerProbability(contract, answer.id)
+  const [editAnswer, setEditAnswer] = useState<Answer>()
 
   const isCpmm = contract.mechanism === 'cpmm-multi-1'
-  const isFreeResponse = contract.outcomeType === 'FREE_RESPONSE'
   const isOther = 'isOther' in answer && answer.isOther
-  const addAnswersMode =
-    'addAnswersMode' in contract
-      ? contract.addAnswersMode ?? 'DISABLED'
-      : isFreeResponse
-      ? 'ANYONE'
-      : 'DISABLED'
 
   const { resolution, resolutions } = contract
   const resolvedProb =
@@ -387,9 +376,8 @@ function Answer(props: {
   const hasBets = userBets && !floatingEqual(sharesSum, 0)
 
   const textColorClass = resolvedProb === 0 ? 'text-ink-700' : 'text-ink-900'
-
   return (
-    <Col>
+    <Col className={'w-full'}>
       <AnswerBar
         color={color}
         prob={prob}
@@ -398,46 +386,45 @@ function Answer(props: {
         onClick={onClick}
         className={clsx(
           'cursor-pointer',
-          selected && 'ring-primary-600 rounded ring-2'
+          selected && 'ring-primary-600 rounded  ring-2'
         )}
         label={
-          isOther ? (
-            <span className={textColorClass}>
-              Other{' '}
-              <InfoTooltip
-                className="!text-ink-600 dark:!text-ink-700"
-                text="Represents all answers not listed. New answers are split out of this answer."
+          <Row className={'items-center gap-1'}>
+            <AnswerStatus contract={contract} answer={answer} />
+            {isOther ? (
+              <span className={textColorClass}>
+                Other{' '}
+                <InfoTooltip
+                  className="!text-ink-600 dark:!text-ink-700"
+                  text="Represents all answers not listed. New answers are split out of this answer."
+                />
+              </span>
+            ) : (
+              <AnswerLabel
+                text={answer.text}
+                createdTime={answer.createdTime}
+                className={clsx(
+                  'items-center text-sm !leading-none sm:text-base',
+                  textColorClass
+                )}
               />
-            </span>
-          ) : (
-            <AnswerLabel
-              text={answer.text}
-              createdTime={answer.createdTime}
-              creator={
-                addAnswersMode === 'ANYONE' ? answerCreator ?? false : undefined
-              }
-              className={clsx(
-                'items-center text-sm !leading-none sm:flex sm:text-base',
-                textColorClass
-              )}
-            />
-          )
+            )}
+          </Row>
         }
         end={
-          <>
+          <Row className={'items-center gap-2'}>
             {selected && (
               <PresentationChartLineIcon
                 className="h-5 w-5 text-black"
                 style={{ fill: color }}
               />
             )}
-            <AnswerStatusAndBetButtons
+            <BetButtons
               contract={contract}
               answer={answer}
               userBets={userBets ?? []}
             />
-            {onCommentClick && <AddComment onClick={onCommentClick} />}
-          </>
+          </Row>
         }
       />
       {!resolution && hasBets && isCpmm && (
@@ -445,6 +432,58 @@ function Answer(props: {
           contract={contract}
           userBets={userBets}
           className="mt-0.5 self-end sm:mx-3 sm:mt-0"
+        />
+      )}
+      {expanded && (
+        <Row className={'mx-0.5 my-1 items-center'}>
+          {showAvatars && answerCreator && (
+            <Row className={'items-center self-start'}>
+              <Avatar avatarUrl={answerCreator.avatarUrl} size={'xs'} />
+              <UserLink
+                user={answerCreator}
+                noLink={false}
+                className="ml-1 text-sm"
+              />
+            </Row>
+          )}
+          <Row className={'w-full justify-end gap-2'}>
+            {user &&
+              'isOther' in answer &&
+              !answer.isOther &&
+              (isAdminId(user.id) ||
+                isModId(user.id) ||
+                user.id === contract.creatorId ||
+                user.id === answer.userId) && (
+                <Button
+                  color={'gray-outline'}
+                  size="2xs"
+                  onClick={() =>
+                    'poolYes' in answer && !answer.isOther
+                      ? setEditAnswer(answer)
+                      : null
+                  }
+                >
+                  <PencilIcon className="mr-1 h-4 w-4" />
+                  Edit
+                </Button>
+              )}
+            {'poolYes' in answer && (
+              <TradesButton
+                contract={contract}
+                answer={answer}
+                color={'gray-outline'}
+              />
+            )}
+            {onCommentClick && <AddComment onClick={onCommentClick} />}
+          </Row>
+        </Row>
+      )}
+      {editAnswer && (
+        <EditAnswerModal
+          open={!!editAnswer}
+          setOpen={() => setEditAnswer(undefined)}
+          contract={contract}
+          answer={editAnswer}
         />
       )}
     </Col>

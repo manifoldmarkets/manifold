@@ -17,7 +17,7 @@ export async function getGroupContracts(groupId: string) {
     })
   )
   if (data && data.length > 0) {
-    return data.map((contract) => (contract as any).data as Contract)
+    return data.map((contract) => contract.data as Contract)
   }
   return []
 }

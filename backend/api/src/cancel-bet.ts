@@ -18,7 +18,6 @@ export const cancelbet = authEndpoint(async (req, auth) => {
     )
     const betDoc = snap.docs[0]
     if (!betDoc?.exists) throw new APIError(404, 'Bet not found')
-
     const bet = betDoc.data() as LimitBet
     if (bet.userId !== auth.uid)
       throw new APIError(403, 'You can only cancel your own bets')
@@ -26,7 +25,16 @@ export const cancelbet = authEndpoint(async (req, auth) => {
       throw new APIError(403, 'Not a limit order. Cannot cancel.')
     if (bet.isCancelled) throw new APIError(403, 'Bet already cancelled')
 
+    const contractDoc = await trans.get(
+      firestore.collection('contracts').doc(bet.contractId)
+    )
+
+    const now = Date.now()
     trans.update(betDoc.ref, { isCancelled: true })
+    trans.update(contractDoc.ref, {
+      lastBetTime: now,
+      lastUpdatedTime: now
+    })
 
     return { ...bet, isCancelled: true }
   })

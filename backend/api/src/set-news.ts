@@ -2,7 +2,7 @@ import { isAdminId, isModId } from 'common/envs/constants'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { z } from 'zod'
 import { APIError, authEndpoint, validate } from './helpers'
-import { getUserSupabase, revalidateStaticProps } from 'shared/utils'
+import { revalidateStaticProps } from 'shared/utils'
 import { track } from 'shared/analytics'
 
 const schema = z

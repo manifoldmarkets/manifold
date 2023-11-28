@@ -11,7 +11,7 @@ import {
 } from 'common/contract'
 import { formatPercent } from 'common/util/format'
 import { ReactNode, useState } from 'react'
-import { IconButton, Button } from '../buttons/button'
+import { Button } from '../buttons/button'
 import { Modal, MODAL_CLASS } from '../layout/modal'
 import { AnswerBetPanel, AnswerCpmmBetPanel } from './answer-bet-panel'
 import { useUser } from 'web/hooks/use-user'
@@ -28,6 +28,10 @@ import { Row } from '../layout/row'
 import { EmptyAvatar, Avatar } from '../widgets/avatar'
 import { Linkify } from '../widgets/linkify'
 import { Tooltip } from '../widgets/tooltip'
+import { animated } from '@react-spring/web'
+import { useAnimatedNumber } from 'web/hooks/use-animated-number'
+import { HOUR_MS } from 'common/util/time'
+import { SparklesIcon } from '@heroicons/react/solid'
 
 export const AnswerBar = (props: {
   color: string // 6 digit hex
@@ -141,15 +145,17 @@ export const AnswerLabel = (props: {
 export const AddComment = (props: { onClick: () => void }) => {
   const { onClick } = props
   return (
-    <IconButton
+    <Button
       onClick={(e) => {
         e.stopPropagation()
         onClick()
       }}
-      className="!p-1"
+      color="gray-outline"
+      size={'2xs'}
     >
-      <ChatIcon className="fill-ink-100 h-5 w-5" />
-    </IconButton>
+      <ChatIcon className="mr-1 h-5 w-5" />
+      Add Comment
+    </Button>
   )
 }
 
@@ -265,12 +271,30 @@ export const MultiSeller = (props: {
   )
 }
 
-export const OpenProb = (props: { prob: number }) => (
-  <span className="whitespace-nowrap text-lg font-bold">
-    {formatPercent(props.prob)}
-  </span>
-)
-
+export const OpenProb = (props: {
+  contract: MultiContract
+  answer: Answer | DpmAnswer
+}) => {
+  const { contract, answer } = props
+  const spring = useAnimatedNumber(getAnswerProbability(contract, answer.id))
+  const cutoffTime = Date.now() - 6 * HOUR_MS
+  const isNew =
+    contract.createdTime < cutoffTime && answer.createdTime > cutoffTime
+  return (
+    <Row className={'items-center'}>
+      <span
+        className={clsx(' min-w-[2.5rem] whitespace-nowrap text-lg font-bold')}
+      >
+        <animated.div>{spring.to((val) => formatPercent(val))}</animated.div>
+      </span>
+      {isNew && (
+        <Tooltip text={'Recently submitted'}>
+          <SparklesIcon className="h-4 w-4 text-green-500" />
+        </Tooltip>
+      )}
+    </Row>
+  )
+}
 export const ClosedProb = (props: { prob: number; resolvedProb?: number }) => {
   const { prob, resolvedProb: resolveProb } = props
   return (
@@ -293,18 +317,13 @@ export const ClosedProb = (props: { prob: number; resolvedProb?: number }) => {
   )
 }
 
-export const AnswerStatusAndBetButtons = (props: {
+export const AnswerStatus = (props: {
   contract: MultiContract
   answer: Answer | DpmAnswer
-  userBets: Bet[]
-  noBetButtons?: boolean
 }) => {
-  const { contract, answer, userBets, noBetButtons } = props
+  const { contract, answer } = props
   const { resolutions } = contract
 
-  const user = useUser()
-
-  const isDpm = contract.mechanism === 'dpm-2'
   const answerResolution =
     'resolution' in answer ? answer.resolution : undefined
 
@@ -316,10 +335,6 @@ export const AnswerStatusAndBetButtons = (props: {
       ? (resolutions?.[answer.id] ?? 0) / 100
       : undefined
 
-  const sharesSum = sumBy(userBets, (bet) =>
-    bet.outcome === 'YES' ? bet.shares : -bet.shares
-  )
-  const hasBets = userBets && !floatingEqual(sharesSum, 0)
   const isOpen = tradingAllowed(
     contract,
     'resolution' in answer ? answer : undefined
@@ -340,25 +355,45 @@ export const AnswerStatusAndBetButtons = (props: {
     )
   }
   return isOpen ? (
-    <>
-      <OpenProb prob={prob} />
-      {noBetButtons ? null : isDpm ? (
-        <DPMMultiBettor answer={answer as any} contract={contract} />
-      ) : (
-        <>
-          <MultiBettor answer={answer as any} contract={contract as any} />
-          {user && hasBets && (
-            <MultiSeller
-              answer={answer as any}
-              contract={contract as any}
-              userBets={userBets}
-              user={user}
-            />
-          )}
-        </>
-      )}
-    </>
+    <OpenProb contract={contract} answer={answer} />
   ) : (
     <ClosedProb prob={prob} resolvedProb={resolvedProb} />
+  )
+}
+export const BetButtons = (props: {
+  contract: MultiContract
+  answer: Answer | DpmAnswer
+  userBets: Bet[]
+}) => {
+  const { contract, answer, userBets } = props
+
+  const user = useUser()
+
+  const isDpm = contract.mechanism === 'dpm-2'
+
+  const sharesSum = sumBy(userBets, (bet) =>
+    bet.outcome === 'YES' ? bet.shares : -bet.shares
+  )
+  const hasBets = userBets && !floatingEqual(sharesSum, 0)
+  const isOpen = tradingAllowed(
+    contract,
+    'resolution' in answer ? answer : undefined
+  )
+  if (!isOpen) return null
+  if (isDpm)
+    return <DPMMultiBettor answer={answer as any} contract={contract} />
+
+  return (
+    <>
+      <MultiBettor answer={answer as any} contract={contract as any} />
+      {user && hasBets && (
+        <MultiSeller
+          answer={answer as any}
+          contract={contract as any}
+          userBets={userBets}
+          user={user}
+        />
+      )}
+    </>
   )
 }

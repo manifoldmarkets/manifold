@@ -19,8 +19,8 @@ async function main() {
 
   const { data } = await db.rpc('search_contract_embeddings' as any, {
     query_embedding: embedding,
-    similarity_threshold: 0.75, 
-    match_count: 10, 
+    similarity_threshold: 0.75,
+    match_count: 10,
   })
 
   const getQuestion = (cid: string) =>
@@ -29,7 +29,7 @@ async function main() {
       .select('data')
       .eq('id', cid)
       .then((r) => (r?.data as any)[0].data.question)
-  
+
   const contractsIds = (data as any).map((d: any) => d.contract_id)
 
   console.log('Results:')

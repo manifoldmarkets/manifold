@@ -15,7 +15,7 @@ import {
 } from 'common/supabase/contract-metrics'
 import { User } from 'common/user'
 import { formatMoney } from 'common/util/format'
-import { first, orderBy, partition, uniqBy } from 'lodash'
+import { countBy, first, orderBy, partition, uniqBy } from 'lodash'
 import { memo, useEffect, useMemo, useState } from 'react'
 import { SortRow } from 'web/components/contract/contract-tabs'
 import { Col } from 'web/components/layout/col'
@@ -28,8 +28,7 @@ import {
   ShortLabel,
   YesLabel,
 } from 'web/components/outcome-label'
-import { Avatar } from 'web/components/widgets/avatar'
-import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
+import { Avatar, EmptyAvatar } from 'web/components/widgets/avatar'
 import { Pagination } from 'web/components/widgets/pagination'
 import { UserLink } from 'web/components/widgets/user-link'
 import { useFollows } from 'web/hooks/use-follows'
@@ -39,80 +38,100 @@ import { db } from 'web/lib/supabase/db'
 import { getStonkDisplayShares } from 'common/stonk'
 import { PillButton } from 'web/components/buttons/pill-button'
 import { Carousel } from 'web/components/widgets/carousel'
+import { Answer } from 'common/answer'
 
 export const UserPositionsTable = memo(
   function UserPositionsTableContent(props: {
     contract: CPMMBinaryContract | CPMMMultiContract
-    positions: ContractMetricsByOutcome
+    positions?: ContractMetricsByOutcome
     setTotalPositions?: (totalPositions: number) => void
+    answerDetails?: {
+      answer: Answer
+      totalPositions: number
+    }
   }) {
-    const { contract, setTotalPositions } = props
+    const { contract, setTotalPositions, answerDetails } = props
+    const answer = answerDetails?.answer
     const contractId = contract.id
 
-    const [contractMetricsByProfit, setContractMetricsByProfit] =
-      useState<ContractMetric[]>()
-    const [contractMetricsByShares, setContractMetricsByShares] = useState<
-      ContractMetric[]
-    >(Object.values(props.positions).flat())
+    useEffect(() => {
+      if (!props.positions) updateContractMetrics(sortBy, currentAnswerId)
+    }, [])
 
-    const [totalMetricsByAnswerId, setTotalMetricsByAnswerId] = useState<{
+    const [contractMetricsOrderedByProfit, setContractMetricsOrderedByProfit] =
+      useState<ContractMetric[] | undefined>()
+    const [contractMetricsOrderedByShares, setContractMetricsOrderedByShares] =
+      useState<ContractMetric[] | undefined>(
+        props.positions ? Object.values(props.positions).flat() : undefined
+      )
+    const [metricsCountsByAnswerId, setMetricsCountsByAnswerId] = useState<{
       [key: string]: number
-    }>({})
-    const [answerId, setAnswerId] = useState<string | undefined>(
-      contract.mechanism === 'cpmm-multi-1'
-        ? first(orderBy(contract.answers, 'totalLiquidity', 'desc'))?.id
+    }>(
+      answerDetails
+        ? { [answerDetails.answer.id]: answerDetails.totalPositions }
+        : countBy(
+            Object.values(props.positions ?? []).flat(),
+            (position) => position.answerId
+          )
+    )
+    const answers = answer
+      ? [answer]
+      : contract.mechanism === 'cpmm-multi-1'
+      ? contract.answers
+      : []
+
+    const [currentAnswerId, setCurrentAnswerId] = useState<string | undefined>(
+      answers.length > 0
+        ? first(orderBy(answers, 'totalLiquidity', 'desc'))?.id
         : undefined
     )
     const [page, setPage] = useState(0)
-    const [loading, setLoading] = useState(false)
-    const [totalYesPositions, setTotalYesPositions] = useState(0)
-    const [totalNoPositions, setTotalNoPositions] = useState(0)
+    const [loading, setLoading] = useState(!props.positions)
+    const [totalYesPositions, setTotalYesPositions] = useState(
+      props.positions?.YES?.length ?? 0
+    )
+    const [totalNoPositions, setTotalNoPositions] = useState(
+      props.positions?.NO?.length ?? 0
+    )
     const [sortBy, setSortBy] = useState<'profit' | 'shares'>(
       contract.isResolved ? 'profit' : 'shares'
     )
 
-    useEffect(() => {
+    const updateContractMetrics = async (
+      sortBy: 'profit' | 'shares',
+      answerId?: string
+    ) => {
       setLoading(true)
-      getOrderedContractMetricRowsForContractId(
+      const rows = await getOrderedContractMetricRowsForContractId(
         contractId,
         db,
         answerId,
         sortBy
-      ).then((rows) =>
-        sortBy === 'profit'
-          ? updateContractMetricsByProfit(convertContractMetricRows(rows))
-          : updateContractMetricsByShares(convertContractMetricRows(rows))
       )
-    }, [contractId, answerId, sortBy])
-
-    const updateContractMetricsByProfit = (cms: ContractMetric[]) => {
-      setContractMetricsByProfit((prev) =>
-        uniqBy(
-          cms.concat(prev ?? []),
-          (cm) => cm.userId + cm.answerId + cm.contractId
-        )
-      )
-      setLoading(false)
-    }
-
-    const updateContractMetricsByShares = (cms: ContractMetric[]) => {
-      setContractMetricsByShares((prev) =>
-        uniqBy(
-          cms.concat(prev ?? []),
-          (cm) => cm.userId + cm.answerId + cm.contractId
-        )
-      )
+      sortBy === 'profit'
+        ? setContractMetricsOrderedByProfit((prev) =>
+            uniqBy(
+              convertContractMetricRows(rows).concat(prev ?? []),
+              (cm) => cm.userId + cm.answerId + cm.contractId
+            )
+          )
+        : setContractMetricsOrderedByShares((prev) =>
+            uniqBy(
+              convertContractMetricRows(rows).concat(prev ?? []),
+              (cm) => cm.userId + cm.answerId + cm.contractId
+            )
+          )
       setLoading(false)
     }
 
     useEffect(() => {
-      getContractMetricsCount(contractId, db, 'yes', answerId).then(
+      getContractMetricsCount(contractId, db, 'yes', currentAnswerId).then(
         setTotalYesPositions
       )
-      getContractMetricsCount(contractId, db, 'no', answerId).then(
+      getContractMetricsCount(contractId, db, 'no', currentAnswerId).then(
         setTotalNoPositions
       )
-    }, [answerId, contractId])
+    }, [currentAnswerId, contractId])
 
     const getAllAnswerPositionCounts = async () => {
       if (!setTotalPositions) return
@@ -121,7 +140,7 @@ export const UserPositionsTable = memo(
       if (contract.mechanism == 'cpmm-1') return
       const allCounts = Object.fromEntries(
         await Promise.all(
-          contract.answers.map(async (answer) => {
+          answers.map(async (answer) => {
             const count = await getContractMetricsCount(
               contractId,
               db,
@@ -132,17 +151,17 @@ export const UserPositionsTable = memo(
           })
         )
       )
-      setTotalMetricsByAnswerId(allCounts)
+      setMetricsCountsByAnswerId(allCounts)
     }
     useEffect(() => {
       getAllAnswerPositionCounts()
     }, [])
 
-    const positionsToDisplay = contractMetricsByShares.filter((cm) =>
-      answerId ? cm.answerId === answerId : !cm.answerId
+    const positionsToDisplay = contractMetricsOrderedByShares?.filter((cm) =>
+      currentAnswerId ? cm.answerId === currentAnswerId : !cm.answerId
     )
-    const profitPositionsToDisplay = contractMetricsByProfit?.filter((cm) =>
-      answerId ? cm.answerId === answerId : !cm.answerId
+    const profitPositionsToDisplay = contractMetricsOrderedByProfit?.filter(
+      (cm) => (currentAnswerId ? cm.answerId === currentAnswerId : !cm.answerId)
     )
 
     if (contract.mechanism === 'cpmm-1') {
@@ -152,8 +171,10 @@ export const UserPositionsTable = memo(
             <SortRow
               sort={sortBy === 'profit' ? 'profit' : 'position'}
               onSortClick={() => {
-                setSortBy(sortBy === 'shares' ? 'profit' : 'shares')
+                const newSort = sortBy === 'shares' ? 'profit' : 'shares'
+                setSortBy(newSort)
                 setPage(0)
+                updateContractMetrics(newSort)
               }}
             />
           </Row>
@@ -167,47 +188,54 @@ export const UserPositionsTable = memo(
             sortBy={sortBy}
             page={page}
             setPage={setPage}
-            loadingPositions={Math.min(totalYesPositions, totalNoPositions)}
+            loadingPositions={Math.max(totalYesPositions, totalNoPositions)}
           />
         </Col>
       )
     } else if (contract.mechanism === 'cpmm-multi-1') {
       return (
         <Col className={'w-full'}>
-          <Carousel labelsParentClassName={'gap-1'}>
-            {orderBy(
-              contract.answers,
-              (answer) => totalMetricsByAnswerId[answer.id] ?? answer.text,
-              'desc'
-            ).map((answer) => (
-              <PillButton
-                key={answer.id}
-                selected={answer.id === answerId}
-                onSelect={() => setAnswerId(answer.id)}
-              >
-                <Row className={'gap-1'}>
-                  <span className={'max-w-[60px] truncate text-ellipsis'}>
-                    {answer.text}
-                  </span>
-                  {totalMetricsByAnswerId[answer.id]
-                    ? ` (${totalMetricsByAnswerId[answer.id]})`
-                    : ''}
-                </Row>
-              </PillButton>
-            ))}
-          </Carousel>
+          {!answer && (
+            <Carousel labelsParentClassName={'gap-1'}>
+              {orderBy(
+                answers,
+                (answer) => metricsCountsByAnswerId[answer.id] ?? answer.text,
+                'desc'
+              ).map((answer) => (
+                <PillButton
+                  key={answer.id}
+                  selected={answer.id === currentAnswerId}
+                  onSelect={() => {
+                    setCurrentAnswerId(answer.id)
+                    updateContractMetrics(sortBy, answer.id)
+                  }}
+                >
+                  <Row className={'gap-1'}>
+                    <span className={'max-w-[60px] truncate text-ellipsis'}>
+                      {answer.text}
+                    </span>
+                    {metricsCountsByAnswerId[answer.id]
+                      ? ` (${metricsCountsByAnswerId[answer.id]})`
+                      : ''}
+                  </Row>
+                </PillButton>
+              ))}
+            </Carousel>
+          )}
           <Row className={'mb-2 mt-1 items-center justify-between gap-2'}>
             <Row className={'font-semibold '}>
               <span className={'line-clamp-1 '}>
-                {contract.answers.find((a) => a.id === answerId)?.text}
+                {answers.find((a) => a.id === currentAnswerId)?.text}
               </span>
             </Row>
 
             <SortRow
               sort={sortBy === 'profit' ? 'profit' : 'position'}
               onSortClick={() => {
-                setSortBy(sortBy === 'shares' ? 'profit' : 'shares')
+                const newSort = sortBy === 'shares' ? 'profit' : 'shares'
+                setSortBy(newSort)
                 setPage(0)
+                updateContractMetrics(newSort, currentAnswerId)
               }}
             />
           </Row>
@@ -222,10 +250,10 @@ export const UserPositionsTable = memo(
             page={page}
             setPage={setPage}
             loadingPositions={
-              answerId
+              currentAnswerId && metricsCountsByAnswerId[currentAnswerId]
                 ? // Just an approximation, could be more asymmetric
-                  totalMetricsByAnswerId[answerId] / 2
-                : Math.min(totalYesPositions, totalNoPositions)
+                  metricsCountsByAnswerId[currentAnswerId] / 2
+                : Math.max(totalYesPositions, totalNoPositions)
             }
           />
         </Col>
@@ -238,7 +266,7 @@ export const UserPositionsTable = memo(
 const BinaryUserPositionsTable = memo(
   function BinaryUserPositionsTabContent(props: {
     contract: CPMMContract | CPMMMultiContract
-    positionsByShares: ContractMetric[]
+    positionsByShares: ContractMetric[] | undefined
     positionsByProfit: ContractMetric[] | undefined
     totalYesPositions: number
     totalNoPositions: number
@@ -352,7 +380,7 @@ const BinaryUserPositionsTable = memo(
           }}
         >
           {loading ? (
-            <LoadingIndicator spinnerClassName={'border-ink-500'} size={'lg'} />
+            <LoadingResults />
           ) : (
             <Row className={'gap-1'}>
               <Col className={'w-1/2'}>
@@ -477,3 +505,27 @@ const PositionRow = memo(function PositionRow(props: {
     </Row>
   )
 })
+const LoadingResults = () => {
+  return (
+    <Row className={'gap-1'}>
+      <Col className={'w-1/2'}>
+        <LoadingPositionsRows />
+        <LoadingPositionsRows />
+        <LoadingPositionsRows />
+      </Col>
+      <Col className={'w-1/2'}>
+        <LoadingPositionsRows />
+        <LoadingPositionsRows />
+        <LoadingPositionsRows />
+      </Col>
+    </Row>
+  )
+}
+export function LoadingPositionsRows() {
+  return (
+    <Row className="border-ink-200 min-h-[4rem] animate-pulse items-center justify-center gap-2 border-b p-2 last:border-none sm:rounded-md sm:border-none">
+      <EmptyAvatar />
+      <div className="bg-canvas-100 h-7 grow rounded-md" />
+    </Row>
+  )
+}

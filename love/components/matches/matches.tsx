@@ -7,7 +7,6 @@ import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { useUser } from 'web/hooks/use-user'
 import { AddAMatchButton } from '../add-a-match-button'
 import { MatchTile } from './match-tile'
-import { User } from 'common/user'
 import { Lover } from 'common/love/lover'
 
 export const Matches = (props: {

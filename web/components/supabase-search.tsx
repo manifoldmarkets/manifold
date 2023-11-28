@@ -95,7 +95,7 @@ const PREDICTION_MARKET_PROB_SORTS = SORTS.filter(
   (item) => !bountySorts.has(item.value)
 )
 
-export type Sort = typeof SORTS[number]['value']
+export type Sort = (typeof SORTS)[number]['value']
 
 const FILTERS = [
   { label: 'Any status', value: 'all' },
@@ -106,7 +106,7 @@ const FILTERS = [
   { label: 'Resolved', value: 'resolved' },
 ] as const
 
-export type Filter = typeof FILTERS[number]['value']
+export type Filter = (typeof FILTERS)[number]['value']
 
 const CONTRACT_TYPES = [
   { label: 'Any type', value: 'ALL' },
@@ -118,7 +118,7 @@ const CONTRACT_TYPES = [
   { label: 'Poll', value: 'POLL' },
 ] as const
 
-export type ContractTypeType = typeof CONTRACT_TYPES[number]['value']
+export type ContractTypeType = (typeof CONTRACT_TYPES)[number]['value']
 type SearchType = 'Topics' | 'Users' | 'Questions' | undefined
 
 export type SearchParams = {
@@ -433,23 +433,24 @@ export function SupabaseSearch(props: {
             />
             <LoadMoreUntilNotVisible loadMore={queryContracts} />
             {shouldLoadMore && <LoadingResults />}
-            {!shouldLoadMore && (filter !== 'all' || contractType !== 'ALL') && (
-              <div className="text-ink-500 mx-2 my-8 text-center">
-                No more results under this filter.{' '}
-                <button
-                  className="text-primary-500 hover:underline"
-                  onClick={() =>
-                    setSearchParams({
-                      [FILTER_KEY]: 'all',
-                      [CONTRACT_TYPE_KEY]: 'ALL',
-                    })
-                  }
-                >
-                  Clear filter
-                </button>
-                ?
-              </div>
-            )}
+            {!shouldLoadMore &&
+              (filter !== 'all' || contractType !== 'ALL') && (
+                <div className="text-ink-500 mx-2 my-8 text-center">
+                  No more results under this filter.{' '}
+                  <button
+                    className="text-primary-500 hover:underline"
+                    onClick={() =>
+                      setSearchParams({
+                        [FILTER_KEY]: 'all',
+                        [CONTRACT_TYPE_KEY]: 'ALL',
+                      })
+                    }
+                  >
+                    Clear filter
+                  </button>
+                  ?
+                </div>
+              )}
           </>
         )
       ) : searchType === 'Users' ? (

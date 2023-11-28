@@ -6,6 +6,7 @@ import { Answer, MAX_ANSWER_LENGTH } from 'common/answer'
 import { APIError, authEndpoint, validate } from './helpers'
 import { isAdminId, isModId } from 'common/envs/constants'
 import { recordContractEdit } from 'shared/record-contract-edit'
+import { HOUR_MS } from 'common/util/time'
 
 const bodySchema = z
   .object({
@@ -33,6 +34,10 @@ export const editanswercpmm = authEndpoint(async (req, auth, log) => {
   if (contract.mechanism !== 'cpmm-multi-1')
     throw new APIError(403, 'Requires a cpmm multiple choice contract')
 
+  const { closeTime } = contract
+  if (closeTime && Date.now() > closeTime)
+    throw new APIError(403, 'Cannot edit answer after market closes')
+
   const answerDoc = firestore
     .collection(`contracts/${contractId}/answersCpmm/`)
     .doc(answerId)
@@ -44,6 +49,18 @@ export const editanswercpmm = authEndpoint(async (req, auth, log) => {
   const answer = answerSnap.data() as Answer
   if (answer.resolution)
     throw new APIError(403, 'Cannot edit answer that is already resolved')
+
+  if (
+    answer.userId === auth.uid &&
+    answer.userId !== contract.creatorId &&
+    !isModId(auth.uid) &&
+    !isAdminId(auth.uid) &&
+    answer.createdTime < Date.now() - HOUR_MS
+  )
+    throw new APIError(
+      403,
+      'Answerer can only edit answer within 1 hour of creation'
+    )
 
   if (
     answer.userId !== auth.uid &&

@@ -1,4 +1,4 @@
-import { SupabaseClient } from '@supabase/supabase-js'
+import { SupabaseClient } from 'common/supabase/utils'
 import { run } from './utils'
 
 export async function getUserFollowsDashboard(

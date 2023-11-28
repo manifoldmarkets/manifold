@@ -141,14 +141,16 @@ export function ContractTabs(props: {
           ),
         },
         totalBets > 0 &&
-          // to enabled after generating positions for cpmm-multi-1
           (contract.mechanism === 'cpmm-1' ||
             contract.mechanism === 'cpmm-multi-1') && {
-            // contract.mechanism === 'cpmm-1' && {
             title: positionsTitle,
             content: (
               <UserPositionsTable
-                positions={userPositionsByOutcome}
+                positions={
+                  Object.values(userPositionsByOutcome).length > 0
+                    ? userPositionsByOutcome
+                    : undefined
+                }
                 contract={contract as CPMMBinaryContract}
                 setTotalPositions={setTotalPositions}
               />

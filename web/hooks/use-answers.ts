@@ -8,6 +8,7 @@ import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
 import { getAnswersForContracts } from 'common/supabase/contracts'
 import { db } from 'web/lib/supabase/db'
 import { useEffectCheckEquality } from './use-effect-check-equality'
+import { getAnswerBettorCount } from 'common/supabase/answers'
 
 export const useAnswers = (contractId: string) => {
   const [answers, setAnswers] = useState<DpmAnswer[] | undefined>()
@@ -42,4 +43,22 @@ export const useAnswersForContracts = (contractIds: string[] | undefined) => {
       })
   }, [contractIds])
   return answersByContractId
+}
+
+export const useUniqueBettorCountOnAnswer = (
+  contractId: string,
+  answerId: string | undefined
+) => {
+  const [uniqueAnswerBettorCount, setUniqueAnswerBettorCount] =
+    usePersistentInMemoryState<number>(
+      0,
+      'uniqueAnswerBettorCount-' + contractId + '-' + answerId
+    )
+  useEffect(() => {
+    if (answerId)
+      getAnswerBettorCount(db, contractId, answerId).then(
+        setUniqueAnswerBettorCount
+      )
+  }, [answerId])
+  return uniqueAnswerBettorCount
 }

@@ -3,17 +3,13 @@ import { db } from './db'
 import { Row, run, tsToMillis } from 'common/supabase/utils'
 
 export const getUserRating = async (userId: string) => {
-  const stuff = await db.rpc('get_rating', { user_id: userId }).single()
-  const { data } = stuff
-
-  return data as any
+  const { data } = await db.rpc('get_rating', { user_id: userId }).single()
+  return data
 }
 
 export const getAverageUserRating = async (userId: string) => {
-  const stuff = await db.rpc('get_average_rating', { user_id: userId }).single()
-  const { data } = stuff
-
-  return data as number
+  const { data } = await db.rpc('get_average_rating', { user_id: userId })
+  return data
 }
 
 export const getUserReviews = async (userId: string) => {

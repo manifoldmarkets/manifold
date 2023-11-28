@@ -8,7 +8,7 @@ import { contentSchema } from 'shared/zod-types'
 import { createMarketReviewedNotification } from 'shared/create-notification'
 import { User } from 'common/user'
 import { Contract } from 'common/contract'
-import { parseJsonContentToText, richTextToString } from 'common/util/parse'
+import { parseJsonContentToText } from 'common/util/parse'
 
 const schema = z
   .object({

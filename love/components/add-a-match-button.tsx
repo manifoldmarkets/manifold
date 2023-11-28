@@ -50,7 +50,8 @@ export const AddAMatchButton = (props: {
       userId1: lover.user_id,
       userId2: selectedMatchId,
       betAmount,
-      introduction: editor?.getJSON(),
+      introduction:
+        (editor?.getCharacterCount() ?? 0) > 0 ? editor?.getJSON() : undefined,
     }).finally(() => {
       setIsSubmitting(false)
     })

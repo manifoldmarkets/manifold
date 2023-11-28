@@ -4,13 +4,13 @@ import Image from 'next/image'
 import { UserIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { Answer } from 'common/answer'
-import { CPMMMultiContract, contractPath } from 'common/contract'
+import { CPMMMultiContract, Contract, contractPath } from 'common/contract'
 import { Lover } from 'common/love/lover'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { useAnswersCpmm } from 'web/hooks/use-answers'
 import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
-import { useUser } from 'web/hooks/use-user'
+import { useUser, useUserById } from 'web/hooks/use-user'
 import { formatPercent } from 'common/util/format'
 import { SendMessageButton } from 'web/components/messaging/send-message-button'
 import { UserLink } from 'web/components/widgets/user-link'
@@ -42,6 +42,7 @@ export const MatchTile = (props: {
     props.contract.visibility,
     props.contract.id
   ) ?? props.contract) as CPMMMultiContract
+  const { matchCreatorId } = contract
   const fetchedAnswers = useAnswersCpmm(contract.id)
   const answers = fetchedAnswers ?? props.answers
 
@@ -62,9 +63,14 @@ export const MatchTile = (props: {
     .substring(answer.text.indexOf('by'), answer.text.length - 1)
     .trim()
 
+  const wasMatchedByALover =
+    matchCreatorId &&
+    (matchCreatorId === profileLover.user_id ||
+      matchCreatorId === lover.user_id)
+
   return (
     <Col className="mb-2 w-[220px] shrink-0 overflow-hidden rounded">
-      <div className="bg-canvas-0 w-full bg-gradient-to-b px-4 py-2">
+      <Col className="bg-canvas-0 w-full px-4 py-2">
         <UserLink
           className={
             'hover:text-primary-500 text-ink-1000 truncate font-semibold transition-colors'
@@ -72,7 +78,10 @@ export const MatchTile = (props: {
           user={user}
           hideBadge
         />
-      </div>
+        {matchCreatorId && !wasMatchedByALover && (
+          <MatchedBy contract={contract} />
+        )}
+      </Col>
       <Col className="relative h-36 w-full overflow-hidden">
         {pinned_url ? (
           <Link href={`/${user.username}`}>
@@ -184,5 +193,22 @@ export const MatchTile = (props: {
         </Row>
       </Col>
     </Col>
+  )
+}
+
+function MatchedBy(props: { contract: Contract }) {
+  const { contract } = props
+  const matchMakerId = contract.matchCreatorId
+  const matchMaker = useUserById(matchMakerId)
+
+  return (
+    <Row className="text-ink-500 items-center gap-[3px] text-xs">
+      <span>Matched by </span>
+      {!matchMaker ? (
+        <div className="dark:bg-ink-400 bg-ink-200 h-3 w-16 animate-pulse" />
+      ) : (
+        <UserLink user={matchMaker} hideBadge />
+      )}
+    </Row>
   )
 }
