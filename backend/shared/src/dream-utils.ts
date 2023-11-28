@@ -1,12 +1,15 @@
 import { DOMAIN } from 'common/envs/constants'
 const MODIFIERS =
   '8k, beautiful, illustration, trending on art station, picture of the day, epic composition'
+// Select engine from https://platform.stability.ai/docs/features/api-parameters#engine
+const ENGINE = 'stable-diffusion-xl-1024-v0-9'
 export const dreamWithDefaultParams = async (input: string) => {
   try {
     const API_KEY = process.env.DREAM_KEY
 
     const data = {
       prompt: input + ', ' + MODIFIERS,
+      engine: ENGINE,
       apiKey: API_KEY,
     }
     const response = await fetch(`https://${DOMAIN}/api/v0/dream`, {
