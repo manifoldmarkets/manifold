@@ -107,6 +107,7 @@ import { updateprivateusermessagechannel } from 'api/update-private-user-message
 import { confirmLoverStage } from './love/confirm-lover-stage'
 import { clearLoverPhoto } from './love/clear-lover-photo'
 import { editanswercpmm } from 'api/edit-answer'
+import { createlovecompatibilityquestion } from 'api/love/create-love-compatibility-question'
 
 const allowCors: RequestHandler = cors({
   origin: [
@@ -270,6 +271,10 @@ app.post('/create-comment-on-lover', ...apiRoute(createcommentonlover))
 app.post('/hide-comment-on-lover', ...apiRoute(hidecommentonlover))
 app.post('/searchlocation', ...apiRoute(searchlocation))
 app.post('/searchnearcity', ...apiRoute(searchnearcity))
+app.post(
+  '/createlovecompatibilityquestion',
+  ...apiRoute(createlovecompatibilityquestion)
+)
 
 // Catch 404 errors - this should be the last route
 app.use(allowCors, (req, res) => {
