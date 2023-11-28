@@ -33,6 +33,7 @@ import { ReplyToUserInfo } from 'web/components/feed/feed-comments'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { useAdmin } from 'web/hooks/use-admin'
 import { EyeOffIcon } from '@heroicons/react/outline'
+import { useLoverByUserId } from 'love/hooks/use-lover'
 
 export function LoverProfileCommentThread(props: {
   onUser: User
@@ -158,7 +159,8 @@ const ProfileComment = memo(function FeedComment(props: {
   const ref = useRef<HTMLDivElement>(null)
   const [comment, setComment] = useState(props.comment)
   const { userUsername, userAvatarUrl, userId, hidden } = comment
-  const owner = onUser.id === userId
+  const isOwner = onUser.id === userId
+  const lover = useLoverByUserId(userId)
 
   useEffect(() => {
     if (highlighted && ref.current) {
@@ -176,8 +178,8 @@ const ProfileComment = memo(function FeedComment(props: {
           <Avatar
             username={userUsername}
             size={isParent ? 'sm' : '2xs'}
-            avatarUrl={userAvatarUrl}
-            className={clsx(owner && 'shadow shadow-amber-300', 'z-10')}
+            avatarUrl={lover?.pinned_url ?? userAvatarUrl}
+            className={clsx(isOwner && 'shadow shadow-amber-300', 'z-10')}
           />
           <div
             className={clsx(
