@@ -116,6 +116,11 @@ export const revalidateStaticProps = async (
   }
 }
 
+export async function revalidateContractStaticProps(contract: Contract) {
+  await revalidateStaticProps(contractPath(contract))
+  await revalidateStaticProps(`/embed${contractPath(contract)}`)
+}
+
 export type UpdateSpec = {
   doc: admin.firestore.DocumentReference
   fields: { [k: string]: unknown }
