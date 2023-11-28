@@ -14,7 +14,7 @@ export type LoveOgProps = {
 
 export function getLoveOgImageUrl(user: User, lover?: LoverRow | null) {
   const loveProps = {
-    avatarUrl: user.avatarUrl,
+    avatarUrl: lover?.pinned_url,
     username: user.username,
     name: user.name,
     age: lover?.age.toString() ?? '25',
