@@ -59,7 +59,7 @@ export function FeedTimeline() {
             <Link href="/charity" className={linkClass}>
               It's Giving Tuesday.
             </Link>{' '}
-            Consider dontating your mana today!
+            Consider donating your mana today!
           </span>
           <Button color="gradient" onClick={() => Router.push('/charity')}>
             Give
