@@ -188,10 +188,7 @@ export function ResolveHeader(props: {
           <span className="mb-2 text-lg">
             If your question closed too early{' '}
           </span>
-          <Button
-            color={'indigo-outline'}
-            onClick={() => setIsEditingCloseTime(true)}
-          >
+          <Button color={'gray'} onClick={() => setIsEditingCloseTime(true)}>
             Extend the close time
           </Button>
         </Col>
