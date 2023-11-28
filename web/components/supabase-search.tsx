@@ -438,19 +438,19 @@ export function SupabaseSearch(props: {
                 <div className="text-ink-500 mx-2 my-8 text-center">
                   No more results under this filter.{' '}
                   <button
-                  className="text-primary-500 hover:underline"
-                  onClick={() =>
-                    setSearchParams({
-                      [FILTER_KEY]: 'all',
-                      [CONTRACT_TYPE_KEY]: 'ALL',
-                    })
-                  }
-                >
-                  Clear filter
-                </button>
-                ?
-              </div>
-            )}
+                    className="text-primary-500 hover:underline"
+                    onClick={() =>
+                      setSearchParams({
+                        [FILTER_KEY]: 'all',
+                        [CONTRACT_TYPE_KEY]: 'ALL',
+                      })
+                    }
+                  >
+                    Clear filter
+                  </button>
+                  ?
+                </div>
+              )}
           </>
         )
       ) : searchType === 'Users' ? (
