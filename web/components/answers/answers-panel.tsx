@@ -424,21 +424,23 @@ function Answer(props: {
               answer={answer}
               userBets={userBets ?? []}
             />
-            <IconButton
-              className={'-ml-1 !px-1.5'}
-              size={'2xs'}
-              onClick={(e) => {
-                e.stopPropagation()
-                onClick?.()
-              }}
-            >
-              <ChevronDownIcon
-                className={clsx(
-                  'h-4 w-4',
-                  expanded ? 'rotate-180 transform' : 'rotate-0 transform'
-                )}
-              />
-            </IconButton>
+            {onClick && (
+              <IconButton
+                className={'-ml-1 !px-1.5'}
+                size={'2xs'}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onClick()
+                }}
+              >
+                <ChevronDownIcon
+                  className={clsx(
+                    'h-4 w-4',
+                    expanded ? 'rotate-180 transform' : 'rotate-0 transform'
+                  )}
+                />
+              </IconButton>
+            )}
           </Row>
         }
       />
