@@ -48,9 +48,9 @@ begin
         new.prob := ((new.data) ->> 'prob')::numeric;
         new.total_liquidity := ((new.data) ->> 'totalLiquidity')::numeric;
         new.subsidy_pool := ((new.data) ->> 'subsidyPool')::numeric;
-        new.prob_change_day := ((new.data) ->> 'probChanges->>day')::numeric;
-        new.prob_change_week := ((new.data) ->> 'probChanges->>week')::numeric;
-        new.prob_change_month := ((new.data) ->> 'probChanges->>month')::numeric;
+        new.prob_change_day := ((new.data) -> 'probChanges'->>'day')::numeric;
+        new.prob_change_week := ((new.data) -> 'probChanges'->>'week')::numeric;
+        new.prob_change_month := ((new.data) -> 'probChanges'->>'month')::numeric;
     end if;
     return new;
 end
