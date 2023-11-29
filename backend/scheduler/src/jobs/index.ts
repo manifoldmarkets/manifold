@@ -1,6 +1,7 @@
 import { createJob } from './helpers'
 import { addTrendingFeedContracts } from './add-trending-feed-contracts'
 import { updateContractMetricsCore } from 'shared/update-contract-metrics-core'
+import { sendOnboardingNotificationsInternal } from 'shared/onboarding-helpers'
 
 export function createJobs() {
   return [
@@ -13,6 +14,11 @@ export function createJobs() {
       'update-contract-metrics',
       '0 */15 * * * *', // every 15 minutes
       updateContractMetricsCore
+    ),
+    createJob(
+      'onboarding-notification',
+      '0 0 11 * * *',
+      sendOnboardingNotificationsInternal
     ),
   ]
 }

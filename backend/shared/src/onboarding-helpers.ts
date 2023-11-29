@@ -4,11 +4,10 @@ import * as dayjs from 'dayjs'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { runTxnFromBank } from 'shared/txn/run-txn'
 import { STARTING_BONUS } from 'common/economy'
-import { getUser, log } from 'shared/utils'
+import { GCPLog, getUser, log } from 'shared/utils'
 import { SignupBonusTxn } from 'common/txn'
 import { PrivateUser } from 'common/user'
 import { createSignupBonusNotification } from 'shared/create-notification'
-import { sendCreatorGuideEmail } from 'shared/emails'
 
 const LAST_TIME_ON_CREATE_USER_SCHEDULED_EMAIL = 1690810713000
 
@@ -16,35 +15,30 @@ const LAST_TIME_ON_CREATE_USER_SCHEDULED_EMAIL = 1690810713000
 D1 send mana bonus email
 [deprecated] D2 send creator guide email
 */
-export async function sendOnboardingNotificationsInternal(
-  firestore: admin.firestore.Firestore
-) {
-  const { recentUserIds } = await getRecentUserIds()
+export async function sendOnboardingNotificationsInternal(log: GCPLog) {
+  const firestore = admin.firestore()
+  const { recentUserIds } = await getRecentNonLoverUserIds()
 
-  console.log(
-    'Users created older than 1 day, younger than 1 week:',
-    recentUserIds.length
+  log(
+    'Non love users created older than 1 day, younger than 1 week:' +
+      recentUserIds.length
   )
 
   await Promise.all(
-    recentUserIds.map((userId) =>
-      sendNotifications(
-        firestore,
-        userId,
-        false // userIdsToReceiveCreatorGuideEmail.includes(userId)
-      )
-    )
+    recentUserIds.map((userId) => sendBonusNotification(firestore, userId))
   )
 }
 
-const getRecentUserIds = async () => {
+const getRecentNonLoverUserIds = async () => {
   const pg = createSupabaseDirectClient()
 
   const userDetails = await pg.map(
     `select id, (data->'createdTime') as created_time from users 
           where 
               millis_to_ts(((data->'createdTime')::bigint)) < now() - interval '23 hours' and
-              millis_to_ts(((data->'createdTime')::bigint)) > now() - interval '1 week'`,
+              millis_to_ts(((data->'createdTime')::bigint)) > now() - interval '1 week'and
+              (data->>'fromLove' is null or data->>'fromLove' = 'false')
+              `,
     // + `and username like '%manifoldtestnewuser%'`,
     [],
     (r) => ({
@@ -106,14 +100,12 @@ const processManaBonus = async (
   })
 }
 
-const sendNotifications = async (
+const sendBonusNotification = async (
   firestore: admin.firestore.Firestore,
-  userId: string,
-  shouldSendCreatorEmail: boolean
+  userId: string
 ) => {
   const { privateUser, txn } = await processManaBonus(firestore, userId)
-  if (!privateUser) return
-  if (!txn && !shouldSendCreatorEmail) return
+  if (!privateUser || !txn) return
 
   const user = await getUser(privateUser.id)
   if (!user) return
@@ -125,9 +117,5 @@ const sendNotifications = async (
       txn.id,
       STARTING_BONUS
     )
-  }
-
-  if (shouldSendCreatorEmail) {
-    await sendCreatorGuideEmail(user, privateUser)
   }
 }
