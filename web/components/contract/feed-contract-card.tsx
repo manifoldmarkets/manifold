@@ -162,6 +162,7 @@ export function FeedContractCard(props: {
               item={item}
               interesting={true}
               toggleInteresting={hide}
+              importanceScore={props.contract.importanceScore}
             />
           </Row>
         </Row>
