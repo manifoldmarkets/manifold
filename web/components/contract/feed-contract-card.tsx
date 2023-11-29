@@ -15,7 +15,7 @@ import {
 import { Avatar } from 'web/components/widgets/avatar'
 import { UserLink } from 'web/components/widgets/user-link'
 import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
-import { FeedTimelineItem } from 'web/hooks/use-feed-timeline'
+import { DEBUG_FEED_CARDS, FeedTimelineItem } from 'web/hooks/use-feed-timeline'
 import { useIsVisible } from 'web/hooks/use-is-visible'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { useUser } from 'web/hooks/use-user'
@@ -90,6 +90,7 @@ export function FeedContractCard(props: {
 
   const { ref } = useIsVisible(
     () =>
+      !DEBUG_FEED_CARDS &&
       track('view market card', {
         contractId: contract.id,
         creatorId: contract.creatorId,

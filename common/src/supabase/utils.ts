@@ -1,9 +1,9 @@
 import {
+  createClient as createClientGeneric,
   PostgrestResponse,
   PostgrestSingleResponse,
   SupabaseClient as SupabaseClientGeneric,
   SupabaseClientOptions as SupabaseClientOptionsGeneric,
-  createClient as createClientGeneric,
 } from '@supabase/supabase-js'
 
 import { Database } from './schema'
@@ -33,7 +33,7 @@ export type SupabaseClient = SupabaseClientGeneric<Database, 'public', Schema>
 export type CollectionTableMapping = { [coll: string]: TableName }
 export const collectionTables: CollectionTableMapping = {
   users: 'users',
-  "private-users": 'private_users',
+  'private-users': 'private_users',
   contracts: 'contracts',
   txns: 'txns',
   manalinks: 'manalinks',
@@ -120,8 +120,7 @@ export function selectFrom<
   TResult = Pick<TData, TFields[number]>
 >(db: SupabaseClient, table: T, ...fields: TFields) {
   const query = fields.map((f) => `data->${f}`).join(', ')
-  const builder = db.from(table).select<string, TResult>(query)
-  return builder
+  return db.from(table).select<string, TResult>(query)
 }
 
 export function millisToTs(millis: number) {
@@ -156,7 +155,8 @@ export const convertSQLtoTS = <
   T extends Record<string, any>
 >(
   sqlData: Partial<Row<R> & { data: any }>,
-  converters: TypeConverter<R, T>
+  converters: TypeConverter<R, T>,
+  expandData = true
 ) => {
   const { data = {}, ...rows } = sqlData
 
@@ -173,8 +173,8 @@ export const convertSQLtoTS = <
     .filter((x) => x != null)
 
   const newRows = Object.fromEntries(m as any)
-
-  return { ...data, ...newRows } as T
+  if (expandData) return { ...data, ...newRows } as T
+  else return { ...newRows } as T
 }
 
 export const convertObjectToSQLRow = <
