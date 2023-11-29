@@ -29,7 +29,11 @@ export const getUserAnswers = async (userId: string) => {
 
 export const getUserCompatibilityAnswers = async (userId: string) => {
   const { data } = await run(
-    db.from('love_compatibility_answers').select('*').eq('creator_id', userId)
+    db
+      .from('love_compatibility_answers')
+      .select('*')
+      .eq('creator_id', userId)
+      .order('importance', { ascending: false })
   )
   return data
 }

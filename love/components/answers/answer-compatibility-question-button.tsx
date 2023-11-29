@@ -74,7 +74,11 @@ function AnswerCompatibilityQuestionModal(props: {
           }}
           isLastQuestion={questionIndex === otherQuestions.length - 1}
           onNext={() => {
-            setQuestionIndex(questionIndex + 1)
+            if (questionIndex === otherQuestions.length - 1) {
+              setOpen(false)
+            } else {
+              setQuestionIndex(questionIndex + 1)
+            }
           }}
         />
       </Col>

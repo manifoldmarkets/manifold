@@ -18,6 +18,31 @@ export type CompatibilityAnswerSubmitType = Omit<
   'created_time' | 'id'
 >
 
+export const IMPORTANCE_CHOICES = {
+  "Don't care": 0,
+  'Somewhat Important': 1,
+  Important: 2,
+  'Very Important': 3,
+}
+
+type ImportanceColorsType = {
+  [key: number]: string
+}
+
+export const IMPORTANCE_RADIO_COLORS: ImportanceColorsType = {
+  0: `bg-stone-400 ring-stone-400 dark:bg-stone-500 dark:ring-stone-500`,
+  1: `bg-teal-200 ring-teal-200 dark:bg-teal-100 dark:ring-teal-100 `,
+  2: `bg-teal-300 ring-teal-300 dark:bg-teal-200 dark:ring-teal-200 `,
+  3: `bg-teal-400 ring-teal-400`,
+}
+
+export const IMPORTANCE_DISPLAY_COLORS: ImportanceColorsType = {
+  0: `bg-stone-300 dark:bg-stone-600 `,
+  1: `bg-teal-200`,
+  2: `bg-teal-300 `,
+  3: `bg-teal-400`,
+}
+
 export const submitCompatibilityAnswer = async (
   newAnswer: CompatibilityAnswerSubmitType
 ) => {
@@ -80,7 +105,9 @@ export function AnswerCompatibilityQuestionContent(props: {
 
   const prefChoicesValid = answer.pref_choices && answer.pref_choices.length > 0
 
-  const importanceValid = answer.importance && answer.importance !== -1
+  const importanceValid = answer.importance !== null && answer.importance !== -1
+
+  console.log(answer)
 
   return (
     <Col className="w-full gap-4">
@@ -146,16 +173,11 @@ export function AnswerCompatibilityQuestionContent(props: {
           <span className="text-ink-400 text-sm">Importance</span>
           <RadioToggleGroup
             currentChoice={answer.importance ?? -1}
-            choicesMap={{
-              "Don't care": 0,
-              'Somewhat Important': 1,
-              Important: 2,
-              'Very Important': 3,
-              Necessary: 4,
-            }}
+            choicesMap={IMPORTANCE_CHOICES}
             setChoice={(choice: number) =>
               setAnswer({ ...answer, importance: choice })
             }
+            indexColors={IMPORTANCE_RADIO_COLORS}
           />
         </Col>
         <Col className="-mt-6 gap-1">
@@ -192,7 +214,12 @@ export function AnswerCompatibilityQuestionContent(props: {
           >
             {isLastQuestion ? 'Finish' : 'Next'}
           </Button>
-          <button className="text-ink-500 text-sm hover:underline">Skip</button>
+          <button
+            onClick={onNext}
+            className="text-ink-500 text-sm hover:underline"
+          >
+            Skip
+          </button>
         </Col>
       </Row>
     </Col>
