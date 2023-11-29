@@ -20,6 +20,7 @@ export function AnswerCompatibilityQuestionButton(props: {
     refreshQuestions,
   } = props
   const [open, setOpen] = useState(false)
+  console.log(otherQuestions)
   if (!user) return null
   return (
     <>
@@ -62,6 +63,7 @@ function AnswerCompatibilityQuestionModal(props: {
       onClose={() => {
         refreshCompatibilityAnswers()
         refreshQuestions()
+        setQuestionIndex(0)
       }}
     >
       <Col className={MODAL_CLASS}>

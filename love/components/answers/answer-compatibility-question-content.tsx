@@ -108,9 +108,14 @@ export function AnswerCompatibilityQuestionContent(props: {
   const importanceValid = answer.importance !== null && answer.importance !== -1
 
   return (
-    <Col className="w-full gap-4">
+    <Col className="h-full w-full gap-4">
       {compatibilityQuestion.question}
-      <Col className={clsx(SCROLLABLE_MODAL_CLASS, 'w-full gap-4')}>
+      <Col
+        className={clsx(
+          SCROLLABLE_MODAL_CLASS,
+          'h-[20rem] w-full gap-4 sm:h-[30rem]'
+        )}
+      >
         <Col className="gap-1">
           <span className="text-ink-500 text-sm">Your answer</span>
           <RadioGroup
@@ -168,7 +173,7 @@ export function AnswerCompatibilityQuestionContent(props: {
           </Col>
         </Col>
         <Col className="gap-1">
-          <span className="text-ink-400 text-sm">Importance</span>
+          <span className="text-ink-500 text-sm">Importance</span>
           <RadioToggleGroup
             currentChoice={answer.importance ?? -1}
             choicesMap={IMPORTANCE_CHOICES}
@@ -179,7 +184,7 @@ export function AnswerCompatibilityQuestionContent(props: {
           />
         </Col>
         <Col className="-mt-6 gap-1">
-          <span className="text-ink-400 text-sm">Explanation</span>
+          <span className="text-ink-500 text-sm">Explanation</span>
           <ExpandingInput
             className={'w-full'}
             rows={3}
