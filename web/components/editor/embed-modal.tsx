@@ -83,19 +83,17 @@ const embedPatterns: EmbedPattern[] = [
   },
 ]
 
-const allowedDomains: string[] = [
-  "streamlit.app",
-  "wikipedia.org",
-];
+const allowedDomains: string[] = ['streamlit.app', 'wikipedia.org']
 
 function isAllowedDomain(url: string) {
   try {
-    const { hostname } = new URL(url);
-    return allowedDomains.some(allowedDomain => 
-      hostname === allowedDomain || hostname.endsWith('.' + allowedDomain)
-    );
+    const { hostname } = new URL(url)
+    return allowedDomains.some(
+      (allowedDomain) =>
+        hostname === allowedDomain || hostname.endsWith('.' + allowedDomain)
+    )
   } catch (error) {
-    return false;
+    return false
   }
 }
 
@@ -107,11 +105,11 @@ function embedCode(text: string) {
     }
   }
 
-  const urlPattern = /^(https?:\/\/.*)/;
-  const match = text.match(urlPattern);
-    // If it's a URL, check against the allowed domains
+  const urlPattern = /^(https?:\/\/.*)/
+  const match = text.match(urlPattern)
+  // If it's a URL, check against the allowed domains
   if (match && isAllowedDomain(match[1])) {
-    return `<iframe src="${match[1]}"></iframe>`;
+    return `<iframe src="${match[1]}"></iframe>`
   }
   return null
 }
