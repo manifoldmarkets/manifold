@@ -14,6 +14,7 @@ import { track } from 'web/lib/service/analytics'
 import { toast } from 'react-hot-toast'
 import { createLoveCompatibilityQuestion } from 'web/lib/firebase/love/api'
 import { Row as rowFor } from 'common/supabase/utils'
+import { AnswerCompatibilityQuestionContent } from './answer-compatibility-question-content'
 
 export function AddCompatibilityQuestionButton() {
   const [open, setOpen] = useState(false)
@@ -27,7 +28,11 @@ export function AddCompatibilityQuestionButton() {
           Add Compatibility Question
         </Row>
       </Button>
-      <AddCompatibilityQuestionModal open={open} setOpen={setOpen} />
+      <AddCompatibilityQuestionModal
+        open={open}
+        setOpen={setOpen}
+        user={user}
+      />
     </>
   )
 }
@@ -35,16 +40,15 @@ export function AddCompatibilityQuestionButton() {
 function AddCompatibilityQuestionModal(props: {
   open: boolean
   setOpen: (open: boolean) => void
+  user: User
 }) {
-  const { open, setOpen } = props
+  const { open, setOpen, user } = props
   const [dbQuestion, setDbQuestion] = useState<rowFor<'love_questions'> | null>(
     null
   )
   const afterAddQuestion = (newQuestion: rowFor<'love_questions'>) => {
     setDbQuestion(newQuestion)
   }
-
-  console.log('dbQuestion', dbQuestion)
 
   return (
     <Modal open={open} setOpen={setOpen}>
@@ -54,7 +58,10 @@ function AddCompatibilityQuestionModal(props: {
             afterAddQuestion={afterAddQuestion}
           />
         ) : (
-          <>hi</>
+          <AnswerCompatibilityQuestionContent
+            compatibilityQuestion={dbQuestion}
+            user={user}
+          />
         )}
       </Col>
     </Modal>
