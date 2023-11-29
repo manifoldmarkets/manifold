@@ -19,7 +19,7 @@ export type CompatibilityAnswerSubmitType = Omit<
 >
 
 export const IMPORTANCE_CHOICES = {
-  "Don't care": 0,
+  'Not Important': 0,
   'Somewhat Important': 1,
   Important: 2,
   'Very Important': 3,

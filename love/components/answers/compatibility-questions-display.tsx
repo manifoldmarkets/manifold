@@ -20,6 +20,10 @@ import {
 import clsx from 'clsx'
 import { CheckCircleIcon } from '@heroicons/react/outline'
 import { Linkify } from 'web/components/widgets/linkify'
+import { FaExclamation } from 'react-icons/fa'
+import { GoDash } from 'react-icons/go'
+import { Tooltip } from 'web/components/widgets/tooltip'
+import { lowerCase } from 'lodash'
 
 export function CompatibilityQuestionsDisplay(props: {
   isCurrentUser: boolean
@@ -59,6 +63,7 @@ export function CompatibilityQuestionsDisplay(props: {
                 key={answer.question_id}
                 answer={answer}
                 yourQuestions={yourQuestions}
+                user={user}
               />
             )
           })}
@@ -82,9 +87,9 @@ export function CompatibilityQuestionsDisplay(props: {
 function CompatibilityAnswerBlock(props: {
   answer: rowFor<'love_compatibility_answers'>
   yourQuestions: QuestionWithCountType[]
+  user: User
 }) {
-  const { answer, yourQuestions } = props
-  console.log(answer)
+  const { answer, yourQuestions, user } = props
   const question = yourQuestions.find((q) => q.id === answer.question_id)
   if (
     !question ||
@@ -101,12 +106,15 @@ function CompatibilityAnswerBlock(props: {
   return (
     <Col
       className={
-        'bg-canvas-0 flex-grow gap-1 whitespace-pre-line rounded-md px-3 py-2 leading-relaxed'
+        'bg-canvas-0 flex-grow gap-2 whitespace-pre-line rounded-md px-3 py-2 leading-relaxed'
       }
     >
-      <div className="text-ink-600 text-sm">{question.question}</div>
-      <Row className="bg-canvas-50 items-center gap-1 rounded px-2 py-1 text-sm">
-        <CheckCircleIcon className="text-ink-600 h-4 w-4 shrink-0" />
+      <Row className="text-ink-600 justify-between gap-1 text-sm">
+        {question.question}
+        <ImportanceDisplay importance={answer.importance} user={user} />
+      </Row>
+      <Row className="bg-canvas-50 w-fit gap-1 rounded py-1 pl-2 pr-3 text-sm">
+        {/* <CheckCircleIcon className="text-ink-600 mt-0.5 h-4 w-4 shrink-0" /> */}
         {answerText}
       </Row>
       {answer.explanation && (
@@ -116,8 +124,8 @@ function CompatibilityAnswerBlock(props: {
   )
 }
 
-function ImportanceDisplay(props: { importance: number | null }) {
-  const { importance } = props
+function ImportanceDisplay(props: { importance: number | null; user: User }) {
+  const { importance, user } = props
 
   if (importance == null) return null
   const importanceText = getStringKeyFromNumValue(
@@ -125,14 +133,31 @@ function ImportanceDisplay(props: { importance: number | null }) {
     IMPORTANCE_CHOICES
   )
   return (
-    <span
-      className={clsx(
-        IMPORTANCE_DISPLAY_COLORS[importance],
-        'text-ink-800 rounded bg-opacity-50 px-1.5 py-0.5 text-xs'
-      )}
+    <Tooltip
+      text={`Compatibility on this is ${lowerCase(importanceText)} to ${
+        user.name.split(' ')[0]
+      }`}
     >
-      {importanceText}
-    </span>
+      <Row
+        className={clsx(
+          IMPORTANCE_DISPLAY_COLORS[importance],
+          'text-ink-800 mt-0.5 h-min w-6 select-none rounded-full bg-opacity-50 px-1.5 py-0.5 text-xs sm:w-fit'
+        )}
+      >
+        <div className="hidden sm:inline">{importanceText}</div>
+        <div className="mx-auto sm:hidden">
+          {importance == 0 ? (
+            <GoDash className="h-[12px] w-[12px]" />
+          ) : (
+            <Row className="gap-0.5">
+              {Array.from({ length: importance }, (_, index) => (
+                <FaExclamation className="h-[12px] w-[3px]" key={index} /> // Replace YourComponent with the actual component you want to repeat
+              ))}
+            </Row>
+          )}
+        </div>
+      </Row>
+    </Tooltip>
   )
 }
 
