@@ -55,17 +55,21 @@ function AnswerCompatibilityQuestionModal(props: {
     refreshQuestions,
   } = props
   const [questionIndex, setQuestionIndex] = useState(0)
-
   return (
-    <Modal open={open} setOpen={setOpen}>
+    <Modal
+      open={open}
+      setOpen={setOpen}
+      onClose={() => {
+        refreshCompatibilityAnswers()
+        refreshQuestions()
+      }}
+    >
       <Col className={MODAL_CLASS}>
         <AnswerCompatibilityQuestionContent
           key={otherQuestions[questionIndex].id}
           compatibilityQuestion={otherQuestions[questionIndex]}
           user={user}
           onSubmit={() => {
-            refreshCompatibilityAnswers()
-            refreshQuestions()
             setOpen(false)
           }}
           isLastQuestion={questionIndex === otherQuestions.length - 1}

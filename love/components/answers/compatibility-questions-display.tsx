@@ -49,7 +49,7 @@ export function CompatibilityQuestionsDisplay(props: {
           })}
         </>
       )}
-      {otherQuestions.length > 1 && (
+      {otherQuestions.length > 0 && (
         <AnswerCompatibilityQuestionButton
           user={user}
           otherQuestions={otherQuestions}
