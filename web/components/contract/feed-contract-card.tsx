@@ -95,6 +95,7 @@ export function FeedContractCard(props: {
         contractId: contract.id,
         creatorId: contract.creatorId,
         slug: contract.slug,
+        feedId: item?.id,
         isPromoted: !!promotedData,
       } as ContractCardView),
     false
@@ -111,6 +112,7 @@ export function FeedContractCard(props: {
       contractId: contract.id,
       creatorId: contract.creatorId,
       slug: contract.slug,
+      feedId: item?.id,
       isPromoted: !!promotedData,
     })
 
@@ -188,7 +190,12 @@ export function FeedContractCard(props: {
               />
             )}
             {isBinaryCpmm && !isClosed && (
-              <BetButton contract={contract} user={user} className="h-min" />
+              <BetButton
+                feedId={item?.id}
+                contract={contract}
+                user={user}
+                className="h-min"
+              />
             )}
           </Row>
         </div>

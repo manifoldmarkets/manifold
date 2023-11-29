@@ -8,6 +8,7 @@ export type ContractCardView = {
   contractId: string
   creatorId: string
   isPromoted?: boolean
+  feedId?: number
   // Following attributes added by saveUserEvent
   name: 'view market card'
   timestamp: number
@@ -43,4 +44,4 @@ const ShareEventNames = [
   'copy comment link',
 ] as const
 
-export type ShareEventName = typeof ShareEventNames[number]
+export type ShareEventName = (typeof ShareEventNames)[number]
