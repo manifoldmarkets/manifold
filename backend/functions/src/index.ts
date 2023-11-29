@@ -19,7 +19,6 @@ export {
   sendWeeklyPortfolioUpdate,
   saveWeeklyContractMetrics,
 } from './scheduled/weekly-portfolio-updates'
-export * from './scheduled/update-contract-metrics'
 export * from './scheduled/update-user-metrics'
 export * from './scheduled/update-group-metrics'
 export * from './scheduled/update-stats'

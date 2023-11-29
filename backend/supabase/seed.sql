@@ -507,8 +507,8 @@ create index if not exists contract_bets_contract_user_id on contract_bets (cont
 /* serving the user bets API */
 create index if not exists contract_bets_user_id on contract_bets (user_id, created_time desc);
 
-/* serving the user bets API */
-create index if not exists contract_bets_answer_id on contract_bets (answer_id);
+create index if not exists contract_bets_answer_id_created_time
+    on contract_bets (answer_id, created_time desc);
 
 create index if not exists contract_bets_user_outstanding_limit_orders on contract_bets (
   user_id,
