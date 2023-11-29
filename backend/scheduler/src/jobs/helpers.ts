@@ -1,5 +1,6 @@
 import { Cron, CronOptions } from 'croner'
-import { gLog as log } from 'shared/utils'
+import { GCPLog, gLog as log } from 'shared/utils'
+import * as crypto from 'crypto'
 
 const DEFAULT_OPTS: CronOptions = {
   timezone: 'America/Los_Angeles',
@@ -17,11 +18,21 @@ const DEFAULT_OPTS: CronOptions = {
   },
 }
 
-export function createJob(name: string, schedule: string, fn: Function) {
+export function createJob(
+  name: string,
+  schedule: string,
+  fn: (log: GCPLog) => Promise<void>
+) {
   const opts = { name, ...DEFAULT_OPTS }
   return Cron(schedule, opts, async () => {
-    log.info(`[${name}] Starting up.`)
-    await fn()
-    log.info(`[${name}] Shutting down.`)
+    const logWithDetails = (message: any, details?: object) =>
+      log.debug(message, {
+        ...details,
+        job: name,
+        traceId: crypto.randomUUID(),
+      })
+    logWithDetails(`[${name}] Starting up.`)
+    await fn(logWithDetails)
+    logWithDetails(`[${name}] Shutting down.`)
   })
 }

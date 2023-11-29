@@ -3,7 +3,7 @@ import {
   createSupabaseDirectClient,
   SupabaseDirectClient,
 } from 'shared/supabase/init'
-import { log } from 'shared/utils'
+import { GCPLog, log as oldLog } from 'shared/utils'
 import { getAll } from 'shared/supabase/utils'
 import { Answer } from 'common/answer'
 import { DAY_MS } from 'common/util/time'
@@ -13,7 +13,7 @@ import { hasChanges } from 'common/util/object'
 import { groupBy, mapValues } from 'lodash'
 import { LimitBet } from 'common/bet'
 
-export async function updateContractMetricsCore() {
+export async function updateContractMetricsCore(log: GCPLog = oldLog) {
   const firestore = admin.firestore()
   const pg = createSupabaseDirectClient()
   log('Loading contract data...')

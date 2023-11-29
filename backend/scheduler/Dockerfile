@@ -11,4 +11,4 @@ RUN yarn install --frozen-lockfile --production
 COPY dist ./
 
 ENV PORT 80
-ENTRYPOINT [ "node", "backend/scheduler/lib/index.js" ]
+ENTRYPOINT [ "node", "--max-old-space-size=6144", "backend/scheduler/lib/index.js" ]

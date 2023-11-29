@@ -1,8 +1,7 @@
 import { SupabaseDirectClient } from 'shared/supabase/init'
 import { SupabaseClient, tsToMillis } from 'common/supabase/utils'
 import { DAY_MS, HOUR_MS, MINUTE_MS } from 'common/util/time'
-import { log } from 'shared/utils'
-import { Contract } from 'common/contract'
+import { GCPLog } from 'shared/utils'
 import { getRecentContractLikes } from 'shared/supabase/likes'
 import {
   insertMarketMovementContractToUsersFeeds,
@@ -20,11 +19,7 @@ import {
 import { Dictionary, pickBy } from 'lodash'
 import { getWhenToIgnoreUsersTime } from 'shared/supabase/users'
 import { DEFAULT_FEED_USER_ID } from 'common/feed'
-const rowToContract = (row: any) =>
-  ({
-    ...(row.data as Contract),
-    importanceScore: row.importance_score,
-  } as Contract)
+import { convertContract } from 'common/supabase/contracts'
 
 export const MINUTE_INTERVAL = 60
 let lastLoadedTime = 0
@@ -33,6 +28,7 @@ export async function addInterestingContractsToFeed(
   db: SupabaseClient,
   pg: SupabaseDirectClient,
   reloadAllEmbeddings: boolean,
+  log: GCPLog,
   readOnly = false
 ) {
   log(`Starting feed population. Loading user embeddings to store...`)
@@ -42,11 +38,11 @@ export async function addInterestingContractsToFeed(
   // We could query for contracts that've had large changes in prob in the past hour
   const contracts = await pg.map(
     `select data, importance_score from contracts
-            where importance_score >= 0.225
+            where importance_score >= 0.31
             order by importance_score desc
             `,
     [],
-    rowToContract
+    convertContract
   )
   log(`Found ${contracts.length} contracts to add to feed`)
 
@@ -93,7 +89,12 @@ export async function addInterestingContractsToFeed(
 
     // This is a newly trending contract, and should be at the top of most users' feeds
     if (todayScore > 10 && todayScore / thisWeekScore > 0.5 && !readOnly) {
-      log('Inserting specifically today trending contract', contract.id)
+      log('Inserting specifically today trending contract', {
+        contractId: contract.id,
+        todayScore,
+        thisWeekScore,
+        importanceScore,
+      })
       await insertTrendingContractToUsersFeeds(
         contract,
         now - 3 * DAY_MS,
@@ -108,15 +109,13 @@ export async function addInterestingContractsToFeed(
       !readOnly &&
       (hourAgoTradersByContract[contract.id] ?? 0) >= (1 - importanceScore) * 15
     ) {
-      log(
-        'Inserting generally trending, recently popular contract',
-        contract.id,
-        'with importance score',
+      log('Inserting generally trending, recently popular contract', {
+        contractId: contract.id,
+        hoursAgoTraders: hourAgoTradersByContract[contract.id],
+        todayScore,
+        thisWeekScore,
         importanceScore,
-        'and',
-        hourAgoTradersByContract[contract.id],
-        'traders in the past hour'
-      )
+      })
       await insertTrendingContractToUsersFeeds(
         contract,
         now - 14 * DAY_MS,
@@ -130,14 +129,14 @@ export async function addInterestingContractsToFeed(
 
     // If it's just undergone a large prob change and wasn't created today, add it to the feed
     if (logOddsChange > 0.8 && contract.mechanism === 'cpmm-1') {
-      log(
-        'Inserting market movement with prob',
-        contract.prob,
-        ' and prev prob',
-        contract.prob - contract.probChanges.day,
-        'for contract',
-        contract.id
-      )
+      log('Inserting market movement with prob', {
+        contractId: contract.id,
+        prob: contract.prob,
+        probChange: contract.prob - contract.probChanges.day,
+        logOddsChange,
+        todayScore,
+        importanceScore,
+      })
       if (!readOnly) await insertMarketMovementContractToUsersFeeds(contract)
     }
   }
