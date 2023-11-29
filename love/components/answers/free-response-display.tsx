@@ -14,7 +14,6 @@ import { Subtitle } from '../widgets/lover-subtitle'
 import { AddQuestionButton } from './free-response-add-question'
 import { QuestionWithCountType } from 'love/hooks/use-questions'
 import { TbMessage } from 'react-icons/tb'
-import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { OtherLoverAnswers } from './other-lover-answers'
 import {
   MODAL_CLASS,

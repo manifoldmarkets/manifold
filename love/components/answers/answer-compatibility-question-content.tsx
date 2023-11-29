@@ -107,8 +107,6 @@ export function AnswerCompatibilityQuestionContent(props: {
 
   const importanceValid = answer.importance !== null && answer.importance !== -1
 
-  console.log(answer)
-
   return (
     <Col className="w-full gap-4">
       {compatibilityQuestion.question}

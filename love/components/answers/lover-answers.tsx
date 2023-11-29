@@ -5,10 +5,8 @@ import {
   useUserAnswers,
 } from 'love/hooks/use-questions'
 import { Col } from 'web/components/layout/col'
-import { FreeResponseDisplay } from './free-response-display'
-import { OpinionScale } from './opinion-scale-display'
-import { AddCompatibilityQuestionButton } from './add-compatibility-question-button'
 import { CompatibilityQuestionsDisplay } from './compatibility-questions-display'
+import { FreeResponseDisplay } from './free-response-display'
 
 export function LoverAnswers(props: { isCurrentUser: boolean; user: User }) {
   const { isCurrentUser, user } = props

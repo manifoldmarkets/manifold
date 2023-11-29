@@ -78,7 +78,10 @@ export function CompatibilityQuestionsDisplay(props: {
         />
       )}
       {(otherQuestions.length < 1 || isAdminId(user?.id)) && (
-        <AddCompatibilityQuestionButton />
+        <AddCompatibilityQuestionButton
+          refreshCompatibilityAnswers={refreshCompatibilityAnswers}
+          refreshQuestions={refreshQuestions}
+        />
       )}
     </Col>
   )

@@ -22,7 +22,11 @@ import { filterKeys } from '../questions-form'
 import { db } from 'web/lib/supabase/db'
 import { uniq } from 'lodash'
 
-export function AddCompatibilityQuestionButton() {
+export function AddCompatibilityQuestionButton(props: {
+  refreshCompatibilityAnswers: () => void
+  refreshQuestions: () => void
+}) {
+  const { refreshCompatibilityAnswers, refreshQuestions } = props
   const [open, setOpen] = useState(false)
   const user = useUser()
   if (!user) return null
@@ -38,6 +42,10 @@ export function AddCompatibilityQuestionButton() {
         open={open}
         setOpen={setOpen}
         user={user}
+        onClose={() => {
+          refreshCompatibilityAnswers()
+          refreshQuestions()
+        }}
       />
     </>
   )
@@ -47,8 +55,9 @@ function AddCompatibilityQuestionModal(props: {
   open: boolean
   setOpen: (open: boolean) => void
   user: User
+  onClose?: () => void
 }) {
-  const { open, setOpen, user } = props
+  const { open, setOpen, user, onClose } = props
   const [dbQuestion, setDbQuestion] = useState<rowFor<'love_questions'> | null>(
     null
   )
@@ -57,7 +66,7 @@ function AddCompatibilityQuestionModal(props: {
   }
 
   return (
-    <Modal open={open} setOpen={setOpen}>
+    <Modal open={open} setOpen={setOpen} onClose={onClose}>
       <Col className={MODAL_CLASS}>
         {!dbQuestion ? (
           <CreateCompatibilityModalContent
@@ -73,6 +82,10 @@ function AddCompatibilityQuestionModal(props: {
               setDbQuestion(null)
             }}
             isLastQuestion
+            onNext={() => {
+              setOpen(false)
+              setDbQuestion(null)
+            }}
           />
         )}
       </Col>
