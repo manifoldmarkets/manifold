@@ -90,6 +90,7 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
 
   closeEmailsSent?: number
 
+  views: number
   volume: number
   volume24Hours: number
   elasticity: number

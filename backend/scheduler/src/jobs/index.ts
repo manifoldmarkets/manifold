@@ -2,6 +2,7 @@ import { createJob } from './helpers'
 import { addTrendingFeedContracts } from './add-trending-feed-contracts'
 import { updateContractMetricsCore } from 'shared/update-contract-metrics-core'
 import { sendOnboardingNotificationsInternal } from 'shared/onboarding-helpers'
+import { updateContractViews } from 'shared/update-contract-views'
 
 export function createJobs() {
   return [
@@ -20,5 +21,6 @@ export function createJobs() {
       '0 0 11 * * *',
       sendOnboardingNotificationsInternal
     ),
+    createJob('update-contract-views', '0 0 * * * *', updateContractViews),
   ]
 }

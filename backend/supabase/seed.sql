@@ -337,7 +337,8 @@ create table if not exists
     ) stored,
     fs_updated_time timestamp not null,
     deleted boolean default false,
-    group_slugs text[]
+    group_slugs text[],
+    views int default 0
   );
 
 alter table contracts enable row level security;
@@ -421,6 +422,7 @@ begin
                            when new.data ? 'groupSlugs' then jsonb_array_to_text_array((new.data) -> 'groupSlugs')
                            else null
         end;
+    new.views := coalesce(((new.data) ->> 'views')::int, 0);
   end if;
   return new;
 end

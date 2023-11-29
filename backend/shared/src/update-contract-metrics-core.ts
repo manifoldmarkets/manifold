@@ -228,33 +228,3 @@ const getAnswerProbsAt = async (pg: SupabaseDirectClient, when: number) => {
     )
   )
 }
-
-// TODO: doesn't work yet
-const getViews = async (pg: SupabaseDirectClient) => {
-  return Object.fromEntries(
-    await pg.map(
-      `select
-         ue.contract_id,
-         count(*) as logged_out_user_seen_markets_count,
-         count(um.id) as logged_in_user_seen_markets_count
-     from
-         user_events ue
-             left join
-         user_seen_markets um on ue.contract_id = um.contract_id
-                                     and ue.name = um.type
-     where
-         ue.contract_id is not null
-       and ue.name = 'view market'
-       and ue.user_id is null
-     group by
-         ue.contract_id;
-    `,
-      [],
-      (r) => [
-        r.contract_id,
-        r.logged_out_user_seen_markets_count +
-          r.logged_in_user_seen_markets_count,
-      ]
-    )
-  )
-}
