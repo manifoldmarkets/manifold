@@ -112,6 +112,10 @@ export function shortFormatNumber(num: number): string {
   return `${numStr}${suffix[i] ?? ''}`
 }
 
+export function maybePluralize(word: string, num: number, plural: string = 's'): string {
+  return num === 1 ? word + plural : word
+}
+
 export function toCamelCase(words: string) {
   const camelCase = words
     .split(' ')
