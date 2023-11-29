@@ -27,6 +27,13 @@ export const getUserAnswers = async (userId: string) => {
   return data
 }
 
+export const getUserCompatibilityAnswers = async (userId: string) => {
+  const { data } = await run(
+    db.from('love_compatibility_answers').select('*').eq('creator_id', userId)
+  )
+  return data
+}
+
 export const getQuestionsWithAnswerCount = async () => {
   const { data } = await db.rpc(
     'get_free_response_questions_with_answer_count' as any

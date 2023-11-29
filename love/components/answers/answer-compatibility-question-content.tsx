@@ -36,8 +36,11 @@ export function AnswerCompatibilityQuestionContent(props: {
   compatibilityQuestion: rowFor<'love_questions'>
   user: User
   onSubmit: () => void
+  onNext?: () => void
+  isLastQuestion: boolean
 }) {
-  const { compatibilityQuestion, user, onSubmit } = props
+  const { compatibilityQuestion, user, onSubmit, isLastQuestion, onNext } =
+    props
 
   const [answer, setAnswer] = useState<CompatibilityAnswerSubmitType>({
     creator_id: user.id,
@@ -84,7 +87,7 @@ export function AnswerCompatibilityQuestionContent(props: {
       {compatibilityQuestion.question}
       <Col className={clsx(SCROLLABLE_MODAL_CLASS, 'w-full gap-4')}>
         <Col className="gap-1">
-          <span className="text-ink-600 text-sm">Your answer</span>
+          <span className="text-ink-500 text-sm">Your answer</span>
           <RadioGroup
             className={
               'border-ink-300 text-ink-400 bg-canvas-0 inline-flex flex-col gap-2 rounded-md border p-1 text-sm shadow-sm'
@@ -104,7 +107,7 @@ export function AnswerCompatibilityQuestionContent(props: {
                     clsx(
                       disabled
                         ? 'text-ink-300 aria-checked:bg-ink-300 aria-checked:text-ink-0 cursor-not-allowed'
-                        : 'text-ink-500 hover:bg-ink-50 aria-checked:bg-primary-100 aria-checked:text-primary-900 cursor-pointer',
+                        : 'text-ink-700 hover:bg-ink-50 aria-checked:bg-primary-100 aria-checked:text-primary-900 cursor-pointer',
                       'ring-primary-500 flex items-center rounded-md p-2 outline-none transition-all focus-visible:ring-2 sm:px-3'
                     )
                   }
@@ -115,7 +118,7 @@ export function AnswerCompatibilityQuestionContent(props: {
           </RadioGroup>
         </Col>
         <Col className="gap-1">
-          <span className="text-ink-600 text-sm">Answers you'll accept</span>
+          <span className="text-ink-500 text-sm">Answers you'll accept</span>
           <Col
             className={
               'border-ink-300 text-ink-400 bg-canvas-0 inline-flex flex-col gap-2 rounded-md border p-1 text-sm shadow-sm'
@@ -130,8 +133,8 @@ export function AnswerCompatibilityQuestionContent(props: {
                   className={clsx(
                     answer.pref_choices?.includes(choice)
                       ? 'bg-primary-100 text-primary-900'
-                      : 'text-ink-500 hover:bg-ink-50',
-                    'ring-primary-500 flex cursor-pointer items-center rounded-md p-2 outline-none transition-all focus-visible:ring-2 sm:px-3'
+                      : 'text-ink-700 hover:bg-ink-50',
+                    'ring-primary-500 flex cursor-pointer items-center rounded-md p-2 text-left outline-none transition-all focus-visible:ring-2 sm:px-3'
                   )}
                 >
                   {choiceKey}
@@ -168,22 +171,29 @@ export function AnswerCompatibilityQuestionContent(props: {
         </Col>
       </Col>
       <Row className="w-full justify-end">
-        <Button
-          disabled={
-            !multipleChoiceValid || !prefChoicesValid || !importanceValid
-          }
-          loading={loading}
-          onClick={() => {
-            setLoading(true)
-            submitCompatibilityAnswer(answer)
-              .then(() => {
-                onSubmit()
-              })
-              .finally(() => setLoading(false))
-          }}
-        >
-          Finish
-        </Button>
+        <Col className="gap-1">
+          <Button
+            disabled={
+              !multipleChoiceValid || !prefChoicesValid || !importanceValid
+            }
+            loading={loading}
+            onClick={() => {
+              setLoading(true)
+              submitCompatibilityAnswer(answer)
+                .then(() => {
+                  if (isLastQuestion) {
+                    onSubmit()
+                  } else if (onNext) {
+                    onNext()
+                  }
+                })
+                .finally(() => setLoading(false))
+            }}
+          >
+            {isLastQuestion ? 'Finish' : 'Next'}
+          </Button>
+          <button className="text-ink-500 text-sm hover:underline">Skip</button>
+        </Col>
       </Row>
     </Col>
   )

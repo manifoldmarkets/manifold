@@ -62,6 +62,7 @@ function AddCompatibilityQuestionModal(props: {
         {!dbQuestion ? (
           <CreateCompatibilityModalContent
             afterAddQuestion={afterAddQuestion}
+            setOpen={setOpen}
           />
         ) : (
           <AnswerCompatibilityQuestionContent
@@ -71,6 +72,7 @@ function AddCompatibilityQuestionModal(props: {
               setOpen(false)
               setDbQuestion(null)
             }}
+            isLastQuestion
           />
         )}
       </Col>
@@ -80,8 +82,9 @@ function AddCompatibilityQuestionModal(props: {
 
 function CreateCompatibilityModalContent(props: {
   afterAddQuestion: (question: rowFor<'love_questions'>) => void
+  setOpen: (open: boolean) => void
 }) {
-  const { afterAddQuestion } = props
+  const { afterAddQuestion, setOpen } = props
   const [question, setQuestion] = useState('')
   const [options, setOptions] = useState<string[]>(['', ''])
   const [loading, setLoading] = useState(false)
@@ -129,7 +132,6 @@ function CreateCompatibilityModalContent(props: {
         newQuestion.status == 'success' &&
         newQuestion.question
       ) {
-        console.log('HERE')
         afterAddQuestion(newQuestion.question as rowFor<'love_questions'>)
       }
       track('create love compatibilty question')
@@ -185,7 +187,14 @@ function CreateCompatibilityModalContent(props: {
       </Col>
 
       <Row className="w-full justify-between">
-        <Button color="gray">Cancel</Button>
+        <Button
+          color="gray"
+          onClick={() => {
+            setOpen(false)
+          }}
+        >
+          Cancel
+        </Button>
         <Button
           loading={loading}
           onClick={() => {
