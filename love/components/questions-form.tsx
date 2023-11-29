@@ -86,7 +86,7 @@ function getInitialForm(userId: string, id: number) {
   }
 }
 
-const filterKeys = (
+export const filterKeys = (
   obj: Record<string, any>,
   predicate: (key: string, value: any) => boolean
 ): Record<string, any> => {

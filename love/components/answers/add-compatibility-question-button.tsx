@@ -13,8 +13,14 @@ import { useEvent } from 'web/hooks/use-event'
 import { track } from 'web/lib/service/analytics'
 import { toast } from 'react-hot-toast'
 import { createLoveCompatibilityQuestion } from 'web/lib/firebase/love/api'
-import { Row as rowFor } from 'common/supabase/utils'
-import { AnswerCompatibilityQuestionContent } from './answer-compatibility-question-content'
+import { Row as rowFor, run } from 'common/supabase/utils'
+import {
+  AnswerCompatibilityQuestionContent,
+  CompatibilityAnswerSubmitType,
+} from './answer-compatibility-question-content'
+import { filterKeys } from '../questions-form'
+import { db } from 'web/lib/supabase/db'
+import { uniq } from 'lodash'
 
 export function AddCompatibilityQuestionButton() {
   const [open, setOpen] = useState(false)
@@ -61,6 +67,10 @@ function AddCompatibilityQuestionModal(props: {
           <AnswerCompatibilityQuestionContent
             compatibilityQuestion={dbQuestion}
             user={user}
+            onSubmit={() => {
+              setOpen(false)
+              setDbQuestion(null)
+            }}
           />
         )}
       </Col>
@@ -74,6 +84,7 @@ function CreateCompatibilityModalContent(props: {
   const { afterAddQuestion } = props
   const [question, setQuestion] = useState('')
   const [options, setOptions] = useState<string[]>(['', ''])
+  const [loading, setLoading] = useState(false)
 
   const onOptionChange = (index: number, value: string) => {
     const newOptions = [...options]
@@ -94,6 +105,8 @@ function CreateCompatibilityModalContent(props: {
     options.every((o) => o.trim().length > 0) && options.length >= 2
 
   const questionIsValid = question.trim().length > 0
+
+  const noRepeatOptions = uniq(options).length == options.length
 
   const generateJson = () => {
     const jsonObject = options.reduce((obj, item, index) => {
@@ -162,6 +175,11 @@ function CreateCompatibilityModalContent(props: {
               )}
             </div>
           ))}
+          {!noRepeatOptions && (
+            <span className="text-xs text-red-500">
+              *You have duplicate options
+            </span>
+          )}
           <Button onClick={addOption} color="gray-outline">
             <Row className="items-center gap-1">
               <PlusIcon className="h-4 w-4" />
@@ -174,8 +192,12 @@ function CreateCompatibilityModalContent(props: {
       <Row className="w-full justify-between">
         <Button color="gray">Cancel</Button>
         <Button
-          onClick={onAddQuestion}
-          disabled={!optionsAreValid || !questionIsValid}
+          loading={loading}
+          onClick={() => {
+            setLoading(true)
+            onAddQuestion().finally(() => setLoading(false))
+          }}
+          disabled={!optionsAreValid || !questionIsValid || !noRepeatOptions}
         >
           Submit & Answer
         </Button>

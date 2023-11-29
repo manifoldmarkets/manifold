@@ -1,5 +1,5 @@
 import { User } from 'common/user'
-import { Row as rowFor } from 'common/supabase/utils'
+import { Row as rowFor, run } from 'common/supabase/utils'
 import { Col } from 'web/components/layout/col'
 import { RadioToggleGroup } from 'web/components/widgets/radio-toggle-group'
 import { useState } from 'react'
@@ -8,17 +8,36 @@ import { RadioGroup } from '@headlessui/react'
 import clsx from 'clsx'
 import { ExpandingInput } from 'web/components/widgets/expanding-input'
 import { SCROLLABLE_MODAL_CLASS } from 'web/components/layout/modal'
+import { Row } from 'web/components/layout/row'
+import { Button } from 'web/components/buttons/button'
+import { filterKeys } from '../questions-form'
+import { db } from 'web/lib/supabase/db'
 
 export type CompatibilityAnswerSubmitType = Omit<
   rowFor<'love_compatibility_answers'>,
   'created_time' | 'id'
 >
 
+export const submitCompatibilityAnswer = async (
+  newAnswer: CompatibilityAnswerSubmitType
+) => {
+  if (!newAnswer) return
+  const input = {
+    ...filterKeys(newAnswer, (key, _) => !['id', 'created_time'].includes(key)),
+  }
+  await run(
+    db
+      .from('love_compatibility_answers')
+      .upsert(input, { onConflict: 'question_id,creator_id' })
+  )
+}
+
 export function AnswerCompatibilityQuestionContent(props: {
   compatibilityQuestion: rowFor<'love_questions'>
   user: User
+  onSubmit: () => void
 }) {
-  const { compatibilityQuestion, user } = props
+  const { compatibilityQuestion, user, onSubmit } = props
 
   const [answer, setAnswer] = useState<CompatibilityAnswerSubmitType>({
     creator_id: user.id,
@@ -28,6 +47,8 @@ export function AnswerCompatibilityQuestionContent(props: {
     question_id: compatibilityQuestion.id,
     importance: -1,
   })
+
+  const [loading, setLoading] = useState(false)
 
   if (
     compatibilityQuestion.answer_type !== 'compatibility_multiple_choice' ||
@@ -51,6 +72,13 @@ export function AnswerCompatibilityQuestionContent(props: {
       })
     }
   }
+
+  const multipleChoiceValid =
+    answer.multiple_choice != null && answer.multiple_choice !== -1
+
+  const prefChoicesValid = answer.pref_choices && answer.pref_choices.length > 0
+
+  const importanceValid = answer.importance && answer.importance !== -1
 
   return (
     <Col className="w-full gap-4">
@@ -140,6 +168,24 @@ export function AnswerCompatibilityQuestionContent(props: {
           />
         </Col>
       </Col>
+      <Row className="w-full justify-end">
+        <Button
+          disabled={
+            !multipleChoiceValid || !prefChoicesValid || !importanceValid
+          }
+          loading={loading}
+          onClick={() => {
+            setLoading(true)
+            submitCompatibilityAnswer(answer)
+              .then(() => {
+                onSubmit()
+              })
+              .finally(() => setLoading(false))
+          }}
+        >
+          Finish
+        </Button>
+      </Row>
     </Col>
   )
 }
