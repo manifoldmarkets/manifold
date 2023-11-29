@@ -339,7 +339,7 @@ export const TooltipContainer = (props: {
       ref={elemRef}
       className={clsx(
         className,
-        'border-ink-200 bg-canvas-0/70 pointer-events-none absolute z-10 whitespace-pre rounded border px-4 py-2 text-sm'
+        'border-ink-200 dark:border-ink-300 bg-canvas-0/70 pointer-events-none absolute z-10 whitespace-pre rounded border px-4 py-2 text-sm'
       )}
       style={{ ...pos }}
     >
