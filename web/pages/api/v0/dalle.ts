@@ -1,9 +1,6 @@
 import OpenAI from 'openai'
 import { NextApiRequest, NextApiResponse } from 'next'
-import {
-  CORS_ORIGIN_MANIFOLD,
-  CORS_ORIGIN_LOCALHOST,
-} from 'common/envs/constants'
+
 import { applyCorsHeaders } from 'web/lib/api/cors'
 import { upload } from 'web/pages/api/v0/dream'
 
@@ -11,10 +8,7 @@ export const config = { api: { bodyParser: true } }
 
 // Highly experimental. Proxy for https://github.com/vpzomtrrfrt/stability-client
 export default async function route(req: NextApiRequest, res: NextApiResponse) {
-  await applyCorsHeaders(req, res, {
-    origin: [CORS_ORIGIN_MANIFOLD, CORS_ORIGIN_LOCALHOST],
-    methods: 'POST',
-  })
+  await applyCorsHeaders(req, res)
 
   // Check that prompt and apiKey are included in the body
   if (!req.body.prompt) {

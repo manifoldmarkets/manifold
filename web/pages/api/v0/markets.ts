@@ -1,11 +1,11 @@
 import { NextApiRequest, NextApiResponse } from 'next'
-import { CORS_UNRESTRICTED, applyCorsHeaders } from 'web/lib/api/cors'
+import { applyCorsHeaders } from 'web/lib/api/cors'
 import { fetchBackend, forwardResponse } from 'web/lib/api/proxy'
 
 export const config = { api: { bodyParser: false } }
 
 export default async function route(req: NextApiRequest, res: NextApiResponse) {
-  await applyCorsHeaders(req, res, CORS_UNRESTRICTED)
+  await applyCorsHeaders(req, res)
   try {
     const backendRes = await fetchBackend(req, 'v0/markets')
     await forwardResponse(res, backendRes)

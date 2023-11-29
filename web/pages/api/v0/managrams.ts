@@ -1,6 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next'
 import { ApiError, ValidationError } from 'web/pages/api/v0/_types'
-import { applyCorsHeaders, CORS_UNRESTRICTED } from 'web/lib/api/cors'
+import { applyCorsHeaders } from 'web/lib/api/cors'
 import { z } from 'zod'
 import { validate } from 'web/pages/api/v0/_validate'
 import { db } from 'web/lib/supabase/db'
@@ -24,7 +24,7 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<ManaPayTxn[] | ValidationError | ApiError>
 ) {
-  await applyCorsHeaders(req, res, CORS_UNRESTRICTED)
+  await applyCorsHeaders(req, res)
 
   let params: z.infer<typeof queryParams>
   try {

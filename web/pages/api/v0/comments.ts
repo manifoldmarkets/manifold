@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next'
-import { applyCorsHeaders, CORS_UNRESTRICTED } from 'web/lib/api/cors'
+import { applyCorsHeaders } from 'web/lib/api/cors'
 import type { Comment } from 'common/comment'
 import { getContractFromSlug } from 'web/lib/supabase/contracts'
 import { ApiError, ValidationError } from './_types'
@@ -43,7 +43,7 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<Comment[] | ValidationError | ApiError>
 ) {
-  await applyCorsHeaders(req, res, CORS_UNRESTRICTED)
+  await applyCorsHeaders(req, res)
 
   let params: z.infer<typeof queryParams>
   try {
