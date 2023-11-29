@@ -34,6 +34,20 @@ export const getUniqueBettorIds = async (
   return res.map((r) => r.user_id as string)
 }
 
+export const getUniqueVoterIds = async (
+  contractId: string,
+  pg: SupabaseDirectClient
+) => {
+  return await pg.map(
+    `select distinct user_id
+       from votes cb
+        where contract_id = $1
+       `,
+    [contractId],
+    (r) => r.user_id
+  )
+}
+
 export const getContractsDirect = async (
   contractIds: string[],
   pg: SupabaseDirectClient

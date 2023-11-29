@@ -5,7 +5,11 @@ import {
   createSupabaseDirectClient,
 } from 'shared/supabase/init'
 import * as admin from 'firebase-admin'
-import { updateContractMetricsCore } from 'shared/update-contract-metrics-core'
+import { Contract } from 'common/contract'
+import { User } from 'common/user'
+import * as crypto from 'crypto'
+import { ContractComment } from 'common/comment'
+import { handleCommentNotifications } from 'functions/src/triggers/on-create-comment-on-contract'
 
 // Ian's file for debugging
 export async function testBackendFunction() {
@@ -19,7 +23,26 @@ export async function testBackendFunction() {
     // await addInterestingContractsToFeed(db, pg)
     // await sendOnboardingNotificationsInternal(firestore)
     // await addInterestingContractsToFeed(db, pg, true)
-    await updateContractMetricsCore()
+    // await updateContractMetricsCore()
+    const comment = (
+      await firestore
+        .collection(`contracts/43xks1GGr9P5T42xndsX/comments`)
+        .doc('hb6rCt2TCWjlwmiSVJKw')
+        .get()
+    ).data() as ContractComment
+    const contract = (
+      await firestore.collection('contracts').doc(comment.contractId).get()
+    ).data() as Contract
+    const commentCreator = (
+      await firestore.collection(`users`).doc(comment.userId).get()
+    ).data() as User
+    await handleCommentNotifications(
+      comment,
+      contract,
+      commentCreator,
+      undefined,
+      crypto.randomUUID()
+    )
     // const userId = '6hHpzvRG0pMq8PNJs7RZj2qlZGn2'
     // await createLeagueChangedNotification(
     //   userId,
