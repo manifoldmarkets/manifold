@@ -11,7 +11,7 @@ export function createJobs() {
     ),
     createJob(
       'update-contract-metrics',
-      '0 0 */15 * * *', // every 15 minutes
+      '0 */15 * * * *', // every 15 minutes
       updateContractMetricsCore
     ),
   ]
