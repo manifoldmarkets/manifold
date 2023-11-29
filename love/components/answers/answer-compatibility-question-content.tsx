@@ -49,7 +49,6 @@ export function AnswerCompatibilityQuestionContent(props: {
   })
 
   const [loading, setLoading] = useState(false)
-
   if (
     compatibilityQuestion.answer_type !== 'compatibility_multiple_choice' ||
     !compatibilityQuestion.multiple_choice_options
@@ -85,7 +84,7 @@ export function AnswerCompatibilityQuestionContent(props: {
       {compatibilityQuestion.question}
       <Col className={clsx(SCROLLABLE_MODAL_CLASS, 'w-full gap-4')}>
         <Col className="gap-1">
-          <span className="text-ink-400 text-sm">Your answer</span>
+          <span className="text-ink-600 text-sm">Your answer</span>
           <RadioGroup
             className={
               'border-ink-300 text-ink-400 bg-canvas-0 inline-flex flex-col gap-2 rounded-md border p-1 text-sm shadow-sm'
@@ -95,8 +94,9 @@ export function AnswerCompatibilityQuestionContent(props: {
               setAnswer({ ...answer, multiple_choice: choice })
             }
           >
-            {Object.entries(compatibilityQuestion.multiple_choice_options).map(
-              ([choiceKey, choice]) => (
+            {Object.entries(compatibilityQuestion.multiple_choice_options)
+              .sort((a, b) => a[1] - b[1])
+              .map(([choiceKey, choice]) => (
                 <RadioGroup.Option
                   key={choiceKey}
                   value={choice}
@@ -111,19 +111,19 @@ export function AnswerCompatibilityQuestionContent(props: {
                 >
                   <RadioGroup.Label as="span">{choiceKey}</RadioGroup.Label>
                 </RadioGroup.Option>
-              )
-            )}
+              ))}
           </RadioGroup>
         </Col>
         <Col className="gap-1">
-          <span className="text-ink-400 text-sm">Answers you'll accept</span>
+          <span className="text-ink-600 text-sm">Answers you'll accept</span>
           <Col
             className={
               'border-ink-300 text-ink-400 bg-canvas-0 inline-flex flex-col gap-2 rounded-md border p-1 text-sm shadow-sm'
             }
           >
-            {Object.entries(compatibilityQuestion.multiple_choice_options).map(
-              ([choiceKey, choice]) => (
+            {Object.entries(compatibilityQuestion.multiple_choice_options)
+              .sort((a, b) => a[1] - b[1])
+              .map(([choiceKey, choice]) => (
                 <button
                   key={choiceKey}
                   onClick={() => onPrefChoiceClick(choice)}
@@ -136,8 +136,7 @@ export function AnswerCompatibilityQuestionContent(props: {
                 >
                   {choiceKey}
                 </button>
-              )
-            )}
+              ))}
           </Col>
         </Col>
         <Col className="gap-1">

@@ -175,11 +175,6 @@ function CreateCompatibilityModalContent(props: {
               )}
             </div>
           ))}
-          {!noRepeatOptions && (
-            <span className="text-xs text-red-500">
-              *You have duplicate options
-            </span>
-          )}
           <Button onClick={addOption} color="gray-outline">
             <Row className="items-center gap-1">
               <PlusIcon className="h-4 w-4" />
