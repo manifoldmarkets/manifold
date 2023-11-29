@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import { getUser, getUsers } from 'web/lib/supabase/user'
 import { useEffectCheckEquality } from './use-effect-check-equality'
 import { Answer, DpmAnswer } from 'common/answer'
-import { uniqBy } from 'lodash'
+import { uniqBy, uniq } from 'lodash'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { filterDefined } from 'common/util/array'
 
@@ -44,18 +44,23 @@ export function useUsersInStore(
     'use-users-in-local-storage' + key
   )
 
+  // Fetch all users at least once on load.
+  const [userIdsFetched, setUserIdsFetched] = useState<string[]>([])
+  const fetchedSet = new Set(userIdsFetched)
+  const userIdsNotFetched = userIds.filter((id) => !fetchedSet.has(id))
+  const userIdsToFetch = limit
+    ? userIdsNotFetched.slice(0, limit)
+    : userIdsNotFetched
+
   useEffectCheckEquality(() => {
-    const userIdSet = new Set((users ?? []).map((u) => u?.id))
-    const userIdsToFetch = userIds.filter((id) => !userIdSet.has(id))
     if (userIdsToFetch.length === 0) return
-    getUsers(limit ? userIdsToFetch.slice(0, limit) : userIdsToFetch).then(
-      (newUsers) => {
-        setUsers((currentUsers) =>
-          uniqBy((currentUsers ?? []).concat(filterDefined(newUsers)), 'id')
-        )
-      }
-    )
-  }, [userIds])
+    getUsers(userIdsToFetch).then((newUsers) => {
+      setUsers((currentUsers) =>
+        uniqBy(filterDefined(newUsers).concat(currentUsers ?? []), 'id')
+      )
+      setUserIdsFetched((currentIds) => uniq(currentIds.concat(userIdsToFetch)))
+    })
+  }, [userIdsToFetch])
 
   return users?.filter((user) => userIds.includes(user?.id))
 }
