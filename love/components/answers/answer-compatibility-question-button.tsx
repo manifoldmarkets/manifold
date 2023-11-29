@@ -25,7 +25,7 @@ export function AnswerCompatibilityQuestionButton(props: {
   return (
     <>
       <Button onClick={() => setOpen(true)} color="gray-outline">
-        <Row className="items-center gap-1">Answer Compatibility Question</Row>
+        <Row className="items-center gap-1">Answer Compatibility Questions</Row>
       </Button>
       <AnswerCompatibilityQuestionModal
         open={open}
