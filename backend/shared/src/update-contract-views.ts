@@ -1,9 +1,9 @@
+import * as admin from 'firebase-admin'
 import {
   createSupabaseDirectClient,
   SupabaseDirectClient,
 } from 'shared/supabase/init'
 import { GCPLog, log as oldLog } from 'shared/utils'
-import * as admin from 'firebase-admin'
 import { getAll } from 'shared/supabase/utils'
 import { hasChanges } from 'common/util/object'
 import { uniq } from 'lodash'

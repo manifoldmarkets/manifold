@@ -6,8 +6,22 @@ import { runTxnFromBank } from 'shared/txn/run-txn'
 import { STARTING_BONUS } from 'common/economy'
 import { GCPLog, getUser, log } from 'shared/utils'
 import { SignupBonusTxn } from 'common/txn'
-import { PrivateUser } from 'common/user'
-import { createSignupBonusNotification } from 'shared/create-notification'
+import {
+  MANIFOLD_AVATAR_URL,
+  MANIFOLD_USER_NAME,
+  MANIFOLD_USER_USERNAME,
+  PrivateUser,
+  User,
+} from 'common/user'
+import {
+  getNotificationDestinationsForUser,
+  userOptedOutOfBrowserNotifications,
+} from 'common/user-notification-preferences'
+import { Notification } from 'common/notification'
+import * as crypto from 'crypto'
+import { getForYouMarkets } from 'shared/supabase/search-contracts'
+import { sendBonusWithInterestingMarketsEmail } from 'shared/emails'
+import { insertNotificationToSupabase } from 'shared/supabase/notifications'
 
 const LAST_TIME_ON_CREATE_USER_SCHEDULED_EMAIL = 1690810713000
 
@@ -118,4 +132,49 @@ const sendBonusNotification = async (
       STARTING_BONUS
     )
   }
+}
+
+const createSignupBonusNotification = async (
+  user: User,
+  privateUser: PrivateUser,
+  txnId: string,
+  bonusAmount: number
+) => {
+  if (!userOptedOutOfBrowserNotifications(privateUser)) {
+    const notification: Notification = {
+      id: crypto.randomUUID(),
+      userId: privateUser.id,
+      reason: 'onboarding_flow',
+      createdTime: Date.now(),
+      isSeen: false,
+      sourceId: txnId,
+      sourceType: 'signup_bonus',
+      sourceUpdateType: 'created',
+      sourceUserName: MANIFOLD_USER_NAME,
+      sourceUserUsername: MANIFOLD_USER_USERNAME,
+      sourceUserAvatarUrl: MANIFOLD_AVATAR_URL,
+      sourceText: bonusAmount.toString(),
+    }
+    const pg = createSupabaseDirectClient()
+    await insertNotificationToSupabase(notification, pg)
+  }
+
+  // This is email is of both types, so try either
+  const { sendToEmail } = getNotificationDestinationsForUser(
+    privateUser,
+    'onboarding_flow'
+  )
+  const { sendToEmail: trendingSendToEmail } =
+    getNotificationDestinationsForUser(privateUser, 'trending_markets')
+
+  if (!sendToEmail && !trendingSendToEmail) return
+
+  const contractsToSend = await getForYouMarkets(privateUser.id)
+
+  await sendBonusWithInterestingMarketsEmail(
+    user,
+    privateUser,
+    contractsToSend,
+    bonusAmount
+  )
 }

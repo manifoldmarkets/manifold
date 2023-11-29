@@ -43,7 +43,6 @@ import { updategroupprivacy } from './update-group-privacy'
 import { addgroupmember } from './add-group-member'
 import { registerdiscordid } from './register-discord-id'
 import { getuserisgroupmember } from './get-user-is-group-member'
-import { redeemad } from './redeem-ad-reward'
 import { completequest } from './complete-quest'
 import { getsupabasetoken } from './get-supabase-token'
 import { updateUserEmbedding } from './update-user-embedding'
@@ -186,7 +185,6 @@ app.post('/addcontracttogroup', ...apiRoute(addcontracttogroup))
 app.post('/removecontractfromgroup', ...apiRoute(removecontractfromgroup))
 app.post('/addgroupmember', ...apiRoute(addgroupmember))
 app.post('/getuserisgroupmember', ...apiRoute(getuserisgroupmember))
-app.post('/redeemad', ...apiRoute(redeemad))
 app.post('/completequest', ...apiRoute(completequest))
 app.post('/update-user-embedding', ...apiRoute(updateUserEmbedding))
 app.post(
@@ -276,9 +274,13 @@ app.post('/searchlocation', ...apiRoute(searchlocation))
 app.post('/searchnearcity', ...apiRoute(searchnearcity))
 
 const publicApiRoute = (endpoint: RequestHandler) => {
-  return [allowCorsUnrestricted, express.json(), endpoint, apiErrorHandler] as const
+  return [
+    allowCorsUnrestricted,
+    express.json(),
+    endpoint,
+    apiErrorHandler,
+  ] as const
 }
-
 
 // v0 public API routes (formerly vercel functions)
 app.options('/v0', allowCorsUnrestricted)
