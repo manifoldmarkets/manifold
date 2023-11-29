@@ -12,7 +12,7 @@ In root directory `./dev.sh [dev|prod]` will run the api with hot reload, along 
 
 ## Deploy
 
-Run `./deploy.sh [dev|prod]` in this directory
+Run `./deploy-api.sh [dev|prod]` in this directory
 
 ## Secrets management
 

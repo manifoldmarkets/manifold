@@ -21,6 +21,11 @@ export type Answer = {
   resolution?: resolution
   resolutionTime?: number
   resolutionProbability?: number
+  probChanges: {
+    day: number
+    week: number
+    month: number
+  }
 }
 
 export type DpmAnswer = {

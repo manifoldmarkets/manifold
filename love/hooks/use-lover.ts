@@ -3,7 +3,7 @@ import { useEffect } from 'react'
 import { Row } from 'common/supabase/utils'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { User } from 'common/user'
-import { getLoverRow, Lover } from 'common/love/lover'
+import { getLoverRow, Lover, LoverRow } from 'common/love/lover'
 import { db } from 'web/lib/supabase/db'
 
 export const useLover = () => {
@@ -27,7 +27,7 @@ export const useLoverByUser = (user: User | undefined) => {
   const userId = user?.id
   const [lover, setLover] = usePersistentInMemoryState<
     Lover | undefined | null
-  >(undefined, `lover-${userId}`)
+  >(undefined, `lover-user-${userId}`)
 
   useEffect(() => {
     if (userId)
@@ -46,4 +46,20 @@ export const useLoverByUser = (user: User | undefined) => {
   }
 
   return { lover, refreshLover }
+}
+
+export const useLoverByUserId = (userId: string | undefined) => {
+  const [lover, setLover] = usePersistentInMemoryState<
+    LoverRow | undefined | null
+  >(undefined, `lover-${userId}`)
+
+  useEffect(() => {
+    if (userId)
+      getLoverRow(userId, db).then((lover) => {
+        if (!lover) setLover(null)
+        else setLover(lover)
+      })
+  }, [userId])
+
+  return lover
 }

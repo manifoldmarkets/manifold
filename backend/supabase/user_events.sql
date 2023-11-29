@@ -30,9 +30,13 @@ create policy "user can insert" on user_events for insert
 
 create index if not exists user_events_name on user_events (user_id, name);
 
+-- useful for user quests
 create index if not exists user_events_ts on user_events (user_id, ts);
 
-create index if not exists user_events_comment_view on user_events (user_id, ts, comment_id) where name = 'view comment thread'
+-- useful for tracking signed out market views
+create index if not exists user_events_contract_name_ts on user_events (user_id, name, contract_id, ts);
+
+create index if not exists user_events_comment_view on user_events (user_id, ts, comment_id) where name = 'view comment thread';
 
 alter table user_events
     cluster on user_events_name;

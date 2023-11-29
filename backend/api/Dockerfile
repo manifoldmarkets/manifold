@@ -10,4 +10,5 @@ RUN yarn install --frozen-lockfile --production
 # then copy over typescript payload
 COPY dist ./
 
+ENV PORT 80
 ENTRYPOINT [ "node", "backend/api/lib/serve.js" ]

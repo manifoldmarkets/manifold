@@ -1,16 +1,7 @@
-import * as admin from 'firebase-admin'
-import { z } from 'zod'
-import { FieldValue } from 'firebase-admin/firestore'
-import { authEndpoint, validate } from './helpers'
+import { authEndpoint } from './helpers'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 
-const bodySchema = z
-  .object({
-    seen: z.boolean(),
-  })
-  .strict()
-
-export const markallnotifications = authEndpoint(async (req, auth) => {
+export const markallnotifications = authEndpoint(async (_req, auth) => {
   const pg = createSupabaseDirectClient()
   await pg.none(
     `update user_notifications

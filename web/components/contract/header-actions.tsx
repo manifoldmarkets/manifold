@@ -25,18 +25,17 @@ export function HeaderActions(props: {
       {children}
 
       {!isBlocked(privateUser, contract.creatorId) && (
-        <div className="flex items-center">
-          <LikeButton
-            user={user}
-            contract={contract}
-            contentId={contract.id}
-            contentType="contract"
-            contentCreatorId={contract.creatorId}
-            totalLikes={contract.likedByUserCount ?? 0}
-            contentText={contract.question}
-            trackingLocation={'contract page'}
-          />
-        </div>
+        <LikeButton
+          user={user}
+          size={'xs'}
+          contract={contract}
+          contentId={contract.id}
+          contentType="contract"
+          contentCreatorId={contract.creatorId}
+          totalLikes={contract.likedByUserCount ?? 0}
+          contentText={contract.question}
+          trackingLocation={'contract page'}
+        />
       )}
 
       <CopyLinkOrShareButton

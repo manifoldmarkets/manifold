@@ -31,7 +31,7 @@ firebase use $FIREBASE_PROJECT
 if [ ! -z $EMULATOR ]
 then
   npx concurrently \
-      -n FIRESTORE,FUNCTIONS,NEXT,TS \
+      -n FIRESTORE,API,NEXT,TS \
       -c green,white,magenta,cyan \
       "yarn --cwd=backend/functions localDbScript" \
       "yarn --cwd=backend/api dev" \
@@ -42,7 +42,7 @@ then
       "cross-env yarn --cwd=${DIR} ts-watch"
 else
   npx concurrently \
-      -n FUNCTIONS,NEXT,TS \
+      -n API,NEXT,TS \
       -c white,magenta,cyan \
       "yarn --cwd=backend/api dev" \
       "cross-env NEXT_PUBLIC_API_URL=http://localhost:8088 \

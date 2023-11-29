@@ -100,7 +100,7 @@ const submitAnswer = async (newForm: loveAnswerState) => {
   if (!newForm) return
   const input = {
     ...filterKeys(newForm, (key, _) => !['id', 'created_time'].includes(key)),
-  }
+  } as loveAnswerState
   await run(
     db
       .from('love_answers')

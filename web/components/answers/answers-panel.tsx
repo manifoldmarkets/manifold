@@ -17,7 +17,7 @@ import {
 } from 'common/contract'
 import { formatMoney } from 'common/util/format'
 import Link from 'next/link'
-import { Button } from 'web/components/buttons/button'
+import { Button, IconButton } from 'web/components/buttons/button'
 import { Row } from 'web/components/layout/row'
 import { useUser } from 'web/hooks/use-user'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
@@ -47,6 +47,7 @@ import { isAdminId, isModId } from 'common/envs/constants'
 import { User } from 'common/user'
 import { Avatar } from 'web/components/widgets/avatar'
 import { UserLink } from 'web/components/widgets/user-link'
+import { TradesButton } from 'web/components/contract/trades-button'
 
 const SORTS = [
   { label: 'High %', value: 'prob-desc' },
@@ -376,7 +377,7 @@ function Answer(props: {
 
   const textColorClass = resolvedProb === 0 ? 'text-ink-700' : 'text-ink-900'
   return (
-    <Col className={' w-full'}>
+    <Col className={'w-full'}>
       <AnswerBar
         color={color}
         prob={prob}
@@ -423,6 +424,23 @@ function Answer(props: {
               answer={answer}
               userBets={userBets ?? []}
             />
+            {onClick && (
+              <IconButton
+                className={'-ml-1 !px-1.5'}
+                size={'2xs'}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onClick()
+                }}
+              >
+                <ChevronDownIcon
+                  className={clsx(
+                    'h-4 w-4',
+                    expanded ? 'rotate-180 transform' : 'rotate-0 transform'
+                  )}
+                />
+              </IconButton>
+            )}
           </Row>
         }
       />
@@ -433,8 +451,9 @@ function Answer(props: {
           className="mt-0.5 self-end sm:mx-3 sm:mt-0"
         />
       )}
+
       {expanded && (
-        <Row className={'mx-0.5 my-1 items-center'}>
+        <Row className={'mx-0.5 mb-1 mt-2 items-center'}>
           {showAvatars && answerCreator && (
             <Row className={'items-center self-start'}>
               <Avatar avatarUrl={answerCreator.avatarUrl} size={'xs'} />
@@ -447,6 +466,8 @@ function Answer(props: {
           )}
           <Row className={'w-full justify-end gap-2'}>
             {user &&
+              'isOther' in answer &&
+              !answer.isOther &&
               (isAdminId(user.id) ||
                 isModId(user.id) ||
                 user.id === contract.creatorId ||
@@ -464,6 +485,13 @@ function Answer(props: {
                   Edit
                 </Button>
               )}
+            {'poolYes' in answer && (
+              <TradesButton
+                contract={contract}
+                answer={answer}
+                color={'gray-outline'}
+              />
+            )}
             {onCommentClick && <AddComment onClick={onCommentClick} />}
           </Row>
         </Row>

@@ -65,7 +65,10 @@ import {
   SupabaseDirectClient,
 } from 'shared/supabase/init'
 import * as crypto from 'crypto'
-import { getUniqueBettorIds } from 'shared/supabase/contracts'
+import {
+  getUniqueBettorIds,
+  getUniqueVoterIds,
+} from 'shared/supabase/contracts'
 import { getGroupMemberIds } from 'common/supabase/groups'
 import { richTextToString } from 'common/util/parse'
 import { JSONContent } from '@tiptap/core'
@@ -75,6 +78,7 @@ import { getUserFollowerIds } from 'shared/supabase/users'
 import { getForYouMarkets } from './supabase/search-contracts'
 import { isManifoldLoveContract } from 'common/love/constants'
 import { buildArray, filterDefined } from 'common/util/array'
+import { isAdminId, isModId } from 'common/envs/constants'
 
 const firestore = admin.firestore()
 
@@ -191,7 +195,7 @@ export type replied_users_info = {
     bet: Bet | undefined
   }
 }
-
+const ALL_TRADERS_ID = 'X3z4hxRXipWvGoFhxlDOVxmP5vL2'
 // TODO: remove contract updated from this, seems out of place
 export const createCommentOrAnswerOrUpdatedContractNotification = async (
   sourceId: string,
@@ -436,12 +440,24 @@ export const createCommentOrAnswerOrUpdatedContractNotification = async (
   }
 
   const notifyTaggedUsers = async () => {
-    if (sourceType === 'comment' && taggedUserIds && taggedUserIds.length > 0)
+    if (sourceType === 'comment' && taggedUserIds && taggedUserIds.length > 0) {
+      if (
+        taggedUserIds.includes(ALL_TRADERS_ID) &&
+        (sourceUser.id === sourceContract.creatorId ||
+          isAdminId(sourceUser.id) ||
+          isModId(sourceUser.id))
+      ) {
+        const allBettors = await getUniqueBettorIds(sourceContract.id, pg)
+        const allVoters = await getUniqueVoterIds(sourceContract.id, pg)
+        const allUsers = uniq(allBettors.concat(allVoters))
+        taggedUserIds.push(...allUsers)
+      }
       await Promise.all(
-        taggedUserIds.map((userId) =>
+        uniq(taggedUserIds).map((userId) =>
           sendNotificationsIfSettingsPermit(userId, 'tagged_user')
         )
       )
+    }
   }
 
   const notifyLiquidityProviders = async () => {

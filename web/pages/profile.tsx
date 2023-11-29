@@ -3,7 +3,7 @@ import { TrashIcon } from '@heroicons/react/solid'
 import { PrivateUser, User } from 'common/user'
 import Link from 'next/link'
 import { ReactNode, useState } from 'react'
-import { buttonClass } from 'web/components/buttons/button'
+import { Button, buttonClass } from 'web/components/buttons/button'
 import { ConfirmationButton } from 'web/components/buttons/confirmation-button'
 import { ExpandingInput } from 'web/components/widgets/expanding-input'
 import { Input } from 'web/components/widgets/input'
@@ -30,6 +30,8 @@ import { useUser } from 'web/hooks/use-user'
 import ShortToggle from 'web/components/widgets/short-toggle'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { useEditableUserInfo } from 'web/hooks/use-editable-user-info'
+import { copyToClipboard } from 'web/lib/util/copy'
+import { AiOutlineCopy } from 'react-icons/ai'
 
 export const getServerSideProps = redirectIfLoggedOut('/', async (_, creds) => {
   return { props: { auth: await getUserAndPrivateUser(creds.uid) } }
@@ -152,6 +154,7 @@ export default function ProfilePage(props: {
             ) : (
               <>
                 <img
+                  alt={`${user.username}'s avatar`}
                   src={avatarUrl}
                   width={80}
                   height={80}
@@ -258,19 +261,29 @@ export default function ProfilePage(props: {
 
           <div>
             <label className="mb-1 block">API key</label>
-            <div className="flex w-full items-stretch space-x-1">
+            <Row className="items-stretch gap-3">
               <Input
                 type="text"
                 placeholder="Click refresh to generate key"
                 value={apiKey}
                 readOnly
+                className={'w-24'}
               />
+              <Button
+                color={'indigo'}
+                onClick={() => {
+                  copyToClipboard(apiKey)
+                  toast.success('Copied to clipboard')
+                }}
+              >
+                <AiOutlineCopy className="h-5 w-5" />
+              </Button>
               <ConfirmationButton
                 openModalBtn={{
                   className: 'p-2',
                   label: '',
                   icon: <RefreshIcon className="h-5 w-5" />,
-                  color: 'indigo',
+                  color: 'red',
                 }}
                 submitBtn={{
                   label: 'Update key',
@@ -296,7 +309,7 @@ export default function ProfilePage(props: {
                   </div>
                 </Col>
               </ConfirmationButton>
-            </div>
+            </Row>
           </div>
           <div>
             <label className="mb-1 block">Delete Account</label>

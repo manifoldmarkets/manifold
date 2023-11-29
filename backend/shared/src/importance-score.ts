@@ -146,7 +146,7 @@ export async function calculateImportanceScore(
 
 export const getTodayComments = async (db: SupabaseClient) => {
   const counts = await db
-    .rpc('count_recent_comments_by_contract' as any)
+    .rpc('count_recent_comments_by_contract')
     .then((res) =>
       (res.data ?? []).map(({ contract_id, comment_count }) => [
         contract_id,

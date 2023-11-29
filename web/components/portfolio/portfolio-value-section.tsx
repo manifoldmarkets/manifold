@@ -12,10 +12,11 @@ import { useEvent } from 'web/hooks/use-event'
 import PlaceholderGraph from 'web/lib/icons/placeholder-graph.svg'
 import { TimeRangePicker } from '../charts/time-range-picker'
 import { ColorType } from '../widgets/choices-toggle-group'
-import { useViewScale } from '../charts/helpers'
 import { AddFundsButton } from '../profile/add-funds-button'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { track } from 'web/lib/service/analytics'
+import { useZoom } from '../charts/helpers'
+import { periodDurations } from 'web/lib/util/time'
 
 export const PortfolioValueSection = memo(
   function PortfolioValueSection(props: {
@@ -60,17 +61,23 @@ export const PortfolioValueSection = memo(
     const onClickNumber = useEvent((mode: GraphMode) => {
       setGraphMode(mode)
       setGraphDisplayNumber(null)
-      graphView.setViewYScale(undefined)
     })
-    const graphView = useViewScale()
-    const isMobile = useIsMobile()
 
-    //zooms out of graph if zoomed in upon time selection change
-    const setTimePeriod = useEvent((timePeriod: Period) => {
-      setCurrentTimePeriod(timePeriod)
-      graphView.setViewXScale(undefined)
-      graphView.setViewYScale(undefined)
-    })
+    const zoomParams = useZoom()
+
+    const setTimePeriod = (period: Period) => {
+      if (period === 'allTime') {
+        zoomParams.rescale(null)
+      } else {
+        const time = periodDurations[period]
+        const end = Date.now()
+        const start = end - time
+        zoomParams.rescaleBetween(start, end)
+      }
+      setCurrentTimePeriod(period)
+    }
+
+    const isMobile = useIsMobile()
 
     const placeholderSection = (
       <div className="text-ink-500 animate-pulse text-lg sm:text-xl">---</div>
@@ -185,7 +192,7 @@ export const PortfolioValueSection = memo(
             points={graphPoints}
             width={width}
             height={height}
-            viewScaleProps={graphView}
+            zoomParams={zoomParams}
             onMouseOver={handleGraphDisplayChange}
           />
         )}

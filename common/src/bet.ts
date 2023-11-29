@@ -113,6 +113,7 @@ export type BetFilter = {
   order?: 'desc' | 'asc'
   limit?: number
   commentRepliesOnly?: boolean
+  answerId?: string
 }
 
 export const calculateMultiBets = (

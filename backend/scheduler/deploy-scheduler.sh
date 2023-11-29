@@ -24,14 +24,21 @@ esac
 IMAGE_URL="gcr.io/${GCLOUD_PROJECT}/${SERVICE_NAME}"
 
 yarn build
+
+gcloud compute ssh ${SERVICE_NAME} \
+       --project ${GCLOUD_PROJECT} \
+       --zone ${ZONE} \
+       --command 'sudo docker image prune -af'
+
 gcloud builds submit . --tag ${IMAGE_URL} --project ${GCLOUD_PROJECT}
 
+# If you augment the instance, be sure to increase --max-old-space-size in the Dockerfile
 if [ "${INITIALIZE}" = true ]; then
-    gcloud compute addresses create scheduler --project ${GCLOUD_PROJECT} --region ${REGION}
-    gcloud compute instances create-with-container scheduler \
+    gcloud compute addresses create ${SERVICE_NAME} --project ${GCLOUD_PROJECT} --region ${REGION}
+    gcloud compute instances create-with-container ${SERVICE_NAME} \
            --project ${GCLOUD_PROJECT} \
            --zone ${ZONE} \
-           --address scheduler \
+           --address ${SERVICE_NAME} \
            --container-image ${IMAGE_URL} \
            --machine-type n2-standard-2 \
            --container-env ENVIRONMENT=${ENVIRONMENT} \
@@ -39,7 +46,7 @@ if [ "${INITIALIZE}" = true ]; then
            --scopes default,cloud-platform \
            --tags http-server
 else
-    gcloud compute instances update-container scheduler \
+    gcloud compute instances update-container ${SERVICE_NAME} \
            --project ${GCLOUD_PROJECT} \
            --zone ${ZONE} \
            --container-image ${IMAGE_URL}

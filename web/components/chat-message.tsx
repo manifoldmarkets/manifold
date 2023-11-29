@@ -34,6 +34,8 @@ export const ChatMessageItem = memo(function ChatMessageItem(props: {
   } = props
   const chat = first(chats)
   if (!chat) return null
+  if (otherUser?.isBannedFromPosting) return null
+
   const isMe = currentUser?.id === chat.userId
   const { username, avatarUrl, name } =
     !isMe && otherUser

@@ -22,7 +22,6 @@ import { MatchTracker } from './match-tracker'
 import { linkClass } from 'web/components/widgets/site-link'
 import { CommentsButton } from '../comments/love-comments-button'
 import { MatchAvatars } from './match-avatars'
-import { User } from 'common/user'
 
 const relationshipStages = [
   '1st date',
@@ -43,6 +42,7 @@ export const MatchTile = (props: {
     props.contract.visibility,
     props.contract.id
   ) ?? props.contract) as CPMMMultiContract
+  const { matchCreatorId } = contract
   const fetchedAnswers = useAnswersCpmm(contract.id)
   const answers = fetchedAnswers ?? props.answers
 
@@ -63,6 +63,11 @@ export const MatchTile = (props: {
     .substring(answer.text.indexOf('by'), answer.text.length - 1)
     .trim()
 
+  const wasMatchedByALover =
+    matchCreatorId &&
+    (matchCreatorId === profileLover.user_id ||
+      matchCreatorId === lover.user_id)
+
   return (
     <Col className="mb-2 w-[220px] shrink-0 overflow-hidden rounded">
       <Col className="bg-canvas-0 w-full px-4 py-2">
@@ -73,7 +78,9 @@ export const MatchTile = (props: {
           user={user}
           hideBadge
         />
-        <MatchedBy contract={contract} />
+        {matchCreatorId && !wasMatchedByALover && (
+          <MatchedBy contract={contract} />
+        )}
       </Col>
       <Col className="relative h-36 w-full overflow-hidden">
         {pinned_url ? (

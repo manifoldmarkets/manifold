@@ -50,11 +50,6 @@ const multipleChoiceSchema = z.object({
   expiresAt: z.number().optional(),
 })
 
-const numericSchema = z.object({
-  outcome: z.string(),
-  value: z.number(),
-})
-
 export const placebet = authEndpoint(async (req, auth, log) => {
   log(`Inside endpoint handler for ${auth.uid}.`)
   const isApi = auth.creds.kind === 'key'

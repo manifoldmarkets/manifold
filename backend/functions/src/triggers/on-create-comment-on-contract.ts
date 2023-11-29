@@ -251,7 +251,7 @@ export const handleCommentNotifications = async (
       })
     }
   }
-  // TODO: after feed goes live, remove non replied/mentioned users from notifications
+
   await createCommentOrAnswerOrUpdatedContractNotification(
     comment.id,
     'comment',

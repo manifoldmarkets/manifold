@@ -109,7 +109,10 @@ import { clearLoverPhoto } from './love/clear-lover-photo'
 import { editanswercpmm } from 'api/edit-answer'
 import { createlovecompatibilityquestion } from 'api/love/create-love-compatibility-question'
 
-const allowCors: RequestHandler = cors({
+import { markets } from 'api/v0/markets'
+
+const allowCorsUnrestricted: RequestHandler = cors({})
+const allowCorsManifold: RequestHandler = cors({
   origin: [
     CORS_ORIGIN_MANIFOLD,
     CORS_ORIGIN_MANIFOLD_LOVE,
@@ -140,14 +143,15 @@ const apiErrorHandler: ErrorRequestHandler = (err, _req, res, next) => {
   }
 }
 
+const apiRoute = (endpoint: RequestHandler) => {
+  return [allowCorsManifold, express.json(), endpoint, apiErrorHandler] as const
+}
+
 export const app = express()
 app.use(requestLogger)
 
-const apiRoute = (endpoint: RequestHandler) => {
-  return [allowCors, express.json(), endpoint, apiErrorHandler] as const
-}
-
-app.options('*', allowCors)
+// internal APIs
+app.options('*', allowCorsManifold)
 app.get('/health', ...apiRoute(health))
 app.get('/getcurrentuser', ...apiRoute(getcurrentuser))
 app.get('/unsubscribe', ...apiRoute(unsubscribe))
@@ -197,10 +201,10 @@ app.post('/save-topic', ...apiRoute(saveTopic))
 app.post('/boost-market', ...apiRoute(boostmarket))
 app.post('/redeem-boost', ...apiRoute(redeemboost))
 
-app.post('/createcheckoutsession', allowCors, createcheckoutsession)
+app.post('/createcheckoutsession', allowCorsManifold, createcheckoutsession)
 app.post(
   '/stripewebhook',
-  allowCors,
+  allowCorsManifold,
   express.raw({ type: '*/*' }),
   stripewebhook
 )
@@ -276,8 +280,17 @@ app.post(
   ...apiRoute(createlovecompatibilityquestion)
 )
 
+const publicApiRoute = (endpoint: RequestHandler) => {
+  return [allowCorsUnrestricted, express.json(), endpoint, apiErrorHandler] as const
+}
+
+
+// v0 public API routes (formerly vercel functions)
+app.options('/v0', allowCorsUnrestricted)
+app.get('/v0/markets', ...publicApiRoute(markets))
+
 // Catch 404 errors - this should be the last route
-app.use(allowCors, (req, res) => {
+app.use(allowCorsUnrestricted, (req, res) => {
   res
     .status(404)
     .set('Content-Type', 'application/json')

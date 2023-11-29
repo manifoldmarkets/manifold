@@ -16,14 +16,16 @@ import DropdownMenu from 'web/components/comments/dropdown-menu'
 import { deleteLover } from 'love/lib/supabase/lovers'
 import { ShareProfileButton } from './widgets/share-profile-button'
 import { Lover } from 'common/love/lover'
+import { useUser } from 'web/hooks/use-user'
 
 export default function LoverProfileHeader(props: {
-  isCurrentUser: boolean
-  currentUser: User | null | undefined
   user: User
   lover: Lover
 }) {
-  const { isCurrentUser, currentUser, user, lover } = props
+  const { user, lover } = props
+  const currentUser = useUser()
+  const isCurrentUser = currentUser?.id === user.id
+
   return (
     <Col className="w-full">
       <Row className={clsx('flex-wrap justify-between gap-2 py-1')}>

@@ -1,7 +1,11 @@
 import * as functions from 'firebase-functions'
-import { getUser, processPaginated, revalidateStaticProps } from 'shared/utils'
+import {
+  getUser,
+  processPaginated,
+  revalidateContractStaticProps,
+} from 'shared/utils'
 import { createCommentOrAnswerOrUpdatedContractNotification } from 'shared/create-notification'
-import { Contract, contractPath } from 'common/contract'
+import { Contract } from 'common/contract'
 import * as admin from 'firebase-admin'
 
 import { difference, isEqual } from 'lodash'
@@ -172,11 +176,6 @@ async function updateContractSubcollectionsVisibility(
     })
     return Promise.all(updatePromises)
   })
-}
-
-async function revalidateContractStaticProps(contract: Contract) {
-  await revalidateStaticProps(contractPath(contract))
-  await revalidateStaticProps(`/embed${contractPath(contract)}`)
 }
 
 const firestore = admin.firestore()

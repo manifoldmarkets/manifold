@@ -7,6 +7,7 @@ export type EnvConfig = {
   supabaseInstanceId: string
   supabaseAnonKey: string
   twitchBotEndpoint: string
+  apiEndpoint: string
   sprigEnvironmentId: string
 
   // IDs for v2 cloud functions -- find these by deploying a cloud function and
@@ -64,6 +65,7 @@ export const PROD_CONFIG: EnvConfig = {
     measurementId: 'G-SSFK1Q138D',
   },
   twitchBotEndpoint: 'https://twitch-bot.manifold.markets',
+  apiEndpoint: 'https://api.manifold.markets',
   cloudRunId: 'nggbo3neva',
   cloudRunRegion: 'uc',
 

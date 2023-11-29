@@ -80,7 +80,7 @@ export async function createMarketHelper(
     totalBounty,
     loverUserId1,
     loverUserId2,
-    matchCreatorId
+    matchCreatorId,
   } = validateMarketBody(body)
 
   const userId = auth.uid
@@ -93,7 +93,7 @@ export async function createMarketHelper(
     }
   }
 
-  let groups = groupIds
+  const groups = groupIds
     ? await Promise.all(
         groupIds.map(async (gId) =>
           getGroupCheckPermissions(gId, visibility, userId)
@@ -438,7 +438,7 @@ function validateMarketBody(body: any) {
     totalBounty,
     loverUserId1,
     loverUserId2,
-    matchCreatorId
+    matchCreatorId,
   }
 }
 

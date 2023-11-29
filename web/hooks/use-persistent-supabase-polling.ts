@@ -21,8 +21,8 @@ type PollingState =
 
 export function usePersistentSupabasePolling<T extends TableName>(
   table: T,
-  allRowsQ: PostgrestBuilder<T>,
-  onlyNewRowsQ: (results: Row<T>[] | undefined) => PostgrestBuilder<T>,
+  allRowsQ: PostgrestBuilder<Row<T>[]>,
+  onlyNewRowsQ: (results: Row<T>[] | undefined) => PostgrestBuilder<Row<T>[]>,
   key: string,
   opts?: PollingOptions
 ) {
@@ -34,14 +34,11 @@ export function usePersistentSupabasePolling<T extends TableName>(
   const [results, setResults] = (
     shouldUseLocalStorage ? usePersistentLocalState : usePersistentInMemoryState
   )<Row<T>[] | undefined>(undefined, key)
-
   const runOnlyNewRowsQ = useEvent(async () => {
-    const res = await run(onlyNewRowsQ(results))
-    return res.data as Row<T>[]
+    return (await run(onlyNewRowsQ(results))).data
   })
   const runAllRowsQ = useEvent(async () => {
-    const res = await run(allRowsQ)
-    return res.data as Row<T>[]
+    return (await run(allRowsQ)).data
   })
   const updateResults = useEvent((rows: Row<T>[]) => {
     setResults(insertChanges(table, results ?? [], rows))

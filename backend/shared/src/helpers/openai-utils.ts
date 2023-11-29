@@ -65,8 +65,13 @@ export const getCloseDate = async (question: string, utcOffset?: number) => {
   return utcTime.utcOffset(utcOffset ?? 0).valueOf()
 }
 
-export const generateImage = async (prompt: string) => {
+const imagePrompt = (q: string) =>
+  `Header image for a discussion thread about predicting "${q}". Do not include text.`
+
+export const generateImage = async (q: string) => {
   const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+  const prompt = imagePrompt(q)
+
   return await openai.images
     .generate({
       model: 'dall-e-3',
@@ -77,50 +82,4 @@ export const generateImage = async (prompt: string) => {
     })
     .then((res) => res.data[0].url)
     .catch((err) => (console.log(err), undefined))
-}
-
-export const getImagePrompt = async (question: string) => {
-  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
-  let response
-  try {
-    response = await openai.completions.create({
-      model: 'text-davinci-003',
-      prompt: `The following are some examples of prompts for titles to be fed into the Dalle-2 image generation model:\n\n
-      Title: "Will the new BART Transbay tube be completed by 2040"\n
-      Prompt: “A futuristic looking train seen from above the water crossing the SF bay area, with a sunny sky and a view of the Bay area in the background".\n
-      Title: "By 2040, will it be possible to take an electric VTOL aircraft on a trip of at least 75 miles for less than $100"\n
-      Prompt: “An electric personal aircraft flying over a glowing, cyberpunk city skyline, with bright stars in the night sky"\n
-      Title: "Will planned electricity shutdowns occur in France this winter?"\n
-      Prompt: "A snowy scene with a person walking in a parisian city and the eiffel tower in the background"\n
-      Title: "Will the United States' inflation rate be above 3% in 2023, 2024, and 2025?"\n
-      Prompt: "The US dollar bill with the edges frayed and slightly burnt"\n
-      Title: "Will proof emerge that the world is ruled by lizard people?"\n
-      Prompt: "A council of lizard people in suits and ties, seated around a conference table with the world in the background"\n
-      Title: "Will I live to be 200 years old?"\n
-      Prompt: "An old and wise-looking person sitting in a cozy, futuristic house with glowing lights hovering around the scene."\n
-      Title: "28. Will Twitter's net income be higher in 2023 than in 2022?"\n
-      Prompt: "A flock of colorful twitter logos above a city skyline with dollar signs in the background."\n
-      Please take the following title and create an image generator prompt, being very specific and detailed, that conveys a related concept:\n
-      Title: ${question}\n
-      Prompt:`,
-      temperature: 1,
-      max_tokens: 256,
-      top_p: 1,
-      frequency_penalty: 0,
-      presence_penalty: 0,
-    })
-  } catch (e: any) {
-    console.error(
-      'Error generating image prompt',
-      !process.env.OPENAI_API_KEY ? ' (no OpenAI API key found)' : '',
-      e.message
-    )
-    return undefined
-  }
-
-  const text = response.choices[0].text
-  if (!text) return undefined
-  console.log('AI-selected image prompt for question', question, ':', text)
-
-  return text
 }

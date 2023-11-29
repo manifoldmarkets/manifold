@@ -337,7 +337,8 @@ create table if not exists
     ) stored,
     fs_updated_time timestamp not null,
     deleted boolean default false,
-    group_slugs text[]
+    group_slugs text[],
+    views int default 0
   );
 
 alter table contracts enable row level security;
@@ -421,6 +422,7 @@ begin
                            when new.data ? 'groupSlugs' then jsonb_array_to_text_array((new.data) -> 'groupSlugs')
                            else null
         end;
+    new.views := coalesce(((new.data) ->> 'views')::int, 0);
   end if;
   return new;
 end
@@ -507,8 +509,8 @@ create index if not exists contract_bets_contract_user_id on contract_bets (cont
 /* serving the user bets API */
 create index if not exists contract_bets_user_id on contract_bets (user_id, created_time desc);
 
-/* serving the user bets API */
-create index if not exists contract_bets_answer_id on contract_bets (answer_id);
+create index if not exists contract_bets_answer_id_created_time
+    on contract_bets (answer_id, created_time desc);
 
 create index if not exists contract_bets_user_outstanding_limit_orders on contract_bets (
   user_id,

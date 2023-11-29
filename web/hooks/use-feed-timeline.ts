@@ -435,9 +435,14 @@ export const useFeedTimeline = (
 
 const getBaseTimelineItem = (item: Row<'user_feed'>) =>
   removeUndefinedProps({
-    ...convertSQLtoTS<'user_feed', FeedTimelineItem>(item, {
-      created_time: (ts) => tsToMillis(ts),
-    }),
+    ...convertSQLtoTS<'user_feed', FeedTimelineItem>(
+      item,
+      {
+        created_time: (ts) => tsToMillis(ts),
+      },
+      false
+    ),
+    data: item.data,
     supabaseTimestamp: item.created_time,
     reasonDescription: getExplanation(
       item.data_type as FEED_DATA_TYPES,
@@ -498,6 +503,16 @@ function createFeedTimelineItems(
           ).ignore
         )
           return
+        if (item.data_type === 'contract_probability_changed')
+          console.log(
+            'prob change',
+            contract.question,
+            getMarketMovementInfo(
+              contract,
+              dataType,
+              item.data as Record<string, any>
+            ).probChange
+          )
 
         // Let's stick with one comment per feed item for now
         const comments = allComments

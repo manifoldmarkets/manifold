@@ -1,20 +1,21 @@
 import { useMemo } from 'react'
-import { last } from 'lodash'
+import { first, last } from 'lodash'
 import { scaleTime, scaleLinear } from 'd3-scale'
 import { getProbability } from 'common/calculate'
 import { BinaryContract } from 'common/contract'
 import {
   TooltipProps,
-  getDateRange,
+  getEndDate,
   getRightmostVisibleDate,
   formatDateInRange,
   formatPct,
+  ZoomParams,
 } from '../helpers'
-import { ControllableSingleValueHistoryChart } from '../generic-charts'
+import { SingleValueHistoryChart } from '../generic-charts'
 import { Row } from 'web/components/layout/row'
 import { Avatar } from 'web/components/widgets/avatar'
 import { YES_GRAPH_COLOR } from 'common/envs/constants'
-import { HistoryPoint, viewScale } from 'common/chart'
+import { HistoryPoint } from 'common/chart'
 
 type BinaryPoint = HistoryPoint<{ userAvatarUrl?: string }>
 
@@ -40,8 +41,7 @@ export const BinaryContractChart = (props: {
   betPoints: BinaryPoint[]
   width: number
   height: number
-  viewScaleProps: viewScale
-  controlledStart?: number
+  zoomParams?: ZoomParams
   percentBounds?: { max?: number; min?: number }
   showZoomer?: boolean
 }) => {
@@ -49,14 +49,14 @@ export const BinaryContractChart = (props: {
     contract,
     width,
     height,
-    viewScaleProps,
-    controlledStart,
+    zoomParams,
     percentBounds,
     betPoints,
     showZoomer,
   } = props
-  const [start, end] = getDateRange(contract)
-  const rangeStart = controlledStart ?? start
+
+  const start = first(betPoints)?.x ?? contract.createdTime
+  const end = getEndDate(contract)
   const endP = getProbability(contract)
 
   const now = useMemo(() => Date.now(), [betPoints])
@@ -67,19 +67,19 @@ export const BinaryContractChart = (props: {
 
   const rightmostDate = getRightmostVisibleDate(end, last(betPoints)?.x, now)
 
-  const xScale = scaleTime([rangeStart, rightmostDate], [0, width])
+  const xScale = scaleTime([start, rightmostDate], [0, width])
   const yScale = scaleLinear(
     [percentBounds?.min ?? 0, percentBounds?.max ?? 1],
     [height, 0]
   )
 
   return (
-    <ControllableSingleValueHistoryChart
+    <SingleValueHistoryChart
       w={width}
       h={height}
       xScale={xScale}
       yScale={yScale}
-      viewScaleProps={viewScaleProps}
+      zoomParams={zoomParams}
       showZoomer={showZoomer}
       yKind="percent"
       data={data}
@@ -89,8 +89,8 @@ export const BinaryContractChart = (props: {
           {...props}
           dateLabel={formatDateInRange(
             // eslint-disable-next-line react/prop-types
-            xScale.invert(props.x),
-            rangeStart,
+            xScale.invert(props.x) ?? 0,
+            start,
             rightmostDate
           )}
         />

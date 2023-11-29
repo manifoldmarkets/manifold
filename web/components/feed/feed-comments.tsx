@@ -68,6 +68,9 @@ import { last, orderBy } from 'lodash'
 
 export type ReplyToUserInfo = { id: string; username: string }
 
+const roundThreadColor = 'border-ink-100 dark:border-ink-300'
+const straightThreadColor = 'bg-ink-100 dark:bg-ink-300'
+
 export function FeedCommentThread(props: {
   contract: Contract
   threadComments: ContractComment[]
@@ -169,7 +172,12 @@ export function FeedCommentThread(props: {
       )}
       {replyToUserInfo && (
         <div className="stop-prop flex">
-          <div className="border-ink-100 -mt-3 ml-4 h-7 w-4 rounded-bl-xl border-b-2 border-l-2" />
+          <div
+            className={clsx(
+              roundThreadColor,
+              '-mt-3 ml-4 h-7 w-4 rounded-bl-xl border-b-2 border-l-2'
+            )}
+          />
           <ContractCommentInput
             contract={contract}
             parentCommentId={parentComment.id}
@@ -265,7 +273,12 @@ export const FeedComment = memo(function FeedComment(props: {
         <Row className="relative">
           {/*// Curved reply line*/}
           {!isParent && (
-            <div className="border-ink-100 dark:border-ink-300 -mt-4 ml-4 h-6 w-4 rounded-bl-xl border-b-2 border-l-2" />
+            <div
+              className={clsx(
+                roundThreadColor,
+                '-mt-4 ml-4 h-6 w-4 rounded-bl-xl border-b-2 border-l-2'
+              )}
+            />
           )}
           <Avatar
             username={userUsername}
@@ -276,7 +289,8 @@ export const FeedComment = memo(function FeedComment(props: {
           {/* Outer vertical reply line*/}
           <div
             className={clsx(
-              'bg-ink-100 dark:bg-ink-300 absolute bottom-0 left-4 w-0.5',
+              straightThreadColor,
+              'absolute bottom-0 left-4 w-0.5',
               isParent ? 'top-0' : '-top-1',
               (!isBetParent || lastInReplyChain) && 'group-last:hidden'
             )}
@@ -285,7 +299,8 @@ export const FeedComment = memo(function FeedComment(props: {
           {isBetParent && !isParent && (
             <div
               className={clsx(
-                'bg-ink-100 dark:bg-ink-300 absolute bottom-0 left-10 top-0 w-0.5'
+                straightThreadColor,
+                'absolute bottom-0 left-10 top-0 w-0.5'
               )}
             />
           )}
@@ -329,17 +344,19 @@ export const FeedComment = memo(function FeedComment(props: {
                   className={'relative mt-1 w-full'}
                   key={bets.map((b) => b.id) + '-reply'}
                 >
-                  {/*// Curved bet reply line*/}
+                  {/* Curved bet reply line*/}
                   <div
                     className={clsx(
-                      'border-ink-100 dark:border-ink-300 rounded-bl-xl border-b-2 border-l-2 ',
+                      roundThreadColor,
+                      'rounded-bl-xl border-b-2 border-l-2 ',
                       isParent ? '-mt-2 ml-4 h-4 w-4' : '-mt-7 ml-10 h-10 w-4'
                     )}
                   />
                   {/* Outer vertical bet reply line*/}
                   <div
                     className={clsx(
-                      'bg-ink-100 dark:bg-ink-300 absolute bottom-0 left-4 w-0.5 group-last:hidden ',
+                      straightThreadColor,
+                      'absolute bottom-0 left-4 w-0.5 group-last:hidden ',
                       isParent ? 'top-0' : '-top-1'
                     )}
                   />
@@ -352,7 +369,8 @@ export const FeedComment = memo(function FeedComment(props: {
                   {/* Inner vertical bet reply line*/}
                   <div
                     className={clsx(
-                      'bg-ink-100 dark:bg-ink-300 absolute w-0.5 ',
+                      straightThreadColor,
+                      'absolute w-0.5 ',
                       isParent ? '  left-4 top-0' : '-top-1 left-10',
                       i === groupedBets.length - 1 ? 'hidden' : 'bottom-0'
                     )}
@@ -603,14 +621,14 @@ function CommentActions(props: {
         />
       )}
       {user && contract.outcomeType === 'BINARY' && (
-        <Tooltip text="Reply with a bet" placement="bottom">
-          <IconButton
-            onClick={() => {
-              setOutcome('YES')
-              setShowBetModal(true)
-            }}
-            size={'xs'}
-          >
+        <IconButton
+          onClick={() => {
+            setOutcome('YES')
+            setShowBetModal(true)
+          }}
+          size={'xs'}
+        >
+          <Tooltip text="Reply with a bet" placement="bottom">
             <Row className={'mt-0.5 gap-1'}>
               {diff != 0 && (
                 <span className="">{Math.round(Math.abs(diff))}</span>
@@ -623,23 +641,23 @@ function CommentActions(props: {
                 <FaArrowTrendUp className={'h-5 w-5'} />
               )}
             </Row>
-          </IconButton>
-        </Tooltip>
+          </Tooltip>
+        </IconButton>
       )}
       {user && onReplyClick && (
-        <Tooltip text="Reply with a comment" placement="bottom">
-          <IconButton
-            size={'xs'}
-            onClick={(e) => {
-              e.preventDefault()
-              e.stopPropagation()
-              onReplyClick(comment)
-            }}
-            className={'text-ink-500'}
-          >
+        <IconButton
+          size={'xs'}
+          onClick={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            onReplyClick(comment)
+          }}
+          className={'text-ink-500'}
+        >
+          <Tooltip text="Reply with a comment" placement="bottom">
             <ReplyIcon className="h-5 w-5 " />
-          </IconButton>
-        </Tooltip>
+          </Tooltip>
+        </IconButton>
       )}
       <LikeButton
         contentCreatorId={comment.userId}
@@ -977,7 +995,12 @@ export function CommentOnBetRow(props: {
 
   return (
     <Row className="ml-4 items-end text-sm">
-      <div className="border-ink-100 h-4 w-6 rounded-tl-xl border-2 border-b-0 border-r-0" />
+      <div
+        className={clsx(
+          roundThreadColor,
+          'h-4 w-6 rounded-tl-xl border-2 border-b-0 border-r-0'
+        )}
+      />
       <Row className="bg-ink-100 text-ink-600 relative items-center gap-1 whitespace-nowrap px-4 py-1">
         <UserLink
           user={{ id: '', name: bettorName, username: bettorUsername }}

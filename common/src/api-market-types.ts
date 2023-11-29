@@ -1,5 +1,4 @@
 import { JSONContent } from '@tiptap/core'
-import { Except } from 'type-fest'
 import { Answer, DpmAnswer } from 'common/answer'
 import { Bet } from 'common/bet'
 import { getAnswerProbability, getProbability } from 'common/calculate'
@@ -48,7 +47,7 @@ export type ApiAnswer =
   | (DpmAnswer & {
       probability: number
     })
-  | Except<
+  | Omit<
       Answer & {
         probability: number
         pool: { YES: number; NO: number }

@@ -1,6 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next'
 import { ApiError, ValidationError } from 'web/pages/api/v0/_types'
-import { applyCorsHeaders, CORS_UNRESTRICTED } from 'web/lib/api/cors'
+import { applyCorsHeaders } from 'web/lib/api/cors'
 import { contractUrl } from 'common/contract'
 import { filterDefined } from 'common/util/array'
 import { getComment, getCommentsOnPost } from 'web/lib/supabase/comments'
@@ -26,7 +26,7 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<LiteReport[] | ValidationError | ApiError>
 ) {
-  await applyCorsHeaders(req, res, CORS_UNRESTRICTED)
+  await applyCorsHeaders(req, res)
 
   const { data: mostRecentReports } = await run(
     db

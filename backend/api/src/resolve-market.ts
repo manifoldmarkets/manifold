@@ -88,12 +88,13 @@ export const resolvemarket = authEndpoint(async (req, auth, log) => {
     throw new APIError(404, 'No contract exists with the provided ID')
   const contract = contractSnap.data() as Contract
 
+  let answers: Answer[] = []
   if (contract.mechanism === 'cpmm-multi-1') {
     // Denormalize answers.
     const answersSnap = await firestore
       .collection(`contracts/${contractId}/answersCpmm`)
       .get()
-    const answers = answersSnap.docs.map((doc) => doc.data() as Answer)
+    answers = answersSnap.docs.map((doc) => doc.data() as Answer)
     contract.answers = answers
   }
 
@@ -114,7 +115,7 @@ export const resolvemarket = authEndpoint(async (req, auth, log) => {
 
   if ('answerId' in resolutionParams && 'answers' in contract) {
     const { answerId } = resolutionParams
-    const answer = contract.answers.find((a) => a.id === answerId)
+    const answer = answers.find((a) => a.id === answerId)
     if (answer && 'resolution' in answer && answer.resolution) {
       throw new APIError(403, `${answerId} answer is already resolved`)
     }

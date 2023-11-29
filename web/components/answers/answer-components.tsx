@@ -28,8 +28,10 @@ import { Row } from '../layout/row'
 import { EmptyAvatar, Avatar } from '../widgets/avatar'
 import { Linkify } from '../widgets/linkify'
 import { Tooltip } from '../widgets/tooltip'
-import { animated, SpringValue } from '@react-spring/web'
+import { animated } from '@react-spring/web'
 import { useAnimatedNumber } from 'web/hooks/use-animated-number'
+import { HOUR_MS } from 'common/util/time'
+import { SparklesIcon } from '@heroicons/react/solid'
 
 export const AnswerBar = (props: {
   color: string // 6 digit hex
@@ -121,7 +123,7 @@ export const AnswerLabel = (props: {
 
   return (
     <Tooltip text={answerTextTooltip}>
-      <Row className={clsx('my-1', className)}>
+      <span className={clsx('my-1', className)}>
         <Tooltip text={dateTooltip}>
           {creator === false ? (
             <EmptyAvatar className="mr-2 inline" size={4} />
@@ -135,7 +137,7 @@ export const AnswerLabel = (props: {
           ) : null}
         </Tooltip>
         <Linkify text={truncated} className="[&_a]:text-primary-800" />
-      </Row>
+      </span>
     </Tooltip>
   )
 }
@@ -269,12 +271,30 @@ export const MultiSeller = (props: {
   )
 }
 
-export const OpenProb = (props: { spring: SpringValue<number> }) => (
-  <span className=" min-w-[2.5rem] whitespace-nowrap text-lg font-bold">
-    <animated.div>{props.spring.to((val) => formatPercent(val))}</animated.div>
-  </span>
-)
-
+export const OpenProb = (props: {
+  contract: MultiContract
+  answer: Answer | DpmAnswer
+}) => {
+  const { contract, answer } = props
+  const spring = useAnimatedNumber(getAnswerProbability(contract, answer.id))
+  const cutoffTime = Date.now() - 6 * HOUR_MS
+  const isNew =
+    contract.createdTime < cutoffTime && answer.createdTime > cutoffTime
+  return (
+    <Row className={'items-center'}>
+      <span
+        className={clsx(' min-w-[2.5rem] whitespace-nowrap text-lg font-bold')}
+      >
+        <animated.div>{spring.to((val) => formatPercent(val))}</animated.div>
+      </span>
+      {isNew && (
+        <Tooltip text={'Recently submitted'}>
+          <SparklesIcon className="h-4 w-4 text-green-500" />
+        </Tooltip>
+      )}
+    </Row>
+  )
+}
 export const ClosedProb = (props: { prob: number; resolvedProb?: number }) => {
   const { prob, resolvedProb: resolveProb } = props
   return (
@@ -319,7 +339,6 @@ export const AnswerStatus = (props: {
     contract,
     'resolution' in answer ? answer : undefined
   )
-  const spring = useAnimatedNumber(getAnswerProbability(contract, answer.id))
 
   if (answerResolution) {
     return (
@@ -336,7 +355,7 @@ export const AnswerStatus = (props: {
     )
   }
   return isOpen ? (
-    <OpenProb spring={spring} />
+    <OpenProb contract={contract} answer={answer} />
   ) : (
     <ClosedProb prob={prob} resolvedProb={resolvedProb} />
   )

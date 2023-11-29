@@ -1,12 +1,5 @@
 import { Contract, CPMMContract, Visibility } from 'common/contract'
-import {
-  millisToTs,
-  run,
-  selectFrom,
-  selectJson,
-  SupabaseClient,
-  Tables,
-} from 'common/supabase/utils'
+import { run, selectFrom, SupabaseClient, Tables } from 'common/supabase/utils'
 import { filterDefined } from 'common/util/array'
 import { db } from './db'
 import { chunk, uniqBy } from 'lodash'
@@ -102,12 +95,6 @@ export async function getContracts(
   }
 }
 
-export const getPublicContract = async (id: string) => {
-  const { data } = await run(
-    db.from('public_contracts').select('data').eq('id', id)
-  )
-  return data && data.length > 0 ? (data[0].data as Contract) : null
-}
 export const getContract = async (id: string) => {
   const { data } = await run(db.from('contracts').select('data').eq('id', id))
   return data && data.length > 0 ? (data[0].data as Contract) : null
@@ -140,28 +127,6 @@ export const getRecentPublicContractRows = async (options: {
   return data as Tables['contracts']['Row'][]
 }
 
-// Only fetches contracts with 'public' visibility
-export const getPublicContracts = async (options: {
-  limit: number
-  beforeTime?: number
-  order?: 'asc' | 'desc'
-  userId?: string
-}) => {
-  let q = selectJson(db, 'public_contracts')
-  q = q.order('created_time', {
-    ascending: options?.order === 'asc',
-  } as any)
-  if (options.beforeTime) {
-    q = q.lt('created_time', millisToTs(options.beforeTime))
-  }
-  if (options?.userId) {
-    q = q.eq('user_id', options.userId)
-  }
-  q = q.limit(options.limit)
-  const { data } = await run(q)
-  return data.map((r) => r.data)
-}
-
 export async function getYourDailyChangedContracts(
   db: SupabaseClient,
   userId: string,
@@ -175,9 +140,7 @@ export async function getYourDailyChangedContracts(
 
   if (!data) return null
 
-  const contracts = filterDefined(
-    data.map((d) => (d as any).data)
-  ) as CPMMContract[]
+  const contracts = filterDefined(data.map((d) => d.data as CPMMContract))
   return contracts
 }
 
@@ -245,7 +208,7 @@ export async function getIsPrivateContractMember(
     this_contract_id: contractId,
     this_member_id: userId,
   })
-  return data as boolean | null
+  return data
 }
 
 export const getTrendingContracts = async (limit: number) => {

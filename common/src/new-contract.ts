@@ -28,7 +28,7 @@ export function getNewContract(props: {
   slug: string
   creator: User
   question: string
-  outcomeType: typeof CREATEABLE_OUTCOME_TYPES[number]
+  outcomeType: (typeof CREATEABLE_OUTCOME_TYPES)[number]
   description: JSONContent
   initialProb: number
   ante: number
@@ -120,6 +120,7 @@ export function getNewContract(props: {
     uniqueBettorCount: 0,
     lastUpdatedTime: createdTime,
 
+    views: 0,
     volume: 0,
     volume24Hours: 0,
     elasticity:
@@ -292,6 +293,7 @@ function createAnswers(
         shouldAnswersSumToOne &&
         addAnswersMode !== 'DISABLED' &&
         i === answers.length - 1,
+      probChanges: { day: 0, week: 0, month: 0 },
     }
     return answer
   })

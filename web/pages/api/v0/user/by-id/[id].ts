@@ -1,14 +1,14 @@
 import { NextApiRequest, NextApiResponse } from 'next'
 import { getUser } from 'web/lib/firebase/users'
 import { User } from 'common/user'
-import { applyCorsHeaders, CORS_UNRESTRICTED } from 'web/lib/api/cors'
+import { applyCorsHeaders } from 'web/lib/api/cors'
 import { ApiError } from '../../_types'
 
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<User | ApiError>
 ) {
-  await applyCorsHeaders(req, res, CORS_UNRESTRICTED)
+  await applyCorsHeaders(req, res)
   const { id } = req.query
   const user = await getUser(id as string)
   if (!user) {

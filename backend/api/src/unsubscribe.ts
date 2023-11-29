@@ -5,6 +5,7 @@ import { PrivateUser } from 'common/user'
 import { NOTIFICATION_DESCRIPTIONS } from 'common/notification'
 import { notification_preference } from 'common/user-notification-preferences'
 import { getApiUrl } from 'common/api'
+import { trackPublicEvent } from 'shared/analytics'
 
 export const unsubscribe = async (req: Request, res: Response) => {
   const id = req.query.id as string
@@ -48,6 +49,10 @@ export const unsubscribe = async (req: Request, res: Response) => {
       [notificationSubscriptionType]: newDestinations,
     },
   }
+
+  await trackPublicEvent(id, 'unsubscribe from emails', {
+    type: notificationSubscriptionType,
+  })
 
   await firestore.collection('private-users').doc(id).update(update)
   const unsubscribeEndpoint = getApiUrl('unsubscribe')
