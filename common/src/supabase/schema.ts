@@ -896,9 +896,9 @@ export interface Database {
           creator_id: string
           explanation: string | null
           id: number
-          importance: number | null
-          multiple_choice: number | null
-          pref_choices: number[] | null
+          importance: number
+          multiple_choice: number
+          pref_choices: number[] 
           question_id: number
         }
         Insert: {
@@ -906,9 +906,9 @@ export interface Database {
           creator_id: string
           explanation?: string | null
           id?: never
-          importance?: number | null
-          multiple_choice?: number | null
-          pref_choices?: number[] | null
+          importance: number 
+          multiple_choice: number
+          pref_choices: number[] 
           question_id: number
         }
         Update: {
@@ -916,9 +916,9 @@ export interface Database {
           creator_id?: string
           explanation?: string | null
           id?: never
-          importance?: number | null
-          multiple_choice?: number | null
-          pref_choices?: number[] | null
+          importance: number
+          multiple_choice: number
+          pref_choices: number[] 
           question_id?: number
         }
         Relationships: []

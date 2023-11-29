@@ -12,7 +12,6 @@ const bodySchema = z.object({
 export const createlovecompatibilityquestion = authEndpoint(
   async (req, auth) => {
     const { question, options } = validate(bodySchema, req.body)
-    console.log(question, options)
 
     const creator = await getUser(auth.uid)
     if (!creator) throw new APIError(401, 'Your account was not found')
@@ -33,7 +32,6 @@ export const createlovecompatibilityquestion = authEndpoint(
       .insert(compatibilityQuestionData)
       .select()
 
-    console.log(result)
     if (result.error) throw new APIError(401, 'Error creating question')
 
     return { status: 'success', question: result.data[0] }

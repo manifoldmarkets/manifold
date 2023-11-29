@@ -5,9 +5,9 @@ create table if not exists
     creator_id text not null,
     created_time timestamptz not null default now(),
     explanation text null,
-    multiple_choice integer,
-    pref_choices integer[],
-    importance integer
+    multiple_choice integer not null,
+    pref_choices integer[] not null,
+    importance integer not null
   );
 
 alter table love_compatibility_answers
