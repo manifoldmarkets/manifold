@@ -20,14 +20,13 @@ alter table love_answers enable row level security;
 
 drop policy if exists "public read" on love_answers;
 
-create policy "public read" on love_answers using (true);
+create policy "public read" on love_answers for select using (true);
 
 drop policy if exists "self update" on love_answers;
 
 create policy "self update" on love_answers
 for update
-with
-  check (creator_id = firebase_uid ());
+using (creator_id = firebase_uid ());
 
 drop policy if exists "self insert" on love_answers;
 

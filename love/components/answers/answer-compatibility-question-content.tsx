@@ -48,34 +48,38 @@ export const submitCompatibilityAnswer = async (
   if (!newAnswer) return
   const input = {
     ...filterKeys(newAnswer, (key, _) => !['id', 'created_time'].includes(key)),
-  }
-  await run(
-    db
-      .from('love_compatibility_answers')
-      .upsert(input as CompatibilityAnswerSubmitType, {
-        onConflict: 'question_id,creator_id',
-      })
+  } as CompatibilityAnswerSubmitType
+  console.log('INPUT', input)
+  const result = await run(
+    db.from('love_compatibility_answers').upsert(input, {
+      onConflict: 'question_id,creator_id',
+    })
   )
+  console.log('RESULT', result)
 }
 
 export function AnswerCompatibilityQuestionContent(props: {
   compatibilityQuestion: rowFor<'love_questions'>
   user: User
+  answer?: rowFor<'love_compatibility_answers'> | null
   onSubmit: () => void
   onNext?: () => void
   isLastQuestion: boolean
 }) {
   const { compatibilityQuestion, user, onSubmit, isLastQuestion, onNext } =
     props
+  const [answer, setAnswer] = useState<CompatibilityAnswerSubmitType>(
+    (props.answer as CompatibilityAnswerSubmitType) ?? {
+      creator_id: user.id,
+      explanation: null,
+      multiple_choice: -1,
+      pref_choices: [],
+      question_id: compatibilityQuestion.id,
+      importance: -1,
+    }
+  )
 
-  const [answer, setAnswer] = useState<CompatibilityAnswerSubmitType>({
-    creator_id: user.id,
-    explanation: null,
-    multiple_choice: -1,
-    pref_choices: [],
-    question_id: compatibilityQuestion.id,
-    importance: -1,
-  })
+  console.log('ANSWER', answer)
 
   const [loading, setLoading] = useState(false)
   if (

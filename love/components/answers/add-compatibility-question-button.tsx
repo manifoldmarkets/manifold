@@ -23,10 +23,9 @@ import { db } from 'web/lib/supabase/db'
 import { uniq } from 'lodash'
 
 export function AddCompatibilityQuestionButton(props: {
-  refreshCompatibilityAnswers: () => void
-  refreshQuestions: () => void
+  refreshCompatibilityAll: () => void
 }) {
-  const { refreshCompatibilityAnswers, refreshQuestions } = props
+  const { refreshCompatibilityAll } = props
   const [open, setOpen] = useState(false)
   const user = useUser()
   if (!user) return null
@@ -43,8 +42,7 @@ export function AddCompatibilityQuestionButton(props: {
         setOpen={setOpen}
         user={user}
         onClose={() => {
-          refreshCompatibilityAnswers()
-          refreshQuestions()
+          refreshCompatibilityAll()
         }}
       />
     </>
