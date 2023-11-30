@@ -992,6 +992,15 @@ We began in 1996 by archiving the Internet itself, a medium that was just beginn
     description:
       'Mareworthy Charities exists to develop and manage programs that ensure all Thoroughbred mares whose racing and breeding careers have ended are tracked and provided with care that protects them from suffering and cruelty with a focus on Thoroughbred warhorse mares (mares who raced more than 50 times) and retired Thoroughbred broodmares. Currently the sanctuary space is in its infancy with limited space in Kentucky, but the future dream is to acquire a larger property that can be home to a larger herd. Until then, Mareworthy Charities is developing a network of approved forever foster homes for eligible mares. We rely on donations, merchandise sales, and any other creative ways we can support the horses we love. Your donation, no matter the size, truly makes a difference!',
   },
+  {
+    name: 'The Human Rights Foundation',
+    website: 'https://hrf.org/',
+    photo: 'https://i.imgur.com/ESrnCq5.png',
+    preview:
+      'A nonpartisan, nonprofit organization that promotes and protects human rights globally, with a focus on closed societies.',
+    description:
+      'We promote freedom where it’s most at risk: in countries ruled by authoritarian regimes. Individuals who suffer under authoritarianism are more likely to: lack food and clean drinking water; lack access to basic education; live in extreme poverty; face war and civil strife; become a refugee; lack freedom of speech and voting rights; and face constant threats of imprisonment, torture, violence, and death.',
+  },
 
   {
     name: 'The Shrimp Welfare Project',

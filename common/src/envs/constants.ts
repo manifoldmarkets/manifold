@@ -120,6 +120,10 @@ export const BOT_USERNAMES = [
   'echo',
   'Sayaka',
   'cc7',
+  'Yuna',
+  'ManifoldLove',
+  'chooterb0t',
+  'bonkbot',
 ]
 
 export const MOD_IDS = [
