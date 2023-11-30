@@ -76,7 +76,7 @@ export function ContractSummaryStats(props: {
               noTap
               className="flex flex-row items-center gap-1"
             >
-              <TbDropletFilled className="stroke-ink-500 h-4 w-4 stroke-[3]" />
+              <TbDropletFilled className="text-ink-500 h-4 w-4 stroke-[3]" />
               <div>
                 {ENV_CONFIG.moneyMoniker}
                 {shortFormatNumber(contract.totalLiquidity)}

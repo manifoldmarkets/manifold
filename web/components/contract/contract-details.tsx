@@ -127,9 +127,9 @@ export function CloseDate(props: {
               className="flex items-center gap-1"
             >
               {dayjs().isBefore(closeTime) ? (
-                <FaClock className=" h-3.5 w-3.5" />
+                <FaClock className="text-ink-500 h-3.5 w-3.5" />
               ) : (
-                <MdLockClock className="h-5 w-5" />
+                <MdLockClock className="text-ink-500 h-5 w-5" />
               )}
               {isSameDay
                 ? fromNow(closeTime)
