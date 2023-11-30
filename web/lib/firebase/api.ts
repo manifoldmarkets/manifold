@@ -14,7 +14,6 @@ import { ReportProps } from 'common/report'
 import { BaseDashboard, Dashboard, DashboardItem } from 'common/dashboard'
 import { Bet } from 'common/bet'
 import { LinkPreview } from 'common/link-preview'
-import { Json } from 'common/supabase/schema'
 
 export { APIError } from 'common/api'
 
