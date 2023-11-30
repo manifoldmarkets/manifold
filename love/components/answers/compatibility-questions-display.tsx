@@ -1,29 +1,27 @@
-import { Col } from 'web/components/layout/col'
-import { AddCompatibilityQuestionButton } from './add-compatibility-question-button'
-import { Subtitle } from '../widgets/lover-subtitle'
+import clsx from 'clsx'
+import { isAdminId } from 'common/envs/constants'
+import { Row as rowFor } from 'common/supabase/utils'
 import { User } from 'common/user'
+import { lowerCase, partition } from 'lodash'
 import {
   QuestionWithCountType,
   useUserCompatibilityAnswers,
 } from 'love/hooks/use-questions'
 import { useState } from 'react'
-import { useUser } from 'web/hooks/use-user'
-import { isAdminId } from 'common/envs/constants'
-import { AnswerCompatibilityQuestionButton } from './answer-compatibility-question-button'
-import { partition } from 'lodash'
+import { FaExclamation } from 'react-icons/fa'
+import { GoDash } from 'react-icons/go'
+import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
-import { Row as rowFor } from 'common/supabase/utils'
+import { Linkify } from 'web/components/widgets/linkify'
+import { Tooltip } from 'web/components/widgets/tooltip'
+import { useUser } from 'web/hooks/use-user'
+import { Subtitle } from '../widgets/lover-subtitle'
+import { AddCompatibilityQuestionButton } from './add-compatibility-question-button'
+import { AnswerCompatibilityQuestionButton } from './answer-compatibility-question-button'
 import {
   IMPORTANCE_CHOICES,
   IMPORTANCE_DISPLAY_COLORS,
 } from './answer-compatibility-question-content'
-import clsx from 'clsx'
-import { CheckCircleIcon } from '@heroicons/react/outline'
-import { Linkify } from 'web/components/widgets/linkify'
-import { FaExclamation } from 'react-icons/fa'
-import { GoDash } from 'react-icons/go'
-import { Tooltip } from 'web/components/widgets/tooltip'
-import { lowerCase } from 'lodash'
 
 export function CompatibilityQuestionsDisplay(props: {
   isCurrentUser: boolean
@@ -117,7 +115,6 @@ function CompatibilityAnswerBlock(props: {
         <ImportanceDisplay importance={answer.importance} user={user} />
       </Row>
       <Row className="bg-canvas-50 w-fit gap-1 rounded py-1 pl-2 pr-3 text-sm">
-        {/* <CheckCircleIcon className="text-ink-600 mt-0.5 h-4 w-4 shrink-0" /> */}
         {answerText}
       </Row>
       {answer.explanation && (
