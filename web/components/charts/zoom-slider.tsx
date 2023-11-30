@@ -3,7 +3,6 @@ import { ZoomParams, formatDateInRange } from './helpers'
 import clsx from 'clsx'
 import { useMemo } from 'react'
 import { Col } from '../layout/col'
-import { Row } from '../layout/row'
 import { clamp } from 'lodash'
 
 // assumes x is time and we're zooming over a time period
