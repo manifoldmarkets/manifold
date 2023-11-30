@@ -32,7 +32,7 @@ export function AnswerCompatibilityQuestionButton(props: {
         setOpen={setOpen}
         user={user}
         otherQuestions={otherQuestions}
-        refreshCompatibilityAnswers={refreshCompatibilityAnswers}
+      refreshCompatibilityAnswers={refreshCompatibilityAnswers}
         refreshQuestions={refreshQuestions}
       />
     </>
