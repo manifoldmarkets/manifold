@@ -6,7 +6,7 @@ import dayjs from 'dayjs'
 import { formatPercent } from 'common/util/format'
 import { Row } from '../layout/row'
 import { SingleValueHistoryChart } from './generic-charts'
-import { TooltipProps } from './helpers'
+import { TooltipProps, useZoom } from './helpers'
 import { SizedContainer } from 'web/components/sized-container'
 import { HistoryPoint } from 'common/chart'
 import { curveLinear } from 'd3-shape'
@@ -47,6 +47,9 @@ export function DailyChart(props: {
 }) {
   const { dailyValues, startDate, excludeFirstDays, pct } = props
 
+  const zoomParams = useZoom()
+  const [xMin, xMax] = zoomParams.viewXScale.domain()
+
   const data = useMemo(
     () => getPoints(startDate, dailyValues ?? []).slice(excludeFirstDays ?? 0),
     [startDate, dailyValues, excludeFirstDays]
@@ -56,7 +59,12 @@ export function DailyChart(props: {
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const maxDate = max(data.map((d) => d.x))!
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  const maxValue = max(data.map((d) => d.y))!
+  const maxValue = max(
+    data
+      .filter((d) => d.x >= xMin.valueOf() && d.x <= xMax.valueOf())
+      .map((d) => d.y)
+  )!
+
   return (
     <SizedContainer className="mb-10 h-[150px] pr-16 sm:h-[250px] sm:pr-0">
       {(width, height) => (
@@ -70,6 +78,7 @@ export function DailyChart(props: {
           Tooltip={pct ? DailyPercentTooltip : DailyCountTooltip}
           color="#11b981"
           curve={curveLinear}
+          zoomParams={zoomParams}
           showZoomer
         />
       )}
