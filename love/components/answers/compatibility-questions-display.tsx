@@ -50,8 +50,11 @@ export function CompatibilityQuestionsDisplay(props: {
       } Compatibility Prompts`}</Subtitle>
       {yourQuestions.length <= 0 ? (
         <span className="text-ink-600 text-sm">
-          You haven't answered any compatibility questions yet! Add some to
-          better see who you'd be most compatible with.
+          {isCurrentUser ? "You haven't" : `${user.name} hasn't`} answered any
+          compatibility questions yet!{' '}
+          {isCurrentUser && (
+            <>Add some to better see who you'd be most compatible with.</>
+          )}
         </span>
       ) : (
         <>
@@ -67,7 +70,7 @@ export function CompatibilityQuestionsDisplay(props: {
           })}
         </>
       )}
-      {otherQuestions.length >= 1 && (
+      {otherQuestions.length >= 1 && isCurrentUser && (
         <AnswerCompatibilityQuestionButton
           user={user}
           otherQuestions={otherQuestions}
@@ -75,7 +78,7 @@ export function CompatibilityQuestionsDisplay(props: {
           refreshQuestions={refreshQuestions}
         />
       )}
-      {(otherQuestions.length < 1 || isAdminId(user?.id)) && (
+      {(otherQuestions.length < 1 || isAdminId(user?.id)) && isCurrentUser && (
         <AddCompatibilityQuestionButton
           refreshCompatibilityAnswers={refreshCompatibilityAnswers}
           refreshQuestions={refreshQuestions}
