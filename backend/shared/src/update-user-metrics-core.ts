@@ -147,7 +147,8 @@ export async function updateUserMetricsCore() {
     const metricsByContract = calculateMetricsByContractAndAnswer(
       metricRelevantBetsByContract,
       contractsById,
-      user
+      user,
+      answersByContractId
     ).flat()
 
     await bulkUpdateContractMetrics(metricsByContract).catch((e) => {
