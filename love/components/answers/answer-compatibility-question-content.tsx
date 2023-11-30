@@ -49,7 +49,6 @@ export const submitCompatibilityAnswer = async (
   const input = {
     ...filterKeys(newAnswer, (key, _) => !['id', 'created_time'].includes(key)),
   }
-  console.log('INPUT', input)
   await run(
     db
       .from('love_compatibility_answers')
@@ -108,8 +107,6 @@ export function AnswerCompatibilityQuestionContent(props: {
   const prefChoicesValid = answer.pref_choices && answer.pref_choices.length > 0
 
   const importanceValid = answer.importance !== null && answer.importance !== -1
-
-  console.log(answer)
 
   return (
     <Col className="h-full w-full gap-4">
