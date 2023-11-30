@@ -20,7 +20,6 @@ export function AnswerCompatibilityQuestionButton(props: {
     refreshQuestions,
   } = props
   const [open, setOpen] = useState(false)
-  console.log(otherQuestions)
   if (!user) return null
   return (
     <>
@@ -32,7 +31,7 @@ export function AnswerCompatibilityQuestionButton(props: {
         setOpen={setOpen}
         user={user}
         otherQuestions={otherQuestions}
-      refreshCompatibilityAnswers={refreshCompatibilityAnswers}
+        refreshCompatibilityAnswers={refreshCompatibilityAnswers}
         refreshQuestions={refreshQuestions}
       />
     </>
