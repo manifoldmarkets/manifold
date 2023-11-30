@@ -20,6 +20,9 @@ export interface Database {
           pool_no: number | null
           pool_yes: number | null
           prob: number | null
+          prob_change_day: number | null
+          prob_change_month: number | null
+          prob_change_week: number | null
           subsidy_pool: number | null
           text: string | null
           text_fts: unknown | null
@@ -36,6 +39,9 @@ export interface Database {
           pool_no?: number | null
           pool_yes?: number | null
           prob?: number | null
+          prob_change_day?: number | null
+          prob_change_month?: number | null
+          prob_change_week?: number | null
           subsidy_pool?: number | null
           text?: string | null
           text_fts?: unknown | null
@@ -52,6 +58,9 @@ export interface Database {
           pool_no?: number | null
           pool_yes?: number | null
           prob?: number | null
+          prob_change_day?: number | null
+          prob_change_month?: number | null
+          prob_change_week?: number | null
           subsidy_pool?: number | null
           text?: string | null
           text_fts?: unknown | null
@@ -406,6 +415,7 @@ export interface Database {
           resolution_probability: number | null
           resolution_time: string | null
           slug: string | null
+          views: number | null
           visibility: string | null
         }
         Insert: {
@@ -429,6 +439,7 @@ export interface Database {
           resolution_probability?: number | null
           resolution_time?: string | null
           slug?: string | null
+          views?: number | null
           visibility?: string | null
         }
         Update: {
@@ -452,6 +463,7 @@ export interface Database {
           resolution_probability?: number | null
           resolution_time?: string | null
           slug?: string | null
+          views?: number | null
           visibility?: string | null
         }
         Relationships: []
@@ -1757,6 +1769,30 @@ export interface Database {
         }
         Relationships: []
       }
+      scheduler_info: {
+        Row: {
+          created_time: string
+          id: number
+          job_name: string
+          last_end_time: string | null
+          last_start_time: string | null
+        }
+        Insert: {
+          created_time?: string
+          id?: never
+          job_name: string
+          last_end_time?: string | null
+          last_start_time?: string | null
+        }
+        Update: {
+          created_time?: string
+          id?: never
+          job_name?: string
+          last_end_time?: string | null
+          last_start_time?: string | null
+        }
+        Relationships: []
+      }
       stats: {
         Row: {
           daily_values: number[] | null
@@ -3010,6 +3046,7 @@ export interface Database {
           resolution_probability: number | null
           resolution_time: string | null
           slug: string | null
+          views: number | null
           visibility: string | null
         }[]
       }
@@ -3275,6 +3312,7 @@ export interface Database {
           resolution_probability: number | null
           resolution_time: string | null
           slug: string | null
+          views: number | null
           visibility: string | null
         }[]
       }

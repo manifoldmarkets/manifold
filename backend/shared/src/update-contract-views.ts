@@ -6,7 +6,10 @@ import {
 import { GCPLog, log as oldLog } from 'shared/utils'
 import { uniq } from 'lodash'
 
-export async function updateContractViews(log: GCPLog = oldLog) {
+export async function updateContractViews(
+  log: GCPLog = oldLog,
+  lastEndTime?: number
+) {
   const firestore = admin.firestore()
   const pg = createSupabaseDirectClient()
   log('Loading contract data...')
@@ -16,15 +19,24 @@ export async function updateContractViews(log: GCPLog = oldLog) {
   const contractIds = Object.keys(contractsToViews)
   log(`Loaded ${contractIds.length} contracts.`)
 
-  log('Computing views...')
-  const views = await getViews(pg)
+  log(
+    'Computing contract views from time: ' +
+      new Date(lastEndTime ?? 0).toISOString()
+  )
+  const views = await getViews(pg, lastEndTime ?? 0)
 
   log('Computing view updates...')
   let writes = 0
+  const addViews = (lastEndTime ?? 0) > 0
+  log(`Adding views: ${addViews}. If false, then setting views.`)
   const writer = firestore.bulkWriter()
   for (const contractId of contractIds) {
+    let totalViews = contractsToViews[contractId] ?? 0
+    if (addViews) totalViews += views[contractId] ?? 0
+    else totalViews = views[contractId] ?? 0
+
     const update = {
-      views: views[contractId] ?? 0,
+      views: totalViews,
     }
 
     if (contractsToViews[contractId] !== update.views) {
@@ -39,10 +51,10 @@ export async function updateContractViews(log: GCPLog = oldLog) {
   log('Done.')
 }
 
-const getViews = async (pg: SupabaseDirectClient) => {
+const getViews = async (pg: SupabaseDirectClient, from: number) => {
   const [signedInViews, signedOutViews] = await Promise.all([
-    getSignedInViews(pg),
-    getSignedOutViews(pg),
+    getSignedInViews(pg, from),
+    getSignedOutViews(pg, from),
   ])
   return Object.fromEntries(
     uniq(Object.keys(signedInViews).concat(Object.keys(signedOutViews))).map(
@@ -54,7 +66,7 @@ const getViews = async (pg: SupabaseDirectClient) => {
     )
   )
 }
-const getSignedInViews = async (pg: SupabaseDirectClient) => {
+const getSignedInViews = async (pg: SupabaseDirectClient, from: number) => {
   return Object.fromEntries(
     await pg.map(
       `select
@@ -63,15 +75,16 @@ const getSignedInViews = async (pg: SupabaseDirectClient) => {
      from
          user_seen_markets
      where type = 'view market'
+     and created_time > millis_to_ts($1)
      group by
          contract_id;
     `,
-      [],
+      [from],
       (r) => [r.contract_id, r.logged_in_user_seen_markets_count]
     )
   )
 }
-const getSignedOutViews = async (pg: SupabaseDirectClient) => {
+const getSignedOutViews = async (pg: SupabaseDirectClient, from: number) => {
   return Object.fromEntries(
     await pg.map(
       `select
@@ -82,10 +95,11 @@ const getSignedOutViews = async (pg: SupabaseDirectClient) => {
      where
        name = 'view market'
        and user_id is null
+     and ts > millis_to_ts($1)
      group by
          contract_id;
     `,
-      [],
+      [from],
       (r) => [r.contract_id, r.logged_out_user_seen_markets_count]
     )
   )

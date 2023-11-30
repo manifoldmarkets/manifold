@@ -3,6 +3,7 @@ import { addTrendingFeedContracts } from './add-trending-feed-contracts'
 import { updateContractMetricsCore } from 'shared/update-contract-metrics-core'
 import { sendOnboardingNotificationsInternal } from 'shared/onboarding-helpers'
 import { updateContractViews } from 'shared/update-contract-views'
+import { updateUserMetricsCore } from 'shared/update-user-metrics-core'
 
 export function createJobs() {
   return [
@@ -22,5 +23,10 @@ export function createJobs() {
       sendOnboardingNotificationsInternal
     ),
     createJob('update-contract-views', '0 0 * * * *', updateContractViews),
+    createJob(
+      'update-user-metrics',
+      '0 */10 * * * *', // every 10 minutes
+      updateUserMetricsCore
+    ),
   ]
 }

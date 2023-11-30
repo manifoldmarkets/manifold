@@ -40,7 +40,7 @@ if [ "${INITIALIZE}" = true ]; then
            --zone ${ZONE} \
            --address ${SERVICE_NAME} \
            --container-image ${IMAGE_URL} \
-           --machine-type n2-standard-2 \
+           --machine-type n2-standard-4 \
            --container-env ENVIRONMENT=${ENVIRONMENT} \
            --container-env GOOGLE_CLOUD_PROJECT=${GCLOUD_PROJECT} \
            --scopes default,cloud-platform \
