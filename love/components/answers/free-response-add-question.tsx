@@ -38,7 +38,7 @@ export function AddQuestionButton(props: {
       >
         <Row className="items-center gap-1">
           <PlusIcon className="h-4 w-4" />
-          Add A Prompt
+          Add Free Response
         </Row>
       </Button>
       <AddQuestionModal

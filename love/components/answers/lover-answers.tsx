@@ -41,6 +41,12 @@ export function LoverAnswers(props: { isCurrentUser: boolean; user: User }) {
 
   return (
     <Col className={'mt-2 gap-5'}>
+      <CompatibilityQuestionsDisplay
+        isCurrentUser={isCurrentUser}
+        user={user}
+        allQuestions={compatibilityQuestions}
+        refreshQuestions={refreshQuestions}
+      />
       <FreeResponseDisplay
         answers={otherAnswers}
         yourQuestions={yourFRQuestions}
@@ -48,12 +54,6 @@ export function LoverAnswers(props: { isCurrentUser: boolean; user: User }) {
         isCurrentUser={isCurrentUser}
         user={user}
         refreshAnswers={refreshAnswers}
-      />
-      <CompatibilityQuestionsDisplay
-        isCurrentUser={isCurrentUser}
-        user={user}
-        allQuestions={compatibilityQuestions}
-        refreshQuestions={refreshQuestions}
       />
     </Col>
   )

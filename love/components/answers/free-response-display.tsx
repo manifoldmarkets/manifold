@@ -59,7 +59,7 @@ export function FreeResponseDisplay(props: {
       <Row className={'w-full items-center justify-between gap-2'}>
         <Subtitle>{`${
           isCurrentUser ? 'Your' : user.name.split(' ')[0] + `'s`
-        } Prompts`}</Subtitle>
+        } Free Response`}</Subtitle>
       </Row>
 
       <Col className="gap-2">
