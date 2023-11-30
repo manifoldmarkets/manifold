@@ -10,15 +10,9 @@ import { QuestionWithCountType } from 'love/hooks/use-questions'
 export function AnswerCompatibilityQuestionButton(props: {
   user: User | null | undefined
   otherQuestions: QuestionWithCountType[]
-  refreshCompatibilityAnswers: () => void
-  refreshQuestions: () => void
+  refreshCompatibilityAll: () => void
 }) {
-  const {
-    user,
-    otherQuestions,
-    refreshCompatibilityAnswers,
-    refreshQuestions,
-  } = props
+  const { user, otherQuestions, refreshCompatibilityAll } = props
   const [open, setOpen] = useState(false)
   if (!user) return null
   return (
@@ -31,8 +25,7 @@ export function AnswerCompatibilityQuestionButton(props: {
         setOpen={setOpen}
         user={user}
         otherQuestions={otherQuestions}
-        refreshCompatibilityAnswers={refreshCompatibilityAnswers}
-        refreshQuestions={refreshQuestions}
+        refreshCompatibilityAll={refreshCompatibilityAll}
       />
     </>
   )
@@ -43,25 +36,16 @@ function AnswerCompatibilityQuestionModal(props: {
   setOpen: (open: boolean) => void
   user: User
   otherQuestions: QuestionWithCountType[]
-  refreshCompatibilityAnswers: () => void
-  refreshQuestions: () => void
+  refreshCompatibilityAll: () => void
 }) {
-  const {
-    open,
-    setOpen,
-    user,
-    otherQuestions,
-    refreshCompatibilityAnswers,
-    refreshQuestions,
-  } = props
+  const { open, setOpen, user, otherQuestions, refreshCompatibilityAll } = props
   const [questionIndex, setQuestionIndex] = useState(0)
   return (
     <Modal
       open={open}
       setOpen={setOpen}
       onClose={() => {
-        refreshCompatibilityAnswers()
-        refreshQuestions()
+        refreshCompatibilityAll()
         setQuestionIndex(0)
       }}
     >

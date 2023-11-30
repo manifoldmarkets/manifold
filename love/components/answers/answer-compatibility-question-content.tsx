@@ -48,34 +48,42 @@ export const submitCompatibilityAnswer = async (
   if (!newAnswer) return
   const input = {
     ...filterKeys(newAnswer, (key, _) => !['id', 'created_time'].includes(key)),
-  }
-  await run(
-    db
-      .from('love_compatibility_answers')
-      .upsert(input as CompatibilityAnswerSubmitType, {
-        onConflict: 'question_id,creator_id',
-      })
+  } as CompatibilityAnswerSubmitType
+
+  const result = await run(
+    db.from('love_compatibility_answers').upsert(input, {
+      onConflict: 'question_id,creator_id',
+    })
   )
 }
 
 export function AnswerCompatibilityQuestionContent(props: {
   compatibilityQuestion: rowFor<'love_questions'>
   user: User
+  answer?: rowFor<'love_compatibility_answers'> | null
   onSubmit: () => void
   onNext?: () => void
   isLastQuestion: boolean
+  noSkip?: boolean
 }) {
-  const { compatibilityQuestion, user, onSubmit, isLastQuestion, onNext } =
-    props
-
-  const [answer, setAnswer] = useState<CompatibilityAnswerSubmitType>({
-    creator_id: user.id,
-    explanation: null,
-    multiple_choice: -1,
-    pref_choices: [],
-    question_id: compatibilityQuestion.id,
-    importance: -1,
-  })
+  const {
+    compatibilityQuestion,
+    user,
+    onSubmit,
+    isLastQuestion,
+    onNext,
+    noSkip,
+  } = props
+  const [answer, setAnswer] = useState<CompatibilityAnswerSubmitType>(
+    (props.answer as CompatibilityAnswerSubmitType) ?? {
+      creator_id: user.id,
+      explanation: null,
+      multiple_choice: -1,
+      pref_choices: [],
+      question_id: compatibilityQuestion.id,
+      importance: -1,
+    }
+  )
 
   const [loading, setLoading] = useState(false)
   if (
@@ -218,12 +226,14 @@ export function AnswerCompatibilityQuestionContent(props: {
           >
             {isLastQuestion ? 'Finish' : 'Next'}
           </Button>
-          <button
-            onClick={onNext}
-            className="text-ink-500 text-sm hover:underline"
-          >
-            Skip
-          </button>
+          {!noSkip && (
+            <button
+              onClick={onNext}
+              className="text-ink-500 text-sm hover:underline"
+            >
+              Skip
+            </button>
+          )}
         </Col>
       </Row>
     </Col>

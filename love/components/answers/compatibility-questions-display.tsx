@@ -19,9 +19,14 @@ import { Subtitle } from '../widgets/lover-subtitle'
 import { AddCompatibilityQuestionButton } from './add-compatibility-question-button'
 import { AnswerCompatibilityQuestionButton } from './answer-compatibility-question-button'
 import {
+  AnswerCompatibilityQuestionContent,
   IMPORTANCE_CHOICES,
   IMPORTANCE_DISPLAY_COLORS,
 } from './answer-compatibility-question-content'
+import DropdownMenu from 'web/components/comments/dropdown-menu'
+import { PencilIcon } from '@heroicons/react/outline'
+import { XIcon } from '@heroicons/react/outline'
+import { MODAL_CLASS, Modal } from 'web/components/layout/modal'
 
 export function CompatibilityQuestionsDisplay(props: {
   isCurrentUser: boolean
@@ -39,6 +44,11 @@ export function CompatibilityQuestionsDisplay(props: {
   const [yourQuestions, otherQuestions] = partition(allQuestions, (question) =>
     answerQuestionIds.has(question.id)
   )
+
+  const refreshCompatibilityAll = () => {
+    refreshCompatibilityAnswers()
+    refreshQuestions()
+  }
 
   const [expanded, setExpanded] = useState(false)
   const currentUser = useUser()
@@ -65,6 +75,8 @@ export function CompatibilityQuestionsDisplay(props: {
                 answer={answer}
                 yourQuestions={yourQuestions}
                 user={user}
+                isCurrentUser={isCurrentUser}
+                refreshCompatibilityAll={refreshCompatibilityAll}
               />
             )
           })}
@@ -74,14 +86,12 @@ export function CompatibilityQuestionsDisplay(props: {
         <AnswerCompatibilityQuestionButton
           user={user}
           otherQuestions={otherQuestions}
-          refreshCompatibilityAnswers={refreshCompatibilityAnswers}
-          refreshQuestions={refreshQuestions}
+          refreshCompatibilityAll={refreshCompatibilityAll}
         />
       )}
       {(otherQuestions.length < 1 || isAdminId(user?.id)) && isCurrentUser && (
         <AddCompatibilityQuestionButton
-          refreshCompatibilityAnswers={refreshCompatibilityAnswers}
-          refreshQuestions={refreshQuestions}
+          refreshCompatibilityAll={refreshCompatibilityAll}
         />
       )}
     </Col>
@@ -92,9 +102,19 @@ function CompatibilityAnswerBlock(props: {
   answer: rowFor<'love_compatibility_answers'>
   yourQuestions: QuestionWithCountType[]
   user: User
+  isCurrentUser: boolean
+  refreshCompatibilityAll: () => void
 }) {
-  const { answer, yourQuestions, user } = props
+  const {
+    answer,
+    yourQuestions,
+    user,
+    isCurrentUser,
+    refreshCompatibilityAll,
+  } = props
   const question = yourQuestions.find((q) => q.id === answer.question_id)
+  const [editOpen, setEditOpen] = useState<boolean>(false)
+
   if (
     !question ||
     !question.multiple_choice_options ||
@@ -115,7 +135,22 @@ function CompatibilityAnswerBlock(props: {
     >
       <Row className="text-ink-600 justify-between gap-1 text-sm">
         {question.question}
-        <ImportanceDisplay importance={answer.importance} user={user} />
+        <Row className="gap-2">
+          <ImportanceDisplay importance={answer.importance} user={user} />
+          {isCurrentUser && (
+            <DropdownMenu
+              items={[
+                {
+                  name: 'Edit',
+                  icon: <PencilIcon className="h-5 w-5" />,
+                  onClick: () => setEditOpen(true),
+                },
+              ]}
+              closeOnClick
+              menuWidth="w-40"
+            />
+          )}
+        </Row>
       </Row>
       <Row className="bg-canvas-50 w-fit gap-1 rounded py-1 pl-2 pr-3 text-sm">
         {answerText}
@@ -123,6 +158,22 @@ function CompatibilityAnswerBlock(props: {
       {answer.explanation && (
         <Linkify className="font-semibold" text={answer.explanation} />
       )}
+      <Modal open={editOpen} setOpen={setEditOpen}>
+        <Col className={MODAL_CLASS}>
+          <AnswerCompatibilityQuestionContent
+            key={`edit answer.id`}
+            compatibilityQuestion={question}
+            answer={answer}
+            user={user}
+            onSubmit={() => {
+              setEditOpen(false)
+              refreshCompatibilityAll()
+            }}
+            isLastQuestion={true}
+            noSkip
+          />
+        </Col>
+      </Modal>
     </Col>
   )
 }
