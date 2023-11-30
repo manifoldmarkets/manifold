@@ -17,7 +17,8 @@ import { UserLink } from '../widgets/user-link'
 import { NO_CLOSE_TIME_TYPES } from 'common/contract'
 import { FollowButton } from '../buttons/follow-button'
 import { updateMarket } from 'web/lib/firebase/api'
-import { FaHourglassEnd, FaHourglassHalf } from 'react-icons/fa6'
+import { FaClock } from 'react-icons/fa6'
+import { MdLockClock } from 'react-icons/md'
 
 export function AuthorInfo(props: { contract: Contract }) {
   const { contract } = props
@@ -126,9 +127,9 @@ export function CloseDate(props: {
               className="flex items-center gap-1"
             >
               {dayjs().isBefore(closeTime) ? (
-                <FaHourglassHalf className="fill-ink-500 h-4 w-4" />
+                <FaClock className=" h-3.5 w-3.5" />
               ) : (
-                <FaHourglassEnd className="fill-ink-500 h-4 w-4" />
+                <MdLockClock className="h-5 w-5" />
               )}
               {isSameDay
                 ? fromNow(closeTime)

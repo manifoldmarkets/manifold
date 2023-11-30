@@ -1,37 +1,40 @@
+import * as admin from 'firebase-admin'
 import {
   createSupabaseDirectClient,
   SupabaseDirectClient,
 } from 'shared/supabase/init'
 import { GCPLog, log as oldLog } from 'shared/utils'
-import * as admin from 'firebase-admin'
-import { getAll } from 'shared/supabase/utils'
-import { hasChanges } from 'common/util/object'
 import { uniq } from 'lodash'
 
 export async function updateContractViews(log: GCPLog = oldLog) {
   const firestore = admin.firestore()
   const pg = createSupabaseDirectClient()
   log('Loading contract data...')
-  const contracts = await getAll(pg, 'contracts')
-  log(`Loaded ${contracts.length} contracts.`)
+  const contractsToViews = Object.fromEntries(
+    await pg.map(`select views, id from contracts`, [], (r) => [r.id, r.views])
+  )
+  const contractIds = Object.keys(contractsToViews)
+  log(`Loaded ${contractIds.length} contracts.`)
 
   log('Computing views...')
   const views = await getViews(pg)
 
   log('Computing view updates...')
+  let writes = 0
   const writer = firestore.bulkWriter()
-  for (const contract of contracts) {
+  for (const contractId of contractIds) {
     const update = {
-      views: views[contract.id] ?? 0,
+      views: views[contractId] ?? 0,
     }
 
-    if (hasChanges(contract, update)) {
-      const contractDoc = firestore.collection('contracts').doc(contract.id)
+    if (contractsToViews[contractId] !== update.views) {
+      const contractDoc = firestore.collection('contracts').doc(contractId)
       writer.update(contractDoc, update)
+      writes++
     }
   }
 
-  log('Committing writes...')
+  log(`Committing ${writes} writes...`)
   await writer.close()
   log('Done.')
 }

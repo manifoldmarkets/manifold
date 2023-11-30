@@ -25,11 +25,12 @@ export function createJob(
 ) {
   const opts = { name, ...DEFAULT_OPTS }
   return Cron(schedule, opts, async () => {
+    const traceId = crypto.randomUUID()
     const logWithDetails = (message: any, details?: object) =>
       log.debug(message, {
         ...details,
         job: name,
-        traceId: crypto.randomUUID(),
+        traceId,
       })
     logWithDetails(`[${name}] Starting up.`)
     await fn(logWithDetails)

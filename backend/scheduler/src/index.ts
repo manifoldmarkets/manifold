@@ -1,16 +1,14 @@
 import * as fs from 'fs'
 import * as path from 'path'
-import { Cron } from 'croner'
 import * as Handlebars from 'handlebars'
 import * as express from 'express'
 import * as basicAuth from 'express-basic-auth'
-import * as admin from 'firebase-admin'
 import { sortBy } from 'lodash'
-import { CONFIGS } from 'common/envs/constants'
 import { isProd } from 'shared/utils'
 import { initGoogleCredentialsAndSecrets } from './utils'
 import { gLog as log } from 'shared/utils'
 import { createJobs } from './jobs'
+import { MINUTE_MS } from 'common/util/time'
 
 const PORT = (process.env.PORT ? parseInt(process.env.PORT) : null) || 8080
 
@@ -43,16 +41,29 @@ const server = app.listen(PORT, async () => {
 
   app.get('/', async (_req, res) => {
     const now = Date.now()
+    const timeZone = 'America/Los_Angeles'
     const jobsData = jobs.map((j) => {
       const currentRun = j.currentRun()
-      const currentRunStart = currentRun?.toString()
-      const currentRunDurationSecs = currentRun
-        ? Math.ceil((now - currentRun.getTime()) / 1000)
+      const currentRunStart = currentRun
+        ? new Date(currentRun.getTime()).toLocaleString('en-US', {
+            timeZone,
+            hour12: true,
+            timeZoneName: 'short',
+          })
+        : null
+      const currentRunDurationMins = currentRun
+        ? Math.ceil((now - currentRun.getTime()) / MINUTE_MS)
         : null
       const nextRun = j.nextRun()
-      const nextRunStart = nextRun?.toString()
-      const nextRunInSecs = nextRun
-        ? Math.ceil((nextRun.getTime() - now) / 1000)
+      const nextRunStart = nextRun
+        ? new Date(nextRun.getTime()).toLocaleString('en-US', {
+            timeZone,
+            hour12: true,
+            timeZoneName: 'short',
+          })
+        : null
+      const nextRunInMins = nextRun
+        ? Math.ceil((nextRun.getTime() - now) / MINUTE_MS)
         : null
       return {
         name: j.name,
@@ -65,9 +76,9 @@ const server = app.listen(PORT, async () => {
           ? 'running'
           : 'waiting',
         currentRunStart,
-        currentRunDurationSecs,
+        currentRunDurationMins,
         nextRunStart,
-        nextRunInSecs,
+        nextRunInMins,
       }
     })
     const sortedJobsData = sortBy(

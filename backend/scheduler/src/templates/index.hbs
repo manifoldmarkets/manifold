@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang='en'>
   <head>
     <style>
      html, body { margin: 0; }
@@ -18,7 +18,7 @@
      .btn-pause { background-color: #6D4008; color: white; }
      .btn-trigger { background-color: #1D008A; color: white; }
      .job {
-       border-top: 1px solid gray;
+       border-top: 1px solid;
        padding: 1em 0;
      }
      .row {
@@ -40,7 +40,7 @@
         <article class="job job-{{status}}">
           <h2>{{name}} &mdash; {{pattern}}</h2>
           {{#if running}}
-            <p>Currently running since {{currentRunStart}} ({{currentRunDurationSecs}}s.)</p>
+            <p>Currently running since {{currentRunStart}} ({{currentRunDurationMins}}mins)</p>
           {{/if}}
           <div class="row">
             {{#if paused}}
@@ -49,7 +49,7 @@
                 <input class="btn btn-resume" type="submit" value="Resume" />
               </form>
             {{else}}
-              <p>Next run: {{nextRunStart}} ({{nextRunInSecs}}s.)</p>
+              <p>Next run: {{nextRunStart}} ({{nextRunInMins}}mins)</p>
               <form action="/jobs/{{name}}/pause" method="post">
                 <input class="btn btn-pause" type="submit" value="Pause" />
               </form>
@@ -65,7 +65,7 @@
     </section>
   </body>
   <script type="text/javascript">
-   function onSubmit(e, form) {
+   function onSubmit(e) {
      e.preventDefault()
      fetch(e.target.action, { method: e.target.method }).then(() => location.reload())
    }
