@@ -170,6 +170,7 @@ function CompatibilityAnswerBlock(props: {
               refreshCompatibilityAll()
             }}
             isLastQuestion={true}
+            noSkip
           />
         </Col>
       </Modal>

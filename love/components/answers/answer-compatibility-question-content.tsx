@@ -65,9 +65,16 @@ export function AnswerCompatibilityQuestionContent(props: {
   onSubmit: () => void
   onNext?: () => void
   isLastQuestion: boolean
+  noSkip?: boolean
 }) {
-  const { compatibilityQuestion, user, onSubmit, isLastQuestion, onNext } =
-    props
+  const {
+    compatibilityQuestion,
+    user,
+    onSubmit,
+    isLastQuestion,
+    onNext,
+    noSkip,
+  } = props
   const [answer, setAnswer] = useState<CompatibilityAnswerSubmitType>(
     (props.answer as CompatibilityAnswerSubmitType) ?? {
       creator_id: user.id,
@@ -222,12 +229,14 @@ export function AnswerCompatibilityQuestionContent(props: {
           >
             {isLastQuestion ? 'Finish' : 'Next'}
           </Button>
-          <button
-            onClick={onNext}
-            className="text-ink-500 text-sm hover:underline"
-          >
-            Skip
-          </button>
+          {!noSkip && (
+            <button
+              onClick={onNext}
+              className="text-ink-500 text-sm hover:underline"
+            >
+              Skip
+            </button>
+          )}
         </Col>
       </Row>
     </Col>
