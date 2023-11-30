@@ -107,6 +107,7 @@ import { confirmLoverStage } from './love/confirm-lover-stage'
 import { clearLoverPhoto } from './love/clear-lover-photo'
 import { editanswercpmm } from 'api/edit-answer'
 import { createlovecompatibilityquestion } from 'api/love/create-love-compatibility-question'
+import { oncreatebet } from 'api/on-create-bet'
 
 import { markets } from 'api/v0/markets'
 
@@ -290,6 +291,9 @@ const publicApiRoute = (endpoint: RequestHandler) => {
 // v0 public API routes (formerly vercel functions)
 app.options('/v0', allowCorsUnrestricted)
 app.get('/v0/markets', ...publicApiRoute(markets))
+
+// Ian: not sure how to restrict triggers to supabase origin, yet
+app.post('/on-create-bet', ...publicApiRoute(oncreatebet))
 
 // Catch 404 errors - this should be the last route
 app.use(allowCorsUnrestricted, (req, res) => {

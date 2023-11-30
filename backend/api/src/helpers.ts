@@ -10,7 +10,12 @@ import * as crypto from 'crypto'
 
 export type Json = Record<string, unknown> | Json[]
 export type Handler<T> = (req: Request) => Promise<T>
-export type JsonHandler<T extends Json> = Handler<T>
+export type JsonHandler<T extends Json> = (
+  req: Request,
+  log: GCPLog,
+  logError: GCPLog,
+  res: Response
+) => Promise<T>
 export type AuthedHandler<T extends Json> = (
   req: Request,
   user: AuthedUser,
@@ -118,7 +123,8 @@ export const endpoint = <T>(fn: Handler<T>) => {
 export const jsonEndpoint = <T extends Json>(fn: JsonHandler<T>) => {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
-      res.status(200).json(await fn(req))
+      const { log, logError } = getLogs(req)
+      res.status(200).json(await fn(req, log, logError, res))
     } catch (e) {
       next(e)
     }

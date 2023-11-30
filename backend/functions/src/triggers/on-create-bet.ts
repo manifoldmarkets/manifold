@@ -1,19 +1,16 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
-import { groupBy, keyBy, sumBy } from 'lodash'
+import { groupBy, sumBy } from 'lodash'
 
-import { Bet, LimitBet } from 'common/bet'
+import { Bet } from 'common/bet'
 import {
   getBettingStreakResetTimeBeforeNow,
   getContract,
   getUser,
-  getUserSupabase,
-  getValues,
   isProd,
   log,
 } from 'shared/utils'
 import {
-  createBetFillNotification,
   createBetReplyToCommentNotification,
   createBettingStreakBonusNotification,
   createFollowSuggestionNotification,
@@ -39,7 +36,6 @@ import {
 } from 'shared/helpers/add-house-subsidy'
 import { BOT_USERNAMES } from 'common/envs/constants'
 import { addUserToContractFollowers } from 'shared/follow-market'
-import { calculateUserMetrics } from 'common/calculate-metrics'
 import { runTxnFromBank } from 'shared/txn/run-txn'
 import {
   createSupabaseClient,
@@ -56,7 +52,6 @@ import {
 } from 'shared/supabase/contracts'
 import { removeUndefinedProps } from 'common/util/object'
 import { updateUserInterestEmbedding } from 'shared/helpers/embeddings'
-import { bulkUpdateContractMetrics } from 'shared/helpers/user-contract-metrics'
 import { Answer } from 'common/answer'
 import { getUserMostChangedPosition } from 'common/supabase/bets'
 import { addBetDataToUsersFeeds } from 'shared/create-feed'
@@ -101,17 +96,7 @@ export const onCreateBet = functions
       )
       return
     }
-
-    const notifiedUsers = await notifyUsersOfLimitFills(
-      bet,
-      contract,
-      eventId,
-      bettor
-    )
-
-    if (bet.shares !== 0) {
-      await updateContractMetrics(contract, [bettor, ...(notifiedUsers ?? [])])
-    }
+    // Note: contract metrics refresh and fill notifications handled in api/on-create-bet
 
     // Note: Anything that applies to redemption bets should be above this line.
     if (bet.isRedemption) return
@@ -476,64 +461,4 @@ export const giveUniqueBettorAndLiquidityBonus = async (
       bet
     )
   }
-}
-
-const notifyUsersOfLimitFills = async (
-  bet: Bet,
-  contract: Contract,
-  eventId: string,
-  user: User
-) => {
-  if (!bet.fills) return
-
-  const matchedFills = bet.fills.filter((fill) => fill.matchedBetId !== null)
-  const matchedBets = (
-    await Promise.all(
-      matchedFills.map((fill) =>
-        getValues<LimitBet>(
-          firestore.collectionGroup('bets').where('id', '==', fill.matchedBetId)
-        )
-      )
-    )
-  ).flat()
-
-  const betUsers = await Promise.all(
-    matchedBets.map((bet) => getUserSupabase(bet.userId))
-  )
-  const betUsersById = keyBy(filterDefined(betUsers), 'id')
-
-  return filterDefined(
-    await Promise.all(
-      matchedBets.map(async (matchedBet) => {
-        const matchedUser = betUsersById[matchedBet.userId]
-        if (!matchedUser) return undefined
-
-        await createBetFillNotification(
-          user,
-          matchedUser,
-          bet,
-          matchedBet,
-          contract,
-          eventId
-        )
-        return matchedUser
-      })
-    )
-  )
-}
-
-const updateContractMetrics = async (contract: Contract, users: User[]) => {
-  const metrics = await Promise.all(
-    users.map(async (user) => {
-      const betSnap = await firestore
-        .collection(`contracts/${contract.id}/bets`)
-        .where('userId', '==', user.id)
-        .get()
-
-      const bets = betSnap.docs.map((doc) => doc.data() as Bet)
-      return calculateUserMetrics(contract, bets, user)
-    })
-  )
-
-  await bulkUpdateContractMetrics(metrics.flat())
 }
