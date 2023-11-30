@@ -12,3 +12,5 @@ export const manifoldLoveRelationshipsGroupId = isProd()
 
 export const isManifoldLoveContract = (contract: Contract) =>
   contract.groupSlugs?.includes(PROD_MANIFOLD_LOVE_GROUP_SLUG)
+
+export const MIN_BET_AMOUNT_FOR_NEW_MATCH = 50

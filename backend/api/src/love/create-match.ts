@@ -16,6 +16,7 @@ import { getNotificationDestinationsForUser } from 'common/user-notification-pre
 import { Notification } from 'common/notification'
 import { createPushNotification } from 'shared/create-push-notification'
 import {
+  MIN_BET_AMOUNT_FOR_NEW_MATCH,
   manifoldLoveRelationshipsGroupId,
   manifoldLoveUserId,
 } from 'common/love/constants'
@@ -27,8 +28,6 @@ import { contentSchema } from 'shared/zod-types'
 import { JSONContent } from '@tiptap/core'
 import { ChatVisibility } from 'common/chat-message'
 import { insertNotificationToSupabase } from 'shared/supabase/notifications'
-
-const MIN_BET_AMOUNT_FOR_NEW_MATCH = 50
 
 const createMatchSchema = z.object({
   userId1: z.string(),

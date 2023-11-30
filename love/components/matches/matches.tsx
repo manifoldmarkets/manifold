@@ -9,6 +9,8 @@ import { AddAMatchButton } from '../add-a-match-button'
 import { MatchTile } from './match-tile'
 import { Lover } from 'common/love/lover'
 import { BrowseMatchesButton } from '../browse-matches-button'
+import { filterDefined } from 'common/util/array'
+import { Row } from 'web/components/layout/row'
 
 export const Matches = (props: {
   profileLover: Lover
@@ -45,6 +47,19 @@ export const Matches = (props: {
 
       return b.answers[resolvedCountB].prob - a.answers[resolvedCountA].prob
     })
+
+  const matchedLovers = filterDefined(
+    currentMatches.map((contract) => {
+      const matchedLoverId =
+        contract.loverUserId1 === profileUserId
+          ? contract.loverUserId2
+          : contract.loverUserId1
+      const matchedLover = lovers.find(
+        (lover) => lover.user_id === matchedLoverId
+      )
+      return matchedLover
+    })
+  )
 
   const areYourMatches = profileUserId === user?.id
 
@@ -85,14 +100,19 @@ export const Matches = (props: {
       )}
 
       {lover && (
-        <>
+        <Row className="gap-4">
           <BrowseMatchesButton
+            className="flex-1"
             lover={lover}
             potentialLovers={potentialLovers}
-            matchedLovers={[]}
+            matchedLovers={matchedLovers}
           />
-          <AddAMatchButton lover={lover} potentialLovers={potentialLovers} />
-        </>
+          <AddAMatchButton
+            className="flex-1"
+            lover={lover}
+            potentialLovers={potentialLovers}
+          />
+        </Row>
       )}
     </Col>
   )

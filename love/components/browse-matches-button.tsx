@@ -1,14 +1,21 @@
 import clsx from 'clsx'
+import { Editor } from '@tiptap/react'
+
+import { MAX_COMMENT_LENGTH } from 'common/comment'
+import { MIN_BET_AMOUNT_FOR_NEW_MATCH } from 'common/love/constants'
 import { Lover } from 'common/love/lover'
 import { LoverProfile } from 'love/pages/[username]'
 import { useState } from 'react'
 import { Button } from 'web/components/buttons/button'
+import { CommentInputTextArea } from 'web/components/comments/comment-input'
 import { Col } from 'web/components/layout/col'
 import { Modal, SCROLLABLE_MODAL_CLASS } from 'web/components/layout/modal'
 import { Row } from 'web/components/layout/row'
 import { Tabs } from 'web/components/layout/tabs'
 import { BuyAmountInput } from 'web/components/widgets/amount-input'
+import { useTextEditor } from 'web/components/widgets/editor'
 import { createMatch } from 'web/lib/firebase/love/api'
+import { useUser } from 'web/hooks/use-user'
 
 export const BrowseMatchesButton = (props: {
   lover: Lover
@@ -20,18 +27,31 @@ export const BrowseMatchesButton = (props: {
 
   const [dialogOpen, setDialogOpen] = useState(false)
   const [selectedMatchId, setSelectedMatchId] = useState<string | null>(null)
-  const [betAmount, setBetAmount] = useState<number | undefined>(20)
+  const [betAmount, setBetAmount] = useState<number | undefined>(
+    MIN_BET_AMOUNT_FOR_NEW_MATCH
+  )
+  const key = `comment ${potentialLovers.map((l) => l.id).join(',')}`
+  const editor = useTextEditor({
+    key,
+    size: 'sm',
+    max: MAX_COMMENT_LENGTH,
+    placeholder: 'Write your introduction...',
+  })
+
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const submit = async () => {
     if (!selectedMatchId || !betAmount) return
+
+    const introduction =
+      (editor?.getCharacterCount() ?? 0) > 0 ? editor?.getJSON() : undefined
 
     setIsSubmitting(true)
     const result = await createMatch({
       userId1: lover.user_id,
       userId2: selectedMatchId,
       betAmount,
-      introduction: undefined,
+      introduction,
     }).finally(() => {
       setIsSubmitting(false)
     })
@@ -73,6 +93,7 @@ export const BrowseMatchesButton = (props: {
           isSubmitting={isSubmitting}
           setOpen={setDialogOpen}
           submit={submit}
+          editor={editor}
         />
       )}
     </>
@@ -90,6 +111,7 @@ const BrowseMatchesDialog = (props: {
   isSubmitting: boolean
   setOpen: (open: boolean) => void
   submit: () => void
+  editor: Editor | null
 }) => {
   const {
     lover,
@@ -101,6 +123,7 @@ const BrowseMatchesDialog = (props: {
     isSubmitting,
     setOpen,
     submit,
+    editor,
   } = props
 
   const [error, setError] = useState<string | undefined>(undefined)
@@ -110,8 +133,10 @@ const BrowseMatchesDialog = (props: {
   const matchedLover = matchedLovers[matchedIndex]
   const potentialLover = potentialLovers[potentialIndex]
 
+  const user = useUser()
+
   return (
-    <Modal className={SCROLLABLE_MODAL_CLASS} size="md" open setOpen={setOpen}>
+    <Modal className={SCROLLABLE_MODAL_CLASS} size="lg" open setOpen={setOpen}>
       <Col className="bg-canvas-0 rounded p-4 pb-8 sm:gap-4">
         <Tabs
           tabs={[
@@ -210,12 +235,19 @@ const BrowseMatchesDialog = (props: {
                       <BuyAmountInput
                         amount={betAmount}
                         onChange={setBetAmount}
-                        minimumAmount={20}
+                        minimumAmount={MIN_BET_AMOUNT_FOR_NEW_MATCH}
                         error={error}
                         setError={setError}
                         showBalance
                       />
                     </Col>
+
+                    <CommentInputTextArea
+                      isSubmitting={isSubmitting}
+                      editor={editor}
+                      user={user}
+                      hideToolbar={true}
+                    />
 
                     <Button
                       className="font-semibold"
@@ -225,7 +257,7 @@ const BrowseMatchesDialog = (props: {
                         !selectedMatchId ||
                         isSubmitting ||
                         !betAmount ||
-                        betAmount < 20
+                        betAmount < MIN_BET_AMOUNT_FOR_NEW_MATCH
                       }
                       loading={isSubmitting}
                     >
