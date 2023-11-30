@@ -1,17 +1,16 @@
-import { User } from 'common/user'
-import { Row as rowFor, run } from 'common/supabase/utils'
-import { Col } from 'web/components/layout/col'
-import { RadioToggleGroup } from 'web/components/widgets/radio-toggle-group'
-import { useState } from 'react'
-import { ChoicesToggleGroup } from 'web/components/widgets/choices-toggle-group'
 import { RadioGroup } from '@headlessui/react'
 import clsx from 'clsx'
-import { ExpandingInput } from 'web/components/widgets/expanding-input'
+import { Row as rowFor, run } from 'common/supabase/utils'
+import { User } from 'common/user'
+import { useState } from 'react'
+import { Button } from 'web/components/buttons/button'
+import { Col } from 'web/components/layout/col'
 import { SCROLLABLE_MODAL_CLASS } from 'web/components/layout/modal'
 import { Row } from 'web/components/layout/row'
-import { Button } from 'web/components/buttons/button'
-import { filterKeys } from '../questions-form'
+import { ExpandingInput } from 'web/components/widgets/expanding-input'
+import { RadioToggleGroup } from 'web/components/widgets/radio-toggle-group'
 import { db } from 'web/lib/supabase/db'
+import { filterKeys } from '../questions-form'
 
 export type CompatibilityAnswerSubmitType = Omit<
   rowFor<'love_compatibility_answers'>,
@@ -50,10 +49,13 @@ export const submitCompatibilityAnswer = async (
   const input = {
     ...filterKeys(newAnswer, (key, _) => !['id', 'created_time'].includes(key)),
   }
+  console.log('INPUT', input)
   await run(
     db
       .from('love_compatibility_answers')
-      .upsert(input, { onConflict: 'question_id,creator_id' })
+      .upsert(input as CompatibilityAnswerSubmitType, {
+        onConflict: 'question_id,creator_id',
+      })
   )
 }
 
@@ -106,6 +108,8 @@ export function AnswerCompatibilityQuestionContent(props: {
   const prefChoicesValid = answer.pref_choices && answer.pref_choices.length > 0
 
   const importanceValid = answer.importance !== null && answer.importance !== -1
+
+  console.log(answer)
 
   return (
     <Col className="h-full w-full gap-4">
