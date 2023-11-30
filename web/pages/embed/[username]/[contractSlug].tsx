@@ -171,16 +171,6 @@ const ContractChart = (props: {
           betPoints={points}
         />
       )
-    case 'FREE_RESPONSE':
-    case 'MULTIPLE_CHOICE':
-      return (
-        <div className="flex h-full flex-col justify-center">
-          <SimpleAnswerBars
-            contract={contract}
-            maxAnswers={numBars(props.height)}
-          />
-        </div>
-      )
 
     case 'NUMERIC':
       return <NumericContractChart {...rest} contract={contract} />
@@ -283,15 +273,24 @@ function ContractSmolView(props: {
               !isMulti && 'pr-10'
             )}
           >
-            {(w, h) => (
-              <ContractChart
-                contract={contract}
-                points={points}
-                width={w}
-                height={h}
-                showOnlyLastThousand={showQRCode}
-              />
-            )}
+            {(w, h) =>
+              isMulti ? (
+                <div className="flex h-full flex-col justify-center">
+                  <SimpleAnswerBars
+                    contract={contract}
+                    maxAnswers={numBars(h)}
+                  />
+                </div>
+              ) : (
+                <ContractChart
+                  contract={contract}
+                  points={points}
+                  width={w}
+                  height={h}
+                  showOnlyLastThousand={showQRCode}
+                />
+              )
+            }
           </SizedContainer>
         )}
         {isBountiedQuestion && (
