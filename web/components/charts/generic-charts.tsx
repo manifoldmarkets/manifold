@@ -152,7 +152,7 @@ export const MultiValueHistoryChart = <P extends HistoryPoint>(props: {
     if (props.xScale) {
       zoomParams?.setXScale(props.xScale)
     }
-  }, [])
+  }, [w])
 
   const xScale = zoomParams?.viewXScale ?? props.xScale
 
@@ -322,7 +322,7 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
     if (props.xScale) {
       zoomParams?.setXScale(props.xScale)
     }
-  }, [])
+  }, [w])
 
   const xScale = zoomParams?.viewXScale ?? props.xScale
 
