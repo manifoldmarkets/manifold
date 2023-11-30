@@ -18,6 +18,10 @@ export function ContractSummaryStats(props: {
   editable?: boolean
 }) {
   const { contract, editable } = props
+  const views =
+    contract.views < contract.uniqueBettorCount
+      ? contract.uniqueBettorCount
+      : contract.views
   return (
     <>
       {contract.outcomeType == 'BOUNTIED_QUESTION' ? (
@@ -43,13 +47,13 @@ export function ContractSummaryStats(props: {
             <div>{shortFormatNumber(contract.uniqueBettorCount ?? 0)}</div>
           </Tooltip>
           <Tooltip
-            text={'Views: ' + formatWithCommas(contract.views)}
+            text={'Views: ' + formatWithCommas(views)}
             placement="bottom"
             noTap
             className="flex flex-row items-center gap-1"
           >
             <EyeIcon className="text-ink-500 h-4 w-4" />
-            <div>{shortFormatNumber(contract.views)}</div>
+            <div>{shortFormatNumber(views)}</div>
           </Tooltip>
 
           {!!contract.volume && (
