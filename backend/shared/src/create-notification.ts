@@ -24,10 +24,10 @@ import {
   getValues,
   log,
 } from 'shared/utils'
-import { Comment, ContractComment } from 'common/comment'
+import { ContractComment } from 'common/comment'
 import { groupBy, keyBy, mapValues, minBy, sum, uniq } from 'lodash'
 import { Bet, LimitBet } from 'common/bet'
-import { Answer, DpmAnswer } from 'common/answer'
+import { Answer } from 'common/answer'
 import { removeUndefinedProps } from 'common/util/object'
 import { Group } from 'common/group'
 import {
@@ -183,7 +183,6 @@ export const createCommentOrAnswerOrUpdatedContractNotification = async (
     taggedUserIds: string[]
   }
 ) => {
-  const firestore = admin.firestore()
   const { repliedUsersInfo, taggedUserIds } = miscData ?? {}
   const pg = createSupabaseDirectClient()
 
@@ -336,13 +335,18 @@ export const createCommentOrAnswerOrUpdatedContractNotification = async (
   }
 
   const notifyOtherAnswerersOnContract = async () => {
-    const answers = await getValues<DpmAnswer>(
-      firestore
-        .collection('contracts')
-        .doc(sourceContract.id)
-        .collection('answers')
+    const dpmAnswererIds = await pg.map(
+      `select distinct data->>'userId' as user_id from contract_answers where contract_id = $1`,
+      [sourceContract.id],
+      (r) => r.user_id as string
     )
-    const recipientUserIds = uniq(answers.map((answer) => answer.userId))
+    const cpmmAnswererIds = await pg.map(
+      `select distinct user_id from answers where contract_id = $1`,
+      [sourceContract.id],
+      (r) => r.user_id as string
+    )
+    const recipientUserIds = uniq(dpmAnswererIds.concat(cpmmAnswererIds))
+
     await Promise.all(
       recipientUserIds.map((userId) =>
         sendNotificationsIfSettingsPermit(
@@ -358,15 +362,13 @@ export const createCommentOrAnswerOrUpdatedContractNotification = async (
   }
 
   const notifyOtherCommentersOnContract = async () => {
-    const comments = await getValues<Comment>(
-      firestore
-        .collection('contracts')
-        .doc(sourceContract.id)
-        .collection('comments')
+    const commenterIds = await pg.map(
+      `select distinct user_id from contract_comments where contract_id = $1`,
+      [sourceContract.id],
+      (r) => r.user_id as string
     )
-    const recipientUserIds = uniq(comments.map((comment) => comment.userId))
     await Promise.all(
-      recipientUserIds.map((userId) =>
+      commenterIds.map((userId) =>
         sendNotificationsIfSettingsPermit(
           userId,
           sourceType === 'answer'
@@ -435,14 +437,13 @@ export const createCommentOrAnswerOrUpdatedContractNotification = async (
   }
 
   const notifyLiquidityProviders = async () => {
-    const liquidityProviders = await firestore
-      .collection(`contracts/${sourceContract.id}/liquidity`)
-      .get()
-    const liquidityProvidersIds = uniq(
-      liquidityProviders.docs.map((doc) => doc.data().userId)
+    const liquidityProviderIds = await pg.map(
+      `select distinct data->>'userId' as user_id from contract_liquidity where contract_id = $1`,
+      [sourceContract.id],
+      (r) => r.user_id as string
     )
     await Promise.all(
-      liquidityProvidersIds.map((userId) =>
+      liquidityProviderIds.map((userId) =>
         sendNotificationsIfSettingsPermit(
           userId,
           sourceType === 'answer'
