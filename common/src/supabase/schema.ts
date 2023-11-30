@@ -890,6 +890,40 @@ export interface Database {
         }
         Relationships: []
       }
+        love_compatibility_answers: {
+        Row: {
+          created_time: string
+          creator_id: string
+          explanation: string | null
+          id: number
+          importance: number
+          multiple_choice: number
+          pref_choices: number[] 
+          question_id: number
+        }
+        Insert: {
+          created_time?: string
+          creator_id: string
+          explanation?: string | null
+          id?: never
+          importance: number 
+          multiple_choice: number
+          pref_choices: number[] 
+          question_id: number
+        }
+        Update: {
+          created_time?: string
+          creator_id?: string
+          explanation?: string | null
+          id?: never
+          importance: number
+          multiple_choice: number
+          pref_choices: number[] 
+          question_id?: number
+        }
+        Relationships: []
+      }
+
       love_answers: {
         Row: {
           created_time: string

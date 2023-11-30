@@ -9,9 +9,16 @@ export function RadioToggleGroup(props: {
   setChoice: (p: number) => void
   className?: string
   toggleClassName?: string
+  indexColors?: Record<number, string>
 }) {
-  const { currentChoice, setChoice, choicesMap, className, toggleClassName } =
-    props
+  const {
+    currentChoice,
+    setChoice,
+    choicesMap,
+    className,
+    toggleClassName,
+    indexColors,
+  } = props
 
   const orderedChoicesMap = orderBy(
     Object.entries(choicesMap),
@@ -46,6 +53,8 @@ export function RadioToggleGroup(props: {
                 ' aria-checked:bg-opacity-100 aria-checked:ring-8 aria-checked:ring-opacity-40 dark:aria-checked:ring-opacity-40',
                 disabled
                   ? 'bg-ink-400 ring-ink-400'
+                  : indexColors
+                  ? indexColors[index]
                   : index == 0
                   ? `bg-rose-600 ring-rose-600 dark:bg-rose-500 dark:ring-rose-500`
                   : index == 1

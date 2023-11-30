@@ -5,6 +5,7 @@ import {
   getFreeResponseQuestions,
   getQuestionsWithAnswerCount,
   getUserAnswers,
+  getUserCompatibilityAnswers,
 } from 'love/lib/supabase/questions'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 
@@ -43,6 +44,27 @@ export const useUserAnswers = (userId: string | undefined) => {
   return { refreshAnswers, answers }
 }
 
+export const useUserCompatibilityAnswers = (userId: string | undefined) => {
+  const [compatibilityAnswers, setCompatibilityAnswers] =
+    usePersistentInMemoryState<Row<'love_compatibility_answers'>[]>(
+      [],
+      `compatiblity-answers-${userId}`
+    )
+
+  useEffect(() => {
+    if (userId) {
+      getUserCompatibilityAnswers(userId).then(setCompatibilityAnswers)
+    }
+  }, [userId])
+
+  async function refreshCompatibilityAnswers() {
+    if (!userId) return
+    getUserCompatibilityAnswers(userId).then(setCompatibilityAnswers)
+  }
+
+  return { refreshCompatibilityAnswers, compatibilityAnswers }
+}
+
 export type QuestionWithCountType = Row<'love_questions'> & {
   answer_count: number
 }
@@ -57,5 +79,14 @@ export const useQuestionsWithAnswerCount = () => {
     })
   }, [])
 
-  return questionsWithCount as QuestionWithCountType[]
+  async function refreshQuestions() {
+    getQuestionsWithAnswerCount().then((questions) => {
+      setQuestionsWithCount(questions)
+    })
+  }
+
+  return {
+    refreshQuestions,
+    questionsWithCount: questionsWithCount as QuestionWithCountType[],
+  }
 }

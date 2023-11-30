@@ -106,6 +106,7 @@ import { updateprivateusermessagechannel } from 'api/update-private-user-message
 import { confirmLoverStage } from './love/confirm-lover-stage'
 import { clearLoverPhoto } from './love/clear-lover-photo'
 import { editanswercpmm } from 'api/edit-answer'
+import { createlovecompatibilityquestion } from 'api/love/create-love-compatibility-question'
 
 import { markets } from 'api/v0/markets'
 
@@ -272,6 +273,10 @@ app.post('/create-comment-on-lover', ...apiRoute(createcommentonlover))
 app.post('/hide-comment-on-lover', ...apiRoute(hidecommentonlover))
 app.post('/searchlocation', ...apiRoute(searchlocation))
 app.post('/searchnearcity', ...apiRoute(searchnearcity))
+app.post(
+  '/createlovecompatibilityquestion',
+  ...apiRoute(createlovecompatibilityquestion)
+)
 
 const publicApiRoute = (endpoint: RequestHandler) => {
   return [

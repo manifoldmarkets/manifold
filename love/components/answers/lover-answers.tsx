@@ -5,8 +5,8 @@ import {
   useUserAnswers,
 } from 'love/hooks/use-questions'
 import { Col } from 'web/components/layout/col'
+import { CompatibilityQuestionsDisplay } from './compatibility-questions-display'
 import { FreeResponseDisplay } from './free-response-display'
-import { OpinionScale } from './opinion-scale-display'
 
 export function LoverAnswers(props: { isCurrentUser: boolean; user: User }) {
   const { isCurrentUser, user } = props
@@ -19,14 +19,22 @@ export function LoverAnswers(props: { isCurrentUser: boolean; user: User }) {
 
   const answerQuestionIds = new Set(answers.map((answer) => answer.question_id))
 
-  const questionsWithCount = useQuestionsWithAnswerCount()
+  const { refreshQuestions, questionsWithCount } = useQuestionsWithAnswerCount()
 
-  const [yourQuestions, otherQuestions] = partition(
-    questionsWithCount,
+  const freeResponseQuestions = questionsWithCount.filter(
+    (q) => q.answer_type == 'free_response'
+  )
+
+  const compatibilityQuestions = questionsWithCount.filter(
+    (q) => q.answer_type == 'compatibility_multiple_choice'
+  )
+
+  const [yourFRQuestions, otherFRQuestions] = partition(
+    freeResponseQuestions,
     (question) => answerQuestionIds.has(question.id)
   )
 
-  const [multiChoiceAnswers, otherAnswers] = partition(
+  const [_multiChoiceAnswers, otherAnswers] = partition(
     answers,
     (a) => a.multiple_choice != null
   )
@@ -35,16 +43,17 @@ export function LoverAnswers(props: { isCurrentUser: boolean; user: User }) {
     <Col className={'mt-2 gap-5'}>
       <FreeResponseDisplay
         answers={otherAnswers}
-        yourQuestions={yourQuestions}
-        otherQuestions={otherQuestions}
+        yourQuestions={yourFRQuestions}
+        otherQuestions={otherFRQuestions}
         isCurrentUser={isCurrentUser}
         user={user}
         refreshAnswers={refreshAnswers}
       />
-      <OpinionScale
-        multiChoiceAnswers={multiChoiceAnswers}
-        questions={questionsWithCount}
+      <CompatibilityQuestionsDisplay
         isCurrentUser={isCurrentUser}
+        user={user}
+        allQuestions={compatibilityQuestions}
+        refreshQuestions={refreshQuestions}
       />
     </Col>
   )
