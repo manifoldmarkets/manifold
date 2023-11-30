@@ -43,7 +43,6 @@ import { updategroupprivacy } from './update-group-privacy'
 import { addgroupmember } from './add-group-member'
 import { registerdiscordid } from './register-discord-id'
 import { getuserisgroupmember } from './get-user-is-group-member'
-import { redeemad } from './redeem-ad-reward'
 import { completequest } from './complete-quest'
 import { getsupabasetoken } from './get-supabase-token'
 import { updateUserEmbedding } from './update-user-embedding'
@@ -107,8 +106,12 @@ import { updateprivateusermessagechannel } from 'api/update-private-user-message
 import { confirmLoverStage } from './love/confirm-lover-stage'
 import { clearLoverPhoto } from './love/clear-lover-photo'
 import { editanswercpmm } from 'api/edit-answer'
+import { createlovecompatibilityquestion } from 'api/love/create-love-compatibility-question'
 
-const allowCors: RequestHandler = cors({
+import { markets } from 'api/v0/markets'
+
+const allowCorsUnrestricted: RequestHandler = cors({})
+const allowCorsManifold: RequestHandler = cors({
   origin: [
     CORS_ORIGIN_MANIFOLD,
     CORS_ORIGIN_MANIFOLD_LOVE,
@@ -139,14 +142,15 @@ const apiErrorHandler: ErrorRequestHandler = (err, _req, res, next) => {
   }
 }
 
+const apiRoute = (endpoint: RequestHandler) => {
+  return [allowCorsManifold, express.json(), endpoint, apiErrorHandler] as const
+}
+
 export const app = express()
 app.use(requestLogger)
 
-const apiRoute = (endpoint: RequestHandler) => {
-  return [allowCors, express.json(), endpoint, apiErrorHandler] as const
-}
-
-app.options('*', allowCors)
+// internal APIs
+app.options('*', allowCorsManifold)
 app.get('/health', ...apiRoute(health))
 app.get('/getcurrentuser', ...apiRoute(getcurrentuser))
 app.get('/unsubscribe', ...apiRoute(unsubscribe))
@@ -182,7 +186,6 @@ app.post('/addcontracttogroup', ...apiRoute(addcontracttogroup))
 app.post('/removecontractfromgroup', ...apiRoute(removecontractfromgroup))
 app.post('/addgroupmember', ...apiRoute(addgroupmember))
 app.post('/getuserisgroupmember', ...apiRoute(getuserisgroupmember))
-app.post('/redeemad', ...apiRoute(redeemad))
 app.post('/completequest', ...apiRoute(completequest))
 app.post('/update-user-embedding', ...apiRoute(updateUserEmbedding))
 app.post(
@@ -196,10 +199,10 @@ app.post('/save-topic', ...apiRoute(saveTopic))
 app.post('/boost-market', ...apiRoute(boostmarket))
 app.post('/redeem-boost', ...apiRoute(redeemboost))
 
-app.post('/createcheckoutsession', allowCors, createcheckoutsession)
+app.post('/createcheckoutsession', allowCorsManifold, createcheckoutsession)
 app.post(
   '/stripewebhook',
-  allowCors,
+  allowCorsManifold,
   express.raw({ type: '*/*' }),
   stripewebhook
 )
@@ -270,9 +273,26 @@ app.post('/create-comment-on-lover', ...apiRoute(createcommentonlover))
 app.post('/hide-comment-on-lover', ...apiRoute(hidecommentonlover))
 app.post('/searchlocation', ...apiRoute(searchlocation))
 app.post('/searchnearcity', ...apiRoute(searchnearcity))
+app.post(
+  '/createlovecompatibilityquestion',
+  ...apiRoute(createlovecompatibilityquestion)
+)
+
+const publicApiRoute = (endpoint: RequestHandler) => {
+  return [
+    allowCorsUnrestricted,
+    express.json(),
+    endpoint,
+    apiErrorHandler,
+  ] as const
+}
+
+// v0 public API routes (formerly vercel functions)
+app.options('/v0', allowCorsUnrestricted)
+app.get('/v0/markets', ...publicApiRoute(markets))
 
 // Catch 404 errors - this should be the last route
-app.use(allowCors, (req, res) => {
+app.use(allowCorsUnrestricted, (req, res) => {
   res
     .status(404)
     .set('Content-Type', 'application/json')

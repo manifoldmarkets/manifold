@@ -27,7 +27,7 @@ export const awardbounty = authEndpoint(async (req, auth) => {
     if (!commentSnap.exists) throw new APIError(404, 'Comment not found')
     const comment = commentSnap.data() as ContractComment
 
-    const { status, txn } = await runAwardBountyTxn(
+    const { txn } = await runAwardBountyTxn(
       transaction,
       {
         fromId: contractId,

@@ -16,6 +16,7 @@ import { trackCallback } from 'web/lib/service/analytics'
 import { User } from 'common/user'
 import { Col } from 'web/components/layout/col'
 import { useAnimatedNumber } from 'web/hooks/use-animated-number'
+import { useLover } from 'love/hooks/use-lover'
 
 const itemClass =
   'sm:hover:bg-ink-200 block w-full py-1 px-3 text-center sm:hover:text-primary-700 transition-colors'
@@ -74,6 +75,44 @@ export function BottomNavBar(props: {
   )
 }
 
+function ProfileItem(props: {
+  user: User
+  item: Item
+  touched: boolean
+  setTouched: (touched: boolean) => void
+  currentPage: string
+  track: () => void
+}) {
+  const { user, item, touched, setTouched, currentPage, track } = props
+  const balance = useAnimatedNumber(user?.balance ?? 0)
+  const lover = useLover()
+  return (
+    <Link
+      href={item.href ?? '#'}
+      className={clsx(
+        itemClass,
+        touched && touchItemClass,
+        currentPage === '/[username]' && selectedItemClass
+      )}
+      onClick={track}
+      onTouchStart={() => setTouched(true)}
+      onTouchEnd={() => setTouched(false)}
+    >
+      <Col>
+        <div className="mx-auto my-1">
+          <Avatar
+            size="xs"
+            username={user.username}
+            avatarUrl={lover?.pinned_url ?? user.avatarUrl}
+            noLink
+          />
+        </div>
+        <animated.div>{balance.to((b) => formatMoney(b))}</animated.div>
+      </Col>
+    </Link>
+  )
+}
+
 function NavBarItem(props: {
   item: Item
   currentPage: string
@@ -84,32 +123,16 @@ function NavBarItem(props: {
   const { item, currentPage, children, user } = props
   const track = trackCallback(`navbar: ${item.trackingEventName ?? item.name}`)
   const [touched, setTouched] = useState(false)
-  const balance = useAnimatedNumber(user?.balance ?? 0)
   if (item.name === 'Profile' && user) {
     return (
-      <Link
-        href={item.href ?? '#'}
-        className={clsx(
-          itemClass,
-          touched && touchItemClass,
-          currentPage === '/[username]' && selectedItemClass
-        )}
-        onClick={track}
-        onTouchStart={() => setTouched(true)}
-        onTouchEnd={() => setTouched(false)}
-      >
-        <Col>
-          <div className="mx-auto my-1">
-            <Avatar
-              size="xs"
-              username={user.username}
-              avatarUrl={user.avatarUrl}
-              noLink
-            />
-          </div>
-          <animated.div>{balance.to((b) => formatMoney(b))}</animated.div>
-        </Col>
-      </Link>
+      <ProfileItem
+        user={user}
+        item={item}
+        touched={touched}
+        setTouched={setTouched}
+        currentPage={currentPage}
+        track={track}
+      />
     )
   }
 

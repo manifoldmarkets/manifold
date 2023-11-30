@@ -19,7 +19,7 @@
   },
   "dependencies": {
     "@google-cloud/secret-manager": "4.2.1",
-    "@supabase/supabase-js": "2.2.0",
+    "@supabase/supabase-js": "2.38.5",
     "@tiptap/core": "2.0.0-beta.204",
     "@tiptap/extension-image": "2.0.0-beta.204",
     "@tiptap/extension-link": "2.0.0-beta.204",
@@ -29,15 +29,16 @@
     "@tiptap/suggestion": "2.0.0-beta.204",
     "croner": "7.0.4",
     "dayjs": "1.11.4",
+    "expo-server-sdk": "3.7.0",
     "express": "4.18.1",
     "express-basic-auth": "1.2.1",
     "firebase-admin": "11.5.0",
     "handlebars": "4.7.8",
     "lodash": "4.17.21",
+    "mailgun-js": "0.22.0",
     "openai": "3.2.1",
     "pg-promise": "11.4.1",
     "string-similarity": "4.0.4",
-    "supabase": "1.38.7",
-    "typescript": "5.0.4"
+    "typescript": "5.3.2"
   }
 }

@@ -8,20 +8,22 @@ import { gLog, GCPLog, log } from 'shared/utils'
 export { APIError } from 'common/api'
 import * as crypto from 'crypto'
 
-export type Json = Record<string, unknown>
+export type Json = Record<string, unknown> | Json[]
 export type Handler<T> = (req: Request) => Promise<T>
 export type JsonHandler<T extends Json> = Handler<T>
 export type AuthedHandler<T extends Json> = (
   req: Request,
   user: AuthedUser,
   log: GCPLog,
-  logError: GCPLog
+  logError: GCPLog,
+  res: Response
 ) => Promise<T>
 export type MaybeAuthedHandler<T extends Json> = (
   req: Request,
   user: AuthedUser | undefined,
   log: GCPLog,
-  logError: GCPLog
+  logError: GCPLog,
+  res: Response
 ) => Promise<T>
 
 export type AuthedUser = {
@@ -122,6 +124,7 @@ export const jsonEndpoint = <T extends Json>(fn: JsonHandler<T>) => {
     }
   }
 }
+
 const getLogs = (req: Request) => {
   const traceContext = req.get('X-Cloud-Trace-Context')
   const traceId = traceContext
@@ -135,17 +138,30 @@ const getLogs = (req: Request) => {
     gLog.error(message, { ...details, endpoint: req.path, traceId })
   return { log, logError }
 }
+
+export const getDummyLogs = (endpointPath: string) => {
+  const traceId = crypto.randomUUID()
+
+  const log = (message: any, details?: object) =>
+    gLog.debug(message, { ...details, endpoint: endpointPath, traceId })
+
+  const logError = (message: any, details?: object) =>
+    gLog.error(message, { ...details, endpoint: endpointPath, traceId })
+  return { log, logError }
+}
+
 export const authEndpoint = <T extends Json>(fn: AuthedHandler<T>) => {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
       const authedUser = await lookupUser(await parseCredentials(req))
       const { log, logError } = getLogs(req)
-      res.status(200).json(await fn(req, authedUser, log, logError))
+      res.status(200).json(await fn(req, authedUser, log, logError, res))
     } catch (e) {
       next(e)
     }
   }
 }
+
 export const MaybeAuthedEndpoint = <T extends Json>(
   fn: MaybeAuthedHandler<T>
 ) => {
@@ -153,11 +169,13 @@ export const MaybeAuthedEndpoint = <T extends Json>(
     let authUser: AuthedUser | undefined = undefined
     try {
       authUser = await lookupUser(await parseCredentials(req))
-    } catch {}
+    } catch {
+      // it's treated as an anon request
+    }
 
     try {
       const { log, logError } = getLogs(req)
-      res.status(200).json(await fn(req, authUser, log, logError))
+      res.status(200).json(await fn(req, authUser, log, logError, res))
     } catch (e) {
       next(e)
     }

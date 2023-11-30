@@ -43,7 +43,6 @@ import {
   createSupabaseDirectClient,
 } from 'shared/supabase/init'
 import { contentSchema } from 'shared/zod-types'
-import { createNewContractFromPrivateGroupNotification } from 'shared/create-notification'
 import { addGroupToContract } from 'shared/update-group-contracts-internal'
 import { generateContractEmbeddings } from 'shared/supabase/contracts'
 import { manifoldLoveUserId } from 'common/love/constants'
@@ -80,7 +79,7 @@ export async function createMarketHelper(
     totalBounty,
     loverUserId1,
     loverUserId2,
-    matchCreatorId
+    matchCreatorId,
   } = validateMarketBody(body)
 
   const userId = auth.uid
@@ -93,7 +92,7 @@ export async function createMarketHelper(
     }
   }
 
-  let groups = groupIds
+  const groups = groupIds
     ? await Promise.all(
         groupIds.map(async (gId) =>
           getGroupCheckPermissions(gId, visibility, userId)
@@ -200,9 +199,6 @@ export async function createMarketHelper(
     await Promise.all(
       groups.map(async (g) => {
         await addGroupToContract(contract, g, pg)
-        if (contract.visibility == 'private') {
-          await createNewContractFromPrivateGroupNotification(user, contract, g)
-        }
       })
     )
   }
@@ -438,7 +434,7 @@ function validateMarketBody(body: any) {
     totalBounty,
     loverUserId1,
     loverUserId2,
-    matchCreatorId
+    matchCreatorId,
   }
 }
 

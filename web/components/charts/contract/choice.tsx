@@ -7,13 +7,14 @@ import { CPMMMultiContract, MultiContract } from 'common/contract'
 import { getAnswerProbability } from 'common/calculate'
 import {
   TooltipProps,
+  ZoomParams,
   formatDateInRange,
   formatPct,
-  getDateRange,
+  getEndDate,
   getRightmostVisibleDate,
 } from '../helpers'
 import { MultiValueHistoryChart } from '../generic-charts'
-import { HistoryPoint, viewScale } from 'common/chart'
+import { HistoryPoint } from 'common/chart'
 import { Row } from 'web/components/layout/row'
 import { pick } from 'lodash'
 import { buildArray } from 'common/util/array'
@@ -108,8 +109,7 @@ export const ChoiceContractChart = (props: {
   multiPoints?: MultiPoints
   width: number
   height: number
-  viewScaleProps: viewScale
-  controlledStart?: number
+  zoomParams: ZoomParams
   showZoomer?: boolean
   highlightAnswerId?: string
   selectedAnswerIds: string[]
@@ -119,15 +119,14 @@ export const ChoiceContractChart = (props: {
     multiPoints = {},
     width,
     height,
-    viewScaleProps,
-    controlledStart,
+    zoomParams,
     showZoomer,
     highlightAnswerId,
     selectedAnswerIds,
   } = props
 
-  const [start, end] = getDateRange(contract)
-  const rangeStart = controlledStart ?? start
+  const start = contract.createdTime
+  const end = getEndDate(contract)
   const answers = useChartAnswers(contract)
 
   const now = useMemo(() => Date.now(), [multiPoints])
@@ -165,7 +164,7 @@ export const ChoiceContractChart = (props: {
     ...Object.values(multiPoints).map((p) => last(p)?.x ?? 0)
   )
   const rightmostDate = getRightmostVisibleDate(end, rightestPointX, now)
-  const xScale = scaleTime([rangeStart, rightmostDate], [0, width])
+  const xScale = scaleTime([start, rightmostDate], [0, width])
   const yScale = scaleLinear([0, 1], [height, 0])
 
   const chosenAnswerIds = buildArray(selectedAnswerIds, highlightAnswerId)
@@ -175,13 +174,16 @@ export const ChoiceContractChart = (props: {
       h={height}
       xScale={xScale}
       yScale={yScale}
-      viewScaleProps={viewScaleProps}
+      zoomParams={zoomParams}
       showZoomer={showZoomer}
-      yKind="percent"
       data={pick(data, chosenAnswerIds)}
       hoveringId={highlightAnswerId}
       Tooltip={(props) => (
-        <ChoiceTooltip answers={answers} xScale={xScale} ttProps={props} />
+        <ChoiceTooltip
+          answers={answers}
+          xScale={zoomParams.viewXScale}
+          ttProps={props}
+        />
       )}
     />
   )

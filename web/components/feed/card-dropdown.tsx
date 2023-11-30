@@ -15,15 +15,20 @@ import { Contract } from 'common/contract'
 import { FeedTimelineItem } from 'web/hooks/use-feed-timeline'
 import toast from 'react-hot-toast'
 import { TiVolume, TiVolumeMute } from 'react-icons/ti'
+import { useAdmin } from 'web/hooks/use-admin'
+import { InformationCircleIcon } from '@heroicons/react/outline'
 
 export function FeedDropdown(props: {
   contract: Contract
   item: FeedTimelineItem | undefined
   interesting: boolean
   toggleInteresting?: () => void
+  importanceScore: number
 }) {
-  const { contract, item, interesting, toggleInteresting } = props
+  const { contract, item, importanceScore, interesting, toggleInteresting } =
+    props
   const user = useUser()
+  const isAdmin = useAdmin()
   const { isFollowing, setIsFollowing } = useIsFollowing(
     user?.id,
     contract.creatorId
@@ -68,7 +73,19 @@ export function FeedDropdown(props: {
           <TiVolume className="h-5 w-5" aria-hidden />
         ),
         onClick: () => markUninteresting(),
-      }
+      },
+    isAdmin && {
+      name: 'Why am I seeing this?',
+      icon: <InformationCircleIcon className="h-5 w-5" aria-hidden />,
+      onClick: () =>
+        toast(
+          item?.dataType +
+            ' : ' +
+            item?.reasons?.join(', ') +
+            ', importance: ' +
+            importanceScore.toPrecision(2)
+        ),
+    }
   ) as DropdownItem[]
 
   if (!user) return <></>

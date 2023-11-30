@@ -146,7 +146,11 @@ export function ContractTabs(props: {
             title: positionsTitle,
             content: (
               <UserPositionsTable
-                positions={userPositionsByOutcome}
+                positions={
+                  Object.values(userPositionsByOutcome).length > 0
+                    ? userPositionsByOutcome
+                    : undefined
+                }
                 contract={contract as CPMMBinaryContract}
                 setTotalPositions={setTotalPositions}
               />

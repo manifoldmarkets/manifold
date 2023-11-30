@@ -22,6 +22,8 @@ import { noFees } from 'common/fees'
 import { getCpmmInitialLiquidity } from 'common/antes'
 import { addUserToContractFollowers } from 'shared/follow-market'
 import { GCPLog } from 'shared/utils'
+import { createCommentOrAnswerOrUpdatedContractNotification } from 'shared/create-notification'
+import * as crypto from 'crypto'
 
 const bodySchema = z
   .object({
@@ -35,7 +37,7 @@ export const createanswercpmm = authEndpoint(async (req, auth, log) => {
   log('Received ' + contractId + ' ' + text)
 
   // Run as transaction to prevent race conditions.
-  const { newAnswerId, contract } = await firestore.runTransaction(
+  const { newAnswerId, contract, user } = await firestore.runTransaction(
     async (transaction) => {
       const contractDoc = firestore.doc(`contracts/${contractId}`)
       const contractSnap = await transaction.get(contractDoc)
@@ -100,6 +102,7 @@ export const createanswercpmm = authEndpoint(async (req, auth, log) => {
         prob: 0.5,
         totalLiquidity: ANSWER_COST,
         subsidyPool: 0,
+        probChanges: { day: 0, week: 0, month: 0 },
       }
 
       if (shouldAnswersSumToOne) {
@@ -136,7 +139,7 @@ export const createanswercpmm = authEndpoint(async (req, auth, log) => {
       )
       transaction.create(liquidityDoc, lp)
 
-      return { newAnswerId: newAnswer.id, contract }
+      return { newAnswerId: newAnswer.id, contract, user }
     }
   )
 
@@ -144,6 +147,15 @@ export const createanswercpmm = authEndpoint(async (req, auth, log) => {
   if (shouldAnswersSumToOne && addAnswersMode !== 'DISABLED') {
     await convertOtherAnswerShares(contractId, newAnswerId)
   }
+  await createCommentOrAnswerOrUpdatedContractNotification(
+    newAnswerId,
+    'answer',
+    'created',
+    user,
+    crypto.randomUUID(),
+    text,
+    contract
+  )
   await addUserToContractFollowers(contractId, auth.uid)
   return { newAnswerId }
 })

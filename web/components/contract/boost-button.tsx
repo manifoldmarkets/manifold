@@ -356,8 +356,8 @@ function FeedAnalytics(props: { contractId: string }) {
       await db
         .from('txns')
         .select('*', { count: 'exact' })
-        .eq('data->>category', 'MARKET_BOOST_REDEEM')
-        .eq('data->>fromId', adQuery.data?.data?.[0]?.id)
+        .eq('data->>category' as any, 'MARKET_BOOST_REDEEM')
+        .eq('data->>fromId' as any, adQuery.data?.data?.[0]?.id)
   )
 
   if (adQuery.error || viewQuery.error || redeemQuery.error) {

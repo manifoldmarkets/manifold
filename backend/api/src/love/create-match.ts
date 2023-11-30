@@ -14,7 +14,6 @@ import { User } from 'common/user'
 import * as crypto from 'crypto'
 import { getNotificationDestinationsForUser } from 'common/user-notification-preferences'
 import { Notification } from 'common/notification'
-import { insertNotificationToSupabase } from 'shared/create-notification'
 import { createPushNotification } from 'shared/create-push-notification'
 import {
   manifoldLoveRelationshipsGroupId,
@@ -27,6 +26,7 @@ import { createPrivateUserMessageMain } from 'api/create-private-user-message'
 import { contentSchema } from 'shared/zod-types'
 import { JSONContent } from '@tiptap/core'
 import { ChatVisibility } from 'common/chat-message'
+import { insertNotificationToSupabase } from 'shared/supabase/notifications'
 
 const MIN_BET_AMOUNT_FOR_NEW_MATCH = 50
 

@@ -20,6 +20,9 @@ export interface Database {
           pool_no: number | null
           pool_yes: number | null
           prob: number | null
+          prob_change_day: number | null
+          prob_change_month: number | null
+          prob_change_week: number | null
           subsidy_pool: number | null
           text: string | null
           text_fts: unknown | null
@@ -36,6 +39,9 @@ export interface Database {
           pool_no?: number | null
           pool_yes?: number | null
           prob?: number | null
+          prob_change_day?: number | null
+          prob_change_month?: number | null
+          prob_change_week?: number | null
           subsidy_pool?: number | null
           text?: string | null
           text_fts?: unknown | null
@@ -52,6 +58,9 @@ export interface Database {
           pool_no?: number | null
           pool_yes?: number | null
           prob?: number | null
+          prob_change_day?: number | null
+          prob_change_month?: number | null
+          prob_change_week?: number | null
           subsidy_pool?: number | null
           text?: string | null
           text_fts?: unknown | null
@@ -406,6 +415,7 @@ export interface Database {
           resolution_probability: number | null
           resolution_time: string | null
           slug: string | null
+          views: number | null
           visibility: string | null
         }
         Insert: {
@@ -429,6 +439,7 @@ export interface Database {
           resolution_probability?: number | null
           resolution_time?: string | null
           slug?: string | null
+          views?: number | null
           visibility?: string | null
         }
         Update: {
@@ -452,6 +463,7 @@ export interface Database {
           resolution_probability?: number | null
           resolution_time?: string | null
           slug?: string | null
+          views?: number | null
           visibility?: string | null
         }
         Relationships: []
@@ -890,6 +902,40 @@ export interface Database {
         }
         Relationships: []
       }
+        love_compatibility_answers: {
+        Row: {
+          created_time: string
+          creator_id: string
+          explanation: string | null
+          id: number
+          importance: number
+          multiple_choice: number
+          pref_choices: number[] 
+          question_id: number
+        }
+        Insert: {
+          created_time?: string
+          creator_id: string
+          explanation?: string | null
+          id?: never
+          importance: number 
+          multiple_choice: number
+          pref_choices: number[] 
+          question_id: number
+        }
+        Update: {
+          created_time?: string
+          creator_id?: string
+          explanation?: string | null
+          id?: never
+          importance: number
+          multiple_choice: number
+          pref_choices: number[] 
+          question_id?: number
+        }
+        Relationships: []
+      }
+
       love_answers: {
         Row: {
           created_time: string
@@ -1720,6 +1766,30 @@ export interface Database {
           rating?: number
           reviewer_id?: string
           vendor_id?: string
+        }
+        Relationships: []
+      }
+      scheduler_info: {
+        Row: {
+          created_time: string
+          id: number
+          job_name: string
+          last_end_time: string | null
+          last_start_time: string | null
+        }
+        Insert: {
+          created_time?: string
+          id?: never
+          job_name: string
+          last_end_time?: string | null
+          last_start_time?: string | null
+        }
+        Update: {
+          created_time?: string
+          id?: never
+          job_name?: string
+          last_end_time?: string | null
+          last_start_time?: string | null
         }
         Relationships: []
       }
@@ -2976,6 +3046,7 @@ export interface Database {
           resolution_probability: number | null
           resolution_time: string | null
           slug: string | null
+          views: number | null
           visibility: string | null
         }[]
       }
@@ -3241,6 +3312,7 @@ export interface Database {
           resolution_probability: number | null
           resolution_time: string | null
           slug: string | null
+          views: number | null
           visibility: string | null
         }[]
       }

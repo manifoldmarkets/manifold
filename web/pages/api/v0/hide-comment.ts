@@ -1,9 +1,4 @@
-import {
-  CORS_ORIGIN_MANIFOLD,
-  CORS_ORIGIN_LOCALHOST,
-  isAdminId,
-  isModId,
-} from 'common/envs/constants'
+import { isAdminId, isModId } from 'common/envs/constants'
 import { NextApiRequest, NextApiResponse } from 'next'
 import { applyCorsHeaders } from 'web/lib/api/cors'
 import * as admin from 'firebase-admin'
@@ -29,10 +24,7 @@ export type HideCommentReq = {
 }
 
 export default async function route(req: NextApiRequest, res: NextApiResponse) {
-  await applyCorsHeaders(req, res, {
-    origin: [CORS_ORIGIN_MANIFOLD, CORS_ORIGIN_LOCALHOST],
-    methods: 'POST',
-  })
+  await applyCorsHeaders(req, res)
   const { commentPath } = validate(schema, req.body)
 
   const userId = await getUserId(req, res)

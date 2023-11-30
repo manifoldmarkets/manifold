@@ -17,7 +17,8 @@ import { UserLink } from '../widgets/user-link'
 import { NO_CLOSE_TIME_TYPES } from 'common/contract'
 import { FollowButton } from '../buttons/follow-button'
 import { updateMarket } from 'web/lib/firebase/api'
-import { FaHourglassEnd, FaHourglassHalf } from 'react-icons/fa6'
+import { FaClock } from 'react-icons/fa6'
+import { MdLockClock } from 'react-icons/md'
 
 export function AuthorInfo(props: { contract: Contract }) {
   const { contract } = props
@@ -86,42 +87,12 @@ export function CloseDate(props: {
 }) {
   const { closeTime, contract, editable } = props
 
-  const isClient = useIsClient()
+  const [isEditingCloseTime, setIsEditingCloseTime] = useState(false)
   const dayJsCloseTime = dayjs(closeTime)
   const dayJsNow = dayjs()
-
-  const [isEditingCloseTime, setIsEditingCloseTime] = useState(false)
-  const [closeDate, setCloseDate] = useState(
-    closeTime && dayJsCloseTime.format('YYYY-MM-DD')
-  )
-  const [closeHoursMinutes, setCloseHoursMinutes] = useState(
-    closeTime && dayJsCloseTime.format('HH:mm')
-  )
-
   const isSameYear = dayJsCloseTime.isSame(dayJsNow, 'year')
   const isSameDay = dayJsCloseTime.isSame(dayJsNow, 'day')
   const isSoon = dayJsCloseTime.diff(dayJsNow, 'month') < 4
-
-  let newCloseTime = closeDate
-    ? dayjs(`${closeDate}T${closeHoursMinutes}`).valueOf()
-    : undefined
-
-  async function onSave(customTime?: number) {
-    if (customTime) {
-      newCloseTime = customTime
-      setCloseDate(dayjs(newCloseTime).format('YYYY-MM-DD'))
-      setCloseHoursMinutes(dayjs(newCloseTime).format('HH:mm'))
-    }
-    if (!newCloseTime) return
-
-    setIsEditingCloseTime(false)
-    if (newCloseTime !== closeTime) {
-      await updateMarket({
-        contractId: contract.id,
-        closeTime: newCloseTime,
-      })
-    }
-  }
   const almostForeverTime = dayjs(contract.createdTime).add(
     dayjs.duration(900, 'year')
   )
@@ -132,54 +103,6 @@ export function CloseDate(props: {
 
   return (
     <>
-      <Modal
-        size="md"
-        open={isEditingCloseTime}
-        setOpen={setIsEditingCloseTime}
-        position="top"
-      >
-        <Col className="bg-canvas-0 rounded-lg p-8">
-          <Title className="!text-2xl">Close time</Title>
-          <div className="mb-4">
-            {contract.outcomeType === 'POLL' ? 'Voting' : 'Trading'} will halt
-            at this time
-          </div>
-          <Row className="flex-wrap items-stretch gap-2">
-            <Input
-              type="date"
-              className="dark:date-range-input-white shrink-0 sm:w-fit"
-              onClick={(e) => e.stopPropagation()}
-              onChange={(e) => setCloseDate(e.target.value)}
-              min={isClient ? dayJsNow.format('YYYY-MM-DD') : undefined}
-              max="9999-12-31"
-              value={closeDate}
-            />
-            <Input
-              type="time"
-              className="dark:date-range-input-white shrink-0 sm:w-max"
-              onClick={(e) => e.stopPropagation()}
-              onChange={(e) => setCloseHoursMinutes(e.target.value)}
-              value={closeHoursMinutes}
-            />
-            <Button size="xl" onClick={() => onSave()}>
-              Save
-            </Button>
-          </Row>
-
-          {(contract.closeTime ?? Date.now() + 1) > Date.now() && (
-            <Row className="mt-8 justify-center">
-              <Button
-                size={'xs'}
-                color="yellow"
-                onClick={() => onSave(Date.now())}
-              >
-                Close question now
-              </Button>
-            </Row>
-          )}
-        </Col>
-      </Modal>
-
       <Row
         className={clsx(
           'group items-center gap-1',
@@ -204,9 +127,9 @@ export function CloseDate(props: {
               className="flex items-center gap-1"
             >
               {dayjs().isBefore(closeTime) ? (
-                <FaHourglassHalf className="fill-ink-500 h-4 w-4" />
+                <FaClock className="text-ink-500 h-3.5 w-3.5" />
               ) : (
-                <FaHourglassEnd className="fill-ink-500 h-4 w-4" />
+                <MdLockClock className="text-ink-500 h-5 w-5" />
               )}
               {isSameDay
                 ? fromNow(closeTime)
@@ -219,7 +142,98 @@ export function CloseDate(props: {
         {editable && (
           <PencilIcon className="sm:group-hover:fill-ink-600 hidden h-4 w-4 sm:flex sm:fill-transparent" />
         )}
+        <EditCloseTimeModal
+          contract={contract}
+          isOpen={isEditingCloseTime}
+          setOpen={setIsEditingCloseTime}
+        />
       </Row>
     </>
+  )
+}
+
+export const EditCloseTimeModal = (props: {
+  contract: Contract
+  isOpen: boolean
+  setOpen: (isOpen: boolean) => void
+  setNewCloseTime?: (closeTime: number) => void
+}) => {
+  const { contract, isOpen, setOpen, setNewCloseTime } = props
+  const { closeTime } = contract
+  const isClient = useIsClient()
+  const dayJsCloseTime = dayjs(closeTime)
+  const dayJsNow = dayjs()
+
+  const [closeDate, setCloseDate] = useState(
+    closeTime && dayJsCloseTime.format('YYYY-MM-DD')
+  )
+  const [closeHoursMinutes, setCloseHoursMinutes] = useState(
+    closeTime && dayJsCloseTime.format('HH:mm')
+  )
+
+  let newCloseTime = closeDate
+    ? dayjs(`${closeDate}T${closeHoursMinutes}`).valueOf()
+    : undefined
+
+  async function onSave(customTime?: number) {
+    if (customTime) {
+      newCloseTime = customTime
+      setCloseDate(dayjs(newCloseTime).format('YYYY-MM-DD'))
+      setCloseHoursMinutes(dayjs(newCloseTime).format('HH:mm'))
+    }
+    if (!newCloseTime) return
+
+    setOpen(false)
+    if (newCloseTime !== closeTime) {
+      await updateMarket({
+        contractId: contract.id,
+        closeTime: newCloseTime,
+      })
+      setNewCloseTime?.(newCloseTime)
+    }
+  }
+  return (
+    <Modal size="md" open={isOpen} setOpen={setOpen} position="top">
+      <Col className="bg-canvas-0 rounded-lg p-8">
+        <Title className="!text-2xl">Close time</Title>
+        <div className="mb-4">
+          {contract.outcomeType === 'POLL' ? 'Voting' : 'Trading'} will halt at
+          this time
+        </div>
+        <Row className="flex-wrap items-stretch gap-2">
+          <Input
+            type="date"
+            className="dark:date-range-input-white shrink-0 sm:w-fit"
+            onClick={(e) => e.stopPropagation()}
+            onChange={(e) => setCloseDate(e.target.value)}
+            min={isClient ? dayJsNow.format('YYYY-MM-DD') : undefined}
+            max="9999-12-31"
+            value={closeDate}
+          />
+          <Input
+            type="time"
+            className="dark:date-range-input-white shrink-0 sm:w-max"
+            onClick={(e) => e.stopPropagation()}
+            onChange={(e) => setCloseHoursMinutes(e.target.value)}
+            value={closeHoursMinutes}
+          />
+          <Button size="xl" onClick={() => onSave()}>
+            Save
+          </Button>
+        </Row>
+
+        {(contract.closeTime ?? Date.now() + 1) > Date.now() && (
+          <Row className="mt-8 justify-center">
+            <Button
+              size={'xs'}
+              color="yellow"
+              onClick={() => onSave(Date.now())}
+            >
+              Close question now
+            </Button>
+          </Row>
+        )}
+      </Col>
+    </Modal>
   )
 }

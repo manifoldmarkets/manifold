@@ -8,7 +8,6 @@ import { getNotificationDestinationsForUser } from 'common/user-notification-pre
 import { log } from 'shared/utils'
 import { PushTicket } from 'common/push-ticket'
 
-const firestore = admin.firestore()
 type ExpoPushMessageWithNotification = ExpoPushMessage & {
   data: Notification
 }
@@ -19,6 +18,7 @@ export const createPushNotification = async (
   title: string,
   body: string
 ) => {
+  const firestore = admin.firestore()
   const expo = new Expo()
   const { sendToMobile } = getNotificationDestinationsForUser(
     privateUser,

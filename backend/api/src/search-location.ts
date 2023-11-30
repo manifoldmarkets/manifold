@@ -1,4 +1,3 @@
-import { GiphyFetch } from '@giphy/js-fetch-api'
 import { z } from 'zod'
 import { MaybeAuthedEndpoint, validate } from './helpers'
 

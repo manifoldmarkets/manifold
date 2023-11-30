@@ -14,7 +14,6 @@ import { BinaryContractChart } from 'web/components/charts/contract/binary'
 import { NumericContractChart } from 'web/components/charts/contract/numeric'
 import { PseudoNumericContractChart } from 'web/components/charts/contract/pseudo-numeric'
 import { StonkContractChart } from 'web/components/charts/contract/stonk'
-import { useViewScale } from 'web/components/charts/helpers'
 import {
   BinaryResolutionOrChance,
   NumericResolutionOrExpectation,
@@ -155,59 +154,29 @@ const ContractChart = (props: {
   showOnlyLastThousand?: boolean
 }) => {
   const { contract, showOnlyLastThousand, ...rest } = props
-  const viewScale = useViewScale()
+  if (!props.points) return null
 
-  const points = showOnlyLastThousand
-    ? props.points?.slice(-1000) ?? []
-    : props.points ?? []
-
-  const controlledStart = showOnlyLastThousand
-    ? points[0]?.x ?? undefined
-    : undefined
+  const points = showOnlyLastThousand ? props.points.slice(-1000) : props.points
 
   switch (contract.outcomeType) {
     case 'BINARY':
       return (
-        <BinaryContractChart
-          {...rest}
-          viewScaleProps={viewScale}
-          contract={contract}
-          betPoints={points}
-          controlledStart={controlledStart}
-        />
+        <BinaryContractChart {...rest} contract={contract} betPoints={points} />
       )
     case 'PSEUDO_NUMERIC':
       return (
         <PseudoNumericContractChart
           {...rest}
-          viewScaleProps={viewScale}
           contract={contract}
           betPoints={points}
-          controlledStart={controlledStart}
         />
-      )
-    case 'FREE_RESPONSE':
-    case 'MULTIPLE_CHOICE':
-      return (
-        <div className="flex h-full flex-col justify-center">
-          <SimpleAnswerBars
-            contract={contract}
-            maxAnswers={numBars(props.height)}
-          />
-        </div>
       )
 
     case 'NUMERIC':
       return <NumericContractChart {...rest} contract={contract} />
     case 'STONK':
       return (
-        <StonkContractChart
-          {...rest}
-          betPoints={points}
-          viewScaleProps={viewScale}
-          contract={contract}
-          controlledStart={controlledStart}
-        />
+        <StonkContractChart {...rest} betPoints={points} contract={contract} />
       )
 
     default:
@@ -304,15 +273,24 @@ function ContractSmolView(props: {
               !isMulti && 'pr-10'
             )}
           >
-            {(w, h) => (
-              <ContractChart
-                contract={contract}
-                points={points}
-                width={w}
-                height={h}
-                showOnlyLastThousand={showQRCode}
-              />
-            )}
+            {(w, h) =>
+              isMulti ? (
+                <div className="flex h-full flex-col justify-center">
+                  <SimpleAnswerBars
+                    contract={contract}
+                    maxAnswers={numBars(h)}
+                  />
+                </div>
+              ) : (
+                <ContractChart
+                  contract={contract}
+                  points={points}
+                  width={w}
+                  height={h}
+                  showOnlyLastThousand={showQRCode}
+                />
+              )
+            }
           </SizedContainer>
         )}
         {isBountiedQuestion && (

@@ -1,5 +1,3 @@
-import { ScaleContinuousNumeric, ScaleTime } from 'd3-scale'
-import { Dispatch, SetStateAction } from 'react'
 import { removeUndefinedProps } from './util/object'
 import { first, last, mapValues, meanBy } from 'lodash'
 
@@ -29,23 +27,6 @@ export const serializeMultiPoints = (data: {
   return mapValues(data, (points) =>
     points.map(({ x, y }) => [x, y] as [number, number])
   )
-}
-
-export type viewScale = {
-  viewXScale: ScaleTime<number, number, never> | undefined
-  setViewXScale: Dispatch<
-    SetStateAction<ScaleTime<number, number, never> | undefined>
-  >
-  viewYScale: ScaleContinuousNumeric<number, number, never> | undefined
-  setViewYScale: Dispatch<
-    SetStateAction<ScaleContinuousNumeric<number, number, never> | undefined>
-  >
-}
-
-export type AxisConstraints = {
-  min?: number
-  max?: number
-  minExtent?: number
 }
 
 export const maxMinBin = <P extends HistoryPoint>(

@@ -17,7 +17,7 @@ import {
 } from 'common/contract'
 import { formatMoney } from 'common/util/format'
 import Link from 'next/link'
-import { Button } from 'web/components/buttons/button'
+import { Button, IconButton } from 'web/components/buttons/button'
 import { Row } from 'web/components/layout/row'
 import { useUser } from 'web/hooks/use-user'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
@@ -424,6 +424,23 @@ function Answer(props: {
               answer={answer}
               userBets={userBets ?? []}
             />
+            {onClick && (
+              <IconButton
+                className={'-ml-1 !px-1.5'}
+                size={'2xs'}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onClick()
+                }}
+              >
+                <ChevronDownIcon
+                  className={clsx(
+                    'h-4 w-4',
+                    expanded ? 'rotate-180 transform' : 'rotate-0 transform'
+                  )}
+                />
+              </IconButton>
+            )}
           </Row>
         }
       />
@@ -434,8 +451,9 @@ function Answer(props: {
           className="mt-0.5 self-end sm:mx-3 sm:mt-0"
         />
       )}
+
       {expanded && (
-        <Row className={'mx-0.5 my-1 items-center'}>
+        <Row className={'mx-0.5 mb-1 mt-2 items-center'}>
           {showAvatars && answerCreator && (
             <Row className={'items-center self-start'}>
               <Avatar avatarUrl={answerCreator.avatarUrl} size={'xs'} />

@@ -1,13 +1,11 @@
 import { DAY_MS } from 'common/util/time'
 import {
-  createSupabaseClient,
   createSupabaseDirectClient,
   SupabaseDirectClient,
 } from 'shared/supabase/init'
-import { log, revalidateStaticProps } from 'shared/utils'
+import { revalidateStaticProps } from 'shared/utils'
 import { User } from 'common/user'
 import { groupBy, mapValues, sumBy, uniq } from 'lodash'
-import { getAnswersForContracts } from 'common/supabase/contracts'
 import { Contract, CPMMMultiContract } from 'common/contract'
 import {
   calculateMetricsByContractAndAnswer,
@@ -21,15 +19,16 @@ import { bulkInsert } from 'shared/supabase/utils'
 import { Bet } from 'common/bet'
 import { convertPortfolioHistory } from 'common/supabase/portfolio-metrics'
 import * as admin from 'firebase-admin'
-const firestore = admin.firestore()
+import { GCPLog, log as oldLog } from 'shared/utils'
+import { getAnswersForContractsDirect } from 'shared/supabase/answers'
 
-export async function updateUserMetricsCore() {
+export async function updateUserMetricsCore(log: GCPLog = oldLog) {
+  const firestore = admin.firestore()
   const now = Date.now()
   const yesterday = now - DAY_MS
   const weekAgo = now - DAY_MS * 7
   const monthAgo = now - DAY_MS * 30
   const pg = createSupabaseDirectClient()
-  const db = createSupabaseClient()
   const writer = firestore.bulkWriter()
 
   log('Loading users...')
@@ -83,8 +82,8 @@ export async function updateUserMetricsCore() {
   log('Loading contracts...')
   const allBets = Object.values(metricRelevantBets).flat()
   const contracts = await getRelevantContracts(pg, allBets)
-  const answersByContractId = await getAnswersForContracts(
-    db,
+  const answersByContractId = await getAnswersForContractsDirect(
+    pg,
     contracts.filter((c) => c.mechanism === 'cpmm-multi-1').map((c) => c.id)
   )
   const contractsById = Object.fromEntries(contracts.map((c) => [c.id, c]))
@@ -147,7 +146,8 @@ export async function updateUserMetricsCore() {
     const metricsByContract = calculateMetricsByContractAndAnswer(
       metricRelevantBetsByContract,
       contractsById,
-      user
+      user,
+      answersByContractId
     ).flat()
 
     await bulkUpdateContractMetrics(metricsByContract).catch((e) => {

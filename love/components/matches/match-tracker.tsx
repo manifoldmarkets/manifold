@@ -1,6 +1,8 @@
 import clsx from 'clsx'
-import { Row } from 'web/components/layout/row'
+import { Fragment } from 'react'
 import { HeartIcon } from '@heroicons/react/solid'
+
+import { Row } from 'web/components/layout/row'
 
 export function MatchTracker(props: {
   lastResolved: number
@@ -13,7 +15,7 @@ export function MatchTracker(props: {
       {Array(4)
         .fill(null)
         .map((_, i) => (
-          <>
+          <Fragment key={i}>
             {i !== 0 && (
               <hr
                 className={clsx(
@@ -43,7 +45,7 @@ export function MatchTracker(props: {
                 <HeartIcon className="mx-0.5 my-[1px] h-3.5 w-3.5" />
               )}
             </button>
-          </>
+          </Fragment>
         ))}
     </Row>
   )

@@ -1,13 +1,10 @@
 import * as admin from 'firebase-admin'
-import {
-  createBountyAddedNotification,
-  createBountyCanceledNotification,
-} from 'shared/create-notification'
+import { createBountyCanceledNotification } from 'shared/create-notification'
 import { runCancelBountyTxn } from 'shared/txn/run-bounty-txn'
 import { z } from 'zod'
 import { APIError, authEndpoint, validate } from './helpers'
 import { Contract } from 'common/contract'
-import dayjs = require('dayjs')
+
 const bodySchema = z
   .object({
     contractId: z.string(),
@@ -37,7 +34,7 @@ export const cancelbounty = authEndpoint(async (req, auth) => {
 
     const bountyLeft = contract.bountyLeft
 
-    const { status, txn } = await runCancelBountyTxn(
+    const { txn } = await runCancelBountyTxn(
       transaction,
       {
         category: 'BOUNTY_CANCELED',

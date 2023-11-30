@@ -50,9 +50,13 @@ export async function getStaticProps() {
   }
 }
 
+const EXCLUDED_USERNAMES = ['acc', 'ManifoldLove']
+
 const queryLeaderboardUsers = async (period: Period) => {
   const [topTraders, topCreators] = await Promise.all([
-    getTopTraders(period),
+    getTopTraders(period).then((users) =>
+      users.filter((u) => !EXCLUDED_USERNAMES.includes(u.username)).slice(0, 20)
+    ),
     getTopCreators(period),
   ])
   return {

@@ -6,13 +6,15 @@ import { Button } from '../buttons/button'
 import { Col } from '../layout/col'
 import { MODAL_CLASS, Modal } from '../layout/modal'
 import { BuyPanel, BinaryOutcomes } from './bet-panel'
+import { track } from 'web/lib/service/analytics'
 
 export function BetButton(props: {
   contract: CPMMBinaryContract
   user: User | null | undefined
+  feedId?: number
   className?: string
 }) {
-  const { contract, user, className } = props
+  const { contract, user, feedId, className } = props
   const { closeTime } = contract
   const isClosed = closeTime && closeTime < Date.now()
   const [dialogueThatIsOpen, setDialogueThatIsOpen] =
@@ -27,6 +29,7 @@ export function BetButton(props: {
         contract={contract}
         outcome="YES"
         user={user}
+        feedId={feedId}
       />
     </div>
   )
@@ -38,9 +41,16 @@ function FeedBetButton(props: {
   contract: CPMMBinaryContract
   outcome: 'YES' | 'NO'
   user?: User | null | undefined
+  feedId?: number
 }) {
-  const { dialogueThatIsOpen, setDialogueThatIsOpen, contract, outcome, user } =
-    props
+  const {
+    dialogueThatIsOpen,
+    feedId,
+    setDialogueThatIsOpen,
+    contract,
+    outcome,
+    user,
+  } = props
   return (
     <>
       <Button
@@ -53,6 +63,10 @@ function FeedBetButton(props: {
             firebaseLogin()
             return
           }
+          track('feed bet button clicked', {
+            feedId: feedId,
+            contractId: contract.id,
+          })
           setDialogueThatIsOpen(outcome)
         }}
       >

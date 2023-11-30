@@ -15,13 +15,7 @@ import {
   ReviewNotificationData,
   UniqueBettorData,
 } from 'common/notification'
-import {
-  MANIFOLD_AVATAR_URL,
-  MANIFOLD_USER_NAME,
-  MANIFOLD_USER_USERNAME,
-  PrivateUser,
-  User,
-} from 'common/user'
+import { PrivateUser, User } from 'common/user'
 import { Contract, MultiContract, renderResolution } from 'common/contract'
 import {
   getPrivateUser,
@@ -30,20 +24,18 @@ import {
   getValues,
   log,
 } from 'shared/utils'
-import { Comment, ContractComment } from 'common/comment'
+import { ContractComment } from 'common/comment'
 import { groupBy, keyBy, mapValues, minBy, sum, uniq } from 'lodash'
 import { Bet, LimitBet } from 'common/bet'
-import { Answer, DpmAnswer } from 'common/answer'
+import { Answer } from 'common/answer'
 import { removeUndefinedProps } from 'common/util/object'
 import { Group } from 'common/group'
 import {
-  sendBonusWithInterestingMarketsEmail,
   sendMarketCloseEmail,
   sendMarketResolutionEmail,
   sendNewAnswerEmail,
   sendNewCommentEmail,
   sendNewFollowedMarketEmail,
-  sendNewPrivateMarketEmail,
   sendNewUniqueBettorsEmail,
 } from './emails'
 import {
@@ -60,42 +52,27 @@ import { QuestType } from 'common/quest'
 import { QuestRewardTxn } from 'common/txn'
 import { formatMoney, getMoneyNumber } from 'common/util/format'
 import {
-  createSupabaseClient,
   createSupabaseDirectClient,
   SupabaseDirectClient,
 } from 'shared/supabase/init'
 import * as crypto from 'crypto'
-import { getUniqueBettorIds } from 'shared/supabase/contracts'
-import { getGroupMemberIds } from 'common/supabase/groups'
+import {
+  getUniqueBettorIds,
+  getUniqueVoterIds,
+} from 'shared/supabase/contracts'
 import { richTextToString } from 'common/util/parse'
-import { JSONContent } from '@tiptap/core'
 import { league_user_info } from 'common/leagues'
 import { hasUserSeenMarket } from 'shared/helpers/seen-markets'
 import { getUserFollowerIds } from 'shared/supabase/users'
-import { getForYouMarkets } from './supabase/search-contracts'
 import { isManifoldLoveContract } from 'common/love/constants'
 import { buildArray, filterDefined } from 'common/util/array'
-
-const firestore = admin.firestore()
+import { isAdminId, isModId } from 'common/envs/constants'
+import { insertNotificationToSupabase } from 'shared/supabase/notifications'
 
 type recipients_to_reason_texts = {
   [userId: string]: { reason: notification_reason_types }
 }
 
-export const insertNotificationToSupabase = async (
-  notification: Notification,
-  pg: SupabaseDirectClient
-) => {
-  return await pg.none(
-    `insert into postgres.public.user_notifications (user_id, notification_id, data, fs_updated_time) values ($1, $2, $3, $4) on conflict do nothing`,
-    [
-      notification.userId,
-      notification.id,
-      notification,
-      new Date().toISOString(),
-    ]
-  )
-}
 export const createFollowOrMarketSubsidizedNotification = async (
   sourceId: string,
   sourceType: 'liquidity' | 'follow',
@@ -191,7 +168,7 @@ export type replied_users_info = {
     bet: Bet | undefined
   }
 }
-
+const ALL_TRADERS_ID = 'X3z4hxRXipWvGoFhxlDOVxmP5vL2'
 // TODO: remove contract updated from this, seems out of place
 export const createCommentOrAnswerOrUpdatedContractNotification = async (
   sourceId: string,
@@ -358,13 +335,18 @@ export const createCommentOrAnswerOrUpdatedContractNotification = async (
   }
 
   const notifyOtherAnswerersOnContract = async () => {
-    const answers = await getValues<DpmAnswer>(
-      firestore
-        .collection('contracts')
-        .doc(sourceContract.id)
-        .collection('answers')
+    const dpmAnswererIds = await pg.map(
+      `select distinct data->>'userId' as user_id from contract_answers where contract_id = $1`,
+      [sourceContract.id],
+      (r) => r.user_id as string
     )
-    const recipientUserIds = uniq(answers.map((answer) => answer.userId))
+    const cpmmAnswererIds = await pg.map(
+      `select distinct user_id from answers where contract_id = $1`,
+      [sourceContract.id],
+      (r) => r.user_id as string
+    )
+    const recipientUserIds = uniq(dpmAnswererIds.concat(cpmmAnswererIds))
+
     await Promise.all(
       recipientUserIds.map((userId) =>
         sendNotificationsIfSettingsPermit(
@@ -380,15 +362,13 @@ export const createCommentOrAnswerOrUpdatedContractNotification = async (
   }
 
   const notifyOtherCommentersOnContract = async () => {
-    const comments = await getValues<Comment>(
-      firestore
-        .collection('contracts')
-        .doc(sourceContract.id)
-        .collection('comments')
+    const commenterIds = await pg.map(
+      `select distinct user_id from contract_comments where contract_id = $1`,
+      [sourceContract.id],
+      (r) => r.user_id as string
     )
-    const recipientUserIds = uniq(comments.map((comment) => comment.userId))
     await Promise.all(
-      recipientUserIds.map((userId) =>
+      commenterIds.map((userId) =>
         sendNotificationsIfSettingsPermit(
           userId,
           sourceType === 'answer'
@@ -436,23 +416,34 @@ export const createCommentOrAnswerOrUpdatedContractNotification = async (
   }
 
   const notifyTaggedUsers = async () => {
-    if (sourceType === 'comment' && taggedUserIds && taggedUserIds.length > 0)
+    if (sourceType === 'comment' && taggedUserIds && taggedUserIds.length > 0) {
+      if (
+        taggedUserIds.includes(ALL_TRADERS_ID) &&
+        (sourceUser.id === sourceContract.creatorId ||
+          isAdminId(sourceUser.id) ||
+          isModId(sourceUser.id))
+      ) {
+        const allBettors = await getUniqueBettorIds(sourceContract.id, pg)
+        const allVoters = await getUniqueVoterIds(sourceContract.id, pg)
+        const allUsers = uniq(allBettors.concat(allVoters))
+        taggedUserIds.push(...allUsers)
+      }
       await Promise.all(
-        taggedUserIds.map((userId) =>
+        uniq(taggedUserIds).map((userId) =>
           sendNotificationsIfSettingsPermit(userId, 'tagged_user')
         )
       )
+    }
   }
 
   const notifyLiquidityProviders = async () => {
-    const liquidityProviders = await firestore
-      .collection(`contracts/${sourceContract.id}/liquidity`)
-      .get()
-    const liquidityProvidersIds = uniq(
-      liquidityProviders.docs.map((doc) => doc.data().userId)
+    const liquidityProviderIds = await pg.map(
+      `select distinct data->>'userId' as user_id from contract_liquidity where contract_id = $1`,
+      [sourceContract.id],
+      (r) => r.user_id as string
     )
     await Promise.all(
-      liquidityProvidersIds.map((userId) =>
+      liquidityProviderIds.map((userId) =>
         sendNotificationsIfSettingsPermit(
           userId,
           sourceType === 'answer'
@@ -883,6 +874,7 @@ export const createUniqueBettorBonusNotification = async (
   idempotencyKey: string,
   bet: Bet
 ) => {
+  const firestore = admin.firestore()
   const privateUser = await getPrivateUser(creatorId)
   if (!privateUser) return
   const { sendToBrowser, sendToEmail } = getNotificationDestinationsForUser(
@@ -1046,61 +1038,6 @@ export const createNewContractNotification = async (
       sendNotificationsIfSettingsAllow(userId, 'tagged_user')
     )
   )
-}
-
-export const createNewContractFromPrivateGroupNotification = async (
-  contractCreator: User,
-  contract: Contract,
-  group: { id: string; name: string }
-) => {
-  const pg = createSupabaseDirectClient()
-  const db = createSupabaseClient()
-  const reason = 'contract_from_private_group'
-  const sendNewContractInFromPrivateGroupNotificationsIfSettingsAllow = async (
-    userId: string
-  ) => {
-    const privateUser = await getPrivateUser(userId)
-    if (!privateUser) return
-    if (userIsBlocked(privateUser, contractCreator.id)) return
-    const { sendToBrowser, sendToEmail } = getNotificationDestinationsForUser(
-      privateUser,
-      reason
-    )
-    if (sendToBrowser) {
-      const notification: Notification = {
-        id: crypto.randomUUID(),
-        userId: userId,
-        reason,
-        createdTime: Date.now(),
-        isSeen: false,
-        sourceId: contract.id,
-        sourceType: 'contract',
-        sourceUpdateType: 'created',
-        sourceUserName: contractCreator.name,
-        sourceUserUsername: contractCreator.username,
-        sourceUserAvatarUrl: contractCreator.avatarUrl,
-        sourceText: richTextToString(contract.description as JSONContent),
-        sourceSlug: contract.slug,
-        sourceTitle: contract.question,
-        sourceContractSlug: contract.slug,
-        sourceContractId: contract.id,
-        sourceContractTitle: contract.question,
-        sourceContractCreatorUsername: contract.creatorUsername,
-      }
-      await insertNotificationToSupabase(notification, pg)
-    }
-    if (!sendToEmail) return
-    await sendNewPrivateMarketEmail(reason, privateUser, contract, group.name)
-  }
-
-  const privateMemberIds = await getGroupMemberIds(db, group.id)
-  for (const privateMemberId of privateMemberIds) {
-    if (privateMemberId != contract.creatorId) {
-      await sendNewContractInFromPrivateGroupNotificationsIfSettingsAllow(
-        privateMemberId
-      )
-    }
-  }
 }
 
 export const createContractResolvedNotifications = async (
@@ -1481,51 +1418,6 @@ export const createQuestPayoutNotification = async (
   }
   const pg = createSupabaseDirectClient()
   await insertNotificationToSupabase(notification, pg)
-}
-
-export const createSignupBonusNotification = async (
-  user: User,
-  privateUser: PrivateUser,
-  txnId: string,
-  bonusAmount: number
-) => {
-  if (!userOptedOutOfBrowserNotifications(privateUser)) {
-    const notification: Notification = {
-      id: crypto.randomUUID(),
-      userId: privateUser.id,
-      reason: 'onboarding_flow',
-      createdTime: Date.now(),
-      isSeen: false,
-      sourceId: txnId,
-      sourceType: 'signup_bonus',
-      sourceUpdateType: 'created',
-      sourceUserName: MANIFOLD_USER_NAME,
-      sourceUserUsername: MANIFOLD_USER_USERNAME,
-      sourceUserAvatarUrl: MANIFOLD_AVATAR_URL,
-      sourceText: bonusAmount.toString(),
-    }
-    const pg = createSupabaseDirectClient()
-    await insertNotificationToSupabase(notification, pg)
-  }
-
-  // This is email is of both types, so try either
-  const { sendToEmail } = getNotificationDestinationsForUser(
-    privateUser,
-    'onboarding_flow'
-  )
-  const { sendToEmail: trendingSendToEmail } =
-    getNotificationDestinationsForUser(privateUser, 'trending_markets')
-
-  if (!sendToEmail && !trendingSendToEmail) return
-
-  const contractsToSend = await getForYouMarkets(privateUser.id)
-
-  await sendBonusWithInterestingMarketsEmail(
-    user,
-    privateUser,
-    contractsToSend,
-    bonusAmount
-  )
 }
 
 export const createBountyAwardedNotification = async (

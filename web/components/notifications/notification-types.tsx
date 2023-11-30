@@ -827,10 +827,27 @@ function MarketClosedNotification(props: {
           }
         />
       }
+      subtitle={
+        <span>
+          Or, if this market closed too early, please extend the close time to
+          reopen trading. If you're not sure what to do, ask for help from
+          traders on the question page or in our{' '}
+          <Link
+            onClick={(e) => {
+              e.stopPropagation()
+            }}
+            href="https://discord.gg/eHQBNBqXuh"
+            className={clsx(linkClass)}
+          >
+            Discord
+          </Link>
+          .
+        </span>
+      }
       link={getSourceUrl(notification)}
     >
       <span className="line-clamp-3">
-        Please resolve your question
+        If you can, please resolve
         {!isChildOfGroup && (
           <>
             {' '}

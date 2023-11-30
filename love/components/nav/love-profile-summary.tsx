@@ -10,9 +10,12 @@ import { trackCallback } from 'web/lib/service/analytics'
 import { AddFundsModal } from 'web/components/add-funds-modal'
 import { useAnimatedNumber } from 'web/hooks/use-animated-number'
 import clsx from 'clsx'
+import { useLover } from 'love/hooks/use-lover'
 
 export function ProfileSummary(props: { user: User; className?: string }) {
   const { user, className } = props
+
+  const lover = useLover()
 
   const [buyModalOpen, setBuyModalOpen] = useState(false)
   const balance = useAnimatedNumber(user.balance)
@@ -27,7 +30,11 @@ export function ProfileSummary(props: { user: User; className?: string }) {
       )}
     >
       <div className="w-2 shrink" />
-      <Avatar avatarUrl={user.avatarUrl} username={user.username} noLink />
+      <Avatar
+        avatarUrl={lover?.pinned_url ?? user.avatarUrl}
+        username={user.username}
+        noLink
+      />
       <div className="mr-1 w-2 shrink-[2]" />
       <div className="shrink-0 grow">
         <div className="group-hover:text-primary-700">{user.name}</div>

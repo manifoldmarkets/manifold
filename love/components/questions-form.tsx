@@ -86,7 +86,7 @@ function getInitialForm(userId: string, id: number) {
   }
 }
 
-const filterKeys = (
+export const filterKeys = (
   obj: Record<string, any>,
   predicate: (key: string, value: any) => boolean
 ): Record<string, any> => {
@@ -100,7 +100,7 @@ const submitAnswer = async (newForm: loveAnswerState) => {
   if (!newForm) return
   const input = {
     ...filterKeys(newForm, (key, _) => !['id', 'created_time'].includes(key)),
-  }
+  } as loveAnswerState
   await run(
     db
       .from('love_answers')

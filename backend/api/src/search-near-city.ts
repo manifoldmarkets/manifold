@@ -1,6 +1,5 @@
-import { GiphyFetch } from '@giphy/js-fetch-api'
 import { z } from 'zod'
-import { MaybeAuthedEndpoint, jsonEndpoint, validate } from './helpers'
+import { MaybeAuthedEndpoint, validate } from './helpers'
 
 const bodySchema = z.object({
   cityId: z.string(),

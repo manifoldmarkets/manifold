@@ -1,4 +1,4 @@
-import { SupabaseClient } from '@supabase/supabase-js'
+import { SupabaseClient } from 'common/supabase/utils'
 import { Contract } from 'common/contract'
 
 export async function getRelatedContracts(
@@ -13,6 +13,6 @@ export async function getRelatedContracts(
     similarity_threshold: 0.7,
     is_admin: !!isAdmin,
   })
-  const contracts = (data ?? []).map((c) => (c as any).data)
+  const contracts = (data ?? []).map((c) => c.data as Contract)
   return contracts
 }

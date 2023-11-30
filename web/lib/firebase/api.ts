@@ -172,10 +172,6 @@ export function redeemBoost(params: any) {
   return call(getApiUrl('redeem-boost'), 'POST', params)
 }
 
-export function redeemAd(params: any) {
-  return call(getApiUrl('redeemad'), 'POST', params)
-}
-
 export function validateIapReceipt(params: any) {
   return call(getApiUrl('validateiap'), 'POST', params)
 }

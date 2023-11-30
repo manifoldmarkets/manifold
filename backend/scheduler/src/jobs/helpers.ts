@@ -1,5 +1,7 @@
 import { Cron, CronOptions } from 'croner'
-import { gLog as log } from 'shared/utils'
+import { GCPLog, gLog as log, logMemory } from 'shared/utils'
+import * as crypto from 'crypto'
+import { createSupabaseClient } from 'shared/supabase/init'
 
 const DEFAULT_OPTS: CronOptions = {
   timezone: 'America/Los_Angeles',
@@ -17,11 +19,53 @@ const DEFAULT_OPTS: CronOptions = {
   },
 }
 
-export function createJob(name: string, schedule: string, fn: Function) {
+export function createJob(
+  name: string,
+  schedule: string,
+  fn: (log: GCPLog, lastEndTime?: number) => Promise<void>
+) {
   const opts = { name, ...DEFAULT_OPTS }
   return Cron(schedule, opts, async () => {
-    log.info(`[${name}] Starting up.`)
-    await fn()
-    log.info(`[${name}] Shutting down.`)
+    const traceId = crypto.randomUUID()
+    const logWithDetails = (message: any, details?: object) =>
+      log.debug(message, {
+        ...details,
+        job: name,
+        traceId,
+      })
+    logWithDetails(`[${name}] Starting up.`)
+    logMemory()
+    const db = createSupabaseClient()
+
+    // Get last end time in case function wants to use it
+    const lastEndTimeStamp = (
+      await db
+        .from('scheduler_info')
+        .select('last_end_time')
+        .eq('job_name', name)
+    ).data?.[0]?.last_end_time
+
+    // Update last start time
+    await db
+      .from('scheduler_info')
+      .upsert(
+        { job_name: name, last_start_time: new Date().toISOString() },
+        { onConflict: 'job_name' }
+      )
+    logWithDetails(`[${name}] Last end time: ${lastEndTimeStamp}`)
+    // Run job
+    await fn(
+      logWithDetails,
+      lastEndTimeStamp ? new Date(lastEndTimeStamp).valueOf() : undefined
+    )
+
+    // Update last end time
+    await db
+      .from('scheduler_info')
+      .upsert(
+        { job_name: name, last_end_time: new Date().toISOString() },
+        { onConflict: 'job_name' }
+      )
+    logWithDetails(`[${name}] Shutting down.`)
   })
 }
