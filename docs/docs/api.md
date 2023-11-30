@@ -306,15 +306,6 @@ Requires no authorization.
   }
   ```
 
-### `PATCH /v0/market/[marketId]`
-
-Updates information of an existing market.
-
-- `visibility`: Optional. The visibility of the market. Must be one of `'unlisted' | 'public'`.
-- `closeTime`: Optional. The time at which the market will close, represented as milliseconds since the epoch.
-- `addAnswersMode`: Optional. Controls who can add answers to the market after it has been created. Must be one of `'ONLY_CREATOR' | 'ANYONE'`.
-- `question`: Optional. The headline question for the market.
-
 ### `GET /v0/market/[marketId]/positions`
 
 Get positions information about a single market by ID.
