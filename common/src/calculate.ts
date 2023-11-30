@@ -495,12 +495,19 @@ export const getContractBetMetricsPerAnswer = (
         contract.mechanism === 'cpmm-multi-1'
       ) {
         const answer = answers?.find((a) => a.id === answerId)
-        periodMetrics = Object.fromEntries(
-          periods.map((period) => [
-            period,
-            calculatePeriodProfit(contract, bets, period, answer),
-          ])
-        )
+        const passedAnswer = !!answer
+        if (contract.mechanism === 'cpmm-multi-1' && !passedAnswer) {
+          console.log(
+            `answer with id ${bets[0].answerId} not found, but is required for cpmm-multi-1 contract: ${contract.id}`
+          )
+        } else {
+          periodMetrics = Object.fromEntries(
+            periods.map((period) => [
+              period,
+              calculatePeriodProfit(contract, bets, period, answer),
+            ])
+          )
+        }
       }
       return {
         ...baseMetrics,
@@ -541,9 +548,6 @@ const calculatePeriodProfit = (
     bets,
     (b) => b.createdTime < fromTime
   )
-  const passedAnswer = !!answer
-  if (contract.mechanism === 'cpmm-multi-1' && !passedAnswer)
-    throw new Error('answer is required for cpmm-multi-1')
 
   const { prob, probChanges } = answer ?? (contract as CPMMContract)
   const prevProb = prob - probChanges[period]
