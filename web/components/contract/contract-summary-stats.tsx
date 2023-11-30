@@ -1,11 +1,17 @@
 import { Contract } from 'common/contract'
 import { Tooltip } from '../widgets/tooltip'
 import { ChartBarIcon, UserIcon } from '@heroicons/react/solid'
-import { formatMoney, shortFormatNumber } from 'common/util/format'
-import { TbDroplet } from 'react-icons/tb'
+import {
+  formatMoney,
+  formatWithCommas,
+  shortFormatNumber,
+} from 'common/util/format'
+import { TbDropletFilled } from 'react-icons/tb'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { CloseOrResolveTime } from './contract-details'
 import { BountyLeft } from './bountied-question'
+import { Row } from 'web/components/layout/row'
+import { EyeIcon } from '@heroicons/react/solid'
 
 export function ContractSummaryStats(props: {
   contract: Contract
@@ -21,12 +27,13 @@ export function ContractSummaryStats(props: {
           inEmbed={true}
         />
       ) : (
-        <div className="flex gap-4">
+        <Row className="gap-4">
           <Tooltip
             text={
               contract.outcomeType == 'POLL'
                 ? 'Voters: '
-                : 'Traders: ' + (contract.uniqueBettorCount ?? 0)
+                : 'Traders: ' +
+                  formatWithCommas(contract.uniqueBettorCount ?? 0)
             }
             placement="bottom"
             noTap
@@ -34,6 +41,15 @@ export function ContractSummaryStats(props: {
           >
             <UserIcon className="text-ink-500 h-4 w-4" />
             <div>{shortFormatNumber(contract.uniqueBettorCount ?? 0)}</div>
+          </Tooltip>
+          <Tooltip
+            text={'Views: ' + formatWithCommas(contract.views)}
+            placement="bottom"
+            noTap
+            className="flex flex-row items-center gap-1"
+          >
+            <EyeIcon className="text-ink-500 h-4 w-4" />
+            <div>{shortFormatNumber(contract.views)}</div>
           </Tooltip>
 
           {!!contract.volume && (
@@ -56,7 +72,7 @@ export function ContractSummaryStats(props: {
               noTap
               className="flex flex-row items-center gap-1"
             >
-              <TbDroplet className="stroke-ink-500 h-4 w-4 stroke-[3]" />
+              <TbDropletFilled className="stroke-ink-500 h-4 w-4 stroke-[3]" />
               <div>
                 {ENV_CONFIG.moneyMoniker}
                 {shortFormatNumber(contract.totalLiquidity)}
@@ -65,7 +81,7 @@ export function ContractSummaryStats(props: {
           )}
 
           <CloseOrResolveTime contract={contract} editable={editable} />
-        </div>
+        </Row>
       )}
     </>
   )
