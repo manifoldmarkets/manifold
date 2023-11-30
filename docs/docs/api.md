@@ -306,6 +306,15 @@ Requires no authorization.
   }
   ```
 
+### `PATCH /v0/market/[marketId]`
+
+Updates information of an existing market.
+
+- `visibility`: Optional. The visibility of the market. Must be one of `'unlisted' | 'public'`.
+- `closeTime`: Optional. The time at which the market will close, represented as milliseconds since the epoch.
+- `addAnswersMode`: Optional. Controls who can add answers to the market after it has been created. Must be one of `'ONLY_CREATOR' | 'ANYONE'`.
+- `question`: Optional. The headline question for the market.
+
 ### `GET /v0/market/[marketId]/positions`
 
 Get positions information about a single market by ID.
@@ -731,11 +740,30 @@ $ curl https://manifold.markets/api/v0/market -X POST -H 'Content-Type: applicat
                  "initialProb":25}'
 ```
 
+### `POST /v0/market/[marketId]/answer`
+
+Adds a valid answer for the market. Currently only supports `MULTIPLE_CHOICE` markets.
+
+- `text`: Required. The answer text.
+
+### `POST /v0/market/[marketId]/add-bounty`
+
+Adds a specified amount to a bounty market.
+
+- `amount`: Required. The amount to add to the bounty, in M$.
+
 ### `POST /v0/market/[marketId]/add-liquidity`
 
 Adds a specified amount of liquidity into the market.
 
 - `amount`: Required. The amount of liquidity to add, in M$.
+
+### `POST /v0/market/[marketId]/award-bounty`
+
+Awards a bounty to a specified comment on a bounty market.
+
+- `amount`: Required. The amount of bounty to award, in M$.
+- `commentId`: Required. The comment to award the bounty to.
 
 ### `POST /v0/market/[marketId]/close`
 

@@ -6,6 +6,7 @@ import { trackPublicEvent } from 'shared/analytics'
 import { throwErrorIfNotMod } from 'shared/helpers/auth'
 import { removeUndefinedProps } from 'common/util/object'
 import { recordContractEdit } from 'shared/record-contract-edit'
+import { MAX_QUESTION_LENGTH } from 'common/contract'
 
 const bodySchema = z
   .object({
@@ -13,18 +14,17 @@ const bodySchema = z
     visibility: z.enum(['unlisted', 'public']).optional(),
     closeTime: z.number().optional(),
     addAnswersMode: z.enum(['ONLY_CREATOR', 'ANYONE']).optional(),
+    question: z.string().min(1).max(MAX_QUESTION_LENGTH).optional(),
   })
   .strict()
 
 export const updatemarket = authEndpoint(async (req, auth, log) => {
-  const { contractId, visibility, addAnswersMode, closeTime } = validate(
-    bodySchema,
-    req.body
-  )
-  if (!visibility && !closeTime && !addAnswersMode)
+  const { contractId, visibility, addAnswersMode, closeTime, question } =
+    validate(bodySchema, req.body)
+  if (!visibility && !closeTime && !addAnswersMode && !question)
     throw new APIError(
       400,
-      'Must provide visibility, closeTime, or add answers mode'
+      'Must provide visibility, closeTime, question or add answers mode'
     )
   const contract = await getContractSupabase(contractId)
   if (!contract) throw new APIError(404, `Contract ${contractId} not found`)
@@ -38,6 +38,7 @@ export const updatemarket = authEndpoint(async (req, auth, log) => {
       visibility,
       closeTime,
       addAnswersMode,
+      question,
     })
   )
   if (closeTime) {
@@ -62,6 +63,13 @@ export const updatemarket = authEndpoint(async (req, auth, log) => {
       addAnswersMode,
     })
     log('updated add answers mode')
+  }
+  if (question) {
+    await firestore.doc(`contracts/${contractId}`).update({
+      question,
+    })
+    log('updated question')
+    await recordContractEdit(contract, auth.uid, ['question'])
   }
 
   return { success: true }
