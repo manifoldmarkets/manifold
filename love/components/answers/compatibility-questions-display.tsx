@@ -27,6 +27,9 @@ import DropdownMenu from 'web/components/comments/dropdown-menu'
 import { PencilIcon } from '@heroicons/react/outline'
 import { XIcon } from '@heroicons/react/outline'
 import { MODAL_CLASS, Modal } from 'web/components/layout/modal'
+import { Pagination } from 'web/components/widgets/pagination'
+
+const NUM_QUESTIONS_TO_SHOW = 8
 
 export function CompatibilityQuestionsDisplay(props: {
   isCurrentUser: boolean
@@ -50,8 +53,12 @@ export function CompatibilityQuestionsDisplay(props: {
     refreshQuestions()
   }
 
-  const [expanded, setExpanded] = useState(false)
-  const currentUser = useUser()
+  const [page, setPage] = useState(0)
+  const currentSlice = page * NUM_QUESTIONS_TO_SHOW
+  const shownAnswers = compatibilityAnswers.slice(
+    currentSlice,
+    currentSlice + NUM_QUESTIONS_TO_SHOW
+  )
 
   return (
     <Col className="gap-2">
@@ -68,7 +75,20 @@ export function CompatibilityQuestionsDisplay(props: {
         </span>
       ) : (
         <>
-          {compatibilityAnswers.map((answer) => {
+          {(otherQuestions.length < 1 || isAdminId(user?.id)) &&
+            isCurrentUser && (
+              <span>
+                {otherQuestions.length < 1 && (
+                  <span className="text-ink-600 text-sm">
+                    You've already answered all the compatibility questions!
+                  </span>
+                )}{' '}
+                <AddCompatibilityQuestionButton
+                  refreshCompatibilityAll={refreshCompatibilityAll}
+                />
+              </span>
+            )}
+          {shownAnswers.map((answer) => {
             return (
               <CompatibilityAnswerBlock
                 key={answer.question_id}
@@ -89,9 +109,12 @@ export function CompatibilityQuestionsDisplay(props: {
           refreshCompatibilityAll={refreshCompatibilityAll}
         />
       )}
-      {(otherQuestions.length < 1 || isAdminId(user?.id)) && isCurrentUser && (
-        <AddCompatibilityQuestionButton
-          refreshCompatibilityAll={refreshCompatibilityAll}
+      {NUM_QUESTIONS_TO_SHOW < compatibilityAnswers.length && (
+        <Pagination
+          page={page}
+          itemsPerPage={NUM_QUESTIONS_TO_SHOW}
+          totalItems={compatibilityAnswers.length}
+          setPage={setPage}
         />
       )}
     </Col>

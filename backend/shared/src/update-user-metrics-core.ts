@@ -20,7 +20,11 @@ import { Bet } from 'common/bet'
 import { convertPortfolioHistory } from 'common/supabase/portfolio-metrics'
 import * as admin from 'firebase-admin'
 import { GCPLog, log as oldLog } from 'shared/utils'
-import { getAnswersForContractsDirect } from 'shared/supabase/answers'
+import {
+  getAnswersForContractsDirect,
+  replicateAnswers,
+} from 'shared/supabase/answers'
+import { Answer } from 'common/answer'
 
 export async function updateUserMetricsCore(log: GCPLog = oldLog) {
   const firestore = admin.firestore()
@@ -86,6 +90,34 @@ export async function updateUserMetricsCore(log: GCPLog = oldLog) {
     pg,
     contracts.filter((c) => c.mechanism === 'cpmm-multi-1').map((c) => c.id)
   )
+  const allContractAnswerIds = Object.values(answersByContractId)
+    .flat()
+    .map((a) => a.id)
+  const allBetAnswerIds = filterDefined(uniq(allBets.map((b) => b.answerId)))
+  if (!allBetAnswerIds.every((id) => allContractAnswerIds.includes(id))) {
+    const missingAnswerIds = allBetAnswerIds.filter(
+      (id) => !allContractAnswerIds.includes(id)
+    )
+
+    log(`Missing ${missingAnswerIds.length} answers, fetching from Firebase...`)
+    const answersFromFirebaseSnap = await Promise.all(
+      missingAnswerIds.map((id) =>
+        firestore
+          .collection(
+            `contracts/${
+              allBets.find((b) => b.answerId === id)?.contractId
+            }/answersCpmm`
+          )
+          .doc(id)
+          .get()
+      )
+    )
+    const answersFromFirebase = filterDefined(
+      answersFromFirebaseSnap.map((snap) => snap.data() as Answer)
+    )
+    await replicateAnswers(pg, answersFromFirebase)
+    // We won't add these answers to the dictionary bc their period changes haven't yet been calculated.
+  }
   const contractsById = Object.fromEntries(contracts.map((c) => [c.id, c]))
 
   for (const [contractId, answers] of Object.entries(answersByContractId)) {

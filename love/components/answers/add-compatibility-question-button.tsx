@@ -31,12 +31,12 @@ export function AddCompatibilityQuestionButton(props: {
   if (!user) return null
   return (
     <>
-      <Button onClick={() => setOpen(true)} color="gray-outline">
-        <Row className="items-center gap-1">
-          <PlusIcon className="h-4 w-4" />
-          Add Compatibility Question
-        </Row>
-      </Button>
+      <span
+        onClick={() => setOpen(true)}
+        className="text-primary-500 cursor-pointer text-sm transition-all hover:underline"
+      >
+        Submit your own compatibility question
+      </span>
       <AddCompatibilityQuestionModal
         open={open}
         setOpen={setOpen}
