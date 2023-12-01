@@ -731,11 +731,30 @@ $ curl https://manifold.markets/api/v0/market -X POST -H 'Content-Type: applicat
                  "initialProb":25}'
 ```
 
+### `POST /v0/market/[marketId]/answer`
+
+Adds a valid answer for the market. Currently only supports `MULTIPLE_CHOICE` markets.
+
+- `text`: Required. The answer text.
+
+### `POST /v0/market/[marketId]/add-bounty`
+
+Adds a specified amount to a bounty market.
+
+- `amount`: Required. The amount to add to the bounty, in M$.
+
 ### `POST /v0/market/[marketId]/add-liquidity`
 
 Adds a specified amount of liquidity into the market.
 
 - `amount`: Required. The amount of liquidity to add, in M$.
+
+### `POST /v0/market/[marketId]/award-bounty`
+
+Awards a bounty to a specified comment on a bounty market.
+
+- `amount`: Required. The amount of bounty to award, in M$.
+- `commentId`: Required. The comment to award the bounty to.
 
 ### `POST /v0/market/[marketId]/close`
 
