@@ -71,6 +71,14 @@ export type notification_source_types =
   | 'market_review'
   | 'comment_on_lover'
   | 'new_match'
+  | 'bet_reply'
+  | 'new_message'
+  | love_notification_source_types
+
+export type love_notification_source_types =
+  | 'love_contract'
+  | 'love_comment'
+  | 'love_answer'
 
 export type notification_source_update_types =
   | 'created'
@@ -82,7 +90,6 @@ export type notification_source_update_types =
 
 /** @deprecated - use a notification_preference (in user-notification-preferences.ts) */
 export type notification_reason_types =
-  | 'tagged_user'
   | 'on_new_follow'
   | 'contract_from_followed_user'
   | 'contract_from_private_group'
@@ -310,6 +317,18 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
     simple: 'Reviews on your questions',
     detailed: 'When a user reviews your question after resolution',
   },
+  new_match: {
+    simple: 'New matches',
+    detailed: 'When you match with another user',
+  },
+  new_message: {
+    simple: 'New messages',
+    detailed: 'When another user messages you',
+  },
+  new_endorsement: {
+    simple: 'New endorsements',
+    detailed: 'When another user endorses you',
+  },
 }
 
 export type BettingStreakData = {
@@ -356,6 +375,16 @@ export type UniqueBettorData = {
 export type ReviewNotificationData = {
   rating: number
   review: string
+}
+
+export type CommentNotificationData = {
+  isReply: boolean
+}
+
+export type BetReplyNotificationData = {
+  betAmount: number
+  betOutcome: string
+  commentText: string
 }
 
 export function getSourceIdForLinkComponent(
@@ -430,6 +459,7 @@ export const BalanceChangeNotificationTypes: NotificationReason[] = [
   'unique_bettors_on_your_contract',
   // resolutions
   'resolution_on_contract_with_users_shares_in',
+  'resolutions_on_watched_markets_with_shares_in',
   // referrals
   'you_referred_user',
   'user_joined_to_bet_on_your_market',

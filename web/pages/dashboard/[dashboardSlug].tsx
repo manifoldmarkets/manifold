@@ -1,14 +1,18 @@
+import { useEffect, useState } from 'react'
+import Head from 'next/head'
+import { useRouter } from 'next/router'
+import Router from 'next/router'
+
 import {
   Dashboard,
   DashboardItem,
+  DashboardLinkItem,
   MAX_DASHBOARD_TITLE_LENGTH,
   convertDashboardSqltoTS,
 } from 'common/dashboard'
-import { useEffect, useState } from 'react'
 import { Button } from 'web/components/buttons/button'
 import { AddItemCard } from 'web/components/dashboard/add-dashboard-item'
 import { DashboardContent } from 'web/components/dashboard/dashboard-content'
-import { DashboardDescription } from 'web/components/dashboard/dashboard-description'
 import { FollowDashboardButton } from 'web/components/dashboard/follow-dashboard-button'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
@@ -24,21 +28,15 @@ import {
 } from 'web/lib/firebase/api'
 import Custom404 from '../404'
 import { useDashboardFromSlug } from 'web/hooks/use-dashboard'
-import { TextEditor, useTextEditor } from 'web/components/widgets/editor'
-import { MAX_DESCRIPTION_LENGTH } from 'common/contract'
-import { JSONEmpty } from 'web/components/contract/contract-description'
-import clsx from 'clsx'
-import { Editor } from '@tiptap/react'
-import { XCircleIcon } from '@heroicons/react/solid'
 import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
-import { ENV_CONFIG, isAdminId } from 'common/envs/constants'
+import { ENV_CONFIG, isAdminId, isModId } from 'common/envs/constants'
 import { SEO } from 'web/components/SEO'
-import { richTextToString } from 'common/util/parse'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { useWarnUnsavedChanges } from 'web/hooks/use-warn-unsaved-changes'
 import { InputWithLimit } from 'web/components/dashboard/input-with-limit'
-import Head from 'next/head'
-import { useRouter } from 'next/router'
+import { LinkPreviews, fetchLinkPreviews } from 'common/link-preview'
+import { useSaveReferral } from 'web/hooks/use-save-referral'
+import { referralQuery } from 'common/util/share'
 
 export async function getStaticProps(ctx: {
   params: { dashboardSlug: string }
@@ -47,11 +45,16 @@ export async function getStaticProps(ctx: {
 
   try {
     const dashboard = await getDashboardFromSlug({ dashboardSlug })
+    const links = dashboard.items.filter(
+      (item): item is DashboardLinkItem => item.type === 'link'
+    )
+    const previews = await fetchLinkPreviews(links.map((l) => l.url))
 
     return {
       props: {
         state: 'success',
         initialDashboard: dashboard,
+        previews,
         slug: dashboardSlug,
       },
     }
@@ -75,6 +78,7 @@ export default function DashboardPage(
     | {
         state: 'success'
         initialDashboard: Dashboard
+        previews: LinkPreviews
         slug: string
       }
     | { state: 'not found' }
@@ -85,24 +89,25 @@ export default function DashboardPage(
   if (props.state === 'not found') {
     return <Custom404 />
   } else {
-    return (
-      <FoundDashbordPage
-        initialDashboard={props.initialDashboard}
-        slug={props.slug}
-        editByDefault={edit}
-      />
-    )
+    return <FoundDashboardPage {...props} editByDefault={edit} />
   }
 }
 
-function FoundDashbordPage(props: {
+function FoundDashboardPage(props: {
   initialDashboard: Dashboard
+  previews: LinkPreviews
   slug: string
   editByDefault: boolean
 }) {
-  const { initialDashboard, slug, editByDefault } = props
+  useSaveReferral()
+
+  const { initialDashboard, slug, editByDefault, previews } = props
   const fetchedDashboard = useDashboardFromSlug(slug)
   const [dashboard, setDashboard] = useState<Dashboard>(initialDashboard)
+
+  const isValid =
+    dashboard.title.length > 0 &&
+    dashboard.title.length <= MAX_DASHBOARD_TITLE_LENGTH
 
   // Update the dashboard state if a new fetchedDashboard becomes available
   useEffect(() => {
@@ -122,21 +127,11 @@ function FoundDashbordPage(props: {
 
   const user = useUser()
   const isCreator = dashboard.creatorId === user?.id
-  const isOnlyAdmin = !isCreator && user && isAdminId(user.id)
+  const isOnlyMod =
+    !isCreator && user && (isAdminId(user.id) || isModId(user.id))
 
   const [editMode, setEditMode] = useState(editByDefault)
   useWarnUnsavedChanges(editMode)
-
-  const editor = useTextEditor({
-    size: 'lg',
-    key: `edit dashboard ${slug}`,
-    max: MAX_DESCRIPTION_LENGTH,
-    defaultValue: dashboard.description,
-    placeholder: 'Optional. Provide background info and details.',
-  })
-
-  const [showDescription, setShowDescription] = useState(false)
-  const reallyShowDesc = editor && (!editor.isEmpty || showDescription)
 
   return (
     <Page
@@ -146,11 +141,7 @@ function FoundDashbordPage(props: {
     >
       <SEO
         title={dashboard.title}
-        description={
-          JSONEmpty(dashboard.description)
-            ? `dashboard created by ${dashboard.creatorName}`
-            : richTextToString(dashboard.description)
-        }
+        description={`dashboard created by ${dashboard.creatorName}`}
       />
       {dashboard.visibility === 'deleted' && (
         <>
@@ -158,12 +149,12 @@ function FoundDashbordPage(props: {
             <meta name="robots" content="noindex, nofollow" />
           </Head>
           <div className="bg-error w-full rounded p-6 text-center text-lg text-white">
-            Deleted by admins
+            Deleted by mods
           </div>
         </>
       )}
 
-      <Col className="w-full max-w-2xl px-1 sm:px-2">
+      <Col className="w-full max-w-3xl px-1 sm:px-2">
         <div className="my-2 sm:mt-4 lg:mt-0">
           {editMode ? (
             <InputWithLimit
@@ -179,7 +170,9 @@ function FoundDashbordPage(props: {
 
               <div className="flex items-center">
                 <CopyLinkOrShareButton
-                  url={`https://${ENV_CONFIG.domain}/dashboard/${dashboard.slug}`}
+                  url={`https://${ENV_CONFIG.domain}/dashboard/${
+                    dashboard.slug
+                  }${user?.username ? referralQuery(user.username) : ''}`}
                   eventTrackingName="copy dashboard link"
                   tooltip="Share"
                 />
@@ -192,13 +185,13 @@ function FoundDashbordPage(props: {
                 {isCreator && (
                   <Button onClick={() => setEditMode(true)}>Edit</Button>
                 )}
-                {isOnlyAdmin && (
+                {isOnlyMod && (
                   <Button
                     color="red"
                     className="ml-6"
                     onClick={() => setEditMode(true)}
                   >
-                    Edit as Admin
+                    Edit as Mod
                   </Button>
                 )}
               </div>
@@ -207,16 +200,17 @@ function FoundDashbordPage(props: {
         </div>
         {editMode ? (
           <Row className="bg-canvas-50 sticky top-0 z-20 mb-2 w-full items-center justify-end gap-2 self-start py-1">
-            {isOnlyAdmin && (
+            {isOnlyMod && (
               <Button
                 color="red"
                 className="mr-auto"
                 onClick={() => {
                   deleteDashboard({ dashboardId: dashboard.id })
                   setEditMode(false)
+                  Router.replace(Router.asPath.split('?')[0])
                 }}
               >
-                Delete dashboard
+                Delete (mark as spam)
               </Button>
             )}
             <Button
@@ -225,18 +219,18 @@ function FoundDashbordPage(props: {
                 // reset to original state
                 setDashboard(fetchedDashboard || initialDashboard)
                 setEditMode(false)
+                Router.replace(Router.asPath.split('?')[0])
               }}
             >
               Cancel
             </Button>
             <Button
-              disabled={dashboard.items.length < 2}
+              disabled={!isValid}
               onClick={() => {
                 updateDashboard({
                   dashboardId: dashboard.id,
                   title: dashboard.title,
                   items: dashboard.items,
-                  description: editor?.getJSON(),
                   topics: dashboard.topics,
                 }).then((data) => {
                   if (data?.updateDashboard) {
@@ -246,6 +240,7 @@ function FoundDashbordPage(props: {
                   }
                 })
                 setEditMode(false)
+                Router.replace(Router.asPath.split('?')[0])
               }}
             >
               Save
@@ -259,8 +254,11 @@ function FoundDashbordPage(props: {
               size="xs"
             />
             <UserLink
-              username={dashboard.creatorUsername}
-              name={dashboard.creatorName}
+              user={{
+                id: dashboard.creatorId,
+                name: dashboard.creatorName,
+                username: dashboard.creatorUsername,
+              }}
               className="text-ink-700"
             />
             <span className="text-ink-400 ml-4 text-sm">
@@ -269,17 +267,6 @@ function FoundDashbordPage(props: {
             </span>
           </Row>
         )}
-        {editMode ? (
-          reallyShowDesc && (
-            <DescriptionEditor
-              editor={editor}
-              className="mb-4"
-              onClose={() => setShowDescription(false)}
-            />
-          )
-        ) : (
-          <DashboardDescription description={dashboard.description} />
-        )}
         {editMode && (
           <div className="mb-4">
             <AddItemCard
@@ -287,13 +274,11 @@ function FoundDashbordPage(props: {
               setItems={updateItems}
               topics={dashboard.topics}
               setTopics={updateTopics}
-              createDescription={
-                reallyShowDesc ? undefined : () => setShowDescription(true)
-              }
             />
           </div>
         )}
         <DashboardContent
+          previews={previews}
           items={dashboard.items}
           setItems={updateItems}
           topics={dashboard.topics}
@@ -302,27 +287,5 @@ function FoundDashbordPage(props: {
         />
       </Col>
     </Page>
-  )
-}
-
-function DescriptionEditor(props: {
-  editor: Editor
-  className?: string
-  onClose: () => void
-}) {
-  const { editor, className, onClose } = props
-  return (
-    <div className={clsx('relative', className)}>
-      <button
-        className="text-ink-500 hover:text-ink-700 absolute -top-2 right-0 z-10 transition-colors"
-        onClick={() => {
-          onClose?.()
-          editor.commands.clearContent()
-        }}
-      >
-        <XCircleIcon className="h-5 w-5" />
-      </button>
-      <TextEditor editor={editor} />
-    </div>
   )
 }

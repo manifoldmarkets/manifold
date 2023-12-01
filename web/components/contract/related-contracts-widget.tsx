@@ -20,9 +20,6 @@ export const RelatedContractsList = memo(function RelatedContractsList(props: {
   className?: string
 }) {
   const { contracts, loadMore, onContractClick, className } = props
-  if (contracts.length === 0) {
-    return null
-  }
 
   return (
     <Col className={clsx(className, 'flex-1')}>
@@ -37,7 +34,9 @@ export const RelatedContractsList = memo(function RelatedContractsList(props: {
         ))}
       </Col>
 
-      {loadMore && <LoadMoreUntilNotVisible loadMore={loadMore} />}
+      {contracts.length > 0 && loadMore && (
+        <LoadMoreUntilNotVisible loadMore={loadMore} />
+      )}
     </Col>
   )
 })
@@ -129,8 +128,11 @@ const RelatedContractCard = memo(function RelatedContractCard(props: {
             noLink
           />
           <UserLink
-            name={contract.creatorName}
-            username={contract.creatorUsername}
+            user={{
+              id: contract.creatorId,
+              name: contract.creatorName,
+              username: contract.creatorUsername,
+            }}
             className="text-ink-500 text-sm"
             createdTime={creatorCreatedTime}
             noLink

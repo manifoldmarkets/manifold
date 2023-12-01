@@ -1,7 +1,7 @@
 import { LiteMarket, toLiteMarket } from 'common/api-market-types'
 import { NextApiRequest, NextApiResponse } from 'next'
 import { applyCorsHeaders } from 'web/lib/api/cors'
-import { APIError, supabaseSearchContracts } from 'web/lib/firebase/api'
+import { APIError, searchContracts } from 'web/lib/firebase/api'
 import { marketCacheStrategy } from 'web/pages/api/v0/market/[id]'
 import { ApiError } from 'web/pages/api/v0/_types'
 
@@ -13,7 +13,7 @@ export default async function handler(
     methods: 'GET',
   })
 
-  const { limit, offset, fuzzy, ...rest } = req.query
+  const { limit, offset, ...rest } = req.query
   // "terms" is a legacy query param for the search term
   const term = req.query.term ?? req.query.terms
 
@@ -21,12 +21,11 @@ export default async function handler(
     term,
     limit: typeof limit === 'string' ? parseInt(limit) : undefined,
     offset: typeof offset === 'string' ? parseInt(offset) : undefined,
-    fuzzy: !!fuzzy,
     ...rest,
   }
 
   try {
-    const contracts = await supabaseSearchContracts(body as any)
+    const contracts = await searchContracts(body as any)
     const liteContracts = contracts.map(toLiteMarket)
     res.setHeader('Cache-Control', marketCacheStrategy)
     res.status(200).json(liteContracts)

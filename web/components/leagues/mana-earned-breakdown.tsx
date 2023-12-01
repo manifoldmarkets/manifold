@@ -62,8 +62,9 @@ export const ManaEarnedBreakdown = (props: {
     ? uniq(loadingBets.map((b) => b.contractId))
     : undefined
   const contracts = usePublicContracts(contractIds)?.filter(
-    (c) => !c.nonPredictive
+    (c) => c.isRanked !== false
   )
+
   const contractsById = keyBy(contracts, 'id')
 
   const betsByContract = groupBy(bets, 'contractId')
@@ -71,7 +72,9 @@ export const ManaEarnedBreakdown = (props: {
     contracts &&
     mapValues(betsByContract, (bets, contractId) => {
       const contract = contractsById[contractId]
-      return contract ? calculateUserMetrics(contract, bets) : undefined
+      return contract
+        ? calculateUserMetrics(contract, bets).find((cm) => !cm.answerId)
+        : undefined
     })
 
   const [showHighestFirst, setShowHighestFirst] = useState(true)
@@ -94,11 +97,7 @@ export const ManaEarnedBreakdown = (props: {
     >
       <Col>
         <Row className="mb-2 items-center gap-4">
-          <UserAvatarAndBadge
-            name={user.name}
-            username={user.username}
-            avatarUrl={user.avatarUrl}
-          />
+          <UserAvatarAndBadge user={user} />
         </Row>
         <Subtitle className="text-ink-800 !mb-2 !mt-2">Mana earned</Subtitle>
         <Table className="text-base">

@@ -123,6 +123,7 @@ Parameters:
   example, if you ask for the most recent 10 markets, and then perform a second
   query for 10 more markets with `before=[the id of the 10th market]`, you will
   get markets 11 through 20.
+- `userId`: Optional. If set, the response will include only markets created by this user.
 
 Requires no authorization.
 
@@ -198,8 +199,10 @@ Requires no authorization.
     resolutionTime?: number
     resolution?: string
     resolutionProbability?: number // Used for BINARY markets resolved to MKT
+    uniqueBettorCount: number
 
     lastUpdatedTime?: number
+    lastBetTime?: number
   }
   ```
 
@@ -481,7 +484,6 @@ Parameters:
 - `creatorId`: Optional. Only include questions created by the user with this id.
 - `limit`: Optional. Number of contracts to return from 0 to 1000. Default 100.
 - `offset`: Optional. Number of contracts to skip. Use with limit to paginate the results.
-- `fuzzy`: Optional. If set to any value, uses fuzzier string matching.
 
 Requires no authorization.
 
@@ -521,7 +523,9 @@ Requires no authorization.
       "resolution": "CANCEL",
       "resolutionTime": 1688137496869,
       "resolutionProbability": 0.94,
-      "lastUpdatedTime": 1688137484056
+      "uniqueBettorCount": 22,
+      "lastUpdatedTime": 1688137484056,
+      "lastBetTime": 1688137484056
     },
     {
       "id": "Z8ZE1ivTKqpuIuUlqaNX",
@@ -549,7 +553,9 @@ Requires no authorization.
       "resolution": "NO",
       "resolutionTime": 1696882191666,
       "resolutionProbability": 0.53,
-      "lastUpdatedTime": 1696887359826
+      "uniqueBettorCount": 34,
+      "lastUpdatedTime": 1696887359826,
+      "lastBetTime": 1696887359826
     }
   ]
   ```
@@ -725,11 +731,30 @@ $ curl https://manifold.markets/api/v0/market -X POST -H 'Content-Type: applicat
                  "initialProb":25}'
 ```
 
+### `POST /v0/market/[marketId]/answer`
+
+Adds a valid answer for the market. Currently only supports `MULTIPLE_CHOICE` markets.
+
+- `text`: Required. The answer text.
+
+### `POST /v0/market/[marketId]/add-bounty`
+
+Adds a specified amount to a bounty market.
+
+- `amount`: Required. The amount to add to the bounty, in M$.
+
 ### `POST /v0/market/[marketId]/add-liquidity`
 
 Adds a specified amount of liquidity into the market.
 
 - `amount`: Required. The amount of liquidity to add, in M$.
+
+### `POST /v0/market/[marketId]/award-bounty`
+
+Awards a bounty to a specified comment on a bounty market.
+
+- `amount`: Required. The amount of bounty to award, in M$.
+- `commentId`: Required. The comment to award the bounty to.
 
 ### `POST /v0/market/[marketId]/close`
 
@@ -741,7 +766,7 @@ Closes a market on behalf of the authorized user.
 
 Add or remove a market to/from a group.
 
-- `groupId`: Required. Id of the group. Must be admin/moderator/creator of group if curated/private. Must be market creator or trustworthyish if group is public.
+- `groupId`: Required. Id of the group. Must be admin/moderator/creator of group if curated/private. Must be market creator or site moderator if group is public.
 - `remove`: Optional. Set to `true` to remove the market from the group.
 
 ### `POST /v0/market/[marketId]/resolve`
@@ -842,6 +867,7 @@ Parameters:
 
 - `contractId`: Optional. Which contract to read comments for. Either an ID or slug must be specified.
 - `contractSlug`: Optional.
+- `userId`: Optional. If set, the response will include only comments created by this user.
 
 Requires no authorization.
 
@@ -860,6 +886,9 @@ Parameters:
   example, if you ask for the most recent 10 bets, and then perform a second
   query for 10 more bets with `before=[the id of the 10th bet]`, you will
   get bets 11 through 20.
+- `after`: Optional. The ID of the bet after which the list will start. For example, if you request the 10 most recent bets and then perform a second query with after=[the id of the 1st bet], you will receive up to 10 new bets, if available.
+- `kinds`: Optional. Specifies subsets of bets to return. Possible kinds: `open-limit` (open limit orders.)
+- `order`: Optional. The sorting order for returned bets. Accepts desc or asc. Default is desc.
 
 Requires no authorization.
 

@@ -1,13 +1,15 @@
+import { LovePage } from 'love/components/love-page'
+import Link from 'next/link'
+import { Button } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
-import { Page } from 'web/components/layout/page'
 import { ExternalLink } from 'web/components/widgets/external-link'
 import { Title } from 'web/components/widgets/title'
 
 export default function Custom404(props: { customText?: string }) {
   return (
-    <Page trackPageView={'404'}>
+    <LovePage trackPageView={'404'}>
       <Custom404Content customText={props.customText} />
-    </Page>
+    </LovePage>
   )
 }
 
@@ -26,6 +28,10 @@ export function Custom404Content(props: { customText?: string }) {
             title="on Discord!"
           />
         </p>
+
+        <Link href="/">
+          <Button className="mt-6">Go home</Button>
+        </Link>
       </Col>
     </div>
   )

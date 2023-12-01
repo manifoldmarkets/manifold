@@ -3,7 +3,6 @@ import { authEndpoint } from './helpers'
 import { createSupabaseClient } from 'shared/supabase/init'
 import { run } from 'common/supabase/utils'
 import { createFollowOrMarketSubsidizedNotification } from 'shared/create-notification'
-import { log } from 'shared/utils'
 
 const schema = z
   .object({
@@ -12,7 +11,7 @@ const schema = z
   })
   .strict()
 
-export const followUser = authEndpoint(async (req, auth) => {
+export const followUser = authEndpoint(async (req, auth, log) => {
   const { userId: them, follow } = schema.parse(req.body)
   const me = auth.uid
 
@@ -50,7 +49,7 @@ export const followUser = authEndpoint(async (req, auth) => {
         { recipients: [them] }
       )
     } catch (error) {
-      log('failed to send notification:', error)
+      log('failed to send notification:', { error })
     }
   }
 

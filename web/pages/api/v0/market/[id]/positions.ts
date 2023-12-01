@@ -1,11 +1,11 @@
 import { ContractMetric } from 'common/contract-metric'
 import {
-  getContractMetricsForContractId,
+  getOrderedContractMetricRowsForContractId,
   getUserContractMetrics,
 } from 'common/supabase/contract-metrics'
 import { uniqBy } from 'lodash'
 import { NextApiRequest, NextApiResponse } from 'next'
-import { applyCorsHeaders, CORS_UNRESTRICTED } from 'web/lib/api/cors'
+import { applyCorsHeaders } from 'web/lib/api/cors'
 import { db } from 'web/lib/supabase/db'
 import { validate } from 'web/pages/api/v0/_validate'
 import { z } from 'zod'
@@ -27,7 +27,7 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<ContractMetric[] | ValidationError | ApiError>
 ) {
-  await applyCorsHeaders(req, res, CORS_UNRESTRICTED)
+  await applyCorsHeaders(req, res)
   let params: z.infer<typeof queryParams>
   try {
     params = validate(queryParams, req.query)
@@ -74,10 +74,14 @@ export default async function handler(
 
   // Get all positions for contract
   try {
-    const contractMetrics = await getContractMetricsForContractId(
+    const contractMetricRows = await getOrderedContractMetricRowsForContractId(
       contractId,
       db,
+      undefined,
       order ? (order as 'profit' | 'shares') : undefined
+    )
+    const contractMetrics = contractMetricRows.map(
+      (row) => row.data as ContractMetric
     )
     if (!top && !bottom) {
       return res.status(200).json(contractMetrics)

@@ -18,8 +18,6 @@ import TriangleDownFillIcon from 'web/lib/icons/triangle-down-fill-icon.svg'
 import TriangleFillIcon from 'web/lib/icons/triangle-fill-icon.svg'
 import { scrollIntoViewCentered } from 'web/lib/util/scroll'
 import { Button, IconButton } from 'web/components/buttons/button'
-import { PaymentsModal } from 'web/pages/payments'
-import TipJar from 'web/public/custom-components/tipJar'
 import { ReplyToggle } from 'web/components/comments/reply-toggle'
 import { Content } from 'web/components/widgets/editor'
 import { Tooltip } from 'web/components/widgets/tooltip'
@@ -35,6 +33,7 @@ import { ReplyToUserInfo } from 'web/components/feed/feed-comments'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { useAdmin } from 'web/hooks/use-admin'
 import { EyeOffIcon } from '@heroicons/react/outline'
+import { useLoverByUserId } from 'love/hooks/use-lover'
 
 export function LoverProfileCommentThread(props: {
   onUser: User
@@ -160,7 +159,8 @@ const ProfileComment = memo(function FeedComment(props: {
   const ref = useRef<HTMLDivElement>(null)
   const [comment, setComment] = useState(props.comment)
   const { userUsername, userAvatarUrl, userId, hidden } = comment
-  const owner = onUser.id === userId
+  const isOwner = onUser.id === userId
+  const lover = useLoverByUserId(userId)
 
   useEffect(() => {
     if (highlighted && ref.current) {
@@ -178,8 +178,8 @@ const ProfileComment = memo(function FeedComment(props: {
           <Avatar
             username={userUsername}
             size={isParent ? 'sm' : '2xs'}
-            avatarUrl={userAvatarUrl}
-            className={clsx(owner && 'shadow shadow-amber-300', 'z-10')}
+            avatarUrl={lover?.pinned_url ?? userAvatarUrl}
+            className={clsx(isOwner && 'shadow shadow-amber-300', 'z-10')}
           />
           <div
             className={clsx(
@@ -206,7 +206,7 @@ const ProfileComment = memo(function FeedComment(props: {
 
           {hidden ? (
             <span className={'text-ink-500 text-sm italic'}>
-              Comment hidden
+              Comment deleted
             </span>
           ) : (
             <Content
@@ -283,7 +283,6 @@ function DotMenu(props: {
   const isCurrentUser = user?.id === comment.userId
   const isOwner = onUser.id === user?.id
   const isAdmin = useAdmin()
-  const [tipping, setTipping] = useState(false)
 
   return (
     <>
@@ -311,12 +310,6 @@ function DotMenu(props: {
         items={buildArray(
           user &&
             comment.userId !== user.id && {
-              name: 'Tip',
-              icon: <TipJar size={20} color="currentcolor" />,
-              onClick: () => setTipping(true),
-            },
-          user &&
-            comment.userId !== user.id && {
               name: 'Report',
               icon: <FlagIcon className="h-5 w-5" />,
               onClick: () => {
@@ -325,7 +318,7 @@ function DotMenu(props: {
               },
             },
           (isAdmin || isCurrentUser || isOwner) && {
-            name: comment.hidden ? 'Unhide' : 'Hide',
+            name: comment.hidden ? 'Undelete' : 'Delete',
             icon: <EyeOffIcon className="h-5 w-5 text-red-500" />,
             onClick: async () => {
               onHide()
@@ -336,17 +329,17 @@ function DotMenu(props: {
                 }),
                 {
                   loading: comment.hidden
-                    ? 'Unhiding comment...'
-                    : 'Hiding comment...',
+                    ? 'Undeleting comment...'
+                    : 'Deleting comment...',
                   success: () => {
                     return comment.hidden
-                      ? 'Comment unhidden'
-                      : 'Comment hidden'
+                      ? 'Comment undeleted'
+                      : 'Comment deleted'
                   },
                   error: () => {
                     return comment.hidden
-                      ? 'Error unhiding comment'
-                      : 'Error hiding comment'
+                      ? 'Error undeleting comment'
+                      : 'Error deleting comment'
                   },
                 }
               )
@@ -354,24 +347,6 @@ function DotMenu(props: {
           }
         )}
       />
-
-      {user && tipping && (
-        <PaymentsModal
-          fromUser={user}
-          toUser={
-            {
-              id: comment.userId,
-              name: comment.userName,
-              username: comment.userUsername,
-              avatarUrl: comment.userAvatarUrl ?? '',
-            } as User
-          }
-          setShow={setTipping}
-          show={tipping}
-          groupId={comment.id}
-          defaultMessage={`Tip for comment on ${onUser.name} profile`}
-        />
-      )}
     </>
   )
 }
@@ -457,7 +432,7 @@ function FeedCommentHeader(props: {
   isParent?: boolean
 }) {
   const { comment, onUser, onHide } = props
-  const { userUsername, userName } = comment
+  const { userUsername, userName, userId } = comment
 
   return (
     <Col className={clsx('text-ink-600 text-sm ')}>
@@ -465,8 +440,7 @@ function FeedCommentHeader(props: {
         <Row className=" gap-1">
           <span>
             <UserLink
-              username={userUsername}
-              name={userName}
+              user={{ id: userId, username: userUsername, name: userName }}
               className={'font-semibold'}
             />
           </span>

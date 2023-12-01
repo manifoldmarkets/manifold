@@ -3,6 +3,16 @@ import { promisify } from 'util'
 import { pipeline } from 'stream'
 import { getApiUrl } from 'common/api'
 
+function getProxiedRequestUrl(req: NextApiRequest, path: string) {
+  const baseUrl = getApiUrl(path)
+  const [prefix, qs] = req.url!.split('?', 2)
+  if (qs) {
+    return baseUrl + '?' + qs
+  } else {
+    return baseUrl
+  }
+}
+
 function getProxiedRequestHeaders(req: NextApiRequest, whitelist: string[]) {
   const result = new Headers()
   for (const name of whitelist) {
@@ -31,8 +41,8 @@ function getProxiedResponseHeaders(res: Response, whitelist: string[]) {
   return result
 }
 
-export const fetchBackend = (req: NextApiRequest, name: string) => {
-  const url = getApiUrl(name)
+export const fetchBackend = (req: NextApiRequest, path: string) => {
+  const url = getProxiedRequestUrl(req, path)
   const headers = getProxiedRequestHeaders(req, [
     'Authorization',
     'Content-Type',

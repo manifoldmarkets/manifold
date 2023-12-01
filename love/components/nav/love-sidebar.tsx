@@ -1,4 +1,5 @@
 import {
+  HeartIcon,
   LogoutIcon,
   MoonIcon,
   SunIcon,
@@ -6,7 +7,6 @@ import {
   QuestionMarkCircleIcon,
   LoginIcon,
 } from '@heroicons/react/outline'
-// import { GiftIcon, MapIcon, MoonIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { buildArray } from 'common/util/array'
 import { capitalize } from 'lodash'
@@ -21,9 +21,7 @@ import { MobileAppsQRCodeDialog } from 'web/components/buttons/mobile-apps-qr-co
 import { ProfileSummary } from './love-profile-summary'
 import { Item, SidebarItem } from './love-sidebar-item'
 import ManifoldLoveLogo from '../manifold-love-logo'
-import toast from 'react-hot-toast'
-import { Col } from 'web/components/layout/col'
-import { Button } from 'web/components/buttons/button'
+import { Button, ColorType, SizeType } from 'web/components/buttons/button'
 import { signupThenMaybeRedirectToSignup } from 'love/lib/util/signup'
 import { useLover } from 'love/hooks/use-lover'
 
@@ -44,9 +42,6 @@ export default function Sidebar(props: {
   const { theme, changeTheme } = useContext(ThemeContext)
 
   const toggleTheme = () => {
-    if (theme === 'dark') {
-      toast('👻 Are you afraid of the dark?')
-    }
     changeTheme(theme === 'auto' ? 'dark' : theme === 'dark' ? 'light' : 'auto')
   }
   const navOptions = props.navigationOptions
@@ -75,7 +70,10 @@ export default function Sidebar(props: {
           setIsModalOpen={setIsModalOpen}
         />
 
-        {user === null && <SidebarSignUpButton />}
+        {user === null && (
+          <SignUpButton className="mt-4" text="Create a profile" />
+        )}
+        {user === null && <SignUpAsMatchmaker className="mt-2" />}
 
         {user && lover === null && (
           <Button className="mt-2" onClick={() => router.push('signup')}>
@@ -109,6 +107,7 @@ const bottomNav = (
   toggleTheme: () => void
 ) =>
   buildArray(
+    { name: 'Share with friends', href: '/referrals', icon: HeartIcon },
     !loggedIn && { name: 'Sign in', icon: LoginIcon, onClick: firebaseLogin },
     loggedIn && { name: 'About', href: '/about', icon: QuestionMarkCircleIcon },
     {
@@ -124,20 +123,40 @@ const bottomNav = (
     loggedIn && { name: 'Sign out', icon: LogoutIcon, onClick: logout }
   )
 
-const SidebarSignUpButton = (props: { className?: string }) => {
-  const { className } = props
+export const SignUpButton = (props: {
+  text?: string
+  className?: string
+  color?: ColorType
+  size?: SizeType
+}) => {
+  const { className, text, color, size } = props
 
   return (
-    <Col className={clsx('mt-4', className)}>
-      <Button
-        color="gradient"
-        size="xl"
-        onClick={signupThenMaybeRedirectToSignup}
-        className="w-full"
-      >
-        Sign up now
-      </Button>
-      {/* <PlayMoneyDisclaimer /> */}
-    </Col>
+    <Button
+      color={color ?? 'gradient'}
+      size={size ?? 'xl'}
+      onClick={signupThenMaybeRedirectToSignup}
+      className={clsx('w-full', className)}
+    >
+      {text ?? 'Sign up now'}
+    </Button>
+  )
+}
+
+export const SignUpAsMatchmaker = (props: {
+  className?: string
+  size?: SizeType
+}) => {
+  const { className, size } = props
+
+  return (
+    <Button
+      color={'indigo-outline'}
+      size={size ?? 'md'}
+      onClick={firebaseLogin}
+      className={clsx('w-full', className)}
+    >
+      Sign up as matchmaker
+    </Button>
   )
 }

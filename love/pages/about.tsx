@@ -63,6 +63,12 @@ export default function AboutPage() {
           setIsModalOpen={setIsModalOpen}
         />
 
+        <div className="mt-4 text-lg">
+          Email us at{' '}
+          <span className="font-semibold">info@manifold.markets</span> with any
+          questions or feedback! We appreciate it.
+        </div>
+
         <div className="mb-6 mt-2 grid grid-cols-2 justify-between sm:grid-cols-3 md:flex">
           {/* {!isNative && (
             <SocialLink
@@ -87,7 +93,7 @@ export default function AboutPage() {
           >
             Twitter
           </SocialLink>
-          <SocialLink Icon={MailIcon} href="mailto:love@manifold.markets">
+          <SocialLink Icon={MailIcon} href="mailto:info@manifold.markets">
             Email
           </SocialLink>
           <SocialLink

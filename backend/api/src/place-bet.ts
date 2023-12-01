@@ -22,7 +22,7 @@ import { addObjects, removeUndefinedProps } from 'common/util/object'
 import { Bet, LimitBet } from 'common/bet'
 import { floatingEqual } from 'common/util/math'
 import { redeemShares } from './redeem-shares'
-import { log } from 'shared/utils'
+import { GCPLog } from 'shared/utils'
 import { filterDefined } from 'common/util/array'
 import { createLimitBetCanceledNotification } from 'shared/create-notification'
 import { Answer } from 'common/answer'
@@ -32,6 +32,7 @@ import { CpmmState, getCpmmProbability } from 'common/calculate-cpmm'
 const bodySchema = z.object({
   contractId: z.string(),
   amount: z.number().gte(1),
+  replyToCommentId: z.string().optional(),
 })
 
 const binarySchema = z.object({
@@ -49,23 +50,19 @@ const multipleChoiceSchema = z.object({
   expiresAt: z.number().optional(),
 })
 
-const numericSchema = z.object({
-  outcome: z.string(),
-  value: z.number(),
-})
-
-export const placebet = authEndpoint(async (req, auth) => {
+export const placebet = authEndpoint(async (req, auth, log) => {
   log(`Inside endpoint handler for ${auth.uid}.`)
   const isApi = auth.creds.kind === 'key'
-  return await placeBetMain(req.body, auth.uid, isApi)
+  return await placeBetMain(req.body, auth.uid, isApi, log)
 })
 
 export const placeBetMain = async (
   body: unknown,
   uid: string,
-  isApi: boolean
+  isApi: boolean,
+  log: GCPLog
 ) => {
-  const { amount, contractId } = validate(bodySchema, body)
+  const { amount, contractId, replyToCommentId } = validate(bodySchema, body)
 
   const result = await firestore.runTransaction(async (trans) => {
     log(`Inside main transaction for ${uid}.`)
@@ -171,13 +168,15 @@ export const placeBetMain = async (
           expiresAt,
         } = validate(multipleChoiceSchema, body)
         if (expiresAt && expiresAt < Date.now())
-          throw new APIError(404, 'Bet cannot expire in the past.')
+          throw new APIError(403, 'Bet cannot expire in the past.')
         const answersSnap = await trans.get(
           contractDoc.collection('answersCpmm')
         )
         const answers = answersSnap.docs.map((doc) => doc.data() as Answer)
         const answer = answers.find((a) => a.id === answerId)
         if (!answer) throw new APIError(404, 'Answer not found')
+        if ('resolution' in answer && answer.resolution)
+          throw new APIError(403, 'Answer is resolved and cannot be bet on')
         if (shouldAnswersSumToOne && answers.length < 2)
           throw new APIError(
             403,
@@ -221,7 +220,7 @@ export const placeBetMain = async (
       } else {
         throw new APIError(
           500,
-          'Contract type/mechaism not supported (or is no longer)'
+          'Contract type/mechanism not supported (or is no longer)'
         )
       }
     })()
@@ -236,31 +235,47 @@ export const placeBetMain = async (
       throw new APIError(403, 'Trade too large for current liquidity pool.')
     }
 
-    if (contract.loverUserId1 && newPool && newP) {
-      const prob = getCpmmProbability(newPool, newP)
-      if (prob < 0.01) {
-        throw new APIError(
-          403,
-          'Cannot bet lower than 1% probability in relationship markets.'
-        )
+    // Special case for relationship markets.
+    if (contract.loverUserId1 && newPool) {
+      if (contract.outcomeType === 'BINARY') {
+        // Binary relationship markets deprecated.
+        const prob = getCpmmProbability(newPool, newP ?? 0.5)
+        if (prob < 0.01) {
+          throw new APIError(
+            403,
+            'Minimum of 1% probability in relationship markets.'
+          )
+        }
+      } else if (contract.outcomeType === 'MULTIPLE_CHOICE') {
+        const prob = getCpmmProbability(newPool, 0.5)
+        if (prob < 0.05) {
+          throw new APIError(
+            403,
+            'Minimum of 5% probability in relationship markets.'
+          )
+        }
       }
     }
 
     const betDoc = contractDoc.collection('bets').doc()
 
-    trans.create(betDoc, {
-      id: betDoc.id,
-      userId: user.id,
-      userAvatarUrl: user.avatarUrl,
-      userUsername: user.username,
-      userName: user.name,
-      isApi,
-      ...newBet,
-    })
+    trans.create(
+      betDoc,
+      removeUndefinedProps({
+        id: betDoc.id,
+        userId: user.id,
+        userAvatarUrl: user.avatarUrl,
+        userUsername: user.username,
+        userName: user.name,
+        isApi,
+        replyToCommentId,
+        ...newBet,
+      })
+    )
     log(`Created new bet document for ${user.username} - auth ${uid}.`)
 
     if (makers) {
-      updateMakers(makers, betDoc.id, contractDoc, trans)
+      updateMakers(makers, betDoc.id, contractDoc, trans, log)
     }
     if (ordersToCancel) {
       for (const bet of ordersToCancel) {
@@ -340,7 +355,7 @@ export const placeBetMain = async (
               })
             )
           }
-          updateMakers(makers, betDoc.id, contractDoc, trans)
+          updateMakers(makers, betDoc.id, contractDoc, trans, log)
           for (const bet of ordersToCancel) {
             trans.update(contractDoc.collection('bets').doc(bet.id), {
               isCancelled: true,
@@ -368,7 +383,9 @@ export const placeBetMain = async (
       uid,
       ...(makers ?? []).map((maker) => maker.bet.userId),
     ])
-    await Promise.all(userIds.map((userId) => redeemShares(userId, contract)))
+    await Promise.all(
+      userIds.map((userId) => redeemShares(userId, contract, log))
+    )
     log(`Share redemption transaction finished - auth ${uid}.`)
   }
   if (ordersToCancel) {
@@ -440,7 +457,8 @@ export const updateMakers = (
   makers: maker[],
   takerBetId: string,
   contractDoc: DocumentReference,
-  trans: Transaction
+  trans: Transaction,
+  log: GCPLog
 ) => {
   const makersByBet = groupBy(makers, (maker) => maker.bet.id)
   for (const makers of Object.values(makersByBet)) {

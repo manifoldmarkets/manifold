@@ -12,7 +12,7 @@ export default function ManifoldLoveLogo(props: {
   const inner = (
     <>
       <LoveLogo
-        className="h-10 w-10 shrink-0 stroke-pink-700 transition-transform group-hover:rotate-12 dark:stroke-pink-300"
+        className="h-10 w-10 shrink-0 stroke-pink-700 transition-transform dark:stroke-pink-300"
         aria-hidden
       />
       <div className={clsx('my-auto text-xl font-thin')}>

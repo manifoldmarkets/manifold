@@ -5,7 +5,7 @@ create table if not exists
     created_time timestamptz not null default now(),
     last_online_time timestamptz not null default now(),
     -- required
-    birthdate timestamp not null,
+    age int not null default 18,
     gender text not null, -- male, female, trans-male
     pref_gender text[] not null, -- male, trans-female
     pref_age_min int not null default 18,
@@ -18,7 +18,7 @@ create table if not exists
     comments_enabled boolean not null default true,
     city text not null,
     -- optional
-    bio text,
+    bio json,
     website text,
     twitter text,
     has_kids int,
@@ -42,7 +42,8 @@ create table if not exists
     region_code text,
     country text,
     city_latitude decimal(9, 6),
-    city_longitude decimal(9, 6)
+    city_longitude decimal(9, 6),
+    referred_by_username text
   );
 
 alter table lovers enable row level security;

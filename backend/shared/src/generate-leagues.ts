@@ -1,4 +1,4 @@
-import { groupBy } from 'lodash'
+import { groupBy, shuffle } from 'lodash'
 import { pgp, SupabaseDirectClient } from './supabase/init'
 import { genNewAdjectiveAnimal } from 'common/util/adjective-animal'
 import { BOT_USERNAMES } from 'common/envs/constants'
@@ -140,15 +140,18 @@ const generateCohorts = async (
     while (remainingUserIds.length > 0) {
       const cohortSize =
         i < cohortsWithOneLess ? usersPerCohort - 1 : usersPerCohort
-      const cohortOfUsers = (
-        await pg.many<{ user_id: string }>(
-          `select user_id from user_embeddings
+      const usersOrderedByProximity = await pg.many<{ user_id: string }>(
+        `select user_id from user_embeddings
         where user_id = any($2)
         order by user_embeddings.interest_embedding <=> (
           select interest_embedding from user_embeddings where user_id = $1
         )`,
-          [remainingUserIds[0], remainingUserIds, cohortSize]
-        )
+        [remainingUserIds[0], remainingUserIds, cohortSize]
+      )
+
+      // Randomize a little by choosing within a larger set.
+      const cohortOfUsers = shuffle(
+        usersOrderedByProximity.slice(0, cohortSize * 3)
       ).slice(0, cohortSize)
 
       const cohort = genNewAdjectiveAnimal(cohortSet)
@@ -183,6 +186,7 @@ export const insertBots = async (pg: SupabaseDirectClient, season: number) => {
 
   // console.log('alreadyAssignedBotIds', alreadyAssignedBotIds)
 
+  const botUsernamesExcludingAcc = BOT_USERNAMES.filter((u) => u !== 'acc')
   const startDate = getSeasonDates(prevSeason).start
   const botIds = await pg.map(
     `with active_user_ids as (
@@ -194,7 +198,7 @@ export const insertBots = async (pg: SupabaseDirectClient, season: number) => {
       where users.username in ($2:csv)
       and id in (select user_id from active_user_ids)
     `,
-    [startDate, BOT_USERNAMES],
+    [startDate, botUsernamesExcludingAcc],
     (r) => r.id
   )
 

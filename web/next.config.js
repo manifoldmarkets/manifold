@@ -20,24 +20,23 @@ module.exports = {
   transpilePackages: ['common'],
   experimental: {
     scrollRestoration: true,
+    turbo: {
+      rules: {
+        '*.svg': { loaders: ['@svgr/webpack'], as: '*.js' },
+      },
+    },
   },
   images: {
     dangerouslyAllowSVG: true,
-    domains: [
-      'manifold.markets',
-      'lh3.googleusercontent.com',
-      'i.imgur.com',
-      'firebasestorage.googleapis.com',
-      'storage.googleapis.com',
-      'picsum.photos',
-      'media.giphy.com',
-      'media0.giphy.com',
-      'media1.giphy.com',
-      'media2.giphy.com',
-      'media3.giphy.com',
-      'media4.giphy.com',
-      'media5.giphy.com',
-      'media6.giphy.com',
+    remotePatterns: [
+      { hostname: 'manifold.markets' },
+      { hostname: 'oaidalleapiprodscus.blob.core.windows.net' },
+      { hostname: 'lh3.googleusercontent.com' },
+      { hostname: 'i.imgur.com' },
+      { hostname: 'firebasestorage.googleapis.com' },
+      { hostname: 'storage.googleapis.com' },
+      { hostname: 'picsum.photos' },
+      { hostname: '*.giphy.com' },
     ],
   },
   webpack: (config) => {

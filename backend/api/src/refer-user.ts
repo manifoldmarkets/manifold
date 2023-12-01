@@ -16,12 +16,13 @@ import { completeReferralsQuest } from 'shared/complete-quest-internal'
 import { convertUser } from 'common/supabase/users'
 import { first } from 'lodash'
 import * as admin from 'firebase-admin'
-import { getContractSupabase, getUserSupabase, log } from 'shared/utils'
+import { GCPLog, getContractSupabase, getUserSupabase } from 'shared/utils'
 import * as crypto from 'crypto'
 import { runTxnFromBank } from 'shared/txn/run-txn'
 import { MINUTE_MS } from 'common/util/time'
 import { removeUndefinedProps } from 'common/util/object'
 import { trackPublicEvent } from 'shared/analytics'
+import { manifoldLoveUserId } from 'common/love/constants'
 
 const bodySchema = z
   .object({
@@ -30,7 +31,7 @@ const bodySchema = z
   })
   .strict()
 
-export const referuser = authEndpoint(async (req, auth) => {
+export const referuser = authEndpoint(async (req, auth, log) => {
   const { referredByUsername, contractId } = validate(bodySchema, req.body)
 
   const pg = createSupabaseDirectClient()
@@ -62,23 +63,25 @@ export const referuser = authEndpoint(async (req, auth) => {
     }
     log(`referredByContract: ${referredByContract.slug}`)
   }
-  await handleReferral(newUser.id, referredByUser.id, referredByContract)
+  await handleReferral(newUser.id, referredByUser.id, log, referredByContract)
   trackPublicEvent(newUser.id, 'Referral', {
     referredByUserId: referredByUser.id,
     referredByContractId: contractId,
   })
-  const db = createSupabaseClient()
-  // Perhaps should check if they're already following the user
-  await db
-    .from('user_follows')
-    .upsert([{ user_id: newUser.id, follow_id: referredByUser.id }])
-  await createFollowAfterReferralNotification(newUser.id, referredByUser, pg)
+  if (referredByUser.id !== manifoldLoveUserId) {
+    const db = createSupabaseClient()
+    await db
+      .from('user_follows')
+      .upsert([{ user_id: newUser.id, follow_id: referredByUser.id }])
+    await createFollowAfterReferralNotification(newUser.id, referredByUser, pg)
+  }
   return { status: 'ok' }
 })
 
 async function handleReferral(
   newUserId: string,
   referredByUserId: string,
+  log: GCPLog,
   referredByContract?: Contract
 ) {
   const firestore = admin.firestore()

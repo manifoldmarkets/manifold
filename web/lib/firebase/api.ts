@@ -13,6 +13,7 @@ import { Portfolio, PortfolioItem } from 'common/portfolio'
 import { ReportProps } from 'common/report'
 import { BaseDashboard, Dashboard, DashboardItem } from 'common/dashboard'
 import { Bet } from 'common/bet'
+import { LinkPreview } from 'common/link-preview'
 
 export { APIError } from 'common/api'
 
@@ -171,10 +172,6 @@ export function redeemBoost(params: any) {
   return call(getApiUrl('redeem-boost'), 'POST', params)
 }
 
-export function redeemAd(params: any) {
-  return call(getApiUrl('redeemad'), 'POST', params)
-}
-
 export function validateIapReceipt(params: any) {
   return call(getApiUrl('validateiap'), 'POST', params)
 }
@@ -266,7 +263,7 @@ export function createCommentOnContract(params: {
   return call(getApiUrl('createcomment'), 'POST', params)
 }
 
-export function supabaseSearchContracts(params: {
+export function searchContracts(params: {
   term: string
   filter?: Filter
   sort?: Sort
@@ -316,18 +313,15 @@ export function joinGroupThroughInvite(params: { inviteId: string }) {
   return call(getApiUrl('joingroupthroughinvite'), 'POST', params)
 }
 
-export function joinGroup(params: { groupId: string }) {
-  return call(getApiUrl('joingroup'), 'POST', params)
+export function followTopic(params: { groupId: string }) {
+  return call(getApiUrl('follow-topic'), 'POST', params)
 }
 
-export function supabaseSearchGroups(params: {
+export function searchGroups(params: {
   term: string
-  offset: number
   limit: number
-  fuzzy?: boolean
-  yourGroups?: boolean
+  offset?: number
   addingToContract?: boolean
-  newContract?: boolean
 }) {
   return maybeAuthedCall(
     getApiUrl('supabasesearchgroups'),
@@ -449,7 +443,6 @@ export function report(params: ReportProps) {
 export function createDashboard(params: {
   title: string
   items: DashboardItem[]
-  description?: JSONContent
   topics: string[]
 }) {
   return call(getApiUrl('createdashboard'), 'POST', params)
@@ -475,6 +468,14 @@ export function supabaseSearchDashboards(params: {
   ) as Promise<BaseDashboard[]>
 }
 
+export function getNewsDashboards() {
+  return maybeAuthedCall(getApiUrl('get-news-dashboards'), 'GET')
+}
+
+export function setNewsDashboards(params: { dashboardIds: string[] }) {
+  return call(getApiUrl('set-news-dashboards'), 'POST', params)
+}
+
 export function getYourFollowedDashboards() {
   return call(getApiUrl('getyourfolloweddashboards'), 'POST')
 }
@@ -484,7 +485,6 @@ export function updateDashboard(params: {
   dashboardId: string
   items: DashboardItem[]
   topics?: string[]
-  description?: JSONContent
 }) {
   return call(getApiUrl('updatedashboard'), 'POST', params)
 }
@@ -512,6 +512,7 @@ export function updateMarket(params: {
   contractId: string
   visibility?: 'public' | 'unlisted'
   closeTime?: number
+  addAnswersMode?: 'ONLY_CREATOR' | 'ANYONE'
 }) {
   return call(getApiUrl('update-market'), 'POST', params)
 }
@@ -519,8 +520,8 @@ export function updateMarket(params: {
 export function banUser(params: { userId: string; unban?: boolean }) {
   return call(getApiUrl('ban-user'), 'POST', params)
 }
-export function createPrivateMessageChannelWithUser(params: {
-  userId: string
+export function createPrivateMessageChannelWithUsers(params: {
+  userIds: string[]
 }) {
   return call(getApiUrl('create-private-user-message-channel'), 'POST', params)
 }
@@ -531,7 +532,44 @@ export function sendUserPrivateMessage(params: {
 }) {
   return call(getApiUrl('create-private-user-message'), 'POST', params)
 }
+export function leavePrivateMessageChannel(params: { channelId: number }) {
+  return call(getApiUrl('leave-private-user-message-channel'), 'POST', params)
+}
+export function updatePrivateMessageChannel(params: {
+  channelId: number
+  notifyAfterTime: number
+}) {
+  return call(getApiUrl('update-private-user-message-channel'), 'POST', params)
+}
+export function editAnswerCpmm(params: {
+  answerId: string
+  text: string
+  contractId: string
+}) {
+  return call(getApiUrl('edit-answer-cpmm'), 'POST', params)
+}
 
 export function searchLocation(params: { term: string; limit?: number }) {
-  return call(getApiUrl('searchlocation'), 'POST', params)
+  return maybeAuthedCall(getApiUrl('searchlocation'), 'POST', params)
+}
+
+export function searchNearCity(params: { cityId: string; radius: number }) {
+  if (params.radius < 1 || params.radius > 500) {
+    throw new Error('Your radius is out of bounds!')
+  }
+  return maybeAuthedCall(getApiUrl('searchnearcity'), 'POST', params)
+}
+
+// vercel api
+
+export async function clientFetchLinkPreview(
+  url: string
+): Promise<LinkPreview | undefined> {
+  url = url.trim()
+  if (!url) return undefined
+  return fetch(`/api/v0/fetch-link-preview?url=${encodeURIComponent(url)}`, {
+    method: 'GET',
+    headers: { 'Content-Type': 'application/json' },
+    redirect: 'follow',
+  }).then((r) => r.json())
 }

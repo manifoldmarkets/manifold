@@ -1,11 +1,13 @@
 export type EnvConfig = {
   domain: string
   loveDomain: string
+  loveDomainAlternate: string
   firebaseConfig: FirebaseConfig
   amplitudeApiKey: string
   supabaseInstanceId: string
   supabaseAnonKey: string
   twitchBotEndpoint: string
+  apiEndpoint: string
   sprigEnvironmentId: string
 
   // IDs for v2 cloud functions -- find these by deploying a cloud function and
@@ -45,6 +47,7 @@ type FirebaseConfig = {
 export const PROD_CONFIG: EnvConfig = {
   domain: 'manifold.markets',
   loveDomain: 'manifold.love',
+  loveDomainAlternate: 'manifoldlove.com',
   amplitudeApiKey: '2d6509fd4185ebb8be29709842752a15',
   supabaseInstanceId: 'pxidrgkatumlvfqaxcll',
   supabaseAnonKey:
@@ -62,6 +65,7 @@ export const PROD_CONFIG: EnvConfig = {
     measurementId: 'G-SSFK1Q138D',
   },
   twitchBotEndpoint: 'https://twitch-bot.manifold.markets',
+  apiEndpoint: 'https://api.manifold.markets',
   cloudRunId: 'nggbo3neva',
   cloudRunRegion: 'uc',
 
@@ -75,6 +79,9 @@ export const PROD_CONFIG: EnvConfig = {
     'uglwf3YKOZNGjjEXKc5HampOFRE2', // D4vid
     'GRwzCexe5PM6ThrSsodKZT9ziln2', //Inga
     '62TNqzdBx7X2q621HltsJm8UFht2', // Marshall
+    'qJHrvvGfGsYiHZkGY6XjVfIMj233', // Alice
+    'z0cH5XmIM9XgWFOBAILQWt0fTHr1', // Rachel W
+    'cA1JupYR5AR8btHUs2xvkui7jA93', // Genzy
   ],
   visibility: 'PUBLIC',
 

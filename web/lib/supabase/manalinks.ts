@@ -82,7 +82,7 @@ export async function getUserManalinkClaims(
       creator_id: userId,
     })
   )
-  return (data ?? []).map((d: any) => ({
+  return (data ?? []).map((d) => ({
     manalinkId: d.manalink_id,
     userId: d.claimant_id,
     ts: d.ts,

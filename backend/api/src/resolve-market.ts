@@ -80,7 +80,7 @@ const pseudoNumericSchema = z.union([
   }),
 ])
 
-export const resolvemarket = authEndpoint(async (req, auth) => {
+export const resolvemarket = authEndpoint(async (req, auth, log) => {
   const { contractId } = validate(bodySchema, req.body)
   const contractDoc = firestore.doc(`contracts/${contractId}`)
   const contractSnap = await contractDoc.get()
@@ -88,12 +88,13 @@ export const resolvemarket = authEndpoint(async (req, auth) => {
     throw new APIError(404, 'No contract exists with the provided ID')
   const contract = contractSnap.data() as Contract
 
+  let answers: Answer[] = []
   if (contract.mechanism === 'cpmm-multi-1') {
     // Denormalize answers.
     const answersSnap = await firestore
       .collection(`contracts/${contractId}/answersCpmm`)
       .get()
-    const answers = answersSnap.docs.map((doc) => doc.data() as Answer)
+    answers = answersSnap.docs.map((doc) => doc.data() as Answer)
     contract.answers = answers
   }
 
@@ -112,15 +113,27 @@ export const resolvemarket = authEndpoint(async (req, auth) => {
 
   const resolutionParams = getResolutionParams(contract, req.body)
 
-  console.log(
-    'Resolving market',
-    contract.slug,
-    contractId,
-    'with params',
-    resolutionParams
-  )
+  if ('answerId' in resolutionParams && 'answers' in contract) {
+    const { answerId } = resolutionParams
+    const answer = answers.find((a) => a.id === answerId)
+    if (answer && 'resolution' in answer && answer.resolution) {
+      throw new APIError(403, `${answerId} answer is already resolved`)
+    }
+  }
 
-  return await resolveMarketHelper(contract, caller, creator, resolutionParams)
+  log('Resolving market ', {
+    contractSlug: contract.slug,
+    contractId,
+    resolutionParams,
+  })
+
+  return await resolveMarketHelper(
+    contract,
+    caller,
+    creator,
+    resolutionParams,
+    log
+  )
 })
 
 function getResolutionParams(contract: Contract, body: string) {

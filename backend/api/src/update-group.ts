@@ -29,5 +29,5 @@ export const updategroup = authEndpoint(async (req, auth) => {
   }
 
   await updateData(db, 'groups', id, data)
-  return { satus: 'success' }
+  return { status: 'success' }
 })

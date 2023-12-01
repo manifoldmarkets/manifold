@@ -1,38 +1,31 @@
 import { NextApiRequest, NextApiResponse } from 'next'
-import { CORS_UNRESTRICTED, applyCorsHeaders } from 'web/lib/api/cors'
+import { applyCorsHeaders } from 'web/lib/api/cors'
 import { ApiError } from 'web/pages/api/v0/_types'
-import { getLinkPreview } from 'link-preview-js'
-
-import { first } from 'lodash'
-
-const CACHE = new Map<string, Awaited<ReturnType<typeof getLinkPreview>>>()
+import { LinkPreview, fetchLinkPreview } from 'common/link-preview'
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse<Awaited<ReturnType<typeof getLinkPreview>> | ApiError>
+  res: NextApiResponse<LinkPreview | ApiError>
 ) {
-  await applyCorsHeaders(req, res, CORS_UNRESTRICTED)
-  res.setHeader('Cache-Control', 's-maxage=86400')
+  await applyCorsHeaders(req, res, {
+    methods: 'GET',
+  })
 
-  const { url } = req.body
-  if (!url) return res.status(404).json({ error: 'url required' })
+  console.log(req.query)
 
-  if (CACHE.has(url))
-    return res
-      .status(200)
-      .json(CACHE.get(url) ?? { error: 'Error fetching link preview' })
+  const { url } = req.query
+  if (!(typeof url === 'string'))
+    return res.status(400).json({ error: 'requires param url (string)' })
 
-  try {
-    const metadata = await fetchLinkPreview(url)
-    CACHE.set(url, metadata)
-    return res.status(200).json(metadata)
-  } catch (error) {
+  const preview = await fetchLinkPreview(url)
+  if (preview) {
+    // Cache for 1 day
+    res.setHeader(
+      'Cache-Control',
+      's-maxage=86400, stale-while-revalidate=86400'
+    )
+    return res.status(200).json(preview)
+  } else {
     return res.status(500).json({ error: 'Error fetching link preview' })
   }
-}
-
-export async function fetchLinkPreview(url: string) {
-  const preview = await getLinkPreview(url)
-  const hasImage = 'images' in preview
-  return { ...preview, image: hasImage ? first(preview.images) : null }
 }

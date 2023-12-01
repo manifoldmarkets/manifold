@@ -15,7 +15,7 @@ import {
 import { Avatar } from 'web/components/widgets/avatar'
 import { UserLink } from 'web/components/widgets/user-link'
 import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
-import { FeedTimelineItem } from 'web/hooks/use-feed-timeline'
+import { DEBUG_FEED_CARDS, FeedTimelineItem } from 'web/hooks/use-feed-timeline'
 import { useIsVisible } from 'web/hooks/use-is-visible'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { useUser } from 'web/hooks/use-user'
@@ -38,6 +38,8 @@ import { CategoryTags } from '../feed/feed-timeline-items'
 import { JSONEmpty } from 'web/components/contract/contract-description'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { TbDropletHeart, TbMoneybag } from 'react-icons/tb'
+import { Tooltip } from 'web/components/widgets/tooltip'
+import { Button } from 'web/components/buttons/button'
 
 export function FeedContractCard(props: {
   contract: Contract
@@ -70,6 +72,8 @@ export function FeedContractCard(props: {
 
   const {
     closeTime,
+    creatorId,
+    creatorName,
     creatorUsername,
     creatorAvatarUrl,
     outcomeType,
@@ -86,10 +90,12 @@ export function FeedContractCard(props: {
 
   const { ref } = useIsVisible(
     () =>
+      !DEBUG_FEED_CARDS &&
       track('view market card', {
         contractId: contract.id,
         creatorId: contract.creatorId,
         slug: contract.slug,
+        feedId: item?.id,
         isPromoted: !!promotedData,
       } as ContractCardView),
     false
@@ -106,6 +112,7 @@ export function FeedContractCard(props: {
       contractId: contract.id,
       creatorId: contract.creatorId,
       slug: contract.slug,
+      feedId: item?.id,
       isPromoted: !!promotedData,
     })
 
@@ -138,11 +145,12 @@ export function FeedContractCard(props: {
               username={creatorUsername}
             />
             <UserLink
-              name={contract.creatorName}
-              username={creatorUsername}
-              className={clsx(
-                'w-full max-w-[10rem] text-ellipsis sm:max-w-[12rem]'
-              )}
+              user={{
+                id: creatorId,
+                name: creatorName,
+                username: creatorUsername,
+              }}
+              className={'w-full max-w-[10rem] text-ellipsis sm:max-w-[12rem]'}
             />
           </Row>
           <Row className="gap-1">
@@ -156,6 +164,7 @@ export function FeedContractCard(props: {
               item={item}
               interesting={true}
               toggleInteresting={hide}
+              importanceScore={props.contract.importanceScore}
             />
           </Row>
         </Row>
@@ -181,7 +190,12 @@ export function FeedContractCard(props: {
               />
             )}
             {isBinaryCpmm && !isClosed && (
-              <BetButton contract={contract} user={user} className="h-min" />
+              <BetButton
+                feedId={item?.id}
+                contract={contract}
+                user={user}
+                className="h-min"
+              />
             )}
           </Row>
         </div>
@@ -199,7 +213,7 @@ export function FeedContractCard(props: {
           <FeedBinaryChart
             contract={contract}
             className="my-4"
-            startDate={item?.createdTime}
+            startDate={item?.createdTime ?? contract.createdTime}
           />
         )}
         {promotedData && (
@@ -239,7 +253,11 @@ export function FeedContractCard(props: {
 
 // ensures that the correct spacing is between buttons
 const BottomRowButtonWrapper = (props: { children: React.ReactNode }) => {
-  return <Row className="basis-10 justify-start">{props.children}</Row>
+  return (
+    <Row className="basis-10 justify-start whitespace-nowrap">
+      {props.children}
+    </Row>
+  )
 }
 
 const BottomActionRow = (props: {
@@ -258,7 +276,7 @@ const BottomActionRow = (props: {
       )}
     >
       <BottomRowButtonWrapper>
-        <TradesButton contract={contract} />
+        <TradesButton contract={contract} className={'h-full'} />
       </BottomRowButtonWrapper>
 
       {contract.outcomeType === 'BOUNTIED_QUESTION' && (
@@ -276,20 +294,29 @@ const BottomActionRow = (props: {
       {/* cpmm markets */}
       {'totalLiquidity' in contract && (
         <BottomRowButtonWrapper>
-          {
-            <div className="text-ink-500 z-10 flex items-center gap-1.5 text-sm">
-              <TbDropletHeart className="h-6 w-6 stroke-2" />
-              <div>
-                {ENV_CONFIG.moneyMoniker}
-                {shortFormatNumber(contract.totalLiquidity)}
-              </div>
-            </div>
-          }
+          <Button
+            disabled={true}
+            size={'2xs'}
+            color={'gray-white'}
+            className={'disabled:cursor-pointer'}
+          >
+            <Tooltip text={`Total liquidity`} placement="top" noTap>
+              <Row
+                className={'text-ink-500 h-full items-center gap-1.5 text-sm'}
+              >
+                <TbDropletHeart className="h-6 w-6 stroke-2" />
+                <div>
+                  {ENV_CONFIG.moneyMoniker}
+                  {shortFormatNumber(contract.totalLiquidity)}
+                </div>
+              </Row>
+            </Tooltip>
+          </Button>
         </BottomRowButtonWrapper>
       )}
 
       <BottomRowButtonWrapper>
-        <CommentsButton contract={contract} user={user} />
+        <CommentsButton contract={contract} user={user} className={'h-full'} />
       </BottomRowButtonWrapper>
       <BottomRowButtonWrapper>
         <LikeButton
@@ -300,7 +327,7 @@ const BottomActionRow = (props: {
           totalLikes={contract.likedByUserCount ?? 0}
           contract={contract}
           contentText={question}
-          className={'hover:!bg-canvas-0 !px-0'}
+          size={'2xs'}
           trackingLocation={'contract card (feed)'}
           placement="top"
         />

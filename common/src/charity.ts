@@ -408,6 +408,16 @@ Wild Animal Initiative currently focuses on helping scientists, grantors, and de
       'Our unique, cost-effective conservation model for protecting endangered species has been implemented successfully for over 30 years. Thanks to the generosity of our donors, the expertise of our partners and the participation of local communities across the tropics, our reserves are exemplary models of international conservation.',
   },
   {
+    name: 'Helping Shepherds of Every Color Rescue',
+    website: 'https://www.helpingshepherdsofeverycolor.com/',
+    ein: '46-1747360',
+    photo: 'https://i.imgur.com/TXQZe9E.png',
+    preview:
+      'Helping Shepherds of Every Color Rescue is an all volunteer German Shepherd rescue group based in Montgomery, AL.',
+    description:
+      'Helping Shepherds of Every Color Rescue is an all volunteer German Shepherd rescue group based in Montgomery, AL. We provide needed medical care, training and rehabilitation to needy GSDs until they are ready for adoption. All dogs are spayed/neutered, up-to-date on shots and heartworm free by the time they are re-homed.',
+  },
+  {
     name: 'The Nature Conservancy',
     website: 'https://www.nature.org/en-us/',
     ein: '53-0242652',
@@ -981,6 +991,15 @@ We began in 1996 by archiving the Internet itself, a medium that was just beginn
       'Develops and manages programs that ensure all Thoroughbred mares whose racing and breeding careers have ended are tracked and provided with care that protects them from suffering and cruelty.',
     description:
       'Mareworthy Charities exists to develop and manage programs that ensure all Thoroughbred mares whose racing and breeding careers have ended are tracked and provided with care that protects them from suffering and cruelty with a focus on Thoroughbred warhorse mares (mares who raced more than 50 times) and retired Thoroughbred broodmares. Currently the sanctuary space is in its infancy with limited space in Kentucky, but the future dream is to acquire a larger property that can be home to a larger herd. Until then, Mareworthy Charities is developing a network of approved forever foster homes for eligible mares. We rely on donations, merchandise sales, and any other creative ways we can support the horses we love. Your donation, no matter the size, truly makes a difference!',
+  },
+  {
+    name: 'The Human Rights Foundation',
+    website: 'https://hrf.org/',
+    photo: 'https://i.imgur.com/ESrnCq5.png',
+    preview:
+      'A nonpartisan, nonprofit organization that promotes and protects human rights globally, with a focus on closed societies.',
+    description:
+      'We promote freedom where it’s most at risk: in countries ruled by authoritarian regimes. Individuals who suffer under authoritarianism are more likely to: lack food and clean drinking water; lack access to basic education; live in extreme poverty; face war and civil strife; become a refugee; lack freedom of speech and voting rights; and face constant threats of imprisonment, torture, violence, and death.',
   },
 
   {

@@ -1,11 +1,12 @@
-import { ContractComment, PostComment } from 'common/comment'
-import { Row, convertSQLtoTS, run, tsToMillis } from 'common/supabase/utils'
+import { PostComment } from 'common/comment'
+import { run } from 'common/supabase/utils'
 import { db } from './db'
 import { JSONContent } from '@tiptap/core'
 import { Post } from 'common/post'
 import { User } from 'common/user'
 import { track } from '../service/analytics'
 import { chunk } from 'lodash'
+import { convertContractComment } from 'common/supabase/comments'
 
 export async function getComment(commentId: string) {
   const res = await db
@@ -79,9 +80,10 @@ export async function getRecentCommentsOnContracts(
 
 export async function getCommentsOnContract(
   contractId: string,
-  limit?: number
+  limit?: number,
+  userId?: string
 ) {
-  const q = db
+  let q = db
     .from('contract_comments')
     .select()
     .eq('contract_id', contractId)
@@ -89,6 +91,10 @@ export async function getCommentsOnContract(
 
   if (limit) {
     q.limit(limit)
+  }
+
+  if (userId) {
+    q = q.eq('user_id', userId)
   }
 
   const { data } = await run(q)
@@ -126,13 +132,6 @@ export async function getNumUserComments(userId: string) {
   )
   return count as number
 }
-
-export const convertContractComment = (row: Row<'contract_comments'>) =>
-  convertSQLtoTS<'contract_comments', ContractComment>(row, {
-    fs_updated_time: false,
-    created_time: tsToMillis as any,
-  })
-
 // post comments
 
 export async function createPostComment(

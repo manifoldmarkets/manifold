@@ -11,88 +11,45 @@ import { colClassName, labelClassName } from 'love/pages/signup'
 import { useRouter } from 'next/router'
 import { updateLover } from 'web/lib/firebase/love/api'
 import { Row as rowFor } from 'common/supabase/utils'
-import Image from 'next/image'
-import { uploadImage } from 'web/lib/firebase/storage'
 import { User } from 'common/user'
-import { changeUserInfo } from 'web/lib/firebase/api'
-import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
-import { StackedUserNames } from 'web/components/widgets/user-link'
 import { track } from 'web/lib/service/analytics'
+import { Races } from './race'
+import { Carousel } from 'web/components/widgets/carousel'
 
 export const OptionalLoveUserForm = (props: {
   lover: rowFor<'lovers'>
   setLover: (key: keyof rowFor<'lovers'>, value: any) => void
   user: User
-  showAvatar?: boolean
-  butonLabel?: string
+  buttonLabel?: string
 }) => {
-  const { lover, showAvatar, user, butonLabel, setLover } = props
+  const { lover, user, buttonLabel, setLover } = props
 
   const router = useRouter()
-  const [heightFeet, setHeightFeet] = useState(
+  const [heightFeet, setHeightFeet] = useState<number | undefined>(
     Math.floor((lover['height_in_inches'] ?? 0) / 12)
+  )
+  const [heightInches, setHeightInches] = useState<number | undefined>(
+    Math.floor((lover['height_in_inches'] ?? 0) % 12)
   )
 
   const handleSubmit = async () => {
-    const res = await updateLover({
-      ...lover,
-    }).catch((e) => {
+    const res = await updateLover({ ...lover }).catch((e) => {
       console.error(e)
       return false
     })
     if (res) {
       console.log('success')
       track('submit love optional profile')
-      router.push('/love-questions')
+      if (user) router.push(`/${user.username}`)
+      else router.push('/')
     }
   }
-  const [uploadingImages, setUploadingImages] = useState(false)
-
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files
-    if (!files || Array.from(files).length === 0) return
-    const selectedFiles = Array.from(files)
-    setUploadingImages(true)
-    const url = await uploadImage(
-      user.username,
-      selectedFiles[0],
-      'love-images'
-    )
-    await changeUserInfo({ avatarUrl: url })
-    setUploadingImages(false)
-  }
-
   return (
     <>
       <Title>More about me</Title>
-      <Col className={'gap-8'}>
-        {showAvatar && (
-          <Col className={clsx(colClassName)}>
-            <label className={clsx(labelClassName)}>
-              Change your avatar photo (optional)
-            </label>
-            <Row>
-              <input
-                type="file"
-                onChange={handleFileChange}
-                className={'w-48'}
-                disabled={uploadingImages}
-              />
-              {uploadingImages && <LoadingIndicator />}
-            </Row>
-            <Row className=" items-center gap-2">
-              <Image
-                src={user.avatarUrl}
-                width={80}
-                height={80}
-                alt={`avatar photo of ${user.username}`}
-                className="h-20 w-20 rounded-full object-cover p-2"
-              />
-              <StackedUserNames user={user} />
-            </Row>
-          </Col>
-        )}
+      <div className="text-ink-500 mb-6 text-lg">Optional information</div>
 
+      <Col className={'gap-8'}>
         <Col className={clsx(colClassName)}>
           <label className={clsx(labelClassName)}>
             Website or date doc link
@@ -146,7 +103,11 @@ export const OptionalLoveUserForm = (props: {
           <label className={clsx(labelClassName)}>Current number of kids</label>
           <Input
             type="number"
-            onChange={(e) => setLover('has_kids', Number(e.target.value))}
+            onChange={(e) => {
+              const value =
+                e.target.value === '' ? null : Number(e.target.value)
+              setLover('has_kids', value)
+            }}
             className={'w-20'}
             min={0}
             value={lover['has_kids'] ?? undefined}
@@ -171,9 +132,11 @@ export const OptionalLoveUserForm = (props: {
           </label>
           <Input
             type="number"
-            onChange={(e) =>
-              setLover('drinks_per_month', Number(e.target.value))
-            }
+            onChange={(e) => {
+              const value =
+                e.target.value === '' ? null : Number(e.target.value)
+              setLover('drinks_per_month', value)
+            }}
             className={'w-20'}
             min={0}
             value={lover['drinks_per_month'] ?? undefined}
@@ -188,29 +151,35 @@ export const OptionalLoveUserForm = (props: {
               <Input
                 type="number"
                 onChange={(e) => {
-                  setHeightFeet(Number(e.target.value))
-                  setLover(
-                    'height_in_inches',
-                    Number(e.target.value) * 12 +
-                      ((lover['height_in_inches'] ?? 0) % 12)
-                  )
+                  if (e.target.value === '') {
+                    setHeightFeet(undefined)
+                  } else {
+                    setHeightFeet(Number(e.target.value))
+                    const heightInInches =
+                      Number(e.target.value) * 12 + (heightInches ?? 0)
+                    setLover('height_in_inches', heightInInches)
+                  }
                 }}
                 className={'w-16'}
-                value={heightFeet}
+                value={heightFeet ?? ''}
               />
             </Col>
             <Col>
               <span>Inches</span>
               <Input
                 type="number"
-                onChange={(e) =>
-                  setLover(
-                    'height_in_inches',
-                    Number(e.target.value) + heightFeet * 12
-                  )
-                }
+                onChange={(e) => {
+                  if (e.target.value === '') {
+                    setHeightInches(undefined)
+                  } else {
+                    setHeightInches(Number(e.target.value))
+                    const heightInInches =
+                      Number(e.target.value) + 12 * (heightFeet ?? 0)
+                    setLover('height_in_inches', heightInInches)
+                  }
+                }}
                 className={'w-16'}
-                value={(lover['height_in_inches'] ?? 0) % 12}
+                value={heightInches ?? ''}
               />
             </Col>
           </Row>
@@ -227,18 +196,9 @@ export const OptionalLoveUserForm = (props: {
         </Col> */}
 
         <Col className={clsx(colClassName)}>
-          <label className={clsx(labelClassName)}>Ethnicity/origin(s)</label>
+          <label className={clsx(labelClassName)}>Ethnicity/origin</label>
           <MultiCheckbox
-            choices={{
-              African: 'african',
-              Asian: 'asian',
-              Caucasian: 'caucasian',
-              Hispanic: 'hispanic',
-              'Middle Eastern': 'middle_eastern',
-              'Native American': 'native_american',
-              'Pacific Islander': 'pacific_islander',
-              Other: 'other',
-            }}
+            choices={Races}
             selected={lover['ethnicity'] ?? []}
             onChange={(selected) => setLover('ethnicity', selected)}
           />
@@ -248,17 +208,20 @@ export const OptionalLoveUserForm = (props: {
           <label className={clsx(labelClassName)}>
             Highest completed education level
           </label>
-          <ChoicesToggleGroup
-            currentChoice={lover['education_level'] ?? ''}
-            choicesMap={{
-              'High school': 'high-school',
-              'Some college': 'some-college',
-              Bachelors: 'bachelors',
-              Masters: 'masters',
-              PhD: 'doctorate',
-            }}
-            setChoice={(c) => setLover('education_level', c)}
-          />
+          <Carousel className="max-w-full">
+            <ChoicesToggleGroup
+              currentChoice={lover['education_level'] ?? ''}
+              choicesMap={{
+                None: 'none',
+                'High school': 'high-school',
+                'Some college': 'some-college',
+                Bachelors: 'bachelors',
+                Masters: 'masters',
+                PhD: 'doctorate',
+              }}
+              setChoice={(c) => setLover('education_level', c)}
+            />
+          </Carousel>
         </Col>
         <Col className={clsx(colClassName)}>
           <label className={clsx(labelClassName)}>University</label>
@@ -291,7 +254,7 @@ export const OptionalLoveUserForm = (props: {
           />
         </Col>
         <Row className={'justify-end'}>
-          <Button onClick={handleSubmit}>{butonLabel ?? 'Next'}</Button>
+          <Button onClick={handleSubmit}>{buttonLabel ?? 'Next'}</Button>
         </Row>
       </Col>
     </>

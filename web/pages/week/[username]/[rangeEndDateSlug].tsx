@@ -15,7 +15,6 @@ import { query, where } from 'firebase/firestore'
 import { chunk, orderBy, sortBy, sum } from 'lodash'
 import { useMemo } from 'react'
 import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
-import { useViewScale } from 'web/components/charts/helpers'
 import { ContractsGrid } from 'web/components/contract/contracts-grid'
 import { ProfitChangeTable } from 'web/components/daily-profit'
 import { Col } from 'web/components/layout/col'
@@ -117,7 +116,7 @@ export default function RangePerformancePage(props: {
   useSaveReferral(currentUser, {
     defaultReferrerUsername: user?.username,
   })
-  const graphView = useViewScale()
+
   const { contracts: relatedMarkets, loadMore } = useRecentlyBetOnContracts(
     user?.id ?? '_'
   )
@@ -173,12 +172,7 @@ export default function RangePerformancePage(props: {
       <Col className={'p-2'}>
         <Row className={'w-full items-start justify-between pb-6'}>
           <Title>
-            <UserLink
-              name={user.name.split(' ')[0] + `'s`}
-              hideBadge={true}
-              username={user.username}
-            />{' '}
-            {date} Profit
+            <UserLink user={user} hideBadge={true} /> {date} Profit
           </Title>
           <CopyLinkOrShareButton
             url={`https://${ENV_CONFIG.domain}/week/${user.username}/${rangeEndDateSlug}`}
@@ -206,7 +200,6 @@ export default function RangePerformancePage(props: {
                   points={graphPoints}
                   width={width}
                   height={height}
-                  viewScaleProps={graphView}
                 />
               )}
             </SizedContainer>

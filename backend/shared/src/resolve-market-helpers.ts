@@ -23,12 +23,12 @@ import {
   revalidateStaticProps,
   isProd,
   getValues,
-  log,
   checkAndMergePayouts,
+  GCPLog,
 } from './utils'
 import { getLoanPayouts, getPayouts, groupPayoutsByUser } from 'common/payouts'
 import { APIError } from 'common/api'
-import { CORE_USERNAMES } from 'common/envs/constants'
+import { ENV_CONFIG } from 'common/envs/constants'
 import { Query } from 'firebase-admin/firestore'
 import { trackPublicEvent } from 'shared/analytics'
 import { recordContractEdit } from 'shared/record-contract-edit'
@@ -46,7 +46,8 @@ export const resolveMarketHelper = async (
   unresolvedContract: Contract,
   resolver: User,
   creator: User,
-  { value, resolutions, probabilityInt, outcome, answerId }: ResolutionParams
+  { value, resolutions, probabilityInt, outcome, answerId }: ResolutionParams,
+  log: GCPLog
 ) => {
   const { closeTime, id: contractId } = unresolvedContract
 
@@ -105,17 +106,17 @@ export const resolveMarketHelper = async (
   const negPayoutThreshold = contract.uniqueBettorCount <= 2 ? -500 : -10000
 
   const userPayouts = groupPayoutsByUser(payouts)
-  console.log('user payouts', userPayouts)
+  log('user payouts', { userPayouts })
 
   const negativePayouts = Object.values(userPayouts).filter(
     (p) => p <= negPayoutThreshold
   )
 
-  console.log('negative payouts', negativePayouts)
+  log('negative payouts', { negativePayouts })
 
   if (
     outcome === 'CANCEL' &&
-    !CORE_USERNAMES.includes(resolver.username) &&
+    !ENV_CONFIG.adminIds.includes(resolver.id) &&
     negativePayouts.length > 0
   ) {
     throw new APIError(
@@ -132,21 +133,28 @@ export const resolveMarketHelper = async (
     const answerDoc = firestore.doc(
       `contracts/${contractId}/answersCpmm/${answerId}`
     )
+    const finalProb =
+      resolutionProbability ??
+      (outcome === 'YES' ? 1 : outcome === 'NO' ? 0 : undefined)
     await answerDoc.update(
       removeUndefinedProps({
         resolution: outcome,
         resolutionTime,
         resolutionProbability,
+        prob: finalProb,
       })
     )
   }
   await contractDoc.update(contract)
 
-  console.log('contract ', contractId, 'resolved to:', outcome)
+  log('contract resolved', {
+    contractId,
+    outcome,
+  })
 
   if (!answerId) {
     await updateContractMetricsForUsers(contract, bets)
-    await undoUniqueBettorRewardsIfCancelResolution(contract, outcome)
+    await undoUniqueBettorRewardsIfCancelResolution(contract, outcome, log)
   }
   await revalidateStaticProps(contractPath(contract))
 
@@ -284,7 +292,8 @@ export const getDataAndPayoutInfo = async (
 }
 async function undoUniqueBettorRewardsIfCancelResolution(
   contract: Contract,
-  outcome: string
+  outcome: string,
+  log: GCPLog
 ) {
   if (outcome === 'CANCEL') {
     const creatorsBonusTxns = await getValues<Txn>(
@@ -297,9 +306,9 @@ async function undoUniqueBettorRewardsIfCancelResolution(
     const bonusTxnsOnThisContract = creatorsBonusTxns.filter(
       (txn) => txn.data && txn.data.contractId === contract.id
     )
-    log('total bonusTxnsOnThisContract', bonusTxnsOnThisContract.length)
+    log('total bonusTxnsOnThisContract ' + bonusTxnsOnThisContract.length)
     const totalBonusAmount = sumBy(bonusTxnsOnThisContract, (txn) => txn.amount)
-    log('totalBonusAmount to be withdrawn', totalBonusAmount)
+    log('totalBonusAmount to be withdrawn ' + totalBonusAmount)
     const result = await firestore.runTransaction(async (trans) => {
       const bonusTxn = {
         fromId: contract.creatorId,
@@ -320,14 +329,12 @@ async function undoUniqueBettorRewardsIfCancelResolution(
 
     if (result.status != 'success' || !result.txn) {
       log(
-        `Couldn't cancel bonus for user: ${contract.creatorId} - status:`,
-        result.status
+        `Couldn't cancel bonus for user: ${contract.creatorId} - status: ${result.status}`
       )
-      log('message:', result.message)
+      log('message: ' + result.message)
     } else {
       log(
-        `Cancel Bonus txn for user: ${contract.creatorId} completed:`,
-        result.txn?.id
+        `Cancel Bonus txn for user: ${contract.creatorId} completed: ${result.txn?.id}`
       )
     }
   }

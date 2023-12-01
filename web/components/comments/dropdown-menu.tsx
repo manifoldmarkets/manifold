@@ -22,6 +22,7 @@ export default function DropdownMenu(props: {
   selectedItemName?: string
   closeOnClick?: boolean
   withinOverflowContainer?: boolean
+  buttonContent?: (open: boolean) => ReactNode
 }) {
   const {
     items,
@@ -33,6 +34,7 @@ export default function DropdownMenu(props: {
     selectedItemName,
     closeOnClick,
     withinOverflowContainer,
+    buttonContent,
   } = props
   const [referenceElement, setReferenceElement] =
     useState<HTMLButtonElement | null>()
@@ -59,7 +61,7 @@ export default function DropdownMenu(props: {
             disabled={buttonDisabled}
           >
             <span className="sr-only">Open options</span>
-            {icon}
+            {buttonContent ? buttonContent(open) : icon}
           </Popover.Button>
 
           <AnimationOrNothing show={open} animate={!withinOverflowContainer}>
@@ -105,7 +107,7 @@ export default function DropdownMenu(props: {
     </Popover>
   )
 }
-const AnimationOrNothing = (props: {
+export const AnimationOrNothing = (props: {
   animate: boolean
   show: boolean
   children: ReactNode

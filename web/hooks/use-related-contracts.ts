@@ -45,14 +45,14 @@ export const useRelatedMarkets = (
       )
       const [{ data: groupSlugData }, { data: creatorData }] =
         await Promise.all([
-          db.rpc('search_contracts_by_group_slugs' as any, {
-            group_slugs: groupSlugsToUse,
+          db.rpc('search_contracts_by_group_slugs_1' as any, {
+            p_group_slugs: groupSlugsToUse,
             lim: GROUPS_PAGE_SIZE,
             start: groupsPage.current * GROUPS_PAGE_SIZE,
           }),
-          db.rpc('search_contracts_by_group_slugs_for_creator' as any, {
+          db.rpc('search_contracts_by_group_slugs_for_creator_1' as any, {
             creator_id: contract.creatorId,
-            group_slugs: groupSlugsToUse,
+            p_group_slugs: groupSlugsToUse,
             lim: GROUPS_PAGE_SIZE,
             start: creatorPage.current * GROUPS_PAGE_SIZE,
           }),

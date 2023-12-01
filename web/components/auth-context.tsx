@@ -6,7 +6,6 @@ import {
   getUserAndPrivateUser,
   listenForPrivateUser,
   listenForUser,
-  setCachedReferralInfoForUser,
 } from 'web/lib/firebase/users'
 import { createUser } from 'web/lib/firebase/api'
 import { randomString } from 'common/util/random'
@@ -188,14 +187,6 @@ export function AuthProvider(props: {
       setUserProperty('username', username)
     }
   }, [username])
-
-  useEffect(() => {
-    if (!authUser) return
-    const { user, authLoaded } = authUser
-    if (authLoaded && user) {
-      setCachedReferralInfoForUser(user)
-    }
-  }, [authUser?.authLoaded, authUser?.user?.id])
 
   return (
     <AuthContext.Provider value={authUser}>{children}</AuthContext.Provider>

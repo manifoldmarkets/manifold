@@ -1,5 +1,5 @@
 import { chunk, Dictionary, flatMap, groupBy, uniqBy } from 'lodash'
-import { run, selectFrom, selectJson, SupabaseClient } from './utils'
+import { Row, run, selectFrom, selectJson, SupabaseClient } from './utils'
 import { getContracts } from './contracts'
 import { Contract, CPMMContract } from '../contract'
 import { ContractMetric } from 'common/contract-metric'
@@ -15,6 +15,7 @@ export async function getTopContractMetrics(
       .select('data')
       .eq('contract_id', contractId)
       .order('profit', { ascending: false } as any)
+      .is('answer_id', null)
       .limit(limit)
   )
 
@@ -31,6 +32,7 @@ export async function getRanking(
       .from('user_contract_metrics')
       .select('*', { count: 'exact' })
       .eq('contract_id', contractId)
+      .is('answer_id', null)
       .gt('profit', profit)
   )
 
@@ -46,6 +48,7 @@ export async function getUserContractMetrics(
     selectJson(db, 'user_contract_metrics')
       .eq('user_id', userId)
       .eq('contract_id', contractId)
+      .is('answer_id', null)
   )
   return data.map((r) => r.data) as ContractMetric[]
 }
@@ -53,19 +56,21 @@ export async function getUserContractMetrics(
 export async function getCPMMContractUserContractMetrics(
   contractId: string,
   limit: number,
+  answerId: string | null,
   db: SupabaseClient
 ) {
   async function fetchOutcomeMetrics(outcome: 'yes' | 'no') {
     const hasSharesColumn = `has_${outcome}_shares`
     const totalSharesColumn = `total_shares_${outcome}`
-
-    const { data, error } = await db
+    let q = db
       .from('user_contract_metrics')
       .select('data')
       .eq('contract_id', contractId)
       .eq(hasSharesColumn, true)
       .order(totalSharesColumn, { ascending: false } as any)
       .limit(limit)
+    q = answerId ? q.eq('answer_id', answerId) : q.is('answer_id', null)
+    const { data, error } = await q
 
     if (error) {
       throw error
@@ -136,6 +141,7 @@ export async function getBestAndWorstUserContractMetrics(
   const { data: negative } = await run(
     selectJson(db, 'user_contract_metrics')
       .eq('user_id', userId)
+      .is('answer_id', null)
       .order(orderString as any, {
         ascending: true,
       })
@@ -144,6 +150,7 @@ export async function getBestAndWorstUserContractMetrics(
   const { data: profit } = await run(
     selectJson(db, 'user_contract_metrics')
       .eq('user_id', userId)
+      .is('answer_id', null)
       .order(orderString as any, {
         ascending: false,
         nullsFirst: false,
@@ -155,7 +162,6 @@ export async function getBestAndWorstUserContractMetrics(
   ) as ContractMetric[]
 }
 
-//TODO: Transition this to rpc call
 export async function getUsersContractMetricsOrderedByProfit(
   userIds: string[],
   db: SupabaseClient,
@@ -168,6 +174,7 @@ export async function getUsersContractMetricsOrderedByProfit(
     const { data: negative } = await run(
       selectJson(db, 'user_contract_metrics')
         .in('user_id', chunk)
+        .is('answer_id', null)
         .order(orderString as any, {
           ascending: true,
         })
@@ -175,6 +182,7 @@ export async function getUsersContractMetricsOrderedByProfit(
     const { data: profit } = await run(
       selectJson(db, 'user_contract_metrics')
         .in('user_id', chunk)
+        .is('answer_id', null)
         .order(orderString as any, {
           ascending: false,
           nullsFirst: false,
@@ -211,6 +219,7 @@ export async function getUsersRecentBetContractIds(
     const { data } = await run(
       selectFrom(db, 'user_contract_metrics', 'userId', 'contractId')
         .in('user_id', chunk)
+        .is('answer_id', null)
         .gt('data->lastBetTime', lastBetTime)
     )
     return data.map((d) => ({
@@ -231,54 +240,82 @@ export async function getContractMetricsForContractIds(
     selectJson(db, 'user_contract_metrics')
       .eq('user_id', userId)
       .in('contract_id', contractIds)
+      .is('answer_id', null)
   )
   return data.map((d) => d.data) as ContractMetric[]
 }
 
-export async function getTotalContractMetrics(
-  contractId: string,
-  db: SupabaseClient
-) {
-  const { count } = await run(
-    db
-      .from('user_contract_metrics')
-      .select('*', { head: true, count: 'exact' })
-      .eq('contract_id', contractId)
-      .gt('data->invested', 0)
-  )
-  return count
-}
-
-export async function getContractMetricsForContractId(
+export async function getContractMetricsCount(
   contractId: string,
   db: SupabaseClient,
-  order?: 'profit' | 'shares'
+  outcome?: 'yes' | 'no',
+  answerId?: string
 ) {
   let q = db
     .from('user_contract_metrics')
+    .select('*', { head: true, count: 'exact' })
+    .eq('contract_id', contractId)
+    .eq('has_shares', true)
+
+  q = answerId ? q.eq('answer_id', answerId) : q.is('answer_id', null)
+
+  if (outcome) {
+    q = q.eq(`has_${outcome}_shares`, true)
+  }
+  const { count } = await run(q)
+
+  return count
+}
+export const convertContractMetricRows = (
+  docs: Row<'user_contract_metrics'>[]
+) =>
+  uniqBy(
+    docs.map((doc) => doc.data as ContractMetric),
+    (cm) => cm.userId + cm.answerId + cm.contractId
+  )
+
+export async function getOrderedContractMetricRowsForContractId(
+  contractId: string,
+  db: SupabaseClient,
+  answerId?: string,
+  order: 'profit' | 'shares' = 'profit',
+  limit: number = 50
+) {
+  let q1 = db
+    .from('user_contract_metrics')
     .select('*')
     .eq('contract_id', contractId)
+    .limit(limit)
+  let q2 = db
+    .from('user_contract_metrics')
+    .select('*')
+    .eq('contract_id', contractId)
+    .limit(limit)
 
-  if (order === 'shares') {
-    const noSharesQuery = db
-      .from('user_contract_metrics')
-      .select('*')
-      .eq('contract_id', contractId)
-      .eq(`data->hasNoShares`, true)
-      .order(`data->totalShares->NO` as any, { ascending: false })
-
-    q = q
-      .eq(`data->hasYesShares`, true)
-      .order(`data->totalShares->YES` as any, { ascending: false })
-
-    const { data: yesData } = await run(q)
-    const { data: noData } = await run(noSharesQuery)
-    return yesData.concat(noData).map((d) => d.data) as ContractMetric[]
+  if (answerId) {
+    q1 = q1.eq('answer_id', answerId)
+    q2 = q2.eq('answer_id', answerId)
+  } else {
+    q1 = q1.is('answer_id', null)
+    q2 = q2.is('answer_id', null)
   }
 
-  q = q
-    .neq(`data->profit`, null)
-    .order(`data->profit` as any, { ascending: false })
-  const { data } = await run(q)
-  return data.map((d) => d.data) as ContractMetric[]
+  if (order === 'shares') {
+    q1 = q1
+      .eq(`has_yes_shares`, true)
+      .order(`total_shares_yes`, { ascending: false })
+    q2 = q2
+      .eq(`has_no_shares`, true)
+      .order(`total_shares_no`, { ascending: false })
+  } else {
+    q1 = q1
+      .order(`profit`, { ascending: false, nullsFirst: false })
+      .gt(`profit`, 0)
+    q2 = q2
+      .order(`profit`, { ascending: true, nullsFirst: false })
+      .lt(`profit`, 0)
+  }
+  const { data: q1Data } = await run(q1)
+  const { data: q2Data } = await run(q2)
+  return q1Data.concat(q2Data)
 }

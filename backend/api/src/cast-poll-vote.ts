@@ -1,10 +1,9 @@
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { log } from 'shared/utils'
 import { z } from 'zod'
 import { APIError, authEndpoint, validate } from './helpers'
 import * as admin from 'firebase-admin'
 import { PollOption } from 'common/poll-option'
-import { Contract, PollContract } from 'common/contract'
+import { PollContract } from 'common/contract'
 import { createVotedOnPollNotification } from 'shared/create-notification'
 
 const schema = z
@@ -26,10 +25,10 @@ export const castpollvote = authEndpoint(async (req, auth) => {
     throw new APIError(403, 'This contract is not a poll')
   }
 
-  let options: PollOption[] = contract.options
+  const options: PollOption[] = contract.options
 
   // Find the option to update
-  let optionToUpdate = options.find((o) => o.id === voteId)
+  const optionToUpdate = options.find((o) => o.id === voteId)
 
   return pg.tx(async (t) => {
     const totalVoters = await t.manyOrNone(

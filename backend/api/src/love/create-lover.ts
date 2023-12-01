@@ -1,13 +1,12 @@
 import { z } from 'zod'
 import { APIError, authEndpoint, validate } from 'api/helpers'
 import { createSupabaseClient } from 'shared/supabase/init'
-import { getUser, log } from 'shared/utils'
-import { addUserToGroup } from 'api/add-group-member'
-import { manifoldLoveRelationshipsGroupId } from 'common/love/constants'
+import { getUser } from 'shared/utils'
 import { HOUR_MS } from 'common/util/time'
 import * as admin from 'firebase-admin'
 import { removePinnedUrlFromPhotoUrls } from 'shared/love/parse-photos'
-import { getIp, track } from 'shared/analytics'
+import { getIp } from 'shared/analytics'
+import { onboardLover } from 'shared/love/onboard-lover'
 const genderType = z.union([
   z.literal('male'),
   z.literal('female'),
@@ -19,7 +18,7 @@ const genderTypes = z.array(genderType)
 
 export const baseLoversSchema = z.object({
   // Required fields
-  birthdate: z.string(),
+  age: z.number().min(18).max(100),
   gender: genderType,
   pref_gender: genderTypes,
   pref_age_min: z.number().min(18).max(999),
@@ -44,9 +43,10 @@ export const baseLoversSchema = z.object({
   city_longitude: z.number().optional(),
 
   pinned_url: z.string(),
+  referred_by_username: z.string().optional(),
 })
 
-export const createlover = authEndpoint(async (req, auth) => {
+export const createlover = authEndpoint(async (req, auth, log, logError) => {
   const parsedBody = validate(baseLoversSchema, req.body)
   const db = createSupabaseClient()
   const { data: existingUser } = await db
@@ -57,14 +57,11 @@ export const createlover = authEndpoint(async (req, auth) => {
   if (existingUser) {
     throw new APIError(400, 'User already exists')
   }
-  try {
-    await addUserToGroup(manifoldLoveRelationshipsGroupId, auth.uid, auth.uid)
-  } catch (e) {
-    log('Error adding user to group', e)
-  }
+
   await removePinnedUrlFromPhotoUrls(parsedBody)
   const user = await getUser(auth.uid)
-  if (user && user.createdTime > Date.now() - HOUR_MS) {
+  if (!user) throw new APIError(401, 'Your account was not found')
+  if (user.createdTime > Date.now() - HOUR_MS) {
     // If they just signed up for manifold via manifold.love, set their avatar to be their pinned photo
     const firestore = admin.firestore()
     await firestore.doc('users/' + auth.uid).update({
@@ -83,13 +80,12 @@ export const createlover = authEndpoint(async (req, auth) => {
     .select()
 
   if (error) {
-    log('Error creating user', error)
+    logError('Error creating user', error)
     throw new APIError(500, 'Error creating user')
   }
 
   log('Created user', data[0])
-  const ip = getIp(req)
-  await track(auth.uid, 'create lover', { username: user?.username }, { ip })
+  await onboardLover(user, getIp(req), log)
 
   return {
     success: true,

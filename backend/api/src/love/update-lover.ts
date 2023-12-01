@@ -1,13 +1,12 @@
 import { z } from 'zod'
 import { APIError, authEndpoint, validate } from 'api/helpers'
 import { createSupabaseClient } from 'shared/supabase/init'
-import { getUser, log } from 'shared/utils'
 import * as admin from 'firebase-admin'
 import { baseLoversSchema } from 'api/love/create-lover'
-import { HOUR_MS } from 'common/util/time'
 import { removePinnedUrlFromPhotoUrls } from 'shared/love/parse-photos'
+import { contentSchema } from 'shared/zod-types'
 
-const optionaLoversSchema = z.object({
+const optionalLoversSchema = z.object({
   political_beliefs: z.array(z.string()).optional(),
   religious_belief_strength: z.number().optional(),
   religious_beliefs: z.string().optional(),
@@ -27,14 +26,14 @@ const optionaLoversSchema = z.object({
   company: z.string().optional(),
   comments_enabled: z.boolean().optional(),
   website: z.string().optional(),
-  bio: z.string().optional(),
+  bio: contentSchema.optional().nullable(),
   twitter: z.string().optional(),
   avatar_url: z.string().optional(),
 })
 // TODO: make strict
-const combinedLoveUsersSchema = baseLoversSchema.merge(optionaLoversSchema)
+const combinedLoveUsersSchema = baseLoversSchema.merge(optionalLoversSchema)
 
-export const updatelover = authEndpoint(async (req, auth) => {
+export const updatelover = authEndpoint(async (req, auth, log) => {
   const parsedBody = validate(combinedLoveUsersSchema, req.body)
   log('parsedBody', parsedBody)
   const db = createSupabaseClient()
@@ -46,7 +45,8 @@ export const updatelover = authEndpoint(async (req, auth) => {
   if (!existingLover) {
     throw new APIError(400, 'Lover not found')
   }
-  !parsedBody.last_online_time && log('Updating lover', auth.uid, parsedBody)
+  !parsedBody.last_online_time &&
+    log('Updating lover', { userId: auth.uid, parsedBody })
 
   await removePinnedUrlFromPhotoUrls(parsedBody)
   if (parsedBody.avatar_url) {

@@ -1,26 +1,31 @@
-import { PencilIcon } from '@heroicons/react/outline'
+import Router from 'next/router'
+import Head from 'next/head'
+
 import { removeUndefinedProps } from 'common/util/object'
 import { LovePage } from 'love/components/love-page'
 import { LoverCommentSection } from 'love/components/lover-comment-section'
 import LoverProfileHeader from 'love/components/lover-profile-header'
-import { Matches } from 'love/components/matches'
+import { Matches } from 'love/components/matches/matches'
 import ProfileCarousel from 'love/components/profile-carousel'
 import { useLoverByUser } from 'love/hooks/use-lover'
-import Head from 'next/head'
-import { useRouter } from 'next/router'
 import { Button } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { SEO } from 'web/components/SEO'
 import { useUser } from 'web/hooks/use-user'
-import { firebaseLogin, getUserByUsername, User } from 'web/lib/firebase/users'
+import { getUserByUsername, User } from 'web/lib/firebase/users'
 import LoverAbout from 'love/components/lover-about'
-import { orderBy } from 'lodash'
-import { Subtitle } from 'love/components/widgets/lover-subtitle'
-import { useUserAnswersAndQuestions } from 'love/hooks/use-questions'
-import { Linkify } from 'web/components/widgets/linkify'
 import { useTracking } from 'web/hooks/use-tracking'
-import { track } from 'web/lib/service/analytics'
+import { LoverAnswers } from 'love/components/answers/lover-answers'
+import { SignUpButton } from 'love/components/nav/love-sidebar'
+import { BackButton } from 'web/components/contract/back-button'
+import { useSaveReferral } from 'web/hooks/use-save-referral'
+import { getLoveOgImageUrl } from 'common/love/og-image'
+import { getLoverRow, Lover } from 'common/love/lover'
+import { LoverBio } from 'love/components/bio/lover-bio'
+import Custom404 from '../404'
+import { db } from 'web/lib/supabase/db'
+import { useSaveCampaign } from 'web/hooks/use-save-campaign'
 
 export const getStaticProps = async (props: {
   params: {
@@ -29,10 +34,12 @@ export const getStaticProps = async (props: {
 }) => {
   const { username } = props.params
   const user = await getUserByUsername(username)
+  const lover = user ? await getLoverRow(user.id, db) : null
   return {
     props: removeUndefinedProps({
       user,
       username,
+      lover,
     }),
     revalidate: 15,
   }
@@ -45,157 +52,143 @@ export const getStaticPaths = () => {
 export default function UserPage(props: {
   user: User | null
   username: string
+  lover: Lover | null
 }) {
-  const { user } = props
+  const { user, username } = props
   const currentUser = useUser()
   const isCurrentUser = currentUser?.id === user?.id
-  const router = useRouter()
+
+  useSaveReferral(user, { defaultReferrerUsername: username })
 
   useTracking('view love profile', { username: user?.username })
+  useSaveCampaign()
 
-  const lover = useLoverByUser(user ?? undefined)
-  const { questions, answers: allAnswers } = useUserAnswersAndQuestions(
-    user?.id
-  )
-  const answers = allAnswers.filter(
-    (a) => a.multiple_choice ?? a.free_response ?? a.integer
-  )
+  const { lover: clientLover, refreshLover } = useLoverByUser(user ?? undefined)
+  const lover = clientLover ?? props.lover
 
-  if (currentUser === undefined) return <div></div>
   if (!user) {
-    return <div>404</div>
+    return <Custom404 />
+  }
+  if (user.isBannedFromPosting) {
+    return <div>User is banned</div>
   }
 
   return (
     <LovePage
-      key={user.id}
       trackPageView={'user page'}
       trackPageProps={{ username: user.username }}
-      className={'p-2'}
+      className={'p-2 sm:pt-0'}
     >
       <SEO
         title={`${user.name} (@${user.username})`}
         description={user.bio ?? ''}
         url={`/${user.username}`}
+        image={getLoveOgImageUrl(user, lover)}
       />
       {(user.isBannedFromPosting || user.userDeleted) && (
         <Head>
           <meta name="robots" content="noindex, nofollow" />
         </Head>
       )}
-      <Col className={'gap-4'}>
-        {!currentUser ? (
-          <Col className={'bg-canvas-0 items-center justify-center p-4'}>
-            <Row className={' items-center justify-center gap-2'}>
-              <Button color={'gradient'} onClick={firebaseLogin}>
-                Sign up
-              </Button>{' '}
-              to see {user.name}'s profile!
-            </Row>
-          </Col>
-        ) : lover ? (
-          <>
-            {lover.photo_urls && <ProfileCarousel lover={lover} />}
-            <LoverProfileHeader
-              isCurrentUser={isCurrentUser}
-              currentUser={currentUser}
-              user={user}
-              lover={lover}
-              router={router}
-            />
-            <Matches userId={user.id} />
-            <LoverAbout lover={lover} />
-            <Col className={'mt-2 gap-2'}>
-              <Row className={'items-center gap-2'}>
-                <Subtitle>Answers</Subtitle>
-                {isCurrentUser && answers.length > 0 && (
-                  <Button
-                    color={'gray-outline'}
-                    size="xs"
-                    className={''}
-                    onClick={() => {
-                      track('edit love questions')
-                      router.push('love-questions')
-                    }}
-                  >
-                    <PencilIcon className="mr-2 h-4 w-4" />
-                    Edit
-                  </Button>
-                )}
-              </Row>
-              <Row className={'flex-wrap gap-3'}>
-                {answers.length > 0 ? (
-                  orderBy(
-                    answers,
-                    (a) => (a.free_response ? 3 : a.multiple_choice ? 2 : 1),
-                    'desc'
-                  ).map((answer) => {
-                    const question = questions.find(
-                      (q) => q.id === answer.question_id
-                    )
-                    if (!question) return null
-                    const options = question.multiple_choice_options as Record<
-                      string,
-                      number
-                    >
-                    const optionKey = options
-                      ? Object.keys(options).find(
-                          (k) => options[k] === answer.multiple_choice
-                        )
-                      : null
+      <BackButton className="-ml-2 mb-2 self-start" />
 
-                    return (
-                      <Col
-                        key={question.id}
-                        className={'bg-canvas-0 flex-grow rounded-md px-3 py-2'}
-                      >
-                        <Row className={'font-semibold'}>
-                          {question.question}
-                        </Row>
-                        <Linkify
-                          text={
-                            answer.free_response ??
-                            optionKey ??
-                            answer.integer?.toString() ??
-                            ''
-                          }
-                        />
-                      </Col>
-                    )
-                  })
-                ) : isCurrentUser ? (
-                  <Col className={'mt-4 w-full items-center'}>
-                    <Row>
-                      <Button onClick={() => router.push('love-questions')}>
-                        Answer questions
-                      </Button>
-                    </Row>
-                  </Col>
-                ) : (
-                  <span className={'text-ink-500 text-sm'}>Nothing yet :(</span>
-                )}
-              </Row>
-            </Col>
-          </>
-        ) : (
-          isCurrentUser && (
+      {currentUser !== undefined && (
+        <Col className={'gap-4'}>
+          {lover ? (
+            <LoverProfile
+              lover={lover}
+              user={user}
+              refreshLover={refreshLover}
+            />
+          ) : isCurrentUser ? (
             <Col className={'mt-4 w-full items-center'}>
               <Row>
-                <Button onClick={() => router.push('signup')}>
+                <Button onClick={() => Router.push('/signup')}>
                   Create a profile
                 </Button>
               </Row>
             </Col>
-          )
-        )}
-      </Col>
-      {currentUser && lover && (
-        <LoverCommentSection
-          onUser={user}
-          lover={lover}
-          currentUser={currentUser}
-        />
+          ) : (
+            <Col className="bg-canvas-0 rounded p-4 ">
+              <div>{user.name} hasn't created a profile yet.</div>
+              <Button
+                className="mt-4 self-start"
+                onClick={() => Router.push('/')}
+              >
+                See more profiles
+              </Button>
+            </Col>
+          )}
+        </Col>
       )}
     </LovePage>
+  )
+}
+
+export function LoverProfile(props: {
+  lover: Lover
+  user: User
+  refreshLover: () => void
+  hideMatches?: boolean
+}) {
+  const { lover, user, refreshLover, hideMatches } = props
+
+  return (
+    <>
+      {lover.photo_urls && <ProfileCarousel lover={lover} />}
+      <LoverProfileHeader user={user} lover={lover} />
+      <LoverContent
+        user={user}
+        lover={lover}
+        refreshLover={refreshLover}
+        hideMatches={hideMatches}
+      />
+    </>
+  )
+}
+
+function LoverContent(props: {
+  user: User
+  lover: Lover
+  refreshLover: () => void
+  hideMatches?: boolean
+}) {
+  const { user, lover, refreshLover, hideMatches } = props
+  const currentUser = useUser()
+  const isCurrentUser = currentUser?.id === user.id
+
+  if (!currentUser) {
+    return (
+      <Col className="bg-canvas-0 w-full gap-4 rounded p-4">
+        <Col className="relative gap-4">
+          <div className="bg-ink-200 dark:bg-ink-400 h-4 w-2/5" />
+          <div className="bg-ink-200 dark:bg-ink-400 h-4 w-3/5" />
+          <div className="bg-ink-200 dark:bg-ink-400 h-4 w-1/2" />
+          <div className="from-canvas-0 absolute bottom-0 h-12 w-full bg-gradient-to-t to-transparent" />
+        </Col>
+        <Row className="gap-2">
+          <SignUpButton text="Sign up to see profile" />
+        </Row>
+      </Col>
+    )
+  }
+  return (
+    <>
+      {!hideMatches && lover.looking_for_matches && (
+        <Matches profileLover={lover} profileUserId={user.id} />
+      )}
+      <LoverAbout lover={lover} />
+      <LoverBio
+        isCurrentUser={isCurrentUser}
+        lover={lover}
+        refreshLover={refreshLover}
+      />
+      <LoverAnswers isCurrentUser={isCurrentUser} user={user} />
+      <LoverCommentSection
+        onUser={user}
+        lover={lover}
+        currentUser={currentUser}
+      />
+    </>
   )
 }

@@ -1,3 +1,5 @@
+import { filterDefined } from 'common/util/array'
+
 export default function stringOrStringArrayToText(fields: {
   text: string[] | string
   preText?: string
@@ -30,7 +32,7 @@ export default function stringOrStringArrayToText(fields: {
         (text.length > 1 ? ' and ' : '') +
         formatText(text[text.length - 1])
     } else {
-      formattedText = text.map(formatText).join(' • ')
+      formattedText = filterDefined(text).map(formatText).join(' • ')
     }
 
     return `${preText} ${formattedText} ${postText}`.trim()

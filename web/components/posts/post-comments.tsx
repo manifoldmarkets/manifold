@@ -106,8 +106,15 @@ export function PostCommentItem(props: {
   onReplyClick?: (comment: PostComment) => void
 }) {
   const { post, comment, indent, onReplyClick } = props
-  const { text, content, userUsername, userName, userAvatarUrl, createdTime } =
-    comment
+  const {
+    text,
+    content,
+    userId,
+    userUsername,
+    userName,
+    userAvatarUrl,
+    createdTime,
+  } = comment
 
   const commentRef = useRef<HTMLDivElement>(null)
   const [highlighted, setHighlighted] = useState(false)
@@ -146,8 +153,11 @@ export function PostCommentItem(props: {
         <div className="text-ink-500 mt-0.5 text-sm">
           <UserLink
             className="text-ink-500"
-            username={userUsername}
-            name={userName}
+            user={{
+              id: userId,
+              name: userName,
+              username: userUsername,
+            }}
           />{' '}
           <CopyLinkDateTimeComponent
             prefix={'post'}

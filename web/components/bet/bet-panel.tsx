@@ -57,6 +57,7 @@ export function BuyPanel(props: {
   singularView?: 'YES' | 'NO' | 'LIMIT'
   initialOutcome?: BinaryOutcomes | 'LIMIT'
   location?: string
+  replyToCommentId?: string
 }) {
   const {
     contract,
@@ -67,6 +68,7 @@ export function BuyPanel(props: {
     initialOutcome,
     location = 'bet panel',
     inModal,
+    replyToCommentId,
   } = props
 
   const isCpmmMulti = contract.mechanism === 'cpmm-multi-1'
@@ -110,6 +112,7 @@ export function BuyPanel(props: {
     if (option === choice && !initialOutcome) {
       setOption(undefined)
     } else {
+      track('bet intent', { choice })
       setOption(choice)
     }
     if (!isIOS() && !isAndroid()) {
@@ -135,6 +138,7 @@ export function BuyPanel(props: {
         amount: betAmount,
         contractId: contract.id,
         answerId: multiProps?.answerToBuy.id,
+        replyToCommentId,
       })
     )
       .then((r) => {

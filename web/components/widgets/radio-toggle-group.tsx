@@ -2,7 +2,6 @@ import { RadioGroup } from '@headlessui/react'
 import clsx from 'clsx'
 import { orderBy } from 'lodash'
 import { Row } from '../layout/row'
-import { MultipleChoiceColors } from 'common/love/multiple-choice'
 
 export function RadioToggleGroup(props: {
   currentChoice: number
@@ -10,9 +9,16 @@ export function RadioToggleGroup(props: {
   setChoice: (p: number) => void
   className?: string
   toggleClassName?: string
+  indexColors?: Record<number, string>
 }) {
-  const { currentChoice, setChoice, choicesMap, className, toggleClassName } =
-    props
+  const {
+    currentChoice,
+    setChoice,
+    choicesMap,
+    className,
+    toggleClassName,
+    indexColors,
+  } = props
 
   const orderedChoicesMap = orderBy(
     Object.entries(choicesMap),
@@ -33,24 +39,31 @@ export function RadioToggleGroup(props: {
       >
         {orderedChoicesMap.map(([choiceKey, choice], index) => (
           <RadioGroup.Option
+            onClick={() => {
+              if (currentChoice == choice) {
+                setChoice(-1)
+              }
+            }}
             key={choiceKey}
             value={choice}
             className={({ disabled }) =>
               clsx(
                 disabled ? 'cursor-not-allowed' : 'cursor-pointer ',
-                ' mx-auto h-5 w-5 rounded-full  bg-opacity-20 ring-1 ring-opacity-70 transition-all',
-                ' aria-checked:bg-opacity-100 aria-checked:ring-8 aria-checked:ring-opacity-40',
+                ' mx-auto h-5 w-5 rounded-full  bg-opacity-20 ring-1 ring-opacity-70 transition-all dark:bg-opacity-20 dark:aria-checked:bg-opacity-100',
+                ' aria-checked:bg-opacity-100 aria-checked:ring-8 aria-checked:ring-opacity-40 dark:aria-checked:ring-opacity-40',
                 disabled
                   ? 'bg-ink-400 ring-ink-400'
-                  : index % MultipleChoiceColors.length == 0
-                  ? 'bg-rose-600 ring-rose-600'
-                  : index % MultipleChoiceColors.length == 1
-                  ? 'bg-rose-400 ring-rose-400'
-                  : index % MultipleChoiceColors.length == 2
-                  ? 'bg-stone-400 ring-stone-400'
-                  : index % MultipleChoiceColors.length == 3
-                  ? 'bg-teal-400 ring-teal-400'
-                  : 'bg-teal-600 ring-teal-600',
+                  : indexColors
+                  ? indexColors[index]
+                  : index == 0
+                  ? `bg-rose-600 ring-rose-600 dark:bg-rose-500 dark:ring-rose-500`
+                  : index == 1
+                  ? `bg-rose-400 ring-rose-400`
+                  : index == 2
+                  ? `bg-stone-400 ring-stone-400 dark:bg-stone-500 dark:ring-stone-500`
+                  : index == 3
+                  ? `bg-teal-300 ring-teal-300 dark:bg-teal-200 dark:ring-teal-200 `
+                  : `bg-teal-400 ring-teal-400`,
 
                 toggleClassName
               )

@@ -110,51 +110,53 @@ export const LikeButton = memo(function LikeButton(props: {
 
   return (
     <>
-      <Tooltip
-        text={
-          showList ? (
-            <UserLikedPopup
-              contentType={contentType}
-              contentId={contentId}
-              onRequestModal={() => setModalOpen(true)}
-              user={user}
-              userLiked={liked}
-            />
-          ) : (
-            'Like'
-          )
-        }
-        placement={placement}
-        noTap
-        hasSafePolygon={showList}
+      <Button
+        color={'gray-white'}
+        disabled={disabled}
+        size={size}
+        className={clsx(
+          'text-ink-500 disabled:cursor-not-allowed',
+          'disabled:text-ink-500',
+          className
+        )}
+        {...likeLongPress}
       >
-        <Button
-          color={'gray-white'}
-          disabled={disabled}
-          size={size}
-          className={clsx(
-            'text-ink-500 flex flex-row items-center disabled:cursor-not-allowed',
-            'disabled:text-ink-500',
-            className
-          )}
-          {...likeLongPress}
+        <Tooltip
+          text={
+            showList ? (
+              <UserLikedPopup
+                contentType={contentType}
+                contentId={contentId}
+                onRequestModal={() => setModalOpen(true)}
+                user={user}
+                userLiked={liked}
+              />
+            ) : (
+              'Like'
+            )
+          }
+          placement={placement}
+          noTap
+          hasSafePolygon={showList}
         >
-          <div className="relative">
-            <HeartIcon
-              className={clsx(
-                'h-6 w-6',
-                liked &&
-                  'fill-scarlet-200 stroke-scarlet-300 dark:stroke-scarlet-600'
-              )}
-            />
-          </div>
-          {totalLikes > 0 && (
-            <div className="text-ink-500 my-auto h-5 pl-1 text-sm disabled:opacity-50">
-              {totalLikes}
+          <Row className={'items-center gap-1.5'}>
+            <div className="relative">
+              <HeartIcon
+                className={clsx(
+                  'h-6 w-6',
+                  liked &&
+                    'fill-scarlet-200 stroke-scarlet-300 dark:stroke-scarlet-600'
+                )}
+              />
             </div>
-          )}
-        </Button>
-      </Tooltip>
+            {totalLikes > 0 && (
+              <div className="text-ink-500 my-auto h-5  text-sm disabled:opacity-50">
+                {totalLikes}
+              </div>
+            )}
+          </Row>
+        </Tooltip>
+      </Button>
       {modalOpen && (
         <UserLikedFullList
           contentType={contentType}
@@ -176,6 +178,7 @@ function getLikeDisplayList(
 ) {
   const likedUserInfos = reacts.map((reaction) => {
     return {
+      id: reaction.userId,
       name: reaction.userDisplayName,
       username: reaction.userUsername,
       avatarUrl: reaction.userAvatarUrl,
@@ -283,11 +286,7 @@ function UserLikedItem(props: { userInfo: MultiUserLinkInfo }) {
         avatarUrl={userInfo.avatarUrl}
         size="2xs"
       />
-      <UserLink
-        name={userInfo.name}
-        username={userInfo.username}
-        short={true}
-      />
+      <UserLink user={userInfo} short={true} />
     </Row>
   )
 }

@@ -147,12 +147,11 @@ export function UserBetsTable(props: { user: User }) {
   if (Object.keys(nullableMetricsByContract).length === 0)
     return <NoBets user={user} />
 
-  const contracts =
-    query && query !== ''
-      ? initialContracts.filter((c) =>
-          searchInAny(query, ...[c.question, c.creatorName, c.creatorUsername])
-        )
-      : initialContracts
+  const contracts = query
+    ? initialContracts.filter((c) =>
+        searchInAny(query, c.question, c.creatorName, c.creatorUsername)
+      )
+    : initialContracts
 
   const FILTERS: Record<BetFilter, (c: Contract) => boolean> = {
     resolved: (c) => !!c.resolutionTime,
@@ -477,9 +476,10 @@ function BetsTable(props: {
     <Col className="mb-4 flex-1 gap-4">
       <Col className={'w-full'}>
         <Row
-          className={
-            'grid-cols-15 bg-canvas-50 sticky top-0 z-10 grid w-full py-2 pr-1'
-          }
+          className={clsx(
+            'grid-cols-15 bg-canvas-50 sticky z-10 grid w-full py-2 pr-1',
+            isMobile ? 'top-16' : 'top-0' // Sets it below sticky user profile header on mobile
+          )}
         >
           {dataColumns.map((c) => (
             <span
@@ -538,8 +538,11 @@ function BetsTable(props: {
                       </Link>
                       <UserLink
                         className={'text-ink-600 w-fit text-sm'}
-                        name={contract.creatorName}
-                        username={contract.creatorUsername}
+                        user={{
+                          id: contract.creatorId,
+                          name: contract.creatorName,
+                          username: contract.creatorUsername,
+                        }}
                       />
                     </Col>
                   </Row>

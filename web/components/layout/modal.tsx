@@ -1,6 +1,6 @@
 import { Dialog, Transition } from '@headlessui/react'
 import clsx from 'clsx'
-import { Fragment, ReactNode } from 'react'
+import { Fragment, ReactNode, useEffect, useRef } from 'react'
 
 export const MODAL_CLASS =
   'items-center gap-4 rounded-md bg-canvas-0 sm:px-8 px-4 py-6 text-ink-1000'
@@ -16,6 +16,7 @@ export function Modal(props: {
   position?: 'center' | 'top' | 'bottom'
   noAutoFocus?: boolean
   className?: string
+  onClose?: () => void
 }) {
   const {
     children,
@@ -25,6 +26,7 @@ export function Modal(props: {
     size = 'md',
     className,
     noAutoFocus,
+    onClose,
   } = props
 
   const sizeClass = {
@@ -39,6 +41,15 @@ export function Modal(props: {
     top: 'sm:items-start',
     bottom: '',
   }[position]
+
+  const wasOpenRef = useRef(open)
+
+  useEffect(() => {
+    if (wasOpenRef.current && !open && onClose) {
+      onClose()
+    }
+    wasOpenRef.current = open
+  }, [open, onClose])
 
   return (
     <Transition.Root show={open} as={Fragment}>

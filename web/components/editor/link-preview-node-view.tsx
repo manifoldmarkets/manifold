@@ -4,6 +4,7 @@ import { LinkPreviewProps } from 'web/components/editor/link-preview-extension'
 import { Editor } from '@tiptap/react'
 import { JSONContent } from '@tiptap/core'
 import { filterDefined } from 'common/util/array'
+import { clientFetchLinkPreview } from 'web/lib/firebase/api'
 
 const linkPreviewDismissed: { [key: string]: boolean } = {}
 export const LinkPreviewNodeView = (props: LinkPreviewProps) => {
@@ -24,7 +25,7 @@ export const LinkPreviewNodeView = (props: LinkPreviewProps) => {
   }
   return (
     <div
-      className="border-ink-300 not-prose relative w-full max-w-[25rem] overflow-hidden rounded-lg border "
+      className="border-ink-300 not-prose relative w-full max-w-[25rem] overflow-hidden rounded-lg border"
       key={id}
     >
       {!hideCloseButton && (
@@ -69,25 +70,8 @@ export const insertLinkPreviews = async (
       .filter((link) => !linkPreviewDismissed[key + link])
       .map(async (link) => {
         try {
-          const res = await fetch('/api/v0/fetch-link-preview', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              url: link,
-            }),
-          })
-          const resText = await res.json()
-          if (
-            !resText ||
-            !resText.title ||
-            !resText.description ||
-            !resText.image ||
-            resText.description === 'Error' ||
-            resText.title === 'Error'
-          )
-            return
+          const preview = await clientFetchLinkPreview(link)
+          if (!preview) return
           // Another fetch may have added a preview, so check again
           const content = editor.getJSON()
           const containsLinkPreview = content.content?.some(
@@ -97,7 +81,7 @@ export const insertLinkPreviews = async (
           const linkPreviewNodeJSON = {
             type: 'linkPreview',
             attrs: {
-              ...resText,
+              ...preview,
               url: link,
               hideCloseButton: false,
               id: crypto.randomUUID(),
@@ -120,11 +104,18 @@ export const insertLinkPreviews = async (
 
 export const findLinksInContent = (content: JSONContent) => {
   const linkRegExp =
-    /(?:^|[^@\w])((?:https?:\/\/)?[\w-]+(?:\.[\w-]+)+\S*[^@\s])/g
-  const linkMatches = content.content?.flatMap((node) =>
-    node.content?.flatMap((n) => {
-      return n.text ? Array.from(n.text.matchAll(linkRegExp)) : []
+    /(?:^|[\s])(?:(?:https?:\/\/|www\.)[\w-]+(?:\.[\w-]+)+|(?:[\w-]+\.(?:com|net|org|us|co)))(?=\s|$)/g
+
+  const linkMatches = content.content?.flatMap((node) => {
+    const contents = node.content?.flat()
+    return contents?.flatMap((n, i) => {
+      const next = contents[i + 1]
+      const { text } = n
+      const spaceFollows = next?.text?.startsWith(' ') || text?.endsWith(' ')
+      return text !== undefined && spaceFollows
+        ? Array.from(text.matchAll(linkRegExp))
+        : []
     })
-  )
+  })
   return filterDefined(linkMatches?.map((m) => m?.[0]) ?? [])
 }

@@ -1,4 +1,4 @@
-import { bisector, extent } from 'd3-array'
+import { bisector } from 'd3-array'
 import { axisBottom, axisRight } from 'd3-axis'
 import { ScaleContinuousNumeric, ScaleTime } from 'd3-scale'
 import {
@@ -8,16 +8,21 @@ import {
   curveStepBefore,
 } from 'd3-shape'
 import { range, mapValues, last } from 'lodash'
-import { ReactNode, useCallback, useId, useMemo, useState } from 'react'
+import {
+  ReactNode,
+  useCallback,
+  useEffect,
+  useId,
+  useMemo,
+  useState,
+} from 'react'
 
 import {
-  AxisConstraints,
   DistributionPoint,
   HistoryPoint,
   Point,
   ValueKind,
   compressPoints,
-  viewScale,
 } from 'common/chart'
 import { formatMoneyNumber } from 'common/util/format'
 import { useEvent } from 'web/hooks/use-event'
@@ -28,18 +33,12 @@ import {
   SVGChart,
   SliceMarker,
   TooltipProps,
+  ZoomParams,
   formatPct,
-  useViewScale,
 } from './helpers'
 import { roundToNearestFive } from 'web/lib/util/roundToNearestFive'
 import { ZoomSlider } from './zoom-slider'
 import clsx from 'clsx'
-
-const Y_AXIS_CONSTRAINTS: Record<ValueKind, AxisConstraints> = {
-  percent: { min: 0, max: 1, minExtent: 0.04 },
-  Ṁ: { minExtent: 10 },
-  amount: { minExtent: 0.04 },
-}
 
 const interpolateY = (
   curve: CurveFactory,
@@ -62,39 +61,6 @@ const interpolateY = (
     return y1
   } else {
     return 0
-  }
-}
-
-const constrainExtent = (
-  extent: [number, number],
-  constraints: AxisConstraints
-) => {
-  // first clamp the extent to our min and max
-  const min = constraints.min ?? -Infinity
-  const max = constraints.max ?? Infinity
-  const minExtent = constraints.minExtent ?? 0
-  const start = Math.max(extent[0], min)
-  const end = Math.min(extent[1], max)
-
-  const size = end - start
-  if (size >= minExtent) {
-    return [start, end]
-  } else {
-    // compute how much padding we need to get to the min extent
-    const halfPad = Math.max(0, minExtent - size) / 2
-    const paddedStart = start - halfPad
-    const paddedEnd = end + halfPad
-    // we would like to return [start - halfPad, end + halfPad], but if our padding
-    // is making us go past the min and max, we need to readjust it to the other end
-    if (paddedStart < min) {
-      const underflow = min - paddedStart
-      return [min, paddedEnd + underflow]
-    } else if (paddedEnd > max) {
-      const overflow = paddedEnd - max
-      return [paddedStart - overflow, max]
-    } else {
-      return [paddedStart, paddedEnd]
-    }
   }
 }
 
@@ -140,11 +106,7 @@ export const DistributionChart = <P extends DistributionPoint>(props: {
   yScale: ScaleContinuousNumeric<number, number>
   curve?: CurveFactory
 }) => {
-  const { data, w, h, color, yScale, curve } = props
-
-  const [viewXScale, setViewXScale] =
-    useState<ScaleContinuousNumeric<number, number>>()
-  const xScale = viewXScale ?? props.xScale
+  const { data, w, h, color, xScale, yScale, curve } = props
 
   const px = useCallback((p: P) => xScale(p.x), [xScale])
   const py0 = yScale(yScale.domain()[0])
@@ -157,14 +119,7 @@ export const DistributionChart = <P extends DistributionPoint>(props: {
   }, [w, xScale, yScale])
 
   return (
-    <SVGChart
-      w={w}
-      h={h}
-      xAxis={xAxis}
-      yAxis={yAxis}
-      fullScale={props.xScale}
-      onRescale={(scale) => setViewXScale(scale ? () => scale : undefined)}
-    >
+    <SVGChart w={w} h={h} xAxis={xAxis} yAxis={yAxis}>
       <AreaWithTopStroke
         color={color}
         data={data}
@@ -184,19 +139,24 @@ export const MultiValueHistoryChart = <P extends HistoryPoint>(props: {
   h: number
   xScale: ScaleTime<number, number>
   yScale: ScaleContinuousNumeric<number, number>
-  viewScaleProps: viewScale
+  zoomParams: ZoomParams
   showZoomer?: boolean
   yKind?: ValueKind
   curve?: CurveFactory
   hoveringId?: string
   Tooltip?: (props: TooltipProps<P> & { ans: string }) => ReactNode
 }) => {
-  const { data, w, h, yScale, yKind, Tooltip, showZoomer } = props
+  const { data, w, h, yScale, zoomParams, showZoomer, Tooltip } = props
 
-  const { viewXScale, setViewXScale } = props.viewScaleProps
+  useEffect(() => {
+    if (props.xScale) {
+      zoomParams?.setXScale(props.xScale)
+    }
+  }, [w])
+
+  const xScale = zoomParams?.viewXScale ?? props.xScale
 
   const [ttParams, setTTParams] = useState<TooltipProps<P> & { ans: string }>()
-  const xScale = viewXScale ?? props.xScale
   const curve = props.curve ?? curveStepAfter
 
   const px = useCallback((p: P) => xScale(p.x), [xScale])
@@ -207,18 +167,12 @@ export const MultiValueHistoryChart = <P extends HistoryPoint>(props: {
     const nTicks = h < 200 ? 3 : 5
     const pctTickValues = getTickValues(min, max, nTicks)
     const xAxis = axisBottom<Date>(xScale).ticks(w / 100)
-    const yAxis =
-      yKind === 'percent'
-        ? axisRight<number>(yScale)
-            .tickValues(pctTickValues)
-            .tickFormat((n) => formatPct(n))
-        : yKind === 'Ṁ'
-        ? axisRight<number>(yScale)
-            .ticks(nTicks)
-            .tickFormat((n) => formatMoneyNumber(n))
-        : axisRight<number>(yScale).ticks(nTicks)
+    const yAxis = axisRight<number>(yScale)
+      .tickValues(pctTickValues)
+      .tickFormat((n) => formatPct(n))
+
     return { xAxis, yAxis }
-  }, [w, h, yKind, xScale, yScale])
+  }, [w, h, xScale, yScale])
 
   const sortedLines = useMemo(
     () =>
@@ -275,14 +229,6 @@ export const MultiValueHistoryChart = <P extends HistoryPoint>(props: {
 
   const hoveringId = props.hoveringId ?? ttParams?.ans
 
-  const rescale = useCallback((newXScale: ScaleTime<number, number> | null) => {
-    if (newXScale) {
-      setViewXScale(() => newXScale)
-    } else {
-      setViewXScale(undefined)
-    }
-  }, [])
-
   return (
     <>
       <SVGChart
@@ -291,8 +237,7 @@ export const MultiValueHistoryChart = <P extends HistoryPoint>(props: {
         xAxis={xAxis}
         yAxis={yAxis}
         ttParams={ttParams}
-        fullScale={props.xScale}
-        onRescale={(scale) => setViewXScale(scale ? () => scale : undefined)}
+        zoomParams={zoomParams}
         onMouseOver={onMouseOver}
         onMouseLeave={onMouseLeave}
         Tooltip={Tooltip}
@@ -337,21 +282,14 @@ export const MultiValueHistoryChart = <P extends HistoryPoint>(props: {
           />
         )}
       </SVGChart>
-      {showZoomer && (
-        <ZoomSlider
-          fullScale={props.xScale}
-          visibleScale={xScale}
-          setVisibleScale={rescale}
-          className="relative top-4"
-        />
+      {showZoomer && zoomParams && (
+        <ZoomSlider zoomParams={zoomParams} className="relative top-4" />
       )}
     </>
   )
 }
 
-export const ControllableSingleValueHistoryChart = <
-  P extends HistoryPoint
->(props: {
+export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
   data: P[]
   w: number
   h: number
@@ -360,7 +298,7 @@ export const ControllableSingleValueHistoryChart = <
   negativeThreshold?: number
   xScale: ScaleTime<number, number>
   yScale: ScaleContinuousNumeric<number, number>
-  viewScaleProps: viewScale
+  zoomParams?: ZoomParams
   showZoomer?: boolean
   yKind?: ValueKind
   curve?: CurveFactory
@@ -376,12 +314,19 @@ export const ControllableSingleValueHistoryChart = <
     Tooltip,
     negativeThreshold = 0,
     showZoomer,
+    yScale,
+    zoomParams,
   } = props
-  const { viewXScale, setViewXScale, viewYScale, setViewYScale } =
-    props.viewScaleProps
+
+  useEffect(() => {
+    if (props.xScale) {
+      zoomParams?.setXScale(props.xScale)
+    }
+  }, [w])
+
+  const xScale = zoomParams?.viewXScale ?? props.xScale
+
   const yKind = props.yKind ?? 'amount'
-  const xScale = viewXScale ?? props.xScale
-  const yScale = viewYScale ?? props.yScale
 
   const [xMin, xMax] = xScale?.domain().map((d) => d.getTime()) ?? [
     data[0].x,
@@ -432,7 +377,7 @@ export const ControllableSingleValueHistoryChart = <
       const y0 = yScale(p.prev.y)
       const y1 = p.next ? yScale(p.next.y) : y0
       const markerY = interpolateY(curve, mouseX, x0, x1, y0, y1)
-      setMouse({ ...p, x: mouseX, y: markerY })
+      setMouse({ ...p, y: markerY })
     } else {
       setMouse(undefined)
     }
@@ -442,35 +387,6 @@ export const ControllableSingleValueHistoryChart = <
     props.onMouseOver?.(undefined)
     setMouse(undefined)
   })
-
-  const rescale = useCallback((newXScale: ScaleTime<number, number> | null) => {
-    if (newXScale) {
-      setViewXScale(() => newXScale)
-      if (yKind === 'percent') return
-
-      const [xMin, xMax] = newXScale.domain()
-
-      const bisect = bisector((p: P) => p.x)
-      const iMin = bisect.right(data, xMin)
-      const iMax = bisect.right(data, xMax)
-
-      // don't zoom axis if they selected an area with only one value
-      if (iMin != iMax) {
-        const visibleYs = range(iMin - 1, iMax).map((i) => data[i]?.y)
-        const [yMin, yMax] = extent(visibleYs) as [number, number]
-        // try to add extra space on top and bottom before constraining
-        const padding = (yMax - yMin) * 0.1
-        const domain = constrainExtent(
-          [yMin - padding, yMax + padding],
-          Y_AXIS_CONSTRAINTS[yKind]
-        )
-        setViewYScale(() => yScale.copy().domain(domain).nice())
-      }
-    } else {
-      setViewXScale(undefined)
-      setViewYScale(undefined)
-    }
-  }, [])
 
   const gradientId = useId()
   const chartTheshold = yScale(negativeThreshold)
@@ -483,8 +399,7 @@ export const ControllableSingleValueHistoryChart = <
         xAxis={xAxis}
         yAxis={yAxis}
         ttParams={mouse}
-        fullScale={props.xScale}
-        onRescale={rescale}
+        zoomParams={zoomParams}
         onMouseOver={onMouseOver}
         onMouseLeave={onMouseLeave}
         Tooltip={Tooltip}
@@ -515,31 +430,13 @@ export const ControllableSingleValueHistoryChart = <
           <SliceMarker color="#5BCEFF" x={mouse.x} y0={py0} y1={mouse.y} />
         )}
       </SVGChart>
-      {showZoomer && (
+      {showZoomer && zoomParams && (
         <ZoomSlider
-          fullScale={props.xScale}
-          visibleScale={xScale}
-          setVisibleScale={rescale}
-          className="relative top-4"
+          zoomParams={zoomParams}
           color="light-green"
+          className="relative top-4"
         />
       )}
     </>
-  )
-}
-
-export const SingleValueHistoryChart = <P extends HistoryPoint>(
-  props: Omit<
-    Parameters<typeof ControllableSingleValueHistoryChart<P>>[0],
-    'viewScaleProps'
-  >
-) => {
-  const viewScaleProps = useViewScale()
-
-  return (
-    <ControllableSingleValueHistoryChart
-      {...props}
-      viewScaleProps={viewScaleProps}
-    />
   )
 }

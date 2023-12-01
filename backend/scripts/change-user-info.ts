@@ -26,7 +26,7 @@ async function main() {
   await changeUser(user, { username: newUsername, name, avatarUrl })
     .then(() =>
       console.log(
-        'succesfully changed',
+        'successfully changed',
         user.username,
         'to',
         name,

@@ -3,11 +3,14 @@ import { Button } from '../buttons/button'
 import { useState } from 'react'
 import { MODAL_CLASS, Modal } from '../layout/modal'
 import { Col } from '../layout/col'
-import { SupabaseSearch } from '../supabase-search'
-import { User } from 'common/user'
-import { createPrivateMessageChannelWithUser } from 'web/lib/firebase/api'
+import { createPrivateMessageChannelWithUsers } from 'web/lib/firebase/api'
 import { useRouter } from 'next/router'
 import clsx from 'clsx'
+import { Row } from 'web/components/layout/row'
+import { SelectUsers } from 'web/components/select-users'
+import { UserSearchResult } from 'web/lib/supabase/users'
+import { usePrivateUser } from 'web/hooks/use-user'
+import { buildArray } from 'common/util/array'
 
 export default function NewMessageButton() {
   const [open, setOpen] = useState(false)
@@ -27,44 +30,41 @@ function MessageModal(props: {
   setOpen: (open: boolean) => void
 }) {
   const { open, setOpen } = props
+  const privateUser = usePrivateUser()
   const router = useRouter()
-  const [loadingUserId, setLoadingUserId] = useState<string | undefined>(
-    undefined
-  )
 
-  const createChannel = async (user: User) => {
-    setLoadingUserId(user.id) // Set the clicked user's ID
-    const res = await createPrivateMessageChannelWithUser({
-      userId: user.id,
+  const [users, setUsers] = useState<UserSearchResult[]>([])
+  const createChannel = async () => {
+    const res = await createPrivateMessageChannelWithUsers({
+      userIds: users.map((user) => user.id),
     }).catch((e) => {
-      setLoadingUserId(undefined)
+      console.error(e)
       return
     })
     if (!res) {
-      setLoadingUserId(undefined)
       return
     }
     router.push(`/messages/${res.channelId}`)
   }
   return (
     <Modal open={open} setOpen={setOpen}>
-      <Col className={clsx(MODAL_CLASS, 'h-[40rem] overflow-y-scroll')}>
-        <div className="bg-canvas-0 rounded-t- absolute top-0 h-20 w-full rounded-t-md" />
-        <SupabaseSearch
-          persistPrefix="message-search"
-          headerClassName={'pt-0 '}
-          defaultSearchType="Users"
-          hideContractFilters
-          hideSearchTypes
-          userResultProps={{
-            onUserClick: (user: User) => {
-              createChannel(user)
-            },
-            hideFollowButton: true,
-            loadingUserId: loadingUserId,
-          }}
+      <Col className={clsx(MODAL_CLASS, 'h-[20rem] rounded-b-none')}>
+        <SelectUsers
+          className={'w-full'}
+          searchLimit={10}
+          setSelectedUsers={setUsers}
+          selectedUsers={users}
+          ignoreUserIds={users
+            .map((user) => user.id)
+            .concat(privateUser?.blockedUserIds ?? [])
+            .concat(buildArray(privateUser?.id))}
         />
       </Col>
+      <Row className={'bg-canvas-0 justify-end rounded-b-md p-2'}>
+        <Button disabled={users.length === 0} onClick={createChannel}>
+          Create
+        </Button>
+      </Row>
     </Modal>
   )
 }

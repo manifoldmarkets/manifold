@@ -17,7 +17,10 @@ export const ExplainerPanel = (props: { className?: string }) => {
   )
 }
 
-const ExpandSection = (props: { title: string; children: React.ReactNode }) => {
+export const ExpandSection = (props: {
+  title: string
+  children: React.ReactNode
+}) => {
   const { title, children } = props
 
   return (
@@ -30,7 +33,7 @@ const ExpandSection = (props: { title: string; children: React.ReactNode }) => {
             aria-hidden
           />
         </summary>
-        <p className="text-ink-900 px-4 pb-3">{children}</p>
+        <div className="text-ink-900 px-4 pb-3">{children}</div>
       </details>
     </Card>
   )
@@ -53,7 +56,7 @@ export const WhatIsAPM = () => (
 
 export const WhatIsMana = () => (
   <ExpandSection title="💰 What is mana (Ṁ)?">
-    Mana (Ṁ) is the play-money used by to bet on Manifold.
+    Mana (Ṁ) is the play-money used to bet on Manifold.
     <br />
     You start with Ṁ500 for free. Earn more by winning bets and gaining bonuses.
     <br />

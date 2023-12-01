@@ -1,6 +1,6 @@
 import { useRouter } from 'next/dist/client/router'
 import { useEffect, useState } from 'react'
-import { usePartialUpdater } from './use-partial-updater'
+import { pickBy } from 'lodash'
 
 type UrlParams = Record<string, string | undefined>
 
@@ -8,37 +8,33 @@ type UrlParams = Record<string, string | undefined>
 export const usePersistentQueriesState = <T extends UrlParams>(
   defaultValue: T,
   pushState?: boolean
-): [T | undefined, (newState: Partial<T>) => void] => {
-  const [state, updateState] = usePartialUpdater(defaultValue)
-  const [routerHasLoaded, setRouterHasLoaded] = useState(false)
+): [T, (newState: Partial<T>) => void] => {
+  const [state, setState] = useState(defaultValue)
 
   // On route change on the same page, set the state.
   // On page load, router isn't ready immediately, so set state once it is.
 
   const router = useRouter()
   useEffect(() => {
-    if (!router.isReady) return
-    if (router.query && Object.keys(router.query).length > 0) {
-      updateState(router.query as Partial<T>)
-    } else {
-      updateState(defaultValue)
+    if (router.isReady) {
+      setState({ ...defaultValue, ...(router.query as Partial<T>) })
     }
-    setRouterHasLoaded(true)
   }, [router.isReady, router.query])
 
-  const setQueryState = (newState: Partial<T>) => {
-    updateState(newState)
-    const q = { query: { ...router.query, ...newState } }
+  const updateState = (update: Partial<T>) => {
+    const newState = { ...state, ...update }
+    setState(newState)
+    const query = pickBy(newState, (v) => v)
     if (pushState) {
-      router.push(q)
+      router.push({ query })
     } else {
-      router.replace(q, undefined, {
+      router.replace({ query }, undefined, {
         shallow: true,
       })
     }
   }
 
-  return [!routerHasLoaded ? undefined : state, setQueryState]
+  return [state, updateState]
 }
 
 export const usePersistentQueryState = <K extends string>(

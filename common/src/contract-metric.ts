@@ -1,4 +1,5 @@
 export type ContractMetric = {
+  id: number
   contractId: string
   from:
     | {
@@ -28,6 +29,7 @@ export type ContractMetric = {
   userName: string
   userAvatarUrl: string
   lastBetTime: number
+  answerId: string | null
 }
 
 export type ContractMetricsByOutcome = Record<string, ContractMetric[]>

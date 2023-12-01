@@ -13,12 +13,16 @@ import {
 import { BETTORS } from 'common/user'
 import { Row } from 'web/components/layout/row'
 import { ProbabilityInput } from './widgets/probability-input'
-import { Button } from './buttons/button'
+import { Button, IconButton } from './buttons/button'
 import { Answer } from 'common/answer'
 import { Col } from './layout/col'
 import { removeUndefinedProps } from 'common/util/object'
 import { XIcon } from '@heroicons/react/solid'
 import { useUser } from 'web/hooks/use-user'
+import { EditCloseTimeModal } from 'web/components/contract/contract-details'
+import clsx from 'clsx'
+import { linkClass } from 'web/components/widgets/site-link'
+import Link from 'next/link'
 
 function getResolveButtonColor(outcome: resolution | undefined) {
   return outcome === 'YES'
@@ -118,7 +122,18 @@ export function ResolutionPanel(props: {
             </Row>
           ) : (
             <span className="text-ink-500">
-              Pick the true answer and pay out {BETTORS} that got it right.
+              Pick the true answer and pay out {BETTORS} that got it right. Ask
+              in the comments section or our{' '}
+              <Link
+                onClick={(e) => {
+                  e.stopPropagation()
+                }}
+                href="https://discord.gg/eHQBNBqXuh"
+                className={clsx(linkClass)}
+              >
+                Discord
+              </Link>{' '}
+              if you need help.
             </span>
           )}
         </div>
@@ -154,31 +169,55 @@ export function ResolveHeader(props: {
   onClose: () => void
 }) {
   const { fullTitle, contract, isCreator, onClose } = props
-
+  const { closeTime } = contract
+  const [isEditingCloseTime, setIsEditingCloseTime] = useState(false)
+  const setNewCloseTime = (newCloseTime: number) => {
+    if (newCloseTime > Date.now()) onClose()
+  }
   return (
-    <div className="mb-6 flex items-start justify-between">
-      <div>
+    <Col>
+      <Row className="mb-6 items-start justify-between">
+        {closeTime && closeTime < Date.now() ? (
+          <Col>
+            <span className="mb-2 text-lg">
+              {!isCreator && (
+                <span className="mr-2 rounded bg-purple-100 p-1 align-baseline text-xs uppercase text-purple-600 dark:bg-purple-900 dark:text-purple-300">
+                  Mod
+                </span>
+              )}
+              If {isCreator ? 'your' : 'this'} question closed too early{' '}
+            </span>
+            <Button color={'gray'} onClick={() => setIsEditingCloseTime(true)}>
+              Extend the close time
+            </Button>
+          </Col>
+        ) : (
+          <div />
+        )}
+        <IconButton size={'2xs'} onClick={onClose}>
+          <XIcon className="h-5 w-5" />
+        </IconButton>
+      </Row>
+      <div className="mb-2 text-lg">
         {!isCreator && (
           <span className="mr-2 rounded bg-purple-100 p-1 align-baseline text-xs uppercase text-purple-600 dark:bg-purple-900 dark:text-purple-300">
             Mod
           </span>
         )}
-        Resolve{' '}
+        If you know the answer, resolve{' '}
         {fullTitle
           ? `"${contract.question}"`
           : isCreator
           ? 'your question'
           : contract.creatorName + `'s question`}
       </div>
-      {
-        <button
-          className="text-ink-500 hover:text-ink-700 py-1 pl-2 transition-colors"
-          onClick={onClose}
-        >
-          <XIcon className="h-5 w-5" />
-        </button>
-      }
-    </div>
+      <EditCloseTimeModal
+        contract={contract}
+        isOpen={isEditingCloseTime}
+        setOpen={setIsEditingCloseTime}
+        setNewCloseTime={setNewCloseTime}
+      />
+    </Col>
   )
 }
 

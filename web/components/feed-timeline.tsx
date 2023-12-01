@@ -35,10 +35,11 @@ export function FeedTimeline() {
   return (
     <Col className="w-full items-center pb-4 sm:px-2">
       {user && remaining > 0 && (
-        <Row className="mb-2 items-center justify-between gap-2 rounded-md bg-green-200 p-2 text-sm">
-          <span className={'text-gray-700'}>
-            🎉 You've got {remaining} free questions! Use them before they
-            expire in{' '}
+        <Row className="text-md mb-2 items-center justify-between gap-2 rounded-md border-2 border-indigo-500 p-2">
+          <span>
+            🎉 You've got{' '}
+            <span className="font-semibold">{remaining} free questions</span>!
+            Use them before they expire in{' '}
             {shortenedFromNow(
               user.createdTime + DAY_MS * DAYS_TO_USE_FREE_QUESTIONS
             )}

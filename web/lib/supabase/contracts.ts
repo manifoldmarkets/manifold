@@ -1,20 +1,6 @@
 import { Contract, CPMMContract, Visibility } from 'common/contract'
-import {
-  millisToTs,
-  run,
-  selectFrom,
-  selectJson,
-  SupabaseClient,
-  Tables,
-} from 'common/supabase/utils'
+import { run, selectFrom, SupabaseClient, Tables } from 'common/supabase/utils'
 import { filterDefined } from 'common/util/array'
-import {
-  ContractTypeType,
-  Filter,
-  SearchState,
-  Sort,
-} from 'web/components/supabase-search'
-import { supabaseSearchContracts } from '../firebase/api'
 import { db } from './db'
 import { chunk, uniqBy } from 'lodash'
 import { convertContract } from 'common/supabase/contracts'
@@ -60,9 +46,9 @@ export async function getPublicContractIdsInTopics(
   const contractLists = await Promise.all(
     chunk(contractIds, 100).map(async (ids) => {
       const { data } = await run(
-        db.rpc('get_contracts_in_group_slugs', {
+        db.rpc('get_contracts_in_group_slugs_1', {
           contract_ids: ids,
-          group_slugs: topicSlugs,
+          p_group_slugs: topicSlugs,
           ignore_slugs: ignoreSlugs ?? [],
         })
       )
@@ -82,8 +68,8 @@ export async function getRecentActiveContractsOnTopics(
   limit: number
 ) {
   const { data } = await run(
-    db.rpc('get_recently_active_contracts_in_group_slugs', {
-      group_slugs: topicSlugs,
+    db.rpc('get_recently_active_contracts_in_group_slugs_1', {
+      p_group_slugs: topicSlugs,
       ignore_slugs: ignoreSlugs,
       max: limit,
     })
@@ -109,12 +95,6 @@ export async function getContracts(
   }
 }
 
-export const getPublicContract = async (id: string) => {
-  const { data } = await run(
-    db.from('public_contracts').select('data').eq('id', id)
-  )
-  return data && data.length > 0 ? (data[0].data as Contract) : null
-}
 export const getContract = async (id: string) => {
   const { data } = await run(db.from('contracts').select('data').eq('id', id))
   return data && data.length > 0 ? (data[0].data as Contract) : null
@@ -147,41 +127,6 @@ export const getRecentPublicContractRows = async (options: {
   return data as Tables['contracts']['Row'][]
 }
 
-// Only fetches contracts with 'public' visibility
-export const getPublicContracts = async (options: {
-  limit: number
-  beforeTime?: number
-  order?: 'asc' | 'desc'
-}) => {
-  let q = selectJson(db, 'public_contracts')
-  q = q.order('created_time', {
-    ascending: options?.order === 'asc',
-  } as any)
-  if (options.beforeTime) {
-    q = q.lt('created_time', millisToTs(options.beforeTime))
-  }
-  q = q.limit(options.limit)
-  const { data } = await run(q)
-  return data.map((r) => r.data)
-}
-
-export async function getYourRecentContracts(
-  db: SupabaseClient,
-  userId: string,
-  count: number
-) {
-  const { data } = await db.rpc('get_your_recent_contracts', {
-    uid: userId,
-    n: count,
-    start: 0,
-  })
-
-  if (!data) return null
-
-  const contracts = filterDefined(data.map((d) => (d as any).data))
-  return contracts
-}
-
 export async function getYourDailyChangedContracts(
   db: SupabaseClient,
   userId: string,
@@ -195,24 +140,8 @@ export async function getYourDailyChangedContracts(
 
   if (!data) return null
 
-  const contracts = filterDefined(
-    data.map((d) => (d as any).data)
-  ) as CPMMContract[]
+  const contracts = filterDefined(data.map((d) => d.data as CPMMContract))
   return contracts
-}
-
-export async function getYourTrendingContracts(
-  db: SupabaseClient,
-  userId: string,
-  count: number
-) {
-  const { data } = await db.rpc('get_your_trending_contracts', {
-    uid: userId,
-    n: count,
-    start: 0,
-  })
-
-  return data?.map((d) => (d as any).data as Contract)
 }
 
 export async function getContractFromSlug(
@@ -240,140 +169,6 @@ export async function getContractVisibilityFromSlug(contractSlug: string) {
   return undefined
 }
 
-export async function searchContract(props: {
-  state?: SearchState
-  query: string
-  filter: Filter
-  sort: Sort
-  contractType?: ContractTypeType
-  offset?: number
-  limit: number
-  topicSlug?: string
-  creatorId?: string
-}) {
-  const {
-    query,
-    filter,
-    sort,
-    contractType = 'ALL',
-    offset = 0,
-    limit,
-    topicSlug,
-    creatorId,
-  } = props
-
-  const state = props.state ?? {
-    contracts: undefined,
-    fuzzyContractOffset: 0,
-    shouldLoadMore: false,
-  }
-
-  if (limit === 0) {
-    return { fuzzyOffset: 0, data: [] }
-  }
-
-  if (!query) {
-    const contracts = await supabaseSearchContracts({
-      term: '',
-      filter,
-      sort,
-      contractType,
-      offset,
-      limit,
-      topicSlug,
-      creatorId,
-    })
-    if (contracts) {
-      return { fuzzyOffset: 0, data: contracts }
-    }
-  }
-  if (state.fuzzyContractOffset > 0) {
-    const contractFuzzy = await searchContractFuzzy({
-      state,
-      query,
-      filter,
-      sort,
-      contractType,
-      limit,
-      topicSlug,
-      creatorId,
-    })
-    return contractFuzzy
-  }
-
-  const contracts = await supabaseSearchContracts({
-    term: query,
-    filter,
-    sort,
-    contractType,
-    offset,
-    limit,
-    fuzzy: false,
-    topicSlug,
-    creatorId: creatorId,
-  })
-  if (contracts) {
-    if (contracts.length == limit) {
-      return { fuzzyOffset: 0, data: contracts }
-    } else {
-      const fuzzyData = await searchContractFuzzy({
-        state,
-        query,
-        filter,
-        sort,
-        contractType,
-        limit: limit - contracts.length,
-        topicSlug,
-        creatorId,
-      })
-      return {
-        fuzzyOffset: fuzzyData.fuzzyOffset,
-        data: contracts.concat(fuzzyData.data),
-      }
-    }
-  }
-  return { fuzzyOffset: 0, data: [] }
-}
-
-export async function searchContractFuzzy(props: {
-  state: SearchState
-  query: string
-  filter: Filter
-  sort: Sort
-  contractType: ContractTypeType
-  limit: number
-  topicSlug?: string
-  creatorId?: string
-}) {
-  const {
-    state,
-    topicSlug,
-    query,
-    filter,
-    sort,
-    contractType,
-    limit,
-    creatorId,
-  } = props
-  const contracts = await supabaseSearchContracts({
-    term: query,
-    filter,
-    sort,
-    contractType,
-    offset: state.fuzzyContractOffset,
-    limit,
-    fuzzy: true,
-    topicSlug,
-    creatorId: creatorId,
-  })
-  if (contracts) {
-    return {
-      fuzzyOffset: contracts.length,
-      data: contracts,
-    }
-  }
-  return { fuzzyOffset: 0, data: [] }
-}
 export async function getWatchedContracts(userId: string) {
   const { data: ids } = await run(
     db.from('contract_follows').select('contract_id').eq('follow_id', userId)
@@ -413,7 +208,7 @@ export async function getIsPrivateContractMember(
     this_contract_id: contractId,
     this_member_id: userId,
   })
-  return data as boolean | null
+  return data
 }
 
 export const getTrendingContracts = async (limit: number) => {

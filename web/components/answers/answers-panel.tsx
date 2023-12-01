@@ -1,19 +1,23 @@
 import {
   ArrowRightIcon,
   ChevronDownIcon,
+  PencilIcon,
   PresentationChartLineIcon,
 } from '@heroicons/react/outline'
 import { groupBy, sortBy, sumBy } from 'lodash'
-import { useState } from 'react'
-
 import clsx from 'clsx'
 import { Answer, DpmAnswer } from 'common/answer'
 import { Bet } from 'common/bet'
 import { getAnswerProbability, getContractBetMetrics } from 'common/calculate'
-import { CPMMMultiContract, MultiContract, contractPath } from 'common/contract'
+import {
+  CPMMMultiContract,
+  MultiContract,
+  contractPath,
+  Contract,
+} from 'common/contract'
 import { formatMoney } from 'common/util/format'
 import Link from 'next/link'
-import { Button } from 'web/components/buttons/button'
+import { Button, IconButton } from 'web/components/buttons/button'
 import { Row } from 'web/components/layout/row'
 import { useUser } from 'web/hooks/use-user'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
@@ -25,14 +29,25 @@ import {
   AddComment,
   AnswerBar,
   AnswerLabel,
-  AnswerStatusAndBetButtons,
+  AnswerStatus,
+  BetButtons,
 } from './answer-components'
 import { floatingEqual } from 'common/util/math'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import DropdownMenu from '../comments/dropdown-menu'
 import generateFilterDropdownItems from '../search/search-dropdown-helpers'
-
-type Sort = 'prob-desc' | 'prob-asc' | 'old' | 'new' | 'liquidity'
+import { SearchCreateAnswerPanel } from './create-answer-panel'
+import { MultiSort } from '../contract/contract-overview'
+import { useState } from 'react'
+import { editAnswerCpmm } from 'web/lib/firebase/api'
+import { Modal } from 'web/components/layout/modal'
+import { Title } from 'web/components/widgets/title'
+import { Input } from 'web/components/widgets/input'
+import { isAdminId, isModId } from 'common/envs/constants'
+import { User } from 'common/user'
+import { Avatar } from 'web/components/widgets/avatar'
+import { UserLink } from 'web/components/widgets/user-link'
+import { TradesButton } from 'web/components/contract/trades-button'
 
 const SORTS = [
   { label: 'High %', value: 'prob-desc' },
@@ -42,90 +57,46 @@ const SORTS = [
   { label: 'Trending', value: 'liquidity' },
 ] as const
 
-// full resorting, hover, clickiness
+// full resorting, hover, clickiness, search and add
 export function AnswersPanel(props: {
   contract: MultiContract
+  answersToShow: (Answer | DpmAnswer)[]
+  selected: string[]
+  sort: MultiSort
+  setSort: (sort: MultiSort) => void
+  query: string
+  setQuery: (query: string) => void
+  setShowAll: (showAll: boolean) => void
   onAnswerCommentClick: (answer: Answer | DpmAnswer) => void
   onAnswerHover: (answer: Answer | DpmAnswer | undefined) => void
   onAnswerClick: (answer: Answer | DpmAnswer) => void
-  selected?: string[] // answer ids
 }) {
   const {
     contract,
     onAnswerCommentClick,
     onAnswerHover,
     onAnswerClick,
+    answersToShow,
     selected,
+    sort,
+    setSort,
+    query,
+    setQuery,
+    setShowAll,
   } = props
-  const { resolutions, outcomeType } = contract
-  const isMultipleChoice = outcomeType === 'MULTIPLE_CHOICE'
+  const { outcomeType, answers } = contract
   const addAnswersMode =
     'addAnswersMode' in contract
       ? contract.addAnswersMode
       : outcomeType === 'FREE_RESPONSE'
       ? 'ANYONE'
       : 'DISABLED'
+  const showAvatars =
+    addAnswersMode === 'ANYONE' ||
+    answers.some((a) => a.userId !== contract.creatorId)
+
   const shouldAnswersSumToOne =
     'shouldAnswersSumToOne' in contract ? contract.shouldAnswersSumToOne : true
-
-  const answers = contract.answers
-    .filter((a) => isMultipleChoice || ('number' in a && a.number !== 0))
-    .map((a) => ({
-      ...a,
-      prob: getAnswerProbability(contract, a.id),
-    }))
-
-  const [sort, setSort] = useState<Sort>(
-    addAnswersMode === 'DISABLED'
-      ? 'old'
-      : !shouldAnswersSumToOne
-      ? 'liquidity'
-      : answers.length > 10
-      ? 'prob-desc'
-      : 'old'
-  )
-
-  const [showAll, setShowAll] = useState(
-    addAnswersMode === 'DISABLED' || answers.length <= 5
-  )
-
-  const sortedAnswers = sortBy(answers, [
-    shouldAnswersSumToOne
-      ? // Winners first
-        (answer) => (resolutions ? -1 * resolutions[answer.id] : answer)
-      : // Resolved last
-        (answer) =>
-          'resolutionTime' in answer ? answer.resolutionTime ?? 1 : 0,
-    // then by sort
-    (answer) => {
-      if (sort === 'old') {
-        return 'index' in answer ? answer.index : answer.number
-      } else if (sort === 'new') {
-        return 'index' in answer ? -answer.index : -answer.number
-      } else if (sort === 'prob-asc') {
-        return answer.prob
-      } else if (sort === 'prob-desc') {
-        return -1 * answer.prob
-      } else if (sort === 'liquidity') {
-        return 'subsidyPool' in answer ? answer.subsidyPool : 0
-      }
-    },
-  ])
-
-  const answersToShow = showAll
-    ? sortedAnswers
-    : sortedAnswers.filter((answer) => {
-        if (resolutions?.[answer.id]) {
-          return true
-        }
-        if (sort === 'prob-asc') {
-          return answer.prob < 0.99
-        } else if (sort === 'prob-desc') {
-          return answer.prob > 0.01
-        } else if (sort === 'liquidity' || sort === 'new' || sort === 'old') {
-          return !('resolution' in answer)
-        }
-      })
 
   const user = useUser()
 
@@ -135,58 +106,143 @@ export function AnswersPanel(props: {
   const userBetsByAnswer = groupBy(userBets, (bet) => bet.answerId)
 
   const moreCount = answers.length - answersToShow.length
-
   // Note: Hide answers if there is just one "Other" answer.
   const showNoAnswers =
     answers.length === 0 || (shouldAnswersSumToOne && answers.length === 1)
-
+  const [expandedIds, setExpandedIds] = useState<string[]>([])
   return (
-    <div className="mx-[2px]">
-      {!showNoAnswers && (
-        <Col className="gap-2">
-          <DropdownMenu
-            className="self-end"
-            items={generateFilterDropdownItems(SORTS, setSort)}
-            icon={
-              <Row className="text-ink-500 items-center gap-0.5">
-                <span className="whitespace-nowrap text-sm font-medium">
-                  Sort: {SORTS.find((s) => s.value === sort)?.label}
-                </span>
-                <ChevronDownIcon className="h-4 w-4" />
-              </Row>
-            }
-          />
+    <Col>
+      <SearchCreateAnswerPanel
+        contract={contract}
+        addAnswersMode={addAnswersMode}
+        text={query}
+        setText={setQuery}
+      >
+        <DropdownMenu
+          className="mb-1"
+          closeOnClick
+          items={generateFilterDropdownItems(SORTS, setSort)}
+          icon={
+            <Row className="text-ink-500 items-center gap-0.5">
+              <span className="whitespace-nowrap text-sm font-medium">
+                Sort: {SORTS.find((s) => s.value === sort)?.label}
+              </span>
+              <ChevronDownIcon className="h-4 w-4" />
+            </Row>
+          }
+        />
+      </SearchCreateAnswerPanel>
 
+      {showNoAnswers ? (
+        <div className="text-ink-500 p-4 text-center">No answers yet</div>
+      ) : (
+        <Col className="mx-[2px] mt-1 gap-2">
           {answersToShow.map((answer) => (
             <Answer
               key={answer.id}
+              user={user}
               answer={answer}
               contract={contract}
               onCommentClick={() => onAnswerCommentClick?.(answer)}
               onHover={(hovering) =>
                 onAnswerHover?.(hovering ? answer : undefined)
               }
-              onClick={() => onAnswerClick?.(answer)}
+              onClick={() => {
+                onAnswerClick?.(answer)
+                if (!('poolYes' in answer) || !user) return
+                setExpandedIds((ids) =>
+                  ids.includes(answer.id)
+                    ? ids.filter((id) => id !== answer.id)
+                    : [...ids, answer.id]
+                )
+              }}
               selected={selected?.includes(answer.id)}
               color={getAnswerColor(answer, answersArray)}
               userBets={userBetsByAnswer[answer.id]}
+              showAvatars={showAvatars}
+              expanded={expandedIds.includes(answer.id)}
             />
           ))}
-          {moreCount > 0 && (
-            <Button
-              color="gray-white"
-              onClick={() => setShowAll(true)}
-              size="xs"
-            >
-              <ChevronDownIcon className="mr-1 h-4 w-4" />
-              Show {moreCount} more {moreCount === 1 ? 'answer' : 'answers'}
-            </Button>
-          )}
+
+          {moreCount > 0 &&
+            (query ? (
+              <div className="text-ink-600 pb-4 text-center">
+                {moreCount} answers hidden by search
+              </div>
+            ) : (
+              <Button
+                color="gray-white"
+                onClick={() => setShowAll(true)}
+                size="xs"
+              >
+                <ChevronDownIcon className="mr-1 h-4 w-4" />
+                Show {moreCount} more {moreCount === 1 ? 'answer' : 'answers'}
+              </Button>
+            ))}
         </Col>
       )}
+    </Col>
+  )
+}
 
-      {showNoAnswers && <div className="text-ink-500 pb-4">No answers yet</div>}
-    </div>
+const EditAnswerModal = (props: {
+  open: boolean
+  setOpen: (show: boolean) => void
+  contract: Contract
+  answer: Answer
+}) => {
+  const { answer, contract, open, setOpen } = props
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  const [text, setText] = useState(answer.text)
+  const [error, setError] = useState<string | null>(null)
+  const editAnswer = async () => {
+    if (isSubmitting) return
+    setIsSubmitting(true)
+
+    const res = await editAnswerCpmm({
+      answerId: answer.id,
+      contractId: contract.id,
+      text,
+    })
+      .catch((e) => {
+        console.error(e)
+        setError(e.message)
+        return null
+      })
+      .finally(() => {
+        setIsSubmitting(false)
+      })
+    if (!res) return
+
+    setOpen(false)
+  }
+
+  return (
+    <Modal open={open} setOpen={setOpen}>
+      <Col className={'bg-canvas-50 rounded-md p-4'}>
+        <Title>Edit answer</Title>
+        <Input
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          className="w-full"
+        />
+        {error ? <span className="text-red-500">{error}</span> : null}
+
+        <Row className={'mt-2 justify-between'}>
+          <Button
+            color={'gray-outline'}
+            disabled={isSubmitting}
+            onClick={() => setOpen(false)}
+          >
+            Cancel
+          </Button>
+          <Button color={'indigo'} loading={isSubmitting} onClick={editAnswer}>
+            Submit
+          </Button>
+        </Row>
+      </Col>
+    </Modal>
   )
 }
 
@@ -200,13 +256,22 @@ export function SimpleAnswerBars(props: {
 
   const shouldAnswersSumToOne =
     'shouldAnswersSumToOne' in contract ? contract.shouldAnswersSumToOne : true
-
+  const user = useUser()
   const answers = contract.answers
     .filter(
       (a) =>
         outcomeType === 'MULTIPLE_CHOICE' || ('number' in a && a.number !== 0)
     )
     .map((a) => ({ ...a, prob: getAnswerProbability(contract, a.id) }))
+  const addAnswersMode =
+    'addAnswersMode' in contract
+      ? contract.addAnswersMode
+      : outcomeType === 'FREE_RESPONSE'
+      ? 'ANYONE'
+      : 'DISABLED'
+  const showAvatars =
+    addAnswersMode === 'ANYONE' ||
+    answers.some((a) => a.userId !== contract.creatorId)
 
   const sortByProb = answers.length > maxAnswers
   const displayedAnswers = sortBy(answers, [
@@ -238,10 +303,12 @@ export function SimpleAnswerBars(props: {
         <>
           {displayedAnswers.map((answer) => (
             <Answer
+              user={user}
               key={answer.id}
               answer={answer}
               contract={contract}
               color={getAnswerColor(answer, answersArray)}
+              showAvatars={showAvatars}
             />
           ))}
           {moreCount > 0 && (
@@ -265,11 +332,14 @@ function Answer(props: {
   contract: MultiContract
   answer: Answer | DpmAnswer
   color: string
+  user: User | undefined | null
   onCommentClick?: () => void
   onHover?: (hovering: boolean) => void
   onClick?: () => void
   selected?: boolean
   userBets?: Bet[]
+  showAvatars?: boolean
+  expanded?: boolean
 }) {
   const {
     answer,
@@ -280,20 +350,17 @@ function Answer(props: {
     selected,
     color,
     userBets,
+    showAvatars,
+    expanded,
+    user,
   } = props
 
   const answerCreator = useUserByIdOrAnswer(answer)
   const prob = getAnswerProbability(contract, answer.id)
+  const [editAnswer, setEditAnswer] = useState<Answer>()
 
   const isCpmm = contract.mechanism === 'cpmm-multi-1'
-  const isFreeResponse = contract.outcomeType === 'FREE_RESPONSE'
   const isOther = 'isOther' in answer && answer.isOther
-  const addAnswersMode =
-    'addAnswersMode' in contract
-      ? contract.addAnswersMode ?? 'DISABLED'
-      : isFreeResponse
-      ? 'ANYONE'
-      : 'DISABLED'
 
   const { resolution, resolutions } = contract
   const resolvedProb =
@@ -309,9 +376,8 @@ function Answer(props: {
   const hasBets = userBets && !floatingEqual(sharesSum, 0)
 
   const textColorClass = resolvedProb === 0 ? 'text-ink-700' : 'text-ink-900'
-
   return (
-    <Col>
+    <Col className={'w-full'}>
       <AnswerBar
         color={color}
         prob={prob}
@@ -320,47 +386,62 @@ function Answer(props: {
         onClick={onClick}
         className={clsx(
           'cursor-pointer',
-          selected && 'ring-primary-600 rounded ring-2'
+          selected && 'ring-primary-600 rounded  ring-2'
         )}
         label={
-          isOther ? (
-            <span className={textColorClass}>
-              Other{' '}
-              <InfoTooltip
-                className="!text-ink-600 dark:!text-ink-700"
-                text="Represents all answers not listed. New answers are split out of this answer."
+          <Row className={'items-center gap-1'}>
+            <AnswerStatus contract={contract} answer={answer} />
+            {isOther ? (
+              <span className={textColorClass}>
+                Other{' '}
+                <InfoTooltip
+                  className="!text-ink-600 dark:!text-ink-700"
+                  text="Represents all answers not listed. New answers are split out of this answer."
+                />
+              </span>
+            ) : (
+              <AnswerLabel
+                text={answer.text}
+                createdTime={answer.createdTime}
+                className={clsx(
+                  'items-center text-sm !leading-none sm:text-base',
+                  textColorClass
+                )}
               />
-            </span>
-          ) : (
-            <AnswerLabel
-              text={answer.text}
-              index={'index' in answer ? answer.index : undefined}
-              createdTime={answer.createdTime}
-              creator={
-                addAnswersMode === 'ANYONE' ? answerCreator ?? false : undefined
-              }
-              className={clsx(
-                'items-center text-sm !leading-none sm:flex sm:text-base',
-                textColorClass
-              )}
-            />
-          )
+            )}
+          </Row>
         }
         end={
-          <>
+          <Row className={'items-center gap-2'}>
             {selected && (
               <PresentationChartLineIcon
                 className="h-5 w-5 text-black"
                 style={{ fill: color }}
               />
             )}
-            <AnswerStatusAndBetButtons
+            <BetButtons
               contract={contract}
               answer={answer}
               userBets={userBets ?? []}
             />
-            {onCommentClick && <AddComment onClick={onCommentClick} />}
-          </>
+            {onClick && (
+              <IconButton
+                className={'-ml-1 !px-1.5'}
+                size={'2xs'}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onClick()
+                }}
+              >
+                <ChevronDownIcon
+                  className={clsx(
+                    'h-4 w-4',
+                    expanded ? 'rotate-180 transform' : 'rotate-0 transform'
+                  )}
+                />
+              </IconButton>
+            )}
+          </Row>
         }
       />
       {!resolution && hasBets && isCpmm && (
@@ -368,6 +449,59 @@ function Answer(props: {
           contract={contract}
           userBets={userBets}
           className="mt-0.5 self-end sm:mx-3 sm:mt-0"
+        />
+      )}
+
+      {expanded && (
+        <Row className={'mx-0.5 mb-1 mt-2 items-center'}>
+          {showAvatars && answerCreator && (
+            <Row className={'items-center self-start'}>
+              <Avatar avatarUrl={answerCreator.avatarUrl} size={'xs'} />
+              <UserLink
+                user={answerCreator}
+                noLink={false}
+                className="ml-1 text-sm"
+              />
+            </Row>
+          )}
+          <Row className={'w-full justify-end gap-2'}>
+            {user &&
+              'isOther' in answer &&
+              !answer.isOther &&
+              (isAdminId(user.id) ||
+                isModId(user.id) ||
+                user.id === contract.creatorId ||
+                user.id === answer.userId) && (
+                <Button
+                  color={'gray-outline'}
+                  size="2xs"
+                  onClick={() =>
+                    'poolYes' in answer && !answer.isOther
+                      ? setEditAnswer(answer)
+                      : null
+                  }
+                >
+                  <PencilIcon className="mr-1 h-4 w-4" />
+                  Edit
+                </Button>
+              )}
+            {'poolYes' in answer && (
+              <TradesButton
+                contract={contract}
+                answer={answer}
+                color={'gray-outline'}
+              />
+            )}
+            {onCommentClick && <AddComment onClick={onCommentClick} />}
+          </Row>
+        </Row>
+      )}
+      {editAnswer && (
+        <EditAnswerModal
+          open={!!editAnswer}
+          setOpen={() => setEditAnswer(undefined)}
+          contract={contract}
+          answer={editAnswer}
         />
       )}
     </Col>

@@ -32,5 +32,6 @@
       "database": "postgres",
       "username": "postgres"
     }
-  ]
+  ],
+  "prettier.ignorePath": "web/.prettierignore"
 }

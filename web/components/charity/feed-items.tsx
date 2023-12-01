@@ -16,12 +16,8 @@ export function Donation(props: { user: User; amount: number; ts: number }) {
         />
         <div className="min-w-0 flex-1">
           <p className="mt-0.5 text-sm">
-            {user ? (
-              <UserLink username={user.username} name={user.name} />
-            ) : (
-              <>Someone</>
-            )}{' '}
-            donated {manaToUSD(amount)}
+            {user ? <UserLink user={user} /> : <>Someone</>} donated{' '}
+            {manaToUSD(amount)}
             <RelativeTimestamp time={ts} />
           </p>
         </div>

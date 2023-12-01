@@ -22,8 +22,9 @@ export function UserContractsList(props: {
   creator: User
   rating?: number
   reviewCount?: number
+  averageRating?: number
 }) {
-  const { creator, rating, reviewCount } = props
+  const { creator, rating, reviewCount, averageRating } = props
   const { creatorTraders } = creator
   const { weekly, allTime } = creatorTraders
   const [marketsCreated, setMarketsCreated] = useState<number | undefined>()
@@ -49,7 +50,7 @@ export function UserContractsList(props: {
   return (
     <Col className={'w-full'}>
       <Row className={'gap-8 pb-4'}>
-        {rating && !!reviewCount && reviewCount > 0 && (
+        {rating && !!reviewCount && reviewCount > 0 && averageRating && (
           <Col>
             <Row className="text-ink-600 gap-0.5 text-xs sm:text-sm">
               Rating
@@ -63,6 +64,7 @@ export function UserContractsList(props: {
             <UserReviews
               userId={creator.id}
               rating={rating}
+              averageRating={averageRating}
               reviewCount={reviewCount}
             />
           </Col>

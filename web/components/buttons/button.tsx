@@ -62,7 +62,7 @@ export function buttonClass(size: SizeType, color: ColorType | 'none') {
       'text-primary-500 hover:bg-primary-500',
     ],
     color === 'gray' &&
-      'bg-ink-300 text-ink-600 disabled:bg-ink-200 disabled:text-white hover:bg-ink-400 hover:text-ink-700',
+      'bg-ink-300 text-ink-900 disabled:bg-ink-200 disabled:text-ink-500 hover:bg-ink-200 dark:enabled:hover:bg-ink-400 hover:text-ink-1000',
     color === 'gray-outline' && [outline, 'text-ink-500 hover:bg-ink-500'],
     color === 'gradient' && [gradient, 'from-primary-500 to-blue-400'],
     color === 'gradient-pink' && [gradient, 'from-primary-500 to-fuchsia-500'],

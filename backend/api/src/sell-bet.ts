@@ -54,6 +54,7 @@ export const sellbet = authEndpoint(async (req, auth) => {
     const newBalance = user.balance + saleAmount + (newBet.loanAmount ?? 0)
     const newBetDoc = firestore.collection(`contracts/${contractId}/bets`).doc()
 
+    const now = Date.now()
     transaction.update(userDoc, { balance: newBalance })
     transaction.update(betDoc, { isSold: true })
     transaction.create(newBetDoc, {
@@ -65,14 +66,17 @@ export const sellbet = authEndpoint(async (req, auth) => {
       ...newBet,
     })
     transaction.update(
-      contractDoc,
-      removeUndefinedProps({
-        pool: newPool,
-        totalShares: newTotalShares,
-        totalBets: newTotalBets,
-        collectedFees: addObjects(fees, collectedFees),
-        volume: volume + Math.abs(newBet.amount),
-      })
+      contractDoc, {
+        lastBetTime: now,
+        lastUpdatedTime: now,
+        ...removeUndefinedProps({
+          pool: newPool,
+          totalShares: newTotalShares,
+          totalBets: newTotalBets,
+          collectedFees: addObjects(fees, collectedFees),
+          volume: volume + Math.abs(newBet.amount),
+        })
+      }
     )
 
     return {}

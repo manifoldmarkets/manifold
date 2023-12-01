@@ -1,73 +1,41 @@
 import { useMemo } from 'react'
 import { last, maxBy, minBy } from 'lodash'
 import { scaleTime, scaleLinear } from 'd3-scale'
-import { Bet } from 'common/bet'
 import { getInitialProbability, getProbability } from 'common/calculate'
 import { formatLargeNumber } from 'common/util/format'
 import { StonkContract } from 'common/contract'
-import {
-  TooltipProps,
-  getDateRange,
-  getRightmostVisibleDate,
-  formatDate,
-} from '../helpers'
-import { ControllableSingleValueHistoryChart } from '../generic-charts'
-import { Row } from 'web/components/layout/row'
-import { Avatar } from 'web/components/widgets/avatar'
+import { getEndDate, getRightmostVisibleDate, ZoomParams } from '../helpers'
+import { SingleValueHistoryChart } from '../generic-charts'
 import { getStonkPriceAtProb } from 'common/stonk'
 import { YES_GRAPH_COLOR } from 'common/envs/constants'
-import { HistoryPoint, viewScale } from 'common/chart'
+import { SingleContractChartTooltip, SingleContractPoint } from './single-value'
 
 const getScaleP = () => {
   return (p: number) => getStonkPriceAtProb({} as StonkContract, p)
 }
 
 const getBetPoints = (
-  bets: HistoryPoint<Partial<Bet>>[],
+  bets: SingleContractPoint[],
   scaleP: (p: number) => number
 ) => {
   return bets.map((pt) => ({ x: pt.x, y: scaleP(pt.y), obj: pt.obj }))
 }
 
-const StonkChartTooltip = (props: TooltipProps<HistoryPoint<Partial<Bet>>>) => {
-  const { prev } = props
-  if (!prev) return null
-  return (
-    <Row className="items-center gap-2">
-      {prev.obj?.userAvatarUrl && (
-        <Avatar size="xs" avatarUrl={prev.obj.userAvatarUrl} />
-      )}{' '}
-      <span className="font-semibold">{formatDate(prev.x)}</span>
-      <span className="text-ink-600">{formatLargeNumber(prev.y)}</span>
-    </Row>
-  )
-}
-
 export const StonkContractChart = (props: {
   contract: StonkContract
-  betPoints: HistoryPoint<Partial<Bet>>[]
+  betPoints: SingleContractPoint[]
   width: number
   height: number
-  viewScaleProps: viewScale
-  controlledStart?: number
-  color?: string
-  onMouseOver?: (p: HistoryPoint<Partial<Bet>> | undefined) => void
+  zoomParams?: ZoomParams
+  showZoomer?: boolean
 }) => {
-  const {
-    contract,
-    width,
-    height,
-    viewScaleProps,
-    controlledStart,
-    color,
-    onMouseOver,
-  } = props
+  const { contract, width, height, zoomParams, showZoomer } = props
 
-  const [start, end] = getDateRange(contract)
-  const rangeStart = controlledStart ?? start
+  const start = contract.createdTime
+  const end = getEndDate(contract)
   const betPointsInRange = useMemo(
-    () => props.betPoints.filter((pt) => pt.x >= rangeStart),
-    [props.betPoints, rangeStart]
+    () => props.betPoints.filter((pt) => pt.x >= start),
+    [props.betPoints, start]
   )
   const minProb = useMemo(
     () => minBy(betPointsInRange, (pt) => pt.y)?.y ?? 0.0001,
@@ -94,20 +62,26 @@ export const StonkContractChart = (props: {
     [betPoints, start, startP, end, endP]
   )
   const rightmostDate = getRightmostVisibleDate(end, last(betPoints)?.x, now)
-  const xScale = scaleTime([rangeStart, rightmostDate], [0, width])
+  const xScale = scaleTime([start, rightmostDate], [0, width])
   // clamp log scale to make sure zeroes go to the bottom
   const yScale = scaleLinear([min, max], [height, 0])
   return (
-    <ControllableSingleValueHistoryChart
+    <SingleValueHistoryChart
       w={width}
       h={height}
       xScale={xScale}
       yScale={yScale}
-      viewScaleProps={viewScaleProps}
+      zoomParams={zoomParams}
+      showZoomer={showZoomer}
       data={data}
-      onMouseOver={onMouseOver}
-      Tooltip={StonkChartTooltip}
-      color={color ?? YES_GRAPH_COLOR}
+      Tooltip={(props) => (
+        <SingleContractChartTooltip
+          ttProps={props}
+          formatY={formatLargeNumber}
+          xScale={zoomParams?.viewXScale ?? xScale}
+        />
+      )}
+      color={YES_GRAPH_COLOR}
     />
   )
 }

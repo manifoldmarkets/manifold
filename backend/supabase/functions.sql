@@ -52,22 +52,22 @@ select ct.resolution_time is null
   and ((ct.close_time > now() + interval '10 minutes') or ct.close_time is null) $$ language sql;
 
 create
-or replace function search_contracts_by_group_slugs (group_slugs text[], lim int, start int) returns jsonb[] stable parallel safe language sql as $$
+or replace function search_contracts_by_group_slugs_1 (p_group_slugs text[], lim int, start int) returns jsonb[] stable parallel safe language sql as $$
 select array_agg(data)
 from (
     select data
     from contracts
-    where data->'groupSlugs' ?| group_slugs
+    where contracts.group_slugs && p_group_slugs
       and is_valid_contract(contracts)
-    order by popularity_score desc,
+    order by importance_score desc,
      slug offset start
     limit lim
   ) as search_contracts $$;
 
 create
-or replace function search_contracts_by_group_slugs_for_creator (
+or replace function search_contracts_by_group_slugs_for_creator_1 (
   creator_id text,
-  group_slugs text[],
+  p_group_slugs text[],
   lim int,
   start int
 ) returns jsonb[] stable parallel safe language sql as $$
@@ -75,10 +75,10 @@ select array_agg(data)
 from (
     select data
     from contracts
-    where data->'groupSlugs' ?| group_slugs
+    where contracts.group_slugs && p_group_slugs
       and is_valid_contract(contracts)
       and contracts.creator_id = $1
-    order by popularity_score desc,
+    order by importance_score desc,
       slug offset start
     limit lim
   ) as search_contracts $$;
@@ -92,6 +92,7 @@ from user_contract_metrics as ucm
     join contracts_rbac as c on c.id = ucm.contract_id
 where ucm.user_id = uid
   and ucm.data->'lastBetTime' is not null
+  and ucm.answer_id is null
 order by ((ucm.data)->'lastBetTime')::bigint desc offset start
 limit count $$;
 
@@ -209,17 +210,6 @@ from get_your_contract_ids(uid)
   left join contracts on contracts.id = contract_id
 where contracts.outcome_type = 'BINARY'
 order by daily_score desc
-limit n offset start $$;
-
-create
-or replace function get_your_trending_contracts (uid text, n int, start int) returns table (data jsonb, score real) stable parallel safe language sql as $$
-select data,
-  popularity_score as score
-from get_your_contract_ids(uid)
-  left join contracts on contracts.id = contract_id
-where is_valid_contract(contracts)
-  and contracts.outcome_type = 'BINARY'
-order by score desc
 limit n offset start $$;
 
 -- Your most recent contracts by bets, likes, or views.
@@ -576,7 +566,6 @@ order by greatest(
   coalesce(data->'creatorTraders'->'allTime',0) desc nulls last
 limit count $$ language sql stable;
 
-
 create
 or replace function extract_text_from_rich_text_json (description jsonb) returns text language sql immutable as $$
 WITH RECURSIVE content_elements AS (
@@ -709,7 +698,8 @@ order by ((n.data->'createdTime')::bigint) desc
 limit max_num
 $$;
 
-create or replace function get_user_manalink_claims(creator_id text) returns table (manalink_id text, claimant_id text, ts bigint) as $$
+create
+or replace function get_user_manalink_claims (creator_id text) returns table (manalink_id text, claimant_id text, ts bigint) as $$
     select mc.manalink_id, (tx.data)->>'toId' as claimant_id, ((tx.data)->'createdTime')::bigint as ts
     from manalink_claims as mc
     join manalinks as m on mc.manalink_id = m.id

@@ -1,7 +1,6 @@
 .gitignore
 .gcloudignore
 /tsconfig.json
-/deploy.sh
+/deploy-replicator.sh
 /src/
 /lib/
-/supabase

@@ -6,18 +6,25 @@ import {
   hasGroupAccess,
   getSearchContractSQL,
   getForYouSQL,
+  SearchTypes,
+  sortFields,
 } from 'shared/supabase/search-contracts'
 import { getGroupIdFromSlug } from 'shared/supabase/groups'
+import { orderBy, uniqBy } from 'lodash'
+import { convertContract } from 'common/supabase/contracts'
+import { GCPLog } from 'shared/utils'
 
 export const supabasesearchcontracts = MaybeAuthedEndpoint(
-  async (req, auth) => {
-    return await searchContracts(req.body, auth?.uid)
+  async (req, auth, log, logError) => {
+    return await searchContracts(req.body, auth?.uid, log, logError)
   }
 )
 
 export const searchContracts = async (
   body: z.infer<typeof bodySchema>,
-  userId?: string
+  userId: string | undefined,
+  log: GCPLog,
+  logError: GCPLog
 ) => {
   const {
     term,
@@ -26,42 +33,97 @@ export const searchContracts = async (
     contractType,
     offset,
     limit,
-    fuzzy,
     topicSlug: possibleTopicSlug,
     creatorId,
   } = validate(bodySchema, body)
 
+  if (limit === 0) {
+    return [] as unknown as Json
+  }
+
   const isForYou = possibleTopicSlug === 'for-you'
+  const isRecent = possibleTopicSlug === 'recent'
   const topicSlug =
-    possibleTopicSlug && !isForYou ? possibleTopicSlug : undefined
+    possibleTopicSlug && !isForYou && !isRecent ? possibleTopicSlug : undefined
   const pg = createSupabaseDirectClient()
   const groupId = topicSlug
     ? await getGroupIdFromSlug(topicSlug, pg)
     : undefined
-
-  const searchMarketSQL =
-    isForYou && !term && sort === 'score' && userId
-      ? getForYouSQL(userId, filter, contractType, limit, offset)
-      : getSearchContractSQL({
+  let contracts
+  if (isForYou && !term && sort === 'score' && userId) {
+    const forYouSql = getForYouSQL(userId, filter, contractType, limit, offset)
+    contracts = await pg.map(forYouSql, [term], (r) => r.data as Contract)
+  } else if (isRecent && !term && userId) {
+    contracts = await pg.map(
+      'select data from get_your_recent_contracts($1, $2, $3)',
+      [userId, limit, offset],
+      convertContract
+    )
+  } else {
+    const groupAccess = await hasGroupAccess(groupId, userId)
+    const searchTypes: SearchTypes[] = [
+      'prefix',
+      'without-stopwords',
+      'answer',
+      'with-stopwords',
+      'description',
+    ]
+    const [
+      contractPrefixMatches,
+      contractsWithoutStopwords,
+      contractsWithMatchingAnswers,
+      contractsWithStopwords,
+      contractDescriptionMatches,
+    ] = await Promise.all(
+      searchTypes.map(async (searchType) => {
+        const searchSQL = getSearchContractSQL({
           term,
           filter,
           sort,
           contractType,
           offset,
           limit,
-          fuzzy,
           groupId,
           creatorId,
           uid: userId,
           isForYou,
-          hasGroupAccess: await hasGroupAccess(groupId, userId),
+          groupAccess,
+          searchType,
         })
+        return pg
+          .map(searchSQL, [], (r) => ({
+            data: convertContract(r),
+            searchType,
+          }))
+          .catch((e) => {
+            // to_tsquery is sensitive to special characters and can throw an error
+            logError(`Error with type: ${searchType} for term: ${term}`)
+            logError(e)
+            return []
+          })
+      })
+    )
+    const contractsOfSimilarRelevance = orderBy(
+      [
+        ...contractsWithoutStopwords,
+        ...contractsWithMatchingAnswers,
+        ...contractPrefixMatches,
+      ],
+      (c) =>
+        sortFields[sort].sortCallback(c.data) *
+        (c.searchType === 'answer' ? 0.5 : 1),
+      sortFields[sort].order.includes('DESC') ? 'desc' : 'asc'
+    )
 
-  const contracts = await pg.map(
-    searchMarketSQL,
-    [term],
-    (r) => r.data as Contract
-  )
+    contracts = uniqBy(
+      [
+        ...contractsOfSimilarRelevance,
+        ...contractsWithStopwords,
+        ...contractDescriptionMatches,
+      ].map((c) => c.data),
+      'id'
+    ).slice(0, limit)
+  }
 
   return (contracts ?? []) as unknown as Json
 }
@@ -112,7 +174,6 @@ const bodySchema = z
       .default('ALL'),
     offset: z.number().gte(0).default(0),
     limit: z.number().gt(0).lte(1000).default(100),
-    fuzzy: z.boolean().optional(),
     topicSlug: z.string().regex(FIRESTORE_DOC_REF_ID_REGEX).optional(),
     creatorId: z.string().regex(FIRESTORE_DOC_REF_ID_REGEX).optional(),
   })

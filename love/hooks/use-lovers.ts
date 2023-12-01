@@ -5,8 +5,8 @@ import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-s
 import { db } from 'web/lib/supabase/db'
 import { getUsers } from 'web/lib/supabase/user'
 import { User } from 'common/user'
-import { Lover } from 'love/hooks/use-lover'
 import { filterDefined } from 'common/util/array'
+import { Lover } from 'common/love/lover'
 
 export const useLovers = () => {
   const [lovers, setLovers] = usePersistentInMemoryState<
@@ -29,7 +29,7 @@ export const useLovers = () => {
               const usersById = keyBy(users, 'id')
               const dataWithUser = data.map((d) => {
                 const user = usersById[d.user_id]
-                if (!user) return undefined
+                if (!user || user.isBannedFromPosting) return undefined
                 return { ...d, user }
               })
               newLovers.push(...filterDefined(dataWithUser))

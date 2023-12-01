@@ -5,7 +5,7 @@ import {
   PencilIcon,
   ScaleIcon,
 } from '@heroicons/react/outline'
-import { ChartBarIcon, LinkIcon } from '@heroicons/react/solid'
+import { ChartBarIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { DIVISION_NAMES, getLeaguePath } from 'common/leagues'
 import { Post } from 'common/post'
@@ -48,7 +48,7 @@ import { Linkify } from 'web/components/widgets/linkify'
 import { QRCode } from 'web/components/widgets/qr-code'
 import { linkClass } from 'web/components/widgets/site-link'
 import { Title } from 'web/components/widgets/title'
-import { StackedUserNames } from 'web/components/widgets/user-link'
+import { StackedUserNames, UserLink } from 'web/components/widgets/user-link'
 import { useAdmin } from 'web/hooks/use-admin'
 import { useFollowers, useFollows } from 'web/hooks/use-follows'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
@@ -65,9 +65,12 @@ import { User, getUserByUsername } from 'web/lib/firebase/users'
 import TrophyIcon from 'web/lib/icons/trophy-icon.svg'
 import { db } from 'web/lib/supabase/db'
 import { getPostsByUser } from 'web/lib/supabase/post'
-import { getUserRating } from 'web/lib/supabase/reviews'
+import { getAverageUserRating, getUserRating } from 'web/lib/supabase/reviews'
 import Custom404 from 'web/pages/404'
 import { UserPayments } from 'web/pages/payments'
+import { UserHandles } from 'web/components/user/user-handles'
+import { BackButton } from 'web/components/contract/back-button'
+import { useHeaderIsStuck } from 'web/hooks/use-header-is-stuck'
 
 export const getStaticProps = async (props: {
   params: {
@@ -79,6 +82,7 @@ export const getStaticProps = async (props: {
   const posts = user ? await getPostsByUser(user.id) : []
 
   const { count, rating } = (user ? await getUserRating(user.id) : null) ?? {}
+  const averageRating = user ? await getAverageUserRating(user.id) : undefined
 
   return {
     props: removeUndefinedProps({
@@ -87,8 +91,10 @@ export const getStaticProps = async (props: {
       posts,
       rating: rating,
       reviewCount: count,
+      averageRating: averageRating,
     }),
-    revalidate: 60 * 5, // Regenerate after 5 minutes
+    // revalidate: 60 * 5, // Regenerate after 5 minutes
+    revalidate: 4,
   }
 }
 
@@ -102,13 +108,13 @@ export default function UserPage(props: {
   posts: Post[]
   rating?: number
   reviewCount?: number
+  averageRating?: number
 }) {
   const isAdmin = useAdmin()
   const { user, ...profileProps } = props
   const privateUser = usePrivateUser()
   const blockedByCurrentUser =
     privateUser?.blockedUserIds.includes(user?.id ?? '_') ?? false
-
   if (!user) return <Custom404 />
   else if (user.userDeleted && !isAdmin) return <DeletedUser />
 
@@ -146,8 +152,9 @@ function UserProfile(props: {
   posts: Post[]
   rating?: number
   reviewCount?: number
+  averageRating?: number
 }) {
-  const { rating, reviewCount } = props
+  const { rating, reviewCount, averageRating } = props
   const user = useUserById(props.user.id) ?? props.user
   const isMobile = useIsMobile()
   const router = useRouter()
@@ -158,6 +165,7 @@ function UserProfile(props: {
   const isCurrentUser = user.id === currentUser?.id
   const [showConfetti, setShowConfetti] = useState(false)
   const [followsYou, setFollowsYou] = useState(false)
+  const { ref: titleRef, headerStuck } = useHeaderIsStuck()
 
   useEffect(() => {
     const claimedMana = router.query['claimed-mana'] === 'yes'
@@ -209,14 +217,32 @@ function UserProfile(props: {
       )}
       {showConfetti && <FullscreenConfetti />}
 
-      <Col className="mx-4 mt-1">
-        <Row
-          className={clsx(
-            'flex-wrap gap-2 py-1',
-            isMobile ? '' : 'justify-between'
-          )}
-        >
-          <Row className={clsx('gap-2')}>
+      <Col className="mt-1">
+        {isMobile && (
+          <Row
+            className={
+              'bg-canvas-50 sticky top-0 z-10 w-full items-center justify-between gap-1 py-2 pl-4 pr-5 sm:gap-2'
+            }
+          >
+            <BackButton />
+
+            <div
+              className={clsx(
+                'opacity-0 transition-opacity',
+                headerStuck && 'opacity-100'
+              )}
+            >
+              <UserLink user={user} noLink />
+            </div>
+
+            <div>
+              <MoreOptionsUserButton user={user} />
+            </div>
+          </Row>
+        )}
+
+        <Row className={clsx('mx-4 flex-wrap justify-between gap-2 py-1')}>
+          <Row className={clsx('gap-2')} ref={titleRef}>
             <Col className={'relative max-h-14'}>
               <ImageWithBlurredShadow
                 image={
@@ -252,17 +278,10 @@ function UserProfile(props: {
               <QuestsOrStreak user={user} />
             </Row>
           ) : isMobile ? (
-            <>
-              <div className={'my-auto'}>
-                <SendMessageButton toUser={user} currentUser={currentUser} />
-              </div>
-              <div className={'my-auto'}>
-                <FollowButton userId={user.id} />
-              </div>
-              <div className={'my-auto'}>
-                <MoreOptionsUserButton user={user} />
-              </div>
-            </>
+            <Row className={'items-center gap-1 sm:gap-2'}>
+              <SendMessageButton toUser={user} currentUser={currentUser} />
+              <FollowButton userId={user.id} />
+            </Row>
           ) : (
             <Row className="items-center gap-1 sm:gap-2">
               <SendMessageButton toUser={user} currentUser={currentUser} />
@@ -271,71 +290,22 @@ function UserProfile(props: {
             </Row>
           )}
         </Row>
-        <Col className={'mt-1'}>
-          <ProfilePublicStats
-            user={user}
-            currentUser={currentUser}
-            rating={rating}
-          />
+        <Col className={'mx-4 mt-1'}>
+          <ProfilePublicStats user={user} currentUser={currentUser} />
           {user.bio && (
             <div className="sm:text-md mt-1 text-sm">
               <Linkify text={user.bio}></Linkify>
             </div>
           )}
-          <Row className="text-ink-400 mt-2 flex-wrap items-center gap-2 sm:gap-4">
-            {user.website && (
-              <a
-                href={
-                  'https://' +
-                  user.website.replace('http://', '').replace('https://', '')
-                }
-              >
-                <Row className="items-center gap-1">
-                  <LinkIcon className="h-4 w-4" />
-                  <span className="text-ink-400 text-sm">{user.website}</span>
-                </Row>
-              </a>
-            )}
-
-            {user.twitterHandle && (
-              <a
-                href={`https://twitter.com/${user.twitterHandle
-                  .replace('https://www.twitter.com/', '')
-                  .replace('https://twitter.com/', '')
-                  .replace('www.twitter.com/', '')
-                  .replace('twitter.com/', '')}`}
-              >
-                <Row className="items-center gap-1">
-                  <img
-                    src="/twitter-logo.svg"
-                    className="h-4 w-4"
-                    alt="Twitter"
-                  />
-                  <span className="text-ink-400 text-sm">
-                    {user.twitterHandle}
-                  </span>
-                </Row>
-              </a>
-            )}
-
-            {user.discordHandle && (
-              <a href="https://discord.com/invite/eHQBNBqXuh">
-                <Row className="items-center gap-1">
-                  <img
-                    src="/discord-logo.svg"
-                    className="h-4 w-4"
-                    alt="Discord"
-                  />
-                  <span className="text-ink-400 text-sm">
-                    {user.discordHandle}
-                  </span>
-                </Row>
-              </a>
-            )}
-          </Row>
+          <UserHandles
+            website={user.website}
+            twitterHandle={user.twitterHandle}
+            discordHandle={user.discordHandle}
+            className="mt-2"
+          />
         </Col>
 
-        <Col className="mt-2">
+        <Col className="mx-4 mt-2">
           <QueryUncontrolledTabs
             trackingName={'profile tabs'}
             labelsParentClassName={'gap-0 sm:gap-4'}
@@ -370,6 +340,7 @@ function UserProfile(props: {
                       creator={user}
                       rating={rating}
                       reviewCount={reviewCount}
+                      averageRating={averageRating}
                     />
                   </>
                 ),
@@ -384,7 +355,7 @@ function UserProfile(props: {
                 ),
               },
               {
-                title: 'Managrams',
+                title: 'Payments',
                 stackedTabIcon: <CashIcon className="h-5" />,
                 content: (
                   <>
@@ -406,12 +377,10 @@ type FollowsDialogTab = 'following' | 'followers'
 function ProfilePublicStats(props: {
   user: User
   currentUser: User | undefined | null
-  rating?: number
   className?: string
 }) {
   const { user, className, currentUser } = props
   const isCurrentUser = user.id === currentUser?.id
-  const [reviewsOpen, setReviewsOpen] = useState(false)
   const [followsOpen, setFollowsOpen] = useState(false)
   const [followsTab, setFollowsTab] = useState<FollowsDialogTab>('following')
   const followingIds = useFollows(user.id)

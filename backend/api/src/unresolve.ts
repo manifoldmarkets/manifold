@@ -10,11 +10,11 @@ import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { z } from 'zod'
 import { validate, authEndpoint, APIError } from 'api/helpers'
 import { trackPublicEvent } from 'shared/analytics'
-import { getContractSupabase, getUserSupabase, log } from 'shared/utils'
+import { GCPLog, getContractSupabase } from 'shared/utils'
 import { MINUTE_MS } from 'common/util/time'
 import { MINUTES_ALLOWED_TO_UNRESOLVE } from 'common/contract'
 import { recordContractEdit } from 'shared/record-contract-edit'
-import { isAdminId, isTrustworthy } from 'common/envs/constants'
+import { isAdminId, isModId } from 'common/envs/constants'
 
 const firestore = admin.firestore()
 const bodySchema = z
@@ -24,12 +24,18 @@ const bodySchema = z
   .strict()
 const TXNS_PR_MERGED_ON = 1675693800000 // #PR 1476
 
-export const unresolve = authEndpoint(async (req, auth) => {
+export const unresolve = authEndpoint(async (req, auth, log) => {
   const { contractId } = validate(bodySchema, req.body)
 
   const contract = await getContractSupabase(contractId)
 
   if (!contract) throw new APIError(404, `Contract ${contractId} not found`)
+  if (
+    contract.mechanism === 'cpmm-multi-1' &&
+    !contract.shouldAnswersSumToOne
+  ) {
+    throw new APIError(400, `Can't unresolve a contract that doesn't sum to 1`)
+  }
 
   const resolutionTime = contract.resolutionTime
   if (!contract.isResolved || !resolutionTime)
@@ -41,9 +47,7 @@ export const unresolve = authEndpoint(async (req, auth) => {
       `Contract ${contractId} was resolved before payouts were unresolvable transactions.`
     )
   const pg = createSupabaseDirectClient()
-  const user = await getUserSupabase(auth.uid)
-  if (!user) throw new APIError(400, `User ${auth.uid} not found.`)
-  const isMod = isTrustworthy(user.username) || isAdminId(auth.uid)
+  const isMod = isModId(auth.uid) || isAdminId(auth.uid)
   if (contract.creatorId !== auth.uid && !isMod)
     throw new APIError(403, `User ${auth.uid} must be a mod to unresolve.`)
   else if (
@@ -68,13 +72,13 @@ export const unresolve = authEndpoint(async (req, auth) => {
   await trackPublicEvent(auth.uid, 'unresolve market', {
     contractId,
   })
-  const updatedAttrs = await undoResolution(contractId)
+  const updatedAttrs = await undoResolution(contractId, log)
   await recordContractEdit(contract, auth.uid, Object.keys(updatedAttrs))
 
   return { success: true }
 })
 
-const undoResolution = async (contractId: string) => {
+const undoResolution = async (contractId: string, log: GCPLog) => {
   const pg = createSupabaseDirectClient()
   const uniqueStartTimes = await pg.map(
     `select distinct data->'data'->'payoutStartTime' as payout_start_time
@@ -104,8 +108,8 @@ const undoResolution = async (contractId: string) => {
       (r) => r.data as ContractResolutionPayoutTxn
     )
   }
-  log('Reverting txns', txns.length)
-  log('With max payout start time', maxPayoutStartTime)
+  log('Reverting txns ' + txns.length)
+  log('With max payout start time ' + maxPayoutStartTime)
   const chunkedTxns = chunk(txns, 250)
   for (const chunk of chunkedTxns) {
     await firestore.runTransaction(async (transaction) => {

@@ -10,9 +10,9 @@ import { Bet } from 'common/bet'
 import { ContractComment } from 'common/comment'
 import { CPMMBinaryContract, Contract } from 'common/contract'
 import { buildArray } from 'common/util/array'
-import { shortFormatNumber } from 'common/util/format'
+import { shortFormatNumber, maybePluralize } from 'common/util/format'
 import { MINUTE_MS } from 'common/util/time'
-import { BinaryUserPositionsTable } from 'web/components/contract/user-positions-table'
+import { UserPositionsTable } from 'web/components/contract/user-positions-table'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { Pagination } from 'web/components/widgets/pagination'
 import { Tooltip } from 'web/components/widgets/tooltip'
@@ -75,7 +75,7 @@ export function ContractTabs(props: {
 
   const commentsTitle =
     (totalComments > 0 ? `${shortFormatNumber(totalComments)} ` : '') +
-    'Comments'
+    maybePluralize('Comment', totalComments)
 
   const user = useUser()
 
@@ -88,7 +88,8 @@ export function ContractTabs(props: {
   const userBets = rows ?? []
 
   const tradesTitle =
-    (totalBets > 0 ? `${shortFormatNumber(totalBets)} ` : '') + 'Trades'
+    (totalBets > 0 ? `${shortFormatNumber(totalBets)} ` : '') +
+    maybePluralize('Trade', totalBets)
 
   const visibleUserBets = userBets.filter(
     (bet) => bet.amount !== 0 && !bet.isRedemption
@@ -102,7 +103,7 @@ export function ContractTabs(props: {
 
   const positionsTitle =
     (totalPositions > 0 ? `${shortFormatNumber(totalPositions)} ` : '') +
-    'Positions'
+    maybePluralize('Position', totalPositions)
 
   return (
     <ControlledTabs
@@ -136,18 +137,23 @@ export function ContractTabs(props: {
               replyTo={replyTo}
               clearReply={() => setReplyTo?.(undefined)}
               className="-ml-2 -mr-1"
+              bets={bets}
             />
           ),
         },
         totalBets > 0 &&
-          contract.mechanism === 'cpmm-1' && {
+          (contract.mechanism === 'cpmm-1' ||
+            contract.mechanism === 'cpmm-multi-1') && {
             title: positionsTitle,
             content: (
-              <BinaryUserPositionsTable
-                positions={userPositionsByOutcome}
+              <UserPositionsTable
+                positions={
+                  Object.values(userPositionsByOutcome).length > 0
+                    ? userPositionsByOutcome
+                    : undefined
+                }
                 contract={contract as CPMMBinaryContract}
                 setTotalPositions={setTotalPositions}
-                enableRealtime
               />
             ),
           },
@@ -184,6 +190,7 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
   replyTo?: Answer | DpmAnswer | Bet
   clearReply?: () => void
   className?: string
+  bets?: Bet[]
 }) {
   const {
     contract,
@@ -192,6 +199,7 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
     replyTo,
     clearReply,
     className,
+    bets,
   } = props
 
   // Firebase useComments
@@ -210,14 +218,21 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
   )
 
   const user = useUser()
-
+  const isBinary = contract.outcomeType === 'BINARY'
   const isBountiedQuestion = contract.outcomeType == 'BOUNTIED_QUESTION'
-  const [sort, setSort] = usePersistentInMemoryState<'Newest' | 'Best'>(
+  const bestFirst =
     isBountiedQuestion && (!user || user.id !== contract.creatorId)
-      ? 'Best'
-      : 'Newest',
+  const sorts = buildArray(
+    bestFirst ? 'Best' : 'Newest',
+    bestFirst ? 'Newest' : 'Best',
+    isBinary && 'Yes bets',
+    isBinary && 'No bets'
+  )
+  const [sortIndex, setSortIndex] = usePersistentInMemoryState(
+    0,
     `comments-sort-${contract.id}`
   )
+  const sort = sorts[sortIndex]
   const likes = comments.some((c) => (c?.likes ?? 0) > 0)
 
   // replied to answers/comments are NOT newest, otherwise newest first
@@ -226,7 +241,8 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
   const strictlySortedComments = sortBy(comments, [
     sort === 'Best'
       ? isBountiedQuestion
-        ? (c) =>
+        ? // Best, bountied
+          (c) =>
             isReply(c)
               ? c.createdTime
               : // For your own recent comments, show first.
@@ -234,7 +250,8 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
                 c.userId === user?.id
               ? -Infinity
               : -((c.bountyAwarded ?? 0) * 1000 + (c.likes ?? 0))
-        : (c) =>
+        : // Best, non-bountied
+          (c) =>
             isReply(c)
               ? c.createdTime
               : // Is this too magic? If there are likes, 'Best' shows your own comments made within the last 10 minutes first, then sorts by score
@@ -243,7 +260,12 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
                 c.userId === user?.id
               ? -Infinity
               : -(c?.likes ?? 0)
-      : (c) => c,
+      : sort === 'Yes bets'
+      ? (c: ContractComment) => -(c.betReplyAmountsByOutcome?.['YES'] ?? 0)
+      : sort === 'No bets'
+      ? (c: ContractComment) => -(c.betReplyAmountsByOutcome?.['NO'] ?? 0)
+      : // Newest
+        (c) => c,
     (c) => (isReply(c) ? c.createdTime : -c.createdTime),
   ])
 
@@ -329,7 +351,7 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
         <SortRow
           sort={sort}
           onSortClick={() => {
-            setSort(sort === 'Newest' ? 'Best' : 'Newest')
+            setSortIndex((i) => (i + 1) % sorts.length)
             refreezeIds()
             track('change-comments-sort', {
               contractSlug: contract.slug,
@@ -362,6 +384,14 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
               : undefined
           }
           onSubmitReply={loadNewer}
+          bets={bets?.filter(
+            (b) =>
+              b.replyToCommentId &&
+              [parent]
+                .concat(commentsByParent[parent.id] ?? [])
+                .map((c) => c.id)
+                .includes(b.replyToCommentId)
+          )}
         />
       ))}
 
@@ -493,7 +523,7 @@ export function SortRow(props: {
 }) {
   const { sort, onSortClick, customBestTooltip } = props
   return (
-    <Row className="items-center justify-end gap-4">
+    <Row className="items-center justify-end gap-4 whitespace-nowrap">
       <Row className="items-center gap-1">
         <span className="text-ink-400 text-sm">Sort by:</span>
         <button className="text-ink-600 w-20 text-sm" onClick={onSortClick}>

@@ -20,13 +20,12 @@ export function isAdminId(id: string) {
   return ENV_CONFIG.adminIds.includes(id)
 }
 
-export function isTrustworthy(username?: string) {
-  if (!username) {
-    return false
-  }
-  return MOD_USERNAMES.includes(username)
+export function isModId(id: string) {
+  return MOD_IDS.includes(id)
 }
 export const DOMAIN = ENV_CONFIG.domain
+export const LOVE_DOMAIN = ENV_CONFIG.loveDomain
+export const LOVE_DOMAIN_ALTERNATE = ENV_CONFIG.loveDomainAlternate
 export const FIREBASE_CONFIG = ENV_CONFIG.firebaseConfig
 export const PROJECT_ID = ENV_CONFIG.firebaseConfig.projectId
 export const IS_PRIVATE_MANIFOLD = ENV_CONFIG.visibility === 'PRIVATE'
@@ -40,10 +39,16 @@ export const AUTH_COOKIE_NAME = `FBUSER_${PROJECT_ID.toUpperCase().replace(
 export const CORS_ORIGIN_MANIFOLD = new RegExp(
   '^https?://(?:[a-zA-Z0-9\\-]+\\.)*' + escapeRegExp(ENV_CONFIG.domain) + '$'
 )
-// Manifold's domain or any subdomains thereof
+// Manifold love domain or any subdomains thereof
 export const CORS_ORIGIN_MANIFOLD_LOVE = new RegExp(
   '^https?://(?:[a-zA-Z0-9\\-]+\\.)*' +
     escapeRegExp(ENV_CONFIG.loveDomain) +
+    '$'
+)
+// Manifold love domain or any subdomains thereof
+export const CORS_ORIGIN_MANIFOLD_LOVE_ALTERNATE = new RegExp(
+  '^https?://(?:[a-zA-Z0-9\\-]+\\.)*' +
+    escapeRegExp(ENV_CONFIG.loveDomainAlternate) +
     '$'
 )
 // Vercel deployments, used for testing.
@@ -111,75 +116,69 @@ export const BOT_USERNAMES = [
   'mirrorbot',
   'JakeBot',
   'loopsbot',
+  'breezybot',
+  'echo',
+  'Sayaka',
+  'cc7',
+  'Yuna',
+  'ManifoldLove',
+  'chooterb0t',
+  'bonkbot',
 ]
 
-export const CORE_USERNAMES = [
-  'Austin',
-  'JamesGrugett',
-  'SG',
-  'ian',
-  'Sinclair',
-  'Alice',
-  'SirSalty',
-  'mqp',
-  'IngaWei',
-  'rachel',
+export const MOD_IDS = [
+  '9hWkzPveXIelUk4XOrm5WroriST2', // a
+  'H6b5PWELWfRV6HhyHAlCGq7yJJu2', // AndrewG
+  'uyzAXSRdCCUWs4KstCLq2GfzAip2', // BoltonBailey
+  '4aW01GHrlgafwAPLI1St7MPnOni1', // CarsonGale
+  'MV9fTVHetcfp3h6CVYzpypIsbyN2', // CodeandSolder
+  'HTbxWFlzWGeHUTiwZvvF0qm8W433', // Conflux
+  '9dAaZrNSx5OT0su6rpusDoG9WPN2', // dglid
+  '5XMvQhA3YgcTzyoJRiNqGWyuB9k2', // dreev
+  'LJ7CB9fuYzZ5j8HieQxubQhRYYu2', // Duncn
+  '946iB1LqFIR06G7d8q89um57PHh2', // egroj
+  'hqdXgp0jK2YMMhPs067eFK4afEH3', // Eliza
+  'kbHiTAGBahXdX9Z4sW29JpNrB0l2', // Ernie
+  'W4yEF6idSMcNWEVUquowziSCZFI3', // EvanDaniel
+  '2VhlvfTaRqZbFn2jqxk2Am9jgsE2', // Gabrielle
+  'cA1JupYR5AR8btHUs2xvkui7jA93', // Gen
+  'TUk0ELR0SNV74OfRAOD48ciiS0W2', // itsTomekK
+  'YGZdZUSFQyM8j2YzPaBqki8NBz23', // jack
+  'cgrBqe2O3AU4Dnng7Nc9wuJHLKb2', // jskf
+  'XeQf3ygmrGM1MxdsE3JSlmq8vL42', // Jacy
+  'eSqS9cD5mzYcP2o7FrST8aC5IWn2', // JosephNoonan
+  'JlVpsgzLsbOUT4pajswVMr0ZzmM2', // Joshua
+  '7HhTMy4xECaVKvl5MmEAfVUkRCS2', // KevinBurke
+  'fP5OQUWYt4MW17A2giGjMGsw1uu2', // LarsDoucet
+  'k13AzY3mu8XTju3xRZV3P8qBjEC2', // LivInTheLookingGlass
+  'lQdCwuc1OrZLUqgA4EwjPSSwG5Z2', // memestiny
+  'b3WDWY8TdrhQKKNuJkNuvQKwHWE3', // MarcusAbramovitch
+  'sA7V30Ic73XZtniboy2eKr6ekkn1', // MartinRandall
+  'nEc7EizWpQSGO5y5A7H13TaE6Aw2', // MattP
+  'AHf5jynaHbNiNiwoYx1UfhRMq3Q2', // MatthewBarnett
+  'jO7sUhIDTQbAJ3w86akzncTlpRG2', // MichaelWheatley
+  'lkkqZxiWCpOgtJ9ztJcAKz4d9y33', // NathanpmYoung
+  'fSrex43BDjeneNZ4ZLfxllSb8b42', // NcyRocks
+  '2DUMvA9R6nNXjQfyidwhKJitKBr2', // NoaNabeshima
+  'mowZ7T5LBUQuy5CWgctdHMkLo8J3', // NuñoSempere
+  'EzsnDabZsZTcpcD1UmChzRUn9Bk1', // PeterWildeford
+  'FSqqnRObrqf0GX63gp5Hk4lUvqn1', // ScottLawrence
+  'OEbsAczmbBc4Sl1bacYZNPJLLLc2', // SirCryptomind
+  'YOILpFNyg0gGj79zBIBUpJigHQ83', // SneakySly
+  'hUM4SO8a8qhfqT1gEZ7ElTCGSEz2', // Stralor
+  'K0l9JnD5DcPqyfloiKWIHbK8klD3', // Tetraspace
+  'VfvvoZdf0nZ6zM63ogTgeuPWSSo1', // TheSkeward
+  'tO4DwIsujySUwtSnrr2hnU1WJtJ3', // WieDan
+  'ps3zKQSRuzLJVMzDQMAOlCDFRgG2', // yaboi69
 ]
 
-export const MOD_USERNAMES = [
-  'Manifold',
-  'memestiny',
-  'BTE',
-  'jack',
-  'Yev',
-  'itsTomekK',
-  'MattP',
-  'egroj',
-  'dreev',
-  'MartinRandall',
-  'LivInTheLookingGlass',
-  'LarsDoucet',
-  'Conflux',
-  'NcyRocks',
-  'MichaelWheatley',
-  'dglid',
-  'yaboi69',
-  'TheSkeward',
-  'Duncn',
-  'a',
-  'NuñoSempere',
-  'CarsonGale',
-  'Tetraspace',
-  'BoltonBailey',
-  'MatthewBarnett',
-  'Jacy',
-  'Gabrielle',
-  'AndrewG',
-  'MarcusAbramovitch',
-  'KevinBurke',
-  'PeterWildeford',
-  'ScottLawrence',
-  'NoaNabeshima',
-  'evergreenemily',
-  'SneakySly',
-  'Eliza',
-  'SirCryptomind',
-  'Joshua',
-  'jskf',
-  'JosephNoonan',
-  'CodeandSolder',
-  'Stralor',
-  'WieDan',
-  'Ernie',
-  'Gen',
-]
+export const MVP = ['Eliza']
 
 export const VERIFIED_USERNAMES = [
   'EliezerYudkowsky',
   'ScottAlexander',
   'Aella',
   'ZviMowshowitz',
-  'NathanpmYoung',
   'GavrielK',
   'CGPGrey',
   'LexFridman',
@@ -214,6 +213,11 @@ export const VERIFIED_USERNAMES = [
   'DylanMatthews',
   'RobinHanson',
   'KevinRoose18ac',
+  'KnowNothing',
+  'SantaPawsSSB',
+  'AndersSandberg',
+  'JosephWeisenthal',
+  'BTE',
 ]
 
 export const HOUSE_BOT_USERNAME = 'acc'
@@ -237,7 +241,7 @@ export const DESTINY_GROUP_SLUGS = [
   'eto',
   'mumbowl-stonks',
 ]
-
+export const PROD_MANIFOLD_LOVE_GROUP_SLUG = 'manifoldlove-relationships'
 export const GROUP_SLUGS_TO_IGNORE_IN_MARKETS_EMAIL = [
   'manifold-features',
   'manifold-6748e065087e',
@@ -246,6 +250,8 @@ export const GROUP_SLUGS_TO_IGNORE_IN_MARKETS_EMAIL = [
   'bugs',
   'manifold-leagues',
   'nonpredictive',
+  'unsubsidized',
+  PROD_MANIFOLD_LOVE_GROUP_SLUG,
 ]
 
 export const DEEMPHASIZED_GROUP_SLUGS = [
@@ -272,6 +278,7 @@ export const DEEMPHASIZED_GROUP_SLUGS = [
   'destinygg',
   'the-market',
   'nonpredictive-profits',
+  'nonpredictive',
   'personal-goals',
   'personal',
   'rationalussy',
@@ -318,10 +325,11 @@ export const GROUP_SLUGS_TO_HIDE_FROM_WELCOME_FLOW = [
   'magaland',
   'metaforecasting',
   'nonpredictive-profits',
+  'nonpredictive',
   '-sircryptomind-crypto-stock',
   'selfresolving',
   'fun',
-  'nonpredictive',
+  'unranked',
   'bugs',
   'rationalussy',
   'personal',
@@ -336,6 +344,8 @@ export const GROUP_SLUGS_TO_HIDE_FROM_WELCOME_FLOW = [
   'crypto-prices', // same as crypto,
   'technical-ai-timelines', // same as ai
   'presidential-politics', // same as politics
+  'unsubsidized',
+  PROD_MANIFOLD_LOVE_GROUP_SLUG,
 ]
 
 export const EXTERNAL_REDIRECTS = ['/umami']

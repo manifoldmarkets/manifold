@@ -2,7 +2,7 @@ import { runScript } from 'run-script'
 import { getLocalEnv } from 'shared/init-admin'
 import { CreateMarketParams } from 'api/create-market'
 import { Contract } from 'common/contract'
-import { getLinkPreview } from 'link-preview-js'
+import { fetchLinkPreview } from 'common/link-preview'
 
 if (require.main === module) {
   runScript(async ({ firestore }) => {
@@ -102,12 +102,6 @@ const getYCMarketParams = async (
       ],
     },
   }
-}
-
-async function fetchLinkPreview(url: string) {
-  const preview = await getLinkPreview(url)
-  const hasImage = 'images' in preview
-  return { ...preview, image: hasImage ? preview.images[0] : null }
 }
 
 const createMarket = async (apiKey: string, params: CreateMarketParams) => {

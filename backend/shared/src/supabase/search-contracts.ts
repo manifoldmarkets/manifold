@@ -1,14 +1,17 @@
 import { Contract } from 'common/contract'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import {
-  SqlBuilder,
-  buildSql,
   from,
+  join,
+  limit as sqlLimit,
   renderSql,
   select,
   where,
+  orderBy,
 } from 'shared/supabase/sql-builder'
 import { getContractPrivacyWhereSQLFilter } from 'shared/supabase/contracts'
+import { PROD_MANIFOLD_LOVE_GROUP_SLUG } from 'common/envs/constants'
+import { constructPrefixTsQuery } from 'shared/helpers/search'
 
 export async function getForYouMarkets(userId: string, limit = 25) {
   const searchMarketSQL = getForYouSQL(userId, 'all', 'ALL', limit, 0)
@@ -27,16 +30,7 @@ export function getForYouSQL(
   offset: number
 ) {
   const whereClause = renderSql(
-    getSearchContractWhereSQL(
-      filter,
-      '',
-      contractType,
-      undefined,
-      uid,
-      undefined,
-      false,
-      true
-    )
+    getSearchContractWhereSQL({ filter, contractType, uid, hideStonks: true })
   )
 
   return `with 
@@ -63,15 +57,19 @@ groups AS (
 select data, contract_id,
       importance_score
            * (
-              0.3
-               + 3 * ((1 - (contract_embeddings.embedding <=> user_interest.interest_embedding)) - 0.8)
-               + (CASE WHEN user_follows.follow_id IS NOT NULL THEN 0.1 ELSE 0 END)
+              0.4
                 + (CASE WHEN  EXISTS (
                     SELECT 1
                     FROM group_contracts
                     join groups on group_contracts.group_id = groups.group_id
                     WHERE group_contracts.contract_id = contracts.id
-                  ) THEN 0.3 ELSE 0 END)
+                  ) THEN 
+                        0.59 
+                        + (CASE WHEN user_follows.follow_id IS NOT NULL THEN 0.01 ELSE 0 END) 
+                      ELSE 
+                        (CASE WHEN user_follows.follow_id IS NOT NULL THEN 0.1 ELSE 0 END)  
+                        + 5 * ((1 - (contract_embeddings.embedding <=> user_interest.interest_embedding)) - 0.8)
+                      END)
            )
            AS modified_importance_score
 from user_interest,
@@ -101,287 +99,110 @@ export const hasGroupAccess = async (groupId?: string, uid?: string) => {
       return r.check_group_accessibility
     })
 }
+export type SearchTypes =
+  | 'without-stopwords'
+  | 'with-stopwords'
+  | 'description'
+  | 'prefix'
+  | 'answer'
 
-export function getSearchContractSQL(contractInput: {
+export function getSearchContractSQL(args: {
   term: string
   filter: string
   sort: string
   contractType: string
   offset: number
   limit: number
-  fuzzy?: boolean
   groupId?: string
   creatorId?: string
   uid?: string
-  hasGroupAccess?: boolean
+  groupAccess?: boolean
   isForYou?: boolean
+  searchType: SearchTypes
 }) {
-  const {
-    term,
-    filter,
-    sort,
-    contractType,
-    offset,
-    limit,
-    fuzzy,
-    groupId,
-    creatorId,
-    uid,
-    hasGroupAccess,
-  } = contractInput
+  const { term, sort, offset, limit, groupId, creatorId, searchType } = args
 
-  let query = ''
-  let queryBuilder: SqlBuilder | undefined
-  const emptyTerm = term.length === 0
+  const hideStonks = sort === 'score' && !term.length && !groupId
+  const hideLove = sort === 'newest' && !term.length && !groupId && !creatorId
 
-  const hideStonks = sort === 'score' && emptyTerm && !groupId
-
-  const whereSqlBuilder = getSearchContractWhereSQL(
-    filter,
-    sort,
-    contractType,
-    creatorId,
-    uid,
-    groupId,
-    hasGroupAccess,
-    hideStonks
-  )
-  const whereSQL = renderSql(whereSqlBuilder)
+  const whereSql = getSearchContractWhereSQL({ ...args, hideStonks, hideLove })
   const isUrl = term.startsWith('https://manifold.markets/')
-
   if (isUrl) {
     const slug = term.split('/').pop()
-    queryBuilder = buildSql(
+    return renderSql(
       select('data'),
       from('contracts'),
-      whereSqlBuilder,
+      whereSql,
       where('slug = $1', [slug])
     )
   }
-  // Searching markets within a group
-  else if (groupId) {
-    // Blank search within group
-    if (emptyTerm) {
-      queryBuilder = buildSql(
-        select('contractz.data'),
-        from(`(
-          select contracts.*, 
-          group_contracts.group_id 
-          from contracts 
-          join group_contracts 
-          on group_contracts.contract_id = contracts.id) 
-        as contractz`),
-        whereSqlBuilder,
-        where('contractz.group_id = $1', [groupId])
-      )
-    }
-    // Fuzzy search within group
-    else if (fuzzy) {
-      query = `
-        SELECT contractz.data
-        FROM (
-            SELECT contracts.*,
-                similarity(contracts.question, $1) AS similarity_score,
-                group_contracts.group_id
-            FROM contracts 
-            join group_contracts 
-            on group_contracts.contract_id = contracts.id
-        ) AS contractz
-      ${whereSQL}
-      AND contractz.similarity_score > 0.1
-      AND contractz.group_id = '${groupId}'`
-    } else {
-      // Normal exact match and prefix search within group
-      query = `
-    select * from (
-        WITH group_contracts as (
-            select contracts.*, group_contracts.group_id 
-            from contracts 
-            join group_contracts on group_contracts.contract_id = contracts.id
-        ) ,
-        subset_query AS (
-            SELECT to_tsquery('english_nostop_with_prefix', get_exact_match_minus_last_word_query($1)) AS query
+
+  const answersSubQuery = renderSql(
+    select('distinct a.contract_id'),
+    from('answers a'),
+    where(`a.text_fts @@ websearch_to_tsquery('english', $1)`, [term])
+  )
+
+  // Normal full text search
+  return renderSql(
+    select('data, importance_score'),
+    from('contracts'),
+    groupId && [
+      join('group_contracts gc on gc.contract_id = contracts.id'),
+      where('gc.group_id = $1', [groupId]),
+    ],
+    searchType === 'answer' &&
+      join(
+        `(${answersSubQuery}) as matched_answers on matched_answers.contract_id = contracts.id`
+      ),
+
+    whereSql,
+
+    term.length && [
+      searchType === 'prefix' &&
+        where(
+          `question_fts @@ to_tsquery('english', $1)`,
+          constructPrefixTsQuery(term)
         ),
-        prefix_query AS (
-            SELECT to_tsquery('english_nostop_with_prefix', get_prefix_match_query($1)) AS query
+      searchType === 'without-stopwords' &&
+        where(`question_fts @@ websearch_to_tsquery('english', $1)`, term),
+      searchType === 'with-stopwords' &&
+        where(
+          `question_nostop_fts @@ websearch_to_tsquery('english_nostop_with_prefix', $1)`,
+          term
         ),
-        subset_matches AS (
-            SELECT group_contracts.*, subset_query.query, 0.0 AS weight
-            FROM group_contracts, subset_query
-                ${whereSQL}
-                AND question_nostop_fts @@ subset_query.query
-                AND group_contracts.group_id = '${groupId}'
-        ),
-        prefix_matches AS (
-            SELECT group_contracts.*, prefix_query.query,  1.0 AS weight
-            FROM group_contracts, prefix_query
-                ${whereSQL}
-                AND question_nostop_fts @@ prefix_query.query
-                AND group_contracts.group_id = '${groupId}'
-        ),
-        combined_matches AS (
-            SELECT * FROM prefix_matches
-            UNION ALL
-            SELECT * FROM subset_matches
-        )
-    SELECT *
-    FROM (
-             SELECT *, ROW_NUMBER() OVER (PARTITION BY id ORDER BY ts_rank_cd(question_nostop_fts, query, 4) + weight DESC) as row_num
-             FROM combined_matches
-         ) AS ranked_matches
-    WHERE row_num = 1
-    -- prefix matches are weighted higher than subset matches bc they include the last word
-    ORDER BY ts_rank_cd(question_nostop_fts, query, 4) + weight DESC
-    ) as relevant_group_contracts
-      `
-    }
-  }
-  // Searching markets by creator
-  else if (creatorId) {
-    // Blank search for markets by creator
-    if (emptyTerm) {
-      queryBuilder = buildSql(
-        select('data'),
-        from('contracts'),
-        whereSqlBuilder
-      )
-    }
-    // Fuzzy search for markets by creator
-    else if (fuzzy) {
-      queryBuilder = buildSql(
-        select('contractz.data'),
-        from(`(
-          select contracts.*,
-          similarity(contracts.question, $1) AS similarity_score
-          from contracts
-          ) as contractz`),
-        whereSqlBuilder,
-        where('contractz.similarity_score > 0.1')
-      )
-    }
-    // Normal prefix and exact match search for markets by creator
-    else {
-      query = `
-        select *
-        from (WITH
-          subset_query AS (
-              SELECT to_tsquery('english_nostop_with_prefix', get_exact_match_minus_last_word_query($1)) AS query
-          ),
-          prefix_query AS (
-              SELECT to_tsquery('english_nostop_with_prefix', get_prefix_match_query($1)) AS query
-          ),
-          subset_matches AS (
-              SELECT contracts.*, subset_query.query, 0.0 AS weight
-              FROM contracts, subset_query
-                  ${whereSQL}
-                  AND question_nostop_fts @@ subset_query.query
-          ),
-          prefix_matches AS (
-              SELECT contracts.*, prefix_query.query,  1.0 AS weight
-              FROM contracts, prefix_query
-                  ${whereSQL}
-                  AND question_nostop_fts @@ prefix_query.query
-          ),
-          combined_matches AS (
-              SELECT * FROM prefix_matches
-              UNION ALL
-              SELECT * FROM subset_matches
-          )
-        SELECT *
-        FROM (
-             SELECT *, ROW_NUMBER() OVER (PARTITION BY id ORDER BY ts_rank_cd(question_nostop_fts, query, 4) + weight DESC) as row_num
-             FROM combined_matches
-         ) AS ranked_matches
-        WHERE row_num = 1
-        -- prefix matches are weighted higher than subset matches bc they include the last word
-        ORDER BY ts_rank_cd(question_nostop_fts, query, 4) + weight DESC
-        ) as relevant_creator_contracts
-      `
-      // Creators typically don't have that many markets so we don't have to sort by popularity score
-    }
-  }
-  // Blank search for markets not by group nor creator
-  else {
-    if (emptyTerm) {
-      queryBuilder = buildSql(
-        select('data'),
-        from('contracts'),
-        whereSqlBuilder
-      )
-    }
-    // Fuzzy search for markets not by group nor creator
-    else if (fuzzy) {
-      query = `
-select * from (
-    WITH
-     subset_query AS (
-         SELECT to_tsquery('english_nostop_with_prefix', get_exact_match_minus_last_word_query($1)) AS query
-     ),
-     prefix_query AS (
-         SELECT to_tsquery('english_nostop_with_prefix', get_prefix_match_query($1)) AS query
-     ),
-     subset_matches AS (
-         SELECT contracts.*, subset_query.query, 0.0 AS weight
-         FROM contracts, subset_query
-             ${whereSQL}
-           AND question_nostop_fts @@ subset_query.query 
-        ),
-     prefix_matches AS (
-         SELECT contracts.*,  prefix_query.query,  1.0 AS weight
-         FROM contracts, prefix_query 
-           ${whereSQL}
-           AND question_nostop_fts @@ prefix_query.query
-        ),
-     combined_matches AS (
-         SELECT * FROM prefix_matches
-         UNION ALL
-         SELECT * FROM subset_matches
-     )
-    SELECT *
-    FROM (
-           SELECT *,
-                  ROW_NUMBER() OVER (PARTITION BY id ORDER BY ts_rank_cd(question_nostop_fts, query, 4) + weight DESC) as row_num
-           FROM combined_matches
-       ) AS ranked_matches
-    WHERE row_num = 1
-    -- prefix matches are weighted higher than subset matches bc they include the last word
-    ORDER BY ts_rank_cd(question_nostop_fts, query, 4) + weight DESC
-  ) as ranked_matches
-    `
-    }
-    // Normal full text search for markets
-    else {
-      query = `
-          SELECT data
-          FROM contracts,
-               websearch_to_tsquery('english',  $1) as query
-          ${whereSQL}
-          AND (question_fts @@ query
-          OR description_fts @@ query)`
-    }
-  }
-  if (queryBuilder) {
-    query = renderSql(queryBuilder)
-  }
-  return (
-    query +
-    ' ' +
-    getSearchContractSortSQL(sort) +
-    ' ' +
-    `LIMIT ${limit} OFFSET ${offset}`
+      searchType === 'description' &&
+        where(`description_fts @@ websearch_to_tsquery('english', $1)`, term),
+    ],
+
+    orderBy(getSearchContractSortSQL(sort)),
+    sqlLimit(limit, offset)
   )
 }
 
-function getSearchContractWhereSQL(
-  filter: string,
-  sort: string,
-  contractType: string,
-  creatorId: string | undefined,
-  uid: string | undefined,
-  groupId: string | undefined,
-  hasGroupAccess?: boolean,
+function getSearchContractWhereSQL(args: {
+  filter: string
+  sort?: string
+  contractType: string
+  creatorId?: string
+  uid?: string
+  groupId?: string
+  hasGroupAccess?: boolean
   hideStonks?: boolean
-) {
+  hideLove?: boolean
+}) {
+  const {
+    filter,
+    sort,
+    contractType,
+    creatorId,
+    uid,
+    groupId,
+    hasGroupAccess,
+    hideStonks,
+    hideLove,
+  } = args
+
   type FilterSQL = Record<string, string>
   const filterSQL: FilterSQL = {
     open: 'resolution_time IS NULL AND (close_time > NOW() or close_time is null)',
@@ -390,7 +211,7 @@ function getSearchContractWhereSQL(
     'closing-this-month': `close_time > now() AND close_time < (date_trunc('month', now()) + interval '1 month' + interval '1 day' + interval '7 hours') AND resolution_time IS NULL`,
     'closing-next-month': `close_time > ((date_trunc('month', now()) + interval '1 month') + interval '1 day' + interval '7 hours') AND close_time < (date_trunc('month', now()) + interval '2 month' + interval '1 day' + interval '7 hours') AND resolution_time IS NULL`,
     resolved: 'resolution_time IS NOT NULL',
-    all: 'true',
+    all: '',
   }
   const contractTypeFilter =
     contractType === 'ALL'
@@ -401,52 +222,107 @@ function getSearchContractWhereSQL(
 
   const stonkFilter =
     hideStonks && contractType !== 'STONK' ? `outcome_type != 'STONK'` : ''
+  const loveFilter = hideLove
+    ? `group_slugs is null or not group_slugs && $1`
+    : ''
   const sortFilter = sort == 'close-date' ? 'close_time > NOW()' : ''
   const creatorFilter = creatorId ? `creator_id = '${creatorId}'` : ''
   const visibilitySQL = getContractPrivacyWhereSQLFilter(
     uid,
-    groupId,
     creatorId,
+    groupId,
     hasGroupAccess
   )
 
-  const deletedFilter = `data->>'deleted' is null OR (data->>'deleted')::boolean = false`
+  const deletedFilter = `deleted = false`
 
-  return buildSql(
+  return [
     where(filterSQL[filter]),
     where(stonkFilter),
+    where(loveFilter, [[PROD_MANIFOLD_LOVE_GROUP_SLUG]]),
     where(sortFilter),
     where(contractTypeFilter),
     where(visibilitySQL),
     where(creatorFilter),
-    where(deletedFilter)
-  )
+    where(deletedFilter),
+  ]
 }
 
-type SortFields = Record<string, string>
-
-function getSearchContractSortSQL(sort: string) {
-  const sortFields: SortFields = {
-    score: 'importance_score',
-    'daily-score': "(data->>'dailyScore')::numeric",
-    '24-hour-vol': "(data->>'volume24Hours')::numeric",
-    liquidity: "(data->>'elasticity')::numeric",
-    'last-updated': "(data->>'lastUpdatedTime')::numeric",
-    'most-popular': "(data->>'uniqueBettorCount')::integer",
-    newest: 'created_time',
-    'resolve-date': 'resolution_time',
-    'close-date': 'close_time',
-    random: 'random()',
-    'bounty-amount': "COALESCE((data->>'bountyLeft')::integer, -1)",
-    'prob-descending': "resolution DESC, (data->>'p')::numeric",
-    'prob-ascending': "resolution DESC, (data->>'p')::numeric",
+type SortFields = Record<
+  string,
+  {
+    sql: string
+    sortCallback: (c: Contract) => number
+    order: 'ASC' | 'DESC' | 'DESC NULLS LAST'
   }
-
-  const ASCDESC =
-    sort === 'close-date' || sort === 'liquidity' || sort === 'prob-ascending'
-      ? 'ASC'
-      : sort === 'prob-descending'
-      ? 'DESC NULLS LAST'
-      : 'DESC'
-  return `ORDER BY ${sortFields[sort]} ${ASCDESC}`
+>
+export const sortFields: SortFields = {
+  score: {
+    sql: 'importance_score',
+    sortCallback: (c: Contract) => c.importanceScore,
+    order: 'DESC',
+  },
+  'daily-score': {
+    sql: "(data->>'dailyScore')::numeric",
+    sortCallback: (c: Contract) => c.dailyScore,
+    order: 'DESC',
+  },
+  '24-hour-vol': {
+    sql: "(data->>'volume24Hours')::numeric",
+    sortCallback: (c: Contract) => c.volume24Hours,
+    order: 'DESC',
+  },
+  liquidity: {
+    sql: "(data->>'elasticity')::numeric",
+    sortCallback: (c: Contract) => c.elasticity,
+    order: 'ASC',
+  },
+  'last-updated': {
+    sql: "(data->>'lastUpdatedTime')::numeric",
+    sortCallback: (c: Contract) => c.lastUpdatedTime,
+    order: 'DESC',
+  },
+  'most-popular': {
+    sql: "(data->>'uniqueBettorCount')::integer",
+    sortCallback: (c: Contract) => c.uniqueBettorCount,
+    order: 'DESC',
+  },
+  newest: {
+    sql: 'created_time',
+    sortCallback: (c: Contract) => c.createdTime,
+    order: 'DESC',
+  },
+  'resolve-date': {
+    sql: 'resolution_time',
+    sortCallback: (c: Contract) => c.resolutionTime ?? 0,
+    order: 'DESC NULLS LAST',
+  },
+  'close-date': {
+    sql: 'close_time',
+    sortCallback: (c: Contract) => c.closeTime ?? Infinity,
+    order: 'ASC',
+  },
+  random: {
+    sql: 'random()',
+    sortCallback: () => Math.random(),
+    order: 'DESC',
+  },
+  'bounty-amount': {
+    sql: "COALESCE((data->>'bountyLeft')::integer, -1)",
+    sortCallback: (c: Contract) => ('bountyLeft' in c && c.bountyLeft) || -1,
+    order: 'DESC',
+  },
+  'prob-descending': {
+    sql: "resolution DESC, (data->>'p')::numeric",
+    sortCallback: (c: Contract) => ('p' in c && c.p) || 0,
+    order: 'DESC NULLS LAST',
+  },
+  'prob-ascending': {
+    sql: "resolution DESC, (data->>'p')::numeric",
+    sortCallback: (c: Contract) => ('p' in c && c.p) || 0,
+    order: 'ASC',
+  },
+}
+function getSearchContractSortSQL(sort: string) {
+  return `${sortFields[sort].sql} ${sortFields[sort].order}`
 }

@@ -1,4 +1,5 @@
 import {
+  get,
   groupBy,
   keyBy,
   mapValues,
@@ -10,32 +11,36 @@ import {
 } from 'lodash'
 import { Bet } from './bet'
 import {
-  getCpmmProbability,
-  getCpmmOutcomeProbabilityAfterBet,
   calculateCpmmPurchase,
+  getCpmmOutcomeProbabilityAfterBet,
+  getCpmmProbability,
 } from './calculate-cpmm'
 import { buy, getProb } from './calculate-cpmm-multi'
 import {
   calculateDpmPayout,
-  getDpmOutcomeProbability,
-  getDpmProbability,
-  getDpmOutcomeProbabilityAfterBet,
   calculateDpmShares,
+  getDpmOutcomeProbability,
+  getDpmOutcomeProbabilityAfterBet,
+  getDpmProbability,
 } from './calculate-dpm'
 import {
   calculateFixedPayout,
   calculateFixedPayoutMulti,
 } from './calculate-fixed-payouts'
 import {
-  Contract,
   BinaryContract,
+  Contract,
+  CPMMContract,
+  CPMMMultiContract,
+  MultiContract,
   PseudoNumericContract,
   StonkContract,
-  MultiContract,
 } from './contract'
 import { floatingEqual } from './util/math'
 import { ContractMetric } from 'common/contract-metric'
 import { Answer, DpmAnswer } from './answer'
+import { DAY_MS } from 'common/util/time'
+import { computeInvestmentValueCustomProb } from 'common/calculate-metrics'
 
 export function getProbability(
   contract: BinaryContract | PseudoNumericContract | StonkContract
@@ -440,7 +445,11 @@ export function getCpmmMultiShares(yourBets: Bet[]) {
   }
 }
 
-export const getContractBetMetrics = (contract: Contract, yourBets: Bet[]) => {
+export const getContractBetMetrics = (
+  contract: Contract,
+  yourBets: Bet[],
+  answerId?: string
+) => {
   const { mechanism } = contract
   const isCpmmMulti = mechanism === 'cpmm-multi-1'
   const { profit, profitPercent, payout } = getProfitMetrics(contract, yourBets)
@@ -466,6 +475,123 @@ export const getContractBetMetrics = (contract: Contract, yourBets: Bet[]) => {
     hasNoShares,
     maxSharesOutcome,
     lastBetTime,
+    answerId: answerId ?? null,
+  }
+}
+export const getContractBetMetricsPerAnswer = (
+  contract: Contract,
+  bets: Bet[],
+  answers?: Answer[]
+) => {
+  const betsPerAnswer = groupBy(bets, 'answerId')
+  const metricsPerAnswer = Object.values(
+    mapValues(betsPerAnswer, (bets) => {
+      const periods = ['day', 'week', 'month'] as const
+      const answerId = bets[0].answerId
+      const baseMetrics = getContractBetMetrics(contract, bets, answerId)
+      let periodMetrics
+      if (
+        contract.mechanism === 'cpmm-1' ||
+        contract.mechanism === 'cpmm-multi-1'
+      ) {
+        const answer = answers?.find((a) => a.id === answerId)
+        const passedAnswer = !!answer
+        if (contract.mechanism === 'cpmm-multi-1' && !passedAnswer) {
+          console.log(
+            `answer with id ${bets[0].answerId} not found, but is required for cpmm-multi-1 contract: ${contract.id}`
+          )
+        } else {
+          periodMetrics = Object.fromEntries(
+            periods.map((period) => [
+              period,
+              calculatePeriodProfit(contract, bets, period, answer),
+            ])
+          )
+        }
+      }
+      return {
+        ...baseMetrics,
+        from: periodMetrics,
+      } as ContractMetric
+    })
+  )
+
+  // Calculate overall contract metrics with answerId:null bc it's nice to have
+  if (contract.mechanism === 'cpmm-multi-1') {
+    const baseFrom = metricsPerAnswer[0].from
+    const calculateProfitPercent = (
+      metrics: ContractMetric[],
+      period: string
+    ) => {
+      const profit = sumBy(metrics, (m) => get(m, `from.${period}.profit`, 0))
+      const invested = sumBy(metrics, (m) =>
+        get(m, `from.${period}.invested`, 0)
+      )
+      return invested !== 0 ? 100 * (profit / invested) : 0
+    }
+
+    const baseMetric = getContractBetMetrics(contract, bets)
+    const from = baseFrom
+      ? mapValues(baseFrom, (periodMetrics, period) =>
+          mapValues(periodMetrics, (_, key) =>
+            key === 'profitPercent'
+              ? calculateProfitPercent(metricsPerAnswer, period)
+              : sumBy(metricsPerAnswer, (m) =>
+                  get(m, `from.${period}.${key}`, 0)
+                )
+          )
+        )
+      : undefined
+    metricsPerAnswer.push({
+      ...baseMetric,
+      // Overall period metrics = sum all the answers' period metrics
+      from,
+      answerId: null,
+    } as ContractMetric)
+  }
+  return metricsPerAnswer
+}
+
+const calculatePeriodProfit = (
+  contract: CPMMContract | CPMMMultiContract,
+  bets: Bet[],
+  period: 'day' | 'week' | 'month',
+  answer?: Answer
+) => {
+  const days = period === 'day' ? 1 : period === 'week' ? 7 : 30
+  const fromTime = Date.now() - days * DAY_MS
+  const [previousBets, recentBets] = partition(
+    bets,
+    (b) => b.createdTime < fromTime
+  )
+
+  const { prob, probChanges } = answer ?? (contract as CPMMContract)
+  const prevProb = prob - probChanges[period]
+
+  const previousBetsValue = computeInvestmentValueCustomProb(
+    previousBets,
+    contract,
+    prevProb
+  )
+  const currentBetsValue = computeInvestmentValueCustomProb(
+    previousBets,
+    contract,
+    prob
+  )
+
+  const { profit: recentProfit, invested: recentInvested } =
+    getContractBetMetrics(contract, recentBets)
+
+  const profit = currentBetsValue - previousBetsValue + recentProfit
+  const invested = previousBetsValue + recentInvested
+  const profitPercent = invested === 0 ? 0 : 100 * (profit / invested)
+
+  return {
+    profit,
+    profitPercent,
+    invested,
+    prevValue: previousBetsValue,
+    value: currentBetsValue,
   }
 }
 
@@ -485,10 +611,9 @@ export function getContractBetNullMetrics() {
 }
 export function getTopAnswer(contract: MultiContract) {
   const { answers } = contract
-  const top = maxBy<Answer | DpmAnswer>(answers, (answer) =>
+  return maxBy<Answer | DpmAnswer>(answers, (answer) =>
     'prob' in answer ? answer.prob : getOutcomeProbability(contract, answer.id)
   )
-  return top
 }
 
 export function getTopNSortedAnswers(contract: MultiContract, n: number) {
@@ -501,7 +626,7 @@ export function getTopNSortedAnswers(contract: MultiContract, n: number) {
     // Types were messed up with out this cast.
   ) as [(Answer | DpmAnswer)[], (Answer | DpmAnswer)[]]
 
-  const sortedAnswers = [
+  return [
     ...sortBy(winningAnswers, (answer) =>
       resolutions ? -1 * resolutions[answer.id] : 0
     ),
@@ -510,7 +635,6 @@ export function getTopNSortedAnswers(contract: MultiContract, n: number) {
       (answer) => -1 * getAnswerProbability(contract, answer.id)
     ),
   ].slice(0, n)
-  return sortedAnswers
 }
 
 export function getLargestPosition(contract: Contract, userBets: Bet[]) {

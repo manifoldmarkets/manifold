@@ -1,9 +1,9 @@
 import { runScript } from './run-script'
 
 import { log } from 'shared/utils'
-import { updateUserMetricsCore } from 'functions/scheduled/update-user-metrics'
-import { updateContractMetricsCore } from 'functions/scheduled/update-contract-metrics'
+import { updateUserMetricsCore } from 'shared/update-user-metrics-core'
 import { updateGroupMetricsCore } from 'functions/scheduled/update-group-metrics'
+import { updateContractMetricsCore } from 'shared/update-contract-metrics-core'
 
 if (require.main === module) {
   runScript(async () => {

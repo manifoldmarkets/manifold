@@ -1,19 +1,17 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
-import { keyBy } from 'lodash'
+import { groupBy, sumBy } from 'lodash'
 
-import { Bet, LimitBet } from 'common/bet'
+import { Bet } from 'common/bet'
 import {
   getBettingStreakResetTimeBeforeNow,
   getContract,
   getUser,
-  getUserSupabase,
-  getValues,
   isProd,
   log,
 } from 'shared/utils'
 import {
-  createBetFillNotification,
+  createBetReplyToCommentNotification,
   createBettingStreakBonusNotification,
   createFollowSuggestionNotification,
   createUniqueBettorBonusNotification,
@@ -38,11 +36,11 @@ import {
 } from 'shared/helpers/add-house-subsidy'
 import { BOT_USERNAMES } from 'common/envs/constants'
 import { addUserToContractFollowers } from 'shared/follow-market'
-import { calculateUserMetrics } from 'common/calculate-metrics'
 import { runTxnFromBank } from 'shared/txn/run-txn'
 import {
   createSupabaseClient,
   createSupabaseDirectClient,
+  SupabaseDirectClient,
 } from 'shared/supabase/init'
 import { secrets } from 'common/secrets'
 import { addToLeagueIfNotInOne } from 'shared/generate-leagues'
@@ -54,11 +52,12 @@ import {
 } from 'shared/supabase/contracts'
 import { removeUndefinedProps } from 'common/util/object'
 import { updateUserInterestEmbedding } from 'shared/helpers/embeddings'
-import { bulkUpdateContractMetrics } from 'shared/helpers/user-contract-metrics'
 import { Answer } from 'common/answer'
 import { getUserMostChangedPosition } from 'common/supabase/bets'
 import { addBetDataToUsersFeeds } from 'shared/create-feed'
 import { MINUTE_MS } from 'common/util/time'
+import { ContractComment } from 'common/comment'
+import { getBetsRepliedToComment } from 'shared/supabase/bets'
 
 const firestore = admin.firestore()
 
@@ -97,20 +96,14 @@ export const onCreateBet = functions
       )
       return
     }
-
-    const notifiedUsers = await notifyUsersOfLimitFills(
-      bet,
-      contract,
-      eventId,
-      bettor
-    )
-
-    if (bet.shares !== 0) {
-      await updateContractMetrics(contract, [bettor, ...(notifiedUsers ?? [])])
-    }
+    // Note: contract metrics refresh and fill notifications handled in api/on-create-bet
 
     // Note: Anything that applies to redemption bets should be above this line.
     if (bet.isRedemption) return
+    const pg = createSupabaseDirectClient()
+
+    if (bet.replyToCommentId)
+      await handleBetReplyToComment(bet, contract, bettor, pg)
 
     const isApiOrBot = bet.isApi || BOT_USERNAMES.includes(bettor.username)
     if (isApiOrBot) {
@@ -128,7 +121,6 @@ export const onCreateBet = functions
      *  Handle bonuses, other stuff for non-bot users below:
      */
 
-    const pg = createSupabaseDirectClient()
     // Follow suggestion should be before betting streak update (which updates lastBetTime)
     !bettor.lastBetTime &&
       !bettor.referredByUserId &&
@@ -163,6 +155,43 @@ const MED_BET_SIZE_FOR_FEED = 100
 
 const MIN_BALANCE_PERCENTAGE_FOR_FEED = 0.05
 const MIN_BET_SIZE_GIVEN_PERCENTAGE = 20
+
+const handleBetReplyToComment = async (
+  bet: Bet,
+  contract: Contract,
+  bettor: User,
+  pg: SupabaseDirectClient
+) => {
+  const commentSnap = await firestore
+    .doc(`contracts/${contract.id}/comments/${bet.replyToCommentId}`)
+    .get()
+  const comment = commentSnap.data() as ContractComment
+  if (comment.userId === bettor.id) return
+  if (comment) {
+    const bets = filterDefined(await getBetsRepliedToComment(pg, comment.id))
+    // This could potentially miss some bets if they're not replicated in time
+    if (!bets.some((b) => b.id === bet.id)) bets.push(bet)
+    const groupedBetsByOutcome = groupBy(bets, 'outcome')
+    const betReplyAmountsByOutcome: { [outcome: string]: number } = {}
+    for (const outcome in groupedBetsByOutcome) {
+      betReplyAmountsByOutcome[outcome] = sumBy(
+        groupedBetsByOutcome[outcome],
+        (b) => b.amount
+      )
+    }
+    await commentSnap.ref.update({
+      betReplyAmountsByOutcome,
+    })
+  }
+  await createBetReplyToCommentNotification(
+    comment.userId,
+    contract,
+    bet,
+    bettor,
+    comment,
+    pg
+  )
+}
 
 const addBetToFollowersFeeds = async (
   bettor: User,
@@ -291,7 +320,8 @@ export const giveUniqueBettorAndLiquidityBonus = async (
 
   const isBot = BOT_USERNAMES.includes(bettor.username)
   const isUnlisted = contract.visibility === 'unlisted'
-  const isNonPredictive = contract.nonPredictive
+  const unSubsidized =
+    contract.isSubsidized === undefined ? false : !contract.isSubsidized
 
   const answer =
     answerId && 'answers' in contract
@@ -301,8 +331,7 @@ export const giveUniqueBettorAndLiquidityBonus = async (
   const creatorId = answerCreatorId ?? contract.creatorId
   const isCreator = bettor.id == creatorId
 
-  if (isCreator || isBot || isUnlisted || isRedemption || isNonPredictive)
-    return
+  if (isCreator || isBot || isUnlisted || isRedemption || unSubsidized) return
 
   const previousBet = answerId
     ? await pg.oneOrNone(
@@ -432,64 +461,4 @@ export const giveUniqueBettorAndLiquidityBonus = async (
       bet
     )
   }
-}
-
-const notifyUsersOfLimitFills = async (
-  bet: Bet,
-  contract: Contract,
-  eventId: string,
-  user: User
-) => {
-  if (!bet.fills) return
-
-  const matchedFills = bet.fills.filter((fill) => fill.matchedBetId !== null)
-  const matchedBets = (
-    await Promise.all(
-      matchedFills.map((fill) =>
-        getValues<LimitBet>(
-          firestore.collectionGroup('bets').where('id', '==', fill.matchedBetId)
-        )
-      )
-    )
-  ).flat()
-
-  const betUsers = await Promise.all(
-    matchedBets.map((bet) => getUserSupabase(bet.userId))
-  )
-  const betUsersById = keyBy(filterDefined(betUsers), 'id')
-
-  return filterDefined(
-    await Promise.all(
-      matchedBets.map(async (matchedBet) => {
-        const matchedUser = betUsersById[matchedBet.userId]
-        if (!matchedUser) return undefined
-
-        await createBetFillNotification(
-          user,
-          matchedUser,
-          bet,
-          matchedBet,
-          contract,
-          eventId
-        )
-        return matchedUser
-      })
-    )
-  )
-}
-
-const updateContractMetrics = async (contract: Contract, users: User[]) => {
-  const metrics = await Promise.all(
-    users.map(async (user) => {
-      const betSnap = await firestore
-        .collection(`contracts/${contract.id}/bets`)
-        .where('userId', '==', user.id)
-        .get()
-
-      const bets = betSnap.docs.map((doc) => doc.data() as Bet)
-      return calculateUserMetrics(contract, bets, user)
-    })
-  )
-
-  await bulkUpdateContractMetrics(metrics)
 }

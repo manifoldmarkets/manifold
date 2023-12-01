@@ -1,4 +1,4 @@
-import { z, ZodUnion } from 'zod'
+import { z } from 'zod'
 import type { JSONContent } from '@tiptap/core'
 
 export const contentSchema: z.ZodType<JSONContent> = z.lazy(() =>
@@ -38,6 +38,16 @@ export const DashboardLinkItemSchema = z
   })
   .strict()
 
-export const DashboardItemSchema: ZodUnion<
-  [typeof DashboardQuestionItemSchema, typeof DashboardLinkItemSchema]
-> = z.union([DashboardQuestionItemSchema, DashboardLinkItemSchema])
+export const DashboardTextItemSchema = z
+  .object({
+    type: z.literal('text'),
+    id: z.string(),
+    content: contentSchema,
+  })
+  .strict()
+
+export const DashboardItemSchema = z.union([
+  DashboardQuestionItemSchema,
+  DashboardLinkItemSchema,
+  DashboardTextItemSchema,
+])

@@ -1,7 +1,5 @@
 import {
   BinaryContract,
-  FreeResponseContract,
-  MultipleChoiceContract,
   NumericContract,
   PseudoNumericContract,
   StonkContract,
@@ -11,7 +9,6 @@ import clsx from 'clsx'
 import {
   BinaryContractOutcomeLabel,
   CancelLabel,
-  MultiOutcomeLabel,
   NumericValueLabel,
 } from 'web/components/outcome-label'
 import { getMappedValue } from 'common/pseudo-numeric'
@@ -26,8 +23,9 @@ import { Tooltip } from 'web/components/widgets/tooltip'
 export function BinaryResolutionOrChance(props: {
   contract: BinaryContract
   className?: string
+  subtextClassName?: string
 }) {
-  const { contract, className } = props
+  const { contract, className, subtextClassName } = props
   const { resolution } = contract
   const textColor = getTextColor(contract)
 
@@ -53,29 +51,17 @@ export function BinaryResolutionOrChance(props: {
           <animated.div className={textColor}>
             {spring.to((val) => formatPercent(val))}
           </animated.div>
-          <div className={clsx(textColor, 'text-base')}>chance</div>
+          <div
+            className={clsx(
+              textColor,
+              'text-ink-600 text-sm',
+              subtextClassName
+            )}
+          >
+            chance
+          </div>
         </>
       )}
-    </Row>
-  )
-}
-
-export function FreeResponseResolution(props: {
-  contract: FreeResponseContract | MultipleChoiceContract
-}) {
-  const { contract } = props
-  const { resolution } = contract
-  if (!(resolution === 'CANCEL' || resolution === 'MKT')) return null
-
-  return (
-    <Row className="gap-2 text-3xl">
-      <div className={clsx('text-base')}>Resolved</div>
-
-      <MultiOutcomeLabel
-        contract={contract}
-        resolution={resolution}
-        truncate="none"
-      />
     </Row>
   )
 }

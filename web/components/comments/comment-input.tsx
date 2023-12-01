@@ -105,7 +105,7 @@ export function CommentInputTextArea(props: {
   user: User | undefined | null
   replyTo?: { id: string; username: string }
   editor: Editor | null
-  submit: () => void
+  submit?: () => void
   isSubmitting: boolean
   submitOnEnter?: boolean
   hideToolbar?: boolean
@@ -139,7 +139,7 @@ export function CommentInputTextArea(props: {
             // emoji list is closed
             !emojiMenuActive(view)
           ) {
-            submit()
+            submit?.()
             event.preventDefault()
             return true
           }
@@ -167,7 +167,7 @@ export function CommentInputTextArea(props: {
 
   return (
     <TextEditor editor={editor} simple hideToolbar={hideToolbar}>
-      {user && !isSubmitting && (
+      {user && !isSubmitting && submit && (
         <button
           className="text-ink-400 hover:text-ink-600 active:bg-ink-300 disabled:text-ink-300 px-4 transition-colors"
           disabled={!editor || editor.isEmpty}
@@ -177,7 +177,7 @@ export function CommentInputTextArea(props: {
         </button>
       )}
 
-      {isSubmitting && (
+      {submit && isSubmitting && (
         <LoadingIndicator
           size={'md'}
           className={'px-4'}

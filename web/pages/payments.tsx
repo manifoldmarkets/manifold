@@ -7,7 +7,7 @@ import { Row } from 'web/components/layout/row'
 import { Button } from 'web/components/buttons/button'
 import { useEffect, useState } from 'react'
 import { Modal } from 'web/components/layout/modal'
-import { FilterSelectUsers } from 'web/components/filter-select-users'
+import { SelectUsers } from 'web/components/select-users'
 import { UserSearchResult } from 'web/lib/supabase/users'
 import { AmountInput } from 'web/components/widgets/amount-input'
 import { sendMana } from 'web/lib/firebase/api'
@@ -28,6 +28,7 @@ import { useCanSendMana } from 'web/hooks/use-can-send-mana'
 import { QRCode } from 'web/components/widgets/qr-code'
 import { CopyLinkRow } from 'web/components/buttons/copy-link-button'
 import { useRouter } from 'next/router'
+import { filterDefined } from 'common/util/array'
 
 export default function Payments() {
   const { payments, load } = useManaPayments()
@@ -92,21 +93,33 @@ export const PaymentsContent = (props: {
   }, [showPayModal])
   return (
     <Col className={'w-full'}>
-      <Row className={'mb-2 justify-between'}>
-        <Button onClick={() => setShowQRModal(true)} color="gray-outline">
+      <Row className={'mb-4 gap-4'}>
+        <Button
+          onClick={() => setShowPayModal(true)}
+          color={'indigo-outline'}
+          size="xl"
+        >
+          Send
+        </Button>
+        <Button
+          onClick={() => setShowQRModal(true)}
+          color="indigo-outline"
+          size="xl"
+        >
           {user && user.id === forUser?.id && (
-            <span className="mr-1">Receive Mana</span>
+            <span className="mr-1">Receive</span>
           )}
           <QrcodeIcon className="h-5 w-5" />
-        </Button>
-        <Button onClick={() => setShowPayModal(true)} color={'indigo'}>
-          Send Mana
         </Button>
       </Row>
       {payments.length === 0 ? (
         <span className="text-ink-500">No Payments</span>
       ) : (
-        <PaymentCards payments={payments} users={users} forUser={forUser} />
+        <PaymentCards
+          payments={payments}
+          users={filterDefined(users ?? [])}
+          forUser={forUser}
+        />
       )}
       {user && (
         <>
@@ -162,17 +175,11 @@ const PaymentCards = (props: {
                   <Col className={'w-full'}>
                     <Row className={'flex-wrap gap-x-1'}>
                       <span className={'ml-1'}>
-                        <UserLink
-                          name={fromUser.name}
-                          username={fromUser.username}
-                        />
+                        <UserLink user={fromUser} />
                       </span>
                       <span>{payment.amount < 0 ? 'fined' : 'paid'}</span>
                       <span>
-                        <UserLink
-                          name={toUser.name}
-                          username={toUser.username}
-                        />
+                        <UserLink user={toUser} />
                       </span>
                     </Row>
                     <span className={'-mt-1'}>
@@ -243,7 +250,7 @@ export const PaymentsModal = (props: {
   return (
     <Modal open={show} setOpen={setShow}>
       <Col className={'bg-canvas-0 rounded-md p-4'}>
-        <div className="my-2 text-xl">Send Mana</div>
+        <div className="my-2 text-xl">Send mana</div>
         <Row className={'text-error'}>{!canSend ? cannotSendMessage : ''}</Row>
         <Col className={'gap-3'}>
           <Row className={'items-center justify-between'}>
@@ -252,11 +259,7 @@ export const PaymentsModal = (props: {
               {toUser && !removedToUser ? (
                 <Col className={'mt-2'}>
                   <Row className={'items-center gap-1'}>
-                    <UserAvatarAndBadge
-                      name={toUser.name}
-                      username={toUser.username}
-                      avatarUrl={toUser.avatarUrl}
-                    />
+                    <UserAvatarAndBadge user={toUser} />
                     <XIcon
                       onClick={() => {
                         setToUsers([])
@@ -268,7 +271,8 @@ export const PaymentsModal = (props: {
                   </Row>
                 </Col>
               ) : (
-                <FilterSelectUsers
+                <SelectUsers
+                  className={'w-64'}
                   setSelectedUsers={setToUsers}
                   selectedUsers={toUsers}
                   ignoreUserIds={[fromUser.id]}
@@ -355,7 +359,7 @@ export const QRModal = (props: {
   const [message, setMessage] = useState('')
 
   const url =
-    `https://${ENV_CONFIG.domain}/${user.username}?tab=managrams&a=${
+    `https://${ENV_CONFIG.domain}/${user.username}?tab=payments&a=${
       amount ?? 10
     }` + (message && `&msg=${encodeURIComponent(message)}`)
 

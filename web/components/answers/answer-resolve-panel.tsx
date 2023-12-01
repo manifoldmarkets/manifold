@@ -20,7 +20,7 @@ import { InfoTooltip } from '../widgets/info-tooltip'
 import {
   AnswerBar,
   AnswerLabel,
-  AnswerStatusAndBetButtons,
+  AnswerStatus,
   ClosedProb,
   OpenProb,
 } from './answer-components'
@@ -227,7 +227,7 @@ export const AnswersResolvePanel = (props: {
   inModal?: boolean
 }) => {
   const { contract, onClose, inModal } = props
-  const { answers } = contract
+  const { answers, outcomeType } = contract
 
   const user = useUser()
 
@@ -275,6 +275,15 @@ export const AnswersResolvePanel = (props: {
     : resolveOption === 'CHOOSE_MULTIPLE'
     ? 'checkbox'
     : undefined
+  const addAnswersMode =
+    'addAnswersMode' in contract
+      ? contract.addAnswersMode
+      : outcomeType === 'FREE_RESPONSE'
+      ? 'ANYONE'
+      : 'DISABLED'
+  const showAvatars =
+    addAnswersMode === 'ANYONE' ||
+    answers.some((a) => a.userId !== contract.creatorId)
 
   return (
     <GradientContainer>
@@ -302,6 +311,7 @@ export const AnswersResolvePanel = (props: {
               totalChosenProb={chosenTotal}
               onChoose={onChoose}
               onDeselect={onDeselect}
+              showAvatar={showAvatars}
             />
           ))}
         </Col>
@@ -319,6 +329,7 @@ export function ResolutionAnswerItem(props: {
   onChoose: (answerId: string, prob?: number) => void
   onDeselect: (answerId: string) => void
   isInModal?: boolean
+  showAvatar?: boolean
 }) {
   const {
     answer,
@@ -328,6 +339,7 @@ export function ResolutionAnswerItem(props: {
     totalChosenProb,
     onChoose,
     onDeselect,
+    showAvatar,
   } = props
   const { text } = answer
   const user = useUserByIdOrAnswer(answer)
@@ -343,13 +355,6 @@ export function ResolutionAnswerItem(props: {
     contract.answers.map((a) => a.id)
   )
 
-  const addAnswersMode =
-    'addAnswersMode' in contract
-      ? contract.addAnswersMode ?? 'DISABLED'
-      : contract.outcomeType === 'FREE_RESPONSE'
-      ? 'ANYONE'
-      : 'DISABLED'
-
   return (
     <AnswerBar
       color={color}
@@ -358,9 +363,8 @@ export function ResolutionAnswerItem(props: {
       label={
         <AnswerLabel
           text={text}
-          index={'index' in answer ? answer.index : undefined}
           createdTime={answer.createdTime}
-          creator={addAnswersMode === 'ANYONE' ? user ?? false : undefined}
+          creator={showAvatar ? user ?? false : undefined}
         />
       }
       end={
@@ -368,7 +372,7 @@ export function ResolutionAnswerItem(props: {
           {chosenShare ? (
             <ClosedProb prob={prob} resolvedProb={chosenShare} />
           ) : (
-            <OpenProb prob={prob} />
+            <OpenProb contract={contract} answer={answer} />
           )}
 
           {showChoice === 'checkbox' && (
@@ -468,36 +472,33 @@ function IndependentResolutionAnswerItem(props: {
         color={color}
         prob={prob}
         label={
-          isOther ? (
-            <span>
-              Other{' '}
-              <InfoTooltip
-                className="!text-ink-600"
-                text="Represents all answers not listed. New answers are split out of this answer."
+          <Row className={'items-center gap-1'}>
+            <AnswerStatus contract={contract} answer={answer} />
+            {isOther ? (
+              <span>
+                Other{' '}
+                <InfoTooltip
+                  className="!text-ink-600"
+                  text="Represents all answers not listed. New answers are split out of this answer."
+                />
+              </span>
+            ) : (
+              <AnswerLabel
+                text={answer.text}
+                createdTime={answer.createdTime}
+                creator={
+                  addAnswersMode === 'ANYONE'
+                    ? answerCreator ?? false
+                    : undefined
+                }
+                className={clsx(
+                  'items-center text-sm !leading-none sm:text-base'
+                )}
               />
-            </span>
-          ) : (
-            <AnswerLabel
-              text={answer.text}
-              index={'index' in answer ? answer.index : undefined}
-              createdTime={answer.createdTime}
-              creator={
-                addAnswersMode === 'ANYONE' ? answerCreator ?? false : undefined
-              }
-              className={clsx(
-                'items-center text-sm !leading-none sm:flex sm:text-base'
-              )}
-            />
-          )
+            )}
+          </Row>
         }
-        end={
-          <AnswerStatusAndBetButtons
-            contract={contract}
-            answer={answer}
-            userBets={[]}
-            noBetButtons
-          />
-        }
+        end={null}
       />
       {!answer.resolution && (
         <MiniResolutionPanel

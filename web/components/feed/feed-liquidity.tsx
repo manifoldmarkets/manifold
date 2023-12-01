@@ -58,7 +58,7 @@ function LiquidityStatusText(props: {
   return (
     <div className="text-ink-1000 flex flex-wrap items-center gap-x-1 pr-4 text-sm">
       {bettor ? (
-        <UserLink name={bettor.name} username={bettor.username} />
+        <UserLink user={bettor} />
       ) : (
         <span>{isSelf ? 'You' : `A ${BETTOR}`}</span>
       )}

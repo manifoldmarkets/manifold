@@ -13,38 +13,46 @@ import {
   useCommentsOnContract,
   useNumContractComments,
 } from 'web/hooks/use-comments-supabase'
+import { Button } from 'web/components/buttons/button'
+import { Row } from '../layout/row'
 
 export function CommentsButton(props: {
   contract: Contract
   user: User | null | undefined
+  className?: string
 }) {
-  const { contract, user } = props
+  const { contract, user, className } = props
 
   const [open, setOpen] = useState(false)
   const totalComments = useNumContractComments(contract.id)
 
   return (
-    <Tooltip text={`Comments`} placement="top" noTap>
-      <button
-        disabled={totalComments === 0 && !user}
-        className="hover:text-ink-600 text-ink-500 flex h-full items-center gap-1.5 disabled:opacity-50"
-        onClick={(e) => {
-          e.preventDefault()
-          setOpen(true)
-          track('click feed card comments button', { contractId: contract.id })
-        }}
-      >
-        <ChatIcon className="h-6 w-6" />
-        {totalComments > 0 && (
-          <div className="text-ink-500 h-5 align-middle text-sm disabled:opacity-50">
-            {totalComments}
-          </div>
-        )}
-        {open && (
-          <CommentsDialog contract={contract} open={open} setOpen={setOpen} />
-        )}
-      </button>
-    </Tooltip>
+    <Button
+      color={'gray-white'}
+      size={'2xs'}
+      disabled={totalComments === 0 && !user}
+      className={clsx(className)}
+      onClick={(e) => {
+        e.stopPropagation()
+        e.preventDefault()
+        setOpen(true)
+        track('click feed card comments button', { contractId: contract.id })
+      }}
+    >
+      <Tooltip text={`Comments`} placement="top" noTap>
+        <Row className={'items-center gap-1.5'}>
+          <ChatIcon className="h-6 w-6" />
+          {totalComments > 0 && (
+            <div className="text-ink-500 h-5 align-middle text-sm disabled:opacity-50">
+              {totalComments}
+            </div>
+          )}
+          {open && (
+            <CommentsDialog contract={contract} open={open} setOpen={setOpen} />
+          )}
+        </Row>
+      </Tooltip>
+    </Button>
   )
 }
 

@@ -1,16 +1,18 @@
 import * as admin from 'firebase-admin'
 import { FieldValue } from 'firebase-admin/firestore'
-import { groupBy, maxBy, sum, sumBy } from 'lodash'
+import { groupBy, maxBy } from 'lodash'
 
 import { Bet } from 'common/bet'
 import { getBinaryRedeemableAmount, getRedemptionBets } from 'common/redeem'
 import { floatingEqual } from 'common/util/math'
 import { CPMMContract, CPMMMultiContract } from 'common/contract'
 import { APIError } from './helpers'
+import { GCPLog } from 'shared/utils'
 
 export const redeemShares = async (
   userId: string,
-  contract: CPMMContract | CPMMMultiContract
+  contract: CPMMContract | CPMMMultiContract,
+  log: GCPLog
 ) => {
   return await firestore.runTransaction(async (trans) => {
     const { id: contractId } = contract
@@ -50,7 +52,10 @@ export const redeemShares = async (
       trans.create(yesDoc, { id: yesDoc.id, userId, ...yesBet })
       trans.create(noDoc, { id: noDoc.id, userId, ...noBet })
 
-      console.log('redeemed', shares, 'shares for', netAmount)
+      log('redeemed', {
+        shares,
+        netAmount,
+      })
     }
 
     const userDoc = firestore.collection('users').doc(userId)

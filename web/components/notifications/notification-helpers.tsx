@@ -13,6 +13,7 @@ import { truncateText } from '../widgets/truncate'
 import NotificationDropdown from './notification-dropdown'
 import { groupBy } from 'lodash'
 import { SparklesIcon } from '@heroicons/react/solid'
+import { UserLink } from '../widgets/user-link'
 
 export const NOTIFICATIONS_PER_PAGE = 30
 
@@ -22,6 +23,24 @@ function getHighlightClass(highlight: boolean) {
 export const NUM_SUMMARY_LINES = 3
 
 export const NOTIFICATION_ICON_SIZE = 'md'
+
+// TODO: fix badges (id based)
+export function NotificationUserLink(props: {
+  userId?: string
+  name?: string
+  username?: string
+  className?: string
+}) {
+  const { userId, name, username, className } = props
+  return (
+    <UserLink
+      user={{ id: userId || '', name: name || '', username: username || '' }}
+      className={clsx(
+        className ?? 'hover:text-primary-500 relative flex-shrink-0'
+      )}
+    />
+  )
+}
 
 export function PrimaryNotificationLink(props: {
   text: string | undefined

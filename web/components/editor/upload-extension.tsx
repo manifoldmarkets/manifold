@@ -16,11 +16,11 @@ export const useUploadMutation = (editor: Editor | null) =>
       Promise.all(files.map((file) => uploadImage('default', file))),
     {
       onSuccess(urls) {
-        if (!editor) return
+        if (!editor || !urls.length) return
         let trans = editor.chain().focus()
         urls.forEach((src) => {
-          trans = trans.createParagraphNear()
           trans = trans.setImage({ src })
+          trans = trans.createParagraphNear()
         })
         trans.run()
       },

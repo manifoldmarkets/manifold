@@ -1,4 +1,7 @@
-import { ReactNode, memo, useState } from 'react'
+import { ReactNode, memo, useMemo, useState } from 'react'
+import clsx from 'clsx'
+import { sortBy } from 'lodash'
+
 import { Bet } from 'common/bet'
 import { HistoryPoint } from 'common/chart'
 import {
@@ -9,7 +12,6 @@ import {
   NumericContract,
   PseudoNumericContract,
 } from 'common/contract'
-import { YES_GRAPH_COLOR } from 'common/envs/constants'
 import { NumericContractChart } from '../charts/contract/numeric'
 import { BinaryContractChart } from '../charts/contract/binary'
 import { ChoiceContractChart, MultiPoints } from '../charts/contract/choice'
@@ -21,17 +23,15 @@ import {
   StonkPrice,
 } from 'web/components/contract/contract-price'
 import { SizedContainer } from 'web/components/sized-container'
-import { useEvent } from 'web/hooks/use-event'
 import { useUser } from 'web/hooks/use-user'
 import { tradingAllowed } from 'common/contract'
 import { Period } from 'web/lib/firebase/users'
 import { periodDurations } from 'web/lib/util/time'
 import { SignedInBinaryMobileBetting } from '../bet/bet-button'
 import { StonkContractChart } from '../charts/contract/stonk'
-import { getDateRange, useViewScale } from '../charts/helpers'
+import { ZoomParams, getEndDate, useZoom } from '../charts/helpers'
 import { TimeRangePicker } from '../charts/time-range-picker'
 import { Row } from '../layout/row'
-import { CertOverview } from './cert-overview'
 import { QfOverview } from './qf-overview'
 import { AnswersPanel } from '../answers/answers-panel'
 import { Answer, DpmAnswer } from 'common/answer'
@@ -42,10 +42,10 @@ import {
 } from '../answers/answer-resolve-panel'
 import { CancelLabel } from '../outcome-label'
 import { PollPanel } from '../poll/poll-panel'
-import { CreateAnswerPanel } from '../answers/create-answer-panel'
-import clsx from 'clsx'
-import { viewScale } from 'common/chart'
 import { Col } from '../layout/col'
+import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import { getAnswerProbability } from 'common/calculate'
+import { searchInAny } from 'common/util/parse'
 
 export const ContractOverview = memo(
   (props: {
@@ -89,8 +89,7 @@ export const ContractOverview = memo(
             resolutionRating={resolutionRating}
           />
         )
-      case 'CERT':
-        return <CertOverview contract={contract} />
+
       case 'QUADRATIC_FUNDING':
         return <QfOverview contract={contract} />
       case 'FREE_RESPONSE':
@@ -113,6 +112,8 @@ export const ContractOverview = memo(
         return <></>
       case 'POLL':
         return <PollPanel contract={contract} />
+      case 'CERT':
+        return <>Deprecated</>
     }
   }
 )
@@ -144,9 +145,8 @@ export const BinaryOverview = (props: {
   const user = useUser()
 
   const [showZoomer, setShowZoomer] = useState(false)
-
-  const { viewScale, currentTimePeriod, setTimePeriod, start, maxRange } =
-    useTimePicker(contract)
+  const { currentTimePeriod, setTimePeriod, maxRange, zoomParams } =
+    useTimePicker(contract, () => setShowZoomer(true))
 
   return (
     <>
@@ -157,10 +157,7 @@ export const BinaryOverview = (props: {
         </Col>
         <TimeRangePicker
           currentTimePeriod={currentTimePeriod}
-          setCurrentTimePeriod={(p) => {
-            setTimePeriod(p)
-            setShowZoomer(true)
-          }}
+          setCurrentTimePeriod={setTimePeriod}
           maxRange={maxRange}
           color="green"
         />
@@ -168,10 +165,9 @@ export const BinaryOverview = (props: {
 
       <BinaryChart
         showZoomer={showZoomer}
+        zoomParams={zoomParams}
         betPoints={betPoints}
         contract={contract}
-        viewScale={viewScale}
-        controlledStart={start}
       />
 
       {tradingAllowed(contract) && (
@@ -182,32 +178,30 @@ export const BinaryOverview = (props: {
 }
 
 export function BinaryChart(props: {
-  showZoomer: boolean
+  showZoomer?: boolean
+  zoomParams?: ZoomParams
   betPoints: HistoryPoint<Partial<Bet>>[]
   percentBounds?: { max: number; min: number }
   contract: BinaryContract
-  viewScale: viewScale
   className?: string
-  controlledStart?: number
   size?: 'sm' | 'md'
   color?: string
 }) {
   const {
     showZoomer,
+    zoomParams,
     betPoints,
     contract,
     percentBounds,
-    viewScale,
     className,
-    controlledStart,
     size = 'md',
   } = props
 
   return (
     <SizedContainer
       className={clsx(
-        showZoomer && 'mb-8',
-        ' w-full pb-3 pr-10',
+        showZoomer && 'mb-12',
+        'w-full pb-3 pr-10',
         size == 'sm' ? 'h-[100px]' : 'h-[150px] sm:h-[250px]',
         className
       )}
@@ -217,16 +211,20 @@ export function BinaryChart(props: {
           width={w}
           height={h}
           betPoints={betPoints}
-          viewScaleProps={viewScale}
-          controlledStart={controlledStart}
+          showZoomer={showZoomer}
+          zoomParams={zoomParams}
           percentBounds={percentBounds}
           contract={contract}
-          showZoomer={showZoomer}
         />
       )}
     </SizedContainer>
   )
 }
+
+export type MultiSort = 'prob-desc' | 'prob-asc' | 'old' | 'new' | 'liquidity'
+
+const MAX_DEFAULT_GRAPHED_ANSWERS = 6
+const MAX_DEFAULT_ANSWERS = 20
 
 const ChoiceOverview = (props: {
   points: MultiPoints
@@ -246,8 +244,8 @@ const ChoiceOverview = (props: {
   } = props
 
   const [showZoomer, setShowZoomer] = useState(false)
-  const { viewScale, currentTimePeriod, setTimePeriod, start, maxRange } =
-    useTimePicker(contract)
+  const { currentTimePeriod, setTimePeriod, maxRange, zoomParams } =
+    useTimePicker(contract, () => setShowZoomer(true))
 
   const [hoverAnswerId, setHoverAnswerId] = useState<string>()
   const [checkedAnswerIds, setCheckedAnswerIds] = useState<string[]>([])
@@ -255,6 +253,99 @@ const ChoiceOverview = (props: {
   const shouldAnswersSumToOne =
     'shouldAnswersSumToOne' in contract ? contract.shouldAnswersSumToOne : true
 
+  const { resolutions, outcomeType } = contract
+  const isMultipleChoice = outcomeType === 'MULTIPLE_CHOICE'
+  const addAnswersMode =
+    'addAnswersMode' in contract
+      ? contract.addAnswersMode
+      : outcomeType === 'FREE_RESPONSE'
+      ? 'ANYONE'
+      : 'DISABLED'
+  const [query, setQuery] = usePersistentInMemoryState(
+    '',
+    'create-answer-text' + contract.id
+  )
+
+  const answers = contract.answers
+    .filter((a) => isMultipleChoice || ('number' in a && a.number !== 0))
+    .map((a) => ({
+      ...a,
+      prob: getAnswerProbability(contract, a.id),
+    }))
+
+  const [sort, setSort] = usePersistentInMemoryState<MultiSort>(
+    addAnswersMode === 'DISABLED'
+      ? 'old'
+      : !shouldAnswersSumToOne
+      ? 'prob-desc'
+      : answers.length > 10
+      ? 'prob-desc'
+      : 'old',
+    'answer-sort' + contract.id
+  )
+
+  const [showAll, setShowAll] = useState(
+    addAnswersMode === 'DISABLED' || answers.length <= 5
+  )
+
+  const sortedAnswers = useMemo(
+    () =>
+      sortBy(answers, [
+        shouldAnswersSumToOne
+          ? // Winners first
+            (answer) => (resolutions ? -1 * resolutions[answer.id] : answer)
+          : // Resolved last
+            (answer) =>
+              'resolutionTime' in answer ? answer.resolutionTime ?? 1 : 0,
+        // then by sort
+        (answer) => {
+          if (sort === 'old') {
+            return 'index' in answer ? answer.index : answer.number
+          } else if (sort === 'new') {
+            return 'index' in answer ? -answer.index : -answer.number
+          } else if (sort === 'prob-asc') {
+            return answer.prob
+          } else if (sort === 'prob-desc') {
+            return -1 * answer.prob
+          } else if (sort === 'liquidity') {
+            return 'subsidyPool' in answer ? -answer.subsidyPool : 0
+          }
+        },
+      ]),
+    [answers, resolutions, shouldAnswersSumToOne, sort]
+  )
+
+  const searchedAnswers = useMemo(() => {
+    if (!answers.length || !query) return []
+
+    return sortedAnswers.filter(
+      (answer) =>
+        checkedAnswerIds.includes(answer.id) || searchInAny(query, answer.text)
+    )
+  }, [sortedAnswers, query])
+
+  const answersToShow = query
+    ? searchedAnswers
+    : showAll
+    ? sortedAnswers
+    : sortedAnswers
+        .filter((answer) => {
+          if (checkedAnswerIds.includes(answer.id)) {
+            return true
+          }
+
+          if (resolutions?.[answer.id]) {
+            return true
+          }
+          if (sort === 'prob-asc') {
+            return answer.prob < 0.99
+          } else if (sort === 'prob-desc') {
+            return answer.prob > 0.01
+          } else if (sort === 'liquidity' || sort === 'new' || sort === 'old') {
+            return !('resolution' in answer)
+          }
+        })
+        .slice(0, MAX_DEFAULT_ANSWERS)
   return (
     <>
       <Row className="justify-between gap-2">
@@ -268,10 +359,7 @@ const ChoiceOverview = (props: {
         )}
         <TimeRangePicker
           currentTimePeriod={currentTimePeriod}
-          setCurrentTimePeriod={(p) => {
-            setTimePeriod(p)
-            setShowZoomer(true)
-          }}
+          setCurrentTimePeriod={setTimePeriod}
           maxRange={maxRange}
           color="indigo"
         />
@@ -280,20 +368,25 @@ const ChoiceOverview = (props: {
         <SizedContainer
           className={clsx(
             'h-[150px] w-full pb-4 pr-10 sm:h-[250px]',
-            showZoomer && 'mb-8'
+            showZoomer && 'mb-12'
           )}
         >
           {(w, h) => (
             <ChoiceContractChart
               showZoomer={showZoomer}
-              viewScaleProps={viewScale}
-              controlledStart={start}
+              zoomParams={zoomParams}
               width={w}
               height={h}
               multiPoints={points}
               contract={contract}
               highlightAnswerId={hoverAnswerId}
-              checkedAnswerIds={checkedAnswerIds}
+              selectedAnswerIds={
+                checkedAnswerIds.length
+                  ? checkedAnswerIds
+                  : answersToShow
+                      .map((a) => a.id)
+                      .slice(0, MAX_DEFAULT_GRAPHED_ANSWERS)
+              }
             />
           )}
         </SizedContainer>
@@ -321,9 +414,14 @@ const ChoiceOverview = (props: {
                   : [...answers, id]
               )
             }
+            sort={sort}
+            setSort={setSort}
+            query={query}
+            setQuery={setQuery}
+            setShowAll={setShowAll}
+            answersToShow={answersToShow}
             selected={checkedAnswerIds}
           />
-          <CreateAnswerPanel contract={contract} />
           <UserBetsSummary
             className="border-ink-200 !mb-2 mt-2 "
             contract={contract}
@@ -340,8 +438,9 @@ const PseudoNumericOverview = (props: {
   resolutionRating?: ReactNode
 }) => {
   const { contract, betPoints, resolutionRating } = props
-  const { viewScale, currentTimePeriod, setTimePeriod, start, maxRange } =
-    useTimePicker(contract)
+  const [showZoomer, setShowZoomer] = useState(false)
+  const { currentTimePeriod, setTimePeriod, maxRange, zoomParams } =
+    useTimePicker(contract, () => setShowZoomer(true))
   const user = useUser()
 
   return (
@@ -364,10 +463,9 @@ const PseudoNumericOverview = (props: {
             width={w}
             height={h}
             betPoints={betPoints}
-            viewScaleProps={viewScale}
-            controlledStart={start}
+            zoomParams={zoomParams}
             contract={contract}
-            showZoomer
+            showZoomer={showZoomer}
           />
         )}
       </SizedContainer>
@@ -378,13 +476,15 @@ const PseudoNumericOverview = (props: {
     </>
   )
 }
+
 const StonkOverview = (props: {
   contract: CPMMStonkContract
   betPoints: HistoryPoint<Partial<Bet>>[]
 }) => {
   const { contract, betPoints } = props
-  const { viewScale, currentTimePeriod, setTimePeriod, start, maxRange } =
-    useTimePicker(contract)
+  const [showZoomer, setShowZoomer] = useState(false)
+  const { currentTimePeriod, setTimePeriod, maxRange, zoomParams } =
+    useTimePicker(contract, () => setShowZoomer(true))
   const user = useUser()
 
   return (
@@ -404,10 +504,9 @@ const StonkOverview = (props: {
             width={w}
             height={h}
             betPoints={betPoints}
-            viewScaleProps={viewScale}
-            controlledStart={start}
+            zoomParams={zoomParams}
+            showZoomer={showZoomer}
             contract={contract}
-            color={YES_GRAPH_COLOR}
           />
         )}
       </SizedContainer>
@@ -419,25 +518,36 @@ const StonkOverview = (props: {
   )
 }
 
-export const useTimePicker = (contract: Contract) => {
-  const viewScale = useViewScale()
-  const [currentTimePeriod, setCurrentTimePeriod] = useState<Period>('allTime')
+export const useTimePicker = (contract: Contract, onRescale?: () => void) => {
+  const [currentTimePeriod, setCurrentTimePeriod] = useState<Period | 'custom'>(
+    'allTime'
+  )
 
-  //zooms out of graph if zoomed in upon time selection change
-  const setTimePeriod = useEvent((timePeriod: Period) => {
-    setCurrentTimePeriod(timePeriod)
-    viewScale.setViewXScale(undefined)
-    viewScale.setViewYScale(undefined)
+  const start = contract.createdTime
+  const endRange = getEndDate(contract)
+  const end = endRange ?? Date.now()
+  const maxRange = end - start
+
+  const zoomParams = useZoom((scale) => {
+    onRescale?.()
+    if (scale) {
+      setCurrentTimePeriod('custom')
+    } else {
+      setCurrentTimePeriod('allTime')
+    }
   })
 
-  const [startRange, endRange] = getDateRange(contract)
-  const end = endRange ?? Date.now()
+  const setTimePeriod = (period: Period) => {
+    if (period === 'allTime') {
+      zoomParams.rescale(null)
+    } else {
+      const time = periodDurations[period]
+      const start = end - time
+      zoomParams.rescaleBetween(start, end)
+    }
 
-  const start =
-    currentTimePeriod === 'allTime'
-      ? undefined
-      : end - periodDurations[currentTimePeriod]
-  const maxRange = end - startRange
+    setCurrentTimePeriod(period)
+  }
 
-  return { viewScale, currentTimePeriod, setTimePeriod, start, maxRange }
+  return { currentTimePeriod, setTimePeriod, maxRange, zoomParams }
 }

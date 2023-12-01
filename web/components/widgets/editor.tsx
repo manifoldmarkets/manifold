@@ -114,14 +114,14 @@ export function useTextEditor(props: {
     proseClass(size),
     'outline-none py-[.5em] px-4',
     'prose-img:select-auto',
-    '[&_.ProseMirror-selectednode]:outline-dotted [&_*]:outline-primary-300' // selected img, embeds
+    '[&_.ProseMirror-selectednode]:outline-dotted [&_*]:outline-primary-300', // selected img, embeds
+    'dark:[&_.ProseMirror-gapcursor]:after:border-white' // gap cursor
   )
 
   const editor = useEditor({
     editorProps: {
       attributes: {
         class: editorClass,
-        spellcheck: simple ? 'true' : 'false',
         style: `min-height: ${1 + 1.625 * (simple ? 2 : 3)}em`, // 1em padding + 1.625 lines per row
       },
     },

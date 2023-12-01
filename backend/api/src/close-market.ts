@@ -14,7 +14,7 @@ const bodySchema = z
   })
   .strict()
 
-export const closemarket = authEndpoint(async (req, auth) => {
+export const closemarket = authEndpoint(async (req, auth, log) => {
   const { contractId, closeTime } = validate(bodySchema, req.body)
   const contractDoc = firestore.doc(`contracts/${contractId}`)
   const contractSnap = await contractDoc.get()
@@ -47,7 +47,7 @@ export const closemarket = authEndpoint(async (req, auth) => {
 
   await contractDoc.update(updatedContract)
 
-  console.log('contract ', contractId, 'closed')
+  log('contract ' + contractId + ' closed')
 
   return updatedContract
 })

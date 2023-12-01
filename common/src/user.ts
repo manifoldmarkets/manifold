@@ -56,6 +56,7 @@ export type User = {
   metricsLastUpdated?: number
   optOutBetWarnings?: boolean
   freeQuestionsCreated?: number
+  fromLove?: boolean
 }
 
 export type PrivateUser = {
@@ -100,6 +101,8 @@ export type UserAndPrivateUser = { user: User; privateUser: PrivateUser }
 export const MANIFOLD_USER_USERNAME = 'Manifold'
 export const MANIFOLD_USER_NAME = 'Manifold'
 export const MANIFOLD_AVATAR_URL = 'https://manifold.markets/logo.png'
+export const MANIFOLD_LOVE_LOGO =
+  'https://manifold.markets/manifold_love_logo.svg'
 
 const MAX_FREE_QUESTIONS = 3
 export const DAYS_TO_USE_FREE_QUESTIONS = 3

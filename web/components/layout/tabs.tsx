@@ -15,12 +15,13 @@ export type Tab = {
   inlineTabIcon?: ReactNode
   tooltip?: string
   className?: string
+  queryString?: string
 }
 
 type TabProps = {
   tabs: Tab[]
   labelClassName?: string
-  onClick?: (tabTitle: string, index: number) => void
+  onClick?: (tabTitleOrQueryTitle: string, index: number) => void
   className?: string
   labelsParentClassName?: string
   trackingName?: string
@@ -53,11 +54,14 @@ export function ControlledTabs(props: TabProps & { activeIndex: number }) {
         {tabs.map((tab, i) => (
           <a
             href="#"
-            key={tab.title}
+            key={tab.queryString ?? tab.title}
             onClick={(e) => {
               e.preventDefault()
 
-              onClick?.(tab.title, i)
+              onClick?.(
+                tab.queryString?.toLowerCase() ?? tab.title.toLowerCase(),
+                i
+              )
 
               if (trackingName) {
                 track(trackingName, {
@@ -117,9 +121,9 @@ export function UncontrolledTabs(props: TabProps & { defaultIndex?: number }) {
     <ControlledTabs
       {...rest}
       activeIndex={activeIndex}
-      onClick={(title, i) => {
+      onClick={(titleOrQueryTitle, i) => {
         setActiveIndex(i)
-        onClick?.(title, i)
+        onClick?.(titleOrQueryTitle, i)
       }}
     />
   )
@@ -128,7 +132,9 @@ export function UncontrolledTabs(props: TabProps & { defaultIndex?: number }) {
 const isTabSelected = (router: NextRouter, queryParam: string, tab: Tab) => {
   const selected = router.query[queryParam]
   if (typeof selected === 'string') {
-    return tab.title.toLowerCase() === selected
+    return (
+      (tab.queryString?.toLowerCase() ?? tab.title.toLowerCase()) === selected
+    )
   } else {
     return false
   }
@@ -144,7 +150,10 @@ export function QueryUncontrolledTabs(
 
   useEffect(() => {
     if (onClick) {
-      onClick(tabs[activeIndex].title, activeIndex)
+      onClick(
+        tabs[activeIndex].queryString ?? tabs[activeIndex].title,
+        activeIndex
+      )
     }
   }, [activeIndex])
 

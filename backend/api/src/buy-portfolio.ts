@@ -12,7 +12,7 @@ const schema = z
   })
   .strict()
 
-export const buyportfolio = authEndpoint(async (req, auth) => {
+export const buyportfolio = authEndpoint(async (req, auth, log) => {
   const { portfolioId, amount, buyOpposite } = validate(schema, req.body)
 
   const db = createSupabaseDirectClient()
@@ -51,7 +51,8 @@ export const buyportfolio = authEndpoint(async (req, auth) => {
         amount: itemAmount,
       },
       user.id,
-      auth.creds.kind === 'key'
+      auth.creds.kind === 'key',
+      log
     )
   }
 

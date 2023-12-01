@@ -1,5 +1,6 @@
-import { SupabaseClient } from '@supabase/supabase-js'
-import { millisToTs, run, selectJson, tsToMillis } from './utils'
+import { SupabaseClient } from 'common/supabase/utils'
+import type { PostgrestFilterBuilder } from '@supabase/postgrest-js'
+import { Row, Schema, millisToTs, run, selectJson, tsToMillis } from './utils'
 import { Bet, BetFilter } from 'common/bet'
 import { User } from 'common/user'
 import { getContractBetMetrics } from 'common/calculate'
@@ -85,34 +86,44 @@ export const getBetPoints = async <S extends SupabaseClient>(
     }))
 }
 
-// mqp: good luck typing q
-export const applyBetsFilter = <T>(q: T, options?: BetFilter): T => {
+export const applyBetsFilter = <
+  T extends PostgrestFilterBuilder<Schema, Row<'contract_bets'>, any>
+>(
+  q: T,
+  options?: BetFilter
+): T => {
   if (options?.contractId) {
-    q = (q as any).eq('contract_id', options.contractId)
+    q = q.eq('contract_id', options.contractId)
   }
   if (options?.userId) {
-    q = (q as any).eq('user_id', options.userId)
+    q = q.eq('user_id', options.userId)
   }
   if (options?.afterTime) {
-    q = (q as any).gt('created_time', millisToTs(options.afterTime))
+    q = q.gt('created_time', millisToTs(options.afterTime))
   }
   if (options?.beforeTime) {
-    q = (q as any).lt('created_time', millisToTs(options.beforeTime))
+    q = q.lt('created_time', millisToTs(options.beforeTime))
   }
   if (options?.filterChallenges) {
-    q = (q as any).eq('is_challenge', false)
+    q = q.eq('is_challenge', false)
   }
   if (options?.filterAntes) {
-    q = (q as any).eq('is_ante', false)
+    q = q.eq('is_ante', false)
   }
   if (options?.filterRedemptions) {
-    q = (q as any).eq('is_redemption', false)
+    q = q.eq('is_redemption', false)
   }
   if (options?.isOpenLimitOrder) {
-    q = (q as any).contains('data', { isFilled: false, isCancelled: false })
+    q = q.contains('data', { isFilled: false, isCancelled: false })
   }
   if (options?.limit) {
-    q = (q as any).limit(options.limit)
+    q = q.limit(options.limit)
+  }
+  if (options?.commentRepliesOnly) {
+    q = q.neq('data->>replyToCommentId', null)
+  }
+  if (options?.answerId) {
+    q = q.eq('answer_id', options.answerId)
   }
   return q
 }

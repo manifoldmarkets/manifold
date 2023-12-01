@@ -13,7 +13,7 @@ import { chunk } from 'lodash'
 const firestore = admin.firestore()
 
 // Add your new pref here, and be sure to add the default as well
-const NEW_PREFERENCE_KEY: notification_preference = 'bounty_canceled'
+const NEW_PREFERENCE_KEY: notification_preference = 'new_match'
 
 async function main() {
   const privateUsers = filterDefined(await getAllPrivateUsers())

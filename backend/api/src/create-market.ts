@@ -34,7 +34,7 @@ import {
 import { randomString } from 'common/util/random'
 import { slugify } from 'common/util/slugify'
 import { getCloseDate } from 'shared/helpers/openai-utils'
-import { getUser, htmlToRichText, isProd } from 'shared/utils'
+import { GCPLog, getUser, htmlToRichText, isProd } from 'shared/utils'
 import { canUserAddGroupToMarket } from './add-contract-to-group'
 import { APIError, AuthedUser, authEndpoint, validate } from './helpers'
 import { STONK_INITIAL_PROB } from 'common/stonk'
@@ -43,23 +43,26 @@ import {
   createSupabaseDirectClient,
 } from 'shared/supabase/init'
 import { contentSchema } from 'shared/zod-types'
-import { createNewContractFromPrivateGroupNotification } from 'shared/create-notification'
 import { addGroupToContract } from 'shared/update-group-contracts-internal'
 import { generateContractEmbeddings } from 'shared/supabase/contracts'
 import { manifoldLoveUserId } from 'common/love/constants'
 
-export const createmarket = authEndpoint(async (req, auth) => {
-  return createMarketHelper(req.body, auth)
+export const createmarket = authEndpoint(async (req, auth, log) => {
+  return createMarketHelper(req.body, auth, log)
 })
 
-export async function createMarketHelper(body: any, auth: AuthedUser) {
+export async function createMarketHelper(
+  body: any,
+  auth: AuthedUser,
+  log: GCPLog
+) {
   const {
     question,
     description,
     descriptionHtml,
     descriptionMarkdown,
     descriptionJson,
-    closeTime,
+    closeTime: closeTimeRaw,
     outcomeType,
     groupIds,
     visibility,
@@ -76,6 +79,7 @@ export async function createMarketHelper(body: any, auth: AuthedUser) {
     totalBounty,
     loverUserId1,
     loverUserId2,
+    matchCreatorId,
   } = validateMarketBody(body)
 
   const userId = auth.uid
@@ -88,10 +92,10 @@ export async function createMarketHelper(body: any, auth: AuthedUser) {
     }
   }
 
-  let groups = groupIds
+  const groups = groupIds
     ? await Promise.all(
         groupIds.map(async (gId) =>
-          getGroupCheckPermissions(gId, visibility, user)
+          getGroupCheckPermissions(gId, visibility, userId)
         )
       )
     : null
@@ -105,8 +109,8 @@ export async function createMarketHelper(body: any, auth: AuthedUser) {
 
   if (ante < 1) throw new APIError(400, 'Ante must be at least 1')
 
-  const closeTimestamp = await getCloseTimestamp(
-    closeTime,
+  const closeTime = await getCloseTimestamp(
+    closeTimeRaw,
     question,
     outcomeType,
     utcOffset
@@ -133,32 +137,33 @@ export async function createMarketHelper(body: any, auth: AuthedUser) {
 
     const slug = await getSlug(trans, question)
 
-    const contract = getNewContract(
-      contractRef.id,
+    const contract = getNewContract({
+      id: contractRef.id,
       slug,
-      user,
+      creator: user,
       question,
       outcomeType,
-      getDescriptionJson(
+      description: getDescriptionJson(
         description,
         descriptionHtml,
         descriptionMarkdown,
         descriptionJson
       ),
-      initialProb ?? 0,
+      initialProb: initialProb ?? 0,
       ante,
-      closeTimestamp,
+      closeTime,
       visibility,
-      isTwitchContract ? true : undefined,
-      min ?? 0,
-      max ?? 0,
-      isLogScale ?? false,
-      answers ?? [],
+      isTwitchContract,
+      min: min ?? 0,
+      max: max ?? 0,
+      isLogScale: isLogScale ?? false,
+      answers: answers ?? [],
       addAnswersMode,
       shouldAnswersSumToOne,
       loverUserId1,
-      loverUserId2
-    )
+      loverUserId2,
+      matchCreatorId,
+    })
 
     const houseId = isProd()
       ? HOUSE_LIQUIDITY_PROVIDER_ID
@@ -179,14 +184,12 @@ export async function createMarketHelper(body: any, auth: AuthedUser) {
     )
   })
 
-  console.log(
-    'created contract for',
-    user.username,
-    'on',
+  log('created contract ', {
+    userUserName: user.username,
+    userId: user.id,
     question,
-    'ante:',
-    ante || 0
-  )
+    ante: ante || 0,
+  })
 
   if (answers && contract.mechanism === 'cpmm-multi-1')
     await createAnswers(contract)
@@ -196,9 +199,6 @@ export async function createMarketHelper(body: any, auth: AuthedUser) {
     await Promise.all(
       groups.map(async (g) => {
         await addGroupToContract(contract, g, pg)
-        if (contract.visibility == 'private') {
-          await createNewContractFromPrivateGroupNotification(user, contract, g)
-        }
       })
     )
   }
@@ -354,6 +354,7 @@ function validateMarketBody(body: any) {
     utcOffset,
     loverUserId1,
     loverUserId2,
+    matchCreatorId,
   } = validate(bodySchema, body)
 
   let min: number | undefined,
@@ -365,13 +366,6 @@ function validateMarketBody(body: any) {
     shouldAnswersSumToOne: boolean | undefined,
     totalBounty: number | undefined,
     extraLiquidity: number | undefined
-
-  if (visibility == 'private' && !groupIds?.length) {
-    throw new APIError(
-      403,
-      'Private markets cannot exist outside a private group.'
-    )
-  }
 
   if (outcomeType === 'PSEUDO_NUMERIC') {
     let initialValue
@@ -440,13 +434,14 @@ function validateMarketBody(body: any) {
     totalBounty,
     loverUserId1,
     loverUserId2,
+    matchCreatorId,
   }
 }
 
 async function getGroupCheckPermissions(
   groupId: string,
   visibility: string,
-  user: User
+  userId: string
 ) {
   const db = createSupabaseClient()
 
@@ -460,7 +455,7 @@ async function getGroupCheckPermissions(
   const membershipQuery = await db
     .from('group_members')
     .select()
-    .eq('member_id', user.id)
+    .eq('member_id', userId)
     .eq('group_id', groupId)
     .limit(1)
   const membership = membershipQuery.data?.[0]
@@ -477,7 +472,7 @@ async function getGroupCheckPermissions(
 
   if (
     !canUserAddGroupToMarket({
-      user,
+      userId,
       group,
       membership,
     })
@@ -550,6 +545,7 @@ const bodySchema = z.object({
   utcOffset: z.number().optional(),
   loverUserId1: z.string().optional(),
   loverUserId2: z.string().optional(),
+  matchCreatorId: z.string().optional(),
 })
 
 export type CreateMarketParams = z.infer<typeof bodySchema> &

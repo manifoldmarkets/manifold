@@ -7,14 +7,18 @@ import { useRouter } from 'next/router'
 import { useGroupedUnseenNotifications } from 'web/hooks/use-notifications'
 import { PrivateUser } from 'common/user'
 import { NOTIFICATIONS_PER_PAGE } from './notifications/notification-helpers'
-import { notification_source_types } from 'common/notification'
+import {
+  notification_source_types,
+  NotificationReason,
+} from 'common/notification'
 
 export function NotificationsIcon(props: {
   className?: string
   selectTypes?: notification_source_types[]
+  selectReasons?: NotificationReason[]
 }) {
   const privateUser = usePrivateUser()
-  const { selectTypes, className } = props
+  const { selectTypes, selectReasons, className } = props
 
   return (
     <Row className="relative justify-center">
@@ -22,6 +26,7 @@ export function NotificationsIcon(props: {
         <UnseenNotificationsBubble
           selectTypes={selectTypes}
           privateUser={privateUser}
+          selectReasons={selectReasons}
         />
       )}
       <BellIcon className={className} />
@@ -32,15 +37,17 @@ export function NotificationsIcon(props: {
 export function SolidNotificationsIcon(props: {
   className?: string
   selectTypes?: notification_source_types[]
+  selectReasons?: NotificationReason[]
 }) {
   const privateUser = usePrivateUser()
-  const { selectTypes, className } = props
+  const { selectTypes, selectReasons, className } = props
   return (
     <Row className="relative justify-center">
       {privateUser && (
         <UnseenNotificationsBubble
           selectTypes={selectTypes}
           privateUser={privateUser}
+          selectReasons={selectReasons}
         />
       )}
       <SolidBellIcon className={className} />
@@ -51,12 +58,14 @@ export function SolidNotificationsIcon(props: {
 function UnseenNotificationsBubble(props: {
   privateUser: PrivateUser
   selectTypes?: notification_source_types[]
+  selectReasons?: NotificationReason[]
 }) {
   const { isReady, pathname } = useRouter()
-  const { privateUser, selectTypes } = props
+  const { privateUser, selectTypes, selectReasons } = props
   const [seen, setSeen] = useState(false)
   const unseenSourceIdsToNotificationIds =
-    useGroupedUnseenNotifications(privateUser.id, selectTypes) ?? []
+    useGroupedUnseenNotifications(privateUser.id, selectTypes, selectReasons) ??
+    []
 
   const unseenNotifs = Object.keys(unseenSourceIdsToNotificationIds).length
 

@@ -23,6 +23,7 @@ import { SEO } from 'web/components/SEO'
 import { Button } from 'web/components/buttons/button'
 import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
 import { CollapsibleContent } from 'web/components/widgets/collapsible-content'
+import { filterDefined } from 'common/util/array'
 
 type DonationItem = { user: User; ts: number; amount: number }
 
@@ -41,7 +42,7 @@ export async function getStaticProps(ctx: { params: { charitySlug: string } }) {
   }
   const txns = await getAllDonations(charity.id)
   const userIds = uniq(txns.map((t) => t.fromId))
-  const users = await getUsers(userIds)
+  const users = filterDefined(await getUsers(userIds))
   const usersById = Object.fromEntries(users.map((u) => [u.id, u]))
   const donations = txns.map((t) => ({
     user: usersById[t.fromId],

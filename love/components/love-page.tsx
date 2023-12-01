@@ -1,6 +1,11 @@
-import { CashIcon, HomeIcon } from '@heroicons/react/outline'
 import {
+  CashIcon,
+  HomeIcon,
   QuestionMarkCircleIcon,
+  ChartBarIcon,
+} from '@heroicons/react/outline'
+import {
+  QuestionMarkCircleIcon as SolidQuestionIcon,
   HomeIcon as SolidHomeIcon,
   UserCircleIcon,
 } from '@heroicons/react/solid'
@@ -13,18 +18,21 @@ import { Toaster } from 'react-hot-toast'
 import { AddFundsModal } from 'web/components/add-funds-modal'
 import { MobileAppsQRCodeDialog } from 'web/components/buttons/mobile-apps-qr-code-button'
 import { Col } from 'web/components/layout/col'
-import {
-  PrivateMessagesIcon,
-  SolidPrivateMessagesIcon,
-} from 'web/components/messaging/messages-icon'
+import { PrivateMessagesIcon } from 'web/components/messaging/messages-icon'
 import { BottomNavBar } from 'love/components/nav/love-bottom-nav-bar'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useTracking } from 'web/hooks/use-tracking'
 import { useUser } from 'web/hooks/use-user'
 import { GoogleOneTapLogin } from 'web/lib/firebase/google-onetap-login'
 import Sidebar from './nav/love-sidebar'
-import { SolidNotificationsIcon } from 'web/components/notifications-icon'
-import { NOTIFICATIONS_TO_SELECT } from 'love/pages/notifications'
+import {
+  NotificationsIcon,
+  SolidNotificationsIcon,
+} from 'web/components/notifications-icon'
+import {
+  NOTIFICATION_REASONS_TO_SELECT,
+  NOTIFICATION_TYPES_TO_SELECT,
+} from 'love/pages/notifications'
 import { signupThenMaybeRedirectToSignup } from 'love/lib/util/signup'
 
 export function LovePage(props: {
@@ -45,15 +53,16 @@ export function LovePage(props: {
   } = props
   const user = useUser()
   const isMobile = useIsMobile()
-  const navigationOptions = user
+  const bottomNavOptions = user
     ? getBottomNavigation(user)
     : signedOutNavigation()
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const sidebarNavigationOptions = user
-    ? isMobile
-      ? getSidebarNavigation(() => setIsAddFundsModalOpen(true))
-      : getDesktopNav(!!user)
-    : getDesktopNav(!!user)
+  const desktopSidebarOptions = getDesktopNav(user)
+
+  const mobileSidebarOptions = user
+    ? getSidebarNavigation(() => setIsAddFundsModalOpen(true))
+    : []
+
   // eslint-disable-next-line react-hooks/rules-of-hooks
   trackPageView && useTracking(`view love ${trackPageView}`, trackPageProps)
   useOnline()
@@ -76,7 +85,7 @@ export function LovePage(props: {
           <div className="lg:col-span-2 lg:flex" />
         ) : (
           <Sidebar
-            navigationOptions={sidebarNavigationOptions}
+            navigationOptions={desktopSidebarOptions}
             className="sticky top-0 hidden self-start px-2 lg:col-span-2 lg:flex"
           />
         )}
@@ -92,8 +101,8 @@ export function LovePage(props: {
       </Col>
       {!hideBottomBar && (
         <BottomNavBar
-          sidebarNavigationOptions={sidebarNavigationOptions}
-          navigationOptions={navigationOptions}
+          sidebarNavigationOptions={mobileSidebarOptions}
+          navigationOptions={bottomNavOptions}
         />
       )}
       <AddFundsModal
@@ -118,7 +127,8 @@ function getBottomNavigation(user: User) {
       icon: (props) => (
         <SolidNotificationsIcon
           {...props}
-          selectTypes={NOTIFICATIONS_TO_SELECT}
+          selectTypes={NOTIFICATION_TYPES_TO_SELECT}
+          selectReasons={NOTIFICATION_REASONS_TO_SELECT}
         />
       ),
     },
@@ -129,31 +139,34 @@ function getBottomNavigation(user: User) {
     {
       name: 'Messages',
       href: '/messages',
-      icon: SolidPrivateMessagesIcon,
+      icon: (props) => (
+        <PrivateMessagesIcon bubbleClassName={'-mr-5'} solid {...props} />
+      ),
     }
   )
 }
 
 const signedOutNavigation = () => [
-  { name: 'Profiles', href: '/', icon: HomeIcon },
-  { name: 'About', href: '/about', icon: QuestionMarkCircleIcon },
+  { name: 'Profiles', href: '/', icon: SolidHomeIcon },
+  { name: 'About', href: '/about', icon: SolidQuestionIcon },
   {
     name: 'Sign in',
     onClick: signupThenMaybeRedirectToSignup,
     icon: UserCircleIcon,
   },
 ]
-const getDesktopNav = (loggedIn: boolean) => {
-  if (loggedIn)
+const getDesktopNav = (user: User | null | undefined) => {
+  if (user)
     return buildArray(
       { name: 'Profiles', href: '/', icon: HomeIcon },
       {
         name: 'Notifs',
         href: `/notifications`,
         icon: (props: any) => (
-          <SolidNotificationsIcon
+          <NotificationsIcon
             {...props}
-            selectTypes={NOTIFICATIONS_TO_SELECT}
+            selectTypes={NOTIFICATION_TYPES_TO_SELECT}
+            selectReasons={NOTIFICATION_REASONS_TO_SELECT}
           />
         ),
       },
@@ -161,6 +174,11 @@ const getDesktopNav = (loggedIn: boolean) => {
         name: 'Messages',
         href: '/messages',
         icon: PrivateMessagesIcon,
+      },
+      {
+        name: 'Portfolio',
+        href: '/portfolio',
+        icon: ChartBarIcon,
       }
     )
 
@@ -173,7 +191,7 @@ const getDesktopNav = (loggedIn: boolean) => {
 // No sidebar when signed out
 const getSidebarNavigation = (toggleModal: () => void) => {
   return buildArray(
+    { name: 'Portfolio', icon: ChartBarIcon, href: '/portfolio' },
     { name: 'Get mana', icon: CashIcon, onClick: toggleModal }
-    // { name: 'Share with friends', href: '/referrals', icon: StarIcon } // remove this and I will beat you — SG
   )
 }

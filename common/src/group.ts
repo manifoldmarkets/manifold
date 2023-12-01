@@ -48,28 +48,6 @@ export function groupPath(groupSlug: string) {
   return `/browse?${TOPIC_KEY}=${groupSlug}`
 }
 
-export const GroupsByTopic = {
-  default: [
-    'economics-default',
-    'technology-default',
-    'science-default',
-    'politics-default',
-    'world-default',
-    'culture-default',
-  ],
-  destiny: ['destinygg', 'destinygg-stocks', 'daliban-hq'],
-  rat: ['effective-altruism', 'sf-bay-rationalists', 'nuclear-risk', 'acx'],
-  ai: [
-    'ai',
-    'technical-ai-timelines',
-    'ai-safety',
-    'ai-impacts',
-    'ai-alignment',
-    'gpt4-speculation',
-  ],
-  ponzi: ['fun', 'selfresolving', 'whale-watching', 'permanent markets'],
-  // grey: ['cgp-grey'],
-}
 // note: changing these breaks old urls. if you do, make sure to update omnisearch and opensearch.xml
 export const TOPIC_KEY = 'topic'
 export const DEFAULT_TOPIC = ''

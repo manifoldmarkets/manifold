@@ -8,15 +8,7 @@ export const UserFromId = (props: { userId: string; className?: string }) => {
   const user = useUserById(userId)
   return (
     <Row className={className}>
-      {user ? (
-        <UserAvatarAndBadge
-          name={user.name}
-          username={user.username}
-          avatarUrl={user.avatarUrl}
-        />
-      ) : (
-        <LoadingIndicator />
-      )}
+      {user ? <UserAvatarAndBadge user={user} /> : <LoadingIndicator />}
     </Row>
   )
 }

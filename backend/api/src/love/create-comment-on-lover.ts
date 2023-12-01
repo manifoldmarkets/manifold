@@ -10,11 +10,12 @@ import {
 } from 'shared/supabase/init'
 import { getNotificationDestinationsForUser } from 'common/user-notification-preferences'
 import { Notification } from 'common/notification'
-import { insertNotificationToSupabase } from 'shared/create-notification'
+import { insertNotificationToSupabase } from 'shared/supabase/notifications'
 import { User } from 'common/user'
 import { createPushNotification } from 'shared/create-push-notification'
 import { richTextToString } from 'common/util/parse'
 import * as crypto from 'crypto'
+import { sendNewEndorsementEmail } from 'shared/emails'
 
 const postSchema = z.object({
   userId: z.string(),
@@ -98,11 +99,9 @@ const createNewCommentOnLoverNotification = async (
   const privateUser = await getPrivateUser(onUser.id)
   if (!privateUser) return
   const id = crypto.randomUUID()
-  const reason = 'tagged_user' // not really true, but it's pretty close
-  const { sendToBrowser, sendToMobile } = getNotificationDestinationsForUser(
-    privateUser,
-    reason
-  )
+  const reason = 'new_endorsement'
+  const { sendToBrowser, sendToMobile, sendToEmail } =
+    getNotificationDestinationsForUser(privateUser, reason)
   const notification: Notification = {
     id,
     userId: privateUser.id,
@@ -126,6 +125,16 @@ const createNewCommentOnLoverNotification = async (
       notification,
       privateUser,
       `${creator.name} commented on your profile`,
+      sourceText
+    )
+  }
+  if (sendToEmail) {
+    await sendNewEndorsementEmail(
+      reason,
+      privateUser,
+      creator,
+      onUser,
+      `${creator.name} just endorsed you!`,
       sourceText
     )
   }

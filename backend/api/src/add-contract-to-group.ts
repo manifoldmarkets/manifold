@@ -2,17 +2,15 @@ import * as admin from 'firebase-admin'
 import { z } from 'zod'
 
 import { Contract } from 'common/contract'
-import { isAdminId, isTrustworthy } from 'common/envs/constants'
+import { isAdminId, isModId } from 'common/envs/constants'
 import { GroupResponse } from 'common/group'
 import { APIError, authEndpoint, validate } from './helpers'
-import { getUser } from 'shared/utils'
 import {
   createSupabaseClient,
   createSupabaseDirectClient,
 } from 'shared/supabase/init'
 import { addGroupToContract } from 'shared/update-group-contracts-internal'
 import { GroupMember } from 'common/group-member'
-import { User } from 'common/user'
 
 const bodySchema = z
   .object({
@@ -57,9 +55,8 @@ export const addcontracttogroup = authEndpoint(async (req, auth) => {
     )
   }
 
-  const user = await getUser(auth.uid)
   const canAdd = canUserAddGroupToMarket({
-    user,
+    userId: auth.uid,
     group,
     contract,
     membership,
@@ -81,18 +78,16 @@ export const addcontracttogroup = authEndpoint(async (req, auth) => {
 const firestore = admin.firestore()
 
 export function canUserAddGroupToMarket(props: {
-  user: User | undefined
+  userId: string
   group: GroupResponse
   contract?: Contract
   membership?: GroupMember
 }) {
-  const { user, group, contract, membership } = props
-  if (!user) return false
-  const userId = user.id
+  const { userId, group, contract, membership } = props
 
   const isMarketCreator = !contract || contract.creatorId === userId
   const isManifoldAdmin = isAdminId(userId)
-  const trustworthy = isTrustworthy(user.username)
+  const trustworthy = isModId(userId)
 
   const isMember = membership != undefined
   const isAdminOrMod =

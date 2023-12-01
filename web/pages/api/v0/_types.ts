@@ -1,9 +1,4 @@
-import {
-  ENV_CONFIG,
-  BOT_USERNAMES,
-  CORE_USERNAMES,
-  MOD_USERNAMES,
-} from 'common/envs/constants'
+import { ENV_CONFIG, BOT_USERNAMES, MOD_IDS } from 'common/envs/constants'
 import { User } from 'common/user'
 import { removeUndefinedProps } from 'common/util/object'
 
@@ -69,8 +64,8 @@ export function toLiteUser(user: User): LiteUser {
   } = user
 
   const isBot = BOT_USERNAMES.includes(username)
-  const isAdmin = CORE_USERNAMES.includes(username)
-  const isTrustworthy = MOD_USERNAMES.includes(username)
+  const isAdmin = ENV_CONFIG.adminIds.includes(id)
+  const isTrustworthy = MOD_IDS.includes(id)
 
   return removeUndefinedProps({
     id,

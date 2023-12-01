@@ -56,7 +56,7 @@ const ContractTopicBreadcrumbs = (props: { contract: Contract }) => {
   )
 
   return (
-    <div className="line-clamp-1 items-center">
+    <div className="line-clamp-1 min-h-[24px] items-center">
       {groups.map((group, i) => (
         <span key={group.id} className={'text-primary-600 text-sm'}>
           <Link

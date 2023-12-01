@@ -24,7 +24,7 @@ const bodySchema = z
   })
   .strict()
 
-export const creategroup = authEndpoint(async (req, auth) => {
+export const creategroup = authEndpoint(async (req, auth, log) => {
   const { name, about, memberIds, privacyStatus } = validate(
     bodySchema,
     req.body
@@ -38,18 +38,13 @@ export const creategroup = authEndpoint(async (req, auth) => {
   // Add creator id to member ids for convenience
   if (!memberIds.includes(creator.id)) memberIds.push(creator.id)
 
-  console.log(
-    'creating group for',
-    creator.username,
-    'named',
+  log('creating group ', {
+    creatorId: creator.id,
     name,
-    'about',
     about,
-    'privacy',
     privacyStatus,
-    'other member ids',
-    memberIds
-  )
+    memberIds,
+  })
 
   const slug = await getSlug(name)
 

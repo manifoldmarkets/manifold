@@ -5,7 +5,7 @@ import {
   ENV_CONFIG,
   firestoreConsolePath,
   isAdminId,
-  isTrustworthy,
+  isModId,
 } from 'common/envs/constants'
 import { BETTORS, User } from 'common/user'
 import { formatMoney } from 'common/util/format'
@@ -31,25 +31,31 @@ import { Row } from '../layout/row'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import ShortToggle from '../widgets/short-toggle'
 import { Table } from '../widgets/table'
-import { NON_PREDICTIVE_GROUP_ID } from 'common/supabase/groups'
+import {
+  UNRANKED_GROUP_ID,
+  UNSUBSIDIZED_GROUP_ID,
+} from 'common/supabase/groups'
 import { ContractHistoryButton } from './contract-edit-history-button'
-import { ShareEmbedButton } from '../buttons/share-embed-button'
+import { ShareEmbedButton, ShareIRLButton } from '../buttons/share-embed-button'
 import { ShareQRButton } from '../buttons/share-qr-button'
 import dayjs from 'dayjs'
 
 export const Stats = (props: {
   contract: Contract
   user?: User | null | undefined
-  hideAdvanced?: boolean
 }) => {
-  const { contract, user, hideAdvanced } = props
+  const { contract, user } = props
 
+  const hideAdvanced = !user
   const isDev = useDev()
   const isAdmin = !!user && isAdminId(user?.id)
-  const isTrusty = !!user && isTrustworthy(user?.username)
+  const isTrusty = !!user && isModId(user?.id)
   const isMod = isAdmin || isTrusty
   const isCreator = user?.id === contract.creatorId
   const isPublic = contract.visibility === 'public'
+  const isMulti = contract.mechanism === 'cpmm-multi-1'
+  const canAddAnswers = isMulti && contract.addAnswersMode !== 'DISABLED'
+  const creatorOnly = isMulti && contract.addAnswersMode === 'ONLY_CREATOR'
   const wasUnlistedByCreator = contract.unlistedById
     ? contract.unlistedById === contract.creatorId
     : false
@@ -86,13 +92,28 @@ export const Stats = (props: {
           label: 'Fixed',
           desc: `Each YES share is worth ${ENV_CONFIG.moneyMoniker}1 if YES wins`,
         }
-      : mechanism === 'cpmm-2' || mechanism === 'cpmm-multi-1'
+      : mechanism === 'cpmm-2'
       ? {
           label: 'Fixed',
           desc: `Each share in an outcome is worth ${ENV_CONFIG.moneyMoniker}1 if it is chosen`,
         }
+      : mechanism === 'cpmm-multi-1'
+      ? contract.shouldAnswersSumToOne
+        ? {
+            label: 'Dependent',
+            desc: `Each share in an outcome is worth ${ENV_CONFIG.moneyMoniker}1 if it is chosen. Only one outcome can be chosen`,
+          }
+        : {
+            label: 'Independent',
+            desc: `Each answer is a separate binary contract with shares worth ${ENV_CONFIG.moneyMoniker}1 if chosen. Any number of answers can be chosen`,
+          }
       : mechanism == 'dpm-2'
-      ? { label: 'Parimutuel', desc: 'Each share is a fraction of the pool' }
+      ? {
+          label: 'Parimutuel',
+          desc: 'Each share is a fraction of the pool. Only one outcome can be chosen',
+        }
+      : mechanism == 'none'
+      ? undefined
       : { label: 'Mistake', desc: "Likely one of Austin's bad ideas" }
 
   const isBettingContract = contract.mechanism !== 'none'
@@ -244,8 +265,35 @@ export const Stats = (props: {
           </tr>
         )}
 
+        {canAddAnswers && (isCreator || isAdmin || isMod) && (
+          <tr className={clsx(isMod && 'bg-purple-500/30')}>
+            <td>
+              Creator only{' '}
+              <InfoTooltip
+                text={
+                  creatorOnly
+                    ? 'Only creator can add answers'
+                    : 'Anyone can add answers'
+                }
+              />
+            </td>
+            <td>
+              <ShortToggle
+                className="align-middle"
+                on={creatorOnly}
+                setOn={(on) =>
+                  updateMarket({
+                    contractId: contract.id,
+                    addAnswersMode: on ? 'ONLY_CREATOR' : 'ANYONE',
+                  })
+                }
+              />
+            </td>
+          </tr>
+        )}
+
         {/* Show a path to Firebase if user is an admin, or we're on localhost */}
-        {!hideAdvanced && (isAdmin || isDev) && (
+        {(isAdmin || isDev) && (
           <>
             <tr className="bg-purple-500/30">
               <td>Firestore link</td>
@@ -263,7 +311,7 @@ export const Stats = (props: {
             <tr className="bg-purple-500/30">
               <td>SQL query</td>
               <td>
-                <span className="trucnate">select * from contracts...</span>
+                <span className="truncate">select * from contracts...</span>
                 <CopyLinkOrShareButton
                   url={`select * from contracts where id = '${id}';`}
                   tooltip="Copy sql query to contract id"
@@ -306,31 +354,30 @@ export const Stats = (props: {
             </td>
           </tr>
         )}
+
         {!hideAdvanced && isBettingContract && (
           <tr className={clsx(isMod && 'bg-purple-500/30')}>
             <td>
-              In leagues{' '}
+              Ranked{' '}
               <InfoTooltip
-                text={
-                  'Whether profit count torward leagues - typically off for non-predictive questions'
-                }
+                text={'Profit and creator bonuses count torward leagues'}
               />
             </td>
             <td>
               <ShortToggle
                 className="align-middle"
-                disabled={!isMod}
-                on={!contract.nonPredictive}
+                disabled={!isMod || !isPublic}
+                on={isPublic && contract.isRanked !== false}
                 setOn={(on) => {
                   toast.promise(
                     on
                       ? removeContractFromGroup({
                           contractId: contract.id,
-                          groupId: NON_PREDICTIVE_GROUP_ID,
+                          groupId: UNRANKED_GROUP_ID,
                         })
                       : addContractToGroup({
                           contractId: contract.id,
-                          groupId: NON_PREDICTIVE_GROUP_ID,
+                          groupId: UNRANKED_GROUP_ID,
                         }).catch((e) => {
                           console.error(e.message)
                           throw e
@@ -338,10 +385,54 @@ export const Stats = (props: {
                     {
                       loading: `${
                         on ? 'Removing' : 'Adding'
-                      } question to non-predictive group...`,
+                      } question to the unranked group...`,
                       success: `Successfully ${
                         on ? 'removed' : 'added'
-                      } question to non-predictive group!`,
+                      } question to the unranked group!`,
+                      error: `Error ${
+                        on ? 'removing' : 'adding'
+                      } category. Try again?`,
+                    }
+                  )
+                }}
+              />
+            </td>
+          </tr>
+        )}
+        {!hideAdvanced && isBettingContract && (
+          <tr className={clsx(isMod && 'bg-purple-500/30')}>
+            <td>
+              Subsidized{' '}
+              <InfoTooltip
+                text={'Market receives unique trader bonuses and house subsidy'}
+              />
+            </td>
+            <td>
+              <ShortToggle
+                className="align-middle"
+                disabled={!isMod || !isPublic}
+                on={isPublic && contract.isSubsidized !== false}
+                setOn={(on) => {
+                  toast.promise(
+                    on
+                      ? removeContractFromGroup({
+                          contractId: contract.id,
+                          groupId: UNSUBSIDIZED_GROUP_ID,
+                        })
+                      : addContractToGroup({
+                          contractId: contract.id,
+                          groupId: UNSUBSIDIZED_GROUP_ID,
+                        }).catch((e) => {
+                          console.error(e.message)
+                          throw e
+                        }),
+                    {
+                      loading: `${
+                        on ? 'Removing' : 'Adding'
+                      } question to the unsubsidized group...`,
+                      success: `Successfully ${
+                        on ? 'removed' : 'added'
+                      } question to the unsubsidized group!`,
                       error: `Error ${
                         on ? 'removing' : 'adding'
                       } category. Try again?`,
@@ -373,7 +464,7 @@ export function ContractInfoDialog(props: {
     >
       <FollowMarketButton contract={contract} user={user} />
 
-      <Stats contract={contract} user={user} hideAdvanced={!user} />
+      <Stats contract={contract} user={user} />
 
       {!!user && (
         <>
@@ -382,6 +473,7 @@ export function ContractInfoDialog(props: {
 
             <ContractHistoryButton contract={contract} />
             <ShareQRButton contract={contract} />
+            <ShareIRLButton contract={contract} />
             <ShareEmbedButton contract={contract} />
           </Row>
           <Row className="flex-wrap gap-2">

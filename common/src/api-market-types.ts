@@ -1,5 +1,4 @@
 import { JSONContent } from '@tiptap/core'
-import { Except } from 'type-fest'
 import { Answer, DpmAnswer } from 'common/answer'
 import { Bet } from 'common/bet'
 import { getAnswerProbability, getProbability } from 'common/calculate'
@@ -11,7 +10,7 @@ import { richTextToString } from 'common/util/parse'
 import { getMappedValue } from './pseudo-numeric'
 
 export type LiteMarket = {
-  // Unique identifer for this market
+  // Unique identifier for this market
   id: string
 
   // Attributes about the creator
@@ -48,7 +47,7 @@ export type ApiAnswer =
   | (DpmAnswer & {
       probability: number
     })
-  | Except<
+  | Omit<
       Answer & {
         probability: number
         pool: { YES: number; NO: number }
@@ -84,7 +83,9 @@ export function toLiteMarket(contract: Contract): LiteMarket {
     resolution,
     resolutionTime,
     resolutionProbability,
+    uniqueBettorCount,
     lastUpdatedTime,
+    lastBetTime
   } = contract
 
   const { p, totalLiquidity } = contract as any
@@ -126,7 +127,9 @@ export function toLiteMarket(contract: Contract): LiteMarket {
     resolution,
     resolutionTime,
     resolutionProbability,
+    uniqueBettorCount,
     lastUpdatedTime,
+    lastBetTime,
     value,
     min,
     max,

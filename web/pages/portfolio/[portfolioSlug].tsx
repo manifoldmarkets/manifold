@@ -96,11 +96,7 @@ export default function PortfolioPage(props: {
             avatarUrl={creator.avatarUrl}
             username={creator.username}
           />
-          <UserLink
-            className="text-ink-700"
-            name={creator.name}
-            username={creator.username}
-          />
+          <UserLink className="text-ink-700" user={creator} />
           <CopyLinkOrShareButton
             tooltip="Copy link to portfolio"
             url={shareUrl}

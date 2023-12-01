@@ -9,14 +9,19 @@ export const removeUndefinedProps = <T extends object>(obj: T): T => {
 
   return newObj
 }
-export const removeNullOrUndefinedProps = <T extends object>(obj: T): T => {
+export const removeNullOrUndefinedProps = <T extends object>(
+  obj: T,
+  exceptions?: string[]
+): T => {
   const newObj: any = {}
 
   for (const key of Object.keys(obj)) {
-    if ((obj as any)[key] !== undefined && (obj as any)[key] !== null)
+    if (
+      ((obj as any)[key] !== undefined && (obj as any)[key] !== null) ||
+      (exceptions ?? []).includes(key)
+    )
       newObj[key] = (obj as any)[key]
   }
-
   return newObj
 }
 

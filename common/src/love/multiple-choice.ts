@@ -7,9 +7,9 @@ export const MultipleChoiceOptions = {
 }
 
 export const MultipleChoiceColors = [
-  'bg-orange-500',
-  'bg-orange-400',
+  'bg-rose-600',
+  'bg-rose-400',
   'bg-stone-400',
+  'dark:bg-teal-200 bg-teal-300',
   'bg-teal-400',
-  'bg-teal-600',
 ]

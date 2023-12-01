@@ -1,17 +1,23 @@
 import { HomeIcon } from '@heroicons/react/solid'
 import { Col } from 'web/components/layout/col'
 import { QueryUncontrolledTabs, Tab } from 'web/components/layout/tabs'
-import { track } from 'web/lib/service/analytics'
-
 import { buildArray } from 'common/util/array'
-import { newsContent } from 'web/components/news/news-content'
 import { NewsDashboard } from './news-dashboard'
+import { Dashboard } from 'common/dashboard'
+import { LinkPreviews } from 'common/link-preview'
+import { useRouter } from 'next/router'
+
+const MORE_LABEL = 'All Dashboards'
 
 export function NewsTopicsTabs(props: {
+  dashboards: Dashboard[]
+  previews: LinkPreviews
   homeContent?: JSX.Element
   dontScroll?: boolean
 }) {
-  const { homeContent, dontScroll } = props
+  const { dashboards, previews, homeContent, dontScroll } = props
+
+  const router = useRouter()
 
   const topics = buildArray<Tab>(
     !!homeContent && {
@@ -19,10 +25,15 @@ export function NewsTopicsTabs(props: {
       inlineTabIcon: <HomeIcon className="h-4 w-4" />,
       content: homeContent,
     },
-    newsContent.map((content) => ({
-      title: content.title,
-      content: <NewsDashboard slug={content.slug} />,
-    }))
+    dashboards.map((d) => ({
+      title: d.title,
+      queryString: d.slug,
+      content: <NewsDashboard dashboard={d} previews={previews} />,
+    })),
+    !!homeContent && {
+      title: MORE_LABEL,
+      content: null,
+    }
   )
   return (
     <Col className="w-full gap-2 px-1 pb-8 sm:mx-auto sm:gap-6">
@@ -31,8 +42,10 @@ export function NewsTopicsTabs(props: {
         trackingName="news tabs"
         scrollToTop={!dontScroll}
         tabs={topics}
-        onClick={(tabTitle) => {
-          track('news topic clicked', { tab: tabTitle })
+        onClick={(tab) => {
+          if (tab === MORE_LABEL) {
+            router.push('/dashboard')
+          }
         }}
       />
     </Col>

@@ -9,9 +9,14 @@ import { SVGChart, formatPct } from 'web/components/charts/helpers'
 import { formatLargeNumber } from 'common/util/format'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { Linkify } from 'web/components/widgets/linkify'
-import { Spacer } from 'web/components/layout/spacer'
 import { SizedContainer } from 'web/components/sized-container'
 import { db } from 'web/lib/supabase/db'
+import { TrustPanel } from 'web/components/trust-panel'
+import ChevronDownIcon from '@heroicons/react/solid/ChevronDownIcon'
+import { FeedContractCard } from 'web/components/contract/feed-contract-card'
+import { getContract } from 'web/lib/supabase/contracts'
+import { Contract } from 'common/contract'
+import { Subtitle } from 'web/components/widgets/subtitle'
 
 const TRADER_THRESHOLD = 15
 const SAMPLING_P = 0.02
@@ -23,13 +28,19 @@ export const getStaticProps = async () => {
     .order('created_time', { ascending: false })
     .limit(1)
 
-  const { points, score, n } = result.data![0]?.data as any
+  const { points, score, n } = result.data?.[0]?.data as any
+  const trumpMarket = await getContract('AiEh38dIYVV5tOs1RmN3')
+  const gazaMarket = await getContract('KmWz1wvC8AmNX3a1iiUF')
+  const sbfMarket = await getContract('dRdXZtj8UXiXxkoF2rXE')
 
   return {
     props: {
       points,
       score,
       n,
+      trumpMarket,
+      gazaMarket,
+      sbfMarket,
     },
     revalidate: 60 * 60, // Regenerate after an hour
   }
@@ -39,8 +50,19 @@ export default function CalibrationPage(props: {
   points: { x: number; y: number }[]
   score: number
   n: number
+  trumpMarket: Contract | null
+  gazaMarket: Contract | null
+  sbfMarket: Contract | null
 }) {
-  const { points, score, n } = props
+  const { points, score, n, trumpMarket, gazaMarket, sbfMarket } = props
+  const [isCollapsed, setIsCollapsed] = useState(true)
+
+  const toggleCollapse = () => {
+    setIsCollapsed(!isCollapsed)
+  }
+  if (!trumpMarket || !gazaMarket || !sbfMarket) {
+    return <div>Contracts not found</div>
+  }
 
   return (
     <Page trackPageView={'platform calibration page'}>
@@ -48,64 +70,206 @@ export default function CalibrationPage(props: {
         title={`Platform calibration`}
         description="Manifold's overall track record"
       />
-      <Col className="w-full rounded px-4 py-6 sm:px-8 xl:w-[125%]">
-        <Col className="max-w-[800px]">
-          <Title>Platform calibration</Title>
+      <Col className=" w-full rounded px-4 py-6 sm:px-8 xl:w-[125%]">
+        <Col className="w-full max-w-[800px]">
+          <Title>Track Record and Accuracy</Title>
 
-          <div className="mb-4">Manifold's overall track record.</div>
+          <TrustPanel />
 
-          <div className="bg-canvas-0 relative w-full max-w-[600px] self-center rounded-md p-4 pr-12">
-            <div className="absolute bottom-0 right-4 top-0 flex items-center">
-              <span className="text-ink-800 text-sm [writing-mode:vertical-rl]">
-                Resolution probability
-              </span>
+          <Subtitle>Case studies</Subtitle>
+
+          <div className="text-ink-600 py-2 pb-4">
+            <div className="pb-8">
+              <div className={'text-ink-600 text-xl'}>
+                Predicting Trump's arrest
+              </div>
+              <div className="py-1">
+                <FeedContractCard
+                  contract={trumpMarket}
+                  showGraph={true}
+                ></FeedContractCard>
+              </div>
+              <div className="py-1">
+                On March 18th Trump posted on Truth Social that he believes he
+                was about to be arrested, this caused our market to spike to
+                88%. However, since December our market had already been
+                hovering around 40% on average before anyone else was even
+                discussing it as a true possibility of happening!
+              </div>
+            </div>
+            <div className="pb-8">
+              <div className={'text-ink-600  text-xl'}>
+                Al-Ahli Arab hospital explosion
+              </div>
+              <div className="py-1">
+                <FeedContractCard
+                  contract={gazaMarket}
+                  showGraph={true}
+                ></FeedContractCard>
+                <div className="py-1">
+                  Just 3 hours after the initial local reports of the explosion,
+                  we had this market made. Within 1 hour of creation it had
+                  already been pushed to down 6%, before eventually settling
+                  between 6-20% over the next few hours as more news came to
+                  light.
+                  <br />
+                  <br />
+                  Meanwhile, major news outlets still presented conflicting
+                  headlines, which eventually led to the {''}
+                  <a
+                    className="text-primary-700 hover:underline"
+                    target="_blank"
+                    href="https://www.theguardian.com/world/2023/oct/19/israel-accuses-bbc-of-modern-blood-libel-over-reporting-of-hospital-strike"
+                  >
+                    BBC conceding that a reporter had been wrong to speculate in
+                    his analysis.
+                  </a>
+                </div>
+              </div>
             </div>
 
-            <SizedContainer className="aspect-square w-full pb-8 pr-8">
-              {(w, h) => (
-                <CalibrationChart points={points} width={w} height={h} />
-              )}
-            </SizedContainer>
-            <div className="text-ink-800 text-center text-sm">
-              Question probability
+            <div className="pb-8">
+              <div className={'text-ink-600  text-xl'}>
+                Predicting SBF fraud
+              </div>
+              <div className="py-1">
+                <FeedContractCard
+                  contract={sbfMarket}
+                  showGraph={true}
+                ></FeedContractCard>
+              </div>
+              <div className="py-1">
+                Manifold had a market stable between 5-10% that SBF would be
+                convicted of a felony 1-month before there was any news about
+                it. It then immediately reacted correctly to rumors before any
+                official statements were made.
+              </div>
+            </div>
+
+            <div className="">
+              <div className={'text-ink-600  text-xl'}>
+                How we performed on the 2022 US midterms
+              </div>
+              <div className="pb-1">
+                Manifold{' '}
+                <a
+                  className="text-primary-700 hover:underline"
+                  target="_blank"
+                  href="https://firstsigma.substack.com/p/midterm-elections-forecast-comparison-analysis"
+                >
+                  outperformed real money prediction markets and was almost as
+                  accurate as FiveThiryEight
+                </a>{' '}
+                when forecasting the 2022 US midterm elections.
+              </div>
             </div>
           </div>
 
-          <div className="prose prose-sm text-ink-600 my-4 max-w-[800px]">
-            <b>Interpretation</b>
+          <Subtitle>Overall calibration</Subtitle>
+          <div className="text-ink-600 mb-2">
+            This chart show whether events happened as often as we predicted. We
+            want to blue dots to be as close to the diagonal line as possible!{' '}
+          </div>
+          <div className="text-ink-600">
+            A dot with a question probability of 70% means we have a group of
+            markets that were predicted to have a 70% chance of occurring. If
+            our predictions are perfectly calibrated, then 70% of those markets
+            should have resolved yes and it should appear on the y-axis at 70%.
+          </div>
+
+          <Col className="mt-4 w-full">
+            <div className="bg-canvas-0 relative w-full  rounded-md p-4 pr-12">
+              <div className="absolute bottom-0 right-4 top-0 flex items-center">
+                <span className="text-ink-800 text-sm [writing-mode:vertical-rl]">
+                  Resolved Yes
+                </span>
+              </div>
+
+              <SizedContainer className="aspect-square w-full pb-8 pr-8">
+                {(w, h) => (
+                  <CalibrationChart points={points} width={w} height={h} />
+                )}
+              </SizedContainer>
+              <div className="text-ink-800 text-center text-sm">
+                Question probability
+              </div>
+            </div>
+          </Col>
+
+          <div className="prose prose-md text-ink-600 max-w-[800px]">
             <ul>
               <li>
-                The chart shows the probability of a binary question resolving
-                to YES given that the question is currently displaying a
-                probability of x%. Perfect calibration would result in all
-                points being on the line.
-              </li>
+                <b>Methodology and Brier score</b>
+                <br />
+                <div
+                  className=" flex cursor-pointer items-center"
+                  onClick={toggleCollapse}
+                >
+                  TL;DR Our data shows our markets are very accurate!&nbsp;
+                  <div className="text-primary-700 hover:underline">
+                    Learn more
+                  </div>
+                  <ChevronDownIcon
+                    className={` h-6 w-6  ${
+                      isCollapsed ? '' : 'rotate-180 transform'
+                    }`}
+                  />
+                </div>
 
-              <li>
-                Methodology: {formatPct(SAMPLING_P)} of all past bets in public
-                resolved binary questions with {TRADER_THRESHOLD} or more
-                traders are sampled to get the average probability before and
-                after the bet. This probability is then bucketed and used to
-                compute the proportion of questions that resolve YES. Sample
-                size: {formatLargeNumber(n)} bets. Updates every hour.
-              </li>
-
-              <li>
-                This methodology uses trade-weighted rather than time-weighted
-                calibration, which may <i>significantly undercount</i> overall
-                calibration, given that users who place large miscalibrated bets
-                are more likely to be corrected immediately.
-              </li>
-
-              <li>
-                <InfoTooltip text="Mean squared error of forecasted probability compared to the true outcome.">
-                  Brier score
-                </InfoTooltip>
-                : {Math.round(score * 1e5) / 1e5}
+                {!isCollapsed && (
+                  <div>
+                    {
+                      <ul className=" list-decimal pl-5">
+                        <li>
+                          Every hour we sample {''}
+                          {formatPct(SAMPLING_P)} of all past trades on resolved
+                          binary questions with {TRADER_THRESHOLD} or more
+                          traders. Current sample size: {formatLargeNumber(n)}{' '}
+                          trades.
+                        </li>
+                        <li>
+                          For each sampled trade, we find the average
+                          probability between the start and end.
+                        </li>
+                        <li>
+                          We group trades with similar probabilities together.
+                        </li>
+                        <li>
+                          Then, we check for trades that said there was eg. a
+                          60% chance, and how often those markets resolve yes.
+                          In this case we would expect 60% of them to have
+                          resolved yes for perfect calibration!
+                        </li>
+                        <li>
+                          We can repeat this at each probability interval to
+                          plot a graph showing how the probability of our trades
+                          compare to how often is actually happens!
+                        </li>
+                        <li>
+                          Our {''}
+                          <InfoTooltip text="Mean squared error of forecasted probability compared to the true outcome.">
+                            <b>Brier score</b>
+                          </InfoTooltip>
+                          : {Math.round(score * 1e5) / 1e5}
+                          <br />
+                          This number between 0 and 1 that tells us how good our
+                          predictions are. Closer to 0 is better. A score
+                          between 0.1 and 0.2 is very good!
+                        </li>
+                        <li>
+                          <b>Flaws</b>: This methodology uses trade-weighted
+                          rather than time-weighted calibration. Market accuracy
+                          may be better than what is reflected here, as large
+                          miscalibrated trades are usually corrected
+                          immediately!
+                        </li>
+                      </ul>
+                    }
+                  </div>
+                )}
               </li>
             </ul>
           </div>
-
           <WasabiCharts />
         </Col>
       </Col>
@@ -189,25 +353,17 @@ export function CalibrationChart(props: {
 export function WasabiCharts() {
   return (
     <>
-      <p className="text-ink-500 mt-8">
-        More charts courtesy of <Linkify text="@wasabipesto" />; originally
-        found{' '}
+      <div className="text-ink-600 mt-8">
+        See more {''}
         <a
           className="text-primary-700 hover:underline"
           target="_blank"
           href="https://wasabipesto.com/manifold/markets/"
         >
-          here.
+          charts
         </a>
-      </p>
-      <Spacer h={4} />
-      <iframe
-        className="w-full border-0"
-        height={3750}
-        src="https://wasabipesto.com/manifold/markets/"
-        frameBorder="0"
-        allowFullScreen
-      />
+        {''} courtesy of <Linkify text="@wasabipesto" /> from our data in 2022.
+      </div>
     </>
   )
 }

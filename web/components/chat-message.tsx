@@ -6,57 +6,136 @@ import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { Content } from 'web/components/widgets/editor'
 import { User } from 'common/user'
 import { ChatMessage } from 'common/chat-message'
-import { first } from 'lodash'
-import { forwardRef } from 'react'
+import { first, last } from 'lodash'
+import { memo, useState } from 'react'
+import { MultipleOrSingleAvatars } from 'web/components/multiple-or-single-avatars'
+import { Modal, MODAL_CLASS } from 'web/components/layout/modal'
+import { UserAvatarAndBadge } from 'web/components/widgets/user-link'
+import Link from 'next/link'
+import DropdownMenu from 'web/components/comments/dropdown-menu'
+import { DotsHorizontalIcon, ReplyIcon } from '@heroicons/react/solid'
+import { manifoldLoveUserId } from 'common/love/constants'
 
-export const ChatMessageItem = forwardRef(
-  (
-    props: {
-      chats: ChatMessage[]
-      currentUser: User | undefined | null
-      otherUser?: User | null
-      onReplyClick?: (chat: ChatMessage) => void
-      beforeSameUser: boolean
-      firstOfUser: boolean
-    },
-    ref: React.Ref<HTMLDivElement>
-  ) => {
-    const {
-      chats,
-      currentUser,
-      otherUser,
-      onReplyClick,
-      beforeSameUser,
-      firstOfUser,
-    } = props
-    const chat = first(chats)
-    if (!chat) return null
-    const isMe = currentUser?.id === chat.userId
-    const {
-      username: userUsername,
-      avatarUrl: userAvatarUrl,
-      name: userName,
-    } = !isMe && otherUser
+export const ChatMessageItem = memo(function ChatMessageItem(props: {
+  chats: ChatMessage[]
+  currentUser: User | undefined | null
+  otherUser?: User | null
+  onReplyClick?: (chat: ChatMessage) => void
+  beforeSameUser: boolean
+  firstOfUser: boolean
+}) {
+  const {
+    chats,
+    onReplyClick,
+    currentUser,
+    otherUser,
+    beforeSameUser,
+    firstOfUser,
+  } = props
+  const chat = first(chats)
+  if (!chat) return null
+  if (otherUser?.isBannedFromPosting) return null
+
+  const isMe = currentUser?.id === chat.userId
+  const { username, avatarUrl, name } =
+    !isMe && otherUser
       ? otherUser
       : isMe && currentUser
       ? currentUser
-      : {
-          username: chat.userUsername,
-          avatarUrl: chat.userAvatarUrl,
-          name: chat.userName,
-        }
+      : { username: '', avatarUrl: undefined, name: '' }
 
-    return (
-      <Row
-        className={clsx(
-          'gap-1',
-          isMe ? '' : 'flex-row-reverse',
-          firstOfUser ? 'mt-3' : ''
+  return (
+    <Row
+      className={clsx(
+        'items-end justify-start gap-1',
+        isMe && 'flex-row-reverse',
+        firstOfUser ? 'mt-2' : 'mt-1'
+      )}
+    >
+      {!isMe && (
+        <MessageAvatar
+          beforeSameUser={beforeSameUser}
+          username={username}
+          userAvatarUrl={avatarUrl}
+        />
+      )}
+      <Col className="max-w-[calc(100vw-6rem)] md:max-w-[80%]">
+        {firstOfUser && !isMe && chat.visibility !== 'system_status' && (
+          <Row className={'items-center gap-3'}>
+            <Link
+              href={'/' + username}
+              className="text-ink-500 dark:text-ink-600 pl-3 text-sm"
+            >
+              {name}
+            </Link>
+            {onReplyClick && (
+              <DropdownMenu
+                items={[
+                  {
+                    name: 'Reply',
+                    icon: <ReplyIcon className=" h-5 w-5 " />,
+                    onClick: () => onReplyClick(chat),
+                  },
+                ]}
+                icon={<DotsHorizontalIcon className="text-ink-400 h-4 w-4" />}
+              />
+            )}
+          </Row>
         )}
-        ref={ref}
-      >
+        <Col className="gap-1">
+          {chats.map((chat) => (
+            <div
+              className={clsx(
+                'group flex items-end gap-1',
+                isMe && 'flex-row-reverse'
+              )}
+              key={chat.id}
+            >
+              <div
+                className={clsx(
+                  'rounded-3xl px-3 py-2',
+                  chat.visibility !== 'system_status' && '',
+                  chat.visibility === 'system_status'
+                    ? 'bg-canvas-50 italic'
+                    : isMe
+                    ? 'bg-primary-100 items-end self-end rounded-r-none group-first:rounded-tr-3xl'
+                    : 'bg-canvas-0 items-start self-start rounded-l-none group-first:rounded-tl-3xl'
+                )}
+              >
+                <Content size={'sm'} content={chat.content} key={chat.id} />
+              </div>
+              <RelativeTimestamp
+                time={chat.createdTime}
+                shortened
+                className="mb-2 mr-1 hidden text-xs group-last:block"
+              />
+            </div>
+          ))}
+        </Col>
+      </Col>
+      <div className={clsx(isMe ? 'pr-1' : '', 'pb-2')}></div>
+    </Row>
+  )
+})
+
+export const SystemChatMessageItem = memo(
+  function SystemChatMessageItem(props: {
+    chats: ChatMessage[]
+    otherUsers: User[] | undefined
+  }) {
+    const { chats, otherUsers } = props
+    const chat = last(chats)
+    const [showUsers, setShowUsers] = useState(false)
+    if (!chat) return null
+    const hideAvatar =
+      chat.visibility === 'system_status' &&
+      chat.userId === manifoldLoveUserId &&
+      chats.length === 1
+    const totalUsers = otherUsers?.length || 1
+    return (
+      <Row className={clsx('flex-row-reverse items-center gap-1')}>
         <Row className="grow" />
-        <Col className={clsx(isMe ? 'pr-1' : '', 'grow-y justify-end pb-2')}>
+        <Col className={clsx('grow-y justify-end pb-2')}>
           <RelativeTimestamp
             time={chat.createdTime}
             shortened
@@ -64,35 +143,59 @@ export const ChatMessageItem = forwardRef(
           />
         </Col>
         <Col className="max-w-[calc(100vw-6rem)] md:max-w-[80%]">
-          {firstOfUser && !otherUser && (
-            <span className="text-ink-500 dark:text-ink-600 mt-1 pl-3 text-sm">
-              {chat.userName}
+          <Col className={clsx(' bg-canvas-50  px-1 py-2 text-sm italic')}>
+            <span>
+              {totalUsers > 1 ? (
+                <span>
+                  {totalUsers} user{totalUsers > 1 ? 's' : ''} joined the chat!
+                </span>
+              ) : (
+                <Content content={chat.content} size={'sm'} />
+              )}
             </span>
-          )}
-          <Col
-            className={clsx(
-              'rounded-3xl px-3 py-2 drop-shadow-sm',
-              isMe
-                ? 'bg-primary-100 items-end self-end rounded-br-none'
-                : 'bg-canvas-0 items-start self-start rounded-bl-none'
-            )}
-          >
-            {chats.map((chat) => (
-              <Content content={chat.content} key={chat.id} />
-            ))}
           </Col>
         </Col>
-        {!isMe && (
-          <MessageAvatar
-            beforeSameUser={!!beforeSameUser}
-            userAvatarUrl={userAvatarUrl}
-            username={userUsername}
+        {!hideAvatar && (
+          <MultipleOrSingleAvatars
+            size={'xs'}
+            spacing={0.3}
+            startLeft={0.6}
+            avatarUrls={otherUsers?.map((u) => u.avatarUrl) || []}
+            onClick={() => setShowUsers(true)}
+          />
+        )}
+        {showUsers && (
+          <MultiUserModal
+            showUsers={showUsers}
+            setShowUsers={setShowUsers}
+            otherUsers={otherUsers ?? []}
           />
         )}
       </Row>
     )
   }
 )
+export const MultiUserModal = (props: {
+  showUsers: boolean
+  setShowUsers: (show: boolean) => void
+  otherUsers: User[]
+}) => {
+  const { showUsers, setShowUsers, otherUsers } = props
+  return (
+    <Modal open={showUsers} setOpen={setShowUsers}>
+      <Col className={clsx(MODAL_CLASS)}>
+        {otherUsers?.map((user) => (
+          <Row
+            key={user.id}
+            className={'w-full items-center justify-start gap-2'}
+          >
+            <UserAvatarAndBadge user={user} />
+          </Row>
+        ))}
+      </Col>
+    </Modal>
+  )
+}
 
 function MessageAvatar(props: {
   beforeSameUser: boolean

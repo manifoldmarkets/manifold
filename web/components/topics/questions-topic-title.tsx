@@ -2,7 +2,6 @@ import { Group, TOPIC_KEY } from 'common/group'
 import {
   ArrowLeftIcon,
   BookmarkIcon,
-  PencilIcon,
   PlusCircleIcon,
 } from '@heroicons/react/outline'
 import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
@@ -10,19 +9,17 @@ import { DOMAIN } from 'common/envs/constants'
 import { Button } from 'web/components/buttons/button'
 import { AddContractToGroupModal } from 'web/components/topics/add-contract-to-group-modal'
 import {
-  followTopic,
+  internalFollowTopic,
   TopicOptionsButton,
 } from 'web/components/topics/topics-button'
 import { Row } from 'web/components/layout/row'
 import { useRealtimeMemberGroups } from 'web/hooks/use-group-supabase'
 import { User } from 'common/user'
 import { forwardRef, Ref, useState } from 'react'
-import {
-  FollowedTopicsModal,
-  ForYouDropdown,
-} from 'web/components/topics/for-you-dropdown'
+import { TopicDropdown } from 'web/components/topics/topic-dropdown'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useRouter } from 'next/router'
+import { TOPIC_IDS_YOU_CANT_FOLLOW } from 'common/supabase/groups'
 
 export const QuestionsTopicTitle = forwardRef(
   (
@@ -42,16 +39,7 @@ export const QuestionsTopicTitle = forwardRef(
     const isMobile = useIsMobile()
     const isFollowing =
       currentTopic && (yourGroupIds ?? []).includes(currentTopic.id)
-    const [showFollowedTopics, setShowFollowedTopics] = useState(false)
     const router = useRouter()
-
-    const buttonTopics = [
-      {
-        name: 'Followed topics',
-        icon: <PencilIcon className="h-5 w-5" />,
-        onClick: () => setShowFollowedTopics(true),
-      },
-    ]
 
     return (
       <Row
@@ -67,41 +55,28 @@ export const QuestionsTopicTitle = forwardRef(
             </Button>
             <span className="text-primary-700 !mb-0 line-clamp-1 text-2xl">
               {currentTopic?.name ??
-                (topicSlug === 'for-you' ? '⭐️ For you' : 'Browse')}
+                (topicSlug === 'for-you'
+                  ? '⭐️ For you'
+                  : topicSlug === 'recent'
+                  ? '⏳ Your recents'
+                  : 'Browse')}
             </span>
           </Row>
-          {user && topicSlug === 'for-you' ? (
-            <ForYouDropdown
-              setCurrentTopic={setTopicSlug}
-              user={user}
-              className={'sm:hidden'}
-            />
-          ) : currentTopic ? (
+          {currentTopic ? (
             <TopicOptionsButton
               group={currentTopic}
               yourGroupIds={yourGroupIds}
               user={user}
               className={'sm:hidden'}
             />
+          ) : user ? (
+            <TopicDropdown
+              setCurrentTopic={setTopicSlug}
+              user={user}
+              className={'sm:hidden'}
+            />
           ) : null}
         </Row>
-        {topicSlug === 'for-you' && (
-          <Row className={'items-center justify-between gap-2'}>
-            {buttonTopics.map((item) => (
-              <Button
-                key={item.name}
-                size={'sm'}
-                color={'gray-white'}
-                onClick={item.onClick}
-              >
-                <Row className={'items-center gap-1'}>
-                  {item.icon}
-                  {item.name}
-                </Row>
-              </Button>
-            ))}
-          </Row>
-        )}
         {currentTopic && (
           <Row className="items-center">
             <CopyLinkOrShareButton
@@ -135,45 +110,38 @@ export const QuestionsTopicTitle = forwardRef(
                 )}
               </>
             ) : (
-              <Button
-                color={'gray-white'}
-                className={'whitespace-nowrap'}
-                loading={loading}
-                size={isMobile ? 'sm' : 'md'}
-                onClick={() => {
-                  setLoading(true)
-                  followTopic(user, currentTopic).finally(() =>
-                    setLoading(false)
-                  )
-                }}
-              >
-                {!loading && <BookmarkIcon className={'mr-1 h-5 w-5'} />}
-                Follow
-              </Button>
+              !TOPIC_IDS_YOU_CANT_FOLLOW.includes(currentTopic.id) && (
+                <Button
+                  color={'gray-white'}
+                  className={'whitespace-nowrap'}
+                  loading={loading}
+                  size={isMobile ? 'sm' : 'md'}
+                  onClick={() => {
+                    setLoading(true)
+                    internalFollowTopic(user, currentTopic).finally(() =>
+                      setLoading(false)
+                    )
+                  }}
+                >
+                  {!loading && <BookmarkIcon className={'mr-1 h-5 w-5'} />}
+                  Follow
+                </Button>
+              )
             )}
           </Row>
         )}
-        {showFollowedTopics && user && (
-          <FollowedTopicsModal
-            user={user}
-            setShow={setShowFollowedTopics}
-            show={showFollowedTopics}
-            setCurrentTopicSlug={setTopicSlug}
-            groups={yourGroups}
-          />
-        )}
-        {user && topicSlug === 'for-you' ? (
-          <ForYouDropdown
-            setCurrentTopic={setTopicSlug}
-            user={user}
-            className={'hidden sm:block md:hidden'}
-          />
-        ) : currentTopic ? (
+        {currentTopic ? (
           <TopicOptionsButton
             group={currentTopic}
             yourGroupIds={yourGroupIds}
             user={user}
             className={'hidden sm:block'}
+          />
+        ) : user ? (
+          <TopicDropdown
+            setCurrentTopic={setTopicSlug}
+            user={user}
+            className={'hidden sm:block md:hidden'}
           />
         ) : null}
       </Row>

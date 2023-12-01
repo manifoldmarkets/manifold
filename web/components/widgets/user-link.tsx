@@ -2,9 +2,10 @@ import Link from 'next/link'
 import clsx from 'clsx'
 import {
   BOT_USERNAMES,
-  MOD_USERNAMES,
   VERIFIED_USERNAMES,
-  CORE_USERNAMES,
+  MVP,
+  ENV_CONFIG,
+  MOD_IDS,
 } from 'common/envs/constants'
 import { SparklesIcon } from '@heroicons/react/solid'
 import { Tooltip } from './tooltip'
@@ -14,9 +15,10 @@ import { Avatar } from './avatar'
 import { DAY_MS } from 'common/util/time'
 import ScalesIcon from 'web/lib/icons/scales-icon.svg'
 import { linkClass } from './site-link'
-import Foldy from '/public/logo.svg'
+import Foldy from 'web/public/logo.svg'
 import { Col } from 'web/components/layout/col'
 import { User } from 'common/user'
+import { BsFillArrowThroughHeartFill } from 'react-icons/bs'
 
 export const isFresh = (createdTime: number) =>
   createdTime > Date.now() - DAY_MS * 14
@@ -36,13 +38,13 @@ function shortenName(name: string) {
 }
 
 export function UserAvatarAndBadge(props: {
-  name: string
-  username: string
-  avatarUrl?: string
+  user: { id: string; name: string; username: string; avatarUrl?: string }
   noLink?: boolean
   className?: string
 }) {
-  const { name, username, avatarUrl, noLink, className } = props
+  const { user, noLink, className } = props
+  const { username, avatarUrl } = user
+
   return (
     <Row className={clsx('items-center gap-2', className)}>
       <Avatar
@@ -51,14 +53,13 @@ export function UserAvatarAndBadge(props: {
         size={'sm'}
         noLink={noLink}
       />
-      <UserLink name={name} username={username} noLink={noLink} />
+      <UserLink user={user} noLink={noLink} />
     </Row>
   )
 }
 
 export function UserLink(props: {
-  name: string
-  username: string
+  user: { id: string; name: string; username: string }
   className?: string
   short?: boolean
   noLink?: boolean
@@ -67,8 +68,7 @@ export function UserLink(props: {
   marketCreator?: boolean
 }) {
   const {
-    name,
-    username,
+    user: { id, name, username },
     className,
     short,
     noLink,
@@ -83,6 +83,7 @@ export function UserLink(props: {
       <span className="max-w-[200px] truncate">{shortName}</span>
       {!hideBadge && (
         <UserBadge
+          userId={id}
           username={username}
           fresh={fresh}
           marketCreator={marketCreator}
@@ -122,10 +123,10 @@ function BotBadge() {
   )
 }
 
-export function PostBanBadge() {
+export function BannedBadge() {
   return (
     <Tooltip
-      text="Can't create comments, posts, or questions"
+      text="Can't create comments, messages, or questions"
       placement="bottom"
     >
       <span className="ml-1.5 rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800">
@@ -136,20 +137,24 @@ export function PostBanBadge() {
 }
 
 export function UserBadge(props: {
+  userId: string
   username: string
   fresh?: boolean
   marketCreator?: boolean
 }) {
-  const { username, fresh, marketCreator } = props
+  const { userId, username, fresh, marketCreator } = props
   const badges = []
   if (BOT_USERNAMES.includes(username)) {
     badges.push(<BotBadge key="bot" />)
   }
-  if (CORE_USERNAMES.includes(username)) {
+  if (ENV_CONFIG.adminIds.includes(userId)) {
     badges.push(<CoreBadge key="core" />)
   }
-  if (MOD_USERNAMES.includes(username)) {
+  if (MOD_IDS.includes(userId)) {
     badges.push(<ModBadge key="mod" />)
+  }
+  if (MVP.includes(username)) {
+    badges.push(<MVPBadge key="mvp" />)
   }
   if (VERIFIED_USERNAMES.includes(username)) {
     badges.push(<VerifiedBadge key="check" />)
@@ -178,8 +183,18 @@ function CoreBadge() {
 // Show a normal checkmark next to our mods
 function ModBadge() {
   return (
-    <Tooltip text="Trustworthy. ish." placement="right">
+    <Tooltip text="Moderator" placement="right">
       <ShieldCheckIcon
+        className="h-4 w-4 text-purple-700 dark:text-purple-400"
+        aria-hidden="true"
+      />
+    </Tooltip>
+  )
+}
+function MVPBadge() {
+  return (
+    <Tooltip text="MVP" placement="right">
+      <BsFillArrowThroughHeartFill
         className="h-4 w-4 text-purple-700 dark:text-purple-400"
         aria-hidden="true"
       />
@@ -190,7 +205,7 @@ function ModBadge() {
 // Show a normal checkmark next to our verified users
 function VerifiedBadge() {
   return (
-    <Tooltip text="It's really me!" placement="right">
+    <Tooltip text="Verified" placement="right">
       <BadgeCheckIcon className="text-primary-700 h-4 w-4" aria-hidden />
     </Tooltip>
   )
@@ -226,11 +241,12 @@ export const StackedUserNames = (props: {
         <span className={clsx('break-anywhere ', className)}>{user.name}</span>
         {
           <UserBadge
+            userId={user.id}
             username={user.username}
             fresh={isFresh(user.createdTime)}
           />
         }
-        {user.isBannedFromPosting && <PostBanBadge />}
+        {user.isBannedFromPosting && <BannedBadge />}
       </div>
       <Row className={'max-w-[8rem] flex-shrink flex-wrap gap-2 sm:max-w-none'}>
         <span className={clsx('text-ink-400 text-sm', usernameClassName)}>

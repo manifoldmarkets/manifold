@@ -15,16 +15,18 @@ export function useRealtimeCommentsOnLover(userId: string) {
       .gt('id', maxBy(rows, 'id')?.id ?? 0)
 
   const res = usePersistentSupabasePolling(
+    'lover_comments',
     q,
     newRowsOnlyQ,
-    `comments-on-lover-${userId}`,
+    `comments-on-lover-${userId}-v1`,
     {
       ms: 500,
       deps: [userId],
+      shouldUseLocalStorage: false,
     }
   )
 
-  return res?.data?.map((r) =>
+  return res?.map((r) =>
     convertSQLtoTS<'lover_comments', LoverComment>(r, {
       created_time: tsToMillis as any,
     })

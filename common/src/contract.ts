@@ -90,6 +90,7 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
 
   closeEmailsSent?: number
 
+  views: number
   volume: number
   volume24Hours: number
   elasticity: number
@@ -111,11 +112,13 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
   isTwitchContract?: boolean
 
   coverImageUrl?: string
-  nonPredictive?: boolean // If true, don't include profits in leagues, etc.
+  isRanked?: boolean
+  isSubsidized?: boolean // NOTE: not backfilled, undefined = true
 
   // Manifold.love
   loverUserId1?: string // The user id's of the pair of lovers referenced in the question.
   loverUserId2?: string // The user id's of the pair of lovers referenced in the question.
+  matchCreatorId?: string // The user id of the person who proposed the match.
 } & T
 
 export type DPMContract = Contract & DPM
@@ -376,7 +379,7 @@ export const MAX_DESCRIPTION_LENGTH = 16000
 export const CPMM_MIN_POOL_QTY = 0.01
 
 export type Visibility = 'public' | 'unlisted' | 'private'
-export const VISIBILITIES = ['public', 'unlisted', 'private'] as const
+export const VISIBILITIES = ['public', 'unlisted'] as const
 
 export const MINUTES_ALLOWED_TO_UNRESOLVE = 10
 

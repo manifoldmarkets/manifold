@@ -35,7 +35,6 @@ import { ManifoldLogo } from './manifold-logo'
 import { ProfileSummary } from './profile-summary'
 import { Item, SidebarItem } from './sidebar-item'
 import { PrivateMessagesIcon } from 'web/components/messaging/messages-icon'
-import toast from 'react-hot-toast'
 
 export default function Sidebar(props: {
   className?: string
@@ -54,9 +53,6 @@ export default function Sidebar(props: {
   const { theme, changeTheme } = useContext(ThemeContext)
 
   const toggleTheme = () => {
-    if (theme === 'dark') {
-      toast('👻 Are you afraid of the dark?')
-    }
     changeTheme(theme === 'auto' ? 'dark' : theme === 'dark' ? 'light' : 'auto')
   }
   const navOptions = props.navigationOptions?.length

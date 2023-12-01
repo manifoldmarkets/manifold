@@ -1,13 +1,12 @@
 // src/components/SearchBar.tsx
 import clsx from 'clsx'
-import { Lover } from 'love/hooks/use-lover'
 import { useEffect, useRef, useState } from 'react'
 import { Col } from 'web/components/layout/col'
-import { Row } from 'web/components/layout/row'
 import { Input } from 'web/components/widgets/input'
 import { searchLocation } from 'web/lib/firebase/api'
 import { Row as rowFor } from 'common/supabase/utils'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
+import { ReactNode } from 'react'
 
 export type City = {
   geodb_city_id: string
@@ -18,7 +17,7 @@ export type City = {
   city_longitude: number
 }
 
-function loverToCity(lover: rowFor<'lovers'>) {
+export function loverToCity(lover: rowFor<'lovers'>) {
   return {
     geodb_city_id: lover.geodb_city_id,
     city: lover.city,
@@ -31,9 +30,20 @@ function loverToCity(lover: rowFor<'lovers'>) {
 
 export function CitySearchBox(props: {
   onCitySelected: (city: City | undefined) => void
-  lover: rowFor<'lovers'>
+  selected: boolean
+  selectedNode: ReactNode | undefined
+  searchBoxClassName?: string
+  excludeCityIds?: string[]
+  placeholder?: string
 }) {
-  const { onCitySelected, lover } = props
+  const {
+    onCitySelected,
+    selected,
+    selectedNode,
+    searchBoxClassName,
+    excludeCityIds,
+    placeholder,
+  } = props
   const [query, setQuery] = useState('')
   const [cities, setCities] = useState<City[]>([])
   const [loading, setLoading] = useState(false)
@@ -82,20 +92,8 @@ export function CitySearchBox(props: {
     }
   }, [query])
 
-  if (lover.city) {
-    return (
-      <Row className="border-primary-500 w-full justify-between rounded border px-4 py-2">
-        <CityRow city={loverToCity(lover)} />
-        <button
-          className="text-ink-700 hover:text-primary-700 text-sm underline"
-          onClick={() => {
-            onCitySelected(undefined)
-          }}
-        >
-          Change
-        </button>
-      </Row>
-    )
+  if (selected) {
+    return <>{selectedNode}</>
   }
 
   return (
@@ -103,8 +101,8 @@ export function CitySearchBox(props: {
       <Input
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        placeholder="Search for a city..."
-        className="w-full"
+        placeholder={placeholder ?? 'Search for a city...'}
+        className={clsx(searchBoxClassName, 'w-full')}
         autoFocus
         onFocus={() => setDropdownVisible(true)}
         onBlur={(e) => {
@@ -128,25 +126,33 @@ export function CitySearchBox(props: {
           ref={dropdownRef}
         >
           {cities.length < 1 && loading && <LoadingIndicator />}
-          {cities.map((city, index) => (
-            <li
-              key={index}
-              onClick={() => {
-                onCitySelected(city)
-                setQuery('')
-                setCities([])
-              }}
-            >
-              <CityRow city={city} className="hover:bg-primary-200 px-4 py-2" />
-            </li>
-          ))}
+          {cities.map((city, index) => {
+            if (excludeCityIds && excludeCityIds.includes(city.geodb_city_id)) {
+              return null
+            }
+            return (
+              <li
+                key={index}
+                onClick={() => {
+                  onCitySelected(city)
+                  setQuery('')
+                  setCities([])
+                }}
+              >
+                <CityRow
+                  city={city}
+                  className="hover:bg-primary-200 px-4 py-2"
+                />
+              </li>
+            )
+          })}
         </ul>
       )}
     </div>
   )
 }
 
-function CityRow(props: { city: City; className?: string }) {
+export function CityRow(props: { city: City; className?: string }) {
   const { city, className } = props
   return (
     <Col className={clsx(className, 'w-full justify-between transition-all')}>

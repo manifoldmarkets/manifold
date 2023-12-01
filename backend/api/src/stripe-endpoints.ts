@@ -85,8 +85,9 @@ export const createcheckoutsession = async (req: Request, res: Response) => {
       },
     ],
     mode: 'payment',
+    allow_promotion_codes: true,
     success_url: `${referrer}?funding-success`,
-    cancel_url: `${referrer}?funding-failiure`,
+    cancel_url: `${referrer}?funding-failure`,
   })
 
   res.redirect(303, session.url || '')

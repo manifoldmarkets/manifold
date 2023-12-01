@@ -19,14 +19,10 @@ export {
   sendWeeklyPortfolioUpdate,
   saveWeeklyContractMetrics,
 } from './scheduled/weekly-portfolio-updates'
-export * from './scheduled/update-contract-metrics'
-export * from './scheduled/update-user-metrics'
 export * from './scheduled/update-group-metrics'
 export * from './scheduled/update-stats'
 export * from './scheduled/backup-db'
-export * from './scheduled/send-onboarding-notifications'
 export * from './scheduled/market-close-notifications'
-export * from './scheduled/add-trending-feed-contracts'
 export * from './scheduled/score-contracts'
 export * from './scheduled/weekly-markets-emails'
 export * from './scheduled/reset-betting-streaks'

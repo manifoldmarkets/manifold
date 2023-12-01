@@ -11,3 +11,13 @@ export const getBetsDirect = async (
     (row) => row.data as Bet
   )
 }
+export const getBetsRepliedToComment = async (
+  pg: SupabaseDirectClient,
+  commentId: string
+) => {
+  return await pg.map(
+    `select data from contract_bets where data->>'replyToCommentId' = $1`,
+    [commentId],
+    (row) => (row ? (row.data as Bet) : null)
+  )
+}

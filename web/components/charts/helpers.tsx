@@ -1,26 +1,29 @@
 import clsx from 'clsx'
-import { Axis, AxisScale } from 'd3-axis'
+import { Axis } from 'd3-axis'
 import { pointer, select } from 'd3-selection'
 import { CurveFactory, area, line } from 'd3-shape'
-import { zoom } from 'd3-zoom'
+import { ZoomBehavior, zoom, zoomIdentity } from 'd3-zoom'
 import dayjs from 'dayjs'
 import React, {
   ReactNode,
   SVGProps,
+  useCallback,
   useDeferredValue,
   useEffect,
+  useId,
   useMemo,
   useRef,
   useState,
 } from 'react'
 import { Contract } from 'common/contract'
 import { useMeasureSize } from 'web/hooks/use-measure-size'
-import { clamp } from 'lodash'
-import { ScaleTime, ScaleContinuousNumeric } from 'd3-scale'
+import { clamp, sortBy } from 'lodash'
+import { ScaleTime, scaleTime } from 'd3-scale'
+import { useEvent } from 'web/hooks/use-event'
+import { buildArray } from 'common/util/array'
 
-export interface ContinuousScale<T> extends AxisScale<T> {
-  invert(n: number): T
-}
+// min number of pixels to mouse drag over to trigger zoom
+const ZOOM_DRAG_THRESHOLD = 16
 
 export const XAxis = <X,>(props: { w: number; h: number; axis: Axis<X> }) => {
   const { h, axis } = props
@@ -164,19 +167,14 @@ export const SliceMarker = (props: {
   )
 }
 
-export const SVGChart = <
-  X,
-  TT extends { x: number; y: number },
-  S extends AxisScale<X>
->(props: {
+export const SVGChart = <X, TT extends { x: number; y: number }>(props: {
   children: ReactNode
   w: number
   h: number
   xAxis: Axis<X>
   yAxis: Axis<number>
   ttParams?: TT | undefined
-  fullScale?: S
-  onRescale?: (xScale: S | null) => void
+  zoomParams?: ZoomParams
   onMouseOver?: (mouseX: number, mouseY: number) => void
   onMouseLeave?: () => void
   Tooltip?: (props: TT) => ReactNode
@@ -190,44 +188,13 @@ export const SVGChart = <
     xAxis,
     yAxis,
     ttParams,
-    fullScale,
-    onRescale,
+    zoomParams,
     onMouseOver,
     onMouseLeave,
     Tooltip,
     noGridlines,
     className,
   } = props
-  const svgRef = useRef<SVGSVGElement>(null)
-
-  useEffect(() => {
-    if (fullScale != null && onRescale != null && svgRef.current) {
-      const zoomer = zoom<SVGSVGElement, unknown>()
-        .scaleExtent([1, 100])
-        .extent([
-          [0, 0],
-          [w, h],
-        ])
-        .translateExtent([
-          [0, 0],
-          [w, h],
-        ])
-        .on('zoom', (ev) => onRescale(ev.transform.rescaleX(fullScale)))
-        .filter((ev) => {
-          if (ev instanceof WheelEvent) {
-            return ev.ctrlKey || ev.metaKey || ev.altKey
-          } else if (ev instanceof TouchEvent) {
-            // disable on touch devices entirely for now to not interfere with scroll
-            return false
-          }
-          return !ev.button
-        })
-
-      select(svgRef.current)
-        .call(zoomer)
-        .on('dblclick.zoom', () => onRescale?.(null))
-    }
-  }, [w, h, fullScale, onRescale])
 
   const onPointerMove = (ev: React.PointerEvent) => {
     if (ev.pointerType === 'mouse' || ev.pointerType === 'pen') {
@@ -236,9 +203,22 @@ export const SVGChart = <
     }
   }
 
+  const { onPointerUp, selectStart, selectEnd } = useInitZoomBehavior({
+    zoomParams,
+    w,
+    h,
+  })
+
+  useEffect(() => {
+    window.addEventListener('pointerup', onPointerUp)
+    return () => window.removeEventListener('pointerup', onPointerUp)
+  }, [onPointerUp])
+
   const onPointerLeave = () => {
     onMouseLeave?.()
   }
+
+  const id = useId()
 
   if (w <= 0 || h <= 0) {
     // i.e. chart is smaller than margin
@@ -247,7 +227,7 @@ export const SVGChart = <
 
   return (
     <div
-      className={clsx(className, 'relative')}
+      className={clsx(className, 'relative cursor-crosshair select-none')}
       onPointerEnter={onPointerMove}
       onPointerMove={onPointerMove}
       onPointerLeave={onPointerLeave}
@@ -261,28 +241,45 @@ export const SVGChart = <
           {Tooltip(ttParams)}
         </TooltipContainer>
       )}
+      {selectStart != undefined && selectEnd != undefined && (
+        // swipeover
+        <div
+          className={clsx(
+            selectEnd - selectStart > ZOOM_DRAG_THRESHOLD
+              ? 'bg-primary-400/40'
+              : 'bg-canvas-100/40',
+            'absolute -z-10 transition-colors'
+          )}
+          style={{
+            left: selectStart,
+            right: w - selectEnd,
+            top: 0,
+            bottom: 0,
+          }}
+        />
+      )}
       <svg
         width={w}
         height={h}
         viewBox={`0 0 ${w} ${h}`}
         overflow="visible"
-        ref={svgRef}
+        ref={zoomParams?.svgRef}
       >
         <defs>
-          <filter id="blur">
+          <filter id={`${id}-blur`}>
             <feGaussianBlur stdDeviation="8" />
           </filter>
-          <mask id="mask">
+          <mask id={`${id}-mask`}>
             <rect
               x={-8}
               y={-8}
               width={w + 16}
               height={h + 16}
               fill="white"
-              filter="url(#blur)"
+              filter={`url(#${id}-blur)`}
             />
           </mask>
-          <clipPath id="clip">
+          <clipPath id={`${id}-clip`}>
             <rect x={-32} y={-32} width={w + 64} height={h + 64} />
           </clipPath>
         </defs>
@@ -292,8 +289,8 @@ export const SVGChart = <
 
           <YAxis axis={yAxis} w={w} noGridlines={noGridlines} />
           {/* clip to stop pointer events outside of graph, and mask for the blur to indicate zoom */}
-          <g clipPath="url(#clip)">
-            <g mask="url(#mask)">{children}</g>
+          <g clipPath={`url(#${id}-clip)`} mask={`url(#${id}-mask)`}>
+            {children}
           </g>
         </g>
       </svg>
@@ -325,6 +322,7 @@ export type TooltipProps<T> = {
   y: number
   prev: T | undefined
   next: T | undefined
+  // prev or next, whichever is closer
   nearest: T
 }
 
@@ -343,7 +341,7 @@ export const TooltipContainer = (props: {
       ref={elemRef}
       className={clsx(
         className,
-        'border-ink-200 bg-canvas-0/70 pointer-events-none absolute z-10 whitespace-pre rounded border px-4 py-2 text-sm'
+        'border-ink-200 dark:border-ink-300 bg-canvas-0/70 pointer-events-none absolute z-10 whitespace-pre rounded border px-4 py-2 text-sm'
       )}
       style={{ ...pos }}
     >
@@ -352,11 +350,11 @@ export const TooltipContainer = (props: {
   )
 }
 
-export const getDateRange = (contract: Contract) => {
-  const { createdTime, closeTime, resolutionTime } = contract
+export const getEndDate = (contract: Contract) => {
+  const { closeTime, resolutionTime } = contract
   const isClosed = !!closeTime && Date.now() > closeTime
   const endDate = resolutionTime ?? (isClosed ? closeTime : null)
-  return [createdTime, endDate ?? null] as const
+  return endDate ?? null
 }
 
 export const getRightmostVisibleDate = (
@@ -378,15 +376,16 @@ export const formatPct = (n: number) => {
   return `${(n * 100).toFixed(0)}%`
 }
 
-export const formatDate = (
+export const formatDateInRange = (
   date: Date | number,
-  opts?: {
-    includeYear?: boolean
-    includeHour?: boolean
-    includeMinute?: boolean
-  }
+  start: Date | number,
+  end: Date | number
 ) => {
-  const { includeYear, includeHour, includeMinute } = opts ?? {}
+  const includeYear = !dayjs(start).isSame(end, 'year')
+  const includeDay = !dayjs(start).isSame(end, 'day')
+  const includeHour = dayjs(end).diff(start, 'day') <= 7
+  const includeMinute = dayjs(end).diff(start, 'day') <= 1
+
   const d = dayjs(date)
   const now = Date.now()
   if (
@@ -395,44 +394,172 @@ export const formatDate = (
   ) {
     return 'Now'
   } else {
-    const dayName = d.isSame(now, 'day')
-      ? 'Today'
+    const day = !includeDay
+      ? null
+      : d.isSame(now, 'day')
+      ? '[Today]'
       : d.add(1, 'day').isSame(now, 'day')
-      ? 'Yesterday'
-      : null
-    let format = dayName ? `[${dayName}]` : 'MMM D'
-    if (includeMinute) {
-      format += ', h:mma'
-    } else if (includeHour) {
-      format += ', ha'
-    } else if (includeYear) {
-      format += ', YYYY'
-    }
-    return d.format(format)
+      ? '[Yesterday]'
+      : d.subtract(1, 'day').isSame(now, 'day')
+      ? '[Tomorrow]'
+      : 'MMM D'
+
+    const time = includeMinute ? 'h:mma' : includeHour ? 'ha' : null
+    const year = includeYear ? 'YYYY' : null
+
+    const format = buildArray(day, time, year).join(', ')
+    return format && d.format(format)
   }
 }
 
-export const formatDateInRange = (
-  d: Date | number,
-  start: Date | number,
-  end: Date | number
-) => {
-  const opts = {
-    includeYear: !dayjs(start).isSame(end, 'year'),
-    includeHour: dayjs(start).add(8, 'day').isAfter(end),
-    includeMinute: dayjs(end).diff(start, 'hours') < 2,
-  }
-  return formatDate(d, opts)
+// ZOOM!
+
+export type ZoomParams = {
+  svgRef: React.MutableRefObject<SVGSVGElement | null>
+  rescale: (
+    scale: ScaleTime<number, number> | null,
+    syncZoomer?: boolean
+  ) => void
+  rescaleBetween: (start: number | Date, end: number | Date) => void
+  // full region
+  xScale: ScaleTime<number, number>
+  // visible region
+  viewXScale: ScaleTime<number, number>
+  // initializers
+  setXScale: (xScale: ScaleTime<number, number>) => void
+  setZoomer: (zoomer: ZoomBehavior<SVGSVGElement, unknown>) => void
 }
 
-export const useViewScale = () => {
-  const [viewXScale, setViewXScale] = useState<ScaleTime<number, number>>()
-  const [viewYScale, setViewYScale] =
-    useState<ScaleContinuousNumeric<number, number>>()
+export const useZoom = (
+  onRescale?: (xScale: ScaleTime<number, number> | null) => void
+): ZoomParams => {
+  const svgRef = useRef<SVGSVGElement>(null)
+  const zoomRef = useRef<ZoomBehavior<SVGSVGElement, unknown>>()
+  const [xScale, setXScale] = useState<ScaleTime<number, number>>(scaleTime())
+  const [viewXScale, setViewXScale] = useState<ScaleTime<number, number>>(
+    scaleTime()
+  )
+
+  const rescale = useCallback(
+    (scale: ScaleTime<number, number> | null, syncZoomer = true) => {
+      onRescale?.(scale)
+      const newXScale = scale ?? xScale
+      setViewXScale(() => newXScale)
+
+      // keep zoomer in sync
+      if (!xScale || !newXScale || !svgRef.current || !syncZoomer) return
+
+      const [min, max] = xScale.domain()
+      const [low, high] = newXScale.domain()
+
+      const scaleFactor =
+        (max.valueOf() - min.valueOf()) / (high.valueOf() - low.valueOf())
+
+      const translation = newXScale(min) - newXScale(low)
+
+      select(svgRef.current).call(
+        zoomRef.current?.transform as any,
+        zoomIdentity.translate(translation, 0).scale(scaleFactor)
+      )
+    },
+    [xScale]
+  )
+
+  const rescaleBetween = (start: number | Date, end: number | Date) => {
+    if (xScale) rescale(xScale.copy().domain([start, end]))
+  }
+
   return {
-    viewXScale,
-    setViewXScale,
-    viewYScale,
-    setViewYScale,
+    svgRef,
+    rescale,
+    rescaleBetween,
+    setZoomer: (z) => {
+      zoomRef.current = z
+    },
+    setXScale: (scale) => {
+      setXScale(() => scale)
+      setViewXScale(() => scale)
+    },
+    xScale: xScale ?? scaleTime(),
+    viewXScale: viewXScale ?? xScale ?? scaleTime(),
   }
+}
+
+function useInitZoomBehavior(props: {
+  zoomParams?: ZoomParams
+  w: number
+  h: number
+}) {
+  const { zoomParams, w, h } = props
+
+  const [mouseDownX, setMouseDownX] = useState<number>()
+  const [mouseCurrentX, setMouseCurrentX] = useState<number>()
+  const [selectStart, selectEnd] = sortBy([mouseDownX, mouseCurrentX])
+
+  useEffect(() => {
+    if (!zoomParams) return
+    const { setZoomer, rescale, xScale, svgRef } = zoomParams
+    if (!svgRef.current) return
+
+    const zoomer = zoom<SVGSVGElement, unknown>()
+      .scaleExtent([1, Infinity])
+      .extent([
+        [0, 0],
+        [w, h],
+      ])
+      .translateExtent([
+        [0, 0],
+        [w, h],
+      ])
+      .on('zoom', (ev) => {
+        if (ev.sourceEvent) {
+          rescale(ev.transform.rescaleX(xScale), false)
+        }
+      })
+      .filter((ev) => {
+        if (ev instanceof WheelEvent) {
+          return ev.ctrlKey || ev.metaKey || ev.altKey
+        } else if (ev instanceof TouchEvent) {
+          // return false
+          return ev.touches.length === 2
+        }
+        return !ev.button
+      })
+
+    setZoomer(zoomer)
+    select(svgRef.current)
+      .call(zoomer)
+      .on('dblclick.zoom', () => rescale(null))
+      .on('mousedown.zoom', (ev) => {
+        if (ev.button === 0 && !ev.ctrlKey && !ev.metaKey && !ev.altKey) {
+          const [x] = pointer(ev)
+          setMouseDownX(x)
+        }
+      })
+      .on('mousemove.zoom', (ev) => {
+        const [x] = pointer(ev)
+        setMouseCurrentX(x)
+      })
+  }, [w, h, zoomParams?.svgRef.current])
+
+  const onPointerUp = useEvent(() => {
+    if (
+      zoomParams &&
+      selectStart != null &&
+      selectEnd != null &&
+      selectEnd - selectStart > ZOOM_DRAG_THRESHOLD
+    ) {
+      const xScale = zoomParams.viewXScale
+
+      const start = xScale.invert(selectStart)
+      const end = xScale.invert(selectEnd)
+
+      if (start && end) {
+        zoomParams?.rescaleBetween(start, end)
+      }
+    }
+    setMouseDownX(undefined)
+  })
+
+  return { onPointerUp, selectStart, selectEnd }
 }

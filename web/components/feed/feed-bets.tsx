@@ -1,4 +1,4 @@
-import { memo } from 'react'
+import { memo, useState } from 'react'
 import dayjs from 'dayjs'
 import { Contract } from 'common/contract'
 import { Bet } from 'common/bet'
@@ -22,6 +22,10 @@ import { ReplyIcon } from '@heroicons/react/solid'
 import { track } from 'web/lib/service/analytics'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { InfoTooltip } from '../widgets/info-tooltip'
+import { filterDefined } from 'common/util/array'
+import { sumBy, uniq } from 'lodash'
+import { Modal, MODAL_CLASS } from 'web/components/layout/modal'
+import { MultipleOrSingleAvatars } from 'web/components/multiple-or-single-avatars'
 
 export const FeedBet = memo(function FeedBet(props: {
   contract: Contract
@@ -59,6 +63,120 @@ export const FeedBet = memo(function FeedBet(props: {
     </Col>
   )
 })
+export const FeedReplyBet = memo(function FeedReplyBet(props: {
+  contract: Contract
+  bets: Bet[]
+  avatarSize?: AvatarSizeType
+  className?: string
+  onReply?: (bet: Bet) => void
+}) {
+  const { contract, bets, avatarSize, className } = props
+  const showUser = bets.every((b) => dayjs(b.createdTime).isAfter('2022-06-01'))
+  const avatarUrls = filterDefined(uniq(bets.map((b) => b.userAvatarUrl)))
+  const [showBets, setShowBets] = useState(false)
+  return (
+    <Col className={'w-full'}>
+      <Row className={'w-full gap-2'}>
+        {!showUser || avatarUrls.length === 0 ? (
+          <EmptyAvatar className="mx-1" />
+        ) : avatarUrls.length === 1 ? (
+          <Avatar
+            size={avatarSize}
+            avatarUrl={bets[0].userAvatarUrl}
+            username={bets[0].userUsername}
+          />
+        ) : (
+          avatarUrls.length > 1 && (
+            <MultipleOrSingleAvatars
+              size={'2xs'}
+              spacing={-0.2}
+              startLeft={0.2}
+              onClick={() => setShowBets(true)}
+              avatarUrls={avatarUrls}
+            />
+          )
+        )}
+        {showBets && (
+          <Modal open={showBets} setOpen={setShowBets}>
+            <Col className={MODAL_CLASS}>
+              {bets.map((bet) => (
+                <FeedBet
+                  key={bet.id + 'modal-bet'}
+                  contract={contract}
+                  bet={bet}
+                />
+              ))}
+            </Col>
+          </Modal>
+        )}
+        <Row
+          className={clsx(
+            className,
+            'w-full items-start gap-2 rounded-r-lg rounded-bl-lg  p-1'
+          )}
+        >
+          {bets.length === 1 ? (
+            <BetStatusText
+              bet={bets[0]}
+              contract={contract}
+              hideUser={!showUser}
+              className="flex-1"
+            />
+          ) : (
+            <BetStatusesText bets={bets} contract={contract} />
+          )}
+        </Row>
+      </Row>
+    </Col>
+  )
+})
+
+export function BetStatusesText(props: {
+  contract: Contract
+  bets: Bet[]
+  className?: string
+  inTimeline?: boolean
+}) {
+  const { bets, contract, className, inTimeline } = props
+  const {
+    amount,
+    outcome,
+    createdTime,
+    answerId,
+    userId,
+    userName,
+    userUsername,
+  } = bets[0]
+
+  const bought = amount >= 0 ? 'bought' : 'sold'
+  const absAmount = Math.abs(sumBy(bets, (b) => b.amount))
+  const money = formatMoney(absAmount)
+  const uniqueUsers = uniq(bets.map((b) => b.userId))
+
+  return (
+    <div className={clsx('text-ink-1000 text-sm', className)}>
+      {!inTimeline &&
+        (uniqueUsers.length === 1 ? (
+          <UserLink
+            user={{ id: userId, name: userName, username: userUsername }}
+            className={'font-semibold'}
+          />
+        ) : (
+          <span>{`${uniq(bets.map((b) => b.userId)).length} traders`}</span>
+        ))}{' '}
+      <>
+        {bought} {money}{' '}
+        <OutcomeLabel
+          outcome={outcome}
+          answerId={answerId}
+          contract={contract}
+          truncate="short"
+        />{' '}
+      </>
+      {!inTimeline && <RelativeTimestamp time={createdTime} shortened={true} />}
+    </div>
+  )
+}
 
 export function BetStatusText(props: {
   contract: Contract
@@ -69,7 +187,7 @@ export function BetStatusText(props: {
 }) {
   const { bet, contract, hideUser, className, inTimeline } = props
   const self = useUser()
-  const { amount, outcome, createdTime, answerId, isChallenge, isApi } = bet
+  const { amount, outcome, createdTime, answerId, isApi } = bet
 
   const bought = amount >= 0 ? 'bought' : 'sold'
   const absAmount = Math.abs(amount)
@@ -99,8 +217,11 @@ export function BetStatusText(props: {
       {!inTimeline ? (
         !hideUser ? (
           <UserLink
-            name={bet.userName}
-            username={bet.userUsername}
+            user={{
+              id: bet.userId,
+              name: bet.userName,
+              username: bet.userUsername,
+            }}
             className={'font-semibold'}
           />
         ) : (

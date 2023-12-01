@@ -7,8 +7,8 @@ import { CreateTopicModal } from 'web/components/topics/create-topic-modal'
 import { Row } from 'web/components/layout/row'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { useUser } from 'web/hooks/use-user'
-import { getGroups, searchGroups } from 'web/lib/supabase/groups'
-import { LoadingIndicator } from '../widgets/loading-indicator'
+import { getGroups } from 'web/lib/supabase/groups'
+import { searchGroups } from 'web/lib/firebase/api'
 import { PRIVACY_STATUS_ITEMS } from './topic-privacy-modal'
 import { uniqBy } from 'lodash'
 
@@ -19,7 +19,6 @@ export function TopicSelector(props: {
   setSelectedGroup: (group: Group) => void
   label?: string
   ignoreGroupIds?: string[]
-  newContract?: boolean
   onlyGroupIds?: string[]
   onCreateTopic?: (group: Group) => void
   className?: string
@@ -30,7 +29,6 @@ export function TopicSelector(props: {
     label,
     onCreateTopic,
     ignoreGroupIds,
-    newContract,
     onlyGroupIds,
     className,
     placeholder,
@@ -65,10 +63,9 @@ export function TopicSelector(props: {
       term: query,
       limit: 10,
       addingToContract: true,
-      newContract,
     }).then((result) => {
       if (requestNumber.current === requestId) {
-        setSearchedGroups(uniqBy(result.data, 'name'))
+        setSearchedGroups(uniqBy(result, 'name'))
         setLoading(false)
       }
     })
@@ -92,95 +89,81 @@ export function TopicSelector(props: {
         nullable={true}
         className={'w-full text-sm'}
       >
-        {() => (
-          <>
-            {label && (
-              <Combobox.Label className="justify-start gap-2 px-1 py-2 text-base">
-                {label}{' '}
-                <InfoTooltip text="Question will be displayed alongside the other questions in the category." />
-              </Combobox.Label>
-            )}
-            <div className="relative w-full">
-              <Combobox.Button as="div">
-                <Combobox.Input
-                  className="border-ink-300 bg-canvas-0 focus:border-primary-500 focus:ring-primary-500 w-full rounded-md border p-3 pl-4  text-sm shadow-sm focus:outline-none focus:ring-1"
-                  onChange={(e) => setQuery(e.target.value)}
-                  displayValue={(group: Group) => group && group.name}
-                  placeholder={placeholder ?? 'e.g. Science, Politics'}
-                />
-              </Combobox.Button>
-              <Combobox.Button className="absolute inset-y-0 right-0 flex items-center rounded-r-md px-2 focus:outline-none">
-                <SelectorIcon
-                  className="text-ink-400 h-5 w-5"
-                  aria-hidden="true"
-                />
-              </Combobox.Button>
+        {label && (
+          <Combobox.Label className="justify-start gap-2 px-1 py-2 text-base">
+            {label}{' '}
+            <InfoTooltip text="Question will be displayed alongside the other questions in the category." />
+          </Combobox.Label>
+        )}
+        <div className="relative w-full">
+          <Combobox.Button as="div">
+            <Combobox.Input
+              className="border-ink-300 bg-canvas-0 focus:border-primary-500 focus:ring-primary-500 w-full rounded-md border p-3 pl-4  text-sm shadow-sm focus:outline-none focus:ring-1"
+              onChange={(e) => setQuery(e.target.value)}
+              displayValue={(group: Group) => group && group.name}
+              placeholder={placeholder ?? 'e.g. Science, Politics'}
+            />
+          </Combobox.Button>
+          <Combobox.Button className="absolute inset-y-0 right-0 flex items-center rounded-r-md px-2 focus:outline-none">
+            <SelectorIcon className="text-ink-400 h-5 w-5" aria-hidden="true" />
+          </Combobox.Button>
 
-              <Combobox.Options
-                static={isCreatingNewGroup}
-                className="bg-canvas-0 ring-ink-1000 absolute z-10 mt-1 max-h-60 w-full overflow-x-hidden rounded-md py-1 shadow-lg ring-1 ring-opacity-5 focus:outline-none"
-              >
-                {loading ? (
-                  <LoadingIndicator />
-                ) : (
-                  searchedGroups
-                    .filter(
-                      (group: Group) =>
-                        !ignoreGroupIds?.some((id) => id == group.id)
-                    )
-                    .map((group: Group) => (
-                      <Combobox.Option
-                        key={group.id}
-                        value={group}
-                        className={({ active }) =>
-                          clsx(
-                            'relative flex h-12 cursor-pointer select-none items-center justify-between px-6 py-2 transition-colors',
-                            active
-                              ? 'bg-primary-200 text-ink-1000'
-                              : 'text-ink-900',
-                            loading ? 'animate-pulse' : ''
-                          )
-                        }
-                      >
-                        {() => (
-                          <>
-                            <div className={'truncate'}>{group.name}</div>
-                            {group.privacyStatus != 'public' && (
-                              <Row className={'text-ink-500'}>
-                                {PRIVACY_STATUS_ITEMS[group.privacyStatus].icon}
-                              </Row>
-                            )}
-                          </>
-                        )}
-                      </Combobox.Option>
-                    ))
-                )}
-
-                {user && (
+          <Combobox.Options
+            static={isCreatingNewGroup}
+            className="bg-canvas-0 ring-ink-1000 absolute z-10 mt-1 max-h-60 w-full overflow-x-hidden rounded-md py-1 shadow-lg ring-1 ring-opacity-5 focus:outline-none"
+          >
+            {loading ? (
+              <>
+                <LoadingOption className={'w-3/4'} />
+                <LoadingOption className={'w-1/2'} />
+                <LoadingOption className={'w-3/4'} />
+              </>
+            ) : (
+              searchedGroups
+                .filter(
+                  (group: Group) =>
+                    !ignoreGroupIds?.some((id) => id == group.id)
+                )
+                .map((group: Group) => (
                   <Combobox.Option
-                    value={'new'}
+                    key={group.id}
+                    value={group}
                     className={({ active }) =>
                       clsx(
                         'relative flex h-12 cursor-pointer select-none items-center justify-between px-6 py-2 transition-colors',
-                        active
-                          ? 'bg-primary-200 text-ink-1000'
-                          : 'text-ink-900',
-                        loading ? 'animate-pulse' : ''
+                        active ? 'bg-primary-200 text-ink-1000' : 'text-ink-900'
                       )
                     }
                   >
-                    {() => (
-                      <Row className={'items-center gap-1 truncate'}>
-                        <PlusCircleIcon className="mr-2 h-5 w-5 text-teal-500" />
-                        Create a new topic
+                    <div className={'truncate'}>{group.name}</div>
+                    {group.privacyStatus != 'public' && (
+                      <Row className={'text-ink-500'}>
+                        {PRIVACY_STATUS_ITEMS[group.privacyStatus].icon}
                       </Row>
                     )}
                   </Combobox.Option>
-                )}
-              </Combobox.Options>
-            </div>
-          </>
-        )}
+                ))
+            )}
+
+            {user && !loading && (
+              <Combobox.Option
+                value={'new'}
+                className={({ active }) =>
+                  clsx(
+                    'relative flex h-12 cursor-pointer select-none items-center justify-between px-6 py-2 transition-colors',
+                    active ? 'bg-primary-200 text-ink-1000' : 'text-ink-900',
+                    loading ? 'animate-pulse' : ''
+                  )
+                }
+              >
+                <Row className={'items-center gap-1 truncate'}>
+                  <PlusCircleIcon className="mr-2 h-5 w-5 text-teal-500" />
+                  Create a new topic
+                </Row>
+              </Combobox.Option>
+            )}
+          </Combobox.Options>
+        </div>
       </Combobox>
       {isCreatingNewGroup && (
         <CreateTopicModal
@@ -198,3 +181,9 @@ export function TopicSelector(props: {
     </Col>
   )
 }
+
+const LoadingOption = (props: { className: string }) => (
+  <div className="flex h-12 w-full animate-pulse select-none items-center px-6">
+    <div className={clsx('bg-ink-300 h-4 rounded-full', props.className)} />
+  </div>
+)

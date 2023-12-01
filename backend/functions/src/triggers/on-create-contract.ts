@@ -1,4 +1,6 @@
 import * as functions from 'firebase-functions'
+import * as admin from 'firebase-admin'
+import * as sharp from 'sharp'
 import { JSONContent } from '@tiptap/core'
 
 import { getUser, log } from 'shared/utils'
@@ -17,8 +19,10 @@ import {
   isContractNonPredictive,
 } from 'shared/supabase/contracts'
 import { addGroupToContract } from 'shared/update-group-contracts-internal'
-import { NON_PREDICTIVE_GROUP_ID } from 'common/supabase/groups'
+import { UNRANKED_GROUP_ID } from 'common/supabase/groups'
 import { HOUSE_LIQUIDITY_PROVIDER_ID } from 'common/antes'
+import { generateImage } from 'shared/helpers/openai-utils'
+import { randomString } from 'common/util/random'
 
 export const onCreateContract = functions
   .runWith({
@@ -27,10 +31,22 @@ export const onCreateContract = functions
   })
   .firestore.document('contracts/{contractId}')
   .onCreate(async (snapshot, context) => {
-    const contract = snapshot.data() as Contract
     const { eventId } = context
-    const contractCreator = await getUser(contract.creatorId)
+
+    const contract = snapshot.data() as Contract
+    const { creatorId, question, loverUserId1, creatorUsername } = contract
+
+    const contractCreator = await getUser(creatorId)
     if (!contractCreator) throw new Error('Could not find contract creator')
+
+    if (!loverUserId1) {
+      const dalleImage = await generateImage(question)
+      if (dalleImage) {
+        await uploadToStorage(dalleImage, creatorUsername)
+          .then((coverImageUrl) => snapshot.ref.update({ coverImageUrl }))
+          .catch((err) => console.error('Failed to load image', err))
+      }
+    }
 
     await completeCalculatedQuestFromTrigger(
       contractCreator,
@@ -63,14 +79,14 @@ export const onCreateContract = functions
       const added = await addGroupToContract(
         contract,
         {
-          id: NON_PREDICTIVE_GROUP_ID,
+          id: UNRANKED_GROUP_ID,
           slug: 'nonpredictive',
           name: 'Unranked',
         },
         pg,
         { userId: HOUSE_LIQUIDITY_PROVIDER_ID }
       )
-      log('Added contract to non-predictive group', added)
+      log('Added contract to unranked group', added)
     }
     if (contract.visibility === 'unlisted') return
     await addContractToFeed(
@@ -91,3 +107,41 @@ export const onCreateContract = functions
       groupIds.map(async (groupId) => upsertGroupEmbedding(pg, groupId))
     )
   })
+
+export const uploadToStorage = async (imgUrl: string, username: string) => {
+  const response = await fetch(imgUrl)
+
+  const arrayBuffer = await response.arrayBuffer()
+  const inputBuffer = Buffer.from(arrayBuffer)
+
+  const buffer = await sharp(inputBuffer)
+    .toFormat('jpeg', { quality: 60 })
+    .toBuffer()
+
+  const bucket = admin.storage().bucket()
+
+  const file = bucket.file(`contract-images/${username}/${randomString()}.jpg`)
+
+  const stream = file.createWriteStream({
+    metadata: {
+      contentType: 'image/jpg',
+    },
+  })
+
+  stream.on('error', (err) => {
+    console.error(err)
+  })
+
+  stream.on('finish', () => {
+    console.log('Image upload completed')
+  })
+
+  stream.end(buffer)
+
+  const urls = await file.getSignedUrl({
+    action: 'read',
+    expires: '03-09-2491',
+  })
+
+  return urls[0]
+}

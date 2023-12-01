@@ -1,14 +1,14 @@
-import { Dictionary, first, partition, sumBy, uniq } from 'lodash'
-import { calculatePayout, getContractBetMetrics } from './calculate'
+import { Dictionary, first, sumBy, uniq } from 'lodash'
+import { calculatePayout, getContractBetMetricsPerAnswer } from './calculate'
 import { Bet, LimitBet } from './bet'
 import { Contract, CPMMContract, DPMContract } from './contract'
 import { User } from './user'
-import { DAY_MS } from './util/time'
 import { computeFills, getNewMultiBetInfo } from './new-bet'
 import { getCpmmProbability } from './calculate-cpmm'
 import { removeUndefinedProps } from './util/object'
 import { logit } from './util/math'
 import { ContractMetric } from 'common/contract-metric'
+import { Answer } from 'common/answer'
 
 const computeInvestmentValue = (
   bets: Bet[],
@@ -194,84 +194,36 @@ export const calculateNewPortfolioMetrics = (
   }
 }
 
-export const calculateMetricsByContract = (
+export const calculateMetricsByContractAndAnswer = (
   betsByContractId: Dictionary<Bet[]>,
   contractsById: Dictionary<Contract>,
-  user?: User
+  user: User,
+  answersByContractId: Dictionary<Answer[]>
 ) => {
   return Object.entries(betsByContractId).map(([contractId, bets]) => {
     const contract: Contract = contractsById[contractId]
-    return calculateUserMetrics(contract, bets, user)
+    const answers = answersByContractId[contractId]
+    return calculateUserMetrics(contract, bets, user, answers)
   })
 }
 
 export const calculateUserMetrics = (
   contract: Contract,
   bets: Bet[],
-  user?: User
+  user?: User,
+  answers?: Answer[]
 ) => {
-  const current = getContractBetMetrics(contract, bets)
-
-  let periodMetrics
-  if (contract.mechanism === 'cpmm-1') {
-    const periods = ['day', 'week', 'month'] as const
-    periodMetrics = Object.fromEntries(
-      periods.map((period) => [
-        period,
-        calculatePeriodProfit(contract, bets, period),
-      ])
-    )
-  }
+  // ContractMetrics will have an answerId for every answer, and a null for the overall metrics.
+  const currentMetrics = getContractBetMetricsPerAnswer(contract, bets, answers)
   const bet = first(bets)
-  return removeUndefinedProps({
-    contractId: contract.id,
-    ...current,
-    from: periodMetrics,
-    userName: user?.name ?? bet?.userName,
-    userId: user?.id ?? bet?.userId,
-    userUsername: user?.username ?? bet?.userUsername,
-    userAvatarUrl: user?.avatarUrl ?? bet?.userAvatarUrl,
-  } as ContractMetric)
-}
-
-const calculatePeriodProfit = (
-  contract: CPMMContract,
-  bets: Bet[],
-  period: 'day' | 'week' | 'month'
-) => {
-  const days = period === 'day' ? 1 : period === 'week' ? 7 : 30
-  const fromTime = Date.now() - days * DAY_MS
-  const [previousBets, recentBets] = partition(
-    bets,
-    (b) => b.createdTime < fromTime
-  )
-
-  const { prob, probChanges } = contract
-  const prevProb = prob - probChanges[period]
-
-  const previousBetsValue = computeInvestmentValueCustomProb(
-    previousBets,
-    contract,
-    prevProb
-  )
-  const currentBetsValue = computeInvestmentValueCustomProb(
-    previousBets,
-    contract,
-    prob
-  )
-
-  const { profit: recentProfit, invested: recentInvested } =
-    getContractBetMetrics(contract, recentBets)
-
-  const profit = currentBetsValue - previousBetsValue + recentProfit
-  const invested = previousBetsValue + recentInvested
-  const profitPercent = invested === 0 ? 0 : 100 * (profit / invested)
-
-  return {
-    profit,
-    profitPercent,
-    invested,
-    prevValue: previousBetsValue,
-    value: currentBetsValue,
-  }
+  return currentMetrics.map((current) => {
+    return removeUndefinedProps({
+      ...current,
+      contractId: contract.id,
+      userName: user?.name ?? bet?.userName,
+      userId: user?.id ?? bet?.userId,
+      userUsername: user?.username ?? bet?.userUsername,
+      userAvatarUrl: user?.avatarUrl ?? bet?.userAvatarUrl,
+    } as ContractMetric)
+  })
 }

@@ -13,6 +13,7 @@ import { Row } from '../layout/row'
 import { UserFromId } from 'web/components/user-from-id'
 import { CollapsibleContent } from '../widgets/collapsible-content'
 import { JSONContent } from '@tiptap/core'
+import { filterDefined } from 'common/util/array'
 
 type ContractEdit = {
   id: string
@@ -23,6 +24,7 @@ type ContractEdit = {
   updatedKeys: string[] | null
   editCreated: number
   editorId: string
+  answers?: string[]
 }
 export const ContractHistoryButton = (props: {
   contract: Contract
@@ -84,7 +86,19 @@ export const ContractHistoryButton = (props: {
     for (let i = 0; i < rawEdits.length; i++) {
       const edit = rawEdits[i]
       const prev = rawEdits[i + 1]
-
+      const answers =
+        edit && prev && 'answers' in edit && 'answers' in prev
+          ? filterDefined([
+              prev.answers.find(
+                (a) =>
+                  a.text !== edit.answers.find((a2) => a2.id === a.id)?.text
+              )?.text,
+              edit.answers.find(
+                (a) =>
+                  a.text !== prev.answers.find((a2) => a2.id === a.id)?.text
+              )?.text,
+            ])
+          : undefined
       if (prev) {
         edits.push({
           id: edit.id,
@@ -101,6 +115,7 @@ export const ContractHistoryButton = (props: {
           updatedKeys: prev.updatedKeys,
           editCreated: prev.editCreated,
           editorId: prev.editorId,
+          answers: answers?.length ? answers : undefined,
         })
       } else {
         // market created
@@ -167,6 +182,12 @@ export const ContractHistoryButton = (props: {
                         />
                       </div>
                     )}
+                    {edit.answers && edit.answers.length > 1 && (
+                      <Col>
+                        <div className={'text-ink-500'}>Edited answer: </div>
+                        {edit.answers[0]} → {edit.answers[1]}
+                      </Col>
+                    )}
                     {edit.closeTime && !edit.resolution && (
                       <CloseDate
                         closeTime={edit.closeTime}
@@ -181,8 +202,11 @@ export const ContractHistoryButton = (props: {
                         <div>Unresolved</div>
                       ))}
 
-                    {edit.updatedKeys?.includes('nonPredictive') && (
-                      <div>Toggled Non-Predictive</div>
+                    {edit.updatedKeys?.includes('isRanked') && (
+                      <div>Toggled ranked</div>
+                    )}
+                    {edit.updatedKeys?.includes('isSubsidized') && (
+                      <div>Toggled subsidized</div>
                     )}
                   </Col>
                 </div>

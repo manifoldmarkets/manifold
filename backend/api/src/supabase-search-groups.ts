@@ -1,209 +1,86 @@
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { z } from 'zod'
-import { APIError, Json, MaybeAuthedEndpoint, validate } from './helpers'
+import { Json, MaybeAuthedEndpoint, validate } from './helpers'
 import { convertGroup } from 'common/supabase/groups'
-
-const SIMILARITY_THRESHOLD = 0.2
+import {
+  renderSql,
+  select,
+  from,
+  limit,
+  orderBy,
+  where,
+} from 'shared/supabase/sql-builder'
+import { constructPrefixTsQuery } from 'shared/helpers/search'
 
 const bodySchema = z
   .object({
     term: z.string(),
-    offset: z.number().gte(0),
+    offset: z.number().gte(0).default(0),
     limit: z.number().gt(0),
-    fuzzy: z.boolean().optional(),
-    yourGroups: z.boolean().optional(),
     addingToContract: z.boolean().optional(),
-    newContract: z.boolean().optional(),
   })
   .strict()
 
 export const supabasesearchgroups = MaybeAuthedEndpoint(async (req, auth) => {
-  const {
-    term,
-    offset,
-    limit,
-    fuzzy,
-    yourGroups,
-    addingToContract,
-    newContract,
-  } = validate(bodySchema, req.body)
+  const { term, offset, limit, addingToContract } = validate(
+    bodySchema,
+    req.body
+  )
 
   const pg = createSupabaseDirectClient()
   const uid = auth?.uid
 
-  const searchGroupSQL =
-    !term && !fuzzy && !addingToContract && !newContract && !!uid
-      ? getForYouGroupsSQL({ uid, offset, limit })
-      : getSearchGroupSQL({
-          term,
-          offset,
-          limit,
-          fuzzy,
-          yourGroups,
-          uid,
-          addingToContract,
-          newContract,
-        })
-  const groups = await pg.map(searchGroupSQL, [term], convertGroup)
+  const searchGroupSQL = getSearchGroupSQL({
+    term,
+    offset,
+    limit,
+    uid,
+    addingToContract,
+  })
+
+  const groups = await pg.map(searchGroupSQL, [], convertGroup)
 
   return (groups ?? []) as unknown as Json
 })
 
-function getForYouGroupsSQL(groupInput: {
-  uid: string
-  offset: number
-  limit: number
-}) {
-  const { uid, offset, limit } = groupInput
-
-  return `with
-     followed_groups AS (SELECT group_id
-                FROM group_members
-                WHERE member_id = '${uid}')
-select groups.*, 
-      importance_score
-           * 
-                (CASE
-                      WHEN EXISTS (SELECT 1
-                                   FROM followed_groups
-                                   WHERE followed_groups.group_id = groups.id) THEN 1
-                      ELSE 0.5 END)
-           
-           AS modified_importance_score
-from groups
-where (privacy_status != 'private' or is_group_member(groups.id, '${uid}') or
-       is_admin('${uid}'))
-order by modified_importance_score DESC
-  limit ${limit} offset ${offset};
-  `
-}
-
-function getSearchGroupSQL(groupInput: {
+function getSearchGroupSQL(props: {
   term: string
   offset: number
   limit: number
-  fuzzy?: boolean
-  yourGroups?: boolean
   uid?: string
   addingToContract?: boolean
-  newContract?: boolean
 }) {
-  const {
-    term,
-    offset,
-    limit,
-    fuzzy,
-    yourGroups,
-    uid,
-    addingToContract,
-    newContract,
-  } = groupInput
+  const { term, uid, addingToContract } = props
 
-  let query = ''
-  const emptyTerm = term.length === 0
+  return renderSql(
+    select('*'),
+    from('groups'),
+    where(
+      `privacy_status != 'private' or is_group_member(id, $1) or is_admin($1)`,
+      uid
+    ),
 
-  // make sure when perusing groups, only non private ones are shown
-  function discoverGroupSearchWhereSQL(groupTable: string) {
-    const privateGroupWhereSQL = uid
-      ? `or is_group_member(${groupTable}.id,'${uid}') or is_admin('${uid}'))`
-      : ')'
-    return `where (privacy_status != 'private' ${privateGroupWhereSQL}`
-  }
-  const discoverGroupOrderBySQL = 'order by importance_score desc'
+    addingToContract &&
+      where(
+        `privacy_status != 'curated' or has_moderator_or_above_role(id, $1)`,
+        uid
+      ),
 
-  function getAddingToContractWhereSQL(groupTable: string) {
-    const curatedModeratorWhereSQL = uid
-      ? `or has_moderator_or_above_role(${groupTable}.id, '${uid}'))`
-      : ')'
+    term
+      ? [
+          where(
+            `name_fts @@ websearch_to_tsquery('english', $1)
+             or name_fts @@ to_tsquery('english', $2)`,
+            [term, constructPrefixTsQuery(term)]
+          ),
+          orderBy('importance_score desc'),
+        ]
+      : !uid
+      ? orderBy('importance_score desc')
+      : orderBy(
+          `importance_score * (CASE WHEN is_group_member(id, '${uid}') THEN 1 ELSE 0.5 END) desc`
+        ),
 
-    const newContractWhereSQL = newContract
-      ? ''
-      : `and privacy_status != 'private'`
-    return addingToContract
-      ? `and (privacy_status!='curated' ${curatedModeratorWhereSQL} ${newContractWhereSQL}`
-      : ''
-  }
-
-  // if looking for your own groups
-  if (yourGroups) {
-    // if user is not the same user groups
-    if (!uid) {
-      throw new APIError(401, 'You must be logged in to see your groups')
-    }
-    // if no term, shows users groups in order of when they joined
-    // exclude your own groups, because it will be shown above
-    if (emptyTerm) {
-      query = `
-      select * from (
-        select groups.*,
-        group_members.created_time as created from groups
-        join group_members on group_members.group_id = groups.id
-        where group_members.member_id = '${uid}'
-      ) as groupz
-      order by created desc
-      `
-    }
-    // if search is fuzzy
-    else if (fuzzy) {
-      query = `
-      select *
-      from (
-        select groups.*, similarity(groups.name,$1) AS similarity_score
-        FROM groups 
-        join group_members 
-        on groups.id = group_members.group_id
-        where group_members.member_id = '${uid}'
-      ) AS groupz
-      where
-      groupz.similarity_score > ${SIMILARITY_THRESHOLD}
-      `
-    } else {
-      query = `
-      select groups.*
-        from groups 
-        join group_members 
-        on groups.id = group_members.group_id,
-        websearch_to_tsquery('english',  $1) as query
-      where group_members.member_id = '${uid}'
-      and groups.name_fts @@ query
-      `
-    }
-    // if in discover groups or adding to contract
-  } else {
-    if (emptyTerm) {
-      query = `
-        select *
-        from groups
-        ${discoverGroupSearchWhereSQL('groups')}
-        ${getAddingToContractWhereSQL('groups')}
-        ${discoverGroupOrderBySQL}
-      `
-    }
-    // if search is fuzzy
-    else if (fuzzy) {
-      query = `
-      SELECT groupz.*
-      FROM (
-        SELECT groups.*,
-            similarity(groups.name,$1) AS similarity_score
-        FROM groups 
-      ) AS groupz
-       ${discoverGroupSearchWhereSQL('groupz')}
-      ${getAddingToContractWhereSQL('groupz')}
-      and groupz.similarity_score > ${SIMILARITY_THRESHOLD}
-      ${discoverGroupOrderBySQL}
-      `
-    } else {
-      query = `
-        select groups.*
-        FROM groups,
-        websearch_to_tsquery('english',  $1) as query
-       ${discoverGroupSearchWhereSQL('groups')}
-        ${getAddingToContractWhereSQL('groups')}
-        and groups.name_fts @@ query
-        ${discoverGroupOrderBySQL}
-      `
-    }
-  }
-  return query + `LIMIT ${limit} OFFSET ${offset}`
+    limit(props.limit, props.offset)
+  )
 }

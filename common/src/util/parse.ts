@@ -15,6 +15,7 @@ import { TiptapTweet } from './tiptap-tweet'
 import { find } from 'linkifyjs'
 import { uniq } from 'lodash'
 import { TiptapSpoiler } from './tiptap-spoiler'
+import { compareTwoStrings } from 'string-similarity'
 
 /** get first url in text. like "notion.so " -> "http://notion.so"; "notion" -> null */
 export function getUrl(text: string) {
@@ -25,9 +26,12 @@ export function getUrl(text: string) {
 export const beginsWith = (text: string, query: string) =>
   text.toLocaleLowerCase().startsWith(query.toLocaleLowerCase())
 
-// TODO: fuzzy matching
-export const wordIn = (word: string, corpus: string) =>
-  corpus.toLocaleLowerCase().includes(word.toLocaleLowerCase())
+export const wordIn = (word: string, corpus: string) => {
+  word = word.toLocaleLowerCase()
+  corpus = corpus.toLocaleLowerCase()
+
+  return corpus.includes(word) || compareTwoStrings(word, corpus) > 0.7
+}
 
 const checkAgainstQuery = (query: string, corpus: string) =>
   query.split(' ').every((word) => wordIn(word, corpus))

@@ -2,7 +2,7 @@ import { Row } from './supabase/utils'
 
 export type season = typeof SEASONS[number]
 
-export const SEASONS = [1, 2, 3, 4, 5, 6] as const
+export const SEASONS = [1, 2, 3, 4, 5, 6, 7] as const
 export const CURRENT_SEASON = SEASONS[SEASONS.length - 1]
 
 export const LEAGUES_START = new Date('2023-05-01T00:00:00-07:00') // Pacific Daylight Time (PDT) as time zone offset
@@ -13,6 +13,7 @@ const SEASON_END_TIMES = [
   new Date('2023-08-01T17:05:29-07:00'),
   new Date('2023-09-01T20:20:04-07:00'),
   new Date('2023-10-01T11:17:16-07:00'),
+  new Date('2023-11-01T14:01:38-07:00'),
 ]
 
 export const getSeasonMonth = (season: number) => {
@@ -178,7 +179,10 @@ export const prizesByDivisionAndRank = [
   [400, 360, 320, 280, 240, 200, 160, 120, 80],
   [800, 720, 640, 560, 480, 400, 320, 240, 160, 80],
   [1600, 1440, 1280, 1120, 960, 800, 640, 480, 320, 160],
-  [3200, 2880, 2560, 2240, 1920, 1600, 1280, 960, 640, 320],
+  [
+    3200, 2880, 2560, 2240, 1920, 1600, 1500, 1400, 1300, 1200, 1100, 1000, 900,
+    800, 700, 600, 500, 400, 300, 200,
+  ],
 ]
 
 export const getLeaguePrize = (division: number, rank: number) => {

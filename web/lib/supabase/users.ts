@@ -1,6 +1,5 @@
 import { db } from './db'
 import { run, selectFrom } from 'common/supabase/utils'
-import { uniqBy } from 'lodash'
 import { User } from 'common/user'
 import { Period } from '../firebase/users'
 
@@ -34,72 +33,7 @@ export async function searchUsers(
 
   const { data } = await db.rpc('search_users', { query: prompt, count: limit })
 
-  return data?.map((d: any) => d.data as User) ?? []
-}
-
-export async function searchUsersNotInGroup(
-  prompt: string,
-  limit: number,
-  groupId: string,
-  myId?: string
-) {
-  if (prompt === '') {
-    const { data: follows } = await run(
-      db
-        .from('user_follows')
-        .select('follow_id')
-        .eq('user_id', myId)
-        .order('created_time')
-    )
-
-    const ids = follows.map((i) => i.follow_id)
-
-    const { data } = await run(
-      db
-        .from('user_groups')
-        .select('*')
-        .not('groups', 'cs', `{${groupId}}`)
-        .in('id', ids)
-        .limit(limit)
-    )
-    return data
-  }
-
-  const [{ data: exactData }, { data: prefixData }, { data: containsData }] =
-    await Promise.all([
-      run(
-        db
-          .from('user_groups')
-          .select('*')
-          .not('groups', 'cs', `{${groupId}}`)
-          .or(`username.ilike.${prompt},name.ilike.${prompt}`)
-          .order('name')
-          .limit(limit)
-      ),
-      run(
-        db
-          .from('user_groups')
-          .select('*')
-          .not('groups', 'cs', `{${groupId}}`)
-          .or(`username.ilike.${prompt}%,name.ilike.${prompt}%`)
-          .order('name')
-          .limit(limit)
-      ),
-      run(
-        db
-          .from('user_groups')
-          .select('*')
-          .not('groups', 'cs', `{${groupId}}`)
-          .or(`username.ilike.%${prompt}%,name.ilike.%${prompt}%`)
-          .order('name')
-          .limit(limit)
-      ),
-    ])
-
-  return uniqBy([...exactData, ...prefixData, ...containsData], 'id').slice(
-    0,
-    limit
-  )
+  return data?.map((d) => d.data as User) ?? []
 }
 
 // leaderboards
@@ -130,7 +64,7 @@ export async function getTopTraders(period: Period) {
       .order(`data->profitCached->${period}`, {
         ascending: false,
       } as any)
-      .limit(21) // add extra for @acc
+      .limit(25) // add extra for @acc, excluded users
   )
   return data
 }
@@ -158,8 +92,7 @@ export async function getTopUserCreators(
       limit_n: limit,
     })
   )
-  // work around rpc typing bug
-  return data as unknown as { user_id: string; n: number }[]
+  return data
 }
 
 export const getTotalContractsCreated = async (userId: string) => {

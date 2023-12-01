@@ -44,36 +44,35 @@ export const getMessageChannelMemberships = async (
     .eq('user_id', userId)
     .order('created_time', { ascending: false })
     .limit(limit)
-  if (channelId) q = q.eq('channel_id', channelId)
+  if (channelId) {
+    q = q.eq('channel_id', channelId)
+  } else {
+    q = q.neq('status', 'left')
+  }
   const { data } = await run(q)
-
   return data
 }
 
 // NOTE: must be authorized (useIsAuthorized) to use this function
-export const getSortedChatMessageChannelIds = async (
+export const getSortedChatMessageChannels = async (
   userId: string,
   limit: number,
   channelId?: string
 ) => {
-  const memberships = (
+  const membershipChannelIds = (
     await getMessageChannelMemberships(userId, limit, channelId)
   ).map((m) => m.channel_id)
-  // If you just want one chanel, you don't need anything sorted
-  if (channelId) {
-    return memberships
-  } else {
-    const orderedIds = await run(
-      db
-        .from('private_user_message_channels')
-        .select('id')
-        .in('id', memberships)
-        .order('last_updated_time', { ascending: false })
-    )
-    return orderedIds.data.map((d) => d.id)
-  }
+  const channels = await run(
+    db
+      .from('private_user_message_channels')
+      .select('*')
+      .in('id', membershipChannelIds)
+      .order('last_updated_time', { ascending: false })
+  )
+  return channels.data
 }
 
+// Note: must be authorized (useIsAuthorized) to use this function
 export const getNonEmptyChatMessageChannelIds = async (
   userId: string,
   limit?: number
@@ -82,35 +81,47 @@ export const getNonEmptyChatMessageChannelIds = async (
     'get_non_empty_private_message_channel_ids',
     {
       p_user_id: userId,
+      p_ignored_statuses: ['left'],
       p_limit: limit,
     }
   )
   if (orderedNonEmptyIds.data) {
-    return orderedNonEmptyIds.data.map((d) => d.id)
+    return orderedNonEmptyIds.data
+      .flat()
+      .map((d) => d as Row<'private_user_message_channels'>)
   }
   return []
 }
 
+export type PrivateMessageMembership = {
+  user_id: string
+  status: 'proposed' | 'joined' | 'left'
+  channel_id: number
+}
 // NOTE: must be authorized (useIsAuthorized) to use this function
 export const getOtherUserIdsInPrivateMessageChannelIds = async (
   userId: string,
   channelIds: number[],
   limit: number
 ) => {
-  const channelIdToUserIds: Record<number, string[]> = {}
+  // const channelIdToUserIds: Record<number, string[]> = {}
   const q = db
     .from('private_user_message_channel_members')
-    .select('channel_id, user_id')
+    .select('channel_id, user_id, status')
     .neq('user_id', userId)
     .in('channel_id', channelIds)
     .order('created_time', { ascending: false })
     .limit(limit)
   const { data } = await run(q)
+  return data as PrivateMessageMembership[]
+}
 
-  data.forEach((d) =>
-    channelIdToUserIds[d.channel_id] === undefined
-      ? (channelIdToUserIds[d.channel_id] = [d.user_id])
-      : channelIdToUserIds[d.channel_id].push(d.user_id)
-  )
-  return channelIdToUserIds
+// NOTE: must be authorized (useIsAuthorized) to use this function
+export const getTotalChatMessages = async (channelId: number) => {
+  const q = db
+    .from('private_user_messages')
+    .select('*', { head: true, count: 'exact' })
+    .eq('channel_id', channelId)
+  const { count } = await run(q)
+  return count
 }

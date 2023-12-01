@@ -6,6 +6,7 @@ import {
   CORS_ORIGIN_LOCALHOST,
   CORS_ORIGIN_VERCEL,
   CORS_ORIGIN_MANIFOLD_LOVE,
+  CORS_ORIGIN_MANIFOLD_LOVE_ALTERNATE,
 } from 'common/envs/constants'
 import { log } from 'shared/utils'
 import { APIError } from 'common/api'
@@ -42,7 +43,6 @@ import { updategroupprivacy } from './update-group-privacy'
 import { addgroupmember } from './add-group-member'
 import { registerdiscordid } from './register-discord-id'
 import { getuserisgroupmember } from './get-user-is-group-member'
-import { redeemad } from './redeem-ad-reward'
 import { completequest } from './complete-quest'
 import { getsupabasetoken } from './get-supabase-token'
 import { updateUserEmbedding } from './update-user-embedding'
@@ -53,8 +53,7 @@ import { getcontractparams } from './get-contract-params'
 import { boostmarket } from './boost-market'
 import { redeemboost } from './redeem-market-ad-reward'
 import { creategroupinvite } from './create-group-invite'
-import { joingroupthroughinvite } from './join-group-through-invite'
-import { joingroup } from './join-group'
+import { followtopic } from './follow-topic'
 import { editcomment } from 'api/edit-comment'
 import { supabasesearchgroups } from './supabase-search-groups'
 import { leagueActivity } from './league-activity'
@@ -85,6 +84,8 @@ import { supabasesearchdashboards } from './supabase-search-dashboards'
 import { getyourfolloweddashboards } from './get-your-followed-dashboards'
 import { updatedashboard } from './update-dashboard'
 import { deletedashboard } from './delete-dashboard'
+import { setnews } from './set-news'
+import { getnews } from './get-news'
 import { getdashboardfromslug } from './get-dashboard-from-slug'
 import { unresolve } from './unresolve'
 import { referuser } from 'api/refer-user'
@@ -99,11 +100,23 @@ import { createcommentonlover } from 'api/love/create-comment-on-lover'
 import { hidecommentonlover } from 'api/love/hide-comment-on-lover'
 import { rejectLover } from './love/reject-lover'
 import { searchlocation } from './search-location'
+import { searchnearcity } from './search-near-city'
+import { leaveprivateusermessagechannel } from 'api/leave-private-user-message-channel'
+import { updateprivateusermessagechannel } from 'api/update-private-user-message-channel'
+import { confirmLoverStage } from './love/confirm-lover-stage'
+import { clearLoverPhoto } from './love/clear-lover-photo'
+import { editanswercpmm } from 'api/edit-answer'
+import { createlovecompatibilityquestion } from 'api/love/create-love-compatibility-question'
+import { oncreatebet } from 'api/on-create-bet'
 
-const allowCors: RequestHandler = cors({
+import { markets } from 'api/v0/markets'
+
+const allowCorsUnrestricted: RequestHandler = cors({})
+const allowCorsManifold: RequestHandler = cors({
   origin: [
     CORS_ORIGIN_MANIFOLD,
     CORS_ORIGIN_MANIFOLD_LOVE,
+    CORS_ORIGIN_MANIFOLD_LOVE_ALTERNATE,
     CORS_ORIGIN_VERCEL,
     CORS_ORIGIN_LOCALHOST,
   ],
@@ -126,18 +139,19 @@ const apiErrorHandler: ErrorRequestHandler = (err, _req, res, next) => {
     res.status(err.code).json(output)
   } else {
     console.error(err.stack)
-    res.status(500).json({ message: 'An unknown error occurred.' })
+    res.status(500).json({ message: `An unknown error occurred: ${err.stack}` })
   }
+}
+
+const apiRoute = (endpoint: RequestHandler) => {
+  return [allowCorsManifold, express.json(), endpoint, apiErrorHandler] as const
 }
 
 export const app = express()
 app.use(requestLogger)
 
-const apiRoute = (endpoint: RequestHandler) => {
-  return [allowCors, express.json(), endpoint, apiErrorHandler] as const
-}
-
-app.options('*', allowCors)
+// internal APIs
+app.options('*', allowCorsManifold)
 app.get('/health', ...apiRoute(health))
 app.get('/getcurrentuser', ...apiRoute(getcurrentuser))
 app.get('/unsubscribe', ...apiRoute(unsubscribe))
@@ -173,7 +187,6 @@ app.post('/addcontracttogroup', ...apiRoute(addcontracttogroup))
 app.post('/removecontractfromgroup', ...apiRoute(removecontractfromgroup))
 app.post('/addgroupmember', ...apiRoute(addgroupmember))
 app.post('/getuserisgroupmember', ...apiRoute(getuserisgroupmember))
-app.post('/redeemad', ...apiRoute(redeemad))
 app.post('/completequest', ...apiRoute(completequest))
 app.post('/update-user-embedding', ...apiRoute(updateUserEmbedding))
 app.post(
@@ -187,23 +200,23 @@ app.post('/save-topic', ...apiRoute(saveTopic))
 app.post('/boost-market', ...apiRoute(boostmarket))
 app.post('/redeem-boost', ...apiRoute(redeemboost))
 
-app.post('/createcheckoutsession', allowCors, createcheckoutsession)
+app.post('/createcheckoutsession', allowCorsManifold, createcheckoutsession)
 app.post(
   '/stripewebhook',
-  allowCors,
+  allowCorsManifold,
   express.raw({ type: '*/*' }),
   stripewebhook
 )
 app.post('/getcontractparams', ...apiRoute(getcontractparams))
 app.post('/creategroupinvite', ...apiRoute(creategroupinvite))
-app.post('/joingroupthroughinvite', ...apiRoute(joingroupthroughinvite))
-app.post('/joingroup', ...apiRoute(joingroup))
+app.post('/follow-topic', ...apiRoute(followtopic))
 app.post('/supabasesearchgroups', ...apiRoute(supabasesearchgroups))
 app.post('/league-activity', ...apiRoute(leagueActivity))
 app.post('/award-bounty', ...apiRoute(awardbounty))
 app.post('/cancel-bounty', ...apiRoute(cancelbounty))
 app.post('/add-bounty', ...apiRoute(addbounty))
 app.post('/createanswercpmm', ...apiRoute(createanswercpmm))
+app.post('/edit-answer-cpmm', ...apiRoute(editanswercpmm))
 app.post('/createportfolio', ...apiRoute(createportfolio))
 app.post('/updateportfolio', ...apiRoute(updateportfolio))
 app.post('/buyportfolio', ...apiRoute(buyportfolio))
@@ -233,6 +246,8 @@ app.post('/supabasesearchdashboards', ...apiRoute(supabasesearchdashboards))
 app.post('/getyourfolloweddashboards', ...apiRoute(getyourfolloweddashboards))
 app.post('/updatedashboard', ...apiRoute(updatedashboard))
 app.post('/delete-dashboard', ...apiRoute(deletedashboard))
+app.post('/set-news-dashboards', ...apiRoute(setnews))
+app.get('/get-news-dashboards', ...apiRoute(getnews))
 app.post('/getdashboardfromslug', ...apiRoute(getdashboardfromslug))
 app.post('/ban-user', ...apiRoute(banuser))
 app.post('/update-market', ...apiRoute(updatemarket))
@@ -241,16 +256,47 @@ app.post(
   '/create-private-user-message-channel',
   ...apiRoute(createprivateusermessagechannel)
 )
+app.post(
+  '/leave-private-user-message-channel',
+  ...apiRoute(leaveprivateusermessagechannel)
+)
+app.post(
+  '/update-private-user-message-channel',
+  ...apiRoute(updateprivateusermessagechannel)
+)
 app.post('/create-lover', ...apiRoute(createlover))
 app.post('/update-lover', ...apiRoute(updatelover))
 app.post('/reject-lover', ...apiRoute(rejectLover))
+app.post('/clear-lover-photo', ...apiRoute(clearLoverPhoto))
+app.post('/confirm-lover-stage', ...apiRoute(confirmLoverStage))
 app.post('/create-match', ...apiRoute(createMatch))
 app.post('/create-comment-on-lover', ...apiRoute(createcommentonlover))
 app.post('/hide-comment-on-lover', ...apiRoute(hidecommentonlover))
 app.post('/searchlocation', ...apiRoute(searchlocation))
+app.post('/searchnearcity', ...apiRoute(searchnearcity))
+app.post(
+  '/createlovecompatibilityquestion',
+  ...apiRoute(createlovecompatibilityquestion)
+)
+
+const publicApiRoute = (endpoint: RequestHandler) => {
+  return [
+    allowCorsUnrestricted,
+    express.json(),
+    endpoint,
+    apiErrorHandler,
+  ] as const
+}
+
+// v0 public API routes (formerly vercel functions)
+app.options('/v0', allowCorsUnrestricted)
+app.get('/v0/markets', ...publicApiRoute(markets))
+
+// Ian: not sure how to restrict triggers to supabase origin, yet
+app.post('/on-create-bet', ...publicApiRoute(oncreatebet))
 
 // Catch 404 errors - this should be the last route
-app.use(allowCors, (req, res) => {
+app.use(allowCorsUnrestricted, (req, res) => {
   res
     .status(404)
     .set('Content-Type', 'application/json')

@@ -1,12 +1,11 @@
 import clsx from 'clsx'
-import { Lover } from 'love/hooks/use-lover'
 import {
   RelationshipType,
   convertRelationshipType,
 } from 'love/lib/util/convert-relationship-type'
 import stringOrStringArrayToText from 'love/lib/util/string-or-string-array-to-text'
 import { ReactNode } from 'react'
-import { BiDna, BiSolidDrink } from 'react-icons/bi'
+import { BiSolidDrink } from 'react-icons/bi'
 import { BsPersonHeart } from 'react-icons/bs'
 import { FaChild } from 'react-icons/fa6'
 import {
@@ -27,6 +26,9 @@ import { Row } from 'web/components/layout/row'
 import { fromNow } from 'web/lib/util/time'
 import { Gender, convertGenderPlural } from './gender-icon'
 import { HiOutlineGlobe } from 'react-icons/hi'
+import { UserHandles } from 'web/components/user/user-handles'
+import { convertRace } from './race'
+import { Lover } from 'common/love/lover'
 
 export function AboutRow(props: {
   icon: ReactNode
@@ -73,7 +75,9 @@ export default function LoverAbout(props: { lover: Lover }) {
       />
       <AboutRow
         icon={<HiOutlineGlobe className="h-5 w-5" />}
-        text={lover.ethnicity}
+        text={lover.ethnicity
+          ?.filter((r) => r !== 'other')
+          ?.map((r: any) => convertRace(r))}
       />
       <Smoker lover={lover} />
       <Drinks lover={lover} />
@@ -82,6 +86,7 @@ export default function LoverAbout(props: { lover: Lover }) {
         text={lover.is_vegetarian_or_vegan ? 'Vegetarian/Vegan' : null}
       />
       <WantsKids lover={lover} />
+      <UserHandles website={lover.website} twitterHandle={lover.twitter} />
     </Col>
   )
 }
@@ -92,12 +97,24 @@ function Seeking(props: { lover: Lover }) {
   const min = lover.pref_age_min
   const max = lover.pref_age_max
   const seekingGenderText = stringOrStringArrayToText({
-    text: prefGender.map((gender) => convertGenderPlural(gender as Gender)),
+    text:
+      prefGender.length == 5
+        ? ['people']
+        : prefGender.map((gender) => convertGenderPlural(gender as Gender)),
     preText: 'Interested in',
     asSentence: true,
     capitalizeFirstLetterOption: false,
   })
-  const ageRangeText = `between ${min} - ${max} years old`
+
+  const ageRangeText =
+    min == 18 && max == 99
+      ? 'of any age'
+      : min == max
+      ? `exactly ${min} years old`
+      : max == 99
+      ? `${min} or older`
+      : `between ${min} - ${max} years old`
+
   if (!prefGender || prefGender.length < 1) {
     return <></>
   }
@@ -137,13 +154,16 @@ function Education(props: { lover: Lover }) {
   const educationLevel = lover.education_level
   const university = lover.university
 
-  const NoUniDegree = !educationLevel || educationLevel == 'high-school'
+  const noUniversity =
+    !educationLevel ||
+    educationLevel == 'high-school' ||
+    educationLevel == 'none'
 
-  if (!university) {
+  if (!university || noUniversity) {
     return <></>
   }
   const universityText = `${
-    NoUniDegree ? '' : capitalizeAndRemoveUnderscores(educationLevel) + ' at '
+    noUniversity ? '' : capitalizeAndRemoveUnderscores(educationLevel) + ' at '
   }${capitalizeAndRemoveUnderscores(university)}`
   return (
     <AboutRow
@@ -177,6 +197,7 @@ function Occupation(props: { lover: Lover }) {
 function Smoker(props: { lover: Lover }) {
   const { lover } = props
   const isSmoker = lover.is_smoker
+  if (isSmoker == null) return null
   if (isSmoker) {
     return (
       <AboutRow icon={<LuCigarette className="h-5 w-5" />} text={'Smokes'} />
@@ -193,8 +214,8 @@ function Smoker(props: { lover: Lover }) {
 function Drinks(props: { lover: Lover }) {
   const { lover } = props
   const drinksPerMonth = lover.drinks_per_month
-  const noDrinking = !drinksPerMonth || drinksPerMonth == 0
-  if (noDrinking) {
+  if (drinksPerMonth == null) return null
+  if (drinksPerMonth === 0) {
     return (
       <AboutRow
         icon={<MdNoDrinks className="h-5 w-5" />}
@@ -205,7 +226,9 @@ function Drinks(props: { lover: Lover }) {
   return (
     <AboutRow
       icon={<BiSolidDrink className="h-5 w-5" />}
-      text={`${drinksPerMonth} drinks per month`}
+      text={`${drinksPerMonth} ${
+        drinksPerMonth == 1 ? 'drink' : 'drinks'
+      } per month`}
     />
   )
 }
@@ -245,8 +268,6 @@ export const formatLoverValue = (key: string, value: any) => {
     return value.join(', ')
   }
   switch (key) {
-    case 'birthdate':
-      return fromNow(new Date(value).valueOf()).replace(' ago', '')
     case 'created_time':
     case 'last_online_time':
       return fromNow(new Date(value).valueOf())

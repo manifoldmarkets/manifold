@@ -71,7 +71,7 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
   useRefreshAllClients()
   useReloadIfClientOld()
 
-  const title = 'Manifold | Bet on news, politics, science, AI, & more!'
+  const title = 'Manifold | The largest prediction market platform'
   const description =
     'Manifold is the largest prediction market platform. Bet on news, politics, science, AI, and more with play-money. Accurate forecasts via the wisdom of the crowd.'
 
@@ -137,11 +137,15 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
           <div />
         </div>
       </div>
+
+      <GoogleOneTapSetup />
+
       {/* Umami, for pageview analytics on https://analytics.umami.is/share/ARwUIC9GWLNyowjq/Manifold%20Markets */}
       <Script
         src="https://analytics.umami.is/script.js"
         data-website-id="ee5d6afd-5009-405b-a69f-04e3e4e3a685"
       />
+
       {/* Hotjar, for recording user sessions */}
       <Script
         id="hotjar"
@@ -157,6 +161,7 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
     })(window,document,'https://static.hotjar.com/c/hotjar-','.js?sv=');`,
         }}
       />
+
       <Script
         id="fbpx"
         dangerouslySetInnerHTML={{
@@ -173,7 +178,22 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
   fbq('track', 'PageView');`,
         }}
       />
-      <GoogleOneTapSetup />
+
+      <Script
+        async
+        src="https://www.googletagmanager.com/gtag/js?id=G-SSFK1Q138D"
+      />
+      <Script
+        id="gaw"
+        dangerouslySetInnerHTML={{
+          __html: `
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-SSFK1Q138D');`,
+        }}
+      />
     </>
   )
 }

@@ -17,6 +17,7 @@ import {
   AvatarNotificationIcon,
   NotificationFrame,
   NotificationIcon,
+  NotificationUserLink,
   PrimaryNotificationLink,
   QuestionOrGroupLink,
 } from './notification-helpers'
@@ -285,13 +286,13 @@ export function LoanIncomeNotification(props: {
     </NotificationFrame>
   )
 }
-export function ManaPaymentReceievedNotification(props: {
+export function ManaPaymentReceivedNotification(props: {
   notification: Notification
   highlighted: boolean
   setHighlighted: (highlighted: boolean) => void
 }) {
   const { notification, highlighted, setHighlighted } = props
-  const { data, sourceUserName, sourceUserUsername } = notification
+  const { data, sourceId, sourceUserName, sourceUserUsername } = notification
   return (
     <NotificationFrame
       notification={notification}
@@ -304,7 +305,12 @@ export function ManaPaymentReceievedNotification(props: {
       link={`/${sourceUserUsername}`}
     >
       <span>
-        <UserLink name={sourceUserName} username={sourceUserUsername} />
+        <NotificationUserLink
+          userId={sourceId}
+          name={sourceUserName}
+          username={sourceUserUsername}
+          className=""
+        />
         <PrimaryNotificationLink text=" sent you " />
         <IncomeNotificationLabel notification={notification} />
       </span>
@@ -319,8 +325,14 @@ export function UserJoinedNotification(props: {
   isChildOfGroup?: boolean
 }) {
   const { notification, isChildOfGroup, highlighted, setHighlighted } = props
-  const { sourceUserName, sourceUserUsername, sourceSlug, reason, sourceText } =
-    notification
+  const {
+    sourceId,
+    sourceUserName,
+    sourceUserUsername,
+    sourceSlug,
+    reason,
+    sourceText,
+  } = notification
   let reasonBlock = <span>because of a link you shared</span>
   if (sourceSlug && reason == 'user_joined_to_bet_on_your_market') {
     reasonBlock = (
@@ -366,10 +378,10 @@ export function UserJoinedNotification(props: {
       }
     >
       <div className="line-clamp-3">
-        <UserLink
-          name={sourceUserName || ''}
-          username={sourceUserUsername || ''}
-          className={'hover:text-primary-500 relative flex-shrink-0'}
+        <NotificationUserLink
+          userId={sourceId}
+          name={sourceUserName}
+          username={sourceUserUsername}
         />{' '}
         joined Manifold {reasonBlock}
       </div>
@@ -515,8 +527,11 @@ function MultiUserNotificationModal(props: {
                   size={'sm'}
                 />
                 <UserLink
-                  name={notif.sourceUserName}
-                  username={notif.sourceUserUsername}
+                  user={{
+                    id: notif.sourceId,
+                    username: notif.sourceUserUsername,
+                    name: notif.sourceUserName,
+                  }}
                   short={short}
                 />
                 {notif.data?.bet && notif.data?.outcomeType && (

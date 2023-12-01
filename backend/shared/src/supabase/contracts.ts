@@ -17,6 +17,7 @@ import { log } from 'shared/utils'
 import { DEEMPHASIZED_GROUP_SLUGS, isAdminId } from 'common/envs/constants'
 import { convertContract } from 'common/supabase/contracts'
 import { generateEmbeddings } from 'shared/helpers/openai-utils'
+import { TOPIC_IDS_YOU_CANT_FOLLOW } from 'common/supabase/groups'
 
 export const getUniqueBettorIds = async (
   contractId: string,
@@ -31,6 +32,20 @@ export const getUniqueBettorIds = async (
     [contractId]
   )
   return res.map((r) => r.user_id as string)
+}
+
+export const getUniqueVoterIds = async (
+  contractId: string,
+  pg: SupabaseDirectClient
+) => {
+  return await pg.map(
+    `select distinct user_id
+       from votes cb
+        where contract_id = $1
+       `,
+    [contractId],
+    (r) => r.user_id
+  )
 }
 
 export const getContractsDirect = async (
@@ -102,6 +117,7 @@ export const getContractViewerIds = async (
 
 export const getContractGroupMemberIds = async (
   contractId: string,
+  ignoringGroupIds: string[],
   pg: SupabaseDirectClient
 ) => {
   const contractGroups = await pg.manyOrNone(
@@ -109,7 +125,9 @@ export const getContractGroupMemberIds = async (
                 where contract_id = $1`,
     [contractId]
   )
-  const groupIds = contractGroups.map((cg) => cg.group_id)
+  const groupIds = contractGroups
+    .map((cg) => cg.group_id)
+    .filter((g) => !ignoringGroupIds.includes(g))
 
   if (groupIds.length === 0) return []
   const contractGroupMemberIds = await pg.manyOrNone<{ member_id: string }>(
@@ -205,7 +223,9 @@ export const getUserToReasonsInterestedInContractAndUser = async (
   reasonsToInclude: CONTRACT_FEED_REASON_TYPES[],
   serverSideCalculation: boolean,
   dataType: FEED_DATA_TYPES,
-  trendingContractType?: 'old' | 'new'
+  trendingContractType?: 'old' | 'new',
+  // This can be deleted after removing all users from these groups
+  ignoringGroupIds = TOPIC_IDS_YOU_CANT_FOLLOW
 ): Promise<{
   [userId: string]: {
     reasons: CONTRACT_FEED_REASON_TYPES[]
@@ -230,7 +250,7 @@ export const getUserToReasonsInterestedInContractAndUser = async (
       users: getUserFollowerIds(creatorId, pg),
     },
     contract_in_group_you_are_in: {
-      users: getContractGroupMemberIds(contractId, pg),
+      users: getContractGroupMemberIds(contractId, ignoringGroupIds, pg),
     },
     similar_interest_vector_to_contract: {
       usersToDistances: serverSideCalculation
@@ -297,7 +317,12 @@ export const getUserToReasonsInterestedInContractAndUser = async (
 }
 
 export const isContractNonPredictive = (contract: Contract) => {
-  return contract.question.trim().toLowerCase().includes('daily coinflip')
+  const questionIncludesDailyCoinflip = contract.question
+    .trim()
+    .toLowerCase()
+    .includes('daily coinflip')
+  const createdByManifoldLove = contract.creatorUsername === 'ManifoldLove'
+  return questionIncludesDailyCoinflip || createdByManifoldLove
   // return (
   //   await pg.map(
   //     `
@@ -315,12 +340,24 @@ export const getContractPrivacyWhereSQLFilter = (
   uid: string | undefined,
   creatorId?: string,
   groupId?: string,
-  hasGroupAccess?: boolean
+  hasGroupAccess?: boolean,
+  contractIdString = 'id',
+  includePrivateMarkets = false
 ) => {
   const otherVisibilitySQL = `
-  OR (visibility = 'unlisted' AND creator_id='${uid}') 
-  OR (visibility = 'unlisted' AND ${isAdminId(uid ?? '_')}) 
-  OR (visibility = 'private' AND can_access_private_contract(id,'${uid}'))
+  OR (visibility = 'unlisted' 
+    AND (
+     creator_id='${uid}'
+     OR ${isAdminId(uid ?? '_')}
+     OR exists(
+         select 1 from contract_bets where contract_id = ${contractIdString} and user_id = '${uid}')
+     )) 
+     ${
+       // Included when viewing your own contract metrics or your own markets
+       includePrivateMarkets || creatorId === uid
+         ? `OR (visibility = 'private' AND can_access_private_contract(${contractIdString},'${uid}'))`
+         : ''
+     }
   `
   return (groupId && hasGroupAccess) ||
     (!!creatorId && !!uid && creatorId === uid)
@@ -357,15 +394,15 @@ export const getImportantContractsForNewUsers = async (
     const ids = await pg.map(
       `select id
        from contracts
-       where (data -> 'groupSlugs') is not null
-         and ($1::text[] is null or jsonb_array_to_text_array((data -> 'groupSlugs')) && $1)
+       where group_slugs is not null
+         and ($1::text[] is null or group_slugs && $1)
          and not exists (
            select 1
-           from unnest(jsonb_array_to_text_array(data->'groupSlugs')) as t(slug)
+           from unnest(group_slugs) as t(slug)
            where (slug = any($2) or slug ilike '%manifold%')
          )
          and resolution_time is null
-         and data ->> 'deleted' is null
+         and deleted = false
          and visibility = 'public'
          and importance_score > $3
        order by importance_score desc

@@ -83,7 +83,7 @@ const App = () => {
         log('Error setting user:', e)
       })
       .then(() => {
-        log('User set succesfully')
+        log('User set successfully')
       })
   }
 

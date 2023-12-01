@@ -11,7 +11,7 @@ const labels: { [label: string]: Period } = {
 }
 
 export const TimeRangePicker = (props: {
-  currentTimePeriod: Period
+  currentTimePeriod: Period | 'custom'
   setCurrentTimePeriod: (period: Period) => void
   /** milliseconds */
   maxRange?: number

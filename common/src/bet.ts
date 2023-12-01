@@ -66,6 +66,7 @@ export type Bet = {
     amount: number // amount user makes from sale
     betId: string // id of BUY bet being sold
   }
+  replyToCommentId?: string
 } & Partial<LimitProps>
 
 export type NumericBet = Bet & {
@@ -111,6 +112,8 @@ export type BetFilter = {
   beforeTime?: number
   order?: 'desc' | 'asc'
   limit?: number
+  commentRepliesOnly?: boolean
+  answerId?: string
 }
 
 export const calculateMultiBets = (

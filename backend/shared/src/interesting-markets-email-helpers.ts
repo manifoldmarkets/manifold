@@ -74,7 +74,7 @@ export const getUsersRecommendedContracts = async (
                 order by relevance_score desc
                 limit 100) uf
                    join contracts c on uf.contract_id = c.id
-                    where not (c.data -> 'groupSlugs' ?| $2)
+                    where not (c.group_slugs && $2)
                       and c.creator_id != $1
                       and not exists(select 1
                         from contract_bets
