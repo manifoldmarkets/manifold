@@ -80,7 +80,7 @@ export const AddAMatchButton = (props: {
     <>
       <Button
         className={clsx(className)}
-        color="indigo"
+        color="indigo-outline"
         onClick={() => setDialogOpen(true)}
         disabled={isSubmitting}
         loading={isSubmitting}

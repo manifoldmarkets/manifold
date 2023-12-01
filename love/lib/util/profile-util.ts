@@ -24,5 +24,5 @@ export const areLocationCompatible = (lover1: LoverRow, lover2: LoverRow) => {
   const longigudeDiff = Math.abs(lover1.city_longitude - lover2.city_longitude)
 
   const root = (latitudeDiff ** 2 + longigudeDiff ** 2) ** 0.5
-  return root < 5
+  return root < 2.5
 }

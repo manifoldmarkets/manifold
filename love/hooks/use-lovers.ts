@@ -29,7 +29,7 @@ export const useLovers = () => {
               const usersById = keyBy(users, 'id')
               const dataWithUser = data.map((d) => {
                 const user = usersById[d.user_id]
-                if (!user) return undefined
+                if (!user || user.isBannedFromPosting) return undefined
                 return { ...d, user }
               })
               newLovers.push(...filterDefined(dataWithUser))
