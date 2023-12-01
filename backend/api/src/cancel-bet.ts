@@ -1,17 +1,8 @@
 import * as admin from 'firebase-admin'
-import { z } from 'zod'
-import { APIError, authEndpoint, validate } from './helpers'
+import { APIError, typedEndpoint } from './helpers'
 import { LimitBet } from 'common/bet'
 
-const bodySchema = z
-  .object({
-    betId: z.string(),
-  })
-  .strict()
-
-export const cancelbet = authEndpoint(async (req, auth) => {
-  const { betId } = validate(bodySchema, req.body)
-
+export const cancelBet = typedEndpoint('cancelBet', async ({ betId }, auth) => {
   return await firestore.runTransaction(async (trans) => {
     const snap = await trans.get(
       firestore.collectionGroup('bets').where('id', '==', betId)
@@ -33,10 +24,10 @@ export const cancelbet = authEndpoint(async (req, auth) => {
     trans.update(betDoc.ref, { isCancelled: true })
     trans.update(contractDoc.ref, {
       lastBetTime: now,
-      lastUpdatedTime: now
+      lastUpdatedTime: now,
     })
 
-    return { ...bet, isCancelled: true }
+    return bet
   })
 })
 

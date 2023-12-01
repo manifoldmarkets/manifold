@@ -12,7 +12,7 @@ export default async function route(req: NextApiRequest, res: NextApiResponse) {
 
   if (req.body) req.body.betId = betId
   try {
-    const backendRes = await fetchBackend(req, 'cancelbet')
+    const backendRes = await fetchBackend(req, 'v0/cancel-bet')
     await forwardResponse(res, backendRes)
   } catch (err) {
     console.error('Error talking to cloud function: ', err)

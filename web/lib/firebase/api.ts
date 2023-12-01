@@ -100,10 +100,6 @@ export function dividendCert(params: any) {
   return call(getApiUrl('dividendcert'), 'POST', params)
 }
 
-export function cancelBet(params: { betId: string }) {
-  return call(getApiUrl('cancelbet'), 'POST', params)
-}
-
 export function sellShares(params: any) {
   return call(getApiUrl('sellshares'), 'POST', params)
 }

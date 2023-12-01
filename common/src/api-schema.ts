@@ -5,6 +5,7 @@ import type { JSONContent } from '@tiptap/core'
 import type { Comment } from 'common/comment'
 import type { User } from './user'
 import { CandidateBet } from './new-bet'
+import { LimitBet } from './bet'
 
 // import { contentSchema } from 'shared/zod-types'
 
@@ -88,6 +89,14 @@ export const API = {
         answerId: z.string().optional(),
       })
       .strict(),
+  },
+  cancelBet: {
+    path: 'cancel-bet',
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    props: z.object({ betId: z.string() }).strict(),
+    returns: _type as LimitBet,
   },
 
   markets: {

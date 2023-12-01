@@ -18,7 +18,7 @@ import { changeuserinfo } from './change-user-info'
 import { createuser } from './create-user'
 import { createanswer } from './create-answer'
 import { placeBet } from './place-bet'
-import { cancelbet } from './cancel-bet'
+import { cancelBet } from './cancel-bet'
 import { sellbet } from './sell-bet'
 import { sellshares } from './sell-shares'
 import { claimmanalink } from './claim-manalink'
@@ -161,6 +161,7 @@ app.options('/v0', allowCorsUnrestricted)
 
 const handlers: { [k in APIName]: RequestHandler } = {
   bet: placeBet,
+  cancelBet,
   comment: createComment,
   markets: markets,
   managram: sendMana,
@@ -202,7 +203,6 @@ app.post('/createanswer', ...apiRoute(createanswer))
 app.post('/editcomment', ...apiRoute(editcomment))
 app.post('/swapcert', ...apiRoute(swapcert))
 app.post('/dividendcert', ...apiRoute(dividendcert))
-app.post('/cancelbet', ...apiRoute(cancelbet))
 app.post('/sellbet', ...apiRoute(sellbet))
 app.post('/sellshares', ...apiRoute(sellshares))
 app.post('/addsubsidy', ...apiRoute(addsubsidy))
