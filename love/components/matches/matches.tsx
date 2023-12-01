@@ -11,6 +11,10 @@ import { Lover } from 'common/love/lover'
 import { BrowseMatchesButton } from '../browse-matches-button'
 import { filterDefined } from 'common/util/array'
 import { Row } from 'web/components/layout/row'
+import {
+  areAgeCompatible,
+  areLocationCompatible,
+} from 'love/lib/util/profile-util'
 
 export const Matches = (props: {
   profileLover: Lover
@@ -32,8 +36,14 @@ export const Matches = (props: {
   const potentialLovers = lovers
     .filter((l) => l.user_id !== profileUserId)
     .filter((l) => !matchesSet.has(l.user_id))
-    .filter((l) => !lover || areGenderCompatible(lover, l))
     .filter((l) => l.looking_for_matches)
+    .filter(
+      (l) =>
+        !lover ||
+        (areGenderCompatible(lover, l) &&
+          areAgeCompatible(lover, l) &&
+          areLocationCompatible(lover, l))
+    )
 
   const currentMatches = matches
     .filter((c) => !c.isResolved)

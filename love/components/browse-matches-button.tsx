@@ -222,48 +222,52 @@ const BrowseMatchesDialog = (props: {
                     </Row>
                   )}
 
-                  <LoverProfile
-                    lover={potentialLover}
-                    user={potentialLover.user}
-                    refreshLover={() => window.location.reload()}
-                    hideMatches
-                  />
-
-                  <Col key={lover.id} className={clsx('gap-4 px-3 py-2')}>
-                    <Col className="gap-1">
-                      <div>Choose bet amount (required)</div>
-                      <BuyAmountInput
-                        amount={betAmount}
-                        onChange={setBetAmount}
-                        minimumAmount={MIN_BET_AMOUNT_FOR_NEW_MATCH}
-                        error={error}
-                        setError={setError}
-                        showBalance
+                  {potentialLovers.length > 0 && (
+                    <>
+                      <LoverProfile
+                        lover={potentialLover}
+                        user={potentialLover.user}
+                        refreshLover={() => window.location.reload()}
+                        hideMatches
                       />
-                    </Col>
 
-                    <CommentInputTextArea
-                      isSubmitting={isSubmitting}
-                      editor={editor}
-                      user={user}
-                      hideToolbar={true}
-                    />
+                      <Col key={lover.id} className={clsx('gap-4 px-3 py-2')}>
+                        <Col className="gap-1">
+                          <div>Choose bet amount (required)</div>
+                          <BuyAmountInput
+                            amount={betAmount}
+                            onChange={setBetAmount}
+                            minimumAmount={MIN_BET_AMOUNT_FOR_NEW_MATCH}
+                            error={error}
+                            setError={setError}
+                            showBalance
+                          />
+                        </Col>
 
-                    <Button
-                      className="font-semibold"
-                      color="green"
-                      onClick={() => submit()}
-                      disabled={
-                        !selectedMatchId ||
-                        isSubmitting ||
-                        !betAmount ||
-                        betAmount < MIN_BET_AMOUNT_FOR_NEW_MATCH
-                      }
-                      loading={isSubmitting}
-                    >
-                      Submit match
-                    </Button>
-                  </Col>
+                        <CommentInputTextArea
+                          isSubmitting={isSubmitting}
+                          editor={editor}
+                          user={user}
+                          hideToolbar={true}
+                        />
+
+                        <Button
+                          className="font-semibold"
+                          color="green"
+                          onClick={() => submit()}
+                          disabled={
+                            !selectedMatchId ||
+                            isSubmitting ||
+                            !betAmount ||
+                            betAmount < MIN_BET_AMOUNT_FOR_NEW_MATCH
+                          }
+                          loading={isSubmitting}
+                        >
+                          Submit match
+                        </Button>
+                      </Col>
+                    </>
+                  )}
                 </Col>
               ),
             },
