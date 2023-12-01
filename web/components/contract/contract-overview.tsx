@@ -201,7 +201,7 @@ export function BinaryChart(props: {
   return (
     <SizedContainer
       className={clsx(
-        showZoomer && 'mb-8',
+        showZoomer && 'mb-12',
         'w-full pb-3 pr-10',
         size == 'sm' ? 'h-[100px]' : 'h-[150px] sm:h-[250px]',
         className
@@ -369,7 +369,7 @@ const ChoiceOverview = (props: {
         <SizedContainer
           className={clsx(
             'h-[150px] w-full pb-4 pr-10 sm:h-[250px]',
-            showZoomer && 'mb-8'
+            showZoomer && 'mb-12'
           )}
         >
           {(w, h) => (
