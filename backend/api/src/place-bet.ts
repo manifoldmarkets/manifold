@@ -8,7 +8,7 @@ import {
 } from 'firebase-admin/firestore'
 import { groupBy, mapValues, sumBy, uniq } from 'lodash'
 
-import { APIError, authEndpoint, validate } from './helpers'
+import { APIError, typedEndpoint } from './helpers'
 import { Contract, CPMM_MIN_POOL_QTY } from 'common/contract'
 import { User } from 'common/user'
 import {
@@ -27,42 +27,20 @@ import { filterDefined } from 'common/util/array'
 import { createLimitBetCanceledNotification } from 'shared/create-notification'
 import { Answer } from 'common/answer'
 import { CpmmState, getCpmmProbability } from 'common/calculate-cpmm'
+import { ValidatedAPIParams } from 'common/api-schema'
 
-// don't use strict() because we want to allow market-type-specific fields
-const bodySchema = z.object({
-  contractId: z.string(),
-  amount: z.number().gte(1),
-  replyToCommentId: z.string().optional(),
-})
-
-const binarySchema = z.object({
-  outcome: z.enum(['YES', 'NO']),
-  limitProb: z.number().gte(0).lte(1).optional(),
-  expiresAt: z.number().optional(),
-})
-
-const multipleChoiceSchema = z.object({
-  answerId: z.string(),
-
-  // Used for new multiple choice contracts (cpmm-multi-1).
-  outcome: z.enum(['YES', 'NO']).optional(),
-  limitProb: z.number().gte(0).lte(1).optional(),
-  expiresAt: z.number().optional(),
-})
-
-export const placebet = authEndpoint(async (req, auth, log) => {
-  log(`Inside endpoint handler for ${auth.uid}.`)
+export const placeBet = typedEndpoint('bet', async (props, auth, { log }) => {
   const isApi = auth.creds.kind === 'key'
-  return await placeBetMain(req.body, auth.uid, isApi, log)
+  return await placeBetMain(props, auth.uid, isApi, log)
 })
 
 export const placeBetMain = async (
-  body: unknown,
+  body: ValidatedAPIParams<'bet'>,
   uid: string,
   isApi: boolean,
   log: GCPLog
 ) => {
-  const { amount, contractId, replyToCommentId } = validate(bodySchema, body)
+  const { amount, contractId, replyToCommentId } = body
 
   const result = await firestore.runTransaction(async (trans) => {
     log(`Inside main transaction for ${uid}.`)
@@ -115,9 +93,10 @@ export const placeBetMain = async (
         mechanism == 'cpmm-1'
       ) {
         // eslint-disable-next-line prefer-const
-        let { outcome, limitProb, expiresAt } = validate(binarySchema, body)
+        let { outcome, limitProb, expiresAt } = body
         if (expiresAt && expiresAt < Date.now())
-          throw new APIError(404, 'Bet cannot expire in the past.')
+          throw new APIError(400, 'Bet cannot expire in the past.')
+
         if (limitProb !== undefined && outcomeType === 'BINARY') {
           const isRounded = floatingEqual(
             Math.round(limitProb * 100),
@@ -151,7 +130,11 @@ export const placeBetMain = async (
         (outcomeType == 'FREE_RESPONSE' || outcomeType === 'MULTIPLE_CHOICE') &&
         mechanism == 'dpm-2'
       ) {
-        const { answerId } = validate(multipleChoiceSchema, body)
+        if (!body.answerId) {
+          throw new APIError(400, 'answerId must be specified for multi bets')
+        }
+
+        const { answerId } = body
         const answerDoc = contractDoc.collection('answers').doc(answerId)
         const answerSnap = await trans.get(answerDoc)
         if (!answerSnap.exists) throw new APIError(404, 'Answer not found')
@@ -161,12 +144,11 @@ export const placeBetMain = async (
         mechanism == 'cpmm-multi-1'
       ) {
         const { shouldAnswersSumToOne } = contract
-        const {
-          answerId,
-          outcome = 'YES',
-          limitProb,
-          expiresAt,
-        } = validate(multipleChoiceSchema, body)
+        if (!body.answerId) {
+          throw new APIError(400, 'answerId must be specified for multi bets')
+        }
+
+        const { answerId, outcome, limitProb, expiresAt } = body
         if (expiresAt && expiresAt < Date.now())
           throw new APIError(403, 'Bet cannot expire in the past.')
         const answersSnap = await trans.get(
@@ -219,7 +201,7 @@ export const placeBetMain = async (
         )
       } else {
         throw new APIError(
-          500,
+          400,
           'Contract type/mechanism not supported (or is no longer)'
         )
       }

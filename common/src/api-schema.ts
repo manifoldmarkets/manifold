@@ -4,6 +4,7 @@ import type { LiteMarket } from './api-market-types'
 import type { JSONContent } from '@tiptap/core'
 import type { Comment } from 'common/comment'
 import type { User } from './user'
+import { CandidateBet } from './new-bet'
 
 // import { contentSchema } from 'shared/zod-types'
 
@@ -64,6 +65,27 @@ export const API = {
         replyToCommentId: z.string().optional(),
         replyToAnswerId: z.string().optional(),
         replyToBetId: z.string().optional(),
+      })
+      .strict(),
+  },
+
+  bet: {
+    path: 'bet',
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    returns: _type as CandidateBet & { betId: string },
+    props: z
+      .object({
+        contractId: z.string(),
+        amount: z.number().gte(1),
+        replyToCommentId: z.string().optional(),
+        limitProb: z.number().gte(0).lte(1).optional(),
+        expiresAt: z.number().optional(),
+        // Used for binary and new multiple choice contracts (cpmm-multi-1).
+        outcome: z.enum(['YES', 'NO']).default('YES'),
+        //Multi
+        answerId: z.string().optional(),
       })
       .strict(),
   },

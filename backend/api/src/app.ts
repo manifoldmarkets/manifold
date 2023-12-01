@@ -160,6 +160,7 @@ app.options('*', allowCorsManifold)
 app.options('/v0', allowCorsUnrestricted)
 
 const handlers: { [k in APIName]: RequestHandler } = {
+  bet: placeBet,
   comment: createComment,
   markets: markets,
   managram: sendMana,
@@ -201,7 +202,6 @@ app.post('/createanswer', ...apiRoute(createanswer))
 app.post('/editcomment', ...apiRoute(editcomment))
 app.post('/swapcert', ...apiRoute(swapcert))
 app.post('/dividendcert', ...apiRoute(dividendcert))
-app.post('/placebet', ...apiRoute(placebet))
 app.post('/cancelbet', ...apiRoute(cancelbet))
 app.post('/sellbet', ...apiRoute(sellbet))
 app.post('/sellshares', ...apiRoute(sellshares))
