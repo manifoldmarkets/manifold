@@ -17,13 +17,13 @@ import { transact } from './transact'
 import { changeuserinfo } from './change-user-info'
 import { createuser } from './create-user'
 import { createanswer } from './create-answer'
-import { placebet } from './place-bet'
+import { placeBet } from './place-bet'
 import { cancelbet } from './cancel-bet'
 import { sellbet } from './sell-bet'
 import { sellshares } from './sell-shares'
 import { claimmanalink } from './claim-manalink'
 import { createmarket } from './create-market'
-import { createcomment } from './create-comment'
+import { createComment } from './create-comment'
 import { creategroup } from './create-group'
 import { resolvemarket } from './resolve-market'
 import { closemarket } from './close-market'
@@ -70,7 +70,7 @@ import { updateportfolio } from './update-portfolio'
 import { buyportfolio } from './buy-portfolio'
 import { searchgiphy } from './search-giphy'
 import { manachantweet } from './manachan-tweet'
-import { sendmana } from './send-mana'
+import { sendMana } from './send-mana'
 import { leavereview } from './leave-review'
 import { getusercontractmetricswithcontracts } from './get-user-contract-metrics-with-contracts'
 import { claimdestinysub } from './claim-destiny-sub'
@@ -109,6 +109,7 @@ import { clearLoverPhoto } from './love/clear-lover-photo'
 import { editanswercpmm } from 'api/edit-answer'
 import { createlovecompatibilityquestion } from 'api/love/create-love-compatibility-question'
 import { oncreatebet } from 'api/on-create-bet'
+import { API, type APIName } from 'common/api-schema'
 
 import { markets } from 'api/v0/markets'
 
@@ -154,15 +155,49 @@ app.use(requestLogger)
 
 // internal APIs
 app.options('*', allowCorsManifold)
-app.get('/health', ...apiRoute(health))
-app.get('/getcurrentuser', ...apiRoute(getcurrentuser))
-app.get('/unsubscribe', ...apiRoute(unsubscribe))
 
+// v0 public API routes
+app.options('/v0', allowCorsUnrestricted)
+
+const handlers: { [k in APIName]: RequestHandler } = {
+  comment: createComment,
+  markets: markets,
+  managram: sendMana,
+  me: getcurrentuser,
+}
+
+// TODO: a clever commennt
+Object.entries(handlers).forEach(([name, handler]) => {
+  const api = API[name as APIName]
+  const path = api.visibility === 'public' ? `/v0/${api.path}` : `/${api.path}`
+  const cors =
+    api.visibility === 'public' ? allowCorsUnrestricted : allowCorsManifold
+
+  console.log('add route', api.method, path, api.authed ? 'authed' : 'anon')
+
+  const apiRoute = [
+    path,
+    express.json(),
+    cors,
+    handler,
+    apiErrorHandler,
+  ] as const
+
+  if (api.method === 'POST') {
+    app.post(...apiRoute)
+  } else if (api.method === 'GET') {
+    app.get(...apiRoute)
+    // } else if (api.method === 'PUT') {
+    //   app.put(...apiRoute)
+  }
+})
+
+app.get('/health', ...apiRoute(health))
+app.get('/unsubscribe', ...apiRoute(unsubscribe))
 app.post('/transact', ...apiRoute(transact))
 app.post('/changeuserinfo', ...apiRoute(changeuserinfo))
 app.post('/createuser', ...apiRoute(createuser))
 app.post('/createanswer', ...apiRoute(createanswer))
-app.post('/createcomment', ...apiRoute(createcomment))
 app.post('/editcomment', ...apiRoute(editcomment))
 app.post('/swapcert', ...apiRoute(swapcert))
 app.post('/dividendcert', ...apiRoute(dividendcert))
@@ -224,7 +259,6 @@ app.post('/updateportfolio', ...apiRoute(updateportfolio))
 app.post('/buyportfolio', ...apiRoute(buyportfolio))
 app.post('/searchgiphy', ...apiRoute(searchgiphy))
 app.post('/manachantweet', ...apiRoute(manachantweet))
-app.post('/send-mana', ...apiRoute(sendmana))
 app.post('/refer-user', ...apiRoute(referuser))
 app.post('/leave-review', ...apiRoute(leavereview))
 app.post(
@@ -289,10 +323,6 @@ const publicApiRoute = (endpoint: RequestHandler) => {
     apiErrorHandler,
   ] as const
 }
-
-// v0 public API routes (formerly vercel functions)
-app.options('/v0', allowCorsUnrestricted)
-app.get('/v0/markets', ...publicApiRoute(markets))
 
 // Ian: not sure how to restrict triggers to supabase origin, yet
 app.post('/on-create-bet', ...publicApiRoute(oncreatebet))

@@ -14,6 +14,7 @@ import { ReportProps } from 'common/report'
 import { BaseDashboard, Dashboard, DashboardItem } from 'common/dashboard'
 import { Bet } from 'common/bet'
 import { LinkPreview } from 'common/link-preview'
+import { API, APIName, APIParams, APIResponse } from 'common/api-schema'
 
 export { APIError } from 'common/api'
 
@@ -22,27 +23,12 @@ export async function call(url: string, method: 'POST' | 'GET', params?: any) {
   if (user == null) {
     throw new Error('Must be signed in to make API calls.')
   }
-  const token = await user.getIdToken()
-  const req = new Request(url, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-    method: method,
-    body: params != null ? JSON.stringify(params) : undefined,
-  })
-  return await fetch(req).then(async (resp) => {
-    const json = (await resp.json()) as { [k: string]: any }
-    if (!resp.ok) {
-      throw new APIError(resp.status as any, json?.message, json?.details)
-    }
-    return json
-  })
+  return maybeAuthedCall(url, method, params)
 }
 
 export async function maybeAuthedCall(
   url: string,
-  method: string,
+  method: 'POST' | 'GET',
   params?: any
 ) {
   const user = auth.currentUser
@@ -62,6 +48,12 @@ export async function maybeAuthedCall(
     }
     return json
   })
+}
+
+// TODO: use this for all calls
+export function api<N extends APIName>(api: N, params: APIParams<N>) {
+  const { path, method } = API[api]
+  return call(getApiUrl(path), method, params) as Promise<APIResponse<N>>
 }
 
 export function lootbox() {
@@ -138,10 +130,6 @@ export function updateGroup(params: { id: string } & Partial<Group>) {
 
 export function acceptChallenge(params: any) {
   return call(getApiUrl('acceptchallenge'), 'POST', params)
-}
-
-export function getCurrentUser(params: any) {
-  return call(getApiUrl('getcurrentuser'), 'GET', params)
 }
 
 export function createPost(params: {
@@ -251,16 +239,6 @@ export function updateUserDisinterestEmbedding(params: {
   removeContract?: boolean
 }) {
   return call(getApiUrl('update-user-disinterest-embedding'), 'POST', params)
-}
-
-export function createCommentOnContract(params: {
-  contractId: string
-  content: JSONContent
-  replyToCommentId?: string
-  replyToAnswerId?: string
-  replyToBetId?: string
-}) {
-  return call(getApiUrl('createcomment'), 'POST', params)
 }
 
 export function searchContracts(params: {
@@ -385,15 +363,6 @@ export function searchGiphy(params: { term: string; limit: number }) {
 
 export function tweetFromManaChan(params: { tweet: string }) {
   return call(getApiUrl('manachantweet'), 'POST', params)
-}
-
-export function sendMana(params: {
-  toIds: string[]
-  amount: number
-  message: string
-  groupId?: string
-}) {
-  return call(getApiUrl('send-mana'), 'POST', params)
 }
 
 export function leaveReview(params: any) {

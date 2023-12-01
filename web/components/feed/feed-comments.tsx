@@ -39,7 +39,7 @@ import { useAdminOrTrusted } from 'web/hooks/use-admin'
 import { useEvent } from 'web/hooks/use-event'
 import { useIsVisible } from 'web/hooks/use-is-visible'
 import { isBlocked, usePrivateUser, useUser } from 'web/hooks/use-user'
-import { createCommentOnContract, hideComment } from 'web/lib/firebase/api'
+import { api, hideComment } from 'web/lib/firebase/api'
 import { firebaseLogin, User } from 'web/lib/firebase/users'
 import TriangleDownFillIcon from 'web/lib/icons/triangle-down-fill-icon.svg'
 import TriangleFillIcon from 'web/lib/icons/triangle-fill-icon.svg'
@@ -768,7 +768,7 @@ export function ContractCommentInput(props: {
       return
     }
     try {
-      await createCommentOnContract({
+      await api('comment', {
         contractId: contract.id,
         content: editor.getJSON(),
         replyToAnswerId: isReplyToAnswer ? replyTo.id : undefined,

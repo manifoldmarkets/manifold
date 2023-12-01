@@ -1,33 +1,17 @@
 import * as admin from 'firebase-admin'
-import { z } from 'zod'
 
 import { User } from 'common/user'
 import { canSendMana, SEND_MANA_REQ } from 'common/manalink'
-import { APIError, authEndpoint, validate } from './helpers'
+import { APIError, typedEndpoint } from './helpers'
 import { runTxn } from 'shared/txn/run-txn'
 import { createManaPaymentNotification } from 'shared/create-notification'
 import * as crypto from 'crypto'
 import { createSupabaseClient } from 'shared/supabase/init'
-import { MAX_ID_LENGTH } from 'common/group'
 import { isAdminId } from 'common/envs/constants'
 import { MAX_COMMENT_LENGTH } from 'common/comment'
 
-const bodySchema = z
-  .object({
-    amount: z.number().finite(),
-    toIds: z.array(z.string()),
-    message: z.string(),
-    groupId: z.string().max(MAX_ID_LENGTH).optional(),
-  })
-  .strict()
-
-export const sendmana = authEndpoint(async (req, auth) => {
-  const {
-    toIds,
-    message,
-    amount,
-    groupId: passedGroupId,
-  } = validate(bodySchema, req.body)
+export const sendMana = typedEndpoint('managram', async (props, auth) => {
+  const { amount, toIds, message, groupId: passedGroupId } = props
   if (message.length > MAX_COMMENT_LENGTH) {
     throw new APIError(
       400,
@@ -100,8 +84,6 @@ export const sendmana = authEndpoint(async (req, auth) => {
         createManaPaymentNotification(fromUser, toId, amount, message)
       )
     )
-
-    return { message: 'Mana sent' }
   })
 })
 

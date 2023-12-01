@@ -85,7 +85,7 @@ export function toLiteMarket(contract: Contract): LiteMarket {
     resolutionProbability,
     uniqueBettorCount,
     lastUpdatedTime,
-    lastBetTime
+    lastBetTime,
   } = contract
 
   const { p, totalLiquidity } = contract as any
