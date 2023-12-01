@@ -9,6 +9,7 @@ import { AnswerCompatibilityQuestionContent } from './answer-compatibility-quest
 export function AnswerCompatibilityQuestionButton(props: {
   user: User | null | undefined
   otherQuestions: QuestionWithCountType[]
+  skippedQuestions: QuestionWithCountType[]
   refreshCompatibilityAll: () => void
 }) {
   const { user, otherQuestions, refreshCompatibilityAll } = props
