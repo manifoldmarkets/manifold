@@ -351,14 +351,6 @@ function FeedAnalytics(props: { contractId: string }) {
         .eq('contract_id', contractId)
   )
 
-  if (adQuery.error || viewQuery.error) {
-    return (
-      <div className="bg-scarlet-100 mb-2 rounded-md p-4">
-        Error loading analytics
-      </div>
-    )
-  }
-  
   const isBoosted = !!adQuery.data?.data?.length
   const lastAdData = adQuery.data?.data?.[0]
 
@@ -371,7 +363,7 @@ function FeedAnalytics(props: { contractId: string }) {
         .eq('data->>fromId', lastAdData?.id)
   )
 
-  if (redeemQuery.error) {
+  if (adQuery.error || viewQuery.error || redeemQuery.error) {
     return (
       <div className="bg-scarlet-100 mb-2 rounded-md p-4">
         Error loading analytics
