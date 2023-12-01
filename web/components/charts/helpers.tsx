@@ -20,6 +20,7 @@ import { useMeasureSize } from 'web/hooks/use-measure-size'
 import { clamp, sortBy } from 'lodash'
 import { ScaleTime, scaleTime } from 'd3-scale'
 import { useEvent } from 'web/hooks/use-event'
+import { buildArray } from 'common/util/array'
 
 // min number of pixels to mouse drag over to trigger zoom
 const ZOOM_DRAG_THRESHOLD = 16
@@ -321,6 +322,7 @@ export type TooltipProps<T> = {
   y: number
   prev: T | undefined
   next: T | undefined
+  // prev or next, whichever is closer
   nearest: T
 }
 
@@ -374,15 +376,16 @@ export const formatPct = (n: number) => {
   return `${(n * 100).toFixed(0)}%`
 }
 
-export const formatDate = (
+export const formatDateInRange = (
   date: Date | number,
-  opts?: {
-    includeYear?: boolean
-    includeHour?: boolean
-    includeMinute?: boolean
-  }
+  start: Date | number,
+  end: Date | number
 ) => {
-  const { includeYear, includeHour, includeMinute } = opts ?? {}
+  const includeYear = !dayjs(start).isSame(end, 'year')
+  const includeDay = !dayjs(start).isSame(end, 'day')
+  const includeHour = dayjs(end).diff(start, 'day') <= 7
+  const includeMinute = dayjs(end).diff(start, 'day') <= 1
+
   const d = dayjs(date)
   const now = Date.now()
   if (
@@ -391,34 +394,22 @@ export const formatDate = (
   ) {
     return 'Now'
   } else {
-    const dayName = d.isSame(now, 'day')
-      ? 'Today'
+    const day = !includeDay
+      ? null
+      : d.isSame(now, 'day')
+      ? '[Today]'
       : d.add(1, 'day').isSame(now, 'day')
-      ? 'Yesterday'
-      : null
-    let format = dayName ? `[${dayName}]` : 'MMM D'
-    if (includeMinute) {
-      format += ', h:mma'
-    } else if (includeHour) {
-      format += ', ha'
-    } else if (includeYear) {
-      format += ', YYYY'
-    }
-    return d.format(format)
-  }
-}
+      ? '[Yesterday]'
+      : d.subtract(1, 'day').isSame(now, 'day')
+      ? '[Tomorrow]'
+      : 'MMM D'
 
-export const formatDateInRange = (
-  d: Date | number,
-  start: Date | number,
-  end: Date | number
-) => {
-  const opts = {
-    includeYear: !dayjs(start).isSame(end, 'year'),
-    includeHour: dayjs(start).add(8, 'day').isAfter(end),
-    includeMinute: dayjs(end).diff(start, 'hours') < 2,
+    const time = includeMinute ? 'h:mma' : includeHour ? 'ha' : null
+    const year = includeYear ? 'YYYY' : null
+
+    const format = buildArray(day, time, year).join(', ')
+    return format && d.format(format)
   }
-  return formatDate(d, opts)
 }
 
 // ZOOM!

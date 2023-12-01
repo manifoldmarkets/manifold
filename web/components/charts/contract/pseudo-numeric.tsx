@@ -5,17 +5,9 @@ import { getInitialProbability, getProbability } from 'common/calculate'
 import { formatLargeNumber } from 'common/util/format'
 import { PseudoNumericContract } from 'common/contract'
 import { NUMERIC_GRAPH_COLOR } from 'common/numeric-constants'
-import {
-  TooltipProps,
-  getEndDate,
-  getRightmostVisibleDate,
-  formatDateInRange,
-  ZoomParams,
-} from '../helpers'
+import { getEndDate, getRightmostVisibleDate, ZoomParams } from '../helpers'
 import { SingleValueHistoryChart } from '../generic-charts'
-import { Row } from 'web/components/layout/row'
-import { Avatar } from 'web/components/widgets/avatar'
-import { HistoryPoint } from 'common/chart'
+import { SingleContractChartTooltip, SingleContractPoint } from './single-value'
 
 // mqp: note that we have an idiosyncratic version of 'log scale'
 // contracts. the values are stored "linearly" and can include zero.
@@ -28,33 +20,16 @@ const getScaleP = (min: number, max: number, isLogScale: boolean) => {
       : p * (max - min) + min
 }
 
-// same as BinaryPoint
-type NumericPoint = HistoryPoint<{ userAvatarUrl?: string }>
-
-const getBetPoints = (bets: NumericPoint[], scaleP: (p: number) => number) => {
-  return bets.map((pt) => ({ x: pt.x, y: scaleP(pt.y), obj: pt.obj }))
-}
-
-const PseudoNumericChartTooltip = (
-  props: TooltipProps<NumericPoint> & { dateLabel: string }
+const getBetPoints = (
+  bets: SingleContractPoint[],
+  scaleP: (p: number) => number
 ) => {
-  const { prev, next, dateLabel } = props
-  if (!prev) return null
-
-  return (
-    <Row className="items-center gap-2">
-      {prev.obj?.userAvatarUrl && (
-        <Avatar size="xs" avatarUrl={prev.obj.userAvatarUrl} />
-      )}
-      <span className="font-semibold">{next ? dateLabel : 'Now'}</span>
-      <span className="text-ink-600">{formatLargeNumber(prev.y)}</span>
-    </Row>
-  )
+  return bets.map((pt) => ({ x: pt.x, y: scaleP(pt.y), obj: pt.obj }))
 }
 
 export const PseudoNumericContractChart = (props: {
   contract: PseudoNumericContract
-  betPoints: NumericPoint[]
+  betPoints: SingleContractPoint[]
   width: number
   height: number
   zoomParams?: ZoomParams
@@ -98,14 +73,10 @@ export const PseudoNumericContractChart = (props: {
       showZoomer={showZoomer}
       data={data}
       Tooltip={(props) => (
-        <PseudoNumericChartTooltip
-          {...props}
-          dateLabel={formatDateInRange(
-            // eslint-disable-next-line react/prop-types
-            xScale.invert(props.x),
-            start,
-            rightmostDate
-          )}
+        <SingleContractChartTooltip
+          ttProps={props}
+          xScale={zoomParams?.viewXScale ?? xScale}
+          formatY={formatLargeNumber}
         />
       )}
       color={NUMERIC_GRAPH_COLOR}
