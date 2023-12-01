@@ -7,6 +7,7 @@ import {
   CORS_ORIGIN_VERCEL,
   CORS_ORIGIN_MANIFOLD_LOVE,
   CORS_ORIGIN_MANIFOLD_LOVE_ALTERNATE,
+  CORS_ORIGIN_CHARITY,
 } from 'common/envs/constants'
 import { log } from 'shared/utils'
 import { APIError } from 'common/api'
@@ -117,6 +118,7 @@ const allowCorsManifold: RequestHandler = cors({
     CORS_ORIGIN_MANIFOLD,
     CORS_ORIGIN_MANIFOLD_LOVE,
     CORS_ORIGIN_MANIFOLD_LOVE_ALTERNATE,
+    CORS_ORIGIN_CHARITY,
     CORS_ORIGIN_VERCEL,
     CORS_ORIGIN_LOCALHOST,
   ],
