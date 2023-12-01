@@ -181,10 +181,10 @@ export function ResolveHeader(props: {
           <Col>
             <span className="mb-2 text-lg">
               {!isCreator && (
-        <span className="mr-2 rounded bg-purple-100 p-1 align-baseline text-xs uppercase text-purple-600 dark:bg-purple-900 dark:text-purple-300">
-          Mod
-        </span>
-      )}
+                <span className="mr-2 rounded bg-purple-100 p-1 align-baseline text-xs uppercase text-purple-600 dark:bg-purple-900 dark:text-purple-300">
+                  Mod
+                </span>
+              )}
               If {isCreator ? 'your' : 'this'} question closed too early{' '}
             </span>
             <Button color={'gray'} onClick={() => setIsEditingCloseTime(true)}>
@@ -199,18 +199,18 @@ export function ResolveHeader(props: {
         </IconButton>
       </Row>
       <div className="mb-2 text-lg">
-          {!isCreator && (
-            <span className="mr-2 rounded bg-purple-100 p-1 align-baseline text-xs uppercase text-purple-600 dark:bg-purple-900 dark:text-purple-300">
-              Mod
-            </span>
-          )}
-          If you know the answer, resolve{' '}
-          {fullTitle
-            ? `"${contract.question}"`
-            : isCreator
-            ? 'your question'
-            : contract.creatorName + `'s question`}
-        </div>
+        {!isCreator && (
+          <span className="mr-2 rounded bg-purple-100 p-1 align-baseline text-xs uppercase text-purple-600 dark:bg-purple-900 dark:text-purple-300">
+            Mod
+          </span>
+        )}
+        If you know the answer, resolve{' '}
+        {fullTitle
+          ? `"${contract.question}"`
+          : isCreator
+          ? 'your question'
+          : contract.creatorName + `'s question`}
+      </div>
       <EditCloseTimeModal
         contract={contract}
         isOpen={isEditingCloseTime}
