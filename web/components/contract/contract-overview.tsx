@@ -12,7 +12,6 @@ import {
   NumericContract,
   PseudoNumericContract,
 } from 'common/contract'
-import { YES_GRAPH_COLOR } from 'common/envs/constants'
 import { NumericContractChart } from '../charts/contract/numeric'
 import { BinaryContractChart } from '../charts/contract/binary'
 import { ChoiceContractChart, MultiPoints } from '../charts/contract/choice'
