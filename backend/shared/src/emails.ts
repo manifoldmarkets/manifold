@@ -797,7 +797,7 @@ export const sendNewMessageEmail = async (
   )
   if (!privateUser.email || !sendToEmail) return
   const firstName = toUser.name.split(' ')[0]
-  const lover = await getLoverRow(toUser.id, createSupabaseClient())
+  const lover = await getLoverRow(fromUser.id, createSupabaseClient())
   const loveOgImageUrl = getLoveOgImageUrl(fromUser, lover)
 
   return await sendTemplateEmail(
