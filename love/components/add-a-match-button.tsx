@@ -17,8 +17,7 @@ import { CommentInputTextArea } from 'web/components/comments/comment-input'
 import { Editor } from '@tiptap/react'
 import { useTextEditor } from 'web/components/widgets/editor'
 import { MAX_COMMENT_LENGTH } from 'common/comment'
-
-const MIN_BET_AMOUNT_FOR_NEW_MATCH = 50
+import { MIN_BET_AMOUNT_FOR_NEW_MATCH } from 'common/love/constants'
 
 export const AddAMatchButton = (props: {
   lover: Lover
@@ -81,7 +80,7 @@ export const AddAMatchButton = (props: {
     <>
       <Button
         className={clsx(className)}
-        color="indigo"
+        color="indigo-outline"
         onClick={() => setDialogOpen(true)}
         disabled={isSubmitting}
         loading={isSubmitting}
