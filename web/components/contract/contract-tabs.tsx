@@ -88,7 +88,8 @@ export function ContractTabs(props: {
   const userBets = rows ?? []
 
   const tradesTitle =
-    (totalBets > 0 ? `${shortFormatNumber(totalBets)} ` : '') + maybePluralize('Trade', totalBets)
+    (totalBets > 0 ? `${shortFormatNumber(totalBets)} ` : '') +
+    maybePluralize('Trade', totalBets)
 
   const visibleUserBets = userBets.filter(
     (bet) => bet.amount !== 0 && !bet.isRedemption
