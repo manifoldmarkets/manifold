@@ -508,7 +508,6 @@ const StonkOverview = (props: {
             zoomParams={zoomParams}
             showZoomer={showZoomer}
             contract={contract}
-            color={YES_GRAPH_COLOR}
           />
         )}
       </SizedContainer>
