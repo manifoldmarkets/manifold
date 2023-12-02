@@ -85,7 +85,7 @@ export function toLiteMarket(contract: Contract): LiteMarket {
     resolutionProbability,
     uniqueBettorCount,
     lastUpdatedTime,
-    lastBetTime
+    lastBetTime,
   } = contract
 
   const { p, totalLiquidity } = contract as any
@@ -148,10 +148,19 @@ export function toFullMarket(contract: Contract): FullMarket {
         )
       : undefined
 
+  const bountyValues =
+    outcomeType === 'BOUNTIED_QUESTION'
+      ? {
+          totalBounty: contract.totalBounty,
+          bountyLeft: contract.bountyLeft,
+        }
+      : {}
+
   const { description, coverImageUrl, groupSlugs } = contract
 
   return {
     ...liteMarket,
+    ...bountyValues,
     answers,
     description,
     coverImageUrl,
