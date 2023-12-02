@@ -25,3 +25,19 @@ BEGIN
         month;
 END;
 $$ language plpgsql;
+
+
+CREATE OR REPLACE FUNCTION calculate_user_profit_for_2023(user_id_input TEXT)
+RETURNS NUMERIC AS $$
+DECLARE
+    total_profit NUMERIC;
+BEGIN
+    SELECT SUM(profit) INTO total_profit
+    FROM public.user_contract_metrics
+    WHERE user_id = user_id_input
+    AND fs_updated_time >= '2023-01-01'::TIMESTAMPTZ
+    AND fs_updated_time < '2024-01-01'::TIMESTAMPTZ;
+
+    RETURN COALESCE(total_profit, 0); -- Return 0 if the sum is NULL
+END;
+$$ LANGUAGE plpgsql;

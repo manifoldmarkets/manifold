@@ -326,6 +326,16 @@ module.exports = {
             transitionTimingFunction: 'cubic-bezier(1, 1, 0.8, 0)',
           },
         },
+        'grow-up': {
+          '0%': {
+            height: 0,
+            transitionTimingFunction: 'cubic-bezier(1, 1, 0.8, 0)',
+          },
+          '100%': {
+            height: '200px',
+            transitionTimingFunction: 'cubic-bezier(1, 1, 0.8, 0)',
+          },
+        },
       },
       animation: {
         progress: 'progress linear forwards',
@@ -354,6 +364,7 @@ module.exports = {
         'slide-right-in': 'slide-right-in 1s',
         'fade-in': 'fade-in 1s',
         'fade-out': 'fade-out 1s',
+        'grow-up': 'grow-up 1s',
       },
       colors: {
         ink: {

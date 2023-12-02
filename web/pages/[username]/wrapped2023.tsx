@@ -16,6 +16,8 @@ import { useState } from 'react'
 import { MonthlyBets } from 'web/components/wrapped/MonthlyBets'
 import { useMonthlyBets } from 'web/hooks/use-wrapped-2023'
 import { GeneralStats } from 'web/components/wrapped/GeneralStats'
+import { TotalProfit } from 'web/components/wrapped/TotalProfit'
+import Link from 'next/link'
 
 export const getStaticProps = async (props: {
   params: {
@@ -70,7 +72,6 @@ function Wrapped2023Content(props: { user: User; username: string }) {
   }
 
   const monthlyBets = useMonthlyBets(user.id)
-  console.log(monthlyBets)
   return (
     <Col
       className={clsx(
@@ -88,6 +89,13 @@ function Wrapped2023Content(props: { user: User; username: string }) {
           user={user}
         />
       ) : state.page == '2' ? (
+        <TotalProfit
+          monthlyBets={monthlyBets}
+          goToPrevPage={goToPrevPage}
+          goToNextPage={goToNextPage}
+          user={user}
+        />
+      ) : state.page == '3' ? (
         <MonthlyBets
           monthlyBets={monthlyBets}
           goToPrevPage={goToPrevPage}
@@ -95,7 +103,9 @@ function Wrapped2023Content(props: { user: User; username: string }) {
           user={user}
         />
       ) : (
-        <></>
+        <Link href="/" className="mx-auto my-auto text-3xl">
+          The end!
+        </Link>
       )}
     </Col>
   )

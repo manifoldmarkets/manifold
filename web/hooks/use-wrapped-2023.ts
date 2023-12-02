@@ -52,3 +52,25 @@ export function useMonthlyBets(userId: string) {
 
   return monthlyBets
 }
+
+export function useTotalProfit(userId: string) {
+  const [totalProfit, setTotalProfit] = useState<number | undefined | null>(
+    undefined
+  )
+  useEffect(() => {
+    db.rpc('calculate_user_profit_for_2023', {
+      user_id_input: userId,
+    }).then((data) => {
+      if (data.error || !data.data) {
+        console.error('Error fetching total profit:', data.error)
+        // Handle the error appropriately
+        setTotalProfit(null)
+      } else {
+        console.log('data', data.data)
+        setTotalProfit(data.data as number)
+      }
+    })
+  }, [userId])
+
+  return totalProfit
+}

@@ -2,35 +2,32 @@ import clsx from 'clsx'
 import { User } from 'common/user'
 import { formatMoney } from 'common/util/format'
 import { useEffect, useState } from 'react'
-import { MonthlyBetsType } from 'web/hooks/use-wrapped-2023'
+import { MonthlyBetsType, useTotalProfit } from 'web/hooks/use-wrapped-2023'
 import { Spacer } from '../layout/spacer'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 
-export function GeneralStats(props: {
+export function TotalProfit(props: {
   monthlyBets: MonthlyBetsType[] | undefined | null
   goToPrevPage: () => void
   goToNextPage: () => void
   user: User
 }) {
   const { goToPrevPage, goToNextPage, user, monthlyBets } = props
-  const [animateTotalSpentIn, setAnimateTotalSpentIn] = useState(true)
-  const [animateMostSpentIn, setAnimateMostSpentIn] = useState(false)
-  const [animateGraphicIn, setAnimateGraphicIn] = useState(false)
+  const [animateIn, setAnimateInt] = useState(true)
+  const [animateGrowingIn, setAnimateGrowingIn] = useState(false)
   const [animateOut, setAnimateOut] = useState(false)
+  const totalProfit = useTotalProfit(user.id)
 
   //triggers for animation in
   useEffect(() => {
-    if (!animateTotalSpentIn) return
+    if (!animateIn) return
     setTimeout(() => {
-      setAnimateMostSpentIn(true)
+      setAnimateGrowingIn(true)
     }, 1000)
-    setTimeout(() => {
-      setAnimateGraphicIn(true)
-    }, 2000)
     setTimeout(() => {
       onGoToNext()
     }, 5000)
-  }, [animateTotalSpentIn])
+  }, [animateIn])
 
   const onGoToNext = () => {
     setAnimateOut(true)
@@ -39,29 +36,13 @@ export function GeneralStats(props: {
     }, 1000)
   }
 
-  if (monthlyBets == undefined) {
+  if (totalProfit == undefined) {
     return <LoadingIndicator />
   }
-  const amountBetThisYear = monthlyBets.reduce((accumulator, current) => {
-    return accumulator + current.total_amount
-  }, 0)
 
-  if (monthlyBets == null) {
+  if (totalProfit == null) {
     return <>An error occured</>
   }
-
-  const monthWithMaxBets = monthlyBets.reduce((max, current) => {
-    return current.bet_count > max.bet_count ? current : max
-  })
-  // Create a date object using the UTC constructor to prevent timezone offsets from affecting the month
-  const dateOfMaxBets = new Date(monthWithMaxBets.month)
-  dateOfMaxBets.setDate(dateOfMaxBets.getDate() + 1)
-
-  // Now you have the month with the highest number of bets
-  const monthName = dateOfMaxBets.toLocaleString('default', {
-    month: 'long',
-    timeZone: 'UTC',
-  })
 
   return (
     <>
@@ -72,45 +53,28 @@ export function GeneralStats(props: {
             animateOut ? 'animate-fade-out' : 'animate-fade-in'
           )}
         >
-          This year you spent{' '}
-          <span className="font-bold text-green-300">
-            {formatMoney(amountBetThisYear)}
-          </span>{' '}
-          betting on things you believed in!
+          On those bets, you made{' '}
+          <span
+            className={clsx(
+              'font-bold ',
+              totalProfit < 0 ? 'text-red-300' : 'text-green-300'
+            )}
+          >
+            {formatMoney(totalProfit)}
+          </span>
         </div>
         <Spacer h={4} />
         <div
           className={clsx(
-            'px-6 text-2xl ',
-            animateMostSpentIn
+            animateGrowingIn
               ? animateOut
                 ? 'animate-fade-out'
-                : 'animate-fade-in'
-              : 'invisible'
+                : 'animate-grow-up'
+              : 'invisible',
+            'h-[200px]',
+            totalProfit < 0 ? 'bg-red-300' : 'bg-green-300'
           )}
-        >
-          You bet the most in{' '}
-          <span className={clsx('highlight-black font-bold text-green-300')}>
-            {monthName}
-          </span>
-          , spending{' '}
-          <span className="font-bold text-green-300">
-            {formatMoney(monthWithMaxBets.bet_count)}
-          </span>{' '}
-          mana!
-        </div>
-        <div
-          className={clsx(
-            'mx-auto my-auto',
-            animateGraphicIn
-              ? animateOut
-                ? 'animate-slide-right-out'
-                : 'animate-slide-right-in'
-              : 'invisible'
-          )}
-        >
-          <CoinBarChart data={monthlyBets} />
-        </div>
+        />
       </div>
       <button
         onClick={goToPrevPage}
