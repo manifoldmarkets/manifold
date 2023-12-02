@@ -94,7 +94,7 @@ export const getDemotionAndPromotionCount = (division: number) => {
     return { demotion: 5, promotion: 7, doublePromotion: 1 }
   }
   if (division === 3) {
-    return { demotion: 5, promotion: 6, doublePromotion: 0 }
+    return { demotion: 6, promotion: 6, doublePromotion: 0 }
   }
   if (division === 4) {
     return { demotion: 10, promotion: 5, doublePromotion: 0 }
@@ -103,7 +103,7 @@ export const getDemotionAndPromotionCount = (division: number) => {
     return { demotion: 12, promotion: 3, doublePromotion: 0 }
   }
   if (division === 6) {
-    return { demotion: 25, promotion: 0, doublePromotion: 0 }
+    return { demotion: 34, promotion: 0, doublePromotion: 0 }
   }
   throw new Error(`Invalid division: ${division}`)
 }
@@ -112,17 +112,29 @@ export const getDemotionAndPromotionCountBySeason = (
   season: number,
   division: number
 ) => {
+  if (season === 6 || season === 7) {
+    if (division === 3) {
+      return { demotion: 5, promotion: 6, doublePromotion: 0 }
+    }
+    if (division === 6)
+      return { demotion: 25, promotion: 0, doublePromotion: 0 }
+  }
   if (season === 5) {
+    if (division === 3) return { demotion: 5, promotion: 6, doublePromotion: 0 }
     if (division === 4) return { demotion: 5, promotion: 5, doublePromotion: 0 }
     if (division === 5) return { demotion: 8, promotion: 3, doublePromotion: 0 }
+    if (division === 6)
+      return { demotion: 25, promotion: 0, doublePromotion: 0 }
   }
   if (season === 4) {
+    if (division === 3) return { demotion: 5, promotion: 6, doublePromotion: 0 }
     if (division === 4) return { demotion: 5, promotion: 5, doublePromotion: 0 }
     if (division === 5) return { demotion: 7, promotion: 4, doublePromotion: 0 }
     if (division === 6)
       return { demotion: 17, promotion: 0, doublePromotion: 0 }
   }
   if (season < 4) {
+    if (division === 3) return { demotion: 5, promotion: 6, doublePromotion: 0 }
     if (division === 4) return { demotion: 5, promotion: 5, doublePromotion: 0 }
     if (division === 5) return { demotion: 6, promotion: 5, doublePromotion: 0 }
   }
