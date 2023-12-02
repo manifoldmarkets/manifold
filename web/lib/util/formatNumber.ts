@@ -7,3 +7,7 @@ export function shortenNumber(num: number): string {
   if (num >= 1e12) return +(num / 1e12).toFixed(1) + 'T' // trillion or more
   return num.toString()
 }
+
+export function numberWithCommas(x: number) {
+  return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+}

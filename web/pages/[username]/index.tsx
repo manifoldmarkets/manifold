@@ -125,7 +125,7 @@ export default function UserPage(props: {
   )
 }
 
-const DeletedUser = () => {
+export const DeletedUser = () => {
   return (
     <Page trackPageView={'deleted user profile'}>
       <Head>
