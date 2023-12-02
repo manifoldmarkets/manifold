@@ -6,7 +6,7 @@ import { CPMMMultiContract, Contract } from 'common/contract'
 import { User } from 'common/user'
 import { CandidateBet, getBetDownToOneMultiBetInfo } from 'common/new-bet'
 import { Answer, getMaximumAnswers, MAX_ANSWER_LENGTH } from 'common/answer'
-import { APIError, authEndpoint, validate } from './helpers'
+import { APIError, AuthedUser, authEndpoint, validate } from './helpers'
 import { ANSWER_COST } from 'common/economy'
 import { randomString } from 'common/util/random'
 import { getUnfilledBetsAndUserBalances, updateMakers } from './place-bet'
@@ -34,6 +34,15 @@ const bodySchema = z
 
 export const createanswercpmm = authEndpoint(async (req, auth, log) => {
   const { contractId, text } = validate(bodySchema, req.body)
+  return await createAnswerCpmmMain(auth, contractId, text, log)
+})
+
+export const createAnswerCpmmMain = async (
+  auth: AuthedUser,
+  contractId: string,
+  text: string,
+  log: GCPLog
+) => {
   log('Received ' + contractId + ' ' + text)
 
   // Run as transaction to prevent race conditions.
@@ -158,7 +167,7 @@ export const createanswercpmm = authEndpoint(async (req, auth, log) => {
   )
   await addUserToContractFollowers(contractId, auth.uid)
   return { newAnswerId }
-})
+}
 
 async function createAnswerAndSumAnswersToOne(
   transaction: FirebaseFirestore.Transaction,
