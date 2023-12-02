@@ -6,7 +6,7 @@ export function FullscreenConfetti(props: ConfettiProps) {
     <Confetti
       className="!fixed inset-0 !z-50"
       recycle={false}
-      numberOfPieces={2024}
+      numberOfPieces={300}
       friction={0.996}
       gravity={0.035}
       // draw a snowflake!
