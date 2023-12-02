@@ -178,6 +178,7 @@ export const ChoiceContractChart = (props: {
       showZoomer={showZoomer}
       data={pick(data, chosenAnswerIds)}
       hoveringId={highlightAnswerId}
+      contractId={contract.id}
       Tooltip={(props) => (
         <ChoiceTooltip
           answers={answers}

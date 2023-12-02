@@ -1,4 +1,4 @@
-import { ReactNode, memo, useMemo, useState } from 'react'
+import { ReactNode, memo, useMemo, useState, useEffect } from 'react'
 import clsx from 'clsx'
 import { sortBy } from 'lodash'
 
@@ -29,7 +29,7 @@ import { Period } from 'web/lib/firebase/users'
 import { periodDurations } from 'web/lib/util/time'
 import { SignedInBinaryMobileBetting } from '../bet/bet-button'
 import { StonkContractChart } from '../charts/contract/stonk'
-import { ZoomParams, getEndDate, useZoom } from '../charts/helpers'
+import { ZoomParams, getEndDate, useZoom, PointerMode } from '../charts/helpers'
 import { TimeRangePicker } from '../charts/time-range-picker'
 import { Row } from '../layout/row'
 import { QfOverview } from './qf-overview'
@@ -46,6 +46,16 @@ import { Col } from '../layout/col'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { getAnswerProbability } from 'common/calculate'
 import { searchInAny } from 'common/util/parse'
+import {
+  ChartAnnotation,
+  useChartAnnotations,
+} from 'web/hooks/use-chart-annotations'
+import { Carousel } from 'web/components/widgets/carousel'
+import { Button } from 'web/components/buttons/button'
+import { PencilIcon } from '@heroicons/react/solid'
+import { ChartAnnotationModal } from 'web/components/annotate-chart'
+import { UserLink } from 'web/components/widgets/user-link'
+import toast from 'react-hot-toast'
 
 export const ContractOverview = memo(
   (props: {
@@ -165,6 +175,7 @@ export const BinaryOverview = (props: {
 
       <BinaryChart
         showZoomer={showZoomer}
+        showAnnotations={true}
         zoomParams={zoomParams}
         betPoints={betPoints}
         contract={contract}
@@ -180,6 +191,7 @@ export const BinaryOverview = (props: {
 export function BinaryChart(props: {
   showZoomer?: boolean
   zoomParams?: ZoomParams
+  showAnnotations?: boolean
   betPoints: HistoryPoint<Partial<Bet>>[]
   percentBounds?: { max: number; min: number }
   contract: BinaryContract
@@ -190,34 +202,182 @@ export function BinaryChart(props: {
   const {
     showZoomer,
     zoomParams,
+    showAnnotations,
     betPoints,
     contract,
     percentBounds,
     className,
     size = 'md',
   } = props
+  const [hoveredAnnotation, setHoveredAnnotation] = useState<number | null>(
+    null
+  )
+  const [pointerMode, setPointerMode] = useState<PointerMode>('zoom')
+  useEffect(() => {
+    if (pointerMode === 'annotate') return
 
+    if (hoveredAnnotation !== null) {
+      setPointerMode('examine')
+    } else {
+      setPointerMode('zoom')
+    }
+  }, [hoveredAnnotation])
+  const chartAnnotations = useChartAnnotations(contract.id)
+  const user = useUser()
+  const enableAnnotations = user?.id === contract.creatorId
   return (
     <SizedContainer
       className={clsx(
-        showZoomer && 'mb-12',
+        showZoomer && !showAnnotations
+          ? 'mb-12'
+          : showAnnotations && showZoomer
+          ? 'mb-32'
+          : showAnnotations &&
+            ((chartAnnotations?.length ?? 0) > 0 || enableAnnotations)
+          ? 'mb-16'
+          : '',
         'w-full pb-3 pr-10',
         size == 'sm' ? 'h-[100px]' : 'h-[150px] sm:h-[250px]',
         className
       )}
     >
       {(w, h) => (
-        <BinaryContractChart
-          width={w}
-          height={h}
-          betPoints={betPoints}
-          showZoomer={showZoomer}
-          zoomParams={zoomParams}
-          percentBounds={percentBounds}
-          contract={contract}
-        />
+        <>
+          <BinaryContractChart
+            width={w}
+            height={h}
+            betPoints={betPoints}
+            showZoomer={showZoomer}
+            zoomParams={zoomParams}
+            percentBounds={percentBounds}
+            contract={contract}
+            hoveredAnnotation={hoveredAnnotation}
+            setHoveredAnnotation={setHoveredAnnotation}
+            pointerMode={pointerMode}
+          />
+          {showAnnotations && chartAnnotations && (
+            <ChartAnnotations
+              annotations={chartAnnotations}
+              hoveredAnnotation={hoveredAnnotation}
+              setHoveredAnnotation={setHoveredAnnotation}
+              pointerMode={pointerMode}
+              setPointerMode={setPointerMode}
+              enableAdd={enableAnnotations}
+              showZoomer={showZoomer}
+            />
+          )}
+        </>
       )}
     </SizedContainer>
+  )
+}
+const ChartAnnotations = (props: {
+  annotations: ChartAnnotation[]
+  hoveredAnnotation?: number | null
+  setHoveredAnnotation?: (id: number | null) => void
+  pointerMode: PointerMode
+  setPointerMode: (mode: PointerMode) => void
+  enableAdd: boolean
+  showZoomer?: boolean
+}) => {
+  const {
+    annotations,
+    hoveredAnnotation,
+    pointerMode,
+    setPointerMode,
+    setHoveredAnnotation,
+    enableAdd,
+    showZoomer,
+  } = props
+  return (
+    <Carousel
+      className={clsx(showZoomer ? 'mt-12' : 'mt-6', 'max-w-full gap-1')}
+    >
+      <Col>
+        {enableAdd && (
+          <Button
+            color={'indigo-outline'}
+            className={clsx(pointerMode === 'annotate' ? 'bg-indigo-500' : '')}
+            onClick={() => {
+              setPointerMode(pointerMode === 'annotate' ? 'zoom' : 'annotate')
+              if (pointerMode !== 'annotate')
+                toast(
+                  'Click on the chart to add an annotation. Tap this button again to stop adding annotations.',
+                  {
+                    icon: <PencilIcon className={'h-8 w-8 text-green-500'} />,
+                  }
+                )
+            }}
+            size={'md'}
+          >
+            <PencilIcon
+              className={clsx(
+                'h-4 w-4',
+                pointerMode === 'annotate' ? 'text-ink-100' : ''
+              )}
+            />
+          </Button>
+        )}
+      </Col>
+
+      {annotations.map((a) => (
+        <ChartAnnotation
+          key={a.id}
+          annotation={a}
+          hovered={a.id === hoveredAnnotation}
+          setHoveredAnnotation={setHoveredAnnotation}
+        />
+      ))}
+    </Carousel>
+  )
+}
+
+const ChartAnnotation = (props: {
+  annotation: ChartAnnotation
+  hovered: boolean
+  setHoveredAnnotation?: (id: number | null) => void
+}) => {
+  const { annotation, hovered, setHoveredAnnotation } = props
+  const { text, id } = annotation
+  const [open, setOpen] = useState(false)
+  const { creator_username, event_time, creator_id, creator_name } = annotation
+  return (
+    <Col
+      className={clsx(
+        'cursor-pointer rounded-md border-2 p-2',
+        hovered ? 'border-blue-300' : ''
+      )}
+      onMouseOver={() => setHoveredAnnotation?.(id)}
+      onMouseLeave={() => setHoveredAnnotation?.(null)}
+      onClick={() => setOpen(true)}
+    >
+      <Col className={'w-[150px]'}>
+        <Row className={'items-center justify-between'}>
+          <UserLink
+            noLink={true}
+            user={{
+              id: creator_id,
+              username: creator_username,
+              name: creator_name,
+            }}
+            hideBadge={true}
+            className={'grow truncate'}
+          />
+          <span className={'text-ink-500 shrink-0 text-xs'}>
+            {new Date(event_time).toLocaleDateString('en-US', {
+              month: 'short',
+              day: 'numeric',
+            })}
+          </span>
+        </Row>
+        <div className=" line-clamp-1 text-xs">{text}</div>
+      </Col>
+      <ChartAnnotationModal
+        open={open}
+        setOpen={setOpen}
+        chartAnnotation={annotation}
+      />
+    </Col>
   )
 }
 

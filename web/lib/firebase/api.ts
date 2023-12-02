@@ -573,3 +573,18 @@ export async function clientFetchLinkPreview(
     redirect: 'follow',
   }).then((r) => r.json())
 }
+
+export function createChartAnnotation(params: {
+  eventTime: number
+  contractId: string
+  text?: string
+  commentId?: string
+  thumbnailUrl?: string
+  externalUrl?: string
+}) {
+  return call(getApiUrl('create-chart-annotation'), 'POST', params)
+}
+
+export function deleteChartAnnotation(params: { id: number }) {
+  return call(getApiUrl('delete-chart-annotation'), 'POST', params)
+}

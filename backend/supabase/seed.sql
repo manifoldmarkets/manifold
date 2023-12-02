@@ -1063,6 +1063,9 @@ alter publication supabase_realtime
 alter publication supabase_realtime
 add table private_user_message_channel_members;
 
+alter publication supabase_realtime
+add table chart_annotations;
+
 commit;
 
 / * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * /

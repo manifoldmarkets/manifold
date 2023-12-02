@@ -1,0 +1,26 @@
+create table if not exists
+    chart_annotations (
+    id bigint generated always as identity primary key,
+    created_time timestamptz not null default now(),
+    event_time bigint not null,
+    contract_id text not null,
+    creator_id text not null,
+    creator_username text not null,
+    creator_name text not null,
+    creator_avatar_url text not null,
+    up_votes integer not null default 0,
+    down_votes integer not null default 0,
+
+    comment_id text null,
+    thumbnail_url text null,
+    external_url text null,
+    text text null
+);
+alter table chart_annotations enable row level security;
+
+drop policy if exists "public read" on chart_annotations;
+
+create policy "public read" on chart_annotations using (true);
+
+alter publication supabase_realtime
+    add table chart_annotations;

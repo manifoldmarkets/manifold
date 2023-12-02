@@ -35,10 +35,19 @@ import {
   TooltipProps,
   ZoomParams,
   formatPct,
+  PointerMode,
 } from './helpers'
 import { roundToNearestFive } from 'web/lib/util/roundToNearestFive'
 import { ZoomSlider } from './zoom-slider'
 import clsx from 'clsx'
+import {
+  AnnotateChartModal,
+  ChartAnnotationModal,
+} from 'web/components/annotate-chart'
+import {
+  ChartAnnotation,
+  useChartAnnotations,
+} from 'web/hooks/use-chart-annotations'
 
 const interpolateY = (
   curve: CurveFactory,
@@ -145,8 +154,10 @@ export const MultiValueHistoryChart = <P extends HistoryPoint>(props: {
   curve?: CurveFactory
   hoveringId?: string
   Tooltip?: (props: TooltipProps<P> & { ans: string }) => ReactNode
+  contractId?: string
 }) => {
-  const { data, w, h, yScale, zoomParams, showZoomer, Tooltip } = props
+  const { data, contractId, w, h, yScale, zoomParams, showZoomer, Tooltip } =
+    props
 
   useEffect(() => {
     if (props.xScale) {
@@ -305,8 +316,13 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
   onMouseOver?: (p: P | undefined) => void
   Tooltip?: (props: TooltipProps<P>) => ReactNode
   pct?: boolean
+  contractId?: string
+  hoveredAnnotation?: number | null
+  setHoveredAnnotation?: (id: number | null) => void
+  pointerMode?: PointerMode
 }) => {
   const {
+    contractId,
     data,
     w,
     h,
@@ -316,6 +332,9 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
     showZoomer,
     yScale,
     zoomParams,
+    hoveredAnnotation,
+    setHoveredAnnotation,
+    pointerMode = 'zoom',
   } = props
 
   useEffect(() => {
@@ -369,27 +388,56 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
 
   const selector = dataAtTimeSelector(points, xScale)
   const onMouseOver = useEvent((mouseX: number) => {
-    const p = selector(mouseX)
-    props.onMouseOver?.(p.prev)
-    if (p.prev) {
-      const x0 = xScale(p.prev.x)
-      const x1 = p.next ? xScale(p.next.x) : x0
-      const y0 = yScale(p.prev.y)
-      const y1 = p.next ? yScale(p.next.y) : y0
-      const markerY = interpolateY(curve, mouseX, x0, x1, y0, y1)
-      setMouse({ ...p, y: markerY })
-    } else {
-      setMouse(undefined)
-    }
+    setMouse(getMarkerPosition(mouseX, props.onMouseOver))
   })
+
+  const getMarkerPosition = useEvent(
+    (mouseX: number, onMouseOver?: (p: P | undefined) => void) => {
+      const p = selector(mouseX) // Ensure the selector function is adapted to use the passed data
+      onMouseOver?.(p.prev)
+      if (p.prev) {
+        const x0 = xScale(p.prev.x)
+        const x1 = p.next ? xScale(p.next.x) : x0
+        const y0 = yScale(p.prev.y)
+        const y1 = p.next ? yScale(p.next.y) : y0
+        const markerY = interpolateY(curve, mouseX, x0, x1, y0, y1)
+
+        return { ...p, y: markerY }
+      } else {
+        return undefined
+      }
+    }
+  )
 
   const onMouseLeave = useEvent(() => {
     props.onMouseOver?.(undefined)
     setMouse(undefined)
   })
 
+  const [showChartAnnotationModal, setShowChartAnnotationModal] =
+    useState<ChartAnnotation>()
+  const [chartAnnotationTime, setChartAnnotationTime] = useState<
+    number | undefined
+  >()
+  const onClick = useEvent((x: number, y: number) => {
+    if (!xScale || !contractId) {
+      console.log('no xScale and/or contractId')
+      return
+    }
+    console.log('x', x)
+    console.log('time at click', xScale.invert(x))
+    if (pointerMode === 'annotate')
+      setChartAnnotationTime(xScale.invert(x).valueOf())
+    else if (pointerMode === 'examine') {
+      const chartAnnotation = chartAnnotations?.find(
+        (a) => a.id === hoveredAnnotation
+      )
+      setShowChartAnnotationModal(chartAnnotation)
+    }
+  })
   const gradientId = useId()
   const chartTheshold = yScale(negativeThreshold)
+  const chartAnnotations = useChartAnnotations(contractId ?? '_')
 
   return (
     <>
@@ -403,6 +451,14 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
         onMouseOver={onMouseOver}
         onMouseLeave={onMouseLeave}
         Tooltip={Tooltip}
+        onClick={onClick}
+        xScale={xScale}
+        y0={py0}
+        yAtX={(x: number) => getMarkerPosition(x)?.y ?? 0}
+        chartAnnotations={chartAnnotations}
+        hoveredAnnotation={hoveredAnnotation}
+        onHoverAnnotation={setHoveredAnnotation}
+        pointerMode={pointerMode}
       >
         {typeof color !== 'string' && (
           <defs>
@@ -435,6 +491,25 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
           zoomParams={zoomParams}
           color="light-green"
           className="relative top-4"
+        />
+      )}
+      {chartAnnotationTime !== undefined &&
+        contractId &&
+        pointerMode === 'annotate' && (
+          <AnnotateChartModal
+            open={true}
+            setOpen={(open) => {
+              if (!open) setChartAnnotationTime(undefined)
+            }}
+            contractId={contractId}
+            atTime={chartAnnotationTime}
+          />
+        )}
+      {showChartAnnotationModal && (
+        <ChartAnnotationModal
+          open={true}
+          setOpen={() => setShowChartAnnotationModal(undefined)}
+          chartAnnotation={showChartAnnotationModal}
         />
       )}
     </>
