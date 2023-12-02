@@ -13,6 +13,9 @@ import { ChartAnnotation } from 'web/hooks/use-chart-annotations'
 import { UserLink } from 'web/components/widgets/user-link'
 import { Avatar } from 'web/components/widgets/avatar'
 import { useUser } from 'web/hooks/use-user'
+import { useCommentOnContract } from 'web/hooks/use-comments-supabase'
+import { Content } from 'web/components/widgets/editor'
+import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 
 export const AnnotateChartModal = (props: {
   open: boolean
@@ -88,7 +91,9 @@ export const ChartAnnotationModal = (props: {
     creator_id,
     creator_name,
     creator_avatar_url,
+    comment_id,
   } = chartAnnotation
+  const comment = useCommentOnContract(comment_id ?? '_')
   return (
     <Modal open={open} setOpen={setOpen}>
       <Col className={clsx(MODAL_CLASS)}>
@@ -135,7 +140,15 @@ export const ChartAnnotationModal = (props: {
           </Row>
         </Col>
         <Row className={'w-full'}>
-          <span>{chartAnnotation.text}</span>
+          {comment_id ? (
+            comment ? (
+              <Content content={comment.content} />
+            ) : (
+              <LoadingIndicator />
+            )
+          ) : (
+            <span>{chartAnnotation.text}</span>
+          )}
         </Row>
       </Col>
     </Modal>

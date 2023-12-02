@@ -4,7 +4,12 @@ import { APIError, authEndpoint, validate } from 'api/helpers'
 import { getContractSupabase, getUser } from 'shared/utils'
 import { throwErrorIfNotMod } from 'shared/helpers/auth'
 import { MAX_ID_LENGTH } from 'common/group'
-import { createSupabaseDirectClient } from 'shared/supabase/init'
+import {
+  createSupabaseClient,
+  createSupabaseDirectClient,
+} from 'shared/supabase/init'
+import { getComment } from 'shared/supabase/contract_comments'
+import { richTextToString } from 'common/util/parse'
 
 const bodySchema = z
   .object({
@@ -21,7 +26,7 @@ const bodySchema = z
 export const createchartannotation = authEndpoint(async (req, auth, log) => {
   const {
     contractId,
-    text,
+    text: passedText,
     commentId,
     externalUrl,
     thumbnailUrl: passedThumbnailUrl,
@@ -34,6 +39,14 @@ export const createchartannotation = authEndpoint(async (req, auth, log) => {
 
   const creator = await getUser(auth.uid)
   if (!creator) throw new APIError(404, 'Your account was not found')
+  const db = createSupabaseClient()
+  const comment = commentId ? await getComment(db, commentId) : null
+
+  const text = passedText
+    ? passedText.trim()
+    : comment
+    ? richTextToString(comment.content)
+    : null
 
   const thumbnailUrl =
     !passedThumbnailUrl && text ? creator.avatarUrl : passedThumbnailUrl
