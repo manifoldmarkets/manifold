@@ -37,7 +37,8 @@ export function ManifoldLogo(props: { className?: string; twoLine?: boolean }) {
           {ENV == 'DEV' ? 'DEVIF❄️LD' : 'MANIF❄️LD'}
         </div>
       </Link>
-      <NConfettis count={snowCount} />
+      {/* Reenable if it doesn't freeze people's computers. */}
+      {/* <NConfettis count={snowCount} /> */}
     </>
   )
 }
