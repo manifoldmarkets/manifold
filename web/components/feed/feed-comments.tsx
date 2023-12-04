@@ -623,6 +623,7 @@ function CommentActions(props: {
       {user && contract.outcomeType === 'BINARY' && (
         <IconButton
           onClick={() => {
+            track('bet intent', { location: 'comment on contract' })
             setOutcome('YES')
             setShowBetModal(true)
           }}

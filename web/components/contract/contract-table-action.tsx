@@ -13,6 +13,7 @@ import { isClosed } from './contracts-table'
 import { AnswersResolvePanel } from '../answers/answer-resolve-panel'
 import { useUser } from 'web/hooks/use-user'
 import clsx from 'clsx'
+import { track } from 'web/lib/service/analytics'
 
 export function Action(props: { contract: Contract }) {
   const { contract } = props
@@ -42,6 +43,7 @@ export function BetButton(props: { contract: Contract; user?: User | null }) {
           onClick={(e) => {
             e.preventDefault()
             e.stopPropagation()
+            track('bet intent', { location: 'contract table' })
             if (!user) {
               firebaseLogin()
               return
