@@ -2,6 +2,7 @@ import { ContractComment, PostComment } from 'common/comment'
 import { useEffect, useState } from 'react'
 import {
   getAllCommentRows,
+  getComment,
   getCommentRows,
   getCommentsOnContract,
   getNewCommentRows,
@@ -50,6 +51,16 @@ export function useCommentsOnContract(contractId: string) {
     })
   }, [contractId])
   return comments
+}
+
+export function useCommentOnContract(commentId: string) {
+  const [comment, setComment] = useState<ContractComment | undefined | null>(
+    undefined
+  )
+  useEffect(() => {
+    getComment(commentId).then(setComment)
+  }, [commentId])
+  return comment
 }
 // TODO: the loadNewerQuery doesn't query for comment edits (e.g. via fs_updated_time).
 //This is okay for now as we're optimistically updating comments via useState.
