@@ -12,6 +12,7 @@ import { getLiquidity } from './calculate-cpmm-multi'
 import { sum } from 'lodash'
 import { getDisplayProbability } from 'common/calculate'
 import { PollOption } from './poll-option'
+import { ChartAnnotation } from 'common/supabase/chart-annotations'
 
 /************************************************
 
@@ -400,6 +401,7 @@ export type ContractParams = {
   totalBets: number
   topContractMetrics: ContractMetric[]
   relatedContracts: Contract[]
+  chartAnnotations: ChartAnnotation[]
 }
 
 export type MaybeAuthedContractParams =

@@ -7,7 +7,7 @@ import {
   curveStepAfter,
   curveStepBefore,
 } from 'd3-shape'
-import { range, mapValues, last } from 'lodash'
+import { last, mapValues, range } from 'lodash'
 import {
   ReactNode,
   useCallback,
@@ -18,36 +18,34 @@ import {
 } from 'react'
 
 import {
+  compressPoints,
   DistributionPoint,
   HistoryPoint,
   Point,
   ValueKind,
-  compressPoints,
 } from 'common/chart'
 import { formatMoneyNumber } from 'common/util/format'
 import { useEvent } from 'web/hooks/use-event'
 import {
   AreaPath,
   AreaWithTopStroke,
+  formatPct,
   LinePath,
-  SVGChart,
+  PointerMode,
   SliceMarker,
+  SVGChart,
   TooltipProps,
   ZoomParams,
-  formatPct,
-  PointerMode,
 } from './helpers'
 import { roundToNearestFive } from 'web/lib/util/roundToNearestFive'
 import { ZoomSlider } from './zoom-slider'
 import clsx from 'clsx'
 import {
   AnnotateChartModal,
-  ChartAnnotationModal,
+  ReadChartAnnotationModal,
 } from 'web/components/annotate-chart'
-import {
-  ChartAnnotation,
-  useChartAnnotations,
-} from 'web/hooks/use-chart-annotations'
+import { useChartAnnotations } from 'web/hooks/use-chart-annotations'
+import { ChartAnnotation } from 'common/supabase/chart-annotations'
 
 const interpolateY = (
   curve: CurveFactory,
@@ -82,13 +80,7 @@ const getTickValues = (min: number, max: number, n: number) => {
     theMax = roundToNearestFive(max)
     step = (theMax - theMin) / (n - 1)
   }
-  const defaultRange = [
-    theMin,
-    ...range(1, n - 1).map((i) => theMin + step * i),
-    theMax,
-  ]
-
-  return defaultRange
+  return [theMin, ...range(1, n - 1).map((i) => theMin + step * i), theMax]
 }
 
 const dataAtTimeSelector = <Y, P extends Point<number, Y>>(
@@ -154,10 +146,8 @@ export const MultiValueHistoryChart = <P extends HistoryPoint>(props: {
   curve?: CurveFactory
   hoveringId?: string
   Tooltip?: (props: TooltipProps<P> & { ans: string }) => ReactNode
-  contractId?: string
 }) => {
-  const { data, contractId, w, h, yScale, zoomParams, showZoomer, Tooltip } =
-    props
+  const { data, w, h, yScale, zoomParams, showZoomer, Tooltip } = props
 
   useEffect(() => {
     if (props.xScale) {
@@ -419,7 +409,7 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
   const [chartAnnotationTime, setChartAnnotationTime] = useState<
     number | undefined
   >()
-  const onClick = useEvent((x: number, y: number) => {
+  const onClick = useEvent((x: number) => {
     if (!xScale || !contractId) {
       console.log('no xScale and/or contractId')
       return
@@ -506,7 +496,7 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
           />
         )}
       {showChartAnnotationModal && (
-        <ChartAnnotationModal
+        <ReadChartAnnotationModal
           open={true}
           setOpen={() => setShowChartAnnotationModal(undefined)}
           chartAnnotation={showChartAnnotationModal}

@@ -21,7 +21,7 @@ import { clamp, sortBy } from 'lodash'
 import { ScaleTime, scaleTime } from 'd3-scale'
 import { useEvent } from 'web/hooks/use-event'
 import { buildArray } from 'common/util/array'
-import { ChartAnnotation } from 'web/hooks/use-chart-annotations'
+import { ChartAnnotation } from 'common/supabase/chart-annotations'
 
 // min number of pixels to mouse drag over to trigger zoom
 const ZOOM_DRAG_THRESHOLD = 16

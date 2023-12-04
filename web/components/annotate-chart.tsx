@@ -9,13 +9,13 @@ import {
   deleteChartAnnotation,
 } from 'web/lib/firebase/api'
 import { Row } from './layout/row'
-import { ChartAnnotation } from 'web/hooks/use-chart-annotations'
 import { UserLink } from 'web/components/widgets/user-link'
 import { Avatar } from 'web/components/widgets/avatar'
 import { useUser } from 'web/hooks/use-user'
 import { useCommentOnContract } from 'web/hooks/use-comments-supabase'
 import { Content } from 'web/components/widgets/editor'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
+import { ChartAnnotation } from 'common/supabase/chart-annotations'
 
 export const AnnotateChartModal = (props: {
   open: boolean
@@ -77,7 +77,7 @@ export const AnnotateChartModal = (props: {
   )
 }
 
-export const ChartAnnotationModal = (props: {
+export const ReadChartAnnotationModal = (props: {
   open: boolean
   setOpen: (open: boolean) => void
   chartAnnotation: ChartAnnotation
