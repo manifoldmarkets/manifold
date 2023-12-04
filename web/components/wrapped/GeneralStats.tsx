@@ -71,10 +71,10 @@ export function GeneralStats(props: {
 
   return (
     <>
-      <div className="relative mx-auto my-auto">
+      <div className="relative mx-auto my-auto max-w-lg">
         <div
           className={clsx(
-            'px-6 text-2xl',
+            'px-4 text-2xl',
             animateOut ? 'animate-fade-out' : 'animate-fade-in'
           )}
         >
@@ -87,7 +87,7 @@ export function GeneralStats(props: {
         <Spacer h={4} />
         <div
           className={clsx(
-            'px-6 text-2xl ',
+            'px-4 text-2xl ',
             animateMostSpentIn
               ? animateOut
                 ? 'animate-fade-out'
@@ -107,7 +107,6 @@ export function GeneralStats(props: {
         </div>
         <div
           className={clsx(
-            'mx-auto my-auto',
             animateGraphicIn
               ? animateOut
                 ? 'animate-slide-right-out'
@@ -137,45 +136,47 @@ const CoinBarChart = (props: { data: MonthlyBetsType[] }) => {
   const scaleFactor = maxManaBet > 0 ? maxCoins / maxManaBet : 1
 
   return (
-    <svg width={svgWidth} height={svgHeight}>
-      {data.map((item, index) => {
-        const coinsInStack = Math.round(item.total_amount * scaleFactor)
-        const isTopRow = index < 6 // First 6 months (Jan-Jun) are in the top row
-        const rowIndex = isTopRow ? index : index - 6 // Adjust index for each row
-        const xPosition = (svgWidth / 6) * rowIndex + spacing // X position of each stack
-        const yBasePosition = isTopRow ? rowSpacing : rowSpacing * 2 // Y base position for each row
+    <div className="ml-6 sm:ml-20">
+      <svg width={svgWidth} height={svgHeight}>
+        {data.map((item, index) => {
+          const coinsInStack = Math.round(item.total_amount * scaleFactor)
+          const isTopRow = index < 6 // First 6 months (Jan-Jun) are in the top row
+          const rowIndex = isTopRow ? index : index - 6 // Adjust index for each row
+          const xPosition = (svgWidth / 6) * rowIndex + spacing // X position of each stack
+          const yBasePosition = isTopRow ? rowSpacing : rowSpacing * 2 // Y base position for each row
 
-        return (
-          <g key={index}>
-            {/* Stack of coins */}
-            {Array.from({ length: coinsInStack }).map((_, coinIndex) => {
-              const yPosition = yBasePosition - (coinIndex * coinHeight + 30)
-              return (
-                <ellipse
-                  key={coinIndex}
-                  cx={xPosition}
-                  cy={yPosition}
-                  rx={coinWidth}
-                  ry={coinHeight}
-                  fill="gold" // Change color as needed
-                  stroke="#92400e"
-                  strokeWidth="1"
-                />
-              )
-            })}
-            {/* Month label */}
-            <text
-              x={xPosition - coinWidth}
-              y={yBasePosition}
-              fill="white"
-              fontSize="12"
-            >
-              {MONTHS[index]}
-            </text>
-          </g>
-        )
-      })}
-    </svg>
+          return (
+            <g key={index}>
+              {/* Stack of coins */}
+              {Array.from({ length: coinsInStack }).map((_, coinIndex) => {
+                const yPosition = yBasePosition - (coinIndex * coinHeight + 30)
+                return (
+                  <ellipse
+                    key={coinIndex}
+                    cx={xPosition}
+                    cy={yPosition}
+                    rx={coinWidth}
+                    ry={coinHeight}
+                    fill="gold" // Change color as needed
+                    stroke="#92400e"
+                    strokeWidth="1"
+                  />
+                )
+              })}
+              {/* Month label */}
+              <text
+                x={xPosition - coinWidth}
+                y={yBasePosition}
+                fill="white"
+                fontSize="12"
+              >
+                {MONTHS[index]}
+              </text>
+            </g>
+          )
+        })}
+      </svg>
+    </div>
   )
 }
 

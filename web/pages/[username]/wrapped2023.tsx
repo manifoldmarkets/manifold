@@ -18,6 +18,7 @@ import { useMonthlyBets } from 'web/hooks/use-wrapped-2023'
 import { GeneralStats } from 'web/components/wrapped/GeneralStats'
 import { TotalProfit } from 'web/components/wrapped/TotalProfit'
 import Link from 'next/link'
+import { Row } from 'web/components/layout/row'
 
 export const getStaticProps = async (props: {
   params: {
@@ -62,13 +63,15 @@ export default function Wrapped2023(props: {
 function Wrapped2023Content(props: { user: User; username: string }) {
   const { user, username } = props
   const [state, updateState] = usePersistentQueriesState({ page: '0' })
+  const maxPages = 5
+  const page = parseInt(state.page)
   const goToNextPage = () => {
-    updateState({ page: `${parseInt(state.page) + 1}` })
+    if (page >= maxPages - 1) return
+    updateState({ page: `${page + 1}` })
   }
   const goToPrevPage = () => {
-    const currentPage = parseInt(state.page)
-    if (currentPage <= 0) return
-    updateState({ page: `${parseInt(state.page) - 1}` })
+    if (page <= 0) return
+    updateState({ page: `${page - 1}` })
   }
 
   const monthlyBets = useMonthlyBets(user.id)
@@ -107,6 +110,29 @@ function Wrapped2023Content(props: { user: User; username: string }) {
           The end!
         </Link>
       )}
+      <Tracker currentPage={page} maxPages={maxPages} />
     </Col>
+  )
+}
+
+function Tracker(props: { currentPage: number; maxPages: number }) {
+  const { currentPage, maxPages } = props
+  return (
+    <Row className="absolute left-0 right-0 top-0 opacity-40">
+      <Row className="mx-auto w-full max-w-lg">
+        {Array.from({ length: maxPages }).map((_, i) => {
+          console.log(i, currentPage, i == currentPage)
+          return (
+            <div
+              key={i}
+              className={clsx(
+                `mx-1 my-2 h-1.5 w-1/5 rounded-full transition-colors`,
+                i <= currentPage ? 'bg-gray-300' : ' bg-gray-700'
+              )}
+            />
+          )
+        })}
+      </Row>
+    </Row>
   )
 }

@@ -74,9 +74,10 @@ export function MonthlyBets(props: {
 
   return (
     <>
-      <div className="relative mx-auto my-auto">
+      <div className="relative mx-auto my-auto max-w-lg">
         <div
           className={clsx(
+            'ml-4 sm:ml-20',
             animateOut
               ? 'animate-slide-right-out'
               : animateCircleIn && 'animate-slide-right-in'

@@ -14,7 +14,7 @@ export function TotalProfit(props: {
   user: User
 }) {
   const { goToPrevPage, goToNextPage, user, monthlyBets } = props
-  const [animateIn, setAnimateInt] = useState(true)
+  const [animateIn, setAnimateIn] = useState(true)
   const [animateGrowingIn, setAnimateGrowingIn] = useState(false)
   const [animateOut, setAnimateOut] = useState(false)
   const totalProfit = useTotalProfit(user.id)

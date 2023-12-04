@@ -1,21 +1,38 @@
 import clsx from 'clsx'
 import { Col } from '../layout/col'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { NavButtons } from './NavButtons'
 
 export function Unwrap(props: { goToNextPage: () => void }) {
   const { goToNextPage } = props
   const [animate, setAnimate] = useState(false)
+  const [buttonClicked, setButtonClicked] = useState(false)
 
   const handleButtonClick = () => {
-    setAnimate(true)
+    if (!buttonClicked) {
+      setButtonClicked(true)
+      setAnimate(true)
 
-    // Optionally reset the animation
-    setTimeout(() => {
-      setAnimate(false)
-      goToNextPage()
-    }, 1000) // Reset after 1s
+      // Optionally reset the animation
+      setTimeout(() => {
+        goToNextPage()
+      }, 1000) // Reset after 1s
+    }
   }
 
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (!buttonClicked) {
+        handleButtonClick()
+      }
+    }, 2000)
+
+    // Cleanup function
+    return () => {
+      clearTimeout(timeout)
+      setButtonClicked(false) // Reset buttonClicked on unmount
+    }
+  })
   return (
     <>
       <Col
@@ -26,12 +43,6 @@ export function Unwrap(props: { goToNextPage: () => void }) {
       >
         <div className="font-mono text-xl">MANIFOLD WRAPPED</div>
         <div className="text-8xl font-semibold">2023</div>
-        <button onClick={handleButtonClick} className="relative mt-4">
-          <Col className="text-semibold h-24 w-24 rounded-full bg-gradient-to-tr from-yellow-700 to-yellow-500 text-center font-mono hover:from-yellow-600 hover:to-yellow-400">
-            <div className="mx-auto my-auto">UNWRAP 2023</div>
-          </Col>
-          <Col className="absolute left-1 top-1 -z-10 h-24 w-24 rounded-full bg-black/40" />
-        </button>
       </Col>
       <div
         className={clsx(
@@ -41,10 +52,11 @@ export function Unwrap(props: { goToNextPage: () => void }) {
       />
       <div
         className={clsx(
-          'absolute top-[calc(50%-145px)] h-40 w-full bg-red-600',
+          'absolute top-[calc(50%-85px)] h-40 w-full bg-red-600',
           animate && 'animate-slide-left-out'
         )}
       />
+      <NavButtons goToNextPage={handleButtonClick} />
     </>
   )
 }

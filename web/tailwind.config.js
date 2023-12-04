@@ -289,10 +289,12 @@ module.exports = {
         'slide-right-out': {
           '0%': {
             transform: 'translateX(0%)',
+            opacity: 1,
             transitionTimingFunction: 'cubic-bezier(1, 1, 0.8, 0)',
           },
           '100%': {
             transform: 'translateX(100%)',
+            opacity: 0,
             transitionTimingFunction: 'cubic-bezier(1, 1, 0.8, 0)',
           },
         },
