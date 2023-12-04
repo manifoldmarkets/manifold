@@ -21,10 +21,12 @@ export function NewsDashboard(props: {
   dashboard: Dashboard
   previews: LinkPreviews
 }) {
-  useSaveReferral()
 
   const { dashboard, previews } = props
+
   const user = useUser()
+  useSaveReferral(user)
+
   const isCreator = user?.id === dashboard.creatorId
   const isOnlyMod =
     user && !isCreator && (isAdminId(user.id) || isModId(user.id))

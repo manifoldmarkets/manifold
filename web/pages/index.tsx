@@ -22,6 +22,7 @@ import { FeedContractCard } from 'web/components/contract/feed-contract-card'
 import { CPMMBinaryContract, Contract } from 'common/contract'
 import { db } from 'web/lib/supabase/db'
 import { DEEMPHASIZED_GROUP_SLUGS } from 'common/envs/constants'
+import { useUser } from 'web/hooks/use-user'
 
 const excluded = [...DEEMPHASIZED_GROUP_SLUGS, 'manifold-6748e065087e']
 
@@ -44,7 +45,8 @@ export default function LandingPage(props: {
 }) {
   const { trendingContracts } = props
 
-  useSaveReferral()
+  const user = useUser()
+  useSaveReferral(user)
   useSaveCampaign()
   useRedirectIfSignedIn()
 
