@@ -153,7 +153,7 @@ export const BinaryOverview = (props: {
   resolutionRating?: ReactNode
   chartAnnotations?: ChartAnnotation[]
 }) => {
-  const { contract, betPoints, resolutionRating, chartAnnotations } = props
+  const { contract, betPoints, resolutionRating } = props
   const user = useUser()
 
   const [showZoomer, setShowZoomer] = useState(false)
@@ -164,6 +164,8 @@ export const BinaryOverview = (props: {
   const [hoveredAnnotation, setHoveredAnnotation] = useState<number | null>(
     null
   )
+  const chartAnnotations =
+    useChartAnnotations(contract.id) ?? props.chartAnnotations
   useEffect(() => {
     if (pointerMode === 'annotate') return
 
@@ -173,6 +175,11 @@ export const BinaryOverview = (props: {
       setPointerMode('zoom')
     }
   }, [hoveredAnnotation])
+
+  useEffect(() => {
+    if (pointerMode === 'annotate') setPointerMode('zoom')
+  }, [chartAnnotations.length])
+
   return (
     <>
       <Row className="items-end justify-between gap-4">
@@ -187,14 +194,11 @@ export const BinaryOverview = (props: {
               onClick={() => {
                 setPointerMode(pointerMode === 'annotate' ? 'zoom' : 'annotate')
                 if (pointerMode !== 'annotate')
-                  toast(
-                    'Click on the chart to add an annotation. Tap this button again to stop adding annotations.',
-                    {
-                      icon: (
-                        <TbPencilPlus className={'h-10 w-10 text-green-500'} />
-                      ),
-                    }
-                  )
+                  toast('Click on the chart to add an annotation.', {
+                    icon: (
+                      <TbPencilPlus className={'h-10 w-10 text-green-500'} />
+                    ),
+                  })
               }}
               size={'xs'}
             >
@@ -256,10 +260,9 @@ export function BinaryChart(props: {
     pointerMode,
     setHoveredAnnotation,
     hoveredAnnotation,
+    chartAnnotations,
   } = props
 
-  const chartAnnotations =
-    useChartAnnotations(contract.id) ?? props.chartAnnotations
   return (
     <SizedContainer
       className={clsx(
