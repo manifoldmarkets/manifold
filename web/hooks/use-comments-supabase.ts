@@ -58,9 +58,7 @@ export function useCommentOnContract(commentId: string) {
     undefined
   )
   useEffect(() => {
-    getComment(commentId).then((comment) => {
-      setComment(comment)
-    })
+    getComment(commentId).then(setComment)
   }, [commentId])
   return comment
 }
