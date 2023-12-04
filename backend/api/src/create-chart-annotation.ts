@@ -63,13 +63,10 @@ export const createchartannotation = authEndpoint(async (req, auth, log) => {
   const res = await pg.one(
     `
     insert into chart_annotations 
-        (contract_id, event_time, text, comment_id, external_url,
-         thumbnail_url, creator_id, creator_name, creator_username, creator_avatar_url)
-       values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-       on conflict (id) do update set
-          event_time = $2, text = $3, comment_id = $4,
-          external_url = $5, thumbnail_url = $6
-        returning id
+        (contract_id, event_time, text, comment_id, external_url, thumbnail_url,
+         creator_id, creator_name, creator_username, creator_avatar_url)
+        values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+    returning id
         `,
     [
       contractId,
