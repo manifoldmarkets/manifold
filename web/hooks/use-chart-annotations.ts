@@ -1,6 +1,7 @@
 import { db } from 'web/lib/supabase/db'
 import { useSubscription } from 'web/lib/supabase/realtime/use-subscription'
 import { getChartAnnotations } from 'common/supabase/chart-annotations'
+import { orderBy } from 'lodash'
 
 export const useChartAnnotations = (contractId: string) => {
   const { rows: annotations } = useSubscription(
@@ -9,5 +10,5 @@ export const useChartAnnotations = (contractId: string) => {
     () => getChartAnnotations(contractId, db)
   )
 
-  return annotations
+  return orderBy(annotations, (a) => a.event_time, 'asc')
 }

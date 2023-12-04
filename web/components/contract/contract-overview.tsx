@@ -1,6 +1,6 @@
 import { ReactNode, memo, useMemo, useState, useEffect } from 'react'
 import clsx from 'clsx'
-import { orderBy, sortBy } from 'lodash'
+import { sortBy } from 'lodash'
 
 import { Bet } from 'common/bet'
 import { HistoryPoint } from 'common/chart'
@@ -258,11 +258,8 @@ export function BinaryChart(props: {
     hoveredAnnotation,
   } = props
 
-  const chartAnnotations = orderBy(
-    useChartAnnotations(contract.id) ?? props.chartAnnotations,
-    (a) => a.event_time,
-    'asc'
-  )
+  const chartAnnotations =
+    useChartAnnotations(contract.id) ?? props.chartAnnotations
   return (
     <SizedContainer
       className={clsx(
