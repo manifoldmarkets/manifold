@@ -21,7 +21,6 @@ export function NewsDashboard(props: {
   dashboard: Dashboard
   previews: LinkPreviews
 }) {
-
   const { dashboard, previews } = props
 
   const user = useUser()
