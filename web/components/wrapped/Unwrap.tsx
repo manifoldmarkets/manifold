@@ -26,11 +26,11 @@ export function Unwrap(props: { goToNextPage: () => void }) {
       >
         <div className="font-mono text-xl">MANIFOLD WRAPPED</div>
         <div className="text-8xl font-semibold">2023</div>
-        <button
-          onClick={handleButtonClick}
-          className="text-semibold mt-4 h-24 w-24 rounded-full bg-gradient-to-tr from-yellow-700 to-yellow-500 text-center font-mono"
-        >
-          UNWRAP 2023
+        <button onClick={handleButtonClick} className="relative mt-4">
+          <Col className="text-semibold h-24 w-24 rounded-full bg-gradient-to-tr from-yellow-700 to-yellow-500 text-center font-mono hover:from-yellow-600 hover:to-yellow-400">
+            <div className="mx-auto my-auto">UNWRAP 2023</div>
+          </Col>
+          <Col className="absolute left-1 top-1 -z-10 h-24 w-24 rounded-full bg-black/40" />
         </button>
       </Col>
       <div

@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react'
 import { MonthlyBetsType, useTotalProfit } from 'web/hooks/use-wrapped-2023'
 import { Spacer } from '../layout/spacer'
 import { LoadingIndicator } from '../widgets/loading-indicator'
+import { NavButtons } from './NavButtons'
 
 export function TotalProfit(props: {
   monthlyBets: MonthlyBetsType[] | undefined | null
@@ -21,12 +22,16 @@ export function TotalProfit(props: {
   //triggers for animation in
   useEffect(() => {
     if (!animateIn) return
-    setTimeout(() => {
+    const timeout1 = setTimeout(() => {
       setAnimateGrowingIn(true)
     }, 1000)
-    setTimeout(() => {
+    const timeout2 = setTimeout(() => {
       onGoToNext()
     }, 5000)
+    return () => {
+      clearTimeout(timeout1)
+      clearTimeout(timeout2)
+    }
   }, [animateIn])
 
   const onGoToNext = () => {
@@ -76,14 +81,7 @@ export function TotalProfit(props: {
           )}
         />
       </div>
-      <button
-        onClick={goToPrevPage}
-        className="absolute bottom-0 left-0 top-0 w-1/2"
-      />
-      <button
-        onClick={onGoToNext}
-        className="absolute bottom-0 right-0 top-0 w-1/2 "
-      />
+      <NavButtons goToPrevPage={goToPrevPage} goToNextPage={onGoToNext} />
     </>
   )
 }

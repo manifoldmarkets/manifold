@@ -75,7 +75,7 @@ function Wrapped2023Content(props: { user: User; username: string }) {
   return (
     <Col
       className={clsx(
-        'text-ink-1000 mx-auto min-h-screen w-full bg-indigo-800'
+        'text-ink-1000 relative mx-auto min-h-screen w-full bg-indigo-800'
       )}
     >
       <Snowfall style={{ opacity: 0.2 }} />

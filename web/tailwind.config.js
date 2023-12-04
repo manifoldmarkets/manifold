@@ -340,7 +340,9 @@ module.exports = {
       animation: {
         progress: 'progress linear forwards',
         'bounce-left': 'bounce-left 0.8s',
+        'bounce-left-loop': 'bounce-left 0.8s infinite',
         'bounce-right': 'bounce-right 0.7s',
+        'bounce-right-loop': 'bounce-right 0.7s infinite',
         'slide-in-from-right': 'slide-in-from-right 0.1s',
         'slide-in-1': 'slide-in-1 4s',
         'slide-in-2': 'slide-in-2 4s',

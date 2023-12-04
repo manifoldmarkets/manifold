@@ -9,6 +9,7 @@ import { numberWithCommas, shortenNumber } from 'web/lib/util/formatNumber'
 import { Spacer } from '../layout/spacer'
 import { Row } from '../layout/row'
 import { MONTHS } from './GeneralStats'
+import { NavButtons } from './NavButtons'
 
 export function MonthlyBets(props: {
   goToPrevPage: () => void
@@ -25,15 +26,20 @@ export function MonthlyBets(props: {
   //triggers for animation in
   useEffect(() => {
     if (!animateCircleIn) return
-    setTimeout(() => {
+    const timeout1 = setTimeout(() => {
       setAnimateTotalBetIn(true)
     }, 1000)
-    setTimeout(() => {
+    const timeout2 = setTimeout(() => {
       setAnimateMostMonthBetIn(true)
     }, 2000)
-    setTimeout(() => {
+    const timeout3 = setTimeout(() => {
       onGoToNext()
     }, 5000)
+    return () => {
+      clearTimeout(timeout1)
+      clearTimeout(timeout2)
+      clearTimeout(timeout3)
+    }
   }, [animateCircleIn])
 
   const onGoToNext = () => {
@@ -119,14 +125,7 @@ export function MonthlyBets(props: {
           bets!
         </div>
       </div>
-      <button
-        onClick={goToPrevPage}
-        className="absolute bottom-0 left-0 top-0 w-1/2"
-      />
-      <button
-        onClick={onGoToNext}
-        className="absolute bottom-0 right-0 top-0 w-1/2 "
-      />
+      <NavButtons goToPrevPage={goToPrevPage} goToNextPage={onGoToNext} />
     </>
   )
 }
