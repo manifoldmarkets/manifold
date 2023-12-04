@@ -3,7 +3,6 @@ import clsx from 'clsx'
 import { useUser } from 'web/hooks/use-user'
 import { ENV } from 'common/envs/constants'
 import Logo from 'web/public/logo.svg'
-import { NConfettis } from '../confetti-on-demand'
 import { useState } from 'react'
 
 export function ManifoldLogo(props: { className?: string; twoLine?: boolean }) {
