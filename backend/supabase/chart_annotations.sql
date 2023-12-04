@@ -22,3 +22,6 @@ drop policy if exists "public read" on chart_annotations;
 
 create policy "public read" on chart_annotations using (true);
 
+create index if not exists contract_annotations_event_time
+    on chart_annotations (contract_id, event_time asc);
+
