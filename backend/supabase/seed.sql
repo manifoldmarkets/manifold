@@ -1058,7 +1058,7 @@ alter publication supabase_realtime
 add table user_follows;
 
 alter publication supabase_realtime
-    add table private_user_messages;
+add table private_user_messages;
 
 alter publication supabase_realtime
 add table private_user_message_channel_members;

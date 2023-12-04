@@ -22,5 +22,3 @@ drop policy if exists "public read" on chart_annotations;
 
 create policy "public read" on chart_annotations using (true);
 
-alter publication supabase_realtime
-    add table chart_annotations;
