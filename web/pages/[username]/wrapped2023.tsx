@@ -19,6 +19,7 @@ import { GeneralStats } from 'web/components/wrapped/GeneralStats'
 import { TotalProfit } from 'web/components/wrapped/TotalProfit'
 import Link from 'next/link'
 import { Row } from 'web/components/layout/row'
+import { TheEnd } from 'web/components/wrapped/TheEnd'
 
 export const getStaticProps = async (props: {
   params: {
@@ -106,9 +107,11 @@ function Wrapped2023Content(props: { user: User; username: string }) {
           user={user}
         />
       ) : (
-        <Link href="/" className="mx-auto my-auto text-3xl">
-          The end!
-        </Link>
+        <TheEnd
+          goToPrevPage={goToPrevPage}
+          username={username}
+          restart={() => updateState({ page: '0' })}
+        />
       )}
       <Tracker currentPage={page} maxPages={maxPages} />
     </Col>
