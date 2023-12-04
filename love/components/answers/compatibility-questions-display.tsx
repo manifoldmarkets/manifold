@@ -64,7 +64,7 @@ export function CompatibilityQuestionsDisplay(props: {
     <Col className="gap-2">
       <Subtitle>{`${
         isCurrentUser ? 'Your' : user.name.split(' ')[0] + `'s`
-      } Compatibility Prompts`}</Subtitle>
+      } Compatibility Questions`}</Subtitle>
       {yourQuestions.length <= 0 ? (
         <span className="text-ink-600 text-sm">
           {isCurrentUser ? "You haven't" : `${user.name} hasn't`} answered any
