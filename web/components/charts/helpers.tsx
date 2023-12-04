@@ -167,41 +167,9 @@ export const SliceMarker = (props: {
     </g>
   )
 }
-export const ANNOTATION_COLOR = '#4cb9fd'
+export const ANNOTATION_COLOR = '#6366f1' // indigo-500
+export const ANNOTATION_GRAY = '#b6adad' // indigo-500
 
-// export const AnnotationMarker = (props: {
-//   color: string
-//   x: number
-//   y0: number
-//   y1: number
-//   id: number
-//   onHover: (id: number) => void
-//   onLeave: () => void
-//   isHovered: boolean
-// }) => {
-//   const { color, x, y0, y1, onLeave, onHover, isHovered, id } = props
-//   return (
-//     <g onMouseEnter={() => onHover(id)} onMouseLeave={onLeave}>
-//       <line
-//         stroke={isHovered ? ANNOTATION_COLOR : '#b6adad'}
-//         strokeWidth={isHovered ? 2 : 1}
-//         strokeDasharray={isHovered ? undefined : '5, 5'}
-//         x1={x}
-//         x2={x}
-//         y1={y0}
-//         y2={y1}
-//       />
-//       <circle
-//         stroke="white"
-//         strokeWidth={isHovered ? 2 : 1}
-//         fill={color}
-//         cx={x}
-//         cy={y0}
-//         r={5}
-//       />
-//     </g>
-//   )
-// }
 export const AnnotationMarker = (props: {
   x: number
   y0: number
@@ -214,10 +182,8 @@ export const AnnotationMarker = (props: {
   const { x, y0, y1, onLeave, onHover, isHovered, id } = props
 
   const scale = 0.04
-  // Calculate the top center and bottom point of the pin
   const pinBottomPointX = x - 10
   const pinTopCenterY = y0 - 18
-  // Define the path for the pin shape
   const pinPath = `M87.084,192c-0.456-5.272-0.688-10.6-0.688-16C86.404,78.8,162.34,0,256.004,0s169.6,78.8,169.6,176
 	c0,5.392-0.232,10.728-0.688,16h0.688c0,96.184-169.6,320-169.6,320s-169.6-223.288-169.6-320H87.084z M256.004,224
 	c36.392,1.024,66.744-27.608,67.84-64c-1.096-36.392-31.448-65.024-67.84-64c-36.392-1.024-66.744,27.608-67.84,64
@@ -227,7 +193,7 @@ export const AnnotationMarker = (props: {
   return (
     <g onMouseEnter={() => onHover(id)} onMouseLeave={onLeave}>
       <line
-        stroke={isHovered ? ANNOTATION_COLOR : '#b6adad'}
+        stroke={isHovered ? ANNOTATION_COLOR : ANNOTATION_GRAY}
         strokeWidth={isHovered ? 3 : 2}
         strokeDasharray={isHovered ? undefined : '5, 5'}
         x1={x}
@@ -238,7 +204,7 @@ export const AnnotationMarker = (props: {
       <path
         transform={transform}
         d={pinPath}
-        fill={isHovered ? ANNOTATION_COLOR : '#b6adad'}
+        fill={isHovered ? ANNOTATION_COLOR : ANNOTATION_GRAY}
         stroke="white"
         strokeWidth={isHovered ? 2 : 1}
       />
