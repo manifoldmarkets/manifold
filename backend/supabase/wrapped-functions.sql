@@ -1,4 +1,6 @@
-drop function get_monthly_bet_count_and_amount (user_id_input text);
+-- drop function get_monthly_bet_count_and_amount (user_id_input text);
+
+
 
 create
 or replace function get_monthly_bet_count_and_amount (user_id_input text) returns table (
@@ -27,7 +29,7 @@ BEGIN
 END;
 $$ language plpgsql;
 
-drop function get_user_portfolio_at_2023_start (p_user_id text);
+-- drop function get_user_portfolio_at_2023_start (p_user_id text);
 
 create
 or replace function get_user_portfolio_at_2023_start (p_user_id text) returns table (
@@ -62,7 +64,7 @@ BEGIN
 END;
 $$ language plpgsql;
 
-drop function get_user_portfolio_at_2023_end (p_user_id text);
+-- drop function get_user_portfolio_at_2023_end (p_user_id text);
 
 create
 or replace function get_user_portfolio_at_2023_end (p_user_id text) returns table (
