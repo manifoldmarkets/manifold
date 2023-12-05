@@ -159,6 +159,7 @@ app.options('*', allowCorsManifold)
 // v0 public API routes
 app.options('/v0', allowCorsUnrestricted)
 
+// we define the handlers in this object in order to typecheck that every API has a handler
 const handlers: { [k in APIName]: RequestHandler } = {
   bet: placeBet,
   cancelBet: cancelBet,
@@ -176,7 +177,6 @@ const handlers: { [k in APIName]: RequestHandler } = {
   twitchCredentials: saveTwitchCredentials,
 }
 
-// TODO: a clever commennt
 Object.entries(handlers).forEach(([name, handler]) => {
   const api = API[name as APIName]
   const path = api.visibility === 'public' ? `/v0/${api.path}` : `/${api.path}`
