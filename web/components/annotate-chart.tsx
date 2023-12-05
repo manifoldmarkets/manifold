@@ -94,6 +94,10 @@ export const ReadChartAnnotationModal = (props: {
     creator_name,
     creator_avatar_url,
     comment_id,
+    user_username,
+    user_id,
+    user_name,
+    user_avatar_url,
   } = chartAnnotation
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const comment = comment_id ? useCommentOnContract(comment_id) : undefined
@@ -104,16 +108,16 @@ export const ReadChartAnnotationModal = (props: {
           <Row className={' justify-between'}>
             <Row className={'items-center gap-2'}>
               <Avatar
-                username={creator_username}
-                avatarUrl={creator_avatar_url}
+                username={user_username ?? creator_username}
+                avatarUrl={user_avatar_url ?? creator_avatar_url}
                 size={'md'}
               />
               <Col>
                 <UserLink
                   user={{
-                    username: creator_username,
-                    id: creator_id,
-                    name: creator_name,
+                    id: user_id ?? creator_id,
+                    username: user_username ?? creator_username,
+                    name: user_name ?? creator_name,
                   }}
                 />
                 <span className={'text-ink-500 text-xs'}>
