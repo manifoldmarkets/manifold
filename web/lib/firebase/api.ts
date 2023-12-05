@@ -582,6 +582,7 @@ export function createChartAnnotation(params: {
   thumbnailUrl?: string
   externalUrl?: string
   answerId?: string
+  probChange?: number
 }) {
   return call(getApiUrl('create-chart-annotation'), 'POST', params)
 }

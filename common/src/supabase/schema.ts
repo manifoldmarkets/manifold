@@ -111,6 +111,7 @@ export interface Database {
           creator_username: string
           down_votes: number
           event_time: number
+          prob_change: number | null
           external_url: string | null
           id: number
           text: string | null
@@ -132,6 +133,7 @@ export interface Database {
           creator_username: string
           down_votes?: number
           event_time: number
+          prob_change?: number | null
           external_url?: string | null
           id?: never
           text?: string | null
@@ -153,6 +155,7 @@ export interface Database {
           creator_username?: string
           down_votes?: number
           event_time?: number
+          prob_change?: number | null
           external_url?: string | null
           id?: never
           text?: string | null
@@ -3395,7 +3398,7 @@ export interface Database {
           user_id: string
         }[]
       }
-            get_user_portfolio_at_2023_end: {
+      get_user_portfolio_at_2023_end: {
         Args: {
           p_user_id: string
         }
@@ -4091,19 +4094,12 @@ export interface Database {
               description: string
             }[]
           }
-      ts_to_millis:
-        | {
-            Args: {
-              ts: string
-            }
-            Returns: number
-          }
-        | {
-            Args: {
-              ts: string
-            }
-            Returns: number
-          }
+      ts_to_millis: {
+        Args: {
+          ts: string
+        }
+        Returns: number
+      }
       user_top_news: {
         Args: {
           uid: string

@@ -52,13 +52,14 @@ import {
   useCarousel,
 } from 'web/components/widgets/carousel'
 import { ReadChartAnnotationModal } from 'web/components/annotate-chart'
-import { UserLink } from 'web/components/widgets/user-link'
 import { Button } from 'web/components/buttons/button'
 import toast from 'react-hot-toast'
 import { TbPencilPlus } from 'react-icons/tb'
 import { ChartAnnotation } from 'common/supabase/chart-annotations'
 import { useEvent } from 'web/hooks/use-event'
 import { Avatar } from 'web/components/widgets/avatar'
+import { formatPercent } from 'common/util/format'
+import { FaArrowTrendDown, FaArrowTrendUp } from 'react-icons/fa6'
 
 export const ContractOverview = memo(
   (props: {
@@ -274,9 +275,9 @@ export function BinaryChart(props: {
         showZoomer && !showAnnotations
           ? 'mb-12'
           : showAnnotations && showZoomer
-          ? 'mb-28'
+          ? 'mb-32'
           : showAnnotations && (chartAnnotations?.length ?? 0) > 0
-          ? 'mb-16'
+          ? 'mb-20'
           : '',
         'w-full pb-3 pr-10',
         size == 'sm' ? 'h-[100px]' : 'h-[150px] sm:h-[250px]',
@@ -298,14 +299,14 @@ export function BinaryChart(props: {
             pointerMode={pointerMode}
             chartAnnotations={chartAnnotations}
           />
-          {showAnnotations && chartAnnotations?.length && (
+          {showAnnotations && chartAnnotations?.length ? (
             <ChartAnnotations
               annotations={chartAnnotations}
               hoveredAnnotation={hoveredAnnotation}
               setHoveredAnnotation={setHoveredAnnotation}
               showZoomer={showZoomer}
             />
-          )}
+          ) : null}
         </>
       )}
     </SizedContainer>
@@ -362,12 +363,12 @@ const ChartAnnotation = (props: {
     user_avatar_url,
     creator_avatar_url,
     id,
-    user_id,
+    prob_change,
+    creator_username,
+    event_time,
     user_username,
-    user_name,
   } = annotation
   const [open, setOpen] = useState(false)
-  const { creator_username, event_time, creator_id, creator_name } = annotation
   const ref = useRef<HTMLDivElement>(null)
 
   const scrollIntoView = useEvent(() => {
@@ -408,7 +409,7 @@ const ChartAnnotation = (props: {
       onClick={() => setOpen(true)}
     >
       <Col className={'w-[175px] gap-1'}>
-        <Row className={'items-center justify-between'}>
+        <Row className={'text-ink-500 items-center justify-between '}>
           <Avatar
             avatarUrl={user_avatar_url ?? creator_avatar_url}
             username={user_username ?? creator_username}
@@ -416,24 +417,37 @@ const ChartAnnotation = (props: {
             size={'2xs'}
             className={'mr-1'}
           />
-          <UserLink
-            noLink={true}
-            user={{
-              id: user_id ?? creator_id,
-              username: user_username ?? creator_username,
-              name: user_name ?? creator_name,
-            }}
-            hideBadge={true}
-            className={'grow truncate text-xs'}
-          />
-          <span className={'text-ink-500 shrink-0 text-xs'}>
-            {new Date(event_time).toLocaleDateString('en-US', {
-              month: 'short',
-              day: 'numeric',
-            })}
-          </span>
+          <Row className={'items-center'}>
+            {prob_change !== null && (
+              <Row className={'gap-1 text-xs'}>
+                <Row
+                  className={clsx(
+                    'items-center gap-1',
+                    prob_change > 0 ? 'text-green-500' : 'text-red-500'
+                  )}
+                >
+                  {prob_change > 0 ? (
+                    <FaArrowTrendUp className={'h-3.5 w-3.5'} />
+                  ) : (
+                    <FaArrowTrendDown className={'h-3.5 w-3.5'} />
+                  )}
+                  {prob_change > 0 ? '+' : ''}
+                  {formatPercent(prob_change)}
+                </Row>{' '}
+                on
+              </Row>
+            )}
+            <span className={'ml-1 shrink-0 text-xs'}>
+              {new Date(event_time).toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+              })}
+            </span>
+          </Row>
         </Row>
-        <div className="line-clamp-1 text-sm">{text}</div>
+        <Row className="line-clamp-2 text-sm">
+          <span className={'line-clamp-2'}>{text}</span>
+        </Row>
       </Col>
       {open && (
         <ReadChartAnnotationModal
@@ -638,14 +652,14 @@ const ChoiceOverview = (props: {
           )}
         </SizedContainer>
       )}
-      {chartAnnotations?.length && (
+      {chartAnnotations?.length ? (
         <ChartAnnotations
           annotations={chartAnnotations}
           hoveredAnnotation={hoveredAnnotation}
           setHoveredAnnotation={setHoveredAnnotation}
           showZoomer={showZoomer}
         />
-      )}
+      ) : null}
       {showResolver ? (
         !shouldAnswersSumToOne && contract.mechanism === 'cpmm-multi-1' ? (
           <IndependentAnswersResolvePanel contract={contract} />

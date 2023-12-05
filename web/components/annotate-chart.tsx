@@ -16,6 +16,10 @@ import { useCommentOnContract } from 'web/hooks/use-comments-supabase'
 import { Content } from 'web/components/widgets/editor'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { ChartAnnotation } from 'common/supabase/chart-annotations'
+import { ContractComment } from 'common/comment'
+import { richTextToString } from 'common/util/parse'
+import { FaArrowTrendDown, FaArrowTrendUp } from 'react-icons/fa6'
+import { formatPercent } from 'common/util/format'
 
 export const AnnotateChartModal = (props: {
   open: boolean
@@ -23,14 +27,16 @@ export const AnnotateChartModal = (props: {
   atTime: number
   contractId: string
   answerId?: string
+  comment?: ContractComment
 }) => {
-  const { atTime, answerId, contractId, open, setOpen } = props
-  const [note, setNote] = useState('')
+  const { atTime, answerId, comment, contractId, open, setOpen } = props
+  const [note, setNote] = useState<string>()
+  const [probChange, setProbChange] = useState<number>()
   const [loading, setLoading] = useState(false)
   return (
     <Modal open={open} setOpen={setOpen}>
       <Col className={clsx(MODAL_CLASS)}>
-        <Row className={'my-2 w-full items-start justify-start'}>
+        <Row className={'mt-1 w-full items-start justify-start'}>
           <span className={'text-primary-700 text-xl'}>
             Add a note at{' '}
             <span>
@@ -44,13 +50,39 @@ export const AnnotateChartModal = (props: {
             </span>
           </span>
         </Row>
-        <Input
-          type={'text'}
-          className={'w-full'}
-          placeholder={'What happened?'}
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-        />
+        <Col className={'w-full'}>
+          <span>What happened? </span>
+          {comment ? (
+            <span className={'line-clamp-2'}>
+              {richTextToString(comment.content)}
+            </span>
+          ) : (
+            <Input
+              type={'text'}
+              className={'w-full'}
+              placeholder={'Information about the event'}
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+            />
+          )}
+        </Col>
+        <Col className={'w-full'}>
+          <span>Change between -1 and 1 that day?</span>
+          <Input
+            type={'number'}
+            className={'w-24'}
+            min="-1"
+            max="1"
+            step="0.01"
+            placeholder={'0.25'}
+            value={probChange?.toString() ?? ''}
+            onChange={(e) =>
+              setProbChange(
+                e.target.value ? parseFloat(e.target.value) : undefined
+              )
+            }
+          />
+        </Col>
         <Row className={'w-full justify-between'}>
           <Button color={'gray-outline'} onClick={() => setOpen(false)}>
             Cancel
@@ -61,9 +93,11 @@ export const AnnotateChartModal = (props: {
               setLoading(true)
               await createChartAnnotation({
                 contractId,
-                text: note,
+                text: note?.length ? note : undefined,
                 eventTime: atTime,
                 answerId,
+                commentId: comment?.id,
+                probChange,
               })
               setLoading(false)
               setOpen(false)
@@ -98,6 +132,7 @@ export const ReadChartAnnotationModal = (props: {
     user_id,
     user_name,
     user_avatar_url,
+    prob_change,
   } = chartAnnotation
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const comment = comment_id ? useCommentOnContract(comment_id) : undefined
@@ -129,6 +164,22 @@ export const ReadChartAnnotationModal = (props: {
                 </span>
               </Col>
             </Row>
+            {prob_change !== null && (
+              <Row
+                className={clsx(
+                  'items-center gap-1',
+                  prob_change > 0 ? 'text-green-500' : 'text-red-500'
+                )}
+              >
+                {prob_change > 0 ? (
+                  <FaArrowTrendUp className={'h-3.5 w-3.5'} />
+                ) : (
+                  <FaArrowTrendDown className={'h-3.5 w-3.5'} />
+                )}
+                {prob_change > 0 ? '+' : ''}
+                {formatPercent(prob_change)}
+              </Row>
+            )}
             {user?.id === chartAnnotation.creator_id && (
               <Button
                 color={'red-outline'}

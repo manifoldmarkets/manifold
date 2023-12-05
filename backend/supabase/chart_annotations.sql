@@ -11,6 +11,7 @@ create table if not exists
     up_votes integer not null default 0,
     down_votes integer not null default 0,
 
+    prob_change numeric null check (prob_change >= -1 and prob_change <= 1),
     user_username text null,
     user_name text null,
     user_avatar_url text null,
