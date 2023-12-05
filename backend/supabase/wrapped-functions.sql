@@ -1,4 +1,3 @@
-drop function get_monthly_bet_count (text);
 
 create
 or replace function get_monthly_bet_count_and_amount (user_id_input text) returns table (

@@ -53,7 +53,11 @@ export function MaxMinProfit(props: {
   }
 
   if (maxContract == undefined || minContract == undefined) {
-    return <LoadingIndicator />
+    return (
+      <div className="mx-auto my-auto">
+        <LoadingIndicator />
+      </div>
+    )
   }
 
   if (maxContract == null || minContract == null) {

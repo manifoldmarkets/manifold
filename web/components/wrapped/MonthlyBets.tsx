@@ -50,7 +50,11 @@ export function MonthlyBets(props: {
   }
 
   if (monthlyBets == undefined) {
-    return <LoadingIndicator />
+    return (
+      <div className="mx-auto my-auto">
+        <LoadingIndicator />
+      </div>
+    )
   }
   const totalBetsThisYear = monthlyBets.reduce((accumulator, current) => {
     return accumulator + current.bet_count

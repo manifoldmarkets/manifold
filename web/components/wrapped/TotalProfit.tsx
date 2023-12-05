@@ -42,7 +42,11 @@ export function TotalProfit(props: {
   }
 
   if (totalProfit == undefined) {
-    return <LoadingIndicator />
+    return (
+      <div className="mx-auto my-auto">
+        <LoadingIndicator />
+      </div>
+    )
   }
 
   if (totalProfit == null) {
