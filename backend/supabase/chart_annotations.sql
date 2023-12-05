@@ -11,6 +11,10 @@ create table if not exists
     up_votes integer not null default 0,
     down_votes integer not null default 0,
 
+    user_username text null,
+    user_name text null,
+    user_avatar_url text null,
+    user_id text null,
     comment_id text null,
     answer_id text null,
     thumbnail_url text null,

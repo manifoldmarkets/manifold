@@ -99,6 +99,72 @@ export interface Database {
         }
         Relationships: []
       }
+      chart_annotations: {
+        Row: {
+          answer_id: string | null
+          comment_id: string | null
+          contract_id: string
+          created_time: string
+          creator_avatar_url: string
+          creator_id: string
+          creator_name: string
+          creator_username: string
+          down_votes: number
+          event_time: number
+          external_url: string | null
+          id: number
+          text: string | null
+          thumbnail_url: string | null
+          up_votes: number
+          user_avatar_url: string | null
+          user_id: string | null
+          user_name: string | null
+          user_username: string | null
+        }
+        Insert: {
+          answer_id?: string | null
+          comment_id?: string | null
+          contract_id: string
+          created_time?: string
+          creator_avatar_url: string
+          creator_id: string
+          creator_name: string
+          creator_username: string
+          down_votes?: number
+          event_time: number
+          external_url?: string | null
+          id?: never
+          text?: string | null
+          thumbnail_url?: string | null
+          up_votes?: number
+          user_avatar_url?: string | null
+          user_id?: string | null
+          user_name?: string | null
+          user_username?: string | null
+        }
+        Update: {
+          answer_id?: string | null
+          comment_id?: string | null
+          contract_id?: string
+          created_time?: string
+          creator_avatar_url?: string
+          creator_id?: string
+          creator_name?: string
+          creator_username?: string
+          down_votes?: number
+          event_time?: number
+          external_url?: string | null
+          id?: never
+          text?: string | null
+          thumbnail_url?: string | null
+          up_votes?: number
+          user_avatar_url?: string | null
+          user_id?: string | null
+          user_name?: string | null
+          user_username?: string | null
+        }
+        Relationships: []
+      }
       chat_messages: {
         Row: {
           channel_id: string
@@ -129,60 +195,6 @@ export interface Database {
           user_id?: string
           user_name?: string
           user_username?: string
-        }
-        Relationships: []
-      }
-      chart_annotations: {
-        Row: {
-          comment_id: string | null
-          answer_id: string | null
-          contract_id: string
-          created_time: string
-          creator_avatar_url: string
-          creator_id: string
-          creator_name: string
-          creator_username: string
-          down_votes: number
-          event_time: number
-          external_url: string | null
-          id: number
-          text: string | null
-          thumbnail_url: string | null
-          up_votes: number
-        }
-        Insert: {
-          comment_id?: string | null
-          answer_id?: string | null
-          contract_id: string
-          created_time?: string
-          creator_avatar_url: string
-          creator_id: string
-          creator_name: string
-          creator_username: string
-          down_votes?: number
-          event_time: number
-          external_url?: string | null
-          id?: never
-          text?: string | null
-          thumbnail_url?: string | null
-          up_votes?: number
-        }
-        Update: {
-          comment_id?: string | null
-          answer_id?: string | null
-          contract_id?: string
-          created_time?: string
-          creator_avatar_url?: string
-          creator_id?: string
-          creator_name?: string
-          creator_username?: string
-          down_votes?: number
-          event_time?: number
-          external_url?: string | null
-          id?: never
-          text?: string | null
-          thumbnail_url?: string | null
-          up_votes?: number
         }
         Relationships: []
       }

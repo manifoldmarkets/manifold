@@ -356,7 +356,7 @@ const ChartAnnotation = (props: {
   carouselRef: HTMLDivElement | null
 }) => {
   const { annotation, hovered, carouselRef, setHoveredAnnotation } = props
-  const { text, id } = annotation
+  const { text, id, user_id, user_username, user_name } = annotation
   const [open, setOpen] = useState(false)
   const { creator_username, event_time, creator_id, creator_name } = annotation
   const ref = useRef<HTMLDivElement>(null)
@@ -403,9 +403,9 @@ const ChartAnnotation = (props: {
           <UserLink
             noLink={true}
             user={{
-              id: creator_id,
-              username: creator_username,
-              name: creator_name,
+              id: user_id ?? creator_id,
+              username: user_username ?? creator_username,
+              name: user_name ?? creator_name,
             }}
             hideBadge={true}
             className={'grow truncate text-xs'}
