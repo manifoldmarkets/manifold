@@ -295,6 +295,7 @@ export function BinaryChart(props: {
             hoveredAnnotation={hoveredAnnotation}
             setHoveredAnnotation={setHoveredAnnotation}
             pointerMode={pointerMode}
+            chartAnnotations={chartAnnotations}
           />
           {showAnnotations && chartAnnotations && (
             <ChartAnnotations
@@ -616,6 +617,7 @@ const ChoiceOverview = (props: {
               pointerMode={pointerMode}
               setHoveredAnnotation={setHoveredAnnotation}
               hoveredAnnotation={hoveredAnnotation}
+              chartAnnotations={chartAnnotations}
             />
           )}
         </SizedContainer>
