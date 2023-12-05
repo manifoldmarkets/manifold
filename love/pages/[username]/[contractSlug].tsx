@@ -475,6 +475,7 @@ export function ContractPageContent(props: ContractParams) {
                 }
                 setShowResolver={setShowResolver}
                 onAnswerCommentClick={setReplyTo}
+                chartAnnotations={[]}
               />
             </Col>
             {showReview && user && (

@@ -32,6 +32,7 @@ import { animated } from '@react-spring/web'
 import { useAnimatedNumber } from 'web/hooks/use-animated-number'
 import { HOUR_MS } from 'common/util/time'
 import { SparklesIcon } from '@heroicons/react/solid'
+import { track } from 'web/lib/service/analytics'
 
 export const AnswerBar = (props: {
   color: string // 6 digit hex
@@ -183,6 +184,7 @@ export const DPMMultiBettor = (props: {
         onClick={(e) => {
           e.preventDefault()
           e.stopPropagation()
+          track('bet intent', { location: 'answer panel' })
           setOpen(true)
         }}
       >
@@ -225,6 +227,7 @@ export const MultiBettor = (props: {
         className="bg-primary-50"
         onClick={(e) => {
           e.stopPropagation()
+          track('bet intent', { location: 'answer panel' })
           setOutcome('YES')
         }}
       >

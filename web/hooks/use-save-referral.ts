@@ -5,7 +5,7 @@ import { useEffect } from 'react'
 import { User, writeReferralInfo } from 'web/lib/firebase/users'
 
 export const useSaveReferral = (
-  user?: User | null,
+  user: User | null | undefined,
   options?: {
     defaultReferrerUsername?: string
     contractId?: string

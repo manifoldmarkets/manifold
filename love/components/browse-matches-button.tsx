@@ -1,17 +1,17 @@
 import clsx from 'clsx'
 import { Editor } from '@tiptap/react'
+import { useState, useEffect } from 'react'
 
 import { MAX_COMMENT_LENGTH } from 'common/comment'
 import { MIN_BET_AMOUNT_FOR_NEW_MATCH } from 'common/love/constants'
 import { Lover } from 'common/love/lover'
 import { LoverProfile } from 'love/pages/[username]'
-import { useState } from 'react'
 import { Button } from 'web/components/buttons/button'
 import { CommentInputTextArea } from 'web/components/comments/comment-input'
 import { Col } from 'web/components/layout/col'
 import { Modal, SCROLLABLE_MODAL_CLASS } from 'web/components/layout/modal'
 import { Row } from 'web/components/layout/row'
-import { Tabs } from 'web/components/layout/tabs'
+import { ControlledTabs } from 'web/components/layout/tabs'
 import { BuyAmountInput } from 'web/components/widgets/amount-input'
 import { useTextEditor } from 'web/components/widgets/editor'
 import { createMatch } from 'web/lib/firebase/love/api'
@@ -118,6 +118,7 @@ const BrowseMatchesDialog = (props: {
     matchedLovers,
     potentialLovers,
     selectedMatchId,
+    setSelectedMatchId,
     betAmount,
     setBetAmount,
     isSubmitting,
@@ -128,6 +129,7 @@ const BrowseMatchesDialog = (props: {
 
   const [error, setError] = useState<string | undefined>(undefined)
 
+  const [tab, setTab] = useState<number>(0)
   const [matchedIndex, setMatchedIndex] = useState(0)
   const [potentialIndex, setPotentialIndex] = useState(0)
   const matchedLover = matchedLovers[matchedIndex]
@@ -135,10 +137,20 @@ const BrowseMatchesDialog = (props: {
 
   const user = useUser()
 
+  useEffect(() => {
+    if (tab === 0 && matchedLover) {
+      setSelectedMatchId(matchedLover.user.id)
+    } else if (tab === 1 && potentialLover) {
+      setSelectedMatchId(potentialLover.user.id)
+    }
+  }, [tab, matchedLover, potentialLover])
+
   return (
     <Modal className={SCROLLABLE_MODAL_CLASS} size="lg" open setOpen={setOpen}>
       <Col className="bg-canvas-0 rounded p-4 pb-8 sm:gap-4">
-        <Tabs
+        <ControlledTabs
+          activeIndex={tab}
+          onClick={(_title, index) => setTab(index)}
           tabs={[
             {
               title: `Matches ${matchedLovers.length}`,
@@ -151,12 +163,13 @@ const BrowseMatchesDialog = (props: {
                       <Row className="mb-2 items-center gap-4">
                         <Button
                           color="gray-outline"
-                          onClick={() =>
+                          onClick={() => {
                             setMatchedIndex(
                               (matchedIndex - 1 + matchedLovers.length) %
                                 matchedLovers.length
                             )
-                          }
+                            setSelectedMatchId(matchedLover.user.id)
+                          }}
                         >
                           Previous
                         </Button>

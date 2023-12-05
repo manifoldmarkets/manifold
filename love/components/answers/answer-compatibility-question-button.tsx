@@ -17,7 +17,7 @@ export function AnswerCompatibilityQuestionButton(props: {
   return (
     <>
       <Button onClick={() => setOpen(true)} color="gray-outline">
-        Answer Prompts{' '}
+        Answer Questions{' '}
         <span className="text-primary-600 ml-2">+{otherQuestions.length}</span>
       </Button>
       <AnswerCompatibilityQuestionModal

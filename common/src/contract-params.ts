@@ -24,6 +24,7 @@ import { SupabaseClient } from 'common/supabase/utils'
 import { buildArray } from 'common/util/array'
 import { groupBy } from 'lodash'
 import { Bet } from 'common/bet'
+import { getChartAnnotations } from 'common/supabase/chart-annotations'
 
 export async function getContractParams(
   contract: Contract,
@@ -48,6 +49,7 @@ export async function getContractParams(
     totalPositions,
     relatedContracts,
     betReplies,
+    chartAnnotations,
   ] = await Promise.all([
     checkAccess ? getCanAccessContract(contract, userId, db) : true,
     hasMechanism ? getTotalBetCount(contract.id, db) : 0,
@@ -77,6 +79,7 @@ export async function getContractParams(
           commentRepliesOnly: true,
         })
       : ([] as Bet[]),
+    getChartAnnotations(contract.id, db),
   ])
   if (!canAccessContract) {
     return contract && !contract.deleted
@@ -119,6 +122,7 @@ export async function getContractParams(
       totalBets,
       topContractMetrics,
       relatedContracts,
+      chartAnnotations,
     }),
   }
 }

@@ -110,6 +110,8 @@ import { createlovecompatibilityquestion } from 'api/love/create-love-compatibil
 import { oncreatebet } from 'api/on-create-bet'
 
 import { markets } from 'api/v0/markets'
+import { createchartannotation } from 'api/create-chart-annotation'
+import { deletechartannotation } from 'api/delete-chart-annotation'
 
 const allowCorsUnrestricted: RequestHandler = cors({})
 const allowCorsManifold: RequestHandler = cors({
@@ -278,6 +280,8 @@ app.post(
   '/createlovecompatibilityquestion',
   ...apiRoute(createlovecompatibilityquestion)
 )
+app.post('/create-chart-annotation', ...apiRoute(createchartannotation))
+app.post('/delete-chart-annotation', ...apiRoute(deletechartannotation))
 
 const publicApiRoute = (endpoint: RequestHandler) => {
   return [
