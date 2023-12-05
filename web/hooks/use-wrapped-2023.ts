@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { db } from '../lib/supabase/db'
 import { usePersistentLocalState } from './use-persistent-local-state'
 import { Row as rowFor } from 'common/supabase/utils'

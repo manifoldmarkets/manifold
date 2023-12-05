@@ -6,9 +6,7 @@ import {
   MonthlyBetsType,
   ProfitType,
   useMaxAndMinProfit,
-  useTotalProfit,
 } from 'web/hooks/use-wrapped-2023'
-import { Spacer } from '../layout/spacer'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { NavButtons } from './NavButtons'
 import { Row } from '../layout/row'

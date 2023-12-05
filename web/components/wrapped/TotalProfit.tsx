@@ -2,11 +2,10 @@ import clsx from 'clsx'
 import { User } from 'common/user'
 import { formatMoney } from 'common/util/format'
 import { useEffect, useState } from 'react'
-import { MonthlyBetsType, useTotalProfit } from 'web/hooks/use-wrapped-2023'
+import { useTotalProfit } from 'web/hooks/use-wrapped-2023'
 import { Spacer } from '../layout/spacer'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { NavButtons } from './NavButtons'
-import { MONTHS } from './GeneralStats'
 
 export function TotalProfit(props: {
   goToPrevPage: () => void
