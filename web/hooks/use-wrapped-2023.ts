@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { db } from '../lib/supabase/db'
+import { usePersistentLocalState } from './use-persistent-local-state'
 
 export type MonthlyBetsType = {
   month: string
@@ -40,9 +41,9 @@ async function getMonthlyBets(userId: string) {
 }
 
 export function useMonthlyBets(userId: string) {
-  const [monthlyBets, setMonthlyBets] = useState<
+  const [monthlyBets, setMonthlyBets] = usePersistentLocalState<
     MonthlyBetsType[] | undefined | null
-  >(undefined)
+  >(undefined, `wrapped-2023-${userId}-monthly-bets`)
   useEffect(() => {
     getMonthlyBets(userId).then((data) => {
       console.log('RES', data)
@@ -54,9 +55,9 @@ export function useMonthlyBets(userId: string) {
 }
 
 export function useTotalProfit(userId: string) {
-  const [totalProfit, setTotalProfit] = useState<number | undefined | null>(
-    undefined
-  )
+  const [totalProfit, setTotalProfit] = usePersistentLocalState<
+    number | undefined | null
+  >(undefined, `wrapped-2023-${userId}-total-profit`)
   useEffect(() => {
     db.rpc('calculate_user_profit_for_2023', {
       user_id_input: userId,
@@ -73,4 +74,78 @@ export function useTotalProfit(userId: string) {
   }, [userId])
 
   return totalProfit
+}
+
+async function getMaxProfitContractMetric(userId: string) {
+  const { data, error } = await db
+    .from('user_contract_metrics')
+    .select('*')
+    .eq('user_id', userId)
+    .gte('fs_updated_time', '2023-01-01T00:00:00Z')
+    .lt('fs_updated_time', '2024-01-01T00:00:00Z')
+    .order('profit', { ascending: false })
+    .limit(1)
+
+  if (error) {
+    console.error(error)
+    return null
+  }
+  return data
+}
+
+async function getMinProfitMetric(userId: string) {
+  const { data, error } = await db
+    .from('user_contract_metrics')
+    .select('*')
+    .eq('user_id', userId)
+    .gte('fs_updated_time', '2023-01-01T00:00:00Z')
+    .lt('fs_updated_time', '2024-01-01T00:00:00Z')
+    .order('profit', { ascending: true })
+    .limit(1)
+
+  if (error) {
+    console.error(error)
+    return null
+  }
+  return data
+}
+
+export type ProfitType = {
+  profit: number
+  contractId: string
+  hasYesShares: boolean | null
+  hasNoShares: boolean | null
+}
+
+export function useMaxAndMinProfit(userId: string) {
+  const [maxProfit, setMaxProfit] = usePersistentLocalState<
+    ProfitType | undefined | null
+  >(undefined, `wrapped-2023-${userId}-max-profit`)
+  const [minProfit, setMinProfit] = usePersistentLocalState<
+    ProfitType | undefined | null
+  >(undefined, `wrapped-2023-${userId}-min-profit`)
+  useEffect(() => {
+    getMaxProfitContractMetric(userId).then((data) => {
+      if (data) {
+        setMaxProfit({
+          profit: data[0].profit ?? 0,
+          contractId: data[0].contract_id,
+          hasNoShares: data[0].has_no_shares,
+          hasYesShares: data[0].has_yes_shares,
+        })
+      }
+    })
+    getMinProfitMetric(userId).then((data) => {
+      if (data) {
+        setMinProfit({
+          profit: data[0].profit ?? 0,
+          contractId: data[0].contract_id,
+          hasNoShares: data[0].has_no_shares,
+          hasYesShares: data[0].has_yes_shares,
+        })
+      }
+    })
+  }, [userId])
+
+  return { maxProfit, minProfit }
 }

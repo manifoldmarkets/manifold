@@ -20,6 +20,7 @@ import { TotalProfit } from 'web/components/wrapped/TotalProfit'
 import Link from 'next/link'
 import { Row } from 'web/components/layout/row'
 import { TheEnd } from 'web/components/wrapped/TheEnd'
+import { MaxMinProfit } from 'web/components/wrapped/MaxMinProfit'
 
 export const getStaticProps = async (props: {
   params: {
@@ -64,7 +65,7 @@ export default function Wrapped2023(props: {
 function Wrapped2023Content(props: { user: User; username: string }) {
   const { user, username } = props
   const [state, updateState] = usePersistentQueriesState({ page: '0' })
-  const maxPages = 5
+  const maxPages = 6
   const page = parseInt(state.page)
   const goToNextPage = () => {
     if (page >= maxPages - 1) return
@@ -94,12 +95,17 @@ function Wrapped2023Content(props: { user: User; username: string }) {
         />
       ) : state.page == '2' ? (
         <TotalProfit
-          monthlyBets={monthlyBets}
           goToPrevPage={goToPrevPage}
           goToNextPage={goToNextPage}
           user={user}
         />
       ) : state.page == '3' ? (
+        <MaxMinProfit
+          goToPrevPage={goToPrevPage}
+          goToNextPage={goToNextPage}
+          user={user}
+        />
+      ) : state.page == '4' ? (
         <MonthlyBets
           monthlyBets={monthlyBets}
           goToPrevPage={goToPrevPage}
@@ -129,7 +135,7 @@ function Tracker(props: { currentPage: number; maxPages: number }) {
             <div
               key={i}
               className={clsx(
-                `mx-1 my-2 h-1.5 w-1/5 rounded-full transition-colors`,
+                `mx-1 my-2 h-1.5 w-1/6 rounded-full transition-colors`,
                 i <= currentPage ? 'bg-gray-300' : ' bg-gray-700'
               )}
             />
