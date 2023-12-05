@@ -81,7 +81,6 @@ async function getTotalProfit(userId: string) {
     }
   )
 
-  console.log(yearStart, yearEnd)
   if (error1 || error2) {
     console.error(error1 ?? error2)
     return null
