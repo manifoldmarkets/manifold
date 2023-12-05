@@ -95,7 +95,8 @@ export const ReadChartAnnotationModal = (props: {
     creator_avatar_url,
     comment_id,
   } = chartAnnotation
-  const comment = useCommentOnContract(comment_id ?? '_')
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const comment = comment_id ? useCommentOnContract(comment_id) : undefined
   return (
     <Modal open={open} setOpen={setOpen}>
       <Col className={clsx(MODAL_CLASS)}>

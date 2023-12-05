@@ -1,4 +1,4 @@
-import { ReactNode, memo, useMemo, useState } from 'react'
+import { ReactNode, memo, useMemo, useState, useEffect, useRef } from 'react'
 import clsx from 'clsx'
 import { sortBy } from 'lodash'
 
@@ -47,13 +47,17 @@ import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-s
 import { getAnswerProbability } from 'common/calculate'
 import { searchInAny } from 'common/util/parse'
 import { useAnnotateChartTools } from 'web/hooks/use-chart-annotations'
-import { Carousel } from 'web/components/widgets/carousel'
+import {
+  ControlledCarousel,
+  useCarousel,
+} from 'web/components/widgets/carousel'
 import { ReadChartAnnotationModal } from 'web/components/annotate-chart'
 import { UserLink } from 'web/components/widgets/user-link'
 import { Button } from 'web/components/buttons/button'
 import toast from 'react-hot-toast'
 import { TbPencilPlus } from 'react-icons/tb'
 import { ChartAnnotation } from 'common/supabase/chart-annotations'
+import { useEvent } from 'web/hooks/use-event'
 
 export const ContractOverview = memo(
   (props: {
@@ -313,9 +317,23 @@ const ChartAnnotations = (props: {
 }) => {
   const { annotations, hoveredAnnotation, setHoveredAnnotation, showZoomer } =
     props
+  const [carouselRef, setCarouselRef] = useState<HTMLDivElement | null>(null)
+  const { onScroll, scrollLeft, scrollRight, atFront, atBack } =
+    useCarousel(carouselRef)
+
   return (
-    <Carousel
-      className={clsx(showZoomer ? 'mt-12' : 'mt-6', 'max-w-full gap-1')}
+    <ControlledCarousel
+      className={clsx(
+        'relative',
+        showZoomer ? 'mt-12' : 'mt-6',
+        'max-w-full gap-1'
+      )}
+      ref={setCarouselRef}
+      onScroll={onScroll}
+      scrollLeft={scrollLeft}
+      scrollRight={scrollRight}
+      atFront={atFront}
+      atBack={atBack}
     >
       {annotations.map((a) => (
         <ChartAnnotation
@@ -323,9 +341,10 @@ const ChartAnnotations = (props: {
           annotation={a}
           hovered={a.id === hoveredAnnotation}
           setHoveredAnnotation={setHoveredAnnotation}
+          carouselRef={carouselRef}
         />
       ))}
-    </Carousel>
+    </ControlledCarousel>
   )
 }
 
@@ -333,22 +352,52 @@ const ChartAnnotation = (props: {
   annotation: ChartAnnotation
   hovered: boolean
   setHoveredAnnotation?: (id: number | null) => void
+  carouselRef: HTMLDivElement | null
 }) => {
-  const { annotation, hovered, setHoveredAnnotation } = props
+  const { annotation, hovered, carouselRef, setHoveredAnnotation } = props
   const { text, id } = annotation
   const [open, setOpen] = useState(false)
   const { creator_username, event_time, creator_id, creator_name } = annotation
+  const ref = useRef<HTMLDivElement>(null)
+
+  const scrollIntoView = useEvent(() => {
+    const card = ref.current
+    if (!hovered || !carouselRef || !card) return
+
+    const cardLeft = card.offsetLeft
+    const cardWidth = card.offsetWidth
+    const carouselScrollLeft = carouselRef.scrollLeft
+    const carouselWidth = carouselRef.offsetWidth
+
+    const cardRight = cardLeft + cardWidth
+    const scrollRight = carouselScrollLeft + carouselWidth
+
+    if (cardLeft < carouselScrollLeft) {
+      carouselRef.scroll({ left: cardLeft, behavior: 'smooth' })
+    } else if (cardRight > scrollRight) {
+      carouselRef.scroll({
+        left: cardRight - carouselWidth,
+        behavior: 'smooth',
+      })
+    }
+  })
+
+  useEffect(() => {
+    if (hovered) scrollIntoView()
+  }, [hovered])
+
   return (
     <Col
       className={clsx(
         'cursor-pointer rounded-md border-2 p-2',
-        hovered ? 'border-blue-300' : ''
+        hovered ? 'border-indigo-600' : ''
       )}
+      ref={ref}
       onMouseOver={() => setHoveredAnnotation?.(id)}
       onMouseLeave={() => setHoveredAnnotation?.(null)}
       onClick={() => setOpen(true)}
     >
-      <Col className={'w-[150px]'}>
+      <Col className={'w-[175px]'}>
         <Row className={'items-center justify-between'}>
           <UserLink
             noLink={true}
@@ -367,13 +416,15 @@ const ChartAnnotation = (props: {
             })}
           </span>
         </Row>
-        <div className=" line-clamp-1 text-sm">{text}</div>
+        <div className="line-clamp-1 text-sm">{text}</div>
       </Col>
-      <ReadChartAnnotationModal
-        open={open}
-        setOpen={setOpen}
-        chartAnnotation={annotation}
-      />
+      {open && (
+        <ReadChartAnnotationModal
+          open={open}
+          setOpen={setOpen}
+          chartAnnotation={annotation}
+        />
+      )}
     </Col>
   )
 }
