@@ -112,6 +112,7 @@ import { API, type APIName } from 'common/api/schema'
 import { markets } from 'api/markets'
 import { createchartannotation } from 'api/create-chart-annotation'
 import { deletechartannotation } from 'api/delete-chart-annotation'
+import { assertUnreachable } from 'common/util/types'
 
 const allowCorsUnrestricted: RequestHandler = cors({})
 const allowCorsManifold: RequestHandler = cors({
@@ -199,6 +200,8 @@ Object.entries(handlers).forEach(([name, handler]) => {
     app.get(...apiRoute)
     // } else if (api.method === 'PUT') {
     //   app.put(...apiRoute)
+  } else {
+    assertUnreachable(api, 'Unsupported API method')
   }
 })
 
