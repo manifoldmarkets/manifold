@@ -29,7 +29,6 @@ export function MaxMinProfit(props: {
   const { maxProfit, minProfit } = useMaxAndMinProfit(user.id)
   const maxContract = useContract(maxProfit?.contractId)
   const minContract = useContract(minProfit?.contractId)
-  console.log(maxProfit, minProfit, maxContract, minContract)
 
   //triggers for animation in
   useEffect(() => {
