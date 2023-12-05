@@ -288,6 +288,7 @@ export const SVGChart = <X, TT extends { x: number; y: number }>(props: {
 
   const onPointerLeave = () => {
     onMouseLeave?.()
+    onHoverAnnotation?.(null)
   }
 
   const id = useId()

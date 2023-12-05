@@ -31,7 +31,7 @@ export const useAnnotateChartTools = (
   const user = useUser()
   const chartAnnotations =
     useChartAnnotations(contract.id) ?? staticChartAnnotations
-  useEffect(() => {
+  const updateHoveredAnnotation = async (hoveredAnnotation: number | null) => {
     if (pointerMode === 'annotate') return
 
     if (hoveredAnnotation !== null) {
@@ -39,8 +39,8 @@ export const useAnnotateChartTools = (
     } else {
       setPointerMode('zoom')
     }
-  }, [hoveredAnnotation])
-
+    setHoveredAnnotation(hoveredAnnotation)
+  }
   useEffect(() => {
     if (pointerMode === 'annotate') setPointerMode('zoom')
   }, [chartAnnotations.length])
@@ -50,7 +50,7 @@ export const useAnnotateChartTools = (
     pointerMode,
     setPointerMode,
     hoveredAnnotation,
-    setHoveredAnnotation,
+    setHoveredAnnotation: updateHoveredAnnotation,
     chartAnnotations,
     enableAdd,
   }
