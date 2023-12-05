@@ -203,7 +203,6 @@ export const CircleGraph = (props: {
 }
 
 function getScaleColor(scaledNum: number) {
-  console.log(scaledNum)
   if (scaledNum < 20) {
     return '#22d3ee'
   }

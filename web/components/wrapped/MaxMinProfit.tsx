@@ -14,6 +14,7 @@ import { NavButtons } from './NavButtons'
 import { Row } from '../layout/row'
 import { useContract } from 'web/hooks/use-contract-supabase'
 import { Col } from '../layout/col'
+import { MONTHS } from './GeneralStats'
 
 export function MaxMinProfit(props: {
   goToPrevPage: () => void
@@ -192,37 +193,4 @@ const CoinBarChart = (props: { data: MonthlyBetsType[] }) => {
       })}
     </svg>
   )
-}
-
-export const MONTHS = [
-  'Jan',
-  'Feb',
-  'Mar',
-  'Apr',
-  'May',
-  'June',
-  'July',
-  'Aug',
-  'Sept',
-  'Oct',
-  'Nov',
-  'Dec',
-]
-
-function getScaleColor(scaledNum: number) {
-  console.log(scaledNum)
-  if (scaledNum < 20) {
-    return '#22d3ee'
-  }
-  if (scaledNum < 40) {
-    return '#67e8f9'
-  }
-  if (scaledNum < 60) {
-    return '#a5f3fc'
-  }
-  if (scaledNum < 80) {
-    return '#cffafe'
-  } else {
-    return '#ecfeff'
-  }
 }

@@ -6,6 +6,7 @@ import { MonthlyBetsType, useTotalProfit } from 'web/hooks/use-wrapped-2023'
 import { Spacer } from '../layout/spacer'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { NavButtons } from './NavButtons'
+import { MONTHS } from './GeneralStats'
 
 export function TotalProfit(props: {
   goToPrevPage: () => void
@@ -83,93 +84,4 @@ export function TotalProfit(props: {
       <NavButtons goToPrevPage={goToPrevPage} goToNextPage={onGoToNext} />
     </>
   )
-}
-
-const CoinBarChart = (props: { data: MonthlyBetsType[] }) => {
-  const { data } = props
-  const svgWidth = 280
-  const svgHeight = 350
-  const maxCoins = 20 // Maximum number of coins in a stack
-  const coinWidth = 9 // Width of the oval (coin)
-  const coinHeight = 3 // Height of the oval (coin)
-  const spacing = 35 // Horizontal spacing between stacks
-  const rowSpacing = svgHeight / 3 // Vertical spacing between rows
-
-  const maxManaBet = Math.max(...data.map((item) => item.total_amount))
-  const scaleFactor = maxManaBet > 0 ? maxCoins / maxManaBet : 1
-
-  return (
-    <svg width={svgWidth} height={svgHeight}>
-      {data.map((item, index) => {
-        const coinsInStack = Math.round(item.total_amount * scaleFactor)
-        const isTopRow = index < 6 // First 6 months (Jan-Jun) are in the top row
-        const rowIndex = isTopRow ? index : index - 6 // Adjust index for each row
-        const xPosition = (svgWidth / 6) * rowIndex + spacing // X position of each stack
-        const yBasePosition = isTopRow ? rowSpacing : rowSpacing * 2 // Y base position for each row
-
-        return (
-          <g key={index}>
-            {/* Stack of coins */}
-            {Array.from({ length: coinsInStack }).map((_, coinIndex) => {
-              const yPosition = yBasePosition - (coinIndex * coinHeight + 30)
-              return (
-                <ellipse
-                  key={coinIndex}
-                  cx={xPosition}
-                  cy={yPosition}
-                  rx={coinWidth}
-                  ry={coinHeight}
-                  fill="gold" // Change color as needed
-                  stroke="#92400e"
-                  strokeWidth="1"
-                />
-              )
-            })}
-            {/* Month label */}
-            <text
-              x={xPosition - coinWidth}
-              y={yBasePosition}
-              fill="white"
-              fontSize="12"
-            >
-              {MONTHS[index]}
-            </text>
-          </g>
-        )
-      })}
-    </svg>
-  )
-}
-
-export const MONTHS = [
-  'Jan',
-  'Feb',
-  'Mar',
-  'Apr',
-  'May',
-  'June',
-  'July',
-  'Aug',
-  'Sept',
-  'Oct',
-  'Nov',
-  'Dec',
-]
-
-function getScaleColor(scaledNum: number) {
-  console.log(scaledNum)
-  if (scaledNum < 20) {
-    return '#22d3ee'
-  }
-  if (scaledNum < 40) {
-    return '#67e8f9'
-  }
-  if (scaledNum < 60) {
-    return '#a5f3fc'
-  }
-  if (scaledNum < 80) {
-    return '#cffafe'
-  } else {
-    return '#ecfeff'
-  }
 }

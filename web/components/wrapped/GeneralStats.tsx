@@ -194,21 +194,3 @@ export const MONTHS = [
   'Nov',
   'Dec',
 ]
-
-function getScaleColor(scaledNum: number) {
-  console.log(scaledNum)
-  if (scaledNum < 20) {
-    return '#22d3ee'
-  }
-  if (scaledNum < 40) {
-    return '#67e8f9'
-  }
-  if (scaledNum < 60) {
-    return '#a5f3fc'
-  }
-  if (scaledNum < 80) {
-    return '#cffafe'
-  } else {
-    return '#ecfeff'
-  }
-}

@@ -130,7 +130,6 @@ function Tracker(props: { currentPage: number; maxPages: number }) {
     <Row className="absolute left-0 right-0 top-0 opacity-40">
       <Row className="mx-auto w-full max-w-lg">
         {Array.from({ length: maxPages }).map((_, i) => {
-          console.log(i, currentPage, i == currentPage)
           return (
             <div
               key={i}

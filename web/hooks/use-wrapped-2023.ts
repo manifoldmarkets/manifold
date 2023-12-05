@@ -46,7 +46,6 @@ export function useMonthlyBets(userId: string) {
   >(undefined, `wrapped-2023-${userId}-monthly-bets`)
   useEffect(() => {
     getMonthlyBets(userId).then((data) => {
-      console.log('RES', data)
       setMonthlyBets((data as MonthlyBetsType[]) ?? [])
     })
   }, [userId])
@@ -67,7 +66,6 @@ export function useTotalProfit(userId: string) {
         // Handle the error appropriately
         setTotalProfit(null)
       } else {
-        console.log('data', data.data)
         setTotalProfit(data.data as number)
       }
     })
