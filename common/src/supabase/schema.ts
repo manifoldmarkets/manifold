@@ -3395,6 +3395,46 @@ export interface Database {
           user_id: string
         }[]
       }
+            get_user_portfolio_at_2023_end: {
+        Args: {
+          p_user_id: string
+        }
+        Returns: {
+          user_id: string
+          ts: string
+          investment_value: number
+          balance: number
+          total_deposits: number
+          loan_total: number
+          id: number
+        }[]
+      }
+      get_user_portfolio_at_2023_start: {
+        Args: {
+          p_user_id: string
+        }
+        Returns: {
+          user_id: string
+          ts: string
+          investment_value: number
+          balance: number
+          total_deposits: number
+          loan_total: number
+          id: number
+        }[]
+      }
+
+      get_monthly_bet_count_and_amount: {
+        Args: {
+          user_id_input: string
+        }
+        Returns: {
+          month: string
+          bet_count: number
+          total_amount: number
+        }[]
+      }
+
       get_open_limit_bets_with_contracts: {
         Args: {
           uid: string
