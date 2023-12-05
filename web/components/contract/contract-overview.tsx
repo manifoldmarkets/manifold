@@ -58,6 +58,7 @@ import toast from 'react-hot-toast'
 import { TbPencilPlus } from 'react-icons/tb'
 import { ChartAnnotation } from 'common/supabase/chart-annotations'
 import { useEvent } from 'web/hooks/use-event'
+import { Avatar } from 'web/components/widgets/avatar'
 
 export const ContractOverview = memo(
   (props: {
@@ -356,7 +357,15 @@ const ChartAnnotation = (props: {
   carouselRef: HTMLDivElement | null
 }) => {
   const { annotation, hovered, carouselRef, setHoveredAnnotation } = props
-  const { text, id, user_id, user_username, user_name } = annotation
+  const {
+    text,
+    user_avatar_url,
+    creator_avatar_url,
+    id,
+    user_id,
+    user_username,
+    user_name,
+  } = annotation
   const [open, setOpen] = useState(false)
   const { creator_username, event_time, creator_id, creator_name } = annotation
   const ref = useRef<HTMLDivElement>(null)
@@ -398,8 +407,15 @@ const ChartAnnotation = (props: {
       onMouseLeave={() => setHoveredAnnotation?.(null)}
       onClick={() => setOpen(true)}
     >
-      <Col className={'w-[175px]'}>
+      <Col className={'w-[175px] gap-1'}>
         <Row className={'items-center justify-between'}>
+          <Avatar
+            avatarUrl={user_avatar_url ?? creator_avatar_url}
+            username={user_username ?? creator_username}
+            noLink={true}
+            size={'2xs'}
+            className={'mr-1'}
+          />
           <UserLink
             noLink={true}
             user={{
