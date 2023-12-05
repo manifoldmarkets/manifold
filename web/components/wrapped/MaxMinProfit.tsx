@@ -122,7 +122,7 @@ export function MaxMinProfit(props: {
 
 function BettingDirection(props: { profit: ProfitType | null | undefined }) {
   if (!props.profit) {
-    return <></>
+    return <> </>
   }
   const { hasYesShares, hasNoShares } = props.profit
   return (
@@ -132,7 +132,7 @@ function BettingDirection(props: { profit: ProfitType | null | undefined }) {
       ) : hasNoShares ? (
         <span className="text-red-300"> NO </span>
       ) : (
-        <></>
+        <> </>
       )}
     </>
   )
