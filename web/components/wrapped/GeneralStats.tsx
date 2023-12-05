@@ -60,15 +60,15 @@ export function GeneralStats(props: {
     return <>An error occured</>
   }
 
-  const monthWithMaxBets = monthlyBets.reduce((max, current) => {
+  const monthWithMostBet = monthlyBets.reduce((max, current) => {
     return current.total_amount > max.total_amount ? current : max
   })
   // Create a date object using the UTC constructor to prevent timezone offsets from affecting the month
-  const dateOfMaxBets = new Date(monthWithMaxBets.month)
-  dateOfMaxBets.setDate(dateOfMaxBets.getDate() + 1)
+  const dateOfMostBet = new Date(monthWithMostBet.month)
+  dateOfMostBet.setDate(dateOfMostBet.getDate() + 1)
 
   // Now you have the month with the highest number of bets
-  const monthName = dateOfMaxBets.toLocaleString('default', {
+  const monthName = dateOfMostBet.toLocaleString('default', {
     month: 'long',
     timeZone: 'UTC',
   })
@@ -105,7 +105,7 @@ export function GeneralStats(props: {
           </span>
           , spending{' '}
           <span className="font-bold text-green-300">
-            {formatMoney(monthWithMaxBets.total_amount)}
+            {formatMoney(monthWithMostBet.total_amount)}
           </span>{' '}
           mana!
         </div>
