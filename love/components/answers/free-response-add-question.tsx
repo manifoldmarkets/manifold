@@ -32,10 +32,7 @@ export function AddQuestionButton(props: {
   )
   return (
     <>
-      <Button
-        color={isFirstQuestion ? 'indigo' : 'gray-outline'}
-        onClick={() => setOpenModal(true)}
-      >
+      <Button color={'gray-outline'} onClick={() => setOpenModal(true)}>
         <Row className="items-center gap-1">
           <PlusIcon className="h-4 w-4" />
           Add Free Response

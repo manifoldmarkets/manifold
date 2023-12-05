@@ -8,6 +8,7 @@ import {
   getRightmostVisibleDate,
   formatPct,
   ZoomParams,
+  PointerMode,
 } from '../helpers'
 import { SingleValueHistoryChart } from '../generic-charts'
 import { YES_GRAPH_COLOR } from 'common/envs/constants'
@@ -21,6 +22,9 @@ export const BinaryContractChart = (props: {
   zoomParams?: ZoomParams
   percentBounds?: { max?: number; min?: number }
   showZoomer?: boolean
+  hoveredAnnotation?: number | null
+  setHoveredAnnotation?: (id: number | null) => void
+  pointerMode?: PointerMode
 }) => {
   const {
     contract,
@@ -30,6 +34,9 @@ export const BinaryContractChart = (props: {
     percentBounds,
     betPoints,
     showZoomer,
+    hoveredAnnotation,
+    setHoveredAnnotation,
+    pointerMode = 'zoom',
   } = props
 
   const start = first(betPoints)?.x ?? contract.createdTime
@@ -68,6 +75,10 @@ export const BinaryContractChart = (props: {
           formatY={formatPct}
         />
       )}
+      contractId={contract.id}
+      hoveredAnnotation={hoveredAnnotation}
+      setHoveredAnnotation={setHoveredAnnotation}
+      pointerMode={pointerMode}
     />
   )
 }

@@ -17,11 +17,13 @@ export const ConfettiOnDemand = () => {
     return () => window.removeEventListener('keydown', handler)
   }, [])
 
-  return (
-    <>
-      {Array.from({ length: confettiCount }).map((_, i) => (
-        <FullscreenConfetti key={i} />
-      ))}
-    </>
-  )
+  return <NConfettis count={confettiCount} />
 }
+
+export const NConfettis = (props: { count: number }) => (
+  <>
+    {Array.from({ length: props.count }).map((_, i) => (
+      <FullscreenConfetti key={i} />
+    ))}
+  </>
+)

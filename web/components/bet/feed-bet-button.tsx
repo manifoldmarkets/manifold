@@ -59,6 +59,7 @@ function FeedBetButton(props: {
         onClick={(e) => {
           e.preventDefault()
           e.stopPropagation()
+          track('bet intent', { location: 'feed card' })
           if (!user) {
             firebaseLogin()
             return

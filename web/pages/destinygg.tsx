@@ -46,7 +46,8 @@ export default function DestinyLandingPage(props: {
 }) {
   const { subCount, trendingContracts } = props
 
-  useSaveReferral()
+  const user = useUser()
+  useSaveReferral(user)
 
   const [destinyUsername, setDestinyUsername] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -54,7 +55,6 @@ export default function DestinyLandingPage(props: {
   const [error, setError] = useState('')
 
   const privateUser = usePrivateUser()
-  const user = useUser()
 
   const destinySubClaimed = privateUser?.destinySub2Claimed ?? false
 

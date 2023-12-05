@@ -99,7 +99,8 @@ function FoundDashboardPage(props: {
   slug: string
   editByDefault: boolean
 }) {
-  useSaveReferral()
+  const user = useUser()
+  useSaveReferral(user)
 
   const { initialDashboard, slug, editByDefault, previews } = props
   const fetchedDashboard = useDashboardFromSlug(slug)
@@ -125,7 +126,6 @@ function FoundDashboardPage(props: {
   const updateTopics = (newTopics: string[]) =>
     setDashboard({ ...dashboard, topics: newTopics })
 
-  const user = useUser()
   const isCreator = dashboard.creatorId === user?.id
   const isOnlyMod =
     !isCreator && user && (isAdminId(user.id) || isModId(user.id))

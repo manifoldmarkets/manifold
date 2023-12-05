@@ -46,7 +46,8 @@ export default function Home(props: {
   const isClient = useIsClient()
 
   useRedirectIfSignedOut()
-  useSaveReferral()
+  const user = useUser()
+  useSaveReferral(user)
 
   if (!isClient)
     return (

@@ -158,6 +158,7 @@ export function ContractPageContent(props: ContractParams) {
     totalPositions,
     relatedContracts,
     historyData,
+    chartAnnotations,
   } = props
 
   const contract =
@@ -449,6 +450,7 @@ export function ContractPageContent(props: ContractParams) {
                 }
                 setShowResolver={setShowResolver}
                 onAnswerCommentClick={setReplyTo}
+                chartAnnotations={chartAnnotations}
               />
             </Col>
             {showReview && user && (

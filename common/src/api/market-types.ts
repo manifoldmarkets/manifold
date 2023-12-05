@@ -158,10 +158,19 @@ export function toFullMarket(contract: Contract): FullMarket {
         )
       : undefined
 
+  const bountyValues =
+    outcomeType === 'BOUNTIED_QUESTION'
+      ? {
+          totalBounty: contract.totalBounty,
+          bountyLeft: contract.bountyLeft,
+        }
+      : {}
+
   const { description, coverImageUrl, groupSlugs } = contract
 
   return {
     ...liteMarket,
+    ...bountyValues,
     answers,
     description,
     coverImageUrl,

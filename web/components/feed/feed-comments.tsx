@@ -7,6 +7,7 @@ import {
   FlagIcon,
   LinkIcon,
   PencilIcon,
+  PlusCircleIcon,
 } from '@heroicons/react/outline'
 import {
   DotsHorizontalIcon,
@@ -39,7 +40,7 @@ import { useAdminOrTrusted } from 'web/hooks/use-admin'
 import { useEvent } from 'web/hooks/use-event'
 import { useIsVisible } from 'web/hooks/use-is-visible'
 import { isBlocked, usePrivateUser, useUser } from 'web/hooks/use-user'
-import { api, hideComment } from 'web/lib/firebase/api'
+import { api, createChartAnnotation, hideComment } from 'web/lib/firebase/api'
 import { firebaseLogin, User } from 'web/lib/firebase/users'
 import TriangleDownFillIcon from 'web/lib/icons/triangle-down-fill-icon.svg'
 import TriangleFillIcon from 'web/lib/icons/triangle-fill-icon.svg'
@@ -528,6 +529,24 @@ export function DotMenu(props: {
               icon: <PencilIcon className="h-5 w-5" />,
               onClick: () => setEditingComment(true),
             },
+          isContractCreator && {
+            name: 'Add to chart',
+            icon: <PlusCircleIcon className="h-5 w-5 text-green-500" />,
+            onClick: async () => {
+              await toast.promise(
+                createChartAnnotation({
+                  eventTime: comment.createdTime,
+                  contractId: contract.id,
+                  commentId: comment.id,
+                }),
+                {
+                  loading: 'Adding to chart...',
+                  success: 'Added to chart!',
+                  error: 'Error adding to chart',
+                }
+              )
+            },
+          },
           (isMod || isContractCreator) && {
             name: comment.hidden ? 'Unhide' : 'Hide',
             icon: <EyeOffIcon className="h-5 w-5 text-red-500" />,
@@ -623,6 +642,7 @@ function CommentActions(props: {
       {user && contract.outcomeType === 'BINARY' && (
         <IconButton
           onClick={() => {
+            track('bet intent', { location: 'comment on contract' })
             setOutcome('YES')
             setShowBetModal(true)
           }}

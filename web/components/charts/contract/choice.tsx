@@ -12,6 +12,7 @@ import {
   formatPct,
   getEndDate,
   getRightmostVisibleDate,
+  PointerMode,
 } from '../helpers'
 import { MultiValueHistoryChart } from '../generic-charts'
 import { HistoryPoint } from 'common/chart'
@@ -113,6 +114,9 @@ export const ChoiceContractChart = (props: {
   showZoomer?: boolean
   highlightAnswerId?: string
   selectedAnswerIds: string[]
+  hoveredAnnotation?: number | null
+  setHoveredAnnotation?: (id: number | null) => void
+  pointerMode?: PointerMode
 }) => {
   const {
     contract,
@@ -123,6 +127,9 @@ export const ChoiceContractChart = (props: {
     showZoomer,
     highlightAnswerId,
     selectedAnswerIds,
+    pointerMode,
+    setHoveredAnnotation,
+    hoveredAnnotation,
   } = props
 
   const start = contract.createdTime
@@ -185,6 +192,10 @@ export const ChoiceContractChart = (props: {
           ttProps={props}
         />
       )}
+      contractId={contract.id}
+      hoveredAnnotation={hoveredAnnotation}
+      setHoveredAnnotation={setHoveredAnnotation}
+      pointerMode={pointerMode}
     />
   )
 }

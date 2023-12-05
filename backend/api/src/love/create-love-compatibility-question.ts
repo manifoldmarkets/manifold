@@ -5,7 +5,7 @@ import { z } from 'zod'
 import { APIError, authEndpoint, validate } from '../helpers'
 
 const bodySchema = z.object({
-  question: z.string().min(1).max(MAX_QUESTION_LENGTH),
+  question: z.string().min(1).max(MAX_QUESTION_LENGTH * 2),
   options: z.record(z.string(), z.number()),
 })
 

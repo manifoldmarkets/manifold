@@ -30,9 +30,9 @@ import { ENV_CONFIG } from 'common/envs/constants'
 import { CopyLinkRow } from 'web/components/buttons/copy-link-button'
 
 export default function TwitchLandingPage() {
-  useSaveReferral()
-
   const user = useUser()
+  useSaveReferral(user)
+
   const privateUser = usePrivateUser()
 
   return (
