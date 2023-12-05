@@ -1,3 +1,5 @@
+drop function get_monthly_bet_count_and_amount (user_id_input text);
+
 create
 or replace function get_monthly_bet_count_and_amount (user_id_input text) returns table (
   month TIMESTAMPTZ,
@@ -9,14 +11,15 @@ BEGIN
     SELECT
         date_trunc('month', created_time) AS month,
         COUNT(bet_id) AS bet_count,
-        SUM(amount) AS total_amount  -- Add this line to calculate the sum of amounts
+        SUM(ABS(amount)) AS total_amount  -- Add this line to calculate the sum of amounts
     FROM
         contract_bets
     WHERE
         user_id = user_id_input AND
         created_time >= '2023-01-01' AND
         created_time <= '2024-01-01' AND
-        is_ante = false
+        is_ante = false AND
+        is_redemption = false
     GROUP BY
         date_trunc('month', created_time)
     ORDER BY

@@ -67,13 +67,18 @@ export function MaxMinProfit(props: {
   return (
     <>
       <div className="relative mx-auto my-auto">
-        <Row className="h-full max-w-lg">
+        <Row
+          className={clsx(
+            'h-full max-w-lg',
+            animateOut ? 'animate-fade-out' : ''
+          )}
+        >
           <div className="grow-y w-7 bg-gradient-to-b from-green-300 via-gray-300 to-red-300" />
           <Col className="grow-y justify-between">
             <div
               className={clsx(
                 'px-6 text-2xl text-green-300',
-                animateOut ? 'animate-fade-out' : 'animate-fade-in'
+                'animate-fade-in'
               )}
             >
               {formatMoney(maxProfit?.profit ?? 0)}
@@ -81,11 +86,7 @@ export function MaxMinProfit(props: {
             <div
               className={clsx(
                 'px-6 text-2xl text-red-300',
-                animateIn2
-                  ? animateOut
-                    ? 'animate-fade-out'
-                    : 'animate-fade-in'
-                  : 'invisible'
+                animateIn2 ? 'animate-fade-in' : 'invisible'
               )}
             >
               {formatMoney(minProfit?.profit ?? 0)}
