@@ -358,7 +358,7 @@ const ChartAnnotation = (props: {
               name: creator_name,
             }}
             hideBadge={true}
-            className={'grow truncate'}
+            className={'grow truncate text-xs'}
           />
           <span className={'text-ink-500 shrink-0 text-xs'}>
             {new Date(event_time).toLocaleDateString('en-US', {
@@ -367,7 +367,7 @@ const ChartAnnotation = (props: {
             })}
           </span>
         </Row>
-        <div className=" line-clamp-1 text-xs">{text}</div>
+        <div className=" line-clamp-1 text-sm">{text}</div>
       </Col>
       <ReadChartAnnotationModal
         open={open}
