@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { db } from '../lib/supabase/db'
 import { usePersistentLocalState } from './use-persistent-local-state'
+import { Row as rowFor } from 'common/supabase/utils'
 
 export type MonthlyBetsType = {
   month: string
@@ -58,22 +59,48 @@ export function useTotalProfit(userId: string) {
     number | undefined | null
   >(undefined, `wrapped-2023-${userId}-total-profit`)
   useEffect(() => {
-    db.rpc('calculate_user_profit_for_2023', {
-      user_id_input: userId,
-    }).then((data) => {
-      if (data.error || !data.data) {
-        console.error('Error fetching total profit:', data.error)
-        // Handle the error appropriately
-        setTotalProfit(null)
-      } else {
-        setTotalProfit(data.data as number)
-      }
+    getTotalProfit(userId).then((data) => {
+      setTotalProfit(data)
     })
   }, [userId])
 
   return totalProfit
 }
 
+async function getTotalProfit(userId: string) {
+  const { data: yearStart, error: error1 } = await db.rpc(
+    'get_user_portfolio_at_2023_start',
+    {
+      p_user_id: userId,
+    }
+  )
+  const { data: yearEnd, error: error2 } = await db.rpc(
+    'get_user_portfolio_at_2023_end',
+    {
+      p_user_id: userId,
+    }
+  )
+
+  console.log(yearStart, yearEnd)
+  if (error1 || error2) {
+    console.error(error1 ?? error2)
+    return null
+  }
+  const yearStartRow = (yearStart as any)[0] as rowFor<'user_portfolio_history'>
+  const yearEndRow = (yearEnd as any)[0] as rowFor<'user_portfolio_history'>
+
+  return calculateTotalProfit(yearEndRow) - calculateTotalProfit(yearStartRow)
+}
+
+function calculateTotalProfit(
+  portfolioHistoryRow: rowFor<'user_portfolio_history'>
+) {
+  return (
+    (portfolioHistoryRow.investment_value ?? 0) +
+    (portfolioHistoryRow.balance ?? 0) -
+    (portfolioHistoryRow.total_deposits ?? 0)
+  )
+}
 async function getMaxProfitContractMetric(userId: string) {
   const { data, error } = await db
     .from('user_contract_metrics')

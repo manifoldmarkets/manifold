@@ -1,4 +1,3 @@
-
 create
 or replace function get_monthly_bet_count_and_amount (user_id_input text) returns table (
   month TIMESTAMPTZ,
@@ -25,18 +24,72 @@ BEGIN
 END;
 $$ language plpgsql;
 
+drop function get_user_portfolio_at_2023_start (p_user_id text);
 
-CREATE OR REPLACE FUNCTION calculate_user_profit_for_2023(user_id_input TEXT)
-RETURNS NUMERIC AS $$
-DECLARE
-    total_profit NUMERIC;
+create
+or replace function get_user_portfolio_at_2023_start (p_user_id text) returns table (
+  -- Add the column definitions here. For example:
+  user_id text,
+  ts timestamp without time zone,
+  investment_value numeric,
+  balance numeric,
+  total_deposits numeric,
+  loan_total numeric,
+  id bigint
+  -- Add other columns as per your 'user_portfolio_history' table
+) as $$
 BEGIN
-    SELECT SUM(profit) INTO total_profit
-    FROM public.user_contract_metrics
-    WHERE user_id = user_id_input
-    AND fs_updated_time >= '2023-01-01'::TIMESTAMPTZ
-    AND fs_updated_time < '2024-01-01'::TIMESTAMPTZ;
-
-    RETURN COALESCE(total_profit, 0); -- Return 0 if the sum is NULL
+    RETURN QUERY
+    (SELECT *
+     FROM user_portfolio_history
+     WHERE user_portfolio_history.user_id = p_user_id
+       AND user_portfolio_history.ts < '2023-01-02'
+       AND user_portfolio_history.ts > '2022-12-31'
+     ORDER BY ABS(EXTRACT(EPOCH FROM (user_portfolio_history.ts - '2023-01-01'::date)))
+     LIMIT 1)
+    UNION ALL
+    -- Query for users who created their portfolio after February 2023
+    (SELECT *
+     FROM user_portfolio_history
+     WHERE user_portfolio_history.user_id = p_user_id
+       AND user_portfolio_history.ts >= '2023-01-02'
+     ORDER BY user_portfolio_history.ts
+     LIMIT 1)
+    LIMIT 1;
 END;
-$$ LANGUAGE plpgsql;
+$$ language plpgsql;
+
+drop function get_user_portfolio_at_2023_end (p_user_id text);
+
+create
+or replace function get_user_portfolio_at_2023_end (p_user_id text) returns table (
+  -- Add the column definitions here. For example:
+  user_id text,
+  ts timestamp without time zone,
+  investment_value numeric,
+  balance numeric,
+  total_deposits numeric,
+  loan_total numeric,
+  id bigint
+  -- Add other columns as per your 'user_portfolio_history' table
+) as $$
+BEGIN
+    RETURN QUERY
+    (SELECT *
+     FROM user_portfolio_history
+     WHERE user_portfolio_history.user_id = p_user_id
+   AND user_portfolio_history.ts < '2024-01-02'
+   AND user_portfolio_history.ts > '2023-12-31'
+ ORDER BY ABS(EXTRACT(EPOCH FROM (user_portfolio_history.ts - '2023-01-01'::date)))
+     LIMIT 1)
+    UNION ALL
+    -- Query for users who created their portfolio after February 2023
+    (SELECT *
+     FROM user_portfolio_history
+     WHERE user_portfolio_history.user_id = p_user_id
+   AND user_portfolio_history.ts < '2024-01-01'
+     ORDER BY user_portfolio_history.ts desc
+     LIMIT 1)
+    LIMIT 1;
+END;
+$$ language plpgsql;
