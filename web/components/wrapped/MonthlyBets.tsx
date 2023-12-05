@@ -192,7 +192,7 @@ export const CircleGraph = (props: {
             dy="0.35em"
             textAnchor="middle"
             fontSize="14"
-            fill="rgb(var(--color-ink-700)" // Change text color if necessary
+            fill="#a28ea4"
             transform={`rotate(${index * (360 / numMonths)} ${x} ${y})`} // This will rotate the text to be upright
           >
             {MONTHS[index]}
