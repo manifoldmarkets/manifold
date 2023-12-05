@@ -1,6 +1,5 @@
 import { useLovers } from 'love/hooks/use-lovers'
 import { useMatches } from 'love/hooks/use-matches'
-import { areGenderCompatible } from 'love/lib/util/gender'
 import { Col } from 'web/components/layout/col'
 import { Carousel } from 'web/components/widgets/carousel'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
@@ -13,8 +12,9 @@ import { filterDefined } from 'common/util/array'
 import { Row } from 'web/components/layout/row'
 import {
   areAgeCompatible,
+  areGenderCompatible,
   areLocationCompatible,
-} from 'love/lib/util/profile-util'
+} from 'love/lib/util/compatibility-util'
 
 export const Matches = (props: {
   profileLover: Lover
