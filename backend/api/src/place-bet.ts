@@ -27,7 +27,7 @@ import { filterDefined } from 'common/util/array'
 import { createLimitBetCanceledNotification } from 'shared/create-notification'
 import { Answer } from 'common/answer'
 import { CpmmState, getCpmmProbability } from 'common/calculate-cpmm'
-import { ValidatedAPIParams } from 'common/api-schema'
+import { ValidatedAPIParams } from 'common/api/schema'
 
 export const placeBet = typedEndpoint('bet', async (props, auth, { log }) => {
   const isApi = auth.creds.kind === 'key'

@@ -1,5 +1,5 @@
 import { auth } from './users'
-import { APIError, getApiUrl } from 'common/api'
+import { APIError, getApiUrl } from 'common/api/utils'
 import { JSONContent } from '@tiptap/core'
 import { Group, GroupRole, PrivacyStatusType } from 'common/group'
 import { HideCommentReq } from 'web/pages/api/v0/hide-comment'
@@ -14,9 +14,9 @@ import { ReportProps } from 'common/report'
 import { BaseDashboard, Dashboard, DashboardItem } from 'common/dashboard'
 import { Bet } from 'common/bet'
 import { LinkPreview } from 'common/link-preview'
-import { API, APIName, APIParams, APIResponse } from 'common/api-schema'
+import { API, APIName, APIParams, APIResponse } from 'common/api/schema'
 
-export { APIError } from 'common/api'
+export { APIError } from 'common/api/utils'
 
 export async function call(url: string, method: 'POST' | 'GET', params?: any) {
   const user = auth.currentUser

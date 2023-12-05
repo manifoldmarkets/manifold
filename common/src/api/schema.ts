@@ -1,14 +1,14 @@
 import { z } from 'zod'
-import { MAX_ID_LENGTH } from './group'
+import { MAX_ID_LENGTH } from '../group'
 import {
   createMarketProps,
   resolveMarketProps,
   type LiteMarket,
-} from './api-market-types'
+} from './market-types'
 import type { Comment } from 'common/comment'
-import type { User } from './user'
-import { CandidateBet } from './new-bet'
-import { LimitBet } from './bet'
+import type { User } from 'common/user'
+import { CandidateBet } from 'common/new-bet'
+import { LimitBet } from 'common/bet'
 import { contentSchema } from 'common/api/zod-types'
 
 type APIGenericSchema = {

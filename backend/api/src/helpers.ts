@@ -3,9 +3,9 @@ import { z } from 'zod'
 import { Request, Response, NextFunction } from 'express'
 
 import { PrivateUser } from 'common/user'
-import { APIError } from 'common/api'
+import { APIError } from 'common//api/utils'
 import { gLog, GCPLog, log } from 'shared/utils'
-export { APIError } from 'common/api'
+export { APIError } from 'common//api/utils'
 import * as crypto from 'crypto'
 import {
   API,
@@ -14,7 +14,7 @@ import {
   APIResponse,
   APISchema,
   ValidatedAPIParams,
-} from 'common/api-schema'
+} from 'common/api/schema'
 
 export type Json = Record<string, unknown> | Json[]
 export type Handler<T> = (req: Request) => Promise<T>

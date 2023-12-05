@@ -6,14 +6,14 @@ import { APIError, typedEndpoint, validate } from './helpers'
 import { resolveMarketHelper } from 'shared/resolve-market-helpers'
 import { Answer } from 'common/answer'
 import { throwErrorIfNotMod } from 'shared/helpers/auth'
-import { ValidatedAPIParams } from 'common/api-schema'
+import { ValidatedAPIParams } from 'common/api/schema'
 import {
   resolveBinarySchema,
   resolveFRSchema,
   resolveMultiSchema,
   resolveNumericSchema,
   resolvePseudoNumericSchema,
-} from 'common/api-market-types'
+} from 'common/api/market-types'
 
 export const resolveMarket = typedEndpoint(
   'resolveMarket',

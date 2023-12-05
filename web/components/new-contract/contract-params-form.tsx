@@ -64,7 +64,7 @@ import { VisibilityTheme } from 'web/pages/create'
 import { getContractWithFields } from 'web/lib/supabase/contracts'
 import { filterDefined } from 'common/util/array'
 import { TopicTag } from 'web/components/topics/topic-tag'
-import { LiteMarket } from 'common/api-market-types'
+import { LiteMarket } from 'common/api/market-types'
 
 export function ContractParamsForm(props: {
   creator: User

@@ -1,4 +1,4 @@
-import { APIName, API } from 'common/api-schema'
+import { APIName, API } from 'common/api/schema'
 import { NextApiRequest, NextApiResponse } from 'next'
 import { applyCorsHeaders } from './cors'
 import { fetchBackend, forwardResponse } from './proxy'

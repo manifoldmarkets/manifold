@@ -1,6 +1,6 @@
 import { SupabaseClient, createSupabaseClient } from 'shared/supabase/init'
 import { run, selectJson } from 'common/supabase/utils'
-import { toLiteMarket } from 'common/api-market-types'
+import { toLiteMarket } from 'common/api/market-types'
 import { typedEndpoint } from '../helpers'
 
 // mqp: this pagination approach is technically incorrect if multiple contracts

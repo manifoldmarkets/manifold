@@ -1,4 +1,4 @@
-import { FullMarket } from 'common/api-market-types'
+import { FullMarket } from 'common/api/market-types'
 import { randomString } from 'common/util/random'
 import { DAY_MS } from 'common/util/time'
 import * as console from 'console'

@@ -10,8 +10,7 @@ import {
   CORS_ORIGIN_CHARITY,
 } from 'common/envs/constants'
 import { log } from 'shared/utils'
-import { APIError } from 'common/api'
-
+import { APIError } from 'common/api/utils'
 import { health } from './health'
 import { transact } from './transact'
 import { changeuserinfo } from './change-user-info'
@@ -109,7 +108,7 @@ import { clearLoverPhoto } from './love/clear-lover-photo'
 import { editanswercpmm } from 'api/edit-answer'
 import { createlovecompatibilityquestion } from 'api/love/create-love-compatibility-question'
 import { oncreatebet } from 'api/on-create-bet'
-import { API, type APIName } from 'common/api-schema'
+import { API, type APIName } from 'common/api/schema'
 
 import { markets } from 'api/v0/markets'
 

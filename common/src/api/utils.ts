@@ -1,4 +1,4 @@
-import { ENV_CONFIG } from './envs/constants'
+import { ENV_CONFIG } from 'common/envs/constants'
 
 type ErrorCode =
   | 400 // your input is bad (like zod is mad)

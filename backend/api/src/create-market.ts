@@ -38,7 +38,7 @@ import {
 import { addGroupToContract } from 'shared/update-group-contracts-internal'
 import { generateContractEmbeddings } from 'shared/supabase/contracts'
 import { manifoldLoveUserId } from 'common/love/constants'
-import { ValidatedAPIParams } from 'common/api-schema'
+import { ValidatedAPIParams } from 'common/api/schema'
 import {
   createBinarySchema,
   createBountySchema,
@@ -46,7 +46,7 @@ import {
   createNumericSchema,
   createPollSchema,
   toLiteMarket,
-} from 'common/api-market-types'
+} from 'common/api/market-types'
 import { z } from 'zod'
 
 type Body = ValidatedAPIParams<'createMarket'>

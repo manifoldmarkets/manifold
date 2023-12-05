@@ -1,4 +1,4 @@
-import { FullMarket } from 'common/api-market-types'
+import { FullMarket } from 'common/api/market-types'
 import { ContractMetrics } from 'common/calculate-metrics'
 import { sendThreadEmbed } from 'discord-bot/helpers'
 
