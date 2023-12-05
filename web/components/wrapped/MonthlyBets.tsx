@@ -60,6 +60,7 @@ export function MonthlyBets(props: {
     return <>An error occured</>
   }
 
+  console.log(monthlyBets)
   const monthWithMaxBets = monthlyBets.reduce((max, current) => {
     return current.bet_count > max.bet_count ? current : max
   })
