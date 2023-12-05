@@ -7,7 +7,7 @@ import { CopyLinkOrShareButton } from '../buttons/copy-link-button'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { Button } from '../buttons/button'
 import { copyToClipboard } from 'web/lib/util/copy'
-import { LinkIcon } from '@heroicons/react/solid'
+import { HomeIcon, LinkIcon } from '@heroicons/react/solid'
 import { Col } from '../layout/col'
 import { VscDebugRestart } from 'react-icons/vsc'
 import toast, { Toaster } from 'react-hot-toast'
@@ -61,6 +61,17 @@ export function TheEnd(props: {
             Restart
           </Row>
         </Button>
+        <Link
+          onClick={(e) => {
+            // e.preventDefault()
+            e.stopPropagation()
+          }}
+          href="/home"
+          className="font-md z-50 flex flex-row items-center justify-center gap-1 rounded-md px-4 py-2 text-center text-sm ring-inset transition-colors hover:text-pink-400 hover:underline disabled:cursor-not-allowed"
+        >
+          <HomeIcon className={clsx('h-5 w-5')} aria-hidden="true" />
+          Back to Home
+        </Link>
       </Col>
       <NavButtons goToPrevPage={goToPrevPage} />
     </>
