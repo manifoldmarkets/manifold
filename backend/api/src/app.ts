@@ -109,8 +109,7 @@ import { editanswercpmm } from 'api/edit-answer'
 import { createlovecompatibilityquestion } from 'api/love/create-love-compatibility-question'
 import { oncreatebet } from 'api/on-create-bet'
 import { API, type APIName } from 'common/api/schema'
-
-import { markets } from 'api/v0/markets'
+import { markets } from 'api/markets'
 import { createchartannotation } from 'api/create-chart-annotation'
 import { deletechartannotation } from 'api/delete-chart-annotation'
 
