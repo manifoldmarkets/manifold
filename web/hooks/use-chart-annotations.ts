@@ -1,7 +1,14 @@
 import { db } from 'web/lib/supabase/db'
 import { useSubscription } from 'web/lib/supabase/realtime/use-subscription'
-import { getChartAnnotations } from 'common/supabase/chart-annotations'
+import {
+  ChartAnnotation,
+  getChartAnnotations,
+} from 'common/supabase/chart-annotations'
 import { orderBy } from 'lodash'
+import { useEffect, useState } from 'react'
+import { PointerMode } from 'web/components/charts/helpers'
+import { useUser } from 'web/hooks/use-user'
+import { Contract } from 'common/contract'
 
 export const useChartAnnotations = (contractId: string) => {
   const { rows: annotations } = useSubscription(
@@ -11,4 +18,40 @@ export const useChartAnnotations = (contractId: string) => {
   )
 
   return orderBy(annotations, (a) => a.event_time, 'asc')
+}
+
+export const useAnnotateChartTools = (
+  contract: Contract,
+  staticChartAnnotations: ChartAnnotation[]
+) => {
+  const [pointerMode, setPointerMode] = useState<PointerMode>('zoom')
+  const [hoveredAnnotation, setHoveredAnnotation] = useState<number | null>(
+    null
+  )
+  const user = useUser()
+  const chartAnnotations =
+    useChartAnnotations(contract.id) ?? staticChartAnnotations
+  useEffect(() => {
+    if (pointerMode === 'annotate') return
+
+    if (hoveredAnnotation !== null) {
+      setPointerMode('examine')
+    } else {
+      setPointerMode('zoom')
+    }
+  }, [hoveredAnnotation])
+
+  useEffect(() => {
+    if (pointerMode === 'annotate') setPointerMode('zoom')
+  }, [chartAnnotations.length])
+
+  const enableAdd = user?.id === contract.creatorId
+  return {
+    pointerMode,
+    setPointerMode,
+    hoveredAnnotation,
+    setHoveredAnnotation,
+    chartAnnotations,
+    enableAdd,
+  }
 }

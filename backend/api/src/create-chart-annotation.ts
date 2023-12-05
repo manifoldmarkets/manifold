@@ -20,6 +20,7 @@ const bodySchema = z
     commentId: z.string().optional(),
     thumbnailUrl: z.string().optional(),
     externalUrl: z.string().optional(),
+    answerId: z.string().max(MAX_ANSWER_LENGTH).optional(),
   })
   .strict()
 
@@ -31,6 +32,7 @@ export const createchartannotation = authEndpoint(async (req, auth, log) => {
     externalUrl,
     thumbnailUrl: passedThumbnailUrl,
     eventTime,
+    answerId,
   } = validate(bodySchema, req.body)
 
   const contract = await getContractSupabase(contractId)
@@ -64,8 +66,8 @@ export const createchartannotation = authEndpoint(async (req, auth, log) => {
     `
     insert into chart_annotations 
         (contract_id, event_time, text, comment_id, external_url, thumbnail_url,
-         creator_id, creator_name, creator_username, creator_avatar_url)
-        values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+         creator_id, creator_name, creator_username, creator_avatar_url, answer_id)
+        values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
     returning id
         `,
     [
@@ -79,6 +81,7 @@ export const createchartannotation = authEndpoint(async (req, auth, log) => {
       creator.name,
       creator.username,
       creator.avatarUrl,
+      answerId,
     ]
   )
 

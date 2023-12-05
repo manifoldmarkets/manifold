@@ -135,6 +135,7 @@ export interface Database {
       chart_annotations: {
         Row: {
           comment_id: string | null
+          answer_id: string | null
           contract_id: string
           created_time: string
           creator_avatar_url: string
@@ -151,6 +152,7 @@ export interface Database {
         }
         Insert: {
           comment_id?: string | null
+          answer_id?: string | null
           contract_id: string
           created_time?: string
           creator_avatar_url: string
@@ -167,6 +169,7 @@ export interface Database {
         }
         Update: {
           comment_id?: string | null
+          answer_id?: string | null
           contract_id?: string
           created_time?: string
           creator_avatar_url?: string

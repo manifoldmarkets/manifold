@@ -12,6 +12,7 @@ create table if not exists
     down_votes integer not null default 0,
 
     comment_id text null,
+    answer_id text null,
     thumbnail_url text null,
     external_url text null,
     text text null

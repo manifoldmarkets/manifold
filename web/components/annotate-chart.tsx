@@ -22,8 +22,9 @@ export const AnnotateChartModal = (props: {
   setOpen: (open: boolean) => void
   atTime: number
   contractId: string
+  answerId?: string
 }) => {
-  const { atTime, contractId, open, setOpen } = props
+  const { atTime, answerId, contractId, open, setOpen } = props
   const [note, setNote] = useState('')
   const [loading, setLoading] = useState(false)
   return (
@@ -62,6 +63,7 @@ export const AnnotateChartModal = (props: {
                 contractId,
                 text: note,
                 eventTime: atTime,
+                answerId,
               })
               setLoading(false)
               setOpen(false)
