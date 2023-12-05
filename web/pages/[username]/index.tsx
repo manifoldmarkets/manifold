@@ -370,7 +370,7 @@ function UserProfile(props: {
             ]}
           />
         </Col>
-        {isCurrentUser && (
+        {isCurrentUser && false && (
           <Row className="fixed bottom-16 left-0 right-0 max-w-[1440px] select-none justify-end sm:bottom-8">
             <Link
               href={`/${user.username}/wrapped2023`}
