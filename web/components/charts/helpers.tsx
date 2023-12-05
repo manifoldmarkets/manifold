@@ -236,7 +236,7 @@ export const SVGChart = <X, TT extends { x: number; y: number }>(props: {
   pointerMode?: PointerMode
   onClick?: (x: number, y: number) => void
   xScale?: ScaleTime<number, number>
-  yAtX?: (x: number, answerId?: string | null) => number
+  yAtTime?: (time: number, answerId?: string | null) => number
   y0?: number
   onHoverAnnotation?: (id: number | null) => void
   hoveredAnnotation?: number | null
@@ -258,14 +258,14 @@ export const SVGChart = <X, TT extends { x: number; y: number }>(props: {
     pointerMode = 'zoom',
     onClick,
     xScale,
-    yAtX,
+    yAtTime,
     chartAnnotations,
     y0,
     onHoverAnnotation,
     hoveredAnnotation,
   } = props
 
-  const showAnnotations = xScale && yAtX && y0 !== undefined
+  const showAnnotations = xScale && yAtTime && y0 !== undefined
   const onPointerMove = (ev: React.PointerEvent) => {
     if (ev.pointerType === 'mouse' || ev.pointerType === 'pen') {
       const [x, y] = pointer(ev)
@@ -380,7 +380,7 @@ export const SVGChart = <X, TT extends { x: number; y: number }>(props: {
                     key={a.id}
                     x={xScale(a.event_time)}
                     y0={y0}
-                    y1={yAtX(xScale(a.event_time).valueOf(), a.answer_id)}
+                    y1={yAtTime(a.event_time, a.answer_id)}
                     id={a.id}
                     onHover={(id) => onHoverAnnotation?.(id)}
                     onLeave={() => onHoverAnnotation?.(null)}
@@ -395,7 +395,7 @@ export const SVGChart = <X, TT extends { x: number; y: number }>(props: {
                     key={a.id}
                     x={xScale(a.event_time)}
                     y0={y0}
-                    y1={yAtX(xScale(a.event_time).valueOf(), a.answer_id)}
+                    y1={yAtTime(a.event_time, a.answer_id)}
                     id={a.id}
                     onHover={(id) => onHoverAnnotation?.(id)}
                     onLeave={() => onHoverAnnotation?.(null)}

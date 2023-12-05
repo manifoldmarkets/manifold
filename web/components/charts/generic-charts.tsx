@@ -83,19 +83,22 @@ const getTickValues = (min: number, max: number, n: number) => {
   return [theMin, ...range(1, n - 1).map((i) => theMin + step * i), theMax]
 }
 
-const dataAtTimeSelector = <Y, P extends Point<number, Y>>(
+const dataAtXSelector = <Y, P extends Point<number, Y>>(
   data: P[],
-  xScale: ScaleTime<number, number>
+  xScale?: ScaleTime<number, number>
 ) => {
   const bisect = bisector((p: P) => p.x)
   return (posX: number) => {
-    const x = xScale.invert(posX)
+    const x = xScale ? xScale.invert(posX) : posX
     const i = bisect.left(data, x)
     const prev = data[i - 1] as P | undefined
     const next = data[i] as P | undefined
     const nearest = data[bisect.center(data, x)]
     return { prev, next, nearest, x: posX }
   }
+}
+const dataAtTimeSelector = <Y, P extends Point<number, Y>>(data: P[]) => {
+  return dataAtXSelector(data)
 }
 
 export const DistributionChart = <P extends DistributionPoint>(props: {
@@ -225,7 +228,10 @@ export const MultiValueHistoryChart = <P extends HistoryPoint>(props: {
   )
 
   const selectors = mapValues(data, (data) =>
-    dataAtTimeSelector(data.points, xScale)
+    dataAtXSelector(data.points, xScale)
+  )
+  const timeSelectors = mapValues(data, (data) =>
+    dataAtTimeSelector(data.points)
   )
   const getMarkerPosition = useEvent((mouseX: number, mouseY: number) => {
     const valueY = yScale.invert(mouseY)
@@ -260,10 +266,10 @@ export const MultiValueHistoryChart = <P extends HistoryPoint>(props: {
   })
 
   const hoveringId = props.hoveringId ?? ttParams?.ans
-  const getYValueByAnswerIdAndX = (x: number, answerId: string) => {
-    const selector = selectors[answerId]
+  const getYValueByAnswerIdAndTime = (time: number, answerId: string) => {
+    const selector = timeSelectors[answerId]
     if (!selector) return null
-    const point = selector(x)
+    const point = selector(time)
     return point ? yScale(point.nearest.y) : null
   }
 
@@ -288,8 +294,8 @@ export const MultiValueHistoryChart = <P extends HistoryPoint>(props: {
         onHoverAnnotation={setHoveredAnnotation}
         y0={yScale(0)}
         xScale={xScale}
-        yAtX={(x, answerId) =>
-          answerId ? getYValueByAnswerIdAndX(x, answerId) ?? 1 : 1
+        yAtTime={(time, answerId) =>
+          answerId ? getYValueByAnswerIdAndTime(time, answerId) ?? 1 : 1
         }
       >
         {sortedLines.map(({ id, points, color }) => (
@@ -483,14 +489,22 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
     return { xAxis, yAxis }
   }, [w, h, yKind, xScale, yScale])
 
-  const selector = dataAtTimeSelector(points, xScale)
+  const xRangeSelector = dataAtXSelector(points, xScale)
+  const allTimeSelector = dataAtTimeSelector(data)
+
   const onMouseOver = useEvent((mouseX: number) => {
     setMouse(getMarkerPosition(mouseX, props.onMouseOver))
   })
 
   const getMarkerPosition = useEvent(
-    (mouseX: number, onMouseOver?: (p: P | undefined) => void) => {
-      const p = selector(mouseX) // Ensure the selector function is adapted to use the passed data
+    (
+      mouseX: number,
+      onMouseOver?: (p: P | undefined) => void,
+      useTimeSelector?: boolean
+    ) => {
+      const p = useTimeSelector
+        ? allTimeSelector(mouseX)
+        : xRangeSelector(mouseX)
       onMouseOver?.(p.prev)
       if (p.prev) {
         const x0 = xScale(p.prev.x)
@@ -537,7 +551,7 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
         onClick={onClick}
         xScale={xScale}
         y0={py0}
-        yAtX={(x: number) => getMarkerPosition(x)?.y ?? 0}
+        yAtTime={(x: number) => getMarkerPosition(x, undefined, true)?.y ?? 0}
         chartAnnotations={chartAnnotations}
         hoveredAnnotation={hoveredAnnotation}
         onHoverAnnotation={setHoveredAnnotation}
