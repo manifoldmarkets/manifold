@@ -94,7 +94,7 @@ export function MaxMinProfit(props: {
           <Col className="h-full justify-between gap-3">
             <div
               className={clsx(
-                'line-clamp-4 px-6 text-2xl',
+                'line-clamp-8 px-6 text-2xl',
                 animateOut ? 'animate-fade-out' : 'animate-fade-in'
               )}
             >
@@ -104,7 +104,7 @@ export function MaxMinProfit(props: {
             </div>
             <div
               className={clsx(
-                'line-clamp-4 px-6 text-2xl',
+                'line-clamp-8 px-6 text-2xl',
                 animateIn2
                   ? animateOut
                     ? 'animate-fade-out'
