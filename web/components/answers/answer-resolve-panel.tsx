@@ -4,7 +4,7 @@ import clsx from 'clsx'
 
 import { CPMMMultiContract, MultiContract } from 'common/contract'
 import { Col } from '../layout/col'
-import { APIError, resolveMarket } from 'web/lib/firebase/api'
+import { APIError, api } from 'web/lib/firebase/api'
 import { Row } from '../layout/row'
 import { ChooseCancelSelector } from '../bet/yes-no-selector'
 import { ResolveConfirmationButton } from '../buttons/confirmation-button'
@@ -136,7 +136,7 @@ function AnswersResolveOptions(props: {
         })
 
     try {
-      const result = await resolveMarket(resolutionProps)
+      const result = await api('resolveMarket', resolutionProps)
       console.log('resolved', resolutionProps, 'result:', result)
     } catch (e) {
       if (e instanceof APIError) {

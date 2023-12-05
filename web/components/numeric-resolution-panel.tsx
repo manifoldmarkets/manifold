@@ -3,7 +3,7 @@ import { NumberCancelSelector } from './bet/yes-no-selector'
 import { Spacer } from './layout/spacer'
 import { ResolveConfirmationButton } from './buttons/confirmation-button'
 import { PseudoNumericContract } from 'common/contract'
-import { APIError, resolveMarket } from 'web/lib/firebase/api'
+import { APIError, api } from 'web/lib/firebase/api'
 import { getPseudoProbability } from 'common/pseudo-numeric'
 import { BETTORS } from 'common/user'
 import { Button } from './buttons/button'
@@ -40,12 +40,7 @@ export function NumericResolutionPanel(props: {
   const [error, setError] = useState<string | undefined>(undefined)
 
   const resolve = async () => {
-    const finalOutcome =
-      outcomeMode === 'CANCEL'
-        ? 'CANCEL'
-        : outcomeType === 'PSEUDO_NUMERIC'
-        ? 'MKT'
-        : 'NUMBER'
+    const finalOutcome = outcomeMode === 'CANCEL' ? 'CANCEL' : 'MKT'
     if (outcomeMode === undefined || finalOutcome === undefined) return
 
     setIsSubmitting(true)
@@ -53,16 +48,10 @@ export function NumericResolutionPanel(props: {
     const boundedValue = Math.max(Math.min(max, value ?? 0), min)
 
     const probabilityInt =
-      100 *
-      getPseudoProbability(
-        boundedValue,
-        min,
-        max,
-        outcomeType === 'PSEUDO_NUMERIC' && contract.isLogScale
-      )
+      100 * getPseudoProbability(boundedValue, min, max, contract.isLogScale)
 
     try {
-      await resolveMarket({
+      await api('resolveMarket', {
         outcome: finalOutcome,
         value,
         probabilityInt,

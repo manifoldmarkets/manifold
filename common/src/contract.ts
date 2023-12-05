@@ -319,6 +319,7 @@ export const CREATEABLE_OUTCOME_TYPES = [
   'BOUNTIED_QUESTION',
   'POLL',
 ] as const
+export type CreateableOutcomeType = (typeof CREATEABLE_OUTCOME_TYPES)[number]
 
 export const renderResolution = (resolution: string, prob?: number) => {
   return (

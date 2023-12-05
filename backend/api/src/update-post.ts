@@ -2,7 +2,7 @@ import { authEndpoint, validate } from './helpers'
 import { MAX_POST_TITLE_LENGTH } from 'common/post'
 import { updateData } from 'shared/supabase/utils'
 import { z } from 'zod'
-import { contentSchema } from 'shared/zod-types'
+import { contentSchema } from 'common/api/zod-types'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 
 const schema = z.object({

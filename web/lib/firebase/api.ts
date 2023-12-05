@@ -80,18 +80,6 @@ export function changeUserInfo(params: any) {
   return call(getApiUrl('changeuserinfo'), 'POST', params)
 }
 
-export function addSubsidy(params: any) {
-  return call(getApiUrl('addsubsidy'), 'POST', params)
-}
-
-export function createMarket(params: any) {
-  return call(getApiUrl('createmarket'), 'POST', params)
-}
-
-export function resolveMarket(params: any) {
-  return call(getApiUrl('resolvemarket'), 'POST', params)
-}
-
 export function swapCert(params: any) {
   return call(getApiUrl('swapcert'), 'POST', params)
 }
@@ -102,10 +90,6 @@ export function dividendCert(params: any) {
 
 export function sellShares(params: any) {
   return call(getApiUrl('sellshares'), 'POST', params)
-}
-
-export function sellBet(params: any) {
-  return call(getApiUrl('sellbet'), 'POST', params)
 }
 
 export function claimManalink(params: any) {
@@ -308,20 +292,8 @@ export function leagueActivity(params: { season: number; cohort: string }) {
   }>
 }
 
-export function awardBounty(params: {
-  contractId: string
-  commentId: string
-  amount: number
-}) {
-  return call(getApiUrl('award-bounty'), 'POST', params)
-}
-
 export function cancelBounty(params: { contractId: string }) {
   return call(getApiUrl('cancel-bounty'), 'POST', params)
-}
-
-export function addBounty(params: { contractId: string; amount: number }) {
-  return call(getApiUrl('add-bounty'), 'POST', params)
 }
 
 export function createAnswerCpmm(params: { contractId: string; text: string }) {

@@ -1,40 +1,18 @@
 import { z } from 'zod'
 import { MAX_ID_LENGTH } from './group'
-import type { LiteMarket } from './api-market-types'
-import type { JSONContent } from '@tiptap/core'
+import {
+  createMarketProps,
+  resolveMarketProps,
+  type LiteMarket,
+} from './api-market-types'
 import type { Comment } from 'common/comment'
 import type { User } from './user'
 import { CandidateBet } from './new-bet'
 import { LimitBet } from './bet'
-
-// import { contentSchema } from 'shared/zod-types'
-
-// ugh
-const contentSchema: z.ZodType<JSONContent> = z.lazy(() =>
-  z.intersection(
-    z.record(z.any()),
-    z.object({
-      type: z.string().optional(),
-      attrs: z.record(z.any()).optional(),
-      content: z.array(contentSchema).optional(),
-      marks: z
-        .array(
-          z.intersection(
-            z.record(z.any()),
-            z.object({
-              type: z.string(),
-              attrs: z.record(z.any()).optional(),
-            })
-          )
-        )
-        .optional(),
-      text: z.string().optional(),
-    })
-  )
-)
+import { contentSchema } from 'common/api/zod-types'
 
 type APIGenericSchema = {
-  // path to the endpoint
+  // path to the endpoint. changing this is a breaking change
   path: string
   // GET is for retrieval, POST is to mutate something, PUT is idempotent mutation (can be repeated safely)
   method: 'GET' | 'POST' | 'PUT'
@@ -98,6 +76,79 @@ export const API = {
     props: z.object({ betId: z.string() }).strict(),
     returns: _type as LimitBet,
   },
+  sellBet: {
+    path: 'sell-bet',
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    props: z.object({ contractId: z.string(), betId: z.string() }).strict(),
+  },
+
+  createMarket: {
+    path: 'market',
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    returns: _type as LiteMarket,
+    props: createMarketProps,
+  },
+  closeMarket: {
+    path: 'close-market',
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    // returns: _type as LiteMarket,
+    props: z
+      .object({
+        contractId: z.string(),
+        closeTime: z.number().int().nonnegative().optional(),
+      })
+      .strict(),
+  },
+  resolveMarket: {
+    path: 'resolve',
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    props: resolveMarketProps,
+  },
+  addLiquidity: {
+    path: 'add-liquidity',
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    props: z
+      .object({
+        contractId: z.string(),
+        amount: z.number().int().gt(0).finite(),
+      })
+      .strict(),
+  },
+  addBounty: {
+    path: 'add-bounty',
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    props: z
+      .object({
+        contractId: z.string(),
+        amount: z.number().gt(0).int().finite(),
+      })
+      .strict(),
+  },
+  awardBounty: {
+    path: 'award-bounty',
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    props: z
+      .object({
+        contractId: z.string(),
+        commentId: z.string(),
+        amount: z.number().gt(0).int().finite(),
+      })
+      .strict(),
+  },
 
   markets: {
     path: 'markets',
@@ -134,6 +185,21 @@ export const API = {
     authed: true,
     props: z.object({}),
     returns: _type as User,
+  },
+
+  twitchCredentials: {
+    path: 'twitch/save',
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    props: z
+      .object({
+        twitchInfo: z.object({
+          twitchName: z.string(),
+          controlToken: z.string(),
+        }),
+      })
+      .strict(),
   },
 } as const
 

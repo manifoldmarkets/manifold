@@ -6,7 +6,7 @@ import { formatMoney } from 'common/util/format'
 import { forwardRef, useEffect, useState } from 'react'
 import { FaXmark } from 'react-icons/fa6'
 import { TbMoneybag } from 'react-icons/tb'
-import { addBounty, awardBounty, cancelBounty } from 'web/lib/firebase/api'
+import { api, cancelBounty } from 'web/lib/firebase/api'
 import { Button } from '../buttons/button'
 import { ConfirmationButton } from '../buttons/confirmation-button'
 import { Col } from '../layout/col'
@@ -134,16 +134,15 @@ export function AwardBountyButton(props: {
   async function onAwardBounty() {
     if (amount) {
       setLoading(true)
-      awardBounty({
+      await api('awardBounty', {
         contractId: contract.id,
         commentId: comment.id,
         amount: amount,
-      }).then((_result) => {
-        setOpen(false)
-        setAmount(bountyLeft - amount)
-        onAward((bountyAwarded ?? 0) + amount)
-        setLoading(false)
-      })
+      }).finally(() => setLoading(false))
+
+      setOpen(false)
+      setAmount(bountyLeft - amount)
+      onAward((bountyAwarded ?? 0) + amount)
     }
   }
   return (
@@ -204,14 +203,14 @@ export function AddBountyButton(props: {
 
   async function onAddBounty() {
     if (amount) {
-      addBounty({
+      await api('addBounty', {
         contractId: contract.id,
         amount: amount,
-      }).then((_result) => {
-        setOpen(false)
       })
+      setOpen(false)
     }
   }
+
   return (
     <>
       <Button

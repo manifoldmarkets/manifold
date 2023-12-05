@@ -1,6 +1,6 @@
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { revalidateStaticProps } from 'shared/utils'
-import { DashboardItemSchema } from 'shared/zod-types'
+import { DashboardItemSchema } from 'common/api/zod-types'
 import { z } from 'zod'
 import { authEndpoint, validate } from './helpers'
 import { isAdminId, isModId } from 'common/envs/constants'

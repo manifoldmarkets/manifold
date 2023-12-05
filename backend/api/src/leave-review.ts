@@ -4,7 +4,7 @@ import {
   createSupabaseClient,
   createSupabaseDirectClient,
 } from 'shared/supabase/init'
-import { contentSchema } from 'shared/zod-types'
+import { contentSchema } from 'common/api/zod-types'
 import { createMarketReviewedNotification } from 'shared/create-notification'
 import { User } from 'common/user'
 import { Contract } from 'common/contract'

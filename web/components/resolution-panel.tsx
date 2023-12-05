@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { YesNoCancelSelector } from './bet/yes-no-selector'
 import { Spacer } from './layout/spacer'
 import { ResolveConfirmationButton } from './buttons/confirmation-button'
-import { APIError, resolveMarket } from 'web/lib/firebase/api'
+import { APIError, api } from 'web/lib/firebase/api'
 import { getAnswerProbability, getProbability } from 'common/calculate'
 import {
   BinaryContract,
@@ -70,12 +70,11 @@ export function ResolutionPanel(props: {
     setIsSubmitting(true)
 
     try {
-      const result = await resolveMarket({
+      await api('resolveMarket', {
         outcome,
         contractId: contract.id,
         probabilityInt: prob,
       })
-      console.log('resolved', outcome, 'result:', result)
     } catch (e) {
       if (e instanceof APIError) {
         setError(e.toString())
@@ -245,7 +244,8 @@ export function MiniResolutionPanel(props: {
     setIsSubmitting(true)
 
     try {
-      const result = await resolveMarket(
+      await api(
+        'resolveMarket',
         removeUndefinedProps({
           outcome,
           contractId: contract.id,
@@ -253,7 +253,6 @@ export function MiniResolutionPanel(props: {
           answerId: answer.id,
         })
       )
-      console.log('resolved', outcome, 'result:', result)
     } catch (e) {
       if (e instanceof APIError) {
         setError(e.toString())

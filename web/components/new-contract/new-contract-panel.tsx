@@ -1,9 +1,8 @@
 import clsx from 'clsx'
 import { ReactNode, useState } from 'react'
 import { ChevronRightIcon } from '@heroicons/react/solid'
-
 import { User } from 'common/user'
-import { OutcomeType, add_answers_mode } from 'common/contract'
+import { CreateableOutcomeType, add_answers_mode } from 'common/contract'
 import { VisibilityTheme } from 'web/pages/create'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
@@ -18,7 +17,7 @@ export type NewQuestionParams = {
   q: string
   description: string
   closeTime: number
-  outcomeType?: OutcomeType
+  outcomeType?: CreateableOutcomeType
   visibility: string
   // Params for PSEUDO_NUMERIC outcomeType
   min?: number
@@ -40,9 +39,9 @@ export function NewContractPanel(props: {
   params?: NewQuestionParams
 }) {
   const { creator, params } = props
-  const [outcomeType, setOutcomeType] = useState<OutcomeType | undefined>(
-    (params?.outcomeType as OutcomeType) ?? undefined
-  )
+  const [outcomeType, setOutcomeType] = useState<
+    CreateableOutcomeType | undefined
+  >(params?.outcomeType ?? undefined)
 
   const [state, setState] = useState<CreateContractStateType>(
     params?.outcomeType ? 'filling contract params' : 'choosing contract'
@@ -85,7 +84,7 @@ export function NewContractPanel(props: {
 }
 
 function CreateStepTracker(props: {
-  outcomeType: OutcomeType | undefined
+  outcomeType: CreateableOutcomeType | undefined
   setState: (state: CreateContractStateType) => void
   privacy: VisibilityTheme
 }) {

@@ -19,20 +19,20 @@ import { createuser } from './create-user'
 import { createanswer } from './create-answer'
 import { placeBet } from './place-bet'
 import { cancelBet } from './cancel-bet'
-import { sellbet } from './sell-bet'
+import { sellBet } from './sell-bet'
 import { sellshares } from './sell-shares'
 import { claimmanalink } from './claim-manalink'
-import { createmarket } from './create-market'
+import { createMarket } from './create-market'
 import { createComment } from './create-comment'
 import { creategroup } from './create-group'
-import { resolvemarket } from './resolve-market'
-import { closemarket } from './close-market'
+import { resolveMarket } from './resolve-market'
+import { closeMarket } from './close-market'
 import { unsubscribe } from './unsubscribe'
 import { stripewebhook, createcheckoutsession } from './stripe-endpoints'
-import { getcurrentuser } from './get-current-user'
+import { getCurrentUser } from './get-current-user'
 import { createpost } from './create-post'
-import { savetwitchcredentials } from './save-twitch-credentials'
-import { addsubsidy } from './add-subsidy'
+import { saveTwitchCredentials } from './save-twitch-credentials'
+import { addLiquidity } from './add-subsidy'
 import { validateiap } from './validate-iap'
 import { swapcert } from './swap-cert'
 import { dividendcert } from './dividend-cert'
@@ -61,8 +61,8 @@ import { leagueActivity } from './league-activity'
 import { updatepost } from './update-post'
 import { updategroup } from './update-group'
 import { updateUserDisinterestEmbedding } from 'api/update-user-disinterests'
-import { awardbounty } from './award-bounty'
-import { addbounty } from './add-bounty'
+import { awardBounty } from './award-bounty'
+import { addBounty } from './add-bounty'
 import { cancelbounty } from './cancel-bounty'
 import { createanswercpmm } from './create-answer-cpmm'
 import { createportfolio } from './create-portfolio'
@@ -161,11 +161,19 @@ app.options('/v0', allowCorsUnrestricted)
 
 const handlers: { [k in APIName]: RequestHandler } = {
   bet: placeBet,
-  cancelBet,
+  cancelBet: cancelBet,
+  sellBet: sellBet,
   comment: createComment,
+  createMarket: createMarket,
+  closeMarket: closeMarket,
+  resolveMarket: resolveMarket,
+  addLiquidity: addLiquidity,
+  addBounty: addBounty,
+  awardBounty: awardBounty,
   markets: markets,
   managram: sendMana,
-  me: getcurrentuser,
+  me: getCurrentUser,
+  twitchCredentials: saveTwitchCredentials,
 }
 
 // TODO: a clever commennt
@@ -175,7 +183,7 @@ Object.entries(handlers).forEach(([name, handler]) => {
   const cors =
     api.visibility === 'public' ? allowCorsUnrestricted : allowCorsManifold
 
-  console.log('add route', api.method, path, api.authed ? 'authed' : 'anon')
+  // console.log('add route', api.method, path, api.authed ? 'authed' : 'anon')
 
   const apiRoute = [
     path,
@@ -203,16 +211,10 @@ app.post('/createanswer', ...apiRoute(createanswer))
 app.post('/editcomment', ...apiRoute(editcomment))
 app.post('/swapcert', ...apiRoute(swapcert))
 app.post('/dividendcert', ...apiRoute(dividendcert))
-app.post('/sellbet', ...apiRoute(sellbet))
 app.post('/sellshares', ...apiRoute(sellshares))
-app.post('/addsubsidy', ...apiRoute(addsubsidy))
 app.post('/claimmanalink', ...apiRoute(claimmanalink))
-app.post('/createmarket', ...apiRoute(createmarket))
 app.post('/creategroup', ...apiRoute(creategroup))
 app.post('/updategroup', ...apiRoute(updategroup))
-app.post('/resolvemarket', ...apiRoute(resolvemarket))
-app.post('/closemarket', ...apiRoute(closemarket))
-app.post('/savetwitchcredentials', ...apiRoute(savetwitchcredentials))
 app.post('/createpost', ...apiRoute(createpost))
 app.post('/updatepost', ...apiRoute(updatepost))
 app.post('/validateIap', ...apiRoute(validateiap))
@@ -249,9 +251,7 @@ app.post('/creategroupinvite', ...apiRoute(creategroupinvite))
 app.post('/follow-topic', ...apiRoute(followtopic))
 app.post('/supabasesearchgroups', ...apiRoute(supabasesearchgroups))
 app.post('/league-activity', ...apiRoute(leagueActivity))
-app.post('/award-bounty', ...apiRoute(awardbounty))
 app.post('/cancel-bounty', ...apiRoute(cancelbounty))
-app.post('/add-bounty', ...apiRoute(addbounty))
 app.post('/createanswercpmm', ...apiRoute(createanswercpmm))
 app.post('/edit-answer-cpmm', ...apiRoute(editanswercpmm))
 app.post('/createportfolio', ...apiRoute(createportfolio))

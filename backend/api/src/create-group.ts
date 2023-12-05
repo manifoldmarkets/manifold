@@ -13,7 +13,7 @@ import { z } from 'zod'
 import { APIError, authEndpoint, validate } from './helpers'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { bulkInsert } from 'shared/supabase/utils'
-import { contentSchema } from 'shared/zod-types'
+import { contentSchema } from 'common/api/zod-types'
 
 const bodySchema = z
   .object({
