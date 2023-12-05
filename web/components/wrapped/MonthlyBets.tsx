@@ -31,10 +31,10 @@ export function MonthlyBets(props: {
     }, 1000)
     const timeout2 = setTimeout(() => {
       setAnimateMostMonthBetIn(true)
-    }, 2000)
+    }, 3000)
     const timeout3 = setTimeout(() => {
       onGoToNext()
-    }, 5000)
+    }, 6000)
     return () => {
       clearTimeout(timeout1)
       clearTimeout(timeout2)

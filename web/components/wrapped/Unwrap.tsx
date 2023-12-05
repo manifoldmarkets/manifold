@@ -25,7 +25,7 @@ export function Unwrap(props: { goToNextPage: () => void }) {
       if (!buttonClicked) {
         handleButtonClick()
       }
-    }, 2000)
+    }, 1500)
 
     // Cleanup function
     return () => {

@@ -24,13 +24,13 @@ export function GeneralStats(props: {
     if (!animateTotalSpentIn) return
     const timeout1 = setTimeout(() => {
       setAnimateMostSpentIn(true)
-    }, 1000)
+    }, 1500)
     const timeout2 = setTimeout(() => {
       setAnimateGraphicIn(true)
-    }, 2000)
+    }, 3000)
     const timeout3 = setTimeout(() => {
       onGoToNext()
-    }, 5000)
+    }, 6000)
     return () => {
       clearTimeout(timeout1)
       clearTimeout(timeout2)

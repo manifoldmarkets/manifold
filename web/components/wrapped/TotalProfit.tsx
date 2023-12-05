@@ -27,7 +27,7 @@ export function TotalProfit(props: {
     }, 1000)
     const timeout2 = setTimeout(() => {
       onGoToNext()
-    }, 5000)
+    }, 4000)
     return () => {
       clearTimeout(timeout1)
       clearTimeout(timeout2)
