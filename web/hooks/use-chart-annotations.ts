@@ -11,13 +11,16 @@ import { useUser } from 'web/hooks/use-user'
 import { Contract } from 'common/contract'
 
 export const useChartAnnotations = (contractId: string) => {
-  const { rows: annotations } = useSubscription(
+  const { rows: annotations, status } = useSubscription(
     'chart_annotations',
     { k: 'contract_id', v: contractId },
     () => getChartAnnotations(contractId, db)
   )
 
-  return orderBy(annotations, (a) => a.event_time, 'asc')
+  return {
+    chartAnnotations: orderBy(annotations, (a) => a.event_time, 'asc'),
+    status,
+  }
 }
 
 export const useAnnotateChartTools = (
@@ -29,8 +32,12 @@ export const useAnnotateChartTools = (
     null
   )
   const user = useUser()
+  const { chartAnnotations: liveAnnotations, status } = useChartAnnotations(
+    contract.id
+  )
   const chartAnnotations =
-    useChartAnnotations(contract.id) ?? staticChartAnnotations
+    status === 'live' ? liveAnnotations : staticChartAnnotations
+
   const updateHoveredAnnotation = async (hoveredAnnotation: number | null) => {
     if (pointerMode === 'annotate') return
 

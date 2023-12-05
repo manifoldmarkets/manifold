@@ -375,7 +375,7 @@ const useAnnotateOnClick = (
   const [chartAnnotationTime, setChartAnnotationTime] = useState<
     { t: number; answerId?: string } | undefined
   >()
-  const chartAnnotations = useChartAnnotations(contractId ?? '_')
+  const { chartAnnotations } = useChartAnnotations(contractId ?? '_')
   const onClick = useEvent((x: number, y: number) => {
     if (!xScale || !contractId) {
       console.error('no xScale and/or contractId')
