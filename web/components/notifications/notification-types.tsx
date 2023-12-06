@@ -1661,7 +1661,7 @@ function BountyAwardedNotification(props: {
             userId={notification.sourceId}
             name={notification.sourceUserName}
             username={notification.sourceUserUsername}
-            className=""
+            className="mr-1"
           />
           awarded you a{' '}
           <span className="font-semibold text-teal-600">
