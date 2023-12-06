@@ -10,7 +10,7 @@ import {
   CORS_ORIGIN_CHARITY,
 } from 'common/envs/constants'
 import { log } from 'shared/utils'
-import { APIError } from 'common/api/utils'
+import { APIError, pathWithPrefix } from 'common/api/utils'
 import { health } from './health'
 import { transact } from './transact'
 import { changeuserinfo } from './change-user-info'
@@ -180,14 +180,11 @@ const handlers: { [k in APIPath]: RequestHandler } = {
 
 Object.entries(handlers).forEach(([path, handler]) => {
   const api = API[path as APIPath]
-  const fullPath = api.visibility === 'public' ? `/v0/${path}` : `/${path}`
   const cors =
     api.visibility === 'public' ? allowCorsUnrestricted : allowCorsManifold
 
-  // console.log('add route', api.method, path, api.authed ? 'authed' : 'anon')
-
   const apiRoute = [
-    fullPath,
+    '/' + pathWithPrefix(path as APIPath),
     express.json(),
     cors,
     handler,

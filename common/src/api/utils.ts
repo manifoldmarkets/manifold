@@ -1,4 +1,5 @@
 import { ENV_CONFIG } from 'common/envs/constants'
+import { API, APIPath } from './schema'
 
 type ErrorCode =
   | 400 // your input is bad (like zod is mad)
@@ -30,7 +31,16 @@ export function getReplicatorUrl() {
   return `https://supabase-replicator-${cloudRunId}-uk.a.run.app`
 }
 
+export function pathWithPrefix(path: APIPath) {
+  return API[path].visibility === 'public' ? `v0/${path}` : path
+}
+
+// TODO: strictly type
 export function getApiUrl(path: string) {
+  if (path in API) {
+    path = pathWithPrefix(path as APIPath)
+  }
+
   if (process.env.NEXT_PUBLIC_API_URL) {
     return `${process.env.NEXT_PUBLIC_API_URL}/${path}`
   } else {
