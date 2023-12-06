@@ -50,6 +50,7 @@ export const getUnresolvedContractsCount = async (
       .eq('creator_id', creatorId)
       .is('resolution_time', null)
       .lt('close_time', millisToTs(Date.now()))
+      .neq('outcome_type', 'BOUNTIED_QUESTION')
   )
   return count
 }
