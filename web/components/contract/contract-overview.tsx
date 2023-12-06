@@ -521,7 +521,7 @@ const ChoiceOverview = (props: {
     }))
 
   const [sort, setSort] = usePersistentInMemoryState<MultiSort>(
-    addAnswersMode === 'DISABLED'
+    contract.sort ?? addAnswersMode === 'DISABLED'
       ? 'old'
       : !shouldAnswersSumToOne
       ? 'prob-desc'
