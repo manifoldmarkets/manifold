@@ -1,35 +1,19 @@
 import * as admin from 'firebase-admin'
-
 import { JSONContent } from '@tiptap/core'
-import { z } from 'zod'
 import { marked } from 'marked'
-
 import { Comment } from 'common/comment'
 import { Bet } from 'common/bet'
 import { FieldValue } from 'firebase-admin/firestore'
 import { FLAT_COMMENT_FEE } from 'common/fees'
 import { removeUndefinedProps } from 'common/util/object'
 import { getContract, getUser, htmlToRichText } from 'shared/utils'
-import { APIError, authEndpoint, validate } from './helpers'
-import { contentSchema } from 'shared/zod-types'
-
-const postSchema = z
-  .object({
-    contractId: z.string(),
-    content: contentSchema.optional(),
-    html: z.string().optional(),
-    markdown: z.string().optional(),
-    replyToCommentId: z.string().optional(),
-    replyToAnswerId: z.string().optional(),
-    replyToBetId: z.string().optional(),
-  })
-  .strict()
+import { APIError, typedEndpoint } from './helpers'
 
 export const MAX_COMMENT_JSON_LENGTH = 20000
 
 // For now, only supports creating a new top-level comment on a contract.
 // Replies, posts, chats are not supported yet.
-export const createcomment = authEndpoint(async (req, auth) => {
+export const createComment = typedEndpoint('comment', async (props, auth) => {
   const firestore = admin.firestore()
   const {
     contractId,
@@ -39,7 +23,7 @@ export const createcomment = authEndpoint(async (req, auth) => {
     replyToCommentId,
     replyToAnswerId,
     replyToBetId,
-  } = validate(postSchema, req.body)
+  } = props
 
   const {
     you: creator,
@@ -97,7 +81,7 @@ export const createcomment = authEndpoint(async (req, auth) => {
     })
   }
 
-  return { status: 'success', comment }
+  return comment
 })
 
 export const validateComment = async (

@@ -8,7 +8,7 @@ import * as admin from 'firebase-admin'
 import { FieldValue } from 'firebase-admin/firestore'
 import { removeUndefinedProps } from 'common/util/object'
 import { User } from 'common/user'
-import { APIError } from 'common/api'
+import { APIError } from 'common//api/utils'
 import { Contract } from 'common/contract'
 
 export async function runPostBountyTxn(

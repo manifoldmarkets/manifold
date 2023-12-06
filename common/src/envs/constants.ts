@@ -51,6 +51,11 @@ export const CORS_ORIGIN_MANIFOLD_LOVE_ALTERNATE = new RegExp(
     escapeRegExp(ENV_CONFIG.loveDomainAlternate) +
     '$'
 )
+
+export const CORS_ORIGIN_CHARITY = new RegExp(
+  '^https?://(?:[a-zA-Z0-9\\-]+\\.)*' + escapeRegExp('manifund.org') + '$'
+)
+
 // Vercel deployments, used for testing.
 export const CORS_ORIGIN_VERCEL = new RegExp(
   '^https?://[a-zA-Z0-9\\-]+' + escapeRegExp('mantic.vercel.app') + '$'
@@ -174,6 +179,7 @@ export const MOD_IDS = [
 ]
 
 export const MVP = ['Eliza']
+export const BTE_USER_ID = '4JuXgDx47xPagH5mcLDqLzUSN5g2'
 
 export const VERIFIED_USERNAMES = [
   'EliezerYudkowsky',

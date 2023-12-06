@@ -1,4 +1,4 @@
-import { FullMarket } from 'common/api-market-types'
+import { FullMarket } from 'common/api/market-types'
 import { filterDefined } from 'common/util/array'
 import { getOpenBinaryMarketFromSlug } from 'discord-bot/api'
 import { Command } from 'discord-bot/command'

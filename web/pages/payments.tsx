@@ -10,7 +10,7 @@ import { Modal } from 'web/components/layout/modal'
 import { SelectUsers } from 'web/components/select-users'
 import { UserSearchResult } from 'web/lib/supabase/users'
 import { AmountInput } from 'web/components/widgets/amount-input'
-import { sendMana } from 'web/lib/firebase/api'
+import { api } from 'web/lib/firebase/api'
 import { useUser } from 'web/hooks/use-user'
 import { ENV_CONFIG, isAdminId } from 'common/envs/constants'
 import { uniq } from 'lodash'
@@ -317,7 +317,7 @@ export const PaymentsModal = (props: {
                 if (!amount || !toUsers.length) return
                 setLoading(true)
                 try {
-                  await sendMana({
+                  await api('send-mana', {
                     toIds: toUsers.map((user) => user.id),
                     amount,
                     message,

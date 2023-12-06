@@ -2,7 +2,7 @@ import { Contract } from 'common/contract'
 import { formatMoney, formatWithCommas } from 'common/util/format'
 import { AmountInput, BuyAmountInput } from '../widgets/amount-input'
 import { ReactNode, useState } from 'react'
-import { addSubsidy, boostMarket } from 'web/lib/firebase/api'
+import { api, boostMarket } from 'web/lib/firebase/api'
 import { Button } from '../buttons/button'
 import toast from 'react-hot-toast'
 import { LoadingIndicator } from '../widgets/loading-indicator'
@@ -151,7 +151,7 @@ function SimpleBoostRow(props: {
       })
 
     if (!subsidyDisabled) {
-      await addSubsidy({ amount: subsidyAmount, contractId })
+      await api('add-liquidity', { amount: subsidyAmount, contractId })
 
       // setSuccess(
       //   `Boosted! You purchased ${numClicks} feed click${

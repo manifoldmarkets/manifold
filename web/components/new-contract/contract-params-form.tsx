@@ -10,11 +10,10 @@ import clsx from 'clsx'
 import {
   Contract,
   MAX_QUESTION_LENGTH,
-  OutcomeType,
   Visibility,
   add_answers_mode,
   contractPath,
-  contractUrl,
+  CreateableOutcomeType,
 } from 'common/contract'
 import {
   MINIMUM_BOUNTY,
@@ -22,7 +21,7 @@ import {
   UNIQUE_ANSWER_BETTOR_BONUS_AMOUNT,
   UNIQUE_BETTOR_BONUS_AMOUNT,
 } from 'common/economy'
-import { ENV_CONFIG } from 'common/envs/constants'
+import { BTE_USER_ID, ENV_CONFIG } from 'common/envs/constants'
 import { formatMoney } from 'common/util/format'
 import { AddFundsModal } from 'web/components/add-funds-modal'
 import { MultipleChoiceAnswers } from 'web/components/answers/multiple-choice-answers'
@@ -53,7 +52,7 @@ import { removeUndefinedProps } from 'common/util/object'
 import { extensions } from 'common/util/parse'
 import { useTextEditor } from 'web/components/widgets/editor'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
-import { createMarket, getSimilarGroupsToContract } from 'web/lib/firebase/api'
+import { api, getSimilarGroupsToContract } from 'web/lib/firebase/api'
 import { track } from 'web/lib/service/analytics'
 import { getGroup, getGroupFromSlug } from 'web/lib/supabase/group'
 import { safeLocalStorage } from 'web/lib/util/local'
@@ -65,10 +64,11 @@ import { VisibilityTheme } from 'web/pages/create'
 import { getContractWithFields } from 'web/lib/supabase/contracts'
 import { filterDefined } from 'common/util/array'
 import { TopicTag } from 'web/components/topics/topic-tag'
+import { LiteMarket } from 'common/api/market-types'
 
 export function ContractParamsForm(props: {
   creator: User
-  outcomeType: OutcomeType
+  outcomeType: CreateableOutcomeType
   setPrivacy: (theme: VisibilityTheme) => void
   params?: NewQuestionParams
 }) {
@@ -269,8 +269,9 @@ export function ContractParamsForm(props: {
     isValidQuestion &&
     ante !== undefined &&
     ante !== null &&
-    ante <= balance &&
+    (ante <= balance || creator.id === BTE_USER_ID) &&
     isValidDate &&
+    visibility !== 'private' &&
     (outcomeType !== 'PSEUDO_NUMERIC' ||
       (min !== undefined &&
         max !== undefined &&
@@ -363,7 +364,7 @@ export function ContractParamsForm(props: {
         totalBounty:
           amountSuppliedByHouse > 0 ? amountSuppliedByHouse : bountyAmount,
       })
-      const newContract = (await createMarket(createProps)) as Contract
+      const newContract = await api('create-market', createProps)
 
       // wait for supabase
       const supabaseContract = await waitForSupabaseContract(newContract)
@@ -848,7 +849,7 @@ async function fetchContract(contractId: string) {
   }
 }
 
-async function waitForSupabaseContract(contract: Contract) {
+async function waitForSupabaseContract(contract: LiteMarket) {
   let retries = 100
 
   const delay = (ms: number) =>
@@ -862,8 +863,6 @@ async function waitForSupabaseContract(contract: Contract) {
   }
 
   throw new Error(
-    `We created your market, but it's taking a while to appear. Check this link in a minute: ${contractUrl(
-      contract
-    )}`
+    `We created your market, but it's taking a while to appear. Check this link in a minute: ${contract.url}`
   )
 }

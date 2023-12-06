@@ -46,7 +46,7 @@ export const PREDICTIVE_CONTRACT_TYPES = {
   //     </Col>
   //   ),
   // },
-}
+} as const
 
 export const NON_PREDICTIVE_CONTRACT_TYPES = {
   bountied_question: {
@@ -83,7 +83,7 @@ export const NON_PREDICTIVE_CONTRACT_TYPES = {
     selectClassName:
       'dark:from-fuchsia-500/20 from-fuchsia-500/30 ring-fuchsia-500 bg-gradient-to-br to-transparent ring-2',
   },
-}
+} as const
 
 export const ALL_CONTRACT_TYPES = {
   ...PREDICTIVE_CONTRACT_TYPES,

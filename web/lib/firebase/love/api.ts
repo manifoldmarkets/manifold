@@ -1,4 +1,4 @@
-import { getApiUrl } from 'common/api'
+import { getApiUrl } from 'common/api/utils'
 import { call } from 'web/lib/firebase/api'
 import { JSONContent } from '@tiptap/core'
 import { removeNullOrUndefinedProps } from 'common/util/object'

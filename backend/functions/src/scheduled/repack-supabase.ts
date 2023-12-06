@@ -1,6 +1,6 @@
 /*
 import * as functions from 'firebase-functions'
-import { getReplicatorUrl } from 'common/api'
+import { getReplicatorUrl } from 'common/api/utils'
 import { invokeFunction, log } from 'shared/utils'
 import { onRequest } from 'firebase-functions/v2/https'
 import { secrets } from 'common/secrets'

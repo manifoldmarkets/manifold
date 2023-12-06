@@ -2,7 +2,7 @@ import {
   createSupabaseDirectClient,
   SupabaseDirectClient,
 } from 'shared/supabase/init'
-import { APIError } from 'common/api'
+import { APIError } from 'common//api/utils'
 import { getPrivateUser } from 'shared/utils'
 import * as admin from 'firebase-admin'
 import { FieldValue } from 'firebase-admin/firestore'

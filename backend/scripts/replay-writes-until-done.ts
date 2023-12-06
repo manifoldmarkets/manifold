@@ -1,4 +1,4 @@
-import { getReplicatorUrl } from 'common/api'
+import { getReplicatorUrl } from 'common/api/utils'
 import { log } from 'shared/utils'
 import { getLocalEnv, initAdmin } from 'shared/init-admin'
 import { getServiceAccountCredentials, loadSecretsToEnv } from 'common/secrets'

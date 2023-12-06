@@ -1,4 +1,4 @@
-import { getApiUrl } from 'common/api'
+import { getApiUrl } from 'common/api/utils'
 
 export const checkoutURL = (
   userId: string,

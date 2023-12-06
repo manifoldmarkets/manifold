@@ -1,7 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next'
 import { promisify } from 'util'
 import { pipeline } from 'stream'
-import { getApiUrl } from 'common/api'
+import { getApiUrl } from 'common/api/utils'
 
 function getProxiedRequestUrl(req: NextApiRequest, path: string) {
   const baseUrl = getApiUrl(path)

@@ -28,7 +28,7 @@ import { getStonkDisplayShares } from 'common/stonk'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
 import { formatTimeShort } from 'web/lib/util/time'
 import { ConfirmationButton } from 'web/components/buttons/confirmation-button'
-import { sellBet } from 'web/lib/firebase/api'
+import { api } from 'web/lib/firebase/api'
 
 export function ContractBetsTable(props: {
   contract: Contract
@@ -318,7 +318,7 @@ function DpmSellButton(props: {
       submitBtn={{ label: 'Sell', color: 'green' }}
       onSubmit={async () => {
         setIsSubmitting(true)
-        await sellBet({ contractId: contract.id, betId: bet.id })
+        await api('sell-bet', { contractId: contract.id, betId: bet.id })
         setIsSubmitting(false)
       }}
     >

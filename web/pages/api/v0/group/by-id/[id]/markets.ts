@@ -1,4 +1,4 @@
-import { toLiteMarket } from 'common/api-market-types'
+import { toLiteMarket } from 'common/api/market-types'
 import { NextApiRequest, NextApiResponse } from 'next'
 import { applyCorsHeaders } from 'web/lib/api/cors'
 import { marketCacheStrategy } from 'web/pages/api/v0/market/[id]'

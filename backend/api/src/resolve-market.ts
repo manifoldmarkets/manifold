@@ -1,142 +1,79 @@
 import * as admin from 'firebase-admin'
-import { z } from 'zod'
 import { sumBy } from 'lodash'
-
-import {
-  CPMMMultiContract,
-  Contract,
-  MultiContract,
-  RESOLUTIONS,
-} from 'common/contract'
+import { CPMMMultiContract, Contract, MultiContract } from 'common/contract'
 import { getUser } from 'shared/utils'
-import { APIError, authEndpoint, validate } from './helpers'
+import { APIError, typedEndpoint, validate } from './helpers'
 import { resolveMarketHelper } from 'shared/resolve-market-helpers'
 import { Answer } from 'common/answer'
 import { throwErrorIfNotMod } from 'shared/helpers/auth'
+import { ValidatedAPIParams } from 'common/api/schema'
+import {
+  resolveBinarySchema,
+  resolveFRSchema,
+  resolveMultiSchema,
+  resolveNumericSchema,
+  resolvePseudoNumericSchema,
+} from 'common/api/market-types'
 
-// don't use strict() to include contract specific fields
-const bodySchema = z.object({
-  contractId: z.string(),
-})
+export const resolveMarket = typedEndpoint(
+  'resolve',
+  async (props, auth, { log }) => {
+    const { contractId } = props
+    const contractDoc = firestore.doc(`contracts/${contractId}`)
+    const contractSnap = await contractDoc.get()
+    if (!contractSnap.exists)
+      throw new APIError(404, 'No contract exists with the provided ID')
+    const contract = contractSnap.data() as Contract
 
-const binarySchema = z.object({
-  outcome: z.enum(RESOLUTIONS),
-  probabilityInt: z.number().gte(0).lte(100).optional(),
-
-  // To resolve one answer of multiple choice. Only independent answers supported (shouldAnswersSumToOne = false)
-  answerId: z.string().optional(),
-})
-
-const freeResponseSchema = z.union([
-  z.object({
-    outcome: z.literal('CANCEL'),
-  }),
-  z.object({
-    outcome: z.literal('MKT'),
-    resolutions: z.array(
-      z.object({
-        answer: z.number().int().nonnegative(),
-        pct: z.number().gte(0).lte(100),
-      })
-    ),
-  }),
-  z.object({
-    outcome: z.number().int().nonnegative(),
-  }),
-])
-
-const cpmmMultipleChoiceSchema = z.union([
-  z.object({
-    outcome: z.literal('CANCEL'),
-  }),
-  z.object({
-    outcome: z.literal('CHOOSE_ONE'),
-    answerId: z.string(),
-  }),
-  z.object({
-    outcome: z.literal('CHOOSE_MULTIPLE'),
-    resolutions: z.array(
-      z.object({
-        answerId: z.string(),
-        pct: z.number().gte(0).lte(100),
-      })
-    ),
-  }),
-])
-
-const numericSchema = z.object({
-  outcome: z.union([z.literal('CANCEL'), z.string()]),
-  value: z.number().optional(),
-})
-
-const pseudoNumericSchema = z.union([
-  z.object({
-    outcome: z.literal('CANCEL'),
-  }),
-  z.object({
-    outcome: z.literal('MKT'),
-    value: z.number(),
-    probabilityInt: z.number().gte(0).lte(100),
-  }),
-])
-
-export const resolvemarket = authEndpoint(async (req, auth, log) => {
-  const { contractId } = validate(bodySchema, req.body)
-  const contractDoc = firestore.doc(`contracts/${contractId}`)
-  const contractSnap = await contractDoc.get()
-  if (!contractSnap.exists)
-    throw new APIError(404, 'No contract exists with the provided ID')
-  const contract = contractSnap.data() as Contract
-
-  let answers: Answer[] = []
-  if (contract.mechanism === 'cpmm-multi-1') {
-    // Denormalize answers.
-    const answersSnap = await firestore
-      .collection(`contracts/${contractId}/answersCpmm`)
-      .get()
-    answers = answersSnap.docs.map((doc) => doc.data() as Answer)
-    contract.answers = answers
-  }
-
-  const { creatorId, outcomeType } = contract
-  if (outcomeType === 'STONK') {
-    throw new APIError(403, 'STONK contracts cannot be resolved')
-  }
-  const caller = await getUser(auth.uid)
-  if (!caller) throw new APIError(400, 'Caller not found')
-  if (creatorId !== auth.uid) await throwErrorIfNotMod(auth.uid)
-
-  if (contract.resolution) throw new APIError(403, 'Contract already resolved')
-
-  const creator = caller.id === creatorId ? caller : await getUser(creatorId)
-  if (!creator) throw new APIError(500, 'Creator not found')
-
-  const resolutionParams = getResolutionParams(contract, req.body)
-
-  if ('answerId' in resolutionParams && 'answers' in contract) {
-    const { answerId } = resolutionParams
-    const answer = answers.find((a) => a.id === answerId)
-    if (answer && 'resolution' in answer && answer.resolution) {
-      throw new APIError(403, `${answerId} answer is already resolved`)
+    let answers: Answer[] = []
+    if (contract.mechanism === 'cpmm-multi-1') {
+      // Denormalize answers.
+      const answersSnap = await firestore
+        .collection(`contracts/${contractId}/answersCpmm`)
+        .get()
+      answers = answersSnap.docs.map((doc) => doc.data() as Answer)
+      contract.answers = answers
     }
+
+    const { creatorId, outcomeType } = contract
+    if (outcomeType === 'STONK') {
+      throw new APIError(403, 'STONK contracts cannot be resolved')
+    }
+    const caller = await getUser(auth.uid)
+    if (!caller) throw new APIError(400, 'Caller not found')
+    if (creatorId !== auth.uid) await throwErrorIfNotMod(auth.uid)
+
+    if (contract.resolution)
+      throw new APIError(403, 'Contract already resolved')
+
+    const creator = caller.id === creatorId ? caller : await getUser(creatorId)
+    if (!creator) throw new APIError(500, 'Creator not found')
+
+    const resolutionParams = getResolutionParams(contract, props)
+
+    if ('answerId' in resolutionParams && 'answers' in contract) {
+      const { answerId } = resolutionParams
+      const answer = answers.find((a) => a.id === answerId)
+      if (answer && 'resolution' in answer && answer.resolution) {
+        throw new APIError(403, `${answerId} answer is already resolved`)
+      }
+    }
+
+    log('Resolving market ', {
+      contractSlug: contract.slug,
+      contractId,
+      resolutionParams,
+    })
+
+    await resolveMarketHelper(contract, caller, creator, resolutionParams, log)
+    // TODO: return?
   }
+)
 
-  log('Resolving market ', {
-    contractSlug: contract.slug,
-    contractId,
-    resolutionParams,
-  })
-
-  return await resolveMarketHelper(
-    contract,
-    caller,
-    creator,
-    resolutionParams,
-    log
-  )
-})
-
-function getResolutionParams(contract: Contract, body: string) {
+function getResolutionParams(
+  contract: Contract,
+  props: ValidatedAPIParams<'resolve'>
+) {
   const { outcomeType } = contract
   if (
     outcomeType === 'BINARY' ||
@@ -144,7 +81,7 @@ function getResolutionParams(contract: Contract, body: string) {
       contract.mechanism === 'cpmm-multi-1' &&
       !contract.shouldAnswersSumToOne)
   ) {
-    const binaryParams = validate(binarySchema, body)
+    const binaryParams = validate(resolveBinarySchema, props)
     if (binaryParams.answerId && outcomeType !== 'MULTIPLE_CHOICE') {
       throw new APIError(
         400,
@@ -160,20 +97,20 @@ function getResolutionParams(contract: Contract, body: string) {
     }
   } else if (outcomeType === 'NUMERIC') {
     return {
-      ...validate(numericSchema, body),
+      ...validate(resolveNumericSchema, props),
       resolutions: undefined,
       probabilityInt: undefined,
     }
   } else if (outcomeType === 'PSEUDO_NUMERIC') {
     return {
-      ...validate(pseudoNumericSchema, body),
+      ...validate(resolvePseudoNumericSchema, props),
       resolutions: undefined,
     }
   } else if (
     outcomeType === 'MULTIPLE_CHOICE' &&
     contract.mechanism === 'cpmm-multi-1'
   ) {
-    const cpmmMultiParams = validate(cpmmMultipleChoiceSchema, body)
+    const cpmmMultiParams = validate(resolveMultiSchema, props)
     const { outcome } = cpmmMultiParams
     if (outcome === 'CANCEL') {
       return {
@@ -213,7 +150,7 @@ function getResolutionParams(contract: Contract, body: string) {
     outcomeType === 'FREE_RESPONSE' ||
     outcomeType === 'MULTIPLE_CHOICE'
   ) {
-    const freeResponseParams = validate(freeResponseSchema, body)
+    const freeResponseParams = validate(resolveFRSchema, props)
     const { outcome } = freeResponseParams
     switch (outcome) {
       case 'CANCEL':
@@ -250,7 +187,7 @@ function getResolutionParams(contract: Contract, body: string) {
       }
     }
   }
-  throw new APIError(500, `Invalid outcome type: ${outcomeType}`)
+  throw new APIError(400, `Invalid outcome type: ${outcomeType}`)
 }
 
 function validateAnswer(contract: MultiContract, answer: number) {

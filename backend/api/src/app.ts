@@ -7,31 +7,31 @@ import {
   CORS_ORIGIN_VERCEL,
   CORS_ORIGIN_MANIFOLD_LOVE,
   CORS_ORIGIN_MANIFOLD_LOVE_ALTERNATE,
+  CORS_ORIGIN_CHARITY,
 } from 'common/envs/constants'
 import { log } from 'shared/utils'
-import { APIError } from 'common/api'
-
+import { APIError, pathWithPrefix } from 'common/api/utils'
 import { health } from './health'
 import { transact } from './transact'
 import { changeuserinfo } from './change-user-info'
 import { createuser } from './create-user'
 import { createanswer } from './create-answer'
-import { placebet } from './place-bet'
-import { cancelbet } from './cancel-bet'
-import { sellbet } from './sell-bet'
+import { placeBet } from './place-bet'
+import { cancelBet } from './cancel-bet'
+import { sellBet } from './sell-bet'
 import { sellshares } from './sell-shares'
 import { claimmanalink } from './claim-manalink'
-import { createmarket } from './create-market'
-import { createcomment } from './create-comment'
+import { createMarket } from './create-market'
+import { createComment } from './create-comment'
 import { creategroup } from './create-group'
-import { resolvemarket } from './resolve-market'
-import { closemarket } from './close-market'
+import { resolveMarket } from './resolve-market'
+import { closeMarket } from './close-market'
 import { unsubscribe } from './unsubscribe'
 import { stripewebhook, createcheckoutsession } from './stripe-endpoints'
-import { getcurrentuser } from './get-current-user'
+import { getCurrentUser } from './get-current-user'
 import { createpost } from './create-post'
-import { savetwitchcredentials } from './save-twitch-credentials'
-import { addsubsidy } from './add-subsidy'
+import { saveTwitchCredentials } from './save-twitch-credentials'
+import { addLiquidity } from './add-subsidy'
 import { validateiap } from './validate-iap'
 import { swapcert } from './swap-cert'
 import { dividendcert } from './dividend-cert'
@@ -60,8 +60,8 @@ import { leagueActivity } from './league-activity'
 import { updatepost } from './update-post'
 import { updategroup } from './update-group'
 import { updateUserDisinterestEmbedding } from 'api/update-user-disinterests'
-import { awardbounty } from './award-bounty'
-import { addbounty } from './add-bounty'
+import { awardBounty } from './award-bounty'
+import { addBounty } from './add-bounty'
 import { cancelbounty } from './cancel-bounty'
 import { createanswercpmm } from './create-answer-cpmm'
 import { createportfolio } from './create-portfolio'
@@ -69,7 +69,7 @@ import { updateportfolio } from './update-portfolio'
 import { buyportfolio } from './buy-portfolio'
 import { searchgiphy } from './search-giphy'
 import { manachantweet } from './manachan-tweet'
-import { sendmana } from './send-mana'
+import { sendMana } from './send-mana'
 import { leavereview } from './leave-review'
 import { getusercontractmetricswithcontracts } from './get-user-contract-metrics-with-contracts'
 import { claimdestinysub } from './claim-destiny-sub'
@@ -108,10 +108,11 @@ import { clearLoverPhoto } from './love/clear-lover-photo'
 import { editanswercpmm } from 'api/edit-answer'
 import { createlovecompatibilityquestion } from 'api/love/create-love-compatibility-question'
 import { oncreatebet } from 'api/on-create-bet'
-
-import { markets } from 'api/v0/markets'
+import { API, type APIPath } from 'common/api/schema'
+import { markets } from 'api/markets'
 import { createchartannotation } from 'api/create-chart-annotation'
 import { deletechartannotation } from 'api/delete-chart-annotation'
+import { assertUnreachable } from 'common/util/types'
 
 const allowCorsUnrestricted: RequestHandler = cors({})
 const allowCorsManifold: RequestHandler = cors({
@@ -119,6 +120,7 @@ const allowCorsManifold: RequestHandler = cors({
     CORS_ORIGIN_MANIFOLD,
     CORS_ORIGIN_MANIFOLD_LOVE,
     CORS_ORIGIN_MANIFOLD_LOVE_ALTERNATE,
+    CORS_ORIGIN_CHARITY,
     CORS_ORIGIN_VERCEL,
     CORS_ORIGIN_LOCALHOST,
   ],
@@ -154,30 +156,65 @@ app.use(requestLogger)
 
 // internal APIs
 app.options('*', allowCorsManifold)
-app.get('/health', ...apiRoute(health))
-app.get('/getcurrentuser', ...apiRoute(getcurrentuser))
-app.get('/unsubscribe', ...apiRoute(unsubscribe))
 
+// v0 public API routes
+app.options('/v0', allowCorsUnrestricted)
+
+// we define the handlers in this object in order to typecheck that every API has a handler
+const handlers: { [k in APIPath]: RequestHandler } = {
+  bet: placeBet,
+  'cancel-bet': cancelBet,
+  'sell-bet': sellBet,
+  comment: createComment,
+  'create-market': createMarket,
+  close: closeMarket,
+  resolve: resolveMarket,
+  'add-liquidity': addLiquidity,
+  'add-bounty': addBounty,
+  'award-bounty': awardBounty,
+  markets: markets,
+  'send-mana': sendMana,
+  me: getCurrentUser,
+  'save-twitch': saveTwitchCredentials,
+}
+
+Object.entries(handlers).forEach(([path, handler]) => {
+  const api = API[path as APIPath]
+  const cors =
+    api.visibility === 'public' ? allowCorsUnrestricted : allowCorsManifold
+
+  const apiRoute = [
+    '/' + pathWithPrefix(path as APIPath),
+    express.json(),
+    cors,
+    handler,
+    apiErrorHandler,
+  ] as const
+
+  if (api.method === 'POST') {
+    app.post(...apiRoute)
+  } else if (api.method === 'GET') {
+    app.get(...apiRoute)
+    // } else if (api.method === 'PUT') {
+    //   app.put(...apiRoute)
+  } else {
+    assertUnreachable(api, 'Unsupported API method')
+  }
+})
+
+app.get('/health', ...apiRoute(health))
+app.get('/unsubscribe', ...apiRoute(unsubscribe))
 app.post('/transact', ...apiRoute(transact))
 app.post('/changeuserinfo', ...apiRoute(changeuserinfo))
 app.post('/createuser', ...apiRoute(createuser))
 app.post('/createanswer', ...apiRoute(createanswer))
-app.post('/createcomment', ...apiRoute(createcomment))
 app.post('/editcomment', ...apiRoute(editcomment))
 app.post('/swapcert', ...apiRoute(swapcert))
 app.post('/dividendcert', ...apiRoute(dividendcert))
-app.post('/placebet', ...apiRoute(placebet))
-app.post('/cancelbet', ...apiRoute(cancelbet))
-app.post('/sellbet', ...apiRoute(sellbet))
 app.post('/sellshares', ...apiRoute(sellshares))
-app.post('/addsubsidy', ...apiRoute(addsubsidy))
 app.post('/claimmanalink', ...apiRoute(claimmanalink))
-app.post('/createmarket', ...apiRoute(createmarket))
 app.post('/creategroup', ...apiRoute(creategroup))
 app.post('/updategroup', ...apiRoute(updategroup))
-app.post('/resolvemarket', ...apiRoute(resolvemarket))
-app.post('/closemarket', ...apiRoute(closemarket))
-app.post('/savetwitchcredentials', ...apiRoute(savetwitchcredentials))
 app.post('/createpost', ...apiRoute(createpost))
 app.post('/updatepost', ...apiRoute(updatepost))
 app.post('/validateIap', ...apiRoute(validateiap))
@@ -214,9 +251,7 @@ app.post('/creategroupinvite', ...apiRoute(creategroupinvite))
 app.post('/follow-topic', ...apiRoute(followtopic))
 app.post('/supabasesearchgroups', ...apiRoute(supabasesearchgroups))
 app.post('/league-activity', ...apiRoute(leagueActivity))
-app.post('/award-bounty', ...apiRoute(awardbounty))
 app.post('/cancel-bounty', ...apiRoute(cancelbounty))
-app.post('/add-bounty', ...apiRoute(addbounty))
 app.post('/createanswercpmm', ...apiRoute(createanswercpmm))
 app.post('/edit-answer-cpmm', ...apiRoute(editanswercpmm))
 app.post('/createportfolio', ...apiRoute(createportfolio))
@@ -224,7 +259,6 @@ app.post('/updateportfolio', ...apiRoute(updateportfolio))
 app.post('/buyportfolio', ...apiRoute(buyportfolio))
 app.post('/searchgiphy', ...apiRoute(searchgiphy))
 app.post('/manachantweet', ...apiRoute(manachantweet))
-app.post('/send-mana', ...apiRoute(sendmana))
 app.post('/refer-user', ...apiRoute(referuser))
 app.post('/leave-review', ...apiRoute(leavereview))
 app.post(
@@ -291,10 +325,6 @@ const publicApiRoute = (endpoint: RequestHandler) => {
     apiErrorHandler,
   ] as const
 }
-
-// v0 public API routes (formerly vercel functions)
-app.options('/v0', allowCorsUnrestricted)
-app.get('/v0/markets', ...publicApiRoute(markets))
 
 // Ian: not sure how to restrict triggers to supabase origin, yet
 app.post('/on-create-bet', ...publicApiRoute(oncreatebet))

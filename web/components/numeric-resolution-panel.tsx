@@ -3,7 +3,7 @@ import { NumberCancelSelector } from './bet/yes-no-selector'
 import { Spacer } from './layout/spacer'
 import { ResolveConfirmationButton } from './buttons/confirmation-button'
 import { PseudoNumericContract } from 'common/contract'
-import { APIError, resolveMarket } from 'web/lib/firebase/api'
+import { APIError, api } from 'web/lib/firebase/api'
 import { getPseudoProbability } from 'common/pseudo-numeric'
 import { BETTORS } from 'common/user'
 import { Button } from './buttons/button'
@@ -30,7 +30,7 @@ export function NumericResolutionPanel(props: {
   onClose: () => void
 }) {
   const { contract, inModal, onClose } = props
-  const { min, max, outcomeType, question } = contract
+  const { min, max, question } = contract
   const isCreator = useUser()?.id === contract.creatorId
 
   const [outcomeMode, setOutcomeMode] = useState<'NUMBER' | 'CANCEL'>('NUMBER')
@@ -40,32 +40,20 @@ export function NumericResolutionPanel(props: {
   const [error, setError] = useState<string | undefined>(undefined)
 
   const resolve = async () => {
-    const finalOutcome =
-      outcomeMode === 'CANCEL'
-        ? 'CANCEL'
-        : outcomeType === 'PSEUDO_NUMERIC'
-        ? 'MKT'
-        : 'NUMBER'
-    if (outcomeMode === undefined || finalOutcome === undefined) return
-
     setIsSubmitting(true)
 
     const boundedValue = Math.max(Math.min(max, value ?? 0), min)
 
     const probabilityInt =
-      100 *
-      getPseudoProbability(
-        boundedValue,
-        min,
-        max,
-        outcomeType === 'PSEUDO_NUMERIC' && contract.isLogScale
-      )
+      100 * getPseudoProbability(boundedValue, min, max, contract.isLogScale)
+
+    const outcome = outcomeMode === 'CANCEL' ? 'CANCEL' : 'MKT'
 
     try {
-      await resolveMarket({
-        outcome: finalOutcome,
+      await api('resolve', {
         value,
         probabilityInt,
+        outcome,
         contractId: contract.id,
       })
     } catch (e) {
