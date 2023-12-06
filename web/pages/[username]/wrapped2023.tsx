@@ -17,6 +17,7 @@ import { TotalProfit } from 'web/components/wrapped/TotalProfit'
 import { Row } from 'web/components/layout/row'
 import { TheEnd } from 'web/components/wrapped/TheEnd'
 import { MaxMinProfit } from 'web/components/wrapped/MaxMinProfit'
+import { SEO } from 'web/components/SEO'
 
 export const getStaticProps = async (props: {
   params: {
@@ -79,6 +80,12 @@ function Wrapped2023Content(props: { user: User; username: string }) {
         'relative mx-auto min-h-screen w-full bg-indigo-800 text-white'
       )}
     >
+      <SEO
+        title={`${user.name}'s Manifold Wrapped 2023`}
+        description={`See ${user.name}'s biggest gains and losses on Manifold in 2023.`}
+        image="/manifold-wrapped.png"
+      />
+
       <Snowfall style={{ opacity: 0.2 }} />
       {state.page == '0' ? (
         <Unwrap goToNextPage={goToNextPage} />
