@@ -60,6 +60,8 @@ import { useEvent } from 'web/hooks/use-event'
 import { Avatar } from 'web/components/widgets/avatar'
 import { FaArrowTrendDown, FaArrowTrendUp } from 'react-icons/fa6'
 import { formatPercent } from 'common/util/format'
+import { updateContract } from 'web/lib/firebase/contracts'
+import { isAdminId, isModId } from 'common/envs/constants'
 
 export const ContractOverview = memo(
   (props: {
@@ -530,7 +532,8 @@ const ChoiceOverview = (props: {
   )
 
   const [showAll, setShowAll] = useState(
-    addAnswersMode === 'DISABLED' || answers.length <= 5
+    (addAnswersMode === 'DISABLED' && answers.length <= 10) ||
+      answers.length <= 5
   )
 
   const sortedAnswers = useMemo(
@@ -559,6 +562,26 @@ const ChoiceOverview = (props: {
       ]),
     [answers, resolutions, shouldAnswersSumToOne, sort]
   )
+
+  useEffect(() => {
+    const currentUserId = useUser()?.id
+
+    if (
+      currentUserId &&
+      (isModId(currentUserId) ||
+        isAdminId(currentUserId) ||
+        contract.creatorId === currentUserId)
+    ) {
+      updateContract(contract.id, { sort }).then(
+        () => {
+          toast.success('Sort order updated for all users')
+        },
+        (e) => {
+          toast.error('Failed to update sort order')
+        }
+      )
+    }
+  }, [sort])
 
   const {
     pointerMode,

@@ -63,6 +63,16 @@ type AnyContractType =
   | (NonBet & BountiedQuestion)
   | (NonBet & Poll)
 
+export const SORTS = [
+  { label: 'High %', value: 'prob-desc' },
+  { label: 'Low %', value: 'prob-asc' },
+  { label: 'Old', value: 'old' },
+  { label: 'New', value: 'new' },
+  { label: 'Trending', value: 'liquidity' },
+] as const
+
+type SortType = (typeof SORTS)[number]['value']
+
 export type Contract<T extends AnyContractType = AnyContractType> = {
   id: string
   slug: string // auto-generated; must be unique
@@ -88,6 +98,7 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
   resolutionTime?: number // When the contract creator resolved the market
   resolution?: string
   resolutionProbability?: number
+  sort?: SortType
 
   closeEmailsSent?: number
 

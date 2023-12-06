@@ -14,6 +14,7 @@ import {
   MultiContract,
   contractPath,
   Contract,
+  SORTS,
 } from 'common/contract'
 import { formatMoney } from 'common/util/format'
 import Link from 'next/link'
@@ -48,14 +49,6 @@ import { User } from 'common/user'
 import { Avatar } from 'web/components/widgets/avatar'
 import { UserLink } from 'web/components/widgets/user-link'
 import { TradesButton } from 'web/components/contract/trades-button'
-
-const SORTS = [
-  { label: 'High %', value: 'prob-desc' },
-  { label: 'Low %', value: 'prob-asc' },
-  { label: 'Old', value: 'old' },
-  { label: 'New', value: 'new' },
-  { label: 'Trending', value: 'liquidity' },
-] as const
 
 // full resorting, hover, clickiness, search and add
 export function AnswersPanel(props: {
