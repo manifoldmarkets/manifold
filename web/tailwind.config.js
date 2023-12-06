@@ -266,11 +266,85 @@ module.exports = {
             transitionTimingFunction: 'cubic-bezier(1, 1, 0.8, 0)',
           },
         },
+        'slide-up-out': {
+          '0%': {
+            transform: 'translateY(0%)',
+            transitionTimingFunction: 'cubic-bezier(1, 1, 0.8, 0)',
+          },
+          '100%': {
+            transform: 'translateY(-100%)',
+            transitionTimingFunction: 'cubic-bezier(1, 1, 0.8, 0)',
+          },
+        },
+        'slide-left-out': {
+          '0%': {
+            transform: 'translateX(0%)',
+            transitionTimingFunction: 'cubic-bezier(1, 1, 0.8, 0)',
+          },
+          '100%': {
+            transform: 'translateX(-100%)',
+            transitionTimingFunction: 'cubic-bezier(1, 1, 0.8, 0)',
+          },
+        },
+        'slide-right-out': {
+          '0%': {
+            transform: 'translateX(0%)',
+            opacity: 1,
+            transitionTimingFunction: 'cubic-bezier(1, 1, 0.8, 0)',
+          },
+          '100%': {
+            transform: 'translateX(100%)',
+            opacity: 0,
+            transitionTimingFunction: 'cubic-bezier(1, 1, 0.8, 0)',
+          },
+        },
+        'slide-right-in': {
+          '0%': {
+            transform: 'translateX(-100%)',
+            transitionTimingFunction: 'cubic-bezier(1, 1, 0.8, 0)',
+          },
+          '100%': {
+            transform: 'translateX(0%)',
+            transitionTimingFunction: 'cubic-bezier(1, 1, 0.8, 0)',
+          },
+        },
+        'fade-in': {
+          '0%': {
+            opacity: 0,
+            transitionTimingFunction: 'cubic-bezier(1, 1, 0.8, 0)',
+          },
+          '100%': {
+            opacity: 1,
+            transitionTimingFunction: 'cubic-bezier(1, 1, 0.8, 0)',
+          },
+        },
+        'fade-out': {
+          '0%': {
+            opacity: 1,
+            transitionTimingFunction: 'cubic-bezier(1, 1, 0.8, 0)',
+          },
+          '100%': {
+            opacity: 0,
+            transitionTimingFunction: 'cubic-bezier(1, 1, 0.8, 0)',
+          },
+        },
+        'grow-up': {
+          '0%': {
+            height: 0,
+            transitionTimingFunction: 'cubic-bezier(1, 1, 0.8, 0)',
+          },
+          '100%': {
+            height: '200px',
+            transitionTimingFunction: 'cubic-bezier(1, 1, 0.8, 0)',
+          },
+        },
       },
       animation: {
         progress: 'progress linear forwards',
         'bounce-left': 'bounce-left 0.8s',
+        'bounce-left-loop': 'bounce-left 0.8s infinite',
         'bounce-right': 'bounce-right 0.7s',
+        'bounce-right-loop': 'bounce-right 0.7s infinite',
         'slide-in-from-right': 'slide-in-from-right 0.1s',
         'slide-in-1': 'slide-in-1 4s',
         'slide-in-2': 'slide-in-2 4s',
@@ -288,6 +362,13 @@ module.exports = {
         'float-and-fade-3': 'float-and-fade-3 5s',
         'slide-in-4-grow': 'slide-in-4-grow 4s',
         'slide-up-3-grow': 'slide-up-3-grow 4s',
+        'slide-up-out': 'slide-up-out 1s',
+        'slide-left-out': 'slide-left-out 1s',
+        'slide-right-out': 'slide-right-out 1s',
+        'slide-right-in': 'slide-right-in 1s',
+        'fade-in': 'fade-in 1s',
+        'fade-out': 'fade-out 1s',
+        'grow-up': 'grow-up 1s',
       },
       colors: {
         ink: {
