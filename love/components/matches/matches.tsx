@@ -1,4 +1,4 @@
-import { useLovers } from 'love/hooks/use-lovers'
+import { useCompatibleLovers, useLovers } from 'love/hooks/use-lovers'
 import { useMatches } from 'love/hooks/use-matches'
 import { Col } from 'web/components/layout/col'
 import { Carousel } from 'web/components/widgets/carousel'
@@ -24,6 +24,8 @@ export const Matches = (props: {
   const lovers = useLovers()
   const matches = useMatches(profileUserId)
   const user = useUser()
+
+  const compatibleLovers = useCompatibleLovers(profileUserId)
 
   if (!lovers || !matches) return <LoadingIndicator />
 

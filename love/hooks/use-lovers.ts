@@ -7,6 +7,7 @@ import { getUsers } from 'web/lib/supabase/user'
 import { User } from 'common/user'
 import { filterDefined } from 'common/util/array'
 import { Lover } from 'common/love/lover'
+import { getCompatibleLovers } from 'web/lib/firebase/api'
 
 export const useLovers = () => {
   const [lovers, setLovers] = usePersistentInMemoryState<
@@ -39,6 +40,21 @@ export const useLovers = () => {
         setLovers(newLovers)
       })
   }, [])
+
+  return lovers
+}
+
+export const useCompatibleLovers = (userId: string) => {
+  const [lovers, setLovers] = usePersistentInMemoryState<
+    (Row<'lovers'> & { user: User })[] | undefined
+  >(undefined, `compatible-lovers-${userId}`)
+
+  useEffect(() => {
+    getCompatibleLovers({ userId }).then((result) => {
+      console.log('got compatible lovers', result)
+      setLovers(result.lovers)
+    })
+  }, [userId])
 
   return lovers
 }

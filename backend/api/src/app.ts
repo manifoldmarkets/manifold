@@ -283,7 +283,7 @@ app.post(
 )
 app.post('/create-chart-annotation', ...apiRoute(createchartannotation))
 app.post('/delete-chart-annotation', ...apiRoute(deletechartannotation))
-app.get('/get-compatible-lovers', ...apiRoute(getCompatibleLovers))
+app.post('/get-compatible-lovers', ...apiRoute(getCompatibleLovers))
 
 const publicApiRoute = (endpoint: RequestHandler) => {
   return [
