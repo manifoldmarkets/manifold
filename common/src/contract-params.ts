@@ -129,7 +129,7 @@ export async function getContractParams(
   }
 }
 
-const getSingleBetPoints = (
+export const getSingleBetPoints = (
   betPoints: { x: number; y: number }[],
   contract: Contract
 ) => {

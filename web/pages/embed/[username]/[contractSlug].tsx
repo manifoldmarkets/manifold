@@ -33,7 +33,7 @@ import Custom404 from '../../404'
 import { ContractSummaryStats } from 'web/components/contract/contract-summary-stats'
 import { PollPanel } from 'web/components/poll/poll-panel'
 import { getBetPoints } from 'common/supabase/bets'
-import { getInitialProbability } from 'common/calculate'
+import { getSingleBetPoints } from 'common/contract-params'
 
 type Points = HistoryPoint<any>[]
 
@@ -51,13 +51,8 @@ export async function getHistoryData(
         afterTime,
       })
 
-      const points = [
-        { x: contract.createdTime, y: getInitialProbability(contract) },
-        ...allBetPoints,
-      ]
-
-      points.sort((a, b) => a.x - b.x)
-      return points
+      const points = getSingleBetPoints(allBetPoints, contract)
+      return points.map(([x, y]) => ({ x, y }))
     }
 
     default:
