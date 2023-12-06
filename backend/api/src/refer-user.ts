@@ -2,27 +2,20 @@ import { z } from 'zod'
 import { APIError, authEndpoint, validate } from 'api/helpers'
 import { MINUTES_ALLOWED_TO_REFER, User } from 'common/user'
 import { Contract } from 'common/contract'
-import {
-  createSupabaseClient,
-  createSupabaseDirectClient,
-} from 'shared/supabase/init'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { ReferralTxn } from 'common/txn'
 import { REFERRAL_AMOUNT } from 'common/economy'
-import {
-  createFollowAfterReferralNotification,
-  createReferralNotification,
-} from 'shared/create-notification'
+import { createReferralNotification } from 'shared/create-notification'
 import { completeReferralsQuest } from 'shared/complete-quest-internal'
 import { convertUser } from 'common/supabase/users'
 import { first } from 'lodash'
 import * as admin from 'firebase-admin'
-import { GCPLog, getContractSupabase, getUserSupabase } from 'shared/utils'
+import { GCPLog, getContractSupabase, getUser } from 'shared/utils'
 import * as crypto from 'crypto'
 import { runTxnFromBank } from 'shared/txn/run-txn'
 import { MINUTE_MS } from 'common/util/time'
 import { removeUndefinedProps } from 'common/util/object'
 import { trackPublicEvent } from 'shared/analytics'
-import { manifoldLoveUserId } from 'common/love/constants'
 
 const bodySchema = z
   .object({
@@ -51,7 +44,7 @@ export const referuser = authEndpoint(async (req, auth, log) => {
       `User ${referredByUsername} is banned from posting, not eligible for referral bonus`
     )
   }
-  const newUser = await getUserSupabase(auth.uid)
+  const newUser = await getUser(auth.uid)
   if (!newUser) {
     throw new APIError(403, `User ${auth.uid} not found`)
   }
@@ -64,17 +57,11 @@ export const referuser = authEndpoint(async (req, auth, log) => {
     log(`referredByContract: ${referredByContract.slug}`)
   }
   await handleReferral(newUser.id, referredByUser.id, log, referredByContract)
-  trackPublicEvent(newUser.id, 'Referral', {
+  await trackPublicEvent(newUser.id, 'Referral', {
     referredByUserId: referredByUser.id,
     referredByContractId: contractId,
   })
-  if (referredByUser.id !== manifoldLoveUserId) {
-    const db = createSupabaseClient()
-    await db
-      .from('user_follows')
-      .upsert([{ user_id: newUser.id, follow_id: referredByUser.id }])
-    await createFollowAfterReferralNotification(newUser.id, referredByUser, pg)
-  }
+
   return { status: 'ok' }
 })
 

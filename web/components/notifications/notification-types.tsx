@@ -1496,12 +1496,12 @@ function ReferralProgramNotification(props: {
         user && canSetReferrer(user) ? (
           <span>Did a friend refer you? Tap here to attribute them!</span>
         ) : (
-          <span>Tap here to see your referral code!</span>
+          <span>Tap here to see your referral code.</span>
         )
       }
     >
       <span>
-        Want free mana? Refer friends and get{' '}
+        Refer friends and get{' '}
         <span className="text-teal-500">{formatMoney(REFERRAL_AMOUNT)}</span> on
         every sign up!
       </span>
@@ -1510,6 +1510,7 @@ function ReferralProgramNotification(props: {
           user={user}
           isOpen={showModal}
           setIsOpen={setShowModal}
+          defaultTab={2}
         />
       )}
     </NotificationFrame>
@@ -1541,7 +1542,7 @@ function FollowFromReferralNotification(props: {
         />
       }
       link={`/browse?${SEARCH_TYPE_KEY}=Users`}
-      subtitle={`Tap here to find more people to follow!`}
+      subtitle={`Tap here to find more people to follow, or to unfollow them.`}
     >
       <>
         <span>
@@ -1551,7 +1552,7 @@ function FollowFromReferralNotification(props: {
             name={sourceUserName}
             username={sourceUserUsername}
           />{' '}
-          (your referrer)
+          (you just bet on their question!)
         </span>
       </>
     </NotificationFrame>
