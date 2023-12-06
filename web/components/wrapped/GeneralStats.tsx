@@ -75,7 +75,7 @@ export function GeneralStats(props: {
 
   return (
     <>
-      <div className="relative mx-auto my-auto max-w-lg">
+      <div className="relative mx-auto my-auto max-w-lg overflow-hidden">
         <div
           className={clsx(
             'px-4 text-2xl',
