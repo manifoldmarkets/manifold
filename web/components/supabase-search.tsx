@@ -284,8 +284,8 @@ export function SupabaseSearch(props: {
 
   const searchCountRef = useRef(0)
   useEffect(() => {
-    const searchCount = ++searchCountRef.current
     queryContracts(true)
+    const searchCount = ++searchCountRef.current
     if (query !== lastQuery) {
       queryUsers(query).then((results) => {
         if (searchCount === searchCountRef.current)
@@ -557,7 +557,7 @@ const useContractSearch = (
     FRESH_SEARCH_CHANGED_STATE,
     `${persistPrefix}-supabase-contract-search`
   )
-  const [firstQuery, setFirstQuery] = useState(true)
+  const [firstLoad, setFirstLoad] = useState(true)
   const [loading, setLoading] = useState(false)
 
   const requestId = useRef(0)
@@ -573,10 +573,12 @@ const useContractSearch = (
     } = searchParams
 
     setLastQuery(query)
+    const hasCachedData = firstLoad && state.contracts?.length
+    setFirstLoad(false)
 
-    const offset = freshQuery ? 0 : state.contracts?.length ?? 0
-
-    if (freshQuery || state.shouldLoadMore) {
+    // if we have cached data, don't fetch. this preserves the scroll position
+    // bottom load more: only load more if there are more results
+    if (freshQuery ? !hasCachedData : state.shouldLoadMore) {
       const id = ++requestId.current
       let timeoutId: NodeJS.Timeout | undefined
       if (freshQuery) {
@@ -592,7 +594,7 @@ const useContractSearch = (
         filter,
         sort,
         contractType,
-        offset,
+        offset: freshQuery ? 0 : state.contracts?.length ?? 0,
         limit: CONTRACTS_PER_SEARCH_PAGE,
         topicSlug: topicSlug !== '' ? topicSlug : undefined,
         creatorId: additionalFilter?.creatorId,
@@ -612,9 +614,7 @@ const useContractSearch = (
         clearTimeout(timeoutId)
         setLoading(false)
 
-        if (freshQuery && isWholePage && !firstQuery) window.scrollTo(0, 0)
-
-        setFirstQuery(false)
+        if (freshQuery && isWholePage) window.scrollTo(0, 0)
 
         return shouldLoadMore
       }
@@ -639,7 +639,7 @@ const useContractSearch = (
 
   return {
     contracts,
-    loading,
+    loading: loading && !(firstLoad && contracts),
     shouldLoadMore: state.shouldLoadMore,
     queryContracts,
   }
