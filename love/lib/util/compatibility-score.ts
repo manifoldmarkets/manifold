@@ -6,6 +6,7 @@ import {
   areRelationshipStyleCompatible,
   areLocationCompatible,
   areGenderCompatible,
+  areWantKidsCompatible,
 } from './compatibility-util'
 
 const importanceToScore = {
@@ -42,6 +43,7 @@ const getLoversCompatibility = (lover1: LoverRow, lover2: LoverRow) => {
   let multiplier = 1
   multiplier *= areAgeCompatible(lover1, lover2) ? 1 : 0.5
   multiplier *= areRelationshipStyleCompatible(lover1, lover2) ? 1 : 0.5
+  multiplier *= areWantKidsCompatible(lover1, lover2) ? 1 : 0.5
   multiplier *= areLocationCompatible(lover1, lover2) ? 1 : 0.1
   multiplier *= areGenderCompatible(lover1, lover2) ? 1 : 0.01
   return multiplier

@@ -108,6 +108,7 @@ import { clearLoverPhoto } from './love/clear-lover-photo'
 import { editanswercpmm } from 'api/edit-answer'
 import { createlovecompatibilityquestion } from 'api/love/create-love-compatibility-question'
 import { oncreatebet } from 'api/on-create-bet'
+import { getCompatibleLovers } from './love/get-compatible-lovers'
 
 import { markets } from 'api/v0/markets'
 import { createchartannotation } from 'api/create-chart-annotation'
@@ -282,6 +283,7 @@ app.post(
 )
 app.post('/create-chart-annotation', ...apiRoute(createchartannotation))
 app.post('/delete-chart-annotation', ...apiRoute(deletechartannotation))
+app.get('/get-compatible-lovers', ...apiRoute(getCompatibleLovers))
 
 const publicApiRoute = (endpoint: RequestHandler) => {
   return [

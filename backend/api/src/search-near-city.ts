@@ -10,6 +10,10 @@ const bodySchema = z.object({
 
 export const searchnearcity = MaybeAuthedEndpoint(async (req) => {
   const { cityId, radius } = validate(bodySchema, req.body)
+  return await searchNearCityMain(cityId, radius)
+})
+
+const searchNearCityMain = async (cityId: string, radius: number) => {
   const apiKey = process.env.GEODB_API_KEY
 
   if (!apiKey) {
@@ -38,4 +42,12 @@ export const searchnearcity = MaybeAuthedEndpoint(async (req) => {
   } catch (error) {
     return { status: 'failure', data: error }
   }
-})
+}
+
+export const getNearbyCities = async (cityId: string, radius: number) => {
+  const result = await searchNearCityMain(cityId, radius)
+  const cityIds = (result.data.data as any[]).map(
+    (city) => city.id.toString() as string
+  )
+  return cityIds
+}
