@@ -58,8 +58,8 @@ import { TbPencilPlus } from 'react-icons/tb'
 import { ChartAnnotation } from 'common/supabase/chart-annotations'
 import { useEvent } from 'web/hooks/use-event'
 import { Avatar } from 'web/components/widgets/avatar'
-import { formatPercent } from 'common/util/format'
 import { FaArrowTrendDown, FaArrowTrendUp } from 'react-icons/fa6'
+import { formatPercent } from 'common/util/format'
 
 export const ContractOverview = memo(
   (props: {
@@ -400,24 +400,32 @@ const ChartAnnotation = (props: {
   return (
     <Col
       className={clsx(
-        'cursor-pointer rounded-md border-2 p-2',
-        hovered ? 'border-indigo-600' : ''
+        'cursor-pointer rounded-md border-2',
+        hovered ? 'border-indigo-600' : 'dark:border-ink-500 border-ink-200'
       )}
       ref={ref}
       onMouseOver={() => setHoveredAnnotation?.(id)}
       onMouseLeave={() => setHoveredAnnotation?.(null)}
       onClick={() => setOpen(true)}
     >
-      <Col className={'w-[175px] gap-1'}>
-        <Row className={'text-ink-500 items-center justify-between '}>
+      <div className={'relative w-[175px] p-1'}>
+        <div className={'h-16 overflow-hidden p-1 text-sm'}>
           <Avatar
             avatarUrl={user_avatar_url ?? creator_avatar_url}
             username={user_username ?? creator_username}
             noLink={true}
             size={'2xs'}
-            className={'mr-1'}
+            className={'float-left mr-1 mt-0.5'}
           />
-          <Row className={'items-center'}>
+          <span className={'break-anywhere text-sm'}>{text}</span>
+        </div>
+        <div
+          className={clsx(
+            'bg-canvas-0 absolute bottom-[0.15rem] right-[0.15rem] justify-end rounded-sm py-0.5',
+            prob_change !== null ? 'pl-2 pr-1' : 'px-1'
+          )}
+        >
+          <Row className={'text-ink-500 items-center'}>
             {prob_change !== null && (
               <Row className={'gap-1 text-xs'}>
                 <Row
@@ -444,11 +452,8 @@ const ChartAnnotation = (props: {
               })}
             </span>
           </Row>
-        </Row>
-        <Row className="line-clamp-2 text-sm">
-          <span className={'line-clamp-2'}>{text}</span>
-        </Row>
-      </Col>
+        </div>
+      </div>
       {open && (
         <ReadChartAnnotationModal
           open={open}

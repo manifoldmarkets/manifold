@@ -179,6 +179,7 @@ export const MOD_IDS = [
 ]
 
 export const MVP = ['Eliza']
+export const BTE_USER_ID = '4JuXgDx47xPagH5mcLDqLzUSN5g2'
 
 export const VERIFIED_USERNAMES = [
   'EliezerYudkowsky',

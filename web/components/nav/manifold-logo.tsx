@@ -4,10 +4,11 @@ import { useUser } from 'web/hooks/use-user'
 import { ENV } from 'common/envs/constants'
 import Logo from 'web/public/logo.svg'
 import { useState } from 'react'
+import Snowfall from 'react-snowfall'
 
 export function ManifoldLogo(props: { className?: string; twoLine?: boolean }) {
   const { className } = props
-  const [snowCount, setSnowCount] = useState(0)
+  const [isSnowing, setIsSnowing] = useState(false)
 
   const user = useUser()
 
@@ -18,7 +19,7 @@ export function ManifoldLogo(props: { className?: string; twoLine?: boolean }) {
         onClick={(e) => {
           if (window.location.pathname == '/home') {
             e.preventDefault()
-            setSnowCount((count) => count + 1)
+            setIsSnowing(!isSnowing)
           }
         }}
         className={clsx(
@@ -36,8 +37,17 @@ export function ManifoldLogo(props: { className?: string; twoLine?: boolean }) {
           {ENV == 'DEV' ? 'DEVIF❄️LD' : 'MANIF❄️LD'}
         </div>
       </Link>
-      {/* Reenable if it doesn't freeze people's computers. */}
-      {/* <NConfettis count={snowCount} /> */}
+      {isSnowing && (
+        <Snowfall
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+          }}
+        />
+      )}
     </>
   )
 }

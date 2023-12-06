@@ -21,7 +21,7 @@ import {
   UNIQUE_ANSWER_BETTOR_BONUS_AMOUNT,
   UNIQUE_BETTOR_BONUS_AMOUNT,
 } from 'common/economy'
-import { ENV_CONFIG } from 'common/envs/constants'
+import { BTE_USER_ID, ENV_CONFIG } from 'common/envs/constants'
 import { formatMoney } from 'common/util/format'
 import { AddFundsModal } from 'web/components/add-funds-modal'
 import { MultipleChoiceAnswers } from 'web/components/answers/multiple-choice-answers'
@@ -269,7 +269,7 @@ export function ContractParamsForm(props: {
     isValidQuestion &&
     ante !== undefined &&
     ante !== null &&
-    ante <= balance &&
+    (ante <= balance || creator.id === BTE_USER_ID) &&
     isValidDate &&
     visibility !== 'private' &&
     (outcomeType !== 'PSEUDO_NUMERIC' ||

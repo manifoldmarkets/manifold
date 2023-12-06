@@ -38,6 +38,7 @@ import {
 import { addGroupToContract } from 'shared/update-group-contracts-internal'
 import { generateContractEmbeddings } from 'shared/supabase/contracts'
 import { manifoldLoveUserId } from 'common/love/constants'
+import { BTE_USER_ID } from 'common/envs/constants'
 import { ValidatedAPIParams } from 'common/api/schema'
 import {
   createBinarySchema,
@@ -137,7 +138,7 @@ export async function createMarketHelper(
       ante
     )
 
-    if (ante > getAvailableBalancePerQuestion(user))
+    if (ante > getAvailableBalancePerQuestion(user) && user.id !== BTE_USER_ID)
       throw new APIError(
         403,
         `Balance must be at least ${amountSuppliedByUser}.`

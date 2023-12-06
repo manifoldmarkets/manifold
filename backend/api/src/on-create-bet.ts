@@ -6,7 +6,10 @@ import { Contract } from 'common/contract'
 import { User } from 'common/user'
 import { keyBy } from 'lodash'
 import { filterDefined } from 'common/util/array'
-import { createBetFillNotification } from 'shared/create-notification'
+import {
+  createBetFillNotification,
+  createFollowAfterReferralNotification,
+} from 'shared/create-notification'
 import { calculateUserMetrics } from 'common/calculate-metrics'
 import { bulkUpdateContractMetrics } from 'shared/helpers/user-contract-metrics'
 import {
@@ -14,6 +17,8 @@ import {
   SupabaseDirectClient,
 } from 'shared/supabase/init'
 import { MAX_ID_LENGTH } from 'common/group'
+import { manifoldLoveUserId } from 'common/love/constants'
+import { MINUTE_MS } from 'common/util/time'
 
 const BetRowSchema = z.object({
   amount: z.number().nullable(),
@@ -45,7 +50,7 @@ const bodySchema = z
   })
   .strict()
 
-export const oncreatebet = jsonEndpoint(async (req, log) => {
+export const oncreatebet = jsonEndpoint(async (req, log, logError) => {
   const { record: bet, type } = validate(bodySchema, req.body)
   if (type !== 'INSERT') {
     throw new APIError(400, 'This endpoint only handles inserts')
@@ -73,7 +78,37 @@ export const oncreatebet = jsonEndpoint(async (req, log) => {
   if (!contract) throw new APIError(404, 'Contract not found')
   const bettor = await getUserSupabase(bet.user_id)
   if (!bettor) throw new APIError(404, 'Bettor not found')
-  if (previousEventExists) return { status: 'success', data: bet }
+
+  // If they're a new user and bet on their referrer's question, auto-create a follow and notify them
+  if (
+    bettor.createdTime > Date.now() - 10 * MINUTE_MS &&
+    bettor.referredByUserId !== manifoldLoveUserId &&
+    bettor.referredByUserId === contract.creatorId
+  ) {
+    const referredByUser = await getUserSupabase(bettor.referredByUserId)
+    if (!referredByUser) {
+      logError(
+        `User ${bettor.referredByUserId} not found, not creating follow after referral notification`
+      )
+    } else {
+      const previousFollowExists = await pg.oneOrNone(
+        `select 1 from user_follows where user_id = $1 and follow_id = $2`,
+        [bettor.id, bettor.referredByUserId]
+      )
+      if (!previousFollowExists) {
+        await pg.none(
+          `insert into user_follows (user_id, follow_id) values ($1, $2)`,
+          [bettor.id, bettor.referredByUserId]
+        )
+        await createFollowAfterReferralNotification(
+          bettor.id,
+          referredByUser,
+          pg
+        )
+      }
+    }
+  }
+
   const notifiedUsers = await notifyUsersOfLimitFills(
     bet.data as Bet,
     contract,
