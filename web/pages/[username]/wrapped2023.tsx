@@ -77,7 +77,7 @@ function Wrapped2023Content(props: { user: User; username: string }) {
   return (
     <Col
       className={clsx(
-        'relative mx-auto min-h-screen w-full bg-indigo-800 text-white'
+        'relative mx-auto max-h-screen min-h-screen w-full overflow-hidden bg-indigo-800 text-white'
       )}
     >
       <SEO
