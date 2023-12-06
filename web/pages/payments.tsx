@@ -317,7 +317,7 @@ export const PaymentsModal = (props: {
                 if (!amount || !toUsers.length) return
                 setLoading(true)
                 try {
-                  await api('managram', {
+                  await api('send-mana', {
                     toIds: toUsers.map((user) => user.id),
                     amount,
                     message,

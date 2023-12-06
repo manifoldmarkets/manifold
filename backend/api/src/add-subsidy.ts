@@ -6,7 +6,7 @@ import { APIError, typedEndpoint } from './helpers'
 import { SUBSIDY_FEE } from 'common/economy'
 
 export const addLiquidity = typedEndpoint(
-  'addLiquidity',
+  'add-liquidity',
   async ({ contractId, amount }, auth) => {
     // run as transaction to prevent race conditions
     return await firestore.runTransaction(async (transaction) => {

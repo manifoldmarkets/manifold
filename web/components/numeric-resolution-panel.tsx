@@ -30,7 +30,7 @@ export function NumericResolutionPanel(props: {
   onClose: () => void
 }) {
   const { contract, inModal, onClose } = props
-  const { min, max, outcomeType, question } = contract
+  const { min, max, question } = contract
   const isCreator = useUser()?.id === contract.creatorId
 
   const [outcomeMode, setOutcomeMode] = useState<'NUMBER' | 'CANCEL'>('NUMBER')
@@ -40,9 +40,6 @@ export function NumericResolutionPanel(props: {
   const [error, setError] = useState<string | undefined>(undefined)
 
   const resolve = async () => {
-    const finalOutcome = outcomeMode === 'CANCEL' ? 'CANCEL' : 'MKT'
-    if (outcomeMode === undefined || finalOutcome === undefined) return
-
     setIsSubmitting(true)
 
     const boundedValue = Math.max(Math.min(max, value ?? 0), min)
@@ -50,11 +47,13 @@ export function NumericResolutionPanel(props: {
     const probabilityInt =
       100 * getPseudoProbability(boundedValue, min, max, contract.isLogScale)
 
+    const outcome = outcomeMode === 'CANCEL' ? 'CANCEL' : 'MKT'
+
     try {
-      await api('resolveMarket', {
-        outcome: finalOutcome,
+      await api('resolve', {
         value,
         probabilityInt,
+        outcome,
         contractId: contract.id,
       })
     } catch (e) {

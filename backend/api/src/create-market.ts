@@ -49,10 +49,10 @@ import {
 } from 'common/api/market-types'
 import { z } from 'zod'
 
-type Body = ValidatedAPIParams<'createMarket'>
+type Body = ValidatedAPIParams<'create-market'>
 
 export const createMarket = typedEndpoint(
-  'createMarket',
+  'create-market',
   async (body, auth, { log }) => {
     const market = await createMarketHelper(body, auth, log)
     return toLiteMarket(market)

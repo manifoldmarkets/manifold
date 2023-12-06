@@ -9,7 +9,7 @@ export { APIError } from 'common//api/utils'
 import * as crypto from 'crypto'
 import {
   API,
-  APIName,
+  APIPath,
   APIParams,
   APIResponse,
   APISchema,
@@ -196,7 +196,7 @@ export const MaybeAuthedEndpoint = <T extends Json>(
   }
 }
 
-export const typedEndpoint = <N extends APIName>(
+export const typedEndpoint = <N extends APIPath>(
   name: N,
   handler: (
     props: ValidatedAPIParams<N>,

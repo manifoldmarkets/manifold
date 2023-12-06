@@ -6,7 +6,7 @@ import { isAdminId } from 'common/envs/constants'
 import { APIError, typedEndpoint } from './helpers'
 
 export const closeMarket = typedEndpoint(
-  'closeMarket',
+  'close',
   async (props, auth, { log }) => {
     const { contractId, closeTime } = props
     const contractDoc = firestore.doc(`contracts/${contractId}`)

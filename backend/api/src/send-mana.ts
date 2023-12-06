@@ -10,7 +10,7 @@ import { createSupabaseClient } from 'shared/supabase/init'
 import { isAdminId } from 'common/envs/constants'
 import { MAX_COMMENT_LENGTH } from 'common/comment'
 
-export const sendMana = typedEndpoint('managram', async (props, auth) => {
+export const sendMana = typedEndpoint('send-mana', async (props, auth) => {
   const { amount, toIds, message, groupId: passedGroupId } = props
   if (message.length > MAX_COMMENT_LENGTH) {
     throw new APIError(

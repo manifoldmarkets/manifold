@@ -108,7 +108,7 @@ import { clearLoverPhoto } from './love/clear-lover-photo'
 import { editanswercpmm } from 'api/edit-answer'
 import { createlovecompatibilityquestion } from 'api/love/create-love-compatibility-question'
 import { oncreatebet } from 'api/on-create-bet'
-import { API, type APIName } from 'common/api/schema'
+import { API, type APIPath } from 'common/api/schema'
 import { markets } from 'api/markets'
 import { createchartannotation } from 'api/create-chart-annotation'
 import { deletechartannotation } from 'api/delete-chart-annotation'
@@ -161,33 +161,33 @@ app.options('*', allowCorsManifold)
 app.options('/v0', allowCorsUnrestricted)
 
 // we define the handlers in this object in order to typecheck that every API has a handler
-const handlers: { [k in APIName]: RequestHandler } = {
+const handlers: { [k in APIPath]: RequestHandler } = {
   bet: placeBet,
-  cancelBet: cancelBet,
-  sellBet: sellBet,
+  'cancel-bet': cancelBet,
+  'sell-bet': sellBet,
   comment: createComment,
-  createMarket: createMarket,
-  closeMarket: closeMarket,
-  resolveMarket: resolveMarket,
-  addLiquidity: addLiquidity,
-  addBounty: addBounty,
-  awardBounty: awardBounty,
+  'create-market': createMarket,
+  close: closeMarket,
+  resolve: resolveMarket,
+  'add-liquidity': addLiquidity,
+  'add-bounty': addBounty,
+  'award-bounty': awardBounty,
   markets: markets,
-  managram: sendMana,
+  'send-mana': sendMana,
   me: getCurrentUser,
-  twitchCredentials: saveTwitchCredentials,
+  'save-twitch': saveTwitchCredentials,
 }
 
-Object.entries(handlers).forEach(([name, handler]) => {
-  const api = API[name as APIName]
-  const path = api.visibility === 'public' ? `/v0/${api.path}` : `/${api.path}`
+Object.entries(handlers).forEach(([path, handler]) => {
+  const api = API[path as APIPath]
+  const fullPath = api.visibility === 'public' ? `/v0/${path}` : `/${path}`
   const cors =
     api.visibility === 'public' ? allowCorsUnrestricted : allowCorsManifold
 
   // console.log('add route', api.method, path, api.authed ? 'authed' : 'anon')
 
   const apiRoute = [
-    path,
+    fullPath,
     express.json(),
     cors,
     handler,

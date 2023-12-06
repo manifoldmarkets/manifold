@@ -364,7 +364,7 @@ export function ContractParamsForm(props: {
         totalBounty:
           amountSuppliedByHouse > 0 ? amountSuppliedByHouse : bountyAmount,
       })
-      const newContract = await api('createMarket', createProps)
+      const newContract = await api('create-market', createProps)
 
       // wait for supabase
       const supabaseContract = await waitForSupabaseContract(newContract)

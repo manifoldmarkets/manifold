@@ -16,7 +16,7 @@ import {
 } from 'common/api/market-types'
 
 export const resolveMarket = typedEndpoint(
-  'resolveMarket',
+  'resolve',
   async (props, auth, { log }) => {
     const { contractId } = props
     const contractDoc = firestore.doc(`contracts/${contractId}`)
@@ -72,7 +72,7 @@ export const resolveMarket = typedEndpoint(
 
 function getResolutionParams(
   contract: Contract,
-  props: ValidatedAPIParams<'resolveMarket'>
+  props: ValidatedAPIParams<'resolve'>
 ) {
   const { outcomeType } = contract
   if (

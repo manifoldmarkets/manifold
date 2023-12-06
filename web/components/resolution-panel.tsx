@@ -70,7 +70,7 @@ export function ResolutionPanel(props: {
     setIsSubmitting(true)
 
     try {
-      await api('resolveMarket', {
+      await api('resolve', {
         outcome,
         contractId: contract.id,
         probabilityInt: prob,
@@ -245,7 +245,7 @@ export function MiniResolutionPanel(props: {
 
     try {
       await api(
-        'resolveMarket',
+        'resolve',
         removeUndefinedProps({
           outcome,
           contractId: contract.id,

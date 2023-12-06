@@ -14,7 +14,7 @@ import { ReportProps } from 'common/report'
 import { BaseDashboard, Dashboard, DashboardItem } from 'common/dashboard'
 import { Bet } from 'common/bet'
 import { LinkPreview } from 'common/link-preview'
-import { API, APIName, APIParams, APIResponse } from 'common/api/schema'
+import { API, APIPath, APIParams, APIResponse } from 'common/api/schema'
 
 export { APIError } from 'common/api/utils'
 
@@ -51,9 +51,9 @@ export async function maybeAuthedCall(
 }
 
 // TODO: use this for all calls
-export function api<N extends APIName>(api: N, params: APIParams<N>) {
-  const { path, method } = API[api]
-  return call(getApiUrl(path), method, params) as Promise<APIResponse<N>>
+export function api<P extends APIPath>(path: P, params: APIParams<P>) {
+  const { method } = API[path]
+  return call(getApiUrl(path), method, params) as Promise<APIResponse<P>>
 }
 
 export function lootbox() {

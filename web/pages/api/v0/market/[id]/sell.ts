@@ -3,7 +3,7 @@ import { nextHandler } from 'web/lib/api/handler'
 
 export const config = { api: { bodyParser: true } }
 
-const handler = nextHandler('sellBet')
+const handler = nextHandler('sell-bet')
 
 export default async function route(req: NextApiRequest, res: NextApiResponse) {
   const { id } = req.query

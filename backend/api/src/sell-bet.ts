@@ -6,7 +6,7 @@ import { Bet } from 'common/bet'
 import { getSellBetInfo } from 'common/sell-bet'
 import { addObjects, removeUndefinedProps } from 'common/util/object'
 
-export const sellBet = typedEndpoint('sellBet', async (req, auth) => {
+export const sellBet = typedEndpoint('sell-bet', async (req, auth) => {
   const { contractId, betId } = req
   // run as transaction to prevent race conditions
   return await firestore.runTransaction(async (transaction) => {

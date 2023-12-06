@@ -1,10 +1,10 @@
-import { APIName, API } from 'common/api/schema'
+import { APIPath, API } from 'common/api/schema'
 import { NextApiRequest, NextApiResponse } from 'next'
 import { applyCorsHeaders } from './cors'
 import { fetchBackend, forwardResponse } from './proxy'
 
-export function nextHandler(api: APIName) {
-  const { path, visibility } = API[api]
+export function nextHandler(path: APIPath) {
+  const { visibility } = API[path]
 
   return async function handler(req: NextApiRequest, res: NextApiResponse) {
     await applyCorsHeaders(req, res)

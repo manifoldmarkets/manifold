@@ -151,7 +151,7 @@ function SimpleBoostRow(props: {
       })
 
     if (!subsidyDisabled) {
-      await api('addLiquidity', { amount: subsidyAmount, contractId })
+      await api('add-liquidity', { amount: subsidyAmount, contractId })
 
       // setSuccess(
       //   `Boosted! You purchased ${numClicks} feed click${
