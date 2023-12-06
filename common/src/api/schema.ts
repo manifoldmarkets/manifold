@@ -26,7 +26,8 @@ type APIGenericSchema = {
 
 let _type: any
 
-export const API = {
+let _apiTypeCheck: { [x: string]: APIGenericSchema }
+export const API = _apiTypeCheck =  {
   comment: {
     method: 'POST',
     visibility: 'public',
@@ -187,10 +188,6 @@ export const API = {
 } as const
 
 export type APIPath = keyof typeof API
-
-// making sure that API follows this type while still being const
-const _typeCheck: { [k in APIPath]: APIGenericSchema } = API
-
 export type APISchema<N extends APIPath> = (typeof API)[N]
 
 export type APIParams<N extends APIPath> = z.input<APISchema<N>['props']>
