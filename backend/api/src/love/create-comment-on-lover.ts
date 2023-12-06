@@ -1,7 +1,7 @@
 import { APIError, authEndpoint, validate } from 'api/helpers'
 import { MAX_COMMENT_JSON_LENGTH } from 'api/create-comment'
 import { z } from 'zod'
-import { contentSchema } from 'shared/zod-types'
+import { contentSchema } from 'common/api/zod-types'
 import { JSONContent } from '@tiptap/core'
 import { getPrivateUser, getUser, getUserSupabase } from 'shared/utils'
 import {

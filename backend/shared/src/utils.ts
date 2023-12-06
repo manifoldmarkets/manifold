@@ -1,5 +1,5 @@
 import { generateJSON } from '@tiptap/html'
-import { getCloudRunServiceUrl } from 'common/api'
+import { getCloudRunServiceUrl } from 'common//api/utils'
 import { Contract, contractPath } from 'common/contract'
 import { PrivateUser, User } from 'common/user'
 import { extensions } from 'common/util/parse'
@@ -28,7 +28,7 @@ export const log = (...args: unknown[]) => {
 
 // log levels GCP's log explorer recognizes
 export const LEVELS = ['DEBUG', 'INFO', 'WARNING', 'ERROR'] as const
-export type GCPLogLevel = typeof LEVELS[number]
+export type GCPLogLevel = (typeof LEVELS)[number]
 
 // ian: Not sure if we need this for reference, from mqp's initial log implementation
 type GCPLogOutput = {

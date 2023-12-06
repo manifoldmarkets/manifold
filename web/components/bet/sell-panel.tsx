@@ -1,4 +1,4 @@
-import { APIError } from 'common/api'
+import { APIError } from 'common/api/utils'
 import { Bet, LimitBet } from 'common/bet'
 import {
   getAnswerProbability,

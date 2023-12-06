@@ -6,7 +6,7 @@ import { Answer, DpmAnswer } from 'common/answer'
 import { CPMMMultiContract, MultiContract } from 'common/contract'
 import { BuyAmountInput } from '../widgets/amount-input'
 import { Col } from '../layout/col'
-import { APIError, placeBet } from 'web/lib/firebase/api'
+import { APIError, api } from 'web/lib/firebase/api'
 import { Row } from '../layout/row'
 import { Spacer } from '../layout/spacer'
 import {
@@ -52,7 +52,8 @@ export function AnswerBetPanel(props: {
     setError(undefined)
     setIsSubmitting(true)
 
-    placeBet(
+    api(
+      'bet',
       removeUndefinedProps({
         amount: betAmount,
         answerId,

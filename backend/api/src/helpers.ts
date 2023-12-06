@@ -3,10 +3,18 @@ import { z } from 'zod'
 import { Request, Response, NextFunction } from 'express'
 
 import { PrivateUser } from 'common/user'
-import { APIError } from 'common/api'
+import { APIError } from 'common//api/utils'
 import { gLog, GCPLog, log } from 'shared/utils'
-export { APIError } from 'common/api'
+export { APIError } from 'common//api/utils'
 import * as crypto from 'crypto'
+import {
+  API,
+  APIPath,
+  APIParams,
+  APIResponse,
+  APISchema,
+  ValidatedAPIParams,
+} from 'common/api/schema'
 
 export type Json = Record<string, unknown> | Json[]
 export type Handler<T> = (req: Request) => Promise<T>
@@ -182,6 +190,40 @@ export const MaybeAuthedEndpoint = <T extends Json>(
     try {
       const { log, logError } = getLogs(req)
       res.status(200).json(await fn(req, authUser, log, logError, res))
+    } catch (e) {
+      next(e)
+    }
+  }
+}
+
+export const typedEndpoint = <N extends APIPath>(
+  name: N,
+  handler: (
+    props: ValidatedAPIParams<N>,
+    auth: APISchema<N> extends { authed: true }
+      ? AuthedUser
+      : AuthedUser | undefined,
+    { log, logError, res }: { log: GCPLog; logError: GCPLog; res: Response }
+  ) => Promise<APIResponse<N>>
+) => {
+  const { props: propSchema, authed: authRequired, method } = API[name]
+
+  return async (req: Request, res: Response, next: NextFunction) => {
+    let authUser: AuthedUser | undefined = undefined
+    try {
+      authUser = await lookupUser(await parseCredentials(req))
+    } catch (e) {
+      if (authRequired) next(e)
+    }
+
+    try {
+      const { log, logError } = getLogs(req)
+      const result = await handler(
+        validate(propSchema, method === 'GET' ? req.query : req.body),
+        authUser as AuthedUser,
+        { log, logError, res }
+      )
+      res.status(200).json(result ?? { success: true })
     } catch (e) {
       next(e)
     }

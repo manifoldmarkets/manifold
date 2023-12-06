@@ -2,22 +2,14 @@ import * as admin from 'firebase-admin'
 import { createBountyAddedNotification } from 'shared/create-notification'
 import { runAddBountyTxn } from 'shared/txn/run-bounty-txn'
 import { getContract } from 'shared/utils'
-import { z } from 'zod'
-import { authEndpoint, validate } from './helpers'
+import { typedEndpoint } from './helpers'
 
-const bodySchema = z
-  .object({
-    contractId: z.string(),
-    amount: z.number().gt(0).int().finite(),
-  })
-  .strict()
-
-export const addbounty = authEndpoint(async (req, auth) => {
-  const { contractId, amount } = validate(bodySchema, req.body)
+export const addBounty = typedEndpoint('add-bounty', async (props, auth) => {
+  const { contractId, amount } = props
 
   // run as transaction to prevent race conditions
   return await firestore.runTransaction(async (transaction) => {
-    const { txn } = await runAddBountyTxn(transaction, {
+    await runAddBountyTxn(transaction, {
       fromId: auth.uid,
       fromType: 'USER',
       toId: contractId,
@@ -36,7 +28,6 @@ export const addbounty = authEndpoint(async (req, auth) => {
         amount
       )
     }
-    return txn
   })
 })
 

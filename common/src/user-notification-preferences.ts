@@ -1,6 +1,6 @@
 import { filterDefined } from './util/array'
 import { notification_reason_types, NotificationReason } from './notification'
-import { getApiUrl } from './api'
+import { getApiUrl } from './api/utils'
 import { DOMAIN } from './envs/constants'
 import { PrivateUser } from './user'
 

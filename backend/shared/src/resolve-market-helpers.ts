@@ -27,7 +27,7 @@ import {
   GCPLog,
 } from './utils'
 import { getLoanPayouts, getPayouts, groupPayoutsByUser } from 'common/payouts'
-import { APIError } from 'common/api'
+import { APIError } from 'common//api/utils'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { Query } from 'firebase-admin/firestore'
 import { trackPublicEvent } from 'shared/analytics'

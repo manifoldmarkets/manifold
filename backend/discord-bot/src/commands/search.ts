@@ -1,4 +1,4 @@
-import { FullMarket, LiteMarket } from 'common/api-market-types'
+import { FullMarket, LiteMarket } from 'common/api/market-types'
 import { floatingEqual } from 'common/util/math'
 import { MINUTE_MS } from 'common/util/time'
 import { Command } from 'discord-bot/command'
