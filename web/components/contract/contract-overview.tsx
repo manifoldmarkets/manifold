@@ -490,6 +490,8 @@ const ChoiceOverview = (props: {
     onAnswerCommentClick,
   } = props
 
+  const currentUser = useUser()
+  const currentUserId = currentUser?.id
   const [showZoomer, setShowZoomer] = useState(false)
   const { currentTimePeriod, setTimePeriod, maxRange, zoomParams } =
     useTimePicker(contract, () => setShowZoomer(true))
@@ -564,8 +566,6 @@ const ChoiceOverview = (props: {
   )
 
   useEffect(() => {
-    const currentUserId = useUser()?.id
-
     if (
       currentUserId &&
       (isModId(currentUserId) ||
