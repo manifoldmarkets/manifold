@@ -56,7 +56,8 @@ export async function getHistoryData(
         ...allBetPoints,
       ]
 
-      return points.toSorted((a, b) => a.x - b.x)
+      points.sort((a, b) => a.x - b.x)
+      return points
     }
 
     default:
