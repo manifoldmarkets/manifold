@@ -86,7 +86,7 @@ function Wrapped2023Content(props: { user: User; username: string }) {
         image="/manifold-wrapped.png"
       />
 
-      {/* <Snowfall style={{ opacity: 0.2 }} /> */}
+      <Snowfall style={{ opacity: 0.2 }} />
       {state.page == '0' ? (
         <Unwrap goToNextPage={goToNextPage} />
       ) : state.page == '1' ? (
