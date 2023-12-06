@@ -31,15 +31,18 @@ export async function maybeAuthedCall(
   method: 'POST' | 'GET',
   params?: any
 ) {
+  const actualUrl =
+    method === 'POST' ? url : `${url}?${new URLSearchParams(params).toString()}`
   const user = auth.currentUser
   const token = await user?.getIdToken()
-  const req = new Request(url, {
+  const req = new Request(actualUrl, {
     headers: {
       Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json',
     },
     method: method,
-    body: params != null ? JSON.stringify(params) : undefined,
+    body:
+      params == null || method == 'GET' ? undefined : JSON.stringify(params),
   })
   return await fetch(req).then(async (resp) => {
     const json = (await resp.json()) as { [k: string]: any }
