@@ -194,8 +194,8 @@ export const AnnotationMarker = (props: {
         strokeDasharray={isHovered ? undefined : '5, 5'}
         className={
           isHovered
-            ? 'dark:stroke-primary-200 stroke-primary-500 z-20'
-            : 'stroke-primary-200 dark:stroke-primary-600'
+            ? 'dark:stroke-primary-300 stroke-primary-500 z-20'
+            : 'stroke-ink-300 dark:stroke-ink-600'
         }
         x1={x}
         x2={x}
@@ -207,8 +207,8 @@ export const AnnotationMarker = (props: {
         d={pinPath}
         className={clsx(
           isHovered
-            ? 'dark:fill-primary-200 fill-primary-500 z-20'
-            : 'fill-primary-200 dark:fill-primary-600'
+            ? 'dark:fill-primary-300 fill-primary-500 z-20'
+            : 'fill-ink-300 dark:fill-ink-600'
         )}
         z={isHovered ? 20 : 0}
         strokeWidth={isHovered ? 2 : 1}
