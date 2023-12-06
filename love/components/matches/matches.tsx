@@ -1,6 +1,5 @@
 import { useLovers } from 'love/hooks/use-lovers'
 import { useMatches } from 'love/hooks/use-matches'
-import { areGenderCompatible } from 'love/lib/util/gender'
 import { Col } from 'web/components/layout/col'
 import { Carousel } from 'web/components/widgets/carousel'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
@@ -8,6 +7,14 @@ import { useUser } from 'web/hooks/use-user'
 import { AddAMatchButton } from '../add-a-match-button'
 import { MatchTile } from './match-tile'
 import { Lover } from 'common/love/lover'
+import { BrowseMatchesButton } from '../browse-matches-button'
+import { filterDefined } from 'common/util/array'
+import { Row } from 'web/components/layout/row'
+import {
+  areAgeCompatible,
+  areGenderCompatible,
+  areLocationCompatible,
+} from 'love/lib/util/compatibility-util'
 
 export const Matches = (props: {
   profileLover: Lover
@@ -29,8 +36,14 @@ export const Matches = (props: {
   const potentialLovers = lovers
     .filter((l) => l.user_id !== profileUserId)
     .filter((l) => !matchesSet.has(l.user_id))
-    .filter((l) => !lover || areGenderCompatible(lover, l))
     .filter((l) => l.looking_for_matches)
+    .filter(
+      (l) =>
+        !lover ||
+        (areGenderCompatible(lover, l) &&
+          areAgeCompatible(lover, l) &&
+          areLocationCompatible(lover, l))
+    )
 
   const currentMatches = matches
     .filter((c) => !c.isResolved)
@@ -44,6 +57,20 @@ export const Matches = (props: {
 
       return b.answers[resolvedCountB].prob - a.answers[resolvedCountA].prob
     })
+
+  const matchedLovers = filterDefined(
+    currentMatches.map((contract) => {
+      const matchedLoverId =
+        contract.loverUserId1 === profileUserId
+          ? contract.loverUserId2
+          : contract.loverUserId1
+      const matchedLover = lovers.find(
+        (lover) => lover.user_id === matchedLoverId
+      )
+      return matchedLover
+    })
+  )
+
   const areYourMatches = profileUserId === user?.id
 
   return (
@@ -83,7 +110,19 @@ export const Matches = (props: {
       )}
 
       {lover && (
-        <AddAMatchButton lover={lover} potentialLovers={potentialLovers} />
+        <Row className="gap-4">
+          <BrowseMatchesButton
+            className="flex-1"
+            lover={lover}
+            potentialLovers={potentialLovers}
+            matchedLovers={matchedLovers}
+          />
+          <AddAMatchButton
+            className="flex-1"
+            lover={lover}
+            potentialLovers={potentialLovers}
+          />
+        </Row>
       )}
     </Col>
   )

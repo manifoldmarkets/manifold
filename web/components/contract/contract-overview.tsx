@@ -1,4 +1,4 @@
-import { ReactNode, memo, useMemo, useState } from 'react'
+import { ReactNode, memo, useMemo, useState, useEffect, useRef } from 'react'
 import clsx from 'clsx'
 import { sortBy } from 'lodash'
 
@@ -12,7 +12,6 @@ import {
   NumericContract,
   PseudoNumericContract,
 } from 'common/contract'
-import { YES_GRAPH_COLOR } from 'common/envs/constants'
 import { NumericContractChart } from '../charts/contract/numeric'
 import { BinaryContractChart } from '../charts/contract/binary'
 import { ChoiceContractChart, MultiPoints } from '../charts/contract/choice'
@@ -30,7 +29,7 @@ import { Period } from 'web/lib/firebase/users'
 import { periodDurations } from 'web/lib/util/time'
 import { SignedInBinaryMobileBetting } from '../bet/bet-button'
 import { StonkContractChart } from '../charts/contract/stonk'
-import { ZoomParams, getEndDate, useZoom } from '../charts/helpers'
+import { ZoomParams, getEndDate, useZoom, PointerMode } from '../charts/helpers'
 import { TimeRangePicker } from '../charts/time-range-picker'
 import { Row } from '../layout/row'
 import { QfOverview } from './qf-overview'
@@ -47,6 +46,20 @@ import { Col } from '../layout/col'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { getAnswerProbability } from 'common/calculate'
 import { searchInAny } from 'common/util/parse'
+import { useAnnotateChartTools } from 'web/hooks/use-chart-annotations'
+import {
+  ControlledCarousel,
+  useCarousel,
+} from 'web/components/widgets/carousel'
+import { ReadChartAnnotationModal } from 'web/components/annotate-chart'
+import { Button } from 'web/components/buttons/button'
+import toast from 'react-hot-toast'
+import { TbPencilPlus } from 'react-icons/tb'
+import { ChartAnnotation } from 'common/supabase/chart-annotations'
+import { useEvent } from 'web/hooks/use-event'
+import { Avatar } from 'web/components/widgets/avatar'
+import { FaArrowTrendDown, FaArrowTrendUp } from 'react-icons/fa6'
+import { formatPercent } from 'common/util/format'
 
 export const ContractOverview = memo(
   (props: {
@@ -56,6 +69,7 @@ export const ContractOverview = memo(
     resolutionRating?: ReactNode
     setShowResolver: (show: boolean) => void
     onAnswerCommentClick: (answer: Answer | DpmAnswer) => void
+    chartAnnotations: ChartAnnotation[]
   }) => {
     const {
       betPoints,
@@ -64,6 +78,7 @@ export const ContractOverview = memo(
       resolutionRating,
       setShowResolver,
       onAnswerCommentClick,
+      chartAnnotations,
     } = props
 
     switch (contract.outcomeType) {
@@ -73,6 +88,7 @@ export const ContractOverview = memo(
             betPoints={betPoints as any}
             contract={contract}
             resolutionRating={resolutionRating}
+            chartAnnotations={chartAnnotations}
           />
         )
       case 'NUMERIC':
@@ -103,6 +119,7 @@ export const ContractOverview = memo(
             setShowResolver={setShowResolver}
             resolutionRating={resolutionRating}
             onAnswerCommentClick={onAnswerCommentClick}
+            chartAnnotations={chartAnnotations}
           />
         )
       case 'STONK':
@@ -141,6 +158,7 @@ export const BinaryOverview = (props: {
   contract: BinaryContract
   betPoints: HistoryPoint<Partial<Bet>>[]
   resolutionRating?: ReactNode
+  chartAnnotations: ChartAnnotation[]
 }) => {
   const { contract, betPoints, resolutionRating } = props
   const user = useUser()
@@ -148,6 +166,14 @@ export const BinaryOverview = (props: {
   const [showZoomer, setShowZoomer] = useState(false)
   const { currentTimePeriod, setTimePeriod, maxRange, zoomParams } =
     useTimePicker(contract, () => setShowZoomer(true))
+  const {
+    pointerMode,
+    setPointerMode,
+    hoveredAnnotation,
+    setHoveredAnnotation,
+    chartAnnotations,
+    enableAdd,
+  } = useAnnotateChartTools(contract, props.chartAnnotations)
 
   return (
     <>
@@ -156,19 +182,32 @@ export const BinaryOverview = (props: {
           <BinaryResolutionOrChance contract={contract} />
           {resolutionRating}
         </Col>
-        <TimeRangePicker
-          currentTimePeriod={currentTimePeriod}
-          setCurrentTimePeriod={setTimePeriod}
-          maxRange={maxRange}
-          color="green"
-        />
+        <Row className={'gap-1'}>
+          {enableAdd && (
+            <EditChartAnnotationsButton
+              pointerMode={pointerMode}
+              setPointerMode={setPointerMode}
+            />
+          )}
+          <TimeRangePicker
+            currentTimePeriod={currentTimePeriod}
+            setCurrentTimePeriod={setTimePeriod}
+            maxRange={maxRange}
+            color="green"
+          />
+        </Row>
       </Row>
 
       <BinaryChart
         showZoomer={showZoomer}
+        showAnnotations={true}
         zoomParams={zoomParams}
         betPoints={betPoints}
         contract={contract}
+        hoveredAnnotation={hoveredAnnotation}
+        setHoveredAnnotation={setHoveredAnnotation}
+        pointerMode={pointerMode}
+        chartAnnotations={chartAnnotations}
       />
 
       {tradingAllowed(contract) && (
@@ -178,47 +217,251 @@ export const BinaryOverview = (props: {
   )
 }
 
+const EditChartAnnotationsButton = (props: {
+  pointerMode: PointerMode
+  setPointerMode: (mode: PointerMode) => void
+}) => {
+  const { pointerMode, setPointerMode } = props
+  return (
+    <Button
+      color={pointerMode === 'annotate' ? 'yellow' : 'gray-white'}
+      onClick={() => {
+        setPointerMode(pointerMode === 'annotate' ? 'zoom' : 'annotate')
+        if (pointerMode !== 'annotate')
+          toast('Click on the chart to add an annotation.', {
+            icon: <TbPencilPlus className={'h-5 w-5 text-green-500'} />,
+          })
+      }}
+      size={'xs'}
+    >
+      <TbPencilPlus className={clsx('h-[1.2rem] w-[1.2rem]')} />
+    </Button>
+  )
+}
+
 export function BinaryChart(props: {
   showZoomer?: boolean
   zoomParams?: ZoomParams
+  showAnnotations?: boolean
   betPoints: HistoryPoint<Partial<Bet>>[]
   percentBounds?: { max: number; min: number }
   contract: BinaryContract
   className?: string
   size?: 'sm' | 'md'
   color?: string
+  hoveredAnnotation?: number | null
+  setHoveredAnnotation?: (id: number | null) => void
+  pointerMode?: PointerMode
+  chartAnnotations?: ChartAnnotation[]
 }) {
   const {
     showZoomer,
     zoomParams,
+    showAnnotations,
     betPoints,
     contract,
     percentBounds,
     className,
     size = 'md',
+    pointerMode,
+    setHoveredAnnotation,
+    hoveredAnnotation,
+    chartAnnotations,
   } = props
 
   return (
     <SizedContainer
       className={clsx(
-        showZoomer && 'mb-8',
+        showZoomer && !showAnnotations
+          ? 'mb-12'
+          : showAnnotations && showZoomer
+          ? 'mb-32'
+          : showAnnotations && (chartAnnotations?.length ?? 0) > 0
+          ? 'mb-20'
+          : '',
         'w-full pb-3 pr-10',
         size == 'sm' ? 'h-[100px]' : 'h-[150px] sm:h-[250px]',
         className
       )}
     >
       {(w, h) => (
-        <BinaryContractChart
-          width={w}
-          height={h}
-          betPoints={betPoints}
-          showZoomer={showZoomer}
-          zoomParams={zoomParams}
-          percentBounds={percentBounds}
-          contract={contract}
-        />
+        <>
+          <BinaryContractChart
+            width={w}
+            height={h}
+            betPoints={betPoints}
+            showZoomer={showZoomer}
+            zoomParams={zoomParams}
+            percentBounds={percentBounds}
+            contract={contract}
+            hoveredAnnotation={hoveredAnnotation}
+            setHoveredAnnotation={setHoveredAnnotation}
+            pointerMode={pointerMode}
+            chartAnnotations={chartAnnotations}
+          />
+          {showAnnotations && chartAnnotations?.length ? (
+            <ChartAnnotations
+              annotations={chartAnnotations}
+              hoveredAnnotation={hoveredAnnotation}
+              setHoveredAnnotation={setHoveredAnnotation}
+              showZoomer={showZoomer}
+            />
+          ) : null}
+        </>
       )}
     </SizedContainer>
+  )
+}
+const ChartAnnotations = (props: {
+  annotations: ChartAnnotation[]
+  hoveredAnnotation?: number | null
+  setHoveredAnnotation?: (id: number | null) => void
+  showZoomer?: boolean
+}) => {
+  const { annotations, hoveredAnnotation, setHoveredAnnotation, showZoomer } =
+    props
+  const [carouselRef, setCarouselRef] = useState<HTMLDivElement | null>(null)
+  const { onScroll, scrollLeft, scrollRight, atFront, atBack } =
+    useCarousel(carouselRef)
+
+  return (
+    <ControlledCarousel
+      className={clsx(
+        'relative',
+        showZoomer ? 'mt-12' : 'mt-6',
+        'max-w-full gap-1'
+      )}
+      ref={setCarouselRef}
+      onScroll={onScroll}
+      scrollLeft={scrollLeft}
+      scrollRight={scrollRight}
+      atFront={atFront}
+      atBack={atBack}
+    >
+      {annotations.map((a) => (
+        <ChartAnnotation
+          key={a.id}
+          annotation={a}
+          hovered={a.id === hoveredAnnotation}
+          setHoveredAnnotation={setHoveredAnnotation}
+          carouselRef={carouselRef}
+        />
+      ))}
+    </ControlledCarousel>
+  )
+}
+
+const ChartAnnotation = (props: {
+  annotation: ChartAnnotation
+  hovered: boolean
+  setHoveredAnnotation?: (id: number | null) => void
+  carouselRef: HTMLDivElement | null
+}) => {
+  const { annotation, hovered, carouselRef, setHoveredAnnotation } = props
+  const {
+    text,
+    user_avatar_url,
+    creator_avatar_url,
+    id,
+    prob_change,
+    creator_username,
+    event_time,
+    user_username,
+  } = annotation
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+
+  const scrollIntoView = useEvent(() => {
+    const card = ref.current
+    if (!hovered || !carouselRef || !card) return
+
+    const cardLeft = card.offsetLeft
+    const cardWidth = card.offsetWidth
+    const carouselScrollLeft = carouselRef.scrollLeft
+    const carouselWidth = carouselRef.offsetWidth
+
+    const cardRight = cardLeft + cardWidth
+    const scrollRight = carouselScrollLeft + carouselWidth
+
+    if (cardLeft < carouselScrollLeft) {
+      carouselRef.scroll({ left: cardLeft, behavior: 'smooth' })
+    } else if (cardRight > scrollRight) {
+      carouselRef.scroll({
+        left: cardRight - carouselWidth,
+        behavior: 'smooth',
+      })
+    }
+  })
+
+  useEffect(() => {
+    if (hovered) scrollIntoView()
+  }, [hovered])
+
+  return (
+    <Col
+      className={clsx(
+        'cursor-pointer rounded-md border-2',
+        hovered ? 'border-indigo-600' : 'dark:border-ink-500 border-ink-200'
+      )}
+      ref={ref}
+      onMouseOver={() => setHoveredAnnotation?.(id)}
+      onMouseLeave={() => setHoveredAnnotation?.(null)}
+      onClick={() => setOpen(true)}
+    >
+      <div className={'relative w-[175px] p-1'}>
+        <div className={'h-16 overflow-hidden p-1 text-sm'}>
+          <Avatar
+            avatarUrl={user_avatar_url ?? creator_avatar_url}
+            username={user_username ?? creator_username}
+            noLink={true}
+            size={'2xs'}
+            className={'float-left mr-1 mt-0.5'}
+          />
+          <span className={'break-anywhere text-sm'}>{text}</span>
+        </div>
+        <div
+          className={clsx(
+            'bg-canvas-0 absolute bottom-[0.15rem] right-[0.15rem] justify-end rounded-sm py-0.5',
+            prob_change !== null ? 'pl-2 pr-1' : 'px-1'
+          )}
+        >
+          <Row className={'text-ink-500 items-center'}>
+            {prob_change !== null && (
+              <Row className={'gap-1 text-xs'}>
+                <Row
+                  className={clsx(
+                    'items-center gap-1',
+                    prob_change > 0 ? 'text-green-500' : 'text-red-500'
+                  )}
+                >
+                  {prob_change > 0 ? (
+                    <FaArrowTrendUp className={'h-3.5 w-3.5'} />
+                  ) : (
+                    <FaArrowTrendDown className={'h-3.5 w-3.5'} />
+                  )}
+                  {prob_change > 0 ? '+' : ''}
+                  {formatPercent(prob_change)}
+                </Row>{' '}
+                on
+              </Row>
+            )}
+            <span className={'ml-1 shrink-0 text-xs'}>
+              {new Date(event_time).toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+              })}
+            </span>
+          </Row>
+        </div>
+      </div>
+      {open && (
+        <ReadChartAnnotationModal
+          open={open}
+          setOpen={setOpen}
+          chartAnnotation={annotation}
+        />
+      )}
+    </Col>
   )
 }
 
@@ -234,6 +477,7 @@ const ChoiceOverview = (props: {
   resolutionRating?: ReactNode
   setShowResolver: (show: boolean) => void
   onAnswerCommentClick: (answer: Answer | DpmAnswer) => void
+  chartAnnotations: ChartAnnotation[]
 }) => {
   const {
     points,
@@ -316,6 +560,15 @@ const ChoiceOverview = (props: {
     [answers, resolutions, shouldAnswersSumToOne, sort]
   )
 
+  const {
+    pointerMode,
+    setPointerMode,
+    hoveredAnnotation,
+    setHoveredAnnotation,
+    chartAnnotations,
+    enableAdd,
+  } = useAnnotateChartTools(contract, props.chartAnnotations)
+
   const searchedAnswers = useMemo(() => {
     if (!answers.length || !query) return []
 
@@ -358,18 +611,26 @@ const ChoiceOverview = (props: {
         ) : (
           <div />
         )}
-        <TimeRangePicker
-          currentTimePeriod={currentTimePeriod}
-          setCurrentTimePeriod={setTimePeriod}
-          maxRange={maxRange}
-          color="indigo"
-        />
+        <Row className={'gap-1'}>
+          {enableAdd && (
+            <EditChartAnnotationsButton
+              pointerMode={pointerMode}
+              setPointerMode={setPointerMode}
+            />
+          )}
+          <TimeRangePicker
+            currentTimePeriod={currentTimePeriod}
+            setCurrentTimePeriod={setTimePeriod}
+            maxRange={maxRange}
+            color="indigo"
+          />
+        </Row>
       </Row>
       {!!Object.keys(points).length && contract.mechanism == 'cpmm-multi-1' && (
         <SizedContainer
           className={clsx(
             'h-[150px] w-full pb-4 pr-10 sm:h-[250px]',
-            showZoomer && 'mb-8'
+            showZoomer && 'mb-12'
           )}
         >
           {(w, h) => (
@@ -388,10 +649,22 @@ const ChoiceOverview = (props: {
                       .map((a) => a.id)
                       .slice(0, MAX_DEFAULT_GRAPHED_ANSWERS)
               }
+              pointerMode={pointerMode}
+              setHoveredAnnotation={setHoveredAnnotation}
+              hoveredAnnotation={hoveredAnnotation}
+              chartAnnotations={chartAnnotations}
             />
           )}
         </SizedContainer>
       )}
+      {chartAnnotations?.length ? (
+        <ChartAnnotations
+          annotations={chartAnnotations}
+          hoveredAnnotation={hoveredAnnotation}
+          setHoveredAnnotation={setHoveredAnnotation}
+          showZoomer={showZoomer}
+        />
+      ) : null}
       {showResolver ? (
         !shouldAnswersSumToOne && contract.mechanism === 'cpmm-multi-1' ? (
           <IndependentAnswersResolvePanel contract={contract} />
@@ -508,7 +781,6 @@ const StonkOverview = (props: {
             zoomParams={zoomParams}
             showZoomer={showZoomer}
             contract={contract}
-            color={YES_GRAPH_COLOR}
           />
         )}
       </SizedContainer>

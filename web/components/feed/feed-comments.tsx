@@ -7,6 +7,7 @@ import {
   FlagIcon,
   LinkIcon,
   PencilIcon,
+  PlusCircleIcon,
 } from '@heroicons/react/outline'
 import {
   DotsHorizontalIcon,
@@ -65,6 +66,7 @@ import { Modal, MODAL_CLASS } from 'web/components/layout/modal'
 import { HOUR_MS } from 'common/util/time'
 import { FaArrowTrendUp, FaArrowTrendDown } from 'react-icons/fa6'
 import { last, orderBy } from 'lodash'
+import { AnnotateChartModal } from 'web/components/annotate-chart'
 
 export type ReplyToUserInfo = { id: string; username: string }
 
@@ -473,6 +475,7 @@ export function DotMenu(props: {
   const isContractCreator = privateUser?.id === contract.creatorId
   const [editingComment, setEditingComment] = useState(false)
   const [tipping, setTipping] = useState(false)
+  const [annotating, setAnnotating] = useState(false)
   return (
     <>
       <ReportModal
@@ -528,6 +531,11 @@ export function DotMenu(props: {
               icon: <PencilIcon className="h-5 w-5" />,
               onClick: () => setEditingComment(true),
             },
+          isContractCreator && {
+            name: 'Add to chart',
+            icon: <PlusCircleIcon className="h-5 w-5 text-green-500" />,
+            onClick: async () => setAnnotating(true),
+          },
           (isMod || isContractCreator) && {
             name: comment.hidden ? 'Unhide' : 'Hide',
             icon: <EyeOffIcon className="h-5 w-5 text-red-500" />,
@@ -549,6 +557,15 @@ export function DotMenu(props: {
           }
         )}
       />
+      {annotating && (
+        <AnnotateChartModal
+          open={annotating}
+          setOpen={setAnnotating}
+          contractId={contract.id}
+          atTime={comment.createdTime}
+          comment={comment}
+        />
+      )}
       {user && editingComment && (
         <EditCommentModal
           user={user}
@@ -623,6 +640,7 @@ function CommentActions(props: {
       {user && contract.outcomeType === 'BINARY' && (
         <IconButton
           onClick={() => {
+            track('bet intent', { location: 'comment on contract' })
             setOutcome('YES')
             setShowBetModal(true)
           }}

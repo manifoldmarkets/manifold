@@ -82,6 +82,10 @@ export const REALTIME_TABLES: Partial<{ [T in TableName]: TableSpec<T> }> = {
     pk: ['id'],
     ts: (r) => Date.parse(r.created_time),
   },
+  chart_annotations: {
+    pk: ['id'],
+    ts: (r) => r.event_time,
+  },
 }
 
 export function buildFilterString<T extends TableName>(filter: Filter<T>) {

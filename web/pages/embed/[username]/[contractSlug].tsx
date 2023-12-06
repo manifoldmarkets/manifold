@@ -28,11 +28,12 @@ import { Avatar } from 'web/components/widgets/avatar'
 import { QRCode } from 'web/components/widgets/qr-code'
 import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
 import { track } from 'web/lib/service/analytics'
-import { getBetFields } from 'web/lib/supabase/bets'
 import { db } from 'web/lib/supabase/db'
 import Custom404 from '../../404'
 import { ContractSummaryStats } from 'web/components/contract/contract-summary-stats'
 import { PollPanel } from 'web/components/poll/poll-panel'
+import { getBetPoints } from 'common/supabase/bets'
+import { getSingleBetPoints } from 'common/contract-params'
 
 type Points = HistoryPoint<any>[]
 
@@ -45,37 +46,13 @@ export async function getHistoryData(
     case 'BINARY':
     case 'PSEUDO_NUMERIC':
     case 'STONK': {
-      // get the last 50k bets, then reverse them (so they're chronological)
-      const fetchedPoints = (
-        await getBetFields(['createdTime', 'probAfter', 'probBefore'], {
-          contractId: contract.id,
-          filterRedemptions: true,
-          filterChallenges: true,
-          limit,
-          order: 'desc',
-          afterTime,
-        })
-      ).reverse()
+      const allBetPoints = await getBetPoints(db, contract.id, {
+        limit,
+        afterTime,
+      })
 
-      if (fetchedPoints && fetchedPoints.length > 0 && !!fetchedPoints[0]) {
-        const createdAfterStartingDate =
-          !afterTime || contract.createdTime > afterTime
-        const points = [
-          {
-            x: createdAfterStartingDate ? contract.createdTime : afterTime,
-            y: createdAfterStartingDate
-              ? contract.initialProbability
-              : fetchedPoints[0].probBefore,
-          },
-          ...fetchedPoints?.map((point) => ({
-            x: point.createdTime,
-            y: point.probAfter,
-          })),
-        ]
-        return points
-      } else {
-        return null
-      }
+      const points = getSingleBetPoints(allBetPoints, contract)
+      return points.map(([x, y]) => ({ x, y }))
     }
 
     default:
@@ -151,12 +128,9 @@ const ContractChart = (props: {
   points: Points | null
   width: number
   height: number
-  showOnlyLastThousand?: boolean
 }) => {
-  const { contract, showOnlyLastThousand, ...rest } = props
-  if (!props.points) return null
-
-  const points = showOnlyLastThousand ? props.points.slice(-1000) : props.points
+  const { contract, points, ...rest } = props
+  if (!points) return null
 
   switch (contract.outcomeType) {
     case 'BINARY':
@@ -287,7 +261,6 @@ function ContractSmolView(props: {
                   points={points}
                   width={w}
                   height={h}
-                  showOnlyLastThousand={showQRCode}
                 />
               )
             }

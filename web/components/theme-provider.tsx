@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { ThemeContext, theme_option } from 'web/hooks/theme-context'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { postMessageToNative } from './native-message-listener'
@@ -8,13 +8,18 @@ export const ThemeProvider = (props: { children: any }) => {
     'auto',
     'theme'
   )
+  const [isActuallyDark, setIsActuallyDark] = useState(false)
 
   const reRenderTheme = () => {
     const autoDark = window.matchMedia('(prefers-color-scheme: dark)').matches
 
-    if (theme === 'dark' || (theme === 'auto' && autoDark))
+    if (theme === 'dark' || (theme === 'auto' && autoDark)) {
       document.body.classList.add('dark')
-    else document.body.classList.remove('dark')
+      setIsActuallyDark(true)
+    } else {
+      document.body.classList.remove('dark')
+      setIsActuallyDark(false)
+    }
 
     // pass theme to app
     const element = document.querySelector('.bg-canvas-0')
@@ -36,7 +41,7 @@ export const ThemeProvider = (props: { children: any }) => {
   }, [])
 
   return (
-    <ThemeContext.Provider value={{ theme, changeTheme }}>
+    <ThemeContext.Provider value={{ theme, isActuallyDark, changeTheme }}>
       {props.children}
     </ThemeContext.Provider>
   )

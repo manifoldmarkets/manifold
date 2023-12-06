@@ -5,11 +5,10 @@ import { useEffect } from 'react'
 import { User, writeReferralInfo } from 'web/lib/firebase/users'
 
 export const useSaveReferral = (
-  user?: User | null,
+  user: User | null | undefined,
   options?: {
     defaultReferrerUsername?: string
     contractId?: string
-    groupId?: string
   }
 ) => {
   const router = useRouter()
@@ -25,7 +24,6 @@ export const useSaveReferral = (
       writeReferralInfo(referrerOrDefault, {
         contractId: options?.contractId,
         explicitReferrer: referrer,
-        groupId: options?.groupId,
       })
     }
   }, [user, router, JSON.stringify(options)])

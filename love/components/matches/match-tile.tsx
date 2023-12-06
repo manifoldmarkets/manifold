@@ -53,7 +53,7 @@ export const MatchTile = (props: {
     return answer.resolution !== undefined ? index : acc
   }, -1)
 
-  const [stage, setStage] = useState(lastResolved + 1)
+  const [stage, setStage] = useState(Math.min(lastResolved + 1, 3))
   const answer = answers[stage]
   const prevAnswer = answers[stage - 1]
   const showConfirmStage =

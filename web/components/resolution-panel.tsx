@@ -176,18 +176,16 @@ export function ResolveHeader(props: {
   }
   return (
     <Col>
-      {!isCreator ? (
-        <span className="mr-2 rounded bg-purple-100 p-1 align-baseline text-xs uppercase text-purple-600 dark:bg-purple-900 dark:text-purple-300">
-          Mod
-        </span>
-      ) : (
-        <div />
-      )}
       <Row className="mb-6 items-start justify-between">
         {closeTime && closeTime < Date.now() ? (
           <Col>
             <span className="mb-2 text-lg">
-              If your question closed too early{' '}
+              {!isCreator && (
+                <span className="mr-2 rounded bg-purple-100 p-1 align-baseline text-xs uppercase text-purple-600 dark:bg-purple-900 dark:text-purple-300">
+                  Mod
+                </span>
+              )}
+              If {isCreator ? 'your' : 'this'} question closed too early{' '}
             </span>
             <Button color={'gray'} onClick={() => setIsEditingCloseTime(true)}>
               Extend the close time
@@ -200,21 +198,19 @@ export function ResolveHeader(props: {
           <XIcon className="h-5 w-5" />
         </IconButton>
       </Row>
-      <Row className="mb-2">
-        <div className={'text-lg'}>
-          {!isCreator && (
-            <span className="mr-2 rounded bg-purple-100 p-1 align-baseline text-xs uppercase text-purple-600 dark:bg-purple-900 dark:text-purple-300">
-              Mod
-            </span>
-          )}
-          If you know the answer, resolve{' '}
-          {fullTitle
-            ? `"${contract.question}"`
-            : isCreator
-            ? 'your question'
-            : contract.creatorName + `'s question`}
-        </div>
-      </Row>
+      <div className="mb-2 text-lg">
+        {!isCreator && (
+          <span className="mr-2 rounded bg-purple-100 p-1 align-baseline text-xs uppercase text-purple-600 dark:bg-purple-900 dark:text-purple-300">
+            Mod
+          </span>
+        )}
+        If you know the answer, resolve{' '}
+        {fullTitle
+          ? `"${contract.question}"`
+          : isCreator
+          ? 'your question'
+          : contract.creatorName + `'s question`}
+      </div>
       <EditCloseTimeModal
         contract={contract}
         isOpen={isEditingCloseTime}

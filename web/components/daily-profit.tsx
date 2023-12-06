@@ -234,10 +234,13 @@ const MarketCell = (props: {
   from: 'day' | 'week' | 'month'
 }) => {
   const c = props.contract
-  const probChange = c.probChanges[props.from]
-  const change =
-    (probChange > 0 ? '+' : '') +
-    getFormattedMappedValue(c, probChange).replace('%', '')
+  let change: undefined | string
+  if (c.probChanges?.[props.from]) {
+    const probChange = c.probChanges[props.from]
+    change =
+      (probChange > 0 ? '+' : '') +
+      getFormattedMappedValue(c, probChange).replace('%', '')
+  }
 
   return (
     <td>

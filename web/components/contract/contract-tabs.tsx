@@ -10,7 +10,7 @@ import { Bet } from 'common/bet'
 import { ContractComment } from 'common/comment'
 import { CPMMBinaryContract, Contract } from 'common/contract'
 import { buildArray } from 'common/util/array'
-import { shortFormatNumber } from 'common/util/format'
+import { shortFormatNumber, maybePluralize } from 'common/util/format'
 import { MINUTE_MS } from 'common/util/time'
 import { UserPositionsTable } from 'web/components/contract/user-positions-table'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
@@ -75,7 +75,7 @@ export function ContractTabs(props: {
 
   const commentsTitle =
     (totalComments > 0 ? `${shortFormatNumber(totalComments)} ` : '') +
-    'Comments'
+    maybePluralize('Comment', totalComments)
 
   const user = useUser()
 
@@ -88,7 +88,8 @@ export function ContractTabs(props: {
   const userBets = rows ?? []
 
   const tradesTitle =
-    (totalBets > 0 ? `${shortFormatNumber(totalBets)} ` : '') + 'Trades'
+    (totalBets > 0 ? `${shortFormatNumber(totalBets)} ` : '') +
+    maybePluralize('Trade', totalBets)
 
   const visibleUserBets = userBets.filter(
     (bet) => bet.amount !== 0 && !bet.isRedemption
@@ -102,7 +103,7 @@ export function ContractTabs(props: {
 
   const positionsTitle =
     (totalPositions > 0 ? `${shortFormatNumber(totalPositions)} ` : '') +
-    'Positions'
+    maybePluralize('Position', totalPositions)
 
   return (
     <ControlledTabs

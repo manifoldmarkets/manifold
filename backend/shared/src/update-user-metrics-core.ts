@@ -86,6 +86,7 @@ export async function updateUserMetricsCore(log: GCPLog = oldLog) {
     pg,
     contracts.filter((c) => c.mechanism === 'cpmm-multi-1').map((c) => c.id)
   )
+
   const contractsById = Object.fromEntries(contracts.map((c) => [c.id, c]))
 
   for (const [contractId, answers] of Object.entries(answersByContractId)) {

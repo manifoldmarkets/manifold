@@ -9,6 +9,7 @@ import { useSaveCampaign } from 'web/hooks/use-save-campaign'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { getNewsDashboards } from 'web/lib/firebase/api'
 import { LinkPreviews, fetchLinkPreviews } from 'common/link-preview'
+import { useUser } from 'web/hooks/use-user'
 
 export async function getStaticProps() {
   const dashboards = (await getNewsDashboards()) as Dashboard[]
@@ -31,7 +32,8 @@ export default function NewsPage(props: {
   dashboards: Dashboard[]
   previews: LinkPreviews
 }) {
-  useSaveReferral()
+  const user = useUser()
+  useSaveReferral(user)
   useSaveCampaign()
 
   return (

@@ -512,26 +512,42 @@ export const getContractBetMetricsPerAnswer = (
       return {
         ...baseMetrics,
         from: periodMetrics,
-      }
+      } as ContractMetric
     })
   )
 
   // Calculate overall contract metrics with answerId:null bc it's nice to have
   if (contract.mechanism === 'cpmm-multi-1') {
     const baseFrom = metricsPerAnswer[0].from
+    const calculateProfitPercent = (
+      metrics: ContractMetric[],
+      period: string
+    ) => {
+      const profit = sumBy(metrics, (m) => get(m, `from.${period}.profit`, 0))
+      const invested = sumBy(metrics, (m) =>
+        get(m, `from.${period}.invested`, 0)
+      )
+      return invested !== 0 ? 100 * (profit / invested) : 0
+    }
+
     const baseMetric = getContractBetMetrics(contract, bets)
+    const from = baseFrom
+      ? mapValues(baseFrom, (periodMetrics, period) =>
+          mapValues(periodMetrics, (_, key) =>
+            key === 'profitPercent'
+              ? calculateProfitPercent(metricsPerAnswer, period)
+              : sumBy(metricsPerAnswer, (m) =>
+                  get(m, `from.${period}.${key}`, 0)
+                )
+          )
+        )
+      : undefined
     metricsPerAnswer.push({
       ...baseMetric,
       // Overall period metrics = sum all the answers' period metrics
-      from: baseFrom
-        ? mapValues(baseFrom, (periodMetrics, period) =>
-            mapValues(periodMetrics, (_, key) =>
-              sumBy(metricsPerAnswer, (m) => get(m, `from.${period}.${key}`, 0))
-            )
-          )
-        : undefined,
+      from,
       answerId: null,
-    })
+    } as ContractMetric)
   }
   return metricsPerAnswer
 }

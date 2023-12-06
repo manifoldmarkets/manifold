@@ -124,6 +124,7 @@ export const BOT_USERNAMES = [
   'ManifoldLove',
   'chooterb0t',
   'bonkbot',
+  'NermitBundaloy',
 ]
 
 export const MOD_IDS = [

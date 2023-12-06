@@ -218,8 +218,8 @@ export const calculateUserMetrics = (
   const bet = first(bets)
   return currentMetrics.map((current) => {
     return removeUndefinedProps({
-      contractId: contract.id,
       ...current,
+      contractId: contract.id,
       userName: user?.name ?? bet?.userName,
       userId: user?.id ?? bet?.userId,
       userUsername: user?.username ?? bet?.userUsername,

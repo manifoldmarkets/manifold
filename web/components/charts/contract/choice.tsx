@@ -12,12 +12,14 @@ import {
   formatPct,
   getEndDate,
   getRightmostVisibleDate,
+  PointerMode,
 } from '../helpers'
 import { MultiValueHistoryChart } from '../generic-charts'
 import { HistoryPoint } from 'common/chart'
 import { Row } from 'web/components/layout/row'
 import { pick } from 'lodash'
 import { buildArray } from 'common/util/array'
+import { ChartAnnotation } from 'common/supabase/chart-annotations'
 
 const CHOICE_ANSWER_COLORS = [
   '#99DDFF', // sky
@@ -109,10 +111,14 @@ export const ChoiceContractChart = (props: {
   multiPoints?: MultiPoints
   width: number
   height: number
+  chartAnnotations: ChartAnnotation[]
   zoomParams: ZoomParams
   showZoomer?: boolean
   highlightAnswerId?: string
   selectedAnswerIds: string[]
+  hoveredAnnotation?: number | null
+  setHoveredAnnotation?: (id: number | null) => void
+  pointerMode?: PointerMode
 }) => {
   const {
     contract,
@@ -123,6 +129,10 @@ export const ChoiceContractChart = (props: {
     showZoomer,
     highlightAnswerId,
     selectedAnswerIds,
+    pointerMode,
+    setHoveredAnnotation,
+    hoveredAnnotation,
+    chartAnnotations,
   } = props
 
   const start = contract.createdTime
@@ -185,6 +195,11 @@ export const ChoiceContractChart = (props: {
           ttProps={props}
         />
       )}
+      contractId={contract.id}
+      hoveredAnnotation={hoveredAnnotation}
+      setHoveredAnnotation={setHoveredAnnotation}
+      pointerMode={pointerMode}
+      chartAnnotations={chartAnnotations}
     />
   )
 }
