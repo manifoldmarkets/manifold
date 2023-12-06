@@ -29,7 +29,7 @@ export function GeneralStats(props: {
       setAnimateGraphicIn(true)
     }, 3000)
     const timeout3 = setTimeout(() => {
-      onGoToNext()
+      // onGoToNext()
     }, 6000)
     return () => {
       clearTimeout(timeout1)

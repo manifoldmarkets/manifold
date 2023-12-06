@@ -71,6 +71,7 @@ export async function sendMarketCloseEmails() {
 // keep sending them notifications bc when it comes back online the time period will have passed
 function shouldSendFirstOrFollowUpCloseNotification(contract: Contract) {
   if (!contract.closeEmailsSent || contract.closeEmailsSent === 0) return true
+  if (contract.outcomeType == 'BOUNTIED_QUESTION') return false
   const { closedMultipleOfNDaysAgo, fullTimePeriodsSinceClose } =
     marketClosedMultipleOfNDaysAgo(contract)
   return (
