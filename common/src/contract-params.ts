@@ -63,7 +63,9 @@ export async function getContractParams(
         })
       : ([] as Bet[]),
     hasMechanism
-      ? getBetPoints(db, contract.id, contract.mechanism === 'cpmm-multi-1')
+      ? getBetPoints(db, contract.id, {
+          filterRedemptions: contract.mechanism !== 'cpmm-multi-1',
+        })
       : [],
     getRecentTopLevelCommentsAndReplies(db, contract.id, 25),
     isCpmm1

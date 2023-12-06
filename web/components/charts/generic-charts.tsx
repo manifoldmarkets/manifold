@@ -16,14 +16,7 @@ import {
   useMemo,
   useState,
 } from 'react'
-
-import {
-  compressPoints,
-  DistributionPoint,
-  HistoryPoint,
-  Point,
-  ValueKind,
-} from 'common/chart'
+import { DistributionPoint, HistoryPoint, Point, ValueKind } from 'common/chart'
 import { formatMoneyNumber } from 'common/util/format'
 import { useEvent } from 'web/hooks/use-event'
 import {
@@ -435,6 +428,7 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
     Tooltip,
     negativeThreshold = 0,
     showZoomer,
+    curve = curveStepAfter,
     yScale,
     zoomParams,
     hoveredAnnotation,
@@ -452,18 +446,6 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
   const xScale = zoomParams?.viewXScale ?? props.xScale
 
   const yKind = props.yKind ?? 'amount'
-
-  const [xMin, xMax] = xScale?.domain().map((d) => d.getTime()) ?? [
-    data[0].x,
-    data[data.length - 1].x,
-  ]
-
-  const { points, isCompressed } = useMemo(
-    () => compressPoints(data, xMin, xMax),
-    [data, xMin, xMax]
-  )
-
-  const curve = props.curve ?? isCompressed ? curveLinear : curveStepAfter
 
   const [mouse, setMouse] = useState<TooltipProps<P>>()
 
@@ -492,7 +474,7 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
     return { xAxis, yAxis }
   }, [w, h, yKind, xScale, yScale])
 
-  const xRangeSelector = dataAtXSelector(points, xScale)
+  const xRangeSelector = dataAtXSelector(data, xScale)
   const allTimeSelector = dataAtTimeSelector(data)
 
   const onMouseOver = useEvent((mouseX: number) => {

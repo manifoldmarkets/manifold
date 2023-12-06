@@ -64,7 +64,7 @@ export const getBets = async (db: SupabaseClient, options?: BetFilter) => {
 export const getBetPoints = async <S extends SupabaseClient>(
   db: S,
   contractId: string,
-  isMulti: boolean
+  options?: BetFilter
 ) => {
   let q = db
     .from('contract_bets')
@@ -72,8 +72,8 @@ export const getBetPoints = async <S extends SupabaseClient>(
     .order('bet_id')
   q = applyBetsFilter(q, {
     contractId,
-    filterRedemptions: !isMulti,
     limit: 50000,
+    ...options,
   })
   const { data } = await run(q)
 
