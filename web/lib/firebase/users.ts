@@ -152,7 +152,7 @@ export async function setCachedReferralInfoForUser(user: User) {
   )
   if (!cachedReferralUsername) return
   console.log(
-    `User created in last ${MINUTES_ALLOWED_TO_REFER} minutes, setting referral info`
+    `User created in last ${MINUTES_ALLOWED_TO_REFER} minutes, trying to set referral`
   )
   // get user via username
   referUser(

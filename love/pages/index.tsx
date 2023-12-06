@@ -23,6 +23,7 @@ import { track } from 'web/lib/service/analytics'
 import { Lover } from 'common/love/lover'
 import { useSaveCampaign } from 'web/hooks/use-save-campaign'
 import { useTracking } from 'web/hooks/use-tracking'
+import { useCallReferUser } from 'web/hooks/use-call-refer-user'
 
 export default function ProfilesPage() {
   const allLovers = useLovers()
@@ -35,7 +36,7 @@ export default function ProfilesPage() {
   useTracking('view love profiles')
   useSaveReferral(user)
   useSaveCampaign()
-
+  useCallReferUser()
   const lover = useLover()
 
   if (user === undefined) return <div />
