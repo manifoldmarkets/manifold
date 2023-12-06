@@ -24,15 +24,13 @@ type APIGenericSchema = {
   returns?: Record<string, any>
 }
 
-let _type: any
-
 let _apiTypeCheck: { [x: string]: APIGenericSchema }
 export const API = _apiTypeCheck =  {
   comment: {
     method: 'POST',
     visibility: 'public',
     authed: true,
-    returns: _type as Comment,
+    returns: {} as Comment,
     props: z
       .object({
         contractId: z.string(),
@@ -50,7 +48,7 @@ export const API = _apiTypeCheck =  {
     method: 'POST',
     visibility: 'public',
     authed: true,
-    returns: _type as CandidateBet & { betId: string },
+    returns: {} as CandidateBet & { betId: string },
     props: z
       .object({
         contractId: z.string(),
@@ -70,7 +68,7 @@ export const API = _apiTypeCheck =  {
     visibility: 'public',
     authed: true,
     props: z.object({ betId: z.string() }).strict(),
-    returns: _type as LimitBet,
+    returns: {} as LimitBet,
   },
   'sell-bet': {
     method: 'POST',
@@ -83,14 +81,14 @@ export const API = _apiTypeCheck =  {
     method: 'POST',
     visibility: 'public',
     authed: true,
-    returns: _type as LiteMarket,
+    returns: {} as LiteMarket,
     props: createMarketProps,
   },
   close: {
     method: 'POST',
     visibility: 'public',
     authed: true,
-    // returns: _type as LiteMarket,
+    // returns: {} as LiteMarket,
     props: z
       .object({
         contractId: z.string(),
@@ -143,7 +141,7 @@ export const API = _apiTypeCheck =  {
     method: 'GET',
     visibility: 'public',
     authed: false,
-    returns: _type as LiteMarket[],
+    returns: [] as LiteMarket[],
     props: z
       .object({
         limit: z.coerce.number().gte(0).lte(1000).default(500),
@@ -170,7 +168,7 @@ export const API = _apiTypeCheck =  {
     visibility: 'public',
     authed: true,
     props: z.object({}),
-    returns: _type as User,
+    returns: {} as User,
   },
   'save-twitch': {
     method: 'POST',
