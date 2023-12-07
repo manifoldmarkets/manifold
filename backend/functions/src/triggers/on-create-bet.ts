@@ -216,7 +216,7 @@ const addBetToFollowersFeeds = async (
       positionChange.change >= MED_BET_SIZE_FOR_FEED)
   )
     await addBetDataToUsersFeeds(
-      contract,
+      contract.id,
       bettor,
       positionChange,
       `${contract.id}-${bettor.id}-${

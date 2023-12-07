@@ -5,7 +5,10 @@ import {
   createSupabaseDirectClient,
 } from 'shared/supabase/init'
 import * as admin from 'firebase-admin'
-import { updateContractMetricsCore } from 'shared/update-contract-metrics-core'
+import { getContract, getUser } from 'shared/utils'
+import { addBetDataToUsersFeeds } from 'shared/create-feed'
+import { getUserMostChangedPosition } from 'common/supabase/bets'
+import * as crypto from 'crypto'
 
 // Ian's file for debugging
 export async function testBackendFunction() {
@@ -19,7 +22,7 @@ export async function testBackendFunction() {
     // await addInterestingContractsToFeed(db, pg)
     // await sendOnboardingNotificationsInternal(firestore)
     // await addInterestingContractsToFeed(db, pg, true)
-    await updateContractMetricsCore()
+    // await updateContractMetricsCore()
     // await updateUserMetricsCore()
     // await updateContractViews()
     // const comment = (
@@ -60,25 +63,38 @@ export async function testBackendFunction() {
     //   pg
     // )
 
-    // const user = await getUser('hqdXgp0jK2YMMhPs067eFK4afEH3')
-    // if (!user) return
-    // const contract = await getContract('OMDk6mF7gC4YZEi1sdVa')
-    // if (!contract) return
+    const user = await getUser('AJwLWoo3xue32XIiAVrL5SyR1WB2')
+    if (!user) return
+    const contract = await getContract('NtFRoxiF2Rfk4RM8KPRc')
+    if (!contract) return
+    // await addContractToFeed(
+    //   contract,
+    //   [
+    //     'follow_user',
+    //     'similar_interest_vector_to_contract',
+    //     'contract_in_group_you_are_in',
+    //   ],
+    //   'new_contract',
+    //   [user.id],
+    //   {
+    //     idempotencyKey: contract.id + '_new_contract',
+    //   }
+    // )
 
-    // const maxOutcome = await getUserMostChangedPosition(
-    //   user,
-    //   contract,
-    //   Date.now() - 1000,
-    //   db
-    // )
-    // if (!maxOutcome) return
-    // await addBetDataToUsersFeeds(
-    //   contract,
-    //   user,
-    //   maxOutcome,
-    //   crypto.randomUUID()
-    // )
-    //
+    const maxOutcome = await getUserMostChangedPosition(
+      user,
+      contract,
+      Date.now() - 5000,
+      db
+    )
+    if (!maxOutcome) return
+    await addBetDataToUsersFeeds(
+      contract.id,
+      user,
+      maxOutcome,
+      crypto.randomUUID()
+    )
+
     // console.log('max change', maxOutcome)
     // await calculateGroupImportanceScore(pg)
     // const apiKey = process.env.NEWS_API_KEY

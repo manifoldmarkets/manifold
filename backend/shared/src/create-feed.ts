@@ -17,7 +17,7 @@ import {
   getRelevanceScore,
   INTEREST_DISTANCE_THRESHOLDS,
 } from 'common/feed'
-import { log } from 'shared/utils'
+import { getContractSupabase, log } from 'shared/utils'
 import {
   getUserFollowerIds,
   getUsersWithSimilarInterestVectorToNews,
@@ -399,12 +399,15 @@ export const insertTrendingContractToUsersFeeds = async (
 }
 
 export const addBetDataToUsersFeeds = async (
-  contract: Contract,
+  contractId: string,
   bettor: User,
   betData: PositionChangeData,
   idempotencyKey: string
 ) => {
   const pg = createSupabaseDirectClient()
+  // Need contract from supabase for importance score
+  const contract = await getContractSupabase(contractId)
+  if (!contract) return
   const now = Date.now()
   let followerIds = await getUserFollowerIds(bettor.id, pg)
   // let followerIds = ['mwaVAaKkabODsH8g5VrtbshsXz03']
