@@ -22,10 +22,10 @@ export const updatemarket = authEndpoint(async (req, auth, log) => {
     bodySchema,
     req.body
   )
-  if (!visibility && !closeTime && !addAnswersMode)
+  if (!visibility && !closeTime && !addAnswersMode && !sort)
     throw new APIError(
       400,
-      'Must provide visibility, closeTime, or add answers mode'
+      'Must provide some change to the contract'
     )
   const contract = await getContractSupabase(contractId)
   if (!contract) throw new APIError(404, `Contract ${contractId} not found`)
