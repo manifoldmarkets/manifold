@@ -74,12 +74,12 @@ export const AnnotateChartModal = (props: {
             placeholder={'15'}
             allowNegative={true}
             label={'%'}
-            onChangeAmount={(amount) => setProbChange(amount)}
-            amount={
-              probChange !== 0 && probChange
-                ? Math.max(Math.min(probChange, 100), -100)
+            onChangeAmount={(amount) =>
+              amount !== 0 && amount
+                ? setProbChange(Math.max(Math.min(amount, 100), -100))
                 : undefined
             }
+            amount={probChange}
           />
         </Col>
         <Row className={'w-full justify-between'}>
@@ -102,7 +102,7 @@ export const AnnotateChartModal = (props: {
               setOpen(false)
             }}
             loading={loading}
-            disabled={loading}
+            disabled={loading || !note?.length}
           >
             Submit
           </Button>
