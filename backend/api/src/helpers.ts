@@ -10,7 +10,6 @@ import * as crypto from 'crypto'
 import {
   API,
   APIPath,
-  APIParams,
   APIResponse,
   APISchema,
   ValidatedAPIParams,

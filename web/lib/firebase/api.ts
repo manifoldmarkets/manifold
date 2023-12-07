@@ -19,10 +19,10 @@ import { API, APIPath, APIParams, APIResponse } from 'common/api/schema'
 export { APIError } from 'common/api/utils'
 
 export async function call(url: string, method: 'POST' | 'GET', params?: any) {
-  const user = auth.currentUser
-  if (user == null) {
-    throw new Error('Must be signed in to make API calls.')
-  }
+  // const user = auth.currentUser
+  // if (user == null) {
+  //   throw new Error('Must be signed in to make API calls.')
+  // }
   return maybeAuthedCall(url, method, params)
 }
 
