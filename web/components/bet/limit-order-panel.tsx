@@ -220,7 +220,7 @@ export default function LimitOrderPanel(props: {
           />
         </Row>
         <Row className="w-full items-center gap-3">
-          Probability
+          {isPseudoNumeric ? 'Value' : 'Probability'}
           <ProbabilityOrNumericInput
             contract={contract}
             prob={limitProbInt}
