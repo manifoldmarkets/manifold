@@ -14,7 +14,6 @@ import { SingleValueHistoryChart } from '../generic-charts'
 import { YES_GRAPH_COLOR } from 'common/envs/constants'
 import { SingleContractChartTooltip, SingleContractPoint } from './single-value'
 import { ChartAnnotation } from 'common/supabase/chart-annotations'
-import { CurveFactory } from 'd3-shape'
 
 export const BinaryContractChart = (props: {
   contract: BinaryContract

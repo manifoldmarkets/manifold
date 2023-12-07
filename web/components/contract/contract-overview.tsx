@@ -63,7 +63,6 @@ import { formatPercent } from 'common/util/format'
 import { isAdminId, isModId } from 'common/envs/constants'
 import { updateMarket } from 'web/lib/firebase/api'
 import { LoadingIndicator } from '../widgets/loading-indicator'
-import { CurveFactory, curveLinear } from 'd3-shape'
 import { useDataZoomFetcher } from '../charts/contract/zoom-utils'
 
 export const ContractOverview = memo(
