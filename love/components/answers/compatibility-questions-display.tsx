@@ -17,7 +17,10 @@ import { Tooltip } from 'web/components/widgets/tooltip'
 import { useUser } from 'web/hooks/use-user'
 import { Subtitle } from '../widgets/lover-subtitle'
 import { AddCompatibilityQuestionButton } from './add-compatibility-question-button'
-import { AnswerCompatibilityQuestionButton } from './answer-compatibility-question-button'
+import {
+  AnswerCompatibilityQuestionButton,
+  AnswerSkippedCompatibilityQuestionsButton,
+} from './answer-compatibility-question-button'
 import {
   AnswerCompatibilityQuestionContent,
   IMPORTANCE_CHOICES,
@@ -31,6 +34,28 @@ import { Pagination } from 'web/components/widgets/pagination'
 
 const NUM_QUESTIONS_TO_SHOW = 8
 
+function separateQuestionsArray(
+  questions: QuestionWithCountType[],
+  skippedAnswerQuestionIds: Set<number>,
+  answeredQuestionIds: Set<number>
+) {
+  const skippedQuestions: QuestionWithCountType[] = []
+  const answeredQuestions: QuestionWithCountType[] = []
+  const otherQuestions: QuestionWithCountType[] = []
+
+  questions.forEach((q) => {
+    if (skippedAnswerQuestionIds.has(q.id)) {
+      skippedQuestions.push(q)
+    } else if (answeredQuestionIds.has(q.id)) {
+      answeredQuestions.push(q)
+    } else {
+      otherQuestions.push(q)
+    }
+  })
+
+  return { skippedQuestions, answeredQuestions, otherQuestions }
+}
+
 export function CompatibilityQuestionsDisplay(props: {
   isCurrentUser: boolean
   user: User
@@ -41,12 +66,25 @@ export function CompatibilityQuestionsDisplay(props: {
   const { refreshCompatibilityAnswers, compatibilityAnswers } =
     useUserCompatibilityAnswers(user.id)
 
-  const answerQuestionIds = new Set(
-    compatibilityAnswers.map((answer) => answer.question_id)
+  const [skippedAnswers, answers] = partition(
+    compatibilityAnswers,
+    (answer) => answer.importance == -1
   )
-  const [yourQuestions, otherQuestions] = partition(allQuestions, (question) =>
-    answerQuestionIds.has(question.id)
+
+  const answeredQuestionIds = new Set(
+    answers.map((answer) => answer.question_id)
   )
+
+  const skippedAnswerQuestionIds = new Set(
+    skippedAnswers.map((answer) => answer.question_id)
+  )
+
+  const { skippedQuestions, answeredQuestions, otherQuestions } =
+    separateQuestionsArray(
+      allQuestions,
+      skippedAnswerQuestionIds,
+      answeredQuestionIds
+    )
 
   const refreshCompatibilityAll = () => {
     refreshCompatibilityAnswers()
@@ -55,7 +93,7 @@ export function CompatibilityQuestionsDisplay(props: {
 
   const [page, setPage] = useState(0)
   const currentSlice = page * NUM_QUESTIONS_TO_SHOW
-  const shownAnswers = compatibilityAnswers.slice(
+  const shownAnswers = answers.slice(
     currentSlice,
     currentSlice + NUM_QUESTIONS_TO_SHOW
   )
@@ -64,8 +102,8 @@ export function CompatibilityQuestionsDisplay(props: {
     <Col className="gap-2">
       <Subtitle>{`${
         isCurrentUser ? 'Your' : user.name.split(' ')[0] + `'s`
-      } Compatibility Questions`}</Subtitle>
-      {yourQuestions.length <= 0 ? (
+      } Compatibility Prompts`}</Subtitle>
+      {answeredQuestions.length <= 0 ? (
         <span className="text-ink-600 text-sm">
           {isCurrentUser ? "You haven't" : `${user.name} hasn't`} answered any
           compatibility questions yet!{' '}
@@ -93,7 +131,7 @@ export function CompatibilityQuestionsDisplay(props: {
               <CompatibilityAnswerBlock
                 key={answer.question_id}
                 answer={answer}
-                yourQuestions={yourQuestions}
+                yourQuestions={answeredQuestions}
                 user={user}
                 isCurrentUser={isCurrentUser}
                 refreshCompatibilityAll={refreshCompatibilityAll}
@@ -108,6 +146,15 @@ export function CompatibilityQuestionsDisplay(props: {
           otherQuestions={otherQuestions}
           refreshCompatibilityAll={refreshCompatibilityAll}
         />
+      )}
+      {skippedQuestions.length > 0 && (
+        <Row className="w-full justify-end">
+          <AnswerSkippedCompatibilityQuestionsButton
+            user={user}
+            skippedQuestions={skippedQuestions}
+            refreshCompatibilityAll={refreshCompatibilityAll}
+          />
+        </Row>
       )}
       {NUM_QUESTIONS_TO_SHOW < compatibilityAnswers.length && (
         <Pagination

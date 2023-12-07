@@ -50,13 +50,23 @@ export const submitCompatibilityAnswer = async (
     ...filterKeys(newAnswer, (key, _) => !['id', 'created_time'].includes(key)),
   } as CompatibilityAnswerSubmitType
 
-  const result = await run(
+  await run(
     db.from('love_compatibility_answers').upsert(input, {
       onConflict: 'question_id,creator_id',
     })
   )
 }
 
+function getEmptyAnswer(userId: string, questionId: number) {
+  return {
+    creator_id: userId,
+    explanation: null,
+    multiple_choice: -1,
+    pref_choices: [],
+    question_id: questionId,
+    importance: -1,
+  }
+}
 export function AnswerCompatibilityQuestionContent(props: {
   compatibilityQuestion: rowFor<'love_questions'>
   user: User
@@ -75,17 +85,12 @@ export function AnswerCompatibilityQuestionContent(props: {
     noSkip,
   } = props
   const [answer, setAnswer] = useState<CompatibilityAnswerSubmitType>(
-    (props.answer as CompatibilityAnswerSubmitType) ?? {
-      creator_id: user.id,
-      explanation: null,
-      multiple_choice: -1,
-      pref_choices: [],
-      question_id: compatibilityQuestion.id,
-      importance: -1,
-    }
+    (props.answer as CompatibilityAnswerSubmitType) ??
+      getEmptyAnswer(user.id, compatibilityQuestion.id)
   )
 
   const [loading, setLoading] = useState(false)
+  const [skipLoading, setSkipLoading] = useState(false)
   if (
     compatibilityQuestion.answer_type !== 'compatibility_multiple_choice' ||
     !compatibilityQuestion.multiple_choice_options
@@ -208,7 +213,11 @@ export function AnswerCompatibilityQuestionContent(props: {
         <Col className="gap-1">
           <Button
             disabled={
-              !multipleChoiceValid || !prefChoicesValid || !importanceValid
+              !multipleChoiceValid ||
+              !prefChoicesValid ||
+              !importanceValid ||
+              loading ||
+              skipLoading
             }
             loading={loading}
             onClick={() => {
@@ -228,8 +237,25 @@ export function AnswerCompatibilityQuestionContent(props: {
           </Button>
           {!noSkip && (
             <button
-              onClick={onNext}
-              className="text-ink-500 text-sm hover:underline"
+              disabled={loading || skipLoading}
+              onClick={() => {
+                setSkipLoading(true)
+                submitCompatibilityAnswer(
+                  getEmptyAnswer(user.id, compatibilityQuestion.id)
+                )
+                  .then(() => {
+                    if (isLastQuestion) {
+                      onSubmit()
+                    } else if (onNext) {
+                      onNext()
+                    }
+                  })
+                  .finally(() => setSkipLoading(false))
+              }}
+              className={clsx(
+                'text-ink-500 disabled:text-ink-300 text-sm hover:underline disabled:cursor-not-allowed',
+                skipLoading && 'animate-pulse'
+              )}
             >
               Skip
             </button>
