@@ -90,7 +90,6 @@ export const getCompatibleLovers = async (
 
 export const getCompatibilityAnswers = async (userIds: string[]) => {
   const pg = createSupabaseDirectClient()
-  console.log('getting compatibility answers for', userIds)
   return await pg.manyOrNone<Row<'love_compatibility_answers'>>(
     `
       select * from love_compatibility_answers

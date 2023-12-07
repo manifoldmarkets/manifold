@@ -7,7 +7,7 @@ import {
   getLovers,
   getCompatibleLovers as getCompatible,
   getCompatibilityAnswers,
-} from 'shared/love/lovers'
+} from 'shared/love/supabase'
 import { filterDefined } from 'common/util/array'
 
 export const getCompatibleLovers = typedEndpoint(
