@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { MAX_QUESTION_LENGTH } from 'common/contract'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { convertGroup } from 'common/supabase/groups'
+import { orderBy, uniqBy } from 'lodash'
 const bodySchema = z
   .object({
     question: z.string().min(1).max(MAX_QUESTION_LENGTH),
@@ -43,5 +44,10 @@ export const getsimilargroupstocontract = authEndpoint(async (req, _, log) => {
       return convertGroup(group)
     }
   )
-  return { groups }
+  return {
+    groups: uniqBy(
+      orderBy(groups, (g) => g.importanceScore, 'desc'),
+      (g) => g.name
+    ),
+  }
 })

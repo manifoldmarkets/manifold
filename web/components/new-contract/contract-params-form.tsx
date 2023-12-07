@@ -25,7 +25,7 @@ import { BTE_USER_ID, ENV_CONFIG } from 'common/envs/constants'
 import { formatMoney } from 'common/util/format'
 import { AddFundsModal } from 'web/components/add-funds-modal'
 import { MultipleChoiceAnswers } from 'web/components/answers/multiple-choice-answers'
-import { Button } from 'web/components/buttons/button'
+import { Button, IconButton } from 'web/components/buttons/button'
 import { TopicSelector } from 'web/components/topics/topic-selector'
 import { Row } from 'web/components/layout/row'
 import { Checkbox } from 'web/components/widgets/checkbox'
@@ -52,7 +52,11 @@ import { removeUndefinedProps } from 'common/util/object'
 import { extensions } from 'common/util/parse'
 import { useTextEditor } from 'web/components/widgets/editor'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
-import { api, getSimilarGroupsToContract } from 'web/lib/firebase/api'
+import {
+  api,
+  getSimilarGroupsToContract,
+  searchContracts,
+} from 'web/lib/firebase/api'
 import { track } from 'web/lib/service/analytics'
 import { getGroup, getGroupFromSlug } from 'web/lib/supabase/group'
 import { safeLocalStorage } from 'web/lib/util/local'
@@ -65,7 +69,10 @@ import { getContractWithFields } from 'web/lib/supabase/contracts'
 import { filterDefined } from 'common/util/array'
 import { TopicTag } from 'web/components/topics/topic-tag'
 import { LiteMarket } from 'common/api/market-types'
-
+import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import { ContractMention } from 'web/components/contract/contract-mention'
+import { compareTwoStrings } from 'string-similarity'
+const DUPES_TO_SHOW = 3
 export function ContractParamsForm(props: {
   creator: User
   outcomeType: CreateableOutcomeType
@@ -167,6 +174,12 @@ export function ContractParamsForm(props: {
     (params?.groupIds?.length ?? 0) > 0,
     'has-chosen-category' + paramsKey
   )
+  const [similarContracts, setSimilarContracts] = usePersistentInMemoryState<
+    Contract[]
+  >([], 'similar-contracts' + paramsKey)
+
+  const [dismissedSimilarContractTitles, setDismissedSimilarContractTitles] =
+    usePersistentInMemoryState<string[]>([], 'dismissed-similar-contracts')
 
   const ante = getAnte(outcomeType, numAnswers)
 
@@ -335,6 +348,8 @@ export function ContractParamsForm(props: {
     setIsLogScale(false)
     setBountyAmount(50)
     setHasChosenCategory(false)
+    setSimilarContracts([])
+    setDismissedSimilarContractTitles([])
   }
 
   const [submitState, setSubmitState] = useState<
@@ -409,25 +424,36 @@ export function ContractParamsForm(props: {
   }, [selectedGroups?.length, toggleVisibility])
 
   const finishedTypingQuestion = async () => {
-    const trimmed = question.trim()
+    const trimmed = question.toLowerCase().trim()
     if (trimmed === '') {
       setHasChosenCategory(false)
+      setSimilarContracts([])
       return
     }
-    if (
-      trimmed.length == 0 ||
-      params?.groupIds?.length ||
-      trimmed === categorizedQuestion ||
-      hasChosenCategory
+    const [similarGroupsRes, contracts] = await Promise.all([
+      !params?.groupIds?.length &&
+      trimmed !== categorizedQuestion &&
+      !hasChosenCategory
+        ? getSimilarGroupsToContract({ question })
+        : { groups: undefined },
+      !dismissedSimilarContractTitles.includes(trimmed)
+        ? searchContracts({
+            term: question,
+            contractType: outcomeType,
+            filter: 'open',
+            limit: 10,
+            sort: 'most-popular',
+          })
+        : [],
+    ])
+
+    if (similarGroupsRes.groups) {
+      setSelectedGroups(similarGroupsRes.groups)
+      setCategorizedQuestion(trimmed)
+    }
+    setSimilarContracts(
+      contracts?.filter((c) => compareTwoStrings(c.question, question) > 0.25)
     )
-      return
-    setCategorizedQuestion(trimmed)
-    try {
-      const { groups } = await getSimilarGroupsToContract({ question })
-      if (groups) setSelectedGroups(groups)
-    } catch (e) {
-      console.error('error getting similar groups', e)
-    }
   }
 
   const [fundsModalOpen, setFundsModalOpen] = useState(false)
@@ -450,7 +476,33 @@ export function ContractParamsForm(props: {
           onBlur={finishedTypingQuestion}
         />
       </Col>
-
+      {similarContracts.length ? (
+        <Col className={'space-y-1 '}>
+          <Row className={'justify-between px-1'}>
+            <span>
+              {DUPES_TO_SHOW +
+                (similarContracts.length > DUPES_TO_SHOW ? '+' : '')}{' '}
+              Existing {outcomeType == 'POLL' ? 'polls' : 'questions'}
+            </span>
+            <IconButton
+              size={'2xs'}
+              onClick={() => {
+                setSimilarContracts([])
+                setDismissedSimilarContractTitles((titles) =>
+                  titles.concat(question.toLowerCase().trim())
+                )
+              }}
+            >
+              <XIcon className="text-ink-500 h-4 w-4" />
+            </IconButton>
+          </Row>
+          {similarContracts.slice(0, DUPES_TO_SHOW).map((contract) => (
+            <Row key={contract.id} className="text-ink-700 pl-1 text-sm">
+              <ContractMention contract={contract} />
+            </Row>
+          ))}
+        </Col>
+      ) : null}
       {(isMulti || outcomeType == 'POLL') && (
         <MultipleChoiceAnswers
           answers={answers}
