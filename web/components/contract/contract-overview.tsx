@@ -62,6 +62,7 @@ import { FaArrowTrendDown, FaArrowTrendUp } from 'react-icons/fa6'
 import { formatPercent } from 'common/util/format'
 import { updateContract } from 'web/lib/firebase/contracts'
 import { isAdminId, isModId } from 'common/envs/constants'
+import { updateMarket } from 'web/lib/firebase/api'
 
 export const ContractOverview = memo(
   (props: {
@@ -579,14 +580,11 @@ const ChoiceOverview = (props: {
         isAdminId(currentUserId) ||
         contract.creatorId === currentUserId)
     ) {
-      updateContract(contract.id, { sort }).then(
-        () => {
-          toast.success('Sort order updated for all users')
-        },
-        () => {
-          toast.error('Failed to update sort order')
-        }
-      )
+      toast.promise(updateMarket({ contractId: contract.id, sort }), {
+        loading: 'Updating sort order...',
+        success: 'Sort order updated for all users',
+        error: 'Failed to update sort order',
+      })
     }
   }, [sort])
 

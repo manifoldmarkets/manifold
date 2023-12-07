@@ -71,7 +71,7 @@ export const SORTS = [
   { label: 'Trending', value: 'liquidity' },
 ] as const
 
-type SortType = (typeof SORTS)[number]['value']
+export type SortType = (typeof SORTS)[number]['value']
 
 export type Contract<T extends AnyContractType = AnyContractType> = {
   id: string
