@@ -1,3 +1,4 @@
+import { sortBy } from 'lodash'
 import { useEffect, useState } from 'react'
 import { Row } from 'common/supabase/utils'
 import {
@@ -53,7 +54,14 @@ export const useUserCompatibilityAnswers = (userId: string | undefined) => {
 
   useEffect(() => {
     if (userId) {
-      getUserCompatibilityAnswers(userId).then(setCompatibilityAnswers)
+      getUserCompatibilityAnswers(userId).then((answers) => {
+        const sortedAnswers = sortBy(
+          answers,
+          (a) => -a.importance,
+          (a) => (a.explanation ? 0 : 1)
+        )
+        setCompatibilityAnswers(sortedAnswers)
+      })
     }
   }, [userId])
 
