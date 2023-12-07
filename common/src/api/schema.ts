@@ -48,6 +48,12 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
+  'hide-comment': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    props: z.object({ commentPath: z.string() }).strict(),
+  },
 
   bet: {
     method: 'POST',

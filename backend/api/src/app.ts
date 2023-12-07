@@ -115,6 +115,7 @@ import { markets } from 'api/markets'
 import { createchartannotation } from 'api/create-chart-annotation'
 import { deletechartannotation } from 'api/delete-chart-annotation'
 import { assertUnreachable } from 'common/util/types'
+import { hideComment } from './hide-comment'
 
 const allowCorsUnrestricted: RequestHandler = cors({})
 const allowCorsManifold: RequestHandler = cors({
@@ -168,6 +169,7 @@ const handlers: { [k in APIPath]: RequestHandler } = {
   'cancel-bet': cancelBet,
   'sell-bet': sellBet,
   comment: createComment,
+  'hide-comment': hideComment,
   'create-market': createMarket,
   close: closeMarket,
   resolve: resolveMarket,

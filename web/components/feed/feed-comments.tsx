@@ -40,7 +40,7 @@ import { useAdminOrTrusted } from 'web/hooks/use-admin'
 import { useEvent } from 'web/hooks/use-event'
 import { useIsVisible } from 'web/hooks/use-is-visible'
 import { isBlocked, usePrivateUser, useUser } from 'web/hooks/use-user'
-import { api, hideComment } from 'web/lib/firebase/api'
+import { api } from 'web/lib/firebase/api'
 import { firebaseLogin, User } from 'web/lib/firebase/users'
 import TriangleDownFillIcon from 'web/lib/icons/triangle-down-fill-icon.svg'
 import TriangleFillIcon from 'web/lib/icons/triangle-fill-icon.svg'
@@ -545,7 +545,7 @@ export function DotMenu(props: {
               updateComment({ hidden: !wasHidden })
 
               try {
-                await hideComment({ commentPath })
+                await api('hide-comment', { commentPath })
               } catch (e) {
                 toast.error(
                   wasHidden ? 'Error unhiding comment' : 'Error hiding comment'

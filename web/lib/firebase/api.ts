@@ -2,7 +2,6 @@ import { auth } from './users'
 import { APIError, getApiUrl } from 'common/api/utils'
 import { JSONContent } from '@tiptap/core'
 import { Group, GroupRole, PrivacyStatusType } from 'common/group'
-import { HideCommentReq } from 'web/pages/api/v0/hide-comment'
 import { Contract } from './contracts'
 import { ContractTypeType, Filter, Sort } from 'web/components/supabase-search'
 import { AD_RATE_LIMIT } from 'common/boost'
@@ -171,10 +170,6 @@ export function removeContractFromGroup(params: {
 
 export function unresolveMarket(params: { contractId: string }) {
   return call(getApiUrl('unresolve'), 'POST', params)
-}
-
-export function hideComment(params: HideCommentReq) {
-  return call(`/api/v0/hide-comment`, 'POST', params)
 }
 
 export function updateGroupPrivacy(params: {
