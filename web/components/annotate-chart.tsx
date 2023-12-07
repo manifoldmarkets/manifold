@@ -20,6 +20,7 @@ import { ContractComment } from 'common/comment'
 import { richTextToString } from 'common/util/parse'
 import { FaArrowTrendDown, FaArrowTrendUp } from 'react-icons/fa6'
 import { formatPercent } from 'common/util/format'
+import { AmountInput } from 'web/components/widgets/amount-input'
 
 export const AnnotateChartModal = (props: {
   open: boolean
@@ -67,19 +68,17 @@ export const AnnotateChartModal = (props: {
           )}
         </Col>
         <Col className={'w-full'}>
-          <span>Change between -1 and 1 that day?</span>
-          <Input
-            type={'number'}
-            className={'w-24'}
-            min="-1"
-            max="1"
-            step="0.01"
-            placeholder={'0.25'}
-            value={probChange?.toString() ?? ''}
-            onChange={(e) =>
-              setProbChange(
-                e.target.value ? parseFloat(e.target.value) : undefined
-              )
+          <span>Probability change as a result</span>
+          <AmountInput
+            inputClassName={'w-24'}
+            placeholder={'15'}
+            allowNegative={true}
+            label={'%'}
+            onChangeAmount={(amount) => setProbChange(amount)}
+            amount={
+              probChange !== 0 && probChange
+                ? Math.max(Math.min(probChange, 100), -100)
+                : undefined
             }
           />
         </Col>
@@ -97,7 +96,7 @@ export const AnnotateChartModal = (props: {
                 eventTime: atTime,
                 answerId,
                 commentId: comment?.id,
-                probChange,
+                probChange: probChange ? probChange / 100 : undefined,
               })
               setLoading(false)
               setOpen(false)
