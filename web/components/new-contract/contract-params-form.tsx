@@ -282,7 +282,8 @@ export function ContractParamsForm(props: {
         max - min > 0.01 &&
         min < initialValue &&
         initialValue < max)) &&
-    isValidMultipleChoice
+    isValidMultipleChoice &&
+    (outcomeType !== 'BOUNTIED_QUESTION' || bountyAmount !== undefined)
 
   const [errorText, setErrorText] = useState<string>('')
   useEffect(() => {
@@ -364,7 +365,7 @@ export function ContractParamsForm(props: {
         totalBounty:
           amountSuppliedByHouse > 0 ? amountSuppliedByHouse : bountyAmount,
       })
-      const newContract = await api('create-market', createProps)
+      const newContract = await api('create-market', createProps as any)
 
       // wait for supabase
       const supabaseContract = await waitForSupabaseContract(newContract)

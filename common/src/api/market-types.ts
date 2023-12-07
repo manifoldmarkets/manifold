@@ -212,11 +212,13 @@ function augmentAnswerWithProbability(
 // create market
 
 export const createBinarySchema = z.object({
+  outcomeType: z.enum(['BINARY', 'STONK']),
   initialProb: z.number().min(1).max(99).optional(),
   extraLiquidity: z.number().min(1).optional(),
 })
 
 export const createNumericSchema = z.object({
+  outcomeType: z.enum(['PSEUDO_NUMERIC']),
   min: z.number().safe(),
   max: z.number().safe(),
   initialValue: z.number().safe(),
@@ -225,6 +227,7 @@ export const createNumericSchema = z.object({
 })
 
 export const createMultiSchema = z.object({
+  outcomeType: z.enum(['MULTIPLE_CHOICE']),
   answers: z.array(z.string().trim().min(1)).max(MAX_ANSWERS),
   addAnswersMode: z
     .enum(['DISABLED', 'ONLY_CREATOR', 'ANYONE'])
@@ -234,10 +237,12 @@ export const createMultiSchema = z.object({
 })
 
 export const createBountySchema = z.object({
+  outcomeType: z.enum(['BOUNTIED_QUESTION']),
   totalBounty: z.number().min(1),
 })
 
 export const createPollSchema = z.object({
+  outcomeType: z.enum(['POLL']),
   answers: z.array(z.string().trim().min(1)).min(2).max(MAX_ANSWERS),
 })
 
@@ -267,7 +272,6 @@ export const createMarketProps = z
   })
   .and(
     z.union([
-      // put more specific schemas first
       createMultiSchema,
       createNumericSchema,
       createBountySchema,
