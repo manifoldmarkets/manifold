@@ -30,6 +30,7 @@ export function NotificationUserLink(props: {
   name?: string
   username?: string
   className?: string
+  short?: string
 }) {
   const { userId, name, username, className } = props
   return (

@@ -68,6 +68,7 @@ import {
   CommentOnLoverNotification,
   NewMatchNotification,
 } from 'manifold-love/components/love-notification-types'
+import { resolve } from 'path'
 
 export function NotificationItem(props: {
   notification: Notification
@@ -641,6 +642,7 @@ export function MarketResolvedNotification(props: {
     sourceUserName,
     sourceUserUsername,
     sourceContractTitle,
+    sourceContractCreatorUsername,
   } = notification
   const { userInvestment, userPayout, profitRank, totalShareholders } =
     (data as ContractResolutionData) ?? {}
@@ -705,12 +707,14 @@ export function MarketResolvedNotification(props: {
     )
   }
 
+  const resolvedByAdmin = sourceUserUsername != sourceContractCreatorUsername
+
   const content =
     sourceText === 'CANCEL' ? (
       <>
         <NotificationUserLink
           userId={sourceId}
-          name={sourceUserName}
+          name={resolvedByAdmin ? 'An Admin' : sourceUserName}
           username={sourceUserUsername}
         />{' '}
         cancelled {isChildOfGroup && <span>the question</span>}
@@ -728,7 +732,7 @@ export function MarketResolvedNotification(props: {
       <>
         <NotificationUserLink
           userId={sourceId}
-          name={sourceUserName}
+          name={resolvedByAdmin ? 'An Admin' : sourceUserName}
           username={sourceUserUsername}
         />{' '}
         resolved {isChildOfGroup && <span>the question</span>}
@@ -757,28 +761,28 @@ export function MarketResolvedNotification(props: {
       subtitle={
         <>
           <div className="mb-1">{subtitle}</div>
-          {showReviewButton && (
-            <Button
-              size={'2xs'}
-              color={'gray'}
-              onClick={(e) => {
-                e.stopPropagation()
-                e.preventDefault()
-                setOpenRateModal(true)
-              }}
-            >
-              <Row className="gap-1">
+          {!resolvedByAdmin &&
+            (showReviewButton ? (
+              <Button
+                size={'2xs'}
+                color={'gray'}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  e.preventDefault()
+                  setOpenRateModal(true)
+                }}
+              >
+                <Row className="gap-1">
+                  <StarIcon className="h-4 w-4" />
+                  Rate {notification.sourceUserName}'s resolution
+                </Row>
+              </Button>
+            ) : (
+              <Row className="text-ink-500 items-center gap-0.5 text-sm italic">
+                You rated this resolution {justNowReview ?? userReview?.rating}{' '}
                 <StarIcon className="h-4 w-4" />
-                Rate {notification.sourceUserName}'s resolution
               </Row>
-            </Button>
-          )}
-          {!showReviewButton && (
-            <Row className="text-ink-500 items-center gap-0.5 text-sm italic">
-              You rated this resolution {justNowReview ?? userReview?.rating}{' '}
-              <StarIcon className="h-4 w-4" />
-            </Row>
-          )}
+            ))}
         </>
       }
       icon={
