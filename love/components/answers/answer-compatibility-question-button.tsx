@@ -9,7 +9,6 @@ import { AnswerCompatibilityQuestionContent } from './answer-compatibility-quest
 export function AnswerCompatibilityQuestionButton(props: {
   user: User | null | undefined
   otherQuestions: QuestionWithCountType[]
-  skippedQuestions: QuestionWithCountType[]
   refreshCompatibilityAll: () => void
 }) {
   const { user, otherQuestions, refreshCompatibilityAll } = props
@@ -26,6 +25,33 @@ export function AnswerCompatibilityQuestionButton(props: {
         setOpen={setOpen}
         user={user}
         otherQuestions={otherQuestions}
+        refreshCompatibilityAll={refreshCompatibilityAll}
+      />
+    </>
+  )
+}
+
+export function AnswerSkippedCompatibilityQuestionsButton(props: {
+  user: User | null | undefined
+  skippedQuestions: QuestionWithCountType[]
+  refreshCompatibilityAll: () => void
+}) {
+  const { user, skippedQuestions, refreshCompatibilityAll } = props
+  const [open, setOpen] = useState(false)
+  if (!user) return null
+  return (
+    <>
+      <button
+        onClick={() => setOpen(true)}
+        className="text-ink-500 text-sm hover:underline"
+      >
+        Answer {skippedQuestions.length} skipped questions{' '}
+      </button>
+      <AnswerCompatibilityQuestionModal
+        open={open}
+        setOpen={setOpen}
+        user={user}
+        otherQuestions={skippedQuestions}
         refreshCompatibilityAll={refreshCompatibilityAll}
       />
     </>

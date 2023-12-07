@@ -17,7 +17,10 @@ import { Tooltip } from 'web/components/widgets/tooltip'
 import { useUser } from 'web/hooks/use-user'
 import { Subtitle } from '../widgets/lover-subtitle'
 import { AddCompatibilityQuestionButton } from './add-compatibility-question-button'
-import { AnswerCompatibilityQuestionButton } from './answer-compatibility-question-button'
+import {
+  AnswerCompatibilityQuestionButton,
+  AnswerSkippedCompatibilityQuestionsButton,
+} from './answer-compatibility-question-button'
 import {
   AnswerCompatibilityQuestionContent,
   IMPORTANCE_CHOICES,
@@ -141,13 +144,18 @@ export function CompatibilityQuestionsDisplay(props: {
         <AnswerCompatibilityQuestionButton
           user={user}
           otherQuestions={otherQuestions}
-          skippedQuestions={skippedQuestions}
           refreshCompatibilityAll={refreshCompatibilityAll}
         />
       )}
-      {/* {otherQuestions.length < 1 && skippedQuestions.length > 0 && (
-        <button onClick={()=>}>Answer skipped questions</button>
-      )} */}
+      {skippedQuestions.length > 0 && (
+        <Row className="w-full justify-end">
+          <AnswerSkippedCompatibilityQuestionsButton
+            user={user}
+            skippedQuestions={skippedQuestions}
+            refreshCompatibilityAll={refreshCompatibilityAll}
+          />
+        </Row>
+      )}
       {NUM_QUESTIONS_TO_SHOW < compatibilityAnswers.length && (
         <Pagination
           page={page}
