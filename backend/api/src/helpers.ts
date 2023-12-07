@@ -145,10 +145,10 @@ const getLogs = (req: Request) => {
     ? traceContext.split('/')[0]
     : crypto.randomUUID()
 
-  const log = (message: any, details?: object) =>
+  const log = (message: any, details?: object | null) =>
     gLog.debug(message, { ...details, endpoint: req.path, traceId })
 
-  const logError = (message: any, details?: object) =>
+  const logError = (message: any, details?: object | null) =>
     gLog.error(message, { ...details, endpoint: req.path, traceId })
   return { log, logError }
 }

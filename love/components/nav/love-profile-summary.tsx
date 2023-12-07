@@ -31,7 +31,7 @@ export function ProfileSummary(props: { user: User; className?: string }) {
     >
       <div className="w-2 shrink" />
       <Avatar
-        avatarUrl={lover?.pinned_url ?? user.avatarUrl}
+        avatarUrl={lover?.pinned_url ?? ''}
         username={user.username}
         noLink
       />

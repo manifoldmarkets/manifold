@@ -3,5 +3,3 @@
 out/
 public/**/*.json
 public/**/*.html
-
-schema.ts

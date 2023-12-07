@@ -5,10 +5,11 @@ import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-s
 import { User } from 'common/user'
 import { getLoverRow, Lover, LoverRow } from 'common/love/lover'
 import { db } from 'web/lib/supabase/db'
+import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 
 export const useLover = () => {
   const user = useUser()
-  const [lover, setLover] = usePersistentInMemoryState<
+  const [lover, setLover] = usePersistentLocalState<
     Row<'lovers'> | undefined | null
   >(undefined, `lover-${user?.id}`)
 

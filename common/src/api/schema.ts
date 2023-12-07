@@ -10,6 +10,9 @@ import type { User } from 'common/user'
 import { CandidateBet } from 'common/new-bet'
 import { LimitBet } from 'common/bet'
 import { contentSchema } from 'common/api/zod-types'
+import { Lover } from 'common/love/lover'
+import { CPMMMultiContract } from 'common/contract'
+import { CompatibilityScore } from 'common/love/compatibility-score'
 import { Txn } from 'common/txn'
 import { LiquidityProvision } from 'common/liquidity-provision'
 
@@ -27,7 +30,7 @@ type APIGenericSchema = {
 }
 
 let _apiTypeCheck: { [x: string]: APIGenericSchema }
-export const API = _apiTypeCheck =  {
+export const API = (_apiTypeCheck = {
   comment: {
     method: 'POST',
     visibility: 'public',
@@ -188,7 +191,22 @@ export const API = _apiTypeCheck =  {
       })
       .strict(),
   },
-} as const
+  'compatible-lovers': {
+    method: 'GET',
+    visibility: 'private',
+    authed: true,
+    props: z.object({ userId: z.string() }),
+    returns: {} as {
+      lover: Lover
+      matchedLovers: Lover[]
+      compatibleLovers: Lover[]
+      loverCompatibilityScores: {
+        [userId: string]: CompatibilityScore
+      }
+      loverContracts: CPMMMultiContract[]
+    },
+  },
+} as const)
 
 export type APIPath = keyof typeof API
 export type APISchema<N extends APIPath> = (typeof API)[N]

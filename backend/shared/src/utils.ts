@@ -37,7 +37,7 @@ type GCPLogOutput = {
   details: any[]
 }
 
-export type GCPLog = (message: any, details?: object) => void
+export type GCPLog = (message: any, details?: object | null) => void
 
 function replacer(key: string, value: any) {
   if (typeof value === 'bigint') {
@@ -47,7 +47,11 @@ function replacer(key: string, value: any) {
   }
 }
 
-export const gLog = (severity: GCPLogLevel, message: any, details?: object) => {
+export const gLog = (
+  severity: GCPLogLevel,
+  message: any,
+  details?: object | null
+) => {
   const output = { severity, message: message ?? null, ...(details ?? {}) }
   try {
     const stringified = JSON.stringify(output, replacer)
@@ -274,6 +278,16 @@ export const getUserSupabase = async (userId: string) => {
     (row) => convertUser(row)
   )
   return first(res)
+}
+
+export const getUsersSupabase = async (userIds: string[]) => {
+  const pg = createSupabaseDirectClient()
+  const res = await pg.map(
+    `select * from users where id = any($1)`,
+    [userIds],
+    (row) => convertUser(row)
+  )
+  return res
 }
 
 export const getPrivateUser = (userId: string) => {
