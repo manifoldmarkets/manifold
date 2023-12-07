@@ -81,7 +81,7 @@ export async function runAddBountyTxn(
   const txn = { id: newTxnDoc.id, createdTime: Date.now(), ...txnData }
   fbTransaction.create(newTxnDoc, removeUndefinedProps(txn))
 
-  return { status: 'success', txn }
+  return txn
 }
 
 export async function runAwardBountyTxn(
@@ -145,7 +145,7 @@ export async function runAwardBountyTxn(
     bountyTxns: FieldValue.arrayUnion(newTxnDoc.id),
   })
 
-  return { status: 'success', txn }
+  return txn
 }
 
 export async function runCancelBountyTxn(

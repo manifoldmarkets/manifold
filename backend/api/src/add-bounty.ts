@@ -9,7 +9,7 @@ export const addBounty = typedEndpoint('add-bounty', async (props, auth) => {
 
   // run as transaction to prevent race conditions
   return await firestore.runTransaction(async (transaction) => {
-    await runAddBountyTxn(transaction, {
+    const txn = await runAddBountyTxn(transaction, {
       fromId: auth.uid,
       fromType: 'USER',
       toId: contractId,
@@ -28,6 +28,7 @@ export const addBounty = typedEndpoint('add-bounty', async (props, auth) => {
         amount
       )
     }
+    return txn
   })
 })
 
