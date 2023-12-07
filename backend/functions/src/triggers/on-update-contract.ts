@@ -1,5 +1,6 @@
 import * as functions from 'firebase-functions'
 import {
+  getContractSupabase,
   getUser,
   processPaginated,
   revalidateContractStaticProps,
@@ -64,14 +65,17 @@ export const onUpdateContract = functions
         upsertGroupEmbedding(pg, groupId)
       )
     )
+    // Adding a contract to a group is ~similar~ to creating a new contract in that group
     if (onlyNewGroupIds.length > 0) {
+      const contractWithScore = await getContractSupabase(contract.id)
+      if (!contractWithScore) return
       await addContractToFeed(
-        contract,
+        contractWithScore,
         ['contract_in_group_you_are_in'],
         'new_contract',
-        [contract.creatorId],
+        [contractWithScore.creatorId],
         {
-          idempotencyKey: contract.id + '_new_contract',
+          idempotencyKey: contractWithScore.id + '_new_contract',
         }
       )
     }

@@ -1,5 +1,5 @@
 import * as functions from 'firebase-functions'
-import { getContract, getUser, log } from 'shared/utils'
+import { getContract, getContractSupabase, getUser, log } from 'shared/utils'
 import { createFollowOrMarketSubsidizedNotification } from 'shared/create-notification'
 import { LiquidityProvision } from 'common/liquidity-provision'
 import { addUserToContractFollowers } from 'shared/follow-market'
@@ -34,21 +34,24 @@ export const onCreateLiquidityProvision = functions
     const liquidityProvider = await getUser(liquidity.userId)
     if (!liquidityProvider) throw new Error('Could not find liquidity provider')
     await addUserToContractFollowers(contract.id, liquidityProvider.id)
-    if (liquidity.amount > 250)
+    if (liquidity.amount > 250) {
+      const contractWithScore = await getContractSupabase(contract.id)
+      if (!contractWithScore) return
       await addContractToFeed(
-        contract,
+        contractWithScore,
         [
           'similar_interest_vector_to_contract',
           'follow_user',
           'contract_in_group_you_are_in',
         ],
         'new_subsidy',
-        [contract.creatorId, liquidity.userId],
+        [contractWithScore.creatorId, liquidity.userId],
         {
           userIdResponsibleForEvent: liquidity.userId,
           idempotencyKey: eventId,
         }
       )
+    }
     await createFollowOrMarketSubsidizedNotification(
       contract.id,
       'liquidity',
