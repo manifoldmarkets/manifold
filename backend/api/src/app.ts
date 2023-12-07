@@ -116,6 +116,7 @@ import { createchartannotation } from 'api/create-chart-annotation'
 import { deletechartannotation } from 'api/delete-chart-annotation'
 import { assertUnreachable } from 'common/util/types'
 import { hideComment } from './hide-comment'
+import { getManagrams } from './get-managrams'
 
 const allowCorsUnrestricted: RequestHandler = cors({})
 const allowCorsManifold: RequestHandler = cors({
@@ -178,6 +179,7 @@ const handlers: { [k in APIPath]: RequestHandler } = {
   'award-bounty': awardBounty,
   markets: markets,
   'send-mana': sendMana,
+  managrams: getManagrams,
   me: getCurrentUser,
   'save-twitch': saveTwitchCredentials,
   'compatible-lovers': getCompatibleLovers,

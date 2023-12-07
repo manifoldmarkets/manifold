@@ -13,7 +13,7 @@ import { contentSchema } from 'common/api/zod-types'
 import { Lover } from 'common/love/lover'
 import { CPMMMultiContract } from 'common/contract'
 import { CompatibilityScore } from 'common/love/compatibility-score'
-import { Txn } from 'common/txn'
+import type { Txn, ManaPayTxn } from 'common/txn'
 import { LiquidityProvision } from 'common/liquidity-provision'
 
 type APIGenericSchema = {
@@ -174,6 +174,21 @@ export const API = (_apiTypeCheck = {
         toIds: z.array(z.string()),
         message: z.string(),
         groupId: z.string().max(MAX_ID_LENGTH).optional(),
+      })
+      .strict(),
+  },
+  managrams: {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    returns: [] as ManaPayTxn[],
+    props: z
+      .object({
+        toId: z.string().optional(),
+        fromId: z.string().optional(),
+        limit: z.coerce.number().gte(0).lte(100).default(100),
+        before: z.string().optional(),
+        after: z.string().optional(),
       })
       .strict(),
   },
