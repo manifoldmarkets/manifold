@@ -1,5 +1,5 @@
 import { auth } from './users'
-import { APIError, getApiUrl } from 'common/api'
+import { APIError, getApiUrl } from 'common/api/utils'
 import { JSONContent } from '@tiptap/core'
 import { Group, GroupRole, PrivacyStatusType } from 'common/group'
 import { HideCommentReq } from 'web/pages/api/v0/hide-comment'
@@ -14,22 +14,35 @@ import { ReportProps } from 'common/report'
 import { BaseDashboard, Dashboard, DashboardItem } from 'common/dashboard'
 import { Bet } from 'common/bet'
 import { LinkPreview } from 'common/link-preview'
+import { API, APIPath, APIParams, APIResponse } from 'common/api/schema'
 
-export { APIError } from 'common/api'
+export { APIError } from 'common/api/utils'
 
 export async function call(url: string, method: 'POST' | 'GET', params?: any) {
   const user = auth.currentUser
   if (user == null) {
     throw new Error('Must be signed in to make API calls.')
   }
-  const token = await user.getIdToken()
-  const req = new Request(url, {
+  return maybeAuthedCall(url, method, params)
+}
+
+export async function maybeAuthedCall(
+  url: string,
+  method: 'POST' | 'GET',
+  params?: any
+) {
+  const actualUrl =
+    method === 'POST' ? url : `${url}?${new URLSearchParams(params).toString()}`
+  const user = auth.currentUser
+  const token = await user?.getIdToken()
+  const req = new Request(actualUrl, {
     headers: {
       Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json',
     },
     method: method,
-    body: params != null ? JSON.stringify(params) : undefined,
+    body:
+      params == null || method == 'GET' ? undefined : JSON.stringify(params),
   })
   return await fetch(req).then(async (resp) => {
     const json = (await resp.json()) as { [k: string]: any }
@@ -40,28 +53,10 @@ export async function call(url: string, method: 'POST' | 'GET', params?: any) {
   })
 }
 
-export async function maybeAuthedCall(
-  url: string,
-  method: string,
-  params?: any
-) {
-  const user = auth.currentUser
-  const token = await user?.getIdToken()
-  const req = new Request(url, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-    method: method,
-    body: params != null ? JSON.stringify(params) : undefined,
-  })
-  return await fetch(req).then(async (resp) => {
-    const json = (await resp.json()) as { [k: string]: any }
-    if (!resp.ok) {
-      throw new APIError(resp.status as any, json?.message, json?.details)
-    }
-    return json
-  })
+// TODO: use this for all calls
+export function api<P extends APIPath>(path: P, params: APIParams<P>) {
+  const { method } = API[path]
+  return call(getApiUrl(path), method, params) as Promise<APIResponse<P>>
 }
 
 export function lootbox() {
@@ -88,18 +83,6 @@ export function changeUserInfo(params: any) {
   return call(getApiUrl('changeuserinfo'), 'POST', params)
 }
 
-export function addSubsidy(params: any) {
-  return call(getApiUrl('addsubsidy'), 'POST', params)
-}
-
-export function createMarket(params: any) {
-  return call(getApiUrl('createmarket'), 'POST', params)
-}
-
-export function resolveMarket(params: any) {
-  return call(getApiUrl('resolvemarket'), 'POST', params)
-}
-
 export function swapCert(params: any) {
   return call(getApiUrl('swapcert'), 'POST', params)
 }
@@ -108,20 +91,8 @@ export function dividendCert(params: any) {
   return call(getApiUrl('dividendcert'), 'POST', params)
 }
 
-export function placeBet(params: any) {
-  return call(getApiUrl('placebet'), 'POST', params)
-}
-
-export function cancelBet(params: { betId: string }) {
-  return call(getApiUrl('cancelbet'), 'POST', params)
-}
-
 export function sellShares(params: any) {
   return call(getApiUrl('sellshares'), 'POST', params)
-}
-
-export function sellBet(params: any) {
-  return call(getApiUrl('sellbet'), 'POST', params)
 }
 
 export function claimManalink(params: any) {
@@ -138,10 +109,6 @@ export function updateGroup(params: { id: string } & Partial<Group>) {
 
 export function acceptChallenge(params: any) {
   return call(getApiUrl('acceptchallenge'), 'POST', params)
-}
-
-export function getCurrentUser(params: any) {
-  return call(getApiUrl('getcurrentuser'), 'GET', params)
 }
 
 export function createPost(params: {
@@ -253,16 +220,6 @@ export function updateUserDisinterestEmbedding(params: {
   return call(getApiUrl('update-user-disinterest-embedding'), 'POST', params)
 }
 
-export function createCommentOnContract(params: {
-  contractId: string
-  content: JSONContent
-  replyToCommentId?: string
-  replyToAnswerId?: string
-  replyToBetId?: string
-}) {
-  return call(getApiUrl('createcomment'), 'POST', params)
-}
-
 export function searchContracts(params: {
   term: string
   filter?: Filter
@@ -338,20 +295,8 @@ export function leagueActivity(params: { season: number; cohort: string }) {
   }>
 }
 
-export function awardBounty(params: {
-  contractId: string
-  commentId: string
-  amount: number
-}) {
-  return call(getApiUrl('award-bounty'), 'POST', params)
-}
-
 export function cancelBounty(params: { contractId: string }) {
   return call(getApiUrl('cancel-bounty'), 'POST', params)
-}
-
-export function addBounty(params: { contractId: string; amount: number }) {
-  return call(getApiUrl('add-bounty'), 'POST', params)
 }
 
 export function createAnswerCpmm(params: { contractId: string; text: string }) {
@@ -385,15 +330,6 @@ export function searchGiphy(params: { term: string; limit: number }) {
 
 export function tweetFromManaChan(params: { tweet: string }) {
   return call(getApiUrl('manachantweet'), 'POST', params)
-}
-
-export function sendMana(params: {
-  toIds: string[]
-  amount: number
-  message: string
-  groupId?: string
-}) {
-  return call(getApiUrl('send-mana'), 'POST', params)
 }
 
 export function leaveReview(params: any) {
@@ -586,6 +522,7 @@ export function createChartAnnotation(params: {
   thumbnailUrl?: string
   externalUrl?: string
   answerId?: string
+  probChange?: number
 }) {
   return call(getApiUrl('create-chart-annotation'), 'POST', params)
 }

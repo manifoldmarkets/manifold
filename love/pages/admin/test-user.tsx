@@ -16,7 +16,7 @@ import { getCookie } from 'web/lib/util/cookie'
 import { Input } from 'web/components/widgets/input'
 
 export default function TestUser() {
-  useRedirectIfSignedIn()
+  useRedirectIfSignedIn('/')
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')

@@ -19,13 +19,18 @@ export function FeedBinaryChart(props: {
 
   useEffect(() => {
     const startingDate = (startDate ?? Date.now()) - DAY_MS
+    // TODO: why do we have to filter by date twice? Seems like the bet filter isn't working
     getHistoryData(
       contract,
       startDate === contract.createdTime ? undefined : 1000,
       startingDate
     ).then((points) => {
       if (points && points.length > 0 && !!points[0]) {
-        setPoints(points)
+        if (startDate) {
+          setPoints(points.filter((point) => point.x >= startDate))
+        } else {
+          setPoints(points)
+        }
       }
     })
   }, [])

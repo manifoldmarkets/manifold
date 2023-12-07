@@ -11,12 +11,13 @@ import { ReplyToUserInfo } from '../feed/feed-comments'
 import { Row } from '../layout/row'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { safeLocalStorage } from 'web/lib/util/local'
+import toast from 'react-hot-toast'
 
 export function CommentInput(props: {
   replyToUserInfo?: ReplyToUserInfo
   // Reply to another comment
   parentCommentId?: string
-  onSubmitComment?: (editor: Editor) => Promise<void>
+  onSubmitComment: (editor: Editor) => Promise<void>
   // unique id for autosave
   pageId: string
   className?: string
@@ -56,16 +57,17 @@ export function CommentInput(props: {
       editor.commands.deleteRange({ from: endPos - 1, to: endPos })
     }
 
-    if (onSubmitComment) {
-      await onSubmitComment?.(editor).catch((e) => {
-        console.error(e)
-        setIsSubmitting(false)
-      })
+    try {
+      await onSubmitComment?.(editor)
+      editor.commands.clearContent(true)
+      // force clear save, because it can fail if editor unrenders
+      safeLocalStorage?.removeItem(`text ${key}`)
+    } catch (e) {
+      console.error(e)
+      toast.error('Error submitting. Try again?')
+    } finally {
+      setIsSubmitting(false)
     }
-    setIsSubmitting(false)
-    editor.commands.clearContent(true)
-    // force clear save, because it can fail if editor unrenders
-    safeLocalStorage?.removeItem(`text ${key}`)
   }
 
   if (user?.isBannedFromPosting) return <></>

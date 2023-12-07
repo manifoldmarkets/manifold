@@ -13,6 +13,7 @@ import {
 import { SingleValueHistoryChart } from '../generic-charts'
 import { YES_GRAPH_COLOR } from 'common/envs/constants'
 import { SingleContractChartTooltip, SingleContractPoint } from './single-value'
+import { ChartAnnotation } from 'common/supabase/chart-annotations'
 
 export const BinaryContractChart = (props: {
   contract: BinaryContract
@@ -25,6 +26,7 @@ export const BinaryContractChart = (props: {
   hoveredAnnotation?: number | null
   setHoveredAnnotation?: (id: number | null) => void
   pointerMode?: PointerMode
+  chartAnnotations?: ChartAnnotation[]
 }) => {
   const {
     contract,
@@ -37,6 +39,7 @@ export const BinaryContractChart = (props: {
     hoveredAnnotation,
     setHoveredAnnotation,
     pointerMode = 'zoom',
+    chartAnnotations,
   } = props
 
   const start = first(betPoints)?.x ?? contract.createdTime
@@ -79,6 +82,7 @@ export const BinaryContractChart = (props: {
       hoveredAnnotation={hoveredAnnotation}
       setHoveredAnnotation={setHoveredAnnotation}
       pointerMode={pointerMode}
+      chartAnnotations={chartAnnotations}
     />
   )
 }

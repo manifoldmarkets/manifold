@@ -1787,16 +1787,15 @@ export const createFollowAfterReferralNotification = async (
 ) => {
   const privateUser = await getPrivateUser(userId)
   if (!privateUser) return
-  const id = crypto.randomUUID()
 
   if (!userOptedOutOfBrowserNotifications(privateUser)) {
     const notification: Notification = {
-      id,
+      id: referredByUser.id + 'follow-after-referral',
       userId: privateUser.id,
       reason: 'onboarding_flow',
       createdTime: Date.now(),
       isSeen: false,
-      sourceId: id,
+      sourceId: referredByUser.id,
       sourceType: 'follow',
       sourceUpdateType: 'created',
       sourceUserName: referredByUser.name,

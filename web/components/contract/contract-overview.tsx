@@ -1,4 +1,4 @@
-import { ReactNode, memo, useMemo, useState } from 'react'
+import { ReactNode, memo, useMemo, useState, useEffect, useRef } from 'react'
 import clsx from 'clsx'
 import { sortBy } from 'lodash'
 
@@ -47,13 +47,19 @@ import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-s
 import { getAnswerProbability } from 'common/calculate'
 import { searchInAny } from 'common/util/parse'
 import { useAnnotateChartTools } from 'web/hooks/use-chart-annotations'
-import { Carousel } from 'web/components/widgets/carousel'
+import {
+  ControlledCarousel,
+  useCarousel,
+} from 'web/components/widgets/carousel'
 import { ReadChartAnnotationModal } from 'web/components/annotate-chart'
-import { UserLink } from 'web/components/widgets/user-link'
 import { Button } from 'web/components/buttons/button'
 import toast from 'react-hot-toast'
 import { TbPencilPlus } from 'react-icons/tb'
 import { ChartAnnotation } from 'common/supabase/chart-annotations'
+import { useEvent } from 'web/hooks/use-event'
+import { Avatar } from 'web/components/widgets/avatar'
+import { FaArrowTrendDown, FaArrowTrendUp } from 'react-icons/fa6'
+import { formatPercent } from 'common/util/format'
 
 export const ContractOverview = memo(
   (props: {
@@ -269,9 +275,9 @@ export function BinaryChart(props: {
         showZoomer && !showAnnotations
           ? 'mb-12'
           : showAnnotations && showZoomer
-          ? 'mb-28'
+          ? 'mb-32'
           : showAnnotations && (chartAnnotations?.length ?? 0) > 0
-          ? 'mb-16'
+          ? 'mb-20'
           : '',
         'w-full pb-3 pr-10',
         size == 'sm' ? 'h-[100px]' : 'h-[150px] sm:h-[250px]',
@@ -291,15 +297,16 @@ export function BinaryChart(props: {
             hoveredAnnotation={hoveredAnnotation}
             setHoveredAnnotation={setHoveredAnnotation}
             pointerMode={pointerMode}
+            chartAnnotations={chartAnnotations}
           />
-          {showAnnotations && chartAnnotations && (
+          {showAnnotations && chartAnnotations?.length ? (
             <ChartAnnotations
               annotations={chartAnnotations}
               hoveredAnnotation={hoveredAnnotation}
               setHoveredAnnotation={setHoveredAnnotation}
               showZoomer={showZoomer}
             />
-          )}
+          ) : null}
         </>
       )}
     </SizedContainer>
@@ -313,9 +320,23 @@ const ChartAnnotations = (props: {
 }) => {
   const { annotations, hoveredAnnotation, setHoveredAnnotation, showZoomer } =
     props
+  const [carouselRef, setCarouselRef] = useState<HTMLDivElement | null>(null)
+  const { onScroll, scrollLeft, scrollRight, atFront, atBack } =
+    useCarousel(carouselRef)
+
   return (
-    <Carousel
-      className={clsx(showZoomer ? 'mt-12' : 'mt-6', 'max-w-full gap-1')}
+    <ControlledCarousel
+      className={clsx(
+        'relative',
+        showZoomer ? 'mt-12' : 'mt-6',
+        'max-w-full gap-1'
+      )}
+      ref={setCarouselRef}
+      onScroll={onScroll}
+      scrollLeft={scrollLeft}
+      scrollRight={scrollRight}
+      atFront={atFront}
+      atBack={atBack}
     >
       {annotations.map((a) => (
         <ChartAnnotation
@@ -323,9 +344,10 @@ const ChartAnnotations = (props: {
           annotation={a}
           hovered={a.id === hoveredAnnotation}
           setHoveredAnnotation={setHoveredAnnotation}
+          carouselRef={carouselRef}
         />
       ))}
-    </Carousel>
+    </ControlledCarousel>
   )
 }
 
@@ -333,47 +355,112 @@ const ChartAnnotation = (props: {
   annotation: ChartAnnotation
   hovered: boolean
   setHoveredAnnotation?: (id: number | null) => void
+  carouselRef: HTMLDivElement | null
 }) => {
-  const { annotation, hovered, setHoveredAnnotation } = props
-  const { text, id } = annotation
+  const { annotation, hovered, carouselRef, setHoveredAnnotation } = props
+  const {
+    text,
+    user_avatar_url,
+    creator_avatar_url,
+    id,
+    prob_change,
+    creator_username,
+    event_time,
+    user_username,
+  } = annotation
   const [open, setOpen] = useState(false)
-  const { creator_username, event_time, creator_id, creator_name } = annotation
+  const ref = useRef<HTMLDivElement>(null)
+
+  const scrollIntoView = useEvent(() => {
+    const card = ref.current
+    if (!hovered || !carouselRef || !card) return
+
+    const cardLeft = card.offsetLeft
+    const cardWidth = card.offsetWidth
+    const carouselScrollLeft = carouselRef.scrollLeft
+    const carouselWidth = carouselRef.offsetWidth
+
+    const cardRight = cardLeft + cardWidth
+    const scrollRight = carouselScrollLeft + carouselWidth
+
+    if (cardLeft < carouselScrollLeft) {
+      carouselRef.scroll({ left: cardLeft, behavior: 'smooth' })
+    } else if (cardRight > scrollRight) {
+      carouselRef.scroll({
+        left: cardRight - carouselWidth,
+        behavior: 'smooth',
+      })
+    }
+  })
+
+  useEffect(() => {
+    if (hovered) scrollIntoView()
+  }, [hovered])
+
   return (
     <Col
       className={clsx(
-        'cursor-pointer rounded-md border-2 p-2',
-        hovered ? 'border-blue-300' : ''
+        'cursor-pointer rounded-md border-2',
+        hovered ? 'border-indigo-600' : 'dark:border-ink-500 border-ink-200'
       )}
+      ref={ref}
       onMouseOver={() => setHoveredAnnotation?.(id)}
       onMouseLeave={() => setHoveredAnnotation?.(null)}
       onClick={() => setOpen(true)}
     >
-      <Col className={'w-[150px]'}>
-        <Row className={'items-center justify-between'}>
-          <UserLink
+      <div className={'relative w-[175px] p-1'}>
+        <div className={'h-16 overflow-hidden p-1 text-sm'}>
+          <Avatar
+            avatarUrl={user_avatar_url ?? creator_avatar_url}
+            username={user_username ?? creator_username}
             noLink={true}
-            user={{
-              id: creator_id,
-              username: creator_username,
-              name: creator_name,
-            }}
-            hideBadge={true}
-            className={'grow truncate text-xs'}
+            size={'2xs'}
+            className={'float-left mr-1 mt-0.5'}
           />
-          <span className={'text-ink-500 shrink-0 text-xs'}>
-            {new Date(event_time).toLocaleDateString('en-US', {
-              month: 'short',
-              day: 'numeric',
-            })}
-          </span>
-        </Row>
-        <div className=" line-clamp-1 text-sm">{text}</div>
-      </Col>
-      <ReadChartAnnotationModal
-        open={open}
-        setOpen={setOpen}
-        chartAnnotation={annotation}
-      />
+          <span className={'break-anywhere text-sm'}>{text}</span>
+        </div>
+        <div
+          className={clsx(
+            'bg-canvas-0 absolute bottom-[0.15rem] right-[0.15rem] justify-end rounded-sm py-0.5',
+            prob_change !== null ? 'pl-2 pr-1' : 'px-1'
+          )}
+        >
+          <Row className={'text-ink-500 items-center'}>
+            {prob_change !== null && (
+              <Row className={'gap-1 text-xs'}>
+                <Row
+                  className={clsx(
+                    'items-center gap-1',
+                    prob_change > 0 ? 'text-green-500' : 'text-red-500'
+                  )}
+                >
+                  {prob_change > 0 ? (
+                    <FaArrowTrendUp className={'h-3.5 w-3.5'} />
+                  ) : (
+                    <FaArrowTrendDown className={'h-3.5 w-3.5'} />
+                  )}
+                  {prob_change > 0 ? '+' : ''}
+                  {formatPercent(prob_change)}
+                </Row>{' '}
+                on
+              </Row>
+            )}
+            <span className={'ml-1 shrink-0 text-xs'}>
+              {new Date(event_time).toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+              })}
+            </span>
+          </Row>
+        </div>
+      </div>
+      {open && (
+        <ReadChartAnnotationModal
+          open={open}
+          setOpen={setOpen}
+          chartAnnotation={annotation}
+        />
+      )}
     </Col>
   )
 }
@@ -565,18 +652,19 @@ const ChoiceOverview = (props: {
               pointerMode={pointerMode}
               setHoveredAnnotation={setHoveredAnnotation}
               hoveredAnnotation={hoveredAnnotation}
+              chartAnnotations={chartAnnotations}
             />
           )}
         </SizedContainer>
       )}
-      {chartAnnotations && (
+      {chartAnnotations?.length ? (
         <ChartAnnotations
           annotations={chartAnnotations}
           hoveredAnnotation={hoveredAnnotation}
           setHoveredAnnotation={setHoveredAnnotation}
           showZoomer={showZoomer}
         />
-      )}
+      ) : null}
       {showResolver ? (
         !shouldAnswersSumToOne && contract.mechanism === 'cpmm-multi-1' ? (
           <IndependentAnswersResolvePanel contract={contract} />

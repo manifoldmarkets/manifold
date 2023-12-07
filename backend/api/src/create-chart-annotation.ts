@@ -21,6 +21,7 @@ const bodySchema = z
     thumbnailUrl: z.string().optional(),
     externalUrl: z.string().optional(),
     answerId: z.string().max(MAX_ANSWER_LENGTH).optional(),
+    probChange: z.number().max(1).min(-1).optional(),
   })
   .strict()
 
@@ -33,6 +34,7 @@ export const createchartannotation = authEndpoint(async (req, auth, log) => {
     thumbnailUrl: passedThumbnailUrl,
     eventTime,
     answerId,
+    probChange,
   } = validate(bodySchema, req.body)
 
   const contract = await getContractSupabase(contractId)
@@ -59,6 +61,8 @@ export const createchartannotation = authEndpoint(async (req, auth, log) => {
     externalUrl,
     thumbnailUrl,
     eventTime,
+    answerId,
+    probChange,
   })
 
   const pg = createSupabaseDirectClient()
@@ -66,8 +70,10 @@ export const createchartannotation = authEndpoint(async (req, auth, log) => {
     `
     insert into chart_annotations 
         (contract_id, event_time, text, comment_id, external_url, thumbnail_url,
-         creator_id, creator_name, creator_username, creator_avatar_url, answer_id)
-        values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+         creator_id, creator_name, creator_username, creator_avatar_url, answer_id,
+         user_username, user_avatar_url, user_name, user_id, prob_change
+         )
+        values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
     returning id
         `,
     [
@@ -82,6 +88,11 @@ export const createchartannotation = authEndpoint(async (req, auth, log) => {
       creator.username,
       creator.avatarUrl,
       answerId,
+      comment?.userUsername ?? null,
+      comment?.userAvatarUrl ?? null,
+      comment?.userName ?? null,
+      comment?.userId ?? null,
+      probChange ?? null,
     ]
   )
 

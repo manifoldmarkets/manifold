@@ -51,8 +51,9 @@ export function ReferralsDialog(props: {
   user: User
   isOpen: boolean
   setIsOpen: (isOpen: boolean) => void
+  defaultTab?: number
 }) {
-  const { user, isOpen, setIsOpen } = props
+  const { user, isOpen, setIsOpen, defaultTab } = props
   const [referredBy, setReferredBy] = useState<UserSearchResult[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [errorText, setErrorText] = useState('')
@@ -79,6 +80,7 @@ export function ReferralsDialog(props: {
         </span>
         <Tabs
           className="my-2"
+          defaultIndex={defaultTab}
           tabs={[
             {
               title: 'Your referrer',

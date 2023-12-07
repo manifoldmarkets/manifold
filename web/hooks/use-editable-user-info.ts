@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { cleanDisplayName, cleanUsername } from 'common/util/clean-username'
-import { APIError } from 'common/api'
+import { APIError } from 'common/api/utils'
 import { User } from 'common/user'
 import { changeUserInfo } from 'web/lib/firebase/api'
 

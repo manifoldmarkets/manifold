@@ -114,10 +114,6 @@ export default function ProfilePage(props: {
       //eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
       twitchInfo: deleteField(),
-      notificationPreferences: {
-        ...privateUser.notificationPreferences,
-        opt_out_all: ['email', 'mobile', 'browser'],
-      },
     })
     await auth.signOut()
   }

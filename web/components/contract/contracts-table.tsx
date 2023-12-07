@@ -8,7 +8,7 @@ import { formatPercentShort } from 'common/util/format'
 import Link from 'next/link'
 import { IoUnlink } from 'react-icons/io5'
 import { useUser } from 'web/hooks/use-user'
-import { shortenNumber } from 'web/lib/util/shortenNumber'
+import { shortenNumber } from 'web/lib/util/formatNumber'
 import { getTextColor } from './text-color'
 import { ContractMinibar } from '../charts/minibar'
 import { Row } from '../layout/row'
@@ -222,7 +222,7 @@ export function ContractStatusLabel(props: {
     }
     case 'FREE_RESPONSE':
     case 'MULTIPLE_CHOICE': {
-      return <ContractMinibar contract={contract} />
+      return <ContractMinibar contract={contract} className={className} />
     }
     case 'CERT': {
       return <span>CERT</span>

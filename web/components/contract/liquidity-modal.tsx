@@ -1,7 +1,7 @@
 import { CPMMContract, CPMMMultiContract } from 'common/contract'
 import { formatMoney, formatPercent } from 'common/util/format'
 import { useState } from 'react'
-import { addSubsidy } from 'web/lib/firebase/api'
+import { api } from 'web/lib/firebase/api'
 import { track } from 'web/lib/service/analytics'
 import { BuyAmountInput } from '../widgets/amount-input'
 import { Button } from '../buttons/button'
@@ -47,21 +47,22 @@ export function AddLiquidityPanel(props: {
 
   const payAmount = Math.ceil((1 / (1 - SUBSIDY_FEE)) * (amount ?? 0))
 
-  const submit = () => {
+  const submit = async () => {
     if (!amount) return
 
     setIsLoading(true)
     setIsSuccess(false)
 
-    addSubsidy({ amount: payAmount, contractId })
-      .then((_) => {
-        setIsSuccess(true)
-        setError(undefined)
-        setIsLoading(false)
-      })
-      .catch((_) => setError('Server error'))
-
-    track('add liquidity', { amount, contractId, slug })
+    try {
+      await api('add-liquidity', { amount: payAmount, contractId })
+      setIsSuccess(true)
+      setError(undefined)
+      track('add liquidity', { amount, contractId, slug })
+    } catch (e) {
+      setError('Server error')
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (

@@ -11,7 +11,6 @@ import { formatMoney, formatPercent } from 'common/util/format'
 import { sortBy } from 'lodash'
 import { useState } from 'react'
 import { useUser } from 'web/hooks/use-user'
-import { cancelBet } from 'web/lib/firebase/api'
 import { Avatar } from '../widgets/avatar'
 import { Button } from '../buttons/button'
 import { Col } from '../layout/col'
@@ -30,6 +29,7 @@ import { Tooltip } from '../widgets/tooltip'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import { DepthChart } from '../charts/contract/depth-chart'
 import { SizedContainer } from '../sized-container'
+import { api } from 'web/lib/firebase/api'
 
 export function YourOrders(props: {
   contract:
@@ -75,13 +75,12 @@ export function OrderTable(props: {
   const { limitBets, contract, isYou, side } = props
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
   const [isCancelling, setIsCancelling] = useState(false)
-  const onCancel = () => {
+  const onCancel = async () => {
     setIsCancelling(true)
-    Promise.all(limitBets.map((bet) => cancelBet({ betId: bet.id }))).then(
-      () => {
-        setIsCancelling(false)
-      }
+    await Promise.all(
+      limitBets.map((bet) => api('cancel-bet', { betId: bet.id }))
     )
+    setIsCancelling(false)
   }
   return (
     <Col>
@@ -150,11 +149,10 @@ function OrderRow(props: {
 
   const [isCancelling, setIsCancelling] = useState(false)
 
-  const onCancel = () => {
+  const onCancel = async () => {
     setIsCancelling(true)
-    cancelBet({ betId: bet.id }).then(() => {
-      setIsCancelling(false)
-    })
+    await api('cancel-bet', { betId: bet.id })
+    setIsCancelling(false)
   }
 
   return (

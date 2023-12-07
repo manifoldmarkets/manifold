@@ -26,6 +26,7 @@ import { LoverBio } from 'love/components/bio/lover-bio'
 import Custom404 from '../404'
 import { db } from 'web/lib/supabase/db'
 import { useSaveCampaign } from 'web/hooks/use-save-campaign'
+import { useCallReferUser } from 'web/hooks/use-call-refer-user'
 
 export const getStaticProps = async (props: {
   params: {
@@ -58,11 +59,10 @@ export default function UserPage(props: {
   const currentUser = useUser()
   const isCurrentUser = currentUser?.id === user?.id
 
-  useSaveReferral(user, { defaultReferrerUsername: username })
-
+  useSaveReferral(currentUser, { defaultReferrerUsername: username })
   useTracking('view love profile', { username: user?.username })
   useSaveCampaign()
-
+  useCallReferUser()
   const { lover: clientLover, refreshLover } = useLoverByUser(user ?? undefined)
   const lover = clientLover ?? props.lover
 

@@ -56,9 +56,9 @@ const ContractTopicBreadcrumbs = (props: { contract: Contract }) => {
   )
 
   return (
-    <div className="line-clamp-1 min-h-[24px] items-center">
+    <span className="line-clamp-1 min-h-[24px]">
       {groups.map((group, i) => (
-        <span key={group.id} className={'text-primary-600 text-sm'}>
+        <span key={group.id} className={'text-primary-700 text-sm'}>
           <Link
             className={linkClass}
             href={groupPath(group.slug)}
@@ -71,12 +71,10 @@ const ContractTopicBreadcrumbs = (props: { contract: Contract }) => {
           >
             {removeEmojis(group.name)}
           </Link>
-          {i !== groups.length - 1 && (
-            <span className="mx-1.5 inline-block">{'•'}</span>
-          )}
+          {i !== groups.length - 1 && <span className="mx-1.5">{'•'}</span>}
         </span>
       ))}
-    </div>
+    </span>
   )
 }
 

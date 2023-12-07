@@ -25,7 +25,7 @@ We often use firebase and supabase directly on the client to get the data. Howev
 - [backend/](./backend/): All the rest of the stuff we run on GCP.
 
 - [common/](./common/): Typescript library code shared between `web/` & `backend/`. If you want to look at how the market math
-  works, most of that's in here (it gets called from the `placeBet` and `sellBet` endpoints in `functions/`.) Also
+  works, most of that's in here (it gets called from the `bet` and `sellBet` endpoints in `functions/`.) Also
   contains in `common/envs` configuration for the different environments (i.e. prod, dev, Manifold for Teams instances.)
 
 - [docs/](./docs/): Manifold's public documentation that lives at https://docs.manifold.markets.

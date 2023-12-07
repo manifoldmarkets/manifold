@@ -21,7 +21,7 @@ import {
 import { computeCpmmBet } from 'common/new-bet'
 import { User, firebaseLogin } from 'web/lib/firebase/users'
 import { LimitBet } from 'common/bet'
-import { APIError, placeBet } from 'web/lib/firebase/api'
+import { APIError, api } from 'web/lib/firebase/api'
 import { BuyAmountInput } from '../widgets/amount-input'
 
 import { useFocus } from 'web/hooks/use-focus'
@@ -135,7 +135,8 @@ export function BuyPanel(props: {
 
     setError(undefined)
     setIsSubmitting(true)
-    placeBet(
+    api(
+      'bet',
       removeUndefinedProps({
         outcome,
         amount: betAmount,

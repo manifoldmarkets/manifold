@@ -1,4 +1,4 @@
-import { APIError } from 'common/api'
+import { APIError } from 'common//api/utils'
 import { isAdminId, isModId } from 'common/envs/constants'
 
 export const throwErrorIfNotMod = async (userId: string) => {

@@ -1,13 +1,23 @@
 import { JSONContent } from '@tiptap/core'
-import { Answer, DpmAnswer } from 'common/answer'
+import { Answer, DpmAnswer, MAX_ANSWERS } from 'common/answer'
 import { Bet } from 'common/bet'
 import { getAnswerProbability, getProbability } from 'common/calculate'
 import { Comment } from 'common/comment'
-import { Contract, MultiContract } from 'common/contract'
+import {
+  CREATEABLE_OUTCOME_TYPES,
+  Contract,
+  MAX_QUESTION_LENGTH,
+  MultiContract,
+  RESOLUTIONS,
+  VISIBILITIES,
+} from 'common/contract'
 import { DOMAIN } from 'common/envs/constants'
 import { removeUndefinedProps } from 'common/util/object'
 import { richTextToString } from 'common/util/parse'
-import { getMappedValue } from './pseudo-numeric'
+import { getMappedValue } from 'common/pseudo-numeric'
+import { z } from 'zod'
+import { MAX_ID_LENGTH } from 'common/group'
+import { contentSchema } from 'common/api/zod-types'
 
 export type LiteMarket = {
   // Unique identifier for this market
@@ -196,3 +206,149 @@ function augmentAnswerWithProbability(
     }
   }
 }
+
+// ZOD TYPES
+
+// create market
+
+export const createBinarySchema = z.object({
+  initialProb: z.number().min(1).max(99),
+  extraLiquidity: z.number().min(1).optional(),
+})
+
+export const createNumericSchema = z.object({
+  min: z.number().safe(),
+  max: z.number().safe(),
+  initialValue: z.number().safe(),
+  isLogScale: z.boolean().optional(),
+  extraLiquidity: z.number().min(1).optional(),
+})
+
+export const createMultiSchema = z.object({
+  answers: z.string().trim().min(1).array().max(MAX_ANSWERS),
+  addAnswersMode: z
+    .enum(['DISABLED', 'ONLY_CREATOR', 'ANYONE'])
+    .optional()
+    .default('DISABLED'),
+  shouldAnswersSumToOne: z.boolean().optional(),
+  extraLiquidity: z.number().min(1).optional(),
+})
+
+export const createBountySchema = z.object({
+  totalBounty: z.number().min(1),
+})
+
+export const createPollSchema = z.object({
+  answers: z.string().trim().min(1).array().min(2).max(MAX_ANSWERS),
+})
+
+export const createMarketProps = z
+  .object({
+    question: z.string().min(1).max(MAX_QUESTION_LENGTH),
+    description: contentSchema.or(z.string()).optional(),
+    descriptionHtml: z.string().optional(),
+    descriptionMarkdown: z.string().optional(),
+    descriptionJson: z.string().optional(),
+    closeTime: z
+      .union([z.date(), z.number()])
+      .refine(
+        (date) =>
+          (typeof date === 'number' ? date : date.getTime()) > Date.now(),
+        'Close time must be in the future.'
+      )
+      .optional(),
+    outcomeType: z.enum(CREATEABLE_OUTCOME_TYPES),
+    groupIds: z.array(z.string().min(1).max(MAX_ID_LENGTH)).optional(),
+    visibility: z.enum(VISIBILITIES).default('public'),
+    isTwitchContract: z.boolean().optional(),
+    utcOffset: z.number().optional(),
+    loverUserId1: z.string().optional(),
+    loverUserId2: z.string().optional(),
+    matchCreatorId: z.string().optional(),
+  })
+  .and(
+    z.union([
+      createBinarySchema,
+      createNumericSchema,
+      createMultiSchema,
+      createBountySchema,
+      createPollSchema,
+    ])
+  )
+
+// resolve market
+
+export const resolveBinarySchema = z.object({
+  outcome: z.enum(RESOLUTIONS),
+  probabilityInt: z.number().gte(0).lte(100).optional(),
+
+  // To resolve one answer of multiple choice. Only independent answers supported (shouldAnswersSumToOne = false)
+  answerId: z.string().optional(),
+})
+
+export const resolveFRSchema = z.union([
+  z.object({
+    outcome: z.literal('CANCEL'),
+  }),
+  z.object({
+    outcome: z.literal('MKT'),
+    resolutions: z.array(
+      z.object({
+        answer: z.number().int().nonnegative(),
+        pct: z.number().gte(0).lte(100),
+      })
+    ),
+  }),
+  z.object({
+    outcome: z.number().int().nonnegative(),
+  }),
+])
+
+export const resolveMultiSchema = z.union([
+  z.object({
+    outcome: z.literal('CANCEL'),
+  }),
+  z.object({
+    outcome: z.literal('CHOOSE_ONE'),
+    answerId: z.string(),
+  }),
+  z.object({
+    outcome: z.literal('CHOOSE_MULTIPLE'),
+    resolutions: z.array(
+      z.object({
+        answerId: z.string(),
+        pct: z.number().gte(0).lte(100),
+      })
+    ),
+  }),
+])
+
+export const resolveNumericSchema = z.object({
+  outcome: z.union([z.literal('CANCEL'), z.string()]),
+  value: z.number().optional(),
+})
+
+export const resolvePseudoNumericSchema = z.union([
+  z.object({
+    outcome: z.literal('CANCEL'),
+  }),
+  z.object({
+    outcome: z.literal('MKT'),
+    value: z.number(),
+    probabilityInt: z.number().gte(0).lte(100),
+  }),
+])
+
+export const resolveMarketProps = z
+  .object({
+    contractId: z.string(),
+  })
+  .and(
+    z.union([
+      resolveBinarySchema,
+      resolveFRSchema,
+      resolveMultiSchema,
+      resolveNumericSchema,
+      resolvePseudoNumericSchema,
+    ])
+  )

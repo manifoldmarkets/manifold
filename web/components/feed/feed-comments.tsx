@@ -40,11 +40,7 @@ import { useAdminOrTrusted } from 'web/hooks/use-admin'
 import { useEvent } from 'web/hooks/use-event'
 import { useIsVisible } from 'web/hooks/use-is-visible'
 import { isBlocked, usePrivateUser, useUser } from 'web/hooks/use-user'
-import {
-  createChartAnnotation,
-  createCommentOnContract,
-  hideComment,
-} from 'web/lib/firebase/api'
+import { api, hideComment } from 'web/lib/firebase/api'
 import { firebaseLogin, User } from 'web/lib/firebase/users'
 import TriangleDownFillIcon from 'web/lib/icons/triangle-down-fill-icon.svg'
 import TriangleFillIcon from 'web/lib/icons/triangle-fill-icon.svg'
@@ -70,6 +66,7 @@ import { Modal, MODAL_CLASS } from 'web/components/layout/modal'
 import { HOUR_MS } from 'common/util/time'
 import { FaArrowTrendUp, FaArrowTrendDown } from 'react-icons/fa6'
 import { last, orderBy } from 'lodash'
+import { AnnotateChartModal } from 'web/components/annotate-chart'
 
 export type ReplyToUserInfo = { id: string; username: string }
 
@@ -478,6 +475,7 @@ export function DotMenu(props: {
   const isContractCreator = privateUser?.id === contract.creatorId
   const [editingComment, setEditingComment] = useState(false)
   const [tipping, setTipping] = useState(false)
+  const [annotating, setAnnotating] = useState(false)
   return (
     <>
       <ReportModal
@@ -536,20 +534,7 @@ export function DotMenu(props: {
           isContractCreator && {
             name: 'Add to chart',
             icon: <PlusCircleIcon className="h-5 w-5 text-green-500" />,
-            onClick: async () => {
-              await toast.promise(
-                createChartAnnotation({
-                  eventTime: comment.createdTime,
-                  contractId: contract.id,
-                  commentId: comment.id,
-                }),
-                {
-                  loading: 'Adding to chart...',
-                  success: 'Added to chart!',
-                  error: 'Error adding to chart',
-                }
-              )
-            },
+            onClick: async () => setAnnotating(true),
           },
           (isMod || isContractCreator) && {
             name: comment.hidden ? 'Unhide' : 'Hide',
@@ -572,6 +557,15 @@ export function DotMenu(props: {
           }
         )}
       />
+      {annotating && (
+        <AnnotateChartModal
+          open={annotating}
+          setOpen={setAnnotating}
+          contractId={contract.id}
+          atTime={comment.createdTime}
+          comment={comment}
+        />
+      )}
       {user && editingComment && (
         <EditCommentModal
           user={user}
@@ -791,29 +785,26 @@ export function ContractCommentInput(props: {
       await firebaseLogin()
       return
     }
-    try {
-      await createCommentOnContract({
-        contractId: contract.id,
-        content: editor.getJSON(),
-        replyToAnswerId: isReplyToAnswer ? replyTo.id : undefined,
-        replyToCommentId: parentCommentId,
-        replyToBetId: isReplyToBet ? replyTo.id : undefined,
-      })
-      clearReply?.()
-      onSubmit?.()
-      track('comment', {
-        location: trackingLocation,
-        replyTo: isReplyToBet
-          ? 'bet'
-          : isReplyToAnswer
-          ? 'answer'
-          : replyToUserInfo
-          ? 'user'
-          : undefined,
-      })
-    } catch (e) {
-      toast.error('Error submitting comment. Try again?')
-    }
+
+    await api('comment', {
+      contractId: contract.id,
+      content: editor.getJSON(),
+      replyToAnswerId: isReplyToAnswer ? replyTo.id : undefined,
+      replyToCommentId: parentCommentId,
+      replyToBetId: isReplyToBet ? replyTo.id : undefined,
+    })
+    clearReply?.()
+    onSubmit?.()
+    track('comment', {
+      location: trackingLocation,
+      replyTo: isReplyToBet
+        ? 'bet'
+        : isReplyToAnswer
+        ? 'answer'
+        : replyToUserInfo
+        ? 'user'
+        : undefined,
+    })
   })
 
   return (

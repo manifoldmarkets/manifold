@@ -167,8 +167,6 @@ export const SliceMarker = (props: {
     </g>
   )
 }
-export const ANNOTATION_COLOR = '#6366f1' // indigo-500
-export const ANNOTATION_GRAY = '#b6adad' // indigo-500
 
 export const AnnotationMarker = (props: {
   x: number
@@ -185,17 +183,20 @@ export const AnnotationMarker = (props: {
   const pinBottomPointX = x - 10
   const pinTopCenterY = y0 - 18
   const pinPath = `M87.084,192c-0.456-5.272-0.688-10.6-0.688-16C86.404,78.8,162.34,0,256.004,0s169.6,78.8,169.6,176
-	c0,5.392-0.232,10.728-0.688,16h0.688c0,96.184-169.6,320-169.6,320s-169.6-223.288-169.6-320H87.084z M256.004,224
-	c36.392,1.024,66.744-27.608,67.84-64c-1.096-36.392-31.448-65.024-67.84-64c-36.392-1.024-66.744,27.608-67.84,64
-	C189.26,196.392,219.612,225.024,256.004,224z`
+	c0,5.392-0.232,10.728-0.688,16h0.688c0,96.184-169.6,320-169.6,320s-169.6-223.288-169.6-320H87.084z`
+
   const transform = `translate(${pinBottomPointX}, ${pinTopCenterY}) scale(${scale})` // Adjust these values based on the actual size of your SVG
 
   return (
     <g onMouseEnter={() => onHover(id)} onMouseLeave={onLeave}>
       <line
-        stroke={isHovered ? ANNOTATION_COLOR : ANNOTATION_GRAY}
         strokeWidth={isHovered ? 3 : 2}
         strokeDasharray={isHovered ? undefined : '5, 5'}
+        className={
+          isHovered
+            ? 'dark:stroke-primary-300 stroke-primary-500 z-20'
+            : 'stroke-ink-300 dark:stroke-ink-600'
+        }
         x1={x}
         x2={x}
         y1={y0 - 20}
@@ -204,8 +205,12 @@ export const AnnotationMarker = (props: {
       <path
         transform={transform}
         d={pinPath}
-        fill={isHovered ? ANNOTATION_COLOR : ANNOTATION_GRAY}
-        stroke="white"
+        className={clsx(
+          isHovered
+            ? 'dark:fill-primary-300 fill-primary-500 z-20'
+            : 'fill-ink-300 dark:fill-ink-600'
+        )}
+        z={isHovered ? 20 : 0}
         strokeWidth={isHovered ? 2 : 1}
       />
     </g>
@@ -231,7 +236,7 @@ export const SVGChart = <X, TT extends { x: number; y: number }>(props: {
   pointerMode?: PointerMode
   onClick?: (x: number, y: number) => void
   xScale?: ScaleTime<number, number>
-  yAtX?: (x: number, answerId?: string | null) => number
+  yAtTime?: (time: number, answerId?: string | null) => number
   y0?: number
   onHoverAnnotation?: (id: number | null) => void
   hoveredAnnotation?: number | null
@@ -253,14 +258,14 @@ export const SVGChart = <X, TT extends { x: number; y: number }>(props: {
     pointerMode = 'zoom',
     onClick,
     xScale,
-    yAtX,
+    yAtTime,
     chartAnnotations,
     y0,
     onHoverAnnotation,
     hoveredAnnotation,
   } = props
 
-  const showAnnotations = xScale && yAtX && y0 !== undefined
+  const showAnnotations = xScale && yAtTime && y0 !== undefined
   const onPointerMove = (ev: React.PointerEvent) => {
     if (ev.pointerType === 'mouse' || ev.pointerType === 'pen') {
       const [x, y] = pointer(ev)
@@ -283,6 +288,7 @@ export const SVGChart = <X, TT extends { x: number; y: number }>(props: {
 
   const onPointerLeave = () => {
     onMouseLeave?.()
+    onHoverAnnotation?.(null)
   }
 
   const id = useId()
@@ -366,19 +372,37 @@ export const SVGChart = <X, TT extends { x: number; y: number }>(props: {
           {/* clip to stop pointer events outside of graph, and mask for the blur to indicate zoom */}
           <g clipPath={`url(#${id}-clip)`} mask={`url(#${id}-mask)`}>
             {children}
+            {/* We can't just change z-index, we have to change rendering order*/}
             {showAnnotations &&
-              chartAnnotations?.map((a) => (
-                <AnnotationMarker
-                  key={a.id}
-                  x={xScale(a.event_time)}
-                  y0={y0}
-                  y1={yAtX(xScale(a.event_time).valueOf(), a.answer_id)}
-                  id={a.id}
-                  onHover={(id) => onHoverAnnotation?.(id)}
-                  onLeave={() => onHoverAnnotation?.(null)}
-                  isHovered={hoveredAnnotation === a.id}
-                />
-              ))}
+              chartAnnotations
+                ?.filter((a) => a.id !== hoveredAnnotation)
+                .map((a) => (
+                  <AnnotationMarker
+                    key={a.id}
+                    x={xScale(a.event_time)}
+                    y0={y0}
+                    y1={yAtTime(a.event_time, a.answer_id)}
+                    id={a.id}
+                    onHover={(id) => onHoverAnnotation?.(id)}
+                    onLeave={() => onHoverAnnotation?.(null)}
+                    isHovered={hoveredAnnotation === a.id}
+                  />
+                ))}
+            {showAnnotations &&
+              chartAnnotations
+                ?.filter((a) => a.id === hoveredAnnotation)
+                .map((a) => (
+                  <AnnotationMarker
+                    key={a.id}
+                    x={xScale(a.event_time)}
+                    y0={y0}
+                    y1={yAtTime(a.event_time, a.answer_id)}
+                    id={a.id}
+                    onHover={(id) => onHoverAnnotation?.(id)}
+                    onLeave={() => onHoverAnnotation?.(null)}
+                    isHovered={hoveredAnnotation === a.id}
+                  />
+                ))}
           </g>
         </g>
       </svg>

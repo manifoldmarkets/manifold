@@ -39,7 +39,7 @@ export const NEW_USER_FEED_DATA_TYPES: FEED_DATA_TYPES[] = [
 export const BASE_FEED_DATA_TYPE_SCORES: { [key in FEED_DATA_TYPES]: number } =
   {
     new_comment: 0.075,
-    new_contract: 0.2,
+    new_contract: 0.25,
     new_subsidy: 0.1,
     news_with_related_contracts: 0.1,
     user_position_changed: 0.02,

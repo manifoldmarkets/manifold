@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { OutcomeType } from 'common/contract'
+import { CreateableOutcomeType } from 'common/contract'
 import { ReactNode, useState } from 'react'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
@@ -13,8 +13,8 @@ import { MINIMUM_BOUNTY, getAnte } from 'common/economy'
 import { formatMoney } from 'common/util/format'
 
 export function ChoosingContractForm(props: {
-  outcomeType: OutcomeType | undefined
-  setOutcomeType: (outcomeType: OutcomeType) => void
+  outcomeType: CreateableOutcomeType | undefined
+  setOutcomeType: (outcomeType: CreateableOutcomeType) => void
   setState: (state: CreateContractStateType) => void
 }) {
   const { outcomeType, setOutcomeType, setState } = props
@@ -80,13 +80,13 @@ function OutcomeButton(props: {
   label: string
   descriptor: string
   example: string | ReactNode
-  value: string
+  value: CreateableOutcomeType
   visual: ReactNode
   className?: string
   backgroundColor?: string
   selectClassName?: string
-  outcomeType: OutcomeType | undefined
-  setOutcomeType: (outcomeType: OutcomeType) => void
+  outcomeType: CreateableOutcomeType | undefined
+  setOutcomeType: (outcomeType: CreateableOutcomeType) => void
   setState: (state: CreateContractStateType) => void
 }) {
   const {
@@ -114,7 +114,7 @@ function OutcomeButton(props: {
           : backgroundColor ?? 'bg-primary-600/5'
       )}
       onClick={() => {
-        setOutcomeType(value as OutcomeType)
+        setOutcomeType(value)
         setState('filling contract params')
       }}
       onTouchStart={() => setTouch(true)}
@@ -125,7 +125,7 @@ function OutcomeButton(props: {
         <Col className="w-full">
           <Row className="w-full justify-between">
             <div className="font-semibold sm:text-lg">{label}</div>
-            <AntePrice outcome={value as OutcomeType} />
+            <AntePrice outcome={value} />
           </Row>
           <Col className="sm:text-md text-sm">
             <span className="text-ink-700 mt-0.5 italic">{example}</span>
@@ -136,7 +136,7 @@ function OutcomeButton(props: {
   )
 }
 
-function AntePrice(props: { outcome: OutcomeType }) {
+function AntePrice(props: { outcome: CreateableOutcomeType }) {
   const { outcome } = props
   const ante = formatMoney(getAnte(outcome, 1))
   if (outcome === 'BOUNTIED_QUESTION') {

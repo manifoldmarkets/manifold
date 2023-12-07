@@ -15,6 +15,7 @@ import { User } from 'common/user'
 import { track } from 'web/lib/service/analytics'
 import { Races } from './race'
 import { Carousel } from 'web/components/widgets/carousel'
+import { useCallReferUser } from 'web/hooks/use-call-refer-user'
 
 export const OptionalLoveUserForm = (props: {
   lover: rowFor<'lovers'>
@@ -31,6 +32,7 @@ export const OptionalLoveUserForm = (props: {
   const [heightInches, setHeightInches] = useState<number | undefined>(
     Math.floor((lover['height_in_inches'] ?? 0) % 12)
   )
+  useCallReferUser()
 
   const handleSubmit = async () => {
     const res = await updateLover({ ...lover }).catch((e) => {

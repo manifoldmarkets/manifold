@@ -19,6 +19,7 @@ import { HistoryPoint } from 'common/chart'
 import { Row } from 'web/components/layout/row'
 import { pick } from 'lodash'
 import { buildArray } from 'common/util/array'
+import { ChartAnnotation } from 'common/supabase/chart-annotations'
 
 const CHOICE_ANSWER_COLORS = [
   '#99DDFF', // sky
@@ -110,6 +111,7 @@ export const ChoiceContractChart = (props: {
   multiPoints?: MultiPoints
   width: number
   height: number
+  chartAnnotations: ChartAnnotation[]
   zoomParams: ZoomParams
   showZoomer?: boolean
   highlightAnswerId?: string
@@ -130,6 +132,7 @@ export const ChoiceContractChart = (props: {
     pointerMode,
     setHoveredAnnotation,
     hoveredAnnotation,
+    chartAnnotations,
   } = props
 
   const start = contract.createdTime
@@ -196,6 +199,7 @@ export const ChoiceContractChart = (props: {
       hoveredAnnotation={hoveredAnnotation}
       setHoveredAnnotation={setHoveredAnnotation}
       pointerMode={pointerMode}
+      chartAnnotations={chartAnnotations}
     />
   )
 }

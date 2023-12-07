@@ -9,7 +9,6 @@ export const useSaveReferral = (
   options?: {
     defaultReferrerUsername?: string
     contractId?: string
-    groupId?: string
   }
 ) => {
   const router = useRouter()
@@ -25,7 +24,6 @@ export const useSaveReferral = (
       writeReferralInfo(referrerOrDefault, {
         contractId: options?.contractId,
         explicitReferrer: referrer,
-        groupId: options?.groupId,
       })
     }
   }, [user, router, JSON.stringify(options)])

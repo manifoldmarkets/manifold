@@ -4,7 +4,7 @@ import { createSupabaseClient } from 'shared/supabase/init'
 import * as admin from 'firebase-admin'
 import { baseLoversSchema } from 'api/love/create-lover'
 import { removePinnedUrlFromPhotoUrls } from 'shared/love/parse-photos'
-import { contentSchema } from 'shared/zod-types'
+import { contentSchema } from 'common/api/zod-types'
 
 const optionalLoversSchema = z.object({
   political_beliefs: z.array(z.string()).optional(),

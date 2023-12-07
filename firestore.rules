@@ -15,7 +15,8 @@ service cloud.firestore {
         'iansphilips@gmail.com',
         'd4vidchee@gmail.com',
         'ingawei@gmail.com',
-        'marshall@pol.rs'
+        'marshall@pol.rs',
+        'politics@manifold.markets'
       ]
     }
 

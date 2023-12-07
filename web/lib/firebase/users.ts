@@ -109,7 +109,6 @@ export function listenForPrivateUser(
 
 export const CACHED_REFERRAL_USERNAME_KEY = 'CACHED_REFERRAL_KEY'
 const CACHED_REFERRAL_CONTRACT_ID_KEY = 'CACHED_REFERRAL_CONTRACT_KEY'
-const CACHED_REFERRAL_GROUP_ID_KEY = 'CACHED_REFERRAL_GROUP_KEY'
 
 // Scenarios:
 // 1. User is referred by another user to homepage, group page, market page etc. explicitly via referrer= query param
@@ -120,12 +119,11 @@ export function writeReferralInfo(
   otherOptions?: {
     contractId?: string
     explicitReferrer?: string
-    groupId?: string
   }
 ) {
   const local = safeLocalStorage
   const cachedReferralUser = local?.getItem(CACHED_REFERRAL_USERNAME_KEY)
-  const { contractId, explicitReferrer, groupId } = otherOptions || {}
+  const { contractId, explicitReferrer } = otherOptions || {}
 
   // Write the first referral username we see.
   if (!cachedReferralUser) {
@@ -133,15 +131,12 @@ export function writeReferralInfo(
       CACHED_REFERRAL_USERNAME_KEY,
       explicitReferrer || defaultReferrerUsername
     )
-    if (groupId) local?.setItem(CACHED_REFERRAL_GROUP_ID_KEY, groupId)
     if (contractId) local?.setItem(CACHED_REFERRAL_CONTRACT_ID_KEY, contractId)
   }
 
   // Overwrite all referral info if we see an explicit referrer.
   if (explicitReferrer) {
     local?.setItem(CACHED_REFERRAL_USERNAME_KEY, explicitReferrer)
-    if (!groupId) local?.removeItem(CACHED_REFERRAL_GROUP_ID_KEY)
-    else local?.setItem(CACHED_REFERRAL_GROUP_ID_KEY, groupId)
     if (!contractId) local?.removeItem(CACHED_REFERRAL_CONTRACT_ID_KEY)
     else local?.setItem(CACHED_REFERRAL_CONTRACT_ID_KEY, contractId)
   }
@@ -157,7 +152,7 @@ export async function setCachedReferralInfoForUser(user: User) {
   )
   if (!cachedReferralUsername) return
   console.log(
-    `User created in last ${MINUTES_ALLOWED_TO_REFER} minutes, setting referral info`
+    `User created in last ${MINUTES_ALLOWED_TO_REFER} minutes, trying to set referral`
   )
   // get user via username
   referUser(
@@ -168,7 +163,6 @@ export async function setCachedReferralInfoForUser(user: User) {
   )
     .then((resp) => {
       console.log('referral resp', resp)
-      local?.removeItem(CACHED_REFERRAL_GROUP_ID_KEY)
       local?.removeItem(CACHED_REFERRAL_USERNAME_KEY)
       local?.removeItem(CACHED_REFERRAL_CONTRACT_ID_KEY)
     })
