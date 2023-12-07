@@ -194,7 +194,7 @@ export const API = (_apiTypeCheck = {
   'compatible-lovers': {
     method: 'GET',
     visibility: 'private',
-    authed: true,
+    authed: false,
     props: z.object({ userId: z.string() }),
     returns: {} as {
       lover: Lover
