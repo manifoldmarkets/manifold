@@ -60,7 +60,6 @@ import { useEvent } from 'web/hooks/use-event'
 import { Avatar } from 'web/components/widgets/avatar'
 import { FaArrowTrendDown, FaArrowTrendUp } from 'react-icons/fa6'
 import { formatPercent } from 'common/util/format'
-import { updateContract } from 'web/lib/firebase/contracts'
 import { isAdminId, isModId } from 'common/envs/constants'
 import { updateMarket } from 'web/lib/firebase/api'
 
