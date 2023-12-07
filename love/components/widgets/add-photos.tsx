@@ -11,6 +11,7 @@ import { uploadImage } from 'web/lib/firebase/storage'
 import { buildArray } from 'common/util/array'
 import { Row } from 'web/components/layout/row'
 import { User } from 'common/user'
+import { PlusIcon } from '@heroicons/react/solid'
 
 export const AddPhotosWidget = (props: {
   user: User
@@ -52,7 +53,7 @@ export const AddPhotosWidget = (props: {
         className={'hidden'}
         disabled={uploadingImages}
       />
-      <label
+      {/* <label
         className={clsx(
           buttonClass('md', 'indigo'),
           'cursor-pointer self-start'
@@ -60,7 +61,7 @@ export const AddPhotosWidget = (props: {
         htmlFor="photo-upload"
       >
         Add photos
-      </label>
+      </label> */}
       <Row className="flex-wrap gap-2">
         {uniq(buildArray(pinned_url, photo_urls))?.map((url, index) => {
           const isPinned = url === pinned_url
@@ -112,6 +113,14 @@ export const AddPhotosWidget = (props: {
             </div>
           )
         })}
+        <label
+          className={clsx(
+            'bg-ink-200 hover:bg-ink-300 text-ink-0 dark:text-ink-500 hover:dark:text-ink-600 flex h-[100px] w-[100px]  cursor-pointer flex-col items-center rounded-md transition-colors'
+          )}
+          htmlFor="photo-upload"
+        >
+          <PlusIcon className=" mx-auto my-auto h-16 w-16" />
+        </label>
       </Row>
       {photo_urls?.length ? (
         <span className={'text-ink-500 text-xs italic'}>

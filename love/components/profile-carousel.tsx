@@ -16,6 +16,7 @@ import { AddPhotosWidget } from './widgets/add-photos'
 import { Row as rowFor } from 'common/supabase/utils'
 import { Row } from 'web/components/layout/row'
 import { useUser } from 'web/hooks/use-user'
+import { PencilIcon } from '@heroicons/react/solid'
 
 export default function ProfileCarousel(props: { lover: Lover }) {
   const { lover } = props
@@ -75,7 +76,7 @@ export default function ProfileCarousel(props: { lover: Lover }) {
           Admin: Delete pinned photo
         </Button>
       )}
-      <Carousel>
+      <Carousel className="group relative">
         {buildArray(lover.pinned_url, lover.photo_urls).map((url, i) => {
           return (
             <div key={url} className="h-80 w-[250px] flex-none snap-start">
@@ -97,7 +98,16 @@ export default function ProfileCarousel(props: { lover: Lover }) {
         })}
 
         {isCurrentUser && (
-          <AddPhotoPlaceholder user={currentUser} lover={lover} />
+          <div
+            className={clsx(
+              'absolute top-2 transition-opacity sm:opacity-0 sm:group-hover:opacity-100',
+              !lover.photo_urls || lover.photo_urls.length < 1
+                ? 'left-[200px]'
+                : 'right-4 '
+            )}
+          >
+            <EditPhotosButton user={currentUser} lover={lover} />
+          </div>
         )}
       </Carousel>
       <Modal open={dialogOpen} setOpen={setDialogOpen}>
@@ -107,7 +117,7 @@ export default function ProfileCarousel(props: { lover: Lover }) {
   )
 }
 
-const AddPhotoPlaceholder = (props: { user: User; lover: Lover }) => {
+const EditPhotosButton = (props: { user: User; lover: Lover }) => {
   const { user } = props
   const [dialogOpen, setDialogOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -128,13 +138,12 @@ const AddPhotoPlaceholder = (props: { user: User; lover: Lover }) => {
 
   return (
     <>
-      <Button color="none" onClick={() => setDialogOpen(true)}>
-        <Col className="bg-canvas-100 dark:bg-canvas-0 text-ink-500 relative h-80 w-[250px] flex-none items-center rounded text-5xl">
-          <Col className="m-auto items-center gap-1">
-            <div className="select-none font-semibold">+ photo</div>
-          </Col>
-        </Col>
-      </Button>
+      <button
+        onClick={() => setDialogOpen(true)}
+        className="bg-ink-500 hover:bg-ink-300 rounded p-1 transition-colors"
+      >
+        <PencilIcon className=" h-5 w-5 text-white" />
+      </button>
       <Modal open={dialogOpen} setOpen={setDialogOpen}>
         <Col className={clsx(MODAL_CLASS)}>
           <AddPhotosWidget
