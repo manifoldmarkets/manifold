@@ -272,22 +272,16 @@ export function BinaryChart(props: {
   } = props
 
   return (
-    <SizedContainer
-      className={clsx(
-        showZoomer && !showAnnotations
-          ? 'mb-12'
-          : showAnnotations && showZoomer
-          ? 'mb-32'
-          : showAnnotations && (chartAnnotations?.length ?? 0) > 0
-          ? 'mb-20'
-          : '',
-        'w-full pb-3 pr-10',
-        size == 'sm' ? 'h-[100px]' : 'h-[150px] sm:h-[250px]',
-        className
-      )}
-    >
-      {(w, h) => (
-        <>
+    <>
+      <SizedContainer
+        className={clsx(
+          showZoomer ? 'mb-12' : '',
+          'w-full pb-3 pr-10',
+          size == 'sm' ? 'h-[100px]' : 'h-[150px] sm:h-[250px]',
+          className
+        )}
+      >
+        {(w, h) => (
           <BinaryContractChart
             width={w}
             height={h}
@@ -301,38 +295,31 @@ export function BinaryChart(props: {
             pointerMode={pointerMode}
             chartAnnotations={chartAnnotations}
           />
-          {showAnnotations && chartAnnotations?.length ? (
-            <ChartAnnotations
-              annotations={chartAnnotations}
-              hoveredAnnotation={hoveredAnnotation}
-              setHoveredAnnotation={setHoveredAnnotation}
-              showZoomer={showZoomer}
-            />
-          ) : null}
-        </>
-      )}
-    </SizedContainer>
+        )}
+      </SizedContainer>
+      {showAnnotations && chartAnnotations?.length ? (
+        <ChartAnnotations
+          annotations={chartAnnotations}
+          hoveredAnnotation={hoveredAnnotation}
+          setHoveredAnnotation={setHoveredAnnotation}
+        />
+      ) : null}
+    </>
   )
 }
 const ChartAnnotations = (props: {
   annotations: ChartAnnotation[]
   hoveredAnnotation?: number | null
   setHoveredAnnotation?: (id: number | null) => void
-  showZoomer?: boolean
 }) => {
-  const { annotations, hoveredAnnotation, setHoveredAnnotation, showZoomer } =
-    props
+  const { annotations, hoveredAnnotation, setHoveredAnnotation } = props
   const [carouselRef, setCarouselRef] = useState<HTMLDivElement | null>(null)
   const { onScroll, scrollLeft, scrollRight, atFront, atBack } =
     useCarousel(carouselRef)
 
   return (
     <ControlledCarousel
-      className={clsx(
-        'relative',
-        showZoomer ? 'mt-12' : 'mt-6',
-        'max-w-full gap-1'
-      )}
+      className={clsx('relative', 'max-w-full gap-1')}
       ref={setCarouselRef}
       onScroll={onScroll}
       scrollLeft={scrollLeft}
@@ -689,7 +676,6 @@ const ChoiceOverview = (props: {
           annotations={chartAnnotations}
           hoveredAnnotation={hoveredAnnotation}
           setHoveredAnnotation={setHoveredAnnotation}
-          showZoomer={showZoomer}
         />
       ) : null}
       {showResolver ? (
