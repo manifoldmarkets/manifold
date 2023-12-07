@@ -480,9 +480,10 @@ export function ContractParamsForm(props: {
         <Col className={'space-y-1 '}>
           <Row className={'justify-between px-1'}>
             <span>
-              {DUPES_TO_SHOW +
-                (similarContracts.length > DUPES_TO_SHOW ? '+' : '')}{' '}
-              Existing {outcomeType == 'POLL' ? 'polls' : 'questions'}
+              {similarContracts.length > DUPES_TO_SHOW
+                ? `${DUPES_TO_SHOW}+`
+                : similarContracts.length}{' '}
+              Existing {outcomeType == 'POLL' ? 'poll(s)' : 'question(s)'}
             </span>
             <IconButton
               size={'2xs'}
