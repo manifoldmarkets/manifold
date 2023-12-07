@@ -212,7 +212,7 @@ function augmentAnswerWithProbability(
 // create market
 
 export const createBinarySchema = z.object({
-  initialProb: z.number().min(1).max(99),
+  initialProb: z.number().min(1).max(99).optional(),
   extraLiquidity: z.number().min(1).optional(),
 })
 

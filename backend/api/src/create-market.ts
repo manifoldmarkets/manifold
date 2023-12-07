@@ -158,7 +158,7 @@ export async function createMarketHelper(
         descriptionMarkdown,
         descriptionJson
       ),
-      initialProb: initialProb ?? 0,
+      initialProb: initialProb ?? 50,
       ante,
       closeTime,
       visibility,
