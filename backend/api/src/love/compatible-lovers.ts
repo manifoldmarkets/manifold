@@ -1,86 +1,128 @@
+import { groupBy, uniq, sortBy } from 'lodash'
 import { APIError, typedEndpoint } from 'api/helpers'
-import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { CPMMMultiContract } from 'common/contract'
-import { Lover, LoverRow } from 'common/love/lover'
-import { getNearbyCities } from 'api/search-near-city'
-import { getUsersSupabase } from 'shared/utils'
+import { getCompatibilityScore } from 'common/love/compatibility-score'
+import {
+  getLover,
+  getLoverContracts,
+  getLovers,
+  getCompatibleLovers as getCompatible,
+  getCompatibilityAnswers,
+} from 'shared/love/lovers'
+import { filterDefined } from 'common/util/array'
 
 export const getCompatibleLovers = typedEndpoint(
   'compatible-lovers',
   async (props, _auth, { log }) => {
     const { userId } = props
 
-    // const potentialLovers = lovers
-    //   .filter((l) => l.user_id !== profileUserId)
-    //   .filter((l) => !matchesSet.has(l.user_id))
-    //   .filter((l) => l.looking_for_matches)
-    //   .filter(
-    //     (l) =>
-    //       !lover ||
-    //       (areGenderCompatible(lover, l) &&
-    //         areAgeCompatible(lover, l) &&
-    //         areLocationCompatible(lover, l))
-    //   )
+    const [lover, loverContracts] = await Promise.all([
+      getLover(userId),
+      getLoverContracts(userId),
+    ])
 
-    const pg = createSupabaseDirectClient()
+    log('got lover', {
+      id: lover?.id,
+      userId: lover?.user_id,
+      username: lover?.user?.username,
+    })
 
-    const lover = await pg.oneOrNone<LoverRow>(
-      `
-    select * from lovers
-    where user_id = $1
-  `,
-      [userId]
+    log(
+      'got lover contracts',
+      loverContracts.map((c) => ({ id: c.id, question: c.question }))
     )
-
-    log('got lover', lover)
 
     if (!lover) throw new APIError(404, 'Lover not found')
+    if (!lover.looking_for_matches)
+      throw new APIError(403, 'Lover not looking for matches')
 
-    const radius = 50
-    const nearbyCityIds = lover.geodb_city_id
-      ? await getNearbyCities(lover.geodb_city_id, radius)
-      : []
+    const matchedUserIds = filterDefined(
+      uniq(loverContracts.flatMap((c) => [c.loverUserId1, c.loverUserId2]))
+    ).filter((id) => id !== userId)
 
-    log('got nearby cities', nearbyCityIds)
+    const radiusKm = 50
 
-    const lovers = await pg.manyOrNone<LoverRow>(
-      `
-    select * from lovers
-    join users on users.id = lovers.user_id
-    where user_id != $1
-    and data->>'isBannedFromPosting' != 'true'
-    and looking_for_matches
-    and lovers.gender = any($2)
-    and $3 = any(lovers.pref_gender)
-    and lovers.geodb_city_id = any($4)
-  `,
-      [userId, lover.pref_gender, lover.gender, nearbyCityIds]
+    const [matchedLovers, allCompatibleLovers] = await Promise.all([
+      getLovers(matchedUserIds),
+      getCompatible(lover, radiusKm),
+    ])
+
+    const matchesSet = new Set([
+      ...loverContracts.map((contract) => contract.loverUserId1),
+      ...loverContracts.map((contract) => contract.loverUserId2),
+    ])
+    const compatibleLovers = allCompatibleLovers.filter(
+      (l) => !matchesSet.has(l.user_id)
     )
 
-    log('got lovers', lovers)
-
-    const loverContracts = await pg.map<CPMMMultiContract>(
-      `select data from contracts
-    where outcome_type = 'MULTIPLE_CHOICE'
-    and resolution is null
-    and (
-      data->>'loverUserId1' = $1
-      or data->>'loverUserId2' = $1
-    )`,
-      [userId],
-      (r) => r.data
-    )
-
-    log('got lover contracts', loverContracts)
-
-    const users = await getUsersSupabase(lovers.map((l) => l.user_id))
-    const loversWithUsers = lovers
-      .map((l, i) => ({
-        ...l,
-        user: users[i],
+    console.log(
+      'got matched',
+      matchedLovers.map((l) => ({
+        id: l.id,
+        username: l.user.username,
+        user_id: l.user.id,
       }))
-      .filter((l) => l.user) as Lover[]
+    )
+    console.log(
+      'got compatible',
+      compatibleLovers.map((l) => ({
+        id: l.id,
+        username: l.user.username,
+        user_id: l.user.id,
+      }))
+    )
 
-    return { status: 'success', lovers: loversWithUsers, loverContracts }
+    const lovers = [...compatibleLovers, ...matchedLovers]
+    const loverAnswers = await getCompatibilityAnswers([
+      userId,
+      ...lovers.map((l) => l.user_id),
+    ])
+    log('got lover answers ' + loverAnswers.length)
+
+    const answersByUserId = groupBy(loverAnswers, 'creator_id')
+    const loverCompatibilityScores = Object.fromEntries(
+      lovers.map(
+        (l) =>
+          [
+            l.user_id,
+            getCompatibilityScore(
+              lover,
+              answersByUserId[lover.user_id] ?? [],
+              l,
+              answersByUserId[l.user_id] ?? []
+            ),
+          ] as const
+      )
+    )
+
+    log('got lover compatibility scores', loverCompatibilityScores)
+
+    const sortedLoverContracts = sortBy(
+      loverContracts,
+      (c) => -1 * c.answers.filter((ans) => ans.resolution).length,
+      (c) => {
+        const resolvedCount = c.answers.filter((ans) => ans.resolution).length
+        return -1 * c.answers[resolvedCount].prob
+      }
+    )
+
+    const sortedMatchedLovers = sortBy(matchedLovers, (l) =>
+      sortedLoverContracts.findIndex(
+        (c) => c.loverUserId1 === l.user_id || c.loverUserId2 === l.user_id
+      )
+    )
+
+    const sortedCompatibleLovers = sortBy(
+      compatibleLovers,
+      (l) => loverCompatibilityScores[l.user_id].score
+    ).reverse()
+
+    return {
+      status: 'success',
+      lover,
+      matchedLovers: sortedMatchedLovers,
+      compatibleLovers: sortedCompatibleLovers,
+      loverCompatibilityScores,
+      loverContracts: sortedLoverContracts,
+    }
   }
 )

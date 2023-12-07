@@ -16,14 +16,22 @@ import { BuyAmountInput } from 'web/components/widgets/amount-input'
 import { useTextEditor } from 'web/components/widgets/editor'
 import { createMatch } from 'web/lib/firebase/love/api'
 import { useUser } from 'web/hooks/use-user'
+import { CompatibilityScore } from 'common/love/compatibility-score'
 
 export const BrowseMatchesButton = (props: {
   lover: Lover
   matchedLovers: Lover[]
   potentialLovers: Lover[]
+  compatibilityScores: Record<string, CompatibilityScore>
   className?: string
 }) => {
-  const { lover, matchedLovers, potentialLovers, className } = props
+  const {
+    lover,
+    matchedLovers,
+    potentialLovers,
+    compatibilityScores,
+    className,
+  } = props
 
   const [dialogOpen, setDialogOpen] = useState(false)
   const [selectedMatchId, setSelectedMatchId] = useState<string | null>(null)
@@ -86,6 +94,7 @@ export const BrowseMatchesButton = (props: {
           lover={lover}
           matchedLovers={matchedLovers}
           potentialLovers={potentialLovers}
+          compatibilityScores={compatibilityScores}
           selectedMatchId={selectedMatchId}
           setSelectedMatchId={setSelectedMatchId}
           betAmount={betAmount}
@@ -104,6 +113,7 @@ const BrowseMatchesDialog = (props: {
   lover: Lover
   matchedLovers: Lover[]
   potentialLovers: Lover[]
+  compatibilityScores: Record<string, CompatibilityScore>
   selectedMatchId: string | null
   setSelectedMatchId: (matchId: string | null) => void
   betAmount: number | undefined
@@ -117,6 +127,7 @@ const BrowseMatchesDialog = (props: {
     lover,
     matchedLovers,
     potentialLovers,
+    compatibilityScores,
     selectedMatchId,
     setSelectedMatchId,
     betAmount,
@@ -134,6 +145,10 @@ const BrowseMatchesDialog = (props: {
   const [potentialIndex, setPotentialIndex] = useState(0)
   const matchedLover = matchedLovers[matchedIndex]
   const potentialLover = potentialLovers[potentialIndex]
+  const compatibility =
+    tab === 0
+      ? compatibilityScores[matchedLover.user_id]
+      : compatibilityScores[potentialLover.user_id]
 
   const user = useUser()
 
@@ -188,6 +203,16 @@ const BrowseMatchesDialog = (props: {
                         </Button>
                       </Row>
                       <Col>
+                        {compatibility.confidence !== 'low' && (
+                          <div>
+                            Compatibility{' '}
+                            <span className="text-primary-600 font-semibold">
+                              {Math.round((compatibility.score ?? 0) * 100) /
+                                10}{' '}
+                              out of 10
+                            </span>
+                          </div>
+                        )}
                         <LoverProfile
                           lover={matchedLover}
                           user={matchedLover.user}
@@ -237,6 +262,15 @@ const BrowseMatchesDialog = (props: {
 
                   {potentialLovers.length > 0 && (
                     <>
+                      {compatibility.confidence !== 'low' && (
+                        <div>
+                          Compatibility{' '}
+                          <span className="text-primary-600 font-semibold">
+                            {Math.round((compatibility.score ?? 0) * 100) / 10}{' '}
+                            out of 10
+                          </span>
+                        </div>
+                      )}
                       <LoverProfile
                         lover={potentialLover}
                         user={potentialLover.user}
