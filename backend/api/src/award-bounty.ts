@@ -20,7 +20,7 @@ export const awardBounty = typedEndpoint(
       if (!commentSnap.exists) throw new APIError(404, 'Comment not found')
       const comment = commentSnap.data() as ContractComment
 
-      await runAwardBountyTxn(
+      const txn = await runAwardBountyTxn(
         transaction,
         {
           fromId: contractId,
@@ -47,6 +47,7 @@ export const awardBounty = typedEndpoint(
           amount
         )
       }
+      return txn
     })
   }
 )

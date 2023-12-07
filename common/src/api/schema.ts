@@ -13,6 +13,8 @@ import { contentSchema } from 'common/api/zod-types'
 import { Lover } from 'common/love/lover'
 import { CPMMMultiContract } from 'common/contract'
 import { CompatibilityScore } from 'common/love/compatibility-score'
+import { Txn } from 'common/txn'
+import { LiquidityProvision } from 'common/liquidity-provision'
 
 type APIGenericSchema = {
   // GET is for retrieval, POST is to mutate something, PUT is idempotent mutation (can be repeated safely)
@@ -109,6 +111,7 @@ export const API = (_apiTypeCheck = {
     method: 'POST',
     visibility: 'public',
     authed: true,
+    returns: {} as LiquidityProvision,
     props: z
       .object({
         contractId: z.string(),
@@ -120,6 +123,7 @@ export const API = (_apiTypeCheck = {
     method: 'POST',
     visibility: 'public',
     authed: true,
+    returns: {} as Txn,
     props: z
       .object({
         contractId: z.string(),
@@ -131,6 +135,7 @@ export const API = (_apiTypeCheck = {
     method: 'POST',
     visibility: 'public',
     authed: true,
+    returns: {} as Txn,
     props: z
       .object({
         contractId: z.string(),

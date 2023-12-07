@@ -67,6 +67,7 @@ export const addLiquidity = typedEndpoint(
       })
 
       transaction.create(newLiquidityProvisionDoc, newLiquidityProvision)
+      return newLiquidityProvision
     })
   }
 )

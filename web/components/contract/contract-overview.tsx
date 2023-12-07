@@ -60,6 +60,10 @@ import { useEvent } from 'web/hooks/use-event'
 import { Avatar } from 'web/components/widgets/avatar'
 import { FaArrowTrendDown, FaArrowTrendUp } from 'react-icons/fa6'
 import { formatPercent } from 'common/util/format'
+import { isAdminId, isModId } from 'common/envs/constants'
+import { updateMarket } from 'web/lib/firebase/api'
+import { LoadingIndicator } from '../widgets/loading-indicator'
+import { useDataZoomFetcher } from '../charts/contract/zoom-utils'
 
 export const ContractOverview = memo(
   (props: {
@@ -160,12 +164,20 @@ export const BinaryOverview = (props: {
   resolutionRating?: ReactNode
   chartAnnotations: ChartAnnotation[]
 }) => {
-  const { contract, betPoints, resolutionRating } = props
+  const { contract, resolutionRating } = props
+
   const user = useUser()
 
   const [showZoomer, setShowZoomer] = useState(false)
   const { currentTimePeriod, setTimePeriod, maxRange, zoomParams } =
     useTimePicker(contract, () => setShowZoomer(true))
+
+  const { points, loading } = useDataZoomFetcher({
+    contractId: contract.id,
+    viewXScale: zoomParams?.viewXScale,
+    points: props.betPoints,
+  })
+
   const {
     pointerMode,
     setPointerMode,
@@ -183,6 +195,7 @@ export const BinaryOverview = (props: {
           {resolutionRating}
         </Col>
         <Row className={'gap-1'}>
+          {!loading && <LoadingIndicator size="sm" />}
           {enableAdd && (
             <EditChartAnnotationsButton
               pointerMode={pointerMode}
@@ -202,7 +215,7 @@ export const BinaryOverview = (props: {
         showZoomer={showZoomer}
         showAnnotations={true}
         zoomParams={zoomParams}
-        betPoints={betPoints}
+        betPoints={points}
         contract={contract}
         hoveredAnnotation={hoveredAnnotation}
         setHoveredAnnotation={setHoveredAnnotation}
@@ -270,22 +283,16 @@ export function BinaryChart(props: {
   } = props
 
   return (
-    <SizedContainer
-      className={clsx(
-        showZoomer && !showAnnotations
-          ? 'mb-12'
-          : showAnnotations && showZoomer
-          ? 'mb-32'
-          : showAnnotations && (chartAnnotations?.length ?? 0) > 0
-          ? 'mb-20'
-          : '',
-        'w-full pb-3 pr-10',
-        size == 'sm' ? 'h-[100px]' : 'h-[150px] sm:h-[250px]',
-        className
-      )}
-    >
-      {(w, h) => (
-        <>
+    <>
+      <SizedContainer
+        className={clsx(
+          showZoomer ? 'mb-12' : '',
+          'w-full pb-3 pr-10',
+          size == 'sm' ? 'h-[100px]' : 'h-[150px] sm:h-[250px]',
+          className
+        )}
+      >
+        {(w, h) => (
           <BinaryContractChart
             width={w}
             height={h}
@@ -299,38 +306,31 @@ export function BinaryChart(props: {
             pointerMode={pointerMode}
             chartAnnotations={chartAnnotations}
           />
-          {showAnnotations && chartAnnotations?.length ? (
-            <ChartAnnotations
-              annotations={chartAnnotations}
-              hoveredAnnotation={hoveredAnnotation}
-              setHoveredAnnotation={setHoveredAnnotation}
-              showZoomer={showZoomer}
-            />
-          ) : null}
-        </>
-      )}
-    </SizedContainer>
+        )}
+      </SizedContainer>
+      {showAnnotations && chartAnnotations?.length ? (
+        <ChartAnnotations
+          annotations={chartAnnotations}
+          hoveredAnnotation={hoveredAnnotation}
+          setHoveredAnnotation={setHoveredAnnotation}
+        />
+      ) : null}
+    </>
   )
 }
 const ChartAnnotations = (props: {
   annotations: ChartAnnotation[]
   hoveredAnnotation?: number | null
   setHoveredAnnotation?: (id: number | null) => void
-  showZoomer?: boolean
 }) => {
-  const { annotations, hoveredAnnotation, setHoveredAnnotation, showZoomer } =
-    props
+  const { annotations, hoveredAnnotation, setHoveredAnnotation } = props
   const [carouselRef, setCarouselRef] = useState<HTMLDivElement | null>(null)
   const { onScroll, scrollLeft, scrollRight, atFront, atBack } =
     useCarousel(carouselRef)
 
   return (
     <ControlledCarousel
-      className={clsx(
-        'relative',
-        showZoomer ? 'mt-12' : 'mt-6',
-        'max-w-full gap-1'
-      )}
+      className={clsx('relative', 'max-w-full gap-1')}
       ref={setCarouselRef}
       onScroll={onScroll}
       scrollLeft={scrollLeft}
@@ -488,6 +488,8 @@ const ChoiceOverview = (props: {
     onAnswerCommentClick,
   } = props
 
+  const currentUser = useUser()
+  const currentUserId = currentUser?.id
   const [showZoomer, setShowZoomer] = useState(false)
   const { currentTimePeriod, setTimePeriod, maxRange, zoomParams } =
     useTimePicker(contract, () => setShowZoomer(true))
@@ -518,19 +520,26 @@ const ChoiceOverview = (props: {
       prob: getAnswerProbability(contract, a.id),
     }))
 
+  let defaultSort = contract.sort
+  if (!defaultSort) {
+    if (addAnswersMode === 'DISABLED') {
+      defaultSort = 'old'
+    } else if (!shouldAnswersSumToOne) {
+      defaultSort = 'prob-desc'
+    } else if (answers.length > 10) {
+      defaultSort = 'prob-desc'
+    } else {
+      defaultSort = 'old'
+    }
+  }
   const [sort, setSort] = usePersistentInMemoryState<MultiSort>(
-    addAnswersMode === 'DISABLED'
-      ? 'old'
-      : !shouldAnswersSumToOne
-      ? 'prob-desc'
-      : answers.length > 10
-      ? 'prob-desc'
-      : 'old',
+    defaultSort,
     'answer-sort' + contract.id
   )
 
   const [showAll, setShowAll] = useState(
-    addAnswersMode === 'DISABLED' || answers.length <= 5
+    (addAnswersMode === 'DISABLED' && answers.length <= 10) ||
+      answers.length <= 5
   )
 
   const sortedAnswers = useMemo(
@@ -559,6 +568,22 @@ const ChoiceOverview = (props: {
       ]),
     [answers, resolutions, shouldAnswersSumToOne, sort]
   )
+
+  useEffect(() => {
+    if (
+      sort !== contract.sort &&
+      currentUserId &&
+      (isModId(currentUserId) ||
+        isAdminId(currentUserId) ||
+        contract.creatorId === currentUserId)
+    ) {
+      toast.promise(updateMarket({ contractId: contract.id, sort }), {
+        loading: 'Updating sort order...',
+        success: 'Sort order updated for all users',
+        error: 'Failed to update sort order',
+      })
+    }
+  }, [sort])
 
   const {
     pointerMode,
@@ -662,7 +687,6 @@ const ChoiceOverview = (props: {
           annotations={chartAnnotations}
           hoveredAnnotation={hoveredAnnotation}
           setHoveredAnnotation={setHoveredAnnotation}
-          showZoomer={showZoomer}
         />
       ) : null}
       {showResolver ? (

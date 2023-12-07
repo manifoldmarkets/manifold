@@ -13,18 +13,19 @@ const bodySchema = z
     visibility: z.enum(['unlisted', 'public']).optional(),
     closeTime: z.number().optional(),
     addAnswersMode: z.enum(['ONLY_CREATOR', 'ANYONE']).optional(),
+    sort: z.string().optional(),
   })
   .strict()
 
 export const updatemarket = authEndpoint(async (req, auth, log) => {
-  const { contractId, visibility, addAnswersMode, closeTime } = validate(
+  const { contractId, visibility, addAnswersMode, closeTime, sort } = validate(
     bodySchema,
     req.body
   )
-  if (!visibility && !closeTime && !addAnswersMode)
+  if (!visibility && !closeTime && !addAnswersMode && !sort)
     throw new APIError(
       400,
-      'Must provide visibility, closeTime, or add answers mode'
+      'Must provide some change to the contract'
     )
   const contract = await getContractSupabase(contractId)
   if (!contract) throw new APIError(404, `Contract ${contractId} not found`)
@@ -62,6 +63,12 @@ export const updatemarket = authEndpoint(async (req, auth, log) => {
       addAnswersMode,
     })
     log('updated add answers mode')
+  }
+  if (sort) {
+    await firestore.doc(`contracts/${contractId}`).update({
+      sort,
+    })
+    log('updated sort')
   }
 
   return { success: true }
