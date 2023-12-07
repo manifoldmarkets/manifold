@@ -522,14 +522,20 @@ const ChoiceOverview = (props: {
       prob: getAnswerProbability(contract, a.id),
     }))
 
+  let defaultSort = contract.sort
+  if (!defaultSort) {
+    if (addAnswersMode === 'DISABLED') {
+      defaultSort = 'old'
+    } else if (!shouldAnswersSumToOne) {
+      defaultSort = 'prob-desc'
+    } else if (answers.length > 10) {
+      defaultSort = 'prob-desc'
+    } else {
+      defaultSort = 'old'
+    }
+  }
   const [sort, setSort] = usePersistentInMemoryState<MultiSort>(
-    contract.sort ?? addAnswersMode === 'DISABLED'
-      ? 'old'
-      : !shouldAnswersSumToOne
-      ? 'prob-desc'
-      : answers.length > 10
-      ? 'prob-desc'
-      : 'old',
+    defaultSort,
     'answer-sort' + contract.id
   )
 
@@ -567,6 +573,7 @@ const ChoiceOverview = (props: {
 
   useEffect(() => {
     if (
+      sort !== contract.sort &&
       currentUserId &&
       (isModId(currentUserId) ||
         isAdminId(currentUserId) ||
@@ -576,7 +583,7 @@ const ChoiceOverview = (props: {
         () => {
           toast.success('Sort order updated for all users')
         },
-        (e) => {
+        () => {
           toast.error('Failed to update sort order')
         }
       )
