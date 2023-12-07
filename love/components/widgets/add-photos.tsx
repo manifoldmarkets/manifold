@@ -53,15 +53,6 @@ export const AddPhotosWidget = (props: {
         className={'hidden'}
         disabled={uploadingImages}
       />
-      {/* <label
-        className={clsx(
-          buttonClass('md', 'indigo'),
-          'cursor-pointer self-start'
-        )}
-        htmlFor="photo-upload"
-      >
-        Add photos
-      </label> */}
       <Row className="flex-wrap gap-2">
         <label
           className={clsx(
