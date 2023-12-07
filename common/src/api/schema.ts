@@ -10,6 +10,8 @@ import type { User } from 'common/user'
 import { CandidateBet } from 'common/new-bet'
 import { LimitBet } from 'common/bet'
 import { contentSchema } from 'common/api/zod-types'
+import { Lover } from 'common/love/lover'
+import { CPMMMultiContract } from 'common/contract'
 
 type APIGenericSchema = {
   // GET is for retrieval, POST is to mutate something, PUT is idempotent mutation (can be repeated safely)
@@ -183,6 +185,13 @@ export const API = _apiTypeCheck =  {
       })
       .strict(),
   },
+  'compatible-lovers': {
+    method: 'GET',
+    visibility: 'private',
+    authed: true,
+    props: z.object({ userId: z.string() }),
+    returns: {} as { lovers: Lover[], loverContracts: CPMMMultiContract[] },
+  }
 } as const
 
 export type APIPath = keyof typeof API

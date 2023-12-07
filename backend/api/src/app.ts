@@ -108,7 +108,7 @@ import { clearLoverPhoto } from './love/clear-lover-photo'
 import { editanswercpmm } from 'api/edit-answer'
 import { createlovecompatibilityquestion } from 'api/love/create-love-compatibility-question'
 import { oncreatebet } from 'api/on-create-bet'
-import { getCompatibleLovers } from './love/get-compatible-lovers'
+import { getCompatibleLovers } from './love/compatible-lovers'
 
 import { API, type APIPath } from 'common/api/schema'
 import { markets } from 'api/markets'
@@ -178,6 +178,7 @@ const handlers: { [k in APIPath]: RequestHandler } = {
   'send-mana': sendMana,
   me: getCurrentUser,
   'save-twitch': saveTwitchCredentials,
+  'compatible-lovers': getCompatibleLovers,
 }
 
 Object.entries(handlers).forEach(([path, handler]) => {
@@ -326,7 +327,6 @@ app.post(
 )
 app.post('/create-chart-annotation', ...apiRoute(createchartannotation))
 app.post('/delete-chart-annotation', ...apiRoute(deletechartannotation))
-app.post('/get-compatible-lovers', ...apiRoute(getCompatibleLovers))
 
 const publicApiRoute = (endpoint: RequestHandler) => {
   return [

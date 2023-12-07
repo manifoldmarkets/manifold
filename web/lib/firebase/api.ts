@@ -496,10 +496,6 @@ export function searchNearCity(params: { cityId: string; radius: number }) {
   return maybeAuthedCall(getApiUrl('searchnearcity'), 'POST', params)
 }
 
-export function getCompatibleLovers(params: { userId: string }) {
-  return maybeAuthedCall(getApiUrl('get-compatible-lovers'), 'POST', params)
-}
-
 // vercel api
 
 export async function clientFetchLinkPreview(
