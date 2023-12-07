@@ -225,10 +225,9 @@ export const createNumericSchema = z.object({
 })
 
 export const createMultiSchema = z.object({
-  answers: z.string().trim().min(1).array().max(MAX_ANSWERS),
+  answers: z.array(z.string().trim().min(1)).max(MAX_ANSWERS),
   addAnswersMode: z
     .enum(['DISABLED', 'ONLY_CREATOR', 'ANYONE'])
-    .optional()
     .default('DISABLED'),
   shouldAnswersSumToOne: z.boolean().optional(),
   extraLiquidity: z.number().min(1).optional(),
@@ -239,7 +238,7 @@ export const createBountySchema = z.object({
 })
 
 export const createPollSchema = z.object({
-  answers: z.string().trim().min(1).array().min(2).max(MAX_ANSWERS),
+  answers: z.array(z.string().trim().min(1)).min(2).max(MAX_ANSWERS),
 })
 
 export const createMarketProps = z
@@ -268,11 +267,12 @@ export const createMarketProps = z
   })
   .and(
     z.union([
-      createBinarySchema,
-      createNumericSchema,
+      // put more specific schemas first
       createMultiSchema,
+      createNumericSchema,
       createBountySchema,
       createPollSchema,
+      createBinarySchema,
     ])
   )
 
