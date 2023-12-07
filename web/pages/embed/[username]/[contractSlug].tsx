@@ -37,20 +37,12 @@ import { getSingleBetPoints } from 'common/contract-params'
 
 type Points = HistoryPoint<any>[]
 
-export async function getHistoryData(
-  contract: Contract,
-  limit = 50000,
-  afterTime?: number
-) {
+async function getHistoryData(contract: Contract) {
   switch (contract.outcomeType) {
     case 'BINARY':
     case 'PSEUDO_NUMERIC':
     case 'STONK': {
-      const allBetPoints = await getBetPoints(db, contract.id, {
-        limit,
-        afterTime,
-      })
-
+      const allBetPoints = await getBetPoints(db, contract.id)
       const points = getSingleBetPoints(allBetPoints, contract)
       return points.map(([x, y]) => ({ x, y }))
     }

@@ -1,10 +1,10 @@
 import { BinaryContract } from 'common/contract'
 import { useEffect } from 'react'
-import { getHistoryData } from 'web/pages/embed/[username]/[contractSlug]'
 import { BinaryChart } from '../contract/contract-overview'
 import { DAY_MS } from 'common/util/time'
 import PlaceholderGraph from 'web/lib/icons/placeholder-graph.svg'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import { getPointsBetween } from '../charts/contract/zoom-utils'
 
 export function FeedBinaryChart(props: {
   contract: BinaryContract
@@ -19,18 +19,9 @@ export function FeedBinaryChart(props: {
 
   useEffect(() => {
     const startingDate = (startDate ?? Date.now()) - DAY_MS
-    // TODO: why do we have to filter by date twice? Seems like the bet filter isn't working
-    getHistoryData(
-      contract,
-      startDate === contract.createdTime ? undefined : 1000,
-      startingDate
-    ).then((points) => {
-      if (points && points.length > 0 && !!points[0]) {
-        if (startDate) {
-          setPoints(points.filter((point) => point.x >= startDate))
-        } else {
-          setPoints(points)
-        }
+    getPointsBetween(contract.id, startingDate).then((points) => {
+      if (points && points.length > 0) {
+        setPoints(points)
       }
     })
   }, [])

@@ -62,6 +62,9 @@ import { FaArrowTrendDown, FaArrowTrendUp } from 'react-icons/fa6'
 import { formatPercent } from 'common/util/format'
 import { isAdminId, isModId } from 'common/envs/constants'
 import { updateMarket } from 'web/lib/firebase/api'
+import { LoadingIndicator } from '../widgets/loading-indicator'
+import { CurveFactory, curveLinear } from 'd3-shape'
+import { useDataZoomFetcher } from '../charts/contract/zoom-utils'
 
 export const ContractOverview = memo(
   (props: {
@@ -162,12 +165,20 @@ export const BinaryOverview = (props: {
   resolutionRating?: ReactNode
   chartAnnotations: ChartAnnotation[]
 }) => {
-  const { contract, betPoints, resolutionRating } = props
+  const { contract, resolutionRating } = props
+
   const user = useUser()
 
   const [showZoomer, setShowZoomer] = useState(false)
   const { currentTimePeriod, setTimePeriod, maxRange, zoomParams } =
     useTimePicker(contract, () => setShowZoomer(true))
+
+  const { points, loading } = useDataZoomFetcher({
+    contractId: contract.id,
+    viewXScale: zoomParams?.viewXScale,
+    points: props.betPoints,
+  })
+
   const {
     pointerMode,
     setPointerMode,
@@ -185,6 +196,7 @@ export const BinaryOverview = (props: {
           {resolutionRating}
         </Col>
         <Row className={'gap-1'}>
+          {!loading && <LoadingIndicator size="sm" />}
           {enableAdd && (
             <EditChartAnnotationsButton
               pointerMode={pointerMode}
@@ -204,7 +216,7 @@ export const BinaryOverview = (props: {
         showZoomer={showZoomer}
         showAnnotations={true}
         zoomParams={zoomParams}
-        betPoints={betPoints}
+        betPoints={points}
         contract={contract}
         hoveredAnnotation={hoveredAnnotation}
         setHoveredAnnotation={setHoveredAnnotation}

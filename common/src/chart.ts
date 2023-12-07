@@ -65,28 +65,6 @@ export const maxMinBin = <P extends HistoryPoint>(
   return result
 }
 
-// compresses points within a visible range, so as you zoom there's more detail.
-export const compressPoints = <P extends HistoryPoint>(
-  points: P[],
-  min: number,
-  max: number
-) => {
-  // add buffer of 100 points on each side for nice panning.
-  const smallIndex = Math.max(points.findIndex((p) => p.x >= min) - 100, 0)
-  const bigIndex = Math.min(
-    points.findIndex((p) => p.x >= max) + 100,
-    points.length
-  )
-
-  const toCompress = points.slice(smallIndex, bigIndex)
-
-  if (toCompress.length < 1500) {
-    return { points: toCompress, isCompressed: false }
-  }
-
-  return { points: maxMinBin(toCompress, 500), isCompressed: true }
-}
-
 export function binAvg<P extends HistoryPoint>(sorted: P[], limit = 100) {
   const length = sorted.length
   if (length <= limit) {
