@@ -68,7 +68,6 @@ import {
   CommentOnLoverNotification,
   NewMatchNotification,
 } from 'manifold-love/components/love-notification-types'
-import { resolve } from 'path'
 
 export function NotificationItem(props: {
   notification: Notification
