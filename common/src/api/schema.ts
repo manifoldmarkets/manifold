@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { MAX_ID_LENGTH } from '../group'
+import { Group, MAX_ID_LENGTH } from 'common/group'
 import {
   createMarketProps,
   resolveMarketProps,
@@ -86,6 +86,20 @@ export const API = (_apiTypeCheck = {
     visibility: 'public',
     authed: true,
     props: z.object({ contractId: z.string(), betId: z.string() }).strict(),
+  },
+
+  groups: {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    returns: [] as Group[],
+    props: z
+      .object({
+        availableToUserId: z.string().optional(),
+        beforeTime: z.coerce.number().int().optional(),
+      })
+      .strict(),
+    // TODO: max-age=60
   },
 
   'create-market': {

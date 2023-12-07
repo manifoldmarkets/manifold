@@ -117,6 +117,7 @@ import { deletechartannotation } from 'api/delete-chart-annotation'
 import { assertUnreachable } from 'common/util/types'
 import { hideComment } from './hide-comment'
 import { getManagrams } from './get-managrams'
+import { getGroups } from './get-groups'
 
 const allowCorsUnrestricted: RequestHandler = cors({})
 const allowCorsManifold: RequestHandler = cors({
@@ -172,6 +173,7 @@ const handlers: { [k in APIPath]: RequestHandler } = {
   comment: createComment,
   'hide-comment': hideComment,
   'create-market': createMarket,
+  groups: getGroups,
   close: closeMarket,
   resolve: resolveMarket,
   'add-liquidity': addLiquidity,
