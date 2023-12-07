@@ -503,16 +503,6 @@ function createFeedTimelineItems(
           ).ignore
         )
           return
-        if (item.data_type === 'contract_probability_changed')
-          console.log(
-            'prob change',
-            contract.question,
-            getMarketMovementInfo(
-              contract,
-              dataType,
-              item.data as Record<string, any>
-            ).probChange
-          )
 
         // Let's stick with one comment per feed item for now
         const comments = allComments
