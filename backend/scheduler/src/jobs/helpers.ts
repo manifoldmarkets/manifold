@@ -27,7 +27,7 @@ export function createJob(
   const opts = { name, ...DEFAULT_OPTS }
   return Cron(schedule, opts, async () => {
     const traceId = crypto.randomUUID()
-    const logWithDetails = (message: any, details?: object) =>
+    const logWithDetails = (message: any, details?: object | null) =>
       log.debug(message, {
         ...details,
         job: name,
