@@ -709,13 +709,6 @@ export function MarketResolvedNotification(props: {
 
   const resolvedByAdmin = sourceUserUsername != sourceContractCreatorUsername
 
-  console.log(
-    'RESLOVEDBY ADMI',
-    resolvedByAdmin,
-    sourceUserUsername,
-    sourceContractCreatorUsername,
-    sourceContractTitle
-  )
   const content =
     sourceText === 'CANCEL' ? (
       <>
