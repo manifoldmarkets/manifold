@@ -38,7 +38,7 @@ export const NEW_USER_FEED_DATA_TYPES: FEED_DATA_TYPES[] = [
 
 export const BASE_FEED_DATA_TYPE_SCORES: { [key in FEED_DATA_TYPES]: number } =
   {
-    new_comment: 0.075,
+    new_comment: 0.05,
     new_contract: 0.25,
     new_subsidy: 0.1,
     news_with_related_contracts: 0.1,
@@ -54,7 +54,7 @@ export const BASE_FEED_REASON_TYPE_SCORES: {
   liked_contract: 0.2,
   contract_in_group_you_are_in: 0.3,
   similar_interest_vector_to_contract: 0, // score calculated using interest distance
-  follow_user: 0.3,
+  follow_user: 0.35,
   similar_interest_vector_to_news_vector: 0.1,
 }
 
@@ -74,8 +74,8 @@ export const getRelevanceScore = (
   return (
     dataTypeScore +
     reasonsScore +
-    importanceScore * 0.3 +
-    (1 - interestDistance) * 0.2
+    importanceScore * (feedDataType === 'new_comment' ? 0.2 : 0.3) +
+    (1 - interestDistance) * 0.15
   )
 }
 

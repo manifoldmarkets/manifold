@@ -23,7 +23,7 @@ import {
   getUsersWithSimilarInterestVectorToNews,
 } from 'shared/supabase/users'
 import { convertObjectToSQLRow, Row } from 'common/supabase/utils'
-import { DAY_MS, HOUR_MS } from 'common/util/time'
+import { DAY_MS } from 'common/util/time'
 import { User } from 'common/user'
 import { fromPairs, groupBy, maxBy, uniq } from 'lodash'
 import { removeUndefinedProps } from 'common/util/object'
@@ -369,7 +369,7 @@ export const insertMarketMovementContractToUsersFeeds = async (
     ],
     'contract_probability_changed',
     [],
-    Date.now() - 24 * HOUR_MS,
+    Date.now() - 1.5 * DAY_MS,
     {
       currentProb: contract.prob,
       previousProb: contract.prob - contract.probChanges.day,
