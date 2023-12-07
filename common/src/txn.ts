@@ -209,6 +209,7 @@ type ContractResolutionPayout = {
     reverted?: boolean
     deposit?: number
     payoutStartTime?: number
+    answerId?: string
   }
 }
 

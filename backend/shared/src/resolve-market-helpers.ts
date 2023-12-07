@@ -127,7 +127,7 @@ export const resolveMarketHelper = async (
 
   // Should we combine all the payouts into one txn?
   const contractDoc = firestore.doc(`contracts/${contractId}`)
-  await payUsersTransactions(payouts, contractId)
+  await payUsersTransactions(payouts, contractId, answerId)
 
   if (answerId) {
     const answerDoc = firestore.doc(
@@ -346,7 +346,8 @@ export const payUsersTransactions = async (
     payout: number
     deposit?: number
   }[],
-  contractId: string
+  contractId: string,
+  answerId?: string
 ) => {
   const firestore = admin.firestore()
   const mergedPayouts = checkAndMergePayouts(payouts)
@@ -366,7 +367,11 @@ export const payUsersTransactions = async (
           toId: userId,
           amount: payout,
           token: 'M$',
-          data: { deposit: deposit ?? 0, payoutStartTime },
+          data: removeUndefinedProps({
+            deposit: deposit ?? 0,
+            payoutStartTime,
+            answerId,
+          }),
           description: 'Contract payout for resolution: ' + contractId,
         } as ContractResolutionPayoutTxn
         runContractPayoutTxn(transaction, payoutTxn)
