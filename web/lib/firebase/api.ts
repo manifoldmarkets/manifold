@@ -8,7 +8,7 @@ import { ContractTypeType, Filter, Sort } from 'web/components/supabase-search'
 import { AD_RATE_LIMIT } from 'common/boost'
 import { ContractComment } from 'common/comment'
 import { Post } from 'common/post'
-import { MaybeAuthedContractParams } from 'common/contract'
+import { MaybeAuthedContractParams, SortType } from 'common/contract'
 import { Portfolio, PortfolioItem } from 'common/portfolio'
 import { ReportProps } from 'common/report'
 import { BaseDashboard, Dashboard, DashboardItem } from 'common/dashboard'
@@ -449,6 +449,7 @@ export function updateMarket(params: {
   visibility?: 'public' | 'unlisted'
   closeTime?: number
   addAnswersMode?: 'ONLY_CREATOR' | 'ANYONE'
+  sort?: SortType
 }) {
   return call(getApiUrl('update-market'), 'POST', params)
 }

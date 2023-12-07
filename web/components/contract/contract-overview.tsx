@@ -60,6 +60,9 @@ import { useEvent } from 'web/hooks/use-event'
 import { Avatar } from 'web/components/widgets/avatar'
 import { FaArrowTrendDown, FaArrowTrendUp } from 'react-icons/fa6'
 import { formatPercent } from 'common/util/format'
+import { updateContract } from 'web/lib/firebase/contracts'
+import { isAdminId, isModId } from 'common/envs/constants'
+import { updateMarket } from 'web/lib/firebase/api'
 
 export const ContractOverview = memo(
   (props: {
@@ -488,6 +491,8 @@ const ChoiceOverview = (props: {
     onAnswerCommentClick,
   } = props
 
+  const currentUser = useUser()
+  const currentUserId = currentUser?.id
   const [showZoomer, setShowZoomer] = useState(false)
   const { currentTimePeriod, setTimePeriod, maxRange, zoomParams } =
     useTimePicker(contract, () => setShowZoomer(true))
@@ -518,19 +523,26 @@ const ChoiceOverview = (props: {
       prob: getAnswerProbability(contract, a.id),
     }))
 
+  let defaultSort = contract.sort
+  if (!defaultSort) {
+    if (addAnswersMode === 'DISABLED') {
+      defaultSort = 'old'
+    } else if (!shouldAnswersSumToOne) {
+      defaultSort = 'prob-desc'
+    } else if (answers.length > 10) {
+      defaultSort = 'prob-desc'
+    } else {
+      defaultSort = 'old'
+    }
+  }
   const [sort, setSort] = usePersistentInMemoryState<MultiSort>(
-    addAnswersMode === 'DISABLED'
-      ? 'old'
-      : !shouldAnswersSumToOne
-      ? 'prob-desc'
-      : answers.length > 10
-      ? 'prob-desc'
-      : 'old',
+    defaultSort,
     'answer-sort' + contract.id
   )
 
   const [showAll, setShowAll] = useState(
-    addAnswersMode === 'DISABLED' || answers.length <= 5
+    (addAnswersMode === 'DISABLED' && answers.length <= 10) ||
+      answers.length <= 5
   )
 
   const sortedAnswers = useMemo(
@@ -559,6 +571,22 @@ const ChoiceOverview = (props: {
       ]),
     [answers, resolutions, shouldAnswersSumToOne, sort]
   )
+
+  useEffect(() => {
+    if (
+      sort !== contract.sort &&
+      currentUserId &&
+      (isModId(currentUserId) ||
+        isAdminId(currentUserId) ||
+        contract.creatorId === currentUserId)
+    ) {
+      toast.promise(updateMarket({ contractId: contract.id, sort }), {
+        loading: 'Updating sort order...',
+        success: 'Sort order updated for all users',
+        error: 'Failed to update sort order',
+      })
+    }
+  }, [sort])
 
   const {
     pointerMode,
