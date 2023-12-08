@@ -16,6 +16,8 @@
 -- END;
 -- $$ language plpgsql;
 
+
+
 create
 or replace function get_fr_questions_with_answer_count () returns setof love_question_with_count_type as $$
 BEGIN
