@@ -140,11 +140,12 @@ const BrowseMatchesDialog = (props: {
 
   const [error, setError] = useState<string | undefined>(undefined)
 
-  const [tab, setTab] = useState<number>(0)
   const [matchedIndex, setMatchedIndex] = useState(0)
   const [potentialIndex, setPotentialIndex] = useState(0)
   const matchedLover = matchedLovers[matchedIndex]
   const potentialLover = potentialLovers[potentialIndex]
+  const [tab, setTab] = useState<number>(matchedLover ? 0 : 1)
+
   const compatibility =
     tab === 0
       ? matchedLover
