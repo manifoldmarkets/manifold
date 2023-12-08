@@ -1,6 +1,4 @@
 import clsx from 'clsx'
-import GenderIcon, { Gender } from '../gender-icon'
-import { Row } from 'web/components/layout/row'
 import {
   RelationshipType,
   convertRelationshipType,
@@ -27,7 +25,7 @@ export function RelationshipFilterText(props: {
   if (relationshipLength > 1) {
     return (
       <span>
-        <span className={clsx('text-semibold', highlightedClass)}>
+        <span className={clsx('font-semibold', highlightedClass)}>
           Multiple
         </span>
       </span>
@@ -35,7 +33,7 @@ export function RelationshipFilterText(props: {
   }
   return (
     <div>
-      <span className={highlightedClass}>
+      <span className={clsx('font-semibold', highlightedClass)}>
         {stringOrStringArrayToText({
           text: convertedRelationships,
           capitalizeFirstLetterOption: true,

@@ -92,7 +92,12 @@ export function KidsLabel(props: {
   return (
     <Row className="items-center gap-0.5">
       <WantsKidsIcon strength={strength} className={clsx('hidden sm:inline')} />
-      <span className={highlightedClass}>
+      <span
+        className={clsx(
+          strength != wantsKidsLabels.no_preference.strength && 'font-semibold',
+          highlightedClass
+        )}
+      >
         {strength == wantsKidsLabels.no_preference.strength
           ? mobile
             ? wantsKidsLabels.no_preference.shortName

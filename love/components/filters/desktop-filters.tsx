@@ -49,7 +49,7 @@ export function DesktopFilters(props: {
       <MyMatchesToggle
         setYourFilters={setYourFilters}
         youLover={youLover}
-        isYourFilters={isYourFilters}
+        on={isYourFilters}
         hidden={!youLover}
       />
       <CustomizeableDropdown

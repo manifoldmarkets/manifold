@@ -1,5 +1,4 @@
-import { ReactNode } from 'react'
-import { MdNoStroller, MdOutlineStroller, MdStroller } from 'react-icons/md'
+import clsx from 'clsx'
 import { Row } from 'web/components/layout/row'
 import { ChoicesToggleGroup } from 'web/components/widgets/choices-toggle-group'
 import { FilterFields } from './search'
@@ -58,7 +57,9 @@ export function HasKidsLabel(props: {
   return (
     <Row className="items-center gap-0.5">
       <FaChild className="hidden h-4 w-4 sm:inline" />
-      <span className={highlightedClass}>
+      <span
+        className={clsx(highlightedClass, has_kids !== -1 && 'font-semibold')}
+      >
         {has_kids == hasKidsLabels.has_kids.value
           ? mobile
             ? hasKidsLabels.has_kids.shortName

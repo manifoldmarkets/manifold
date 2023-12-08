@@ -19,14 +19,14 @@ export function GenderFilterText(props: {
     )
   }
   return (
-    <Row className="items-center gap-0.5">
+    <Row className="items-center gap-0.5 font-semibold">
       {gender.map((g) => {
         return (
           <GenderIcon
             key={g}
             gender={g}
             className={clsx('h-4 w-4')}
-            hasColor={!!highlightedClass}
+            hasColor
           />
         )
       })}{' '}
