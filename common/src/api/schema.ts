@@ -17,6 +17,7 @@ import { CompatibilityScore } from 'common/love/compatibility-score'
 import type { Txn, ManaPayTxn } from 'common/txn'
 import { LiquidityProvision } from 'common/liquidity-provision'
 import { LiteUser } from './user-types'
+import { League } from 'common/leagues'
 
 export const marketCacheStrategy = 's-maxage=15, stale-while-revalidate=45'
 
@@ -227,7 +228,19 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
-
+  leagues: {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    cache: 'max-age=60',
+    returns: [] as League[],
+    props: z
+      .object({
+        userId: z.string(),
+        season: z.number().optional(),
+      })
+      .strict(),
+  },
   markets: {
     method: 'GET',
     visibility: 'public',

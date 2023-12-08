@@ -1041,6 +1041,17 @@ Example body
 }
 ```
 
+### `GET /v0/leagues`
+
+Gets a list of leagues for a user, ordered by creation time descending.
+
+Parameters
+
+- `userId`: Required. Returns leagues for this user.
+- `season`: Optional. Number. Returns only a particular season.
+
+Requires no authorization.
+
 ## Changelog
 
 - 2023-10-27: Update `/search-markets` to allow all the same search options as our search.
