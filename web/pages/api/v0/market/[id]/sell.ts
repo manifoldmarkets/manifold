@@ -8,6 +8,5 @@ const handler = nextHandler('sell-bet')
 export default async function route(req: NextApiRequest, res: NextApiResponse) {
   const { id } = req.query
   if (req.body) req.body.contractId = id
-
-  handler(req, res)
+  await handler(req, res)
 }
