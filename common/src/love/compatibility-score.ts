@@ -33,8 +33,8 @@ export const getCompatibilityScore = (
     answerCount,
   } = getAnswersCompatibility(answers1, answers2)
   const { score: score2, maxScore: maxScore2 } = getAnswersCompatibility(
-    answers1,
-    answers2
+    answers2,
+    answers1
   )
 
   const upWeight = 5
