@@ -21,6 +21,7 @@ import {
 import { filterKeys } from '../questions-form'
 import { db } from 'web/lib/supabase/db'
 import { uniq } from 'lodash'
+import { QuestionWithCountType } from 'love/hooks/use-questions'
 
 export function AddCompatibilityQuestionButton(props: {
   refreshCompatibilityAll: () => void
@@ -73,7 +74,7 @@ function AddCompatibilityQuestionModal(props: {
           />
         ) : (
           <AnswerCompatibilityQuestionContent
-            compatibilityQuestion={dbQuestion}
+            compatibilityQuestion={dbQuestion as QuestionWithCountType}
             user={user}
             onSubmit={() => {
               setOpen(false)
