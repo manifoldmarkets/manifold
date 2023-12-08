@@ -12,7 +12,11 @@ import { Linkify } from 'web/components/widgets/linkify'
 import { IndividualQuestionRow } from '../questions-form'
 import { Subtitle } from '../widgets/lover-subtitle'
 import { AddQuestionButton } from './free-response-add-question'
-import { QuestionWithCountType } from 'love/hooks/use-questions'
+import {
+  QuestionWithCountType,
+  useFRQuestionsWithAnswerCount,
+  useUserAnswers,
+} from 'love/hooks/use-questions'
 import { TbMessage } from 'react-icons/tb'
 import { OtherLoverAnswers } from './other-lover-answers'
 import {
@@ -20,23 +24,26 @@ import {
   Modal,
   SCROLLABLE_MODAL_CLASS,
 } from 'web/components/layout/modal'
+import { partition } from 'lodash'
 
 export function FreeResponseDisplay(props: {
-  answers: rowFor<'love_answers'>[]
-  yourQuestions: QuestionWithCountType[]
-  otherQuestions: QuestionWithCountType[]
   isCurrentUser: boolean
   user: User
-  refreshAnswers: () => void
 }) {
-  const {
-    answers,
-    yourQuestions,
-    otherQuestions,
-    isCurrentUser,
-    refreshAnswers,
-    user,
-  } = props
+  const { isCurrentUser, user } = props
+
+  const { refreshAnswers, answers: allAnswers } = useUserAnswers(user?.id)
+
+  const answers = allAnswers.filter((a) => a.free_response != null)
+
+  const answerQuestionIds = new Set(answers.map((answer) => answer.question_id))
+
+  const FRquestionsWithCount = useFRQuestionsWithAnswerCount()
+
+  const [yourFRQuestions, otherFRQuestions] = partition(
+    FRquestionsWithCount,
+    (question) => answerQuestionIds.has(question.id)
+  )
 
   const noAnswers = answers.length < 1
 
@@ -45,7 +52,7 @@ export function FreeResponseDisplay(props: {
       return (
         <AddQuestionButton
           isFirstQuestion={answers.length < 1}
-          questions={otherQuestions}
+          questions={otherFRQuestions}
           user={user}
           refreshAnswers={refreshAnswers}
         />
@@ -68,7 +75,7 @@ export function FreeResponseDisplay(props: {
             <AnswerBlock
               key={answer.free_response ?? '' + answer.id}
               answer={answer}
-              questions={yourQuestions}
+              questions={yourFRQuestions}
               isCurrentUser={isCurrentUser}
               user={user}
               refreshAnswers={refreshAnswers}
@@ -79,7 +86,7 @@ export function FreeResponseDisplay(props: {
       {isCurrentUser && (
         <AddQuestionButton
           isFirstQuestion={answers.length < 1}
-          questions={otherQuestions}
+          questions={otherFRQuestions}
           user={user}
           refreshAnswers={refreshAnswers}
         />

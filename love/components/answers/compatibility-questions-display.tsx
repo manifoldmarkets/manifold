@@ -5,6 +5,7 @@ import { User } from 'common/user'
 import { lowerCase, partition } from 'lodash'
 import {
   QuestionWithCountType,
+  useCompatibilityQuestionsWithAnswerCount,
   useUserCompatibilityAnswers,
 } from 'love/hooks/use-questions'
 import { useState } from 'react'
@@ -59,12 +60,13 @@ function separateQuestionsArray(
 export function CompatibilityQuestionsDisplay(props: {
   isCurrentUser: boolean
   user: User
-  allQuestions: QuestionWithCountType[]
-  refreshQuestions: () => void
   fromSignup?: boolean
 }) {
-  const { isCurrentUser, user, allQuestions, refreshQuestions, fromSignup } =
-    props
+  const { isCurrentUser, user, fromSignup } = props
+
+  const { refreshCompatibilityQuestions, compatibilityQuestionsWithCount } =
+    useCompatibilityQuestionsWithAnswerCount()
+
   const { refreshCompatibilityAnswers, compatibilityAnswers } =
     useUserCompatibilityAnswers(user.id)
 
@@ -83,14 +85,14 @@ export function CompatibilityQuestionsDisplay(props: {
 
   const { skippedQuestions, answeredQuestions, otherQuestions } =
     separateQuestionsArray(
-      allQuestions,
+      compatibilityQuestionsWithCount,
       skippedAnswerQuestionIds,
       answeredQuestionIds
     )
 
   const refreshCompatibilityAll = () => {
     refreshCompatibilityAnswers()
-    refreshQuestions()
+    refreshCompatibilityQuestions()
   }
 
   const [page, setPage] = useState(0)

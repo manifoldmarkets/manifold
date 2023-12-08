@@ -80,6 +80,8 @@ function AnswerCompatibilityQuestionModal(props: {
       <Col className={MODAL_CLASS}>
         <AnswerCompatibilityQuestionContent
           key={otherQuestions[questionIndex].id}
+          index={questionIndex}
+          total={otherQuestions.length}
           compatibilityQuestion={otherQuestions[questionIndex]}
           user={user}
           onSubmit={() => {
