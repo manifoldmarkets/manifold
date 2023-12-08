@@ -124,6 +124,7 @@ import { getUsers } from './get-users'
 import { getMarket } from './get-market'
 import { getGroup } from './get-group'
 import { getPositions } from './get-positions'
+import { getLeagues } from './get-leagues'
 
 const allowCorsUnrestricted: RequestHandler = cors({})
 const allowCorsManifold: RequestHandler = cors({
@@ -196,6 +197,7 @@ const handlers: { [k in APIPath]: RequestHandler } = {
   'add-liquidity': addLiquidity,
   'add-bounty': addBounty,
   'award-bounty': awardBounty,
+  leagues: getLeagues,
   markets: markets,
   'send-mana': sendMana,
   managrams: getManagrams,
