@@ -43,6 +43,7 @@ import dayjs from 'dayjs'
 import { useBoosts } from 'web/hooks/use-boosts'
 import { useIsAuthorized } from 'web/hooks/use-user'
 import { convertContractComment } from 'common/supabase/comments'
+import { Json } from 'common/supabase/schema'
 
 export const DEBUG_FEED_CARDS =
   typeof window != 'undefined' &&
@@ -77,7 +78,7 @@ export type FeedTimelineItem = {
   answers?: Answer[]
   reasonDescription?: string
   isCopied?: boolean
-  data?: Record<string, any>
+  data?: Json
   manuallyCreatedFromContract?: boolean
   relatedItems?: FeedTimelineItem[]
 }
@@ -188,7 +189,7 @@ export const useFeedTimeline = (
     if (data.length == 0) {
       return { timelineItems: [] }
     }
-
+    // TODO: hide feed rows that are too old?
     const newFeedRows = data.map((d) => {
       const createdTimeAdjusted =
         1 - dayjs().diff(dayjs(d.created_time), 'day') / 10
@@ -489,18 +490,13 @@ function createFeedTimelineItems(
     data
       .filter((d) => !d.news_id && d.contract_id)
       .map((item) => {
-        const dataType = item.data_type as FEED_DATA_TYPES
         const contract = contracts?.find(
           (contract) => contract.id === item.contract_id
         )
         // We may not find a relevant contract if they've already seen the same contract in their feed
         if (
           !contract ||
-          getMarketMovementInfo(
-            contract,
-            dataType,
-            item.data as Record<string, any>
-          ).ignore
+          getMarketMovementInfo(contract, getBaseTimelineItem(item)).ignore
         )
           return
 

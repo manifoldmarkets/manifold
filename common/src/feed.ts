@@ -184,3 +184,8 @@ export function getExplanation(
 ): string | undefined {
   return FeedExplanationDictionary[feedDataType][feedReasonType]
 }
+
+export type ProbChangeData = {
+  currentProb: number
+  previousProb: number
+}

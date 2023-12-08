@@ -1,41 +1,93 @@
 import { Contract } from 'common/contract'
-import { FEED_DATA_TYPES } from 'common/feed'
 import { DAY_MS } from 'common/util/time'
+import { FeedTimelineItem } from 'web/hooks/use-feed-timeline'
+import { ProbChangeData } from 'common/feed'
 
 const PROB_CHANGE_THRESHOLD = 0.05
 export const getMarketMovementInfo = (
   contract: Contract,
-  dataType?: FEED_DATA_TYPES,
-  data?: Record<string, any>
+  feedItem?: FeedTimelineItem
 ) => {
-  const previousProb =
-    data?.previousProb ??
-    (contract.mechanism === 'cpmm-1'
-      ? contract.prob - contract.probChanges?.day
-      : null)
-  const previousProbAbout50 =
-    (previousProb ?? 0.5) > 0.47 && (previousProb ?? 0.5) < 0.53
-  const probChangeSinceAdd =
-    contract.mechanism === 'cpmm-1' && previousProb
-      ? contract.prob - previousProb
-      : null
-
-  const probChange =
-    contract.mechanism === 'cpmm-1' &&
-    contract.createdTime < Date.now() - DAY_MS &&
-    // make sure it wasn't made within the past 2 days and just moved from 50%
-    !(contract.createdTime > Date.now() - 2 * DAY_MS && previousProbAbout50) &&
-    Math.abs(probChangeSinceAdd ?? contract.probChanges.day) >
-      PROB_CHANGE_THRESHOLD &&
-    !contract.isResolved
-      ? Math.round((probChangeSinceAdd ?? contract.probChanges.day) * 100)
-      : null
-
-  const showChange = probChange != null
-
-  if (!showChange && dataType === 'contract_probability_changed') {
-    // console.log('filtering prob change', probChangeSinceAdd, contract)
-    return { ignore: true, probChange }
+  const nullCase = { ignore: true, probChange: undefined, startTime: undefined }
+  if (
+    contract.mechanism !== 'cpmm-1' ||
+    contract.createdTime > Date.now() - DAY_MS
+  ) {
+    return nullCase
   }
-  return { ignore: false, probChange }
+  const probChangeData = feedItem?.data as ProbChangeData | undefined
+  const previousProbAbout50 = (prob: number) => prob > 0.47 && prob < 0.53
+  const probChangeIsSignificant = (probChange: number) =>
+    Math.abs(probChange) > PROB_CHANGE_THRESHOLD
+
+  const calculatePreviousProbability = () => {
+    const feedRowStartTime = feedItem?.createdTime ?? 0
+    const feedRowPreviousProb = probChangeData?.previousProb ?? 0.5
+    const feedRowChange = feedRowPreviousProb - contract.prob
+
+    const canUseFeedRowChange =
+      probChangeIsSignificant(feedRowChange) &&
+      !previousProbAbout50(feedRowPreviousProb)
+
+    const feedRowCurrentProb = probChangeData?.currentProb ?? 0.5
+    const feedRowCurrentProbChange = feedRowCurrentProb - contract.prob
+    const canUseFeedRowCurrentProbChange =
+      probChangeIsSignificant(feedRowCurrentProbChange) &&
+      !previousProbAbout50(feedRowCurrentProb)
+
+    const dayAgoTime = Date.now() - DAY_MS
+    const dayAgoProb = contract.prob - contract.probChanges.day
+    const dayAgoChange = contract.probChanges.day
+
+    const canUseContractChange =
+      probChangeIsSignificant(dayAgoChange) && !previousProbAbout50(dayAgoProb)
+
+    const longTimeElapsed = feedRowStartTime < dayAgoTime - 7 * DAY_MS
+
+    if (canUseContractChange && canUseFeedRowChange) {
+      if (feedRowStartTime > dayAgoTime) {
+        return {
+          previousProb: feedRowPreviousProb,
+          startTime: feedRowStartTime - DAY_MS,
+        }
+      } else {
+        return {
+          previousProb: dayAgoProb,
+          startTime: dayAgoTime,
+        }
+      }
+    } else if (canUseFeedRowCurrentProbChange && longTimeElapsed) {
+      return {
+        previousProb: feedRowCurrentProb,
+        startTime: feedRowStartTime,
+      }
+    } else if (canUseFeedRowChange) {
+      return {
+        previousProb: feedRowPreviousProb,
+        startTime: feedRowStartTime - DAY_MS,
+      }
+    } else
+      return {
+        previousProb: dayAgoProb,
+        startTime: dayAgoTime,
+      }
+  }
+  const { previousProb, startTime } = calculatePreviousProbability()
+
+  if (
+    contract.createdTime > Date.now() - 2 * DAY_MS &&
+    previousProbAbout50(previousProb)
+  ) {
+    return nullCase
+  }
+
+  const probChangeSinceAdd = contract.prob - previousProb
+  // Probability change must exceed the threshold and the contract can't be resolved
+  if (!probChangeIsSignificant(probChangeSinceAdd) || contract.isResolved) {
+    return nullCase
+  }
+
+  const probChange = Math.round(probChangeSinceAdd * 100)
+
+  return { ignore: false, probChange, startTime }
 }

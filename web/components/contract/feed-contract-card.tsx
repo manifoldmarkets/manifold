@@ -101,10 +101,9 @@ export function FeedContractCard(props: {
     false
   )
 
-  const { probChange } = getMarketMovementInfo(
+  const { probChange, startTime, ignore } = getMarketMovementInfo(
     contract,
-    item?.dataType,
-    item?.data
+    item
   )
 
   const trackClick = () =>
@@ -158,6 +157,7 @@ export function FeedContractCard(props: {
               item={item}
               contract={contract}
               probChange={probChange}
+              since={startTime}
             />
             <FeedDropdown
               contract={contract}
@@ -209,11 +209,12 @@ export function FeedContractCard(props: {
           <SimpleAnswerBars contract={contract} maxAnswers={4} />
         )}
 
-        {isBinaryCpmm && (showGraph || probChange) && (
+        {isBinaryCpmm && (showGraph || !ignore) && (
           <FeedBinaryChart
             contract={contract}
             className="my-4"
-            startDate={item?.createdTime ?? contract.createdTime}
+            startDate={startTime ? startTime : contract.createdTime}
+            addLeadingBetPoint={true}
           />
         )}
         {promotedData && (

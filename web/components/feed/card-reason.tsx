@@ -4,13 +4,15 @@ import { HiSparkles } from 'react-icons/hi'
 import { FeedTimelineItem } from 'web/hooks/use-feed-timeline'
 import { Row } from '../layout/row'
 import { RelativeTimestamp } from '../relative-timestamp'
+import { shortenedFromNow } from 'web/lib/util/shortenedFromNow'
 
 export function CardReason(props: {
   item: FeedTimelineItem | undefined
   contract: Contract
-  probChange: number | null
+  probChange?: number
+  since?: number
 }) {
-  const { item, contract, probChange } = props
+  const { item, contract, probChange, since } = props
 
   if (!item) {
     if (contract.resolutionTime) {
@@ -25,7 +27,7 @@ export function CardReason(props: {
         </span>
       )
     } else if (probChange) {
-      return <ProbabilityChange probChange={probChange} />
+      return <ProbabilityChange probChange={probChange} since={since} />
     } else {
       return (
         <span className="text-ink-400 text-sm">
@@ -45,7 +47,7 @@ export function CardReason(props: {
   }
 
   if (probChange) {
-    return <ProbabilityChange probChange={probChange} />
+    return <ProbabilityChange probChange={probChange} since={since} />
   }
 
   if (item.dataType == 'new_contract') {
@@ -66,8 +68,8 @@ export function CardReason(props: {
   return null
 }
 
-function ProbabilityChange(props: { probChange: number }) {
-  const { probChange } = props
+function ProbabilityChange(props: { probChange: number; since?: number }) {
+  const { probChange, since } = props
   const positiveChange = probChange && probChange > 0
   return (
     <span
@@ -80,7 +82,11 @@ function ProbabilityChange(props: { probChange: number }) {
         {positiveChange ? '+' : ''}
         {probChange}%
       </span>{' '}
-      today
+      {since
+        ? shortenedFromNow(since) === '1d'
+          ? 'today'
+          : shortenedFromNow(since)
+        : 'today'}
     </span>
   )
 }
