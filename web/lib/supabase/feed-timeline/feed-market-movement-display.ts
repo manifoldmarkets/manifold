@@ -66,6 +66,11 @@ export const getMarketMovementInfo = (
         previousProb: feedRowPreviousProb,
         startTime: feedRowStartTime - DAY_MS,
       }
+    } else if (canUseFeedRowCurrentProbChange) {
+      return {
+        previousProb: feedRowCurrentProb,
+        startTime: feedRowStartTime,
+      }
     } else
       return {
         previousProb: dayAgoProb,
