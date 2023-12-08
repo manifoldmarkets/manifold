@@ -69,6 +69,7 @@ export const SORTS = [
   { label: 'Old', value: 'old' },
   { label: 'New', value: 'new' },
   { label: 'Trending', value: 'liquidity' },
+  { label: 'A-Z', value: 'alphabetical' },
 ] as const
 
 export type SortType = (typeof SORTS)[number]['value']
