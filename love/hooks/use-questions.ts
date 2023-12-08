@@ -80,7 +80,7 @@ export type QuestionWithCountType = Row<'love_questions'> & {
 
 export const useFRQuestionsWithAnswerCount = () => {
   const [FRquestionsWithCount, setFRQuestionsWithCount] =
-    usePersistentInMemoryState<any>([], `questions-with-count`)
+    usePersistentInMemoryState<any>([], `fr-questions-with-count`)
 
   useEffect(() => {
     getFRQuestionsWithAnswerCount().then((questions) => {
@@ -93,7 +93,7 @@ export const useFRQuestionsWithAnswerCount = () => {
 
 export const useCompatibilityQuestionsWithAnswerCount = () => {
   const [compatibilityQuestionsWithCount, setCompatibilityQuestionsWithCount] =
-    usePersistentInMemoryState<any>([], `questions-with-count`)
+    usePersistentInMemoryState<any>([], `compatibility-questions-with-count`)
 
   useEffect(() => {
     getCompatibilityQuestionsWithAnswerCount().then((questions) => {
