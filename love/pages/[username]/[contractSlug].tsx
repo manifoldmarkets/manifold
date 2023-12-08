@@ -71,6 +71,7 @@ import { TbDroplet } from 'react-icons/tb'
 import { getContractParams } from 'common/contract-params'
 import { LovePage } from 'love/components/love-page'
 import { useReview } from 'web/hooks/use-review'
+
 export async function getStaticProps(ctx: {
   params: { username: string; contractSlug: string }
 }) {
