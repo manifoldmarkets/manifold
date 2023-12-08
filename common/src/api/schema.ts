@@ -236,8 +236,9 @@ export const API = (_apiTypeCheck = {
     returns: [] as League[],
     props: z
       .object({
-        userId: z.string(),
-        season: z.number().optional(),
+        userId: z.string().optional(),
+        cohort: z.string().optional(),
+        season: z.coerce.number().optional(),
       })
       .strict(),
   },

@@ -1043,12 +1043,13 @@ Example body
 
 ### `GET /v0/leagues`
 
-Gets a list of leagues for a user, ordered by creation time descending.
+Gets a list of league standings for a particular user or season
 
 Parameters
 
-- `userId`: Required. Returns leagues for this user.
+- `userId`: Optional. Returns only leagues for this user.
 - `season`: Optional. Number. Returns only a particular season.
+- `cohort`: Optional. String. The snake-cased quirky name of a league - returns only this particular league
 
 Requires no authorization.
 
