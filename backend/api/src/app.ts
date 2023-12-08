@@ -119,6 +119,8 @@ import { getManagrams } from './get-managrams'
 import { getGroups } from './get-groups'
 import { getComments } from './get-comments'
 import { getBets } from './get-bets'
+import { getUser } from './get-user'
+import { getUsers } from './get-users'
 
 const allowCorsUnrestricted: RequestHandler = cors({})
 const allowCorsManifold: RequestHandler = cors({
@@ -186,6 +188,8 @@ const handlers: { [k in APIPath]: RequestHandler } = {
   'send-mana': sendMana,
   managrams: getManagrams,
   me: getCurrentUser,
+  user: getUser,
+  users: getUsers,
   'save-twitch': saveTwitchCredentials,
   'compatible-lovers': getCompatibleLovers,
 }

@@ -15,6 +15,7 @@ import { CPMMMultiContract } from 'common/contract'
 import { CompatibilityScore } from 'common/love/compatibility-score'
 import type { Txn, ManaPayTxn } from 'common/txn'
 import { LiquidityProvision } from 'common/liquidity-provision'
+import { LiteUser } from './user-types'
 
 type APIGenericSchema = {
   // GET is for retrieval, POST is to mutate something, PUT is idempotent mutation (can be repeated safely)
@@ -249,6 +250,30 @@ export const API = (_apiTypeCheck = {
     authed: true,
     props: z.object({}),
     returns: {} as User,
+  },
+  user: {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    returns: {} as LiteUser,
+    props: z.union([
+      z.object({ id: z.string() }),
+      z.object({ username: z.string() }),
+    ]),
+    //TODO: no-cache
+  },
+  users: {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    returns: [] as LiteUser[],
+    props: z
+      .object({
+        limit: z.coerce.number().gte(0).lte(1000).default(500),
+        before: z.string().optional(),
+      })
+      .strict(),
+    // TODO: s-maxage=45, stale-while-revalidate=45
   },
   'save-twitch': {
     method: 'POST',
