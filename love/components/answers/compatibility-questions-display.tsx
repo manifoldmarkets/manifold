@@ -61,8 +61,10 @@ export function CompatibilityQuestionsDisplay(props: {
   user: User
   allQuestions: QuestionWithCountType[]
   refreshQuestions: () => void
+  fromSignup?: boolean
 }) {
-  const { isCurrentUser, user, allQuestions, refreshQuestions } = props
+  const { isCurrentUser, user, allQuestions, refreshQuestions, fromSignup } =
+    props
   const { refreshCompatibilityAnswers, compatibilityAnswers } =
     useUserCompatibilityAnswers(user.id)
 
@@ -145,6 +147,7 @@ export function CompatibilityQuestionsDisplay(props: {
           user={user}
           otherQuestions={otherQuestions}
           refreshCompatibilityAll={refreshCompatibilityAll}
+          fromSignup={fromSignup}
         />
       )}
       {skippedQuestions.length > 0 && (

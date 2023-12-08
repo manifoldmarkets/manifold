@@ -27,6 +27,7 @@ import Custom404 from '../404'
 import { db } from 'web/lib/supabase/db'
 import { useSaveCampaign } from 'web/hooks/use-save-campaign'
 import { useCallReferUser } from 'web/hooks/use-call-refer-user'
+import { useRouter } from 'next/router'
 
 export const getStaticProps = async (props: {
   params: {
@@ -56,6 +57,10 @@ export default function UserPage(props: {
   lover: Lover | null
 }) {
   const { user, username } = props
+  const router = useRouter()
+  const { query } = router
+  const fromSignup = query.fromSignup === 'true'
+
   const currentUser = useUser()
   const isCurrentUser = currentUser?.id === user?.id
 
@@ -99,6 +104,7 @@ export default function UserPage(props: {
               lover={lover}
               user={user}
               refreshLover={refreshLover}
+              fromSignup={fromSignup}
             />
           ) : isCurrentUser ? (
             <Col className={'mt-4 w-full items-center'}>
@@ -130,8 +136,9 @@ export function LoverProfile(props: {
   user: User
   refreshLover: () => void
   hideMatches?: boolean
+  fromSignup?: boolean
 }) {
-  const { lover, user, refreshLover, hideMatches } = props
+  const { lover, user, refreshLover, hideMatches, fromSignup } = props
 
   return (
     <>
@@ -142,6 +149,7 @@ export function LoverProfile(props: {
         lover={lover}
         refreshLover={refreshLover}
         hideMatches={hideMatches}
+        fromSignup={fromSignup}
       />
     </>
   )
@@ -152,8 +160,9 @@ function LoverContent(props: {
   lover: Lover
   refreshLover: () => void
   hideMatches?: boolean
+  fromSignup?: boolean
 }) {
-  const { user, lover, refreshLover, hideMatches } = props
+  const { user, lover, refreshLover, hideMatches, fromSignup } = props
   const currentUser = useUser()
   const isCurrentUser = currentUser?.id === user.id
 
@@ -183,7 +192,11 @@ function LoverContent(props: {
         lover={lover}
         refreshLover={refreshLover}
       />
-      <LoverAnswers isCurrentUser={isCurrentUser} user={user} />
+      <LoverAnswers
+        isCurrentUser={isCurrentUser}
+        user={user}
+        fromSignup={fromSignup}
+      />
       <LoverCommentSection
         onUser={user}
         lover={lover}

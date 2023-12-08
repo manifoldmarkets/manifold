@@ -22,8 +22,9 @@ export const OptionalLoveUserForm = (props: {
   setLover: (key: keyof rowFor<'lovers'>, value: any) => void
   user: User
   buttonLabel?: string
+  fromSignup?: boolean
 }) => {
-  const { lover, user, buttonLabel, setLover } = props
+  const { lover, user, buttonLabel, setLover, fromSignup } = props
 
   const router = useRouter()
   const [heightFeet, setHeightFeet] = useState<number | undefined>(
@@ -42,7 +43,8 @@ export const OptionalLoveUserForm = (props: {
     if (res) {
       console.log('success')
       track('submit love optional profile')
-      if (user) router.push(`/${user.username}`)
+      if (user)
+        router.push(`/${user.username}${fromSignup ? '?fromSignup=true' : ''}`)
       else router.push('/')
     }
   }

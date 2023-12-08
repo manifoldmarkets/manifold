@@ -10,9 +10,11 @@ export function AnswerCompatibilityQuestionButton(props: {
   user: User | null | undefined
   otherQuestions: QuestionWithCountType[]
   refreshCompatibilityAll: () => void
+  fromSignup?: boolean
 }) {
-  const { user, otherQuestions, refreshCompatibilityAll } = props
-  const [open, setOpen] = useState(false)
+  const { user, otherQuestions, refreshCompatibilityAll, fromSignup } = props
+  const [open, setOpen] = useState(fromSignup ?? false)
+  console.log('FROM SIGNUP', fromSignup)
   if (!user) return null
   return (
     <>

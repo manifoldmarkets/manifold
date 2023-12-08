@@ -8,8 +8,12 @@ import { Col } from 'web/components/layout/col'
 import { CompatibilityQuestionsDisplay } from './compatibility-questions-display'
 import { FreeResponseDisplay } from './free-response-display'
 
-export function LoverAnswers(props: { isCurrentUser: boolean; user: User }) {
-  const { isCurrentUser, user } = props
+export function LoverAnswers(props: {
+  isCurrentUser: boolean
+  user: User
+  fromSignup?: boolean
+}) {
+  const { isCurrentUser, user, fromSignup } = props
 
   const { refreshAnswers, answers: allAnswers } = useUserAnswers(user?.id)
 
@@ -46,6 +50,7 @@ export function LoverAnswers(props: { isCurrentUser: boolean; user: User }) {
         user={user}
         allQuestions={compatibilityQuestions}
         refreshQuestions={refreshQuestions}
+        fromSignup={fromSignup}
       />
       <FreeResponseDisplay
         answers={otherAnswers}

@@ -82,6 +82,7 @@ export default function SignupPage() {
               setLover={setLoverState}
               lover={loverForm}
               user={user}
+              fromSignup
             />
           ) : (
             <LoadingIndicator />
