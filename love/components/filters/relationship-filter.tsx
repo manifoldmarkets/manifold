@@ -15,7 +15,7 @@ export function RelationshipFilterText(props: {
   const relationshipLength = (relationship ?? []).length
 
   if (!relationship || relationshipLength < 1) {
-    return <span className={clsx('text-semibold', highlightedClass)}>Any</span>
+    return <span className={clsx('text-semibold', highlightedClass)}>Any style</span>
   }
 
   const convertedRelationships = relationship.map((r) =>

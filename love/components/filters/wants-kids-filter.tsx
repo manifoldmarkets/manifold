@@ -40,7 +40,7 @@ export function wantsKidsDatabaseToWantsKidsFilter(
 
 export const wantsKidsLabels: KidsLabelsMap = {
   no_preference: {
-    name: 'No preference',
+    name: 'Any preference',
     shortName: 'Either',
     icon: <MdOutlineStroller className="h-4 w-4" />,
     strength: -1,
