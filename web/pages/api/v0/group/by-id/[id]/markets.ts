@@ -1,22 +1,14 @@
-import { toLiteMarket } from 'common/api/market-types'
-import { marketCacheStrategy } from 'common/api/schema'
 import { NextApiRequest, NextApiResponse } from 'next'
-import { applyCorsHeaders } from 'web/lib/api/cors'
-import { getGroupMarkets } from 'web/lib/supabase/group'
+import { nextHandler } from 'web/lib/api/handler'
+import { appendQuery } from 'web/lib/firebase/api'
+
+const marketHandler = nextHandler('markets')
 
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  await applyCorsHeaders(req, res)
   const { id } = req.query
-  const contracts = (await getGroupMarkets(id as string))?.map((contract) =>
-    toLiteMarket(contract)
-  )
-  if (!contracts) {
-    res.status(404).json({ error: 'Group not found' })
-    return
-  }
-  res.setHeader('Cache-Control', marketCacheStrategy)
-  return res.status(200).json(contracts)
+  req.url = appendQuery(req.url ?? '/', { groupId: id })
+  await marketHandler(req, res)
 }

@@ -239,6 +239,7 @@ export const API = (_apiTypeCheck = {
         limit: z.coerce.number().gte(0).lte(1000).default(500),
         before: z.string().optional(),
         userId: z.string().optional(),
+        groupId: z.string().optional(), // TODO: document this
       })
       .strict(),
   },
