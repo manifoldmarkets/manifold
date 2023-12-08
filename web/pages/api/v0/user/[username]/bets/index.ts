@@ -1,32 +1,14 @@
 import { NextApiRequest, NextApiResponse } from 'next'
-import { applyCorsHeaders } from 'web/lib/api/cors'
-import { Bet } from 'web/lib/firebase/bets'
-import { getUserByUsername } from 'web/lib/firebase/users'
-import { ApiError } from '../../../_types'
-import { getBets } from 'common/supabase/bets'
-import { db } from 'web/lib/supabase/db'
+import { nextHandler } from 'web/lib/api/handler'
+import { appendQuery } from 'web/lib/firebase/api'
+
+const betsHandler = nextHandler('bets')
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse<Bet[] | ApiError>
+  res: NextApiResponse
 ) {
-  await applyCorsHeaders(req, res)
   const { username } = req.query
-
-  const user = await getUserByUsername(username as string)
-
-  if (!user) {
-    res.status(404).json({ error: 'User not found' })
-    return
-  }
-
-  const bets = await getBets(db, {
-    userId: user.id,
-    filterAntes: true,
-    filterRedemptions: true,
-    order: 'desc',
-  })
-
-  res.setHeader('Cache-Control', 'max-age=0')
-  return res.status(200).json(bets)
+  req.url = appendQuery(req.url ?? '/', { username })
+  return betsHandler(req, res)
 }
