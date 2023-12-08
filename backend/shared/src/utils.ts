@@ -314,12 +314,6 @@ export const getAllPrivateUsersNotSent = async (
   return users.docs.map((doc) => doc.data() as PrivateUser)
 }
 
-export const getAllUsers = async () => {
-  const firestore = admin.firestore()
-  const users = await firestore.collection('users').get()
-  return users.docs.map((doc) => doc.data() as User)
-}
-
 export const getUserByUsername = async (username: string) => {
   const firestore = admin.firestore()
   const snap = await firestore

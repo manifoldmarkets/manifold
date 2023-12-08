@@ -22,13 +22,6 @@ export async function getGroupContracts(groupId: string) {
   return []
 }
 
-export async function getMemberGroups(userId: string, db: SupabaseClient) {
-  const groupIds = await getMemberGroupIds(userId, db)
-  const query = db.from('groups').select().in('id', groupIds)
-
-  return (await run(query)).data.map(convertGroup)
-}
-
 export async function getShouldBlockDestiny(
   userId: string,
   db: SupabaseClient
@@ -87,24 +80,6 @@ export async function getMyGroupRoles(userId: string) {
       .order('createdtime', { ascending: false })
   )
   return data
-}
-
-// gets all public groups
-export async function getPublicGroups(limit?: number, beforeTime?: number) {
-  let q = db
-    .from('groups')
-    .select()
-    .eq('privacy_status', 'public')
-    .order('data->createdTime', { ascending: false } as any)
-  if (limit) {
-    q = q.limit(limit)
-  }
-  if (beforeTime) {
-    q = q.lt('data->createdTime', beforeTime)
-  }
-  const { data } = await run(q)
-
-  return data.map(convertGroup)
 }
 
 export async function getGroupBySlug(groupSlug: string) {

@@ -1,7 +1,7 @@
 import { SupabaseClient, createSupabaseClient } from 'shared/supabase/init'
 import { run, selectJson } from 'common/supabase/utils'
 import { toLiteMarket } from 'common/api/market-types'
-import { typedEndpoint } from './helpers'
+import { APIError, typedEndpoint } from './helpers'
 
 // mqp: this pagination approach is technically incorrect if multiple contracts
 // have the exact same createdTime, but that's very unlikely
@@ -35,36 +35,46 @@ const getPublicContracts = async (
     beforeTime?: string
     order?: 'asc' | 'desc'
     userId?: string
+    groupId?: string
   }
 ) => {
-  let q = selectJson(db, 'public_contracts')
-  q = q.order('created_time', {
+  const q = selectJson(db, 'public_contracts')
+  q.order('created_time', {
     ascending: options?.order === 'asc',
   } as any)
   if (options.beforeTime) {
-    q = q.lt('created_time', options.beforeTime)
+    q.lt('created_time', options.beforeTime)
   }
-  if (options?.userId) {
-    q = q.eq('user_id', options.userId)
+  if (options.userId) {
+    q.eq('user_id', options.userId)
   }
-  q = q.limit(options.limit)
+  if (options.groupId) {
+    // TODO: use the sql builder instead and use a join
+    const { data, error } = await db
+      .from('groups')
+      .select('slug')
+      .eq('id', options.groupId)
+      .single()
+    if (error)
+      throw new APIError(404, `Group with id ${options.groupId} not found`)
+    q.contains('group_slugs', [data.slug])
+  }
+  q.limit(options.limit)
   const { data } = await run(q)
   return data.map((r) => r.data)
 }
 
 export const markets = typedEndpoint(
   'markets',
-  async ({ limit, userId, before }, _auth, { res }) => {
+  async ({ limit, userId, groupId, before }) => {
     const db = createSupabaseClient()
     const beforeTime = await getBeforeTime(db, before)
     const contracts = await getPublicContracts(db, {
       beforeTime,
       limit,
       userId,
+      groupId,
     })
-
-    // Serve from cache, then update. see https://cloud.google.com/cdn/docs/caching
-    res.setHeader('Cache-Control', 's-maxage=45, stale-while-revalidate=45')
 
     return contracts.map(toLiteMarket)
   }

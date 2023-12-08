@@ -78,51 +78,6 @@ export async function getRecentCommentsOnContracts(
   return rows.flat().map((r) => convertContractComment(r))
 }
 
-export async function getCommentsOnContract(
-  contractId: string,
-  limit?: number,
-  userId?: string
-) {
-  let q = db
-    .from('contract_comments')
-    .select()
-    .eq('contract_id', contractId)
-    .order('created_time', { ascending: false })
-
-  if (limit) {
-    q.limit(limit)
-  }
-
-  if (userId) {
-    q = q.eq('user_id', userId)
-  }
-
-  const { data } = await run(q)
-
-  return data.map(convertContractComment)
-}
-
-export async function getUserComments(
-  userId: string,
-  limit: number,
-  page: number
-) {
-  const { data } = await run(
-    db
-      .from('contract_comments')
-      .select()
-      .eq('user_id', userId)
-      .eq('visibility', 'public')
-      .order('created_time', { ascending: false } as any)
-      .range(page * limit, page * limit + limit - 1)
-  )
-  if (data) {
-    return data.map(convertContractComment)
-  } else {
-    return []
-  }
-}
-
 export async function getNumUserComments(userId: string) {
   const { count } = await run(
     db

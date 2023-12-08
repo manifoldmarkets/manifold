@@ -1,20 +1,15 @@
 import { NextApiRequest, NextApiResponse } from 'next'
-import { getUser } from 'web/lib/firebase/users'
-import { User } from 'common/user'
-import { applyCorsHeaders } from 'web/lib/api/cors'
-import { ApiError } from '../../_types'
+import { nextHandler } from 'web/lib/api/handler'
+import { appendQuery } from 'web/lib/firebase/api'
+
+const userHandler = nextHandler('user')
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse<User | ApiError>
+  res: NextApiResponse
 ) {
-  await applyCorsHeaders(req, res)
   const { id } = req.query
-  const user = await getUser(id as string)
-  if (!user) {
-    res.status(404).json({ error: 'User not found' })
-    return
-  }
-  res.setHeader('Cache-Control', 'no-cache')
-  return res.status(200).json(user)
+
+  req.url = appendQuery(req.url ?? '/', { id })
+  return userHandler(req, res)
 }

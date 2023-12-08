@@ -7,8 +7,6 @@ const handler = nextHandler('add-liquidity')
 
 export default async function route(req: NextApiRequest, res: NextApiResponse) {
   const { id } = req.query
-  const contractId = id as string
-
-  if (req.body) req.body.contractId = contractId
+  if (req.body) req.body.contractId = id
   await handler(req, res)
 }

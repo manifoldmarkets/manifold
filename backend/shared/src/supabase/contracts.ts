@@ -1,4 +1,4 @@
-import { SupabaseDirectClient } from 'shared/supabase/init'
+import { SupabaseClient, SupabaseDirectClient } from 'shared/supabase/init'
 import { groupBy, reduce, sum, uniq } from 'lodash'
 import { getUserFollowerIds } from 'shared/supabase/users'
 import {
@@ -18,6 +18,24 @@ import { DEEMPHASIZED_GROUP_SLUGS, isAdminId } from 'common/envs/constants'
 import { convertContract } from 'common/supabase/contracts'
 import { generateEmbeddings } from 'shared/helpers/openai-utils'
 import { TOPIC_IDS_YOU_CANT_FOLLOW } from 'common/supabase/groups'
+import { APIError } from 'common/api/utils'
+
+// used for API to allow slug as param
+export const getContractIdFromSlug = async (
+  db: SupabaseClient,
+  slug?: string
+) => {
+  if (!slug) return undefined
+
+  const { data, error } = await db
+    .from('contracts')
+    .select('id')
+    .eq('slug', slug)
+    .single()
+
+  if (error) throw new APIError(404, `Contract with slug ${slug} not found`)
+  return data.id
+}
 
 export const getUniqueBettorIds = async (
   contractId: string,

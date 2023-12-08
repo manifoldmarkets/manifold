@@ -202,7 +202,7 @@ export const typedEndpoint = <N extends APIPath>(
     auth: APISchema<N> extends { authed: true }
       ? AuthedUser
       : AuthedUser | undefined,
-    { log, logError, res }: { log: GCPLog; logError: GCPLog; res: Response }
+    { log, logError }: { log: GCPLog; logError: GCPLog }
   ) => Promise<APIResponse<N>>
 ) => {
   const { props: propSchema, authed: authRequired, method } = API[name]
@@ -216,11 +216,10 @@ export const typedEndpoint = <N extends APIPath>(
     }
 
     try {
-      const { log, logError } = getLogs(req)
       const result = await handler(
         validate(propSchema, method === 'GET' ? req.query : req.body),
         authUser as AuthedUser,
-        { log, logError, res }
+        getLogs(req)
       )
       res.status(200).json(result ?? { success: true })
     } catch (e) {

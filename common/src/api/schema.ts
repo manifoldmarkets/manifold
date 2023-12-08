@@ -1,20 +1,24 @@
 import { z } from 'zod'
-import { MAX_ID_LENGTH } from '../group'
+import { Group, MAX_ID_LENGTH } from 'common/group'
 import {
   createMarketProps,
   resolveMarketProps,
   type LiteMarket,
+  FullMarket,
 } from './market-types'
-import type { Comment } from 'common/comment'
+import type { Comment, ContractComment } from 'common/comment'
 import type { User } from 'common/user'
 import { CandidateBet } from 'common/new-bet'
-import { LimitBet } from 'common/bet'
+import type { Bet, LimitBet } from 'common/bet'
 import { contentSchema } from 'common/api/zod-types'
 import { Lover } from 'common/love/lover'
 import { CPMMMultiContract } from 'common/contract'
 import { CompatibilityScore } from 'common/love/compatibility-score'
-import { Txn } from 'common/txn'
+import type { Txn, ManaPayTxn } from 'common/txn'
 import { LiquidityProvision } from 'common/liquidity-provision'
+import { LiteUser } from './user-types'
+
+export const marketCacheStrategy = 's-maxage=15, stale-while-revalidate=45'
 
 type APIGenericSchema = {
   // GET is for retrieval, POST is to mutate something, PUT is idempotent mutation (can be repeated safely)
@@ -27,6 +31,8 @@ type APIGenericSchema = {
   props: z.ZodType
   // note this has to be JSON serializable
   returns?: Record<string, any>
+  // Cache-Control header. like, 'max-age=60'
+  cache?: string
 }
 
 let _apiTypeCheck: { [x: string]: APIGenericSchema }
@@ -45,6 +51,29 @@ export const API = (_apiTypeCheck = {
         replyToCommentId: z.string().optional(),
         replyToAnswerId: z.string().optional(),
         replyToBetId: z.string().optional(),
+      })
+      .strict(),
+  },
+  'hide-comment': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    props: z.object({ commentPath: z.string() }).strict(),
+  },
+  comments: {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    cache: 'max-age=15, public',
+    returns: [] as ContractComment[],
+    props: z
+      .object({
+        contractId: z.string().optional(),
+        contractSlug: z.string().optional(),
+        limit: z.coerce.number().gte(0).lte(1000).default(1000),
+        page: z.coerce.number().gte(0).default(0), // TODO: document this
+        before: z.string().optional(),
+        userId: z.string().optional(),
       })
       .strict(),
   },
@@ -81,7 +110,61 @@ export const API = (_apiTypeCheck = {
     authed: true,
     props: z.object({ contractId: z.string(), betId: z.string() }).strict(),
   },
-
+  bets: {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    cache: 'max-age=15, public',
+    returns: [] as Bet[],
+    props: z
+      .object({
+        userId: z.string().optional(),
+        username: z.string().optional(),
+        contractId: z.string().optional(),
+        contractSlug: z.string().optional(),
+        // market: z.string().optional(), // deprecated, synonym for `contractSlug`
+        limit: z.coerce.number().gte(0).lte(1000).default(1000),
+        before: z.string().optional(),
+        after: z.string().optional(),
+        kinds: z.string().optional(),
+        order: z.enum(['asc', 'desc']).optional(),
+      })
+      .strict(),
+  },
+  group: {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    cache: 'no-cache',
+    returns: {} as Group,
+    props: z.union([
+      z.object({ id: z.string() }),
+      z.object({ slug: z.string() }),
+    ]),
+  },
+  groups: {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    cache: 'max-age=60',
+    returns: [] as Group[],
+    props: z
+      .object({
+        availableToUserId: z.string().optional(),
+        beforeTime: z.coerce.number().int().optional(),
+      })
+      .strict(),
+  },
+  market: {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    returns: {} as LiteMarket | FullMarket,
+    cache: marketCacheStrategy,
+    props: z
+      .union([z.object({ id: z.string() }), z.object({ slug: z.string() })])
+      .and(z.object({ lite: z.boolean().optional() })),
+  },
   'create-market': {
     method: 'POST',
     visibility: 'public',
@@ -149,12 +232,14 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'public',
     authed: false,
+    cache: marketCacheStrategy,
     returns: [] as LiteMarket[],
     props: z
       .object({
         limit: z.coerce.number().gte(0).lte(1000).default(500),
         before: z.string().optional(),
         userId: z.string().optional(),
+        groupId: z.string().optional(), // TODO: document this
       })
       .strict(),
   },
@@ -171,12 +256,67 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
+  managrams: {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    returns: [] as ManaPayTxn[],
+    props: z
+      .object({
+        toId: z.string().optional(),
+        fromId: z.string().optional(),
+        limit: z.coerce.number().gte(0).lte(100).default(100),
+        before: z.string().optional(),
+        after: z.string().optional(),
+      })
+      .strict(),
+  },
+  positions: {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    cache: 's-maxage=120, stale-while-revalidate=150',
+    returns: {} as any,
+    props: z
+      .object({
+        id: z.string(),
+        userId: z.string().optional(),
+        top: z.undefined().or(z.coerce.number()),
+        bottom: z.undefined().or(z.coerce.number()),
+        order: z.enum(['shares', 'profit']).optional(),
+      })
+      .strict(),
+  },
   me: {
     method: 'GET',
     visibility: 'public',
     authed: true,
     props: z.object({}),
     returns: {} as User,
+  },
+  user: {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    cache: 'no-cache',
+    returns: {} as LiteUser,
+    props: z.union([
+      z.object({ id: z.string() }),
+      z.object({ username: z.string() }),
+    ]),
+  },
+  users: {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    cache: 's-maxage=45, stale-while-revalidate=45',
+    returns: [] as LiteUser[],
+    props: z
+      .object({
+        limit: z.coerce.number().gte(0).lte(1000).default(500),
+        before: z.string().optional(),
+      })
+      .strict(),
   },
   'save-twitch': {
     method: 'POST',

@@ -2,7 +2,6 @@ import { auth } from './users'
 import { APIError, getApiUrl } from 'common/api/utils'
 import { JSONContent } from '@tiptap/core'
 import { Group, GroupRole, PrivacyStatusType } from 'common/group'
-import { HideCommentReq } from 'web/pages/api/v0/hide-comment'
 import { Contract } from './contracts'
 import { ContractTypeType, Filter, Sort } from 'web/components/supabase-search'
 import { AD_RATE_LIMIT } from 'common/boost'
@@ -15,8 +14,16 @@ import { BaseDashboard, Dashboard, DashboardItem } from 'common/dashboard'
 import { Bet } from 'common/bet'
 import { LinkPreview } from 'common/link-preview'
 import { API, APIPath, APIParams, APIResponse } from 'common/api/schema'
+import { forEach } from 'lodash'
 
 export { APIError } from 'common/api/utils'
+
+export function appendQuery(url: string, props: Record<string, any>) {
+  const [base, query] = url.split(/\?(.+)/)
+  const params = new URLSearchParams(query)
+  forEach(props, (v, k) => params.set(k, v))
+  return `${base}?${params.toString()}`
+}
 
 export async function call(url: string, method: 'POST' | 'GET', params?: any) {
   // const user = auth.currentUser
@@ -31,8 +38,7 @@ export async function maybeAuthedCall(
   method: 'POST' | 'GET',
   params?: any
 ) {
-  const actualUrl =
-    method === 'POST' ? url : `${url}?${new URLSearchParams(params).toString()}`
+  const actualUrl = method === 'POST' ? url : appendQuery(url, params)
   const user = auth.currentUser
   const token = await user?.getIdToken()
   const req = new Request(actualUrl, {
@@ -171,10 +177,6 @@ export function removeContractFromGroup(params: {
 
 export function unresolveMarket(params: { contractId: string }) {
   return call(getApiUrl('unresolve'), 'POST', params)
-}
-
-export function hideComment(params: HideCommentReq) {
-  return call(`/api/v0/hide-comment`, 'POST', params)
 }
 
 export function updateGroupPrivacy(params: {

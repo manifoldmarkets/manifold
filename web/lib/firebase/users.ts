@@ -17,10 +17,8 @@ import {
   getDocs,
   limit,
   onSnapshot,
-  orderBy,
   query,
   setDoc,
-  startAfter,
   updateDoc,
   where,
 } from 'firebase/firestore'
@@ -187,20 +185,6 @@ export async function firebaseLogout() {
   if (getIsNative()) nativeSignOut()
 
   await auth.signOut()
-}
-
-export async function listAllUsers(
-  n: number,
-  before?: string,
-  sortDescBy = 'createdTime'
-): Promise<User[]> {
-  let q = query(users, orderBy(sortDescBy, 'desc'), limit(n))
-  if (before != null) {
-    const snap = await getDoc(doc(users, before))
-    q = query(q, startAfter(snap))
-  }
-  const snapshot = await getDocs(q)
-  return snapshot.docs.map((doc) => doc.data())
 }
 
 export function getUsers() {

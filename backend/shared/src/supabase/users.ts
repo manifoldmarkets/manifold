@@ -6,7 +6,7 @@ import {
   INTEREST_DISTANCE_THRESHOLDS,
   NEW_USER_FEED_DATA_TYPES,
 } from 'common/feed'
-import { Row } from 'common/supabase/utils'
+import { Row, SupabaseClient } from 'common/supabase/utils'
 import { GCPLog } from 'shared/utils'
 import { ITask } from 'pg-promise'
 import { IClient } from 'pg-promise/typescript/pg-subset'
@@ -14,6 +14,24 @@ import { MINUTE_MS, WEEK_MS } from 'common/util/time'
 import { getContractsDirect } from 'shared/supabase/contracts'
 import { createManualTrendingFeedRow } from 'shared/create-feed'
 import { removeUndefinedProps } from 'common/util/object'
+import { APIError } from 'common/api/utils'
+
+// used for API to allow username as parm
+export const getUserIdFromUsername = async (
+  db: SupabaseClient,
+  username?: string
+) => {
+  if (!username) return undefined
+
+  const { data, error } = await db
+    .from('users')
+    .select('id')
+    .eq('username', username)
+    .single()
+  if (error) throw new APIError(404, `User with username ${username} not found`)
+
+  return data.id
+}
 
 export const getUserFollowerIds = async (
   userId: string,

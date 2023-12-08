@@ -4,7 +4,6 @@ import {
   getAllCommentRows,
   getComment,
   getCommentRows,
-  getCommentsOnContract,
   getNewCommentRows,
   getNumContractComments,
   getNumUserComments,
@@ -14,6 +13,7 @@ import { useSubscription } from 'web/lib/supabase/realtime/use-subscription'
 import { maxBy } from 'lodash'
 import { tsToMillis } from 'common/supabase/utils'
 import { convertContractComment } from 'common/supabase/comments'
+import { api } from 'web/lib/firebase/api'
 
 export function useNumContractComments(contractId: string) {
   const [numComments, setNumComments] = useState<number>(0)
@@ -46,7 +46,7 @@ export function useCommentsOnContract(contractId: string) {
     undefined
   )
   useEffect(() => {
-    getCommentsOnContract(contractId).then((comments) => {
+    api('comments', { contractId }).then((comments) => {
       setComments(comments)
     })
   }, [contractId])

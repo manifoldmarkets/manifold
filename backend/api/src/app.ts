@@ -109,12 +109,21 @@ import { editanswercpmm } from 'api/edit-answer'
 import { createlovecompatibilityquestion } from 'api/love/create-love-compatibility-question'
 import { oncreatebet } from 'api/on-create-bet'
 import { getCompatibleLovers } from './love/compatible-lovers'
-
 import { API, type APIPath } from 'common/api/schema'
 import { markets } from 'api/markets'
 import { createchartannotation } from 'api/create-chart-annotation'
 import { deletechartannotation } from 'api/delete-chart-annotation'
 import { assertUnreachable } from 'common/util/types'
+import { hideComment } from './hide-comment'
+import { getManagrams } from './get-managrams'
+import { getGroups } from './get-groups'
+import { getComments } from './get-comments'
+import { getBets } from './get-bets'
+import { getUser } from './get-user'
+import { getUsers } from './get-users'
+import { getMarket } from './get-market'
+import { getGroup } from './get-group'
+import { getPositions } from './get-positions'
 
 const allowCorsUnrestricted: RequestHandler = cors({})
 const allowCorsManifold: RequestHandler = cors({
@@ -127,6 +136,13 @@ const allowCorsManifold: RequestHandler = cors({
     CORS_ORIGIN_LOCALHOST,
   ],
 })
+
+function cacheController(policy?: string): RequestHandler {
+  return (_req, res, next) => {
+    if (policy) res.appendHeader('Cache-Control', policy)
+    next()
+  }
+}
 
 const requestLogger: RequestHandler = (req, _res, next) => {
   log(`${req.method} ${req.url} ${JSON.stringify(req.body ?? '')}`)
@@ -167,8 +183,14 @@ const handlers: { [k in APIPath]: RequestHandler } = {
   bet: placeBet,
   'cancel-bet': cancelBet,
   'sell-bet': sellBet,
+  bets: getBets,
   comment: createComment,
+  'hide-comment': hideComment,
+  comments: getComments,
   'create-market': createMarket,
+  group: getGroup,
+  groups: getGroups,
+  market: getMarket,
   close: closeMarket,
   resolve: resolveMarket,
   'add-liquidity': addLiquidity,
@@ -176,7 +198,11 @@ const handlers: { [k in APIPath]: RequestHandler } = {
   'award-bounty': awardBounty,
   markets: markets,
   'send-mana': sendMana,
+  managrams: getManagrams,
+  positions: getPositions,
   me: getCurrentUser,
+  user: getUser,
+  users: getUsers,
   'save-twitch': saveTwitchCredentials,
   'compatible-lovers': getCompatibleLovers,
 }
@@ -185,11 +211,13 @@ Object.entries(handlers).forEach(([path, handler]) => {
   const api = API[path as APIPath]
   const cors =
     api.visibility === 'public' ? allowCorsUnrestricted : allowCorsManifold
+  const cache = cacheController((api as any).cache)
 
   const apiRoute = [
     '/' + pathWithPrefix(path as APIPath),
     express.json(),
     cors,
+    cache,
     handler,
     apiErrorHandler,
   ] as const

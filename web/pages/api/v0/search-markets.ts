@@ -1,8 +1,8 @@
 import { LiteMarket, toLiteMarket } from 'common/api/market-types'
+import { marketCacheStrategy } from 'common/api/schema'
 import { NextApiRequest, NextApiResponse } from 'next'
 import { applyCorsHeaders } from 'web/lib/api/cors'
 import { APIError, searchContracts } from 'web/lib/firebase/api'
-import { marketCacheStrategy } from 'web/pages/api/v0/market/[id]'
 import { ApiError } from 'web/pages/api/v0/_types'
 
 export default async function handler(
