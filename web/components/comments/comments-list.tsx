@@ -4,7 +4,6 @@ import { groupConsecutive } from 'common/util/array'
 import { useEffect, useState } from 'react'
 import { UserLink } from 'web/components/widgets/user-link'
 import { useNumUserComments } from 'web/hooks/use-comments-supabase'
-import { getUserComments } from 'web/lib/supabase/comments'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { RelativeTimestamp } from '../relative-timestamp'
@@ -14,6 +13,7 @@ import { LoadingIndicator } from '../widgets/loading-indicator'
 import { Pagination } from '../widgets/pagination'
 import Link from 'next/link'
 import { useIsAuthorized } from 'web/hooks/use-user'
+import { api } from 'web/lib/firebase/api'
 
 type ContractKey = {
   contractId: string
@@ -47,7 +47,7 @@ export function UserCommentsList(props: { user: User }) {
 
   useEffect(() => {
     setIsLoading(true)
-    getUserComments(user.id, pageSize, pageNum)
+    api('comments', { userId: user.id, limit: pageSize, page: pageNum })
       .then((result) =>
         setPageComments(
           groupConsecutive(result, (c) => {

@@ -5,7 +5,7 @@ import {
   resolveMarketProps,
   type LiteMarket,
 } from './market-types'
-import type { Comment } from 'common/comment'
+import type { Comment, ContractComment } from 'common/comment'
 import type { User } from 'common/user'
 import { CandidateBet } from 'common/new-bet'
 import { LimitBet } from 'common/bet'
@@ -53,6 +53,23 @@ export const API = (_apiTypeCheck = {
     visibility: 'public',
     authed: true,
     props: z.object({ commentPath: z.string() }).strict(),
+  },
+  comments: {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    returns: [] as ContractComment[],
+    props: z
+      .object({
+        contractId: z.string().optional(),
+        contractSlug: z.string().optional(),
+        limit: z.coerce.number().gte(0).lte(1000).default(1000),
+        page: z.coerce.number().gte(0).default(0), // TODO: document this
+        before: z.string().optional(),
+        userId: z.string().optional(),
+      })
+      .strict(),
+    // TODO: max-age=15, public
   },
 
   bet: {

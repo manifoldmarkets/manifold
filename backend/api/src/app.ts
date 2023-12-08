@@ -118,6 +118,7 @@ import { assertUnreachable } from 'common/util/types'
 import { hideComment } from './hide-comment'
 import { getManagrams } from './get-managrams'
 import { getGroups } from './get-groups'
+import { getComments } from './get-comments'
 
 const allowCorsUnrestricted: RequestHandler = cors({})
 const allowCorsManifold: RequestHandler = cors({
@@ -172,6 +173,7 @@ const handlers: { [k in APIPath]: RequestHandler } = {
   'sell-bet': sellBet,
   comment: createComment,
   'hide-comment': hideComment,
+  comments: getComments,
   'create-market': createMarket,
   groups: getGroups,
   close: closeMarket,
