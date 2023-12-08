@@ -465,7 +465,13 @@ const ChartAnnotation = (props: {
   )
 }
 
-export type MultiSort = 'prob-desc' | 'prob-asc' | 'old' | 'new' | 'liquidity'
+export type MultiSort =
+  | 'prob-desc'
+  | 'prob-asc'
+  | 'old'
+  | 'new'
+  | 'liquidity'
+  | 'alphabetical'
 
 const MAX_DEFAULT_GRAPHED_ANSWERS = 6
 const MAX_DEFAULT_ANSWERS = 20
@@ -563,6 +569,8 @@ const ChoiceOverview = (props: {
             return -1 * answer.prob
           } else if (sort === 'liquidity') {
             return 'subsidyPool' in answer ? -answer.subsidyPool : 0
+          } else if (sort === 'alphabetical') {
+            return answer.text.toLowerCase()
           }
         },
       ]),
