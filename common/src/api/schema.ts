@@ -271,6 +271,22 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
+  positions: {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    cache: 's-maxage=120, stale-while-revalidate=150',
+    returns: {} as any,
+    props: z
+      .object({
+        id: z.string(),
+        userId: z.string().optional(),
+        top: z.undefined().or(z.coerce.number()),
+        bottom: z.undefined().or(z.coerce.number()),
+        order: z.enum(['shares', 'profit']).optional(),
+      })
+      .strict(),
+  },
   me: {
     method: 'GET',
     visibility: 'public',

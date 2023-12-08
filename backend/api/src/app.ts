@@ -123,6 +123,7 @@ import { getUser } from './get-user'
 import { getUsers } from './get-users'
 import { getMarket } from './get-market'
 import { getGroup } from './get-group'
+import { getPositions } from './get-positions'
 
 const allowCorsUnrestricted: RequestHandler = cors({})
 const allowCorsManifold: RequestHandler = cors({
@@ -198,6 +199,7 @@ const handlers: { [k in APIPath]: RequestHandler } = {
   markets: markets,
   'send-mana': sendMana,
   managrams: getManagrams,
+  positions: getPositions,
   me: getCurrentUser,
   user: getUser,
   users: getUsers,
