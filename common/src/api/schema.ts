@@ -131,6 +131,17 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
+  group: {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    cache: 'no-cache',
+    returns: {} as Group,
+    props: z.union([
+      z.object({ id: z.string() }),
+      z.object({ slug: z.string() }),
+    ]),
+  },
   groups: {
     method: 'GET',
     visibility: 'public',

@@ -122,6 +122,7 @@ import { getBets } from './get-bets'
 import { getUser } from './get-user'
 import { getUsers } from './get-users'
 import { getMarket } from './get-market'
+import { getGroup } from './get-group'
 
 const allowCorsUnrestricted: RequestHandler = cors({})
 const allowCorsManifold: RequestHandler = cors({
@@ -186,6 +187,7 @@ const handlers: { [k in APIPath]: RequestHandler } = {
   'hide-comment': hideComment,
   comments: getComments,
   'create-market': createMarket,
+  group: getGroup,
   groups: getGroups,
   market: getMarket,
   close: closeMarket,
