@@ -1008,8 +1008,8 @@ export interface Database {
           explanation: string | null
           id: number
           importance: number
-          multiple_choice: number | null
-          pref_choices: number[] | null
+          multiple_choice: number
+          pref_choices: number[]
           question_id: number
         }
         Insert: {
@@ -1018,8 +1018,8 @@ export interface Database {
           explanation?: string | null
           id?: never
           importance: number
-          multiple_choice?: number | null
-          pref_choices?: number[] | null
+          multiple_choice: number
+          pref_choices: number[]
           question_id: number
         }
         Update: {
@@ -1028,8 +1028,8 @@ export interface Database {
           explanation?: string | null
           id?: never
           importance?: number
-          multiple_choice?: number | null
-          pref_choices?: number[] | null
+          multiple_choice?: number
+          pref_choices?: number[]
           question_id?: number
         }
         Relationships: []
