@@ -54,7 +54,7 @@ const getPublicContracts = async (
 
 export const markets = typedEndpoint(
   'markets',
-  async ({ limit, userId, before }, _auth, { res }) => {
+  async ({ limit, userId, before }) => {
     const db = createSupabaseClient()
     const beforeTime = await getBeforeTime(db, before)
     const contracts = await getPublicContracts(db, {
@@ -62,9 +62,6 @@ export const markets = typedEndpoint(
       limit,
       userId,
     })
-
-    // Serve from cache, then update. see https://cloud.google.com/cdn/docs/caching
-    res.setHeader('Cache-Control', 's-maxage=45, stale-while-revalidate=45')
 
     return contracts.map(toLiteMarket)
   }

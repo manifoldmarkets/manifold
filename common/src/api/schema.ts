@@ -28,6 +28,8 @@ type APIGenericSchema = {
   props: z.ZodType
   // note this has to be JSON serializable
   returns?: Record<string, any>
+  // Cache-Control header. like, 'max-age=60'
+  cache?: string
 }
 
 let _apiTypeCheck: { [x: string]: APIGenericSchema }
@@ -59,6 +61,7 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'public',
     authed: false,
+    cache: 'max-age=15, public',
     returns: [] as ContractComment[],
     props: z
       .object({
@@ -70,7 +73,6 @@ export const API = (_apiTypeCheck = {
         userId: z.string().optional(),
       })
       .strict(),
-    // TODO: max-age=15, public
   },
 
   bet: {
@@ -109,6 +111,7 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'public',
     authed: false,
+    cache: 'max-age=15, public',
     returns: [] as Bet[],
     props: z
       .object({
@@ -124,12 +127,12 @@ export const API = (_apiTypeCheck = {
         order: z.enum(['asc', 'desc']).optional(),
       })
       .strict(),
-    // TODO: max-age=15, public'
   },
   groups: {
     method: 'GET',
     visibility: 'public',
     authed: false,
+    cache: 'max-age=60',
     returns: [] as Group[],
     props: z
       .object({
@@ -137,7 +140,6 @@ export const API = (_apiTypeCheck = {
         beforeTime: z.coerce.number().int().optional(),
       })
       .strict(),
-    // TODO: max-age=60
   },
 
   'create-market': {
@@ -207,6 +209,7 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'public',
     authed: false,
+    cache: 's-maxage=45, stale-while-revalidate=45',
     returns: [] as LiteMarket[],
     props: z
       .object({
@@ -255,17 +258,18 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'public',
     authed: false,
+    cache: 'no-cache',
     returns: {} as LiteUser,
     props: z.union([
       z.object({ id: z.string() }),
       z.object({ username: z.string() }),
     ]),
-    //TODO: no-cache
   },
   users: {
     method: 'GET',
     visibility: 'public',
     authed: false,
+    cache: 's-maxage=45, stale-while-revalidate=45',
     returns: [] as LiteUser[],
     props: z
       .object({
@@ -273,7 +277,6 @@ export const API = (_apiTypeCheck = {
         before: z.string().optional(),
       })
       .strict(),
-    // TODO: s-maxage=45, stale-while-revalidate=45
   },
   'save-twitch': {
     method: 'POST',

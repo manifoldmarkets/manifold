@@ -134,6 +134,13 @@ const allowCorsManifold: RequestHandler = cors({
   ],
 })
 
+function cacheController(policy?: string): RequestHandler {
+  return (_req, res, next) => {
+    if (policy) res.appendHeader('Cache-Control', policy)
+    next()
+  }
+}
+
 const requestLogger: RequestHandler = (req, _res, next) => {
   log(`${req.method} ${req.url} ${JSON.stringify(req.body ?? '')}`)
   next()
@@ -198,11 +205,13 @@ Object.entries(handlers).forEach(([path, handler]) => {
   const api = API[path as APIPath]
   const cors =
     api.visibility === 'public' ? allowCorsUnrestricted : allowCorsManifold
+  const cache = cacheController((api as any).cache)
 
   const apiRoute = [
     '/' + pathWithPrefix(path as APIPath),
     express.json(),
     cors,
+    cache,
     handler,
     apiErrorHandler,
   ] as const
