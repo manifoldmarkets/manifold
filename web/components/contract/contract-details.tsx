@@ -19,13 +19,14 @@ import { FollowButton } from '../buttons/follow-button'
 import { updateMarket } from 'web/lib/firebase/api'
 import { FaClock } from 'react-icons/fa6'
 import { MdLockClock } from 'react-icons/md'
+import { useUserById } from 'web/hooks/use-user'
 
 export function AuthorInfo(props: { contract: Contract }) {
   const { contract } = props
   const { creatorId, creatorName, creatorUsername, creatorAvatarUrl } = contract
-
+  const resolver = useUserById(contract.resolverId)
   return (
-    <Row className="grow items-center gap-2">
+    <Row className="grow flex-wrap items-center gap-1">
       <div className="relative">
         <Avatar
           username={creatorUsername}
@@ -33,16 +34,29 @@ export function AuthorInfo(props: { contract: Contract }) {
           size={'xs'}
         />
       </div>
-
       <UserLink
         user={{
           id: creatorId,
           name: creatorName,
           username: creatorUsername,
         }}
+        className={'mr-1'}
       />
-
       <FollowButton userId={contract.creatorId} size="2xs" />
+      {contract.isResolved &&
+        contract.resolverId! !== contract.creatorId &&
+        resolver && (
+          <>
+            <span className={'ml-1'}>resolved by </span>
+            <UserLink
+              user={{
+                id: resolver.id,
+                name: resolver.name,
+                username: resolver.username,
+              }}
+            />
+          </>
+        )}
     </Row>
   )
 }
