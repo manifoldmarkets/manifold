@@ -310,9 +310,6 @@ function UserProfile(props: {
             trackingName={'profile tabs'}
             labelsParentClassName={'gap-0 sm:gap-4'}
             labelClassName={'pb-2 pt-1 sm:pt-4 '}
-            defaultIndex={
-              !isCurrentUser && user.creatorTraders.monthly > 5 ? 1 : 0
-            }
             tabs={[
               {
                 title: 'Portfolio',
