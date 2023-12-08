@@ -1,6 +1,7 @@
 import clsx from 'clsx'
 import { Editor } from '@tiptap/react'
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 
 import { MAX_COMMENT_LENGTH } from 'common/comment'
 import { MIN_BET_AMOUNT_FOR_NEW_MATCH } from 'common/love/constants'
@@ -236,7 +237,12 @@ const BrowseMatchesDialog = (props: {
               content: (
                 <Col>
                   {potentialLovers.length === 0 ? (
-                    <div>No remaining compatible matches.</div>
+                    <Col className="gap-4">
+                      <div>No remaining compatible matches.</div>
+                      <Link href="/referrals">
+                        <Button color="indigo">Refer friends</Button>
+                      </Link>
+                    </Col>
                   ) : (
                     <Row className="mb-2 items-center gap-4">
                       <Button
