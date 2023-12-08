@@ -1,7 +1,7 @@
 import { toLiteMarket } from 'common/api/market-types'
+import { marketCacheStrategy } from 'common/api/schema'
 import { NextApiRequest, NextApiResponse } from 'next'
 import { applyCorsHeaders } from 'web/lib/api/cors'
-import { marketCacheStrategy } from 'web/pages/api/v0/market/[id]'
 import { getGroupMarkets } from 'web/lib/supabase/group'
 
 export default async function handler(

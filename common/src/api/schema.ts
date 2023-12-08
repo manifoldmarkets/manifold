@@ -4,6 +4,7 @@ import {
   createMarketProps,
   resolveMarketProps,
   type LiteMarket,
+  FullMarket,
 } from './market-types'
 import type { Comment, ContractComment } from 'common/comment'
 import type { User } from 'common/user'
@@ -16,6 +17,8 @@ import { CompatibilityScore } from 'common/love/compatibility-score'
 import type { Txn, ManaPayTxn } from 'common/txn'
 import { LiquidityProvision } from 'common/liquidity-provision'
 import { LiteUser } from './user-types'
+
+export const marketCacheStrategy = 's-maxage=15, stale-while-revalidate=45'
 
 type APIGenericSchema = {
   // GET is for retrieval, POST is to mutate something, PUT is idempotent mutation (can be repeated safely)
@@ -141,7 +144,16 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
-
+  market: {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    returns: {} as LiteMarket | FullMarket,
+    cache: marketCacheStrategy,
+    props: z
+      .union([z.object({ id: z.string() }), z.object({ slug: z.string() })])
+      .and(z.object({ lite: z.boolean().optional() })),
+  },
   'create-market': {
     method: 'POST',
     visibility: 'public',
@@ -209,7 +221,7 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'public',
     authed: false,
-    cache: 's-maxage=45, stale-while-revalidate=45',
+    cache: marketCacheStrategy,
     returns: [] as LiteMarket[],
     props: z
       .object({
