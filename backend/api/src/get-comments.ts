@@ -1,6 +1,7 @@
 import { APIError, typedEndpoint } from './helpers'
-import { SupabaseClient, createSupabaseClient } from 'shared/supabase/init'
+import { createSupabaseClient } from 'shared/supabase/init'
 import { getComments as getCommentsSupabase } from 'shared/supabase/contract_comments'
+import { getContractIdFromSlug } from 'shared/supabase/contracts'
 
 export const getComments = typedEndpoint('comments', async (props) => {
   const { userId, limit, page, contractSlug } = props
@@ -12,18 +13,7 @@ export const getComments = typedEndpoint('comments', async (props) => {
   const db = createSupabaseClient()
 
   const contractId =
-    props.contractId ?? (await getContractId(db, contractSlug as string))
+    props.contractId ?? (await getContractIdFromSlug(db, contractSlug))
 
   return getCommentsSupabase(db, { contractId, userId, limit, page })
 })
-
-const getContractId = async (db: SupabaseClient, slug: string) => {
-  const { data, error } = await db
-    .from('contracts')
-    .select('id')
-    .eq('slug', slug)
-    .single()
-
-  if (error) throw new APIError(404, 'Contract not found')
-  return data.id
-}

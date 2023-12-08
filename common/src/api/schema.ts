@@ -8,7 +8,7 @@ import {
 import type { Comment, ContractComment } from 'common/comment'
 import type { User } from 'common/user'
 import { CandidateBet } from 'common/new-bet'
-import { LimitBet } from 'common/bet'
+import type { Bet, LimitBet } from 'common/bet'
 import { contentSchema } from 'common/api/zod-types'
 import { Lover } from 'common/love/lover'
 import { CPMMMultiContract } from 'common/contract'
@@ -104,7 +104,27 @@ export const API = (_apiTypeCheck = {
     authed: true,
     props: z.object({ contractId: z.string(), betId: z.string() }).strict(),
   },
-
+  bets: {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    returns: [] as Bet[],
+    props: z
+      .object({
+        userId: z.string().optional(),
+        username: z.string().optional(),
+        contractId: z.string().optional(),
+        contractSlug: z.string().optional(),
+        // market: z.string().optional(), // deprecated, synonym for `contractSlug`
+        limit: z.coerce.number().gte(0).lte(1000).default(1000),
+        before: z.string().optional(),
+        after: z.string().optional(),
+        kinds: z.string().optional(),
+        order: z.enum(['asc', 'desc']).optional(),
+      })
+      .strict(),
+    // TODO: max-age=15, public'
+  },
   groups: {
     method: 'GET',
     visibility: 'public',

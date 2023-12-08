@@ -1,12 +1,10 @@
 import { db } from './db'
-import { millisToTs, run, selectFrom, selectJson } from 'common/supabase/utils'
-import { Bet, BetFilter } from 'common/bet'
+import { millisToTs, run, selectJson } from 'common/supabase/utils'
 import { Contract } from 'common/contract'
 import { Dictionary, flatMap } from 'lodash'
 import { LimitBet } from 'common/bet'
 import { useCallback, useEffect, useState } from 'react'
 import { getUserContractMetricsWithContracts } from 'common/supabase/contract-metrics'
-import { applyBetsFilter } from 'common/supabase/bets'
 
 export async function getOlderBets(
   contractId: string,
@@ -25,32 +23,6 @@ export async function getOlderBets(
   return data.map((r) => r.data)
 }
 
-export const getBet = async (id: string) => {
-  const q = selectJson(db, 'contract_bets').eq('bet_id', id)
-  const { data } = await run(q)
-  return data.length > 0 ? data[0].data : null
-}
-
-export const getPublicBets = async (options?: BetFilter) => {
-  let q = selectJson(db, 'public_contract_bets')
-  q = q.order('created_time', { ascending: options?.order === 'asc' })
-  q = applyBetsFilter(q, options)
-  const { data } = await run(q)
-  return data.map((r) => r.data)
-}
-
-export const getBetsOnContracts = async (
-  contractIds: string[],
-  options?: BetFilter
-) => {
-  let q = selectJson(db, 'contract_bets')
-  q = q.in('contract_id', contractIds)
-  q = q.order('created_time', { ascending: options?.order === 'asc' })
-  q = applyBetsFilter(q, options)
-  const { data } = await run(q)
-  return data.map((r) => r.data)
-}
-
 export const getUnfilledLimitOrders = async (contractId: string) => {
   const q = selectJson(db, 'contract_bets')
     .eq('contract_id', contractId)
@@ -59,17 +31,6 @@ export const getUnfilledLimitOrders = async (contractId: string) => {
     .order('created_time', { ascending: false })
   const { data } = await run(q)
   return data.map((r) => r.data as LimitBet)
-}
-
-export const getBetFields = async <T extends (keyof Bet)[]>(
-  fields: T,
-  options?: BetFilter
-) => {
-  let q = selectFrom(db, 'contract_bets', ...fields)
-  q = q.order('created_time', { ascending: options?.order === 'asc' })
-  q = applyBetsFilter(q, options)
-  const { data } = await run(q)
-  return data
 }
 
 export const getOpenLimitOrdersWithContracts = async (

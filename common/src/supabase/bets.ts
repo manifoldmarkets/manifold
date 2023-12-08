@@ -14,6 +14,12 @@ export const CONTRACT_BET_FILTER: BetFilter = {
   filterAntes: false,
 }
 
+export async function getBet(db: SupabaseClient, id: string) {
+  const q = selectJson(db, 'contract_bets').eq('bet_id', id).single()
+  const { data } = await run(q)
+  return data.data
+}
+
 export async function getTotalBetCount(contractId: string, db: SupabaseClient) {
   const { count } = await run(
     db
@@ -50,6 +56,17 @@ export async function getBetsOnContracts(
     })
   )
   return rows.flat().map((r) => r.data as Bet)
+}
+
+export const getPublicBets = async (
+  db: SupabaseClient,
+  options?: BetFilter
+) => {
+  let q = selectJson(db, 'public_contract_bets')
+  q = q.order('created_time', { ascending: options?.order === 'asc' })
+  q = applyBetsFilter(q, options)
+  const { data } = await run(q)
+  return data.map((r) => r.data)
 }
 
 export const getBets = async (db: SupabaseClient, options?: BetFilter) => {

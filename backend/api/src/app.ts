@@ -109,7 +109,6 @@ import { editanswercpmm } from 'api/edit-answer'
 import { createlovecompatibilityquestion } from 'api/love/create-love-compatibility-question'
 import { oncreatebet } from 'api/on-create-bet'
 import { getCompatibleLovers } from './love/compatible-lovers'
-
 import { API, type APIPath } from 'common/api/schema'
 import { markets } from 'api/markets'
 import { createchartannotation } from 'api/create-chart-annotation'
@@ -119,6 +118,7 @@ import { hideComment } from './hide-comment'
 import { getManagrams } from './get-managrams'
 import { getGroups } from './get-groups'
 import { getComments } from './get-comments'
+import { getBets } from './get-bets'
 
 const allowCorsUnrestricted: RequestHandler = cors({})
 const allowCorsManifold: RequestHandler = cors({
@@ -171,6 +171,7 @@ const handlers: { [k in APIPath]: RequestHandler } = {
   bet: placeBet,
   'cancel-bet': cancelBet,
   'sell-bet': sellBet,
+  bets: getBets,
   comment: createComment,
   'hide-comment': hideComment,
   comments: getComments,
