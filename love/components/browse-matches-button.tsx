@@ -147,8 +147,12 @@ const BrowseMatchesDialog = (props: {
   const potentialLover = potentialLovers[potentialIndex]
   const compatibility =
     tab === 0
-      ? compatibilityScores[matchedLover.user_id]
-      : compatibilityScores[potentialLover.user_id]
+      ? matchedLover
+        ? compatibilityScores[matchedLover.user_id]
+        : undefined
+      : potentialLover
+      ? compatibilityScores[potentialLover.user_id]
+      : undefined
 
   const user = useUser()
 
@@ -203,16 +207,17 @@ const BrowseMatchesDialog = (props: {
                         </Button>
                       </Row>
                       <Col>
-                        {compatibility.confidence !== 'low' && (
-                          <div>
-                            Compatibility{' '}
-                            <span className="text-primary-600 font-semibold">
-                              {Math.round((compatibility.score ?? 0) * 100) /
-                                10}{' '}
-                              out of 10
-                            </span>
-                          </div>
-                        )}
+                        {compatibility &&
+                          compatibility.confidence !== 'low' && (
+                            <div>
+                              Compatibility{' '}
+                              <span className="text-primary-600 font-semibold">
+                                {Math.round((compatibility.score ?? 0) * 100) /
+                                  10}{' '}
+                                out of 10
+                              </span>
+                            </div>
+                          )}
                         <LoverProfile
                           lover={matchedLover}
                           user={matchedLover.user}
@@ -262,7 +267,7 @@ const BrowseMatchesDialog = (props: {
 
                   {potentialLovers.length > 0 && (
                     <>
-                      {compatibility.confidence !== 'low' && (
+                      {compatibility && compatibility.confidence !== 'low' && (
                         <div>
                           Compatibility{' '}
                           <span className="text-primary-600 font-semibold">
