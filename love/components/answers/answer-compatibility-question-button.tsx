@@ -14,7 +14,6 @@ export function AnswerCompatibilityQuestionButton(props: {
 }) {
   const { user, otherQuestions, refreshCompatibilityAll, fromSignup } = props
   const [open, setOpen] = useState(fromSignup ?? false)
-  console.log('FROM SIGNUP', fromSignup)
   if (!user) return null
   return (
     <>
