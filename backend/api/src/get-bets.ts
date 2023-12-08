@@ -1,6 +1,6 @@
 import { BetFilter } from 'common/bet'
 import { getBets as getBetsSupabase, getPublicBets } from 'common/supabase/bets'
-import { run, type SupabaseClient } from 'common/supabase/utils'
+import { run, tsToMillis, type SupabaseClient } from 'common/supabase/utils'
 import { APIError, typedEndpoint } from './helpers'
 import { createSupabaseClient } from 'shared/supabase/init'
 import { getContractIdFromSlug } from 'shared/supabase/contracts'
@@ -8,9 +8,9 @@ import { getUserIdFromUsername } from 'shared/supabase/users'
 
 async function getBetTime(db: SupabaseClient, id: string) {
   const { data } = await run(
-    db.from('contract_bets').select('created_time').eq('id', id).single()
+    db.from('contract_bets').select('created_time').eq('bet_id', id).single()
   )
-  return parseInt(data.created_time)
+  return tsToMillis(data.created_time)
 }
 
 export const getBets = typedEndpoint('bets', async (props) => {
