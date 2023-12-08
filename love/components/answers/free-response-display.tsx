@@ -11,7 +11,6 @@ import { Row } from 'web/components/layout/row'
 import { Linkify } from 'web/components/widgets/linkify'
 import { IndividualQuestionRow } from '../questions-form'
 import { Subtitle } from '../widgets/lover-subtitle'
-import { AddQuestionButton } from './free-response-add-question'
 import { QuestionWithCountType } from 'love/hooks/use-questions'
 import { TbMessage } from 'react-icons/tb'
 import { OtherLoverAnswers } from './other-lover-answers'
@@ -29,28 +28,24 @@ export function FreeResponseDisplay(props: {
   user: User
   refreshAnswers: () => void
 }) {
-  const {
-    answers,
-    yourQuestions,
-    otherQuestions,
-    isCurrentUser,
-    refreshAnswers,
-    user,
-  } = props
+  const { answers, yourQuestions, isCurrentUser, refreshAnswers, user } = props
 
   const noAnswers = answers.length < 1
 
   if (noAnswers) {
-    if (isCurrentUser) {
-      return (
-        <AddQuestionButton
-          isFirstQuestion={answers.length < 1}
-          questions={otherQuestions}
-          user={user}
-          refreshAnswers={refreshAnswers}
-        />
-      )
-    }
+    // Deprecation plan:
+    // Disable adding new free response questions.
+    //
+    // if (isCurrentUser) {
+    //   return (
+    //     <AddQuestionButton
+    //       isFirstQuestion={answers.length < 1}
+    //       questions={otherQuestions}
+    //       user={user}
+    //       refreshAnswers={refreshAnswers}
+    //     />
+    //   )
+    // }
     return null
   }
 
@@ -76,14 +71,18 @@ export function FreeResponseDisplay(props: {
           )
         })}
       </Col>
-      {isCurrentUser && (
+
+      {/* Deprecation plan:
+       * Disable adding new free response questions
+       */}
+      {/* {isCurrentUser && (
         <AddQuestionButton
           isFirstQuestion={answers.length < 1}
           questions={otherQuestions}
           user={user}
           refreshAnswers={refreshAnswers}
         />
-      )}
+      )} */}
     </Col>
   )
 }
