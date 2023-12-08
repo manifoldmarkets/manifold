@@ -45,10 +45,10 @@ export const getMarketMovementInfo = (
     const longTimeElapsed = feedRowStartTime < dayAgoTime - 7 * DAY_MS
 
     if (canUseContractChange && canUseFeedRowChange) {
-      if (feedRowStartTime > dayAgoTime) {
+      if (feedRowStartTime > Date.now() - 1.5 * DAY_MS) {
         return {
           previousProb: feedRowPreviousProb,
-          startTime: feedRowStartTime - DAY_MS,
+          startTime: feedRowStartTime - 1.01 * DAY_MS,
         }
       } else {
         return {
@@ -64,7 +64,7 @@ export const getMarketMovementInfo = (
     } else if (canUseFeedRowChange) {
       return {
         previousProb: feedRowPreviousProb,
-        startTime: feedRowStartTime - DAY_MS,
+        startTime: feedRowStartTime - 1.01 * DAY_MS,
       }
     } else if (canUseFeedRowCurrentProbChange) {
       return {
