@@ -3,11 +3,10 @@ import clsx from 'clsx'
 import { Contract } from 'common/contract'
 import Image from 'next/image'
 import { useState } from 'react'
-import { Button, buttonClass } from '../buttons/button'
+import { buttonClass } from '../buttons/button'
 import { Modal } from '../layout/modal'
 import { Tooltip } from '../widgets/tooltip'
 import { updateContract } from 'web/lib/firebase/contracts'
-import { dreamDefault } from '../editor/image-modal'
 import { useUser } from 'web/hooks/use-user'
 import { useAdmin } from 'web/hooks/use-admin'
 import toast from 'react-hot-toast'
@@ -85,13 +84,6 @@ const ChangeBannerModal = (props: {
   const { open, setOpen, contract, canEdit } = props
 
   const src = contract.coverImageUrl
-  const [dreaming, setDreaming] = useState(false)
-  async function redream() {
-    setDreaming(true)
-    const url = await dreamDefault(contract.question)
-    await updateContract(contract.id, { coverImageUrl: url })
-    setDreaming(false)
-  }
 
   return (
     <Modal open={open} setOpen={setOpen}>
@@ -107,11 +99,8 @@ const ChangeBannerModal = (props: {
         </div>
 
         {canEdit && (
-          <div className="mb-2 flex justify-end gap-2">
+          <div className="mb-2 flex justify-end">
             <ChangeCoverImageButton contract={contract} />
-            <Button loading={dreaming} onClick={redream}>
-              Redream
-            </Button>
           </div>
         )}
       </div>
