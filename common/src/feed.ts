@@ -63,7 +63,8 @@ export const getRelevanceScore = (
   reasons: FEED_REASON_TYPES[],
   importanceScore: number,
   interestDistance: number,
-  trendingContractType?: 'old' | 'new'
+  trendingContractType?: 'old' | 'new',
+  addRandomnessToGroupScore = false
 ): number => {
   const dataTypeScore =
     trendingContractType === 'old'
@@ -75,7 +76,11 @@ export const getRelevanceScore = (
     dataTypeScore +
     reasonsScore +
     importanceScore * (feedDataType === 'new_comment' ? 0.2 : 0.3) +
-    (1 - interestDistance) * 0.15
+    (1 - interestDistance) * 0.15 +
+    (addRandomnessToGroupScore &&
+    reasons.includes('contract_in_group_you_are_in')
+      ? Math.random() * 0.2
+      : 0)
   )
 }
 

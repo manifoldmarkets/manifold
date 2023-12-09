@@ -242,6 +242,7 @@ export const getUserToReasonsInterestedInContractAndUser = async (
   serverSideCalculation: boolean,
   dataType: FEED_DATA_TYPES,
   trendingContractType?: 'old' | 'new',
+  addRandomnessToGroupScore = false,
   // This can be deleted after removing all users from these groups
   ignoringGroupIds = TOPIC_IDS_YOU_CANT_FOLLOW
 ): Promise<{
@@ -316,7 +317,8 @@ export const getUserToReasonsInterestedInContractAndUser = async (
         reasons,
         importanceScore,
         interestDistance,
-        trendingContractType
+        trendingContractType,
+        addRandomnessToGroupScore
       )
       acc[userId] = {
         reasons,

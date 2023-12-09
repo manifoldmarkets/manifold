@@ -228,7 +228,9 @@ export const addContractToFeed = async (
       pg,
       reasonsToInclude,
       false,
-      dataType
+      dataType,
+      undefined,
+      true
     )
   await bulkInsertDataToUserFeed(
     usersToReasonsInterestedInContract,
