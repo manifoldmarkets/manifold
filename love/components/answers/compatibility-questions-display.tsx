@@ -1,3 +1,4 @@
+import { PencilIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { isAdminId } from 'common/envs/constants'
 import { Row as rowFor } from 'common/supabase/utils'
@@ -5,16 +6,19 @@ import { User } from 'common/user'
 import { lowerCase, partition } from 'lodash'
 import {
   QuestionWithCountType,
+  useCompatibilityQuestionsWithAnswerCount,
   useUserCompatibilityAnswers,
 } from 'love/hooks/use-questions'
 import { useState } from 'react'
 import { FaExclamation } from 'react-icons/fa'
 import { GoDash } from 'react-icons/go'
+import DropdownMenu from 'web/components/comments/dropdown-menu'
 import { Col } from 'web/components/layout/col'
+import { MODAL_CLASS, Modal } from 'web/components/layout/modal'
 import { Row } from 'web/components/layout/row'
 import { Linkify } from 'web/components/widgets/linkify'
+import { Pagination } from 'web/components/widgets/pagination'
 import { Tooltip } from 'web/components/widgets/tooltip'
-import { useUser } from 'web/hooks/use-user'
 import { Subtitle } from '../widgets/lover-subtitle'
 import { AddCompatibilityQuestionButton } from './add-compatibility-question-button'
 import {
@@ -26,11 +30,6 @@ import {
   IMPORTANCE_CHOICES,
   IMPORTANCE_DISPLAY_COLORS,
 } from './answer-compatibility-question-content'
-import DropdownMenu from 'web/components/comments/dropdown-menu'
-import { PencilIcon } from '@heroicons/react/outline'
-import { XIcon } from '@heroicons/react/outline'
-import { MODAL_CLASS, Modal } from 'web/components/layout/modal'
-import { Pagination } from 'web/components/widgets/pagination'
 
 const NUM_QUESTIONS_TO_SHOW = 8
 
@@ -59,12 +58,13 @@ function separateQuestionsArray(
 export function CompatibilityQuestionsDisplay(props: {
   isCurrentUser: boolean
   user: User
-  allQuestions: QuestionWithCountType[]
-  refreshQuestions: () => void
   fromSignup?: boolean
 }) {
-  const { isCurrentUser, user, allQuestions, refreshQuestions, fromSignup } =
-    props
+  const { isCurrentUser, user, fromSignup } = props
+
+  const { refreshCompatibilityQuestions, compatibilityQuestionsWithCount } =
+    useCompatibilityQuestionsWithAnswerCount()
+
   const { refreshCompatibilityAnswers, compatibilityAnswers } =
     useUserCompatibilityAnswers(user.id)
 
@@ -83,14 +83,14 @@ export function CompatibilityQuestionsDisplay(props: {
 
   const { skippedQuestions, answeredQuestions, otherQuestions } =
     separateQuestionsArray(
-      allQuestions,
+      compatibilityQuestionsWithCount,
       skippedAnswerQuestionIds,
       answeredQuestionIds
     )
 
   const refreshCompatibilityAll = () => {
     refreshCompatibilityAnswers()
-    refreshQuestions()
+    refreshCompatibilityQuestions()
   }
 
   const [page, setPage] = useState(0)

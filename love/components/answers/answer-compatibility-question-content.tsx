@@ -11,6 +11,10 @@ import { ExpandingInput } from 'web/components/widgets/expanding-input'
 import { RadioToggleGroup } from 'web/components/widgets/radio-toggle-group'
 import { db } from 'web/lib/supabase/db'
 import { filterKeys } from '../questions-form'
+import { QuestionWithCountType } from 'love/hooks/use-questions'
+import { UserIcon } from '@heroicons/react/solid'
+import { Tooltip } from 'web/components/widgets/tooltip'
+import { shortenNumber } from 'web/lib/util/formatNumber'
 
 export type CompatibilityAnswerSubmitType = Omit<
   rowFor<'love_compatibility_answers'>,
@@ -68,8 +72,10 @@ function getEmptyAnswer(userId: string, questionId: number) {
   }
 }
 export function AnswerCompatibilityQuestionContent(props: {
-  compatibilityQuestion: rowFor<'love_questions'>
+  compatibilityQuestion: QuestionWithCountType
   user: User
+  index?: number
+  total?: number
   answer?: rowFor<'love_compatibility_answers'> | null
   onSubmit: () => void
   onNext?: () => void
@@ -83,6 +89,8 @@ export function AnswerCompatibilityQuestionContent(props: {
     isLastQuestion,
     onNext,
     noSkip,
+    index,
+    total,
   } = props
   const [answer, setAnswer] = useState<CompatibilityAnswerSubmitType>(
     (props.answer as CompatibilityAnswerSubmitType) ??
@@ -121,9 +129,32 @@ export function AnswerCompatibilityQuestionContent(props: {
 
   const importanceValid = answer.importance !== null && answer.importance !== -1
 
+  const shortenedPopularity = compatibilityQuestion.answer_count
+    ? shortenNumber(compatibilityQuestion.answer_count)
+    : null
   return (
     <Col className="h-full w-full gap-4">
-      {compatibilityQuestion.question}
+      <Col className="gap-1">
+        {index && total && (
+          <Row className="text-ink-500 -mt-4 w-full justify-end text-sm">
+            <span>
+              <span className="text-ink-600 font-semibold">{index + 1}</span> /{' '}
+              {total}
+            </span>
+          </Row>
+        )}
+        <div>{compatibilityQuestion.question}</div>
+        {shortenedPopularity && (
+          <Row className="text-ink-500 select-none items-center text-sm">
+            <Tooltip
+              text={`${shortenedPopularity} people have answered this question`}
+            >
+              {shortenedPopularity}
+            </Tooltip>
+            <UserIcon className="h-4 w-4" />
+          </Row>
+        )}
+      </Col>
       <Col
         className={clsx(
           SCROLLABLE_MODAL_CLASS,
@@ -209,7 +240,17 @@ export function AnswerCompatibilityQuestionContent(props: {
           />
         </Col>
       </Col>
-      <Row className="w-full justify-end">
+      <Row className="w-full justify-between">
+        <Button
+          disabled={loading || skipLoading}
+          onClick={() => {
+            onSubmit()
+          }}
+          color={'gray-outline'}
+          className="h-min"
+        >
+          Close
+        </Button>
         <Col className="gap-1">
           <Button
             disabled={

@@ -3,8 +3,9 @@ import { useEffect, useState } from 'react'
 import { Row } from 'common/supabase/utils'
 import {
   getAllQuestions,
+  getCompatibilityQuestionsWithAnswerCount,
+  getFRQuestionsWithAnswerCount,
   getFreeResponseQuestions,
-  getQuestionsWithAnswerCount,
   getUserAnswers,
   getUserCompatibilityAnswers,
 } from 'love/lib/supabase/questions'
@@ -77,24 +78,38 @@ export type QuestionWithCountType = Row<'love_questions'> & {
   answer_count: number
 }
 
-export const useQuestionsWithAnswerCount = () => {
-  const [questionsWithCount, setQuestionsWithCount] =
-    usePersistentInMemoryState<any>([], `questions-with-count`)
+export const useFRQuestionsWithAnswerCount = () => {
+  const [FRquestionsWithCount, setFRQuestionsWithCount] =
+    usePersistentInMemoryState<any>([], `fr-questions-with-count`)
 
   useEffect(() => {
-    getQuestionsWithAnswerCount().then((questions) => {
-      setQuestionsWithCount(questions)
+    getFRQuestionsWithAnswerCount().then((questions) => {
+      setFRQuestionsWithCount(questions)
     })
   }, [])
 
-  async function refreshQuestions() {
-    getQuestionsWithAnswerCount().then((questions) => {
-      setQuestionsWithCount(questions)
+  return FRquestionsWithCount as QuestionWithCountType[]
+}
+
+export const useCompatibilityQuestionsWithAnswerCount = () => {
+  const [compatibilityQuestionsWithCount, setCompatibilityQuestionsWithCount] =
+    usePersistentInMemoryState<any>([], `compatibility-questions-with-count`)
+
+  useEffect(() => {
+    getCompatibilityQuestionsWithAnswerCount().then((questions) => {
+      setCompatibilityQuestionsWithCount(questions)
+    })
+  }, [])
+
+  async function refreshCompatibilityQuestions() {
+    getCompatibilityQuestionsWithAnswerCount().then((questions) => {
+      setCompatibilityQuestionsWithCount(questions)
     })
   }
 
   return {
-    refreshQuestions,
-    questionsWithCount: questionsWithCount as QuestionWithCountType[],
+    refreshCompatibilityQuestions,
+    compatibilityQuestionsWithCount:
+      compatibilityQuestionsWithCount as QuestionWithCountType[],
   }
 }

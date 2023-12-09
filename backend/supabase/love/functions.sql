@@ -1,5 +1,25 @@
+-- create
+-- or replace function get_free_response_questions_with_answer_count () returns setof love_question_with_count_type as $$
+-- BEGIN
+--     RETURN QUERY 
+--     SELECT 
+--         love_questions.*,
+--         COUNT(love_answers.question_id) as answer_count
+--     FROM 
+--         love_questions
+--     LEFT JOIN 
+--         love_answers ON love_questions.id = love_answers.question_id
+--     GROUP BY 
+--         love_questions.id
+--     ORDER BY 
+--         answer_count DESC;
+-- END;
+-- $$ language plpgsql;
+
+
+
 create
-or replace function get_free_response_questions_with_answer_count () returns setof love_question_with_count_type as $$
+or replace function get_fr_questions_with_answer_count () returns setof love_question_with_count_type as $$
 BEGIN
     RETURN QUERY 
     SELECT 
@@ -9,6 +29,27 @@ BEGIN
         love_questions
     LEFT JOIN 
         love_answers ON love_questions.id = love_answers.question_id
+        WHERE love_questions.answer_type='free_response'
+    GROUP BY 
+        love_questions.id
+    ORDER BY 
+        answer_count DESC;
+END;
+$$ language plpgsql;
+
+create
+or replace function get_compatibility_questions_with_answer_count () returns setof love_question_with_count_type as $$
+BEGIN
+    RETURN QUERY 
+    SELECT 
+        love_questions.*,
+        COUNT(love_compatibility_answers.question_id) as answer_count
+    FROM 
+        love_questions
+    LEFT JOIN 
+        love_compatibility_answers ON love_questions.id = love_compatibility_answers.question_id
+        WHERE love_questions.answer_type='compatibility_multiple_choice'
+        AND love_compatibility_answers.importance!= -1
     GROUP BY 
         love_questions.id
     ORDER BY 

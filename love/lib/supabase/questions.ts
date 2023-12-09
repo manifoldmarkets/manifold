@@ -38,9 +38,14 @@ export const getUserCompatibilityAnswers = async (userId: string) => {
   return data
 }
 
-export const getQuestionsWithAnswerCount = async () => {
+export const getFRQuestionsWithAnswerCount = async () => {
+  const { data } = await db.rpc('get_fr_questions_with_answer_count' as any)
+  return data
+}
+
+export const getCompatibilityQuestionsWithAnswerCount = async () => {
   const { data } = await db.rpc(
-    'get_free_response_questions_with_answer_count' as any
+    'get_compatibility_questions_with_answer_count' as any
   )
   return data
 }
