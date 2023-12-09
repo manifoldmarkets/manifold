@@ -10,7 +10,6 @@ import { DEBUG_FEED_CARDS, FeedTimelineItem } from 'web/hooks/use-feed-timeline'
 import { useIsVisible } from 'web/hooks/use-is-visible'
 import { db } from 'web/lib/supabase/db'
 import { ContractsTable } from '../contract/contracts-table'
-import { NewsArticle } from '../news/news-article'
 import { FeedBetsItem } from './feed-bet-item'
 import { FeedCommentItem } from './feed-comment-item'
 import { Contract } from 'common/contract'
@@ -124,33 +123,6 @@ export const FeedTimelineItems = (props: {
               item={item}
               key={item.id}
             />
-          )
-        } else if ('news' in item && item.news) {
-          const { news } = item
-          return (
-            <FeedItemFrame
-              item={item}
-              key={news.id + 'feed-timeline-item'}
-              className="bg-canvas-0 border-canvas-0 w-full overflow-hidden rounded-2xl border drop-shadow-md "
-            >
-              <NewsArticle
-                author={(news as any)?.author}
-                published_time={(news as any)?.published_time}
-                {...news}
-              />
-              {item.contracts && item.contracts.length > 0 && (
-                <Col className="px-2 pb-3 pt-2">
-                  <span className="text-ink-500 text-sm">
-                    Related Questions
-                  </span>
-                  <ContractsTable
-                    contracts={item.contracts}
-                    hideHeader={true}
-                  />
-                </Col>
-              )}
-              <CategoryTags categories={item.groups} className="mx-4 mb-3" />
-            </FeedItemFrame>
           )
         }
       })}
