@@ -1,25 +1,12 @@
 import { NextApiRequest, NextApiResponse } from 'next'
-import { applyCorsHeaders } from 'web/lib/api/cors'
-import { fetchBackend, forwardResponse } from 'web/lib/api/proxy'
+import { nextHandler } from 'web/lib/api/handler'
 
 export const config = { api: { bodyParser: true } }
 
+const tagHandler = nextHandler('update-tag')
+
 export default async function route(req: NextApiRequest, res: NextApiResponse) {
-  await applyCorsHeaders(req, res)
   const { id } = req.query
-  const contractId = id as string
-  if (req.body) req.body.contractId = contractId
-  try {
-    if (!req.body.remove) {
-      const backendRes = await fetchBackend(req, 'addcontracttogroup')
-      await forwardResponse(res, backendRes)
-    }
-    if (req.body.remove) {
-      const backendRes = await fetchBackend(req, 'removecontractfromgroup')
-      await forwardResponse(res, backendRes)
-    }
-  } catch (err) {
-    console.error('Error talking to cloud function: ', err)
-    res.status(500).json({ message: 'Error communicating with backend.' })
-  }
+  if (req.body) req.body.contractId = id
+  await tagHandler(req, res)
 }

@@ -228,6 +228,18 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
+  'update-tag': {
+    method: 'PUT',
+    visibility: 'public',
+    authed: true,
+    props: z
+      .object({
+        contractId: z.string(),
+        groupId: z.string(),
+        remove: z.boolean().default(false),
+      })
+      .strict(),
+  },
   leagues: {
     method: 'GET',
     visibility: 'public',

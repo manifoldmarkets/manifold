@@ -2,7 +2,7 @@ import { CheckCircleIcon, XCircleIcon } from '@heroicons/react/solid'
 import { Contract } from 'common/contract'
 import { Group } from 'common/group'
 import toast from 'react-hot-toast'
-import { addContractToGroup } from 'web/lib/firebase/api'
+import { api } from 'web/lib/firebase/api'
 import { AddMarketToGroupModal } from './add-market-modal'
 import { useUser } from 'web/hooks/use-user'
 import { useGroupFromSlug, useGroupRole } from 'web/hooks/use-group-supabase'
@@ -35,10 +35,9 @@ export function AddContractToGroupModal(props: {
   async function onSubmit(contracts: Contract[]) {
     await Promise.all(
       contracts.map((contract) =>
-        addContractToGroup({
-          groupId: group.id,
-          contractId: contract.id,
-        }).catch((e) => console.log(e))
+        api('update-tag', { groupId: group.id, contractId: contract.id }).catch(
+          (e) => console.log(e)
+        )
       )
     )
       .then(() =>

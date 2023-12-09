@@ -25,7 +25,11 @@ export function appendQuery(url: string, props: Record<string, any>) {
   return `${base}?${params.toString()}`
 }
 
-export async function call(url: string, method: 'POST' | 'GET', params?: any) {
+export async function call(
+  url: string,
+  method: 'POST' | 'PUT' | 'GET',
+  params?: any
+) {
   // const user = auth.currentUser
   // if (user == null) {
   //   throw new Error('Must be signed in to make API calls.')
@@ -35,7 +39,7 @@ export async function call(url: string, method: 'POST' | 'GET', params?: any) {
 
 export async function maybeAuthedCall(
   url: string,
-  method: 'POST' | 'GET',
+  method: 'POST' | 'PUT' | 'GET',
   params?: any
 ) {
   const actualUrl = method === 'POST' ? url : appendQuery(url, params)
@@ -159,20 +163,6 @@ export function updateMemberRole(params: {
   role: string
 }) {
   return call(getApiUrl('updatememberrole'), 'POST', params)
-}
-
-export function addContractToGroup(params: {
-  groupId: string
-  contractId: string
-}) {
-  return call(getApiUrl('addcontracttogroup'), 'POST', params)
-}
-
-export function removeContractFromGroup(params: {
-  groupId: string
-  contractId: string
-}) {
-  return call(getApiUrl('removecontractfromgroup'), 'POST', params)
 }
 
 export function unresolveMarket(params: { contractId: string }) {

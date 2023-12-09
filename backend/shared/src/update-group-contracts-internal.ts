@@ -1,44 +1,30 @@
 import * as admin from 'firebase-admin'
-
 import { Contract } from 'common/contract'
-import { GroupLink } from 'common/group'
-import { createSupabaseClient, SupabaseDirectClient } from './supabase/init'
+import { GroupLink, GroupResponse } from 'common/group'
+import { createSupabaseClient } from './supabase/init'
 import {
   UNRANKED_GROUP_ID,
   UNSUBSIDIZED_GROUP_ID,
 } from 'common/supabase/groups'
 import { recordContractEdit } from 'shared/record-contract-edit'
 import { trackPublicEvent } from 'shared/analytics'
+import { isAdminId, isModId } from 'common/envs/constants'
+import { GroupMember } from 'common/group-member'
 
 const firestore = admin.firestore()
 
 export async function addGroupToContract(
   contract: Contract,
   group: { id: string; slug: string; name: string },
-  pg: SupabaseDirectClient,
-  recordEdit?: { userId: string }
+  userId?: string
 ) {
-  const addedToGroupAlready = await pg.one(
-    `
-    select exists (
-      select 1
-      from group_contracts
-      where group_id = $1
-        and contract_id = $2
-    )
-    `,
-    [group.id, contract.id]
-  )
-  if (!addedToGroupAlready.exists) {
-    await pg.none(
-      `
-     insert into group_contracts (group_id, contract_id)
-     values ($1, $2)
-     on conflict do nothing
-     `,
-      [group.id, contract.id]
-    )
-  }
+  const db = createSupabaseClient()
+
+  // insert into group_contracts table
+  await db
+    .from('group_contracts')
+    .upsert({ group_id: group.id, contract_id: contract.id })
+
   const linkedToGroupAlready = (contract?.groupLinks ?? []).some(
     (g) => g.groupId === group.id
   )
@@ -56,37 +42,31 @@ export async function addGroupToContract(
           name: group.name,
         }),
       })
-  }
 
-  if (group.id === UNRANKED_GROUP_ID) {
-    await firestore.collection('contracts').doc(contract.id).update({
-      isRanked: false,
-    })
-    if (recordEdit) {
-      await recordContractEdit(contract, recordEdit.userId, ['isRanked'])
+    if (group.id === UNRANKED_GROUP_ID) {
+      await firestore.collection('contracts').doc(contract.id).update({
+        isRanked: false,
+      })
+      if (userId) {
+        await recordContractEdit(contract, userId, ['isRanked'])
+      }
+    }
+
+    if (group.id === UNSUBSIDIZED_GROUP_ID) {
+      await firestore.collection('contracts').doc(contract.id).update({
+        isSubsidized: false,
+      })
+      if (userId) {
+        await recordContractEdit(contract, userId, ['isSubsidized'])
+      }
     }
   }
 
-  if (group.id === UNSUBSIDIZED_GROUP_ID) {
-    await firestore.collection('contracts').doc(contract.id).update({
-      isSubsidized: false,
-    })
-    if (recordEdit) {
-      await recordContractEdit(contract, recordEdit.userId, ['isSubsidized'])
-    }
-  }
-
-  await trackPublicEvent(
-    recordEdit?.userId ?? contract.creatorId,
-    'add market to topic',
-    {
-      contractId: contract.id,
-      groupSlug: group.slug,
-      inCreateMarket: !recordEdit,
-    }
-  )
-
-  return !(linkedToGroupAlready && addedToGroupAlready)
+  await trackPublicEvent(userId ?? contract.creatorId, 'add market to topic', {
+    contractId: contract.id,
+    groupSlug: group.slug,
+    inCreateMarket: !userId,
+  })
 }
 
 export async function removeGroupFromContract(
@@ -131,4 +111,30 @@ export async function removeGroupFromContract(
     contractId: contract.id,
     groupSlug: group.slug,
   })
+}
+
+export function canUserAddGroupToMarket(props: {
+  userId: string
+  group: GroupResponse
+  contract?: Contract
+  membership?: GroupMember
+}) {
+  const { userId, group, contract, membership } = props
+
+  const isMarketCreator = !contract || contract.creatorId === userId
+  const isManifoldAdmin = isAdminId(userId)
+  const trustworthy = isModId(userId)
+
+  const isMember = membership != undefined
+  const isAdminOrMod =
+    membership?.role === 'admin' || membership?.role === 'moderator'
+
+  return (
+    isManifoldAdmin ||
+    isAdminOrMod ||
+    trustworthy ||
+    // if user owns the contract and is a public group
+    (group.privacy_status === 'public' && isMarketCreator) ||
+    (group.privacy_status === 'private' && isMarketCreator && isMember)
+  )
 }

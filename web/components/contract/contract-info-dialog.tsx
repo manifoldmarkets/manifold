@@ -16,8 +16,7 @@ import { BlockMarketButton } from 'web/components/buttons/block-market-button'
 import { FollowMarketButton } from 'web/components/buttons/follow-market-button'
 import { useDev } from 'web/hooks/use-admin'
 import {
-  addContractToGroup,
-  removeContractFromGroup,
+  api,
   updateMarket,
   updateUserDisinterestEmbedding,
 } from 'web/lib/firebase/api'
@@ -370,28 +369,21 @@ export const Stats = (props: {
                 on={isPublic && contract.isRanked !== false}
                 setOn={(on) => {
                   toast.promise(
-                    on
-                      ? removeContractFromGroup({
-                          contractId: contract.id,
-                          groupId: UNRANKED_GROUP_ID,
-                        })
-                      : addContractToGroup({
-                          contractId: contract.id,
-                          groupId: UNRANKED_GROUP_ID,
-                        }).catch((e) => {
-                          console.error(e.message)
-                          throw e
-                        }),
+                    api('update-tag', {
+                      contractId: contract.id,
+                      groupId: UNRANKED_GROUP_ID,
+                      remove: on,
+                    }),
                     {
                       loading: `${
                         on ? 'Removing' : 'Adding'
-                      } question to the unranked group...`,
+                      } question to the unranked topic...`,
                       success: `Successfully ${
                         on ? 'removed' : 'added'
-                      } question to the unranked group!`,
+                      } question to the unranked topic!`,
                       error: `Error ${
                         on ? 'removing' : 'adding'
-                      } category. Try again?`,
+                      } topic. Try again?`,
                     }
                   )
                 }}
@@ -414,28 +406,21 @@ export const Stats = (props: {
                 on={isPublic && contract.isSubsidized !== false}
                 setOn={(on) => {
                   toast.promise(
-                    on
-                      ? removeContractFromGroup({
-                          contractId: contract.id,
-                          groupId: UNSUBSIDIZED_GROUP_ID,
-                        })
-                      : addContractToGroup({
-                          contractId: contract.id,
-                          groupId: UNSUBSIDIZED_GROUP_ID,
-                        }).catch((e) => {
-                          console.error(e.message)
-                          throw e
-                        }),
+                    api('update-tag', {
+                      contractId: contract.id,
+                      groupId: UNSUBSIDIZED_GROUP_ID,
+                      remove: on,
+                    }),
                     {
                       loading: `${
                         on ? 'Removing' : 'Adding'
-                      } question to the unsubsidized group...`,
+                      } question to the unsubsidized topic...`,
                       success: `Successfully ${
                         on ? 'removed' : 'added'
-                      } question to the unsubsidized group!`,
+                      } question to the unsubsidized topic!`,
                       error: `Error ${
                         on ? 'removing' : 'adding'
-                      } category. Try again?`,
+                      } topic. Try again?`,
                     }
                   )
                 }}

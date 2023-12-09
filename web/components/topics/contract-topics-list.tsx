@@ -3,10 +3,7 @@ import { Group } from 'common/group'
 import toast from 'react-hot-toast'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
-import {
-  addContractToGroup,
-  removeContractFromGroup,
-} from 'web/lib/firebase/api'
+import { api } from 'web/lib/firebase/api'
 import { TopicSelector } from './topic-selector'
 import { useGroupsWithContract } from 'web/hooks/use-group-supabase'
 import { useState } from 'react'
@@ -44,9 +41,10 @@ export function ContractTopicsList(props: {
                     <button
                       onClick={() => {
                         toast.promise(
-                          removeContractFromGroup({
+                          api('update-tag', {
                             groupId: g.id,
                             contractId: contract.id,
+                            remove: true,
                           }).catch((e) => {
                             console.error(e.message)
                             throw e
@@ -75,7 +73,7 @@ export function ContractTopicsList(props: {
                 ignoreGroupIds={groups.map((g) => g.id)}
                 setSelectedGroup={(group) =>
                   group &&
-                  addContractToGroup({
+                  api('update-tag', {
                     groupId: group.id,
                     contractId: contract.id,
                   }).catch((e) => {

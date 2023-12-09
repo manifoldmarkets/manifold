@@ -28,14 +28,16 @@ import { randomString } from 'common/util/random'
 import { slugify } from 'common/util/slugify'
 import { getCloseDate } from 'shared/helpers/openai-utils'
 import { GCPLog, getUser, htmlToRichText, isProd } from 'shared/utils'
-import { canUserAddGroupToMarket } from './add-contract-to-group'
 import { APIError, AuthedUser, typedEndpoint } from './helpers'
 import { STONK_INITIAL_PROB } from 'common/stonk'
 import {
   createSupabaseClient,
   createSupabaseDirectClient,
 } from 'shared/supabase/init'
-import { addGroupToContract } from 'shared/update-group-contracts-internal'
+import {
+  addGroupToContract,
+  canUserAddGroupToMarket,
+} from 'shared/update-group-contracts-internal'
 import { generateContractEmbeddings } from 'shared/supabase/contracts'
 import { manifoldLoveUserId } from 'common/love/constants'
 import { BTE_USER_ID } from 'common/envs/constants'
@@ -207,7 +209,7 @@ export async function createMarketHelper(
   if (groups) {
     await Promise.all(
       groups.map(async (g) => {
-        await addGroupToContract(contract, g, pg)
+        await addGroupToContract(contract, g)
       })
     )
   }

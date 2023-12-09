@@ -36,7 +36,6 @@ import { validateiap } from './validate-iap'
 import { swapcert } from './swap-cert'
 import { dividendcert } from './dividend-cert'
 import { markallnotifications } from './mark-all-notifications'
-import { addcontracttogroup } from './add-contract-to-group'
 import { updatememberrole } from './update-group-member-role'
 import { removecontractfromgroup } from './remove-contract-from-group'
 import { updategroupprivacy } from './update-group-privacy'
@@ -125,6 +124,7 @@ import { getMarket } from './get-market'
 import { getGroup } from './get-group'
 import { getPositions } from './get-positions'
 import { getLeagues } from './get-leagues'
+import { addOrRemoveGroupFromContract } from './update-tag'
 
 const allowCorsUnrestricted: RequestHandler = cors({})
 const allowCorsManifold: RequestHandler = cors({
@@ -189,6 +189,7 @@ const handlers: { [k in APIPath]: RequestHandler } = {
   'hide-comment': hideComment,
   comments: getComments,
   'create-market': createMarket,
+  'update-tag': addOrRemoveGroupFromContract,
   group: getGroup,
   groups: getGroups,
   market: getMarket,
@@ -228,8 +229,8 @@ Object.entries(handlers).forEach(([path, handler]) => {
     app.post(...apiRoute)
   } else if (api.method === 'GET') {
     app.get(...apiRoute)
-    // } else if (api.method === 'PUT') {
-    //   app.put(...apiRoute)
+  } else if (api.method === 'PUT') {
+    app.put(...apiRoute)
   } else {
     assertUnreachable(api, 'Unsupported API method')
   }
@@ -263,8 +264,8 @@ app.post('/markallnotifications', ...apiRoute(markallnotifications))
 app.post('/updatememberrole', ...apiRoute(updatememberrole))
 app.post('/updategroupprivacy', ...apiRoute(updategroupprivacy))
 app.post('/registerdiscordid', ...apiRoute(registerdiscordid))
-app.post('/addcontracttogroup', ...apiRoute(addcontracttogroup))
-app.post('/removecontractfromgroup', ...apiRoute(removecontractfromgroup))
+app.post('/addcontracttogroup', ...apiRoute(addOrRemoveGroupFromContract)) // TODO: remove after a few days
+app.post('/removecontractfromgroup', ...apiRoute(removecontractfromgroup)) // TODO: remove after a few days
 app.post('/addgroupmember', ...apiRoute(addgroupmember))
 app.post('/getuserisgroupmember', ...apiRoute(getuserisgroupmember))
 app.post('/completequest', ...apiRoute(completequest))
