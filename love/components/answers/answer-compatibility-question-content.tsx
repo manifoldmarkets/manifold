@@ -135,14 +135,17 @@ export function AnswerCompatibilityQuestionContent(props: {
   return (
     <Col className="h-full w-full gap-4">
       <Col className="gap-1">
-        {index && total && (
-          <Row className="text-ink-500 -mt-4 w-full justify-end text-sm">
-            <span>
-              <span className="text-ink-600 font-semibold">{index + 1}</span> /{' '}
-              {total}
-            </span>
-          </Row>
-        )}
+        {index !== null &&
+          index !== undefined &&
+          total !== null &&
+          total !== undefined && (
+            <Row className="text-ink-500 -mt-4 w-full justify-end text-sm">
+              <span>
+                <span className="text-ink-600 font-semibold">{index + 1}</span>{' '}
+                / {total}
+              </span>
+            </Row>
+          )}
         <div>{compatibilityQuestion.question}</div>
         {shortenedPopularity && (
           <Row className="text-ink-500 select-none items-center text-sm">
