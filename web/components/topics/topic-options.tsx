@@ -3,7 +3,11 @@ import { User } from 'common/user'
 import { useState } from 'react'
 import { useGroupRole } from 'web/hooks/use-group-supabase'
 import { buildArray } from 'common/util/array'
-import { DotsVerticalIcon, PencilIcon } from '@heroicons/react/solid'
+import {
+  DotsVerticalIcon,
+  PencilIcon,
+  PlusCircleIcon,
+} from '@heroicons/react/solid'
 import DropdownMenu, {
   DropdownItem,
 } from 'web/components/comments/dropdown-menu'
@@ -18,6 +22,10 @@ import {
 } from 'web/components/topics/add-contract-to-group-modal'
 import { BsFillPersonDashFill } from 'react-icons/bs'
 import { AiFillTrophy } from 'react-icons/ai'
+import { BiSolidVolumeMute } from 'react-icons/bi'
+import { usePrivateUser } from 'web/hooks/use-user'
+import { blockGroup, unBlockGroup } from 'web/components/topics/topic-dropdown'
+import { useIsMobile } from 'web/hooks/use-is-mobile'
 
 export function TopicOptions(props: {
   group: Group
@@ -26,12 +34,20 @@ export function TopicOptions(props: {
   unfollow: () => void
 }) {
   const { group, user, isMember, unfollow } = props
+  const privateUser = usePrivateUser()
   const [editingName, setEditingName] = useState(false)
   const [showAddContract, setShowAddContract] = useState(false)
   const userRole = useGroupRole(group.id, user)
   const isCreator = group.creatorId == user?.id
+  const isMobile = useIsMobile()
 
   const groupOptionItems = buildArray(
+    isMember &&
+      isMobile && {
+        name: 'Add questions',
+        icon: <PlusCircleIcon className="h-5 w-5" />,
+        onClick: () => setShowAddContract(true),
+      },
     {
       name: 'Leaderboards',
       icon: <AiFillTrophy className="h-5 w-5" />,
@@ -47,6 +63,17 @@ export function TopicOptions(props: {
         name: 'Unfollow',
         icon: <BsFillPersonDashFill className="h-5 w-5" />,
         onClick: unfollow,
+      },
+    !isMember &&
+      privateUser && {
+        name: privateUser.blockedGroupSlugs?.includes(group.slug)
+          ? 'Unblock topic'
+          : 'Block topic',
+        icon: <BiSolidVolumeMute className="h-5 w-5" />,
+        onClick: () =>
+          privateUser.blockedGroupSlugs?.includes(group.slug)
+            ? unBlockGroup(privateUser, group.slug)
+            : blockGroup(privateUser, group.slug),
       }
   ) as DropdownItem[]
   return (

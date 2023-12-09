@@ -20,6 +20,8 @@ import { TopicDropdown } from 'web/components/topics/topic-dropdown'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useRouter } from 'next/router'
 import { TOPIC_IDS_YOU_CANT_FOLLOW } from 'common/supabase/groups'
+import { Col } from 'web/components/layout/col'
+import { toast } from 'react-hot-toast'
 
 export const QuestionsTopicTitle = forwardRef(
   (
@@ -44,16 +46,21 @@ export const QuestionsTopicTitle = forwardRef(
     return (
       <Row
         className={
-          'col-span-8 my-1 flex-col gap-1 px-2 sm:mb-3 sm:flex-row sm:items-center xl:col-span-7'
+          'col-span-8 my-1 items-center justify-between gap-1 px-2 sm:mb-3 xl:col-span-7'
         }
         ref={ref}
       >
-        <Row className={'items-center justify-between gap-2'}>
-          <Row className={'mb-1 items-center gap-1'}>
-            <Button size={'sm'} color={'gray-white'} onClick={router.back}>
+        <Col className={'mb-1 truncate'}>
+          <Row className={' items-center gap-1'}>
+            <Button size={'2xs'} color={'gray-white'} onClick={router.back}>
               <ArrowLeftIcon className={'h-5 w-5'} />
             </Button>
-            <span className="text-primary-700 !mb-0 line-clamp-1 text-2xl">
+            <span
+              className="text-primary-700 !mb-0 truncate text-2xl"
+              onClick={() =>
+                currentTopic ? toast(`Questions in ${currentTopic.name}`) : null
+              }
+            >
               {currentTopic?.name ??
                 (topicSlug === 'for-you'
                   ? '⭐️ For you'
@@ -62,88 +69,79 @@ export const QuestionsTopicTitle = forwardRef(
                   : 'Browse')}
             </span>
           </Row>
+        </Col>
+        <Row className="items-center">
+          {currentTopic && (
+            <>
+              <CopyLinkOrShareButton
+                url={`https://${DOMAIN}/browse?${TOPIC_KEY}=${
+                  currentTopic?.slug ?? ''
+                }`}
+                className={'gap-1 whitespace-nowrap'}
+                eventTrackingName={'copy questions page link'}
+                size={isMobile ? 'sm' : 'md'}
+              >
+                Share
+              </CopyLinkOrShareButton>
+              {isFollowing && !isMobile && user ? (
+                <>
+                  <Button
+                    color={'gray-white'}
+                    size={isMobile ? 'sm' : 'md'}
+                    className={'whitespace-nowrap'}
+                    onClick={() => setShowAddContract(true)}
+                  >
+                    <Row>
+                      <PlusCircleIcon className={'mr-1 h-5 w-5'} />
+                      Add questions
+                    </Row>
+                  </Button>
+                  {showAddContract && user && (
+                    <AddContractToGroupModal
+                      group={currentTopic}
+                      open={showAddContract}
+                      setOpen={setShowAddContract}
+                      user={user}
+                    />
+                  )}
+                </>
+              ) : (
+                !isFollowing &&
+                !TOPIC_IDS_YOU_CANT_FOLLOW.includes(currentTopic.id) &&
+                user && (
+                  <Button
+                    color={'gray-white'}
+                    className={'whitespace-nowrap'}
+                    loading={loading}
+                    size={isMobile ? 'sm' : 'md'}
+                    onClick={() => {
+                      setLoading(true)
+                      internalFollowTopic(user, currentTopic).finally(() =>
+                        setLoading(false)
+                      )
+                    }}
+                  >
+                    {!loading && <BookmarkIcon className={'mr-1 h-5 w-5'} />}
+                    Follow
+                  </Button>
+                )
+              )}
+            </>
+          )}
           {currentTopic ? (
             <TopicOptionsButton
               group={currentTopic}
               yourGroupIds={yourGroupIds}
               user={user}
-              className={'sm:hidden'}
             />
           ) : user ? (
             <TopicDropdown
               setCurrentTopic={setTopicSlug}
               user={user}
-              className={'sm:hidden'}
+              className={'md:hidden'}
             />
           ) : null}
         </Row>
-        {currentTopic && (
-          <Row className="items-center">
-            <CopyLinkOrShareButton
-              url={`https://${DOMAIN}/browse?${TOPIC_KEY}=${
-                currentTopic?.slug ?? ''
-              }`}
-              className={'gap-1 whitespace-nowrap'}
-              eventTrackingName={'copy questions page link'}
-              size={isMobile ? 'sm' : 'md'}
-            >
-              Share
-            </CopyLinkOrShareButton>
-            {isFollowing ? (
-              <>
-                <Button
-                  color={'gray-white'}
-                  size={isMobile ? 'sm' : 'md'}
-                  className={'whitespace-nowrap'}
-                  onClick={() => setShowAddContract(true)}
-                >
-                  <PlusCircleIcon className={'mr-1 h-5 w-5'} />
-                  Add questions
-                </Button>
-                {showAddContract && user && (
-                  <AddContractToGroupModal
-                    group={currentTopic}
-                    open={showAddContract}
-                    setOpen={setShowAddContract}
-                    user={user}
-                  />
-                )}
-              </>
-            ) : (
-              !TOPIC_IDS_YOU_CANT_FOLLOW.includes(currentTopic.id) && (
-                <Button
-                  color={'gray-white'}
-                  className={'whitespace-nowrap'}
-                  loading={loading}
-                  size={isMobile ? 'sm' : 'md'}
-                  onClick={() => {
-                    setLoading(true)
-                    internalFollowTopic(user, currentTopic).finally(() =>
-                      setLoading(false)
-                    )
-                  }}
-                >
-                  {!loading && <BookmarkIcon className={'mr-1 h-5 w-5'} />}
-                  Follow
-                </Button>
-              )
-            )}
-          </Row>
-        )}
-        {currentTopic ? (
-          <TopicOptionsButton
-            group={currentTopic}
-            yourGroupIds={yourGroupIds}
-            user={user}
-            className={'hidden sm:block'}
-          />
-        ) : user ? (
-          <TopicDropdown
-            setCurrentTopic={setTopicSlug}
-            user={user}
-            className={'hidden sm:block md:hidden'}
-          />
-        ) : null}
       </Row>
     )
   }
