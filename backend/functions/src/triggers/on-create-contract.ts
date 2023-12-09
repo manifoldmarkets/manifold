@@ -83,8 +83,7 @@ export const onCreateContract = functions
           slug: 'nonpredictive',
           name: 'Unranked',
         },
-        pg,
-        { userId: HOUSE_LIQUIDITY_PROVIDER_ID }
+        HOUSE_LIQUIDITY_PROVIDER_ID
       )
       log('Added contract to unranked group', added)
     }
