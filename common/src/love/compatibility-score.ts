@@ -41,14 +41,13 @@ export const getCompatibilityScore = (
   const downWeight = 10
   const compat1 = (score1 + upWeight) / (maxScore1 + downWeight)
   const compat2 = (score2 + upWeight) / (maxScore2 + downWeight)
-  const rootMeanCompat = Math.sqrt(compat1 * compat2)
+  const geometricMean = Math.sqrt(compat1 * compat2)
 
   const multiplier = getLoversCompatibility(lover1, lover2)
-  const score = multiplier * rootMeanCompat
+  const score = multiplier * geometricMean
 
-  const minMaxScore = Math.min(maxScore1, maxScore2)
   const confidence =
-    minMaxScore < 40 ? 'low' : answerCount < 100 ? 'medium' : 'high'
+    answerCount < 10 ? 'low' : answerCount < 100 ? 'medium' : 'high'
 
   return { score, confidence }
 }

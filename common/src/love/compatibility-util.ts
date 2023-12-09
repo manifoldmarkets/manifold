@@ -59,5 +59,5 @@ export const areWantKidsCompatible = (lover1: LoverRow, lover2: LoverRow) => {
   if (kids1 === undefined || kids2 === undefined) return true
 
   const diff = Math.abs(kids1 - kids2)
-  return diff <= 1
+  return diff <= 2
 }
