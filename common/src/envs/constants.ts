@@ -130,7 +130,7 @@ export const BOT_USERNAMES = [
   'chooterb0t',
   'bonkbot',
   'NermitBundaloy',
-  'FirstBot'
+  'FirstBot',
 ]
 
 export const MOD_IDS = [
