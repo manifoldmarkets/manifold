@@ -26,6 +26,7 @@ export type NewQuestionParams = {
   initValue?: number
   answers?: string[]
   addAnswersMode?: add_answers_mode
+  shouldAnswersSumToOne?: boolean
 }
 
 export type ContractVisibilityType = 'public' | 'unlisted'

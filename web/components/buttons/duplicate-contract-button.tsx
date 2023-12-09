@@ -50,6 +50,11 @@ function duplicateContractHref(contract: Contract) {
     params.answers = contract.answers.map((a) => a.text)
   }
 
+  if (contract.mechanism === 'cpmm-multi-1') {
+    params.addAnswersMode = contract.addAnswersMode
+    params.shouldAnswersSumToOne = contract.shouldAnswersSumToOne
+  }
+
   if (contract.groupLinks && contract.groupLinks.length > 0) {
     params.groupIds = contract.groupLinks.map((gl) => gl.groupId)
   }

@@ -114,9 +114,13 @@ export function ContractParamsForm(props: {
     params?.answers ? params.answers : defaultAnswers,
     'new-answers-with-other' + paramsKey
   )
-  const [addAnswersMode, setAddAnswersMode] =
-    useState<add_answers_mode>('DISABLED')
-  const [shouldAnswersSumToOne, setShouldAnswersSumToOne] = useState(true)
+  const [addAnswersMode, setAddAnswersMode] = useState<add_answers_mode>(
+    params?.addAnswersMode ?? 'DISABLED'
+  )
+  const [shouldAnswersSumToOne, setShouldAnswersSumToOne] = useState(
+    params?.shouldAnswersSumToOne ?? true
+  )
+  // NOTE: if you add another user-controlled state variable here, you should also add it to the duplication parameters
 
   const hasOtherAnswer = addAnswersMode !== 'DISABLED' && shouldAnswersSumToOne
   const numAnswers = hasOtherAnswer ? answers.length + 1 : answers.length
