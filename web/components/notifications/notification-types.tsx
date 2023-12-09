@@ -713,7 +713,7 @@ export function MarketResolvedNotification(props: {
       <>
         <NotificationUserLink
           userId={sourceId}
-          name={resolvedByAdmin ? 'An Admin' : sourceUserName}
+          name={resolvedByAdmin ? 'A mod' : sourceUserName}
           username={sourceUserUsername}
         />{' '}
         cancelled {isChildOfGroup && <span>the question</span>}
@@ -731,7 +731,7 @@ export function MarketResolvedNotification(props: {
       <>
         <NotificationUserLink
           userId={sourceId}
-          name={resolvedByAdmin ? 'An Admin' : sourceUserName}
+          name={resolvedByAdmin ? 'A mod' : sourceUserName}
           username={sourceUserUsername}
         />{' '}
         resolved {isChildOfGroup && <span>the question</span>}
