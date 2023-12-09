@@ -1041,6 +1041,18 @@ Example body
 }
 ```
 
+### `GET /v0/leagues`
+
+Gets a list of league standings for a particular user or season
+
+Parameters
+
+- `userId`: Optional. Returns only leagues for this user.
+- `season`: Optional. Number. Returns only a particular season.
+- `cohort`: Optional. String. The snake-cased quirky name of a league - returns only this particular league
+
+Requires no authorization.
+
 ## Changelog
 
 - 2023-10-27: Update `/search-markets` to allow all the same search options as our search.

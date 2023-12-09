@@ -80,6 +80,7 @@ export const resolveMarketHelper = async (
     resolutionProbability,
     resolutions,
     collectedFees,
+    resolverId: resolver.id,
   })
 
   if (unresolvedContract.mechanism === 'cpmm-multi-1' && answerId) {

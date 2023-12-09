@@ -125,6 +125,7 @@ export const uploadToStorage = async (imgUrl: string, username: string) => {
   const stream = file.createWriteStream({
     metadata: {
       contentType: 'image/jpg',
+      predefinedAcl: 'publicRead',
     },
   })
 
@@ -138,10 +139,6 @@ export const uploadToStorage = async (imgUrl: string, username: string) => {
 
   stream.end(buffer)
 
-  const urls = await file.getSignedUrl({
-    action: 'read',
-    expires: '03-09-2491',
-  })
-
-  return urls[0]
+  const url = await file.publicUrl()
+  return url
 }

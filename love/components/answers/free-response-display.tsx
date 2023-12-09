@@ -48,16 +48,19 @@ export function FreeResponseDisplay(props: {
   const noAnswers = answers.length < 1
 
   if (noAnswers) {
-    if (isCurrentUser) {
-      return (
-        <AddQuestionButton
-          isFirstQuestion={answers.length < 1}
-          questions={otherFRQuestions}
-          user={user}
-          refreshAnswers={refreshAnswers}
-        />
-      )
-    }
+    // Deprecation plan:
+    // Disable adding new free response questions.
+    //
+    // if (isCurrentUser) {
+    //   return (
+    //     <AddQuestionButton
+    //       isFirstQuestion={answers.length < 1}
+    //       questions={otherQuestions}
+    //       user={user}
+    //       refreshAnswers={refreshAnswers}
+    //     />
+    //   )
+    // }
     return null
   }
 
@@ -83,14 +86,18 @@ export function FreeResponseDisplay(props: {
           )
         })}
       </Col>
-      {isCurrentUser && (
+
+      {/* Deprecation plan:
+       * Disable adding new free response questions
+       */}
+      {/* {isCurrentUser && (
         <AddQuestionButton
           isFirstQuestion={answers.length < 1}
           questions={otherFRQuestions}
           user={user}
           refreshAnswers={refreshAnswers}
         />
-      )}
+      )} */}
     </Col>
   )
 }

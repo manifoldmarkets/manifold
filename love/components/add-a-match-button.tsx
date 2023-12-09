@@ -1,6 +1,9 @@
 import clsx from 'clsx'
-import { filterDefined } from 'common/util/array'
+import { Editor } from '@tiptap/react'
 import { useState } from 'react'
+import Link from 'next/link'
+
+import { filterDefined } from 'common/util/array'
 import { Button } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
 import { MODAL_CLASS, Modal } from 'web/components/layout/modal'
@@ -14,7 +17,6 @@ import { createMatch } from 'web/lib/firebase/love/api'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { Lover } from 'common/love/lover'
 import { CommentInputTextArea } from 'web/components/comments/comment-input'
-import { Editor } from '@tiptap/react'
 import { useTextEditor } from 'web/components/widgets/editor'
 import { MAX_COMMENT_LENGTH } from 'common/comment'
 import { MIN_BET_AMOUNT_FOR_NEW_MATCH } from 'common/love/constants'
@@ -162,7 +164,12 @@ const AddMatchDialog = (props: {
 
         <Col className="gap-0">
           {potentialLovers.length === 0 && (
-            <div>No remaining matches of preferred gender.</div>
+            <Col className="gap-4">
+              <div>No remaining compatible matches.</div>
+              <Link href="/referrals">
+                <Button color="indigo">Refer friends</Button>
+              </Link>
+            </Col>
           )}
 
           <Col className="max-h-[300px] overflow-y-auto">

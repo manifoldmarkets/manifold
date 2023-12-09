@@ -30,12 +30,9 @@ export function LocationFilterText(props: {
     )
   }
   return (
-    <span>
+    <span className="font-semibold">
       <span className="hidden sm:inline">
-        <span className={clsx('text-semibold', highlightedClass)}>
-          {radius}
-        </span>{' '}
-        miles
+        <span className={clsx(highlightedClass)}>{radius}</span> miles
       </span>{' '}
       <span className="capitalize sm:normal-case">near</span>{' '}
       <span className={highlightedClass}>

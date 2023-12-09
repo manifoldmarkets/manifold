@@ -17,6 +17,18 @@ const SEASON_END_TIMES = [
   new Date('2023-12-01T14:02:25-08:00'),
 ]
 
+export type League = {
+  season: number
+  division: number
+  cohort: string
+  rank: number
+  createdTime: string
+  manaEarned: number
+  manaEarnedBreakdown: Record<number, number>
+  userId: string
+  rankSnapshot: number
+}
+
 export const getSeasonMonth = (season: number) => {
   return getSeasonDates(season).start.toLocaleString('default', {
     month: 'long',

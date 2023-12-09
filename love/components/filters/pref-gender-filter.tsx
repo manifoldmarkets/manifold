@@ -26,7 +26,7 @@ export function PrefGenderFilterText(props: {
     )
   }
   return (
-    <Row className="items-center gap-0.5">
+    <Row className="items-center gap-0.5 font-semibold">
       <span className="hidden sm:inline">Interested in </span>
       {pref_gender.map((gender) => {
         return (
@@ -34,7 +34,7 @@ export function PrefGenderFilterText(props: {
             key={gender}
             gender={gender}
             className={clsx('h-4 w-4')}
-            hasColor={!!highlightedClass}
+            hasColor
           />
         )
       })}

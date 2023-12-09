@@ -99,7 +99,7 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
   resolutionTime?: number // When the contract creator resolved the market
   resolution?: string
   resolutionProbability?: number
-  sort?: SortType
+  resolverId?: string
 
   closeEmailsSent?: number
 
@@ -319,6 +319,7 @@ export type MultiContract = (
 ) & {
   answers: (DpmAnswer | Answer)[]
   resolutions?: { [outcome: string]: number }
+  sort?: SortType
 }
 
 export type OutcomeType = AnyOutcomeType['outcomeType']

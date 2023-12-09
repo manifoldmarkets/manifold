@@ -542,6 +542,25 @@ const ChoiceOverview = (props: {
     defaultSort,
     'answer-sort' + contract.id
   )
+  const updateSort = async (newSort: MultiSort) => {
+    setSort(newSort)
+    if (
+      newSort !== contract.sort &&
+      currentUserId &&
+      (isModId(currentUserId) ||
+        isAdminId(currentUserId) ||
+        contract.creatorId === currentUserId)
+    ) {
+      await toast.promise(
+        updateMarket({ contractId: contract.id, sort: newSort }),
+        {
+          loading: 'Updating sort order...',
+          success: 'Sort order updated for all users',
+          error: 'Failed to update sort order',
+        }
+      )
+    }
+  }
 
   const [showAll, setShowAll] = useState(
     (addAnswersMode === 'DISABLED' && answers.length <= 10) ||
@@ -576,22 +595,6 @@ const ChoiceOverview = (props: {
       ]),
     [answers, resolutions, shouldAnswersSumToOne, sort]
   )
-
-  useEffect(() => {
-    if (
-      sort !== contract.sort &&
-      currentUserId &&
-      (isModId(currentUserId) ||
-        isAdminId(currentUserId) ||
-        contract.creatorId === currentUserId)
-    ) {
-      toast.promise(updateMarket({ contractId: contract.id, sort }), {
-        loading: 'Updating sort order...',
-        success: 'Sort order updated for all users',
-        error: 'Failed to update sort order',
-      })
-    }
-  }, [sort])
 
   const {
     pointerMode,
@@ -721,7 +724,7 @@ const ChoiceOverview = (props: {
               )
             }
             sort={sort}
-            setSort={setSort}
+            setSort={updateSort}
             query={query}
             setQuery={setQuery}
             setShowAll={setShowAll}

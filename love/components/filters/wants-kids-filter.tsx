@@ -40,7 +40,7 @@ export function wantsKidsDatabaseToWantsKidsFilter(
 
 export const wantsKidsLabels: KidsLabelsMap = {
   no_preference: {
-    name: 'No preference',
+    name: 'Any preference',
     shortName: 'Either',
     icon: <MdOutlineStroller className="h-4 w-4" />,
     strength: -1,
@@ -92,7 +92,12 @@ export function KidsLabel(props: {
   return (
     <Row className="items-center gap-0.5">
       <WantsKidsIcon strength={strength} className={clsx('hidden sm:inline')} />
-      <span className={highlightedClass}>
+      <span
+        className={clsx(
+          strength != wantsKidsLabels.no_preference.strength && 'font-semibold',
+          highlightedClass
+        )}
+      >
         {strength == wantsKidsLabels.no_preference.strength
           ? mobile
             ? wantsKidsLabels.no_preference.shortName

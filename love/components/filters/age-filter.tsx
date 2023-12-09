@@ -32,8 +32,8 @@ export function AgeFilterText(props: {
   }
   if (noMinAge) {
     return (
-      <span>
-        <span className={clsx('text-semibold', highlightedClass)}>
+      <span className="font-semibold">
+        <span className={clsx(highlightedClass)}>
           {'<'}
           {pref_age_max}
         </span>{' '}
@@ -43,8 +43,8 @@ export function AgeFilterText(props: {
   }
   if (noMaxAge) {
     return (
-      <span>
-        <span className={clsx('text-semibold', highlightedClass)}>
+      <span className="font-semibold">
+        <span className={clsx(highlightedClass)}>
           {'>'}
           {pref_age_min}
         </span>{' '}
@@ -53,8 +53,8 @@ export function AgeFilterText(props: {
     )
   }
   return (
-    <span>
-      <span className={clsx('text-semibold', highlightedClass)}>
+    <span className="font-semibold">
+      <span className={clsx(highlightedClass)}>
         {pref_age_min}
         {' - '}
         {pref_age_max}

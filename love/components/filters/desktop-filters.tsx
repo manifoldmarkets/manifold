@@ -49,7 +49,7 @@ export function DesktopFilters(props: {
       <MyMatchesToggle
         setYourFilters={setYourFilters}
         youLover={youLover}
-        isYourFilters={isYourFilters}
+        on={isYourFilters}
         hidden={!youLover}
       />
       <CustomizeableDropdown
@@ -237,7 +237,12 @@ export function DesktopFilters(props: {
         buttonClass={'!text-ink-600 !hover:!text-ink-600'}
         buttonContent={(open: boolean) => (
           <DropdownButton
-            content={<HasKidsLabel has_kids={filters.has_kids ?? -1} />}
+            content={
+              <HasKidsLabel
+                has_kids={filters.has_kids ?? -1}
+                highlightedClass={open ? 'text-primary-500' : ''}
+              />
+            }
             open={open}
           />
         )}
