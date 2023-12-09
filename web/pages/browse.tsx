@@ -54,8 +54,7 @@ export default function BrowsePage() {
 
   const [topicSlug, setTopicSlug] = usePersistentQueryState<string>(
     TOPIC_KEY,
-    DEFAULT_TOPIC,
-    true
+    DEFAULT_TOPIC
   )
   const topicsByImportance = combineGroupsByImportance(
     trendingTopics ?? [],
