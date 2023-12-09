@@ -44,7 +44,6 @@ import {
 } from './contract/contract-table-col-formats'
 import { buildArray } from 'common/util/array'
 import { ContractsTable, LoadingContractRow } from './contract/contracts-table'
-import { useRouter } from 'next/router'
 
 const USERS_PER_PAGE = 100
 const TOPICS_PER_PAGE = 100
