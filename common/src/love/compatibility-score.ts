@@ -61,7 +61,6 @@ const getLoversCompatibility = (lover1: LoverRow, lover2: LoverRow) => {
   multiplier *= areGenderCompatible(lover1, lover2) ? 1 : 0.01
   return multiplier
 }
-
 const getAnswersCompatibility = (
   answers1: rowFor<'love_compatibility_answers'>[],
   answers2: rowFor<'love_compatibility_answers'>[]
@@ -77,10 +76,35 @@ const getAnswersCompatibility = (
     answerCount++
     const importanceScore = importanceToScore[a.importance] ?? 0
     maxScore += importanceScore
-    return a.pref_choices.includes(answer2.multiple_choice)
-      ? importanceScore
-      : 0
+    return getAnswerCompatibility(a, answer2)
   })
 
   return { score, maxScore, answerCount }
+}
+
+export function getAnswerCompatibility(
+  answer1: rowFor<'love_compatibility_answers'> | undefined | null,
+  answer2: rowFor<'love_compatibility_answers'> | undefined | null
+) {
+  if (!answer1 || !answer2 || answer1.importance < 0 || answer2.importance < 0)
+    return 0
+
+  const importanceScore = importanceToScore[answer1.importance] ?? 0
+  return answer1.pref_choices.includes(answer2.multiple_choice)
+    ? importanceScore
+    : 0
+}
+
+export function getMutualAnswerCompatibility(
+  answer1: rowFor<'love_compatibility_answers'>,
+  answer2: rowFor<'love_compatibility_answers'>
+) {
+  if (answer1.importance <= 0 || answer2.importance <= 0) {
+    return 0
+  }
+
+  return (
+    (answer1.pref_choices.includes(answer2.multiple_choice) ? 0.5 : 0) +
+    (answer2.pref_choices.includes(answer1.multiple_choice) ? 0.5 : 0)
+  )
 }

@@ -135,10 +135,10 @@ export function LoverProfile(props: {
   lover: Lover
   user: User
   refreshLover: () => void
-  hideMatches?: boolean
+  fromLoverPage?: Lover
   fromSignup?: boolean
 }) {
-  const { lover, user, refreshLover, hideMatches, fromSignup } = props
+  const { lover, user, refreshLover, fromLoverPage, fromSignup } = props
 
   return (
     <>
@@ -148,7 +148,7 @@ export function LoverProfile(props: {
         user={user}
         lover={lover}
         refreshLover={refreshLover}
-        hideMatches={hideMatches}
+        fromLoverPage={fromLoverPage}
         fromSignup={fromSignup}
       />
     </>
@@ -159,10 +159,10 @@ function LoverContent(props: {
   user: User
   lover: Lover
   refreshLover: () => void
-  hideMatches?: boolean
+  fromLoverPage?: Lover
   fromSignup?: boolean
 }) {
-  const { user, lover, refreshLover, hideMatches, fromSignup } = props
+  const { user, lover, refreshLover, fromLoverPage, fromSignup } = props
   const currentUser = useUser()
   const isCurrentUser = currentUser?.id === user.id
 
@@ -183,7 +183,7 @@ function LoverContent(props: {
   }
   return (
     <>
-      {!hideMatches && lover.looking_for_matches && (
+      {!fromLoverPage && lover.looking_for_matches && (
         <Matches profileLover={lover} profileUserId={user.id} />
       )}
       <LoverAbout lover={lover} />
@@ -196,6 +196,8 @@ function LoverContent(props: {
         isCurrentUser={isCurrentUser}
         user={user}
         fromSignup={fromSignup}
+        fromLoverPage={fromLoverPage}
+        lover={lover}
       />
       <LoverCommentSection
         onUser={user}

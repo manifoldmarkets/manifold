@@ -1,23 +1,3 @@
--- create
--- or replace function get_free_response_questions_with_answer_count () returns setof love_question_with_count_type as $$
--- BEGIN
---     RETURN QUERY 
---     SELECT 
---         love_questions.*,
---         COUNT(love_answers.question_id) as answer_count
---     FROM 
---         love_questions
---     LEFT JOIN 
---         love_answers ON love_questions.id = love_answers.question_id
---     GROUP BY 
---         love_questions.id
---     ORDER BY 
---         answer_count DESC;
--- END;
--- $$ language plpgsql;
-
-
-
 create
 or replace function get_fr_questions_with_answer_count () returns setof love_question_with_count_type as $$
 BEGIN
@@ -59,8 +39,8 @@ $$ language plpgsql;
 
 drop function get_love_question_answers_and_lovers (question_id bigint);
 
-
 drop function get_love_question_answers_and_lovers (p_question_id bigint);
+
 create
 or replace function get_love_question_answers_and_lovers (p_question_id bigint) returns setof other_lover_answers_type as $$
 BEGIN

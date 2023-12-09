@@ -224,7 +224,7 @@ const BrowseMatchesDialog = (props: {
                           lover={matchedLover}
                           user={matchedLover.user}
                           refreshLover={() => window.location.reload()}
-                          hideMatches
+                          fromLoverPage={lover}
                         />
                       </Col>
                     </>
@@ -287,7 +287,7 @@ const BrowseMatchesDialog = (props: {
                         lover={potentialLover}
                         user={potentialLover.user}
                         refreshLover={() => window.location.reload()}
-                        hideMatches
+                        fromLoverPage={lover}
                       />
 
                       <Col key={lover.id} className={clsx('gap-4 px-3 py-2')}>

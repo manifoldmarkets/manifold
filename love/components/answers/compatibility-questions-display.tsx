@@ -1,35 +1,36 @@
 import { PencilIcon } from '@heroicons/react/outline'
-import clsx from 'clsx'
 import { isAdminId } from 'common/envs/constants'
+import { Lover, LoverRow } from 'common/love/lover'
 import { Row as rowFor } from 'common/supabase/utils'
 import { User } from 'common/user'
-import { lowerCase, partition } from 'lodash'
+import { partition } from 'lodash'
+import { useLoverByUserId } from 'love/hooks/use-lover'
 import {
   QuestionWithCountType,
   useCompatibilityQuestionsWithAnswerCount,
   useUserCompatibilityAnswers,
 } from 'love/hooks/use-questions'
 import { useState } from 'react'
-import { FaExclamation } from 'react-icons/fa'
-import { GoDash } from 'react-icons/go'
 import DropdownMenu from 'web/components/comments/dropdown-menu'
 import { Col } from 'web/components/layout/col'
 import { MODAL_CLASS, Modal } from 'web/components/layout/modal'
 import { Row } from 'web/components/layout/row'
 import { Linkify } from 'web/components/widgets/linkify'
 import { Pagination } from 'web/components/widgets/pagination'
-import { Tooltip } from 'web/components/widgets/tooltip'
 import { Subtitle } from '../widgets/lover-subtitle'
 import { AddCompatibilityQuestionButton } from './add-compatibility-question-button'
 import {
   AnswerCompatibilityQuestionButton,
   AnswerSkippedCompatibilityQuestionsButton,
 } from './answer-compatibility-question-button'
+import { AnswerCompatibilityQuestionContent } from './answer-compatibility-question-content'
+import { useEffect } from 'react'
+import { db } from 'web/lib/supabase/db'
+import { useUser } from 'web/hooks/use-user'
 import {
-  AnswerCompatibilityQuestionContent,
-  IMPORTANCE_CHOICES,
-  IMPORTANCE_DISPLAY_COLORS,
-} from './answer-compatibility-question-content'
+  getAnswersCompatibility,
+  getMutualAnswerCompatibility,
+} from 'common/love/compatibility-score'
 
 const NUM_QUESTIONS_TO_SHOW = 8
 
@@ -58,9 +59,11 @@ function separateQuestionsArray(
 export function CompatibilityQuestionsDisplay(props: {
   isCurrentUser: boolean
   user: User
+  lover: Lover
   fromSignup?: boolean
+  fromLoverPage?: Lover
 }) {
-  const { isCurrentUser, user, fromSignup } = props
+  const { isCurrentUser, user, fromSignup, fromLoverPage, lover } = props
 
   const { refreshCompatibilityQuestions, compatibilityQuestionsWithCount } =
     useCompatibilityQuestionsWithAnswerCount()
@@ -137,6 +140,8 @@ export function CompatibilityQuestionsDisplay(props: {
                 user={user}
                 isCurrentUser={isCurrentUser}
                 refreshCompatibilityAll={refreshCompatibilityAll}
+                lover={lover}
+                fromLoverPage={fromLoverPage}
               />
             )
           })}
@@ -176,17 +181,28 @@ function CompatibilityAnswerBlock(props: {
   yourQuestions: QuestionWithCountType[]
   user: User
   isCurrentUser: boolean
+  lover: Lover
   refreshCompatibilityAll: () => void
+  fromLoverPage?: Lover
 }) {
   const {
     answer,
     yourQuestions,
     user,
+    lover,
     isCurrentUser,
     refreshCompatibilityAll,
+    fromLoverPage,
   } = props
   const question = yourQuestions.find((q) => q.id === answer.question_id)
   const [editOpen, setEditOpen] = useState<boolean>(false)
+  const currentUser = useUser()
+  const currentLover = useLoverByUserId(currentUser?.id)
+  const comparedLover = isCurrentUser
+    ? null
+    : !!fromLoverPage
+    ? fromLoverPage
+    : { ...currentLover, user: currentUser }
 
   if (
     !question ||
@@ -209,7 +225,15 @@ function CompatibilityAnswerBlock(props: {
       <Row className="text-ink-600 justify-between gap-1 text-sm">
         {question.question}
         <Row className="gap-2">
-          <ImportanceDisplay importance={answer.importance} user={user} />
+          {comparedLover && (
+            <CompatibilityDisplay
+              question={question}
+              lover1={lover}
+              answer1={answer}
+              lover2={comparedLover as Lover}
+              currentUserIsComparedLover={!fromLoverPage}
+            />
+          )}
           {isCurrentUser && (
             <DropdownMenu
               items={[
@@ -251,41 +275,40 @@ function CompatibilityAnswerBlock(props: {
   )
 }
 
-function ImportanceDisplay(props: { importance: number | null; user: User }) {
-  const { importance, user } = props
+function CompatibilityDisplay(props: {
+  question: QuestionWithCountType
+  lover1: Lover
+  lover2: Lover
+  answer1: rowFor<'love_compatibility_answers'>
+  currentUserIsComparedLover: boolean
+}) {
+  const { question, lover1, lover2, answer1, currentUserIsComparedLover } =
+    props
 
-  if (importance == null) return null
-  const importanceText = getStringKeyFromNumValue(
-    importance,
-    IMPORTANCE_CHOICES
-  )
-  return (
-    <Tooltip
-      text={`Compatibility on this is ${lowerCase(importanceText)} to ${
-        user.name.split(' ')[0]
-      }`}
-    >
-      <Row
-        className={clsx(
-          IMPORTANCE_DISPLAY_COLORS[importance],
-          'text-ink-800 mt-0.5 h-min w-6 select-none rounded-full bg-opacity-50 px-1.5 py-0.5 text-xs sm:w-fit'
-        )}
-      >
-        <div className="hidden sm:inline">{importanceText}</div>
-        <div className="mx-auto sm:hidden">
-          {importance == 0 ? (
-            <GoDash className="h-[12px] w-[12px]" />
-          ) : (
-            <Row className="gap-0.5">
-              {Array.from({ length: importance }, (_, index) => (
-                <FaExclamation className="h-[12px] w-[3px]" key={index} /> // Replace YourComponent with the actual component you want to repeat
-              ))}
-            </Row>
-          )}
-        </div>
-      </Row>
-    </Tooltip>
-  )
+  const [answer2, setAnswer2] = useState<
+    rowFor<'love_compatibility_answers'> | null | undefined
+  >(undefined)
+
+  useEffect(() => {
+    db.from('love_compatibility_answers')
+      .select()
+      .eq('creator_id', lover2.user_id)
+      .eq('question_id', question.id)
+      .then((res) => {
+        if (res.error) {
+          console.error(res.error)
+          return
+        }
+        setAnswer2(res.data[0] ?? null)
+      })
+  }, [])
+
+  if (lover1.id === lover2.id) return null
+  if ((!answer2 || answer2.importance == -1) && currentUserIsComparedLover)
+    return <button className="text-xs">Answer</button>
+
+  const answerCompatibility = getMutualAnswerCompatibility(answer1, answer2)
+  return <button className="text-xs">{answerCompatibility * 100}% match</button>
 }
 
 function getStringKeyFromNumValue(
