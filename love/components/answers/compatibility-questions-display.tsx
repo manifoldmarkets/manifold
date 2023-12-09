@@ -150,7 +150,7 @@ export function CompatibilityQuestionsDisplay(props: {
           fromSignup={fromSignup}
         />
       )}
-      {skippedQuestions.length > 0 && (
+      {skippedQuestions.length > 0 && isCurrentUser && (
         <Row className="w-full justify-end">
           <AnswerSkippedCompatibilityQuestionsButton
             user={user}
