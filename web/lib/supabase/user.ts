@@ -1,6 +1,7 @@
 import { run } from 'common/supabase/utils'
 import { User } from 'common/user'
 import { db } from './db'
+import { DAY_MS, WEEK_MS } from 'common/util/time'
 
 export async function getUser(userId: string) {
   const { data: user } = await run(
@@ -34,4 +35,16 @@ export async function getUserInterestTopics(userId: string) {
   } else {
     return []
   }
+}
+export async function getRecentlyActiveUsers(limit: number) {
+  const { data } = await run(
+    db
+      .from('users')
+      .select('data')
+      .gt('data->>lastBetTime', Date.now() - DAY_MS)
+      .lt('data->>createdTime', Date.now() - WEEK_MS)
+      .limit(limit)
+  )
+  console.log('getRecentlyActiveUsers', data)
+  return data.map((d) => d.data as User)
 }

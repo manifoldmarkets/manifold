@@ -21,6 +21,7 @@ import {
   DAYS_TO_USE_FREE_QUESTIONS,
   freeQuestionRemaining,
   PrivateUser,
+  User,
 } from 'common/user'
 import { CreateQuestionButton } from 'web/components/buttons/create-question-button'
 import { shortenedFromNow } from 'web/lib/util/shortenedFromNow'
@@ -48,7 +49,9 @@ export function FeedTimeline() {
           <CreateQuestionButton className={'max-w-[10rem]'} />
         </Row>
       )}
-      {privateUser && <FeedTimelineContent privateUser={privateUser} />}
+      {privateUser && (
+        <FeedTimelineContent user={user} privateUser={privateUser} />
+      )}
       <button
         type="button"
         className={clsx(
@@ -66,9 +69,11 @@ export function FeedTimeline() {
     </Col>
   )
 }
-function FeedTimelineContent(props: { privateUser: PrivateUser }) {
-  const user = useUser()
-  const { privateUser } = props
+export function FeedTimelineContent(props: {
+  privateUser: PrivateUser
+  user: User | undefined | null
+}) {
+  const { privateUser, user } = props
   const {
     boosts,
     checkForNewer,
