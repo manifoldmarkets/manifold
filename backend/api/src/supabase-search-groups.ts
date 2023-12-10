@@ -57,13 +57,13 @@ function getSearchGroupSQL(props: {
     from('groups'),
     where(
       `privacy_status != 'private' or is_group_member(id, $1) or is_admin($1)`,
-      uid
+      [uid]
     ),
 
     addingToContract &&
       where(
         `privacy_status != 'curated' or has_moderator_or_above_role(id, $1)`,
-        uid
+        [uid]
       ),
 
     term
