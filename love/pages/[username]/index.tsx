@@ -135,20 +135,20 @@ export function LoverProfile(props: {
   lover: Lover
   user: User
   refreshLover: () => void
-  hideMatches?: boolean
+  simpleView?: boolean
   fromSignup?: boolean
 }) {
-  const { lover, user, refreshLover, hideMatches, fromSignup } = props
+  const { lover, user, refreshLover, simpleView, fromSignup } = props
 
   return (
     <>
       {lover.photo_urls && <ProfileCarousel lover={lover} />}
-      <LoverProfileHeader user={user} lover={lover} />
+      <LoverProfileHeader user={user} lover={lover} simpleView={simpleView} />
       <LoverContent
         user={user}
         lover={lover}
         refreshLover={refreshLover}
-        hideMatches={hideMatches}
+        simpleView={simpleView}
         fromSignup={fromSignup}
       />
     </>
@@ -159,10 +159,10 @@ function LoverContent(props: {
   user: User
   lover: Lover
   refreshLover: () => void
-  hideMatches?: boolean
+  simpleView?: boolean
   fromSignup?: boolean
 }) {
-  const { user, lover, refreshLover, hideMatches, fromSignup } = props
+  const { user, lover, refreshLover, simpleView, fromSignup } = props
   const currentUser = useUser()
   const isCurrentUser = currentUser?.id === user.id
 
@@ -183,8 +183,12 @@ function LoverContent(props: {
   }
   return (
     <>
-      {!hideMatches && lover.looking_for_matches && (
-        <Matches profileLover={lover} profileUserId={user.id} />
+      {!simpleView && lover.looking_for_matches && (
+        <Matches
+          key={user.id}
+          profileLover={lover}
+          profileUserId={user.id}
+        />
       )}
       <LoverAbout lover={lover} />
       <LoverBio
@@ -201,6 +205,7 @@ function LoverContent(props: {
         onUser={user}
         lover={lover}
         currentUser={currentUser}
+        simpleView={simpleView}
       />
     </>
   )

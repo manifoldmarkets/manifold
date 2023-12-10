@@ -2,6 +2,7 @@ import { PencilIcon } from '@heroicons/react/outline'
 import { DotsHorizontalIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import Router from 'next/router'
+import Link from 'next/link'
 
 import { User } from 'common/user'
 import { Button } from 'web/components/buttons/button'
@@ -17,12 +18,14 @@ import { deleteLover } from 'love/lib/supabase/lovers'
 import { ShareProfileButton } from './widgets/share-profile-button'
 import { Lover } from 'common/love/lover'
 import { useUser } from 'web/hooks/use-user'
+import { linkClass } from 'web/components/widgets/site-link'
 
 export default function LoverProfileHeader(props: {
   user: User
   lover: Lover
+  simpleView?: boolean
 }) {
-  const { user, lover } = props
+  const { user, lover, simpleView } = props
   const currentUser = useUser()
   const isCurrentUser = currentUser?.id === user.id
 
@@ -33,7 +36,14 @@ export default function LoverProfileHeader(props: {
           <Row className="items-center gap-1 text-xl">
             <OnlineIcon last_online_time={lover.last_online_time} />
             <span>
-              <span className="font-semibold">{user.name}</span>, {lover.age}
+              {simpleView ? (
+                <Link className={linkClass} href={`/${user.username}`}>
+                  <span className="font-semibold">{user.name}</span>
+                </Link>
+              ) : (
+                <span className="font-semibold">{user.name}</span>
+              )}
+              , {lover.age}
             </span>
           </Row>
           <LoverPrimaryInfo lover={lover} />
