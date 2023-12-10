@@ -280,7 +280,7 @@ export function SupabaseSearch(props: {
     if (isReady) {
       queryContracts(true)
     }
-  }, [query, topicSlug, sort, filter, contractType])
+  }, [query, topicSlug, sort, filter, contractType, isReady])
 
   const searchCountRef = useRef(0)
   useEffect(() => {
