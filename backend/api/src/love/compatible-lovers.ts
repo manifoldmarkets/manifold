@@ -41,10 +41,13 @@ export const getCompatibleLovers = typedEndpoint(
 
     const radiusKm = 50
 
-    const [matchedLovers, allCompatibleLovers] = await Promise.all([
+    const [matchedLoversPrefiltered, allCompatibleLovers] = await Promise.all([
       getLovers(matchedUserIds),
       getCompatible(lover, radiusKm),
     ])
+    const matchedLovers = matchedLoversPrefiltered.filter(
+      (l) => !l.user.isBannedFromPosting
+    )
 
     const matchesSet = new Set([
       ...loverContracts.map((contract) => contract.loverUserId1),
@@ -96,12 +99,18 @@ export const getCompatibleLovers = typedEndpoint(
 
     log('got lover compatibility scores', loverCompatibilityScores)
 
+    const filteredLoverContracts = loverContracts.filter((c) =>
+      matchedLovers.some(
+        (l) => l.user_id === c.loverUserId1 || l.user_id === c.loverUserId2
+      )
+    )
     const sortedLoverContracts = sortBy(
-      loverContracts,
+      filteredLoverContracts,
       (c) => -1 * c.answers.filter((ans) => ans.resolution).length,
       (c) => {
         const resolvedCount = c.answers.filter((ans) => ans.resolution).length
-        return -1 * c.answers[resolvedCount].prob
+        const index = Math.min(resolvedCount, c.answers.length - 1)
+        return -1 * c.answers[index].prob
       }
     )
 

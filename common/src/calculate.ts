@@ -277,7 +277,7 @@ function getCpmmInvested(yourBets: Bet[]) {
     const spent = totalSpent[outcome] ?? 0
     const position = totalShares[outcome] ?? 0
 
-    if (amount > 0) {
+    if (amount >= 0) {
       totalShares[outcome] = position + shares
       totalSpent[outcome] = spent + amount
     } else if (amount < 0) {

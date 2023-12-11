@@ -162,7 +162,7 @@ export function FeedTimelineContent(props: {
       <FeedTimelineItems
         boosts={boosts}
         user={user}
-        feedTimelineItems={uniqBy(savedFeedItems, (i) => i.newsId ?? i.id)}
+        feedTimelineItems={uniqBy(savedFeedItems, (i) => i.id)}
       />
       <div className="relative">
         <VisibilityObserver

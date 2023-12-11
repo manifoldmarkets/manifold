@@ -223,7 +223,7 @@ export const getDataAndPayoutInfo = async (
     bets = await pg.map(
       `select * from contract_bets
       where contract_id = $1
-      and shares != 0
+      and (shares != 0 or (data->>'loanAmount')::numeric != 0)
       `,
       [contractId],
       (row) => row.data

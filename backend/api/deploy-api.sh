@@ -52,7 +52,7 @@ echo "Creating new instance template ${TEMPLATE_NAME} using Docker image https:/
 gcloud compute instance-templates create-with-container ${TEMPLATE_NAME} \
        --project ${GCLOUD_PROJECT} \
        --container-image ${IMAGE_URL} \
-       --machine-type n2-standard-4 \
+       --machine-type n2-standard-8 \
        --container-env ENVIRONMENT=${ENVIRONMENT},GOOGLE_CLOUD_PROJECT=${GCLOUD_PROJECT} \
        --no-user-output-enabled \
        --scopes default,cloud-platform

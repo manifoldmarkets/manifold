@@ -8,9 +8,7 @@ import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
 import { convertSQLtoTS, Row, run, tsToMillis } from 'common/supabase/utils'
 import { db } from 'web/lib/supabase/db'
 import {
-  countBy,
   difference,
-  first,
   groupBy,
   intersection,
   minBy,
@@ -20,7 +18,6 @@ import {
   uniq,
   uniqBy,
 } from 'lodash'
-import { News } from 'common/news'
 import {
   BASE_FEED_DATA_TYPE_SCORES,
   CreatorDetails,
@@ -61,7 +58,6 @@ export type FeedTimelineItem = {
   relevanceScore: number
   contractId: string | null
   commentId: string | null
-  newsId: string | null
   betData: PositionChangeData | null
   answerIds: string[] | null
   creatorId: string | null
@@ -74,7 +70,6 @@ export type FeedTimelineItem = {
   contracts?: Contract[]
   comments?: ContractComment[]
   groups?: Group[]
-  news?: News
   answers?: Answer[]
   reasonDescription?: string
   isCopied?: boolean
@@ -105,9 +100,9 @@ const baseQuery = (
       `(${privateUser.blockedUserIds.concat(privateUser.blockedByUserIds)})`
     )
     .not('contract_id', 'in', `(${privateUser.blockedContractIds})`)
-    // One comment per contract or news items with contracts we already have on the feed are okay
+    // One comment per contract we already have on the feed are okay
     .or(
-      `and(data_type.eq.new_comment,contract_id.not.in.(${ignoreContractIdsWithComments})), data_type.eq.news_with_related_contracts, contract_id.not.in.(${ignoreContractIds})`
+      `and(data_type.eq.new_comment,contract_id.not.in.(${ignoreContractIdsWithComments})), contract_id.not.in.(${ignoreContractIds})`
     )
     .order('relevance_score', { ascending: false })
     .limit(limit)
@@ -204,18 +199,14 @@ export const useFeedTimeline = (
       newCommentIds,
       newCommentIdsFromFollowed,
       potentiallySeenCommentIds,
-      newsIds,
-      groupIds,
       answerIds,
       userIds,
-    } = getNewContentIds(newFeedRows, savedFeedItems, followedIds)
+    } = getNewContentIds(newFeedRows, followedIds)
 
     const [
       likedUnhiddenComments,
       commentsFromFollowed,
       openListedContracts,
-      news,
-      groups,
       uninterestingContractIds,
       seenCommentIds,
       answers,
@@ -244,30 +235,6 @@ export const useFeedTimeline = (
         .is('resolution_time', null)
         .or(`close_time.gt.${new Date().toISOString()},close_time.is.null`)
         .then((res) => res.data?.map(convertContract)),
-      db
-        .from('news')
-        .select('*')
-        .in('id', newsIds)
-        .then((res) =>
-          res.data?.map(
-            (news) =>
-              ({
-                ...news,
-                id: news.id.toString(),
-                urlToImage: news.image_url,
-              } as News)
-          )
-        ),
-      db
-        .from('groups')
-        .select('data, id')
-        .in('id', groupIds)
-        .then((res) =>
-          res.data?.map((r) => {
-            const data = r.data as Group
-            return { ...data, id: r.id } as Group
-          })
-        ),
       db
         .from('user_disinterests')
         .select('contract_id')
@@ -360,13 +327,10 @@ export const useFeedTimeline = (
 
     setSeenFeedItems(contractFeedIdsToIgnore.concat(commentFeedIdsToIgnore))
 
-    // It's possible we're missing contracts for news items bc of the duplicate filter
     const timelineItems = createFeedTimelineItems(
       newFeedRows,
       freshAndInterestingContracts,
       unseenUnhiddenLikedOrFollowedComments,
-      news,
-      groups,
       answers,
       users
     )
@@ -455,85 +419,54 @@ function createFeedTimelineItems(
   data: Row<'user_feed'>[],
   contracts: Contract[] | undefined,
   allComments: ContractComment[] | undefined,
-  news: News[] | undefined,
-  groups: Group[] | undefined,
   allAnswers: Answer[] | undefined,
   creators: CreatorDetails[] | undefined
 ): FeedTimelineItem[] {
-  const newsData = Object.entries(
-    groupBy(
-      data.filter((d) => d.news_id),
-      (item) => item.news_id
-    )
-  ).map(([newsId, newsItems]) => {
-    const relevantContracts = contracts?.filter((contract) =>
-      newsItems.map((i) => i.contract_id).includes(contract.id)
-    )
-    const relevantGroups = orderBy(
-      groups?.filter((group) =>
-        newsItems.map((i) => i.group_id).includes(group.id)
-      ),
-      (g) => -g.importanceScore
-    ).slice(0, 5)
+  const timelineItems = uniqBy(
+    data.map((item) => {
+      const contract = contracts?.find(
+        (contract) => contract.id === item.contract_id
+      )
+      // We may not find a relevant contract if they've already seen the same contract in their feed
+      if (
+        !contract ||
+        (item.data_type === 'contract_probability_changed' &&
+          getMarketMovementInfo(contract, getBaseTimelineItem(item)).ignore)
+      )
+        return
 
-    return {
-      ...getBaseTimelineItem(newsItems[0]),
-      newsId,
-      avatarUrl: relevantContracts?.[0]?.creatorAvatarUrl,
-      contracts: relevantContracts,
-      groups: relevantGroups,
-      news: news?.find((news) => news.id === newsId),
-    } as FeedTimelineItem
-  })
-  // TODO: The uniqBy will coalesce contract-based feed timeline elements non-deterministically
-  const nonNewsTimelineItems = uniqBy(
-    data
-      .filter((d) => !d.news_id && d.contract_id)
-      .map((item) => {
-        const contract = contracts?.find(
-          (contract) => contract.id === item.contract_id
+      // Let's stick with one comment per feed item for now
+      const comments = allComments
+        ?.filter((comment) => comment.id === item.comment_id)
+        .filter(
+          (ct) =>
+            !ct.content?.content?.some((c) =>
+              IGNORE_COMMENT_FEED_CONTENT.includes(c.type ?? '')
+            )
         )
-        // We may not find a relevant contract if they've already seen the same contract in their feed
-        if (
-          !contract ||
-          getMarketMovementInfo(contract, getBaseTimelineItem(item)).ignore
-        )
-          return
+      if (item.comment_id && !comments?.length) return
+      const creatorDetails = creators?.find((u) => u.id === item.creator_id)
+      const answers = allAnswers?.filter((a) => item.answer_ids?.includes(a.id))
 
-        // Let's stick with one comment per feed item for now
-        const comments = allComments
-          ?.filter((comment) => comment.id === item.comment_id)
-          .filter(
-            (ct) =>
-              !ct.content?.content?.some((c) =>
-                IGNORE_COMMENT_FEED_CONTENT.includes(c.type ?? '')
-              )
-          )
-        if (item.comment_id && !comments?.length) return
-        const creatorDetails = creators?.find((u) => u.id === item.creator_id)
-        const answers = allAnswers?.filter((a) =>
-          item.answer_ids?.includes(a.id)
-        )
-
-        return {
-          ...getBaseTimelineItem(item),
-          avatarUrl: item.comment_id
-            ? comments?.[0]?.userAvatarUrl
-            : contract?.creatorAvatarUrl,
-          contract,
-          comments,
-          answers,
-          creatorDetails,
-        } as FeedTimelineItem
-      }),
+      return {
+        ...getBaseTimelineItem(item),
+        avatarUrl: item.comment_id
+          ? comments?.[0]?.userAvatarUrl
+          : contract?.creatorAvatarUrl,
+        contract,
+        comments,
+        answers,
+        creatorDetails,
+      } as FeedTimelineItem
+    }),
     'contractId'
   )
 
   const groupedItems = groupItemsBySimilarQuestions(
-    filterDefined(nonNewsTimelineItems)
+    filterDefined(timelineItems)
   )
 
-  return sortBy([...newsData, ...groupedItems], (i) => -i.relevanceScore)
+  return sortBy(groupedItems, (i) => -i.relevanceScore)
 }
 
 const groupItemsBySimilarQuestions = (items: FeedTimelineItem[]) => {
@@ -547,7 +480,6 @@ const groupItemsBySimilarQuestions = (items: FeedTimelineItem[]) => {
 
   const soloDataTypes: FEED_DATA_TYPES[] = [
     'contract_probability_changed',
-    'news_with_related_contracts',
     'new_comment',
     'user_position_changed',
   ]
@@ -609,42 +541,12 @@ const groupItemsBySimilarQuestions = (items: FeedTimelineItem[]) => {
   return groupedItems
 }
 
-const getNewContentIds = (
-  data: Row<'user_feed'>[],
-  savedFeedItems: FeedTimelineItem[] | undefined,
-  followedIds?: string[]
-) => {
-  const alreadySavedNewsIds = filterDefined(
-    savedFeedItems?.map((item) => item.newsId) ?? []
-  )
-  const newsIds = filterDefined(
-    data
-      .filter(
-        (item) =>
-          item.news_id &&
-          item.contract_id &&
-          !alreadySavedNewsIds.includes(item.news_id)
-      )
-      .map((item) => item.news_id)
-  )
-  const rowsByNewsIdCount = countBy(newsIds)
-  const mostImportantNewsId = first(
-    sortBy(
-      Object.keys(rowsByNewsIdCount),
-      (newsId) => -rowsByNewsIdCount[newsId]
-    )
-  )
-  const shouldGetNewsRelatedItem = (item: Row<'user_feed'>) =>
-    item.news_id ? item.news_id === mostImportantNewsId : true
-
+const getNewContentIds = (data: Row<'user_feed'>[], followedIds?: string[]) => {
   const contractIdsByCreatorId = groupBy(data, (item) => item.creator_id)
   const newContractIds = filterDefined(
     Object.values(contractIdsByCreatorId)
       .map((items) =>
-        items
-          .filter((item) => item.contract_id && shouldGetNewsRelatedItem(item))
-          .slice(0, MAX_ITEMS_PER_CREATOR)
-          .map((item) => item.contract_id)
+        items.slice(0, MAX_ITEMS_PER_CREATOR).map((item) => item.contract_id)
       )
       .flat()
   )
@@ -658,14 +560,6 @@ const getNewContentIds = (
       newCommentIdsFromFollowed.includes(item.comment_id ?? '_')
         ? null
         : item.comment_id
-    )
-  )
-
-  const groupIds = uniq(
-    filterDefined(
-      data
-        .filter((item) => item.group_id && shouldGetNewsRelatedItem(item))
-        .map((item) => item.group_id)
     )
   )
 
@@ -686,8 +580,6 @@ const getNewContentIds = (
     newCommentIds,
     newCommentIdsFromFollowed,
     potentiallySeenCommentIds,
-    newsIds: filterDefined([mostImportantNewsId]),
-    groupIds,
     answerIds,
     userIds,
   }

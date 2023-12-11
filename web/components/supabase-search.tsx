@@ -208,7 +208,7 @@ export function SupabaseSearch(props: {
     hideSearchTypes,
   } = props
 
-  const [searchParams, setSearchParams] = useSearchQueryState({
+  const [searchParams, setSearchParams, isReady] = useSearchQueryState({
     defaultSort,
     defaultFilter,
     defaultContractType,
@@ -219,11 +219,7 @@ export function SupabaseSearch(props: {
   const followingUsers = useFollowedUsersOnLoad(user?.id)
   const follwingTopics = useRealtimeMemberGroupIds(user?.id)
 
-  const [lastQuery, setLastQuery] = usePersistentInMemoryState(
-    '',
-    `${persistPrefix}-last-search`
-  )
-  const query = searchParams[QUERY_KEY] ?? ''
+  const query = searchParams[QUERY_KEY]
   const searchType = searchParams[SEARCH_TYPE_KEY]
   const topicSlug = searchParams[TOPIC_KEY]
   const sort = searchParams[SORT_KEY]
@@ -248,18 +244,16 @@ export function SupabaseSearch(props: {
   )
 
   const { contracts, loading, queryContracts, shouldLoadMore } =
-    useContractSearch(
-      persistPrefix,
-      setLastQuery,
-      searchParams,
-      additionalFilter,
-      isWholePage
-    )
+    useContractSearch(persistPrefix, searchParams, additionalFilter)
+
+  const onChange = (changes: Partial<SearchParams>) => {
+    setSearchParams(changes)
+    if (isWholePage) window.scrollTo(0, 0)
+  }
 
   const pillOptions: SearchType[] = ['Questions', 'Users', 'Topics']
-  const setQuery = (query: string) => setSearchParams({ [QUERY_KEY]: query })
-  const setSearchType = (t: SearchType) =>
-    setSearchParams({ [SEARCH_TYPE_KEY]: t })
+  const setQuery = (query: string) => onChange({ [QUERY_KEY]: query })
+  const setSearchType = (t: SearchType) => onChange({ [SEARCH_TYPE_KEY]: t })
 
   const showSearchTypes =
     !hideSearchTypes &&
@@ -282,20 +276,22 @@ export function SupabaseSearch(props: {
     })
   )
 
+  useEffect(() => {
+    if (isReady) {
+      queryContracts(true)
+    }
+  }, [query, topicSlug, sort, filter, contractType, isReady])
+
   const searchCountRef = useRef(0)
   useEffect(() => {
-    queryContracts(true)
     const searchCount = ++searchCountRef.current
-    if (query !== lastQuery) {
-      queryUsers(query).then((results) => {
-        if (searchCount === searchCountRef.current)
-          setQueriedUserResults(results)
-      })
-      queryTopics(query).then((results) => {
-        if (searchCount === searchCountRef.current) setTopicResults?.(results)
-      })
-    }
-  }, [query, topicSlug, sort, filter, contractType])
+    queryUsers(query).then((results) => {
+      if (searchCount === searchCountRef.current) setQueriedUserResults(results)
+    })
+    queryTopics(query).then((results) => {
+      if (searchCount === searchCountRef.current) setTopicResults?.(results)
+    })
+  }, [query])
 
   const emptyContractsState =
     props.emptyState ??
@@ -342,7 +338,7 @@ export function SupabaseSearch(props: {
                   className={'absolute right-2 top-1/2 -translate-y-1/2'}
                   size={'2xs'}
                   onClick={() => {
-                    setSearchParams({ [QUERY_KEY]: '' })
+                    onChange({ [QUERY_KEY]: '' })
                   }}
                 >
                   {loading ? (
@@ -360,7 +356,7 @@ export function SupabaseSearch(props: {
           <ContractFilters
             includeProbSorts={includeProbSorts}
             params={searchParams}
-            updateParams={setSearchParams}
+            updateParams={onChange}
             className={
               searchType && searchType !== 'Questions' ? 'invisible' : ''
             }
@@ -375,7 +371,7 @@ export function SupabaseSearch(props: {
             color={'gray-white'}
             className={'ml-1 rounded-full sm:hidden'}
             onClick={() => {
-              setSearchParams({ [SEARCH_TYPE_KEY]: undefined, [QUERY_KEY]: '' })
+              onChange({ [SEARCH_TYPE_KEY]: undefined, [QUERY_KEY]: '' })
             }}
           >
             <ArrowLeftIcon className={'h-4 w-4'} />
@@ -440,7 +436,7 @@ export function SupabaseSearch(props: {
                   <button
                     className="text-primary-500 hover:underline"
                     onClick={() =>
-                      setSearchParams({
+                      onChange({
                         [FILTER_KEY]: 'all',
                         [CONTRACT_TYPE_KEY]: 'ALL',
                       })
@@ -548,22 +544,18 @@ const FRESH_SEARCH_CHANGED_STATE: SearchState = {
 
 const useContractSearch = (
   persistPrefix: string,
-  setLastQuery: (q: string) => void,
-  searchParams: SearchParams | undefined,
-  additionalFilter?: SupabaseAdditionalFilter,
-  isWholePage?: boolean
+  searchParams: SearchParams,
+  additionalFilter?: SupabaseAdditionalFilter
 ) => {
   const [state, setState] = usePersistentInMemoryState<SearchState>(
     FRESH_SEARCH_CHANGED_STATE,
     `${persistPrefix}-supabase-contract-search`
   )
-  const [firstLoad, setFirstLoad] = useState(true)
   const [loading, setLoading] = useState(false)
 
   const requestId = useRef(0)
 
   const queryContracts = useEvent(async (freshQuery?: boolean) => {
-    if (!searchParams) return true
     const {
       q: query,
       s: sort,
@@ -572,13 +564,7 @@ const useContractSearch = (
       ct: contractType,
     } = searchParams
 
-    setLastQuery(query)
-    const hasCachedData = firstLoad && state.contracts?.length
-    setFirstLoad(false)
-
-    // if we have cached data, don't fetch. this preserves the scroll position
-    // bottom load more: only load more if there are more results
-    if (freshQuery ? !hasCachedData : state.shouldLoadMore) {
+    if (freshQuery || state.shouldLoadMore) {
       const id = ++requestId.current
       let timeoutId: NodeJS.Timeout | undefined
       if (freshQuery) {
@@ -614,8 +600,6 @@ const useContractSearch = (
         clearTimeout(timeoutId)
         setLoading(false)
 
-        if (freshQuery && isWholePage) window.scrollTo(0, 0)
-
         return shouldLoadMore
       }
     }
@@ -639,7 +623,7 @@ const useContractSearch = (
 
   return {
     contracts,
-    loading: loading && !(firstLoad && contracts),
+    loading,
     shouldLoadMore: state.shouldLoadMore,
     queryContracts,
   }
@@ -669,10 +653,14 @@ const useSearchQueryState = (props: {
     [SEARCH_TYPE_KEY]: defaultSearchType,
   }
 
-  const useHook = useUrlParams ? usePersistentQueriesState : usePartialUpdater
-  const [state, setState] = useHook(defaults)
+  const useHook = useUrlParams ? usePersistentQueriesState : useShim
+  const [state, setState, ready] = useHook(defaults)
+  return [state, setState, ready] as const
+}
 
-  return [state, setState] as const
+const useShim = <T extends Record<string, string | undefined>>(x: T) => {
+  const [state, setState] = usePartialUpdater(x)
+  return [state, setState, true] as const
 }
 
 function ContractFilters(props: {

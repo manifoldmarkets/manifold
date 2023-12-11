@@ -19,8 +19,9 @@ export const LoverCommentSection = (props: {
   onUser: User
   lover: Lover
   currentUser: User | null | undefined
+  simpleView?: boolean
 }) => {
-  const { onUser, currentUser } = props
+  const { onUser, currentUser, simpleView } = props
   const comments = (useRealtimeCommentsOnLover(onUser.id) ?? []).filter(
     (c) => !c.hidden
   )
@@ -28,11 +29,15 @@ export const LoverCommentSection = (props: {
   const commentsByParent = groupBy(comments, (c) => c.replyToCommentId ?? '_')
   const [lover, setLover] = useState<Lover>(props.lover)
   const isCurrentUser = currentUser?.id === onUser.id
+
+  if (simpleView && (!lover.comments_enabled || parentComments.length == 0))
+    return null
+
   return (
     <Col className={'mt-4 rounded py-2'}>
       <Row className={'mb-2 justify-between'}>
         <Subtitle>Endorsements</Subtitle>
-        {isCurrentUser && (
+        {isCurrentUser && !simpleView && (
           <Tooltip
             text={
               (lover.comments_enabled ? 'Disable' : 'Enable') +
@@ -63,28 +68,33 @@ export const LoverCommentSection = (props: {
           </Tooltip>
         )}
       </Row>
-      <div className="mb-4">
-        {!lover.comments_enabled ? (
-          <>This feature is disabled.</>
-        ) : isCurrentUser ? (
-          <>Other users can write endorsements of you here.</>
-        ) : (
-          <>
-            If you know them, write something nice that adds to their profile.
-          </>
-        )}
-      </div>
-      {currentUser && !isCurrentUser && lover.comments_enabled && (
-        <LoverCommentInput
-          className="mb-4 mr-px mt-px"
-          onUserId={onUser.id}
-          trackingLocation={'contract page'}
-        />
-      )}
-      {!lover.comments_enabled && currentUser?.id != lover.user_id && (
-        <span className={'text-ink-500 text-sm'}>
-          {onUser.name} has disabled endorsements from others.
-        </span>
+      {!simpleView && (
+        <>
+          <div className="mb-4">
+            {!lover.comments_enabled ? (
+              <>This feature is disabled.</>
+            ) : isCurrentUser ? (
+              <>Other users can write endorsements of you here.</>
+            ) : (
+              <>
+                If you know them, write something nice that adds to their
+                profile.
+              </>
+            )}
+          </div>
+          {currentUser && !isCurrentUser && lover.comments_enabled && (
+            <LoverCommentInput
+              className="mb-4 mr-px mt-px"
+              onUserId={onUser.id}
+              trackingLocation={'contract page'}
+            />
+          )}
+          {!lover.comments_enabled && currentUser?.id != lover.user_id && (
+            <span className={'text-ink-500 text-sm'}>
+              {onUser.name} has disabled endorsements from others.
+            </span>
+          )}
+        </>
       )}
       {lover.comments_enabled &&
         orderBy(parentComments, 'createdTime', 'desc').map((c) => (

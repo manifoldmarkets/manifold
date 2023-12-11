@@ -79,6 +79,26 @@ export const TopicDropdown = (props: {
     </>
   )
 }
+
+export const blockGroup = async (
+  privateUser: PrivateUser,
+  groupSlug: string
+) => {
+  await updatePrivateUser(privateUser.id, {
+    blockedGroupSlugs: [...(privateUser.blockedGroupSlugs ?? []), groupSlug],
+  })
+}
+
+export const unBlockGroup = async (
+  privateUser: PrivateUser,
+  groupSlug: string
+) => {
+  await updatePrivateUser(privateUser.id, {
+    blockedGroupSlugs:
+      privateUser.blockedGroupSlugs?.filter((id) => id !== groupSlug) ?? [],
+  })
+}
+
 const BlockedTopicsModal = (props: {
   privateUser: PrivateUser
   setShowEditingBlockedTopics: (show: boolean) => void
@@ -86,17 +106,6 @@ const BlockedTopicsModal = (props: {
 }) => {
   const { privateUser, show, setShowEditingBlockedTopics } = props
   const groups = useListGroupsBySlug(privateUser.blockedGroupSlugs ?? [])
-  const unBlockGroup = async (groupSlug: string) => {
-    await updatePrivateUser(privateUser.id, {
-      blockedGroupSlugs:
-        privateUser.blockedGroupSlugs?.filter((id) => id !== groupSlug) ?? [],
-    })
-  }
-  const blockGroup = async (groupSlug: string) => {
-    await updatePrivateUser(privateUser.id, {
-      blockedGroupSlugs: [...(privateUser.blockedGroupSlugs ?? []), groupSlug],
-    })
-  }
 
   return (
     <Modal
@@ -117,7 +126,7 @@ const BlockedTopicsModal = (props: {
             <Button
               size={'xs'}
               color={'gray'}
-              onClick={() => unBlockGroup(group.slug)}
+              onClick={() => unBlockGroup(privateUser, group.slug)}
             >
               <MinusCircleIcon className="h-5 w-5" />
             </Button>
@@ -126,7 +135,9 @@ const BlockedTopicsModal = (props: {
         <span className={'text-primary-700 mt-2 text-lg'}>
           Block more topics
         </span>
-        <TopicSelector setSelectedGroup={(group) => blockGroup(group.slug)} />
+        <TopicSelector
+          setSelectedGroup={(group) => blockGroup(privateUser, group.slug)}
+        />
         <div className={'mb-[10rem]'} />
       </Col>
     </Modal>

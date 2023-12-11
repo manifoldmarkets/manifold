@@ -28,7 +28,7 @@ export function OgMarket(props: OgCardProps) {
     <div className="relative flex h-full w-full flex-col items-stretch justify-between bg-white pt-4">
       <div
         className={clsx(
-          'mx-6 line-clamp-4 flex overflow-hidden leading-tight text-indigo-700',
+          'mx-6 flex overflow-hidden leading-tight text-indigo-700',
           showGraph ? 'text-2xl' : 'text-3xl'
         )}
       >

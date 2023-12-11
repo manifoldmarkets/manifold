@@ -1,6 +1,7 @@
 import { PencilIcon } from '@heroicons/react/outline'
 import { isAdminId } from 'common/envs/constants'
-import { Lover, LoverRow } from 'common/love/lover'
+import { getMutualAnswerCompatibility } from 'common/love/compatibility-score'
+import { Lover } from 'common/love/lover'
 import { Row as rowFor } from 'common/supabase/utils'
 import { User } from 'common/user'
 import { partition } from 'lodash'
@@ -10,13 +11,15 @@ import {
   useCompatibilityQuestionsWithAnswerCount,
   useUserCompatibilityAnswers,
 } from 'love/hooks/use-questions'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import DropdownMenu from 'web/components/comments/dropdown-menu'
 import { Col } from 'web/components/layout/col'
 import { MODAL_CLASS, Modal } from 'web/components/layout/modal'
 import { Row } from 'web/components/layout/row'
 import { Linkify } from 'web/components/widgets/linkify'
 import { Pagination } from 'web/components/widgets/pagination'
+import { useUser } from 'web/hooks/use-user'
+import { db } from 'web/lib/supabase/db'
 import { Subtitle } from '../widgets/lover-subtitle'
 import { AddCompatibilityQuestionButton } from './add-compatibility-question-button'
 import {
@@ -24,13 +27,6 @@ import {
   AnswerSkippedCompatibilityQuestionsButton,
 } from './answer-compatibility-question-button'
 import { AnswerCompatibilityQuestionContent } from './answer-compatibility-question-content'
-import { useEffect } from 'react'
-import { db } from 'web/lib/supabase/db'
-import { useUser } from 'web/hooks/use-user'
-import {
-  getAnswersCompatibility,
-  getMutualAnswerCompatibility,
-} from 'common/love/compatibility-score'
 
 const NUM_QUESTIONS_TO_SHOW = 8
 
