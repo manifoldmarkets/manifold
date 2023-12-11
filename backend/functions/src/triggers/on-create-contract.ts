@@ -119,6 +119,8 @@ export const uploadToStorage = async (imgUrl: string, username: string) => {
 
   const bucket = admin.storage().bucket()
 
+  await bucket.makePublic()
+
   const file = bucket.file(`contract-images/${username}/${randomString()}.jpg`)
 
   const stream = file.createWriteStream({
@@ -139,5 +141,5 @@ export const uploadToStorage = async (imgUrl: string, username: string) => {
   stream.end(buffer)
 
   const url = await file.publicUrl()
-  return url
+  return url.replace('%2F', '/') // prevent weird escaping 
 }
