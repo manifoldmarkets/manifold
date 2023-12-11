@@ -282,13 +282,15 @@ export const createMarketProps = z
 
 // resolve market
 
-export const resolveBinarySchema = z.object({
-  outcome: z.enum(RESOLUTIONS),
-  probabilityInt: z.number().gte(0).lte(100).optional(),
+export const resolveBinarySchema = z
+  .object({
+    outcome: z.enum(RESOLUTIONS),
+    probabilityInt: z.number().gte(0).lte(100).optional(),
 
-  // To resolve one answer of multiple choice. Only independent answers supported (shouldAnswersSumToOne = false)
-  answerId: z.string().optional(),
-})
+    // To resolve one answer of multiple choice. Only independent answers supported (shouldAnswersSumToOne = false)
+    answerId: z.string().optional(),
+  })
+  .passthrough() // overlaps with pseudo-numeric
 
 export const resolveFRSchema = z.union([
   z.object({
@@ -350,9 +352,9 @@ export const resolveMarketProps = z
   .and(
     z.union([
       resolveBinarySchema,
-      resolveFRSchema,
       resolveMultiSchema,
-      resolveNumericSchema,
+      resolveFRSchema,
       resolvePseudoNumericSchema,
+      resolveNumericSchema,
     ])
   )
