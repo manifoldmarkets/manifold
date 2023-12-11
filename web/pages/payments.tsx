@@ -8,7 +8,7 @@ import { Button } from 'web/components/buttons/button'
 import { useEffect, useState } from 'react'
 import { Modal } from 'web/components/layout/modal'
 import { SelectUsers } from 'web/components/select-users'
-import { UserSearchResult } from 'web/lib/supabase/users'
+import { UserDisplay } from 'web/lib/supabase/users'
 import { AmountInput } from 'web/components/widgets/amount-input'
 import { api } from 'web/lib/firebase/api'
 import { useUser } from 'web/hooks/use-user'
@@ -29,6 +29,7 @@ import { QRCode } from 'web/components/widgets/qr-code'
 import { CopyLinkRow } from 'web/components/buttons/copy-link-button'
 import { useRouter } from 'next/router'
 import { filterDefined } from 'common/util/array'
+import { LiteUser } from 'common/api/user-types'
 
 export default function Payments() {
   const { payments, load } = useManaPayments()
@@ -220,7 +221,7 @@ const PaymentCards = (props: {
 
 export const PaymentsModal = (props: {
   fromUser: User
-  toUser?: User
+  toUser?: UserDisplay
   show: boolean
   setShow: (show: boolean) => void
   defaultMessage?: string
@@ -240,7 +241,7 @@ export const PaymentsModal = (props: {
   const [message, setMessage] = useState(defaultMessage)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [toUsers, setToUsers] = useState<UserSearchResult[]>([])
+  const [toUsers, setToUsers] = useState<UserDisplay[]>([])
   const [removedToUser, setRemovedToUser] = useState(false)
   const { canSend, message: cannotSendMessage } = useCanSendMana(fromUser)
   const isAdmin = isAdminId(fromUser.id)
@@ -265,7 +266,7 @@ export const PaymentsModal = (props: {
                         setToUsers([])
                         setRemovedToUser(true)
                       }}
-                      className=" text-ink-400 hover:text-ink-700 h-5 w-5 cursor-pointer rounded-full"
+                      className="text-ink-400 hover:text-ink-700 h-5 w-5 cursor-pointer rounded-full"
                       aria-hidden="true"
                     />
                   </Row>

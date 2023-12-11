@@ -24,7 +24,8 @@ export const getUsernameById = async (
   )
 }
 
-export const convertUser = (row: Row<'users'> | null): User | null => {
+export function convertUser(row: Row<'users'>): User
+export function convertUser(row: Row<'users'> | null): User | null {
   if (!row) return null
   return {
     ...(row.data as User),

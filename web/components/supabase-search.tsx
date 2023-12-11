@@ -27,11 +27,9 @@ import { useUser } from 'web/hooks/use-user'
 import { FollowOrUnfolowTopicButton } from 'web/components/topics/topics-button'
 
 import { PillButton } from 'web/components/buttons/pill-button'
-import { searchUsers, UserSearchResult } from 'web/lib/supabase/users'
-import { User } from 'common/user'
+import { searchUsers } from 'web/lib/supabase/users'
 import { Button, IconButton } from 'web/components/buttons/button'
 import Link from 'next/link'
-import { useFollowedUsersOnLoad } from 'web/hooks/use-follows'
 import { CONTRACTS_PER_SEARCH_PAGE } from 'common/supabase/contracts'
 import { UserResults } from './search/user-results'
 import { searchContracts, searchGroups } from 'web/lib/firebase/api'
@@ -44,6 +42,7 @@ import {
 } from './contract/contract-table-col-formats'
 import { buildArray } from 'common/util/array'
 import { ContractsTable, LoadingContractRow } from './contract/contracts-table'
+import { LiteUser } from 'common/api/user-types'
 
 const USERS_PER_PAGE = 100
 const TOPICS_PER_PAGE = 100
@@ -176,11 +175,6 @@ export function SupabaseSearch(props: {
   contractsOnly?: boolean
   showTopicTag?: boolean
   hideSearchTypes?: boolean
-  userResultProps?: {
-    onUserClick?: (user: User) => void
-    hideFollowButton?: boolean
-    loadingUserId?: string
-  }
 }) {
   const {
     defaultSort,
@@ -189,7 +183,6 @@ export function SupabaseSearch(props: {
     defaultSearchType,
     additionalFilter,
     onContractClick,
-    userResultProps,
     hideActions,
     highlightContractIds,
     headerClassName,
@@ -216,7 +209,7 @@ export function SupabaseSearch(props: {
     useUrlParams,
   })
   const user = useUser()
-  const followingUsers = useFollowedUsersOnLoad(user?.id)
+  // const followingUsers = useFollowedUsersOnLoad(user?.id)
   const follwingTopics = useRealtimeMemberGroupIds(user?.id)
 
   const query = searchParams[QUERY_KEY]
@@ -226,22 +219,9 @@ export function SupabaseSearch(props: {
   const filter = searchParams[FILTER_KEY]
   const contractType = searchParams[CONTRACT_TYPE_KEY]
 
-  const [queriedUserResults, setQueriedUserResults] =
-    usePersistentInMemoryState<UserSearchResult[] | undefined>(
-      undefined,
-      `${persistPrefix}-queried-user-results`
-    )
-
-  const userResults = uniqBy(
-    (
-      followingUsers?.filter(
-        (f) =>
-          f.name.toLowerCase().includes(query.toLowerCase()) ||
-          f.username.toLowerCase().includes(query.toLowerCase())
-      ) ?? []
-    ).concat(queriedUserResults ?? []),
-    'id'
-  )
+  const [userResults, setUserResults] = usePersistentInMemoryState<
+    LiteUser[] | undefined
+  >(undefined, `${persistPrefix}-queried-user-results`)
 
   const { contracts, loading, queryContracts, shouldLoadMore } =
     useContractSearch(persistPrefix, searchParams, additionalFilter)
@@ -261,12 +241,7 @@ export function SupabaseSearch(props: {
     (((!topicSlug || topicSlug === 'for-you') && query !== '') || searchType)
 
   const queryUsers = useEvent(async (query: string) =>
-    searchUsers(query, USERS_PER_PAGE, [
-      'creatorTraders',
-      'bio',
-      'createdTime',
-      'isBannedFromPosting',
-    ])
+    searchUsers(query, USERS_PER_PAGE)
   )
 
   const queryTopics = useEvent(async (query: string) =>
@@ -286,7 +261,7 @@ export function SupabaseSearch(props: {
   useEffect(() => {
     const searchCount = ++searchCountRef.current
     queryUsers(query).then((results) => {
-      if (searchCount === searchCountRef.current) setQueriedUserResults(results)
+      if (searchCount === searchCountRef.current) setUserResults(results)
     })
     queryTopics(query).then((results) => {
       if (searchCount === searchCountRef.current) setTopicResults?.(results)
@@ -453,13 +428,10 @@ export function SupabaseSearch(props: {
         userResults && userResults.length === 0 ? (
           <Col className="text-ink-700 mx-2 my-6 text-center">
             No users found.
-            {/* Find users from your contacts!*/}
           </Col>
         ) : (
-          <UserResults
-            users={userResults ?? []}
-            userResultProps={userResultProps}
-          />
+          <UserResults users={userResults ?? []} />
+          // TODO: load more users when scroll to end
         )
       ) : searchType === 'Topics' ? (
         topicResults && topicResults.length === 0 ? (

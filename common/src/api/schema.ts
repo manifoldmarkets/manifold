@@ -344,6 +344,20 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
+  'search-users': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    cache: 's-maxage=45, stale-while-revalidate=45',
+    returns: [] as LiteUser[],
+    props: z
+      .object({
+        term: z.string(),
+        limit: z.coerce.number().gte(0).lte(1000).default(500),
+        page: z.coerce.number().gte(0).default(0),
+      })
+      .strict(),
+  },
   'save-twitch': {
     method: 'POST',
     visibility: 'public',

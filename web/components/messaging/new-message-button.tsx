@@ -8,7 +8,7 @@ import { useRouter } from 'next/router'
 import clsx from 'clsx'
 import { Row } from 'web/components/layout/row'
 import { SelectUsers } from 'web/components/select-users'
-import { UserSearchResult } from 'web/lib/supabase/users'
+import { UserDisplay } from 'web/lib/supabase/users'
 import { usePrivateUser } from 'web/hooks/use-user'
 import { buildArray } from 'common/util/array'
 
@@ -33,7 +33,7 @@ function MessageModal(props: {
   const privateUser = usePrivateUser()
   const router = useRouter()
 
-  const [users, setUsers] = useState<UserSearchResult[]>([])
+  const [users, setUsers] = useState<UserDisplay[]>([])
   const createChannel = async () => {
     const res = await createPrivateMessageChannelWithUsers({
       userIds: users.map((user) => user.id),

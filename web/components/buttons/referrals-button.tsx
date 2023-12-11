@@ -12,7 +12,7 @@ import { TextButton } from './text-button'
 import { UserLink } from 'web/components/widgets/user-link'
 import { Button } from './button'
 import { getReferrals } from 'web/lib/supabase/referrals'
-import { UserSearchResult } from 'web/lib/supabase/users'
+import { UserDisplay } from 'web/lib/supabase/users'
 import { getReferralCount } from 'common/supabase/referrals'
 import { db } from 'web/lib/supabase/db'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
@@ -54,12 +54,12 @@ export function ReferralsDialog(props: {
   defaultTab?: number
 }) {
   const { user, isOpen, setIsOpen, defaultTab } = props
-  const [referredBy, setReferredBy] = useState<UserSearchResult[]>([])
+  const [referredBy, setReferredBy] = useState<UserDisplay[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [errorText, setErrorText] = useState('')
-  const [referredUsers, setReferredUsers] = useState<
-    UserSearchResult[] | undefined
-  >(undefined)
+  const [referredUsers, setReferredUsers] = useState<UserDisplay[] | undefined>(
+    undefined
+  )
   useEffect(() => {
     if (!isOpen || referredUsers !== undefined) return
     getReferrals(user.id).then(setReferredUsers)

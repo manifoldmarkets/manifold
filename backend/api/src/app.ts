@@ -125,6 +125,7 @@ import { getGroup } from './get-group'
 import { getPositions } from './get-positions'
 import { getLeagues } from './get-leagues'
 import { addOrRemoveGroupFromContract } from './update-tag'
+import { searchUsers } from './supabase-search-users'
 
 const allowCorsUnrestricted: RequestHandler = cors({})
 const allowCorsManifold: RequestHandler = cors({
@@ -206,6 +207,7 @@ const handlers: { [k in APIPath]: RequestHandler } = {
   me: getCurrentUser,
   user: getUser,
   users: getUsers,
+  'search-users': searchUsers,
   'save-twitch': saveTwitchCredentials,
   'compatible-lovers': getCompatibleLovers,
 }
