@@ -29,7 +29,6 @@ import { QRCode } from 'web/components/widgets/qr-code'
 import { CopyLinkRow } from 'web/components/buttons/copy-link-button'
 import { useRouter } from 'next/router'
 import { filterDefined } from 'common/util/array'
-import { LiteUser } from 'common/api/user-types'
 
 export default function Payments() {
   const { payments, load } = useManaPayments()
