@@ -454,7 +454,7 @@ function QuestionCompatibilityButton(props: {
 function ImportanceDisplay(props: { importance: number }) {
   const { importance } = props
   return (
-    <span className={clsx(' text-ink-700 w-fit')}>
+    <span className={clsx('w-fit')}>
       {getStringKeyFromNumValue(importance, IMPORTANCE_CHOICES)}
     </span>
   )

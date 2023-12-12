@@ -112,5 +112,13 @@ export function getMutualAnswerCompatibility(
   const importanceCompatibility =
     1 - Math.abs(answer1.importance - answer2.importance) / 4
 
-  return ((compatibility1to2 + compatibility2to1) * importanceCompatibility) / 2
+  // Adjust these weights to change the impact of each component
+  const compatibilityWeight = 0.7
+  const importanceWeight = 0.3
+
+  return (
+    ((compatibility1to2 + compatibility2to1) * compatibilityWeight +
+      importanceCompatibility * importanceWeight) /
+    2
+  )
 }
