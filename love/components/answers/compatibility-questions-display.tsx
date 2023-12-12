@@ -26,7 +26,14 @@ import {
   AnswerCompatibilityQuestionButton,
   AnswerSkippedCompatibilityQuestionsButton,
 } from './answer-compatibility-question-button'
-import { AnswerCompatibilityQuestionContent } from './answer-compatibility-question-content'
+import {
+  AnswerCompatibilityQuestionContent,
+  IMPORTANCE_CHOICES,
+} from './answer-compatibility-question-content'
+import clsx from 'clsx'
+import { Avatar } from 'web/components/widgets/avatar'
+import { UserLink } from 'web/components/widgets/user-link'
+import { PreferredList } from './compatibility-question-preferred-list'
 
 const NUM_QUESTIONS_TO_SHOW = 8
 
@@ -100,7 +107,7 @@ export function CompatibilityQuestionsDisplay(props: {
   )
 
   return (
-    <Col className="gap-2">
+    <Col className="gap-4">
       <Subtitle>{`${
         isCurrentUser ? 'Your' : user.name.split(' ')[0] + `'s`
       } Compatibility Prompts`}</Subtitle>
@@ -215,12 +222,12 @@ function CompatibilityAnswerBlock(props: {
   return (
     <Col
       className={
-        'bg-canvas-0 flex-grow gap-2 whitespace-pre-line rounded-md px-3 py-2 leading-relaxed'
+        'bg-canvas-0 flex-grow gap-4 whitespace-pre-line rounded-md px-3 py-2 leading-relaxed'
       }
     >
       <Row className="text-ink-600 justify-between gap-1 text-sm">
         {question.question}
-        <Row className="gap-2">
+        <Row className="gap-4">
           {comparedLover && (
             <CompatibilityDisplay
               question={question}
@@ -228,6 +235,7 @@ function CompatibilityAnswerBlock(props: {
               answer1={answer}
               lover2={comparedLover as Lover}
               currentUserIsComparedLover={!fromLoverPage}
+              currentUser={currentUser}
             />
           )}
           {isCurrentUser && (
@@ -277,15 +285,23 @@ function CompatibilityDisplay(props: {
   lover2: Lover
   answer1: rowFor<'love_compatibility_answers'>
   currentUserIsComparedLover: boolean
+  currentUser: User | null | undefined
+  className?: string
 }) {
-  const { question, lover1, lover2, answer1, currentUserIsComparedLover } =
-    props
+  const {
+    question,
+    lover1,
+    lover2,
+    answer1,
+    currentUserIsComparedLover,
+    currentUser,
+  } = props
 
   const [answer2, setAnswer2] = useState<
     rowFor<'love_compatibility_answers'> | null | undefined
   >(undefined)
 
-  useEffect(() => {
+  async function getComparedLoverAnswer() {
     db.from('love_compatibility_answers')
       .select()
       .eq('creator_id', lover2.user_id)
@@ -297,14 +313,125 @@ function CompatibilityDisplay(props: {
         }
         setAnswer2(res.data[0] ?? null)
       })
+  }
+  useEffect(() => {
+    getComparedLoverAnswer()
   }, [])
 
   if (lover1.id === lover2.id) return null
-  if ((!answer2 || answer2.importance == -1) && currentUserIsComparedLover)
-    return <button className="text-xs">Answer</button>
+  if (
+    (!answer2 || answer2.importance == -1) &&
+    currentUserIsComparedLover &&
+    !!currentUser
+  )
+    return (
+      <AnswerCompatibilityQuestionButton
+        user={currentUser}
+        otherQuestions={[question]}
+        refreshCompatibilityAll={getComparedLoverAnswer}
+        size="sm"
+      />
+    )
 
+  if (!answer2) return null
+
+  return (
+    <QuestionCompatibilityButton
+      question={question}
+      answer1={answer1}
+      lover1={lover1}
+      answer2={answer2}
+      lover2={lover2}
+      isCurrentUser={currentUserIsComparedLover}
+    />
+  )
+}
+
+function QuestionCompatibilityButton(props: {
+  question: QuestionWithCountType
+  answer1: rowFor<'love_compatibility_answers'>
+  lover1: Lover
+  answer2: rowFor<'love_compatibility_answers'>
+  lover2: Lover
+  isCurrentUser: boolean
+}) {
+  const { question, answer1, answer2, lover1, lover2, isCurrentUser } = props
   const answerCompatibility = getMutualAnswerCompatibility(answer1, answer2)
-  return <button className="text-xs">{answerCompatibility * 100}% match</button>
+  const [open, setOpen] = useState(false)
+  const user1 = lover1.user
+  const user2 = lover2.user
+  return (
+    <>
+      <button
+        onClick={() => setOpen(true)}
+        className={clsx(
+          'text-ink-1000 w-24 rounded-full px-2 text-xs transition-colors ',
+          answerCompatibility <= 0.25
+            ? 'bg-red-500/20 hover:bg-red-500/30'
+            : answerCompatibility <= 0.5
+            ? 'bg-yellow-500/20 hover:bg-yellow-500/30'
+            : answerCompatibility <= 0.75
+            ? 'bg-lime-500/20 hover:bg-lime-500/30'
+            : 'bg-green-500/20 hover:bg-green-500/30'
+        )}
+      >
+        {answerCompatibility * 100}% match
+      </button>
+      <Modal open={open} setOpen={setOpen}>
+        <Col className={MODAL_CLASS}>
+          <Subtitle>{question.question}</Subtitle>
+          <div className={clsx('grid w-full grid-cols-2 gap-4 text-sm')}>
+            <Avatar
+              username={user1.username}
+              avatarUrl={user1.avatarUrl}
+              size="xl"
+              className="mx-auto"
+            />
+            <Avatar
+              username={user2.username}
+              avatarUrl={user2.avatarUrl}
+              size="xl"
+              className="mx-auto"
+            />
+          </div>
+          <div className={clsx('grid w-full grid-cols-2 gap-4 text-sm')}>
+            <div className="text-ink-400">{`${user1.username}'s preferred answers`}</div>
+            <div className="text-ink-400">{`${
+              isCurrentUser ? 'Your' : user2.username
+            } preferred answers`}</div>
+          </div>
+          <div className={clsx('grid w-full grid-cols-2 gap-4 text-sm')}>
+            <PreferredList
+              answer={answer1}
+              question={question}
+              comparedAnswer={answer2}
+              comparedUser={user2}
+            />
+            <PreferredList
+              answer={answer2}
+              question={question}
+              comparedAnswer={answer1}
+              comparedUser={user1}
+            />
+          </div>
+          <div className={clsx('mt-4 grid w-full grid-cols-2 gap-4 text-sm')}>
+            <div className="text-ink-400">{`${user1.username}'s importance ranking`}</div>
+            <div className="text-ink-400">{`${
+              isCurrentUser ? 'Your' : user2.username
+            } importance ranking`}</div>
+          </div>
+          <div className={clsx('mt-4 grid w-full grid-cols-2 gap-4 text-sm')}>
+            <div className="text-ink-400">
+              {getStringKeyFromNumValue(answer1.importance, IMPORTANCE_CHOICES)}
+            </div>
+            <div className="text-ink-400">
+              {getStringKeyFromNumValue(answer2.importance, IMPORTANCE_CHOICES)}
+            </div>
+          </div>
+        </Col>
+      </Modal>
+    </>
+  )
 }
 
 function getStringKeyFromNumValue(

@@ -99,12 +99,18 @@ export function getMutualAnswerCompatibility(
   answer1: rowFor<'love_compatibility_answers'>,
   answer2: rowFor<'love_compatibility_answers'>
 ) {
-  if (answer1.importance <= 0 || answer2.importance <= 0) {
+  if (answer1.importance < 0 || answer2.importance < 0) {
     return 0
   }
 
-  return (
-    (answer1.pref_choices.includes(answer2.multiple_choice) ? 0.5 : 0) +
-    (answer2.pref_choices.includes(answer1.multiple_choice) ? 0.5 : 0)
+  const compatibility1to2 = +answer1.pref_choices.includes(
+    answer2.multiple_choice
   )
+  const compatibility2to1 = +answer2.pref_choices.includes(
+    answer1.multiple_choice
+  )
+  const importanceCompatibility =
+    1 - Math.abs(answer1.importance - answer2.importance) / 4
+
+  return ((compatibility1to2 + compatibility2to1) * importanceCompatibility) / 2
 }
