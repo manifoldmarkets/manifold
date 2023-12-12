@@ -11,16 +11,34 @@ export function AnswerCompatibilityQuestionButton(props: {
   otherQuestions: QuestionWithCountType[]
   refreshCompatibilityAll: () => void
   fromSignup?: boolean
+  size?: 'sm' | 'md'
 }) {
-  const { user, otherQuestions, refreshCompatibilityAll, fromSignup } = props
+  const {
+    user,
+    otherQuestions,
+    refreshCompatibilityAll,
+    fromSignup,
+    size = 'md',
+  } = props
   const [open, setOpen] = useState(fromSignup ?? false)
   if (!user) return null
   return (
     <>
-      <Button onClick={() => setOpen(true)} color="gray-outline">
-        Answer Questions{' '}
-        <span className="text-primary-600 ml-2">+{otherQuestions.length}</span>
-      </Button>
+      {size === 'md' ? (
+        <Button onClick={() => setOpen(true)} color="gray-outline">
+          Answer Questions{' '}
+          <span className="text-primary-600 ml-2">
+            +{otherQuestions.length}
+          </span>
+        </Button>
+      ) : (
+        <button
+          onClick={() => setOpen(true)}
+          className="bg-ink-100 dark:bg-ink-300 text-ink-1000 hover:bg-ink-200 hover:dark:bg-ink-400 w-28 rounded-full px-2 py-0.5 text-xs transition-colors"
+        >
+          Answer
+        </button>
+      )}
       <AnswerCompatibilityQuestionModal
         open={open}
         setOpen={setOpen}

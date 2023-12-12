@@ -25,6 +25,7 @@ import {
   SCROLLABLE_MODAL_CLASS,
 } from 'web/components/layout/modal'
 import { partition } from 'lodash'
+import { shortenName } from 'web/components/widgets/user-link'
 
 export function FreeResponseDisplay(props: {
   isCurrentUser: boolean
@@ -68,7 +69,7 @@ export function FreeResponseDisplay(props: {
     <Col className="gap-2">
       <Row className={'w-full items-center justify-between gap-2'}>
         <Subtitle>{`${
-          isCurrentUser ? 'Your' : user.name.split(' ')[0] + `'s`
+          isCurrentUser ? 'Your' : shortenName(user.name) + `'s`
         } Free Response`}</Subtitle>
       </Row>
 

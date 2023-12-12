@@ -22,7 +22,7 @@ import { BsFillArrowThroughHeartFill } from 'react-icons/bs'
 export const isFresh = (createdTime: number) =>
   createdTime > Date.now() - DAY_MS * 14
 
-function shortenName(name: string) {
+export function shortenName(name: string) {
   const firstName = name.split(' ')[0]
   const maxLength = 11
   const shortName =

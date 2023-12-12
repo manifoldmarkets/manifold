@@ -46,6 +46,7 @@ export const IMPORTANCE_DISPLAY_COLORS: ImportanceColorsType = {
   3: `bg-teal-400`,
 }
 
+
 export const submitCompatibilityAnswer = async (
   newAnswer: CompatibilityAnswerSubmitType
 ) => {
@@ -138,7 +139,8 @@ export function AnswerCompatibilityQuestionContent(props: {
         {index !== null &&
           index !== undefined &&
           total !== null &&
-          total !== undefined && (
+          total !== undefined &&
+          total > 1 && (
             <Row className="text-ink-500 -mt-4 w-full justify-end text-sm">
               <span>
                 <span className="text-ink-600 font-semibold">{index + 1}</span>{' '}
