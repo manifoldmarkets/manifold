@@ -1,5 +1,4 @@
 import { Page } from 'web/components/layout/page'
-import { getPostBySlug, postPath } from 'web/lib/supabase/old-post'
 import { OldPost } from 'common/old-post'
 import { Spacer } from 'web/components/layout/spacer'
 import {
@@ -20,6 +19,9 @@ import { SEO } from 'web/components/SEO'
 import { richTextToString } from 'common/util/parse'
 import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
 import comments from 'web/pages/api/v0/comments'
+import { convertSQLtoTS, run } from 'common/supabase/utils'
+import { db } from 'web/lib/supabase/db'
+import { Row as rowFor } from 'common/supabase/utils'
 
 export async function getStaticProps(props: { params: { slug: string } }) {
   const { slug } = props.params
@@ -97,14 +99,13 @@ export default function PostPage(props: {
   )
 }
 
-export function RichEditPost(props: {
+function RichEditPost(props: {
   post: OldPost
   canEdit: boolean
   children?: React.ReactNode
 }) {
   const { post, canEdit, children } = props
   const [editing, setEditing] = useState(false)
-  const [contentCache, setContentCache] = useState(post.content)
 
   const editor = useTextEditor({
     defaultValue: post.content,
@@ -124,7 +125,7 @@ export function RichEditPost(props: {
     </>
   ) : (
     <Col>
-      <Content size="lg" content={contentCache} />
+      <Content size="lg" content={post.content} />
       {canEdit && (
         <Row className="place-content-end">
           <Button
@@ -143,3 +144,23 @@ export function RichEditPost(props: {
     </Col>
   )
 }
+
+function postPath(postSlug: string) {
+  return `/old-post/${postSlug}`
+}
+
+async function getPostBySlug(slug: string) {
+  const { data } = await run(
+    db.from('old_posts').select().eq('data->>slug', slug)
+  )
+  if (data && data.length > 0) {
+    return convertPost(data[0])
+  }
+  return null
+}
+
+const convertPost = (sqlPost: rowFor<'old_posts'>) =>
+  convertSQLtoTS<'old_posts', OldPost>(sqlPost, {
+    fs_updated_time: false,
+    created_time: false, // grab from data
+  })

@@ -1,6 +1,7 @@
 import { JSONContent } from '@tiptap/core'
 import { Visibility } from './contract'
 
+/** @deprecated */
 export type OldPost = {
   id: string
   type?: string
