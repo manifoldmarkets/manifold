@@ -40,7 +40,7 @@ import generateFilterDropdownItems from '../search/search-dropdown-helpers'
 import { SearchCreateAnswerPanel } from './create-answer-panel'
 import { MultiSort } from '../contract/contract-overview'
 import { useState } from 'react'
-import { editAnswerCpmm } from 'web/lib/firebase/api'
+import { editAnswerCpmm, updateMarket } from 'web/lib/firebase/api'
 import { Modal } from 'web/components/layout/modal'
 import { Title } from 'web/components/widgets/title'
 import { Input } from 'web/components/widgets/input'
@@ -49,6 +49,7 @@ import { User } from 'common/user'
 import { Avatar } from 'web/components/widgets/avatar'
 import { UserLink } from 'web/components/widgets/user-link'
 import { TradesButton } from 'web/components/contract/trades-button'
+import toast from 'react-hot-toast'
 
 // full resorting, hover, clickiness, search and add
 export function AnswersPanel(props: {
@@ -63,6 +64,7 @@ export function AnswersPanel(props: {
   onAnswerCommentClick: (answer: Answer | DpmAnswer) => void
   onAnswerHover: (answer: Answer | DpmAnswer | undefined) => void
   onAnswerClick: (answer: Answer | DpmAnswer) => void
+  showSetDefaultSort?: boolean
 }) {
   const {
     contract,
@@ -76,6 +78,7 @@ export function AnswersPanel(props: {
     query,
     setQuery,
     setShowAll,
+    showSetDefaultSort,
   } = props
   const { outcomeType, answers } = contract
   const addAnswersMode =
@@ -103,6 +106,13 @@ export function AnswersPanel(props: {
   const showNoAnswers =
     answers.length === 0 || (shouldAnswersSumToOne && answers.length === 1)
   const [expandedIds, setExpandedIds] = useState<string[]>([])
+  const setDefaultSort = async () => {
+    await toast.promise(updateMarket({ contractId: contract.id, sort }), {
+      loading: 'Updating sort order...',
+      success: 'Sort order updated for all users',
+      error: 'Failed to update sort order',
+    })
+  }
   return (
     <Col>
       <SearchCreateAnswerPanel
@@ -111,19 +121,25 @@ export function AnswersPanel(props: {
         text={query}
         setText={setQuery}
       >
-        <DropdownMenu
-          className="mb-1"
-          closeOnClick
-          items={generateFilterDropdownItems(SORTS, setSort)}
-          icon={
-            <Row className="text-ink-500 items-center gap-0.5">
-              <span className="whitespace-nowrap text-sm font-medium">
-                Sort: {SORTS.find((s) => s.value === sort)?.label}
-              </span>
-              <ChevronDownIcon className="h-4 w-4" />
-            </Row>
-          }
-        />
+        <Row className={'mb-1 items-center gap-3'}>
+          <DropdownMenu
+            closeOnClick
+            items={generateFilterDropdownItems(SORTS, setSort)}
+            icon={
+              <Row className="text-ink-500 items-center gap-0.5">
+                <span className="whitespace-nowrap text-sm font-medium">
+                  Sort: {SORTS.find((s) => s.value === sort)?.label}
+                </span>
+                <ChevronDownIcon className="h-4 w-4" />
+              </Row>
+            }
+          />
+          {showSetDefaultSort && contract.sort !== sort && (
+            <Button color="gray-outline" size="2xs" onClick={setDefaultSort}>
+              Set default
+            </Button>
+          )}
+        </Row>
       </SearchCreateAnswerPanel>
 
       {showNoAnswers ? (

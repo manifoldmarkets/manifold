@@ -61,7 +61,6 @@ import { Avatar } from 'web/components/widgets/avatar'
 import { FaArrowTrendDown, FaArrowTrendUp } from 'react-icons/fa6'
 import { formatPercent } from 'common/util/format'
 import { isAdminId, isModId } from 'common/envs/constants'
-import { updateMarket } from 'web/lib/firebase/api'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { useDataZoomFetcher } from '../charts/contract/zoom-utils'
 
@@ -542,25 +541,17 @@ const ChoiceOverview = (props: {
     defaultSort,
     'answer-sort' + contract.id
   )
-  const updateSort = async (newSort: MultiSort) => {
-    setSort(newSort)
+  const [showSetDefaultSort, setShowSetDefaultSort] = useState(false)
+  useEffect(() => {
     if (
-      newSort !== contract.sort &&
+      sort !== contract.sort &&
       currentUserId &&
       (isModId(currentUserId) ||
         isAdminId(currentUserId) ||
         contract.creatorId === currentUserId)
-    ) {
-      await toast.promise(
-        updateMarket({ contractId: contract.id, sort: newSort }),
-        {
-          loading: 'Updating sort order...',
-          success: 'Sort order updated for all users',
-          error: 'Failed to update sort order',
-        }
-      )
-    }
-  }
+    )
+      setShowSetDefaultSort(true)
+  }, [sort])
 
   const [showAll, setShowAll] = useState(
     (addAnswersMode === 'DISABLED' && answers.length <= 10) ||
@@ -724,12 +715,13 @@ const ChoiceOverview = (props: {
               )
             }
             sort={sort}
-            setSort={updateSort}
+            setSort={setSort}
             query={query}
             setQuery={setQuery}
             setShowAll={setShowAll}
             answersToShow={answersToShow}
             selected={checkedAnswerIds}
+            showSetDefaultSort={showSetDefaultSort}
           />
           <UserBetsSummary
             className="border-ink-200 !mb-2 mt-2 "
