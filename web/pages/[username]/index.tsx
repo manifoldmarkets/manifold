@@ -8,7 +8,6 @@ import {
 import { ChartBarIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { DIVISION_NAMES, getLeaguePath } from 'common/leagues'
-import { Post } from 'common/post'
 import { removeUndefinedProps } from 'common/util/object'
 import Head from 'next/head'
 import Link from 'next/link'
@@ -64,7 +63,6 @@ import { useDiscoverUsers } from 'web/hooks/use-users'
 import { User, getUserByUsername } from 'web/lib/firebase/users'
 import TrophyIcon from 'web/lib/icons/trophy-icon.svg'
 import { db } from 'web/lib/supabase/db'
-import { getPostsByUser } from 'web/lib/supabase/post'
 import { getAverageUserRating, getUserRating } from 'web/lib/supabase/reviews'
 import Custom404 from 'web/pages/404'
 import { UserPayments } from 'web/pages/payments'
@@ -79,7 +77,6 @@ export const getStaticProps = async (props: {
 }) => {
   const { username } = props.params
   const user = await getUserByUsername(username)
-  const posts = user ? await getPostsByUser(user.id) : []
 
   const { count, rating } = (user ? await getUserRating(user.id) : null) ?? {}
   const averageRating = user ? await getAverageUserRating(user.id) : undefined
@@ -88,7 +85,6 @@ export const getStaticProps = async (props: {
     props: removeUndefinedProps({
       user,
       username,
-      posts,
       rating: rating,
       reviewCount: count,
       averageRating: averageRating,
@@ -105,7 +101,6 @@ export const getStaticPaths = () => {
 export default function UserPage(props: {
   user: User | null
   username: string
-  posts: Post[]
   rating?: number
   reviewCount?: number
   averageRating?: number
@@ -149,7 +144,6 @@ export const DeletedUser = () => {
 
 function UserProfile(props: {
   user: User
-  posts: Post[]
   rating?: number
   reviewCount?: number
   averageRating?: number

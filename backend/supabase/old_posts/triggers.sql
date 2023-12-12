@@ -1,13 +1,13 @@
-alter table posts
+alter table old_posts
 add column visibility text;
 
-alter table posts
+alter table old_posts
 add column group_id text;
 
-alter table posts
+alter table old_posts
 add column creator_id text;
 
-alter table posts
+alter table old_posts
 add column created_time timestamptz;
 
 create
@@ -22,5 +22,5 @@ end $$;
 
 create trigger post_populate before insert
 or
-update on posts for each row
+update on old_posts for each row
 execute function post_populate_cols ();

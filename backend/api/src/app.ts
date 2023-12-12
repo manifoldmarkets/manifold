@@ -29,7 +29,6 @@ import { closeMarket } from './close-market'
 import { unsubscribe } from './unsubscribe'
 import { stripewebhook, createcheckoutsession } from './stripe-endpoints'
 import { getCurrentUser } from './get-current-user'
-import { createpost } from './create-post'
 import { saveTwitchCredentials } from './save-twitch-credentials'
 import { addLiquidity } from './add-subsidy'
 import { validateiap } from './validate-iap'
@@ -55,7 +54,6 @@ import { followtopic } from './follow-topic'
 import { editcomment } from 'api/edit-comment'
 import { supabasesearchgroups } from './supabase-search-groups'
 import { leagueActivity } from './league-activity'
-import { updatepost } from './update-post'
 import { updategroup } from './update-group'
 import { updateUserDisinterestEmbedding } from 'api/update-user-disinterests'
 import { awardBounty } from './award-bounty'
@@ -265,8 +263,6 @@ app.post('/creategroup', ...apiRoute(creategroup))
 app.post('/updategroup', ...apiRoute(updategroup))
 app.post('/resolvemarket', ...apiRoute(resolveMarket))
 app.post('/closemarket', ...apiRoute(closeMarket))
-app.post('/createpost', ...apiRoute(createpost))
-app.post('/updatepost', ...apiRoute(updatepost))
 app.post('/validateIap', ...apiRoute(validateiap))
 app.post('/markallnotifications', ...apiRoute(markallnotifications))
 app.post('/updatememberrole', ...apiRoute(updatememberrole))

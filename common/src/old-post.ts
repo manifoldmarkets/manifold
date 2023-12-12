@@ -1,7 +1,7 @@
 import { JSONContent } from '@tiptap/core'
 import { Visibility } from './contract'
 
-export type Post = {
+export type OldPost = {
   id: string
   type?: string
   title: string
@@ -28,12 +28,3 @@ export type Post = {
   featuredLabel?: string
   visibility: Visibility
 }
-
-export type DateDoc = Post & {
-  bounty: number
-  birthday: number
-  type: 'date-doc'
-  contractSlug: string
-}
-
-export const MAX_POST_TITLE_LENGTH = 480

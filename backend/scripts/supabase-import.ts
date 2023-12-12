@@ -168,7 +168,12 @@ async function importDatabase(
   }
 
   if (shouldImport('private_users'))
-    await importCollection(pg, firestore.collection('private-users'), 'private_users', 500)
+    await importCollection(
+      pg,
+      firestore.collection('private-users'),
+      'private_users',
+      500
+    )
   if (shouldImport('users'))
     await importCollection(pg, firestore.collection('users'), 'users', 500)
   if (shouldImport('user_portfolio_history'))
@@ -306,15 +311,6 @@ async function importDatabase(
       'manalinks',
       2500
     )
-  if (shouldImport('posts'))
-    await importCollection(pg, firestore.collection('posts'), 'posts', 100)
-  if (shouldImport('post_comments'))
-    await importCollectionGroup(pg,
-      firestore.collectionGroup('comments'),
-      'post_comments',
-      (c) => c.get('commentType') === 'post',
-      500
-    )
 }
 
 if (require.main === module) {
@@ -344,10 +340,10 @@ if (require.main === module) {
   runScript(async ({ pg }) => {
     await importDatabase(pg, tables, timestamp, chunk)
   })
-  .then(() => {
-    log('Finished importing.')
-  })
-  .catch((e) => {
-    console.error(e)
-  })
+    .then(() => {
+      log('Finished importing.')
+    })
+    .catch((e) => {
+      console.error(e)
+    })
 }

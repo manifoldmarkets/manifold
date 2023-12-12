@@ -36,12 +36,6 @@ export type TableSpec<T extends TableName> = {
 
 // if you add a table here, don't forget to enable in supabase seed.sql (alter publication supabase_realtime)
 export const REALTIME_TABLES: Partial<{ [T in TableName]: TableSpec<T> }> = {
-  posts: {
-    pk: ['id'],
-  },
-  post_comments: {
-    pk: ['post_id', 'comment_id'],
-  },
   contract_bets: {
     pk: ['contract_id', 'bet_id'],
     ts: (r) => Date.parse(r.fs_updated_time),
