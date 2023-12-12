@@ -1,5 +1,4 @@
 import { Page } from 'web/components/layout/page'
-import { OldPost } from 'common/old-post'
 import { Spacer } from 'web/components/layout/spacer'
 import {
   Content,
@@ -22,6 +21,8 @@ import comments from 'web/pages/api/v0/comments'
 import { convertSQLtoTS, run } from 'common/supabase/utils'
 import { db } from 'web/lib/supabase/db'
 import { Row as rowFor } from 'common/supabase/utils'
+import { JSONContent } from '@tiptap/core'
+import { Visibility } from 'common/contract'
 
 export async function getStaticProps(props: { params: { slug: string } }) {
   const { slug } = props.params
@@ -164,3 +165,32 @@ const convertPost = (sqlPost: rowFor<'old_posts'>) =>
     fs_updated_time: false,
     created_time: false, // grab from data
   })
+
+/** @deprecated */
+type OldPost = {
+  id: string
+  type?: string
+  title: string
+  /** @deprecated */
+  subtitle?: string
+  content: JSONContent
+  creatorId: string // User id
+  createdTime: number
+  slug: string
+
+  // denormalized user fields
+  creatorName: string
+  creatorUsername: string
+  creatorAvatarUrl?: string
+
+  likedByUserIds?: string[]
+  likedByUserCount?: number
+
+  /** @deprecated */
+  commentCount?: number
+  /** @deprecated */
+  isGroupAboutPost?: boolean
+  groupId?: string
+  featuredLabel?: string
+  visibility: Visibility
+}
