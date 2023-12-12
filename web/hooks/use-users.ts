@@ -1,11 +1,6 @@
 import { PrivateUser, User } from 'common/user'
-import { debounce } from 'lodash'
 import { useEffect, useState } from 'react'
-import {
-  UserSearchResult,
-  getTopUserCreators,
-  searchUsers,
-} from 'web/lib/supabase/users'
+import { getTopUserCreators } from 'web/lib/supabase/users'
 import { getRecentlyActiveUsers } from 'web/lib/supabase/user'
 import { getPrivateUser } from 'web/lib/firebase/users'
 
@@ -24,24 +19,6 @@ export const useDiscoverUsers = (
   }, [userId])
 
   return discoverUserIds
-}
-
-export const useUsersSupabase = (
-  query: string,
-  limit: number,
-  extraUserFields?: (keyof User)[]
-) => {
-  const [users, setUsers] = useState<UserSearchResult[] | undefined>(undefined)
-
-  const debouncedSearchUsers = debounce((query, limit) => {
-    searchUsers(query, limit, extraUserFields).then(setUsers)
-  }, 200)
-  useEffect(() => {
-    debouncedSearchUsers(query, limit)
-    return () => debouncedSearchUsers.cancel()
-  }, [query, limit])
-
-  return users
 }
 
 export const useRecentlyActiveUsersAndPrivateUsers = (limit: number) => {

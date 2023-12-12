@@ -12,12 +12,13 @@ import { CandidateBet } from 'common/new-bet'
 import type { Bet, LimitBet } from 'common/bet'
 import { contentSchema } from 'common/api/zod-types'
 import { Lover } from 'common/love/lover'
-import { CPMMMultiContract } from 'common/contract'
+import { CPMMMultiContract, Contract } from 'common/contract'
 import { CompatibilityScore } from 'common/love/compatibility-score'
 import type { Txn, ManaPayTxn } from 'common/txn'
 import { LiquidityProvision } from 'common/liquidity-provision'
 import { LiteUser } from './user-types'
 import { League } from 'common/leagues'
+import { searchProps } from './market-search-types'
 
 export const marketCacheStrategy = 's-maxage=15, stale-while-revalidate=45'
 
@@ -269,6 +270,22 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
+  'search-markets': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    cache: marketCacheStrategy,
+    returns: [] as LiteMarket[],
+    props: searchProps,
+  },
+  'search-markets-full': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    cache: marketCacheStrategy,
+    returns: [] as Contract[],
+    props: searchProps,
+  },
   'send-mana': {
     method: 'POST',
     visibility: 'public',
@@ -341,6 +358,20 @@ export const API = (_apiTypeCheck = {
       .object({
         limit: z.coerce.number().gte(0).lte(1000).default(500),
         before: z.string().optional(),
+      })
+      .strict(),
+  },
+  'search-users': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    cache: 's-maxage=45, stale-while-revalidate=45',
+    returns: [] as LiteUser[],
+    props: z
+      .object({
+        term: z.string(),
+        limit: z.coerce.number().gte(0).lte(1000).default(500),
+        page: z.coerce.number().gte(0).default(0),
       })
       .strict(),
   },

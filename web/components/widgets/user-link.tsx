@@ -17,7 +17,6 @@ import ScalesIcon from 'web/lib/icons/scales-icon.svg'
 import { linkClass } from './site-link'
 import Foldy from 'web/public/logo.svg'
 import { Col } from 'web/components/layout/col'
-import { User } from 'common/user'
 import { BsFillArrowThroughHeartFill } from 'react-icons/bs'
 
 export const isFresh = (createdTime: number) =>
@@ -229,7 +228,13 @@ function MarketCreatorBadge() {
 }
 
 export const StackedUserNames = (props: {
-  user: User
+  user: {
+    id: string
+    name: string
+    username: string
+    createdTime: number
+    isBannedFromPosting?: boolean
+  }
   followsYou?: boolean
   className?: string
   usernameClassName?: string

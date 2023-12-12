@@ -2,8 +2,14 @@ import { db } from './db'
 import { run, selectFrom } from 'common/supabase/utils'
 import { User } from 'common/user'
 import { Period } from '../firebase/users'
+import { api } from '../firebase/api'
 
-export type UserSearchResult = Awaited<ReturnType<typeof searchUsers>>[number]
+export type UserDisplay = {
+  id: string
+  name: string
+  username: string
+  avatarUrl?: string
+}
 
 const defaultFields = ['id', 'name', 'username', 'avatarUrl'] as const
 
@@ -16,24 +22,9 @@ export async function getUserByUsername(username: string) {
   return data[0] as User
 }
 
-export async function searchUsers(
-  prompt: string,
-  limit: number,
-  extraFields?: (keyof User)[]
-) {
-  const fields = [...defaultFields, ...(extraFields ?? [])]
-  if (prompt === '') {
-    const { data } = await run(
-      selectFrom(db, 'users', ...fields)
-        .order('data->creatorTraders->allTime', { ascending: false } as any)
-        .limit(limit)
-    )
-    return data
-  }
-
-  const { data } = await db.rpc('search_users', { query: prompt, count: limit })
-
-  return data?.map((d) => d.data as User) ?? []
+export async function searchUsers(prompt: string, limit: number) {
+  const users = await api('search-users', { term: prompt, limit: limit })
+  return users
 }
 
 // leaderboards

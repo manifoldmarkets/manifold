@@ -18,10 +18,12 @@ ENV=${1:-dev}
 case $ENV in
     dev)
         ENVIRONMENT=DEV
-        GCLOUD_PROJECT=dev-mantic-markets ;;
+        GCLOUD_PROJECT=dev-mantic-markets
+        MACHINE_TYPE=n2-standard-2 ;;
     prod)
         ENVIRONMENT=PROD
-        GCLOUD_PROJECT=mantic-markets ;;
+        GCLOUD_PROJECT=mantic-markets
+        MACHINE_TYPE=n2-standard-8 ;;
     *)
         echo "Invalid environment; must be dev or prod."
         exit 1
@@ -52,7 +54,7 @@ echo "Creating new instance template ${TEMPLATE_NAME} using Docker image https:/
 gcloud compute instance-templates create-with-container ${TEMPLATE_NAME} \
        --project ${GCLOUD_PROJECT} \
        --container-image ${IMAGE_URL} \
-       --machine-type n2-standard-8 \
+       --machine-type ${MACHINE_TYPE} \
        --container-env ENVIRONMENT=${ENVIRONMENT},GOOGLE_CLOUD_PROJECT=${GCLOUD_PROJECT} \
        --no-user-output-enabled \
        --scopes default,cloud-platform

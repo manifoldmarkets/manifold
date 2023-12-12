@@ -1,67 +1,30 @@
-import { UserSearchResult } from 'web/lib/supabase/users'
-import { Col } from '../layout/col'
+import { LiteUser } from 'common/api/user-types'
 import Link from 'next/link'
+import { FollowButton } from '../buttons/follow-button'
+import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { Avatar } from '../widgets/avatar'
 import { StackedUserNames } from '../widgets/user-link'
-import { User } from 'common/user'
-import { FollowButton } from '../buttons/follow-button'
-import { shortFormatNumber } from 'common/util/format'
-import clsx from 'clsx'
-import { LoadingIndicator } from '../widgets/loading-indicator'
 
-export const UserResults = (props: {
-  users: UserSearchResult[]
-  userResultProps?: {
-    onUserClick?: (user: User) => void
-    hideFollowButton?: boolean
-    loadingUserId?: string
-  }
-}) => {
-  const { users, userResultProps = {} } = props
-  const { onUserClick, loadingUserId } = userResultProps
+export const UserResults = (props: { users: LiteUser[] }) => {
+  const { users } = props
+
   return (
     <Col className={'mt-1 w-full gap-1'}>
       {users.map((user) => {
-        if (!!onUserClick) {
-          return (
-            <div
-              key={user.id}
-              onClick={() => {
-                if (!loadingUserId) {
-                  onUserClick(user)
-                }
-              }}
-              className={clsx(loadingUserId ? 'pointer-events-none' : '')}
-            >
-              <UserResult user={user} userResultProps={userResultProps} />
-            </div>
-          )
-        } else {
-          return (
-            <Link key={user.id} href={`/${user.username}`}>
-              <UserResult user={user} userResultProps={userResultProps} />
-            </Link>
-          )
-        }
+        return (
+          <Link key={user.id} href={`/${user.username}`}>
+            <UserResult user={user} />
+          </Link>
+        )
       })}
     </Col>
   )
 }
 
-function UserResult(props: {
-  user: User
-  userResultProps?: {
-    onUserClick?: (user: User) => void
-    hideFollowButton?: boolean
-    loadingUserId?: string
-  }
-}) {
-  const { user, userResultProps = {} } = props
-  const { id, name, username, avatarUrl, bio, createdTime, creatorTraders } =
-    user
+function UserResult(props: { user: LiteUser }) {
+  const { id, name, username, avatarUrl, bio, createdTime } = props.user
 
-  const { hideFollowButton, loadingUserId } = userResultProps
   return (
     <Row className={'hover:bg-primary-100 p-1'}>
       <Col className={'w-full'}>
@@ -73,23 +36,16 @@ function UserResult(props: {
               className={'mt-1'}
             />
             <StackedUserNames
-              user={{ id, name, username, avatarUrl, createdTime } as User}
+              user={{ id, name, username, createdTime }}
               className={'font-normal sm:text-lg'}
               usernameClassName={'sm:text-sm font-normal'}
             />
           </Row>
           <Row className="gap-1">
-            {!hideFollowButton && <FollowButton size={'xs'} userId={id} />}
-            {!!loadingUserId && loadingUserId === id && <LoadingIndicator />}
+            <FollowButton size={'xs'} userId={id} />
           </Row>
         </Row>
         <div className={'text-ink-500 ml-1 line-clamp-2 text-sm'}>
-          {creatorTraders.allTime > 0 && (
-            <span className={'mr-1'}>
-              {shortFormatNumber(creatorTraders.allTime)} traders
-              {bio && ' •'}
-            </span>
-          )}
           <span>{bio}</span>
         </div>
       </Col>

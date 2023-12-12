@@ -6,13 +6,13 @@ import { Avatar } from 'web/components/widgets/avatar'
 import { Row } from 'web/components/layout/row'
 import { UserLink } from 'web/components/widgets/user-link'
 import { Input } from './widgets/input'
-import { searchUsers, UserSearchResult } from 'web/lib/supabase/users'
+import { searchUsers, UserDisplay } from 'web/lib/supabase/users'
 import { Col } from 'web/components/layout/col'
 import { Button } from 'web/components/buttons/button'
 
 export function SelectUsers(props: {
-  setSelectedUsers: (users: UserSearchResult[]) => void
-  selectedUsers: UserSearchResult[]
+  setSelectedUsers: (users: UserDisplay[]) => void
+  selectedUsers: UserDisplay[]
   ignoreUserIds: string[]
   showSelectedUsersTitle?: boolean
   selectedUsersClassName?: string
@@ -33,7 +33,7 @@ export function SelectUsers(props: {
     searchLimit,
   } = props
   const [query, setQuery] = useState('')
-  const [filteredUsers, setFilteredUsers] = useState<UserSearchResult[]>([])
+  const [filteredUsers, setFilteredUsers] = useState<UserDisplay[]>([])
 
   const requestId = useRef(0)
   const queryReady = query.length > 1

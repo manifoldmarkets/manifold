@@ -553,20 +553,6 @@ or replace function count_recent_comments_by_contract () returns table (contract
 $$ language sql;
 
 create
-or replace function search_users (query text, count integer) returns setof users as $$
-select *
-from users
-where users.name_username_vector @@ websearch_to_tsquery(query)
-   or username % query
-   or name % query
-order by greatest(
-    similarity(query, name),
-    similarity(query, username)
-  ) desc,
-  coalesce(data->'creatorTraders'->'allTime',0) desc nulls last
-limit count $$ language sql stable;
-
-create
 or replace function extract_text_from_rich_text_json (description jsonb) returns text language sql immutable as $$
 WITH RECURSIVE content_elements AS (
   SELECT jsonb_array_elements(description->'content') AS element

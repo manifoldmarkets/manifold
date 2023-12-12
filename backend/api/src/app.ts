@@ -45,7 +45,6 @@ import { getuserisgroupmember } from './get-user-is-group-member'
 import { completequest } from './complete-quest'
 import { getsupabasetoken } from './get-supabase-token'
 import { updateUserEmbedding } from './update-user-embedding'
-import { supabasesearchcontracts } from './supabase-search-contract'
 import { deleteMarket } from './delete-market'
 import { saveTopic } from './save-topic'
 import { getcontractparams } from './get-contract-params'
@@ -125,6 +124,12 @@ import { getGroup } from './get-group'
 import { getPositions } from './get-positions'
 import { getLeagues } from './get-leagues'
 import { addOrRemoveGroupFromContract } from './update-tag'
+import { searchUsers } from './supabase-search-users'
+import {
+  searchMarketsLite,
+  searchMarketsFull,
+  searchMarketsLegacy,
+} from './supabase-search-contract'
 
 const allowCorsUnrestricted: RequestHandler = cors({})
 const allowCorsManifold: RequestHandler = cors({
@@ -200,12 +205,15 @@ const handlers: { [k in APIPath]: RequestHandler } = {
   'award-bounty': awardBounty,
   leagues: getLeagues,
   markets: markets,
+  'search-markets': searchMarketsLite,
+  'search-markets-full': searchMarketsFull,
   'send-mana': sendMana,
   managrams: getManagrams,
   positions: getPositions,
   me: getCurrentUser,
   user: getUser,
   users: getUsers,
+  'search-users': searchUsers,
   'save-twitch': saveTwitchCredentials,
   'compatible-lovers': getCompatibleLovers,
 }
@@ -275,7 +283,7 @@ app.post(
   ...apiRoute(updateUserDisinterestEmbedding)
 )
 app.get('/getsupabasetoken', ...apiRoute(getsupabasetoken))
-app.post('/supabasesearchcontracts', ...apiRoute(supabasesearchcontracts))
+app.post('/supabasesearchcontracts', ...apiRoute(searchMarketsLegacy)) // TODO: remove after a few days
 app.post('/delete-market', ...apiRoute(deleteMarket))
 app.post('/save-topic', ...apiRoute(saveTopic))
 app.post('/boost-market', ...apiRoute(boostmarket))

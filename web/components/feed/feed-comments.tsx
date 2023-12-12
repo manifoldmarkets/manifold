@@ -41,7 +41,7 @@ import { useEvent } from 'web/hooks/use-event'
 import { useIsVisible } from 'web/hooks/use-is-visible'
 import { isBlocked, usePrivateUser, useUser } from 'web/hooks/use-user'
 import { api } from 'web/lib/firebase/api'
-import { firebaseLogin, User } from 'web/lib/firebase/users'
+import { firebaseLogin } from 'web/lib/firebase/users'
 import TriangleDownFillIcon from 'web/lib/icons/triangle-down-fill-icon.svg'
 import TriangleFillIcon from 'web/lib/icons/triangle-fill-icon.svg'
 import { track } from 'web/lib/service/analytics'
@@ -579,14 +579,12 @@ export function DotMenu(props: {
       {user && tipping && (
         <PaymentsModal
           fromUser={user}
-          toUser={
-            {
-              id: comment.userId,
-              name: comment.userName,
-              username: comment.userUsername,
-              avatarUrl: comment.userAvatarUrl ?? '',
-            } as User
-          }
+          toUser={{
+            id: comment.userId,
+            name: comment.userName,
+            username: comment.userUsername,
+            avatarUrl: comment.userAvatarUrl ?? '',
+          }}
           setShow={setTipping}
           show={tipping}
           groupId={comment.id}
