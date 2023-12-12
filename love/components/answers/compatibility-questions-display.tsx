@@ -14,7 +14,11 @@ import {
 import { useEffect, useState } from 'react'
 import DropdownMenu from 'web/components/comments/dropdown-menu'
 import { Col } from 'web/components/layout/col'
-import { MODAL_CLASS, Modal } from 'web/components/layout/modal'
+import {
+  MODAL_CLASS,
+  Modal,
+  SCROLLABLE_MODAL_CLASS,
+} from 'web/components/layout/modal'
 import { Row } from 'web/components/layout/row'
 import { Linkify } from 'web/components/widgets/linkify'
 import { Pagination } from 'web/components/widgets/pagination'
@@ -398,51 +402,61 @@ function QuestionCompatibilityButton(props: {
       <Modal open={open} setOpen={setOpen}>
         <Col className={MODAL_CLASS}>
           <Subtitle>{question.question}</Subtitle>
-          <div className={clsx('grid w-full grid-cols-2 gap-4 text-sm')}>
-            <Avatar
-              username={user1.username}
-              avatarUrl={user1.avatarUrl}
-              size="xl"
-              className="mx-auto"
-            />
-            <Avatar
-              username={user2.username}
-              avatarUrl={user2.avatarUrl}
-              size="xl"
-              className="mx-auto"
-            />
-          </div>
-          <div className={clsx('grid w-full grid-cols-2 gap-4 text-sm')}>
-            <div className="text-ink-400">{`${user1.username}'s preferred answers`}</div>
-            <div className="text-ink-400">{`${
-              isCurrentUser ? 'Your' : user2.username
-            } preferred answers`}</div>
-          </div>
-          <div className={clsx('grid w-full grid-cols-2 gap-4 text-sm')}>
-            <PreferredList
-              answer={answer1}
-              question={question}
-              comparedAnswer={answer2}
-              comparedUser={user2}
-            />
-            <PreferredList
-              answer={answer2}
-              question={question}
-              comparedAnswer={answer1}
-              comparedUser={user1}
-            />
-          </div>
-          <div className={clsx('mt-4 grid w-full grid-cols-2 gap-4 text-sm')}>
-            <div className="text-ink-400">{`${user1.username}'s importance ranking`}</div>
-            <div className="text-ink-400">{`${
-              isCurrentUser ? 'Your' : user2.username
-            } importance ranking`}</div>
-          </div>
-          <div className={clsx('mt-4 grid w-full grid-cols-2 gap-4 text-sm')}>
-            <ImportanceDisplay importance={answer1.importance} />
+          <Col className={clsx('gap-1', SCROLLABLE_MODAL_CLASS)}>
+            <div className={clsx('grid w-full grid-cols-2 gap-4 text-sm')}>
+              <Avatar
+                username={user1.username}
+                avatarUrl={user1.avatarUrl}
+                size="xl"
+                className="mx-auto"
+              />
+              <Avatar
+                username={user2.username}
+                avatarUrl={user2.avatarUrl}
+                size="xl"
+                className="mx-auto"
+              />
+            </div>
+            <div
+              className={clsx(
+                'text-ink-300 grid w-full grid-cols-2 gap-4 text-xs'
+              )}
+            >
+              <div>{`${user1.username}'s preferred answers`}</div>
+              <div>{`${
+                isCurrentUser ? 'Your' : user2.username
+              } preferred answers`}</div>
+            </div>
+            <div className={clsx('grid w-full grid-cols-2 gap-4 text-sm')}>
+              <PreferredList
+                answer={answer1}
+                question={question}
+                comparedAnswer={answer2}
+                comparedUser={user2}
+              />
+              <PreferredList
+                answer={answer2}
+                question={question}
+                comparedAnswer={answer1}
+                comparedUser={user1}
+              />
+            </div>
 
-            <ImportanceDisplay importance={answer2.importance} />
-          </div>
+            <div
+              className={clsx(
+                'text-ink-300 mt-4 grid w-full grid-cols-2 gap-4 text-xs'
+              )}
+            >
+              <div>{`${user1.username}'s importance ranking`}</div>
+              <div>{`${
+                isCurrentUser ? 'Your' : user2.username
+              } importance ranking`}</div>
+            </div>
+            <div className={clsx('mt-4 grid w-full grid-cols-2 gap-4 text-sm')}>
+              <ImportanceDisplay importance={answer1.importance} />
+              <ImportanceDisplay importance={answer2.importance} />
+            </div>
+          </Col>
         </Col>
       </Modal>
     </>
