@@ -128,6 +128,7 @@ import { searchUsers } from './supabase-search-users'
 import {
   searchMarketsLite,
   searchMarketsFull,
+  searchMarketsLegacy,
 } from './supabase-search-contract'
 
 const allowCorsUnrestricted: RequestHandler = cors({})
@@ -282,7 +283,7 @@ app.post(
   ...apiRoute(updateUserDisinterestEmbedding)
 )
 app.get('/getsupabasetoken', ...apiRoute(getsupabasetoken))
-app.post('/supabasesearchcontracts', ...apiRoute(searchMarketsFull)) // TODO: remove after a few days
+app.post('/supabasesearchcontracts', ...apiRoute(searchMarketsLegacy)) // TODO: remove after a few days
 app.post('/delete-market', ...apiRoute(deleteMarket))
 app.post('/save-topic', ...apiRoute(saveTopic))
 app.post('/boost-market', ...apiRoute(boostmarket))

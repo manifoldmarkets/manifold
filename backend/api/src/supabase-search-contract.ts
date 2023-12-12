@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { Contract } from 'common/contract'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { typedEndpoint } from './helpers'
+import { MaybeAuthedEndpoint, typedEndpoint } from './helpers'
 import {
   hasGroupAccess,
   getSearchContractSQL,
@@ -28,6 +28,13 @@ export const searchMarketsFull = typedEndpoint(
   'search-markets-full',
   async (props, auth, { logError }) => {
     return await search(props, auth?.uid, logError)
+  }
+)
+
+// TODO: delete after a few days
+export const searchMarketsLegacy = MaybeAuthedEndpoint(
+  async (req, auth, _log, logError) => {
+    return await search(req.body, auth?.uid, logError)
   }
 )
 
