@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { Contract } from 'common/contract'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { Json, MaybeAuthedEndpoint, validate } from './helpers'
+import { typedEndpoint } from './helpers'
 import {
   hasGroupAccess,
   getSearchContractSQL,
@@ -13,17 +13,27 @@ import { getGroupIdFromSlug } from 'shared/supabase/groups'
 import { orderBy, uniqBy } from 'lodash'
 import { convertContract } from 'common/supabase/contracts'
 import { GCPLog } from 'shared/utils'
+import { toLiteMarket } from 'common/api/market-types'
+import { searchProps } from 'common/api/market-search-types'
 
-export const supabasesearchcontracts = MaybeAuthedEndpoint(
-  async (req, auth, log, logError) => {
-    return await searchContracts(req.body, auth?.uid, log, logError)
+export const searchMarketsLite = typedEndpoint(
+  'search-markets',
+  async (props, auth, { logError }) => {
+    const contracts = await search(props, auth?.uid, logError)
+    return contracts.map(toLiteMarket)
   }
 )
 
-export const searchContracts = async (
-  body: z.infer<typeof bodySchema>,
+export const searchMarketsFull = typedEndpoint(
+  'search-markets-full',
+  async (props, auth, { logError }) => {
+    return await search(props, auth?.uid, logError)
+  }
+)
+
+const search = async (
+  props: z.infer<typeof searchProps>,
   userId: string | undefined,
-  log: GCPLog,
   logError: GCPLog
 ) => {
   const {
@@ -35,10 +45,10 @@ export const searchContracts = async (
     limit,
     topicSlug: possibleTopicSlug,
     creatorId,
-  } = validate(bodySchema, body)
+  } = props
 
   if (limit === 0) {
-    return [] as unknown as Json
+    return []
   }
 
   const isForYou = possibleTopicSlug === 'for-you'
@@ -125,56 +135,5 @@ export const searchContracts = async (
     ).slice(0, limit)
   }
 
-  return (contracts ?? []) as unknown as Json
+  return contracts
 }
-
-export const FIRESTORE_DOC_REF_ID_REGEX = /^[a-zA-Z0-9_-]{1,}$/
-
-const bodySchema = z
-  .object({
-    term: z.string(),
-    filter: z
-      .union([
-        z.literal('open'),
-        z.literal('closing-this-month'),
-        z.literal('closing-next-month'),
-        z.literal('closed'),
-        z.literal('resolved'),
-        z.literal('all'),
-      ])
-      .default('all'),
-    sort: z
-      .union([
-        z.literal('newest'),
-        z.literal('score'),
-        z.literal('daily-score'),
-        z.literal('24-hour-vol'),
-        z.literal('most-popular'),
-        z.literal('liquidity'),
-        z.literal('last-updated'),
-        z.literal('close-date'),
-        z.literal('resolve-date'),
-        z.literal('random'),
-        z.literal('bounty-amount'),
-        z.literal('prob-descending'),
-        z.literal('prob-ascending'),
-      ])
-      .default('most-popular'),
-    contractType: z
-      .union([
-        z.literal('ALL'),
-        z.literal('BINARY'),
-        z.literal('MULTIPLE_CHOICE'),
-        z.literal('FREE_RESPONSE'),
-        z.literal('PSEUDO_NUMERIC'),
-        z.literal('BOUNTIED_QUESTION'),
-        z.literal('STONK'),
-        z.literal('POLL'),
-      ])
-      .default('ALL'),
-    offset: z.number().gte(0).default(0),
-    limit: z.number().gt(0).lte(1000).default(100),
-    topicSlug: z.string().regex(FIRESTORE_DOC_REF_ID_REGEX).optional(),
-    creatorId: z.string().regex(FIRESTORE_DOC_REF_ID_REGEX).optional(),
-  })
-  .strict()

@@ -15,13 +15,14 @@ import { Bet } from 'common/bet'
 import { LinkPreview } from 'common/link-preview'
 import { API, APIPath, APIParams, APIResponse } from 'common/api/schema'
 import { forEach } from 'lodash'
+import { removeUndefinedProps } from 'common/util/object'
 
 export { APIError } from 'common/api/utils'
 
 export function appendQuery(url: string, props: Record<string, any>) {
   const [base, query] = url.split(/\?(.+)/)
   const params = new URLSearchParams(query)
-  forEach(props, (v, k) => params.set(k, v))
+  forEach(removeUndefinedProps(props), (v, k) => params.set(k, v))
   return `${base}?${params.toString()}`
 }
 
@@ -223,11 +224,7 @@ export function searchContracts(params: {
   topicSlug?: string
   creatorId?: string
 }) {
-  return maybeAuthedCall(
-    getApiUrl('supabasesearchcontracts'),
-    'POST',
-    params
-  ) as Promise<Contract[]>
+  return api('search-markets-full', params)
 }
 
 export function deleteMarket(params: { contractId: string }) {
