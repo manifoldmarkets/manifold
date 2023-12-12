@@ -22,7 +22,7 @@ export { APIError } from 'common/api/utils'
 export function appendQuery(url: string, props: Record<string, any>) {
   const [base, query] = url.split(/\?(.+)/)
   const params = new URLSearchParams(query)
-  forEach(removeUndefinedProps(props), (v, k) => params.set(k, v))
+  forEach(removeUndefinedProps(props ?? {}), (v, k) => params.set(k, v))
   return `${base}?${params.toString()}`
 }
 
