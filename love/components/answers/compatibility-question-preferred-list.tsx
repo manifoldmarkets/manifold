@@ -5,6 +5,7 @@ import { Col } from 'web/components/layout/col'
 import clsx from 'clsx'
 import { User } from 'common/user'
 import { Avatar } from 'web/components/widgets/avatar'
+import { Tooltip } from 'web/components/widgets/tooltip'
 
 export function PreferredList(props: {
   question: QuestionWithCountType
@@ -22,27 +23,27 @@ export function PreferredList(props: {
   return (
     <Col className="gap-2">
       {sortedEntries.map(([key, value]) => (
-        <Row key={key} className="items-center gap-2">
-          <div
-            className={clsx(
-              answer.pref_choices?.includes(value)
-                ? comparedAnswer.multiple_choice === value
-                  ? 'bg-ink-700 dark:bg-ink-400 text-ink-0 dark:text-ink-1000'
-                  : 'bg-ink-700 dark:bg-ink-400 text-ink-0 dark:text-ink-1000'
-                : 'text-ink-300',
-              'bg-canvas-50 relative w-fit gap-1 rounded py-1 pl-2 pr-6 text-sm '
-            )}
-          >
-            {key}
-          </div>
+        <div
+          key={key}
+          className={clsx(
+            answer.pref_choices?.includes(value)
+              ? comparedAnswer.multiple_choice === value
+                ? 'text-ink-1000  dark:text-ink-1000 '
+                : 'text-ink-1000 dark:text-ink-1000'
+              : 'opacity-20',
+            'bg-canvas-50 relative w-fit gap-1 rounded py-2 pl-2 pr-8 text-sm'
+          )}
+        >
+          {key}
           {comparedAnswer.multiple_choice === value && (
             <Avatar
               username={comparedUser.username}
               avatarUrl={comparedUser.avatarUrl}
               size="2xs"
+              className=" ring-primary-500 absolute bottom-2 right-2 ring-2"
             />
           )}
-        </Row>
+        </div>
       ))}
     </Col>
   )

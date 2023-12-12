@@ -29,6 +29,7 @@ import {
 import {
   AnswerCompatibilityQuestionContent,
   IMPORTANCE_CHOICES,
+  IMPORTANCE_RADIO_COLORS,
 } from './answer-compatibility-question-content'
 import clsx from 'clsx'
 import { Avatar } from 'web/components/widgets/avatar'
@@ -229,14 +230,16 @@ function CompatibilityAnswerBlock(props: {
         {question.question}
         <Row className="gap-4">
           {comparedLover && (
-            <CompatibilityDisplay
-              question={question}
-              lover1={lover}
-              answer1={answer}
-              lover2={comparedLover as Lover}
-              currentUserIsComparedLover={!fromLoverPage}
-              currentUser={currentUser}
-            />
+            <div className="hidden sm:block">
+              <CompatibilityDisplay
+                question={question}
+                lover1={lover}
+                answer1={answer}
+                lover2={comparedLover as Lover}
+                currentUserIsComparedLover={!fromLoverPage}
+                currentUser={currentUser}
+              />
+            </div>
           )}
           {isCurrentUser && (
             <DropdownMenu
@@ -253,9 +256,24 @@ function CompatibilityAnswerBlock(props: {
           )}
         </Row>
       </Row>
-      <Row className="bg-canvas-50 w-fit gap-1 rounded py-1 pl-2 pr-3 text-sm">
-        {answerText}
-      </Row>
+      <Col className="gap-2">
+        <Row className="bg-canvas-50 w-fit gap-1 rounded py-1 pl-2 pr-3 text-sm">
+          {answerText}
+        </Row>
+        {comparedLover && (
+          <Row className="w-full justify-end sm:hidden">
+            <CompatibilityDisplay
+              question={question}
+              lover1={lover}
+              answer1={answer}
+              lover2={comparedLover as Lover}
+              currentUserIsComparedLover={!fromLoverPage}
+              currentUser={currentUser}
+            />
+          </Row>
+        )}
+      </Col>
+
       {answer.explanation && (
         <Linkify className="font-semibold" text={answer.explanation} />
       )}
@@ -365,7 +383,7 @@ function QuestionCompatibilityButton(props: {
       <button
         onClick={() => setOpen(true)}
         className={clsx(
-          'text-ink-1000 w-24 rounded-full px-2 text-xs transition-colors ',
+          'text-ink-1000 h-fit w-24 rounded-full px-2 py-0.5 text-xs transition-colors',
           answerCompatibility <= 0.25
             ? 'bg-red-500/20 hover:bg-red-500/30'
             : answerCompatibility <= 0.5
@@ -421,16 +439,27 @@ function QuestionCompatibilityButton(props: {
             } importance ranking`}</div>
           </div>
           <div className={clsx('mt-4 grid w-full grid-cols-2 gap-4 text-sm')}>
-            <div className="text-ink-400">
-              {getStringKeyFromNumValue(answer1.importance, IMPORTANCE_CHOICES)}
-            </div>
-            <div className="text-ink-400">
-              {getStringKeyFromNumValue(answer2.importance, IMPORTANCE_CHOICES)}
-            </div>
+            <ImportanceDisplay importance={answer1.importance} />
+
+            <ImportanceDisplay importance={answer2.importance} />
           </div>
         </Col>
       </Modal>
     </>
+  )
+}
+
+function ImportanceDisplay(props: { importance: number }) {
+  const { importance } = props
+  return (
+    <div
+      className={clsx(
+        'text-ink-1000 w-fit rounded bg-opacity-40 px-2 py-1 text-sm',
+        IMPORTANCE_RADIO_COLORS[importance]
+      )}
+    >
+      {getStringKeyFromNumValue(importance, IMPORTANCE_CHOICES)}
+    </div>
   )
 }
 

@@ -34,7 +34,7 @@ export function AnswerCompatibilityQuestionButton(props: {
       ) : (
         <button
           onClick={() => setOpen(true)}
-          className="bg-ink-100 dark:bg-ink-300 text-ink-1000 hover:bg-ink-200 hover:dark:bg-ink-400 w-24 rounded-full px-2 text-xs transition-colors"
+          className="bg-ink-100 dark:bg-ink-300 text-ink-1000 hover:bg-ink-200 hover:dark:bg-ink-400 w-24 rounded-full px-2 py-0.5 text-xs transition-colors"
         >
           Answer
         </button>
