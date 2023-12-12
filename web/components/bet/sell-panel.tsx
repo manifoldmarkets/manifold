@@ -22,7 +22,7 @@ import {
 import { sumBy } from 'lodash'
 import { useState } from 'react'
 import { useUnfilledBetsAndBalanceByUserId } from 'web/hooks/use-bets'
-import { sellShares } from 'web/lib/firebase/api'
+import { api } from 'web/lib/firebase/api'
 import { track } from 'web/lib/service/analytics'
 import { WarningConfirmationButton } from '../buttons/warning-confirmation-button'
 import { Col } from '../layout/col'
@@ -129,20 +129,19 @@ export function SellPanel(props: {
     setError(undefined)
     setIsSubmitting(true)
 
-    await sellShares({
+    await api('sell-shares', {
       shares: isSellingAllShares ? undefined : amount,
       outcome: sharesOutcome,
       contractId: contract.id,
       answerId,
     })
-      .then((r) => {
-        console.log('Sold shares. Result:', r)
+      .then(() => {
         setIsSubmitting(false)
         setWasSubmitted(true)
         setAmount(undefined)
         if (onSellSuccess) onSellSuccess()
       })
-      .catch((e) => {
+      .catch((e: unknown) => {
         if (e instanceof APIError) {
           toast.error(e.message)
         } else {

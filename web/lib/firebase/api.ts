@@ -101,10 +101,6 @@ export function dividendCert(params: any) {
   return call(getApiUrl('dividendcert'), 'POST', params)
 }
 
-export function sellShares(params: any) {
-  return call(getApiUrl('sellshares'), 'POST', params)
-}
-
 export function claimManalink(params: any) {
   return call(getApiUrl('claimmanalink'), 'POST', params)
 }

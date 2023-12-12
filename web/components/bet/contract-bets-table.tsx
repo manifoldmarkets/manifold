@@ -318,7 +318,7 @@ function DpmSellButton(props: {
       submitBtn={{ label: 'Sell', color: 'green' }}
       onSubmit={async () => {
         setIsSubmitting(true)
-        await api('sell-bet', { contractId: contract.id, betId: bet.id })
+        await api('sell-shares-dpm', { contractId: contract.id, betId: bet.id })
         setIsSubmitting(false)
       }}
     >

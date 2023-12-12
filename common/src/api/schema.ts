@@ -106,7 +106,19 @@ export const API = (_apiTypeCheck = {
     props: z.object({ betId: z.string() }).strict(),
     returns: {} as LimitBet,
   },
-  'sell-bet': {
+  'sell-shares': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    returns: {} as CandidateBet & { betId: string },
+    props: z.object({
+      contractId: z.string(),
+      shares: z.number().positive().optional(), // leave it out to sell all shares
+      outcome: z.enum(['YES', 'NO']).optional(), // leave it out to sell whichever you have
+      answerId: z.string().optional(), // Required for multi binary markets
+    }),
+  },
+  'sell-shares-dpm': {
     method: 'POST',
     visibility: 'public',
     authed: true,

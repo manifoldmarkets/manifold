@@ -18,8 +18,8 @@ import { createuser } from './create-user'
 import { createanswer } from './create-answer'
 import { placeBet } from './place-bet'
 import { cancelBet } from './cancel-bet'
-import { sellBet } from './sell-bet'
-import { sellshares } from './sell-shares'
+import { sellShareDPM } from './sell-bet'
+import { sellShares } from './sell-shares'
 import { claimmanalink } from './claim-manalink'
 import { createMarket } from './create-market'
 import { createComment } from './create-comment'
@@ -186,7 +186,8 @@ app.options('/v0', allowCorsUnrestricted)
 const handlers: { [k in APIPath]: RequestHandler } = {
   bet: placeBet,
   'cancel-bet': cancelBet,
-  'sell-bet': sellBet,
+  'sell-shares-dpm': sellShareDPM,
+  'sell-shares': sellShares,
   bets: getBets,
   comment: createComment,
   'hide-comment': hideComment,
@@ -254,8 +255,8 @@ app.post('/swapcert', ...apiRoute(swapcert))
 app.post('/dividendcert', ...apiRoute(dividendcert))
 app.post('/placebet', ...apiRoute(placeBet))
 app.post('/cancelbet', ...apiRoute(cancelBet))
-app.post('/sellbet', ...apiRoute(sellBet))
-app.post('/sellshares', ...apiRoute(sellshares))
+app.post('/sellbet', ...apiRoute(sellShareDPM))
+app.post('/sellshares', ...apiRoute(sellShares))
 app.post('/addsubsidy', ...apiRoute(addLiquidity))
 app.post('/claimmanalink', ...apiRoute(claimmanalink))
 app.post('/createmarket', ...apiRoute(createMarket))
