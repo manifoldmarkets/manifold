@@ -220,8 +220,9 @@ const handlers: { [k in APIPath]: RequestHandler } = {
 
 Object.entries(handlers).forEach(([path, handler]) => {
   const api = API[path as APIPath]
-  const cors =
-    api.visibility === 'public' ? allowCorsUnrestricted : allowCorsManifold
+  const cors = ['public', 'undocumented'].includes(api.visibility)
+    ? allowCorsUnrestricted
+    : allowCorsManifold
   const cache = cacheController((api as any).cache)
 
   const apiRoute = [
