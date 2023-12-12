@@ -260,10 +260,13 @@ function CompatibilityAnswerBlock(props: {
           )}
         </Row>
       </Row>
+      <Row className="bg-canvas-50 w-fit gap-1 rounded py-1 pl-2 pr-3 text-sm">
+        {answerText}
+      </Row>
       <Col className="gap-2">
-        <Row className="bg-canvas-50 w-fit gap-1 rounded py-1 pl-2 pr-3 text-sm">
-          {answerText}
-        </Row>
+        {answer.explanation && (
+          <Linkify className="font-semibold" text={answer.explanation} />
+        )}
         {comparedLover && (
           <Row className="w-full justify-end sm:hidden">
             <CompatibilityDisplay
@@ -277,10 +280,6 @@ function CompatibilityAnswerBlock(props: {
           </Row>
         )}
       </Col>
-
-      {answer.explanation && (
-        <Linkify className="font-semibold" text={answer.explanation} />
-      )}
       <Modal open={editOpen} setOpen={setEditOpen}>
         <Col className={MODAL_CLASS}>
           <AnswerCompatibilityQuestionContent
