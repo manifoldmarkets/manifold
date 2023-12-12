@@ -37,8 +37,9 @@ import {
 } from './answer-compatibility-question-content'
 import clsx from 'clsx'
 import { Avatar } from 'web/components/widgets/avatar'
-import { UserLink } from 'web/components/widgets/user-link'
+import { UserLink, shortenName } from 'web/components/widgets/user-link'
 import { PreferredList } from './compatibility-question-preferred-list'
+import { lowerCase } from 'lodash'
 
 const NUM_QUESTIONS_TO_SHOW = 8
 
@@ -114,7 +115,7 @@ export function CompatibilityQuestionsDisplay(props: {
   return (
     <Col className="gap-4">
       <Subtitle>{`${
-        isCurrentUser ? 'Your' : user.name.split(' ')[0] + `'s`
+        isCurrentUser ? 'Your' : shortenName(user.name) + `'s`
       } Compatibility Prompts`}</Subtitle>
       {answeredQuestions.length <= 0 ? (
         <span className="text-ink-600 text-sm">
@@ -381,12 +382,13 @@ function QuestionCompatibilityButton(props: {
   const [open, setOpen] = useState(false)
   const user1 = lover1.user
   const user2 = lover2.user
+
   return (
     <>
       <button
         onClick={() => setOpen(true)}
         className={clsx(
-          'text-ink-1000 h-fit w-24 rounded-full px-2 py-0.5 text-xs transition-colors',
+          'text-ink-1000 h-fit w-28 rounded-full px-2 py-0.5 text-xs transition-colors',
           answerCompatibility <= 0.25
             ? 'bg-red-500/20 hover:bg-red-500/30'
             : answerCompatibility <= 0.5
@@ -396,65 +398,52 @@ function QuestionCompatibilityButton(props: {
             : 'bg-green-500/20 hover:bg-green-500/30'
         )}
       >
-        {answerCompatibility * 100}% match
+        {answerCompatibility <= 0.25
+          ? 'Incompatible'
+          : answerCompatibility <= 0.5
+          ? 'Semi-compatible'
+          : answerCompatibility <= 0.75
+          ? 'Compatible'
+          : 'Very Compatible'}
       </button>
       <Modal open={open} setOpen={setOpen}>
         <Col className={MODAL_CLASS}>
           <Subtitle>{question.question}</Subtitle>
-          <Col className={clsx('gap-1', SCROLLABLE_MODAL_CLASS)}>
-            <div className={clsx('grid w-full grid-cols-2 gap-4 text-sm')}>
-              <Avatar
-                username={user1.username}
-                avatarUrl={user1.avatarUrl}
-                size="xl"
-                className="mx-auto"
-              />
-              <Avatar
-                username={user2.username}
-                avatarUrl={user2.avatarUrl}
-                size="xl"
-                className="mx-auto"
-              />
+          <Col className={clsx('w-full gap-1', SCROLLABLE_MODAL_CLASS)}>
+            <div className="text-ink-600 items-center gap-2">
+              {`${shortenName(user1.name)}'s preferred answers`}
             </div>
-            <div
-              className={clsx(
-                'text-ink-300 grid w-full grid-cols-2 gap-4 text-xs'
-              )}
-            >
-              <div>{`${user1.username}'s preferred answers`}</div>
-              <div>{`${
-                isCurrentUser ? 'Your' : user2.username
-              } preferred answers`}</div>
+            <div className="text-ink-500 text-sm">
+              {shortenName(user1.name)} marked this as{' '}
+              <span className="font-semibold">
+                <ImportanceDisplay importance={answer1.importance} />
+              </span>
             </div>
-            <div className={clsx('grid w-full grid-cols-2 gap-4 text-sm')}>
-              <PreferredList
-                answer={answer1}
-                question={question}
-                comparedAnswer={answer2}
-                comparedUser={user2}
-              />
-              <PreferredList
-                answer={answer2}
-                question={question}
-                comparedAnswer={answer1}
-                comparedUser={user1}
-              />
-            </div>
+            <PreferredList
+              answer={answer1}
+              question={question}
+              comparedAnswer={answer2}
+              comparedUser={user2}
+              isComparedUser={isCurrentUser}
+            />
 
-            <div
-              className={clsx(
-                'text-ink-300 mt-4 grid w-full grid-cols-2 gap-4 text-xs'
-              )}
-            >
-              <div>{`${user1.username}'s importance ranking`}</div>
-              <div>{`${
-                isCurrentUser ? 'Your' : user2.username
-              } importance ranking`}</div>
+            <div className="text-ink-600 mt-6 items-center gap-2">
+              {`${
+                isCurrentUser ? 'Your' : shortenName(user2.name) + `'s`
+              } preferred answers`}
             </div>
-            <div className={clsx('mt-4 grid w-full grid-cols-2 gap-4 text-sm')}>
-              <ImportanceDisplay importance={answer1.importance} />
-              <ImportanceDisplay importance={answer2.importance} />
+            <div className="text-ink-500 text-sm">
+              {isCurrentUser ? 'You' : shortenName(user2.name)} marked this as{' '}
+              <span className="font-semibold">
+                <ImportanceDisplay importance={answer2.importance} />
+              </span>
             </div>
+            <PreferredList
+              answer={answer2}
+              question={question}
+              comparedAnswer={answer1}
+              comparedUser={user1}
+            />
           </Col>
         </Col>
       </Modal>
@@ -465,14 +454,9 @@ function QuestionCompatibilityButton(props: {
 function ImportanceDisplay(props: { importance: number }) {
   const { importance } = props
   return (
-    <div
-      className={clsx(
-        'text-ink-1000 w-fit rounded bg-opacity-40 px-2 py-1 text-sm',
-        IMPORTANCE_RADIO_COLORS[importance]
-      )}
-    >
+    <span className={clsx(' text-ink-700 w-fit')}>
       {getStringKeyFromNumValue(importance, IMPORTANCE_CHOICES)}
-    </div>
+    </span>
   )
 }
 

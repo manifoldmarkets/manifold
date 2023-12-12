@@ -46,6 +46,7 @@ export const IMPORTANCE_DISPLAY_COLORS: ImportanceColorsType = {
   3: `bg-teal-400`,
 }
 
+
 export const submitCompatibilityAnswer = async (
   newAnswer: CompatibilityAnswerSubmitType
 ) => {
