@@ -148,7 +148,9 @@ export function ContractTabs(props: {
             content: (
               <UserPositionsTable
                 positions={
-                  Object.values(userPositionsByOutcome).length > 0
+                  // If contract is resolved, will have to refetch positions by profit
+                  Object.values(userPositionsByOutcome).length > 0 &&
+                  !contract.isResolved
                     ? userPositionsByOutcome
                     : undefined
                 }

@@ -4,7 +4,7 @@ import { OnLover } from 'common/love/love-comment'
 
 export const MAX_COMMENT_LENGTH = 10000
 
-export type AnyCommentType = OnContract | OnPost | OnLover
+export type AnyCommentType = OnContract | OnLover
 
 // Currently, comments are created after the bet, not atomically with the bet.
 // They're uniquely identified by the pair contractId/betId.
@@ -61,10 +61,4 @@ export type OnContract = {
   betReplyAmountsByOutcome?: { [outcome: string]: number }
 }
 
-export type OnPost = {
-  commentType: 'post'
-  postId: string
-}
-
 export type ContractComment = Comment<OnContract>
-export type PostComment = Comment<OnPost>

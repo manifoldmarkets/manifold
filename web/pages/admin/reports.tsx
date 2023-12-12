@@ -13,10 +13,9 @@ import { Content } from 'web/components/widgets/editor'
 import { Title } from 'web/components/widgets/title'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { BannedBadge, UserLink } from 'web/components/widgets/user-link'
-import { getComment, getCommentsOnPost } from 'web/lib/supabase/comments'
+import { getComment } from 'web/lib/supabase/comments'
 import { getContract } from 'web/lib/supabase/contracts'
 import { db } from 'web/lib/supabase/db'
-import { getPost, postPath } from 'web/lib/supabase/post'
 import { getUser } from 'web/lib/supabase/user'
 
 export async function getStaticProps() {
@@ -172,26 +171,6 @@ const getReports = async (
               text: comment.content,
             }
           }
-          // Reported comment on a post
-        } else if (
-          contentType === 'comment' &&
-          parentType === 'post' &&
-          parentId
-        ) {
-          const post = await getPost(parentId)
-          if (post) {
-            const comments = (await getCommentsOnPost(post.id)).filter(
-              (comment) => comment.id === contentId
-            )
-            partialReport =
-              comments.length > 0
-                ? {
-                    slug: `/${postPath(post.slug)}` + '#' + comments[0].id,
-                    text: comments[0].content,
-                  }
-                : null
-          }
-          // Reported a user
         } else if (contentType === 'user') {
           const reportedUser = await getUser(contentId)
           partialReport = {

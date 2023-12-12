@@ -1,4 +1,4 @@
-import { ContractComment, PostComment } from 'common/comment'
+import { ContractComment } from 'common/comment'
 import { useEffect, useState } from 'react'
 import {
   getAllCommentRows,
@@ -7,7 +7,6 @@ import {
   getNewCommentRows,
   getNumContractComments,
   getNumUserComments,
-  getPostCommentRows,
 } from 'web/lib/supabase/comments'
 import { useSubscription } from 'web/lib/supabase/realtime/use-subscription'
 import { maxBy } from 'lodash'
@@ -89,23 +88,4 @@ export function useRealtimeComments(
     getAllCommentRows(limit)
   )
   return rows?.map((r) => r.data as ContractComment)
-}
-
-export const useRealtimePostComments = (postId: string) => {
-  const { rows } = useSubscription(
-    'post_comments',
-    { k: 'post_id', v: postId },
-    () => getPostCommentRows(postId)
-  )
-
-  console.log(rows)
-
-  return (rows ?? []).map(
-    (c) =>
-      ({
-        ...(c.data as any),
-        id: c.comment_id,
-        createdTime: c.created_time && Date.parse(c.created_time),
-      } as PostComment)
-  )
 }

@@ -6,7 +6,7 @@ create temp table
       p.data -> 'content' as new
     from
       groups g
-      join posts p on g.data ->> 'aboutPostId' = p.id
+      join old_posts p on g.data ->> 'aboutPostId' = p.id
   );
 
 update groups
@@ -17,7 +17,7 @@ from
 where
   about_updates.id = groups.id;
 
-delete from posts
+delete from old_posts
 where
   id in (
     select

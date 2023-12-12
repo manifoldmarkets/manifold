@@ -6,7 +6,6 @@ import { Contract } from './contracts'
 import { ContractTypeType, Filter, Sort } from 'web/components/supabase-search'
 import { AD_RATE_LIMIT } from 'common/boost'
 import { ContractComment } from 'common/comment'
-import { Post } from 'common/post'
 import { MaybeAuthedContractParams, SortType } from 'common/contract'
 import { Portfolio, PortfolioItem } from 'common/portfolio'
 import { ReportProps } from 'common/report'
@@ -22,7 +21,7 @@ export { APIError } from 'common/api/utils'
 export function appendQuery(url: string, props: Record<string, any>) {
   const [base, query] = url.split(/\?(.+)/)
   const params = new URLSearchParams(query)
-  forEach(removeUndefinedProps(props), (v, k) => params.set(k, v))
+  forEach(removeUndefinedProps(props ?? {}), (v, k) => params.set(k, v))
   return `${base}?${params.toString()}`
 }
 
@@ -120,18 +119,6 @@ export function updateGroup(params: { id: string } & Partial<Group>) {
 
 export function acceptChallenge(params: any) {
   return call(getApiUrl('acceptchallenge'), 'POST', params)
-}
-
-export function createPost(params: {
-  title: string
-  content: JSONContent
-  groupId?: string
-}) {
-  return call(getApiUrl('createpost'), 'POST', params)
-}
-
-export function updatePost(params: { id: string } & Partial<Post>) {
-  return call(getApiUrl('updatepost'), 'POST', params)
 }
 
 export function boostMarket(params: any) {

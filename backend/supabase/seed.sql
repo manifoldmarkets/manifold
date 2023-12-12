@@ -744,7 +744,7 @@ create table if not exists
 alter table manalink_claims cluster on manalink_claims_pkey;
 
 create table if not exists
-  posts (
+  old_posts (
     id text not null primary key default uuid_generate_v4 (),
     data jsonb not null,
     visibility text,
@@ -754,45 +754,16 @@ create table if not exists
     fs_updated_time timestamp
   );
 
-alter table posts enable row level security;
+alter table old_posts enable row level security;
 
-drop policy if exists "public read" on posts;
+drop policy if exists "public read" on old_posts;
 
-create policy "public read" on posts for
+create policy "public read" on old_posts for
 select
   using (true);
 
-alter table posts
+alter table old_posts
 cluster on posts_pkey;
-
-create table if not exists
-  post_comments (
-    post_id text not null,
-    comment_id text not null default uuid_generate_v4 (),
-    data jsonb not null,
-    fs_updated_time timestamp,
-    visibility text,
-    user_id text,
-    created_time timestamptz default now(),
-    primary key (post_id, comment_id)
-  );
-
-alter table post_comments enable row level security;
-
-drop policy if exists "public read" on post_comments;
-
-create policy "public read" on post_comments for
-select
-  using (true);
-
-drop policy if exists "user can insert" on post_comments;
-
-create policy "user can insert" on post_comments for insert
-with
-  check (true);
-
-alter table post_comments
-cluster on post_comments_pkey;
 
 create table if not exists
   user_recommendation_features (
@@ -1041,9 +1012,6 @@ add table contract_bets;
 
 alter publication supabase_realtime
 add table contract_comments;
-
-alter publication supabase_realtime
-add table post_comments;
 
 alter publication supabase_realtime
 add table group_contracts;
