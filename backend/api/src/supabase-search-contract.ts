@@ -134,8 +134,8 @@ const search = async (
 
     contracts = uniqBy(
       [
-        ...contractsOfSimilarRelevance,
         ...contractsWithStopwords,
+        ...contractsOfSimilarRelevance,
         ...contractDescriptionMatches,
       ].map((c) => c.data),
       'id'
