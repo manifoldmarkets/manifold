@@ -16,9 +16,16 @@ export type LiteUser = {
   twitterHandle?: string
   discordHandle?: string
 
+  isBot?: boolean
+  isAdmin?: boolean
+  isTrustworthy?: boolean
+  isBannedFromPosting?: boolean
+  userDeleted?: boolean
+
   balance: number
   totalDeposits: number
-
+  lastBetTime?: number
+  currentBettingStreak?: number
   profitCached: {
     daily: number
     weekly: number

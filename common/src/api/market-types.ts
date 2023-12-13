@@ -42,6 +42,10 @@ export type LiteMarket = {
   probability?: number
   p?: number
   totalLiquidity?: number
+  // For pseudo-numeric
+  value?: number
+  min?: number
+  max?: number
 
   volume: number
   volume24Hours: number
@@ -51,7 +55,9 @@ export type LiteMarket = {
   resolutionTime?: number
   resolutionProbability?: number
 
+  uniqueBettorCount: number
   lastUpdatedTime?: number
+  lastBetTime?: number
 }
 export type ApiAnswer =
   | (DpmAnswer & {

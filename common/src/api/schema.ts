@@ -73,8 +73,7 @@ export const API = (_apiTypeCheck = {
         contractId: z.string().optional(),
         contractSlug: z.string().optional(),
         limit: z.coerce.number().gte(0).lte(1000).default(1000),
-        page: z.coerce.number().gte(0).default(0), // TODO: document this
-        before: z.string().optional(),
+        page: z.coerce.number().gte(0).default(0),
         userId: z.string().optional(),
       })
       .strict(),
@@ -278,7 +277,7 @@ export const API = (_apiTypeCheck = {
         limit: z.coerce.number().gte(0).lte(1000).default(500),
         before: z.string().optional(),
         userId: z.string().optional(),
-        groupId: z.string().optional(), // TODO: document this
+        groupId: z.string().optional(),
       })
       .strict(),
   },
@@ -389,7 +388,7 @@ export const API = (_apiTypeCheck = {
   },
   'save-twitch': {
     method: 'POST',
-    visibility: 'public',
+    visibility: 'undocumented',
     authed: true,
     props: z
       .object({
