@@ -764,7 +764,7 @@ export function ContractCommentInput(props: {
   parentCommentId?: string
   clearReply?: () => void
   trackingLocation: string
-  onSubmit?: () => void
+  onSubmit?: (comment: ContractComment) => void
   commentTypes: CommentType[]
   onClearInput?: () => void
 }) {
@@ -793,8 +793,9 @@ export function ContractCommentInput(props: {
         return
       }
 
+      let comment: ContractComment | undefined
       if (type === 'comment') {
-        await api('comment', {
+        comment = await api('comment', {
           contractId: contract.id,
           content: editor.getJSON(),
           replyToAnswerId: isReplyToAnswer ? replyTo.id : undefined,
@@ -802,7 +803,7 @@ export function ContractCommentInput(props: {
           replyToBetId: isReplyToBet ? replyTo.id : undefined,
         })
       } else {
-        await toast.promise(
+        comment = await toast.promise(
           api('post', {
             contractId: contract.id,
             content: editor.getJSON(),
@@ -815,7 +816,7 @@ export function ContractCommentInput(props: {
         )
       }
       clearReply?.()
-      onSubmit?.()
+      onSubmit?.(comment)
       await track(type, {
         location: trackingLocation,
         replyTo: isReplyToBet

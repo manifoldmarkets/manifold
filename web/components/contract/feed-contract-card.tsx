@@ -53,6 +53,7 @@ export function FeedContractCard(props: {
   small?: boolean
   hide?: () => void
   showGraph?: boolean
+  hideBottomRow?: boolean
 }) {
   const {
     promotedData,
@@ -63,6 +64,7 @@ export function FeedContractCard(props: {
     small,
     hide,
     showGraph,
+    hideBottomRow,
   } = props
   const user = useUser()
 
@@ -241,14 +243,16 @@ export function FeedContractCard(props: {
         )}
 
         <CategoryTags categories={contract.groupLinks} />
-        <Col>
-          <BottomActionRow
-            contract={contract}
-            user={user}
-            underline={!!children}
-          />
-          {children}
-        </Col>
+        {!hideBottomRow && (
+          <Col>
+            <BottomActionRow
+              contract={contract}
+              user={user}
+              underline={!!children}
+            />
+            {children}
+          </Col>
+        )}
       </div>
     </ClickFrame>
   )

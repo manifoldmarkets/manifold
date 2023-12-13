@@ -20,8 +20,9 @@ export function CommentsButton(props: {
   contract: Contract
   user: User | null | undefined
   className?: string
+  highlightCommentId?: string
 }) {
-  const { contract, user, className } = props
+  const { contract, highlightCommentId, user, className } = props
 
   const [open, setOpen] = useState(false)
   const totalComments = useNumContractComments(contract.id)
@@ -48,7 +49,12 @@ export function CommentsButton(props: {
             </div>
           )}
           {open && (
-            <CommentsDialog contract={contract} open={open} setOpen={setOpen} />
+            <CommentsDialog
+              highlightCommentId={highlightCommentId}
+              contract={contract}
+              open={open}
+              setOpen={setOpen}
+            />
           )}
         </Row>
       </Tooltip>
@@ -60,8 +66,9 @@ function CommentsDialog(props: {
   contract: Contract
   open: boolean
   setOpen: (open: boolean) => void
+  highlightCommentId?: string
 }) {
-  const { contract, open, setOpen } = props
+  const { contract, highlightCommentId, open, setOpen } = props
   const comments = useCommentsOnContract(contract.id) ?? []
 
   const privateUser = usePrivateUser()
@@ -82,6 +89,7 @@ function CommentsDialog(props: {
           contract={contract}
           comments={comments}
           blockedUserIds={blockedUserIds}
+          highlightCommentId={highlightCommentId}
         />
       </Col>
     </Modal>

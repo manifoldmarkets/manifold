@@ -6,8 +6,8 @@ import {
 } from 'shared/supabase/init'
 import { getComment } from 'shared/supabase/contract_comments'
 import { createCommentOnContractInternal } from 'api/create-comment'
-import { ContractComment } from 'common/comment'
 import { repostContractToFeed } from 'shared/create-feed'
+import { ContractComment } from 'common/comment'
 
 export const post = typedEndpoint('post', async (props, auth, { log }) => {
   const { contractId, content, commentId } = props
@@ -18,19 +18,21 @@ export const post = typedEndpoint('post', async (props, auth, { log }) => {
   const creator = await getUser(auth.uid)
   if (!creator) throw new APIError(404, 'Your account was not found')
 
-  let comment: ContractComment | undefined | null
-  if (!content && !commentId)
+  let comment: ContractComment
+  if (!content && !commentId) {
     throw new APIError(400, 'Must specify content or commentId')
-  else if (content && commentId) {
+  } else if (content && commentId) {
     throw new APIError(400, 'Cannot specify both content and commentId')
   } else if (content) {
     comment = await createCommentOnContractInternal(contractId, auth, {
       content,
       isRepost: true,
     })
-  } else if (commentId) {
-    comment = await getComment(createSupabaseClient(), commentId)
-    if (!comment) throw new APIError(404, `Comment ${commentId} not found`)
+  } else {
+    if (!commentId) throw new APIError(400, 'Must specify at least a commentId')
+    const otherComment = await getComment(createSupabaseClient(), commentId)
+    if (!otherComment) throw new APIError(404, `Comment ${commentId} not found`)
+    comment = otherComment
   }
 
   log('Received post', {
@@ -57,10 +59,7 @@ export const post = typedEndpoint('post', async (props, auth, { log }) => {
       creator.avatarUrl,
     ]
   )
+  await repostContractToFeed(contract, comment, res.id, [auth.uid])
 
-  if (comment) {
-    await repostContractToFeed(contract, comment, res.id, [auth.uid])
-  }
-
-  return { success: true }
+  return comment
 })

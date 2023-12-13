@@ -6,7 +6,7 @@ import {
   type LiteMarket,
   FullMarket,
 } from './market-types'
-import type { Comment, ContractComment } from 'common/comment'
+import type { ContractComment } from 'common/comment'
 import type { User } from 'common/user'
 import { CandidateBet } from 'common/new-bet'
 import type { Bet, LimitBet } from 'common/bet'
@@ -43,7 +43,7 @@ export const API = (_apiTypeCheck = {
     method: 'POST',
     visibility: 'public',
     authed: true,
-    returns: {} as Comment,
+    returns: {} as ContractComment,
     props: z
       .object({
         contractId: z.string(),
@@ -418,7 +418,7 @@ export const API = (_apiTypeCheck = {
     method: 'POST',
     visibility: 'private',
     authed: true,
-    returns: {} as any,
+    returns: {} as ContractComment,
     props: z
       .object({
         contractId: z.string(),

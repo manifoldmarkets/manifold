@@ -202,7 +202,7 @@ export const useFeedTimeline = (
       potentiallySeenCommentIds,
       answerIds,
       userIds,
-    } = getNewContentIds(newFeedRows, followedIds)
+    } = getOnePerCreatorContentIds(newFeedRows, followedIds)
 
     const [
       likedUnhiddenComments,
@@ -542,12 +542,18 @@ const groupItemsBySimilarQuestions = (items: FeedTimelineItem[]) => {
   return groupedItems
 }
 
-const getNewContentIds = (data: Row<'user_feed'>[], followedIds?: string[]) => {
+const getOnePerCreatorContentIds = (
+  data: Row<'user_feed'>[],
+  followedIds?: string[]
+) => {
   const contractIdsByCreatorId = groupBy(data, (item) => item.creator_id)
+  // Only one contract per creator
   const newContractIds = filterDefined(
     Object.values(contractIdsByCreatorId)
       .map((items) =>
-        items.slice(0, MAX_ITEMS_PER_CREATOR).map((item) => item.contract_id)
+        orderBy(items, (r) => r.relevance_score, 'desc')
+          .slice(0, MAX_ITEMS_PER_CREATOR)
+          .map((item) => item.contract_id)
       )
       .flat()
   )

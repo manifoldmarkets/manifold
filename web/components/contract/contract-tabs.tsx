@@ -193,6 +193,7 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
   clearReply?: () => void
   className?: string
   bets?: Bet[]
+  highlightCommentId?: string
 }) {
   const {
     contract,
@@ -202,6 +203,7 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
     clearReply,
     className,
     bets,
+    highlightCommentId,
   } = props
 
   // Firebase useComments
@@ -315,14 +317,15 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
         .flat(),
     [comments.length]
   )
-  const hashInUrl = useHashInUrl()
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const idToHighlight = highlightCommentId ?? useHashInUrl()
   useEffect(() => {
-    if (hashInUrl) {
-      const currentlyVisible = visibleCommentIds.includes(hashInUrl)
+    if (idToHighlight) {
+      const currentlyVisible = visibleCommentIds.includes(idToHighlight)
       if (!currentlyVisible) setParentCommentsToRender(comments.length)
     }
     setCommentsLength?.(comments.length)
-  }, [hashInUrl, comments.length])
+  }, [idToHighlight, comments.length])
 
   const loadMore = () => setParentCommentsToRender((prev) => prev + LOAD_MORE)
   const onVisibilityUpdated = useEvent((visible: boolean) => {
@@ -377,7 +380,7 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
           parentComment={parent}
           threadComments={commentsByParent[parent.id] ?? []}
           trackingLocation={'contract page'}
-          idInUrl={hashInUrl}
+          idInUrl={idToHighlight}
           showReplies={
             !isBountiedQuestion || (!!user && user.id === contract.creatorId)
           }

@@ -11,24 +11,36 @@ import { FeedDropdown } from 'web/components/feed/card-dropdown'
 import { FeedTimelineItem } from 'web/hooks/use-feed-timeline'
 import { FeedContractCard } from 'web/components/contract/feed-contract-card'
 import { Content } from 'web/components/widgets/editor'
+import { PrivateUser, User } from 'common/user'
+import { TradesButton } from 'web/components/contract/trades-button'
+import { TbDropletHeart, TbMoneybag } from 'react-icons/tb'
+import { ENV_CONFIG } from 'common/envs/constants'
+import { shortFormatNumber } from 'common/util/format'
+import { Button } from 'web/components/buttons/button'
+import { Tooltip } from 'web/components/widgets/tooltip'
+import { LikeButton } from 'web/components/contract/like-button'
+import { richTextToString } from 'common/util/parse'
+import { isBlocked, usePrivateUser } from 'web/hooks/use-user'
+import { CommentsButton } from 'web/components/comments/comments-button'
 
 export const FeedRepost = memo(function (props: {
   contract: Contract
-  comment: ContractComment
+  topLevelComment: ContractComment
   item: FeedTimelineItem
   trackingLocation: string
+  user: User | null | undefined
   hide: () => void
   onReplyClick?: (comment: ContractComment) => void
   inTimeline?: boolean
 }) {
-  const { contract, item, hide, inTimeline, comment } = props
-
-  const { userUsername, userAvatarUrl } = comment
-  const marketCreator = contract.creatorId === comment.userId
+  const { contract, user, item, hide, inTimeline, topLevelComment } = props
+  const privateUser = usePrivateUser()
+  const { userUsername, userAvatarUrl } = topLevelComment
+  const marketCreator = contract.creatorId === topLevelComment.userId
 
   return (
     <Col className="bg-canvas-0 group rounded-lg py-2">
-      <CommentReplyHeader comment={comment} contract={contract} />
+      <CommentReplyHeader comment={topLevelComment} contract={contract} />
       <Row className={'w-full gap-2'}>
         <Col className={'w-full px-3  transition-colors'}>
           <Row className="justify-between gap-2">
@@ -41,11 +53,11 @@ export const FeedRepost = memo(function (props: {
               />
               <Col className={''}>
                 <FeedCommentHeader
-                  comment={comment}
+                  comment={topLevelComment}
                   contract={contract}
                   inTimeline={inTimeline}
                 />
-                <Content content={comment.content} />
+                <Content content={topLevelComment.content} />
               </Col>
             </Row>
             <Col className="gap-1">
@@ -66,19 +78,101 @@ export const FeedRepost = memo(function (props: {
               item={item}
               className="!bg-canvas-0 border-ink-200 max-w-full"
               small={true}
+              hideBottomRow={true}
             />
+            <Col>
+              <BottomActionRow
+                contract={contract}
+                user={user}
+                comment={topLevelComment}
+                privateUser={privateUser}
+              />
+            </Col>
           </Col>
-          {/*Not sure how to add these, yet*/}
-          {/*<Row>*/}
-          {/*  <CommentActions*/}
-          {/*    onReplyClick={onReplyClick}*/}
-          {/*    comment={comment}*/}
-          {/*    contract={contract}*/}
-          {/*    trackingLocation={trackingLocation}*/}
-          {/*  />*/}
-          {/*</Row>*/}
         </Col>
       </Row>
     </Col>
   )
 })
+
+const BottomActionRow = (props: {
+  contract: Contract
+  comment: ContractComment
+  user: User | null | undefined
+  privateUser: PrivateUser | null | undefined
+}) => {
+  const { contract, comment, privateUser, user } = props
+
+  return (
+    <Row className={clsx('justify-between pt-2', 'pb-2')}>
+      <BottomRowButtonWrapper>
+        <TradesButton contract={contract} className={'h-full'} />
+      </BottomRowButtonWrapper>
+
+      {contract.outcomeType === 'BOUNTIED_QUESTION' && (
+        <BottomRowButtonWrapper>
+          <div className="text-ink-500 z-10 flex items-center gap-1.5 text-sm">
+            <TbMoneybag className="h-6 w-6 stroke-2" />
+            <div>
+              {ENV_CONFIG.moneyMoniker}
+              {shortFormatNumber(contract.bountyLeft)}
+            </div>
+          </div>
+        </BottomRowButtonWrapper>
+      )}
+
+      {/* cpmm markets */}
+      {'totalLiquidity' in contract && (
+        <BottomRowButtonWrapper>
+          <Button
+            disabled={true}
+            size={'2xs'}
+            color={'gray-white'}
+            className={'disabled:cursor-pointer'}
+          >
+            <Tooltip text={`Total liquidity`} placement="top" noTap>
+              <Row
+                className={'text-ink-500 h-full items-center gap-1.5 text-sm'}
+              >
+                <TbDropletHeart className="h-6 w-6 stroke-2" />
+                <div>
+                  {ENV_CONFIG.moneyMoniker}
+                  {shortFormatNumber(contract.totalLiquidity)}
+                </div>
+              </Row>
+            </Tooltip>
+          </Button>
+        </BottomRowButtonWrapper>
+      )}
+
+      <BottomRowButtonWrapper>
+        <CommentsButton
+          highlightCommentId={comment.id}
+          contract={contract}
+          user={user}
+        />
+      </BottomRowButtonWrapper>
+      <BottomRowButtonWrapper>
+        <LikeButton
+          contentCreatorId={comment.userId}
+          contentId={comment.id}
+          user={user}
+          contentType={'comment'}
+          totalLikes={comment.likes ?? 0}
+          contract={contract}
+          size={'xs'}
+          contentText={richTextToString(comment.content)}
+          disabled={isBlocked(privateUser, comment.userId)}
+          trackingLocation={'feed'}
+        />
+      </BottomRowButtonWrapper>
+    </Row>
+  )
+}
+const BottomRowButtonWrapper = (props: { children: React.ReactNode }) => {
+  return (
+    <Row className="basis-10 justify-start whitespace-nowrap">
+      {props.children}
+    </Row>
+  )
+}

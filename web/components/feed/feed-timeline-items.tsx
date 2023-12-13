@@ -161,6 +161,7 @@ const FeedContractAndRelatedItems = (props: {
     item,
     childCommentsByParentCommentId,
     parentComments,
+    user,
   } = props
   const hasComments = parentComments && parentComments.length > 0
   const [hidden, setHidden] = useState(false)
@@ -180,11 +181,12 @@ const FeedContractAndRelatedItems = (props: {
       ) : item?.postId ? (
         <FeedRepost
           contract={contract}
-          comment={parentComments[0]}
+          topLevelComment={parentComments[0]}
           hide={() => setHidden(true)}
           trackingLocation={'feed'}
           inTimeline={true}
           item={item}
+          user={user}
         />
       ) : (
         <FeedContractCard
