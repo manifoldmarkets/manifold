@@ -1,9 +1,9 @@
 import { convertDashboardSqltoTS } from 'common/dashboard'
 import { createSupabaseClient } from 'shared/supabase/init'
-import { APIError, endpoint } from './helpers'
+import { APIError, jsonEndpoint } from './helpers'
 
-export const getnews = endpoint(async () => {
-  const db = await createSupabaseClient()
+export const getnews = jsonEndpoint(async () => {
+  const db = createSupabaseClient()
   const dash = await db
     .from('dashboards')
     .select()

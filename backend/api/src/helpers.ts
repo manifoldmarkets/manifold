@@ -16,7 +16,6 @@ import {
 } from 'common/api/schema'
 
 export type Json = Record<string, unknown> | Json[]
-export type Handler<T> = (req: Request) => Promise<T>
 export type JsonHandler<T extends Json> = (
   req: Request,
   log: GCPLog,
@@ -114,16 +113,6 @@ export const validate = <T extends z.ZodTypeAny>(schema: T, val: unknown) => {
     throw new APIError(400, 'Error validating request.', issues)
   } else {
     return result.data as z.infer<T>
-  }
-}
-
-export const endpoint = <T>(fn: Handler<T>) => {
-  return async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      res.status(200).send(await fn(req))
-    } catch (e) {
-      next(e)
-    }
   }
 }
 
