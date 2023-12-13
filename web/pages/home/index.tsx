@@ -21,7 +21,6 @@ import { useYourFollowedDashboards } from 'web/hooks/use-dashboard'
 import { buildArray } from 'common/util/array'
 import { uniqBy } from 'lodash'
 import { LinkPreviews, fetchLinkPreviews } from 'common/link-preview'
-import Link from 'next/link'
 
 export async function getStaticProps() {
   const dashboards = (await getNewsDashboards()) as Dashboard[]

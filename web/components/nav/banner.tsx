@@ -1,4 +1,4 @@
-import { ExternalLinkIcon, XIcon } from '@heroicons/react/outline'
+import { XIcon } from '@heroicons/react/outline'
 import { IconButton } from '../buttons/button'
 import { Row } from '../layout/row'
 import clsx from 'clsx'
