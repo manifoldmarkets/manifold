@@ -3,11 +3,13 @@ import { IconButton } from '../buttons/button'
 import { Row } from '../layout/row'
 import clsx from 'clsx'
 
-export function ManifestBanner(props: {
+export function Banner(props: {
   setShowBanner: (show: boolean) => void
   className?: string
+  children: React.ReactNode
+  link: string
 }) {
-  const { setShowBanner, className } = props
+  const { setShowBanner, className, children, link } = props
   return (
     <Row
       className={clsx(
@@ -16,17 +18,12 @@ export function ManifestBanner(props: {
       )}
     >
       <a
-        href="https://www.manifestconference.net/"
+        href={link}
         target="_blank"
         rel="noopener noreferrer"
-        className="py-3 pl-4"
+        className="w-full py-3 pl-4"
       >
-        Get tickets to{' '}
-        <span className="inline-block font-semibold group-hover:animate-bounce">
-          Manifest
-        </span>{' '}
-        — our first forecasting festival, Sept 22-24 in Berkeley, CA
-        <ExternalLinkIcon className="ml-1 inline-block h-4 w-4" />
+        {children}
       </a>
       <IconButton onClick={() => setShowBanner(false)}>
         <XIcon className="h-5 w-5 cursor-pointer" />
