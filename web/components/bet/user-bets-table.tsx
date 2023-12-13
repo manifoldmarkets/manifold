@@ -331,8 +331,8 @@ function BetsTable(props: {
               : ''
         }
         return (
-          <Row className={'justify-left relative -z-10 items-center'}>
-            <ContractStatusLabel className={' font-bold'} contract={c} />
+          <Row className={'justify-left relative items-center'}>
+            <ContractStatusLabel className={'font-bold'} contract={c} />
             {change != undefined && (
               <span className={'text-ink-500 ml-1 text-xs'}>{change}</span>
             )}
@@ -477,8 +477,8 @@ function BetsTable(props: {
       <Col className={'w-full'}>
         <Row
           className={clsx(
-            'grid-cols-15 bg-canvas-50 sticky z-0 grid w-full py-2 pr-1',
-            isMobile ? 'top-12' : 'top-0' // Sets it below sticky user profile header on mobile
+            'grid-cols-15 bg-canvas-50 sticky z-10 grid w-full py-2 pr-1',
+            isMobile ? 'top-16' : 'top-0' // Sets it below sticky user profile header on mobile
           )}
         >
           {dataColumns.map((c) => (

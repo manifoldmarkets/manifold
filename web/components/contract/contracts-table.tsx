@@ -222,7 +222,7 @@ export function ContractStatusLabel(props: {
     }
     case 'FREE_RESPONSE':
     case 'MULTIPLE_CHOICE': {
-      return <ContractMinibar contract={contract} className={className} />
+      return <ContractMinibar contract={contract} />
     }
     case 'CERT': {
       return <span>CERT</span>
