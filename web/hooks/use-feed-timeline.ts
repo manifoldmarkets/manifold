@@ -136,7 +136,6 @@ const queryForFeedRows = async (
     currentlyFetchedCommentItems,
     100
   )
-  console.log('feed ids options', options)
   if (options.time === 'new') {
     query = query.gt('created_time', newestCreatedTimestamp)
   } else if (options.time === 'old') {
@@ -204,13 +203,6 @@ export const useFeedTimeline = (
       answerIds,
       userIds,
     } = getNewContentIds(newFeedRows, followedIds)
-    console.log('new comment ids', newCommentIds)
-    console.log(
-      'new feed ids includes',
-      newContractIds.includes('tB3azr3vfYiJMeafPRPx'),
-      'relevance score',
-      minBy(newFeedRows, 'relevance_score')?.relevance_score
-    )
 
     const [
       likedUnhiddenComments,
