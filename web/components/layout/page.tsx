@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { ReactNode } from 'react'
+import { ReactNode, useEffect } from 'react'
 import { BottomNavBar } from '../nav/bottom-nav-bar'
 import Sidebar from '../nav/sidebar'
 import { Toaster } from 'react-hot-toast'
@@ -8,6 +8,11 @@ import { Col } from './col'
 import { GoogleOneTapLogin } from 'web/lib/firebase/google-onetap-login'
 import { ConfettiOnDemand } from '../confetti-on-demand'
 import { useTracking } from 'web/hooks/use-tracking'
+import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
+import { safeLocalStorage } from 'web/lib/util/local'
+import { Banner } from '../nav/banner'
+import { ENV_CONFIG } from 'common/envs/constants'
+import { useUser } from 'web/hooks/use-user'
 
 export function Page(props: {
   trackPageView: string | false
@@ -16,6 +21,7 @@ export function Page(props: {
   children?: ReactNode
   hideSidebar?: boolean
   hideBottomBar?: boolean
+  manifoldWrappedBannerEnabled?: boolean
 }) {
   const {
     trackPageView,
@@ -24,11 +30,24 @@ export function Page(props: {
     className,
     hideSidebar,
     hideBottomBar,
+    manifoldWrappedBannerEnabled,
   } = props
 
   // eslint-disable-next-line react-hooks/rules-of-hooks
   trackPageView && useTracking(`view ${trackPageView}`, trackPageProps)
   const isMobile = useIsMobile()
+
+  const [showBanner, setShowBanner] = usePersistentLocalState<
+    boolean | undefined
+  >(undefined, 'show-manifest-banner')
+  useEffect(() => {
+    const shouldHide =
+      safeLocalStorage?.getItem('show-manifest-banner') === 'false'
+    if (!shouldHide) {
+      setShowBanner(true)
+    }
+  }, [showBanner])
+  const user = useUser()
 
   return (
     <>
@@ -53,9 +72,21 @@ export function Page(props: {
           className={clsx(
             'flex flex-1 flex-col lg:mt-6 xl:px-2',
             'col-span-8',
+            manifoldWrappedBannerEnabled && showBanner ? 'lg:mt-0' : 'lg:mt-6',
             className
           )}
         >
+          {manifoldWrappedBannerEnabled && showBanner && user && (
+            <Banner
+              className="mb-3"
+              setShowBanner={setShowBanner}
+              link={`https://${ENV_CONFIG.domain}/${user.username}/wrapped2023`}
+            >
+              <div className="flex flex-col items-start">
+                🎁 Your Manifold Wrapped is here!
+              </div>
+            </Banner>
+          )}
           {children}
         </main>
       </Col>

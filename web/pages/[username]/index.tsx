@@ -361,16 +361,6 @@ function UserProfile(props: {
             ]}
           />
         </Col>
-        {isCurrentUser && (
-          <Row className="fixed bottom-16 left-0 right-0 max-w-[1440px] select-none justify-end sm:bottom-8">
-            <Link
-              href={`/${user.username}/wrapped2023`}
-              className="from-primary-400 hover:from-primary-500 mr-4 w-fit rounded-full bg-gradient-to-br to-pink-400 px-4 py-2 text-white hover:to-pink-500"
-            >
-              🎁 Your Manifold Wrapped is here!
-            </Link>
-          </Row>
-        )}
       </Col>
     </Page>
   )

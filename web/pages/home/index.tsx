@@ -21,6 +21,7 @@ import { useYourFollowedDashboards } from 'web/hooks/use-dashboard'
 import { buildArray } from 'common/util/array'
 import { uniqBy } from 'lodash'
 import { LinkPreviews, fetchLinkPreviews } from 'common/link-preview'
+import Link from 'next/link'
 
 export async function getStaticProps() {
   const dashboards = (await getNewsDashboards()) as Dashboard[]
@@ -75,7 +76,11 @@ function HomeDashboard(props: {
         description="Breaking news meets the wisdom of the crowd"
       />
       <Welcome />
-      <Page trackPageView={'home'} trackPageProps={{ kind: 'desktop' }}>
+      <Page
+        trackPageView={'home'}
+        trackPageProps={{ kind: 'desktop' }}
+        manifoldWrappedBannerEnabled
+      >
         <Row className="mx-3 mb-2 items-center gap-4">
           <div className="flex md:hidden">
             {user ? <ProfileSummary user={user} /> : <Spacer w={4} />}
@@ -86,7 +91,6 @@ function HomeDashboard(props: {
           )}
           <DailyStats user={user} />
         </Row>
-
         <NewsTopicsTabs
           dashboards={uniqBy(buildArray(myDashboards, dashboards), 'id')}
           previews={previews}
