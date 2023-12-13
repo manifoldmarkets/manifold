@@ -46,7 +46,7 @@ const getPublicContracts = async (
     q.lt('created_time', options.beforeTime)
   }
   if (options.userId) {
-    q.eq('user_id', options.userId)
+    q.eq('creator_id', options.userId)
   }
   if (options.groupId) {
     // TODO: use the sql builder instead and use a join
