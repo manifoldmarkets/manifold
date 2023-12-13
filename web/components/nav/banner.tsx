@@ -17,12 +17,7 @@ export function Banner(props: {
         'bg-primary-100 text-ink-900 group items-center justify-between gap-4'
       )}
     >
-      <a
-        href={link}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="w-full py-3 pl-4"
-      >
+      <a href={link} className="w-full py-3 pl-4">
         {children}
       </a>
       <IconButton onClick={() => setShowBanner(false)}>
