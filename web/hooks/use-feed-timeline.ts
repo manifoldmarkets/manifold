@@ -139,7 +139,7 @@ const queryForFeedRows = async (
   if (options.time === 'new') {
     query = query.gt('created_time', newestCreatedTimestamp)
   } else if (options.time === 'old') {
-    // query = query.lt('created_time', newestCreatedTimestamp)
+    query = query.lt('created_time', newestCreatedTimestamp)
     if (options.allowSeen) {
       // We don't want the same top cards over and over when we've run out of new cards,
       // instead it should be the most recently seen items first
