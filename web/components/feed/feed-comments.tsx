@@ -48,7 +48,7 @@ import { track } from 'web/lib/service/analytics'
 import { scrollIntoViewCentered } from 'web/lib/util/scroll'
 import { Button, IconButton } from '../buttons/button'
 import { CommentEditHistoryButton } from '../comments/comment-edit-history-button'
-import { CommentInput } from '../comments/comment-input'
+import { CommentInput, CommentType } from '../comments/comment-input'
 import { ReplyToggle } from '../comments/reply-toggle'
 import { AwardBountyButton } from '../contract/bountied-question'
 import { Content } from '../widgets/editor'
@@ -67,6 +67,7 @@ import { HOUR_MS } from 'common/util/time'
 import { FaArrowTrendUp, FaArrowTrendDown } from 'react-icons/fa6'
 import { last, orderBy } from 'lodash'
 import { AnnotateChartModal } from 'web/components/annotate-chart'
+import { BiRepost } from 'react-icons/bi'
 
 export type ReplyToUserInfo = { id: string; username: string }
 
@@ -603,7 +604,7 @@ export function DotMenu(props: {
 
 function CommentActions(props: {
   onReplyClick?: (comment: ContractComment) => void
-  onAward: (bountyTotal: number) => void
+  onAward?: (bountyTotal: number) => void
   comment: ContractComment
   contract: Contract
   trackingLocation: string
@@ -617,7 +618,8 @@ function CommentActions(props: {
     isBountiedQuestion &&
     user &&
     user.id == contract.creatorId &&
-    comment.userId != user.id
+    comment.userId != user.id &&
+    onAward
   const [showBetModal, setShowBetModal] = useState(false)
   const [outcome, setOutcome] = useState<'YES' | 'NO'>('YES')
   const diff =
@@ -777,33 +779,49 @@ export function ContractCommentInput(props: {
   const isReplyToBet = replyTo && 'amount' in replyTo
   const isReplyToAnswer = replyTo && !isReplyToBet
 
-  const onSubmitComment = useEvent(async (editor: Editor) => {
-    if (!user) {
-      track('sign in to comment')
-      await firebaseLogin()
-      return
-    }
+  const onSubmitComment = useEvent(
+    async (editor: Editor, type: CommentType) => {
+      if (!user) {
+        track('sign in to comment')
+        await firebaseLogin()
+        return
+      }
 
-    await api('comment', {
-      contractId: contract.id,
-      content: editor.getJSON(),
-      replyToAnswerId: isReplyToAnswer ? replyTo.id : undefined,
-      replyToCommentId: parentCommentId,
-      replyToBetId: isReplyToBet ? replyTo.id : undefined,
-    })
-    clearReply?.()
-    onSubmit?.()
-    track('comment', {
-      location: trackingLocation,
-      replyTo: isReplyToBet
-        ? 'bet'
-        : isReplyToAnswer
-        ? 'answer'
-        : replyToUserInfo
-        ? 'user'
-        : undefined,
-    })
-  })
+      if (type === 'comment') {
+        await api('comment', {
+          contractId: contract.id,
+          content: editor.getJSON(),
+          replyToAnswerId: isReplyToAnswer ? replyTo.id : undefined,
+          replyToCommentId: parentCommentId,
+          replyToBetId: isReplyToBet ? replyTo.id : undefined,
+        })
+      } else {
+        toast.promise(
+          api('post', {
+            contractId: contract.id,
+            content: editor.getJSON(),
+          }),
+          {
+            loading: 'Reposting question & comment to your followers...',
+            success: 'Question & comment posted to your followers!',
+            error: 'Error posting',
+          }
+        )
+      }
+      clearReply?.()
+      onSubmit?.()
+      await track(type, {
+        location: trackingLocation,
+        replyTo: isReplyToBet
+          ? 'bet'
+          : isReplyToAnswer
+          ? 'answer'
+          : replyToUserInfo
+          ? 'user'
+          : undefined,
+      })
+    }
+  )
 
   return (
     <>
@@ -839,15 +857,16 @@ export function ContractCommentInput(props: {
             ? 'Write an answer or comment'
             : undefined
         }
+        allowRepost={true}
       />
     </>
   )
 }
 
-function FeedCommentHeader(props: {
+export function FeedCommentHeader(props: {
   comment: ContractComment
-  updateComment: (comment: Partial<ContractComment>) => void
   contract: Contract
+  updateComment?: (comment: Partial<ContractComment>) => void
   inTimeline?: boolean
   isParent?: boolean
 }) {
@@ -865,6 +884,7 @@ function FeedCommentHeader(props: {
     userId,
     isApi,
     bountyAwarded,
+    isRepost,
   } = comment
 
   const marketCreator = contract.creatorId === userId
@@ -884,6 +904,12 @@ function FeedCommentHeader(props: {
               marketCreator={marketCreator}
               className={'font-semibold'}
             />
+            {isRepost && (
+              <span className="text-ink-500 ml-1">
+                <BiRepost className="mr-1 inline h-4 w-4" />
+                reposted
+              </span>
+            )}
             {/* Hide my status if replying to a bet, it's too much clutter*/}
             {bettorUsername == undefined && !inTimeline && (
               <span className="text-ink-500 ml-1">
@@ -921,7 +947,7 @@ function FeedCommentHeader(props: {
               </InfoTooltip>
             )}
           </span>
-          {!inTimeline && (
+          {!inTimeline && updateComment && (
             <DotMenu
               updateComment={updateComment}
               comment={comment}
@@ -949,7 +975,7 @@ const getBoughtMoney = (betAmount: number | undefined) => {
   return { bought, money }
 }
 
-function CommentReplyHeader(props: {
+export function CommentReplyHeader(props: {
   comment: ContractComment
   contract: Contract
 }) {

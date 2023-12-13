@@ -21,6 +21,7 @@ import { orderBy, sum, uniqBy } from 'lodash'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { TopicTag } from 'web/components/topics/topic-tag'
 import { BoostsType } from 'web/lib/supabase/ads'
+import { FeedRepost } from 'web/components/feed/feed-repost-item'
 
 const MAX_PARENT_COMMENTS_PER_FEED_ITEM = 1
 export const MIN_BET_AMOUNT = 20
@@ -166,7 +167,26 @@ const FeedContractAndRelatedItems = (props: {
 
   return (
     <FeedItemFrame item={item}>
-      {!hidden ? (
+      {hidden ? (
+        <Col
+          className={clsx(
+            'bg-canvas-0 border-canvas-0 rounded-xl border drop-shadow-md'
+          )}
+        >
+          <Row className={'text-ink-400 mb-4 px-4 pt-3 text-sm'}>
+            <i>Market hidden</i>
+          </Row>
+        </Col>
+      ) : item?.postId ? (
+        <FeedRepost
+          contract={contract}
+          comment={parentComments[0]}
+          hide={() => setHidden(true)}
+          trackingLocation={'feed'}
+          inTimeline={true}
+          item={item}
+        />
+      ) : (
         <FeedContractCard
           contract={contract}
           promotedData={promotedData}
@@ -196,16 +216,6 @@ const FeedContractAndRelatedItems = (props: {
             )
           )}
         </FeedContractCard>
-      ) : (
-        <Col
-          className={clsx(
-            'bg-canvas-0 border-canvas-0 rounded-xl border drop-shadow-md'
-          )}
-        >
-          <Row className={'text-ink-400 mb-4 px-4 pt-3 text-sm'}>
-            <i>Market hidden</i>
-          </Row>
-        </Col>
       )}
     </FeedItemFrame>
   )

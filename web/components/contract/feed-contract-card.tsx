@@ -152,21 +152,23 @@ export function FeedContractCard(props: {
               className={'w-full max-w-[10rem] text-ellipsis sm:max-w-[12rem]'}
             />
           </Row>
-          <Row className="gap-1">
-            <CardReason
-              item={item}
-              contract={contract}
-              probChange={probChange}
-              since={startTime}
-            />
-            <FeedDropdown
-              contract={contract}
-              item={item}
-              interesting={true}
-              toggleInteresting={hide}
-              importanceScore={props.contract.importanceScore}
-            />
-          </Row>
+          {hide && (
+            <Row className="gap-1">
+              <CardReason
+                item={item}
+                contract={contract}
+                probChange={probChange}
+                since={startTime}
+              />
+              <FeedDropdown
+                contract={contract}
+                item={item}
+                interesting={true}
+                toggleInteresting={hide}
+                importanceScore={props.contract.importanceScore}
+              />
+            </Row>
+          )}
         </Row>
 
         <div

@@ -3,7 +3,7 @@ import {
   pgp,
   SupabaseDirectClient,
 } from 'shared/supabase/init'
-import { Comment } from 'common/comment'
+import { Comment, ContractComment } from 'common/comment'
 import {
   getUsersWithSimilarInterestVectorsToContract,
   getUserToReasonsInterestedInContractAndUser,
@@ -48,6 +48,7 @@ export const bulkInsertDataToUserFeed = async (
     reactionId?: string
     idempotencyKey?: string
     betData?: any
+    postId?: number
   },
   pg: SupabaseDirectClient
 ) => {
@@ -176,17 +177,18 @@ const userIdsToIgnore = async (
 
 export const addCommentOnContractToFeed = async (
   contract: Contract,
-  comment: Comment,
+  comment: ContractComment,
   userIdsToExclude: string[],
   idempotencyKey?: string
 ) => {
+  if (comment.isRepost || comment.replyToCommentId) return
   const pg = createSupabaseDirectClient()
   const usersToReasonsInterestedInContract =
     await getUserToReasonsInterestedInContractAndUser(
       contract,
       comment.userId,
       pg,
-      ['follow_contract', 'follow_user'],
+      ['follow_contract'],
       false,
       'new_comment'
     )
@@ -200,6 +202,45 @@ export const addCommentOnContractToFeed = async (
       commentId: comment.id,
       creatorId: comment.userId,
       idempotencyKey,
+    },
+    pg
+  )
+}
+
+export const repostContractToFeed = async (
+  contract: Contract,
+  comment: Comment,
+  postId: number,
+  userIdsToExclude: string[],
+  idempotencyKey?: string
+) => {
+  const pg = createSupabaseDirectClient()
+  const usersToReasonsInterestedInContract =
+    await getUserToReasonsInterestedInContractAndUser(
+      contract,
+      comment.userId,
+      pg,
+      [
+        'follow_user',
+        'follow_contract', // unsure which of these will work besides follow_user
+        'contract_in_group_you_are_in',
+        'similar_interest_vector_to_contract',
+      ],
+      false,
+      'repost',
+      0.15
+    )
+  await bulkInsertDataToUserFeed(
+    usersToReasonsInterestedInContract,
+    comment.createdTime,
+    'repost',
+    userIdsToExclude,
+    {
+      contractId: contract.id,
+      commentId: comment.id,
+      creatorId: comment.userId,
+      idempotencyKey,
+      postId,
     },
     pg
   )
@@ -225,8 +266,7 @@ export const addContractToFeed = async (
       reasonsToInclude,
       false,
       dataType,
-      undefined,
-      true
+      0.2
     )
   await bulkInsertDataToUserFeed(
     usersToReasonsInterestedInContract,
@@ -265,6 +305,7 @@ export const addContractToFeedIfNotDuplicative = async (
       reasonsToInclude,
       true,
       dataType,
+      undefined,
       trendingContractType
     )
   log(

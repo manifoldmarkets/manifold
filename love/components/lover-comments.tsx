@@ -19,10 +19,10 @@ import TriangleFillIcon from 'web/lib/icons/triangle-fill-icon.svg'
 import { scrollIntoViewCentered } from 'web/lib/util/scroll'
 import { Button, IconButton } from 'web/components/buttons/button'
 import { ReplyToggle } from 'web/components/comments/reply-toggle'
-import { Content } from 'web/components/widgets/editor'
+import { Content, useTextEditor } from 'web/components/widgets/editor'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { LoverComment } from 'common/love/love-comment'
-import { CommentInput } from 'web/components/comments/comment-input'
+import { CommentInputTextArea } from 'web/components/comments/comment-input'
 import { Editor } from '@tiptap/react'
 import { track } from 'web/lib/service/analytics'
 import {
@@ -34,6 +34,8 @@ import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { useAdmin } from 'web/hooks/use-admin'
 import { EyeOffIcon } from '@heroicons/react/outline'
 import { useLoverByUserId } from 'love/hooks/use-lover'
+import { MAX_COMMENT_LENGTH } from 'common/comment'
+import { safeLocalStorage } from 'web/lib/util/local'
 
 export function LoverProfileCommentThread(props: {
   onUser: User
@@ -422,6 +424,83 @@ export function LoverCommentInput(props: {
       placeholder="Write your endorsement..."
       className={className}
     />
+  )
+}
+
+function CommentInput(props: {
+  replyToUserInfo?: ReplyToUserInfo
+  // Reply to another comment
+  parentCommentId?: string
+  onSubmitComment: (editor: Editor) => Promise<void>
+  // unique id for autosave
+  pageId: string
+  className?: string
+  blocked?: boolean
+  placeholder?: string
+}) {
+  const {
+    parentCommentId,
+    replyToUserInfo,
+    onSubmitComment,
+    pageId,
+    className,
+    blocked,
+    placeholder = 'Write a comment...',
+  } = props
+  const user = useUser()
+
+  const key = `comment ${pageId} ${parentCommentId ?? ''}`
+
+  const editor = useTextEditor({
+    key,
+    size: 'sm',
+    max: MAX_COMMENT_LENGTH,
+    placeholder,
+  })
+
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  async function submitComment() {
+    if (!editor || editor.isEmpty || isSubmitting) return
+    setIsSubmitting(true)
+    editor.commands.focus('end')
+    // if last item is text, try to linkify it by adding and deleting a space
+    if (editor.state.selection.empty) {
+      editor.commands.insertContent(' ')
+      const endPos = editor.state.selection.from
+      editor.commands.deleteRange({ from: endPos - 1, to: endPos })
+    }
+
+    try {
+      await onSubmitComment?.(editor)
+      editor.commands.clearContent(true)
+      // force clear save, because it can fail if editor unrenders
+      safeLocalStorage?.removeItem(`text ${key}`)
+    } catch (e) {
+      console.error(e)
+      toast.error('Error submitting. Try again?')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  if (user?.isBannedFromPosting) return <></>
+
+  return blocked ? (
+    <div className={'text-ink-500 mb-3 text-sm'}>
+      You blocked the creator or they blocked you, so you can't comment.
+    </div>
+  ) : (
+    <Row className={clsx(className, 'mb-2 w-full gap-1 sm:gap-2')}>
+      <Avatar avatarUrl={user?.avatarUrl} username={user?.username} size="sm" />
+      <CommentInputTextArea
+        editor={editor}
+        replyTo={replyToUserInfo}
+        user={user}
+        submit={submitComment}
+        isSubmitting={isSubmitting}
+      />
+    </Row>
   )
 }
 

@@ -1,20 +1,19 @@
 import * as admin from 'firebase-admin'
 import { JSONContent } from '@tiptap/core'
 import { marked } from 'marked'
-import { Comment } from 'common/comment'
+import { ContractComment } from 'common/comment'
 import { Bet } from 'common/bet'
 import { FieldValue } from 'firebase-admin/firestore'
 import { FLAT_COMMENT_FEE } from 'common/fees'
 import { removeUndefinedProps } from 'common/util/object'
 import { getContract, getUser, htmlToRichText } from 'shared/utils'
-import { APIError, typedEndpoint } from './helpers'
+import { APIError, AuthedUser, typedEndpoint } from './helpers'
 
 export const MAX_COMMENT_JSON_LENGTH = 20000
 
 // For now, only supports creating a new top-level comment on a contract.
 // Replies, posts, chats are not supported yet.
 export const createComment = typedEndpoint('comment', async (props, auth) => {
-  const firestore = admin.firestore()
   const {
     contractId,
     content,
@@ -24,6 +23,39 @@ export const createComment = typedEndpoint('comment', async (props, auth) => {
     replyToAnswerId,
     replyToBetId,
   } = props
+  return createCommentOnContractInternal(contractId, auth, {
+    content,
+    html,
+    markdown,
+    replyToCommentId,
+    replyToAnswerId,
+    replyToBetId,
+  })
+})
+
+export const createCommentOnContractInternal = async (
+  contractId: string,
+  auth: AuthedUser,
+  options: {
+    content: JSONContent | undefined
+    html?: string
+    markdown?: string
+    replyToCommentId?: string
+    replyToAnswerId?: string
+    replyToBetId?: string
+    isRepost?: boolean
+  }
+) => {
+  const firestore = admin.firestore()
+  const {
+    content,
+    html,
+    markdown,
+    replyToCommentId,
+    replyToAnswerId,
+    replyToBetId,
+    isRepost,
+  } = options
 
   const {
     you: creator,
@@ -69,7 +101,8 @@ export const createComment = typedEndpoint('comment', async (props, auth) => {
     bettorName: bet?.userName,
     bettorUsername: bet?.userUsername,
     isApi,
-  } as Comment)
+    isRepost,
+  } as ContractComment)
 
   await ref.set(comment)
 
@@ -82,7 +115,7 @@ export const createComment = typedEndpoint('comment', async (props, auth) => {
   }
 
   return comment
-})
+}
 
 export const validateComment = async (
   contractId: string,

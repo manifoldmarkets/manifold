@@ -63,6 +63,7 @@ export type FeedTimelineItem = {
   creatorId: string | null
   seenTime: string | null
   seenDuration: number | null
+  postId: number | null
   // These are fetched/generated at runtime
   avatarUrl: string | null
   creatorDetails?: CreatorDetails
@@ -135,10 +136,11 @@ const queryForFeedRows = async (
     currentlyFetchedCommentItems,
     100
   )
+  console.log('feed ids options', options)
   if (options.time === 'new') {
     query = query.gt('created_time', newestCreatedTimestamp)
   } else if (options.time === 'old') {
-    query = query.lt('created_time', newestCreatedTimestamp)
+    // query = query.lt('created_time', newestCreatedTimestamp)
     if (options.allowSeen) {
       // We don't want the same top cards over and over when we've run out of new cards,
       // instead it should be the most recently seen items first
@@ -202,6 +204,13 @@ export const useFeedTimeline = (
       answerIds,
       userIds,
     } = getNewContentIds(newFeedRows, followedIds)
+    console.log('new comment ids', newCommentIds)
+    console.log(
+      'new feed ids includes',
+      newContractIds.includes('tB3azr3vfYiJMeafPRPx'),
+      'relevance score',
+      minBy(newFeedRows, 'relevance_score')?.relevance_score
+    )
 
     const [
       likedUnhiddenComments,

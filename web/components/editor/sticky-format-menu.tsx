@@ -2,18 +2,20 @@ import { EmojiHappyIcon } from '@heroicons/react/outline'
 import {
   CodeIcon,
   PhotographIcon,
+  PlusCircleIcon,
   PresentationChartLineIcon,
 } from '@heroicons/react/solid'
 import { Editor } from '@tiptap/react'
-import { useState } from 'react'
+import { MouseEventHandler, useState } from 'react'
 import { FileUploadButton } from '../buttons/file-upload-button'
 import { LoadingIndicator } from '../widgets/loading-indicator'
-import { Tooltip } from '../widgets/tooltip'
 import { EmbedModal } from './embed-modal'
 import { MarketModal } from './market-modal'
 import type { UploadMutation } from './upload-extension'
 import { PiGifFill } from 'react-icons/pi'
 import { GIFModal } from './gif-modal'
+import { Row } from 'web/components/layout/row'
+import ButtonDropdownMenu from 'web/components/comments/dropdown-button-menu'
 
 /* Toolbar, with buttons for images and embeds */
 export function StickyFormatMenu(props: {
@@ -28,31 +30,60 @@ export function StickyFormatMenu(props: {
   const [marketOpen, setMarketOpen] = useState(false)
 
   return (
-    <div className="flex h-9 items-stretch">
-      <UploadButton upload={upload} />
-      <ToolbarButton label="Add GIF" onClick={() => setGIFOpen(true)}>
-        <GIFModal editor={editor} open={GIFOpen} setOpen={setGIFOpen} />
-        <PiGifFill className="h-5 w-5" aria-hidden />
-      </ToolbarButton>
-      <ToolbarButton label="Add embed" onClick={() => setIframeOpen(true)}>
-        <EmbedModal editor={editor} open={iframeOpen} setOpen={setIframeOpen} />
-        <CodeIcon className="h-5 w-5" aria-hidden="true" />
-      </ToolbarButton>
-      <ToolbarButton label="Add question" onClick={() => setMarketOpen(true)}>
-        <MarketModal
-          editor={editor}
-          open={marketOpen}
-          setOpen={setMarketOpen}
-        />
-        <PresentationChartLineIcon className="h-5 w-5" aria-hidden="true" />
-      </ToolbarButton>
-      <ToolbarButton label="Add emoji" onClick={() => insertEmoji(editor)}>
-        <EmojiHappyIcon className="h-5 w-5" />
-      </ToolbarButton>
+    <Row className="text-ink-800 ml-2 h-8 items-center">
+      <ButtonDropdownMenu
+        withinOverflowContainer={true}
+        icon={
+          <PlusCircleIcon
+            className=" hover:text-ink-700 text-ink-500 h-5 w-5"
+            aria-hidden
+          />
+        }
+        items={[
+          <UploadButton key={'upload-button'} upload={upload} />,
+          <ToolbarButton
+            key={'gif-button'}
+            label="Add GIF"
+            onClick={() => setGIFOpen(true)}
+          >
+            <PiGifFill className="h-5 w-5" aria-hidden />
+          </ToolbarButton>,
+          <ToolbarButton
+            key={'embed-button'}
+            label="Add embed"
+            onClick={(e) => {
+              e.stopPropagation()
+              e.preventDefault()
+              setIframeOpen(true)
+            }}
+          >
+            <CodeIcon className="h-5 w-5" aria-hidden="true" />
+          </ToolbarButton>,
+
+          <ToolbarButton
+            key={'market-button'}
+            label="Add question"
+            onClick={() => setMarketOpen(true)}
+          >
+            <PresentationChartLineIcon className="h-5 w-5" aria-hidden="true" />
+          </ToolbarButton>,
+          <ToolbarButton
+            key={'emoji-button'}
+            label="Add emoji"
+            onClick={() => insertEmoji(editor)}
+          >
+            <EmojiHappyIcon className="h-5 w-5" />
+          </ToolbarButton>,
+        ]}
+      />
+
+      <EmbedModal editor={editor} open={iframeOpen} setOpen={setIframeOpen} />
+      <MarketModal editor={editor} open={marketOpen} setOpen={setMarketOpen} />
+      <GIFModal editor={editor} open={GIFOpen} setOpen={setGIFOpen} />
 
       <div className="grow" />
       {children}
-    </div>
+    </Row>
   )
 }
 
@@ -60,40 +91,43 @@ function UploadButton(props: { upload: UploadMutation }) {
   const { upload } = props
 
   return (
-    <Tooltip text="Upload image" noTap noFade className="w-12 flex-initial">
-      <FileUploadButton
-        onFiles={(files) => upload?.mutate(files)}
-        className="text-ink-400 hover:text-ink-600 active:bg-ink-300 relative flex h-full w-full items-center justify-center transition-colors"
-      >
+    <FileUploadButton
+      onFiles={(files) => upload?.mutate(files)}
+      className=" hover:bg-canvas-100 active:bg-ink-300 relative flex p-1 transition-colors"
+    >
+      <Row className={'items-center justify-start gap-2'}>
         <PhotographIcon className="h-5 w-5" aria-hidden="true" />
-        {upload?.isLoading && (
+        {upload?.isLoading ? (
           <LoadingIndicator
             className="absolute bottom-0 left-0 right-0 top-0"
             spinnerClassName="!h-6 !w-6 !border-2"
           />
+        ) : (
+          <span>Upload image</span>
         )}
-      </FileUploadButton>
-    </Tooltip>
+      </Row>
+    </FileUploadButton>
   )
 }
 
 function ToolbarButton(props: {
   label: string
-  onClick: () => void
+  onClick: MouseEventHandler
   children: React.ReactNode
 }) {
   const { label, onClick, children } = props
 
   return (
-    <Tooltip text={label} noTap noFade className="w-12 flex-initial">
-      <button
-        type="button"
-        onClick={onClick}
-        className="text-ink-400 hover:text-ink-600 active:bg-ink-300 flex h-full w-full items-center justify-center transition-colors"
-      >
+    <button
+      type="button"
+      onClick={onClick}
+      className="hover:bg-canvas-100 active:bg-ink-300 p-1 transition-colors"
+    >
+      <Row className={'w-full items-center justify-start gap-2'}>
         {children}
-      </button>
-    </Tooltip>
+        {label}
+      </Row>
+    </button>
   )
 }
 

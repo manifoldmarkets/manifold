@@ -17,7 +17,6 @@ import { log } from 'shared/utils'
 import { DEEMPHASIZED_GROUP_SLUGS, isAdminId } from 'common/envs/constants'
 import { convertContract } from 'common/supabase/contracts'
 import { generateEmbeddings } from 'shared/helpers/openai-utils'
-import { TOPIC_IDS_YOU_CANT_FOLLOW } from 'common/supabase/groups'
 import { APIError } from 'common/api/utils'
 
 // used for API to allow slug as param
@@ -135,7 +134,6 @@ export const getContractViewerIds = async (
 
 export const getContractGroupMemberIds = async (
   contractId: string,
-  ignoringGroupIds: string[],
   pg: SupabaseDirectClient
 ) => {
   const contractGroups = await pg.manyOrNone(
@@ -143,9 +141,7 @@ export const getContractGroupMemberIds = async (
                 where contract_id = $1`,
     [contractId]
   )
-  const groupIds = contractGroups
-    .map((cg) => cg.group_id)
-    .filter((g) => !ignoringGroupIds.includes(g))
+  const groupIds = contractGroups.map((cg) => cg.group_id)
 
   if (groupIds.length === 0) return []
   const contractGroupMemberIds = await pg.manyOrNone<{ member_id: string }>(
@@ -241,10 +237,8 @@ export const getUserToReasonsInterestedInContractAndUser = async (
   reasonsToInclude: CONTRACT_FEED_REASON_TYPES[],
   serverSideCalculation: boolean,
   dataType: FEED_DATA_TYPES,
-  trendingContractType?: 'old' | 'new',
-  addRandomnessToGroupScore = false,
-  // This can be deleted after removing all users from these groups
-  ignoringGroupIds = TOPIC_IDS_YOU_CANT_FOLLOW
+  randomGroupCoefficient = 0,
+  trendingContractType?: 'old' | 'new'
 ): Promise<{
   [userId: string]: {
     reasons: CONTRACT_FEED_REASON_TYPES[]
@@ -269,7 +263,7 @@ export const getUserToReasonsInterestedInContractAndUser = async (
       users: getUserFollowerIds(creatorId, pg),
     },
     contract_in_group_you_are_in: {
-      users: getContractGroupMemberIds(contractId, ignoringGroupIds, pg),
+      users: getContractGroupMemberIds(contractId, pg),
     },
     similar_interest_vector_to_contract: {
       usersToDistances: serverSideCalculation
@@ -318,7 +312,7 @@ export const getUserToReasonsInterestedInContractAndUser = async (
         importanceScore,
         interestDistance,
         trendingContractType,
-        addRandomnessToGroupScore
+        randomGroupCoefficient
       )
       acc[userId] = {
         reasons,

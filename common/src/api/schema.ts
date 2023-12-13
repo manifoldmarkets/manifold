@@ -414,6 +414,19 @@ export const API = (_apiTypeCheck = {
       loverContracts: CPMMMultiContract[]
     },
   },
+  post: {
+    method: 'POST',
+    visibility: 'private',
+    authed: true,
+    returns: {} as any,
+    props: z
+      .object({
+        contractId: z.string(),
+        commentId: z.string().optional(),
+        content: contentSchema.optional(),
+      })
+      .strict(),
+  },
 } as const)
 
 export type APIPath = keyof typeof API

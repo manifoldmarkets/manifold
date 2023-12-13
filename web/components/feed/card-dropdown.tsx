@@ -22,7 +22,7 @@ export function FeedDropdown(props: {
   contract: Contract
   item: FeedTimelineItem | undefined
   interesting: boolean
-  toggleInteresting?: () => void
+  toggleInteresting: () => void
   importanceScore: number
 }) {
   const { contract, item, importanceScore, interesting, toggleInteresting } =
@@ -37,9 +37,6 @@ export function FeedDropdown(props: {
   const { creatorId, creatorName } = contract
 
   const markUninteresting = async () => {
-    if (!toggleInteresting) {
-      return
-    }
     await updateUserDisinterestEmbedding({
       contractId: contract.id,
       creatorId: creatorId,
@@ -64,16 +61,15 @@ export function FeedDropdown(props: {
       ),
       onClick: () => onFollowClick(creatorId, isFollowing, setIsFollowing),
     },
-    user &&
-      toggleInteresting && {
-        name: interesting ? 'Show less of this' : 'Undo show less of this',
-        icon: interesting ? (
-          <TiVolumeMute className="h-5 w-5" aria-hidden />
-        ) : (
-          <TiVolume className="h-5 w-5" aria-hidden />
-        ),
-        onClick: () => markUninteresting(),
-      },
+    user && {
+      name: interesting ? 'Show less of this' : 'Undo show less of this',
+      icon: interesting ? (
+        <TiVolumeMute className="h-5 w-5" aria-hidden />
+      ) : (
+        <TiVolume className="h-5 w-5" aria-hidden />
+      ),
+      onClick: () => markUninteresting(),
+    },
     isAdmin && {
       name: 'Why am I seeing this?',
       icon: <InformationCircleIcon className="h-5 w-5" aria-hidden />,

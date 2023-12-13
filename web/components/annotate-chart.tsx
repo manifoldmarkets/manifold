@@ -102,7 +102,7 @@ export const AnnotateChartModal = (props: {
               setOpen(false)
             }}
             loading={loading}
-            disabled={loading || !note?.length}
+            disabled={loading || (!note?.length && !comment)}
           >
             Submit
           </Button>

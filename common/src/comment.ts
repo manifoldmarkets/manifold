@@ -59,6 +59,8 @@ export type OnContract = {
 
   bountyAwarded?: number
   betReplyAmountsByOutcome?: { [outcome: string]: number }
+
+  isRepost?: boolean
 }
 
 export type ContractComment = Comment<OnContract>

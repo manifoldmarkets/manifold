@@ -12,17 +12,20 @@ import { Row } from '../layout/row'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { safeLocalStorage } from 'web/lib/util/local'
 import toast from 'react-hot-toast'
+import { BiRepost } from 'react-icons/bi'
+import { Tooltip } from 'web/components/widgets/tooltip'
 
 export function CommentInput(props: {
   replyToUserInfo?: ReplyToUserInfo
   // Reply to another comment
   parentCommentId?: string
-  onSubmitComment: (editor: Editor) => Promise<void>
+  onSubmitComment: (editor: Editor, type: CommentType) => Promise<void>
   // unique id for autosave
   pageId: string
   className?: string
   blocked?: boolean
   placeholder?: string
+  allowRepost?: boolean
 }) {
   const {
     parentCommentId,
@@ -32,6 +35,7 @@ export function CommentInput(props: {
     className,
     blocked,
     placeholder = 'Write a comment...',
+    allowRepost,
   } = props
   const user = useUser()
 
@@ -46,7 +50,7 @@ export function CommentInput(props: {
 
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  async function submitComment() {
+  async function submitComment(type: CommentType) {
     if (!editor || editor.isEmpty || isSubmitting) return
     setIsSubmitting(true)
     editor.commands.focus('end')
@@ -58,7 +62,7 @@ export function CommentInput(props: {
     }
 
     try {
-      await onSubmitComment?.(editor)
+      await onSubmitComment?.(editor, type)
       editor.commands.clearContent(true)
       // force clear save, because it can fail if editor unrenders
       safeLocalStorage?.removeItem(`text ${key}`)
@@ -85,6 +89,7 @@ export function CommentInput(props: {
         user={user}
         submit={submitComment}
         isSubmitting={isSubmitting}
+        allowRepost={allowRepost}
       />
     </Row>
   )
@@ -103,14 +108,16 @@ const emojiMenuActive = (view: { state: any }) => {
   return active
 }
 
+export type CommentType = 'comment' | 'repost'
 export function CommentInputTextArea(props: {
   user: User | undefined | null
   replyTo?: { id: string; username: string }
   editor: Editor | null
-  submit?: () => void
+  submit?: (type: CommentType) => void
   isSubmitting: boolean
   submitOnEnter?: boolean
   hideToolbar?: boolean
+  allowRepost?: boolean
 }) {
   const {
     user,
@@ -120,6 +127,7 @@ export function CommentInputTextArea(props: {
     submit,
     isSubmitting,
     replyTo,
+    allowRepost,
   } = props
   useEffect(() => {
     editor?.setEditable(!isSubmitting)
@@ -141,7 +149,7 @@ export function CommentInputTextArea(props: {
             // emoji list is closed
             !emojiMenuActive(view)
           ) {
-            submit?.()
+            submit?.('comment')
             event.preventDefault()
             return true
           }
@@ -169,23 +177,39 @@ export function CommentInputTextArea(props: {
 
   return (
     <TextEditor editor={editor} simple hideToolbar={hideToolbar}>
-      {user && !isSubmitting && submit && (
-        <button
-          className="text-ink-400 hover:text-ink-600 active:bg-ink-300 disabled:text-ink-300 px-4 transition-colors"
-          disabled={!editor || editor.isEmpty}
-          onClick={submit}
-        >
-          <PaperAirplaneIcon className="m-0 h-[25px] w-[22px] rotate-90 p-0" />
-        </button>
-      )}
+      <Row className={''}>
+        {user && !isSubmitting && submit && allowRepost && (
+          <Tooltip
+            text={'Post question & comment to your followers'}
+            className={'mt-2'}
+          >
+            <button
+              disabled={!editor || editor.isEmpty}
+              className="text-ink-500 hover:text-ink-700 active:bg-ink-300 disabled:text-ink-300 px-2 transition-colors"
+              onClick={() => submit('repost')}
+            >
+              <BiRepost className="h-7 w-7" />
+            </button>
+          </Tooltip>
+        )}
+        {user && !isSubmitting && submit && (
+          <button
+            className="text-ink-500 hover:text-ink-700 active:bg-ink-300 disabled:text-ink-300 px-4 transition-colors"
+            disabled={!editor || editor.isEmpty}
+            onClick={() => submit('comment')}
+          >
+            <PaperAirplaneIcon className="m-0 h-[25px] w-[22px] rotate-90 p-0" />
+          </button>
+        )}
 
-      {submit && isSubmitting && (
-        <LoadingIndicator
-          size={'md'}
-          className={'px-4'}
-          spinnerClassName="border-ink-500"
-        />
-      )}
+        {submit && isSubmitting && (
+          <LoadingIndicator
+            size={'md'}
+            className={'px-4'}
+            spinnerClassName="border-ink-500"
+          />
+        )}
+      </Row>
     </TextEditor>
   )
 }

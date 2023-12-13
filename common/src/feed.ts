@@ -7,6 +7,7 @@ export const ALL_FEED_USER_ID = 'IG3WZ8i3IzY6R4wuTDxuvsXbkxD3'
 export type FEED_DATA_TYPES =
   | 'new_comment'
   | 'new_contract'
+  | 'repost'
   | 'contract_probability_changed'
   | 'trending_contract'
   | 'new_subsidy'
@@ -35,6 +36,7 @@ export const BASE_FEED_DATA_TYPE_SCORES: { [key in FEED_DATA_TYPES]: number } =
   {
     new_comment: 0.05,
     new_contract: 0.25,
+    repost: 0.25,
     new_subsidy: 0.1,
     user_position_changed: 0.02,
     contract_probability_changed: 0.25, // todo: multiply by magnitude of prob change
@@ -58,7 +60,7 @@ export const getRelevanceScore = (
   importanceScore: number,
   interestDistance: number,
   trendingContractType?: 'old' | 'new',
-  addRandomnessToGroupScore = false
+  randomGroupCoefficient = 0
 ): number => {
   const dataTypeScore =
     trendingContractType === 'old'
@@ -71,9 +73,8 @@ export const getRelevanceScore = (
     reasonsScore +
     importanceScore * (feedDataType === 'new_comment' ? 0.2 : 0.3) +
     (1 - interestDistance) * 0.15 +
-    (addRandomnessToGroupScore &&
-    reasons.includes('contract_in_group_you_are_in')
-      ? Math.random() * 0.2
+    (reasons.includes('contract_in_group_you_are_in')
+      ? Math.random() * randomGroupCoefficient
       : 0)
   )
 }
@@ -96,6 +97,7 @@ export const INTEREST_DISTANCE_THRESHOLDS: Record<
   new_subsidy: 0.15,
   user_position_changed: 1, // only targets followed users,
   ad: 0.175,
+  repost: 0.125,
 }
 
 export const FeedExplanationDictionary: Record<
@@ -146,6 +148,12 @@ export const FeedExplanationDictionary: Record<
     similar_interest_vector_to_contract:
       'New bets on a question you may be interested in',
     follow_user: 'New bets by a creator you follow',
+  },
+  repost: {
+    contract_in_group_you_are_in: 'Question reposted in a group you are in',
+    similar_interest_vector_to_contract:
+      'New reposted question you may be interested in',
+    follow_user: 'New reposted question by a creator you follow',
   },
 }
 

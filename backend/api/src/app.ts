@@ -128,6 +128,7 @@ import {
   searchMarketsFull,
   searchMarketsLegacy,
 } from './supabase-search-contract'
+import { post } from 'api/post'
 
 const allowCorsUnrestricted: RequestHandler = cors({})
 const allowCorsManifold: RequestHandler = cors({
@@ -215,6 +216,7 @@ const handlers: { [k in APIPath]: RequestHandler } = {
   'search-users': searchUsers,
   'save-twitch': saveTwitchCredentials,
   'compatible-lovers': getCompatibleLovers,
+  post: post,
 }
 
 Object.entries(handlers).forEach(([path, handler]) => {
@@ -363,6 +365,7 @@ app.post(
 )
 app.post('/create-chart-annotation', ...apiRoute(createchartannotation))
 app.post('/delete-chart-annotation', ...apiRoute(deletechartannotation))
+app.post('/post', ...apiRoute(post))
 
 const publicApiRoute = (endpoint: RequestHandler) => {
   return [
