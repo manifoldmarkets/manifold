@@ -189,6 +189,7 @@ export function FeedCommentThread(props: {
             trackingLocation={trackingLocation}
             className="w-full min-w-0 grow"
             onSubmit={onSubmitReply}
+            commentTypes={['comment']}
           />
         </div>
       )}
@@ -763,6 +764,8 @@ export function ContractCommentInput(props: {
   clearReply?: () => void
   trackingLocation: string
   onSubmit?: () => void
+  commentTypes: CommentType[]
+  onClearInput?: () => void
 }) {
   const user = useUser()
   const privateUser = usePrivateUser()
@@ -775,6 +778,8 @@ export function ContractCommentInput(props: {
     clearReply,
     trackingLocation,
     onSubmit,
+    commentTypes,
+    onClearInput,
   } = props
   const isReplyToBet = replyTo && 'amount' in replyTo
   const isReplyToAnswer = replyTo && !isReplyToBet
@@ -796,7 +801,7 @@ export function ContractCommentInput(props: {
           replyToBetId: isReplyToBet ? replyTo.id : undefined,
         })
       } else {
-        toast.promise(
+        await toast.promise(
           api('post', {
             contractId: contract.id,
             content: editor.getJSON(),
@@ -857,7 +862,8 @@ export function ContractCommentInput(props: {
             ? 'Write an answer or comment'
             : undefined
         }
-        allowRepost={true}
+        commentTypes={commentTypes}
+        onClearInput={onClearInput}
       />
     </>
   )

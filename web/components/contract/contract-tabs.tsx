@@ -347,6 +347,7 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
           clearReply={clearReply}
           trackingLocation={'contract page'}
           onSubmit={loadNewer}
+          commentTypes={['comment', 'repost']}
         />
       )}
       {comments.length > 0 && (

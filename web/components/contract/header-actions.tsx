@@ -9,6 +9,7 @@ import { Contract } from 'web/lib/firebase/contracts'
 import { Row } from '../layout/row'
 import { Tooltip } from '../widgets/tooltip'
 import { LikeButton } from './like-button'
+import { RepostButton } from 'web/components/comments/repost-modal'
 
 export function HeaderActions(props: {
   contract: Contract
@@ -37,6 +38,7 @@ export function HeaderActions(props: {
           trackingLocation={'contract page'}
         />
       )}
+      <RepostButton contract={contract} />
 
       <CopyLinkOrShareButton
         url={getShareUrl(contract, user?.username)}

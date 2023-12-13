@@ -224,7 +224,6 @@ export const repostContractToFeed = async (
         'follow_user',
         'follow_contract', // unsure which of these will work besides follow_user
         'contract_in_group_you_are_in',
-        'similar_interest_vector_to_contract',
       ],
       false,
       'repost',

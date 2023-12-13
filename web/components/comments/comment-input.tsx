@@ -25,7 +25,8 @@ export function CommentInput(props: {
   className?: string
   blocked?: boolean
   placeholder?: string
-  allowRepost?: boolean
+  commentTypes: CommentType[]
+  onClearInput?: () => void
 }) {
   const {
     parentCommentId,
@@ -35,7 +36,8 @@ export function CommentInput(props: {
     className,
     blocked,
     placeholder = 'Write a comment...',
-    allowRepost,
+    commentTypes,
+    onClearInput,
   } = props
   const user = useUser()
 
@@ -66,6 +68,7 @@ export function CommentInput(props: {
       editor.commands.clearContent(true)
       // force clear save, because it can fail if editor unrenders
       safeLocalStorage?.removeItem(`text ${key}`)
+      onClearInput?.()
     } catch (e) {
       console.error(e)
       toast.error('Error submitting. Try again?')
@@ -89,7 +92,7 @@ export function CommentInput(props: {
         user={user}
         submit={submitComment}
         isSubmitting={isSubmitting}
-        allowRepost={allowRepost}
+        commentTypes={commentTypes}
       />
     </Row>
   )
@@ -117,7 +120,7 @@ export function CommentInputTextArea(props: {
   isSubmitting: boolean
   submitOnEnter?: boolean
   hideToolbar?: boolean
-  allowRepost?: boolean
+  commentTypes?: CommentType[]
 }) {
   const {
     user,
@@ -127,7 +130,7 @@ export function CommentInputTextArea(props: {
     submit,
     isSubmitting,
     replyTo,
-    allowRepost,
+    commentTypes = ['comment'],
   } = props
   useEffect(() => {
     editor?.setEditable(!isSubmitting)
@@ -178,7 +181,7 @@ export function CommentInputTextArea(props: {
   return (
     <TextEditor editor={editor} simple hideToolbar={hideToolbar}>
       <Row className={''}>
-        {user && !isSubmitting && submit && allowRepost && (
+        {user && !isSubmitting && submit && commentTypes.includes('repost') && (
           <Tooltip
             text={'Post question & comment to your followers'}
             className={'mt-2'}
@@ -192,15 +195,18 @@ export function CommentInputTextArea(props: {
             </button>
           </Tooltip>
         )}
-        {user && !isSubmitting && submit && (
-          <button
-            className="text-ink-500 hover:text-ink-700 active:bg-ink-300 disabled:text-ink-300 px-4 transition-colors"
-            disabled={!editor || editor.isEmpty}
-            onClick={() => submit('comment')}
-          >
-            <PaperAirplaneIcon className="m-0 h-[25px] w-[22px] rotate-90 p-0" />
-          </button>
-        )}
+        {user &&
+          !isSubmitting &&
+          submit &&
+          commentTypes.includes('comment') && (
+            <button
+              className="text-ink-500 hover:text-ink-700 active:bg-ink-300 disabled:text-ink-300 px-4 transition-colors"
+              disabled={!editor || editor.isEmpty}
+              onClick={() => submit('comment')}
+            >
+              <PaperAirplaneIcon className="m-0 h-[25px] w-[22px] rotate-90 p-0" />
+            </button>
+          )}
 
         {submit && isSubmitting && (
           <LoadingIndicator
