@@ -185,7 +185,7 @@ Response type: `LiteUser`
 
 ### `GET /v0/me`
 
-Returns the authenticated user
+Returns the [authenticated](#authentication) user
 
 Response type: `LiteUser`
 
@@ -201,7 +201,7 @@ Parameters:
 ### `GET /v0/group`
 
 Get info on a topic
-
+[]
 Parameters:
 
 - `id`: Optional. Gets a topic by it's unique ID.
@@ -616,7 +616,7 @@ Parameter:
 
 - `betId`: the ID of the bet
 
-Requires Authentication.
+[Requires Auth](#authentication)
 
 Response type: A `Bet`
 
@@ -631,7 +631,7 @@ Parameters:
 - `shares`: Optional. How many shares you are selling - defaults to all.
 - `answerId`: Required on multi choice. The ID of the answer you are selling your position in.
 
-Requires Authentication.
+[Requires Auth](#authentication)
 
 Response type: A `Bet`
 
@@ -644,7 +644,7 @@ Parameters:
 - `contractId`: the ID of the market
 - `betId`: the ID of the bet to sell
 
-Requires Authentication.
+[Requires Auth](#authentication)
 
 ### `POST /v0/create-market`
 
@@ -698,7 +698,7 @@ For polls, you must also provide:
 
 - `answers`: An array of strings, each of which will be an option for the poll.
 
-Requires Authentication.
+[Requires Auth](#authentication)
 
 Response type: `LiteMarket`
 
@@ -710,7 +710,7 @@ Add or remove a topic tag from a market
 - `groupId`: The ID of the topic.
 - `remove`: Optional. Set to `true` to un-tag the topic.
 
-Requires Authentication. Must be admin/moderator/creator of group if curated/private. Must be market creator or site moderator if group is public.
+[Requires Auth](#authentication). Must be admin/moderator/creator of group if curated/private. Must be market creator or site moderator if group is public.
 
 ### `POST /v0/add-liquidity`
 
@@ -719,7 +719,7 @@ Add mana to liquidity pool. Does not boost.
 - `contractId`: The id of the market
 - `amount`: Amount of M$ to add
 
-Requires Authentication.
+[Requires Auth](#authentication)
 
 Response type: something
 
@@ -732,7 +732,7 @@ Parameters:
 - `contractId`: The ID of the market
 - `amount`: Amount of M$ to add
 
-Requires Authentication.
+[Requires Auth](#authentication)
 
 Response type: `Txn`
 
@@ -744,7 +744,7 @@ Distribute a bounty market reward
 - `amount`: The amount of bounty to award, in M$.
 - `commentId`: The comment to award the bounty to.
 
-Requires Authentication.
+[Requires Auth](#authentication)
 
 Response type `Txn`
 
@@ -755,7 +755,7 @@ Set when trading halts on a market
 - `contractId`: The ID of the market
 - `closeTime`: Optional. Milliseconds since the epoch to close the market at. If not provided, close the market immediately.
 
-Requires Authentication.
+[Requires Auth](#authentication)
 
 ### `POST /v0/resolve`
 
@@ -781,7 +781,7 @@ For numeric markets:
   - If log scale: `log10(value - min + 1) / log10(max - min + 1)`
   - Otherwise: `(value - min) / (max - min)`
 
-Requires Authentication.
+[Requires Auth](#authentication)
 
 ### `GET /v0/comments`
 
@@ -806,7 +806,7 @@ Parameters:
 - `html`: The comment to post, formatted as an HTML string, OR
 - `markdown`: The comment to post, formatted as a markdown string.
 
-Requires Authentication.
+[Requires Auth](#authentication)
 
 <!-- ### `POST /v0/hide-comment`
 
@@ -816,7 +816,7 @@ Parameter:
 
 - `commentPath`: ...
 
-Requires Authentication. Must be a moderator. -->
+[Requires Auth](#authentication) Must be a moderator. -->
 
 ### `GET /v0/bets`
 
