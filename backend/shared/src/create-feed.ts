@@ -18,10 +18,7 @@ import {
   INTEREST_DISTANCE_THRESHOLDS,
 } from 'common/feed'
 import { getContractSupabase, log } from 'shared/utils'
-import {
-  getUserFollowerIds,
-  getUsersWithSimilarInterestVectorToNews,
-} from 'shared/supabase/users'
+import { getUserFollowerIds } from 'shared/supabase/users'
 import { convertObjectToSQLRow, Row } from 'common/supabase/utils'
 import { DAY_MS } from 'common/util/time'
 import { User } from 'common/user'
@@ -29,7 +26,6 @@ import { fromPairs, groupBy, maxBy, uniq } from 'lodash'
 import { removeUndefinedProps } from 'common/util/object'
 import { PositionChangeData } from 'common/supabase/bets'
 import { filterDefined } from 'common/util/array'
-import { average } from 'common/util/math'
 
 export const bulkInsertDataToUserFeed = async (
   usersToReasonsInterestedInContract: {
@@ -298,66 +294,6 @@ export const addContractToFeedIfNotDuplicative = async (
   )
 }
 
-export const insertNewsToUsersFeeds = async (
-  newsId: string,
-  contracts: {
-    id: string
-    creatorId: string
-    importanceScore: number
-  }[],
-  groups: {
-    id: string
-    creatorId: string
-  }[],
-  eventTime: number,
-  pg: SupabaseDirectClient
-) => {
-  const usersToReasons = await getUsersWithSimilarInterestVectorToNews(
-    newsId,
-    average(contracts.map((c) => c.importanceScore)),
-    pg
-  )
-  console.log(
-    'found users interested in news id',
-    newsId,
-    Object.keys(usersToReasons).length
-  )
-  const userIdsToExclude = ['FSqqnRObrqf0GX63gp5Hk4lUvqn1'] //bday present for SL
-  const dataType = 'news_with_related_contracts'
-  await Promise.all(
-    contracts.map(async (contract) => {
-      await bulkInsertDataToUserFeed(
-        usersToReasons,
-        eventTime,
-        dataType,
-        userIdsToExclude,
-        {
-          contractId: contract.id,
-          creatorId: contract.creatorId,
-          newsId,
-        },
-        pg
-      )
-    })
-  )
-  await Promise.all(
-    groups.map(async (group) => {
-      await bulkInsertDataToUserFeed(
-        usersToReasons,
-        eventTime,
-        // Should we change this to news_with_related_groups?
-        dataType,
-        userIdsToExclude,
-        {
-          groupId: group.id,
-          creatorId: group.creatorId,
-          newsId,
-        },
-        pg
-      )
-    })
-  )
-}
 export const insertMarketMovementContractToUsersFeeds = async (
   contract: CPMMContract
 ) => {

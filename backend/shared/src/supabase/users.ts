@@ -1,11 +1,5 @@
 import { pgp, SupabaseDirectClient } from 'shared/supabase/init'
-import { fromPairs } from 'lodash'
-import {
-  FEED_REASON_TYPES,
-  getRelevanceScore,
-  INTEREST_DISTANCE_THRESHOLDS,
-  NEW_USER_FEED_DATA_TYPES,
-} from 'common/feed'
+import { NEW_USER_FEED_DATA_TYPES } from 'common/feed'
 import { Row, SupabaseClient } from 'common/supabase/utils'
 import { GCPLog } from 'shared/utils'
 import { ITask } from 'pg-promise'
@@ -42,52 +36,6 @@ export const getUserFollowerIds = async (
     [userId]
   )
   return userFollowerIds.map((r) => r.user_id)
-}
-
-export const getUsersWithSimilarInterestVectorToNews = async (
-  newsId: string,
-  averageImportanceScore: number,
-  pg: SupabaseDirectClient
-) => {
-  const userIdsAndDistances = await pg.manyOrNone<{
-    user_id: string
-    distance: number
-  }>(
-    // The indices don't work great (returns ~half the users) for far out of sample vectors, running a seq
-    // scan instead by omitting the order by clause.
-    `
-    with ce as (
-        select title_embedding
-        from news
-        where news.id = $1
-    )
-    select user_id, distance
-    from (
-             select ue.user_id, (select title_embedding from ce) <=> ue.interest_embedding as distance
-             from user_embeddings as ue
-         ) as distances
-    where distance < $2
-  `,
-    [newsId, INTEREST_DISTANCE_THRESHOLDS.news_with_related_contracts]
-  )
-  const reasons = [
-    'similar_interest_vector_to_news_vector',
-  ] as FEED_REASON_TYPES[]
-
-  return fromPairs(
-    userIdsAndDistances.map((r) => [
-      r.user_id,
-      {
-        reasons,
-        relevanceScore: getRelevanceScore(
-          'news_with_related_contracts',
-          reasons,
-          averageImportanceScore,
-          r.distance
-        ),
-      },
-    ])
-  )
 }
 
 export const generateNewUserFeedFromContracts = async (
