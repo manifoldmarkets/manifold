@@ -50,30 +50,30 @@ export const parseCredentials = async (req: Request): Promise<Credentials> => {
   const auth = admin.auth()
   const authHeader = req.get('Authorization')
   if (!authHeader) {
-    throw new APIError(403, 'Missing Authorization header.')
+    throw new APIError(401, 'Missing Authorization header.')
   }
   const authParts = authHeader.split(' ')
   if (authParts.length !== 2) {
-    throw new APIError(403, 'Invalid Authorization header.')
+    throw new APIError(401, 'Invalid Authorization header.')
   }
 
   const [scheme, payload] = authParts
   switch (scheme) {
     case 'Bearer':
       if (payload === 'undefined') {
-        throw new APIError(403, 'Firebase JWT payload undefined.')
+        throw new APIError(401, 'Firebase JWT payload undefined.')
       }
       try {
         return { kind: 'jwt', data: await auth.verifyIdToken(payload) }
       } catch (err) {
         // This is somewhat suspicious, so get it into the firebase console
         console.error('Error verifying Firebase JWT: ', err, scheme, payload)
-        throw new APIError(403, 'Error validating token.')
+        throw new APIError(500, 'Error validating token.')
       }
     case 'Key':
       return { kind: 'key', data: payload }
     default:
-      throw new APIError(403, 'Invalid auth scheme; must be "Key" or "Bearer".')
+      throw new APIError(401, 'Invalid auth scheme; must be "Key" or "Bearer".')
   }
 }
 
@@ -83,7 +83,7 @@ export const lookupUser = async (creds: Credentials): Promise<AuthedUser> => {
   switch (creds.kind) {
     case 'jwt': {
       if (typeof creds.data.user_id !== 'string') {
-        throw new APIError(403, 'JWT must contain Manifold user ID.')
+        throw new APIError(401, 'JWT must contain Manifold user ID.')
       }
       return { uid: creds.data.user_id, creds }
     }
@@ -91,13 +91,13 @@ export const lookupUser = async (creds: Credentials): Promise<AuthedUser> => {
       const key = creds.data
       const privateUserQ = await privateUsers.where('apiKey', '==', key).get()
       if (privateUserQ.empty) {
-        throw new APIError(403, `No private user exists with API key ${key}.`)
+        throw new APIError(401, `No private user exists with API key ${key}.`)
       }
       const privateUser = privateUserQ.docs[0].data() as PrivateUser
       return { uid: privateUser.id, creds: { privateUser, ...creds } }
     }
     default:
-      throw new APIError(500, 'Invalid credential type.')
+      throw new APIError(401, 'Invalid credential type.')
   }
 }
 
