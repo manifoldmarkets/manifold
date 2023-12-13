@@ -135,44 +135,44 @@ Example response
 ]
 ```
 
-- Response type: Array of `LiteUser`
+Response type: Array of `LiteUser`
 
-  ```tsx
-  // Basic information about a user
-  type LiteUser = {
-    id: string // user's unique id
-    createdTime: number
+```tsx
+// Basic information about a user
+type LiteUser = {
+  id: string // user's unique id
+  createdTime: number
 
-    name: string // display name, may contain spaces
-    username: string // username, used in urls
-    url: string // link to user's profile
-    avatarUrl?: string
+  name: string // display name, may contain spaces
+  username: string // username, used in urls
+  url: string // link to user's profile
+  avatarUrl?: string
 
-    bio?: string
-    bannerUrl?: string
-    website?: string
-    twitterHandle?: string
-    discordHandle?: string
+  bio?: string
+  bannerUrl?: string
+  website?: string
+  twitterHandle?: string
+  discordHandle?: string
 
-    isBot?: boolean
-    isAdmin?: boolean // is Manifold team
-    isTrustworthy?: boolean // is Moderator
-    isBannedFromPosting?: boolean
-    userDeleted?: boolean
+  isBot?: boolean
+  isAdmin?: boolean // is Manifold team
+  isTrustworthy?: boolean // is Moderator
+  isBannedFromPosting?: boolean
+  userDeleted?: boolean
 
-    // Note: the following are here for convenience only and may be removed in the future.
-    balance: number
-    totalDeposits: number
-    lastBetTime?: number
-    currentBettingStreak?: number
-    profitCached: {
-      daily: number
-      weekly: number
-      monthly: number
-      allTime: number
-    }
+  // Note: the following are here for convenience only and may be removed in the future.
+  balance: number
+  totalDeposits: number
+  lastBetTime?: number
+  currentBettingStreak?: number
+  profitCached: {
+    daily: number
+    weekly: number
+    monthly: number
+    allTime: number
   }
-  ```
+}
+```
 
 ### `GET /v0/user`
 
@@ -185,13 +185,13 @@ Parameters:
 
 Requires no authorization.
 
-- Response type: `LiteUser`
+Response type: `LiteUser`
 
 ### `GET /v0/me`
 
 Returns the authenticated user
 
-- Response type: `LiteUser`
+Response type: `LiteUser`
 
 ### `GET /v0/groups`
 
@@ -266,56 +266,56 @@ Example response
 ]
 ```
 
-- Response type: Array of `LiteMarket`
+Response type: Array of `LiteMarket`
 
-  ```tsx
-  // Information about a market, but without bets or comments
-  type LiteMarket = {
-    // Unique identifer for this market
-    id: string
+```tsx
+// Information about a market, but without bets or comments
+type LiteMarket = {
+  // Unique identifer for this market
+  id: string
 
-    // Attributes about the creator
-    creatorId: string
-    creatorUsername: string
-    creatorName: string
-    creatorAvatarUrl?: string
+  // Attributes about the creator
+  creatorId: string
+  creatorUsername: string
+  creatorName: string
+  creatorAvatarUrl?: string
 
-    // Market attributes.
-    createdTime: number // When market created
-    closeTime?: number // Min of creator's chosen date, and resolutionTime
-    question: string
-    slug: string
+  // Market attributes.
+  createdTime: number // When market created
+  closeTime?: number // Min of creator's chosen date, and resolutionTime
+  question: string
+  slug: string
 
-    // Note: This url always points to https://manifold.markets, regardless of what instance the api is running on.
-    // This url includes the creator's username, but this doesn't need to be correct when constructing valid URLs.
-    //   i.e. https://manifold.markets/Austin/test-market is the same as https://manifold.markets/foo/test-market
-    url: string
+  // Note: This url always points to https://manifold.markets, regardless of what instance the api is running on.
+  // This url includes the creator's username, but this doesn't need to be correct when constructing valid URLs.
+  //   i.e. https://manifold.markets/Austin/test-market is the same as https://manifold.markets/foo/test-market
+  url: string
 
-    outcomeType: string // BINARY, FREE_RESPONSE, MULTIPLE_CHOICE, NUMERIC, PSEUDO_NUMERIC, BOUNTIED_QUESTION, POLL, or ...
-    mechanism: string // dpm-2, cpmm-1, or cpmm-multi-1
+  outcomeType: string // BINARY, FREE_RESPONSE, MULTIPLE_CHOICE, NUMERIC, PSEUDO_NUMERIC, BOUNTIED_QUESTION, POLL, or ...
+  mechanism: string // dpm-2, cpmm-1, or cpmm-multi-1
 
-    probability: number
-    pool: { outcome: number } // For CPMM markets, the number of shares in the liquidity pool. For DPM markets, the amount of mana invested in each answer.
-    p?: number // CPMM markets only, probability constant in y^p * n^(1-p) = k
-    totalLiquidity?: number // CPMM markets only, the amount of mana deposited into the liquidity pool
-    value?: number // PSEUDO_NUMERIC markets only, the current market value, which is mapped from probability using min, max, and isLogScale.
-    min?: number // PSEUDO_NUMERIC markets only, the minimum resolvable value
-    max?: number // PSEUDO_NUMERIC markets only, the maximum resolvable value
-    isLogScale?: bool // PSEUDO_NUMERIC markets only, if true `number = (max - min + 1)^probability + minstart - 1`, otherwise `number = min + (max - min) * probability`
+  probability: number
+  pool: { outcome: number } // For CPMM markets, the number of shares in the liquidity pool. For DPM markets, the amount of mana invested in each answer.
+  p?: number // CPMM markets only, probability constant in y^p * n^(1-p) = k
+  totalLiquidity?: number // CPMM markets only, the amount of mana deposited into the liquidity pool
+  value?: number // PSEUDO_NUMERIC markets only, the current market value, which is mapped from probability using min, max, and isLogScale.
+  min?: number // PSEUDO_NUMERIC markets only, the minimum resolvable value
+  max?: number // PSEUDO_NUMERIC markets only, the maximum resolvable value
+  isLogScale?: bool // PSEUDO_NUMERIC markets only, if true `number = (max - min + 1)^probability + minstart - 1`, otherwise `number = min + (max - min) * probability`
 
-    volume: number
-    volume24Hours: number
+  volume: number
+  volume24Hours: number
 
-    isResolved: boolean
-    resolutionTime?: number
-    resolution?: string
-    resolutionProbability?: number // Used for BINARY markets resolved to MKT
-    uniqueBettorCount: number
+  isResolved: boolean
+  resolutionTime?: number
+  resolution?: string
+  resolutionProbability?: number // Used for BINARY markets resolved to MKT
+  uniqueBettorCount: number
 
-    lastUpdatedTime?: number
-    lastBetTime?: number
-  }
-  ```
+  lastUpdatedTime?: number
+  lastBetTime?: number
+}
+```
 
 ### `GET /v0/search-markets`
 
@@ -340,7 +340,7 @@ Example request
 curl "https://api.manifold.markets/v0/search-markets?term=biden&sort=liquidity&filter=resolved&contractType=BINARY&limit=2" -X GET
 ```
 
-- Response type: Array of `LiteMarket`.
+Response type: Array of `LiteMarket`.
 
 ### `GET /v0/market`
 
@@ -435,17 +435,17 @@ Example response
 }
 ```
 
-- Response type: A `FullMarket`
+Response type: A `FullMarket`
 
-  ```tsx
-  // A complete market, along with answers (for free response markets)
-  type FullMarket = LiteMarket & {
-    answers?: Answer[] // dpm-2 markets only
-    description: JSONContent // Rich text content. See https://tiptap.dev/guide/output#option-1-json
-    textDescription: string // string description without formatting, images, or embeds
-    groupSlugs?: string[] // groups which the market is a part of
-  }
-  ```
+```tsx
+// A complete market, along with answers (for free response markets)
+type FullMarket = LiteMarket & {
+  answers?: Answer[] // dpm-2 markets only
+  description: JSONContent // Rich text content. See https://tiptap.dev/guide/output#option-1-json
+  textDescription: string // string description without formatting, images, or embeds
+  groupSlugs?: string[] // groups which the market is a part of
+}
+```
 
 ### `GET /v0/positions`
 
@@ -560,43 +560,43 @@ Example response
 ]
 ```
 
-- Response type: An array of `ContractMetric`
+Response type: An array of `ContractMetric`
 
-  ```tsx
-  // A single position in a market
-  type ContractMetric = {
-    contractId: string
-    from:
-      | {
-          // includes, day, week,month
-          [period: string]: {
-            profit: number
-            profitPercent: number
-            invested: number
-            prevValue: number
-            value: number
-          }
+```tsx
+// A single position in a market
+type ContractMetric = {
+  contractId: string
+  from:
+    | {
+        // includes, day, week,month
+        [period: string]: {
+          profit: number
+          profitPercent: number
+          invested: number
+          prevValue: number
+          value: number
         }
-      | undefined
-    hasNoShares: boolean
-    hasShares: boolean
-    hasYesShares: boolean
-    invested: number
-    loan: number
-    maxSharesOutcome: string | null
-    payout: number
-    profit: number
-    profitPercent: number
-    totalShares: {
-      [outcome: string]: number
-    }
-    userId: string
-    userUsername: string
-    userName: string
-    userAvatarUrl: string
-    lastBetTime: number
+      }
+    | undefined
+  hasNoShares: boolean
+  hasShares: boolean
+  hasYesShares: boolean
+  invested: number
+  loan: number
+  maxSharesOutcome: string | null
+  payout: number
+  profit: number
+  profitPercent: number
+  totalShares: {
+    [outcome: string]: number
   }
-  ```
+  userId: string
+  userUsername: string
+  userName: string
+  userAvatarUrl: string
+  lastBetTime: number
+}
+```
 
 ### `POST /v0/bet`
 
@@ -620,7 +620,7 @@ Parameters:
 - `expiresAt`: Optional. When the limit order should be automatically canceled.
 - `replyToCommentId`: Optional. Makes this a bet reply to the comment with this ID.
 
-- Response type: A `Bet`
+Response type: A `Bet`
 
 Resquires Authentication.
 
@@ -634,7 +634,7 @@ Parameter:
 
 Requires Authentication.
 
-- Response type: A `Bet`
+Response type: A `Bet`
 
 ### `POST /v0/sell-shares`
 
@@ -647,9 +647,9 @@ Parameters:
 - `shares`: Optional. How many shares you are selling - defaults to all.
 - `answerId`: Required on multi choice. The ID of the answer you are selling your position in.
 
-- Response type: A `Bet`
-
 Requires Authentication.
+
+Response type: A `Bet`
 
 ### `POST /v0/sell-shares-dpm`
 
@@ -716,7 +716,7 @@ For polls, you must also provide:
 
 Requires Authentication.
 
-- Response type: `LiteMarket`
+Response type: `LiteMarket`
 
 ### `POST /v0/update-tag`
 
@@ -737,7 +737,7 @@ Add mana to liquidity pool. Does not boost.
 
 Requires Authentication.
 
-- Response type: something
+Response type: something
 
 ### `POST /v0/add-bounty`
 
@@ -750,7 +750,7 @@ Parameters:
 
 Requires Authentication.
 
-- Response type: `Txn`
+Response type: `Txn`
 
 ### `POST /v0/award-bounty`
 
@@ -762,7 +762,7 @@ Distribute a bounty market reward
 
 Requires Authentication.
 
-- Response type `Txn`
+Response type `Txn`
 
 ### `POST /v0/close`
 
@@ -865,7 +865,7 @@ Example request
 curl "https://api.manifold.markets/v0/bets?username=Manifold&contractSlug=will-i-be-able-to-place-a-limit-ord" -X GET
 ```
 
-- Response type: An array of `Bet`.
+Response type: An array of `Bet`.
 
 Example response
 
