@@ -104,8 +104,6 @@ Parameters:
 - `before`: Optional. Include only users created before this time.
   - For example, if you ask for the most recent 10 users, and then perform a secondquery for 10 more users with `before=[the id of the 10th user]`, you will get users 11 through 20.
 
-Requires no authorization.
-
 Example request
 
 ```bash
@@ -183,8 +181,6 @@ Parameters:
 - `username`: Optional. Get the user by their username. Remember that usernames may change.
 - `id`: Optional. Get the user by their unique ID. Many other API endpoints return this as the `userId`.
 
-Requires no authorization.
-
 Response type: `LiteUser`
 
 ### `GET /v0/me`
@@ -202,8 +198,6 @@ Parameters:
 - `beforeTime`: Optional. Get only topics created before this time.
 - `availableToUserId`: Optional. Get only topics that the user has access to.
 
-Requires no authorization.
-
 ### `GET /v0/group`
 
 Get info on a topic
@@ -212,8 +206,6 @@ Parameters:
 
 - `id`: Optional. Gets a topic by it's unique ID.
 - `slug`: Optional: Gets a topic by it's slug.
-
-Requires no authorization.
 
 ### `GET /v0/markets`
 
@@ -228,8 +220,6 @@ Parameters:
   get markets 11 through 20.
 - `userId`: Optional. Include only markets created by this user.
 - `groupId`: Optional. Include only markets tagged with this topic.
-
-Requires no authorization.
 
 Example request
 
@@ -332,8 +322,6 @@ Parameters:
 - `limit`: Optional. Number of contracts to return from 0 to 1000. Default 100.
 - `offset`: Optional. Number of contracts to skip. Use with limit to paginate the results.
 
-Requires no authorization.
-
 Example request
 
 ```bash
@@ -352,8 +340,6 @@ Parameters:
 - `id`: Optional. Get the market by its unique ID. Many other API endpoints return this as `contractId`.
 - `slug`: Optional. Get the market by slug.
 - `lite`: Optional. `true` or `false` (default). Whether to return a `FullMarket` or `LiteMarket`
-
-Requires no authorization.
 
 Example request
 
@@ -458,8 +444,6 @@ Parameters:
 - `top`: Optional. The number of top positions (ordered by `order`) to return.
 - `bottom`: Optional. The number of bottom positions (ordered by `order`) to return.
 - `userId`: Optional. The user ID to query by. If provided, only the position for this user will be returned.
-
-Requires no authorization.
 
 Example request
 
@@ -811,8 +795,6 @@ Parameters:
 - `page`. Optional. For pagination with `limit`
 - `userId`: Optional. Get only comments created by this user.
 
-Requires no authorization.
-
 ### `POST /v0/comment`
 
 Creates a comment in the specified market. Only supports top-level comments for now.
@@ -856,8 +838,6 @@ Parameters:
   - For example, if you request the 10 most recent bets and then perform a second query with `after=[the id of the 1st bet]`, you will receive up to 10 new bets, if available.
 - `kinds`: Optional. Specifies subsets of bets to return. Possible kinds: `open-limit` (open limit orders.)
 - `order`: Optional. `asc` or `desc` (default). The sorting order for returned bets.
-
-Requires no authorization.
 
 Example request
 
@@ -941,8 +921,6 @@ Parameters:
 - `before`: Optional. The `createdTime` before which you want managrams
 - `after`: Optional. The `createdTime` after which you want managrams
 
-Requires no authorization.
-
 Example request
 
 ```bash
@@ -1003,8 +981,6 @@ Parameters:
 - `userId`: Optional. Returns only leagues for this user.
 - `season`: Optional. Number. Returns only a particular season.
 - `cohort`: Optional. String. The snake-cased quirky name of a league - returns only this particular league
-
-Requires no authorization.
 
 ## Changelog
 
