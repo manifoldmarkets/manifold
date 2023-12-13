@@ -173,26 +173,27 @@ export function FeedCommentThread(props: {
           </Button>
         </Row>
       )}
-      {replyToUserInfo && (
-        <div className="stop-prop flex">
-          <div
-            className={clsx(
-              roundThreadColor,
-              '-mt-3 ml-4 h-7 w-4 rounded-bl-xl border-b-2 border-l-2'
-            )}
-          />
-          <ContractCommentInput
-            contract={contract}
-            parentCommentId={parentComment.id}
-            replyToUserInfo={replyToUserInfo}
-            clearReply={clearReply}
-            trackingLocation={trackingLocation}
-            className="w-full min-w-0 grow"
-            onSubmit={onSubmitReply}
-            commentTypes={['comment']}
-          />
-        </div>
-      )}
+
+      <div
+        className={clsx('stop-prop flex', replyToUserInfo ? 'block' : 'hidden')}
+      >
+        <div
+          className={clsx(
+            roundThreadColor,
+            '-mt-3 ml-4 h-7 w-4 rounded-bl-xl border-b-2 border-l-2'
+          )}
+        />
+        <ContractCommentInput
+          contract={contract}
+          parentCommentId={parentComment.id}
+          replyToUserInfo={replyToUserInfo}
+          clearReply={clearReply}
+          trackingLocation={trackingLocation}
+          className="w-full min-w-0 grow"
+          onSubmit={onSubmitReply}
+          commentTypes={['comment']}
+        />
+      </div>
     </Col>
   )
 }
