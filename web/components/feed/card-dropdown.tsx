@@ -17,6 +17,7 @@ import toast from 'react-hot-toast'
 import { TiVolume, TiVolumeMute } from 'react-icons/ti'
 import { useAdmin } from 'web/hooks/use-admin'
 import { InformationCircleIcon } from '@heroicons/react/outline'
+import { useUserById } from 'web/hooks/use-user-supabase'
 
 export function FeedDropdown(props: {
   contract: Contract
@@ -29,17 +30,14 @@ export function FeedDropdown(props: {
     props
   const user = useUser()
   const isAdmin = useAdmin()
-  const { isFollowing, setIsFollowing } = useIsFollowing(
-    user?.id,
-    contract.creatorId
-  )
-
-  const { creatorId, creatorName } = contract
+  const creatorId = item?.creatorId ?? contract.creatorId
+  const creator = useUserById(creatorId)
+  const { isFollowing, setIsFollowing } = useIsFollowing(user?.id, creatorId)
 
   const markUninteresting = async () => {
     await updateUserDisinterestEmbedding({
       contractId: contract.id,
-      creatorId: creatorId,
+      creatorId,
       feedId: item?.id,
       // Currently not interesting, toggling to interesting
       removeContract: !interesting,
@@ -53,7 +51,9 @@ export function FeedDropdown(props: {
 
   const feedCardOptions = buildArray(
     user && {
-      name: isFollowing ? `Unfollow ${creatorName}` : `Follow ${creatorName}`,
+      name: isFollowing
+        ? `Unfollow ${creator?.name ?? contract.creatorName}`
+        : `Follow ${creator?.name ?? contract.creatorName}`,
       icon: isFollowing ? (
         <MinusCircleIcon className="h-5 w-5" aria-hidden />
       ) : (
