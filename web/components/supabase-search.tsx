@@ -1,7 +1,7 @@
 import { ArrowLeftIcon, ChevronDownIcon, XIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { sample, uniqBy } from 'lodash'
-import { ReactNode, useEffect, useRef, useState } from 'react'
+import { ReactNode, useRef, useState } from 'react'
 import { Contract } from 'common/contract'
 import { useEvent } from 'web/hooks/use-event'
 import { useDebouncedEffect } from 'web/hooks/use-debounced-effect'
