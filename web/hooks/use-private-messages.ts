@@ -235,13 +235,13 @@ export const useUnseenPrivateMessageChannels = (
 }
 
 const useLastSeenMessagesPageTime = (userId: string) => {
-  const { isReady, asPath } = useRouter()
+  const { isReady, pathname } = useRouter()
   const isVisible = useIsPageVisible()
 
   const [lastSeenMessagesPageTime, setLastSeenMessagesPageTime] =
     usePersistentLocalState(0, 'last-seen-private-messages-page')
   useEffect(() => {
-    if (isReady && asPath.endsWith('/messages')) {
+    if (isReady && pathname === 'messages') {
       setLastSeenMessagesPageTime(Date.now())
       track('view love messages page')
       return
@@ -258,7 +258,7 @@ const useLastSeenMessagesPageTime = (userId: string) => {
     ).then(({ data }) => {
       setLastSeenMessagesPageTime(new Date(data[0]?.ts ?? 0).valueOf())
     })
-  }, [isReady, asPath, isVisible])
+  }, [isReady, pathname, isVisible])
 
   return lastSeenMessagesPageTime
 }
