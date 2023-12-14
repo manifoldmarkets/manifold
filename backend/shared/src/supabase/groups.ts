@@ -6,7 +6,7 @@ import { APIError } from 'common//api/utils'
 import { getPrivateUser } from 'shared/utils'
 import * as admin from 'firebase-admin'
 import { FieldValue } from 'firebase-admin/firestore'
-import { isAdminId } from 'common/envs/constants'
+import { isAdminId, isModId } from 'common/envs/constants'
 import { createAddedToGroupNotification } from 'shared/create-notification'
 import { TOPIC_IDS_YOU_CANT_FOLLOW } from 'common/supabase/groups'
 
@@ -77,6 +77,7 @@ export async function addUserToTopic(
     }
 
     const isAdminRequest = isAdminId(myId)
+    const isModRequest = isModId(myId)
 
     if (userId === myId) {
       if (group.privacy_status === 'private') {
@@ -84,7 +85,10 @@ export async function addUserToTopic(
       }
     } else {
       if (!requester) {
-        if (!isAdminRequest) {
+        if (
+          !isAdminRequest &&
+          !(isModRequest && group.privacy_status !== 'private')
+        ) {
           throw new APIError(
             403,
             'User does not have permission to add members'

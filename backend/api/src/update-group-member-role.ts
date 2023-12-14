@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-import { isAdminId } from 'common/envs/constants'
+import { isAdminId, isModId } from 'common/envs/constants'
 import { APIError, authEndpoint, validate } from './helpers'
 import { createGroupStatusChangeNotification } from 'shared/create-notification'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
@@ -39,8 +39,12 @@ export const updatememberrole = authEndpoint(async (req, auth) => {
     if (!requesterUser) throw new APIError(401, 'Your account was not found')
 
     const isAdminRequest = isAdminId(auth.uid)
+    const isModRequest = isModId(auth.uid)
 
-    if (!isAdminRequest) {
+    if (
+      !isAdminRequest &&
+      !(isModRequest && group.privacy_status !== 'private')
+    ) {
       const requesterMembership = await tx.oneOrNone(
         'select role from group_members where member_id = $1 and group_id = $2',
         [auth.uid, groupId]
