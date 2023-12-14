@@ -228,6 +228,7 @@ export const VERIFIED_USERNAMES = [
   'JosephWeisenthal',
   'BTE',
   'LawrenceLessig',
+  'NatFriedman',
 ]
 
 export const HOUSE_BOT_USERNAME = 'acc'
