@@ -1,7 +1,7 @@
 import { auth } from './users'
 import { APIError, getApiUrl } from 'common/api/utils'
 import { JSONContent } from '@tiptap/core'
-import { Group, GroupRole, PrivacyStatusType } from 'common/group'
+import { Group, PrivacyStatusType } from 'common/group'
 import { Contract } from './contracts'
 import { ContractTypeType, Filter, Sort } from 'web/components/supabase-search'
 import { AD_RATE_LIMIT } from 'common/boost'
