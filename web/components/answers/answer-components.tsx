@@ -25,7 +25,7 @@ import { floatingEqual } from 'common/util/math'
 import { formatTimeShort } from 'web/lib/util/time'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
-import { EmptyAvatar, Avatar } from '../widgets/avatar'
+import { Avatar, EmptyAvatar } from '../widgets/avatar'
 import { Linkify } from '../widgets/linkify'
 import { Tooltip } from '../widgets/tooltip'
 import { animated } from '@react-spring/web'
@@ -101,7 +101,7 @@ export const AnswerBar = (props: {
   )
 }
 
-export const AnswerLabel = (props: {
+export const CreatorAndAnswerLabel = (props: {
   text: string
   createdTime: number
   truncate?: 'short' | 'long' | 'none' //  | medium (30)
@@ -139,6 +139,28 @@ export const AnswerLabel = (props: {
         </Tooltip>
         <Linkify text={truncated} className="[&_a]:text-primary-800" />
       </Row>
+    </Tooltip>
+  )
+}
+export const AnswerLabel = (props: {
+  text: string
+  className?: string
+  truncate?: 'short' | 'long' | 'none' //  | medium (30)
+}) => {
+  const { text, truncate = 'none', className } = props
+
+  const ELLIPSES_LENGTH = 3
+  const maxLength = { short: 20, long: 75, none: undefined }[truncate]
+  const truncated =
+    maxLength && text.length > maxLength + ELLIPSES_LENGTH
+      ? text.slice(0, maxLength) + '...'
+      : text
+
+  const answerTextTooltip = truncated === text ? false : text
+
+  return (
+    <Tooltip text={answerTextTooltip} className={className}>
+      <Linkify text={truncated} className="[&_a]:text-primary-800" />
     </Tooltip>
   )
 }

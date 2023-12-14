@@ -29,7 +29,7 @@ import { NoLabel, YesLabel } from '../outcome-label'
 import {
   AddComment,
   AnswerBar,
-  AnswerLabel,
+  CreatorAndAnswerLabel,
   AnswerStatus,
   BetButtons,
 } from './answer-components'
@@ -409,7 +409,7 @@ function Answer(props: {
                 />
               </span>
             ) : (
-              <AnswerLabel
+              <CreatorAndAnswerLabel
                 text={answer.text}
                 createdTime={answer.createdTime}
                 className={clsx(

@@ -19,7 +19,7 @@ import { MiniResolutionPanel, ResolveHeader } from '../resolution-panel'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import {
   AnswerBar,
-  AnswerLabel,
+  CreatorAndAnswerLabel,
   AnswerStatus,
   ClosedProb,
   OpenProb,
@@ -361,7 +361,7 @@ export function ResolutionAnswerItem(props: {
       prob={prob}
       resolvedProb={chosenShare}
       label={
-        <AnswerLabel
+        <CreatorAndAnswerLabel
           text={text}
           createdTime={answer.createdTime}
           creator={showAvatar ? user ?? false : undefined}
@@ -483,7 +483,7 @@ function IndependentResolutionAnswerItem(props: {
                 />
               </span>
             ) : (
-              <AnswerLabel
+              <CreatorAndAnswerLabel
                 text={answer.text}
                 createdTime={answer.createdTime}
                 creator={
