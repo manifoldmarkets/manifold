@@ -159,8 +159,11 @@ export const AnswerLabel = (props: {
   const answerTextTooltip = truncated === text ? false : text
 
   return (
-    <Tooltip text={answerTextTooltip} className={className}>
-      <Linkify text={truncated} className="[&_a]:text-primary-800" />
+    <Tooltip text={answerTextTooltip}>
+      <Linkify
+        text={truncated}
+        className={clsx('[&_a]:text-primary-800', className)}
+      />
     </Tooltip>
   )
 }
