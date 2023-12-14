@@ -66,10 +66,10 @@ export default function DropdownMenu(props: {
                 'bg-canvas-0 ring-ink-1000 z-30 mt-2 rounded-md shadow-lg ring-1 ring-opacity-5 focus:outline-none',
                 menuWidth ?? 'w-34',
                 menuItemsClass,
-                'py-1'
+                'p-1'
               )}
             >
-              <Col>{items.map((item) => item)}</Col>
+              <Col className={'gap-1'}>{items.map((item) => item)}</Col>
             </Popover.Panel>
           </AnimationOrNothing>
         </>

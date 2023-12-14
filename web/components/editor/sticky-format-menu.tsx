@@ -30,7 +30,7 @@ export function StickyFormatMenu(props: {
   const [marketOpen, setMarketOpen] = useState(false)
 
   return (
-    <Row className="text-ink-800 ml-2 h-8 items-center">
+    <Row className="text-ink-600 ml-2 h-8 items-center">
       <ButtonDropdownMenu
         withinOverflowContainer={true}
         icon={
