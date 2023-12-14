@@ -151,6 +151,8 @@ const ContractChart = (props: {
 }
 
 const numBars = (height: number) => {
+  if (height < 50) return 0
+  if (height < 100) return 1
   if (height < 150) return 2
   if (height < 200) return 3
   if (height < 250) return 4
@@ -179,28 +181,24 @@ function ContractSmolView(props: {
 
   return (
     <Col className="bg-canvas-0 h-[100vh] w-full gap-1 px-6 py-4">
-      <Row className="text-ink-500 w-full justify-between text-sm">
-        <Row className="items-center gap-1">
-          <Avatar
-            size="2xs"
-            avatarUrl={contract.creatorAvatarUrl}
-            username={contract.creatorUsername}
-            noLink
-          />
-          {contract.creatorName}
-        </Row>
+      <Row className="text-ink-500 items-center gap-1 text-sm">
+        <Avatar
+          size="2xs"
+          avatarUrl={contract.creatorAvatarUrl}
+          username={contract.creatorUsername}
+          noLink
+        />
+        {contract.creatorName}
       </Row>
       <Row className="justify-between gap-4">
-        <Col>
-          <a
-            href={href}
-            target="_blank"
-            className="hover:text-primary-700 text-ink-1000 text-lg transition-all hover:underline sm:text-xl lg:mb-4 lg:text-2xl"
-            rel="noreferrer"
-          >
-            {question}
-          </a>
-        </Col>
+        <a
+          href={href}
+          target="_blank"
+          className="hover:text-primary-700 text-ink-1000 text-lg transition-all hover:underline sm:text-xl lg:mb-4 lg:text-2xl"
+          rel="noreferrer"
+        >
+          {question}
+        </a>
         {isBinary && (
           <BinaryResolutionOrChance
             contract={contract}
@@ -223,7 +221,7 @@ function ContractSmolView(props: {
           <StonkPrice className="!flex-col !gap-0" contract={contract} />
         )}
       </Row>
-      <div className="grow-y relative flex h-full w-full">
+      <div className="relative flex h-full min-h-0 w-full flex-1">
         {showQRCode && (
           <div className="absolute inset-0 z-10 m-auto flex items-center justify-center">
             <div className="border-ink-400 bg-canvas-0 rounded-xl border p-4 pb-2 drop-shadow">
