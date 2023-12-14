@@ -11,4 +11,6 @@ RUN yarn install --frozen-lockfile --production
 COPY dist ./
 
 ENV PORT 80
-ENTRYPOINT [ "node", "backend/api/lib/serve.js" ]
+
+# 32 GB on the box, give 28 GB to the JS heap
+ENTRYPOINT [ "node", "--max-old-space-size=28672", "backend/api/lib/serve.js" ]
