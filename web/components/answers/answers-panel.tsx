@@ -8,15 +8,8 @@ import { groupBy, sortBy, sumBy } from 'lodash'
 import clsx from 'clsx'
 import { Answer, DpmAnswer } from 'common/answer'
 import { Bet } from 'common/bet'
-import { getAnswerProbability, getContractBetMetrics } from 'common/calculate'
-import {
-  CPMMMultiContract,
-  MultiContract,
-  contractPath,
-  Contract,
-  SORTS,
-} from 'common/contract'
-import { formatMoney } from 'common/util/format'
+import { getAnswerProbability } from 'common/calculate'
+import { MultiContract, contractPath, Contract, SORTS } from 'common/contract'
 import Link from 'next/link'
 import { Button, IconButton } from 'web/components/buttons/button'
 import { Row } from 'web/components/layout/row'
@@ -25,13 +18,13 @@ import { useUserContractBets } from 'web/hooks/use-user-bets'
 import { useUserByIdOrAnswer } from 'web/hooks/use-user-supabase'
 import { getAnswerColor, useChartAnswers } from '../charts/contract/choice'
 import { Col } from '../layout/col'
-import { NoLabel, YesLabel } from '../outcome-label'
 import {
   AddComment,
   AnswerBar,
   CreatorAndAnswerLabel,
   AnswerStatus,
   BetButtons,
+  AnswerPosition,
 } from './answer-components'
 import { floatingEqual } from 'common/util/math'
 import { InfoTooltip } from '../widgets/info-tooltip'
@@ -50,6 +43,7 @@ import { Avatar } from 'web/components/widgets/avatar'
 import { UserLink } from 'web/components/widgets/user-link'
 import { TradesButton } from 'web/components/contract/trades-button'
 import toast from 'react-hot-toast'
+import { useIsMobile } from 'web/hooks/use-is-mobile'
 
 // full resorting, hover, clickiness, search and add
 export function AnswersPanel(props: {
@@ -383,6 +377,7 @@ function Answer(props: {
     bet.outcome === 'YES' ? bet.shares : -bet.shares
   )
   const hasBets = userBets && !floatingEqual(sharesSum, 0)
+  const isMobile = useIsMobile()
 
   const textColorClass = resolvedProb === 0 ? 'text-ink-700' : 'text-ink-900'
   return (
@@ -421,18 +416,14 @@ function Answer(props: {
           </Row>
         }
         end={
-          <Row className={'items-center gap-2'}>
+          <Row className={'items-center gap-1.5 sm:gap-2'}>
             {selected && (
               <PresentationChartLineIcon
                 className="h-5 w-5 text-black"
                 style={{ fill: color }}
               />
             )}
-            <BetButtons
-              contract={contract}
-              answer={answer}
-              userBets={userBets ?? []}
-            />
+            <BetButtons contract={contract} answer={answer} />
             {onClick && (
               <IconButton
                 className={'-ml-1 !px-1.5'}
@@ -453,11 +444,13 @@ function Answer(props: {
           </Row>
         }
       />
-      {!resolution && hasBets && isCpmm && (
+      {!resolution && hasBets && isCpmm && user && (
         <AnswerPosition
           contract={contract}
+          answer={answer as Answer}
           userBets={userBets}
           className="mt-0.5 self-end sm:mx-3 sm:mt-0"
+          user={user}
         />
       )}
 
@@ -470,6 +463,7 @@ function Answer(props: {
                 user={answerCreator}
                 noLink={false}
                 className="ml-1 text-sm"
+                short={isMobile}
               />
             </Row>
           )}
@@ -514,50 +508,5 @@ function Answer(props: {
         />
       )}
     </Col>
-  )
-}
-
-function AnswerPosition(props: {
-  contract: CPMMMultiContract
-  userBets: Bet[]
-  className?: string
-}) {
-  const { contract, userBets, className } = props
-
-  const { invested, totalShares } = getContractBetMetrics(contract, userBets)
-
-  const yesWinnings = totalShares.YES ?? 0
-  const noWinnings = totalShares.NO ?? 0
-  const position = yesWinnings - noWinnings
-
-  return (
-    <Row
-      className={clsx(
-        className,
-        'text-ink-500 gap-1.5 whitespace-nowrap text-xs font-semibold'
-      )}
-    >
-      <Row className="gap-1">
-        Payout
-        {position > 1e-7 ? (
-          <>
-            <span className="text-ink-700">{formatMoney(position)}</span> on
-            <YesLabel />
-          </>
-        ) : position < -1e-7 ? (
-          <>
-            <span className="text-ink-700">{formatMoney(-position)}</span> on
-            <NoLabel />
-          </>
-        ) : (
-          '——'
-        )}
-      </Row>
-      &middot;
-      <Row className="gap-1">
-        <div className="text-ink-500">Spent</div>
-        <div className="text-ink-700">{formatMoney(invested)}</div>
-      </Row>
-    </Row>
   )
 }

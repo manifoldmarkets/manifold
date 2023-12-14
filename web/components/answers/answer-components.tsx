@@ -9,7 +9,7 @@ import {
   resolution,
   tradingAllowed,
 } from 'common/contract'
-import { formatPercent } from 'common/util/format'
+import { formatMoney, formatPercent } from 'common/util/format'
 import { ReactNode, useState } from 'react'
 import { Button } from '../buttons/button'
 import { Modal, MODAL_CLASS } from '../layout/modal'
@@ -19,9 +19,13 @@ import { Bet } from 'common/bet'
 import { sumBy } from 'lodash'
 import { User } from 'common/user'
 import { SellSharesModal } from '../bet/sell-row'
-import { BinaryOutcomeLabel, ProbPercentLabel } from '../outcome-label'
-import { getAnswerProbability } from 'common/calculate'
-import { floatingEqual } from 'common/util/math'
+import {
+  BinaryOutcomeLabel,
+  NoLabel,
+  ProbPercentLabel,
+  YesLabel,
+} from '../outcome-label'
+import { getAnswerProbability, getContractBetMetrics } from 'common/calculate'
 import { formatTimeShort } from 'web/lib/util/time'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
@@ -180,7 +184,7 @@ export const AddComment = (props: { onClick: () => void }) => {
       size={'2xs'}
     >
       <ChatIcon className="mr-1 h-5 w-5" />
-      Add Comment
+      Comment
     </Button>
   )
 }
@@ -261,6 +265,60 @@ export const MultiBettor = (props: {
     </>
   )
 }
+export const YesNoBetButtons = (props: {
+  answer: Answer
+  contract: CPMMMultiContract
+}) => {
+  const { answer, contract } = props
+  const [outcome, setOutcome] = useState<'YES' | 'NO' | 'LIMIT' | undefined>(
+    undefined
+  )
+
+  const user = useUser()
+
+  return (
+    <>
+      <Modal
+        open={outcome != undefined}
+        setOpen={(open) => setOutcome(open ? 'YES' : undefined)}
+        className={MODAL_CLASS}
+      >
+        <AnswerCpmmBetPanel
+          answer={answer}
+          contract={contract}
+          outcome={outcome}
+          closePanel={() => setOutcome(undefined)}
+          me={user}
+        />
+      </Modal>
+
+      <Button
+        size="2xs"
+        color="green-outline"
+        className="bg-primary-50"
+        onClick={(e) => {
+          e.stopPropagation()
+          track('bet intent', { location: 'answer panel' })
+          setOutcome('YES')
+        }}
+      >
+        Yes
+      </Button>
+      <Button
+        size="2xs"
+        color="red-outline"
+        className="bg-primary-50"
+        onClick={(e) => {
+          e.stopPropagation()
+          track('bet intent', { location: 'answer panel' })
+          setOutcome('NO')
+        }}
+      >
+        No
+      </Button>
+    </>
+  )
+}
 
 export const MultiSeller = (props: {
   answer: Answer
@@ -287,14 +345,12 @@ export const MultiSeller = (props: {
           answerId={answer.id}
         />
       )}
-      <Button
-        size="2xs"
-        color="indigo-outline"
-        className="bg-primary-50"
+      <button
+        className={'hover:text-ink-700 decoration-2 hover:underline'}
         onClick={() => setOpen(true)}
       >
         Sell
-      </Button>
+      </button>
     </>
   )
 }
@@ -391,18 +447,10 @@ export const AnswerStatus = (props: {
 export const BetButtons = (props: {
   contract: MultiContract
   answer: Answer | DpmAnswer
-  userBets: Bet[]
 }) => {
-  const { contract, answer, userBets } = props
-
-  const user = useUser()
-
+  const { contract, answer } = props
   const isDpm = contract.mechanism === 'dpm-2'
 
-  const sharesSum = sumBy(userBets, (bet) =>
-    bet.outcome === 'YES' ? bet.shares : -bet.shares
-  )
-  const hasBets = userBets && !floatingEqual(sharesSum, 0)
   const isOpen = tradingAllowed(
     contract,
     'resolution' in answer ? answer : undefined
@@ -412,16 +460,63 @@ export const BetButtons = (props: {
     return <DPMMultiBettor answer={answer as any} contract={contract} />
 
   return (
-    <>
-      <MultiBettor answer={answer as any} contract={contract as any} />
-      {user && hasBets && (
-        <MultiSeller
-          answer={answer as any}
-          contract={contract as any}
-          userBets={userBets}
-          user={user}
-        />
+    <YesNoBetButtons
+      answer={answer as Answer}
+      contract={contract as CPMMMultiContract}
+    />
+  )
+}
+
+export function AnswerPosition(props: {
+  contract: CPMMMultiContract
+  userBets: Bet[]
+  answer: Answer
+  user: User
+  className?: string
+}) {
+  const { contract, user, userBets, answer, className } = props
+
+  const { invested, totalShares } = getContractBetMetrics(contract, userBets)
+
+  const yesWinnings = totalShares.YES ?? 0
+  const noWinnings = totalShares.NO ?? 0
+  const position = yesWinnings - noWinnings
+
+  return (
+    <Row
+      className={clsx(
+        className,
+        'text-ink-500 gap-1.5 whitespace-nowrap text-xs font-semibold'
       )}
-    </>
+    >
+      <Row className="gap-1">
+        Payout
+        {position > 1e-7 ? (
+          <>
+            <span className="text-ink-700">{formatMoney(position)}</span> on
+            <YesLabel />
+          </>
+        ) : position < -1e-7 ? (
+          <>
+            <span className="text-ink-700">{formatMoney(-position)}</span> on
+            <NoLabel />
+          </>
+        ) : (
+          '——'
+        )}
+      </Row>
+      &middot;
+      <Row className="gap-1">
+        <div className="text-ink-500">Spent</div>
+        <div className="text-ink-700">{formatMoney(invested)}</div>
+      </Row>
+      &middot;
+      <MultiSeller
+        answer={answer}
+        contract={contract}
+        userBets={userBets}
+        user={user}
+      />
+    </Row>
   )
 }
