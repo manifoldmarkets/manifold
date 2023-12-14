@@ -4,6 +4,7 @@ import { sample, uniqBy } from 'lodash'
 import { ReactNode, useEffect, useRef, useState } from 'react'
 import { Contract } from 'common/contract'
 import { useEvent } from 'web/hooks/use-event'
+import { useDebouncedEffect } from 'web/hooks/use-debounced-effect'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { track, trackCallback } from 'web/lib/service/analytics'
 import DropdownMenu from './comments/dropdown-menu'
@@ -251,22 +252,30 @@ export function SupabaseSearch(props: {
     })
   )
 
-  useEffect(() => {
-    if (isReady) {
-      queryContracts(true)
-    }
-  }, [query, topicSlug, sort, filter, contractType, isReady])
+  useDebouncedEffect(
+    () => {
+      if (isReady) {
+        queryContracts(true)
+      }
+    },
+    100,
+    [query, topicSlug, sort, filter, contractType, isReady]
+  )
 
   const searchCountRef = useRef(0)
-  useEffect(() => {
-    const searchCount = ++searchCountRef.current
-    queryUsers(query).then((results) => {
-      if (searchCount === searchCountRef.current) setUserResults(results)
-    })
-    queryTopics(query).then((results) => {
-      if (searchCount === searchCountRef.current) setTopicResults?.(results)
-    })
-  }, [query])
+  useDebouncedEffect(
+    () => {
+      const searchCount = ++searchCountRef.current
+      queryUsers(query).then((results) => {
+        if (searchCount === searchCountRef.current) setUserResults(results)
+      })
+      queryTopics(query).then((results) => {
+        if (searchCount === searchCountRef.current) setTopicResults?.(results)
+      })
+    },
+    100,
+    [query]
+  )
 
   const emptyContractsState =
     props.emptyState ??
