@@ -18,7 +18,7 @@ export const ClickFrame = forwardRef(
 
     return (
       <div
-        className={clsx('stop-prop', className)}
+        className={clsx('stop-prop cursor-pointer', className)}
         tabIndex={-1}
         onClick={onClick}
         ref={ref}

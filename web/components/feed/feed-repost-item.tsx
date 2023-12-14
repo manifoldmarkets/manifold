@@ -1,9 +1,9 @@
 import { ContractComment } from 'common/comment'
-import { Contract } from 'common/contract'
+import { Contract, contractPath } from 'common/contract'
 import { CommentReplyHeader, FeedCommentHeader } from './feed-comments'
 import { Col } from '../layout/col'
 import clsx from 'clsx'
-import { memo } from 'react'
+import { memo, useState } from 'react'
 import { Row } from 'web/components/layout/row'
 import { Avatar } from 'web/components/widgets/avatar'
 import { CardReason } from 'web/components/feed/card-reason'
@@ -22,6 +22,8 @@ import { LikeButton } from 'web/components/contract/like-button'
 import { richTextToString } from 'common/util/parse'
 import { isBlocked, usePrivateUser } from 'web/hooks/use-user'
 import { CommentsButton } from 'web/components/comments/comments-button'
+import router from 'next/router'
+import { ClickFrame } from 'web/components/widgets/click-frame'
 
 export const FeedRepost = memo(function (props: {
   contract: Contract
@@ -37,60 +39,75 @@ export const FeedRepost = memo(function (props: {
   const privateUser = usePrivateUser()
   const { userUsername, userAvatarUrl } = topLevelComment
   const marketCreator = contract.creatorId === topLevelComment.userId
-
+  const [hoveringChildContract, setHoveringChildContract] = useState(false)
   return (
-    <Col className="bg-canvas-0 group rounded-lg py-2">
-      <CommentReplyHeader comment={topLevelComment} contract={contract} />
-      <Row className={'w-full gap-2'}>
-        <Col className={'w-full px-3  transition-colors'}>
-          <Row className="justify-between gap-2">
-            <Row className="gap-2">
-              <Avatar
-                username={userUsername}
-                size={'sm'}
-                avatarUrl={userAvatarUrl}
-                className={clsx(marketCreator && 'shadow shadow-amber-300')}
-              />
-              <Col className={''}>
-                <FeedCommentHeader
-                  comment={topLevelComment}
-                  contract={contract}
-                  inTimeline={inTimeline}
+    <Col
+      className={clsx(
+        'bg-canvas-0 group rounded-lg py-2 ',
+        hoveringChildContract ? '' : 'hover:ring-[1px]'
+      )}
+    >
+      <ClickFrame
+        onClick={() => {
+          router.push(`${contractPath(contract)}#${topLevelComment.id}`)
+        }}
+      >
+        <CommentReplyHeader comment={topLevelComment} contract={contract} />
+        <Row className={'w-full gap-2'}>
+          <Col className={'w-full px-3  transition-colors'}>
+            <Row className="justify-between gap-2">
+              <Row className="gap-2">
+                <Avatar
+                  username={userUsername}
+                  size={'sm'}
+                  avatarUrl={userAvatarUrl}
+                  className={clsx(marketCreator && 'shadow shadow-amber-300')}
                 />
-                <Content content={topLevelComment.content} />
+                <Col className={''}>
+                  <FeedCommentHeader
+                    comment={topLevelComment}
+                    contract={contract}
+                    inTimeline={inTimeline}
+                  />
+                  <Content content={topLevelComment.content} />
+                </Col>
+              </Row>
+              <Col className="gap-1">
+                <CardReason item={item} contract={contract} />
+                <FeedDropdown
+                  contract={contract}
+                  item={item}
+                  interesting={true}
+                  toggleInteresting={hide}
+                  importanceScore={props.contract.importanceScore}
+                />
               </Col>
             </Row>
-            <Col className="gap-1">
-              <CardReason item={item} contract={contract} />
-              <FeedDropdown
+            <Col
+              className={'ml-4 mt-2'}
+              onMouseEnter={() => setHoveringChildContract(true)}
+              onMouseLeave={() => setHoveringChildContract(false)}
+            >
+              <FeedContractCard
                 contract={contract}
+                trackingPostfix="feed"
                 item={item}
-                interesting={true}
-                toggleInteresting={hide}
-                importanceScore={props.contract.importanceScore}
+                className="!bg-canvas-0 border-ink-200 max-w-full"
+                small={true}
+                hideBottomRow={true}
               />
-            </Col>
-          </Row>
-          <Col className={' ml-4 mt-2'}>
-            <FeedContractCard
-              contract={contract}
-              trackingPostfix="feed"
-              item={item}
-              className="!bg-canvas-0 border-ink-200 max-w-full"
-              small={true}
-              hideBottomRow={true}
-            />
-            <Col>
-              <BottomActionRow
-                contract={contract}
-                user={user}
-                comment={topLevelComment}
-                privateUser={privateUser}
-              />
+              <Col>
+                <BottomActionRow
+                  contract={contract}
+                  user={user}
+                  comment={topLevelComment}
+                  privateUser={privateUser}
+                />
+              </Col>
             </Col>
           </Col>
-        </Col>
-      </Row>
+        </Row>
+      </ClickFrame>
     </Col>
   )
 })
