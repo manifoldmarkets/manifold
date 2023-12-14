@@ -144,10 +144,10 @@ const getLogs = (req: Request) => {
 export const getDummyLogs = (endpointPath: string) => {
   const traceId = crypto.randomUUID()
 
-  const log = (message: any, details?: object) =>
+  const log = (message: any, details?: object | null) =>
     gLog.debug(message, { ...details, endpoint: endpointPath, traceId })
 
-  const logError = (message: any, details?: object) =>
+  const logError = (message: any, details?: object | null) =>
     gLog.error(message, { ...details, endpoint: endpointPath, traceId })
   return { log, logError }
 }
