@@ -34,8 +34,5 @@
     "tsc-alias": "1.8.2",
     "tsconfig-paths": "4.1.2",
     "typescript": "5.3.2"
-  },
-  "resolutions": {
-    "@supabase/realtime-js": "git+https://github.com/mqp/realtime-js.git"
   }
 }
