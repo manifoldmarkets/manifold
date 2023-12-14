@@ -75,7 +75,6 @@ export function CloseOrResolveTime(props: {
       {isResolved && resolutionTime && (
         <DateTimeTooltip
           className="whitespace-nowrap"
-          text="Question resolved:"
           time={resolutionTime}
           placement="bottom-start"
         >
@@ -129,12 +128,7 @@ export function CloseDate(props: {
         ) : (
           closeTime && (
             <DateTimeTooltip
-              text={
-                contract.outcomeType === 'POLL'
-                  ? 'Poll '
-                  : 'Market ' +
-                    (closeTime <= Date.now() ? 'closed:' : 'closes:')
-              }
+              text={closeTime <= Date.now() ? 'Closed on ' : 'Closes on '}
               time={closeTime}
               placement="bottom-end"
               noTap
