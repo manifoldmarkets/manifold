@@ -227,7 +227,7 @@ export const repostContractToFeed = async (
       ],
       false,
       'repost',
-      0.15
+      0.1
     )
   await bulkInsertDataToUserFeed(
     usersToReasonsInterestedInContract,
