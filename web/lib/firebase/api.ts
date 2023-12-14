@@ -160,14 +160,6 @@ export function updateGroupPrivacy(params: {
   return call(getApiUrl('updategroupprivacy'), 'POST', params)
 }
 
-export function addGroupMember(params: {
-  groupId: string
-  userId: string
-  role?: GroupRole
-}) {
-  return call(getApiUrl('addgroupmember'), 'POST', params)
-}
-
 export function registerDiscordId(params: any) {
   return call(getApiUrl('registerdiscordid'), 'POST', params)
 }

@@ -7,7 +7,6 @@ import { getPrivateUser } from 'shared/utils'
 import * as admin from 'firebase-admin'
 import { FieldValue } from 'firebase-admin/firestore'
 import { isAdminId } from 'common/envs/constants'
-import { removeUndefinedProps } from 'common/util/object'
 import { createAddedToGroupNotification } from 'shared/create-notification'
 import { TOPIC_IDS_YOU_CANT_FOLLOW } from 'common/supabase/groups'
 
@@ -37,9 +36,7 @@ export const getGroupIdFromSlug = async (
 export async function addUserToTopic(
   groupId: string,
   userId: string,
-  myId: string,
-  role?: string,
-  isLink = false
+  myId: string
 ) {
   if (TOPIC_IDS_YOU_CANT_FOLLOW.includes(groupId)) {
     throw new APIError(403, 'You can not follow this topic.')
@@ -82,7 +79,7 @@ export async function addUserToTopic(
     const isAdminRequest = isAdminId(myId)
 
     if (userId === myId) {
-      if (group.privacy_status === 'private' && !isLink) {
+      if (group.privacy_status === 'private') {
         throw new APIError(403, 'You can not add yourself to a private group!')
       }
     } else {
@@ -102,11 +99,7 @@ export async function addUserToTopic(
       }
     }
 
-    const member = removeUndefinedProps({
-      member_id: userId,
-      group_id: groupId,
-      role,
-    })
+    const member = { member_id: userId, group_id: groupId }
     // insert and return row
     const ret = await tx.one(
       `insert into group_members($1:name) values($1:csv)
