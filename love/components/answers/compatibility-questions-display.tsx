@@ -225,6 +225,17 @@ function CompatibilityAnswerBlock(props: {
     answer.multiple_choice,
     question.multiple_choice_options as Record<string, number>
   )
+  const preferredAnswersText = answer.pref_choices.map((choice) =>
+    getStringKeyFromNumValue(
+      choice,
+      question.multiple_choice_options as Record<string, number>
+    )
+  )
+  const distinctPreferredAnswersText = preferredAnswersText.filter(
+    (text) => text !== answerText
+  )
+  const preferredDoesNotIncludeAnswerText =
+    !preferredAnswersText.includes(answerText)
 
   return (
     <Col
@@ -265,6 +276,25 @@ function CompatibilityAnswerBlock(props: {
       <Row className="bg-canvas-50 w-fit gap-1 rounded py-1 pl-2 pr-3 text-sm">
         {answerText}
       </Row>
+      {distinctPreferredAnswersText.length > 0 && (
+        <Col className="gap-2">
+          <div className="text-ink-600 text-sm">
+            {preferredDoesNotIncludeAnswerText
+              ? 'Acceptable'
+              : 'Also acceptable'}
+          </div>
+          <Row className="gap-2">
+            {distinctPreferredAnswersText.map((text) => (
+              <Row
+                key={text}
+                className="bg-canvas-50 w-fit gap-1 rounded py-1 pl-2 pr-3 text-sm"
+              >
+                {text}
+              </Row>
+            ))}
+          </Row>
+        </Col>
+      )}
       <Col className="gap-2">
         {answer.explanation && (
           <Linkify className="font-semibold" text={answer.explanation} />
