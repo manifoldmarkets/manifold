@@ -1,4 +1,4 @@
-import { ENV_CONFIG } from 'common/envs/constants'
+import { PROD_CONFIG } from 'common/envs/prod'
 import { NextRequest } from 'next/server'
 
 // copied from common/src/utils/api. TODO the right thing
@@ -6,7 +6,7 @@ function getApiUrl(path: string) {
   if (process.env.NEXT_PUBLIC_API_URL) {
     return `${process.env.NEXT_PUBLIC_API_URL}/${path}`
   } else {
-    const { apiEndpoint } = ENV_CONFIG
+    const { apiEndpoint } = PROD_CONFIG
     return `${apiEndpoint}/${path}`
   }
 }
