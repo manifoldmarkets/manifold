@@ -1,7 +1,7 @@
 import { SupabaseClient, createSupabaseClient } from 'shared/supabase/init'
 import { run, selectJson } from 'common/supabase/utils'
 import { toLiteMarket } from 'common/api/market-types'
-import { APIError, typedEndpoint } from './helpers'
+import { APIError, type APIHandler } from './helpers'
 
 // mqp: this pagination approach is technically incorrect if multiple contracts
 // have the exact same createdTime, but that's very unlikely
@@ -64,18 +64,20 @@ const getPublicContracts = async (
   return data.map((r) => r.data)
 }
 
-export const markets = typedEndpoint(
-  'markets',
-  async ({ limit, userId, groupId, before }) => {
-    const db = createSupabaseClient()
-    const beforeTime = await getBeforeTime(db, before)
-    const contracts = await getPublicContracts(db, {
-      beforeTime,
-      limit,
-      userId,
-      groupId,
-    })
+export const getMarkets: APIHandler<'markets'> = async ({
+  limit,
+  userId,
+  groupId,
+  before,
+}) => {
+  const db = createSupabaseClient()
+  const beforeTime = await getBeforeTime(db, before)
+  const contracts = await getPublicContracts(db, {
+    beforeTime,
+    limit,
+    userId,
+    groupId,
+  })
 
-    return contracts.map(toLiteMarket)
-  }
-)
+  return contracts.map(toLiteMarket)
+}

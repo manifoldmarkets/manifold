@@ -129,7 +129,7 @@ export function SellPanel(props: {
     setError(undefined)
     setIsSubmitting(true)
 
-    await api('sell-shares', {
+    await api('market/:contractId/sell', {
       shares: isSellingAllShares ? undefined : amount,
       outcome: sharesOutcome,
       contractId: contract.id,

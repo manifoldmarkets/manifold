@@ -106,7 +106,7 @@ import { createlovecompatibilityquestion } from 'api/love/create-love-compatibil
 import { oncreatebet } from 'api/on-create-bet'
 import { getCompatibleLovers } from './love/compatible-lovers'
 import { API, type APIPath } from 'common/api/schema'
-import { markets } from 'api/markets'
+import { getMarkets } from 'api/markets'
 import { createchartannotation } from 'api/create-chart-annotation'
 import { deletechartannotation } from 'api/delete-chart-annotation'
 import { assertUnreachable } from 'common/util/types'
@@ -129,6 +129,7 @@ import {
   searchMarketsLegacy,
 } from './supabase-search-contract'
 import { post } from 'api/post'
+import { type APIHandler, typedEndpoint } from './helpers'
 
 const allowCorsUnrestricted: RequestHandler = cors({})
 const allowCorsManifold: RequestHandler = cors({
@@ -184,35 +185,40 @@ app.options('*', allowCorsManifold)
 app.options('/v0', allowCorsUnrestricted)
 
 // we define the handlers in this object in order to typecheck that every API has a handler
-const handlers: { [k in APIPath]: RequestHandler } = {
+const handlers: { [k in APIPath]: APIHandler<k> } = {
   bet: placeBet,
-  'cancel-bet': cancelBet,
+  'bet/cancel/:betId': cancelBet,
   'sell-shares-dpm': sellShareDPM,
-  'sell-shares': sellShares,
+  'market/:contractId/sell': sellShares,
   bets: getBets,
   comment: createComment,
   'hide-comment': hideComment,
   comments: getComments,
-  'create-market': createMarket,
-  'update-tag': addOrRemoveGroupFromContract,
-  group: getGroup,
+  market: createMarket,
+  'market/:contractId/group': addOrRemoveGroupFromContract,
+  'group/:slug': getGroup,
+  'group/by-id/:id': getGroup,
+  'group/by-id/:id/markets': ({ id, limit }, ...rest) =>
+    getMarkets({ groupId: id, limit }, ...rest),
   groups: getGroups,
-  market: getMarket,
-  close: closeMarket,
-  resolve: resolveMarket,
-  'add-liquidity': addLiquidity,
-  'add-bounty': addBounty,
-  'award-bounty': awardBounty,
-  'add-answer': createAnswerCPMM,
+  'market/:id': getMarket,
+  'slug/:slug': getMarket,
+  'market/:contractId/close': closeMarket,
+  'market/:contractId/resolve': resolveMarket,
+  'market/:contractId/add-liquidity': addLiquidity,
+  'market/:contractId/add-bounty': addBounty,
+  'market/:contractId/award-bounty': awardBounty,
+  'market/:contractId/answer': createAnswerCPMM,
   leagues: getLeagues,
-  markets: markets,
+  markets: getMarkets,
   'search-markets': searchMarketsLite,
   'search-markets-full': searchMarketsFull,
   'send-mana': sendMana,
   managrams: getManagrams,
-  positions: getPositions,
+  'market/:id/positions': getPositions,
   me: getCurrentUser,
-  user: getUser,
+  'user/:username': getUser,
+  'user/by-id/:id': getUser,
   users: getUsers,
   'search-users': searchUsers,
   'save-twitch': saveTwitchCredentials,
@@ -231,7 +237,7 @@ Object.entries(handlers).forEach(([path, handler]) => {
     express.json(),
     cors,
     cache,
-    handler,
+    typedEndpoint(path as any, handler as any),
     apiErrorHandler,
   ] as const
 
@@ -252,27 +258,27 @@ app.post('/transact', ...apiRoute(transact))
 app.post('/changeuserinfo', ...apiRoute(changeuserinfo))
 app.post('/createuser', ...apiRoute(createuser))
 app.post('/createanswer', ...apiRoute(createanswer))
-app.post('/createcomment', ...apiRoute(createComment))
+// app.post('/createcomment', ...apiRoute(createComment))
 app.post('/editcomment', ...apiRoute(editcomment))
 app.post('/swapcert', ...apiRoute(swapcert))
 app.post('/dividendcert', ...apiRoute(dividendcert))
-app.post('/placebet', ...apiRoute(placeBet))
-app.post('/cancelbet', ...apiRoute(cancelBet))
-app.post('/sellbet', ...apiRoute(sellShareDPM))
-app.post('/sellshares', ...apiRoute(sellShares))
-app.post('/addsubsidy', ...apiRoute(addLiquidity))
+// app.post('/placebet', ...apiRoute(placeBet))
+// app.post('/cancelbet', ...apiRoute(cancelBet))
+// app.post('/sellbet', ...apiRoute(sellShareDPM))
+// app.post('/sellshares', ...apiRoute(sellShares))
+// app.post('/addsubsidy', ...apiRoute(addLiquidity))
 app.post('/claimmanalink', ...apiRoute(claimmanalink))
-app.post('/createmarket', ...apiRoute(createMarket))
+// app.post('/createmarket', ...apiRoute(createMarket))
 app.post('/creategroup', ...apiRoute(creategroup))
 app.post('/updategroup', ...apiRoute(updategroup))
-app.post('/resolvemarket', ...apiRoute(resolveMarket))
-app.post('/closemarket', ...apiRoute(closeMarket))
+// app.post('/resolvemarket', ...apiRoute(resolveMarket))
+// app.post('/closemarket', ...apiRoute(closeMarket))
 app.post('/validateIap', ...apiRoute(validateiap))
 app.post('/markallnotifications', ...apiRoute(markallnotifications))
 app.post('/updatememberrole', ...apiRoute(updatememberrole))
 app.post('/updategroupprivacy', ...apiRoute(updategroupprivacy))
 app.post('/registerdiscordid', ...apiRoute(registerdiscordid))
-app.post('/addcontracttogroup', ...apiRoute(addOrRemoveGroupFromContract)) // TODO: remove after a few days
+// app.post('/addcontracttogroup', ...apiRoute(addOrRemoveGroupFromContract)) // TODO: remove after a few days
 app.post('/removecontractfromgroup', ...apiRoute(removecontractfromgroup)) // TODO: remove after a few days
 app.post('/addgroupmember', ...apiRoute(addgroupmember))
 app.post('/getuserisgroupmember', ...apiRoute(getuserisgroupmember))
@@ -302,7 +308,7 @@ app.post('/follow-topic', ...apiRoute(followtopic))
 app.post('/supabasesearchgroups', ...apiRoute(supabasesearchgroups))
 app.post('/league-activity', ...apiRoute(leagueActivity))
 app.post('/cancel-bounty', ...apiRoute(cancelbounty))
-app.post('/createanswercpmm', ...apiRoute(createAnswerCPMM))
+// app.post('/createanswercpmm', ...apiRoute(createAnswerCPMM))
 app.post('/edit-answer-cpmm', ...apiRoute(editanswercpmm))
 app.post('/createportfolio', ...apiRoute(createportfolio))
 app.post('/updateportfolio', ...apiRoute(updateportfolio))
@@ -366,7 +372,6 @@ app.post(
 )
 app.post('/create-chart-annotation', ...apiRoute(createchartannotation))
 app.post('/delete-chart-annotation', ...apiRoute(deletechartannotation))
-app.post('/post', ...apiRoute(post))
 
 const publicApiRoute = (endpoint: RequestHandler) => {
   return [

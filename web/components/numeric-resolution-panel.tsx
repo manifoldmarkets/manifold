@@ -50,7 +50,7 @@ export function NumericResolutionPanel(props: {
     const outcome = outcomeMode === 'CANCEL' ? 'CANCEL' : 'MKT'
 
     try {
-      await api('resolve', {
+      await api('market/:contractId/resolve', {
         value,
         probabilityInt,
         outcome,

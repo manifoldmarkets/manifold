@@ -41,7 +41,7 @@ export function ContractTopicsList(props: {
                     <button
                       onClick={() => {
                         toast.promise(
-                          api('update-tag', {
+                          api('market/:contractId/group', {
                             groupId: g.id,
                             contractId: contract.id,
                             remove: true,
@@ -73,7 +73,7 @@ export function ContractTopicsList(props: {
                 ignoreGroupIds={groups.map((g) => g.id)}
                 setSelectedGroup={(group) =>
                   group &&
-                  api('update-tag', {
+                  api('market/:contractId/group', {
                     groupId: group.id,
                     contractId: contract.id,
                   }).catch((e) => {

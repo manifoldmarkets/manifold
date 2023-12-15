@@ -54,7 +54,10 @@ export function AddLiquidityPanel(props: {
     setIsSuccess(false)
 
     try {
-      await api('add-liquidity', { amount: payAmount, contractId })
+      await api('market/:contractId/add-liquidity', {
+        amount: payAmount,
+        contractId,
+      })
       setIsSuccess(true)
       setError(undefined)
       track('add liquidity', { amount, contractId, slug })

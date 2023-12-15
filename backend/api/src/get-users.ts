@@ -2,9 +2,9 @@ import { toLiteUser } from 'common/api/user-types'
 import { run } from 'common/supabase/utils'
 import { User } from 'common/user'
 import { createSupabaseClient } from 'shared/supabase/init'
-import { APIError, typedEndpoint } from './helpers'
+import { APIError, type APIHandler } from './helpers'
 
-export const getUsers = typedEndpoint('users', async ({ limit, before }) => {
+export const getUsers: APIHandler<'users'> = async ({ limit, before }) => {
   const db = createSupabaseClient()
 
   const q = db
@@ -25,4 +25,4 @@ export const getUsers = typedEndpoint('users', async ({ limit, before }) => {
 
   const { data } = await run(q)
   return data.map((data) => toLiteUser(data.data as unknown as User))
-})
+}

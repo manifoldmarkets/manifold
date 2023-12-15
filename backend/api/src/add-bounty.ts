@@ -2,9 +2,12 @@ import * as admin from 'firebase-admin'
 import { createBountyAddedNotification } from 'shared/create-notification'
 import { runAddBountyTxn } from 'shared/txn/run-bounty-txn'
 import { getContract } from 'shared/utils'
-import { typedEndpoint } from './helpers'
+import { type APIHandler } from './helpers'
 
-export const addBounty = typedEndpoint('add-bounty', async (props, auth) => {
+export const addBounty: APIHandler<'market/:contractId/add-bounty'> = async (
+  props,
+  auth
+) => {
   const { contractId, amount } = props
 
   // run as transaction to prevent race conditions
@@ -30,6 +33,6 @@ export const addBounty = typedEndpoint('add-bounty', async (props, auth) => {
     }
     return txn
   })
-})
+}
 
 const firestore = admin.firestore()

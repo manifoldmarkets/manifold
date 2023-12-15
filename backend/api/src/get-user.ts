@@ -1,9 +1,9 @@
 import type { User } from 'common/user'
 import { toLiteUser } from 'common/api/user-types'
 import { createSupabaseClient } from 'shared/supabase/init'
-import { APIError, typedEndpoint } from './helpers'
+import { APIError } from './helpers'
 
-export const getUser = typedEndpoint('user', async (props) => {
+export const getUser = async (props: { id: string } | { username: string }) => {
   const db = createSupabaseClient()
 
   const q = db.from('users').select('data')
@@ -18,4 +18,4 @@ export const getUser = typedEndpoint('user', async (props) => {
   if (error) throw new APIError(404, `Could not find user`)
 
   return toLiteUser(data.data as unknown as User)
-})
+}

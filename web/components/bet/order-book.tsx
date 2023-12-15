@@ -78,7 +78,7 @@ export function OrderTable(props: {
   const onCancel = async () => {
     setIsCancelling(true)
     await Promise.all(
-      limitBets.map((bet) => api('cancel-bet', { betId: bet.id }))
+      limitBets.map((bet) => api('bet/cancel/:betId', { betId: bet.id }))
     )
     setIsCancelling(false)
   }
@@ -151,7 +151,7 @@ function OrderRow(props: {
 
   const onCancel = async () => {
     setIsCancelling(true)
-    await api('cancel-bet', { betId: bet.id })
+    await api('bet/cancel/:betId', { betId: bet.id })
     setIsCancelling(false)
   }
 

@@ -1,9 +1,9 @@
-import { APIError, typedEndpoint } from './helpers'
+import { APIError, type APIHandler } from './helpers'
 import { createSupabaseClient } from 'shared/supabase/init'
 import { getComments as getCommentsSupabase } from 'shared/supabase/contract_comments'
 import { getContractIdFromSlug } from 'shared/supabase/contracts'
 
-export const getComments = typedEndpoint('comments', async (props) => {
+export const getComments: APIHandler<'comments'> = async (props) => {
   const { userId, limit, page, contractSlug } = props
 
   if (!props.contractId && !contractSlug && !userId) {
@@ -16,4 +16,4 @@ export const getComments = typedEndpoint('comments', async (props) => {
     props.contractId ?? (await getContractIdFromSlug(db, contractSlug))
 
   return getCommentsSupabase(db, { contractId, userId, limit, page })
-})
+}

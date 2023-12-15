@@ -1,10 +1,10 @@
 import { uniqBy } from 'lodash'
-import { typedEndpoint } from './helpers'
+import { type APIHandler } from './helpers'
 import { type SupabaseClient, run } from 'common/supabase/utils'
 import { convertGroup } from 'common/supabase/groups'
 import { createSupabaseClient } from 'shared/supabase/init'
 
-export const getGroups = typedEndpoint('groups', async (props) => {
+export const getGroups: APIHandler<'groups'> = async (props) => {
   const { availableToUserId, beforeTime } = props
 
   const db = createSupabaseClient()
@@ -17,7 +17,7 @@ export const getGroups = typedEndpoint('groups', async (props) => {
   } else {
     return publicGroups
   }
-})
+}
 
 async function getPublicGroups(
   db: SupabaseClient,

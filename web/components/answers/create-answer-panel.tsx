@@ -48,7 +48,10 @@ export function CreateAnswerCpmmPanel(props: {
       setIsSubmitting(true)
 
       try {
-        await api('add-answer', { contractId: contract.id, text })
+        await api('market/:contractId/answer', {
+          contractId: contract.id,
+          text,
+        })
         setText('')
       } catch (e) {}
 

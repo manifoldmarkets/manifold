@@ -7,13 +7,13 @@ import { FieldValue } from 'firebase-admin/firestore'
 import { FLAT_COMMENT_FEE } from 'common/fees'
 import { removeUndefinedProps } from 'common/util/object'
 import { getContract, getUser, htmlToRichText } from 'shared/utils'
-import { APIError, AuthedUser, typedEndpoint } from './helpers'
+import { APIError, AuthedUser, type APIHandler } from './helpers'
 
 export const MAX_COMMENT_JSON_LENGTH = 20000
 
 // For now, only supports creating a new top-level comment on a contract.
 // Replies, posts, chats are not supported yet.
-export const createComment = typedEndpoint('comment', async (props, auth) => {
+export const createComment: APIHandler<'comment'> = async (props, auth) => {
   const {
     contractId,
     content,
@@ -31,7 +31,7 @@ export const createComment = typedEndpoint('comment', async (props, auth) => {
     replyToAnswerId,
     replyToBetId,
   })
-})
+}
 
 export const createCommentOnContractInternal = async (
   contractId: string,
