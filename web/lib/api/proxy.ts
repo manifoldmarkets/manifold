@@ -40,17 +40,6 @@ function getProxiedRequestHeaders(req: NextRequest, whitelist: string[]) {
   return result
 }
 
-function getProxiedResponseHeaders(res: Response, whitelist: string[]) {
-  const result: { [k: string]: string } = {}
-  for (const name of whitelist) {
-    const v = res.headers.get(name)
-    if (v != null) {
-      result[name] = v
-    }
-  }
-  return result
-}
-
 export const fetchBackend = (req: NextRequest, path: string) => {
   const url = getProxiedRequestUrl(req, path)
   const headers = getProxiedRequestHeaders(req, [
@@ -69,14 +58,4 @@ export const fetchBackend = (req: NextRequest, path: string) => {
     body: hasBody ? body : null,
   }
   return fetch(url, opts)
-}
-
-export const getHeaders = async (backendRes: Response) => {
-  return getProxiedResponseHeaders(backendRes, [
-    'Access-Control-Allow-Origin',
-    'Content-Type',
-    'Cache-Control',
-    'ETag',
-    'Vary',
-  ])
 }
