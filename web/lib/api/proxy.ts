@@ -1,11 +1,9 @@
-import { NextApiRequest, NextApiResponse } from 'next'
-import { promisify } from 'util'
-import { pipeline } from 'stream'
 import { getApiUrl } from 'common/api/utils'
+import { NextRequest } from 'next/server'
 
-function getProxiedRequestUrl(req: NextApiRequest, path: string) {
+function getProxiedRequestUrl(req: NextRequest, path: string) {
   const baseUrl = getApiUrl(path)
-  const [prefix, qs] = req.url!.split('?', 2)
+  const [_prefix, qs] = req.url!.split('?', 2)
   if (qs) {
     return baseUrl + '?' + qs
   } else {
@@ -13,10 +11,10 @@ function getProxiedRequestUrl(req: NextApiRequest, path: string) {
   }
 }
 
-function getProxiedRequestHeaders(req: NextApiRequest, whitelist: string[]) {
+function getProxiedRequestHeaders(req: NextRequest, whitelist: string[]) {
   const result = new Headers()
   for (const name of whitelist) {
-    const v = req.headers[name.toLowerCase()]
+    const v = req.headers.get(name.toLowerCase())
     if (Array.isArray(v)) {
       for (const vv of v) {
         result.append(name, vv)
@@ -27,7 +25,7 @@ function getProxiedRequestHeaders(req: NextApiRequest, whitelist: string[]) {
   }
   // mqp: the backend uses this in the cloud armor rules to bypass GCP throttling
   result.append('X-Vercel-Proxy-Secret', process.env.VERCEL_PROXY_SECRET ?? '')
-  result.append('X-Forwarded-For', req.socket.remoteAddress || '')
+  result.append('X-Forwarded-For', '')
   result.append('Via', 'Vercel public API')
   return result
 }
@@ -43,7 +41,7 @@ function getProxiedResponseHeaders(res: Response, whitelist: string[]) {
   return result
 }
 
-export const fetchBackend = (req: NextApiRequest, path: string) => {
+export const fetchBackend = (req: NextRequest, path: string) => {
   const url = getProxiedRequestUrl(req, path)
   const headers = getProxiedRequestHeaders(req, [
     'Authorization',
@@ -63,22 +61,12 @@ export const fetchBackend = (req: NextApiRequest, path: string) => {
   return fetch(url, opts)
 }
 
-export const forwardResponse = async (
-  res: NextApiResponse,
-  backendRes: Response
-) => {
-  const headers = getProxiedResponseHeaders(backendRes, [
+export const getHeaders = async (backendRes: Response) => {
+  return getProxiedResponseHeaders(backendRes, [
     'Access-Control-Allow-Origin',
     'Content-Type',
     'Cache-Control',
     'ETag',
     'Vary',
   ])
-  res.writeHead(backendRes.status, headers)
-  if (backendRes.body != null) {
-    return await promisify(pipeline)(
-      backendRes.body as unknown as NodeJS.ReadableStream,
-      res
-    )
-  }
 }
