@@ -4,8 +4,6 @@ import { Row } from 'web/components/layout/row'
 import { Col } from 'web/components/layout/col'
 import clsx from 'clsx'
 import { User } from 'common/user'
-import { Avatar } from 'web/components/widgets/avatar'
-import { Tooltip } from 'web/components/widgets/tooltip'
 import { shortenName } from 'web/components/widgets/user-link'
 import { CheckCircleIcon, XCircleIcon } from '@heroicons/react/outline'
 
@@ -60,6 +58,37 @@ export function PreferredList(props: {
               answer
             </Row>
           )}
+        </Row>
+      ))}
+    </Col>
+  )
+}
+
+export function PreferredListNoComparison(props: {
+  question: QuestionWithCountType
+  answer: rowFor<'love_compatibility_answers'>
+}) {
+  const { question, answer } = props
+  const { multiple_choice_options } = question
+  if (!multiple_choice_options) return null
+  const sortedEntries = Object.entries(multiple_choice_options).sort(
+    (a, b) => a[1] - b[1]
+  )
+  return (
+    <Col className="gap-2">
+      {sortedEntries.map(([key, value]) => (
+        <Row key={key} className="items-center gap-2 text-sm">
+          <div
+            key={key}
+            className={clsx(
+              answer.pref_choices?.includes(value)
+                ? 'text-ink-1000  dark:text-ink-1000'
+                : 'hidden',
+              'bg-canvas-50 relative w-2/3 gap-1 rounded py-2 pl-2 pr-8'
+            )}
+          >
+            {key}
+          </div>
         </Row>
       ))}
     </Col>

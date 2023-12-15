@@ -40,12 +40,11 @@ export const IMPORTANCE_RADIO_COLORS: ImportanceColorsType = {
 }
 
 export const IMPORTANCE_DISPLAY_COLORS: ImportanceColorsType = {
-  0: `bg-stone-300 dark:bg-stone-600 `,
-  1: `bg-teal-200`,
-  2: `bg-teal-300 `,
-  3: `bg-teal-400`,
+  0: `bg-stone-300 dark:bg-stone-600`,
+  1: `bg-yellow-500/20`,
+  2: `bg-yellow-500/50`,
+  3: `bg-yellow-400/80`,
 }
-
 
 export const submitCompatibilityAnswer = async (
   newAnswer: CompatibilityAnswerSubmitType

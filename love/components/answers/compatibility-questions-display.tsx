@@ -33,13 +33,14 @@ import {
 import {
   AnswerCompatibilityQuestionContent,
   IMPORTANCE_CHOICES,
-  IMPORTANCE_RADIO_COLORS,
+  IMPORTANCE_DISPLAY_COLORS,
 } from './answer-compatibility-question-content'
 import clsx from 'clsx'
-import { Avatar } from 'web/components/widgets/avatar'
-import { UserLink, shortenName } from 'web/components/widgets/user-link'
-import { PreferredList } from './compatibility-question-preferred-list'
-import { lowerCase } from 'lodash'
+import { shortenName } from 'web/components/widgets/user-link'
+import {
+  PreferredList,
+  PreferredListNoComparison,
+} from './compatibility-question-preferred-list'
 
 const NUM_QUESTIONS_TO_SHOW = 8
 
@@ -340,72 +341,65 @@ function CompatibilityDisplay(props: {
     getComparedLoverAnswer()
   }, [])
 
+  const [open, setOpen] = useState(false)
+
   if (lover1.id === lover2.id) return null
-  if (
+
+  const showCreateAnswer =
     (!answer2 || answer2.importance == -1) &&
     currentUserIsComparedLover &&
     !!currentUser
-  )
-    return (
-      <AnswerCompatibilityQuestionButton
-        user={currentUser}
-        otherQuestions={[question]}
-        refreshCompatibilityAll={getComparedLoverAnswer}
-        size="sm"
-      />
-    )
 
-  if (!answer2) return null
+  const isCurrentUser = currentUser?.id === lover2.user_id
 
-  return (
-    <QuestionCompatibilityButton
-      question={question}
-      answer1={answer1}
-      lover1={lover1}
-      answer2={answer2}
-      lover2={lover2}
-      isCurrentUser={currentUserIsComparedLover}
-    />
-  )
-}
-
-function QuestionCompatibilityButton(props: {
-  question: QuestionWithCountType
-  answer1: rowFor<'love_compatibility_answers'>
-  lover1: Lover
-  answer2: rowFor<'love_compatibility_answers'>
-  lover2: Lover
-  isCurrentUser: boolean
-}) {
-  const { question, answer1, answer2, lover1, lover2, isCurrentUser } = props
-  const answerCompatibility = getMutualAnswerCompatibility(answer1, answer2)
-  const [open, setOpen] = useState(false)
+  const answerCompatibility = answer2
+    ? getMutualAnswerCompatibility(answer1, answer2)
+    : undefined
   const user1 = lover1.user
   const user2 = lover2.user
 
+  const importanceScore = answer1.importance
+
   return (
-    <>
+    <Row className="gap-2">
       <button
         onClick={() => setOpen(true)}
         className={clsx(
           'text-ink-1000 h-fit w-28 rounded-full px-2 py-0.5 text-xs transition-colors',
-          answerCompatibility <= 0.25
-            ? 'bg-red-500/20 hover:bg-red-500/30'
-            : answerCompatibility <= 0.5
-            ? 'bg-yellow-500/20 hover:bg-yellow-500/30'
-            : answerCompatibility <= 0.75
-            ? 'bg-lime-500/20 hover:bg-lime-500/30'
-            : 'bg-green-500/20 hover:bg-green-500/30'
+          IMPORTANCE_DISPLAY_COLORS[importanceScore]
         )}
       >
-        {answerCompatibility <= 0.25
-          ? 'Incompatible'
-          : answerCompatibility <= 0.5
-          ? 'Semi-compatible'
-          : answerCompatibility <= 0.75
-          ? 'Compatible'
-          : 'Very Compatible'}
+        <ImportanceDisplay importance={importanceScore} />
       </button>
+
+      {showCreateAnswer || !answerCompatibility || !answer2 ? (
+        <AnswerCompatibilityQuestionButton
+          user={currentUser}
+          otherQuestions={[question]}
+          refreshCompatibilityAll={getComparedLoverAnswer}
+          size="sm"
+        />
+      ) : (
+        <>
+          <button
+            onClick={() => setOpen(true)}
+            className={clsx(
+              'text-ink-1000 h-fit w-28 rounded-full px-2 py-0.5 text-xs transition-colors',
+              answerCompatibility <= 0.25
+                ? 'bg-red-500/20 hover:bg-red-500/30'
+                : answerCompatibility <= 0.5
+                ? 'bg-yellow-500/20 hover:bg-yellow-500/30'
+                : 'bg-green-500/20 hover:bg-green-500/30'
+            )}
+          >
+            {answerCompatibility <= 0.25
+              ? 'Incompatible'
+              : answerCompatibility <= 0.5
+              ? 'Semi-compatible'
+              : 'Compatible'}
+          </button>
+        </>
+      )}
       <Modal open={open} setOpen={setOpen}>
         <Col className={MODAL_CLASS}>
           <Subtitle>{question.question}</Subtitle>
@@ -419,35 +413,43 @@ function QuestionCompatibilityButton(props: {
                 <ImportanceDisplay importance={answer1.importance} />
               </span>
             </div>
-            <PreferredList
-              answer={answer1}
-              question={question}
-              comparedAnswer={answer2}
-              comparedUser={user2}
-              isComparedUser={isCurrentUser}
-            />
+            {!answer2 && (
+              <PreferredListNoComparison question={question} answer={answer1} />
+            )}
+            {answer2 && (
+              <>
+                <PreferredList
+                  answer={answer1}
+                  question={question}
+                  comparedAnswer={answer2}
+                  comparedUser={user2}
+                  isComparedUser={isCurrentUser}
+                />
 
-            <div className="text-ink-600 mt-6 items-center gap-2">
-              {`${
-                isCurrentUser ? 'Your' : shortenName(user2.name) + `'s`
-              } preferred answers`}
-            </div>
-            <div className="text-ink-500 text-sm">
-              {isCurrentUser ? 'You' : shortenName(user2.name)} marked this as{' '}
-              <span className="font-semibold">
-                <ImportanceDisplay importance={answer2.importance} />
-              </span>
-            </div>
-            <PreferredList
-              answer={answer2}
-              question={question}
-              comparedAnswer={answer1}
-              comparedUser={user1}
-            />
+                <div className="text-ink-600 mt-6 items-center gap-2">
+                  {`${
+                    isCurrentUser ? 'Your' : shortenName(user2.name) + `'s`
+                  } preferred answers`}
+                </div>
+                <div className="text-ink-500 text-sm">
+                  {isCurrentUser ? 'You' : shortenName(user2.name)} marked this
+                  as{' '}
+                  <span className="font-semibold">
+                    <ImportanceDisplay importance={answer2.importance} />
+                  </span>
+                </div>
+                <PreferredList
+                  answer={answer2}
+                  question={question}
+                  comparedAnswer={answer1}
+                  comparedUser={user1}
+                />
+              </>
+            )}
           </Col>
         </Col>
       </Modal>
-    </>
+    </Row>
   )
 }
 
