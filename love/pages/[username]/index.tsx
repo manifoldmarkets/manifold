@@ -143,7 +143,11 @@ export function LoverProfile(props: {
   return (
     <>
       {lover.photo_urls && <ProfileCarousel lover={lover} />}
-      <LoverProfileHeader user={user} lover={lover} />
+      <LoverProfileHeader
+        user={user}
+        lover={lover}
+        simpleView={!!fromLoverPage}
+      />
       <LoverContent
         user={user}
         lover={lover}
@@ -203,6 +207,7 @@ function LoverContent(props: {
         onUser={user}
         lover={lover}
         currentUser={currentUser}
+        simpleView={!!fromLoverPage}
       />
     </>
   )
