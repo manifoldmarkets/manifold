@@ -112,7 +112,10 @@ export function MultipleChoiceAnswers(props: {
               <div>
                 <InfoTooltip
                   text={
-                    'Determines who will be able to add new answers after question creation. If enabled, then an "Other" answer will be included.'
+                    'Determines who will be able to add new answers after question creation.' +
+                    (shouldAnswersSumToOne
+                      ? ' If enabled, then an "Other" answer will be included.'
+                      : '')
                   }
                 />
               </div>
