@@ -1,9 +1,9 @@
+'use client'
 import { BellIcon } from '@heroicons/react/outline'
 import { BellIcon as SolidBellIcon } from '@heroicons/react/solid'
 import { Row } from 'web/components/layout/row'
 import { useEffect, useState } from 'react'
 import { usePrivateUser } from 'web/hooks/use-user'
-import { useRouter } from 'next/router'
 import { useGroupedUnseenNotifications } from 'web/hooks/use-notifications'
 import { PrivateUser } from 'common/user'
 import { NOTIFICATIONS_PER_PAGE } from './notifications/notification-helpers'
@@ -11,6 +11,7 @@ import {
   notification_source_types,
   NotificationReason,
 } from 'common/notification'
+import { usePathname } from 'next/navigation'
 
 export function NotificationsIcon(props: {
   className?: string
@@ -60,7 +61,7 @@ function UnseenNotificationsBubble(props: {
   selectTypes?: notification_source_types[]
   selectReasons?: NotificationReason[]
 }) {
-  const { isReady, pathname } = useRouter()
+  const pathname = usePathname()
   const { privateUser, selectTypes, selectReasons } = props
   const [seen, setSeen] = useState(false)
   const unseenSourceIdsToNotificationIds =
@@ -70,10 +71,10 @@ function UnseenNotificationsBubble(props: {
   const unseenNotifs = Object.keys(unseenSourceIdsToNotificationIds).length
 
   useEffect(() => {
-    if (isReady && pathname.endsWith('notifications')) {
+    if (pathname?.endsWith('notifications')) {
       setSeen(pathname.endsWith('notifications'))
     }
-  }, [isReady, pathname])
+  }, [pathname])
 
   if (unseenNotifs === 0 || seen) {
     return null

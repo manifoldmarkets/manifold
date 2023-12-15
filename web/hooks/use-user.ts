@@ -1,3 +1,4 @@
+'use client'
 import { PrivateUser } from 'common/user'
 import { useContext, useEffect, useState } from 'react'
 import { AuthContext } from 'web/components/auth-context'

@@ -38,11 +38,11 @@ import { SwitchSetting } from 'web/components/switch-setting'
 
 import { updatePrivateUser } from 'web/lib/firebase/users'
 import { getIsNative } from 'web/lib/native/is-native'
-import { postMessageToNative } from 'web/components/native-message-listener'
 import { UserWatchedContractsButton } from 'web/components/notifications/watched-markets'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import TrophyIcon from 'web/lib/icons/trophy-icon.svg'
+import { postMessageToNative } from 'web/lib/native/post-message'
 
 const emailsEnabled: Array<notification_preference> = [
   'all_comments_on_watched_markets',
