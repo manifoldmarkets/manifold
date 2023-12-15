@@ -27,7 +27,12 @@ export function createSupabaseClient() {
   if (!key) {
     throw new Error("Can't connect to Supabase; no process.env.SUPABASE_KEY.")
   }
-  return createClient(instanceId, key)
+
+  // mqp - note that if you want to pass autoRefreshToken: true, you MUST call
+  // `client.auth.stopAutoRefresh` on the client when you are done or it will
+  // leak the refresh interval!
+
+  return createClient(instanceId, key, { auth: { autoRefreshToken: false } })
 }
 
 // Use one connection to avoid WARNING: Creating a duplicate database object for the same connection.
