@@ -35,7 +35,7 @@ function getProxiedRequestHeaders(req: NextRequest, whitelist: string[]) {
   }
   // mqp: the backend uses this in the cloud armor rules to bypass GCP throttling
   result.append('X-Vercel-Proxy-Secret', process.env.VERCEL_PROXY_SECRET ?? '')
-  result.append('X-Forwarded-For', '')
+  result.append('X-Forwarded-For', req.ip ?? '')
   result.append('Via', 'Vercel public API')
   return result
 }
