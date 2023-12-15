@@ -28,7 +28,7 @@ class LogTransform extends Transform {
       }
     } catch (e) {
       // If not json formatted, just print it. TODO: parse timestamp?
-      this.push(chunk.toString() + '\n')
+      this.push(chunk.toString())
     }
     callback()
   }
