@@ -3,8 +3,6 @@ import { NextRequest } from 'next/server'
 
 // copied from common/src/utils/api. TODO the right thing
 function getApiUrl(path: string) {
-  path = 'v0/' + path
-
   if (process.env.NEXT_PUBLIC_API_URL) {
     return `${process.env.NEXT_PUBLIC_API_URL}/${path}`
   } else {
