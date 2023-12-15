@@ -1,5 +1,17 @@
-import { getApiUrl } from 'common/api/utils'
+import { ENV_CONFIG } from 'common/envs/constants'
 import { NextRequest } from 'next/server'
+
+// copied from common/src/utils/api. TODO the right thing
+function getApiUrl(path: string) {
+  path = 'v0/' + path
+
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    return `${process.env.NEXT_PUBLIC_API_URL}/${path}`
+  } else {
+    const { apiEndpoint } = ENV_CONFIG
+    return `${apiEndpoint}/${path}`
+  }
+}
 
 function getProxiedRequestUrl(req: NextRequest, path: string) {
   const baseUrl = getApiUrl(path)
