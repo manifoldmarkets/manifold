@@ -263,10 +263,6 @@ export function cancelBounty(params: { contractId: string }) {
   return call(getApiUrl('cancel-bounty'), 'POST', params)
 }
 
-export function createAnswerCpmm(params: { contractId: string; text: string }) {
-  return call(getApiUrl('createanswercpmm'), 'POST', params)
-}
-
 export function createPortfolio(params: {
   name: string
   items: PortfolioItem[]
