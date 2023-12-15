@@ -31,8 +31,8 @@ export const isUserEligibleForLoan = (
 ) => {
   if (!portfolio) return true
 
-  const { investmentValue } = portfolio
-  return investmentValue > 0
+  const { investmentValue, loanTotal } = portfolio
+  return investmentValue > 0 && (loanTotal ?? 0) / investmentValue < 1
 }
 
 const calculateLoanBetUpdates = (
