@@ -5,22 +5,20 @@ import { Col } from 'web/components/layout/col'
 import { ExternalLink } from 'web/components/widgets/external-link'
 import { Title } from 'web/components/widgets/title'
 
-export default function Custom404(props: { customText?: string }) {
+export default function Custom404() {
   return (
     <PoliticsPage trackPageView={'404'}>
-      <Custom404Content customText={props.customText} />
+      <Custom404Content />
     </PoliticsPage>
   )
 }
 
-export function Custom404Content(props: { customText?: string }) {
-  const { customText } = props
+export function Custom404Content() {
   return (
     <div className="flex h-[50vh] flex-col items-center justify-center">
       <Col className="max-w-sm">
         <Title>404: Oops!</Title>
-        {customText && <p>{customText}</p>}
-        {!customText && <p>Less than 1% chance anything exists at this url.</p>}
+        <p>Less than 1% chance anything exists at this url.</p>
         <p>
           If you didn't expect this, let us know{' '}
           <ExternalLink

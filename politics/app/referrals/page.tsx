@@ -1,4 +1,3 @@
-'use client'
 import { REFERRAL_AMOUNT } from 'common/economy'
 import { formatMoney } from 'common/util/format'
 import { PoliticsPage } from 'politics/components/politics-page'
