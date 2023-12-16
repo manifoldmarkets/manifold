@@ -5,7 +5,8 @@ import {
   updatePrivateUser,
 } from 'web/lib/firebase/users'
 import { removeUndefinedProps } from 'common/util/object'
-import { postMessageToNative } from 'web/components/native-message-listener'
+
+import { postMessageToNative } from 'web/lib/native/post-message'
 
 export const setPushToken = async (userId: string, pushToken: string) => {
   const privateUser = await getPrivateUser(userId)

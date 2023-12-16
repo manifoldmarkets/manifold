@@ -1,3 +1,4 @@
+'use client'
 import { createContext, ReactNode, useEffect } from 'react'
 import { pickBy } from 'lodash'
 import { onIdTokenChanged, User } from 'firebase/auth'

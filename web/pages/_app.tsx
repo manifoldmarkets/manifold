@@ -4,10 +4,7 @@ import Script from 'next/script'
 import { useEffect } from 'react'
 import { AuthProvider, AuthUser } from 'web/components/auth-context'
 import { ThemeProvider } from 'web/components/theme-provider'
-import {
-  NativeMessageListener,
-  postMessageToNative,
-} from 'web/components/native-message-listener'
+import { NativeMessageListener } from 'web/components/native-message-listener'
 import { useHasLoaded } from 'web/hooks/use-has-loaded'
 import '../styles/globals.css'
 import { getIsNative } from 'web/lib/native/is-native'
@@ -16,6 +13,7 @@ import { GoogleOneTapSetup } from 'web/lib/firebase/google-onetap-login'
 import clsx from 'clsx'
 import { useRefreshAllClients } from 'web/hooks/use-refresh-all-clients'
 import { useReloadIfClientOld } from 'web/hooks/use-reload-if-client-old'
+import { postMessageToNative } from 'web/lib/native/post-message'
 
 // See https://nextjs.org/docs/basic-features/font-optimization#google-fonts
 // and if you add a font, you must add it to tailwind config as well for it to work.

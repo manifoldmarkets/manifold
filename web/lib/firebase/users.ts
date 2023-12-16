@@ -22,7 +22,6 @@ import {
   updateDoc,
   where,
 } from 'firebase/firestore'
-import { postMessageToNative } from 'web/components/native-message-listener'
 import { getIsNative } from 'web/lib/native/is-native'
 import { nativeSignOut } from 'web/lib/native/native-messages'
 import { safeLocalStorage } from '../util/local'
@@ -30,6 +29,7 @@ import { referUser } from './api'
 import { app, db } from './init'
 import { coll, getValues, listenForValue } from './utils'
 import { removeUndefinedProps } from 'common/util/object'
+import { postMessageToNative } from 'web/lib/native/post-message'
 
 dayjs.extend(utc)
 

@@ -6,8 +6,8 @@ import { useEffect, useState } from 'react'
 import { Button } from 'web/components/buttons/button'
 import { Row } from 'web/components/layout/row'
 import { updatePrivateUser } from 'web/lib/firebase/users'
-import { postMessageToNative } from 'web/components/native-message-listener'
 import { getIsNative } from 'web/lib/native/is-native'
+import { postMessageToNative } from 'web/lib/native/post-message'
 
 export function PushNotificationsModal(props: {
   privateUser: PrivateUser

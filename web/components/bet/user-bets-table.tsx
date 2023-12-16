@@ -1,3 +1,4 @@
+'use client'
 import { debounce, Dictionary, groupBy, max, sortBy, sum, uniqBy } from 'lodash'
 import { ReactNode, useEffect, useMemo, useState } from 'react'
 

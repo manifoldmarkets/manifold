@@ -1,7 +1,9 @@
+'use client'
 import { useEffect, useState } from 'react'
 import { ThemeContext, theme_option } from 'web/hooks/theme-context'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
-import { postMessageToNative } from './native-message-listener'
+
+import { postMessageToNative } from 'web/lib/native/post-message'
 
 export const ThemeProvider = (props: { children: any }) => {
   const [theme, changeTheme] = usePersistentLocalState<theme_option>(
