@@ -3,7 +3,6 @@ import {
   CashIcon,
   HomeIcon,
   QuestionMarkCircleIcon,
-  ChartBarIcon,
 } from '@heroicons/react/outline'
 import {
   QuestionMarkCircleIcon as SolidQuestionIcon,
@@ -110,7 +109,7 @@ export function PoliticsPage(props: {
 
 function getBottomNavigation(user: User) {
   return buildArray(
-    { name: 'Profiles', href: '/', icon: SolidHomeIcon },
+    { name: 'Home', href: '/', icon: SolidHomeIcon },
     {
       name: 'Notifs',
       href: `/notifications`,
@@ -130,7 +129,7 @@ function getBottomNavigation(user: User) {
 }
 
 const signedOutNavigation = () => [
-  { name: 'Profiles', href: '/', icon: SolidHomeIcon },
+  { name: 'Home', href: '/', icon: SolidHomeIcon },
   { name: 'About', href: '/about', icon: SolidQuestionIcon },
   {
     name: 'Sign in',
@@ -141,7 +140,7 @@ const signedOutNavigation = () => [
 const getDesktopNav = (user: User | null | undefined) => {
   if (user)
     return buildArray(
-      { name: 'Profiles', href: '/', icon: HomeIcon },
+      { name: 'Home', href: '/', icon: HomeIcon },
       {
         name: 'Notifs',
         href: `/notifications`,
@@ -152,24 +151,16 @@ const getDesktopNav = (user: User | null | undefined) => {
             selectReasons={NOTIFICATION_REASONS_TO_SELECT}
           />
         ),
-      },
-      {
-        name: 'Portfolio',
-        href: '/portfolio',
-        icon: ChartBarIcon,
       }
     )
 
   return buildArray(
-    { name: 'Profiles', href: '/', icon: HomeIcon },
+    { name: 'Home', href: '/', icon: HomeIcon },
     { name: 'About', href: '/about', icon: QuestionMarkCircleIcon }
   )
 }
 
 // No sidebar when signed out
 const getSidebarNavigation = (toggleModal: () => void) => {
-  return buildArray(
-    { name: 'Portfolio', icon: ChartBarIcon, href: '/portfolio' },
-    { name: 'Get mana', icon: CashIcon, onClick: toggleModal }
-  )
+  return buildArray({ name: 'Get mana', icon: CashIcon, onClick: toggleModal })
 }

@@ -9140,6 +9140,14 @@ react-dom@18.2.0:
     loose-envify "^1.1.0"
     scheduler "^0.23.0"
 
+react-dom@18.3.0-canary-0cdfef19b-20231211:
+  version "18.3.0-canary-0cdfef19b-20231211"
+  resolved "https://registry.yarnpkg.com/react-dom/-/react-dom-18.3.0-canary-0cdfef19b-20231211.tgz#4078729dc8d90a85591d4bca50ff3f617915f4da"
+  integrity sha512-QYGE64TfLagDxz1GesLiaudvyJ6i9SDy8uup5Lx9h7rwZwoywUtzaPUY9a+MjqXhEOHbPxajrkpkhZ2xutR39Q==
+  dependencies:
+    loose-envify "^1.1.0"
+    scheduler "0.24.0-canary-0cdfef19b-20231211"
+
 react-expanding-textarea@2.3.6:
   version "2.3.6"
   resolved "https://registry.yarnpkg.com/react-expanding-textarea/-/react-expanding-textarea-2.3.6.tgz#daa50e5110dd71ca79e1df8e056b0b2eb0e8a84a"
@@ -9234,6 +9242,13 @@ react@18.2.0:
   version "18.2.0"
   resolved "https://registry.yarnpkg.com/react/-/react-18.2.0.tgz#555bd98592883255fa00de14f1151a917b5d77d5"
   integrity sha512-/3IjMdb2L9QbBdWiW5e3P2/npwMBaU9mHCSCUzNln0ZCYbcfTsGbTJrU/kGemdH2IWmB2ioZ+zkxtmq6g09fGQ==
+  dependencies:
+    loose-envify "^1.1.0"
+
+react@18.3.0-canary-0cdfef19b-20231211:
+  version "18.3.0-canary-0cdfef19b-20231211"
+  resolved "https://registry.yarnpkg.com/react/-/react-18.3.0-canary-0cdfef19b-20231211.tgz#a9ead88ede09f721ba30a534a6bf2133b2f4d4a8"
+  integrity sha512-+Pkvj3ukUbbFqfZsuXAYlVvis3shVapv3HvX+QClpJN+O3NT71tHUw43RHyGLkuc/9e2X3R1kvhPBKSGy8p/Wg==
   dependencies:
     loose-envify "^1.1.0"
 
@@ -9581,6 +9596,13 @@ satori@0.10.9:
     parse-css-color "^0.2.1"
     postcss-value-parser "^4.2.0"
     yoga-wasm-web "^0.3.3"
+
+scheduler@0.24.0-canary-0cdfef19b-20231211:
+  version "0.24.0-canary-0cdfef19b-20231211"
+  resolved "https://registry.yarnpkg.com/scheduler/-/scheduler-0.24.0-canary-0cdfef19b-20231211.tgz#3fd525180e1f866174fe13ce4c1e294a8b97c6f3"
+  integrity sha512-9EwkgOdYhzRoPImNwSsBMLHo4iK/ivUXCRIXbbftV5UDIi3saLtq/2A0eydf3+NtUII3/AqioomD5qNIjFlB6w==
+  dependencies:
+    loose-envify "^1.1.0"
 
 scheduler@^0.23.0:
   version "0.23.0"

@@ -1,8 +1,14 @@
 import { PoliticsPage } from 'politics/components/politics-page'
 import type { Metadata, ResolvingMetadata } from 'next'
+import { run } from 'common/supabase/utils'
+import { Contract } from 'common/contract'
+import { cache } from 'react'
+import { db } from 'web/lib/supabase/db'
+import { filterDefined } from 'common/util/array'
+import Custom404 from 'politics/app/404/page'
 
 export const dynamicParams = true
-export const revalidate = 15000 // revalidate at most every 5 seconds
+export const revalidate = 15000 // revalidate at most in milliseconds
 
 export async function generateStaticParams() {
   return []
@@ -12,28 +18,17 @@ export async function generateMetadata(
   props: { params: { contractSlug: string } },
   parent: ResolvingMetadata
 ): Promise<Metadata> {
-  const market = await getMarket(props.params)
+  const market = await getContractFromSlug(props.params.contractSlug)
+  if (!market) return { title: 'Not found' }
   // optionally access and extend (rather than replace) parent metadata
   const previousImages = (await parent).openGraph?.images || []
 
   return {
     title: market.question,
     openGraph: {
-      images: [market.coverImageUrl, ...previousImages],
+      images: filterDefined([market?.coverImageUrl, ...previousImages]),
     },
   }
-}
-
-async function getMarket(params: { contractSlug: string }) {
-  const res = await fetch(
-    'https://api.manifold.markets/v0/market?slug=' + params.contractSlug,
-    { next: { revalidate: 60 } }
-  )
-
-  const market = await res.json()
-  console.log('market', market)
-
-  return market
 }
 
 export default async function Page({
@@ -41,8 +36,8 @@ export default async function Page({
 }: {
   params: { contractSlug: string }
 }) {
-  const market = await getMarket(params)
-
+  const market = await getContractFromSlug(params.contractSlug)
+  if (!market) return <Custom404 />
   return (
     <PoliticsPage
       trackPageView={'politics market page'}
@@ -52,3 +47,11 @@ export default async function Page({
     </PoliticsPage>
   )
 }
+
+const getContractFromSlug = cache(async (contractSlug: string) => {
+  const { data } = await run(
+    db.from('contracts').select('data').eq('slug', contractSlug)
+  )
+  if (data.length === 0) return null
+  return data[0].data as Contract
+})

@@ -69,7 +69,6 @@ export default function Sidebar(props: {
         {user === null && (
           <SignUpButton className="mt-4" text="Create a profile" />
         )}
-        {user === null && <SignUpAsMatchmaker className="mt-2" />}
       </div>
       <div className="mb-6 mt-auto flex flex-col gap-1">
         {bottomNavOptions.map((item) => (

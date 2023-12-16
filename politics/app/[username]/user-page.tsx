@@ -29,11 +29,9 @@ import ImageWithBlurredShadow from 'web/components/widgets/image-with-blurred-sh
 import { Avatar } from 'web/components/widgets/avatar'
 import Link from 'next/link'
 import {
-  CashIcon,
   ChatAlt2Icon,
   CurrencyDollarIcon,
   PencilIcon,
-  ScaleIcon,
 } from '@heroicons/react/outline'
 import { DailyLeagueStat } from 'web/components/daily-league-stat'
 import { QuestsOrStreak } from 'web/components/quests-or-streak'
@@ -44,9 +42,7 @@ import { QueryUncontrolledTabs, Tabs } from 'web/components/layout/tabs'
 import { Spacer } from 'web/components/layout/spacer'
 import { PortfolioValueSection } from 'web/components/portfolio/portfolio-value-section'
 import { UserBetsTable } from 'web/components/bet/user-bets-table'
-import { UserContractsList } from 'web/components/profile/user-contracts-list'
 import { UserCommentsList } from 'web/components/comments/comments-list'
-import { UserPayments } from 'web/pages/payments'
 import { useFollowers, useFollows } from 'web/hooks/use-follows'
 import { useLeagueInfo } from 'web/hooks/use-leagues'
 import { TextButton } from 'web/components/buttons/text-button'
@@ -71,9 +67,6 @@ import { useDefinedSearchParams } from 'web/hooks/use-defined-search-params'
 export default function UserPage(props: {
   user: User | null
   username: string
-  rating?: number
-  reviewCount?: number
-  averageRating?: number | null
 }) {
   const isAdmin = useAdmin()
   const { user, ...profileProps } = props
@@ -112,13 +105,7 @@ export const DeletedUser = () => {
   )
 }
 
-function UserProfile(props: {
-  user: User
-  rating?: number
-  reviewCount?: number
-  averageRating?: number | null
-}) {
-  const { rating, reviewCount, averageRating } = props
+function UserProfile(props: { user: User }) {
   const user = useUserById(props.user.id) ?? props.user
   const isMobile = useIsMobile()
   const router = useRouter()
@@ -282,37 +269,12 @@ function UserProfile(props: {
                 ),
               },
               {
-                title: 'Questions',
-                stackedTabIcon: <ScaleIcon className="h-5" />,
-                content: (
-                  <>
-                    <Spacer h={4} />
-                    <UserContractsList
-                      creator={user}
-                      rating={rating}
-                      reviewCount={reviewCount}
-                      averageRating={averageRating}
-                    />
-                  </>
-                ),
-              },
-              {
                 title: 'Comments',
                 stackedTabIcon: <ChatAlt2Icon className="h-5" />,
                 content: (
                   <Col>
                     <UserCommentsList user={user} />
                   </Col>
-                ),
-              },
-              {
-                title: 'Payments',
-                stackedTabIcon: <CashIcon className="h-5" />,
-                content: (
-                  <>
-                    <Spacer h={4} />
-                    <UserPayments userId={user.id} />
-                  </>
                 ),
               },
             ]}

@@ -24,6 +24,8 @@
     "verify:dir": "npx prettier --check .; yarn lint --max-warnings 0; tsc --pretty --project tsconfig.json --noEmit"
   },
   "dependencies": {
+    "react": "18.3.0-canary-0cdfef19b-20231211",
+    "react-dom": "18.3.0-canary-0cdfef19b-20231211",
     "server-only": "0.0.1"
   },
   "devDependencies": {
