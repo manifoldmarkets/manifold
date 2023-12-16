@@ -5,7 +5,7 @@ import { Lover } from 'common/love/lover'
 import { Row as rowFor } from 'common/supabase/utils'
 import { User } from 'common/user'
 import { partition } from 'lodash'
-import { useLoverByUserId } from 'love/hooks/use-lover'
+import { useLover } from 'love/hooks/use-lover'
 import {
   QuestionWithCountType,
   useCompatibilityQuestionsWithAnswerCount,
@@ -22,7 +22,6 @@ import {
 import { Row } from 'web/components/layout/row'
 import { Linkify } from 'web/components/widgets/linkify'
 import { Pagination } from 'web/components/widgets/pagination'
-import { useUser } from 'web/hooks/use-user'
 import { db } from 'web/lib/supabase/db'
 import { Subtitle } from '../widgets/lover-subtitle'
 import { AddCompatibilityQuestionButton } from './add-compatibility-question-button'
@@ -41,6 +40,7 @@ import {
   PreferredList,
   PreferredListNoComparison,
 } from './compatibility-question-preferred-list'
+import { useUser } from 'web/hooks/use-user'
 
 const NUM_QUESTIONS_TO_SHOW = 8
 
@@ -207,7 +207,8 @@ function CompatibilityAnswerBlock(props: {
   const question = yourQuestions.find((q) => q.id === answer.question_id)
   const [editOpen, setEditOpen] = useState<boolean>(false)
   const currentUser = useUser()
-  const currentLover = useLoverByUserId(currentUser?.id)
+  const currentLover = useLover()
+
   const comparedLover = isCurrentUser
     ? null
     : !!fromLoverPage
