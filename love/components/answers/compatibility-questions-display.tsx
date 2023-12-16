@@ -1,5 +1,4 @@
 import { PencilIcon } from '@heroicons/react/outline'
-import { isAdminId } from 'common/envs/constants'
 import { getMutualAnswerCompatibility } from 'common/love/compatibility-score'
 import { Lover } from 'common/love/lover'
 import { Row as rowFor } from 'common/supabase/utils'
@@ -128,19 +127,18 @@ export function CompatibilityQuestionsDisplay(props: {
         </span>
       ) : (
         <>
-          {(otherQuestions.length < 1 || isAdminId(user?.id)) &&
-            isCurrentUser && (
-              <span>
-                {otherQuestions.length < 1 && (
-                  <span className="text-ink-600 text-sm">
-                    You've already answered all the compatibility questions!
-                  </span>
-                )}{' '}
-                <AddCompatibilityQuestionButton
-                  refreshCompatibilityAll={refreshCompatibilityAll}
-                />
-              </span>
-            )}
+          {isCurrentUser && (
+            <span>
+              {otherQuestions.length < 1 && (
+                <span className="text-ink-600 text-sm">
+                  You've already answered all the compatibility questions!
+                </span>
+              )}{' '}
+              <AddCompatibilityQuestionButton
+                refreshCompatibilityAll={refreshCompatibilityAll}
+              />
+            </span>
+          )}
           {shownAnswers.map((answer) => {
             return (
               <CompatibilityAnswerBlock
