@@ -11,7 +11,7 @@ export const ReferralCopy = (props: { className?: string }) => {
   return (
     <Col className={className}>
       <QRCode url={url} className="mt-4 self-center" />
-      <CopyLinkRow url={url} eventTrackingName="copy love referral" />
+      <CopyLinkRow url={url} eventTrackingName="copy politics referral" />
     </Col>
   )
 }

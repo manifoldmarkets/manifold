@@ -40,7 +40,7 @@ export default function NotificationsPage() {
         {/* <Title className="hidden lg:block">Notifications</Title> */}
         <SEO
           title="Notifications"
-          description="Manifold.love user notifications"
+          description="Manifold Politics user notifications"
         />
         <Tabs
           tabs={[

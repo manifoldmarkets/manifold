@@ -60,7 +60,7 @@ export function PoliticsPage(props: {
     : []
 
   // eslint-disable-next-line react-hooks/rules-of-hooks
-  trackPageView && useTracking(`view love ${trackPageView}`, trackPageProps)
+  trackPageView && useTracking(`view politics ${trackPageView}`, trackPageProps)
   const [isAddFundsModalOpen, setIsAddFundsModalOpen] = useState(false)
 
   return (
