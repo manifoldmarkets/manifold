@@ -22,7 +22,7 @@ export function UserContractsList(props: {
   creator: User
   rating?: number
   reviewCount?: number
-  averageRating?: number | null
+  averageRating?: number
 }) {
   const { creator, rating, reviewCount, averageRating } = props
   const { creatorTraders } = creator
