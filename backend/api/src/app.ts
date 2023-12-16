@@ -36,7 +36,6 @@ import { swapcert } from './swap-cert'
 import { dividendcert } from './dividend-cert'
 import { markallnotifications } from './mark-all-notifications'
 import { updatememberrole } from './update-group-member-role'
-import { removecontractfromgroup } from './remove-contract-from-group'
 import { updategroupprivacy } from './update-group-privacy'
 import { addgroupmember } from './add-group-member'
 import { registerdiscordid } from './register-discord-id'
@@ -279,7 +278,7 @@ app.post('/updatememberrole', ...apiRoute(updatememberrole))
 app.post('/updategroupprivacy', ...apiRoute(updategroupprivacy))
 app.post('/registerdiscordid', ...apiRoute(registerdiscordid))
 // app.post('/addcontracttogroup', ...apiRoute(addOrRemoveGroupFromContract)) // TODO: remove after a few days
-app.post('/removecontractfromgroup', ...apiRoute(removecontractfromgroup)) // TODO: remove after a few days
+// app.post('/removecontractfromgroup', ...apiRoute(removecontractfromgroup)) // TODO: remove after a few days
 app.post('/addgroupmember', ...apiRoute(addgroupmember))
 app.post('/getuserisgroupmember', ...apiRoute(getuserisgroupmember))
 app.post('/completequest', ...apiRoute(completequest))
