@@ -2,7 +2,7 @@ import { PoliticsPage } from 'politics/components/politics-page'
 import type { Metadata, ResolvingMetadata } from 'next'
 import { run } from 'common/supabase/utils'
 import { Contract } from 'common/contract'
-import { cache } from 'react'
+// import { cache } from 'react'
 import { db } from 'web/lib/supabase/db'
 import { filterDefined } from 'common/util/array'
 import Custom404 from 'politics/app/404/page'
@@ -48,10 +48,10 @@ export default async function Page({
   )
 }
 
-const getContractFromSlug = cache(async (contractSlug: string) => {
+const getContractFromSlug = async (contractSlug: string) => {
   const { data } = await run(
     db.from('contracts').select('data').eq('slug', contractSlug)
   )
   if (data.length === 0) return null
   return data[0].data as Contract
-})
+}
