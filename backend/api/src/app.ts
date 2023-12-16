@@ -174,6 +174,18 @@ const apiRoute = (endpoint: RequestHandler) => {
   return [allowCorsManifold, express.json(), endpoint, apiErrorHandler] as const
 }
 
+// temporary
+const oldRouteFrom = <N extends APIPath>(path: N) => {
+  const handler = handlers[path]
+
+  return [
+    allowCorsUnrestricted,
+    express.json(),
+    typedEndpoint(path, handler),
+    apiErrorHandler,
+  ] as const
+}
+
 export const app = express()
 app.use(requestLogger)
 
@@ -257,28 +269,40 @@ app.post('/transact', ...apiRoute(transact))
 app.post('/changeuserinfo', ...apiRoute(changeuserinfo))
 app.post('/createuser', ...apiRoute(createuser))
 app.post('/createanswer', ...apiRoute(createanswer))
-// app.post('/createcomment', ...apiRoute(createComment))
 app.post('/editcomment', ...apiRoute(editcomment))
 app.post('/swapcert', ...apiRoute(swapcert))
 app.post('/dividendcert', ...apiRoute(dividendcert))
-// app.post('/placebet', ...apiRoute(placeBet))
-// app.post('/cancelbet', ...apiRoute(cancelBet))
-// app.post('/sellbet', ...apiRoute(sellShareDPM))
-// app.post('/sellshares', ...apiRoute(sellShares))
-// app.post('/addsubsidy', ...apiRoute(addLiquidity))
+
+// TODO: remove everything in this block after a few days. This is mostly for compatibility with frontend
+app.post('/createcomment', ...oldRouteFrom('comment'))
+app.post('/placebet', ...oldRouteFrom('bet'))
+app.post('/cancelbet', ...oldRouteFrom('bet/cancel/:betId'))
+app.post('/v0/cancel-bet', ...oldRouteFrom('bet/cancel/:betId'))
+app.post('/sellbet', ...oldRouteFrom('sell-shares-dpm'))
+app.post('/sellshares', ...oldRouteFrom('market/:contractId/sell'))
+app.post('/v0/sell-shares', ...oldRouteFrom('market/:contractId/sell'))
+app.post('/addsubsidy', ...oldRouteFrom('market/:contractId/add-liquidity'))
+app.post(
+  '/v0/add-liquidity',
+  ...oldRouteFrom('market/:contractId/add-liquidity')
+)
+app.post('/createmarket', ...oldRouteFrom('market'))
+app.post('/v0/create-market', ...oldRouteFrom('market'))
+app.post('/resolvemarket', ...oldRouteFrom('market/:contractId/resolve'))
+app.post('/v0/resolve', ...oldRouteFrom('market/:contractId/resolve'))
+app.post('/closemarket', ...oldRouteFrom('market/:contractId/close'))
+app.post('/v0/close', ...oldRouteFrom('market/:contractId/close'))
+app.post('/createanswercpmm', ...oldRouteFrom('market/:contractId/answer'))
+app.post('/v0/create-answer', ...oldRouteFrom('market/:contractId/answer'))
+
 app.post('/claimmanalink', ...apiRoute(claimmanalink))
-// app.post('/createmarket', ...apiRoute(createMarket))
 app.post('/creategroup', ...apiRoute(creategroup))
 app.post('/updategroup', ...apiRoute(updategroup))
-// app.post('/resolvemarket', ...apiRoute(resolveMarket))
-// app.post('/closemarket', ...apiRoute(closeMarket))
 app.post('/validateIap', ...apiRoute(validateiap))
 app.post('/markallnotifications', ...apiRoute(markallnotifications))
 app.post('/updatememberrole', ...apiRoute(updatememberrole))
 app.post('/updategroupprivacy', ...apiRoute(updategroupprivacy))
 app.post('/registerdiscordid', ...apiRoute(registerdiscordid))
-// app.post('/addcontracttogroup', ...apiRoute(addOrRemoveGroupFromContract)) // TODO: remove after a few days
-// app.post('/removecontractfromgroup', ...apiRoute(removecontractfromgroup)) // TODO: remove after a few days
 app.post('/addgroupmember', ...apiRoute(addgroupmember))
 app.post('/getuserisgroupmember', ...apiRoute(getuserisgroupmember))
 app.post('/completequest', ...apiRoute(completequest))
@@ -307,7 +331,6 @@ app.post('/follow-topic', ...apiRoute(followtopic))
 app.post('/supabasesearchgroups', ...apiRoute(supabasesearchgroups))
 app.post('/league-activity', ...apiRoute(leagueActivity))
 app.post('/cancel-bounty', ...apiRoute(cancelbounty))
-// app.post('/createanswercpmm', ...apiRoute(createAnswerCPMM))
 app.post('/edit-answer-cpmm', ...apiRoute(editanswercpmm))
 app.post('/createportfolio', ...apiRoute(createportfolio))
 app.post('/updateportfolio', ...apiRoute(updateportfolio))
