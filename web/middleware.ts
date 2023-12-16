@@ -1,8 +1,13 @@
-import { type NextRequest } from 'next/server'
+import { NextResponse, type NextRequest } from 'next/server'
 import { fetchBackend } from './lib/api/proxy'
 
 export async function middleware(req: NextRequest) {
   const path = req.nextUrl.pathname.replace('/api/', '')
+
+  if (pathsToSkip.includes(path)) {
+    return NextResponse.next()
+  }
+
   try {
     return await fetchBackend(req, path)
   } catch (err) {
@@ -14,3 +19,9 @@ export async function middleware(req: NextRequest) {
 export const config = {
   matcher: ['/api/v0/:path*'],
 }
+
+const pathsToSkip = [
+  'v0/deployment-id',
+  'v0/fetch-link-preview',
+  'v0/revalidate',
+]
