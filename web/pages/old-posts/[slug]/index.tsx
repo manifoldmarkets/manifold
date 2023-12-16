@@ -17,7 +17,6 @@ import { UserLink } from 'web/components/widgets/user-link'
 import { SEO } from 'web/components/SEO'
 import { richTextToString } from 'common/util/parse'
 import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
-import comments from 'web/pages/api/v0/comments'
 import { convertSQLtoTS, run } from 'common/supabase/utils'
 import { db } from 'web/lib/supabase/db'
 import { Row as rowFor } from 'common/supabase/utils'
@@ -37,7 +36,6 @@ export async function getStaticProps(props: { params: { slug: string } }) {
     props: {
       post,
       creator,
-      comments,
       watched,
       skipped,
     },
