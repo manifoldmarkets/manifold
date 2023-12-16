@@ -146,6 +146,20 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
+  // deprecated. use /bets?username= instead
+  'user/:username/bets': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    cache: 'max-age=15, public',
+    returns: [] as Bet[],
+    props: z
+      .object({
+        username: z.string(),
+        limit: z.coerce.number().gte(0).lte(1000).default(1000),
+      })
+      .strict(),
+  },
   'group/:slug': {
     method: 'GET',
     visibility: 'public',
@@ -162,8 +176,8 @@ export const API = (_apiTypeCheck = {
     returns: {} as Group,
     props: z.object({ id: z.string() }).strict(),
   },
+  // deprecated. use /markets?groupId= instead
   'group/by-id/:id/markets': {
-    // deprecated. use /markets instead
     method: 'GET',
     visibility: 'public',
     authed: false,
@@ -196,6 +210,15 @@ export const API = (_apiTypeCheck = {
     returns: {} as LiteMarket | FullMarket,
     cache: marketCacheStrategy,
     props: z.object({ id: z.string(), lite: z.boolean().optional() }),
+  },
+  // deprecated. use /market/:id?lite=true instead
+  'market/:id/lite': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    returns: {} as LiteMarket,
+    cache: marketCacheStrategy,
+    props: z.object({ id: z.string() }),
   },
   'slug/:slug': {
     method: 'GET',
@@ -336,7 +359,7 @@ export const API = (_apiTypeCheck = {
     returns: [] as Contract[],
     props: searchProps,
   },
-  'send-mana': {
+  managram: {
     method: 'POST',
     visibility: 'public',
     authed: true,

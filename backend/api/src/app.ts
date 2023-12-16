@@ -213,6 +213,7 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
     getMarkets({ groupId: id, limit }, ...rest),
   groups: getGroups,
   'market/:id': getMarket,
+  'market/:id/lite': ({ id }) => getMarket({ id, lite: true }),
   'slug/:slug': getMarket,
   'market/:contractId/close': closeMarket,
   'market/:contractId/resolve': resolveMarket,
@@ -224,11 +225,12 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   markets: getMarkets,
   'search-markets': searchMarketsLite,
   'search-markets-full': searchMarketsFull,
-  'send-mana': sendMana,
+  managram: sendMana,
   managrams: getManagrams,
   'market/:id/positions': getPositions,
   me: getCurrentUser,
   'user/:username': getUser,
+  'user/:username/bets': (...props) => getBets(...props),
   'user/by-id/:id': getUser,
   users: getUsers,
   'search-users': searchUsers,
@@ -294,6 +296,7 @@ app.post('/closemarket', ...oldRouteFrom('market/:contractId/close'))
 app.post('/v0/close', ...oldRouteFrom('market/:contractId/close'))
 app.post('/createanswercpmm', ...oldRouteFrom('market/:contractId/answer'))
 app.post('/v0/create-answer', ...oldRouteFrom('market/:contractId/answer'))
+app.post('/v0/send-mana', ...oldRouteFrom('managram'))
 
 app.post('/claimmanalink', ...apiRoute(claimmanalink))
 app.post('/creategroup', ...apiRoute(creategroup))
