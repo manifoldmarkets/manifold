@@ -13,7 +13,7 @@ export default function Custom404() {
   )
 }
 
-export function Custom404Content() {
+function Custom404Content() {
   return (
     <div className="flex h-[50vh] flex-col items-center justify-center">
       <Col className="max-w-sm">
