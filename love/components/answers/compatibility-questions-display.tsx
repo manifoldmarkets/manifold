@@ -511,7 +511,9 @@ function ImportanceButton(props: {
     <button
       onClick={onClick}
       className={clsx(
-        'text-ink-1000 h-fit w-28 rounded-full px-2 py-0.5 text-xs transition-colors',
+        'text-ink-1000 h-fit rounded-full px-2 py-0.5 text-xs transition-colors',
+        // Longer width for "Somewhat important"
+        importance === 1 ? 'w-36' : 'w-28',
         IMPORTANCE_DISPLAY_COLORS[importance],
         className
       )}
