@@ -258,17 +258,24 @@ function CompatibilityAnswerBlock(props: {
             </div>
           )}
           {isCurrentUser && (
-            <DropdownMenu
-              items={[
-                {
-                  name: 'Edit',
-                  icon: <PencilIcon className="h-5 w-5" />,
-                  onClick: () => setEditOpen(true),
-                },
-              ]}
-              closeOnClick
-              menuWidth="w-40"
-            />
+            <>
+              <ImportanceButton
+                className="hidden sm:block"
+                importance={answer.importance}
+                onClick={() => setEditOpen(true)}
+              />
+              <DropdownMenu
+                items={[
+                  {
+                    name: 'Edit',
+                    icon: <PencilIcon className="h-5 w-5" />,
+                    onClick: () => setEditOpen(true),
+                  },
+                ]}
+                closeOnClick
+                menuWidth="w-40"
+              />
+            </>
           )}
         </Row>
       </Row>
@@ -282,7 +289,7 @@ function CompatibilityAnswerBlock(props: {
               ? 'Acceptable'
               : 'Also acceptable'}
           </div>
-          <Row className="gap-2">
+          <Row className="flex-wrap gap-2">
             {distinctPreferredAnswersText.map((text) => (
               <Row
                 key={text}
@@ -307,6 +314,14 @@ function CompatibilityAnswerBlock(props: {
               lover2={comparedLover as Lover}
               currentUserIsComparedLover={!fromLoverPage}
               currentUser={currentUser}
+            />
+          </Row>
+        )}
+        {isCurrentUser && (
+          <Row className="w-full justify-end sm:hidden">
+            <ImportanceButton
+              importance={answer.importance}
+              onClick={() => setEditOpen(true)}
             />
           </Row>
         )}
@@ -391,15 +406,10 @@ function CompatibilityDisplay(props: {
 
   return (
     <Row className="gap-2">
-      <button
+      <ImportanceButton
+        importance={importanceScore}
         onClick={() => setOpen(true)}
-        className={clsx(
-          'text-ink-1000 h-fit w-28 rounded-full px-2 py-0.5 text-xs transition-colors',
-          IMPORTANCE_DISPLAY_COLORS[importanceScore]
-        )}
-      >
-        <ImportanceDisplay importance={importanceScore} />
-      </button>
+      />
 
       {showCreateAnswer || !answerCompatibility || !answer2 ? (
         <AnswerCompatibilityQuestionButton
@@ -491,6 +501,25 @@ function ImportanceDisplay(props: { importance: number }) {
   )
 }
 
+function ImportanceButton(props: {
+  importance: number
+  onClick: () => void
+  className?: string
+}) {
+  const { importance, onClick, className } = props
+  return (
+    <button
+      onClick={onClick}
+      className={clsx(
+        'text-ink-1000 h-fit w-28 rounded-full px-2 py-0.5 text-xs transition-colors',
+        IMPORTANCE_DISPLAY_COLORS[importance],
+        className
+      )}
+    >
+      <ImportanceDisplay importance={importance} />
+    </button>
+  )
+}
 function getStringKeyFromNumValue(
   value: number,
   map: Record<string, number>
