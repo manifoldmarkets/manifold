@@ -2,7 +2,6 @@ import Link from 'next/link'
 import clsx from 'clsx'
 import { useUser } from 'web/hooks/use-user'
 import { ENV } from 'common/envs/constants'
-import Logo from 'web/public/logo.svg'
 import { useState } from 'react'
 import Snowfall from 'react-snowfall'
 
