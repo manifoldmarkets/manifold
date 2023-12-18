@@ -1,11 +1,14 @@
-import { MAX_QUESTION_LENGTH } from 'common/contract'
 import { createSupabaseClient } from 'shared/supabase/init'
 import { getUser } from 'shared/utils'
 import { z } from 'zod'
 import { APIError, authEndpoint, validate } from '../helpers'
+import { MAX_COMPATIBILITY_QUESTION_LENGTH } from 'common/love/constants'
 
 const bodySchema = z.object({
-  question: z.string().min(1).max(MAX_QUESTION_LENGTH * 2),
+  question: z
+    .string()
+    .min(1)
+    .max(MAX_COMPATIBILITY_QUESTION_LENGTH),
   options: z.record(z.string(), z.number()),
 })
 
