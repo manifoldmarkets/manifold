@@ -26,8 +26,8 @@ export const searchUsers = typedEndpoint(
     const searchFollowersSQL = getSearchUserSQL({ term, offset, limit, userId })
     const searchAllSQL = getSearchUserSQL({ term, offset, limit })
     const [followers, all] = await Promise.all([
-      pg.map(searchFollowersSQL, [term], convertUser),
-      pg.map(searchAllSQL, [term], convertUser),
+      pg.map(searchFollowersSQL, null, convertUser),
+      pg.map(searchAllSQL, null, convertUser),
     ])
 
     return uniqBy([...followers, ...all], 'id')
@@ -63,7 +63,8 @@ function getSearchUserSQL(props: {
 
           orderBy(
             `ts_rank(name_username_vector, websearch_to_tsquery($1)) desc,
-             data->>'lastBetTime' desc nulls last`
+             data->>'lastBetTime' desc nulls last`,
+            [term]
           ),
         ]
       : orderBy(`data->'creatorTraders'->'allTime' desc nulls last`),

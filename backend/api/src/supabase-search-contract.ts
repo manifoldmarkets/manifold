@@ -108,7 +108,7 @@ const search = async (
           searchType,
         })
         return pg
-          .map(searchSQL, [], (r) => ({
+          .map(searchSQL, null, (r) => ({
             data: convertContract(r),
             searchType,
           }))
