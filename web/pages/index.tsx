@@ -128,7 +128,7 @@ export default function LandingPage(props: {
                 className="mt-8"
                 onClick={firebaseLogin}
               >
-                Start trading
+                Start predicting
               </Button>
 
               <div className="text-md ml-8 ">
