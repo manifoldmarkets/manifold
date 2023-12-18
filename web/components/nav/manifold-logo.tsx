@@ -27,7 +27,8 @@ export function ManifoldLogo(props: { className?: string; twoLine?: boolean }) {
           className
         )}
       >
-        <Logo
+        <img
+          src="/christmas_manifold_logo.png"
           className="h-10 w-10 shrink-0 stroke-indigo-700 transition-transform group-hover:rotate-12 dark:stroke-white"
           aria-hidden
         />
