@@ -148,7 +148,8 @@ export async function setCachedReferralInfoForUser(user: User) {
   const cachedReferralContractId = local?.getItem(
     CACHED_REFERRAL_CONTRACT_ID_KEY
   )
-  if (!cachedReferralUsername) return
+  const referralComplete = local?.getItem('referral-complete') == 'true'
+  if (!cachedReferralUsername || referralComplete) return
   console.log(
     `User created in last ${MINUTES_ALLOWED_TO_REFER} minutes, trying to set referral`
   )
@@ -161,8 +162,7 @@ export async function setCachedReferralInfoForUser(user: User) {
   )
     .then((resp) => {
       console.log('referral resp', resp)
-      local?.removeItem(CACHED_REFERRAL_USERNAME_KEY)
-      local?.removeItem(CACHED_REFERRAL_CONTRACT_ID_KEY)
+      local?.setItem('referral-complete', 'true')
     })
     .catch((err) => {
       console.log('error setting referral details', err)
