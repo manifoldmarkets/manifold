@@ -288,6 +288,30 @@ export const createMarketProps = z
     ])
   )
 
+// update market
+
+export const updateMarketProps = z
+  .object({
+    contractId: z.string(),
+    visibility: z.enum(VISIBILITIES).default('public').optional(),
+    closeTime: z
+      .union([z.date(), z.number()])
+      .refine(
+        (date) =>
+          (typeof date === 'number' ? date : date.getTime()) > Date.now(),
+        'Close time must be in the future.'
+      )
+      .optional(),
+    question: z.string().min(1).max(MAX_QUESTION_LENGTH).optional(),
+    description: contentSchema.or(z.string()).optional(),
+    descriptionHtml: z.string().optional(),
+    descriptionMarkdown: z.string().optional(),
+    descriptionJson: z.string().optional(),
+    addAnswersMode: z.enum(['ONLY_CREATOR', 'ANYONE']).optional(),
+    sort: z.string().optional(),
+  })
+  .strict()
+
 // resolve market
 
 export const resolveBinarySchema = z

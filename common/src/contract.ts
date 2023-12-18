@@ -2,17 +2,19 @@ import { Answer, DpmAnswer } from './answer'
 import { Bet } from './bet'
 import { MultiSerializedPoints, SerializedPoint } from './chart'
 import { Fees } from './fees'
-import { JSONContent } from '@tiptap/core'
+import { JSONContent, generateJSON } from '@tiptap/core'
 import { GroupLink } from 'common/group'
 import { ContractMetric, ContractMetricsByOutcome } from './contract-metric'
 import { ContractComment } from './comment'
 import { ENV_CONFIG } from './envs/constants'
 import { formatMoney, formatPercent } from './util/format'
+import { extensions } from './util/parse'
 import { getLiquidity } from './calculate-cpmm-multi'
 import { sum } from 'lodash'
 import { getDisplayProbability } from 'common/calculate'
 import { PollOption } from './poll-option'
 import { ChartAnnotation } from 'common/supabase/chart-annotations'
+import { marked } from 'marked'
 
 /************************************************
 
@@ -431,3 +433,27 @@ export type MaybeAuthedContractParams =
   | {
       state: 'not found'
     }
+
+export function getDescriptionJson(
+  description?: string | JSONContent,
+  descriptionHtml?: string,
+  descriptionMarkdown?: string,
+  descriptionJson?: string
+): JSONContent {
+  if (description) {
+    if (typeof description === 'string') {
+      return generateJSON(`<p>${description}</p>`, extensions)
+    } else {
+      return description
+    }
+  } else if (descriptionHtml) {
+    return generateJSON(descriptionHtml, extensions)
+  } else if (descriptionMarkdown) {
+    return generateJSON(marked.parse(descriptionMarkdown), extensions)
+  } else if (descriptionJson) {
+    return JSON.parse(descriptionJson)
+  } else {
+    // Use a single empty space as the description
+    return generateJSON('<p> </p>', extensions)
+  }
+}

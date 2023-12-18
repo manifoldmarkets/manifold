@@ -5,6 +5,7 @@ import {
   resolveMarketProps,
   type LiteMarket,
   FullMarket,
+  updateMarketProps,
 } from './market-types'
 import type { ContractComment } from 'common/comment'
 import type { User } from 'common/user'
@@ -185,6 +186,12 @@ export const API = (_apiTypeCheck = {
     authed: true,
     returns: {} as LiteMarket,
     props: createMarketProps,
+  },
+  'update-market': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    props: updateMarketProps,
   },
   close: {
     method: 'POST',

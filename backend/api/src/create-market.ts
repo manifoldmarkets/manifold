@@ -1,7 +1,5 @@
 import * as admin from 'firebase-admin'
-import { JSONContent } from '@tiptap/core'
 import { FieldValue, Transaction } from 'firebase-admin/firestore'
-import { marked } from 'marked'
 import { runPostBountyTxn } from 'shared/txn/run-bounty-txn'
 import {
   DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
@@ -13,6 +11,7 @@ import {
   Contract,
   CPMMBinaryContract,
   CPMMMultiContract,
+  getDescriptionJson,
   NO_CLOSE_TIME_TYPES,
   OutcomeType,
 } from 'common/contract'
@@ -27,7 +26,7 @@ import {
 import { randomString } from 'common/util/random'
 import { slugify } from 'common/util/slugify'
 import { getCloseDate } from 'shared/helpers/openai-utils'
-import { GCPLog, getUser, htmlToRichText, isProd } from 'shared/utils'
+import { GCPLog, getUser, isProd } from 'shared/utils'
 import { APIError, AuthedUser, typedEndpoint } from './helpers'
 import { STONK_INITIAL_PROB } from 'common/stonk'
 import {
@@ -287,30 +286,6 @@ const runCreateMarketTxn = async (
     })
 
   return contract
-}
-
-function getDescriptionJson(
-  description?: string | JSONContent,
-  descriptionHtml?: string,
-  descriptionMarkdown?: string,
-  descriptionJson?: string
-): JSONContent {
-  if (description) {
-    if (typeof description === 'string') {
-      return htmlToRichText(`<p>${description}</p>`)
-    } else {
-      return description
-    }
-  } else if (descriptionHtml) {
-    return htmlToRichText(descriptionHtml)
-  } else if (descriptionMarkdown) {
-    return htmlToRichText(marked.parse(descriptionMarkdown))
-  } else if (descriptionJson) {
-    return JSON.parse(descriptionJson)
-  } else {
-    // Use a single empty space as the description
-    return htmlToRichText('<p> </p>')
-  }
 }
 
 async function getCloseTimestamp(
