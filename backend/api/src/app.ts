@@ -258,8 +258,8 @@ Object.entries(handlers).forEach(([path, handler]) => {
     app.post(...apiRoute)
   } else if (api.method === 'GET') {
     app.get(...apiRoute)
-  } else if (api.method === 'PUT') {
-    app.put(...apiRoute)
+    // } else if (api.method === 'PUT') {
+    //   app.put(...apiRoute)
   } else {
     assertUnreachable(api, 'Unsupported API method')
   }

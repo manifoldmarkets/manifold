@@ -291,7 +291,7 @@ export const API = (_apiTypeCheck = {
       .strict(),
   },
   'market/:contractId/group': {
-    method: 'PUT',
+    method: 'POST',
     visibility: 'public',
     authed: true,
     props: z
