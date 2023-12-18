@@ -59,7 +59,7 @@ import { updateUserDisinterestEmbedding } from 'api/update-user-disinterests'
 import { awardBounty } from './award-bounty'
 import { addBounty } from './add-bounty'
 import { cancelbounty } from './cancel-bounty'
-import { createanswercpmm } from './create-answer-cpmm'
+import { createAnswerCPMM } from './create-answer-cpmm'
 import { createportfolio } from './create-portfolio'
 import { updateportfolio } from './update-portfolio'
 import { buyportfolio } from './buy-portfolio'
@@ -203,6 +203,7 @@ const handlers: { [k in APIPath]: RequestHandler } = {
   'add-liquidity': addLiquidity,
   'add-bounty': addBounty,
   'award-bounty': awardBounty,
+  'add-answer': createAnswerCPMM,
   leagues: getLeagues,
   markets: markets,
   'search-markets': searchMarketsLite,
@@ -301,7 +302,7 @@ app.post('/follow-topic', ...apiRoute(followtopic))
 app.post('/supabasesearchgroups', ...apiRoute(supabasesearchgroups))
 app.post('/league-activity', ...apiRoute(leagueActivity))
 app.post('/cancel-bounty', ...apiRoute(cancelbounty))
-app.post('/createanswercpmm', ...apiRoute(createanswercpmm))
+app.post('/createanswercpmm', ...apiRoute(createAnswerCPMM))
 app.post('/edit-answer-cpmm', ...apiRoute(editanswercpmm))
 app.post('/createportfolio', ...apiRoute(createportfolio))
 app.post('/updateportfolio', ...apiRoute(updateportfolio))

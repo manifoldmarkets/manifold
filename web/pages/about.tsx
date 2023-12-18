@@ -59,6 +59,10 @@ export default function AboutPage() {
         </div>
 
         <Col className="w-full">
+          <iframe
+            src="https://www.youtube.com/embed/DB5TfX7eaVY?start=9"
+            className="mb-4 h-80 max-w-2xl"
+          ></iframe>
           <WhatIsAPM />
 
           <WhatIsMana />

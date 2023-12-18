@@ -9,7 +9,7 @@ import {
 } from 'common/contract'
 import { BuyAmountInput } from '../widgets/amount-input'
 import { Col } from '../layout/col'
-import { APIError, createAnswer, createAnswerCpmm } from 'web/lib/firebase/api'
+import { APIError, api, createAnswer } from 'web/lib/firebase/api'
 import { Row } from '../layout/row'
 import {
   formatMoney,
@@ -48,10 +48,7 @@ export function CreateAnswerCpmmPanel(props: {
       setIsSubmitting(true)
 
       try {
-        await createAnswerCpmm({
-          contractId: contract.id,
-          text,
-        })
+        await api('add-answer', { contractId: contract.id, text })
         setText('')
       } catch (e) {}
 

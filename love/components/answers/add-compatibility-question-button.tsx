@@ -1,4 +1,3 @@
-import { MAX_QUESTION_LENGTH } from 'common/contract'
 import { useState } from 'react'
 import { Button } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
@@ -13,15 +12,11 @@ import { useEvent } from 'web/hooks/use-event'
 import { track } from 'web/lib/service/analytics'
 import { toast } from 'react-hot-toast'
 import { createLoveCompatibilityQuestion } from 'web/lib/firebase/love/api'
-import { Row as rowFor, run } from 'common/supabase/utils'
-import {
-  AnswerCompatibilityQuestionContent,
-  CompatibilityAnswerSubmitType,
-} from './answer-compatibility-question-content'
-import { filterKeys } from '../questions-form'
-import { db } from 'web/lib/supabase/db'
+import { Row as rowFor } from 'common/supabase/utils'
+import { AnswerCompatibilityQuestionContent } from './answer-compatibility-question-content'
 import { uniq } from 'lodash'
 import { QuestionWithCountType } from 'love/hooks/use-questions'
+import { MAX_COMPATIBILITY_QUESTION_LENGTH } from 'common/love/constants'
 
 export function AddCompatibilityQuestionButton(props: {
   refreshCompatibilityAll: () => void
@@ -159,7 +154,7 @@ function CreateCompatibilityModalContent(props: {
           Question<span className={'text-scarlet-500'}>*</span>
         </label>
         <ExpandingInput
-          maxLength={MAX_QUESTION_LENGTH}
+          maxLength={MAX_COMPATIBILITY_QUESTION_LENGTH}
           value={question}
           onChange={(e) => setQuestion(e.target.value || '')}
         />

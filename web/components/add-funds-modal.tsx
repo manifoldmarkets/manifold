@@ -1,3 +1,4 @@
+'use client'
 import { formatMoney, manaToUSD } from 'common/util/format'
 import { useEffect, useState } from 'react'
 import { useUser } from 'web/hooks/use-user'
@@ -7,7 +8,6 @@ import { Modal } from './layout/modal'
 import { getNativePlatform } from 'web/lib/native/is-native'
 import { Tabs } from './layout/tabs'
 import { IOS_PRICES, WEB_PRICES } from 'web/pages/add-funds'
-import { postMessageToNative } from 'web/components/native-message-listener'
 import {
   BETTING_STREAK_BONUS_MAX,
   REFERRAL_AMOUNT,
@@ -26,6 +26,7 @@ import { AlertBox } from './widgets/alert-box'
 import { AD_REDEEM_REWARD } from 'common/boost'
 import { Txn } from 'common/txn'
 import { DAY_MS } from 'common/util/time'
+import { postMessageToNative } from 'web/lib/native/post-message'
 
 export function AddFundsModal(props: {
   open: boolean

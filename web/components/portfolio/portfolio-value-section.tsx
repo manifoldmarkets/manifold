@@ -1,3 +1,4 @@
+'use client'
 import clsx from 'clsx'
 import { formatMoney } from 'common/util/format'
 import { last } from 'lodash'

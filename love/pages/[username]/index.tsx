@@ -1,5 +1,7 @@
+import { useState } from 'react'
 import Router from 'next/router'
 import Head from 'next/head'
+import { useRouter } from 'next/router'
 
 import { removeUndefinedProps } from 'common/util/object'
 import { LovePage } from 'love/components/love-page'
@@ -21,13 +23,12 @@ import { SignUpButton } from 'love/components/nav/love-sidebar'
 import { BackButton } from 'web/components/contract/back-button'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { getLoveOgImageUrl } from 'common/love/og-image'
-import { getLoverRow, Lover } from 'common/love/lover'
+import { getLoverRow, Lover, LoverRow } from 'common/love/lover'
 import { LoverBio } from 'love/components/bio/lover-bio'
 import Custom404 from '../404'
 import { db } from 'web/lib/supabase/db'
 import { useSaveCampaign } from 'web/hooks/use-save-campaign'
 import { useCallReferUser } from 'web/hooks/use-call-refer-user'
-import { useRouter } from 'next/router'
 
 export const getStaticProps = async (props: {
   params: {
@@ -54,7 +55,7 @@ export const getStaticPaths = () => {
 export default function UserPage(props: {
   user: User | null
   username: string
-  lover: Lover | null
+  lover: LoverRow | null
 }) {
   const { user, username } = props
   const router = useRouter()
@@ -68,8 +69,12 @@ export default function UserPage(props: {
   useTracking('view love profile', { username: user?.username })
   useSaveCampaign()
   useCallReferUser()
+
+  const [staticLover] = useState(
+    props.lover && user ? { ...props.lover, user: user } : null
+  )
   const { lover: clientLover, refreshLover } = useLoverByUser(user ?? undefined)
-  const lover = clientLover ?? props.lover
+  const lover = clientLover ?? staticLover
 
   if (!user) {
     return <Custom404 />

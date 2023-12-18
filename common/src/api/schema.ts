@@ -19,6 +19,7 @@ import { LiquidityProvision } from 'common/liquidity-provision'
 import { LiteUser } from './user-types'
 import { League } from 'common/leagues'
 import { searchProps } from './market-search-types'
+import { MAX_ANSWER_LENGTH } from 'common/answer'
 
 export const marketCacheStrategy = 's-maxage=15, stale-while-revalidate=45'
 
@@ -249,6 +250,18 @@ export const API = (_apiTypeCheck = {
         contractId: z.string(),
         groupId: z.string(),
         remove: z.boolean().default(false),
+      })
+      .strict(),
+  },
+  'add-answer': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    returns: {} as { newAnswerId: string },
+    props: z
+      .object({
+        contractId: z.string().max(MAX_ANSWER_LENGTH),
+        text: z.string().min(1).max(MAX_ANSWER_LENGTH),
       })
       .strict(),
   },

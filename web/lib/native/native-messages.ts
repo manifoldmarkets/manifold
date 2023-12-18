@@ -1,4 +1,4 @@
-import { postMessageToNative } from 'web/components/native-message-listener'
+import { postMessageToNative } from 'web/lib/native/post-message'
 
 export const nativePassUsers = (userJson: string) => {
   postMessageToNative('users', userJson)

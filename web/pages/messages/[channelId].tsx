@@ -167,6 +167,7 @@ export const PrivateChat = (props: {
     ? Math.max(0, totalMessages - messages.length)
     : 0
   const editor = useTextEditor({
+    key: `private-message-${channelId}-${user.id}`,
     size: 'sm',
     placeholder: 'Send a message',
   })

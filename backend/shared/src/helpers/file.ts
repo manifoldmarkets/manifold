@@ -21,23 +21,24 @@ export const readJson = async <T>(filename: string) => {
   return JSON.parse(data) as T
 }
 
-const SEPARATOR = ','
+const SEPARATOR = '|'
 
 export const writeCsv = async <T extends { [field: string]: string }>(
   filename: string,
   fields: string[],
-  data: T[]
+  data: T[],
+  seperator = SEPARATOR
 ) => {
   console.log('\n', 'Writing to', filename, '\n')
 
-  const firstLine = fields.join(SEPARATOR) + '\n'
+  const firstLine = fields.join(seperator) + '\n'
 
   const lines =
     firstLine +
     data
       .map((datum) => {
         const values = fields.map((field) => datum[field] ?? '')
-        return values.join(SEPARATOR)
+        return values.join(seperator)
       })
       .join('\n') +
     '\n'

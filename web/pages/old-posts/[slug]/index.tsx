@@ -17,7 +17,6 @@ import { UserLink } from 'web/components/widgets/user-link'
 import { SEO } from 'web/components/SEO'
 import { richTextToString } from 'common/util/parse'
 import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
-import comments from 'web/pages/api/v0/comments'
 import { convertSQLtoTS, run } from 'common/supabase/utils'
 import { db } from 'web/lib/supabase/db'
 import { Row as rowFor } from 'common/supabase/utils'
@@ -37,7 +36,7 @@ export async function getStaticProps(props: { params: { slug: string } }) {
     props: {
       post,
       creator,
-      comments,
+      comments: [],
       watched,
       skipped,
     },
@@ -68,7 +67,7 @@ export default function PostPage(props: {
       <SEO
         title={post.title}
         description={richTextToString(post.content)}
-        url={'/old-post/' + post.slug}
+        url={'/old-posts/' + post.slug}
       />
       <div className="mx-auto mt-1 flex w-full max-w-2xl flex-col">
         <div className="h-2" />
@@ -147,7 +146,7 @@ function RichEditPost(props: {
 }
 
 function postPath(postSlug: string) {
-  return `/old-post/${postSlug}`
+  return `/old-posts/${postSlug}`
 }
 
 async function getPostBySlug(slug: string) {

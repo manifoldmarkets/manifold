@@ -5,7 +5,7 @@ import { trackCallback } from 'web/lib/service/analytics'
 import { buttonClass } from './button'
 import Link from 'next/link'
 import { NewQuestionParams } from 'web/components/new-contract/new-contract-panel'
-import { getNativePlatform } from 'web/lib/native/is-native'
+import { getLinkTarget } from 'web/components/widgets/linkify'
 
 export function DuplicateContractButton(props: { contract: Contract }) {
   const { contract } = props
@@ -60,12 +60,4 @@ function duplicateContractHref(contract: Contract) {
   }
 
   return `/create?params=` + encodeURIComponent(JSON.stringify(params))
-}
-
-const getLinkTarget = (href: string, newTab?: boolean) => {
-  if (href.startsWith('http')) return '_blank'
-  const { isNative } = getNativePlatform()
-  // Native will open 'a new tab' when target = '_blank' in the system browser rather than in the app
-  if (isNative) return '_self'
-  return newTab ? '_blank' : '_self'
 }

@@ -29,7 +29,7 @@ export const getCloseDate = async (question: string, utcOffset?: number) => {
   let response
   try {
     response = await openai.completions.create({
-      model: 'text-davinci-003',
+      model: 'gpt-3.5-turbo-instruct',
       prompt: `Question: Will I finish the task by 2027?\nNow: 5/2/2026 12:11 pm\nEnd date: 12/31/2026 11:59 pm\n\nQuestion: Will an AI-drawn movie have a rating >=7.0 on IMDB before 2025?\nNow: 5/2/2019 3:47 pm\nEnd date: 12/31/2024 11:59 pm\n\nQuestion: Will Bolsanaro concede the election by Nov 15?\nNow: 8/5/2022 1:20 pm\nEnd date: 11/14/2022 11:59 pm\n\nQuestion: Will Dwarf Fortress be released on Steam this year?\nNow: 2/5/2023 11:24 am\nEnd date: 12/31/2023 11:59 pm\n\nQuestion: Will eat ice cream today?\nNow: 10/2/2022 5:55 pm\nEnd date: 10/2/2022 11:59 pm\n\nQuestion: ${question}\nNow: ${now}\nEnd date:`,
       temperature: 0.4,
       max_tokens: 15,

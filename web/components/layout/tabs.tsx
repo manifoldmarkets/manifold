@@ -1,5 +1,10 @@
 import clsx from 'clsx'
-import { useRouter, NextRouter } from 'next/router'
+import {
+  useRouter,
+  usePathname,
+  ReadonlyURLSearchParams,
+} from 'next/navigation'
+
 import { ReactNode, useEffect, useRef } from 'react'
 import { track } from 'web/lib/service/analytics'
 import { Col } from './col'
@@ -7,6 +12,7 @@ import { Tooltip } from 'web/components/widgets/tooltip'
 import { Row } from 'web/components/layout/row'
 import { Carousel } from 'web/components/widgets/carousel'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import { useDefinedSearchParams } from 'web/hooks/use-defined-search-params'
 
 export type Tab = {
   title: string
@@ -129,8 +135,12 @@ export function UncontrolledTabs(props: TabProps & { defaultIndex?: number }) {
   )
 }
 
-const isTabSelected = (router: NextRouter, queryParam: string, tab: Tab) => {
-  const selected = router.query[queryParam]
+const isTabSelected = (
+  params: ReadonlyURLSearchParams,
+  queryParam: string,
+  tab: Tab
+) => {
+  const selected = params.get(queryParam)
   if (typeof selected === 'string') {
     return (
       (tab.queryString?.toLowerCase() ?? tab.title.toLowerCase()) === selected
@@ -145,7 +155,11 @@ export function QueryUncontrolledTabs(
 ) {
   const { tabs, defaultIndex, onClick, scrollToTop, ...rest } = props
   const router = useRouter()
-  const selectedIdx = tabs.findIndex((t) => isTabSelected(router, 'tab', t))
+  const pathName = usePathname()
+  const { searchParams, createQueryString } = useDefinedSearchParams()
+  const selectedIdx = tabs.findIndex((t) =>
+    isTabSelected(searchParams, 'tab', t)
+  )
   const activeIndex = selectedIdx !== -1 ? selectedIdx : defaultIndex ?? 0
 
   useEffect(() => {
@@ -164,11 +178,7 @@ export function QueryUncontrolledTabs(
       activeIndex={activeIndex}
       onClick={(title) => {
         if (scrollToTop) window.scrollTo({ top: 0 })
-        router.replace(
-          { query: { ...router.query, tab: title.toLowerCase() } },
-          undefined,
-          { shallow: true }
-        )
+        router.replace(pathName + '?' + createQueryString('tab', title))
       }}
     />
   )
