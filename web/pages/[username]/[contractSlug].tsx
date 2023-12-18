@@ -359,13 +359,13 @@ export function ContractPageContent(props: ContractParams) {
             )}
             <Row
               className={clsx(
-                'sticky -top-px z-50 mt-px flex h-12 w-full px-4 py-2 transition-colors',
+                'sticky -top-px z-50 mt-px flex h-12 w-full pb-2 pr-2 transition-colors',
                 headerStuck
                   ? 'dark:bg-canvas-50/80 bg-white/80 backdrop-blur-sm'
                   : ''
               )}
             >
-              <Row className=" mr-4 grow">
+              <Row className="mr-4 grow">
                 {(headerStuck || !coverImageUrl) && (
                   <Col className="my-auto">
                     <BackButton />

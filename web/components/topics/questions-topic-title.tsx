@@ -46,12 +46,12 @@ export const QuestionsTopicTitle = forwardRef(
     return (
       <Row
         className={
-          'col-span-8 my-1 items-center justify-between gap-1 px-2 sm:mb-3 xl:col-span-7'
+          'col-span-8 my-1 items-center justify-between gap-1 sm:mb-3 xl:col-span-7'
         }
         ref={ref}
       >
         <Col className={'mb-1 truncate'}>
-          <Row className={' items-center gap-1'}>
+          <Row className={'items-center gap-1'}>
             <Button size={'2xs'} color={'gray-white'} onClick={router.back}>
               <ArrowLeftIcon className={'h-5 w-5'} />
             </Button>
@@ -70,7 +70,7 @@ export const QuestionsTopicTitle = forwardRef(
             </span>
           </Row>
         </Col>
-        <Row className="items-center">
+        <Row className="items-center px-2">
           {currentTopic && (
             <>
               <CopyLinkOrShareButton
