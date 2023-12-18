@@ -143,6 +143,7 @@ export const resolveMarketHelper = async (
         resolutionTime,
         resolutionProbability,
         prob: finalProb,
+        resolverId: resolver.id,
       })
     )
   }
