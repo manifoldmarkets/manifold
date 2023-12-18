@@ -8,15 +8,18 @@ import { MatchTile } from './match-tile'
 import { Lover } from 'common/love/lover'
 import { BrowseMatchesButton } from '../browse-matches-button'
 import { Row } from 'web/components/layout/row'
+import { User } from 'common/user'
+import { useContext } from 'react'
+import CompatibilityAnswersContext from 'love/hooks/compatibility-answers-context'
 
 export const Matches = (props: {
   profileLover: Lover
   profileUserId: string
+  currentUser: User
 }) => {
-  const { profileLover, profileUserId } = props
-  const user = useUser()
+  const { profileLover, profileUserId, currentUser } = props
 
-  const data = useCompatibleLovers(profileUserId)
+  const data = useCompatibleLovers(profileUserId, currentUser)
 
   if (!data) return <LoadingIndicator />
 
@@ -28,7 +31,7 @@ export const Matches = (props: {
     loverCompatibilityScores,
   } = data
 
-  const areYourMatches = profileUserId === user?.id
+  const areYourMatches = profileUserId === currentUser?.id
 
   return (
     <Col className=" w-full ">

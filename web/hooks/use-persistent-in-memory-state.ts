@@ -5,7 +5,7 @@ import { useEvent } from 'web/hooks/use-event'
 
 const store: { [key: string]: any } = {}
 export function isFunction<T>(
-  value: T | ((prevState: T) => T)
+value: T | ((prevState: T) => T)
 ): value is (prevState: T) => T {
   return typeof value === 'function'
 }

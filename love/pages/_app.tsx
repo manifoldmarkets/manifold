@@ -14,6 +14,7 @@ import { getIsNative } from 'web/lib/native/is-native'
 import { Major_Mono_Display, Figtree } from 'next/font/google'
 import clsx from 'clsx'
 import { useRefreshAllClients } from 'web/hooks/use-refresh-all-clients'
+import { CompatibilityAnswersContextProvider } from 'love/components/compatibility-answers-context-provider'
 
 // See https://nextjs.org/docs/basic-features/font-optimization#google-fonts
 // and if you add a font, you must add it to tailwind config as well for it to work.
@@ -118,8 +119,10 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
       >
         <AuthProvider serverUser={pageProps.auth}>
           <ThemeProvider>
-            <NativeMessageListener />
-            <Component {...pageProps} />
+            <CompatibilityAnswersContextProvider>
+              <NativeMessageListener />
+              <Component {...pageProps} />
+            </CompatibilityAnswersContextProvider>
           </ThemeProvider>
         </AuthProvider>
         {/* Workaround for https://github.com/tailwindlabs/headlessui/discussions/666, to allow font CSS variable */}

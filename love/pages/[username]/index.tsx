@@ -188,7 +188,11 @@ function LoverContent(props: {
   return (
     <>
       {!fromLoverPage && lover.looking_for_matches && (
-        <Matches profileLover={lover} profileUserId={user.id} />
+        <Matches
+          profileLover={lover}
+          profileUserId={user.id}
+          currentUser={currentUser}
+        />
       )}
       <LoverAbout lover={lover} />
       <LoverBio
