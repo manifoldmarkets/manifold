@@ -5,7 +5,7 @@ slug: /api
 
 # Manifold API
 
-Programatic access to [Manifold](https://manifold.markets).
+Programmatic access to [Manifold](https://manifold.markets).
 
 :::caution
 
@@ -702,7 +702,7 @@ For polls, you must also provide:
 
 Response type: `LiteMarket`
 
-### `POST /v0/update-tag`
+### `PUT /v0/update-tag`
 
 Add or remove a topic tag from a market
 
