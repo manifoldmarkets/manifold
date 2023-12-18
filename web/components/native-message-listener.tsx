@@ -6,18 +6,14 @@ import {
   setPushToken,
 } from 'web/lib/firebase/notifications'
 import { useRouter } from 'next/router'
-import {
-  getIsNative,
-  setInstalledAppPlatform,
-  setIsNative,
-} from 'web/lib/native/is-native'
+import { setInstalledAppPlatform, setIsNative } from 'web/lib/native/is-native'
 import { useNativeMessages } from 'web/hooks/use-native-messages'
-import { webToNativeMessageType } from 'common/native-message'
 import { useEffect } from 'react'
 import { usePrivateUser } from 'web/hooks/use-user'
 import { useEvent } from 'web/hooks/use-event'
 import { auth } from 'web/lib/firebase/users'
 import { User as FirebaseUser } from 'firebase/auth'
+import { postMessageToNative } from 'web/lib/native/post-message'
 
 export const NativeMessageListener = () => {
   const router = useRouter()
@@ -88,24 +84,4 @@ export const NativeMessageListener = () => {
   )
 
   return <div />
-}
-
-export const postMessageToNative = (
-  type: webToNativeMessageType,
-  data: any
-) => {
-  const isNative = getIsNative()
-  if (
-    isNative &&
-    (window as any).ReactNativeWebView &&
-    // NOTE: After the webview is killed on android due to OOM, postMessage will be undefined, see: https://github.com/react-native-webview/react-native-webview/issues/2680
-    typeof (window as any).ReactNativeWebView.postMessage === 'function'
-  ) {
-    ;(window as any).ReactNativeWebView?.postMessage(
-      JSON.stringify({
-        type,
-        data,
-      })
-    )
-  }
 }

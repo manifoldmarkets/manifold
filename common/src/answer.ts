@@ -21,6 +21,8 @@ export type Answer = {
   resolution?: resolution
   resolutionTime?: number
   resolutionProbability?: number
+  resolverId?: string
+
   probChanges: {
     day: number
     week: number

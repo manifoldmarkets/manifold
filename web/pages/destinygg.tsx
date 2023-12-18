@@ -125,7 +125,7 @@ export default function DestinyLandingPage(props: {
         <Col className="max-w-3xl">
           <LabCard
             title="📖 Welcome explanation"
-            href="https://manifold.markets/post/welcome-explanation-for-newcomers-f"
+            href="https://manifold.markets/old-posts/welcome-explanation-for-newcomers-f"
             target="_blank"
           />
           <WhatIsMana />

@@ -139,15 +139,21 @@ export const createMatchMain = async (
   const thirtyDaysLaterStr = dayjs(
     Date.now() + DAY_MS * 30 + 7 * HOUR_MS
   ).format('MMM D')
-  const eightMonthsLater = new Date(Date.now() + 8 * MONTH_MS)
+  const sixtyDaysLaterStr = dayjs(
+    Date.now() + DAY_MS * 60 + 7 * HOUR_MS
+  ).format('MMM D')
+  const ninetyDaysLaterStr = dayjs(
+    Date.now() + DAY_MS * 90 + 7 * HOUR_MS
+  ).format('MMM D')
+  const nineMonthsLater = new Date(Date.now() + 9 * MONTH_MS)
 
   const contract = (await createMarketHelper(
     {
       question: `Relationship of @${user1.username} & @${user2.username}`,
       answers: [
         `First date by ${thirtyDaysLaterStr}?`,
-        `If first date, second date within one month?`,
-        `If second date, third date within one month?`,
+        `If first date, second date by ${sixtyDaysLaterStr}?`,
+        `If second date, third date by ${ninetyDaysLaterStr}?`,
         `If third date, continue relationship for six months?`,
       ],
       descriptionMarkdown: `Are [${user1.name}](https://manifold.love/${user1.username}) and [${user2.name}](https://manifold.love/${user2.username}) a good match? Bet on whether they will hit any of these relationship milestones! 
@@ -163,7 +169,7 @@ See [FAQ](https://manifold.love/faq) for more details.`,
       addAnswersMode: 'DISABLED',
       groupIds: [manifoldLoveRelationshipsGroupId],
       visibility: 'public',
-      closeTime: eightMonthsLater,
+      closeTime: nineMonthsLater,
       loverUserId1: userId1,
       loverUserId2: userId2,
       matchCreatorId: matchCreator.id,

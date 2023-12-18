@@ -146,6 +146,10 @@ const queryForFeedRows = async (
       query = query.order('seen_time', { ascending: false })
     } else {
       query = query.is('seen_time', null)
+      query = query.gt(
+        'created_time',
+        new Date(Date.now() - 7 * DAY_MS).toISOString()
+      )
     }
   }
   const results = await query

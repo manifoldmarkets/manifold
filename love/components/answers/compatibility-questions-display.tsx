@@ -1,11 +1,10 @@
 import { PencilIcon } from '@heroicons/react/outline'
-import { isAdminId } from 'common/envs/constants'
 import { getMutualAnswerCompatibility } from 'common/love/compatibility-score'
 import { Lover } from 'common/love/lover'
 import { Row as rowFor } from 'common/supabase/utils'
 import { User } from 'common/user'
 import { partition } from 'lodash'
-import { useLoverByUserId } from 'love/hooks/use-lover'
+import { useLover } from 'love/hooks/use-lover'
 import {
   QuestionWithCountType,
   useCompatibilityQuestionsWithAnswerCount,
@@ -22,7 +21,6 @@ import {
 import { Row } from 'web/components/layout/row'
 import { Linkify } from 'web/components/widgets/linkify'
 import { Pagination } from 'web/components/widgets/pagination'
-import { useUser } from 'web/hooks/use-user'
 import { db } from 'web/lib/supabase/db'
 import { Subtitle } from '../widgets/lover-subtitle'
 import { AddCompatibilityQuestionButton } from './add-compatibility-question-button'
@@ -41,6 +39,7 @@ import {
   PreferredList,
   PreferredListNoComparison,
 } from './compatibility-question-preferred-list'
+import { useUser } from 'web/hooks/use-user'
 
 const NUM_QUESTIONS_TO_SHOW = 8
 
@@ -128,19 +127,18 @@ export function CompatibilityQuestionsDisplay(props: {
         </span>
       ) : (
         <>
-          {(otherQuestions.length < 1 || isAdminId(user?.id)) &&
-            isCurrentUser && (
-              <span>
-                {otherQuestions.length < 1 && (
-                  <span className="text-ink-600 text-sm">
-                    You've already answered all the compatibility questions!
-                  </span>
-                )}{' '}
-                <AddCompatibilityQuestionButton
-                  refreshCompatibilityAll={refreshCompatibilityAll}
-                />
-              </span>
-            )}
+          {isCurrentUser && (
+            <span>
+              {otherQuestions.length < 1 && (
+                <span className="text-ink-600 text-sm">
+                  You've already answered all the compatibility questions!
+                </span>
+              )}{' '}
+              <AddCompatibilityQuestionButton
+                refreshCompatibilityAll={refreshCompatibilityAll}
+              />
+            </span>
+          )}
           {shownAnswers.map((answer) => {
             return (
               <CompatibilityAnswerBlock
@@ -207,7 +205,8 @@ function CompatibilityAnswerBlock(props: {
   const question = yourQuestions.find((q) => q.id === answer.question_id)
   const [editOpen, setEditOpen] = useState<boolean>(false)
   const currentUser = useUser()
-  const currentLover = useLoverByUserId(currentUser?.id)
+  const currentLover = useLover()
+
   const comparedLover = isCurrentUser
     ? null
     : !!fromLoverPage
@@ -259,17 +258,24 @@ function CompatibilityAnswerBlock(props: {
             </div>
           )}
           {isCurrentUser && (
-            <DropdownMenu
-              items={[
-                {
-                  name: 'Edit',
-                  icon: <PencilIcon className="h-5 w-5" />,
-                  onClick: () => setEditOpen(true),
-                },
-              ]}
-              closeOnClick
-              menuWidth="w-40"
-            />
+            <>
+              <ImportanceButton
+                className="hidden sm:block"
+                importance={answer.importance}
+                onClick={() => setEditOpen(true)}
+              />
+              <DropdownMenu
+                items={[
+                  {
+                    name: 'Edit',
+                    icon: <PencilIcon className="h-5 w-5" />,
+                    onClick: () => setEditOpen(true),
+                  },
+                ]}
+                closeOnClick
+                menuWidth="w-40"
+              />
+            </>
           )}
         </Row>
       </Row>
@@ -283,7 +289,7 @@ function CompatibilityAnswerBlock(props: {
               ? 'Acceptable'
               : 'Also acceptable'}
           </div>
-          <Row className="gap-2">
+          <Row className="flex-wrap gap-2">
             {distinctPreferredAnswersText.map((text) => (
               <Row
                 key={text}
@@ -308,6 +314,14 @@ function CompatibilityAnswerBlock(props: {
               lover2={comparedLover as Lover}
               currentUserIsComparedLover={!fromLoverPage}
               currentUser={currentUser}
+            />
+          </Row>
+        )}
+        {isCurrentUser && (
+          <Row className="w-full justify-end sm:hidden">
+            <ImportanceButton
+              importance={answer.importance}
+              onClick={() => setEditOpen(true)}
             />
           </Row>
         )}
@@ -392,15 +406,10 @@ function CompatibilityDisplay(props: {
 
   return (
     <Row className="gap-2">
-      <button
+      <ImportanceButton
+        importance={importanceScore}
         onClick={() => setOpen(true)}
-        className={clsx(
-          'text-ink-1000 h-fit w-28 rounded-full px-2 py-0.5 text-xs transition-colors',
-          IMPORTANCE_DISPLAY_COLORS[importanceScore]
-        )}
-      >
-        <ImportanceDisplay importance={importanceScore} />
-      </button>
+      />
 
       {showCreateAnswer || !answerCompatibility || !answer2 ? (
         <AnswerCompatibilityQuestionButton
@@ -492,6 +501,27 @@ function ImportanceDisplay(props: { importance: number }) {
   )
 }
 
+function ImportanceButton(props: {
+  importance: number
+  onClick: () => void
+  className?: string
+}) {
+  const { importance, onClick, className } = props
+  return (
+    <button
+      onClick={onClick}
+      className={clsx(
+        'text-ink-1000 h-fit rounded-full px-2 py-0.5 text-xs transition-colors',
+        // Longer width for "Somewhat important"
+        importance === 1 ? 'w-36' : 'w-28',
+        IMPORTANCE_DISPLAY_COLORS[importance],
+        className
+      )}
+    >
+      <ImportanceDisplay importance={importance} />
+    </button>
+  )
+}
 function getStringKeyFromNumValue(
   value: number,
   map: Record<string, number>

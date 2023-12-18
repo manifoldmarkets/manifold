@@ -11,7 +11,6 @@ import {
 } from 'web/components/buttons/button'
 import toast from 'react-hot-toast'
 import LinkIcon from 'web/lib/icons/link-icon.svg'
-import { postMessageToNative } from 'web/components/native-message-listener'
 import { NativeShareData } from 'common/native-share-data'
 import {
   CheckIcon,
@@ -22,6 +21,7 @@ import ArrowUpSquareIcon from 'web/lib/icons/arrow-up-square-icon.svg'
 import { getNativePlatform } from 'web/lib/native/is-native'
 import { useBrowserOS } from 'web/hooks/use-browser-os'
 import { ShareIcon } from '@heroicons/react/outline'
+import { postMessageToNative } from 'web/lib/native/post-message'
 
 export function CopyLinkOrShareButton(props: {
   url: string

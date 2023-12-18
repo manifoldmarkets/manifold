@@ -1,8 +1,8 @@
 import { cleanUsername } from 'common/util/clean-username'
-import { useRouter } from 'next/router'
 import { useEffect } from 'react'
 
 import { User, writeReferralInfo } from 'web/lib/firebase/users'
+import { useDefinedSearchParams } from 'web/hooks/use-defined-search-params'
 
 export const useSaveReferral = (
   user: User | null | undefined,
@@ -11,22 +11,22 @@ export const useSaveReferral = (
     contractId?: string
   }
 ) => {
-  const router = useRouter()
+  const { searchParams } = useDefinedSearchParams()
 
   useEffect(() => {
-    const referrer = router.query.r
-      ? decodeBase64(router.query.r as string)
-      : (router.query.referrer as string)
+    const referrer = searchParams.get('r')
+      ? decodeBase64(searchParams.get('r') as string)
+      : (searchParams.get('referrer') as string)
 
     const referrerOrDefault = referrer || options?.defaultReferrerUsername
 
-    if (user === null && router.isReady && referrerOrDefault) {
+    if (user === null && referrerOrDefault) {
       writeReferralInfo(referrerOrDefault, {
         contractId: options?.contractId,
         explicitReferrer: referrer,
       })
     }
-  }, [user, router, JSON.stringify(options)])
+  }, [user, searchParams, JSON.stringify(options)])
 }
 
 const decodeBase64 = (base64: string) => {

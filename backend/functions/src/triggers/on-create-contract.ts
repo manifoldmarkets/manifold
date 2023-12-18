@@ -28,6 +28,7 @@ export const onCreateContract = functions
   .runWith({
     secrets,
     timeoutSeconds: 540,
+    memory: '1GB',
   })
   .firestore.document('contracts/{contractId}')
   .onCreate(async (snapshot, context) => {
@@ -141,5 +142,5 @@ export const uploadToStorage = async (imgUrl: string, username: string) => {
   stream.end(buffer)
 
   const url = await file.publicUrl()
-  return url.replace('%2F', '/') // prevent weird escaping 
+  return url.replace('%2F', '/') // prevent weird escaping
 }

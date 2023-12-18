@@ -4,7 +4,9 @@ import { Row } from '../layout/row'
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/solid'
 import { ReactNode, useEffect } from 'react'
 import { range } from 'lodash'
-import { useRouter } from 'next/router'
+import { usePathname, useRouter } from 'next/navigation'
+import { useDefinedSearchParams } from 'web/hooks/use-defined-search-params'
+
 export const PAGE_ELLIPSES = '...'
 
 export function PaginationNextPrev(props: {
@@ -57,37 +59,23 @@ export function Pagination(props: {
     savePageToQuery,
   } = props
   const router = useRouter()
-  const { query } = router
-  const { p: pageQuery } = query
+  const { searchParams, createQueryString } = useDefinedSearchParams()
+  const pathname = usePathname()
 
   useEffect(() => {
-    if (savePageToQuery) {
-      if (pageQuery && page !== parseInt(pageQuery as string)) {
-        setPage(parseInt(pageQuery as string))
-      } else if (!pageQuery && page !== 0) {
-        setPage(0)
-      }
+    if (!savePageToQuery) return
+    const p = searchParams.get('p')
+    if (p && page !== parseInt(p as string)) {
+      setPage(parseInt(p as string))
+    } else if (!p && page !== 0) {
+      setPage(0)
     }
-  }, [pageQuery])
+  }, [searchParams])
 
   const onClick = (page: number) => {
     if (savePageToQuery) {
-      router.push(
-        {
-          query: {
-            ...router.query,
-            p: page.toString(),
-          },
-        },
-        {
-          query: {
-            ...router.query,
-            p: (page + 1).toString(),
-          },
-        }
-      )
-    }
-    setPage(page)
+      router.push(pathname + '?' + createQueryString('p', page.toString()))
+    } else setPage(page)
   }
 
   const maxPage = Math.ceil(totalItems / itemsPerPage) - 1

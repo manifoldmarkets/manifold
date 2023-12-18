@@ -36,6 +36,7 @@ export async function getStaticProps(props: { params: { slug: string } }) {
     props: {
       post,
       creator,
+      comments: [],
       watched,
       skipped,
     },
@@ -66,7 +67,7 @@ export default function PostPage(props: {
       <SEO
         title={post.title}
         description={richTextToString(post.content)}
-        url={'/old-post/' + post.slug}
+        url={'/old-posts/' + post.slug}
       />
       <div className="mx-auto mt-1 flex w-full max-w-2xl flex-col">
         <div className="h-2" />
@@ -145,7 +146,7 @@ function RichEditPost(props: {
 }
 
 function postPath(postSlug: string) {
-  return `/old-post/${postSlug}`
+  return `/old-posts/${postSlug}`
 }
 
 async function getPostBySlug(slug: string) {

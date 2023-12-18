@@ -62,8 +62,9 @@ export function where(clause: string, formatValues?: any) {
   return buildSql({ where })
 }
 
-export function orderBy(clause: string) {
-  return buildSql({ orderBy: clause })
+export function orderBy(clause: string, formatValues?: any) {
+  const orderBy = pgp.as.format(clause, formatValues)
+  return buildSql({ orderBy })
 }
 
 export function limit(limit: number, offset?: number) {
