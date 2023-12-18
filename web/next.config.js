@@ -135,6 +135,11 @@ module.exports = {
         permanent: true,
       },
       {
+        source: '/post/:slug*',
+        destination: '/old-posts/:slug*',
+        permanent: false,
+      },
+      {
         source: '/questions:slug*',
         has: [
           {
