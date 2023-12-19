@@ -3,9 +3,9 @@ import { PoliticsPage } from 'politics/components/politics-page'
 import Custom404 from 'politics/app/404/page'
 import { getDashboardFromSlug } from 'web/lib/firebase/api'
 import { DashboardLinkItem } from 'common/dashboard'
-import { fetchLinkPreviews } from 'web/lib/util/link-previews'
 import { FoundDashboardPage } from 'web/pages/dashboard/found-dashboard-page'
 import { cache } from 'react'
+import { fetchLinkPreviews } from 'common/link-preview'
 const dashboardSlug = '2024-us-election-updates'
 
 export const revalidate = 15000 // revalidate at most in milliseconds

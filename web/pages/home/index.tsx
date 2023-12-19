@@ -20,8 +20,7 @@ import { EditNewsButton } from 'web/components/news/edit-news-button'
 import { useYourFollowedDashboards } from 'web/hooks/use-dashboard'
 import { buildArray } from 'common/util/array'
 import { uniqBy } from 'lodash'
-import { LinkPreviews } from 'common/link-preview'
-import { fetchLinkPreviews } from 'web/lib/util/link-previews'
+import { fetchLinkPreviews, LinkPreviews } from 'common/link-preview'
 
 export async function getStaticProps() {
   const dashboards = (await getNewsDashboards()) as Dashboard[]
