@@ -129,7 +129,7 @@ Requires no authorization.
 
 - Example request
   ```
-  https://manifold.markets/api/v0/markets?limit=1
+  https://api.manifold.markets/v0/markets?limit=1
   ```
 - Example response
   ```json
@@ -217,7 +217,7 @@ Requires no authorization.
 - Example request
 
   ```
-  https://manifold.markets/api/v0/market/3zspH9sSzMlbFQLn9GKR
+  https://api.manifold.markets/v0/market/3zspH9sSzMlbFQLn9GKR
   ```
 
 - Example response
@@ -322,7 +322,7 @@ Requires no authorization.
 - Example request
 
   ```
-  https://manifold.markets/api/v0/market/kupKInoLsjMuiDiNfogm/positions?top=1&bottom=1
+  https://api.manifold.markets/v0/market/kupKInoLsjMuiDiNfogm/positions?top=1&bottom=1
   ```
 
 - Example response
@@ -464,7 +464,7 @@ Requires no authorization.
 
 - Example request
   ```
-  https://manifold.markets/api/v0/slug/will-carrick-flynn-win-the-general
+  https://api.manifold.markets/v0/slug/will-carrick-flynn-win-the-general
   ```
 - Response type: A `FullMarket` ; same as above.
 
@@ -490,7 +490,7 @@ Requires no authorization.
 - Example request
 
   ```
-  https://manifold.markets/api/v0/search-markets?term=biden&sort=liquidity&filter=resolved&contractType=BINARY&limit=2
+  https://api.manifold.markets/v0/search-markets?term=biden&sort=liquidity&filter=resolved&contractType=BINARY&limit=2
   ```
 
 - Example response
@@ -578,7 +578,7 @@ Requires no authorization.
 
 - Example request
   ```
-  https://manifold.markets/api/v0/users?limit=1
+  https://api.manifold.markets/v0/users?limit=1
   ```
 - Example response
   ```json
@@ -660,7 +660,7 @@ Parameters:
 Example request:
 
 ```
-$ curl https://manifold.markets/api/v0/bet -X POST -H 'Content-Type: application/json' \
+$ curl https://api.manifold.markets/v0/bet -X POST -H 'Content-Type: application/json' \
     -H 'Authorization: Key {...}' \
     --data-raw '{"amount":1, \
                  "outcome":"YES", \
@@ -722,7 +722,7 @@ For polls, you must also provide:
 Example request:
 
 ```
-$ curl https://manifold.markets/api/v0/market -X POST -H 'Content-Type: application/json' \
+$ curl https://api.manifold.markets/v0/market -X POST -H 'Content-Type: application/json' \
     -H 'Authorization: Key {...}'
     --data-raw '{"outcomeType":"BINARY", \
                  "question":"Is there life on Mars?", \
@@ -797,26 +797,26 @@ Example request:
 
 ```
 # Resolve a binary market
-$ curl https://manifold.markets/api/v0/market/{marketId}/resolve -X POST \
+$ curl https://api.manifold.markets/v0/market/{marketId}/resolve -X POST \
     -H 'Content-Type: application/json' \
     -H 'Authorization: Key {...}' \
     --data-raw '{"outcome": "YES"}'
 
 # Resolve a binary market with a specified probability
-$ curl https://manifold.markets/api/v0/market/{marketId}/resolve -X POST \
+$ curl https://api.manifold.markets/v0/market/{marketId}/resolve -X POST \
     -H 'Content-Type: application/json' \
     -H 'Authorization: Key {...}' \
     --data-raw '{"outcome": "MKT", \
                  "probabilityInt": 75}'
 
 # Resolve a free response market with a single answer chosen
-$ curl https://manifold.markets/api/v0/market/{marketId}/resolve -X POST \
+$ curl https://api.manifold.markets/v0/market/{marketId}/resolve -X POST \
     -H 'Content-Type: application/json' \
     -H 'Authorization: Key {...}' \
     --data-raw '{"outcome": 2}'
 
 # Resolve a free response market with multiple answers chosen
-$ curl https://manifold.markets/api/v0/market/{marketId}/resolve -X POST \
+$ curl https://api.manifold.markets/v0/market/{marketId}/resolve -X POST \
     -H 'Content-Type: application/json' \
     -H 'Authorization: Key {...}' \
     --data-raw '{"outcome": "MKT", \
@@ -840,7 +840,7 @@ Parameters:
 Example request:
 
 ```
-$ curl https://manifold.markets/api/v0/market/{marketId}/sell -X POST \
+$ curl https://api.manifold.markets/v0/market/{marketId}/sell -X POST \
     -H 'Content-Type: application/json' \
     -H 'Authorization: Key {...}' \
     --data-raw '{"outcome": "YES", "shares": 10}'
@@ -894,7 +894,7 @@ Requires no authorization.
 
 - Example request
   ```
-  https://manifold.markets/api/v0/bets?username=Manifold&contractSlug=will-i-be-able-to-place-a-limit-ord
+  https://api.manifold.markets/v0/bets?username=Manifold&contractSlug=will-i-be-able-to-place-a-limit-ord
   ```
 - Response type: A `Bet[]`.
 
@@ -977,7 +977,7 @@ Requires no authorization.
 Example request
 
 ```
-https://manifold.markets/api/v0/managrams?toId=IPTOzEqrpkWmEzh6hwvAyY9PqFb2
+https://api.manifold.markets/v0/managrams?toId=IPTOzEqrpkWmEzh6hwvAyY9PqFb2
 ```
 
 Example response
