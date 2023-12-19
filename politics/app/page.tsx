@@ -5,12 +5,13 @@ import { getDashboardFromSlug } from 'web/lib/firebase/api'
 import { DashboardLinkItem } from 'common/dashboard'
 import { fetchLinkPreviews } from 'web/lib/util/link-previews'
 import { FoundDashboardPage } from 'web/pages/dashboard/found-dashboard-page'
+import { cache } from 'react'
 const dashboardSlug = '2024-us-election-updates'
 
 export const revalidate = 15000 // revalidate at most in milliseconds
 
 export async function generateMetadata(): Promise<Metadata> {
-  const dashboard = await getDashboardFromSlug({ dashboardSlug })
+  const dashboard = await getDashboardFromSlugCached({ dashboardSlug })
   if (!dashboard) return { title: 'Not found' }
   const links = dashboard.items.filter(
     (item): item is DashboardLinkItem => item.type === 'link'
@@ -25,7 +26,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function Page() {
-  const dashboard = await getDashboardFromSlug({ dashboardSlug })
+  const dashboard = await getDashboardFromSlugCached({ dashboardSlug })
   if (!dashboard) return <Custom404 />
   const links = dashboard.items.filter(
     (item): item is DashboardLinkItem => item.type === 'link'
@@ -43,3 +44,5 @@ export default async function Page() {
     </PoliticsPage>
   )
 }
+
+const getDashboardFromSlugCached = cache(getDashboardFromSlug)
