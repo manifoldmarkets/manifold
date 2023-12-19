@@ -212,8 +212,9 @@ export function TextEditor(props: {
   hideToolbar?: boolean // hide toolbar
   children?: ReactNode // additional toolbar buttons
   className?: string
+  onBlur?: () => void
 }) {
-  const { editor, simple, hideToolbar, children, className } = props
+  const { editor, simple, hideToolbar, children, className, onBlur } = props
 
   return (
     // matches input styling
@@ -225,7 +226,7 @@ export function TextEditor(props: {
     >
       <FloatingFormatMenu editor={editor} advanced={!simple} />
       <div className={clsx('max-h-[69vh] overflow-auto')}>
-        <EditorContent editor={editor} />
+        <EditorContent editor={editor} onBlur={onBlur} />
       </div>
       {!hideToolbar ? (
         <StickyFormatMenu editor={editor}>{children}</StickyFormatMenu>

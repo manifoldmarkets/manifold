@@ -1,7 +1,8 @@
 import { PencilIcon, XIcon } from '@heroicons/react/outline'
 import { JSONContent } from '@tiptap/core'
+import clsx from 'clsx'
+
 import { Lover } from 'common/love/lover'
-import { useState } from 'react'
 import DropdownMenu from 'web/components/comments/dropdown-menu'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -20,9 +21,10 @@ export function BioBlock(props: {
 
   return (
     <Col
-      className={
-        'bg-canvas-0 flex-grow whitespace-pre-line rounded-md px-3 py-2 leading-relaxed'
-      }
+      className={clsx(
+        'bg-canvas-0 flex-grow whitespace-pre-line rounded-md leading-relaxed',
+        !edit && 'px-3 py-2'
+      )}
     >
       <Row className="w-full">
         {!edit && (
@@ -33,7 +35,7 @@ export function BioBlock(props: {
         {edit && (
           <EditableBio
             lover={lover}
-            onCancel={() => setEdit(false)}
+            onCancel={lover.bio ? () => setEdit(false) : undefined}
             onSave={() => {
               refreshLover()
               setEdit(false)

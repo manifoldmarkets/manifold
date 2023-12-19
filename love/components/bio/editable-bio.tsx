@@ -1,5 +1,4 @@
 import { JSONContent } from '@tiptap/core'
-import { Editor } from '@tiptap/react'
 import { MAX_DESCRIPTION_LENGTH } from 'common/contract'
 import { Lover } from 'common/love/lover'
 import { Button } from 'web/components/buttons/button'
@@ -11,15 +10,17 @@ import { track } from 'web/lib/service/analytics'
 
 export function EditableBio(props: {
   lover: Lover
-  onCancel: () => void
   onSave: () => void
+  onCancel?: () => void
 }) {
   const { lover, onCancel, onSave } = props
   const editor = useTextEditor({
     max: MAX_DESCRIPTION_LENGTH,
     defaultValue: (lover.bio as JSONContent) ?? '',
-    placeholder: 'Tell us about yourself!',
+    placeholder: "Tell us about yourself — and what you're looking for!",
   })
+
+  const hideButtons = editor?.getText().length === 0 && !lover.bio
 
   const saveBio = async () => {
     if (!editor) return
@@ -36,21 +37,27 @@ export function EditableBio(props: {
     }
   }
   return (
-    <Col className="w-full">
+    <Col className="relative w-full">
       <TextEditor editor={editor} />
-      <Row className="my-2 justify-between gap-2">
-        <Button color="gray-outline" onClick={onCancel}>
-          Cancel
-        </Button>
-        <Button
-          onClick={async () => {
-            await saveBio()
-            onSave()
-          }}
-        >
-          Save
-        </Button>
-      </Row>
+
+      {!hideButtons && (
+        <Row className="absolute bottom-1 right-1 justify-between gap-2">
+          {onCancel && (
+            <Button size="xs" color="gray-outline" onClick={onCancel}>
+              Cancel
+            </Button>
+          )}
+          <Button
+            size="xs"
+            onClick={async () => {
+              await saveBio()
+              onSave()
+            }}
+          >
+            Save
+          </Button>
+        </Row>
+      )}
     </Col>
   )
 }
