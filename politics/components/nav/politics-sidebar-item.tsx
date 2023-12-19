@@ -25,8 +25,8 @@ export function SidebarItem(props: { item: Item; currentPage?: string }) {
 
   const sidebarClass = clsx(
     isCurrentPage
-      ? 'bg-ink-100 text-primary-700'
-      : 'text-ink-600 hover:bg-ink-100 hover:text-primary-700',
+      ? 'bg-ink-100 text-ink-700'
+      : 'text-ink-600 hover:bg-ink-100 hover:text-ink-700',
     'group flex items-center rounded-md px-3 py-2 text-sm font-medium',
     'focus-visible:bg-ink-100 outline-none transition-all'
   )
@@ -37,8 +37,8 @@ export function SidebarItem(props: { item: Item; currentPage?: string }) {
         <item.icon
           className={clsx(
             isCurrentPage
-              ? 'text-primary-700'
-              : 'text-ink-500 group-hover:text-primary-700',
+              ? 'text-ink-700'
+              : 'text-ink-500 group-hover:text-ink-700',
             '-ml-1 mr-3 h-6 w-6 flex-shrink-0 transition-all'
           )}
           aria-hidden="true"

@@ -30,7 +30,7 @@ export function ProfileSummary(props: { user: User; className?: string }) {
       <Avatar avatarUrl={user.avatarUrl} username={user.username} noLink />
       <div className="mr-1 w-2 shrink-[2]" />
       <div className="shrink-0 grow">
-        <div className="group-hover:text-primary-700">{user.name}</div>
+        <div className="group-hover:text-ink-700">{user.name}</div>
         <div className="flex items-center text-sm">
           <span className="mr-2">
             <animated.div>{balance.to((b) => formatMoney(b))}</animated.div>
