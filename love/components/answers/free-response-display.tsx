@@ -11,7 +11,6 @@ import { Row } from 'web/components/layout/row'
 import { Linkify } from 'web/components/widgets/linkify'
 import { IndividualQuestionRow } from '../questions-form'
 import { Subtitle } from '../widgets/lover-subtitle'
-import { AddQuestionButton } from './free-response-add-question'
 import {
   QuestionWithCountType,
   useFRQuestionsWithAnswerCount,
@@ -35,13 +34,15 @@ export function FreeResponseDisplay(props: {
 
   const { refreshAnswers, answers: allAnswers } = useUserAnswers(user?.id)
 
-  const answers = allAnswers.filter((a) => a.free_response != null)
+  const answers = allAnswers.filter(
+    (a) => a.free_response != null && a.free_response !== ''
+  )
 
   const answerQuestionIds = new Set(answers.map((answer) => answer.question_id))
 
   const FRquestionsWithCount = useFRQuestionsWithAnswerCount()
 
-  const [yourFRQuestions, otherFRQuestions] = partition(
+  const [yourFRQuestions, _otherFRQuestions] = partition(
     FRquestionsWithCount,
     (question) => answerQuestionIds.has(question.id)
   )
