@@ -9,6 +9,14 @@ Programatic access to [Manifold](https://manifold.markets).
 
 :::caution
 
+Our API was historically hosted on `https://manifold.markets/api`, but we recently moved to give the API its own domain at `api.manifold.markets`.
+
+Please migrate any code you have to the new domain. The old domain will disappear at some point in the future.
+
+:::
+
+:::caution
+
 Our API is still in alpha — things may change or break at any time!
 
 If you have questions, come chat with us on [Discord](https://discord.com/invite/eHQBNBqXuh). We’d love to hear about what you build!
@@ -1055,6 +1063,7 @@ Requires no authorization.
 
 ## Changelog
 
+- 2023-12-18: `manifold.markets/api` -> `api.manifold.markets`. Please migrate old code.
 - 2023-10-27: Update `/search-markets` to allow all the same search options as our search.
 - 2023-09-29: Add `/managrams` and `/managram` endpoints
 - 2023-05-15: Change the response of the `/market/{marketId}/sell` POST endpoint from
