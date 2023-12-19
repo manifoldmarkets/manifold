@@ -3,6 +3,8 @@ import { z } from 'zod'
 import { ValidationError } from './_types'
 import { validate } from './_validate'
 
+export const config = { runtime: 'edge' }
+
 const queryParams = z
   .object({
     // This secret is stored in both Firebase and Vercel's environment variables, as API_SECRET.
