@@ -8,7 +8,7 @@ import { cache } from 'react'
 import { fetchLinkPreviews } from 'common/link-preview'
 const dashboardSlug = '2024-us-election-updates'
 
-export const revalidate = 15000 // revalidate at most in milliseconds
+export const revalidate = 60 // revalidate at most in seconds
 
 export async function generateMetadata(): Promise<Metadata> {
   const dashboard = await getDashboardFromSlugCached({ dashboardSlug })
@@ -31,6 +31,7 @@ export default async function Page() {
   const links = dashboard.items.filter(
     (item): item is DashboardLinkItem => item.type === 'link'
   )
+  // It'd be nice if we could cache these previews, but this doesn't use fetch, see: https://nextjs.org/docs/app/building-your-application/caching#data-cache
   const previews = await fetchLinkPreviews(links.map((l) => l.url))
 
   return (

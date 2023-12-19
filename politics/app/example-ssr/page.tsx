@@ -1,6 +1,6 @@
 import { PoliticsPage } from 'politics/components/politics-page'
 
-export const revalidate = 5000 // revalidate at most every 5 seconds
+export const revalidate = 5 // revalidate at most in seconds
 
 async function getData() {
   const res = await fetch('https://api.manifold.markets/v0/markets')
