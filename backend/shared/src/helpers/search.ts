@@ -5,6 +5,6 @@ export const constructPrefixTsQuery = (term: string) => {
     .trim()
   console.log(`Term: "${sanitized}"`)
   if (sanitized === '') return ''
-  const tokens = sanitized.split(' ')
+  const tokens = sanitized.split(/\s+/)
   return tokens.join(' & ') + ':*'
 }
