@@ -148,6 +148,14 @@ export type SupabaseAdditionalFilter = {
 export type SearchState = {
   contracts: Contract[] | undefined
   shouldLoadMore: boolean
+  // mirror of search param state, but to determine if the first load should load new data
+  lastSearchParams?: {
+    query: string
+    sort: Sort
+    filter: Filter
+    contractType: ContractTypeType
+    topicSlug: string
+  }
 }
 
 export function SupabaseSearch(props: {
@@ -545,6 +553,18 @@ const useContractSearch = (
       ct: contractType,
     } = searchParams
 
+    // if fresh query and the search params haven't changed (like user clicked back) do nothing
+    if (
+      freshQuery &&
+      query === state.lastSearchParams?.query &&
+      sort === state.lastSearchParams?.sort &&
+      filter === state.lastSearchParams?.filter &&
+      contractType === state.lastSearchParams?.contractType &&
+      topicSlug === state.lastSearchParams?.topicSlug
+    ) {
+      return state.shouldLoadMore
+    }
+
     if (freshQuery || state.shouldLoadMore) {
       const id = ++requestId.current
       let timeoutId: NodeJS.Timeout | undefined
@@ -577,6 +597,7 @@ const useContractSearch = (
         setState({
           contracts: freshContracts,
           shouldLoadMore,
+          lastSearchParams: { query, sort, filter, contractType, topicSlug },
         })
         clearTimeout(timeoutId)
         setLoading(false)
