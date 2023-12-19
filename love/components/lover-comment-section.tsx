@@ -35,7 +35,7 @@ export const LoverCommentSection = (props: {
 
   return (
     <Col className={'mt-4 rounded py-2'}>
-      <Row className={'mb-2 justify-between'}>
+      <Row className={'mb-4 justify-between'}>
         <Subtitle>Endorsements</Subtitle>
         {isCurrentUser && !simpleView && (
           <Tooltip
@@ -70,30 +70,37 @@ export const LoverCommentSection = (props: {
       </Row>
       {!simpleView && (
         <>
-          <div className="mb-4">
-            {!lover.comments_enabled ? (
-              <>This feature is disabled.</>
-            ) : isCurrentUser ? (
-              <>Other users can write endorsements of you here.</>
+          {lover.comments_enabled && (
+            <>
+              <div className="mb-4">
+                {isCurrentUser ? (
+                  <>Other users can write endorsements of you here.</>
+                ) : (
+                  <>
+                    If you know them, write something nice that adds to their
+                    profile.
+                  </>
+                )}
+              </div>
+              {currentUser && !isCurrentUser && (
+                <LoverCommentInput
+                  className="mb-4 mr-px mt-px"
+                  onUserId={onUser.id}
+                  trackingLocation={'contract page'}
+                />
+              )}
+            </>
+          )}
+          {!lover.comments_enabled &&
+            (isCurrentUser ? (
+              <span className={'text-ink-500 text-sm'}>
+                This feature is disabled
+              </span>
             ) : (
-              <>
-                If you know them, write something nice that adds to their
-                profile.
-              </>
-            )}
-          </div>
-          {currentUser && !isCurrentUser && lover.comments_enabled && (
-            <LoverCommentInput
-              className="mb-4 mr-px mt-px"
-              onUserId={onUser.id}
-              trackingLocation={'contract page'}
-            />
-          )}
-          {!lover.comments_enabled && currentUser?.id != lover.user_id && (
-            <span className={'text-ink-500 text-sm'}>
-              {onUser.name} has disabled endorsements from others.
-            </span>
-          )}
+              <span className={'text-ink-500 text-sm'}>
+                {onUser.name} has disabled endorsements from others.
+              </span>
+            ))}
         </>
       )}
       {lover.comments_enabled &&
