@@ -172,7 +172,7 @@ function UserProfile(props: { user: User }) {
               />
               {/*{isCurrentUser && (*/}
               {/*  <Link*/}
-              {/*    className=" bg-primary-600 shadow-primary-300 hover:bg-primary-700 text-ink-0 absolute bottom-0 right-0 h-6 w-6 rounded-full p-1.5 shadow-sm"*/}
+              {/*    className=" bg-ink-600 shadow-ink-300 hover:bg-ink-700 text-ink-0 absolute bottom-0 right-0 h-6 w-6 rounded-full p-1.5 shadow-sm"*/}
               {/*    href="/profile"*/}
               {/*    onClick={(e) => e.stopPropagation()}*/}
               {/*  >*/}

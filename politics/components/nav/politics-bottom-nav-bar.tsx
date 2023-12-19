@@ -19,9 +19,9 @@ import { useAnimatedNumber } from 'web/hooks/use-animated-number'
 import { usePathname } from 'next/navigation'
 
 const itemClass =
-  'sm:hover:bg-ink-200 block w-full py-1 px-3 text-center sm:hover:text-primary-700 transition-colors'
-const selectedItemClass = 'bg-ink-100 text-primary-700'
-const touchItemClass = 'bg-primary-100'
+  'sm:hover:bg-ink-200 block w-full py-1 px-3 text-center sm:hover:text-ink-700 transition-colors'
+const selectedItemClass = 'bg-ink-100 text-ink-700'
+const touchItemClass = 'bg-ink-100'
 
 // From https://codepen.io/chris__sev/pen/QWGvYbL
 export function BottomNavBar(props: {
