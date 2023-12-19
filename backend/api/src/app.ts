@@ -128,6 +128,7 @@ import {
   searchMarketsLegacy,
 } from './supabase-search-contract'
 import { post } from 'api/post'
+import { fetchLinkPreview } from './fetch-link-preview'
 import { type APIHandler, typedEndpoint } from './helpers'
 
 const allowCorsUnrestricted: RequestHandler = cors({})
@@ -237,6 +238,7 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'save-twitch': saveTwitchCredentials,
   'compatible-lovers': getCompatibleLovers,
   post: post,
+  'fetch-link-preview': fetchLinkPreview,
 }
 
 Object.entries(handlers).forEach(([path, handler]) => {
