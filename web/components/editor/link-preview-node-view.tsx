@@ -4,7 +4,7 @@ import { LinkPreviewProps } from 'web/components/editor/link-preview-extension'
 import { Editor } from '@tiptap/react'
 import { JSONContent } from '@tiptap/core'
 import { filterDefined } from 'common/util/array'
-import { clientFetchLinkPreview } from 'web/lib/firebase/api'
+import { api } from 'web/lib/firebase/api'
 
 const linkPreviewDismissed: { [key: string]: boolean } = {}
 export const LinkPreviewNodeView = (props: LinkPreviewProps) => {
@@ -70,7 +70,9 @@ export const insertLinkPreviews = async (
       .filter((link) => !linkPreviewDismissed[key + link])
       .map(async (link) => {
         try {
-          const preview = await clientFetchLinkPreview(link)
+          const preview = link
+            ? await api('fetch-link-preview', { url: link.trim() })
+            : null
           if (!preview) return
           // Another fetch may have added a preview, so check again
           const content = editor.getJSON()
