@@ -465,18 +465,6 @@ export function searchNearCity(params: { cityId: string; radius: number }) {
 
 // vercel api
 
-export async function clientFetchLinkPreview(
-  url: string
-): Promise<LinkPreview | undefined> {
-  url = url.trim()
-  if (!url) return undefined
-  return fetch(`/api/v0/fetch-link-preview?url=${encodeURIComponent(url)}`, {
-    method: 'GET',
-    headers: { 'Content-Type': 'application/json' },
-    redirect: 'follow',
-  }).then((r) => r.json())
-}
-
 export function createChartAnnotation(params: {
   eventTime: number
   contractId: string

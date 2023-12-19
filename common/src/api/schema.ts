@@ -20,6 +20,7 @@ import { LiteUser } from './user-types'
 import { League } from 'common/leagues'
 import { searchProps } from './market-search-types'
 import { MAX_ANSWER_LENGTH } from 'common/answer'
+import { type LinkPreview } from 'common/link-preview'
 
 export const marketCacheStrategy = 's-maxage=15, stale-while-revalidate=45'
 
@@ -493,6 +494,14 @@ export const API = (_apiTypeCheck = {
         content: contentSchema.optional(),
       })
       .strict(),
+  },
+  'fetch-link-preview': {
+    method: 'GET',
+    visibility: 'private',
+    authed: false,
+    props: z.object({ url: z.string() }).strict(),
+    cache: 'max-age=86400, stale-while-revalidate=86400',
+    returns: {} as LinkPreview,
   },
 } as const)
 

@@ -20,6 +20,7 @@
     "@tiptap/starter-kit": "2.0.0-beta.204",
     "@tiptap/suggestion": "2.0.0-beta.204",
     "dayjs": "1.11.4",
+    "link-preview-js": "3.0.4",
     "lodash": "4.17.21",
     "string-similarity": "4.0.4",
     "zod": "3.21.4"

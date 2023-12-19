@@ -20,8 +20,4 @@ export const config = {
   matcher: ['/api/v0/:path*'],
 }
 
-const pathsToSkip = [
-  'v0/deployment-id',
-  'v0/fetch-link-preview',
-  'v0/revalidate',
-]
+const pathsToSkip = ['v0/deployment-id', 'v0/revalidate']
