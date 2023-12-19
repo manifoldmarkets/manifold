@@ -3,7 +3,6 @@ import { AuthProvider } from 'web/components/auth-context'
 import '../styles/globals.css'
 import { Major_Mono_Display, Figtree } from 'next/font/google'
 import clsx from 'clsx'
-import { ThemeProvider } from 'web/components/theme-provider'
 import { Metadata, Viewport } from 'next'
 import { cookies } from 'next/headers'
 import { authenticateOnServer } from 'web/lib/firebase/server-auth'
@@ -91,9 +90,7 @@ export default async function RootLayout({
         )}
       >
         <AuthProvider serverUser={authUser}>
-          <ThemeProvider>
-            <div className={'bg-canvas-50 text-ink-1000'}>{children}</div>
-          </ThemeProvider>
+          <div className={'bg-canvas-50 text-ink-1000'}>{children}</div>
         </AuthProvider>
         {/* Workaround for https://github.com/tailwindlabs/headlessui/discussions/666, to allow font CSS variable */}
         <div id="headlessui-portal-root">
