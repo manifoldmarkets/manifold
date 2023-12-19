@@ -25,7 +25,7 @@ export function SidebarItem(props: { item: Item; currentPage?: string }) {
 
   const sidebarClass = clsx(
     isCurrentPage
-      ? 'bg-ink-100 text-ink-700'
+      ? 'bg-ink-0 text-ink-700'
       : 'text-ink-600 hover:bg-ink-100 hover:text-ink-700',
     'group flex items-center rounded-md px-3 py-2 text-sm font-medium',
     'focus-visible:bg-ink-100 outline-none transition-all'
