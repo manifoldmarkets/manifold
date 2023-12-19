@@ -1,28 +1,19 @@
 'use client'
-import {
-  HeartIcon,
-  LogoutIcon,
-  MoonIcon,
-  SunIcon,
-  SparklesIcon,
-  LoginIcon,
-} from '@heroicons/react/outline'
+import { HeartIcon, LoginIcon, LogoutIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { buildArray } from 'common/util/array'
-import { capitalize } from 'lodash'
+import { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime'
+import { usePathname, useRouter } from 'next/navigation'
 import { useContext, useState } from 'react'
 import { AddFundsModal } from 'web/components/add-funds-modal'
+import { Button, ColorType, SizeType } from 'web/components/buttons/button'
+import { MobileAppsQRCodeDialog } from 'web/components/buttons/mobile-apps-qr-code-button'
 import { ThemeContext } from 'web/hooks/theme-context'
 import { useUser } from 'web/hooks/use-user'
 import { firebaseLogin, firebaseLogout } from 'web/lib/firebase/users'
 import { withTracking } from 'web/lib/service/analytics'
-import { MobileAppsQRCodeDialog } from 'web/components/buttons/mobile-apps-qr-code-button'
 import { ProfileSummary } from './politics-profile-summary'
 import { Item, SidebarItem } from './politics-sidebar-item'
-import { Button, ColorType, SizeType } from 'web/components/buttons/button'
-import { usePathname } from 'next/navigation'
-import { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime'
-import { useRouter } from 'next/navigation'
 
 export default function Sidebar(props: {
   className?: string
@@ -91,16 +82,6 @@ const bottomNav = (
   return buildArray(
     { name: 'Share with friends', href: '/referrals', icon: HeartIcon },
     !loggedIn && { name: 'Sign in', icon: LoginIcon, onClick: firebaseLogin },
-    {
-      name: theme === 'auto' ? 'Auto' : capitalize(theme),
-      icon:
-        theme === 'light'
-          ? SunIcon
-          : theme === 'dark'
-          ? MoonIcon
-          : SparklesIcon,
-      onClick: toggleTheme,
-    },
     loggedIn && {
       name: 'Sign out',
       icon: LogoutIcon,
