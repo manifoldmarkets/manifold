@@ -184,15 +184,17 @@ export const MaybeAuthedEndpoint = <T extends Json>(
   }
 }
 
+export type APIHandler<N extends APIPath> = (
+  props: ValidatedAPIParams<N>,
+  auth: APISchema<N> extends { authed: true }
+    ? AuthedUser
+    : AuthedUser | undefined,
+  { log, logError }: { log: GCPLog; logError: GCPLog }
+) => Promise<APIResponse<N>>
+
 export const typedEndpoint = <N extends APIPath>(
   name: N,
-  handler: (
-    props: ValidatedAPIParams<N>,
-    auth: APISchema<N> extends { authed: true }
-      ? AuthedUser
-      : AuthedUser | undefined,
-    { log, logError }: { log: GCPLog; logError: GCPLog }
-  ) => Promise<APIResponse<N>>
+  handler: APIHandler<N>
 ) => {
   const { props: propSchema, authed: authRequired, method } = API[name]
 
@@ -204,9 +206,14 @@ export const typedEndpoint = <N extends APIPath>(
       if (authRequired) next(e)
     }
 
+    const props = {
+      ...(method === 'GET' ? req.query : req.body),
+      ...req.params,
+    }
+
     try {
       const result = await handler(
-        validate(propSchema, method === 'GET' ? req.query : req.body),
+        validate(propSchema, props),
         authUser as AuthedUser,
         getLogs(req)
       )

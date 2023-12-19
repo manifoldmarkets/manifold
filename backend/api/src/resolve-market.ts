@@ -2,7 +2,7 @@ import * as admin from 'firebase-admin'
 import { sumBy } from 'lodash'
 import { CPMMMultiContract, Contract, MultiContract } from 'common/contract'
 import { getUser } from 'shared/utils'
-import { APIError, typedEndpoint, validate } from './helpers'
+import { APIError, type APIHandler, validate } from './helpers'
 import { resolveMarketHelper } from 'shared/resolve-market-helpers'
 import { Answer } from 'common/answer'
 import { throwErrorIfNotMod } from 'shared/helpers/auth'
@@ -15,64 +15,64 @@ import {
   resolvePseudoNumericSchema,
 } from 'common/api/market-types'
 
-export const resolveMarket = typedEndpoint(
-  'resolve',
-  async (props, auth, { log }) => {
-    const { contractId } = props
-    const contractDoc = firestore.doc(`contracts/${contractId}`)
-    const contractSnap = await contractDoc.get()
-    if (!contractSnap.exists)
-      throw new APIError(404, 'No contract exists with the provided ID')
-    const contract = contractSnap.data() as Contract
+export const resolveMarket: APIHandler<'market/:contractId/resolve'> = async (
+  props,
+  auth,
+  { log }
+) => {
+  const { contractId } = props
+  const contractDoc = firestore.doc(`contracts/${contractId}`)
+  const contractSnap = await contractDoc.get()
+  if (!contractSnap.exists)
+    throw new APIError(404, 'No contract exists with the provided ID')
+  const contract = contractSnap.data() as Contract
 
-    let answers: Answer[] = []
-    if (contract.mechanism === 'cpmm-multi-1') {
-      // Denormalize answers.
-      const answersSnap = await firestore
-        .collection(`contracts/${contractId}/answersCpmm`)
-        .get()
-      answers = answersSnap.docs.map((doc) => doc.data() as Answer)
-      contract.answers = answers
-    }
-
-    const { creatorId, outcomeType } = contract
-    if (outcomeType === 'STONK') {
-      throw new APIError(403, 'STONK contracts cannot be resolved')
-    }
-    const caller = await getUser(auth.uid)
-    if (!caller) throw new APIError(400, 'Caller not found')
-    if (creatorId !== auth.uid) await throwErrorIfNotMod(auth.uid)
-
-    if (contract.resolution)
-      throw new APIError(403, 'Contract already resolved')
-
-    const creator = caller.id === creatorId ? caller : await getUser(creatorId)
-    if (!creator) throw new APIError(500, 'Creator not found')
-
-    const resolutionParams = getResolutionParams(contract, props)
-
-    if ('answerId' in resolutionParams && 'answers' in contract) {
-      const { answerId } = resolutionParams
-      const answer = answers.find((a) => a.id === answerId)
-      if (answer && 'resolution' in answer && answer.resolution) {
-        throw new APIError(403, `${answerId} answer is already resolved`)
-      }
-    }
-
-    log('Resolving market ', {
-      contractSlug: contract.slug,
-      contractId,
-      resolutionParams,
-    })
-
-    await resolveMarketHelper(contract, caller, creator, resolutionParams, log)
-    // TODO: return?
+  let answers: Answer[] = []
+  if (contract.mechanism === 'cpmm-multi-1') {
+    // Denormalize answers.
+    const answersSnap = await firestore
+      .collection(`contracts/${contractId}/answersCpmm`)
+      .get()
+    answers = answersSnap.docs.map((doc) => doc.data() as Answer)
+    contract.answers = answers
   }
-)
+
+  const { creatorId, outcomeType } = contract
+  if (outcomeType === 'STONK') {
+    throw new APIError(403, 'STONK contracts cannot be resolved')
+  }
+  const caller = await getUser(auth.uid)
+  if (!caller) throw new APIError(400, 'Caller not found')
+  if (creatorId !== auth.uid) await throwErrorIfNotMod(auth.uid)
+
+  if (contract.resolution) throw new APIError(403, 'Contract already resolved')
+
+  const creator = caller.id === creatorId ? caller : await getUser(creatorId)
+  if (!creator) throw new APIError(500, 'Creator not found')
+
+  const resolutionParams = getResolutionParams(contract, props)
+
+  if ('answerId' in resolutionParams && 'answers' in contract) {
+    const { answerId } = resolutionParams
+    const answer = answers.find((a) => a.id === answerId)
+    if (answer && 'resolution' in answer && answer.resolution) {
+      throw new APIError(403, `${answerId} answer is already resolved`)
+    }
+  }
+
+  log('Resolving market ', {
+    contractSlug: contract.slug,
+    contractId,
+    resolutionParams,
+  })
+
+  await resolveMarketHelper(contract, caller, creator, resolutionParams, log)
+  // TODO: return?
+}
 
 function getResolutionParams(
   contract: Contract,
-  props: ValidatedAPIParams<'resolve'>
+  props: ValidatedAPIParams<'market/:contractId/resolve'>
 ) {
   const { outcomeType } = contract
   if (

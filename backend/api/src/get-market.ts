@@ -1,9 +1,11 @@
 import { createSupabaseClient } from 'shared/supabase/init'
-import { APIError, typedEndpoint } from './helpers'
+import { APIError } from './helpers'
 import { toFullMarket, toLiteMarket } from 'common/api/market-types'
 import { convertContract } from 'common/supabase/contracts'
 
-export const getMarket = typedEndpoint('market', async (props) => {
+export const getMarket = async (
+  props: ({ id: string } | { slug: string }) & { lite?: boolean }
+) => {
   const db = createSupabaseClient()
   const q = db.from('contracts').select()
   if ('id' in props) {
@@ -16,4 +18,4 @@ export const getMarket = typedEndpoint('market', async (props) => {
 
   const contract = convertContract(data)
   return props.lite ? toLiteMarket(contract) : toFullMarket(contract)
-})
+}

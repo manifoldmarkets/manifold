@@ -1,5 +1,4 @@
 import * as admin from 'firebase-admin'
-import { z } from 'zod'
 import {
   DocumentReference,
   FieldValue,
@@ -8,7 +7,7 @@ import {
 } from 'firebase-admin/firestore'
 import { groupBy, mapValues, sumBy, uniq } from 'lodash'
 
-import { APIError, typedEndpoint } from './helpers'
+import { APIError, type APIHandler } from './helpers'
 import { Contract, CPMM_MIN_POOL_QTY } from 'common/contract'
 import { User } from 'common/user'
 import {
@@ -29,10 +28,10 @@ import { Answer } from 'common/answer'
 import { CpmmState, getCpmmProbability } from 'common/calculate-cpmm'
 import { ValidatedAPIParams } from 'common/api/schema'
 
-export const placeBet = typedEndpoint('bet', async (props, auth, { log }) => {
+export const placeBet: APIHandler<'bet'> = async (props, auth, { log }) => {
   const isApi = auth.creds.kind === 'key'
   return await placeBetMain(props, auth.uid, isApi, log)
-})
+}
 
 export const placeBetMain = async (
   body: ValidatedAPIParams<'bet'>,

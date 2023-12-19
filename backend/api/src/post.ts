@@ -1,4 +1,4 @@
-import { APIError, typedEndpoint } from 'api/helpers'
+import { APIError, type APIHandler } from 'api/helpers'
 import { getContractSupabase, getUser } from 'shared/utils'
 import {
   createSupabaseClient,
@@ -9,7 +9,7 @@ import { createCommentOnContractInternal } from 'api/create-comment'
 import { repostContractToFeed } from 'shared/create-feed'
 import { ContractComment } from 'common/comment'
 
-export const post = typedEndpoint('post', async (props, auth, { log }) => {
+export const post: APIHandler<'post'> = async (props, auth, { log }) => {
   const { contractId, content, commentId } = props
 
   const contract = await getContractSupabase(contractId)
@@ -62,4 +62,4 @@ export const post = typedEndpoint('post', async (props, auth, { log }) => {
   await repostContractToFeed(contract, comment, res.id, [auth.uid])
 
   return comment
-})
+}

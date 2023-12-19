@@ -1,9 +1,9 @@
 import { run } from 'common/supabase/utils'
-import { APIError, typedEndpoint } from './helpers'
+import { APIError, type APIHandler } from './helpers'
 import { createSupabaseClient } from 'shared/supabase/init'
 import type { ManaPayTxn } from 'common/txn'
 
-export const getManagrams = typedEndpoint('managrams', async (props, auth) => {
+export const getManagrams: APIHandler<'managrams'> = async (props, auth) => {
   const { limit, toId, fromId, before, after } = props
 
   const db = createSupabaseClient()
@@ -23,4 +23,4 @@ export const getManagrams = typedEndpoint('managrams', async (props, auth) => {
   } catch (e) {
     throw new APIError(500, `Error while fetching managrams: ${e}`)
   }
-})
+}

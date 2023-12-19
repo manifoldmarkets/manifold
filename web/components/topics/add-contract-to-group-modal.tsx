@@ -35,9 +35,10 @@ export function AddContractToGroupModal(props: {
   async function onSubmit(contracts: Contract[]) {
     await Promise.all(
       contracts.map((contract) =>
-        api('update-tag', { groupId: group.id, contractId: contract.id }).catch(
-          (e) => console.log(e)
-        )
+        api('market/:contractId/group', {
+          groupId: group.id,
+          contractId: contract.id,
+        }).catch((e) => console.log(e))
       )
     )
       .then(() =>

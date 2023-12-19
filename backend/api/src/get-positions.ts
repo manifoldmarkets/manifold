@@ -1,4 +1,4 @@
-import { APIError, typedEndpoint } from './helpers'
+import { APIError, type APIHandler } from './helpers'
 
 import { ContractMetric } from 'common/contract-metric'
 import {
@@ -8,7 +8,9 @@ import {
 import { uniqBy } from 'lodash'
 import { createSupabaseClient } from 'shared/supabase/init'
 
-export const getPositions = typedEndpoint('positions', async (props) => {
+export const getPositions: APIHandler<'market/:id/positions'> = async (
+  props
+) => {
   const { id: contractId, userId } = props
 
   if (contractId === 'U3zLgOZkGUE7cvG98961') {
@@ -76,4 +78,4 @@ export const getPositions = typedEndpoint('positions', async (props) => {
   }
 
   return uniqBy(topSlice.concat(bottomSlice), (cm) => cm.userId)
-})
+}

@@ -2,7 +2,7 @@ import * as admin from 'firebase-admin'
 
 import { User } from 'common/user'
 import { canSendMana, SEND_MANA_REQ } from 'common/manalink'
-import { APIError, typedEndpoint } from './helpers'
+import { APIError, type APIHandler } from './helpers'
 import { runTxn } from 'shared/txn/run-txn'
 import { createManaPaymentNotification } from 'shared/create-notification'
 import * as crypto from 'crypto'
@@ -10,7 +10,7 @@ import { createSupabaseClient } from 'shared/supabase/init'
 import { isAdminId } from 'common/envs/constants'
 import { MAX_COMMENT_LENGTH } from 'common/comment'
 
-export const sendMana = typedEndpoint('send-mana', async (props, auth) => {
+export const sendMana: APIHandler<'managram'> = async (props, auth) => {
   const { amount, toIds, message, groupId: passedGroupId } = props
   if (message.length > MAX_COMMENT_LENGTH) {
     throw new APIError(
@@ -85,6 +85,6 @@ export const sendMana = typedEndpoint('send-mana', async (props, auth) => {
       )
     )
   })
-})
+}
 
 const firestore = admin.firestore()

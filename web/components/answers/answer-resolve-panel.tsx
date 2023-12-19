@@ -136,7 +136,7 @@ function AnswersResolveOptions(props: {
         })
 
     try {
-      const result = await api('resolve', resolutionProps)
+      const result = await api('market/:contractId/resolve', resolutionProps)
       console.log('resolved', resolutionProps, 'result:', result)
     } catch (e) {
       if (e instanceof APIError) {

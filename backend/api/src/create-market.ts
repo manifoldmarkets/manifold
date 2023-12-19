@@ -28,7 +28,7 @@ import { randomString } from 'common/util/random'
 import { slugify } from 'common/util/slugify'
 import { getCloseDate } from 'shared/helpers/openai-utils'
 import { GCPLog, getUser, htmlToRichText, isProd } from 'shared/utils'
-import { APIError, AuthedUser, typedEndpoint } from './helpers'
+import { APIError, AuthedUser, type APIHandler } from './helpers'
 import { STONK_INITIAL_PROB } from 'common/stonk'
 import {
   createSupabaseClient,
@@ -52,15 +52,16 @@ import {
 } from 'common/api/market-types'
 import { z } from 'zod'
 
-type Body = ValidatedAPIParams<'create-market'>
+type Body = ValidatedAPIParams<'market'>
 
-export const createMarket = typedEndpoint(
-  'create-market',
-  async (body, auth, { log }) => {
-    const market = await createMarketHelper(body, auth, log)
-    return toLiteMarket(market)
-  }
-)
+export const createMarket: APIHandler<'market'> = async (
+  body,
+  auth,
+  { log }
+) => {
+  const market = await createMarketHelper(body, auth, log)
+  return toLiteMarket(market)
+}
 
 export async function createMarketHelper(
   body: Body,

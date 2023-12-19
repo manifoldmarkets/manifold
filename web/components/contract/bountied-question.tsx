@@ -134,7 +134,7 @@ export function AwardBountyButton(props: {
   async function onAwardBounty() {
     if (amount) {
       setLoading(true)
-      await api('award-bounty', {
+      await api('market/:contractId/award-bounty', {
         contractId: contract.id,
         commentId: comment.id,
         amount: amount,
@@ -203,7 +203,7 @@ export function AddBountyButton(props: {
 
   async function onAddBounty() {
     if (amount) {
-      await api('add-bounty', {
+      await api('market/:contractId/add-bounty', {
         contractId: contract.id,
         amount: amount,
       })

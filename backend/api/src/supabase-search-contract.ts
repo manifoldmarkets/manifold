@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { Contract } from 'common/contract'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { MaybeAuthedEndpoint, typedEndpoint } from './helpers'
+import { MaybeAuthedEndpoint, type APIHandler } from './helpers'
 import {
   hasGroupAccess,
   getSearchContractSQL,
@@ -16,20 +16,22 @@ import { GCPLog } from 'shared/utils'
 import { toLiteMarket } from 'common/api/market-types'
 import { searchProps } from 'common/api/market-search-types'
 
-export const searchMarketsLite = typedEndpoint(
-  'search-markets',
-  async (props, auth, { logError }) => {
-    const contracts = await search(props, auth?.uid, logError)
-    return contracts.map(toLiteMarket)
-  }
-)
+export const searchMarketsLite: APIHandler<'search-markets'> = async (
+  props,
+  auth,
+  { logError }
+) => {
+  const contracts = await search(props, auth?.uid, logError)
+  return contracts.map(toLiteMarket)
+}
 
-export const searchMarketsFull = typedEndpoint(
-  'search-markets-full',
-  async (props, auth, { logError }) => {
-    return await search(props, auth?.uid, logError)
-  }
-)
+export const searchMarketsFull: APIHandler<'search-markets-full'> = async (
+  props,
+  auth,
+  { logError }
+) => {
+  return await search(props, auth?.uid, logError)
+}
 
 // TODO: delete after a few days
 export const searchMarketsLegacy = MaybeAuthedEndpoint(

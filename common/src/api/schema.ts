@@ -99,14 +99,15 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
-  'cancel-bet': {
+  'bet/cancel/:betId': {
     method: 'POST',
     visibility: 'public',
     authed: true,
     props: z.object({ betId: z.string() }).strict(),
     returns: {} as LimitBet,
   },
-  'sell-shares': {
+  // sell shares
+  'market/:contractId/sell': {
     method: 'POST',
     visibility: 'public',
     authed: true,
@@ -145,16 +146,49 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
-  group: {
+  // deprecated. use /bets?username= instead
+  'user/:username/bets': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    cache: 'max-age=15, public',
+    returns: [] as Bet[],
+    props: z
+      .object({
+        username: z.string(),
+        limit: z.coerce.number().gte(0).lte(1000).default(1000),
+      })
+      .strict(),
+  },
+  'group/:slug': {
     method: 'GET',
     visibility: 'public',
     authed: false,
     cache: 'no-cache',
     returns: {} as Group,
-    props: z.union([
-      z.object({ id: z.string() }),
-      z.object({ slug: z.string() }),
-    ]),
+    props: z.object({ slug: z.string() }),
+  },
+  'group/by-id/:id': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    cache: 'no-cache',
+    returns: {} as Group,
+    props: z.object({ id: z.string() }).strict(),
+  },
+  // deprecated. use /markets?groupId= instead
+  'group/by-id/:id/markets': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    cache: marketCacheStrategy,
+    returns: [] as LiteMarket[],
+    props: z
+      .object({
+        id: z.string(),
+        limit: z.coerce.number().gte(0).lte(1000).default(500),
+      })
+      .strict(),
   },
   groups: {
     method: 'GET',
@@ -169,24 +203,39 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
-  market: {
+  'market/:id': {
     method: 'GET',
     visibility: 'public',
     authed: false,
     returns: {} as LiteMarket | FullMarket,
     cache: marketCacheStrategy,
-    props: z
-      .union([z.object({ id: z.string() }), z.object({ slug: z.string() })])
-      .and(z.object({ lite: z.boolean().optional() })),
+    props: z.object({ id: z.string(), lite: z.boolean().optional() }),
   },
-  'create-market': {
+  // deprecated. use /market/:id?lite=true instead
+  'market/:id/lite': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    returns: {} as LiteMarket,
+    cache: marketCacheStrategy,
+    props: z.object({ id: z.string() }),
+  },
+  'slug/:slug': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    returns: {} as LiteMarket | FullMarket,
+    cache: marketCacheStrategy,
+    props: z.object({ slug: z.string(), lite: z.boolean().optional() }),
+  },
+  market: {
     method: 'POST',
     visibility: 'public',
     authed: true,
     returns: {} as LiteMarket,
     props: createMarketProps,
   },
-  close: {
+  'market/:contractId/close': {
     method: 'POST',
     visibility: 'public',
     authed: true,
@@ -198,13 +247,13 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
-  resolve: {
+  'market/:contractId/resolve': {
     method: 'POST',
     visibility: 'public',
     authed: true,
     props: resolveMarketProps,
   },
-  'add-liquidity': {
+  'market/:contractId/add-liquidity': {
     method: 'POST',
     visibility: 'public',
     authed: true,
@@ -216,7 +265,7 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
-  'add-bounty': {
+  'market/:contractId/add-bounty': {
     method: 'POST',
     visibility: 'public',
     authed: true,
@@ -228,7 +277,7 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
-  'award-bounty': {
+  'market/:contractId/award-bounty': {
     method: 'POST',
     visibility: 'public',
     authed: true,
@@ -241,8 +290,8 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
-  'update-tag': {
-    method: 'PUT',
+  'market/:contractId/group': {
+    method: 'POST',
     visibility: 'public',
     authed: true,
     props: z
@@ -253,7 +302,7 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
-  'add-answer': {
+  'market/:contractId/answer': {
     method: 'POST',
     visibility: 'public',
     authed: true,
@@ -310,7 +359,7 @@ export const API = (_apiTypeCheck = {
     returns: [] as Contract[],
     props: searchProps,
   },
-  'send-mana': {
+  managram: {
     method: 'POST',
     visibility: 'public',
     authed: true,
@@ -338,7 +387,7 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
-  positions: {
+  'market/:id/positions': {
     method: 'GET',
     visibility: 'public',
     authed: false,
@@ -361,16 +410,21 @@ export const API = (_apiTypeCheck = {
     props: z.object({}),
     returns: {} as User,
   },
-  user: {
+  'user/:username': {
     method: 'GET',
     visibility: 'public',
     authed: false,
     cache: 'no-cache',
     returns: {} as LiteUser,
-    props: z.union([
-      z.object({ id: z.string() }),
-      z.object({ username: z.string() }),
-    ]),
+    props: z.object({ username: z.string() }),
+  },
+  'user/by-id/:id': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    cache: 'no-cache',
+    returns: {} as LiteUser,
+    props: z.object({ id: z.string() }).strict(),
   },
   users: {
     method: 'GET',

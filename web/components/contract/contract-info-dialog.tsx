@@ -369,7 +369,7 @@ export const Stats = (props: {
                 on={isPublic && contract.isRanked !== false}
                 setOn={(on) => {
                   toast.promise(
-                    api('update-tag', {
+                    api('market/:contractId/group', {
                       contractId: contract.id,
                       groupId: UNRANKED_GROUP_ID,
                       remove: on,
@@ -406,7 +406,7 @@ export const Stats = (props: {
                 on={isPublic && contract.isSubsidized !== false}
                 setOn={(on) => {
                   toast.promise(
-                    api('update-tag', {
+                    api('market/:contractId/group', {
                       contractId: contract.id,
                       groupId: UNSUBSIDIZED_GROUP_ID,
                       remove: on,
