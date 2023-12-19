@@ -390,29 +390,24 @@ export function ContractPageContent(props: ContractParams) {
               )}
             </Row>
           </div>
-          <Col
-            className={clsx(
-              'mb-4 p-4 pt-0 md:pb-8 lg:px-8',
-              coverImageUrl ? 'pt-2' : ''
-            )}
-          >
+          {coverImageUrl && (
+            <Row className="w-full justify-between pb-1 pr-2">
+              <Col className="my-auto">
+                <BackButton />
+              </Col>
+              <HeaderActions contract={contract}>
+                {!coverImageUrl && isCreator && (
+                  <ChangeBannerButton
+                    contract={contract}
+                    className="ml-3 first:ml-0"
+                  />
+                )}
+              </HeaderActions>
+            </Row>
+          )}
+          <Col className={clsx('mb-4 p-4 pt-0 md:pb-8 lg:px-8')}>
             <Col className="w-full gap-3 lg:gap-4">
               <Col>
-                {coverImageUrl && (
-                  <Row className=" w-full justify-between">
-                    <Col className="my-auto">
-                      <BackButton />
-                    </Col>
-                    <HeaderActions contract={contract}>
-                      {!coverImageUrl && isCreator && (
-                        <ChangeBannerButton
-                          contract={contract}
-                          className="ml-3 first:ml-0"
-                        />
-                      )}
-                    </HeaderActions>
-                  </Row>
-                )}
                 <div ref={titleRef}>
                   <VisibilityIcon
                     contract={contract}
