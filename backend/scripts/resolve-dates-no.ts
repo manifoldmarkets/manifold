@@ -15,7 +15,8 @@ if (require.main === module) {
     where data ->> 'loverUserId1' is not null
       and outcome_type = 'MULTIPLE_CHOICE'
       and resolution is null
-      and (data -> 'answers' -> 0 ->> 'text') LIKE '%Dec 11%';
+      and (data -> 'answers' -> 0 ->> 'text') LIKE '%Dec 11%'
+      and (data -> 'answers' -> 0 ->> 'resolution') is null
   `,
       [],
       (r) => r.data
