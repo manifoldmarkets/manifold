@@ -48,14 +48,11 @@ export const fetchBackend = (req: NextRequest, path: string) => {
     'Origin',
   ])
   const hasBody = req.method != 'HEAD' && req.method != 'GET'
-  const body = req.body
-    ? JSON.stringify(req.body)
-    : (req as unknown as ReadableStream)
   const opts = {
     headers,
     method: req.method,
     duplex: 'half',
-    body: hasBody ? body : null,
+    body: hasBody ? req.body : null,
   }
   return fetch(url, opts)
 }
