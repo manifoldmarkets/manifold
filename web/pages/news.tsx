@@ -8,8 +8,9 @@ import { Title } from 'web/components/widgets/title'
 import { useSaveCampaign } from 'web/hooks/use-save-campaign'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { getNewsDashboards } from 'web/lib/firebase/api'
-import { LinkPreviews, fetchLinkPreviews } from 'common/link-preview'
+import { LinkPreviews } from 'common/link-preview'
 import { useUser } from 'web/hooks/use-user'
+import { fetchLinkPreviews } from 'web/lib/util/link-previews'
 
 export async function getStaticProps() {
   const dashboards = (await getNewsDashboards()) as Dashboard[]

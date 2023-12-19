@@ -14,6 +14,7 @@ import { Bet } from 'common/bet'
 import { API, APIPath, APIParams, APIResponse } from 'common/api/schema'
 import { forEach } from 'lodash'
 import { removeUndefinedProps } from 'common/util/object'
+import { cache } from 'react'
 
 export { APIError } from 'common/api/utils'
 
@@ -394,13 +395,15 @@ export function deleteDashboard(params: { dashboardId: string }) {
   return call(getApiUrl('delete-dashboard'), 'POST', params)
 }
 
-export function getDashboardFromSlug(params: { dashboardSlug: string }) {
-  return maybeAuthedCall(
-    getApiUrl('getdashboardfromslug'),
-    'POST',
-    params
-  ) as Promise<Dashboard>
-}
+export const getDashboardFromSlug = cache(
+  (params: { dashboardSlug: string }) => {
+    return maybeAuthedCall(
+      getApiUrl('getdashboardfromslug'),
+      'POST',
+      params
+    ) as Promise<Dashboard>
+  }
+)
 
 export function referUser(params: {
   referredByUsername: string

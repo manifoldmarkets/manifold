@@ -7,9 +7,7 @@ import {
   useUser,
   useUserById,
 } from 'web/hooks/use-user'
-import Custom404 from 'web/pages/404'
 import { BlockedUser } from 'web/components/profile/blocked-user'
-import Head from 'next/head'
 import { Title } from 'web/components/widgets/title'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useRouter, usePathname } from 'next/navigation'
@@ -17,7 +15,6 @@ import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { useEffect, useState } from 'react'
 import { useHeaderIsStuck } from 'web/hooks/use-header-is-stuck'
 import { db } from 'web/lib/supabase/db'
-import { SEO } from 'web/components/SEO'
 import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -28,11 +25,7 @@ import { MoreOptionsUserButton } from 'web/components/buttons/more-options-user-
 import ImageWithBlurredShadow from 'web/components/widgets/image-with-blurred-shadow'
 import { Avatar } from 'web/components/widgets/avatar'
 import Link from 'next/link'
-import {
-  ChatAlt2Icon,
-  CurrencyDollarIcon,
-  PencilIcon,
-} from '@heroicons/react/outline'
+import { ChatAlt2Icon, CurrencyDollarIcon } from '@heroicons/react/outline'
 import { DailyLeagueStat } from 'web/components/daily-league-stat'
 import { QuestsOrStreak } from 'web/components/quests-or-streak'
 import { FollowButton } from 'web/components/buttons/follow-button'
@@ -64,17 +57,13 @@ import { FollowList } from 'web/components/follow-list'
 import { PoliticsPage } from 'politics/components/politics-page'
 import { useDefinedSearchParams } from 'web/hooks/use-defined-search-params'
 
-export default function UserPage(props: {
-  user: User | null
-  username: string
-}) {
+export default function UserPage(props: { user: User; username: string }) {
   const isAdmin = useAdmin()
   const { user, ...profileProps } = props
   const privateUser = usePrivateUser()
   const blockedByCurrentUser =
     privateUser?.blockedUserIds.includes(user?.id ?? '_') ?? false
-  if (!user) return <Custom404 />
-  else if (user.userDeleted && !isAdmin) return <DeletedUser />
+  if (user.userDeleted && !isAdmin) return <DeletedUser />
 
   return privateUser && blockedByCurrentUser ? (
     <BlockedUser user={user} privateUser={privateUser} />
@@ -86,9 +75,6 @@ export default function UserPage(props: {
 export const DeletedUser = () => {
   return (
     <PoliticsPage trackPageView={'deleted user profile'}>
-      <Head>
-        <meta name="robots" content="noindex, nofollow" />
-      </Head>
       <div className="flex h-full flex-col items-center justify-center">
         <Title>Deleted account page</Title>
         <p>This user has been deleted.</p>
@@ -145,18 +131,7 @@ function UserProfile(props: { user: User }) {
       trackPageView={'user page'}
       trackPageProps={{ username: user.username }}
     >
-      <SEO
-        title={`${user.name} (@${user.username})`}
-        description={user.bio ?? ''}
-        url={`/${user.username}`}
-      />
-      {(user.isBannedFromPosting || user.userDeleted) && (
-        <Head>
-          <meta name="robots" content="noindex, nofollow" />
-        </Head>
-      )}
       {showConfetti && <FullscreenConfetti />}
-
       <Col className="relative mt-1">
         {isMobile && (
           <Row
@@ -195,15 +170,15 @@ function UserProfile(props: { user: User }) {
                   />
                 }
               />
-              {isCurrentUser && (
-                <Link
-                  className=" bg-primary-600 shadow-primary-300 hover:bg-primary-700 text-ink-0 absolute bottom-0 right-0 h-6 w-6 rounded-full p-1.5 shadow-sm"
-                  href="/profile"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <PencilIcon className="text-ink-0 h-3.5 w-3.5 " />
-                </Link>
-              )}
+              {/*{isCurrentUser && (*/}
+              {/*  <Link*/}
+              {/*    className=" bg-primary-600 shadow-primary-300 hover:bg-primary-700 text-ink-0 absolute bottom-0 right-0 h-6 w-6 rounded-full p-1.5 shadow-sm"*/}
+              {/*    href="/profile"*/}
+              {/*    onClick={(e) => e.stopPropagation()}*/}
+              {/*  >*/}
+              {/*    <PencilIcon className="text-ink-0 h-3.5 w-3.5 " />*/}
+              {/*  </Link>*/}
+              {/*)}*/}
             </Col>
             <StackedUserNames
               usernameClassName={'sm:text-base'}

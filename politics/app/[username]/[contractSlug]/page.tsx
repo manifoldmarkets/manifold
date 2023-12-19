@@ -1,33 +1,44 @@
-import { PoliticsPage } from 'politics/components/politics-page'
-import type { Metadata, ResolvingMetadata } from 'next'
-import { run } from 'common/supabase/utils'
-import { Contract } from 'common/contract'
-// import { cache } from 'react'
 import { db } from 'web/lib/supabase/db'
-import { filterDefined } from 'common/util/array'
+import { getContractFromSlug } from 'common/supabase/contracts'
+import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
+import type { Metadata } from 'next'
+import { getContractParams } from 'politics/app/[username]/[contractSlug]/get-contract-params'
+import { ContractPage } from 'politics/app/[username]/[contractSlug]/contract-page'
 import Custom404 from 'politics/app/404/page'
+import { getContractOGProps, getSeoDescription } from 'common/contract-seo'
+import { removeUndefinedProps } from 'common/util/object'
+import { buildOgUrl } from 'common/util/og'
 
-export const dynamicParams = true
 export const revalidate = 15000 // revalidate at most in milliseconds
-
 export async function generateStaticParams() {
   return []
 }
-
-export async function generateMetadata(
-  props: { params: { contractSlug: string } },
-  parent: ResolvingMetadata
-): Promise<Metadata> {
-  const market = await getContractFromSlug(props.params.contractSlug)
-  if (!market) return { title: 'Not found' }
-  // optionally access and extend (rather than replace) parent metadata
-  const previousImages = (await parent).openGraph?.images || []
-
+export async function generateMetadata(props: {
+  params: { contractSlug: string }
+}): Promise<Metadata> {
+  const contract = await getContractFromSlug(props.params.contractSlug, db)
+  if (!contract) return { title: 'Not found' }
+  const description = getSeoDescription(contract)
+  const adminDb = await initSupabaseAdmin()
+  const params = await getContractParams(contract, adminDb)
+  const imageUrl = buildOgUrl(
+    removeUndefinedProps({
+      ...getContractOGProps(contract),
+      points: params.pointsString,
+    }) as Record<string, string>,
+    'market'
+  )
   return {
-    title: market.question,
+    title: contract.question,
     openGraph: {
-      images: filterDefined([market?.coverImageUrl, ...previousImages]),
+      images: [imageUrl],
+      url: `https://manifold.politics/${contract.creatorUsername}/${contract.slug}`,
     },
+    twitter: {
+      images: [imageUrl],
+    },
+    robots: contract.visibility === 'public' ? undefined : 'noindex, nofollow',
+    description,
   }
 }
 
@@ -36,22 +47,13 @@ export default async function Page({
 }: {
   params: { contractSlug: string }
 }) {
-  const market = await getContractFromSlug(params.contractSlug)
-  if (!market) return <Custom404 />
-  return (
-    <PoliticsPage
-      trackPageView={'politics market page'}
-      className={'bg-canvas-50'}
-    >
-      {market.question}
-    </PoliticsPage>
-  )
-}
+  const { contractSlug } = params
+  const adminDb = await initSupabaseAdmin()
+  const contract = (await getContractFromSlug(contractSlug, adminDb)) ?? null
+  if (!contract || contract.visibility === 'private' || contract.deleted) {
+    return <Custom404 />
+  }
 
-const getContractFromSlug = async (contractSlug: string) => {
-  const { data } = await run(
-    db.from('contracts').select('data').eq('slug', contractSlug)
-  )
-  if (data.length === 0) return null
-  return data[0].data as Contract
+  const props = await getContractParams(contract, adminDb)
+  return <ContractPage contractParams={props} />
 }

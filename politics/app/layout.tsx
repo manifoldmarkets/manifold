@@ -4,7 +4,11 @@ import '../styles/globals.css'
 import { Major_Mono_Display, Figtree } from 'next/font/google'
 import clsx from 'clsx'
 import { ThemeProvider } from 'web/components/theme-provider'
-import { Metadata } from 'next'
+import { Metadata, Viewport } from 'next'
+import { cookies } from 'next/headers'
+import { authenticateOnServer } from 'web/lib/firebase/server-auth'
+import { getUserAndPrivateUser } from 'web/lib/firebase/users'
+import { AUTH_COOKIE_NAME } from 'common/envs/constants'
 
 // See https://nextjs.org/docs/basic-features/font-optimization#google-fonts
 // and if you add a font, you must add it to tailwind config as well for it to work.
@@ -58,12 +62,25 @@ export const metadata: Metadata = {
     ],
   },
 }
-export const viewport = {
+export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
 }
-function RootLayout({ children }: { children: React.ReactNode }) {
+
+// Only renders once per session
+export default async function RootLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  const cookieStore = cookies()
+  const user = cookieStore.has(AUTH_COOKIE_NAME)
+    ? cookieStore.get(AUTH_COOKIE_NAME)
+    : null
+  const serverUser = await authenticateOnServer(user?.value)
+  const users = serverUser ? await getUserAndPrivateUser(serverUser.uid) : null
+  const authUser = users ? { ...users, authLoaded: true } : null
   return (
     <html>
       <body
@@ -73,8 +90,10 @@ function RootLayout({ children }: { children: React.ReactNode }) {
           mainFont.variable
         )}
       >
-        <AuthProvider>
-          <ThemeProvider>{children}</ThemeProvider>
+        <AuthProvider serverUser={authUser}>
+          <ThemeProvider>
+            <div className={'bg-canvas-50 text-ink-1000'}>{children}</div>
+          </ThemeProvider>
         </AuthProvider>
         {/* Workaround for https://github.com/tailwindlabs/headlessui/discussions/666, to allow font CSS variable */}
         <div id="headlessui-portal-root">
@@ -122,5 +141,3 @@ function RootLayout({ children }: { children: React.ReactNode }) {
     </html>
   )
 }
-
-export default RootLayout

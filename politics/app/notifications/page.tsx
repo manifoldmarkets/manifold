@@ -2,7 +2,6 @@
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { useState } from 'react'
-import { SEO } from 'web/components/SEO'
 import { Row } from 'web/components/layout/row'
 import {
   ExclamationIcon,
@@ -36,12 +35,7 @@ export default function NotificationsPage() {
 
   return (
     <PoliticsPage trackPageView={'notifications page'}>
-      <div className="w-full">
-        {/* <Title className="hidden lg:block">Notifications</Title> */}
-        <SEO
-          title="Notifications"
-          description="Manifold Politics user notifications"
-        />
+      <div>
         <Tabs
           tabs={[
             {
@@ -84,9 +78,20 @@ function NotificationsContent(props: { privateUser: PrivateUser; user: User }) {
   )
 }
 
-const userInteractions: NotificationSectionData = {
-  label: 'Users',
-  subscriptionTypes: ['new_message', 'new_match', 'new_endorsement'],
+const notificationSectionData: NotificationSectionData = {
+  label: 'General',
+  subscriptionTypes: [
+    'contract_from_followed_user',
+    'trending_markets',
+    'quest_payout',
+    'betting_streaks',
+    'profit_loss_updates',
+    'tagged_user',
+    'all_replies_to_my_comments_on_watched_markets',
+    'all_replies_to_my_answers_on_watched_markets',
+    'resolutions_on_watched_markets',
+    'resolutions_on_watched_markets_with_shares_in',
+  ],
 }
 function NotificationSettings(props: {
   navigateToSection: string | undefined
@@ -113,7 +118,7 @@ function NotificationSettings(props: {
 
         <NotificationSection
           icon={<UserIcon className={'h-6 w-6'} />}
-          data={userInteractions}
+          data={notificationSectionData}
         />
 
         <NotificationSection

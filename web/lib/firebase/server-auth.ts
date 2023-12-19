@@ -1,4 +1,3 @@
-import { IncomingMessage, ServerResponse } from 'http'
 import { User as FirebaseUser } from 'firebase/auth'
 import { AUTH_COOKIE_NAME } from 'common/envs/constants'
 import { getCookiesFromString } from 'web/lib/util/cookie'
@@ -13,16 +12,8 @@ import { app as clientApp } from './init'
 
 import { setFirebaseUserViaJson } from 'common/firebase-auth'
 
-type RequestContext = {
-  req: IncomingMessage
-  res: ServerResponse
-}
-
-export const authenticateOnServer = async (ctx: RequestContext) => {
-  const user = getCookiesFromString(ctx.req.headers.cookie ?? '')[
-    AUTH_COOKIE_NAME
-  ]
-  if (user == null) {
+export const authenticateOnServer = async (user: string | null | undefined) => {
+  if (!user) {
     console.debug('User is unauthenticated.')
     return null
   }
@@ -43,7 +34,9 @@ export const redirectIfLoggedIn = <P extends { [k: string]: any }>(
   fn?: GetServerSideProps<P>
 ) => {
   return async (ctx: GetServerSidePropsContext) => {
-    const creds = await authenticateOnServer(ctx)
+    const creds = await authenticateOnServer(
+      getCookiesFromString(ctx.req.headers.cookie ?? '')[AUTH_COOKIE_NAME]
+    )
     if (creds == null) {
       if (fn == null) {
         return { props: {} }
@@ -70,7 +63,9 @@ export const redirectIfLoggedOut = <P extends { [k: string]: any }>(
   fn?: GetServerSidePropsAuthed<P>
 ) => {
   return async (ctx: GetServerSidePropsContext) => {
-    const creds = await authenticateOnServer(ctx)
+    const creds = await authenticateOnServer(
+      getCookiesFromString(ctx.req.headers.cookie ?? '')[AUTH_COOKIE_NAME]
+    )
     if (creds == null) {
       console.debug(`Redirecting to ${dest}.`)
       return { redirect: { destination: dest, permanent: false } }

@@ -1,11 +1,6 @@
 'use client'
+import { CashIcon, HomeIcon } from '@heroicons/react/outline'
 import {
-  CashIcon,
-  HomeIcon,
-  QuestionMarkCircleIcon,
-} from '@heroicons/react/outline'
-import {
-  QuestionMarkCircleIcon as SolidQuestionIcon,
   HomeIcon as SolidHomeIcon,
   UserCircleIcon,
 } from '@heroicons/react/solid'
@@ -68,7 +63,7 @@ export function PoliticsPage(props: {
       <Col
         className={clsx(
           'pb-[58px] lg:pb-0', // bottom bar padding
-          'text-ink-1000 mx-auto min-h-screen w-full max-w-[1440px] lg:grid lg:grid-cols-12'
+          'mx-auto min-h-screen w-full max-w-[1440px] lg:grid lg:grid-cols-12'
         )}
       >
         <Toaster
@@ -130,7 +125,6 @@ function getBottomNavigation(user: User) {
 
 const signedOutNavigation = () => [
   { name: 'Home', href: '/', icon: SolidHomeIcon },
-  { name: 'About', href: '/about', icon: SolidQuestionIcon },
   {
     name: 'Sign in',
     onClick: firebaseLogin,
@@ -154,10 +148,7 @@ const getDesktopNav = (user: User | null | undefined) => {
       }
     )
 
-  return buildArray(
-    { name: 'Home', href: '/', icon: HomeIcon },
-    { name: 'About', href: '/about', icon: QuestionMarkCircleIcon }
-  )
+  return buildArray({ name: 'Home', href: '/', icon: HomeIcon })
 }
 
 // No sidebar when signed out

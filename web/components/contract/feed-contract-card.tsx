@@ -6,7 +6,7 @@ import { ContractCardView } from 'common/events'
 import { User } from 'common/user'
 import { formatMoney, shortFormatNumber } from 'common/util/format'
 import Link from 'next/link'
-import { useRouter } from 'next/router'
+import { useRouter } from 'next/navigation'
 import { ClaimButton } from 'web/components/ad/claim-ad-button'
 import {
   ContractStatusLabel,

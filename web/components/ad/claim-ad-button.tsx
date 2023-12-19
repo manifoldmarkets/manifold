@@ -12,7 +12,7 @@ export function ClaimButton(props: {
   adId: string
   reward: number
   className?: string
-  onClaim: () => Promise<any>
+  onClaim: () => void
 }) {
   const { adId, reward, className, onClaim } = props
 
@@ -44,7 +44,7 @@ export function ClaimButton(props: {
         e.stopPropagation()
         setLoading(true)
         try {
-          await onClaim()
+          onClaim()
           await redeemBoost({ adId })
           toast.success(`Boost claimed! +${formatMoney(reward)}`)
           setClaimed(true)

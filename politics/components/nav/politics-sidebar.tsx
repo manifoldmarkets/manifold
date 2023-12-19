@@ -5,7 +5,6 @@ import {
   MoonIcon,
   SunIcon,
   SparklesIcon,
-  QuestionMarkCircleIcon,
   LoginIcon,
 } from '@heroicons/react/outline'
 import clsx from 'clsx'
@@ -92,7 +91,6 @@ const bottomNav = (
   return buildArray(
     { name: 'Share with friends', href: '/referrals', icon: HeartIcon },
     !loggedIn && { name: 'Sign in', icon: LoginIcon, onClick: firebaseLogin },
-    loggedIn && { name: 'About', href: '/about', icon: QuestionMarkCircleIcon },
     {
       name: theme === 'auto' ? 'Auto' : capitalize(theme),
       icon:

@@ -144,7 +144,7 @@ export const getSingleBetPoints = (
   return points.map((p) => [p.x, p.y] as const)
 }
 
-const getMultiBetPoints = (
+export const getMultiBetPoints = (
   betPoints: { x: number; y: number; answerId: string }[],
   contract: CPMMMultiContract
 ) => {

@@ -1,5 +1,4 @@
 import { getLinkPreview } from 'link-preview-js'
-import { keyBy } from 'lodash'
 import { removeUndefinedProps } from './util/object'
 
 export type LinkPreview = {
@@ -36,12 +35,4 @@ export async function fetchLinkPreview(url: string) {
     console.error(error)
     return undefined
   }
-}
-
-export async function fetchLinkPreviews(urls: string[]) {
-  const previews = (await Promise.all(urls.map(fetchLinkPreview))).filter(
-    (preview): preview is LinkPreview => preview !== undefined
-  )
-
-  return keyBy(previews, 'url')
 }

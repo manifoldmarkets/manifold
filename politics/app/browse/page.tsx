@@ -1,35 +1,30 @@
-import type { Metadata, ResolvingMetadata } from 'next'
+import type { Metadata } from 'next'
+import { getGroupBySlug } from 'web/lib/supabase/groups'
+import { PoliticsPage } from 'politics/components/politics-page'
 
 type Props = {
   // aka queryparams
   searchParams: { [key: string]: string | string[] | undefined }
 }
 
-export async function generateMetadata(
-  { searchParams }: Props,
-  parent: ResolvingMetadata
-): Promise<Metadata> {
+export async function generateMetadata({
+  searchParams,
+}: Props): Promise<Metadata> {
   console.log('searchParams', searchParams)
   // fetch data
-  const group = await fetch(
-    `https://api.manifold.markets/v0/group?slug=${searchParams.topic}`
-  ).then((res) => res.json())
-  console.log('group', group)
-  // optionally access and extend (rather than replace) parent metadata
-  const previousImages = (await parent).openGraph?.images || []
+  const group = await getGroupBySlug(searchParams.topic as string)
+  if (!group) return { title: 'Not found' }
 
   return {
     title: group.name,
-    openGraph: {
-      images: ['/dgg-logo.png', ...previousImages],
-    },
+    description: `Browse questions about ${group.name} on Manifold`,
   }
 }
 
 export default function Page({ searchParams }: Props) {
   return (
-    <div>
+    <PoliticsPage trackPageView={'browse page'}>
       <h1>{searchParams.topic}</h1>
-    </div>
+    </PoliticsPage>
   )
 }
