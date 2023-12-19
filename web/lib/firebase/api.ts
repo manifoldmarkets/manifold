@@ -66,7 +66,13 @@ export async function maybeAuthedCall(
 // TODO: use this for all calls
 export function api<P extends APIPath>(path: P, params: APIParams<P>) {
   const { method } = API[path]
-  return call(getApiUrl(path), method, params) as Promise<APIResponse<P>>
+  // parse any params that should part of the path (like market/:id)
+  let url = getApiUrl(path)
+  forEach(params, (v, k) => {
+    url = url.replace(`:${k}`, v + '')
+  })
+
+  return call(url, method, params) as Promise<APIResponse<P>>
 }
 
 export function lootbox() {
