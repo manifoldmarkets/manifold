@@ -39,9 +39,9 @@ create or replace view
     from
       listed_open_contracts
     where
-      listed_open_contracts.popularity_score > 0
+      listed_open_contracts.importance_score > 0
     order by
-      popularity_score desc
+      importance_score desc
   );
 
 create or replace view
@@ -49,7 +49,7 @@ create or replace view
     select
       ce1.contract_id as id1,
       ce2.contract_id as id2,
-      ce1.embedding <= > ce2.embedding as distance
+      ce1.embedding <=> ce2.embedding as distance
     from
       contract_embeddings ce1
       cross join contract_embeddings ce2
@@ -76,7 +76,7 @@ create or replace view
     select
       user_id,
       contract_id,
-      user_embeddings.interest_embedding <= > contract_embeddings.embedding as distance
+      user_embeddings.interest_embedding <=> contract_embeddings.embedding as distance
     from
       user_embeddings
       cross join contract_embeddings

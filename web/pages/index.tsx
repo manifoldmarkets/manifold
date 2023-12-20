@@ -23,20 +23,35 @@ import { CPMMBinaryContract, Contract } from 'common/contract'
 import { db } from 'web/lib/supabase/db'
 import { DEEMPHASIZED_GROUP_SLUGS } from 'common/envs/constants'
 import { useUser } from 'web/hooks/use-user'
+import { some } from 'd3-array'
 
 const excluded = [...DEEMPHASIZED_GROUP_SLUGS, 'manifold-6748e065087e']
 
 export const getServerSideProps = redirectIfLoggedIn('/home', async (_) => {
-  const { data } = await db.from('trending_contracts').select('data').limit(20)
+  const { data } = await db
+    .from('trending_contracts')
+    .select('data')
+    .neq('outcome_type', 'STONK')
+    .gt('data->uniqueBettorCount', 10)
+    .limit(50)
   const contracts = (data ?? []).map((d) => d.data) as Contract[]
-  const trendingContracts = contracts
-    .filter(
-      (c) => !c.groupSlugs?.some((slug) => excluded.includes(slug as any))
-    )
-    .filter((c) => c.outcomeType !== 'STONK')
-    .slice(0, 7)
+  const filteredContracts = contracts.filter(
+    (c) => !c.groupSlugs?.some((slug) => excluded.includes(slug as any))
+  )
+
+  const hasCommonGroupSlug = (contract: Contract, groupSlugsSet: string[]) =>
+    some(contract.groupSlugs ?? [], (slug) => groupSlugsSet.includes(slug))
+
+  const addedGroupSlugs: string[] = []
+  const uniqueContracts: Contract[] = []
+  filteredContracts.forEach((contract) => {
+    if (!hasCommonGroupSlug(contract, addedGroupSlugs)) {
+      uniqueContracts.push(contract)
+      addedGroupSlugs.push(...(contract.groupSlugs ?? []))
+    }
+  })
   return {
-    props: { trendingContracts },
+    props: { trendingContracts: uniqueContracts.slice(0, 7) },
   }
 })
 
@@ -141,7 +156,11 @@ export default function LandingPage(props: {
               </div>
             </Col>
             <Col className="hidden sm:flex">
-              <img src="welcome/manipurple.png" width={220} />
+              <img
+                src="welcome/manipurple.png"
+                width={220}
+                alt={'manifold logo'}
+              />
             </Col>
           </Row>
         </Col>
