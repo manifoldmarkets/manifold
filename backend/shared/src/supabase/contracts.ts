@@ -335,8 +335,12 @@ export const isContractNonPredictive = (contract: Contract) => {
     .trim()
     .toLowerCase()
     .includes('daily coinflip')
+  const questionIncludesCloseHigher = contract.question
+    .trim()
+    .toLowerCase()
+    .includes('close higher')
   const createdByManifoldLove = contract.creatorUsername === 'ManifoldLove'
-  return questionIncludesDailyCoinflip || createdByManifoldLove
+  return questionIncludesDailyCoinflip || questionIncludesCloseHigher || createdByManifoldLove
   // return (
   //   await pg.map(
   //     `
