@@ -4,7 +4,7 @@ import { Dashboard, DashboardLinkItem } from 'common/dashboard'
 import { getDashboardFromSlug } from 'web/lib/firebase/api'
 import Custom404 from '../404'
 import { fetchLinkPreviews, LinkPreviews } from 'common/link-preview'
-import { FoundDashboardPage } from 'web/pages/dashboard/found-dashboard-page'
+import FoundDashboardPage from 'web/pages/dashboard/found-dashboard-page'
 import { Page } from 'web/components/layout/page'
 
 export async function getStaticProps(ctx: {
