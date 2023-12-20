@@ -3,7 +3,6 @@ import { ReactNode, useState } from 'react'
 import { ChevronRightIcon } from '@heroicons/react/solid'
 import { User } from 'common/user'
 import { CreateableOutcomeType, add_answers_mode } from 'common/contract'
-import { VisibilityTheme } from 'web/pages/create'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { ChoosingContractForm } from './choosing-contract-form'
@@ -48,10 +47,6 @@ export function NewContractPanel(props: {
     params?.outcomeType ? 'filling contract params' : 'choosing contract'
   )
 
-  const [privacy, setPrivacy] = useState<VisibilityTheme>(
-    params && params.visibility === 'private' ? 'private' : 'non-private'
-  )
-
   return (
     <Col
       className={clsx(
@@ -61,7 +56,7 @@ export function NewContractPanel(props: {
       <CreateStepTracker
         outcomeType={outcomeType}
         setState={setState}
-        privacy={privacy}
+        privacy={'non-private'}
       />
       <Col className={clsx('px-6 py-2')}>
         {state == 'choosing contract' && (
@@ -75,7 +70,6 @@ export function NewContractPanel(props: {
           <ContractParamsForm
             outcomeType={outcomeType}
             creator={creator}
-            setPrivacy={setPrivacy}
             params={params}
           />
         )}
@@ -87,7 +81,7 @@ export function NewContractPanel(props: {
 function CreateStepTracker(props: {
   outcomeType: CreateableOutcomeType | undefined
   setState: (state: CreateContractStateType) => void
-  privacy: VisibilityTheme
+  privacy: 'non-private' | 'private'
 }) {
   const { outcomeType, setState, privacy } = props
   return (

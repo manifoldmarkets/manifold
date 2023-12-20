@@ -1,5 +1,4 @@
-import { useRouter } from 'next/router'
-
+'use client'
 import { SEO } from 'web/components/SEO'
 import { Page } from 'web/components/layout/page'
 import {
@@ -9,20 +8,23 @@ import {
 import { Title } from 'web/components/widgets/title'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { useUser } from 'web/hooks/use-user'
+import { useDefinedSearchParams } from 'web/hooks/use-defined-search-params'
 
-export type VisibilityTheme = 'private' | 'non-private'
-
-export default function Create() {
+export default function CreatePage() {
   useRedirectIfSignedOut()
 
   const user = useUser()
-  const router = useRouter()
-  const { params: jsonParams } = router.query
-  const params = jsonParams
-    ? JSON.parse(jsonParams as string)
+  const { searchParams } = useDefinedSearchParams()
+  const paramsEntries = Object.fromEntries(searchParams.entries())
+  const params = searchParams
+    ? (Object.fromEntries(
+        Object.keys(paramsEntries).map((key) => [
+          key,
+          JSON.parse(paramsEntries[key]),
+        ])
+      ).params as NewQuestionParams)
     : ({} as NewQuestionParams)
-
-  if (!user || !router.isReady) return <div />
+  if (!user) return <div />
 
   if (user.isBannedFromPosting)
     return (

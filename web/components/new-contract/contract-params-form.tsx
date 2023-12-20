@@ -3,7 +3,6 @@ import router from 'next/router'
 import { useEffect, useState } from 'react'
 import { XIcon } from '@heroicons/react/outline'
 import { uniqBy } from 'lodash'
-import { toast } from 'react-hot-toast'
 import { generateJSON } from '@tiptap/core'
 import clsx from 'clsx'
 
@@ -63,8 +62,7 @@ import { safeLocalStorage } from 'web/lib/util/local'
 import { Col } from '../layout/col'
 import { BuyAmountInput } from '../widgets/amount-input'
 import { getContractTypeThingFromValue } from './create-contract-types'
-import { ContractVisibilityType, NewQuestionParams } from './new-contract-panel'
-import { VisibilityTheme } from 'web/pages/create'
+import { NewQuestionParams } from './new-contract-panel'
 import { getContractWithFields } from 'web/lib/supabase/contracts'
 import { filterDefined } from 'common/util/array'
 import { TopicTag } from 'web/components/topics/topic-tag'
@@ -72,14 +70,14 @@ import { LiteMarket } from 'common/api/market-types'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { ContractMention } from 'web/components/contract/contract-mention'
 import { compareTwoStrings } from 'string-similarity'
+import { toast } from 'react-hot-toast'
 const DUPES_TO_SHOW = 3
 export function ContractParamsForm(props: {
   creator: User
   outcomeType: CreateableOutcomeType
-  setPrivacy: (theme: VisibilityTheme) => void
   params?: NewQuestionParams
 }) {
-  const { creator, params, setPrivacy, outcomeType } = props
+  const { creator, params, outcomeType } = props
   const paramsKey =
     (params?.q ?? '') +
     (params?.groupSlugs?.join('') ?? '') +
@@ -102,7 +100,7 @@ export function ContractParamsForm(props: {
     'new-init-value' + paramsKey
   )
   const [visibility, setVisibility] = usePersistentLocalState<Visibility>(
-    (params?.visibility as Visibility) ?? 'public',
+    (params?.visibility ?? 'public') as Visibility,
     `new-visibility` + paramsKey
   )
 
@@ -144,7 +142,9 @@ export function ContractParamsForm(props: {
     if (params?.groupIds) {
       const getAndSetGroups = async (groupIds: string[]) => {
         const groups = await Promise.all(groupIds.map((id) => getGroup(id)))
-        setSelectedGroups(filterDefined(groups))
+        setSelectedGroups(
+          filterDefined(groups).filter((g) => g.privacyStatus !== 'private')
+        )
       }
       getAndSetGroups(params.groupIds)
     }
@@ -153,7 +153,9 @@ export function ContractParamsForm(props: {
         const groups = await Promise.all(
           groupSlugs.map((s) => getGroupFromSlug(s))
         )
-        setSelectedGroups(filterDefined(groups))
+        setSelectedGroups(
+          filterDefined(groups).filter((g) => g.privacyStatus !== 'private')
+        )
       }
       getAndSetGroupsViaSlugs(params.groupSlugs)
     }
@@ -288,7 +290,6 @@ export function ContractParamsForm(props: {
     ante !== null &&
     (ante <= balance || creator.id === BTE_USER_ID) &&
     isValidDate &&
-    visibility !== 'private' &&
     (outcomeType !== 'PSEUDO_NUMERIC' ||
       (min !== undefined &&
         max !== undefined &&
@@ -415,17 +416,6 @@ export function ContractParamsForm(props: {
     }
   }
   const [bountyError, setBountyError] = useState<string | undefined>(undefined)
-  const [toggleVisibility, setToggleVisibility] =
-    useState<ContractVisibilityType>('public')
-  useEffect(() => {
-    if (selectedGroups.some((g) => g.privacyStatus == 'private')) {
-      setVisibility('private')
-      setPrivacy('private')
-    } else {
-      setVisibility(toggleVisibility)
-      setPrivacy('non-private')
-    }
-  }, [selectedGroups?.length, toggleVisibility])
 
   const finishedTypingQuestion = async () => {
     const trimmed = question.toLowerCase().trim()
@@ -645,7 +635,7 @@ export function ContractParamsForm(props: {
                 location={'create page'}
                 key={group.id}
                 topic={group}
-                isPrivate={group.privacyStatus === 'private'}
+                isPrivate={false}
                 className="bg-ink-100"
               >
                 <button
@@ -665,16 +655,8 @@ export function ContractParamsForm(props: {
         )}
         <TopicSelector
           setSelectedGroup={(group) => {
-            if (
-              (selectedGroups.length > 0 &&
-                group.privacyStatus === 'private') ||
-              (selectedGroups.length > 0 &&
-                selectedGroups.some((g) => g.privacyStatus === 'private'))
-            ) {
-              toast(
-                `Questions are only allowed one topic if the topic is private.`,
-                { icon: '🚫' }
-              )
+            if (group.privacyStatus === 'private') {
+              toast.error('You cannot use private groups.')
               return
             }
             setSelectedGroups((groups) =>
@@ -765,26 +747,25 @@ export function ContractParamsForm(props: {
           )}
         </Col>
       )}
-      {visibility != 'private' && (
-        <Row className="mt-2 items-center gap-2">
-          <span>
-            Publicly listed{' '}
-            <InfoTooltip
-              text={
-                visibility === 'public'
-                  ? 'Visible on home page and search results'
-                  : "Only visible via link. Won't notify followers"
-              }
-            />
-          </span>
-          <ShortToggle
-            on={toggleVisibility === 'public'}
-            setOn={(on) => {
-              setToggleVisibility(on ? 'public' : 'unlisted')
-            }}
+
+      <Row className="mt-2 items-center gap-2">
+        <span>
+          Publicly listed{' '}
+          <InfoTooltip
+            text={
+              visibility === 'public'
+                ? 'Visible on home page and search results'
+                : "Only visible via link. Won't notify followers"
+            }
           />
-        </Row>
-      )}
+        </span>
+        <ShortToggle
+          on={visibility === 'public'}
+          setOn={(on) => {
+            setVisibility(on ? 'public' : 'unlisted')
+          }}
+        />
+      </Row>
       <Col className="items-start">
         <label className="mb-1 gap-2 px-1 py-2">
           <span>Cost </span>

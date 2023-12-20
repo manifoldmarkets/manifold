@@ -11,7 +11,6 @@ import {
 import { animated } from '@react-spring/web'
 import { Transition, Dialog } from '@headlessui/react'
 import { useState, Fragment } from 'react'
-import { useRouter } from 'next/router'
 
 import Sidebar from './sidebar'
 import { Item } from './sidebar-item'
@@ -26,6 +25,7 @@ import { Col } from '../layout/col'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { useAnimatedNumber } from 'web/hooks/use-animated-number'
 import { UnseenMessagesBubble } from 'web/components/messaging/messages-icon'
+import { usePathname } from 'next/navigation'
 
 export const BOTTOM_NAV_BAR_HEIGHT = 58
 
@@ -71,15 +71,9 @@ export function BottomNavBar(props: {
   const { hideCreateQuestionButton } = props
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
-  const router = useRouter()
-  const currentPage = router.pathname
+  const currentPage = usePathname() ?? ''
 
   const user = useUser()
-
-  // const [appStoreUrl, setAppStoreUrl] = useState(APPLE_APP_URL)
-  // useEffect(() => {
-  //   setAppStoreUrl(isIOS() ? APPLE_APP_URL : GOOGLE_PLAY_APP_URL)
-  // }, [])
 
   const isIframe = useIsIframe()
   if (isIframe) {

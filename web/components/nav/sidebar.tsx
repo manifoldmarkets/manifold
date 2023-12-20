@@ -18,7 +18,7 @@ import {
 import clsx from 'clsx'
 import { buildArray } from 'common/util/array'
 import { capitalize } from 'lodash'
-import Router, { useRouter } from 'next/router'
+import { usePathname, useRouter } from 'next/navigation'
 import { useContext, useState } from 'react'
 import { AddFundsModal } from 'web/components/add-funds-modal'
 import { AppBadgesOrGetAppButton } from 'web/components/buttons/app-badges-or-get-app-button'
@@ -35,6 +35,7 @@ import { ManifoldLogo } from './manifold-logo'
 import { ProfileSummary } from './profile-summary'
 import { Item, SidebarItem } from './sidebar-item'
 import { PrivateMessagesIcon } from 'web/components/messaging/messages-icon'
+import { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime'
 
 export default function Sidebar(props: {
   className?: string
@@ -44,7 +45,7 @@ export default function Sidebar(props: {
 }) {
   const { className, isMobile, hideCreateQuestionButton } = props
   const router = useRouter()
-  const currentPage = router.pathname
+  const currentPage = usePathname() ?? undefined
 
   const user = useUser()
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -61,7 +62,7 @@ export default function Sidebar(props: {
     ? getMobileNav(() => setIsAddFundsModalOpen(!isAddFundsModalOpen))
     : getDesktopNav(!!user, () => setIsModalOpen(true), true)
 
-  const bottomNavOptions = bottomNav(!!user, theme, toggleTheme)
+  const bottomNavOptions = bottomNav(!!user, theme, toggleTheme, router)
 
   const createMarketButton = !hideCreateQuestionButton &&
     user &&
@@ -109,13 +110,6 @@ export default function Sidebar(props: {
       />
     </nav>
   )
-}
-
-const logout = async () => {
-  // log out, and then reload the page, in case SSR wants to boot them out
-  // of whatever logged-in-only area of the site they might be in
-  await withTracking(firebaseLogout, 'sign out')()
-  await Router.replace(Router.asPath)
 }
 
 const getDesktopNav = (
@@ -171,7 +165,8 @@ const getMobileNav = (toggleModal: () => void) => {
 const bottomNav = (
   loggedIn: boolean,
   theme: 'light' | 'dark' | 'auto',
-  toggleTheme: () => void
+  toggleTheme: () => void,
+  router: AppRouterInstance
 ) =>
   buildArray(
     !loggedIn && { name: 'Sign in', icon: LoginIcon, onClick: firebaseLogin },
@@ -186,5 +181,12 @@ const bottomNav = (
           : SparklesIcon,
       onClick: toggleTheme,
     },
-    loggedIn && { name: 'Sign out', icon: LogoutIcon, onClick: logout }
+    loggedIn && {
+      name: 'Sign out',
+      icon: LogoutIcon,
+      onClick: async () => {
+        await withTracking(firebaseLogout, 'sign out')()
+        await router.refresh()
+      },
+    }
   )

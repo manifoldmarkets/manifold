@@ -28,9 +28,9 @@ import { db } from 'web/lib/supabase/db'
 import { MINUTE_MS } from 'common/util/time'
 import { safeLocalStorage } from 'web/lib/util/local'
 import { useEvent } from 'web/hooks/use-event'
-import { useRouter } from 'next/router'
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
 import { track } from 'web/lib/service/analytics'
+import { usePathname } from 'next/navigation'
 
 // NOTE: must be authorized (useIsAuthorized) to use this hook
 export function useRealtimePrivateMessagesPolling(
@@ -130,7 +130,7 @@ export const useUnseenPrivateMessageChannels = (
   if (!isAuthed)
     console.error('useUnseenPrivateMessageChannels must be authorized')
 
-  const { asPath } = useRouter()
+  const pathName = usePathname()
   const lastSeenMessagesPageTime = useLastSeenMessagesPageTime(userId)
   const [lastSeenChatTimeByChannelId, setLastSeenChatTimeByChannelId] =
     usePersistentLocalState<Record<number, number> | undefined>(
@@ -229,19 +229,19 @@ export const useUnseenPrivateMessageChannels = (
     })
     .flat()
     .filter((message) => message.createdTime > lastSeenMessagesPageTime)
-    .filter((message) => !asPath.endsWith(`/messages/${message.channelId}`))
+    .filter((message) => !pathName?.endsWith(`/messages/${message.channelId}`))
 
   return { unseenMessages }
 }
 
 const useLastSeenMessagesPageTime = (userId: string) => {
-  const { isReady, pathname } = useRouter()
+  const pathname = usePathname()
   const isVisible = useIsPageVisible()
 
   const [lastSeenMessagesPageTime, setLastSeenMessagesPageTime] =
     usePersistentLocalState(0, 'last-seen-private-messages-page')
   useEffect(() => {
-    if (isReady && pathname === 'messages') {
+    if (pathname === 'messages') {
       setLastSeenMessagesPageTime(Date.now())
       track('view love messages page')
       return
@@ -258,7 +258,7 @@ const useLastSeenMessagesPageTime = (userId: string) => {
     ).then(({ data }) => {
       setLastSeenMessagesPageTime(new Date(data[0]?.ts ?? 0).valueOf())
     })
-  }, [isReady, pathname, isVisible])
+  }, [pathname, isVisible])
 
   return lastSeenMessagesPageTime
 }
