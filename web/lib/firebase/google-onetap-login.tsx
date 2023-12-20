@@ -1,3 +1,4 @@
+'use client'
 import { GoogleAuthProvider, signInWithCredential } from 'firebase/auth'
 import Script from 'next/script'
 import { useEffect } from 'react'

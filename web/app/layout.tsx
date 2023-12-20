@@ -8,6 +8,8 @@ import { cookies } from 'next/headers'
 import { authenticateOnServer } from 'web/lib/firebase/server-auth'
 import { getUserAndPrivateUser } from 'web/lib/firebase/users'
 import { AUTH_COOKIE_NAME } from 'common/envs/constants'
+import { GoogleOneTapSetup } from 'web/lib/firebase/google-onetap-login'
+import { ThemeProvider } from 'web/components/theme-provider'
 
 // See https://nextjs.org/docs/basic-features/font-optimization#google-fonts
 // and if you add a font, you must add it to tailwind config as well for it to work.
@@ -89,7 +91,10 @@ export default async function RootLayout({
         )}
       >
         <AuthProvider serverUser={authUser}>
-          <div className={'bg-canvas-50 text-ink-1000'}>{children}</div>
+          {/*// TODO: this theme provide isn't synced with the /pages directory, so flashes on navigation b/w routers */}
+          <ThemeProvider>
+            <div className={'bg-canvas-50 text-ink-1000'}>{children}</div>
+          </ThemeProvider>
         </AuthProvider>
         {/* Workaround for https://github.com/tailwindlabs/headlessui/discussions/666, to allow font CSS variable */}
         <div id="headlessui-portal-root">
@@ -132,8 +137,7 @@ export default async function RootLayout({
   fbq('track', 'PageView');`,
         }}
       />
-      {/* POLITICS TODO: Reenable one tap setup */}
-      {/* <GoogleOneTapSetup /> */}
+      <GoogleOneTapSetup />
     </html>
   )
 }

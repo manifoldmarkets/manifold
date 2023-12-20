@@ -9,7 +9,7 @@ import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { useUser } from 'web/hooks/use-user'
 import { useDefinedSearchParams } from 'web/hooks/use-defined-search-params'
 
-export default function CreatePage() {
+export default function Create() {
   useRedirectIfSignedOut()
 
   const user = useUser()
