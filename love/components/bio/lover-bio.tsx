@@ -12,6 +12,8 @@ export function LoverBio(props: {
   const { isCurrentUser, lover, refreshLover } = props
   const [edit, setEdit] = useState(false)
 
+  if (!isCurrentUser && !lover.bio) return null
+
   return (
     <Col>
       <Subtitle className="mb-4">About Me</Subtitle>
@@ -19,7 +21,7 @@ export function LoverBio(props: {
         isCurrentUser={isCurrentUser}
         lover={lover}
         refreshLover={refreshLover}
-        edit={edit || !lover.bio}
+        edit={edit || (isCurrentUser && !lover.bio)}
         setEdit={setEdit}
       />
     </Col>
