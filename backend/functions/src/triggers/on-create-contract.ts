@@ -19,7 +19,10 @@ import {
   isContractNonPredictive,
 } from 'shared/supabase/contracts'
 import { addGroupToContract } from 'shared/update-group-contracts-internal'
-import { UNRANKED_GROUP_ID } from 'common/supabase/groups'
+import {
+  UNRANKED_GROUP_ID,
+  UNSUBSIDIZED_GROUP_ID,
+} from 'common/supabase/groups'
 import { HOUSE_LIQUIDITY_PROVIDER_ID } from 'common/antes'
 import { generateImage } from 'shared/helpers/openai-utils'
 import { randomString } from 'common/util/random'
@@ -77,7 +80,7 @@ export const onCreateContract = functions
     )
     if (!embedding) await generateContractEmbeddings(contract, pg)
     if (isContractNonPredictive(contract)) {
-      const added = await addGroupToContract(
+      const unranked = await addGroupToContract(
         contract,
         {
           id: UNRANKED_GROUP_ID,
@@ -86,7 +89,17 @@ export const onCreateContract = functions
         },
         HOUSE_LIQUIDITY_PROVIDER_ID
       )
-      log('Added contract to unranked group', added)
+      log('Added contract to unranked group', unranked)
+      const unsubsidized = await addGroupToContract(
+        contract,
+        {
+          id: UNSUBSIDIZED_GROUP_ID,
+          slug: 'unsubsidized',
+          name: 'Unsubsidized',
+        },
+        HOUSE_LIQUIDITY_PROVIDER_ID
+      )
+      log('Added contract to unsubsidized group', unsubsidized)
     }
     if (contract.visibility === 'unlisted') return
     await addContractToFeed(

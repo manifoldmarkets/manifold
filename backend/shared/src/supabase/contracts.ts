@@ -340,18 +340,11 @@ export const isContractNonPredictive = (contract: Contract) => {
     .toLowerCase()
     .includes('close higher')
   const createdByManifoldLove = contract.creatorUsername === 'ManifoldLove'
-  return questionIncludesDailyCoinflip || questionIncludesCloseHigher || createdByManifoldLove
-  // return (
-  //   await pg.map(
-  //     `
-  //   select
-  //   ((select embedding from contract_embeddings where contract_id = $1)
-  //        <=>
-  //       (select embedding from group_embeddings where group_id = $2)) as distance`,
-  //     [contract.id, NON_PREDICTIVE_GROUP_ID],
-  //     (row) => row.distance < 0.11
-  //   )
-  // )[0]
+  return (
+    questionIncludesDailyCoinflip ||
+    questionIncludesCloseHigher ||
+    createdByManifoldLove
+  )
 }
 
 export const getContractPrivacyWhereSQLFilter = (
