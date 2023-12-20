@@ -1,4 +1,3 @@
-import { useRouter } from 'next/router'
 import clsx from 'clsx'
 
 import { firebaseLogin } from 'web/lib/firebase/users'
@@ -9,19 +8,13 @@ import { Row } from 'web/components/layout/row'
 
 export const SidebarSignUpButton = (props: { className?: string }) => {
   const { className } = props
-  const router = useRouter()
 
   return (
     <Col className={clsx('mt-4', className)}>
       <Button
         color="gradient"
         size="xl"
-        onClick={async () => {
-          // login, and then reload the page, to hit any SSR redirect (e.g.
-          // redirecting from / to /home for logged in users)
-          await firebaseLogin()
-          router.replace(router.asPath)
-        }}
+        onClick={firebaseLogin}
         className="w-full"
       >
         Sign up

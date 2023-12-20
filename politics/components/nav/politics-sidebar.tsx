@@ -56,9 +56,7 @@ export default function Sidebar(props: {
           setIsModalOpen={setIsModalOpen}
         />
 
-        {user === null && (
-          <SignUpButton className="mt-4" text="Create a profile" />
-        )}
+        {user === null && <SignUpButton className="mt-4" />}
       </div>
       <div className="mb-6 mt-auto flex flex-col gap-1">
         {bottomNavOptions.map((item) => (
