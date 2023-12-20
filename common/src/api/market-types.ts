@@ -71,9 +71,21 @@ export type ApiAnswer =
       'prob' | 'poolYes' | 'poolNo'
     >
 export type FullMarket = LiteMarket & {
-  bets?: Bet[]
-  comments?: Comment[]
+  // bets?: Bet[]
+  // comments?: Comment[]
+
+  // multi markets only
   answers?: ApiAnswer[]
+  shouldAnswersSumToOne?: boolean
+  addAnswersMode?: 'ANYONE' | 'ONLY_CREATOR' | 'DISABLED'
+
+  // poll only
+  options?: { text: string; votes: number }[]
+
+  // bounty only
+  totalBounty?: number
+  bountyLeft?: number
+
   description: string | JSONContent
   textDescription: string // string version of description
   coverImageUrl?: string
@@ -112,10 +124,11 @@ export function toLiteMarket(contract: Contract): LiteMarket {
       ? getProbability(contract)
       : undefined
 
-  let value, min, max, isLogScale: any
+  let numericValues = {}
   if (contract.outcomeType === 'PSEUDO_NUMERIC') {
-    value = getMappedValue(contract, contract.prob)
-    ;({ min, max, isLogScale } = contract)
+    const value = getMappedValue(contract, contract.prob)
+    const { min, max, isLogScale } = contract
+    numericValues = { value, min, max, isLogScale }
   }
 
   return removeUndefinedProps({
@@ -148,10 +161,7 @@ export function toLiteMarket(contract: Contract): LiteMarket {
     uniqueBettorCount,
     lastUpdatedTime,
     lastBetTime,
-    value,
-    min,
-    max,
-    isLogScale,
+    ...numericValues,
   })
 }
 
@@ -164,6 +174,32 @@ export function toFullMarket(contract: Contract): FullMarket {
       ? contract.answers.map((answer) =>
           augmentAnswerWithProbability(contract, answer)
         )
+      : undefined
+
+  let multiValues = {}
+  if (outcomeType === 'MULTIPLE_CHOICE') {
+    if (contract.mechanism === 'cpmm-multi-1') {
+      multiValues = {
+        shouldAnswersSumToOne: contract.shouldAnswersSumToOne,
+        addAnswersMode: contract.addAnswersMode,
+      }
+    } else {
+      multiValues = {
+        shouldAnswersSumToOne: true,
+        addAnswersMode: 'DISABLED',
+      }
+    }
+  }
+  if (outcomeType === 'FREE_RESPONSE') {
+    multiValues = {
+      shouldAnswersSumToOne: true,
+      addAnswersMode: 'ANYONE',
+    }
+  }
+
+  const options =
+    outcomeType === 'POLL'
+      ? contract.options.map(({ text, votes }) => ({ text, votes }))
       : undefined
 
   const bountyValues =
@@ -179,7 +215,9 @@ export function toFullMarket(contract: Contract): FullMarket {
   return {
     ...liteMarket,
     ...bountyValues,
+    ...multiValues,
     answers,
+    options,
     description,
     coverImageUrl,
     groupSlugs,

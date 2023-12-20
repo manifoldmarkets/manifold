@@ -276,6 +276,7 @@ type LiteMarket = {
   pool: { outcome: number } // For CPMM markets, the number of shares in the liquidity pool. For DPM markets, the amount of mana invested in each answer.
   p?: number // CPMM markets only, probability constant in y^p * n^(1-p) = k
   totalLiquidity?: number // CPMM markets only, the amount of mana deposited into the liquidity pool
+
   value?: number // PSEUDO_NUMERIC markets only, the current market value, which is mapped from probability using min, max, and isLogScale.
   min?: number // PSEUDO_NUMERIC markets only, the minimum resolvable value
   max?: number // PSEUDO_NUMERIC markets only, the maximum resolvable value
@@ -388,9 +389,18 @@ Response type: A `FullMarket`
 ```tsx
 // A complete market, along with answers (for free response markets)
 type FullMarket = LiteMarket & {
-  answers?: Answer[] // dpm-2 markets only
+  answers?: Answer[] // multi markets only
+  shouldAnswersSumToOne?: boolean // multi markets only, whether answers are dependant (that is add up to 100%, typically used when only one answer should win). Always true for dpm-2 multiple choice and free response
+  addAnswersMode?: 'ANYONE' | 'ONLY_CREATOR' | 'DISABLED' // multi markets only, who can add answers
+
+  options?: { text: string; votes: number }[] // poll only
+
+  totalBounty?: number // bounty only
+  bountyLeft?: number // bounty only
+
   description: JSONContent // Rich text content. See https://tiptap.dev/guide/output#option-1-json
   textDescription: string // string description without formatting, images, or embeds
+  coverImageUrl?: string
   groupSlugs?: string[] // topics tagged in this market
 }
 ```
