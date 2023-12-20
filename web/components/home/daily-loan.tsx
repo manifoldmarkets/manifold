@@ -16,6 +16,7 @@ import timezone from 'dayjs/plugin/timezone'
 import utc from 'dayjs/plugin/utc'
 import { useHasReceivedLoanToday } from 'web/hooks/use-has-received-loan'
 import { updateUser } from 'web/lib/firebase/users'
+import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 
 dayjs.extend(utc)
 dayjs.extend(timezone)
@@ -24,6 +25,10 @@ export function DailyLoan(props: { user: User }) {
 
   const [showLoansModal, setShowLoansModal] = useState(false)
   const [loaning, setLoaning] = useState(false)
+  const [justReceivedLoan, setJustReceivedLoan] = usePersistentInMemoryState(
+    false,
+    `just-received-loan-${user.id}`
+  )
   const getLoan = async () => {
     if (receivedLoanToday) {
       setShowLoansModal(true)
@@ -36,8 +41,11 @@ export function DailyLoan(props: { user: User }) {
       toast.error('Error requesting loan')
       return null
     })
-    if (res) toast.success(`${formatMoney(res.payout)} loan collected!`)
-    await checkTxns()
+    if (res) {
+      await checkTxns()
+      toast.success(`${formatMoney(res.payout)} loan collected!`)
+      setJustReceivedLoan(true)
+    }
     toast.dismiss(id)
     if (!user.hasSeenLoanModal) setTimeout(() => setShowLoansModal(true), 1000)
     setLoaning(false)
@@ -48,13 +56,15 @@ export function DailyLoan(props: { user: User }) {
       updateUser(user.id, { hasSeenLoanModal: true })
   }, [showLoansModal])
 
-  const { receivedLoanToday, checkTxns } = useHasReceivedLoanToday(user)
+  const { receivedLoanToday: receivedTxnLoan, checkTxns } =
+    useHasReceivedLoanToday(user)
   if (
     user.createdTime > Date.now() - DAY_MS ||
     !user.lastBetTime ||
     (user.nextLoanCached < 1 && !receivedLoanToday)
   )
     return <div />
+  const receivedLoanToday = receivedTxnLoan || justReceivedLoan
 
   return (
     <Col className={clsx(dailyStatsClass, '')}>

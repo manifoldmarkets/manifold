@@ -23,16 +23,14 @@ export const useHasReceivedLoanToday = (user: User) => {
         .limit(1)
     )
       .then((res) => {
-        console.log('loan res', res)
         if (res.data.length > 0) {
-          console.log('setting last loan received', res.data[0].createdTime)
           setLastLoanReceived(parseInt(res.data[0].createdTime))
         } else {
           setLastLoanReceived(0)
         }
       })
       .catch((e) => {
-        console.error('loan txn', e)
+        console.error('loan txns err', e)
       })
   }, [user.id])
 
