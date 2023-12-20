@@ -79,7 +79,8 @@ export const onCreateContract = functions
       [contract.id]
     )
     if (!embedding) await generateContractEmbeddings(contract, pg)
-    if (isContractNonPredictive(contract)) {
+    const isNonPredictive = isContractNonPredictive(contract)
+    if (isNonPredictive) {
       const unranked = await addGroupToContract(
         contract,
         {
@@ -103,7 +104,11 @@ export const onCreateContract = functions
     }
     if (contract.visibility === 'unlisted') return
     await addContractToFeed(
-      contract,
+      {
+        ...contract,
+        isRanked: !isNonPredictive,
+        isSubsidized: !isNonPredictive,
+      },
       [
         'follow_user',
         'similar_interest_vector_to_contract',

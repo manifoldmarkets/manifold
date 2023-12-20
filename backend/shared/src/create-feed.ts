@@ -265,7 +265,7 @@ export const addContractToFeed = async (
       reasonsToInclude,
       false,
       dataType,
-      0.2
+      contract.isRanked === false || contract.isSubsidized === false ? 0 : 0.2
     )
   await bulkInsertDataToUserFeed(
     usersToReasonsInterestedInContract,
