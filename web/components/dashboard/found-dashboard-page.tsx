@@ -30,7 +30,7 @@ import { AddItemCard } from 'web/components/dashboard/add-dashboard-item'
 import { DashboardContent } from 'web/components/dashboard/dashboard-content'
 import { usePathname, useRouter } from 'next/navigation'
 
-export default function FoundDashboardPage(props: {
+export function FoundDashboardPage(props: {
   initialDashboard: Dashboard
   previews: LinkPreviews
   slug: string

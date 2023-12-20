@@ -3,7 +3,7 @@ import { PoliticsPage } from 'politics/components/politics-page'
 import Custom404 from 'politics/app/404/page'
 import { getDashboardFromSlug } from 'web/lib/firebase/api'
 import { DashboardLinkItem } from 'common/dashboard'
-import FoundDashboardPage from 'web/pages/dashboard/found-dashboard-page'
+import { FoundDashboardPage } from 'web/components/dashboard/found-dashboard-page'
 import { cache } from 'react'
 import { fetchLinkPreviews } from 'common/link-preview'
 import {
