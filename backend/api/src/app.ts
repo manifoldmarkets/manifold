@@ -130,6 +130,7 @@ import {
 import { post } from 'api/post'
 import { fetchLinkPreview } from './fetch-link-preview'
 import { type APIHandler, typedEndpoint } from './helpers'
+import { requestloan } from 'api/request-loan'
 
 const allowCorsUnrestricted: RequestHandler = cors({})
 const allowCorsManifold: RequestHandler = cors({
@@ -239,6 +240,7 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'compatible-lovers': getCompatibleLovers,
   post: post,
   'fetch-link-preview': fetchLinkPreview,
+  'request-loan': requestloan,
 }
 
 Object.entries(handlers).forEach(([path, handler]) => {

@@ -5,14 +5,18 @@ import { animated } from '@react-spring/web'
 
 import { User } from 'web/lib/firebase/users'
 import { formatMoney } from 'common/util/format'
-import { Avatar } from '../widgets/avatar'
+import { Avatar, AvatarSizeType } from '../widgets/avatar'
 import { trackCallback } from 'web/lib/service/analytics'
 import { AddFundsModal } from '../add-funds-modal'
 import { useAnimatedNumber } from 'web/hooks/use-animated-number'
 import clsx from 'clsx'
 
-export function ProfileSummary(props: { user: User; className?: string }) {
-  const { user, className } = props
+export function ProfileSummary(props: {
+  user: User
+  className?: string
+  avatarSize?: AvatarSizeType
+}) {
+  const { user, className, avatarSize } = props
 
   const [buyModalOpen, setBuyModalOpen] = useState(false)
   const balance = useAnimatedNumber(user.balance)
@@ -27,7 +31,12 @@ export function ProfileSummary(props: { user: User; className?: string }) {
       )}
     >
       <div className="w-2 shrink" />
-      <Avatar avatarUrl={user.avatarUrl} username={user.username} noLink />
+      <Avatar
+        avatarUrl={user.avatarUrl}
+        username={user.username}
+        noLink
+        size={avatarSize}
+      />
       <div className="mr-1 w-2 shrink-[2]" />
       <div className="shrink-0 grow">
         <div>{user.name}</div>

@@ -373,6 +373,13 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
+  'request-loan': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({}),
+    returns: {} as { payout: number },
+  },
   managrams: {
     method: 'GET',
     visibility: 'public',

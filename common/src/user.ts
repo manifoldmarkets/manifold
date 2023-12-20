@@ -50,6 +50,7 @@ export type User = {
   currentBettingStreak?: number
   streakForgiveness: number
 
+  hasSeenLoanModal?: boolean
   hasSeenContractFollowModal?: boolean
   isBannedFromPosting?: boolean
   userDeleted?: boolean

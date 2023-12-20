@@ -24,7 +24,7 @@ import {
 import { MultipleAvatarIcons } from './notification-types'
 import { QuestRewardTxn } from 'common/txn'
 import { QUEST_DETAILS } from 'common/quest'
-import { QuestsModal } from '../quests-or-streak'
+import { QuestsModal } from '../home/quests-or-streak'
 import { Modal } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -258,6 +258,7 @@ export function LoanIncomeNotification(props: {
   setHighlighted: (highlighted: boolean) => void
 }) {
   const { notification, highlighted, setHighlighted } = props
+  const user = useUser()
   const [open, setOpen] = useState(false)
   return (
     <NotificationFrame
@@ -282,7 +283,9 @@ export function LoanIncomeNotification(props: {
           <PrimaryNotificationLink text="Loan" />
         </span>
       </span>
-      <LoansModal isOpen={open} setOpen={setOpen} />
+      {user && open && (
+        <LoansModal isOpen={open} setOpen={setOpen} user={user} />
+      )}
     </NotificationFrame>
   )
 }

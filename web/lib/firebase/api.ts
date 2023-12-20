@@ -480,3 +480,7 @@ export function createChartAnnotation(params: {
 export function deleteChartAnnotation(params: { id: number }) {
   return call(getApiUrl('delete-chart-annotation'), 'POST', params)
 }
+
+export function requestLoan() {
+  return call(getApiUrl('request-loan'), 'GET')
+}

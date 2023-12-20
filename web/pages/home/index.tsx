@@ -1,5 +1,5 @@
 import { SEO } from 'web/components/SEO'
-import { DailyStats } from 'web/components/daily-stats'
+import { DailyStats } from 'web/components/home/daily-stats'
 import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
 import { Spacer } from 'web/components/layout/spacer'
@@ -21,6 +21,7 @@ import { useYourFollowedDashboards } from 'web/hooks/use-dashboard'
 import { buildArray } from 'common/util/array'
 import { uniqBy } from 'lodash'
 import { fetchLinkPreviews, LinkPreviews } from 'common/link-preview'
+import { useIsMobile } from 'web/hooks/use-is-mobile'
 
 export async function getStaticProps() {
   const dashboards = (await getNewsDashboards()) as Dashboard[]
@@ -67,6 +68,7 @@ function HomeDashboard(props: {
 
   const user = useUser()
   const myDashboards = useYourFollowedDashboards()
+  const isMobile = useIsMobile()
 
   return (
     <>
@@ -80,9 +82,16 @@ function HomeDashboard(props: {
         trackPageProps={{ kind: 'desktop' }}
         manifoldWrappedBannerEnabled
       >
-        <Row className="mx-3 mb-2 items-center gap-4">
+        <Row className="mx-3 mb-2 items-center gap-2">
           <div className="flex md:hidden">
-            {user ? <ProfileSummary user={user} /> : <Spacer w={4} />}
+            {user ? (
+              <ProfileSummary
+                user={user}
+                avatarSize={isMobile ? 'sm' : undefined}
+              />
+            ) : (
+              <Spacer w={4} />
+            )}
           </div>
           <Title className="!mb-0 hidden md:flex">Home</Title>
           {user && (isAdminId(user.id) || isModId(user.id)) && (

@@ -38,7 +38,7 @@ type AnyTxnType =
   | BountyAdded
   | BountyCanceled
   | ManaPay
-  | LeagueBid
+  | Loan
 
 export type SourceType =
   | 'USER'
@@ -353,16 +353,11 @@ type ManaPay = {
   }
 }
 
-type LeagueBid = {
-  category: 'LEAGUE_BID'
-  fromType: 'USER'
-  toType: 'LEAGUE'
+type Loan = {
+  category: 'LOAN'
+  fromType: 'BANK'
+  toType: 'USER'
   token: 'M$'
-  data: {
-    season: number
-    division: number
-    cohort: string
-  }
 }
 
 export type DonationTxn = Txn & Donation
@@ -401,4 +396,4 @@ export type BountyPostedTxn = Txn & BountyPosted
 export type BountyAddedTxn = Txn & BountyAdded
 export type BountyCanceledTxn = Txn & BountyCanceled
 export type ManaPayTxn = Txn & ManaPay
-export type LeagueBidTxn = Txn & LeagueBid
+export type LoanTxn = Txn & Loan

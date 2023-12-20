@@ -638,7 +638,6 @@ export const createReferralNotification = async (
 
 export const createLoanIncomeNotification = async (
   toUser: User,
-  idempotencyKey: string,
   income: number
 ) => {
   const privateUser = await getPrivateUser(toUser.id)
@@ -648,9 +647,10 @@ export const createLoanIncomeNotification = async (
     'loan_income'
   )
   if (!sendToBrowser) return
+  const idempotencyKey = new Date().toDateString().replace(' ', '-')
 
   const notification: Notification = {
-    id: idempotencyKey,
+    id: idempotencyKey + '-loan-income-' + income,
     userId: toUser.id,
     reason: 'loan_income',
     createdTime: Date.now(),

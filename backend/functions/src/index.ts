@@ -14,7 +14,6 @@ export * from './triggers/on-create-liquidity-provision'
 export * from './triggers/on-update-reaction'
 
 // scheduled functions
-export * from './scheduled/update-loans'
 export {
   sendWeeklyPortfolioUpdate,
   saveWeeklyContractMetrics,
