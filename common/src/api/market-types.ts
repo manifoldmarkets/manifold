@@ -1,8 +1,6 @@
 import { JSONContent } from '@tiptap/core'
 import { Answer, DpmAnswer, MAX_ANSWERS } from 'common/answer'
-import { Bet } from 'common/bet'
 import { getAnswerProbability, getProbability } from 'common/calculate'
-import { Comment } from 'common/comment'
 import {
   CREATEABLE_OUTCOME_TYPES,
   Contract,
