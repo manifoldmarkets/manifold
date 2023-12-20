@@ -237,40 +237,28 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
     `comments-sort-${contract.id}`
   )
   const sort = sorts[sortIndex]
-  const likes = comments.some((c) => (c?.likes ?? 0) > 0)
 
   // replied to answers/comments are NOT newest, otherwise newest first
   const isReply = (c: ContractComment) => c.replyToCommentId !== undefined
 
   const strictlySortedComments = sortBy(comments, [
     sort === 'Best'
-      ? isBountiedQuestion
-        ? // Best, bountied
-          (c) =>
-            isReply(c)
-              ? c.createdTime
-              : // For your own recent comments, show first.
-              c.createdTime > Date.now() - 10 * MINUTE_MS &&
-                c.userId === user?.id
-              ? -Infinity
-              : -((c.bountyAwarded ?? 0) * 1000 + (c.likes ?? 0))
-        : // Best, non-bountied
-          (c) =>
-            isReply(c)
-              ? c.createdTime
-              : // Is this too magic? If there are likes, 'Best' shows your own comments made within the last 10 minutes first, then sorts by score
-              likes &&
-                c.createdTime > Date.now() - 10 * MINUTE_MS &&
-                c.userId === user?.id
-              ? -Infinity
-              : -(c?.likes ?? 0)
+      ? (c) =>
+          isReply(c)
+            ? c.createdTime
+            : // For your own recent comments, show first.
+            c.createdTime > Date.now() - 10 * MINUTE_MS && c.userId === user?.id
+            ? -Infinity
+            : c.hidden
+            ? Infinity
+            : -((c.bountyAwarded ?? 0) * 1000 + (c.likes ?? 0))
       : sort === 'Yes bets'
       ? (c: ContractComment) => -(c.betReplyAmountsByOutcome?.['YES'] ?? 0)
       : sort === 'No bets'
       ? (c: ContractComment) => -(c.betReplyAmountsByOutcome?.['NO'] ?? 0)
       : // Newest
         (c) => c,
-    (c) => (isReply(c) ? c.createdTime : -c.createdTime),
+    (c) => (isReply(c) ? c.createdTime : c.hidden ? Infinity : -c.createdTime),
   ])
 
   const commentsByParent = groupBy(
