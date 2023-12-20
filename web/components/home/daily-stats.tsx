@@ -17,8 +17,8 @@ export function DailyStats(props: {
   if (!user) return <></>
   return (
     <Row className={'z-30 w-full items-center justify-end gap-3'}>
-      <DailyLoan user={user} />
       {!isMobile && <DailyProfit user={user} />}
+      <DailyLoan user={user} />
       <DailyLeagueStat user={user} />
       <QuestsOrStreak user={user} />
     </Row>
