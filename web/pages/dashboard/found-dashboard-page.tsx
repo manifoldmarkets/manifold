@@ -39,7 +39,7 @@ export default function FoundDashboardPage(props: {
   const user = useUser()
   useSaveReferral(user)
   const router = useRouter()
-  const pathName = usePathname()
+  const pathName = usePathname() ?? ''
 
   const { initialDashboard, slug, editByDefault, previews } = props
   const fetchedDashboard = useDashboardFromSlug(slug)

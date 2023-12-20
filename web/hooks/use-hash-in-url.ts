@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 
 export const useHashInUrl = () => {
   const [hash, setHash] = useState<string | undefined>()
-  const pathname = usePathname()
+  const pathname = usePathname() ?? ''
   useEffect(() => {
     const parts = pathname.split('#')
     if (parts.length > 1 && parts[1] != null) {
