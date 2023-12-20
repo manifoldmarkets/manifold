@@ -1,5 +1,4 @@
 'use client'
-import { SEO } from 'web/components/SEO'
 import { Page } from 'web/components/layout/page'
 import {
   NewContractPanel,
@@ -40,12 +39,6 @@ export default function CreatePage() {
 
   return (
     <Page trackPageView={'create page'}>
-      <SEO
-        title="Create a question"
-        description="Create a play-money prediction market on any question."
-        url="/create"
-      />
-
       <NewContractPanel params={params} creator={user} />
     </Page>
   )
