@@ -510,17 +510,18 @@ export function AnswerPosition(props: {
         <div className="text-ink-500">Spent</div>
         <div className="text-ink-700">{formatMoney(invested)}</div>
       </Row>
-      {(!contract.closeTime || contract.closeTime > Date.now()) && (
-        <>
-          &middot;
-          <MultiSeller
-            answer={answer}
-            contract={contract}
-            userBets={userBets}
-            user={user}
-          />
-        </>
-      )}
+      {(!contract.closeTime || contract.closeTime > Date.now()) &&
+        !answer.resolutionTime && (
+          <>
+            &middot;
+            <MultiSeller
+              answer={answer}
+              contract={contract}
+              userBets={userBets}
+              user={user}
+            />
+          </>
+        )}
     </Row>
   )
 }
