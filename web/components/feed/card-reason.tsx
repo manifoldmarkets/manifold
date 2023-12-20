@@ -5,6 +5,7 @@ import { FeedTimelineItem } from 'web/hooks/use-feed-timeline'
 import { Row } from '../layout/row'
 import { RelativeTimestamp } from '../relative-timestamp'
 import { shortenedFromNow } from 'web/lib/util/shortenedFromNow'
+import dayjs from 'dayjs'
 
 export function CardReason(props: {
   item: FeedTimelineItem | undefined
@@ -51,11 +52,16 @@ export function CardReason(props: {
   }
 
   if (item.dataType == 'new_contract') {
+    const diff = dayjs(item.createdTime).diff(
+      dayjs(contract.createdTime),
+      'day'
+    )
+
     return (
       <Row className={'text-ink-400 items-center gap-1 text-sm'}>
         <HiSparkles className={'h-4 w-4 text-yellow-400'} />
         <span>
-          created
+          {diff >= 1 ? 'updated' : 'created'}
           <RelativeTimestamp
             time={item.createdTime}
             shortened={true}
