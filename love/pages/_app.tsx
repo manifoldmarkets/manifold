@@ -8,7 +8,7 @@ import { NativeMessageListener } from 'web/components/native-message-listener'
 import { useHasLoaded } from 'web/hooks/use-has-loaded'
 import '../styles/globals.css'
 import { getIsNative } from 'web/lib/native/is-native'
-import { Major_Mono_Display, Figtree } from 'next/font/google'
+import { Major_Mono_Display, Figtree, Inconsolata } from 'next/font/google'
 import clsx from 'clsx'
 import { useRefreshAllClients } from 'web/hooks/use-refresh-all-clients'
 import { postMessageToNative } from 'web/lib/native/post-message'
@@ -25,6 +25,12 @@ const logoFont = Major_Mono_Display({
 const mainFont = Figtree({
   weight: ['300', '400', '500', '600', '700'],
   variable: '--font-main',
+  subsets: ['latin'],
+})
+
+const monoFont = Inconsolata({
+  weight: ['300', '400', '500', '600', '700'],
+  variable: '--font-mono',
   subsets: ['latin'],
 })
 
@@ -111,7 +117,8 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
         className={clsx(
           'font-figtree contents font-normal',
           logoFont.variable,
-          mainFont.variable
+          mainFont.variable,
+          monoFont.variable
         )}
       >
         <AuthProvider serverUser={pageProps.auth}>

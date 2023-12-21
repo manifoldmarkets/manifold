@@ -44,7 +44,7 @@ export function SidebarItem(props: { item: Item; currentPage?: string }) {
           aria-hidden="true"
         />
       )}
-      <span className="truncate">{item.name}</span>
+      <span className="truncate font-mono font-bold">{item.name}</span>
     </>
   )
 
