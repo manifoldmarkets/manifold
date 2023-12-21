@@ -69,15 +69,17 @@ export const onUpdateContract = functions
     if (onlyNewGroupIds.length > 0) {
       const contractWithScore = await getContractSupabase(contract.id)
       if (!contractWithScore) return
-      await addContractToFeed(
-        contractWithScore,
-        ['contract_in_group_you_are_in'],
-        'new_contract',
-        [contractWithScore.creatorId],
-        {
-          idempotencyKey: contractWithScore.id + '_new_contract',
-        }
-      )
+      // TEMPORARILTY DIASABLED B/C DATABASE IS ON FIRE.
+      // TODO: Renable
+      // await addContractToFeed(
+      //   contractWithScore,
+      //   ['contract_in_group_you_are_in'],
+      //   'new_contract',
+      //   [contractWithScore.creatorId],
+      //   {
+      //     idempotencyKey: contractWithScore.id + '_new_contract',
+      //   }
+      // )
     }
 
     if (
