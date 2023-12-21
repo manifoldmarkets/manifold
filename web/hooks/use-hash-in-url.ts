@@ -21,5 +21,5 @@ export const useHashInUrl = () => {
     }
   }, [isClient])
 
-  return isClient ? hash : null
+  return isClient ? hash : undefined
 }
