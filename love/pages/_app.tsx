@@ -8,31 +8,12 @@ import { NativeMessageListener } from 'web/components/native-message-listener'
 import { useHasLoaded } from 'web/hooks/use-has-loaded'
 import '../styles/globals.css'
 import { getIsNative } from 'web/lib/native/is-native'
-import { Major_Mono_Display, Figtree, Inconsolata } from 'next/font/google'
 import clsx from 'clsx'
 import { useRefreshAllClients } from 'web/hooks/use-refresh-all-clients'
 import { postMessageToNative } from 'web/lib/native/post-message'
 
 // See https://nextjs.org/docs/basic-features/font-optimization#google-fonts
 // and if you add a font, you must add it to tailwind config as well for it to work.
-
-const logoFont = Major_Mono_Display({
-  weight: ['400'],
-  variable: '--font-logo',
-  subsets: ['latin'],
-})
-
-const mainFont = Figtree({
-  weight: ['300', '400', '500', '600', '700'],
-  variable: '--font-main',
-  subsets: ['latin'],
-})
-
-const monoFont = Inconsolata({
-  weight: ['300', '400', '500', '600', '700'],
-  variable: '--font-mono',
-  subsets: ['latin'],
-})
 
 function firstLine(msg: string) {
   return msg.replace(/\r?\n.*/s, '')
@@ -113,19 +94,10 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
           content="width=device-width, initial-scale=1,maximum-scale=1, user-scalable=no"
         />
       </Head>
-      <div
-        className={clsx(
-          'font-figtree contents font-normal',
-          logoFont.variable,
-          mainFont.variable,
-          monoFont.variable
-        )}
-      >
+      <div>
         <AuthProvider serverUser={pageProps.auth}>
-          <ThemeProvider>
-            <NativeMessageListener />
-            <Component {...pageProps} />
-          </ThemeProvider>
+          <NativeMessageListener />
+          <Component {...pageProps} />
         </AuthProvider>
         {/* Workaround for https://github.com/tailwindlabs/headlessui/discussions/666, to allow font CSS variable */}
         <div id="headlessui-portal-root">
