@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import clsx from 'clsx'
 import Image from 'next/image'
+import Router from 'next/router'
 
 import { buildArray } from 'common/util/array'
 import { Carousel } from 'web/components/widgets/carousel'
@@ -11,12 +12,13 @@ import { SignUpButton } from './nav/love-sidebar'
 import { Lover } from 'common/love/lover'
 import { useAdmin } from 'web/hooks/use-admin'
 import { Button } from 'web/components/buttons/button'
-import { clearLoverPhoto, updateLover } from 'web/lib/firebase/love/api'
+import { updateLover } from 'web/lib/firebase/love/api'
 import { AddPhotosWidget } from './widgets/add-photos'
 import { Row as rowFor } from 'common/supabase/utils'
 import { Row } from 'web/components/layout/row'
 import { useUser } from 'web/hooks/use-user'
 import { PencilIcon } from '@heroicons/react/solid'
+import { api } from 'web/lib/firebase/api'
 
 export default function ProfileCarousel(props: { lover: Lover }) {
   const { lover } = props
@@ -70,7 +72,9 @@ export default function ProfileCarousel(props: { lover: Lover }) {
           color="red"
           onClick={() => {
             console.log('deleting')
-            clearLoverPhoto({ loverId: lover.id })
+            api('remove-pinned-photo', { userId: lover.user_id }).then(() =>
+              Router.back()
+            )
           }}
         >
           Admin: Delete pinned photo

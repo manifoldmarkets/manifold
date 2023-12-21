@@ -99,7 +99,6 @@ import { searchnearcity } from './search-near-city'
 import { leaveprivateusermessagechannel } from 'api/leave-private-user-message-channel'
 import { updateprivateusermessagechannel } from 'api/update-private-user-message-channel'
 import { confirmLoverStage } from './love/confirm-lover-stage'
-import { clearLoverPhoto } from './love/clear-lover-photo'
 import { editanswercpmm } from 'api/edit-answer'
 import { createlovecompatibilityquestion } from 'api/love/create-love-compatibility-question'
 import { oncreatebet } from 'api/on-create-bet'
@@ -131,6 +130,7 @@ import { post } from 'api/post'
 import { fetchLinkPreview } from './fetch-link-preview'
 import { type APIHandler, typedEndpoint } from './helpers'
 import { requestloan } from 'api/request-loan'
+import { removePinnedPhoto } from './love/remove-pinned-photo'
 
 const allowCorsUnrestricted: RequestHandler = cors({})
 const allowCorsManifold: RequestHandler = cors({
@@ -241,6 +241,7 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   post: post,
   'fetch-link-preview': fetchLinkPreview,
   'request-loan': requestloan,
+  'remove-pinned-photo': removePinnedPhoto,
 }
 
 Object.entries(handlers).forEach(([path, handler]) => {
@@ -391,7 +392,6 @@ app.post(
 app.post('/create-lover', ...apiRoute(createlover))
 app.post('/update-lover', ...apiRoute(updatelover))
 app.post('/reject-lover', ...apiRoute(rejectLover))
-app.post('/clear-lover-photo', ...apiRoute(clearLoverPhoto))
 app.post('/confirm-lover-stage', ...apiRoute(confirmLoverStage))
 app.post('/create-match', ...apiRoute(createMatch))
 app.post('/create-comment-on-lover', ...apiRoute(createcommentonlover))

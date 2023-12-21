@@ -510,6 +510,17 @@ export const API = (_apiTypeCheck = {
     cache: 'max-age=86400, stale-while-revalidate=86400',
     returns: {} as LinkPreview,
   },
+  'remove-pinned-photo': {
+    method: 'POST',
+    visibility: 'private',
+    authed: true,
+    returns: { success: true },
+    props: z
+      .object({
+        userId: z.string(),
+      })
+      .strict(),
+  },
 } as const)
 
 export type APIPath = keyof typeof API
