@@ -18,7 +18,6 @@ import {
 } from 'shared/supabase/init'
 import { upsertGroupEmbedding } from 'shared/helpers/embeddings'
 import { buildArray } from 'common/util/array'
-import { addContractToFeed } from 'shared/create-feed'
 
 export const onUpdateContract = functions
   .runWith({ secrets })
