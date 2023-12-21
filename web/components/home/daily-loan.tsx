@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import clsx from 'clsx'
-
 import { Col } from 'web/components/layout/col'
 import { User } from 'common/user'
 import { formatMoney } from 'common/util/format'
@@ -58,13 +57,14 @@ export function DailyLoan(props: { user: User }) {
 
   const { receivedLoanToday: receivedTxnLoan, checkTxns } =
     useHasReceivedLoanToday(user)
+  const receivedLoanToday = receivedTxnLoan || justReceivedLoan
   if (
     user.createdTime > Date.now() - DAY_MS ||
     !user.lastBetTime ||
     (user.nextLoanCached < 1 && !receivedLoanToday)
-  )
+  ) {
     return <div />
-  const receivedLoanToday = receivedTxnLoan || justReceivedLoan
+  }
 
   return (
     <Col className={clsx(dailyStatsClass, '')}>
