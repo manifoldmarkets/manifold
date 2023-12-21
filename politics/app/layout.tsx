@@ -1,7 +1,12 @@
 import Script from 'next/script'
 import { AuthProvider } from 'web/components/auth-context'
 import '../styles/globals.css'
-import { Major_Mono_Display, Figtree } from 'next/font/google'
+import {
+  Major_Mono_Display,
+  Figtree,
+  Inconsolata,
+  Crimson_Text,
+} from 'next/font/google'
 import clsx from 'clsx'
 import { Metadata, Viewport } from 'next'
 import { cookies } from 'next/headers'
@@ -21,6 +26,18 @@ const logoFont = Major_Mono_Display({
 const mainFont = Figtree({
   weight: ['300', '400', '500', '600', '700'],
   variable: '--font-main',
+  subsets: ['latin'],
+})
+
+const monoFont = Inconsolata({
+  weight: ['300', '400', '500', '600', '700'],
+  variable: '--font-mono',
+  subsets: ['latin'],
+})
+
+const serifFont = Crimson_Text({
+  weight: ['400', '600', '700'],
+  variable: '--font-serif',
   subsets: ['latin'],
 })
 
@@ -86,7 +103,9 @@ export default async function RootLayout({
         className={clsx(
           'font-figtree contents font-normal',
           logoFont.variable,
-          mainFont.variable
+          mainFont.variable,
+          monoFont.variable,
+          serifFont.variable
         )}
       >
         <AuthProvider serverUser={authUser}>

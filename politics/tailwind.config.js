@@ -18,6 +18,8 @@ module.exports = {
         'major-mono': ['var(--font-logo)', 'monospace'],
         figtree: ['icomoon', 'var(--font-main)', 'emoji', 'sans-serif'],
         'grenze-gotisch': ['var(--font-match-cards)', 'cursive'], // just for match card game
+        mono: ['var(--font-mono)', 'monospace'],
+        serif: ['var(--font-serif)', 'serif'],
       }
     ),
     extend: {
