@@ -1,30 +1,31 @@
 import { useRouter } from 'next/router'
 
 import { Dashboard, DashboardLinkItem } from 'common/dashboard'
-import { getDashboardFromSlug } from 'web/lib/firebase/api'
+import { api, getDashboardFromSlug } from 'web/lib/firebase/api'
 import Custom404 from '../404'
 import { fetchLinkPreviews, LinkPreviews } from 'common/link-preview'
 import { FoundDashboardPage } from 'web/components/dashboard/found-dashboard-page'
 import { Page } from 'web/components/layout/page'
+import { Headline } from 'common/news'
 
-export async function getStaticProps(ctx: {
-  params: { dashboardSlug: string }
-}) {
-  const { dashboardSlug: slugWithQuery } = ctx.params
-  const dashboardSlug = slugWithQuery.split('&')[0]
+export async function getStaticProps(ctx: { params: { slug: string } }) {
+  const { slug } = ctx.params
   try {
-    const dashboard = await getDashboardFromSlug({ dashboardSlug })
+    const dashboard = await getDashboardFromSlug({ dashboardSlug: slug })
     const links = dashboard.items.filter(
       (item): item is DashboardLinkItem => item.type === 'link'
     )
     const previews = await fetchLinkPreviews(links.map((l) => l.url))
 
+    const headlines = await api('headlines', {})
+
     return {
       props: {
         state: 'success',
         initialDashboard: dashboard,
+        headlines,
         previews,
-        slug: dashboardSlug,
+        slug,
       },
     }
   } catch (e) {
@@ -42,12 +43,13 @@ export async function getStaticPaths() {
   return { paths: [], fallback: 'blocking' }
 }
 
-export default function DashboardPage(
+export default function NewsPage(
   props:
     | {
         state: 'success'
         initialDashboard: Dashboard
         previews: LinkPreviews
+        headlines: Headline[]
         slug: string
       }
     | { state: 'not found' }

@@ -29,10 +29,13 @@ import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { AddItemCard } from 'web/components/dashboard/add-dashboard-item'
 import { DashboardContent } from 'web/components/dashboard/dashboard-content'
 import { usePathname, useRouter } from 'next/navigation'
+import { HeadlineTabs } from 'web/pages/news/_header'
+import { Headline } from 'common/news'
 
 export function FoundDashboardPage(props: {
   initialDashboard: Dashboard
   previews: LinkPreviews
+  headlines: Headline[]
   slug: string
   editByDefault: boolean
 }) {
@@ -41,7 +44,7 @@ export function FoundDashboardPage(props: {
   const router = useRouter()
   const pathName = usePathname() ?? ''
 
-  const { initialDashboard, slug, editByDefault, previews } = props
+  const { initialDashboard, slug, editByDefault, previews, headlines } = props
   const fetchedDashboard = useDashboardFromSlug(slug)
   const [dashboard, setDashboard] = useState<Dashboard>(initialDashboard)
 
@@ -78,6 +81,8 @@ export function FoundDashboardPage(props: {
         title={dashboard.title}
         description={`dashboard created by ${dashboard.creatorName}`}
       />
+      <HeadlineTabs headlines={headlines} currentSlug={slug} />
+
       {dashboard.visibility === 'deleted' && (
         <>
           <Head>

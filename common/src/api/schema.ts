@@ -21,6 +21,7 @@ import { League } from 'common/leagues'
 import { searchProps } from './market-search-types'
 import { MAX_ANSWER_LENGTH } from 'common/answer'
 import { type LinkPreview } from 'common/link-preview'
+import { Headline } from 'common/news'
 
 export const marketCacheStrategy = 's-maxage=15, stale-while-revalidate=45'
 
@@ -473,6 +474,13 @@ export const API = (_apiTypeCheck = {
         }),
       })
       .strict(),
+  },
+  headlines: {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    returns: [] as Headline[],
+    props: z.object({}),
   },
   'compatible-lovers': {
     method: 'GET',
