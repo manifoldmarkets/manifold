@@ -63,7 +63,12 @@ export function useCommentOnContract(commentId: string) {
 }
 // TODO: the loadNewerQuery doesn't query for comment edits (e.g. via fs_updated_time).
 //This is okay for now as we're optimistically updating comments via useState.
-export function useRealtimeCommentsOnContract(contractId: string) {
+export function useRealtimeCommentsOnContract(
+  contractId: string,
+  loadNewerProps?: {
+    userId: string
+  }
+) {
   const { rows, loadNewer } = useSubscription(
     'contract_comments',
     { k: 'contract_id', v: contractId },
@@ -74,7 +79,8 @@ export function useRealtimeCommentsOnContract(contractId: string) {
       getNewCommentRows(
         contractId,
         maxBy(rows ?? [], (r) => tsToMillis(r.created_time))?.created_time ??
-          new Date(Date.now() - 500).toISOString()
+          new Date(Date.now() - 500).toISOString(),
+        loadNewerProps?.userId
       )
   )
 
