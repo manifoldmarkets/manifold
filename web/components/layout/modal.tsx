@@ -25,7 +25,7 @@ export function Modal(props: {
     setOpen,
     size = 'md',
     className,
-    noAutoFocus,
+    noAutoFocus = true, // This is annoying in every case I've seen, so default to true
     onClose,
   } = props
 
