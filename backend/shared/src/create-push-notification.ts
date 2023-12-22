@@ -39,7 +39,6 @@ export const createPushNotification = async (
     messages.push({
       to: pushToken,
       channelId: 'default',
-      sound: 'default',
       title,
       body,
       data: notification,
