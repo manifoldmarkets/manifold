@@ -18,6 +18,8 @@ import {
 } from 'shared/supabase/init'
 import { upsertGroupEmbedding } from 'shared/helpers/embeddings'
 import { buildArray } from 'common/util/array'
+import { addContractToFeed } from 'shared/create-feed'
+import { DAY_MS } from 'common/util/time'
 
 export const onUpdateContract = functions
   .runWith({ secrets })
@@ -65,20 +67,21 @@ export const onUpdateContract = functions
       )
     )
     // Adding a contract to a group is ~similar~ to creating a new contract in that group
-    if (onlyNewGroupIds.length > 0) {
+    if (
+      onlyNewGroupIds.length > 0 &&
+      contract.createdTime > Date.now() - 2 * DAY_MS
+    ) {
       const contractWithScore = await getContractSupabase(contract.id)
       if (!contractWithScore) return
-      // TEMPORARILTY DIASABLED B/C DATABASE IS ON FIRE.
-      // TODO: Renable
-      // await addContractToFeed(
-      //   contractWithScore,
-      //   ['contract_in_group_you_are_in'],
-      //   'new_contract',
-      //   [contractWithScore.creatorId],
-      //   {
-      //     idempotencyKey: contractWithScore.id + '_new_contract',
-      //   }
-      // )
+      await addContractToFeed(
+        contractWithScore,
+        ['contract_in_group_you_are_in'],
+        'new_contract',
+        [contractWithScore.creatorId],
+        {
+          idempotencyKey: contractWithScore.id + '_new_contract',
+        }
+      )
     }
 
     if (
