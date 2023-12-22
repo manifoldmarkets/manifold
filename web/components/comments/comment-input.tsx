@@ -42,15 +42,15 @@ export function CommentInput(props: {
   const user = useUser()
 
   const key = `comment ${pageId} ${parentCommentId ?? ''}`
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const editor = useTextEditor({
     key,
     size: 'sm',
     max: MAX_COMMENT_LENGTH,
     placeholder,
+    className: isSubmitting ? '!text-ink-400' : '',
   })
-
-  const [isSubmitting, setIsSubmitting] = useState(false)
 
   async function submitComment(type: CommentType) {
     if (!editor || editor.isEmpty || isSubmitting) return
