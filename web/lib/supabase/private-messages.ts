@@ -86,9 +86,14 @@ export const getNonEmptyChatMessageChannelIds = async (
     }
   )
   if (orderedNonEmptyIds.data) {
-    return orderedNonEmptyIds.data
-      .flat()
-      .map((d) => d as Row<'private_user_message_channels'>)
+    return (
+      orderedNonEmptyIds.data
+        .flat()
+        .map((d) => d as Row<'private_user_message_channels'>)
+        // Filter out Manifold love general channel.
+        // TODO: delete this channel from the database once we're sure.
+        .filter((c) => c.id !== 638)
+    )
   }
   return []
 }
