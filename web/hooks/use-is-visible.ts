@@ -18,7 +18,7 @@ export function useIsVisible(
 
     const viewportHeight = window.innerHeight
     const elementHeight = element.getBoundingClientRect().height
-    const threshold = elementHeight >= viewportHeight ? 0.1 : 0.9
+    const threshold = elementHeight >= viewportHeight ? 0.01 : 0.9
 
     const observer = new IntersectionObserver(
       (entries) => {
