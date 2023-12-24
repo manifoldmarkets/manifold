@@ -4,7 +4,6 @@ import { compact, first } from 'lodash'
 import { getUser, getValues, revalidateStaticProps } from 'shared/utils'
 import { ContractComment } from 'common/comment'
 import { Bet } from 'common/bet'
-import { getLargestPosition } from 'common/calculate'
 import {
   createCommentOrAnswerOrUpdatedContractNotification,
   replied_users_info,
@@ -65,22 +64,6 @@ async function getMostRecentCommentableBet(
   )
 }
 
-export async function getPriorContractBets(
-  contractId: string,
-  userId: string,
-  before: number
-) {
-  const priorBetsQuery = await firestore
-    .collection('contracts')
-    .doc(contractId)
-    .collection('bets')
-    .where('createdTime', '<', before)
-    .where('userId', '==', userId)
-    .where('isAnte', '==', false)
-    .get()
-  return priorBetsQuery.docs.map((d) => d.data() as Bet)
-}
-
 export const onCreateCommentOnContract = functions
   .runWith({ memory: '4GB', timeoutSeconds: 540, secrets })
   .firestore.document('contracts/{contractId}/comments/{commentId}')
@@ -111,12 +94,6 @@ export const onCreateCommentOnContract = functions
       .doc(contract.id)
       .update({ lastCommentTime, lastUpdatedTime: Date.now() })
 
-    const priorUserBets = await getPriorContractBets(
-      contractId,
-      comment.userId,
-      comment.createdTime
-    )
-
     let bet: Bet | undefined
     if (!comment.betId) {
       const bet = await getMostRecentCommentableBet(
@@ -139,14 +116,14 @@ export const onCreateCommentOnContract = functions
       }
     }
 
-    const position = getLargestPosition(contract, priorUserBets)
-    if (position) {
+    const position = await getLargestPosition(pg, contract.id, comment.userId)
+    if (position && position.shares >= 1) {
       const fields: { [k: string]: unknown } = {
         commenterPositionShares: position.shares,
         commenterPositionOutcome: position.outcome,
       }
-      if (position.answerId) {
-        fields.commenterPositionAnswerId = position.answerId
+      if (position.answer_id) {
+        fields.commenterPositionAnswerId = position.answer_id
       }
       if (contract.mechanism === 'cpmm-1') {
         fields.commenterPositionProb = contract.prob
@@ -271,4 +248,22 @@ export const handleCommentNotifications = async (
     }
   )
   return [...mentionedUsers, ...Object.keys(repliedUsers)]
+}
+
+async function getLargestPosition(
+  pg: SupabaseDirectClient,
+  contractId: string,
+  userId: string
+) {
+  return await pg.oneOrNone(
+    `with user_positions as (
+      select answer_id, outcome, sum(shares) as shares
+      from contract_bets
+      where contract_id = $1
+      and user_id = $2
+      group by answer_id, outcome
+    )
+    select * from user_positions order by shares desc limit 1`,
+    [contractId, userId]
+  )
 }
