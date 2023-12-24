@@ -155,6 +155,7 @@ export const onCreateCommentOnContract = functions
     }
 
     const repliedOrMentionedUserIds = await handleCommentNotifications(
+      pg,
       comment,
       contract,
       commentCreator,
@@ -169,35 +170,42 @@ export const onCreateCommentOnContract = functions
     )
   })
 
-const getReplyInfo = async (comment: ContractComment, contract: Contract) => {
+const getReplyInfo = async (
+  pg: SupabaseDirectClient,
+  comment: ContractComment,
+  contract: Contract
+) => {
   if (
     comment.answerOutcome &&
     contract.outcomeType === 'FREE_RESPONSE' &&
     contract.answers
   ) {
-    const comments = await getValues<ContractComment>(
-      firestore.collection('contracts').doc(contract.id).collection('comments')
-    )
     const answer = contract.answers.find((a) => a.id === comment.answerOutcome)
+    const comments = await pg.manyOrNone(
+      `select id, user_id
+      from contract_comments
+      where contract_id = $1 and coalesce(data->>'answerOutcome', '') = $2`,
+      [contract.id, answer?.id ?? '']
+    )
     return {
       repliedToAnswer: answer,
       repliedToType: 'answer',
       repliedUserId: answer?.userId,
-      commentsInSameReplyChain: comments.filter(
-        (c) => c.answerOutcome === answer?.id
-      ),
+      commentsInSameReplyChain: comments,
     } as const
   } else if (comment.replyToCommentId) {
-    const comments = await getValues<ContractComment>(
-      firestore.collection('contracts').doc(contract.id).collection('comments')
+    const comments = await pg.manyOrNone(
+      `select id, user_id, data->>'replyToCommentId' as reply_to_id
+      from contract_comments where contract_id = $1`,
+      [contract.id]
     )
     return {
       repliedToAnswer: null,
       repliedToType: 'comment',
       repliedUserId: comments.find((c) => c.id === comment.replyToCommentId)
-        ?.userId,
+        ?.user_id,
       commentsInSameReplyChain: comments.filter(
-        (c) => c.replyToCommentId === comment.replyToCommentId
+        (c) => c.reply_to_id === comment.replyToCommentId
       ),
     } as const
   } else {
@@ -206,13 +214,14 @@ const getReplyInfo = async (comment: ContractComment, contract: Contract) => {
 }
 
 export const handleCommentNotifications = async (
+  pg: SupabaseDirectClient,
   comment: ContractComment,
   contract: Contract,
   commentCreator: User,
   bet: Bet | undefined,
   eventId: string
 ) => {
-  const replyInfo = await getReplyInfo(comment, contract)
+  const replyInfo = await getReplyInfo(pg, comment, contract)
 
   const mentionedUsers = compact(parseMentions(comment.content))
   const repliedUsers: replied_users_info = {}
@@ -236,7 +245,7 @@ export const handleCommentNotifications = async (
     if (commentsInSameReplyChain) {
       // The rest of the children in the chain are always comments
       commentsInSameReplyChain.forEach((c) => {
-        if (c.userId !== comment.userId && c.userId !== repliedUserId) {
+        if (c.user_id !== comment.userId && c.user_id !== repliedUserId) {
           repliedUsers[c.userId] = {
             repliedToType: 'comment',
             repliedToAnswerText: undefined,
