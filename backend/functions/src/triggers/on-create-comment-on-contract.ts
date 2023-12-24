@@ -18,50 +18,51 @@ import { HOUR_MS } from 'common/util/time'
 import { removeUndefinedProps } from 'common/util/object'
 import { addCommentOnContractToFeed } from 'shared/create-feed'
 import { getContractsDirect } from 'shared/supabase/contracts'
-import { createSupabaseDirectClient } from 'shared/supabase/init'
+import {
+  createSupabaseDirectClient,
+  SupabaseDirectClient,
+} from 'shared/supabase/init'
 
 const firestore = admin.firestore()
 
-export function getMostRecentCommentableBet(
-  commentCreatedTime: number,
-  betsByCurrentUser: Bet[],
-  commentsByCurrentUser: ContractComment[],
-  answerOutcome?: string
-) {
-  const mostRecentCommentedOnBet = commentsByCurrentUser
-    .filter((c) => c.betId)
-    .sort((a, b) => b.createdTime - a.createdTime)[0]
-  const oneHourAgo = commentCreatedTime - HOUR_MS
-  const cutoffTime =
-    mostRecentCommentedOnBet &&
-    mostRecentCommentedOnBet.createdTime > oneHourAgo
-      ? mostRecentCommentedOnBet.createdTime
-      : oneHourAgo
-  const mostRecentCommentableBets = betsByCurrentUser
-    .sort((a, b) => b.createdTime - a.createdTime)
-    .filter(
-      (bet) =>
-        !bet.isRedemption &&
-        (answerOutcome ? bet.outcome === answerOutcome : true) &&
-        bet.createdTime > cutoffTime &&
-        !commentsByCurrentUser.some((comment) => comment.betId === bet.id)
-    )
-  return mostRecentCommentableBets[0]
-}
-
-export async function getPriorUserComments(
+async function getMostRecentCommentableBet(
+  pg: SupabaseDirectClient,
   contractId: string,
   userId: string,
-  before: number
+  commentCreatedTime: number,
+  answerOutcome?: string
 ) {
-  const priorCommentsQuery = await firestore
-    .collection('contracts')
-    .doc(contractId)
-    .collection('comments')
-    .where('createdTime', '<', before)
-    .where('userId', '==', userId)
-    .get()
-  return priorCommentsQuery.docs.map((d) => d.data() as ContractComment)
+  return await pg.oneOrNone(
+    `with prior_user_comments_with_bets as (
+      select created_time, data->>'betId' as bet_id from contract_comments
+      where contract_id = $1 and user_id = $2
+      and created_time < millis_to_ts($3)
+      and data ->> 'betId' is not null
+    ), prior_user_bets as (
+      select * from contract_bets
+      where contract_id = $1 and user_id = $2
+      and created_time < millis_to_ts($3)
+      and not is_ante
+    ), cutoff_time as (
+      select *
+      from (
+        select created_time from prior_user_comments_with_bets
+        union all
+        select (millis_to_ts($3) - interval '1 hour') as created_time
+      ) as t
+      order by created_time desc
+      limit 1
+    )
+    select id, outcome, answer_id, amount
+    from prior_user_bets as b
+    where not b.is_redemption
+    and $4 is null or b.id = $4
+    and b.created_time > (select created_time from cutoff_time)
+    and b.bet_id not in (select bet_id from prior_user_comments_with_bets)
+    order by created_time desc
+    limit 1`,
+    [contractId, userId, commentCreatedTime, answerOutcome]
+  )
 }
 
 export async function getPriorContractBets(
@@ -88,11 +89,9 @@ export const onCreateCommentOnContract = functions
       contractId: string
     }
     const { eventId } = context
+    const pg = createSupabaseDirectClient()
 
-    const contracts = await getContractsDirect(
-      [contractId],
-      createSupabaseDirectClient()
-    )
+    const contracts = await getContractsDirect([contractId], pg)
     const contract = first(contracts)
     if (!contract)
       throw new Error('Could not find contract corresponding with comment')
@@ -117,28 +116,27 @@ export const onCreateCommentOnContract = functions
       comment.userId,
       comment.createdTime
     )
-    const priorUserComments = await getPriorUserComments(
-      contractId,
-      comment.userId,
-      comment.createdTime
-    )
+
     let bet: Bet | undefined
     if (!comment.betId) {
-      bet = getMostRecentCommentableBet(
+      const bet = await getMostRecentCommentableBet(
+        pg,
+        contract.id,
+        comment.userId,
         comment.createdTime,
-        priorUserBets,
-        priorUserComments,
         comment.answerOutcome
       )
-      if (bet)
+      if (bet) {
+        const { id, outcome, amount, answer_id } = bet
         await change.ref.update(
           removeUndefinedProps({
-            betId: bet.id,
-            betOutcome: bet.outcome,
-            betAmount: bet.amount,
-            betAnswerId: bet.answerId,
+            betId: id,
+            betOutcome: outcome,
+            betAmount: amount,
+            betAnswerId: answer_id,
           })
         )
+      }
     }
 
     const position = getLargestPosition(contract, priorUserBets)
