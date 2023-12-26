@@ -26,9 +26,6 @@ export function PushNotificationsModal(props: {
   useEffect(() => {
     if (!getIsNative() || privateUser.pushToken) return
 
-    // Just in case they gave system permission, but we haven't written the token to the db yet
-    postMessageToNative('tryToGetPushTokenWithoutPrompt', {})
-
     // They said 'sure' to our prompt, but they haven't given us system permissions yet
     if (
       privateUser.interestedInPushNotifications &&
@@ -74,6 +71,10 @@ export function PushNotificationsModal(props: {
     privateUser.rejectedPushNotificationsOn,
   ])
 
+  useEffect(() => {
+    postMessageToNative('tryToGetPushTokenWithoutPrompt', {})
+  }, [showSettingsDescription])
+
   if (!getIsNative()) return <div />
 
   return (
@@ -109,7 +110,10 @@ export function PushNotificationsModal(props: {
               size={'xl'}
               className={'mt-4'}
               color={'indigo-outline'}
-              onClick={() => setOpen(false)}
+              onClick={() => {
+                postMessageToNative('tryToGetPushTokenWithoutPrompt', {})
+                setOpen(false)
+              }}
             >
               Done
             </Button>
@@ -136,7 +140,7 @@ export function PushNotificationsModal(props: {
                 updatePrivateUser(privateUser.id, {
                   interestedInPushNotifications: true,
                 })
-                if (privateUser.rejectedPushNotificationsOn) {
+                if (!!privateUser.rejectedPushNotificationsOn) {
                   setShowSettingsDescription(true)
                   return
                 }
