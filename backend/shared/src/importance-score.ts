@@ -25,14 +25,15 @@ export async function calculateImportanceScore(
   readOnly = false
 ) {
   const now = Date.now()
-  const lastUpdatedTime = now - IMPORTANCE_MINUTE_INTERVAL * MINUTE_MS
   const hourAgo = now - HOUR_MS
   const dayAgo = now - DAY_MS
   const weekAgo = now - 7 * DAY_MS
 
   const activeContracts = await pg.map(
-    `select data from contracts where ((data->'lastUpdatedTime')::numeric) > $1`,
-    [lastUpdatedTime],
+    `select data from contracts
+    where ((data->'lastBetTime')::numeric) > $1
+    or ((data->'lastCommentTime')::numeric) > $1 `,
+    [now - IMPORTANCE_MINUTE_INTERVAL * MINUTE_MS],
     (row) => row.data as Contract
   )
   // We have to downgrade previously active contracts to allow the new ones to bubble up
