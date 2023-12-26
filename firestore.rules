@@ -97,7 +97,7 @@ service cloud.firestore {
       allow read: if userId == request.auth.uid || isAdmin();
       allow update: if (userId == request.auth.uid || isAdmin())
                        && request.resource.data.diff(resource.data).affectedKeys()
-                         .hasOnly(['email', 'apiKey', 'notificationPreferences', 'twitchInfo', 'pushToken', 'rejectedPushNotificationsOn', 'blockedUserIds', 'blockedContractIds', 'blockedGroupSlugs','interestedInPushNotifications', 'hasSeenAppBannerInNotificationsOn', 'installedAppPlatforms']);
+                         .hasOnly(['email', 'apiKey', 'notificationPreferences', 'twitchInfo', 'pushToken', 'rejectedPushNotificationsOn', 'blockedUserIds', 'blockedContractIds', 'blockedGroupSlugs','interestedInPushNotifications', 'hasSeenAppBannerInNotificationsOn', 'installedAppPlatforms','lastPromptedToEnablePushNotifications']);
     // Symmetric block rules
       allow update: if (request.auth != null || isAdmin())
                        && request.resource.data.diff(resource.data).affectedKeys()

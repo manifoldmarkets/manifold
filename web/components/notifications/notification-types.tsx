@@ -22,6 +22,7 @@ import {
   LeagueChangedNotification,
   LoanIncomeNotification,
   ManaPaymentReceivedNotification,
+  PushNotificationBonusNotification,
   QuestIncomeNotification,
   UniqueBettorBonusIncomeNotification,
   UserJoinedNotification,
@@ -78,9 +79,17 @@ export function NotificationItem(props: {
 
   const [highlighted, setHighlighted] = useState(!notification.isSeen)
 
-  if (sourceType === 'bonus') {
+  if (reason === 'unique_bettors_on_your_contract') {
     return (
       <UniqueBettorBonusIncomeNotification
+        notification={notification}
+        highlighted={highlighted}
+        setHighlighted={setHighlighted}
+      />
+    )
+  } else if (sourceType === 'push_notification_bonus') {
+    return (
+      <PushNotificationBonusNotification
         notification={notification}
         highlighted={highlighted}
         setHighlighted={setHighlighted}

@@ -15,7 +15,13 @@ import {
   ReviewNotificationData,
   UniqueBettorData,
 } from 'common/notification'
-import { PrivateUser, User } from 'common/user'
+import {
+  MANIFOLD_AVATAR_URL,
+  MANIFOLD_USER_NAME,
+  MANIFOLD_USER_USERNAME,
+  PrivateUser,
+  User,
+} from 'common/user'
 import { Contract, MultiContract, renderResolution } from 'common/contract'
 import {
   getPrivateUser,
@@ -901,7 +907,7 @@ export const createUniqueBettorBonusNotification = async (
       createdTime: Date.now(),
       isSeen: false,
       sourceId: txnId,
-      sourceType: 'bonus',
+      sourceType: 'push_notification_bonus',
       sourceUpdateType: 'created',
       sourceUserName: bettor.name,
       sourceUserUsername: bettor.username,
@@ -1923,4 +1929,31 @@ export const createBetReplyToCommentNotification = async (
     }
     await insertNotificationToSupabase(notification, pg)
   }
+}
+
+export const createPushNotificationBonusNotification = async (
+  privateUser: PrivateUser,
+  txnId: string,
+  amount: number,
+  idempotencyKey: string
+) => {
+  if (userOptedOutOfBrowserNotifications(privateUser)) return
+
+  const notification: Notification = {
+    id: idempotencyKey,
+    userId: privateUser.id,
+    reason: 'onboarding_flow',
+    createdTime: Date.now(),
+    isSeen: false,
+    sourceId: txnId,
+    sourceType: 'push_notification_bonus',
+    sourceUpdateType: 'created',
+    sourceUserName: MANIFOLD_USER_NAME,
+    sourceUserUsername: MANIFOLD_USER_USERNAME,
+    sourceUserAvatarUrl: MANIFOLD_AVATAR_URL,
+    sourceText: amount.toString(),
+    sourceTitle: 'Push Notification Bonus',
+  }
+  const pg = createSupabaseDirectClient()
+  await insertNotificationToSupabase(notification, pg)
 }
