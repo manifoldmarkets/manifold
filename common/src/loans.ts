@@ -26,13 +26,16 @@ export const getUserLoanUpdates = (
   return { updates, payout: sumBy(updates, (update) => update.newLoan) }
 }
 
+export const overLeveraged = (loanTotal: number, investmentValue: number) =>
+  loanTotal / investmentValue >= 8
+
 export const isUserEligibleForLoan = (
   portfolio: PortfolioMetrics | undefined
 ) => {
   if (!portfolio) return true
 
   const { investmentValue, loanTotal } = portfolio
-  return investmentValue > 0 && (loanTotal ?? 0) / investmentValue < 8
+  return investmentValue > 0 && !overLeveraged(loanTotal ?? 0, investmentValue)
 }
 
 const calculateLoanBetUpdates = (
