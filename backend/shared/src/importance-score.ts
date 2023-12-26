@@ -31,8 +31,8 @@ export async function calculateImportanceScore(
 
   const activeContracts = await pg.map(
     `select data from contracts
-    where ((data->'lastBetTime')::numeric) > $1
-    or ((data->'lastCommentTime')::numeric) > $1 `,
+    where last_bet_time > millis_to_ts($1)
+    or last_comment_time > millis_to_ts($1)`,
     [now - IMPORTANCE_MINUTE_INTERVAL * MINUTE_MS],
     (row) => row.data as Contract
   )
