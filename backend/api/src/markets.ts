@@ -1,83 +1,69 @@
 import { SupabaseClient, createSupabaseClient } from 'shared/supabase/init'
-import { run, selectJson } from 'common/supabase/utils'
+import { Column, Row, run, selectJson } from 'common/supabase/utils'
 import { toLiteMarket } from 'common/api/market-types'
 import { APIError, type APIHandler } from './helpers'
 
+const SORT_COLUMNS = {
+  'created-time': 'created_time',
+  'updated-time': 'last_updated_time',
+  'last-bet-time': 'last_bet_time',
+  'last-comment-time': 'last_comment_time',
+} as const
+
 // mqp: this pagination approach is technically incorrect if multiple contracts
 // have the exact same createdTime, but that's very unlikely
-const getBeforeTime = async (
+const getBeforeValue = async <T extends Column<'public_contracts'>>(
   db: SupabaseClient,
-  beforeId: string | undefined
+  beforeId: string | undefined,
+  sortColumn: T
 ) => {
   if (beforeId) {
-    const createdTime = await getCreatedTime(db, beforeId)
-    if (createdTime == null) {
+    const { data } = await run(
+      db.from('public_contracts').select(sortColumn).eq('id', beforeId)
+    )
+    if (!data?.length) {
       throw new Error('Contract specified in before parameter not found.')
     }
-    return createdTime
+    return (data[0] as any)[sortColumn] as Row<'public_contracts'>[T]
   } else {
     return undefined
   }
 }
 
-const getCreatedTime = async (db: SupabaseClient, id: string) => {
-  const { data } = await run(
-    db.from('public_contracts').select('created_time').eq('id', id)
-  )
-  return data && data.length > 0 ? data[0].created_time : null
-}
-
 // Only fetches contracts with 'public' visibility
-const getPublicContracts = async (
-  db: SupabaseClient,
-  options: {
-    limit: number
-    beforeTime?: string
-    order?: 'asc' | 'desc'
-    userId?: string
-    groupId?: string
-  }
-) => {
-  const q = selectJson(db, 'public_contracts')
-  q.order('created_time', {
-    ascending: options?.order === 'asc',
-  } as any)
-  if (options.beforeTime) {
-    q.lt('created_time', options.beforeTime)
-  }
-  if (options.userId) {
-    q.eq('creator_id', options.userId)
-  }
-  if (options.groupId) {
-    // TODO: use the sql builder instead and use a join
-    const { data, error } = await db
-      .from('groups')
-      .select('slug')
-      .eq('id', options.groupId)
-      .single()
-    if (error)
-      throw new APIError(404, `Group with id ${options.groupId} not found`)
-    q.contains('group_slugs', [data.slug])
-  }
-  q.limit(options.limit)
-  const { data } = await run(q)
-  return data.map((r) => r.data)
-}
-
 export const getMarkets: APIHandler<'markets'> = async ({
   limit,
   userId,
   groupId,
   before,
+  sort,
+  order,
 }) => {
   const db = createSupabaseClient()
-  const beforeTime = await getBeforeTime(db, before)
-  const contracts = await getPublicContracts(db, {
-    beforeTime,
-    limit,
-    userId,
-    groupId,
-  })
-
-  return contracts.map(toLiteMarket)
+  const sortColumn = SORT_COLUMNS[sort ?? 'created-time']
+  const q = selectJson(db, 'public_contracts')
+  q.order(sortColumn, {
+    ascending: order === 'asc',
+    nullsFirst: false,
+  } as any)
+  if (before) {
+    const beforeVal = await getBeforeValue(db, before, sortColumn)
+    q.lt(sortColumn, beforeVal)
+  }
+  if (userId) {
+    q.eq('creator_id', userId)
+  }
+  if (groupId) {
+    // TODO: use the sql builder instead and use a join
+    const { data, error } = await db
+      .from('groups')
+      .select('slug')
+      .eq('id', groupId)
+      .single()
+    if (error) throw new APIError(404, `Group with id ${groupId} not found`)
+    q.contains('group_slugs', [data.slug])
+  }
+  q.limit(limit)
+  const { data } = await run(q)
+  return data.map((r) => toLiteMarket(r.data))
 }
