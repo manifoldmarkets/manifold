@@ -822,7 +822,7 @@ create policy "admin write access" on contract_embeddings as PERMISSIVE for all 
 set
   ivfflat.probes = 7;
 
-create index if not exists contract_embeddings_embedding on contract_embeddings using ivfflat (embedding vector_cosine_ops)
+create index if not exists contract_embeddings_embedding_dec_2023 on contract_embeddings using ivfflat (embedding vector_cosine_ops)
 with
   (lists = 500);
 
