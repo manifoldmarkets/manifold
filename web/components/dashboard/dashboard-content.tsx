@@ -51,66 +51,76 @@ export const DashboardContent = (props: {
   return (
     <>
       <div ref={loadLiveRef} />
-      <DragDropContext
-        onDragStart={() => window.navigator.vibrate?.(100)}
-        onDragEnd={({ destination, source }) => {
-          if (!destination) return
-          const newItems = [...items]
-          const [removed] = newItems.splice(source.index, 1)
-          newItems.splice(destination.index, 0, removed)
-          setItems?.(newItems)
-        }}
-      >
-        <Droppable droppableId="dashboard">
-          {(provided, snapshot) => (
-            <div
-              ref={provided.innerRef}
-              {...provided.droppableProps}
-              className="relative flex flex-col"
-            >
-              {items.map((item, index) => (
-                <Draggable
-                  isDragDisabled={!isEditing}
-                  key={key(item)}
-                  draggableId={key(item)}
-                  index={index}
-                >
-                  {(provided) => (
-                    <div
-                      ref={provided.innerRef}
-                      {...provided.draggableProps}
-                      {...provided.dragHandleProps}
-                      className="relative mb-4"
-                      onMouseMove={(e) => {
-                        if (
-                          e.nativeEvent.offsetY <
-                          e.currentTarget.offsetHeight / 2
-                        ) {
-                          setHoverIndex(index)
-                          setHoverTop(e.currentTarget.offsetTop - 8)
-                        } else {
-                          setHoverIndex(index + 1)
-                          setHoverTop(
-                            e.currentTarget.offsetTop +
-                              e.currentTarget.offsetHeight +
-                              4
-                          )
-                        }
-                      }}
-                    >
-                      <Card
-                        item={item}
-                        setItem={(newItem) => {
-                          const newItems = [...items]
-                          newItems[index] = newItem
-
-                          setItems?.(newItems)
+      {!isEditing ? (
+        <div className="mb-4 flex flex-col gap-4">
+          {items.map((item) => (
+            <Card
+              key={key(item)}
+              item={item}
+              previews={previews}
+              contracts={contracts}
+            />
+          ))}
+        </div>
+      ) : (
+        <DragDropContext
+          onDragStart={() => window.navigator.vibrate?.(100)}
+          onDragEnd={({ destination, source }) => {
+            if (!destination) return
+            const newItems = [...items]
+            const [removed] = newItems.splice(source.index, 1)
+            newItems.splice(destination.index, 0, removed)
+            setItems?.(newItems)
+          }}
+        >
+          <Droppable droppableId="dashboard">
+            {(provided, snapshot) => (
+              <div
+                ref={provided.innerRef}
+                {...provided.droppableProps}
+                className="relative flex flex-col"
+              >
+                {items.map((item, index) => (
+                  <Draggable
+                    key={key(item)}
+                    draggableId={key(item)}
+                    index={index}
+                  >
+                    {(provided) => (
+                      <div
+                        ref={provided.innerRef}
+                        {...provided.draggableProps}
+                        {...provided.dragHandleProps}
+                        className="relative mb-4"
+                        onMouseMove={(e) => {
+                          if (
+                            e.nativeEvent.offsetY <
+                            e.currentTarget.offsetHeight / 2
+                          ) {
+                            setHoverIndex(index)
+                            setHoverTop(e.currentTarget.offsetTop - 8)
+                          } else {
+                            setHoverIndex(index + 1)
+                            setHoverTop(
+                              e.currentTarget.offsetTop +
+                                e.currentTarget.offsetHeight +
+                                4
+                            )
+                          }
                         }}
-                        previews={previews}
-                        contracts={contracts}
-                        isEditing={isEditing}
-                      />
-                      {isEditing && (
+                      >
+                        <Card
+                          item={item}
+                          setItem={(newItem) => {
+                            const newItems = [...items]
+                            newItems[index] = newItem
+
+                            setItems?.(newItems)
+                          }}
+                          previews={previews}
+                          contracts={contracts}
+                          isEditing
+                        />
                         <RemoveButton
                           onClick={() => {
                             const newItems = [...items]
@@ -118,35 +128,34 @@ export const DashboardContent = (props: {
                             setItems?.(newItems)
                           }}
                         />
-                      )}
+                      </div>
+                    )}
+                  </Draggable>
+                ))}
+                {!snapshot.isDraggingOver &&
+                  hoverIndex != null &&
+                  hoverTop != null && (
+                    <div
+                      className="absolute -right-2 hidden -translate-y-1/2 translate-x-full transition-all md:block lg:-right-8"
+                      style={{ top: hoverTop }}
+                    >
+                      <AddItemFloatyButton
+                        key="floaty button"
+                        position={hoverIndex}
+                        items={items}
+                        setItems={setItems}
+                        topics={topics}
+                        setTopics={setTopics}
+                      />
                     </div>
                   )}
-                </Draggable>
-              ))}
-              {isEditing &&
-                !snapshot.isDraggingOver &&
-                hoverIndex != null &&
-                hoverTop != null && (
-                  <div
-                    className="absolute -right-2 hidden -translate-y-1/2 translate-x-full transition-all md:block lg:-right-8"
-                    style={{ top: hoverTop }}
-                  >
-                    <AddItemFloatyButton
-                      key="floaty button"
-                      position={hoverIndex}
-                      items={items}
-                      setItems={setItems}
-                      topics={topics}
-                      setTopics={setTopics}
-                    />
-                  </div>
-                )}
 
-              {provided.placeholder}
-            </div>
-          )}
-        </Droppable>
-      </DragDropContext>
+                {provided.placeholder}
+              </div>
+            )}
+          </Droppable>
+        </DragDropContext>
+      )}
       {loadLiveFeed && <DashboardLive topics={topics} editing={isEditing} />}
     </>
   )
@@ -160,7 +169,7 @@ const key = (item: DashboardItem) => {
 
 const Card = (props: {
   item: DashboardItem
-  setItem: (item: DashboardItem) => void
+  setItem?: (item: DashboardItem) => void
   previews?: LinkPreviews
   contracts: Contract[]
   isEditing?: boolean
@@ -189,7 +198,7 @@ const Card = (props: {
       <DashboardText
         content={item.content}
         editing={isEditing}
-        onSave={(content) => setItem({ ...item, content })}
+        onSave={(content) => setItem?.({ ...item, content })}
       />
     )
   }
