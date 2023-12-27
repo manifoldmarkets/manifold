@@ -28,7 +28,7 @@ import { VisibilityIcon } from 'web/components/contract/contracts-table'
 import { HeaderActions } from 'web/components/contract/header-actions'
 import { MarketTopics } from 'web/components/contract/market-topics'
 import {
-  RelatedContractsCarousel,
+  RelatedContractsGrid,
   RelatedContractsList,
 } from 'web/components/contract/related-contracts-widget'
 import { EditableQuestionTitle } from 'web/components/contract/title-edit'
@@ -438,12 +438,8 @@ export function ContractPageContent(props: ContractParams) {
               />
             )}
             {contract.outcomeType !== 'BOUNTIED_QUESTION' && (
-              <RelatedContractsCarousel
-                className="-ml-4 mb-2 mt-4 xl:hidden"
+              <RelatedContractsGrid
                 contracts={relatedMarkets}
-                onContractClick={(c) =>
-                  track('click related market', { contractId: c.id })
-                }
                 loadMore={loadMore}
               />
             )}
@@ -477,12 +473,8 @@ export function ContractPageContent(props: ContractParams) {
               />
             </div>
             {contract.outcomeType === 'BOUNTIED_QUESTION' && (
-              <RelatedContractsCarousel
-                className="-ml-4 mb-2 mt-4 xl:hidden"
+              <RelatedContractsGrid
                 contracts={relatedMarkets}
-                onContractClick={(c) =>
-                  track('click related market', { contractId: c.id })
-                }
                 loadMore={loadMore}
               />
             )}

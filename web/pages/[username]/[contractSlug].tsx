@@ -31,7 +31,7 @@ import { HeaderActions } from 'web/components/contract/header-actions'
 import { MarketTopics } from 'web/components/contract/market-topics'
 import { PrivateContractPage } from 'web/components/contract/private-contract'
 import {
-  RelatedContractsCarousel,
+  RelatedContractsGrid,
   RelatedContractsList,
 } from 'web/components/contract/related-contracts-widget'
 import { EditableQuestionTitle } from 'web/components/contract/title-edit'
@@ -76,6 +76,7 @@ import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
 import { DangerZone } from 'web/components/contract/danger-zone'
 import { ContractDescription } from 'web/components/contract/contract-description'
 import { ContractSummaryStats } from 'web/components/contract/contract-summary-stats'
+import { parseJsonContentToText } from 'common/util/parse'
 export async function getStaticProps(ctx: {
   params: { username: string; contractSlug: string }
 }) {
@@ -304,6 +305,18 @@ export function ContractPageContent(props: ContractParams) {
   const [justNowReview, setJustNowReview] = useState<null | Rating>(null)
   const userReview = useReview(contract.id, user?.id)
   const userHasReviewed = userReview || justNowReview
+  const [justBet, setJustBet] = useState(false)
+
+  // Show related contracts after a user bets, like Google shows related searches.
+  useEffect(() => {
+    if (
+      !user ||
+      !user.lastBetTime ||
+      parseJsonContentToText(contract.description).trim().length < 200
+    )
+      return
+    setJustBet(user.lastBetTime > Date.now() - 1000)
+  }, [user?.lastBetTime])
 
   return (
     <>
@@ -448,6 +461,13 @@ export function ContractPageContent(props: ContractParams) {
                 chartAnnotations={chartAnnotations}
               />
             </Col>
+            {justBet && (
+              <RelatedContractsGrid
+                contracts={relatedMarkets}
+                loadMore={loadMore}
+              />
+            )}
+
             {showReview && user && (
               <div className="relative my-2">
                 <ReviewPanel
@@ -507,16 +527,10 @@ export function ContractPageContent(props: ContractParams) {
                 contract={contract}
               />
             )}
-            {contract.outcomeType !== 'BOUNTIED_QUESTION' && (
-              <RelatedContractsCarousel
-                className="-ml-4 mb-2 mt-4 xl:hidden"
-                contracts={relatedMarkets}
-                onContractClick={(c) =>
-                  track('click related market', { contractId: c.id })
-                }
-                loadMore={loadMore}
-              />
-            )}
+            <RelatedContractsGrid
+              contracts={relatedMarkets}
+              loadMore={loadMore}
+            />
             {isResolved && resolution !== 'CANCEL' && (
               <>
                 <ContractLeaderboard
@@ -546,16 +560,11 @@ export function ContractPageContent(props: ContractParams) {
                 setActiveIndex={setActiveTabIndex}
               />
             </div>
-            {contract.outcomeType === 'BOUNTIED_QUESTION' && (
-              <RelatedContractsCarousel
-                className="-ml-4 mb-2 mt-4 xl:hidden"
-                contracts={relatedMarkets}
-                onContractClick={(c) =>
-                  track('click related market', { contractId: c.id })
-                }
-                loadMore={loadMore}
-              />
-            )}
+            <RelatedContractsGrid
+              contracts={relatedMarkets}
+              loadMore={loadMore}
+              showAll={true}
+            />
           </Col>
         </Col>
         <Col className="hidden min-h-full max-w-[375px] xl:flex">
