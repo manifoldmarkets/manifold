@@ -49,14 +49,7 @@ export const updatedashboard = authEndpoint(async (req, auth, log) => {
     topics,
   })
 
-  await revalidateStaticProps(`/dashboards/${updatedDashboard.slug}`)
-  // if in news
-  if (updatedDashboard.importance_score) {
-    await Promise.all([
-      revalidateStaticProps(`/news`),
-      revalidateStaticProps(`/home`),
-    ])
-  }
+  await revalidateStaticProps(`/news/${updatedDashboard.slug}`)
 
   // return updated dashboard
   return { updateDashboard: { ...updatedDashboard, topics } }
