@@ -1,9 +1,5 @@
-export type News = {
-  error?: string
-  image?: string
-  url: string
-  title: string
-  description: string
-  urlToImage: string
+export type Headline = {
   id: string
+  slug: string
+  title: string
 }

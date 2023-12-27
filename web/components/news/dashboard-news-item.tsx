@@ -11,8 +11,7 @@ export const MaybeDashboardNewsItem = (props: {
   preview?: LinkPreview
   className?: string
 }) => {
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  const preview = props.preview ?? useLinkPreview(props.url)
+  const preview = useLinkPreview(props.url, props.preview)
 
   if (!preview) {
     return <DashboardNewsItemPlaceholder pulse />

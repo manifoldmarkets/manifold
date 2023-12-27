@@ -404,7 +404,6 @@ export const RESERVED_PATHS = [
   'help',
   'home',
   'jobs',
-  'latestposts',
   'leaderboard',
   'leaderboards',
   'league',

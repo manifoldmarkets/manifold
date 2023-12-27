@@ -131,6 +131,7 @@ import { fetchLinkPreview } from './fetch-link-preview'
 import { type APIHandler, typedEndpoint } from './helpers'
 import { requestloan } from 'api/request-loan'
 import { removePinnedPhoto } from './love/remove-pinned-photo'
+import { getHeadlines } from './get-headlines'
 
 const allowCorsUnrestricted: RequestHandler = cors({})
 
@@ -228,6 +229,7 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   users: getUsers,
   'search-users': searchUsers,
   'save-twitch': saveTwitchCredentials,
+  headlines: getHeadlines,
   'compatible-lovers': getCompatibleLovers,
   post: post,
   'fetch-link-preview': fetchLinkPreview,

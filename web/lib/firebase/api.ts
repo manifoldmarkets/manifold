@@ -369,10 +369,6 @@ export function supabaseSearchDashboards(params: {
   ) as Promise<BaseDashboard[]>
 }
 
-export function getNewsDashboards() {
-  return maybeAuthedCall(getApiUrl('get-news-dashboards'), 'GET')
-}
-
 export function setNewsDashboards(params: { dashboardIds: string[] }) {
   return call(getApiUrl('set-news-dashboards'), 'POST', params)
 }

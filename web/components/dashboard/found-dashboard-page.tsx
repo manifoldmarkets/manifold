@@ -28,10 +28,15 @@ import { UserLink } from 'web/components/widgets/user-link'
 import { AddItemCard } from 'web/components/dashboard/add-dashboard-item'
 import { DashboardContent } from 'web/components/dashboard/dashboard-content'
 import { usePathname, useRouter } from 'next/navigation'
+import { HeadlineTabs } from 'web/components/dashboard/header'
+import { Headline } from 'common/news'
+import { type Contract } from 'common/contract'
 
 export function FoundDashboardPage(props: {
   initialDashboard: Dashboard
   previews: LinkPreviews
+  initialContracts: Contract[]
+  headlines: Headline[]
   slug: string
   editByDefault: boolean
 }) {
@@ -40,7 +45,14 @@ export function FoundDashboardPage(props: {
   const router = useRouter()
   const pathName = usePathname() ?? ''
 
-  const { initialDashboard, slug, editByDefault, previews } = props
+  const {
+    initialDashboard,
+    slug,
+    editByDefault,
+    previews,
+    initialContracts,
+    headlines,
+  } = props
   const fetchedDashboard = useDashboardFromSlug(slug)
   const [dashboard, setDashboard] = useState<Dashboard>(initialDashboard)
 
@@ -77,6 +89,8 @@ export function FoundDashboardPage(props: {
         title={dashboard.title}
         description={`dashboard created by ${dashboard.creatorName}`}
       />
+      {!editMode && <HeadlineTabs headlines={headlines} currentSlug={slug} />}
+
       {dashboard.visibility === 'deleted' && (
         <>
           <Head>
@@ -104,9 +118,9 @@ export function FoundDashboardPage(props: {
 
               <div className="flex items-center">
                 <CopyLinkOrShareButton
-                  url={`https://${ENV_CONFIG.domain}/dashboard/${
-                    dashboard.slug
-                  }${user?.username ? referralQuery(user.username) : ''}`}
+                  url={`https://${ENV_CONFIG.domain}/news/${slug}${
+                    user?.username ? referralQuery(user.username) : ''
+                  }`}
                   eventTrackingName="copy dashboard link"
                   tooltip="Share"
                 />
@@ -208,7 +222,9 @@ export function FoundDashboardPage(props: {
           </div>
         )}
         <DashboardContent
+          key={dashboard.id} // make sure content re-renders when switching pages
           previews={previews}
+          initialContracts={initialContracts}
           items={dashboard.items}
           setItems={updateItems}
           topics={dashboard.topics}

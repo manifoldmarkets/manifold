@@ -4,8 +4,8 @@ import { useDebouncedEffect } from 'web/hooks/use-debounced-effect'
 import { api } from 'web/lib/firebase/api'
 import { safeLocalStorage } from 'web/lib/util/local'
 
-export const useLinkPreview = (url: string) => {
-  const [preview, setPreview] = useState<LinkPreview | undefined>(undefined)
+export const useLinkPreview = (url: string, initial?: LinkPreview) => {
+  const [preview, setPreview] = useState(initial)
   useDebouncedEffect(
     () => {
       if (url) {
