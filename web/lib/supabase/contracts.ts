@@ -85,14 +85,9 @@ export async function getContracts(
   contractIds: string[],
   pk: 'id' | 'slug' = 'id'
 ) {
-  const { data } = await run(
-    db.from('contracts').select('data').in(pk, contractIds)
-  )
-  if (data && data.length > 0) {
-    return data.map((d) => d.data as Contract)
-  } else {
-    return []
-  }
+  const q = db.from('contracts').select('data').in(pk, contractIds)
+  const { data } = await run(q)
+  return data.map((d) => d.data as Contract)
 }
 
 export const getContract = async (id: string) => {

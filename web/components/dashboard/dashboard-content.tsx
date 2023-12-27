@@ -19,19 +19,28 @@ import clsx from 'clsx'
 export const DashboardContent = (props: {
   items: DashboardItem[]
   previews?: LinkPreviews
+  initialContracts?: Contract[]
   setItems?: (items: DashboardItem[]) => void
   topics: string[]
   setTopics?: (topics: string[]) => void
   isEditing?: boolean
 }) => {
-  const { items, previews, isEditing, setItems, topics = [], setTopics } = props
+  const {
+    items,
+    previews,
+    initialContracts,
+    isEditing,
+    setItems,
+    topics = [],
+    setTopics,
+  } = props
 
   const questions = items.filter(
     (x): x is DashboardQuestionItem => x.type === 'question'
   )
 
   const slugs = questions.map((q) => q.slug)
-  const contracts = useContracts(slugs, 'slug')
+  const contracts = useContracts(slugs, 'slug', initialContracts)
 
   const [loadLiveFeed, setLoadLiveFeed] = useState(false)
   const { ref: loadLiveRef } = useIsVisible(() => setLoadLiveFeed(true), true)

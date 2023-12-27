@@ -5,14 +5,14 @@ import { Row } from '../layout/row'
 import { RelativeTimestamp } from '../relative-timestamp'
 import { useLinkPreview } from 'web/hooks/use-link-previews'
 import { LinkPreview } from 'common/link-preview'
+import { useEffect } from 'react'
 
 export const MaybeDashboardNewsItem = (props: {
   url: string
   preview?: LinkPreview
   className?: string
 }) => {
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  const preview = props.preview ?? useLinkPreview(props.url)
+  const preview = useLinkPreview(props.url, props.preview)
 
   if (!preview) {
     return <DashboardNewsItemPlaceholder pulse />

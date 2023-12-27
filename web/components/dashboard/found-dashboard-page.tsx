@@ -31,10 +31,12 @@ import { DashboardContent } from 'web/components/dashboard/dashboard-content'
 import { usePathname, useRouter } from 'next/navigation'
 import { HeadlineTabs } from 'web/pages/news/_header'
 import { Headline } from 'common/news'
+import { type Contract } from 'common/contract'
 
 export function FoundDashboardPage(props: {
   initialDashboard: Dashboard
   previews: LinkPreviews
+  initialContracts: Contract[]
   headlines: Headline[]
   slug: string
   editByDefault: boolean
@@ -44,7 +46,14 @@ export function FoundDashboardPage(props: {
   const router = useRouter()
   const pathName = usePathname() ?? ''
 
-  const { initialDashboard, slug, editByDefault, previews, headlines } = props
+  const {
+    initialDashboard,
+    slug,
+    editByDefault,
+    previews,
+    initialContracts,
+    headlines,
+  } = props
   const fetchedDashboard = useDashboardFromSlug(slug)
   const [dashboard, setDashboard] = useState<Dashboard>(initialDashboard)
 
@@ -81,7 +90,7 @@ export function FoundDashboardPage(props: {
         title={dashboard.title}
         description={`dashboard created by ${dashboard.creatorName}`}
       />
-      <HeadlineTabs headlines={headlines} currentSlug={slug} />
+      {!editMode && <HeadlineTabs headlines={headlines} currentSlug={slug} />}
 
       {dashboard.visibility === 'deleted' && (
         <>
@@ -218,7 +227,9 @@ export function FoundDashboardPage(props: {
           </div>
         )}
         <DashboardContent
+          key={dashboard.id} // make sure content re-renders when switching pages
           previews={previews}
+          initialContracts={initialContracts}
           items={dashboard.items}
           setItems={updateItems}
           topics={dashboard.topics}
