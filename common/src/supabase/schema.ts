@@ -3066,33 +3066,32 @@ export interface Database {
         }
         Returns: boolean
       }
-      closest_contract_embeddings:
-        | {
-            Args: {
-              input_contract_id: string
-              similarity_threshold: number
-              match_count: number
-            }
-            Returns: {
-              contract_id: string
-              similarity: number
-              data: Json
-            }[]
-          }
-        | {
-            Args: {
-              input_contract_id: string
-              similarity_threshold: number
-              match_count: number
-              is_admin?: boolean
-            }
-            Returns: {
-              contract_id: string
-              similarity: number
-              data: Json
-            }[]
-          }
-      closest_contract_embeddings2: {
+      close_contract_embeddings: {
+        Args: {
+          input_contract_id: string
+          similarity_threshold: number
+          match_count: number
+        }
+        Returns: {
+          contract_id: string
+          similarity: number
+          data: Json
+        }[]
+      }
+      closest_contract_embeddings: {
+        Args: {
+          input_contract_id: string
+          similarity_threshold: number
+          match_count: number
+          is_admin?: boolean
+        }
+        Returns: {
+          contract_id: string
+          similarity: number
+          data: Json
+        }[]
+      }
+      closest_contract_embeddings_2: {
         Args: {
           input_contract_id: string
           similarity_threshold: number
