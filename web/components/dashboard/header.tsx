@@ -16,7 +16,9 @@ export function HeadlineTabs(props: {
   return (
     <div className="bg-canvas-50 sticky top-0 z-50 mb-3 w-full">
       <Carousel labelsParentClassName="gap-px">
-        <Tab label="Home" href="/home" active={currentSlug === 'home'} />
+        {user && (
+          <Tab label="Home" href="/home" active={currentSlug === 'home'} />
+        )}
         {headlines.map(({ id, slug, title }) => (
           <Tab
             key={id}
@@ -25,7 +27,7 @@ export function HeadlineTabs(props: {
             active={slug === currentSlug}
           />
         ))}
-        <Tab label="More" href="/dashboard" />
+        {user && <Tab label="More" href="/dashboard" />}
         {user && (isAdminId(user.id) || isModId(user.id)) && (
           <EditNewsButton defaultDashboards={headlines} />
         )}
