@@ -527,10 +527,12 @@ export function ContractPageContent(props: ContractParams) {
                 contract={contract}
               />
             )}
-            <RelatedContractsGrid
-              contracts={relatedMarkets}
-              loadMore={loadMore}
-            />
+            {comments.length > 3 && (
+              <RelatedContractsGrid
+                contracts={relatedMarkets}
+                loadMore={loadMore}
+              />
+            )}
             {isResolved && resolution !== 'CANCEL' && (
               <>
                 <ContractLeaderboard
