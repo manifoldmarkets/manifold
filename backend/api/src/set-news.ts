@@ -39,6 +39,7 @@ export const setnews = authEndpoint(async (req, auth) => {
 
   await Promise.all([
     revalidateStaticProps(`/home`),
+    revalidateStaticProps(`/news`),
     ...slugs.map(({ slug }) => revalidateStaticProps(`/news/${slug}`)),
   ])
 
