@@ -113,6 +113,7 @@ export function toLiteMarket(contract: Contract): LiteMarket {
     uniqueBettorCount,
     lastUpdatedTime,
     lastBetTime,
+    lastCommentTime,
   } = contract
 
   const { p, totalLiquidity } = contract as any
@@ -159,6 +160,7 @@ export function toLiteMarket(contract: Contract): LiteMarket {
     uniqueBettorCount,
     lastUpdatedTime,
     lastBetTime,
+    lastCommentTime,
     ...numericValues,
   })
 }
