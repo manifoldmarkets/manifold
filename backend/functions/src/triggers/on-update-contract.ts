@@ -2,14 +2,14 @@ import * as functions from 'firebase-functions'
 import {
   getContractSupabase,
   getUser,
+  log,
   processPaginated,
   revalidateContractStaticProps,
 } from 'shared/utils'
 import { createCommentOrAnswerOrUpdatedContractNotification } from 'shared/create-notification'
 import { Contract } from 'common/contract'
 import * as admin from 'firebase-admin'
-
-import { difference, isEqual } from 'lodash'
+import { difference, isEqual, pick } from 'lodash'
 import { secrets } from 'common/secrets'
 import { run } from 'common/supabase/utils'
 import {
@@ -20,6 +20,26 @@ import { upsertGroupEmbedding } from 'shared/helpers/embeddings'
 import { buildArray } from 'common/util/array'
 import { addContractToFeed } from 'shared/create-feed'
 import { DAY_MS } from 'common/util/time'
+
+const propsThatTriggerRevalidation = [
+  'volume',
+  'question',
+  'closeTime',
+  'description',
+  'groupLinks',
+  'lastCommentTime',
+] as const
+
+const propsThatTriggerUpdatedTime = [
+  'question',
+  'description',
+  'closeTime',
+  'groupLinks',
+  'isResolved',
+  'isRanked',
+  'isSubsidized',
+  'visibility',
+] as const
 
 export const onUpdateContract = functions
   .runWith({ secrets })
@@ -94,8 +114,8 @@ export const onUpdateContract = functions
 
     if (
       !isEqual(
-        getPropsThatTriggerRevalidation(previousContract),
-        getPropsThatTriggerRevalidation(contract)
+        pick(previousContract, propsThatTriggerRevalidation),
+        pick(contract, propsThatTriggerRevalidation)
       )
     ) {
       // Check if replicated to supabase before revalidating contract.
@@ -105,6 +125,7 @@ export const onUpdateContract = functions
         .eq('id', contract.id)
         .limit(1)
       if (result.data && result.data.length > 0) {
+        log(`Revalidating contract ${contract.id}.`)
         await revalidateContractStaticProps(contract)
       }
     }
@@ -113,6 +134,20 @@ export const onUpdateContract = functions
       const newVisibility = contract.visibility as 'public' | 'unlisted'
 
       await updateContractSubcollectionsVisibility(contract.id, newVisibility)
+    }
+
+    if (
+      !isEqual(
+        pick(previousContract, propsThatTriggerUpdatedTime),
+        pick(contract, propsThatTriggerUpdatedTime)
+      )
+    ) {
+      log(`Updating lastUpdatedTime for contract ${contract.id}.`)
+      // mqp: ugly to do this update in the trigger but i was too lazy
+      // to fix all the random call sites
+      await firestore.collection('contracts').doc(contract.id).update({
+        lastUpdatedTime: Date.now(),
+      })
     }
   })
 
@@ -139,25 +174,6 @@ async function handleUpdatedCloseTime(
     sourceText,
     contract
   )
-}
-
-const getPropsThatTriggerRevalidation = (contract: Contract) => {
-  const {
-    volume,
-    question,
-    closeTime,
-    description,
-    groupLinks,
-    lastCommentTime,
-  } = contract
-  return {
-    volume,
-    question,
-    closeTime,
-    description,
-    groupLinks,
-    lastCommentTime,
-  }
 }
 
 async function updateContractSubcollectionsVisibility(

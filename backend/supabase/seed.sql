@@ -288,7 +288,10 @@ create table if not exists
     fs_updated_time timestamp not null,
     deleted boolean default false,
     group_slugs text[],
-    views int default 0
+    views int default 0,
+    last_updated_time timestamptz,
+    last_bet_time timestamptz,
+    last_comment_time timestamptz
   );
 
 alter table contracts enable row level security;
@@ -331,8 +334,6 @@ create index if not exists contracts_sample_filtering on contracts (
 
 create index if not exists contracts_on_importance_score_and_resolution_time_idx on contracts(importance_score, resolution_time);
 
-create index if not exists contracts_last_updated_time on contracts(((data ->> 'lastUpdatedTime')::bigint) desc);
-
 create index if not exists idx_lover_user_id1 on contracts ((data ->> 'loverUserId1')) where data->>'loverUserId1' is not null;
 create index if not exists idx_lover_user_id2 on contracts ((data ->> 'loverUserId2')) where data->>'loverUserId2' is not null;
 
@@ -373,6 +374,18 @@ begin
                            else null
         end;
     new.views := coalesce(((new.data) ->> 'views')::int, 0);
+    new.last_updated_time := case
+                          when new.data ? 'lastUpdatedTime' then millis_to_ts(((new.data) ->> 'lastUpdatedTime')::bigint)
+                          else null
+      end;
+    new.last_bet_time := case
+                          when new.data ? 'lastBetTime' then millis_to_ts(((new.data) ->> 'lastBetTime')::bigint)
+                          else null
+      end;
+    new.last_comment_time := case
+                          when new.data ? 'lastCommentTime' then millis_to_ts(((new.data) ->> 'lastCommentTime')::bigint)
+                          else null
+      end;
   end if;
   return new;
 end

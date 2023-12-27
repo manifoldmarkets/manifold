@@ -89,7 +89,7 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
   visibility: Visibility
 
   createdTime: number // Milliseconds since epoch
-  lastUpdatedTime: number // Updated on new bet or comment
+  lastUpdatedTime: number // Updated on any change to the market (metadata, bet, comment)
   lastBetTime?: number
   lastCommentTime?: number
   closeTime?: number // When no more trading is allowed

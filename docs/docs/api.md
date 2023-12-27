@@ -202,6 +202,9 @@ List all markets, ordered by creation date descending.
 Parameters:
 
 - `limit`: Optional. How many markets to return. The maximum is 1000 and the default is 500.
+- `sort`: Optional. One of 'created-time', 'updated-time', 'last-bet-time', or 'last-comment-time'
+  to sort by that timestamp. Defaults to 'created-time'.
+- `order`: Optional. One of 'asc' or 'desc'. Defaults to 'desc'.
 - `before`: Optional. The ID of the market before which the list will start. For
   example, if you ask for the most recent 10 markets, and then perform a second
   query for 10 more markets with `before=[the id of the 10th market]`, you will

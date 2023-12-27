@@ -25,7 +25,6 @@ import { Button } from 'web/components/buttons/button'
 import { deleteDashboard, updateDashboard } from 'web/lib/firebase/api'
 import { Avatar } from 'web/components/widgets/avatar'
 import { UserLink } from 'web/components/widgets/user-link'
-import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { AddItemCard } from 'web/components/dashboard/add-dashboard-item'
 import { DashboardContent } from 'web/components/dashboard/dashboard-content'
 import { usePathname, useRouter } from 'next/navigation'
@@ -210,10 +209,6 @@ export function FoundDashboardPage(props: {
               }}
               className="text-ink-700"
             />
-            <span className="text-ink-400 ml-4 text-sm">
-              Created
-              <RelativeTimestamp time={dashboard.createdTime} />
-            </span>
           </Row>
         )}
         {editMode && (

@@ -134,16 +134,6 @@ import { removePinnedPhoto } from './love/remove-pinned-photo'
 import { getHeadlines } from './get-headlines'
 
 const allowCorsUnrestricted: RequestHandler = cors({})
-const allowCorsManifold: RequestHandler = cors({
-  origin: [
-    CORS_ORIGIN_MANIFOLD,
-    CORS_ORIGIN_MANIFOLD_LOVE,
-    CORS_ORIGIN_MANIFOLD_LOVE_ALTERNATE,
-    CORS_ORIGIN_CHARITY,
-    CORS_ORIGIN_VERCEL,
-    CORS_ORIGIN_LOCALHOST,
-  ],
-})
 
 function cacheController(policy?: string): RequestHandler {
   return (_req, res, next) => {
@@ -174,7 +164,12 @@ const apiErrorHandler: ErrorRequestHandler = (err, _req, res, next) => {
 }
 
 const apiRoute = (endpoint: RequestHandler) => {
-  return [allowCorsManifold, express.json(), endpoint, apiErrorHandler] as const
+  return [
+    allowCorsUnrestricted,
+    express.json(),
+    endpoint,
+    apiErrorHandler,
+  ] as const
 }
 
 // temporary
@@ -192,11 +187,7 @@ const oldRouteFrom = <N extends APIPath>(path: N) => {
 export const app = express()
 app.use(requestLogger)
 
-// internal APIs
-app.options('*', allowCorsManifold)
-
-// v0 public API routes
-app.options('/v0', allowCorsUnrestricted)
+app.options('*', allowCorsUnrestricted)
 
 // we define the handlers in this object in order to typecheck that every API has a handler
 const handlers: { [k in APIPath]: APIHandler<k> } = {
@@ -248,14 +239,13 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
 
 Object.entries(handlers).forEach(([path, handler]) => {
   const api = API[path as APIPath]
-  const cors =
-    api.visibility === 'private' ? allowCorsManifold : allowCorsUnrestricted
   const cache = cacheController((api as any).cache)
+  const url = '/' + pathWithPrefix(path as APIPath)
 
   const apiRoute = [
-    '/' + pathWithPrefix(path as APIPath),
+    url,
     express.json(),
-    cors,
+    allowCorsUnrestricted,
     cache,
     typedEndpoint(path as any, handler as any),
     apiErrorHandler,
@@ -331,10 +321,10 @@ app.post('/save-topic', ...apiRoute(saveTopic))
 app.post('/boost-market', ...apiRoute(boostmarket))
 app.post('/redeem-boost', ...apiRoute(redeemboost))
 
-app.post('/createcheckoutsession', allowCorsManifold, createcheckoutsession)
+app.post('/createcheckoutsession', allowCorsUnrestricted, createcheckoutsession)
 app.post(
   '/stripewebhook',
-  allowCorsManifold,
+  allowCorsUnrestricted,
   express.raw({ type: '*/*' }),
   stripewebhook
 )
