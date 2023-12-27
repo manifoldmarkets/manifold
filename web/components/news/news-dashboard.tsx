@@ -3,7 +3,6 @@ import { LoadingIndicator } from '../widgets/loading-indicator'
 import { CopyLinkOrShareButton } from '../buttons/copy-link-button'
 import { Row } from '../layout/row'
 import { FollowDashboardButton } from '../dashboard/follow-dashboard-button'
-import { RelativeTimestamp } from '../relative-timestamp'
 import { Avatar } from '../widgets/avatar'
 import { UserLink } from '../widgets/user-link'
 import Link from 'next/link'
@@ -87,10 +86,6 @@ export function NewsDashboard(props: {
           }}
           className="text-ink-700"
         />
-        <span className="text-ink-400 ml-4 text-sm">
-          Created
-          <RelativeTimestamp time={dashboard.createdTime} />
-        </span>
       </Row>
 
       <DashboardContent
