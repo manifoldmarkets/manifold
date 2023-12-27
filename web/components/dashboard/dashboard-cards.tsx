@@ -37,7 +37,7 @@ function DashboardCard(props: { dashboard: Dashboard }) {
     props.dashboard
   const router = useRouter()
 
-  const href = `/dashboard/${slug}`
+  const href = `/news/${slug}`
 
   return (
     <ClickFrame

@@ -157,6 +157,23 @@ module.exports = {
         destination: '/browse',
         permanent: true,
       },
+      {
+        source: '/dashboard/:slug',
+        destination: '/news/:slug',
+        permanent: false, // TODO: after 1/7/2024 change this and below to true
+      },
+      {
+        source: '/home:slug*',
+        has: [
+          {
+            type: 'query',
+            key: 'tab',
+            value: '(?<slug>.*)',
+          },
+        ],
+        permanent: false,
+        destination: '/news/:slug',
+      },
       // NOTE: add any external redirects at common/envs/constants.ts and update native apps.
     ]
   },

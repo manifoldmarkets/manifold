@@ -110,9 +110,9 @@ export function FoundDashboardPage(props: {
 
               <div className="flex items-center">
                 <CopyLinkOrShareButton
-                  url={`https://${ENV_CONFIG.domain}/dashboard/${
-                    dashboard.slug
-                  }${user?.username ? referralQuery(user.username) : ''}`}
+                  url={`https://${ENV_CONFIG.domain}/news/${slug}${
+                    user?.username ? referralQuery(user.username) : ''
+                  }`}
                   eventTrackingName="copy dashboard link"
                   tooltip="Share"
                 />
