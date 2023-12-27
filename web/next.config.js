@@ -174,6 +174,18 @@ module.exports = {
         permanent: false,
         destination: '/news/:slug',
       },
+      {
+        source: '/news:slug*',
+        has: [
+          {
+            type: 'query',
+            key: 'tab',
+            value: '(?<slug>.*)',
+          },
+        ],
+        permanent: false,
+        destination: '/news/:slug',
+      },
       // NOTE: add any external redirects at common/envs/constants.ts and update native apps.
     ]
   },
