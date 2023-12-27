@@ -28,7 +28,7 @@ import { UserLink } from 'web/components/widgets/user-link'
 import { AddItemCard } from 'web/components/dashboard/add-dashboard-item'
 import { DashboardContent } from 'web/components/dashboard/dashboard-content'
 import { usePathname, useRouter } from 'next/navigation'
-import { HeadlineTabs } from 'web/pages/news/_header'
+import { HeadlineTabs } from 'web/components/dashboard/header'
 import { Headline } from 'common/news'
 import { type Contract } from 'common/contract'
 

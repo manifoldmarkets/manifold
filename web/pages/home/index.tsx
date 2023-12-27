@@ -13,7 +13,7 @@ import { FeedTimeline } from 'web/components/feed-timeline'
 import { api } from 'web/lib/firebase/api'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { Headline } from 'common/news'
-import { HeadlineTabs } from '../news/_header'
+import { HeadlineTabs } from 'web/components/dashboard/header'
 
 export async function getStaticProps() {
   const headlines = await api('headlines', {})
