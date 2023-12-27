@@ -474,6 +474,9 @@ export interface Database {
           group_slugs: string[] | null
           id: string
           importance_score: number | null
+          last_bet_time: string | null
+          last_comment_time: string | null
+          last_updated_time: string | null
           mechanism: string | null
           outcome_type: string | null
           popularity_score: number | null
@@ -498,6 +501,9 @@ export interface Database {
           group_slugs?: string[] | null
           id: string
           importance_score?: number | null
+          last_bet_time?: string | null
+          last_comment_time?: string | null
+          last_updated_time?: string | null
           mechanism?: string | null
           outcome_type?: string | null
           popularity_score?: number | null
@@ -522,6 +528,9 @@ export interface Database {
           group_slugs?: string[] | null
           id?: string
           importance_score?: number | null
+          last_bet_time?: string | null
+          last_comment_time?: string | null
+          last_updated_time?: string | null
           mechanism?: string | null
           outcome_type?: string | null
           popularity_score?: number | null
@@ -2746,6 +2755,9 @@ export interface Database {
           group_slugs: string[] | null
           id: string | null
           importance_score: number | null
+          last_bet_time: string | null
+          last_comment_time: string | null
+          last_updated_time: string | null
           mechanism: string | null
           outcome_type: string | null
           popularity_score: number | null
@@ -2769,6 +2781,9 @@ export interface Database {
           group_slugs?: string[] | null
           id?: string | null
           importance_score?: number | null
+          last_bet_time?: string | null
+          last_comment_time?: string | null
+          last_updated_time?: string | null
           mechanism?: string | null
           outcome_type?: string | null
           popularity_score?: number | null
@@ -2792,6 +2807,9 @@ export interface Database {
           group_slugs?: string[] | null
           id?: string | null
           importance_score?: number | null
+          last_bet_time?: string | null
+          last_comment_time?: string | null
+          last_updated_time?: string | null
           mechanism?: string | null
           outcome_type?: string | null
           popularity_score?: number | null
@@ -3395,6 +3413,9 @@ export interface Database {
           group_slugs: string[] | null
           id: string
           importance_score: number | null
+          last_bet_time: string | null
+          last_comment_time: string | null
+          last_updated_time: string | null
           mechanism: string | null
           outcome_type: string | null
           popularity_score: number | null
