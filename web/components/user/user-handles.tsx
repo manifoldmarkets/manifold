@@ -18,6 +18,7 @@ export function UserHandles(props: {
     >
       {website && (
         <a
+          target={'_blank'}
           href={
             'https://' + website.replace('http://', '').replace('https://', '')
           }
@@ -31,6 +32,7 @@ export function UserHandles(props: {
 
       {twitterHandle && (
         <a
+          target={'_blank'}
           href={`https://twitter.com/${twitterHandle
             .replace('https://www.twitter.com/', '')
             .replace('https://twitter.com/', '')
@@ -46,7 +48,7 @@ export function UserHandles(props: {
       )}
 
       {discordHandle && (
-        <a href="https://discord.com/invite/eHQBNBqXuh">
+        <a target={'_blank'} href="https://discord.com/invite/eHQBNBqXuh">
           <Row className="items-center gap-1">
             <img src="/discord-logo.svg" className="h-4 w-4" alt="Discord" />
             <span className="text-ink-400 text-sm">{discordHandle}</span>
