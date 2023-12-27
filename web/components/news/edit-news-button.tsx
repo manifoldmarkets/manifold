@@ -1,6 +1,6 @@
 import { DragDropContext, Draggable, Droppable } from '@hello-pangea/dnd'
 import { XIcon } from '@heroicons/react/outline'
-import { BaseDashboard, Dashboard } from 'common/dashboard'
+import { BaseDashboard } from 'common/dashboard'
 import { uniqBy } from 'lodash'
 import { useEffect, useRef, useState } from 'react'
 import {

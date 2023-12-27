@@ -5,7 +5,6 @@ import { Row } from '../layout/row'
 import { RelativeTimestamp } from '../relative-timestamp'
 import { useLinkPreview } from 'web/hooks/use-link-previews'
 import { LinkPreview } from 'common/link-preview'
-import { useEffect } from 'react'
 
 export const MaybeDashboardNewsItem = (props: {
   url: string
