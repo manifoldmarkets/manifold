@@ -29,25 +29,12 @@ export const secrets = (
   ] as const
 ).concat()
 
-type secret_names = typeof secrets[number]
-
-// Get a secret from the environment. Be sure to await loadSecretsToEnv first.
-export const getSecret = (secretName: secret_names) => {
-  const secret = process.env[secretName]
-  if (secret == null) {
-    throw new Error(
-      'Secret not found: ' +
-        secretName +
-        '. Is it in the secrets list (secrets.ts)? Did you call loadSecretsToEnv?'
-    )
-  }
-  return secret
-}
+type SecretId = (typeof secrets)[number]
 
 // Fetches all secrets from google cloud.
 // For deployed google cloud service, no credential is needed.
 // For local and Vercel deployments: requires credentials json object.
-export const loadSecretsToEnv = async (credentials?: any) => {
+export const getSecrets = async (credentials?: any, ...ids: SecretId[]) => {
   let client: SecretManagerServiceClient
   if (credentials) {
     const projectId = credentials['project_id']
@@ -60,7 +47,9 @@ export const loadSecretsToEnv = async (credentials?: any) => {
   }
   const projectId = await client.getProjectId()
 
-  const fullSecretNames = secrets.map(
+  const secretIds = ids.length > 0 ? ids : secrets
+
+  const fullSecretNames = secretIds.map(
     (secret: string) =>
       `${client.projectPath(projectId)}/secrets/${secret}/versions/latest`
   )
@@ -73,10 +62,17 @@ export const loadSecretsToEnv = async (credentials?: any) => {
     )
   )
   const secretValues = secretResponses.map(([response]) =>
-    response.payload?.data?.toString()
+    response.payload!.data!.toString()
   )
+  const pairs = zip(secretIds, secretValues) as [string, string][]
+  return Object.fromEntries(pairs)
+}
 
-  for (const [key, value] of zip(secrets, secretValues)) {
+// Fetches all secrets and loads them into process.env.
+// Useful for running random backend code.
+export const loadSecretsToEnv = async (credentials?: any) => {
+  const allSecrets = await getSecrets(credentials)
+  for (const [key, value] of Object.entries(allSecrets)) {
     if (key && value) {
       process.env[key] = value
     }
