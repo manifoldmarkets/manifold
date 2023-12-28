@@ -213,8 +213,14 @@ export const calculateUserMetrics = (
   user?: User,
   answers?: Answer[]
 ) => {
+  const useDenormalizedAnswers =
+    contract.mechanism === 'cpmm-multi-1' && !answers
   // ContractMetrics will have an answerId for every answer, and a null for the overall metrics.
-  const currentMetrics = getContractBetMetricsPerAnswer(contract, bets, answers)
+  const currentMetrics = getContractBetMetricsPerAnswer(
+    contract,
+    bets,
+    useDenormalizedAnswers ? contract.answers : answers
+  )
   const bet = first(bets)
   return currentMetrics.map((current) => {
     return removeUndefinedProps({

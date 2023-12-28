@@ -154,8 +154,9 @@ export const resolveMarketHelper = async (
     outcome,
   })
 
+  await updateContractMetricsForUsers(contract, bets)
+  // TODO: we may want to support clawing back trader bonuses on MC markets too
   if (!answerId) {
-    await updateContractMetricsForUsers(contract, bets)
     await undoUniqueBettorRewardsIfCancelResolution(contract, outcome, log)
   }
   await revalidateStaticProps(contractPath(contract))
