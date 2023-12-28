@@ -242,7 +242,11 @@ export function FeedContractCard(props: {
           />
         )}
 
-        <CategoryTags categories={contract.groupLinks} />
+        <CategoryTags
+          categories={contract.groupLinks}
+          // hide tags after first line. (tags are 24 px tall)
+          className="h-6 flex-wrap overflow-hidden"
+        />
         {!hideBottomRow && (
           <Col>
             <BottomActionRow
