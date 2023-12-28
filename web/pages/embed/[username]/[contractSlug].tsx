@@ -233,7 +233,7 @@ function ContractSmolView(props: {
         {!isBountiedQuestion && !isPoll && (
           <SizedContainer
             className={clsx(
-              'text-ink-1000 my-4 min-h-0 flex-1',
+              'text-ink-1000 my-4 min-h-0 w-full flex-1',
               !isMulti && 'pr-10'
             )}
           >
