@@ -112,7 +112,7 @@ const AddDashboardModal = (props: {
         activeIndex={tab}
         onClick={(title, index) => {
           setTab(index as 0 | 1 | 2 | 3)
-          if (title === 'Add text') {
+          if (title === 'add text') {
             insertItems([newTextItem()])
             setOpen(false)
           }
