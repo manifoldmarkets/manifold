@@ -32,6 +32,12 @@ export const RelatedContractsList = memo(function (props: {
   className?: string
 }) {
   const { contracts, loadMore, contractsByTopicSlug, topics, className } = props
+  const MAX_CONTRACTS_PER_GROUP = 2
+  const displayedGroupContractIds = Object.values(contractsByTopicSlug ?? {})
+    .map((contracts) =>
+      contracts.slice(0, MAX_CONTRACTS_PER_GROUP).map((c) => c.id)
+    )
+    .flat()
 
   return (
     <Col className={clsx(className, 'flex-1')}>
@@ -54,7 +60,7 @@ export const RelatedContractsList = memo(function (props: {
               </h2>
               <Col className="divide-ink-300 divide-y-[0.5px]">
                 {contractsByTopicSlug[topic.slug]
-                  .slice(0, 2)
+                  .slice(0, MAX_CONTRACTS_PER_GROUP)
                   .map((contract) => (
                     <SidebarRelatedContractCard
                       key={contract.id}
@@ -70,15 +76,17 @@ export const RelatedContractsList = memo(function (props: {
           ))}
       <h2 className={clsx('text-ink-600 mb-2 text-xl')}>Related questions</h2>
       <Col className="divide-ink-300 divide-y-[0.5px]">
-        {contracts.map((contract) => (
-          <SidebarRelatedContractCard
-            contract={contract}
-            key={contract.id}
-            onContractClick={(c) =>
-              track('click related market', { contractId: c.id })
-            }
-          />
-        ))}
+        {contracts
+          .filter((c) => !displayedGroupContractIds.includes(c.id))
+          .map((contract) => (
+            <SidebarRelatedContractCard
+              contract={contract}
+              key={contract.id}
+              onContractClick={(c) =>
+                track('click related market', { contractId: c.id })
+              }
+            />
+          ))}
       </Col>
 
       {contracts.length > 0 && loadMore && (
@@ -262,7 +270,12 @@ export const RelatedContractsGrid = memo(function (props: {
   if (contracts.length === 0 && !hasRelatedContractByTopic) {
     return null
   }
-
+  const MAX_CONTRACTS_PER_GROUP = 4
+  const displayedGroupContractIds = Object.values(contractsByTopicSlug ?? {})
+    .map((contracts) =>
+      contracts.slice(0, MAX_CONTRACTS_PER_GROUP).map((c) => c.id)
+    )
+    .flat()
   return (
     <Col className={clsx(className, 'mb-2 mt-4 flex-1 py-2 xl:hidden')}>
       {topics &&
@@ -288,7 +301,7 @@ export const RelatedContractsGrid = memo(function (props: {
                 )}
               >
                 {contractsByTopicSlug[topic.slug]
-                  .slice(0, 4)
+                  .slice(0, MAX_CONTRACTS_PER_GROUP)
                   .map((contract) => (
                     <RelatedContractCard
                       key={contract.id}
@@ -326,17 +339,19 @@ export const RelatedContractsGrid = memo(function (props: {
           showAll ? 'h-full' : showMore ? 'h-[40rem]' : 'h-48'
         )}
       >
-        {contracts.map((contract) => (
-          <RelatedContractCard
-            key={contract.id}
-            showGraph={showAll}
-            contract={contract}
-            onContractClick={(c) =>
-              track('click related market', { contractId: c.id })
-            }
-            twoLines
-          />
-        ))}
+        {contracts
+          .filter((c) => !displayedGroupContractIds.includes(c.id))
+          .map((contract) => (
+            <RelatedContractCard
+              key={contract.id}
+              showGraph={showAll}
+              contract={contract}
+              onContractClick={(c) =>
+                track('click related market', { contractId: c.id })
+              }
+              twoLines
+            />
+          ))}
         {loadMore && <LoadMoreUntilNotVisible loadMore={loadMore} />}
       </Masonry>
       {!showAll && (
