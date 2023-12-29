@@ -75,8 +75,8 @@ export const getrelatedmarkets: APIHandler<'get-related-markets'> = async (
       marketsByTopicSlug[slug].push(contract)
   }
   // Return only the limit for each topic
-  for (const slug of Object.keys(marketsByTopicSlug)) {
-    marketsByTopicSlug[slug] = marketsByTopicSlug[slug].slice(0, limit)
+  for (const slug of topics.map((t) => t.slug)) {
+    marketsByTopicSlug[slug] = (marketsByTopicSlug[slug] ?? []).slice(0, limit)
   }
   log('topic slugs found:', Object.keys(marketsByTopicSlug))
   return {
