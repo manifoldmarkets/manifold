@@ -50,7 +50,7 @@ export function TopicSelectorDialog(props: {
       setUserSelectedTopics((tops) => (tops ?? []).filter((t) => t !== groupId))
     } else {
       setUserSelectedTopics((tops) => uniq([...(tops ?? []), groupId]))
-      if (user) followTopic({ groupId })
+      if (user) followTopic({ groupId }).catch((e) => console.error(e))
     }
   }
 
@@ -94,10 +94,15 @@ export function TopicSelectorDialog(props: {
       <Col className="h-[32rem] overflow-y-auto">
         <div className="bg-canvas-0 sticky top-0 px-5 py-4">
           <p className="text-primary-700 mb-2 text-2xl">What interests you?</p>
-          <p>Select 3 or more topics to personalize your experience</p>
+          <span>
+            Select 3 or more topics to personalize your experience.
+            {userInterestedTopics.length > 0 || userBetInTopics.length > 0
+              ? ' We selected a few for you already based on your browsing history.'
+              : ''}
+          </span>
         </div>
         <Col className={'mb-4 px-5'}>
-          <div className="text-primary-700 mb-1 text-sm">Trending now</div>
+          <div className="text-ink-700 mb-1">Trending now</div>
           <Row className={'flex-wrap gap-1 '}>
             {trendingTopics.map((group) => (
               <div className="" key={group.id + '-section'}>
@@ -109,7 +114,7 @@ export function TopicSelectorDialog(props: {
 
         {topics.map((topic) => (
           <div className="mb-4 px-5" key={topic + '-section'}>
-            <div className="text-primary-700 text-sm">{topic.slice(3)}</div>
+            <div className="text-ink-700 mb-1">{topic.slice(3)}</div>
             <Row className="flex flex-wrap gap-x-1 gap-y-1.5">
               {getSubtopics(topic)
                 .filter(([_, __, groupId]) => !!groupId)
