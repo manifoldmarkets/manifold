@@ -2,15 +2,12 @@ import { Contract } from 'common/contract'
 import { formatMoney, formatWithCommas } from 'common/util/format'
 import { AmountInput, BuyAmountInput } from '../widgets/amount-input'
 import { ReactNode, useState } from 'react'
-import { api, boostMarket } from 'web/lib/firebase/api'
+import { api, boostMarket, getAdAnalytics } from 'web/lib/firebase/api'
 import { Button } from '../buttons/button'
 import toast from 'react-hot-toast'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { DEFAULT_AD_COST_PER_VIEW, MIN_AD_COST_PER_VIEW } from 'common/boost'
-import { db } from 'web/lib/supabase/db'
 import { Table } from '../widgets/table'
-import { uniqBy } from 'lodash'
-import { ContractCardView } from 'common/events'
 import { Modal } from '../layout/modal'
 import { Col } from '../layout/col'
 import { Title } from '../widgets/title'
@@ -26,6 +23,7 @@ import { AddLiquidityPanel } from './liquidity-modal'
 import { buildArray } from 'common/util/array'
 import { ShowMoreLessButton } from '../widgets/collapsible-content'
 import { SUBSIDY_FEE } from 'common/economy'
+import { APISchema } from 'common/api/schema'
 
 export function BoostButton(props: { contract: Contract; className?: string }) {
   const { contract, className } = props
@@ -334,69 +332,50 @@ function BoostFormRow(props: { contract: Contract }) {
 
 function FeedAnalytics(props: { contractId: string }) {
   const { contractId } = props
-
-  // TODO rewrite these in functions.sql as a single rpc. This is ridiculous.
-
-  const adQuery = useQuery(
-    async () =>
-      await db
-        .from('market_ads')
-        .select('id, funds, created_at, cost_per_view')
-        .eq('market_id', contractId)
+  const {
+    data: adAnalytics,
+    error,
+    isLoading,
+  } = useQuery(async () =>
+    getAdAnalytics({
+      contractId,
+    })
   )
-
-  const viewQuery = useQuery(
-    async () =>
-      await db
-        .from('user_seen_markets')
-        .select('user_id, data')
-        .eq('type', 'view market card')
-        .eq('contract_id', contractId)
-  )
-
-  const isBoosted = !!adQuery.data?.data?.length
-  const lastAdData = adQuery.data?.data?.[0]
-
-  const redeemQuery = useQuery(
-    async () =>
-      await db
-        .from('txns')
-        .select('*', { count: 'exact' })
-        .eq('data->>category' as any, 'MARKET_BOOST_REDEEM')
-        .eq('data->>fromId' as any, lastAdData?.id)
-  )
-
-  if (adQuery.error || viewQuery.error || redeemQuery.error) {
+  if (error) {
     return (
       <div className="bg-scarlet-100 mb-2 rounded-md p-4">
         Error loading analytics
       </div>
     )
   }
+  if (isLoading || !adAnalytics) {
+    return (
+      <div className=" mb-2 p-4">
+        <LoadingIndicator />
+      </div>
+    )
+  }
 
-  const totalFunds =
-    adQuery.data?.data?.reduce((acc, v) => acc + v.funds, 0) ?? 0
-  const viewData = viewQuery.data?.data
-  const promotedViewData = viewData?.filter(
-    (v) => (v.data as ContractCardView).isPromoted
-  )
+  const {
+    totalViews,
+    uniqueViewers,
+    totalPromotedViews,
+    uniquePromotedViewers,
+    redeemCount,
+    isBoosted,
+    totalFunds,
+    adCreatedTime,
+  } = adAnalytics as APISchema<'get-ad-analytics'>['returns']
 
   return (
     <div className="mt-4">
-      <div className="mb-2 text-lg">
-        Feed Analytics
-        {(adQuery.isLoading ||
-          viewQuery.isLoading ||
-          redeemQuery.isLoading) && (
-          <LoadingIndicator size="sm" className="ml-4 !inline-flex" />
-        )}
-      </div>
+      <div className="mb-2 text-lg">Feed Analytics</div>
       <Table className="text-ink-900 max-w-sm table-fixed">
-        {lastAdData && (
+        {adCreatedTime && (
           <>
             <TableItem
               label="Campaign start"
-              value={new Date(lastAdData.created_at).toDateString()}
+              value={new Date(adCreatedTime).toDateString()}
             />
             <TableItem label="Funds left" value={formatMoney(totalFunds)} />
           </>
@@ -404,25 +383,15 @@ function FeedAnalytics(props: { contractId: string }) {
 
         <TableItem
           label="Impressions"
-          value={
-            viewData &&
-            `${viewData.length} (${uniqBy(viewData, 'user_id').length} people)`
-          }
+          value={`${totalViews} (${uniqueViewers} people)`}
         />
         {isBoosted && (
           <TableItem
             label="Boost Impressions"
-            value={
-              promotedViewData &&
-              `${promotedViewData.length} (${
-                uniqBy(promotedViewData, 'user_id').length
-              } people)`
-            }
+            value={`${totalPromotedViews} (${uniquePromotedViewers} people)`}
           />
         )}
-        {isBoosted && (
-          <TableItem label="Boost clicks" value={redeemQuery.data?.count} />
-        )}
+        {isBoosted && <TableItem label="Boost clicks" value={redeemCount} />}
       </Table>
     </div>
   )

@@ -552,6 +552,24 @@ export const API = (_apiTypeCheck = {
       marketsByTopicSlug: { [topicSlug: string]: Contract[] }
     },
   },
+  'get-ad-analytics': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: false,
+    props: z.object({
+      contractId: z.string(),
+    }),
+    returns: {} as {
+      uniqueViewers: number
+      totalViews: number
+      uniquePromotedViewers: number
+      totalPromotedViews: number
+      redeemCount: number
+      isBoosted: boolean
+      totalFunds: number
+      adCreatedTime: string
+    },
+  },
 } as const)
 
 export type APIPath = keyof typeof API

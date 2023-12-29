@@ -126,6 +126,7 @@ import { requestloan } from 'api/request-loan'
 import { removePinnedPhoto } from './love/remove-pinned-photo'
 import { getHeadlines } from './get-headlines'
 import { getrelatedmarkets } from 'api/get-related-markets'
+import { getadanalytics } from 'api/get-ad-analytics'
 
 const allowCorsUnrestricted: RequestHandler = cors({})
 
@@ -230,6 +231,7 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'request-loan': requestloan,
   'remove-pinned-photo': removePinnedPhoto,
   'get-related-markets': getrelatedmarkets,
+  'get-ad-analytics': getadanalytics,
 }
 
 Object.entries(handlers).forEach(([path, handler]) => {

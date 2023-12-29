@@ -430,11 +430,8 @@ export function createChartAnnotation(params: {
 export function deleteChartAnnotation(params: { id: number }) {
   return call(getApiUrl('delete-chart-annotation'), 'POST', params)
 }
-export function getRelatedMarkets(params: {
-  contractId: string
-  limit: number
-}) {
-  return call(getApiUrl('get-related-markets'), 'POST', params)
+export function getAdAnalytics(params: { contractId: string }) {
+  return call(getApiUrl('get-ad-analytics'), 'POST', params)
 }
 
 export function requestLoan() {
