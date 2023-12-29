@@ -21,7 +21,7 @@ import { getIsAdmin } from 'common/supabase/is-admin'
 import { pointsToBase64 } from 'common/util/og'
 import { SupabaseClient } from 'common/supabase/utils'
 import { buildArray } from 'common/util/array'
-import { groupBy } from 'lodash'
+import { groupBy, orderBy } from 'lodash'
 import { Bet } from 'common/bet'
 import { getChartAnnotations } from 'common/supabase/chart-annotations'
 import { unauthedApi } from 'common/util/api'
@@ -132,7 +132,11 @@ export async function getContractParams(
       relatedContracts: relatedContracts.marketsFromEmbeddings as Contract[],
       relatedContractsByTopicSlug: relatedContracts.marketsByTopicSlug,
       chartAnnotations,
-      topics,
+      topics: orderBy(
+        topics,
+        (t) => t.importanceScore + (t.privacyStatus === 'public' ? 1 : 0),
+        'desc'
+      ),
     }),
   }
 }

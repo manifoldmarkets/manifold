@@ -2,7 +2,6 @@ import { Contract } from 'common/contract'
 import { Row } from 'web/components/layout/row'
 import clsx from 'clsx'
 import { useGroupsWhereUserHasRole } from 'web/hooks/use-group-supabase'
-import { orderBy } from 'lodash'
 import Link from 'next/link'
 import { linkClass } from 'web/components/widgets/site-link'
 import { useState } from 'react'
@@ -48,15 +47,10 @@ const ContractTopicBreadcrumbs = (props: {
   topics: Topic[]
 }) => {
   const { contract, topics } = props
-  const orderedTopics = orderBy(
-    topics,
-    (g) => g.importanceScore * (g.privacyStatus === 'public' ? 2 : 1),
-    'desc'
-  )
 
   return (
     <span className="line-clamp-1 min-h-[24px]">
-      {orderedTopics.map((topic, i) => (
+      {topics.map((topic, i) => (
         <span key={topic.id} className={'text-primary-700 text-sm'}>
           <Link
             className={linkClass}
@@ -70,9 +64,7 @@ const ContractTopicBreadcrumbs = (props: {
           >
             {removeEmojis(topic.name)}
           </Link>
-          {i !== orderedTopics.length - 1 && (
-            <span className="mx-1.5">{'•'}</span>
-          )}
+          {i !== topics.length - 1 && <span className="mx-1.5">{'•'}</span>}
         </span>
       ))}
     </span>
