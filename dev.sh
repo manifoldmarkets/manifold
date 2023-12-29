@@ -28,7 +28,7 @@ fi
 if [ "$PROJECT" == "politics" ]; then
     export IS_MANIFOLD_POLITICS=true
     DIR=politics
-    echo "Building ManifoldPolitics.com..."
+    echo "Building politifold.com..."
 fi
 
 firebase use $FIREBASE_PROJECT

@@ -95,6 +95,9 @@ export const getContractParams = cache(async function (
     totalPositions,
     totalBets,
     topContractMetrics,
+    // Not sure if these will be used on politics, if so will need to implement
+    relatedContractsByTopicSlug: {},
+    topics: [],
     relatedContracts,
     chartAnnotations,
   } as ContractParams

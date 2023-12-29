@@ -52,7 +52,7 @@ module.exports = {
       },
       {
         protocol: 'https',
-        hostname: 'manifoldpolitics.com',
+        hostname: 'politifold.com',
       },
     ],
   },

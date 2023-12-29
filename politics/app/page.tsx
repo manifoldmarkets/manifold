@@ -108,6 +108,9 @@ export default async function Page() {
         initialDashboard={dashboard}
         editByDefault={false}
         slug={dashboardSlug}
+        // Not sure if these will be used on politics, if so will need to implement
+        headlines={[]}
+        initialContracts={[]}
       />
     </PoliticsPage>
   )
