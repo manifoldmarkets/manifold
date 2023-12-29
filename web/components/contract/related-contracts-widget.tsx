@@ -29,9 +29,17 @@ export const RelatedContractsList = memo(function (props: {
   loadMore?: () => Promise<boolean>
   topics?: Topic[]
   contractsByTopicSlug?: Record<string, Contract[]>
+  seenContractIds?: string[]
   className?: string
 }) {
-  const { contracts, loadMore, contractsByTopicSlug, topics, className } = props
+  const {
+    contracts,
+    loadMore,
+    seenContractIds,
+    contractsByTopicSlug,
+    topics,
+    className,
+  } = props
   const MAX_CONTRACTS_PER_GROUP = 2
   const displayedGroupContractIds = Object.values(contractsByTopicSlug ?? {})
     .map((contracts) =>
@@ -44,7 +52,11 @@ export const RelatedContractsList = memo(function (props: {
       {topics &&
         contractsByTopicSlug &&
         topics
-          .filter((t) => contractsByTopicSlug[t.slug].length > 0)
+          .filter(
+            (t) =>
+              getUnseenContracts(contractsByTopicSlug[t.slug], seenContractIds)
+                .length > 0
+          )
           .map((topic) => (
             <Col key={'related-topics-' + topic.id} className={'my-2'}>
               <h2 className={clsx('text-ink-600 mb-2 text-lg')}>
@@ -59,7 +71,10 @@ export const RelatedContractsList = memo(function (props: {
                 </Link>
               </h2>
               <Col className="divide-ink-300 divide-y-[0.5px]">
-                {contractsByTopicSlug[topic.slug]
+                {getUnseenContracts(
+                  contractsByTopicSlug[topic.slug],
+                  seenContractIds
+                )
                   .slice(0, MAX_CONTRACTS_PER_GROUP)
                   .map((contract) => (
                     <SidebarRelatedContractCard
@@ -76,7 +91,7 @@ export const RelatedContractsList = memo(function (props: {
           ))}
       <h2 className={clsx('text-ink-600 mb-2 text-xl')}>Related questions</h2>
       <Col className="divide-ink-300 divide-y-[0.5px]">
-        {contracts
+        {getUnseenContracts(contracts, seenContractIds)
           .filter((c) => !displayedGroupContractIds.includes(c.id))
           .map((contract) => (
             <SidebarRelatedContractCard
@@ -247,11 +262,16 @@ const RelatedContractCard = memo(function (props: {
   )
 })
 
+const getUnseenContracts = (
+  contracts: Contract[],
+  seenContractIds?: string[]
+) => contracts.filter((c) => !seenContractIds?.includes(c.id))
+
 export const RelatedContractsGrid = memo(function (props: {
   contracts: Contract[]
-  // where should we get the group names, from the groupLinks?
   contractsByTopicSlug?: Record<string, Contract[]>
   topics?: Topic[]
+  seenContractIds?: string[]
   loadMore?: () => Promise<boolean>
   className?: string
   showAll?: boolean
@@ -263,6 +283,7 @@ export const RelatedContractsGrid = memo(function (props: {
     loadMore,
     className,
     showAll,
+    seenContractIds,
   } = props
   const [showMore, setShowMore] = useState(showAll ?? false)
   const hasRelatedContractByTopic =
@@ -281,7 +302,11 @@ export const RelatedContractsGrid = memo(function (props: {
       {topics &&
         contractsByTopicSlug &&
         topics
-          .filter((t) => contractsByTopicSlug[t.slug].length > 0)
+          .filter(
+            (t) =>
+              getUnseenContracts(contractsByTopicSlug[t.slug], seenContractIds)
+                .length > 0
+          )
           .map((topic) => (
             <Col key={'related-topics-' + topic.id} className={'my-2'}>
               <h2 className={clsx('text-ink-800 mb-1 text-lg')}>
@@ -300,7 +325,10 @@ export const RelatedContractsGrid = memo(function (props: {
                   'h-full'
                 )}
               >
-                {contractsByTopicSlug[topic.slug]
+                {getUnseenContracts(
+                  contractsByTopicSlug[topic.slug],
+                  seenContractIds
+                )
                   .slice(0, MAX_CONTRACTS_PER_GROUP)
                   .map((contract) => (
                     <RelatedContractCard
@@ -339,7 +367,7 @@ export const RelatedContractsGrid = memo(function (props: {
           showAll ? 'h-full' : showMore ? 'h-[40rem]' : 'h-48'
         )}
       >
-        {contracts
+        {getUnseenContracts(contracts, seenContractIds)
           .filter((c) => !displayedGroupContractIds.includes(c.id))
           .map((contract) => (
             <RelatedContractCard

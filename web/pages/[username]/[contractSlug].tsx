@@ -77,6 +77,7 @@ import { DangerZone } from 'web/components/contract/danger-zone'
 import { ContractDescription } from 'web/components/contract/contract-description'
 import { ContractSummaryStats } from 'web/components/contract/contract-summary-stats'
 import { parseJsonContentToText } from 'common/util/parse'
+import { useHasSeenContracts } from 'web/hooks/use-has-seen-contracts'
 export async function getStaticProps(ctx: {
   params: { username: string; contractSlug: string }
 }) {
@@ -296,6 +297,16 @@ export function ContractPageContent(props: ContractParams) {
     contract,
     relatedContracts
   )
+  const seenContractIds = useHasSeenContracts(
+    user?.id,
+    relatedMarkets
+      .map((c) => c.id)
+      .concat(
+        Object.values(relatedContractsByTopicSlug)
+          .flat()
+          .map((c) => c.id)
+      )
+  )
 
   // detect whether header is stuck by observing if title is visible
   const { ref: titleRef, headerStuck } = useHeaderIsStuck()
@@ -466,6 +477,7 @@ export function ContractPageContent(props: ContractParams) {
             {justBet && (
               <RelatedContractsGrid
                 contracts={relatedMarkets}
+                seenContractIds={seenContractIds}
                 loadMore={loadMore}
               />
             )}
@@ -532,6 +544,7 @@ export function ContractPageContent(props: ContractParams) {
             {comments.length > 3 && (
               <RelatedContractsGrid
                 contracts={relatedMarkets}
+                seenContractIds={seenContractIds}
                 loadMore={loadMore}
               />
             )}
@@ -566,6 +579,7 @@ export function ContractPageContent(props: ContractParams) {
             </div>
             <RelatedContractsGrid
               contracts={relatedMarkets}
+              seenContractIds={seenContractIds}
               loadMore={loadMore}
               contractsByTopicSlug={relatedContractsByTopicSlug}
               topics={topics}
@@ -578,6 +592,7 @@ export function ContractPageContent(props: ContractParams) {
 
           <RelatedContractsList
             contracts={relatedMarkets}
+            seenContractIds={seenContractIds}
             loadMore={loadMore}
             topics={topics}
             contractsByTopicSlug={relatedContractsByTopicSlug}
