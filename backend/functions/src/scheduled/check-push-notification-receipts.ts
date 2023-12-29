@@ -1,13 +1,13 @@
 import { Expo } from 'expo-server-sdk'
 import { PushTicket } from 'common/push-ticket'
-import { log } from 'shared/utils'
+import { isProd, log } from 'shared/utils'
 import * as admin from 'firebase-admin'
 import { removeUndefinedProps } from 'common/util/object'
 import * as functions from 'firebase-functions'
 const firestore = admin.firestore()
 
 export const checkPushNotificationReceiptsScheduled = functions
-  .runWith({ memory: '4GB' })
+  .runWith({ memory: isProd() ? '4GB' : '256MB' })
   // every minute on Monday for 2 hours starting at 12pm PT (UTC -07:00)
   .pubsub.schedule('every 30 minutes')
   .onRun(async () => {
