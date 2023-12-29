@@ -20,6 +20,8 @@ export const useTheme = () => {
 
 export const useThemeManager = () => {
   useEffect(() => {
+    reRenderTheme()
+
     const darkQuery = window.matchMedia('(prefers-color-scheme: dark)')
     darkQuery.addEventListener('change', reRenderTheme)
     return () => darkQuery.removeEventListener('change', reRenderTheme)
