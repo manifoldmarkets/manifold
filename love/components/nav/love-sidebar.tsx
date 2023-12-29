@@ -11,9 +11,8 @@ import clsx from 'clsx'
 import { buildArray } from 'common/util/array'
 import { capitalize } from 'lodash'
 import Router, { useRouter } from 'next/router'
-import { useContext, useState } from 'react'
+import { useState } from 'react'
 import { AddFundsModal } from 'web/components/add-funds-modal'
-import { ThemeContext } from 'web/hooks/theme-context'
 import { useUser } from 'web/hooks/use-user'
 import { firebaseLogin, firebaseLogout } from 'web/lib/firebase/users'
 import { withTracking } from 'web/lib/service/analytics'
@@ -24,6 +23,7 @@ import ManifoldLoveLogo from '../manifold-love-logo'
 import { Button, ColorType, SizeType } from 'web/components/buttons/button'
 import { signupThenMaybeRedirectToSignup } from 'love/lib/util/signup'
 import { useLover } from 'love/hooks/use-lover'
+import { useTheme } from 'web/hooks/use-theme'
 
 export default function Sidebar(props: {
   className?: string
@@ -39,10 +39,10 @@ export default function Sidebar(props: {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isAddFundsModalOpen, setIsAddFundsModalOpen] = useState(false)
 
-  const { theme, changeTheme } = useContext(ThemeContext)
+  const { theme, setTheme } = useTheme()
 
   const toggleTheme = () => {
-    changeTheme(theme === 'auto' ? 'dark' : theme === 'dark' ? 'light' : 'auto')
+    setTheme(theme === 'auto' ? 'dark' : theme === 'dark' ? 'light' : 'auto')
   }
   const navOptions = props.navigationOptions
 
@@ -103,7 +103,7 @@ const logout = async () => {
 
 const bottomNav = (
   loggedIn: boolean,
-  theme: 'light' | 'dark' | 'auto',
+  theme: 'light' | 'dark' | 'auto' | 'loading',
   toggleTheme: () => void
 ) =>
   buildArray(
@@ -111,7 +111,7 @@ const bottomNav = (
     !loggedIn && { name: 'Sign in', icon: LoginIcon, onClick: firebaseLogin },
     loggedIn && { name: 'About', href: '/about', icon: QuestionMarkCircleIcon },
     {
-      name: theme === 'auto' ? 'Auto' : capitalize(theme),
+      name: theme === 'loading' ? '' : capitalize(theme),
       icon:
         theme === 'light'
           ? SunIcon
