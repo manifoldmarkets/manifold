@@ -259,7 +259,8 @@ export const getContract = (contractId: string) => {
 export const getContractSupabase = async (contractId: string) => {
   const pg = createSupabaseDirectClient()
   const res = await pg.map(
-    `select * from postgres.public.contracts where id = $1`,
+    `select data, importance_score from contracts where id = $1
+            limit 1`,
     [contractId],
     (row) => convertContract(row)
   )

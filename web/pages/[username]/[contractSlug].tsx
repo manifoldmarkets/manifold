@@ -160,6 +160,8 @@ export function ContractPageContent(props: ContractParams) {
     relatedContracts,
     historyData,
     chartAnnotations,
+    relatedContractsByTopicSlug,
+    topics,
   } = props
 
   const contract =
@@ -432,7 +434,7 @@ export function ContractPageContent(props: ContractParams) {
                     canEdit={isAdmin || isCreator}
                   />
                 </div>
-                <MarketTopics contract={contract} />
+                <MarketTopics contract={contract} topics={topics} />
               </Col>
 
               <div className="text-ink-600 flex flex-wrap items-center justify-between gap-y-1 text-sm">
@@ -565,6 +567,8 @@ export function ContractPageContent(props: ContractParams) {
             <RelatedContractsGrid
               contracts={relatedMarkets}
               loadMore={loadMore}
+              contractsByTopicSlug={relatedContractsByTopicSlug}
+              topics={topics}
               showAll={true}
             />
           </Col>
@@ -574,10 +578,9 @@ export function ContractPageContent(props: ContractParams) {
 
           <RelatedContractsList
             contracts={relatedMarkets}
-            onContractClick={(c) =>
-              track('click related market', { contractId: c.id })
-            }
             loadMore={loadMore}
+            topics={topics}
+            contractsByTopicSlug={relatedContractsByTopicSlug}
           />
         </Col>
       </Row>

@@ -26,7 +26,6 @@ import ContractSharePanel from 'web/components/contract/contract-share-panel'
 import { ContractTabs } from 'web/components/contract/contract-tabs'
 import { VisibilityIcon } from 'web/components/contract/contracts-table'
 import { HeaderActions } from 'web/components/contract/header-actions'
-import { MarketTopics } from 'web/components/contract/market-topics'
 import {
   RelatedContractsGrid,
   RelatedContractsList,
@@ -349,7 +348,6 @@ export function ContractPageContent(props: ContractParams) {
                     canEdit={isAdmin || isCreator}
                   />
                 </div>
-                <MarketTopics contract={contract} />
               </Col>
 
               <div className="text-ink-600 flex flex-wrap items-center justify-between gap-y-1 text-sm">
@@ -485,9 +483,6 @@ export function ContractPageContent(props: ContractParams) {
 
           <RelatedContractsList
             contracts={relatedMarkets}
-            onContractClick={(c) =>
-              track('click related market', { contractId: c.id })
-            }
             loadMore={loadMore}
           />
         </Col>

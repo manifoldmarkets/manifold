@@ -1,7 +1,6 @@
 import clsx from 'clsx'
 import Link from 'next/link'
 import { memo, useState } from 'react'
-import { range } from 'lodash'
 
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
@@ -10,31 +9,74 @@ import { UserLink } from '../widgets/user-link'
 import { LoadMoreUntilNotVisible } from '../widgets/visibility-observer'
 import { ContractStatusLabel } from './contracts-table'
 import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
-import { Contract, contractPath } from 'common/contract'
+import { Contract, contractPath, CPMMBinaryContract } from 'common/contract'
 import Masonry from 'react-masonry-css'
 import { Button } from 'web/components/buttons/button'
 import { track } from 'web/lib/service/analytics'
-import { Carousel } from 'web/components/widgets/carousel'
-import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/outline'
+import {
+  ArrowRightIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
+} from '@heroicons/react/outline'
+import { Topic, TOPIC_KEY } from 'common/group'
+import { FeedBinaryChart } from 'web/components/feed/feed-chart'
+import { DAY_MS } from 'common/util/time'
+import { linkClass } from 'web/components/widgets/site-link'
+import { removeEmojis } from 'common/topics'
 
 export const RelatedContractsList = memo(function (props: {
   contracts: Contract[]
   loadMore?: () => Promise<boolean>
-  onContractClick?: (contract: Contract) => void
+  topics?: Topic[]
+  contractsByTopicSlug?: Record<string, Contract[]>
   className?: string
 }) {
-  const { contracts, loadMore, onContractClick, className } = props
+  const { contracts, loadMore, contractsByTopicSlug, topics, className } = props
 
   return (
     <Col className={clsx(className, 'flex-1')}>
+      {topics &&
+        contractsByTopicSlug &&
+        topics
+          .filter((t) => contractsByTopicSlug[t.slug].length > 0)
+          .map((topic) => (
+            <Col key={'related-topics-' + topic.id} className={'my-2'}>
+              <h2 className={clsx('text-ink-600 mb-2 text-lg')}>
+                <Link
+                  className={linkClass}
+                  href={`/browse?${TOPIC_KEY}=${topic.slug}`}
+                >
+                  <Row className={'items-center gap-1'}>
+                    {removeEmojis(topic.name)} questions
+                    <ArrowRightIcon className="h-4 w-4" />
+                  </Row>
+                </Link>
+              </h2>
+              <Col className="divide-ink-300 divide-y-[0.5px]">
+                {contractsByTopicSlug[topic.slug]
+                  .slice(0, 2)
+                  .map((contract) => (
+                    <SidebarRelatedContractCard
+                      key={contract.id}
+                      contract={contract}
+                      onContractClick={(c) =>
+                        track('click related market', { contractId: c.id })
+                      }
+                      twoLines
+                    />
+                  ))}
+              </Col>
+            </Col>
+          ))}
       <h2 className={clsx('text-ink-600 mb-2 text-xl')}>Related questions</h2>
       <Col className="divide-ink-300 divide-y-[0.5px]">
         {contracts.map((contract) => (
-          <RelatedContractCard
+          <SidebarRelatedContractCard
             contract={contract}
-            className={'px-4 py-3'}
             key={contract.id}
-            onContractClick={onContractClick}
+            onContractClick={(c) =>
+              track('click related market', { contractId: c.id })
+            }
           />
         ))}
       </Col>
@@ -46,53 +88,7 @@ export const RelatedContractsList = memo(function (props: {
   )
 })
 
-export const RelatedContractsCarousel = memo(function (props: {
-  contracts: Contract[]
-  loadMore?: () => Promise<boolean>
-  onContractClick?: (contract: Contract) => void
-  className?: string
-}) {
-  const { contracts, loadMore, onContractClick, className } = props
-  if (contracts.length === 0) {
-    return null
-  }
-
-  const halfRange = range(Math.floor(contracts.length / 2))
-
-  return (
-    <Col
-      className={clsx(className, '-ml-4 mb-2 mt-4 flex-1 px-3 py-2 xl:hidden')}
-    >
-      <h2 className={clsx('text-ink-800 mb-2 text-lg')}>Related questions</h2>
-      <Carousel loadMore={loadMore}>
-        {halfRange.map((i) => {
-          const contract = contracts[i * 2]
-          const secondContract = contracts[i * 2 + 1]
-          return (
-            <Col key={contract.id} className="snap-start gap-2">
-              <RelatedContractCard
-                className="border-ink-300 min-w-[300px] rounded-xl border-2 px-4 py-3"
-                contract={contract}
-                onContractClick={onContractClick}
-                twoLines
-              />
-              {secondContract && (
-                <RelatedContractCard
-                  className="border-ink-300 min-w-[300px] rounded-xl border-2 px-4 py-3"
-                  contract={secondContract}
-                  onContractClick={onContractClick}
-                  twoLines
-                />
-              )}
-            </Col>
-          )
-        })}
-      </Carousel>
-    </Col>
-  )
-})
-
-const RelatedContractCard = memo(function (props: {
+const SidebarRelatedContractCard = memo(function (props: {
   contract: Contract
   onContractClick?: (contract: Contract) => void
   twoLines?: boolean
@@ -111,6 +107,7 @@ const RelatedContractCard = memo(function (props: {
       className={clsx(
         'whitespace-nowrap outline-none',
         'bg-canvas-0 lg:hover:bg-primary-50 focus:bg-primary-50 transition-colors',
+        'px-4 py-3',
         className
       )}
       href={contractPath(contract)}
@@ -154,21 +151,173 @@ const RelatedContractCard = memo(function (props: {
   )
 })
 
+const RelatedContractCard = memo(function (props: {
+  contract: Contract
+  onContractClick?: (contract: Contract) => void
+  twoLines?: boolean
+  showGraph?: boolean
+  className?: string
+}) {
+  const { onContractClick, showGraph, twoLines, className } = props
+
+  const contract =
+    useFirebasePublicContract(props.contract.visibility, props.contract.id) ??
+    props.contract
+  const { creatorUsername, creatorAvatarUrl, question, creatorCreatedTime } =
+    contract
+  const probChange =
+    contract.outcomeType === 'BINARY' &&
+    showGraph &&
+    Math.abs((contract as CPMMBinaryContract).probChanges.day) > 0.03
+      ? (contract as CPMMBinaryContract).probChanges.day
+      : 0
+
+  return (
+    <Link
+      className={clsx(
+        'whitespace-nowrap outline-none',
+        'bg-canvas-0 lg:hover:bg-primary-50 focus:bg-primary-50 transition-colors',
+        'border-ink-300 my-2 flex flex-col rounded-lg border-2 p-2',
+        className
+      )}
+      href={contractPath(contract)}
+      onClick={() => onContractClick?.(contract)}
+    >
+      <div
+        className={clsx(
+          'break-anywhere mb-2 whitespace-normal font-medium',
+          twoLines ? 'line-clamp-2' : 'line-clamp-3'
+        )}
+      >
+        {question}
+      </div>
+      <Row className="w-full items-end justify-between">
+        <Row className="items-center gap-1.5">
+          <Avatar
+            username={creatorUsername}
+            avatarUrl={creatorAvatarUrl}
+            size="xs"
+            noLink
+          />
+          <UserLink
+            user={{
+              id: contract.creatorId,
+              name: contract.creatorName,
+              username: contract.creatorUsername,
+            }}
+            className="text-ink-500 text-sm"
+            createdTime={creatorCreatedTime}
+            noLink
+          />
+        </Row>
+
+        <Row className={'items-baseline gap-1'}>
+          {contract.outcomeType === 'BINARY' && probChange !== 0 && (
+            <span
+              className={clsx(
+                'mr-1 text-sm',
+                probChange > 0 ? 'text-green-500' : 'text-red-500'
+              )}
+            >
+              {probChange > 0 ? '+' : ''}
+              {Math.round(probChange * 100)}% 1d
+            </span>
+          )}
+          <ContractStatusLabel contract={contract} className="font-semibold" />
+          <span className={'text-ink-500 text-sm'}>chance</span>
+        </Row>
+      </Row>
+      {contract.outcomeType === 'BINARY' && probChange !== 0 && (
+        <FeedBinaryChart
+          contract={contract}
+          className="my-4"
+          startDate={Date.now() - DAY_MS}
+          addLeadingBetPoint={true}
+        />
+      )}
+    </Link>
+  )
+})
+
 export const RelatedContractsGrid = memo(function (props: {
   contracts: Contract[]
+  // where should we get the group names, from the groupLinks?
+  contractsByTopicSlug?: Record<string, Contract[]>
+  topics?: Topic[]
   loadMore?: () => Promise<boolean>
   className?: string
   showAll?: boolean
 }) {
-  const { contracts, loadMore, className, showAll } = props
+  const {
+    contracts,
+    topics,
+    contractsByTopicSlug,
+    loadMore,
+    className,
+    showAll,
+  } = props
   const [showMore, setShowMore] = useState(showAll ?? false)
-  if (contracts.length === 0) {
+  const hasRelatedContractByTopic =
+    Object.values(contractsByTopicSlug ?? {}).length > 0
+  if (contracts.length === 0 && !hasRelatedContractByTopic) {
     return null
   }
 
   return (
     <Col className={clsx(className, 'mb-2 mt-4 flex-1 py-2 xl:hidden')}>
-      <h2 className={clsx('text-ink-800 mb-2 text-lg')}>Related questions</h2>
+      {topics &&
+        contractsByTopicSlug &&
+        topics
+          .filter((t) => contractsByTopicSlug[t.slug].length > 0)
+          .map((topic) => (
+            <Col key={'related-topics-' + topic.id} className={'my-2'}>
+              <h2 className={clsx('text-ink-800 mb-1 text-lg')}>
+                <Link
+                  className={linkClass}
+                  href={`/browse?${TOPIC_KEY}=${topic.slug}`}
+                >
+                  Related in {removeEmojis(topic.name)}
+                </Link>
+              </h2>
+              <Masonry
+                breakpointCols={{ default: 2, 768: 1 }}
+                className={clsx(
+                  ' flex w-auto',
+                  'scrollbar-hide snap-x gap-2 overflow-y-auto scroll-smooth',
+                  'h-full'
+                )}
+              >
+                {contractsByTopicSlug[topic.slug]
+                  .slice(0, 4)
+                  .map((contract) => (
+                    <RelatedContractCard
+                      key={contract.id}
+                      showGraph={showAll}
+                      contract={contract}
+                      onContractClick={(c) =>
+                        track('click related market', { contractId: c.id })
+                      }
+                      twoLines
+                    />
+                  ))}
+              </Masonry>
+
+              <Row className={'text-ink-700 items-center justify-end'}>
+                <Link
+                  className={linkClass}
+                  href={`/browse?${TOPIC_KEY}=${topic.slug}`}
+                >
+                  <Row className={'items-center gap-1'}>
+                    See more {removeEmojis(topic.name)} questions
+                    <ArrowRightIcon className="h-4 w-4" />
+                  </Row>
+                </Link>
+              </Row>
+            </Col>
+          ))}
+      <h2 className={clsx('text-ink-800 mb-2 text-lg')}>
+        {hasRelatedContractByTopic ? 'More related ' : 'Related '} questions
+      </h2>
       <Masonry
         breakpointCols={{ default: 2, 768: 1 }}
         className={clsx(
@@ -180,9 +329,7 @@ export const RelatedContractsGrid = memo(function (props: {
         {contracts.map((contract) => (
           <RelatedContractCard
             key={contract.id}
-            className={
-              'border-ink-300 my-2 flex flex-col rounded-lg border-2 p-2'
-            }
+            showGraph={showAll}
             contract={contract}
             onContractClick={(c) =>
               track('click related market', { contractId: c.id })

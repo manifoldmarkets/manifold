@@ -1,5 +1,5 @@
 import { Row, SupabaseClient, convertSQLtoTS, run } from 'common/supabase/utils'
-import { Group } from 'common/group'
+import { Group, Topic } from 'common/group'
 
 export const UNRANKED_GROUP_ID = 'f141b8ca-eac3-4400-962a-72973b3ceb62'
 export const UNSUBSIDIZED_GROUP_ID = 'f08f4130-3410-4030-9bf5-f675e5035e9c'
@@ -51,3 +51,14 @@ export const convertGroup = (
     fs_updated_time: false,
     name_fts: false,
   })
+
+export async function getTopics(groupIds: string[], db: SupabaseClient) {
+  const { data } = await run(
+    db
+      .from('groups')
+      .select('id,name,slug,importance_score,privacy_status')
+      .in('id', groupIds)
+      .order('importance_score', { ascending: false })
+  )
+  return data?.map(convertGroup) as Topic[]
+}

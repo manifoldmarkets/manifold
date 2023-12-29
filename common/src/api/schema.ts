@@ -538,6 +538,20 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
+  'get-related-markets': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: false,
+    props: z.object({
+      contractId: z.string(),
+      limit: z.coerce.number().gte(0).lte(100),
+      userId: z.string().optional(),
+    }),
+    returns: {} as {
+      marketsFromEmbeddings: Contract[]
+      marketsByTopicSlug: { [topicSlug: string]: Contract[] }
+    },
+  },
 } as const)
 
 export type APIPath = keyof typeof API

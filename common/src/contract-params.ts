@@ -15,8 +15,7 @@ import {
   getTopContractMetrics,
   getContractMetricsCount,
 } from 'common/supabase/contract-metrics'
-import { getUserIsMember } from 'common/supabase/groups'
-import { getRelatedContracts } from 'common/supabase/related-contracts'
+import { getTopics, getUserIsMember } from 'common/supabase/groups'
 import { removeUndefinedProps } from 'common/util/object'
 import { getIsAdmin } from 'common/supabase/is-admin'
 import { pointsToBase64 } from 'common/util/og'
@@ -25,6 +24,7 @@ import { buildArray } from 'common/util/array'
 import { groupBy } from 'lodash'
 import { Bet } from 'common/bet'
 import { getChartAnnotations } from 'common/supabase/chart-annotations'
+import { unauthedApi } from 'common/util/api'
 
 export async function getContractParams(
   contract: Contract,
@@ -50,6 +50,7 @@ export async function getContractParams(
     relatedContracts,
     betReplies,
     chartAnnotations,
+    topics,
   ] = await Promise.all([
     checkAccess ? getCanAccessContract(contract, userId, db) : true,
     hasMechanism ? getTotalBetCount(contract.id, db) : 0,
@@ -73,7 +74,11 @@ export async function getContractParams(
       : {},
     contract.resolution ? getTopContractMetrics(contract.id, 10, db) : [],
     isCpmm1 || isMulti ? getContractMetricsCount(contract.id, db) : 0,
-    getRelatedContracts(contract, 20, db, true),
+    unauthedApi('get-related-markets', {
+      contractId: contract.id,
+      limit: 4,
+    }),
+    // getRelatedContracts(contract, 20, db),
     // TODO: Should only send bets that are replies to comments we're sending, and load the rest client side
     isCpmm1
       ? getBets(db, {
@@ -82,6 +87,7 @@ export async function getContractParams(
         })
       : ([] as Bet[]),
     getChartAnnotations(contract.id, db),
+    getTopics(contract.groupLinks?.map((gl) => gl.groupId) ?? [], db),
   ])
   if (!canAccessContract) {
     return contract && !contract.deleted
@@ -123,8 +129,10 @@ export async function getContractParams(
       totalPositions,
       totalBets,
       topContractMetrics,
-      relatedContracts,
+      relatedContracts: relatedContracts.marketsFromEmbeddings as Contract[],
+      relatedContractsByTopicSlug: relatedContracts.marketsByTopicSlug,
       chartAnnotations,
+      topics,
     }),
   }
 }
