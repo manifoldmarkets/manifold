@@ -134,9 +134,10 @@ export default function College(props: {
                 </h1>
                 <br></br>
                 <h1 className="text-xl">
-                  Using the power of Manifold's play-money prediction markets,
-                  we can find your chance of admission for any college. It's
-                  100% <strong className="font-semibold">free, fun,</strong> and{' '}
+                  Using the aggregate wisdom of Manifold's play-money prediction
+                  markets, we can find your chance of admission for{' '}
+                  <u>any college.</u> It's 100%{' '}
+                  <strong className="font-semibold">free, fun,</strong> and{' '}
                   <strong className="font-semibold">easy</strong> to use!
                   {/* It's play money,{' '}
                   <strong className="font-semibold">not crypto</strong>, and
@@ -150,8 +151,8 @@ export default function College(props: {
                   crowd's collective predictions. Participants have a financial
                   incentive to make accurate predictions, encouraging a dynamic
                   exchange of information. This makes prediction markets
-                  effective tools for forecasting and decision-making.
-                  Prediction markets are valuable because they harness
+                  effective tools for forecasting and decision-making. Overall,
+                  prediction markets are valuable because they harness
                   collective wisdom, incentivize accurate predictions, and
                   provide dynamic insights into the likelihood of future events.
                   <Image
@@ -163,9 +164,9 @@ export default function College(props: {
                   />
                 </ExpandSection>
                 <ExpandSection title="How accurate are prediction markets?">
-                  Unlike websites like Collegevine or subreddits like chanceme
-                  and ApplyingToCollege, Manifold's markets have a lot of
-                  evidence behind their probabilities.
+                  Unlike websites like Collegevine or subreddits like r/chanceme
+                  and r/ApplyingToCollege, Manifold's markets have a proven
+                  track record of conveying accurate probabilities.
                   <br></br>
                   <br></br>
                   This calibration chart shows whether events happened as often
@@ -195,14 +196,17 @@ export default function College(props: {
                     alt="Example profile"
                   />
                 </ExpandSection>
-
+                <hr></hr>
+                <h1 className="mt-1 text-xl">
+                  College admissions can be stressful, so...
+                </h1>
                 <Button
                   color="gradient"
                   size="2xl"
-                  className="mt-8"
+                  className="mt-1"
                   onClick={firebaseLogin}
                 >
-                  Find your chances
+                  Join now to find your chances!
                 </Button>
                 <div className="text-md ml-8 ">
                   ...and get{'   '}
