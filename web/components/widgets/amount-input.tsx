@@ -170,7 +170,7 @@ export function BuyAmountInput(props: {
   }
 
   const quickAddButtons = (
-    <Row className="absolute right-0 divide-x border-l">
+    <Row className="border-ink-300 divide-ink-300 absolute right-0 divide-x border-l">
       <IncrementDecrementButton
         amount={10}
         onIncrement={() => increment(10)}
