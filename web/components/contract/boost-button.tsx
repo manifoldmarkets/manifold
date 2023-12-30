@@ -60,7 +60,7 @@ export function BoostDialog(props: {
   const [index, setIndex] = useState(0)
   const [showTabs, setShowTabs] = useState(false)
 
-  const [amount, setAmount] = useState<number | undefined>(undefined)
+  const [amount, setAmount] = useState<number | undefined>(100)
 
   const subsidyDisabled =
     contract.isResolved ||
@@ -199,7 +199,7 @@ function SimpleBoostRow(props: {
 
       <Row className="mb-2">
         <BuyAmountInput
-          inputClassName="w-40 mr-2"
+          inputClassName="w-40"
           amount={amount}
           onChange={onAmountChange}
           error={error}
@@ -207,7 +207,7 @@ function SimpleBoostRow(props: {
           disabled={isLoading}
           // don't use slider: useless for larger amounts
           sliderOptions={{ show: false, wrap: false }}
-          hideQuickAdd
+          quickAddAmount={100}
         />
       </Row>
 
@@ -249,7 +249,6 @@ function BoostFormRow(props: {
 
   const [loading, setLoading] = useState(false)
   const [showBid, setShowBid] = useState(true)
-  // const [totalCost, setTotalCost] = useState<number>()
   const [costPerView, setCostPerView] = useState<number | undefined>(
     DEFAULT_AD_COST_PER_VIEW
   )
@@ -297,11 +296,15 @@ function BoostFormRow(props: {
       </div>
 
       <Row className="items-center justify-between">
-        <AmountInput
+        <BuyAmountInput
+          inputClassName="w-40"
           amount={amount}
-          onChangeAmount={setAmount}
-          label={ENV_CONFIG.moneyMoniker}
-          inputClassName="mr-2 w-36"
+          onChange={setAmount}
+          error={error}
+          setError={(_e) => {}}
+          disabled={false}
+          sliderOptions={{ show: false, wrap: false }}
+          quickAddAmount={100}
         />
       </Row>
 
