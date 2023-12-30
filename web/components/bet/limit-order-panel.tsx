@@ -266,6 +266,7 @@ export default function LimitOrderPanel(props: {
           scale,
           setScale: onUpdateScale,
         }}
+        quickAddAmount={scale / 10}
         showBalance
       />
 

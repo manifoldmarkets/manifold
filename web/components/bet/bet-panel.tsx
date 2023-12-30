@@ -338,6 +338,7 @@ export function BuyPanel(props: {
             scale,
             setScale: onUpdateScale,
           }}
+          quickAddAmount={scale / 10}
           binaryOutcome={outcome}
           showBalance
         />
