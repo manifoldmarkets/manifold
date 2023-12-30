@@ -199,15 +199,11 @@ function SimpleBoostRow(props: {
 
       <Row className="mb-2">
         <BuyAmountInput
-          inputClassName="w-40"
           amount={amount}
           onChange={onAmountChange}
           error={error}
           setError={setError}
           disabled={isLoading}
-          // don't use slider: useless for larger amounts
-          sliderOptions={{ show: false, wrap: false }}
-          quickAddAmount={100}
         />
       </Row>
 
@@ -297,14 +293,11 @@ function BoostFormRow(props: {
 
       <Row className="items-center justify-between">
         <BuyAmountInput
-          inputClassName="w-40"
           amount={amount}
           onChange={setAmount}
           error={error}
           setError={(_e) => {}}
           disabled={false}
-          sliderOptions={{ show: false, wrap: false }}
-          quickAddAmount={100}
         />
       </Row>
 

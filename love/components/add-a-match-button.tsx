@@ -210,7 +210,6 @@ const AddMatchDialog = (props: {
             <div className="text-sm font-bold">Bet on their relationship</div>
             <BuyAmountInput
               amount={betAmount}
-              inputClassName={'w-36'}
               onChange={setBetAmount}
               minimumAmount={MIN_BET_AMOUNT_FOR_NEW_MATCH}
               error={error}

@@ -518,14 +518,11 @@ export function ContractParamsForm(props: {
           </label>
           {amountSuppliedByHouse === 0 ? (
             <BuyAmountInput
-              inputClassName="w-full max-w-none"
               minimumAmount={MINIMUM_BOUNTY}
               amount={bountyAmount}
               onChange={(newAmount) => setBountyAmount(newAmount)}
               error={bountyError}
               setError={setBountyError}
-              sliderOptions={{ show: true, wrap: false }}
-              customRange={{ rangeMax: 500 }}
             />
           ) : (
             <div className="text-ink-700 pl-1 text-sm">

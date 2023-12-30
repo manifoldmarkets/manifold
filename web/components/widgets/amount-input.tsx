@@ -2,13 +2,12 @@ import clsx from 'clsx'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { formatMoney } from 'common/util/format'
 import { ReactNode, useEffect, useState } from 'react'
-import { BetSlider } from 'web/components/bet/bet-slider'
 import { useUser } from 'web/hooks/use-user'
 import { AddFundsModal } from '../add-funds-modal'
-import { BinaryOutcomes } from '../bet/bet-panel'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { Input } from './input'
+import { IncrementDecrementButton } from './increment-decrement-button'
 
 export function AmountInput(
   props: {
@@ -113,7 +112,6 @@ export function BuyAmountInput(props: {
   setError: (error: string | undefined) => void
   minimumAmount?: number
   maximumAmount?: number
-  quickAddAmount?: number
   disabled?: boolean
   showBalance?: boolean
   parentClassName?: string
@@ -121,18 +119,7 @@ export function BuyAmountInput(props: {
   inputClassName?: string
   // Needed to focus the amount input
   inputRef?: React.MutableRefObject<any>
-  binaryOutcome?: BinaryOutcomes
-  sliderOptions?: {
-    show: boolean
-    wrap: boolean
-    scale?: number
-    setScale?: (scale: number) => void
-  }
   hideQuickAdd?: boolean
-  customRange?: {
-    rangeMin?: number
-    rangeMax?: number
-  }
   disregardUserBalance?: boolean
 }) {
   const {
@@ -140,23 +127,17 @@ export function BuyAmountInput(props: {
     onChange,
     error,
     setError,
-    sliderOptions,
     disabled,
     showBalance,
     parentClassName,
     className,
     inputClassName,
     minimumAmount,
-    quickAddAmount = 10,
     inputRef,
-    binaryOutcome,
     maximumAmount,
-    customRange,
     disregardUserBalance,
     hideQuickAdd,
   } = props
-  const { show, wrap, scale = 100, setScale } = sliderOptions ?? {}
-
   const user = useUser()
 
   // Check for errors.
@@ -176,56 +157,56 @@ export function BuyAmountInput(props: {
     }
   }, [amount, user, minimumAmount, maximumAmount, disregardUserBalance])
 
-  const quickAddButton = (
-    <button
-      className={clsx(
-        quickAddMoreButtonClassName,
-        binaryOutcome === 'YES'
-          ? 'text-teal-500 hover:bg-teal-100'
-          : binaryOutcome === 'NO'
-          ? 'text-scarlet-300 hover:bg-scarlet-50'
-          : 'text-ink-500 hover:bg-ink-200'
-      )}
-      onClick={() => onChange((amount ?? 0) + quickAddAmount)}
-    >
-      +{quickAddAmount}
-    </button>
+  const increment = (interval: number) => {
+    const newAmount = (amount ?? 0) + interval
+    if (maximumAmount && newAmount > maximumAmount) onChange(maximumAmount)
+    else onChange(newAmount)
+  }
+  const decrement = (interval: number) => {
+    const newAmount = (amount ?? 0) - interval
+    if (newAmount <= 0) onChange(undefined)
+    else if (minimumAmount && newAmount < minimumAmount) onChange(minimumAmount)
+    else onChange(newAmount)
+  }
+
+  const quickAddButtons = (
+    <Row className="absolute right-0 divide-x border-l">
+      <IncrementDecrementButton
+        amount={10}
+        onIncrement={() => increment(10)}
+        onDecrement={() => decrement(10)}
+      />
+      <IncrementDecrementButton
+        amount={100}
+        onIncrement={() => increment(100)}
+        onDecrement={() => decrement(100)}
+      />
+      <IncrementDecrementButton
+        amount={1000}
+        onIncrement={() => increment(1000)}
+        onDecrement={() => decrement(1000)}
+      />
+    </Row>
   )
 
   return (
     <>
       <Col className={parentClassName}>
-        <Row
-          className={clsx(
-            'justify-between gap-x-4 gap-y-1 sm:justify-start',
-            wrap ? 'flex-wrap' : ''
-          )}
-        >
+        <Row className={clsx('flex-wrap items-center gap-x-2 gap-y-1')}>
           <AmountInput
+            className={className}
+            inputClassName={clsx(
+              hideQuickAdd ? 'w-32' : 'w-[265px] pr-[148px]',
+              inputClassName
+            )}
             amount={amount}
             onChangeAmount={onChange}
             label={ENV_CONFIG.moneyMoniker}
             error={!!error}
             disabled={disabled}
-            className={className}
-            inputClassName={clsx('pr-12', inputClassName)}
             inputRef={inputRef}
-            quickAddMoreButton={
-              hideQuickAdd || maximumAmount ? undefined : quickAddButton
-            }
+            quickAddMoreButton={hideQuickAdd ? undefined : quickAddButtons}
           />
-          {show && (
-            <BetSlider
-              amount={amount}
-              onAmountChange={onChange}
-              binaryOutcome={binaryOutcome}
-              maximumAmount={maximumAmount}
-              customRange={customRange}
-              disabled={disabled}
-              scale={scale}
-              setScale={setScale}
-            />
-          )}
         </Row>
         {error ? (
           <div className="text-scarlet-500 mt-0.5 whitespace-nowrap text-sm">

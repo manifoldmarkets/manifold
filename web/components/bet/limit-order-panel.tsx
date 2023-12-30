@@ -1,7 +1,7 @@
 import clsx from 'clsx'
 import dayjs from 'dayjs'
 import { clamp, sumBy } from 'lodash'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 
 import { Answer } from 'common/answer'
 import { LimitBet } from 'common/bet'
@@ -32,7 +32,6 @@ import { OrderBookButton } from './order-book'
 import { YesNoSelector } from './yes-no-selector'
 import { ProbabilityOrNumericInput } from '../widgets/probability-input'
 import { getPseudoProbability } from 'common/pseudo-numeric'
-import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 
 export default function LimitOrderPanel(props: {
   contract:
@@ -65,27 +64,10 @@ export default function LimitOrderPanel(props: {
   }
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
 
-  const [betAmount, setBetAmount] = useState<number | undefined>(10)
+  const [betAmount, setBetAmount] = useState<number | undefined>(undefined)
   const [error, setError] = useState<string | undefined>()
   const [inputError, setInputError] = useState<boolean>(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [rawScale, setScale] = usePersistentLocalState<number | undefined>(
-    undefined,
-    'bet-scale'
-  )
-  const scale = rawScale ?? 100
-
-  function onUpdateScale(newScale: number) {
-    const factor = newScale / scale
-    setScale(newScale)
-    setBetAmount((betAmount ?? 0) * factor)
-  }
-
-  useEffect(() => {
-    if (rawScale) {
-      setBetAmount(rawScale / 10)
-    }
-  }, [!!rawScale])
 
   // Expiring orders
   const [addExpiration, setAddExpiration] = useState(false)
@@ -254,19 +236,11 @@ export default function LimitOrderPanel(props: {
       <span className="text-ink-800 mb-2 text-sm">Amount</span>
 
       <BuyAmountInput
-        inputClassName="w-full max-w-none"
         amount={betAmount}
         onChange={onBetChange}
         error={error}
         setError={setError}
         disabled={isSubmitting}
-        sliderOptions={{
-          show: true,
-          wrap: false,
-          scale,
-          setScale: onUpdateScale,
-        }}
-        quickAddAmount={scale / 10}
         showBalance
       />
 

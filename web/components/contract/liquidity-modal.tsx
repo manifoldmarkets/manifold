@@ -90,14 +90,11 @@ export function AddLiquidityPanel(props: {
 
       <Row className="mb-4">
         <BuyAmountInput
-          inputClassName="w-40"
           amount={amount}
           onChange={setAmount}
           error={error}
           setError={(_e) => {}}
           disabled={false}
-          sliderOptions={{ show: false, wrap: false }}
-          quickAddAmount={100}
         />
       </Row>
       <Button
