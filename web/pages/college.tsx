@@ -145,15 +145,15 @@ export default function College(props: {
                 <br></br>
 
                 <ExpandSection title="What is a prediction market?">
-                  A prediction market is like a betting game where people trade
-                  virtual shares based on what they think will happen in the
-                  future, such as college admissions results. These trades
-                  generate a probability for the market resolving to YES. This
-                  works well because many people with different ideas and
-                  information join in, and as they trade, the prices tend to
-                  reflect what's likely to really happen. So, prediction markets
-                  are like a smart crowd making predictions by buying and
-                  selling shares.
+                  Prediction markets are platforms where people bet on the
+                  likelihood of future events, and the probabilities reflect the
+                  crowd's collective predictions. Participants have a financial
+                  incentive to make accurate predictions, encouraging a dynamic
+                  exchange of information. This makes prediction markets
+                  effective tools for forecasting and decision-making.
+                  Prediction markets are valuable because they harness
+                  collective wisdom, incentivize accurate predictions, and
+                  provide dynamic insights into the likelihood of future events.
                   <Image
                     src="/welcome/manifold-example.gif"
                     className="my-4 h-full w-full object-contain"
