@@ -41,6 +41,7 @@ import { getCpmmProbability } from 'common/calculate-cpmm'
 import { removeUndefinedProps } from 'common/util/object'
 import { calculateCpmmMultiArbitrageBet } from 'common/calculate-cpmm-arbitrage'
 import LimitOrderPanel from './limit-order-panel'
+import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 
 export type BinaryOutcomes = 'YES' | 'NO' | undefined
 
@@ -96,7 +97,13 @@ export function BuyPanel(props: {
   const outcome = option === 'LIMIT' ? undefined : option
   const seeLimit = option === 'LIMIT'
 
-  const [betAmount, setBetAmount] = useState<number | undefined>(10)
+  const [rawScale, setScale] = usePersistentLocalState<number | undefined>(
+    undefined,
+    'bet-scale'
+  )
+  const scale = rawScale ?? 100
+
+  const [betAmount, setBetAmount] = useState<number | undefined>(scale / 10)
   const [error, setError] = useState<string | undefined>()
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -107,6 +114,18 @@ export function BuyPanel(props: {
       setOption(initialOutcome)
     }
   }, [initialOutcome])
+
+  function onUpdateScale(newScale: number) {
+    const factor = newScale / scale
+    setScale(newScale)
+    setBetAmount((betAmount ?? 0) * factor)
+  }
+
+  useEffect(() => {
+    if (rawScale) {
+      setBetAmount(rawScale / 10)
+    }
+  }, [!!rawScale])
 
   function onOptionChoice(choice: 'YES' | 'NO' | 'LIMIT') {
     if (option === choice && !initialOutcome) {
@@ -313,7 +332,12 @@ export function BuyPanel(props: {
           setError={setError}
           disabled={isSubmitting}
           inputRef={inputRef}
-          sliderOptions={{ show: true, wrap: false }}
+          sliderOptions={{
+            show: true,
+            wrap: false,
+            scale,
+            setScale: onUpdateScale,
+          }}
           binaryOutcome={outcome}
           showBalance
         />

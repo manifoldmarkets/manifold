@@ -105,6 +105,7 @@ export function AmountInput(
 }
 export const quickAddMoreButtonClassName =
   'absolute right-px top-px bottom-px rounded-r-md px-2.5 transition-colors'
+
 export function BuyAmountInput(props: {
   amount: number | undefined
   onChange: (newAmount: number | undefined) => void
@@ -124,6 +125,8 @@ export function BuyAmountInput(props: {
   sliderOptions?: {
     show: boolean
     wrap: boolean
+    scale?: number
+    setScale?: (scale: number) => void
   }
   hideQuickAdd?: boolean
   customRange?: {
@@ -152,7 +155,7 @@ export function BuyAmountInput(props: {
     disregardUserBalance,
     hideQuickAdd,
   } = props
-  const { show, wrap } = sliderOptions ?? {}
+  const { show, wrap, scale = 100, setScale } = sliderOptions ?? {}
 
   const user = useUser()
 
@@ -194,7 +197,7 @@ export function BuyAmountInput(props: {
       <Col className={parentClassName}>
         <Row
           className={clsx(
-            'items-center justify-between gap-x-4 gap-y-1 sm:justify-start',
+            'justify-between gap-x-4 gap-y-1 sm:justify-start',
             wrap ? 'flex-wrap' : ''
           )}
         >
@@ -219,6 +222,8 @@ export function BuyAmountInput(props: {
               maximumAmount={maximumAmount}
               customRange={customRange}
               disabled={disabled}
+              scale={scale}
+              setScale={setScale}
             />
           )}
         </Row>
