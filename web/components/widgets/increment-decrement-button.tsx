@@ -8,7 +8,7 @@ export const IncrementDecrementButton = (props: {
 }) => {
   const { amount, onIncrement, onDecrement } = props
   const buttonClasses =
-    'active:bg-ink-100 flex h-6 w-12 flex-row items-center justify-center'
+    'active:bg-ink-100 flex h-8 w-12 flex-row items-center justify-center'
   return (
     <Col className="text-ink-600 relative items-center">
       <button className={clsx(buttonClasses, '')} onClick={onIncrement}>
