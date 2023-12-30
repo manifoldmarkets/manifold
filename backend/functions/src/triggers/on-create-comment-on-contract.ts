@@ -1,7 +1,7 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 import { compact, first } from 'lodash'
-import { getUser, getValues, revalidateStaticProps } from 'shared/utils'
+import { getUser, revalidateStaticProps } from 'shared/utils'
 import { ContractComment } from 'common/comment'
 import { Bet } from 'common/bet'
 import {
@@ -13,7 +13,6 @@ import { addUserToContractFollowers } from 'shared/follow-market'
 import { Contract, contractPath } from 'common/contract'
 import { User } from 'common/user'
 import { secrets } from 'common/secrets'
-import { HOUR_MS } from 'common/util/time'
 import { removeUndefinedProps } from 'common/util/object'
 import { addCommentOnContractToFeed } from 'shared/create-feed'
 import { getContractsDirect } from 'shared/supabase/contracts'
@@ -255,6 +254,7 @@ async function getLargestPosition(
   contractId: string,
   userId: string
 ) {
+  // mqp: should probably use user_contract_metrics for this, i am just lazily porting
   return await pg.oneOrNone(
     `with user_positions as (
       select answer_id, outcome, sum(shares) as shares
