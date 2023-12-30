@@ -17,13 +17,18 @@ export function LiquidityModal(props: {
   setOpen: (open: boolean) => void
 }) {
   const { contract, isOpen, setOpen } = props
+  const [amount, setAmount] = useState<number | undefined>(undefined)
 
   return (
     <Modal open={isOpen} setOpen={setOpen} size="md">
       <Col className="bg-canvas-0 gap-3  rounded p-4 pb-8 sm:gap-4">
         <Title className="!mb-2">💧 Subsidize this market</Title>
 
-        <AddLiquidityPanel contract={contract} />
+        <AddLiquidityPanel
+          contract={contract}
+          amount={amount}
+          setAmount={setAmount}
+        />
       </Col>
     </Modal>
   )
@@ -31,11 +36,12 @@ export function LiquidityModal(props: {
 
 export function AddLiquidityPanel(props: {
   contract: CPMMContract | CPMMMultiContract
+  amount: number | undefined
+  setAmount: (amount: number | undefined) => void
 }) {
-  const { contract } = props
+  const { contract, amount, setAmount } = props
   const { id: contractId, slug, totalLiquidity } = contract
 
-  const [amount, setAmount] = useState<number | undefined>(undefined)
   const [error, setError] = useState<string | undefined>(undefined)
   const [isSuccess, setIsSuccess] = useState(false)
   const [isLoading, setIsLoading] = useState(false)

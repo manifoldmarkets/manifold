@@ -60,6 +60,8 @@ export function BoostDialog(props: {
   const [index, setIndex] = useState(0)
   const [showTabs, setShowTabs] = useState(false)
 
+  const [amount, setAmount] = useState<number | undefined>(undefined)
+
   const subsidyDisabled =
     contract.isResolved ||
     (contract.closeTime ?? Infinity) < Date.now() ||
@@ -74,6 +76,8 @@ export function BoostDialog(props: {
           <SimpleBoostRow
             contract={contract}
             subsidyDisabled={subsidyDisabled}
+            amount={amount}
+            setAmount={setAmount}
           />
         )}
 
@@ -85,13 +89,25 @@ export function BoostDialog(props: {
         {showTabs && (
           <ControlledTabs
             tabs={buildArray(
-              !subsidyDisabled && {
-                title: 'Subsidies',
-                content: <AddLiquidityPanel contract={contract} />,
-              },
               {
                 title: 'Feed promo',
-                content: <BoostFormRow contract={contract} />,
+                content: (
+                  <BoostFormRow
+                    contract={contract}
+                    amount={amount}
+                    setAmount={setAmount}
+                  />
+                ),
+              },
+              !subsidyDisabled && {
+                title: 'Subsidies',
+                content: (
+                  <AddLiquidityPanel
+                    contract={contract}
+                    amount={amount}
+                    setAmount={setAmount}
+                  />
+                ),
               },
               {
                 title: 'Analytics',
@@ -111,11 +127,12 @@ export function BoostDialog(props: {
 function SimpleBoostRow(props: {
   contract: Contract
   subsidyDisabled: boolean
+  amount: number | undefined
+  setAmount: (amount: number | undefined) => void
 }) {
-  const { contract, subsidyDisabled } = props
+  const { contract, subsidyDisabled, amount, setAmount } = props
   const { id: contractId, slug } = contract
 
-  const [amount, setAmount] = useState<number | undefined>(undefined)
   const [error, setError] = useState<string | undefined>(undefined)
   const [success, setSuccess] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -223,18 +240,21 @@ function SimpleBoostRow(props: {
   )
 }
 
-function BoostFormRow(props: { contract: Contract }) {
-  const { contract } = props
+function BoostFormRow(props: {
+  contract: Contract
+  amount: number | undefined
+  setAmount: (amount: number | undefined) => void
+}) {
+  const { contract, amount, setAmount } = props
 
   const [loading, setLoading] = useState(false)
   const [showBid, setShowBid] = useState(true)
-  const [totalCost, setTotalCost] = useState<number>()
+  // const [totalCost, setTotalCost] = useState<number>()
   const [costPerView, setCostPerView] = useState<number | undefined>(
     DEFAULT_AD_COST_PER_VIEW
   )
 
-  const redeems =
-    totalCost && costPerView ? Math.floor(totalCost / costPerView) : 0
+  const redeems = amount && costPerView ? Math.floor(amount / costPerView) : 0
 
   const error =
     !costPerView || costPerView < MIN_AD_COST_PER_VIEW
@@ -242,19 +262,21 @@ function BoostFormRow(props: { contract: Contract }) {
       : undefined
 
   const onSubmit = async () => {
+    if (!amount || !costPerView) return
+
     setLoading(true)
     try {
       await boostMarket({
         marketId: contract.id,
-        totalCost,
+        totalCost: amount,
         costPerView,
       })
       toast.success('Boosted!')
-      setTotalCost(undefined)
+      setAmount(undefined)
 
       track('boost market', {
         slug: contract.slug,
-        totalCost,
+        totalCost: amount,
         costPerView,
       })
     } catch (e) {
@@ -276,8 +298,8 @@ function BoostFormRow(props: { contract: Contract }) {
 
       <Row className="items-center justify-between">
         <AmountInput
-          amount={totalCost}
-          onChangeAmount={setTotalCost}
+          amount={amount}
+          onChangeAmount={setAmount}
           label={ENV_CONFIG.moneyMoniker}
           inputClassName="mr-2 w-36"
         />
