@@ -305,7 +305,7 @@ export function BuyPanel(props: {
       >
         <div className="text-ink-700 mb-1 mt-2 text-sm">Amount</div>
 
-        <Row className="mb-6 flex-wrap gap-x-8 gap-y-4">
+        <Row className="mb-6 flex-wrap gap-x-10 gap-y-4">
           <BuyAmountInput
             amount={betAmount}
             onChange={onBetChange}
@@ -316,7 +316,7 @@ export function BuyPanel(props: {
             showBalance
           />
 
-          <Row className="mt-2 gap-4">
+          <Row className="mt-2 gap-8">
             <Col>
               <Col className="text-ink-700 flex-nowrap whitespace-nowrap text-sm">
                 {isPseudoNumeric || isStonk ? (
