@@ -96,7 +96,7 @@ export function BuyPanel(props: {
   const outcome = option === 'LIMIT' ? undefined : option
   const seeLimit = option === 'LIMIT'
 
-  const [betAmount, setBetAmount] = useState<number | undefined>(undefined)
+  const [betAmount, setBetAmount] = useState<number | undefined>(10)
   const [error, setError] = useState<string | undefined>()
   const [isSubmitting, setIsSubmitting] = useState(false)
 
