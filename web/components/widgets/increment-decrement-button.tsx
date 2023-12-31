@@ -12,7 +12,7 @@ export const IncrementDecrementButton = (props: {
   return (
     <Col className="text-ink-600 relative items-center">
       <button className={clsx(buttonClasses, 'h-10')} onClick={onIncrement}>
-        <div className="pb-2">+</div>
+        <div className="pb-4">+</div>
       </button>
       <span className="pointer-events-none absolute top-[50%] -translate-y-[40%] transform text-xs">
         {amount}
@@ -21,7 +21,7 @@ export const IncrementDecrementButton = (props: {
         className={clsx(buttonClasses, 'h-6 shadow-sm')}
         onClick={onDecrement}
       >
-        <div className="pt-2">-</div>
+        <div className="pt-0">-</div>
       </button>
     </Col>
   )
