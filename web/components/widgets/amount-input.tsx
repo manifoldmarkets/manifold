@@ -169,8 +169,17 @@ export function BuyAmountInput(props: {
     else onChange(newAmount)
   }
 
+  const hasLotsOfMana = user && user.balance > 1000
+
   const quickAddButtons = (
     <Row className="border-ink-300 divide-ink-300 absolute right-0 divide-x border-l">
+      {!hasLotsOfMana && (
+        <IncrementDecrementButton
+          amount={1}
+          onIncrement={() => increment(1)}
+          onDecrement={() => decrement(1)}
+        />
+      )}
       <IncrementDecrementButton
         amount={10}
         onIncrement={() => increment(10)}
@@ -181,11 +190,13 @@ export function BuyAmountInput(props: {
         onIncrement={() => increment(100)}
         onDecrement={() => decrement(100)}
       />
-      <IncrementDecrementButton
-        amount={1000}
-        onIncrement={() => increment(1000)}
-        onDecrement={() => decrement(1000)}
-      />
+      {hasLotsOfMana && (
+        <IncrementDecrementButton
+          amount={1000}
+          onIncrement={() => increment(1000)}
+          onDecrement={() => decrement(1000)}
+        />
+      )}
     </Row>
   )
 
