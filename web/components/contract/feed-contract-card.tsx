@@ -113,8 +113,9 @@ export function FeedContractCard(props: {
     }
   )
 
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  const adSecondsLeft = promotedData && useAdTimer(AD_WAIT_SECONDS, visible)
+  const adSecondsLeft =
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    promotedData && useAdTimer(contract.id, AD_WAIT_SECONDS, visible)
   const [canAdPay, setCanAdPay] = useState(true)
   const adId = promotedData?.adId
   useEffect(() => {
@@ -179,7 +180,7 @@ export function FeedContractCard(props: {
           {hide && (
             <Row className="gap-2">
               {promotedData && canAdPay && (
-                <div className="text-ink-500 w-12">
+                <div className="text-ink-400 w-12 text-sm">
                   Ad {adSecondsLeft ? adSecondsLeft + 's' : ''}
                 </div>
               )}
