@@ -8,6 +8,7 @@ import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { Input } from './input'
 import { IncrementDecrementButton } from './increment-decrement-button'
+import { useCurrentPortfolio } from 'web/hooks/use-portfolio-history'
 
 export function AmountInput(
   props: {
@@ -169,7 +170,9 @@ export function BuyAmountInput(props: {
     else onChange(newAmount)
   }
 
-  const hasLotsOfMana = user && user.balance > 1000
+  const portfolio = useCurrentPortfolio(user?.id)
+  const hasLotsOfMana =
+    !!portfolio && portfolio.balance + portfolio.investmentValue > 2000
 
   const quickAddButtons = (
     <Row className="border-ink-300 divide-ink-300 absolute right-0 divide-x border-l">
