@@ -4,16 +4,16 @@ import clsx from 'clsx'
 import { buildArray } from 'common/util/array'
 import { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime'
 import { usePathname, useRouter } from 'next/navigation'
-import { useContext, useState } from 'react'
+import { useState } from 'react'
 import { AddFundsModal } from 'web/components/add-funds-modal'
 import { Button, ColorType, SizeType } from 'web/components/buttons/button'
 import { MobileAppsQRCodeDialog } from 'web/components/buttons/mobile-apps-qr-code-button'
-import { ThemeContext } from 'web/hooks/theme-context'
 import { useUser } from 'web/hooks/use-user'
 import { firebaseLogin, firebaseLogout } from 'web/lib/firebase/users'
 import { withTracking } from 'web/lib/service/analytics'
 import { ProfileSummary } from './politics-profile-summary'
 import { Item, SidebarItem } from './politics-sidebar-item'
+import { useTheme } from 'web/hooks/use-theme'
 
 export default function Sidebar(props: {
   className?: string
@@ -27,10 +27,10 @@ export default function Sidebar(props: {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isAddFundsModalOpen, setIsAddFundsModalOpen] = useState(false)
 
-  const { theme, changeTheme } = useContext(ThemeContext)
+  const { theme, setTheme } = useTheme()
 
   const toggleTheme = () => {
-    changeTheme(theme === 'auto' ? 'dark' : theme === 'dark' ? 'light' : 'auto')
+    setTheme(theme === 'auto' ? 'dark' : theme === 'dark' ? 'light' : 'auto')
   }
   const navOptions = props.navigationOptions
   const router = useRouter()
@@ -73,11 +73,12 @@ export default function Sidebar(props: {
 
 const bottomNav = (
   loggedIn: boolean,
-  theme: 'light' | 'dark' | 'auto',
+  theme: 'light' | 'dark' | 'auto' | 'loading',
   toggleTheme: () => void,
   router: AppRouterInstance
 ) => {
   return buildArray(
+    // TODO: theme switcher
     { name: 'Share with friends', href: '/referrals', icon: HeartIcon },
     !loggedIn && { name: 'Sign in', icon: LoginIcon, onClick: firebaseLogin },
     loggedIn && {

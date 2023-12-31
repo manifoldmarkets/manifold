@@ -166,15 +166,12 @@ export function AwardBountyButton(props: {
             Award <b>{comment.userName}</b> a bounty
           </span>
           <BuyAmountInput
-            parentClassName="w-full"
-            inputClassName="w-full max-w-none"
             amount={amount}
             onChange={(newAmount) => setAmount(newAmount)}
             error={error}
             setError={setError}
             minimumAmount={1}
             maximumAmount={bountyLeft}
-            sliderOptions={{ show: true, wrap: false }}
             disregardUserBalance={true}
           />
           <Button
@@ -225,13 +222,10 @@ export function AddBountyButton(props: {
         <Col className={MODAL_CLASS}>
           <h1 className="text-xl">Add to the bounty</h1>
           <BuyAmountInput
-            parentClassName="w-full"
-            inputClassName="w-full max-w-none"
             amount={amount}
             onChange={(newAmount) => setAmount(newAmount)}
             error={error}
             setError={setError}
-            sliderOptions={{ show: true, wrap: false }}
           />
           <Button
             size="lg"

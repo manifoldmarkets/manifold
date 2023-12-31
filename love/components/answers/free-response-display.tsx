@@ -25,6 +25,7 @@ import {
 } from 'web/components/layout/modal'
 import { partition } from 'lodash'
 import { shortenName } from 'web/components/widgets/user-link'
+import { AddQuestionButton } from './free-response-add-question'
 
 export function FreeResponseDisplay(props: {
   isCurrentUser: boolean
@@ -42,7 +43,7 @@ export function FreeResponseDisplay(props: {
 
   const FRquestionsWithCount = useFRQuestionsWithAnswerCount()
 
-  const [yourFRQuestions, _otherFRQuestions] = partition(
+  const [yourFRQuestions, otherFRQuestions] = partition(
     FRquestionsWithCount,
     (question) => answerQuestionIds.has(question.id)
   )
@@ -50,19 +51,16 @@ export function FreeResponseDisplay(props: {
   const noAnswers = answers.length < 1
 
   if (noAnswers) {
-    // Deprecation plan:
-    // Disable adding new free response questions.
-    //
-    // if (isCurrentUser) {
-    //   return (
-    //     <AddQuestionButton
-    //       isFirstQuestion={answers.length < 1}
-    //       questions={otherQuestions}
-    //       user={user}
-    //       refreshAnswers={refreshAnswers}
-    //     />
-    //   )
-    // }
+    if (isCurrentUser) {
+      return (
+        <AddQuestionButton
+          isFirstQuestion={answers.length < 1}
+          questions={otherFRQuestions}
+          user={user}
+          refreshAnswers={refreshAnswers}
+        />
+      )
+    }
     return null
   }
 
@@ -89,17 +87,14 @@ export function FreeResponseDisplay(props: {
         })}
       </Col>
 
-      {/* Deprecation plan:
-       * Disable adding new free response questions
-       */}
-      {/* {isCurrentUser && (
+      {isCurrentUser && (
         <AddQuestionButton
           isFirstQuestion={answers.length < 1}
           questions={otherFRQuestions}
           user={user}
           refreshAnswers={refreshAnswers}
         />
-      )} */}
+      )}
     </Col>
   )
 }

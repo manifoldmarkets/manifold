@@ -538,6 +538,38 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
+  'get-related-markets': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: false,
+    props: z.object({
+      contractId: z.string(),
+      limit: z.coerce.number().gte(0).lte(100),
+      userId: z.string().optional(),
+    }),
+    returns: {} as {
+      marketsFromEmbeddings: Contract[]
+      marketsByTopicSlug: { [topicSlug: string]: Contract[] }
+    },
+  },
+  'get-ad-analytics': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: false,
+    props: z.object({
+      contractId: z.string(),
+    }),
+    returns: {} as {
+      uniqueViewers: number
+      totalViews: number
+      uniquePromotedViewers: number
+      totalPromotedViews: number
+      redeemCount: number
+      isBoosted: boolean
+      totalFunds: number
+      adCreatedTime: string
+    },
+  },
 } as const)
 
 export type APIPath = keyof typeof API

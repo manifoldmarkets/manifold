@@ -3,7 +3,7 @@ import { Bet } from './bet'
 import { MultiSerializedPoints, SerializedPoint } from './chart'
 import { Fees } from './fees'
 import { JSONContent } from '@tiptap/core'
-import { GroupLink } from 'common/group'
+import { GroupLink, Topic } from 'common/group'
 import { ContractMetric, ContractMetricsByOutcome } from './contract-metric'
 import { ContractComment } from './comment'
 import { ENV_CONFIG } from './envs/constants'
@@ -416,6 +416,8 @@ export type ContractParams = {
   topContractMetrics: ContractMetric[]
   relatedContracts: Contract[]
   chartAnnotations: ChartAnnotation[]
+  relatedContractsByTopicSlug: Record<string, Contract[]>
+  topics: Topic[]
 }
 
 export type MaybeAuthedContractParams =

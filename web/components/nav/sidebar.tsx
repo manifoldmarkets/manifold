@@ -19,12 +19,11 @@ import clsx from 'clsx'
 import { buildArray } from 'common/util/array'
 import { capitalize } from 'lodash'
 import { usePathname, useRouter } from 'next/navigation'
-import { useContext, useState } from 'react'
 import { AddFundsModal } from 'web/components/add-funds-modal'
 import { AppBadgesOrGetAppButton } from 'web/components/buttons/app-badges-or-get-app-button'
 import { CreateQuestionButton } from 'web/components/buttons/create-question-button'
 import { NotificationsIcon } from 'web/components/notifications-icon'
-import { ThemeContext } from 'web/hooks/theme-context'
+import { useTheme } from 'web/hooks/use-theme'
 import { useUser } from 'web/hooks/use-user'
 import { firebaseLogin, firebaseLogout } from 'web/lib/firebase/users'
 import TrophyIcon from 'web/lib/icons/trophy-icon.svg'
@@ -36,6 +35,7 @@ import { ProfileSummary } from './profile-summary'
 import { Item, SidebarItem } from './sidebar-item'
 import { PrivateMessagesIcon } from 'web/components/messaging/messages-icon'
 import { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime'
+import { useState } from 'react'
 
 export default function Sidebar(props: {
   className?: string
@@ -51,10 +51,10 @@ export default function Sidebar(props: {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isAddFundsModalOpen, setIsAddFundsModalOpen] = useState(false)
 
-  const { theme, changeTheme } = useContext(ThemeContext)
+  const { theme, setTheme } = useTheme()
 
   const toggleTheme = () => {
-    changeTheme(theme === 'auto' ? 'dark' : theme === 'dark' ? 'light' : 'auto')
+    setTheme(theme === 'auto' ? 'dark' : theme === 'dark' ? 'light' : 'auto')
   }
   const navOptions = props.navigationOptions?.length
     ? props.navigationOptions
@@ -164,7 +164,7 @@ const getMobileNav = (toggleModal: () => void) => {
 
 const bottomNav = (
   loggedIn: boolean,
-  theme: 'light' | 'dark' | 'auto',
+  theme: 'light' | 'dark' | 'auto' | 'loading',
   toggleTheme: () => void,
   router: AppRouterInstance
 ) =>
@@ -172,7 +172,7 @@ const bottomNav = (
     !loggedIn && { name: 'Sign in', icon: LoginIcon, onClick: firebaseLogin },
     loggedIn && { name: 'About', href: '/about', icon: QuestionMarkCircleIcon },
     {
-      name: theme === 'auto' ? 'Auto' : capitalize(theme),
+      name: theme === 'loading' ? '' : capitalize(theme),
       icon:
         theme === 'light'
           ? SunIcon

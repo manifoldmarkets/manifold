@@ -1,7 +1,7 @@
 import * as functions from 'firebase-functions'
 import { groupBy, sum, uniq, zipObject } from 'lodash'
 
-import { log, revalidateStaticProps } from 'shared/utils'
+import { isProd, log, revalidateStaticProps } from 'shared/utils'
 import { Bet } from 'common/bet'
 import { Contract } from 'common/contract'
 import {
@@ -15,7 +15,7 @@ import { getProfitMetrics } from 'common/calculate'
 
 export const updateLeague = functions
   .runWith({
-    memory: '4GB',
+    memory: isProd() ? '4GB' : '256MB',
     timeoutSeconds: 540,
     secrets,
   })

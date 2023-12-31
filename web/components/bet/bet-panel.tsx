@@ -305,89 +305,92 @@ export function BuyPanel(props: {
       >
         <div className="text-ink-700 mb-1 mt-2 text-sm">Amount</div>
 
-        <BuyAmountInput
-          inputClassName="w-full max-w-none"
-          amount={betAmount}
-          onChange={onBetChange}
-          error={error}
-          setError={setError}
-          disabled={isSubmitting}
-          inputRef={inputRef}
-          sliderOptions={{ show: true, wrap: false }}
-          binaryOutcome={outcome}
-          showBalance
-        />
+        <Row className="mb-6 flex-wrap gap-x-10 gap-y-4">
+          <BuyAmountInput
+            amount={betAmount}
+            onChange={onBetChange}
+            error={error}
+            setError={setError}
+            disabled={isSubmitting}
+            inputRef={inputRef}
+            showBalance
+          />
 
-        <Row className="mb-4 mt-8 w-full">
-          <Col className="w-1/2">
-            <Col className="text-ink-700 flex-nowrap whitespace-nowrap text-sm">
-              {isPseudoNumeric || isStonk ? (
-                'Shares'
+          <Row className="mt-2 gap-8">
+            <Col>
+              <Col className="text-ink-700 flex-nowrap whitespace-nowrap text-sm">
+                {isPseudoNumeric || isStonk ? (
+                  'Shares'
+                ) : (
+                  <>Payout if {outcome ?? 'YES'}</>
+                )}
+              </Col>
+              <div>
+                <span className="whitespace-nowrap text-lg font-semibold">
+                  {isStonk
+                    ? getStonkDisplayShares(contract, currentPayout, 2)
+                    : isPseudoNumeric
+                    ? Math.floor(currentPayout)
+                    : formatMoney(currentPayout)}
+                </span>
+                <span className="text-ink-500 pr-3 text-sm">
+                  {isStonk || isPseudoNumeric
+                    ? ''
+                    : ' +' + currentReturnPercent}
+                </span>
+              </div>
+            </Col>
+            <Col className="text-sm">
+              <Row>
+                <span className="text-ink-700 whitespace-nowrap text-sm">
+                  {isPseudoNumeric
+                    ? 'Estimated value'
+                    : isStonk
+                    ? 'New stock price'
+                    : 'New probability'}
+                </span>
+                {!isPseudoNumeric && !isStonk && (
+                  <InfoTooltip
+                    text={`The probability of YES after your ${SINGULAR_BET}`}
+                    className="text-ink-400 ml-1"
+                    size="sm"
+                  />
+                )}
+              </Row>
+              {probStayedSame ? (
+                <div className="text-lg font-semibold">
+                  {getFormattedMappedValue(contract, probBefore)}
+                </div>
               ) : (
-                <>Payout if {outcome ?? 'YES'}</>
+                <div>
+                  <span className="text-lg font-semibold">
+                    {getFormattedMappedValue(contract, probAfter)}
+                  </span>
+                  <span
+                    className={clsx(
+                      'text-sm',
+                      highProbMove
+                        ? 'text-warning font-semibold'
+                        : 'text-ink-500'
+                    )}
+                  >
+                    {isPseudoNumeric ? (
+                      <></>
+                    ) : (
+                      <>
+                        {' '}
+                        {outcome != 'NO' && '+'}
+                        {getFormattedMappedValue(
+                          contract,
+                          probAfter - probBefore
+                        )}
+                      </>
+                    )}
+                  </span>
+                </div>
               )}
             </Col>
-            <div>
-              <span className="whitespace-nowrap text-lg font-semibold">
-                {isStonk
-                  ? getStonkDisplayShares(contract, currentPayout, 2)
-                  : isPseudoNumeric
-                  ? Math.floor(currentPayout)
-                  : formatMoney(currentPayout)}
-              </span>
-              <span className="text-ink-500 pr-3 text-sm">
-                {isStonk || isPseudoNumeric ? '' : ' +' + currentReturnPercent}
-              </span>
-            </div>
-          </Col>
-          <Col className="w-1/2 text-sm">
-            <Row>
-              <span className="text-ink-700 whitespace-nowrap text-sm">
-                {isPseudoNumeric
-                  ? 'Estimated value'
-                  : isStonk
-                  ? 'New stock price'
-                  : 'New probability'}
-              </span>
-              {!isPseudoNumeric && !isStonk && (
-                <InfoTooltip
-                  text={`The probability of YES after your ${SINGULAR_BET}`}
-                  className="text-ink-400 ml-1"
-                  size="sm"
-                />
-              )}
-            </Row>
-            {probStayedSame ? (
-              <div className="text-lg font-semibold">
-                {getFormattedMappedValue(contract, probBefore)}
-              </div>
-            ) : (
-              <div>
-                <span className="text-lg font-semibold">
-                  {getFormattedMappedValue(contract, probAfter)}
-                </span>
-                <span
-                  className={clsx(
-                    'text-sm',
-                    highProbMove ? 'text-warning font-semibold' : 'text-ink-500'
-                  )}
-                >
-                  {isPseudoNumeric ? (
-                    <></>
-                  ) : (
-                    <>
-                      {' '}
-                      {outcome != 'NO' && '+'}
-                      {getFormattedMappedValue(
-                        contract,
-                        probAfter - probBefore
-                      )}
-                    </>
-                  )}
-                </span>
-              </div>
-            )}
-          </Col>
+          </Row>
         </Row>
 
         {user ? (

@@ -1,14 +1,7 @@
 import * as cors from 'cors'
 import * as express from 'express'
 import { ErrorRequestHandler, RequestHandler } from 'express'
-import {
-  CORS_ORIGIN_MANIFOLD,
-  CORS_ORIGIN_LOCALHOST,
-  CORS_ORIGIN_VERCEL,
-  CORS_ORIGIN_MANIFOLD_LOVE,
-  CORS_ORIGIN_MANIFOLD_LOVE_ALTERNATE,
-  CORS_ORIGIN_CHARITY,
-} from 'common/envs/constants'
+
 import { log } from 'shared/utils'
 import { APIError, pathWithPrefix } from 'common/api/utils'
 import { health } from './health'
@@ -132,6 +125,8 @@ import { type APIHandler, typedEndpoint } from './helpers'
 import { requestloan } from 'api/request-loan'
 import { removePinnedPhoto } from './love/remove-pinned-photo'
 import { getHeadlines } from './get-headlines'
+import { getrelatedmarkets } from 'api/get-related-markets'
+import { getadanalytics } from 'api/get-ad-analytics'
 
 const allowCorsUnrestricted: RequestHandler = cors({})
 
@@ -235,6 +230,8 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'fetch-link-preview': fetchLinkPreview,
   'request-loan': requestloan,
   'remove-pinned-photo': removePinnedPhoto,
+  'get-related-markets': getrelatedmarkets,
+  'get-ad-analytics': getadanalytics,
 }
 
 Object.entries(handlers).forEach(([path, handler]) => {

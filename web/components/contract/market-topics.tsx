@@ -1,11 +1,7 @@
 import { Contract } from 'common/contract'
 import { Row } from 'web/components/layout/row'
 import clsx from 'clsx'
-import {
-  useGroupsWhereUserHasRole,
-  useGroupsWithContract,
-} from 'web/hooks/use-group-supabase'
-import { orderBy } from 'lodash'
+import { useGroupsWhereUserHasRole } from 'web/hooks/use-group-supabase'
 import Link from 'next/link'
 import { linkClass } from 'web/components/widgets/site-link'
 import { useState } from 'react'
@@ -16,17 +12,17 @@ import { Col } from 'web/components/layout/col'
 import { ContractTopicsList } from 'web/components/topics/contract-topics-list'
 import { useAdminOrTrusted } from 'web/hooks/use-admin'
 import { filterDefined } from 'common/util/array'
-import { Group, groupPath } from 'common/group'
+import { Group, groupPath, Topic } from 'common/group'
 import { track } from 'web/lib/service/analytics'
 import { removeEmojis } from 'common/topics'
 import { TopicTag } from 'web/components/topics/topic-tag'
 
-export function MarketTopics(props: { contract: Contract }) {
-  const { contract } = props
+export function MarketTopics(props: { contract: Contract; topics: Topic[] }) {
+  const { contract, topics } = props
   if (contract.visibility === 'private') {
     return <PrivateMarketGroups contract={contract} />
   } else {
-    return <PublicMarketTopics contract={contract} />
+    return <PublicMarketTopics contract={contract} topics={topics} />
   }
 }
 
@@ -46,41 +42,41 @@ function PrivateMarketGroups(props: { contract: Contract }) {
   return <></>
 }
 
-const ContractTopicBreadcrumbs = (props: { contract: Contract }) => {
-  const { contract } = props
-  const groups = orderBy(
-    useGroupsWithContract(contract) ?? [],
-    // boost public groups
-    (g) => (g.privacyStatus === 'public' ? 100 : 0) + g.totalMembers,
-    'desc'
-  )
+const ContractTopicBreadcrumbs = (props: {
+  contract: Contract
+  topics: Topic[]
+}) => {
+  const { contract, topics } = props
 
   return (
     <span className="line-clamp-1 min-h-[24px]">
-      {groups.map((group, i) => (
-        <span key={group.id} className={'text-primary-700 text-sm'}>
+      {topics.map((topic, i) => (
+        <span key={topic.id} className={'text-primary-700 text-sm'}>
           <Link
             className={linkClass}
-            href={groupPath(group.slug)}
+            href={groupPath(topic.slug)}
             onClick={() => {
               track('click category pill on market', {
                 contractId: contract.id,
-                categoryName: group.name,
+                categoryName: topic.name,
               })
             }}
           >
-            {removeEmojis(group.name)}
+            {removeEmojis(topic.name)}
           </Link>
-          {i !== groups.length - 1 && <span className="mx-1.5">{'•'}</span>}
+          {i !== topics.length - 1 && <span className="mx-1.5">{'•'}</span>}
         </span>
       ))}
     </span>
   )
 }
 
-export function PublicMarketTopics(props: { contract: Contract }) {
+export function PublicMarketTopics(props: {
+  contract: Contract
+  topics: Topic[]
+}) {
   const [open, setOpen] = useState(false)
-  const { contract } = props
+  const { contract, topics } = props
   const user = useUser()
   const isCreator = contract.creatorId === user?.id
   const adminGroups = useGroupsWhereUserHasRole(user?.id)
@@ -96,7 +92,7 @@ export function PublicMarketTopics(props: { contract: Contract }) {
   return (
     <>
       <Row className={'group gap-1'}>
-        <ContractTopicBreadcrumbs contract={contract} />
+        <ContractTopicBreadcrumbs contract={contract} topics={topics} />
         {user && canEdit && (
           <button
             onClick={(e) => {

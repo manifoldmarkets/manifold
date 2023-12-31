@@ -194,9 +194,8 @@ function DonationBox(props: {
       <h2 className="text-primary-600 !mt-0 mb-4 text-2xl">Donate</h2>
       <label className="text-ink-700 mb-2 block text-sm">Amount</label>
       <BuyAmountInput
-        inputClassName="w-full max-w-none donate-input"
+        inputClassName="donate-input"
         minimumAmount={MIN_DONATION_MANA}
-        quickAddAmount={MIN_DONATION_MANA}
         amount={amount}
         onChange={setAmount}
         error={error}

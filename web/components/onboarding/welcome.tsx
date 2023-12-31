@@ -83,7 +83,7 @@ export default function Welcome() {
   const [userBetInTopics, setUserBetInTopics] = useState<Group[]>([])
   const [trendingTopics, setTrendingTopics] = useState<Group[]>([])
 
-  const getTrendingCategories = async (userId: string) => {
+  const getTrendingAndUserCategories = async (userId: string) => {
     const hardCodedTopicIds = Object.keys(TOPICS_TO_SUBTOPICS)
       .map((topic) => getSubtopics(topic))
       .flat()
@@ -131,8 +131,14 @@ export default function Welcome() {
     }))
 
     setTrendingTopics(
-      uniqBy([...userInterestedTopics, ...trendingTopics], (g) =>
-        removeEmojis(g.name)
+      uniqBy(
+        [
+          ...userInterestedTopics.filter(
+            (g) => !hardCodedTopicIds.includes(g.id)
+          ),
+          ...trendingTopics,
+        ],
+        (g) => removeEmojis(g.name)
       ).slice(0, 15)
     )
     if (userInterestedTopics.some((g) => g.hasBet)) {
@@ -145,8 +151,9 @@ export default function Welcome() {
   }
 
   useEffect(() => {
-    if (user?.id && user?.shouldShowWelcome) getTrendingCategories(user.id)
-  }, [user?.id])
+    if (user?.id && user?.shouldShowWelcome && authed)
+      getTrendingAndUserCategories(user.id)
+  }, [user?.id, authed])
 
   const close = () => {
     setOpen(false)

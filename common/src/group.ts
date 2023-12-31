@@ -44,6 +44,11 @@ export type GroupLink = {
   userId?: string
 }
 
+export type Topic = Pick<
+  Group,
+  'id' | 'slug' | 'name' | 'importanceScore' | 'privacyStatus'
+>
+
 export function groupPath(groupSlug: string) {
   return `/browse?${TOPIC_KEY}=${groupSlug}`
 }

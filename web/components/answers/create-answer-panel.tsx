@@ -171,14 +171,12 @@ function CreateAnswerDpmPanel(props: {
                 </span>
               </Row>{' '}
               <BuyAmountInput
-                inputClassName={'w-32'}
                 amount={betAmount}
                 onChange={setBetAmount}
                 error={amountError}
                 setError={setAmountError}
                 minimumAmount={1}
                 disabled={isSubmitting}
-                sliderOptions={{ show: true, wrap: false }}
               />
             </Col>
             <Col className="w-full gap-3">

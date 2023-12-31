@@ -1035,6 +1035,15 @@ Foresight’s biggest event every year is our annual member gathering Vision Wee
 We also host several technical conferences every year, inviting top researchers, entrepreneurs, and funders to highlight undervalued areas for progress. In addition to learning about undervalued opportunities for progress relevant to your field, and forming lasting collaborations with other leading scientists, entrepreneurs, and funders around shared goals, we hope that these workshops will generate direction and drive toward shared long-term goals.
     `,
   },
+  {
+    name: 'Racket',
+    website: 'https://racket-lang.org/sfc.html',
+    photo: 'https://i.imgur.com/qsVbGo8.png',
+    preview:
+      'Donate to Racket, a programming language, via the Software Freedom Conservancy which is a nonprofit organization centered around ethical technology',
+    description:
+      'Donate to Racket, a programming language, via the Software Freedom Conservancy which is a nonprofit organization centered around ethical technology',
+  },
 ].map((charity) => {
   const slug = charity.name.toLowerCase().replace(/\s/g, '-')
   return {
