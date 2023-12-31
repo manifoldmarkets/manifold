@@ -44,7 +44,7 @@ export const getServerSideProps = redirectIfLoggedIn(
     const { data } = await db
       .from('contracts')
       .select('data')
-      .contains('group_slugs', ['college-admissions'])
+      .contains('group_slugs', ['chance-me'])
       .neq('outcome_type', 'STONK')
       .limit(50)
     const contracts = (data ?? []).map((d) => d.data) as Contract[]
@@ -164,24 +164,18 @@ export default function College(props: {
                   />
                 </ExpandSection>
                 <ExpandSection title="How accurate are prediction markets?">
-                  Unlike websites like Collegevine or subreddits like r/chanceme
-                  and r/ApplyingToCollege, Manifold's markets have a proven
-                  track record of conveying accurate probabilities.
-                  <br></br>
-                  <br></br>
-                  This calibration chart shows whether events happened as often
-                  as Manifold's markets predict. We want to blue dots to be as
-                  close to the diagonal line as possible! A dot with a question
-                  probability of 70% means we have a group of markets that were
-                  predicted to have a 70% chance of occurring. If our
-                  predictions are perfectly calibrated, then 70% of those
-                  markets should have resolved yes and it should appear on the
-                  y-axis at 70%.
-                  <br></br>
-                  <br></br>
-                  Overall, Manifold is a well calibrated platform, which means
-                  that the probability you have for admissions at a given
-                  college should be fairly accurate.
+                  Manifold's markets stand apart from resources like CollegeVine
+                  or college admission subreddits with their demonstrated
+                  accuracy in predicting probabilities. The provided calibration
+                  chart evaluates how closely the actual outcomes match
+                  Manifold's predictions. Ideally, the blue dots on the chart
+                  should align with the diagonal line, indicating precise
+                  calibration. For instance, a dot representing a 70% predicted
+                  probability indicates that out of similar forecasts, 70%
+                  indeed resolved positively, verifying the prediction's
+                  accuracy. Overall, Manifold is a well calibrated platform,
+                  which means that the probability you have for admissions at a
+                  given college should be fairly accurate.
                   <SizedContainer className="aspect-square w-full pb-8 pr-8">
                     {(w, h) => (
                       <CalibrationChart points={points} width={w} height={h} />
@@ -192,9 +186,20 @@ export default function College(props: {
                   Here is an example of an admissions profile for a hypothetical
                   student:
                   <img
-                    src="https://i.imgur.com/bnVdH3F.png"
+                    src="https://i.imgur.com/L86IE48.png"
                     alt="Example profile"
                   />
+                </ExpandSection>
+                <ExpandSection title="Will my information be private?">
+                  Other users will be able to see your admissions profile and
+                  bet on it, as this is a key mechanism of the website. However,
+                  you are able to be anonymous and your name will not be shared
+                  with any colleges or universities. You are also welcome to
+                  provide as little or as much information as you like when you
+                  create your profile, although you will get more accurate
+                  probabilities the more information you give. Feel free to
+                  check out the privacy policy and terms and conditions on the
+                  bottom of this page.
                 </ExpandSection>
                 <hr></hr>
                 <h1 className="mt-1 text-xl">
@@ -208,14 +213,6 @@ export default function College(props: {
                 >
                   Join now to find your chances!
                 </Button>
-                <div className="text-md ml-8 ">
-                  ...and get{'   '}
-                  <span className="z-10 font-semibold">
-                    {formatMoney(STARTING_BALANCE)}
-                  </span>
-                  {'   '}
-                  in play money!
-                </div>
               </Col>
             </Row>
           </Col>

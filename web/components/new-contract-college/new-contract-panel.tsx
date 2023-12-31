@@ -32,7 +32,6 @@ export type ContractVisibilityType = 'public' | 'unlisted'
 export type CreateContractStateType =
   | 'choosing contract'
   | 'filling contract params'
-
 // Allow user to create a new contract
 export function NewContractPanel(props: {
   creator: User

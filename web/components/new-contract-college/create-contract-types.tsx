@@ -28,7 +28,7 @@ export const PREDICTIVE_CONTRACT_TYPES = {
     name: 'multiple choice',
     descriptor: 'A question with multiple answers that you define.',
     example:
-      'Which of these colleges will I get into as an Asian Male applying for CS?',
+      'Which of these colleges will I get into as an biology obsessed girl applying for biotech?',
     visual: (
       <Col className="text-primary-400 relative my-auto h-12 w-12">
         <BsUiChecks className="h-12 w-12" />

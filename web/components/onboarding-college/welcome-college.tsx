@@ -54,7 +54,6 @@ export default function Welcome() {
 
   const availablePages = buildArray([
     <WhatIsManifoldPage />,
-    <PredictionMarketPage />,
     user && <ThankYouPage />,
   ])
 
@@ -354,80 +353,21 @@ function WhatIsManifoldPage() {
             >
               <span className="font-semibold">{name}</span>{' '}
               <PencilIcon className="mb-1 inline h-4 w-4" />
-            </span>
+            </span>{' '}
+            <text className="text-sm">
+              (hover over your username to change it)
+            </text>
           </div>
         )}
       </div>
       <div className="mb-4 text-lg">
-        Thank you for joining Manifold! We're thrilled to have you as part of
-        our community.
+        Thank you for joining Manifold College Admissions! We're thrilled to
+        have you as part of our community.
       </div>
     </>
   )
 }
 
-function PredictionMarketPage() {
-  return (
-    <>
-      <div className="text-primary-700 mb-6 mt-3 text-center text-2xl font-normal">
-        How it works
-      </div>
-      <div className="mt-2 text-lg">
-        Create a question. Bet on the right answer. Traders putting their money
-        where their mouth is produces accurate predictions.
-      </div>
-      <Image
-        src="/welcome/manifold-example.gif"
-        className="my-4 h-full w-full object-contain"
-        alt={'Manifold example animation'}
-        width={200}
-        height={100}
-      />
-    </>
-  )
-}
-function CollegeMarket() {
-  const user = useUser()
-  const [group, setGroup] = useState<Group | null>(null)
-
-  useEffect(() => {
-    const fetchGroup = async () => {
-      try {
-        const fetchedGroup = await getGroupBySlug('college-admissions')
-        setGroup(fetchedGroup)
-      } catch (error) {
-        console.error('Error fetching group:', error)
-        // Handle the error appropriately
-      }
-    }
-
-    if (user) {
-      fetchGroup()
-    }
-  }, [user])
-
-  if (!user || !group) {
-    return <div>'Error'</div>
-  }
-
-  return (
-    <>
-      <div className="text-primary-700 mb-6 mt-3 text-center text-2xl font-normal">
-        Create your own market! (optional)
-      </div>
-      <NewContractPanel
-        params={
-          {
-            q: '',
-            description: '',
-            groupIds: [group.id],
-          } as NewQuestionParams
-        }
-        creator={user}
-      />
-    </>
-  )
-}
 function ThankYouPage() {
   return (
     <>

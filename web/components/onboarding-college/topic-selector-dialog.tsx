@@ -44,7 +44,6 @@ export function TopicSelectorDialog(props: {
       if (user) followTopic({ groupId })
     }
   }
-
   const [isLoading, setIsLoading] = useState(false)
 
   const closeDialog = async (skipUpdate: boolean) => {
@@ -74,7 +73,6 @@ export function TopicSelectorDialog(props: {
       {topicWithEmoji}
     </PillButton>
   )
-
   return (
     <Modal
       open
@@ -87,7 +85,7 @@ export function TopicSelectorDialog(props: {
           <p className="text-primary-700 mb-2 text-2xl">
             Which topics interest you?
           </p>
-          <p>Select 3 or more topics to personalize your experience</p>
+          <p>Select 2 or more topics to personalize your experience</p>
         </div>
         <Col className={'mb-4 px-5'}></Col>
 
@@ -116,8 +114,11 @@ export function TopicSelectorDialog(props: {
               </Button>
             )}
             <Button
-              onClick={() => closeDialog(false)}
-              disabled={(userSelectedTopics ?? []).length <= 2}
+              onClick={() => {
+                closeDialog(false)
+                selectTopic('96c94845-f2a8-43fd-a2f4-7906082a1702')
+              }}
+              disabled={(userSelectedTopics ?? []).length <= 1}
               loading={isLoading}
             >
               Done
@@ -127,4 +128,5 @@ export function TopicSelectorDialog(props: {
       </Col>
     </Modal>
   )
+  //  selectTopic('96c94845-f2a8-43fd-a2f4-7906082a1702')
 }

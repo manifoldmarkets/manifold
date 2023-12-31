@@ -84,7 +84,7 @@ export function MultipleChoiceAnswers(props: {
           <div className="mx-1.5">
             <InfoTooltip
               text={
-                'The "Other" answer represents all answers that are not listed. New answers are split off from it.'
+                'The "Other" answer represents all colleges that you may add later. New answers are split off from it.'
               }
             />
           </div>
