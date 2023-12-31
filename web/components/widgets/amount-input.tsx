@@ -186,15 +186,15 @@ export function BuyAmountInput(props: {
         onDecrement={() => decrement(10)}
       />
       <IncrementDecrementButton
-        amount={100}
-        onIncrement={() => increment(100)}
-        onDecrement={() => decrement(100)}
+        amount={50}
+        onIncrement={() => increment(50)}
+        onDecrement={() => decrement(50)}
       />
       {hasLotsOfMana && (
         <IncrementDecrementButton
-          amount={1000}
-          onIncrement={() => increment(1000)}
-          onDecrement={() => decrement(1000)}
+          amount={250}
+          onIncrement={() => increment(250)}
+          onDecrement={() => decrement(250)}
         />
       )}
     </Row>
