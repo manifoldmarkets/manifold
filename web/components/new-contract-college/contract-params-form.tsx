@@ -118,7 +118,7 @@ export function ContractParamsForm(props: {
     'new-answers-with-other' + paramsKey
   )
   const [addAnswersMode, setAddAnswersMode] = useState<add_answers_mode>(
-    params?.addAnswersMode ?? 'ONLY_CREATOR'
+    params?.addAnswersMode ?? 'DISABLED'
   )
   const [shouldAnswersSumToOne, setShouldAnswersSumToOne] = useState(
     params?.shouldAnswersSumToOne ?? false

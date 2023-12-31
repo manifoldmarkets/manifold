@@ -1,7 +1,10 @@
 'use client'
+import { getIsNative } from 'web/lib/native/is-native'
 import { Page } from 'web/components/layout/page'
 import { Col } from 'web/components/layout/col'
+import { useRouter } from 'next/navigation'
 import clsx from 'clsx'
+import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import {
   NewContractPanel,
   NewQuestionParams,
@@ -9,7 +12,6 @@ import {
 import { db } from 'web/lib/supabase/db'
 import { Group } from 'common/group'
 import { Title } from 'web/components/widgets/title'
-import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { useUser } from 'web/hooks/use-user'
 import { useDefinedSearchParams } from 'web/hooks/use-defined-search-params'
 import Welcome from 'web/components/onboarding-college/welcome-college'
@@ -22,17 +24,17 @@ export const getStaticProps = async () => {
   const { data } = await db
     .from('contracts')
     .select('data')
-    .contains('group_slugs', ['chance-me'])
+    .contains('group_slugs', ['college-chance-me'])
     .neq('outcome_type', 'STONK')
     .limit(50)
   const contracts = (data ?? []).map((d) => d.data) as Contract[]
   contracts.sort((a, b) => b.uniqueBettorCount - a.uniqueBettorCount)
-  const trendingContracts = contracts.slice(0, 1)
+  const trendingContracts = contracts.slice(0, 2)
   return {
     props: { trendingContracts },
   }
 }
-export default function Create(props: {
+export default function Chanceme(props: {
   trendingContracts: CPMMBinaryContract[]
 }) {
   const { trendingContracts } = props
@@ -43,7 +45,7 @@ export default function Create(props: {
   useEffect(() => {
     const fetchGroup = async () => {
       try {
-        const fetchedGroup = await getGroupBySlug('chance-me')
+        const fetchedGroup = await getGroupBySlug('college-chance-me')
         setGroup(fetchedGroup)
       } catch (error) {
         console.error('Error fetching group:', error)
@@ -55,7 +57,7 @@ export default function Create(props: {
       fetchGroup()
     }
   }, [user])
-  if (!user) return <div />
+  if (!user) return <div></div>
   if (!user || !group) {
     return <div></div>
   }
@@ -79,7 +81,7 @@ export default function Create(props: {
         <br></br>
         <br></br>
         <div className="text-primary-700 mb-2 mt-3 text-center text-2xl font-normal">
-          Create your own market!
+          Create your own market
         </div>
         <NewContractPanel
           params={
@@ -87,6 +89,8 @@ export default function Create(props: {
               q: '',
               description: json,
               groupIds: [group.id],
+              addAnswersMode: 'ONLY_CREATOR',
+              shouldAnswersSumToOne: false,
             } as NewQuestionParams
           }
           creator={user}
@@ -99,7 +103,7 @@ export default function Create(props: {
           OR
         </div>
         <div className="text-primary-700 mb-2 mt-3 text-center text-2xl font-normal">
-          Bet on someone else's market
+          Bet on a market
         </div>
         <div
           style={{

@@ -116,7 +116,8 @@ export function TopicSelectorDialog(props: {
             <Button
               onClick={() => {
                 closeDialog(false)
-                selectTopic('96c94845-f2a8-43fd-a2f4-7906082a1702')
+                selectTopic('18eee249-3e4e-4ff8-a555-d8f1b31a0195')
+                // selectTopic('96c94845-f2a8-43fd-a2f4-7906082a1702')
               }}
               disabled={(userSelectedTopics ?? []).length <= 1}
               loading={isLoading}

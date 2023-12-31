@@ -38,31 +38,19 @@ import { HeadlineTabs } from 'web/components/dashboard/header'
 import { SizedContainer } from 'web/components/sized-container'
 import { CalibrationChart } from 'web/pages/calibration'
 import { ExpandSection } from 'web/components/explainer-panel'
-export const getServerSideProps = redirectIfLoggedIn(
-  '/create-college',
-  async (_) => {
-    const { data } = await db
-      .from('contracts')
-      .select('data')
-      .contains('group_slugs', ['chance-me'])
-      .neq('outcome_type', 'STONK')
-      .limit(50)
-    const contracts = (data ?? []).map((d) => d.data) as Contract[]
-    contracts.sort((a, b) => b.uniqueBettorCount - a.uniqueBettorCount)
-    const trendingContracts = contracts.slice(0, 7)
-    const result = await db
-      .from('platform_calibration')
-      .select('*')
-      .order('created_time', { ascending: false })
-      .limit(1)
+export const getServerSideProps = redirectIfLoggedIn('/chanceme', async (_) => {
+  const result = await db
+    .from('platform_calibration')
+    .select('*')
+    .order('created_time', { ascending: false })
+    .limit(1)
 
-    const { points, score, n } = result.data?.[0]?.data as any
-    console.log(points)
-    return {
-      props: { points, score, n, trendingContracts },
-    }
+  const { points, score, n } = result.data?.[0]?.data as any
+  console.log(points)
+  return {
+    props: { points, score, n },
   }
-)
+})
 // export async function getStaticProps() {
 //   const headlines = await api('headlines', {})
 //   return {
@@ -79,9 +67,8 @@ export default function College(props: {
   points: { x: number; y: number }[]
   score: number
   n: number
-  trendingContracts: CPMMBinaryContract[]
 }) {
-  const { points, score, n, trendingContracts } = props
+  const { points, score, n } = props
   const router = useRouter()
   const user = useUser()
   const [count, setCount] = useState<number>(0)
@@ -104,7 +91,7 @@ export default function College(props: {
 
   useSaveReferral(user, { defaultReferrerUsername: 'cc6' }) //I can have credit for it, right?
   useSaveCampaign()
-  useRedirectIfSignedIn('create-college')
+  useRedirectIfSignedIn('chanceme')
   const [isModalOpen, setIsModalOpen] = useState(false)
 
   return (

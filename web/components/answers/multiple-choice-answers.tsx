@@ -28,6 +28,7 @@ export function MultipleChoiceAnswers(props: {
     outcomeType,
     placeholder,
   } = props
+
   const setAnswer = (i: number, answer: string) => {
     const newAnswers = setElement(answers, i, answer)
     setAnswers(newAnswers)
