@@ -71,7 +71,7 @@ export const resolveMarketHelper = async (
     answerId
   )
 
-  let updatedAttrs = removeUndefinedProps({
+  let updatedAttrs: Partial<Contract> | undefined = removeUndefinedProps({
     isResolved: true,
     resolution: outcome,
     resolutionValue: value,
@@ -95,7 +95,7 @@ export const resolveMarketHelper = async (
         ...updatedAttrs,
         resolution: 'MKT',
       }
-    else updatedAttrs = {} as any
+    else updatedAttrs = undefined
   }
 
   const contract = {
@@ -128,9 +128,12 @@ export const resolveMarketHelper = async (
 
   // Should we combine all the payouts into one txn?
   const contractDoc = firestore.doc(`contracts/${contractId}`)
-  log('updating contract', { updatedAttrs })
-  await contractDoc.update(updatedAttrs)
-  log('contract resolved')
+
+  if (updatedAttrs) {
+    log('updating contract', { updatedAttrs })
+    await contractDoc.update(updatedAttrs)
+    log('contract resolved')
+  }
 
   log('processing payouts', { payouts })
 
