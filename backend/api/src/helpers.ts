@@ -211,14 +211,17 @@ export const typedEndpoint = <N extends APIPath>(
       ...req.params,
     }
 
+    const logs = getLogs(req)
+
     try {
       const result = await handler(
         validate(propSchema, props),
         authUser as AuthedUser,
-        getLogs(req)
+        logs
       )
       res.status(200).json(result ?? { success: true })
     } catch (e) {
+      logs.logError('Error in api endpoint', { error: e })
       next(e)
     }
   }
