@@ -81,6 +81,7 @@ export const resolveMarketHelper = async (
     resolutions,
     collectedFees,
     resolverId: resolver.id,
+    subsidyPool: 0,
   })
 
   if (unresolvedContract.mechanism === 'cpmm-multi-1' && answerId) {
@@ -100,7 +101,6 @@ export const resolveMarketHelper = async (
   const contract = {
     ...unresolvedContract,
     ...updatedAttrs,
-    subsidyPool: 0,
   } as Contract
 
   // handle exploit where users can get negative payouts
@@ -128,8 +128,8 @@ export const resolveMarketHelper = async (
 
   // Should we combine all the payouts into one txn?
   const contractDoc = firestore.doc(`contracts/${contractId}`)
-  log('updating contract', { contract })
-  await contractDoc.update(contract)
+  log('updating contract', { updatedAttrs })
+  await contractDoc.update(updatedAttrs)
   log('contract resolved')
 
   log('processing payouts', { payouts })
