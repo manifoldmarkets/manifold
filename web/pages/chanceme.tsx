@@ -4,7 +4,6 @@ import { Page } from 'web/components/layout/page'
 import { Col } from 'web/components/layout/col'
 import { useRouter } from 'next/navigation'
 import clsx from 'clsx'
-import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import {
   NewContractPanel,
   NewQuestionParams,
@@ -34,11 +33,22 @@ export const getStaticProps = async () => {
     props: { trendingContracts },
   }
 }
+export const useRedirectIfSignedOutCollege = () => {
+  const user = useUser()
+  const router = useRouter()
+  useEffect(() => {
+    if (user !== null) return
+    // Go to landing page if not logged in.
+    if (getIsNative()) router.replace('/sign-in-waiting')
+    else router.replace('/college')
+  }, [user])
+}
+
 export default function Chanceme(props: {
   trendingContracts: CPMMBinaryContract[]
 }) {
   const { trendingContracts } = props
-  useRedirectIfSignedOut()
+  useRedirectIfSignedOutCollege()
   const [group, setGroup] = useState<Group | null>(null)
   const user = useUser()
 
