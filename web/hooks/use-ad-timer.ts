@@ -1,7 +1,15 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
+import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
 
-export const useAdTimer = (seconds: number, visible: boolean) => {
-  const [secondsLeft, setSecondsLeft] = useState(seconds)
+export const useAdTimer = (
+  contractId: string,
+  seconds: number,
+  visible: boolean
+) => {
+  const [secondsLeft, setSecondsLeft] = usePersistentInMemoryState(
+    seconds,
+    `ad-timer-${contractId}`
+  )
 
   useEffect(() => {
     if (secondsLeft <= 0) return

@@ -159,7 +159,11 @@ export function BuyAmountInput(props: {
   }, [amount, user, minimumAmount, maximumAmount, disregardUserBalance])
 
   const increment = (interval: number) => {
-    const newAmount = (amount ?? 0) + interval
+    let newAmount = (amount ?? 0) + interval
+
+    // Special case to have rounded numbers.
+    if (amount === 10 && interval > 10) newAmount = interval
+
     if (maximumAmount && newAmount > maximumAmount) onChange(maximumAmount)
     else onChange(newAmount)
   }
