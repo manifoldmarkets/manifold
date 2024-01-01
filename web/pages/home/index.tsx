@@ -38,10 +38,7 @@ export default function Home(props: { headlines: Headline[] }) {
   return (
     <>
       <Welcome />
-      <Page
-        trackPageView={'home'}
-        trackPageProps={{ kind: 'desktop' }}
-      >
+      <Page trackPageView={'home'} trackPageProps={{ kind: 'desktop' }}>
         <HeadlineTabs headlines={headlines} />
         <Row className="mx-3 mb-2 items-center gap-2">
           <div className="flex md:hidden">
