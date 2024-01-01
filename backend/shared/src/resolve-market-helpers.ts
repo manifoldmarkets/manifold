@@ -178,7 +178,7 @@ export const resolveMarketHelper = async (
   await recordContractEdit(
     unresolvedContract,
     resolver.id,
-    Object.keys(updatedAttrs)
+    Object.keys(updatedAttrs ?? {})
   )
 
   await createContractResolvedNotifications(
