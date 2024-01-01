@@ -46,7 +46,6 @@ export const getServerSideProps = redirectIfLoggedIn('/chanceme', async (_) => {
     .limit(1)
 
   const { points, score, n } = result.data?.[0]?.data as any
-  console.log(points)
   return {
     props: { points, score, n },
   }
@@ -104,6 +103,22 @@ export default function College(props: {
               <LogoSEO />
 
               <Row className="items-center gap-2">
+                <Button
+                  color="gray-white"
+                  size="xs"
+                  onClick={firebaseLogin}
+                  className="whitespace-nowrap"
+                >
+                  Sign in
+                </Button>
+                <Button
+                  color="indigo"
+                  size="xs"
+                  onClick={firebaseLogin}
+                  className="whitespace-nowrap lg:flex"
+                >
+                  Sign up
+                </Button>
                 <MobileAppsQRCodeDialog
                   isModalOpen={isModalOpen}
                   setIsModalOpen={setIsModalOpen}
@@ -168,6 +183,19 @@ export default function College(props: {
                       <CalibrationChart points={points} width={w} height={h} />
                     )}
                   </SizedContainer>
+                </ExpandSection>
+                <ExpandSection title="Should I make an account if I'm not in 12th grade yet?">
+                  Absolutely! Prediction markets are dynamic systems that
+                  respond to new information. If you were to create one for
+                  college admissions before reaching 12th grade, it would still
+                  work well. These markets continuously update as you progress
+                  through your academic journey, considering your achievements
+                  and experiences. People participating in the market anticipate
+                  that your profile will evolve over time, and they make
+                  informed guesses based on your current accomplishments and
+                  future potential. While your age may be a factor, prediction
+                  markets are designed to effectively evaluate possibilities for
+                  individuals at different stages of their education.
                 </ExpandSection>
                 <ExpandSection title="What do the markets look like?">
                   Here is an example of an admissions profile for a hypothetical
