@@ -41,7 +41,6 @@ export default function Home(props: { headlines: Headline[] }) {
       <Page
         trackPageView={'home'}
         trackPageProps={{ kind: 'desktop' }}
-        manifoldWrappedBannerEnabled
       >
         <HeadlineTabs headlines={headlines} />
         <Row className="mx-3 mb-2 items-center gap-2">
