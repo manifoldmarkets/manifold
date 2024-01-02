@@ -157,10 +157,11 @@ export default function AboutPage() {
             description="General expectations and account rules"
             href="https://manifoldmarkets.notion.site/New-WIP-Community-Guidelines-2b986d33f0c646478d4921667c272f21"
           />
+
           <LabCard
-            title="📏 Platform calibration"
-            description="Manifold's overall track record"
-            href="/calibration"
+            title="🦋 Changelog"
+            description="List of new features and other changes"
+            href="https://manifoldmarkets.notion.site/Changelog-da5b4fe95872484f8fa4ee5cc71806d8"
           />
 
           {(!isNative || (isNative && platform !== 'ios')) && (
