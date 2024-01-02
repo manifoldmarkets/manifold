@@ -24,7 +24,6 @@ import { buildArray } from 'common/util/array'
 import { groupBy, orderBy } from 'lodash'
 import { Bet } from 'common/bet'
 import { getChartAnnotations } from 'common/supabase/chart-annotations'
-import { unauthedApi } from 'common/util/api'
 
 export async function getContractParams(
   contract: Contract,
