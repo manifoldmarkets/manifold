@@ -263,9 +263,10 @@ const RelatedContractCard = memo(function (props: {
 })
 
 const getUnseenContracts = (
-  contracts: Contract[],
+  contracts: Contract[] | undefined,
   seenContractIds?: string[]
-) => contracts.filter((c) => !seenContractIds?.includes(c.id))
+) =>
+  contracts ? contracts.filter((c) => !seenContractIds?.includes(c.id)) : []
 
 export const RelatedContractsGrid = memo(function (props: {
   contracts: Contract[]
