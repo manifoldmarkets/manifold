@@ -385,20 +385,18 @@ export function ContractPageContent(props: ContractParams) {
             )}
             <Row
               className={clsx(
-                'sticky -top-px z-50 mt-px flex h-12 w-full pb-2 pr-2 transition-colors',
+                'sticky -top-px z-50 mt-px flex h-12 w-full pr-2 transition-colors',
                 headerStuck
                   ? 'dark:bg-canvas-50/80 bg-white/80 backdrop-blur-sm'
                   : ''
               )}
             >
-              <Row className="mr-4 grow">
+              <Row className="mr-4 grow items-center">
                 {(headerStuck || !coverImageUrl) && (
-                  <Col className="my-auto">
-                    <BackButton />
-                  </Col>
+                  <BackButton className="self-stretch" />
                 )}
                 {headerStuck && (
-                  <span className="text-ink-1000 ml-4 mt-1 w-full min-w-0 overflow-hidden break-all">
+                  <span className="text-ink-1000 ml-4 line-clamp-2">
                     <VisibilityIcon contract={contract} /> {contract.question}
                   </span>
                 )}
