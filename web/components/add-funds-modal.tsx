@@ -42,16 +42,17 @@ export function AddFundsModal(props: {
     >
       <Tabs
         trackingName="buy modal tabs"
+        className="[&_svg]:hidden" // hide carousel switcher
         tabs={[
           {
-            title: 'Buy Mana',
+            title: 'Buy mana',
             content: <BuyManaTab onClose={() => setOpen(false)} />,
           },
           {
-            title: "I'm Broke",
+            title: 'Earn free mana',
             content: (
               <>
-                <div className="mb-4 mt-6">Other ways to get mana:</div>
+                <div className="mb-4 mt-6">Other ways to earn mana:</div>
                 <OtherWaysToGetMana />
               </>
             ),

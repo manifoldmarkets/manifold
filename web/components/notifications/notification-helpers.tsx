@@ -18,7 +18,7 @@ import { UserLink } from '../widgets/user-link'
 export const NOTIFICATIONS_PER_PAGE = 30
 
 function getHighlightClass(highlight: boolean) {
-  return highlight ? 'text-ink-1000 bg-primary-50' : 'text-ink-800'
+  return highlight ? 'text-ink-1000 bg-primary-50' : 'text-ink-700'
 }
 export const NUM_SUMMARY_LINES = 3
 
