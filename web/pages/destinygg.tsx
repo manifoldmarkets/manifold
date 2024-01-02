@@ -29,7 +29,7 @@ export async function getStaticProps() {
     sort: 'score',
     limit: 6,
     topicSlug: 'destinygg',
-  })
+  }).catch(() => [])
 
   return {
     props: {

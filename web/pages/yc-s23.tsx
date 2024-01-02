@@ -22,7 +22,7 @@ export async function getStaticProps() {
     // Manifold
     creatorId: 'IPTOzEqrpkWmEzh6hwvAyY9PqFb2',
     limit: 1000,
-  })
+  }).catch(() => [])
 
   return {
     props: {
