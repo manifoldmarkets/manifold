@@ -18,7 +18,6 @@ import { User } from 'common/user'
 import { SEO } from 'web/components/SEO'
 import { Input } from 'web/components/widgets/input'
 import { ENV_CONFIG } from 'common/envs/constants'
-import { AlertBox } from 'web/components/widgets/alert-box'
 
 export async function getStaticProps() {
   const [totalsByCharity, mostRecentDonation] = await Promise.all([
