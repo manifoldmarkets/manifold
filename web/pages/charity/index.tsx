@@ -111,7 +111,8 @@ export default function Charity(props: {
           <span className="text-ink-500">
             Convert your {ENV_CONFIG.moneyMoniker} earnings into real charitable
             donations at a ratio of{' '}
-            <span className="semibold">{formatMoney(100)} : $1</span>.
+            <span className="semibold">{formatMoney(100)} : $1</span>, capped at
+            $10,000 per month.
             <a
               href="https://manifoldmarkets.notion.site/Charitable-donation-program-668d55f4ded147cf8cf1282a007fb005"
               target="_blank"
@@ -121,19 +122,7 @@ export default function Charity(props: {
               Read more here.
             </a>
           </span>
-          <AlertBox title="2024 changes" className="mt-4 max-w-2xl">
-            Starting January 2nd, 2024 (Pacific time) Manifold user donations
-            will be{' '}
-            <a
-              href="https://manifoldmarkets.notion.site/The-New-Deal-for-Manifold-s-Charity-Program-1527421b89224370a30dc1c7820c23ec"
-              target="_blank"
-              rel="noreferrer"
-              className="text-primary-700"
-            >
-              capped at $10,000 per month
-            </a>
-            .
-          </AlertBox>
+
           <DonatedStats
             stats={[
               {
